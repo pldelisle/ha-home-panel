@@ -420,4 +420,12 @@ Object.assign(FR_MAP, {
   'Heating is held back.': 'Le chauffage est réduit.', 'Rooms are warming up before the challenge.': 'Les pièces se réchauffent avant le défi.',
   'inside': "à l'intérieur", 'house using': 'la maison consomme', 'of {n} kWh allowed': 'sur {n} kWh permis', '{n} – {n}': '{n} – {n}',
   'Charged to {n}%': 'Rechargée à {n} %', 'Challenge done': 'Défi terminé',
+  // ---- lights sheet (2.10.0) ----
+  'Brightness and colour follow the time of day': "L'intensité et la couleur suivent l'heure du jour", 'Very dim red light for the night': 'Lumière rouge très tamisée pour la nuit',
+  'Linked with': 'Lié avec', 'Link with': 'Lier avec', 'Moves together with another room': 'Bouge avec une autre pièce', 'Only an admin can change this': 'Seul un administrateur peut changer ceci',
+  'This room moves on its own': 'Cette pièce bouge seule', 'Bulbs': 'Ampoules', 'Colour temperature': 'Température de couleur',
+  'Warm white': 'Blanc chaud', 'Neutral white': 'Blanc neutre', 'Cool white': 'Blanc froid', 'Red, very dim': 'Rouge, très tamisé',
+  'Linked rooms switch, dim and change colour together. Picking a room copies this room\'s light onto it. A room links with one other room at a time.': "Les pièces liées s'allument, se tamisent et changent de couleur ensemble. Choisir une pièce y copie l'éclairage de celle-ci. Une pièce se lie à une seule autre à la fois.",
+  'Auto on': 'Auto activé', 'Auto off': 'Auto désactivé', 'Night on': 'Nuit activée', 'Night off': 'Nuit désactivée', 'Set by hand, Auto off': 'Réglé à la main, Auto désactivé',
+  'Rooms linked': 'Pièces liées', 'Room unlinked': 'Pièce déliée', 'now with': 'maintenant avec',
 });

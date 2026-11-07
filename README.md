@@ -68,11 +68,13 @@ Add a `config:` block under the panel to name the rest of your devices, pick the
       scenes: [scene.dinner, scene.movie_night]
 ```
 
-To change the order of the Lights tab, an admin taps Arrange and drags the rows; the order is saved in Home Assistant and every screen uses it.
+The Lights tab shows one tile per room, the way Apple's Home app does: the bulb switches the room and the rest of the tile opens it. The room's sheet has a brightness slider and a colour temperature slider side by side, and, when the room has an Adaptive Lighting instance, an Auto switch (the schedule) and a Night switch (its sleep mode). Moving a slider by hand takes the room off Auto until Auto is turned on again.
+
+To change the order of the Lights tab, an admin taps Arrange and drags the tiles; the order is saved in Home Assistant and every screen uses it.
 
 An area holding several light groups shows as one card, with a button per group in its sheet. To give each group its own card, list the area under `split_light_areas`, for example `split_light_areas: [living_room]`.
 
-Two light cards can be linked so that one switch, brightness slider or colour slider moves both. List each pair under `light_links`, by area id or by light entity. Give a pair an `input_boolean` and you can link and unlink it from the panel: a chain button on the seam between the cards on a tablet, a switch in the light's sheet on a phone. A pair without one stays linked.
+Two rooms can be linked so that one switch, brightness slider or colour slider moves both. An admin picks the partner from the room's sheet ("Linked with", a list of the other rooms), and the pairs are saved in Home Assistant for every screen. Until someone picks there, the panel starts from the pairs listed under `light_links`, by area id or by light entity; a pair with an `input_boolean` counts while that switch is on.
 
 ```yaml
       light_links:
