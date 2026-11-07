@@ -16,6 +16,7 @@ export function build(version = JSON.parse(read('package.json')).version, out = 
     '/*__CONFIG__*/': read('src/config.js'),
     '/*__FR__*/': read('src/i18n/fr.js') + '\n' + read('src/i18n/fr-map.js'),
     '/*__AUTO__*/': read('src/auto.js'),
+    '/*__STACK__*/': read('src/stack.js'),
     '__CSS__': JSON.stringify(css),
     "'__VERSION__'": JSON.stringify(version),
   };

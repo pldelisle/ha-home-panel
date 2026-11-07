@@ -323,6 +323,21 @@ const FR_MAP = {
   'Environment Canada only reports wind chill or humidex when they differ from the air temperature.': 'Environnement Canada ne donne le refroidissement éolien ou l’humidex que lorsqu’ils diffèrent de la température de l’air.',
   'Forecast highs and lows as solid lines, the normals for the date dashed.': 'Maximums et minimums prévus en trait plein, normales de la date en pointillé.',
   // ---- footer ----
+  // ---- idle clock smart stack (2.5.0) ----
+  'Now playing': 'En cours de lecture', 'Tap for the player': 'Toucher pour le lecteur', 'Lights unreachable': 'Lumières injoignables',
+  'They are not answering Home Assistant': 'Elles ne répondent plus à Home Assistant', 'Stays here until the door closes': 'Reste affiché jusqu’à ce que la porte se ferme',
+  'Open since {n}': 'Ouverte depuis {n}', 'Plug in before bed': 'Branchez-la avant d’aller dormir', 'Presence not updating': 'Présence figée',
+  "{n} iPhone stopped updating. Who's home and Away may be wrong.": '{n} iPhone ne se met plus à jour. Qui est là et le mode Absent pourraient être faux.',
+  "{n} iPhones stopped updating. Who's home and Away may be wrong.": '{n} iPhone ne se mettent plus à jour. Qui est là et le mode Absent pourraient être faux.',
+  'Sign in to iCloud again in Settings': 'Reconnectez iCloud dans les paramètres', 'Lights off at sunrise': 'Lumières éteintes au lever du soleil',
+  'in {n} min': 'dans {n} min', 'Every light turns off then': 'Toutes les lumières s’éteignent alors', 'Lights still on': 'Lumières encore allumées', 'Every light is off': 'Toutes les lumières sont éteintes',
+  'Lower consumption now': 'Réduisez la consommation maintenant', 'Hydro-Québec announced a critical peak': 'Hydro-Québec a annoncé une pointe critique', 'Using {n} right now': 'Consommation actuelle : {n}',
+  'Arrived {n}': 'Arrivé·e à {n}', 'Left {n}': 'Parti·e à {n}', '{n} event': '{n} événement', '{n} events': '{n} événements', 'From your calendars': 'De vos calendriers', 'and {n} more': 'et {n} de plus',
+  'All day': 'Toute la journée', 'All lights off': 'Toutes les lumières éteintes', 'Ends when someone comes home': 'Prend fin quand quelqu’un rentre',
+  'Open a door or a window a little': 'Entrouvrez une porte ou une fenêtre', 'The purifier can run faster': 'Le purificateur peut aller plus vite', 'Not charging right now': 'Ne charge pas en ce moment',
+  'Charging to {n}%': 'Charge jusqu’à {n}%', 'Energy today': "Énergie aujourd'hui", 'In effect for your area': 'En vigueur pour votre secteur', '{n} warnings in effect': '{n} avertissements en vigueur',
+  'Issued {n}': 'Émis {n}', 'Tap for the details': 'Toucher pour les détails', 'Env. Canada': 'Env. Canada', 'Reminder': 'Rappel', 'Departure': 'Départ', 'Weekdays at {n}': 'En semaine à {n}',
+  'Heating {n}%': 'Chauffage {n}%', 'water {n}%': 'eau {n}%', 'car {n}%': 'voiture {n}%', 'so far': 'jusqu’ici', 'Plugged in': 'Branchée'
 };
 // state words from integrations, matched without regard to case
 const FR_LOW = Object.fromEntries(Object.entries({
@@ -359,6 +374,9 @@ const FR_LBL = {setpoint: 'consigne', brightness: 'luminosité', lights: 'lumiè
   playing: 'en lecture', paused: 'en pause', 'battery low': 'pile faible', offline: 'hors ligne', open: 'ouverte'};
 // patterns around names and other free parts; a part that is ours is translated, a name stays
 const FR_RX = [
+  [/^Tonight: (.+), low \{n\}°$/, a => `Ce soir : ${(frLook(a) ?? a).toLowerCase()}, minimum {n}°`],
+  [/^(.+) not plugged in$/, a => `${a} non branchée`], [/^(.+) opened \{n\}$/, a => `${a} ouverte à {n}`],
+  [/^(.+) air$/, a => `Air : ${a}`], [/^(.+) is high$/, a => `${a} élevé`], [/^(.+) open$/, a => `${a} : ouverte`],
   [/^(.+) · (low|mean|high)$/, (a, b) => { const x = frLook(a); return x == null ? null : `${x} · ${{low: 'min', mean: 'moyenne', high: 'max'}[b]}`; }],
   [/^· (.+)$/, x => { const t = frLook(x); return t == null ? null : '· ' + t; }],
   [/^(.+) ·$/, x => { const t = frLook(x); return t == null ? null : t + ' ·'; }],

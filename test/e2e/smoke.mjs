@@ -31,13 +31,14 @@ const FULL_CFG = {
 const TABLET = ['home', 'lights', 'climate', 'weather', 'car', 'energy', 'air', 'media', 'cams', 'auto'], PHONE = ['home', 'lights', 'climate', 'car'];
 const browser = await chromium.launch();
 let failures = 0;
-async function run(name, {house, cfg, viewport, lang = 'en', theme = 'light', check}) {
+async function run(name, {house, cfg, viewport, lang = 'en', theme = 'light', time, check}) {
   const page = await browser.newPage({viewport, deviceScaleFactor: 1, timezoneId: 'America/Toronto', reducedMotion: 'reduce'});
   const errors = [], calls = []; let at = 'load';
   page.on('pageerror', e => errors.push(`[${at}] ` + e.message + (process.env.STACK ? '\n' + e.stack : '')));
   page.on('console', m => { if (m.text().startsWith('SERVICE ')) calls.push(m.text().slice(8)); if (m.type() === 'error' && !/Failed to load resource|fonts\.googleapis/.test(m.text())) errors.push(m.text()); });
   await page.addInitScript(([c, t]) => { window.PANEL_CFG = c; try { localStorage.setItem('home-panel-theme', t); } catch (e) {} }, [cfg || null, theme]);
   await page.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
+  if (time) await page.clock.setFixedTime(new Date(time));
   try {
     await page.goto(`${BASE}?house=${house}&lang=${lang}`);
     await page.waitForFunction(() => document.querySelector('home-panel')?.shadowRoot?.getElementById('rail'));
@@ -92,6 +93,38 @@ await run('full-ipad-fr', {house: 'full', cfg: FULL_CFG, viewport: ipad, lang: '
   assert.match(txt, /Accueil|Lumières|Climat/, 'the rail is in French for a French-language user');
 }});
 await run('full-iphone', {house: 'full', cfg: FULL_CFG, viewport: iphone});
+// smart stack (2.5.0): at 11:30 pm the plugged-in car and the playing speaker take turns beside the idle clock; a tap on the car card opens the car
+await run('stack-ipad', {house: 'full', cfg: FULL_CFG, viewport: ipad, time: '2026-11-07T23:30:00-05:00', check: async page => {
+  const R = fn => page.evaluate(fn);
+  await R(() => document.querySelector('home-panel').idleStart());
+  await page.waitForTimeout(300);
+  const ks = [];
+  for (let i = 0; i < 2; i++) {
+    ks.push(await R(() => { const r = document.querySelector('home-panel').shadowRoot; return [r.querySelector('#istk .sc')?.dataset.k, r.querySelectorAll('#istk .sdots i').length]; }));
+    await page.clock.setFixedTime(new Date(Date.parse('2026-11-07T23:30:00-05:00') + 20000 * (i + 1)));
+    await R(() => document.querySelector('home-panel').renderIdle());
+  }
+  assert.deepEqual(ks.map(k => k[0]).sort(), ['car', 'music'], `the car and the speaker take turns (got ${JSON.stringify(ks)})`);
+  assert.equal(ks[0][1], 2, 'two dots for two cards');
+  assert.ok(await R(() => !!document.querySelector('home-panel').shadowRoot.querySelector('#iwrap .iclk2 .wxi')), 'the clock keeps its weather icon');
+  await page.screenshot({path: join(OUT, 'stack-ipad-idle.png')});
+  await R(() => { const r = document.querySelector('home-panel'); r.stackGo('sh-car'); r.idleArm(); });
+  await page.waitForTimeout(500);
+  assert.ok(await R(() => !document.querySelector('home-panel').shadowRoot.getElementById('pane-car').hidden), 'the car card leads to the car');
+}});
+await run('stack-iphone', {house: 'full', cfg: FULL_CFG, viewport: iphone, time: '2026-11-07T23:30:00-05:00', check: async page => {
+  await page.evaluate(() => document.querySelector('home-panel').idleStart());
+  await page.waitForTimeout(300);
+  const box = await page.evaluate(() => { const r = document.querySelector('home-panel').shadowRoot, c = r.querySelector('#istk .sc').getBoundingClientRect(), k = r.querySelector('#iclk').getBoundingClientRect(); return {below: c.top >= k.bottom - 1, inside: c.left >= 0 && c.right <= innerWidth}; });
+  assert.deepEqual(box, {below: true, inside: true}, 'on a phone in portrait the card sits under the clock, on screen');
+  await page.screenshot({path: join(OUT, 'stack-iphone-idle.png')});
+}});
+// idle_stack.enabled: false keeps the clock alone
+await run('stack-off', {house: 'full', cfg: {...FULL_CFG, idle_stack: {enabled: false}}, viewport: ipad, time: '2026-11-07T23:30:00-05:00', check: async page => {
+  await page.evaluate(() => document.querySelector('home-panel').idleStart());
+  await page.waitForTimeout(300);
+  assert.equal(await page.evaluate(() => document.querySelector('home-panel').shadowRoot.querySelectorAll('#iwrap .sc').length), 0, 'no card when the stack is off');
+}});
 // the names on the Lights tab's area cards, in order
 const lightTiles = async page => {
   await page.evaluate(() => document.querySelector('home-panel').shadowRoot.querySelector('#rail [data-tab="lights"]').click());
