@@ -197,3 +197,18 @@ button.hsen{appearance:none;-webkit-appearance:none;font:inherit;color:inherit;t
 .app.idle>:not(.idle){opacity:0;transition:opacity .9s ease-out}
 .app.idle.gl::before{animation-play-state:running}
 @media (prefers-reduced-motion:reduce){.idle,.idle.wake{animation:none;transition:none}.app.idle>:not(.idle){transition:none}.app.idle.gl::before{animation-play-state:paused}}
+/* linked light cards (light_links): the pair takes two columns; joined into one outlined card while linked, a chain button on the seam */
+.lareas .llink{grid-column:span 2;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;position:relative;border-radius:18px}
+.lareas .llink.on{gap:0;background:var(--card2);box-shadow:0 0 0 1.5px color-mix(in srgb,var(--lc,var(--warn)) 45%,transparent)}
+.app.gl .lareas .llink.on{background:var(--g-tile);box-shadow:var(--g-edge-s),0 0 0 1.5px color-mix(in srgb,var(--lc,var(--warn)) 45%,transparent)}
+.lareas .llink.on>.larea{background:transparent!important;box-shadow:none!important}
+.lareas .llink.on>.larea:first-child{border-radius:18px 0 0 18px;padding-right:32px}
+.lareas .llink.on>.larea:nth-child(2){border-radius:0 18px 18px 0;padding-left:32px}
+.lareas .llink.on::after{content:"";position:absolute;left:50%;top:16px;bottom:16px;width:1px;background:var(--ring);opacity:.8;pointer-events:none}
+.lnk{position:absolute;left:50%;top:82px;transform:translate(-50%,-50%);z-index:2;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;border:0;padding:0;cursor:pointer;font:inherit;transition:background .2s,color .2s}
+.llink.on .lnk{color:color-mix(in srgb,var(--lc,var(--warn)) 60%,var(--fg));background:color-mix(in srgb,var(--lc,var(--warn)) 30%,var(--card));box-shadow:0 0 0 4px color-mix(in srgb,var(--bg) 40%,transparent),0 0 16px color-mix(in srgb,var(--lc,var(--warn)) 50%,transparent)}
+.llink:not(.on) .lnk{color:var(--fg3);background:var(--card);box-shadow:0 1px 3px rgba(0,0,0,.18);width:34px;height:34px}
+.lnk:focus-visible{outline:2px solid var(--c-home);outline-offset:2px}.lnk:disabled{opacity:.5;cursor:default}
+.lkd{color:color-mix(in srgb,var(--lc,var(--warn)) 70%,var(--fg));font-style:normal;font-weight:600;display:inline-flex;align-items:center;gap:3px;vertical-align:-2px}
+@media (max-width:1000px){.lareas .llink{grid-column:span 2}}
+@media (max-width:720px){.lareas .llink{grid-column:auto;grid-template-columns:minmax(0,1fr)}.lareas .llink.on>.larea{border-radius:18px!important;padding:12px 14px!important}.lareas .llink.on::after{display:none}.lnk{top:50%}}

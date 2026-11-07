@@ -50,3 +50,9 @@ panel_custom:
         hallway: switch.adaptive_lighting_upstairs
       # HA areas whose light groups (and lights outside a group) each get their own card instead of one card for the area
       split_light_areas: [kitchen]
+      # light cards that move together: one switch or slider reaches both cards of a pair. A card is an area id or a light entity.
+      # With an input_boolean the pair can be linked and unlinked from the panel; without one it stays linked.
+      light_links:
+        - lights: [light.kitchen_island, light.kitchen_sink]
+          switch: input_boolean.kitchen_lights_linked
+        - [office, hallway]

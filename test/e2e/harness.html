@@ -42,6 +42,7 @@ if (full) {
   ['island_1', 'island_2', 'sink_1'].forEach((k, i) => add(`light.kitchen_${k}`, i < 2 ? 'on' : 'off', {...ct, brightness: i < 2 ? 150 : 0}, {platform: 'hue', hidden: true}));
   add('light.kitchen_island', 'on', {...ct, brightness: 150, entity_id: ['light.kitchen_island_1', 'light.kitchen_island_2'], friendly_name: 'Kitchen Island'}, {area_id: 'kitchen', platform: 'group'});
   add('light.kitchen_sink', 'off', {...ct, entity_id: ['light.kitchen_sink_1'], friendly_name: 'Kitchen Sink'}, {area_id: 'kitchen', platform: 'group'});
+  add('input_boolean.kitchen_lights_linked', 'on', {friendly_name: 'Kitchen lights linked'});
   add('scene.movie_night', 'unknown', {friendly_name: 'Movie night'}); add('scene.dinner', iso(now - 7200e3), {friendly_name: 'Dinner'});
   add('input_boolean.kids_bedtime', 'off', {friendly_name: 'Kids bedtime'});
   add('binary_sensor.front_door', 'off', {device_class: 'door', friendly_name: 'Front door'}, {area_id: 'living_room', platform: 'zha', device_id: 's1'}, {id: 's1', area_id: 'living_room', name: 'Front door'});

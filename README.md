@@ -41,7 +41,7 @@ Every section is optional. A section shows only when its entities exist, so a ho
        sidebar_title: Home panel
        sidebar_icon: mdi:home-analytics
        url_path: home-panel
-       module_url: /local/home-panel/home-panel.js?v=2.2.0
+       module_url: /local/home-panel/home-panel.js?v=2.3.0
    ```
 
 4. Restart Home Assistant. The panel shows up in the sidebar.
@@ -69,6 +69,15 @@ Add a `config:` block under the panel to name the rest of your devices, pick the
 ```
 
 An area holding several light groups shows as one card with a button per group. To give each group its own card, list the area under `split_light_areas`, for example `split_light_areas: [living_room]`.
+
+Two light cards can be linked so that one switch, brightness slider or colour slider moves both. List each pair under `light_links`, by area id or by light entity. Give a pair an `input_boolean` and you can link and unlink it from the panel: a chain button on the seam between the cards on a tablet, a switch in the light's sheet on a phone. A pair without one stays linked.
+
+```yaml
+      light_links:
+        - lights: [light.living_room_lamps, light.tv_lamps]
+          switch: input_boolean.living_room_lights_linked
+        - [office, hallway]
+```
 
 Room icons can be `sofa`, `door`, `desk`, `bed`, `bath`, `drop`, `car`, `house` and `therm`.
 

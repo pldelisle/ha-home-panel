@@ -159,6 +159,7 @@ const FR_MAP = {
   // heat pump modes and settings
   'Heat': 'Chauffage', 'Dry': 'Déshumidification', 'Auto': 'Auto', 'Eco': 'Éco', 'Boost': 'Boost', 'Diffuse': 'Diffus', 'Quiet': 'Silencieux', 'Sleep': 'Sommeil', 'Comfort': 'Confort',
   // ---- lights ----
+  'Link with': 'Lier avec', 'Switch, brightness and colour move both': 'L’interrupteur, l’intensité et la couleur suivent pour les deux',
   'Lights': 'Lumières', 'Other lights': 'Autres lumières', 'On · {n}%': 'Allumé · {n}%', 'On · {n} W': 'Allumée · {n} W', 'Outlet on': 'Prise allumée', 'Outlet off': 'Prise éteinte', '{n} of {n} on · {n}%': '{n} sur {n} allumées · {n}%', '{n} lights on': '{n} lumières allumées', '{n} light on': '{n} lumière allumée',
   'lights on ·': 'lumières allumées ·', 'light on ·': 'lumière allumée ·', 'lights on': 'lumières allumées', 'light on': 'lumière allumée', 'lights on · Doors closed': 'lumières allumées · Portes fermées',
   'Adaptive Lighting: colour and brightness follow the time of day': "Éclairage adaptatif : la couleur et l'intensité suivent l'heure du jour",
