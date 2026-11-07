@@ -19,6 +19,7 @@ panel_custom:
       car:
         name: My car        # default: the FordPass vehicle name
         color: "#2F5FAF"    # body colour of the drawing shown when FordPass has no photo
+        battery_kwh: 91     # usable battery size, for the time to full on the charging pill when FordPass gives none
       entities:
         weather: weather.springfield_forecast   # default: the first weather entity
         grid_power: sensor.house_power

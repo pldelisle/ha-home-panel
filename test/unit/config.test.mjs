@@ -17,7 +17,7 @@ test('no config and no states: generic defaults, nothing personal', () => {
   const c = resolveConfig(undefined, undefined);
   assert.equal(c.entities.weather, null);
   assert.deepEqual(c.rooms, []); assert.deepEqual(c.people, []); assert.deepEqual(c.scenes, []); assert.deepEqual(c.modes, []);
-  assert.equal(c.house, null); assert.deepEqual(c.car, {name: null, color: null});
+  assert.equal(c.house, null); assert.deepEqual(c.car, {name: null, color: null, battery_kwh: null});
   assert.equal(c.entities.sun, 'sun.sun');
 });
 
@@ -76,7 +76,8 @@ test('house image: one URL for both themes, or day and night', () => {
 test('scenes, modes, Adaptive Lighting areas and car pass through', () => {
   const c = resolveConfig({scenes: ['scene.a'], modes: 'input_boolean.b', adaptive_lighting_areas: {hall: 'switch.al'}, car: {name: 'EV', color: '#123'}});
   assert.deepEqual(c.scenes, ['scene.a']); assert.deepEqual(c.modes, ['input_boolean.b']);
-  assert.deepEqual(c.alAreas, {hall: 'switch.al'}); assert.deepEqual(c.car, {name: 'EV', color: '#123'});
+  assert.deepEqual(c.alAreas, {hall: 'switch.al'}); assert.deepEqual(c.car, {name: 'EV', color: '#123', battery_kwh: null});
+  assert.equal(resolveConfig({car: {battery_kwh: 91}}).car.battery_kwh, 91); assert.equal(resolveConfig({car: {battery_kwh: 'x'}}).car.battery_kwh, null);
 });
 
 test('split_light_areas: a list or one area, empty by default', () => {

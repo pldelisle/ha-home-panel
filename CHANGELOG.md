@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.6.0
+
+- Live activities: while something runs, the "All clear" status chip turns into a glass pill. The car charging shows its battery and time to full, the water heater its temperature and about how long is left, and a Hilo challenge its phase and countdown from pre-heat until recovery ends. A second or third activity sits beside the pill as a small ring, and a status problem as a "!".
+- Tapping the pill opens one card per activity above the usual Status checks: the car's battery toward its limit, full time, energy and cost so far, with Pause charging and Open Car; the water heater's curve for this cycle; the challenge's pre-heat, reduction and recovery bar with the energy used so far.
+- When the car reaches its limit or a challenge ends, the pill shows a check for 10 minutes, then the chip says "All clear" again. On a tablet the weather chip shows only the temperature while a pill is up.
+- New `car: {battery_kwh: …}` option, used for the time to full when FordPass doesn't report one.
+
 ## 2.5.0
 
 - Smart stack on the idle clock: one card beside the clock (under it on a portrait screen) that follows the moment. It covers tomorrow's weather in the evening, the car charging overnight, who just came home, the hour before sunrise, reminders, critical peaks, now playing, today's calendar, Away, poor room air and energy used today. A door left open or lights that stop answering pin a red card until fixed, and a weather warning, an unplugged car low at night or a frozen iCloud tracker go first in amber. Cards take turns every 20 seconds, and a tap opens what the card is about. New options: `idle_stack` (`enabled`, `sunrise_lights_off`, `reminders`) and `entities.away_mode`.
