@@ -7,7 +7,7 @@ import {fileURLToPath} from 'node:url';
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
 const read = p => readFileSync(join(ROOT, p), 'utf8');
-export const CSS_ORDER = ['base', 'extra', 'tabs', 'phone', 'glass', 'live', 'motion'];   // motion.css last: it overrides the others
+export const CSS_ORDER = ['base', 'extra', 'tabs', 'phone', 'glass', 'lights', 'live', 'motion'];   // motion.css last: it overrides the others
 
 export function build(version = JSON.parse(read('package.json')).version, out = join(ROOT, 'dist')) {
   let src = read('src/home-panel.src.js');

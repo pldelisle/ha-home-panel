@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.10.0
+
+- The Lights tab's sideways dimmer rows are gone. Each room is a tile in the style of Apple's Home app, four to a row on a tablet and two on a phone: the bulb switches the room and the rest of the tile opens it. The tile is bright while the room is on, tinted with its colour, and says its brightness and whether Auto, Night or Manual is in charge.
+- The room's sheet has two tall sliders side by side, brightness and colour temperature (warm at the bottom, cool at the top, within what the bulbs can do). Drag, tap a spot to jump there, or use the arrow keys. Dragging brightness to the bottom turns the room off. A power button sits beside the room's name and Done closes the sheet.
+- Auto and Night are switches in a list under the sliders, each with a line saying what it does. Moving a slider by hand takes the room off Auto (Adaptive Lighting's manual control) and ends Night; turning Auto on hands the room back to the schedule. Night turns Auto on, and Auto off ends Night.
+- "Linked with" is a row in the sheet that opens a list of the other rooms with a check mark on the current partner, the way iOS picks a value. Any two rooms can be linked; picking a room that is already linked moves it, None unlinks. The pairs are saved in Home Assistant's frontend system data for every screen (admins only), and `light_links` is now only the starting point. The chain button between linked cards is gone.
+- Single bulbs stay as chips in the sheet, with a check mark when on. Every control is at least 44 points.
+
 ## 2.8.1
 
 - The Home card no longer has a Status block with "All clear" and the list of checks under Who's home, since the header pill already says when something needs attention. The Home tab's subtitle drops "all clear" too. The checks are still one tap away in the pill when something needs attention.
