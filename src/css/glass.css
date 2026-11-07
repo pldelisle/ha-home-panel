@@ -1,0 +1,100 @@
+/* ---- Liquid Glass (v1.18.0), Mercury drop material since v1.19.0: almost no tint, a soft white inner glow, a 15 px blur and (Chromium) a noise distortion of the backdrop.
+   .gl on .app = glass on (Status popup: Glass None / Dawn / Lake / Meadow, localStorage home-panel-glass), data-wp = the wallpaper.
+   Material = a thin fill + the backdrop blurred and saturated + a light rim; the lens (Chromium only) is added by lensAll() in the JS. ---- */
+.app{--g-fill:rgba(255,255,255,calc(.08*var(--g-m,1)));--g-dense:rgba(255,255,255,calc(.3*var(--g-m,1)));--g-ring:rgba(255,255,255,.3);--g-hi:rgba(255,255,255,.7);--g-glow:rgba(255,255,255,.3);--g-sel:rgba(255,255,255,calc(.3*var(--g-m,1)));--g-shadow:0 0 21px -8px rgba(255,255,255,.3);--g-blur:15px;--g-edge:inset 0 0 12px -4px var(--g-hi),inset 0 0 0 1px var(--g-ring),var(--g-shadow);--g-edge-s:inset 0 0 8px -3px var(--g-hi),inset 0 0 0 1px var(--g-ring);--g-bd:blur(var(--g-blur)) saturate(1.5)}
+.app[data-theme="dark"]{--g-fill:rgba(255,255,255,calc(.05*var(--g-m,1)));--g-dense:rgba(20,20,24,calc(.4*var(--g-m,1)));--g-ring:rgba(255,255,255,.12);--g-hi:rgba(255,255,255,.35);--g-glow:rgba(255,255,255,.08);--g-sel:rgba(255,255,255,calc(.12*var(--g-m,1)));--g-shadow:0 0 21px -8px rgba(255,255,255,.12)}
+/* thin glass: the bar, the rail, the header chips and round buttons */
+.app.tabsv.gl .rail,.app.gl .head .chip,.app.gl .head button.icon{background:var(--g-fill);border:0;-webkit-backdrop-filter:var(--g-bd);backdrop-filter:var(--g-bd);box-shadow:var(--g-edge)}
+/* dense glass: surfaces that carry text (the Status popup, confirmation toasts, phone sheets) fill and blur more */
+.app.gl .pop,.app.gl .toast:not(.err),.app.gl .sheet>.panel{background:var(--g-dense);border:0;-webkit-backdrop-filter:var(--g-bd);backdrop-filter:var(--g-bd);box-shadow:var(--g-edge)}
+.app.gl .toast:not(.err){color:var(--fg);border-radius:999px;padding:12px 18px;font-weight:600}
+/* phone: the bar floats as a capsule; the open section sits in a lighter capsule of its own, tinted with the section's colour */
+.app.tabsv.gl.cp .rail{left:14px;right:14px;bottom:calc(10px + env(safe-area-inset-bottom,0px));border-radius:34px;padding:6px 8px;gap:2px}
+.app.tabsv.gl.cp .wrap{padding-bottom:calc(110px + env(safe-area-inset-bottom,0px))}
+.app.tabsv.gl.cp .rtab[aria-selected="true"]{background:color-mix(in srgb,var(--rc) 20%,var(--g-sel));border-radius:24px;box-shadow:var(--g-edge-s)}
+/* iPad: the rail is the same capsule, standing on the page */
+.app.tabsv.gl:not(.cp) .rail{border-radius:30px;padding:10px 6px}
+.app.tabsv.gl:not(.cp) .rtab[aria-selected="true"]{background:color-mix(in srgb,var(--rc) 20%,var(--g-sel))}
+/* phone: toasts sit above the floating capsule */
+.app.gl.cp .toast{bottom:calc(86px + env(safe-area-inset-bottom,0px))}
+/* phone sheets: a lighter scrim, the sheet frame is glass, the cards inside stay opaque so numbers stay readable */
+.app.gl .sheet{background:rgba(20,16,12,.18);-webkit-backdrop-filter:blur(6px) saturate(1.3);backdrop-filter:blur(6px) saturate(1.3)}
+.app.gl.cp .sheet{background:rgba(20,16,12,.2)}
+.app.gl.cp .sheet>.panel>.grab::before{background:var(--fg2)}
+/* the wallpaper: a fixed layer behind the page (iOS ignores background-attachment:fixed), soft colour washes for the glass to bend */
+.app.gl{position:relative;z-index:0;background:var(--wbase,var(--bg))}
+.app.gl::before{content:"";position:fixed;inset:-12vh 0;z-index:-1;pointer-events:none;background:var(--wp,none),var(--wbase,var(--bg))}
+.app.gl[data-wp="dawn"]{--wbase:#EFEAF0;--wp:radial-gradient(60% 50% at 12% 8%,rgba(250,186,150,.85),transparent 70%),radial-gradient(55% 45% at 88% 16%,rgba(192,172,236,.8),transparent 70%),radial-gradient(45% 40% at 42% 56%,rgba(252,224,166,.55),transparent 70%),radial-gradient(65% 50% at 62% 96%,rgba(156,196,244,.75),transparent 70%)}
+.app.gl[data-wp="lake"]{--wbase:#DCE6F4;--wp:radial-gradient(60% 50% at 18% 12%,rgba(96,156,244,.85),transparent 70%),radial-gradient(55% 48% at 84% 28%,rgba(142,114,232,.8),transparent 70%),radial-gradient(50% 42% at 62% 88%,rgba(238,146,200,.7),transparent 70%),radial-gradient(45% 40% at 8% 78%,rgba(132,220,240,.65),transparent 70%)}
+.app.gl[data-wp="meadow"]{--wbase:#E8F0E8;--wp:radial-gradient(60% 50% at 16% 10%,rgba(160,224,196,.9),transparent 70%),radial-gradient(55% 48% at 86% 24%,rgba(110,186,194,.8),transparent 70%),radial-gradient(50% 42% at 60% 90%,rgba(246,226,150,.7),transparent 70%),radial-gradient(45% 40% at 8% 76%,rgba(166,204,236,.6),transparent 70%)}
+.app.gl[data-theme="dark"][data-wp="dawn"]{--wbase:#17151B;--wp:radial-gradient(60% 50% at 12% 8%,rgba(150,74,60,.55),transparent 70%),radial-gradient(55% 45% at 88% 16%,rgba(92,66,150,.55),transparent 70%),radial-gradient(65% 50% at 62% 96%,rgba(40,76,140,.5),transparent 70%)}
+.app.gl[data-theme="dark"][data-wp="lake"]{--wbase:#121722;--wp:radial-gradient(60% 50% at 18% 12%,rgba(30,80,180,.6),transparent 70%),radial-gradient(55% 48% at 84% 28%,rgba(84,52,170,.55),transparent 70%),radial-gradient(50% 42% at 62% 88%,rgba(160,52,120,.45),transparent 70%)}
+.app.gl[data-theme="dark"][data-wp="meadow"]{--wbase:#131A16;--wp:radial-gradient(60% 50% at 16% 10%,rgba(30,110,80,.55),transparent 70%),radial-gradient(55% 48% at 86% 24%,rgba(28,92,104,.55),transparent 70%),radial-gradient(50% 42% at 60% 90%,rgba(130,104,40,.4),transparent 70%)}
+.app.gl[data-wp="ember"]{--wbase:#F4E9E4;--wp:radial-gradient(60% 50% at 14% 10%,rgba(250,150,120,.8),transparent 70%),radial-gradient(55% 48% at 84% 20%,rgba(252,206,120,.75),transparent 70%),radial-gradient(50% 42% at 60% 92%,rgba(196,140,200,.6),transparent 70%),radial-gradient(45% 40% at 6% 76%,rgba(248,176,190,.6),transparent 70%)}
+.app.gl[data-wp="aurora"]{--wbase:#E4ECF2;--wp:radial-gradient(60% 50% at 16% 12%,rgba(100,220,200,.8),transparent 70%),radial-gradient(55% 48% at 86% 26%,rgba(150,232,170,.7),transparent 70%),radial-gradient(50% 42% at 62% 90%,rgba(160,140,240,.7),transparent 70%),radial-gradient(45% 40% at 8% 76%,rgba(120,170,250,.6),transparent 70%)}
+.app.gl[data-wp="sand"]{--wbase:#F2ECE2;--wp:radial-gradient(60% 50% at 14% 10%,rgba(236,206,150,.85),transparent 70%),radial-gradient(55% 48% at 86% 24%,rgba(232,160,120,.7),transparent 70%),radial-gradient(50% 42% at 60% 90%,rgba(150,196,240,.7),transparent 70%),radial-gradient(45% 40% at 8% 76%,rgba(180,210,180,.55),transparent 70%)}
+.app.gl[data-theme="dark"][data-wp="ember"]{--wbase:#1C1416;--wp:radial-gradient(60% 50% at 14% 10%,rgba(170,70,50,.55),transparent 70%),radial-gradient(55% 48% at 84% 20%,rgba(160,110,30,.5),transparent 70%),radial-gradient(50% 42% at 60% 92%,rgba(100,50,120,.5),transparent 70%)}
+.app.gl[data-theme="dark"][data-wp="aurora"]{--wbase:#0E1620;--wp:radial-gradient(60% 50% at 16% 12%,rgba(20,140,120,.6),transparent 70%),radial-gradient(55% 48% at 86% 26%,rgba(40,150,80,.5),transparent 70%),radial-gradient(50% 42% at 62% 90%,rgba(90,60,180,.55),transparent 70%)}
+.app.gl[data-theme="dark"][data-wp="sand"]{--wbase:#1A1612;--wp:radial-gradient(60% 50% at 14% 10%,rgba(140,100,40,.5),transparent 70%),radial-gradient(55% 48% at 86% 24%,rgba(150,70,40,.5),transparent 70%),radial-gradient(50% 42% at 60% 90%,rgba(40,80,140,.45),transparent 70%)}
+/* cards and tiles are glass too (v1.18.1): a denser fill than the bar, so numbers and captions keep their contrast over the washes */
+.app.gl{--g-card:rgba(255,255,255,calc(.14*var(--g-m,1)));--g-tile:rgba(255,255,255,calc(.12*var(--g-m,1)))}
+.app.gl[data-theme="dark"]{--g-card:rgba(255,255,255,calc(.06*var(--g-m,1)));--g-tile:rgba(255,255,255,calc(.06*var(--g-m,1)))}
+.app.gl .card,.app.gl .htile,.app.gl .stile,.app.gl .ptile,.app.gl .hsec{background:var(--g-card);-webkit-backdrop-filter:var(--g-bd);backdrop-filter:var(--g-bd);box-shadow:var(--g-edge)}
+.app.gl .tile{background:var(--g-tile)}
+/* v1.18.2: every other surface follows. Top-level panels (sheet sections, air cards, room list) are glass cards; inner wells (rows, segmented controls, tabs, steppers, sensor and speaker rows) take the tile fill; small buttons inside take the selected-bubble fill; tinted "on" states mix their accent into the glass instead of the opaque card */
+.app.gl .inner,.app.gl .aqcard,.app.gl .citem{background:var(--g-card);-webkit-backdrop-filter:var(--g-bd);backdrop-filter:var(--g-bd);box-shadow:var(--g-edge)}
+.app.gl .larea,.app.gl .pod,.app.gl .hsen,.app.gl .camempty,.app.gl .schip,.app.gl .mtvscreen,.app.gl .facts,.app.gl .access,.app.gl .arow,.app.gl .seg,.app.gl .tabs,.app.gl .stepper,.app.gl .cbtn,.app.gl .tgl,.app.gl .dtime,.app.gl .more,.app.gl .room,.app.gl .radar,.app.gl .cct,.app.gl .aupick .chip,.app.gl .auchips .chip,.app.gl .inner .chips .chip,.app.gl .card .chips .chip,.app.gl .sstrip,.app.gl .sevents li,.app.gl .sheet button.icon.close,.app.gl .ausel .close{background:var(--g-tile);box-shadow:var(--g-edge-s)}
+.app.gl .sheet button.icon.close{box-shadow:var(--g-edge-s)}
+.app.gl .seg button[aria-checked="true"],.app.gl .stepper button,.app.gl .abtn,.app.gl .lauto,.app.gl .pod .pp,.app.gl .pod .pic,.app.gl .stile .pp2,.app.gl .hsen .sic,.app.gl .cbtn .ic,.app.gl .citem .ic,.app.gl .lic,.app.gl .sic{background:var(--g-sel);border-color:transparent}
+.app.gl[data-theme="dark"] .seg button[aria-checked="true"]{background:rgba(255,255,255,.05);box-shadow:inset 0 0 0 1px rgba(255,255,255,.22)}
+.app.gl .aupick .chip.sel,.app.gl .auchips .chip.sel{background:var(--fg)}
+.app.gl .pod.on{background:color-mix(in srgb,var(--c-home) 14%,var(--g-tile))}
+.app.gl .mtvscreen.on{background:color-mix(in srgb,var(--c-home) 14%,var(--g-tile))}
+.app.gl .pod .pp.on,.app.gl .stile .pp2.on{background:var(--c-home)}
+.app.gl .citem[aria-selected="true"]{background:color-mix(in srgb,var(--c-home) 16%,var(--g-card));box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--c-home) 55%,transparent),var(--g-shadow)}
+.app.gl .citem.on .ic{background:color-mix(in srgb,var(--c-wh) 22%,var(--g-sel))}
+.app.gl .cbtn[aria-pressed="true"]{background:color-mix(in srgb,var(--c-wh) 18%,var(--g-tile))}
+.app.gl .lauto[aria-pressed="true"]{background:color-mix(in srgb,var(--c-home) 16%,var(--g-sel))}
+.app.gl .larea.on .lic{background:color-mix(in srgb,var(--lc,var(--warn)) 26%,var(--g-sel))}.app.gl .schip.warn .sic{background:color-mix(in srgb,var(--warn) 20%,var(--g-sel))}
+.app.gl .schip.act .sic{background:color-mix(in srgb,var(--c-home) 18%,var(--g-sel))}
+.app.gl .tab[aria-selected="true"]{background:var(--g-sel)}
+.app.gl .days button,.app.gl .mtvctl button{background:var(--g-tile);box-shadow:var(--g-edge-s)}
+.app.gl .days button[aria-pressed="true"]{background:color-mix(in srgb,var(--c-ev) 22%,var(--g-sel))}
+.app.gl .mtvctl button[aria-pressed="true"]{background:color-mix(in srgb,var(--warn) 18%,var(--g-sel))}
+.app.tabsv.gl .rtab:not([aria-selected="true"]):active{background:var(--g-fill)}
+/* small pills and icon squares (who's home, status pills, light chips, tile icons): tile fill, tinted states keep their accent */
+.app.gl .wp,.app.gl .hwx .wp,.app.gl .pill,.app.gl .pane-auto .pill,.app.gl .state,.app.gl .go,.app.gl .lchip,.app.gl .stile .ic,.app.gl .ic.acc,.app.gl .aud.up,.app.gl .aud.skip,.app.gl .clear span{background:var(--g-tile);box-shadow:var(--g-edge-s)}
+.app.gl .hsen,.app.gl .schip{box-shadow:var(--g-edge-s)}
+.app.gl .pill.on{background:color-mix(in srgb,var(--c-wh) 20%,var(--g-tile))}.app.gl .pill.bad{background:color-mix(in srgb,var(--warn) 20%,var(--g-tile))}
+.app.gl .pane-auto .pill.run{background:color-mix(in srgb,var(--warn) 18%,var(--g-tile))}.app.gl .pane-auto .pill.no{background:color-mix(in srgb,var(--crit) 16%,var(--g-tile))}.app.gl .pane-auto .pill.ok{background:color-mix(in srgb,var(--ok) 18%,var(--g-tile))}
+.app.gl .lchip[aria-pressed="true"]{background:color-mix(in srgb,var(--warn) 24%,var(--g-tile))}
+.app.gl .ic.acc{background:color-mix(in srgb,var(--acc) 22%,var(--g-tile))}
+.app.gl .stile.on .ic,.app.gl .citem.bad .ic{background:color-mix(in srgb,var(--warn) 22%,var(--g-tile))}.app.gl .stile.ltile.on .ic{background:color-mix(in srgb,var(--lc,var(--warn)) 26%,var(--g-tile))}.app.gl .stile.on.home .ic{background:color-mix(in srgb,var(--c-home) 20%,var(--g-tile))}
+.app.gl .stile.bad .ic{background:color-mix(in srgb,var(--warn) 22%,var(--g-tile))}.app.gl .stile.blue .ic{background:color-mix(in srgb,var(--m-blue) 20%,var(--g-tile))}.app.gl .stile.grid .ic{background:color-mix(in srgb,var(--c-grid) 22%,var(--g-tile))}.app.gl .morelist .stile .ic{background:color-mix(in srgb,var(--rc) 20%,var(--g-tile))}
+/* v1.18.3: WebKit leaves ghosts of the previous flow drawing behind a blurred card (stale compositing under backdrop-filter), so on iOS the two Automations cards keep a denser plain translucent fill with no blur, and every flow drawing gets its own layer */
+.augraph{isolation:isolate;transform:translateZ(0)}
+@supports (-webkit-touch-callout:none){.app.gl .auc,.app.gl .autoday{-webkit-backdrop-filter:none;backdrop-filter:none;background:color-mix(in srgb,var(--g-card) 70%,var(--card))}}
+/* pane and sheet title icons are tinted glass instead of a flat colour square */
+.app.gl .ph .badge{background:color-mix(in srgb,var(--acc,var(--fg3)) 22%,var(--g-fill));-webkit-backdrop-filter:var(--g-bd);backdrop-filter:var(--g-bd);box-shadow:var(--g-edge)}
+/* Mercury drop (v1.19.0): Chromium bends the backdrop with a blurred fractal-noise displacement map (#glass-distortion in the JS); WebKit keeps the frosted look */
+.app.gl.mc{--g-bd:blur(var(--g-blur)) saturate(1.5) url(#glass-distortion)}
+/* text on the wallpaper or on clear glass is a shade darker than on a card (secondary text and the tinted accents), so it keeps 4.5:1 over the colour washes (dark theme already passes) */
+.app.gl{--fg2:#57544F}
+.app.gl:not([data-theme="dark"]){--t-ev:#086050;--t-home:#2F5A90;--t-wh:#8C4421}
+.app.gl[data-theme="dark"]{--fg2:#B0ADA7}
+.app.gl:not([data-theme="dark"]) .rtab:not([aria-selected="true"]),.app.gl:not([data-theme="dark"]) .hello>div,.app.gl:not([data-theme="dark"]) .clock small,.app.gl:not([data-theme="dark"]) .pane .ph .sub,.app.gl:not([data-theme="dark"]) .head .chip small{color:var(--fg)}
+/* Reduce Transparency, or Increase Contrast: the glass turns back into near-solid cards */
+.app.gl[data-theme="dark"] .seg button[aria-checked="true"] b{color:#66CCAE}
+/* Transparency slider in the Status popup (v1.18.2): scales every glass fill; hidden when Glass is None */
+.gtrow{display:none;align-items:center;gap:10px;margin-top:10px;font-size:calc(12px*var(--tx));color:var(--fg2)}
+.app.gl .gtrow{display:flex}
+.gtrange{flex:1;height:44px;margin:0;-webkit-appearance:none;appearance:none;background:transparent;cursor:pointer;--p:50%}
+.gtrange::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:linear-gradient(90deg,var(--c-home) 0,var(--c-home) var(--p),var(--ring) var(--p))}
+.gtrange::-moz-range-track{height:6px;border-radius:3px;background:var(--ring)}
+.gtrange::-moz-range-progress{height:6px;border-radius:3px;background:var(--c-home)}
+.gtrange::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;border-radius:50%;margin-top:-11px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.3),0 0 0 .5px rgba(0,0,0,.08)}
+.gtrange::-moz-range-thumb{width:28px;height:28px;border:0;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+@media (prefers-reduced-transparency:reduce){.app.gl .clear span{background:var(--card2)}.app.gl .inner .chips .chip,.app.gl .card .chips .chip{background:var(--card2);box-shadow:none}.app.tabsv.gl .rail,.app.gl .head .chip,.app.gl .head button.icon,.app.gl .pop,.app.gl .toast:not(.err),.app.gl.cp .sheet>.panel,.app.gl .card,.app.gl .htile,.app.gl .stile,.app.gl .ptile,.app.gl .hsec{-webkit-backdrop-filter:none;backdrop-filter:none;background:var(--card)}.app.gl .tile{background:var(--card2)}.app.gl .ph .badge{-webkit-backdrop-filter:none;backdrop-filter:none;background:color-mix(in srgb,var(--acc,var(--fg3)) 22%,var(--card))}.app.gl .inner,.app.gl .aqcard,.app.gl .citem{-webkit-backdrop-filter:none;backdrop-filter:none;background:var(--card)}.app.gl .larea,.app.gl .pod,.app.gl .hsen,.app.gl .camempty,.app.gl .schip,.app.gl .mtvscreen,.app.gl .facts,.app.gl .access,.app.gl .arow,.app.gl .seg,.app.gl .tabs,.app.gl .stepper,.app.gl .cbtn,.app.gl .tgl,.app.gl .dtime,.app.gl .more,.app.gl .room,.app.gl .radar{background:var(--card2)}}
+@media (prefers-contrast:more){.app.gl{--g-m:1 !important;--g-fill:rgba(255,255,255,.86);--g-dense:rgba(255,255,255,.95);--g-sel:rgba(255,255,255,.95);--g-card:rgba(255,255,255,.95);--g-tile:rgba(243,241,237,.95)}.app.gl[data-theme="dark"]{--fg2:#CFCCC6;--g-fill:rgba(40,40,44,.88);--g-dense:rgba(30,30,34,.95);--g-sel:rgba(255,255,255,.2);--g-card:rgba(47,45,42,.95);--g-tile:rgba(56,53,50,.95)}}
+.app.gl #lsheet .larea{box-shadow:none}
+.app.gl .cct{box-shadow:var(--g-edge-s)}.app.gl .cct .seg{background:var(--g-sel);box-shadow:none}.app.gl .cct .ccic{background:var(--g-sel)}.app.gl button.cct[aria-pressed="true"]{background:var(--fg);box-shadow:none}.app.gl button.cct[aria-pressed="true"] .ccic{background:rgba(255,255,255,.22)}
