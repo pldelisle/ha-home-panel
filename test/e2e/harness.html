@@ -10,7 +10,7 @@
 import '/panel/home-panel.js';
 const house = new URLSearchParams(location.search).get('house') || 'full', full = house === 'full';
 const now = Date.now(), iso = t => new Date(t).toISOString();
-const S = {}, ENT = {}, DEV = {}, AREAS = {living_room: {area_id: 'living_room', name: 'Living room'}, office: {area_id: 'office', name: 'Office'}, bedroom: {area_id: 'bedroom', name: 'Bedroom'}, garage: {area_id: 'garage', name: 'Garage'}};
+const S = {}, ENT = {}, DEV = {}, AREAS = {living_room: {area_id: 'living_room', name: 'Living room'}, office: {area_id: 'office', name: 'Office'}, bedroom: {area_id: 'bedroom', name: 'Bedroom'}, garage: {area_id: 'garage', name: 'Garage'}, kitchen: {area_id: 'kitchen', name: 'Kitchen'}};
 const add = (id, state, attributes = {}, reg = null, dev = null) => {
   S[id] = {entity_id: id, state: String(state), attributes: {friendly_name: id.split('.')[1].replace(/_/g, ' '), ...attributes}, last_changed: iso(now - 3600e3), last_updated: iso(now - 60e3)};
   if (reg) ENT[id] = {entity_id: id, ...reg};
@@ -37,6 +37,11 @@ if (full) {
   });
   add('light.office_1', 'on', {brightness: 200, supported_color_modes: ['color_temp', 'hs'], color_mode: 'color_temp', color_temp_kelvin: 4000, min_color_temp_kelvin: 2000, max_color_temp_kelvin: 6500, friendly_name: 'Office ceiling'}, {area_id: 'office', platform: 'hue', device_id: 'l2'}, {id: 'l2', area_id: 'office', name: 'Office ceiling'});
   add('switch.adaptive_lighting_office', 'on', {friendly_name: 'Adaptive Lighting: Office', color_temp_kelvin: 3800, brightness_pct: 80, sun_position: .4, configured_lights: ['light.office_1']});
+  // two light groups in one area: one tile by default, one tile each with split_light_areas
+  const ct = {supported_color_modes: ['color_temp'], color_mode: 'color_temp', color_temp_kelvin: 3000, min_color_temp_kelvin: 2200, max_color_temp_kelvin: 6500};
+  ['island_1', 'island_2', 'sink_1'].forEach((k, i) => add(`light.kitchen_${k}`, i < 2 ? 'on' : 'off', {...ct, brightness: i < 2 ? 150 : 0}, {platform: 'hue', hidden: true}));
+  add('light.kitchen_island', 'on', {...ct, brightness: 150, entity_id: ['light.kitchen_island_1', 'light.kitchen_island_2'], friendly_name: 'Kitchen Island'}, {area_id: 'kitchen', platform: 'group'});
+  add('light.kitchen_sink', 'off', {...ct, entity_id: ['light.kitchen_sink_1'], friendly_name: 'Kitchen Sink'}, {area_id: 'kitchen', platform: 'group'});
   add('scene.movie_night', 'unknown', {friendly_name: 'Movie night'}); add('scene.dinner', iso(now - 7200e3), {friendly_name: 'Dinner'});
   add('input_boolean.kids_bedtime', 'off', {friendly_name: 'Kids bedtime'});
   add('binary_sensor.front_door', 'off', {device_class: 'door', friendly_name: 'Front door'}, {area_id: 'living_room', platform: 'zha', device_id: 's1'}, {id: 's1', area_id: 'living_room', name: 'Front door'});

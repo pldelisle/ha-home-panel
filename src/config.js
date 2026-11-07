@@ -86,6 +86,7 @@ function resolveConfig(cfg, states) {
     entities: E, rooms, people,
     scenes: asList(cfg.scenes).map(String),                 // scene order; scenes not listed follow alphabetically
     modes: asList(cfg.modes).map(String),                   // input_booleans shown as on/off routine tiles beside the scenes
+    splitLightAreas: asList(cfg.split_light_areas).map(String), // HA areas whose light groups each get their own tile
     alAreas: cfg.adaptive_lighting_areas && typeof cfg.adaptive_lighting_areas === 'object' ? {...cfg.adaptive_lighting_areas} : {},
     house: house && house.day ? house : null,
     car: {name: car.name ? String(car.name) : null, color: car.color ? String(car.color) : null},
