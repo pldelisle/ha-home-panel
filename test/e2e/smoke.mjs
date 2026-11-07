@@ -100,10 +100,14 @@ const pillCheck = async (page, calls) => {
   await R(() => document.querySelector('home-panel').shadowRoot.querySelector('#attpop [data-la="pause"]').click());
   await page.waitForTimeout(300);
   assert.ok(calls.some(c => /^switch\.turn_off .*charger_pause/.test(c)), `Pause charging turns the Wallbox switch off (calls: ${calls.join('; ')})`);
-  // once charging stops, the chip says All clear again
+  // once charging stops and nothing needs attention, the spot is empty: no All clear chip (2.8.0)
   await R(() => { const P = document.querySelector('home-panel'); hass.states['sensor.fordpass_test_elvehcharging'] = {...hass.states['sensor.fordpass_test_elvehcharging'], state: 'NOT_READY'}; hass.states['sensor.fordpass_test_elvehplug'] = {...hass.states['sensor.fordpass_test_elvehplug'], state: 'DISCONNECTED'}; P.hass = {...hass}; P.renderLive(); });
-  const back = await R(() => document.querySelector('home-panel').shadowRoot.querySelector('#chips .attchip').classList.contains('lap'));
-  assert.equal(back, false, 'with nothing running the status chip is back');
+  const back = await R(() => !!document.querySelector('home-panel').shadowRoot.querySelector('#chips .attchip'));
+  assert.equal(back, false, 'with nothing running and nothing to check there is no status chip');
+  // a door left open: the spot shows an attention pill that opens the Status checks
+  await R(() => { const P = document.querySelector('home-panel'); hass.states['binary_sensor.front_door'] = {...hass.states['binary_sensor.front_door'], state: 'on', last_changed: new Date(Date.now() - 20 * 6e4).toISOString()}; P.hass = {...hass}; P.renderLive(); });
+  const att = await R(() => { const b = document.querySelector('home-panel').shadowRoot.querySelector('#chips .attchip'); return b && b.textContent; });
+  assert.match(att || '', /needs attention/, 'a status problem shows as an attention pill');
 };
 await run('pill-ipad', {house: 'full', cfg: FULL_CFG, viewport: ipad, check: pillCheck});
 await run('pill-iphone', {house: 'full', cfg: FULL_CFG, viewport: iphone, check: pillCheck});

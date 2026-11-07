@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.8.0
+
+- No more "All clear" chip in the header. With nothing running and nothing to check, that spot stays empty. The live-activity pill appears while something runs, and a status problem shows as its own amber pill (red when critical) that opens the Status checks.
+
 ## 2.7.0
 
 - Arrange the Lights tab: an admin taps Arrange, drags rows into the order they want (a linked pair moves as one block), and taps Done. The order is saved in Home Assistant's frontend system data, so every screen in the house shows the same order. Lights added later go at the end. Reset order goes back to the order by area. The arrow keys move a focused row while arranging.

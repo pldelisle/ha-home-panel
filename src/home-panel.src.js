@@ -1094,8 +1094,8 @@ class HomePanel extends HTMLElement {
     if (temp != null) chips.push(`<div class="chip wxchip"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="9" r="4" fill="var(--m-amber)"/><path d="M8 19h9a4 4 0 0 0 0-8 5 5 0 0 0-9.6 1.6A3.2 3.2 0 0 0 8 19z" fill="var(--fg3)" opacity=".7"/></svg><span class="num">${f1(temp)}°</span><small>${esc(condName(ok(cond) ? cond.state : (st(E.weather) || {}).state))}</small></div>`);
     if (peak && peak.state === 'on') chips.push(`<div class="chip"><span class="dot" style="background:var(--crit)"></span>Critical peak now</div>`);
     const open = !this.$('attpop').hidden, pill = this.laPill(att);
-    if (pill) { chips.push(pill); if (chips[0].includes('wxchip')) chips[0] = chips[0].replace('chip wxchip', 'chip wxchip slim'); }
-    else chips.push(`<button type="button" class="chip attchip${att.items.length ? ' warn' : ''}" aria-haspopup="dialog" aria-expanded="${open}"><span class="dot" style="background:var(--${att.items.length ? (att.items.some(i => i[0] === 'crit') ? 'crit' : 'warn') : 'ok'})"></span>${att.items.length ? (att.items.length === 1 ? '1 thing needs' : att.items.length + ' things need') + ' attention' : 'All clear'}<svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>`);
+    if (pill) { chips.push(pill); if (chips[0].includes('wxchip') && this.liveActs().acts.length) chips[0] = chips[0].replace('chip wxchip', 'chip wxchip slim'); }
+    else if (open) this.toggleAttention(false);
     this.set('chips', chips.join(''));
     const err = this.histErr ? `<div class="err">History didn't load: ${esc(this.histErr)}. Live values still update.</div>` : '';
     this.set('err', err);
@@ -1312,8 +1312,12 @@ class HomePanel extends HTMLElement {
   }
   laPill(att) {
     const {acts, done} = this.liveActs();
-    if (!acts.length && !done) return null;
+    // since 2.8.0 there is no "All clear" chip: with nothing running and nothing to check, the spot stays empty
+    if (!acts.length && !done && !att.items.length) return null;
     const open = !this.$('attpop').hidden, crit = att.items.some(i => i[0] === 'crit'), a = acts[0];
+    const need = att.items.length === 1 ? '1 thing needs attention' : `${att.items.length} things need attention`;
+    // only a status problem: the pill is the problem, in amber (red when critical)
+    if (!a && !done) return `<button type="button" class="chip attchip lap" aria-haspopup="dialog" aria-expanded="${open}" aria-label="${esc(need)}"><span class="lmain latt" style="--ac:var(--${crit ? 'crit' : 'warn'})"><span class="lwarn"><b>!</b></span><span>${need}</span></span></button>`;
     const ring = (x, s) => { const r = s / 2 - 2.5, c = 2 * Math.PI * r, p = x.p == null ? null : Math.max(0.02, Math.min(1, x.p));
       return `<span class="lring" style="--ac:${x.ac};width:${s}px;height:${s}px"><svg viewBox="0 0 ${s} ${s}" aria-hidden="true"><circle cx="${s / 2}" cy="${s / 2}" r="${r}" fill="color-mix(in srgb,${x.ac} 16%,transparent)" stroke="color-mix(in srgb,${x.ac} 22%,transparent)" stroke-width="3"/>${p == null ? '' : `<circle cx="${s / 2}" cy="${s / 2}" r="${r}" fill="none" stroke="${x.ac}" stroke-width="3" stroke-linecap="round" stroke-dasharray="${(c * p).toFixed(1)} ${c.toFixed(1)}"/>`}</svg><span class="li">${ico(x.ic, Math.round(s * 0.5))}</span></span>`; };
     const main = a ? `<span class="lmain${a.tint ? ' tint' : ''}" style="--ac:${a.ac}">${ring(a, 34)}${this.compact ? a.pill : a.short}</span>`
