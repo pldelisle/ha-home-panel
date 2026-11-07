@@ -31,7 +31,7 @@ const FULL_CFG = {
 const TABLET = ['home', 'lights', 'climate', 'weather', 'car', 'energy', 'air', 'media', 'cams', 'auto'], PHONE = ['home', 'lights', 'climate', 'car'];
 const browser = await chromium.launch();
 let failures = 0;
-async function run(name, {house, cfg, viewport, lang = 'en', theme = 'light', check}) {
+async function run(name, {house, cfg, viewport, lang = 'en', theme = 'light', check, init, query = ''}) {
   const page = await browser.newPage({viewport, deviceScaleFactor: 1, timezoneId: 'America/Toronto', reducedMotion: 'reduce'});
   const errors = [], calls = []; let at = 'load';
   page.on('pageerror', e => errors.push(`[${at}] ` + e.message + (process.env.STACK ? '\n' + e.stack : '')));
@@ -39,7 +39,8 @@ async function run(name, {house, cfg, viewport, lang = 'en', theme = 'light', ch
   await page.addInitScript(([c, t]) => { window.PANEL_CFG = c; try { localStorage.setItem('home-panel-theme', t); } catch (e) {} }, [cfg || null, theme]);
   await page.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
   try {
-    await page.goto(`${BASE}?house=${house}&lang=${lang}`);
+    if (init) await page.addInitScript(init);
+    await page.goto(`${BASE}?house=${house}&lang=${lang}${query}`);
     await page.waitForFunction(() => document.querySelector('home-panel')?.shadowRoot?.getElementById('rail'));
     const R = fn => page.evaluate(fn);
     for (const t of viewport.width < 600 ? PHONE : TABLET) {
@@ -155,6 +156,29 @@ await run('dimmer-rows-iphone', {house: 'full', cfg: LINK_CFG, viewport: iphone,
   await lightTiles(page);
   const shown = await page.evaluate(() => [...document.querySelector('home-panel').shadowRoot.querySelectorAll('#ltiles .lrow .lauto')].some(b => getComputedStyle(b).display !== 'none'));
   assert.equal(shown, false, 'phone rows leave Auto and Night to the sheet');
+}});
+// 2.6.0 Arrange: drag a row (a linked pair as one block) to a new place; the order is saved in HA's system data for every screen
+await run('arrange-lights-ipad', {house: 'full', cfg: LINK_CFG, viewport: ipad, check: async (page, calls) => {
+  const ws = []; page.on('console', m => { if (m.text().startsWith('WS ')) ws.push(JSON.parse(m.text().slice(3))); });
+  await lightTiles(page);
+  const R = f => page.evaluate(f);
+  await R(() => document.querySelector('home-panel').shadowRoot.getElementById('ledit').click()); await page.waitForTimeout(300);
+  const pos = name => page.evaluate(n => { const b = [...document.querySelector('home-panel').shadowRoot.querySelectorAll('#lights .lrow')].find(r => r.querySelector('.tx b').textContent === n).getBoundingClientRect(); return [b.x + b.width / 2, b.y + b.height / 2]; }, name);
+  const [x0, y0] = await pos('Living room'), [x1, y1] = await pos('Island');
+  await page.mouse.move(x0, y0); await page.mouse.down(); await page.mouse.move(x1, y1, {steps: 12}); await page.mouse.up(); await page.waitForTimeout(400);
+  assert.deepEqual(await lightTiles(page), ['Office', 'Living room', 'Island', 'Sink'], 'the dragged pair moves first, as one block');
+  assert.deepEqual(ws.at(-1), {type: 'frontend/set_system_data', key: 'home_panel', value: {light_order: ['office', 'light.kitchen_island']}}, 'the new order is saved for the whole house');
+  assert.ok(!calls.some(c => /^light\./.test(c)), `arranging doesn't switch or dim anything (calls: ${calls.join('; ')})`);
+  await R(() => document.querySelector('home-panel').shadowRoot.getElementById('ledit').click()); await page.waitForTimeout(200);
+  assert.equal(await R(() => document.querySelector('home-panel').shadowRoot.getElementById('pane-lights').classList.contains('ledit')), false, 'Done leaves arranging');
+}});
+// a saved order is used on every screen, and only admins see Arrange
+await run('arranged-lights-iphone', {house: 'full', cfg: LINK_CFG, viewport: iphone, init: () => { window.SYSDATA = {home_panel: {light_order: ['office', 'light.kitchen_island']}}; }, check: async page => {
+  assert.deepEqual(await page.evaluate(async () => { const r = document.querySelector('home-panel').shadowRoot; r.querySelector('[data-tab="lights"]').click(); await new Promise(f => setTimeout(f, 500)); return [...r.querySelectorAll('#ltiles .lrow .tx b')].map(b => b.textContent); }), ['Office', 'Living room', 'Island', 'Sink'], 'the phone follows the saved order');
+}});
+await run('arrange-hidden-for-users', {house: 'full', cfg: LINK_CFG, viewport: ipad, query: '&admin=0', check: async page => {
+  await lightTiles(page);
+  assert.ok((await q(page, '#ledbar'))[0].hidden, 'no Arrange button for someone who is not an admin');
 }});
 await run('grouped-lights-ipad', {house: 'full', cfg: FULL_CFG, viewport: ipad, check: async page => {
   assert.deepEqual(await lightTiles(page), ['Kitchen', 'Living room', 'Office'], 'without split_light_areas an area is one tile');

@@ -72,9 +72,12 @@ const stats = (ids, period) => { const out = {}, step = period === '5minute' ? 3
   for (const id of ids) { if (!S[id]) continue; out[id] = []; for (let i = n; i >= 0; i--) { const t = now - i * step, w = Math.sin(i / 6) * .5 + .5;
     const v = /temperature/.test(id) ? 19 + 3 * w : /power/.test(id) ? 0.4 + 2 * w : 10 + 5 * w; out[id].push({start: t, end: t + step, mean: v, min: v - .5, max: v + .5, change: period === 'day' ? 20 + 10 * w : 1 + w, sum: 0}); } }
   return out; };
-const hass = {states: S, entities: ENT, devices: DEV, areas: AREAS, config: {time_zone: 'America/Toronto', latitude: 43.65, longitude: -79.38}, user: {name: 'Alex Example'}, locale: {language: new URLSearchParams(location.search).get('lang') || 'en'}, services: {adaptive_lighting: {}},
+const hass = {states: S, entities: ENT, devices: DEV, areas: AREAS, config: {time_zone: 'America/Toronto', latitude: 43.65, longitude: -79.38}, user: {name: 'Alex Example', is_admin: new URLSearchParams(location.search).get('admin') !== '0'}, locale: {language: new URLSearchParams(location.search).get('lang') || 'en'}, services: {adaptive_lighting: {}},
   callService: async (d, s, data) => { console.log('SERVICE', d + '.' + s, JSON.stringify(data)); },
-  callWS: async m => m.type === 'trace/list' ? LIST : m.type === 'trace/get' ? FULL[m.item_id + '/' + m.run_id] : m.type === 'automation/config' ? {config: (CONF.find(c => c.entity_id === m.entity_id) || {}).config}
+  // the frontend's system data (the panel keeps the house-wide light order there); window.SYSDATA can preset it
+  callWS: async m => m.type === 'frontend/get_system_data' ? {value: (window.SYSDATA || {})[m.key] ?? null}
+    : m.type === 'frontend/set_system_data' ? (console.log('WS', JSON.stringify(m)), (window.SYSDATA = window.SYSDATA || {})[m.key] = m.value, null)
+    : m.type === 'trace/list' ? LIST : m.type === 'trace/get' ? FULL[m.item_id + '/' + m.run_id] : m.type === 'automation/config' ? {config: (CONF.find(c => c.entity_id === m.entity_id) || {}).config}
     : m.type === 'recorder/statistics_during_period' ? stats(m.statistic_ids, m.period) : m.type === 'history/history_during_period' ? {} : m.type === 'camera_thumbnail' ? {} : {},
   connection: {subscribeMessage: async () => () => {}, subscribeEvents: async () => () => {}},
   hassUrl: p => p, formatEntityState: s => s.state,

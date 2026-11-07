@@ -41,7 +41,7 @@ Every section is optional. A section shows only when its entities exist, so a ho
        sidebar_title: Home panel
        sidebar_icon: mdi:home-analytics
        url_path: home-panel
-       module_url: /local/home-panel/home-panel.js?v=2.4.0
+       module_url: /local/home-panel/home-panel.js?v=2.6.0
    ```
 
 4. Restart Home Assistant. The panel shows up in the sidebar.
@@ -67,6 +67,8 @@ Add a `config:` block under the panel to name the rest of your devices, pick the
         - climate.bedroom
       scenes: [scene.dinner, scene.movie_night]
 ```
+
+To change the order of the Lights tab, an admin taps Arrange and drags the rows; the order is saved in Home Assistant and every screen uses it.
 
 An area holding several light groups shows as one card, with a button per group in its sheet. To give each group its own card, list the area under `split_light_areas`, for example `split_light_areas: [living_room]`.
 

@@ -11,6 +11,7 @@ const CSS = __CSS__;
 // ---------- entities ----------
 /*__CONFIG__*/
 // filled by applyConfig() from the panel's config before the first render
+const LIGHT_ORDER_KEY = 'home_panel';
 const E = {}, ROOMS = [], HOUSEHOLD = [], SCENE_ORDER = [], MODES = [], AL_AREAS = {}, SPLIT_AREAS = [], LIGHT_LINKS = [];
 let CFG = null;
 function applyConfig(panelCfg) {
@@ -92,6 +93,7 @@ const aqFmt = (k, v, short) => v == null ? '–' : short && v >= 10000 ? Math.ro
 const outLevel = v => v == null ? 0 : v <= 50 ? 0 : v <= 100 ? 1 : 2;
 const ICON = {
   chev: '<path d="m9 6 6 6-6 6"/>',
+  grip: '<path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" stroke-width="3"/>',
   link: '<path d="M10 13.5a4 4 0 0 0 5.7.3l3-3a4 4 0 0 0-5.7-5.6l-1.2 1.2"/><path d="M14 10.5a4 4 0 0 0-5.7-.3l-3 3a4 4 0 0 0 5.7 5.6l1.2-1.2"/>',
   unlink: '<path d="M15.5 13l3.2-3.2a4 4 0 0 0-5.7-5.6l-1.6 1.6"/><path d="M8.5 11l-3.2 3.2a4 4 0 0 0 5.7 5.6l1.6-1.6"/><path d="M8 3v2.5M3 8h2.5M16 21v-2.5M21 16h-2.5"/>',
   more: '<rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/>',
@@ -304,6 +306,7 @@ class HomePanel extends HTMLElement {
     this.configure();
     if (!this.$app) this.build();
     if (!this.fcSubs && this.isConnected) this.subscribeForecasts();
+    if (!this.lightOrderAsked) { this.lightOrderAsked = true; this.loadLightOrder(); }
     this.tick();
   }
   // (re)read the panel's config; true when it changed after the panel was drawn, so it must be drawn again
@@ -393,7 +396,7 @@ class HomePanel extends HTMLElement {
     <nav class="rail" id="rail" aria-label="Sections">${TABS.map(([k, l, i]) => `<button type="button" class="rtab" data-tab="${k}"${PHONE_TABS.includes(k) ? ' data-ph' : ''} aria-selected="false">${ico(i, 24)}<span>${l}</span></button>`).join('')}<button type="button" class="rtab rmore" id="moretab" data-more aria-selected="false" aria-haspopup="dialog">${ico('more', 24)}<span>More</span></button></nav>
     <div class="panes">
       <section class="pane pane-home" id="pane-home" hidden><div class="ph"><span class="badge" style="--acc:var(--c-grid)">${ico('house', 26)}</span><div class="grow"><h2>Home</h2><div class="sub" id="hsub"></div></div></div><div class="card hwx" id="hwx"></div><div class="hright"><div class="htiles" id="htiles"></div><div class="card hsec" id="hsec"></div></div><div class="hscenes" id="hscenes" hidden></div></section>
-      <section class="pane pane-lights" id="pane-lights" hidden><div class="ph"><span class="badge" style="--acc:var(--warn)">${ico('bulb', 26)}</span><div class="grow"><h2>Lights</h2><div class="sub" id="lsub"></div></div></div><div class="card" id="albar" hidden></div><div class="ltiles" id="ltiles"></div><div id="lhost"></div></section>
+      <section class="pane pane-lights" id="pane-lights" hidden><div class="ph"><span class="badge" style="--acc:var(--warn)">${ico('bulb', 26)}</span><div class="grow"><h2>Lights</h2><div class="sub" id="lsub"></div></div><div class="ledbar" id="ledbar" hidden><button type="button" class="more" id="lreset" hidden>Reset order</button><button type="button" class="more" id="ledit" aria-pressed="false">Arrange</button></div></div><div class="card" id="albar" hidden></div><div class="ltiles" id="ltiles"></div><div id="lhost"></div></section>
       <section class="pane pane-climate" id="pane-climate" hidden><div class="ph cph"><span class="badge" style="--acc:var(--c-wh)">${ico('therm', 26)}</span><div class="grow"><h2 id="ch2">Climate</h2><div class="sub" id="csub2"></div></div></div><div class="ctiles2" id="ctiles2"></div></section>
       <section class="pane pane-weather" id="pane-weather" hidden><div class="ph cph"><span class="badge" style="--acc:var(--m-blue)">${ico('wx', 26)}</span><div class="grow"><h2 id="wh2">Weather</h2><div class="sub" id="wsub2"></div></div></div><div id="wxhost"></div><div class="wxtiles" id="wxtiles"></div></section>
       <section class="pane pane-car" id="pane-car" hidden><div class="ph cph"><span class="badge" style="--acc:var(--c-ev)">${ico('car', 26)}</span><div class="grow"><h2 id="carh2">Car</h2><div class="sub" id="carsub2"></div></div></div><div id="carhost"></div></section>
@@ -708,12 +711,55 @@ class HomePanel extends HTMLElement {
     this.$('tv').addEventListener('click', e => { const b = e.target.closest('button[data-tv]'); if (b) this.tvCmd(b.dataset.tv); });
     // dimmer rows: a sideways slide dims (relative to where the fill was), an up-down move scrolls the page as usual,
     // and the brightness goes out on release; a linked pair's two rows move together while sliding
+    // Arrange: drag whole rows (a linked pair as one block) into the order you want; it's saved for every screen
+    this.$('ledit').addEventListener('click', () => this.setLightEdit(!this.lightEdit));
+    this.$('lreset').addEventListener('click', () => { this.saveLightOrder(null); this.tick(); });
+    for (const lt of [this.$('lights'), this.$('ltiles')]) {
+      let m = null;
+      const box = () => lt.id === 'ltiles' ? lt : lt.querySelector('.lrows');
+      const unitOf = (b, n) => b && [...b.children].find(c => c.contains(n));
+      const keys = b => [...b.children].map(c => c.matches('.lrow') ? c : c.querySelector('.lrow')).filter(Boolean).map(r => r.dataset.lsheet);
+      const save = b => { const k = keys(b); if (JSON.stringify(k) !== JSON.stringify(this.lightAreas().filter(x => !x.link || x.link.first).map(x => x.aid))) this.saveLightOrder(k); };
+      lt.addEventListener('pointerdown', e => {
+        if (!this.lightEdit || e.button > 0) return;
+        const b = box(), u = unitOf(b, e.target); if (!u) return;
+        e.preventDefault(); const r = u.getBoundingClientRect();
+        m = {u, b, id: e.pointerId, gx: e.clientX - r.left, gy: e.clientY - r.top}; this.lightDrag = true; u.classList.add('lifted');
+        try { u.setPointerCapture(e.pointerId); } catch (x) {}
+      });
+      lt.addEventListener('pointermove', e => {
+        if (!m || e.pointerId !== m.id) return;
+        e.preventDefault();
+        // the row under the finger takes the dragged one's place
+        const over = unitOf(m.b, this.shadowRoot.elementFromPoint(e.clientX, e.clientY));
+        if (over && over !== m.u) { const k = [...m.b.children], i = k.indexOf(m.u), j = k.indexOf(over); m.b.insertBefore(m.u, j > i ? over.nextSibling : over); }
+        m.u.style.transform = ''; const r = m.u.getBoundingClientRect();
+        m.u.style.transform = `translate(${e.clientX - m.gx - r.left}px,${e.clientY - m.gy - r.top}px)`;
+        // near the top or bottom of the screen the page scrolls along
+        if (e.clientY < 70) window.scrollBy(0, -12); else if (e.clientY > innerHeight - 90) window.scrollBy(0, 12);
+      });
+      const drop = e => {
+        if (!m || e.pointerId !== m.id) return;
+        const x = m; m = null; x.u.style.transform = ''; x.u.classList.remove('lifted');
+        save(x.b); setTimeout(() => { this.lightDrag = false; this.tick(); }, 60);
+      };
+      lt.addEventListener('pointerup', drop); lt.addEventListener('pointercancel', drop);
+      // while arranging, taps don't switch lights or open sheets, and the arrow keys move the focused row
+      lt.addEventListener('click', e => { if (this.lightEdit && e.target.closest('.lrows > *, #ltiles > *')) { e.stopPropagation(); e.preventDefault(); } }, true);
+      lt.addEventListener('keydown', e => {
+        if (!this.lightEdit) return;
+        const b = box(), u = unitOf(b, e.target), step = {ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1}[e.key]; if (!u || !step) return;
+        e.preventDefault(); e.stopImmediatePropagation();
+        const k = [...b.children], i = k.indexOf(u), j = i + step; if (j < 0 || j >= k.length) return;
+        b.insertBefore(u, step > 0 ? k[j].nextSibling : k[j]); e.target.focus(); save(b);
+      }, true);
+    }
     for (const lt of [this.$('lights'), this.$('ltiles')]) {
       let d = null;
       const rowsOf = r => { const w = r.closest('.llink.on'); return w ? [...w.querySelectorAll('.lrow')] : [r]; };
       const paint = (rows, p) => rows.forEach(r => { r.style.setProperty('--p', p + '%'); r.classList.add('on'); const t = r.querySelector('.lpct'); if (t) t.textContent = p + '%'; r.setAttribute('aria-valuenow', p); r.setAttribute('aria-valuetext', p + '%'); });
       lt.addEventListener('pointerdown', e => {
-        const r = e.target.closest('.lrow[data-dim]'); if (!r || e.target.closest('button') || e.button > 0) return;
+        const r = e.target.closest('.lrow[data-dim]'); if (!r || this.lightEdit || e.target.closest('button') || e.button > 0) return;
         d = {r, id: e.pointerId, x0: e.clientX, y0: e.clientY, p0: parseFloat(r.style.getPropertyValue('--p')) || 0, w: r.getBoundingClientRect().width, go: false};
       });
       lt.addEventListener('pointermove', e => {
@@ -2020,6 +2066,8 @@ class HomePanel extends HTMLElement {
     if (this.inline) this.hide();
     if (this.open === 'sh-more') this.hide();
     const prev = this.tab; this.tab = t; try { localStorage.setItem('home-panel-tab', t); } catch (e) {}
+    if (t === 'lights' && prev !== t) this.loadLightOrder();   // another screen may have rearranged them
+    if (t !== 'lights' && this.lightEdit) this.setLightEdit(false);
     this.shadowRoot.querySelectorAll('#rail .rtab[data-tab]').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === t));
     this.renderMoreTab();
     TABS.forEach(([k]) => { this.$('pane-' + k).hidden = k !== t; });
@@ -2044,7 +2092,12 @@ class HomePanel extends HTMLElement {
     const lit = this.lightAreas().flatMap(a => a.ids).filter(isOn).length, als = [...new Set(this.lightAreas().map(a => a.al).filter(Boolean))], alOn = als.filter(isOn).length;
     const temps = L.rooms.map(r => r.t).filter(v => v != null), avg = temps.length ? sum(temps) / temps.length : null, out = attr(E.weather, 'temperature') ?? num(E.outT);
     if (this.tab === 'home') this.set('hsub', [new Date().toLocaleDateString('en-CA', {weekday: 'long', month: 'long', day: 'numeric', timeZone: TZ}), avg == null ? '' : `${avg.toFixed(1)}° inside`, out == null ? '' : `${f1(out)}° outside`, att.items.length ? plural(att.items.length, 'item') + (att.items.length === 1 ? ' needs' : ' need') + ' attention' : 'all clear'].filter(Boolean).join(' · '));
-    if (this.tab === 'lights') this.set('lsub', [lit ? `${plural(lit, 'light')} on` : 'All lights off', als.length ? `Adaptive Lighting ${alOn === als.length ? 'on everywhere' : alOn ? `on in ${alOn} of ${als.length}` : 'off everywhere'}` : ''].filter(Boolean).join(' · '));
+    if (this.tab === 'lights') {
+      this.set('lsub', this.lightEdit ? 'Drag the lights into the order you want' : [lit ? `${plural(lit, 'light')} on` : 'All lights off', als.length ? `Adaptive Lighting ${alOn === als.length ? 'on everywhere' : alOn ? `on in ${alOn} of ${als.length}` : 'off everywhere'}` : ''].filter(Boolean).join(' · '));
+      // only admins can write the house-wide order, so only they get the Arrange button
+      const bar = this.$('ledbar'); if (bar) bar.hidden = !(hass.user && hass.user.is_admin) || this.lightAreas().filter(x => !x.link || x.link.first).length < 2;
+      const rs = this.$('lreset'); if (rs) rs.hidden = !this.lightEdit || !(this.lightOrder && this.lightOrder.length);
+    }
     if (this.tab === 'media') {
       const T = this.tv(), ts = T && st(T.id), tvOn = ts && ok(ts) && ts.state !== 'off', src = tvOn && ts.attributes.source ? String(ts.attributes.source).replace(/\s+[-–].*$/, '') : '', M = this.speakers(), playing = M.filter(m => (st(m.id) || {}).state === 'playing').length;
       this.set('msub', [T ? (tvOn ? `TV on${src ? ' · ' + esc(src) : ''}` : 'TV off') : '', M.length ? (playing ? plural(playing, 'speaker') + ' playing' : `${plural(M.length, 'speaker')} · nothing playing`) : ''].filter(Boolean).join(' · '));
@@ -2252,7 +2305,33 @@ class HomePanel extends HTMLElement {
       const on = sw ? (st(sw) || {}).state === 'on' : true;
       a.link = {other: b, sw, on, first: true}; b.link = {other: a, sw, on, first: false};
     }
+    // the order someone arranged on the Lights tab (saved for the whole house); a pair moves as one, lights it doesn't know go last
+    const O = this.lightOrder;
+    if (Array.isArray(O) && O.length) {
+      const units = []; for (const t of out) if (!t.link || t.link.first) units.push(t.link ? [t, t.link.other] : [t]);
+      const at = u => { const i = O.indexOf(u[0].aid); return i < 0 ? Infinity : i; };
+      return units.map((u, i) => [u, i]).sort((x, y) => at(x[0]) - at(y[0]) || x[1] - y[1]).flatMap(x => x[0]);
+    }
     return out;
+  }
+  // the light order lives in Home Assistant's frontend system data (one value for every screen; only admins may write it)
+  loadLightOrder() {
+    if (!hass || !hass.callWS) return;
+    hass.callWS({type: 'frontend/get_system_data', key: LIGHT_ORDER_KEY}).then(r => {
+      const v = (r && r.value) || {}, o = Array.isArray(v.light_order) ? v.light_order : null;
+      this.sysData = v; if (this.lightDrag || JSON.stringify(o) === JSON.stringify(this.lightOrder || null)) return;
+      this.lightOrder = o; this.tick();
+    }).catch(() => {});
+  }
+  saveLightOrder(keys) {
+    this.lightOrder = keys; const v = {...(this.sysData || {}), light_order: keys}; this.sysData = v;
+    hass.callWS({type: 'frontend/set_system_data', key: LIGHT_ORDER_KEY, value: v}).then(() => this.toast(keys ? 'Light order saved' : 'Light order reset'))
+      .catch(e => this.toast(`Couldn't save the light order: ${e.message || e.code || e}`, true));
+  }
+  setLightEdit(on) {
+    this.lightEdit = on; const p = this.$('pane-lights'); if (p) p.classList.toggle('ledit', on);
+    const b = this.$('ledit'); if (b) { b.textContent = on ? 'Done' : 'Arrange'; b.setAttribute('aria-pressed', on); }
+    this.tick();
   }
   renderLights() {
     if (this.lightDrag) return;
@@ -2282,7 +2361,7 @@ class HomePanel extends HTMLElement {
       ${a.al ? `<button type="button" class="lauto" aria-pressed="${!!alOn}" data-l="al" data-id="${esc(a.al)}" title="Adaptive Lighting: colour and brightness follow the time of day" ${ok(st(a.al)) ? '' : 'disabled'}>Auto</button>` : ''}
       ${night ? `<button type="button" class="lauto lnight" aria-pressed="${!!nightOn}" data-l="night" data-id="${esc(night)}" data-al="${esc(a.al)}" title="Night mode: very dim, warm light" ${ok(st(night)) ? '' : 'disabled'}>Night</button>` : ''}
       <span class="lpct num" aria-hidden="true">${any ? br + '%' : ''}</span>
-      <button type="button" class="lmore" data-lsheet="${esc(a.aid)}" aria-label="${esc(a.name)}: details">${ico('chev', 18)}</button></div>`;
+      <button type="button" class="lmore" data-lsheet="${esc(a.aid)}" aria-label="${esc(a.name)}: details">${ico('chev', 18)}</button><span class="lgrip" aria-hidden="true">${ico('grip', 20)}</span></div>`;
   }
   // the colour an area's lights are showing: the first lit bulb's rgb_color, or its colour temperature turned into a warm-to-cool white
   lightTint(on) {
