@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.7.0
+
+- Arrange the Lights tab: an admin taps Arrange, drags rows into the order they want (a linked pair moves as one block), and taps Done. The order is saved in Home Assistant's frontend system data, so every screen in the house shows the same order. Lights added later go at the end. Reset order goes back to the order by area. The arrow keys move a focused row while arranging.
+
 ## 2.6.0
 
 - Live activities: while something runs, the "All clear" status chip turns into a glass pill. The car charging shows its battery and time to full, the water heater its temperature and about how long is left, and a Hilo challenge its phase and countdown from pre-heat until recovery ends. A second or third activity sits beside the pill as a small ring, and a status problem as a "!".

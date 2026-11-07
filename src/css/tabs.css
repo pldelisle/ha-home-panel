@@ -278,3 +278,17 @@ button.hsen{appearance:none;-webkit-appearance:none;font:inherit;color:inherit;t
 .ltiles .llink.on::after,.lrows .llink.on::after{display:none}
 /* the light sheet on a tablet: a narrow panel instead of the full width, since it only holds a few controls */
 .app:not(.cp) #sh-light>.panel{width:min(560px,100%)}
+/* Arrange (2.7.0): the Lights tab's rows can be dragged into the order you want; a linked pair moves as one block */
+.pane-lights>.ph .ledbar{margin-left:auto;display:flex;gap:8px}
+.pane-lights>.ph .ledbar .more{padding:8px 16px;border-radius:999px;font:inherit;font-weight:600}
+.pane-lights>.ph .ledbar #ledit[aria-pressed="true"]{color:#fff;background:var(--c-home);border-color:transparent}
+.lgrip{display:none;flex:none;width:36px;height:44px;place-items:center;color:var(--fg3)}
+.ledit .lrow .lauto,.ledit .lrow .lpct,.ledit .lrow .lmore{display:none}
+.ledit .lrow .lgrip{display:grid}
+.ledit .lrow .lbulb{pointer-events:none}
+.ledit .lrows>*,.ledit #ltiles>*{touch-action:none;cursor:grab;animation:ljig .3s ease-in-out infinite alternate}
+.ledit .lrows>*:nth-child(2n),.ledit #ltiles>*:nth-child(2n){animation-delay:-.15s}
+.ledit .lnk{pointer-events:none}
+.lifted{position:relative;z-index:5;pointer-events:none;cursor:grabbing!important;animation:none!important;box-shadow:0 18px 40px -12px rgba(0,0,0,.35);opacity:.96}
+@keyframes ljig{from{rotate:-.35deg}to{rotate:.35deg}}
+@media (prefers-reduced-motion:reduce){.ledit .lrows>*,.ledit #ltiles>*{animation:none;outline:1.5px dashed var(--ring);outline-offset:3px}}
