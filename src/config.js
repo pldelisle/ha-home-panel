@@ -92,6 +92,6 @@ function resolveConfig(cfg, states) {
     splitLightAreas: asList(cfg.split_light_areas).map(String), // HA areas whose light groups each get their own tile
     alAreas: cfg.adaptive_lighting_areas && typeof cfg.adaptive_lighting_areas === 'object' ? {...cfg.adaptive_lighting_areas} : {},
     house: house && house.day ? house : null,
-    car: {name: car.name ? String(car.name) : null, color: car.color ? String(car.color) : null},
+    car: {name: car.name ? String(car.name) : null, color: car.color ? String(car.color) : null, battery_kwh: +car.battery_kwh > 0 ? +car.battery_kwh : null},
   };
 }

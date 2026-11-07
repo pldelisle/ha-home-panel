@@ -86,6 +86,25 @@ await run('full-ipad', {house: 'full', cfg: FULL_CFG, viewport: ipad, check: asy
   await page.evaluate(() => document.querySelector('home-panel').idleArm());
   await page.waitForTimeout(500);
 }});
+// live activities (2.5.0): the test car is charging, so the status chip is a pill; tapped, it shows the car's card above the Status checks
+const pillCheck = async (page, calls) => {
+  const R = fn => page.evaluate(fn);
+  const pill = await R(() => { const b = document.querySelector('home-panel').shadowRoot.querySelector('#chips .attchip'); return b && {lap: b.classList.contains('lap'), text: b.textContent}; });
+  assert.ok(pill && pill.lap && /64%/.test(pill.text), `the status chip turns into a charging pill (got ${JSON.stringify(pill)})`);
+  await R(() => document.querySelector('home-panel').shadowRoot.querySelector('#chips .attchip').click());
+  await page.waitForTimeout(300);
+  const pop = await R(() => { const p = document.querySelector('home-panel').shadowRoot.getElementById('attpop'); return {open: !p.hidden, acts: p.querySelectorAll('.lact').length, status: !!p.querySelector('.lstat')}; });
+  assert.deepEqual(pop, {open: true, acts: 1, status: true}, 'the popup shows one activity card and the Status checks');
+  await R(() => document.querySelector('home-panel').shadowRoot.querySelector('#attpop [data-la="pause"]').click());
+  await page.waitForTimeout(300);
+  assert.ok(calls.some(c => /^switch\.turn_off .*charger_pause/.test(c)), `Pause charging turns the Wallbox switch off (calls: ${calls.join('; ')})`);
+  // once charging stops, the chip says All clear again
+  await R(() => { const P = document.querySelector('home-panel'); hass.states['sensor.fordpass_test_elvehcharging'] = {...hass.states['sensor.fordpass_test_elvehcharging'], state: 'NOT_READY'}; hass.states['sensor.fordpass_test_elvehplug'] = {...hass.states['sensor.fordpass_test_elvehplug'], state: 'DISCONNECTED'}; P.hass = {...hass}; P.renderLive(); });
+  const back = await R(() => document.querySelector('home-panel').shadowRoot.querySelector('#chips .attchip').classList.contains('lap'));
+  assert.equal(back, false, 'with nothing running the status chip is back');
+};
+await run('pill-ipad', {house: 'full', cfg: FULL_CFG, viewport: ipad, check: pillCheck});
+await run('pill-iphone', {house: 'full', cfg: FULL_CFG, viewport: iphone, check: pillCheck});
 await run('full-ipad-dark', {house: 'full', cfg: FULL_CFG, viewport: ipad, theme: 'dark'});
 await run('full-ipad-fr', {house: 'full', cfg: FULL_CFG, viewport: ipad, lang: 'fr', check: async page => {
   const txt = await page.evaluate(() => document.querySelector('home-panel').shadowRoot.getElementById('rail').textContent);

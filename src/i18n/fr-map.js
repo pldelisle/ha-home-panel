@@ -385,3 +385,20 @@ const FR_RX = [
   [/^(.+) volume$/, x => `Volume de ${x}`],
   [/^(.+), (.+)$/, (a, b) => { const x = frLook(a), y = frLook(b); return x == null || y == null ? null : `${x}, ${y}`; }],
 ];
+// live activities (2.5.0): the pill and its cards; durations read 52 min, 1 h 50 or 3 h
+for (const [en, fr] of [['{n} min', '{n} min'], ['{n} h {n}', '{n} h {n}'], ['{n} h', '{n} h']]) Object.assign(FR_MAP, {
+  [en]: fr, [`challenge in ${en}`]: `défi dans ${fr}`, [`ends in ${en}`]: `fin dans ${fr}`, [`in ${en}`]: `dans ${fr}`, [`~${en}`]: `~${fr}`,
+  [`~${en} left`]: `reste ~${fr}`, [`usual cycle ${en}`]: `cycle habituel ${fr}`,
+});
+Object.assign(FR_MAP, {
+  'Charging paused': 'Recharge en pause', 'paused': 'en pause', 'Hilo pre-heat': 'Préchauffage Hilo', 'Hilo challenge': 'Défi Hilo', 'Hilo recovery': 'Récupération Hilo',
+  'Pre-heat': 'Préchauffage', 'Challenge': 'Défi', 'Recovery': 'Récupération', 'Reduction': 'Réduction', 'Water': 'Eau', 'almost done': 'presque fini', 'Almost done': 'Presque fini',
+  '→ {n}% limit': '→ limite de {n} %', 'Full at {n}': 'Pleine à {n}', 'Plugged in at {n}': 'Branchée à {n}', 'about': 'environ', 'so far': "jusqu'ici",
+  'Pause charging': 'Suspendre la recharge', 'Resume charging': 'Reprendre la recharge', 'Open Car ›': 'Ouvrir Voiture ›', 'Charging resumed': 'Recharge reprise',
+  'Water heater heating': 'Chauffe-eau en chauffe', 'Started {n}': 'Commencé à {n}', 'this cycle': 'ce cycle', '{n} cycles in 24 h': '{n} cycles en 24 h', '{n} cycle in 24 h': '{n} cycle en 24 h',
+  '↗ {n}° / {n} min': '↗ {n}° / {n} min', '↘ {n}° / {n} min': '↘ {n}° / {n} min',
+  'until heating holds back': 'avant la baisse du chauffage', 'until the challenge ends': 'avant la fin du défi', 'until recovery ends': 'avant la fin de la récupération',
+  'Heating is held back.': 'Le chauffage est réduit.', 'Rooms are warming up before the challenge.': 'Les pièces se réchauffent avant le défi.',
+  'inside': "à l'intérieur", 'house using': 'la maison consomme', 'of {n} kWh allowed': 'sur {n} kWh permis', '{n} – {n}': '{n} – {n}',
+  'Charged to {n}%': 'Rechargée à {n} %', 'Challenge done': 'Défi terminé',
+});
