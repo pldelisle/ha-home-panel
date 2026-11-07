@@ -41,7 +41,7 @@ Every section is optional. A section shows only when its entities exist, so a ho
        sidebar_title: Home panel
        sidebar_icon: mdi:home-analytics
        url_path: home-panel
-       module_url: /local/home-panel/home-panel.js?v=2.6.0
+       module_url: /local/home-panel/home-panel.js?v=2.7.0
    ```
 
 4. Restart Home Assistant. The panel shows up in the sidebar.
@@ -79,6 +79,40 @@ Two light cards can be linked so that one switch, brightness slider or colour sl
         - lights: [light.living_room_lamps, light.tv_lamps]
           switch: input_boolean.living_room_lights_linked
         - [office, hallway]
+```
+
+While something runs, the status chip in the header turns into a live-activity pill: the car charging (battery and time to full), the water heater heating (temperature and about how long is left, from its other cycles in the last 24 hours) and a Hilo challenge (phase and countdown, from pre-heat until recovery ends). Tap it for a card per activity above the usual status checks. When FordPass gives no time to full, the panel works it out from the charger's power and `car: {battery_kwh: …}`, the battery's usable size.
+
+### Idle clock and smart stack
+
+On a wall tablet, the panel shows a big clock after 5 minutes without a touch. "Sleep now" in the settings shows it on a phone too. One card sits beside the clock, or under it on a portrait screen, and it changes with the moment. When several cards apply, they take turns every 20 seconds, and small dots show how many there are. Tapping a card wakes the panel and opens what the card is about.
+
+| Card | When it shows |
+| --- | --- |
+| A door open (red, stays until the door closes) | A door sensor open for 5 minutes or more |
+| Lights unreachable (red, stays until fixed) | Any light unavailable for 5 minutes |
+| Weather warning (amber) | Environment Canada issues a warning |
+| Car not plugged in (amber) | After 9 pm, the car home, unplugged and under 40% |
+| Presence not updating (amber) | A person's iCloud tracker hasn't updated in 3 hours |
+| Sunrise | The hour before sunrise, with the rooms whose lights are still on |
+| Reminders | Before each time listed under `idle_stack.reminders` |
+| Critical peak | A Hydro-Québec critical peak or a Hilo challenge |
+| Now playing | A speaker is playing |
+| Who's home | 30 minutes after someone arrives or leaves |
+| Today | 6 to 11 am, today's events from your calendar entities |
+| Away | The `away_mode` input_boolean is on |
+| Room air | A purifier's room reads poor (CO₂, particles, VOC) |
+| Tomorrow | From 5 pm, tomorrow's forecast |
+| Car charge | 9 pm to 7 am, while the car is plugged in at home |
+| Energy today, who's home | In the daytime, when nothing else applies |
+
+Red cards stay on screen alone, and amber cards come first in the rotation. No card reads camera motion.
+
+```yaml
+      idle_stack:
+        sunrise_lights_off: true
+        reminders:
+          - {at: "20:00", title: Bedtime, text: The kids' lamp goes to night mode, lead: 30}
 ```
 
 Room icons can be `sofa`, `door`, `desk`, `bed`, `bath`, `drop`, `car`, `house` and `therm`.

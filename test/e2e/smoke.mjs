@@ -31,13 +31,14 @@ const FULL_CFG = {
 const TABLET = ['home', 'lights', 'climate', 'weather', 'car', 'energy', 'air', 'media', 'cams', 'auto'], PHONE = ['home', 'lights', 'climate', 'car'];
 const browser = await chromium.launch();
 let failures = 0;
-async function run(name, {house, cfg, viewport, lang = 'en', theme = 'light', check, init, query = ''}) {
+async function run(name, {house, cfg, viewport, lang = 'en', theme = 'light', time, check, init, query = ''}) {
   const page = await browser.newPage({viewport, deviceScaleFactor: 1, timezoneId: 'America/Toronto', reducedMotion: 'reduce'});
   const errors = [], calls = []; let at = 'load';
   page.on('pageerror', e => errors.push(`[${at}] ` + e.message + (process.env.STACK ? '\n' + e.stack : '')));
   page.on('console', m => { if (m.text().startsWith('SERVICE ')) calls.push(m.text().slice(8)); if (m.type() === 'error' && !/Failed to load resource|fonts\.googleapis/.test(m.text())) errors.push(m.text()); });
   await page.addInitScript(([c, t]) => { window.PANEL_CFG = c; try { localStorage.setItem('home-panel-theme', t); } catch (e) {} }, [cfg || null, theme]);
   await page.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
+  if (time) await page.clock.setFixedTime(new Date(time));
   try {
     if (init) await page.addInitScript(init);
     await page.goto(`${BASE}?house=${house}&lang=${lang}${query}`);
@@ -87,12 +88,63 @@ await run('full-ipad', {house: 'full', cfg: FULL_CFG, viewport: ipad, check: asy
   await page.evaluate(() => document.querySelector('home-panel').idleArm());
   await page.waitForTimeout(500);
 }});
+// live activities (2.5.0): the test car is charging, so the status chip is a pill; tapped, it shows the car's card above the Status checks
+const pillCheck = async (page, calls) => {
+  const R = fn => page.evaluate(fn);
+  const pill = await R(() => { const b = document.querySelector('home-panel').shadowRoot.querySelector('#chips .attchip'); return b && {lap: b.classList.contains('lap'), text: b.textContent}; });
+  assert.ok(pill && pill.lap && /64%/.test(pill.text), `the status chip turns into a charging pill (got ${JSON.stringify(pill)})`);
+  await R(() => document.querySelector('home-panel').shadowRoot.querySelector('#chips .attchip').click());
+  await page.waitForTimeout(300);
+  const pop = await R(() => { const p = document.querySelector('home-panel').shadowRoot.getElementById('attpop'); return {open: !p.hidden, acts: p.querySelectorAll('.lact').length, status: !!p.querySelector('.lstat')}; });
+  assert.deepEqual(pop, {open: true, acts: 1, status: true}, 'the popup shows one activity card and the Status checks');
+  await R(() => document.querySelector('home-panel').shadowRoot.querySelector('#attpop [data-la="pause"]').click());
+  await page.waitForTimeout(300);
+  assert.ok(calls.some(c => /^switch\.turn_off .*charger_pause/.test(c)), `Pause charging turns the Wallbox switch off (calls: ${calls.join('; ')})`);
+  // once charging stops, the chip says All clear again
+  await R(() => { const P = document.querySelector('home-panel'); hass.states['sensor.fordpass_test_elvehcharging'] = {...hass.states['sensor.fordpass_test_elvehcharging'], state: 'NOT_READY'}; hass.states['sensor.fordpass_test_elvehplug'] = {...hass.states['sensor.fordpass_test_elvehplug'], state: 'DISCONNECTED'}; P.hass = {...hass}; P.renderLive(); });
+  const back = await R(() => document.querySelector('home-panel').shadowRoot.querySelector('#chips .attchip').classList.contains('lap'));
+  assert.equal(back, false, 'with nothing running the status chip is back');
+};
+await run('pill-ipad', {house: 'full', cfg: FULL_CFG, viewport: ipad, check: pillCheck});
+await run('pill-iphone', {house: 'full', cfg: FULL_CFG, viewport: iphone, check: pillCheck});
 await run('full-ipad-dark', {house: 'full', cfg: FULL_CFG, viewport: ipad, theme: 'dark'});
 await run('full-ipad-fr', {house: 'full', cfg: FULL_CFG, viewport: ipad, lang: 'fr', check: async page => {
   const txt = await page.evaluate(() => document.querySelector('home-panel').shadowRoot.getElementById('rail').textContent);
   assert.match(txt, /Accueil|Lumières|Climat/, 'the rail is in French for a French-language user');
 }});
 await run('full-iphone', {house: 'full', cfg: FULL_CFG, viewport: iphone});
+// smart stack (2.5.0): at 11:30 pm the plugged-in car and the playing speaker take turns beside the idle clock; a tap on the car card opens the car
+await run('stack-ipad', {house: 'full', cfg: FULL_CFG, viewport: ipad, time: '2026-11-07T23:30:00-05:00', check: async page => {
+  const R = fn => page.evaluate(fn);
+  await R(() => document.querySelector('home-panel').idleStart());
+  await page.waitForTimeout(300);
+  const ks = [];
+  for (let i = 0; i < 2; i++) {
+    ks.push(await R(() => { const r = document.querySelector('home-panel').shadowRoot; return [r.querySelector('#istk .sc')?.dataset.k, r.querySelectorAll('#istk .sdots i').length]; }));
+    await page.clock.setFixedTime(new Date(Date.parse('2026-11-07T23:30:00-05:00') + 20000 * (i + 1)));
+    await R(() => document.querySelector('home-panel').renderIdle());
+  }
+  assert.deepEqual(ks.map(k => k[0]).sort(), ['car', 'music'], `the car and the speaker take turns (got ${JSON.stringify(ks)})`);
+  assert.equal(ks[0][1], 2, 'two dots for two cards');
+  assert.ok(await R(() => !!document.querySelector('home-panel').shadowRoot.querySelector('#iwrap .iclk2 .wxi')), 'the clock keeps its weather icon');
+  await page.screenshot({path: join(OUT, 'stack-ipad-idle.png')});
+  await R(() => { const r = document.querySelector('home-panel'); r.stackGo('sh-car'); r.idleArm(); });
+  await page.waitForTimeout(500);
+  assert.ok(await R(() => !document.querySelector('home-panel').shadowRoot.getElementById('pane-car').hidden), 'the car card leads to the car');
+}});
+await run('stack-iphone', {house: 'full', cfg: FULL_CFG, viewport: iphone, time: '2026-11-07T23:30:00-05:00', check: async page => {
+  await page.evaluate(() => document.querySelector('home-panel').idleStart());
+  await page.waitForTimeout(300);
+  const box = await page.evaluate(() => { const r = document.querySelector('home-panel').shadowRoot, c = r.querySelector('#istk .sc').getBoundingClientRect(), k = r.querySelector('#iclk').getBoundingClientRect(); return {below: c.top >= k.bottom - 1, inside: c.left >= 0 && c.right <= innerWidth}; });
+  assert.deepEqual(box, {below: true, inside: true}, 'on a phone in portrait the card sits under the clock, on screen');
+  await page.screenshot({path: join(OUT, 'stack-iphone-idle.png')});
+}});
+// idle_stack.enabled: false keeps the clock alone
+await run('stack-off', {house: 'full', cfg: {...FULL_CFG, idle_stack: {enabled: false}}, viewport: ipad, time: '2026-11-07T23:30:00-05:00', check: async page => {
+  await page.evaluate(() => document.querySelector('home-panel').idleStart());
+  await page.waitForTimeout(300);
+  assert.equal(await page.evaluate(() => document.querySelector('home-panel').shadowRoot.querySelectorAll('#iwrap .sc').length), 0, 'no card when the stack is off');
+}});
 // the names on the Lights tab's area cards, in order
 const lightTiles = async page => {
   await page.evaluate(() => document.querySelector('home-panel').shadowRoot.querySelector('#rail [data-tab="lights"]').click());
@@ -157,7 +209,7 @@ await run('dimmer-rows-iphone', {house: 'full', cfg: LINK_CFG, viewport: iphone,
   const shown = await page.evaluate(() => [...document.querySelector('home-panel').shadowRoot.querySelectorAll('#ltiles .lrow .lauto')].some(b => getComputedStyle(b).display !== 'none'));
   assert.equal(shown, false, 'phone rows leave Auto and Night to the sheet');
 }});
-// 2.6.0 Arrange: drag a row (a linked pair as one block) to a new place; the order is saved in HA's system data for every screen
+// 2.7.0 Arrange: drag a row (a linked pair as one block) to a new place; the order is saved in HA's system data for every screen
 await run('arrange-lights-ipad', {house: 'full', cfg: LINK_CFG, viewport: ipad, check: async (page, calls) => {
   const ws = []; page.on('console', m => { if (m.text().startsWith('WS ')) ws.push(JSON.parse(m.text().slice(3))); });
   await lightTiles(page);

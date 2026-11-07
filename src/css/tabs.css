@@ -194,9 +194,43 @@ button.hsen{appearance:none;-webkit-appearance:none;font:inherit;color:inherit;t
 .idle .iclk2{display:flex;align-items:center;justify-content:center;gap:clamp(16px,2.4vw,32px)}
 .idle .iclk2 .wxi{width:clamp(80px,11vw,140px);height:auto;display:block}
 .idle .isun{font-size:clamp(14px,1.6vw,19px);color:var(--fg2);margin-top:8px}
+/* smart stack (2.5.0): one card beside the clock, below it on a portrait screen; a tap on it opens what it is about */
+.idle .ss{display:flex;align-items:center;justify-content:center;gap:clamp(32px,5vw,72px)}
+.idle .ss .iclock{font-size:clamp(80px,11.5vw,168px)}
+.idle .ss .iclk2 .wxi{width:clamp(62px,8.5vw,116px)}
+.idle .ssk{display:flex;align-items:center;gap:14px;text-align:left}
+.idle .scw{position:relative}
+.idle .speek{position:absolute;left:18px;right:18px;top:-9px;height:24px;border-radius:22px 22px 0 0;background:var(--g-card,var(--card));opacity:.55}
+.idle .sc{position:relative;width:340px;height:300px;box-sizing:border-box;padding:22px 24px;border-radius:34px;background:var(--g-card,var(--card));backdrop-filter:var(--g-bd,none);-webkit-backdrop-filter:var(--g-bd,none);box-shadow:var(--g-edge,var(--shadow));display:flex;flex-direction:column;color:var(--fg);overflow:hidden;animation:scin .6s ease-out both}
+.idle .sc[data-go]{cursor:pointer}
+.idle .sc.amber{box-shadow:var(--g-edge,var(--shadow)),0 0 0 2px color-mix(in srgb,var(--warn) 70%,transparent),0 0 40px -6px color-mix(in srgb,var(--warn) 60%,transparent)}
+.idle .sc.red{box-shadow:var(--g-edge,var(--shadow)),0 0 0 2px color-mix(in srgb,var(--crit) 75%,transparent),0 0 44px -6px color-mix(in srgb,var(--crit) 60%,transparent)}
+@keyframes scin{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+.idle .sh{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--fg2);min-width:0}
+.idle .sh .si{flex:none;width:28px;height:28px;border-radius:9px;display:grid;place-items:center;color:#fff}
+.idle .sh b{font-weight:700;color:var(--fg);font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.idle .sh em{margin-left:auto;font-style:normal;white-space:nowrap;padding-left:6px}
+.idle .sbig{font-family:var(--f-num);font-weight:var(--num-w);font-size:56px;line-height:1;letter-spacing:-.02em;margin-top:18px}
+.idle .sbig small,.idle .sring b small{font-size:.42em;font-weight:600}
+.idle .smid{font-size:17px;font-weight:600;margin-top:8px;line-height:1.3}
+.idle .sft{margin-top:auto;font-size:14px;color:var(--fg2);line-height:1.35}
+.idle .schips{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}.idle .schips span{font-size:13px;font-weight:600;padding:5px 10px;border-radius:99px;background:color-mix(in srgb,var(--fg) 10%,transparent)}
+.idle .swx{display:flex;align-items:center;gap:14px;margin-top:12px}.idle .swx .sbig{margin-top:0;font-size:50px}.idle .swx .sbig small{color:var(--fg2);font-size:.55em}.idle .swx .wxi{flex:none}
+.idle .srow{display:flex;align-items:center;gap:18px;margin-top:14px}
+.idle .sring{position:relative;display:grid;place-items:center;flex:none}.idle .sring svg{position:absolute;inset:0}.idle .sring b{font-family:var(--f-num);font-weight:var(--num-w);font-size:32px}
+.idle .skv{display:grid;gap:8px}.idle .skv small{display:block;font-size:12.5px;color:var(--fg2)}.idle .skv b{font-size:18px}
+.idle .spl{display:grid;gap:12px;margin-top:18px}.idle .sp{display:flex;align-items:center;gap:12px}.idle .sp b{display:block;font-size:16px}.idle .sp small{font-size:13.5px;color:var(--fg2)}
+.idle .sav{flex:none;width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:var(--m-orange);color:#fff;font-weight:700;font-size:17px}.idle .sav.away{filter:grayscale(.9);opacity:.55}
+.idle .stag{margin-left:auto;font-size:12.5px;font-weight:700;padding:4px 10px;border-radius:99px;background:color-mix(in srgb,var(--fg) 10%,transparent);color:var(--fg2)}.idle .stag.ok{background:color-mix(in srgb,var(--ok) 22%,transparent);color:var(--ok)}
+.idle .sev{display:flex;gap:12px;margin-top:16px}.idle .sev i{flex:none;width:4px;border-radius:2px}.idle .sev b{display:block;font-size:16px}.idle .sev small{font-size:13.5px;color:var(--fg2)}
+.idle .snp{display:flex;align-items:center;gap:14px;margin-top:18px}.idle .snp img,.idle .snp .sart{flex:none;width:84px;height:84px;border-radius:14px;object-fit:cover;background:linear-gradient(135deg,var(--m-amber),var(--m-purple))}.idle .snp b{display:block;font-size:18px}.idle .snp small{font-size:14px;color:var(--fg2)}
+.idle .sbar{display:flex;gap:3px;height:12px;margin-top:18px}.idle .sbar i{border-radius:4px}
+.idle .sdots{display:flex;flex-direction:column;gap:6px}.idle .sdots i{width:6px;height:6px;border-radius:3px;background:var(--fg);opacity:.25}.idle .sdots i.on{opacity:.9;height:16px}
+@media (max-aspect-ratio:1/1){.idle .ss{flex-direction:column;gap:34px}.idle .ss .iclock{font-size:min(84px,21vw)}.idle .ss .iclk2 .wxi{width:min(62px,16vw)}.idle .ssk{padding-left:20px}}
+@media (max-width:380px){.idle .sc{width:300px;height:280px;padding:20px}}
 .app.idle>:not(.idle){opacity:0;transition:opacity .9s ease-out}
 .app.idle.gl::before{animation-play-state:running}
-@media (prefers-reduced-motion:reduce){.idle,.idle.wake{animation:none;transition:none}.app.idle>:not(.idle){transition:none}.app.idle.gl::before{animation-play-state:paused}}
+@media (prefers-reduced-motion:reduce){.idle,.idle.wake,.idle .sc{animation:none;transition:none}.app.idle>:not(.idle){transition:none}.app.idle.gl::before{animation-play-state:paused}}
 /* linked light cards (light_links): the pair takes two columns; joined into one outlined card while linked, a chain button on the seam */
 .lareas .llink{grid-column:span 2;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;position:relative;border-radius:18px}
 .lareas .llink.on{gap:0;background:var(--card2);box-shadow:0 0 0 1.5px color-mix(in srgb,var(--lc,var(--warn)) 45%,transparent)}
@@ -244,7 +278,7 @@ button.hsen{appearance:none;-webkit-appearance:none;font:inherit;color:inherit;t
 .ltiles .llink.on::after,.lrows .llink.on::after{display:none}
 /* the light sheet on a tablet: a narrow panel instead of the full width, since it only holds a few controls */
 .app:not(.cp) #sh-light>.panel{width:min(560px,100%)}
-/* Arrange (2.6.0): the Lights tab's rows can be dragged into the order you want; a linked pair moves as one block */
+/* Arrange (2.7.0): the Lights tab's rows can be dragged into the order you want; a linked pair moves as one block */
 .pane-lights>.ph .ledbar{margin-left:auto;display:flex;gap:8px}
 .pane-lights>.ph .ledbar .more{padding:8px 16px;border-radius:999px;font:inherit;font-weight:600}
 .pane-lights>.ph .ledbar #ledit[aria-pressed="true"]{color:#fff;background:var(--c-home);border-color:transparent}

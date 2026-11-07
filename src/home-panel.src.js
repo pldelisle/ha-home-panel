@@ -10,6 +10,7 @@ const CSS = __CSS__;
 
 // ---------- entities ----------
 /*__CONFIG__*/
+/*__STACK__*/
 // filled by applyConfig() from the panel's config before the first render
 const LIGHT_ORDER_KEY = 'home_panel';
 const E = {}, ROOMS = [], HOUSEHOLD = [], SCENE_ORDER = [], MODES = [], AL_AREAS = {}, SPLIT_AREAS = [], LIGHT_LINKS = [];
@@ -35,6 +36,9 @@ const kw = id => { const v = num(id); if (v == null) return null; const u = attr
 const sum = a => a.reduce((x, y) => x + (y || 0), 0);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
 const f1 = v => v == null ? '–' : (+v).toFixed(1);
+const f0 = v => v == null ? '–' : String(Math.round(+v));
+// a duration for the live-activity pill: 52 min, 1 h 50, 3 h
+const durTxt = ms => { const m = Math.max(1, Math.round(ms / 6e4)); return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h${m % 60 ? ' ' + String(m % 60).padStart(2, '0') : ''}`; };
 const ampm = s => s.replace(/\s?([ap])\.\s?m\.?/i, ' $1m');
 const fmtTime = d => ampm(new Date(d).toLocaleTimeString('en-CA', {hour: 'numeric', minute: '2-digit', timeZone: TZ}));
 const fmtDay = s => new Date(s + 'T12:00:00').toLocaleDateString('en-CA', {month: 'short', day: 'numeric'});
@@ -53,6 +57,7 @@ const shortNames = names => {
   let k = 0; while (w.every(x => x.length > k + 1 && fold(x[k]) === fold(w[0][k]))) k++;
   return w.map(x => x.slice(k).join(' '));
 };
+const L0kw = v => v == null ? '–' : v < 1 ? Math.round(v * 1000) + ' W' : v.toFixed(1) + ' kW';
 const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
 /*__FR__*/
 const ago = t => { const m = Math.round((Date.now() - Date.parse(t)) / 6e4); return m < 1 ? 'just now' : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : fmtDate(t); };
@@ -123,7 +128,9 @@ const ICON = {
   prev: '<path d="M6 6v12"/><path d="M19 6.5v11L10 12z" fill="currentColor"/>', next: '<path d="M18 6v12"/><path d="M5 6.5v11l9-5.5z" fill="currentColor"/>',
   play: '<path d="M7.5 5.5v13l11-6.5z" fill="currentColor"/>', pause: '<path d="M8.5 5.5v13M15.5 5.5v13" stroke-width="3.2"/>',
   gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>', sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>', sunauto: '<path d="M3 18h18M5 18a7 7 0 0 1 14 0M12 3v3M4.2 6.2l2.1 2.1M19.8 6.2l-2.1 2.1"/>',
-  menu: '<path d="M4 7h16M4 12h16M4 17h16"/>', flow: '<circle cx="5" cy="6" r="2"/><circle cx="5" cy="18" r="2"/><circle cx="19" cy="12" r="2.2"/><path d="M7 6c5 0 5 6 9.8 6M7 18c5 0 5-6 9.8-6"/>', shield: '<path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/>', cam: '<path d="M3 7h12a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H3zM17 10.5l4-2.5v8l-4-2.5"/><circle cx="9" cy="12" r="2.5"/>',
+  cal: '<rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/>', warn: '<path d="M12 3.5 2.5 20h19z"/><path d="M12 10v4.5M12 17.2v.3"/>',
+  sunup: '<path d="M12 3v4.5M9.5 5.5 12 3l2.5 2.5M4.9 11.4l1.6 1.6M19.1 11.4l-1.6 1.6M3 19h18M7 19a5 5 0 0 1 10 0"/>',
+  menu: '<path d="M4 7h16M4 12h16M4 17h16"/>', check: '<path d="m5 12.5 4.5 4.5L19 7.5" stroke-width="2.6"/>', flow: '<circle cx="5" cy="6" r="2"/><circle cx="5" cy="18" r="2"/><circle cx="19" cy="12" r="2.2"/><path d="M7 6c5 0 5 6 9.8 6M7 18c5 0 5-6 9.8-6"/>', shield: '<path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/>', cam: '<path d="M3 7h12a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H3zM17 10.5l4-2.5v8l-4-2.5"/><circle cx="9" cy="12" r="2.5"/>',
 };
 const ico = (k, s = 20) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[k]}</svg>`;
 
@@ -609,7 +616,7 @@ class HomePanel extends HTMLElement {
   idleStart() {
     if (!hass) return this.idleArm();
     clearTimeout(this.idleT); this.idleT = null;
-    const o = this.$('idle'); clearTimeout(this.wakeT); o.classList.remove('wake'); o.hidden = false; this.$app.classList.add('idle'); this.cache.iwrap = null; this.renderIdle();
+    const o = this.$('idle'); clearTimeout(this.wakeT); o.classList.remove('wake'); o.hidden = false; this.$app.classList.add('idle'); this.cache.ishell = null; this.renderIdle();
   }
   renderIdle() {
     if (!this.$app || !hass || !this.$app.classList.contains('idle')) return;
@@ -622,11 +629,136 @@ class HomePanel extends HTMLElement {
     const icon = c ? `<span class="iwx">${wxIcon(c, 120, up())}</span>` : '';
     const ms = now.getTime(), d = this.sunDay(0), d1 = this.sunDay(1);
     const next = ms < d.rise ? ['Sunrise', d.rise] : ms < d.set ? ['Sunset', d.set] : ['Sunrise', d1.rise];
+    const clock = `<div class="iclock num">${t[0]}<small>${t[1] || ''}</small></div>`;
+    // smart stack (2.5.0): one contextual card beside the clock, picked by pickStack() from the cards that apply right now
+    let pick = null; try { pick = CFG && CFG.stack.on ? pickStack(this.stackCards(), ms) : null; } catch (e) { console.error('home-panel stack', e); }
+    const shell = pick ? 'ss' : 'solo';
+    if (this.cache.ishell !== shell) { this.cache.ishell = shell; this.cache.iclk = this.cache.istk = null;
+      this.$('iwrap').innerHTML = pick ? '<div class="ss"><div class="ssc" id="iclk"></div><div class="ssk" id="istk"></div></div>' : '<div id="iclk"></div>'; }
+    this.set('iclk', `${icon ? `<div class="iclk2">${icon}${clock}</div>` : clock}<div class="idate">${esc(dateStr)}</div>${temps ? `<div class="itemps">${temps}</div>` : ''}${next[1] ? `<div class="isun">${next[0]} ${fmtTime(next[1])}</div>` : ''}`);
+    if (pick) this.set('istk', `<div class="scw">${pick.n > 1 ? '<div class="speek"></div>' : ''}${pick.card.html}</div>${pick.n > 1 ? `<div class="sdots" aria-hidden="true">${Array.from({length: pick.n}, (_, i) => `<i${i === pick.i ? ' class="on"' : ''}></i>`).join('')}</div>` : ''}`);
     // the block drifts a little on every tick so the OLED-less iPad still never shows the same pixels for hours
     const x = Math.round(Math.random() * 40 - 20), y = Math.round(Math.random() * 30 - 15);
-    const clock = `<div class="iclock num">${t[0]}<small>${t[1] || ''}</small></div>`;
-    this.set('iwrap', `${icon ? `<div class="iclk2">${icon}${clock}</div>` : clock}<div class="idate">${esc(dateStr)}</div>${temps ? `<div class="itemps">${temps}</div>` : ''}${next[1] ? `<div class="isun">${next[0]} ${fmtTime(next[1])}</div>` : ''}`);
     this.$('iwrap').style.transform = `translate(${x}px,${y}px)`;
+  }
+  // one smart stack card: a title row, a body and a footer line; go = where a tap on it leads
+  scard(k, {ic, label, color, right = '', body = '', foot = '', tone = null, go = '', filler = false}) {
+    const html = `<div class="sc${tone ? ' ' + tone : ''}" data-k="${k}"${go ? ` data-go="${esc(go)}"` : ''}><div class="sh"><span class="si" style="background:${color}">${ico(ic, 16)}</span><b>${esc(label)}</b>${right ? `<em>${esc(right)}</em>` : ''}</div>${body}${foot ? `<div class="sft">${esc(foot)}</div>` : ''}</div>`;
+    return {k, tone, filler, html};
+  }
+  sring(pct, lim, color, size = 124) {
+    const r = 52, c = 2 * Math.PI * r, a = c * Math.max(0, Math.min(100, pct || 0)) / 100;
+    return `<span class="sring" style="width:${size}px;height:${size}px"><svg width="${size}" height="${size}" viewBox="0 0 124 124" aria-hidden="true"><circle cx="62" cy="62" r="${r}" fill="none" stroke="currentColor" stroke-opacity=".14" stroke-width="11"/><circle cx="62" cy="62" r="${r}" fill="none" stroke="${color}" stroke-width="11" stroke-linecap="round" stroke-dasharray="${a.toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 62 62)"/>${lim ? `<circle cx="62" cy="62" r="${r}" fill="none" stroke="currentColor" stroke-opacity=".6" stroke-width="11" stroke-dasharray="1.6 ${c.toFixed(1)}" stroke-dashoffset="${(-c * lim / 100).toFixed(1)}" transform="rotate(-90 62 62)"/>` : ''}</svg><b class="num">${pct == null ? '–' : Math.round(pct)}<small>%</small></b></span>`;
+  }
+  // every card that applies right now, red alerts and amber warnings first. No card ever reads camera motion.
+  stackCards() {
+    const now = Date.now(), h = hourNow(), out = [], S = (CFG && CFG.stack) || {}, mins = t => Math.round((now - Date.parse(t)) / 6e4);
+    const when = t => { const d = Date.parse(t); return localDay(d) === localDay(now) ? fmtTime(d) : fmtDate(d); };
+    const chips = names => `<div class="schips">${names.slice(0, 3).map(n => `<span>${esc(n)}</span>`).join('')}${names.length > 3 ? `<span>+${names.length - 3}</span>` : ''}</div>`;
+    const big = (v, u) => `<div class="sbig num">${v}${u ? `<small>${u}</small>` : ''}</div>`, mid = t => `<div class="smid">${esc(t)}</div>`;
+    const X = this.sensors(), doors = X.filter(x => x.kind === 'door');
+    const areas = this.lightAreas();
+    // red: a door open 5 min or more, lights that stopped answering for 5 min (pinned until fixed)
+    doors.filter(x => (st(x.id) || {}).state === 'on' && mins(st(x.id).last_changed) >= 5).forEach(x => {
+      const m = mins(st(x.id).last_changed);
+      out.push(this.scard('door', {ic: 'door', label: `${x.name} open`, color: 'var(--crit)', tone: 'red', go: 'sens:' + x.id,
+        body: m < 60 ? big(m, ' min') : big(Math.floor(m / 60), ' h') + mid(`Open since ${when(st(x.id).last_changed)}`), foot: 'Stays here until the door closes'}));
+    });
+    const lost = areas.filter(a => a.ids.some(id => { const s = st(id); return s && s.state === 'unavailable' && mins(s.last_changed) >= 5; }));
+    if (lost.length) {
+      const ids = lost.flatMap(a => a.ids.filter(id => (st(id) || {}).state === 'unavailable')), first = ids.map(id => Date.parse(st(id).last_changed)).sort()[0];
+      out.push(this.scard('lights', {ic: 'bulb', label: 'Lights unreachable', color: 'var(--crit)', right: 'since ' + when(first), tone: 'red', go: 'tab:lights',
+        body: big(ids.length, ids.length === 1 ? ' light' : ' lights') + chips(lost.map(a => a.name)), foot: 'They are not answering Home Assistant'}));
+    }
+    // amber: a weather warning, the car low and unplugged at night, phones that stopped updating
+    const warn = this.alerts().filter(a => a.kind === 'Warning');
+    if (warn.length) out.push(this.scard('wxwarn', {ic: 'warn', label: warn[0].title, color: 'var(--warn)', tone: 'amber', go: 'sh-weather', right: 'Env. Canada',
+      body: mid(warn.length > 1 ? `${warn.length} warnings in effect` : 'In effect for your area'), foot: warn[0].time ? `Issued ${when(warn[0].time)}` : 'Tap for the details'}));
+    const C = this.car ? this.carState() : null;
+    if (C && C.home !== false && !C.plugged && C.soc != null && C.soc < 40 && inHours(h, 21, 6))
+      out.push(this.scard('carlow', {ic: 'car', label: `${this.carName()} not plugged in`, color: 'var(--warn)', tone: 'amber', go: 'sh-car',
+        body: `<div class="srow">${this.sring(C.soc, 0, 'var(--warn)', 108)}<div class="skv">${C.range != null ? `<div><small>Range</small><b class="num">${Math.round(C.range)} km</b></div>` : ''}</div></div>`, foot: 'Plug in before bed'}));
+    const reg = hass.entities || {};
+    const frozen = Object.keys(hass.states).filter(id => id.startsWith('person.')).map(id => attr(id, 'source')).filter(Boolean)
+      .filter(t => (reg[t] || {}).platform === 'icloud' && ok(st(t)) && mins(st(t).last_updated) >= 180);
+    if (frozen.length) out.push(this.scard('presence', {ic: 'house', label: 'Presence not updating', color: 'var(--warn)', tone: 'amber', right: 'since ' + when(st(frozen[0]).last_updated),
+      body: mid(`${plural(frozen.length, 'iPhone')} stopped updating. Who's home and Away may be wrong.`), foot: 'Sign in to iCloud again in Settings'}));
+    // the hour before sunrise
+    const d0 = this.sunDay(0), rise = now < d0.rise ? d0.rise : this.sunDay(1).rise, left = (rise - now) / 6e4;
+    if (rise && left > 0 && left <= 60) {
+      const on = areas.filter(a => a.ids.some(id => (st(id) || {}).state === 'on')).map(a => a.name);
+      if (!S.sunriseOff || on.length) out.push(this.scard('sunrise', {ic: 'sunup', label: S.sunriseOff ? 'Lights off at sunrise' : 'Sunrise', color: 'var(--m-amber)', go: 'tab:lights',
+        body: big(...fmtTime(rise).split(' ').map((x, i) => i ? ' ' + x : x)) + mid(`in ${Math.round(left)} min`) + (on.length ? chips(on) : ''),
+        foot: on.length ? (S.sunriseOff ? 'Every light turns off then' : 'Lights still on') : 'Every light is off'}));
+    }
+    // reminders from the config (a child's bedtime, say)
+    (S.reminders || []).forEach((r, i) => { const m = reminderLeft(r, h); if (m == null) return;
+      out.push(this.scard('rem' + i, {ic: 'moon', label: r.title, color: 'var(--m-purple)', body: big(...fmtTime(Date.now() + m * 6e4).split(' ').map((x, j) => j ? ' ' + x : x)) + (r.text ? mid(r.text) : ''), foot: `in ${m} min`})); });
+    // Hydro-Québec critical peaks and Hilo challenges
+    const pk = st(E.hqPeak), pu = st(E.hqUpcoming), defi = st(E.defi);
+    if ((pk && pk.state === 'on') || (pu && pu.state === 'on')) out.push(this.scard('peak', {ic: 'bolt', label: pk && pk.state === 'on' ? 'Critical peak now' : 'Critical peak coming', color: 'var(--crit)', right: 'Hydro-Québec', go: 'sh-energy',
+      body: mid(pk && pk.state === 'on' ? 'Lower consumption now' : 'Hydro-Québec announced a critical peak'), foot: `Using ${L0kw(this.live().grid)} right now`}));
+    else if (ok(defi) && defi.state !== 'off') out.push(this.scard('peak', {ic: 'bolt', label: 'Hilo challenge', color: 'var(--crit)', right: 'Hilo', go: 'sh-energy', body: mid(String(defi.state)), foot: `Using ${L0kw(this.live().grid)} right now`}));
+    // a HomePod playing
+    const sp = this.speakers().find(x => (st(x.id) || {}).state === 'playing');
+    if (sp) { const pic = attr(sp.id, 'entity_picture'), area = ((hass.areas || {})[sp.aid] || {}).name || sp.name;
+      out.push(this.scard('music', {ic: 'spk', label: 'Now playing', color: 'var(--m-purple)', right: area, go: 'tab:media',
+        body: `<div class="snp">${pic ? `<img src="${esc(pic)}" alt="">` : '<span class="sart"></span>'}<div><b>${esc(attr(sp.id, 'media_title') || 'Playing')}</b><small>${esc(attr(sp.id, 'media_artist') || attr(sp.id, 'app_name') || '')}</small></div></div>`, foot: 'Tap for the player'})); }
+    // someone came or left in the last 30 min
+    const P = this.presence(), pe = id => { const s = st(id); return s && s.last_changed; };
+    const pid = n => Object.keys(hass.states).find(id => id.startsWith('person.') && fold(attr(id, 'friendly_name') || '').split(/\s+/)[0] === fold(n));
+    const moved = P.map(p => ({...p, at: pe(pid(p.name))})).filter(p => p.at);
+    const who = () => { const dr = doors.filter(x => st(x.id) && mins(st(x.id).last_changed) <= 30 && (st(x.id) || {}).state === 'off').sort((a, b) => Date.parse(st(b.id).last_changed) - Date.parse(st(a.id).last_changed))[0];
+      return {ic: 'house', label: "Who's home", color: 'var(--m-orange)',
+        body: `<div class="spl">${moved.map(p => `<div class="sp"><span class="sav${p.home ? '' : ' away'}">${esc(p.name.charAt(0))}</span><div><b>${esc(p.name)}</b><small>${p.home ? 'Arrived' : 'Left'} ${when(p.at)}</small></div><span class="stag${p.home ? ' ok' : ''}">${p.home ? 'Home' : 'Away'}</span></div>`).join('')}</div>`,
+        foot: dr ? `${dr.name} opened ${when(st(dr.id).last_changed)}` : ''}; };
+    if (moved.some(p => mins(p.at) <= 30)) out.push(this.scard('who', who()));
+    // today's calendar events, in the morning
+    if (inHours(h, 6, 11)) {
+      const today = localDay(now), ev = Object.keys(hass.states).filter(id => id.startsWith('calendar.') && !(reg[id] || {}).hidden && ok(st(id)))
+        .map(id => ({id, a: st(id).attributes})).filter(x => x.a.start_time && localDay(Date.parse(String(x.a.start_time).replace(' ', 'T'))) === today && Date.parse(String(x.a.end_time || x.a.start_time).replace(' ', 'T')) > now)
+        .sort((x, y) => String(x.a.start_time).localeCompare(String(y.a.start_time)));
+      if (ev.length) out.push(this.scard('agenda', {ic: 'cal', label: 'Today', color: 'var(--crit)', right: plural(ev.length, 'event'),
+        body: ev.slice(0, 2).map((x, i) => `<div class="sev"><i style="background:var(--${['c-home', 'm-purple'][i]})"></i><div><b>${esc(x.a.message || attr(x.id, 'friendly_name'))}</b><small class="num">${x.a.all_day ? 'All day' : fmtTime(Date.parse(String(x.a.start_time).replace(' ', 'T')))}</small></div></div>`).join(''),
+        foot: ev.length > 2 ? `and ${ev.length - 2} more` : 'From your calendars'}));
+    }
+    // Away mode
+    const aw = st(E.away);
+    if (aw && aw.state === 'on') { const on = areas.filter(a => a.ids.some(id => (st(id) || {}).state === 'on')).length, ins = this.live().rooms.map(r => r.t).filter(v => v != null);
+      out.push(this.scard('away', {ic: 'shield', label: 'Away', color: 'var(--c-home)', right: 'since ' + when(aw.last_changed),
+        body: (ins.length ? big((sum(ins) / ins.length).toFixed(1) + '°', ' inside') : '') + mid(on ? `${plural(on, 'light')} on` : 'All lights off'), foot: 'Ends when someone comes home'})); }
+    // a room whose air turned poor
+    try { const P2 = this.purifiers(); P2.rooms.forEach(r => { const a = this.roomAir(r), bad = a.lv.filter(x => x.l >= 2).sort((x, y) => y.l - x.l)[0]; if (!bad) return;
+      out.push(this.scard('air', {ic: 'wind', label: `${r.name} air`, color: 'var(--m-teal)', go: 'sh-air', body: big(aqFmt(bad.k, bad.v), ' ' + AQ[bad.k].unit) + mid(`${AQ[bad.k].name} is high`), foot: bad.k === 'co2' ? 'Open a door or a window a little' : 'The purifier can run faster'})); }); } catch (e) { /* no Mila purifiers */ }
+    // tomorrow's weather, in the evening
+    if (inHours(h, 17, 24)) {
+      const days = this.wxDays(), tm = days.find(x => x.k === localDay(now + 864e5)), tn = days.find(x => x.k === localDay(now));
+      if (tm && (tm.hi != null || tm.lo != null)) out.push(this.scard('tomorrow', {ic: 'cal', label: 'Tomorrow', color: 'var(--c-home)', right: this.dayName(tm.k, false) === 'Tomorrow' ? new Date(tm.k + 'T12:00:00').toLocaleDateString('en-CA', {weekday: 'long'}) : '', go: 'sh-weather',
+        body: `<div class="swx">${wxIcon(tm.cond, 76, true)}<div>${big(tm.hi != null ? Math.round(tm.hi) + '°' : '–', tm.lo != null ? ' / ' + Math.round(tm.lo) + '°' : '')}${mid(condName(tm.cond) + (tm.pop ? `, ${Math.round(tm.pop)}%` : ''))}</div></div>`,
+        foot: tn && tn.night ? `Tonight: ${condName(tn.night)}${tn.lo != null ? `, low ${Math.round(tn.lo)}°` : ''}` : ''}));
+    }
+    // the car charging overnight
+    if (C && C.plugged && C.home !== false && inHours(h, 21, 7)) { const p = kw(E.evP), dep = (st(this.car.id('switch', 'departuretimes')) || {}).state === 'on' ? this.schedText() : '';
+      out.push(this.scard('car', {ic: 'car', label: this.carName(), color: 'var(--c-ev)', right: C.charging ? 'Charging' : 'Plugged in', go: 'sh-car',
+        body: `<div class="srow">${this.sring(C.soc, C.lim, 'var(--ok)')}<div class="skv">${p != null && p > 0.05 ? `<div><small>Power</small><b class="num">${p.toFixed(1)} kW</b></div>` : ''}${C.range != null ? `<div><small>Range</small><b class="num">${Math.round(C.range)} km</b></div>` : ''}${C.lim ? `<div><small>Limit</small><b class="num">${C.lim}%</b></div>` : ''}</div></div>`,
+        foot: dep && !/^No /.test(dep) ? `Departure: ${dep.replace(/ saved\.$/, '')}` : C.charging ? `Charging to ${C.lim || 100}%` : 'Not charging right now'}));
+    }
+    // fillers, when nothing else applies: energy used today in the daytime, and who's home
+    const T = this.H && this.H.totals, F = this.H && this.H.flow;
+    if (T && T.today != null && inHours(h, 8, 21)) { const td = (F || []).filter(r => localDay(r[0]) === localDay(now));
+      const part = [3, 2, 1, 4].map(i => sum(td.map(r => r[i]))), tot = sum(part) || 1, col = ['var(--c-heat)', 'var(--c-wh)', 'var(--c-ev)', 'var(--fg3)'];
+      out.push(this.scard('energy', {ic: 'bolt', label: 'Energy today', color: 'var(--m-orange)', right: 'so far', go: 'sh-energy', filler: true,
+        body: big(f1(T.today), ' kWh') + (td.length ? `<div class="sbar">${part.map((v, i) => v > 0 ? `<i style="flex:${(v / tot * 100).toFixed(1)};background:${col[i]}"></i>` : '').join('')}</div>` : ''),
+        foot: td.length ? ['Heating', 'water', 'car'].map((n, i) => `${n} ${Math.round(part[i] / tot * 100)}%`).join(' · ') : ''}));
+    }
+    if (moved.length && inHours(h, 7, 22) && !out.some(c => c.k === 'who')) out.push({...this.scard('who', who()), filler: true});
+    return out;
+  }
+  // a tap on the stack's card wakes the panel and opens what the card is about
+  stackGo(go) {
+    if (go.startsWith('sens:')) return this.openSens(go.slice(5));
+    if (go.startsWith('tab:')) { const t = go.slice(4); if (this.shadowRoot.querySelector(`#rail [data-tab="${t}"]:not([hidden])`)) this.setTab(t); return; }
+    if (this.$(go)) this.show(go);
   }
   // Attention glow (v1.19.6): when a door opens or motion starts, the Security card's edge pulses amber for about 2.5 s
   secWatch() {
@@ -663,6 +795,8 @@ class HomePanel extends HTMLElement {
 
   // ---------- events ----------
   wire() {
+    // the idle overlay swallows the tap that wakes the panel; on the smart stack's card that tap opens what the card is about
+    this.$('idle').addEventListener('click', e => { const g = e.target.closest('[data-go]'); if (g) this.stackGo(g.dataset.go); });
     this.$('menu').addEventListener('click', () => this.dispatchEvent(new Event('hass-toggle-menu', {bubbles: true, composed: true})));
     this.$('gear').addEventListener('click', () => { this.toggleAttention(false); this.renderHeader(); this.toggleSettings(); });
     this.$('toast').addEventListener('click', () => { this.$('toast').hidden = true; });
@@ -690,6 +824,7 @@ class HomePanel extends HTMLElement {
       this.shadowRoot.querySelectorAll('#etabs .tab').forEach(t => t.setAttribute('aria-selected', t === b));
       this.range = b.dataset.r; this.energyMain();
     });
+    this.$('attpop').addEventListener('click', e => this.laClick(e));
     this.$('chips').addEventListener('click', e => { if (e.target.closest('.attchip')) { e.stopPropagation(); this.toggleAttention(); this.renderHeader(); } });
     this.shadowRoot.addEventListener('click', e => {
       const pop = this.$('attpop'); if (!pop.hidden && !e.composedPath().some(n => n === pop || (n.classList && n.classList.contains('attchip')))) { this.toggleAttention(false); this.renderHeader(); }
@@ -958,8 +1093,9 @@ class HomePanel extends HTMLElement {
     const chips = [];
     if (temp != null) chips.push(`<div class="chip wxchip"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="9" r="4" fill="var(--m-amber)"/><path d="M8 19h9a4 4 0 0 0 0-8 5 5 0 0 0-9.6 1.6A3.2 3.2 0 0 0 8 19z" fill="var(--fg3)" opacity=".7"/></svg><span class="num">${f1(temp)}°</span><small>${esc(condName(ok(cond) ? cond.state : (st(E.weather) || {}).state))}</small></div>`);
     if (peak && peak.state === 'on') chips.push(`<div class="chip"><span class="dot" style="background:var(--crit)"></span>Critical peak now</div>`);
-    const open = !this.$('attpop').hidden;
-    chips.push(`<button type="button" class="chip attchip${att.items.length ? ' warn' : ''}" aria-haspopup="dialog" aria-expanded="${open}"><span class="dot" style="background:var(--${att.items.length ? (att.items.some(i => i[0] === 'crit') ? 'crit' : 'warn') : 'ok'})"></span>${att.items.length ? (att.items.length === 1 ? '1 thing needs' : att.items.length + ' things need') + ' attention' : 'All clear'}<svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>`);
+    const open = !this.$('attpop').hidden, pill = this.laPill(att);
+    if (pill) { chips.push(pill); if (chips[0].includes('wxchip')) chips[0] = chips[0].replace('chip wxchip', 'chip wxchip slim'); }
+    else chips.push(`<button type="button" class="chip attchip${att.items.length ? ' warn' : ''}" aria-haspopup="dialog" aria-expanded="${open}"><span class="dot" style="background:var(--${att.items.length ? (att.items.some(i => i[0] === 'crit') ? 'crit' : 'warn') : 'ok'})"></span>${att.items.length ? (att.items.length === 1 ? '1 thing needs' : att.items.length + ' things need') + ' attention' : 'All clear'}<svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>`);
     this.set('chips', chips.join(''));
     const err = this.histErr ? `<div class="err">History didn't load: ${esc(this.histErr)}. Live values still update.</div>` : '';
     this.set('err', err);
@@ -1047,9 +1183,154 @@ class HomePanel extends HTMLElement {
   renderAttention() {
     const {items, clear} = this.attention();
     const row = ([lvl, b, s]) => `<div class="arow"><span class="ic acc" style="--acc:var(--${lvl})">!</span><div><b>${esc(b)}</b><span>${esc(s)}</span></div></div>`;
-    this.set('att', `<div class="top"><span class="lbl">Status</span><span class="right">${items.length ? plural(items.length, 'item') + (items.length === 1 ? ' needs' : ' need') + ' attention' : 'All clear'}</span></div>
+    const acts = this.liveActs().acts;
+    this.$('attpop').classList.toggle('la', acts.length > 0);
+    this.set('att', `${acts.map(a => `<div class="lact" style="--ac:${a.ac}">${a.card()}</div>`).join('')}<div class="lstat"><div class="top"><span class="lbl">Status</span><span class="right">${items.length ? plural(items.length, 'item') + (items.length === 1 ? ' needs' : ' need') + ' attention' : 'All clear'}</span></div>
       ${items.length ? `<div class="att">${items.map(row).join('')}</div>` : `<div class="muted" style="font-size:14px">Everything is reporting normally.</div>`}
-      <div class="clear">${clear.map(c => `<span>${esc(c)}</span>`).join('')}</div>`);
+      <div class="clear">${clear.map(c => `<span>${esc(c)}</span>`).join('')}</div></div>`);
+  }
+
+  // ---------- live activities (2.5.0) ----------
+  // While something runs (the car charging, the water heater heating, a Hilo challenge), the status chip turns into a pill
+  // with that one number and the time left; other running things sit beside it as small rings, and a status problem as a "!".
+  // Tapping opens the Status popup with one card per activity above the usual checks. When the car reaches its limit or a
+  // challenge ends, a check shows for 10 minutes, then the chip says "All clear" again.
+  liveActs() {
+    const now = Date.now(), acts = [], seen = {};
+    const ring = (ic, p, ac, s = 34) => { const r = s / 2 - 2.5, c = 2 * Math.PI * r, pp = p == null ? null : Math.max(0.02, Math.min(1, p));
+      return `<span class="lring" style="--ac:${ac};width:${s}px;height:${s}px"><svg viewBox="0 0 ${s} ${s}" aria-hidden="true"><circle cx="${s / 2}" cy="${s / 2}" r="${r}" fill="color-mix(in srgb,${ac} 16%,transparent)" stroke="color-mix(in srgb,${ac} 22%,transparent)" stroke-width="3"/>${pp == null ? '' : `<circle cx="${s / 2}" cy="${s / 2}" r="${r}" fill="none" stroke="${ac}" stroke-width="3" stroke-linecap="round" stroke-dasharray="${(c * pp).toFixed(1)} ${c.toFixed(1)}"/>`}</svg><span class="li">${ico(ic, Math.round(s * 0.5))}</span></span>`; };
+    const head = (a, title, right) => `<div class="lah">${ring(a.ic, a.p, a.ac, 30)}<b>${title}</b><span class="rt">${right}</span></div>`;
+    // Hilo challenge: from the start of pre-heat until recovery ends; phase times come from the challenge sensor's next event
+    const defi = st(E.defi), dst = ok(defi) ? (defi.state === 'on' ? 'reduction' : defi.state) : null;
+    if (['pre_heat', 'reduction', 'recovery'].includes(dst)) {
+      const ev = (defi.attributes.next_events || [])[0] || {}, ph = ev.phases || {};
+      const T = k => { const v = Date.parse(String(ph[k] || '').replace(' ', 'T')); return Number.isFinite(v) ? v : null; };
+      const [a0, b0] = {pre_heat: ['preheat_start', 'preheat_end'], reduction: ['reduction_start', 'reduction_end'], recovery: ['recovery_start', 'recovery_end']}[dst].map(T);
+      const to = dst === 'pre_heat' ? (T('reduction_start') ?? b0) : b0;
+      const p = a0 && b0 && b0 > a0 ? (now - a0) / (b0 - a0) : null, red = dst === 'reduction';
+      const name = {pre_heat: 'Hilo pre-heat', reduction: 'Hilo challenge', recovery: 'Hilo recovery'}[dst], short = {pre_heat: 'Pre-heat', reduction: 'Challenge', recovery: 'Recovery'}[dst];
+      const left = to ? durTxt(to - now) : '', what = dst === 'pre_heat' ? 'challenge in' : 'ends in';
+      const L = this.live(), ins = L.rooms.map(r => r.t).filter(v => v != null), inside = ins.length ? sum(ins) / ins.length : null;
+      seen.hilo = true;
+      const a = {k: 'hilo', prio: red ? 0 : 1, ic: 'bolt', ac: red ? 'var(--crit)' : 'var(--c-grid)', p, tint: red,
+        pill: `<span class="ll">${name}</span>${left ? `<i class="lsep"></i><span class="lv">${what} ${left}</span>` : ''}`,
+        short: `<span class="ll">${short}</span>${left ? `<i class="lsep"></i><span class="lv">${left}</span>` : ''}`,
+        label: `${name}${left ? `, ${what} ${left}` : ''}`};
+      a.card = () => {
+        const p0 = T('preheat_start'), p1 = T('reduction_start'), p2 = T('recovery_start'), p3 = T('recovery_end');
+        const bar = p0 && p1 && p2 && p3 && p3 > p0 ? (() => { const W = p3 - p0, pc = t => ((t - p0) / W * 100).toFixed(1);
+          return `<div class="lph" role="img" aria-label="Pre-heat ${fmtTime(p0)}, reduction ${fmtTime(p1)} to ${fmtTime(p2)}, recovery until ${fmtTime(p3)}"><span style="flex:${p1 - p0};--pc:var(--c-grid)">Pre-heat</span><span style="flex:${p2 - p1};--pc:var(--crit)">Reduction</span><span style="flex:${p3 - p2};--pc:var(--c-ev)">Recovery</span><i style="left:${Math.max(0, Math.min(100, +pc(now)))}%"></i></div>
+            <div class="lpt">${[p0, p1, p2, p3].map(t => `<span style="left:${pc(t)}%">${fmtTime(t).replace(/ [ap]m$/, '')}</span>`).join('')}</div>`; })() : '';
+        const used = ev.used_kWh, allowed = ev.allowed_kWh, g = kw(E.grid);
+        const meta = [inside != null ? `<b>${inside.toFixed(1)}°</b> inside` : '', g != null ? `house using <b>${g.toFixed(1)} kW</b>` : '',
+          used != null && allowed ? `<b>${(+used).toFixed(1)}</b> of ${(+allowed).toFixed(1)} kWh allowed` : ''].filter(Boolean).join(' · ');
+        return head(a, 'Hilo challenge', `${short}${a0 && b0 ? ` · ${fmtTime(a0)} – ${fmtTime(b0)}` : ''}`) + bar
+          + (left ? `<div class="lbig"><span class="n">${left}</span><span class="to">${dst === 'pre_heat' ? 'until heating holds back' : dst === 'reduction' ? 'until the challenge ends' : 'until recovery ends'}</span></div>` : '')
+          + `<div class="lmeta">${dst === 'reduction' ? 'Heating is held back. ' : dst === 'pre_heat' ? 'Rooms are warming up before the challenge. ' : ''}${meta}</div>`;
+      };
+      acts.push(a);
+    }
+    // the car: while FordPass says it's charging, or while it's plugged in with the Wallbox paused below its limit
+    const C = this.car, c = C ? this.carState() : null;
+    const paused = !!(c && !c.charging && c.plugged && E.wbPause && this.sw(E.wbPause) === false && (c.soc == null || c.lim == null || c.soc < c.lim - 1));
+    if (c && (c.charging || paused)) {
+      const chg = c.chg ? c.chg.attributes : {}, soc = c.soc, lim = c.lim || 100;
+      const pw = kw(E.evP) ?? (() => { const k = Object.keys(chg).find(x => /charg.*(power|kw)$/i.test(x)); return k && Number.isFinite(+chg[k]) ? +chg[k] : null; })();
+      // time to full: FordPass's own estimate when it reports one, else what's left of the battery at the charger's power
+      let eta = null;
+      for (const [k, v] of Object.entries(chg)) {
+        if (!/(end|complete|full|remain)/i.test(k)) continue;
+        const t = typeof v === 'string' && /\d{4}-\d\d-\d\d/.test(v) ? Date.parse(v) : null;
+        if (t && t > now) { eta = t; break; }
+        if (/(minutes|remain|to.?full)/i.test(k) && Number.isFinite(+v) && +v > 0 && +v < 3000) { eta = now + +v * 6e4; break; }
+      }
+      const cap = CFG && +CFG.car.battery_kwh;
+      if (!eta && c.charging && cap && soc != null && pw > 0.3 && soc < lim) eta = now + (lim - soc) / 100 * cap / pw * 36e5;
+      const left = eta ? durTxt(eta - now) : '';
+      const H = this.H, ses = H && H.sessions.length ? H.sessions[H.sessions.length - 1] : null, plugT = (() => { const x = st(C.id('sensor', 'elvehplug')); return ok(x) ? Date.parse(x.last_changed) : null; })();
+      // the hourly charging session that started with this plug-in (sessions are built from hourly statistics)
+      const cur = ses && ses.b >= now - 2 * 36e5 && (!plugT || ses.a >= plugT - 36e5) ? ses : null;
+      const price = num(E.wbPrice) ?? 0.07, plug = st(C.id('sensor', 'elvehplug'));
+      seen.car = {lim};
+      const a = {k: 'car', prio: 2, ic: 'car', ac: paused ? 'var(--fg3)' : 'var(--c-ev)', p: soc == null ? null : soc / 100,
+        pill: `<span class="ll">${paused ? 'Charging paused' : 'Charging'}</span><span class="lv">${f0(soc)}%</span>${left ? `<i class="lsep"></i><span class="lv">${left}</span>` : ''}`,
+        short: `<span class="lv">${f0(soc)}%</span><i class="lsep"></i><span class="lv">${paused ? 'paused' : left || 'charging'}</span>`,
+        label: `${paused ? 'Charging paused' : 'Car charging'}, ${f0(soc)} percent${left ? `, full in ${left}` : ''}`};
+      a.card = () => {
+        const on = this.sw(E.wbPause);
+        const meta = [ok(plug) && plug.state !== 'DISCONNECTED' ? `Plugged in at ${fmtTime(plug.last_changed)}` : '', cur ? `<b>+${f1(cur.kwh)} kWh</b> so far · about <b>$${(cur.kwh * price).toFixed(2)}</b>` : '',
+          c.range != null ? `${Math.round(c.range)} km range` : ''].filter(Boolean).join(' · ');
+        return head(a, `${esc(this.carName())} <span>${paused ? 'paused' : 'charging'}</span>`, pw != null && pw > 0.05 ? `${pw.toFixed(1)} kW` : '')
+          + `<div class="lbig"><span class="n">${f0(soc)}<small>%</small></span><span class="to">→ ${lim}% limit</span>${eta ? `<span class="eta"><b>Full at ${fmtTime(eta)}</b>in ${left}</span>` : ''}</div>
+          <div class="lbar" role="img" aria-label="Battery ${f0(soc)} percent, limit ${lim} percent"><i style="width:${soc || 0}%"></i><em style="left:${lim}%"></em></div>
+          ${meta ? `<div class="lmeta">${meta}</div>` : ''}
+          <div class="lbtns">${E.wbPause && ok(st(E.wbPause)) ? `<button type="button" data-la="pause">${on === false ? 'Resume charging' : 'Pause charging'}</button>` : ''}<button type="button" class="go" data-la="car">Open Car ›</button></div>`;
+      };
+      acts.push(a);
+    }
+    // the water heater: while it draws power; time left from how long its other cycles today lasted
+    const wp = kw(E.whP);
+    if (wp != null && wp > 0.2) {
+      const W = this.H && this.H.wh24, pts = W ? W.p.filter(x => x[0] >= now - 864e5) : [], runs = [];
+      let r0 = null;
+      pts.forEach((x, i) => { const on = x[1] > 0.2; if (on && r0 == null) r0 = x[0]; if ((!on || i === pts.length - 1) && r0 != null) { runs.push([r0, on ? x[0] + 3e5 : x[0]]); r0 = null; } });
+      const last = runs[runs.length - 1], open = last && last[1] >= now - 15 * 6e4;
+      const sPw = st(E.whP), start = open ? last[0] : Date.parse(sPw.last_changed);
+      const done = runs.filter(x => x !== (open ? last : null) && x[1] - x[0] >= 5 * 6e4).map(x => x[1] - x[0]).sort((x, y) => x - y);
+      const typ = done.length ? done[Math.floor(done.length / 2)] : null, el = now - start;
+      const left = typ ? Math.max(0, typ - el) : null, t = num(E.whT);
+      const tp = W ? W.t.filter(x => x[0] >= start - 6e5) : [];
+      const rate = tp.length > 1 && tp[tp.length - 1][0] > tp[0][0] ? (tp[tp.length - 1][1] - tp[0][1]) / ((tp[tp.length - 1][0] - tp[0][0]) / 6e5) : null;
+      const lt = left == null ? '' : left < 3 * 6e4 ? 'almost done' : `~${durTxt(left)}`;
+      const a = {k: 'wh', prio: 3, ic: 'drop', ac: 'var(--c-wh)', p: typ ? el / typ : null,
+        pill: `<span class="ll">Water heater</span>${t != null ? `<span class="lv">${Math.round(t)}°</span>` : ''}${lt ? `<i class="lsep"></i><span class="lv">${lt}</span>` : ''}`,
+        short: `<span class="ll">Water</span>${lt ? `<i class="lsep"></i><span class="lv">${lt}</span>` : ''}`,
+        label: `Water heater heating${lt ? `, ${lt.replace('~', 'about ')} left` : ''}`};
+      a.card = () => {
+        const kwh = sum(pts.filter(x => x[0] >= start).map(x => x[1])) / 12, nth = runs.length;
+        let spark = '';
+        if (tp.length > 1) {
+          const ys = tp.map(x => x[1]), lo = Math.min(...ys) - 0.5, hi = Math.max(...ys) + 0.5, x0 = tp[0][0], x1 = Math.max(now, x0 + 1);
+          const X = v => ((v - x0) / (x1 - x0) * 330 + 5).toFixed(1), Y = v => (40 - (v - lo) / (hi - lo) * 34).toFixed(1);
+          const d = tp.map((x, i) => `${i ? 'L' : 'M'}${X(x[0])},${Y(x[1])}`).join(''), e = tp[tp.length - 1];
+          spark = `<svg class="lspark" viewBox="0 0 340 46" preserveAspectRatio="none" role="img" aria-label="Water temperature this cycle"><path d="${d}L${X(e[0])},46L5,46Z" fill="color-mix(in srgb,var(--c-wh) 16%,transparent)"/><path d="${d}" fill="none" stroke="var(--c-wh)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>`;
+        }
+        return head(a, 'Water heater heating', `${wp.toFixed(1)} kW`) + spark
+          + `<div class="lbig"><span class="n">${f1(t)}<small>°C</small></span>${rate != null && Math.abs(rate) >= 0.05 ? `<span class="to">${rate > 0 ? '↗' : '↘'} ${Math.abs(rate).toFixed(1)}° / 10 min</span>` : ''}${lt ? `<span class="eta"><b>${lt === 'almost done' ? 'Almost done' : lt + ' left'}</b>usual cycle ${durTxt(typ)}</span>` : ''}</div>
+          <div class="lmeta">Started ${fmtTime(start)}${pts.length ? ` · <b>${kwh.toFixed(1)} kWh</b> this cycle` : ''}${nth > 1 ? ` · ${plural(nth, 'cycle')} in 24 h` : ''}</div>`;
+      };
+      acts.push(a);
+    }
+    acts.sort((x, y) => x.prio - y.prio);
+    // something that just finished keeps a check for 10 minutes: the car at its limit, a challenge after recovery
+    const prev = this.laSeen || {};
+    if (prev.car && !seen.car && c && c.soc != null && c.soc >= (prev.car.lim || 100) - 1) this.laDone = {text: `Charged to ${Math.round(c.soc)}%`, until: now + 6e5, at: now};
+    if (prev.hilo && !seen.hilo && ok(defi) && !['pre_heat', 'reduction', 'recovery', 'on'].includes(defi.state)) this.laDone = {text: 'Challenge done', until: now + 6e5, at: now};
+    this.laSeen = seen;
+    if (this.laDone && (this.laDone.until < now || acts.length)) this.laDone = null;
+    return {acts, done: this.laDone};
+  }
+  laPill(att) {
+    const {acts, done} = this.liveActs();
+    if (!acts.length && !done) return null;
+    const open = !this.$('attpop').hidden, crit = att.items.some(i => i[0] === 'crit'), a = acts[0];
+    const ring = (x, s) => { const r = s / 2 - 2.5, c = 2 * Math.PI * r, p = x.p == null ? null : Math.max(0.02, Math.min(1, x.p));
+      return `<span class="lring" style="--ac:${x.ac};width:${s}px;height:${s}px"><svg viewBox="0 0 ${s} ${s}" aria-hidden="true"><circle cx="${s / 2}" cy="${s / 2}" r="${r}" fill="color-mix(in srgb,${x.ac} 16%,transparent)" stroke="color-mix(in srgb,${x.ac} 22%,transparent)" stroke-width="3"/>${p == null ? '' : `<circle cx="${s / 2}" cy="${s / 2}" r="${r}" fill="none" stroke="${x.ac}" stroke-width="3" stroke-linecap="round" stroke-dasharray="${(c * p).toFixed(1)} ${c.toFixed(1)}"/>`}</svg><span class="li">${ico(x.ic, Math.round(s * 0.5))}</span></span>`; };
+    const main = a ? `<span class="lmain${a.tint ? ' tint' : ''}" style="--ac:${a.ac}">${ring(a, 34)}${this.compact ? a.pill : a.short}</span>`
+      : `<span class="lmain" style="--ac:var(--c-ev)"><span class="lok">${ico('check', 18)}</span><span>${esc(done.text)}</span>${this.compact ? '' : `<span class="ll">${fmtTime(done.at)}</span>`}</span>`;
+    const bubs = acts.slice(1).map(x => `<span class="lbub">${ring(x, 36)}</span>`).join('') + (att.items.length ? `<span class="lbub lwarn" style="--ac:var(--${crit ? 'crit' : 'warn'})"><b>!</b></span>` : '');
+    const label = [a ? a.label : done.text, ...acts.slice(1).map(x => x.label), att.items.length ? (att.items.length === 1 ? '1 thing needs attention' : `${att.items.length} things need attention`) : ''].filter(Boolean).join('. ');
+    return `<button type="button" class="chip attchip lap" aria-haspopup="dialog" aria-expanded="${open}" aria-label="${esc(label)}">${main}${bubs}</button>`;
+  }
+  laClick(e) {
+    const b = e.target.closest('[data-la]'); if (!b) return;
+    e.stopPropagation();
+    if (b.dataset.la === 'car') { this.toggleAttention(false); this.renderHeader(); this.show('sh-car'); return; }
+    if (b.dataset.la === 'pause' && E.wbPause) {
+      const on = !this.sw(E.wbPause); this.pending[E.wbPause] = {on, until: Date.now() + 20000};
+      this.call('switch', on ? 'turn_on' : 'turn_off', {entity_id: E.wbPause}, on ? 'Charging resumed' : 'Charging paused');
+      this.renderAttention(); this.renderHeader();
+    }
   }
 
   // ---------- climate card ----------
