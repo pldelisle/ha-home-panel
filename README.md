@@ -89,6 +89,8 @@ While something runs, a live-activity pill shows in the header (with nothing run
 
 On a wall tablet, the panel shows a big clock after 5 minutes without a touch. "Sleep now" in the settings shows it on a phone too. One card sits beside the clock, or under it on a portrait screen, and it changes with the moment. When several cards apply, they take turns every 20 seconds, and small dots show how many there are. Tapping a card wakes the panel and opens what the card is about.
 
+On a tablet the same stack also fills the Home card, under Who's home (without the who's-home card, which the chips above already show).
+
 | Card | When it shows |
 | --- | --- |
 | A door open (red, stays until the door closes) | A door sensor open for 5 minutes or more |

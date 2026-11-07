@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.11.0
+
+- On a tablet, the Home card fills the space under Who's home with the smart stack from the idle clock. It shows the same cards in the same 20-second turns, such as a door left open, the car charging overnight, energy used today or what's playing, with dots for how many there are. A tap opens what the card is about. Who's home is listed right above it, so the who's-home filler card is left out there. With nothing to show, the slot hides. `idle_stack: {enabled: false}` turns this off too.
+
 ## 2.10.0
 
 - The Lights tab's sideways dimmer rows are gone. Each room is a tile in the style of Apple's Home app, four to a row on a tablet and two on a phone: the bulb switches the room and the rest of the tile opens it. The tile is bright while the room is on, tinted with its colour, and says its brightness and whether Auto, Night or Manual is in charge.

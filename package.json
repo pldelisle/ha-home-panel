@@ -1,6 +1,6 @@
 {
   "name": "ha-home-panel",
-  "version": "2.10.0",
+  "version": "2.11.0",
   "description": "A wall-tablet and phone dashboard for Home Assistant, installed as a custom sidebar panel",
   "type": "module",
   "private": true,
