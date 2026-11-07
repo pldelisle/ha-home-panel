@@ -22,6 +22,8 @@ const DEFAULT_ENTITIES = {
   gateway: 'sensor.hilo_gateway', hq: null, hqPeak: null, hqUpcoming: null,
   // a heat pump or air conditioner shown beside the rooms
   hp: null,
+  // an input_boolean that is on while the house is in Away mode (the idle clock shows a card for it)
+  away: null,
 };
 // Environment Canada sensor suffix for each weather key (sensor.<town>_<suffix>)
 const EC_SUFFIX = {
@@ -37,7 +39,7 @@ const ENTITY_ALIAS = {
   water_heater_power: 'whP', water_heater_temperature: 'whT', water_heater_energy: 'whE',
   ev_charger_power: 'evP', ev_charger_status: 'wbStatus', ev_charger_current: 'wbAmps', ev_charger_pause: 'wbPause', ev_charger_lock: 'wbLock', ev_charger_price: 'wbPrice',
   hilo_rate: 'rate', hilo_rate_low: 'rateLow', hilo_rate_medium: 'rateMed', hilo_rate_reward: 'rateReward', hilo_challenge: 'defi', hilo_rewards: 'rewards', hilo_gateway: 'gateway',
-  hydro_quebec_balance: 'hq', hydro_quebec_peak: 'hqPeak', hydro_quebec_upcoming_peak: 'hqUpcoming', heat_pump: 'hp',
+  hydro_quebec_balance: 'hq', hydro_quebec_peak: 'hqPeak', hydro_quebec_upcoming_peak: 'hqUpcoming', heat_pump: 'hp', away_mode: 'away',
 };
 const ROOM_ICONS = ['sofa', 'door', 'desk', 'bed', 'bath', 'drop', 'car', 'house', 'therm'];
 // a room's icon from its name, when the config doesn't give one
@@ -82,6 +84,7 @@ function resolveConfig(cfg, states) {
   const house = typeof cfg.house_image === 'string' ? {day: cfg.house_image, night: cfg.house_image}
     : cfg.house_image && typeof cfg.house_image === 'object' ? {day: cfg.house_image.day || cfg.house_image.night || null, night: cfg.house_image.night || cfg.house_image.day || null} : null;
   const car = cfg.car && typeof cfg.car === 'object' ? cfg.car : {};
+  const ist = cfg.idle_stack && typeof cfg.idle_stack === 'object' ? cfg.idle_stack : {};
   return {
     entities: E, rooms, people,
     scenes: asList(cfg.scenes).map(String),                 // scene order; scenes not listed follow alphabetically
@@ -93,5 +96,10 @@ function resolveConfig(cfg, states) {
     alAreas: cfg.adaptive_lighting_areas && typeof cfg.adaptive_lighting_areas === 'object' ? {...cfg.adaptive_lighting_areas} : {},
     house: house && house.day ? house : null,
     car: {name: car.name ? String(car.name) : null, color: car.color ? String(car.color) : null},
+    // the idle clock's smart stack: off turns it off; sunrise_lights_off names the sunrise card for a house whose lights go off at sunrise;
+    // reminders are {at: 'HH:MM', title, text, lead (minutes before, 30 by default)}
+    stack: {on: ist.enabled !== false, sunriseOff: ist.sunrise_lights_off === true,
+      reminders: asList(ist.reminders).filter(r => r && typeof r === 'object' && /^\d{1,2}:\d{2}$/.test(String(r.at || '').trim()))
+        .map(r => ({at: String(r.at).trim(), title: String(r.title || 'Reminder'), text: r.text ? String(r.text) : '', lead: +r.lead || 30}))},
   };
 }

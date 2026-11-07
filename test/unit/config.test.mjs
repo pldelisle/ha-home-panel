@@ -99,3 +99,11 @@ test('light_links: pairs as a list or with a switch; anything else is dropped', 
   assert.deepEqual(resolveConfig({light_links: [['a', 'b'], {lights: ['light.x', 'light.y'], switch: 'input_boolean.l'}, ['only-one'], 'nonsense']}).lightLinks,
     [{keys: ['a', 'b'], sw: null}, {keys: ['light.x', 'light.y'], sw: 'input_boolean.l'}]);
 });
+
+test('idle_stack: on by default, reminders need an HH:MM time, away_mode alias', () => {
+  assert.deepEqual(resolveConfig({}, {}).stack, {on: true, sunriseOff: false, reminders: []});
+  const c = resolveConfig({entities: {away_mode: 'input_boolean.away'}, idle_stack: {enabled: false, sunrise_lights_off: true,
+    reminders: [{at: '20:00', title: 'Bedtime', text: 'Lamp to night', lead: 20}, {at: 'later'}, null]}}, {});
+  assert.equal(c.entities.away, 'input_boolean.away');
+  assert.deepEqual(c.stack, {on: false, sunriseOff: true, reminders: [{at: '20:00', title: 'Bedtime', text: 'Lamp to night', lead: 20}]});
+});
