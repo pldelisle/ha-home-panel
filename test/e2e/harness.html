@@ -42,6 +42,7 @@ if (full) {
   add('binary_sensor.front_door', 'off', {device_class: 'door', friendly_name: 'Front door'}, {area_id: 'living_room', platform: 'zha', device_id: 's1'}, {id: 's1', area_id: 'living_room', name: 'Front door'});
   add('binary_sensor.hall_motion', 'on', {device_class: 'motion', friendly_name: 'Hall motion'}, {area_id: 'office', platform: 'zha', device_id: 's2'}, {id: 's2', area_id: 'office', name: 'Hall motion'});
   add('person.alex', 'home', {friendly_name: 'Alex Example'}); add('person.sam', 'not_home', {friendly_name: 'Sam Example'});
+  add('media_player.living_room_tv', 'on', {device_class: 'tv', source: 'Netflix', friendly_name: 'Living room TV', supported_features: 16 | 32 | 4 | 1 | 8 | 128 | 256}, {platform: 'samsungtv', area_id: 'living_room', device_id: 'tv1'}, {id: 'tv1', area_id: 'living_room', name: 'Living room TV'});
   add('media_player.living_room_speaker', 'playing', {friendly_name: 'Living room speaker', media_title: 'Test tone', media_artist: 'Nobody', volume_level: .35, supported_features: 16 | 32 | 4 | 1 | 16384}, {platform: 'cast', area_id: 'living_room'});
   // a FordPass car (the panel finds it by sensor.fordpass_<name>_soc)
   add('sensor.fordpass_test_soc', 64, {batteryRange: 280}); add('sensor.fordpass_test_elvehcharging', 'CHARGING', {globalAcTargetSoc: 90}); add('sensor.fordpass_test_elvehplug', 'CONNECTED');

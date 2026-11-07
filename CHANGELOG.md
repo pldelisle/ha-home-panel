@@ -9,7 +9,8 @@ The panel moves out of a personal configuration repository into its own project.
 - The time zone and location come from Home Assistant, with no built-in fallback city.
 - `[hidden]` always hides, so an invisible overlay can't block taps again.
 - A chart with nothing to draw no longer breaks the Climate tab.
+- The TV card's power and mute buttons work again (from 1.19.9), and a test now fails on any call to a method that no longer exists.
 - History that was loading when the config changed is thrown away instead of being shown.
 - A Node build (`build.mjs`), unit tests, a browser smoke test, CI and tagged releases.
 
-Before 2.0.0, versions 1.0 to 1.19.8 lived in a private repository.
+Before 2.0.0, versions 1.0 to 1.19.9 lived in a private repository.

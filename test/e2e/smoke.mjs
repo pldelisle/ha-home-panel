@@ -33,9 +33,9 @@ const browser = await chromium.launch();
 let failures = 0;
 async function run(name, {house, cfg, viewport, lang = 'en', theme = 'light', check}) {
   const page = await browser.newPage({viewport, deviceScaleFactor: 1, timezoneId: 'America/Toronto', reducedMotion: 'reduce'});
-  const errors = []; let at = 'load';
+  const errors = [], calls = []; let at = 'load';
   page.on('pageerror', e => errors.push(`[${at}] ` + e.message + (process.env.STACK ? '\n' + e.stack : '')));
-  page.on('console', m => { if (m.type() === 'error' && !/Failed to load resource|fonts\.googleapis/.test(m.text())) errors.push(m.text()); });
+  page.on('console', m => { if (m.text().startsWith('SERVICE ')) calls.push(m.text().slice(8)); if (m.type() === 'error' && !/Failed to load resource|fonts\.googleapis/.test(m.text())) errors.push(m.text()); });
   await page.addInitScript(([c, t]) => { window.PANEL_CFG = c; try { localStorage.setItem('home-panel-theme', t); } catch (e) {} }, [cfg || null, theme]);
   await page.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
   try {
@@ -54,7 +54,7 @@ async function run(name, {house, cfg, viewport, lang = 'en', theme = 'light', ch
     // nothing invisible may sit on top of the panel and swallow taps (the v1.19.6 idle overlay did)
     const top = await R(() => { const r = document.querySelector('home-panel').shadowRoot, b = r.querySelector('[data-tab="home"]'), x = b.getBoundingClientRect(); const e = r.elementFromPoint(x.x + x.width / 2, x.y + x.height / 2); return !!e && (e === b || b.contains(e)); });
     assert.ok(top, `${name}: the Home tab button is covered by another element`);
-    if (check) await check(page);
+    if (check) await check(page, calls);
     assert.deepEqual(errors, [], `${name}: page errors`);
     console.log(`ok   ${name}`);
   } catch (e) {
@@ -65,12 +65,19 @@ async function run(name, {house, cfg, viewport, lang = 'en', theme = 'light', ch
 const ipad = {width: 1180, height: 820}, iphone = {width: 393, height: 852};
 const q = (page, sel) => page.evaluate(s => [...document.querySelector('home-panel').shadowRoot.querySelectorAll(s)].map(e => ({hidden: e.hidden || getComputedStyle(e).display === 'none', text: e.textContent})), sel);
 
-await run('full-ipad', {house: 'full', cfg: FULL_CFG, viewport: ipad, check: async page => {
+await run('full-ipad', {house: 'full', cfg: FULL_CFG, viewport: ipad, check: async (page, calls) => {
   const who = (await q(page, '.who, #who, .pill')).map(x => x.text).join(' ');
   assert.ok(/Alex/.test(await page.evaluate(() => document.querySelector('home-panel').shadowRoot.textContent)), 'who\'s home lists the configured people');
   assert.ok(!(await q(page, '#water'))[0].hidden, 'the water heater card shows when its sensors are set');
   assert.ok((await q(page, '#hilo'))[0].hidden, 'the Hilo card stays hidden without Hilo');
   assert.ok(!(await q(page, '#rail [data-tab="car"]'))[0].hidden, 'the car tab shows when a FordPass car exists');
+  // the TV buttons reach Home Assistant (1.19.9: they crashed on a removed method before sending anything)
+  await page.evaluate(() => document.querySelector('home-panel').shadowRoot.querySelector('#rail [data-tab="media"]').click());
+  await page.waitForTimeout(500);
+  for (const k of ['mute', 'power']) await page.evaluate(k => document.querySelector('home-panel').shadowRoot.querySelector(`#pane-media button[data-tv="${k}"], button[data-tv="${k}"]`).click(), k);
+  await page.waitForTimeout(500);
+  assert.ok(calls.some(c => /^media_player\.volume_mute /.test(c)), `mute sends media_player.volume_mute (calls: ${calls.join('; ')})`);
+  assert.ok(calls.some(c => /^media_player\.turn_off /.test(c)), `power sends media_player.turn_off (calls: ${calls.join('; ')})`);
 }});
 await run('full-ipad-dark', {house: 'full', cfg: FULL_CFG, viewport: ipad, theme: 'dark'});
 await run('full-ipad-fr', {house: 'full', cfg: FULL_CFG, viewport: ipad, lang: 'fr', check: async page => {

@@ -1736,7 +1736,7 @@ class HomePanel extends HTMLElement {
   }
   async tvCmd(k) {
     const T = this.tv(); if (!T) return;
-    const s = st(T.id), id = T.id, on = this.pend(id + ':on', ok(s) && s.state !== 'off') === true, hold = (key, x) => { this.pending[id + ':' + key] = {v: x, until: Date.now() + 15000}; this.cache.tv = null; this.renderTV(); this.renderPhone(); this.renderTabs(); };
+    const s = st(T.id), id = T.id, on = this.pend(id + ':on', ok(s) && s.state !== 'off') === true, hold = (key, x) => { this.pending[id + ':' + key] = {v: x, until: Date.now() + 15000}; this.cache.tv = null; this.renderTV(); this.renderTabs(); };
     if (k === 'power') {
       if (on) { hold('on', false); return this.call('media_player', 'turn_off', {entity_id: id}, 'TV turned off'); }
       hold('on', true);
