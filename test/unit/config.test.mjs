@@ -93,3 +93,9 @@ test('room icons from names, English and French', () => {
   assert.equal(guessIcon('Chambre des maîtres'), 'bed'); assert.equal(guessIcon('Salle de bain'), 'bath');
   assert.equal(guessIcon('Bureau'), 'desk'); assert.equal(guessIcon('Salon'), 'sofa'); assert.equal(guessIcon('Attic'), 'therm');
 });
+
+test('light_links: pairs as a list or with a switch; anything else is dropped', () => {
+  assert.deepEqual(resolveConfig({}).lightLinks, []);
+  assert.deepEqual(resolveConfig({light_links: [['a', 'b'], {lights: ['light.x', 'light.y'], switch: 'input_boolean.l'}, ['only-one'], 'nonsense']}).lightLinks,
+    [{keys: ['a', 'b'], sw: null}, {keys: ['light.x', 'light.y'], sw: 'input_boolean.l'}]);
+});

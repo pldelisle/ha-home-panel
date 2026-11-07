@@ -86,6 +86,9 @@ function resolveConfig(cfg, states) {
     entities: E, rooms, people,
     scenes: asList(cfg.scenes).map(String),                 // scene order; scenes not listed follow alphabetically
     modes: asList(cfg.modes).map(String),                   // input_booleans shown as on/off routine tiles beside the scenes
+    // pairs of light cards that can move together: [a, b] or {lights: [a, b], switch: input_boolean.x}; a card is an area id or a light entity
+    lightLinks: asList(cfg.light_links).map(l => Array.isArray(l) ? {keys: l, sw: null} : l && typeof l === 'object' ? {keys: asList(l.lights), sw: l.switch ? String(l.switch) : null} : null)
+      .filter(l => l && l.keys.length === 2).map(l => ({keys: l.keys.map(String), sw: l.sw})),
     splitLightAreas: asList(cfg.split_light_areas).map(String), // HA areas whose light groups each get their own tile
     alAreas: cfg.adaptive_lighting_areas && typeof cfg.adaptive_lighting_areas === 'object' ? {...cfg.adaptive_lighting_areas} : {},
     house: house && house.day ? house : null,

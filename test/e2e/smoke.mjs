@@ -106,6 +106,25 @@ await run('split-lights-ipad', {house: 'full', cfg: {...FULL_CFG, split_light_ar
   assert.ok(calls.some(c => /^light\.turn_on .*kitchen_sink_1/.test(c) && !/island/.test(c)), `the Sink tile switches only its own bulbs (calls: ${calls.join('; ')})`);
 }});
 await run('split-lights-iphone', {house: 'full', cfg: {...FULL_CFG, split_light_areas: ['kitchen']}, viewport: iphone});
+// light_links: the kitchen's two cards are linked, so one switch reaches both; Living room is linked to Office with no switch (always together)
+const LINK_CFG = {...FULL_CFG, split_light_areas: ['kitchen'], light_links: [{lights: ['light.kitchen_island', 'light.kitchen_sink'], switch: 'input_boolean.kitchen_lights_linked'}, ['office', 'living_room']]};
+await run('linked-lights-ipad', {house: 'full', cfg: LINK_CFG, viewport: ipad, check: async (page, calls) => {
+  assert.deepEqual(await lightTiles(page), ['Island', 'Sink', 'Office', 'Living room'], 'the second card of a pair follows the first');
+  const pairs = await page.evaluate(() => [...document.querySelector('home-panel').shadowRoot.querySelectorAll('#pane-lights .llink')].map(w => [w.classList.contains('on'), w.querySelectorAll('.larea').length, !!w.querySelector('.lnk')]));
+  assert.deepEqual(pairs, [[true, 2, true], [true, 2, false]], 'two joined pairs; only the one with a switch has the chain button');
+  const press = sel => page.evaluate(s => document.querySelector('home-panel').shadowRoot.querySelector(s).click(), sel);
+  await press('#pane-lights .larea button.sw[data-a="light.kitchen_sink"]'); await page.waitForTimeout(300);
+  assert.ok(calls.some(c => /^light\.turn_off .*kitchen_island_1.*kitchen_sink_1|^light\.turn_off .*kitchen_sink_1.*kitchen_island_1/.test(c)) || calls.some(c => /^light\.turn_on .*kitchen_island_1/.test(c) && /kitchen_sink_1/.test(c)), `a linked card's switch reaches both cards (calls: ${calls.join('; ')})`);
+  await press('#pane-lights .lnk'); await page.waitForTimeout(300);
+  assert.ok(calls.some(c => /^input_boolean\.turn_off .*kitchen_lights_linked/.test(c)), `the chain button unlinks (calls: ${calls.join('; ')})`);
+}});
+await run('linked-lights-iphone', {house: 'full', cfg: LINK_CFG, viewport: iphone, check: async page => {
+  const r = await page.evaluate(async () => { const root = document.querySelector('home-panel').shadowRoot; root.querySelector('[data-tab="lights"]').click(); await new Promise(f => setTimeout(f, 500));
+    const blocks = root.querySelectorAll('#ltiles .llink.on').length, buttons = root.querySelectorAll('#ltiles .lnk').length;
+    root.querySelector('#ltiles .ltile[data-lsheet="light.kitchen_island"]').click(); await new Promise(f => setTimeout(f, 600));
+    return {blocks, buttons, row: !!root.querySelector('#lsheet .lsrow button[data-l="link"]')}; });
+  assert.deepEqual(r, {blocks: 2, buttons: 0, row: true}, 'phone: joined blocks, no chain button, the link switch in the sheet');
+}});
 await run('grouped-lights-ipad', {house: 'full', cfg: FULL_CFG, viewport: ipad, check: async page => {
   assert.deepEqual(await lightTiles(page), ['Kitchen', 'Living room', 'Office'], 'without split_light_areas an area is one tile');
 }});
