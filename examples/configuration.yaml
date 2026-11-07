@@ -37,6 +37,7 @@ panel_custom:
         hydro_quebec_balance: sensor.hydro_quebec_balance
         hydro_quebec_peak: binary_sensor.hydro_quebec_critical_peak_in_progress
         hydro_quebec_upcoming_peak: binary_sensor.hydro_quebec_upcoming_critical_peak
+        away_mode: input_boolean.away   # on while the house is in Away mode (a card on the idle clock)
       # rooms on the Climate tab, in this order (default: every thermostat except the heat pump)
       rooms:
         - {climate: climate.living_room, name: Living room, icon: sofa}
@@ -57,3 +58,9 @@ panel_custom:
         - lights: [light.kitchen_island, light.kitchen_sink]
           switch: input_boolean.kitchen_lights_linked
         - [office, hallway]
+      # the idle clock's smart stack: one card beside the clock that changes with the moment (see the README)
+      idle_stack:
+        enabled: true               # false keeps the clock alone
+        sunrise_lights_off: true    # this house turns every light off at sunrise: the sunrise card says so
+        reminders:                  # a card for `lead` minutes before each time
+          - {at: "20:00", title: Bedtime, text: The kids' lamp goes to night mode, lead: 30}
