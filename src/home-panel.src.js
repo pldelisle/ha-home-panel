@@ -2376,7 +2376,7 @@ class HomePanel extends HTMLElement {
     const isOn = i => (st(i) || {}).state === 'on', L = this.live(), att = this.attention();
     const lit = this.lightAreas().flatMap(a => a.ids).filter(isOn).length, als = [...new Set(this.lightAreas().map(a => a.al).filter(Boolean))], alOn = als.filter(isOn).length;
     const temps = L.rooms.map(r => r.t).filter(v => v != null), avg = temps.length ? sum(temps) / temps.length : null, out = attr(E.weather, 'temperature') ?? num(E.outT);
-    if (this.tab === 'home') this.set('hsub', [new Date().toLocaleDateString('en-CA', {weekday: 'long', month: 'long', day: 'numeric', timeZone: TZ}), avg == null ? '' : `${avg.toFixed(1)}° inside`, out == null ? '' : `${f1(out)}° outside`, att.items.length ? plural(att.items.length, 'item') + (att.items.length === 1 ? ' needs' : ' need') + ' attention' : 'all clear'].filter(Boolean).join(' · '));
+    if (this.tab === 'home') this.set('hsub', [new Date().toLocaleDateString('en-CA', {weekday: 'long', month: 'long', day: 'numeric', timeZone: TZ}), avg == null ? '' : `${avg.toFixed(1)}° inside`, out == null ? '' : `${f1(out)}° outside`, att.items.length ? plural(att.items.length, 'item') + (att.items.length === 1 ? ' needs' : ' need') + ' attention' : ''].filter(Boolean).join(' · '));
     if (this.tab === 'lights') {
       this.set('lsub', this.lightEdit ? 'Drag the lights into the order you want' : [lit ? `${plural(lit, 'light')} on` : 'All lights off', als.length ? `Adaptive Lighting ${alOn === als.length ? 'on everywhere' : alOn ? `on in ${alOn} of ${als.length}` : 'off everywhere'}` : ''].filter(Boolean).join(' · '));
       // only admins can write the house-wide order, so only they get the Arrange button
@@ -2395,17 +2395,14 @@ class HomePanel extends HTMLElement {
   // Home pane, as sketched: weather and the house on the left, six big tiles, then doors and what's coming up
   renderHome() {
     if (this.tab !== 'home') return;
-    const L = this.live(), isOn = i => (st(i) || {}).state === 'on', att = this.attention(), H = this.H;
+    const L = this.live(), isOn = i => (st(i) || {}).state === 'on', H = this.H;
     const sun = st(E.sun), dayUp = sun && sun.state === 'above_horizon', nxt = st(dayUp ? E.setting : E.rising), nxt2 = st(dayUp ? E.rising : E.setting);
     const temp = attr(E.weather, 'temperature') ?? num(E.outT), cond = st(E.cond), hi = num(E.hi), lo = num(E.lo);
-    const worst = att.items.some(i => i[0] === 'crit') ? 'crit' : att.items.length ? 'warn' : 'ok';
     this.set('hwx', `<div class="muted" style="font-size:13px;font-weight:500">${dayUp ? 'Sunset' : 'Sunrise'} <b style="color:var(--fg)">${ok(nxt) ? fmtTime(nxt.state) : '–'}</b>${ok(nxt2) ? ` · ${dayUp ? 'sunrise' : 'sunset'} <b style="color:var(--fg)">${fmtTime(nxt2.state)}</b>` : ''}</div>
       <div class="hbig"><span class="num">${temp == null ? '–' : Math.round(temp) + '°'}</span><div><div class="hc">${esc(condName(ok(cond) ? cond.state : (st(E.weather) || {}).state))}</div><div class="muted">${hi != null ? `High ${Math.round(hi)}°` : ''}${lo != null ? ` · low ${Math.round(lo)}°` : ''}</div></div></div>
       <div class="hhouse">${houseImg()}</div>
-      <div class="lbl" style="margin-top:4px">Who's home</div>${this.whoHtml() || '<p class="hint">No one is tracked yet.</p>'}
-      <div class="lbl" style="margin-top:8px">Status</div>
-      <div class="hstat"><span class="dot" style="background:var(--${worst})"></span>${att.items.length ? `${plural(att.items.length, 'item')} ${att.items.length === 1 ? 'needs' : 'need'} attention` : 'All clear'}</div>
-      <div class="muted" style="font-size:13px">${esc(att.items.length ? att.items.map(i => i[1]).join(', ') : att.clear.map(c => c.toLowerCase()).join(', ') + '.')}</div>`);
+      <div class="lbl hwho">Who's home</div>${this.whoHtml() || '<p class="hint">No one is tracked yet.</p>'}`);
+    // no Status block here since 2.8.1: the header pill already says when something needs attention
     const A = this.lightAreas(), onAreas = A.map(a => ({a, on: a.ids.filter(isOn)})).filter(x => x.on.length);
     const temps = L.rooms.map(r => r.t).filter(v => v != null), avg = temps.length ? sum(temps) / temps.length : null, nHeat = L.rooms.filter(r => r.heating).length;
     const hp = st(E.hp), hpTxt = !ok(hp) ? 'offline' : hp.state === 'off' ? 'off' : (hp.attributes.hvac_action || hp.state);

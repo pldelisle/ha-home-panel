@@ -108,6 +108,9 @@ const pillCheck = async (page, calls) => {
   await R(() => { const P = document.querySelector('home-panel'); hass.states['binary_sensor.front_door'] = {...hass.states['binary_sensor.front_door'], state: 'on', last_changed: new Date(Date.now() - 20 * 6e4).toISOString()}; P.hass = {...hass}; P.renderLive(); });
   const att = await R(() => { const b = document.querySelector('home-panel').shadowRoot.querySelector('#chips .attchip'); return b && b.textContent; });
   assert.match(att || '', /needs attention/, 'a status problem shows as an attention pill');
+  // the Home card has no Status block of its own any more: the pill says it (2.8.1)
+  const hw = await R(() => { const P = document.querySelector('home-panel'); P.renderHome(); const h = P.shadowRoot.getElementById('hwx'); return h ? h.textContent : null; });
+  assert.ok(hw != null && /Who's home/.test(hw) && !/Status|All clear/.test(hw), `the Home card ends at Who's home (got ${JSON.stringify(hw && hw.slice(-120))})`);
 };
 await run('pill-ipad', {house: 'full', cfg: FULL_CFG, viewport: ipad, check: pillCheck});
 await run('pill-iphone', {house: 'full', cfg: FULL_CFG, viewport: iphone, check: pillCheck});
