@@ -1,0 +1,21 @@
+name: Release
+# Push a tag like v2.0.0: builds dist/ with that version and attaches home-panel.zip to a GitHub release
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node build.mjs "${GITHUB_REF_NAME#v}"
+      - run: node --test "test/unit/*.test.mjs"
+      - run: cd dist && zip -r ../home-panel.zip .
+      - run: gh release create "$GITHUB_REF_NAME" home-panel.zip --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}

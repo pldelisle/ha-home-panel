@@ -1,0 +1,54 @@
+/* ---- Motion (v1.19.1): the native feel. Press feedback, sections that settle in, sheets that spring up, a dial that draws itself,
+   a wallpaper that drifts while the panel is in use and a weather icon that moves. Everything here stops under Reduce Motion. ---- */
+/* press feedback: a tappable piece shrinks a touch under the finger and springs back; selected states cross-fade instead of snapping */
+.cct,.hsen,button.schip,.quick button,.crow button,.senstabs button,.seg button,.rtab,.head button.icon,.sheet button.icon.close,.ausel .close,.lchip,.lauto,.abtn,.stepper button,.days button,.pp,.pp2,.tab,.go,button.chip,.dtime,.cbtn,.tgl,.more,.ptile,.htile,.stile,.tilebtn,.tvctl button,.mtvctl button{transition:transform .18s cubic-bezier(.2,.8,.2,1),background-color .2s ease,box-shadow .2s ease,color .2s ease}
+.cct:active,.hsen:active,button.schip:active,.quick button:active,.crow button:active,.senstabs button:active,.seg button:active,.head button.icon:active,.sheet button.icon.close:active,.ausel .close:active,.lchip:active,.lauto:active,.abtn:active,.stepper button:active,.days button:active,.pp:active,.pp2:active,.tab:active,.go:active,button.chip:active,.dtime:active,.cbtn:active,.tgl:active,.more:active{transform:scale(.96)}
+.rtab svg{transition:transform .18s cubic-bezier(.2,.8,.2,1)}.rtab:active svg{transform:scale(.86)}
+.sw::after{transition:transform .22s cubic-bezier(.3,1.3,.4,1)}
+/* a section settles in when its tab is chosen */
+.pane:not([hidden]){animation:panein .28s cubic-bezier(.2,.8,.2,1) both}
+@keyframes panein{from{opacity:0;transform:translateY(10px)}}
+/* sheets: the scrim fades, the phone sheet springs up with a little overshoot, the iPad modal pops in */
+.sheet{animation:fadein .22s ease-out both}
+@keyframes fadein{from{opacity:0}}
+.app.cp .sheet>.panel{animation:shup .46s cubic-bezier(.3,1.22,.4,1)}
+.app:not(.cp) .sheet>.panel{animation:popin .3s cubic-bezier(.2,.9,.3,1.06) both}
+@keyframes popin{from{opacity:0;transform:translateY(10px) scale(.97)}}
+/* the thermostat dial draws its arc, then the knob and the number land */
+.dial.in .dact{stroke-dasharray:600;animation:dialdraw .7s cubic-bezier(.2,.8,.2,1) both}
+@keyframes dialdraw{from{stroke-dashoffset:600}to{stroke-dashoffset:0}}
+.dial .dknob{transform-box:fill-box;transform-origin:center;transition:transform .15s cubic-bezier(.2,.8,.2,1)}
+.dial.in .dknob{animation:knobin .4s .4s cubic-bezier(.2,.9,.3,1.3) both}
+@keyframes knobin{from{opacity:0;transform:scale(.3)}}
+.dial.ed:active .dknob{transform:scale(1.18)}
+.dial.in .dialc{animation:fadeup .45s .2s cubic-bezier(.2,.8,.2,1) both}
+@keyframes fadeup{from{opacity:0;transform:translateY(8px)}}
+/* the wallpaper washes drift slowly while the panel is in use (class live for 60 s after a touch or scroll); the wall iPad rests between uses */
+.app.gl::before{background-size:140% 140%,140% 140%,140% 140%,140% 140%;background-repeat:no-repeat;animation:wpdrift 80s ease-in-out infinite alternate;animation-play-state:paused}
+.app.gl.live::before{animation-play-state:running}
+@keyframes wpdrift{0%{background-position:0% 0%,100% 0%,50% 100%,0% 100%}50%{background-position:60% 30%,40% 40%,20% 60%,50% 50%}100%{background-position:30% 80%,70% 70%,80% 20%,100% 0%}}
+/* energy: the EV node breathes a ring while the car charges; the Car tile's icon pulses too */
+.flow .npulse{transform-box:fill-box;transform-origin:center;animation:npulse 2.2s ease-out infinite;pointer-events:none}
+@keyframes npulse{from{transform:scale(1);opacity:.7}to{transform:scale(1.4);opacity:0}}
+.htile.chg .hh>span:first-child{display:inline-block;animation:chgpulse 2.2s ease-in-out infinite}
+@keyframes chgpulse{50%{transform:scale(1.15);filter:drop-shadow(0 0 5px var(--c-ev))}}
+/* the big weather icon on the Weather sheet: the sun's rays turn, clouds breathe, rain falls, snow drifts, lightning flickers, fog and wind slide */
+.wicon .wxi .rays{transform-box:fill-box;transform-origin:center;animation:spin 48s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.wicon .wxi .cld{animation:bob 5s ease-in-out infinite}
+@keyframes bob{50%{transform:translate(1px,-.6px)}}
+.wicon .wxi .drp{animation:fall 1.2s linear infinite}
+@keyframes fall{from{transform:translateY(-1px);opacity:0}25%{opacity:1}to{transform:translateY(2.4px);opacity:0}}
+.wicon .wxi .flk{animation:snow 2.8s ease-in-out infinite}
+@keyframes snow{from{transform:translate(0,-1px);opacity:0}30%{opacity:1}50%{transform:translate(.6px,.8px)}to{transform:translate(-.4px,2.4px);opacity:0}}
+.wicon .wxi .bolt{animation:flash 4s ease-in-out infinite}
+@keyframes flash{0%,88%,100%{opacity:1}90%{opacity:.2}92%{opacity:1}94%{opacity:.3}}
+.wicon .wxi .fog{animation:slide 6s ease-in-out infinite}
+@keyframes slide{50%{transform:translateX(1.4px)}}
+.wicon .wxi .wnd{stroke-dasharray:14 5;animation:gust 1.6s linear infinite}
+@keyframes gust{to{stroke-dashoffset:-19}}
+/* Attention glow (v1.19.6): a door opening or motion starting makes the Security card's edge pulse amber twice, then settle */
+.hsec{--hsh:var(--shadow)}.app.gl .hsec{--hsh:var(--g-edge)}
+.hsec.glow{animation:attn 2.6s ease-out}
+@keyframes attn{0%,100%{box-shadow:var(--hsh),inset 0 0 0 0 transparent,0 0 0 0 transparent}12%{box-shadow:var(--hsh),inset 0 0 0 2px color-mix(in srgb,var(--warn) 90%,transparent),0 0 28px 4px color-mix(in srgb,var(--warn) 50%,transparent)}45%{box-shadow:var(--hsh),inset 0 0 0 1.5px color-mix(in srgb,var(--warn) 50%,transparent),0 0 12px 0 color-mix(in srgb,var(--warn) 20%,transparent)}60%{box-shadow:var(--hsh),inset 0 0 0 2px color-mix(in srgb,var(--warn) 85%,transparent),0 0 24px 3px color-mix(in srgb,var(--warn) 45%,transparent)}}
+@media (prefers-reduced-motion:reduce){.pane:not([hidden]),.sheet,.app:not(.cp) .sheet>.panel,.dial.in .dact,.dial.in .dknob,.dial.in .dialc,.app.gl::before,.flow .npulse,.htile.chg .hh>span:first-child,.wicon .wxi .rays,.wicon .wxi .cld,.wicon .wxi .drp,.wicon .wxi .flk,.wicon .wxi .bolt,.wicon .wxi .fog,.wicon .wxi .wnd{animation:none}.hsec.glow{animation:none;box-shadow:var(--hsh),inset 0 0 0 2px var(--warn)}.rtab:active svg,.dial.ed:active .dknob{transform:none}}

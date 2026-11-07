@@ -1,0 +1,17 @@
+{
+  "name": "ha-home-panel",
+  "version": "2.0.0",
+  "description": "A wall-tablet and phone dashboard for Home Assistant, installed as a custom sidebar panel",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node --test \"test/unit/*.test.mjs\"",
+    "test:e2e": "node build.mjs && node test/e2e/smoke.mjs",
+    "check": "node --check dist/home-panel.js"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0"
+  },
+  "engines": {"node": ">=20"}
+}

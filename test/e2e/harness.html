@@ -1,0 +1,80 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Home panel test house</title>
+<style>body{margin:0;background:#F2F0EB}</style></head>
+<body>
+<script type="module">
+// A made-up house for the tests: no real people, places or devices. Two modes:
+//   ?house=full  (default) thermostats, lights, sensors, a car, an EV charger, a water heater, Environment Canada weather
+//   ?house=bare  only the sun, one weather entity and one light: every optional section must stay hidden
+// window.PANEL_CFG (set before the page loads) becomes the panel's config, as panel_custom's `config:` would.
+import '/panel/home-panel.js';
+const house = new URLSearchParams(location.search).get('house') || 'full', full = house === 'full';
+const now = Date.now(), iso = t => new Date(t).toISOString();
+const S = {}, ENT = {}, DEV = {}, AREAS = {living_room: {area_id: 'living_room', name: 'Living room'}, office: {area_id: 'office', name: 'Office'}, bedroom: {area_id: 'bedroom', name: 'Bedroom'}, garage: {area_id: 'garage', name: 'Garage'}};
+const add = (id, state, attributes = {}, reg = null, dev = null) => {
+  S[id] = {entity_id: id, state: String(state), attributes: {friendly_name: id.split('.')[1].replace(/_/g, ' '), ...attributes}, last_changed: iso(now - 3600e3), last_updated: iso(now - 60e3)};
+  if (reg) ENT[id] = {entity_id: id, ...reg};
+  if (dev) DEV[dev.id] = dev;
+};
+// the sun at a believable time of day: rises 07:00 and sets 16:45 local time
+const at = (h, m) => { const d = new Date(now); d.setHours(h, m, 0, 0); if (d.getTime() < now) d.setDate(d.getDate() + 1); return d.getTime(); };
+const rise = at(7, 0), set = at(16, 45), up = set < rise;
+add('sun.sun', up ? 'above_horizon' : 'below_horizon', {next_rising: iso(rise), next_setting: iso(set), next_midnight: iso(at(23, 52))});
+add('sensor.sun_next_setting', iso(set)); add('sensor.sun_next_rising', iso(rise)); add('sensor.sun_next_dawn', iso(rise - 1800e3));
+add('weather.springfield_forecast', 'partlycloudy', {temperature: 4.2, humidity: 71, wind_speed: 14, pressure: 101.9, friendly_name: 'Springfield'});
+add('light.living_room_1', 'on', {brightness: 180, supported_color_modes: ['color_temp'], color_mode: 'color_temp', color_temp_kelvin: 2700, min_color_temp_kelvin: 2000, max_color_temp_kelvin: 6500, friendly_name: 'Living room lamp'}, {area_id: 'living_room', platform: 'hue', device_id: 'l1'}, {id: 'l1', area_id: 'living_room', name: 'Living room lamp'});
+if (full) {
+  // Environment Canada style sensors, found from the weather entity's name
+  for (const [k, v] of Object.entries({current_condition: 'Mainly Sunny', temperature: 4.2, high_temperature: 7, low_temperature: -1, normal_high_temperature: 6, normal_low_temperature: -2, wind_speed: 14, wind_direction: 'SW', humidity: 71, uv_index: 1, aqhi: 2, dew_point: -0.5, barometric_pressure: 101.9, tendency: 'rising', wind_gust: 25, observation_time: iso(now - 1800e3), summary: 'Sunny with cloudy periods.'}))
+    add(`sensor.springfield_${k}`, v, k === 'temperature' ? {unit_of_measurement: '°C'} : {});
+  // energy: a whole-house meter, a water heater and an EV charger, named in the config
+  add('sensor.house_power', 3240, {unit_of_measurement: 'W'}); add('sensor.water_heater_power', 0, {unit_of_measurement: 'W'}); add('sensor.water_heater_temperature', 50, {unit_of_measurement: '°C'});
+  add('sensor.charger_power', 7.1, {unit_of_measurement: 'kW'}); add('sensor.charger_status', 'Charging'); add('number.charger_max_current', 32, {min: 6, max: 40}); add('switch.charger_pause', 'on'); add('lock.charger_lock', 'unlocked');
+  // thermostats, named the way the room discovery expects (sensor.<name>_temperature / _target_temperature / _power)
+  ['living_room', 'office', 'bedroom', 'garage'].forEach((k, i) => {
+    add(`climate.${k}`, 'heat', {current_temperature: 20 + i * .4, temperature: 21, hvac_action: i % 2 ? 'idle' : 'heating', min_temp: 5, max_temp: 30, friendly_name: AREAS[k].name}, {area_id: k, platform: 'demo'});
+    add(`sensor.${k}_temperature`, 20 + i * .4, {unit_of_measurement: '°C'}); add(`sensor.${k}_target_temperature`, 21, {unit_of_measurement: '°C'}); add(`sensor.${k}_power`, i % 2 ? 0 : 1.2, {unit_of_measurement: 'kW'});
+  });
+  add('light.office_1', 'on', {brightness: 200, supported_color_modes: ['color_temp', 'hs'], color_mode: 'color_temp', color_temp_kelvin: 4000, min_color_temp_kelvin: 2000, max_color_temp_kelvin: 6500, friendly_name: 'Office ceiling'}, {area_id: 'office', platform: 'hue', device_id: 'l2'}, {id: 'l2', area_id: 'office', name: 'Office ceiling'});
+  add('switch.adaptive_lighting_office', 'on', {friendly_name: 'Adaptive Lighting: Office', color_temp_kelvin: 3800, brightness_pct: 80, sun_position: .4, configured_lights: ['light.office_1']});
+  add('scene.movie_night', 'unknown', {friendly_name: 'Movie night'}); add('scene.dinner', iso(now - 7200e3), {friendly_name: 'Dinner'});
+  add('input_boolean.kids_bedtime', 'off', {friendly_name: 'Kids bedtime'});
+  add('binary_sensor.front_door', 'off', {device_class: 'door', friendly_name: 'Front door'}, {area_id: 'living_room', platform: 'zha', device_id: 's1'}, {id: 's1', area_id: 'living_room', name: 'Front door'});
+  add('binary_sensor.hall_motion', 'on', {device_class: 'motion', friendly_name: 'Hall motion'}, {area_id: 'office', platform: 'zha', device_id: 's2'}, {id: 's2', area_id: 'office', name: 'Hall motion'});
+  add('person.alex', 'home', {friendly_name: 'Alex Example'}); add('person.sam', 'not_home', {friendly_name: 'Sam Example'});
+  add('media_player.living_room_tv', 'on', {device_class: 'tv', source: 'Netflix', friendly_name: 'Living room TV', supported_features: 16 | 32 | 4 | 1 | 8 | 128 | 256}, {platform: 'samsungtv', area_id: 'living_room', device_id: 'tv1'}, {id: 'tv1', area_id: 'living_room', name: 'Living room TV'});
+  add('media_player.living_room_speaker', 'playing', {friendly_name: 'Living room speaker', media_title: 'Test tone', media_artist: 'Nobody', volume_level: .35, supported_features: 16 | 32 | 4 | 1 | 16384}, {platform: 'cast', area_id: 'living_room'});
+  // a FordPass car (the panel finds it by sensor.fordpass_<name>_soc)
+  add('sensor.fordpass_test_soc', 64, {batteryRange: 280}); add('sensor.fordpass_test_elvehcharging', 'CHARGING', {globalAcTargetSoc: 90}); add('sensor.fordpass_test_elvehplug', 'CONNECTED');
+  add('lock.fordpass_test_doorlock', 'locked'); add('device_tracker.fordpass_test_tracker', 'home'); add('sensor.fordpass_test_odometer', 12000);
+  add('sensor.fordpass_test_tirepressure', 'NORMAL_OPERATION', {frontLeft: 240, frontRight: 241, rearLeft: 238, rearRight: 239}); add('sensor.fordpass_test_lastrefresh', iso(now - 600e3));
+}
+// automations: the configs above, one finished run each today
+const CONF = full ? await (await fetch('/automations.json')).json() : [];
+const T0 = new Date(now); T0.setHours(0, 0, 0, 0);
+const LIST = [], FULL = {};
+CONF.forEach((c, i) => {
+  const start = T0.getTime() + (7 + i * 5) * 3600e3, run_id = 'r' + i, tr = {'trigger/0': [{path: 'trigger/0', timestamp: iso(start), changed_variables: {trigger: {idx: '0'}}}]};
+  (c.config.conditions || []).forEach((x, j) => { tr[`condition/${j}`] = [{path: `condition/${j}`, timestamp: iso(start + 300), result: {result: true}}]; });
+  c.config.actions.forEach((x, j) => { tr[`action/${j}`] = [{path: `action/${j}`, timestamp: iso(start + 600 + j * 300)}]; });
+  const sm = {item_id: c.config.id, run_id, domain: 'automation', state: 'stopped', script_execution: 'finished', timestamp: {start: iso(start), finish: iso(start + 2000)}, trigger: 'test', last_step: `action/${c.config.actions.length - 1}`};
+  LIST.push(sm); FULL[c.config.id + '/' + run_id] = {...sm, trace: tr, config: c.config};
+  add(c.entity_id, 'on', {id: c.config.id, friendly_name: c.config.alias, last_triggered: iso(start), current: 0, mode: c.config.mode});
+});
+// statistics and history: smooth made-up curves
+const stats = (ids, period) => { const out = {}, step = period === '5minute' ? 3e5 : period === 'hour' ? 36e5 : 864e5, n = period === '5minute' ? 300 : period === 'hour' ? 170 : 60;
+  for (const id of ids) { if (!S[id]) continue; out[id] = []; for (let i = n; i >= 0; i--) { const t = now - i * step, w = Math.sin(i / 6) * .5 + .5;
+    const v = /temperature/.test(id) ? 19 + 3 * w : /power/.test(id) ? 0.4 + 2 * w : 10 + 5 * w; out[id].push({start: t, end: t + step, mean: v, min: v - .5, max: v + .5, change: period === 'day' ? 20 + 10 * w : 1 + w, sum: 0}); } }
+  return out; };
+const hass = {states: S, entities: ENT, devices: DEV, areas: AREAS, config: {time_zone: 'America/Toronto', latitude: 43.65, longitude: -79.38}, user: {name: 'Alex Example'}, locale: {language: new URLSearchParams(location.search).get('lang') || 'en'}, services: {adaptive_lighting: {}},
+  callService: async (d, s, data) => { console.log('SERVICE', d + '.' + s, JSON.stringify(data)); },
+  callWS: async m => m.type === 'trace/list' ? LIST : m.type === 'trace/get' ? FULL[m.item_id + '/' + m.run_id] : m.type === 'automation/config' ? {config: (CONF.find(c => c.entity_id === m.entity_id) || {}).config}
+    : m.type === 'recorder/statistics_during_period' ? stats(m.statistic_ids, m.period) : m.type === 'history/history_during_period' ? {} : m.type === 'camera_thumbnail' ? {} : {},
+  connection: {subscribeMessage: async () => () => {}, subscribeEvents: async () => () => {}},
+  hassUrl: p => p, formatEntityState: s => s.state,
+};
+window.hass = hass;
+const el = document.createElement('home-panel'); el.hass = hass; el.narrow = innerWidth < 870; el.panel = window.PANEL_CFG ? {config: window.PANEL_CFG} : {}; document.body.appendChild(el);
+window.panel = el;
+</script>
+</body></html>

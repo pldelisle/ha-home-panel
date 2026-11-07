@@ -1,0 +1,50 @@
+# Add this to Home Assistant's configuration.yaml, then restart Home Assistant.
+# Copy the files from dist/ (or a release zip) to <config>/www/home-panel/ first.
+panel_custom:
+  - name: home-panel
+    sidebar_title: Home panel
+    sidebar_icon: mdi:home-analytics
+    url_path: home-panel
+    # bump ?v= after each update: HA serves /local/ files with a 31-day cache
+    module_url: /local/home-panel/home-panel.js?v=2.0.0
+    require_admin: false
+    # Everything below is optional. Left out, the panel finds what it can on its own.
+    config:
+      # who's home: first names of the people to show (default: every person entity)
+      people: [Alex, Sam]
+      # a picture of the house on the weather card: one URL, or one per theme
+      house_image:
+        day: /local/home-panel/house-day.webp
+        night: /local/home-panel/house-night.webp
+      car:
+        name: My car        # default: the FordPass vehicle name
+        color: "#2F5FAF"    # body colour of the drawing shown when FordPass has no photo
+      entities:
+        weather: weather.springfield_forecast   # default: the first weather entity
+        grid_power: sensor.house_power
+        energy_total: sensor.house_energy
+        water_heater_power: sensor.water_heater_power
+        water_heater_temperature: sensor.water_heater_temperature
+        water_heater_energy: sensor.water_heater_energy
+        ev_charger_power: sensor.charger_power
+        ev_charger_status: sensor.charger_status
+        ev_charger_current: number.charger_max_current
+        ev_charger_pause: switch.charger_pause_resume
+        ev_charger_lock: lock.charger_lock
+        ev_charger_price: sensor.charger_energy_price
+        heat_pump: climate.heat_pump
+        hydro_quebec_balance: sensor.hydro_quebec_balance
+        hydro_quebec_peak: binary_sensor.hydro_quebec_critical_peak_in_progress
+        hydro_quebec_upcoming_peak: binary_sensor.hydro_quebec_upcoming_critical_peak
+      # rooms on the Climate tab, in this order (default: every thermostat except the heat pump)
+      rooms:
+        - {climate: climate.living_room, name: Living room, icon: sofa}
+        - {climate: climate.office, icon: desk, temperature: sensor.office_temperature}
+        - climate.bedroom
+      # scene tiles in this order (others follow alphabetically)
+      scenes: [scene.dinner, scene.movie_night]
+      # input_booleans shown as on/off routine tiles beside the scenes
+      modes: [input_boolean.kids_bedtime]
+      # HA area → Adaptive Lighting switch, for areas whose lights the panel can't match by name
+      adaptive_lighting_areas:
+        hallway: switch.adaptive_lighting_upstairs
