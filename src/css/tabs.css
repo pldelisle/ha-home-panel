@@ -38,8 +38,9 @@
 .hhouse .house{display:block;width:100%;max-width:300px;height:auto;margin:6px auto;filter:drop-shadow(0 10px 10px rgba(40,30,20,.18))}
 .app[data-theme="dark"] .hhouse .house{filter:drop-shadow(0 10px 14px rgba(0,0,0,.5))}
 .hhouse .house.night,.app[data-theme="dark"] .hhouse .house.day{display:none}.app[data-theme="dark"] .hhouse .house.night{display:block}
+/* Who's home sits at the bottom of the weather card when the card is stretched beside the tiles */
+.hwx .hwho{margin-top:auto;padding-top:4px}
 .hwx .who{margin:0}.hwx .wp{background:var(--card2)}
-.hstat{display:flex;align-items:center;gap:10px;font-size:calc(18px*var(--tx));font-weight:600}.hstat .dot{width:10px;height:10px;border-radius:50%;flex:none}
 .hright{display:grid;gap:16px;min-width:0;grid-template-rows:auto 1fr;align-content:start}
 .hscenes{grid-column:1/-1;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:16px}
 .hscenes[hidden]{display:none}

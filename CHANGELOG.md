@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.8.1
+
+- The Home card no longer has a Status block with "All clear" and the list of checks under Who's home, since the header pill already says when something needs attention. The Home tab's subtitle drops "all clear" too. The checks are still one tap away in the pill when something needs attention.
+
 ## 2.8.0
 
 - No more "All clear" chip in the header. With nothing running and nothing to check, that spot stays empty. The live-activity pill appears while something runs, and a status problem shows as its own amber pill (red when critical) that opens the Status checks.
