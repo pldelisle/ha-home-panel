@@ -22,11 +22,12 @@
 .lcell.on .tx small{color:rgba(30,27,25,.68)}
 .lcell.on .lkd{color:rgba(30,27,25,.8)}
 .lcell.na .tx{opacity:.6}
+.lcell .lchev{flex:none;display:grid;place-items:center;color:var(--fg3);margin-left:-4px}.lcell.on .lchev{color:rgba(30,27,25,.45)}
+.ledit .lcell .lchev{display:none}
+@media (hover:hover){.lcell:hover{box-shadow:0 0 0 1.5px var(--ring)}.lcell.on:hover{box-shadow:0 0 0 1.5px rgba(30,27,25,.18),0 0 22px -8px color-mix(in srgb,var(--lc,var(--warn)) 70%,transparent)}}
 .app.cp .lcell{min-height:70px;padding:10px;gap:10px;border-radius:20px}.app.cp .lcell .lbulb{width:44px;height:44px}
-/* a linked pair: two tiles side by side as one block, edged in the lights' colour */
-.lrows .llink,.ltiles .llink{grid-column:span 2;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0;border-radius:22px;overflow:hidden;box-shadow:0 0 0 1.5px color-mix(in srgb,var(--lc,var(--warn)) 50%,transparent)}
-.llink>.lcell{border-radius:0;box-shadow:none}.llink>.lcell+.lcell{border-left:1px solid var(--ring)}
-.llink>.lcell:active{transform:none}
+/* a linked pair: two ordinary tiles kept side by side (so Arrange moves them together); the link shows in each subtitle */
+.lrows .llink,.ltiles .llink{grid-column:span 2;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:inherit}
 /* the sheet: narrow on a tablet; power on the left of the title, Done on the right (changes apply as you go) */
 .app:not(.cp) #sh-light>.panel{width:min(560px,100%)}
 #sh-light .ph{align-items:center}
