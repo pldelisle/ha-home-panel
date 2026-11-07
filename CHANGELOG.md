@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.4.0
+
+- The Lights tab is compact: each light card is now a dimmer row, two columns on a tablet and one on a phone, so about 16 lights fit on one tablet screen. The row fills to the brightness in the lights' own colour. Slide across it to dim, tap the bulb to switch, tap the row or its chevron for the sheet with colour, single groups and linking (now a narrow panel on a tablet). On a tablet, Auto and Night stay on the row. Arrow keys dim a focused row by 10 %.
+- A linked pair is drawn as one block of two rows on both screens, with the chain button on the seam by the bulbs on a tablet. Sliding either row moves both.
+
 ## 2.3.0
 
 - New `light_links` option: two light cards that move together. While linked, the switch, brightness and colour of either card reach both, and the cards are drawn as one with the other card's name in each subtitle. On a tablet, a chain button on the seam links and unlinks them; on a phone, a switch in the light's sheet does. Linking copies the tapped card's lights onto the other card. The state lives in an `input_boolean`, so every screen agrees.

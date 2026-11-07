@@ -181,11 +181,8 @@
 .dialc em{font-style:normal;font-size:calc(12px*var(--tx));font-weight:600;color:var(--fg2)}
 .app.cp #cctl .stepper[aria-label="Setpoint"],.app.cp #cctl .stepper[aria-label="Target"]{display:none}.app.cp #cctl .crow{justify-content:center}.app.cp #cctl .quick{justify-content:center;width:100%}
 /* linked light cards on the phone: one stacked block, no button (link and unlink from a light's sheet) */
-.ltiles .llink{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;border-radius:20px;position:relative}
-.ltiles .llink.on{gap:0;background:var(--card);box-shadow:0 0 0 1.5px color-mix(in srgb,var(--lc,var(--warn)) 45%,transparent)}
-.app.gl .ltiles .llink.on{background:var(--g-tile);box-shadow:var(--g-edge-s),0 0 0 1.5px color-mix(in srgb,var(--lc,var(--warn)) 45%,transparent)}
-.ltiles .llink.on>.ltile{background:transparent!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
-.ltiles .llink.on::after{content:"";position:absolute;left:72px;right:16px;top:50%;height:1px;background:var(--ring);opacity:.8;pointer-events:none}
+/* dimmer rows on the phone (2.4.0): Auto and Night move into the sheet, the rest as on the tablet */
+.app.cp .lrow .lauto{display:none}.app.cp .lrow{min-height:68px}
 .lsrow{display:flex;align-items:center;gap:12px;margin-top:14px;padding:12px 14px;border-radius:14px;background:var(--card2)}
 .app.gl .lsrow{background:var(--g-tile);box-shadow:var(--g-edge-s)}
 .lsrow .lnkic{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:var(--fg3);background:var(--card)}

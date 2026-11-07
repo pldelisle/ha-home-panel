@@ -21,7 +21,7 @@ Every section is optional. A section shows only when its entities exist, so a ho
 |---|---|
 | Weather | any `weather` entity. Environment Canada's extra sensors are found automatically. The radar needs [Weather Radar Card](https://github.com/Makin-Things/weather-radar-card) from HACS |
 | Climate | every `climate` entity, with temperature, setpoint and power history from sensors named like Hilo's (`sensor.<thermostat>_temperature`, `_target_temperature`, `_power`), or set per room |
-| Lights | lights by area, with [Adaptive Lighting](https://github.com/basnijholt/adaptive-lighting) when installed |
+| Lights | one dimmer row per area: slide the row to dim, tap the bulb to switch, tap the row for colour; with [Adaptive Lighting](https://github.com/basnijholt/adaptive-lighting) Auto and Night when installed |
 | Energy | a whole-house power sensor, a water heater, an EV charger, [Hilo](https://github.com/dvd-dev/hilo) rates and Hydro-Québec peaks |
 | Car | the [FordPass](https://github.com/itchannel/fordpass-ha) integration |
 | Air | Mila purifiers and air sensors |
@@ -41,7 +41,7 @@ Every section is optional. A section shows only when its entities exist, so a ho
        sidebar_title: Home panel
        sidebar_icon: mdi:home-analytics
        url_path: home-panel
-       module_url: /local/home-panel/home-panel.js?v=2.3.0
+       module_url: /local/home-panel/home-panel.js?v=2.4.0
    ```
 
 4. Restart Home Assistant. The panel shows up in the sidebar.
@@ -68,7 +68,7 @@ Add a `config:` block under the panel to name the rest of your devices, pick the
       scenes: [scene.dinner, scene.movie_night]
 ```
 
-An area holding several light groups shows as one card with a button per group. To give each group its own card, list the area under `split_light_areas`, for example `split_light_areas: [living_room]`.
+An area holding several light groups shows as one card, with a button per group in its sheet. To give each group its own card, list the area under `split_light_areas`, for example `split_light_areas: [living_room]`.
 
 Two light cards can be linked so that one switch, brightness slider or colour slider moves both. List each pair under `light_links`, by area id or by light entity. Give a pair an `input_boolean` and you can link and unlink it from the panel: a chain button on the seam between the cards on a tablet, a switch in the light's sheet on a phone. A pair without one stays linked.
 
