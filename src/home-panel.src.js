@@ -591,6 +591,7 @@ class HomePanel extends HTMLElement {
     this.lensAll(); this.pageBg();
   }
   // Idle clock (v1.19.6): after 5 min without a touch the wall iPad shows a big clock with the date, the temperatures and the next sun event.
+  // Since 2.2.0 the current outdoor condition's icon (day or night version) sits beside the time.
   // Any touch brings the panel back; the overlay swallows that first tap so nothing underneath gets pressed. Phones never go idle.
   idleArm() {
     clearTimeout(this.idleT); this.idleT = null;
@@ -610,12 +611,15 @@ class HomePanel extends HTMLElement {
     const t = FR ? [now.toLocaleTimeString('fr-CA', {hour: '2-digit', minute: '2-digit', timeZone: TZ}).replace(/\s?h\s?/, ':')] : fmtTime(now).split(' ');
     const dateStr = now.toLocaleDateString(loc, {weekday: 'long', month: 'long', day: 'numeric', timeZone: TZ}), L = this.live();
     const ins = L.rooms.map(r => r.t).filter(v => v != null), outT = attr(E.weather, 'temperature') ?? num(E.outT);
+    const cond = st(E.cond), w = st(E.weather), c = ok(cond) ? cond.state : ok(w) ? w.state : null;
     const temps = [ins.length ? `${(sum(ins) / ins.length).toFixed(1)}° inside` : '', outT == null ? '' : `${f1(outT)}° outside`].filter(Boolean).join(' · ');
+    const icon = c ? `<span class="iwx">${wxIcon(c, 120, up())}</span>` : '';
     const ms = now.getTime(), d = this.sunDay(0), d1 = this.sunDay(1);
     const next = ms < d.rise ? ['Sunrise', d.rise] : ms < d.set ? ['Sunset', d.set] : ['Sunrise', d1.rise];
     // the block drifts a little on every tick so the OLED-less iPad still never shows the same pixels for hours
     const x = Math.round(Math.random() * 40 - 20), y = Math.round(Math.random() * 30 - 15);
-    this.set('iwrap', `<div class="iclock num">${t[0]}<small>${t[1] || ''}</small></div><div class="idate">${esc(dateStr)}</div>${temps ? `<div class="itemps">${temps}</div>` : ''}${next[1] ? `<div class="isun">${next[0]} ${fmtTime(next[1])}</div>` : ''}`);
+    const clock = `<div class="iclock num">${t[0]}<small>${t[1] || ''}</small></div>`;
+    this.set('iwrap', `${icon ? `<div class="iclk2">${icon}${clock}</div>` : clock}<div class="idate">${esc(dateStr)}</div>${temps ? `<div class="itemps">${temps}</div>` : ''}${next[1] ? `<div class="isun">${next[0]} ${fmtTime(next[1])}</div>` : ''}`);
     this.$('iwrap').style.transform = `translate(${x}px,${y}px)`;
   }
   // Attention glow (v1.19.6): when a door opens or motion starts, the Security card's edge pulses amber for about 2.5 s

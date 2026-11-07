@@ -191,6 +191,8 @@ button.hsen{appearance:none;-webkit-appearance:none;font:inherit;color:inherit;t
 .idle .iclock small{font-size:.32em;margin-left:10px;font-weight:600}
 .idle .idate{font-size:clamp(18px,2.4vw,28px);font-weight:600;margin-top:10px}
 .idle .itemps{font-size:clamp(16px,2vw,24px);color:var(--fg2);margin-top:18px}
+.idle .iclk2{display:flex;align-items:center;justify-content:center;gap:clamp(16px,2.4vw,32px)}
+.idle .iclk2 .wxi{width:clamp(80px,11vw,140px);height:auto;display:block}
 .idle .isun{font-size:clamp(14px,1.6vw,19px);color:var(--fg2);margin-top:8px}
 .app.idle>:not(.idle){opacity:0;transition:opacity .9s ease-out}
 .app.idle.gl::before{animation-play-state:running}

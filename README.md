@@ -41,7 +41,7 @@ Every section is optional. A section shows only when its entities exist, so a ho
        sidebar_title: Home panel
        sidebar_icon: mdi:home-analytics
        url_path: home-panel
-       module_url: /local/home-panel/home-panel.js?v=2.1.0
+       module_url: /local/home-panel/home-panel.js?v=2.2.0
    ```
 
 4. Restart Home Assistant. The panel shows up in the sidebar.

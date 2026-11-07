@@ -78,6 +78,13 @@ await run('full-ipad', {house: 'full', cfg: FULL_CFG, viewport: ipad, check: asy
   await page.waitForTimeout(500);
   assert.ok(calls.some(c => /^media_player\.volume_mute /.test(c)), `mute sends media_player.volume_mute (calls: ${calls.join('; ')})`);
   assert.ok(calls.some(c => /^media_player\.turn_off /.test(c)), `power sends media_player.turn_off (calls: ${calls.join('; ')})`);
+  // the idle clock shows the outdoor condition's icon beside the time (2.2.0), and a tap still wakes the panel
+  await page.evaluate(() => document.querySelector('home-panel').idleStart());
+  await page.waitForTimeout(300);
+  const wx = await page.evaluate(() => document.querySelector('home-panel').shadowRoot.querySelector('#iwrap .iclk2 .wxi')?.getAttribute('aria-label'));
+  assert.equal(wx, 'Mainly sunny', 'the idle clock shows the icon for the Environment Canada condition');
+  await page.evaluate(() => document.querySelector('home-panel').idleArm());
+  await page.waitForTimeout(500);
 }});
 await run('full-ipad-dark', {house: 'full', cfg: FULL_CFG, viewport: ipad, theme: 'dark'});
 await run('full-ipad-fr', {house: 'full', cfg: FULL_CFG, viewport: ipad, lang: 'fr', check: async page => {
