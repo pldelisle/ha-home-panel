@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.1.0
+
+- New `split_light_areas` option: the areas it lists show one light card per light group (or per light outside a group) instead of one card for the whole area. The cards keep the area's Adaptive Lighting Auto and Night buttons and stay together in the list.
+
 ## 2.0.0 (unreleased)
 
 The panel moves out of a personal configuration repository into its own project.

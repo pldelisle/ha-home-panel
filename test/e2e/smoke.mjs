@@ -85,6 +85,23 @@ await run('full-ipad-fr', {house: 'full', cfg: FULL_CFG, viewport: ipad, lang: '
   assert.match(txt, /Accueil|Lumières|Climat/, 'the rail is in French for a French-language user');
 }});
 await run('full-iphone', {house: 'full', cfg: FULL_CFG, viewport: iphone});
+// the names on the Lights tab's area cards, in order
+const lightTiles = async page => {
+  await page.evaluate(() => document.querySelector('home-panel').shadowRoot.querySelector('#rail [data-tab="lights"]').click());
+  await page.waitForTimeout(500);
+  return page.evaluate(() => [...document.querySelector('home-panel').shadowRoot.querySelectorAll('#pane-lights .larea .lhead b')].map(b => b.textContent));
+};
+// split_light_areas: the kitchen's two light groups get a tile each, named by what tells them apart
+await run('split-lights-ipad', {house: 'full', cfg: {...FULL_CFG, split_light_areas: ['kitchen']}, viewport: ipad, check: async (page, calls) => {
+  assert.deepEqual(await lightTiles(page), ['Island', 'Sink', 'Living room', 'Office'], 'one tile per kitchen group, kept together where the kitchen sorts');
+  await page.evaluate(() => document.querySelector('home-panel').shadowRoot.querySelector('#pane-lights .larea button.sw[data-a="light.kitchen_sink"]').click());
+  await page.waitForTimeout(300);
+  assert.ok(calls.some(c => /^light\.turn_on .*kitchen_sink_1/.test(c) && !/island/.test(c)), `the Sink tile switches only its own bulbs (calls: ${calls.join('; ')})`);
+}});
+await run('split-lights-iphone', {house: 'full', cfg: {...FULL_CFG, split_light_areas: ['kitchen']}, viewport: iphone});
+await run('grouped-lights-ipad', {house: 'full', cfg: FULL_CFG, viewport: ipad, check: async page => {
+  assert.deepEqual(await lightTiles(page), ['Kitchen', 'Living room', 'Office'], 'without split_light_areas an area is one tile');
+}});
 await run('bare-ipad', {house: 'bare', viewport: ipad, check: async page => {
   for (const sel of ['#water', '#hilo', '#rail [data-tab="car"]', '#rail [data-tab="climate"]']) assert.ok((await q(page, sel)).every(x => x.hidden), `${sel} stays hidden in a house without it`);
 }});

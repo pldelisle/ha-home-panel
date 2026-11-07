@@ -41,7 +41,7 @@ Every section is optional. A section shows only when its entities exist, so a ho
        sidebar_title: Home panel
        sidebar_icon: mdi:home-analytics
        url_path: home-panel
-       module_url: /local/home-panel/home-panel.js?v=2.0.0
+       module_url: /local/home-panel/home-panel.js?v=2.1.0
    ```
 
 4. Restart Home Assistant. The panel shows up in the sidebar.
@@ -67,6 +67,8 @@ Add a `config:` block under the panel to name the rest of your devices, pick the
         - climate.bedroom
       scenes: [scene.dinner, scene.movie_night]
 ```
+
+An area holding several light groups shows as one card with a button per group. To give each group its own card, list the area under `split_light_areas`, for example `split_light_areas: [living_room]`.
 
 Room icons can be `sofa`, `door`, `desk`, `bed`, `bath`, `drop`, `car`, `house` and `therm`.
 

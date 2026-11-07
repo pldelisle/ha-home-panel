@@ -79,6 +79,12 @@ test('scenes, modes, Adaptive Lighting areas and car pass through', () => {
   assert.deepEqual(c.alAreas, {hall: 'switch.al'}); assert.deepEqual(c.car, {name: 'EV', color: '#123'});
 });
 
+test('split_light_areas: a list or one area, empty by default', () => {
+  assert.deepEqual(resolveConfig({}).splitLightAreas, []);
+  assert.deepEqual(resolveConfig({split_light_areas: 'living_room'}).splitLightAreas, ['living_room']);
+  assert.deepEqual(resolveConfig({split_light_areas: ['kitchen', 'den']}).splitLightAreas, ['kitchen', 'den']);
+});
+
 test('HA adds _panel_custom to the config; it is ignored', () => {
   assert.doesNotThrow(() => resolveConfig({_panel_custom: {name: 'home-panel', module_url: '/local/x.js'}}, states));
 });

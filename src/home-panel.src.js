@@ -11,7 +11,7 @@ const CSS = __CSS__;
 // ---------- entities ----------
 /*__CONFIG__*/
 // filled by applyConfig() from the panel's config before the first render
-const E = {}, ROOMS = [], HOUSEHOLD = [], SCENE_ORDER = [], MODES = [], AL_AREAS = {};
+const E = {}, ROOMS = [], HOUSEHOLD = [], SCENE_ORDER = [], MODES = [], AL_AREAS = {}, SPLIT_AREAS = [];
 let CFG = null;
 function applyConfig(panelCfg) {
   const c = resolveConfig(panelCfg, hass ? hass.states : {});
@@ -20,6 +20,7 @@ function applyConfig(panelCfg) {
   Object.assign(E, c.entities); Object.assign(AL_AREAS, c.alAreas);
   ROOMS.splice(0, ROOMS.length, ...c.rooms); HOUSEHOLD.splice(0, HOUSEHOLD.length, ...c.people);
   SCENE_ORDER.splice(0, SCENE_ORDER.length, ...c.scenes); MODES.splice(0, MODES.length, ...c.modes);
+  SPLIT_AREAS.splice(0, SPLIT_AREAS.length, ...c.splitLightAreas);
   CFG = c;
 }
 
@@ -2184,10 +2185,20 @@ class HomePanel extends HTMLElement {
       || als.find(a => aid && area(a) === aid)
       || als.find(a => alName(a) && groups.some(g => area(g) === aid && fold(String(attr(g, 'friendly_name') || '')).includes(alName(a))));
     const byName = (x, y) => String(attr(x, 'friendly_name') || x).localeCompare(attr(y, 'friendly_name') || y);
-    return [...by].filter(([, a]) => a.ids.length).map(([aid, {ids, units}]) => {
+    const out = [];
+    for (const [aid, {ids, units}] of by) {
+      if (!ids.length) continue;
       units.sort(byName);
-      return {aid, name: aid ? (areas[aid] || {}).name || aid : 'Other lights', ids, al: alFor(aid, ids), units, labels: shortNames(units.map(i => attr(i, 'friendly_name') || i))};
-    }).sort((a, b) => (!a.aid) - (!b.aid) || a.name.localeCompare(b.name));
+      const area = aid ? (areas[aid] || {}).name || aid : 'Other lights', labels = shortNames(units.map(i => attr(i, 'friendly_name') || i));
+      // areas listed in split_light_areas get one tile per light group (or loose light) instead of one for the whole area;
+      // each tile keeps the area's Adaptive Lighting switch, so Auto and Night still act on the area
+      if (SPLIT_AREAS.includes(aid) && units.length > 1) {
+        const al = alFor(aid, ids);
+        units.forEach((u, k) => { const mine = ids.filter(i => (owner[i] || i) === u); if (mine.length) out.push({aid: u, area, other: !aid, name: labels[k], ids: mine, al, units: [u], labels: [labels[k]]}); });
+      } else out.push({aid, area, other: !aid, name: area, ids, al: alFor(aid, ids), units, labels});
+    }
+    // split tiles stay together under their area's place in the list
+    return out.sort((a, b) => a.other - b.other || a.area.localeCompare(b.area) || a.name.localeCompare(b.name));
   }
   renderLights() {
     if (this.lightDrag) return;

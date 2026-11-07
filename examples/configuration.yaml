@@ -6,7 +6,7 @@ panel_custom:
     sidebar_icon: mdi:home-analytics
     url_path: home-panel
     # bump ?v= after each update: HA serves /local/ files with a 31-day cache
-    module_url: /local/home-panel/home-panel.js?v=2.0.0
+    module_url: /local/home-panel/home-panel.js?v=2.1.0
     require_admin: false
     # Everything below is optional. Left out, the panel finds what it can on its own.
     config:
@@ -48,3 +48,5 @@ panel_custom:
       # HA area → Adaptive Lighting switch, for areas whose lights the panel can't match by name
       adaptive_lighting_areas:
         hallway: switch.adaptive_lighting_upstairs
+      # HA areas whose light groups (and lights outside a group) each get their own card instead of one card for the area
+      split_light_areas: [kitchen]
