@@ -50,3 +50,8 @@
 .lpt span:first-child{transform:none}.lpt span:last-child{transform:translateX(-100%)}
 .lspark{display:block;width:100%;height:46px;margin:8px 0 2px}
 @media (prefers-reduced-transparency:reduce){.app.gl .lap .lmain,.app.gl .lap .lbub{background:var(--card);-webkit-backdrop-filter:none;backdrop-filter:none}}
+/* 2.8.0: a status problem alone is a pill too */
+.lap .latt{padding-left:5px}
+.lap .latt .lwarn{width:34px;height:34px;display:grid;place-items:center}
+.lap .latt.lmain{background:color-mix(in srgb,var(--ac) 14%,var(--card))}
+.app.gl .lap .latt.lmain{background:color-mix(in srgb,var(--ac) 16%,var(--g-dense))}
