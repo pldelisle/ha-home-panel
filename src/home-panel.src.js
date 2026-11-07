@@ -755,7 +755,7 @@ class HomePanel extends HTMLElement {
     return out;
   }
   // the smart stack inside the Home card on a tablet (2.9.0): same cards and turns as beside the idle clock, minus the who's-home filler
-  // that the Who's home chips right under it already show. Nothing to show: the slot hides and Who's home stays at the bottom.
+  // that the Who's home chips right above it already show. Nothing to show: the slot hides.
   renderHomeStack() {
     const el = this.$('hstk'); if (!el || this.compact || this.tab !== 'home') return;
     let pick = null; try { pick = CFG && CFG.stack.on ? pickStack(this.stackCards().filter(c => !(c.k === 'who' && c.filler)), Date.now()) : null; } catch (e) { console.error('home-panel home stack', e); }
@@ -2410,9 +2410,9 @@ class HomePanel extends HTMLElement {
     const hwxWas = this.cache.hwx;
     this.set('hwx', `<div class="muted" style="font-size:13px;font-weight:500">${dayUp ? 'Sunset' : 'Sunrise'} <b style="color:var(--fg)">${ok(nxt) ? fmtTime(nxt.state) : '–'}</b>${ok(nxt2) ? ` · ${dayUp ? 'sunrise' : 'sunset'} <b style="color:var(--fg)">${fmtTime(nxt2.state)}</b>` : ''}</div>
       <div class="hbig"><span class="num">${temp == null ? '–' : Math.round(temp) + '°'}</span><div><div class="hc">${esc(condName(ok(cond) ? cond.state : (st(E.weather) || {}).state))}</div><div class="muted">${hi != null ? `High ${Math.round(hi)}°` : ''}${lo != null ? ` · low ${Math.round(lo)}°` : ''}</div></div></div>
-      <div class="hhouse">${houseImg()}</div>${this.compact ? '' : '<div class="hstk" id="hstk" hidden></div>'}
-      <div class="lbl hwho">Who's home</div>${this.whoHtml() || '<p class="hint">No one is tracked yet.</p>'}`);
-    // 2.9.0: the space between the house and Who's home holds the idle clock's smart stack (a fresh card slot whenever the card was rebuilt)
+      <div class="hhouse">${houseImg()}</div>
+      <div class="lbl hwho">Who's home</div>${this.whoHtml() || '<p class="hint">No one is tracked yet.</p>'}${this.compact ? '' : '<div class="hstk" id="hstk" hidden></div>'}`);
+    // 2.9.0: under Who's home, the rest of the card holds the idle clock's smart stack (a fresh card slot whenever the card was rebuilt)
     if (this.cache.hwx !== hwxWas) this.cache.hstk = null;
     this.renderHomeStack();
     const A = this.lightAreas(), onAreas = A.map(a => ({a, on: a.ids.filter(isOn)})).filter(x => x.on.length);

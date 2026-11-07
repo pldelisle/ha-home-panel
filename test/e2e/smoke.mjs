@@ -123,7 +123,7 @@ await run('full-iphone', {house: 'full', cfg: FULL_CFG, viewport: iphone});
 // smart stack (2.5.0): at 11:30 pm the plugged-in car and the playing speaker take turns beside the idle clock; a tap on the car card opens the car
 await run('stack-ipad', {house: 'full', cfg: FULL_CFG, viewport: ipad, time: '2026-11-07T23:30:00-05:00', check: async page => {
   const R = fn => page.evaluate(fn);
-  // 2.9.0: the same stack fills the Home card between the house and Who's home, without making the row taller than the tiles beside it
+  // 2.9.0: the same stack fills the Home card under Who's home, without making the row taller than the tiles beside it
   const home = await R(() => { const r = document.querySelector('home-panel').shadowRoot, s = r.getElementById('hstk'), w = r.getElementById('hwx').getBoundingClientRect(), t = r.querySelector('.hright').getBoundingClientRect();
     return {shown: !!s && !s.hidden, k: s && s.querySelector('.sc')?.dataset.k, dots: s ? s.querySelectorAll('.sdots i').length : 0, fits: w.height <= t.height + 1}; });
   assert.ok(home.shown && ['car', 'music'].includes(home.k) && home.dots === 2, `the Home card shows the stack (got ${JSON.stringify(home)})`);
