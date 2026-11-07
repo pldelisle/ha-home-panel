@@ -91,6 +91,7 @@ const aqFmt = (k, v, short) => v == null ? '–' : short && v >= 10000 ? Math.ro
 // outdoor AQI on the US scale: up to 50 good, up to 100 moderate
 const outLevel = v => v == null ? 0 : v <= 50 ? 0 : v <= 100 ? 1 : 2;
 const ICON = {
+  chev: '<path d="m9 6 6 6-6 6"/>',
   link: '<path d="M10 13.5a4 4 0 0 0 5.7.3l3-3a4 4 0 0 0-5.7-5.6l-1.2 1.2"/><path d="M14 10.5a4 4 0 0 0-5.7-.3l-3 3a4 4 0 0 0 5.7 5.6l1.2-1.2"/>',
   unlink: '<path d="M15.5 13l3.2-3.2a4 4 0 0 0-5.7-5.6l-1.6 1.6"/><path d="M8.5 11l-3.2 3.2a4 4 0 0 0 5.7 5.6l1.6-1.6"/><path d="M8 3v2.5M3 8h2.5M16 21v-2.5M21 16h-2.5"/>',
   more: '<rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/>',
@@ -705,6 +706,50 @@ class HomePanel extends HTMLElement {
       lt.addEventListener('click', e => { const b = e.target.closest('button[data-l]'); if (b) this.lightCmd(b.dataset.l, b.dataset.a ?? b.dataset.id, b.dataset.al); });
     }
     this.$('tv').addEventListener('click', e => { const b = e.target.closest('button[data-tv]'); if (b) this.tvCmd(b.dataset.tv); });
+    // dimmer rows: a sideways slide dims (relative to where the fill was), an up-down move scrolls the page as usual,
+    // and the brightness goes out on release; a linked pair's two rows move together while sliding
+    for (const lt of [this.$('lights'), this.$('ltiles')]) {
+      let d = null;
+      const rowsOf = r => { const w = r.closest('.llink.on'); return w ? [...w.querySelectorAll('.lrow')] : [r]; };
+      const paint = (rows, p) => rows.forEach(r => { r.style.setProperty('--p', p + '%'); r.classList.add('on'); const t = r.querySelector('.lpct'); if (t) t.textContent = p + '%'; r.setAttribute('aria-valuenow', p); r.setAttribute('aria-valuetext', p + '%'); });
+      lt.addEventListener('pointerdown', e => {
+        const r = e.target.closest('.lrow[data-dim]'); if (!r || e.target.closest('button') || e.button > 0) return;
+        d = {r, id: e.pointerId, x0: e.clientX, y0: e.clientY, p0: parseFloat(r.style.getPropertyValue('--p')) || 0, w: r.getBoundingClientRect().width, go: false};
+      });
+      lt.addEventListener('pointermove', e => {
+        if (!d || e.pointerId !== d.id) return;
+        const dx = e.clientX - d.x0, dy = e.clientY - d.y0;
+        if (!d.go) {
+          if (Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx)) { d = null; return; }   // a scroll
+          if (Math.abs(dx) < 8) return;
+          d.go = true; this.lightDrag = true; d.r.classList.add('drag'); try { d.r.setPointerCapture(e.pointerId); } catch (x) {}
+        }
+        e.preventDefault();
+        d.p = Math.max(1, Math.min(100, Math.round(d.p0 + dx / d.w * 100))); paint(rowsOf(d.r), d.p);
+      });
+      const end = e => {
+        if (!d || e.pointerId !== d.id) return;
+        const x = d; d = null; if (!x.go) return;
+        x.r.classList.remove('drag'); this.dimEnd = Date.now();
+        if (e.type === 'pointerup' && x.p) {
+          // hold the new fill until Home Assistant reports it, so the row doesn't jump back for a moment
+          this.dimHold = this.dimHold || {}; for (const r of rowsOf(x.r)) this.dimHold[r.dataset.dim] = {p: x.p, t: Date.now()};
+          this.lightCmd('br', x.r.dataset.dim, x.p);
+        }
+        setTimeout(() => { this.lightDrag = false; this.tick(); }, 60);
+      };
+      lt.addEventListener('pointerup', end); lt.addEventListener('pointercancel', end);
+      // the click that ends a slide doesn't also open the sheet
+      lt.addEventListener('click', e => { if (this.dimEnd && Date.now() - this.dimEnd < 400 && e.target.closest('.lrow')) { e.stopPropagation(); e.preventDefault(); } }, true);
+      // keyboard: arrows dim by 10 %, Enter opens the sheet
+      lt.addEventListener('keydown', e => {
+        const r = e.target.closest('.lrow[data-dim]'); if (!r || e.target !== r) return;
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); return this.openLight(r.dataset.lsheet); }
+        const step = {ArrowRight: 10, ArrowUp: 10, ArrowLeft: -10, ArrowDown: -10}[e.key]; if (!step) return;
+        e.preventDefault(); const p = Math.max(1, Math.min(100, (parseFloat(r.style.getPropertyValue('--p')) || 0) + step));
+        paint(rowsOf(r), p); this.lightCmd('br', r.dataset.dim, p);
+      });
+    }
     // Tabs view: the rail and the glance tiles switch panes; scenes and speakers work as on the phone view
     const tv = this.$('tabview');
     this.$('pane-auto').addEventListener('click', e => {
@@ -735,7 +780,7 @@ class HomePanel extends HTMLElement {
     this.$('sh-more').addEventListener('click', e => {
       const t = e.target.closest('[data-tab]'); if (t) { this.hide(); return this.setTab(t.dataset.tab); }
     });
-    for (const h of ['ltiles', 'mtiles']) this.$(h).addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[role="button"]')) { e.preventDefault(); e.target.click(); } });
+    for (const h of ['mtiles']) this.$(h).addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[role="button"]')) { e.preventDefault(); e.target.click(); } });
     // speaker volume sliders: hold off re-rendering while one is dragged, the level goes out on release
     const isV = e => e.target.dataset && e.target.dataset.mv;
     tv.addEventListener('pointerdown', e => { if (isV(e)) this.lightDrag = true; });
@@ -1851,22 +1896,13 @@ class HomePanel extends HTMLElement {
     }
     if (this.tab === 'air') { const P = this.purifiers(), a = P.rooms.length ? this.airSummary(P) : null; this.set('asub2', !a ? 'No purifiers found' : [plural(P.rooms.length, 'purifier'), a.worst < 0 ? 'no data' : AQ_LVL[a.worst][0], a.worst > 0 ? esc(a.why) : ''].filter(Boolean).join(' · ')); }
   }
-  // Lights: one row per area with its switch; the row opens the area's controls in a sheet
+  // Lights on the phone: the same dimmer rows as the tablet, one column; the row opens the area's controls in a sheet
   renderLightTiles() {
     if (this.tab !== 'lights' || this.lightDrag) return;
-    const A = this.lightAreas(), isOn = i => (st(i) || {}).state === 'on';
+    const A = this.lightAreas();
     if (!A.length) { this.set('ltiles', '<p class="hint">No lights found.</p>'); return; }
-    const tile = a => {
-      const on = a.ids.filter(isOn), any = on.length > 0, avail = a.ids.some(i => ok(st(i)));
-      const br = any ? Math.max(1, Math.round(sum(on.map(i => attr(i, 'brightness') || 0)) / on.length / 2.55)) : 0;
-      const alOn = a.al && isOn(a.al), night = a.al && st(a.al + '_sleep_mode') ? a.al + '_sleep_mode' : null, nightOn = night && isOn(night);
-      const sub = !avail ? 'Unavailable' : !any ? 'Off' : `${on.length === a.ids.length ? (a.ids.length === 1 ? 'On' : 'All on') : `${on.length} of ${a.ids.length} on`} · ${br}%`;
-      const mode = nightOn ? 'Night' : alOn ? 'Auto' : a.al ? 'Manual' : '';
-      const tint = any ? this.lightTint(on) : '';
-      return `<div class="stile wide ltile${any ? ' on' : ''}" data-lsheet="${esc(a.aid)}" role="button" tabindex="0" aria-label="${esc(a.name)}: details"${tint ? ` style="--lc:${tint}"` : ''}><span class="ic">${ico('bulb', 20)}</span><span class="tx"><b>${esc(a.name)}</b><small>${sub}${mode ? ` · <em>${mode}</em>` : ''}${this.linkTag(a)}</small></span><button type="button" class="sw" role="switch" aria-checked="${any}" aria-label="${esc(a.name)} lights" data-l="area" data-a="${esc(a.aid)}" ${avail ? '' : 'disabled'}></button></div>`;
-    };
     // a linked pair is one block on the phone; linking and unlinking is done from a light's sheet
-    this.set('ltiles', A.map(a => !a.link ? tile(a) : !a.link.first ? '' : this.linkPair(a, tile(a) + tile(a.link.other), false)).join(''));
+    this.set('ltiles', A.map(a => !a.link ? this.dimRow(a) : !a.link.first ? '' : this.linkPair(a, this.dimRow(a) + this.dimRow(a.link.other), false)).join(''));
   }
   openLight(aid) { this.lightSel = aid; this.show('sh-light'); }
   renderLightSheet() {
@@ -2223,8 +2259,30 @@ class HomePanel extends HTMLElement {
     const A = this.lightAreas(), isOn = i => (st(i) || {}).state === 'on';
     if (!A.length) { this.set('lights', '<div class="top"><span class="lbl">Lights</span><span class="right">No lights found</span></div>'); return; }
     const lit = A.flatMap(a => a.ids).filter(isOn).length;
-    const rows = A.map(a => !a.link ? this.lightRow(a) : !a.link.first ? '' : this.linkPair(a, this.lightRow(a) + this.lightRow(a.link.other), true)).join('');
-    this.set('lights', `<div class="top"><span class="lbl">Lights</span><span class="right">${lit ? `${plural(lit, 'light')} on<button type="button" class="more" data-l="alloff">All off</button>` : 'All off'}</span></div><div class="lareas">${rows}</div>`);
+    const rows = A.map(a => !a.link ? this.dimRow(a) : !a.link.first ? '' : this.linkPair(a, this.dimRow(a) + this.dimRow(a.link.other), true)).join('');
+    this.set('lights', `<div class="top"><span class="lbl">Lights</span><span class="right">${lit ? `${plural(lit, 'light')} on<button type="button" class="more" data-l="alloff">All off</button>` : 'All off'}</span></div><div class="lrows">${rows}</div>`);
+  }
+  // one light card as a dimmer row: the fill is the brightness, in the lights' colour; slide across the row to dim, the bulb switches,
+  // Auto and Night sit on the row (tablet), and the row or its chevron opens the sheet for colour, single bulbs and linking
+  dimRow(a) {
+    const isOn = i => (st(i) || {}).state === 'on';
+    const on = a.ids.filter(isOn), avail = a.ids.some(i => ok(st(i)));
+    let any = on.length > 0, br = any ? Math.max(1, Math.round(sum(on.map(i => attr(i, 'brightness') || 0)) / on.length / 2.55)) : 0;
+    const h = this.dimHold && this.dimHold[a.aid];
+    if (h) { if (Date.now() - h.t < 4000 && Math.abs(br - h.p) > 1) { br = h.p; any = true; } else delete this.dimHold[a.aid]; }
+    const alOn = a.al && isOn(a.al), night = a.al && st(a.al + '_sleep_mode') ? a.al + '_sleep_mode' : null, nightOn = night && isOn(night);
+    const ks = on.map(i => attr(i, 'color_temp_kelvin')).filter(v => v != null), k = ks.length ? Math.round(sum(ks) / ks.length / 50) * 50 : null;
+    const mode = nightOn ? 'Night' : alOn ? 'Auto' : a.al ? 'Manual' : '';
+    const sub = !avail ? 'Unavailable' : !any ? 'Off' : [on.length < a.ids.length ? `${on.length} of ${a.ids.length} on` : '', mode, k ? k + ' K' : ''].filter(Boolean).join(' · ') || 'On';
+    const tint = any ? this.lightTint(on) : '';
+    return `<div class="lrow${any ? ' on' : ''}${avail ? '' : ' na'}" data-lsheet="${esc(a.aid)}"${avail ? ` data-dim="${esc(a.aid)}" role="slider" tabindex="0" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${br}" aria-valuetext="${any ? br + '%' : 'Off'}"` : ''} aria-label="${esc(a.name)} brightness" style="--p:${br}%${tint ? `;--lc:${tint}` : ''}">
+      <span class="lfill" aria-hidden="true"></span>
+      <button type="button" class="lbulb" role="switch" aria-checked="${any}" aria-label="${esc(a.name)} lights" data-l="area" data-a="${esc(a.aid)}" ${avail ? '' : 'disabled'}>${ico('bulb', 20)}</button>
+      <span class="tx"><b>${esc(a.name)}</b><small>${sub}${this.linkTag(a)}</small></span>
+      ${a.al ? `<button type="button" class="lauto" aria-pressed="${!!alOn}" data-l="al" data-id="${esc(a.al)}" title="Adaptive Lighting: colour and brightness follow the time of day" ${ok(st(a.al)) ? '' : 'disabled'}>Auto</button>` : ''}
+      ${night ? `<button type="button" class="lauto lnight" aria-pressed="${!!nightOn}" data-l="night" data-id="${esc(night)}" data-al="${esc(a.al)}" title="Night mode: very dim, warm light" ${ok(st(night)) ? '' : 'disabled'}>Night</button>` : ''}
+      <span class="lpct num" aria-hidden="true">${any ? br + '%' : ''}</span>
+      <button type="button" class="lmore" data-lsheet="${esc(a.aid)}" aria-label="${esc(a.name)}: details">${ico('chev', 18)}</button></div>`;
   }
   // the colour an area's lights are showing: the first lit bulb's rgb_color, or its colour temperature turned into a warm-to-cool white
   lightTint(on) {

@@ -212,3 +212,35 @@ button.hsen{appearance:none;-webkit-appearance:none;font:inherit;color:inherit;t
 .lkd{color:color-mix(in srgb,var(--lc,var(--warn)) 70%,var(--fg));font-style:normal;font-weight:600;display:inline-flex;align-items:center;gap:3px;vertical-align:-2px}
 @media (max-width:1000px){.lareas .llink{grid-column:span 2}}
 @media (max-width:720px){.lareas .llink{grid-column:auto;grid-template-columns:minmax(0,1fr)}.lareas .llink.on>.larea{border-radius:18px!important;padding:12px 14px!important}.lareas .llink.on::after{display:none}.lnk{top:50%}}
+/* Lights tab (2.4.0): dimmer rows, two columns on a tablet, one on a phone. The fill is the brightness, tinted by the lights' colour */
+.pane-lights #lights{background:none!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;padding:0;border:0}
+.pane-lights #lights>.top{margin:0 0 12px}.pane-lights #lights>.top .lbl{visibility:hidden}
+.lrows{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start;grid-auto-flow:row dense}
+.lrow{position:relative;display:flex;align-items:center;gap:10px;min-height:72px;padding:0 6px 0 14px;border-radius:20px;overflow:hidden;background:var(--card);box-shadow:var(--shadow);touch-action:pan-y;cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+.app.gl .lrow{background:var(--g-card);-webkit-backdrop-filter:var(--g-bd);backdrop-filter:var(--g-bd);box-shadow:var(--g-edge-s)}
+.lrow .lfill{position:absolute;inset:0 auto 0 0;width:var(--p,0%);border-radius:0 14px 14px 0;background:linear-gradient(90deg,color-mix(in srgb,var(--lc,var(--warn)) 26%,transparent),color-mix(in srgb,var(--lc,var(--warn)) 48%,transparent));pointer-events:none;transition:width .25s ease}
+.lrow.drag .lfill{transition:none}
+.lrow:not(.on) .lfill{display:none}
+.lrow>:not(.lfill){position:relative}
+.lrow:focus-visible{outline:2px solid var(--c-home);outline-offset:2px}
+.lbulb{width:44px;height:44px;flex:none;border-radius:14px;border:0;padding:0;display:grid;place-items:center;cursor:pointer;font:inherit;color:var(--fg2);background:var(--card2)}
+.app.gl .lbulb{background:var(--g-tile);box-shadow:var(--g-edge-s)}
+.lrow.on .lbulb{color:color-mix(in srgb,var(--lc,var(--warn)) 55%,var(--fg));background:color-mix(in srgb,var(--lc,var(--warn)) 40%,var(--card));box-shadow:0 0 14px color-mix(in srgb,var(--lc,var(--warn)) 45%,transparent)}
+.lbulb:focus-visible,.lmore:focus-visible{outline:2px solid var(--c-home);outline-offset:2px}.lbulb:disabled{opacity:.5;cursor:default}
+.lrow .tx{flex:1;min-width:0;display:flex;flex-direction:column}
+.lrow .tx b{font-size:calc(15px*var(--tx));font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lrow .tx small{font-size:calc(12.5px*var(--tx));color:var(--fg2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lrow.na .tx{opacity:.6}
+.lrow .lauto{flex:none;min-height:36px;padding:6px 11px;border-radius:999px}
+.lrow .lpct{flex:none;min-width:50px;text-align:right;font-size:calc(19px*var(--tx));font-weight:600;letter-spacing:-.02em}
+.lmore{flex:none;width:32px;height:44px;border:0;padding:0;background:none;color:var(--fg3);display:grid;place-items:center;cursor:pointer}
+/* a linked pair: the two rows stacked as one block (both screens); the chain button sits on the seam by the bulbs */
+.lrows .llink,.ltiles .llink{grid-row:span 2;grid-column:auto;display:grid;grid-template-columns:minmax(0,1fr);gap:12px;position:relative;border-radius:20px}
+.lrows .llink.on,.ltiles .llink.on{gap:0;overflow:hidden;box-shadow:0 0 0 1.5px color-mix(in srgb,var(--lc,var(--warn)) 50%,transparent)}
+.llink.on>.lrow{border-radius:0;box-shadow:none}
+.llink.on>.lrow:first-child{border-bottom:1px solid var(--ring)}
+.lrows .llink .lnk{left:36px;top:50%;width:32px;height:32px}
+.lrows .llink:not(.on) .lnk{width:30px;height:30px}
+.ltiles .llink.on::after,.lrows .llink.on::after{display:none}
+/* the light sheet on a tablet: a narrow panel instead of the full width, since it only holds a few controls */
+.app:not(.cp) #sh-light>.panel{width:min(560px,100%)}
