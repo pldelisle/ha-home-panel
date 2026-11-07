@@ -37,6 +37,7 @@ if (full) {
   });
   add('light.office_1', 'on', {brightness: 200, supported_color_modes: ['color_temp', 'hs'], color_mode: 'color_temp', color_temp_kelvin: 4000, min_color_temp_kelvin: 2000, max_color_temp_kelvin: 6500, friendly_name: 'Office ceiling'}, {area_id: 'office', platform: 'hue', device_id: 'l2'}, {id: 'l2', area_id: 'office', name: 'Office ceiling'});
   add('switch.adaptive_lighting_office', 'on', {friendly_name: 'Adaptive Lighting: Office', color_temp_kelvin: 3800, brightness_pct: 80, sun_position: .4, configured_lights: ['light.office_1']});
+  add('switch.adaptive_lighting_office_sleep_mode', 'off', {friendly_name: 'Adaptive Lighting Sleep Mode: Office'});
   // two light groups in one area: one tile by default, one tile each with split_light_areas
   const ct = {supported_color_modes: ['color_temp'], color_mode: 'color_temp', color_temp_kelvin: 3000, min_color_temp_kelvin: 2200, max_color_temp_kelvin: 6500};
   ['island_1', 'island_2', 'sink_1'].forEach((k, i) => add(`light.kitchen_${k}`, i < 2 ? 'on' : 'off', {...ct, brightness: i < 2 ? 150 : 0}, {platform: 'hue', hidden: true}));

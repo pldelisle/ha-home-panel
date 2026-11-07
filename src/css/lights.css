@@ -1,0 +1,95 @@
+/* ---- Lights (2.10.0): Apple Home style tiles and a sheet with two tall sliders.
+   Tiles are content, so they take a plain blurred material, not Liquid Glass (HIG: no glass in the content layer).
+   A tile is bright while its lights are on, tinted with their colour; the bulb switches, the rest opens the sheet. ---- */
+.pane-lights #lights{background:none!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;padding:0;border:0}
+.pane-lights #lights>.top{margin:0 0 12px}.pane-lights #lights>.top .lbl{visibility:hidden}
+.lrows{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:stretch}
+.app.tabsv.cp .ltiles{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:stretch}
+@media (max-width:1000px){.lrows{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:720px){.lrows{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.lcell{position:relative;display:flex;align-items:center;gap:12px;min-height:76px;padding:12px;border-radius:22px;background:var(--card);box-shadow:var(--shadow);cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;transition:background-color .25s ease,box-shadow .25s ease,transform .15s ease}
+.app.gl .lcell{background:color-mix(in srgb,var(--card) 62%,transparent);-webkit-backdrop-filter:blur(30px);backdrop-filter:blur(30px);box-shadow:none}
+.lcell:active{transform:scale(.97)}
+.lcell.on,.app.gl .lcell.on{background:color-mix(in srgb,var(--lc,var(--warn)) 30%,#FFFCF8 86%);color:#1E1B19;box-shadow:0 0 22px -8px color-mix(in srgb,var(--lc,var(--warn)) 70%,transparent)}
+.lcell:focus-visible{outline:2px solid var(--c-home);outline-offset:2px}
+.lcell .lbulb{width:46px;height:46px;flex:none;border-radius:50%;border:0;padding:0;display:grid;place-items:center;cursor:pointer;font:inherit;color:var(--fg2);background:var(--card2)}
+.app.gl .lcell .lbulb{background:var(--g-sel);box-shadow:none}
+.lcell.on .lbulb,.app.gl .lcell.on .lbulb{color:#3A2410;background:var(--lc,var(--warn));box-shadow:0 0 14px color-mix(in srgb,var(--lc,var(--warn)) 70%,transparent)}
+.lcell .lbulb:focus-visible{outline:2px solid var(--c-home);outline-offset:2px}.lcell .lbulb:disabled{opacity:.5;cursor:default}
+.lcell .tx{flex:1;min-width:0;display:flex;flex-direction:column}
+.lcell .tx b{font-size:calc(15px*var(--tx));font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lcell .tx small{font-size:calc(12.5px*var(--tx));color:var(--fg2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lcell.on .tx small{color:rgba(30,27,25,.68)}
+.lcell.on .lkd{color:rgba(30,27,25,.8)}
+.lcell.na .tx{opacity:.6}
+.app.cp .lcell{min-height:70px;padding:10px;gap:10px;border-radius:20px}.app.cp .lcell .lbulb{width:44px;height:44px}
+/* a linked pair: two tiles side by side as one block, edged in the lights' colour */
+.lrows .llink,.ltiles .llink{grid-column:span 2;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0;border-radius:22px;overflow:hidden;box-shadow:0 0 0 1.5px color-mix(in srgb,var(--lc,var(--warn)) 50%,transparent)}
+.llink>.lcell{border-radius:0;box-shadow:none}.llink>.lcell+.lcell{border-left:1px solid var(--ring)}
+.llink>.lcell:active{transform:none}
+/* the sheet: narrow on a tablet; power on the left of the title, Done on the right (changes apply as you go) */
+.app:not(.cp) #sh-light>.panel{width:min(560px,100%)}
+#sh-light .ph{align-items:center}
+.lpwr{width:48px;height:48px;flex:none;border-radius:50%;border:0;padding:0;display:grid;place-items:center;cursor:pointer;color:var(--fg2);background:var(--card2)}
+.app.gl .lpwr{background:var(--g-sel);box-shadow:var(--g-edge-s)}
+.lpwr[aria-checked="true"],.app.gl .lpwr[aria-checked="true"]{color:#3A2410;background:var(--lc,var(--warn));box-shadow:0 0 16px color-mix(in srgb,var(--lc,var(--warn)) 65%,transparent)}
+.lpwr:disabled{opacity:.5;cursor:default}.lpwr:focus-visible,.ldone:focus-visible{outline:2px solid var(--c-home);outline-offset:2px}
+#sh-light .ldone{min-width:64px;height:44px;padding:0 18px;border-radius:999px;border:0;font:inherit;font-size:calc(15px*var(--tx));font-weight:600;cursor:pointer;color:var(--fg);background:var(--card2)}
+.app.gl #sh-light .ldone{background:var(--g-sel);box-shadow:var(--g-edge-s)}
+.lsbody{display:flex;flex-direction:column;gap:18px}
+/* two tall sliders, Apple Home style: brightness fills from the bottom in the lights' colour; colour runs warm (bottom) to cool (top) */
+.lpills{display:flex;justify-content:center;gap:40px;padding:4px 0 0}
+.lpc{display:flex;flex-direction:column;align-items:center;gap:10px}
+.lpill{position:relative;width:112px;height:min(290px,38vh);min-height:200px;border-radius:32px;overflow:hidden;background:var(--card2);box-shadow:inset 0 0 0 1px var(--ring);cursor:ns-resize;touch-action:none;-webkit-user-select:none;user-select:none;transition:transform .18s ease,box-shadow .18s ease}
+.app.gl .lpill{background:rgba(127,127,127,.18)}
+.app.cp .lpill{width:100px;height:min(240px,32vh)}
+.lpill .lpf{position:absolute;left:0;right:0;bottom:0;height:var(--v);background:var(--lc,var(--warn));transition:height .2s ease}
+.lpill.drag .lpf,.lpill.drag .lphd{transition:none}
+/* while a finger is on it the slider lifts and takes a glass rim, as Apple's do */
+.lpill.drag{transform:scale(1.04);box-shadow:inset 0 0 14px -4px rgba(255,255,255,.7),inset 0 0 0 1.5px rgba(255,255,255,.7),0 10px 30px -10px rgba(0,0,0,.45)}
+.lpill:focus-visible{outline:2px solid var(--c-home);outline-offset:3px}
+.lpill[aria-disabled="true"]{opacity:.4;cursor:default}
+.lpill .lpmx,.lpill .lpmn{position:absolute;left:0;right:0;display:grid;place-items:center;pointer-events:none;color:rgba(40,30,20,.5)}
+.lpill .lpmx{top:16px}.lpill .lpmn{bottom:18px}
+.lpill.lbr .lpmx{color:var(--fg2)}.lpill.lbr.off .lpmn{color:var(--fg2)}
+.lpill.lct,.app.gl .lpill.lct{background:linear-gradient(to top,var(--warm),var(--mid),var(--cool))}
+.lpill.lct .lpmx{color:rgba(30,40,70,.55)}.lpill.lct .lpmn{color:rgba(90,40,0,.6)}
+.lpill .lphd{position:absolute;left:14px;right:14px;height:10px;border-radius:6px;bottom:calc(var(--v) - 5px);background:#fff;box-shadow:0 0 0 2px rgba(0,0,0,.28),0 2px 8px rgba(0,0,0,.35);transition:bottom .2s ease}
+.lpill .lpnl{display:none}
+.lpill.lct.night,.app.gl .lpill.lct.night{background:linear-gradient(to top,#A81C00,#FF2800)}
+.lpill.lct.night .lphd,.lpill.lct.night .lpmx,.lpill.lct.night .lpmn{display:none}
+.lpill.lct.night .lpnl{display:block;position:absolute;inset:auto 0 18px;text-align:center;font-size:calc(12px*var(--tx));font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#fff;pointer-events:none}
+.lpv{text-align:center;line-height:1.25}
+.lpv b{display:block;font-size:calc(22px*var(--tx));font-weight:600;letter-spacing:-.02em}
+.lpv small{font-size:calc(13px*var(--tx));color:var(--fg2)}
+/* grouped list rows (iOS inset list): switches live only here */
+.lgrp{border-radius:18px;overflow:hidden;background:var(--card2)}
+.app.gl .lgrp{background:var(--g-tile);box-shadow:var(--g-edge-s)}
+.lgr{display:flex;align-items:center;gap:14px;width:100%;min-height:60px;padding:10px 14px;border:0;background:none;font:inherit;color:inherit;text-align:left}
+.lgr+.lgr{border-top:1px solid var(--ring)}
+button.lgr{cursor:pointer}button.lgr:disabled{cursor:default;opacity:.6}
+button.lgr:focus-visible{outline:2px solid var(--c-home);outline-offset:-3px}
+.lgr .lgi{width:32px;height:32px;flex:none;border-radius:9px;display:grid;place-items:center;color:#fff;background:var(--gi)}
+.lgr .tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.lgr .tx b{font-size:calc(15.5px*var(--tx));font-weight:600}
+.lgr .tx small{font-size:calc(13px*var(--tx));color:var(--fg2);line-height:1.35}
+.lgr .lval{font-size:calc(15px*var(--tx));color:var(--fg2);white-space:nowrap}
+.lgr>svg:last-child{flex:none;color:var(--fg3)}
+.lgr .lck{width:24px;flex:none;display:grid;place-items:center;color:var(--t-home,var(--c-home))}
+.lgr .lnow{color:var(--t-warn,var(--warn))}
+/* single bulbs: toggle buttons outside the list; on = filled with a check mark, so state isn't colour alone */
+#lsheet .lchips{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0}
+#lsheet .lcl{font-size:calc(13px*var(--tx));color:var(--fg2);margin-right:4px}
+#lsheet .lchip{min-height:44px;padding:8px 16px;border-radius:999px;border:0;display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:calc(14px*var(--tx));font-weight:600;color:var(--fg2);background:var(--card2);cursor:pointer}
+.app.gl #lsheet .lchip{background:var(--g-tile);box-shadow:var(--g-edge-s)}
+#lsheet .lchip[aria-pressed="true"],.app.gl #lsheet .lchip[aria-pressed="true"]{color:var(--bg);background:var(--fg);box-shadow:none}
+#lsheet .lchip .ck{display:none}#lsheet .lchip[aria-pressed="true"] .ck{display:inline-grid}
+/* the "Link with" list, pushed inside the sheet with a Back button to the room */
+.lpkh{position:relative;display:flex;align-items:center;justify-content:center;min-height:44px}
+.lpkh b{font-size:calc(17px*var(--tx));font-weight:600}
+.lback{position:absolute;left:0;top:0;display:inline-flex;align-items:center;gap:2px;min-height:44px;padding:0 8px 0 0;border:0;background:none;font:inherit;font-size:calc(16px*var(--tx));color:var(--t-home,var(--c-home));cursor:pointer;max-width:40%}
+.lback span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lback:focus-visible{outline:2px solid var(--c-home);outline-offset:2px}
+.lfoot{margin:-8px 6px 0;font-size:calc(12.5px*var(--tx));color:var(--fg2);line-height:1.45}
+@media (prefers-reduced-motion:reduce){.lcell,.lpill,.lpill .lpf,.lpill .lphd{transition:none}.lpill.drag{transform:none}}
+@media (prefers-reduced-transparency:reduce){.app.gl .lcell{background:var(--card);-webkit-backdrop-filter:none;backdrop-filter:none}}

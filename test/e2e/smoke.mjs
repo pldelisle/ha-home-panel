@@ -156,65 +156,90 @@ await run('stack-off', {house: 'full', cfg: {...FULL_CFG, idle_stack: {enabled: 
 const lightTiles = async page => {
   await page.evaluate(() => document.querySelector('home-panel').shadowRoot.querySelector('#rail [data-tab="lights"]').click());
   await page.waitForTimeout(500);
-  return page.evaluate(() => [...document.querySelector('home-panel').shadowRoot.querySelectorAll('#pane-lights .lrow .tx b')].map(b => b.textContent));
+  return page.evaluate(() => [...document.querySelector('home-panel').shadowRoot.querySelectorAll('#pane-lights .lcell .tx b')].map(b => b.textContent));
 };
 // split_light_areas: the kitchen's two light groups get a tile each, named by what tells them apart
 await run('split-lights-ipad', {house: 'full', cfg: {...FULL_CFG, split_light_areas: ['kitchen']}, viewport: ipad, check: async (page, calls) => {
   assert.deepEqual(await lightTiles(page), ['Island', 'Sink', 'Living room', 'Office'], 'one tile per kitchen group, kept together where the kitchen sorts');
-  await page.evaluate(() => document.querySelector('home-panel').shadowRoot.querySelector('#pane-lights .lrow button.lbulb[data-a="light.kitchen_sink"]').click());
+  await page.evaluate(() => document.querySelector('home-panel').shadowRoot.querySelector('#pane-lights .lcell button.lbulb[data-a="light.kitchen_sink"]').click());
   await page.waitForTimeout(300);
   assert.ok(calls.some(c => /^light\.turn_on .*kitchen_sink_1/.test(c) && !/island/.test(c)), `the Sink tile switches only its own bulbs (calls: ${calls.join('; ')})`);
 }});
 await run('split-lights-iphone', {house: 'full', cfg: {...FULL_CFG, split_light_areas: ['kitchen']}, viewport: iphone});
-// light_links: the kitchen's two cards are linked, so one switch reaches both; Living room is linked to Office with no switch (always together)
+// light_links: the kitchen's two cards are linked (its switch is on), Living room is linked to Office with no switch
 const LINK_CFG = {...FULL_CFG, split_light_areas: ['kitchen'], light_links: [{lights: ['light.kitchen_island', 'light.kitchen_sink'], switch: 'input_boolean.kitchen_lights_linked'}, ['office', 'living_room']]};
+const panelOpen = page => page.evaluate(() => document.querySelector('home-panel').open);
+const sheetPress = (page, sel) => page.evaluate(s => document.querySelector('home-panel').shadowRoot.querySelector(s).click(), sel);
 await run('linked-lights-ipad', {house: 'full', cfg: LINK_CFG, viewport: ipad, check: async (page, calls) => {
+  const ws = []; page.on('console', m => { if (m.text().startsWith('WS ')) ws.push(JSON.parse(m.text().slice(3))); });
   assert.deepEqual(await lightTiles(page), ['Island', 'Sink', 'Office', 'Living room'], 'the second card of a pair follows the first');
-  const pairs = await page.evaluate(() => [...document.querySelector('home-panel').shadowRoot.querySelectorAll('#pane-lights .llink')].map(w => [w.classList.contains('on'), w.querySelectorAll('.lrow').length, !!w.querySelector('.lnk')]));
-  assert.deepEqual(pairs, [[true, 2, true], [true, 2, false]], 'two joined pairs; only the one with a switch has the chain button');
-  const press = sel => page.evaluate(s => document.querySelector('home-panel').shadowRoot.querySelector(s).click(), sel);
-  await press('#pane-lights .lrow button.lbulb[data-a="light.kitchen_sink"]'); await page.waitForTimeout(300);
-  assert.ok(calls.some(c => /^light\.turn_off .*kitchen_island_1.*kitchen_sink_1|^light\.turn_off .*kitchen_sink_1.*kitchen_island_1/.test(c)) || calls.some(c => /^light\.turn_on .*kitchen_island_1/.test(c) && /kitchen_sink_1/.test(c)), `a linked card's switch reaches both cards (calls: ${calls.join('; ')})`);
-  await press('#pane-lights .lnk'); await page.waitForTimeout(300);
-  assert.ok(calls.some(c => /^input_boolean\.turn_off .*kitchen_lights_linked/.test(c)), `the chain button unlinks (calls: ${calls.join('; ')})`);
+  assert.equal(await page.evaluate(() => document.querySelector('home-panel').shadowRoot.querySelectorAll('#pane-lights .llink.on').length), 2, 'two linked pairs, each one block');
+  await sheetPress(page, '#pane-lights .lcell button.lbulb[data-a="light.kitchen_sink"]'); await page.waitForTimeout(300);
+  assert.ok(calls.some(c => /^light\.turn_(on|off) .*kitchen_(island|sink)_1.*kitchen_(island|sink)_1/.test(c)), `a linked tile's bulb reaches both rooms (calls: ${calls.join('; ')})`);
+  // "Linked with" is a row that opens a list of the other rooms; None unlinks, and the pairs are saved for the whole house
+  await page.evaluate(() => document.querySelector('home-panel').openLight('light.kitchen_island')); await page.waitForTimeout(400);
+  assert.equal(await page.evaluate(() => document.querySelector('home-panel').shadowRoot.querySelector('#lsheet .lnav .lval').textContent), 'Sink', 'the row names the linked room');
+  await sheetPress(page, '#lsheet .lnav'); await page.waitForTimeout(200);
+  const opts = await page.evaluate(() => [...document.querySelector('home-panel').shadowRoot.querySelectorAll('#lsheet .lopt')].map(o => [o.querySelector('b').textContent, o.getAttribute('aria-checked')]));
+  assert.deepEqual(opts, [['None', 'false'], ['Sink', 'true'], ['Office', 'false'], ['Living room', 'false']], 'None plus every other room, the partner checked');
+  await sheetPress(page, '#lsheet .lopt[data-al=""]'); await page.waitForTimeout(300);
+  assert.deepEqual(ws.at(-1), {type: 'frontend/set_system_data', key: 'home_panel', value: {light_links: [['office', 'living_room']]}}, 'unlinking saves the remaining pairs');
+  assert.equal(await page.evaluate(() => document.querySelector('home-panel').shadowRoot.querySelectorAll('#pane-lights .llink.on').length), 1, 'the kitchen tiles stand apart again');
+  // pick Living room: it leaves Office and joins the Island
+  await sheetPress(page, '#lsheet .lopt[data-al="living_room"]'); await page.waitForTimeout(300);
+  assert.deepEqual(ws.at(-1).value.light_links, [['light.kitchen_island', 'living_room']], 'a room already linked moves to its new partner');
+  assert.ok(calls.some(c => /^light\.turn_on .*living_room_1/.test(c)), `the new partner starts out matching (calls: ${calls.join('; ')})`);
+  await sheetPress(page, '#lsheet .lback'); await page.waitForTimeout(200);
+  assert.ok(await page.evaluate(() => !!document.querySelector('home-panel').shadowRoot.querySelector('#lsheet .lpill')), 'Back returns to the room');
 }});
 await run('linked-lights-iphone', {house: 'full', cfg: LINK_CFG, viewport: iphone, check: async page => {
   const r = await page.evaluate(async () => { const root = document.querySelector('home-panel').shadowRoot; root.querySelector('[data-tab="lights"]').click(); await new Promise(f => setTimeout(f, 500));
-    const blocks = root.querySelectorAll('#ltiles .llink.on').length, buttons = root.querySelectorAll('#ltiles .lnk').length;
-    root.querySelector('#ltiles .lrow[data-lsheet="light.kitchen_island"] .tx').click(); await new Promise(f => setTimeout(f, 600));
-    return {blocks, buttons, row: !!root.querySelector('#lsheet .lsrow button[data-l="link"]')}; });
-  assert.deepEqual(r, {blocks: 2, buttons: 0, row: true}, 'phone: joined blocks, no chain button, the link switch in the sheet');
+    const blocks = root.querySelectorAll('#ltiles .llink.on').length;
+    root.querySelector('#ltiles .lcell[data-lsheet="light.kitchen_island"] .tx').click(); await new Promise(f => setTimeout(f, 600));
+    return {blocks, row: !!root.querySelector('#lsheet .lnav'), open: document.querySelector('home-panel').open}; });
+  assert.deepEqual(r, {blocks: 2, row: true, open: 'sh-light'}, 'phone: joined pairs, a tap opens the sheet with its Linked with row');
 }});
-// 2.4.0 dimmer rows: a sideways slide dims and doesn't open the sheet, an up-down move doesn't dim, a tap opens the sheet,
-// the arrows dim from the keyboard, and Auto sits on the tablet row but not on the phone's
-const dimRow = async (page, aid) => page.evaluate(a => { const r = document.querySelector('home-panel').shadowRoot.querySelector(`.lrow[data-dim="${a}"]:not([hidden])`); const b = r.getBoundingClientRect(); return {x: b.x, y: b.y, w: b.width, h: b.height}; }, aid);
-const panelOpen = page => page.evaluate(() => document.querySelector('home-panel').open);
-await run('dimmer-rows-ipad', {house: 'full', cfg: LINK_CFG, viewport: ipad, check: async (page, calls) => {
+// someone who isn't an admin can't change links (system data is admin-only)
+await run('link-row-users', {house: 'full', cfg: LINK_CFG, viewport: ipad, query: '&admin=0', check: async page => {
+  await lightTiles(page); await page.evaluate(() => document.querySelector('home-panel').openLight('office')); await page.waitForTimeout(400);
+  assert.ok(await page.evaluate(() => document.querySelector('home-panel').shadowRoot.querySelector('#lsheet .lnav').disabled), 'the Linked with row is read-only');
+}});
+// 2.10.0 tiles and the light sheet: the bulb switches, the tile opens the sheet; two tall sliders (drag, tap, arrows);
+// moving one takes the room off Auto; Auto and Night are switches in a list
+const pillBox = (page, lp) => page.evaluate(l => { const b = document.querySelector('home-panel').shadowRoot.querySelector(`#lsheet .lpill[data-lp="${l}"]`).getBoundingClientRect(); return {x: b.x, y: b.y, w: b.width, h: b.height}; }, lp);
+await run('light-sheet-ipad', {house: 'full', cfg: FULL_CFG, viewport: ipad, check: async (page, calls) => {
   await lightTiles(page);
-  const r = await dimRow(page, 'light.kitchen_island'), y = r.y + r.h / 2;
-  await page.mouse.move(r.x + r.w * .45, y); await page.mouse.down();
-  for (let i = 1; i <= 10; i++) await page.mouse.move(r.x + r.w * .45 + i * 20, y + 2);
+  const t = await page.evaluate(() => { const b = document.querySelector('home-panel').shadowRoot.querySelector('#pane-lights .lcell[data-lsheet="office"]').getBoundingClientRect(); return {x: b.x, y: b.y, w: b.width, h: b.height}; });
+  await page.mouse.click(t.x + t.w * .7, t.y + t.h / 2); await page.waitForTimeout(400);
+  assert.equal(await panelOpen(page), 'sh-light', 'a tap on the tile opens the sheet');
+  assert.ok(!calls.some(c => /^light\./.test(c)), 'opening the sheet switches nothing');
+  const b = await pillBox(page, 'br');
+  await page.mouse.move(b.x + b.w / 2, b.y + b.h * .6); await page.mouse.down();
+  for (let i = 1; i <= 8; i++) await page.mouse.move(b.x + b.w / 2, b.y + b.h * (.6 - i * .07));
   await page.mouse.up(); await page.waitForTimeout(300);
-  const br = calls.filter(c => /^light\.turn_on .*kitchen_island_1/.test(c) && /brightness_pct/.test(c));
-  assert.equal(br.length, 1, `a slide sends one brightness (calls: ${calls.join('; ')})`);
-  assert.ok(JSON.parse(br[0].replace(/^\S+ /, '')).brightness_pct > 59, 'sliding right brightens');
-  assert.notEqual(await panelOpen(page), 'sh-light', 'a slide does not open the sheet');
-  const n = calls.length;
-  await page.mouse.move(r.x + r.w * .5, y); await page.mouse.down(); await page.mouse.move(r.x + r.w * .5 + 4, y + 60, {steps: 6}); await page.mouse.up(); await page.waitForTimeout(200);
-  assert.ok(!calls.slice(n).some(c => /brightness_pct/.test(c)), 'an up-down move does not dim');
-  await page.evaluate(() => document.querySelector('home-panel').hide()); await page.waitForTimeout(200);
-  await page.mouse.click(r.x + r.w * .3, y); await page.waitForTimeout(400);
-  assert.equal(await panelOpen(page), 'sh-light', 'a tap on the row opens the sheet');
-  await page.evaluate(() => document.querySelector('home-panel').hide()); await page.waitForTimeout(200);
-  await page.evaluate(() => document.querySelector('home-panel').shadowRoot.querySelector('.lrow[data-dim="office"]').focus()); await page.keyboard.press('ArrowLeft'); await page.waitForTimeout(200);
-  assert.ok(calls.some(c => /^light\.turn_on .*office_1.*"brightness_pct":68/.test(c)), `ArrowLeft dims by 10 % (calls: ${calls.join('; ')})`);
-  await page.evaluate(() => document.querySelector('home-panel').shadowRoot.querySelector('.lrow[data-dim="office"] button.lauto[data-l="al"]').click()); await page.waitForTimeout(200);
-  assert.ok(calls.some(c => /^switch\.turn_off .*adaptive_lighting_office/.test(c)), `Auto on the row reaches Adaptive Lighting (calls: ${calls.join('; ')})`);
+  const br = calls.filter(c => /^light\.turn_on .*office_1/.test(c) && /brightness_pct/.test(c));
+  assert.equal(br.length, 1, `a drag sends one brightness (calls: ${calls.join('; ')})`);
+  assert.ok(JSON.parse(br[0].replace(/^\S+ /, '')).brightness_pct >= 90, 'dragging up brightens');
+  assert.ok(calls.some(c => /^adaptive_lighting\.set_manual_control .*"manual_control":true/.test(c)), `a change by hand takes the room off Auto (calls: ${calls.join('; ')})`);
+  const k = await pillBox(page, 'ct');
+  await page.mouse.click(k.x + k.w / 2, k.y + k.h * .05); await page.waitForTimeout(300);
+  const ct = calls.filter(c => /color_temp_kelvin/.test(c)).at(-1);
+  assert.ok(ct && JSON.parse(ct.replace(/^\S+ /, '')).color_temp_kelvin > 6000, `a tap near the top of the colour slider picks a cool white (calls: ${calls.join('; ')})`);
+  await page.evaluate(() => document.querySelector('home-panel').shadowRoot.querySelector('#lsheet .lpill[data-lp="br"]').focus()); await page.keyboard.press('ArrowDown'); await page.waitForTimeout(200);
+  assert.ok(calls.some(c => /^light\.turn_on .*office_1.*"brightness_pct":86/.test(c)), `ArrowDown dims by 10 % from where the slider was left (calls: ${calls.join('; ')})`);
+  await sheetPress(page, '#lsheet button.sw[data-l="al"]'); await page.waitForTimeout(200);
+  assert.ok(calls.some(c => /^switch\.turn_off .*adaptive_lighting_office"/.test(c)), `the Auto switch reaches Adaptive Lighting (calls: ${calls.join('; ')})`);
+  await sheetPress(page, '#lsheet button.sw[data-l="night"]'); await page.waitForTimeout(200);
+  assert.ok(calls.some(c => /^switch\.turn_on .*office_sleep_mode/.test(c)), `the Night switch turns sleep mode on (calls: ${calls.join('; ')})`);
+  await sheetPress(page, '#sh-light .ldone'); await page.waitForTimeout(200);
+  assert.notEqual(await panelOpen(page), 'sh-light', 'Done closes the sheet');
+  await page.evaluate(() => document.querySelector('home-panel').shadowRoot.querySelector('#pane-lights .lcell[data-lsheet="office"]').focus()); await page.keyboard.press('Enter'); await page.waitForTimeout(300);
+  assert.equal(await panelOpen(page), 'sh-light', 'Enter on a tile opens the sheet');
 }});
-await run('dimmer-rows-iphone', {house: 'full', cfg: LINK_CFG, viewport: iphone, check: async page => {
+await run('light-tiles-iphone', {house: 'full', cfg: FULL_CFG, viewport: iphone, check: async page => {
   await lightTiles(page);
-  const shown = await page.evaluate(() => [...document.querySelector('home-panel').shadowRoot.querySelectorAll('#ltiles .lrow .lauto')].some(b => getComputedStyle(b).display !== 'none'));
-  assert.equal(shown, false, 'phone rows leave Auto and Night to the sheet');
+  const cols = await page.evaluate(() => getComputedStyle(document.querySelector('home-panel').shadowRoot.getElementById('ltiles')).gridTemplateColumns.split(' ').length);
+  assert.equal(cols, 2, 'two tiles to a row on the phone');
 }});
 // 2.7.0 Arrange: drag a row (a linked pair as one block) to a new place; the order is saved in HA's system data for every screen
 await run('arrange-lights-ipad', {house: 'full', cfg: LINK_CFG, viewport: ipad, check: async (page, calls) => {
@@ -222,7 +247,7 @@ await run('arrange-lights-ipad', {house: 'full', cfg: LINK_CFG, viewport: ipad, 
   await lightTiles(page);
   const R = f => page.evaluate(f);
   await R(() => document.querySelector('home-panel').shadowRoot.getElementById('ledit').click()); await page.waitForTimeout(300);
-  const pos = name => page.evaluate(n => { const b = [...document.querySelector('home-panel').shadowRoot.querySelectorAll('#lights .lrow')].find(r => r.querySelector('.tx b').textContent === n).getBoundingClientRect(); return [b.x + b.width / 2, b.y + b.height / 2]; }, name);
+  const pos = name => page.evaluate(n => { const b = [...document.querySelector('home-panel').shadowRoot.querySelectorAll('#lights .lcell')].find(r => r.querySelector('.tx b').textContent === n).getBoundingClientRect(); return [b.x + b.width / 2, b.y + b.height / 2]; }, name);
   const [x0, y0] = await pos('Living room'), [x1, y1] = await pos('Island');
   await page.mouse.move(x0, y0); await page.mouse.down(); await page.mouse.move(x1, y1, {steps: 12}); await page.mouse.up(); await page.waitForTimeout(400);
   assert.deepEqual(await lightTiles(page), ['Office', 'Living room', 'Island', 'Sink'], 'the dragged pair moves first, as one block');
@@ -233,7 +258,7 @@ await run('arrange-lights-ipad', {house: 'full', cfg: LINK_CFG, viewport: ipad, 
 }});
 // a saved order is used on every screen, and only admins see Arrange
 await run('arranged-lights-iphone', {house: 'full', cfg: LINK_CFG, viewport: iphone, init: () => { window.SYSDATA = {home_panel: {light_order: ['office', 'light.kitchen_island']}}; }, check: async page => {
-  assert.deepEqual(await page.evaluate(async () => { const r = document.querySelector('home-panel').shadowRoot; r.querySelector('[data-tab="lights"]').click(); await new Promise(f => setTimeout(f, 500)); return [...r.querySelectorAll('#ltiles .lrow .tx b')].map(b => b.textContent); }), ['Office', 'Living room', 'Island', 'Sink'], 'the phone follows the saved order');
+  assert.deepEqual(await page.evaluate(async () => { const r = document.querySelector('home-panel').shadowRoot; r.querySelector('[data-tab="lights"]').click(); await new Promise(f => setTimeout(f, 500)); return [...r.querySelectorAll('#ltiles .lcell .tx b')].map(b => b.textContent); }), ['Office', 'Living room', 'Island', 'Sink'], 'the phone follows the saved order');
 }});
 await run('arrange-hidden-for-users', {house: 'full', cfg: LINK_CFG, viewport: ipad, query: '&admin=0', check: async page => {
   await lightTiles(page);

@@ -97,7 +97,10 @@ const aqFmt = (k, v, short) => v == null ? '–' : short && v >= 10000 ? Math.ro
 // outdoor AQI on the US scale: up to 50 good, up to 100 moderate
 const outLevel = v => v == null ? 0 : v <= 50 ? 0 : v <= 100 ? 1 : 2;
 const ICON = {
-  chev: '<path d="m9 6 6 6-6 6"/>',
+  chev: '<path d="m9 6 6 6-6 6"/>', chevl: '<path d="m15 6-6 6 6 6"/>',
+  lsun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  lpow: '<path d="M12 3v8M6.4 6.6a8 8 0 1 0 11.2 0"/>',
+  lsnow: '<path d="M12 2v20M4 7l16 10M20 7 4 17"/>', lflame: '<path d="M12 22a7 7 0 0 0 7-7c0-4-3-6-4-10-2 2-3 4-3 6-1-1-2-2-2-4-2 2-5 5-5 8a7 7 0 0 0 7 7z"/>',
   grip: '<path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" stroke-width="3"/>',
   link: '<path d="M10 13.5a4 4 0 0 0 5.7.3l3-3a4 4 0 0 0-5.7-5.6l-1.2 1.2"/><path d="M14 10.5a4 4 0 0 0-5.7-.3l-3 3a4 4 0 0 0 5.7 5.6l1.2-1.2"/>',
   unlink: '<path d="M15.5 13l3.2-3.2a4 4 0 0 0-5.7-5.6l-1.6 1.6"/><path d="M8.5 11l-3.2 3.2a4 4 0 0 0 5.7 5.6l1.6-1.6"/><path d="M8 3v2.5M3 8h2.5M16 21v-2.5M21 16h-2.5"/>',
@@ -502,8 +505,8 @@ class HomePanel extends HTMLElement {
   <div class="camlive" id="camlive"></div>
 </div></div>
 <div class="sheet" id="sh-light" hidden><div class="panel" role="dialog" aria-modal="true" aria-labelledby="lshh">
-  <div class="ph"><span class="badge" style="--acc:var(--warn)">${ico('bulb', 26)}</span><div class="grow"><h2 id="lshh"></h2><div class="sub" id="lshsub"></div></div><button class="icon close" type="button" aria-label="Close">✕</button></div>
-  <div class="card" id="lsheet"></div>
+  <div class="ph"><button type="button" class="lpwr" id="lshpwr" role="switch" aria-checked="false" data-l="area" data-a="">${ico('lpow', 24)}</button><div class="grow"><h2 id="lshh"></h2><div class="sub" id="lshsub"></div></div><button class="close ldone" type="button">Done</button></div>
+  <div class="lsbody" id="lsheet"></div>
 </div></div>
 <div class="sheet" id="sh-card" hidden><div class="panel" role="dialog" aria-modal="true" aria-labelledby="cardh">
   <div class="ph"><span class="badge" id="cardb"></span><div class="grow"><h2 id="cardh"></h2></div><button class="icon close" type="button" aria-label="Close">✕</button></div>
@@ -831,18 +834,41 @@ class HomePanel extends HTMLElement {
       const sp = this.$('setpop'); if (!sp.hidden && !e.composedPath().some(n => n === sp || n === this.$('gear'))) this.toggleSettings(false);
     });
     this.$('cams').addEventListener('click', e => { const b = e.target.closest('[data-cam]'); if (b) this.openCamera(b.dataset.cam); });
-    // brightness and colour sliders: hold off re-rendering while one is being dragged, send the value on release
-    const isBr = e => e.target.dataset && (e.target.dataset.l === 'br' || e.target.dataset.l === 'ct');
-    for (const lt of [this.$('lights'), this.$('ltiles'), this.$('sh-light')]) {
-      lt.addEventListener('pointerdown', e => { if (isBr(e)) this.lightDrag = true; });
-      lt.addEventListener('input', e => { if (!isBr(e)) return; this.lightDrag = true;
-        if (e.target.dataset.l === 'ct') { const k = e.target.nextElementSibling; if (k) k.textContent = e.target.value + ' K'; e.target.setAttribute('aria-valuetext', e.target.value + ' K'); return; }
-        e.target.style.setProperty('--p', e.target.value + '%');
-        const s = e.target.closest('.larea').querySelector('.tx span'); if (s) s.textContent = e.target.value + '%'; });
-      lt.addEventListener('change', e => { if (!isBr(e)) return; this.lightDrag = false; this.lightCmd(e.target.dataset.l, e.target.dataset.a, +e.target.value); });
-      for (const t of ['pointerup', 'pointercancel']) lt.addEventListener(t, e => { if (isBr(e)) setTimeout(() => { this.lightDrag = false; this.tick(); }, 60); });
-      lt.addEventListener('click', e => { const b = e.target.closest('button[data-l]'); if (b) this.lightCmd(b.dataset.l, b.dataset.a ?? b.dataset.id, b.dataset.al); });
-    }
+    // the light sheet's two tall sliders (Apple Home style): the finger's height is the value, a tap jumps there,
+    // the arrows step it; nothing re-renders while one is held, and the value goes out on release
+    const sh = this.$('sh-light');
+    const lpVal = (p, y) => { const b = p.getBoundingClientRect(); return Math.max(0, Math.min(1, (b.bottom - y) / b.height)); };
+    const lpPaint = (p, f) => {
+      const box = p.closest('.lpc'), out = box && box.querySelector('.lpv b');
+      if (p.dataset.lp === 'br') { const v = Math.round(f * 100); p.style.setProperty('--v', v + '%'); p.classList.toggle('off', !v); p.setAttribute('aria-valuenow', v); p.setAttribute('aria-valuetext', v ? v + '%' : 'Off'); if (out) out.textContent = v ? v + '%' : 'Off'; return v; }
+      const lo = +p.dataset.min, hi = +p.dataset.max, k = Math.round((lo + f * (hi - lo)) / 50) * 50;
+      p.style.setProperty('--v', ((k - lo) / (hi - lo) * 100).toFixed(1) + '%'); p.classList.remove('night'); p.setAttribute('aria-valuenow', k); p.setAttribute('aria-valuetext', k + ' K'); if (out) out.textContent = k + ' K'; return k;
+    };
+    let lp = null;
+    sh.addEventListener('pointerdown', e => {
+      const p = e.target.closest('.lpill[data-lp]'); if (!p || p.getAttribute('aria-disabled') === 'true' || e.button > 0) return;
+      e.preventDefault(); lp = {p, id: e.pointerId}; this.lightDrag = true; p.classList.add('drag');
+      try { p.setPointerCapture(e.pointerId); } catch (x) {}
+      lp.v = lpPaint(p, lpVal(p, e.clientY));
+    });
+    sh.addEventListener('pointermove', e => { if (lp && e.pointerId === lp.id) { e.preventDefault(); lp.v = lpPaint(lp.p, lpVal(lp.p, e.clientY)); } });
+    const lpEnd = e => {
+      if (!lp || e.pointerId !== lp.id) return;
+      const x = lp; lp = null; x.p.classList.remove('drag');
+      if (e.type === 'pointerup') this.lightCmd(x.p.dataset.lp, x.p.dataset.a, x.v);
+      setTimeout(() => { this.lightDrag = false; this.tick(); }, 60);
+    };
+    sh.addEventListener('pointerup', lpEnd); sh.addEventListener('pointercancel', lpEnd);
+    sh.addEventListener('keydown', e => {
+      const p = e.target.closest('.lpill[data-lp]'); if (!p || p.getAttribute('aria-disabled') === 'true') return;
+      const dir = {ArrowUp: 1, ArrowRight: 1, ArrowDown: -1, ArrowLeft: -1}[e.key]; if (!dir) return;
+      e.preventDefault();
+      const br = p.dataset.lp === 'br', now = +p.getAttribute('aria-valuenow') || 0;
+      const f = br ? Math.max(0, Math.min(100, now + dir * 10)) / 100 : (Math.max(+p.dataset.min, Math.min(+p.dataset.max, now + dir * 100)) - p.dataset.min) / (p.dataset.max - p.dataset.min);
+      this.lightCmd(p.dataset.lp, p.dataset.a, lpPaint(p, f));
+    });
+    // every light button (tiles, sheet switches, chips, the link picker) goes through lightCmd
+    for (const lt of [this.$('lights'), this.$('ltiles'), sh]) lt.addEventListener('click', e => { const b = e.target.closest('button[data-l]'); if (b && !b.disabled) this.lightCmd(b.dataset.l, b.dataset.a ?? b.dataset.id, b.dataset.al); });
     this.$('tv').addEventListener('click', e => { const b = e.target.closest('button[data-tv]'); if (b) this.tvCmd(b.dataset.tv); });
     // dimmer rows: a sideways slide dims (relative to where the fill was), an up-down move scrolls the page as usual,
     // and the brightness goes out on release; a linked pair's two rows move together while sliding
@@ -853,7 +879,7 @@ class HomePanel extends HTMLElement {
       let m = null;
       const box = () => lt.id === 'ltiles' ? lt : lt.querySelector('.lrows');
       const unitOf = (b, n) => b && [...b.children].find(c => c.contains(n));
-      const keys = b => [...b.children].map(c => c.matches('.lrow') ? c : c.querySelector('.lrow')).filter(Boolean).map(r => r.dataset.lsheet);
+      const keys = b => [...b.children].map(c => c.matches('.lcell') ? c : c.querySelector('.lcell')).filter(Boolean).map(r => r.dataset.lsheet);
       const save = b => { const k = keys(b); if (JSON.stringify(k) !== JSON.stringify(this.lightAreas().filter(x => !x.link || x.link.first).map(x => x.aid))) this.saveLightOrder(k); };
       lt.addEventListener('pointerdown', e => {
         if (!this.lightEdit || e.button > 0) return;
@@ -889,48 +915,11 @@ class HomePanel extends HTMLElement {
         b.insertBefore(u, step > 0 ? k[j].nextSibling : k[j]); e.target.focus(); save(b);
       }, true);
     }
-    for (const lt of [this.$('lights'), this.$('ltiles')]) {
-      let d = null;
-      const rowsOf = r => { const w = r.closest('.llink.on'); return w ? [...w.querySelectorAll('.lrow')] : [r]; };
-      const paint = (rows, p) => rows.forEach(r => { r.style.setProperty('--p', p + '%'); r.classList.add('on'); const t = r.querySelector('.lpct'); if (t) t.textContent = p + '%'; r.setAttribute('aria-valuenow', p); r.setAttribute('aria-valuetext', p + '%'); });
-      lt.addEventListener('pointerdown', e => {
-        const r = e.target.closest('.lrow[data-dim]'); if (!r || this.lightEdit || e.target.closest('button') || e.button > 0) return;
-        d = {r, id: e.pointerId, x0: e.clientX, y0: e.clientY, p0: parseFloat(r.style.getPropertyValue('--p')) || 0, w: r.getBoundingClientRect().width, go: false};
-      });
-      lt.addEventListener('pointermove', e => {
-        if (!d || e.pointerId !== d.id) return;
-        const dx = e.clientX - d.x0, dy = e.clientY - d.y0;
-        if (!d.go) {
-          if (Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx)) { d = null; return; }   // a scroll
-          if (Math.abs(dx) < 8) return;
-          d.go = true; this.lightDrag = true; d.r.classList.add('drag'); try { d.r.setPointerCapture(e.pointerId); } catch (x) {}
-        }
-        e.preventDefault();
-        d.p = Math.max(1, Math.min(100, Math.round(d.p0 + dx / d.w * 100))); paint(rowsOf(d.r), d.p);
-      });
-      const end = e => {
-        if (!d || e.pointerId !== d.id) return;
-        const x = d; d = null; if (!x.go) return;
-        x.r.classList.remove('drag'); this.dimEnd = Date.now();
-        if (e.type === 'pointerup' && x.p) {
-          // hold the new fill until Home Assistant reports it, so the row doesn't jump back for a moment
-          this.dimHold = this.dimHold || {}; for (const r of rowsOf(x.r)) this.dimHold[r.dataset.dim] = {p: x.p, t: Date.now()};
-          this.lightCmd('br', x.r.dataset.dim, x.p);
-        }
-        setTimeout(() => { this.lightDrag = false; this.tick(); }, 60);
-      };
-      lt.addEventListener('pointerup', end); lt.addEventListener('pointercancel', end);
-      // the click that ends a slide doesn't also open the sheet
-      lt.addEventListener('click', e => { if (this.dimEnd && Date.now() - this.dimEnd < 400 && e.target.closest('.lrow')) { e.stopPropagation(); e.preventDefault(); } }, true);
-      // keyboard: arrows dim by 10 %, Enter opens the sheet
-      lt.addEventListener('keydown', e => {
-        const r = e.target.closest('.lrow[data-dim]'); if (!r || e.target !== r) return;
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); return this.openLight(r.dataset.lsheet); }
-        const step = {ArrowRight: 10, ArrowUp: 10, ArrowLeft: -10, ArrowDown: -10}[e.key]; if (!step) return;
-        e.preventDefault(); const p = Math.max(1, Math.min(100, (parseFloat(r.style.getPropertyValue('--p')) || 0) + step));
-        paint(rowsOf(r), p); this.lightCmd('br', r.dataset.dim, p);
-      });
-    }
+    // light tiles: Enter or Space opens the room, like a tap (the bulb inside is its own button)
+    for (const lt of [this.$('lights'), this.$('ltiles')]) lt.addEventListener('keydown', e => {
+      const c = e.target.closest('.lcell'); if (!c || e.target !== c || this.lightEdit || (e.key !== 'Enter' && e.key !== ' ')) return;
+      e.preventDefault(); this.openLight(c.dataset.lsheet);
+    });
     // Tabs view: the rail and the glance tiles switch panes; scenes and speakers work as on the phone view
     const tv = this.$('tabview');
     this.$('pane-auto').addEventListener('click', e => {
@@ -2227,23 +2216,52 @@ class HomePanel extends HTMLElement {
     }
     if (this.tab === 'air') { const P = this.purifiers(), a = P.rooms.length ? this.airSummary(P) : null; this.set('asub2', !a ? 'No purifiers found' : [plural(P.rooms.length, 'purifier'), a.worst < 0 ? 'no data' : AQ_LVL[a.worst][0], a.worst > 0 ? esc(a.why) : ''].filter(Boolean).join(' · ')); }
   }
-  // Lights on the phone: the same dimmer rows as the tablet, one column; the row opens the area's controls in a sheet
+  // Lights on the phone: the same tiles as the tablet, two to a row; a tile opens the room's controls in a sheet
   renderLightTiles() {
     if (this.tab !== 'lights' || this.lightDrag) return;
     const A = this.lightAreas();
     if (!A.length) { this.set('ltiles', '<p class="hint">No lights found.</p>'); return; }
-    // a linked pair is one block on the phone; linking and unlinking is done from a light's sheet
-    this.set('ltiles', A.map(a => !a.link ? this.dimRow(a) : !a.link.first ? '' : this.linkPair(a, this.dimRow(a) + this.dimRow(a.link.other), false)).join(''));
+    this.set('ltiles', this.lightGrid(A));
   }
-  openLight(aid) { this.lightSel = aid; this.show('sh-light'); }
+  openLight(aid) { this.lightSel = aid; this.lightPick = false; this.show('sh-light'); }
+  // the room's sheet: power in the header, brightness and colour as two tall sliders, Auto and Night as switches in a list,
+  // single bulbs as chips, and "Linked with" as a row that opens a list of the other rooms (the iOS way to pick one value)
   renderLightSheet() {
     if (this.open !== 'sh-light' || this.lightDrag) return;
-    const a = this.lightAreas().find(x => x.aid === this.lightSel); if (!a) { this.hide(); return; }
-    const isOn = i => (st(i) || {}).state === 'on', on = a.ids.filter(isOn), alOn = a.al && isOn(a.al), night = a.al && st(a.al + '_sleep_mode') ? a.al + '_sleep_mode' : null;
+    const A = this.lightAreas(), a = A.find(x => x.aid === this.lightSel); if (!a) { this.hide(); return; }
+    const s = this.lightState(a), m = this.lightMode(a), aid = esc(a.aid);
     this.set('lshh', esc(a.name));
-    this.set('lshsub', [on.length ? `${on.length === a.ids.length ? (a.ids.length === 1 ? 'On' : 'All on') : `${on.length} of ${a.ids.length} on`}` : 'Off', a.al ? (night && isOn(night) ? 'Night mode' : alOn ? 'Adaptive Lighting on' : 'Adaptive Lighting off') : ''].filter(Boolean).join(' · '));
-    const L = a.link, o = L && L.other, lk = L && L.sw ? `<div class="lsrow${L.on ? ' on' : ''}"><span class="lnkic">${ico(L.on ? 'link' : 'unlink', 18)}</span><span class="tx"><b>Link with <span class="lkn">${esc(o.name)}</span></b><small>Switch, brightness and colour move both</small></span><button type="button" class="sw" role="switch" aria-checked="${L.on}" aria-label="Link ${esc(a.name)} with ${esc(o.name)}" data-l="link" data-a="${esc(a.aid)}" ${ok(st(L.sw)) ? '' : 'disabled'}></button></div>` : '';
-    this.set('lsheet', this.lightRow(a).replace('<input type="range" min="1"', '<div class="lbl" style="margin-top:14px">Brightness</div><input type="range" min="1"').replace('<div class="ctrow">', '<div class="lbl" style="margin-top:12px">Colour</div><div class="ctrow">').replace('<button type="button" class="sw"', '<span class="swl">Lights</span><button type="button" class="sw"') + lk);
+    this.set('lshsub', this.lightSub(a, s, m));
+    const pw = this.$('lshpwr'); pw.dataset.a = a.aid; pw.setAttribute('aria-checked', s.any); pw.setAttribute('aria-label', `${a.name} lights`); pw.disabled = !s.avail;
+    pw.style.setProperty('--lc', s.tint || 'var(--warn)');
+    this.$('sh-light').querySelector('.panel').style.setProperty('--lc', s.tint || 'var(--warn)');
+    if (this.lightPick) { this.set('lsheet', this.lightPicker(a, A)); return; }
+    const br = s.any ? s.br : 0;
+    const brP = `<div class="lpc"><div class="lpill lbr${s.any ? '' : ' off'}" data-lp="br" data-a="${aid}" role="slider" tabindex="0" aria-label="Brightness" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${br}" aria-valuetext="${s.any ? br + '%' : 'Off'}"${s.avail ? '' : ' aria-disabled="true"'} style="--v:${br}%"><span class="lpf"></span><span class="lpmx">${ico('lsun', 20)}</span><span class="lpmn">${ico('bulb', 28)}</span></div>
+      <div class="lpv"><b class="num">${s.any ? br + '%' : 'Off'}</b><small>Brightness</small></div></div>`;
+    const ct = s.ct, night = m.nightOn && m.alOn;
+    const ctP = !ct ? '' : `<div class="lpc"><div class="lpill lct${night ? ' night' : ''}" data-lp="ct" data-a="${aid}" data-min="${ct.min}" data-max="${ct.max}" role="slider" tabindex="0" aria-label="Colour temperature" aria-valuemin="${ct.min}" aria-valuemax="${ct.max}" aria-valuenow="${ct.k}" aria-valuetext="${night ? 'Night' : ct.k + ' K'}"${s.any && s.avail ? '' : ' aria-disabled="true"'} style="--v:${((ct.k - ct.min) / (ct.max - ct.min) * 100).toFixed(1)}%;--warm:${kelvinRGB(ct.min)};--mid:${kelvinRGB((ct.min + ct.max) / 2)};--cool:${kelvinRGB(ct.max)}"><span class="lphd"></span><span class="lpmx">${ico('lsnow', 18)}</span><span class="lpmn">${ico('lflame', 18)}</span><span class="lpnl">Night</span></div>
+      <div class="lpv"><b class="num">${night ? 'Night' : ct.k + ' K'}</b><small>${night ? 'Red, very dim' : ct.k <= 3000 ? 'Warm white' : ct.k >= 5000 ? 'Cool white' : 'Neutral white'}</small></div></div>`;
+    const sw = (l, on, id, ok2, label) => `<button type="button" class="sw" role="switch" aria-checked="${!!on}" aria-label="${label}" data-l="${l}" data-a="${aid}" data-id="${esc(id)}" ${ok2 ? '' : 'disabled'}></button>`;
+    const modes = !a.al ? '' : `<div class="lgrp">
+      <div class="lgr"><span class="lgi" style="--gi:#D98A1E">${ico('lsun', 20)}</span><span class="tx"><b>Auto</b><small>Brightness and colour follow the time of day</small></span>${sw('al', m.auto, a.al, ok(st(a.al)), 'Auto')}</div>
+      ${m.night ? `<div class="lgr"><span class="lgi" style="--gi:#C2412A">${ico('moon', 19)}</span><span class="tx"><b>Night</b><small>Very dim red light for the night</small></span>${sw('night', night, m.night, ok(st(m.night)), 'Night')}</div>` : ''}
+    </div>`;
+    const isOn = i => (st(i) || {}).state === 'on';
+    const chips = a.units.length > 1 ? `<div class="lchips" role="group" aria-label="Bulbs"><span class="lcl">Bulbs</span>${a.units.map((i, k) => `<button type="button" class="lchip" aria-pressed="${isOn(i)}" data-l="one" data-id="${esc(i)}" ${ok(st(i)) ? '' : 'disabled'}><span class="ck" aria-hidden="true">${ico('check', 14)}</span>${esc(a.labels[k])}</button>`).join('')}</div>` : '';
+    const L = a.link, admin = !!(hass.user && hass.user.is_admin);
+    const link = A.length < 2 ? '' : `<div class="lgrp"><button type="button" class="lgr lnav" data-l="pick" data-a="${aid}" ${admin ? '' : 'disabled'}><span class="lgi" style="--gi:#5B7FB8">${ico('link', 19)}</span><span class="tx"><b>Linked with</b><small>${admin ? 'Moves together with another room' : 'Only an admin can change this'}</small></span><span class="lval">${L ? esc(L.other.name) : 'None'}</span>${ico('chev', 18)}</button></div>`;
+    this.set('lsheet', `<div class="lpills">${brP}${ctP}</div>${modes}${chips}${link}`);
+  }
+  // "Linked with": None plus every other room, a check mark on the current one; a room already linked elsewhere says so
+  lightPicker(a, A) {
+    const cur = a.link ? a.link.other.aid : '', aid = esc(a.aid);
+    const opt = (id, name, sub) => `<button type="button" class="lgr lopt" role="radio" aria-checked="${cur === id}" data-l="linkto" data-a="${aid}" data-al="${esc(id)}"><span class="tx"><b>${esc(name)}</b><small>${sub}</small></span><span class="lck" aria-hidden="true">${cur === id ? ico('check', 20) : ''}</span></button>`;
+    const rows = [opt('', 'None', 'This room moves on its own'), ...A.filter(x => x.aid !== a.aid).map(x => { const s = this.lightState(x), m = this.lightMode(x);
+      return opt(x.aid, x.name, this.lightSub(x, s, m) + (x.link && x.link.other.aid !== a.aid ? ` · <span class="lnow">now with ${esc(x.link.other.name)}</span>` : '')); })];
+    return `<div class="lpkh"><button type="button" class="lback" data-l="back" data-a="${aid}">${ico('chevl', 20)}<span>${esc(a.name)}</span></button><b>Link with</b></div>
+      <div class="lgrp" role="radiogroup" aria-label="Link with">${rows.join('')}</div>
+      <p class="lfoot">Linked rooms switch, dim and change colour together. Picking a room copies this room's light onto it. A room links with one other room at a time.</p>`;
   }
   // Climate: the same list as the sheet's, as tiles; a tile opens the sheet on that room
   // the heat pump's maker, from its device (FGLair units are Fujitsu's)
@@ -2579,13 +2597,12 @@ class HomePanel extends HTMLElement {
     }
     // split tiles stay together under their area's place in the list
     out.sort((a, b) => a.other - b.other || a.area.localeCompare(b.area) || a.name.localeCompare(b.name));
-    // light_links: the second card of a pair moves next to the first; while the pair's switch is on (or it has none) they act together
+    // linked rooms: the second card of a pair moves next to the first and they act together
     const card = k => out.find(t => t.aid === k) || out.find(t => t.units.includes(k) || t.ids.includes(k));
-    for (const {keys, sw} of LIGHT_LINKS) {
+    for (const keys of this.lightLinkList()) {
       const a = card(keys[0]), b = card(keys[1]); if (!a || !b || a === b || a.link || b.link) continue;
       out.splice(out.indexOf(b), 1); out.splice(out.indexOf(a) + 1, 0, b);
-      const on = sw ? (st(sw) || {}).state === 'on' : true;
-      a.link = {other: b, sw, on, first: true}; b.link = {other: a, sw, on, first: false};
+      a.link = {other: b, on: true, first: true}; b.link = {other: a, on: true, first: false};
     }
     // the order someone arranged on the Lights tab (saved for the whole house); a pair moves as one, lights it doesn't know go last
     const O = this.lightOrder;
@@ -2596,12 +2613,24 @@ class HomePanel extends HTMLElement {
     }
     return out;
   }
+  // the pairs of linked rooms: picked in a light sheet and saved for the whole house (system data light_links),
+  // or, until someone picks, the panel config's light_links (a pair with a switch counts while its switch is on)
+  lightLinkList() {
+    const v = this.sysData && this.sysData.light_links;
+    if (Array.isArray(v)) return v.filter(p => Array.isArray(p) && p.length === 2).map(p => p.map(String));
+    return LIGHT_LINKS.filter(l => l.keys.length === 2 && (!l.sw || (st(l.sw) || {}).state === 'on')).map(l => l.keys);
+  }
+  saveLightLinks(pairs, msg) {
+    const v = {...(this.sysData || {}), light_links: pairs}; this.sysData = v; this.tick();
+    hass.callWS({type: 'frontend/set_system_data', key: LIGHT_ORDER_KEY, value: v}).then(() => this.toast(msg))
+      .catch(e => this.toast(`Couldn't save the link: ${e.message || e.code || e}`, true));
+  }
   // the light order lives in Home Assistant's frontend system data (one value for every screen; only admins may write it)
   loadLightOrder() {
     if (!hass || !hass.callWS) return;
     hass.callWS({type: 'frontend/get_system_data', key: LIGHT_ORDER_KEY}).then(r => {
       const v = (r && r.value) || {}, o = Array.isArray(v.light_order) ? v.light_order : null;
-      this.sysData = v; if (this.lightDrag || JSON.stringify(o) === JSON.stringify(this.lightOrder || null)) return;
+      const same = JSON.stringify(v) === JSON.stringify(this.sysData || {}); this.sysData = v; if (this.lightDrag || (same && JSON.stringify(o) === JSON.stringify(this.lightOrder || null))) return;
       this.lightOrder = o; this.tick();
     }).catch(() => {});
   }
@@ -2620,121 +2649,116 @@ class HomePanel extends HTMLElement {
     const A = this.lightAreas(), isOn = i => (st(i) || {}).state === 'on';
     if (!A.length) { this.set('lights', '<div class="top"><span class="lbl">Lights</span><span class="right">No lights found</span></div>'); return; }
     const lit = A.flatMap(a => a.ids).filter(isOn).length;
-    const rows = A.map(a => !a.link ? this.dimRow(a) : !a.link.first ? '' : this.linkPair(a, this.dimRow(a) + this.dimRow(a.link.other), true)).join('');
-    this.set('lights', `<div class="top"><span class="lbl">Lights</span><span class="right">${lit ? `${plural(lit, 'light')} on<button type="button" class="more" data-l="alloff">All off</button>` : 'All off'}</span></div><div class="lrows">${rows}</div>`);
+    this.set('lights', `<div class="top"><span class="lbl">Lights</span><span class="right">${lit ? `${plural(lit, 'light')} on<button type="button" class="more" data-l="alloff">All off</button>` : 'All off'}</span></div><div class="lrows">${this.lightGrid(A)}</div>`);
   }
-  // one light card as a dimmer row: the fill is the brightness, in the lights' colour; slide across the row to dim, the bulb switches,
-  // Auto and Night sit on the row (tablet), and the row or its chevron opens the sheet for colour, single bulbs and linking
-  dimRow(a) {
-    const isOn = i => (st(i) || {}).state === 'on';
-    const on = a.ids.filter(isOn), avail = a.ids.some(i => ok(st(i)));
-    let any = on.length > 0, br = any ? Math.max(1, Math.round(sum(on.map(i => attr(i, 'brightness') || 0)) / on.length / 2.55)) : 0;
-    const h = this.dimHold && this.dimHold[a.aid];
-    if (h) { if (Date.now() - h.t < 4000 && Math.abs(br - h.p) > 1) { br = h.p; any = true; } else delete this.dimHold[a.aid]; }
-    const alOn = a.al && isOn(a.al), night = a.al && st(a.al + '_sleep_mode') ? a.al + '_sleep_mode' : null, nightOn = night && isOn(night);
-    const ks = on.map(i => attr(i, 'color_temp_kelvin')).filter(v => v != null), k = ks.length ? Math.round(sum(ks) / ks.length / 50) * 50 : null;
-    const mode = nightOn ? 'Night' : alOn ? 'Auto' : a.al ? 'Manual' : '';
-    const sub = !avail ? 'Unavailable' : !any ? 'Off' : [on.length < a.ids.length ? `${on.length} of ${a.ids.length} on` : '', mode, k ? k + ' K' : ''].filter(Boolean).join(' · ') || 'On';
-    const tint = any ? this.lightTint(on) : '';
-    return `<div class="lrow${any ? ' on' : ''}${avail ? '' : ' na'}" data-lsheet="${esc(a.aid)}"${avail ? ` data-dim="${esc(a.aid)}" role="slider" tabindex="0" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${br}" aria-valuetext="${any ? br + '%' : 'Off'}"` : ''} aria-label="${esc(a.name)} brightness" style="--p:${br}%${tint ? `;--lc:${tint}` : ''}">
-      <span class="lfill" aria-hidden="true"></span>
-      <button type="button" class="lbulb" role="switch" aria-checked="${any}" aria-label="${esc(a.name)} lights" data-l="area" data-a="${esc(a.aid)}" ${avail ? '' : 'disabled'}>${ico('bulb', 20)}</button>
-      <span class="tx"><b>${esc(a.name)}</b><small>${sub}${this.linkTag(a)}</small></span>
-      ${a.al ? `<button type="button" class="lauto" aria-pressed="${!!alOn}" data-l="al" data-id="${esc(a.al)}" title="Adaptive Lighting: colour and brightness follow the time of day" ${ok(st(a.al)) ? '' : 'disabled'}>Auto</button>` : ''}
-      ${night ? `<button type="button" class="lauto lnight" aria-pressed="${!!nightOn}" data-l="night" data-id="${esc(night)}" data-al="${esc(a.al)}" title="Night mode: very dim, warm light" ${ok(st(night)) ? '' : 'disabled'}>Night</button>` : ''}
-      <span class="lpct num" aria-hidden="true">${any ? br + '%' : ''}</span>
-      <button type="button" class="lmore" data-lsheet="${esc(a.aid)}" aria-label="${esc(a.name)}: details">${ico('chev', 18)}</button><span class="lgrip" aria-hidden="true">${ico('grip', 20)}</span></div>`;
+  // the tiles, a linked pair drawn as one block of two
+  lightGrid(A) { return A.map(a => !a.link ? this.lightCell(a) : !a.link.first ? '' : this.linkPair(a, this.lightCell(a) + this.lightCell(a.link.other))).join(''); }
+  // what an area's lights are doing: which are on, the mean brightness and colour temperature, the tint, the colour range
+  lightState(a) {
+    const isOn = i => (st(i) || {}).state === 'on', on = a.ids.filter(isOn), avail = a.ids.some(i => ok(st(i))), any = on.length > 0;
+    const br = any ? Math.max(1, Math.round(sum(on.map(i => attr(i, 'brightness') || 0)) / on.length / 2.55)) : 0;
+    const tw = i => (attr(i, 'supported_color_modes') || []).includes('color_temp'), tws = a.ids.filter(tw);
+    let ct = null;
+    if (tws.length) {
+      const mins = tws.map(i => attr(i, 'min_color_temp_kelvin')).filter(Boolean), maxs = tws.map(i => attr(i, 'max_color_temp_kelvin')).filter(Boolean);
+      const min = Math.ceil((mins.length ? Math.max(...mins) : 2000) / 50) * 50, max = Math.floor((maxs.length ? Math.min(...maxs) : 6500) / 50) * 50;
+      const ks = on.filter(tw).map(i => attr(i, 'color_temp_kelvin')).filter(x => x != null), k = ks.length ? Math.round(sum(ks) / ks.length / 50) * 50 : Math.round((min + max) / 100) * 50;
+      if (max > min) ct = {min, max, k: Math.max(min, Math.min(max, k)), known: ks.length > 0};
+    }
+    return {on, any, avail, br, ct, k: ct && ct.known ? ct.k : null, tint: any ? this.lightTint(on) : ''};
+  }
+  // who's in charge: Auto = Adaptive Lighting on and none of the lights taken over by hand; Night = its sleep mode
+  lightMode(a) {
+    const isOn = i => (st(i) || {}).state === 'on', alOn = !!(a.al && isOn(a.al));
+    const night = a.al && st(a.al + '_sleep_mode') ? a.al + '_sleep_mode' : null, nightOn = !!(night && isOn(night));
+    const man = alOn && (attr(a.al, 'manual_control') || []).some(l => a.ids.includes(l) || a.units.includes(l));
+    return {alOn, night, nightOn, manual: man, auto: alOn && !man, mode: nightOn && alOn ? 'Night' : alOn && !man ? 'Auto' : a.al ? 'Manual' : ''};
+  }
+  lightSub(a, s, m) {
+    if (!s.avail) return 'Unavailable'; if (!s.any) return 'Off';
+    return [s.on.length < a.ids.length ? `${s.on.length} of ${a.ids.length} on` : '', s.br + '%', m.mode || (s.k ? s.k + ' K' : '')].filter(Boolean).join(' · ');
+  }
+  // one room as an Apple Home style tile: the bulb switches it, the rest of the tile opens its sheet
+  lightCell(a) {
+    const s = this.lightState(a), m = this.lightMode(a), sub = this.lightSub(a, s, m), aid = esc(a.aid);
+    return `<div class="lcell${s.any ? ' on' : ''}${s.avail ? '' : ' na'}" data-lsheet="${aid}" role="button" tabindex="0" aria-label="${esc(a.name)}: ${sub}"${s.tint ? ` style="--lc:${s.tint}"` : ''}>
+      <button type="button" class="lbulb" role="switch" aria-checked="${s.any}" aria-label="${esc(a.name)} lights" data-l="area" data-a="${aid}" ${s.avail ? '' : 'disabled'}>${ico('bulb', 22)}</button>
+      <span class="tx"><b>${esc(a.name)}</b><small>${sub}${this.linkTag(a)}</small></span><span class="lgrip" aria-hidden="true">${ico('grip', 20)}</span></div>`;
   }
   // the colour an area's lights are showing: the first lit bulb's rgb_color, or its colour temperature turned into a warm-to-cool white
   lightTint(on) {
     for (const i of on) { const rgb = attr(i, 'rgb_color'), k = attr(i, 'color_temp_kelvin'), mode = attr(i, 'color_mode');
       if (rgb && !['color_temp', 'white', 'brightness', 'onoff'].includes(mode)) return `rgb(${rgb.slice(0, 3).join(',')})`;
-      if (k) { const T = [[2000, [255, 147, 41]], [2700, [255, 180, 107]], [3500, [255, 206, 166]], [4500, [255, 228, 206]], [5500, [255, 243, 239]], [6500, [235, 240, 255]]];
-        let lo = T[0], hi = T[T.length - 1]; for (let j = 1; j < T.length; j++) if (k <= T[j][0]) { lo = T[j - 1]; hi = T[j]; break; }
-        const f = Math.min(1, Math.max(0, (k - lo[0]) / (hi[0] - lo[0]))); return `rgb(${lo[1].map((v, j) => Math.round(v + (hi[1][j] - v) * f)).join(',')})`; } }
+      if (k) return kelvinRGB(k); }
     return '';
   }
-  // a linked card's subtitle names the card it moves with
-  linkTag(a) { return a.link && a.link.on ? ` · <em class="lkd">${ico('link', 13)}${esc(a.link.other.name)}</em>` : ''; }
-  // two linked cards drawn as one: joined while linked, apart while not; on the iPad the chain button on the seam links and unlinks them
-  linkPair(a, inner, button) {
-    const L = a.link, o = L.other, tint = this.lightTint(a.ids.concat(o.ids).filter(i => (st(i) || {}).state === 'on'));
-    const btn = button && L.sw ? `<button type="button" class="lnk" data-l="link" data-a="${esc(a.aid)}" aria-pressed="${L.on}" aria-label="${L.on ? 'Unlink' : 'Link'} ${esc(a.name)} and ${esc(o.name)}" title="${L.on ? 'Unlink' : 'Link'} ${esc(a.name)} and ${esc(o.name)}" ${ok(st(L.sw)) ? '' : 'disabled'}>${ico(L.on ? 'link' : 'unlink', 18)}</button>` : '';
-    return `<div class="llink${L.on ? ' on' : ''}"${tint ? ` style="--lc:${tint}"` : ''}>${inner}${btn}</div>`;
-  }
-  // one area's controls
-  lightRow(a) {
-    const isOn = i => (st(i) || {}).state === 'on';
-      const on = a.ids.filter(isOn), any = on.length > 0, avail = a.ids.some(i => ok(st(i)));
-      const br = any ? Math.max(1, Math.round(sum(on.map(i => attr(i, 'brightness') || 0)) / on.length / 2.55)) : 0;
-      const alOn = a.al && isOn(a.al), night = a.al && st(a.al + '_sleep_mode') ? a.al + '_sleep_mode' : null, nightOn = night && isOn(night);
-      const sub = !avail ? 'Unavailable' : !any ? 'Off' : `${on.length === a.ids.length ? (a.ids.length === 1 ? 'On' : 'All on') : `${on.length} of ${a.ids.length} on`} · ${br}%`;
-      const tint = any ? this.lightTint(on) : '';
-      return `<div class="larea${any ? ' on' : ''}"${tint ? ` style="--lc:${tint}"` : ''}>
-        <div class="lhead"><span class="lic">${ico('bulb', 18)}</span><div class="tx"><b>${esc(a.name)}</b><span>${sub}${this.linkTag(a)}</span></div>
-          ${a.al ? `<button type="button" class="lauto" aria-pressed="${!!alOn}" data-l="al" data-id="${esc(a.al)}" title="Adaptive Lighting: colour and brightness follow the time of day" ${ok(st(a.al)) ? '' : 'disabled'}>${alOn ? 'Auto' : 'Back to Auto'}</button>` : ''}
-          ${night ? `<button type="button" class="lauto lnight" aria-pressed="${!!nightOn}" data-l="night" data-id="${esc(night)}" data-al="${esc(a.al)}" title="Night mode: very dim, warm light" ${ok(st(night)) ? '' : 'disabled'}>Night</button>` : ''}
-          <button type="button" class="sw" role="switch" aria-checked="${any}" aria-label="${esc(a.name)} lights" data-l="area" data-a="${esc(a.aid)}" ${avail ? '' : 'disabled'}></button></div>
-        <input type="range" min="1" max="100" step="1" value="${br || 1}" style="--p:${br || 1}%" aria-label="${esc(a.name)} brightness" data-l="br" data-a="${esc(a.aid)}" ${avail ? '' : 'disabled'}>
-        ${this.ctRow(a, on, any)}
-        ${a.units.length > 1 ? `<div class="lchips">${a.units.map((i, k) => `<button type="button" class="lchip" aria-pressed="${isOn(i)}" data-l="one" data-id="${esc(i)}" ${ok(st(i)) ? '' : 'disabled'}>${esc(a.labels[k])}</button>`).join('')}</div>` : ''}
-      </div>`;
-  }
-  // colour temperature slider for the area's tunable-white lights: warm to cool, the track painted in the real colours
-  ctRow(a, on, any) {
-    const tw = i => (attr(i, 'supported_color_modes') || []).includes('color_temp'), ids = a.ids.filter(tw); if (!ids.length) return '';
-    const mins = ids.map(i => attr(i, 'min_color_temp_kelvin')).filter(Boolean), maxs = ids.map(i => attr(i, 'max_color_temp_kelvin')).filter(Boolean);
-    const kmin = Math.ceil((mins.length ? Math.max(...mins) : 2000) / 50) * 50, kmax = Math.floor((maxs.length ? Math.min(...maxs) : 6500) / 50) * 50;
-    const ks = on.filter(tw).map(i => attr(i, 'color_temp_kelvin')).filter(v => v != null), kcur = ks.length ? Math.round(sum(ks) / ks.length) : null;
-    const alOn = a.al && (st(a.al) || {}).state === 'on';
-    return `<div class="ctrow"><input type="range" class="ct" min="${kmin}" max="${kmax}" step="50" value="${kcur || Math.round((kmin + kmax) / 100) * 50}" style="--ctg:linear-gradient(90deg,${kelvinRGB(kmin)},${kelvinRGB((kmin + kmax) / 2)},${kelvinRGB(kmax)})" ${kcur ? `aria-valuetext="${kcur} K"` : ''} aria-label="${esc(a.name)} colour temperature" data-l="ct" data-a="${esc(a.aid)}" ${any && ks.length ? '' : 'disabled'}><span class="ctv num">${kcur ? kcur + ' K' : '–'}</span>${a.al && !alOn ? '<span class="ctm">Manual</span>' : ''}</div>`;
+  // a linked tile's subtitle names the room it moves with
+  linkTag(a) { return a.link ? ` · <em class="lkd">${ico('link', 13)}${esc(a.link.other.name)}</em>` : ''; }
+  // two linked tiles drawn as one block
+  linkPair(a, inner) {
+    const tint = this.lightTint(a.ids.concat(a.link.other.ids).filter(i => (st(i) || {}).state === 'on'));
+    return `<div class="llink on"${tint ? ` style="--lc:${tint}"` : ''}>${inner}</div>`;
   }
   lightCmd(kind, key, v) {
-    const A = this.lightAreas(), isOn = i => (st(i) || {}).state === 'on';
+    const A = this.lightAreas(), isOn = i => (st(i) || {}).state === 'on', AL = hass.services && hass.services.adaptive_lighting;
     if (kind === 'alloff') { const ids = A.flatMap(x => x.ids).filter(isOn); if (ids.length) this.call('light', 'turn_off', {entity_id: ids}); return; }
     if (kind === 'one') { this.call('light', 'toggle', {entity_id: key}); return; }
-    if (kind === 'night') {
-      const on = isOn(key);
-      this.call('switch', on ? 'turn_off' : 'turn_on', {entity_id: key}, `Night mode ${on ? 'off' : 'on'}`);
-      // night mode only acts while Adaptive Lighting is on
-      if (!on && v && !isOn(v)) this.call('switch', 'turn_on', {entity_id: v});
-      return;
-    }
-    if (kind === 'al') {
-      const on = isOn(key); this.call('switch', on ? 'turn_off' : 'turn_on', {entity_id: key}, `Adaptive Lighting ${on ? 'off' : 'on'}`);
-      // back to Auto also clears the manual-control flag a colour change set on the lights
-      if (!on && hass.services && hass.services.adaptive_lighting) this.call('adaptive_lighting', 'set_manual_control', {entity_id: key, manual_control: false});
-      return;
-    }
     const a = A.find(x => x.aid === key); if (!a) return;
-    if (kind === 'link') {
-      const L = a.link; if (!L || !L.sw) return;
-      this.call('input_boolean', L.on ? 'turn_off' : 'turn_on', {entity_id: L.sw}, `${a.name} and ${L.other.name} ${L.on ? 'unlinked' : 'linked'}`);
-      // linking copies this card's lights onto the other card, so the pair starts out matching
-      if (!L.on) {
-        const mine = a.ids.filter(isOn), other = L.other.ids;
-        if (!mine.length) { if (other.some(isOn)) this.call('light', 'turn_off', {entity_id: other}); return; }
-        const br = Math.max(1, Math.round(sum(mine.map(i => attr(i, 'brightness') || 0)) / mine.length / 2.55));
-        const ks = mine.map(i => attr(i, 'color_temp_kelvin')).filter(v => v != null), k = ks.length ? Math.round(sum(ks) / ks.length) : null;
-        const tw = other.filter(i => (attr(i, 'supported_color_modes') || []).includes('color_temp'));
-        // under Adaptive Lighting the colour follows on its own; a colour set by hand is copied
-        const alOn = a.al && isOn(a.al);
-        if (k && !alOn && tw.length) { this.call('light', 'turn_on', {entity_id: tw, brightness_pct: br, color_temp_kelvin: k}); const rest = other.filter(i => !tw.includes(i)); if (rest.length) this.call('light', 'turn_on', {entity_id: rest, brightness_pct: br}); }
-        else this.call('light', 'turn_on', {entity_id: other, brightness_pct: br});
-      }
-      return;
+    // a linked pair acts as one room
+    const pair = a.link ? [a, a.link.other] : [a], all = pair.flatMap(x => x.ids), on = all.filter(isOn);
+    const als = [...new Set(pair.map(x => x.al).filter(Boolean))];
+    // back to the schedule: Adaptive Lighting on and nothing held by hand
+    const resume = (ids, al) => { if (!isOn(al)) this.call('switch', 'turn_on', {entity_id: al}); if (AL) this.call('adaptive_lighting', 'set_manual_control', {entity_id: al, lights: ids, manual_control: false}); };
+    if (kind === 'pick' || kind === 'back') { this.lightPick = kind === 'pick'; this.renderLightSheet(); const f = this.$('lsheet').querySelector(this.lightPick ? '.lback' : '.lnav'); if (f) f.focus({preventScroll: true, focusVisible: false}); return; }
+    if (kind === 'linkto') { this.linkTo(a, v || '', A); return; }
+    if (kind === 'area') { this.call('light', a.ids.some(isOn) ? 'turn_off' : 'turn_on', {entity_id: all}); return; }
+    if (kind === 'al') {
+      // Auto on: the schedule takes the room back (Night stays as it was); Auto off: Adaptive Lighting lets go, and Night with it
+      const auto = pair.every(x => !x.al || this.lightMode(x).auto);
+      for (const x of pair) { if (!x.al) continue;
+        if (!auto) resume(x.ids, x.al);
+        else { this.call('switch', 'turn_off', {entity_id: x.al}); const n = this.lightMode(x).night; if (n && isOn(n)) this.call('switch', 'turn_off', {entity_id: n}); } }
+      this.toast(auto ? 'Auto off' : 'Auto on'); return;
     }
-    // a linked pair acts as one card
-    const pair = a.link && a.link.on ? [a, a.link.other] : [a];
-    const all = pair.flatMap(x => x.ids), on = all.filter(isOn);
-    if (kind === 'area') this.call('light', a.ids.some(isOn) ? 'turn_off' : 'turn_on', {entity_id: all});
-    else if (kind === 'br') this.call('light', 'turn_on', {entity_id: on.length ? on : all, brightness_pct: v});
-    else if (kind === 'ct') {
-      // a colour picked by hand: Adaptive Lighting lets go of the area until Auto is tapped again
+    if (kind === 'night') {
+      // Night needs Adaptive Lighting, so turning it on also hands the room back to Auto
+      const m = this.lightMode(a), going = !(m.nightOn && m.alOn);
+      for (const x of pair) { const mx = this.lightMode(x); if (!mx.night) continue;
+        this.call('switch', going ? 'turn_on' : 'turn_off', {entity_id: mx.night});
+        if (going) resume(x.ids, x.al); }
+      this.toast(going ? 'Night on' : 'Night off'); return;
+    }
+    if (kind !== 'br' && kind !== 'ct') return;
+    // brightness or colour by hand: the room leaves Auto and Night until Auto is turned on again
+    const took = pair.filter(x => x.al && (this.lightMode(x).auto || this.lightMode(x).nightOn));
+    for (const x of took) { const mx = this.lightMode(x);
+      if (mx.nightOn) this.call('switch', 'turn_off', {entity_id: mx.night});
+      if (AL) this.call('adaptive_lighting', 'set_manual_control', {entity_id: x.al, lights: x.ids, manual_control: true});
+      else this.call('switch', 'turn_off', {entity_id: x.al}); }
+    if (kind === 'br') {
+      if (v < 1) this.call('light', 'turn_off', {entity_id: all});
+      else this.call('light', 'turn_on', {entity_id: on.length ? on : all, brightness_pct: v});
+    } else {
       const ids = (on.length ? on : all).filter(i => (attr(i, 'supported_color_modes') || []).includes('color_temp')); if (!ids.length) return;
       this.call('light', 'turn_on', {entity_id: ids, color_temp_kelvin: v});
-      [...new Set(pair.map(x => x.al).filter(x => x && isOn(x)))].forEach(al => this.call('switch', 'turn_off', {entity_id: al}, `${a.name}: ${v} K, Adaptive Lighting off`));
     }
+    if (took.length) this.toast('Set by hand, Auto off');
+  }
+  // pick the room this one moves with (or none); the pair list is saved for the whole house, and a new partner starts out matching
+  linkTo(a, other, A) {
+    const cur = A.filter(t => t.link && t.link.first).map(t => [t.aid, t.link.other.aid]);
+    const b = other ? A.find(x => x.aid === other) : null; if (other && !b) return;
+    if ((a.link ? a.link.other.aid : '') === other) return;
+    const next = cur.filter(p => !p.includes(a.aid) && !(other && p.includes(other)));
+    if (b) next.push([a.aid, b.aid]);
+    this.saveLightLinks(next, b ? 'Rooms linked' : 'Room unlinked');
+    if (!b) return;
+    const isOn = i => (st(i) || {}).state === 'on', mine = a.ids.filter(isOn), them = b.ids;
+    if (!mine.length) { if (them.some(isOn)) this.call('light', 'turn_off', {entity_id: them}); return; }
+    const s = this.lightState(a), m = this.lightMode(a), tw = them.filter(i => (attr(i, 'supported_color_modes') || []).includes('color_temp'));
+    // under Auto the colour follows on its own; a colour set by hand is copied
+    if (s.k && !m.auto && tw.length) { this.call('light', 'turn_on', {entity_id: tw, brightness_pct: s.br, color_temp_kelvin: s.k}); const rest = them.filter(i => !tw.includes(i)); if (rest.length) this.call('light', 'turn_on', {entity_id: rest, brightness_pct: s.br}); }
+    else this.call('light', 'turn_on', {entity_id: them, brightness_pct: s.br});
   }
   openCamera(id) {
     const s = st(id); if (!s) return;
