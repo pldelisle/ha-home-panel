@@ -332,7 +332,7 @@ class HomePanel extends HTMLElement {
   connectedCallback() {
     // properties set before the element was upgraded shadow the setters; replay them
     for (const k of ['narrow', 'panel', 'hass']) if (Object.prototype.hasOwnProperty.call(this, k)) { const v = this[k]; delete this[k]; this[k] = v; }
-    this.clockT = setInterval(() => { this.renderHeader(); this.renderIdle(); }, 20000);
+    this.clockT = setInterval(() => { this.renderHeader(); this.renderIdle(); this.renderHomeStack(); }, 20000);
     const live = () => { if (!this.$app) return; this.$app.classList.add('live'); clearTimeout(this.liveT); this.liveT = setTimeout(() => this.$app.classList.remove('live'), 60000); this.idleArm(); };
     for (const t of ['pointerdown', 'wheel', 'keydown']) this.shadowRoot.addEventListener(t, live, {passive: true});
     window.addEventListener('scroll', live, {passive: true, capture: true}); this.liveOff = () => window.removeEventListener('scroll', live, {capture: true});
@@ -754,6 +754,14 @@ class HomePanel extends HTMLElement {
     if (moved.length && inHours(h, 7, 22) && !out.some(c => c.k === 'who')) out.push({...this.scard('who', who()), filler: true});
     return out;
   }
+  // the smart stack inside the Home card on a tablet (2.9.0): same cards and turns as beside the idle clock, minus the who's-home filler
+  // that the Who's home chips right under it already show. Nothing to show: the slot hides and Who's home stays at the bottom.
+  renderHomeStack() {
+    const el = this.$('hstk'); if (!el || this.compact || this.tab !== 'home') return;
+    let pick = null; try { pick = CFG && CFG.stack.on ? pickStack(this.stackCards().filter(c => !(c.k === 'who' && c.filler)), Date.now()) : null; } catch (e) { console.error('home-panel home stack', e); }
+    el.hidden = !pick;
+    if (pick) this.set('hstk', `<div class="scw">${pick.card.html}</div>${pick.n > 1 ? `<div class="sdots" aria-hidden="true">${Array.from({length: pick.n}, (_, i) => `<i${i === pick.i ? ' class="on"' : ''}></i>`).join('')}</div>` : ''}`);
+  }
   // a tap on the stack's card wakes the panel and opens what the card is about
   stackGo(go) {
     if (go.startsWith('sens:')) return this.openSens(go.slice(5));
@@ -797,6 +805,7 @@ class HomePanel extends HTMLElement {
   wire() {
     // the idle overlay swallows the tap that wakes the panel; on the smart stack's card that tap opens what the card is about
     this.$('idle').addEventListener('click', e => { const g = e.target.closest('[data-go]'); if (g) this.stackGo(g.dataset.go); });
+    this.$('hwx').addEventListener('click', e => { const g = e.target.closest('.hstk [data-go]'); if (g) { e.stopPropagation(); this.stackGo(g.dataset.go); } });
     this.$('menu').addEventListener('click', () => this.dispatchEvent(new Event('hass-toggle-menu', {bubbles: true, composed: true})));
     this.$('gear').addEventListener('click', () => { this.toggleAttention(false); this.renderHeader(); this.toggleSettings(); });
     this.$('toast').addEventListener('click', () => { this.$('toast').hidden = true; });
@@ -2398,11 +2407,14 @@ class HomePanel extends HTMLElement {
     const L = this.live(), isOn = i => (st(i) || {}).state === 'on', H = this.H;
     const sun = st(E.sun), dayUp = sun && sun.state === 'above_horizon', nxt = st(dayUp ? E.setting : E.rising), nxt2 = st(dayUp ? E.rising : E.setting);
     const temp = attr(E.weather, 'temperature') ?? num(E.outT), cond = st(E.cond), hi = num(E.hi), lo = num(E.lo);
+    const hwxWas = this.cache.hwx;
     this.set('hwx', `<div class="muted" style="font-size:13px;font-weight:500">${dayUp ? 'Sunset' : 'Sunrise'} <b style="color:var(--fg)">${ok(nxt) ? fmtTime(nxt.state) : '–'}</b>${ok(nxt2) ? ` · ${dayUp ? 'sunrise' : 'sunset'} <b style="color:var(--fg)">${fmtTime(nxt2.state)}</b>` : ''}</div>
       <div class="hbig"><span class="num">${temp == null ? '–' : Math.round(temp) + '°'}</span><div><div class="hc">${esc(condName(ok(cond) ? cond.state : (st(E.weather) || {}).state))}</div><div class="muted">${hi != null ? `High ${Math.round(hi)}°` : ''}${lo != null ? ` · low ${Math.round(lo)}°` : ''}</div></div></div>
-      <div class="hhouse">${houseImg()}</div>
+      <div class="hhouse">${houseImg()}</div>${this.compact ? '' : '<div class="hstk" id="hstk" hidden></div>'}
       <div class="lbl hwho">Who's home</div>${this.whoHtml() || '<p class="hint">No one is tracked yet.</p>'}`);
-    // no Status block here since 2.8.1: the header pill already says when something needs attention
+    // 2.9.0: the space between the house and Who's home holds the idle clock's smart stack (a fresh card slot whenever the card was rebuilt)
+    if (this.cache.hwx !== hwxWas) this.cache.hstk = null;
+    this.renderHomeStack();
     const A = this.lightAreas(), onAreas = A.map(a => ({a, on: a.ids.filter(isOn)})).filter(x => x.on.length);
     const temps = L.rooms.map(r => r.t).filter(v => v != null), avg = temps.length ? sum(temps) / temps.length : null, nHeat = L.rooms.filter(r => r.heating).length;
     const hp = st(E.hp), hpTxt = !ok(hp) ? 'offline' : hp.state === 'off' ? 'off' : (hp.attributes.hvac_action || hp.state);

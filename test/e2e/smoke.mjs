@@ -123,6 +123,15 @@ await run('full-iphone', {house: 'full', cfg: FULL_CFG, viewport: iphone});
 // smart stack (2.5.0): at 11:30 pm the plugged-in car and the playing speaker take turns beside the idle clock; a tap on the car card opens the car
 await run('stack-ipad', {house: 'full', cfg: FULL_CFG, viewport: ipad, time: '2026-11-07T23:30:00-05:00', check: async page => {
   const R = fn => page.evaluate(fn);
+  // 2.9.0: the same stack fills the Home card between the house and Who's home, without making the row taller than the tiles beside it
+  const home = await R(() => { const r = document.querySelector('home-panel').shadowRoot, s = r.getElementById('hstk'), w = r.getElementById('hwx').getBoundingClientRect(), t = r.querySelector('.hright').getBoundingClientRect();
+    return {shown: !!s && !s.hidden, k: s && s.querySelector('.sc')?.dataset.k, dots: s ? s.querySelectorAll('.sdots i').length : 0, fits: w.height <= t.height + 1}; });
+  assert.ok(home.shown && ['car', 'music'].includes(home.k) && home.dots === 2, `the Home card shows the stack (got ${JSON.stringify(home)})`);
+  assert.ok(home.fits, 'the Home card is no taller than the tiles and Security beside it');
+  await R(() => document.querySelector('home-panel').shadowRoot.querySelector('#hstk .sc').click());
+  await page.waitForTimeout(400);
+  assert.equal(await R(() => document.querySelector('home-panel').tab), home.k === 'car' ? 'car' : 'media', 'a tap on the card opens what it is about');
+  await R(() => document.querySelector('home-panel').setTab('home'));
   await R(() => document.querySelector('home-panel').idleStart());
   await page.waitForTimeout(300);
   const ks = [];
@@ -140,6 +149,7 @@ await run('stack-ipad', {house: 'full', cfg: FULL_CFG, viewport: ipad, time: '20
   assert.ok(await R(() => !document.querySelector('home-panel').shadowRoot.getElementById('pane-car').hidden), 'the car card leads to the car');
 }});
 await run('stack-iphone', {house: 'full', cfg: FULL_CFG, viewport: iphone, time: '2026-11-07T23:30:00-05:00', check: async page => {
+  assert.equal(await page.evaluate(() => !!document.querySelector('home-panel').shadowRoot.getElementById('hstk')), false, 'a phone keeps its Home card without the stack');
   await page.evaluate(() => document.querySelector('home-panel').idleStart());
   await page.waitForTimeout(300);
   const box = await page.evaluate(() => { const r = document.querySelector('home-panel').shadowRoot, c = r.querySelector('#istk .sc').getBoundingClientRect(), k = r.querySelector('#iclk').getBoundingClientRect(); return {below: c.top >= k.bottom - 1, inside: c.left >= 0 && c.right <= innerWidth}; });
@@ -151,6 +161,7 @@ await run('stack-off', {house: 'full', cfg: {...FULL_CFG, idle_stack: {enabled: 
   await page.evaluate(() => document.querySelector('home-panel').idleStart());
   await page.waitForTimeout(300);
   assert.equal(await page.evaluate(() => document.querySelector('home-panel').shadowRoot.querySelectorAll('#iwrap .sc').length), 0, 'no card when the stack is off');
+  assert.equal(await page.evaluate(() => document.querySelector('home-panel').shadowRoot.getElementById('hstk').hidden), true, 'nor in the Home card');
 }});
 // the names on the Lights tab's area cards, in order
 const lightTiles = async page => {

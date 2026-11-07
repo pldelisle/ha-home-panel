@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.9.0
+
+- On a tablet, the Home card fills the space between the house and Who's home with the smart stack from the idle clock. It shows the same cards in the same 20-second turns, such as a door left open, the car charging overnight, energy used today or what's playing, with dots for how many there are. A tap opens what the card is about. Who's home is already listed right under it, so the who's-home filler card is left out there. With nothing to show, the slot hides. `idle_stack: {enabled: false}` turns this off too.
+
 ## 2.8.1
 
 - The Home card no longer has a Status block with "All clear" and the list of checks under Who's home, since the header pill already says when something needs attention. The Home tab's subtitle drops "all clear" too. The checks are still one tap away in the pill when something needs attention.
