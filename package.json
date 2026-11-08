@@ -7,11 +7,14 @@
   "scripts": {
     "build": "node build.mjs",
     "test": "node --test \"test/unit/*.test.mjs\"",
-    "test:e2e": "node build.mjs && node test/e2e/smoke.mjs",
-    "check": "node --check dist/home-panel.js"
+    "test:e2e": "npm run build && playwright test",
+    "check": "node --check dist/home-panel.js",
+    "test:e2e:old": "node test/e2e/smoke.mjs"
+  },
+  "engines": {
+    "node": ">=20"
   },
   "devDependencies": {
-    "playwright": "1.63.0"
-  },
-  "engines": {"node": ">=20"}
+    "@playwright/test": "1.63.0"
+  }
 }
