@@ -25,5 +25,5 @@ test('no call to a method that no longer exists', () => {
   );
   const assigned = new Set([...src.matchAll(/this\.([A-Za-z_$][\w$]*)\s*=/g)].map(m => m[1]));
   const missing = [...called].filter(n => !defined.has(n) && !assigned.has(n) && !BUILTIN.has(n));
-  expect(missing).toEqual([]);
+  expect(missing).toStrictEqual([]);
 });

@@ -1,10 +1,15 @@
 // resolveConfig(): panel config + the house's states → what the panel runs with
 import {test, expect} from 'vitest';
 import {readFileSync} from 'node:fs';
-// config.js is spliced into the bundle as plain script text; run that same text here
-const {resolveConfig, guessIcon, DEFAULT_ENTITIES} = new Function(
-  readFileSync(new URL('../../src/config.js', import.meta.url), 'utf8') +
-    '\nreturn {resolveConfig, guessIcon, DEFAULT_ENTITIES};',
+import {fileURLToPath} from 'node:url';
+import {compileFunction} from 'node:vm';
+// config.js is spliced into the bundle as plain script text; run that same text here. compileFunction (unlike new Function)
+// is given the file's name, so V8 coverage is attributed to src/config.js. #34 turns this loader into an import.
+const configUrl = new URL('../../src/config.js', import.meta.url);
+const {resolveConfig, guessIcon, DEFAULT_ENTITIES} = compileFunction(
+  readFileSync(configUrl, 'utf8') + '\nreturn {resolveConfig, guessIcon, DEFAULT_ENTITIES};',
+  [],
+  {filename: fileURLToPath(configUrl)},
 )();
 
 const st = (id, attrs = {}) => [id, {entity_id: id, state: 'on', attributes: attrs}];
@@ -24,12 +29,12 @@ const states = Object.fromEntries([
 test('no config and no states: generic defaults, nothing personal', () => {
   const c = resolveConfig(undefined, undefined);
   expect(c.entities.weather).toBe(null);
-  expect(c.rooms).toEqual([]);
-  expect(c.people).toEqual([]);
-  expect(c.scenes).toEqual([]);
-  expect(c.modes).toEqual([]);
+  expect(c.rooms).toStrictEqual([]);
+  expect(c.people).toStrictEqual([]);
+  expect(c.scenes).toStrictEqual([]);
+  expect(c.modes).toStrictEqual([]);
   expect(c.house).toBe(null);
-  expect(c.car).toEqual({name: null, color: null, battery_kwh: null});
+  expect(c.car).toStrictEqual({name: null, color: null, battery_kwh: null});
   expect(c.entities.sun).toBe('sun.sun');
 });
 
@@ -73,7 +78,7 @@ test('Hilo gateway: found under its _2 name', () => {
 
 test('rooms: discovered from thermostats except the heat pump, with Hilo-style sensor names', () => {
   const c = resolveConfig({entities: {heat_pump: 'climate.heat_pump'}}, states);
-  expect(c.rooms.map(r => r.climate)).toEqual(['climate.bedroom', 'climate.thermostat_living_room']);
+  expect(c.rooms.map(r => r.climate)).toStrictEqual(['climate.bedroom', 'climate.thermostat_living_room']);
   const lr = c.rooms[1];
   expect(lr.k).toBe('living_room');
   expect(lr.temp).toBe('sensor.thermostat_living_room_temperature');
@@ -94,7 +99,7 @@ test('rooms: the configured list, in order, with names, icons and sensor overrid
     },
     states,
   );
-  expect(c.rooms.map(r => [r.k, r.n, r.icon])).toEqual([
+  expect(c.rooms.map(r => [r.k, r.n, r.icon])).toStrictEqual([
     ['bedroom', 'Kids', 'bed'],
     ['garage', null, 'car'],
     ['x', null, 'therm'],
@@ -103,13 +108,16 @@ test('rooms: the configured list, in order, with names, icons and sensor overrid
 });
 
 test('people: configured names, else person entities by first name', () => {
-  expect(resolveConfig({}, states).people).toEqual(['Alex', 'Sam']);
-  expect(resolveConfig({people: 'Jo'}, states).people).toEqual(['Jo']);
+  expect(resolveConfig({}, states).people).toStrictEqual(['Alex', 'Sam']);
+  expect(resolveConfig({people: 'Jo'}, states).people).toStrictEqual(['Jo']);
 });
 
 test('house image: one URL for both themes, or day and night', () => {
-  expect(resolveConfig({house_image: '/local/h.png'}).house).toEqual({day: '/local/h.png', night: '/local/h.png'});
-  expect(resolveConfig({house_image: {night: '/local/n.png'}}).house).toEqual({
+  expect(resolveConfig({house_image: '/local/h.png'}).house).toStrictEqual({
+    day: '/local/h.png',
+    night: '/local/h.png',
+  });
+  expect(resolveConfig({house_image: {night: '/local/n.png'}}).house).toStrictEqual({
     day: '/local/n.png',
     night: '/local/n.png',
   });
@@ -123,18 +131,18 @@ test('scenes, modes, Adaptive Lighting areas and car pass through', () => {
     adaptive_lighting_areas: {hall: 'switch.al'},
     car: {name: 'EV', color: '#123'},
   });
-  expect(c.scenes).toEqual(['scene.a']);
-  expect(c.modes).toEqual(['input_boolean.b']);
-  expect(c.alAreas).toEqual({hall: 'switch.al'});
-  expect(c.car).toEqual({name: 'EV', color: '#123', battery_kwh: null});
+  expect(c.scenes).toStrictEqual(['scene.a']);
+  expect(c.modes).toStrictEqual(['input_boolean.b']);
+  expect(c.alAreas).toStrictEqual({hall: 'switch.al'});
+  expect(c.car).toStrictEqual({name: 'EV', color: '#123', battery_kwh: null});
   expect(resolveConfig({car: {battery_kwh: 91}}).car.battery_kwh).toBe(91);
   expect(resolveConfig({car: {battery_kwh: 'x'}}).car.battery_kwh).toBe(null);
 });
 
 test('split_light_areas: a list or one area, empty by default', () => {
-  expect(resolveConfig({}).splitLightAreas).toEqual([]);
-  expect(resolveConfig({split_light_areas: 'living_room'}).splitLightAreas).toEqual(['living_room']);
-  expect(resolveConfig({split_light_areas: ['kitchen', 'den']}).splitLightAreas).toEqual(['kitchen', 'den']);
+  expect(resolveConfig({}).splitLightAreas).toStrictEqual([]);
+  expect(resolveConfig({split_light_areas: 'living_room'}).splitLightAreas).toStrictEqual(['living_room']);
+  expect(resolveConfig({split_light_areas: ['kitchen', 'den']}).splitLightAreas).toStrictEqual(['kitchen', 'den']);
 });
 
 test('HA adds _panel_custom to the config; it is ignored', () => {
@@ -150,19 +158,19 @@ test('room icons from names, English and French', () => {
 });
 
 test('light_links: pairs as a list or with a switch; anything else is dropped', () => {
-  expect(resolveConfig({}).lightLinks).toEqual([]);
+  expect(resolveConfig({}).lightLinks).toStrictEqual([]);
   expect(
     resolveConfig({
       light_links: [['a', 'b'], {lights: ['light.x', 'light.y'], switch: 'input_boolean.l'}, ['only-one'], 'nonsense'],
     }).lightLinks,
-  ).toEqual([
+  ).toStrictEqual([
     {keys: ['a', 'b'], sw: null},
     {keys: ['light.x', 'light.y'], sw: 'input_boolean.l'},
   ]);
 });
 
 test('idle_stack: on by default, reminders need an HH:MM time, away_mode alias', () => {
-  expect(resolveConfig({}, {}).stack).toEqual({on: true, sunriseOff: false, reminders: []});
+  expect(resolveConfig({}, {}).stack).toStrictEqual({on: true, sunriseOff: false, reminders: []});
   const c = resolveConfig(
     {
       entities: {away_mode: 'input_boolean.away'},
@@ -175,7 +183,7 @@ test('idle_stack: on by default, reminders need an HH:MM time, away_mode alias',
     {},
   );
   expect(c.entities.away).toBe('input_boolean.away');
-  expect(c.stack).toEqual({
+  expect(c.stack).toStrictEqual({
     on: false,
     sunriseOff: true,
     reminders: [{at: '20:00', title: 'Bedtime', text: 'Lamp to night', lead: 20}],

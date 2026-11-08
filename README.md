@@ -123,7 +123,7 @@ Room icons can be `sofa`, `door`, `desk`, `bed`, `bath`, `drop`, `car`, `house` 
 
 ## Develop
 
-You need Node 22.12 or later (Vitest 5 requires it).
+You need Node 22.12 or later (Vitest 5 requires Node 22.12, 24 or 26 and later).
 
 ```sh
 npm ci
@@ -147,8 +147,9 @@ If `npm run format:check` still fails after one `npm run format`, run `npm run f
 `npm run test:e2e -- test/e2e/lights-sheet.spec.ts` runs one file. The first run needs a browser: `npx playwright install chromium`.
 The test server listens on port 4173 unless `E2E_PORT` names another, so several runs can share a machine.
 
-`npm run test:coverage` reports coverage for `src/config.js` and `src/stack.js` (text in the terminal, HTML in `coverage/`, uploaded by CI). Both files are still
-scripts that the tests evaluate with `new Function`, which V8 coverage does not attribute to the file, so the report reads 0% until they become modules the tests import.
+`npm run test:coverage` reports coverage for `src/config.js` and `src/stack.js` (text in the terminal, HTML in `coverage/`, uploaded by CI). Today: 98.82% of statements
+over the two files (`config.js` 98.21%, `stack.js` 100%). The tests still evaluate the two scripts with `vm.compileFunction`, which is given the file name so V8 attributes the
+coverage to it; #34 turns those loaders into plain imports.
 
 `npm run test:visual` runs the screenshot project against the baselines in `test/e2e/__screenshots__/`, and only ever inside the Playwright image
 (Linux arm64, as in CI): compare with `test:visual:docker` or `test:visual:container` (Apple's `container`, after `container system start`), rewrite with

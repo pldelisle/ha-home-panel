@@ -1,9 +1,14 @@
 // pickStack() and the reminder window: which card the idle clock's smart stack shows
 import {test, expect} from 'vitest';
 import {readFileSync} from 'node:fs';
-const {pickStack, inHours, reminderLeft, STACK_TURN_MS} = new Function(
-  readFileSync(new URL('../../src/stack.js', import.meta.url), 'utf8') +
-    '\nreturn {pickStack, inHours, reminderLeft, STACK_TURN_MS};',
+import {fileURLToPath} from 'node:url';
+import {compileFunction} from 'node:vm';
+// stack.js is a plain script too; compileFunction takes the file's name so V8 coverage is attributed to src/stack.js (#34 turns this into an import)
+const stackUrl = new URL('../../src/stack.js', import.meta.url);
+const {pickStack, inHours, reminderLeft, STACK_TURN_MS} = compileFunction(
+  readFileSync(stackUrl, 'utf8') + '\nreturn {pickStack, inHours, reminderLeft, STACK_TURN_MS};',
+  [],
+  {filename: fileURLToPath(stackUrl)},
 )();
 const card = (k, tone = null, filler = false) => ({k, tone, filler});
 
@@ -13,7 +18,12 @@ test('nothing applies: no card', () => {
 });
 test('cards take turns, one per tick', () => {
   const C = [card('tomorrow'), card('car'), card('who')];
-  expect([0, 1, 2, 3].map(i => pickStack(C, i * STACK_TURN_MS).card.k)).toEqual(['tomorrow', 'car', 'who', 'tomorrow']);
+  expect([0, 1, 2, 3].map(i => pickStack(C, i * STACK_TURN_MS).card.k)).toStrictEqual([
+    'tomorrow',
+    'car',
+    'who',
+    'tomorrow',
+  ]);
   expect(pickStack(C, 0).n).toBe(3);
 });
 test('a red alert pins itself; the rest wait', () => {
