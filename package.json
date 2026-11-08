@@ -6,6 +6,7 @@
   "private": true,
   "scripts": {
     "build": "node build.mjs",
+    "typecheck": "tsc -p tsconfig.check.json",
     "test": "node --test \"test/unit/*.test.mjs\"",
     "test:e2e": "npm run build && playwright test --project=tablet --project=phone",
     "test:visual": "npm run build && playwright test --project=visual",
@@ -22,6 +23,7 @@
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",
-    "prettier": "3.9.10"
+    "prettier": "3.9.10",
+    "typescript": "6.0.3"
   }
 }
