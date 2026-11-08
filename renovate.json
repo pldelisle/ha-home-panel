@@ -71,22 +71,15 @@
       "allowedVersions": "3.45.2"
     },
     {
-      "description": "license-checker-rseidelsohn 5 needs Node 24 and npm 11, and CI (the lint job) runs Node 22 and engines allows 22.19; stay on 4.x, as @types/node stays on 22, until the Node version is changed by hand",
-      "matchPackageNames": ["license-checker-rseidelsohn"],
-      "matchUpdateTypes": ["major"],
-      "enabled": false
-    },
-    {
       "description": "typescript-eslint does not support TypeScript 7 yet; re-enable majors when it does",
       "matchPackageNames": ["typescript"],
       "matchUpdateTypes": ["major"],
       "enabled": false
     },
     {
-      "description": "@types/node stays on the Node 22 that CI and the Playwright image run, until that is changed by hand",
+      "description": "@types/node follows the Node that CI runs (24: setup-node and the Playwright image), not the newest Node, so its 24.x minors and patches arrive and 25 and 26 do not; raise the limit when the Playwright image ships a newer Node",
       "matchPackageNames": ["@types/node"],
-      "matchUpdateTypes": ["major"],
-      "enabled": false
+      "allowedVersions": "<25"
     },
     {
       "description": "The Node version (setup-node, which :pinAllExceptPeerDependencies would pin to a patch release) and the runner image (ubuntu-24.04-arm) are chosen by hand; engines in package.json is left alone too",

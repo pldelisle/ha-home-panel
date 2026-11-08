@@ -5,7 +5,7 @@ on:
   pull_request:
 permissions:
   contents: read
-# The lint job checks formatting and runs ESLint on a plain Node 22 runner. The test and visual jobs run on GitHub's
+# The lint job checks formatting and runs ESLint on a plain Node 24 runner. The test and visual jobs run on GitHub's
 # arm64 runners inside the Playwright image for the pinned version, the same image and Chromium a maintainer uses
 # locally through Docker or `container` (npm run test:visual:docker). The screenshot baselines are recorded in that
 # image, so they compare there.
@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 22
+          node-version: 24
       - run: npm ci
       - run: npm run format:check
       - run: npm run lint
