@@ -638,16 +638,27 @@ export const autoMethods = {
       fg = c('--fg'),
       fg3 = c('--fg3'),
       line = c('--line');
-    // Home Assistant text (aliases, names, trace errors) goes into quoted labels: esc() leaves no `"` to close one, and
-    // every % becomes Mermaid's #37; entity, so no text can open a %%{init}%% directive (theme, CSS, label settings)
-    const esc2 = s => esc(s).replace(/%/g, '#37;');
+    // Home Assistant text (aliases, names, trace errors) goes into quoted labels, and Mermaid reads `#nn;` entities in
+    // them, `%%{init}%%` directives and `$$…$$` formulas (KaTeX), so each of those is written so it can only be drawn:
+    // esc() leaves no `"` to close a label; a # that starts what could be an entity (`#36;`, `#lt;`) becomes `#35;`
+    // first, so a typed `#36;` or `#37;` stays text instead of turning into the `$` or `%` it names (any other # is
+    // left alone: `#35;` before every one would lose its `;` in a label with no later `;`, see below); every % becomes
+    // `#37;` (no `%%{init}%%` directive: theme, CSS, label settings); each $ gets its own <span>, so no two meet (an
+    // entity would not do: Mermaid decodes it before it looks for `$$`). Known: Mermaid drops the last `;` of a source
+    // line that has a `#` after a `style…:` with no space between, so a label that ends its line with `100#37;` draws
+    // `100#37`; the labels with a subtitle (a run's time) are spared by the `;` in its style
+    const mermaidText = s =>
+      esc(s)
+        .replace(/#(?=\w*;)/g, '#35;')
+        .replace(/%/g, '#37;')
+        .replace(/\$/g, () => '<span>$</span>');
     const lbl = n => {
       if (n.shape === 'circle' || n.shape === 'stop')
-        return `<span style='font-size:11px;font-weight:800;letter-spacing:.08em'>${esc2(n.d.t)}</span>`;
+        return `<span style='font-size:11px;font-weight:800;letter-spacing:.08em'>${mermaidText(n.d.t)}</span>`;
       const k = n.d.k
-        ? `<span style='font-size:11px;font-weight:800;letter-spacing:.1em;opacity:.65'>${esc2(n.d.k.toUpperCase())}</span><br/>`
+        ? `<span style='font-size:11px;font-weight:800;letter-spacing:.1em;opacity:.65'>${mermaidText(n.d.k.toUpperCase())}</span><br/>`
         : '';
-      return `${k}<span style='font-size:12px;font-weight:700'>${esc2(auCut(n.d.t, 64))}</span>${n.sub ? `<br/><span style='font-size:11px;font-weight:500;opacity:.75'>${esc2(n.sub)}</span>` : ''}`;
+      return `${k}<span style='font-size:12px;font-weight:700'>${mermaidText(auCut(n.d.t, 64))}</span>${n.sub ? `<br/><span style='font-size:11px;font-weight:500;opacity:.75'>${mermaidText(n.sub)}</span>` : ''}`;
     };
     const shape = n => {
       const L = `"${lbl(n)}"`;
@@ -667,7 +678,7 @@ export const autoMethods = {
     for (const n of G.nodes) out.push(`  ${n.id}${shape(n)}:::${n.cls}`);
     G.edges.forEach(e =>
       out.push(
-        `  ${e.a} ${e.cls === 'off' ? '-.->' : '-->'}${e.label ? `|"<span style='font-size:11px;font-weight:600'>${esc2(e.label)}</span>"|` : ''} ${e.b}`,
+        `  ${e.a} ${e.cls === 'off' ? '-.->' : '-->'}${e.label ? `|"<span style='font-size:11px;font-weight:600'>${mermaidText(e.label)}</span>"|` : ''} ${e.b}`,
       ),
     );
     out.push(`  classDef hit fill:${auMix(ok, card, 0.16)},stroke:${ok},stroke-width:2px,color:${fg}`);
@@ -1043,6 +1054,10 @@ export const autoMethods = {
       M.initialize({
         startOnLoad: false,
         securityLevel: 'strict',
+        // Mermaid 11.10+ draws node outlines with Rough.js, which with the default seed 0 picks a random one on each
+        // render: the outline's curve points then differ by sub-pixel amounts from one draw to the next, and the
+        // exact-match screenshots of the flows flake. Any fixed non-zero seed makes the drawing repeatable.
+        handDrawnSeed: 1,
         theme: 'base',
         fontFamily: this.css('--f-body') || 'Montserrat, sans-serif',
         themeVariables: {

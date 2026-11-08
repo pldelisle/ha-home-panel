@@ -1,6 +1,6 @@
 // Every tab opens, on a tablet and a phone, in the full and the bare house; nothing covers the Home button; no page error.
 // Test titles start with the check's number in docs/specs/01-playwright-test.md.
-import {test, expect, tabletOnly, eachShownTab, type House} from './fixtures';
+import {test, expect, tabletOnly, phoneOnly, eachShownTab, type House} from './fixtures';
 import type {Locator} from '@playwright/test';
 import {FULL_CFG} from './houses';
 
@@ -116,6 +116,32 @@ test.describe('French', () => {
     tabletOnly();
     await expect(house.root().locator('#rail')).toContainText(/Accueil|Lumières|Climat/);
     await homeButtonUncovered(house);
+  });
+
+  // The test house has a closed door, a hall sensor that sees motion and no camera. The line is English fragments joined with
+  // " · " and translated as one text node: a part without its own entry stayed English, and the sensor-row form put a colon in
+  // it. The whole line is compared, so an English word or a colon left in it fails the test.
+  test('42 the Security card on Home reads in French, with no English word and no colon', async ({house}) => {
+    await house.tab('home');
+    await expect(house.root().locator('#hsec .right')).toHaveText('toutes les portes fermées · mouvement en cours');
+  });
+
+  test('43 the Security pane reads in French, with no English word and no colon', async ({house}) => {
+    tabletOnly();
+    await house.tab('cams');
+    await expect(house.root().locator('#cmsub')).toHaveText(
+      'Aucune caméra · toutes les portes fermées · mouvement en cours',
+    );
+  });
+
+  test('44 the Security line under More on a phone reads in French, with no English word and no colon', async ({
+    house,
+  }) => {
+    phoneOnly();
+    await house.root().locator('#moretab').click();
+    await expect(house.root().locator('#morelist [data-tab="cams"] small')).toHaveText(
+      'Portes fermées · mouvement en cours',
+    );
   });
 });
 
