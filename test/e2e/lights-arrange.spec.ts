@@ -9,12 +9,14 @@ const tabletOnly = () => test.skip(test.info().project.name === 'phone', 'tablet
 const phoneOnly = () => test.skip(test.info().project.name === 'tablet', 'phone layout');
 
 test.describe('as an admin', () => {
-  test.use({houseOpts: {cfg: LINK_CFG}});
+  // the clock is faked so the test can let a stray service call show up before it ends, without waiting in real time
+  test.use({houseOpts: {cfg: LINK_CFG, time: '2026-11-07T12:00:00-05:00'}});
 
   test('37 dragging Living room onto Island reorders the tiles, saves the order and switches nothing', async ({house}) => {
     tabletOnly();
     const root = house.root();
     await house.tab('lights');
+    await expect(root.locator('#ledbar')).toBeVisible();
     await root.locator('#ledit').click();
     await expect(root.locator('#pane-lights')).toHaveClass(/ledit/);
     const centre = async (name: string) => {
@@ -30,10 +32,11 @@ test.describe('as an admin', () => {
 
     await expect.poll(() => tileTexts(house)).toEqual(['Office', 'Living room', 'Island', 'Sink']);
     await expect.poll(() => house.ws.at(-1)).toEqual({type: 'frontend/set_system_data', key: 'home_panel', value: {light_order: ['office', 'light.kitchen_island']}});
-    expect(house.calls.filter(c => /^light\./.test(c)), 'arranging switches or dims nothing').toEqual([]);
 
     await root.locator('#ledit').click();
     await expect(root.locator('#pane-lights')).not.toHaveClass(/ledit/);
+    await house.clock.runFor(1_100);
+    expect(house.calls.filter(c => /^light\./.test(c)), 'arranging switches or dims nothing').toEqual([]);
   });
 });
 
@@ -52,6 +55,8 @@ test.describe('as someone who is not an admin', () => {
   test('39 the Arrange bar is hidden', async ({house}) => {
     tabletOnly();
     await house.tab('lights');
-    await expect(house.root().locator('#ledbar')).toBeHidden();
+    const bar = house.root().locator('#ledbar');
+    await expect(bar).toHaveCount(1);
+    await expect(bar).toBeHidden();
   });
 });
