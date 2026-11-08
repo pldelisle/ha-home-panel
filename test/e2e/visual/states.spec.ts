@@ -2,29 +2,23 @@
 // stack card, the light sheet, the live-activity popup, the settings popup and the Status checks.
 // Baselines live in test/e2e/__screenshots__/visual/states.spec.ts/ and are recorded only inside the Playwright image (Docker or
 // `container`: npm run test:visual:update); a difference is either fixed or approved by updating them in the same pull request.
-import {test, expect, IDLE_AFTER_MS, type House} from '../fixtures';
+import {test, expect, type House} from '../fixtures';
 import {AFTERNOON, FULL_CFG, VIEWPORTS} from '../houses';
 import {OFFICE_TILE} from '../lights';
+import {NIGHT, goIdle} from '../idle';
 import {pill, stopCharging, openFrontDoor, openPopup} from '../live';
-
-const NIGHT = '2026-11-07T23:30:00-05:00';
 
 // The idle clock draws two things that differ between runs, and neither is a tolerance question:
 // - the time: it reads "now", so Date cannot be frozen (`frozen` would show 11:30 pm after five minutes). The test stops the clock
-//   a minute on from the load and lets fastForward move it, so the time (and the card the stack turns to) is the same on every run.
+//   a minute on from the load and lets goIdle move it five minutes on, on a phone too, so the time (and the card the stack turns
+//   to: the first one, on both viewports) is the same on every run.
 // - the position: the panel nudges the whole block by a random offset on every tick so the screen never rests on the same pixels
-//   (Math.random in renderIdle). The test pins Math.random to its middle, which is no nudge at all.
-async function goIdle(house: House, viewport: 'tablet' | 'phone') {
+//   (Math.random in renderIdle). The test pins Math.random to its middle, which is no nudge at all. The pin MUST be installed before
+//   the idle clock starts, because renderIdle draws the first offset the moment it starts; idle.spec.ts covers the drift this hides.
+async function idleClock(house: House) {
   await house.page.evaluate(() => { Math.random = () => 0.5; });
   await house.clock.pauseAt(new Date(Date.parse(NIGHT) + 60_000));
-  if (viewport === 'tablet') {
-    await house.clock.fastForward(IDLE_AFTER_MS + 1_000);
-  } else {
-    // phones never go idle on their own: "Sleep now" in the settings starts the clock
-    await house.root().locator('#gear').click();
-    await house.root().locator('[data-sleep]').click();
-  }
-  await expect(house.root().locator('#istk .sc')).toBeVisible();
+  await goIdle(house);
 }
 
 for (const viewport of ['tablet', 'phone'] as const) {
@@ -36,7 +30,7 @@ for (const viewport of ['tablet', 'phone'] as const) {
         test.describe('idle clock', () => {
           test.use({houseOpts: {cfg: FULL_CFG, theme, time: NIGHT}});
           test('with a stack card', async ({house}) => {
-            await goIdle(house, viewport);
+            await idleClock(house);
             await expect(house.page).toHaveScreenshot(`idle-stack-${viewport}-${theme}-en.png`);
           });
         });
@@ -56,7 +50,6 @@ for (const viewport of ['tablet', 'phone'] as const) {
             await expect(house.page).toHaveScreenshot(`live-popup-${viewport}-${theme}-en.png`);
           });
 
-          // the gear is `<button id="gear" aria-label="Settings">` in the header; the popup it opens is `#setpop`
           if (viewport === 'tablet') {
             test('settings popup', async ({house}) => {
               await house.root().locator('#gear').click();

@@ -3,7 +3,7 @@
 // Test titles start with the check's number in docs/specs/01-playwright-test.md.
 import {test, expect} from './fixtures';
 import {LINK_CFG} from './houses';
-import {tileNames} from './lights';
+import {OFFICE_TILE, tileNames} from './lights';
 
 const tabletOnly = () => test.skip(test.info().project.name === 'phone', 'tablet layout');
 const phoneOnly = () => test.skip(test.info().project.name === 'tablet', 'phone layout');
@@ -65,7 +65,7 @@ test.describe('as someone who is not an admin', () => {
     tabletOnly();
     const root = house.root();
     await house.tab('lights');
-    await root.locator('#pane-lights .lcell[data-lsheet="office"] .tx').click();
+    await root.locator(`${OFFICE_TILE} .tx`).click();
     await expect(root.locator('#lsheet .lnav')).toBeDisabled();
   });
 });
