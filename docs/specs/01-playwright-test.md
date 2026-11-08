@@ -88,7 +88,7 @@ Every check below exists in the script today and MUST exist after the conversion
 1. Every tab button that is not hidden opens a pane that is visible and at least 50 px tall. Tablet tabs: home, lights, climate, weather, car, energy, air, media, cams, auto. Phone tabs: home, lights, climate, car.
 2. The Home tab button is the topmost element at its centre (nothing invisible covers it).
 3. Full house, tablet: the text "Alex" appears (who's home lists the configured people); the water heater card is visible; the Hilo card is hidden; the Car tab button is visible.
-4. Bare house, both viewports: the water heater card, the Hilo card, the Car tab and the Climate tab are hidden. 4b (added for #72): no Climate or Car tab or Home tile is left shown at the end of any task, on load or after a change redraws the Home tiles (a MutationObserver installed before the panel loads sees the DOM as the next frame would paint it).
+4. Bare house, both viewports: the water heater card, the Hilo card, the Car tab and the Climate tab are hidden. 41. In the bare house, both viewports: nothing the house lacks (the Climate and Car tabs and their Home tiles, the water heater and Hilo cards and the tiles that open them) is shown at the end of any task that changes the panel, from load through a light change that redraws the Home tiles and, on a phone, opening Energy, which draws its Water heater and Hilo rows.
 5. French (`lang: 'fr'`), tablet: the rail text matches Accueil, Lumières or Climat.
 6. Dark theme, tablet: loads with no error (kept as a smoke run until spec 02 makes it a screenshot).
 
