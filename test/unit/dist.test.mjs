@@ -138,20 +138,29 @@ test('the licence notices the libraries carry stay in their chunks', () => {
   expect(all).toContain('ApexCharts v3.45.2');
 });
 
-test('ApexCharts and its stylesheet are in one lazy chunk, and not in the entry', () => {
+test('ApexCharts is in one lazy chunk, and its stylesheet is shipped once', () => {
   // the version comes from the package, and the library is recognised by a class name only its drawing code uses (its
-  // banner comment stays in the chunk with the other licence comments, but says nothing about where the code is); the
-  // stylesheet by one of its selectors
+  // banner comment stays in the chunk with the other licence comments, but says nothing about where the code is). The
+  // library carries its own copy of the stylesheet and writes it into the shadow root when a chart mounts; the panel
+  // must not add a second one by importing the CSS file as text (`?raw`, or `?inline`, which Vite minifies). The copies
+  // are told apart by counting, with a snippet that survives minifying (one selector, no line breaks or spaces that a
+  // minifier may change): it is in the shipped files once, not twice.
   const lib = 'apexcharts-xaxis-label',
-    sheet = '.apexcharts-canvas ::-webkit-scrollbar';
+    sheet = '.apexcharts-canvas ::-webkit-scrollbar-thumb';
   // 3.45.2 exactly: the charts must stay pixel-identical, and renovate.json freezes the version
   expect(JSON.parse(read('node_modules/apexcharts/package.json')).version).toBe('3.45.2');
+  expect(
+    read('node_modules/apexcharts/dist/apexcharts.css'),
+    'the probe is a line of the package stylesheet',
+  ).toContain(sheet);
   const withApex = chunks.filter(c => text(c).includes(lib));
   expect(withApex, `chunks holding the library (${lib})`).toHaveLength(1);
-  expect(text(withApex[0]).includes(sheet), 'the stylesheet text is in that chunk').toBe(true);
   const entry = readFileSync(BUNDLE, 'utf8');
   expect(entry.includes(lib), 'the entry holds no ApexCharts code').toBe(false);
-  expect(entry.includes(sheet), 'the entry holds no ApexCharts stylesheet').toBe(false);
+  const copies = body => body.split(sheet).length - 1;
+  expect(copies(entry), 'copies of the stylesheet in the entry').toBe(0);
+  expect(copies(text(withApex[0])), "copies of the stylesheet in the library's chunk (its own)").toBe(1);
+  for (const c of chunks) if (c !== withApex[0]) expect(copies(text(c)), `copies of the stylesheet in ${c}`).toBe(0);
   // the entry reaches the chunk through a dynamic import of a path beside it
   expect(entry).toMatch(/import\(\s*[`"']\.\/chunks\/apex-lib-[\w-]+\.js[`"']\s*\)/);
 });
