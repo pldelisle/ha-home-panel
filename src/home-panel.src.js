@@ -2316,7 +2316,7 @@ class HomePanel extends HTMLElement {
       }
     });
     for (const t of ['pointerup', 'pointercancel'])
-      cd.addEventListener(t, e => {
+      cd.addEventListener(t, () => {
         if (!this.dialDrag) return;
         this.dialDrag = false;
         this.dialLast = null;
@@ -2622,8 +2622,7 @@ class HomePanel extends HTMLElement {
     const temp = attr(E.weather, 'temperature') ?? num(E.outT),
       cond = st(E.cond),
       att = this.attention();
-    const ri = this.rateInfo(),
-      peak = st(E.hqPeak);
+    const peak = st(E.hqPeak);
     const chips = [];
     if (temp != null)
       chips.push(
@@ -2715,8 +2714,7 @@ class HomePanel extends HTMLElement {
       </svg>`;
   }
   renderEnergy() {
-    const L = this.live(),
-      ri = this.rateInfo(),
+    const ri = this.rateInfo(),
       H = this.H;
     const t = H ? H.totals : null,
       g30 = H ? H.g30 : null;
@@ -3222,7 +3220,7 @@ class HomePanel extends HTMLElement {
     const fn = attr(this.car.id('image', 'vehicleimage'), 'friendly_name') || '';
     return (CFG && CFG.car.name) || fn.replace(/\s*Vehicle Picture$/i, '') || 'Car';
   }
-  carImg(cls) {
+  carImg() {
     const pic = attr(this.car.id('image', 'vehicleimage'), 'entity_picture');
     return pic && !this.imgFail
       ? `<img class="carimg" src="${esc(pic)}" alt="${esc(this.carName())}">`
@@ -4625,7 +4623,7 @@ class HomePanel extends HTMLElement {
   }
   renderAirLive() {
     const P = this.purifiers(),
-      {A, worst, good, why} = this.airSummary(P);
+      {A, worst, why} = this.airSummary(P);
     this.$('asub').textContent =
       worst < 0 ? 'No readings yet' : worst === 0 ? `${AQ_LVL[0][0]} in every room` : `${AQ_LVL[worst][0]} · ${why}`;
     this.set(
@@ -6648,7 +6646,6 @@ class HomePanel extends HTMLElement {
     const pair = a.link ? [a, a.link.other] : [a],
       all = pair.flatMap(x => x.ids),
       on = all.filter(isOn);
-    const als = [...new Set(pair.map(x => x.al).filter(Boolean))];
     // back to the schedule: Adaptive Lighting on and nothing held by hand
     const resume = (ids, al) => {
       if (!isOn(al)) this.call('switch', 'turn_on', {entity_id: al});
@@ -7365,8 +7362,7 @@ class HomePanel extends HTMLElement {
     this.$('coutp').textContent = R.outNote;
   }
   climInfo() {
-    const L = this.live(),
-      H = this.H;
+    const L = this.live();
     const C = this.CR[this.crange],
       R = CRANGE[this.crange],
       rng = pts => {
@@ -7471,7 +7467,7 @@ class HomePanel extends HTMLElement {
       }
       this.set(
         'chead',
-        `<div class="big"><div><h3>${esc(title)}</h3><p>${esc(sub)}</p></div>${pill}</div>${this.dial(t, d.sp, d.lo, d.hi, d.ed, `${t != null ? 'Now ' + f1(t) + '°' : ''}${out != null ? ' · Outside ' + f1(out) + '°' : ''}`, d.state)}`,
+        `<div class="big"><div><h3>${esc(title)}</h3><p>${esc(sub)}</p></div>${pill}</div>${this.dial(t, d.sp, d.lo, d.hi, d.ed, `${t != null ? 'Now ' + f1(t) + '°' : ''}${out != null ? ' · Outside ' + f1(out) + '°' : ''}`)}`,
       );
       if (fresh) {
         const d = this.$('chead').querySelector('.dial');
@@ -7625,7 +7621,7 @@ class HomePanel extends HTMLElement {
     this.set('cctl', html);
   }
   // Apple Home style thermostat dial: a 270° track, ticks, the setpoint knob (draggable) and a dot at the room temperature
-  dial(t, sp, lo, hi, ed, sub, state) {
+  dial(t, sp, lo, hi, ed, sub) {
     const S = 260,
       c = S / 2,
       R = 106,
@@ -8139,7 +8135,7 @@ class HomePanel extends HTMLElement {
       win = st(this.car.id('sensor', 'windowposition'));
     if (!ok(ds)) return '';
     const open = Object.entries(ds.attributes)
-      .filter(([k, v]) => v === 'OPEN' || v === 'AJAR')
+      .filter(([, v]) => v === 'OPEN' || v === 'AJAR')
       .map(([k]) => k);
     return open.length
       ? 'Open: ' + open.join(', ')

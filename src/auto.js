@@ -111,7 +111,6 @@ const auShortAlias = a => {
   const i = a.indexOf(' - ');
   return i > 0 && i < 24 ? a.slice(i + 3) : a;
 };
-const auQ = s => String(s).replace(/"/g, '#quot;');
 
 const AUTO = {
   // ---------- names in plain words ----------
@@ -184,7 +183,7 @@ const AUTO = {
       .replace(/\bwait\.completed\b/g, 'the wait finished')
       .replace(/\brepeat\.index\b/g, 'try')
       .replace(/'([^']*)'/g, (m, x) => x.replace(/_/g, ' '))
-      .replace(/[()\[\]]/g, ' ')
+      .replace(/[()[\]]/g, ' ')
       .replace(/\b(and|or)\b/g, ' $1 ')
       .replace(/\s+/g, ' ')
       .trim();
