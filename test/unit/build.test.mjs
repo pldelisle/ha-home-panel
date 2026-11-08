@@ -1,6 +1,5 @@
 // The build: every placeholder filled once, a valid ES module, and nothing from one particular house inside
-import {test} from 'node:test';
-import assert from 'node:assert/strict';
+import {test, expect} from 'vitest';
 import {readFileSync, readdirSync, mkdtempSync, existsSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
@@ -12,19 +11,19 @@ const r = build('9.9.9-test', out);
 const js = readFileSync(join(out, 'home-panel.js'), 'utf8');
 
 test('the bundle carries the version and no placeholder', () => {
-  assert.equal(r.version, '9.9.9-test');
-  assert.match(js, /const VERSION = "9\.9\.9-test";/);
+  expect(r.version).toBe('9.9.9-test');
+  expect(js).toMatch(/const VERSION = "9\.9\.9-test";/);
   for (const m of ['__CSS__', '__VERSION__', '/*__FR__*/', '/*__AUTO__*/', '/*__CONFIG__*/'])
-    assert.ok(!js.includes(m), m);
+    expect(!js.includes(m), m).toBeTruthy();
 });
 
 test('the bundle parses as an ES module', () => {
-  assert.doesNotThrow(() => execFileSync(process.execPath, ['--check', join(out, 'home-panel.js')], {stdio: 'pipe'}));
+  expect(() => execFileSync(process.execPath, ['--check', join(out, 'home-panel.js')], {stdio: 'pipe'})).not.toThrow();
 });
 
 test('the vendored libraries are copied next to it', () => {
   for (const f of ['apexcharts.min.js', 'apexcharts.css', 'leaflet.js', 'leaflet.css', 'mermaid.min.js'])
-    assert.ok(existsSync(join(out, f)), f);
+    expect(existsSync(join(out, f)), f).toBeTruthy();
 });
 
 test('no personal data: names, places, a house photo or house-specific entity ids', () => {
@@ -33,11 +32,11 @@ test('no personal data: names, places, a house photo or house-specific entity id
     .filter(f => /\.(ts|mjs|html|json)$/.test(f))
     .map(f => 'test/e2e/' + f);
   for (const f of ['houses.ts', 'fixtures.ts', 'harness.html', 'automations.json'])
-    assert.ok(e2e.includes('test/e2e/' + f), `scans ${f}`);
-  assert.ok(
+    expect(e2e.includes('test/e2e/' + f), `scans ${f}`).toBeTruthy();
+  expect(
     e2e.some(f => f.endsWith('.spec.ts')),
     'scans the specs',
-  );
+  ).toBeTruthy();
   const src =
     ['src/home-panel.src.js', 'src/config.js', 'src/auto.js', 'src/i18n/fr.js', 'src/i18n/fr-map.js', ...e2e]
       .map(f => readFileSync(new URL('../../' + f, import.meta.url), 'utf8'))
@@ -56,6 +55,6 @@ test('no personal data: names, places, a house photo or house-specific entity id
   ];
   for (const re of banned) {
     const m = src.match(re);
-    assert.equal(m, null, `found ${re}: …${m && src.slice(Math.max(0, m.index - 40), m.index + 40)}…`);
+    expect(m, `found ${re}: …${m && src.slice(Math.max(0, m.index - 40), m.index + 40)}…`).toBe(null);
   }
 });
