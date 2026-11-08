@@ -1,4 +1,4 @@
-// Helpers for the Lights tab specs: what a person reads on the tiles and where they press on a slider.
+// Helpers for the Lights tab specs: what a person reads on the tiles, and what the panel sent to Home Assistant.
 import type {House} from './fixtures';
 
 /** opens the Lights tab and returns the names on its tiles, in order */
@@ -9,3 +9,6 @@ export const tileNames = async (house: House) => {
 
 /** the JSON a service call carried: "light.turn_on {...}" gives the object */
 export const callData = (call: string) => JSON.parse(call.replace(/^\S+ /, ''));
+
+/** a failure message that shows the calls the panel made */
+export const callsMessage = (house: House, what: string) => `${what} (calls: ${house.calls.join('; ')})`;

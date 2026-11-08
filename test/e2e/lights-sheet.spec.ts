@@ -3,15 +3,15 @@
 // Test titles start with the check's number in docs/specs/01-playwright-test.md.
 import {test, expect, type House} from './fixtures';
 import {FULL_CFG} from './houses';
-import {callData} from './lights';
+import {callData, callsMessage} from './lights';
 
-test.use({houseOpts: {cfg: FULL_CFG}});
+// a fake clock lets the tests run past the panel's timers (the 60 ms drag release, the 1 s render tick) without waiting
+test.use({houseOpts: {cfg: FULL_CFG, time: '2026-11-07T12:00:00-05:00'}});
 test.skip(() => test.info().project.name === 'phone', 'tablet layout');
 
 const OFFICE_TILE = '#pane-lights .lcell[data-lsheet="office"]';
-const callsMessage = (house: House, what: string) => `${what} (calls: ${house.calls.join('; ')})`;
 
-/** the centre of an element, in page coordinates, plus its size */
+/** an element's top-left corner and size, in page coordinates */
 const box = async (house: House, selector: string) => {
   const b = await house.root().locator(selector).boundingBox();
   if (!b) throw new Error(`${selector} is not on screen`);
@@ -28,7 +28,8 @@ const openOffice = async (house: House) => {
 
 test('26 tapping the right part of the Office tile opens the sheet and switches nothing', async ({house}) => {
   await openOffice(house);
-  expect(house.calls.filter(c => /^light\./.test(c)), 'opening the sheet switches nothing').toEqual([]);
+  await house.clock.runFor(1_100);
+  expect(house.calls.filter(c => /^light\./.test(c)), callsMessage(house, 'opening the sheet switches nothing')).toEqual([]);
 });
 
 test('27 dragging up the brightness slider sends one brightness and takes the room off Auto', async ({house}) => {
@@ -39,6 +40,7 @@ test('27 dragging up the brightness slider sends one brightness and takes the ro
   await house.page.mouse.down();
   for (let i = 1; i <= 8; i++) await house.page.mouse.move(x, b.y + b.height * (0.6 - i * 0.07));
   await house.page.mouse.up();
+  await house.clock.runFor(1_100); // past the drag's release and the panel's next render tick: a stray second call would be sent by now
   const brightness = () => house.calls.filter(c => /^light\.turn_on .*office_1/.test(c) && /brightness_pct/.test(c));
   await expect.poll(() => brightness().length, callsMessage(house, 'a drag sends a brightness')).toBeGreaterThan(0);
   expect(brightness(), callsMessage(house, 'a drag sends one brightness')).toHaveLength(1);
@@ -58,7 +60,9 @@ test('28 tapping near the top of the colour slider picks a cool white', async ({
 test('29 ArrowDown on the brightness slider dims by 10 %', async ({house}) => {
   await house.setState('light.office_1', {attributes: {brightness: 245}}); // the office bulb sits at 96 %
   await openOffice(house);
-  await house.root().locator('#lsheet .lpill[data-lp="br"]').focus();
+  const pill = house.root().locator('#lsheet .lpill[data-lp="br"]');
+  await expect(pill).toHaveAttribute('aria-valuenow', '96');
+  await pill.focus();
   await house.page.keyboard.press('ArrowDown');
   await expect.poll(() => house.calls.some(c => /^light\.turn_on .*office_1.*"brightness_pct":86/.test(c)), callsMessage(house, 'ArrowDown dims by 10 % from where the slider stands')).toBe(true);
 });

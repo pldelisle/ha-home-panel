@@ -3,7 +3,7 @@
 // Test titles start with the check's number in docs/specs/01-playwright-test.md.
 import {test, expect} from './fixtures';
 import {FULL_CFG} from './houses';
-import {tileNames} from './lights';
+import {tileNames, callsMessage} from './lights';
 
 const SPLIT_CFG = {...FULL_CFG, split_light_areas: ['kitchen']};
 const isPhone = () => test.info().project.name === 'phone';
@@ -15,7 +15,7 @@ test.describe('split kitchen', () => {
     test.skip(isPhone(), 'tablet layout');
     expect(await tileNames(house), 'one tile per kitchen group, kept together where the kitchen sorts').toEqual(['Island', 'Sink', 'Living room', 'Office']);
     await house.root().locator('#pane-lights .lcell button.lbulb[data-a="light.kitchen_sink"]').click();
-    await expect.poll(() => house.calls.some(c => /^light\.turn_on .*kitchen_sink_1/.test(c) && !/island/.test(c)), `the Sink tile switches only its own bulbs (calls: ${house.calls.join('; ')})`).toBe(true);
+    await expect.poll(() => house.calls.some(c => /^light\.turn_on .*kitchen_sink_1/.test(c) && !/island/.test(c)), callsMessage(house, 'the Sink tile switches only its own bulbs')).toBe(true);
   });
 
   test('23 the Lights tab opens on a phone with no page error', async ({house}) => {
