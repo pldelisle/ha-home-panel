@@ -7,7 +7,12 @@
   "scripts": {
     "build": "node build.mjs",
     "test": "node --test \"test/unit/*.test.mjs\"",
-    "test:e2e": "npm run build && playwright test",
+    "test:e2e": "npm run build && playwright test --project=tablet --project=phone",
+    "test:visual": "npm run build && playwright test --project=visual",
+    "test:visual:docker": "docker run --rm --init --ipc=host -v \"$PWD\":/work -w /work -e CI=1 mcr.microsoft.com/playwright:v1.63.0-noble npm run test:visual",
+    "test:visual:update": "docker run --rm --init --ipc=host -v \"$PWD\":/work -w /work -e CI=1 mcr.microsoft.com/playwright:v1.63.0-noble npm run test:visual -- --update-snapshots",
+    "test:visual:container": "container run --rm --init -c 4 -m 4g -v \"$PWD\":/work -w /work -e CI=1 mcr.microsoft.com/playwright:v1.63.0-noble npm run test:visual",
+    "test:visual:update:container": "container run --rm --init -c 4 -m 4g -v \"$PWD\":/work -w /work -e CI=1 mcr.microsoft.com/playwright:v1.63.0-noble npm run test:visual -- --update-snapshots",
     "check": "node --check dist/home-panel.js"
   },
   "engines": {

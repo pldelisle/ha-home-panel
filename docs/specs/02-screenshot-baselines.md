@@ -27,8 +27,8 @@ Record a reference screenshot of every tab and of the main open states, on both 
 
 ### Where screenshots run
 
-- Screenshots are rendered by text, fonts and anti-aliasing that differ between operating systems. Baselines MUST therefore be recorded and compared on one platform only: Linux, inside the official Playwright Docker image for the pinned Playwright version. CI already runs Ubuntu with that version's browsers; locally, a script MUST run the visual project inside that image so a maintainer can update baselines without a Linux machine.
-- `npm run test:visual` runs the visual project (in CI directly; locally through Docker). `npm run test:visual:update` runs it with `--update-snapshots` through Docker and writes the new baselines.
+- Screenshots are rendered by text, fonts and anti-aliasing that differ between operating systems and CPU architectures. Baselines MUST therefore be recorded and compared on one platform only: Linux arm64, inside the official Playwright image (`mcr.microsoft.com/playwright:v1.63.0-noble`, multi-arch) for the pinned Playwright version. CI runs on GitHub's arm64 runners (`ubuntu-24.04-arm`) with a job-level `container:` of that image, so every job, behaviour suite included, uses the same image and Chromium. A maintainer on an Apple Silicon Mac runs the same image natively, through Docker or Apple's `container` CLI; no emulation is involved. A baseline MUST NOT be recorded on the bare host or on an x86 machine.
+- `npm run test:visual` runs the visual project and is what the image executes (CI runs it in the container; on a laptop it never runs on the bare host). `npm run test:visual:docker` and `npm run test:visual:container` compare through Docker and Apple's `container`; `npm run test:visual:update` and `npm run test:visual:update:container` run it with `--update-snapshots` the same two ways and write the new baselines. Both runners produce byte-identical PNGs.
 - The snapshot path template MUST NOT include the platform or browser name, so one set of files is the truth: `test/e2e/__screenshots__/{testFilePath}/{arg}{ext}`, where `{arg}` is the name the test gives.
 - Until spec 08 bundles the font, Montserrat is blocked and the fallback is whatever the Docker image's `sans-serif` resolves to. That is stable within the image and is accepted as the baseline look for now; spec 08 updates every baseline once.
 
@@ -51,6 +51,7 @@ That is about 100 images. Each MUST be a full-page viewport capture (`fullPage: 
 ### Determinism rules
 
 - Every visual test MUST install the fake clock at `2026-11-07T14:00:00-05:00` unless the row above says otherwise, so greetings, sun position, "ago" texts, history curves and the day's calendar are fixed.
+- Installing the fake clock is not enough: it lets time keep flowing from the fixed instant, so a chart axis or a history curve drawn from "now" moves by a sub-pixel between runs (seen on the Climate tab). Visual tests also freeze `Date` with the fixture's `frozen: true`; timers still run.
 - `reducedMotion: 'reduce'` is inherited from the project; `toHaveScreenshot` MUST pass `animations: 'disabled'` and `caret: 'hide'`.
 - Before capturing a tab, the test MUST wait for the pane to be visible and then for the page to settle; `toHaveScreenshot` already waits for two consecutive identical frames, which covers chart draw-in.
 - The Automations tab draws with Mermaid; the test MUST wait for the flow SVG to exist before capturing.

@@ -24,6 +24,8 @@ export type HouseOpts = {
   admin?: boolean;
   /** an ISO instant; when set, the page's clock is faked at it before the panel loads */
   time?: string;
+  /** with `time`: also stop `Date` from moving, so anything drawn from "now" (chart axes, history curves) is the same pixels on every run; timers still run */
+  frozen?: boolean;
   /** the frontend's system data to start from, e.g. {home_panel: {light_order: [...]}} */
   sysdata?: object;
 };
@@ -71,6 +73,7 @@ export const test = base.extend<{houseOpts: HouseOpts; house: House}>({
       else if (m.type() === 'error' && !/Failed to load resource|fonts\.g/.test(t)) errors.push(t);
     });
     if (o.time) await page.clock.install({time: new Date(o.time)});
+    if (o.time && o.frozen) await page.clock.setFixedTime(new Date(o.time));
     await page.goto(`/?house=${o.house}&lang=${o.lang}&admin=${o.admin ? 1 : 0}`);
     const root = () => page.locator('home-panel');
     await root().locator('#rail').waitFor({state: 'attached'});

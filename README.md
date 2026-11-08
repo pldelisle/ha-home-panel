@@ -130,11 +130,20 @@ npm ci
 npm run build          # dist/home-panel.js plus the vendored libraries
 npm test               # unit tests: config, build, French, a scan for personal data
 npm run test:e2e       # builds, then runs the Playwright suite
+npm run test:visual:docker           # compares every tab with its screenshot baseline, inside Docker
+npm run test:visual:update           # records new baselines, inside Docker
+npm run test:visual:container        # the same two, through Apple's `container` CLI (container system start)
+npm run test:visual:update:container
 ```
 
-`npm run test:e2e` builds, then runs the Playwright suite against the made-up house on a tablet and a phone;
+`npm run test:e2e` builds, then runs the Playwright suite (the tablet and phone projects, not the screenshots) against the made-up house;
 `npm run test:e2e -- test/e2e/lights-sheet.spec.ts` runs one file. The first run needs a browser: `npx playwright install chromium`.
 The test server listens on port 4173 unless `E2E_PORT` names another, so several runs can share a machine.
+
+Screenshots are compared with baselines in `test/e2e/__screenshots__/`. They are rendered in the Playwright image for the pinned
+version (Linux arm64, which is also what CI runs on), so fonts and anti-aliasing match everywhere: `npm run test:visual:docker` (or
+`:container`) compares, `npm run test:visual:update` (or `:container`) rewrites them. Run the one for the tool you have: Docker Desktop, or
+Apple's `container` after `container system start`. Baselines are only ever regenerated through the Docker or container script, never on the bare host.
 
 The source is one custom element in `src/home-panel.src.js`. `build.mjs` splices in the CSS (`src/css/`), the French
 translations (`src/i18n/`), the Automations tab (`src/auto.js`) and the configuration code (`src/config.js`).

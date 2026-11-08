@@ -9,6 +9,9 @@ const PORT = Number(process.env.E2E_PORT ?? 4173);
 export default defineConfig({
   testDir: 'test/e2e',
   testMatch: '**/*.spec.ts',
+  // one set of baselines for everyone: no platform or browser in the name, because they are recorded in the Docker image only
+  snapshotPathTemplate: '{testDir}/__screenshots__/{testFilePath}/{arg}{ext}',
+  expect: {toHaveScreenshot: {maxDiffPixelRatio: 0.001, threshold: 0.2, animations: 'disabled', caret: 'hide'}},
   retries: CI ? 2 : 0,
   workers: CI ? 2 : undefined,
   reporter: CI ? [['github'], ['html', {open: 'never'}]] : 'list',
@@ -29,7 +32,9 @@ export default defineConfig({
     reuseExistingServer: !CI,
   },
   projects: [
-    {name: 'tablet', use: {viewport: {width: 1180, height: 820}}},
-    {name: 'phone', use: {viewport: {width: 393, height: 852}}},
+    {name: 'tablet', testIgnore: '**/visual/**', use: {viewport: {width: 1180, height: 820}}},
+    {name: 'phone', testIgnore: '**/visual/**', use: {viewport: {width: 393, height: 852}}},
+    // the specs under visual/ set their own viewport per describe (the baseline names carry it); no retries, so a flaky frame shows
+    {name: 'visual', testMatch: '**/visual/*.spec.ts', retries: 0, timeout: 120_000, use: {viewport: {width: 1180, height: 820}}},
   ],
 });
