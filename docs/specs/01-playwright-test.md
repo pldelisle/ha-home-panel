@@ -90,7 +90,7 @@ Every check below exists in the script today and MUST exist after the conversion
 3. Full house, tablet: the text "Alex" appears (who's home lists the configured people); the water heater card is visible; the Hilo card is hidden; the Car tab button is visible.
 4. Bare house, both viewports: the water heater card, the Hilo card, the Car tab and the Climate tab are hidden. 41. In the bare house, both viewports: nothing the house lacks (the Climate and Car tabs and their Home tiles, the water heater and Hilo cards and the tiles that open them) is shown at the end of any task that changes the panel, from load through a light change that redraws the Home tiles and, on a phone, opening Energy, which draws its Water heater and Hilo rows.
 5. French (`lang: 'fr'`), tablet: the rail text matches Accueil, Lumières or Climat.
-6. Dark theme, tablet: loads with no error (kept as a smoke run until spec 02 makes it a screenshot).
+6. Dark theme, tablet: loads with no error (kept as a smoke run until spec 02 makes it a screenshot). 42. Full house, both viewports, under the projects' Reduce Motion: tapping every shown tab starts no transition or animation in the tab bar (the rail on a tablet, the bar on a phone), as `transitionrun` and `animationstart` report in the frame after a tap (#94).
 
 `media.spec.ts` (tablet) 7. Tapping the TV mute button sends `media_player.volume_mute`; tapping power sends `media_player.turn_off`.
 

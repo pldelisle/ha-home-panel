@@ -69,6 +69,27 @@ test.describe('full house', () => {
     await shown(house.root().locator('#hilo')).toBe(false);
     await shown(house.root().locator('#rail [data-tab="car"]')).toBe(true);
   });
+
+  // every project sets Reduce Motion; under it a tap changes the tab bar in one step. A highlight that still faded redrew the glass
+  // rail for a fifth of a second after the tap, and a screenshot that ended the fade at whatever frame it had reached came out one
+  // of two images (#94). A transition or animation reports itself (transitionrun, animationstart) in the frame after it starts.
+  test('42 under Reduce Motion, tapping a tab starts no transition or animation in the tab bar', async ({house}) => {
+    await house.root().evaluate(el => {
+      const started: string[] = [];
+      (window as unknown as {started: string[]}).started = started;
+      for (const type of ['transitionrun', 'animationstart'])
+        el.shadowRoot!.addEventListener(type, e => {
+          const t = e.target as HTMLElement,
+            what = e instanceof TransitionEvent ? e.propertyName : (e as AnimationEvent).animationName;
+          // the rail on a tablet, the bar on a phone; a chart drawing in the pane is not the question here
+          if (t.closest('#rail')) started.push(`${t.dataset.tab ?? t.localName} ${type} ${what}`);
+        });
+    });
+    await eachShownTab(house);
+    // one frame more, so the last tap's events have arrived
+    await house.page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
+    expect(await house.page.evaluate(() => (window as unknown as {started: string[]}).started)).toEqual([]);
+  });
 });
 
 test.describe('bare house', () => {
