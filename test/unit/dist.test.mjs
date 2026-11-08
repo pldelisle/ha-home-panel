@@ -65,6 +65,20 @@ test('dist/ holds the bundle, its source map, the lazy chunks and the vendored l
   }
 });
 
+test("the chunks' maps name the libraries' files but leave out their text", () => {
+  // vite.config.ts drops each node_modules source's text from the chunk maps (9.9 MB of Mermaid alone); the panel's
+  // own files keep theirs
+  const maps = distFiles.filter(f => /^chunks\/.+\.js\.map$/.test(f));
+  expect(maps.length).toBeGreaterThan(0);
+  for (const f of maps) {
+    const map = JSON.parse(readFileSync(join(DIST, f), 'utf8'));
+    map.sources.forEach((s, i) => {
+      if (s.includes('node_modules/')) expect(map.sourcesContent?.[i] ?? null, `${f}: ${s}`).toBe(null);
+      else expect(typeof map.sourcesContent?.[i], `${f}: ${s}`).toBe('string');
+    });
+  }
+});
+
 test('the vendored libraries are copied as they are', () => {
   for (const f of VENDORED)
     expect(readFileSync(join(DIST, f)).equals(readFileSync(join(ROOT, 'vendor', f))), f).toBe(true);
