@@ -115,7 +115,7 @@ Every check below exists in the script today and MUST exist after the conversion
 
 ## Acceptance Criteria
 
-1. `npm run test:e2e` passes locally and in CI on `main`, with every check numbered 1 to 40 present as a named test.
+1. `npm run test:e2e` passes locally and in CI on `main`, with every check numbered 1 to 44 present as a named test.
 2. `smoke.mjs` is gone; `test/e2e/out/` is gone; no spec calls a method or reads a property of the `home-panel` element other than setting `hass`, `narrow` and `panel` from the harness.
 3. No file under `src/` changed.
 4. A deliberately failing assertion in CI produces an uploaded trace and screenshot.

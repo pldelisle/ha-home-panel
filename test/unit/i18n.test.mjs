@@ -63,17 +63,29 @@ test('the Security line is French in every part and has no stray colon', async (
   expect(frText('all doors closed')).toBe('toutes les portes fermées');
 });
 
-test('the camera sheet line: state, motion now or last motion', async () => {
+// A sensor row ("Front door open", "Garage door offline": `${name} open`, `${name} offline` in sensorState and the attention
+// list) keeps the form it had, colon included; the Security line must never reach it. FR_DOOR's motion forms and
+// "Front door closed" are not drawn by the panel today; they are pinned so that FR_DOOR stays as it is.
+test('a sensor row keeps its own form', async () => {
   const {frText} = await load([]);
-  expect(frText('Streaming · motion now')).toBe('En direct · mouvement en cours');
-  expect(frText('Streaming · last motion 5 min ago')).toBe('En direct · dernier mouvement il y a 5 min');
-});
-
-// a sensor row puts the colon after the name ("Hall : mouvement en cours"); the Security line must never reach that form
-test('a sensor row keeps its colon', async () => {
-  const {frText} = await load([]);
+  expect(frText('Front door open')).toBe('Front door : ouverte');
+  expect(frText('Garage door offline')).toBe('Garage door hors ligne');
+  expect(frText('Front door closed')).toBe('Front door fermée');
   expect(frText('Hall motion now')).toBe('Hall : mouvement en cours');
   expect(frText('Hall no motion')).toBe('Hall : aucun mouvement');
   expect(frText('Hall motion 5 min ago')).toBe('Hall : mouvement il y a 5 min');
-  expect(frText('Front door closed')).toBe('Front door fermée');
+});
+
+// "·" separates parts only with a space on each side: a name with a bare "·" in it is still one sensor
+test('a name with a bare middle dot stays one name', async () => {
+  const {frText} = await load([]);
+  expect(frText('Porte·Garage open')).toBe('Porte·Garage : ouverte');
+  expect(frText('Porte·Garage offline')).toBe('Porte·Garage hors ligne');
+});
+
+// a name with " · " in it cannot be told from two parts of a line, so it is translated part by part (a part that is
+// not one of ours stays as it is)
+test('a name with " · " in it is read as two parts', async () => {
+  const {frText} = await load([]);
+  expect(frText('Lights · Front door open')).toBe('Lumières · Front door : ouverte');
 });

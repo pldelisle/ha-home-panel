@@ -118,27 +118,20 @@ test.describe('French', () => {
     await homeButtonUncovered(house);
   });
 
-  // the test house has a closed door, a hall sensor that sees motion and no camera. The line is English fragments joined with
-  // " · " and translated as one text node: a part without its own entry stayed English, and the sensor-row form put a colon in it
-  const ENGLISH = /\b(?:all|doors?|closed|open|motion|now|no|cameras?)\b/i;
-
+  // The test house has a closed door, a hall sensor that sees motion and no camera. The line is English fragments joined with
+  // " · " and translated as one text node: a part without its own entry stayed English, and the sensor-row form put a colon in
+  // it. The whole line is compared, so an English word or a colon left in it fails the test.
   test('42 the Security card on Home reads in French, with no English word and no colon', async ({house}) => {
     await house.tab('home');
-    const line = house.root().locator('#hsec .right');
-    await expect(line).toHaveText('toutes les portes fermées · mouvement en cours');
-    const text = (await line.textContent())!;
-    expect(text).not.toMatch(ENGLISH);
-    expect(text).not.toContain(':');
+    await expect(house.root().locator('#hsec .right')).toHaveText('toutes les portes fermées · mouvement en cours');
   });
 
   test('43 the Security pane reads in French, with no English word and no colon', async ({house}) => {
     tabletOnly();
     await house.tab('cams');
-    const sub = house.root().locator('#cmsub');
-    await expect(sub).toHaveText('Aucune caméra · toutes les portes fermées · mouvement en cours');
-    const text = (await sub.textContent())!;
-    expect(text).not.toMatch(ENGLISH);
-    expect(text).not.toContain(':');
+    await expect(house.root().locator('#cmsub')).toHaveText(
+      'Aucune caméra · toutes les portes fermées · mouvement en cours',
+    );
   });
 
   test('44 the Security line under More on a phone reads in French, with no English word and no colon', async ({
@@ -146,11 +139,9 @@ test.describe('French', () => {
   }) => {
     phoneOnly();
     await house.root().locator('#moretab').click();
-    const sub = house.root().locator('#morelist [data-tab="cams"] small');
-    await expect(sub).toHaveText('Portes fermées · mouvement en cours');
-    const text = (await sub.textContent())!;
-    expect(text).not.toMatch(ENGLISH);
-    expect(text).not.toContain(':');
+    await expect(house.root().locator('#morelist [data-tab="cams"] small')).toHaveText(
+      'Portes fermées · mouvement en cours',
+    );
   });
 });
 
