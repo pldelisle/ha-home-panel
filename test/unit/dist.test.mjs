@@ -15,11 +15,13 @@ const BUNDLE = join(DIST, 'home-panel.js');
 const read = f => readFileSync(join(ROOT, f), 'utf8');
 const version = JSON.parse(read('package.json')).version;
 
-// every file under dir (as paths relative to ROOT), skipping the folders that hold no source text
+// every file under dir (as paths relative to ROOT), skipping the folders (or, in a git worktree, the .git file) that
+// hold no source text
 const walk = (dir, skip = []) =>
   readdirSync(join(ROOT, dir), {withFileTypes: true}).flatMap(e => {
-    const rel = `${dir}/${e.name}`;
-    if (e.isDirectory()) return skip.includes(e.name) ? [] : walk(rel, skip);
+    const rel = dir === '.' ? e.name : `${dir}/${e.name}`;
+    if (skip.includes(e.name)) return [];
+    if (e.isDirectory()) return walk(rel, skip);
     return [rel];
   });
 
@@ -178,11 +180,45 @@ test('the source map names the original files under src/', () => {
   expect(readFileSync(BUNDLE, 'utf8')).toMatch(/\n\/\/# sourceMappingURL=home-panel\.js\.map\s*$/);
 });
 
+// every tracked file that can hold text: what `git ls-files` lists, so there is no directory list to keep by hand and a
+// maintainer's untracked scratch folders are not scanned; an exported tree without .git is walked from the root instead
+const SCAN_SKIP_DIRS = [
+  'node_modules',
+  'dist',
+  '.git',
+  'coverage',
+  'test-results',
+  'playwright-report',
+  'graphify-out',
+  '.claude',
+  '.idea',
+  '__screenshots__',
+];
+const trackedFiles = () => {
+  try {
+    return execFileSync('git', ['ls-files', '-z'], {cwd: ROOT, encoding: 'utf8', stdio: 'pipe'})
+      .split('\0')
+      .filter(Boolean);
+  } catch {
+    return walk('.', SCAN_SKIP_DIRS);
+  }
+};
+
 test('no personal data: names, places, a house photo or house-specific entity ids', () => {
-  // every text file under src/ and test/ is scanned (this one holds the patterns, so it is left out), so a new file
-  // needs no edit here
-  const files = [...walk('src'), ...walk('test', ['__screenshots__'])].filter(
-    f => /\.(js|mjs|ts|css|html|json)$/.test(f) && f !== 'test/unit/dist.test.mjs',
+  // every tracked text file is scanned (screenshots, other binaries and the files named below are left out), so a new
+  // file needs no edit here
+  const files = trackedFiles().filter(
+    f =>
+      existsSync(join(ROOT, f)) &&
+      !f.startsWith('test/e2e/__screenshots__/') &&
+      !/\.(png|woff2|ico|jpe?g|webp|iml)$/.test(f) &&
+      // this file holds the patterns
+      f !== 'test/unit/dist.test.mjs' &&
+      // the copyright line names the licence holder, by design
+      f !== 'LICENSE' &&
+      // 261 KB of third-party licence text generated from node_modules (and checked by licenses.test.mjs): a package
+      // author who happens to be called Pierre must not fail this test
+      f !== 'LICENSES.md',
   );
   for (const f of ['src/config.js', 'src/home-panel.js', 'src/auto.js', 'src/i18n/fr.js', 'src/css/base.css'])
     expect(files.includes(f), `scans ${f}`).toBe(true);
@@ -192,8 +228,28 @@ test('no personal data: names, places, a house photo or house-specific entity id
     files.some(f => f.endsWith('.spec.ts')),
     'scans the specs',
   ).toBe(true);
+  for (const f of [
+    'package.json',
+    'package-lock.json',
+    'vite.config.ts',
+    'playwright.config.ts',
+    'vitest.config.ts',
+    'renovate.json',
+    '.github/workflows/ci.yml',
+    'scripts/licenses.mjs',
+    'examples/configuration.yaml',
+    'README.md',
+    'CHANGELOG.md',
+    '.changeset/config.json',
+  ])
+    expect(files.includes(f), `scans ${f}`).toBe(true);
+  expect(files.length).toBeGreaterThan(100);
   // the source map ships in the release zip too, with the source text inside it
-  const text = [...files.map(read), readFileSync(BUNDLE, 'utf8'), readFileSync(`${BUNDLE}.map`, 'utf8')].join('\n');
+  const texts = [
+    ...files.map(f => [f, read(f)]),
+    ['dist/home-panel.js', readFileSync(BUNDLE, 'utf8')],
+    ['dist/home-panel.js.map', readFileSync(`${BUNDLE}.map`, 'utf8')],
+  ];
   const banned = [
     /pierre/i,
     /genevi[eè]ve/i,
@@ -206,8 +262,12 @@ test('no personal data: names, places, a house photo or house-specific entity id
     /\b192\.168\.\d+\.\d+\b/,
     /meter00|calypso|pulsar_plus|ac_uty_|hydro_quebec_maison|thermostat_chambre/i,
   ];
-  for (const re of banned) {
-    const m = text.match(re);
-    expect(m, `found ${re}: …${m && text.slice(Math.max(0, m.index - 40), m.index + 40)}…`).toBe(null);
+  for (const [name, raw] of texts) {
+    // the repository's own address holds the owner's handle; it is public by nature
+    const text = raw.replaceAll('pldelisle/ha-home-panel', '');
+    for (const re of banned) {
+      const m = text.match(re);
+      expect(m, `${name}: found ${re}: …${m && text.slice(Math.max(0, m.index - 40), m.index + 40)}…`).toBe(null);
+    }
   }
 });
