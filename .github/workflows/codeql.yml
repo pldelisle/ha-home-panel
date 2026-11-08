@@ -2,10 +2,12 @@ name: CodeQL
 # Scans the JavaScript and TypeScript for known vulnerability patterns on every push to main, on pull requests and
 # weekly (Monday 09:00 UTC), so that a new query pack reaches code that has not changed. Findings appear under the
 # repository's Security > Code scanning tab. This is the advanced setup, a workflow file; the repository's "default
-# setup" for code scanning must stay off, or the two conflict. Python is added when and if the HACS integration exists.
+# setup" for code scanning must stay off, or the two conflict. Python is added when and if the HACS integration
+# exists.
 #
-# init and analyze are the same release of github/codeql-action and must stay on the same commit (Renovate bumps them
-# together). The build step is not needed: javascript-typescript is interpreted, so CodeQL reads the sources as they are.
+# init and analyze are the same release of github/codeql-action and must stay on the same commit (Renovate bumps
+# them together). The build step is not needed: javascript-typescript is interpreted, so CodeQL reads the sources
+# as they are.
 on:
   push:
     branches: [main]

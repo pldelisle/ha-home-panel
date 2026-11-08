@@ -11,8 +11,7 @@ name: Changeset
 # title, which anyone can type). That pull request is opened with GITHUB_TOKEN, so no pull_request workflow runs for it
 # at all today: if `changeset` is a required check it never reports and blocks the merge until an admin bypasses it,
 # unless version-pr.yml opens the pull request with a GitHub App token or a PAT, in which case the branch skip applies.
-# TODO(#32): when Renovate arrives, decide whether its pull requests (author renovate[bot]) are skipped here or carry
-# a changeset; this job does not look at the author yet.
+# renovate.json labels devDependency, Action and image-tag bumps no-changeset, so Renovate needs no special case.
 on:
   pull_request:
     types: [opened, synchronize, reopened, labeled, unlabeled]
