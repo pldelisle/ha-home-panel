@@ -1,5 +1,5 @@
 // The build output: dist/ has the shape the install instructions and the release zip assume, and nothing from one
-// particular house is inside. dist/ is the result of `npm run build` (CI and the release workflow run it first); when it
+// particular house is inside (the bundle, its source map, and the source files and tests they come from). dist/ is the result of `npm run build` (CI and the release workflow run it first); when it
 // is missing or older than a file it is built from, this test runs the build itself, so `npm test` works on a fresh
 // checkout and never checks a stale bundle.
 import {test, expect, beforeAll} from 'vitest';
@@ -35,26 +35,28 @@ beforeAll(() => {
   execFileSync('npm', ['run', 'build'], {cwd: ROOT, stdio: 'pipe'});
 }, 120_000);
 
+const VENDORED = ['apexcharts.css', 'apexcharts.min.js', 'leaflet.css', 'leaflet.js', 'mermaid.min.js'];
+
 test('dist/ holds the bundle, its source map and the vendored libraries, and nothing else', () => {
-  expect(readdirSync(DIST).sort()).toStrictEqual([
-    'apexcharts.css',
-    'apexcharts.min.js',
-    'home-panel.js',
-    'home-panel.js.map',
-    'leaflet.css',
-    'leaflet.js',
-    'mermaid.min.js',
-  ]);
+  expect(readdirSync(DIST).sort()).toStrictEqual([...VENDORED, 'home-panel.js', 'home-panel.js.map'].sort());
+});
+
+test('the vendored libraries are copied as they are', () => {
+  for (const f of VENDORED)
+    expect(readFileSync(join(DIST, f)).equals(readFileSync(join(ROOT, 'vendor', f))), f).toBe(true);
 });
 
 test('the bundle parses as an ES module', () => {
   expect(() => execFileSync(process.execPath, ['--check', BUNDLE], {stdio: 'pipe'})).not.toThrow();
 });
 
-test('the bundle carries the package version and no placeholder', () => {
+test('the bundle carries the package version once and no placeholder', () => {
   const js = readFileSync(BUNDLE, 'utf8');
-  // the minifier may inline the constant where it is used, so the literal can appear more than once
-  expect(js).toMatch(new RegExp('[`"\']' + version.replaceAll('.', '\\.') + '[`"\']'));
+  // The version as a string of its own is the VERSION constant of src/legacy/globals.js, so it is there exactly once:
+  // twice would mean that module, and the hass it holds, is bundled twice. The minifier may also fold the version into
+  // a longer string where it is used (mermaid.min.js?v=…); those copies are not counted.
+  const literal = new RegExp('[`"\']' + version.replaceAll('.', '\\.') + '[`"\']', 'g');
+  expect(js.match(literal) ?? [], `the version ${version} as a string`).toHaveLength(1);
   for (const m of ['__CONFIG__', '__STACK__', '__FR__', '__AUTO__', '__CSS__', '__VERSION__'])
     expect(js.includes(m), m).toBe(false);
 });
@@ -84,7 +86,8 @@ test('no personal data: names, places, a house photo or house-specific entity id
     files.some(f => f.endsWith('.spec.ts')),
     'scans the specs',
   ).toBe(true);
-  const text = [...files.map(read), readFileSync(BUNDLE, 'utf8')].join('\n');
+  // the source map ships in the release zip too, with the source text inside it
+  const text = [...files.map(read), readFileSync(BUNDLE, 'utf8'), readFileSync(`${BUNDLE}.map`, 'utf8')].join('\n');
   const banned = [
     /pierre/i,
     /genevi[eè]ve/i,

@@ -3,8 +3,10 @@ import {test, expect, vi} from 'vitest';
 
 // frText() looks up the house's own names through hass and caches them for a minute. A tiny fake hass whose names must
 // stay untranslated, set on a fresh copy of the modules so one test's cache never reaches the next.
+// As in the panel, the module is loaded first and hass is handed over afterwards, so a hass read at import time fails here.
 const load = async names => {
   vi.resetModules();
+  const fr = await import('../../src/i18n/fr.js');
   const {setHass} = await import('../../src/legacy/globals.js');
   setHass({
     areas: {a: {name: 'Home'}},
@@ -12,7 +14,7 @@ const load = async names => {
     entities: {},
     states: Object.fromEntries(names.map((n, i) => [`light.l${i}`, {attributes: {friendly_name: n}}])),
   });
-  return import('../../src/i18n/fr.js');
+  return fr;
 };
 
 test('greetings, numbers and dates', async () => {
