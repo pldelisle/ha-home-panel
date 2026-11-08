@@ -170,6 +170,13 @@ If the run that the Release pull request's merge starts fails, re-run that faile
 That needs the repository setting "Allow GitHub Actions to create and approve pull requests" on, and because the Release pull request is opened with `GITHUB_TOKEN` it gets no CI checks of its own; they run on `main` after the merge.
 The `changeset` CI job (`.github/workflows/changeset.yml` lists the paths it watches) fails a pull request that changes what ships without a changeset; pull requests that only change documentation, tests or CI pass without one, and the `no-changeset` label skips the job when a watched path changed without a release note (a devDependency bump, say).
 
+Renovate (`renovate.json`) opens pull requests weekly, on Monday mornings: the npm minor and patch updates in one, the GitHub Actions in another.
+Playwright (the npm package and the Docker image tag together) and lock-file maintenance come monthly, each in its own pull request.
+Pull requests that touch devDependencies, Actions or the image tag carry the `no-changeset` label; lock-file maintenance needs none.
+Renovate does not re-record screenshots: a person pushes the re-recorded baselines to the Renovate Playwright branch (`npm run test:visual:update`, or its `:container` variant) before it can merge.
+Every `uses:` in `.github/workflows/` is pinned to a commit with its version in a comment (Renovate keeps both current), each workflow declares its `permissions:` at the top, and `.github/workflows/codeql.yml` runs CodeQL on pushes to `main`, on pull requests and weekly.
+`test/unit/workflows.test.mjs` fails a workflow that breaks the first two rules.
+
 The source is one custom element in `src/home-panel.src.js`. `build.mjs` splices in the CSS (`src/css/`), the French
 translations (`src/i18n/`), the Automations tab (`src/auto.js`) and the configuration code (`src/config.js`).
 The test house in `test/e2e/harness.html` is made up. Keep real names, addresses and entity IDs out of the repository:

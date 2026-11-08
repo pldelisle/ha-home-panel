@@ -1,0 +1,83 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", "helpers:pinGitHubActionDigests", ":pinAllExceptPeerDependencies"],
+  "ignorePresets": ["group:playwrightMonorepo"],
+  "timezone": "America/Toronto",
+  "schedule": ["before 6am on monday"],
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 6am on the first day of the month"]
+  },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "The Playwright image tag in the package.json scripts (the github-actions manager already reads the one in ci.yml); test/unit/playwright-image.test.mjs asserts all copies equal the pinned @playwright/test version",
+      "managerFilePatterns": ["/^package\\.json$/"],
+      "matchStrings": ["mcr\\.microsoft\\.com/playwright:(?<currentValue>v\\d+\\.\\d+\\.\\d+-noble)"],
+      "depNameTemplate": "mcr.microsoft.com/playwright",
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "regex:^v?(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)-noble$"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "Minor and patch bumps of the npm packages arrive together in one weekly pull request",
+      "matchUpdateTypes": ["minor", "patch"],
+      "matchManagers": ["npm"],
+      "groupName": "npm minor and patch updates"
+    },
+    {
+      "description": "Every GitHub Action arrives together in one weekly pull request",
+      "matchManagers": ["github-actions"],
+      "groupName": "GitHub Actions"
+    },
+    {
+      "description": "A Playwright or Chromium bump re-records every screenshot baseline (about 20 MB, spec 02), so the npm package and the Docker image tag move together in their own monthly pull request, never in the weekly groups; this rule comes after them to win (and group:playwrightMonorepo is ignored above, since it would split @playwright/test off)",
+      "matchPackageNames": ["@playwright/test", "mcr.microsoft.com/playwright"],
+      "groupName": "Playwright",
+      "schedule": ["before 6am on the first day of the month"]
+    },
+    {
+      "description": "vitest and @vitest/coverage-v8 are installed at the same version, so a major bump of one is a major bump of both",
+      "matchPackageNames": ["vitest", "@vitest/**"],
+      "matchUpdateTypes": ["major"],
+      "groupName": "Vitest"
+    },
+    {
+      "description": "The package has no runtime dependencies, so a bump of a dev dependency changes nothing the household receives; the label skips the changeset job (docs/specs/05)",
+      "matchManagers": ["npm"],
+      "matchDepTypes": ["devDependencies"],
+      "addLabels": ["no-changeset"]
+    },
+    {
+      "description": "A bump of an Action or of the Playwright image tag in the package.json scripts changes nothing the household receives either; same label",
+      "matchManagers": ["github-actions", "custom.regex"],
+      "addLabels": ["no-changeset"]
+    },
+    {
+      "description": "3.x is the last plain-MIT line; see docs/specs/production-grade-refactor.md",
+      "matchPackageNames": ["apexcharts"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    },
+    {
+      "description": "typescript-eslint does not support TypeScript 7 yet; re-enable majors when it does",
+      "matchPackageNames": ["typescript"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    },
+    {
+      "description": "@types/node stays on the Node 22 that CI and the Playwright image run, until that is changed by hand",
+      "matchPackageNames": ["@types/node"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    },
+    {
+      "description": "The Node version (setup-node, which :pinAllExceptPeerDependencies would pin to a patch release) and the runner image (ubuntu-24.04-arm) are chosen by hand; engines in package.json is left alone too",
+      "matchManagers": ["github-actions"],
+      "matchDepNames": ["node", "ubuntu"],
+      "enabled": false
+    }
+  ],
+  "automerge": false
+}
