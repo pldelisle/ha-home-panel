@@ -1027,12 +1027,11 @@ export const autoMethods = {
     if (!boxes.length) return;
     let M;
     try {
-      this.auMer = this.auMer || loadMermaid();
-      M = await this.auMer;
+      M = await loadMermaid();
     } catch {
       boxes.forEach(b => {
         b.innerHTML =
-          '<p class="hint">The flow drawing library didn\'t load (the chunks folder missing next to home-panel.js).</p>';
+          '<p class="hint">The flow drawing library didn\'t load: the chunks folder is missing next to home-panel.js, or the connection dropped. Reload the page to try again.</p>';
         b.dataset.drawn = b.dataset.def;
       });
       return;

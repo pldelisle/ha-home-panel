@@ -109,7 +109,10 @@ export const test = base.extend<{houseOpts: HouseOpts; house: House}>({
       if (CHUNK_URL.test(r.url()))
         r.text().then(
           body => chunks.push({url: r.url(), body}),
-          () => {}, // the page closed before the body arrived
+          (e: Error) => {
+            // the page closed before the body arrived (the test is over); any other failure is the fixture's to report
+            if (!/closed/i.test(e.message)) errors.push(`reading ${r.url()}: ${e.message}`);
+          },
         );
     });
     page.on('pageerror', e => errors.push(e.message));
