@@ -2,7 +2,7 @@
 // the Automations tab fetches Mermaid. `house.chunkRequests` lists what the panel asked for under chunks/ and
 // `house.chunks` what arrived, with its text, so a library is told by what is inside the chunk, not by a file name
 // (names carry a content hash).
-import {test, expect, tabletOnly, CHUNK_URL, type House} from './fixtures';
+import {test, expect, tabletOnly, CHUNK_URL, KATEX_CHUNK_URL, type House} from './fixtures';
 import {AFTERNOON, FULL_CFG} from './houses';
 
 // ApexCharts' export name; the chunk is the only file under chunks/ that has it
@@ -10,8 +10,6 @@ const APEX = 'ApexCharts';
 // a property of Mermaid's default export that minifying keeps; only Mermaid's core chunk has it. Were Mermaid imported
 // statically, its core would be in home-panel.js and the Automations tab would fetch only diagram chunks, without it.
 const MERMAID = 'mermaidAPI';
-// Mermaid's formula typesetter is its own chunk, katex-<hash>.js (Rolldown names a chunk after its package)
-const KATEX = /\/chunks\/katex-/;
 
 test.beforeEach(tabletOnly);
 
@@ -135,7 +133,7 @@ test.describe('lazy chunks', () => {
     await expect.poll(() => house.chunksWith(MERMAID), 'chunks holding Mermaid on the Automations tab').toHaveLength(1);
     // KaTeX (Mermaid's formulas, 259 kB) stays a lazy chunk of its own, asked for only by a label with $$…$$: none here
     expect(
-      house.chunkRequests.filter(u => KATEX.test(u)),
+      house.chunkRequests.filter(u => KATEX_CHUNK_URL.test(u)),
       'KaTeX chunks asked for on the Automations tab',
     ).toEqual([]);
   });
