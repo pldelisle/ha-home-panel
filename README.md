@@ -198,7 +198,7 @@ file under `src/` without `strict`, so a name that does not exist or an import t
 `src/legacy/dom-scaffolding.d.ts` holds the ambient declarations that second pass needs (only `tsconfig.legacy.json` lists it); the refactor's second phase deletes it.
 The source map points a stack trace or the browser's DevTools back at the files in `src/`; it ships in the release zip next to `home-panel.js`.
 The test house in `test/e2e/harness.html` is made up. Keep real names, addresses and entity IDs out of the repository:
-`npm test` fails if it finds some of them.
+`npm test` fails if it finds some of them in any committed file.
 
 ## Credits
 
