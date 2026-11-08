@@ -1,5 +1,5 @@
 // The build output: dist/ has the shape the install instructions and the release zip assume, and nothing from one
-// particular house is inside (the bundle, its source map, and the source files and tests they come from).
+// particular house is inside (the bundle, its source map, and every committed text file they come from).
 // dist/ is the result of `npm run build` (CI and the release workflow run it first); when it is missing or older than
 // a file it is built from, this test runs the build itself, so `npm test` works on a fresh checkout and never checks a
 // stale bundle.
@@ -181,7 +181,9 @@ test('the source map names the original files under src/', () => {
 });
 
 // every tracked file that can hold text: what `git ls-files` lists, so there is no directory list to keep by hand and a
-// maintainer's untracked scratch folders are not scanned; an exported tree without .git is walked from the root instead
+// maintainer's untracked scratch folders are not scanned; an exported tree without .git (or a checkout nested inside
+// another repository, where git lists nothing) is walked from the root instead. The walk skips the .git file of a
+// worktree and the folders below, and the filter in the test drops the same binaries from both lists.
 const SCAN_SKIP_DIRS = [
   'node_modules',
   'dist',
@@ -191,61 +193,55 @@ const SCAN_SKIP_DIRS = [
   'playwright-report',
   'graphify-out',
   '.claude',
-  '.idea',
   '__screenshots__',
 ];
 const trackedFiles = () => {
   try {
-    return execFileSync('git', ['ls-files', '-z'], {cwd: ROOT, encoding: 'utf8', stdio: 'pipe'})
+    const listed = execFileSync('git', ['ls-files', '-z'], {cwd: ROOT, encoding: 'utf8', stdio: 'pipe'})
       .split('\0')
       .filter(Boolean);
+    if (listed.length > 0) return listed;
   } catch {
-    return walk('.', SCAN_SKIP_DIRS);
+    // no git, or not a repository: walk instead
   }
+  return walk('.', SCAN_SKIP_DIRS);
 };
 
+// the tracked files that are not scanned, and why
+const NOT_SCANNED = new Map([
+  ['test/unit/dist.test.mjs', 'it holds the patterns'],
+  ['LICENSE', 'the copyright line names the licence holder, by design'],
+  [
+    'LICENSES.md',
+    'third-party licence text generated from node_modules and checked by licenses.test.mjs: a package author who ' +
+      'happens to be called Pierre must not fail this test',
+  ],
+]);
+
 test('no personal data: names, places, a house photo or house-specific entity ids', () => {
-  // every tracked text file is scanned (screenshots, other binaries and the files named below are left out), so a new
-  // file needs no edit here
+  // every tracked text file is scanned (images, fonts and the IDE module file are not text; the files above are
+  // left out), so a new file needs no edit here. The screenshot baselines are .png, so the extension keeps them out.
   const files = trackedFiles().filter(
     f =>
-      existsSync(join(ROOT, f)) &&
-      !f.startsWith('test/e2e/__screenshots__/') &&
-      !/\.(png|woff2|ico|jpe?g|webp|iml)$/.test(f) &&
-      // this file holds the patterns
-      f !== 'test/unit/dist.test.mjs' &&
-      // the copyright line names the licence holder, by design
-      f !== 'LICENSE' &&
-      // 261 KB of third-party licence text generated from node_modules (and checked by licenses.test.mjs): a package
-      // author who happens to be called Pierre must not fail this test
-      f !== 'LICENSES.md',
+      // tracked, but deleted in the working tree
+      existsSync(join(ROOT, f)) && !/\.(png|woff2|ico|jpe?g|webp|iml)$/i.test(f) && !NOT_SCANNED.has(f),
   );
-  for (const f of ['src/config.js', 'src/home-panel.js', 'src/auto.js', 'src/i18n/fr.js', 'src/css/base.css'])
-    expect(files.includes(f), `scans ${f}`).toBe(true);
-  for (const f of ['houses.ts', 'fixtures.ts', 'harness.html', 'automations.json'])
-    expect(files.includes('test/e2e/' + f), `scans ${f}`).toBe(true);
+  const scanned = [
+    ...['src/config.js', 'src/home-panel.js', 'src/auto.js', 'src/i18n/fr.js', 'src/css/base.css'],
+    ...['houses.ts', 'fixtures.ts', 'harness.html', 'automations.json'].map(f => 'test/e2e/' + f),
+    ...['package.json', 'package-lock.json', 'vite.config.ts', 'playwright.config.ts', 'vitest.config.ts'],
+    ...['renovate.json', '.github/workflows/ci.yml', 'scripts/licenses.mjs', 'examples/configuration.yaml'],
+    ...['README.md', 'CHANGELOG.md', '.changeset/config.json'],
+  ];
+  for (const f of scanned) expect(files.includes(f), `scans ${f}`).toBe(true);
   expect(
     files.some(f => f.endsWith('.spec.ts')),
     'scans the specs',
   ).toBe(true);
-  for (const f of [
-    'package.json',
-    'package-lock.json',
-    'vite.config.ts',
-    'playwright.config.ts',
-    'vitest.config.ts',
-    'renovate.json',
-    '.github/workflows/ci.yml',
-    'scripts/licenses.mjs',
-    'examples/configuration.yaml',
-    'README.md',
-    'CHANGELOG.md',
-    '.changeset/config.json',
-  ])
-    expect(files.includes(f), `scans ${f}`).toBe(true);
   expect(files.length).toBeGreaterThan(100);
-  // the source map ships in the release zip too, with the source text inside it
+  // the file names too, and the bundle and its source map, which ships in the release zip with the source text inside
   const texts = [
+    ['(tracked paths)', files.join('\n')],
     ...files.map(f => [f, read(f)]),
     ['dist/home-panel.js', readFileSync(BUNDLE, 'utf8')],
     ['dist/home-panel.js.map', readFileSync(`${BUNDLE}.map`, 'utf8')],
@@ -262,12 +258,14 @@ test('no personal data: names, places, a house photo or house-specific entity id
     /\b192\.168\.\d+\.\d+\b/,
     /meter00|calypso|pulsar_plus|ac_uty_|hydro_quebec_maison|thermostat_chambre/i,
   ];
+  const hits = [];
   for (const [name, raw] of texts) {
     // the repository's own address holds the owner's handle; it is public by nature
-    const text = raw.replaceAll('pldelisle/ha-home-panel', '');
+    const text = raw.replaceAll('pldelisle/ha-home-panel', '<repo>');
     for (const re of banned) {
       const m = text.match(re);
-      expect(m, `${name}: found ${re}: …${m && text.slice(Math.max(0, m.index - 40), m.index + 40)}…`).toBe(null);
+      if (m) hits.push(`${name}: found ${re}: …${text.slice(Math.max(0, m.index - 40), m.index + 40)}…`);
     }
   }
+  expect(hits).toEqual([]);
 });
