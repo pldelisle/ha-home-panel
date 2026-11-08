@@ -2,7 +2,7 @@
 // the Automations tab fetches Mermaid. `house.chunkRequests` lists what the panel asked for under chunks/ and
 // `house.chunks` what arrived, with its text, so a library is told by what is inside the chunk, not by a file name
 // (names carry a content hash).
-import {test, expect, tabletOnly, CHUNK_URL} from './fixtures';
+import {test, expect, tabletOnly, CHUNK_URL, type House} from './fixtures';
 import {AFTERNOON, FULL_CFG} from './houses';
 
 // ApexCharts' export name; the chunk is the only file under chunks/ that has it
@@ -12,6 +12,19 @@ const APEX = 'ApexCharts';
 const MERMAID = 'mermaidAPI';
 
 test.beforeEach(tabletOnly);
+
+// the library's own <style id="apexcharts-css"> is in the shadow root, the panel's old #apexcss is not, and a tooltip that
+// has not been asked for is hidden (opacity 0 comes from the library's stylesheet only)
+async function expectLibraryStyles(house: House) {
+  await expect(house.root().locator('style#apexcharts-css').first()).toBeAttached();
+  expect(await house.root().locator('style#apexcharts-css').count(), 'style elements from the library').toBeGreaterThan(
+    0,
+  );
+  await expect(house.root().locator('#apexcss')).toHaveCount(0);
+  const tooltip = house.root().locator('#pane-energy .apexcharts-tooltip').first();
+  await expect(tooltip).toBeAttached();
+  await expect.poll(() => tooltip.evaluate(e => getComputedStyle(e).opacity), 'the hidden tooltip').toBe('0');
+}
 
 test.describe('lazy chunks', () => {
   test.use({houseOpts: {cfg: FULL_CFG, time: AFTERNOON}});
@@ -24,22 +37,30 @@ test.describe('lazy chunks', () => {
     await house.tab('energy');
     await expect.poll(() => house.chunksWith(APEX), 'chunks holding ApexCharts on the Energy tab').toHaveLength(1);
     const [apex] = house.chunksWith(APEX);
-    // the chart is drawn, with the library's stylesheet in the panel's own #apexcss
+    // the chart is drawn, and styled by the stylesheet ApexCharts writes into the shadow root itself: the panel adds none
     await expect(house.root().locator('#pane-energy .apexcharts-canvas').first()).toBeVisible();
-    await expect
-      .poll(() =>
-        house
-          .root()
-          .locator('#apexcss')
-          .evaluate(e => e.textContent),
-      )
-      .toContain('.apexcharts-canvas');
+    await expectLibraryStyles(house);
 
     // the second tab with charts reuses it: no further request for the library
     await house.tab('climate');
     await expect(house.root().locator('#pane-climate .apexcharts-canvas').first()).toBeVisible();
     await expect.poll(() => house.chunksWith(APEX)).toEqual([apex]);
     expect(house.chunkRequests).toEqual([apex]);
+  });
+
+  test('the charts are styled by the library after the panel is rebuilt', async ({house}) => {
+    await house.tab('energy');
+    await expect(house.root().locator('#pane-energy .apexcharts-canvas').first()).toBeVisible();
+    await expectLibraryStyles(house);
+    // a profile in French makes Home Assistant hand the panel a new hass; the panel redraws itself, shadow root included
+    await house.page.evaluate(() => {
+      const w = window as unknown as {panel: {hass: object}; hass: object};
+      w.panel.hass = {...w.hass, locale: {language: 'fr'}};
+    });
+    await expect(house.root().locator('#app')).toHaveAttribute('lang', 'fr-CA');
+    await house.tab('energy');
+    await expect(house.root().locator('#pane-energy .apexcharts-canvas').first()).toBeVisible();
+    await expectLibraryStyles(house);
   });
 
   test('the Weather tab, opened first, fetches the library and draws its charts', async ({house}) => {
