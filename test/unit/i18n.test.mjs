@@ -41,3 +41,51 @@ test('no French entry is empty, and placeholders match', async () => {
       );
   }
 });
+
+// The Security card, the Cams pane and the Home tile join fragments with " · " ("2 cameras · all doors closed · motion now").
+// The expected French is written out in full, never built by the code under test.
+test('the Security line is French in every part and has no stray colon', async () => {
+  const {frText} = await load([]);
+  expect(frText('2 cameras · all doors closed · motion now')).toBe(
+    '2 caméras · toutes les portes fermées · mouvement en cours',
+  );
+  expect(frText('all doors closed · no motion')).toBe('toutes les portes fermées · aucun mouvement');
+  expect(frText('1 door open · motion now')).toBe('1 porte ouverte · mouvement en cours');
+  expect(frText('2 cameras · 2 doors open · no motion')).toBe('2 caméras · 2 portes ouvertes · aucun mouvement');
+  expect(frText('No cameras · all doors closed')).toBe('Aucune caméra · toutes les portes fermées');
+  // without a motion part the line ends in "open", and the sensor-row pattern must not take the whole line
+  expect(frText('2 cameras · 1 door open')).toBe('2 caméras · 1 porte ouverte');
+  expect(frText('2 cameras · all doors closed')).toBe('2 caméras · toutes les portes fermées');
+  // the Home tile (capital D) and the lone fragments
+  expect(frText('Doors closed · motion now')).toBe('Portes fermées · mouvement en cours');
+  expect(frText('motion now')).toBe('mouvement en cours');
+  expect(frText('no motion')).toBe('aucun mouvement');
+  expect(frText('all doors closed')).toBe('toutes les portes fermées');
+});
+
+// A sensor row ("Front door open", "Garage door offline": `${name} open`, `${name} offline` in sensorState and the attention
+// list) keeps the form it had, colon included; the Security line must never reach it. FR_DOOR's motion forms and
+// "Front door closed" are not drawn by the panel today; they are pinned so that FR_DOOR stays as it is.
+test('a sensor row keeps its own form', async () => {
+  const {frText} = await load([]);
+  expect(frText('Front door open')).toBe('Front door : ouverte');
+  expect(frText('Garage door offline')).toBe('Garage door hors ligne');
+  expect(frText('Front door closed')).toBe('Front door fermée');
+  expect(frText('Hall motion now')).toBe('Hall : mouvement en cours');
+  expect(frText('Hall no motion')).toBe('Hall : aucun mouvement');
+  expect(frText('Hall motion 5 min ago')).toBe('Hall : mouvement il y a 5 min');
+});
+
+// "·" separates parts only with a space on each side: a name with a bare "·" in it is still one sensor
+test('a name with a bare middle dot stays one name', async () => {
+  const {frText} = await load([]);
+  expect(frText('Porte·Garage open')).toBe('Porte·Garage : ouverte');
+  expect(frText('Porte·Garage offline')).toBe('Porte·Garage hors ligne');
+});
+
+// a name with " · " in it cannot be told from two parts of a line, so it is translated part by part (a part that is
+// not one of ours stays as it is)
+test('a name with " · " in it is read as two parts', async () => {
+  const {frText} = await load([]);
+  expect(frText('Lights · Front door open')).toBe('Lumières · Front door : ouverte');
+});
