@@ -3,7 +3,8 @@
 // keep the list short and do not add to it. See docs/specs/06-vite-build.md.
 
 export const VERSION = __VERSION__; // injected from package.json by vite.config.ts (and vitest.config.ts)
-export const BASE = new URL(/* @vite-ignore */ '.', import.meta.url).href; // the folder home-panel.js was loaded from; the vendor files sit beside it
+// the folder home-panel.js was loaded from; the vendor files sit beside it
+export const BASE = new URL(/* @vite-ignore */ '.', import.meta.url).href;
 
 // the two mutable variables, behind accessors because an importing module cannot assign to an imported binding
 let hass = null;

@@ -1,7 +1,8 @@
 // The build output: dist/ has the shape the install instructions and the release zip assume, and nothing from one
-// particular house is inside (the bundle, its source map, and the source files and tests they come from). dist/ is the result of `npm run build` (CI and the release workflow run it first); when it
-// is missing or older than a file it is built from, this test runs the build itself, so `npm test` works on a fresh
-// checkout and never checks a stale bundle.
+// particular house is inside (the bundle, its source map, and the source files and tests they come from).
+// dist/ is the result of `npm run build` (CI and the release workflow run it first); when it is missing or older than
+// a file it is built from, this test runs the build itself, so `npm test` works on a fresh checkout and never checks a
+// stale bundle.
 import {test, expect, beforeAll} from 'vitest';
 import {readFileSync, readdirSync, existsSync, statSync} from 'node:fs';
 import {join} from 'node:path';
@@ -68,7 +69,11 @@ test('the source map names the original files under src/', () => {
       map.sources.some(s => s.endsWith(f)),
       f,
     ).toBe(true);
-  expect(map.sources.some(s => s.includes('node_modules'))).toBe(false);
+  // relative paths into src/ only: nothing from node_modules, no absolute path of the machine that built it
+  expect(
+    map.sources.every(s => s.startsWith('../src/')),
+    map.sources.join(', '),
+  ).toBe(true);
   expect(readFileSync(BUNDLE, 'utf8')).toMatch(/\n\/\/# sourceMappingURL=home-panel\.js\.map\s*$/);
 });
 

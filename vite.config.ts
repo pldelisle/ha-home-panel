@@ -2,11 +2,15 @@ import {defineConfig} from 'vite';
 import {viteStaticCopy} from 'vite-plugin-static-copy';
 import pkg from './package.json' with {type: 'json'};
 
-// One minified ES module, dist/home-panel.js, with its source map beside it. The CSS is imported as text (src/styles.js)
-// and the version is injected here, from package.json. The vendored libraries are copied next to the entry: the panel
-// loads them at run time with loadScript(BASE + …), so they are not part of the bundle.
+// One minified ES module, dist/home-panel.js, with its source map beside it. The CSS is imported as text
+// (src/styles.js) and the version is injected here, from package.json. The vendored libraries are copied next to the
+// entry: the panel loads them at run time with loadScript(BASE + …), so they are not part of the bundle.
+
+// The constants the build replaces in src/ (declared in src/env.d.ts); vitest.config.ts uses the same object.
+export const define = {__VERSION__: JSON.stringify(pkg.version)};
+
 export default defineConfig({
-  define: {__VERSION__: JSON.stringify(pkg.version)},
+  define,
   build: {
     lib: {entry: 'src/main.js', formats: ['es'], fileName: () => 'home-panel.js'},
     outDir: 'dist',
