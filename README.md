@@ -129,7 +129,7 @@ You need Node 22.12 or later (Vitest 5 requires Node 22.12, 24 or 26 and later).
 npm ci
 # once per clone: git blame skips the Prettier format commit
 git config blame.ignoreRevsFile .git-blame-ignore-revs
-npm run build          # Vite: dist/home-panel.js (minified), home-panel.js.map and the vendored libraries
+npm run build          # Vite: dist/home-panel.js (minified), home-panel.js.map, the lazy chunks in dist/chunks/ and the vendored libraries
 npm run dev            # the same build, redone on every save (vite build --watch)
 npm run typecheck      # tsc --checkJs over the config and stack modules (types in src/types.d.ts)
 npm test               # unit tests (Vitest): config, stack, French, the built dist/, a scan for personal data
@@ -181,8 +181,8 @@ The source is ES modules under `src/`, built by Vite (`vite.config.ts`) into one
 `dist/home-panel.js.map` beside it. `src/main.js` is the entry and defines the custom element; the `HomePanel` class is in `src/home-panel.js`, with the
 Automations tab (`src/auto.js`), the configuration code (`src/config.js`), the smart-stack rules (`src/stack.js`), the French translations
 (`src/i18n/fr.js`) and the stylesheet (`src/styles.js`, which joins the files in `src/css/`) imported from it. `src/legacy/globals.js` holds the state
-and helpers those files used to share as globals; it goes away in the refactor's second phase. The vendored libraries in `vendor/` are copied next to
-the bundle and loaded when a tab needs them.
+and helpers those files used to share as globals; it goes away in the refactor's second phase. ApexCharts comes from npm and is a lazy chunk (`src/charts/apex.js`), fetched when the first tab with charts opens; the other vendored libraries
+in `vendor/` are copied next to the bundle and loaded when a tab needs them.
 The source map points a stack trace or the browser's DevTools back at the files in `src/`; it ships in the release zip next to `home-panel.js`.
 The test house in `test/e2e/harness.html` is made up. Keep real names, addresses and entity IDs out of the repository:
 `npm test` fails if it finds some of them.

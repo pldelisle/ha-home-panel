@@ -36,15 +36,46 @@ beforeAll(() => {
   execFileSync('npm', ['run', 'build'], {cwd: ROOT, stdio: 'pipe'});
 }, 120_000);
 
-const VENDORED = ['apexcharts.css', 'apexcharts.min.js', 'leaflet.css', 'leaflet.js', 'mermaid.min.js'];
+const VENDORED = ['leaflet.css', 'leaflet.js', 'mermaid.min.js'];
 
-test('dist/ holds the bundle, its source map and the vendored libraries, and nothing else', () => {
-  expect(readdirSync(DIST).sort()).toStrictEqual([...VENDORED, 'home-panel.js', 'home-panel.js.map'].sort());
+// every file under dist/, as paths relative to it ('chunks/x.js'), sorted
+const distFiles = () =>
+  walk('dist')
+    .map(f => f.slice('dist/'.length))
+    .sort();
+// the lazy chunks the entry loads with import(): chunks/<name>-<hash>.js, each with its source map
+const chunks = () => distFiles().filter(f => /^chunks\/.+\.js$/.test(f));
+
+test('dist/ holds the bundle, its source map, the lazy chunks and the vendored libraries, and nothing else', () => {
+  const names = distFiles();
+  const rest = names.filter(f => !chunks().some(c => f === c || f === c + '.map'));
+  expect(rest).toStrictEqual([...VENDORED, 'home-panel.js', 'home-panel.js.map'].sort());
+  // a chunk that lost its map would leave the stack traces of a chart error pointing at minified code
+  for (const c of chunks()) expect(names, c).toContain(c + '.map');
 });
 
 test('the vendored libraries are copied as they are', () => {
   for (const f of VENDORED)
     expect(readFileSync(join(DIST, f)).equals(readFileSync(join(ROOT, 'vendor', f))), f).toBe(true);
+});
+
+test('ApexCharts and its stylesheet are in one lazy chunk, and not in the entry', () => {
+  // the minifier drops the library's banner comment, so the version comes from the package and the library is
+  // recognised by a class name only its drawing code uses; the stylesheet by one of its selectors
+  const lib = 'apexcharts-xaxis-label',
+    sheet = '.apexcharts-canvas ::-webkit-scrollbar';
+  // 3.45.2 exactly: the last plain-MIT release (see renovate.json)
+  expect(JSON.parse(read('node_modules/apexcharts/package.json')).version).toBe('3.45.2');
+  const withApex = chunks().filter(c => readFileSync(join(DIST, c), 'utf8').includes(lib));
+  expect(withApex, `chunks holding the library (${lib})`).toHaveLength(1);
+  expect(readFileSync(join(DIST, withApex[0]), 'utf8').includes(sheet), 'the stylesheet text is in that chunk').toBe(
+    true,
+  );
+  const entry = readFileSync(BUNDLE, 'utf8');
+  expect(entry.includes(lib), 'the entry holds no ApexCharts code').toBe(false);
+  expect(entry.includes(sheet), 'the entry holds no ApexCharts stylesheet').toBe(false);
+  // the entry reaches the chunk through a dynamic import of a path beside it
+  expect(entry).toMatch(/import\(\s*[`"']\.\/chunks\/apex-lib-[\w-]+\.js[`"']\s*\)/);
 });
 
 test('the bundle parses as an ES module', () => {

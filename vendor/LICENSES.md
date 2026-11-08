@@ -5,7 +5,7 @@ They are loaded only when a tab needs them.
 
 | File | Project | Version | Licence |
 |---|---|---|---|
-| `apexcharts.min.js`, `apexcharts.css` | [ApexCharts](https://github.com/apexcharts/apexcharts.js) | 3.45.2 | MIT |
+| _(npm package `apexcharts`, a lazy chunk of the build)_ | [ApexCharts](https://github.com/apexcharts/apexcharts.js) | 3.45.2 | MIT |
 | `leaflet.js`, `leaflet.css` | [Leaflet](https://github.com/Leaflet/Leaflet) | 1.9.4 | BSD-2-Clause |
 | `mermaid.min.js` | [Mermaid](https://github.com/mermaid-js/mermaid) | 11.4.1 | MIT |
 
