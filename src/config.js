@@ -1,4 +1,4 @@
-// ---------- configuration ----------
+// ---------- configuration ---------- (throwaway)
 // Everything that belongs to one house lives here: which entities feed each card, the rooms, the people, the house picture.
 // It comes from the `config:` block under `panel_custom:` in configuration.yaml (HA hands it over as panel.config),
 // and whatever is left out falls back to a default found from the house's own entities.
