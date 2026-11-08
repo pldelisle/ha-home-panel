@@ -123,7 +123,7 @@ Room icons can be `sofa`, `door`, `desk`, `bed`, `bath`, `drop`, `car`, `house` 
 
 ## Develop
 
-You need Node 22.19 or later (24.5 or later on the 24 line): `size-limit` 14 requires it, and Vitest 5 and Vite 8 need less.
+You need Node 24.5 or later, with npm 11 (what Node 24 ships): the licence checker 5 requires Node 24, `size-limit` 14 requires 24.5 on the 24 line, and Vitest 5 and Vite 8 need less. Every CI job that uses Node runs 24: `setup-node` for the lint, changeset, version and release jobs, and the Playwright image for the test and visual jobs.
 
 ```sh
 npm ci
