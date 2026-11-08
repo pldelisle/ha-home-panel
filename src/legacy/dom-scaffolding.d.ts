@@ -13,10 +13,9 @@
 export {};
 
 declare global {
-  // the vendored libraries put themselves on window when loadScript() has loaded them
+  // the vendored library puts itself on window when loadScript() has loaded it (Mermaid is imported, not vendored)
   interface Window {
     ApexCharts: any;
-    mermaid: any;
   }
   interface EventTarget {
     closest(selectors: string): any;

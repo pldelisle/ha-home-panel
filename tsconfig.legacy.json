@@ -1,6 +1,6 @@
 {
   "extends": "./tsconfig.check.json",
-  "compilerOptions": {"strict": false, "noImplicitAny": false, "noImplicitThis": false},
+  "compilerOptions": {"strict": false, "noImplicitAny": false, "noImplicitThis": false, "skipLibCheck": true},
   "include": [
     "src/env.d.ts",
     "src/legacy/dom-scaffolding.d.ts",
