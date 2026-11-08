@@ -1,6 +1,7 @@
 name: Version PR
 # Keeps one "Release" pull request open (branch changeset-release/main) that collects the changesets merged into main:
-# it bumps package.json, writes CHANGELOG.md and syncs the ?v= snippets (npm run version). Merging it is the release
+# it bumps package.json, writes CHANGELOG.md and syncs the ?v= snippets (npm run version-packages; not named
+# "version", which npm would also run after every `npm version`). Merging it is the release
 # decision; tagging and the GitHub release are the release workflow's job, not this one's.
 #
 # With no changesets on main the action only logs and exits, so the run is a no-op. It pushes the version branch with
@@ -8,7 +9,9 @@ name: Version PR
 # listens to main only, never to changeset-release/main.
 #
 # Needs the repository setting Settings > Actions > General > "Allow GitHub Actions to create and approve pull
-# requests", otherwise the push succeeds and opening the pull request fails with a 403.
+# requests", otherwise the push succeeds and opening the pull request fails with a 403. contents: write is for pushing
+# the version branch (the other workflows only read). A pull request opened with GITHUB_TOKEN does not start the
+# pull_request workflows, so the Release PR gets no CI checks; they run on main after it is merged.
 on:
   push:
     branches: [main]
@@ -30,6 +33,6 @@ jobs:
       - run: npm ci
       - uses: changesets/action@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
         with:
-          version-script: npm run version
+          version-script: npm run version-packages
           pr-title: Release
           commit-message: Release

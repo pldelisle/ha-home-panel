@@ -31,8 +31,8 @@ Each pull request declares its change (patch, minor, major) and its changelog li
 - `@changesets/cli` as a dev dependency. `.changeset/config.json` with `baseBranch: "main"`, `commit: false`, `access: "restricted"`, `privatePackages: {version: true, tag: true}` (the package is private; it is versioned and tagged but never published to npm).
 - A changeset file is a Markdown file under `.changeset/` naming the package and the bump, with the changelog text as its body. The text MUST be written in the changelog's current voice: a sentence or short paragraph about what the household sees, no commit hashes, no PR numbers, no "feat:" prefixes.
 - A custom changelog formatter (`.changeset/changelog.cjs`, implementing the two functions Changesets expects) MUST emit the current `CHANGELOG.md` shape: a `## x.y.z` heading followed by one `- ` bullet per changeset, with no "Major Changes" or "Minor Changes" sub-headings and no links. The existing changelog content is left untouched above the new entries.
-- `npm run version` MUST run `changeset version` and then a small script that rewrites `?v=<semver>` in `README.md` and `examples/configuration.yaml` to the new version. `npm run changeset` MUST open the interactive prompt for a new changeset.
-- The version pull request is created and kept up to date by the `changesets/action` workflow on every push to `main`. Its title is "Release <version>" and its body is the pending changelog. Merging it is the release decision.
+- `npm run version-packages` MUST run `changeset version` and then a small script (`scripts/sync-version.mjs`) that rewrites `home-panel.js?v=<semver>` in `README.md` and `examples/configuration.yaml` to the new version, syncs the root version in `package-lock.json` and removes the sub-headings `changeset version` writes from `CHANGELOG.md`. The script is not called `version`, because npm also runs a script of that name after every `npm version`. `npm run changeset` MUST open the interactive prompt for a new changeset.
+- The version pull request is created and kept up to date by the `changesets/action` workflow on every push to `main`. Its title is "Release" (action v2 takes a fixed `pr-title`) and its body is the pending changelog. Merging it is the release decision. The repository setting "Allow GitHub Actions to create and approve pull requests" MUST be on, and a pull request opened with `GITHUB_TOKEN` starts no `pull_request` workflows, so the Release PR gets no CI checks; they run on `main` after the merge.
 
 ### Release workflow
 
@@ -54,7 +54,7 @@ Each pull request declares its change (patch, minor, major) and its changelog li
 ### Pinned Actions
 
 - Every `uses:` in `.github/workflows/` MUST reference a full commit SHA followed by a comment with the tag, for example `actions/checkout@<sha> # v4.2.2`. This applies to the CI, release, changeset and CodeQL workflows.
-- Every workflow MUST declare the least `permissions:` it needs at the top level; the release workflow needs `contents: write`, the others `contents: read` (plus `security-events: write` for CodeQL and `pull-requests: write` for the changesets action).
+- Every workflow MUST declare the least `permissions:` it needs at the top level; the release workflow needs `contents: write`, the others `contents: read` (plus `security-events: write` for CodeQL, and `contents: write` with `pull-requests: write` for the changesets action, which pushes its version branch and opens the pull request).
 
 ### CodeQL
 

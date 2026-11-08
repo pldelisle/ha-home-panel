@@ -27,10 +27,16 @@ test('two sample changesets give the two exact bullets', async () => {
     getReleaseLine({summary: 'Linked rooms are two ordinary tiles again.'}, 'patch'),
     getReleaseLine({summary: 'Light tiles show a chevron.\nA ring shows under a mouse.'}, 'minor'),
   ]);
-  expect(lines).toEqual([
+  expect(lines).toStrictEqual([
     '- Linked rooms are two ordinary tiles again.',
     '- Light tiles show a chevron.\n  A ring shows under a mouse.',
   ]);
+});
+
+test('a changeset with no text is an error, not an empty bullet', async () => {
+  await expect(getReleaseLine({id: 'quiet-owls-sing', summary: '  \n'}, 'patch')).rejects.toThrow(
+    'The changeset "quiet-owls-sing" has no text',
+  );
 });
 
 test('dependency updates add nothing to the changelog', async () => {

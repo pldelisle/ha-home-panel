@@ -19,7 +19,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "changeset": "changeset",
-    "version": "changeset version && node scripts/sync-version.mjs && prettier --write package.json README.md examples/configuration.yaml"
+    "version-packages": "changeset version && node scripts/sync-version.mjs && prettier --write package.json README.md examples/configuration.yaml"
   },
   "engines": {
     "node": "^22.12 || ^24 || >=26"

@@ -1,18 +1,22 @@
-// Runs after `changeset version` (see "version" in package.json): copies the new version from package.json into the
-// places Changesets does not touch, and tidies the changelog entry it wrote.
-//   - ?v=<semver> in README.md and examples/configuration.yaml, so the install snippet names the version to download
-//   - the root version in package-lock.json
-//   - the "### Minor Changes" sub-headings and the blank lines between bullets in CHANGELOG.md, so the new entry has
-//     the shape of the older ones: `## x.y.z`, then `- ` bullets
-import {readFileSync, writeFileSync} from 'node:fs';
+// Runs after `changeset version` (the "version-packages" script in package.json). Changesets bumps package.json and
+// writes CHANGELOG.md; this script does the rest, working from the new package.json version:
+//   - `home-panel.js?v=<semver>` in README.md and examples/configuration.yaml, so the install snippet names the
+//     version to download
+//   - the root version in package-lock.json, which Changesets leaves behind
+//   - CHANGELOG.md: drops the "### Minor Changes" sub-headings and the blank lines between bullets, so the new entry
+//     has the shape of the older ones, `## x.y.z` then `- ` bullets. .changeset/changelog.cjs writes the bullets in
+//     that shape; the two files agree on it.
+import {readFileSync, realpathSync, writeFileSync} from 'node:fs';
 import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 
-const VERSION_QUERY = /\?v=\d+\.\d+\.\d+(-[\w.]+)?/g;
+// semver with an optional prerelease (2.12.0, 2.12.0-beta.1), only on the panel's own module URL. The lookahead leaves
+// a longer number alone (?v=2.7.0.1) while a sentence's full stop after the version is not part of it.
+const VERSION_QUERY = /(home-panel\.js\?v=)\d+\.\d+\.\d+(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?![0-9A-Za-z-]|\.\d)/g;
 
-/** Rewrites every `?v=<semver>` in the text to the given version. */
+/** Rewrites every `home-panel.js?v=<semver>` in the text to the given version. */
 export function syncSnippet(text, version) {
-  return text.replace(VERSION_QUERY, `?v=${version}`);
+  return text.replace(VERSION_QUERY, `$1${version}`);
 }
 
 /**
@@ -28,7 +32,7 @@ export function cleanChangelog(text) {
     if (line === '') {
       if (out.at(-1) === '') return; // one blank line is enough
       const previous = out.at(-1);
-      const next = lines.slice(i + 1).find(l => l !== '');
+      const next = lines.slice(i + 1).find(line => line !== '');
       // a blank line between a bullet (or its indented paragraphs) and the next bullet goes; any other stays
       if (next?.startsWith('- ') && (previous?.startsWith('- ') || previous?.startsWith('  '))) return;
     }
@@ -74,6 +78,7 @@ export function syncVersion(root) {
   ];
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+// run directly (also through a symlink), not when a test imports it
+if (process.argv[1] && realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url))) {
   console.log(syncVersion(fileURLToPath(new URL('../', import.meta.url))).join('\n'));
 }
