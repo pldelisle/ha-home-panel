@@ -32,7 +32,7 @@ Every section is optional. A section shows only when its entities exist, so a ho
 ## Install
 
 1. Download `home-panel.zip` from the [latest release](../../releases/latest), or build it yourself (below).
-2. Unzip it into `<config>/www/home-panel/`, so that `home-panel.js` sits at `<config>/www/home-panel/home-panel.js` with the `chunks/` folder beside it.
+2. Unzip it into `<config>/www/home-panel/`, so that `home-panel.js` sits at `<config>/www/home-panel/home-panel.js` with the `chunks/` and `fonts/` folders beside it.
 3. Add the panel to `configuration.yaml`:
 
    ```yaml
@@ -123,16 +123,16 @@ Room icons can be `sofa`, `door`, `desk`, `bed`, `bath`, `drop`, `car`, `house` 
 
 ## Develop
 
-You need Node 22.19 or later (24.5 or later on the 24 line): `size-limit` 14 requires it, and Vitest 5 and Vite 8 need less.
+You need Node 24.5 or later, with npm 11 (what Node 24 ships): the licence checker 5 requires Node 24, `size-limit` 14 requires 24.5 on the 24 line, and Vitest 5 and Vite 8 need less. Every CI job that uses Node runs 24: `setup-node` for the lint, changeset, version and release jobs, and the Playwright image for the test and visual jobs.
 
 ```sh
 npm ci
 # once per clone: git blame skips the Prettier format commit
 git config blame.ignoreRevsFile .git-blame-ignore-revs
-npm run build          # Vite: dist/home-panel.js (minified), home-panel.js.map, the lazy chunks in dist/chunks/ and LICENSES.md
+npm run build          # Vite: dist/home-panel.js (minified), home-panel.js.map, the lazy chunks in dist/chunks/, the font in dist/fonts/ and LICENSES.md
 npm run dev            # the same build, redone on every save (vite build --watch)
 npm run size           # the main chunk, gzipped, against its budget in package.json, then the lazy chunks for information (run it after a build)
-npm run licenses       # rewrites LICENSES.md from the installed production packages (run it when apexcharts, mermaid or the lock file changes)
+npm run licenses       # rewrites LICENSES.md from the installed production packages (run it when apexcharts, mermaid, the font or the lock file changes)
 npm run typecheck      # tsc --checkJs: the config and stack modules strictly, the rest of src/ loosely (tsconfig.legacy.json)
 npm test               # unit tests (Vitest): config, stack, French, the built dist/, a scan for personal data
 npm run test:watch     # the same, re-run on every save
@@ -153,8 +153,8 @@ If `npm run format:check` still fails after one `npm run format`, run `npm run f
 `npm run test:e2e -- test/e2e/lights-sheet.spec.ts` runs one file. The first run needs a browser: `npx playwright install chromium`.
 The test server listens on port 4173 unless `E2E_PORT` names another, so several runs can share a machine.
 
-`npm run test:coverage` reports coverage for `src/config.js` and `src/stack.js` (text in the terminal, HTML in `coverage/`, uploaded by CI). Today: 98.82% of statements
-over the two files (`config.js` 98.21%, `stack.js` 100%). The two files are imported by their tests like any module.
+`npm run test:coverage` reports coverage for `src/config.js`, `src/stack.js` and `src/fonts.js` (text in the terminal, HTML in `coverage/`, uploaded by CI). Today: 99.03% of statements
+over the three files (`config.js` 98.21%, `stack.js` and `fonts.js` 100%; the terminal table leaves out a file covered in full). The three files are imported by their tests like any module.
 
 `npm run test:visual` runs the screenshot project against the baselines in `test/e2e/__screenshots__/`, and only ever inside the Playwright image
 (Linux arm64, as in CI): compare with `test:visual:docker` or `test:visual:container` (Apple's `container`, after `container system start`), rewrite with
@@ -173,10 +173,10 @@ That needs the repository setting "Allow GitHub Actions to create and approve pu
 The `changeset` CI job (`.github/workflows/changeset.yml` lists the paths it watches) fails a pull request that changes what ships without a changeset; pull requests that only change documentation, tests or CI pass without one, and the `no-changeset` label skips the job when a watched path changed without a release note (a devDependency bump, say).
 
 Renovate (`renovate.json`) opens pull requests weekly, on Monday mornings: the npm minor and patch updates in one, the GitHub Actions in another.
-Playwright (the npm package and the Docker image tag together) and lock-file maintenance come monthly, each in its own pull request.
+Playwright (the npm package and the Docker image tag together), the Montserrat font (`@fontsource/montserrat`) and lock-file maintenance come monthly, each in its own pull request.
 Pull requests that touch devDependencies, Actions or the image tag carry the `no-changeset` label. Lock-file maintenance changes `package-lock.json`, which pins the libraries inside `dist/chunks/`: it needs a changeset when it moved one of them, or the label when nothing that ships changed.
-A bump of `apexcharts` or `mermaid`, and lock-file maintenance that moves a package inside them, changes `package.json` or `package-lock.json` and not `LICENSES.md`, so the licences test fails that pull request until a person runs `npm run licenses` on its branch and commits the result (Renovate cannot: its `postUpgradeTasks` need a self-hosted bot).
-Renovate does not re-record screenshots: a person pushes the re-recorded baselines to the Renovate Playwright branch (`npm run test:visual:update`, or its `:container` variant) before it can merge.
+A bump of `apexcharts`, `mermaid` or `@fontsource/montserrat`, and lock-file maintenance that moves a package inside them, changes `package.json` or `package-lock.json` and not `LICENSES.md`, so the licences test fails that pull request until a person runs `npm run licenses` on its branch and commits the result (Renovate cannot: its `postUpgradeTasks` need a self-hosted bot).
+Renovate does not re-record screenshots: a person pushes the re-recorded baselines to the Renovate Playwright branch, and to a font bump's branch when the font files changed (`npm run test:visual:update`, or its `:container` variant), before it can merge.
 Every `uses:` in `.github/workflows/` is pinned to a commit with its version in a comment (Renovate keeps both current), each workflow declares its `permissions:` at the top, and `.github/workflows/codeql.yml` runs CodeQL on pushes to `main`, on pull requests and weekly.
 `test/unit/workflows.test.mjs` fails a workflow that breaks the first two rules.
 
@@ -190,18 +190,22 @@ Automations tab (`src/auto.js`), the configuration code (`src/config.js`), the s
 (`src/i18n/fr.js`) and the stylesheet (`src/styles.js`, which joins the files in `src/css/`, minified by Lightning CSS with Safari 15 targets) imported from it. `src/legacy/globals.js` holds the state
 and helpers those files used to share as globals; it goes away in the refactor's second phase. ApexCharts and Mermaid come from npm as lazy chunks under
 `dist/chunks/`: ApexCharts (`src/charts/apex.js`) is fetched when the first tab with charts opens, Mermaid when the Automations tab draws its first flow.
+Montserrat comes from npm too: `@fontsource/montserrat`'s woff2 files for weights 400 to 700, latin and latin-ext, are copied into `dist/fonts/` under their own names,
+and `src/fonts.js` declares them with `@font-face` rules in the document (Chromium ignores them inside a shadow root), so the panel never calls Google Fonts.
 No library is committed as a file. `LICENSES.md` at the root lists every production package with its version and licence text; `npm run licenses` generates it (it is not edited by hand, and Prettier skips it), `vite build` copies it into `dist/`, and `test/unit/licenses.test.mjs` fails when it is out of date.
-`npm run typecheck` runs `tsc` twice: `tsconfig.check.json` checks the pure modules (`config.js`, `stack.js`) strictly, and `tsconfig.legacy.json` checks every
+`npm run typecheck` runs `tsc` twice: `tsconfig.check.json` checks the small modules (`config.js`, `stack.js`, `fonts.js`) strictly, and `tsconfig.legacy.json` checks every
 file under `src/` without `strict`, so a name that does not exist or an import that does not resolve is an error while the untyped class is tolerated.
 `src/legacy/dom-scaffolding.d.ts` holds the ambient declarations that second pass needs (only `tsconfig.legacy.json` lists it); the refactor's second phase deletes it.
 The source map points a stack trace or the browser's DevTools back at the files in `src/`; it ships in the release zip next to `home-panel.js`.
 The test house in `test/e2e/harness.html` is made up. Keep real names, addresses and entity IDs out of the repository:
-`npm test` fails if it finds some of them.
+`npm test` fails if it finds some of them in any committed file.
 
 ## Credits
 
 The colour palette comes from [Origami](https://github.com/hazymorning/origami) by hazymorning.
 Charts are drawn by [ApexCharts](https://apexcharts.com) and automation flows by [Mermaid](https://mermaid.js.org).
+The typeface is [Montserrat](https://github.com/JulietaUla/Montserrat) by the Montserrat Project Authors, under the SIL Open Font Licence 1.1, packaged by [Fontsource](https://fontsource.org/fonts/montserrat).
+It ships in the release's `fonts/` folder and loads from your own Home Assistant, so the panel no longer calls Google Fonts: a tablet tells no third party when it opens the dashboard, and the font works when the internet is down.
 Every shipped library and its licence is listed in [LICENSES.md](LICENSES.md).
 
 ## Licence

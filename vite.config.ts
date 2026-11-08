@@ -1,13 +1,15 @@
 import {defineConfig, type Plugin} from 'vite';
 import {readFileSync} from 'node:fs';
+import {createRequire} from 'node:module';
 import {fileURLToPath} from 'node:url';
 import pkg from './package.json' with {type: 'json'};
+import {FONT_FILES} from './src/fonts.js';
 
 // One minified ES module, dist/home-panel.js, with its source map beside it. The CSS is imported as minified text
 // (`?inline`, src/styles.js) and the version is injected here, from package.json. ApexCharts and Mermaid come from npm through
 // dynamic imports, so they are emitted as lazy chunks under dist/chunks/, fetched when a tab first needs them. The
 // generated LICENSES.md (npm run licenses) is emitted beside the entry, so the release zip carries the libraries'
-// licences. Nothing else is copied: there is no vendor/ directory.
+// licences, and the Montserrat files go to dist/fonts/. Nothing else is copied: there is no vendor/ directory.
 
 // The constants the build replaces in src/ (declared in src/env.d.ts); vitest.config.ts uses the same object.
 export const define = {__VERSION__: JSON.stringify(pkg.version)};
@@ -39,6 +41,22 @@ const shipLicenses: Plugin = {
   },
   generateBundle() {
     this.emitFile({type: 'asset', fileName: 'LICENSES.md', source: readFileSync(licensesPath, 'utf8')});
+  },
+};
+
+// Montserrat (spec 08): the eight woff2 files src/fonts.js declares, copied from @fontsource/montserrat into
+// dist/fonts/ under Fontsource's own names. Not imported through CSS, where Vite would inline or hash them: the names
+// stay stable, so a tablet's cached font outlives an update, and src/fonts.js can name them.
+const requireFontsource = createRequire(import.meta.url);
+const shipFonts: Plugin = {
+  name: 'ship-fonts',
+  generateBundle() {
+    for (const file of FONT_FILES)
+      this.emitFile({
+        type: 'asset',
+        fileName: `fonts/${file}`,
+        source: readFileSync(requireFontsource.resolve(`@fontsource/montserrat/files/${file}`)),
+      });
   },
 };
 
@@ -78,5 +96,5 @@ export default defineConfig({
       },
     },
   },
-  plugins: [shipLicenses, chunkMapsWithoutLibrarySources],
+  plugins: [shipLicenses, shipFonts, chunkMapsWithoutLibrarySources],
 });

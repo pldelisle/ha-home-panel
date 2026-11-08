@@ -28,6 +28,7 @@ import {
   cap,
 } from './legacy/globals.js';
 import {loadApex} from './charts/apex.js';
+import {ensureFonts} from './fonts.js';
 // Liquid Glass: the wallpapers the Status popup offers, and whether this engine can run an SVG filter inside backdrop-filter (Chromium only)
 const GLASS_WP = ['dawn', 'lake', 'meadow', 'ember', 'aurora', 'sand', 'sky']; // sky = picked from the time of day and the weather (skyWp)
 const LENS_OK =
@@ -734,7 +735,6 @@ export class HomePanel extends HTMLElement {
     this.H = null; // history-derived data
     this.charts = []; // sheet charts, destroyed on close
     this.ApexCharts = null; // the library, once the lazy chunk has loaded (loadCharts)
-    this.apexCss = ''; // its stylesheet, written into #apexcss on every build
     this.chartsLoad = null; // the one load of the chunk
     this.open = null; // open sheet id
     this.inline = null; // sheet shown inside a tab pane (Tabs view), same id as this.open while it shows
@@ -915,14 +915,8 @@ export class HomePanel extends HTMLElement {
 
   // ---------- skeleton ----------
   build() {
-    if (!document.querySelector('link[data-home-panel="font"]')) {
-      const l = document.createElement('link');
-      l.rel = 'stylesheet';
-      l.dataset.homePanel = 'font';
-      l.href = 'https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap';
-      document.head.appendChild(l);
-    }
-    this.shadowRoot.innerHTML = `<style>${CSS}</style><style id="apexcss"></style>
+    ensureFonts(); // Montserrat from the panel's own fonts/ folder, declared in the document once
+    this.shadowRoot.innerHTML = `<style>${CSS}</style>
 <div class="app" id="app"><div class="wrap">
   <header class="head">
     <button class="icon menu" id="menu" type="button" aria-label="Open the sidebar">${ico('menu')}</button>
@@ -1082,7 +1076,6 @@ export class HomePanel extends HTMLElement {
 <span id="txprobe" aria-hidden="true" style="position:absolute;left:-9999px;visibility:hidden;font-size:17px;font:-apple-system-body"></span>
 </div>`;
     this.$app = this.$('app');
-    this.applyApexCss();
     this.$app.lang = FR ? 'fr-CA' : 'en-CA';
     this.shadowRoot
       .querySelectorAll('.sheet>.panel')
@@ -1124,6 +1117,8 @@ export class HomePanel extends HTMLElement {
         if (!document.hidden) this.applyText();
       });
     }
+    // the first render (setView → renderTabs) gates the Car tab and tile, so it must already know the car; renderLive looks again
+    this.findCar();
     this.setView();
     this.applyGlass();
     this.loadHistory();
@@ -3124,10 +3119,6 @@ export class HomePanel extends HTMLElement {
 
   // ---------- climate card ----------
   renderClimate() {
-    // no thermostats and no heat pump: no Climate tab
-    this.shadowRoot.querySelectorAll('[data-tab="climate"]').forEach(el => {
-      el.hidden = !ROOMS.length && !st(E.hp);
-    });
     const L = this.live(),
       H = this.H,
       temps = L.rooms.map(r => r.t).filter(v => v != null);
@@ -3228,19 +3219,17 @@ export class HomePanel extends HTMLElement {
       where: ok(trk) ? (trk.state === 'home' ? 'Parked at home' : trk.state === 'not_home' ? 'Away' : trk.state) : '',
     };
   }
-  // hide a card (and the tiles and tabs that open it) when the house has nothing to show in it; true = hidden
-  gate(card, have) {
-    const off = !have,
-      r = this.shadowRoot;
-    r.querySelectorAll(`#${card}, [data-card="${card}"]`).forEach(el => {
-      el.hidden = off;
-    });
-    return off;
+  // the sections this house has nothing for (true = nothing): Climate with no thermostat and no heat pump, Car with no car, the water
+  // heater with neither of its sensors, Hilo with no rate. gateTabs hides them; renderWater and renderHilo draw nothing for them
+  lacking() {
+    return {
+      climate: !ROOMS.length && !st(E.hp),
+      car: !this.car,
+      water: !(st(E.whT) || st(E.whP)),
+      hilo: !st(E.rate),
+    };
   }
   renderCarCard() {
-    this.shadowRoot.querySelectorAll('[data-tab="car"]').forEach(el => {
-      el.hidden = !this.car;
-    });
     if (!this.car) {
       this.set(
         'carcard',
@@ -3286,7 +3275,7 @@ export class HomePanel extends HTMLElement {
     return fn.replace(/\s*(water heater\s*)?(temperature|température|power|puissance)$/i, '').trim();
   }
   renderWater() {
-    if (this.gate('water', st(E.whT) || st(E.whP))) return;
+    if (this.lacking().water) return;
     const t = num(E.whT),
       p = kw(E.whP),
       H = this.H,
@@ -3370,7 +3359,7 @@ export class HomePanel extends HTMLElement {
     return `<svg viewBox="0 0 ${w} ${h}" style="display:block;width:100%;height:auto;margin-top:12px;overflow:visible" role="img" aria-label="Water temperature ${lo} to ${hi} degrees and heating power, last 24 hours">${grid}${pax}${ticks}${bars}${tp.length > 1 ? `<path d="${line}" fill="none" stroke="var(--c-wh)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>` : ''}${last ? `<circle cx="${X(last[0] + 15e4).toFixed(1)}" cy="${Yt(last[1]).toFixed(1)}" r="3" fill="var(--c-wh)" stroke="var(--card)" stroke-width="1.5"/>` : ''}</svg>`;
   }
   renderHilo() {
-    if (this.gate('hilo', st(E.rate))) return;
+    if (this.lacking().hilo) return;
     const ri = this.rateInfo(),
       defi = st(E.defi),
       rw = num(E.rewards);
@@ -3672,20 +3661,8 @@ export class HomePanel extends HTMLElement {
   }
   // ApexCharts is fetched the first time a sheet that draws charts opens, then kept (the chunk is cached by the browser)
   loadCharts() {
-    this.chartsLoad ??= loadApex().then(({ApexCharts, css}) => {
-      this.ApexCharts = ApexCharts;
-      this.apexCss = css;
-      return ApexCharts;
-    });
-    return this.chartsLoad.then(ApexCharts => {
-      this.applyApexCss();
-      return ApexCharts;
-    });
-  }
-  // build() makes a new #apexcss, so the stylesheet is written again each time, not only when the chunk arrives
-  applyApexCss() {
-    const el = this.$('apexcss');
-    if (el) el.textContent = this.apexCss;
+    this.chartsLoad ??= loadApex().then(({ApexCharts}) => (this.ApexCharts = ApexCharts));
+    return this.chartsLoad;
   }
   async buildSheet(id) {
     const tag = (this.sheetTag = Symbol());
@@ -5822,6 +5799,7 @@ export class HomePanel extends HTMLElement {
       'renderPaneSubs',
       'renderAuto',
       'renderCompact',
+      'gateTabs',
     ]) {
       try {
         this[f]();
@@ -5829,6 +5807,18 @@ export class HomePanel extends HTMLElement {
         console.error('home-panel tabs', f, e);
       }
     }
+  }
+  // what the house lacks is hidden wherever it shows: the Climate and Car tabs with their rail buttons (the phone's tab bar too) and
+  // Home tiles, the water heater and Hilo cards with the tiles that open them. It runs last in renderTabs because the renderers above
+  // redraw their tiles whole: a hide that ran before a redraw let the new tile show until the next update hid it again
+  gateTabs() {
+    const L = this.lacking(),
+      hide = (sel, off) =>
+        this.shadowRoot.querySelectorAll(sel).forEach(el => {
+          el.hidden = off;
+        });
+    for (const t of ['climate', 'car']) hide(`[data-tab="${t}"]`, L[t]);
+    for (const c of ['water', 'hilo']) hide(`#${c}, [data-card="${c}"]`, L[c]);
   }
   // one line under each pane title, like the detail sheets have
   renderPaneSubs() {

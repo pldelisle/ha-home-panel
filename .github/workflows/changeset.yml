@@ -5,7 +5,7 @@ name: Changeset
 # package.json (it carries the version) and package-lock.json (it pins the libraries the build puts in dist/chunks/:
 # lock-file maintenance can move DOMPurify or d3 inside Mermaid's chunks). A devDependency-only change is not a
 # release: it takes the label. A change to a runtime dependency (apexcharts, mermaid: the build puts them in chunks of
-# dist/) does ship, so it needs a changeset.
+# dist/; @fontsource/montserrat: the build copies its files into dist/fonts/) does ship, so it needs a changeset.
 # Documentation, tests, scripts and CI-only pull requests touch none of these paths and pass without a changeset or a
 # label, and without installing anything.
 #
@@ -61,7 +61,7 @@ jobs:
       - if: steps.changed.outputs.ships == 'true'
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
       - if: steps.changed.outputs.ships == 'true'
         run: npm ci

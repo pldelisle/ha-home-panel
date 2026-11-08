@@ -2,11 +2,14 @@
 // stack card, the light sheet, the live-activity popup, the settings popup and the Status checks.
 // Baselines live in test/e2e/__screenshots__/visual/states.spec.ts/ and are recorded only inside the Playwright image (Docker or
 // `container`: npm run test:visual:update); a difference is either fixed or approved by updating them in the same pull request.
-import {test, expect, type House} from '../fixtures';
+import {test, expect, fontsLoaded, type House} from '../fixtures';
 import {AFTERNOON, FULL_CFG, VIEWPORTS} from '../houses';
 import {OFFICE_TILE} from '../lights';
 import {NIGHT, goIdle} from '../idle';
 import {pill, stopCharging, openFrontDoor, openPopup} from '../live';
+
+// every screenshot shows the bundled Montserrat, never the fallback it swaps from (font-display: swap)
+test.beforeEach(({house}) => fontsLoaded(house));
 
 // The idle clock draws two things that differ between runs, and neither is a tolerance question:
 // - the time: it reads "now", so Date cannot be frozen (`frozen` would show 11:30 pm after five minutes). The test stops the clock
