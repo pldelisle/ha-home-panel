@@ -84,3 +84,5 @@ Release machinery is verified by exercising it once end to end on a throwaway br
 
 - The version PR replaces the "bump version and changelog" commit each thread used to make. Threads MUST NOT edit `package.json`'s version or `CHANGELOG.md` directly after this PR; the `changeset` job does not enforce that, review does.
 - `privatePackages.tag: true` makes `changeset tag` create `v<version>`; the release workflow MAY use it or create the tag with `gh`, but there MUST be exactly one place that creates tags.
+
+<!-- throwaway t31 docs check -->
