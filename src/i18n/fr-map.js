@@ -467,7 +467,6 @@ const FR_MAP = {
   'Light order saved': 'Ordre des lumières enregistré',
   'Light order reset': 'Ordre des lumières par défaut',
   "Couldn't save the light order: {n}": 'Impossible d’enregistrer l’ordre des lumières : {n}',
-  'Link with': 'Lier avec',
   'Switch, brightness and colour move both': 'L’interrupteur, l’intensité et la couleur suivent pour les deux',
   Lights: 'Lumières',
   'Other lights': 'Autres lumières',
@@ -690,8 +689,6 @@ const FR_MAP = {
   '{n}° inside · {n} lights on · Doors closed': '{n}° dedans · {n} lumières allumées · Portes fermées',
   Charger: 'Borne',
   'Car not plugged in': 'Voiture non branchée',
-  'Charging resumed': 'Recharge reprise',
-  'Charging paused': 'Recharge en pause',
   // ---- car ----
   Car: 'Voiture',
   'Open car details': 'Ouvrir les détails de la voiture',
@@ -1131,7 +1128,6 @@ const FR_MAP = {
   'Heating {n}%': 'Chauffage {n}%',
   'water {n}%': 'eau {n}%',
   'car {n}%': 'voiture {n}%',
-  'so far': 'jusqu’ici',
   'Plugged in': 'Branchée',
 };
 // state words from integrations, matched without regard to case
