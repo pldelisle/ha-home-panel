@@ -32,6 +32,7 @@ test.describe('tablet', () => {
     const k = await cardKey(house, '#hstk');
     await house.root().locator('#hstk .sc').click();
     await expect(house.root().locator(k === 'car' ? '#pane-car' : '#pane-media')).toBeVisible();
+    await expect(house.root().locator('#pane-home'), 'the Home pane gives way to the one the card leads to').toBeHidden();
   });
 
   test('18 the car and the speaker take turns beside the idle clock', async ({house}) => {
@@ -61,6 +62,7 @@ test.describe('phone', () => {
   test.use({houseOpts: {cfg: FULL_CFG, time: NIGHT}});
 
   test('20 a phone keeps its Home card without the stack; on the idle clock the card sits under the clock', async ({house}) => {
+    await expect(house.root().locator('#pane-home')).toBeVisible(); // the Home card is drawn before we look for a stack in it
     await expect(house.root().locator('#hstk')).toHaveCount(0);
     // phones never go idle on their own; "Sleep now" in the settings starts the clock
     await house.root().locator('#gear').click();
@@ -85,6 +87,6 @@ test.describe('idle_stack disabled', () => {
     await house.clock.fastForward(IDLE_AFTER_MS + 1_000);
     await expect(house.root().locator('#idle')).toBeVisible();
     await expect(house.root().locator('#iwrap .sc')).toHaveCount(0);
-    await expect(house.root().locator('#hstk')).toBeHidden();
+    await expect(house.root().locator('#hstk'), 'the Home-card slot exists and is hidden').toHaveAttribute('hidden', '');
   });
 });
