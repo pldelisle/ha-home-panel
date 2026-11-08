@@ -1,12 +1,12 @@
 // ---------- smart stack: the rules that pick the idle clock's card ----------
-// Pure functions (no DOM, no hass object), spliced into the bundle and run under Node by the tests.
+// Pure functions (no DOM, no hass object), bundled with the rest and run under Node by the tests.
 // A card is {k, tone, filler}: tone 'red' pins it (doors left open, lights that stopped answering), 'amber' puts it first
 // in the rotation, filler cards (energy today, who's home) only show when nothing else applies.
 
 /** @typedef {import('./types.d.ts').StackCard} StackCard */
 /** @typedef {import('./types.d.ts').Reminder} Reminder */
 
-const STACK_TURN_MS = 20000; // one card per clock tick
+export const STACK_TURN_MS = 20000; // one card per clock tick
 /** @type {Record<string, number>} */
 const TONE_RANK = {red: 0, amber: 1};
 /**
@@ -14,7 +14,7 @@ const TONE_RANK = {red: 0, amber: 1};
  * @param {number} now milliseconds (Date.now() or a clock's getTime())
  * @returns {{card: StackCard, i: number, n: number} | null} the card for this tick, its place and how many are in turn
  */
-function pickStack(cards, now) {
+export function pickStack(cards, now) {
   const all = (cards || []).filter(Boolean);
   const red = all.filter(c => c.tone === 'red');
   let pool = red.length ? red : all.filter(c => !c.filler);
@@ -36,7 +36,7 @@ function pickStack(cards, now) {
  * @param {number} to
  * @returns {boolean}
  */
-const inHours = (h, from, to) => (from <= to ? h >= from && h < to : h >= from || h < to);
+export const inHours = (h, from, to) => (from <= to ? h >= from && h < to : h >= from || h < to);
 // "20:00" → 20
 /**
  * @param {unknown} s
@@ -52,7 +52,7 @@ const hhmm = s => {
  * @param {number} h the hour as a decimal
  * @returns {number | null}
  */
-function reminderLeft(rem, h) {
+export function reminderLeft(rem, h) {
   const at = hhmm(rem && rem.at);
   if (at == null) return null;
   const lead = Math.max(1, Math.min(240, +rem.lead || 30)) / 60;

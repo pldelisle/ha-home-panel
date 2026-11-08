@@ -1,6 +1,6 @@
 name: Changeset
 # A pull request that changes what ships must carry a changeset (npm run changeset), or the `changeset` job fails.
-# The paths that count are in SHIPPING below: what build.mjs builds into dist/ and the release zip (src/, build.mjs,
+# The paths that count are in SHIPPING below: what the Vite build puts into dist/ and the release zip (src/, vite.config.ts,
 # vendor/*.js and vendor/*.css), plus examples/ (it carries the ?v= install snippet) and package.json (it carries the
 # version). The package has no runtime dependencies, so a devDependency-only change is not a release: it takes the
 # label. Documentation, tests, scripts and CI-only pull requests touch none of these paths and pass without a changeset
@@ -34,7 +34,7 @@ jobs:
     timeout-minutes: 10
     env:
       BASE: ${{ github.base_ref }}
-      SHIPPING: '^(src/|build\.mjs$|package\.json$|examples/|vendor/[^/]+\.(js|css)$)'
+      SHIPPING: '^(src/|vite\.config\.ts$|package\.json$|examples/|vendor/[^/]+\.(js|css)$)'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

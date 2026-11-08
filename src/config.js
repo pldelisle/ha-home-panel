@@ -3,7 +3,7 @@
 // It comes from the `config:` block under `panel_custom:` in configuration.yaml (HA hands it over as panel.config),
 // and whatever is left out falls back to a default found from the house's own entities.
 // resolveConfig() is pure (no DOM, no hass object), so the tests run it under Node.
-// The types are in types.d.ts and are checked by `npm run typecheck` (tsc --checkJs); this file is still a script, so
+// The types are in types.d.ts and are checked by `npm run typecheck` (tsc --checkJs); this file is plain JavaScript, so
 // they come in through typedefs.
 
 /** @typedef {import('./types.d.ts').PanelConfig} PanelConfig */
@@ -20,7 +20,7 @@
 // Names that an integration always creates the same way are defaults (the sun, Hilo's gateway sensors);
 // names that carry a device's or a town's name are found from the house's entities or set in the config.
 /** @type {EntityMap} */
-const DEFAULT_ENTITIES = {
+export const DEFAULT_ENTITIES = {
   // weather: the weather entity, plus Environment Canada's sensors found by the weather entity's prefix (weather.<town>_forecast → sensor.<town>_*)
   weather: null,
   cond: null,
@@ -113,7 +113,7 @@ const EC_SUFFIX = {
 };
 // the config's snake_case names for the entity keys above (both spellings are accepted)
 /** @type {Record<string, EntityKey>} */
-const ENTITY_ALIAS = {
+export const ENTITY_ALIAS = {
   condition: 'cond',
   outdoor_temperature: 'outT',
   high: 'hi',
@@ -150,13 +150,13 @@ const ENTITY_ALIAS = {
   away_mode: 'away',
 };
 /** @type {RoomIcon[]} */
-const ROOM_ICONS = ['sofa', 'door', 'desk', 'bed', 'bath', 'drop', 'car', 'house', 'therm'];
+export const ROOM_ICONS = ['sofa', 'door', 'desk', 'bed', 'bath', 'drop', 'car', 'house', 'therm'];
 // a room's icon from its name, when the config doesn't give one
 /**
  * @param {unknown} s the room's name, or a value of another type: it goes through String()
  * @returns {RoomIcon}
  */
-const guessIcon = s => {
+export const guessIcon = s => {
   const n = String(s || '')
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
@@ -224,7 +224,7 @@ const firstWord = s =>
  * @param {HassStates | null | undefined} states hass.states
  * @returns {ResolvedConfig}
  */
-function resolveConfig(cfg, states) {
+export function resolveConfig(cfg, states) {
   cfg = cfg && typeof cfg === 'object' ? cfg : {};
   states = states || {};
   const ids = Object.keys(states),

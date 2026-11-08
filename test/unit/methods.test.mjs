@@ -2,7 +2,7 @@
 // a method removed along with the old Phone view; this catches that kind of leftover before it ships.
 import {test, expect} from 'vitest';
 import {readFileSync} from 'node:fs';
-const src = ['src/home-panel.src.js', 'src/auto.js']
+const src = ['src/home-panel.js', 'src/auto.js']
   .map(f => readFileSync(new URL('../../' + f, import.meta.url), 'utf8'))
   .join('\n');
 const BUILTIN = new Set([

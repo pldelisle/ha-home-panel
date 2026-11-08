@@ -1,15 +1,6 @@
 // pickStack() and the reminder window: which card the idle clock's smart stack shows
 import {test, expect} from 'vitest';
-import {readFileSync} from 'node:fs';
-import {fileURLToPath} from 'node:url';
-import {compileFunction} from 'node:vm';
-// stack.js is a plain script too; compileFunction takes the file's name so V8 coverage is attributed to src/stack.js (#34 turns this into an import)
-const stackUrl = new URL('../../src/stack.js', import.meta.url);
-const {pickStack, inHours, reminderLeft, STACK_TURN_MS} = compileFunction(
-  readFileSync(stackUrl, 'utf8') + '\nreturn {pickStack, inHours, reminderLeft, STACK_TURN_MS};',
-  [],
-  {filename: fileURLToPath(stackUrl)},
-)();
+import {pickStack, inHours, reminderLeft, STACK_TURN_MS} from '../../src/stack.js';
 const card = (k, tone = null, filler = false) => ({k, tone, filler});
 
 test('nothing applies: no card', () => {

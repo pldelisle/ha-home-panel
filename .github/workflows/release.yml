@@ -91,6 +91,8 @@ jobs:
           unzip -Z1 home-panel.zip | grep -v '/$' | sort > "$RUNNER_TEMP/zip.txt"
           cat "$RUNNER_TEMP/zip.txt"
           grep -qx 'home-panel.js' "$RUNNER_TEMP/zip.txt"
+          # its source map, beside it, so DevTools and stack traces on the tablet point at src/
+          grep -qx 'home-panel.js.map' "$RUNNER_TEMP/zip.txt"
           # every file the build put in dist/, the vendored libraries included, is at its place in the zip
           diff "$RUNNER_TEMP/dist.txt" "$RUNNER_TEMP/zip.txt"
       - name: Create the release (and its tag)

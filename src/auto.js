@@ -3,6 +3,23 @@
 // (trace/list, trace/get), which record which trigger fired, each condition's result and each step's time.
 // The graph is laid out by Mermaid (www/home-panel/mermaid.min.js, loaded only when the tab opens);
 // the path a run took is lit green, the step it is waiting on amber, a failed check red, the rest dashed grey.
+import {
+  getHass,
+  getTZ,
+  st,
+  ok,
+  attr,
+  esc,
+  cap,
+  plural,
+  localDay,
+  fmtDate,
+  tile,
+  loadScript,
+  BASE,
+  VERSION,
+} from './legacy/globals.js';
+
 const AU_DOMAIN = {
   climate: 'Climate',
   light: 'Light',
@@ -96,11 +113,11 @@ const auClock = t =>
     minute: '2-digit',
     second: '2-digit',
     hour12: false,
-    timeZone: TZ,
+    timeZone: getTZ(),
   });
 const auHM = t =>
   new Date(t)
-    .toLocaleTimeString('en-CA', {hour: '2-digit', minute: '2-digit', hour12: false, timeZone: TZ})
+    .toLocaleTimeString('en-CA', {hour: '2-digit', minute: '2-digit', hour12: false, timeZone: getTZ()})
     .replace(/^24/, '00');
 const auMins = t => {
   const [h, m] = auHM(t).split(':').map(Number);
@@ -112,7 +129,7 @@ const auShortAlias = a => {
   return i > 0 && i < 24 ? a.slice(i + 3) : a;
 };
 
-const AUTO = {
+export const autoMethods = {
   // ---------- names in plain words ----------
   auName(id) {
     if (!id) return '';
@@ -679,7 +696,7 @@ const AUTO = {
   },
   // ---------- data ----------
   auAutos() {
-    return Object.values(hass.states)
+    return Object.values(getHass().states)
       .filter(s => s.entity_id.startsWith('automation.'))
       .map(s => ({
         entity: s.entity_id,
@@ -698,16 +715,18 @@ const AUTO = {
     return /^time pattern/i.test(sm.trigger || '') && sm.script_execution === 'failed_conditions';
   },
   async auLoad(force) {
-    if (this.auBusy || !hass) return;
+    if (this.auBusy || !getHass()) return;
     if (!force && Date.now() - (this.auAt || 0) < 20000) return;
     this.auBusy = true;
     this.auCfg = this.auCfg || {};
     this.auTr = this.auTr || {};
     try {
-      const list = await hass.callWS({type: 'trace/list', domain: 'automation'}).catch(e => {
-        this.auErr = e && (e.message || e.code);
-        return null;
-      });
+      const list = await getHass()
+        .callWS({type: 'trace/list', domain: 'automation'})
+        .catch(e => {
+          this.auErr = e && (e.message || e.code);
+          return null;
+        });
       if (list) {
         this.auList = list;
         this.auErr = null;
@@ -719,7 +738,7 @@ const AUTO = {
       }
       await Promise.all(
         A.filter(a => a.item && (stale || !(a.item in this.auCfg))).map(a =>
-          hass
+          getHass()
             .callWS({type: 'automation/config', entity_id: a.entity})
             .then(r => {
               this.auCfg[a.item] = (r && r.config) || r || null;
@@ -735,7 +754,7 @@ const AUTO = {
           const k = sm.item_id + '/' + sm.run_id,
             have = this.auTr[k];
           if (have && have.state !== 'running' && sm.state !== 'running') return null;
-          return hass
+          return getHass()
             .callWS({type: 'trace/get', domain: 'automation', item_id: sm.item_id, run_id: sm.run_id})
             .then(t => {
               this.auTr[k] = t;
@@ -798,7 +817,7 @@ const AUTO = {
   },
   // ---------- drawing ----------
   renderAuto() {
-    if (this.view !== 'tabs' || this.tab !== 'auto' || !hass) return;
+    if (this.view !== 'tabs' || this.tab !== 'auto' || !getHass()) return;
     const A = this.auAutos(),
       sig = A.map(a => a.entity + a.last + a.current + a.on).join('|');
     if (sig !== this.auSig) {
@@ -927,7 +946,7 @@ const AUTO = {
     const nextUp = up[0],
       nextUp2 = up[1];
     const skipped = today.filter(sm => sm.script_execution === 'failed_conditions').length;
-    const todayCard = `<section class="card autoday"><div class="shead"><div><h3>Today</h3><p>One dot per run, a number when several ran close together. Filled ran, ringed red checked and did nothing, green is running now, hollow is still to come. Tap one to draw it below.</p></div><span class="pill">${esc(new Date().toLocaleDateString('en-CA', {weekday: 'short', month: 'short', day: 'numeric', timeZone: TZ}))} · ${auHM(Date.now())}</span></div>
+    const todayCard = `<section class="card autoday"><div class="shead"><div><h3>Today</h3><p>One dot per run, a number when several ran close together. Filled ran, ringed red checked and did nothing, green is running now, hollow is still to come. Tap one to draw it below.</p></div><span class="pill">${esc(new Date().toLocaleDateString('en-CA', {weekday: 'short', month: 'short', day: 'numeric', timeZone: getTZ()}))} · ${auHM(Date.now())}</span></div>
       <div class="autl"><div class="axis"></div><div class="past" style="width:${((nowM / 1440) * 100).toFixed(2)}%"></div><div class="nowl" style="left:${((nowM / 1440) * 100).toFixed(2)}%"></div>${[0, 6, 12, 18].map(h => `<span class="hr" style="left:${(h / 24) * 100}%">${String(h).padStart(2, '0')}:00</span>`).join('')}${dotsH}</div>
       <div class="tiles" style="grid-template-columns:repeat(3,minmax(0,1fr))">${tile(['Ran today', runs.length, '', skipped ? `${skipped} more checked and did nothing` : 'every run passed its checks'])}${tile(['Next', nextUp ? auHM(nextUp.t) : '–', '', nextUp ? esc(auShortAlias(nextUp.name)) : 'nothing else scheduled today'])}${tile(['Then', nextUp2 ? auHM(nextUp2.t) : '–', '', nextUp2 ? esc(auShortAlias(nextUp2.name)) : '—'])}</div></section>`;
     // flow cards
