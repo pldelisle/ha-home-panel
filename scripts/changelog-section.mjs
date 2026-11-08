@@ -16,7 +16,7 @@ export function changelogSection(text, version) {
   const lines = text.split(/\r?\n/);
   const start = lines.findIndex(line => {
     if (!line.startsWith('## ')) return false;
-    const heading = line.slice(3).trimEnd();
+    const heading = line.slice(3);
     return heading === version || heading.startsWith(version + ' ');
   });
   if (start === -1) return null;

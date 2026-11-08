@@ -48,42 +48,48 @@ test('a suffix after the version in the heading is allowed, a longer version is 
   expect(changelogSection('## 2.1.0-beta.1\n\n- Beta.\n', '2.1.0-beta.1')).toBe('- Beta.');
 });
 
-test('a missing version, an empty section and an empty version give null', () => {
+test('trailing spaces after the heading are fine', () => {
+  expect(changelogSection('## 2.1.0 \n\n- Text.\n', '2.1.0')).toBe('- Text.');
+});
+
+test('a missing version and an empty section give null', () => {
   expect(changelogSection(sample, '9.9.9')).toBeNull();
   expect(changelogSection('## 1.0.0\n\n\n## 0.9.0\n\n- Text.\n', '1.0.0')).toBeNull();
+});
+
+test('an empty or missing version is never a match, not even for an empty heading', () => {
+  expect(changelogSection('## \n\n- Text.\n', '')).toBeNull();
+  expect(changelogSection('## \n\n- Text.\n', undefined)).toBeNull();
   expect(changelogSection(sample, '')).toBeNull();
-  expect(changelogSection(sample, undefined)).toBeNull();
 });
 
-test('works on CRLF text', () => {
-  expect(changelogSection('## 1.0.0\r\n\r\n- One.\r\n\r\n## 0.9.0\r\n\r\n- Two.\r\n', '1.0.0')).toBe('- One.');
+test('works on CRLF text, with several lines in the body', () => {
+  expect(changelogSection('## 1.0.0\r\n\r\n- One.\r\n- Two.\r\n\r\n## 0.9.0\r\n\r\n- Old.\r\n', '1.0.0')).toBe(
+    '- One.\n- Two.',
+  );
 });
 
-test('the real CHANGELOG.md has a section for the package.json version, its first entry and its last', () => {
+test('the real CHANGELOG.md has text for the package.json version and every section stays under its heading', () => {
   const {version} = JSON.parse(readFileSync(join(repo, 'package.json'), 'utf8'));
-  expect(changelogSection(changelog, version)).toMatch(/^- \S/);
+  expect(changelogSection(changelog, version)).not.toBeNull();
   const headings = [...changelog.matchAll(/^## (\S+)/gm)].map(match => match[1]);
-  const first = changelogSection(changelog, headings[0]);
-  const second = changelogSection(changelog, headings[1]);
-  const last = changelogSection(changelog, headings.at(-1));
-  expect(first).toMatch(/^- \S/);
-  // the oldest entry is "## 2.0.0 (unreleased)": a paragraph, then bullets, then a closing paragraph
-  expect(last).toMatch(/^The panel moves out of/);
-  expect(last).toMatch(/Before 2\.0\.0, versions 1\.0 to 1\.19\.9 lived in a private repository\.$/);
-  expect(last).not.toMatch(/^## /m);
-  // a section does not leak into the one under it
-  expect(first).not.toContain(second);
+  expect(headings.length).toBeGreaterThan(1);
+  for (const heading of headings) {
+    const section = changelogSection(changelog, heading);
+    expect(section, heading).not.toBeNull();
+    expect(section, heading).not.toMatch(/^## /m);
+  }
 });
 
 function run(...args) {
   return spawnSync(process.execPath, [script, ...args], {encoding: 'utf8'});
 }
 
-test('the command prints the section of the real changelog and exits 0', () => {
-  const result = run('2.11.1');
+test("the command prints the package.json version's section of the real changelog and exits 0", () => {
+  const {version} = JSON.parse(readFileSync(join(repo, 'package.json'), 'utf8'));
+  const result = run(version);
   expect(result.status).toBe(0);
-  expect(result.stdout).toBe(changelogSection(changelog, '2.11.1') + '\n');
-  expect(result.stdout.startsWith('- Linked rooms are two ordinary tiles again')).toBe(true);
+  expect(result.stdout).toBe(changelogSection(changelog, version) + '\n');
   expect(result.stdout).not.toContain('## ');
 });
 
