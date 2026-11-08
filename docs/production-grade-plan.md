@@ -18,9 +18,9 @@ The panel works and is tested at the edges, but nearly all of it lives in one cl
 
 Already in place, and worth keeping:
 
-- A build (`build.mjs`) that produces one ES module plus lazy-loaded chart, map and diagram libraries.
+- A build (`../build.mjs`) that produces one ES module plus lazy-loaded chart, map and diagram libraries.
 
-- A pure, unit-tested config resolver (`src/config.js`) and smart-stack ranking (`src/stack.js`).
+- A pure, unit-tested config resolver (`../src/config.js`) and smart-stack ranking (`src/stack.js`).
 
 - An end-to-end smoke test that loads the real bundle in Chromium against a made-up house, on tablet and phone, in English and French, and fails on any page error.
 
@@ -32,7 +32,7 @@ What limits it:
 
 | Area | Today | Why it matters |
 |---|---|---|
-| Structure | `src/home-panel.src.js` is 3,274 lines (331 KB). One `HomePanel` class holds about 200 methods and 95 instance fields | Every change touches the same file, so parallel branches conflict and get renumbered (2.6.0 became 2.7.0 on 7 Nov) |
+| Structure | `../src/home-panel.src.js` is 3,274 lines (331 KB). One `HomePanel` class holds about 200 methods and 95 instance fields | Every change touches the same file, so parallel branches conflict and get renumbered (2.6.0 became 2.7.0 on 7 Nov) |
 | Readability | 111 lines are over 300 characters, the longest 855 | Hard to review in a diff, easy to hide a bug in |
 | Shared state | `hass`, `TZ`, `FR`, `E`, `ROOMS` and others are module-level variables | Two panels on one page would overwrite each other; anything can change anything |
 | Rendering | HTML strings written with `innerHTML` in 52 places, escaped by hand with `esc()` 198 times | One missed `esc()` on a media title or calendar event is a script injection. Replaced DOM loses focus and slider state, hence workarounds like `lightDrag` and catching Escape on `window` |
@@ -114,7 +114,7 @@ Mirror Home Assistant's frontend toolchain where it applies, and add screenshot 
 | Tool | Job | Replaces |
 |---|---|---|
 | TypeScript, strict mode | Types for `hass`, states and WebSocket replies (from `home-assistant-js-websocket`) | The regex "methods exist" test |
-| Vite (library build) | ES module entry plus lazy chunks, minified, with source maps | `build.mjs` text splicing |
+| Vite (library build) | ES module entry plus lazy chunks, minified, with source maps | `../build.mjs` text splicing |
 | ESLint with typescript-eslint and eslint-plugin-lit, Prettier, lit-analyzer | Lint, format and type-check templates, the same trio HA runs | Nothing today |
 | Vitest | Unit tests for models, providers, config, i18n, against recorded fixtures | `node:test` |
 | Playwright Test | Today's made-up house, plus `toHaveScreenshot` baselines for tablet and phone, light and dark, English and French | The smoke script and manual screenshot checks |
