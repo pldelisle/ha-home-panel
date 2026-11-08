@@ -3,7 +3,8 @@
 import {defineConfig} from '@playwright/test';
 
 const CI = !!process.env.CI;
-const PORT = 4173;
+// parallel worktrees each set their own E2E_PORT, so one run never reuses another's server
+const PORT = Number(process.env.E2E_PORT ?? 4173);
 
 export default defineConfig({
   testDir: 'test/e2e',
