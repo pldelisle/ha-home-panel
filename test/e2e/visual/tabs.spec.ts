@@ -16,9 +16,15 @@ for (const viewport of ['tablet', 'phone'] as const) {
 
     // opens every tab this screen shows in this house and compares it with its baseline; a mismatch on one tab
     // does not hide the others (soft), so one run lists every screen that changed
-    async function captureTabs(house: House, name: (tab: string) => string) {
+    async function captureTabs(house: House, name: (tab: string) => string, withFlows: boolean) {
       return eachShownTab(house, async t => {
-        if (t === 'auto') await expect(house.root().locator('#pane-auto svg').first()).toBeVisible({timeout: 10_000});
+        // the flows are drawn once Mermaid's chunk has loaded, and while it loads no frame changes, so two identical frames
+        // can show the empty flow card: wait for every flow box to hold its drawing (the panel marks it data-drawn in the
+        // task that inserts it). Not `#pane-auto svg`: the pane's title badge is an svg too, so that passed at once (#94)
+        if (t === 'auto' && withFlows) {
+          await expect(house.root().locator('#pane-auto .augraph svg').first()).toBeVisible({timeout: 10_000});
+          await expect(house.root().locator('#pane-auto .augraph:not([data-drawn])')).toHaveCount(0);
+        }
         await expect.soft(house.page).toHaveScreenshot(name(t));
       });
     }
@@ -28,7 +34,7 @@ for (const viewport of ['tablet', 'phone'] as const) {
         test.describe(`full house, ${theme}, ${lang}`, () => {
           test.use({houseOpts: {cfg: FULL_CFG, theme, lang, time: AFTERNOON, frozen: true}});
           test('every tab', async ({house}) => {
-            const captured = await captureTabs(house, t => `${t}-${viewport}-${theme}-${lang}.png`);
+            const captured = await captureTabs(house, t => `${t}-${viewport}-${theme}-${lang}.png`, true);
             // the full house shows every tab; one that went missing must fail here, not shrink the baseline set quietly
             expect(captured, 'tabs captured').toEqual(TABS[viewport]);
           });
@@ -40,7 +46,7 @@ for (const viewport of ['tablet', 'phone'] as const) {
     test.describe('bare house, light, en', () => {
       test.use({houseOpts: {house: 'bare', time: AFTERNOON, frozen: true}});
       test('every tab', async ({house}) => {
-        await captureTabs(house, t => `bare-${t}-${viewport}-light-en.png`);
+        await captureTabs(house, t => `bare-${t}-${viewport}-light-en.png`, false); // no automations, so no flow
       });
     });
   });
