@@ -8,7 +8,6 @@ import {FR, setFR, FR_ATTR, frNode, frTree, frApex} from './i18n/fr.js';
 import {autoMethods} from './auto.js';
 import {
   VERSION,
-  BASE,
   getHass,
   setHass,
   getTZ,
@@ -27,8 +26,8 @@ import {
   tile,
   plural,
   cap,
-  loadScript,
 } from './legacy/globals.js';
+import {loadApex} from './charts/apex.js';
 // Liquid Glass: the wallpapers the Status popup offers, and whether this engine can run an SVG filter inside backdrop-filter (Chromium only)
 const GLASS_WP = ['dawn', 'lake', 'meadow', 'ember', 'aurora', 'sand', 'sky']; // sky = picked from the time of day and the weather (skyWp)
 const LENS_OK =
@@ -142,6 +141,10 @@ const TABS = [
   ['cams', 'Security', 'shield'],
   ['auto', 'Automations', 'flow'],
 ];
+// the sheets that wait for the charts library before they draw anything; the others never do. The Weather sheet is not
+// one of them: it shows its tiles and forecast at once and fetches the library beside its history (weatherSheet)
+const CHARTS_FAILED = 'Charts library failed to load';
+const CHART_SHEETS = new Set(['sh-energy', 'sh-climate', 'sh-car', 'sh-air', 'sh-wx']);
 const TAB_SHEET = {climate: 'sh-climate', weather: 'sh-weather', car: 'sh-car', energy: 'sh-energy', air: 'sh-air'};
 // on a phone the bar at the bottom holds these four; the other sections sit under More
 const PHONE_TABS = ['home', 'lights', 'climate', 'car'];
@@ -730,6 +733,9 @@ export class HomePanel extends HTMLElement {
     this.attachShadow({mode: 'open'});
     this.H = null; // history-derived data
     this.charts = []; // sheet charts, destroyed on close
+    this.ApexCharts = null; // the library, once the lazy chunk has loaded (loadCharts)
+    this.apexCss = ''; // its stylesheet, written into #apexcss on every build
+    this.chartsLoad = null; // the one load of the chunk
     this.open = null; // open sheet id
     this.inline = null; // sheet shown inside a tab pane (Tabs view), same id as this.open while it shows
     this.tab = 'home';
@@ -1076,6 +1082,7 @@ export class HomePanel extends HTMLElement {
 <span id="txprobe" aria-hidden="true" style="position:absolute;left:-9999px;visibility:hidden;font-size:17px;font:-apple-system-body"></span>
 </div>`;
     this.$app = this.$('app');
+    this.applyApexCss();
     this.$app.lang = FR ? 'fr-CA' : 'en-CA';
     this.shadowRoot
       .querySelectorAll('.sheet>.panel')
@@ -1119,13 +1126,6 @@ export class HomePanel extends HTMLElement {
     }
     this.setView();
     this.applyGlass();
-    fetch(BASE + 'apexcharts.css')
-      .then(r => (r.ok ? r.text() : ''))
-      .then(t => {
-        this.$('apexcss').textContent = t;
-      })
-      .catch(() => {});
-    this.apex = loadScript(BASE + 'apexcharts.min.js?v=' + VERSION);
     this.loadHistory();
   }
 
@@ -3670,12 +3670,29 @@ export class HomePanel extends HTMLElement {
       this.buildSheet(this.open);
     }
   }
+  // ApexCharts is fetched the first time a sheet that draws charts opens, then kept (the chunk is cached by the browser)
+  loadCharts() {
+    this.chartsLoad ??= loadApex().then(({ApexCharts, css}) => {
+      this.ApexCharts = ApexCharts;
+      this.apexCss = css;
+      return ApexCharts;
+    });
+    return this.chartsLoad.then(ApexCharts => {
+      this.applyApexCss();
+      return ApexCharts;
+    });
+  }
+  // build() makes a new #apexcss, so the stylesheet is written again each time, not only when the chunk arrives
+  applyApexCss() {
+    const el = this.$('apexcss');
+    if (el) el.textContent = this.apexCss;
+  }
   async buildSheet(id) {
     const tag = (this.sheetTag = Symbol());
     try {
-      await this.apex;
+      if (CHART_SHEETS.has(id)) await this.loadCharts();
     } catch {
-      this.toast('Charts library failed to load', true);
+      this.toast(CHARTS_FAILED, true);
       return;
     }
     if (tag !== this.sheetTag || this.open !== id) return;
@@ -3731,7 +3748,7 @@ export class HomePanel extends HTMLElement {
     if (FR) opt = frApex(opt);
     const el = this.$(id);
     el.innerHTML = '';
-    const c = new window.ApexCharts(el, opt);
+    const c = new this.ApexCharts(el, opt);
     this.charts.push(c);
     // a chart with nothing to draw must not take the panel down with it
     const done = c.render();
@@ -3843,6 +3860,7 @@ export class HomePanel extends HTMLElement {
       .join('');
   }
   energyMain() {
+    if (!this.ApexCharts) return; // a tap while the chunk is loading; buildSheet draws it when it lands
     if (this.mainChart) {
       this.mainChart.destroy();
       this.charts = this.charts.filter(c => c !== this.mainChart);
@@ -4068,13 +4086,19 @@ export class HomePanel extends HTMLElement {
     };
   }
   async weatherSheet() {
+    const tag = this.sheetTag; // buildSheet's; a sheet closed or reopened while the chunk was loading is not drawn twice
     this.$('wsub').textContent = this.weatherSummary();
     this.renderWeatherNow();
     this.renderForecast();
-    try {
-      await this.loadWxHistory();
-    } catch (e) {
-      console.error('home-panel weather history', e);
+    // the charts library and the history are fetched together, and each has its own message when it fails
+    const [lib, hist] = await Promise.allSettled([this.loadCharts(), this.loadWxHistory()]);
+    if (tag !== this.sheetTag) return;
+    if (lib.status === 'rejected') {
+      this.toast(CHARTS_FAILED, true);
+      return;
+    }
+    if (hist.status === 'rejected') {
+      console.error('home-panel weather history', hist.reason);
       this.$('wseason').innerHTML = '<p>History is not available right now.</p>';
       return;
     }
@@ -4297,7 +4321,7 @@ export class HomePanel extends HTMLElement {
             `<div><span>${esc(fmtHour(h.datetime))}</span>${wxIcon(h.condition, 28, isDay(ms(h.datetime), this))}<b class="num">${Math.round(h.temperature)}°</b>${h.precipitation_probability ? `<small>${h.precipitation_probability}%</small>` : '<small>&nbsp;</small>'}</div>`,
         )
         .join('')}</div><div id="c-whour"></div>`;
-      if (window.ApexCharts) {
+      if (this.ApexCharts) {
         this.charts = this.charts.filter(c => {
           if (c.__wh) {
             try {
@@ -4338,6 +4362,12 @@ export class HomePanel extends HTMLElement {
           }),
         );
         c.__wh = true;
+      } else {
+        // the first chart of this visit: fetch the library, then draw it
+        this.loadCharts().then(
+          () => this.open === 'sh-weather' && this.renderForecast(),
+          () => {}, // weatherSheet says so
+        );
       }
     }
     if (!days.length) {
@@ -4679,6 +4709,7 @@ export class HomePanel extends HTMLElement {
     });
   }
   async airChart() {
+    if (!this.ApexCharts) return; // a tap while the chunk is loading; buildSheet draws it when it lands
     const r = this.airRange,
       m = this.airMetric,
       tag = (this.airTag = Symbol()),
@@ -4760,6 +4791,7 @@ export class HomePanel extends HTMLElement {
   }
   // outdoor air over the same range: the Mila station's US AQI, and Environment Canada's AQHI when it has statistics
   async airOutChart() {
+    if (!this.ApexCharts) return; // a tap while the chunk is loading; buildSheet draws it when it lands
     const box = this.$('c-aout');
     if (!box) return;
     const o = this.purifiers().outside,
@@ -6882,6 +6914,7 @@ export class HomePanel extends HTMLElement {
       .join('');
   }
   async wxSheet() {
+    if (!this.ApexCharts) return; // a tap while the chunk is loading; buildSheet draws it when it lands
     const D = WX_DEF[this.wxKey],
       r = this.wxRange,
       R = CRANGE[r],
@@ -7237,6 +7270,7 @@ export class HomePanel extends HTMLElement {
       .map(([x, v]) => [x, +(sum(v) / v.length).toFixed(2)]);
   }
   async climateSheet() {
+    if (!this.ApexCharts) return; // a tap while the chunk is loading; buildSheet draws it when it lands
     this.$('csub').textContent = this.climateSummary();
     this.shadowRoot
       .querySelectorAll('#ctabs .tab')
@@ -7495,7 +7529,7 @@ export class HomePanel extends HTMLElement {
     this.cache.chead = this.cache.ctiles = this.cache.cctl = null;
     this.renderClimateHead();
     this.renderClimateControls();
-    if (!C || !window.ApexCharts) return;
+    if (!C || !this.ApexCharts) return;
     // apex splits 'smooth' lines into pieces once any series has a gap, so with a setpoint the room lines use monotoneCubic instead
     const cv = this.climSel === 'hp' ? 'straight' : hasSp ? 'monotoneCubic' : 'smooth';
     this.climChart = this.mk(

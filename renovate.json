@@ -38,7 +38,7 @@
       "schedule": ["before 6am on the first day of the month"]
     },
     {
-      "description": "Mermaid draws the Automations flow charts, and its releases move their pixels (from 11.10 the node outlines are drawn as paths), so a bump comes in its own pull request, never in the weekly group: that pull request re-records the Automations baselines and carries a changeset (docs/specs/07, As built)",
+      "description": "Mermaid draws the Automations flow charts, and its releases move their pixels (from 11.10 the node outlines are drawn as paths), so a bump comes in its own pull request, never in the weekly group, and fails the visual job until a person re-records the Automations baselines on its branch and adds a changeset (Renovate does neither). Unlike ApexCharts it is not frozen: its releases carry security fixes (docs/specs/07, As built)",
       "matchPackageNames": ["mermaid"],
       "groupName": "Mermaid"
     },
@@ -49,7 +49,7 @@
       "groupName": "Vitest"
     },
     {
-      "description": "A dev dependency does not ship, so a bump of one changes nothing the household receives; the label skips the changeset job (docs/specs/05). Runtime dependencies (mermaid) ship and get no label",
+      "description": "A bump of a dev dependency changes nothing the household receives, so the label skips the changeset job (docs/specs/05); a runtime dependency (apexcharts, mermaid: bundled into the chunks the panel loads) does ship, so its pull requests are not labelled",
       "matchManagers": ["npm"],
       "matchDepTypes": ["devDependencies"],
       "addLabels": ["no-changeset"]
@@ -60,10 +60,15 @@
       "addLabels": ["no-changeset"]
     },
     {
-      "description": "3.x is the last plain-MIT line; see docs/specs/production-grade-refactor.md",
+      "description": "ApexCharts stays on 3.x: majors are skipped (4.x and 5.0.0 are MIT, 5.1.0 onward is under ApexCharts' own licence, per npm's licence field; docs/specs/production-grade-refactor.md)",
       "matchPackageNames": ["apexcharts"],
       "matchUpdateTypes": ["major"],
       "enabled": false
+    },
+    {
+      "description": "ApexCharts is frozen at 3.45.2, not only held to 3.x: a minor or patch would change the charts the baselines in test/e2e/__screenshots__ pin pixel for pixel, and dist.test.mjs asserts the version. Unfreeze it on purpose, with a changeset and a visual check, never through the weekly group",
+      "matchPackageNames": ["apexcharts"],
+      "allowedVersions": "3.45.2"
     },
     {
       "description": "typescript-eslint does not support TypeScript 7 yet; re-enable majors when it does",

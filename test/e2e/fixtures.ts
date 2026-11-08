@@ -14,6 +14,9 @@ declare global {
   }
 }
 
+/** where Vite puts the lazy chunks in the served panel (dist/chunks/, served under /panel/) */
+export const CHUNK_URL = /\/panel\/chunks\//;
+
 /** a chunk the panel fetched from dist/chunks/: its URL and its source text */
 export type Chunk = {url: string; body: string};
 
@@ -46,7 +49,9 @@ export type House = {
   ws: Array<{type: string; key: string; value: unknown}>;
   /** page errors and console errors; the fixture asserts this is empty after the test */
   errors: string[];
-  /** the lazy chunks the panel fetched (anything served from /panel/chunks/), in the order their bodies arrived */
+  /** the URLs the panel asked for under /panel/chunks/ (lazy chunks), in the order it asked, whether or not they arrived */
+  chunkRequests: string[];
+  /** the lazy chunks that arrived, with their text, in the order their bodies arrived */
   chunks: Chunk[];
   /** the URLs of the fetched chunks whose body contains `needle` (a string, or a pattern) */
   chunksWith: (needle: string | RegExp) => string[];
@@ -75,6 +80,7 @@ export const test = base.extend<{houseOpts: HouseOpts; house: House}>({
     const calls: string[] = [],
       ws: House['ws'] = [],
       errors: string[] = [],
+      chunkRequests: string[] = [],
       chunks: Chunk[] = [];
     await page.addInitScript(
       ([cfg, sysdata, theme]) => {
@@ -90,8 +96,11 @@ export const test = base.extend<{houseOpts: HouseOpts; house: House}>({
     );
     await page.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
     // the body is read as the response arrives, so a test can tell the chunk that holds a library from one that does not
+    page.on('request', r => {
+      if (CHUNK_URL.test(r.url())) chunkRequests.push(r.url());
+    });
     page.on('response', r => {
-      if (/\/panel\/chunks\//.test(r.url()))
+      if (CHUNK_URL.test(r.url()))
         r.text().then(
           body => chunks.push({url: r.url(), body}),
           () => {}, // the page closed before the body arrived
@@ -114,6 +123,7 @@ export const test = base.extend<{houseOpts: HouseOpts; house: House}>({
       calls,
       ws,
       errors,
+      chunkRequests,
       chunks,
       chunksWith: needle =>
         chunks

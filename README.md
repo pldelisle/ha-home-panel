@@ -129,7 +129,7 @@ You need Node 22.19 or later (24.5 or later on the 24 line): `size-limit` 14 req
 npm ci
 # once per clone: git blame skips the Prettier format commit
 git config blame.ignoreRevsFile .git-blame-ignore-revs
-npm run build          # Vite: dist/home-panel.js (minified), home-panel.js.map and the vendored libraries
+npm run build          # Vite: dist/home-panel.js (minified), home-panel.js.map, the lazy chunks in dist/chunks/ and what is left in vendor/
 npm run dev            # the same build, redone on every save (vite build --watch)
 npm run size           # the main chunk, gzipped, against its budget in package.json (run it after a build)
 npm run typecheck      # tsc --checkJs: the config and stack modules strictly, the rest of src/ loosely (tsconfig.legacy.json)
@@ -186,9 +186,9 @@ It may be lowered at any time; raising it needs a changeset that says why.
 The source is ES modules under `src/`, built by Vite (`vite.config.ts`). `src/main.js` is the entry and defines the custom element; the `HomePanel` class is in `src/home-panel.js`, with the
 Automations tab (`src/auto.js`), the configuration code (`src/config.js`), the smart-stack rules (`src/stack.js`), the French translations
 (`src/i18n/fr.js`) and the stylesheet (`src/styles.js`, which joins the files in `src/css/`) imported from it. `src/legacy/globals.js` holds the state
-and helpers those files used to share as globals; it goes away in the refactor's second phase. Mermaid is installed from npm and built into lazy chunks
-under `dist/chunks/`, which the Automations tab imports when it opens; the libraries still in `vendor/` are copied next to the bundle and loaded when a
-tab needs them.
+and helpers those files used to share as globals; it goes away in the refactor's second phase. ApexCharts and Mermaid come from npm as lazy chunks under
+`dist/chunks/`: ApexCharts (`src/charts/apex.js`) is fetched when the first tab with charts opens, Mermaid when the Automations tab draws its first flow.
+`vendor/` still holds Leaflet, which the panel does not use; it is copied next to the bundle until spec 07's last step removes it.
 `npm run typecheck` runs `tsc` twice: `tsconfig.check.json` checks the pure modules (`config.js`, `stack.js`) strictly, and `tsconfig.legacy.json` checks every
 file under `src/` without `strict`, so a name that does not exist or an import that does not resolve is an error while the untyped class is tolerated.
 `src/legacy/dom-scaffolding.d.ts` holds the ambient declarations that second pass needs (only `tsconfig.legacy.json` lists it); the refactor's second phase deletes it.

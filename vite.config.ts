@@ -21,6 +21,13 @@ export default defineConfig({
     minify: 'oxc', // Vite 8's default; `esbuild` would need the esbuild package as well
     target: 'es2020',
     rolldownOptions: {
+      // apexcharts.esm.js is an ES module that also carries a `typeof module` test (inside its bundled svg.js), which
+      // Rolldown warns about on every build; the test is what makes it behave as the <script> build did (see spec 07)
+      onwarn(warning, defaultHandler) {
+        if (warning.code === 'COMMONJS_VARIABLE_IN_ESM' && String(warning.message).includes('node_modules/apexcharts/'))
+          return;
+        defaultHandler(warning);
+      },
       output: {
         // library mode keeps an ES entry's whitespace so that the consumer's bundler can still shake it; this entry is
         // the final file Home Assistant loads, so it is minified all the way

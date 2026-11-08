@@ -48,14 +48,15 @@
     "vite-plugin-static-copy": "4.1.1",
     "vitest": "5.1.0"
   },
+  "dependencies": {
+    "apexcharts": "3.45.2",
+    "mermaid": "11.4.1"
+  },
   "size-limit": [
     {
       "path": "dist/home-panel.js",
       "limit": "160 kB",
       "gzip": true
     }
-  ],
-  "dependencies": {
-    "mermaid": "11.4.1"
-  }
+  ]
 }
