@@ -1,7 +1,6 @@
 // Every this.method() the panel calls must exist. v1.19.9 fixed TV buttons that crashed on a call to renderPhone(),
 // a method removed along with the old Phone view; this catches that kind of leftover before it ships.
-import {test} from 'node:test';
-import assert from 'node:assert/strict';
+import {test, expect} from 'vitest';
 import {readFileSync} from 'node:fs';
 const src = ['src/home-panel.src.js', 'src/auto.js']
   .map(f => readFileSync(new URL('../../' + f, import.meta.url), 'utf8'))
@@ -26,5 +25,5 @@ test('no call to a method that no longer exists', () => {
   );
   const assigned = new Set([...src.matchAll(/this\.([A-Za-z_$][\w$]*)\s*=/g)].map(m => m[1]));
   const missing = [...called].filter(n => !defined.has(n) && !assigned.has(n) && !BUILTIN.has(n));
-  assert.deepEqual(missing, []);
+  expect(missing).toEqual([]);
 });

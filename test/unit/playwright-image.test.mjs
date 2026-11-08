@@ -1,6 +1,5 @@
 // The Playwright image tag appears in package.json (four scripts) and ci.yml (two jobs); every copy must name the pinned @playwright/test version
-import {test} from 'node:test';
-import assert from 'node:assert/strict';
+import {test, expect} from 'vitest';
 import {readFileSync} from 'node:fs';
 
 const read = p => readFileSync(new URL(`../../${p}`, import.meta.url), 'utf8');
@@ -13,7 +12,7 @@ test('every use of the Playwright image names the pinned version', () => {
     ['.github/workflows/ci.yml', 2],
   ]) {
     const tags = [...read(file).matchAll(/mcr\.microsoft\.com\/playwright:(\S+?)(?=["\s]|$)/g)].map(m => m[1]);
-    assert.equal(tags.length, expected, `${file}: number of image references`);
-    for (const t of tags) assert.equal(t, tag, `${file}: image tag`);
+    expect(tags.length, `${file}: number of image references`).toBe(expected);
+    for (const t of tags) expect(t, `${file}: image tag`).toBe(tag);
   }
 });
