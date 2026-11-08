@@ -130,6 +130,7 @@ npm ci
 npm run build          # dist/home-panel.js plus the vendored libraries
 npm test               # unit tests: config, build, French, a scan for personal data
 npm run format         # Prettier (run it before committing; CI checks it with npm run format:check)
+git config blame.ignoreRevsFile .git-blame-ignore-revs   # once per clone: git blame skips the Prettier format commit
 npm run test:e2e       # builds, then runs the Playwright suite
 npm run test:visual:docker           # compares every tab with its screenshot baseline, inside Docker
 npm run test:visual:update           # records new baselines, inside Docker
