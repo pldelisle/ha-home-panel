@@ -1,14 +1,16 @@
 name: Changeset
 # A pull request that changes what ships must carry a changeset (npm run changeset), or the `changeset` job fails.
-# What ships is what ends up in dist/ and the release zip: src/ and build.mjs (they make home-panel.js), the vendored
-# libraries (vendor/*.js and vendor/*.css, copied next to it) and examples/ (the install snippet). package.json is
-# included because a dependency change can change the build. Documentation, tests, scripts and CI-only pull requests
-# touch none of these, so the job passes without a changeset (and without installing anything).
+# The paths that count are in SHIPPING below: what build.mjs builds into dist/ and the release zip (src/, build.mjs,
+# vendor/*.js and vendor/*.css), plus examples/ (it carries the ?v= install snippet) and package.json (it carries the
+# version). The package has no runtime dependencies, so a devDependency-only change is not a release: it takes the
+# label. Documentation, tests, scripts and CI-only pull requests touch none of these paths and pass without a changeset
+# or a label, and without installing anything.
 #
-# Opt-outs: the label `no-changeset` (for example a devDependency bump or a refactor that still touches a listed path)
-# and the Release pull request, recognised by its title (changesets/action's pr-title is "Release"). The Release PR is
-# opened with GITHUB_TOKEN and gets no pull_request workflows today; the title check still matters once a token that
-# does start them is used.
+# Opt-outs: the label `no-changeset` (a listed path changed without a release note: a devDependency bump, a refactor)
+# and the Release pull request, recognised by its branch changeset-release/main from this repository (not by its
+# title, which anyone can type). That pull request is opened with GITHUB_TOKEN, so no pull_request workflow runs for it
+# at all today: if `changeset` is a required check it never reports and blocks the merge until an admin bypasses it,
+# unless version-pr.yml opens the pull request with a GitHub App token or a PAT, in which case the branch skip applies.
 # TODO(#32): when Renovate arrives, decide whether its pull requests (author renovate[bot]) are skipped here or carry
 # a changeset; this job does not look at the author yet.
 on:
@@ -23,33 +25,36 @@ concurrency:
   cancel-in-progress: true
 jobs:
   changeset:
-    # The labels and the title come from the event payload, which is current for labeled and unlabeled events too.
-    # When the condition is false the job is reported as skipped, not as a failure.
+    # the labels and the branch come from the event payload, which is current for labeled and unlabeled events too;
+    # when the condition is false the job is reported as skipped, not as a failure
     if: >-
       ${{ !contains(github.event.pull_request.labels.*.name, 'no-changeset')
-      && !startsWith(github.event.pull_request.title, 'Release') }}
+      && !(github.head_ref == 'changeset-release/main'
+      && github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 10
+    env:
+      BASE: ${{ github.base_ref }}
+      SHIPPING: '^(src/|build\.mjs$|package\.json$|examples/|vendor/[^/]+\.(js|css)$)'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
       - id: changed
-        env:
-          BASE: ${{ github.base_ref }}
         run: |
           set -euo pipefail
           git fetch --no-tags origin "+refs/heads/${BASE}:refs/remotes/origin/${BASE}"
-          git diff --name-only "origin/${BASE}...HEAD" > "$RUNNER_TEMP/changed-files.txt"
+          # --no-renames lists both the old and the new path of a move, so moving a file out of src/ still counts
+          git diff --name-only --no-renames "origin/${BASE}...HEAD" > "$RUNNER_TEMP/changed-files.txt"
           echo "Files changed against origin/${BASE}:"
           cat "$RUNNER_TEMP/changed-files.txt"
-          if grep -Eq '^(src/|build\.mjs$|package\.json$|examples/|vendor/[^/]+\.(js|css)$)' "$RUNNER_TEMP/changed-files.txt"; then
+          if grep -Eq "$SHIPPING" "$RUNNER_TEMP/changed-files.txt"; then
             echo "ships=true" >> "$GITHUB_OUTPUT"
           else
             echo "Nothing that ships changed, so no changeset is needed."
           fi
-      # Install only when there is something to check: the path check above keeps docs, tests and CI pull requests cheap.
+      # install only when there is something to check: the path check above keeps docs, tests and CI pull requests cheap
       - if: steps.changed.outputs.ships == 'true'
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
@@ -59,6 +64,4 @@ jobs:
         run: npm ci
       # exits non-zero when a changed package has no changeset
       - if: steps.changed.outputs.ships == 'true'
-        env:
-          BASE: ${{ github.base_ref }}
         run: npx changeset status --since="origin/${BASE}"
