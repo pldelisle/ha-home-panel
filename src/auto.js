@@ -1,24 +1,14 @@
 // ---------- Automations tab: what ran today, and each run drawn as a flow (v1.14) ----------
 // Data comes from Home Assistant itself: the automation's own config (automation/config), and its traces
 // (trace/list, trace/get), which record which trigger fired, each condition's result and each step's time.
-// The graph is laid out by Mermaid (www/home-panel/mermaid.min.js, loaded only when the tab opens);
+// The graph is laid out by Mermaid (from npm, in lazy chunks imported only when the tab opens);
 // the path a run took is lit green, the step it is waiting on amber, a failed check red, the rest dashed grey.
-import {
-  getHass,
-  getTZ,
-  st,
-  ok,
-  attr,
-  esc,
-  cap,
-  plural,
-  localDay,
-  fmtDate,
-  tile,
-  loadScript,
-  BASE,
-  VERSION,
-} from './legacy/globals.js';
+import {getHass, getTZ, st, ok, attr, esc, cap, plural, localDay, fmtDate, tile} from './legacy/globals.js';
+
+// Mermaid is imported the first time a flow is drawn, so the bundle the other tabs load does not carry it; Vite emits
+// it as chunks under chunks/, beside home-panel.js. One import for every panel on the page.
+let mermaidP;
+const loadMermaid = () => (mermaidP ??= import('mermaid').then(m => m.default));
 
 const AU_DOMAIN = {
   climate: 'Climate',
@@ -1033,19 +1023,19 @@ export const autoMethods = {
       b => b.dataset.drawn !== b.dataset.def,
     );
     if (!boxes.length) return;
+    let M;
     try {
-      this.auMer = this.auMer || loadScript(BASE + 'mermaid.min.js?v=' + VERSION, 'mermaid', () => window.mermaid);
-      await this.auMer;
+      this.auMer = this.auMer || loadMermaid();
+      M = await this.auMer;
     } catch {
       boxes.forEach(b => {
         b.innerHTML =
-          '<p class="hint">The flow drawing library didn\'t load (mermaid.min.js missing next to home-panel.js).</p>';
+          '<p class="hint">The flow drawing library didn\'t load (the chunks folder missing next to home-panel.js).</p>';
         b.dataset.drawn = b.dataset.def;
       });
       return;
     }
-    const M = window.mermaid,
-      theme = [this.css('--f-body'), this.css('--card'), this.css('--fg')].join();
+    const theme = [this.css('--f-body'), this.css('--card'), this.css('--fg')].join();
     if (this.auTheme !== theme) {
       this.auTheme = theme;
       this.auSvg = {};

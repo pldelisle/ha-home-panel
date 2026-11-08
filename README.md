@@ -32,7 +32,7 @@ Every section is optional. A section shows only when its entities exist, so a ho
 ## Install
 
 1. Download `home-panel.zip` from the [latest release](../../releases/latest), or build it yourself (below).
-2. Unzip it into `<config>/www/home-panel/`, so that `home-panel.js` sits at `<config>/www/home-panel/home-panel.js`.
+2. Unzip it into `<config>/www/home-panel/`, so that `home-panel.js` sits at `<config>/www/home-panel/home-panel.js` with the `chunks/` folder beside it.
 3. Add the panel to `configuration.yaml`:
 
    ```yaml
@@ -181,8 +181,9 @@ The source is ES modules under `src/`, built by Vite (`vite.config.ts`) into one
 `dist/home-panel.js.map` beside it. `src/main.js` is the entry and defines the custom element; the `HomePanel` class is in `src/home-panel.js`, with the
 Automations tab (`src/auto.js`), the configuration code (`src/config.js`), the smart-stack rules (`src/stack.js`), the French translations
 (`src/i18n/fr.js`) and the stylesheet (`src/styles.js`, which joins the files in `src/css/`) imported from it. `src/legacy/globals.js` holds the state
-and helpers those files used to share as globals; it goes away in the refactor's second phase. The vendored libraries in `vendor/` are copied next to
-the bundle and loaded when a tab needs them.
+and helpers those files used to share as globals; it goes away in the refactor's second phase. Mermaid is installed from npm and built into lazy chunks
+under `dist/chunks/`, which the Automations tab imports when it opens; the libraries still in `vendor/` are copied next to the bundle and loaded when a
+tab needs them.
 The source map points a stack trace or the browser's DevTools back at the files in `src/`; it ships in the release zip next to `home-panel.js`.
 The test house in `test/e2e/harness.html` is made up. Keep real names, addresses and entity IDs out of the repository:
 `npm test` fails if it finds some of them.

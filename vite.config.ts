@@ -3,8 +3,10 @@ import {viteStaticCopy} from 'vite-plugin-static-copy';
 import pkg from './package.json' with {type: 'json'};
 
 // One minified ES module, dist/home-panel.js, with its source map beside it. The CSS is imported as text
-// (src/styles.js) and the version is injected here, from package.json. The vendored libraries are copied next to the
-// entry: the panel loads them at run time with loadScript(BASE + …), so they are not part of the bundle.
+// (src/styles.js) and the version is injected here, from package.json. Mermaid comes from npm through a dynamic
+// import, so it is emitted as lazy chunks, each with its map, under dist/chunks/; they load when the Automations tab
+// opens. The libraries still in vendor/ are copied next to the entry: the panel loads them at run time with
+// loadScript(BASE + …).
 
 // The constants the build replaces in src/ (declared in src/env.d.ts); vitest.config.ts uses the same object.
 export const define = {__VERSION__: JSON.stringify(pkg.version)};
@@ -23,6 +25,8 @@ export default defineConfig({
         // library mode keeps an ES entry's whitespace so that the consumer's bundler can still shake it; this entry is
         // the final file Home Assistant loads, so it is minified all the way
         minify: {codegen: true},
+        // the libraries' licence comments (/*! … */, @license) stay in their chunks, as in the files from vendor/
+        comments: {legal: true},
         chunkFileNames: 'chunks/[name]-[hash].js',
         assetFileNames: 'assets/[name]-[hash][extname]',
       },
