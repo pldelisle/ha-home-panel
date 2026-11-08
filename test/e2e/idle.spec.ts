@@ -2,9 +2,9 @@
 // outdoor condition's icon beside the time (2.2.0), and a tap wakes the panel. Phones never go idle on their own.
 // Test titles start with the check's number in docs/specs/01-playwright-test.md.
 import {test, expect, tabletOnly, IDLE_AFTER_MS} from './fixtures';
-import {FULL_CFG} from './houses';
+import {AFTERNOON, FULL_CFG} from './houses';
 
-test.use({houseOpts: {cfg: FULL_CFG, time: '2026-11-07T14:00:00-05:00'}});
+test.use({houseOpts: {cfg: FULL_CFG, time: AFTERNOON}});
 test.beforeEach(tabletOnly);
 
 test('8 after five minutes the idle clock shows with the weather icon', async ({house}) => {

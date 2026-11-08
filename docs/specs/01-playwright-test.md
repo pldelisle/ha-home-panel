@@ -34,7 +34,7 @@ Convert the script to Playwright Test: a configuration, a static server for the 
 
 - `@playwright/test` replaces the `playwright` dev dependency, at the same version line (1.63.x) pinned exactly.
 - `npm run test:e2e` MUST build and then run `playwright test`. `npm run test:e2e -- <file>` MUST run one spec.
-- CI MUST run `npx playwright install --with-deps chromium` then `npx playwright test`, and MUST upload the `test-results/` directory as an artifact when the job fails.
+- CI MUST run `npx playwright test` (the tablet and phone projects) and MUST upload the `test-results/` directory as an artifact when the job fails. It originally ran `npx playwright install --with-deps chromium` first; spec 02 supersedes that: the job runs inside the Playwright image for the pinned version, which already provides the browsers.
 
 ### Configuration
 

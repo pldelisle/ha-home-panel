@@ -5,25 +5,38 @@ on:
   pull_request:
 permissions:
   contents: read
+# Both jobs run on GitHub's arm64 runners inside the Playwright image for the pinned version, the same image and Chromium
+# a maintainer uses locally through Docker or `container` (npm run test:visual:docker). The screenshot baselines are recorded
+# in that image, so they compare there.
 jobs:
   test:
-    # pinned: Playwright installs browser dependencies only for the Ubuntu releases it knows
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-24.04-arm
+    container: mcr.microsoft.com/playwright:v1.63.0-noble
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
       - run: npm ci
       - run: npm run build
       - run: npm test
-      - run: npx playwright install --with-deps chromium
-      - run: npx playwright test
+      # the screenshots run in the visual job
+      - run: npx playwright test --project=tablet --project=phone
       - if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: e2e-results
+          path: |
+            test-results/
+            playwright-report/
+  visual:
+    runs-on: ubuntu-24.04-arm
+    container: mcr.microsoft.com/playwright:v1.63.0-noble
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm ci
+      - run: npm run test:visual
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-results
           path: |
             test-results/
             playwright-report/

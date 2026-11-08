@@ -48,6 +48,7 @@ Each pull request declares its change (patch, minor, major) and its changelog li
 
 - `renovate.json` at the root extending `config:recommended`, with: `schedule` weekly (early Monday, America/Toronto), `rangeStrategy: "pin"`, grouped minor and patch updates for npm in one PR, `helpers:pinGitHubActionDigests` so Actions stay pinned by SHA with the version comment, `lockFileMaintenance` enabled monthly, and `automerge: false`.
 - A rule disabling major updates for `apexcharts` is added here so that spec 07 inherits it: `{"matchPackageNames": ["apexcharts"], "matchUpdateTypes": ["major"], "enabled": false, "description": "3.x is the last plain-MIT line; see docs/specs/production-grade-refactor.md"}`.
+- A Playwright or Chromium bump re-records every screenshot baseline (about 20 MB, spec 02), so Renovate MUST open it as its own pull request on a slower schedule than the weekly group, with the Docker image tags in `package.json` and `ci.yml` bumped together.
 - Renovate is a GitHub App that the repository owner installs once; the PR description MUST say so with the link, since that step cannot be done from the repository.
 
 ### Pinned Actions

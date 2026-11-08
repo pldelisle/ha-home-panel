@@ -31,3 +31,12 @@ export const LINK_CFG = {
 // the tabs each screen shows; a tab hidden on purpose (no car, say) is skipped by the tests
 export const TABLET_TABS = ['home', 'lights', 'climate', 'weather', 'car', 'energy', 'air', 'media', 'cams', 'auto'];
 export const PHONE_TABS = ['home', 'lights', 'climate', 'car'];
+
+// the screen sizes of the tablet and phone projects (playwright.config.ts uses these too)
+export const VIEWPORTS = {
+  tablet: {width: 1180, height: 820},
+  phone: {width: 393, height: 852},
+} as const;
+
+// the fake clock most tests start at (a Saturday afternoon, Toronto time), so greetings, the sun, "ago" texts and the day's calendar never move
+export const AFTERNOON = '2026-11-07T14:00:00-05:00';

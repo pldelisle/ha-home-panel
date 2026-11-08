@@ -3,6 +3,7 @@
 // Tests drive the panel through what a person touches and what Home Assistant does (a new `hass`, time passing): never
 // through the element's methods.
 import {test as base, expect, type Locator, type Page} from '@playwright/test';
+import {PHONE_TABS, TABLET_TABS} from './houses';
 
 // what harness.html reads before the panel loads, and the helper it exposes afterwards
 declare global {
@@ -24,6 +25,12 @@ export type HouseOpts = {
   admin?: boolean;
   /** an ISO instant; when set, the page's clock is faked at it before the panel loads */
   time?: string;
+  /**
+   * with `time`: also stop `Date` from moving, so anything drawn from "now" (chart axes, history curves) is the same pixels on every run.
+   * Timers still run, and clock.runFor / fastForward still fire them, but `Date` stays at `time` throughout: do not use it for a test
+   * that needs "now" to advance (the idle clock, "ago" texts).
+   */
+  frozen?: boolean;
   /** the frontend's system data to start from, e.g. {home_panel: {light_order: [...]}} */
   sysdata?: object;
 };
@@ -71,6 +78,7 @@ export const test = base.extend<{houseOpts: HouseOpts; house: House}>({
       else if (m.type() === 'error' && !/Failed to load resource|fonts\.g/.test(t)) errors.push(t);
     });
     if (o.time) await page.clock.install({time: new Date(o.time)});
+    if (o.time && o.frozen) await page.clock.setFixedTime(new Date(o.time));
     await page.goto(`/?house=${o.house}&lang=${o.lang}&admin=${o.admin ? 1 : 0}`);
     const root = () => page.locator('home-panel');
     await root().locator('#rail').waitFor({state: 'attached'});
@@ -90,6 +98,21 @@ export const test = base.extend<{houseOpts: HouseOpts; house: House}>({
     expect(errors, 'page errors').toEqual([]);
   },
 });
+
+// opens each tab the screen offers (a tab button hidden on purpose, no car say, is skipped; one that is merely invisible is not)
+// and runs `each` on it; returns the tabs it opened, in order
+export async function eachShownTab(house: House, each?: (tab: string, pane: Locator) => Promise<void>): Promise<string[]> {
+  const tabs = house.page.viewportSize()!.width < 600 ? PHONE_TABS : TABLET_TABS;
+  const opened: string[] = [];
+  for (const t of tabs) {
+    const button = house.root().locator(`[data-tab="${t}"]`).first();
+    if (!(await button.count()) || await button.evaluate(e => (e as HTMLElement).hidden)) continue;
+    await house.tab(t);
+    opened.push(t);
+    if (each) await each(t, house.root().locator(`#pane-${t}`));
+  }
+  return opened;
+}
 
 // skip a test (or a describe's tests, as a beforeEach) on the wrong project, for checks about one layout
 export const tabletOnly = () => test.skip(test.info().project.name === 'phone', 'tablet layout');
