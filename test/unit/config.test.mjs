@@ -1,16 +1,6 @@
 // resolveConfig(): panel config + the house's states → what the panel runs with
 import {test, expect} from 'vitest';
-import {readFileSync} from 'node:fs';
-import {fileURLToPath} from 'node:url';
-import {compileFunction} from 'node:vm';
-// config.js is spliced into the bundle as plain script text; run that same text here. compileFunction (unlike new Function)
-// is given the file's name, so V8 coverage is attributed to src/config.js. #34 turns this loader into an import.
-const configUrl = new URL('../../src/config.js', import.meta.url);
-const {resolveConfig, guessIcon, DEFAULT_ENTITIES} = compileFunction(
-  readFileSync(configUrl, 'utf8') + '\nreturn {resolveConfig, guessIcon, DEFAULT_ENTITIES};',
-  [],
-  {filename: fileURLToPath(configUrl)},
-)();
+import {resolveConfig, guessIcon, DEFAULT_ENTITIES} from '../../src/config.js';
 
 const st = (id, attrs = {}) => [id, {entity_id: id, state: 'on', attributes: attrs}];
 const states = Object.fromEntries([
