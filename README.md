@@ -55,17 +55,17 @@ Add a `config:` block under the panel to name the rest of your devices, pick the
 [examples/configuration.yaml](examples/configuration.yaml) lists every option.
 
 ```yaml
-config:
-  people: [Alex, Sam]
-  house_image: /local/home-panel/my-house.webp
-  entities:
-    grid_power: sensor.house_power
-    water_heater_temperature: sensor.water_heater_temperature
-    ev_charger_power: sensor.charger_power
-  rooms:
-    - {climate: climate.living_room, name: Living room, icon: sofa}
-    - climate.bedroom
-  scenes: [scene.dinner, scene.movie_night]
+    config:
+      people: [Alex, Sam]
+      house_image: /local/home-panel/my-house.webp
+      entities:
+        grid_power: sensor.house_power
+        water_heater_temperature: sensor.water_heater_temperature
+        ev_charger_power: sensor.charger_power
+      rooms:
+        - {climate: climate.living_room, name: Living room, icon: sofa}
+        - climate.bedroom
+      scenes: [scene.dinner, scene.movie_night]
 ```
 
 The Lights tab shows one tile per room, the way Apple's Home app does: the bulb switches the room and the rest of the tile opens it. The room's sheet has a brightness slider and a colour temperature slider side by side, and, when the room has an Adaptive Lighting instance, an Auto switch (the schedule) and a Night switch (its sleep mode). Moving a slider by hand takes the room off Auto until Auto is turned on again.
@@ -77,10 +77,10 @@ An area holding several light groups shows as one card, with a button per group 
 Two rooms can be linked so that one switch, brightness slider or colour slider moves both. An admin picks the partner from the room's sheet ("Linked with", a list of the other rooms), and the pairs are saved in Home Assistant for every screen. Until someone picks there, the panel starts from the pairs listed under `light_links`, by area id or by light entity; a pair with an `input_boolean` counts while that switch is on.
 
 ```yaml
-light_links:
-  - lights: [light.living_room_lamps, light.tv_lamps]
-    switch: input_boolean.living_room_lights_linked
-  - [office, hallway]
+      light_links:
+        - lights: [light.living_room_lamps, light.tv_lamps]
+          switch: input_boolean.living_room_lights_linked
+        - [office, hallway]
 ```
 
 While something runs, a live-activity pill shows in the header (with nothing running and nothing to check, that spot stays empty): the car charging (battery and time to full), the water heater heating (temperature and about how long is left, from its other cycles in the last 24 hours) and a Hilo challenge (phase and countdown, from pre-heat until recovery ends). Tap it for a card per activity above the usual status checks. When FordPass gives no time to full, the panel works it out from the charger's power and `car: {battery_kwh: …}`, the battery's usable size.
@@ -113,10 +113,10 @@ On a tablet the same stack also fills the Home card, under Who's home (without t
 Red cards stay on screen alone, and amber cards come first in the rotation. No card reads camera motion.
 
 ```yaml
-idle_stack:
-  sunrise_lights_off: true
-  reminders:
-    - {at: '20:00', title: Bedtime, text: The kids' lamp goes to night mode, lead: 30}
+      idle_stack:
+        sunrise_lights_off: true
+        reminders:
+          - {at: "20:00", title: Bedtime, text: The kids' lamp goes to night mode, lead: 30}
 ```
 
 Room icons can be `sofa`, `door`, `desk`, `bed`, `bath`, `drop`, `car`, `house` and `therm`.
