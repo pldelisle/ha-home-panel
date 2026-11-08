@@ -134,6 +134,7 @@ npm test               # unit tests (Vitest): config, build, French, a scan for 
 npm run test:watch     # the same, re-run on every save
 npm run test:coverage  # the same, with a coverage report in coverage/
 npm run format         # Prettier (run it before committing; CI checks it with npm run format:check)
+npm run lint           # ESLint (CI runs it after format:check)
 npm run test:e2e       # builds, then runs the Playwright suite
 npm run test:visual:docker           # compares every tab with its screenshot baseline, inside Docker
 npm run test:visual:update           # records new baselines, inside Docker
