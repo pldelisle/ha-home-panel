@@ -74,7 +74,9 @@ export const test = base.extend<{houseOpts: HouseOpts; house: House}>({
         window.SYSDATA = sysdata;
         try {
           localStorage.setItem('home-panel-theme', theme);
-        } catch {}
+        } catch {
+          // storage is blocked: the panel keeps its default theme
+        }
       },
       [o.cfg ?? null, o.sysdata ?? null, o.theme] as const,
     );
@@ -83,7 +85,7 @@ export const test = base.extend<{houseOpts: HouseOpts; house: House}>({
     page.on('console', m => {
       const t = m.text();
       if (t.startsWith('SERVICE ')) calls.push(t.slice(8));
-      else if (t.startsWith('WS ')) ws.push(JSON.parse(t.slice(3)));
+      else if (t.startsWith('WS ')) ws.push(JSON.parse(t.slice(3)) as House['ws'][number]);
       else if (m.type() === 'error' && !/Failed to load resource|fonts\.g/.test(t)) errors.push(t);
     });
     if (o.time) await page.clock.install({time: new Date(o.time)});

@@ -26,7 +26,7 @@ Add ESLint and Prettier with one configuration at the root, run them in CI befor
 
 ### Tools and versions
 
-- ESLint 9 with the flat configuration format (`eslint.config.js`), `@eslint/js`, `typescript-eslint` and `eslint-plugin-lit`, all installed now even though no TypeScript or Lit file exists yet. The TypeScript and Lit rule sets are scoped to `**/*.ts` files and therefore apply to nothing until phase 1.
+- ESLint 9 with the flat configuration format (`eslint.config.js`), `@eslint/js`, `typescript-eslint` and `eslint-plugin-lit`, all installed now. The TypeScript and Lit rule sets are scoped to `**/*.ts` files. No Lit file exists yet, but the Playwright suite is TypeScript, so the type-checked rules already apply to `playwright.config.ts` and `test/e2e/**/*.ts`; a root `tsconfig.json` (which `typescript-eslint` reads through `projectService`) covers them, and `typescript` and `@types/node` are installed with it.
 - Prettier 3 with `eslint-config-prettier` so no ESLint rule conflicts with formatting.
 - Dependencies pinned exactly in `package.json`; Renovate (spec 05) moves them.
 
@@ -49,7 +49,9 @@ Prettier MUST format `*.js`, `*.mjs`, `*.ts`, `*.css`, `*.json`, `*.md` and `*.y
 ### ESLint rules
 
 - `@eslint/js` `recommended` on every JavaScript file.
-- For `src/home-panel.src.js` and `src/auto.js` only, a named override block `legacy` MAY disable rules that fire on the existing code for reasons that are not bugs (for example `no-cond-assign` on the `(m = frCap(m), ...)` idiom). Each disabled rule MUST carry a one-line comment saying why. This block MUST NOT gain entries after this PR and MUST shrink as code leaves those files; it is deleted with the old class.
+- For `src/home-panel.src.js` and `src/auto.js` only, a named override block `legacy` MAY disable rules that fire on the existing code for reasons that are not bugs (for example `no-cond-assign` on the `(m = frCap(m), ...)` idiom). Each disabled rule MUST carry a one-line comment saying why. This block MUST NOT gain entries after this PR and MUST shrink as code leaves those files; it is deleted with the old class. As built it disables one rule: `no-empty` is relaxed to `allowEmptyCatch`, for the deliberate `catch {}` of best-effort calls (storage, `JSON.parse`, a library that may not load). Unused `catch (e)` bindings are not an idiom: they were rewritten as `catch {`.
+- `eqeqeq` (`always`, `null: ignore`) is on for every JavaScript file, and `globals.node` is limited to `build.mjs`, `scripts/`, the root `*.config.*` files and `test/`; `src/` gets browser globals only.
+- `build.mjs` pastes `config.js`, `stack.js`, `i18n/fr.js`, `i18n/fr-map.js` and `auto.js` into `home-panel.src.js`, so they share one scope. ESLint lints them as scripts, with the names each takes from another file declared as read-only globals in `eslint.config.js` (the list #33 turns into imports) rather than `no-undef` being turned off, and `no-unused-vars` set to `vars: "local"` on those five files, because a top-level name there is how a file hands something to the others. `home-panel.src.js` itself is linted as a module (it uses `import.meta`) with the default `no-unused-vars`. Since per-file linting cannot see a dead top-level name in a spliced file, `npm run check` also lints `dist/home-panel.js` as one module (`eslint.bundle.config.js`: `no-undef` and `no-unused-vars` with `vars: "all"`); that check goes away with the splicing (#33).
 - Every ESLint finding that is a real bug (an unused variable, an unreachable return, a `==` where `===` was meant) MUST be fixed in this PR if the fix is a pure cleanup verified by the baselines, or recorded as a follow-up issue if it changes behaviour.
 - `typescript-eslint` `recommendedTypeChecked` and `eslint-plugin-lit` `flat/recommended` scoped to `**/*.ts`.
 - `no-restricted-syntax` MUST forbid `innerHTML` assignment and `insertAdjacentHTML` in every file except the two legacy files, so new code cannot reintroduce string rendering.
@@ -57,7 +59,7 @@ Prettier MUST format `*.js`, `*.mjs`, `*.ts`, `*.css`, `*.json`, `*.md` and `*.y
 ### Scripts and CI
 
 - `npm run lint` runs ESLint on the repo; `npm run format` runs Prettier in write mode; `npm run format:check` runs it in check mode.
-- `npm run check` (today `node --check dist/home-panel.js`) is kept and extended to run `lint` and `format:check` first.
+- `npm run check` (today `node --check dist/home-panel.js`) is kept and extended to run `format:check` and `lint` first, and to lint the built bundle as one module afterwards.
 - CI gains a `lint` job that runs `format:check` and `lint` before the `test` job, and the `test` job `needs` it.
 - A `.editorconfig` with two-space indentation, LF line endings and a final newline.
 - No git hook is installed by default (agent threads run in varied environments); the README's Develop section says to run `npm run format` before committing.

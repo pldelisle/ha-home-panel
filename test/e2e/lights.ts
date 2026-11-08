@@ -8,7 +8,7 @@ export const tileNames = async (house: House) => {
 };
 
 /** the JSON a service call carried: "light.turn_on {...}" gives the object */
-export const callData = (call: string) => JSON.parse(call.replace(/^\S+ /, ''));
+export const callData = (call: string) => JSON.parse(call.replace(/^\S+ /, '')) as Record<string, unknown>;
 
 /** a failure message that shows the calls the panel made */
 export const callsMessage = (house: House, what: string) => `${what} (calls: ${house.calls.join('; ')})`;

@@ -2,7 +2,7 @@
 // (the made-up house in harness.html). Started by Playwright as its web server; PORT picks the port (default 4173).
 import http from 'node:http';
 import {createReadStream, existsSync, statSync} from 'node:fs';
-import {dirname, extname, join, resolve} from 'node:path';
+import {dirname, extname, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
