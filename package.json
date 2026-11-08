@@ -8,8 +8,7 @@
     "build": "node build.mjs",
     "test": "node --test \"test/unit/*.test.mjs\"",
     "test:e2e": "npm run build && playwright test",
-    "check": "node --check dist/home-panel.js",
-    "test:e2e:old": "node test/e2e/smoke.mjs"
+    "check": "node --check dist/home-panel.js"
   },
   "engines": {
     "node": ">=20"

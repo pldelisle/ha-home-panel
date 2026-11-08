@@ -1,7 +1,7 @@
 // The build: every placeholder filled once, a valid ES module, and nothing from one particular house inside
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync, mkdtempSync, existsSync} from 'node:fs';
+import {readFileSync, readdirSync, mkdtempSync, existsSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {execFileSync} from 'node:child_process';
@@ -26,9 +26,10 @@ test('the vendored libraries are copied next to it', () => {
 });
 
 test('no personal data: names, places, a house photo or house-specific entity ids', () => {
-  const src = ['src/home-panel.src.js', 'src/config.js', 'src/auto.js', 'src/i18n/fr.js', 'src/i18n/fr-map.js', 'test/e2e/harness.html', 'test/e2e/automations.json',
-    'test/e2e/houses.ts', 'test/e2e/fixtures.ts', 'test/e2e/tabs.spec.ts', 'test/e2e/media.spec.ts', 'test/e2e/idle.spec.ts',
-    'test/e2e/live-pill.spec.ts', 'test/e2e/smart-stack.spec.ts']
+  // every spec and helper under test/e2e is scanned, so a new file needs no edit here
+  const e2e = readdirSync(new URL('../e2e/', import.meta.url)).filter(f => /\.ts$/.test(f)).map(f => 'test/e2e/' + f);
+  assert.ok(e2e.some(f => f.endsWith('.spec.ts')), 'found the e2e specs');
+  const src = ['src/home-panel.src.js', 'src/config.js', 'src/auto.js', 'src/i18n/fr.js', 'src/i18n/fr-map.js', 'test/e2e/harness.html', 'test/e2e/automations.json', ...e2e]
     .map(f => readFileSync(new URL('../../' + f, import.meta.url), 'utf8')).join('\n') + js;
   const banned = [/pierre/i, /genevi[eè]ve/i, /\bmilan\b/i, /delisle/i, /mascouche/i, /montr[eé]al/i, /data:image\/(webp|png|jpe?g)/i,
     /\b10\.0\.\d+\.\d+\b/, /\b192\.168\.\d+\.\d+\b/, /meter00|calypso|pulsar_plus|ac_uty_|hydro_quebec_maison|thermostat_chambre/i];
