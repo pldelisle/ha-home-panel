@@ -1,0 +1,60 @@
+# Home panel: where to apply Apple's guidelines next
+
+> Moved from the Claude artifact [9KK2FkC7ShNohS5kCBCifz](https://claude.ai/artifact/9KK2FkC7ShNohS5kCBCifz), first published 2026-11-07.
+
+Nov 7, 2026
+
+The measurable part of Apple's guidelines is now met: on 2.8.1 no text is under 11 pt, no text fails 4.5:1 contrast, and no control is under 28 pt, on iPad or iPhone, light or dark. What's left is about *which component* the panel uses where, and the biggest one is glass: since 1.18 every card and tile is Liquid Glass, which Apple reserves for navigation and controls. Fifteen refactors follow, ranked by how far the panel is from Apple's rule and how much people would notice.
+
+## Where it stands
+
+Most of the 2026-11-06 review was built in 1.17 to 1.19 after all. Measured again today on 2.8.1 (a Playwright pass over every tab on a 1180×820 iPad and a 393×852 iPhone):
+
+| Measure | 1.16.1 (Nov 6) | 2.8.1 (today) |
+|---|---|---|
+| Text under 11 pt, iPad | 212 of 1,017 | 0 of 723 |
+| Text under 4.5:1 contrast, iPad light | 341 | 0 |
+| Controls under 28 pt, iPad | 36 | 0 |
+| Controls under 44 pt, iPad | 140 | 15 |
+
+Already done from that review: 11 pt text floor and darker greys, Increase Contrast and Reduce Transparency variants, text size that follows the iPhone setting (plus Smaller to Larger), swipe-down to close phone sheets, 51×31 switches, 28 pt slider thumbs, "Tap a bar" with round axis ticks, a spoken summary on every chart, errors that stay until tapped, empty car tiles hidden, top-to-bottom flow graphs on the phone, the panel's language set for VoiceOver.
+
+Still open from that review: the phone header (item 4 below), Automations dots at 28 pt instead of 44 (item 9), colour-only chart legends (item 14), the theme following the sun (item 6). The "Back to Auto" switch label belongs to the lights redesign.
+
+## Ranked refactors
+
+Ranked by distance from Apple's rule times how often people see it. S is under an hour, M an afternoon, L a day or more. Items 1 to 5 change how the panel looks and feels, so they should get a sketch for the owner first; 6 to 15 are small and could share one release.
+
+| \# | Where | What departs from Apple's guidelines | Refactor | Effort |
+|---|---|---|---|---|
+| 1 | Every card, tile, row, segmented control, stepper and chip (`src/css/glass.css` lines 42 to 70, about 40 selectors) | Liquid Glass is for "controls and navigation elements, like tab bars and sidebars"; "Don't use Liquid Glass in the content layer." Only sliders and toggles may turn glassy while touched. The extra Chromium noise distortion (`url(#glass-distortion)`, line 80) goes against "use Liquid Glass effects sparingly". | Keep glass on the rail and tab bar, the header chips and gear, the live activity pill, the settings popover, toasts and the sheet frame. Cards become a standard material: a near-opaque fill with no rim glow and no distortion. Tiles inside cards become the plain secondary fill. The wallpaper stays behind. Side benefit: the iOS ghosting workaround for Automations (line 74) and most of the blur cost on the wall iPad go away. | M |
+| 2 | Phone sheets for a light, a room's climate, the car, the TV and speakers (`sh-light`, `sh-climate`, `sh-car`, `sh-card`) | Changes in these sheets apply live, so there is nothing to cancel. Apple: Close or Cancel "dismisses a sheet without saving", Done "dismisses a sheet after completing a task", at the trailing edge. A circled × on a sheet full of live controls reads as "discard". | A text "Done" button at the top right of sheets with controls. Read-only sheets (weather history, a sensor, a camera) keep the ×. One shared header helper so every sheet gets it the same way. | S |
+| 3 | Phone "More" (`sh-more`, line 512) | More opens as a sheet, and the sheet is a menu of sections. Apple: "Avoid using a sheet to help people navigate your app's content." The Tab bars page also says to avoid overflow tabs, and where iOS needs one it is a list inside the tab, not a modal. | Make More a real fifth tab pane: a grouped list of the six sections with their live status and a chevron. Tapping one switches section with the tab bar still showing More as selected. | M |
+| 4 | Phone header on every tab (`#hello`, line 375) | "Good morning, Alex", the date, both temperatures and the charging chip repeat above Lights, Climate and Car, so each tab's real title ("Lights") starts about 150 px down. Apple's tab screens open on the section's own large title. | Greeting only on Home. Other tabs open on the section title, with the gear and the live activity pill in the same row. | M |
+| 5 | Settings popover (`renderSettings`, line 576) | Laid out like Control Center tiles, but Control Center is for quick system toggles; app settings are a grouped list. The two theme tiles say "Light, Following the sun" next to "Auto, Follows the sun", which is confusing. A transparency slider is an app-level appearance setting, which the Dark Mode page asks apps to avoid. | A grouped list: Appearance ›, Text size ›, Wallpaper › as value rows (value plus chevron opening a checkmark list), and Sleep now as a plain button row. Drop the transparency slider once item 1 lands; Reduce Transparency already covers people who need it. | S |
+| 6 | Theme Auto (`applyTheme`, line 561) | Auto is dark when the device is dark or when the sun is down, so an iPhone in Light mode still turns dark at sunset. Apple: follow the system appearance. | Phone: Automatic means the system setting only. Wall iPad: keep the sun as an explicit choice ("Automatic (sunset)") since it is mounted and its own setting is rarely changed. | S |
+| 7 | Car, Comfort and access, Unlock; Climate, Set all and All off (`armed`, lines 3020, 3191, 3202) | "Tap again" within 4 seconds is an invented confirmation: easy to miss, and VoiceOver only hears the label change. Apple confirms consequential actions with an action sheet (iPhone) or a popover (iPad) that names the action and has Cancel. | One confirm helper: "Unlock the car?" with a button titled Unlock (not OK) and Cancel, as the Alerts page asks. Use it for Unlock, Remote start, Set all rooms and All off. | S to M |
+| 8 | Car, Charge limit 50% to Full (line 3186) | Drawn as a six-segment control, but the hint says Home Assistant can't change it. Something that looks tappable must be tappable. | Show it as a value row ("Charge limit 90%, set in FordPass") or as a marker on the battery bar, which already has one. | S |
+| 9 | Remaining small targets: Automations timeline dots 28×28, automation chips 40 tall, light-sheet group chips 39 tall | Apple's default is 44×44; 28 is the floor. The dots are the panel's only controls still at the floor, 20 to a screen. | Give dots a transparent 44 px hit area, and widen the merge distance for close runs (dots with a count already exist) to 44 px. Chips to 44 tall. | S |
+| 10 | Toggle buttons whose state is colour only: departure days M T W T F S S (line 3205), light group chips | "Avoid relying solely on different colors to communicate state." Selected and unselected days differ only by a pale green tint. | Selected = filled accent with white letter, unselected = outline, as iOS Alarms does; chips get a checkmark when on. | S |
+| 11 | Period controls: Climate Day / Week / Month / Year, Energy Today / Week / Month / Year plus a second Now / Today / 30 days control, Air Day / Week / Month | Same choice, three vocabularies and two controls on one screen. Segmented controls should use consistent nouns. Apple Health and Fitness use one D / W / M / Y control per screen. | One period control per pane, the same words everywhere (Day, Week, Month, Year). Energy's flow card follows the pane's period, with Now as its default. | S to M |
+| 12 | Repeated content on the iPad Home tab | The date sits under the greeting and again in the Home subtitle; Who's home sits in the header and again on the Home card. Apple's layout rule: limit what's on screen and don't repeat it. | Home subtitle drops the date. Who's home stays in the header only; the smart stack fills the space it leaves (2.9.0 already moves that way). | S |
+| 13 | Messages that catch mistakes after the tap: "Pick a cabin temperature first", "Pick at least one day" (lines 3260 to 3261); the TV error toast still vanishes (line 2127) | Apple prefers preventing an error to reporting it, and errors should stay until read. | Save schedule stays disabled with a one-line reason until a day and a temperature are picked. The TV error toast gets the sticky flag like the others. | S |
+| 14 | Energy charts and their legends | Room heating, water heating, EV and rest of home differ by colour only. Charts page: don't rely on colour alone. | Series name in every tooltip and a pattern on one series; the spoken chart summary already exists. | M |
+| 15 | Uppercase spaced labels ("ALL ROOMS", "WARMEST", "TEXT SIZE", "FRONT LEFT"; `.lbl`, `.tile .k`) | Now legible (12 pt, 4.5:1), but uppercase plus tracking is the hardest style to read at a distance and doesn't scale well with larger text sizes. | Optional: sentence-case semibold labels at the same size. A taste call for the owner. | S |
+
+## Handled in other threads
+
+- **Light controls** are being redesigned in [Redesign light controls with two sliders](https://claude.ai/code/project/chan_01941MiLAaoKngxxHYoNaUEy?thread=cmsg_01941MiLAaoKngxxHYoNaUEyUwXfVYPAkRnx5Xri3Uk4Aj): the sideways dimmer rows, the Auto pill (36 pt), the row chevron (32 pt wide), "Back to Auto" as a switch label, and the light sheet. Its rules (switches only in list rows, toggle buttons elsewhere, value rows with a checkmark list, Done on live sheets, glass only while a slider is touched) are the same ones this list applies to the rest of the panel, so items 2, 5 and 10 should reuse whatever that thread builds.
+
+- **Code structure** is reviewed in [Make Home panel code production grade](https://claude.ai/code/project/chan_01941MiLAaoKngxxHYoNaUEy?thread=cmsg_01941MiLAaoKngxxHYoNaUEyPZTxi3txfYYBNSpcu4WPWd). Items 2, 5 and 7 each want one shared helper (sheet header, value row, confirm) rather than per-screen markup, which fits that review.
+
+- **Sensor names** (duplicated door and motion entities) are a Home Assistant rename, not a panel change, as noted on Nov 6.
+
+## How this was checked
+
+The panel at main (2.8.1, commit 459e1ac) was built and loaded with the repository's test house, then every tab and the phone sheets were measured for hit-area size, text size and contrast on a 1180×820 iPad and a 393×852 iPhone, light and dark, and screenshotted for the component review. The test house uses the system font and made-up data, so wrapping can differ slightly on the real iPad. The measuring script and its results are in the project files under `home-panel/hig-review/2.8.1/`. No code was changed.
+
+## Sources
+
+Apple Human Interface Guidelines, read today: [Materials](https://developer.apple.com/design/human-interface-guidelines/materials), [Sheets](https://developer.apple.com/design/human-interface-guidelines/sheets), [Toggles](https://developer.apple.com/design/human-interface-guidelines/toggles), [Segmented controls](https://developer.apple.com/design/human-interface-guidelines/segmented-controls), [Sliders](https://developer.apple.com/design/human-interface-guidelines/sliders), [Pickers](https://developer.apple.com/design/human-interface-guidelines/pickers), [Tab bars](https://developer.apple.com/design/human-interface-guidelines/tab-bars), [Alerts](https://developer.apple.com/design/human-interface-guidelines/alerts), [Dark Mode](https://developer.apple.com/design/human-interface-guidelines/dark-mode), [Layout](https://developer.apple.com/design/human-interface-guidelines/layout), [Accessibility](https://developer.apple.com/design/human-interface-guidelines/accessibility), [Charts](https://developer.apple.com/design/human-interface-guidelines/charts), [Feedback](https://developer.apple.com/design/human-interface-guidelines/feedback). Earlier review: [Home panel vs Apple HIG review](https://claude.ai/artifact/VZuGg5Z8H9fEZFtN5jhRH7) (Nov 6).
