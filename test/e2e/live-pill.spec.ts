@@ -2,25 +2,11 @@
 // Status checks. With nothing running and nothing to check the spot is empty (2.8.0); a problem shows as an attention pill.
 // State changes go through the harness, the way Home Assistant hands the panel a new hass.
 // Test titles start with the check's number in docs/specs/01-playwright-test.md.
-import {test, expect, expectCall, type House} from './fixtures';
+import {test, expect, expectCall} from './fixtures';
 import {FULL_CFG} from './houses';
+import {pill, stopCharging, openFrontDoor, openPopup} from './live';
 
 test.use({houseOpts: {cfg: FULL_CFG}});
-
-const pill = (house: House) => house.root().locator('#chips .attchip');
-// the car stops charging and is unplugged: no live activity is left
-const stopCharging = async (house: House) => {
-  await house.setState('sensor.fordpass_test_elvehcharging', {state: 'NOT_READY'});
-  await house.setState('sensor.fordpass_test_elvehplug', {state: 'DISCONNECTED'});
-};
-// the front door has been open for 20 minutes (counted on the page's clock)
-const openFrontDoor = (house: House) => house.setStateSince('binary_sensor.front_door', {state: 'on'}, 20 * 60_000);
-const openPopup = async (house: House) => {
-  await pill(house).click();
-  const popup = house.root().locator('#attpop');
-  await expect(popup).toBeVisible();
-  return popup;
-};
 
 test('10 the status chip is a charging pill', async ({house}) => {
   await expect(pill(house)).toHaveClass(/\blap\b/);

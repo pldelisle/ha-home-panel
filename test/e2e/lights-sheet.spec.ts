@@ -3,13 +3,11 @@
 // Test titles start with the check's number in docs/specs/01-playwright-test.md.
 import {test, expect, type House} from './fixtures';
 import {FULL_CFG} from './houses';
-import {callData, callsMessage} from './lights';
+import {callData, callsMessage, OFFICE_TILE} from './lights';
 
 // a fake clock lets the tests run past the panel's timers (the 60 ms drag release, the 1 s render tick) without waiting
 test.use({houseOpts: {cfg: FULL_CFG, time: '2026-11-07T12:00:00-05:00'}});
 test.skip(() => test.info().project.name === 'phone', 'tablet layout');
-
-const OFFICE_TILE = '#pane-lights .lcell[data-lsheet="office"]';
 
 /** an element's top-left corner and size, in page coordinates */
 const box = async (house: House, selector: string) => {

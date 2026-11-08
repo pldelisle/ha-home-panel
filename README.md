@@ -145,6 +145,8 @@ The test server listens on port 4173 unless `E2E_PORT` names another, so several
 `test:visual:update` or `test:visual:update:container`. Baselines are only ever regenerated through the Docker or container script, never on the bare host.
 The scripts reuse your `node_modules` inside Linux, which is fine while no dependency has a native build.
 
+> Screenshots under `test/e2e/__screenshots__/` are the reference for how the panel looks. A pull request that changes one either fixes the code or regenerates the baseline with `npm run test:visual:update` and says in its changelog entry which screens changed and why. Pull requests that only restructure code must not change a baseline.
+
 The source is one custom element in `src/home-panel.src.js`. `build.mjs` splices in the CSS (`src/css/`), the French
 translations (`src/i18n/`), the Automations tab (`src/auto.js`) and the configuration code (`src/config.js`).
 The test house in `test/e2e/harness.html` is made up. Keep real names, addresses and entity IDs out of the repository:

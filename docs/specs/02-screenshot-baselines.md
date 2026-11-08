@@ -46,12 +46,13 @@ The visual project is a third Playwright project, `visual`, that reuses the `hou
 | Settings popup | tablet | light, dark | en | full | the gear menu open |
 | Status checks | tablet | light | en | full, front door open 20 min | the attention pill tapped |
 
-That is about 100 images. Each MUST be a full-page viewport capture (`fullPage: false`) so the image size is the viewport.
+That is 81 images: 66 tabs and 15 states (the idle clock, light sheet and live popup each 4, the settings popup 2, the Status checks 1). On a phone the idle clock is started with "Sleep now" in the settings, because phones never go idle on their own. Each MUST be a full-page viewport capture (`fullPage: false`) so the image size is the viewport.
 
 ### Determinism rules
 
 - Every visual test MUST install the fake clock at `2026-11-07T14:00:00-05:00` unless the row above says otherwise, so greetings, sun position, "ago" texts, history curves and the day's calendar are fixed.
 - Installing the fake clock is not enough: it lets time keep flowing from the fixed instant, so a chart axis or a history curve drawn from "now" moves by a sub-pixel between runs (seen on the Climate tab). Visual tests also freeze `Date` with the fixture's `frozen: true`; timers still run.
+- The idle clock is the exception to `frozen`: it reads "now", so a frozen `Date` would show 11:30 pm after five minutes. Its tests pause the clock a minute after load and `fastForward` it, which fixes the time and the card the stack turns to, and pin `Math.random` to its middle, because the panel nudges the clock block by a random offset on every tick (burn-in protection).
 - `reducedMotion: 'reduce'` is inherited from the project; `toHaveScreenshot` MUST pass `animations: 'disabled'` and `caret: 'hide'`.
 - Before capturing a tab, the test MUST wait for the pane to be visible and then for the page to settle; `toHaveScreenshot` already waits for two consecutive identical frames, which covers chart draw-in.
 - The Automations tab draws with Mermaid; the test MUST wait for the flow SVG to exist before capturing.
