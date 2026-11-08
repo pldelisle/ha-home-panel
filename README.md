@@ -134,6 +134,7 @@ npm run typecheck      # tsc --checkJs over the config and stack modules (types 
 npm test               # unit tests (Vitest): config, build, French, a scan for personal data
 npm run test:watch     # the same, re-run on every save
 npm run test:coverage  # the same, with a coverage report in coverage/
+npm run changeset      # describes your change for the changelog and the version (see below)
 npm run format         # Prettier (run it before committing; CI checks it with npm run format:check)
 npm run lint           # ESLint (CI runs it after format:check)
 npm run test:e2e       # builds, then runs the Playwright suite
@@ -159,6 +160,12 @@ coverage to it; #34 turns those loaders into plain imports.
 The scripts reuse your `node_modules` inside Linux, which is fine while no dependency has a native build.
 
 > Screenshots under `test/e2e/__screenshots__/` are the reference for how the panel looks. A pull request that changes one either fixes the code or regenerates the baseline with `npm run test:visual:update` and says in its changelog entry which screens changed and why. Pull requests that only restructure code must not change a baseline.
+
+Run `npm run changeset` in every pull request that changes what the household sees.
+Pick patch, minor or major.
+Write the changelog line as one paragraph, a sentence about what the household sees (one paragraph keeps the list tight), and never edit `package.json`'s version or `CHANGELOG.md` by hand.
+A bot runs `npm run version-packages` on a release branch and keeps one "Release" pull request open; merging it is the release.
+That needs the repository setting "Allow GitHub Actions to create and approve pull requests" on, and because the Release pull request is opened with `GITHUB_TOKEN` it gets no CI checks of its own; they run on `main` after the merge.
 
 The source is one custom element in `src/home-panel.src.js`. `build.mjs` splices in the CSS (`src/css/`), the French
 translations (`src/i18n/`), the Automations tab (`src/auto.js`) and the configuration code (`src/config.js`).
