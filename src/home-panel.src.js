@@ -2695,7 +2695,7 @@ class HomePanel extends HTMLElement {
     const s = this.lightState(a), m = this.lightMode(a), sub = this.lightSub(a, s, m), aid = esc(a.aid);
     return `<div class="lcell${s.any ? ' on' : ''}${s.avail ? '' : ' na'}" data-lsheet="${aid}" role="button" tabindex="0" aria-label="${esc(a.name)}: ${sub}"${s.tint ? ` style="--lc:${s.tint}"` : ''}>
       <button type="button" class="lbulb" role="switch" aria-checked="${s.any}" aria-label="${esc(a.name)} lights" data-l="area" data-a="${aid}" ${s.avail ? '' : 'disabled'}>${ico('bulb', 22)}</button>
-      <span class="tx"><b>${esc(a.name)}</b><small>${sub}${this.linkTag(a)}</small></span><span class="lgrip" aria-hidden="true">${ico('grip', 20)}</span></div>`;
+      <span class="tx"><b>${esc(a.name)}</b><small>${sub}${this.linkTag(a)}</small></span><span class="lchev" aria-hidden="true">${ico('chev', 18)}</span><span class="lgrip" aria-hidden="true">${ico('grip', 20)}</span></div>`;
   }
   // the colour an area's lights are showing: the first lit bulb's rgb_color, or its colour temperature turned into a warm-to-cool white
   lightTint(on) {

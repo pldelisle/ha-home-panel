@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.11.1
+
+- Linked rooms are two ordinary tiles again, each with its own rounded corners, instead of one glued card. They still sit side by side so Arrange moves them together, and each tile's subtitle names its partner.
+- Light tiles show a chevron (and a ring under a mouse) so it is clear that a tap opens the room's sheet.
+
 ## 2.11.0
 
 - On a tablet, the Home card fills the space under Who's home with the smart stack from the idle clock. It shows the same cards in the same 20-second turns, such as a door left open, the car charging overnight, energy used today or what's playing, with dots for how many there are. A tap opens what the card is about. Who's home is listed right above it, so the who's-home filler card is left out there. With nothing to show, the slot hides. `idle_stack: {enabled: false}` turns this off too.
