@@ -52,7 +52,7 @@
 .app.gl .lap .lmain.tint {
   background: color-mix(in srgb, var(--ac) 16%, var(--g-dense));
 }
-.app.gl .lap .lwarn {
+.app.gl .lap .lwarn:where(.lbub) {
   background: color-mix(in srgb, var(--ac) 20%, var(--g-dense));
 }
 .lap .ll {
