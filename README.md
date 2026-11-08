@@ -173,7 +173,7 @@ The `changeset` CI job (`.github/workflows/changeset.yml` lists the paths it wat
 
 Renovate (`renovate.json`) opens pull requests weekly, on Monday mornings: the npm minor and patch updates in one, the GitHub Actions in another.
 Playwright (the npm package and the Docker image tag together) and lock-file maintenance come monthly, each in its own pull request.
-Pull requests that touch devDependencies, Actions or the image tag carry the `no-changeset` label; lock-file maintenance needs none.
+Pull requests that touch devDependencies, Actions or the image tag carry the `no-changeset` label. Lock-file maintenance changes `package-lock.json`, which pins the libraries inside `dist/chunks/`: it needs a changeset when it moved one of them, or the label when nothing that ships changed.
 Renovate does not re-record screenshots: a person pushes the re-recorded baselines to the Renovate Playwright branch (`npm run test:visual:update`, or its `:container` variant) before it can merge.
 Every `uses:` in `.github/workflows/` is pinned to a commit with its version in a comment (Renovate keeps both current), each workflow declares its `permissions:` at the top, and `.github/workflows/codeql.yml` runs CodeQL on pushes to `main`, on pull requests and weekly.
 `test/unit/workflows.test.mjs` fails a workflow that breaks the first two rules.
