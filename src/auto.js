@@ -638,7 +638,9 @@ export const autoMethods = {
       fg = c('--fg'),
       fg3 = c('--fg3'),
       line = c('--line');
-    const esc2 = s => esc(s).replace(/"/g, '#quot;');
+    // Home Assistant text (aliases, names, trace errors) goes into quoted labels: esc() leaves no `"` to close one, and
+    // every % becomes Mermaid's #37; entity, so no text can open a %%{init}%% directive (theme, CSS, label settings)
+    const esc2 = s => esc(s).replace(/%/g, '#37;');
     const lbl = n => {
       if (n.shape === 'circle' || n.shape === 'stop')
         return `<span style='font-size:11px;font-weight:800;letter-spacing:.08em'>${esc2(n.d.t)}</span>`;

@@ -39,6 +39,8 @@ export type HouseOpts = {
   frozen?: boolean;
   /** the frontend's system data to start from, e.g. {home_panel: {light_order: [...]}} */
   sysdata?: object;
+  /** the full house's automations ({entity_id, config} each), served in place of test/e2e/automations.json */
+  automations?: object[];
 };
 
 export type House = {
@@ -95,6 +97,10 @@ export const test = base.extend<{houseOpts: HouseOpts; house: House}>({
       [o.cfg ?? null, o.sysdata ?? null, o.theme] as const,
     );
     await page.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
+    if (o.automations) {
+      const body = JSON.stringify(o.automations);
+      await page.route(/\/automations\.json$/, r => r.fulfill({contentType: 'application/json', body}));
+    }
     // the body is read as the response arrives, so a test can tell the chunk that holds a library from one that does not
     page.on('request', r => {
       if (CHUNK_URL.test(r.url())) chunkRequests.push(r.url());
