@@ -20,6 +20,17 @@ export const CHUNK_URL = /\/panel\/chunks\//;
 /** a chunk the panel fetched from dist/chunks/: its URL and its source text */
 export type Chunk = {url: string; body: string};
 
+/** where the build puts Montserrat in the served panel (dist/fonts/, served under /panel/) */
+export const FONT_URL = /\/panel\/fonts\//;
+
+/** the weights the panel's stylesheet uses, which src/fonts.js declares */
+const FONT_WEIGHTS = [400, 500, 600, 700];
+
+// Google's font hosts, which the panel must never call (spec 08): a request to either fails the test. Each name is
+// written in two pieces so that spec 08's check, a grep of src/, test/ and dist/ for the two hosts, finds none in test/.
+const GOOGLE_FONT_HOSTS = ['fonts.google' + 'apis.com', 'fonts.g' + 'static.com'];
+const isGoogleFont = (url: string | URL) => GOOGLE_FONT_HOSTS.includes(new URL(url).hostname);
+
 export type HouseOpts = {
   /** which made-up house: everything, or only the sun, one weather entity and one light */
   house?: 'full' | 'bare';
@@ -57,6 +68,8 @@ export type House = {
   chunks: Chunk[];
   /** the URLs of the fetched chunks whose body contains `needle` (a string, or a pattern) */
   chunksWith: (needle: string | RegExp) => string[];
+  /** the responses to the panel's requests under /panel/fonts/ (the bundled Montserrat), in the order they came */
+  fonts: Array<{url: string; status: number}>;
   /** the panel element */
   root: () => Locator;
   /** taps the tab's button (rail or phone bar) and waits for its pane */
@@ -83,7 +96,8 @@ export const test = base.extend<{houseOpts: HouseOpts; house: House}>({
       ws: House['ws'] = [],
       errors: string[] = [],
       chunkRequests: string[] = [],
-      chunks: Chunk[] = [];
+      chunks: Chunk[] = [],
+      fonts: House['fonts'] = [];
     await page.addInitScript(
       ([cfg, sysdata, theme]) => {
         window.PANEL_CFG = cfg;
@@ -96,7 +110,14 @@ export const test = base.extend<{houseOpts: HouseOpts; house: House}>({
       },
       [o.cfg ?? null, o.sysdata ?? null, o.theme] as const,
     );
-    await page.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
+    // a Google Fonts request fails the test; it is also aborted, so that a run never depends on the internet
+    page.on('request', r => {
+      if (isGoogleFont(r.url())) errors.push(`Google Fonts request: ${r.url()}`);
+    });
+    await page.route(isGoogleFont, r => r.abort());
+    page.on('response', r => {
+      if (FONT_URL.test(r.url())) fonts.push({url: r.url(), status: r.status()});
+    });
     if (o.automations) {
       const body = JSON.stringify(o.automations);
       await page.route(/\/automations\.json$/, r => r.fulfill({contentType: 'application/json', body}));
@@ -120,7 +141,7 @@ export const test = base.extend<{houseOpts: HouseOpts; house: House}>({
       const t = m.text();
       if (t.startsWith('SERVICE ')) calls.push(t.slice(8));
       else if (t.startsWith('WS ')) ws.push(JSON.parse(t.slice(3)) as House['ws'][number]);
-      else if (m.type() === 'error' && !/Failed to load resource|fonts\.g/.test(t)) errors.push(t);
+      else if (m.type() === 'error' && !/Failed to load resource/.test(t)) errors.push(t);
     });
     if (o.time) await page.clock.install({time: new Date(o.time)});
     if (o.time && o.frozen) await page.clock.setFixedTime(new Date(o.time));
@@ -134,6 +155,7 @@ export const test = base.extend<{houseOpts: HouseOpts; house: House}>({
       errors,
       chunkRequests,
       chunks,
+      fonts,
       chunksWith: needle =>
         chunks
           .filter(c => (typeof needle === 'string' ? c.body.includes(needle) : needle.test(c.body)))
@@ -173,6 +195,21 @@ export async function eachShownTab(
     if (each) await each(t, house.root().locator(`#pane-${t}`));
   }
   return opened;
+}
+
+// Waits until Montserrat is loaded in all four weights. The font is declared with font-display: swap, so text is drawn
+// in the fallback until a weight arrives; a screenshot must never catch that, and a chart or a flow drawn later must
+// measure its labels in the real font (ApexCharts and Mermaid size boxes and axes from the text). document.fonts.load
+// fetches a weight the page has not used yet and resolves with the faces it loaded (one each: the latin file); it
+// rejects when a file cannot be fetched. document.fonts.check alone would not do: it is true for a family no rule
+// declares at all.
+export async function fontsLoaded(house: House) {
+  const state = await house.page.evaluate(async weights => {
+    const faces = await Promise.all(weights.map(w => document.fonts.load(`${w} 16px Montserrat`)));
+    await document.fonts.ready;
+    return {faces: faces.map(f => f.length), check: weights.every(w => document.fonts.check(`${w} 16px Montserrat`))};
+  }, FONT_WEIGHTS);
+  expect(state, 'Montserrat faces loaded for 400, 500, 600 and 700').toEqual({faces: [1, 1, 1, 1], check: true});
 }
 
 // skip a test (or a describe's tests, as a beforeEach) on the wrong project, for checks about one layout

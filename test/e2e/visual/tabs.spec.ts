@@ -1,10 +1,14 @@
 // One screenshot per tab, per viewport, theme and language (spec 02, "The matrix": Tabs and Bare rows).
 // Baselines live in test/e2e/__screenshots__/visual/tabs.spec.ts/ and are recorded only inside the Playwright image (Docker or
 // `container`: npm run test:visual:update); a difference is either fixed or approved by updating them in the same pull request.
-import {test, expect, eachShownTab, type House} from '../fixtures';
+import {test, expect, eachShownTab, fontsLoaded, type House} from '../fixtures';
 import {AFTERNOON, FULL_CFG, PHONE_TABS, TABLET_TABS, VIEWPORTS} from '../houses';
 
 const TABS = {tablet: TABLET_TABS, phone: PHONE_TABS};
+
+// every screenshot shows the bundled Montserrat, never the fallback it swaps from, and the charts and flows drawn after
+// this measure their labels in it
+test.beforeEach(({house}) => fontsLoaded(house));
 
 for (const viewport of ['tablet', 'phone'] as const) {
   test.describe(viewport, () => {

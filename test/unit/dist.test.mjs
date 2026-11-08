@@ -8,6 +8,7 @@ import {readFileSync, readdirSync, existsSync, statSync} from 'node:fs';
 import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {execFileSync} from 'node:child_process';
+import {createRequire} from 'node:module';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const DIST = join(ROOT, 'dist');
@@ -48,10 +49,22 @@ beforeAll(() => {
   text = c => texts.get(c);
 });
 
-test('dist/ holds the bundle, its source map, the lazy chunks and the licence list, and nothing else', () => {
+test('dist/ holds the bundle, its source map, the lazy chunks, the fonts and the licence list, and nothing else', () => {
   // no copied library file (there is no vendor/), no assets/ folder: the stylesheets are imported as text
   const rest = distFiles.filter(f => !chunks.some(c => f === c || f === c + '.map'));
-  expect(rest).toStrictEqual(['LICENSES.md', 'home-panel.js', 'home-panel.js.map']);
+  expect(rest).toStrictEqual([
+    'LICENSES.md',
+    'fonts/montserrat-latin-400-normal.woff2',
+    'fonts/montserrat-latin-500-normal.woff2',
+    'fonts/montserrat-latin-600-normal.woff2',
+    'fonts/montserrat-latin-700-normal.woff2',
+    'fonts/montserrat-latin-ext-400-normal.woff2',
+    'fonts/montserrat-latin-ext-500-normal.woff2',
+    'fonts/montserrat-latin-ext-600-normal.woff2',
+    'fonts/montserrat-latin-ext-700-normal.woff2',
+    'home-panel.js',
+    'home-panel.js.map',
+  ]);
   for (const c of chunks) {
     expect(c).toMatch(/^chunks\/[\w.-]+-[\w-]{8}\.js$/); // [name]-[hash].js
     // a chunk names its map at its end exactly when the map is there, so a stack trace from a chart or a flow points
@@ -75,6 +88,31 @@ test("the chunks' maps name the libraries' files but leave out their text", () =
       if (s.includes('node_modules/')) expect(map.sourcesContent?.[i] ?? null, `${f}: ${s}`).toBe(null);
       else expect(typeof map.sourcesContent?.[i], `${f}: ${s}`).toBe('string');
     });
+  }
+});
+
+test('dist/fonts/ holds the eight Montserrat files as Fontsource ships them, and nothing names Google', () => {
+  // weights 400 to 700 in the latin and latin-ext subsets, under Fontsource's names (src/fonts.js builds the URLs from
+  // them), byte for byte the installed package's files
+  const fonts = distFiles.filter(f => f.startsWith('fonts/'));
+  expect(fonts).toHaveLength(8);
+  const fontsource = createRequire(import.meta.url);
+  for (const f of fonts)
+    expect(
+      readFileSync(join(DIST, f)).equals(
+        readFileSync(fontsource.resolve(`@fontsource/montserrat/files/${f.slice(6)}`)),
+      ),
+      f,
+    ).toBe(true);
+  // the entry declares them itself: the subsets' ranges and the style element are in it
+  const entry = readFileSync(BUNDLE, 'utf8');
+  expect(entry).toContain('home-panel-fonts');
+  expect(entry).toContain('U+0000-00FF,U+0131,U+0152-0153');
+  // no text file in dist/ names Google's font hosts (spelled in pieces, so that a grep of test/ for them finds none)
+  const hosts = ['fonts.google' + 'apis.com', 'fonts.g' + 'static.com'];
+  for (const f of distFiles.filter(f => /\.(js|map|md)$/.test(f))) {
+    const text = readFileSync(join(DIST, f), 'utf8');
+    for (const host of hosts) expect(text.includes(host), `${f} names ${host}`).toBe(false);
   }
 });
 

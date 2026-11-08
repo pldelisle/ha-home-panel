@@ -10,5 +10,5 @@
     "lib": ["ES2022", "DOM"],
     "types": []
   },
-  "include": ["src/types.d.ts", "src/config.js", "src/stack.js"]
+  "include": ["src/types.d.ts", "src/config.js", "src/stack.js", "src/fonts.js"]
 }
