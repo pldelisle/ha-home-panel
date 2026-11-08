@@ -3124,10 +3124,6 @@ export class HomePanel extends HTMLElement {
 
   // ---------- climate card ----------
   renderClimate() {
-    // no thermostats and no heat pump: no Climate tab
-    this.shadowRoot.querySelectorAll('[data-tab="climate"]').forEach(el => {
-      el.hidden = !ROOMS.length && !st(E.hp);
-    });
     const L = this.live(),
       H = this.H,
       temps = L.rooms.map(r => r.t).filter(v => v != null);
@@ -3238,9 +3234,6 @@ export class HomePanel extends HTMLElement {
     return off;
   }
   renderCarCard() {
-    this.shadowRoot.querySelectorAll('[data-tab="car"]').forEach(el => {
-      el.hidden = !this.car;
-    });
     if (!this.car) {
       this.set(
         'carcard',
@@ -5829,6 +5822,18 @@ export class HomePanel extends HTMLElement {
         console.error('home-panel tabs', f, e);
       }
     }
+    this.gateTabs();
+  }
+  // a tab the house has nothing for is hidden wherever it shows, its rail button (the phone's tab bar too) and its Home tile: Climate
+  // with no thermostat and no heat pump, Car with no car. It runs after the tabs are drawn, because renderHome redraws its tiles whole:
+  // hiding them beforehand let the first frame, and every redraw after a change, show both tiles until the next update hid them (#72)
+  gateTabs() {
+    this.findCar();
+    const off = {climate: !ROOMS.length && !st(E.hp), car: !this.car};
+    for (const [t, hide] of Object.entries(off))
+      this.shadowRoot.querySelectorAll(`[data-tab="${t}"]`).forEach(el => {
+        el.hidden = hide;
+      });
   }
   // one line under each pane title, like the detail sheets have
   renderPaneSubs() {
