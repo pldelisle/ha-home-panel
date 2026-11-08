@@ -62,7 +62,7 @@ test('works on CRLF text', () => {
 test('the real CHANGELOG.md has a section for the package.json version, its first entry and its last', () => {
   const {version} = JSON.parse(readFileSync(join(repo, 'package.json'), 'utf8'));
   expect(changelogSection(changelog, version)).toMatch(/^- \S/);
-  const headings = [...changelog.matchAll(/^## (\d+\.\d+\.\d+)/gm)].map(match => match[1]);
+  const headings = [...changelog.matchAll(/^## (\S+)/gm)].map(match => match[1]);
   const first = changelogSection(changelog, headings[0]);
   const second = changelogSection(changelog, headings[1]);
   const last = changelogSection(changelog, headings.at(-1));
