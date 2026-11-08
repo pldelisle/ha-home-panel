@@ -2,15 +2,31 @@
 // version and licence text. A Renovate bump of apexcharts or mermaid, or lock-file maintenance, changes package.json or
 // package-lock.json and not LICENSES.md, so these tests turn that pull request red until someone runs
 // `npm run licenses` and commits the result.
-import {test, expect} from 'vitest';
+import {test, expect, beforeAll} from 'vitest';
 import {existsSync, readFileSync} from 'node:fs';
 import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {renderLicenses} from '../../scripts/licenses.mjs';
+import {collectLicenses, renderLicenses} from '../../scripts/licenses.mjs';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
-const json = f => JSON.parse(readFileSync(join(ROOT, f), 'utf8'));
-const licenses = readFileSync(join(ROOT, 'LICENSES.md'), 'utf8');
+const json = file => JSON.parse(readFileSync(join(ROOT, file), 'utf8'));
+const licensesFile = readFileSync(join(ROOT, 'LICENSES.md'), 'utf8');
+const RUN = 'run npm run licenses and commit LICENSES.md';
+
+// the table of LICENSES.md as {name, version, licenses}, read once; the header and separator rows are skipped
+const listed = licensesFile
+  .split('\n')
+  .filter(line => line.startsWith('| ') && !line.startsWith('| Package '))
+  .map(line => {
+    const [name, version, licenses] = line.slice(2).split(' | ');
+    return {name, version, licenses};
+  });
+
+// what the installed packages say now, read once
+let installed;
+beforeAll(async () => {
+  installed = await collectLicenses();
+}, 60_000);
 
 test('LICENSES.md lists every production dependency at the version package-lock.json installs', () => {
   const {dependencies} = json('package.json');
@@ -21,16 +37,22 @@ test('LICENSES.md lists every production dependency at the version package-lock.
     const version = packages[`node_modules/${name}`]?.version;
     expect(version, `${name} in package-lock.json`).toBeTruthy();
     expect(
-      licenses.includes(`| ${name} | ${version} |`),
-      `LICENSES.md has no row for ${name} ${version}: run npm run licenses`,
+      listed.some(row => row.name === name && row.version === version),
+      `LICENSES.md has no row for ${name} ${version}: ${RUN}`,
     ).toBe(true);
   }
 });
 
-test('LICENSES.md is what npm run licenses writes for the installed packages, down to the last transitive one', async () => {
-  // Mermaid's dependencies (DOMPurify, d3, lodash-es …) change with the lock file without package.json moving
-  expect(licenses === (await renderLicenses()), 'LICENSES.md is out of date: run npm run licenses').toBe(true);
-}, 60_000);
+test('the packages in LICENSES.md are the installed ones, down to the last transitive one', () => {
+  // Mermaid's dependencies (DOMPurify, d3, lodash-es …) change with the lock file without package.json moving. The
+  // rows are compared first, so a failure names the packages and versions that moved
+  const expected = installed.map(({name, version, licenses}) => ({name, version, licenses}));
+  expect(listed, `the table is out of date: ${RUN}`).toEqual(expected);
+});
+
+test('LICENSES.md is exactly what npm run licenses writes, licence texts included', () => {
+  expect(licensesFile === renderLicenses(installed), `LICENSES.md is out of date: ${RUN}`).toBe(true);
+});
 
 test('no vendor directory: no library is committed as a file', () => {
   expect(existsSync(join(ROOT, 'vendor'))).toBe(false);

@@ -106,6 +106,7 @@ test('the licence notices the libraries carry stay in their chunks', () => {
   const all = chunks.map(text).join('\n');
   expect(all).toMatch(/@license DOMPurify \d/);
   expect(all).toContain('/*! svg.draggable.js');
+  expect(all).toContain('ApexCharts v3.45.2');
 });
 
 test('ApexCharts and its stylesheet are in one lazy chunk, and not in the entry', () => {

@@ -9,8 +9,6 @@ import pkg from './package.json' with {type: 'json'};
 // generated LICENSES.md (npm run licenses) is emitted beside the entry, so the release zip carries the libraries'
 // licences. Nothing else is copied: there is no vendor/ directory.
 
-const licensesPath = fileURLToPath(new URL('./LICENSES.md', import.meta.url));
-
 // The constants the build replaces in src/ (declared in src/env.d.ts); vitest.config.ts uses the same object.
 export const define = {__VERSION__: JSON.stringify(pkg.version)};
 
@@ -33,6 +31,7 @@ const chunkMapsWithoutLibrarySources: Plugin = {
 
 // LICENSES.md, generated at the root and committed, goes into dist/ and so into the release zip and a manual install
 // (HACS copies the zip's files too). test/unit/licenses.test.mjs fails when the file is out of date.
+const licensesPath = fileURLToPath(new URL('./LICENSES.md', import.meta.url));
 const shipLicenses: Plugin = {
   name: 'ship-licenses',
   buildStart() {
@@ -64,7 +63,7 @@ export default defineConfig({
         // library mode keeps an ES entry's whitespace so that the consumer's bundler can still shake it; this entry is
         // the final file Home Assistant loads, so it is minified all the way
         minify: {codegen: true},
-        // the libraries' licence comments (/*! … */, @license) stay in their chunks, as in the files from vendor/
+        // the libraries' licence comments (/*! … */, @license) stay in their chunks
         comments: {legal: true},
         chunkFileNames: 'chunks/[name]-[hash].js',
         assetFileNames: 'assets/[name]-[hash][extname]',
