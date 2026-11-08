@@ -4,6 +4,15 @@
 // through the element's methods.
 import {test as base, expect, type Locator, type Page} from '@playwright/test';
 
+// what harness.html reads before the panel loads, and the helper it exposes afterwards
+declare global {
+  interface Window {
+    PANEL_CFG: object | null;
+    SYSDATA: object | null;
+    house: {setState(entityId: string, patch: object): void};
+  }
+}
+
 export type HouseOpts = {
   /** which made-up house: everything, or only the sun, one weather entity and one light */
   house?: 'full' | 'bare';
@@ -45,9 +54,9 @@ export const test = base.extend<{houseOpts: HouseOpts; house: House}>({
     const calls: string[] = [], ws: House['ws'] = [], errors: string[] = [];
     await page.addInitScript(
       ([cfg, sysdata, theme]) => {
-        (window as any).PANEL_CFG = cfg;
-        (window as any).SYSDATA = sysdata;
-        try { localStorage.setItem('home-panel-theme', theme as string); } catch {}
+        window.PANEL_CFG = cfg;
+        window.SYSDATA = sysdata;
+        try { localStorage.setItem('home-panel-theme', theme); } catch {}
       },
       [o.cfg ?? null, o.sysdata ?? null, o.theme] as const,
     );
@@ -69,7 +78,7 @@ export const test = base.extend<{houseOpts: HouseOpts; house: House}>({
         await root().locator(`[data-tab="${name}"]`).first().click();
         await expect(root().locator(`#pane-${name}`)).toBeVisible();
       },
-      setState: (id, patch) => page.evaluate(([id, patch]) => (window as any).house.setState(id, patch), [id, patch] as const),
+      setState: (id, patch) => page.evaluate(([id, patch]) => window.house.setState(id, patch), [id, patch] as const),
     };
     await use(house);
     expect(errors, 'page errors').toEqual([]);

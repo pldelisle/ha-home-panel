@@ -26,7 +26,8 @@ test('the vendored libraries are copied next to it', () => {
 });
 
 test('no personal data: names, places, a house photo or house-specific entity ids', () => {
-  const src = ['src/home-panel.src.js', 'src/config.js', 'src/auto.js', 'src/i18n/fr.js', 'src/i18n/fr-map.js', 'test/e2e/harness.html', 'test/e2e/automations.json']
+  const src = ['src/home-panel.src.js', 'src/config.js', 'src/auto.js', 'src/i18n/fr.js', 'src/i18n/fr-map.js', 'test/e2e/harness.html', 'test/e2e/automations.json',
+    'test/e2e/houses.ts', 'test/e2e/fixtures.ts', 'test/e2e/tabs.spec.ts']
     .map(f => readFileSync(new URL('../../' + f, import.meta.url), 'utf8')).join('\n') + js;
   const banned = [/pierre/i, /genevi[eè]ve/i, /\bmilan\b/i, /delisle/i, /mascouche/i, /montr[eé]al/i, /data:image\/(webp|png|jpe?g)/i,
     /\b10\.0\.\d+\.\d+\b/, /\b192\.168\.\d+\.\d+\b/, /meter00|calypso|pulsar_plus|ac_uty_|hydro_quebec_maison|thermostat_chambre/i];
