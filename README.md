@@ -127,16 +127,19 @@ You need Node 20 or later.
 
 ```sh
 npm ci
+# once per clone: git blame skips the Prettier format commit
+git config blame.ignoreRevsFile .git-blame-ignore-revs
 npm run build          # dist/home-panel.js plus the vendored libraries
 npm test               # unit tests: config, build, French, a scan for personal data
 npm run format         # Prettier (run it before committing; CI checks it with npm run format:check)
-git config blame.ignoreRevsFile .git-blame-ignore-revs   # once per clone: git blame skips the Prettier format commit
 npm run test:e2e       # builds, then runs the Playwright suite
 npm run test:visual:docker           # compares every tab with its screenshot baseline, inside Docker
 npm run test:visual:update           # records new baselines, inside Docker
 npm run test:visual:container        # the same two, through Apple's `container` CLI (container system start)
 npm run test:visual:update:container
 ```
+
+If `npm run format:check` still fails after one `npm run format`, run `npm run format` again: Prettier settles some chains on the second pass.
 
 `npm run test:e2e` builds, then runs the Playwright suite (the tablet and phone projects, not the screenshots) against the made-up house;
 `npm run test:e2e -- test/e2e/lights-sheet.spec.ts` runs one file. The first run needs a browser: `npx playwright install chromium`.
