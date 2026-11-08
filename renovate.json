@@ -44,7 +44,7 @@
       "groupName": "Vitest"
     },
     {
-      "description": "The package has no runtime dependencies, so a bump of a dev dependency changes nothing the household receives; the label skips the changeset job (docs/specs/05)",
+      "description": "A bump of a dev dependency changes nothing the household receives, so the label skips the changeset job (docs/specs/05); a runtime dependency (apexcharts, bundled into the chunk the panel loads) does ship, so its pull requests are not labelled",
       "matchManagers": ["npm"],
       "matchDepTypes": ["devDependencies"],
       "addLabels": ["no-changeset"]
@@ -55,10 +55,15 @@
       "addLabels": ["no-changeset"]
     },
     {
-      "description": "3.x is the last plain-MIT line; see docs/specs/production-grade-refactor.md",
+      "description": "ApexCharts stays on 3.x: majors are skipped (4.x and 5.0.0 are MIT, 5.1.0 onward is under ApexCharts' own licence, per npm's licence field; docs/specs/production-grade-refactor.md)",
       "matchPackageNames": ["apexcharts"],
       "matchUpdateTypes": ["major"],
       "enabled": false
+    },
+    {
+      "description": "ApexCharts is frozen at 3.45.2, not only held to 3.x: a minor or patch would change the charts the baselines in test/e2e/__screenshots__ pin pixel for pixel, and dist.test.mjs asserts the version. Unfreeze it on purpose, with a changeset and a visual check, never through the weekly group",
+      "matchPackageNames": ["apexcharts"],
+      "allowedVersions": "3.45.2"
     },
     {
       "description": "typescript-eslint does not support TypeScript 7 yet; re-enable majors when it does",

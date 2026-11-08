@@ -2,8 +2,8 @@ name: Changeset
 # A pull request that changes what ships must carry a changeset (npm run changeset), or the `changeset` job fails.
 # The paths that count are in SHIPPING below: what the Vite build puts into dist/ and the release zip (src/, vite.config.ts,
 # vendor/*.js and vendor/*.css), plus examples/ (it carries the ?v= install snippet) and package.json (it carries the
-# version). The package has no runtime dependencies, so a devDependency-only change is not a release: it takes the
-# label. Documentation, tests, scripts and CI-only pull requests touch none of these paths and pass without a changeset
+# version). A devDependency-only change is not a release: it takes the label. A change to a runtime dependency (apexcharts,
+# which the build puts in a chunk of dist/) does ship, and package.json is a shipping path, so it needs a changeset. Documentation, tests, scripts and CI-only pull requests touch none of these paths and pass without a changeset
 # or a label, and without installing anything.
 #
 # Opt-outs: the label `no-changeset` (a listed path changed without a release note: a devDependency bump, a refactor)

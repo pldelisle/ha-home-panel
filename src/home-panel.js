@@ -143,6 +143,7 @@ const TABS = [
 ];
 // the sheets that wait for the charts library before they draw anything; the others never do. The Weather sheet is not
 // one of them: it shows its tiles and forecast at once and fetches the library beside its history (weatherSheet)
+const CHARTS_FAILED = 'Charts library failed to load';
 const CHART_SHEETS = new Set(['sh-energy', 'sh-climate', 'sh-car', 'sh-air', 'sh-wx']);
 const TAB_SHEET = {climate: 'sh-climate', weather: 'sh-weather', car: 'sh-car', energy: 'sh-energy', air: 'sh-air'};
 // on a phone the bar at the bottom holds these four; the other sections sit under More
@@ -732,6 +733,9 @@ export class HomePanel extends HTMLElement {
     this.attachShadow({mode: 'open'});
     this.H = null; // history-derived data
     this.charts = []; // sheet charts, destroyed on close
+    this.ApexCharts = null; // the library, once the lazy chunk has loaded (loadCharts)
+    this.apexCss = ''; // its stylesheet, written into #apexcss on every build
+    this.chartsLoad = null; // the one load of the chunk
     this.open = null; // open sheet id
     this.inline = null; // sheet shown inside a tab pane (Tabs view), same id as this.open while it shows
     this.tab = 'home';
@@ -1078,6 +1082,7 @@ export class HomePanel extends HTMLElement {
 <span id="txprobe" aria-hidden="true" style="position:absolute;left:-9999px;visibility:hidden;font-size:17px;font:-apple-system-body"></span>
 </div>`;
     this.$app = this.$('app');
+    this.applyApexCss();
     this.$app.lang = FR ? 'fr-CA' : 'en-CA';
     this.shadowRoot
       .querySelectorAll('.sheet>.panel')
@@ -3667,18 +3672,27 @@ export class HomePanel extends HTMLElement {
   }
   // ApexCharts is fetched the first time a sheet that draws charts opens, then kept (the chunk is cached by the browser)
   loadCharts() {
-    return (this.apex ??= loadApex().then(({ApexCharts, css}) => {
-      this.$('apexcss').textContent = css;
+    this.chartsLoad ??= loadApex().then(({ApexCharts, css}) => {
       this.ApexCharts = ApexCharts;
+      this.apexCss = css;
       return ApexCharts;
-    }));
+    });
+    return this.chartsLoad.then(ApexCharts => {
+      this.applyApexCss();
+      return ApexCharts;
+    });
+  }
+  // build() makes a new #apexcss, so the stylesheet is written again each time, not only when the chunk arrives
+  applyApexCss() {
+    const el = this.$('apexcss');
+    if (el) el.textContent = this.apexCss;
   }
   async buildSheet(id) {
     const tag = (this.sheetTag = Symbol());
     try {
       if (CHART_SHEETS.has(id)) await this.loadCharts();
     } catch {
-      this.toast('Charts library failed to load', true);
+      this.toast(CHARTS_FAILED, true);
       return;
     }
     if (tag !== this.sheetTag || this.open !== id) return;
@@ -3846,6 +3860,7 @@ export class HomePanel extends HTMLElement {
       .join('');
   }
   energyMain() {
+    if (!this.ApexCharts) return; // a tap while the chunk is loading; buildSheet draws it when it lands
     if (this.mainChart) {
       this.mainChart.destroy();
       this.charts = this.charts.filter(c => c !== this.mainChart);
@@ -4071,13 +4086,15 @@ export class HomePanel extends HTMLElement {
     };
   }
   async weatherSheet() {
+    const tag = this.sheetTag; // buildSheet's; a sheet closed or reopened while the chunk was loading is not drawn twice
     this.$('wsub').textContent = this.weatherSummary();
     this.renderWeatherNow();
     this.renderForecast();
     // the charts library and the history are fetched together, and each has its own message when it fails
     const [lib, hist] = await Promise.allSettled([this.loadCharts(), this.loadWxHistory()]);
+    if (tag !== this.sheetTag) return;
     if (lib.status === 'rejected') {
-      this.toast('Charts library failed to load', true);
+      this.toast(CHARTS_FAILED, true);
       return;
     }
     if (hist.status === 'rejected') {
@@ -4692,6 +4709,7 @@ export class HomePanel extends HTMLElement {
     });
   }
   async airChart() {
+    if (!this.ApexCharts) return; // a tap while the chunk is loading; buildSheet draws it when it lands
     const r = this.airRange,
       m = this.airMetric,
       tag = (this.airTag = Symbol()),
@@ -4773,6 +4791,7 @@ export class HomePanel extends HTMLElement {
   }
   // outdoor air over the same range: the Mila station's US AQI, and Environment Canada's AQHI when it has statistics
   async airOutChart() {
+    if (!this.ApexCharts) return; // a tap while the chunk is loading; buildSheet draws it when it lands
     const box = this.$('c-aout');
     if (!box) return;
     const o = this.purifiers().outside,
@@ -6895,6 +6914,7 @@ export class HomePanel extends HTMLElement {
       .join('');
   }
   async wxSheet() {
+    if (!this.ApexCharts) return; // a tap while the chunk is loading; buildSheet draws it when it lands
     const D = WX_DEF[this.wxKey],
       r = this.wxRange,
       R = CRANGE[r],
@@ -7250,6 +7270,7 @@ export class HomePanel extends HTMLElement {
       .map(([x, v]) => [x, +(sum(v) / v.length).toFixed(2)]);
   }
   async climateSheet() {
+    if (!this.ApexCharts) return; // a tap while the chunk is loading; buildSheet draws it when it lands
     this.$('csub').textContent = this.climateSummary();
     this.shadowRoot
       .querySelectorAll('#ctabs .tab')

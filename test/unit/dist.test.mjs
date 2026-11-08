@@ -64,7 +64,7 @@ test('ApexCharts and its stylesheet are in one lazy chunk, and not in the entry'
   // recognised by a class name only its drawing code uses; the stylesheet by one of its selectors
   const lib = 'apexcharts-xaxis-label',
     sheet = '.apexcharts-canvas ::-webkit-scrollbar';
-  // 3.45.2 exactly: the last plain-MIT release (see renovate.json)
+  // 3.45.2 exactly: the charts must stay pixel-identical, and renovate.json freezes the version
   expect(JSON.parse(read('node_modules/apexcharts/package.json')).version).toBe('3.45.2');
   const withApex = chunks().filter(c => readFileSync(join(DIST, c), 'utf8').includes(lib));
   expect(withApex, `chunks holding the library (${lib})`).toHaveLength(1);
