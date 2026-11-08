@@ -45,3 +45,42 @@ test("15 the Home card ends at Who's home: the pill says the rest (2.8.1)", asyn
   await expect(home).toContainText(/Who's home/);
   await expect(home).not.toContainText(/Status|All clear/);
 });
+
+// The attention mark under the glass look (the default): the inline "!" of the attention pill is the bare round badge, with no tinted
+// box behind it, and the round bubble beside a charging pill keeps its tint (#50). Computed style, because a box is pixels the text
+// assertions above never see.
+const CLEAR = 'rgba(0, 0, 0, 0)';
+
+test("45 under the glass look, the attention pill's warning mark has no tinted box behind it", async ({house}) => {
+  await expect(house.root().locator('.app.gl')).toHaveCount(1); // glass is on: it is the look that used to paint the box
+  await stopCharging(house);
+  await openFrontDoor(house);
+  await expect(pill(house)).toContainText(/needs attention/);
+  const mark = pill(house).locator('.lwarn');
+  await expect(mark).toHaveCount(1);
+  await expect(mark).toHaveCSS('background-color', CLEAR);
+  await expect(mark.locator('b')).toHaveCSS('border-radius', '50%'); // the round badge itself is what carries the mark
+});
+
+test('46 while the car charges, the attention bubble beside the pill stays tinted, and opaque when transparency is reduced', async ({
+  house,
+}) => {
+  await expect(house.root().locator('.app.gl')).toHaveCount(1);
+  await openFrontDoor(house);
+  const bubble = pill(house).locator('.lbub.lwarn');
+  await expect(bubble).toHaveCount(1);
+  await expect(bubble).toHaveCSS('border-radius', '999px');
+  // tinted: not the plain glass of the charging pill beside it, and not see-through
+  const plain = await pill(house)
+    .locator('.lmain')
+    .evaluate(e => getComputedStyle(e).backgroundColor);
+  await expect(bubble).not.toHaveCSS('background-color', plain);
+  await expect(bubble).not.toHaveCSS('background-color', CLEAR);
+  // with transparency reduced the glass gives way to the opaque card colour, tint included (light theme: white)
+  // Playwright's emulateMedia has no reducedTransparency (it is silently ignored), so this asks Chromium directly
+  const cdp = await house.page.context().newCDPSession(house.page);
+  await cdp.send('Emulation.setEmulatedMedia', {features: [{name: 'prefers-reduced-transparency', value: 'reduce'}]});
+  expect(await house.page.evaluate(() => matchMedia('(prefers-reduced-transparency: reduce)').matches)).toBe(true);
+  await expect(bubble).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  await expect(bubble).toHaveCSS('backdrop-filter', 'none');
+});
