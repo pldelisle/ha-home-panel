@@ -29,7 +29,7 @@ jobs:
     # when the condition is false the job is reported as skipped, not as a failure
     if: >-
       ${{ !contains(github.event.pull_request.labels.*.name, 'no-changeset')
-      && !(github.head_ref == 'changeset-release/main'
+      && !(github.head_ref == 'changeset-release/t31-test'
       && github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 10
