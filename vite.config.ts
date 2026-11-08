@@ -18,8 +18,8 @@ const chunkMapsWithoutLibrarySources: Plugin = {
   generateBundle(_, bundle) {
     for (const f of Object.values(bundle))
       if (f.type === 'asset' && /^chunks\/.+\.js\.map$/.test(f.fileName)) {
-        const m = JSON.parse(String(f.source));
-        m.sourcesContent = m.sources.map((s: string, i: number) =>
+        const m = JSON.parse(String(f.source)) as {sources: string[]; sourcesContent?: (string | null)[]};
+        m.sourcesContent = m.sources.map((s, i) =>
           s.includes('node_modules/') ? null : (m.sourcesContent?.[i] ?? null),
         );
         f.source = JSON.stringify(m);
