@@ -1,7 +1,34 @@
 // Home panel for Home Assistant: a wall-tablet and phone dashboard (energy, climate, lights, weather, car, air, security, automations).
 // Registered with panel_custom, so it runs inside the HA frontend and uses the signed-in user's connection.
 // Nothing secret lives in this file: the house's entities, rooms and people come from the panel's config (see config.js) or are found in hass.
-const VERSION = '__VERSION__';
+import {CSS} from './styles.js';
+import {resolveConfig} from './config.js';
+import {pickStack, inHours, reminderLeft} from './stack.js';
+import {FR, setFR, FR_ATTR, frNode, frTree, frApex} from './i18n/fr.js';
+import {autoMethods} from './auto.js';
+import {
+  VERSION,
+  BASE,
+  getHass,
+  setHass,
+  getTZ,
+  setTZ,
+  st,
+  ok,
+  num,
+  attr,
+  kw,
+  esc,
+  ampm,
+  fmtTime,
+  fmtDate,
+  localDay,
+  hourNow,
+  tile,
+  plural,
+  cap,
+  loadScript,
+} from './legacy/globals.js';
 // Liquid Glass: the wallpapers the Status popup offers, and whether this engine can run an SVG filter inside backdrop-filter (Chromium only)
 const GLASS_WP = ['dawn', 'lake', 'meadow', 'ember', 'aurora', 'sand', 'sky']; // sky = picked from the time of day and the weather (skyWp)
 const LENS_OK =
@@ -9,12 +36,8 @@ const LENS_OK =
   'userAgentData' in navigator &&
   !!window.CSS &&
   window.CSS.supports('backdrop-filter', 'url(#x)');
-const BASE = new URL('.', import.meta.url).href;
-const CSS = __CSS__;
 
 // ---------- entities ----------
-/*__CONFIG__*/
-/*__STACK__*/
 // filled by applyConfig() from the panel's config before the first render
 const LIGHT_ORDER_KEY = 'home_panel';
 const E = {},
@@ -27,7 +50,7 @@ const E = {},
   LIGHT_LINKS = [];
 let CFG = null;
 function applyConfig(panelCfg) {
-  const c = resolveConfig(panelCfg, hass ? hass.states : {});
+  const c = resolveConfig(panelCfg, getHass() ? getHass().states : {});
   for (const k of Object.keys(E)) delete E[k];
   for (const k of Object.keys(AL_AREAS)) delete AL_AREAS[k];
   Object.assign(E, c.entities);
@@ -41,29 +64,7 @@ function applyConfig(panelCfg) {
   CFG = c;
 }
 
-// ---------- small helpers ----------
-let hass = null,
-  TZ = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-const st = id => hass && hass.states[id];
-const ok = s => s && s.state !== 'unavailable' && s.state !== 'unknown';
-const num = id => {
-  const s = st(id);
-  if (!ok(s)) return null;
-  const v = parseFloat(s.state);
-  return Number.isFinite(v) ? v : null;
-};
-const attr = (id, a) => {
-  const s = st(id);
-  return s ? s.attributes[a] : undefined;
-};
-const kw = id => {
-  const v = num(id);
-  if (v == null) return null;
-  const u = attr(id, 'unit_of_measurement');
-  return u === 'W' ? v / 1000 : v;
-};
 const sum = a => a.reduce((x, y) => x + (y || 0), 0);
-const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'})[c]);
 const f1 = v => (v == null ? '–' : (+v).toFixed(1));
 const f0 = v => (v == null ? '–' : String(Math.round(+v)));
 // a duration for the live-activity pill: 52 min, 1 h 50, 3 h
@@ -71,24 +72,8 @@ const durTxt = ms => {
   const m = Math.max(1, Math.round(ms / 6e4));
   return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h${m % 60 ? ' ' + String(m % 60).padStart(2, '0') : ''}`;
 };
-const ampm = s => s.replace(/\s?([ap])\.\s?m\.?/i, ' $1m');
-const fmtTime = d => ampm(new Date(d).toLocaleTimeString('en-CA', {hour: 'numeric', minute: '2-digit', timeZone: TZ}));
 const fmtDay = s => new Date(s + 'T12:00:00').toLocaleDateString('en-CA', {month: 'short', day: 'numeric'});
-const fmtDate = d => new Date(d).toLocaleDateString('en-CA', {month: 'short', day: 'numeric', timeZone: TZ});
-const localDay = ms => new Date(ms).toLocaleDateString('en-CA', {timeZone: TZ});
-const hourNow = () => {
-  const p = new Intl.DateTimeFormat('en-CA', {
-    timeZone: TZ,
-    hour: 'numeric',
-    minute: 'numeric',
-    hourCycle: 'h23',
-  }).formatToParts(new Date());
-  const g = t => +p.find(x => x.type === t).value;
-  return g('hour') + g('minute') / 60;
-};
 const ms = v => (typeof v === 'number' ? v : Date.parse(v));
-const tile = ([k, v, u, sb]) =>
-  `<div class="tile"><div class="k">${k}</div><div class="v num">${v}<small>${u || ''}</small></div>${sb ? `<div class="s">${sb}</div>` : ''}</div>`;
 // tiles with nothing to show (the car's sensors it doesn't have) are left out rather than shown with a dash
 const tiles = arr =>
   arr
@@ -109,8 +94,6 @@ const shortNames = names => {
   return w.map(x => x.slice(k).join(' '));
 };
 const L0kw = v => (v == null ? '–' : v < 1 ? Math.round(v * 1000) + ' W' : v.toFixed(1) + ' kW');
-const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
-/*__FR__*/
 const ago = t => {
   const m = Math.round((Date.now() - Date.parse(t)) / 6e4);
   return m < 1 ? 'just now' : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : fmtDate(t);
@@ -402,7 +385,8 @@ const up = () => {
   const s = st(E.sun);
   return !s || s.state === 'above_horizon';
 };
-const fmtHour = d => ampm(new Date(d).toLocaleTimeString('en-CA', {hour: 'numeric', timeZone: TZ})).replace(':00', '');
+const fmtHour = d =>
+  ampm(new Date(d).toLocaleTimeString('en-CA', {hour: 'numeric', timeZone: getTZ()})).replace(':00', '');
 const isDay = (t, p) => {
   const s = p.sunDay((t - Date.now()) / 864e5);
   return t > s.rise && t < s.set;
@@ -655,10 +639,6 @@ const heatRanges = stops => {
   return out;
 };
 const HVAC = {off: 'Off', heat: 'Heat', cool: 'Cool', auto: 'Auto', heat_cool: 'Auto', dry: 'Dry', fan_only: 'Fan'};
-const cap = s =>
-  String(s || '')
-    .replace(/_/g, ' ')
-    .replace(/^./, c => c.toUpperCase());
 const swingName = m =>
   ({vertical: 'Swing up and down', horizontal: 'Swing side to side', both: 'Swing both ways', off: 'Fixed'})[m] ||
   (/^vertical_(\d+)$/i.test(m)
@@ -671,7 +651,7 @@ const localParts = t => {
   const key = Math.floor(t / 36e5);
   if (LP.has(key)) return LP.get(key);
   const p = new Intl.DateTimeFormat('en-CA', {
-    timeZone: TZ,
+    timeZone: getTZ(),
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
@@ -742,22 +722,7 @@ const z0 = (lo, span, step = 10) =>
     .map(v => `<span class="tick" style="left:${((v - lo) / span) * 100}%">${v}°</span>`)
     .join('');
 
-function loadScript(src, key = 'apex', ready = () => window.ApexCharts) {
-  return new Promise((res, rej) => {
-    if (ready()) return res();
-    let s = document.querySelector(`script[data-home-panel="${key}"]`);
-    if (!s) {
-      s = document.createElement('script');
-      s.src = src;
-      s.dataset.homePanel = key;
-      document.head.appendChild(s);
-    }
-    s.addEventListener('load', () => res());
-    s.addEventListener('error', rej);
-  });
-}
-
-class HomePanel extends HTMLElement {
+export class HomePanel extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({mode: 'open'});
@@ -790,7 +755,7 @@ class HomePanel extends HTMLElement {
   }
   set panel(v) {
     this._panel = v;
-    if (hass && this.configure()) {
+    if (getHass() && this.configure()) {
       this.build();
       if (this.isConnected) {
         this.subscribeForecasts();
@@ -801,12 +766,12 @@ class HomePanel extends HTMLElement {
     }
   }
   set hass(h) {
-    hass = h;
-    TZ = (h.config && h.config.time_zone) || TZ;
+    setHass(h);
+    setTZ((h.config && h.config.time_zone) || getTZ());
     // French follows the user's profile language; switching it redraws the panel
     const fr = /^fr\b/i.test((h.locale && h.locale.language) || h.language || '');
     if (fr !== FR) {
-      FR = fr;
+      setFR(fr);
       if (this.$app) this.teardown();
     }
     this.configure();
@@ -868,12 +833,12 @@ class HomePanel extends HTMLElement {
     window.addEventListener('scroll', live, {passive: true, capture: true});
     this.liveOff = () => window.removeEventListener('scroll', live, {capture: true});
     this.camT = setInterval(() => {
-      if (hass && this.$app && !document.hidden) this.renderCameras();
+      if (getHass() && this.$app && !document.hidden) this.renderCameras();
     }, 10000);
     this.histT = setInterval(() => this.loadHistory(), 15 * 60000);
     window.addEventListener('keydown', this.onKey);
-    if (hass && this.$app) this.subscribeForecasts();
-    if (hass && this.$app) this.loadHistory();
+    if (getHass() && this.$app) this.subscribeForecasts();
+    if (getHass() && this.$app) this.loadHistory();
     if (this.$app) this.observeLayout();
   }
   // repack the cards whenever the page width or a card's height changes
@@ -1343,7 +1308,7 @@ class HomePanel extends HTMLElement {
   }
   // also started by "Sleep now" in the settings popup, on the iPad and the phone
   idleStart() {
-    if (!hass) return this.idleArm();
+    if (!getHass()) return this.idleArm();
     clearTimeout(this.idleT);
     this.idleT = null;
     const o = this.$('idle');
@@ -1355,13 +1320,17 @@ class HomePanel extends HTMLElement {
     this.renderIdle();
   }
   renderIdle() {
-    if (!this.$app || !hass || !this.$app.classList.contains('idle')) return;
+    if (!this.$app || !getHass() || !this.$app.classList.contains('idle')) return;
     const loc = FR ? 'fr-CA' : 'en-CA',
       now = new Date();
     const t = FR
-      ? [now.toLocaleTimeString('fr-CA', {hour: '2-digit', minute: '2-digit', timeZone: TZ}).replace(/\s?h\s?/, ':')]
+      ? [
+          now
+            .toLocaleTimeString('fr-CA', {hour: '2-digit', minute: '2-digit', timeZone: getTZ()})
+            .replace(/\s?h\s?/, ':'),
+        ]
       : fmtTime(now).split(' ');
-    const dateStr = now.toLocaleDateString(loc, {weekday: 'long', month: 'long', day: 'numeric', timeZone: TZ}),
+    const dateStr = now.toLocaleDateString(loc, {weekday: 'long', month: 'long', day: 'numeric', timeZone: getTZ()}),
       L = this.live();
     const ins = L.rooms.map(r => r.t).filter(v => v != null),
       outT = attr(E.weather, 'temperature') ?? num(E.outT);
@@ -1511,8 +1480,8 @@ class HomePanel extends HTMLElement {
           foot: 'Plug in before bed',
         }),
       );
-    const reg = hass.entities || {};
-    const frozen = Object.keys(hass.states)
+    const reg = getHass().entities || {};
+    const frozen = Object.keys(getHass().states)
       .filter(id => id.startsWith('person.'))
       .map(id => attr(id, 'source'))
       .filter(Boolean)
@@ -1605,7 +1574,7 @@ class HomePanel extends HTMLElement {
     const sp = this.speakers().find(x => (st(x.id) || {}).state === 'playing');
     if (sp) {
       const pic = attr(sp.id, 'entity_picture'),
-        area = ((hass.areas || {})[sp.aid] || {}).name || sp.name;
+        area = ((getHass().areas || {})[sp.aid] || {}).name || sp.name;
       out.push(
         this.scard('music', {
           ic: 'spk',
@@ -1625,7 +1594,7 @@ class HomePanel extends HTMLElement {
         return s && s.last_changed;
       };
     const pid = n =>
-      Object.keys(hass.states).find(
+      Object.keys(getHass().states).find(
         id => id.startsWith('person.') && fold(attr(id, 'friendly_name') || '').split(/\s+/)[0] === fold(n),
       );
     const moved = P.map(p => ({...p, at: pe(pid(p.name))})).filter(p => p.at);
@@ -1645,7 +1614,7 @@ class HomePanel extends HTMLElement {
     // today's calendar events, in the morning
     if (inHours(h, 6, 11)) {
       const today = localDay(now),
-        ev = Object.keys(hass.states)
+        ev = Object.keys(getHass().states)
           .filter(id => id.startsWith('calendar.') && !(reg[id] || {}).hidden && ok(st(id)))
           .map(id => ({id, a: st(id).attributes}))
           .filter(
@@ -2456,7 +2425,7 @@ class HomePanel extends HTMLElement {
   }
   async call(domain, service, data, done) {
     try {
-      await hass.callService(domain, service, data);
+      await getHass().callService(domain, service, data);
       if (done) this.toast(done);
     } catch (e) {
       this.toast(`Didn't work: ${e.message || e.code || e}`, true);
@@ -2476,7 +2445,7 @@ class HomePanel extends HTMLElement {
     }, wait);
   }
   renderLive() {
-    if (!hass) return;
+    if (!getHass()) return;
     this.findCar();
     this.applyTheme();
     for (const f of [
@@ -2584,7 +2553,7 @@ class HomePanel extends HTMLElement {
   renderHeader() {
     const h = hourNow(),
       part = h < 5 ? 'Good night' : h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
-    const name = ((hass.user && hass.user.name) || '')
+    const name = ((getHass().user && getHass().user.name) || '')
       .split(' ')[0]
       .replace(/(^|-)(\p{L})/gu, (m, a, b) => a + b.toUpperCase());
     // on a phone the Home pane has no title line of its own, so the header carries what it said: the date, inside and outside
@@ -2592,7 +2561,7 @@ class HomePanel extends HTMLElement {
         weekday: 'long',
         month: 'long',
         day: 'numeric',
-        timeZone: TZ,
+        timeZone: getTZ(),
       }),
       L0 = this.compact ? this.live() : null;
     const ins = L0 ? L0.rooms.map(r => r.t).filter(v => v != null) : [],
@@ -2611,7 +2580,7 @@ class HomePanel extends HTMLElement {
     const t = FR
       ? [
           new Date()
-            .toLocaleTimeString('fr-CA', {hour: '2-digit', minute: '2-digit', timeZone: TZ})
+            .toLocaleTimeString('fr-CA', {hour: '2-digit', minute: '2-digit', timeZone: getTZ()})
             .replace(/\s?h\s?/, ':'),
         ]
       : fmtTime(new Date()).split(' ');
@@ -2796,7 +2765,7 @@ class HomePanel extends HTMLElement {
       if (!ok(st(C.id('sensor', 'soc'))))
         items.push(['warn', 'Car not reporting', 'The Ford integration has no battery data right now.']);
     }
-    const X = hass ? this.sensors() : [];
+    const X = getHass() ? this.sensors() : [];
     X.filter(
       x =>
         x.kind === 'door' &&
@@ -3211,7 +3180,7 @@ class HomePanel extends HTMLElement {
   // ---------- car discovery ----------
   findCar() {
     if (this.car) return;
-    const id = Object.keys(hass.states).find(e => /^sensor\.fordpass_[a-z0-9]+_soc$/.test(e));
+    const id = Object.keys(getHass().states).find(e => /^sensor\.fordpass_[a-z0-9]+_soc$/.test(e));
     if (!id) return;
     const pre = id.slice('sensor.'.length, -'_soc'.length);
     this.car = {pre, id: (dom, key) => `${dom}.${pre}_${key}`};
@@ -3375,7 +3344,7 @@ class HomePanel extends HTMLElement {
     const pax = txt(w - R + 4, T + 3, `${pmax} kW`) + txt(w - R + 4, T + ph + 3, '0 kW');
     let ticks = '';
     for (let t = Math.ceil(t0 / 36e5) * 36e5; t <= now; t += 36e5) {
-      const hr = +new Intl.DateTimeFormat('en-CA', {timeZone: TZ, hour: 'numeric', hourCycle: 'h23'}).format(
+      const hr = +new Intl.DateTimeFormat('en-CA', {timeZone: getTZ(), hour: 'numeric', hourCycle: 'h23'}).format(
         new Date(t),
       );
       if (hr % 6 === 0)
@@ -3431,12 +3400,12 @@ class HomePanel extends HTMLElement {
       units: {power: 'kW', energy: 'kWh', temperature: '°C'},
     };
     if (end) msg.end_time = end.toISOString();
-    return hass.callWS(msg);
+    return getHass().callWS(msg);
   }
   async loadHistory() {
     // a load started under another config (the panel was redrawn meanwhile) is thrown away
     const key = this.cfgKey;
-    if (!hass || this.loadingH === key) return;
+    if (!getHass() || this.loadingH === key) return;
     this.loadingH = key;
     try {
       const now = new Date(),
@@ -3450,7 +3419,7 @@ class HomePanel extends HTMLElement {
         this.stats([E.evP], 'hour', d(366), ['mean', 'max']),
         !E.hp
           ? Promise.resolve({})
-          : hass
+          : getHass()
               .callWS({
                 type: 'history/history_during_period',
                 start_time: d(7).toISOString(),
@@ -3855,7 +3824,12 @@ class HomePanel extends HTMLElement {
       ['Today so far', f1(t.today), 'kWh', 'until ' + fmtTime(new Date())],
       ['Yesterday', t.yesterday == null ? '–' : f1(t.yesterday), 'kWh'],
       ['30 days', Math.round(t.d30), 'kWh', (t.d30 / 30).toFixed(1) + ' kWh a day'],
-      [new Date().toLocaleDateString('en-CA', {month: 'long', timeZone: TZ}), Math.round(t.month), 'kWh', 'so far'],
+      [
+        new Date().toLocaleDateString('en-CA', {month: 'long', timeZone: getTZ()}),
+        Math.round(t.month),
+        'kWh',
+        'so far',
+      ],
       ['EV, 30 days', Math.round(H.g30[2]), 'kWh', plural(evDays, 'charging day')],
       ['Rate now', ri.r == null ? '–' : (ri.r * 100).toFixed(2), '¢', 'Hilo ' + ri.tier.toLowerCase()],
     ]
@@ -3892,7 +3866,7 @@ class HomePanel extends HTMLElement {
             weekday: this.range === 'week' ? 'short' : undefined,
             hour: 'numeric',
             minute: '2-digit',
-            timeZone: TZ,
+            timeZone: getTZ(),
           }),
         );
         p.textContent = `Busiest hour: ${pk[5].toFixed(1)} kWh, ${when}. Tap a bar to see what was running.`;
@@ -3971,10 +3945,10 @@ class HomePanel extends HTMLElement {
   // ---------- weather ----------
   // Forecasts are not in hass.states any more; the frontend subscribes to them like the weather card does.
   subscribeForecasts() {
-    if (this.fcSubs || !hass || !hass.connection || !st(E.weather)) return;
+    if (this.fcSubs || !getHass() || !getHass().connection || !st(E.weather)) return;
     this.fcSubs = ['daily', 'hourly'].map(type =>
-      hass.connection
-        .subscribeMessage(
+      getHass()
+        .connection.subscribeMessage(
           m => {
             this.fc[type] = (m && m.forecast) || [];
             this.cache.wxd = null;
@@ -4018,8 +3992,8 @@ class HomePanel extends HTMLElement {
     return FR ? d.charAt(0).toUpperCase() + d.slice(1) : d;
   }
   sunDay(offset = 0) {
-    const lat = (hass.config && hass.config.latitude) ?? 0,
-      lon = (hass.config && hass.config.longitude) ?? 0;
+    const lat = (getHass().config && getHass().config.latitude) ?? 0,
+      lon = (getHass().config && getHass().config.longitude) ?? 0;
     return sunTimes(Date.now() + offset * 864e5, lat, lon);
   }
   weatherSummary() {
@@ -4414,7 +4388,7 @@ class HomePanel extends HTMLElement {
       ['Warmest', f1(warmest.max) + '°', '', fmtDay(warmest.k)],
       ['Coldest', f1(coldest.min) + '°', '', fmtDay(coldest.k)],
       [
-        new Date().toLocaleDateString('en-CA', {month: 'long', timeZone: TZ}),
+        new Date().toLocaleDateString('en-CA', {month: 'long', timeZone: getTZ()}),
         cm ? f1(cm.s / cm.n) + '°' : '–',
         '',
         cm ? `average, ${plural(cm.frost, 'frosty night')}` : '',
@@ -4445,9 +4419,9 @@ class HomePanel extends HTMLElement {
 
   // ---------- cameras (UniFi Protect, or any camera entity) ----------
   cameras() {
-    const reg = hass.entities || {},
+    const reg = getHass().entities || {},
       seen = new Map();
-    Object.keys(hass.states)
+    Object.keys(getHass().states)
       .filter(id => id.startsWith('camera.'))
       .forEach(id => {
         const r = reg[id] || {};
@@ -4471,7 +4445,9 @@ class HomePanel extends HTMLElement {
         );
         const motion = mo.find(e => /_motion$/.test(e.entity_id)) || mo[0];
         const dn =
-          (hass.devices && hass.devices[c.dev] && (hass.devices[c.dev].name_by_user || hass.devices[c.dev].name)) ||
+          (getHass().devices &&
+            getHass().devices[c.dev] &&
+            (getHass().devices[c.dev].name_by_user || getHass().devices[c.dev].name)) ||
           attr(c.id, 'friendly_name') ||
           c.id;
         return {
@@ -4513,9 +4489,9 @@ class HomePanel extends HTMLElement {
   }
   // ---------- air quality (Mila purifiers) ----------
   purifiers() {
-    const reg = hass.entities || {},
-      dev = hass.devices || {},
-      areas = hass.areas || {},
+    const reg = getHass().entities || {},
+      dev = getHass().devices || {},
+      areas = getHass().areas || {},
       by = {};
     for (const e of Object.values(reg))
       if (e.platform === 'mila' && e.device_id) (by[e.device_id] = by[e.device_id] || []).push(e.entity_id);
@@ -4931,8 +4907,8 @@ class HomePanel extends HTMLElement {
   // scene tiles, plus routines that stay on (the config's modes, like a child's bedtime) as on/off tiles
   sceneTiles() {
     const isOn = i => (st(i) || {}).state === 'on',
-      reg = hass.entities || {};
-    const scenes = Object.keys(hass.states)
+      reg = getHass().entities || {};
+    const scenes = Object.keys(getHass().states)
       .filter(i => i.startsWith('scene.') && !(reg[i] || {}).hidden)
       .sort((a, b) => (SCENE_ORDER.indexOf(a) + 1 || 99) - (SCENE_ORDER.indexOf(b) + 1 || 99) || a.localeCompare(b));
     return (
@@ -5021,10 +4997,10 @@ class HomePanel extends HTMLElement {
 
   // ---------- who's home: the household's phones and watches (iPads and laptops stay home, so they don't count) ----------
   presence() {
-    const reg = hass.entities || {},
+    const reg = getHass().entities || {},
       by = new Map();
     // a person entity wins: it follows the trackers chosen in HA's People settings
-    for (const id of Object.keys(hass.states)) {
+    for (const id of Object.keys(getHass().states)) {
       if (!id.startsWith('person.')) continue;
       const who = HOUSEHOLD.find(h => fold(attr(id, 'friendly_name') || '').split(/\s+/)[0] === fold(h)),
         s = st(id);
@@ -5032,7 +5008,7 @@ class HomePanel extends HTMLElement {
         by.set(who, {name: who, home: s.state === 'home', since: s.state === 'home' ? null : s.last_changed});
     }
     if (by.size) return HOUSEHOLD.filter(h => by.has(h)).map(h => by.get(h));
-    for (const id of Object.keys(hass.states)) {
+    for (const id of Object.keys(getHass().states)) {
       if (!id.startsWith('device_tracker.') || (reg[id] || {}).hidden) continue;
       const n = attr(id, 'friendly_name') || '',
         m = n.match(/^(.+?)[’']s\s+(.+)$/) || n.match(/^(.+?)\s+(?:de|d[’'])\s*(.+)$/);
@@ -5059,16 +5035,16 @@ class HomePanel extends HTMLElement {
 
   // ---------- TV ----------
   tv() {
-    const reg = hass.entities || {},
-      dev = hass.devices || {};
-    const ids = Object.keys(hass.states).filter(
+    const reg = getHass().entities || {},
+      dev = getHass().devices || {};
+    const ids = Object.keys(getHass().states).filter(
       id => id.startsWith('media_player.') && attr(id, 'device_class') === 'tv' && !(reg[id] || {}).hidden,
     );
     const id = ids.find(i => (reg[i] || {}).platform === 'samsungtv') || ids[0];
     if (!id) return null;
     const e = reg[id] || {},
       D = dev[e.device_id] || {};
-    const wol = Object.keys(hass.states).find(
+    const wol = Object.keys(getHass().states).find(
       i => i.startsWith('button.wake_on_lan_') && /tv/i.test(attr(i, 'friendly_name') || ''),
     );
     return {
@@ -5129,7 +5105,7 @@ class HomePanel extends HTMLElement {
       }
       hold('on', true);
       try {
-        await hass.callService('media_player', 'turn_on', {entity_id: id});
+        await getHass().callService('media_player', 'turn_on', {entity_id: id});
         this.toast('Turning the TV on');
       } catch (e) {
         if (T.wol) this.call('button', 'press', {entity_id: T.wol}, 'Turning the TV on');
@@ -5153,11 +5129,11 @@ class HomePanel extends HTMLElement {
 
   // ---------- door and motion sensors ----------
   sensors() {
-    const reg = hass.entities || {},
-      dev = hass.devices || {},
-      areas = hass.areas || {},
+    const reg = getHass().entities || {},
+      dev = getHass().devices || {},
+      areas = getHass().areas || {},
       out = [];
-    for (const id of Object.keys(hass.states)) {
+    for (const id of Object.keys(getHass().states)) {
       if (!id.startsWith('binary_sensor.')) continue;
       const e = reg[id] || {},
         dc = attr(id, 'device_class'),
@@ -5221,20 +5197,20 @@ class HomePanel extends HTMLElement {
   }
 
   entArea(id) {
-    const e = (hass.entities || {})[id] || {};
-    return e.area_id || ((hass.devices || {})[e.device_id] || {}).area_id || '';
+    const e = (getHass().entities || {})[id] || {};
+    return e.area_id || ((getHass().devices || {})[e.device_id] || {}).area_id || '';
   }
   // speakers by area (HomePods and the like); camera speakers and the TV have their own controls
   speakers() {
-    const reg = hass.entities || {},
-      areas = hass.areas || {},
+    const reg = getHass().entities || {},
+      areas = getHass().areas || {},
       tv = (this.tv() || {}).id;
     const words = x =>
       fold(x)
         .replace(/'s\b/g, '')
         .split(/[^a-z0-9]+/)
         .filter(Boolean);
-    return Object.keys(hass.states)
+    return Object.keys(getHass().states)
       .filter(
         i =>
           i.startsWith('media_player.') &&
@@ -5437,7 +5413,7 @@ class HomePanel extends HTMLElement {
         ? `<div class="lchips" role="group" aria-label="Bulbs"><span class="lcl">Bulbs</span>${a.units.map((i, k) => `<button type="button" class="lchip" aria-pressed="${isOn(i)}" data-l="one" data-id="${esc(i)}" ${ok(st(i)) ? '' : 'disabled'}><span class="ck" aria-hidden="true">${ico('check', 14)}</span>${esc(a.labels[k])}</button>`).join('')}</div>`
         : '';
     const L = a.link,
-      admin = !!(hass.user && hass.user.is_admin);
+      admin = !!(getHass().user && getHass().user.is_admin);
     const link =
       A.length < 2
         ? ''
@@ -5472,8 +5448,8 @@ class HomePanel extends HTMLElement {
   // Climate: the same list as the sheet's, as tiles; a tile opens the sheet on that room
   // the heat pump's maker, from its device (FGLair units are Fujitsu's)
   hpBrand() {
-    const e = (hass.entities || {})[E.hp] || {},
-      d = (hass.devices || {})[e.device_id] || {};
+    const e = (getHass().entities || {})[E.hp] || {},
+      d = (getHass().devices || {})[e.device_id] || {};
     return /fglair/.test(e.platform || '') || /fujitsu/i.test(d.manufacturer || '')
       ? 'Fujitsu'
       : d.manufacturer || 'Heat pump';
@@ -5583,7 +5559,7 @@ class HomePanel extends HTMLElement {
         `<div class="stile wide home${on ? ' on' : ''}" data-card="mtv" data-title="${esc(T.name)}" data-icon="tv" data-color="var(--c-home)" role="button" tabindex="0" aria-label="${esc(T.name)}: controls"><span class="ic">${ico('tv', 20)}</span><span class="tx"><b>${esc(T.name)}</b><small>${!avail ? 'Not responding' : on ? 'On' + (src ? ' · ' + src : '') : 'Off'}</small></span><button type="button" class="sw" role="switch" aria-checked="${on}" aria-label="${esc(T.name)} power" data-tv="power" ${avail ? '' : 'disabled'}></button></div>`,
       );
     }
-    const areas = hass.areas || {};
+    const areas = getHass().areas || {};
     this.speakers().forEach(m => {
       const id = esc(m.id),
         sv = st(m.id),
@@ -5799,7 +5775,7 @@ class HomePanel extends HTMLElement {
     this.buildSheet(id);
   }
   renderTabs() {
-    if (this.view !== 'tabs' || !hass) return;
+    if (this.view !== 'tabs' || !getHass()) return;
     for (const f of [
       'renderHome',
       'renderAlBar',
@@ -5839,7 +5815,7 @@ class HomePanel extends HTMLElement {
       this.set(
         'hsub',
         [
-          new Date().toLocaleDateString('en-CA', {weekday: 'long', month: 'long', day: 'numeric', timeZone: TZ}),
+          new Date().toLocaleDateString('en-CA', {weekday: 'long', month: 'long', day: 'numeric', timeZone: getTZ()}),
           avg == null ? '' : `${avg.toFixed(1)}° inside`,
           out == null ? '' : `${f1(out)}° outside`,
           att.items.length
@@ -5867,7 +5843,8 @@ class HomePanel extends HTMLElement {
       const bar = this.$('ledbar');
       if (bar)
         bar.hidden =
-          !(hass.user && hass.user.is_admin) || this.lightAreas().filter(x => !x.link || x.link.first).length < 2;
+          !(getHass().user && getHass().user.is_admin) ||
+          this.lightAreas().filter(x => !x.link || x.link.first).length < 2;
       const rs = this.$('lreset');
       if (rs) rs.hidden = !this.lightEdit || !(this.lightOrder && this.lightOrder.length);
     }
@@ -6218,7 +6195,7 @@ class HomePanel extends HTMLElement {
         <p class="hint">The TV doesn't report its volume, so there's no slider.</p>`,
       );
     }
-    const areas = hass.areas || {},
+    const areas = getHass().areas || {},
       M = this.speakers().map(m => ({...m, room: (areas[m.aid] || {}).name || m.name})),
       playing = M.filter(m => (st(m.id) || {}).state === 'playing').length;
     const pod = m => {
@@ -6367,15 +6344,15 @@ class HomePanel extends HTMLElement {
     );
   }
   lightAreas() {
-    const reg = hass.entities || {},
-      dev = hass.devices || {},
-      areas = hass.areas || {},
+    const reg = getHass().entities || {},
+      dev = getHass().devices || {},
+      areas = getHass().areas || {},
       by = new Map();
     const area = id => {
       const e = reg[id] || {};
       return e.area_id || (dev[e.device_id] || {}).area_id || '';
     };
-    const all = Object.keys(hass.states).filter(id => id.startsWith('light.'));
+    const all = Object.keys(getHass().states).filter(id => id.startsWith('light.'));
     // light groups carry their members in entity_id: the group gives the area, its bulbs get the controls
     const groups = all.filter(id => Array.isArray(attr(id, 'entity_id'))),
       owner = {};
@@ -6399,7 +6376,7 @@ class HomePanel extends HTMLElement {
       if (!owner[id]) a.units.push(id);
     }
     // Adaptive Lighting: by its configured lights when exposed, else its device's area, else a group sharing its name
-    const als = Object.keys(hass.states).filter(
+    const als = Object.keys(getHass().states).filter(
       id => /^switch\.adaptive_lighting_/.test(id) && !/_(sleep_mode|adapt_color|adapt_brightness)$/.test(id),
     );
     const alName = a => fold(String(attr(a, 'friendly_name') || '').replace(/^Adaptive Lighting:\s*/i, ''));
@@ -6477,15 +6454,15 @@ class HomePanel extends HTMLElement {
     const v = {...(this.sysData || {}), light_links: pairs};
     this.sysData = v;
     this.tick();
-    hass
+    getHass()
       .callWS({type: 'frontend/set_system_data', key: LIGHT_ORDER_KEY, value: v})
       .then(() => this.toast(msg))
       .catch(e => this.toast(`Couldn't save the link: ${e.message || e.code || e}`, true));
   }
   // the light order lives in Home Assistant's frontend system data (one value for every screen; only admins may write it)
   loadLightOrder() {
-    if (!hass || !hass.callWS) return;
-    hass
+    if (!getHass() || !getHass().callWS) return;
+    getHass()
       .callWS({type: 'frontend/get_system_data', key: LIGHT_ORDER_KEY})
       .then(r => {
         const v = (r && r.value) || {},
@@ -6502,7 +6479,7 @@ class HomePanel extends HTMLElement {
     this.lightOrder = keys;
     const v = {...(this.sysData || {}), light_order: keys};
     this.sysData = v;
-    hass
+    getHass()
       .callWS({type: 'frontend/set_system_data', key: LIGHT_ORDER_KEY, value: v})
       .then(() => this.toast(keys ? 'Light order saved' : 'Light order reset'))
       .catch(e => this.toast(`Couldn't save the light order: ${e.message || e.code || e}`, true));
@@ -6630,7 +6607,7 @@ class HomePanel extends HTMLElement {
   lightCmd(kind, key, v) {
     const A = this.lightAreas(),
       isOn = i => (st(i) || {}).state === 'on',
-      AL = hass.services && hass.services.adaptive_lighting;
+      AL = getHass().services && getHass().services.adaptive_lighting;
     if (kind === 'alloff') {
       const ids = A.flatMap(x => x.ids).filter(isOn);
       if (ids.length) this.call('light', 'turn_off', {entity_id: ids});
@@ -6771,7 +6748,7 @@ class HomePanel extends HTMLElement {
     // HA's own player (WebRTC or HLS) when the frontend has it loaded, else the MJPEG proxy
     if (customElements.get('ha-camera-stream')) {
       const v = document.createElement('ha-camera-stream');
-      v.hass = hass;
+      v.hass = getHass();
       v.stateObj = s;
       v.muted = true;
       v.controls = true;
@@ -6829,7 +6806,7 @@ class HomePanel extends HTMLElement {
       t0 = now - R.days * 864e5;
     let h;
     try {
-      h = await hass.callWS({
+      h = await getHass().callWS({
         type: 'history/history_during_period',
         start_time: new Date(t0).toISOString(),
         entity_ids: [x.id],
@@ -7021,7 +6998,7 @@ class HomePanel extends HTMLElement {
     const missing = ser.filter(x => !(stt[x.id] || []).length).map(x => x.id);
     let hist = {};
     if (missing.length)
-      hist = await hass
+      hist = await getHass()
         .callWS({
           type: 'history/history_during_period',
           start_time: start.toISOString(),
@@ -7064,7 +7041,7 @@ class HomePanel extends HTMLElement {
     // import it from its Lovelace resource URL so a dashboard that also uses the card doesn't load it twice
     return (this.wrc =
       this.wrc ||
-      hass
+      getHass()
         .callWS({type: 'lovelace/resources'})
         .catch(() => [])
         .then(
@@ -7112,7 +7089,7 @@ class HomePanel extends HTMLElement {
       disable_wheel_zoom: true,
       disable_scroll: phone,
     });
-    card.hass = hass;
+    card.hass = getHass();
     this.radarCard = card;
     this.radarKey = key;
     box.replaceChildren(card);
@@ -7178,7 +7155,7 @@ class HomePanel extends HTMLElement {
       this.stats(ids, R.period, start, ['mean', 'min', 'max']),
       !E.hp
         ? Promise.resolve({})
-        : hass
+        : getHass()
             .callWS({
               type: 'history/history_during_period',
               start_time: start.toISOString(),
@@ -7850,7 +7827,7 @@ class HomePanel extends HTMLElement {
       price = num(E.wbPrice) ?? 0.07;
     this.$('slist').innerHTML = rows
       .map(
-        x => `<tr><td>${new Date(x.a).toLocaleDateString('en-CA', {weekday: 'short', month: 'short', day: 'numeric', timeZone: TZ})}</td><td class="hide-s">${fmtTime(x.a)} to ${fmtTime(x.b)}</td><td class="r hide-s">${Math.round((x.b - x.a) / 36e5)} h</td>
+        x => `<tr><td>${new Date(x.a).toLocaleDateString('en-CA', {weekday: 'short', month: 'short', day: 'numeric', timeZone: getTZ()})}</td><td class="hide-s">${fmtTime(x.a)} to ${fmtTime(x.b)}</td><td class="r hide-s">${Math.round((x.b - x.a) / 36e5)} h</td>
       <td><span class="bar" style="width:${Math.round((x.kwh / mx) * 70) + 4}px"></span>${x.kwh.toFixed(1)} kWh</td><td class="r hide-s">${x.pk.toFixed(1)} kW</td><td class="r">$${(x.kwh * price).toFixed(2)}</td></tr>`,
       )
       .join('');
@@ -8281,6 +8258,4 @@ const merge = (a, b, ...more) => {
   return more.length ? merge(a, ...more) : a;
 };
 
-/*__AUTO__*/
-Object.assign(HomePanel.prototype, AUTO);
-if (!customElements.get('home-panel')) customElements.define('home-panel', HomePanel);
+Object.assign(HomePanel.prototype, autoMethods);

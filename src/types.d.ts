@@ -1,6 +1,6 @@
 // Types for the two pure modules (config.js, stack.js). They are checked by `npm run typecheck` (tsc --checkJs, strict)
-// and reached from those files with /** @typedef {import('./types.d.ts').X} X */, because the files are still scripts
-// spliced into the bundle (build.mjs), not modules. This file is never built or shipped.
+// and reached from those files with /** @typedef {import('./types.d.ts').X} X */, because the files are still plain
+// JavaScript, not TypeScript. This file is never built or shipped.
 // PanelConfig is the `config:` block as a person writes it; ResolvedConfig is what resolveConfig() returns today.
 // Both describe the code as it is, not as it should be: the phase-2 schema starts from them.
 
