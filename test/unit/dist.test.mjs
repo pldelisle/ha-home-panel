@@ -142,10 +142,11 @@ test('ApexCharts is in one lazy chunk, and its stylesheet is shipped once', () =
   // the version comes from the package, and the library is recognised by a class name only its drawing code uses (its
   // banner comment stays in the chunk with the other licence comments, but says nothing about where the code is). The
   // library carries its own copy of the stylesheet and writes it into the shadow root when a chart mounts; the panel
-  // must not add a second one by importing the CSS file as text (`?raw`). The minifier writes both copies the same way,
-  // so they are told apart by counting: one line of the package's stylesheet is in the shipped files once, not twice.
+  // must not add a second one by importing the CSS file as text (`?raw`, or `?inline`, which Vite minifies). The copies
+  // are told apart by counting, with a snippet that survives minifying (one selector, no line breaks or spaces that a
+  // minifier may change): it is in the shipped files once, not twice.
   const lib = 'apexcharts-xaxis-label',
-    sheet = '.apexcharts-canvas {\n  position: relative;';
+    sheet = '.apexcharts-canvas ::-webkit-scrollbar-thumb';
   // 3.45.2 exactly: the charts must stay pixel-identical, and renovate.json freezes the version
   expect(JSON.parse(read('node_modules/apexcharts/package.json')).version).toBe('3.45.2');
   expect(

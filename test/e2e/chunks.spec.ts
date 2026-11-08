@@ -53,10 +53,7 @@ test.describe('lazy chunks', () => {
     await expect(house.root().locator('#pane-energy .apexcharts-canvas').first()).toBeVisible();
     await expectLibraryStyles(house);
     // a profile in French makes Home Assistant hand the panel a new hass; the panel redraws itself, shadow root included
-    await house.page.evaluate(() => {
-      const w = window as unknown as {panel: {hass: object}; hass: object};
-      w.panel.hass = {...w.hass, locale: {language: 'fr'}};
-    });
+    await house.setLanguage('fr');
     await expect(house.root().locator('#app')).toHaveAttribute('lang', 'fr-CA');
     await house.tab('energy');
     await expect(house.root().locator('#pane-energy .apexcharts-canvas').first()).toBeVisible();
