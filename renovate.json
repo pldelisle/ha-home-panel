@@ -38,13 +38,18 @@
       "schedule": ["before 6am on the first day of the month"]
     },
     {
+      "description": "Mermaid draws the Automations flow charts, and its releases move their pixels (from 11.10 the node outlines are drawn as paths), so a bump comes in its own pull request, never in the weekly group, and fails the visual job until a person re-records the Automations baselines on its branch and adds a changeset (Renovate does neither). Unlike ApexCharts it is not frozen: its releases carry security fixes (docs/specs/07, As built)",
+      "matchPackageNames": ["mermaid"],
+      "groupName": "Mermaid"
+    },
+    {
       "description": "vitest and @vitest/coverage-v8 are installed at the same version, so a major bump of one is a major bump of both",
       "matchPackageNames": ["vitest", "@vitest/**"],
       "matchUpdateTypes": ["major"],
       "groupName": "Vitest"
     },
     {
-      "description": "A bump of a dev dependency changes nothing the household receives, so the label skips the changeset job (docs/specs/05); a runtime dependency (apexcharts, bundled into the chunk the panel loads) does ship, so its pull requests are not labelled",
+      "description": "A bump of a dev dependency changes nothing the household receives, so the label skips the changeset job (docs/specs/05); a runtime dependency (apexcharts, mermaid: bundled into the chunks the panel loads) does ship, so its pull requests are not labelled",
       "matchManagers": ["npm"],
       "matchDepTypes": ["devDependencies"],
       "addLabels": ["no-changeset"]

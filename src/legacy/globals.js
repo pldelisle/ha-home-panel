@@ -3,8 +3,6 @@
 // keep the list short and do not add to it. See docs/specs/06-vite-build.md.
 
 export const VERSION = __VERSION__; // injected from package.json by vite.config.ts (and vitest.config.ts)
-// the folder home-panel.js was loaded from; the vendor files sit beside it
-export const BASE = new URL(/* @vite-ignore */ '.', import.meta.url).href;
 
 // the two mutable variables, behind accessors because an importing module cannot assign to an imported binding
 let hass = null;
@@ -62,18 +60,3 @@ export const cap = s =>
   String(s || '')
     .replace(/_/g, ' ')
     .replace(/^./, c => c.toUpperCase());
-
-export function loadScript(src, key, ready) {
-  return new Promise((res, rej) => {
-    if (ready()) return res();
-    let s = /** @type {HTMLScriptElement | null} */ (document.querySelector(`script[data-home-panel="${key}"]`));
-    if (!s) {
-      s = document.createElement('script');
-      s.src = src;
-      s.dataset.homePanel = key;
-      document.head.appendChild(s);
-    }
-    s.addEventListener('load', () => res());
-    s.addEventListener('error', rej);
-  });
-}

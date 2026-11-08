@@ -1,17 +1,20 @@
 name: Changeset
 # A pull request that changes what ships must carry a changeset (npm run changeset), or the `changeset` job fails.
 # The paths that count are in SHIPPING below: what the Vite build puts into dist/ and the release zip (src/, vite.config.ts,
-# vendor/*.js and vendor/*.css), plus examples/ (it carries the ?v= install snippet) and package.json (it carries the
-# version). A devDependency-only change is not a release: it takes the label. A change to a runtime dependency (apexcharts,
-# which the build puts in a chunk of dist/) does ship, and package.json is a shipping path, so it needs a changeset. Documentation, tests, scripts and CI-only pull requests touch none of these paths and pass without a changeset
-# or a label, and without installing anything.
+# vendor/*.js and vendor/*.css), plus examples/ (it carries the ?v= install snippet), package.json (it carries the
+# version) and package-lock.json (it pins the libraries the build puts in dist/chunks/: lock-file maintenance can move
+# DOMPurify or d3 inside Mermaid's chunks). A devDependency-only change is not a release: it takes the label. A change to
+# a runtime dependency (apexcharts, mermaid: the build puts them in chunks of dist/) does ship, so it needs a changeset.
+# Documentation, tests, scripts and CI-only pull requests touch none of these paths and pass without a changeset or a
+# label, and without installing anything.
 #
 # Opt-outs: the label `no-changeset` (a listed path changed without a release note: a devDependency bump, a refactor)
 # and the Release pull request, recognised by its branch changeset-release/main from this repository (not by its
 # title, which anyone can type). That pull request is opened with GITHUB_TOKEN, so no pull_request workflow runs for it
 # at all today: if `changeset` is a required check it never reports and blocks the merge until an admin bypasses it,
 # unless version-pr.yml opens the pull request with a GitHub App token or a PAT, in which case the branch skip applies.
-# renovate.json labels devDependency, Action and image-tag bumps no-changeset, so Renovate needs no special case.
+# renovate.json labels devDependency, Action and image-tag bumps no-changeset, so those need no special case. Its monthly
+# lock-file maintenance gets no label: a person adds a changeset when it moved a shipped library, or the label when not.
 on:
   pull_request:
     types: [opened, synchronize, reopened, labeled, unlabeled]
@@ -34,7 +37,7 @@ jobs:
     timeout-minutes: 10
     env:
       BASE: ${{ github.base_ref }}
-      SHIPPING: '^(src/|vite\.config\.ts$|package\.json$|examples/|vendor/[^/]+\.(js|css)$)'
+      SHIPPING: '^(src/|vite\.config\.ts$|package\.json$|package-lock\.json$|examples/|vendor/[^/]+\.(js|css)$)'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

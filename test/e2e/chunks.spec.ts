@@ -1,11 +1,15 @@
-// The charts library is a lazy chunk: the Home tab does not fetch it, the first tab that draws a chart fetches it once.
-// `house.chunkRequests` lists what the panel asked for under chunks/ and `house.chunks` what arrived, with its text, so a
-// library is told by what is inside the chunk, not by a file name (names carry a content hash).
+// The libraries are lazy chunks: the Home tab fetches none, the first tab that draws a chart fetches ApexCharts once, and
+// the Automations tab fetches Mermaid. `house.chunkRequests` lists what the panel asked for under chunks/ and
+// `house.chunks` what arrived, with its text, so a library is told by what is inside the chunk, not by a file name
+// (names carry a content hash).
 import {test, expect, tabletOnly, CHUNK_URL} from './fixtures';
 import {AFTERNOON, FULL_CFG} from './houses';
 
 // ApexCharts' export name; the chunk is the only file under chunks/ that has it
 const APEX = 'ApexCharts';
+// a property of Mermaid's default export that minifying keeps; only Mermaid's core chunk has it. Were Mermaid imported
+// statically, its core would be in home-panel.js and the Automations tab would fetch only diagram chunks, without it.
+const MERMAID = 'mermaidAPI';
 
 test.beforeEach(tabletOnly);
 
@@ -99,5 +103,24 @@ test.describe('lazy chunks', () => {
     await house.root().locator('#etabs .tab').nth(1).click();
     release();
     await expect(house.root().locator('#pane-energy .apexcharts-canvas').first()).toBeVisible();
+  });
+
+  test('Mermaid is fetched when the Automations tab opens, not on Home', async ({house}) => {
+    // four minutes pass on Home (the idle screen comes at five): a timer that fetched Mermaid later would fire
+    await house.clock.runFor(4 * 60_000);
+    expect(house.chunkRequests, 'chunks asked for on the Home tab').toEqual([]);
+
+    await house.tab('auto');
+    await expect(house.root().locator('#pane-auto svg').first()).toBeVisible({timeout: 10_000});
+    await expect.poll(() => house.chunksWith(MERMAID), 'chunks holding Mermaid on the Automations tab').toHaveLength(1);
+  });
+
+  test("when Mermaid's chunks cannot be fetched each flow says so, and nothing else breaks", async ({house}) => {
+    await house.page.route(CHUNK_URL, r => r.abort());
+    await house.tab('auto');
+    const graphs = house.root().locator('#pane-auto .augraph');
+    await expect(graphs.first()).toContainText("The flow drawing library didn't load");
+    await expect(graphs.locator('svg')).toHaveCount(0);
+    await house.tab('home');
   });
 });

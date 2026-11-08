@@ -36,22 +36,47 @@ beforeAll(() => {
   execFileSync('npm', ['run', 'build'], {cwd: ROOT, stdio: 'pipe'});
 }, 120_000);
 
-const VENDORED = ['leaflet.css', 'leaflet.js', 'mermaid.min.js'];
+const VENDORED = ['leaflet.css', 'leaflet.js'];
 
-// every file under dist/, as paths relative to it ('chunks/x.js'), sorted
-const distFiles = () =>
-  walk('dist')
+// every file under dist/, as paths relative to it ('chunks/x.js'), sorted; the lazy chunks the entry loads with
+// import(), chunks/<name>-<hash>.js, and their text. Read once, after the build above.
+let distFiles, chunks, text;
+beforeAll(() => {
+  distFiles = walk('dist')
     .map(f => f.slice('dist/'.length))
     .sort();
-// the lazy chunks the entry loads with import(): chunks/<name>-<hash>.js, each with its source map
-const chunks = () => distFiles().filter(f => /^chunks\/.+\.js$/.test(f));
+  chunks = distFiles.filter(f => /^chunks\/.+\.js$/.test(f));
+  const texts = new Map(chunks.map(c => [c, readFileSync(join(DIST, c), 'utf8')]));
+  text = c => texts.get(c);
+});
 
 test('dist/ holds the bundle, its source map, the lazy chunks and the vendored libraries, and nothing else', () => {
-  const names = distFiles();
-  const rest = names.filter(f => !chunks().some(c => f === c || f === c + '.map'));
+  const rest = distFiles.filter(f => !chunks.some(c => f === c || f === c + '.map'));
   expect(rest).toStrictEqual([...VENDORED, 'home-panel.js', 'home-panel.js.map'].sort());
-  // a chunk that lost its map would leave the stack traces of a chart error pointing at minified code
-  for (const c of chunks()) expect(names, c).toContain(c + '.map');
+  for (const c of chunks) {
+    expect(c).toMatch(/^chunks\/[\w.-]+-[\w-]{8}\.js$/); // [name]-[hash].js
+    // a chunk names its map at its end exactly when the map is there, so a stack trace from a chart or a flow points
+    // at the code it came from; Rolldown writes none for a chunk with no code from a source file (one that only
+    // re-exports another, or holds its own runtime helpers)
+    const named = text(c)
+      .trimEnd()
+      .endsWith(`//# sourceMappingURL=${c.slice('chunks/'.length)}.map`);
+    expect(distFiles.includes(c + '.map'), `${c} and its map`).toBe(named);
+  }
+});
+
+test("the chunks' maps name the libraries' files but leave out their text", () => {
+  // vite.config.ts drops each node_modules source's text from the chunk maps (9.9 MB of Mermaid alone); the panel's
+  // own files keep theirs
+  const maps = distFiles.filter(f => /^chunks\/.+\.js\.map$/.test(f));
+  expect(maps.length).toBeGreaterThan(0);
+  for (const f of maps) {
+    const map = JSON.parse(readFileSync(join(DIST, f), 'utf8'));
+    map.sources.forEach((s, i) => {
+      if (s.includes('node_modules/')) expect(map.sourcesContent?.[i] ?? null, `${f}: ${s}`).toBe(null);
+      else expect(typeof map.sourcesContent?.[i], `${f}: ${s}`).toBe('string');
+    });
+  }
 });
 
 test('the vendored libraries are copied as they are', () => {
@@ -60,22 +85,41 @@ test('the vendored libraries are copied as they are', () => {
 });
 
 test('ApexCharts and its stylesheet are in one lazy chunk, and not in the entry', () => {
-  // the minifier drops the library's banner comment, so the version comes from the package and the library is
-  // recognised by a class name only its drawing code uses; the stylesheet by one of its selectors
+  // the version comes from the package, and the library is recognised by a class name only its drawing code uses (its
+  // banner comment stays in the chunk with the other licence comments, but says nothing about where the code is); the
+  // stylesheet by one of its selectors
   const lib = 'apexcharts-xaxis-label',
     sheet = '.apexcharts-canvas ::-webkit-scrollbar';
   // 3.45.2 exactly: the charts must stay pixel-identical, and renovate.json freezes the version
   expect(JSON.parse(read('node_modules/apexcharts/package.json')).version).toBe('3.45.2');
-  const withApex = chunks().filter(c => readFileSync(join(DIST, c), 'utf8').includes(lib));
+  const withApex = chunks.filter(c => text(c).includes(lib));
   expect(withApex, `chunks holding the library (${lib})`).toHaveLength(1);
-  expect(readFileSync(join(DIST, withApex[0]), 'utf8').includes(sheet), 'the stylesheet text is in that chunk').toBe(
-    true,
-  );
+  expect(text(withApex[0]).includes(sheet), 'the stylesheet text is in that chunk').toBe(true);
   const entry = readFileSync(BUNDLE, 'utf8');
   expect(entry.includes(lib), 'the entry holds no ApexCharts code').toBe(false);
   expect(entry.includes(sheet), 'the entry holds no ApexCharts stylesheet').toBe(false);
   // the entry reaches the chunk through a dynamic import of a path beside it
   expect(entry).toMatch(/import\(\s*[`"']\.\/chunks\/apex-lib-[\w-]+\.js[`"']\s*\)/);
+});
+
+test('Mermaid is a lazy chunk with its map, not in the entry, which fetches no chunk as it loads', () => {
+  // `mermaidAPI`, a property of Mermaid's default export that minifying keeps, is in its core only
+  const mermaid = chunks.filter(c => text(c).includes('mermaidAPI'));
+  expect(mermaid, 'chunks holding Mermaid').toHaveLength(1);
+  // a stack trace from a flow chart points at Mermaid's files
+  expect(distFiles).toContain(mermaid[0] + '.map');
+  const entry = readFileSync(BUNDLE, 'utf8');
+  expect(entry.includes('mermaidAPI'), 'the entry holds no Mermaid code').toBe(false);
+  // every chunk the entry names is loaded with import(), Mermaid's core among them
+  const refs = [...entry.matchAll(/(import\(\s*)?[`"']\.\/(chunks\/[^`"']+)[`"']/g)];
+  for (const [, dynamic, c] of refs) expect(dynamic, `${c} imported statically`).toBeTruthy();
+  expect(refs.map(r => r[2])).toContain(mermaid[0]);
+});
+
+test('no chunk imports the entry back', () => {
+  // Home Assistant loads home-panel.js?v=…; a chunk importing ../home-panel.js would load a second copy without the
+  // query and run the panel's modules twice
+  for (const c of chunks) expect(text(c).includes('home-panel.js'), c).toBe(false);
 });
 
 test('the bundle parses as an ES module', () => {
@@ -85,8 +129,7 @@ test('the bundle parses as an ES module', () => {
 test('the bundle carries the package version once and no placeholder', () => {
   const js = readFileSync(BUNDLE, 'utf8');
   // The version as a string of its own is the VERSION constant of src/legacy/globals.js, so it is there exactly once:
-  // twice would mean that module, and the hass it holds, is bundled twice. The minifier may also fold the version into
-  // a longer string where it is used (mermaid.min.js?v=…); those copies are not counted.
+  // twice would mean that module, and the hass it holds, is bundled twice.
   const literal = new RegExp('[`"\']' + version.replaceAll('.', '\\.') + '[`"\']', 'g');
   expect(js.match(literal) ?? [], `the version ${version} as a string`).toHaveLength(1);
   for (const m of ['__CONFIG__', '__STACK__', '__FR__', '__AUTO__', '__CSS__', '__VERSION__'])
@@ -105,6 +148,8 @@ test('the source map names the original files under src/', () => {
     map.sources.every(s => s.startsWith('../src/')),
     map.sources.join(', '),
   ).toBe(true);
+  // with their text: Home Assistant serves the panel's folder, not src/, so DevTools reads the code from the map
+  expect(map.sourcesContent.every(c => typeof c === 'string' && c.length > 0)).toBe(true);
   expect(readFileSync(BUNDLE, 'utf8')).toMatch(/\n\/\/# sourceMappingURL=home-panel\.js\.map\s*$/);
 });
 

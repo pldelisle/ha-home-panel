@@ -13,10 +13,6 @@
 export {};
 
 declare global {
-  // the vendored libraries put themselves on window when loadScript() has loaded them
-  interface Window {
-    mermaid: any;
-  }
   interface EventTarget {
     closest(selectors: string): any;
     classList: DOMTokenList;
