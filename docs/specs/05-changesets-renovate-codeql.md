@@ -42,7 +42,7 @@ Each pull request declares its change (patch, minor, major) and its changelog li
 
 ### Changeset enforcement
 
-- A CI job `changeset` runs `changeset status --since=origin/main` on pull requests and fails when the PR changes files under `src/`, `build.mjs`, `package.json` dependencies or `examples/` without a changeset. The job is skipped when the PR carries the label `no-changeset` (for docs, tests and CI-only changes) or is the version PR itself.
+- A CI job `changeset` (`.github/workflows/changeset.yml`) runs on pull requests (opened, synchronize, reopened, labeled, unlabeled). It first diffs against `origin/<base>` and only when the PR changes a path that ships does it install and run `changeset status --since=origin/<base>`, which fails when there is no changeset. Shipping paths are those that end up in `dist/` and the release zip: `src/`, `build.mjs`, `vendor/*.js` and `vendor/*.css`, `examples/` and `package.json` (a dependency change can change the build). `package-lock.json` is not on the list, so lockfile maintenance needs no changeset. A PR that touches only documentation, tests, scripts or CI passes without one. The job is skipped (reported as skipped, which satisfies a required check) when the PR carries the label `no-changeset` (docs, tests or CI only, or a devDependency bump) or its title starts with "Release" (the version PR). Renovate's own PRs are not special-cased yet; #32 decides. The repository owner adds `changeset` to the required checks in branch protection.
 
 ### Renovate
 

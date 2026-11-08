@@ -1,0 +1,64 @@
+name: Changeset
+# A pull request that changes what ships must carry a changeset (npm run changeset), or the `changeset` job fails.
+# What ships is what ends up in dist/ and the release zip: src/ and build.mjs (they make home-panel.js), the vendored
+# libraries (vendor/*.js and vendor/*.css, copied next to it) and examples/ (the install snippet). package.json is
+# included because a dependency change can change the build. Documentation, tests, scripts and CI-only pull requests
+# touch none of these, so the job passes without a changeset (and without installing anything).
+#
+# Opt-outs: the label `no-changeset` (for example a devDependency bump or a refactor that still touches a listed path)
+# and the Release pull request, recognised by its title (changesets/action's pr-title is "Release"). The Release PR is
+# opened with GITHUB_TOKEN and gets no pull_request workflows today; the title check still matters once a token that
+# does start them is used.
+# TODO(#32): when Renovate arrives, decide whether its pull requests (author renovate[bot]) are skipped here or carry
+# a changeset; this job does not look at the author yet.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+permissions:
+  contents: read
+  pull-requests: read
+# a label click starts a new run while the previous one may still be going; only the newest matters
+concurrency:
+  group: changeset-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  changeset:
+    # The labels and the title come from the event payload, which is current for labeled and unlabeled events too.
+    # When the condition is false the job is reported as skipped, not as a failure.
+    if: >-
+      ${{ !contains(github.event.pull_request.labels.*.name, 'no-changeset')
+      && !startsWith(github.event.pull_request.title, 'Release') }}
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: changed
+        env:
+          BASE: ${{ github.base_ref }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin "+refs/heads/${BASE}:refs/remotes/origin/${BASE}"
+          git diff --name-only "origin/${BASE}...HEAD" > "$RUNNER_TEMP/changed-files.txt"
+          echo "Files changed against origin/${BASE}:"
+          cat "$RUNNER_TEMP/changed-files.txt"
+          if grep -Eq '^(src/|build\.mjs$|package\.json$|examples/|vendor/[^/]+\.(js|css)$)' "$RUNNER_TEMP/changed-files.txt"; then
+            echo "ships=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Nothing that ships changed, so no changeset is needed."
+          fi
+      # Install only when there is something to check: the path check above keeps docs, tests and CI pull requests cheap.
+      - if: steps.changed.outputs.ships == 'true'
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+      - if: steps.changed.outputs.ships == 'true'
+        run: npm ci
+      # exits non-zero when a changed package has no changeset
+      - if: steps.changed.outputs.ships == 'true'
+        env:
+          BASE: ${{ github.base_ref }}
+        run: npx changeset status --since="origin/${BASE}"
