@@ -63,7 +63,7 @@ export const cap = s =>
     .replace(/_/g, ' ')
     .replace(/^./, c => c.toUpperCase());
 
-export function loadScript(src, key = 'apex', ready = () => window.ApexCharts) {
+export function loadScript(src, key, ready) {
   return new Promise((res, rej) => {
     if (ready()) return res();
     let s = /** @type {HTMLScriptElement | null} */ (document.querySelector(`script[data-home-panel="${key}"]`));

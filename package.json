@@ -48,6 +48,9 @@
     "vite-plugin-static-copy": "4.1.1",
     "vitest": "5.1.0"
   },
+  "dependencies": {
+    "apexcharts": "3.45.2"
+  },
   "size-limit": [
     {
       "path": "dist/home-panel.js",

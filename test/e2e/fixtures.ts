@@ -14,6 +14,12 @@ declare global {
   }
 }
 
+/** where Vite puts the lazy chunks in the served panel (dist/chunks/, served under /panel/) */
+export const CHUNK_URL = /\/panel\/chunks\//;
+
+/** a chunk the panel fetched from dist/chunks/: its URL and its source text */
+export type Chunk = {url: string; body: string};
+
 export type HouseOpts = {
   /** which made-up house: everything, or only the sun, one weather entity and one light */
   house?: 'full' | 'bare';
@@ -43,6 +49,12 @@ export type House = {
   ws: Array<{type: string; key: string; value: unknown}>;
   /** page errors and console errors; the fixture asserts this is empty after the test */
   errors: string[];
+  /** the URLs the panel asked for under /panel/chunks/ (lazy chunks), in the order it asked, whether or not they arrived */
+  chunkRequests: string[];
+  /** the lazy chunks that arrived, with their text, in the order their bodies arrived */
+  chunks: Chunk[];
+  /** the URLs of the fetched chunks whose body contains `needle` (a string, or a pattern) */
+  chunksWith: (needle: string | RegExp) => string[];
   /** the panel element */
   root: () => Locator;
   /** taps the tab's button (rail or phone bar) and waits for its pane */
@@ -67,7 +79,9 @@ export const test = base.extend<{houseOpts: HouseOpts; house: House}>({
     const o = {...DEFAULTS, ...houseOpts};
     const calls: string[] = [],
       ws: House['ws'] = [],
-      errors: string[] = [];
+      errors: string[] = [],
+      chunkRequests: string[] = [],
+      chunks: Chunk[] = [];
     await page.addInitScript(
       ([cfg, sysdata, theme]) => {
         window.PANEL_CFG = cfg;
@@ -81,6 +95,17 @@ export const test = base.extend<{houseOpts: HouseOpts; house: House}>({
       [o.cfg ?? null, o.sysdata ?? null, o.theme] as const,
     );
     await page.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
+    // the body is read as the response arrives, so a test can tell the chunk that holds a library from one that does not
+    page.on('request', r => {
+      if (CHUNK_URL.test(r.url())) chunkRequests.push(r.url());
+    });
+    page.on('response', r => {
+      if (CHUNK_URL.test(r.url()))
+        r.text().then(
+          body => chunks.push({url: r.url(), body}),
+          () => {}, // the page closed before the body arrived
+        );
+    });
     page.on('pageerror', e => errors.push(e.message));
     page.on('console', m => {
       const t = m.text();
@@ -98,6 +123,12 @@ export const test = base.extend<{houseOpts: HouseOpts; house: House}>({
       calls,
       ws,
       errors,
+      chunkRequests,
+      chunks,
+      chunksWith: needle =>
+        chunks
+          .filter(c => (typeof needle === 'string' ? c.body.includes(needle) : needle.test(c.body)))
+          .map(c => c.url),
       root,
       clock: page.clock,
       tab: async name => {
