@@ -2182,9 +2182,8 @@ export class HomePanel extends HTMLElement {
       if (!r && !c && !x) return;
       this.auSel = x ? null : r ? {item: r.dataset.item, run: r.dataset.run} : {item: c.dataset.au, run: null};
       this.cache.auhost = null;
-      // the Automations methods are put on the prototype by Object.assign, at the end of this file
-      /** @type {any} */ (this).auLoad(true);
-      /** @type {any} */ (this).renderAuto();
+      this.auLoad(true);
+      this.renderAuto();
       if (!x) {
         const h = this.$('auhost');
         const card = h && h.querySelector('.ausel');
@@ -5690,7 +5689,7 @@ export class HomePanel extends HTMLElement {
       X = this.sensors(),
       open = X.filter(x => x.kind === 'door' && isOn(x.id)).length,
       moving = X.some(x => x.kind === 'motion' && isOn(x.id));
-    const A = /** @type {any} */ (this).auAutos ? /** @type {any} */ (this).auAutos() : [],
+    const A = this.auAutos ? this.auAutos() : [],
       running = A.filter(a => a.current).length;
     const sb = {
       weather:

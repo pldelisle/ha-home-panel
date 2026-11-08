@@ -123,7 +123,7 @@ Room icons can be `sofa`, `door`, `desk`, `bed`, `bath`, `drop`, `car`, `house` 
 
 ## Develop
 
-You need Node 22.12 or later (Vitest 5 requires Node 22.12, 24 or 26 and later); `npm run size` needs 22.19, 24.5 or 26 (`size-limit` 14), and CI runs it on Node 24.
+You need Node 22.19 or later (24.5 or later on the 24 line): `size-limit` 14 requires it, and Vitest 5 and Vite 8 need less.
 
 ```sh
 npm ci
@@ -190,7 +190,7 @@ and helpers those files used to share as globals; it goes away in the refactor's
 the bundle and loaded when a tab needs them.
 `npm run typecheck` runs `tsc` twice: `tsconfig.check.json` checks the pure modules (`config.js`, `stack.js`) strictly, and `tsconfig.legacy.json` checks every
 file under `src/` without `strict`, so a name that does not exist or an import that does not resolve is an error while the untyped class is tolerated.
-`src/env.d.ts` holds the ambient declarations that second pass needs; the refactor's second phase deletes the part that stands in for typed elements.
+`src/legacy/dom-scaffolding.d.ts` holds the ambient declarations that second pass needs (only `tsconfig.legacy.json` lists it); the refactor's second phase deletes it.
 The source map points a stack trace or the browser's DevTools back at the files in `src/`; it ships in the release zip next to `home-panel.js`.
 The test house in `test/e2e/harness.html` is made up. Keep real names, addresses and entity IDs out of the repository:
 `npm test` fails if it finds some of them.

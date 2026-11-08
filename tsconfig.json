@@ -9,5 +9,7 @@
     "types": ["node"],
     "skipLibCheck": true
   },
-  "include": ["*.ts", "src/**/*.ts", "test/**/*.ts"]
+  "include": ["*.ts", "src/**/*.ts", "test/**/*.ts"],
+  // loose-pass scaffolding for the legacy files: tsconfig.legacy.json only
+  "exclude": ["src/legacy/**/*.d.ts"]
 }

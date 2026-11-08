@@ -19,6 +19,7 @@ export default defineConfig(
       'node_modules/',
       'coverage/',
       'vendor/', // third-party libraries, copied as shipped
+      'src/legacy/dom-scaffolding.d.ts', // declarations for tsconfig.legacy.json only; tsconfig.json excludes it, so the typed project cannot parse it
       'test/e2e/__screenshots__/',
       'playwright-report/',
       'test-results/',
@@ -68,12 +69,14 @@ export default defineConfig(
     files: ['src/**/*.{js,ts}', 'test/**/*.{js,mjs,ts}'],
     plugins: {'import-x': importX},
     settings: {
+      // import-x/named reads a .ts file's exports with the same parser ESLint uses for it
+      'import-x/parsers': {'@typescript-eslint/parser': ['.ts']},
       // the tests import their .ts helpers without an extension, as TypeScript and Playwright allow
       'import-x/resolver-next': [createNodeResolver({extensions: ['.js', '.mjs', '.ts', '.d.ts', '.json']})],
     },
     rules: {
       'import-x/no-unresolved': ['error', {ignore: ['\\?raw$']}],
-      // TypeScript checks the names it imports itself
+      // for .ts files too, through the parser setting above (`import {PHONE_TABZ} from './houses'` fails)
       'import-x/named': ['error'],
     },
   },

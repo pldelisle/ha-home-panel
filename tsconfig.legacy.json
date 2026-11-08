@@ -3,6 +3,7 @@
   "compilerOptions": {"strict": false, "noImplicitAny": false, "noImplicitThis": false},
   "include": [
     "src/env.d.ts",
+    "src/legacy/dom-scaffolding.d.ts",
     "src/types.d.ts",
     "src/home-panel.js",
     "src/auto.js",
