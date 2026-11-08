@@ -22,7 +22,7 @@ Already in place, and worth keeping:
 
 - A pure, unit-tested config resolver (`../src/config.js`) and smart-stack ranking (`src/stack.js`).
 
-- An end-to-end smoke test that loads the real bundle in Chromium against a made-up house, on tablet and phone, in English and French, and fails on any page error.
+- An end-to-end suite (once a smoke script, now Playwright Test) that loads the real bundle in Chromium against a made-up house, on tablet and phone, in English and French, and fails on any page error.
 
 - A test that blocks personal data (names, IPs, house entity ids) from the public repo.
 
@@ -42,7 +42,7 @@ What limits it:
 | Build | Source files are spliced into placeholders as text. The 571 KB bundle (169 KB gzipped) is not minified and has no source maps | Stack traces point into a 4,386-line file; no tree shaking |
 | Dependencies | ApexCharts, Leaflet and Mermaid (2.5 MB) are committed as minified files | Nothing tells you about security fixes; ApexCharts is frozen at 3.45.2 for licence reasons |
 | Privacy | Montserrat loads from Google Fonts at runtime | Every wall tablet calls Google, and the font fails offline |
-| Tests | 30 unit tests, mostly config. The smoke test checks that panes appear, not what they show | Logic inside the class (live activities, energy split, lights) has no tests |
+| Tests | 30 unit tests, mostly config. The old smoke test checked that panes appear, not what they show; the Playwright suite replaced it | Logic inside the class (live activities, energy split, lights) has no tests |
 | Releases | Version picked by hand in each branch. Install means copying files, editing `?v=` and restarting HA | Collisions between threads, and a manual cache-busting step |
 
 ## Language and framework options
