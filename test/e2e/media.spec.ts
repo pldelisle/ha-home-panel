@@ -1,6 +1,6 @@
 // The TV card's buttons reach Home Assistant (1.19.9: they crashed on a removed method before sending anything).
 // Test titles start with the check's number in docs/specs/01-playwright-test.md.
-import {test, expect, expectCall, tabletOnly} from './fixtures';
+import {test, expectCall, tabletOnly} from './fixtures';
 import {FULL_CFG} from './houses';
 
 test.use({houseOpts: {cfg: FULL_CFG}});

@@ -75,11 +75,11 @@ test.describe('phone', () => {
     await expect(house.root().locator('#pane-home')).toBeVisible(); // the Home card is drawn before we look for a stack in it
     await expect(house.root().locator('#hstk')).toHaveCount(0);
     await sleepNow(house);
-    const [card, clock, view] = await Promise.all([
+    const [card, clock] = await Promise.all([
       house.root().locator('#istk .sc').boundingBox(),
       house.root().locator('#iclk').boundingBox(),
-      house.page.viewportSize(),
     ]);
+    const view = house.page.viewportSize(); // synchronous: not part of the Promise.all
     expect(card!.y, 'under the clock').toBeGreaterThanOrEqual(clock!.y + clock!.height - 1);
     expect(card!.x, 'inside the screen on the left').toBeGreaterThanOrEqual(0);
     expect(card!.x + card!.width, 'inside the screen on the right').toBeLessThanOrEqual(view!.width);

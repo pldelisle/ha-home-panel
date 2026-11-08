@@ -97,7 +97,7 @@ const frKey = (s, vals) => {
   });
 };
 const FR_UNITS =
-  /^(?:\{n\}|[\s°%·–\-−+\/,()×]|°C|kWh|MWh|kW|W|V|A|km\/h|km|kPa|ppm|µg\/m³|lx|lux|psi|¢\/kWh|¢|h|min|s|k|RH|AQI|UV|PM\{n\}|CO₂|CO|VOC)+$/;
+  /^(?:\{n\}|[\s°%·–\-−+/,()×]|°C|kWh|MWh|kW|W|V|A|km\/h|km|kPa|ppm|µg\/m³|lx|lux|psi|¢\/kWh|¢|h|min|s|k|RH|AQI|UV|PM\{n\}|CO₂|CO|VOC)+$/;
 let FR_NAMES = new Set(),
   FR_NAMES_AT = 0;
 function frNames() {
