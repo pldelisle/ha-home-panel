@@ -244,15 +244,15 @@ export function resolveConfig(cfg, states) {
       : ids.find(i => /^weather\..+_forecast$/.test(i)) || ids.find(i => i.startsWith('weather.')) || null;
   const town = E.weather && (E.weather.match(/^weather\.(.+?)(?:_forecast)?$/) || [])[1];
   if (town)
-    for (const [k, suf] of Object.entries(EC_SUFFIX)) {
+    for (const [k, suf] of /** @type {[EntityKey, string][]} */ (Object.entries(EC_SUFFIX))) {
       const id = `sensor.${town}_${suf}`;
-      // @ts-expect-error EC_SUFFIX's keys are EntityKeys, but Object.entries widens them to string
       if (has(id)) E[k] = id;
     }
   // Hilo's gateway sensor is sensor.hilo_gateway, or _2 after the integration was added twice
-  // @ts-expect-error EntityMap types E.gateway as string | null, so has() sees a possible null; at this line it still
-  // holds the default (a string), and the null comes later, from Object.assign(E, given) when the config clears it
-  if (!has(E.gateway)) E.gateway = ids.find(i => /^sensor\.hilo_gateway(_\d+)?$/.test(i)) || E.gateway;
+  // EntityMap types E.gateway as string | null; at this line it still holds the default (a string), and the null
+  // comes later, from Object.assign(E, given) when the config clears it
+  if (!has(/** @type {string} */ (E.gateway)))
+    E.gateway = ids.find(i => /^sensor\.hilo_gateway(_\d+)?$/.test(i)) || E.gateway;
   Object.assign(E, given);
   // rooms: the configured list, else every thermostat except the heat pump
   const rooms = (cfg.rooms ? asList(cfg.rooms) : ids.filter(i => i.startsWith('climate.') && i !== E.hp).sort())
@@ -291,8 +291,7 @@ export function resolveConfig(cfg, states) {
             ? {keys: asList(l.lights), sw: l.switch ? String(l.switch) : null}
             : null,
       )
-      // @ts-expect-error `l && ...` is null for a null entry, which is falsy for the filter all the same
-      .filter(/** @returns {l is LightLink} */ l => l && l.keys.length === 2)
+      .filter(/** @returns {l is LightLink} */ l => !!l && l.keys.length === 2)
       .map(l => ({keys: l.keys.map(String), sw: l.sw})),
     splitLightAreas: asList(cfg.split_light_areas).map(String), // HA areas whose light groups each get their own tile
     alAreas:
@@ -303,8 +302,8 @@ export function resolveConfig(cfg, states) {
     car: {
       name: car.name ? String(car.name) : null,
       color: car.color ? String(car.color) : null,
-      // @ts-expect-error +undefined is NaN, which the > 0 test turns into null
-      battery_kwh: +car.battery_kwh > 0 ? +car.battery_kwh : null,
+      // an absent value is NaN, which the > 0 test turns into null
+      battery_kwh: Number(car.battery_kwh) > 0 ? Number(car.battery_kwh) : null,
     },
     // the idle clock's smart stack: off turns it off; sunrise_lights_off names the sunrise card for a house whose lights go off at sunrise;
     // reminders are {at: 'HH:MM', title, text, lead (minutes before, 30 by default)}
@@ -317,8 +316,8 @@ export function resolveConfig(cfg, states) {
           at: String(r.at).trim(),
           title: String(r.title || 'Reminder'),
           text: r.text ? String(r.text) : '',
-          // @ts-expect-error +undefined is NaN, which || turns into 30
-          lead: +r.lead || 30,
+          // an absent lead is NaN, which || turns into 30
+          lead: Number(r.lead) || 30,
         })),
     },
   };

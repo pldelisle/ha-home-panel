@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.check.json",
+  "compilerOptions": {"strict": false, "noImplicitAny": false, "noImplicitThis": false},
+  "include": [
+    "src/env.d.ts",
+    "src/legacy/dom-scaffolding.d.ts",
+    "src/types.d.ts",
+    "src/home-panel.js",
+    "src/auto.js",
+    "src/i18n/fr.js",
+    "src/legacy/globals.js",
+    "src/main.js",
+    "src/styles.js"
+  ]
+}

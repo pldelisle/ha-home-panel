@@ -23,8 +23,13 @@ export function pickStack(cards, now) {
   // stable order: amber first, then the order the cards were listed in
   pool = pool
     .map(/** @returns {[StackCard, number]} */ (c, i) => [c, i])
-    // @ts-expect-error a card without a tone (null) is not a key of TONE_RANK; ?? 2 ranks it last
-    .sort((a, b) => (TONE_RANK[a[0].tone] ?? 2) - (TONE_RANK[b[0].tone] ?? 2) || a[1] - b[1])
+    // a card without a tone is null, not a string: TONE_RANK has no such key, and ?? 2 ranks it last (the cast is for the
+    // checker; null indexes as "null")
+    .sort(
+      (a, b) =>
+        (TONE_RANK[/** @type {string} */ (a[0].tone)] ?? 2) - (TONE_RANK[/** @type {string} */ (b[0].tone)] ?? 2) ||
+        a[1] - b[1],
+    )
     .map(x => x[0]);
   const i = Math.floor(now / STACK_TURN_MS) % pool.length;
   return {card: pool[i], i, n: pool.length};
