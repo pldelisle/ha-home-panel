@@ -130,6 +130,7 @@ npm ci
 # once per clone: git blame skips the Prettier format commit
 git config blame.ignoreRevsFile .git-blame-ignore-revs
 npm run build          # dist/home-panel.js plus the vendored libraries
+npm run typecheck      # tsc --checkJs over the config and stack modules (types in src/types.d.ts)
 npm test               # unit tests (Vitest): config, build, French, a scan for personal data
 npm run test:watch     # the same, re-run on every save
 npm run test:coverage  # the same, with a coverage report in coverage/

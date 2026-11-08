@@ -1,12 +1,25 @@
 // ---------- configuration ----------
 // Everything that belongs to one house lives here: which entities feed each card, the rooms, the people, the house picture.
 // It comes from the `config:` block under `panel_custom:` in configuration.yaml (HA hands it over as panel.config),
-// and anything left out falls back to a default found from the house's own entities.
+// and whatever is left out falls back to a default found from the house's own entities.
 // resolveConfig() is pure (no DOM, no hass object), so the tests run it under Node.
+// The types are in types.d.ts and are checked by `npm run typecheck` (tsc --checkJs); this file is still a script, so
+// they come in through typedefs.
+
+/** @typedef {import('./types.d.ts').PanelConfig} PanelConfig */
+/** @typedef {import('./types.d.ts').ResolvedConfig} ResolvedConfig */
+/** @typedef {import('./types.d.ts').RoomInput} RoomInput */
+/** @typedef {import('./types.d.ts').RoomSpec} RoomSpec */
+/** @typedef {import('./types.d.ts').RoomIcon} RoomIcon */
+/** @typedef {import('./types.d.ts').EntityKey} EntityKey */
+/** @typedef {import('./types.d.ts').EntityMap} EntityMap */
+/** @typedef {import('./types.d.ts').LightLink} LightLink */
+/** @typedef {import('./types.d.ts').HassStates} HassStates */
 
 // Entities each card reads. null = not set; the card or tile that needs it stays hidden or shows a dash.
 // Names that an integration always creates the same way are defaults (the sun, Hilo's gateway sensors);
 // names that carry a device's or a town's name are found from the house's entities or set in the config.
+/** @type {EntityMap} */
 const DEFAULT_ENTITIES = {
   // weather: the weather entity, plus Environment Canada's sensors found by the weather entity's prefix (weather.<town>_forecast → sensor.<town>_*)
   weather: null,
@@ -69,6 +82,7 @@ const DEFAULT_ENTITIES = {
   away: null,
 };
 // Environment Canada sensor suffix for each weather key (sensor.<town>_<suffix>)
+/** @type {Partial<Record<EntityKey, string>>} */
 const EC_SUFFIX = {
   cond: 'current_condition',
   outT: 'temperature',
@@ -98,6 +112,7 @@ const EC_SUFFIX = {
   statements: 'statements',
 };
 // the config's snake_case names for the entity keys above (both spellings are accepted)
+/** @type {Record<string, EntityKey>} */
 const ENTITY_ALIAS = {
   condition: 'cond',
   outdoor_temperature: 'outT',
@@ -134,8 +149,13 @@ const ENTITY_ALIAS = {
   heat_pump: 'hp',
   away_mode: 'away',
 };
+/** @type {RoomIcon[]} */
 const ROOM_ICONS = ['sofa', 'door', 'desk', 'bed', 'bath', 'drop', 'car', 'house', 'therm'];
 // a room's icon from its name, when the config doesn't give one
+/**
+ * @param {unknown} s the room's name, or a value of another type: it goes through String()
+ * @returns {RoomIcon}
+ */
 const guessIcon = s => {
   const n = String(s || '')
     .normalize('NFD')
@@ -159,15 +179,23 @@ const guessIcon = s => {
 };
 // a room: its thermostat, and the sensors that hold its temperature, setpoint and heating power history
 // (by default the thermostat's own name plus _temperature / _target_temperature / _power, which is how Hilo names them)
+/**
+ * @param {RoomInput} r
+ * @param {HassStates | null | undefined} states
+ * @returns {RoomSpec}
+ */
 function roomSpec(r, states) {
   const climate = typeof r === 'string' ? r : r.climate;
   const obj = String(climate).replace(/^climate\./, ''),
+    /** @type {Partial<Exclude<RoomInput, string>>} */
     o = typeof r === 'string' ? {} : r;
   const fn = states && states[climate] && states[climate].attributes && states[climate].attributes.friendly_name;
   const n = o.name ?? null;
   return {
     k: o.key || obj.replace(/^thermostat_/, ''),
     n,
+    // @ts-expect-error o.icon is a string or undefined here, not a RoomIcon: includes() rejects it as an argument and the
+    // ternary returns it as the icon. It is only returned when ROOM_ICONS includes it, and includes(undefined) is false
     icon: ROOM_ICONS.includes(o.icon) ? o.icon : guessIcon(n || fn || obj),
     climate,
     temp: o.temperature || `sensor.${obj}_temperature`,
@@ -175,19 +203,35 @@ function roomSpec(r, states) {
     power: o.power || `sensor.${obj}_power`,
   };
 }
+/**
+ * @template T
+ * @param {T | T[] | null | undefined} v one value, a list of them, or nothing
+ * @returns {T[]}
+ */
 const asList = v => (v == null ? [] : Array.isArray(v) ? v : [v]);
+/**
+ * @param {unknown} s
+ * @returns {string}
+ */
 const firstWord = s =>
   String(s || '')
     .trim()
     .split(/\s+/)[0];
 
 // panel.config (+ the house's states) → the settings the panel runs with
+/**
+ * @param {PanelConfig | null | undefined} cfg panel.config: a value that is not an object counts as empty
+ * @param {HassStates | null | undefined} states hass.states
+ * @returns {ResolvedConfig}
+ */
 function resolveConfig(cfg, states) {
   cfg = cfg && typeof cfg === 'object' ? cfg : {};
   states = states || {};
   const ids = Object.keys(states),
-    has = id => !!states[id];
+    has = /** @param {string} id */ id => !!states[id];
+  /** @type {EntityMap} */
   const E = {...DEFAULT_ENTITIES};
+  /** @type {Record<string, string | null>} */
   const given = {};
   for (const [k, v] of Object.entries(cfg.entities || {})) {
     const key = ENTITY_ALIAS[k] || k;
@@ -202,9 +246,12 @@ function resolveConfig(cfg, states) {
   if (town)
     for (const [k, suf] of Object.entries(EC_SUFFIX)) {
       const id = `sensor.${town}_${suf}`;
+      // @ts-expect-error EC_SUFFIX's keys are EntityKeys, but Object.entries widens them to string
       if (has(id)) E[k] = id;
     }
   // Hilo's gateway sensor is sensor.hilo_gateway, or _2 after the integration was added twice
+  // @ts-expect-error EntityMap types E.gateway as string | null, so has() sees a possible null; at this line it still
+  // holds the default (a string), and the null comes later, from Object.assign(E, given) when the config clears it
   if (!has(E.gateway)) E.gateway = ids.find(i => /^sensor\.hilo_gateway(_\d+)?$/.test(i)) || E.gateway;
   Object.assign(E, given);
   // rooms: the configured list, else every thermostat except the heat pump
@@ -244,7 +291,8 @@ function resolveConfig(cfg, states) {
             ? {keys: asList(l.lights), sw: l.switch ? String(l.switch) : null}
             : null,
       )
-      .filter(l => l && l.keys.length === 2)
+      // @ts-expect-error `l && ...` is null for a null entry, which is falsy for the filter all the same
+      .filter(/** @returns {l is LightLink} */ l => l && l.keys.length === 2)
       .map(l => ({keys: l.keys.map(String), sw: l.sw})),
     splitLightAreas: asList(cfg.split_light_areas).map(String), // HA areas whose light groups each get their own tile
     alAreas:
@@ -255,6 +303,7 @@ function resolveConfig(cfg, states) {
     car: {
       name: car.name ? String(car.name) : null,
       color: car.color ? String(car.color) : null,
+      // @ts-expect-error +undefined is NaN, which the > 0 test turns into null
       battery_kwh: +car.battery_kwh > 0 ? +car.battery_kwh : null,
     },
     // the idle clock's smart stack: off turns it off; sunrise_lights_off names the sunrise card for a house whose lights go off at sunrise;
@@ -268,6 +317,7 @@ function resolveConfig(cfg, states) {
           at: String(r.at).trim(),
           title: String(r.title || 'Reminder'),
           text: r.text ? String(r.text) : '',
+          // @ts-expect-error +undefined is NaN, which || turns into 30
           lead: +r.lead || 30,
         })),
     },
