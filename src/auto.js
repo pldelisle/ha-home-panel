@@ -639,8 +639,13 @@ export const autoMethods = {
       fg3 = c('--fg3'),
       line = c('--line');
     // Home Assistant text (aliases, names, trace errors) goes into quoted labels: esc() leaves no `"` to close one, and
-    // every % becomes Mermaid's #37; entity, so no text can open a %%{init}%% directive (theme, CSS, label settings)
-    const esc2 = s => esc(s).replace(/%/g, '#37;');
+    // every % becomes Mermaid's #37; entity, so no text can open a %%{init}%% directive (theme, CSS, label settings).
+    // Each $ gets its own <span>, so no two meet: Mermaid 11.17 typesets a $$…$$ in any label with KaTeX, and an entity
+    // would not stop it (it decodes the entity before it looks)
+    const esc2 = s =>
+      esc(s)
+        .replace(/%/g, '#37;')
+        .replace(/\$/g, () => '<span>$</span>');
     const lbl = n => {
       if (n.shape === 'circle' || n.shape === 'stop')
         return `<span style='font-size:11px;font-weight:800;letter-spacing:.08em'>${esc2(n.d.t)}</span>`;
@@ -1043,6 +1048,10 @@ export const autoMethods = {
       M.initialize({
         startOnLoad: false,
         securityLevel: 'strict',
+        // Mermaid 11.10+ draws node outlines with Rough.js, which with the default seed 0 picks a random one on each
+        // render: the outline's curve points then differ by sub-pixel amounts from one draw to the next, and the
+        // exact-match screenshots of the flows flake. Any fixed non-zero seed makes the drawing repeatable.
+        handDrawnSeed: 1,
         theme: 'base',
         fontFamily: this.css('--f-body') || 'Montserrat, sans-serif',
         themeVariables: {

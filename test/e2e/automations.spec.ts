@@ -6,10 +6,12 @@ import {FULL_CFG} from './houses';
 
 // what an automation's author could type as the alias of a step, each under the 64 characters a label keeps
 const HOSTILE = {
-  trigger: "Door %%{init:{'theme':'dark'}}%%",
+  trigger: 'Door %%{init: {"theme":"dark"}}%%',
   condition: '"]; click A call alert(1)',
   first: "%%{init:{'themeCSS':'*{background:url(//x.invalid/a)}'}}%%",
   last: '100% sure %%{ never closed',
+  // KaTeX's delimiters: Mermaid typesets a $$…$$ in a label, so this one must stay text (and KaTeX's chunk unfetched)
+  math: 'Fan $$x$$',
 };
 
 // the test house's automations, with those aliases on the steps of the one the Automations tab draws first
@@ -23,6 +25,7 @@ const automations = (
   c.triggers[0] = alias(c.triggers[0], HOSTILE.trigger);
   c.conditions[0] = alias(c.conditions[0], HOSTILE.condition);
   c.actions[0] = alias(c.actions[0], HOSTILE.first);
+  c.actions[1] = alias(c.actions[1], HOSTILE.math);
   c.actions[2] = alias(c.actions[2], HOSTILE.last);
   return {...a, config: c};
 });
@@ -39,6 +42,12 @@ test.describe('Home Assistant text in a flow', () => {
       svg = flow.locator('.augraph svg');
     await expect(svg).toBeVisible({timeout: 10_000});
     for (const text of Object.values(HOSTILE)) await expect(svg).toContainText(text);
+    // no formula was typeset (KaTeX writes a <math> element) and KaTeX's chunk was never asked for
+    await expect(svg.locator('math, .katex')).toHaveCount(0);
+    expect(
+      house.chunkRequests.filter(u => /\/chunks\/katex-/.test(u)),
+      'KaTeX chunks fetched',
+    ).toEqual([]);
     // no directive reached Mermaid: the text and the nodes have the panel's colours, not the dark theme's, and the
     // stylesheet has no rule from the alias
     const [card, ring, fg] = await house
