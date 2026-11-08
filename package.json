@@ -6,6 +6,7 @@
   "private": true,
   "scripts": {
     "build": "vite build",
+    "dev": "vite build --watch",
     "typecheck": "tsc -p tsconfig.check.json",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -21,8 +22,7 @@
     "format:check": "prettier --check .",
     "lint": "eslint .",
     "changeset": "changeset",
-    "version-packages": "changeset version && node scripts/sync-version.mjs && prettier --write package.json README.md examples/configuration.yaml",
-    "dev": "vite build --watch"
+    "version-packages": "changeset version && node scripts/sync-version.mjs && prettier --write package.json README.md examples/configuration.yaml"
   },
   "engines": {
     "node": "^22.12 || ^24 || >=26"
