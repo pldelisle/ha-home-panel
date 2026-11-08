@@ -1133,7 +1133,7 @@ class HomePanel extends HTMLElement {
       this.mqOn = true;
       try {
         this.mq.addEventListener('change', () => this.onCompact());
-      } catch (e) {
+      } catch {
         this.mq.addListener(() => this.onCompact());
       }
     }
@@ -1143,7 +1143,7 @@ class HomePanel extends HTMLElement {
       this.sysDark = matchMedia('(prefers-color-scheme: dark)');
       try {
         this.sysDark.addEventListener('change', () => this.applyTheme());
-      } catch (e) {
+      } catch {
         this.sysDark.addListener(() => this.applyTheme());
       }
       document.addEventListener('visibilitychange', () => {
@@ -1202,7 +1202,7 @@ class HomePanel extends HTMLElement {
   themeMode() {
     try {
       return localStorage.getItem('home-panel-theme') || 'auto';
-    } catch (e) {
+    } catch {
       return 'auto';
     }
   }
@@ -1280,7 +1280,7 @@ class HomePanel extends HTMLElement {
   textMode() {
     try {
       return localStorage.getItem('home-panel-text') || 'auto';
-    } catch (e) {
+    } catch {
       return 'auto';
     }
   }
@@ -1302,14 +1302,14 @@ class HomePanel extends HTMLElement {
     try {
       const v = parseInt(localStorage.getItem('home-panel-glass-t'), 10);
       return isNaN(v) ? 50 : Math.max(0, Math.min(100, v));
-    } catch (e) {
+    } catch {
       return 50;
     }
   }
   glassMode() {
     try {
       return localStorage.getItem('home-panel-glass') || 'dawn';
-    } catch (e) {
+    } catch {
       return 'dawn';
     }
   }
@@ -1711,7 +1711,7 @@ class HomePanel extends HTMLElement {
           }),
         );
       });
-    } catch (e) {
+    } catch {
       /* no Mila purifiers */
     }
     // tomorrow's weather, in the evening
@@ -1911,7 +1911,7 @@ class HomePanel extends HTMLElement {
       r.style.setProperty('--p', r.value + '%');
       try {
         localStorage.setItem('home-panel-glass-t', r.value);
-      } catch (x) {}
+      } catch {}
       this.applyGlass();
     });
     this.$('setc').addEventListener('click', e => {
@@ -1925,7 +1925,7 @@ class HomePanel extends HTMLElement {
         const next = t.dataset.th === 'auto' ? 'auto' : this.$app.dataset.theme === 'dark' ? 'light' : 'dark';
         try {
           localStorage.setItem('home-panel-theme', next);
-        } catch (x) {}
+        } catch {}
         this.applyTheme();
         this.cache.setc = null;
         this.renderSettings();
@@ -1935,7 +1935,7 @@ class HomePanel extends HTMLElement {
       if (g) {
         try {
           localStorage.setItem('home-panel-glass', g.dataset.gl);
-        } catch (x) {}
+        } catch {}
         this.applyGlass();
         this.cache.setc = null;
         this.renderSettings();
@@ -1945,7 +1945,7 @@ class HomePanel extends HTMLElement {
       if (!b) return;
       try {
         localStorage.setItem('home-panel-text', b.dataset.tx);
-      } catch (x) {}
+      } catch {}
       this.applyText();
       this.cache.setc = null;
       this.renderSettings();
@@ -2040,7 +2040,7 @@ class HomePanel extends HTMLElement {
       p.classList.add('drag');
       try {
         p.setPointerCapture(e.pointerId);
-      } catch (x) {}
+      } catch {}
       lp.v = lpPaint(p, lpVal(p, e.clientY));
     });
     sh.addEventListener('pointermove', e => {
@@ -2127,7 +2127,7 @@ class HomePanel extends HTMLElement {
         u.classList.add('lifted');
         try {
           u.setPointerCapture(e.pointerId);
-        } catch (x) {}
+        } catch {}
       });
       lt.addEventListener('pointermove', e => {
         if (!m || e.pointerId !== m.id) return;
@@ -2438,7 +2438,7 @@ class HomePanel extends HTMLElement {
       d = {y: e.clientY, t: Date.now(), id: e.pointerId, on: false};
       try {
         p.setPointerCapture(e.pointerId);
-      } catch (x) {}
+      } catch {}
     });
     p.addEventListener('pointermove', e => {
       if (!d || e.pointerId !== d.id) return;
@@ -3684,7 +3684,7 @@ class HomePanel extends HTMLElement {
     this.charts.forEach(c => {
       try {
         c.destroy();
-      } catch (e) {}
+      } catch {}
     });
     this.charts = [];
     this.mainChart = this.climChart = null;
@@ -3699,7 +3699,7 @@ class HomePanel extends HTMLElement {
     const tag = (this.sheetTag = Symbol());
     try {
       await this.apex;
-    } catch (e) {
+    } catch {
       this.toast('Charts library failed to load', true);
       return;
     }
@@ -4322,7 +4322,7 @@ class HomePanel extends HTMLElement {
           if (c.__wh) {
             try {
               c.destroy();
-            } catch (e) {}
+            } catch {}
             return false;
           }
           return true;
@@ -4720,7 +4720,7 @@ class HomePanel extends HTMLElement {
     if (this.airC) {
       try {
         this.airC.destroy();
-      } catch (e) {}
+      } catch {}
       this.charts = this.charts.filter(c => c !== this.airC);
     }
     const s = this.S(),
@@ -4811,7 +4811,7 @@ class HomePanel extends HTMLElement {
     if (this.aoC) {
       try {
         this.aoC.destroy();
-      } catch (e) {}
+      } catch {}
       this.charts = this.charts.filter(c => c !== this.aoC);
       this.aoC = null;
     }
@@ -5751,7 +5751,7 @@ class HomePanel extends HTMLElement {
     let t = 'home';
     try {
       t = localStorage.getItem('home-panel-tab') || t;
-    } catch (e) {}
+    } catch {}
     this.setTab(t);
   }
   leaveTabs() {
@@ -5772,7 +5772,7 @@ class HomePanel extends HTMLElement {
     this.tab = t;
     try {
       localStorage.setItem('home-panel-tab', t);
-    } catch (e) {}
+    } catch {}
     if (t === 'lights' && prev !== t) this.loadLightOrder(); // another screen may have rearranged them
     if (t !== 'lights' && this.lightEdit) this.setLightEdit(false);
     this.shadowRoot
@@ -5788,7 +5788,7 @@ class HomePanel extends HTMLElement {
     if (this.compact && prev && prev !== t) {
       try {
         this.$app.scrollIntoView({block: 'start'});
-      } catch (e) {}
+      } catch {}
     }
   }
   openInline(t) {
@@ -7084,7 +7084,7 @@ class HomePanel extends HTMLElement {
     if (!this.$('wradar')) return;
     try {
       await this.loadRadarCard();
-    } catch (e) {
+    } catch {
       this.$('wradar').innerHTML =
         '<p class="muted rnote">Weather Radar Card didn\'t load. Check that it is still installed in HACS.</p>';
       return;
@@ -7276,7 +7276,7 @@ class HomePanel extends HTMLElement {
       if (c.__clim) {
         try {
           c.destroy();
-        } catch (e) {}
+        } catch {}
         return false;
       }
       return true;

@@ -1017,7 +1017,7 @@ const AUTO = {
     try {
       this.auMer = this.auMer || loadScript(BASE + 'mermaid.min.js?v=' + VERSION, 'mermaid', () => window.mermaid);
       await this.auMer;
-    } catch (e) {
+    } catch {
       boxes.forEach(b => {
         b.innerHTML =
           '<p class="hint">The flow drawing library didn\'t load (mermaid.min.js missing next to home-panel.js).</p>';
