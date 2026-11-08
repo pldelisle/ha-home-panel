@@ -129,9 +129,10 @@ You need Node 22.12 or later (Vitest 5 requires Node 22.12, 24 or 26 and later).
 npm ci
 # once per clone: git blame skips the Prettier format commit
 git config blame.ignoreRevsFile .git-blame-ignore-revs
-npm run build          # dist/home-panel.js plus the vendored libraries
+npm run build          # Vite: dist/home-panel.js (minified), home-panel.js.map and the vendored libraries
+npm run dev            # the same build, redone on every save (vite build --watch)
 npm run typecheck      # tsc --checkJs over the config and stack modules (types in src/types.d.ts)
-npm test               # unit tests (Vitest): config, build, French, a scan for personal data
+npm test               # unit tests (Vitest): config, stack, French, the built dist/, a scan for personal data
 npm run test:watch     # the same, re-run on every save
 npm run test:coverage  # the same, with a coverage report in coverage/
 npm run changeset      # describes your change for the changelog and the version (see below)
@@ -151,13 +152,12 @@ If `npm run format:check` still fails after one `npm run format`, run `npm run f
 The test server listens on port 4173 unless `E2E_PORT` names another, so several runs can share a machine.
 
 `npm run test:coverage` reports coverage for `src/config.js` and `src/stack.js` (text in the terminal, HTML in `coverage/`, uploaded by CI). Today: 98.82% of statements
-over the two files (`config.js` 98.21%, `stack.js` 100%). The tests still evaluate the two scripts with `vm.compileFunction`, which is given the file name so V8 attributes the
-coverage to it; #34 turns those loaders into plain imports.
+over the two files (`config.js` 98.21%, `stack.js` 100%). The two files are imported by their tests like any module.
 
 `npm run test:visual` runs the screenshot project against the baselines in `test/e2e/__screenshots__/`, and only ever inside the Playwright image
 (Linux arm64, as in CI): compare with `test:visual:docker` or `test:visual:container` (Apple's `container`, after `container system start`), rewrite with
 `test:visual:update` or `test:visual:update:container`. Baselines are only ever regenerated through the Docker or container script, never on the bare host.
-The scripts reuse your `node_modules` inside Linux, which is fine while no dependency has a native build.
+The scripts build `dist/` on your machine and only run Playwright inside Linux, because Vite's native bundler is installed for your platform, not for Linux's.
 
 > Screenshots under `test/e2e/__screenshots__/` are the reference for how the panel looks. A pull request that changes one either fixes the code or regenerates the baseline with `npm run test:visual:update` and says in its changelog entry which screens changed and why. Pull requests that only restructure code must not change a baseline.
 
@@ -177,8 +177,13 @@ Renovate does not re-record screenshots: a person pushes the re-recorded baselin
 Every `uses:` in `.github/workflows/` is pinned to a commit with its version in a comment (Renovate keeps both current), each workflow declares its `permissions:` at the top, and `.github/workflows/codeql.yml` runs CodeQL on pushes to `main`, on pull requests and weekly.
 `test/unit/workflows.test.mjs` fails a workflow that breaks the first two rules.
 
-The source is one custom element in `src/home-panel.src.js`. `build.mjs` splices in the CSS (`src/css/`), the French
-translations (`src/i18n/`), the Automations tab (`src/auto.js`) and the configuration code (`src/config.js`).
+The source is ES modules under `src/`, built by Vite (`vite.config.ts`) into one minified module, `dist/home-panel.js`, with its source map
+`dist/home-panel.js.map` beside it. `src/main.js` is the entry and defines the custom element; the `HomePanel` class is in `src/home-panel.js`, with the
+Automations tab (`src/auto.js`), the configuration code (`src/config.js`), the smart-stack rules (`src/stack.js`), the French translations
+(`src/i18n/fr.js`) and the stylesheet (`src/styles.js`, which joins the files in `src/css/`) imported from it. `src/legacy/globals.js` holds the state
+and helpers those files used to share as globals; it goes away in the refactor's second phase. The vendored libraries in `vendor/` are copied next to
+the bundle and loaded when a tab needs them.
+The source map points a stack trace or the browser's DevTools back at the files in `src/`; it ships in the release zip next to `home-panel.js`.
 The test house in `test/e2e/harness.html` is made up. Keep real names, addresses and entity IDs out of the repository:
 `npm test` fails if it finds some of them.
 
