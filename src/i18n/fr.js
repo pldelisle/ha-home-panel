@@ -311,6 +311,11 @@ export const FR_MAP = {
   '{n}% left.': '{n}% restant.',
   'Doors closed': 'Portes fermées',
   'All doors closed': 'Toutes les portes fermées',
+  // the lowercase fragments of the Security line ("2 cameras · all doors closed · motion now"); FR_DOOR's "motion now" is for sensor rows
+  'all doors closed': 'toutes les portes fermées',
+  'motion now': 'mouvement en cours',
+  'no motion': 'aucun mouvement',
+  'No cameras': 'Aucune caméra',
   'Wallbox offline': 'Wallbox hors ligne',
   'The charger is unavailable in Home Assistant.': 'La borne est indisponible dans Home Assistant.',
   "History didn't load: {n}. Live values still update.":
@@ -1528,7 +1533,9 @@ const FR_RX = [
   [/^(.+) opened \{n\}$/, a => `${a} ouverte à {n}`],
   [/^(.+) air$/, a => `Air : ${a}`],
   [/^(.+) is high$/, a => `${a} élevé`],
-  [/^(.+) open$/, a => `${a} : ouverte`],
+  // a row that ends in a state ("Front door open", "Hall motion now") names one sensor; a " · " line is never one name, so
+  // it falls through to the piece-by-piece rule in frLook() (the same goes for the FR_DOOR rule below)
+  [/^([^·]+) open$/, a => `${a} : ouverte`],
   [
     /^(.+) · (low|mean|high)$/,
     (a, b) => {
@@ -1552,7 +1559,7 @@ const FR_RX = [
   ],
   [/^Open (.+) live$/, x => `Voir ${x} en direct`],
   [
-    /^(.+?) (closed|open|offline|motion now|no motion|motion \{n\} min ago|motion \{n\} h ago|motion just now)$/,
+    /^([^·]+?) (closed|open|offline|motion now|no motion|motion \{n\} min ago|motion \{n\} h ago|motion just now)$/,
     (x, s) => `${x} ${FR_DOOR[s]}`,
   ],
   [
