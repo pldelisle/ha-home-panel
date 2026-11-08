@@ -4,11 +4,12 @@ import {test, expect, tabletOnly, type House} from './fixtures';
 import type {Locator} from '@playwright/test';
 import {FULL_CFG, PHONE_TABS, TABLET_TABS} from './houses';
 
-// opens each tab the screen shows (a tab hidden on purpose, no car say, is skipped) and runs `check` on its pane
+// opens each tab the screen offers (a tab button hidden on purpose, no car say, is skipped; one that is merely invisible is not) and runs `check` on its pane
 async function openEveryTab(house: House, check?: (tab: string, pane: Locator) => Promise<void>) {
   const tabs = house.page.viewportSize()!.width < 600 ? PHONE_TABS : TABLET_TABS;
   for (const t of tabs) {
-    if (!(await house.root().locator(`[data-tab="${t}"]`).first().isVisible())) continue;
+    const button = house.root().locator(`[data-tab="${t}"]`).first();
+    if (!(await button.count()) || await button.evaluate(e => (e as HTMLElement).hidden)) continue;
     await house.tab(t);
     if (check) await check(t, house.root().locator(`#pane-${t}`));
   }
@@ -84,7 +85,7 @@ test.describe('dark theme', () => {
   test('6 every tab opens with no page error', async ({house}) => {
     tabletOnly();
     await expect(house.root().locator('.app'), 'the theme option reached the panel').toHaveAttribute('data-theme', 'dark');
-    await openEveryTab(house);
+    await openEveryTab(house, tallEnough(true));
     await homeButtonUncovered(house);
   });
 });

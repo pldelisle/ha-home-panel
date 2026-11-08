@@ -129,11 +129,12 @@ You need Node 20 or later.
 npm ci
 npm run build          # dist/home-panel.js plus the vendored libraries
 npm test               # unit tests: config, build, French, a scan for personal data
-npm run test:e2e       # builds, then opens every tab in Chromium on a made-up house
+npm run test:e2e       # builds, then runs the Playwright suite
 ```
 
-The first run of `test:e2e` needs a browser: `npx playwright install chromium`. The test server listens on port 4173 unless
-`E2E_PORT` names another, so several runs can share a machine.
+`npm run test:e2e` builds, then runs the Playwright suite against the made-up house on a tablet and a phone;
+`npm run test:e2e -- test/e2e/lights-sheet.spec.ts` runs one file. The first run needs a browser: `npx playwright install chromium`.
+The test server listens on port 4173 unless `E2E_PORT` names another, so several runs can share a machine.
 
 The source is one custom element in `src/home-panel.src.js`. `build.mjs` splices in the CSS (`src/css/`), the French
 translations (`src/i18n/`), the Automations tab (`src/auto.js`) and the configuration code (`src/config.js`).
