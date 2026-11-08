@@ -735,7 +735,6 @@ export class HomePanel extends HTMLElement {
     this.H = null; // history-derived data
     this.charts = []; // sheet charts, destroyed on close
     this.ApexCharts = null; // the library, once the lazy chunk has loaded (loadCharts)
-    this.apexCss = ''; // its stylesheet, written into #apexcss on every build
     this.chartsLoad = null; // the one load of the chunk
     this.open = null; // open sheet id
     this.inline = null; // sheet shown inside a tab pane (Tabs view), same id as this.open while it shows
@@ -917,7 +916,7 @@ export class HomePanel extends HTMLElement {
   // ---------- skeleton ----------
   build() {
     ensureFonts(); // Montserrat from the panel's own fonts/ folder, declared in the document once
-    this.shadowRoot.innerHTML = `<style>${CSS}</style><style id="apexcss"></style>
+    this.shadowRoot.innerHTML = `<style>${CSS}</style>
 <div class="app" id="app"><div class="wrap">
   <header class="head">
     <button class="icon menu" id="menu" type="button" aria-label="Open the sidebar">${ico('menu')}</button>
@@ -1077,7 +1076,6 @@ export class HomePanel extends HTMLElement {
 <span id="txprobe" aria-hidden="true" style="position:absolute;left:-9999px;visibility:hidden;font-size:17px;font:-apple-system-body"></span>
 </div>`;
     this.$app = this.$('app');
-    this.applyApexCss();
     this.$app.lang = FR ? 'fr-CA' : 'en-CA';
     this.shadowRoot
       .querySelectorAll('.sheet>.panel')
@@ -3663,20 +3661,8 @@ export class HomePanel extends HTMLElement {
   }
   // ApexCharts is fetched the first time a sheet that draws charts opens, then kept (the chunk is cached by the browser)
   loadCharts() {
-    this.chartsLoad ??= loadApex().then(({ApexCharts, css}) => {
-      this.ApexCharts = ApexCharts;
-      this.apexCss = css;
-      return ApexCharts;
-    });
-    return this.chartsLoad.then(ApexCharts => {
-      this.applyApexCss();
-      return ApexCharts;
-    });
-  }
-  // build() makes a new #apexcss, so the stylesheet is written again each time, not only when the chunk arrives
-  applyApexCss() {
-    const el = this.$('apexcss');
-    if (el) el.textContent = this.apexCss;
+    this.chartsLoad ??= loadApex().then(({ApexCharts}) => (this.ApexCharts = ApexCharts));
+    return this.chartsLoad;
   }
   async buildSheet(id) {
     const tag = (this.sheetTag = Symbol());
