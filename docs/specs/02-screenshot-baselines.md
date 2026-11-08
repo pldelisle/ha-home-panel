@@ -52,7 +52,7 @@ That is 81 images: 66 tabs and 15 states (the idle clock, light sheet and live p
 
 - Every visual test MUST install the fake clock at `2026-11-07T14:00:00-05:00` unless the row above says otherwise, so greetings, sun position, "ago" texts, history curves and the day's calendar are fixed.
 - Installing the fake clock is not enough: it lets time keep flowing from the fixed instant, so a chart axis or a history curve drawn from "now" moves by a sub-pixel between runs (seen on the Climate tab). Visual tests also freeze `Date` with the fixture's `frozen: true`; timers still run.
-- The idle clock is the exception to `frozen`: it reads "now", so a frozen `Date` would show 11:30 pm after five minutes. Its tests pause the clock a minute after load and `fastForward` it, which fixes the time and the card the stack turns to, and pin `Math.random` to its middle, because the panel nudges the clock block by a random offset on every tick (burn-in protection).
+- The idle clock is the exception to `frozen`: it reads "now", so a frozen `Date` would show 11:30 pm after five minutes. Its tests MUST pause the clock a minute after load and `fastForward` it (on a phone, which never goes idle by itself, "Sleep now" follows, so both viewports show the same time and the first card), which fixes the time and the card the stack turns to, and MUST pin `Math.random` to its middle, because the panel nudges the clock block by a random offset on every tick (burn-in protection).
 - `reducedMotion: 'reduce'` is inherited from the project; `toHaveScreenshot` MUST pass `animations: 'disabled'` and `caret: 'hide'`.
 - Before capturing a tab, the test MUST wait for the pane to be visible and then for the page to settle; `toHaveScreenshot` already waits for two consecutive identical frames, which covers chart draw-in.
 - The Automations tab draws with Mermaid; the test MUST wait for the flow SVG to exist before capturing.
@@ -61,13 +61,13 @@ That is 81 images: 66 tabs and 15 states (the idle clock, light sheet and live p
 
 ### Process rule
 
-- A pull request whose run fails on a screenshot MUST either fix the code so the baseline passes or update the baseline with `test:visual:update` and state in its changeset which screens changed and why. The reviewer MUST look at the diff images in the PR.
+- A pull request whose run fails on a screenshot MUST either fix the code so the baseline passes or update the baseline with `test:visual:update` and state in its changelog entry which screens changed and why. The reviewer MUST look at the diff images in the PR.
 - A structural PR (anything from this parent spec other than an approved visual change) MUST NOT update a baseline.
 - CI MUST upload the Playwright HTML report and `test-results/` on failure so the expected, actual and diff images are one click away.
 
 ### Git
 
-- Baseline PNGs are committed. They are not tiny: a viewport PNG is 155 to 445 KB (about 20 MB for the 66 tab baselines), so every full re-record adds that much to history. LFS is NOT used, so a clone stays simple. Bumping Playwright or Chromium re-records everything, so it SHOULD be its own Renovate pull request on a slow schedule (spec 05).
+- Baseline PNGs are committed. They are not tiny: a viewport PNG is 115 to 440 KB (about 20 MB for the 66 tab baselines), so every full re-record adds that much to history. LFS is NOT used, so a clone stays simple. Bumping Playwright or Chromium re-records everything, so it SHOULD be its own Renovate pull request on a slow schedule (spec 05).
 - A `.gitattributes` entry marks `*.png` under the screenshots directory as binary.
 
 ## Acceptance Criteria

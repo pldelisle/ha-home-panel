@@ -97,6 +97,7 @@ Every check below exists in the script today and MUST exist after the conversion
 `idle.spec.ts` (tablet)
 8. After five minutes without input the idle clock shows, and the weather icon beside the time has the accessible label "Mainly sunny".
 9. Tapping the idle overlay wakes the panel and the panes are usable again.
+40. With the real `Math.random`, the idle clock block's transform changes between 20-second ticks and stays within 20 px sideways and 15 px up or down (the screenshots pin `Math.random`, so this is the one check of the burn-in drift).
 
 `live-pill.spec.ts` (tablet and phone, full house with the standard config)
 10. The status chip is a pill with the `lap` class whose text contains "64%".
@@ -147,7 +148,7 @@ Every check below exists in the script today and MUST exist after the conversion
 
 ## Acceptance Criteria
 
-1. `npm run test:e2e` passes locally and in CI on `main`, with every check numbered 1 to 39 present as a named test.
+1. `npm run test:e2e` passes locally and in CI on `main`, with every check numbered 1 to 40 present as a named test.
 2. `smoke.mjs` is gone; `test/e2e/out/` is gone; no spec calls a method or reads a property of the `home-panel` element other than setting `hass`, `narrow` and `panel` from the harness.
 3. No file under `src/` changed.
 4. A deliberately failing assertion in CI produces an uploaded trace and screenshot.

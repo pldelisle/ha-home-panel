@@ -3,14 +3,10 @@
 // Test titles start with the check's number in docs/specs/01-playwright-test.md.
 import {test, expect, tabletOnly, phoneOnly, IDLE_AFTER_MS, type House} from './fixtures';
 import {FULL_CFG} from './houses';
+import {NIGHT, goIdle, sleepNow} from './idle';
 
 const STACK_TURN_MS = 20_000;
-const NIGHT = '2026-11-07T23:30:00-05:00';
 
-const goIdle = async (house: House) => {
-  await house.clock.fastForward(IDLE_AFTER_MS + 1_000);
-  await expect(house.root().locator('#istk .sc')).toBeVisible();
-};
 const cardKey = (house: House, stack: '#hstk' | '#istk') => house.root().locator(`${stack} .sc`).getAttribute('data-k');
 
 test.describe('tablet', () => {
@@ -62,10 +58,7 @@ test.describe('phone', () => {
   test('20 a phone keeps its Home card without the stack; on the idle clock the card sits under the clock', async ({house}) => {
     await expect(house.root().locator('#pane-home')).toBeVisible(); // the Home card is drawn before we look for a stack in it
     await expect(house.root().locator('#hstk')).toHaveCount(0);
-    // phones never go idle on their own; "Sleep now" in the settings starts the clock
-    await house.root().locator('#gear').click();
-    await house.root().locator('[data-sleep]').click();
-    await expect(house.root().locator('#istk .sc')).toBeVisible();
+    await sleepNow(house);
     const [card, clock, view] = await Promise.all([
       house.root().locator('#istk .sc').boundingBox(),
       house.root().locator('#iclk').boundingBox(),
