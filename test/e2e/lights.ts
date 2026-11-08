@@ -12,3 +12,6 @@ export const callData = (call: string) => JSON.parse(call.replace(/^\S+ /, ''));
 
 /** a failure message that shows the calls the panel made */
 export const callsMessage = (house: House, what: string) => `${what} (calls: ${house.calls.join('; ')})`;
+
+/** the Office tile on the Lights tab (its right part opens the sheet, its left part is the bulb) */
+export const OFFICE_TILE = '#pane-lights .lcell[data-lsheet="office"]';
