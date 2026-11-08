@@ -28,6 +28,7 @@ import {
   cap,
 } from './legacy/globals.js';
 import {loadApex} from './charts/apex.js';
+import {ensureFonts} from './fonts.js';
 // Liquid Glass: the wallpapers the Status popup offers, and whether this engine can run an SVG filter inside backdrop-filter (Chromium only)
 const GLASS_WP = ['dawn', 'lake', 'meadow', 'ember', 'aurora', 'sand', 'sky']; // sky = picked from the time of day and the weather (skyWp)
 const LENS_OK =
@@ -914,13 +915,7 @@ export class HomePanel extends HTMLElement {
 
   // ---------- skeleton ----------
   build() {
-    if (!document.querySelector('link[data-home-panel="font"]')) {
-      const l = document.createElement('link');
-      l.rel = 'stylesheet';
-      l.dataset.homePanel = 'font';
-      l.href = 'https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap';
-      document.head.appendChild(l);
-    }
+    ensureFonts(); // Montserrat from the panel's own fonts/ folder, declared in the document once
     this.shadowRoot.innerHTML = `<style>${CSS}</style>
 <div class="app" id="app"><div class="wrap">
   <header class="head">
