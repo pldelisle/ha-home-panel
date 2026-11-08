@@ -86,5 +86,13 @@ const hass = {states: S, entities: ENT, devices: DEV, areas: AREAS, config: {tim
 window.hass = hass;
 const el = document.createElement('home-panel'); el.hass = hass; el.narrow = innerWidth < 870; el.panel = window.PANEL_CFG ? {config: window.PANEL_CFG} : {}; document.body.appendChild(el);
 window.panel = el;
+// the test's side of the boundary: what Home Assistant does on a state change, a new state object inside a new hass object
+window.house = {
+  setState(id, patch) {
+    const prev = hass.states[id] || {entity_id: id, state: '', attributes: {}};
+    hass.states[id] = {...prev, ...patch, attributes: {...prev.attributes, ...(patch.attributes || {})}};
+    el.hass = {...hass};
+  },
+};
 </script>
 </body></html>

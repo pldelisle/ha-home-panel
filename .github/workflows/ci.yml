@@ -19,9 +19,14 @@ jobs:
       - run: npm run build
       - run: npm test
       - run: npx playwright install --with-deps chromium
+      - run: npx playwright test
+      # the old smoke script runs beside the Playwright suite until every check has moved (#22)
       - run: node test/e2e/smoke.mjs
       - if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: smoke-screenshots
-          path: test/e2e/out/
+          name: e2e-results
+          path: |
+            test-results/
+            playwright-report/
+            test/e2e/out/
