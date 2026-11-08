@@ -3,7 +3,7 @@
 // Test titles start with the check's number in docs/specs/01-playwright-test.md.
 import {test, expect} from './fixtures';
 import {LINK_CFG} from './houses';
-import {tileTexts} from './lights-links.helpers';
+import {tileNames} from './lights';
 
 const tabletOnly = () => test.skip(test.info().project.name === 'phone', 'tablet layout');
 const phoneOnly = () => test.skip(test.info().project.name === 'tablet', 'phone layout');
@@ -30,7 +30,7 @@ test.describe('as an admin', () => {
     await house.page.mouse.move(to.x, to.y, {steps: 12});
     await house.page.mouse.up();
 
-    await expect.poll(() => tileTexts(house)).toEqual(['Office', 'Living room', 'Island', 'Sink']);
+    await expect.poll(() => tileNames(house)).toEqual(['Office', 'Living room', 'Island', 'Sink']);
     await expect.poll(() => house.ws.at(-1)).toEqual({type: 'frontend/set_system_data', key: 'home_panel', value: {light_order: ['office', 'light.kitchen_island']}});
 
     await root.locator('#ledit').click();
@@ -45,7 +45,7 @@ test.describe('with a saved order', () => {
 
   test('38 the phone follows the saved order', async ({house}) => {
     phoneOnly();
-    await expect.poll(() => tileTexts(house)).toEqual(['Office', 'Living room', 'Island', 'Sink']);
+    await expect.poll(() => tileNames(house)).toEqual(['Office', 'Living room', 'Island', 'Sink']);
   });
 });
 

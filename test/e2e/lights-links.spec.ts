@@ -3,7 +3,7 @@
 // Test titles start with the check's number in docs/specs/01-playwright-test.md.
 import {test, expect} from './fixtures';
 import {LINK_CFG} from './houses';
-import {tileTexts} from './lights-links.helpers';
+import {tileNames} from './lights';
 
 const tabletOnly = () => test.skip(test.info().project.name === 'phone', 'tablet layout');
 const phoneOnly = () => test.skip(test.info().project.name === 'tablet', 'phone layout');
@@ -13,7 +13,7 @@ test.describe('as an admin', () => {
 
   test('32 the tiles read Island, Sink, Office, Living room and two linked pairs are shown', async ({house}) => {
     tabletOnly();
-    await expect.poll(() => tileTexts(house)).toEqual(['Island', 'Sink', 'Office', 'Living room']);
+    await expect.poll(() => tileNames(house)).toEqual(['Island', 'Sink', 'Office', 'Living room']);
     await expect(house.root().locator('#pane-lights .llink.on')).toHaveCount(2);
   });
 

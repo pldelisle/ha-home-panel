@@ -1,10 +1,10 @@
 // Helpers for the Lights tab specs: what a person reads on the tiles, and what the panel sent to Home Assistant.
 import type {House} from './fixtures';
 
-/** opens the Lights tab and returns the names on its tiles, in order */
+/** opens the Lights tab and returns the names on the tiles on screen, in order (the phone and the tablet each draw their own copy; only one is visible) */
 export const tileNames = async (house: House) => {
   await house.tab('lights');
-  return house.root().locator('#pane-lights .lcell .tx b').allTextContents();
+  return house.root().locator('#pane-lights .lcell:visible .tx b').allTextContents();
 };
 
 /** the JSON a service call carried: "light.turn_on {...}" gives the object */
