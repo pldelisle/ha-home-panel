@@ -3,8 +3,8 @@ import {readFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import pkg from './package.json' with {type: 'json'};
 
-// One minified ES module, dist/home-panel.js, with its source map beside it. The CSS is imported as text
-// (src/styles.js) and the version is injected here, from package.json. ApexCharts and Mermaid come from npm through
+// One minified ES module, dist/home-panel.js, with its source map beside it. The CSS is imported as minified text
+// (`?inline`, src/styles.js) and the version is injected here, from package.json. ApexCharts and Mermaid come from npm through
 // dynamic imports, so they are emitted as lazy chunks under dist/chunks/, fetched when a tab first needs them. The
 // generated LICENSES.md (npm run licenses) is emitted beside the entry, so the release zip carries the libraries'
 // licences. Nothing else is copied: there is no vendor/ directory.
@@ -51,6 +51,14 @@ export default defineConfig({
     sourcemap: true,
     minify: 'oxc', // Vite 8's default; `esbuild` would need the esbuild package as well
     target: 'es2020',
+    // The stylesheet (imported with `?inline` in src/styles.js) is minified by Lightning CSS, named here so that a
+    // change of Vite's default cannot switch the minifier. Without browser targets Lightning drops 16 of the 19
+    // `-webkit-backdrop-filter` lines (spec 06), which Safari before 18 needs for the glass; with Safari 15 and iOS 15 in
+    // the targets it keeps them, and every other prefix the stylesheet carries. test/unit/styles.test.mjs counts them.
+    // Lightning also merges a rule that writes `backdrop-filter` before `-webkit-backdrop-filter` into the second
+    // alone, which Chromium ignores, so the stylesheet always writes the prefixed line first.
+    cssMinify: 'lightningcss',
+    cssTarget: ['chrome90', 'safari15', 'ios15'],
     rolldownOptions: {
       // apexcharts.esm.js is an ES module that also carries a `typeof module` test (inside its bundled svg.js), which
       // Rolldown warns about on every build; the test is what makes it behave as the <script> build did (see spec 07)

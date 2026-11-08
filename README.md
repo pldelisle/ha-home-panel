@@ -187,7 +187,7 @@ It may be lowered at any time; raising it needs a changeset that says why.
 
 The source is ES modules under `src/`, built by Vite (`vite.config.ts`). `src/main.js` is the entry and defines the custom element; the `HomePanel` class is in `src/home-panel.js`, with the
 Automations tab (`src/auto.js`), the configuration code (`src/config.js`), the smart-stack rules (`src/stack.js`), the French translations
-(`src/i18n/fr.js`) and the stylesheet (`src/styles.js`, which joins the files in `src/css/`) imported from it. `src/legacy/globals.js` holds the state
+(`src/i18n/fr.js`) and the stylesheet (`src/styles.js`, which joins the files in `src/css/`, minified by Lightning CSS with Safari 15 targets) imported from it. `src/legacy/globals.js` holds the state
 and helpers those files used to share as globals; it goes away in the refactor's second phase. ApexCharts and Mermaid come from npm as lazy chunks under
 `dist/chunks/`: ApexCharts (`src/charts/apex.js`) is fetched when the first tab with charts opens, Mermaid when the Automations tab draws its first flow.
 No library is committed as a file. `LICENSES.md` at the root lists every production package with its version and licence text; `npm run licenses` generates it (it is not edited by hand, and Prettier skips it), `vite build` copies it into `dist/`, and `test/unit/licenses.test.mjs` fails when it is out of date.
