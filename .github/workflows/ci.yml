@@ -6,7 +6,8 @@ on:
 permissions:
   contents: read
 # Both jobs run on GitHub's arm64 runners inside the Playwright image for the pinned version, the same image and Chromium
-# a maintainer uses locally (npm run test:visual:docker). The screenshot baselines are recorded there, so they compare there.
+# a maintainer uses locally through Docker or `container` (npm run test:visual:docker). The screenshot baselines are recorded
+# in that image, so they compare there.
 jobs:
   test:
     runs-on: ubuntu-24.04-arm

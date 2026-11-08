@@ -28,7 +28,7 @@ Record a reference screenshot of every tab and of the main open states, on both 
 ### Where screenshots run
 
 - Screenshots are rendered by text, fonts and anti-aliasing that differ between operating systems and CPU architectures. Baselines MUST therefore be recorded and compared on one platform only: Linux arm64, inside the official Playwright image (`mcr.microsoft.com/playwright:v1.63.0-noble`, multi-arch) for the pinned Playwright version. CI runs on GitHub's arm64 runners (`ubuntu-24.04-arm`) with a job-level `container:` of that image, so every job, behaviour suite included, uses the same image and Chromium. A maintainer on an Apple Silicon Mac runs the same image natively, through Docker or Apple's `container` CLI; no emulation is involved. A baseline MUST NOT be recorded on the bare host or on an x86 machine.
-- `npm run test:visual` runs the visual project and is what the image executes (CI runs it in the container; on a laptop it never runs on the bare host). `npm run test:visual:docker` and `npm run test:visual:container` compare through Docker and Apple's `container`; `npm run test:visual:update` and `npm run test:visual:update:container` run it with `--update-snapshots` the same two ways and write the new baselines. Both runners produce byte-identical PNGs.
+- The update scripts pass `--update-snapshots=all`, because the default (`changed`) skips a difference inside a tolerance. `npm run test:visual` runs the visual project and is what the image executes (CI runs it in the container; on a laptop it never runs on the bare host). `npm run test:visual:docker` and `npm run test:visual:container` compare through Docker and Apple's `container`; `npm run test:visual:update` and `npm run test:visual:update:container` run it with `--update-snapshots` the same two ways and write the new baselines. Both runners produce byte-identical PNGs.
 - The snapshot path template MUST NOT include the platform or browser name, so one set of files is the truth: `test/e2e/__screenshots__/{testFilePath}/{arg}{ext}`, where `{arg}` is the name the test gives.
 - Until spec 08 bundles the font, Montserrat is blocked and the fallback is whatever the Docker image's `sans-serif` resolves to. That is stable within the image and is accepted as the baseline look for now; spec 08 updates every baseline once.
 
@@ -56,7 +56,7 @@ That is about 100 images. Each MUST be a full-page viewport capture (`fullPage: 
 - Before capturing a tab, the test MUST wait for the pane to be visible and then for the page to settle; `toHaveScreenshot` already waits for two consecutive identical frames, which covers chart draw-in.
 - The Automations tab draws with Mermaid; the test MUST wait for the flow SVG to exist before capturing.
 - The Weather sheet's radar region shows the "Weather Radar Card didn't load" note in the test house. That is deterministic and acceptable.
-- Comparison tolerance: `maxDiffPixelRatio: 0.001` and `threshold: 0.2` set once in the project. These absorb sub-pixel anti-aliasing and nothing larger.
+- Comparison tolerance: exact, `threshold: 0` and `maxDiffPixels: 0`, set once in the config. With the clock frozen and one image on one architecture, re-renders are byte-identical (Docker and `container` agree), so a tolerance would only hide change: at `threshold: 0.2` a 2 px `.tile` radius change and a 1 px line-colour change both passed unnoticed. If the CI runner ever differs from the laptop, diagnose why rather than loosening this.
 
 ### Process rule
 
@@ -66,7 +66,7 @@ That is about 100 images. Each MUST be a full-page viewport capture (`fullPage: 
 
 ### Git
 
-- Baseline PNGs are committed. They are small (a viewport PNG of flat UI is tens of kilobytes). Git LFS is NOT used, so a clone stays simple.
+- Baseline PNGs are committed. They are not tiny: a viewport PNG is 155 to 445 KB (about 20 MB for the 66 tab baselines), so every full re-record adds that much to history. LFS is NOT used, so a clone stays simple. Bumping Playwright or Chromium re-records everything, so it SHOULD be its own Renovate pull request on a slow schedule (spec 05).
 - A `.gitattributes` entry marks `*.png` under the screenshots directory as binary.
 
 ## Acceptance Criteria
