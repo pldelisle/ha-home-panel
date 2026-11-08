@@ -77,7 +77,7 @@
       "enabled": false
     },
     {
-      "description": "@types/node follows the Node that CI runs (24: setup-node and the Playwright image), not the newest Node, so its 24.x minors and patches arrive and 25 and 26 do not; raise the limit when the Playwright image ships a newer Node",
+      "description": "@types/node follows the Node that CI runs (24: setup-node and the Playwright image), not the newest Node, so its 24.x minors and patches arrive and 25 and 26 do not; raise the limit when CI moves to a newer Node (setup-node and the Playwright image)",
       "matchPackageNames": ["@types/node"],
       "allowedVersions": "<25"
     },
