@@ -123,7 +123,7 @@ Room icons can be `sofa`, `door`, `desk`, `bed`, `bath`, `drop`, `car`, `house` 
 
 ## Develop
 
-You need Node 22.12 or later (Vitest 5 requires Node 22.12, 24 or 26 and later).
+You need Node 22.12 or later (Vitest 5 requires Node 22.12, 24 or 26 and later); `npm run size` needs 22.19, 24.5 or 26 (`size-limit` 14), and CI runs it on Node 24.
 
 ```sh
 npm ci
@@ -131,13 +131,14 @@ npm ci
 git config blame.ignoreRevsFile .git-blame-ignore-revs
 npm run build          # Vite: dist/home-panel.js (minified), home-panel.js.map and the vendored libraries
 npm run dev            # the same build, redone on every save (vite build --watch)
-npm run typecheck      # tsc --checkJs over the config and stack modules (types in src/types.d.ts)
+npm run size           # the main chunk, gzipped, against its budget in package.json (run it after a build)
+npm run typecheck      # tsc --checkJs: the config and stack modules strictly, the rest of src/ loosely (tsconfig.legacy.json)
 npm test               # unit tests (Vitest): config, stack, French, the built dist/, a scan for personal data
 npm run test:watch     # the same, re-run on every save
 npm run test:coverage  # the same, with a coverage report in coverage/
 npm run changeset      # describes your change for the changelog and the version (see below)
 npm run format         # Prettier (run it before committing; CI checks it with npm run format:check)
-npm run lint           # ESLint (CI runs it after format:check)
+npm run lint           # ESLint, including an error for an import that does not resolve (CI runs it after format:check)
 npm run test:e2e       # builds, then runs the Playwright suite
 npm run test:visual:docker           # compares every tab with its screenshot baseline, inside Docker
 npm run test:visual:update           # records new baselines, inside Docker
@@ -177,12 +178,19 @@ Renovate does not re-record screenshots: a person pushes the re-recorded baselin
 Every `uses:` in `.github/workflows/` is pinned to a commit with its version in a comment (Renovate keeps both current), each workflow declares its `permissions:` at the top, and `.github/workflows/codeql.yml` runs CodeQL on pushes to `main`, on pull requests and weekly.
 `test/unit/workflows.test.mjs` fails a workflow that breaks the first two rules.
 
-The source is ES modules under `src/`, built by Vite (`vite.config.ts`) into one minified module, `dist/home-panel.js`, with its source map
-`dist/home-panel.js.map` beside it. `src/main.js` is the entry and defines the custom element; the `HomePanel` class is in `src/home-panel.js`, with the
+`npm run build` builds `dist/home-panel.js` with Vite from the ES modules under `src/`, minified, with a source map beside it; `npm run dev` rebuilds on save.
+`npm run size` checks the main chunk against its budget: its gzipped size (as `size-limit` counts it) must stay under the `size-limit` limit in `package.json`,
+and CI fails the pull request that goes over. The budget is the size of the first minified build plus 10 percent, rounded up to the kilobyte.
+It may be lowered at any time; raising it needs a changeset that says why.
+
+The source is ES modules under `src/`, built by Vite (`vite.config.ts`). `src/main.js` is the entry and defines the custom element; the `HomePanel` class is in `src/home-panel.js`, with the
 Automations tab (`src/auto.js`), the configuration code (`src/config.js`), the smart-stack rules (`src/stack.js`), the French translations
 (`src/i18n/fr.js`) and the stylesheet (`src/styles.js`, which joins the files in `src/css/`) imported from it. `src/legacy/globals.js` holds the state
 and helpers those files used to share as globals; it goes away in the refactor's second phase. The vendored libraries in `vendor/` are copied next to
 the bundle and loaded when a tab needs them.
+`npm run typecheck` runs `tsc` twice: `tsconfig.check.json` checks the pure modules (`config.js`, `stack.js`) strictly, and `tsconfig.legacy.json` checks every
+file under `src/` without `strict`, so a name that does not exist or an import that does not resolve is an error while the untyped class is tolerated.
+`src/env.d.ts` holds the ambient declarations that second pass needs; the refactor's second phase deletes the part that stands in for typed elements.
 The source map points a stack trace or the browser's DevTools back at the files in `src/`; it ships in the release zip next to `home-panel.js`.
 The test house in `test/e2e/harness.html` is made up. Keep real names, addresses and entity IDs out of the repository:
 `npm test` fails if it finds some of them.

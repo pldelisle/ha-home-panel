@@ -2,6 +2,7 @@ import js from '@eslint/js';
 import {defineConfig} from 'eslint/config';
 import tseslint from 'typescript-eslint';
 import lit from 'eslint-plugin-lit';
+import {importX, createNodeResolver} from 'eslint-plugin-import-x';
 import prettier from 'eslint-config-prettier';
 import globals from 'globals';
 
@@ -60,6 +61,22 @@ export default defineConfig(
 
   // The one constant the build injects (vite.config.ts `define`); every other cross-file name is an import now
   {files: ['src/**/*.js'], languageOptions: {globals: {__VERSION__: 'readonly'}}},
+
+  // Imports must resolve, and a name imported from a module must be one it exports (a misspelled import is an error
+  // here, not a blank screen on the tablet). Vite's `?raw` suffix is not part of the file name, so those are skipped.
+  {
+    files: ['src/**/*.{js,ts}', 'test/**/*.{js,mjs,ts}'],
+    plugins: {'import-x': importX},
+    settings: {
+      // the tests import their .ts helpers without an extension, as TypeScript and Playwright allow
+      'import-x/resolver-next': [createNodeResolver({extensions: ['.js', '.mjs', '.ts', '.d.ts', '.json']})],
+    },
+    rules: {
+      'import-x/no-unresolved': ['error', {ignore: ['\\?raw$']}],
+      // TypeScript checks the names it imports itself
+      'import-x/named': ['error'],
+    },
+  },
 
   // legacy: rules that fire on idioms in the old class; each entry says why; this block only shrinks
   {
