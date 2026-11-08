@@ -1,22 +1,86 @@
 name: Release
-# Push a tag like v2.0.0: builds dist/ with that version and attaches home-panel.zip to a GitHub release
+# Runs on every push to main. When package.json's version has no published GitHub release yet, it builds that version,
+# runs the unit tests, zips dist/ and creates the release v<version> with that version's CHANGELOG.md section as the
+# notes and home-panel.zip attached. Merging the "Release" pull request (version-pr.yml) is what bumps the version, so
+# that merge is what publishes; any other push to main finds the release and exits early.
+#
+# This is the only place that creates tags, and it does not run `git tag`: `gh release create --target <sha>` makes
+# GitHub create the tag v<version> at that commit when the release is published. Tags made with GITHUB_TOKEN start no
+# workflows, which is why this runs on the push to main and not on a tag. gh creates a release that has files as a
+# draft, uploads them and only then publishes it, so a failed upload leaves a draft and no tag. The next run removes
+# that draft and starts over. A tag with no release (made by hand, or by an interrupted run) is completed, not
+# skipped: the release is created on the existing tag.
 on:
   push:
-    tags: ['v*']
+    branches: [main]
 permissions:
   contents: write
+# one run at a time, and a run that has started is never cancelled half way through publishing; a newer push waits
+concurrency:
+  group: release
+  cancel-in-progress: false
 jobs:
   release:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # all tags, to see whether v<version> exists
+          persist-credentials: false # nothing here pushes with git; gh calls the API with GH_TOKEN
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
-      - run: npm ci
-      - run: node build.mjs "${GITHUB_REF_NAME#v}"
-      - run: npm test
-      - run: cd dist && zip -r ../home-panel.zip .
-      - run: gh release create "$GITHUB_REF_NAME" home-panel.zip --generate-notes
+          cache: npm
+      - name: Is this version released already?
+        id: v
+        run: |
+          V=$(node -p "require('./package.json').version")
+          export TAG="v$V"
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          # every release for the tag, as "<id> <draft>"; gh fails the step on an API error
+          RELEASES=$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases" --jq '.[] | select(.tag_name == env.TAG) | "\(.id) \(.draft)"')
+          if grep -q ' false$' <<< "$RELEASES"; then
+            echo "Release $TAG already exists, nothing to publish."
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          while read -r ID DRAFT; do
+            [ -n "$ID" ] || continue
+            echo "Deleting the draft release $ID that an earlier run left for $TAG."
+            gh api -X DELETE "repos/$GITHUB_REPOSITORY/releases/$ID"
+          done <<< "$RELEASES"
+          if git rev-parse -q --verify "refs/tags/$TAG" > /dev/null; then
+            echo "Tag $TAG exists but its release does not; completing the release on that tag."
+            if [ "$(git rev-list -n 1 "$TAG")" != "$GITHUB_SHA" ]; then
+              echo "::warning::$TAG points at $(git rev-list -n 1 "$TAG"), not at this commit ($GITHUB_SHA); the zip is built from this commit."
+            fi
+          else
+            echo "No tag or release for $TAG yet; publishing it from $GITHUB_SHA."
+          fi
+      # first, so that a version without a changelog section fails before anything is built or published
+      - name: Release notes from CHANGELOG.md
+        if: steps.v.outputs.exists != 'true'
+        run: node scripts/changelog-section.mjs "$VERSION" > notes.md
         env:
-          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.v.outputs.version }}
+      - if: steps.v.outputs.exists != 'true'
+        run: npm ci
+      - if: steps.v.outputs.exists != 'true'
+        run: npm run build
+      - if: steps.v.outputs.exists != 'true'
+        run: npm test
+      - name: Zip dist/ (the files at the root of the zip)
+        if: steps.v.outputs.exists != 'true'
+        run: |
+          (cd dist && zip -r ../home-panel.zip .)
+          unzip -Z1 home-panel.zip
+          unzip -Z1 home-panel.zip | grep -qx 'home-panel.js'
+      - name: Create the release (and its tag)
+        if: steps.v.outputs.exists != 'true'
+        run: |
+          case "$VERSION" in *-*) PRERELEASE=--prerelease ;; *) PRERELEASE= ;; esac
+          gh release create "v$VERSION" home-panel.zip --target "$GITHUB_SHA" --title "$VERSION" --notes-file notes.md $PRERELEASE
+        env:
+          VERSION: ${{ steps.v.outputs.version }}

@@ -26,7 +26,7 @@ Already in place, and worth keeping:
 
 - A test that blocks personal data (names, IPs, house entity ids) from the public repo.
 
-- CI on every PR, a tag-driven release workflow, vendored library licences documented, aria roles and keyboard handling, reduced-motion support.
+- CI on every PR, a release workflow (tag-driven then, since spec 05 it runs on merge to `main`), vendored library licences documented, aria roles and keyboard handling, reduced-motion support.
 
 What limits it:
 
