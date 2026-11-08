@@ -40,6 +40,7 @@ test('12 Pause charging turns the charger\'s pause switch off', async ({house}) 
 });
 
 test('13 once charging stops and nothing needs attention, the spot is empty', async ({house}) => {
+  await expect(pill(house)).toHaveClass(/\blap\b/); // the pill was there first, so its absence below means something
   await stopCharging(house);
   await expect(pill(house)).toHaveCount(0);
 });

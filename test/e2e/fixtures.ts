@@ -91,10 +91,19 @@ export const test = base.extend<{houseOpts: HouseOpts; house: House}>({
   },
 });
 
-// skips the test on the phone project, for checks that are about the tablet layout
+// skip a test (or a describe's tests, as a beforeEach) on the wrong project, for checks about one layout
 export const tabletOnly = () => test.skip(test.info().project.name === 'phone', 'tablet layout');
+export const phoneOnly = () => test.skip(test.info().project.name !== 'phone', 'phone layout');
 
-// asserts the panel sent a service call ("domain.service {json}") matching `re`; on failure the report lists the calls it did send
-export const expectCall = (house: House, re: RegExp) => expect.poll(() => house.calls, {message: `a service call matching ${re}`}).toContainEqual(expect.stringMatching(re));
+// the panel shows its idle clock after this long without a touch
+export const IDLE_AFTER_MS = 5 * 60_000;
+
+// asserts the panel sent a service call ("domain.service {json}") matching `re`; on failure the report lists the calls it did
+// send, and the boxed step points at the spec's line rather than this one
+export const expectCall = (house: House, re: RegExp) => test.step(
+  `the panel sent a service call matching ${re}`,
+  () => expect.poll(() => house.calls).toContainEqual(expect.stringMatching(re)),
+  {box: true},
+);
 
 export {expect};

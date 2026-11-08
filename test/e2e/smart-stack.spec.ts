@@ -1,14 +1,12 @@
 // Smart stack (2.5.0): at 11:30 pm the plugged-in car and the playing speaker take turns beside the idle clock, and (2.9.0)
 // the same stack fills the Home card on a tablet. A tap opens what the card is about. Time is faked, so cards turn on command.
 // Test titles start with the check's number in docs/specs/01-playwright-test.md.
-import {test, expect, type House} from './fixtures';
+import {test, expect, tabletOnly, phoneOnly, IDLE_AFTER_MS, type House} from './fixtures';
 import {FULL_CFG} from './houses';
 
-const IDLE_AFTER_MS = 5 * 60_000;
 const STACK_TURN_MS = 20_000;
 const NIGHT = '2026-11-07T23:30:00-05:00';
 
-const isPhone = () => test.info().project.name === 'phone';
 const goIdle = async (house: House) => {
   await house.clock.fastForward(IDLE_AFTER_MS + 1_000);
   await expect(house.root().locator('#istk .sc')).toBeVisible();
@@ -16,7 +14,7 @@ const goIdle = async (house: House) => {
 const cardKey = (house: House, stack: '#hstk' | '#istk') => house.root().locator(`${stack} .sc`).getAttribute('data-k');
 
 test.describe('tablet', () => {
-  test.beforeEach(() => test.skip(isPhone(), 'tablet layout'));
+  test.beforeEach(tabletOnly);
   test.use({houseOpts: {cfg: FULL_CFG, time: NIGHT}});
 
   test('16 the Home card shows the stack without growing taller than the tiles beside it', async ({house}) => {
@@ -58,7 +56,7 @@ test.describe('tablet', () => {
 });
 
 test.describe('phone', () => {
-  test.beforeEach(() => test.skip(!isPhone(), 'phone layout'));
+  test.beforeEach(phoneOnly);
   test.use({houseOpts: {cfg: FULL_CFG, time: NIGHT}});
 
   test('20 a phone keeps its Home card without the stack; on the idle clock the card sits under the clock', async ({house}) => {
@@ -80,7 +78,7 @@ test.describe('phone', () => {
 });
 
 test.describe('idle_stack disabled', () => {
-  test.beforeEach(() => test.skip(isPhone(), 'tablet layout'));
+  test.beforeEach(tabletOnly);
   test.use({houseOpts: {cfg: {...FULL_CFG, idle_stack: {enabled: false}}, time: NIGHT}});
 
   test('21 the clock stays alone and the Home card has no stack', async ({house}) => {
