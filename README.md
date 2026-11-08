@@ -166,6 +166,7 @@ Pick patch, minor or major.
 Write the changelog line as one paragraph, a sentence about what the household sees (one paragraph keeps the list tight), and never edit `package.json`'s version or `CHANGELOG.md` by hand.
 A bot runs `npm run version-packages` on a release branch and keeps one "Release" pull request open; merging it is the release.
 That needs the repository setting "Allow GitHub Actions to create and approve pull requests" on, and because the Release pull request is opened with `GITHUB_TOKEN` it gets no CI checks of its own; they run on `main` after the merge.
+The `changeset` CI job (`.github/workflows/changeset.yml` lists the paths it watches) fails a pull request that changes what ships without a changeset; pull requests that only change documentation, tests or CI pass without one, and the `no-changeset` label skips the job when a watched path changed without a release note (a devDependency bump, say).
 
 The source is one custom element in `src/home-panel.src.js`. `build.mjs` splices in the CSS (`src/css/`), the French
 translations (`src/i18n/`), the Automations tab (`src/auto.js`) and the configuration code (`src/config.js`).
