@@ -1,11 +1,15 @@
 import {defineConfig, type Plugin} from 'vite';
-import {viteStaticCopy} from 'vite-plugin-static-copy';
+import {readFileSync} from 'node:fs';
+import {fileURLToPath} from 'node:url';
 import pkg from './package.json' with {type: 'json'};
 
 // One minified ES module, dist/home-panel.js, with its source map beside it. The CSS is imported as text
 // (src/styles.js) and the version is injected here, from package.json. ApexCharts and Mermaid come from npm through
-// dynamic imports, so they are emitted as lazy chunks under dist/chunks/, fetched when a tab first needs them. What is
-// left in vendor/ (Leaflet, unused, until spec 07 removes it) is copied next to the entry.
+// dynamic imports, so they are emitted as lazy chunks under dist/chunks/, fetched when a tab first needs them. The
+// generated LICENSES.md (npm run licenses) is emitted beside the entry, so the release zip carries the libraries'
+// licences. Nothing else is copied: there is no vendor/ directory.
+
+const licensesPath = fileURLToPath(new URL('./LICENSES.md', import.meta.url));
 
 // The constants the build replaces in src/ (declared in src/env.d.ts); vitest.config.ts uses the same object.
 export const define = {__VERSION__: JSON.stringify(pkg.version)};
@@ -24,6 +28,18 @@ const chunkMapsWithoutLibrarySources: Plugin = {
         );
         f.source = JSON.stringify(m);
       }
+  },
+};
+
+// LICENSES.md, generated at the root and committed, goes into dist/ and so into the release zip and a manual install
+// (HACS copies the zip's files too). test/unit/licenses.test.mjs fails when the file is out of date.
+const shipLicenses: Plugin = {
+  name: 'ship-licenses',
+  buildStart() {
+    this.addWatchFile(licensesPath);
+  },
+  generateBundle() {
+    this.emitFile({type: 'asset', fileName: 'LICENSES.md', source: readFileSync(licensesPath, 'utf8')});
   },
 };
 
@@ -55,8 +71,5 @@ export default defineConfig({
       },
     },
   },
-  plugins: [
-    viteStaticCopy({targets: [{src: 'vendor/*.{js,css}', dest: '.', rename: {stripBase: 1}}]}),
-    chunkMapsWithoutLibrarySources,
-  ],
+  plugins: [shipLicenses, chunkMapsWithoutLibrarySources],
 });

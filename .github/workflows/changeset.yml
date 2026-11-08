@@ -1,7 +1,7 @@
 name: Changeset
 # A pull request that changes what ships must carry a changeset (npm run changeset), or the `changeset` job fails.
 # The paths that count are in SHIPPING below: what the Vite build puts into dist/ and the release zip (src/, vite.config.ts,
-# vendor/*.js and vendor/*.css), plus examples/ (it carries the ?v= install snippet), package.json (it carries the
+# LICENSES.md, which the build copies into dist/), plus examples/ (it carries the ?v= install snippet), package.json (it carries the
 # version) and package-lock.json (it pins the libraries the build puts in dist/chunks/: lock-file maintenance can move
 # DOMPurify or d3 inside Mermaid's chunks). A devDependency-only change is not a release: it takes the label. A change to
 # a runtime dependency (apexcharts, mermaid: the build puts them in chunks of dist/) does ship, so it needs a changeset.
@@ -37,7 +37,7 @@ jobs:
     timeout-minutes: 10
     env:
       BASE: ${{ github.base_ref }}
-      SHIPPING: '^(src/|vite\.config\.ts$|package\.json$|package-lock\.json$|examples/|vendor/[^/]+\.(js|css)$)'
+      SHIPPING: '^(src/|vite\.config\.ts$|package\.json$|package-lock\.json$|examples/|LICENSES\.md$)'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
