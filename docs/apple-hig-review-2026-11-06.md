@@ -20,17 +20,17 @@ Where it falls short of the Human Interface Guidelines (HIG) is mostly measurabl
 
 ### Scorecard
 
-| Area | Verdict | What the numbers say |
-|---|---|---|
-| Layout | Good | Safe areas on all four edges, 16 px rhythm, size-class breakpoint at 600 px. The phone header stack takes 215 px before content, and the date appears twice. |
-| Navigation and modality | Good, one gap | Rail and tab bar follow the HIG pattern. Sheets have a grabber without swipe-to-dismiss. |
-| Typography | Needs work | 212 of 1,017 text elements per iPad pass are under 11 px. No Dynamic Type. |
-| Colour and dark mode | Needs work | Secondary grey 3.96:1, tertiary 2.3:1 (light) and 2.85:1 (dark). Primary text 7.5:1 and 14:1, fine. |
-| Controls and touch targets | Mixed | 36 controls per iPad pass are under 28 pt (sliders, switches, timeline dots), 140 under 44 pt. |
-| Charts | Good, two fixes | Familiar chart types with headline subtitles. "Hover" wording, no text alternative, odd tick values. |
-| Feedback and loading | Good, one fix | Status sits next to the item, empty states explain themselves. Errors auto-dismiss. |
-| Accessibility | Good foundation | 0 unlabelled controls, focus rings, Reduce Motion, aria-live. Contrast and size pull it down. |
-| Apple Home comparison | Consistent | Same status-first reading, same tile vocabulary. Sensor names are duplicated in Home Assistant, not in the panel. |
+| Area                       | Verdict         | What the numbers say                                                                                                                                         |
+| -------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Layout                     | Good            | Safe areas on all four edges, 16 px rhythm, size-class breakpoint at 600 px. The phone header stack takes 215 px before content, and the date appears twice. |
+| Navigation and modality    | Good, one gap   | Rail and tab bar follow the HIG pattern. Sheets have a grabber without swipe-to-dismiss.                                                                     |
+| Typography                 | Needs work      | 212 of 1,017 text elements per iPad pass are under 11 px. No Dynamic Type.                                                                                   |
+| Colour and dark mode       | Needs work      | Secondary grey 3.96:1, tertiary 2.3:1 (light) and 2.85:1 (dark). Primary text 7.5:1 and 14:1, fine.                                                          |
+| Controls and touch targets | Mixed           | 36 controls per iPad pass are under 28 pt (sliders, switches, timeline dots), 140 under 44 pt.                                                               |
+| Charts                     | Good, two fixes | Familiar chart types with headline subtitles. "Hover" wording, no text alternative, odd tick values.                                                         |
+| Feedback and loading       | Good, one fix   | Status sits next to the item, empty states explain themselves. Errors auto-dismiss.                                                                          |
+| Accessibility              | Good foundation | 0 unlabelled controls, focus rings, Reduce Motion, aria-live. Contrast and size pull it down.                                                                |
+| Apple Home comparison      | Consistent      | Same status-first reading, same tile vocabulary. Sensor names are duplicated in Home Assistant, not in the panel.                                            |
 
 The Recommendations section ranks 18 fixes. The first five (text floor, greys, hit areas, "Tap a bar", the truncated rail label) are a single small release.
 
@@ -44,12 +44,12 @@ The Recommendations section ranks 18 fixes. The first five (text floor, greys, h
 
 2.  **A measurement pass** (`hig-audit.js`, Playwright with the panel's mock Home Assistant data) that walked every visible control and text element and recorded its hit-area size, computed font size and weight, text colour, the composited background behind it, and the resulting contrast ratio. Apple's thresholds were applied directly: 44 pt default and 28 pt minimum for controls, 11 pt minimum text, 4.5:1 contrast for text under 18 pt and 3:1 for larger or bold text.
 
-| Configuration | Controls measured | Under 44 pt | Under 28 pt | Text elements | Contrast fails | Under 11 px |
-|---|---|---|---|---|---|---|
-| iPad, light, 10 tabs | 285 | 140 | 36 | 1,017 | 341 (34%) | 212 (21%) |
-| iPad, dark, 10 tabs | 285 | 140 | 36 | 1,017 | 152 (15%) | 212 (21%) |
-| iPhone, light, 10 tabs | 177 | 77 | 25 | 465 | 184 (40%) | 87 (19%) |
-| iPhone, light, 11 sheets | 133 | 80 | 5 | 646 | 240 (37%) | 88 (14%) |
+| Configuration            | Controls measured | Under 44 pt | Under 28 pt | Text elements | Contrast fails | Under 11 px |
+| ------------------------ | ----------------- | ----------- | ----------- | ------------- | -------------- | ----------- |
+| iPad, light, 10 tabs     | 285               | 140         | 36          | 1,017         | 341 (34%)      | 212 (21%)   |
+| iPad, dark, 10 tabs      | 285               | 140         | 36          | 1,017         | 152 (15%)      | 212 (21%)   |
+| iPhone, light, 10 tabs   | 177               | 77          | 25          | 465           | 184 (40%)      | 87 (19%)    |
+| iPhone, light, 11 sheets | 133               | 80          | 5           | 646           | 240 (37%)      | 88 (14%)    |
 
 CSS pixels equal points on iOS, so the numbers compare directly with Apple's.
 
@@ -137,13 +137,13 @@ CSS pixels equal points on iOS, so the numbers compare directly with Apple's.
 
 **Measured size distribution on the iPad (1,017 text elements across the ten tabs).**
 
-| Size | Count | Share | Where |
-|---|---|---|---|
-| 9.5 to 10.5 px | 212 | 21% | Rail labels (10.5, and 9.5 for "Automations"), uppercase stat labels ("WARMEST", "PM2.5", "ODOMETER"), "· 1 h ago" timestamps, Adaptive Lighting hour marks |
-| 11 to 12 px | 232 | 23% | Units (kWh, µg/m³, ppm), tile detail lines, "never" and run times in the Automations list, list-row status |
-| 12.5 to 14 px | 289 | 28% | Body: subtitles, chip text, helper sentences, segmented labels |
-| 15 to 17 px | 95 | 9% | Card titles, list-row names |
-| 18 px and up | 189 | 19% | Pane titles, big numbers (22 to 78 px), clock |
+| Size           | Count | Share | Where                                                                                                                                                       |
+| -------------- | ----- | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 9.5 to 10.5 px | 212   | 21%   | Rail labels (10.5, and 9.5 for "Automations"), uppercase stat labels ("WARMEST", "PM2.5", "ODOMETER"), "· 1 h ago" timestamps, Adaptive Lighting hour marks |
+| 11 to 12 px    | 232   | 23%   | Units (kWh, µg/m³, ppm), tile detail lines, "never" and run times in the Automations list, list-row status                                                  |
+| 12.5 to 14 px  | 289   | 28%   | Body: subtitles, chip text, helper sentences, segmented labels                                                                                              |
+| 15 to 17 px    | 95    | 9%    | Card titles, list-row names                                                                                                                                 |
+| 18 px and up   | 189   | 19%   | Pane titles, big numbers (22 to 78 px), clock                                                                                                               |
 
 The phone is the same picture with the tab-bar labels at 10 px.
 
@@ -175,15 +175,15 @@ The phone is the same picture with the tab-bar labels at 10 px.
 
 **Measured contrast of the palette as used.**
 
-| Role | Light theme | Ratio on page / tile / card | Dark theme | Ratio on card / tile |
-|---|---|---|---|---|
-| Primary text `--fg` | \#4F4C49 | 7.5 / 7.5 / 8.6 | \#E5E3DD | 14.0 / 11.9 |
-| Secondary `--fg2` | \#7A7672 | **3.96 / 3.99** / 4.50 | \#A9A6A0 | 5.65 / 5.02 |
-| Tertiary `--fg3` | \#A4A09B | **2.28 / 2.30 / 2.60** | \#7D7A75 | **3.21 / 2.85** |
-| Stat label `--label` | \#8A7A64 | **3.69** / 4.16 | \#A9A6A0 | 5.0 |
-| EV green as text `--c-ev` | \#1F8C74 | **4.15** on white | \#36A487 | **4.46** |
-| Blue as text `--c-home` | \#4A7DBA | **3.77** on tile | \#6593D6 | **3.89** |
-| Warn as text `--warn` | \#B27C43 | **3.18** (used bold, so 3:1 applies) | \#EABA89 | 7.7 |
+| Role                      | Light theme | Ratio on page / tile / card          | Dark theme | Ratio on card / tile |
+| ------------------------- | ----------- | ------------------------------------ | ---------- | -------------------- |
+| Primary text `--fg`       | \#4F4C49    | 7.5 / 7.5 / 8.6                      | \#E5E3DD   | 14.0 / 11.9          |
+| Secondary `--fg2`         | \#7A7672    | **3.96 / 3.99** / 4.50               | \#A9A6A0   | 5.65 / 5.02          |
+| Tertiary `--fg3`          | \#A4A09B    | **2.28 / 2.30 / 2.60**               | \#7D7A75   | **3.21 / 2.85**      |
+| Stat label `--label`      | \#8A7A64    | **3.69** / 4.16                      | \#A9A6A0   | 5.0                  |
+| EV green as text `--c-ev` | \#1F8C74    | **4.15** on white                    | \#36A487   | **4.46**             |
+| Blue as text `--c-home`   | \#4A7DBA    | **3.77** on tile                     | \#6593D6   | **3.89**             |
+| Warn as text `--warn`     | \#B27C43    | **3.18** (used bold, so 3:1 applies) | \#EABA89   | 7.7                  |
 
 Bold figures fail Apple's 4.5:1 for small text. "Page" is \#F2F0EB, "tile" the inner \#F3F1ED, "card" white.
 
@@ -221,21 +221,21 @@ Bold figures fail Apple's 4.5:1 for small text. "Page" is \#F2F0EB, "tile" the i
 
 **Measured hit areas (iPad; the phone matches except where noted).**
 
-| Control | Size | Apple | Where |
-|---|---|---|---|
-| Automations timeline dots | 22×22 (16×16 when skipped) | under the 28 minimum | Automations, 20 per screen |
-| Switches `.sw` | 44×26 | under 28 tall; iOS switch is 51×31 | Lights, Car, Media |
-| Brightness slider | 303×16 | under 28 tall | Lights (4) |
-| Colour-temperature slider | 183 to 247 × 8 | under 28 tall | Lights (4) |
-| Sheet Close × | 36×36 | between 28 and 44 | every phone sheet |
-| Sidebar menu, theme button | 38×38 (iPad theme 42) | between | every tab |
-| Volume − / + | 38×38 | between | Media |
-| Play / pause | 40×40 | between | Media (phone) |
-| Segmented controls, period tabs | 36 to 38 tall | between | Climate, Energy, Air, Car |
-| "Auto" / "Back to Auto" pill | 50×29 | between | Lights |
-| "All off" | 67×34 | between | Lights |
-| Security card header (whole row is a button) | 658×28 | at the minimum | Home |
-| Tiles, list rows, rail tabs, scene tiles, TV buttons | 56 to 120 tall | fine | everywhere |
+| Control                                              | Size                       | Apple                              | Where                      |
+| ---------------------------------------------------- | -------------------------- | ---------------------------------- | -------------------------- |
+| Automations timeline dots                            | 22×22 (16×16 when skipped) | under the 28 minimum               | Automations, 20 per screen |
+| Switches `.sw`                                       | 44×26                      | under 28 tall; iOS switch is 51×31 | Lights, Car, Media         |
+| Brightness slider                                    | 303×16                     | under 28 tall                      | Lights (4)                 |
+| Colour-temperature slider                            | 183 to 247 × 8             | under 28 tall                      | Lights (4)                 |
+| Sheet Close ×                                        | 36×36                      | between 28 and 44                  | every phone sheet          |
+| Sidebar menu, theme button                           | 38×38 (iPad theme 42)      | between                            | every tab                  |
+| Volume − / +                                         | 38×38                      | between                            | Media                      |
+| Play / pause                                         | 40×40                      | between                            | Media (phone)              |
+| Segmented controls, period tabs                      | 36 to 38 tall              | between                            | Climate, Energy, Air, Car  |
+| "Auto" / "Back to Auto" pill                         | 50×29                      | between                            | Lights                     |
+| "All off"                                            | 67×34                      | between                            | Lights                     |
+| Security card header (whole row is a button)         | 658×28                     | at the minimum                     | Home                       |
+| Tiles, list rows, rail tabs, scene tiles, TV buttons | 56 to 120 tall             | fine                               | everywhere                 |
 
 **What the panel does well.**
 
@@ -387,20 +387,20 @@ Bold figures fail Apple's 4.5:1 for small text. "Page" is \#F2F0EB, "tile" the i
 
 Apple's HomeKit page sets the vocabulary (rooms are names, zones group rooms, a scene is a group of actions, use "scene" not "action set", show an accessory's room and home in its detail view, never cover a camera image, defer to names set in the Home app, avoid room words in accessory names because they break voice control). The Home app itself is the practical reference for how Apple lays out a home dashboard.
 
-| Aspect | Apple Home | Home panel | Verdict |
-|---|---|---|---|
-| First thing on screen | Home title, then status pills ("1 door open", "4 lights on") | Greeting, attention chip ("1 thing needs attention"), then the Home subtitle with inside / outside temperatures and the item count | Same status-first reading. The panel adds weather and who's home, which Apple Home leaves to other apps. |
-| Tiles | Icon, name, state; tap toggles, long-press opens detail | Icon, name, big value, detail line; tap opens detail; switches live in list rows | The panel is monitoring-first by design. Clearer at a metre than Apple's tiles; one more tap to act. Consistent with the brief. |
-| Scenes | Top of the Home tab, horizontal row | Bottom of the Home tab | Apple puts the most-tapped items first. The iPad placement was chosen deliberately; the phone would benefit from the row moving up. |
-| Rooms | Rooms are the main grouping; each room shows its accessories | Sections by domain (Lights, Climate, Air) with room rows inside | Domain-first suits a wall dashboard; Apple's room-first suits a phone walking through the house. The removed Rooms view was the room-first variant. |
-| Accessory detail | Sheet with a big vertical slider (brightness) and colour tiles below, close × top right | Sheet with the room name, a toggle and two horizontal sliders, close × top right | Same shape. Apple's vertical slider is easier to drag one-handed; horizontal is fine for the iPad. |
-| Cameras | Thumbnails never covered, live view on tap | Security card shows up to four thumbnails, modal viewer on tap | Matches the HomeKit rule. |
-| Naming | Avoid room words in accessory names; one name per accessory | "Porte Entree" and "Porte Entrée Door" are two rows; "Premier Etage" and "Premier Étage Occupancy" too | These are two Home Assistant entities per device with near-identical names. Renaming them in Home Assistant (for example "Front door", "Front door battery" or merging) fixes the panel and Siri at once. The owner's call. |
-| Climate | Round dial per thermostat, no house average | Whole-house average with a gradient bar, per-room list, stepper and quick setpoints, history | Richer than Apple Home, and the HIG's steppers-and-value pattern is followed. |
-| Energy | Not in Apple Home | Stacked bars, Sankey, Hilo rate | No Apple reference; follows the Charts page. |
-| Automations | List with on/off, no history | Timeline of today's runs plus flow graphs lit from traces | No Apple reference; the timeline dot targets need to grow. |
-| Appearance | Follows the system; white tiles over a blurred wallpaper | Cream cards, optional dark theme following the sun | Deliberate brand (Origami look). The theme should follow the system by default. |
-| Icons | SF Symbols, filled when selected | Custom outline SVG set at 24 px, consistent stroke | The Icons page asks for consistent size, weight and perspective, which the set has. Selected tabs could use a filled variant. |
+| Aspect                | Apple Home                                                                              | Home panel                                                                                                                         | Verdict                                                                                                                                                                                                                     |
+| --------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| First thing on screen | Home title, then status pills ("1 door open", "4 lights on")                            | Greeting, attention chip ("1 thing needs attention"), then the Home subtitle with inside / outside temperatures and the item count | Same status-first reading. The panel adds weather and who's home, which Apple Home leaves to other apps.                                                                                                                    |
+| Tiles                 | Icon, name, state; tap toggles, long-press opens detail                                 | Icon, name, big value, detail line; tap opens detail; switches live in list rows                                                   | The panel is monitoring-first by design. Clearer at a metre than Apple's tiles; one more tap to act. Consistent with the brief.                                                                                             |
+| Scenes                | Top of the Home tab, horizontal row                                                     | Bottom of the Home tab                                                                                                             | Apple puts the most-tapped items first. The iPad placement was chosen deliberately; the phone would benefit from the row moving up.                                                                                         |
+| Rooms                 | Rooms are the main grouping; each room shows its accessories                            | Sections by domain (Lights, Climate, Air) with room rows inside                                                                    | Domain-first suits a wall dashboard; Apple's room-first suits a phone walking through the house. The removed Rooms view was the room-first variant.                                                                         |
+| Accessory detail      | Sheet with a big vertical slider (brightness) and colour tiles below, close × top right | Sheet with the room name, a toggle and two horizontal sliders, close × top right                                                   | Same shape. Apple's vertical slider is easier to drag one-handed; horizontal is fine for the iPad.                                                                                                                          |
+| Cameras               | Thumbnails never covered, live view on tap                                              | Security card shows up to four thumbnails, modal viewer on tap                                                                     | Matches the HomeKit rule.                                                                                                                                                                                                   |
+| Naming                | Avoid room words in accessory names; one name per accessory                             | "Porte Entree" and "Porte Entrée Door" are two rows; "Premier Etage" and "Premier Étage Occupancy" too                             | These are two Home Assistant entities per device with near-identical names. Renaming them in Home Assistant (for example "Front door", "Front door battery" or merging) fixes the panel and Siri at once. The owner's call. |
+| Climate               | Round dial per thermostat, no house average                                             | Whole-house average with a gradient bar, per-room list, stepper and quick setpoints, history                                       | Richer than Apple Home, and the HIG's steppers-and-value pattern is followed.                                                                                                                                               |
+| Energy                | Not in Apple Home                                                                       | Stacked bars, Sankey, Hilo rate                                                                                                    | No Apple reference; follows the Charts page.                                                                                                                                                                                |
+| Automations           | List with on/off, no history                                                            | Timeline of today's runs plus flow graphs lit from traces                                                                          | No Apple reference; the timeline dot targets need to grow.                                                                                                                                                                  |
+| Appearance            | Follows the system; white tiles over a blurred wallpaper                                | Cream cards, optional dark theme following the sun                                                                                 | Deliberate brand (Origami look). The theme should follow the system by default.                                                                                                                                             |
+| Icons                 | SF Symbols, filled when selected                                                        | Custom outline SVG set at 24 px, consistent stroke                                                                                 | The Icons page asks for consistent size, weight and perspective, which the set has. Selected tabs could use a filled variant.                                                                                               |
 
 **Net.** The panel is a dashboard that borrows Apple Home's reading order and component vocabulary, then adds what Apple Home does not have (weather, energy, car, air, automations). Where it departs from Apple Home (domain-first sections, detail on tap instead of toggle on tap, scenes last) it does so on purpose and the HIG does not object. The two things Apple would change are the sensor names and the scene row position on the phone.
 
@@ -456,13 +456,13 @@ Each sketch is the real panel rendered with the proposed change applied as an ov
 
 Sketch 1. Phone Home tab, iPhone 16. One title block instead of greeting plus date plus pane header, the inside and outside temperatures in the subtitle, and the scene row at the top. The first card starts 150 px higher.
 
-*(Screenshot of the live panel left out of the public repo: Sketch 1: phone Home tab, now and proposed, with one title block and the scene row at the top.)*
+_(Screenshot of the live panel left out of the public repo: Sketch 1: phone Home tab, now and proposed, with one title block and the scene row at the top.)_
 
 Sketch 2. iPad Climate detail and Home tiles. Stat labels at 12 px in the secondary grey, the secondary grey itself one step darker (4.5:1 on cream), units at 12 px, and the Car tile title no longer truncated.
 
 ![Sketch 2a: iPad Climate detail, now and proposed, with 12 px stat labels in the darker secondary grey](images/apple-hig-review-2026-11-06/image2.png)
 
-*(Screenshot of the live panel left out of the public repo: Sketch 2b: iPad Home tiles, now and proposed, with the Car tile title no longer truncated.)*
+_(Screenshot of the live panel left out of the public repo: Sketch 2b: iPad Home tiles, now and proposed, with the Car tile title no longer truncated.)_
 
 Sketch 3. Phone light sheet. 44 px Close, a 51×31 switch with its own "Lights" label, "Back to Auto" as a bordered button, and both sliders with a 44 px hit height and a 28 px thumb.
 
@@ -482,24 +482,24 @@ Sketch 6. Phone car sheet. Tiles that the Ford integration never fills (Full ran
 
 Sketch 7. iPad Lights with a failed command. The error toast keeps a Dismiss action and stays until tapped, and the switch that failed is ringed in the critical colour.
 
-*(Screenshot of the live panel left out of the public repo: Sketch 7: iPad Lights with a failed command, now and proposed, with a persistent error toast and the failed switch ringed.)*
+_(Screenshot of the live panel left out of the public repo: Sketch 7: iPad Lights with a failed command, now and proposed, with a persistent error toast and the failed switch ringed.)_
 
 ## Appendix: screen by screen
 
 Counts are from the measurement pass in light mode: controls under 44 pt out of all controls on the screen, and text elements failing Apple's contrast rule out of all text elements. Dark mode fails fewer contrast checks (about half) and the same sizes.
 
-| Screen | iPad (controls under 44 / all, contrast fails / texts) | iPhone (same) | What stands out |
-|---|---|---|---|
-| Home | 3 / 23, 23 / 88 | 4 / 20, 26 / 74 | Reads top-down as the HIG wants. Tile titles truncate ("Mustang Ma…", "Water h…"). Security rows repeat two sensors. On the phone the header stack is 215 px and scenes are 1,450 px down. |
-| Lights | 18 / 28, 19 / 54 | 7 / 16, 14 / 32 | Switches in list rows (correct). Sliders 8 and 16 px tall, switches 26 px tall, "Back to Auto" as a switch label. Adaptive Lighting strip hour marks 10 px. The phone list is the cleanest screen on the panel. |
-| Climate | 8 / 30, 25 / 106 | 3 / 18, 7 / 41 | Stepper with value and a confirmation sentence, segmented Day / Week / Month / Year, quick setpoints: all HIG patterns. Stat labels 10.5 px tertiary. Room list on the iPad has 44 px rows with a selected state. |
-| Weather | 2 / 20, 41 / 110 | 3 / 17, 9 / 52 | Fixed sun arc and nine stat tiles; most contrast failures on the panel because every tile has a tertiary label plus a secondary unit. The "No warnings" card could collapse into the subtitle. |
-| Car | 25 / 44, 67 / 174 | 3 / 9, 15 / 30 | Richest screen: six segments for the charge limit, switches, weekday pills, a stepper. Six tiles show permanent dashes. Weekday buttons 55×36. Battery bar fixed 0 to 100% (correct). |
-| Energy | 9 / 19, 32 / 101 | 3 / 11, 19 / 36 | Stacked bars with a headline subtitle and legend; Sankey with a reading guide. "Hover a bar". Ticks 9.9 / 14.9 / 19.9. No text alternative. |
-| Air | 17 / 27, 67 / 157 | 3 / 9, 30 / 49 | Four identical room cards, each with seven stat tiles and an Automagic / Manual segmented control (37 px tall). Units µg/m³ and ppm at 11 px secondary on cream: 3.99:1. Selected segment text in EV green: 4.15:1. |
-| Media | 7 / 23, 7 / 47 | 6 / 14, 7 / 17 | TV card with four 72 px buttons and a switch; speaker rows with a 38 px volume stepper and a 40 px play button. Best contrast on the panel. The empty TV-volume note is a model empty state. |
-| Security | 3 / 13, 11 / 46 | 4 / 9, 14 / 32 | Empty state with instructions (harness has no cameras); on the real iPad, four thumbnails. Door and motion rows 60 px with word plus colour status. Card header on Home is a 28 px button. |
-| Automations | 48 / 58, 49 / 134 | 41 / 54, 43 / 102 | The one screen with hard failures: 20 timeline dots at 22 px (16 when skipped), overlapping labels, "never" at 11 px tertiary in the list. Flow graphs clip on the phone. Legend uses shape as well as colour (good). |
-| Phone sheets (11) | n/a | 80 / 133, 240 / 646 | Close 36 px on all eleven. Light sheet 5 of 5 controls under 44. Car sheet 24 of 33, Air sheet 16 of 16 (segments). More sheet: one control under 44, all text passes. |
+| Screen            | iPad (controls under 44 / all, contrast fails / texts) | iPhone (same)       | What stands out                                                                                                                                                                                                       |
+| ----------------- | ------------------------------------------------------ | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Home              | 3 / 23, 23 / 88                                        | 4 / 20, 26 / 74     | Reads top-down as the HIG wants. Tile titles truncate ("Mustang Ma…", "Water h…"). Security rows repeat two sensors. On the phone the header stack is 215 px and scenes are 1,450 px down.                            |
+| Lights            | 18 / 28, 19 / 54                                       | 7 / 16, 14 / 32     | Switches in list rows (correct). Sliders 8 and 16 px tall, switches 26 px tall, "Back to Auto" as a switch label. Adaptive Lighting strip hour marks 10 px. The phone list is the cleanest screen on the panel.       |
+| Climate           | 8 / 30, 25 / 106                                       | 3 / 18, 7 / 41      | Stepper with value and a confirmation sentence, segmented Day / Week / Month / Year, quick setpoints: all HIG patterns. Stat labels 10.5 px tertiary. Room list on the iPad has 44 px rows with a selected state.     |
+| Weather           | 2 / 20, 41 / 110                                       | 3 / 17, 9 / 52      | Fixed sun arc and nine stat tiles; most contrast failures on the panel because every tile has a tertiary label plus a secondary unit. The "No warnings" card could collapse into the subtitle.                        |
+| Car               | 25 / 44, 67 / 174                                      | 3 / 9, 15 / 30      | Richest screen: six segments for the charge limit, switches, weekday pills, a stepper. Six tiles show permanent dashes. Weekday buttons 55×36. Battery bar fixed 0 to 100% (correct).                                 |
+| Energy            | 9 / 19, 32 / 101                                       | 3 / 11, 19 / 36     | Stacked bars with a headline subtitle and legend; Sankey with a reading guide. "Hover a bar". Ticks 9.9 / 14.9 / 19.9. No text alternative.                                                                           |
+| Air               | 17 / 27, 67 / 157                                      | 3 / 9, 30 / 49      | Four identical room cards, each with seven stat tiles and an Automagic / Manual segmented control (37 px tall). Units µg/m³ and ppm at 11 px secondary on cream: 3.99:1. Selected segment text in EV green: 4.15:1.   |
+| Media             | 7 / 23, 7 / 47                                         | 6 / 14, 7 / 17      | TV card with four 72 px buttons and a switch; speaker rows with a 38 px volume stepper and a 40 px play button. Best contrast on the panel. The empty TV-volume note is a model empty state.                          |
+| Security          | 3 / 13, 11 / 46                                        | 4 / 9, 14 / 32      | Empty state with instructions (harness has no cameras); on the real iPad, four thumbnails. Door and motion rows 60 px with word plus colour status. Card header on Home is a 28 px button.                            |
+| Automations       | 48 / 58, 49 / 134                                      | 41 / 54, 43 / 102   | The one screen with hard failures: 20 timeline dots at 22 px (16 when skipped), overlapping labels, "never" at 11 px tertiary in the list. Flow graphs clip on the phone. Legend uses shape as well as colour (good). |
+| Phone sheets (11) | n/a                                                    | 80 / 133, 240 / 646 | Close 36 px on all eleven. Light sheet 5 of 5 controls under 44. Car sheet 24 of 33, Air sheet 16 of 16 (segments). More sheet: one control under 44, all text passes.                                                |
 
 **Things seen in the harness that are not real-device findings.** "Sunrise 1:34 am · sunset 1:34 pm" on the Home card and "No cameras yet" come from the mock data. The real panel reads the Environment Canada sun sensors and has four UniFi cameras. Neither affects any count above.

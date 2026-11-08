@@ -34,15 +34,15 @@ Add ESLint and Prettier with one configuration at the root, run them in CI befor
 
 Chosen to match the existing style so the reformat changes line breaks, not idiom:
 
-| Option | Value | Why |
-|---|---|---|
-| `printWidth` | 120 | Fits a side-by-side diff on a laptop; the code is dense and 80 would triple its height |
-| `singleQuote` | true | Current style |
-| `bracketSpacing` | false | Current style: `{readFileSync, join}` |
-| `arrowParens` | `avoid` | Current style: `x => x.id` |
-| `trailingComma` | `all` | Smaller diffs when a list grows |
-| `quoteProps` | `as-needed` | Current style |
-| `semi` | true | Current style |
+| Option           | Value       | Why                                                                                    |
+| ---------------- | ----------- | -------------------------------------------------------------------------------------- |
+| `printWidth`     | 120         | Fits a side-by-side diff on a laptop; the code is dense and 80 would triple its height |
+| `singleQuote`    | true        | Current style                                                                          |
+| `bracketSpacing` | false       | Current style: `{readFileSync, join}`                                                  |
+| `arrowParens`    | `avoid`     | Current style: `x => x.id`                                                             |
+| `trailingComma`  | `all`       | Smaller diffs when a list grows                                                        |
+| `quoteProps`     | `as-needed` | Current style                                                                          |
+| `semi`           | true        | Current style                                                                          |
 
 Prettier MUST format `*.js`, `*.mjs`, `*.ts`, `*.css`, `*.json`, `*.md` and `*.yml`. The CSS files under `src/css/` are formatted too; the resulting one-declaration-per-line layout is accepted.
 

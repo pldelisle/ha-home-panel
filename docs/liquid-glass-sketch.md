@@ -16,11 +16,11 @@ Nothing is deployed. If you want it, it becomes v1.18.0 as its own PR, with a Gl
 
 Home Assistant has no engine of its own. The frontend is a web app that runs in whatever browser opens it, and the panel inherits that browser.
 
-| Where you open the panel | Engine | Glass it can draw |
-|---|---|---|
-| Home Assistant app on the iPhone and the wall iPad | WKWebView, Safari's WebKit (Apple allows no other engine on iOS and iPadOS) | Frosted glass: blur, saturation, rim highlights |
-| Safari on the iPad or the Mac | WebKit | Frosted glass |
-| Chrome on the Mac (the HA host:8123) | Blink (Chromium) | Full effect: frosted glass plus the lens (edge refraction, chromatic fringe) |
+| Where you open the panel                           | Engine                                                                      | Glass it can draw                                                            |
+| -------------------------------------------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Home Assistant app on the iPhone and the wall iPad | WKWebView, Safari's WebKit (Apple allows no other engine on iOS and iPadOS) | Frosted glass: blur, saturation, rim highlights                              |
+| Safari on the iPad or the Mac                      | WebKit                                                                      | Frosted glass                                                                |
+| Chrome on the Mac (the HA host:8123)               | Blink (Chromium)                                                            | Full effect: frosted glass plus the lens (edge refraction, chromatic fringe) |
 
 The one feature that separates the two is `backdrop-filter: url(#filter)`, an SVG filter applied to what sits behind the element. Chromium runs it. WebKit drops the whole declaration, blur included, so the panel keeps a separate `-webkit-backdrop-filter` line without the `url()` part. The nordify README and source say the same: "Only Chromium runs url() filters inside backdrop-filter. Safari drops the whole declaration".
 
@@ -30,12 +30,12 @@ iOS 26's Liquid Glass is a system material. No web API asks for it, so a web pag
 
 All five of your sources build the material from the same four layers. The first two run everywhere, the last two only in Chromium.
 
-| Layer | What it does | CSS | Runs on |
-|---|---|---|---|
-| Material | A translucent fill, and the content behind it blurred and saturated | `background: rgba(255,255,255,.34)` + `backdrop-filter: blur(14px) saturate(1.7) brightness(1.06)` | WebKit and Chromium |
-| Rim | A 1 px light ring, a brighter top-left edge, a soft inner glow and a drop shadow | three inset `box-shadow` layers plus one outer shadow | WebKit and Chromium |
-| Lens | The edges bend what is behind them, like thick glass; a faint colour fringe (chromatic aberration) at the bezel | an SVG `feDisplacementMap` fed by a displacement map image, attached with `backdrop-filter: url(#id)` | Chromium only |
-| Reflection | A soft highlight that follows the edge | nordify: a second SVG filter with `feGaussianBlur` on the bent image, masked to the rim | Chromium only |
+| Layer      | What it does                                                                                                    | CSS                                                                                                   | Runs on             |
+| ---------- | --------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ------------------- |
+| Material   | A translucent fill, and the content behind it blurred and saturated                                             | `background: rgba(255,255,255,.34)` + `backdrop-filter: blur(14px) saturate(1.7) brightness(1.06)`    | WebKit and Chromium |
+| Rim        | A 1 px light ring, a brighter top-left edge, a soft inner glow and a drop shadow                                | three inset `box-shadow` layers plus one outer shadow                                                 | WebKit and Chromium |
+| Lens       | The edges bend what is behind them, like thick glass; a faint colour fringe (chromatic aberration) at the bezel | an SVG `feDisplacementMap` fed by a displacement map image, attached with `backdrop-filter: url(#id)` | Chromium only       |
+| Reflection | A soft highlight that follows the edge                                                                          | nordify: a second SVG filter with `feGaussianBlur` on the bent image, masked to the rim               | Chromium only       |
 
 What each source contributed:
 
@@ -55,15 +55,15 @@ The sketch uses the hiredigital material and rim values, the kube.io three-pass 
 
 Apple puts Liquid Glass on the layer that floats above content (tab bars, toolbars, sheets, popovers) and keeps content itself flat. The sketch follows that split.
 
-| Element | Glass | Why |
-|---|---|---|
-| Phone tab bar | Yes: a floating capsule 14 px in from the edges, the selected tab in a lighter bubble | It is the one element that sits over scrolling content, so the blur has something to show |
-| iPad rail | Yes: the same capsule, vertical | Same reason, and it is the only chrome on the wall iPad |
-| Header chips and round buttons (weather, attention, theme, menu) | Yes | They float over the greeting area |
-| Status popup and the confirmation toast | Yes | Transient layers above content |
-| Phone sheets (light, weather, energy) | The sheet's own frame only, the cards inside stay opaque | The sheet is a layer; its controls are content |
-| Tiles, cards, charts, Security rows, timeline | No, they stay opaque cream or dark | Numbers and labels need a stable background; glass under a chart halves its contrast |
-| Error toasts and the attention dot | No, solid colour | A warning must not fade into whatever is behind it |
+| Element                                                          | Glass                                                                                 | Why                                                                                       |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Phone tab bar                                                    | Yes: a floating capsule 14 px in from the edges, the selected tab in a lighter bubble | It is the one element that sits over scrolling content, so the blur has something to show |
+| iPad rail                                                        | Yes: the same capsule, vertical                                                       | Same reason, and it is the only chrome on the wall iPad                                   |
+| Header chips and round buttons (weather, attention, theme, menu) | Yes                                                                                   | They float over the greeting area                                                         |
+| Status popup and the confirmation toast                          | Yes                                                                                   | Transient layers above content                                                            |
+| Phone sheets (light, weather, energy)                            | The sheet's own frame only, the cards inside stay opaque                              | The sheet is a layer; its controls are content                                            |
+| Tiles, cards, charts, Security rows, timeline                    | No, they stay opaque cream or dark                                                    | Numbers and labels need a stable background; glass under a chart halves its contrast      |
+| Error toasts and the attention dot                               | No, solid colour                                                                      | A warning must not fade into whatever is behind it                                        |
 
 Two background options, since glass needs something behind it to be glass:
 
@@ -79,11 +79,11 @@ Three images, rendered from the real v1.17.0 bundle in the test harness with the
 
 Phone home, left to right: today, glass on the flat cream (A), glass on the soft wallpaper (B), and a light sheet open on B. The tab bar becomes a floating capsule with the selected tab in a lighter bubble, the menu and theme buttons and the attention chip turn to glass, the cards stay solid.
 
-*(Screenshot of the live panel left out of the public repo: Phone home: now, glass on flat cream, glass on soft wallpaper, and a light sheet.)*
+_(Screenshot of the live panel left out of the public repo: Phone home: now, glass on flat cream, glass on soft wallpaper, and a light sheet.)_
 
 iPad home: today, then B in light, then B in dark. The rail is the glass capsule, the header chips go glass, and the wallpaper washes are what you see bending at the rail's edge.
 
-*(Screenshot of the live panel left out of the public repo: iPad home: now, glass on soft wallpaper in light, and in dark.)*
+_(Screenshot of the live panel left out of the public repo: iPad home: now, glass on soft wallpaper in light, and in dark.)_
 
 Tab bar detail: what Chrome on the Mac draws (the bezel bends the row edges under it, with a faint colour fringe) against what the iPad and iPhone draw (the same frosted material, straight edges). The difference is real but small, which is the point: the frosted version carries the look on its own.
 
@@ -126,16 +126,16 @@ Two rules from nordify that decide whether it works at all: no `overflow: hidden
 
 ## Risks and the settings that cover them
 
-| Risk | What happens | Cover |
-|---|---|---|
-| Readability on glass | Labels on the tab bar sit on whatever scrolls under it; the HIG review's contrast pass was done on solid cream | Keep tab labels at full weight and dark grey, keep `--g-fill` at .34 or more; the audit script runs again on the glass build before any deploy |
-| GPU and battery on the wall iPad | `backdrop-filter` re-renders the blurred region on every scroll frame; the wall iPad runs the panel 24 h a day | The iPad rail is the only glass element on the home pane, and it blurs a 96 px strip; a Glass off setting in the Status popup, remembered in localStorage like the theme and text size |
-| Reduce Transparency (iOS setting) | Apple turns Liquid Glass opaque system-wide | `prefers-reduced-transparency: reduce` turns the glass elements back into cream cards; WebKit support for that media query is recent, so the manual setting above is the reliable switch |
-| Increase Contrast | The v1.17.0 `prefers-contrast: more` block darkens the greys | The same block also sets `--g-fill` to .85, so glass becomes near-solid |
-| Motion | Apple's glass moves with scrolling and the lens shimmers | The sketch has no animation; nothing to turn off under `prefers-reduced-motion` |
-| Chrome on the Mac looks different from the iPad | The lens only draws in Chromium | Expected, and the difference is subtle (see the detail render); nothing depends on it |
-| Backdrop-root pitfalls | One `overflow: hidden` on an ancestor, and the glass blurs nothing | The glass elements are direct children of the app root; the build script's checks would assert that `getComputedStyle` on the ancestors shows none of the six properties |
-| HA app updates | A future Home Assistant frontend could wrap custom panels in a container with `overflow: hidden` | Same assertion at runtime: if the blur has no backdrop, the panel removes `glass` and falls back to cards |
+| Risk                                            | What happens                                                                                                   | Cover                                                                                                                                                                                    |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Readability on glass                            | Labels on the tab bar sit on whatever scrolls under it; the HIG review's contrast pass was done on solid cream | Keep tab labels at full weight and dark grey, keep `--g-fill` at .34 or more; the audit script runs again on the glass build before any deploy                                           |
+| GPU and battery on the wall iPad                | `backdrop-filter` re-renders the blurred region on every scroll frame; the wall iPad runs the panel 24 h a day | The iPad rail is the only glass element on the home pane, and it blurs a 96 px strip; a Glass off setting in the Status popup, remembered in localStorage like the theme and text size   |
+| Reduce Transparency (iOS setting)               | Apple turns Liquid Glass opaque system-wide                                                                    | `prefers-reduced-transparency: reduce` turns the glass elements back into cream cards; WebKit support for that media query is recent, so the manual setting above is the reliable switch |
+| Increase Contrast                               | The v1.17.0 `prefers-contrast: more` block darkens the greys                                                   | The same block also sets `--g-fill` to .85, so glass becomes near-solid                                                                                                                  |
+| Motion                                          | Apple's glass moves with scrolling and the lens shimmers                                                       | The sketch has no animation; nothing to turn off under `prefers-reduced-motion`                                                                                                          |
+| Chrome on the Mac looks different from the iPad | The lens only draws in Chromium                                                                                | Expected, and the difference is subtle (see the detail render); nothing depends on it                                                                                                    |
+| Backdrop-root pitfalls                          | One `overflow: hidden` on an ancestor, and the glass blurs nothing                                             | The glass elements are direct children of the app root; the build script's checks would assert that `getComputedStyle` on the ancestors shows none of the six properties                 |
+| HA app updates                                  | A future Home Assistant frontend could wrap custom panels in a container with `overflow: hidden`               | Same assertion at runtime: if the blur has no backdrop, the panel removes `glass` and falls back to cards                                                                                |
 
 ## Decision
 

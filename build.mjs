@@ -7,7 +7,7 @@ import {fileURLToPath} from 'node:url';
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
 const read = p => readFileSync(join(ROOT, p), 'utf8');
-export const CSS_ORDER = ['base', 'extra', 'tabs', 'phone', 'glass', 'lights', 'live', 'motion'];   // motion.css last: it overrides the others
+export const CSS_ORDER = ['base', 'extra', 'tabs', 'phone', 'glass', 'lights', 'live', 'motion']; // motion.css last: it overrides the others
 
 export function build(version = JSON.parse(read('package.json')).version, out = join(ROOT, 'dist')) {
   let src = read('src/home-panel.src.js');
@@ -17,7 +17,7 @@ export function build(version = JSON.parse(read('package.json')).version, out = 
     '/*__FR__*/': read('src/i18n/fr.js') + '\n' + read('src/i18n/fr-map.js'),
     '/*__AUTO__*/': read('src/auto.js'),
     '/*__STACK__*/': read('src/stack.js'),
-    '__CSS__': JSON.stringify(css),
+    __CSS__: JSON.stringify(css),
     "'__VERSION__'": JSON.stringify(version),
   };
   for (const [mark, text] of Object.entries(parts)) {
@@ -27,7 +27,8 @@ export function build(version = JSON.parse(read('package.json')).version, out = 
   }
   mkdirSync(out, {recursive: true});
   writeFileSync(join(out, 'home-panel.js'), src);
-  for (const f of readdirSync(join(ROOT, 'vendor'))) if (/\.(js|css)$/.test(f)) copyFileSync(join(ROOT, 'vendor', f), join(out, f));
+  for (const f of readdirSync(join(ROOT, 'vendor')))
+    if (/\.(js|css)$/.test(f)) copyFileSync(join(ROOT, 'vendor', f), join(out, f));
   return {version, bytes: Buffer.byteLength(src)};
 }
 

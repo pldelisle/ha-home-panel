@@ -5,7 +5,8 @@ import type {Locator} from '@playwright/test';
 import {FULL_CFG} from './houses';
 
 // whether the element itself is shown: not `hidden` and not display:none (its pane may be closed, that is not the question)
-const shown = (loc: Locator) => expect.poll(() => loc.evaluate(e => !(e as HTMLElement).hidden && getComputedStyle(e).display !== 'none'));
+const shown = (loc: Locator) =>
+  expect.poll(() => loc.evaluate(e => !(e as HTMLElement).hidden && getComputedStyle(e).display !== 'none'));
 // the pane is at least 50 px tall; in a house with automations the Automations pane has drawn its flow first
 const tallEnough = (withFlows: boolean) => async (tab: string, pane: Locator) => {
   if (tab === 'auto' && withFlows) await expect(pane.locator('svg').first()).toBeVisible({timeout: 10_000});
@@ -14,7 +15,9 @@ const tallEnough = (withFlows: boolean) => async (tab: string, pane: Locator) =>
 // nothing invisible may sit on top of the panel and swallow taps (the v1.19.6 idle overlay did); checked in every house
 const homeButtonUncovered = async (house: House) => {
   const covered = await house.root().evaluate(el => {
-    const root = el.shadowRoot!, b = root.querySelector('[data-tab="home"]')!, x = b.getBoundingClientRect();
+    const root = el.shadowRoot!,
+      b = root.querySelector('[data-tab="home"]')!,
+      x = b.getBoundingClientRect();
     const top = root.elementFromPoint(x.x + x.width / 2, x.y + x.height / 2);
     return !top || !(top === b || b.contains(top));
   });
@@ -74,7 +77,10 @@ test.describe('dark theme', () => {
 
   test('6 every tab opens with no page error', async ({house}) => {
     tabletOnly();
-    await expect(house.root().locator('.app'), 'the theme option reached the panel').toHaveAttribute('data-theme', 'dark');
+    await expect(house.root().locator('.app'), 'the theme option reached the panel').toHaveAttribute(
+      'data-theme',
+      'dark',
+    );
     await eachShownTab(house, tallEnough(true));
     await homeButtonUncovered(house);
   });

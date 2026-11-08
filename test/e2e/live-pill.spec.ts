@@ -19,7 +19,7 @@ test('11 tapped, the pill shows one activity card and the Status checks', async 
   await expect(popup.locator('.lstat')).toHaveCount(1);
 });
 
-test('12 Pause charging turns the charger\'s pause switch off', async ({house}) => {
+test("12 Pause charging turns the charger's pause switch off", async ({house}) => {
   const popup = await openPopup(house);
   await popup.locator('[data-la="pause"]').click();
   await expectCall(house, /^switch\.turn_off .*charger_pause/);
@@ -37,7 +37,7 @@ test('14 a door left open shows as an attention pill', async ({house}) => {
   await expect(pill(house)).toContainText(/needs attention/);
 });
 
-test('15 the Home card ends at Who\'s home: the pill says the rest (2.8.1)', async ({house}) => {
+test("15 the Home card ends at Who's home: the pill says the rest (2.8.1)", async ({house}) => {
   await stopCharging(house);
   await openFrontDoor(house);
   await expect(pill(house)).toContainText(/needs attention/); // there is a problem, and still no Status block on the Home card

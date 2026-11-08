@@ -12,7 +12,9 @@ test.describe('as an admin', () => {
   // the clock is faked so the test can let a stray service call show up before it ends, without waiting in real time
   test.use({houseOpts: {cfg: LINK_CFG, time: '2026-11-07T12:00:00-05:00'}});
 
-  test('37 dragging Living room onto Island reorders the tiles, saves the order and switches nothing', async ({house}) => {
+  test('37 dragging Living room onto Island reorders the tiles, saves the order and switches nothing', async ({
+    house,
+  }) => {
     tabletOnly();
     const root = house.root();
     await house.tab('lights');
@@ -20,23 +22,35 @@ test.describe('as an admin', () => {
     await root.locator('#ledit').click();
     await expect(root.locator('#pane-lights')).toHaveClass(/ledit/);
     const centre = async (name: string) => {
-      const tile = root.locator('#pane-lights .lcell').filter({has: house.page.locator('.tx b', {hasText: new RegExp(`^${name}$`)})});
+      const tile = root
+        .locator('#pane-lights .lcell')
+        .filter({has: house.page.locator('.tx b', {hasText: new RegExp(`^${name}$`)})});
       const box = await tile.boundingBox();
       return {x: box!.x + box!.width / 2, y: box!.y + box!.height / 2};
     };
-    const from = await centre('Living room'), to = await centre('Island');
+    const from = await centre('Living room'),
+      to = await centre('Island');
     await house.page.mouse.move(from.x, from.y);
     await house.page.mouse.down();
     await house.page.mouse.move(to.x, to.y, {steps: 12});
     await house.page.mouse.up();
 
     await expect.poll(() => tileNames(house)).toEqual(['Office', 'Living room', 'Island', 'Sink']);
-    await expect.poll(() => house.ws.at(-1)).toEqual({type: 'frontend/set_system_data', key: 'home_panel', value: {light_order: ['office', 'light.kitchen_island']}});
+    await expect
+      .poll(() => house.ws.at(-1))
+      .toEqual({
+        type: 'frontend/set_system_data',
+        key: 'home_panel',
+        value: {light_order: ['office', 'light.kitchen_island']},
+      });
 
     await root.locator('#ledit').click();
     await expect(root.locator('#pane-lights')).not.toHaveClass(/ledit/);
     await house.clock.runFor(1_100);
-    expect(house.calls.filter(c => /^light\./.test(c)), 'arranging switches or dims nothing').toEqual([]);
+    expect(
+      house.calls.filter(c => /^light\./.test(c)),
+      'arranging switches or dims nothing',
+    ).toEqual([]);
   });
 });
 

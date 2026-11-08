@@ -2,7 +2,10 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-const {pickStack, inHours, reminderLeft, STACK_TURN_MS} = new Function(readFileSync(new URL('../../src/stack.js', import.meta.url), 'utf8') + '\nreturn {pickStack, inHours, reminderLeft, STACK_TURN_MS};')();
+const {pickStack, inHours, reminderLeft, STACK_TURN_MS} = new Function(
+  readFileSync(new URL('../../src/stack.js', import.meta.url), 'utf8') +
+    '\nreturn {pickStack, inHours, reminderLeft, STACK_TURN_MS};',
+)();
 const card = (k, tone = null, filler = false) => ({k, tone, filler});
 
 test('nothing applies: no card', () => {
@@ -11,7 +14,10 @@ test('nothing applies: no card', () => {
 });
 test('cards take turns, one per tick', () => {
   const C = [card('tomorrow'), card('car'), card('who')];
-  assert.deepEqual([0, 1, 2, 3].map(i => pickStack(C, i * STACK_TURN_MS).card.k), ['tomorrow', 'car', 'who', 'tomorrow']);
+  assert.deepEqual(
+    [0, 1, 2, 3].map(i => pickStack(C, i * STACK_TURN_MS).card.k),
+    ['tomorrow', 'car', 'who', 'tomorrow'],
+  );
   assert.equal(pickStack(C, 0).n, 3);
 });
 test('a red alert pins itself; the rest wait', () => {
@@ -29,8 +35,11 @@ test('fillers only when nothing else applies', () => {
   assert.equal(pickStack([card('energy', null, true)], 0).card.k, 'energy');
 });
 test('hour windows cross midnight', () => {
-  assert.ok(inHours(23, 21, 7)); assert.ok(inHours(3, 21, 7)); assert.ok(!inHours(12, 21, 7));
-  assert.ok(inHours(17.5, 17, 24)); assert.ok(!inHours(16.9, 17, 24));
+  assert.ok(inHours(23, 21, 7));
+  assert.ok(inHours(3, 21, 7));
+  assert.ok(!inHours(12, 21, 7));
+  assert.ok(inHours(17.5, 17, 24));
+  assert.ok(!inHours(16.9, 17, 24));
 });
 test('a reminder shows for its lead time before its hour', () => {
   assert.equal(reminderLeft({at: '20:00', lead: 30}, 19.5), 30);

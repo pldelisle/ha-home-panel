@@ -36,15 +36,15 @@ Record a reference screenshot of every tab and of the main open states, on both 
 
 The visual project is a third Playwright project, `visual`, that reuses the `house` fixture and runs only the files under `test/e2e/visual/`. It MUST cover:
 
-| Set | Viewports | Theme | Language | House | What is captured |
-|---|---|---|---|---|---|
-| Tabs | tablet, phone | light, dark | en, fr | full | every tab the viewport shows (10 on tablet, 4 on phone) |
-| Bare | tablet, phone | light | en | bare | every tab the bare house shows |
-| Idle clock with a stack card | tablet, phone | light, dark | en | full, time 2026-11-07T23:30:00-05:00 | the idle overlay after five minutes, first card |
-| Light sheet | tablet, phone | light, dark | en | full | the Office sheet open |
-| Live-activity popup | tablet, phone | light, dark | en | full | the pill tapped, popup open |
-| Settings popup | tablet | light, dark | en | full | the gear menu open |
-| Status checks | tablet | light | en | full, front door open 20 min | the attention pill tapped |
+| Set                          | Viewports     | Theme       | Language | House                                | What is captured                                        |
+| ---------------------------- | ------------- | ----------- | -------- | ------------------------------------ | ------------------------------------------------------- |
+| Tabs                         | tablet, phone | light, dark | en, fr   | full                                 | every tab the viewport shows (10 on tablet, 4 on phone) |
+| Bare                         | tablet, phone | light       | en       | bare                                 | every tab the bare house shows                          |
+| Idle clock with a stack card | tablet, phone | light, dark | en       | full, time 2026-11-07T23:30:00-05:00 | the idle overlay after five minutes, first card         |
+| Light sheet                  | tablet, phone | light, dark | en       | full                                 | the Office sheet open                                   |
+| Live-activity popup          | tablet, phone | light, dark | en       | full                                 | the pill tapped, popup open                             |
+| Settings popup               | tablet        | light, dark | en       | full                                 | the gear menu open                                      |
+| Status checks                | tablet        | light       | en       | full, front door open 20 min         | the attention pill tapped                               |
 
 That is 81 images: 66 tabs and 15 states (the idle clock, light sheet and live popup each 4, the settings popup 2, the Status checks 1). On a phone the idle clock is started with "Sleep now" in the settings, because phones never go idle on their own. Each MUST be a full-page viewport capture (`fullPage: false`) so the image size is the viewport.
 

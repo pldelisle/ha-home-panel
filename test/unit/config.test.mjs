@@ -3,26 +3,40 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 // config.js is spliced into the bundle as plain script text; run that same text here
-const {resolveConfig, guessIcon, DEFAULT_ENTITIES} = new Function(readFileSync(new URL('../../src/config.js', import.meta.url), 'utf8') + '\nreturn {resolveConfig, guessIcon, DEFAULT_ENTITIES};')();
+const {resolveConfig, guessIcon, DEFAULT_ENTITIES} = new Function(
+  readFileSync(new URL('../../src/config.js', import.meta.url), 'utf8') +
+    '\nreturn {resolveConfig, guessIcon, DEFAULT_ENTITIES};',
+)();
 
 const st = (id, attrs = {}) => [id, {entity_id: id, state: 'on', attributes: attrs}];
 const states = Object.fromEntries([
-  st('weather.springfield_forecast'), st('weather.other'), st('sensor.springfield_temperature'), st('sensor.springfield_humidity'),
-  st('climate.thermostat_living_room', {friendly_name: 'Thermostat Living Room'}), st('climate.bedroom', {friendly_name: 'Main bedroom'}), st('climate.heat_pump'),
-  st('person.alex', {friendly_name: 'Alex Example'}), st('person.sam', {friendly_name: 'Sam'}),
+  st('weather.springfield_forecast'),
+  st('weather.other'),
+  st('sensor.springfield_temperature'),
+  st('sensor.springfield_humidity'),
+  st('climate.thermostat_living_room', {friendly_name: 'Thermostat Living Room'}),
+  st('climate.bedroom', {friendly_name: 'Main bedroom'}),
+  st('climate.heat_pump'),
+  st('person.alex', {friendly_name: 'Alex Example'}),
+  st('person.sam', {friendly_name: 'Sam'}),
   st('sensor.hilo_gateway_2'),
 ]);
 
 test('no config and no states: generic defaults, nothing personal', () => {
   const c = resolveConfig(undefined, undefined);
   assert.equal(c.entities.weather, null);
-  assert.deepEqual(c.rooms, []); assert.deepEqual(c.people, []); assert.deepEqual(c.scenes, []); assert.deepEqual(c.modes, []);
-  assert.equal(c.house, null); assert.deepEqual(c.car, {name: null, color: null, battery_kwh: null});
+  assert.deepEqual(c.rooms, []);
+  assert.deepEqual(c.people, []);
+  assert.deepEqual(c.scenes, []);
+  assert.deepEqual(c.modes, []);
+  assert.equal(c.house, null);
+  assert.deepEqual(c.car, {name: null, color: null, battery_kwh: null});
   assert.equal(c.entities.sun, 'sun.sun');
 });
 
 test('every default entity is null or a well-formed entity id', () => {
-  for (const [k, v] of Object.entries(DEFAULT_ENTITIES)) assert.ok(v === null || /^[a-z_]+\.[a-z0-9_]+$/.test(v), `${k}: ${v}`);
+  for (const [k, v] of Object.entries(DEFAULT_ENTITIES))
+    assert.ok(v === null || /^[a-z_]+\.[a-z0-9_]+$/.test(v), `${k}: ${v}`);
 });
 
 test('weather: a *_forecast entity wins, and its town finds the Environment Canada sensors', () => {
@@ -34,10 +48,23 @@ test('weather: a *_forecast entity wins, and its town finds the Environment Cana
 });
 
 test('entities from the config win, in snake_case or by their short key', () => {
-  const c = resolveConfig({entities: {weather: 'weather.other', grid_power: 'sensor.meter', whT: 'sensor.tank', heat_pump: 'climate.heat_pump', bogus: 'x.y'}}, states);
+  const c = resolveConfig(
+    {
+      entities: {
+        weather: 'weather.other',
+        grid_power: 'sensor.meter',
+        whT: 'sensor.tank',
+        heat_pump: 'climate.heat_pump',
+        bogus: 'x.y',
+      },
+    },
+    states,
+  );
   assert.equal(c.entities.weather, 'weather.other');
   assert.equal(c.entities.outT, null, 'no Environment Canada sensors for weather.other');
-  assert.equal(c.entities.grid, 'sensor.meter'); assert.equal(c.entities.whT, 'sensor.tank'); assert.equal(c.entities.hp, 'climate.heat_pump');
+  assert.equal(c.entities.grid, 'sensor.meter');
+  assert.equal(c.entities.whT, 'sensor.tank');
+  assert.equal(c.entities.hp, 'climate.heat_pump');
   assert.ok(!('bogus' in c.entities));
 });
 
@@ -47,18 +74,38 @@ test('Hilo gateway: found under its _2 name', () => {
 
 test('rooms: discovered from thermostats except the heat pump, with Hilo-style sensor names', () => {
   const c = resolveConfig({entities: {heat_pump: 'climate.heat_pump'}}, states);
-  assert.deepEqual(c.rooms.map(r => r.climate), ['climate.bedroom', 'climate.thermostat_living_room']);
+  assert.deepEqual(
+    c.rooms.map(r => r.climate),
+    ['climate.bedroom', 'climate.thermostat_living_room'],
+  );
   const lr = c.rooms[1];
   assert.equal(lr.k, 'living_room');
   assert.equal(lr.temp, 'sensor.thermostat_living_room_temperature');
   assert.equal(lr.target, 'sensor.thermostat_living_room_target_temperature');
   assert.equal(lr.power, 'sensor.thermostat_living_room_power');
-  assert.equal(lr.icon, 'sofa'); assert.equal(c.rooms[0].icon, 'bed');
+  assert.equal(lr.icon, 'sofa');
+  assert.equal(c.rooms[0].icon, 'bed');
 });
 
 test('rooms: the configured list, in order, with names, icons and sensor overrides', () => {
-  const c = resolveConfig({rooms: [{climate: 'climate.bedroom', name: 'Kids', icon: 'bed', temperature: 'sensor.kids_temp'}, 'climate.garage', {climate: 'climate.x', icon: 'not-an-icon'}]}, states);
-  assert.deepEqual(c.rooms.map(r => [r.k, r.n, r.icon]), [['bedroom', 'Kids', 'bed'], ['garage', null, 'car'], ['x', null, 'therm']]);
+  const c = resolveConfig(
+    {
+      rooms: [
+        {climate: 'climate.bedroom', name: 'Kids', icon: 'bed', temperature: 'sensor.kids_temp'},
+        'climate.garage',
+        {climate: 'climate.x', icon: 'not-an-icon'},
+      ],
+    },
+    states,
+  );
+  assert.deepEqual(
+    c.rooms.map(r => [r.k, r.n, r.icon]),
+    [
+      ['bedroom', 'Kids', 'bed'],
+      ['garage', null, 'car'],
+      ['x', null, 'therm'],
+    ],
+  );
   assert.equal(c.rooms[0].temp, 'sensor.kids_temp');
 });
 
@@ -69,15 +116,26 @@ test('people: configured names, else person entities by first name', () => {
 
 test('house image: one URL for both themes, or day and night', () => {
   assert.deepEqual(resolveConfig({house_image: '/local/h.png'}).house, {day: '/local/h.png', night: '/local/h.png'});
-  assert.deepEqual(resolveConfig({house_image: {night: '/local/n.png'}}).house, {day: '/local/n.png', night: '/local/n.png'});
+  assert.deepEqual(resolveConfig({house_image: {night: '/local/n.png'}}).house, {
+    day: '/local/n.png',
+    night: '/local/n.png',
+  });
   assert.equal(resolveConfig({house_image: {}}).house, null);
 });
 
 test('scenes, modes, Adaptive Lighting areas and car pass through', () => {
-  const c = resolveConfig({scenes: ['scene.a'], modes: 'input_boolean.b', adaptive_lighting_areas: {hall: 'switch.al'}, car: {name: 'EV', color: '#123'}});
-  assert.deepEqual(c.scenes, ['scene.a']); assert.deepEqual(c.modes, ['input_boolean.b']);
-  assert.deepEqual(c.alAreas, {hall: 'switch.al'}); assert.deepEqual(c.car, {name: 'EV', color: '#123', battery_kwh: null});
-  assert.equal(resolveConfig({car: {battery_kwh: 91}}).car.battery_kwh, 91); assert.equal(resolveConfig({car: {battery_kwh: 'x'}}).car.battery_kwh, null);
+  const c = resolveConfig({
+    scenes: ['scene.a'],
+    modes: 'input_boolean.b',
+    adaptive_lighting_areas: {hall: 'switch.al'},
+    car: {name: 'EV', color: '#123'},
+  });
+  assert.deepEqual(c.scenes, ['scene.a']);
+  assert.deepEqual(c.modes, ['input_boolean.b']);
+  assert.deepEqual(c.alAreas, {hall: 'switch.al'});
+  assert.deepEqual(c.car, {name: 'EV', color: '#123', battery_kwh: null});
+  assert.equal(resolveConfig({car: {battery_kwh: 91}}).car.battery_kwh, 91);
+  assert.equal(resolveConfig({car: {battery_kwh: 'x'}}).car.battery_kwh, null);
 });
 
 test('split_light_areas: a list or one area, empty by default', () => {
@@ -91,20 +149,43 @@ test('HA adds _panel_custom to the config; it is ignored', () => {
 });
 
 test('room icons from names, English and French', () => {
-  assert.equal(guessIcon('Chambre des maîtres'), 'bed'); assert.equal(guessIcon('Salle de bain'), 'bath');
-  assert.equal(guessIcon('Bureau'), 'desk'); assert.equal(guessIcon('Salon'), 'sofa'); assert.equal(guessIcon('Attic'), 'therm');
+  assert.equal(guessIcon('Chambre des maîtres'), 'bed');
+  assert.equal(guessIcon('Salle de bain'), 'bath');
+  assert.equal(guessIcon('Bureau'), 'desk');
+  assert.equal(guessIcon('Salon'), 'sofa');
+  assert.equal(guessIcon('Attic'), 'therm');
 });
 
 test('light_links: pairs as a list or with a switch; anything else is dropped', () => {
   assert.deepEqual(resolveConfig({}).lightLinks, []);
-  assert.deepEqual(resolveConfig({light_links: [['a', 'b'], {lights: ['light.x', 'light.y'], switch: 'input_boolean.l'}, ['only-one'], 'nonsense']}).lightLinks,
-    [{keys: ['a', 'b'], sw: null}, {keys: ['light.x', 'light.y'], sw: 'input_boolean.l'}]);
+  assert.deepEqual(
+    resolveConfig({
+      light_links: [['a', 'b'], {lights: ['light.x', 'light.y'], switch: 'input_boolean.l'}, ['only-one'], 'nonsense'],
+    }).lightLinks,
+    [
+      {keys: ['a', 'b'], sw: null},
+      {keys: ['light.x', 'light.y'], sw: 'input_boolean.l'},
+    ],
+  );
 });
 
 test('idle_stack: on by default, reminders need an HH:MM time, away_mode alias', () => {
   assert.deepEqual(resolveConfig({}, {}).stack, {on: true, sunriseOff: false, reminders: []});
-  const c = resolveConfig({entities: {away_mode: 'input_boolean.away'}, idle_stack: {enabled: false, sunrise_lights_off: true,
-    reminders: [{at: '20:00', title: 'Bedtime', text: 'Lamp to night', lead: 20}, {at: 'later'}, null]}}, {});
+  const c = resolveConfig(
+    {
+      entities: {away_mode: 'input_boolean.away'},
+      idle_stack: {
+        enabled: false,
+        sunrise_lights_off: true,
+        reminders: [{at: '20:00', title: 'Bedtime', text: 'Lamp to night', lead: 20}, {at: 'later'}, null],
+      },
+    },
+    {},
+  );
   assert.equal(c.entities.away, 'input_boolean.away');
-  assert.deepEqual(c.stack, {on: false, sunriseOff: true, reminders: [{at: '20:00', title: 'Bedtime', text: 'Lamp to night', lead: 20}]});
+  assert.deepEqual(c.stack, {
+    on: false,
+    sunriseOff: true,
+    reminders: [{at: '20:00', title: 'Bedtime', text: 'Lamp to night', lead: 20}],
+  });
 });

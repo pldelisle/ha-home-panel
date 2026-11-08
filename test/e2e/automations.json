@@ -1,5 +1,46 @@
 [
-  {"entity_id": "automation.lights_off_at_sunrise", "config": {"id": "lights_off_at_sunrise", "alias": "Lights - off at sunrise", "description": "Every light goes off when the sun rises.", "triggers": [{"trigger": "sun", "event": "sunrise"}], "conditions": [], "actions": [{"action": "light.turn_off", "target": {"entity_id": "all"}}], "mode": "single"}},
-  {"entity_id": "automation.heating_evening", "config": {"id": "heating_evening", "alias": "Heating - evening setpoints", "triggers": [{"trigger": "time", "at": "18:00:00"}], "conditions": [{"condition": "state", "entity_id": "input_boolean.heating_away", "state": "off"}], "actions": [{"action": "climate.set_temperature", "target": {"entity_id": "climate.living_room"}, "data": {"temperature": 21}}], "mode": "single"}},
-  {"entity_id": "automation.front_door_light", "config": {"id": "front_door_light", "alias": "Entrance - light when the door opens after dark", "triggers": [{"trigger": "state", "entity_id": "binary_sensor.front_door", "to": "on"}], "conditions": [{"condition": "state", "entity_id": "sun.sun", "state": "below_horizon"}], "actions": [{"action": "light.turn_on", "target": {"entity_id": "light.living_room_1"}}, {"delay": {"minutes": 5}}, {"action": "light.turn_off", "target": {"entity_id": "light.living_room_1"}}], "mode": "restart"}}
+  {
+    "entity_id": "automation.lights_off_at_sunrise",
+    "config": {
+      "id": "lights_off_at_sunrise",
+      "alias": "Lights - off at sunrise",
+      "description": "Every light goes off when the sun rises.",
+      "triggers": [{"trigger": "sun", "event": "sunrise"}],
+      "conditions": [],
+      "actions": [{"action": "light.turn_off", "target": {"entity_id": "all"}}],
+      "mode": "single"
+    }
+  },
+  {
+    "entity_id": "automation.heating_evening",
+    "config": {
+      "id": "heating_evening",
+      "alias": "Heating - evening setpoints",
+      "triggers": [{"trigger": "time", "at": "18:00:00"}],
+      "conditions": [{"condition": "state", "entity_id": "input_boolean.heating_away", "state": "off"}],
+      "actions": [
+        {
+          "action": "climate.set_temperature",
+          "target": {"entity_id": "climate.living_room"},
+          "data": {"temperature": 21}
+        }
+      ],
+      "mode": "single"
+    }
+  },
+  {
+    "entity_id": "automation.front_door_light",
+    "config": {
+      "id": "front_door_light",
+      "alias": "Entrance - light when the door opens after dark",
+      "triggers": [{"trigger": "state", "entity_id": "binary_sensor.front_door", "to": "on"}],
+      "conditions": [{"condition": "state", "entity_id": "sun.sun", "state": "below_horizon"}],
+      "actions": [
+        {"action": "light.turn_on", "target": {"entity_id": "light.living_room_1"}},
+        {"delay": {"minutes": 5}},
+        {"action": "light.turn_off", "target": {"entity_id": "light.living_room_1"}}
+      ],
+      "mode": "restart"
+    }
+  }
 ]

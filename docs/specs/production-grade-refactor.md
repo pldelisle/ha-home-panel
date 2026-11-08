@@ -8,16 +8,16 @@ Decisions taken after review on 2026-11-07: ApexCharts stays (its replacement by
 
 This document is the programme: the why, the architecture and the rules every pull request obeys. Work is done from child specs, each one pull request, each pointing back here. Phases 0 and 1 are specified now; phases 2 to 4 are written only once phase 1 has shipped and the decision to continue is taken.
 
-| # | Spec | Phase | Depends on | Why this order |
-|---|---|---|---|---|
-| 01 | [Playwright Test replaces the smoke script](01-playwright-test.md) | 0 | nothing | The test runner must exist before baselines can be recorded |
-| 02 | [Screenshot baselines](02-screenshot-baselines.md) | 0 | 01 | Baselines are recorded on untouched code so every later change is measured against them |
-| 03 | [ESLint, Prettier and the reflow of long lines](03-lint-and-format.md) | 0 | 02 | The reflow touches nearly every line; the baselines prove it changed nothing |
-| 04 | [Vitest and type checks on the pure modules](04-vitest-and-checkjs.md) | 0 | 03 | Formatting first, so the JSDoc additions are a clean diff |
-| 05 | [Changesets, Renovate, pinned Actions and CodeQL](05-changesets-renovate-codeql.md) | 0 | 01 | Independent of 03 and 04; lands any time after the CI shape is set |
-| 06 | [Vite build, ES modules replace text splicing](06-vite-build.md) | 1 | 02, 03, 04, 05 | The first change to how the panel is built; needs every guard rail in place |
-| 07 | [npm packages replace the committed vendor files](07-npm-packages-replace-vendor.md) | 1 | 06 | Needs a module build to emit lazy chunks |
-| 08 | [Montserrat ships with the panel](08-bundled-font.md) | 1 | 06 | Needs the module build to copy assets; the one approved visual change of phase 1 |
+| #   | Spec                                                                                 | Phase | Depends on     | Why this order                                                                          |
+| --- | ------------------------------------------------------------------------------------ | ----- | -------------- | --------------------------------------------------------------------------------------- |
+| 01  | [Playwright Test replaces the smoke script](01-playwright-test.md)                   | 0     | nothing        | The test runner must exist before baselines can be recorded                             |
+| 02  | [Screenshot baselines](02-screenshot-baselines.md)                                   | 0     | 01             | Baselines are recorded on untouched code so every later change is measured against them |
+| 03  | [ESLint, Prettier and the reflow of long lines](03-lint-and-format.md)               | 0     | 02             | The reflow touches nearly every line; the baselines prove it changed nothing            |
+| 04  | [Vitest and type checks on the pure modules](04-vitest-and-checkjs.md)               | 0     | 03             | Formatting first, so the JSDoc additions are a clean diff                               |
+| 05  | [Changesets, Renovate, pinned Actions and CodeQL](05-changesets-renovate-codeql.md)  | 0     | 01             | Independent of 03 and 04; lands any time after the CI shape is set                      |
+| 06  | [Vite build, ES modules replace text splicing](06-vite-build.md)                     | 1     | 02, 03, 04, 05 | The first change to how the panel is built; needs every guard rail in place             |
+| 07  | [npm packages replace the committed vendor files](07-npm-packages-replace-vendor.md) | 1     | 06             | Needs a module build to emit lazy chunks                                                |
+| 08  | [Montserrat ships with the panel](08-bundled-font.md)                                | 1     | 06             | Needs the module build to copy assets; the one approved visual change of phase 1        |
 
 Written later, one at a time: phase 2 as three or four specs (store and the removal of module globals, typed API client, config schema, catalogs and formatters); phase 3 as one spec per feature in the move order, written when that feature's turn comes; phase 4 as one spec, the deletion of the French rewrite layer.
 
@@ -162,7 +162,7 @@ Actors: **household member** (anyone using the tablet or phone), **French-speaki
 
 ## Implementation Decisions
 
-Decisions are grouped by phase. A decision that spans phases is stated where it first applies. Vocabulary follows the README and changelog: *tab* and *pane* (the ten subjects on the tablet rail), *sheet* (a detail view opened from a pane), *tile*, *card*, *chip*, the *live-activity pill*, the *smart stack*, the *idle clock*, *Arrange*, *linked rooms*, *Status checks*, *who's home*, the *test house*.
+Decisions are grouped by phase. A decision that spans phases is stated where it first applies. Vocabulary follows the README and changelog: _tab_ and _pane_ (the ten subjects on the tablet rail), _sheet_ (a detail view opened from a pane), _tile_, _card_, _chip_, the _live-activity pill_, the _smart stack_, the _idle clock_, _Arrange_, _linked rooms_, _Status checks_, _who's home_, the _test house_.
 
 ### Global decisions
 
@@ -258,22 +258,22 @@ Nothing in between: no tests of Lit component internals, of the store's subscrip
 
 ### What is tested where
 
-| Subject | Seam | Notes |
-|---|---|---|
-| Every tab on every matrix cell (viewport × theme × language × house) | Harness, screenshot | The contract for phases 0 to 3 |
-| Idle clock, smart stack rotation, wake on tap | Harness | Fake clock advanced past 5 minutes and in 20-second steps |
-| Live-activity pill, Status checks, attention pill | Harness | State mutation through the harness, then re-assigning `hass` |
-| Light tiles, sheet sliders (drag, tap, arrows), Auto and Night, linked rooms picker, Arrange, saved order, admin-only controls | Harness | Asserts the service calls and system-data writes observed on the console |
-| TV and speaker controls, scenes, Pause charging | Harness | Asserts service calls |
-| Optional sections hidden in the bare house | Harness | Water heater, Hilo, Car tab, Climate tab |
-| No outbound font request; no page error; nothing covering the Home tab button | Harness | Kept from the smoke test |
-| axe on every tab and open sheet | Harness | Serious and critical fail |
-| Config resolution, discovery, aliases, schema errors | Vitest | Prior art: the config tests |
-| Smart-stack picking, hour windows, reminders | Vitest | Prior art: the stack tests |
-| Each feature model and provider | Vitest | New, written during each phase-3 move, with recorded fixtures |
-| Catalog completeness, placeholder parity, plural forms, Québec French formatting | Vitest | Prior art: the French tests |
-| Settings migration | Vitest | Malformed and missing values |
-| Build output: version present, source maps present, size budget, no personal data | Vitest and size-limit | Prior art: the build test |
+| Subject                                                                                                                        | Seam                  | Notes                                                                    |
+| ------------------------------------------------------------------------------------------------------------------------------ | --------------------- | ------------------------------------------------------------------------ |
+| Every tab on every matrix cell (viewport × theme × language × house)                                                           | Harness, screenshot   | The contract for phases 0 to 3                                           |
+| Idle clock, smart stack rotation, wake on tap                                                                                  | Harness               | Fake clock advanced past 5 minutes and in 20-second steps                |
+| Live-activity pill, Status checks, attention pill                                                                              | Harness               | State mutation through the harness, then re-assigning `hass`             |
+| Light tiles, sheet sliders (drag, tap, arrows), Auto and Night, linked rooms picker, Arrange, saved order, admin-only controls | Harness               | Asserts the service calls and system-data writes observed on the console |
+| TV and speaker controls, scenes, Pause charging                                                                                | Harness               | Asserts service calls                                                    |
+| Optional sections hidden in the bare house                                                                                     | Harness               | Water heater, Hilo, Car tab, Climate tab                                 |
+| No outbound font request; no page error; nothing covering the Home tab button                                                  | Harness               | Kept from the smoke test                                                 |
+| axe on every tab and open sheet                                                                                                | Harness               | Serious and critical fail                                                |
+| Config resolution, discovery, aliases, schema errors                                                                           | Vitest                | Prior art: the config tests                                              |
+| Smart-stack picking, hour windows, reminders                                                                                   | Vitest                | Prior art: the stack tests                                               |
+| Each feature model and provider                                                                                                | Vitest                | New, written during each phase-3 move, with recorded fixtures            |
+| Catalog completeness, placeholder parity, plural forms, Québec French formatting                                               | Vitest                | Prior art: the French tests                                              |
+| Settings migration                                                                                                             | Vitest                | Malformed and missing values                                             |
+| Build output: version present, source maps present, size budget, no personal data                                              | Vitest and size-limit | Prior art: the build test                                                |
 
 ### Fixtures
 

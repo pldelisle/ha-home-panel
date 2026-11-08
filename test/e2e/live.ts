@@ -11,7 +11,8 @@ export const stopCharging = async (house: House) => {
 };
 
 /** the front door has been open for 20 minutes (counted on the page's clock) */
-export const openFrontDoor = (house: House) => house.setStateSince('binary_sensor.front_door', {state: 'on'}, 20 * 60_000);
+export const openFrontDoor = (house: House) =>
+  house.setStateSince('binary_sensor.front_door', {state: 'on'}, 20 * 60_000);
 
 /** taps the pill, waits for the popup it opens and returns it */
 export const openPopup = async (house: House) => {

@@ -1,182 +1,826 @@
 /* ---------- Phone: the Tabs view under 600 px (iPhone). Bottom tab bar, one column, summary tiles that open sheets ---------- */
-#chips{display:contents}
-.pane .ph.cph,.rtab.rmore,.ltiles,.ctiles2,.etiles,.mtiles,.wxtiles{display:none}
-.app.tabsv.cp .wrap{display:block;padding-top:max(14px,env(safe-area-inset-top,0px));padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+#chips {
+  display: contents;
+}
+.pane .ph.cph,
+.rtab.rmore,
+.ltiles,
+.ctiles2,
+.etiles,
+.mtiles,
+.wxtiles {
+  display: none;
+}
+.app.tabsv.cp .wrap {
+  display: block;
+  padding-top: max(14px, env(safe-area-inset-top, 0px));
+  padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+}
 /* header: menu, greeting and theme on one row, the status chip under them */
-.app.tabsv.cp .head{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px 10px;margin-bottom:16px;position:relative}
-.app.tabsv.cp .head .menu{grid-area:1/1;width:44px;height:44px}
-.app.tabsv.cp .head .hello{grid-area:1/2}
-.app.tabsv.cp .head .hello h1{font-size:calc(22px*var(--tx))}
-.app.tabsv.cp .head .hello div{font-size:calc(13px*var(--tx));margin-top:1px}
-.app.tabsv.cp .head .who{display:none}
-.app.tabsv.cp .head .chips{display:contents}
-.app.tabsv.cp .head #theme{grid-area:1/3;width:44px;height:44px}
-.app.tabsv.cp .head #chips{grid-area:2/1/3/4;display:flex;gap:8px;flex-wrap:wrap}
-.app.tabsv.cp .head .chip{padding:7px 12px;font-size:calc(13px*var(--tx))}
-.app.tabsv.cp .head .clock,.app.tabsv.cp .head .wxchip{display:none}
-.app.tabsv.cp .pop{top:calc(100% + 6px);left:0;right:0;width:auto}
+.app.tabsv.cp .head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px 10px;
+  margin-bottom: 16px;
+  position: relative;
+}
+.app.tabsv.cp .head .menu {
+  grid-area: 1/1;
+  width: 44px;
+  height: 44px;
+}
+.app.tabsv.cp .head .hello {
+  grid-area: 1/2;
+}
+.app.tabsv.cp .head .hello h1 {
+  font-size: calc(22px * var(--tx));
+}
+.app.tabsv.cp .head .hello div {
+  font-size: calc(13px * var(--tx));
+  margin-top: 1px;
+}
+.app.tabsv.cp .head .who {
+  display: none;
+}
+.app.tabsv.cp .head .chips {
+  display: contents;
+}
+.app.tabsv.cp .head #theme {
+  grid-area: 1/3;
+  width: 44px;
+  height: 44px;
+}
+.app.tabsv.cp .head #chips {
+  grid-area: 2/1/3/4;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.app.tabsv.cp .head .chip {
+  padding: 7px 12px;
+  font-size: calc(13px * var(--tx));
+}
+.app.tabsv.cp .head .clock,
+.app.tabsv.cp .head .wxchip {
+  display: none;
+}
+.app.tabsv.cp .pop {
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  width: auto;
+}
 /* the bar at the bottom, as iOS has: four sections and More, lit in the open section's colour */
-.app.tabsv.cp .rail{position:fixed;top:auto;left:0;right:0;bottom:0;z-index:12;flex-direction:row;align-items:stretch;gap:0;margin:0;border-radius:0;padding:6px max(8px,env(safe-area-inset-right,0px)) max(8px,env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px));background:color-mix(in srgb,var(--card) 90%,transparent);backdrop-filter:blur(20px) saturate(1.5);-webkit-backdrop-filter:blur(20px) saturate(1.5);box-shadow:0 -1px 0 var(--line)}
-.app.tabsv.cp .rtab{display:none}
-.app.tabsv.cp .rtab[data-ph],.app.tabsv.cp .rtab.rmore{display:flex;flex:1 1 0;min-width:0;padding:5px 2px 3px;gap:3px;border-radius:14px;font-size:11px}
-.app.tabsv.cp .rtab[aria-selected="true"]{background:transparent}
-.app.tabsv.cp .rtab[aria-selected="true"] span{color:var(--fg)}
-.app.tabsv.cp .rtab svg{width:26px;height:26px}
+.app.tabsv.cp .rail {
+  position: fixed;
+  top: auto;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 12;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 0;
+  margin: 0;
+  border-radius: 0;
+  padding: 6px max(8px, env(safe-area-inset-right, 0px)) max(8px, env(safe-area-inset-bottom, 0px))
+    max(8px, env(safe-area-inset-left, 0px));
+  background: color-mix(in srgb, var(--card) 90%, transparent);
+  backdrop-filter: blur(20px) saturate(1.5);
+  -webkit-backdrop-filter: blur(20px) saturate(1.5);
+  box-shadow: 0 -1px 0 var(--line);
+}
+.app.tabsv.cp .rtab {
+  display: none;
+}
+.app.tabsv.cp .rtab[data-ph],
+.app.tabsv.cp .rtab.rmore {
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 5px 2px 3px;
+  gap: 3px;
+  border-radius: 14px;
+  font-size: 11px;
+}
+.app.tabsv.cp .rtab[aria-selected='true'] {
+  background: transparent;
+}
+.app.tabsv.cp .rtab[aria-selected='true'] span {
+  color: var(--fg);
+}
+.app.tabsv.cp .rtab svg {
+  width: 26px;
+  height: 26px;
+}
 /* pane titles, a size down */
-.app.tabsv.cp .pane .ph{gap:8px 12px;margin-bottom:12px}
-.app.tabsv.cp .pane .ph .badge{width:44px;height:44px;border-radius:14px}
-.app.tabsv.cp .pane .ph .badge svg{width:22px;height:22px}
-.app.tabsv.cp .pane .ph h2{font-size:calc(24px*var(--tx))}
-.app.tabsv.cp .pane .ph .sub{font-size:calc(12.5px*var(--tx))}
-.app.tabsv.cp .cph{display:flex}
-.app.tabsv.cp .pane-home,.app.tabsv.cp .pane-lights,.app.tabsv.cp .pane-media,.app.tabsv.cp .pane-cams,.app.tabsv.cp .pane-energy{display:flex;flex-direction:column;gap:16px}
-.app.tabsv.cp .pane-climate,.app.tabsv.cp .pane-weather,.app.tabsv.cp .pane-car,.app.tabsv.cp .pane-air{display:flex;flex-direction:column;gap:16px}
-.app.tabsv.cp .pane>.ph{margin-bottom:0}
-.app.tabsv.cp .pane{align-items:stretch}
-.app.tabsv.cp .pane>.panel{display:none}
-.app.tabsv.cp .pane[hidden]{display:none}
+.app.tabsv.cp .pane .ph {
+  gap: 8px 12px;
+  margin-bottom: 12px;
+}
+.app.tabsv.cp .pane .ph .badge {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+}
+.app.tabsv.cp .pane .ph .badge svg {
+  width: 22px;
+  height: 22px;
+}
+.app.tabsv.cp .pane .ph h2 {
+  font-size: calc(24px * var(--tx));
+}
+.app.tabsv.cp .pane .ph .sub {
+  font-size: calc(12.5px * var(--tx));
+}
+.app.tabsv.cp .cph {
+  display: flex;
+}
+.app.tabsv.cp .pane-home,
+.app.tabsv.cp .pane-lights,
+.app.tabsv.cp .pane-media,
+.app.tabsv.cp .pane-cams,
+.app.tabsv.cp .pane-energy {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.app.tabsv.cp .pane-climate,
+.app.tabsv.cp .pane-weather,
+.app.tabsv.cp .pane-car,
+.app.tabsv.cp .pane-air {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.app.tabsv.cp .pane > .ph {
+  margin-bottom: 0;
+}
+.app.tabsv.cp .pane {
+  align-items: stretch;
+}
+.app.tabsv.cp .pane > .panel {
+  display: none;
+}
+.app.tabsv.cp .pane[hidden] {
+  display: none;
+}
 /* summary tiles: a square with the value, or a row with a switch; both open a sheet */
-.stile{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:0;min-height:112px;padding:12px 14px;border:0;border-radius:20px;background:var(--card);box-shadow:var(--shadow);font:inherit;color:inherit;text-align:left;min-width:0;cursor:pointer;--rc:var(--c-home)}
-.stile:active{transform:scale(.98)}.stile:focus-visible{outline:2px solid var(--c-home);outline-offset:2px}
-.stile .ic{width:36px;height:36px;border-radius:12px;background:var(--card2);display:grid;place-items:center;color:var(--fg2);flex:none;margin-bottom:10px;overflow:hidden}
-.stile .ic.art img{width:100%;height:100%;object-fit:cover;display:block}
-.stile .tv{order:2;font-size:calc(24px*var(--tx));line-height:1.1;letter-spacing:-.02em;margin-top:auto;white-space:nowrap}
-.stile .tv small{font-size:calc(13px*var(--tx));color:var(--fg2);font-family:var(--f-body);font-weight:500}
-.stile .tx{order:3;display:flex;flex-direction:column;min-width:0;max-width:100%;margin-top:4px}
-.stile b{font-size:calc(13.5px*var(--tx));font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.stile small{font-size:calc(12px*var(--tx));color:var(--fg2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.stile small em{font-style:normal;color:var(--fg2)}
-.stile.on .ic{color:var(--c-wh);background:color-mix(in srgb,var(--c-wh) 18%,var(--card))}
-.stile.bad .ic{color:var(--warn);background:color-mix(in srgb,var(--warn) 18%,var(--card))}
-.stile.blue .ic{color:var(--m-blue);background:color-mix(in srgb,var(--m-blue) 16%,var(--card))}
-.stile.grid .ic{color:var(--c-grid);background:color-mix(in srgb,var(--c-grid) 18%,var(--card))}
-.stile.home.on .ic{color:var(--c-home);background:color-mix(in srgb,var(--c-home) 16%,var(--card))}
-.stile.ltile.on .ic{color:var(--warn);background:color-mix(in srgb,var(--warn) 18%,var(--card))}
-.stile.wide{flex-direction:row;align-items:center;gap:12px;min-height:0;padding:12px 14px}
-.stile.wide .ic{margin:0;width:40px;height:40px;border-radius:13px}
-.stile.wide .tx{order:0;flex:1;margin:0}
-.stile.wide .tv{order:0;margin:0;font-size:calc(22px*var(--tx))}
-.stile.wide b{font-size:calc(15px*var(--tx))}.stile.wide small{font-size:calc(12.5px*var(--tx))}
-.stile .sw{flex:none}
-.stile .pp2{width:44px;height:44px;border-radius:50%;border:0;background:var(--card2);color:var(--fg);display:grid;place-items:center;cursor:pointer;flex:none}
-.stile .pp2.on{background:var(--c-home);color:#fff}.stile .pp2:disabled{opacity:.4;cursor:default}
-.stile.sel{box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--rc) 55%,transparent),var(--shadow)}
-.ltiles,.ctiles2,.etiles,.mtiles,.wxtiles{gap:12px}
-.app.tabsv.cp .ltiles,.app.tabsv.cp .etiles,.app.tabsv.cp .mtiles{display:grid;grid-template-columns:1fr}
-.app.tabsv.cp .ctiles2,.app.tabsv.cp .wxtiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
-.app.tabsv.cp .stile.wide{grid-column:1/-1}
+.stile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  min-height: 112px;
+  padding: 12px 14px;
+  border: 0;
+  border-radius: 20px;
+  background: var(--card);
+  box-shadow: var(--shadow);
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  min-width: 0;
+  cursor: pointer;
+  --rc: var(--c-home);
+}
+.stile:active {
+  transform: scale(0.98);
+}
+.stile:focus-visible {
+  outline: 2px solid var(--c-home);
+  outline-offset: 2px;
+}
+.stile .ic {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: var(--card2);
+  display: grid;
+  place-items: center;
+  color: var(--fg2);
+  flex: none;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+.stile .ic.art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.stile .tv {
+  order: 2;
+  font-size: calc(24px * var(--tx));
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin-top: auto;
+  white-space: nowrap;
+}
+.stile .tv small {
+  font-size: calc(13px * var(--tx));
+  color: var(--fg2);
+  font-family: var(--f-body);
+  font-weight: 500;
+}
+.stile .tx {
+  order: 3;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  max-width: 100%;
+  margin-top: 4px;
+}
+.stile b {
+  font-size: calc(13.5px * var(--tx));
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.stile small {
+  font-size: calc(12px * var(--tx));
+  color: var(--fg2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.stile small em {
+  font-style: normal;
+  color: var(--fg2);
+}
+.stile.on .ic {
+  color: var(--c-wh);
+  background: color-mix(in srgb, var(--c-wh) 18%, var(--card));
+}
+.stile.bad .ic {
+  color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 18%, var(--card));
+}
+.stile.blue .ic {
+  color: var(--m-blue);
+  background: color-mix(in srgb, var(--m-blue) 16%, var(--card));
+}
+.stile.grid .ic {
+  color: var(--c-grid);
+  background: color-mix(in srgb, var(--c-grid) 18%, var(--card));
+}
+.stile.home.on .ic {
+  color: var(--c-home);
+  background: color-mix(in srgb, var(--c-home) 16%, var(--card));
+}
+.stile.ltile.on .ic {
+  color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 18%, var(--card));
+}
+.stile.wide {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  min-height: 0;
+  padding: 12px 14px;
+}
+.stile.wide .ic {
+  margin: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 13px;
+}
+.stile.wide .tx {
+  order: 0;
+  flex: 1;
+  margin: 0;
+}
+.stile.wide .tv {
+  order: 0;
+  margin: 0;
+  font-size: calc(22px * var(--tx));
+}
+.stile.wide b {
+  font-size: calc(15px * var(--tx));
+}
+.stile.wide small {
+  font-size: calc(12.5px * var(--tx));
+}
+.stile .sw {
+  flex: none;
+}
+.stile .pp2 {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 0;
+  background: var(--card2);
+  color: var(--fg);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  flex: none;
+}
+.stile .pp2.on {
+  background: var(--c-home);
+  color: #fff;
+}
+.stile .pp2:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.stile.sel {
+  box-shadow:
+    inset 0 0 0 1.5px color-mix(in srgb, var(--rc) 55%, transparent),
+    var(--shadow);
+}
+.ltiles,
+.ctiles2,
+.etiles,
+.mtiles,
+.wxtiles {
+  gap: 12px;
+}
+.app.tabsv.cp .ltiles,
+.app.tabsv.cp .etiles,
+.app.tabsv.cp .mtiles {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+.app.tabsv.cp .ctiles2,
+.app.tabsv.cp .wxtiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.app.tabsv.cp .stile.wide {
+  grid-column: 1/-1;
+}
 /* Home: weather and house, then the six tiles two across, Security, the scenes two across */
-.app.tabsv.cp .hwx{cursor:pointer}
-.app.tabsv.cp .hbig .num{font-size:calc(60px*var(--tx))}
-.app.tabsv.cp .hhouse .house{max-width:220px;margin:2px auto}
-.app.tabsv.cp .hright{display:contents}
-.app.tabsv.cp .htiles{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-.app.tabsv.cp .htile{min-height:116px;padding:14px;border-radius:20px}
-.app.tabsv.cp .htile .hv{font-size:calc(28px*var(--tx));margin-top:8px}
-.app.tabsv.cp .htile .hs{font-size:calc(12px*var(--tx))}
-.app.tabsv.cp .htile .hh .lbl{font-size:calc(14px*var(--tx))}.app.tabsv.cp .htile .hh .go{display:none}
+.app.tabsv.cp .hwx {
+  cursor: pointer;
+}
+.app.tabsv.cp .hbig .num {
+  font-size: calc(60px * var(--tx));
+}
+.app.tabsv.cp .hhouse .house {
+  max-width: 220px;
+  margin: 2px auto;
+}
+.app.tabsv.cp .hright {
+  display: contents;
+}
+.app.tabsv.cp .htiles {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.app.tabsv.cp .htile {
+  min-height: 116px;
+  padding: 14px;
+  border-radius: 20px;
+}
+.app.tabsv.cp .htile .hv {
+  font-size: calc(28px * var(--tx));
+  margin-top: 8px;
+}
+.app.tabsv.cp .htile .hs {
+  font-size: calc(12px * var(--tx));
+}
+.app.tabsv.cp .htile .hh .lbl {
+  font-size: calc(14px * var(--tx));
+}
+.app.tabsv.cp .htile .hh .go {
+  display: none;
+}
 /* at the Larger text size the two-column tiles go to one column, so nothing is cut */
-.app.tabsv.cp.txl .htiles,.app.tabsv.cp.txl .ctiles2,.app.tabsv.cp.txl .wxtiles,.app.cp.txl .morelist{grid-template-columns:1fr}
-.app.tabsv.cp .hsec{padding:14px}
-.app.tabsv.cp .hcams{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.app.tabsv.cp .hsens{grid-template-columns:1fr;gap:10px}
+.app.tabsv.cp.txl .htiles,
+.app.tabsv.cp.txl .ctiles2,
+.app.tabsv.cp.txl .wxtiles,
+.app.cp.txl .morelist {
+  grid-template-columns: 1fr;
+}
+.app.tabsv.cp .hsec {
+  padding: 14px;
+}
+.app.tabsv.cp .hcams {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.app.tabsv.cp .hsens {
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
 /* the scenes come first, one row that scrolls sideways; the pane has no title of its own, the header line says the date and temperatures */
-.app.tabsv.cp .pane-home>.ph{display:none}
-.app.tabsv.cp .hscenes{order:-1;display:flex;gap:10px;margin:0 -16px;padding:0 16px 2px;overflow-x:auto;scroll-snap-type:x proximity;scrollbar-width:none;-webkit-overflow-scrolling:touch}
-.app.tabsv.cp .hscenes::-webkit-scrollbar{display:none}
-.app.tabsv.cp .hscenes[hidden]{display:none}
-.app.tabsv.cp .hscenes .ptile{flex:0 0 158px;scroll-snap-align:start}
+.app.tabsv.cp .pane-home > .ph {
+  display: none;
+}
+.app.tabsv.cp .hscenes {
+  order: -1;
+  display: flex;
+  gap: 10px;
+  margin: 0 -16px;
+  padding: 0 16px 2px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.app.tabsv.cp .hscenes::-webkit-scrollbar {
+  display: none;
+}
+.app.tabsv.cp .hscenes[hidden] {
+  display: none;
+}
+.app.tabsv.cp .hscenes .ptile {
+  flex: 0 0 158px;
+  scroll-snap-align: start;
+}
 /* Lights: the strip, then the rows */
-.app.tabsv.cp #lhost{display:none}
-.app.tabsv.cp .alstrip{margin:4px 4px 0;height:46px}
-.app.tabsv.cp .almark{font-size:calc(11px*var(--tx))}
-.app.tabsv.cp .pane-lights>.card{padding:16px}
-.app.tabsv.cp #albar .top{flex-wrap:wrap;gap:2px 10px}.app.tabsv.cp #albar .top .right{white-space:nowrap}
+.app.tabsv.cp #lhost {
+  display: none;
+}
+.app.tabsv.cp .alstrip {
+  margin: 4px 4px 0;
+  height: 46px;
+}
+.app.tabsv.cp .almark {
+  font-size: calc(11px * var(--tx));
+}
+.app.tabsv.cp .pane-lights > .card {
+  padding: 16px;
+}
+.app.tabsv.cp #albar .top {
+  flex-wrap: wrap;
+  gap: 2px 10px;
+}
+.app.tabsv.cp #albar .top .right {
+  white-space: nowrap;
+}
 /* the cards of the old Home view become the Weather, Car, Energy and Air panes */
-.app.tabsv.cp #eside{display:none}
-.app.tabsv.cp #open-air .rooms{grid-template-columns:1fr}
-.app.tabsv.cp .wxcard .house.photo{width:150px;top:12px;right:12px}
-.app.tabsv.cp .pane .card.tap .go{display:grid}
+.app.tabsv.cp #eside {
+  display: none;
+}
+.app.tabsv.cp #open-air .rooms {
+  grid-template-columns: 1fr;
+}
+.app.tabsv.cp .wxcard .house.photo {
+  width: 150px;
+  top: 12px;
+  right: 12px;
+}
+.app.tabsv.cp .pane .card.tap .go {
+  display: grid;
+}
 /* Media and Security */
-.app.tabsv.cp .pane-media>#mtv,.app.tabsv.cp .pane-media>#media{display:none}
-.app.tabsv.cp .camgrid{grid-template-columns:1fr;gap:10px}
-.app.tabsv.cp .pane-cams #senhost .sgrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.app.tabsv.cp .pane-media > #mtv,
+.app.tabsv.cp .pane-media > #media {
+  display: none;
+}
+.app.tabsv.cp .camgrid {
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+.app.tabsv.cp .pane-cams #senhost .sgrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
 /* Automations: the timeline keeps its dots, the labels would pile up at this width */
-.app.tabsv.cp .aul{display:none}
-.app.tabsv.cp .autl{height:64px;margin:12px 6px 4px}
-.app.tabsv.cp .pane-auto .shead{flex-wrap:wrap}
-.app.tabsv.cp .augraph svg{max-width:none}
+.app.tabsv.cp .aul {
+  display: none;
+}
+.app.tabsv.cp .autl {
+  height: 64px;
+  margin: 12px 6px 4px;
+}
+.app.tabsv.cp .pane-auto .shead {
+  flex-wrap: wrap;
+}
+.app.tabsv.cp .augraph svg {
+  max-width: none;
+}
 /* sheets rise from the bottom, full width, with a grabber */
-.app.cp .sheet{padding:0;place-items:end stretch;background:rgba(20,16,12,.38)}
-.app.cp .sheet>.panel{width:100%;max-width:none;max-height:calc(100% - max(40px,env(safe-area-inset-top,0px)));border-radius:26px 26px 0 0;padding:8px 16px calc(24px + env(safe-area-inset-bottom,0px));animation:shup .32s cubic-bezier(.2,.8,.2,1);overscroll-behavior:contain;transition:transform .2s ease-out}
+.app.cp .sheet {
+  padding: 0;
+  place-items: end stretch;
+  background: rgba(20, 16, 12, 0.38);
+}
+.app.cp .sheet > .panel {
+  width: 100%;
+  max-width: none;
+  max-height: calc(100% - max(40px, env(safe-area-inset-top, 0px)));
+  border-radius: 26px 26px 0 0;
+  padding: 8px 16px calc(24px + env(safe-area-inset-bottom, 0px));
+  animation: shup 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+  overscroll-behavior: contain;
+  transition: transform 0.2s ease-out;
+}
 /* the grabber: drag it, or the title, down to close the sheet; a short drag springs back */
-.grab{display:none}
-.app.cp .sheet>.panel>.grab{display:block;padding:6px 0 12px;touch-action:none;cursor:grab}
-.app.cp .sheet>.panel>.grab::before{content:"";display:block;width:36px;height:5px;border-radius:3px;background:var(--fg3);margin:0 auto}
-.sheet>.panel>.grab+*,.pane>.panel>.grab+*,.app.cp .sheet>.panel>.grab+*{margin-top:0}
-.app.cp .sheet>.panel.dragging{transition:none}
-.app.cp .sheet>.panel>.grab,.app.cp .sheet .ph>.badge,.app.cp .sheet .ph>.grow{touch-action:none;user-select:none;-webkit-user-select:none}
-@keyframes shup{from{transform:translateY(56px);opacity:.4}}
-@media (prefers-reduced-motion:reduce){.app.cp .sheet>.panel{animation:none}}
-.app.cp .sheet .ph{position:relative;gap:8px 12px;margin-bottom:14px}
-.app.cp .sheet .ph .badge{width:44px;height:44px;border-radius:14px}
-.app.cp .sheet .ph .badge svg{width:22px;height:22px}
-.app.cp .sheet .ph h2{font-size:calc(22px*var(--tx))}
-.app.cp .sheet .ph .sub{font-size:calc(12.5px*var(--tx))}
-.app.cp .sheet .ph .grow{padding-right:48px}
-.app.cp .sheet .ph .close{position:absolute;top:0;right:0;width:44px;height:44px}
-.app.cp .sheet .ph .tabs{width:100%}
-.app.cp .sheet>.panel>*+*{margin-top:14px}
-.app.cp .sheet .inner{padding:14px;border-radius:18px}
+.grab {
+  display: none;
+}
+.app.cp .sheet > .panel > .grab {
+  display: block;
+  padding: 6px 0 12px;
+  touch-action: none;
+  cursor: grab;
+}
+.app.cp .sheet > .panel > .grab::before {
+  content: '';
+  display: block;
+  width: 36px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--fg3);
+  margin: 0 auto;
+}
+.sheet > .panel > .grab + *,
+.pane > .panel > .grab + *,
+.app.cp .sheet > .panel > .grab + * {
+  margin-top: 0;
+}
+.app.cp .sheet > .panel.dragging {
+  transition: none;
+}
+.app.cp .sheet > .panel > .grab,
+.app.cp .sheet .ph > .badge,
+.app.cp .sheet .ph > .grow {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+@keyframes shup {
+  from {
+    transform: translateY(56px);
+    opacity: 0.4;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .app.cp .sheet > .panel {
+    animation: none;
+  }
+}
+.app.cp .sheet .ph {
+  position: relative;
+  gap: 8px 12px;
+  margin-bottom: 14px;
+}
+.app.cp .sheet .ph .badge {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+}
+.app.cp .sheet .ph .badge svg {
+  width: 22px;
+  height: 22px;
+}
+.app.cp .sheet .ph h2 {
+  font-size: calc(22px * var(--tx));
+}
+.app.cp .sheet .ph .sub {
+  font-size: calc(12.5px * var(--tx));
+}
+.app.cp .sheet .ph .grow {
+  padding-right: 48px;
+}
+.app.cp .sheet .ph .close {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 44px;
+  height: 44px;
+}
+.app.cp .sheet .ph .tabs {
+  width: 100%;
+}
+.app.cp .sheet > .panel > * + * {
+  margin-top: 14px;
+}
+.app.cp .sheet .inner {
+  padding: 14px;
+  border-radius: 18px;
+}
 /* a light area's controls in its sheet: the name is in the title, so the row keeps only its buttons */
-#lsheet .larea{background:transparent;padding:0}
-#lsheet .lhead .lic,#lsheet .lhead .tx{display:none}
-#lsheet .lhead{justify-content:flex-start;gap:10px}
-#lsheet .lhead .swl{order:-1;flex:1;font-size:calc(14px*var(--tx));font-weight:600}
-#lsheet .larea input[type=range]{margin:6px 0 0;height:44px}
-#lsheet .ctrow{margin-top:4px}
-#lsheet .lchips{margin-top:14px}
-#lsheet .lchip{padding:10px 14px;font-size:calc(13.5px*var(--tx))}
+#lsheet .larea {
+  background: transparent;
+  padding: 0;
+}
+#lsheet .lhead .lic,
+#lsheet .lhead .tx {
+  display: none;
+}
+#lsheet .lhead {
+  justify-content: flex-start;
+  gap: 10px;
+}
+#lsheet .lhead .swl {
+  order: -1;
+  flex: 1;
+  font-size: calc(14px * var(--tx));
+  font-weight: 600;
+}
+#lsheet .larea input[type='range'] {
+  margin: 6px 0 0;
+  height: 44px;
+}
+#lsheet .ctrow {
+  margin-top: 4px;
+}
+#lsheet .lchips {
+  margin-top: 14px;
+}
+#lsheet .lchip {
+  padding: 10px 14px;
+  font-size: calc(13.5px * var(--tx));
+}
 /* a card inside the generic sheet */
-#cardhost>.card{padding:14px;border-radius:18px}
-#cardhost>.card>.top{margin-bottom:12px}
+#cardhost > .card {
+  padding: 14px;
+  border-radius: 18px;
+}
+#cardhost > .card > .top {
+  margin-bottom: 12px;
+}
 /* More */
-.morelist{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-.morelist .stile{min-height:0;flex-direction:row;align-items:center;gap:12px;padding:12px 14px}
-.morelist .stile .ic{margin:0;color:var(--rc);background:color-mix(in srgb,var(--rc) 16%,var(--card))}
-.morelist .stile .tx{order:0;margin:0;flex:1}
+.morelist {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.morelist .stile {
+  min-height: 0;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+}
+.morelist .stile .ic {
+  margin: 0;
+  color: var(--rc);
+  background: color-mix(in srgb, var(--rc) 16%, var(--card));
+}
+.morelist .stile .tx {
+  order: 0;
+  margin: 0;
+  flex: 1;
+}
 /* in the climate sheet the room picked comes first, the list of the others under it */
-.app.cp .clim{display:flex;flex-direction:column}
-.app.cp .clim .cdet{order:-1}
+.app.cp .clim {
+  display: flex;
+  flex-direction: column;
+}
+.app.cp .clim .cdet {
+  order: -1;
+}
 /* v1.18.4: an even two-column grid of rooms on the phone, Whole house across the top (the wrapped flex row gave ragged widths) */
-.app.cp .clist{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.app.cp .clist>.citem:first-child{grid-column:1/-1}
-.app.cp .citem{width:auto;min-width:0;padding:9px 12px;gap:10px}
-.app.cp .citem .ic{width:32px;height:32px}
-.app.cp .citem .tv{font-size:calc(16px*var(--tx))}
+.app.cp .clist {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.app.cp .clist > .citem:first-child {
+  grid-column: 1/-1;
+}
+.app.cp .citem {
+  width: auto;
+  min-width: 0;
+  padding: 9px 12px;
+  gap: 10px;
+}
+.app.cp .citem .ic {
+  width: 32px;
+  height: 32px;
+}
+.app.cp .citem .tv {
+  font-size: calc(16px * var(--tx));
+}
 /* speakers in a sheet: name and play on one row, the volume stepper under */
-.app.cp .pod{flex-wrap:wrap;gap:10px 12px;padding:12px}
-.app.cp .pod .pic{width:52px;height:52px;border-radius:14px}
-.app.cp .pod .tx{flex:1 1 0;min-width:100px}
-.app.cp .pod .pp{order:1;width:48px;height:48px}
-.app.cp .pod .stepper{order:2;flex:1 1 100%;justify-content:space-between}
-.app.cp .pod .stepper .sv{flex:1}
+.app.cp .pod {
+  flex-wrap: wrap;
+  gap: 10px 12px;
+  padding: 12px;
+}
+.app.cp .pod .pic {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+}
+.app.cp .pod .tx {
+  flex: 1 1 0;
+  min-width: 100px;
+}
+.app.cp .pod .pp {
+  order: 1;
+  width: 48px;
+  height: 48px;
+}
+.app.cp .pod .stepper {
+  order: 2;
+  flex: 1 1 100%;
+  justify-content: space-between;
+}
+.app.cp .pod .stepper .sv {
+  flex: 1;
+}
 /* automation chips wrap instead of widening the page */
-.app.tabsv.cp .auchips .chip,.app.tabsv.cp .aupick .chip{white-space:normal;max-width:100%;text-align:left;line-height:1.3}
-.app.cp #carcard .tile .v{font-size:calc(18px*var(--tx));white-space:normal}
+.app.tabsv.cp .auchips .chip,
+.app.tabsv.cp .aupick .chip {
+  white-space: normal;
+  max-width: 100%;
+  text-align: left;
+  line-height: 1.3;
+}
+.app.cp #carcard .tile .v {
+  font-size: calc(18px * var(--tx));
+  white-space: normal;
+}
 /* phone climate sheet: one room, a thermostat dial; no room list, heatmap or outside chart */
-.app.cp #sh-climate .clist,.app.cp #cheatwrap,.app.cp #coutwrap{display:none}
-.dial{position:relative;width:min(260px,72vw);margin:4px auto 6px;touch-action:none;user-select:none;-webkit-user-select:none}
-.dial svg{display:block;width:100%;height:auto;overflow:visible}
-.dial .dtrack{fill:none;stroke:var(--card2);stroke-width:14;stroke-linecap:round}
-.app.gl .dial .dtrack{stroke:var(--g-tile)}
-.dial .dact{fill:none;stroke-width:14;stroke-linecap:round}
-.dial .dticks line{stroke:var(--fg3);opacity:.55}
-.dial .dnow{fill:var(--fg)}
-.dial .dknob{fill:var(--card);stroke:var(--fg);stroke-width:3;filter:drop-shadow(0 2px 4px rgba(0,0,0,.25))}
-.dial.ed{cursor:grab}.dial.ed:focus-visible{outline:2px solid var(--c-home);outline-offset:4px;border-radius:50%}
-.dialc{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;pointer-events:none;padding:0 54px;text-align:center}
-.dialc b{font-family:var(--f-num);font-weight:var(--num-w);font-size:calc(46px*var(--tx));line-height:1;letter-spacing:-.03em}
-.dialc small{font-size:calc(12.5px*var(--tx));color:var(--fg2)}
-.dialc em{font-style:normal;font-size:calc(12px*var(--tx));font-weight:600;color:var(--fg2)}
-.app.cp #cctl .stepper[aria-label="Setpoint"],.app.cp #cctl .stepper[aria-label="Target"]{display:none}.app.cp #cctl .crow{justify-content:center}.app.cp #cctl .quick{justify-content:center;width:100%}
+.app.cp #sh-climate .clist,
+.app.cp #cheatwrap,
+.app.cp #coutwrap {
+  display: none;
+}
+.dial {
+  position: relative;
+  width: min(260px, 72vw);
+  margin: 4px auto 6px;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.dial svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.dial .dtrack {
+  fill: none;
+  stroke: var(--card2);
+  stroke-width: 14;
+  stroke-linecap: round;
+}
+.app.gl .dial .dtrack {
+  stroke: var(--g-tile);
+}
+.dial .dact {
+  fill: none;
+  stroke-width: 14;
+  stroke-linecap: round;
+}
+.dial .dticks line {
+  stroke: var(--fg3);
+  opacity: 0.55;
+}
+.dial .dnow {
+  fill: var(--fg);
+}
+.dial .dknob {
+  fill: var(--card);
+  stroke: var(--fg);
+  stroke-width: 3;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25));
+}
+.dial.ed {
+  cursor: grab;
+}
+.dial.ed:focus-visible {
+  outline: 2px solid var(--c-home);
+  outline-offset: 4px;
+  border-radius: 50%;
+}
+.dialc {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  pointer-events: none;
+  padding: 0 54px;
+  text-align: center;
+}
+.dialc b {
+  font-family: var(--f-num);
+  font-weight: var(--num-w);
+  font-size: calc(46px * var(--tx));
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+.dialc small {
+  font-size: calc(12.5px * var(--tx));
+  color: var(--fg2);
+}
+.dialc em {
+  font-style: normal;
+  font-size: calc(12px * var(--tx));
+  font-weight: 600;
+  color: var(--fg2);
+}
+.app.cp #cctl .stepper[aria-label='Setpoint'],
+.app.cp #cctl .stepper[aria-label='Target'] {
+  display: none;
+}
+.app.cp #cctl .crow {
+  justify-content: center;
+}
+.app.cp #cctl .quick {
+  justify-content: center;
+  width: 100%;
+}

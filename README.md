@@ -7,8 +7,8 @@ to users whose Home Assistant profile is in French.
 
 ![Home tab on a tablet](docs/tablet-home.png)
 
-| Phone | Climate, dark theme |
-|---|---|
+| Phone                                       | Climate, dark theme                          |
+| ------------------------------------------- | -------------------------------------------- |
 | ![Home tab on a phone](docs/phone-home.png) | ![Climate tab](docs/tablet-climate-dark.png) |
 
 It's mostly for monitoring. You can control lights, scenes, thermostats, media players, the EV charger and a FordPass car.
@@ -17,17 +17,17 @@ It's mostly for monitoring. You can control lights, scenes, thermostats, media p
 
 Every section is optional. A section shows only when its entities exist, so a house without a car never sees a Car tab.
 
-| Section | Works with |
-|---|---|
-| Weather | any `weather` entity. Environment Canada's extra sensors are found automatically. The radar needs [Weather Radar Card](https://github.com/Makin-Things/weather-radar-card) from HACS |
-| Climate | every `climate` entity, with temperature, setpoint and power history from sensors named like Hilo's (`sensor.<thermostat>_temperature`, `_target_temperature`, `_power`), or set per room |
-| Lights | one dimmer row per area: slide the row to dim, tap the bulb to switch, tap the row for colour; with [Adaptive Lighting](https://github.com/basnijholt/adaptive-lighting) Auto and Night when installed |
-| Energy | a whole-house power sensor, a water heater, an EV charger, [Hilo](https://github.com/dvd-dev/hilo) rates and Hydro-Québec peaks |
-| Car | the [FordPass](https://github.com/itchannel/fordpass-ha) integration |
-| Air | Mila purifiers and air sensors |
-| Security | door, window and motion sensors, UniFi Protect cameras |
-| Media | TVs (Wake-on-LAN), speakers |
-| Automations | your automations' own traces, drawn as flow charts |
+| Section     | Works with                                                                                                                                                                                             |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Weather     | any `weather` entity. Environment Canada's extra sensors are found automatically. The radar needs [Weather Radar Card](https://github.com/Makin-Things/weather-radar-card) from HACS                   |
+| Climate     | every `climate` entity, with temperature, setpoint and power history from sensors named like Hilo's (`sensor.<thermostat>_temperature`, `_target_temperature`, `_power`), or set per room              |
+| Lights      | one dimmer row per area: slide the row to dim, tap the bulb to switch, tap the row for colour; with [Adaptive Lighting](https://github.com/basnijholt/adaptive-lighting) Auto and Night when installed |
+| Energy      | a whole-house power sensor, a water heater, an EV charger, [Hilo](https://github.com/dvd-dev/hilo) rates and Hydro-Québec peaks                                                                        |
+| Car         | the [FordPass](https://github.com/itchannel/fordpass-ha) integration                                                                                                                                   |
+| Air         | Mila purifiers and air sensors                                                                                                                                                                         |
+| Security    | door, window and motion sensors, UniFi Protect cameras                                                                                                                                                 |
+| Media       | TVs (Wake-on-LAN), speakers                                                                                                                                                                            |
+| Automations | your automations' own traces, drawn as flow charts                                                                                                                                                     |
 
 ## Install
 
@@ -55,17 +55,17 @@ Add a `config:` block under the panel to name the rest of your devices, pick the
 [examples/configuration.yaml](examples/configuration.yaml) lists every option.
 
 ```yaml
-    config:
-      people: [Alex, Sam]
-      house_image: /local/home-panel/my-house.webp
-      entities:
-        grid_power: sensor.house_power
-        water_heater_temperature: sensor.water_heater_temperature
-        ev_charger_power: sensor.charger_power
-      rooms:
-        - {climate: climate.living_room, name: Living room, icon: sofa}
-        - climate.bedroom
-      scenes: [scene.dinner, scene.movie_night]
+config:
+  people: [Alex, Sam]
+  house_image: /local/home-panel/my-house.webp
+  entities:
+    grid_power: sensor.house_power
+    water_heater_temperature: sensor.water_heater_temperature
+    ev_charger_power: sensor.charger_power
+  rooms:
+    - {climate: climate.living_room, name: Living room, icon: sofa}
+    - climate.bedroom
+  scenes: [scene.dinner, scene.movie_night]
 ```
 
 The Lights tab shows one tile per room, the way Apple's Home app does: the bulb switches the room and the rest of the tile opens it. The room's sheet has a brightness slider and a colour temperature slider side by side, and, when the room has an Adaptive Lighting instance, an Auto switch (the schedule) and a Night switch (its sleep mode). Moving a slider by hand takes the room off Auto until Auto is turned on again.
@@ -77,10 +77,10 @@ An area holding several light groups shows as one card, with a button per group 
 Two rooms can be linked so that one switch, brightness slider or colour slider moves both. An admin picks the partner from the room's sheet ("Linked with", a list of the other rooms), and the pairs are saved in Home Assistant for every screen. Until someone picks there, the panel starts from the pairs listed under `light_links`, by area id or by light entity; a pair with an `input_boolean` counts while that switch is on.
 
 ```yaml
-      light_links:
-        - lights: [light.living_room_lamps, light.tv_lamps]
-          switch: input_boolean.living_room_lights_linked
-        - [office, hallway]
+light_links:
+  - lights: [light.living_room_lamps, light.tv_lamps]
+    switch: input_boolean.living_room_lights_linked
+  - [office, hallway]
 ```
 
 While something runs, a live-activity pill shows in the header (with nothing running and nothing to check, that spot stays empty): the car charging (battery and time to full), the water heater heating (temperature and about how long is left, from its other cycles in the last 24 hours) and a Hilo challenge (phase and countdown, from pre-heat until recovery ends). Tap it for a card per activity above the usual status checks. When FordPass gives no time to full, the panel works it out from the charger's power and `car: {battery_kwh: …}`, the battery's usable size.
@@ -91,32 +91,32 @@ On a wall tablet, the panel shows a big clock after 5 minutes without a touch. "
 
 On a tablet the same stack also fills the Home card, under Who's home (without the who's-home card, which the chips above already show).
 
-| Card | When it shows |
-| --- | --- |
-| A door open (red, stays until the door closes) | A door sensor open for 5 minutes or more |
-| Lights unreachable (red, stays until fixed) | Any light unavailable for 5 minutes |
-| Weather warning (amber) | Environment Canada issues a warning |
-| Car not plugged in (amber) | After 9 pm, the car home, unplugged and under 40% |
-| Presence not updating (amber) | A person's iCloud tracker hasn't updated in 3 hours |
-| Sunrise | The hour before sunrise, with the rooms whose lights are still on |
-| Reminders | Before each time listed under `idle_stack.reminders` |
-| Critical peak | A Hydro-Québec critical peak or a Hilo challenge |
-| Now playing | A speaker is playing |
-| Who's home | 30 minutes after someone arrives or leaves |
-| Today | 6 to 11 am, today's events from your calendar entities |
-| Away | The `away_mode` input_boolean is on |
-| Room air | A purifier's room reads poor (CO₂, particles, VOC) |
-| Tomorrow | From 5 pm, tomorrow's forecast |
-| Car charge | 9 pm to 7 am, while the car is plugged in at home |
-| Energy today, who's home | In the daytime, when nothing else applies |
+| Card                                           | When it shows                                                     |
+| ---------------------------------------------- | ----------------------------------------------------------------- |
+| A door open (red, stays until the door closes) | A door sensor open for 5 minutes or more                          |
+| Lights unreachable (red, stays until fixed)    | Any light unavailable for 5 minutes                               |
+| Weather warning (amber)                        | Environment Canada issues a warning                               |
+| Car not plugged in (amber)                     | After 9 pm, the car home, unplugged and under 40%                 |
+| Presence not updating (amber)                  | A person's iCloud tracker hasn't updated in 3 hours               |
+| Sunrise                                        | The hour before sunrise, with the rooms whose lights are still on |
+| Reminders                                      | Before each time listed under `idle_stack.reminders`              |
+| Critical peak                                  | A Hydro-Québec critical peak or a Hilo challenge                  |
+| Now playing                                    | A speaker is playing                                              |
+| Who's home                                     | 30 minutes after someone arrives or leaves                        |
+| Today                                          | 6 to 11 am, today's events from your calendar entities            |
+| Away                                           | The `away_mode` input_boolean is on                               |
+| Room air                                       | A purifier's room reads poor (CO₂, particles, VOC)                |
+| Tomorrow                                       | From 5 pm, tomorrow's forecast                                    |
+| Car charge                                     | 9 pm to 7 am, while the car is plugged in at home                 |
+| Energy today, who's home                       | In the daytime, when nothing else applies                         |
 
 Red cards stay on screen alone, and amber cards come first in the rotation. No card reads camera motion.
 
 ```yaml
-      idle_stack:
-        sunrise_lights_off: true
-        reminders:
-          - {at: "20:00", title: Bedtime, text: The kids' lamp goes to night mode, lead: 30}
+idle_stack:
+  sunrise_lights_off: true
+  reminders:
+    - {at: '20:00', title: Bedtime, text: The kids' lamp goes to night mode, lead: 30}
 ```
 
 Room icons can be `sofa`, `door`, `desk`, `bed`, `bath`, `drop`, `car`, `house` and `therm`.
