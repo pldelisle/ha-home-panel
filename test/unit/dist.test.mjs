@@ -1,5 +1,5 @@
 // The build output: dist/ has the shape the install instructions and the release zip assume, and nothing from one
-// particular house is inside (the bundle, its source map, and the source files and tests they come from).
+// particular house is inside (the bundle, its source map, and every committed text file they come from).
 // dist/ is the result of `npm run build` (CI and the release workflow run it first); when it is missing or older than
 // a file it is built from, this test runs the build itself, so `npm test` works on a fresh checkout and never checks a
 // stale bundle.
@@ -15,11 +15,13 @@ const BUNDLE = join(DIST, 'home-panel.js');
 const read = f => readFileSync(join(ROOT, f), 'utf8');
 const version = JSON.parse(read('package.json')).version;
 
-// every file under dir (as paths relative to ROOT), skipping the folders that hold no source text
+// every file under dir (as paths relative to ROOT), skipping the folders (or, in a git worktree, the .git file) that
+// hold no source text
 const walk = (dir, skip = []) =>
   readdirSync(join(ROOT, dir), {withFileTypes: true}).flatMap(e => {
-    const rel = `${dir}/${e.name}`;
-    if (e.isDirectory()) return skip.includes(e.name) ? [] : walk(rel, skip);
+    const rel = dir === '.' ? e.name : `${dir}/${e.name}`;
+    if (skip.includes(e.name)) return [];
+    if (e.isDirectory()) return walk(rel, skip);
     return [rel];
   });
 
@@ -178,22 +180,72 @@ test('the source map names the original files under src/', () => {
   expect(readFileSync(BUNDLE, 'utf8')).toMatch(/\n\/\/# sourceMappingURL=home-panel\.js\.map\s*$/);
 });
 
+// every tracked file that can hold text: what `git ls-files` lists, so there is no directory list to keep by hand and a
+// maintainer's untracked scratch folders are not scanned; an exported tree without .git (or a checkout nested inside
+// another repository, where git lists nothing) is walked from the root instead. The walk skips the .git file of a
+// worktree and the folders below, and the filter in the test drops the same binaries from both lists.
+const SCAN_SKIP_DIRS = [
+  'node_modules',
+  'dist',
+  '.git',
+  'coverage',
+  'test-results',
+  'playwright-report',
+  'graphify-out',
+  '.claude',
+  '__screenshots__',
+];
+const trackedFiles = () => {
+  try {
+    const listed = execFileSync('git', ['ls-files', '-z'], {cwd: ROOT, encoding: 'utf8', stdio: 'pipe'})
+      .split('\0')
+      .filter(Boolean);
+    if (listed.length > 0) return listed;
+  } catch {
+    // no git, or not a repository: walk instead
+  }
+  return walk('.', SCAN_SKIP_DIRS);
+};
+
+// the tracked files that are not scanned, and why
+const NOT_SCANNED = new Map([
+  ['test/unit/dist.test.mjs', 'it holds the patterns'],
+  ['LICENSE', 'the copyright line names the licence holder, by design'],
+  [
+    'LICENSES.md',
+    'third-party licence text generated from node_modules and checked by licenses.test.mjs: a package author who ' +
+      'happens to be called Pierre must not fail this test',
+  ],
+]);
+
 test('no personal data: names, places, a house photo or house-specific entity ids', () => {
-  // every text file under src/ and test/ is scanned (this one holds the patterns, so it is left out), so a new file
-  // needs no edit here
-  const files = [...walk('src'), ...walk('test', ['__screenshots__'])].filter(
-    f => /\.(js|mjs|ts|css|html|json)$/.test(f) && f !== 'test/unit/dist.test.mjs',
+  // every tracked text file is scanned (images, fonts and the IDE module file are not text; the files above are
+  // left out), so a new file needs no edit here. The screenshot baselines are .png, so the extension keeps them out.
+  const files = trackedFiles().filter(
+    f =>
+      // tracked, but deleted in the working tree
+      existsSync(join(ROOT, f)) && !/\.(png|woff2|ico|jpe?g|webp|iml)$/i.test(f) && !NOT_SCANNED.has(f),
   );
-  for (const f of ['src/config.js', 'src/home-panel.js', 'src/auto.js', 'src/i18n/fr.js', 'src/css/base.css'])
-    expect(files.includes(f), `scans ${f}`).toBe(true);
-  for (const f of ['houses.ts', 'fixtures.ts', 'harness.html', 'automations.json'])
-    expect(files.includes('test/e2e/' + f), `scans ${f}`).toBe(true);
+  const scanned = [
+    ...['src/config.js', 'src/home-panel.js', 'src/auto.js', 'src/i18n/fr.js', 'src/css/base.css'],
+    ...['houses.ts', 'fixtures.ts', 'harness.html', 'automations.json'].map(f => 'test/e2e/' + f),
+    ...['package.json', 'package-lock.json', 'vite.config.ts', 'playwright.config.ts', 'vitest.config.ts'],
+    ...['renovate.json', '.github/workflows/ci.yml', 'scripts/licenses.mjs', 'examples/configuration.yaml'],
+    ...['README.md', 'CHANGELOG.md', '.changeset/config.json'],
+  ];
+  for (const f of scanned) expect(files.includes(f), `scans ${f}`).toBe(true);
   expect(
     files.some(f => f.endsWith('.spec.ts')),
     'scans the specs',
   ).toBe(true);
-  // the source map ships in the release zip too, with the source text inside it
-  const text = [...files.map(read), readFileSync(BUNDLE, 'utf8'), readFileSync(`${BUNDLE}.map`, 'utf8')].join('\n');
+  expect(files.length).toBeGreaterThan(100);
+  // the file names too, and the bundle and its source map, which ships in the release zip with the source text inside
+  const texts = [
+    ['(tracked paths)', files.join('\n')],
+    ...files.map(f => [f, read(f)]),
+    ['dist/home-panel.js', readFileSync(BUNDLE, 'utf8')],
+    ['dist/home-panel.js.map', readFileSync(`${BUNDLE}.map`, 'utf8')],
+  ];
   const banned = [
     /pierre/i,
     /genevi[eè]ve/i,
@@ -206,8 +258,14 @@ test('no personal data: names, places, a house photo or house-specific entity id
     /\b192\.168\.\d+\.\d+\b/,
     /meter00|calypso|pulsar_plus|ac_uty_|hydro_quebec_maison|thermostat_chambre/i,
   ];
-  for (const re of banned) {
-    const m = text.match(re);
-    expect(m, `found ${re}: …${m && text.slice(Math.max(0, m.index - 40), m.index + 40)}…`).toBe(null);
+  const hits = [];
+  for (const [name, raw] of texts) {
+    // the repository's own address holds the owner's handle; it is public by nature
+    const text = raw.replaceAll('pldelisle/ha-home-panel', '<repo>');
+    for (const re of banned) {
+      const m = text.match(re);
+      if (m) hits.push(`${name}: found ${re}: …${text.slice(Math.max(0, m.index - 40), m.index + 40)}…`);
+    }
   }
+  expect(hits).toEqual([]);
 });
