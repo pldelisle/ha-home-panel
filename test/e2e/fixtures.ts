@@ -42,6 +42,8 @@ export type House = {
   tab: (name: string) => Promise<void>;
   /** what Home Assistant does on a state change: a new state object inside a new hass object */
   setState: (entityId: string, patch: object) => Promise<void>;
+  /** setState, with last_changed set `agoMs` before now on the page's own clock (faked or not) */
+  setStateSince: (entityId: string, patch: object, agoMs: number) => Promise<void>;
   clock: Page['clock'];
 };
 
@@ -79,10 +81,29 @@ export const test = base.extend<{houseOpts: HouseOpts; house: House}>({
         await expect(root().locator(`#pane-${name}`)).toBeVisible();
       },
       setState: (id, patch) => page.evaluate(([id, patch]) => window.house.setState(id, patch), [id, patch] as const),
+      setStateSince: (id, patch, agoMs) => page.evaluate(
+        ([id, patch, agoMs]) => window.house.setState(id, {...patch, last_changed: new Date(Date.now() - agoMs).toISOString()}),
+        [id, patch, agoMs] as const,
+      ),
     };
     await use(house);
     expect(errors, 'page errors').toEqual([]);
   },
 });
+
+// skip a test (or a describe's tests, as a beforeEach) on the wrong project, for checks about one layout
+export const tabletOnly = () => test.skip(test.info().project.name === 'phone', 'tablet layout');
+export const phoneOnly = () => test.skip(test.info().project.name !== 'phone', 'phone layout');
+
+// the panel shows its idle clock after this long without a touch
+export const IDLE_AFTER_MS = 5 * 60_000;
+
+// asserts the panel sent a service call ("domain.service {json}") matching `re`; on failure the report lists the calls it did
+// send, and the boxed step points at the spec's line rather than this one
+export const expectCall = (house: House, re: RegExp) => test.step(
+  `the panel sent a service call matching ${re}`,
+  () => expect.poll(() => house.calls).toContainEqual(expect.stringMatching(re)),
+  {box: true},
+);
 
 export {expect};
