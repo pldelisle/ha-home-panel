@@ -1,6 +1,6 @@
 // Every tab opens, on a tablet and a phone, in the full and the bare house; nothing covers the Home button; no page error.
 // Test titles start with the check's number in docs/specs/01-playwright-test.md.
-import {test, expect, type House} from './fixtures';
+import {test, expect, tabletOnly, type House} from './fixtures';
 import type {Locator} from '@playwright/test';
 import {FULL_CFG, PHONE_TABS, TABLET_TABS} from './houses';
 
@@ -13,7 +13,6 @@ async function openEveryTab(house: House, check?: (tab: string, pane: Locator) =
     if (check) await check(t, house.root().locator(`#pane-${t}`));
   }
 }
-const tabletOnly = () => test.skip(test.info().project.name === 'phone', 'tablet layout');
 // whether the element itself is shown: not `hidden` and not display:none (its pane may be closed, that is not the question)
 const shown = (loc: Locator) => expect.poll(() => loc.evaluate(e => !(e as HTMLElement).hidden && getComputedStyle(e).display !== 'none'));
 // the pane is at least 50 px tall; in a house with automations the Automations pane has drawn its flow first
