@@ -54,6 +54,7 @@ export const hourNow = () => {
   const g = t => +p.find(x => x.type === t).value;
   return g('hour') + g('minute') / 60;
 };
+/** @param {any[]} t [label, value, unit, sub-line] */
 export const tile = ([k, v, u, sb]) =>
   `<div class="tile"><div class="k">${k}</div><div class="v num">${v}<small>${u || ''}</small></div>${sb ? `<div class="s">${sb}</div>` : ''}</div>`;
 export const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
@@ -65,7 +66,7 @@ export const cap = s =>
 export function loadScript(src, key, ready) {
   return new Promise((res, rej) => {
     if (ready()) return res();
-    let s = document.querySelector(`script[data-home-panel="${key}"]`);
+    let s = /** @type {HTMLScriptElement | null} */ (document.querySelector(`script[data-home-panel="${key}"]`));
     if (!s) {
       s = document.createElement('script');
       s.src = src;

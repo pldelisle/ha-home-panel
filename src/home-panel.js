@@ -597,6 +597,7 @@ const toOk = hex => {
     0.0259040371 * l + 0.7827717662 * m - 0.808675766 * q,
   ];
 };
+/** @param {number[]} lab */
 const fromOk = ([L, A, B]) => {
   const l = (L + 0.3963377774 * A + 0.2158037573 * B) ** 3,
     m = (L - 0.1055613458 * A - 0.0638541728 * B) ** 3,
@@ -699,6 +700,7 @@ function bucket(pts, r) {
   return [...m.values()].sort((a, b) => (a.k < b.k ? -1 : 1)).map(c => [c.k, c.lbl, +(c.s / c.n).toFixed(2)]);
 }
 // heat pump readings from state history; a gap with no state means it was offline
+/** @param {(attrs: any, state: string) => any} [get] what to read from a point (the default is the temperature) */
 function hpSeries(rows, get = a => a.current_temperature) {
   const out = [];
   let prev = null;
@@ -1994,6 +1996,7 @@ export class HomePanel extends HTMLElement {
       if (out) out.textContent = k + ' K';
       return k;
     };
+    /** @type {{p: any, id: number, v?: any} | null} */
     let lp = null;
     sh.addEventListener('pointerdown', e => {
       const p = e.target.closest('.lpill[data-lp]');
@@ -2151,7 +2154,7 @@ export class HomePanel extends HTMLElement {
             j = i + step;
           if (j < 0 || j >= k.length) return;
           b.insertBefore(u, step > 0 ? k[j].nextSibling : k[j]);
-          e.target.focus();
+          /** @type {HTMLElement} */ (e.target).focus();
           save(b);
         },
         true,
@@ -2223,7 +2226,7 @@ export class HomePanel extends HTMLElement {
     });
     for (const h of ['mtiles'])
       this.$(h).addEventListener('keydown', e => {
-        if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[role="button"]')) {
+        if ((e.key === 'Enter' || e.key === ' ') && /** @type {Element} */ (e.target).matches('[role="button"]')) {
           e.preventDefault();
           e.target.click();
         }
@@ -2236,7 +2239,8 @@ export class HomePanel extends HTMLElement {
     tv.addEventListener('change', e => {
       if (isV(e)) {
         this.lightDrag = false;
-        this.mpVol(e.target.dataset.mv, +e.target.value / 100);
+        const t = /** @type {HTMLInputElement} */ (e.target);
+        this.mpVol(t.dataset.mv, +t.value / 100);
       }
     });
     for (const t of ['pointerup', 'pointercancel'])
@@ -2319,8 +2323,9 @@ export class HomePanel extends HTMLElement {
       this.sensSheet();
     });
     this.$('cdet').addEventListener('change', e => {
-      if (e.target.id === 'hpswing') {
-        const v = e.target.value;
+      const t = /** @type {HTMLInputElement} */ (e.target);
+      if (t.id === 'hpswing') {
+        const v = t.value;
         this.pending['hp:swing'] = {v, until: Date.now() + 20000};
         this.call(
           'climate',
@@ -3037,6 +3042,7 @@ export class HomePanel extends HTMLElement {
     }
     acts.sort((x, y) => x.prio - y.prio);
     // something that just finished keeps a check for 10 minutes: the car at its limit, a challenge after recovery
+    /** @type {Record<string, any>} */
     const prev = this.laSeen || {};
     if (prev.car && !seen.car && c && c.soc != null && c.soc >= (prev.car.lim || 100) - 1)
       this.laDone = {text: `Charged to ${Math.round(c.soc)}%`, until: now + 6e5, at: now};
@@ -3612,7 +3618,7 @@ export class HomePanel extends HTMLElement {
       return;
     }
     if (id === 'sh-more') this.renderMore();
-    this.lastFocus = this.shadowRoot.activeElement;
+    this.lastFocus = /** @type {HTMLElement | null} */ (this.shadowRoot.activeElement);
     this.open = id;
     const el = this.$(id);
     el.hidden = false;
@@ -6410,6 +6416,7 @@ export class HomePanel extends HTMLElement {
           groups.some(g => area(g) === aid && fold(String(attr(g, 'friendly_name') || '')).includes(alName(a))),
       );
     const byName = (x, y) => String(attr(x, 'friendly_name') || x).localeCompare(attr(y, 'friendly_name') || y);
+    /** @type {any[]} */
     const out = [];
     for (const [aid, {ids, units}] of by) {
       if (!ids.length) continue;
@@ -6450,7 +6457,7 @@ export class HomePanel extends HTMLElement {
         return i < 0 ? Infinity : i;
       };
       return units
-        .map((u, i) => [u, i])
+        .map(/** @returns {[any[], number]} */ (u, i) => [u, i])
         .sort((x, y) => at(x[0]) - at(y[0]) || x[1] - y[1])
         .flatMap(x => x[0]);
     }
@@ -6835,6 +6842,7 @@ export class HomePanel extends HTMLElement {
     }
     if (tag !== this.sensTag || this.open !== 'sh-sens') return;
     const segs = [];
+    /** @type {{a: number, b?: number, live?: boolean} | null} */
     let cur = null;
     (h[x.id] || []).forEach(y => {
       const t = (y.lu || y.lc) * 1000;
