@@ -17,6 +17,8 @@ declare global {
 
 /** where Vite puts the lazy chunks in the served panel (dist/chunks/, served under /panel/) */
 export const CHUNK_URL = /\/panel\/chunks\//;
+/** the chunk Mermaid's formula typesetter (KaTeX) is in: asked for only by a label with `$$…$$`, never by the panel's own flows */
+export const KATEX_CHUNK_URL = /\/panel\/chunks\/katex-/;
 
 /** a chunk the panel fetched from dist/chunks/: its URL and its source text */
 export type Chunk = {url: string; body: string};

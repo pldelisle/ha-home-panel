@@ -39,8 +39,19 @@
     },
     {
       "description": "Mermaid draws the Automations flow charts, and its releases move their pixels (from 11.10 the node outlines are drawn as paths), so a bump comes in its own pull request, never in the weekly group, and fails the visual job until a person re-records the Automations baselines on its branch and adds a changeset (Renovate does neither). Unlike ApexCharts it is not frozen: its releases carry security fixes (docs/specs/07, As built)",
-      "matchPackageNames": ["mermaid"],
+      "matchPackageNames": ["mermaid", "katex"],
       "groupName": "Mermaid"
+    },
+    {
+      "description": "katex is only in package.json as an override of the copy Mermaid 11 asks for (^0.16, which keeps an advisory fixed in 0.18.2; docs/specs/07, As built #75) and ships in its own lazy chunk, so a bump rides with Mermaid's group above, never in the weekly one, and is not labelled no-changeset. Held below 0.19 until Mermaid's own range moves; 0.18.11 is deprecated on npm, so 0.18.10 stays",
+      "matchPackageNames": ["katex"],
+      "allowedVersions": "<0.19"
+    },
+    {
+      "description": "Mermaid 12 is deferred in #82 (ELK layout, a new look that recolours every node, ES2024 and Safari 17.4); remove this rule when #82 is picked up",
+      "matchPackageNames": ["mermaid"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
     },
     {
       "description": "@fontsource/montserrat is the font the panel ships in dist/fonts/ (spec 08), and every screenshot baseline draws its glyphs: a release that changes the woff2 files re-records all of them (about 25 MB, as for Playwright), so it comes alone and monthly, never in the weekly group. Its visual job fails until a person re-records the baselines on its branch (npm run test:visual:update), runs npm run licenses and adds a changeset; Renovate does none of these. A file Fontsource renames or a unicode range it moves fails test/unit/fonts.test.mjs",
