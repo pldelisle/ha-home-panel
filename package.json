@@ -6,7 +6,9 @@
   "private": true,
   "scripts": {
     "build": "node build.mjs",
-    "test": "node --test \"test/unit/*.test.mjs\"",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "test:e2e": "npm run build && playwright test --project=tablet --project=phone",
     "test:visual": "npm run build && playwright test --project=visual",
     "test:visual:docker": "docker run --rm --init --ipc=host -v \"$PWD\":/work -w /work -e CI=1 mcr.microsoft.com/playwright:v1.63.0-noble npm run test:visual",
@@ -18,10 +20,12 @@
     "format:check": "prettier --check ."
   },
   "engines": {
-    "node": ">=20"
+    "node": "^22.12 || ^24 || >=26"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",
-    "prettier": "3.9.10"
+    "@vitest/coverage-v8": "5.1.0",
+    "prettier": "3.9.10",
+    "vitest": "5.1.0"
   }
 }

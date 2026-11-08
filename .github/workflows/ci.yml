@@ -27,7 +27,12 @@ jobs:
       - uses: actions/checkout@v4
       - run: npm ci
       - run: npm run build
-      - run: npm test
+      - run: npm test -- --coverage
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/
       # the screenshots run in the visual job
       - run: npx playwright test --project=tablet --project=phone
       - if: failure()

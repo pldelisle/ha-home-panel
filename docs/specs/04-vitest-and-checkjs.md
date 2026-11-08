@@ -28,7 +28,7 @@ Move the unit tests to Vitest, the runner Home Assistant's frontend uses, with c
 
 - `vitest` as a dev dependency, pinned exactly. `npm test` runs `vitest run`; `npm run test:watch` runs `vitest`; `npm run test:coverage` runs `vitest run --coverage` with the `v8` provider.
 - `vitest.config.ts` sets `test.include` to `test/unit/**/*.test.{mjs,ts}` and `environment: 'node'`. No jsdom: the pure modules need no DOM.
-- The five existing test files move as they are, replacing `node:test` and `node:assert/strict` imports with Vitest's `test` and `expect`. Assertions MUST be translated one to one (`assert.equal` to `toBe`, `assert.deepEqual` to `toEqual`, `assert.match` to `toMatch`, `assert.ok` to `toBeTruthy`, `assert.doesNotThrow` to `expect(fn).not.toThrow()`).
+- The five existing test files move as they are, replacing `node:test` and `node:assert/strict` imports with Vitest's `test` and `expect`. Assertions MUST be translated one to one (`assert.equal` to `toBe`, `assert.deepEqual` to `toStrictEqual`, because `node:assert/strict` made it a strict deep-equal and `toEqual` ignores `undefined` keys and prototypes, `assert.match` to `toMatch`, `assert.ok` to `toBeTruthy`, `assert.doesNotThrow` to `expect(fn).not.toThrow()`).
 - The source-text loader (`new Function(readFileSync(...))`) stays in this PR; spec 06 replaces it with imports.
 - Coverage thresholds are reported but not enforced in this PR. `coverage.include` is `src/config.js` and `src/stack.js`.
 

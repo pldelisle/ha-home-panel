@@ -123,14 +123,16 @@ Room icons can be `sofa`, `door`, `desk`, `bed`, `bath`, `drop`, `car`, `house` 
 
 ## Develop
 
-You need Node 20 or later.
+You need Node 22.12 or later (Vitest 5 requires Node 22.12, 24 or 26 and later).
 
 ```sh
 npm ci
 # once per clone: git blame skips the Prettier format commit
 git config blame.ignoreRevsFile .git-blame-ignore-revs
 npm run build          # dist/home-panel.js plus the vendored libraries
-npm test               # unit tests: config, build, French, a scan for personal data
+npm test               # unit tests (Vitest): config, build, French, a scan for personal data
+npm run test:watch     # the same, re-run on every save
+npm run test:coverage  # the same, with a coverage report in coverage/
 npm run format         # Prettier (run it before committing; CI checks it with npm run format:check)
 npm run test:e2e       # builds, then runs the Playwright suite
 npm run test:visual:docker           # compares every tab with its screenshot baseline, inside Docker
@@ -144,6 +146,10 @@ If `npm run format:check` still fails after one `npm run format`, run `npm run f
 `npm run test:e2e` builds, then runs the Playwright suite (the tablet and phone projects, not the screenshots) against the made-up house;
 `npm run test:e2e -- test/e2e/lights-sheet.spec.ts` runs one file. The first run needs a browser: `npx playwright install chromium`.
 The test server listens on port 4173 unless `E2E_PORT` names another, so several runs can share a machine.
+
+`npm run test:coverage` reports coverage for `src/config.js` and `src/stack.js` (text in the terminal, HTML in `coverage/`, uploaded by CI). Today: 98.82% of statements
+over the two files (`config.js` 98.21%, `stack.js` 100%). The tests still evaluate the two scripts with `vm.compileFunction`, which is given the file name so V8 attributes the
+coverage to it; #34 turns those loaders into plain imports.
 
 `npm run test:visual` runs the screenshot project against the baselines in `test/e2e/__screenshots__/`, and only ever inside the Playwright image
 (Linux arm64, as in CI): compare with `test:visual:docker` or `test:visual:container` (Apple's `container`, after `container system start`), rewrite with
