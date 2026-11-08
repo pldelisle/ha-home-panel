@@ -9,5 +9,5 @@
     "types": ["node"],
     "skipLibCheck": true
   },
-  "include": ["playwright.config.ts", "test/e2e/**/*.ts"]
+  "include": ["*.ts", "src/**/*.ts", "test/**/*.ts"]
 }
