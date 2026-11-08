@@ -8,6 +8,6 @@ export default defineConfig({
   test: {
     include: ['test/unit/**/*.test.{mjs,ts}'],
     environment: 'node',
-    coverage: {provider: 'v8', include: ['src/config.js', 'src/stack.js'], reporter: ['text', 'html']},
+    coverage: {provider: 'v8', include: ['src/config.js', 'src/stack.js', 'src/fonts.js'], reporter: ['text', 'html']},
   },
 });

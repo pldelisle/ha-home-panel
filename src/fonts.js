@@ -35,8 +35,8 @@ export const FONT_FILES = FONT_SUBSETS.flatMap(([subset]) => FONT_WEIGHTS.map(w 
 // /local/home-panel/fonts/, without the query (the names are stable, so a cached font outlives an update). The module's
 // URL is held in a variable first: Vite reads `new URL('fonts/', import.meta.url)` as a file to bundle, finds no
 // src/fonts/ and warns on every build; through a variable it is a plain URL, resolved in the browser.
-const here = import.meta.url;
-const FONTS_URL = new URL('fonts/', here).href;
+const moduleUrl = import.meta.url;
+const FONTS_URL = new URL('fonts/', moduleUrl).href;
 
 /** The @font-face rules for the eight files under `base` (a URL ending in a slash). */
 export const fontFaces = (base = FONTS_URL) =>

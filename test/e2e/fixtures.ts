@@ -4,6 +4,7 @@
 // through the element's methods.
 import {test as base, expect, type Locator, type Page} from '@playwright/test';
 import {PHONE_TABS, TABLET_TABS} from './houses';
+import {GOOGLE_FONT_HOSTS} from '../google-font-hosts.mjs';
 
 // what harness.html reads before the panel loads, and the helper it exposes afterwards
 declare global {
@@ -23,12 +24,10 @@ export type Chunk = {url: string; body: string};
 /** where the build puts Montserrat in the served panel (dist/fonts/, served under /panel/) */
 export const FONT_URL = /\/panel\/fonts\//;
 
-/** the weights the panel's stylesheet uses, which src/fonts.js declares */
-const FONT_WEIGHTS = [400, 500, 600, 700];
+/** the weights the panel's stylesheet uses, which src/fonts.js declares, as `document.fonts` writes them */
+export const FONT_WEIGHTS = ['400', '500', '600', '700'];
 
-// Google's font hosts, which the panel must never call (spec 08): a request to either fails the test. Each name is
-// written in two pieces so that spec 08's check, a grep of src/, test/ and dist/ for the two hosts, finds none in test/.
-const GOOGLE_FONT_HOSTS = ['fonts.google' + 'apis.com', 'fonts.g' + 'static.com'];
+// a request to Google's font hosts fails the test (spec 08)
 const isGoogleFont = (url: string | URL) => GOOGLE_FONT_HOSTS.includes(new URL(url).hostname);
 
 export type HouseOpts = {
@@ -68,7 +67,7 @@ export type House = {
   chunks: Chunk[];
   /** the URLs of the fetched chunks whose body contains `needle` (a string, or a pattern) */
   chunksWith: (needle: string | RegExp) => string[];
-  /** the responses to the panel's requests under /panel/fonts/ (the bundled Montserrat), in the order they came */
+  /** every font file the page received, wherever it came from (the bundled Montserrat is under /panel/fonts/), in order */
   fonts: Array<{url: string; status: number}>;
   /** the panel element */
   root: () => Locator;
@@ -116,7 +115,7 @@ export const test = base.extend<{houseOpts: HouseOpts; house: House}>({
     });
     await page.route(isGoogleFont, r => r.abort());
     page.on('response', r => {
-      if (FONT_URL.test(r.url())) fonts.push({url: r.url(), status: r.status()});
+      if (r.request().resourceType() === 'font') fonts.push({url: r.url(), status: r.status()});
     });
     if (o.automations) {
       const body = JSON.stringify(o.automations);
@@ -197,19 +196,28 @@ export async function eachShownTab(
   return opened;
 }
 
+/**
+ * The weights of Montserrat the document has loaded, sorted. Not `document.fonts.check()`: in Chromium it is true for a
+ * family no rule declares at all, so it would pass with the font gone. A loaded face is one whose file arrived.
+ */
+export const loadedFontWeights = (house: House) =>
+  house.page.evaluate(() =>
+    [...document.fonts]
+      .filter(f => f.family.replaceAll(/["']/g, '') === 'Montserrat' && f.status === 'loaded')
+      .map(f => f.weight)
+      .sort(),
+  );
+
 // Waits until Montserrat is loaded in all four weights. The font is declared with font-display: swap, so text is drawn
 // in the fallback until a weight arrives; a screenshot must never catch that, and a chart or a flow drawn later must
 // measure its labels in the real font (ApexCharts and Mermaid size boxes and axes from the text). document.fonts.load
-// fetches a weight the page has not used yet and resolves with the faces it loaded (one each: the latin file); it
-// rejects when a file cannot be fetched. document.fonts.check alone would not do: it is true for a family no rule
-// declares at all.
+// fetches a weight the page has not used yet and resolves when it is there; it rejects when a file cannot be fetched.
 export async function fontsLoaded(house: House) {
-  const state = await house.page.evaluate(async weights => {
-    const faces = await Promise.all(weights.map(w => document.fonts.load(`${w} 16px Montserrat`)));
+  await house.page.evaluate(async weights => {
+    await Promise.all(weights.map(w => document.fonts.load(`${w} 16px Montserrat`)));
     await document.fonts.ready;
-    return {faces: faces.map(f => f.length), check: weights.every(w => document.fonts.check(`${w} 16px Montserrat`))};
   }, FONT_WEIGHTS);
-  expect(state, 'Montserrat faces loaded for 400, 500, 600 and 700').toEqual({faces: [1, 1, 1, 1], check: true});
+  expect(await loadedFontWeights(house), 'Montserrat weights loaded').toEqual(FONT_WEIGHTS);
 }
 
 // skip a test (or a describe's tests, as a beforeEach) on the wrong project, for checks about one layout

@@ -47,7 +47,7 @@ const shipLicenses: Plugin = {
 // Montserrat (spec 08): the eight woff2 files src/fonts.js declares, copied from @fontsource/montserrat into
 // dist/fonts/ under Fontsource's own names. Not imported through CSS, where Vite would inline or hash them: the names
 // stay stable, so a tablet's cached font outlives an update, and src/fonts.js can name them.
-const fontsource = createRequire(import.meta.url);
+const requireFontsource = createRequire(import.meta.url);
 const shipFonts: Plugin = {
   name: 'ship-fonts',
   generateBundle() {
@@ -55,7 +55,7 @@ const shipFonts: Plugin = {
       this.emitFile({
         type: 'asset',
         fileName: `fonts/${file}`,
-        source: readFileSync(fontsource.resolve(`@fontsource/montserrat/files/${file}`)),
+        source: readFileSync(requireFontsource.resolve(`@fontsource/montserrat/files/${file}`)),
       });
   },
 };

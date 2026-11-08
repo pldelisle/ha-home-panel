@@ -153,8 +153,8 @@ If `npm run format:check` still fails after one `npm run format`, run `npm run f
 `npm run test:e2e -- test/e2e/lights-sheet.spec.ts` runs one file. The first run needs a browser: `npx playwright install chromium`.
 The test server listens on port 4173 unless `E2E_PORT` names another, so several runs can share a machine.
 
-`npm run test:coverage` reports coverage for `src/config.js` and `src/stack.js` (text in the terminal, HTML in `coverage/`, uploaded by CI). Today: 98.82% of statements
-over the two files (`config.js` 98.21%, `stack.js` 100%). The two files are imported by their tests like any module.
+`npm run test:coverage` reports coverage for `src/config.js`, `src/stack.js` and `src/fonts.js` (text in the terminal, HTML in `coverage/`, uploaded by CI). Today: 99.03% of statements
+over the three files (`config.js` 98.21%, `stack.js` and `fonts.js` 100%; the terminal table leaves out a file covered in full). The three files are imported by their tests like any module.
 
 `npm run test:visual` runs the screenshot project against the baselines in `test/e2e/__screenshots__/`, and only ever inside the Playwright image
 (Linux arm64, as in CI): compare with `test:visual:docker` or `test:visual:container` (Apple's `container`, after `container system start`), rewrite with
@@ -193,7 +193,7 @@ and helpers those files used to share as globals; it goes away in the refactor's
 Montserrat comes from npm too: `@fontsource/montserrat`'s woff2 files for weights 400 to 700, latin and latin-ext, are copied into `dist/fonts/` under their own names,
 and `src/fonts.js` declares them with `@font-face` rules in the document (Chromium ignores them inside a shadow root), so the panel never calls Google Fonts.
 No library is committed as a file. `LICENSES.md` at the root lists every production package with its version and licence text; `npm run licenses` generates it (it is not edited by hand, and Prettier skips it), `vite build` copies it into `dist/`, and `test/unit/licenses.test.mjs` fails when it is out of date.
-`npm run typecheck` runs `tsc` twice: `tsconfig.check.json` checks the pure modules (`config.js`, `stack.js`) strictly, and `tsconfig.legacy.json` checks every
+`npm run typecheck` runs `tsc` twice: `tsconfig.check.json` checks the small modules (`config.js`, `stack.js`, `fonts.js`) strictly, and `tsconfig.legacy.json` checks every
 file under `src/` without `strict`, so a name that does not exist or an import that does not resolve is an error while the untyped class is tolerated.
 `src/legacy/dom-scaffolding.d.ts` holds the ambient declarations that second pass needs (only `tsconfig.legacy.json` lists it); the refactor's second phase deletes it.
 The source map points a stack trace or the browser's DevTools back at the files in `src/`; it ships in the release zip next to `home-panel.js`.

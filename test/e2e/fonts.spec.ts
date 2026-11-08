@@ -1,30 +1,40 @@
 // Montserrat ships with the panel (spec 08): the font comes from the panel's own fonts/ folder, and nothing is asked of
 // Google. The fixture already fails any test whose page calls Google's font hosts; this file checks that the font
 // arrives from beside home-panel.js, that the page draws with it, and that no tab reaches past the house's server.
-import {test, expect, tabletOnly, eachShownTab, FONT_URL, type House} from './fixtures';
+import {
+  test,
+  expect,
+  tabletOnly,
+  eachShownTab,
+  loadedFontWeights,
+  FONT_URL,
+  FONT_WEIGHTS,
+  type House,
+} from './fixtures';
 import {FULL_CFG} from './houses';
 
 test.beforeEach(tabletOnly);
 test.use({houseOpts: {cfg: FULL_CFG}});
 
 // the four weights of the latin subset, the files the test house's text needs (it shows no latin-ext character)
-const LATIN = [400, 500, 600, 700].map(w => `montserrat-latin-${w}-normal.woff2`);
+const LATIN = FONT_WEIGHTS.map(w => `montserrat-latin-${w}-normal.woff2`);
 
-// the weights of Montserrat the document has loaded. document.fonts.check() is true for a family no rule declares at
-// all, so the faces themselves are asked for: the panel declares them in the document (Chromium ignores @font-face in
-// its shadow root), and a loaded face is one whose file arrived
-const loadedWeights = (house: House) =>
-  house.page.evaluate(() =>
-    [...document.fonts]
-      .filter(f => f.family.replaceAll(/["']/g, '') === 'Montserrat' && f.status === 'loaded')
-      .map(f => f.weight)
-      .sort(),
-  );
+// a font-family list that starts with the bundled family, as getComputedStyle writes it
+const MONTSERRAT_FIRST = /^["']?Montserrat["']?,/;
+
+// the font-family the first element matching `selector` in the panel is set in
+const family = (house: House, selector: string) =>
+  house
+    .root()
+    .locator(selector)
+    .first()
+    .evaluate(e => getComputedStyle(e).fontFamily);
 
 test("the Home tab draws in Montserrat from the panel's fonts/ folder", async ({house}) => {
-  // every font the panel asked for came from /panel/fonts/ with a 200; the weights the Home tab uses are among them
+  // the weights the Home tab uses arrived; every font file the page received (the fixture records them all, wherever
+  // they came from) is one of the panel's, with a 200
   await expect
-    .poll(() => house.fonts.map(f => f.url.slice(f.url.lastIndexOf('/') + 1)), 'files fetched from /panel/fonts/')
+    .poll(() => house.fonts.map(f => f.url.slice(f.url.lastIndexOf('/') + 1)), 'font files received')
     .toEqual(expect.arrayContaining(LATIN));
   for (const f of house.fonts) {
     expect(f.url).toMatch(FONT_URL);
@@ -38,17 +48,14 @@ test("the Home tab draws in Montserrat from the panel's fonts/ folder", async ({
       return document.fonts.check('600 16px Montserrat');
     }),
   ).toBe(true);
-  expect(await loadedWeights(house)).toEqual(['400', '500', '600', '700']);
+  // check() is also true for a family no rule declares, so the loaded faces are asked for too: the panel declares
+  // them in the document (Chromium ignores @font-face in its shadow root)
+  expect(await loadedFontWeights(house)).toEqual(FONT_WEIGHTS);
   await expect(page.locator('head style#home-panel-fonts')).toHaveCount(1);
   expect(await page.locator('head link[rel="stylesheet"]').count(), 'stylesheet links in the head').toBe(0);
   // and the text uses the family: a heading on the Home pane is drawn in it
   await house.tab('home');
-  expect(
-    await house
-      .root()
-      .locator('#pane-home h2')
-      .evaluate(e => getComputedStyle(e).fontFamily),
-  ).toMatch(/^["']?Montserrat["']?,/);
+  expect(await family(house, '#pane-home h2')).toMatch(MONTSERRAT_FIRST);
 });
 
 test("no tab asks anything of a server other than the house's, and charts and flows draw in Montserrat", async ({
@@ -60,28 +67,22 @@ test("no tab asks anything of a server other than the house's, and charts and fl
   const origin = new URL(page.url()).origin;
   const urls: string[] = [];
   page.on('request', r => urls.push(r.url()));
-  const family = (selector: string) =>
-    house
-      .root()
-      .locator(selector)
-      .first()
-      .evaluate(e => getComputedStyle(e).fontFamily);
   await eachShownTab(house, async t => {
     if (t === 'energy') {
       // ApexCharts draws its labels as SVG text in the panel's --f-body
       await expect(house.root().locator('#pane-energy .apexcharts-canvas text').first()).toBeAttached();
-      expect(await family('#pane-energy .apexcharts-canvas text')).toMatch(/^["']?Montserrat["']?,/);
+      expect(await family(house, '#pane-energy .apexcharts-canvas text')).toMatch(MONTSERRAT_FIRST);
     }
     if (t === 'auto') {
       // Mermaid draws the flow's labels as HTML inside the SVG, in its fontFamily setting (the same --f-body)
       await expect(house.root().locator('#pane-auto .augraph foreignObject span').first()).toBeAttached();
-      expect(await family('#pane-auto .augraph foreignObject span')).toMatch(/^["']?Montserrat["']?,/);
+      expect(await family(house, '#pane-auto .augraph foreignObject span')).toMatch(MONTSERRAT_FIRST);
     }
   });
   urls.push(...(await page.evaluate(() => performance.getEntriesByType('resource').map(e => e.name))));
   expect(urls.length, 'requests seen').toBeGreaterThan(10);
   expect(urls.filter(u => !u.startsWith(origin + '/') && !u.startsWith('data:'))).toEqual([]);
-  expect(house.fonts.every(f => f.status === 200)).toBe(true);
+  expect(house.fonts.every(f => FONT_URL.test(f.url) && f.status === 200)).toBe(true);
   // the family the charts and the flows name is the bundled one, loaded
-  expect(await loadedWeights(house)).toEqual(['400', '500', '600', '700']);
+  expect(await loadedFontWeights(house)).toEqual(FONT_WEIGHTS);
 });
