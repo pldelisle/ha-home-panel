@@ -2,6 +2,7 @@ import js from '@eslint/js';
 import {defineConfig} from 'eslint/config';
 import tseslint from 'typescript-eslint';
 import lit from 'eslint-plugin-lit';
+import {importX, createNodeResolver} from 'eslint-plugin-import-x';
 import prettier from 'eslint-config-prettier';
 import globals from 'globals';
 
@@ -18,6 +19,7 @@ export default defineConfig(
       'node_modules/',
       'coverage/',
       'vendor/', // third-party libraries, copied as shipped
+      'src/legacy/dom-scaffolding.d.ts', // declarations for tsconfig.legacy.json only; tsconfig.json excludes it, so the typed project cannot parse it
       'test/e2e/__screenshots__/',
       'playwright-report/',
       'test-results/',
@@ -60,6 +62,24 @@ export default defineConfig(
 
   // The one constant the build injects (vite.config.ts `define`); every other cross-file name is an import now
   {files: ['src/**/*.js'], languageOptions: {globals: {__VERSION__: 'readonly'}}},
+
+  // Imports must resolve, and a name imported from a module must be one it exports (a misspelled import is an error
+  // here, not a blank screen on the tablet). Vite's `?raw` suffix is not part of the file name, so those are skipped.
+  {
+    files: ['src/**/*.{js,ts}', 'test/**/*.{js,mjs,ts}'],
+    plugins: {'import-x': importX},
+    settings: {
+      // import-x/named reads a .ts file's exports with the same parser ESLint uses for it
+      'import-x/parsers': {'@typescript-eslint/parser': ['.ts']},
+      // the tests import their .ts helpers without an extension, as TypeScript and Playwright allow
+      'import-x/resolver-next': [createNodeResolver({extensions: ['.js', '.mjs', '.ts', '.d.ts', '.json']})],
+    },
+    rules: {
+      'import-x/no-unresolved': ['error', {ignore: ['\\?raw$']}],
+      // for .ts files too, through the parser setting above (`import {PHONE_TABZ} from './houses'` fails)
+      'import-x/named': ['error'],
+    },
+  },
 
   // legacy: rules that fire on idioms in the old class; each entry says why; this block only shrinks
   {

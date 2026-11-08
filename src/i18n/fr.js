@@ -83,7 +83,13 @@ const FR_TOK = [
   [`\\b(\\d{1,2}):(\\d{2}) ?([ap])\\.?m\\b\\.?`, (h, m, ap) => frH(h, m, ap)],
   [`\\b(\\d{1,2}) ?([ap])\\.?m\\b\\.?`, (h, ap) => frH(h, '', ap)],
   ['[-−]?\\d+(?:[.,]\\d+)*', n => frNum(n.replace('−', '-'))],
-].map(([rx, f]) => [new RegExp(rx, /\[ap\]/.test(rx) ? 'gi' : 'g'), f]);
+].map(
+  /**
+   * @param {[string, (...g: string[]) => string]} rule
+   * @returns {[RegExp, (...g: string[]) => string]}
+   */
+  ([rx, f]) => [new RegExp(rx, /\[ap\]/.test(rx) ? 'gi' : 'g'), f],
+);
 // English text -> lookup key with {n} for each number, time or date; their French forms go into vals, in reading order
 const frKey = (s, vals) => {
   const got = [],
