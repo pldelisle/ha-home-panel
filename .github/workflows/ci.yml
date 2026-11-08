@@ -28,7 +28,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: npm ci
       - run: npm run build
-      # the main chunk against its gzip budget in package.json ("size-limit")
+      # the main chunk against its gzip budget in package.json ("size-limit"); the lazy chunks are printed
+      # beside it, without a limit
       - run: npm run size
       - run: npm run typecheck
       - run: npm test -- --coverage

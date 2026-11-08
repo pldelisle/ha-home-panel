@@ -26,7 +26,7 @@ const walk = (dir, skip = []) =>
 // the newest modification time among the inputs of the build
 const newestInput = () =>
   Math.max(
-    ...['package.json', 'package-lock.json', 'vite.config.ts', ...walk('src'), ...walk('vendor')].map(
+    ...['package.json', 'package-lock.json', 'vite.config.ts', 'LICENSES.md', ...walk('src')].map(
       f => statSync(join(ROOT, f)).mtimeMs,
     ),
   );
@@ -35,8 +35,6 @@ beforeAll(() => {
   if (existsSync(BUNDLE) && statSync(BUNDLE).mtimeMs >= newestInput()) return;
   execFileSync('npm', ['run', 'build'], {cwd: ROOT, stdio: 'pipe'});
 }, 120_000);
-
-const VENDORED = ['leaflet.css', 'leaflet.js'];
 
 // every file under dist/, as paths relative to it ('chunks/x.js'), sorted; the lazy chunks the entry loads with
 // import(), chunks/<name>-<hash>.js, and their text. Read once, after the build above.
@@ -50,9 +48,10 @@ beforeAll(() => {
   text = c => texts.get(c);
 });
 
-test('dist/ holds the bundle, its source map, the lazy chunks and the vendored libraries, and nothing else', () => {
+test('dist/ holds the bundle, its source map, the lazy chunks and the licence list, and nothing else', () => {
+  // no copied library file (there is no vendor/), no assets/ folder: the stylesheets are imported as text
   const rest = distFiles.filter(f => !chunks.some(c => f === c || f === c + '.map'));
-  expect(rest).toStrictEqual([...VENDORED, 'home-panel.js', 'home-panel.js.map'].sort());
+  expect(rest).toStrictEqual(['LICENSES.md', 'home-panel.js', 'home-panel.js.map']);
   for (const c of chunks) {
     expect(c).toMatch(/^chunks\/[\w.-]+-[\w-]{8}\.js$/); // [name]-[hash].js
     // a chunk names its map at its end exactly when the map is there, so a stack trace from a chart or a flow points
@@ -79,9 +78,35 @@ test("the chunks' maps name the libraries' files but leave out their text", () =
   }
 });
 
-test('the vendored libraries are copied as they are', () => {
-  for (const f of VENDORED)
-    expect(readFileSync(join(DIST, f)).equals(readFileSync(join(ROOT, 'vendor', f))), f).toBe(true);
+test("the generated LICENSES.md ships as it is, so the release zip carries the libraries' licences", () => {
+  expect(readFileSync(join(DIST, 'LICENSES.md')).equals(readFileSync(join(ROOT, 'LICENSES.md')))).toBe(true);
+});
+
+test('every package whose code is in a chunk is listed in LICENSES.md', () => {
+  // the chunks' maps name each node_modules file a chunk was built from; a package inside a pre-bundled file (svg.js
+  // inside apexcharts.esm.js) has no entry of its own, and the list covers it as part of the production tree
+  const rows = read('LICENSES.md')
+    .split('\n')
+    .filter(l => l.startsWith('| '))
+    .map(l => l.split(' | ')[0].slice(2));
+  const used = new Set();
+  for (const f of distFiles.filter(f => /^chunks\/.+\.js\.map$/.test(f)))
+    for (const s of JSON.parse(readFileSync(join(DIST, f), 'utf8')).sources) {
+      const i = s.lastIndexOf('node_modules/');
+      if (i < 0) continue;
+      const [a, b] = s.slice(i + 'node_modules/'.length).split('/');
+      used.add(a.startsWith('@') ? `${a}/${b}` : a);
+    }
+  expect(used.size, 'packages named in the maps').toBeGreaterThan(20);
+  for (const name of used) expect(rows, name).toContain(name);
+});
+
+test('the licence notices the libraries carry stay in their chunks', () => {
+  // vite.config.ts sets comments: {legal: true}; Vite 8 would strip /*! … */ and @license comments otherwise
+  const all = chunks.map(text).join('\n');
+  expect(all).toMatch(/@license DOMPurify \d/);
+  expect(all).toContain('/*! svg.draggable.js');
+  expect(all).toContain('ApexCharts v3.45.2');
 });
 
 test('ApexCharts and its stylesheet are in one lazy chunk, and not in the entry', () => {

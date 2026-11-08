@@ -71,6 +71,12 @@
       "allowedVersions": "3.45.2"
     },
     {
+      "description": "license-checker-rseidelsohn 5 needs Node 24 and npm 11, and CI (the lint job) runs Node 22 and engines allows 22.19; stay on 4.x, as @types/node stays on 22, until the Node version is changed by hand",
+      "matchPackageNames": ["license-checker-rseidelsohn"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    },
+    {
       "description": "typescript-eslint does not support TypeScript 7 yet; re-enable majors when it does",
       "matchPackageNames": ["typescript"],
       "matchUpdateTypes": ["major"],

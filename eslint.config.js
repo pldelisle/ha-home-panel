@@ -18,7 +18,6 @@ export default defineConfig(
       'dist/',
       'node_modules/',
       'coverage/',
-      'vendor/', // third-party libraries, copied as shipped
       'src/legacy/dom-scaffolding.d.ts', // declarations for tsconfig.legacy.json only; tsconfig.json excludes it, so the typed project cannot parse it
       'test/e2e/__screenshots__/',
       'playwright-report/',
