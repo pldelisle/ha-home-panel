@@ -4,19 +4,17 @@
 // in the rotation, filler cards (energy today, who's home) only show when nothing else applies.
 
 /** @typedef {import('./types.d.ts').StackCard} StackCard */
-/** @typedef {import('./types.d.ts').ReminderWindow} ReminderWindow */
+/** @typedef {import('./types.d.ts').Reminder} Reminder */
 
 const STACK_TURN_MS = 20000; // one card per clock tick
 /** @type {Record<string, number>} */
 const TONE_RANK = {red: 0, amber: 1};
 /**
- * @param {(StackCard | null | undefined | false)[] | null | undefined} cards falsy entries are skipped
+ * @param {StackCard[] | null | undefined} cards falsy entries are skipped too
  * @param {number} now milliseconds (Date.now() or a clock's getTime())
- * @returns {{card: StackCard, i: number, n: number} | null} the card for this tick, its place and the number of cards in turn
+ * @returns {{card: StackCard, i: number, n: number} | null} the card for this tick, its place and how many are in turn
  */
 function pickStack(cards, now) {
-  /** @type {StackCard[]} */
-  // @ts-expect-error .filter(Boolean) drops the null and false entries; TypeScript cannot see that
   const all = (cards || []).filter(Boolean);
   const red = all.filter(c => c.tone === 'red');
   let pool = red.length ? red : all.filter(c => !c.filler);
@@ -50,14 +48,13 @@ const hhmm = s => {
 };
 // a reminder shows for `lead` minutes before its time: returns the minutes left, or null outside that window
 /**
- * @param {ReminderWindow} rem
+ * @param {Reminder} rem
  * @param {number} h the hour as a decimal
  * @returns {number | null}
  */
 function reminderLeft(rem, h) {
   const at = hhmm(rem && rem.at);
   if (at == null) return null;
-  // @ts-expect-error +undefined is NaN, which || turns into 30
   const lead = Math.max(1, Math.min(240, +rem.lead || 30)) / 60;
   const left = (((at - h) % 24) + 24) % 24;
   return left > 0 && left <= lead ? Math.round(left * 60) : null;

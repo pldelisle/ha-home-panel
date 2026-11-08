@@ -13,6 +13,7 @@
 /** @typedef {import('./types.d.ts').RoomIcon} RoomIcon */
 /** @typedef {import('./types.d.ts').EntityKey} EntityKey */
 /** @typedef {import('./types.d.ts').EntityMap} EntityMap */
+/** @typedef {import('./types.d.ts').LightLink} LightLink */
 /** @typedef {import('./types.d.ts').HassStates} HassStates */
 
 // Entities each card reads. null = not set; the card or tile that needs it stays hidden or shows a dash.
@@ -148,8 +149,7 @@ const ENTITY_ALIAS = {
   heat_pump: 'hp',
   away_mode: 'away',
 };
-// typed wide on purpose: .includes() takes the config's icon, which can be an arbitrary string
-/** @type {string[]} */
+/** @type {RoomIcon[]} */
 const ROOM_ICONS = ['sofa', 'door', 'desk', 'bed', 'bath', 'drop', 'car', 'house', 'therm'];
 // a room's icon from its name, when the config doesn't give one
 /**
@@ -194,7 +194,8 @@ function roomSpec(r, states) {
   return {
     k: o.key || obj.replace(/^thermostat_/, ''),
     n,
-    // @ts-expect-error o.icon is undefined when the config gives none, and includes(undefined) is false
+    // @ts-expect-error o.icon is a string or undefined here, not a RoomIcon: includes() rejects it as an argument and the
+    // ternary returns it as the icon. It is only returned when ROOM_ICONS includes it, and includes(undefined) is false
     icon: ROOM_ICONS.includes(o.icon) ? o.icon : guessIcon(n || fn || obj),
     climate,
     temp: o.temperature || `sensor.${obj}_temperature`,
@@ -228,7 +229,7 @@ function resolveConfig(cfg, states) {
   states = states || {};
   const ids = Object.keys(states),
     has = /** @param {string} id */ id => !!states[id];
-  /** @type {EntityMap & Record<string, string | null>} */ // the string index is for the lookups by weather key below
+  /** @type {EntityMap} */
   const E = {...DEFAULT_ENTITIES};
   /** @type {Record<string, string | null>} */
   const given = {};
@@ -245,10 +246,12 @@ function resolveConfig(cfg, states) {
   if (town)
     for (const [k, suf] of Object.entries(EC_SUFFIX)) {
       const id = `sensor.${town}_${suf}`;
+      // @ts-expect-error EC_SUFFIX's keys are EntityKeys, but Object.entries widens them to string
       if (has(id)) E[k] = id;
     }
   // Hilo's gateway sensor is sensor.hilo_gateway, or _2 after the integration was added twice
-  // @ts-expect-error E.gateway is null when the config clears it; has(null) is false, as for an id that is not a state
+  // @ts-expect-error EntityMap types E.gateway as string | null, so has() sees a possible null; at this line it still
+  // holds the default (a string), and the null comes later, from Object.assign(E, given) when the config clears it
   if (!has(E.gateway)) E.gateway = ids.find(i => /^sensor\.hilo_gateway(_\d+)?$/.test(i)) || E.gateway;
   Object.assign(E, given);
   // rooms: the configured list, else every thermostat except the heat pump
@@ -289,7 +292,7 @@ function resolveConfig(cfg, states) {
             : null,
       )
       // @ts-expect-error `l && ...` is null for a null entry, which is falsy for the filter all the same
-      .filter(/** @returns {l is {keys: string[], sw: string | null}} */ l => l && l.keys.length === 2)
+      .filter(/** @returns {l is LightLink} */ l => l && l.keys.length === 2)
       .map(l => ({keys: l.keys.map(String), sw: l.sw})),
     splitLightAreas: asList(cfg.split_light_areas).map(String), // HA areas whose light groups each get their own tile
     alAreas:

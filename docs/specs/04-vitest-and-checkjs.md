@@ -34,7 +34,7 @@ Move the unit tests to Vitest, the runner Home Assistant's frontend uses, with c
 
 ### Type checking with JSDoc
 
-- `typescript` as a dev dependency, pinned exactly. A `tsconfig.check.json` with `allowJs`, `checkJs`, `noEmit`, `strict`, `target: ES2022`, `lib: ["ES2022", "DOM"]`, and `include` limited to `src/config.js` and `src/stack.js`. `npm run typecheck` runs `tsc -p tsconfig.check.json`.
+- `typescript` as a dev dependency, pinned exactly. A `tsconfig.check.json` with `allowJs`, `checkJs`, `noEmit`, `strict`, `target: ES2022`, `lib: ["ES2022", "DOM"]`, and `include` limited to `src/config.js` and `src/stack.js`. `npm run typecheck` runs `tsc -p tsconfig.check.json`. Because `lib` includes `DOM`, an undeclared DOM global used in the pure modules is not caught; follow-up: narrow `lib` once the modules are real imports (spec 06).
 - Both files gain JSDoc annotations until `typecheck` passes under `strict` with no `any` except where a comment justifies it. At minimum the following typedefs MUST exist, in a `src/types.d.ts` that the check config includes:
   - `HassState`: `{entity_id: string; state: string; attributes: Record<string, unknown>; last_changed: string; last_updated: string}`.
   - `HassStates`: `Record<string, HassState>`.

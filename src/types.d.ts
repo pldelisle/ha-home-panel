@@ -28,7 +28,10 @@ export type RoomInput =
       target?: string;
       power?: string;
     };
-/** Two light cards (an area id or a light entity each) that move together, with an optional input_boolean to link and unlink them. */
+/**
+ * Two light cards (an area id or a light entity each) that move together,
+ * with an optional input_boolean to link and unlink them.
+ */
 export type LightLinkInput = [string, string] | {lights: [string, string]; switch?: string};
 /** `at` is 'HH:MM'; `lead` is the minutes before `at` that the card shows (30 by default). */
 export interface ReminderInput {
@@ -42,7 +45,10 @@ export interface PanelConfig {
   people?: string | string[];
   house_image?: string | {day?: string; night?: string};
   car?: {name?: string; color?: string; battery_kwh?: number};
-  /** The snake_case names (ENTITY_ALIAS) or the camelCase keys (EntityKey) to an entity id; empty or null clears the default. */
+  /**
+   * The snake_case names (ENTITY_ALIAS) or the camelCase keys (EntityKey) to an entity id;
+   * empty or null clears the default.
+   */
   entities?: Record<string, string | null>;
   rooms?: RoomInput | RoomInput[];
   scenes?: string | string[];
@@ -121,8 +127,8 @@ export interface RoomSpec {
   k: string;
   /** The config's `name`; null when the card takes the thermostat's own name. */
   n: string | null;
-  /** One of RoomIcon: the config's icon when it is in ROOM_ICONS, else guessIcon() of the room's name. */
-  icon: string;
+  /** The config's icon when it is in ROOM_ICONS, else guessIcon() of the room's name. */
+  icon: RoomIcon;
   climate: string;
   temp: string;
   target: string;
@@ -157,16 +163,14 @@ export interface ResolvedConfig {
 
 // ---------- smart stack (stack.js) ----------
 
-/** The card pickStack() chooses among. `tone` 'red' pins it, 'amber' puts it first; a card without a tone is neutral. */
+/**
+ * The card pickStack() chooses among. `tone` 'red' pins it, 'amber' puts it first;
+ * a card without a tone is neutral.
+ */
 export interface StackCard {
   k: string;
   tone: 'red' | 'amber' | null;
   filler: boolean;
-  // the fields the idle clock's card builder attaches (icon, label, body...); typed when the class is
-  [extra: string]: unknown;
-}
-/** What reminderLeft() reads of a reminder: every value is accepted and a bad `at` means no card. */
-export interface ReminderWindow {
-  at?: unknown;
-  lead?: unknown;
+  /** The card's markup, built by scard() in the main class. */
+  html: string;
 }
