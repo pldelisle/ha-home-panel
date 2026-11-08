@@ -18,15 +18,23 @@ test.describe('tablet', () => {
     await expect(stack).toBeVisible();
     expect(['car', 'music']).toContain(await cardKey(house, '#hstk'));
     await expect(stack.locator('.sdots i')).toHaveCount(2);
-    const [card, tiles] = await Promise.all([house.root().locator('#hwx').boundingBox(), house.root().locator('.hright').boundingBox()]);
-    expect(card!.height, 'the Home card is no taller than the tiles and Security beside it').toBeLessThanOrEqual(tiles!.height + 1);
+    const [card, tiles] = await Promise.all([
+      house.root().locator('#hwx').boundingBox(),
+      house.root().locator('.hright').boundingBox(),
+    ]);
+    expect(card!.height, 'the Home card is no taller than the tiles and Security beside it').toBeLessThanOrEqual(
+      tiles!.height + 1,
+    );
   });
 
   test('17 a tap on the Home card opens what it is about', async ({house}) => {
     const k = await cardKey(house, '#hstk');
     await house.root().locator('#hstk .sc').click();
     await expect(house.root().locator(k === 'car' ? '#pane-car' : '#pane-media')).toBeVisible();
-    await expect(house.root().locator('#pane-home'), 'the Home pane gives way to the one the card leads to').toBeHidden();
+    await expect(
+      house.root().locator('#pane-home'),
+      'the Home pane gives way to the one the card leads to',
+    ).toBeHidden();
   });
 
   test('18 the car and the speaker take turns beside the idle clock', async ({house}) => {
@@ -36,8 +44,14 @@ test.describe('tablet', () => {
       seen.push([await cardKey(house, '#istk'), await house.root().locator('#istk .sdots i').count()]);
       await house.clock.runFor(STACK_TURN_MS);
     }
-    expect(seen.map(s => s[0]).sort(), `the car and the speaker take turns (got ${JSON.stringify(seen)})`).toEqual(['car', 'music']);
-    expect(seen.map(s => s[1]), 'two dots for two cards').toEqual([2, 2]);
+    expect(seen.map(s => s[0]).sort(), `the car and the speaker take turns (got ${JSON.stringify(seen)})`).toEqual([
+      'car',
+      'music',
+    ]);
+    expect(
+      seen.map(s => s[1]),
+      'two dots for two cards',
+    ).toEqual([2, 2]);
     await expect(house.root().locator('#iwrap .iclk2 .wxi'), 'the clock keeps its weather icon').toBeVisible();
   });
 
@@ -55,7 +69,9 @@ test.describe('phone', () => {
   test.beforeEach(phoneOnly);
   test.use({houseOpts: {cfg: FULL_CFG, time: NIGHT}});
 
-  test('20 a phone keeps its Home card without the stack; on the idle clock the card sits under the clock', async ({house}) => {
+  test('20 a phone keeps its Home card without the stack; on the idle clock the card sits under the clock', async ({
+    house,
+  }) => {
     await expect(house.root().locator('#pane-home')).toBeVisible(); // the Home card is drawn before we look for a stack in it
     await expect(house.root().locator('#hstk')).toHaveCount(0);
     await sleepNow(house);
@@ -78,6 +94,9 @@ test.describe('idle_stack disabled', () => {
     await house.clock.fastForward(IDLE_AFTER_MS + 1_000);
     await expect(house.root().locator('#idle')).toBeVisible();
     await expect(house.root().locator('#iwrap .sc')).toHaveCount(0);
-    await expect(house.root().locator('#hstk'), 'the Home-card slot exists and is hidden').toHaveAttribute('hidden', '');
+    await expect(house.root().locator('#hstk'), 'the Home-card slot exists and is hidden').toHaveAttribute(
+      'hidden',
+      '',
+    );
   });
 });

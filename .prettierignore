@@ -1,0 +1,8 @@
+dist/
+node_modules/
+test/e2e/__screenshots__/
+# hand-written voice
+CHANGELOG.md
+package-lock.json
+# third-party libraries, copied as shipped
+vendor/

@@ -17,11 +17,11 @@ panel_custom:
         day: /local/home-panel/house-day.webp
         night: /local/home-panel/house-night.webp
       car:
-        name: My car        # default: the FordPass vehicle name
-        color: "#2F5FAF"    # body colour of the drawing shown when FordPass has no photo
-        battery_kwh: 91     # usable battery size, for the time to full on the charging pill when FordPass gives none
+        name: My car # default: the FordPass vehicle name
+        color: '#2F5FAF' # body colour of the drawing shown when FordPass has no photo
+        battery_kwh: 91 # usable battery size, for the time to full on the charging pill when FordPass gives none
       entities:
-        weather: weather.springfield_forecast   # default: the first weather entity
+        weather: weather.springfield_forecast # default: the first weather entity
         grid_power: sensor.house_power
         energy_total: sensor.house_energy
         water_heater_power: sensor.water_heater_power
@@ -37,7 +37,7 @@ panel_custom:
         hydro_quebec_balance: sensor.hydro_quebec_balance
         hydro_quebec_peak: binary_sensor.hydro_quebec_critical_peak_in_progress
         hydro_quebec_upcoming_peak: binary_sensor.hydro_quebec_upcoming_critical_peak
-        away_mode: input_boolean.away   # on while the house is in Away mode (a card on the idle clock)
+        away_mode: input_boolean.away # on while the house is in Away mode (a card on the idle clock)
       # rooms on the Climate tab, in this order (default: every thermostat except the heat pump)
       rooms:
         - {climate: climate.living_room, name: Living room, icon: sofa}
@@ -60,7 +60,7 @@ panel_custom:
         - [office, hallway]
       # the idle clock's smart stack: one card beside the clock that changes with the moment (see the README)
       idle_stack:
-        enabled: true               # false keeps the clock alone
-        sunrise_lights_off: true    # this house turns every light off at sunrise: the sunrise card says so
-        reminders:                  # a card for `lead` minutes before each time
-          - {at: "20:00", title: Bedtime, text: The kids' lamp goes to night mode, lead: 30}
+        enabled: true # false keeps the clock alone
+        sunrise_lights_off: true # this house turns every light off at sunrise: the sunrise card says so
+        reminders: # a card for `lead` minutes before each time
+          - {at: '20:00', title: Bedtime, text: The kids' lamp goes to night mode, lead: 30}

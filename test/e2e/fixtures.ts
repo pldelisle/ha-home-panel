@@ -54,18 +54,27 @@ export type House = {
   clock: Page['clock'];
 };
 
-const DEFAULTS: Required<Pick<HouseOpts, 'house' | 'lang' | 'theme' | 'admin'>> = {house: 'full', lang: 'en', theme: 'light', admin: true};
+const DEFAULTS: Required<Pick<HouseOpts, 'house' | 'lang' | 'theme' | 'admin'>> = {
+  house: 'full',
+  lang: 'en',
+  theme: 'light',
+  admin: true,
+};
 
 export const test = base.extend<{houseOpts: HouseOpts; house: House}>({
   houseOpts: [{}, {option: true}],
   house: async ({page, houseOpts}, use) => {
     const o = {...DEFAULTS, ...houseOpts};
-    const calls: string[] = [], ws: House['ws'] = [], errors: string[] = [];
+    const calls: string[] = [],
+      ws: House['ws'] = [],
+      errors: string[] = [];
     await page.addInitScript(
       ([cfg, sysdata, theme]) => {
         window.PANEL_CFG = cfg;
         window.SYSDATA = sysdata;
-        try { localStorage.setItem('home-panel-theme', theme); } catch {}
+        try {
+          localStorage.setItem('home-panel-theme', theme);
+        } catch {}
       },
       [o.cfg ?? null, o.sysdata ?? null, o.theme] as const,
     );
@@ -83,16 +92,23 @@ export const test = base.extend<{houseOpts: HouseOpts; house: House}>({
     const root = () => page.locator('home-panel');
     await root().locator('#rail').waitFor({state: 'attached'});
     const house: House = {
-      page, calls, ws, errors, root, clock: page.clock,
+      page,
+      calls,
+      ws,
+      errors,
+      root,
+      clock: page.clock,
       tab: async name => {
         await root().locator(`[data-tab="${name}"]`).first().click();
         await expect(root().locator(`#pane-${name}`)).toBeVisible();
       },
       setState: (id, patch) => page.evaluate(([id, patch]) => window.house.setState(id, patch), [id, patch] as const),
-      setStateSince: (id, patch, agoMs) => page.evaluate(
-        ([id, patch, agoMs]) => window.house.setState(id, {...patch, last_changed: new Date(Date.now() - agoMs).toISOString()}),
-        [id, patch, agoMs] as const,
-      ),
+      setStateSince: (id, patch, agoMs) =>
+        page.evaluate(
+          ([id, patch, agoMs]) =>
+            window.house.setState(id, {...patch, last_changed: new Date(Date.now() - agoMs).toISOString()}),
+          [id, patch, agoMs] as const,
+        ),
     };
     await use(house);
     expect(errors, 'page errors').toEqual([]);
@@ -101,12 +117,15 @@ export const test = base.extend<{houseOpts: HouseOpts; house: House}>({
 
 // opens each tab the screen offers (a tab button hidden on purpose, no car say, is skipped; one that is merely invisible is not)
 // and runs `each` on it; returns the tabs it opened, in order
-export async function eachShownTab(house: House, each?: (tab: string, pane: Locator) => Promise<void>): Promise<string[]> {
+export async function eachShownTab(
+  house: House,
+  each?: (tab: string, pane: Locator) => Promise<void>,
+): Promise<string[]> {
   const tabs = house.page.viewportSize()!.width < 600 ? PHONE_TABS : TABLET_TABS;
   const opened: string[] = [];
   for (const t of tabs) {
     const button = house.root().locator(`[data-tab="${t}"]`).first();
-    if (!(await button.count()) || await button.evaluate(e => (e as HTMLElement).hidden)) continue;
+    if (!(await button.count()) || (await button.evaluate(e => (e as HTMLElement).hidden))) continue;
     await house.tab(t);
     opened.push(t);
     if (each) await each(t, house.root().locator(`#pane-${t}`));
@@ -123,10 +142,11 @@ export const IDLE_AFTER_MS = 5 * 60_000;
 
 // asserts the panel sent a service call ("domain.service {json}") matching `re`; on failure the report lists the calls it did
 // send, and the boxed step points at the spec's line rather than this one
-export const expectCall = (house: House, re: RegExp) => test.step(
-  `the panel sent a service call matching ${re}`,
-  () => expect.poll(() => house.calls).toContainEqual(expect.stringMatching(re)),
-  {box: true},
-);
+export const expectCall = (house: House, re: RegExp) =>
+  test.step(
+    `the panel sent a service call matching ${re}`,
+    () => expect.poll(() => house.calls).toContainEqual(expect.stringMatching(re)),
+    {box: true},
+  );
 
 export {expect};

@@ -13,12 +13,15 @@
     "test:visual:update": "docker run --rm --init --ipc=host -v \"$PWD\":/work -w /work -e CI=1 mcr.microsoft.com/playwright:v1.63.0-noble npm run test:visual -- --update-snapshots=all",
     "test:visual:container": "container run --rm --init -c 4 -m 4g -v \"$PWD\":/work -w /work -e CI=1 mcr.microsoft.com/playwright:v1.63.0-noble npm run test:visual",
     "test:visual:update:container": "container run --rm --init -c 4 -m 4g -v \"$PWD\":/work -w /work -e CI=1 mcr.microsoft.com/playwright:v1.63.0-noble npm run test:visual -- --update-snapshots=all",
-    "check": "node --check dist/home-panel.js"
+    "check": "node --check dist/home-panel.js",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "engines": {
     "node": ">=20"
   },
   "devDependencies": {
-    "@playwright/test": "1.63.0"
+    "@playwright/test": "1.63.0",
+    "prettier": "3.9.10"
   }
 }

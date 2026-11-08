@@ -7,8 +7,8 @@ to users whose Home Assistant profile is in French.
 
 ![Home tab on a tablet](docs/tablet-home.png)
 
-| Phone | Climate, dark theme |
-|---|---|
+| Phone                                       | Climate, dark theme                          |
+| ------------------------------------------- | -------------------------------------------- |
 | ![Home tab on a phone](docs/phone-home.png) | ![Climate tab](docs/tablet-climate-dark.png) |
 
 It's mostly for monitoring. You can control lights, scenes, thermostats, media players, the EV charger and a FordPass car.
@@ -17,17 +17,17 @@ It's mostly for monitoring. You can control lights, scenes, thermostats, media p
 
 Every section is optional. A section shows only when its entities exist, so a house without a car never sees a Car tab.
 
-| Section | Works with |
-|---|---|
-| Weather | any `weather` entity. Environment Canada's extra sensors are found automatically. The radar needs [Weather Radar Card](https://github.com/Makin-Things/weather-radar-card) from HACS |
-| Climate | every `climate` entity, with temperature, setpoint and power history from sensors named like Hilo's (`sensor.<thermostat>_temperature`, `_target_temperature`, `_power`), or set per room |
-| Lights | one dimmer row per area: slide the row to dim, tap the bulb to switch, tap the row for colour; with [Adaptive Lighting](https://github.com/basnijholt/adaptive-lighting) Auto and Night when installed |
-| Energy | a whole-house power sensor, a water heater, an EV charger, [Hilo](https://github.com/dvd-dev/hilo) rates and Hydro-Québec peaks |
-| Car | the [FordPass](https://github.com/itchannel/fordpass-ha) integration |
-| Air | Mila purifiers and air sensors |
-| Security | door, window and motion sensors, UniFi Protect cameras |
-| Media | TVs (Wake-on-LAN), speakers |
-| Automations | your automations' own traces, drawn as flow charts |
+| Section     | Works with                                                                                                                                                                                             |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Weather     | any `weather` entity. Environment Canada's extra sensors are found automatically. The radar needs [Weather Radar Card](https://github.com/Makin-Things/weather-radar-card) from HACS                   |
+| Climate     | every `climate` entity, with temperature, setpoint and power history from sensors named like Hilo's (`sensor.<thermostat>_temperature`, `_target_temperature`, `_power`), or set per room              |
+| Lights      | one dimmer row per area: slide the row to dim, tap the bulb to switch, tap the row for colour; with [Adaptive Lighting](https://github.com/basnijholt/adaptive-lighting) Auto and Night when installed |
+| Energy      | a whole-house power sensor, a water heater, an EV charger, [Hilo](https://github.com/dvd-dev/hilo) rates and Hydro-Québec peaks                                                                        |
+| Car         | the [FordPass](https://github.com/itchannel/fordpass-ha) integration                                                                                                                                   |
+| Air         | Mila purifiers and air sensors                                                                                                                                                                         |
+| Security    | door, window and motion sensors, UniFi Protect cameras                                                                                                                                                 |
+| Media       | TVs (Wake-on-LAN), speakers                                                                                                                                                                            |
+| Automations | your automations' own traces, drawn as flow charts                                                                                                                                                     |
 
 ## Install
 
@@ -91,24 +91,24 @@ On a wall tablet, the panel shows a big clock after 5 minutes without a touch. "
 
 On a tablet the same stack also fills the Home card, under Who's home (without the who's-home card, which the chips above already show).
 
-| Card | When it shows |
-| --- | --- |
-| A door open (red, stays until the door closes) | A door sensor open for 5 minutes or more |
-| Lights unreachable (red, stays until fixed) | Any light unavailable for 5 minutes |
-| Weather warning (amber) | Environment Canada issues a warning |
-| Car not plugged in (amber) | After 9 pm, the car home, unplugged and under 40% |
-| Presence not updating (amber) | A person's iCloud tracker hasn't updated in 3 hours |
-| Sunrise | The hour before sunrise, with the rooms whose lights are still on |
-| Reminders | Before each time listed under `idle_stack.reminders` |
-| Critical peak | A Hydro-Québec critical peak or a Hilo challenge |
-| Now playing | A speaker is playing |
-| Who's home | 30 minutes after someone arrives or leaves |
-| Today | 6 to 11 am, today's events from your calendar entities |
-| Away | The `away_mode` input_boolean is on |
-| Room air | A purifier's room reads poor (CO₂, particles, VOC) |
-| Tomorrow | From 5 pm, tomorrow's forecast |
-| Car charge | 9 pm to 7 am, while the car is plugged in at home |
-| Energy today, who's home | In the daytime, when nothing else applies |
+| Card                                           | When it shows                                                     |
+| ---------------------------------------------- | ----------------------------------------------------------------- |
+| A door open (red, stays until the door closes) | A door sensor open for 5 minutes or more                          |
+| Lights unreachable (red, stays until fixed)    | Any light unavailable for 5 minutes                               |
+| Weather warning (amber)                        | Environment Canada issues a warning                               |
+| Car not plugged in (amber)                     | After 9 pm, the car home, unplugged and under 40%                 |
+| Presence not updating (amber)                  | A person's iCloud tracker hasn't updated in 3 hours               |
+| Sunrise                                        | The hour before sunrise, with the rooms whose lights are still on |
+| Reminders                                      | Before each time listed under `idle_stack.reminders`              |
+| Critical peak                                  | A Hydro-Québec critical peak or a Hilo challenge                  |
+| Now playing                                    | A speaker is playing                                              |
+| Who's home                                     | 30 minutes after someone arrives or leaves                        |
+| Today                                          | 6 to 11 am, today's events from your calendar entities            |
+| Away                                           | The `away_mode` input_boolean is on                               |
+| Room air                                       | A purifier's room reads poor (CO₂, particles, VOC)                |
+| Tomorrow                                       | From 5 pm, tomorrow's forecast                                    |
+| Car charge                                     | 9 pm to 7 am, while the car is plugged in at home                 |
+| Energy today, who's home                       | In the daytime, when nothing else applies                         |
 
 Red cards stay on screen alone, and amber cards come first in the rotation. No card reads camera motion.
 
@@ -127,14 +127,19 @@ You need Node 20 or later.
 
 ```sh
 npm ci
+# once per clone: git blame skips the Prettier format commit
+git config blame.ignoreRevsFile .git-blame-ignore-revs
 npm run build          # dist/home-panel.js plus the vendored libraries
 npm test               # unit tests: config, build, French, a scan for personal data
+npm run format         # Prettier (run it before committing; CI checks it with npm run format:check)
 npm run test:e2e       # builds, then runs the Playwright suite
 npm run test:visual:docker           # compares every tab with its screenshot baseline, inside Docker
 npm run test:visual:update           # records new baselines, inside Docker
 npm run test:visual:container        # the same two, through Apple's `container` CLI (container system start)
 npm run test:visual:update:container
 ```
+
+If `npm run format:check` still fails after one `npm run format`, run `npm run format` again: Prettier settles some chains on the second pass.
 
 `npm run test:e2e` builds, then runs the Playwright suite (the tablet and phone projects, not the screenshots) against the made-up house;
 `npm run test:e2e -- test/e2e/lights-sheet.spec.ts` runs one file. The first run needs a browser: `npx playwright install chromium`.

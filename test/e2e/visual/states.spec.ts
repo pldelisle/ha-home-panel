@@ -16,7 +16,9 @@ import {pill, stopCharging, openFrontDoor, openPopup} from '../live';
 //   (Math.random in renderIdle). The test pins Math.random to its middle, which is no nudge at all. The pin MUST be installed before
 //   the idle clock starts, because renderIdle draws the first offset the moment it starts; idle.spec.ts covers the drift this hides.
 async function idleClock(house: House) {
-  await house.page.evaluate(() => { Math.random = () => 0.5; });
+  await house.page.evaluate(() => {
+    Math.random = () => 0.5;
+  });
   await house.clock.pauseAt(new Date(Date.parse(NIGHT) + 60_000));
   await goIdle(house);
 }

@@ -27,7 +27,10 @@ const openOffice = async (house: House) => {
 test('26 tapping the right part of the Office tile opens the sheet and switches nothing', async ({house}) => {
   await openOffice(house);
   await house.clock.runFor(1_100);
-  expect(house.calls.filter(c => /^light\./.test(c)), callsMessage(house, 'opening the sheet switches nothing')).toEqual([]);
+  expect(
+    house.calls.filter(c => /^light\./.test(c)),
+    callsMessage(house, 'opening the sheet switches nothing'),
+  ).toEqual([]);
 });
 
 test('27 dragging up the brightness slider sends one brightness and takes the room off Auto', async ({house}) => {
@@ -43,7 +46,12 @@ test('27 dragging up the brightness slider sends one brightness and takes the ro
   await expect.poll(() => brightness().length, callsMessage(house, 'a drag sends a brightness')).toBeGreaterThan(0);
   expect(brightness(), callsMessage(house, 'a drag sends one brightness')).toHaveLength(1);
   expect(callData(brightness()[0]).brightness_pct, 'dragging up brightens').toBeGreaterThanOrEqual(90);
-  await expect.poll(() => house.calls.some(c => /^adaptive_lighting\.set_manual_control .*"manual_control":true/.test(c)), callsMessage(house, 'a change by hand takes the room off Auto')).toBe(true);
+  await expect
+    .poll(
+      () => house.calls.some(c => /^adaptive_lighting\.set_manual_control .*"manual_control":true/.test(c)),
+      callsMessage(house, 'a change by hand takes the room off Auto'),
+    )
+    .toBe(true);
 });
 
 test('28 tapping near the top of the colour slider picks a cool white', async ({house}) => {
@@ -51,8 +59,12 @@ test('28 tapping near the top of the colour slider picks a cool white', async ({
   const k = await box(house, '#lsheet .lpill[data-lp="ct"]');
   await house.page.mouse.click(k.x + k.width / 2, k.y + k.height * 0.05);
   const kelvin = () => house.calls.filter(c => /color_temp_kelvin/.test(c)).at(-1);
-  await expect.poll(() => kelvin() !== undefined, callsMessage(house, 'a tap on the colour slider sends a colour temperature')).toBe(true);
-  expect(callData(kelvin()!).color_temp_kelvin, callsMessage(house, 'near the top is a cool white')).toBeGreaterThan(6000);
+  await expect
+    .poll(() => kelvin() !== undefined, callsMessage(house, 'a tap on the colour slider sends a colour temperature'))
+    .toBe(true);
+  expect(callData(kelvin()!).color_temp_kelvin, callsMessage(house, 'near the top is a cool white')).toBeGreaterThan(
+    6000,
+  );
 });
 
 test('29 ArrowDown on the brightness slider dims by 10 %', async ({house}) => {
@@ -62,15 +74,30 @@ test('29 ArrowDown on the brightness slider dims by 10 %', async ({house}) => {
   await expect(pill).toHaveAttribute('aria-valuenow', '96');
   await pill.focus();
   await house.page.keyboard.press('ArrowDown');
-  await expect.poll(() => house.calls.some(c => /^light\.turn_on .*office_1.*"brightness_pct":86/.test(c)), callsMessage(house, 'ArrowDown dims by 10 % from where the slider stands')).toBe(true);
+  await expect
+    .poll(
+      () => house.calls.some(c => /^light\.turn_on .*office_1.*"brightness_pct":86/.test(c)),
+      callsMessage(house, 'ArrowDown dims by 10 % from where the slider stands'),
+    )
+    .toBe(true);
 });
 
 test('30 the Auto and Night switches reach Adaptive Lighting', async ({house}) => {
   await openOffice(house);
   await house.root().locator('#lsheet button.sw[data-l="al"]').click();
-  await expect.poll(() => house.calls.some(c => /^switch\.turn_off .*adaptive_lighting_office"/.test(c)), callsMessage(house, 'Auto reaches the Adaptive Lighting switch')).toBe(true);
+  await expect
+    .poll(
+      () => house.calls.some(c => /^switch\.turn_off .*adaptive_lighting_office"/.test(c)),
+      callsMessage(house, 'Auto reaches the Adaptive Lighting switch'),
+    )
+    .toBe(true);
   await house.root().locator('#lsheet button.sw[data-l="night"]').click();
-  await expect.poll(() => house.calls.some(c => /^switch\.turn_on .*office_sleep_mode/.test(c)), callsMessage(house, 'Night turns sleep mode on')).toBe(true);
+  await expect
+    .poll(
+      () => house.calls.some(c => /^switch\.turn_on .*office_sleep_mode/.test(c)),
+      callsMessage(house, 'Night turns sleep mode on'),
+    )
+    .toBe(true);
 });
 
 test('31 Done closes the sheet and Enter on a tile opens it again', async ({house}) => {

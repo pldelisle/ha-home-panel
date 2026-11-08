@@ -67,23 +67,24 @@ The panel element itself MUST NOT gain any test-only method, property or attribu
 
 ### Replacing method calls with actions
 
-| Script does today | Spec does instead |
-|---|---|
-| `idleStart()` | `house.clock.fastForward(5 * 60_000 + 1000)` with the fake clock installed; the idle overlay becomes visible by itself |
-| `idleArm()` after idle | tap the idle overlay (what a person does to wake the tablet) |
+| Script does today                                                                          | Spec does instead                                                                                                                                                                                                |
+| ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `idleStart()`                                                                              | `house.clock.fastForward(5 * 60_000 + 1000)` with the fake clock installed; the idle overlay becomes visible by itself                                                                                           |
+| `idleArm()` after idle                                                                     | tap the idle overlay (what a person does to wake the tablet)                                                                                                                                                     |
 | mutate `hass.states[...]`, set `P.hass = {...hass}`, call `renderLive()` or `renderHome()` | `house.setState(id, patch)`, then an auto-retrying `expect(...)` on the DOM; the panel's own throttle (once a second) is covered by `expect`'s polling, or by `house.clock.runFor(1100)` when the clock is faked |
-| `renderIdle()` between stack cards | `house.clock.runFor(20_000)` |
-| `setTab('home')` | `house.tab('home')` |
-| `stackGo('sh-car')` | tap the stack card |
-| `openLight('office')` | tap the Office tile |
-| read `P.tab` | assert `#pane-<tab>` is visible and the other panes are hidden |
-| read `P.open` | assert the sheet element (`#sh-light`) is visible or hidden |
+| `renderIdle()` between stack cards                                                         | `house.clock.runFor(20_000)`                                                                                                                                                                                     |
+| `setTab('home')`                                                                           | `house.tab('home')`                                                                                                                                                                                              |
+| `stackGo('sh-car')`                                                                        | tap the stack card                                                                                                                                                                                               |
+| `openLight('office')`                                                                      | tap the Office tile                                                                                                                                                                                              |
+| read `P.tab`                                                                               | assert `#pane-<tab>` is visible and the other panes are hidden                                                                                                                                                   |
+| read `P.open`                                                                              | assert the sheet element (`#sh-light`) is visible or hidden                                                                                                                                                      |
 
 ### Spec files and the checks each carries
 
 Every check below exists in the script today and MUST exist after the conversion, on the viewports listed. Selectors MAY keep using today's ids and data attributes (`[data-tab]`, `#pane-*`, `#lsheet`, `.lcell`, `.attchip`, `#attpop`, `#hstk`, `#istk`, `#ledit`, `#ledbar`), which are the stable hooks a person's tap lands on. New tests SHOULD prefer role and accessible-name locators where they exist.
 
 `tabs.spec.ts` (tablet and phone, full and bare house)
+
 1. Every tab button that is not hidden opens a pane that is visible and at least 50 px tall. Tablet tabs: home, lights, climate, weather, car, energy, air, media, cams, auto. Phone tabs: home, lights, climate, car.
 2. The Home tab button is the topmost element at its centre (nothing invisible covers it).
 3. Full house, tablet: the text "Alex" appears (who's home lists the configured people); the water heater card is visible; the Hilo card is hidden; the Car tab button is visible.
@@ -91,55 +92,21 @@ Every check below exists in the script today and MUST exist after the conversion
 5. French (`lang: 'fr'`), tablet: the rail text matches Accueil, Lumières or Climat.
 6. Dark theme, tablet: loads with no error (kept as a smoke run until spec 02 makes it a screenshot).
 
-`media.spec.ts` (tablet)
-7. Tapping the TV mute button sends `media_player.volume_mute`; tapping power sends `media_player.turn_off`.
+`media.spec.ts` (tablet) 7. Tapping the TV mute button sends `media_player.volume_mute`; tapping power sends `media_player.turn_off`.
 
-`idle.spec.ts` (tablet)
-8. After five minutes without input the idle clock shows, and the weather icon beside the time has the accessible label "Mainly sunny".
-9. Tapping the idle overlay wakes the panel and the panes are usable again.
-40. With the real `Math.random`, the idle clock block's transform changes between 20-second ticks and stays within 20 px sideways and 15 px up or down (the screenshots pin `Math.random`, so this is the one check of the burn-in drift).
+`idle.spec.ts` (tablet) 8. After five minutes without input the idle clock shows, and the weather icon beside the time has the accessible label "Mainly sunny". 9. Tapping the idle overlay wakes the panel and the panes are usable again. 40. With the real `Math.random`, the idle clock block's transform changes between 20-second ticks and stays within 20 px sideways and 15 px up or down (the screenshots pin `Math.random`, so this is the one check of the burn-in drift).
 
-`live-pill.spec.ts` (tablet and phone, full house with the standard config)
-10. The status chip is a pill with the `lap` class whose text contains "64%".
-11. Tapping it opens the popup with exactly one activity card and the Status checks.
-12. Tapping Pause charging sends `switch.turn_off` for the charger pause switch.
-13. After `setState` makes the car stop charging and unplug, no status chip is present.
-14. After `setState` opens the front door with `last_changed` twenty minutes ago, an attention pill with text matching "needs attention" is present.
-15. The Home card's text contains "Who's home" and does not contain "Status" or "All clear".
+`live-pill.spec.ts` (tablet and phone, full house with the standard config) 10. The status chip is a pill with the `lap` class whose text contains "64%". 11. Tapping it opens the popup with exactly one activity card and the Status checks. 12. Tapping Pause charging sends `switch.turn_off` for the charger pause switch. 13. After `setState` makes the car stop charging and unplug, no status chip is present. 14. After `setState` opens the front door with `last_changed` twenty minutes ago, an attention pill with text matching "needs attention" is present. 15. The Home card's text contains "Who's home" and does not contain "Status" or "All clear".
 
-`smart-stack.spec.ts` (fixed time 2026-11-07T23:30:00-05:00)
-16. Tablet: the Home card's stack is visible, its card key is `car` or `music`, it shows two dots, and the Home card is no taller than the tiles beside it.
-17. Tablet: tapping the stack card opens the Car or Media pane according to the card.
-18. Tablet: on the idle clock, the card key alternates between `car` and `music` across two 20-second steps, with two dots, and the clock keeps its weather icon.
-19. Tablet: tapping the car card on the idle clock wakes the panel with the Car pane visible.
-20. Phone: there is no Home-card stack; on the idle clock the card sits below the clock and inside the viewport.
-21. Config `idle_stack: {enabled: false}`: no stack card on the idle clock, and the Home-card stack is hidden.
+`smart-stack.spec.ts` (fixed time 2026-11-07T23:30:00-05:00) 16. Tablet: the Home card's stack is visible, its card key is `car` or `music`, it shows two dots, and the Home card is no taller than the tiles beside it. 17. Tablet: tapping the stack card opens the Car or Media pane according to the card. 18. Tablet: on the idle clock, the card key alternates between `car` and `music` across two 20-second steps, with two dots, and the clock keeps its weather icon. 19. Tablet: tapping the car card on the idle clock wakes the panel with the Car pane visible. 20. Phone: there is no Home-card stack; on the idle clock the card sits below the clock and inside the viewport. 21. Config `idle_stack: {enabled: false}`: no stack card on the idle clock, and the Home-card stack is hidden.
 
-`lights-tiles.spec.ts`
-22. Tablet, config `split_light_areas: ['kitchen']`: the tiles read Island, Sink, Living room, Office in that order; tapping the Sink bulb sends `light.turn_on` naming only the sink bulb.
-23. Phone, same config: loads with no error.
-24. Tablet, no split: tiles read Kitchen, Living room, Office.
-25. Phone: the tile grid has two columns.
+`lights-tiles.spec.ts` 22. Tablet, config `split_light_areas: ['kitchen']`: the tiles read Island, Sink, Living room, Office in that order; tapping the Sink bulb sends `light.turn_on` naming only the sink bulb. 23. Phone, same config: loads with no error. 24. Tablet, no split: tiles read Kitchen, Living room, Office. 25. Phone: the tile grid has two columns.
 
-`lights-sheet.spec.ts` (tablet)
-26. Tapping the right part of the Office tile opens the light sheet and sends no `light.*` call.
-27. A mouse drag up the brightness slider sends exactly one `light.turn_on` with `brightness_pct` of 90 or more for the office bulb, and an `adaptive_lighting.set_manual_control` with `manual_control: true`.
-28. Tapping near the top of the colour slider sends a `color_temp_kelvin` above 6000.
-29. ArrowDown on the focused brightness slider sends `brightness_pct: 86`.
-30. The Auto switch sends `switch.turn_off` for the office Adaptive Lighting switch; the Night switch sends `switch.turn_on` for the office sleep-mode switch.
-31. Done closes the sheet; Enter on a focused tile opens it.
+`lights-sheet.spec.ts` (tablet) 26. Tapping the right part of the Office tile opens the light sheet and sends no `light.*` call. 27. A mouse drag up the brightness slider sends exactly one `light.turn_on` with `brightness_pct` of 90 or more for the office bulb, and an `adaptive_lighting.set_manual_control` with `manual_control: true`. 28. Tapping near the top of the colour slider sends a `color_temp_kelvin` above 6000. 29. ArrowDown on the focused brightness slider sends `brightness_pct: 86`. 30. The Auto switch sends `switch.turn_off` for the office Adaptive Lighting switch; the Night switch sends `switch.turn_on` for the office sleep-mode switch. 31. Done closes the sheet; Enter on a focused tile opens it.
 
-`lights-links.spec.ts` (config with the kitchen pair on a switch and office linked to living room)
-32. Tablet: tiles read Island, Sink, Office, Living room; two linked pairs are shown.
-33. Tablet: tapping a linked tile's bulb sends one `light.turn_on` or `light.turn_off` naming both rooms' bulbs.
-34. Tablet: the sheet's Linked with row reads "Sink"; opening it lists None, Sink (checked), Office, Living room; choosing None writes `frontend/set_system_data` with key `home_panel` and value `{light_links: [['office', 'living_room']]}` and the kitchen tiles stand apart; choosing Living room writes `light_links: [['light.kitchen_island', 'living_room']]` and sends `light.turn_on` for the living room bulb; Back returns to the room.
-35. Phone: two linked blocks; tapping the Island tile's text opens the sheet with a Linked with row.
-36. Non-admin (`admin: false`): the Linked with row is disabled.
+`lights-links.spec.ts` (config with the kitchen pair on a switch and office linked to living room) 32. Tablet: tiles read Island, Sink, Office, Living room; two linked pairs are shown. 33. Tablet: tapping a linked tile's bulb sends one `light.turn_on` or `light.turn_off` naming both rooms' bulbs. 34. Tablet: the sheet's Linked with row reads "Sink"; opening it lists None, Sink (checked), Office, Living room; choosing None writes `frontend/set_system_data` with key `home_panel` and value `{light_links: [['office', 'living_room']]}` and the kitchen tiles stand apart; choosing Living room writes `light_links: [['light.kitchen_island', 'living_room']]` and sends `light.turn_on` for the living room bulb; Back returns to the room. 35. Phone: two linked blocks; tapping the Island tile's text opens the sheet with a Linked with row. 36. Non-admin (`admin: false`): the Linked with row is disabled.
 
-`lights-arrange.spec.ts`
-37. Tablet, admin: Arrange, drag Living room onto Island, and the order becomes Office, Living room, Island, Sink; the last system-data write is `{light_order: ['office', 'light.kitchen_island']}`; no `light.*` call was sent; Done leaves arranging.
-38. Phone with `sysdata: {home_panel: {light_order: ['office', 'light.kitchen_island']}}`: tiles follow the saved order.
-39. Tablet, non-admin: the Arrange bar is hidden.
+`lights-arrange.spec.ts` 37. Tablet, admin: Arrange, drag Living room onto Island, and the order becomes Office, Living room, Island, Sink; the last system-data write is `{light_order: ['office', 'light.kitchen_island']}`; no `light.*` call was sent; Done leaves arranging. 38. Phone with `sysdata: {home_panel: {light_order: ['office', 'light.kitchen_island']}}`: tiles follow the saved order. 39. Tablet, non-admin: the Arrange bar is hidden.
 
 ### Determinism
 
