@@ -164,7 +164,9 @@ The scripts reuse your `node_modules` inside Linux, which is fine while no depen
 Run `npm run changeset` in every pull request that changes what the household sees.
 Pick patch, minor or major.
 Write the changelog line as one paragraph, a sentence about what the household sees (one paragraph keeps the list tight), and never edit `package.json`'s version or `CHANGELOG.md` by hand.
-A bot runs `npm run version-packages` on a release branch and keeps one "Release" pull request open; merging it is the release.
+A bot runs `npm run version-packages` on a release branch and keeps one "Release" pull request open. Merging the Release pull request publishes the release.
+The release workflow (`.github/workflows/release.yml`, on every push to `main`) then builds that version, tags it `v<version>` and creates the GitHub release with the changelog section as its notes and `home-panel.zip` attached; never tag by hand.
+If the run that the Release pull request's merge starts fails, re-run that failed run; do not push another commit to `main` first, because the next push would publish that version from the later commit.
 That needs the repository setting "Allow GitHub Actions to create and approve pull requests" on, and because the Release pull request is opened with `GITHUB_TOKEN` it gets no CI checks of its own; they run on `main` after the merge.
 The `changeset` CI job (`.github/workflows/changeset.yml` lists the paths it watches) fails a pull request that changes what ships without a changeset; pull requests that only change documentation, tests or CI pass without one, and the `no-changeset` label skips the job when a watched path changed without a release note (a devDependency bump, say).
 
