@@ -1,0 +1,93 @@
+# Spec 02: Screenshot baselines
+
+Parent: [production-grade-refactor.md](production-grade-refactor.md), phase 0.
+Depends on: [01 Playwright Test](01-playwright-test.md). Blocks: [03 lint and format](03-lint-and-format.md), every later spec.
+Ships as: one pull request, a patch release, no visible change.
+
+The key words MUST, MUST NOT, SHOULD, SHOULD NOT and MAY are to be read as in RFC 2119.
+
+## Problem Statement
+
+The migration promises that structural changes alter no pixel, but nothing enforces it. The end-to-end tests check that panes appear and that calls leave, not what the panel shows. A reflowed line, a moved CSS rule or a rewritten feature could shift a tile by four pixels or lose a colour, and no one would know until someone looked at the tablet.
+
+## Solution
+
+Record a reference screenshot of every tab and of the main open states, on both viewports, both themes and both languages, and compare against them on every pull request. Any difference fails the run and attaches the expected, actual and diff images. A difference is either fixed or deliberately approved by updating the baseline in the same pull request. These baselines are the contract for phases 0 to 3.
+
+## User Stories
+
+1. As a household member, I want a release that only restructures code to look exactly like the release before, so that I never see drift I did not ask for.
+2. As a maintainer, I want a visual change to be visible in the pull request as a before-and-after image, so that I approve what the household will see.
+3. As a maintainer, I want the baselines stable across my laptop and CI, so that a passing run means the same thing everywhere.
+4. As an agent thread, I want a command that regenerates the baselines for the feature I changed on purpose, so that an approved change is a one-line step.
+5. As a maintainer, I want French and dark-theme screens covered, so that a regression in the translation layer or the theme is caught too.
+6. As a maintainer, I want the idle clock, the light sheet, the live-activity popup and the settings popup covered, so that the states a person sees most are protected, not only the tabs.
+
+## Implementation Decisions
+
+### Where screenshots run
+
+- Screenshots are rendered by text, fonts and anti-aliasing that differ between operating systems. Baselines MUST therefore be recorded and compared on one platform only: Linux, inside the official Playwright Docker image for the pinned Playwright version. CI already runs Ubuntu with that version's browsers; locally, a script MUST run the visual project inside that image so a maintainer can update baselines without a Linux machine.
+- `npm run test:visual` runs the visual project (in CI directly; locally through Docker). `npm run test:visual:update` runs it with `--update-snapshots` through Docker and writes the new baselines.
+- The snapshot path template MUST NOT include the platform or browser name, so one set of files is the truth: `test/e2e/__screenshots__/{testFilePath}/{arg}{ext}`, where `{arg}` is the name the test gives.
+- Until spec 08 bundles the font, Montserrat is blocked and the fallback is whatever the Docker image's `sans-serif` resolves to. That is stable within the image and is accepted as the baseline look for now; spec 08 updates every baseline once.
+
+### The matrix
+
+The visual project is a third Playwright project, `visual`, that reuses the `house` fixture and runs only the files under `test/e2e/visual/`. It MUST cover:
+
+| Set | Viewports | Theme | Language | House | What is captured |
+|---|---|---|---|---|---|
+| Tabs | tablet, phone | light, dark | en, fr | full | every tab the viewport shows (10 on tablet, 4 on phone) |
+| Bare | tablet, phone | light | en | bare | every tab the bare house shows |
+| Idle clock with a stack card | tablet, phone | light, dark | en | full, time 2026-11-07T23:30:00-05:00 | the idle overlay after five minutes, first card |
+| Light sheet | tablet, phone | light, dark | en | full | the Office sheet open |
+| Live-activity popup | tablet, phone | light, dark | en | full | the pill tapped, popup open |
+| Settings popup | tablet | light, dark | en | full | the gear menu open |
+| Status checks | tablet | light | en | full, front door open 20 min | the attention pill tapped |
+
+That is about 100 images. Each MUST be a full-page viewport capture (`fullPage: false`) so the image size is the viewport.
+
+### Determinism rules
+
+- Every visual test MUST install the fake clock at `2026-11-07T14:00:00-05:00` unless the row above says otherwise, so greetings, sun position, "ago" texts, history curves and the day's calendar are fixed.
+- `reducedMotion: 'reduce'` is inherited from the project; `toHaveScreenshot` MUST pass `animations: 'disabled'` and `caret: 'hide'`.
+- Before capturing a tab, the test MUST wait for the pane to be visible and then for the page to settle; `toHaveScreenshot` already waits for two consecutive identical frames, which covers chart draw-in.
+- The Automations tab draws with Mermaid; the test MUST wait for the flow SVG to exist before capturing.
+- The Weather sheet's radar region shows the "Weather Radar Card didn't load" note in the test house. That is deterministic and acceptable.
+- Comparison tolerance: `maxDiffPixelRatio: 0.001` and `threshold: 0.2` set once in the project. These absorb sub-pixel anti-aliasing and nothing larger.
+
+### Process rule
+
+- A pull request whose run fails on a screenshot MUST either fix the code so the baseline passes or update the baseline with `test:visual:update` and state in its changeset which screens changed and why. The reviewer MUST look at the diff images in the PR.
+- A structural PR (anything from this parent spec other than an approved visual change) MUST NOT update a baseline.
+- CI MUST upload the Playwright HTML report and `test-results/` on failure so the expected, actual and diff images are one click away.
+
+### Git
+
+- Baseline PNGs are committed. They are small (a viewport PNG of flat UI is tens of kilobytes). Git LFS is NOT used, so a clone stays simple.
+- A `.gitattributes` entry marks `*.png` under the screenshots directory as binary.
+
+## Acceptance Criteria
+
+1. `npm run test:visual` passes on `main` in CI and through the Docker script locally, with the matrix above present as named tests.
+2. Running the visual project twice in a row in CI produces no diff (stability).
+3. Moving one CSS rule (for example the tile radius by 2 px) on a branch makes the visual run fail with diff images uploaded.
+4. The README's Develop section documents `test:visual` and `test:visual:update` in two sentences.
+5. No file under `src/` changed.
+
+## Testing Decisions
+
+This spec is itself the regression net for the harness seam. Its verification is criteria 2 and 3: stable when nothing changed, loud when one thing changed.
+
+## Out of Scope
+
+- Screenshots against a real Home Assistant.
+- Per-component or per-element screenshots.
+- WebKit rendering.
+- Accessibility (axe) checks, which start with the Lit shell in phase 3.
+
+## Notes
+
+- The order of phase 0 is deliberate: this spec lands before the lint reflow so that the reflow is verified against baselines recorded on untouched code.
+- The baseline count grows with each state added later; keep each new state justified by a real regression risk.
