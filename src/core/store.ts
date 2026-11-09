@@ -15,6 +15,7 @@ import type {
 import {panelLocale} from './i18n/locale.ts';
 import {createMessages, type Messages} from './i18n/messages.ts';
 import {createNames, type Names} from './i18n/names.ts';
+import {attributeOf, numberOf} from './states.ts';
 
 /** What `setHass` found different from the previous hass. */
 export interface HassChange {
@@ -75,9 +76,6 @@ interface Subscriber {
   cb: (change: HassChange) => void;
 }
 
-const isAvailable = (s: HassEntity | undefined): s is HassEntity =>
-  s !== undefined && s.state !== 'unavailable' && s.state !== 'unknown';
-
 export function createStore(opts: StoreOptions): PanelStore {
   let hass: PanelHass | null = null;
   let raw: unknown = {};
@@ -118,13 +116,8 @@ export function createStore(opts: StoreOptions): PanelStore {
   let names = buildNames();
 
   const state = (id: string | null | undefined) => (id ? hass?.states[id] : undefined);
-  const num = (id: string | null | undefined) => {
-    const s = state(id);
-    if (!isAvailable(s)) return null;
-    const v = parseFloat(s.state);
-    return Number.isFinite(v) ? v : null;
-  };
-  const attr = (id: string | null | undefined, name: string): unknown => state(id)?.attributes[name];
+  const num = (id: string | null | undefined) => numberOf(hass?.states, id);
+  const attr = (id: string | null | undefined, name: string): unknown => attributeOf(hass?.states, id, name);
 
   const entity = (id: string) => hass?.entities?.[id];
   const device = (id: string) => hass?.devices?.[id];

@@ -5,6 +5,7 @@ import {pickStack, inHours, reminderLeft} from './stack.js';
 import {FR_ATTR, createFrench} from './i18n/fr.js';
 import {autoMethods} from './auto.js';
 import {StaleReply} from './core/api.ts';
+import {isDayAt, sunTimes} from './core/sun.ts';
 import {browserDefaults} from './core/i18n/browser.ts';
 import {createFormatters} from './core/i18n/format.ts';
 import {englishLocale, panelLocale} from './core/i18n/locale.ts';
@@ -350,39 +351,6 @@ const wxIcon = (c, sz = 28, day = true) => {
   }[k];
   return `<svg class="wxi" width="${sz}" height="${sz}" viewBox="0 0 24 24" role="img" aria-label="${esc(condName(c))}">${g}</svg>`;
 };
-const isDay = (t, p) => {
-  const s = p.sunDay((t - Date.now()) / 864e5);
-  return t > s.rise && t < s.set;
-};
-// sunrise, sunset, dawn, dusk and solar noon for the local day `day` (YYYY-MM-DD) (the usual suncalc formulas)
-function sunTimes(lat, lon, day) {
-  const rad = Math.PI / 180,
-    J1970 = 2440588,
-    J2000 = 2451545,
-    e = rad * 23.4397,
-    J0 = 0.0009;
-  const noonGuess = Date.parse(day + 'T12:00:00Z') - (lon / 15) * 36e5;
-  const d = noonGuess / 864e5 - 0.5 + J1970 - J2000,
-    lw = rad * -lon,
-    phi = rad * lat;
-  const n = Math.round(d - J0 - lw / (2 * Math.PI)),
-    ds = J0 + lw / (2 * Math.PI) + n;
-  const M = rad * (357.5291 + 0.98560028 * ds),
-    L = M + rad * (1.9148 * Math.sin(M) + 0.02 * Math.sin(2 * M) + 0.0003 * Math.sin(3 * M)) + rad * 102.9372 + Math.PI;
-  const dec = Math.asin(Math.sin(e) * Math.sin(L)),
-    transit = x => J2000 + x + 0.0053 * Math.sin(M) - 0.0069 * Math.sin(2 * L),
-    Jnoon = transit(ds);
-  const toMs = j => (j + 0.5 - J1970) * 864e5;
-  const at = h => {
-    const w = Math.acos((Math.sin(h * rad) - Math.sin(phi) * Math.sin(dec)) / (Math.cos(phi) * Math.cos(dec)));
-    if (Number.isNaN(w)) return [null, null];
-    const Jset = transit(J0 + (w + lw) / (2 * Math.PI) + n);
-    return [toMs(Jnoon - (Jset - Jnoon)), toMs(Jset)];
-  };
-  const [rise, set] = at(-0.833),
-    [dawn, dusk] = at(-6);
-  return {rise, set, dawn, dusk, noon: toMs(Jnoon)};
-}
 // weather measures that open a history chart from the Weather sheet's tiles; a function of the entity ids (the panel's config), not a constant of the module
 const wxDef = e => ({
   wind: {
@@ -3984,6 +3952,12 @@ export class LegacyPanel {
     const t = Date.now() + offset * 864e5;
     return sunTimes(lat, lon, this.fmtEn.isoDay(t));
   }
+  // whether the sun is up at instant `t`, by the sun of the house's place on that local day
+  sunUpAt(t) {
+    const lat = (this.hass.config && this.hass.config.latitude) ?? 0,
+      lon = (this.hass.config && this.hass.config.longitude) ?? 0;
+    return isDayAt(t, lat, lon, this.fmtEn.isoDay(t));
+  }
   weatherSummary() {
     const cond = this.st(this.E.cond),
       w = this.st(this.E.weather),
@@ -4298,7 +4272,7 @@ export class LegacyPanel {
         .filter((h, i) => i % 3 === 0)
         .map(
           h =>
-            `<div><span>${esc(this.fmtEn.hour(new Date(h.datetime)))}</span>${wxIcon(h.condition, 28, isDay(ms(h.datetime), this))}<b class="num">${Math.round(h.temperature)}°</b>${h.precipitation_probability ? `<small>${h.precipitation_probability}%</small>` : '<small>&nbsp;</small>'}</div>`,
+            `<div><span>${esc(this.fmtEn.hour(new Date(h.datetime)))}</span>${wxIcon(h.condition, 28, this.sunUpAt(ms(h.datetime)))}<b class="num">${Math.round(h.temperature)}°</b>${h.precipitation_probability ? `<small>${h.precipitation_probability}%</small>` : '<small>&nbsp;</small>'}</div>`,
         )
         .join('')}</div><div id="c-whour"></div>`;
       if (this.ApexCharts) {

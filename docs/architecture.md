@@ -19,7 +19,7 @@ The layers are folders under `src/`. Dependencies point inward, toward the core.
 
 The rules live in one place, [`.dependency-cruiser.cjs`](../.dependency-cruiser.cjs), one rule per row with a comment saying why. Beyond the table it forbids import cycles, modules nothing imports and imports that resolve to nothing. `npm run lint` runs it after ESLint, so a forbidden import fails the build and CI's lint job needs no extra step. An ESLint block also bans `document`, `window`, `localStorage`, `navigator` and similar globals in `src/core/`: a core module that needs the time zone, the locale or a `Storage` takes it as a parameter, which is what lets the core run in Node with no browser.
 
-The shell's folder holds its first files (the host element, the contexts and the guest interface); the folders for providers, UI kit and features do not exist yet. Their rules name them so they apply from each folder's first file.
+The shell's folder holds its first files (the host element, the contexts and the guest interface), and `src/providers/` and `src/features/weather/` hold the first weather sources and model ([ADR 0020](adr/0020-weather-source-strategies.md)); the folder for the UI kit does not exist yet. The rules name every folder so they apply from its first file.
 
 The module graph is drawn from the code, not from a slide: see [the dependency graph](architecture/dependency-graph.md). `npm run arch:graph` regenerates it, and a unit test fails when the committed file is stale, so do not edit it by hand.
 
@@ -73,7 +73,7 @@ The shape is the Elm and Flux one of unidirectional data flow. The store is [spe
 | A string                          | The catalog, read through `t()` ([spec 11](specs/11-catalogs-and-formatters.md)) |
 | A DOM event                       | The feature's element                                                            |
 
-Two reminders from the same specs. A provider is a pure function that turns an integration's entities into the generic inputs the models expect, so a model never matches on an integration's entity naming (the anti-corruption layer of Evans). And a name a person gave in Home Assistant is data, not a code string: it goes through the display-name resolver, not the catalog ([spec 11](specs/11-catalogs-and-formatters.md)).
+Two reminders from the same specs. A provider is an adapter in `src/providers/` whose `read` is a pure function turning an integration's entities into the generic inputs the models expect; a feature can have several, applied in a declared order ([ADR 0020](adr/0020-weather-source-strategies.md)), so a model never matches on an integration's entity naming (the anti-corruption layer of Evans). And a name a person gave in Home Assistant is data, not a code string: it goes through the display-name resolver, not the catalog ([spec 11](specs/11-catalogs-and-formatters.md)).
 
 If two features need the same code, it cannot be shared sideways. It moves down into the UI kit, a provider or the core ([ADR 0011](adr/0011-layered-architecture-dependency-rule.md)).
 

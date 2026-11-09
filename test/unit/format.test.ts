@@ -75,6 +75,12 @@ const rows: Row[] = [
   ['number clamps many digits to two', f => f.number(0.12345, 9), '0.12', '0,12', '0,12'],
   ['number with no digits', f => f.number(12.5, 0), '13', '13', '13'],
   ['number does not pad', f => f.number(12, 2), '12', '12', '12'],
+  ['fixed pads one digit', f => f.fixed(4, 1), '4.0', '4,0', '4,0'],
+  ['fixed rounds to one digit', f => f.fixed(101.94, 1), '101.9', '101,9', '101,9'],
+  ['fixed two digits and grouping', f => f.fixed(1234.5, 2), '1,234.50', '1\u202f234,50', '1.234,50'],
+  ['fixed with no digits', f => f.fixed(12.5, 0), '13', '13', '13'],
+  ['fixed clamps three digits to two', f => f.fixed(0.5, 3), '0.50', '0,50', '0,50'],
+  ['fixed keeps the sign of a small negative, as toFixed does', f => f.fixed(-0.04, 1), '-0.0', '-0,0', '-0,0'],
 ];
 /** The dayParts row: the day and hour are the same everywhere, the weekday is localised. */
 function parts(en: string, fr: string, de: string, h: number, day: string): [unknown, unknown, unknown] {
@@ -171,6 +177,7 @@ describe('the number_format preference', () => {
     expect(make('en-CA', {useGrouping: false}).integer(1234567)).toBe('1234567');
     expect(make('fr-CA', {useGrouping: false}).integer(1234567)).toBe('1234567');
     expect(make('de-DE', {useGrouping: false}).number(1234.5)).toBe('1234,5');
+    expect(make('en-CA', {useGrouping: false}).fixed(1234.5, 1)).toBe('1234.5');
   });
 });
 
