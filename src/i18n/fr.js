@@ -3,11 +3,6 @@
 // numbers, times and dates are lifted out first and come back in French form, so "Oct 27, 4:07 pm" needs no entry of its own,
 // then the rest is looked up whole, by pattern, or piece by piece around " · ". Anything not found stays as it was.
 // Names people gave in Home Assistant (areas, scenes, lights, sensors) are never translated.
-// the French flag: home-panel.js reads it as a live binding and sets it through setFR() when the user's language is known
-export let FR = false;
-export const setFR = v => {
-  FR = v;
-};
 const EN_MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const EN_MONL = [
   'January',
@@ -126,14 +121,6 @@ function houseNames(hass) {
   }
   return S;
 }
-let FR_NAMES = new Set(),
-  FR_NAMES_AT = 0;
-function frNames(hass) {
-  if (Date.now() - FR_NAMES_AT < 60000 && FR_NAMES.size) return FR_NAMES;
-  FR_NAMES = houseNames(hass);
-  FR_NAMES_AT = Date.now();
-  return FR_NAMES;
-}
 function frLook(k) {
   let v = FR_MAP[k];
   if (v != null) return v;
@@ -181,11 +168,7 @@ function frTextWith(s, isName) {
   out = frPost(out);
   return m[1] + out + m[3];
 }
-// the module functions take the panel's hass from their caller (the ticket's alternative to reading the store: the class
-// still calls them directly until migrate C, #129, moves it to the createFrench instance) and go at contract, #130 (spec 10)
-export const frText = (s, hass) => frTextWith(s, core => frNames(hass).has(core));
 export const FR_ATTR = ['aria-label', 'title', 'placeholder', 'alt'];
-const frSeen = new WeakMap();
 function frNodeWith(n, translate, seen) {
   if (n.nodeType === 3) {
     const p = n.parentNode;
@@ -208,7 +191,6 @@ function frNodeWith(n, translate, seen) {
     seen.set(n, done);
   }
 }
-export const frNode = (n, hass) => frNodeWith(n, s => frText(s, hass), frSeen);
 function frTreeWith(root, visit) {
   if (root.nodeType === 3) return visit(root);
   if (root.nodeType === 1) visit(root);
@@ -216,7 +198,6 @@ function frTreeWith(root, visit) {
   let n;
   while ((n = w.nextNode())) visit(n);
 }
-export const frTree = (root, hass) => frTreeWith(root, n => frNode(n, hass));
 // apex draws its own dates: give it French month and day names and day-first formats
 const APEX_FR = {
   name: 'fr',
@@ -230,7 +211,7 @@ const frFmt = f =>
         .replace(/h:mm tt|h tt/g, 'HH:mm')
         .replace(/, (?=HH)/, ' ')
         .replace(/MMM d, yyyy/, 'd MMM yyyy');
-export function frApex(o) {
+function frApex(o) {
   o.chart = {...o.chart, locales: [APEX_FR], defaultLocale: 'fr'};
   if (o.tooltip && o.tooltip.x && o.tooltip.x.format) o.tooltip.x = {...o.tooltip.x, format: frFmt(o.tooltip.x.format)};
   if (o.xaxis && o.xaxis.type === 'datetime')
@@ -245,7 +226,7 @@ export function frApex(o) {
 /**
  * The translator for one panel: the same functions as the module's, reading the names the house gave from the store's
  * hass (with a cache of their own) and the language from the store, so two panels on a page do not share either.
- * Nothing is translated while the store's language is not French. The module functions above go at contract (spec 10).
+ * Nothing is translated while the store's language is not French. The module keeps no state of its own.
  * @param {{hass: any, isFrench: boolean}} store
  */
 export function createFrench(store) {

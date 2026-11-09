@@ -4,11 +4,11 @@
 import {CSS} from './styles.js';
 import {resolveConfig} from './config.js';
 import {pickStack, inHours, reminderLeft} from './stack.js';
-import {setFR, FR_ATTR, createFrench} from './i18n/fr.js';
+import {FR_ATTR, createFrench} from './i18n/fr.js';
 import {autoMethods} from './auto.js';
 import {createStore} from './core/store.ts';
 import {createSettings} from './core/settings.ts';
-import {VERSION, setHass, setTZ, ok, esc, ampm, tile, plural, cap} from './legacy/globals.js';
+import {VERSION, ok, esc, ampm, tile, plural, cap} from './legacy/globals.js';
 import {loadApex} from './charts/apex.js';
 import {ensureFonts} from './fonts.js';
 // Liquid Glass: the wallpapers the Status popup offers, and whether this engine can run an SVG filter inside backdrop-filter (Chromium only)
@@ -19,35 +19,7 @@ const LENS_OK =
   !!window.CSS &&
   window.CSS.supports('backdrop-filter', 'url(#x)');
 
-// ---------- entities ----------
-// filled by applyConfig() from the panel's config before the first render
 const LIGHT_ORDER_KEY = 'home_panel';
-const E = {},
-  ROOMS = [],
-  HOUSEHOLD = [],
-  SCENE_ORDER = [],
-  MODES = [],
-  AL_AREAS = {},
-  SPLIT_AREAS = [],
-  LIGHT_LINKS = [];
-// no longer read: the class reads this.CFG; applyConfig still writes it until contract (spec 10). Contract (#130)
-// deletes this declaration together with the other module globals, and this disable with it.
-// eslint-disable-next-line no-unused-vars
-let CFG = null;
-function applyConfig(panelCfg, states) {
-  const c = resolveConfig(panelCfg, states);
-  for (const k of Object.keys(E)) delete E[k];
-  for (const k of Object.keys(AL_AREAS)) delete AL_AREAS[k];
-  Object.assign(E, c.entities);
-  Object.assign(AL_AREAS, c.alAreas);
-  ROOMS.splice(0, ROOMS.length, ...c.rooms);
-  HOUSEHOLD.splice(0, HOUSEHOLD.length, ...c.people);
-  SCENE_ORDER.splice(0, SCENE_ORDER.length, ...c.scenes);
-  MODES.splice(0, MODES.length, ...c.modes);
-  SPLIT_AREAS.splice(0, SPLIT_AREAS.length, ...c.splitLightAreas);
-  LIGHT_LINKS.splice(0, LIGHT_LINKS.length, ...c.lightLinks);
-  CFG = c;
-}
 
 const sum = a => a.reduce((x, y) => x + (y || 0), 0);
 const f1 = v => (v == null ? '–' : (+v).toFixed(1));
@@ -657,7 +629,7 @@ export class HomePanel extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({mode: 'open'});
-    // the store and the settings are fed beside the module globals until the contract step deletes them (spec 10)
+    // the composition root: this panel's store, settings and French layer, none of them shared with another panel (spec 10)
     this.store = createStore({
       defaultTimeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
       resolve: resolveConfig,
@@ -665,7 +637,7 @@ export class HomePanel extends HTMLElement {
     /** @type {import('./core/settings.ts').KeyValueStorage} */
     let storage = {getItem: () => null, setItem: () => {}};
     try {
-      storage = localStorage;
+      storage = localStorage; // the one adapter wiring: only src/core/settings.ts reads or writes it
     } catch {
       // blocked site data: touching localStorage throws, so the settings keep their defaults
     }
@@ -725,14 +697,11 @@ export class HomePanel extends HTMLElement {
   }
   set hass(h) {
     this.store.setHass(h);
-    setHass(h);
-    setTZ(this.store.timeZone);
     // French follows the user's profile language; switching it redraws the panel.
     // The store's locale change is not enough here: a host may set the new language on the hass object it already
     // handed over (the harness does, on its first switch), so the store sees the same language before and after.
     // Comparing with the language this panel was drawn in catches that too.
     const fr = this.store.isFrench;
-    setFR(fr); // kept only until contract deletes the flag; nothing reads it any more
     if (fr !== this.frDrawn) {
       this.frDrawn = fr;
       if (this.$app) this.teardown();
@@ -752,7 +721,6 @@ export class HomePanel extends HTMLElement {
     if (key === this.cfgKey) return false;
     this.cfgKey = key;
     this.store.setPanelConfig(pc);
-    applyConfig(pc, this.hass ? this.hass.states : {});
     if (!this.$app) return false;
     this.teardown();
     this.H = null;
@@ -832,7 +800,7 @@ export class HomePanel extends HTMLElement {
     if (this.unsubStore) this.unsubStore();
     this.unsubStore = null;
   }
-  // the store's reads: every call site goes through these, and the contract step deletes the module globals (spec 10)
+  // the store's reads: every call site goes through these; the house lives in this panel's store, not at module scope (spec 10)
   get E() {
     return this.store.config.entities;
   }

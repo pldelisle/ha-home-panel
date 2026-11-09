@@ -19,22 +19,20 @@ const climateRooms = async (panel: Locator) => {
   return panel.locator(`${room('.citem', 'data-id', '.nm')}, ${room('.stile', 'data-csel', 'b')}`);
 };
 
-// FIXME: this fails while the module globals are shared between the panels (the second one's config overwrites the first's).
-// It passes, and the fixme goes, with the contract ticket (#130) that deletes the globals.
-test.fixme('two panels on one page show their own houses (passes after #130)', async ({house}) => {
+test('two panels on one page show their own houses', async ({house}) => {
   const first = house.page.locator('home-panel').nth(0),
     second = house.page.locator('home-panel').nth(1);
 
   // each Climate tab lists its own rooms
   await expect(await climateRooms(second)).toHaveText(['Living room', 'Office']);
-  await expect(await climateRooms(first)).toHaveText(['Living room', 'Office', 'Bedroom', 'Garage']);
+  await expect(await climateRooms(first)).toHaveText(['Bedroom', 'Garage', 'Living room', 'Office']); // discovered: every thermostat, sorted by id
 
   // the headers show two people in the first and one in the second
   await expect(first.locator('#hello .wp')).toHaveCount(2);
   await expect(second.locator('#hello .wp')).toHaveCount(1);
 
   // a state change through the harness reaches both
-  const bulb = (panel: Locator) => panel.locator('#pane-lights .lbulb[data-a="living_room"]');
+  const bulb = (panel: Locator) => panel.locator('#pane-lights .lbulb[data-a="living_room"]').first(); // the phone draws two of them, both on, both following the state
   for (const panel of [first, second]) await openTab(panel, 'lights');
   await expect(bulb(first)).toHaveAttribute('aria-checked', 'true');
   await expect(bulb(second)).toHaveAttribute('aria-checked', 'true');
