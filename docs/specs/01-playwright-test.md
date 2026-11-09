@@ -90,7 +90,7 @@ Every check below exists in the script today and MUST exist after the conversion
 3. Full house, tablet: the text "Alex" appears (who's home lists the configured people); the water heater card is visible; the Hilo card is hidden; the Car tab button is visible.
 4. Bare house, both viewports: the water heater card, the Hilo card, the Car tab and the Climate tab are hidden. 41. In the bare house, both viewports: nothing the house lacks (the Climate and Car tabs and their Home tiles, the water heater and Hilo cards and the tiles that open them) is shown at the end of any task that changes the panel, from load through a light change that redraws the Home tiles and, on a phone, opening Energy, which draws its Water heater and Hilo rows.
 5. French (`lang: 'fr'`), tablet: the rail text matches Accueil, Lumières or Climat. 42. French, both viewports: the Security card on Home reads "toutes les portes fermées · mouvement en cours", with no English word and no colon. 43. French, tablet: the Security pane's line reads "Aucune caméra · toutes les portes fermées · mouvement en cours", same two checks. 44. French, phone: the Security line under More reads "Portes fermées · mouvement en cours", same two checks.
-6. Dark theme, tablet: loads with no error (kept as a smoke run until spec 02 makes it a screenshot).
+6. Dark theme, tablet: loads with no error (kept as a smoke run until spec 02 makes it a screenshot). 47. Full house, both viewports, under the projects' Reduce Motion: tapping every shown tab starts no transition or animation in the tab bar (the rail on a tablet, the bar on a phone), as `transitionrun` and `animationstart` report in the frame after a tap, and as `getAnimations()` lists them right after it, so an animation still in its delay is caught too (#94, #101). 48. Full house, both viewports, under Reduce Motion: opening the light sheet leaves no animation, no transition and no transition-duration on the sheet or its panel, which on a phone includes the spring up and the spring back after a short drag (#101).
 
 `media.spec.ts` (tablet) 7. Tapping the TV mute button sends `media_player.volume_mute`; tapping power sends `media_player.turn_off`.
 
@@ -115,7 +115,7 @@ Every check below exists in the script today and MUST exist after the conversion
 
 ## Acceptance Criteria
 
-1. `npm run test:e2e` passes locally and in CI on `main`, with every check numbered 1 to 46 present as a named test.
+1. `npm run test:e2e` passes locally and in CI on `main`, with every check numbered 1 to 48 present as a named test.
 2. `smoke.mjs` is gone; `test/e2e/out/` is gone; no spec calls a method or reads a property of the `home-panel` element other than setting `hass`, `narrow` and `panel` from the harness.
 3. No file under `src/` changed.
 4. A deliberately failing assertion in CI produces an uploaded trace and screenshot.

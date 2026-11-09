@@ -3,6 +3,7 @@
 import {test, expect, tabletOnly, phoneOnly, eachShownTab, type House} from './fixtures';
 import type {Locator} from '@playwright/test';
 import {FULL_CFG} from './houses';
+import {OFFICE_TILE} from './lights';
 
 // what the bare house lacks, wherever it shows: the Climate and Car tabs (rail buttons, Home tiles), the water heater and Hilo cards
 // and the tiles that open them
@@ -68,6 +69,70 @@ test.describe('full house', () => {
     await shown(house.root().locator('#water')).toBe(true);
     await shown(house.root().locator('#hilo')).toBe(false);
     await shown(house.root().locator('#rail [data-tab="car"]')).toBe(true);
+  });
+
+  // every project sets Reduce Motion; under it a tap changes the tab bar in one step. A highlight that still faded redrew the glass
+  // rail for a fifth of a second after the tap, and a screenshot that ended the fade at whatever frame it had reached came out one
+  // of two images (#94). A transition or animation reports itself (transitionrun, animationstart) in the frame after it starts.
+  test('47 under Reduce Motion, tapping a tab starts no transition or animation in the tab bar', async ({house}) => {
+    await house.root().evaluate(el => {
+      const started: string[] = [];
+      (window as unknown as {started: string[]}).started = started;
+      for (const type of ['transitionrun', 'animationstart'])
+        el.shadowRoot!.addEventListener(type, e => {
+          const t = e.target as HTMLElement,
+            what = e instanceof TransitionEvent ? e.propertyName : (e as AnimationEvent).animationName;
+          // the rail on a tablet, the bar on a phone; a chart drawing in the pane is not the question here
+          if (t.closest('#rail')) started.push(`${t.dataset.tab ?? t.localName} ${type} ${what}`);
+        });
+    });
+    // an animation with a delay reports animationstart only after the delay, so each tap also asks the tab bar for what is queued or running now
+    await eachShownTab(house, async tab => {
+      const running = await house
+        .root()
+        .locator('#rail')
+        .evaluate(el =>
+          el.getAnimations({subtree: true}).map(a => {
+            const t = a as CSSAnimation & CSSTransition;
+            return `${a.constructor.name} ${t.animationName ?? t.transitionProperty}`;
+          }),
+        );
+      expect(running, `${tab}: animations and transitions in the tab bar after the tap`).toEqual([]);
+    });
+    // one frame more, so the last tap's events have arrived
+    await house.page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
+    expect(await house.page.evaluate(() => (window as unknown as {started: string[]}).started)).toEqual([]);
+  });
+
+  // the glass sheet is captured right after the tap that opens it; under Reduce Motion it appears at once, on a tablet (the pop in) and
+  // on a phone (the spring up, and the spring back after a short drag, which is a transition on the same panel) (#101)
+  test('48 under Reduce Motion, opening the light sheet starts no transition or animation on the sheet', async ({
+    house,
+  }) => {
+    await house.tab('lights');
+    const t = (await house.root().locator(`${OFFICE_TILE}:visible`).boundingBox())!;
+    await house.page.mouse.click(t.x + t.width * 0.7, t.y + t.height / 2);
+    await expect(house.root().locator('#sh-light')).toBeVisible();
+    const left = await house.root().evaluate(el => {
+      const sheet = el.shadowRoot!.querySelector('#sh-light')!,
+        panel = sheet.querySelector(':scope > .panel')!;
+      return [sheet, panel].flatMap(e => {
+        const c = getComputedStyle(e),
+          running = e
+            .getAnimations()
+            .map(
+              a =>
+                `${a.constructor.name} ${(a as CSSAnimation).animationName ?? (a as CSSTransition).transitionProperty}`,
+            ),
+          // a transition starts only when a property changes, so what the panel would run on a drag's release counts too
+          set =
+            c.animationName !== 'none' || c.transitionDuration.split(', ').some(d => parseFloat(d) > 0)
+              ? [`${e.className || e.id}: ${c.animationName} ${c.transitionProperty} ${c.transitionDuration}`]
+              : [];
+        return [...running, ...set];
+      });
+    });
+    expect(left).toEqual([]);
   });
 });
 
