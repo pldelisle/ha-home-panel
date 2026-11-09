@@ -798,8 +798,10 @@ export class HomePanel extends HTMLElement {
     this.store.setHass(h);
     setHass(h);
     setTZ((h.config && h.config.time_zone) || getTZ());
-    // French follows the user's profile language; switching it redraws the panel
-    // compared with the language this panel was drawn in, not with the previous hass, which a host may change in place
+    // French follows the user's profile language; switching it redraws the panel.
+    // The store's locale change is not enough here: a host may set the new language on the hass object it already
+    // handed over (the harness does, on its first switch), so the store sees the same language before and after.
+    // Comparing with the language this panel was drawn in catches that too.
     const fr = this.store.isFrench;
     setFR(fr); // kept only until contract deletes the flag; nothing reads it any more
     if (fr !== this.frDrawn) {
@@ -1228,11 +1230,8 @@ export class HomePanel extends HTMLElement {
   }
 
   // ---------- theme: dark when the device is, or after sunset, unless overridden ----------
-  themeMode() {
-    return this.settings.get().theme;
-  }
   applyTheme() {
-    const m = this.themeMode(),
+    const {theme: m, glass} = this.settings.get(), // one read of the settings per tick
       s = st(E.sun),
       sys = this.sysDark ? this.sysDark.matches : matchMedia('(prefers-color-scheme: dark)').matches;
     const dark = m === 'dark' || (m === 'auto' && (sys || (s && s.state === 'below_horizon')));
@@ -1243,7 +1242,7 @@ export class HomePanel extends HTMLElement {
       this.redrawCharts();
       this.pageBg();
     }
-    if (this.glassMode() === 'sky' && this.$app.dataset.wp !== this.skyWp()) this.applyGlass();
+    if (glass === 'sky' && this.$app.dataset.wp !== this.skyWp()) this.applyGlass();
     if (this.$('setpop') && !this.$('setpop').hidden) {
       this.cache.setc = null;
       this.renderSettings();
@@ -1261,10 +1260,8 @@ export class HomePanel extends HTMLElement {
     }
   }
   renderSettings() {
-    const m = this.themeMode(),
-      dark = this.$app.dataset.theme === 'dark',
-      tx = this.textMode(),
-      gl = this.glassMode();
+    const {theme: m, text: tx, glass: gl, glassLevel: gt} = this.settings.get(),
+      dark = this.$app.dataset.theme === 'dark';
     this.set(
       'setc',
       `<div class="cc">
@@ -1297,7 +1294,7 @@ export class HomePanel extends HTMLElement {
             `<button type="button" role="radio" aria-checked="${k === gl}" data-gl="${k}"><b>${l}</b></button>`,
         )
         .join('')}</div>
-        <div class="gtrow"><span>Solid</span><input type="range" class="gtrange" min="0" max="100" step="1" value="${this.glassT()}" style="--p:${this.glassT()}%" aria-label="Transparency"><span>Clear</span></div></div>
+        <div class="gtrow"><span>Solid</span><input type="range" class="gtrange" min="0" max="100" step="1" value="${gt}" style="--p:${gt}%" aria-label="Transparency"><span>Clear</span></div></div>
       <div class="ccv">Home panel v${VERSION}${this.H ? ' · statistics refreshed every 15 minutes' : ''}</div></div>`,
     );
   }

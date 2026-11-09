@@ -147,14 +147,16 @@ test('the Lights tile sub-line is French in every part', () => {
   expect(frText('2 of 3 on · 59%')).toBe('2 sur 3 allumées · 59 %');
 });
 
-// createFrench(store): the per-panel translator, fed by a store (a fake store is enough)
-test('createFrench translates for its store and leaves the names the house gave', () => {
-  const store = {hass: fakeHass(houseWithNames(['Good evening'])), isFrench: true};
-  const fr = createFrench(store);
-  expect(fr.text('Good evening')).toBe('Good evening');
-  expect(fr.text('Live · history 4:07 pm')).toBe('En direct · historique 16 h 07');
-  expect(fr.text('12.5')).toBe('12,5');
-  expect(fr.text('Some text nobody translated')).toBe('Some text nobody translated');
+// createFrench(store): the per-panel translator, fed by a store (a fake store is enough). Two panels on one page have
+// two layers, and each reads the house's names from its own store: a name one house gave is still translated for the
+// other. The translations themselves are covered above, where every layer is built the same way.
+test('two createFrench layers over two stores each leave only the names their own house gave', () => {
+  const evening = createFrench({hass: fakeHass(houseWithNames(['Good evening'])), isFrench: true});
+  const morning = createFrench({hass: fakeHass(houseWithNames(['Good morning'])), isFrench: true});
+  expect(evening.text('Good evening')).toBe('Good evening');
+  expect(evening.text('Good morning')).toBe('Bonjour');
+  expect(morning.text('Good morning')).toBe('Good morning');
+  expect(morning.text('Good evening')).toBe('Bonsoir');
 });
 
 test('createFrench does nothing while the store is not French', () => {
