@@ -1,25 +1,31 @@
 // Writes LICENSES.md: a table of the production dependencies with version, licence and repository, then each licence
 // text. `npm run licenses` regenerates it; test/unit/licenses.test.mjs fails when it is out of date.
 //
-// What it lists is the whole production tree: every package npm installs for the panel's `dependencies` (and what they
-// pull in), as license-checker-rseidelsohn's --production reads it from node_modules. Vite tree-shakes
-// part of that tree out of the chunks, and some packages hold only type declarations, but telling which is the build's
-// job and would change with every Mermaid release; listing a package that does not ship costs a line, and leaving out
-// one that does would be a licence breach, so the list errs on the long side.
+// What it reads: package-lock.json, which names every package npm installs, and for each production one the
+// package.json and the licence file in its directory under node_modules. No network, no npm, no other tool: the lock
+// file is the input, so the same lock file gives the same output on every machine.
 //
-// The output depends on the installed tree and on nothing else: rows sorted by code point (no locale), line ends
-// and trailing spaces normalised, no path, date or machine name in it. The same lock file gives the same file on a Mac
-// and on Linux.
-import {readFileSync, realpathSync, writeFileSync} from 'node:fs';
-import {basename} from 'node:path';
+// What it lists is the whole production tree: every package npm installs for the panel's `dependencies` (and what they
+// pull in), that is every `node_modules/` entry of the lock file that is not `dev`. Vite tree-shakes part of that tree
+// out of the chunks, and some packages hold only type declarations, but telling which is the build's job and would
+// change with every Mermaid release; listing a package that does not ship costs a line, and leaving out one that does
+// would be a licence breach, so the list errs on the long side.
+//
+// The output depends on the lock file and the installed packages and on nothing else: rows sorted by code point (no
+// locale), line ends and trailing spaces normalised, no path, date or machine name in it. The same lock file gives the
+// same file on a Mac and on Linux.
+import {readdirSync, readFileSync, realpathSync, writeFileSync} from 'node:fs';
+import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {init} from 'license-checker-rseidelsohn';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 
-// license-checker's licence file can be a README (it falls back to one when a package has no licence file); a README
-// is not the licence text
-const isLicenseFile = file => /^(licen[cs]e|copying)/i.test(basename(file));
+// LICENSE, LICENCE, COPYING and their variants (LICENSE.md, LICENSE-MIT, COPYING.txt); a README is not the licence text
+const isLicenseFile = file => /^(licen[cs]e|copying)/i.test(file);
+
+// the file read when a package has several: the usual names first, then the rest by code point
+const PREFERRED = ['LICENSE', 'LICENSE.md', 'LICENSE.txt'];
+const rank = file => (PREFERRED.includes(file) ? PREFERRED.indexOf(file) : PREFERRED.length);
 
 // the same text on every machine: LF line ends, no trailing spaces, no blank lines around it
 const clean = text =>
@@ -35,34 +41,57 @@ const fence = text => '`'.repeat(Math.max(3, ...[...text.matchAll(/`+/g)].map(m 
 
 const byCodePoint = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 
-const scan = () =>
-  new Promise((resolve, reject) =>
-    init({start: ROOT, production: true, excludePrivatePackages: true}, (error, found) =>
-      error ? reject(error) : resolve(found),
-    ),
-  );
+// the licence as the package declares it: a string (an SPDX expression, kept as written), a {type} object, or the old
+// `licenses` array of those joined with ', '; '' when it declares none
+const declaredLicense = pkg => {
+  const one = value => (typeof value === 'string' ? value : (value?.type ?? ''));
+  const old = Array.isArray(pkg.licenses) ? pkg.licenses.map(one).filter(Boolean).join(', ') : '';
+  return one(pkg.license) || old;
+};
+
+// the https URL of the repository: `git+https://…/x.git`, `git://…`, `http://…`, `github:owner/name` and `owner/name`
+// all become the host's https URL without the `.git`
+const repositoryUrl = pkg => {
+  const url = typeof pkg.repository === 'string' ? pkg.repository : pkg.repository?.url;
+  if (!url) return '';
+  const shorthand = url.match(/^(?:github:)?([\w.-]+\/[\w.-]+)$/);
+  return (shorthand ? `https://github.com/${shorthand[1]}` : url)
+    .replace(/^git\+/, '')
+    .replace(/^(?:git|http|ssh):\/\//, 'https://')
+    .replace(/\.git$/, '');
+};
 
 /**
  * The installed production packages, sorted by name then version (code points, not a locale): one row each with its
  * name, version, licence, repository and licence text. Throws when a package has no licence to read.
+ * `options.root` is the directory that holds package-lock.json and node_modules (the repository by default).
  */
-export async function collectLicenses() {
-  const found = await scan();
-  const rows = Object.entries(found)
-    .map(([key, info]) => {
-      const at = key.lastIndexOf('@'); // the last one: a scoped name starts with one
-      const licenses = [info.licenses].flat().join(', ');
-      const text =
-        info.licenseFile && isLicenseFile(info.licenseFile) ? clean(readFileSync(info.licenseFile, 'utf8')) : '';
-      return {
-        name: key.slice(0, at),
-        version: key.slice(at + 1),
-        licenses,
-        repository: info.repository ?? '',
-        text: text || `This package ships no licence file; its package.json declares ${licenses}.`,
-      };
-    })
-    .sort((a, b) => byCodePoint(a.name, b.name) || byCodePoint(a.version, b.version));
+export async function collectLicenses(options = {}) {
+  const root = options.root ?? ROOT;
+  const {packages} = JSON.parse(readFileSync(join(root, 'package-lock.json'), 'utf8'));
+  const rows = [];
+  for (const [key, entry] of Object.entries(packages)) {
+    // a key outside node_modules ("" is the project, "../x" a package above the repository) is not a dependency
+    if (!key.startsWith('node_modules/') || entry.dev || entry.extraneous || entry.link) continue;
+    const dir = join(root, key);
+    const pkg = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8'));
+    const file = readdirSync(dir, {withFileTypes: true})
+      .filter(item => item.isFile() && isLicenseFile(item.name))
+      .map(item => item.name)
+      .sort((a, b) => rank(a) - rank(b) || byCodePoint(a, b))[0];
+    const text = file ? clean(readFileSync(join(dir, file), 'utf8')) : '';
+    // no licence field: a licence file with the MIT grant is read as MIT, starred; anything else needs a person
+    const licenses =
+      declaredLicense(pkg) || (/Permission is hereby granted, free of charge/.test(text) ? 'MIT*' : 'UNKNOWN');
+    rows.push({
+      name: key.slice(key.lastIndexOf('node_modules/') + 'node_modules/'.length),
+      version: entry.version,
+      licenses,
+      repository: repositoryUrl(pkg),
+      text: text || `This package ships no licence file; its package.json declares ${licenses}.`,
+    });
+  }
+  rows.sort((a, b) => byCodePoint(a.name, b.name) || byCodePoint(a.version, b.version));
   const unknown = rows.filter(row => /UNKNOWN|UNLICENSED/.test(row.licenses));
   if (unknown.length)
     throw new Error(

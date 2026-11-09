@@ -6,3 +6,5 @@ playwright-report/
 .claude/
 graphify-out/
 coverage/
+# the licence generator's test trees (test/unit/fixtures/licenses) are made of node_modules directories
+!test/unit/fixtures/licenses/**/node_modules/
