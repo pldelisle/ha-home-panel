@@ -106,4 +106,11 @@ describe('the numbers', () => {
       expect(fr.number(v, digits)).toBe(layerText(en.number(v, digits)));
     },
   );
+
+  test.each(VALUES.flatMap(v => [0, 1, 2].map(digits => [v, digits] as const)))(
+    'fixed of %s with %s fraction digits',
+    (v, digits) => {
+      expect(fr.fixed(v, digits)).toBe(layerText(en.fixed(v, digits)));
+    },
+  );
 });

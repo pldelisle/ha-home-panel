@@ -16,6 +16,8 @@ export default defineConfig({
         'src/stack.js',
         'src/fonts.js',
         'src/core/**/*.ts',
+        'src/providers/**/*.ts',
+        'src/features/*/{ids,inputs,model,tiles}.ts', // the pure files; the elements are proven by the harness
         'src/shell/guest.ts',
         'src/shell/features.ts',
         'src/shell/legacy-feature.ts',
@@ -23,9 +25,12 @@ export default defineConfig({
         'scripts/lib/anonymise.mjs',
       ],
       reporter: [['text', {skipFull: false}], 'html'], // skipFull false lists the files at 100 percent too
-      // the phase-2 gate: every statement in the core is tested (CI runs `npm test -- --coverage`)
+      // the phase-2 gate: every statement in the core is tested (CI runs `npm test -- --coverage`); phase 3 holds the providers and
+      // each feature's model, ids, inputs and tiles to the same line
       thresholds: {
         'src/core/**/*.ts': {statements: 100},
+        'src/providers/**/*.ts': {statements: 100},
+        'src/features/*/{ids,inputs,model,tiles}.ts': {statements: 100},
         'src/shell/guest.ts': {statements: 100},
         'src/shell/features.ts': {statements: 100},
         'src/shell/legacy-feature.ts': {statements: 100},

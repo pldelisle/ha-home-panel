@@ -16,6 +16,8 @@
     "src/stack.js",
     "src/fonts.js",
     "src/core/**/*.ts",
+    "src/providers/**/*.ts",
+    "src/features/**/*.ts",
     "src/shell/**/*.ts",
     "src/ui/**/*.ts"
   ]

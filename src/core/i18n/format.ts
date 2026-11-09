@@ -2,7 +2,7 @@
 // Pattern: a factory returning the instance's functions and its per-hour cache (Ousterhout, deep module), on the same CLDR
 // data as Home Assistant's formatTime and formatNumber. Deliberate overrides of CLDR and `Intl`, and the only
 // post-processing: the three house rules (en-* am/pm without periods, fr-* "16 h" on the hour, fr-* thousands U+202F)
-// and number() clamping its fraction digits to 2, and time24 and time24s, which join the parts with a colon and Latin
+// and number() and fixed() clamping their fraction digits to 2, and time24 and time24s, which join the parts with a colon and Latin
 // digits in every locale because the table asks for `16:07`. Must not: read the clock, the DOM or a browser default.
 import type {PanelLocaleSpec} from './locale.ts';
 
@@ -41,6 +41,8 @@ export interface Formatters {
   integer(n: number): string;
   /** At most `maxFraction` digits (default 1), clamped to 2. */
   number(n: number, maxFraction?: number): string;
+  /** Exactly `digits` fraction digits, clamped to 2: `4.0`, `101.9`, `4,0`; the former `toFixed`. */
+  fixed(n: number, digits: number): string;
 }
 
 const PARTS_CACHE_LIMIT = 20_000;
@@ -101,6 +103,7 @@ export function createFormatters(locale: PanelLocaleSpec): Formatters {
     new Intl.NumberFormat(locale.numberLocale, {maximumFractionDigits, useGrouping: locale.useGrouping});
   const integer = numberFormat(0);
   const numbers = new Map<number, Intl.NumberFormat>();
+  const fixedFormats = new Map<number, Intl.NumberFormat>();
 
   // the hour-bucket cache of the former `localParts`: an instant is formatted at the top of its UTC hour, which is also
   // the top of its local hour in every whole-hour zone; a half-hour zone (Asia/Kolkata) can be given the previous hour
@@ -143,6 +146,19 @@ export function createFormatters(locale: PanelLocaleSpec): Formatters {
       const digits = Math.min(maxFraction ?? 1, 2);
       let format = numbers.get(digits);
       if (!format) numbers.set(digits, (format = numberFormat(digits)));
+      return numberRule(format.format(n));
+    },
+    fixed: (n, digits) => {
+      const exactly = Math.min(digits, 2);
+      let format = fixedFormats.get(exactly);
+      if (!format) {
+        const options = {
+          minimumFractionDigits: exactly,
+          maximumFractionDigits: exactly,
+          useGrouping: locale.useGrouping,
+        };
+        fixedFormats.set(exactly, (format = new Intl.NumberFormat(locale.numberLocale, options)));
+      }
       return numberRule(format.format(n));
     },
   };
