@@ -2,17 +2,9 @@
 // Baselines live in test/e2e/__screenshots__/visual/tabs.spec.ts/ and are recorded only inside the Playwright image (Docker or
 // `container`: npm run test:visual:update); a difference is either fixed or approved by updating them in the same pull request.
 import {test, expect, eachShownTab, fontsLoaded, type House} from '../fixtures';
-import {AFTERNOON, FULL_CFG, PHONE_TABS, TABLET_TABS, VIEWPORTS} from '../houses';
+import {AFTERNOON, FULL_CFG, KEEP_ENGLISH_NAMES, PHONE_TABS, TABLET_TABS, VIEWPORTS} from '../houses';
 
 const TABS = {tablet: TABLET_TABS, phone: PHONE_TABS};
-
-// The French baselines were recorded when the test house's English area names (Living room, Kitchen) were left as they are
-// in French. The room dictionary (#134) now reads them Salon, Cuisine, Bureau, so these runs say, per name, that the house
-// keeps its English wording in French; the names spec covers the translated reading. A baseline is never updated for a
-// structural change.
-const KEEP_ENGLISH_NAMES = Object.fromEntries(
-  ['Living room', 'Kitchen', 'Office', 'Bedroom'].map(name => [name, {fr: name}]),
-);
 
 // every screenshot shows the bundled Montserrat, never the fallback it swaps from, and the charts and flows drawn after
 // this measure their labels in it

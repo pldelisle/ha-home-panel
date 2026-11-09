@@ -98,11 +98,75 @@ describe('the dictionary', () => {
     expect(createNames({}, 'FR', hass).name('living')).toBe('Salon');
     expect(createNames({}, 'en-GB', hass).name('salon')).toBe('Living room');
   });
-  test('every entry of the list reads both ways', () => {
-    for (const [en, fr] of ROOM_NAMES) {
-      expect(createNames({}, 'fr', null).name(en)).toBe(fr);
-      expect(createNames({}, 'en', null).name(fr)).toBe(en);
-    }
+  test('the table has the 18 rows the spec lists, by their English keys', () => {
+    expect(ROOM_NAMES.map(([en]) => en)).toEqual([
+      'Living room',
+      'Kitchen',
+      'Bedroom',
+      'Main bedroom',
+      'Office',
+      'Bathroom',
+      'Dining room',
+      'Laundry room',
+      'Laundry',
+      'Basement',
+      'Entrance',
+      'Hallway',
+      'Garage',
+      'Outside',
+      'Backyard',
+      'Deck',
+      'Vestibule',
+      'Attic',
+    ]);
+  });
+  test('English reads each French word of the list as the English one', () => {
+    const {name} = createNames({}, 'en', null);
+    const pairs = [
+      ['Salon', 'Living room'],
+      ['Cuisine', 'Kitchen'],
+      ['Chambre', 'Bedroom'],
+      ['Chambre principale', 'Main bedroom'],
+      ['Bureau', 'Office'],
+      ['Salle de bain', 'Bathroom'],
+      ['Salle à manger', 'Dining room'],
+      ['Salle de lavage', 'Laundry room'],
+      ['Buanderie', 'Laundry'],
+      ['Sous-sol', 'Basement'],
+      ['Entrée', 'Entrance'],
+      ['Couloir', 'Hallway'],
+      ['Garage', 'Garage'],
+      ['Extérieur', 'Outside'],
+      ['Cour', 'Backyard'],
+      ['Terrasse', 'Deck'],
+      ['Vestibule', 'Vestibule'],
+      ['Grenier', 'Attic'],
+    ];
+    for (const [fr, en] of pairs) expect(name(fr), fr).toBe(en);
+  });
+  test('French reads each English word of the list as the French one', () => {
+    const {name} = createNames({}, 'fr', null);
+    const pairs = [
+      ['Living room', 'Salon'],
+      ['Kitchen', 'Cuisine'],
+      ['Bedroom', 'Chambre'],
+      ['Main bedroom', 'Chambre principale'],
+      ['Office', 'Bureau'],
+      ['Bathroom', 'Salle de bain'],
+      ['Dining room', 'Salle à manger'],
+      ['Laundry room', 'Salle de lavage'],
+      ['Laundry', 'Buanderie'],
+      ['Basement', 'Sous-sol'],
+      ['Entrance', 'Entrée'],
+      ['Hallway', 'Couloir'],
+      ['Garage', 'Garage'],
+      ['Outside', 'Extérieur'],
+      ['Backyard', 'Cour'],
+      ['Deck', 'Terrasse'],
+      ['Vestibule', 'Vestibule'],
+      ['Attic', 'Grenier'],
+    ];
+    for (const [en, fr] of pairs) expect(name(en), en).toBe(fr);
   });
 });
 

@@ -1,7 +1,7 @@
 // The display-name resolver: every name the panel shows passes through name(key), which answers in the panel's language.
-// Pattern: resolution in a fixed order, first match wins (the house's `names:` block, the built-in room dictionary, then
-// the name as Home Assistant gives it); names are data, never message keys (Evans, ubiquitous language). Home Assistant's
-// own aliases are not used: they carry no language tag, so they cannot say which is English.
+// Pattern: Chain of Responsibility (Gamma et al., Design Patterns, 1994): the first link that has an answer wins (the
+// house's `names:` block, the built-in room dictionary, then the name as Home Assistant gives it); names are data, never
+// message keys. Home Assistant's own aliases are not used: they carry no language tag, so they cannot say which is English.
 // Must not: translate part of a name (`Lampe du salon` needs an override), read the DOM or a global locale, or cache a hass.
 import type {PanelHass} from '../hass.ts';
 import {ROOM_NAMES} from './room-names.ts';

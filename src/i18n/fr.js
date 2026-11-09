@@ -103,9 +103,9 @@ const frKey = (s, vals) => {
 };
 const FR_UNITS =
   /^(?:\{n\}|[\s°%·–\-−+/,()×]|°C|kWh|MWh|kW|W|V|A|km\/h|km|kPa|ppm|µg\/m³|lx|lux|psi|¢\/kWh|¢|h|min|s|k|RH|AQI|UV|PM\{n\}|CO₂|CO|VOC)+$/;
-// the names people gave in HA: areas, devices and the kinds of entity whose friendly name is theirs, each as Home Assistant
-// gives it and as the panel shows it (the store's display names: `Salon` is read `Living room` in English), so the layer
-// leaves both alone
+// the names people gave in HA: areas, devices, the kinds of entity whose friendly name is theirs and the rooms the thermostats
+// name, each as Home Assistant gives it and as the panel shows it (the store's display names: `Living room` is read `Salon`
+// in French), so the layer leaves both alone
 function houseNames(hass, name) {
   const S = new Set(),
     reg = hass.entities || {},
@@ -116,8 +116,21 @@ function houseNames(hass, name) {
   };
   Object.entries(hass.areas || {}).forEach(([id, a]) => a.name && add(id, a.name));
   Object.entries(hass.devices || {}).forEach(([id, d]) => d.name_by_user && add(id, d.name_by_user));
+  // a name the house or the room dictionary changed is the house's, whoever made the thing it names (a device with only its
+  // own name, an entity of any other kind); one they left as it was is not, and stays open to translation
+  const changed = (id, given) => given && name(id) !== given && S.add(name(id));
+  Object.entries(hass.devices || {}).forEach(([id, d]) => changed(id, d.name_by_user || d.name));
   for (const [id, s] of Object.entries(hass.states)) {
     const p = (reg[id] || {}).platform;
+    // a thermostat is shown as a room, by its name without the `Thermostat` the integration puts in front
+    changed(id, s.attributes.friendly_name);
+    if (id.startsWith('climate.') && s.attributes.friendly_name) {
+      const room = String(s.attributes.friendly_name).replace(/^Thermostat\s*/i, '');
+      if (room) {
+        S.add(room);
+        S.add(name(room));
+      }
+    }
     if (
       keep.test(id) &&
       !['fordpass', 'wallbox', 'adaptive_lighting', 'hilo', 'unifiprotect'].includes(p) &&
@@ -230,8 +243,8 @@ function frApex(o) {
   return o;
 }
 /**
- * The translator for one panel: text, node, tree and apex, reading the names the house gave from the store's hass and its display names (with a
- * cache of their own) and the language from the store, so two panels on a page do not share either.
+ * The translator for one panel: text, node, tree and apex, reading the names the house gave from the store's hass and its
+ * display names (with a cache of their own) and the language from the store, so two panels on a page do not share either.
  * Nothing is translated while the store's language is not French. The module keeps no state of its own.
  * @param {{hass: any, isFrench: boolean, names: {name: (key: string) => string}}} store
  */

@@ -185,7 +185,7 @@ export function createStore<TConfig>(opts: StoreOptions<TConfig>): PanelStore<TC
       // the config was resolved against no states until now (discovery needs them): resolve it again, same generation
       if (!prev) config = opts.resolve(raw, next.states);
       // the messages and the names are built from the first hass, then rebuilt on the locale change the subscribers are
-      // told of, and on no other
+      // told of; the names are also rebuilt when the config changes (setConfig), the messages are not
       if (!prev || change.locale) {
         messages = createMessages(panelLocale(next, {timeZone: seenTimeZone, browserLocale: 'en'}));
         names = buildNames();

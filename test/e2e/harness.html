@@ -417,6 +417,11 @@
           hass.states[id] = {...prev, ...patch, attributes: {...prev.attributes, ...(patch.attributes || {})}};
           for (const p of panels) p.hass = {...hass};
         },
+        // an area is renamed in Home Assistant: a new areas registry inside a new hass object
+        setAreaName(id, name) {
+          hass.areas = {...hass.areas, [id]: {...hass.areas[id], name}};
+          for (const p of panels) p.hass = {...hass};
+        },
         // the profile language changes: Home Assistant hands the panel a new hass with it, and keeps it for every later state change
         setLanguage(lang) {
           hass.locale = {language: lang};

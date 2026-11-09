@@ -1603,7 +1603,7 @@ export class HomePanel extends HTMLElement {
     const sp = this.speakers().find(x => (this.st(x.id) || {}).state === 'playing');
     if (sp) {
       const pic = this.attr(sp.id, 'entity_picture'),
-        area = (this.hass.areas || {})[sp.aid] ? this.store.names.name(sp.aid) : sp.name;
+        area = this.areaName(sp.aid, sp.name);
       out.push(
         this.scard('music', {
           ic: 'spk',
@@ -5242,6 +5242,11 @@ export class HomePanel extends HTMLElement {
     return e.area_id || ((this.hass.devices || {})[e.device_id] || {}).area_id || '';
   }
   // speakers by area (HomePods and the like); camera speakers and the TV have their own controls
+  // an area's name as the panel shows it; an area that has no name of its own gives the fallback, as it always did
+  areaName(aid, fallback = '') {
+    const a = (this.hass.areas || {})[aid];
+    return a && a.name ? this.store.names.name(aid) : fallback;
+  }
   speakers() {
     const reg = this.hass.entities || {},
       areas = this.hass.areas || {},
@@ -5262,7 +5267,7 @@ export class HomePanel extends HTMLElement {
       .map(i => {
         // the words of the area's name, as Home Assistant gives it and as the panel shows it, are the ones to drop
         const aid = this.entArea(i),
-          aw = new Set([...words((areas[aid] || {}).name || ''), ...(aid ? words(this.store.names.name(aid)) : [])]),
+          aw = new Set([...words((areas[aid] || {}).name || ''), ...words(this.areaName(aid))]),
           fn = this.store.names.name(i);
         // "HomePod mini Kitchen" in the Kitchen is just "HomePod mini"
         const short = String(fn)
@@ -5601,7 +5606,6 @@ export class HomePanel extends HTMLElement {
         `<div class="stile wide home${on ? ' on' : ''}" data-card="mtv" data-title="${esc(T.name)}" data-icon="tv" data-color="var(--c-home)" role="button" tabindex="0" aria-label="${esc(T.name)}: controls"><span class="ic">${ico('tv', 20)}</span><span class="tx"><b>${esc(T.name)}</b><small>${!avail ? 'Not responding' : on ? 'On' + (src ? ' · ' + src : '') : 'Off'}</small></span><button type="button" class="sw" role="switch" aria-checked="${on}" aria-label="${esc(T.name)} power" data-tv="power" ${avail ? '' : 'disabled'}></button></div>`,
       );
     }
-    const areas = this.hass.areas || {};
     this.speakers().forEach(m => {
       const id = esc(m.id),
         sv = this.st(m.id),
@@ -5612,7 +5616,7 @@ export class HomePanel extends HTMLElement {
         f = a.supported_features || 0;
       const can = bit => live && (f & bit) === bit,
         loaded = live && ['playing', 'paused'].includes(state) && !!a.media_title,
-        room = areas[m.aid] ? this.store.names.name(m.aid) : m.name;
+        room = this.areaName(m.aid, m.name);
       const sub = !live
         ? 'Unavailable'
         : state === 'paused' && !loaded
@@ -6249,8 +6253,7 @@ export class HomePanel extends HTMLElement {
         <p class="hint">The TV doesn't report its volume, so there's no slider.</p>`,
       );
     }
-    const areas = this.hass.areas || {},
-      M = this.speakers().map(m => ({...m, room: areas[m.aid] ? this.store.names.name(m.aid) : m.name})),
+    const M = this.speakers().map(m => ({...m, room: this.areaName(m.aid, m.name)})),
       playing = M.filter(m => (this.st(m.id) || {}).state === 'playing').length;
     const pod = m => {
       const id = esc(m.id),

@@ -258,6 +258,23 @@ describe('the layer leaves a display name alone', () => {
     expect(text('Good evening')).toBe('Good evening');
   });
 
+  test('a name set for a device that has only its own name, or for a thermostat room, is left as it is', () => {
+    const store = createStore({defaultTimeZone: 'UTC', resolve: raw => raw});
+    store.setPanelConfig({names: {d2: {fr: 'Good night'}, Den: {fr: 'Good afternoon'}}});
+    store.setHass(
+      fakeHass({
+        locale: {language: 'fr'},
+        devices: {d2: {id: 'd2', name: 'Hub', name_by_user: null}},
+        states: {'climate.den': entity('climate.den', 'heat', {friendly_name: 'Thermostat Den'})},
+      }),
+    );
+    const {text} = createFrench(store);
+    expect(text('Good night')).toBe('Good night');
+    expect(text('Good afternoon')).toBe('Good afternoon');
+    // a name nobody changed is still the layer's to translate
+    expect(text('Good evening')).toBe('Bonsoir');
+  });
+
   test('a name the config no longer gives is translated again, the list following the store', () => {
     const {store, text} = layerIn('fr', {'Good evening': {fr: 'Good night'}});
     expect(text('Good night')).toBe('Good night');
