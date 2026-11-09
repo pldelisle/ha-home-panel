@@ -80,3 +80,29 @@ test('package-lock.json names no package outside the repository', () => {
     expect(entry.extraneous, `package-lock.json marks ${key} extraneous`).toBeUndefined();
   }
 });
+
+// small made-up lock files and package trees (test/unit/fixtures/licenses) that collectLicenses({root}) reads
+const fixture = name => join(ROOT, 'test/unit/fixtures/licenses', name);
+
+test('the generator lists production packages only, with a scoped name cut at the right node_modules/', async () => {
+  // the dev, the extraneous and the ../x entries have no directory in the fixture: reading one would throw
+  const rows = await collectLicenses({root: fixture('tree')});
+  expect(rows.map(({name, version, licenses, repository}) => ({name, version, licenses, repository}))).toEqual([
+    {
+      name: '@acme/widget',
+      version: '2.1.0',
+      licenses: '(MIT OR Apache-2.0)',
+      repository: 'https://github.com/acme/widget',
+    },
+    {name: 'nested', version: '0.3.0', licenses: 'ISC', repository: ''},
+    {name: 'plain', version: '1.0.0', licenses: 'MIT', repository: 'https://github.com/acme/plain'},
+  ]);
+  expect(rows[0].text).toBe('Widget licence text.');
+  expect(rows[1].text).toBe('This package ships no licence file; its package.json declares ISC.');
+});
+
+test('a package with no licence field is MIT* when its licence file carries the MIT grant, else the run stops', async () => {
+  const [row] = await collectLicenses({root: fixture('mit-text')});
+  expect(row).toMatchObject({name: 'unmarked', licenses: 'MIT*'});
+  await expect(collectLicenses({root: fixture('no-license')})).rejects.toThrow('mystery@1.0.0');
+});

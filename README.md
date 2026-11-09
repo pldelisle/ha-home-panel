@@ -123,7 +123,7 @@ Room icons can be `sofa`, `door`, `desk`, `bed`, `bath`, `drop`, `car`, `house` 
 
 ## Develop
 
-You need Node 24.5 or later, with npm 11 (what Node 24 ships): the licence checker 5 requires Node 24, `size-limit` 14 requires 24.5 on the 24 line, and Vitest 5 and Vite 8 need less. Every CI job that uses Node runs 24: `setup-node` for the lint, changeset, version and release jobs, and the Playwright image for the test and visual jobs.
+You need Node 24.5 or later, with npm 11 (what Node 24 ships): `size-limit` 14 requires 24.5 on the 24 line, and Vitest 5 and Vite 8 need less. Every CI job that uses Node runs 24: `setup-node` for the lint, changeset, version and release jobs, and the Playwright image for the test and visual jobs.
 
 ```sh
 npm ci
@@ -132,7 +132,7 @@ git config blame.ignoreRevsFile .git-blame-ignore-revs
 npm run build          # Vite: dist/home-panel.js (minified), home-panel.js.map, the lazy chunks in dist/chunks/, the font in dist/fonts/ and LICENSES.md
 npm run dev            # the same build, redone on every save (vite build --watch)
 npm run size           # the main chunk, gzipped, against its budget in package.json, then the lazy chunks for information (run it after a build)
-npm run licenses       # rewrites LICENSES.md from the installed production packages (run it when apexcharts, mermaid, the font or the lock file changes)
+npm run licenses       # rewrites LICENSES.md from package-lock.json and node_modules, production packages only (run it when apexcharts, mermaid, the font or the lock file changes)
 npm run typecheck      # tsc --checkJs: the config and stack modules strictly, the rest of src/ loosely (tsconfig.legacy.json)
 npm test               # unit tests (Vitest): config, stack, French, the built dist/, a scan for personal data
 npm run test:watch     # the same, re-run on every save
