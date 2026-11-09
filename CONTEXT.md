@@ -1,6 +1,6 @@
 # Glossary
 
-The words the panel and its code use. One word per concept: use it in issues, tests, code and the changelog, and not the words under Avoid. Sources: `README.md`, `CHANGELOG.md`, `docs/specs/` and `docs/adr/`.
+The words the panel and its code use. One word per concept: use it in issues, tests, code and the changelog, and not the words under Avoid. An entry with no Avoid line has no rival word in the sources. Sources: `README.md`, `CHANGELOG.md`, `docs/specs/` and `docs/adr/`.
 
 ## The house, as the panel shows it
 
@@ -16,7 +16,7 @@ The words the panel and its code use. One word per concept: use it in issues, te
 
 **Chip** — A small rounded label, in the header (weather, the people) or in a sheet (a single bulb, with a check mark when on).
 
-**Pill** — The glass capsule in the header that stands for something happening or needing a look; it is solid, like the plain pill, under Reduce Transparency.
+**Pill** — The glass capsule in the header that stands for something happening or needing a look; under Reduce Transparency it is solid.
 
 **Live-activity pill** — The pill shown while something runs: the car charging, the water heater heating or a Hilo challenge. A further activity sits beside it as a small ring, and tapping it opens one card per activity above the Status checks. Avoid: status chip (the "All clear" chip it replaced).
 
@@ -52,7 +52,7 @@ The words the panel and its code use. One word per concept: use it in issues, te
 
 **Recovery** — The last phase of a Hilo challenge, after the reduction; the pill's countdown ends when recovery ends, then shows a check for 10 minutes.
 
-**Heat pump** — The climate entity named by `entities.heat_pump`, left out of the Climate tab's rooms by default and hidden, with its row, in a house that has none.
+**Heat pump** — The climate entity named by `entities.heat_pump`, left out of the Climate tab's rooms by default and hidden in a house that has none.
 
 **Departure schedule** — The car's departure times, which the Car pane lists with its controls (see the move order in the programme spec); its times go through the formatters.
 
@@ -70,7 +70,7 @@ The words the panel and its code use. One word per concept: use it in issues, te
 
 **Core** — The layer in `src/core/`, the functional core: it imports only itself and npm packages, has no DOM, and is where the only code that touches `hass` lives; whatever it needs from the browser (time zone, locale, storage) it takes as a parameter.
 
-**Store** — The per-element object that holds the current `hass`, the resolved config, the locale and the formatters, and notifies a subscriber only when one of its entity ids has a new state object (reference equality). It is never a singleton. Avoid: state manager, global state.
+**Store** — The per-element object that holds the current `hass`, the resolved config, the locale and the formatters, and notifies a subscriber only when one of its entity ids has a new state object (reference equality). It is never a singleton. Avoid: state manager.
 
 **API client** — The one core module that sends every WebSocket message and service call the panel makes, with a typed request and reply for each; nothing else in `src/` calls `callWS`, `callService` or `connection.subscribeMessage`. A read rejects with `StaleReply` if the config changed before the reply came back.
 
@@ -78,23 +78,23 @@ The words the panel and its code use. One word per concept: use it in issues, te
 
 **Message key** — The typed, feature-namespaced name of one string, such as `lights.auto`, passed to `t(key, values)`; a missing key is a compile error and a missing French translation is a test failure.
 
-**Formatter** — A date, time or number function built on `Intl` from the user's Home Assistant locale, time zone and 12 or 24-hour and number-format choices. Avoid: a hard-coded `en-CA`.
+**Formatter** — A date, time or number function built on `Intl` from the user's Home Assistant locale, time zone and 12 or 24-hour and number-format choices.
 
 **House rule** — One of the three deliberate overrides of `Intl` in the formatters: English `am` and `pm`, French time on the hour as `16 h`, and a narrow no-break space as the French thousands separator.
 
 **Display name** — A name given to an entity, area or device after it passes through the display-name resolver: the config's `names:` block first, then the built-in dictionary of room words, then the name as Home Assistant gives it. Names are data, never message keys. Avoid: friendly name (the raw name Home Assistant gives, the last fallback).
 
-**Legacy class** — The `HomePanel` class in `src/home-panel.js` and the files around it that the strangler fig is replacing; it only shrinks, and the number of modules it still holds is printed by `npm run lint`. Avoid: old class, old renderer.
+**Legacy class** — The `HomePanel` class in `src/home-panel.js` and the files around it that the strangler fig is replacing; it only shrinks, and the number of modules it still holds is printed by `npm run lint`.
 
 **Strangler fig** — The migration shape: rewrite in place, one feature per release, the live panel never going dark, until the legacy class is deleted. After Fowler's Strangler Fig Application.
 
-**Baseline** — A committed reference screenshot in `test/e2e/__screenshots__/`, recorded and compared only inside the pinned Linux arm64 Playwright image, with an exact match. It is the contract of the rewrite: a restructuring pull request must not change one. Avoid: snapshot.
+**Baseline** — A committed reference screenshot in `test/e2e/__screenshots__/`, recorded and compared only inside the pinned Linux arm64 Playwright image, with an exact match. It is the contract of the rewrite: a restructuring pull request must not change one.
 
 **Harness** — `test/e2e/harness.html`, the test's side of the seam: it builds the test house's `hass`, hands it to `<home-panel>` as Home Assistant does, offers `window.house` helpers (set a state, advance time) and logs service calls and system-data writes to the console. The panel exposes no test-only methods.
 
 **Seam** — A place where behaviour can be changed without editing the code (Feathers). The panel has two for tests: the `hass` seam and pure functions. Avoid: boundary.
 
-**Adapter** — What stands behind a port: at the API client, `hass` is the production adapter and the fake `hass` of the unit tests and the harness is the second. Avoid: mock.
+**Adapter** — What stands behind a port: at the API client, `hass` is the production adapter and the fake `hass` of the unit tests and the harness is the second.
 
 **Humble object** — The Lit element that only forwards what Home Assistant gives it, leaving the logic in the store and the models where Node can test it (Meszaros, Fowler).
 

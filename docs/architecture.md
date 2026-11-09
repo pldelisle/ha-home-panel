@@ -33,7 +33,7 @@ Data goes one way, and a change of mind goes round the whole loop.
 2. The shell receives `hass` and feeds the store.
 3. The store holds the current `hass`, the resolved config, the user's locale and the formatters. It tells a subscriber only when one of the entity ids that subscriber reads has changed.
 4. Models compute view models from what the store holds. A model is a pure function: `model(states, registries, config, now) → view model`.
-5. Features render the view models. A tile is a view model drawn.
+5. Features render the view models. A tile is one of the compact blocks they draw.
 6. A tap becomes a call through the API client, the one module that talks to Home Assistant's WebSocket.
 7. Home Assistant acts, and answers by handing the shell a new `hass`. The loop starts again at step 1.
 
@@ -60,7 +60,7 @@ The panel never writes to `hass`. `hass` is Home Assistant's, and the panel trea
 - Models take values and return values, with no DOM and no `hass` methods (the programme spec, phase 3). That is what makes them testable by calling them.
 - Tests cross the panel at two seams: they hand it a `hass`, as Home Assistant does, or they call a pure function ([ADR 0005](adr/0005-two-seams-for-tests.md)). A panel that wrote to `hass` would have a third, hidden channel.
 
-The shape is the Elm and Flux one of unidirectional data flow. Planned, not built yet: the store is [spec 10](specs/10-entity-store.md), the API client is [spec 12](specs/12-api-client.md), and the shell is phase 3. Today the old class still receives `hass` itself.
+The shape is the Elm and Flux one of unidirectional data flow. Planned, not built yet: the store is [spec 10](specs/10-entity-store.md), the API client is [spec 12](specs/12-api-client.md), and the shell is phase 3. Today the legacy class still receives `hass` itself.
 
 ## 3. Where does this go?
 
@@ -79,13 +79,13 @@ If two features need the same code, it cannot be shared sideways. It moves down 
 
 ## 4. The strangler fig
 
-The panel is being rewritten in place, one feature per release, while it keeps running in the house ([ADR 0003](adr/0003-rewrite-in-place-strangler-fig.md)). The old code, the legacy set in the table above, is the host. New layers grow around it and take over a feature at a time, until the old class is deleted. Fowler's _Strangler Fig Application_ names the shape, and _Parallel Change_ (expand, migrate, contract) names how a wide change such as removing the module globals stays mergeable.
+The panel is being rewritten in place, one feature per release, while it keeps running in the house ([ADR 0003](adr/0003-rewrite-in-place-strangler-fig.md)). The legacy code, the legacy set, is the host. It is the table's legacy row plus the files `scripts/legacy-set.cjs` adds to it (all of `src/i18n/` and the two declaration files) and minus `src/main.js`, the shell's entry. New layers grow around it and take over a feature at a time, until the legacy class is deleted. Fowler's _Strangler Fig Application_ names the shape, and _Parallel Change_ (expand, migrate, contract) names how a wide change such as removing the module globals stays mergeable.
 
 How the set shrinks:
 
 - A structural move changes no behaviour and no pixel. The screenshot baselines are the characterization tests that prove it ([ADR 0004](adr/0004-screenshot-baselines-are-the-contract.md)).
-- Until a feature has moved, fixes and new work for it go into the old class and the move rebases on top. After it has moved, work goes into its folder.
-- One feature moves per pull request. Each move extracts the model with unit tests against recorded fixtures, writes the Lit elements, subscribes only to the entity ids the model reads, and deletes the matching methods from the old class.
+- Until a feature has moved, fixes and new work for it go into the legacy class and the move rebases on top. After it has moved, work goes into its folder.
+- One feature moves per pull request. Each move extracts the model with unit tests against recorded fixtures, writes the Lit elements, subscribes only to the entity ids the model reads, and deletes the matching methods from the legacy class.
 - The regular expression in `scripts/legacy-set.cjs` shrinks as modules move into a layer.
 
 The move order of phase 3 is fixed and announced in the changelog of the release that starts it:
@@ -102,9 +102,9 @@ The move order of phase 3 is fixed and announced in the changelog of the release
 10. Automations
 11. Idle clock
 
-The live-activity pill and the Status checks move with the shell's header and are extracted as their own feature after Energy and Car, which they read. The shell comes first: on its first release the old renderer mounts into a slot inside it and still draws every pane. The programme spec states the order but not the reasoning behind each position, so this page does not guess at it.
+The live-activity pill and the Status checks move with the shell's header and are extracted as their own feature after Energy and Car, which they read. The shell comes first: on its first release the legacy class mounts into a slot inside it and still draws every pane. The order starts with the features that have the least shared state (Weather, Media, Security, Air) and ends with the ones that read everything (Home, Automations, Idle clock), so the legacy class shrinks from its edges inward.
 
-The footprint number is how many modules the legacy set still contains. `npm run lint` prints it as `legacy footprint: N modules`. On this branch it is 21. It counts files, declaration files included, so a move can lower it by more than one. A unit test also checks the other half of the rule: no module outside the legacy set imports a legacy module. The number is the progress figure of phase 3: it falls as modules move into a layer.
+The footprint number is how many modules the legacy set still contains. `npm run lint` prints it as `legacy footprint: N modules`. It was 21 when this page was written. It counts files, declaration files included, so a move can lower it by more than one. A unit test also checks the other half of the rule: no module outside the legacy set imports a legacy module. The number is the progress figure of phase 3: it falls as modules move into a layer.
 
 ## 5. Coding conventions
 
@@ -117,19 +117,19 @@ The footprint number is how many modules the legacy set still contains. `npm run
 // Must not: touch the DOM, call a hass method, or be imported as a singleton.
 ```
 
-A pattern named in code uses the glossary's term, and the glossary uses the literature's name where there is one: seam, adapter, humble object, strangler fig, parse not validate.
+A pattern named in code uses the glossary's term, and the glossary uses the literature's name where there is one: seam, adapter, humble object, strangler fig.
 
 **Parse, don't validate, at the edges.** Data from outside the panel (the config, a WebSocket reply, a `localStorage` read) is parsed into a typed value at the edge, once, and the rest of the code trusts the type. Problems are values, not exceptions, and the panel is a tolerant reader. The config schema is both the parser and the type ([spec 13](specs/13-config-schema.md)); replies are parsed in the API client, which rejects a stale reply ([spec 12](specs/12-api-client.md)). Source: King, _Parse, don't validate_.
 
 **Pure models, with `now` passed in.** A model is a synchronous function from values to a view model, with no DOM and no `hass` methods. It does not read the clock: the caller passes `now`. Like the core's rule about the time zone, locale and storage, it accepts its dependencies and does not create them. This is why a model is tested by calling it with a recorded fixture.
 
-**No `innerHTML` outside legacy.** The old class sets `innerHTML` in about 52 places and escapes values by hand. New code uses Lit templates, with lists keyed by entity id, so no hand escaper is needed and focus, open sheets and drags survive a `hass` update.
+**No `innerHTML` outside legacy.** The legacy class sets `innerHTML` in dozens of places (52 when this page was written) and escapes values by hand. New code uses Lit templates, with lists keyed by entity id, so no hand escaper is needed and focus, open sheets and drags survive a `hass` update.
 
 **Strings through `t()`.** A string the user reads is a catalog key, looked up with `t(key, values)`. English is the source of keys and French must have every key. A missing key is a compile error and a missing French translation is a test failure ([spec 11](specs/11-catalogs-and-formatters.md), planned).
 
 **Formats through the formatters.** Dates, times and numbers go through the formatter set, built on `Intl` from the Home Assistant profile, never through a hard-coded `en-CA`. The formatters are the one place that knows the three house rules: English `pm` without periods, French `16 h` for a time on the hour, and a narrow no-break space as the French thousands separator. Planned in [spec 11](specs/11-catalogs-and-formatters.md).
 
-**An ADR per decision.** A decision a future reader could reasonably argue with, or that constrains later code, gets a record in [docs/adr/](adr/README.md), in the same pull request as the code. An accepted record is never edited; a reversal is a new record that supersedes it.
+**An ADR per decision.** A decision a future reader could reasonably argue with, or that constrains later code, gets a record in [docs/adr/](adr/README.md), in the same pull request as the code. An accepted record is never edited, except its Status line; a reversal is a new record that supersedes it.
 
 ## 6. Reading list
 
@@ -147,7 +147,7 @@ Each entry says what it gave the panel. Books are named by title and author.
 **Migration and tests**
 
 - Martin Fowler, [_Strangler Fig Application_](https://martinfowler.com/bliki/StranglerFigApplication.html). The migration shape of [ADR 0003](adr/0003-rewrite-in-place-strangler-fig.md).
-- Martin Fowler, [_Parallel Change_](https://martinfowler.com/bliki/ParallelChange.html). Expand, migrate, contract: how the module globals leave the old class without blocking other work ([spec 10](specs/10-entity-store.md)).
+- Martin Fowler, [_Parallel Change_](https://martinfowler.com/bliki/ParallelChange.html). Expand, migrate, contract: how the module globals leave the legacy class without blocking other work ([spec 10](specs/10-entity-store.md)).
 - Michael Feathers, _Working Effectively with Legacy Code_. Seams and characterization tests: the two test seams of [ADR 0005](adr/0005-two-seams-for-tests.md) and the screenshot baselines of [ADR 0004](adr/0004-screenshot-baselines-are-the-contract.md).
 - Kent C. Dodds, [_The Testing Trophy_](https://kentcdodds.com/blog/the-testing-trophy-and-testing-classifications). Why most tests run at the `hass` seam.
 

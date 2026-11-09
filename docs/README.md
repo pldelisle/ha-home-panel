@@ -10,4 +10,4 @@ Reports and plans about the panel, moved here from Claude artifacts. Names, plac
 | [ideas-what-apple-would-do.md](ideas-what-apple-would-do.md)     | 2026-11-06 | Idea backlog (five rounds) for the panel and the house around it                                               |
 | [liquid-glass-sketch.md](liquid-glass-sketch.md)                 | 2026-11-06 | The Liquid Glass look: options, browser support and what shipped                                               |
 | [architecture.md](architecture.md)                               | 2026-11-09 | Where code goes and why: the layers, the one-way flow, the strangler fig, the conventions and the reading list |
-| [adr/](adr/README.md)                                            | 2026-11-09 | The architecture decision records, one decision each, with the source it leans on                              |
+| [adr/](adr/README.md)                                            | 2026-11-08 | The architecture decision records, one decision each, with the source it leans on                              |
