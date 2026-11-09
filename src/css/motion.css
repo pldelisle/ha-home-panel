@@ -341,6 +341,7 @@ button.chip:active,
 @media (prefers-reduced-motion: reduce) {
   .pane:not([hidden]),
   .sheet,
+  .app.cp .sheet > .panel,
   .app:not(.cp) .sheet > .panel,
   .dial.in .dact,
   .dial.in .dknob,
@@ -367,9 +368,10 @@ button.chip:active,
   .dial.ed:active .dknob {
     transform: none;
   }
-  /* the switch knob slides and the dial's knob glides only with motion on (base.css gives the knob a slide of its own) */
+  /* the switch knob slides, the dial's knob glides and a phone sheet springs back after a short drag only with motion on (base.css gives the knob a slide of its own) */
   .sw::after,
-  .dial .dknob {
+  .dial .dknob,
+  .app.cp .sheet > .panel {
     transition: none;
   }
 }

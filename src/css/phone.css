@@ -550,11 +550,6 @@
     opacity: 0.4;
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .app.cp .sheet > .panel {
-    animation: none;
-  }
-}
 .app.cp .sheet .ph {
   position: relative;
   gap: 8px 12px;
