@@ -103,7 +103,6 @@ const TABS = [
 ];
 // the sheets that wait for the charts library before they draw anything; the others never do. The Weather sheet is not
 // one of them: it shows its tiles and forecast at once and fetches the library beside its history (weatherSheet)
-const CHARTS_FAILED = 'Charts library failed to load';
 const CHART_SHEETS = new Set(['sh-energy', 'sh-climate', 'sh-car', 'sh-air', 'sh-wx']);
 const TAB_SHEET = {climate: 'sh-climate', weather: 'sh-weather', car: 'sh-car', energy: 'sh-energy', air: 'sh-air'};
 // on a phone the bar at the bottom holds these four; the other sections sit under More
@@ -3686,7 +3685,7 @@ export class HomePanel extends HTMLElement {
     try {
       if (CHART_SHEETS.has(id)) await this.loadCharts();
     } catch {
-      this.toast(CHARTS_FAILED, true);
+      this.toast(this.store.t('charts.failed'), true);
       return;
     }
     if (tag !== this.sheetTag || this.open !== id) return;
@@ -4090,7 +4089,7 @@ export class HomePanel extends HTMLElement {
     const [lib, hist] = await Promise.allSettled([this.loadCharts(), this.loadWxHistory()]);
     if (tag !== this.sheetTag) return;
     if (lib.status === 'rejected') {
-      this.toast(CHARTS_FAILED, true);
+      this.toast(this.store.t('charts.failed'), true);
       return;
     }
     if (hist.status === 'rejected') {

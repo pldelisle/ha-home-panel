@@ -338,7 +338,6 @@ export const FR_MAP = {
   'The charger is unavailable in Home Assistant.': 'La borne est indisponible dans Home Assistant.',
   "History didn't load: {n}. Live values still update.":
     "L'historique n'a pas chargé : {n}. Les valeurs en direct se mettent quand même à jour.",
-  'Charts library failed to load': "La bibliothèque de graphiques n'a pas chargé",
   "Didn't work:": 'Échec :',
   // ---- general words ----
   Close: 'Fermer',

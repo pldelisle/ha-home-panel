@@ -2,6 +2,7 @@
 import {test, expect} from 'vitest';
 import {fakeHass, entity} from './fake-hass.ts';
 import {createFrench, FR_MAP} from '../../src/i18n/fr.js';
+import {createMessages} from '../../src/core/i18n/messages.ts';
 
 // The translator looks up the house's own names through its store's hass and caches them for a minute. Each test builds
 // its own layer from a fake store with a tiny fake hass whose names must stay untranslated, so one test's cache never
@@ -18,6 +19,16 @@ test('greetings, numbers and dates', () => {
   expect(frText('Live · history 4:07 pm')).toBe('En direct · historique 16 h 07');
   expect(frText('12.5')).toBe('12,5');
   expect(frText('Some text nobody translated')).toBe('Some text nobody translated');
+});
+
+// The charts-failed toast moved from the rewrite map to the catalogs: the former map text, written out, is what t() says
+// in French, the English is the constant it replaced, and the layer leaves the already-French toast as it is.
+test('the charts-failed toast reads the same in both languages as it did from the map', () => {
+  const fr = createMessages({language: 'fr', tag: 'fr-CA'}).t('charts.failed');
+  expect(fr).toBe("La bibliothèque de graphiques n'a pas chargé");
+  expect(createMessages({language: 'en', tag: 'en-CA'}).t('charts.failed')).toBe('Charts library failed to load');
+  expect(FR_MAP).not.toHaveProperty('Charts library failed to load');
+  expect(frTextFor([])(fr)).toBe(fr);
 });
 
 test('a name the house gave in HA is never translated', () => {
