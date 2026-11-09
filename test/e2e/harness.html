@@ -258,14 +258,7 @@
         FULL = {};
       CONF.forEach((c, i) => {
         const start = T0.getTime() + (7 + i * 5) * 3600e3,
-          run_id = 'r' + i,
-          tr = {'trigger/0': [{path: 'trigger/0', timestamp: iso(start), changed_variables: {trigger: {idx: '0'}}}]};
-        (c.config.conditions || []).forEach((x, j) => {
-          tr[`condition/${j}`] = [{path: `condition/${j}`, timestamp: iso(start + 300), result: {result: true}}];
-        });
-        c.config.actions.forEach((x, j) => {
-          tr[`action/${j}`] = [{path: `action/${j}`, timestamp: iso(start + 600 + j * 300)}];
-        });
+          run_id = 'r' + i;
         if (c.noRun) {
           // an automation with no run stored since Home Assistant started (its flow has no subtitles)
           add(c.entity_id, 'on', {
@@ -277,6 +270,15 @@
           });
           return;
         }
+        const tr = {
+          'trigger/0': [{path: 'trigger/0', timestamp: iso(start), changed_variables: {trigger: {idx: '0'}}}],
+        };
+        (c.config.conditions || []).forEach((x, j) => {
+          tr[`condition/${j}`] = [{path: `condition/${j}`, timestamp: iso(start + 300), result: {result: true}}];
+        });
+        c.config.actions.forEach((x, j) => {
+          tr[`action/${j}`] = [{path: `action/${j}`, timestamp: iso(start + 600 + j * 300)}];
+        });
         const sm = {
           item_id: c.config.id,
           run_id,

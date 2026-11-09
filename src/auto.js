@@ -645,8 +645,8 @@ export const autoMethods = {
     // Home Assistant text (aliases, names, trace errors) goes into quoted labels, and Mermaid reads `#nn;` entities in
     // them, `%%{init}%%` directives and `$$…$$` formulas (KaTeX), so each of those is written so it can only be drawn:
     // esc() leaves no `"` to close a label; a # that starts what could be an entity (`#36;`, `#lt;`) becomes `#35;`
-    // first, so a typed `#36;` or `#37;` stays text instead of turning into the `$` or `%` it names (any other # is
-    // left alone: `#35;` before every one would lose its `;` in a label with no later `;`, see below); every % becomes
+    // first, so a typed `#36;` or `#37;` stays text instead of turning into the `$` or `%` it names (Mermaid reads only
+    // `#`, word characters and `;` as an entity, so any other # is already plain text and is left alone); every % becomes
     // `#37;` (no `%%{init}%%` directive: theme, CSS, label settings); each $ gets its own <span>, so no two meet (an
     // entity would not do: Mermaid decodes it before it looks for `$$`). Known: Mermaid drops the last `;` of a source
     // line that has a `#` after a `style…:` with no space between, see the `;` ending every statement below
