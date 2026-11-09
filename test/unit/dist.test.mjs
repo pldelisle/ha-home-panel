@@ -306,7 +306,8 @@ test('no personal data: names, places, a house photo or house-specific entity id
   );
   const scanned = [
     ...['src/core/config.ts', 'src/home-panel.js', 'src/auto.js', 'src/i18n/fr.js', 'src/css/base.css'],
-    ...['houses.ts', 'fixtures.ts', 'harness.html', 'automations.json'].map(f => 'test/e2e/' + f),
+    ...['houses.ts', 'fixtures.ts', 'harness.html'].map(f => 'test/e2e/' + f),
+    ...['full.mjs', 'bare.mjs', 'build.mjs', 'clock.mjs', 'read.mjs'].map(f => 'test/houses/' + f),
     ...['package.json', 'package-lock.json', 'vite.config.ts', 'playwright.config.ts', 'vitest.config.ts'],
     ...['renovate.json', '.github/workflows/ci.yml', 'scripts/licenses.mjs', 'examples/configuration.yaml'],
     ...['README.md', 'CHANGELOG.md', '.changeset/config.json'],

@@ -40,9 +40,9 @@ The words the panel and its code use. One word per concept: use it in issues, te
 
 **Who's home** — The people the panel knows (the `people` option), shown as chips in the header and as the Who's home card on the Home tab; it is also a smart-stack card for 30 minutes after someone arrives or leaves.
 
-**Full test house** — The made-up house in `test/e2e/harness.html` with thermostats, a car and a water heater (the Hilo card stays hidden); it is the default house for tests and baselines. Avoid: fixture (recorded, anonymised data that feeds model tests).
+**Full test house** — The made-up house in `test/houses/full.mjs` (plain data, read by the harness and by `fakeHass.fromHouse`) with thermostats, a car and a water heater (the Hilo card stays hidden); it is the default house for tests and baselines. Avoid: fixture (recorded, anonymised data that feeds model tests).
 
-**Bare test house** — The same harness with almost nothing configured; it proves that a section whose entities are missing is hidden (no Climate or Car tab, no water heater or Hilo card). Avoid: fixture.
+**Bare test house** — `test/houses/bare.mjs`, the same kind of data with almost nothing configured; it proves that a section whose entities are missing is hidden (no Climate or Car tab, no water heater or Hilo card). Avoid: fixture.
 
 **Household changelog voice** — The way a changelog line is written: plain sentences about what the household sees, as one paragraph.
 
@@ -90,7 +90,7 @@ The words the panel and its code use. One word per concept: use it in issues, te
 
 **Baseline** — A committed reference screenshot in `test/e2e/__screenshots__/`, recorded and compared only inside the pinned Linux arm64 Playwright image, with an exact match. It is the contract of the rewrite: a restructuring pull request must not change one.
 
-**Harness** — `test/e2e/harness.html`, the test's side of the seam: it builds the test house's `hass`, hands it to `<home-panel>` as Home Assistant does, offers `window.house` helpers (set a state, advance time) and logs service calls and system-data writes to the console. The panel exposes no test-only methods.
+**Harness** — `test/e2e/harness.html`, the test's side of the seam: it reads the test house (`test/houses/`) into a `hass`, hands it to `<home-panel>` as Home Assistant does, offers `window.house` helpers (set a state, advance time) and logs service calls and system-data writes to the console. The panel exposes no test-only methods.
 
 **Seam** — A place where behaviour can be changed without editing the code (Feathers). The panel has two for tests: the `hass` seam and pure functions. Avoid: boundary.
 
