@@ -142,7 +142,8 @@ npm run test:watch     # the same, re-run on every save
 npm run test:coverage  # the same, with a coverage report in coverage/
 npm run changeset      # describes your change for the changelog and the version (see below)
 npm run format         # Prettier (run it before committing; CI checks it with npm run format:check)
-npm run lint           # ESLint, including an error for an import that does not resolve (CI runs it after format:check)
+npm run lint           # ESLint (an import that does not resolve is an error), then the layer rules and the legacy footprint
+npm run arch:graph     # redraws docs/architecture/dependency-graph.md from the imports under src/ (a test fails when it is stale)
 npm run test:e2e       # builds, then runs the Playwright suite
 npm run test:visual:docker           # compares every tab with its screenshot baseline, inside Docker
 npm run test:visual:update           # records new baselines, inside Docker
