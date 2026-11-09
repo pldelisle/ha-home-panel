@@ -1,5 +1,7 @@
-// The two test houses (test/houses/): they load, the full house has what the e2e fixtures name, the bare house lacks
+// The two test houses (test/houses/): they load, the full house has what the e2e specs name, the bare house lacks
 // what the optional sections need, and the reader resolves times the same way wherever the test runs.
+// Pattern: example-based tests over the house data (Meszaros, xUnit Test Patterns).
+// Must not: hold a state literal; a house is data in test/houses/.
 import {describe, expect, test} from 'vitest';
 import {fakeHass} from './fake-hass';
 import * as full from '../houses/full.mjs';
@@ -22,6 +24,9 @@ describe('the houses load', () => {
       devices: h.devices,
       areas: h.areas,
       automations: h.automations,
+      config: h.config,
+      user: h.user,
+      services: h.services,
     });
     expect(ids(h).length).toBeGreaterThan(0);
     expect(Object.keys(h.areas)).toEqual(['living_room', 'office', 'bedroom', 'garage', 'kitchen']);
@@ -187,7 +192,7 @@ describe('the clock markers', () => {
   const at = iso => Date.parse(iso);
 
   test('resolve against the instant they are given, not the machine', () => {
-    const now = at('2026-11-07T14:00:00-05:00');
+    const now = REFERENCE_MS;
     expect(resolveTimes(fromNow(-60e3), now)).toBe('2026-11-07T18:59:00.000Z');
     expect(resolveTimes({a: [fromNow(1000)], b: 'plain', c: null, d: 4}, now)).toEqual({
       a: ['2026-11-07T19:00:01.000Z'],
@@ -217,9 +222,7 @@ describe('the clock markers', () => {
   });
 
   test('a day starts at local midnight, also on the day the clocks go back', () => {
-    expect(new Date(dayStart(at('2026-11-07T14:00:00-05:00'), TOWN_ZONE)).toISOString()).toBe(
-      '2026-11-07T05:00:00.000Z',
-    );
+    expect(new Date(dayStart(REFERENCE_MS, TOWN_ZONE)).toISOString()).toBe('2026-11-07T05:00:00.000Z');
     // 1 November 2026: daylight saving time ends at 02:00; midnight is still on summer time, and the day has 25 hours
     expect(new Date(dayStart(at('2026-11-01T12:00:00-05:00'), TOWN_ZONE)).toISOString()).toBe(
       '2026-11-01T04:00:00.000Z',

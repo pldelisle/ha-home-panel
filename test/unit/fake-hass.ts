@@ -90,6 +90,9 @@ export type HouseModule = {
   entities: object;
   devices: object;
   areas: object;
+  config: PanelHass['config'];
+  user: NonNullable<PanelHass['user']>;
+  services: NonNullable<PanelHass['services']>;
   automations: Array<{entity_id: string; config: {id: string; alias?: string; mode?: string}; noRun?: boolean}>;
 };
 
@@ -109,8 +112,7 @@ export type FromHouseOptions = {
  */
 function fromHouse(house: HouseModule, opts: FromHouseOptions = {}): FakeHass {
   const {now = REFERENCE_MS, frenchAreas, automations, ...init} = opts;
-  const base = fakeHass();
-  const config = {...base.config, ...init.config};
+  const config = {...house.config, ...init.config};
   const read = readHouse(house, {now, timeZone: config.time_zone, frenchAreas, automations});
   const hass = fakeHass({
     states: Object.fromEntries(
@@ -122,7 +124,8 @@ function fromHouse(house: HouseModule, opts: FromHouseOptions = {}): FakeHass {
     entities: read.entities as PanelHass['entities'],
     devices: read.devices as PanelHass['devices'],
     areas: read.areas as PanelHass['areas'],
-    services: {adaptive_lighting: {}},
+    user: house.user,
+    services: house.services,
     connection: {subscribeMessage: () => Promise.resolve(() => Promise.resolve())},
     ...init,
     config,

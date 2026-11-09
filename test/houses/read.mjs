@@ -1,6 +1,6 @@
 // The one reader of a test house: resolves its time markers, adds its automations' entities, and answers what the registry
 // and recorder would. The harness and `fakeHass.fromHouse` both call it, so a model test and a screenshot see the same house.
-// Pattern: interpreter over plain data (a house is data, this is its single reading; Fowler's "Separated Presentation" applied to fixtures).
+// Pattern: interpreter over plain data (Gamma et al., Interpreter, kept to one reading function); a house is data, this is its only reader.
 // Must not: read the real clock (it takes `now`), touch the DOM or the page, or keep state between two readings.
 import {stateOf} from './build.mjs';
 import {dayStart, resolveTimes} from './clock.mjs';
@@ -87,11 +87,13 @@ function automationRuns(automations, now, timeZone) {
   return {entities, list, traces};
 }
 
+/** How far apart the recorder's points are, and how many the panel gets, for each period (an unknown period reads as a day). */
+const PERIODS = {'5minute': {step: 3e5, n: 300}, hour: {step: 36e5, n: 170}, day: {step: 864e5, n: 60}};
+
 /** Smooth made-up curves for the recorder's statistics, one series per known entity id. */
 function statisticsOf(states, now, ids, period) {
   const out = {},
-    step = period === '5minute' ? 3e5 : period === 'hour' ? 36e5 : 864e5,
-    n = period === '5minute' ? 300 : period === 'hour' ? 170 : 60;
+    {step, n} = PERIODS[period] ?? PERIODS.day;
   for (const id of ids) {
     if (!states[id]) continue;
     out[id] = [];
@@ -148,7 +150,7 @@ export function readHouse(house, {now, timeZone, frenchAreas = false, automation
     areas,
     /** the message types the house answers */
     types: Object.keys(replies),
-    /** the reply to a registry or recorder message; `otherwise` for a type the house does not answer */
-    ws: (msg, otherwise = {}) => (Object.hasOwn(replies, msg.type) ? replies[msg.type](msg) : otherwise),
+    /** the reply to a registry or recorder message; `{}` for a type the house does not answer */
+    ws: msg => (Object.hasOwn(replies, msg.type) ? replies[msg.type](msg) : {}),
   };
 }

@@ -43,10 +43,10 @@
         entities: read.entities,
         devices: read.devices,
         areas: read.areas,
-        config: {time_zone: 'America/Toronto', latitude: 43.65, longitude: -79.38, country: 'CA'},
-        user: {name: 'Alex Example', is_admin: params.get('admin') !== '0'},
+        config: blueprint.config,
+        user: {...blueprint.user, is_admin: blueprint.user.is_admin && params.get('admin') !== '0'},
         locale: {language: params.get('lang') || 'en'},
-        services: {adaptive_lighting: {}},
+        services: blueprint.services,
         callService: async (d, s, data) => {
           console.log('SERVICE', d + '.' + s, JSON.stringify(data));
         },

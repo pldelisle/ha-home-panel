@@ -9,8 +9,6 @@ export const REFERENCE_MS = Date.parse(REFERENCE_INSTANT);
 
 /** An instant `ms` after the house's `now` (negative: before it). */
 export const fromNow = ms => ({$time: {from: 'now', plus: ms}});
-/** An instant `ms` after the start of the house's local day. */
-export const fromMidnight = ms => ({$time: {from: 'midnight', plus: ms}});
 /** The next local `hour`:`minute` at or after `now` (today's if it is still ahead, tomorrow's if not), `ms` later. */
 export const nextAt = (hour, minute, ms = 0) => ({$time: {from: 'next', at: [hour, minute], plus: ms}});
 /** 'above_horizon' when the next local `set` comes before the next local `rise`, 'below_horizon' otherwise. */
@@ -69,7 +67,7 @@ function resolveMarker(marker, now, timeZone) {
     return set < rise ? 'above_horizon' : 'below_horizon';
   }
   const {from, plus, at} = marker.$time;
-  const base = from === 'now' ? now : from === 'midnight' ? dayStart(now, timeZone) : nextAtMs(now, at, timeZone);
+  const base = from === 'now' ? now : nextAtMs(now, at, timeZone);
   return new Date(base + plus).toISOString();
 }
 

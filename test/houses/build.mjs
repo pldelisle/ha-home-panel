@@ -1,6 +1,6 @@
 // How a test house is written down: a builder that collects states and registry rows into plain objects.
 // Pattern: builder (Gamma et al.), kept to the one job of shaping data; what comes out is a plain object any reader can walk.
-// Must not: resolve a time marker, read a clock, or touch the DOM; a house module imports this and nothing else of ours but clock.mjs.
+// Must not: resolve a time marker, read a clock, or touch the DOM; a house module imports this, clock.mjs and, for the full house, the bare house it extends; nothing else.
 import {fromNow} from './clock.mjs';
 
 /** One state as Home Assistant hands it over; the two dates are markers, resolved by whoever reads the house. */

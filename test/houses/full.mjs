@@ -1,6 +1,6 @@
 // The full test house: the bare house plus thermostats, lights, sensors, scenes, people, media, a car, an EV charger, a
 // water heater, Environment Canada style weather sensors and three automations (the Hilo card stays hidden).
-// Pattern: test data as a plain ES module (ADR 0005's two seams: the harness serves it, Vitest imports it, one house for both).
+// Pattern: Object Mother (Fowler, ObjectMother) written with a Test Data Builder (Meszaros; Freeman and Pryce), exported as plain data.
 // Must not: hold behaviour or read a clock (times are markers from clock.mjs); nothing in it belongs to a real house.
 import * as bare from './bare.mjs';
 import {builder} from './build.mjs';
@@ -177,6 +177,7 @@ b.add('sensor.fordpass_test_lastrefresh', fromNow(-600e3));
 
 export const {states, entities, devices} = b.data;
 export {areas};
+export const {config, user, services} = bare;
 /**
  * The automations the Automations tab lists, each `{entity_id, config}` (`noRun: true` for one with no run stored). The
  * reader adds their entities to the states and gives each one finished run today, so a test that serves other
@@ -224,4 +225,4 @@ export const automations = [
     },
   },
 ];
-export const house = {states, entities, devices, areas, automations};
+export const house = {states, entities, devices, areas, automations, config, user, services};
