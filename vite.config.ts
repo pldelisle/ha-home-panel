@@ -5,9 +5,9 @@ import {fileURLToPath} from 'node:url';
 import pkg from './package.json' with {type: 'json'};
 import {FONT_FILES} from './src/fonts.js';
 
-// One minified ES module, dist/home-panel.js, with its source map beside it. The CSS is imported as text
-// (src/styles.js) and the version is injected here, from package.json. ApexCharts and Mermaid come from npm through
-// dynamic imports, so they are emitted as lazy chunks under dist/chunks/, fetched when a tab first needs them. The
+// One minified ES module, dist/home-panel.js, with its source map beside it. The CSS is imported as minified text
+// (`?inline`, src/styles.js) and the version is injected here, from package.json. ApexCharts and Mermaid come from npm
+// through dynamic imports, so they are emitted as lazy chunks under dist/chunks/, fetched when a tab first needs them. The
 // generated LICENSES.md (npm run licenses) is emitted beside the entry, so the release zip carries the libraries'
 // licences, and the Montserrat files go to dist/fonts/. Nothing else is copied: there is no vendor/ directory.
 
@@ -68,7 +68,15 @@ export default defineConfig({
     emptyOutDir: true,
     sourcemap: true,
     minify: 'oxc', // Vite 8's default; `esbuild` would need the esbuild package as well
-    target: 'es2020',
+    // The browser floor as a language level: ES2025 is Vite's row for Safari 26, iOS 26, Chrome 136 and Firefox 138.
+    // Not `esnext`, which is open-ended: a later Vite could emit syntax Safari 26 lacks. Why: spec 06, As built (#103).
+    target: 'es2025',
+    // The stylesheet (`?inline` in src/styles.js) is minified by Lightning CSS, named here so that a change of Vite's
+    // default cannot switch the minifier. The targets are the browser floor, Safari and iOS 26 and current Chrome, Edge
+    // and Firefox (README, Browser support): Lightning CSS drops the vendor prefixes they do not need. Why, and what it
+    // does to the rules: spec 06, As built (#69); test/unit/styles.test.mjs guards it.
+    cssMinify: 'lightningcss',
+    cssTarget: ['safari26', 'ios26', 'chrome140', 'edge140', 'firefox140'],
     rolldownOptions: {
       // apexcharts.esm.js is an ES module that also carries a `typeof module` test (inside its bundled svg.js), which
       // Rolldown warns about on every build; the test is what makes it behave as the <script> build did (see spec 07)
