@@ -642,6 +642,14 @@ const z0 = (lo, span, step = 10) =>
     .join('');
 
 export class HomePanel extends HTMLElement {
+  // The guest's two doors to the page (spec 14, step B). The class reaches its shadow root through `root` and the element
+  // through `host`; the Lit host (ticket #152) sets both from GuestContext in connect(), and these getters become fields then.
+  get root() {
+    return this.shadowRoot;
+  }
+  get host() {
+    return this;
+  }
   constructor() {
     super();
     this.attachShadow({mode: 'open'});
@@ -706,7 +714,7 @@ export class HomePanel extends HTMLElement {
     this._panel = v;
     if (this.hass && this.configure()) {
       this.build();
-      if (this.isConnected) {
+      if (this.host.isConnected) {
         this.subscribeForecasts();
         this.loadHistory();
         this.observeLayout();
@@ -735,7 +743,7 @@ export class HomePanel extends HTMLElement {
     }
     this.configure();
     if (!this.$app) this.build();
-    if (!this.fcSubs && this.isConnected) this.subscribeForecasts();
+    if (!this.fcSubs && this.host.isConnected) this.subscribeForecasts();
     if (!this.lightOrderAsked) {
       this.lightOrderAsked = true;
       this.loadLightOrder();
@@ -791,7 +799,7 @@ export class HomePanel extends HTMLElement {
       this.liveT = setTimeout(() => this.$app.classList.remove('live'), 60000);
       this.idleArm();
     };
-    for (const t of ['pointerdown', 'wheel', 'keydown']) this.shadowRoot.addEventListener(t, live, {passive: true});
+    for (const t of ['pointerdown', 'wheel', 'keydown']) this.root.addEventListener(t, live, {passive: true});
     window.addEventListener('scroll', live, {passive: true, capture: true});
     this.liveOff = () => window.removeEventListener('scroll', live, {capture: true});
     this.camT = setInterval(() => {
@@ -810,7 +818,7 @@ export class HomePanel extends HTMLElement {
       clearTimeout(this.layT);
       this.layT = setTimeout(() => this.layout(), 120);
     });
-    this.ro.observe(this.shadowRoot.querySelector('.cols'));
+    this.ro.observe(this.root.querySelector('.cols'));
     LAYOUT.forEach(id => this.$(id) && this.ro.observe(this.$(id)));
   }
   disconnectedCallback() {
@@ -942,7 +950,7 @@ export class HomePanel extends HTMLElement {
     return [...m.values()].sort((a, b) => (a.k < b.k ? -1 : 1)).map(c => [c.k, c.lbl, +(c.s / c.n).toFixed(2)]);
   }
   $(id) {
-    return this.shadowRoot.getElementById(id);
+    return this.root.getElementById(id);
   }
   css(n) {
     return getComputedStyle(this.$app).getPropertyValue(n).trim();
@@ -952,7 +960,7 @@ export class HomePanel extends HTMLElement {
   }
   frStart() {
     this.frStop();
-    const root = this.shadowRoot;
+    const root = this.root;
     this.frObs = new MutationObserver(ms => {
       for (const m of ms) {
         if (m.type === 'childList') m.addedNodes.forEach(this.french.tree);
@@ -983,7 +991,7 @@ export class HomePanel extends HTMLElement {
   // ---------- skeleton ----------
   build() {
     ensureFonts(); // Montserrat from the panel's own fonts/ folder, declared in the document once
-    this.shadowRoot.innerHTML = `<style>${CSS}</style>
+    this.root.innerHTML = `<style>${CSS}</style>
 <div class="app" id="app"><div class="wrap">
   <header class="head">
     <button class="icon menu" id="menu" type="button" aria-label="Open the sidebar">${ico('menu')}</button>
@@ -1144,7 +1152,7 @@ export class HomePanel extends HTMLElement {
 </div>`;
     this.$app = this.$('app');
     this.$app.lang = (this.store.isFrench ? this.locale : this.localeEn).tag;
-    this.shadowRoot
+    this.root
       .querySelectorAll('.sheet>.panel')
       .forEach(p => p.insertAdjacentHTML('afterbegin', '<div class="grab" aria-hidden="true"></div>'));
     this.applyText();
@@ -1153,7 +1161,7 @@ export class HomePanel extends HTMLElement {
     this.applyTheme();
     // the detail panels move into the tab panes in the Tabs view, so they are kept by id
     this.panels = {};
-    this.shadowRoot.querySelectorAll('.sheet').forEach(sh => {
+    this.root.querySelectorAll('.sheet').forEach(sh => {
       this.panels[sh.id] = sh.querySelector('.panel');
     });
     this.wire();
@@ -1193,7 +1201,7 @@ export class HomePanel extends HTMLElement {
 
   // ---------- layout: cards packed into the shortest column, so no column runs long ----------
   layout() {
-    const box = this.shadowRoot.querySelector('.cols');
+    const box = this.root.querySelector('.cols');
     if (!box || !box.clientWidth) return;
     const w = box.clientWidth,
       n = w >= 1250 ? 3 : w >= 700 ? 2 : 1,
@@ -1822,7 +1830,7 @@ export class HomePanel extends HTMLElement {
     if (go.startsWith('sens:')) return this.openSens(go.slice(5));
     if (go.startsWith('tab:')) {
       const t = go.slice(4);
-      if (this.shadowRoot.querySelector(`#rail [data-tab="${t}"]:not([hidden])`)) this.setTab(t);
+      if (this.root.querySelector(`#rail [data-tab="${t}"]:not([hidden])`)) this.setTab(t);
       return;
     }
     if (this.$(go)) this.show(go);
@@ -1876,7 +1884,7 @@ export class HomePanel extends HTMLElement {
       this.lensSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       this.lensSvg.setAttribute('aria-hidden', 'true');
       this.lensSvg.style.cssText = 'position:absolute;width:0;height:0';
-      this.shadowRoot.appendChild(this.lensSvg);
+      this.root.appendChild(this.lensSvg);
       this.lensSvg.innerHTML =
         '<filter id="glass-distortion" x="0%" y="0%" width="100%" height="100%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency="0.008 0.008" numOctaves="2" seed="92" result="noise"/><feGaussianBlur in="noise" stdDeviation="2" result="blurred"/><feDisplacementMap in="SourceGraphic" in2="blurred" scale="150" xChannelSelector="R" yChannelSelector="G"/></filter>';
     }
@@ -1898,7 +1906,7 @@ export class HomePanel extends HTMLElement {
       }
     });
     this.$('menu').addEventListener('click', () =>
-      this.dispatchEvent(new Event('hass-toggle-menu', {bubbles: true, composed: true})),
+      this.host.dispatchEvent(new Event('hass-toggle-menu', {bubbles: true, composed: true})),
     );
     this.$('gear').addEventListener('click', () => {
       this.toggleAttention(false);
@@ -1961,7 +1969,7 @@ export class HomePanel extends HTMLElement {
         }
       });
     });
-    this.shadowRoot.querySelectorAll('.sheet').forEach(sh => {
+    this.root.querySelectorAll('.sheet').forEach(sh => {
       sh.addEventListener('click', e => {
         if (e.target === sh) this.hide();
       });
@@ -1971,7 +1979,7 @@ export class HomePanel extends HTMLElement {
     this.$('etabs').addEventListener('click', e => {
       const b = e.target.closest('.tab');
       if (!b) return;
-      this.shadowRoot.querySelectorAll('#etabs .tab').forEach(t => t.setAttribute('aria-selected', t === b));
+      this.root.querySelectorAll('#etabs .tab').forEach(t => t.setAttribute('aria-selected', t === b));
       this.range = b.dataset.r;
       this.energyMain();
     });
@@ -1983,7 +1991,7 @@ export class HomePanel extends HTMLElement {
         this.renderHeader();
       }
     });
-    this.shadowRoot.addEventListener('click', e => {
+    this.root.addEventListener('click', e => {
       const pop = this.$('attpop');
       if (!pop.hidden && !e.composedPath().some(n => n === pop || (n.classList && n.classList.contains('attchip')))) {
         this.toggleAttention(false);
@@ -2129,7 +2137,7 @@ export class HomePanel extends HTMLElement {
         if (!m || e.pointerId !== m.id) return;
         e.preventDefault();
         // the row under the finger takes the dragged one's place
-        const over = unitOf(m.b, this.shadowRoot.elementFromPoint(e.clientX, e.clientY));
+        const over = unitOf(m.b, this.root.elementFromPoint(e.clientX, e.clientY));
         if (over && over !== m.u) {
           const k = [...m.b.children],
             i = k.indexOf(m.u),
@@ -2373,7 +2381,7 @@ export class HomePanel extends HTMLElement {
       this.climateDetail();
     });
     // Ford's photo comes through HA's image proxy; if it fails to load, fall back to the drawn car
-    this.shadowRoot.addEventListener(
+    this.root.addEventListener(
       'error',
       e => {
         if (e.target.classList && e.target.classList.contains('carimg') && !this.imgFail) {
@@ -3620,7 +3628,7 @@ export class HomePanel extends HTMLElement {
       return;
     }
     if (id === 'sh-more') this.renderMore();
-    this.lastFocus = /** @type {HTMLElement | null} */ (this.shadowRoot.activeElement);
+    this.lastFocus = /** @type {HTMLElement | null} */ (this.root.activeElement);
     this.open = id;
     const el = this.$(id);
     el.hidden = false;
@@ -4617,7 +4625,7 @@ export class HomePanel extends HTMLElement {
   airSheet() {
     this.airRange = this.airRange || 'day';
     this.airMetric = this.airMetric || 'pm2_5';
-    this.shadowRoot
+    this.root
       .querySelectorAll('#atabs .tab')
       .forEach(t => t.setAttribute('aria-selected', t.dataset.r === this.airRange));
     this.cache.arooms = this.cache.aout = null;
@@ -4706,7 +4714,7 @@ export class HomePanel extends HTMLElement {
       tag = (this.airTag = Symbol()),
       R = CRANGE[r],
       A = AQ[m] || {name: 'Humidity', unit: '%', b: [60, 70]};
-    this.shadowRoot.querySelectorAll('#ametric button').forEach(b => b.setAttribute('aria-checked', b.dataset.m === m));
+    this.root.querySelectorAll('#ametric button').forEach(b => b.setAttribute('aria-checked', b.dataset.m === m));
     this.$('aqch').textContent = `${A.name}, ${R.label}`;
     this.$('aqcp').textContent =
       m === 'humidity'
@@ -4896,7 +4904,7 @@ export class HomePanel extends HTMLElement {
     const t = e.target.closest('[data-r]');
     if (t && t.closest('#atabs')) {
       this.airRange = t.dataset.r;
-      this.shadowRoot
+      this.root
         .querySelectorAll('#atabs .tab')
         .forEach(x => x.setAttribute('aria-selected', x.dataset.r === this.airRange));
       this.airChart();
@@ -5277,7 +5285,7 @@ export class HomePanel extends HTMLElement {
     this.view = 'tabs';
     this.$('app').classList.remove('pv');
     this.$('app').classList.add('tabsv');
-    this.shadowRoot.querySelector('.cols').hidden = true;
+    this.root.querySelector('.cols').hidden = true;
     this.$('tabview').hidden = false;
     if (prev !== 'tabs') this.enterTabs();
   }
@@ -5309,7 +5317,7 @@ export class HomePanel extends HTMLElement {
         this.$(t === 'energy' ? 'ehost' : 'pane-' + t).appendChild(p);
       }
     }
-    const col = this.shadowRoot.querySelector('.col.c1'),
+    const col = this.root.querySelector('.col.c1'),
       mv = (id, h) => {
         const el = this.$(id);
         if (el && h && el.parentNode !== h) h.appendChild(el);
@@ -5788,7 +5796,7 @@ export class HomePanel extends HTMLElement {
     this.settings.set('tab', t);
     if (t === 'lights' && prev !== t) this.loadLightOrder(); // another screen may have rearranged them
     if (t !== 'lights' && this.lightEdit) this.setLightEdit(false);
-    this.shadowRoot
+    this.root
       .querySelectorAll('#rail .rtab[data-tab]')
       .forEach(b => b.setAttribute('aria-selected', b.dataset.tab === t));
     this.renderMoreTab();
@@ -5836,7 +5844,7 @@ export class HomePanel extends HTMLElement {
   gateTabs() {
     const L = this.lacking(),
       hide = (sel, off) =>
-        this.shadowRoot.querySelectorAll(sel).forEach(el => {
+        this.root.querySelectorAll(sel).forEach(el => {
           el.hidden = off;
         });
     for (const t of ['climate', 'car']) hide(`[data-tab="${t}"]`, L[t]);
@@ -6341,7 +6349,7 @@ export class HomePanel extends HTMLElement {
   renderSankey() {
     const el = this.$('sankey');
     if (!el) return;
-    this.shadowRoot
+    this.root
       .querySelectorAll('#stabs .tab')
       .forEach(t => t.setAttribute('aria-selected', t.dataset.s === (this.smode || 'now')));
     const D = this.sankeyData(),
@@ -6848,7 +6856,7 @@ export class HomePanel extends HTMLElement {
     const pop = this.$('attpop'),
       open = force ?? pop.hidden;
     pop.hidden = !open;
-    const b = this.shadowRoot.querySelector('#chips .attchip');
+    const b = this.root.querySelector('#chips .attchip');
     if (b) b.setAttribute('aria-expanded', open);
     if (open) this.renderAttention();
   }
@@ -6887,7 +6895,7 @@ export class HomePanel extends HTMLElement {
     this.$('senssub').textContent = door ? 'Door' : 'Motion';
     this.$('sensbadge').innerHTML = ico(door ? 'door' : 'walk', 26);
     this.$('sensbadge').style.setProperty('--acc', door ? 'var(--t-warn)' : 'var(--t-home)');
-    this.shadowRoot.querySelectorAll('#senstabs .tab').forEach(t => t.setAttribute('aria-selected', t.dataset.r === r));
+    this.root.querySelectorAll('#senstabs .tab').forEach(t => t.setAttribute('aria-selected', t.dataset.r === r));
     this.$('senst').textContent = `${x.name}, ${R.label}`;
     const now = Date.now(),
       t0 = now - R.days * 864e5;
@@ -6967,7 +6975,7 @@ export class HomePanel extends HTMLElement {
       s = this.S();
     this.$('wxh').textContent = D.title;
     this.$('wxsub').textContent = D.sub;
-    this.shadowRoot.querySelectorAll('#wxtabs .tab').forEach(t => t.setAttribute('aria-selected', t.dataset.r === r));
+    this.root.querySelectorAll('#wxtabs .tab').forEach(t => t.setAttribute('aria-selected', t.dataset.r === r));
     this.$('wxt').textContent = `${D.title}, ${R.label}`;
     this.$('wxp').textContent = D.note || '';
     const ser = D.series.filter(x => this.st(x.id));
@@ -7298,7 +7306,7 @@ export class HomePanel extends HTMLElement {
   async climateSheet() {
     if (!this.ApexCharts) return; // a tap while the chunk is loading; buildSheet draws it when it lands
     this.$('csub').textContent = this.climateSummary();
-    this.shadowRoot
+    this.root
       .querySelectorAll('#ctabs .tab')
       .forEach(t => t.setAttribute('aria-selected', t.dataset.r === this.crange));
     this.cache.clist = null;

@@ -1016,7 +1016,7 @@ export const autoMethods = {
     this.set('auhost', todayCard + cards.join('') + all);
     this.auDraw();
     // the running pill counts up without redrawing the graph
-    this.shadowRoot.querySelectorAll('#auhost .pill.run[data-since]').forEach(p => {
+    this.root.querySelectorAll('#auhost .pill.run[data-since]').forEach(p => {
       p.textContent = 'running ' + this.auElapsed(p.dataset.since);
     });
   },
@@ -1027,9 +1027,7 @@ export const autoMethods = {
       : `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
   },
   async auDraw() {
-    const boxes = [...this.shadowRoot.querySelectorAll('#auhost .augraph')].filter(
-      b => b.dataset.drawn !== b.dataset.def,
-    );
+    const boxes = [...this.root.querySelectorAll('#auhost .augraph')].filter(b => b.dataset.drawn !== b.dataset.def);
     if (!boxes.length) return;
     let M;
     try {
