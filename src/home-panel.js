@@ -625,6 +625,12 @@ export class LegacyPanel {
     this.fc = {}; // forecasts by type, from the weather subscription
     this.crange = 'day'; // climate history range (Day by default since v1.18.2)
     this.CR = {}; // climate history by range
+    // the idle overlay is the shell's and outlives a draw: one listener, added at connect and removed at disconnect.
+    // On the smart stack's card the tap that wakes the panel opens what the card is about
+    this.onIdleClick = e => {
+      const g = e.target.closest('[data-go]');
+      if (g) this.stackGo(g.dataset.go);
+    };
     // Escape is caught on window: re-rendered lists drop focus out of the shadow root, so the host would miss the key
     this.onKey = e => {
       if (e.key !== 'Escape') return;
@@ -739,7 +745,6 @@ export class LegacyPanel {
       this.$app.classList.add('live');
       clearTimeout(this.liveT);
       this.liveT = setTimeout(() => this.$app.classList.remove('live'), 60000);
-      this.idleArm();
     };
     for (const t of ['pointerdown', 'wheel', 'keydown']) this.root.addEventListener(t, live, {passive: true});
     window.addEventListener('scroll', live, {passive: true, capture: true});
@@ -749,6 +754,7 @@ export class LegacyPanel {
     }, 10000);
     this.histT = setInterval(() => this.loadHistory(), 15 * 60000);
     window.addEventListener('keydown', this.onKey);
+    this.$('idle').addEventListener('click', this.onIdleClick);
     if (this.hass && this.$app) this.subscribeForecasts();
     if (this.hass && this.$app) this.loadHistory();
     if (this.$app) this.observeLayout();
@@ -766,8 +772,6 @@ export class LegacyPanel {
   disconnect() {
     for (const el of [document.documentElement, document.body]) el.style.removeProperty('background-color');
     clearTimeout(this.liveT);
-    clearTimeout(this.idleT);
-    clearTimeout(this.wakeT);
     clearTimeout(this.glowT);
     if (this.liveOff) this.liveOff();
     if (this.ro) this.ro.disconnect();
@@ -776,6 +780,7 @@ export class LegacyPanel {
     this.radarStop();
     clearInterval(this.histT);
     window.removeEventListener('keydown', this.onKey);
+    this.$('idle')?.removeEventListener('click', this.onIdleClick);
     this.unsubscribeForecasts();
     if (this.unsubStore) this.unsubStore();
     this.unsubStore = null;
@@ -1065,13 +1070,12 @@ export class LegacyPanel {
   <div class="ph"><span class="badge" style="--acc:var(--c-home)">${ico('more', 26)}</span><div class="grow"><h2 id="moreh">More</h2><div class="sub">All sections</div></div><button class="icon close" type="button" aria-label="Close">✕</button></div>
   <div class="morelist" id="morelist"></div>
 </div></div>
-<div class="idle" id="idle" hidden aria-hidden="true"><div class="iwrap" id="iwrap"></div></div>
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 <span id="txprobe" aria-hidden="true" style="position:absolute;left:-9999px;visibility:hidden;font-size:17px;font:-apple-system-body"></span>`;
     this.$app = this.$('app');
     // `.app` is the shell's and outlives a draw, where a fresh one used to start bare: clear what the guest toggles on it, then
-    // the applyText, applyTheme and applyGlass below set theirs again
-    this.$app.classList.remove('live', 'idle', 'mc', 'gl', 'txl');
+    // the applyText, applyTheme and applyGlass below set theirs again; `idle` is the shell's, from the idle timer
+    this.$app.classList.remove('live', 'mc', 'gl', 'txl');
     delete this.$app.dataset.theme;
     delete this.$app.dataset.wp;
     this.$app.lang = (this.store.isFrench ? this.locale : this.localeEn).tag;
@@ -1088,7 +1092,7 @@ export class LegacyPanel {
     });
     this.wire();
     this.observeLayout();
-    this.idleArm();
+    this.ctx.shell.idle.arm(); // a draw counts as a touch, as it did: the five minutes start over, and an idle panel wakes
     // the theme follows the device's appearance as well as the sun; the text size is read again when the panel comes back into view
     if (!this.sysOn) {
       this.sysOn = true;
@@ -1252,31 +1256,10 @@ export class LegacyPanel {
   // Idle clock (v1.19.6): after 5 min without a touch the wall iPad shows a big clock with the date, the temperatures and the next sun event.
   // Since 2.2.0 the current outdoor condition's icon (day or night version) sits beside the time.
   // Any touch brings the panel back; the overlay swallows that first tap so nothing underneath gets pressed. Phones never go idle.
-  idleArm() {
-    clearTimeout(this.idleT);
-    this.idleT = null;
-    const o = this.$('idle');
-    if (this.$app.classList.contains('idle')) {
-      this.$app.classList.remove('idle');
-      o.classList.add('wake');
-      clearTimeout(this.wakeT);
-      this.wakeT = setTimeout(() => {
-        o.hidden = true;
-        o.classList.remove('wake');
-      }, 400);
-    }
-    if (!this.compact) this.idleT = setTimeout(() => this.idleStart(), 5 * 60000);
-  }
-  // also started by "Sleep now" in the settings popup, on the iPad and the phone
-  idleStart() {
-    if (!this.hass) return this.idleArm();
-    clearTimeout(this.idleT);
-    this.idleT = null;
-    const o = this.$('idle');
-    clearTimeout(this.wakeT);
-    o.classList.remove('wake');
-    o.hidden = false;
-    this.$app.classList.add('idle');
+  // The shell's idle timer (src/shell/idle-timer.ts) decides when, draws the overlay and `.app.idle`, and tells the guest here;
+  // "Sleep now" in the settings popup asks it through ctx.shell.idle. The guest draws the clock into #iwrap until the clock moves.
+  idleChanged(idle) {
+    if (!idle) return; // the shell took `.idle` off the frame already; the overlay fades out by itself
     this.cache.ishell = null;
     this.renderIdle();
   }
@@ -1804,11 +1787,6 @@ export class LegacyPanel {
 
   // ---------- events ----------
   wire() {
-    // the idle overlay swallows the tap that wakes the panel; on the smart stack's card that tap opens what the card is about
-    this.$('idle').addEventListener('click', e => {
-      const g = e.target.closest('[data-go]');
-      if (g) this.stackGo(g.dataset.go);
-    });
     this.$('hwx').addEventListener('click', e => {
       const g = e.target.closest('.hstk [data-go]');
       if (g) {
@@ -1837,7 +1815,7 @@ export class LegacyPanel {
     this.$('setc').addEventListener('click', e => {
       if (e.target.closest('[data-sleep]')) {
         this.toggleSettings(false);
-        this.idleStart();
+        this.ctx.shell.idle.sleepNow();
         return;
       }
       const t = e.target.closest('[data-th]');
@@ -5198,7 +5176,6 @@ export class LegacyPanel {
   compactChanged() {
     if (!this.$app) return; // nothing drawn yet: the first draw reads the shell
     this.applyGlass();
-    this.idleArm();
     if (this.open && this.open !== this.inline) this.hide();
     if (this.view === 'tabs') {
       this.leaveTabs();
