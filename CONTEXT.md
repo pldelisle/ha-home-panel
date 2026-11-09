@@ -44,7 +44,7 @@ The words the panel and its code use. One word per concept: use it in issues, te
 
 **Bare test house** — `test/houses/bare.mjs`, the same kind of data with almost nothing configured; it proves that a section whose entities are missing is hidden (no Climate or Car tab, no water heater or Hilo card). Avoid: fixture.
 
-**Fixture** — A house recorded from the real Home Assistant and anonymised with the owner's mapping, in `test/unit/fixtures/houses/` (states, the three registries and, when asked, statistics); a model test starts from one with `fakeHass.fromFixture(name)`. The made-up houses of `test/houses/` are not fixtures. Avoid: sample data, snapshot (the screenshot baselines).
+**Fixture** — A house in the recorder's format under `test/unit/fixtures/houses/` (states, the three registries and, when asked, statistics), normally recorded from the real Home Assistant and anonymised with the owner's mapping; a model test starts from one with `fakeHass.fromFixture(name)`. The made-up houses of `test/houses/` are not fixtures; `sample.json`, a slice of the full test house written by the recorder from a fake connection so that the loader can be tested, is the one exception. Avoid: snapshot (the screenshot baselines).
 
 **Household changelog voice** — The way a changelog line is written: plain sentences about what the household sees, as one paragraph.
 

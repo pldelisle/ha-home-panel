@@ -191,9 +191,10 @@ describe('anonymise', () => {
     [{entities: []}, 'mapping.entities must be an object'],
     [{strings: 'x'}, 'mapping.strings must be an object'],
     [{strings: {'': 'x'}}, 'mapping.strings has an empty key, which would match everywhere'],
-    [{strings: {a: 1}}, 'mapping.strings["a"] must be a string'],
-    [{entities: {'sensor.a': null}}, 'mapping.entities["sensor.a"] must be a string'],
-    [{entities: {nodomain: 'x'}}, 'mapping.entities["nodomain"] is not an entity id'],
+    // a key is a real name: the message shows its first and last character only
+    [{strings: {abc: 1}}, 'mapping.strings["a…c"] must be a string'],
+    [{entities: {'sensor.a': null}}, 'mapping.entities["s…a"] must be a string'],
+    [{entities: {nodomain: 'x'}}, 'mapping.entities["n…n"] is not an entity id'],
   ])('a mapping that cannot be applied is refused: %j', (mapping, message) => {
     expect(() => replacerOf(mapping)).toThrow(message);
     expect(() => anonymise({states: {}}, mapping)).toThrow(message);
@@ -213,33 +214,39 @@ describe('scan', () => {
     expect(scan(anonymised, MAPPING, BANNED_PATTERNS)).toEqual([]);
   });
 
+  const value = path => ({path, kind: 'value', source: 'mapping'});
+
   test('a mapped string left in a value is reported with its path, whatever its case or accents', () => {
     const leaky = structuredClone(anonymised);
     leaky.states['person.robin'].attributes.friendly_name = 'ZOE at the cabin';
     leaky.areas.springfield_shed.tags = ['ok', 'the REAL TOWN way'];
     expect(scan(leaky, MAPPING, [])).toEqual(
       expect.arrayContaining([
-        {path: '$.states["person.robin"].attributes.friendly_name', kind: 'value', found: 'Zoë', source: 'mapping'},
-        {path: '$.states["person.robin"].attributes.friendly_name', kind: 'value', found: 'Cabin', source: 'mapping'},
-        {path: '$.areas.springfield_shed.tags[1]', kind: 'value', found: 'Real Town', source: 'mapping'},
+        {...value('$.states["person.robin"].attributes.friendly_name'), found: 'Zoë', table: 'strings'},
+        {...value('$.states["person.robin"].attributes.friendly_name'), found: 'Cabin', table: 'strings'},
+        {...value('$.areas.springfield_shed.tags[1]'), found: 'Real Town', table: 'strings'},
       ]),
     );
   });
 
   test('a mapped string left in a key, in its id spelling, is reported', () => {
     const leaky = {states: {'sensor.real_town_pressure': {state: '1'}}, entities: {'sensor.real_town_temperature': {}}};
+    // a key that holds a leftover is a real name: the paths write it `…`
+    const key = (path, found, table) => ({path, kind: 'key', found, source: 'mapping', table});
     expect(scan(leaky, MAPPING, [])).toEqual([
-      {path: '$.states["sensor.real_town_pressure"]', kind: 'key', found: 'Real Town', source: 'mapping'},
-      {path: '$.states["sensor.real_town_pressure"]', kind: 'key', found: 'Real', source: 'mapping'},
-      {
-        path: '$.entities["sensor.real_town_temperature"]',
-        kind: 'key',
-        found: 'sensor.real_town_temperature',
-        source: 'mapping',
-      },
-      {path: '$.entities["sensor.real_town_temperature"]', kind: 'key', found: 'Real Town', source: 'mapping'},
-      {path: '$.entities["sensor.real_town_temperature"]', kind: 'key', found: 'Real', source: 'mapping'},
+      key('$.states["…"]', 'Real Town', 'strings'),
+      key('$.states["…"]', 'Real', 'strings'),
+      key('$.entities["…"]', 'sensor.real_town_temperature', 'entities'),
+      key('$.entities["…"]', 'Real Town', 'strings'),
+      key('$.entities["…"]', 'Real', 'strings'),
     ]);
+  });
+
+  test('the paths below a key that holds a leftover do not carry it either', () => {
+    const leaky = {states: {'sensor.real_town_pressure': {attributes: {note: `near ${BANNED_TOWN}`}}}};
+    const found = scan(leaky, {strings: {'Real Town': 'x'}}, BANNED_PATTERNS);
+    expect(found.map(f => f.path)).toEqual(['$.states["…"]', '$.states["…"].attributes.note']);
+    expect(JSON.stringify(found)).not.toMatch(/real_town/);
   });
 
   test('a banned pattern is reported with its path, mapped or not', () => {
@@ -339,6 +346,57 @@ function rawHouse() {
 
 const NOW = new Date('2026-11-09T12:00:00.000Z');
 
+// the checked-in sample: a slice of the full test house, as the recorder writes it from a fake connection at this instant
+const SAMPLE_NOW = new Date('2026-11-07T19:00:00.000Z');
+const SAMPLE_FILE = new URL('./fixtures/houses/sample.json', import.meta.url);
+const SAMPLE_STATISTIC_ID = 'sensor.springfield_temperature';
+const SAMPLE_IDS = [
+  'sun.sun',
+  'weather.springfield_forecast',
+  'light.living_room_1',
+  'sensor.springfield_current_condition',
+  'sensor.springfield_temperature',
+  'sensor.springfield_high_temperature',
+  'sensor.springfield_low_temperature',
+  'sensor.springfield_normal_high_temperature',
+  'sensor.springfield_normal_low_temperature',
+  'sensor.springfield_wind_speed',
+  'sensor.springfield_wind_direction',
+  'sensor.springfield_humidity',
+  'sensor.springfield_uv_index',
+  'sensor.springfield_aqhi',
+  'sensor.springfield_dew_point',
+  'sensor.springfield_barometric_pressure',
+  'sensor.springfield_tendency',
+  'sensor.springfield_wind_gust',
+  'sensor.springfield_observation_time',
+  'sensor.springfield_summary',
+  'sensor.house_power',
+  'climate.living_room',
+  'sensor.living_room_temperature',
+  'person.alex',
+];
+// how many rows of each period the sample keeps, and how far apart they are
+const SAMPLE_ROWS = {'5minute': {n: 12, step: 3e5}, hour: {n: 24, step: 36e5}, day: {n: 14, step: 864e5}};
+
+/** The rows of a statistics message from a formula: from the start asked, one per step, the values a function of the index. */
+function sampleRows(msg) {
+  const {n, step} = SAMPLE_ROWS[msg.period];
+  const start = Date.parse(msg.start_time);
+  return Array.from({length: n}, (_, i) => {
+    const mean = 10 + (i % 7) / 2;
+    return {
+      start: start + i * step,
+      end: start + (i + 1) * step,
+      mean,
+      min: mean - 0.5,
+      max: mean + 0.5,
+      change: i % 3,
+      sum: 0,
+    };
+  });
+}
+
 describe('fetchHouse', () => {
   test('asks for the states and the three registries and keys what comes back as hass keys it', async () => {
     const connection = fakeConnection();
@@ -365,9 +423,9 @@ describe('fetchHouse', () => {
     expect(
       asked.every(m => m.statistic_ids.length === 1 && m.statistic_ids[0] === 'sensor.real_town_temperature'),
     ).toBe(true);
-    expect(asked[1].start_time).toBe('2026-11-02T12:00:00.000Z'); // hour: 7 days before
+    expect(asked[1].start_time).toBe('2025-11-08T12:00:00.000Z'); // hour: 366 days before, the EV's span
     expect(Object.keys(recorded.statistics)).toEqual(asked.map(m => `${m.period}@${m.start_time}`));
-    expect(recorded.statistics['hour@2026-11-02T12:00:00.000Z']).toEqual({
+    expect(recorded.statistics['hour@2025-11-08T12:00:00.000Z']).toEqual({
       'sensor.real_town_temperature': [{start: 1, end: 2, mean: 3}],
     });
   });
@@ -378,6 +436,8 @@ describe('main', () => {
   const run = (args, env = {HASS_URL: 'http://ha.test:8123', HASS_TOKEN: 'secret-token'}, deps = {}) =>
     main(args, env, {now: () => NOW, log: m => logs.push(m), error: m => errors.push(m), ...deps});
   const args = (...more) => ['--map', mapPath, '--out', outPath, ...more];
+  // the token is in the environment of the run: nothing the script prints may carry it
+  const expectNoSecrets = () => expect([...logs, ...errors].join('\n')).not.toContain('secret-token');
 
   beforeEach(() => {
     dir = mkdtempSync(join(tmpdir(), 'record-fixture-'));
@@ -412,7 +472,7 @@ describe('main', () => {
     expect(written.recordedAt).toBe('2026-11-09T12:00:00.000Z');
     expect(written.source).toBe('home-assistant 2026.11.0');
     expect(Object.keys(written.states)).toContain('sensor.springfield_temperature');
-    expect(written.statistics['hour@2026-11-02T12:00:00.000Z']).toEqual({
+    expect(written.statistics['hour@2025-11-08T12:00:00.000Z']).toEqual({
       'sensor.springfield_temperature': [{start: 1, end: 2, mean: 3}],
     });
     expect(logs).toEqual([
@@ -423,6 +483,7 @@ describe('main', () => {
     // what was written holds nothing of the mapping and nothing a banned pattern finds
     expect(scan(written, MAPPING, BANNED_PATTERNS)).toEqual([]);
     expect(readFileSync(outPath, 'utf8')).not.toMatch(/real.town|secret/i);
+    expectNoSecrets();
   });
 
   test('records the full test house, whole, with the house renamed', async () => {
@@ -441,6 +502,40 @@ describe('main', () => {
     expect(Object.keys(JSON.parse(written).states)).toHaveLength(Object.keys(read.states).length);
   });
 
+  test('writes the checked-in sample: the recorder, from a fake connection over the full test house, is its generator', async () => {
+    writeFileSync(mapPath, '{}');
+    const read = readHouse(full, {now: REFERENCE_MS, timeZone: full.config.time_zone});
+    const rows = map => Object.values(map).filter(row => SAMPLE_IDS.includes(row.entity_id));
+    const entities = rows(read.entities);
+    const deviceIds = new Set(entities.map(row => row.device_id));
+    const answers = {
+      get_states: rows(read.states).map(s => ({...s, context: {id: 'abc', parent_id: null, user_id: null}})),
+      'config/entity_registry/list': entities,
+      'config/device_registry/list': Object.values(read.devices).filter(d => deviceIds.has(d.id)),
+      'config/area_registry/list': Object.values(read.areas),
+      'recorder/statistics_during_period': msg => ({[SAMPLE_STATISTIC_ID]: sampleRows(msg)}),
+    };
+    const connection = {
+      haVersion: '0.0.0-sample',
+      close() {},
+      sendMessagePromise: async msg =>
+        typeof answers[msg.type] === 'function' ? answers[msg.type](msg) : answers[msg.type],
+    };
+    const written = [];
+    const code = await run(args('--statistics', SAMPLE_STATISTIC_ID), undefined, {
+      connect: async () => connection,
+      now: () => SAMPLE_NOW,
+      writeFile: (path, text) => written.push([path, text]),
+    });
+    expect(code).toBe(0);
+    const [[, text]] = written;
+    if (process.env.WRITE_SAMPLE) writeFileSync(SAMPLE_FILE, text);
+    expect(
+      text,
+      'sample.json differs from what the recorder makes of the full test house: run `WRITE_SAMPLE=1 npx vitest run record-fixture` to regenerate it, and commit the result',
+    ).toBe(readFileSync(SAMPLE_FILE, 'utf8'));
+  });
+
   test('refuses and writes nothing when a banned pattern is left, naming where', async () => {
     const raw = rawHouse();
     raw.states[2].attributes.note = `parked in ${BANNED_TOWN}`;
@@ -452,6 +547,7 @@ describe('main', () => {
     expect(errors.join('\n')).toContain(
       `$.states["light.shelf_lamp"].attributes.note (value) still holds ${TOWN_RULE}`,
     );
+    expectNoSecrets();
   });
 
   test('refuses and writes nothing when a mapped string survives its own replacement', async () => {
@@ -459,7 +555,10 @@ describe('main', () => {
     const code = await run(args(), undefined, {connect: async () => fakeConnection()});
     expect(code).toBe(1);
     expect(existsSync(outPath)).toBe(false);
-    expect(errors.join('\n')).toContain('still holds "Real Town"');
+    // the real string is not printed: its ends and its length are, and the key that holds it is written `…`
+    expect(errors.join('\n')).toContain('  $.states["…"] (key) still holds mapping.strings["R…n"] (9 chars)');
+    expect(errors.join('\n')).not.toMatch(/real.town/i);
+    expectNoSecrets();
   });
 
   test('the connection is closed when a reply fails, and the failure is reported', async () => {
@@ -469,6 +568,7 @@ describe('main', () => {
     expect(connection.closed).toBe(true);
     expect(errors).toEqual(['failed: socket dropped']);
     expect(existsSync(outPath)).toBe(false);
+    expectNoSecrets();
   });
 
   test.each([
@@ -478,6 +578,7 @@ describe('main', () => {
   ])('the library throws the number %i: it is said in words', async (number, message) => {
     expect(await run(args(), undefined, {connect: () => Promise.reject(number)})).toBe(1);
     expect(errors).toEqual([message]);
+    expectNoSecrets();
   });
 
   test('a thrown value that is neither a library error nor an Error is shown as it is', async () => {
@@ -486,12 +587,13 @@ describe('main', () => {
   });
 
   test('a mapping file that is not JSON fails before any connection is made', async () => {
-    writeFileSync(mapPath, '{not json');
+    // the mapping is real names: Node's own message quotes the text it cannot parse, ours does not
+    writeFileSync(mapPath, '{"strings": {"Real Town": oops}');
     let connected = false;
     const code = await run(args(), undefined, {connect: async () => ((connected = true), fakeConnection())});
     expect(code).toBe(1);
     expect(connected).toBe(false);
-    expect(errors[0]).toMatch(/^failed: /);
+    expect(errors).toEqual([`cannot read ${mapPath} as JSON`]);
   });
 
   test('a mapping inside the repository is refused, so it is never committed by accident', async () => {
@@ -590,5 +692,42 @@ describe('the personal-data scan over a fixture folder', () => {
   test('the repository address is not a hit, a name beside it is', () => {
     expect(bannedHits([['a', 'github.com/pldelisle/ha-home-panel']])).toEqual([]);
     expect(bannedHits([['a', `${BANNED_TOWN} near pldelisle/ha-home-panel`]])).toHaveLength(1);
+  });
+});
+
+describe('the recorded statistics spans', () => {
+  // STATISTIC_SPANS copies what the panel asks for (the comments at both places say so): when the panel asks for a longer
+  // span of a period, the fixture would hold too little for the model, and this fails
+  const panel = readFileSync(new URL('../../src/home-panel.js', import.meta.url), 'utf8');
+  const asked = [
+    // loadHistory: this.api.statistics(ids, 'hour', d(7), [...])
+    ...panel.matchAll(/api\.statistics\([^;]*?'(5minute|hour|day)',\s*d\(([\d.]+)\)/g),
+    // the weather history: this.api.statistics(ids, 'day', new Date(now - 400 * 864e5), [...])
+    ...panel.matchAll(/'(5minute|hour|day)',\s*new Date\(now - ([\d.]+) \* 864e5\)/g),
+  ].map(([, period, days]) => ({period, days: Number(days)}));
+  // the climate sheet's ranges: `days: 7, period: 'hour'`
+  const ranges = [...panel.matchAll(/days:\s*([\d.]+),\s*period:\s*'(5minute|hour|day)'/g)].map(([, days, period]) => ({
+    period,
+    days: Number(days),
+  }));
+
+  test('the panel is read: every call and every range is found', () => {
+    expect(asked.length).toBeGreaterThanOrEqual(5);
+    expect(ranges.map(r => r.period).sort()).toEqual(['5minute', 'day', 'hour', 'hour']);
+  });
+
+  test.each([...asked, ...ranges].map(r => [`${r.period} over ${r.days} days`, r]))(
+    'covers %s',
+    (_, {period, days}) => {
+      expect(STATISTIC_SPANS[period]).toBeGreaterThanOrEqual(days);
+    },
+  );
+
+  test('the units are the ones the API client asks for', () => {
+    const client = readFileSync(new URL('../../src/core/api.ts', import.meta.url), 'utf8');
+    expect(client).toContain("units: {power: 'kW', energy: 'kWh', temperature: '°C'}");
+    expect(readFileSync(new URL('../../scripts/record-fixture.mjs', import.meta.url), 'utf8')).toContain(
+      "STATISTIC_UNITS = {power: 'kW', energy: 'kWh', temperature: '°C'}",
+    );
   });
 });

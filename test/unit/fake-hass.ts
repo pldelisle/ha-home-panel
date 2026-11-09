@@ -176,7 +176,7 @@ function recordedStatistics(recorded: NonNullable<HouseFixture['statistics']>, m
 /**
  * The fake `hass` of a recorded fixture: its states and registries, and its statistics for `recorder/statistics_during_period`.
  * The shape is the one `fromHouse` builds; what a fixture does not hold (the zone, the user, the services) is the default of
- * `fakeHass`, and `init` overrides any of it.
+ * `fakeHass` (the zone is America/Toronto, whatever zone the house was recorded in), and `init` overrides any of it.
  */
 function fromFixture(name: string, init: Partial<PanelHass> = {}): FakeHass {
   const fixture = readFixture(name);

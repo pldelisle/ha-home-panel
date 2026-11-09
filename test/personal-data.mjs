@@ -34,9 +34,8 @@ const SCAN_SKIP_DIRS = [
   '__screenshots__',
 ];
 
-/** The tracked files that are not scanned, and why. */
-export const NOT_SCANNED = new Map([
-  ['test/unit/dist.test.mjs', 'it runs the scan'],
+// the tracked files that are not scanned, and why
+const NOT_SCANNED = new Map([
   ['test/personal-data.mjs', 'it holds the patterns'],
   ['LICENSE', 'the copyright line names the licence holder, by design'],
   [

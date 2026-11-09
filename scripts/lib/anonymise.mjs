@@ -42,6 +42,12 @@ export const slug = s =>
     .replace(/[^a-z0-9]+/g, '_')
     .replace(/^_+|_+$/g, '');
 
+/** A string of the mapping as it may be shown: its first and last character, so the real one is never printed. */
+export const shorten = s => {
+  const chars = Array.from(s);
+  return `${chars[0]}…${chars.at(-1)}`;
+};
+
 /** The mapping's two tables, checked: plain objects of non-empty keys to strings. Throws on a mapping that cannot be applied. */
 function checkMapping(mapping) {
   for (const table of ['entities', 'strings']) {
@@ -49,9 +55,10 @@ function checkMapping(mapping) {
     if (typeof t !== 'object' || Array.isArray(t)) throw new Error(`mapping.${table} must be an object`);
     for (const [from, to] of Object.entries(t)) {
       if (from === '') throw new Error(`mapping.${table} has an empty key, which would match everywhere`);
-      if (typeof to !== 'string') throw new Error(`mapping.${table}["${from}"] must be a string`);
+      // a key is a real name: the messages show its ends only
+      if (typeof to !== 'string') throw new Error(`mapping.${table}["${shorten(from)}"] must be a string`);
       if (table === 'entities' && !from.includes('.'))
-        throw new Error(`mapping.entities["${from}"] is not an entity id`);
+        throw new Error(`mapping.entities["${shorten(from)}"] is not an entity id`);
     }
   }
   return {entities: mapping?.entities ?? {}, strings: mapping?.strings ?? {}};
@@ -153,7 +160,7 @@ export function anonymise(house, mapping) {
 
 // ---- the scan ----
 
-/** `states["sensor.x"].attributes.list[0]`: where in the output a leftover sits. */
+/** `$.states["sensor.x"].attributes.list[0]`: where in the output a leftover sits. */
 const pathOf = (parent, key) =>
   typeof key === 'number'
     ? `${parent}[${key}]`
@@ -161,36 +168,45 @@ const pathOf = (parent, key) =>
       ? `${parent}.${key}`
       : `${parent}[${JSON.stringify(key)}]`;
 
-/** Every string of `value` (keys included) with its path, depth first. */
-function* walkStrings(value, path = '$') {
+/**
+ * Every string of `value` (keys included) with its path, depth first. A key for which `hides(key)` is true is a real name
+ * and is written `…` in the paths, its own and those below it.
+ */
+function* walkStrings(value, hides, path = '$') {
   if (typeof value === 'string') yield {path, text: value, kind: 'value'};
-  else if (Array.isArray(value)) for (const [i, v] of value.entries()) yield* walkStrings(v, pathOf(path, i));
+  else if (Array.isArray(value)) for (const [i, v] of value.entries()) yield* walkStrings(v, hides, pathOf(path, i));
   else if (value !== null && typeof value === 'object')
     for (const [k, v] of Object.entries(value)) {
-      yield {path: pathOf(path, k), text: k, kind: 'key'};
-      yield* walkStrings(v, pathOf(path, k));
+      const here = pathOf(path, hides(k) ? '…' : k);
+      yield {path: here, text: k, kind: 'key'};
+      yield* walkStrings(v, hides, here);
     }
 }
 
 /**
  * Everything in `output` that the mapping says must be gone, or that a banned pattern matches: `[{path, kind, found,
- * source}]`, `kind` being `key` or `value`, `source` being `mapping` (found is the mapped string) or `pattern` (found is
- * the pattern). Mapped strings are looked for ignoring case and accents, and also spelled as an id. An empty list means the
+ * source, table?}]`, `kind` being `key` or `value`, `source` being `mapping` (found is the mapped string, `table` the
+ * table it is in) or `pattern` (found is the pattern). Mapped strings are looked for ignoring case and accents, and also
+ * spelled as an id. A key that holds a leftover is a real name, so it is written `…` in the paths. An empty list means the
  * output may be written.
  */
 export function scan(output, mapping, bannedPatterns) {
   const {entities, strings: names} = checkMapping(mapping);
   const needles = [
-    ...Object.keys(entities).map(from => [from, [fold(from)]]),
-    ...Object.keys(names).map(from => [from, [fold(from), slug(from)].filter(Boolean)]),
+    ...Object.keys(entities).map(from => [from, [fold(from)], 'entities']),
+    ...Object.keys(names).map(from => [from, [fold(from), slug(from)].filter(Boolean), 'strings']),
   ];
-  const leftovers = [];
-  for (const {path, text, kind} of walkStrings(output)) {
+  const leftoversIn = text => {
     const folded = fold(text);
-    for (const [from, forms] of needles)
-      if (forms.some(f => folded.includes(f))) leftovers.push({path, kind, found: from, source: 'mapping'});
-    for (const re of bannedPatterns)
-      if (text.search(re) >= 0) leftovers.push({path, kind, found: String(re), source: 'pattern'});
-  }
+    return [
+      ...needles
+        .filter(([, forms]) => forms.some(f => folded.includes(f)))
+        .map(([found, , table]) => ({found, source: 'mapping', table})),
+      ...bannedPatterns.filter(re => text.search(re) >= 0).map(re => ({found: String(re), source: 'pattern'})),
+    ];
+  };
+  const leftovers = [];
+  for (const {path, text, kind} of walkStrings(output, key => leftoversIn(key).length > 0))
+    for (const l of leftoversIn(text)) leftovers.push({path, kind, ...l});
   return leftovers;
 }

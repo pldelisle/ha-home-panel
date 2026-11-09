@@ -8,13 +8,19 @@ import {dirname, relative, resolve, isAbsolute} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {parseArgs} from 'node:util';
 import {BANNED_PATTERNS} from '../test/personal-data.mjs';
-import {anonymise, scan} from './lib/anonymise.mjs';
+import {anonymise, scan, shorten} from './lib/anonymise.mjs';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const DAY = 864e5;
 
-/** The statistics periods the panel asks for and the longest span it asks of each, in days (src/home-panel.js). */
-export const STATISTIC_SPANS = {'5minute': 1.05, hour: 7, day: 400};
+/**
+ * The statistics periods the panel asks for and the longest span it asks of each, in days. A copy of the numbers in
+ * src/home-panel.js (loadHistory's `d(n)`, CRANGE's `days`) and of the `units` of src/core/api.ts: when the panel asks
+ * for more, a test fails here (record-fixture.test.mjs) and this table grows.
+ */
+export const STATISTIC_SPANS = {'5minute': 1.05, hour: 366, day: 400};
+// the units the API client asks the recorder for (src/core/api.ts), so the recorded rows are the ones the panel reads
+const STATISTIC_UNITS = {power: 'kW', energy: 'kWh', temperature: '°C'};
 const STATISTIC_TYPES = ['mean', 'min', 'max', 'change', 'sum'];
 
 // what the library throws for a connection that does not open (it throws numbers, not errors)
@@ -109,7 +115,7 @@ export async function fetchHouse(connection, {statisticIds = [], now}) {
         statistic_ids: statisticIds,
         period,
         types: STATISTIC_TYPES,
-        units: {power: 'kW', energy: 'kWh', temperature: '°C'},
+        units: STATISTIC_UNITS,
       });
     }
   }
@@ -158,7 +164,14 @@ export async function main(argv, env, deps = {}) {
       );
       return 1;
     }
-    const mapping = JSON.parse(readFile(mapPath));
+    let mapping;
+    try {
+      mapping = JSON.parse(readFile(mapPath));
+    } catch {
+      // not Node's own message: it quotes the text it could not parse, which is the mapping
+      error(`cannot read ${args.map} as JSON`);
+      return 1;
+    }
     const connection = await connect({url: env.HASS_URL, token: env.HASS_TOKEN});
     let recorded;
     try {
@@ -173,8 +186,14 @@ export async function main(argv, env, deps = {}) {
       error(
         `refusing to write ${args.out}: ${leftovers.length} leftover(s), nothing was written. Add each to the mapping:`,
       );
-      for (const l of leftovers)
-        error(`  ${l.path} (${l.kind}) still holds ${l.source === 'mapping' ? `"${l.found}"` : l.found}`);
+      // a mapped string is a real name: only its first and last character and its length are printed
+      for (const l of leftovers) {
+        const found =
+          l.source === 'mapping'
+            ? `mapping.${l.table}["${shorten(l.found)}"] (${Array.from(l.found).length} chars)`
+            : l.found;
+        error(`  ${l.path} (${l.kind}) still holds ${found}`);
+      }
       return 1;
     }
     writeFile(resolve(args.out), `${stringify(output)}\n`);
