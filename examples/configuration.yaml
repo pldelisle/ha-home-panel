@@ -6,7 +6,7 @@ panel_custom:
     sidebar_icon: mdi:home-analytics
     url_path: home-panel
     # bump ?v= after each update: HA serves /local/ files with a 31-day cache
-    module_url: /local/home-panel/home-panel.js?v=2.12.0
+    module_url: /local/home-panel/home-panel.js?v=2.13.0
     require_admin: false
     # Everything below is optional. Left out, the panel finds what it can on its own.
     config:
