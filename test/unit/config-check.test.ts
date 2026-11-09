@@ -107,12 +107,39 @@ describe('config.unknownKey and config.unknownKeyHint', () => {
 
   test('the hint comes from the keys valid at that level, not from the top', () => {
     // `name` is a key of a room and of the car, not of the top level
-    expect(checkConfig({nam: 'x'})[0].key).toBe('config.unknownKeyHint'); // names
+    expect(checkConfig({nam: 'x'})).toEqual([{path: 'nam', key: 'config.unknownKey', values: {path: 'nam'}}]);
     expect(checkConfig({house_image: {dya: '/a.png'}})[0].values).toEqual({path: 'house_image.dya', hint: 'day'});
   });
 
   test('the nearest key wins', () => {
     expect(checkConfig({mode: ['x']})[0].values).toEqual({path: 'mode', hint: 'modes'});
+  });
+
+  // a hint needs a plausible match: two edits at most, and no more than a third of the longer word, one edit at least
+  test('a short key is not matched to another short key two edits away', () => {
+    const entity = (key: string) => checkConfig({entities: {[key]: 'sensor.x'}}).map(p => [p.key, p.values]);
+    // foo is two edits from lo and low, temp from tend, ac from hi: each would be a false hint
+    expect(entity('foo')).toEqual([['config.unknownEntity', {path: 'entities.foo'}]]);
+    expect(entity('temp')).toEqual([['config.unknownEntity', {path: 'entities.temp'}]]);
+    expect(entity('ac')).toEqual([['config.unknownEntity', {path: 'entities.ac'}]]);
+    expect(entity('far_away_key')).toEqual([['config.unknownEntity', {path: 'entities.far_away_key'}]]);
+    expect(checkConfig({foo: 1})).toEqual([{path: 'foo', key: 'config.unknownKey', values: {path: 'foo'}}]);
+  });
+
+  test('one edit is a hint at any length, two edits from six letters up', () => {
+    const entity = (key: string) => checkConfig({entities: {[key]: 'sensor.x'}})[0].values;
+    expect(entity('hii')).toEqual({path: 'entities.hii', hint: 'hi'});
+    expect(entity('windd')).toEqual({path: 'entities.windd', hint: 'wind'});
+    expect(entity('grid_pwr')).toEqual({path: 'entities.grid_pwr', hint: 'grid_power'});
+    expect(entity('humidty')).toEqual({path: 'entities.humidty', hint: 'humidity'});
+    expect(checkConfig({sceenss: ['a']})[0].values).toEqual({path: 'sceenss', hint: 'scenes'});
+  });
+
+  test('_panel_custom is accepted but never suggested: panel_custom is just unknown', () => {
+    expect(checkConfig({panel_custom: {}})).toEqual([
+      {path: 'panel_custom', key: 'config.unknownKey', values: {path: 'panel_custom'}},
+    ]);
+    expect(checkConfig({_panel_custom: {}})).toEqual([]);
   });
 });
 
@@ -134,34 +161,35 @@ describe('config.wrongType', () => {
       {
         path: 'idle_stack.reminders[0].lead',
         key: 'config.wrongType',
-        values: {path: 'idle_stack.reminders[0].lead', expected: 'a number', got: 'text'},
+        values: {path: 'idle_stack.reminders[0].lead', expected: 'number', got: 'text'},
       },
     ]);
   });
 
-  test('each plain word: text, a number, yes or no, a list, a block of settings, nothing', () => {
+  // the values name a plain word (the message chooses its wording in each language), never a type name
+  test('each plain word: text, number, yesno, list, block, nothing', () => {
     const wrong = (raw: unknown) => checkConfig(raw).map(p => [p.path, p.key, p.values.expected, p.values.got]);
-    expect(wrong({people: 3})).toEqual([['people', 'config.wrongType', 'text', 'a number']]);
+    expect(wrong({people: 3})).toEqual([['people', 'config.wrongType', 'text', 'number']]);
     expect(wrong({idle_stack: {enabled: 'yes'}})).toEqual([
-      ['idle_stack.enabled', 'config.wrongType', 'yes or no', 'text'],
+      ['idle_stack.enabled', 'config.wrongType', 'yesno', 'text'],
     ]);
-    expect(wrong({car: {battery_kwh: true}})).toEqual([
-      ['car.battery_kwh', 'config.wrongType', 'a number', 'yes or no'],
-    ]);
-    expect(wrong({car: 'red'})).toEqual([['car', 'config.wrongType', 'a block of settings', 'text']]);
-    expect(wrong({car: ['red']})).toEqual([['car', 'config.wrongType', 'a block of settings', 'a list']]);
-    expect(wrong({names: {Salon: 'Living room'}})).toEqual([
-      ['names.Salon', 'config.wrongType', 'a block of settings', 'text'],
-    ]);
-    expect(wrong({names: ['Salon']})).toEqual([['names', 'config.wrongType', 'a block of settings', 'a list']]);
-    expect(wrong({scenes: {a: 1}})).toEqual([['scenes', 'config.wrongType', 'text', 'a block of settings']]);
-    expect(wrong({modes: [['x']]})).toEqual([['modes[0]', 'config.wrongType', 'text', 'a list']]);
+    expect(wrong({car: {battery_kwh: true}})).toEqual([['car.battery_kwh', 'config.wrongType', 'number', 'yesno']]);
+    expect(wrong({car: 'red'})).toEqual([['car', 'config.wrongType', 'block', 'text']]);
+    expect(wrong({car: ['red']})).toEqual([['car', 'config.wrongType', 'block', 'list']]);
+    expect(wrong({names: {Salon: 'Living room'}})).toEqual([['names.Salon', 'config.wrongType', 'block', 'text']]);
+    expect(wrong({names: ['Salon']})).toEqual([['names', 'config.wrongType', 'block', 'list']]);
+    expect(wrong({scenes: {a: 1}})).toEqual([['scenes', 'config.wrongType', 'text', 'block']]);
+    expect(wrong({modes: [['x']]})).toEqual([['modes[0]', 'config.wrongType', 'text', 'list']]);
     expect(wrong({rooms: [null]})).toEqual([['rooms[0]', 'config.wrongType', 'text', 'nothing']]);
     expect(wrong({adaptive_lighting_areas: {hall: 4}})).toEqual([
-      ['adaptive_lighting_areas.hall', 'config.wrongType', 'text', 'a number'],
+      ['adaptive_lighting_areas.hall', 'config.wrongType', 'text', 'number'],
     ]);
-    expect(wrong({entities: {grid_power: 4}})).toEqual([
-      ['entities.grid_power', 'config.wrongType', 'text', 'a number'],
+    expect(wrong({entities: {grid_power: 4}})).toEqual([['entities.grid_power', 'config.wrongType', 'text', 'number']]);
+  });
+
+  test('a value that no YAML holds is a value, not a type name', () => {
+    expect(checkConfig({car: {battery_kwh: 10n}}).map(p => p.values)).toEqual([
+      {path: 'car.battery_kwh', expected: 'number', got: 'other'},
     ]);
   });
 
@@ -171,7 +199,7 @@ describe('config.wrongType', () => {
       {
         path: 'idle_stack.reminders[0].at',
         key: 'config.wrongType',
-        values: {path: 'idle_stack.reminders[0].at', expected: 'text', got: 'a number'},
+        values: {path: 'idle_stack.reminders[0].at', expected: 'text', got: 'number'},
       },
     ]);
   });
@@ -191,6 +219,21 @@ describe('config.notOneOf', () => {
       },
     ]);
     expect(ROOM_ICONS.join(', ')).toBe('sofa, door, desk, bed, bath, drop, car, house, therm');
+  });
+
+  test('a number outside the list is named, and what is not text or a number is a wrong type, not a word in the list', () => {
+    expect(checkConfig({rooms: [{climate: 'climate.a', icon: 5}]})[0].values).toEqual({
+      path: 'rooms[0].icon',
+      got: '5',
+      options: 'sofa, door, desk, bed, bath, drop, car, house, therm',
+    });
+    expect(checkConfig({rooms: [{climate: 'climate.a', icon: ['bed']}]})).toEqual([
+      {
+        path: 'rooms[0].icon',
+        key: 'config.wrongType',
+        values: {path: 'rooms[0].icon', expected: 'text', got: 'list'},
+      },
+    ]);
   });
 });
 
@@ -252,12 +295,38 @@ describe('config.missingKey', () => {
   });
 });
 
+describe('an undefined value is a setting that is not there', () => {
+  test('an undefined optional value is no problem, and the others are kept', () => {
+    expect(checkConfig({entities: {grid: undefined, whT: 'sensor.x'}})).toEqual([]);
+    expect(checkConfig({car: {name: undefined}, people: undefined, names: {a: undefined}})).toEqual([]);
+    expect(resolveConfig({entities: {grid: undefined, whT: 'sensor.tank'}}).entities.whT).toBe('sensor.tank');
+    expect(resolveConfig({names: {a: undefined, b: {en: 'B'}}}).names).toEqual({b: {en: 'B'}});
+  });
+
+  test('a required key that is undefined is missing, and only that', () => {
+    expect(checkConfig({rooms: [{climate: undefined, name: 'Office'}]})).toEqual([
+      {path: 'rooms[0]', key: 'config.missingKey', values: {path: 'rooms[0]', missing: 'climate'}},
+    ]);
+    expect(checkConfig({light_links: [{lights: undefined}]})[0].key).toBe('config.missingKey');
+  });
+
+  test('an undefined list element is a wrong type of its own, not a missing key of the list', () => {
+    expect(checkConfig({scenes: [undefined]})).toEqual([
+      {
+        path: 'scenes[0]',
+        key: 'config.wrongType',
+        values: {path: 'scenes[0]', expected: 'text', got: 'nothing'},
+      },
+    ]);
+    expect(resolveConfig({scenes: ['scene.a', undefined, 'scene.b']}).scenes).toEqual(['scene.a', 'scene.b']);
+  });
+});
+
 describe('the catalog has a message for every kind', () => {
   test('every config.* key is in English and in French, with the spec text in English', () => {
     expect(en['config.unknownKey']).toBe('{path}: unknown setting.');
     expect(en['config.unknownKeyHint']).toBe('{path}: unknown setting. Did you mean {hint}?');
     expect(en['config.unknownEntity']).toBe('{path}: not an entity the panel reads. See the example configuration.');
-    expect(en['config.wrongType']).toBe('{path}: expected {expected}, got {got}.');
     expect(en['config.notOneOf']).toBe('{path}: {got} is not one of {options}.');
     expect(en['config.notAPair']).toBe('{path}: a link needs exactly two cards.');
     expect(en['config.notATime']).toBe('{path}: {got} is not a time like 20:00.');
@@ -276,12 +345,13 @@ describe('the messages read as sentences', () => {
   test('a problem fills its message, in English and in French', () => {
     const [hint] = checkConfig({peoples: ['Alex']});
     expect(say('en', hint.key, hint.values)).toBe('peoples: unknown setting. Did you mean people?');
-    expect(say('fr', hint.key, hint.values)).toBe('peoples : réglage inconnu. Vouliez-vous écrire people?');
+    expect(say('fr', hint.key, hint.values)).toBe('peoples : réglage inconnu. Vouliez-vous écrire people ?');
     const [wrong] = checkConfig({idle_stack: {reminders: [{at: '20:00', lead: 'thirty'}]}});
     expect(say('en', wrong.key, wrong.values)).toBe('idle_stack.reminders[0].lead: expected a number, got text.');
+    expect(say('fr', wrong.key, wrong.values)).toBe('idle_stack.reminders[0].lead : attendu un nombre, reçu du texte.');
   });
 
-  test('every kind fills in both languages, with the values the checker gives it', () => {
+  test('every kind reads as a sentence in both languages, with the values the checker gives it', () => {
     const problems = checkConfig({
       frobnicate: 1,
       peoples: [],
@@ -291,9 +361,61 @@ describe('the messages read as sentences', () => {
       light_links: [['one']],
       idle_stack: {reminders: [{at: '8pm'}]},
     });
-    expect(new Set(problems.map(p => p.key)).size).toBe(8);
-    for (const p of problems)
-      for (const language of ['en', 'fr']) expect(say(language, p.key, p.values), p.path).toContain(p.path);
+    const sentences = problems.map(p => [p.key, say('en', p.key, p.values), say('fr', p.key, p.values)]);
+    expect(sentences).toEqual([
+      [
+        'config.wrongType',
+        'car: expected a block of settings, got text.',
+        'car : attendu un bloc de réglages, reçu du texte.',
+      ],
+      [
+        'config.notOneOf',
+        'rooms[0].icon: couch is not one of sofa, door, desk, bed, bath, drop, car, house, therm.',
+        'rooms[0].icon : couch ne fait pas partie de sofa, door, desk, bed, bath, drop, car, house, therm.',
+      ],
+      ['config.missingKey', 'rooms[1]: climate is required.', 'rooms[1] : climate est obligatoire.'],
+      [
+        'config.notAPair',
+        'light_links[0]: a link needs exactly two cards.',
+        'light_links[0] : un lien doit relier exactement deux cartes.',
+      ],
+      [
+        'config.notATime',
+        'idle_stack.reminders[0].at: 8pm is not a time like 20:00.',
+        "idle_stack.reminders[0].at : 8pm n'est pas une heure comme 20:00.",
+      ],
+      ['config.unknownKey', 'frobnicate: unknown setting.', 'frobnicate : réglage inconnu.'],
+      [
+        'config.unknownKeyHint',
+        'peoples: unknown setting. Did you mean people?',
+        'peoples : réglage inconnu. Vouliez-vous écrire people ?',
+      ],
+      [
+        'config.unknownEntity',
+        'entities.frobnicate: not an entity the panel reads. See the example configuration.',
+        "entities.frobnicate : ce n'est pas une entité que le panneau lit. Voir l'exemple de configuration.",
+      ],
+    ]);
+  });
+
+  test('each plain word is a word of its own in both languages', () => {
+    const wrong = (expected: string, got: string) => say('en', 'config.wrongType', {path: 'x', expected, got});
+    const mal = (expected: string, got: string) => say('fr', 'config.wrongType', {path: 'x', expected, got});
+    const words = [
+      ['text', 'text', 'du texte'],
+      ['number', 'a number', 'un nombre'],
+      ['yesno', 'yes or no', 'oui ou non'],
+      ['list', 'a list', 'une liste'],
+      ['block', 'a block of settings', 'un bloc de réglages'],
+      ['nothing', 'nothing', 'rien'],
+      ['other', 'a value', 'une valeur'],
+    ];
+    for (const [word, english, french] of words) {
+      expect(wrong(word, 'text'), word).toBe(`x: expected ${english}, got text.`);
+      expect(wrong('text', word), word).toBe(`x: expected text, got ${english}.`);
+      expect(mal(word, 'text'), word).toBe(`x : attendu ${french}, reçu du texte.`);
+      expect(mal('text', word), word).toBe(`x : attendu du texte, reçu ${french}.`);
+    }
   });
 
   test('the lead line counts the settings', () => {

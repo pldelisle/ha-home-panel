@@ -401,7 +401,7 @@ describe('panel config', () => {
   test('the config resolves against empty states before the first hass', () => {
     const store = make();
     expect(store.setPanelConfig({rooms: ['a']})).toBe(true);
-    expect(store.config).toMatchObject({raw: {rooms: ['a']}, count: 0});
+    expect(store.config).toEqual({...resolveConfig({rooms: ['a']}, {}), raw: {rooms: ['a']}, count: 0});
     expect(store.generation).toBe(1);
   });
 
@@ -409,7 +409,7 @@ describe('panel config', () => {
     const store = make();
     store.setPanelConfig({rooms: ['a']});
     store.setHass(house());
-    expect(store.config).toMatchObject({raw: {rooms: ['a']}, count: 3});
+    expect(store.config).toEqual({...resolveConfig({rooms: ['a']}, house().states), raw: {rooms: ['a']}, count: 3});
     expect(store.generation).toBe(1);
   });
 

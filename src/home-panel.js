@@ -1,6 +1,6 @@
 // Home panel for Home Assistant: a wall-tablet and phone dashboard (energy, climate, lights, weather, car, air, security, automations).
 // Registered with panel_custom, so it runs inside the HA frontend and uses the signed-in user's connection.
-// Nothing secret lives in this file: the house's entities, rooms and people come from the panel's config (see config.js) or are found in hass.
+// Nothing secret lives in this file: the house's entities, rooms and people come from the panel's config (see core/config.ts) or are found in hass.
 import {CSS} from './styles.js';
 import {resolveConfig} from './core/config.ts';
 import {pickStack, inHours, reminderLeft} from './stack.js';

@@ -196,3 +196,19 @@ test('idle_stack: on by default, reminders need an HH:MM time, away_mode alias',
     reminders: [{at: '20:00', title: 'Bedtime', text: 'Lamp to night', lead: 20}],
   });
 });
+
+test('discovery reads a friendly name as the old resolver did: through String(), a falsy value as no name', () => {
+  const named = (name: unknown) =>
+    resolveConfig({}, Object.fromEntries([st('person.x', {friendly_name: name})])).people;
+  expect(named(['Bob'])).toStrictEqual(['Bob']);
+  expect(named(7)).toStrictEqual(['7']);
+  expect(named(0)).toStrictEqual([]);
+  expect(named('')).toStrictEqual([]);
+  expect(named(null)).toStrictEqual([]);
+  expect(named({a: 1})).toStrictEqual(['[object']);
+  expect(guessIcon(['Bedroom'])).toBe('bed');
+  expect(guessIcon(0)).toBe('therm');
+  expect(guessIcon(null)).toBe('therm');
+  const room = resolveConfig({}, Object.fromEntries([st('climate.z', {friendly_name: ['Bedroom']})])).rooms;
+  expect(room.map(r => r.icon)).toStrictEqual(['bed']);
+});

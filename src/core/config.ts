@@ -2,7 +2,8 @@
 // the resolver that turns what is understood, plus what the house's entities say, into the settings the panel runs with.
 // Pattern: parse, don't validate (King, 2019), so `PanelConfig` is inferred from the struct and cannot disagree with the
 // parser; tolerant reader (Fowler): a bad leaf, element or key is dropped and reported, never thrown; superstruct, as Home
-// Assistant's frontend validates card configs. Must not: throw, coerce a type, touch the DOM or `hass`, or look for an entity.
+// Assistant's frontend validates card configs. Must not: throw, coerce a type, check that a configured entity exists, read
+// the clock, or touch the DOM or `hass` (it reads the house's `states` it is handed, to find what the config leaves out).
 import {
   array,
   boolean,
@@ -336,28 +337,33 @@ const found = (at: Place, key: MessageKey, values: Record<string, string | numbe
   problem: {path: show(at), key, values: {path: show(at), ...values}},
 });
 
-// plain words for what a value is, and for what was expected, not type names
-const WORDS: Record<string, string> = {
+// plain words for what a value is and what was expected, never type names: the values of a problem hold one of these
+// words and the message (`config.wrongType`) chooses its wording in each language with an ICU select
+type Word = 'text' | 'number' | 'yesno' | 'list' | 'block' | 'nothing' | 'other';
+const WORD_OF_TYPE: Partial<Record<string, Word>> = {
   string: 'text',
-  number: 'a number',
-  boolean: 'yes or no',
-  object: 'a block of settings',
+  number: 'number',
+  boolean: 'yesno',
+  object: 'block',
 };
-const kindOf = (v: unknown): string =>
-  v === null || v === undefined ? 'nothing' : Array.isArray(v) ? 'a list' : (WORDS[typeof v] ?? typeof v);
+const kindOf = (v: unknown): Word =>
+  v === null || v === undefined ? 'nothing' : Array.isArray(v) ? 'list' : (WORD_OF_TYPE[typeof v] ?? 'other');
 
-/** The text a value holds: a string, or a number as digits; anything else (an attribute can be anything) holds none. */
-const asText = (v: unknown): string => (typeof v === 'string' || typeof v === 'number' ? String(v) : '');
-/** The value itself when it is text or a number, else plain words for what it is. */
-const gotText = (v: unknown): string => (typeof v === 'string' || typeof v === 'number' ? String(v) : kindOf(v));
+/**
+ * Whether `candidate` is a plausible spelling meant by `key`, `distance` edits away: two at most, and no more than a third
+ * of the longer word (one at least), so a short key is not matched to every other short key (`foo` is two edits from `lo`
+ * and `low`, `temp` from `tend`, `ac` from `hi`) while `peoples`, `climat` and `grid_powr` are one edit from theirs.
+ */
+const plausible = (key: string, candidate: string, distance: number): boolean =>
+  distance <= Math.max(1, Math.min(2, Math.floor(Math.max(key.length, candidate.length) / 3)));
 
-/** The key of `candidates` within two edits of `key`, the nearest first, as `git` and `npm` suggest a command. */
+/** The plausible spelling among `candidates`, the nearest first, as `git` and `npm` suggest a command. */
 function nearest(key: string, candidates: readonly string[]): string | undefined {
   let best: string | undefined;
   let bestDistance = 3;
   for (const candidate of candidates) {
     const distance = editDistance(key, candidate);
-    if (distance < bestDistance) {
+    if (distance < bestDistance && plausible(key, candidate, distance)) {
       best = candidate;
       bestDistance = distance;
     }
@@ -382,7 +388,8 @@ function keysOfBlock(failure: Failure): string[] {
     struct =
       shape.type === 'array' ? (shape.schema as AnyStruct) : (shape.schema as Record<string, AnyStruct>)[path[depth]];
   }
-  return Object.keys(shapeOf(struct, branch[path.length - 1]).schema as object);
+  // _panel_custom is accepted, not suggested: panel_custom is a typo of nothing we wrote
+  return Object.keys(shapeOf(struct, branch[path.length - 1]).schema as object).filter(key => key !== '_panel_custom');
 }
 
 const unknownKey = (at: Place, candidates: readonly string[], plain: MessageKey = 'config.unknownKey'): Found => {
@@ -394,12 +401,17 @@ function problemOf(failure: Failure): Found {
   const at = failure.path as Place;
   const value: unknown = failure.value;
   if (failure.type === 'never') return unknownKey(at, keysOfBlock(failure));
-  if (value === undefined) return found(at.slice(0, -1), 'config.missingKey', {missing: String(at[at.length - 1])});
-  if (failure.refinement === 'pattern') return found(at, 'config.notATime', {got: gotText(value)});
-  if (failure.type === 'enums')
-    return found(at, 'config.notOneOf', {got: gotText(value), options: ROOM_ICONS.join(', ')});
+  // a required key of a block that is not there (an undefined value was dropped before the check); a list element that is
+  // undefined is a wrong type of its own
+  const branch = failure.branch as unknown[];
+  if (value === undefined && isRecord(branch[branch.length - 2]))
+    return found(at.slice(0, -1), 'config.missingKey', {missing: String(at[at.length - 1])});
+  if (failure.refinement === 'pattern') return found(at, 'config.notATime', {got: String(value)});
+  if (failure.type === 'enums' && (typeof value === 'string' || typeof value === 'number'))
+    return found(at, 'config.notOneOf', {got: String(value), options: ROOM_ICONS.join(', ')});
+  if (failure.type === 'enums') return found(at, 'config.wrongType', {expected: 'text', got: kindOf(value)});
   if (failure.type === 'pair') return found(at, 'config.notAPair');
-  return found(at, 'config.wrongType', {expected: WORDS[failure.type] ?? failure.type, got: kindOf(value)});
+  return found(at, 'config.wrongType', {expected: WORD_OF_TYPE[failure.type] ?? 'other', got: kindOf(value)});
 }
 
 /** Every problem of a block of settings, each with the place to drop. */
@@ -419,10 +431,25 @@ function findProblems(raw: Record<string, unknown>): Found[] {
  * required setting that is missing. A value that is not a block of settings counts as empty. Never throws.
  */
 export function checkConfig(raw: unknown): ConfigProblem[] {
-  return isRecord(raw) ? findProblems(raw).map(f => f.problem) : [];
+  return isRecord(raw) ? findProblems(defined(raw) as Record<string, unknown>).map(f => f.problem) : [];
 }
 
 // ---------- pruning: the tolerant reader ----------
+
+/**
+ * A copy without the settings whose value is `undefined`: a setting that is not there. YAML has no undefined (an empty
+ * value is null, which clears an entity); a script that builds a config can leave one, and it must not cost the block.
+ */
+const defined = (node: unknown): unknown =>
+  Array.isArray(node)
+    ? node.map(defined)
+    : isRecord(node)
+      ? Object.fromEntries(
+          Object.entries(node)
+            .filter(([, v]) => v !== undefined)
+            .map(([k, v]) => [k, defined(v)]),
+        )
+      : node;
 
 /** A copy without the holes `delete` leaves in a list. Anything that is not a list or a block is kept as it is. */
 const tidy = (node: unknown): unknown =>
@@ -443,7 +470,7 @@ const accepted = (data: unknown) => data as PanelConfig;
  * block without a required key, which the next round drops in turn; three rounds are more than any config needs.
  */
 function prune(raw: Record<string, unknown>): PanelConfig {
-  let data = tidy(raw) as Record<string, unknown>;
+  let data = defined(raw) as Record<string, unknown>;
   for (let round = 0; round < 3; round++) {
     const problems = findProblems(data);
     if (problems.length === 0) break;
@@ -459,10 +486,17 @@ function prune(raw: Record<string, unknown>): PanelConfig {
 
 // ---------- the resolver ----------
 
+/**
+ * What discovery has always made of a value it did not choose (a friendly name can be anything): String() of it, and a
+ * falsy value is no text. A list of one name reads as the name, a number as digits.
+ */
+// eslint-disable-next-line @typescript-eslint/no-base-to-string -- the old resolver's coercion, kept: discovery keeps every rule
+const lenientText = (v: unknown): string => String(v || '');
+
 // a room's icon from its name, when the config doesn't give one
-/** @param s the room's name, or a value of another type: a number is read as text, anything else as no name */
+/** @param s the room's name, or a value of another type: it goes through String(), and a falsy value is no name */
 export const guessIcon = (s: unknown): RoomIcon => {
-  const n = asText(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  const n = lenientText(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
   return /bed|chambre|nursery|kid/.test(n)
     ? 'bed'
     : /bath|salle de bain|toilet/.test(n)
@@ -499,7 +533,7 @@ function roomSpec(r: Infer<typeof room>, states: ConfigStates): RoomSpec {
 }
 
 const asList = <T>(v: T | T[] | undefined): T[] => (v === undefined ? [] : Array.isArray(v) ? v : [v]);
-const firstWord = (s: unknown): string => asText(s).trim().split(/\s+/)[0];
+const firstWord = (s: unknown): string => lenientText(s).trim().split(/\s+/)[0];
 
 /**
  * panel.config and the house's states → the settings the panel runs with. It runs on the config without what
