@@ -3422,10 +3422,11 @@ export class HomePanel extends HTMLElement {
 
   // ---------- history ----------
   async loadHistory() {
-    // one load per config at a time; a load under another config (the panel was redrawn meanwhile) is a StaleReply
+    // one load per config at a time; a load under another config (the panel was redrawn meanwhile) is let go
     const generation = this.store.generation;
-    if (!this.hass || generation === this.loadingH) return;
-    this.loadingH = generation;
+    // loadingGen is an in-flight marker (the generation whose load is running), not a stale guard: the StaleReply is
+    if (!this.hass || generation === this.loadingGen) return;
+    this.loadingGen = generation;
     try {
       const now = new Date(),
         d = n => new Date(now.getTime() - n * 864e5);
@@ -3447,11 +3448,12 @@ export class HomePanel extends HTMLElement {
       this.H = this.derive(hour7, day, meter, evh, hp, today, t24);
       this.histErr = null;
     } catch (e) {
-      if (e instanceof StaleReply) return;
+      // a load of an old config is let go whatever went wrong: a network error is no StaleReply, but the new load owns the state
+      if (e instanceof StaleReply || generation !== this.store.generation) return;
       console.error('home-panel history', e);
       this.histErr = e.message || e.code || String(e);
     }
-    this.loadingH = false;
+    this.loadingGen = false;
     this.cache = {};
     this.renderLive();
     if (this.open) this.redrawCharts();
@@ -6539,7 +6541,7 @@ export class HomePanel extends HTMLElement {
   loadLightOrder() {
     if (!this.hass) return;
     this.api
-      .getSystemData(LIGHT_ORDER_KEY)
+      .getSystemData(LIGHT_ORDER_KEY, {stale: false}) // the system data is the same under every config
       .then(r => {
         const v = r || {},
           o = Array.isArray(v.light_order) ? v.light_order : null;
@@ -6549,10 +6551,7 @@ export class HomePanel extends HTMLElement {
         this.lightOrder = o;
         this.tick();
       })
-      .catch(e => {
-        // the config changed while the read was on its way: ask again under the new one
-        if (e instanceof StaleReply) this.loadLightOrder();
-      });
+      .catch(() => {});
   }
   saveLightOrder(keys) {
     this.lightOrder = keys;

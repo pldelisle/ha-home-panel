@@ -170,6 +170,23 @@ describe('system data', () => {
     expect(await api.getSystemData('home_panel')).toBeNull();
   });
 
+  test('a read that opts out of the staleness check resolves although the config changed meanwhile', async () => {
+    const ctx = setup();
+    let release = () => {};
+    ctx.hass.replies.set(
+      'frontend/get_system_data',
+      () =>
+        new Promise(resolve => {
+          release = () => resolve({value: {light_order: ['a']}});
+        }),
+    );
+    const asked = ctx.api.getSystemData('home_panel', {stale: false});
+    ctx.store.setPanelConfig({people: ['x']});
+    release();
+    await expect(asked).resolves.toEqual({light_order: ['a']});
+    expect(ctx.hass.calls.ws).toEqual([{type: 'frontend/get_system_data', key: 'home_panel'}]);
+  });
+
   test('sets the value under the key', async () => {
     const {hass, api} = setup();
     await api.setSystemData('home_panel', {light_order: null, light_links: [['a', 'b']]});
@@ -223,10 +240,16 @@ describe('automation traces', () => {
     expect(hass.calls.ws).toEqual([{type: 'automation/config', entity_id: 'automation.porch'}]);
   });
 
-  test('a missing configuration is an empty one', async () => {
+  test('a missing configuration is null, so the caller falls back to the trace', async () => {
     const {hass, api} = setup();
     hass.replies.set('automation/config', () => null);
-    expect(await api.automationConfig('automation.porch')).toEqual({config: {}});
+    expect((await api.automationConfig('automation.porch')).config).toBeNull();
+  });
+
+  test('a reply that is the bare configuration is read as the configuration', async () => {
+    const {hass, api} = setup();
+    hass.replies.set('automation/config', () => ({alias: 'Porch light', triggers: []}));
+    expect(await api.automationConfig('automation.porch')).toEqual({config: {alias: 'Porch light', triggers: []}});
   });
 });
 
@@ -343,6 +366,24 @@ describe('stale replies', () => {
     store.setPanelConfig({people: ['x']});
     release();
     await expect(asked).rejects.toBeInstanceOf(StaleReply);
+  });
+
+  test('a network error is the error of Home Assistant, not a StaleReply, even when the config changed meanwhile', async () => {
+    const ctx = setup();
+    let fail: (e: Error) => void = () => {};
+    ctx.hass.replies.set(
+      'history/history_during_period',
+      () =>
+        new Promise((_resolve, reject) => {
+          fail = reject;
+        }),
+    );
+    const asked = ctx.api.history(['a.b'], START, {minimal: true, attributes: false});
+    ctx.store.setPanelConfig({people: ['x']});
+    fail(new Error('connection lost'));
+    const err = await asked.catch((e: unknown) => e);
+    expect(err).not.toBeInstanceOf(StaleReply);
+    expect(err).toMatchObject({message: 'connection lost'});
   });
 
   test('a read is not stale when the config is written again unchanged', async () => {

@@ -4,6 +4,7 @@
 // The graph is laid out by Mermaid (from npm, in lazy chunks imported only when the tab opens);
 // the path a run took is lit green, the step it is waiting on amber, a failed check red, the rest dashed grey.
 import {ok, esc, cap, plural, tile} from './legacy/globals.js';
+import {StaleReply} from './core/api.ts';
 
 // Mermaid is imported the first time a flow is drawn, so the bundle the other tabs load does not carry it; Vite emits
 // it as chunks under chunks/, beside home-panel.js.
@@ -729,10 +730,14 @@ export const autoMethods = {
     this.auCfg = this.auCfg || {};
     this.auTr = this.auTr || {};
     try {
+      let dropped = false;
       const list = await this.api.traceList('automation').catch(e => {
-        this.auErr = e && (e.message || e.code);
+        // the config changed while the list was on its way: neither a list nor an error, so ask again later
+        if (e instanceof StaleReply) dropped = true;
+        else this.auErr = e && (e.message || e.code);
         return null;
       });
+      if (dropped) return;
       if (list) {
         this.auList = list;
         this.auErr = null;
@@ -749,7 +754,8 @@ export const autoMethods = {
             .then(r => {
               this.auCfg[a.item] = r.config;
             })
-            .catch(() => {
+            .catch(e => {
+              if (e instanceof StaleReply) return; // not a failure: the next load asks again
               if (!(a.item in this.auCfg)) this.auCfg[a.item] = null;
             }),
         ),

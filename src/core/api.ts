@@ -1,7 +1,8 @@
 // The API client: the one typed door to Home Assistant, a method per message the panel sends and the reply as its own type.
 // Pattern: port and gateway (Cockburn, Hexagonal Architecture; Fowler, Patterns of Enterprise Application Architecture)
 // over an anti-corruption layer (Evans, Domain-Driven Design): the wire is read into the panel's types here and nowhere else.
-// Must not: let a caller see a wire field name, cache, retry or batch, touch the DOM, or be bypassed (ESLint forbids callWS).
+// Time fields become milliseconds and shapes are typed at the edge; field names stay the wire's (item_id, light_order).
+// Must not: let a caller parse a wire shape, cache, retry or batch, touch the DOM, or be bypassed (ESLint forbids callWS).
 import type {
   AutomationConfig,
   ForecastEntry,
@@ -30,6 +31,11 @@ export class StaleReply extends Error {
 /** The forecast kinds `weather/subscribe_forecast` serves. */
 export type ForecastType = 'daily' | 'hourly' | 'twice_daily';
 
+export interface ReadOptions {
+  /** False takes the reply whatever the config did meanwhile; true (the default) rejects with a StaleReply. */
+  stale?: boolean;
+}
+
 export interface HistoryOptions {
   /** Home Assistant's minimal response: states without attributes, except the first of each entity. */
   minimal: boolean;
@@ -48,12 +54,16 @@ export interface PanelApi {
     end?: Date,
   ): Promise<Record<string, StatisticRow[]>>;
   history(ids: readonly string[], start: Date, options: HistoryOptions): Promise<Record<string, HistoryPoint[]>>;
-  /** What is stored under the key, or null when nothing is. */
-  getSystemData(key: string): Promise<PanelSystemData | null>;
+  /**
+   * What is stored under the key, or null when nothing is. System data does not depend on the panel's config, so a
+   * caller that reads it for that reason passes `{stale: false}` and gets the reply whatever the config did meanwhile.
+   */
+  getSystemData(key: string, options?: ReadOptions): Promise<PanelSystemData | null>;
   setSystemData(key: string, value: PanelSystemData): Promise<void>;
   traceList(domain: string): Promise<TraceSummary[]>;
   traceGet(domain: string, itemId: string, runId: string): Promise<Trace>;
-  automationConfig(entityId: string): Promise<{config: AutomationConfig}>;
+  /** The config is null when Home Assistant has none, so a caller's fallback (the trace's copy) still applies. */
+  automationConfig(entityId: string): Promise<{config: AutomationConfig | null}>;
   lovelaceResources(): Promise<LovelaceResource[]>;
   /** The returned function unsubscribes. */
   subscribeForecast(entityId: string, type: ForecastType, cb: (forecast: ForecastEntry[]) => void): Promise<() => void>;
@@ -118,11 +128,15 @@ export function createApi(store: PanelStore): PanelApi {
   };
 
   /** A read: the reply is dropped, as a StaleReply, when the config changed while it was on its way. */
-  async function read<W, R>(msg: {type: string} & Record<string, unknown>, reader: (wire: W) => R): Promise<R> {
+  async function read<W, R>(
+    msg: {type: string} & Record<string, unknown>,
+    reader: (wire: W) => R,
+    {stale = true}: ReadOptions = {},
+  ): Promise<R> {
     const hass = connected();
     const generation = store.generation;
     const wire = await hass.callWS<W>(msg);
-    if (store.generation !== generation) throw new StaleReply(generation, store.generation);
+    if (stale && store.generation !== generation) throw new StaleReply(generation, store.generation);
     return reader(wire);
   }
 
@@ -173,10 +187,11 @@ export function createApi(store: PanelStore): PanelApi {
       );
     },
 
-    getSystemData(key) {
+    getSystemData(key, options) {
       return read<Wire<{value?: PanelSystemData | null}>, PanelSystemData | null>(
         {type: 'frontend/get_system_data', key},
         wire => wire?.value ?? null,
+        options,
       );
     },
 
@@ -194,9 +209,10 @@ export function createApi(store: PanelStore): PanelApi {
     },
 
     automationConfig(entityId) {
-      return read<Wire<{config?: AutomationConfig}>, {config: AutomationConfig}>(
+      // the config is in `config`; a reply that is the bare config is the config; no reply is no config
+      return read<Wire<AutomationConfig & {config?: AutomationConfig}>, {config: AutomationConfig | null}>(
         {type: 'automation/config', entity_id: entityId},
-        wire => ({config: wire?.config ?? {}}),
+        wire => ({config: wire?.config || wire || null}),
       );
     },
 

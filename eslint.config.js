@@ -27,8 +27,18 @@ const STRING_RENDERING = [
     message: 'Render with Lit templates, not insertAdjacentHTML.',
   },
 ];
+// Any way of reaching one of the four socket functions: `hass.callWS(...)`, `hass['callWS'](...)`, a template literal
+// key, `hass.callWS.call(...)` and `.apply`/`.bind` (all member accesses) and `const {callWS} = hass` (a destructuring
+// pattern, key written as a name or a string). A key computed at run time (`hass[name]`) no selector can see.
+const SOCKET = '/^(callWS|callService|subscribeMessage|subscribeEvents)$/';
 const API_DOOR = {
-  selector: 'CallExpression[callee.property.name=/^(callWS|callService|subscribeMessage|subscribeEvents)$/]',
+  selector: [
+    `MemberExpression[property.name=${SOCKET}]`,
+    `MemberExpression[property.value=${SOCKET}]`,
+    `MemberExpression > TemplateLiteral.property[quasis.0.value.cooked=${SOCKET}]`,
+    `ObjectPattern > Property[key.name=${SOCKET}]`,
+    `ObjectPattern > Property[key.value=${SOCKET}]`,
+  ].join(', '),
   message: 'Call Home Assistant through the API client (src/core/api.ts).',
 };
 
