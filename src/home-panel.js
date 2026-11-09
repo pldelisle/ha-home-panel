@@ -487,8 +487,6 @@ const wxDef = e => ({
     note: 'Forecast highs and lows as solid lines, the normals for the date dashed.',
   },
 });
-// Built from an empty config, as it has always been: every series id is undefined, so the history sheet says the sensor is missing. Deliberately unchanged in this migration; the next commit builds it from the panel's config.
-const WX_DEF = wxDef({});
 // ---------- climate helpers ----------
 // history ranges for the climate sheet: statistics period, span, and how the heatmap groups cells
 const CRANGE = {
@@ -5743,9 +5741,9 @@ export class HomePanel extends HTMLElement {
         'wx',
         'UV index',
         uv == null ? '–' : String(Math.round(uv)),
-        band(WX_DEF.uv.bands, uv) || (uv != null && uv >= 8 ? 'Very high' : ''),
+        band(this.wxDefs().uv.bands, uv) || (uv != null && uv >= 8 ? 'Very high' : ''),
       ],
-      ['aqhi', 'aq', 'Air quality', aq == null ? '–' : String(Math.round(aq)), band(WX_DEF.aqhi.bands, aq)],
+      ['aqhi', 'aq', 'Air quality', aq == null ? '–' : String(Math.round(aq)), band(this.wxDefs().aqhi.bands, aq)],
       ['pop', 'drop', 'Rain or snow', v(this.E.pop) == null ? '–' : `${v(this.E.pop)}<small>%</small>`, 'Chance today'],
       [
         'normal',
@@ -6906,8 +6904,17 @@ export class HomePanel extends HTMLElement {
 
   // ---------- weather radar (Weather Radar Card from HACS, RainViewer data) ----------
   // ---------- weather history: one measure from the Weather sheet, Day / Week / Month / Year ----------
+  // the measures built from this panel's entity ids; built again only when the config hands out a new entity map
+  wxDefs() {
+    const e = this.E;
+    if (this.wxDefsFor !== e) {
+      this.wxDefsFor = e;
+      this.wxDefsOf = wxDef(e);
+    }
+    return this.wxDefsOf;
+  }
   openWx(key) {
-    if (!WX_DEF[key]) return;
+    if (!this.wxDefs()[key]) return;
     this.wxKey = key;
     this.wxRange = this.wxRange || 'week';
     this.show('sh-wx');
@@ -7006,7 +7013,7 @@ export class HomePanel extends HTMLElement {
   }
   async wxSheet() {
     if (!this.ApexCharts) return; // a tap while the chunk is loading; buildSheet draws it when it lands
-    const D = WX_DEF[this.wxKey],
+    const D = this.wxDefs()[this.wxKey],
       r = this.wxRange,
       R = CRANGE[r],
       tag = (this.wxTag = Symbol()),
