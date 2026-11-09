@@ -8,6 +8,7 @@ import type {PanelApi} from '../core/api.ts';
 import type {PanelSettings} from '../core/settings.ts';
 import type {HassChange, PanelStore} from '../core/store.ts';
 import type {FeatureDescriptor, FeatureKey, GuestAnswers} from './feature.ts';
+import type {IdleTimer} from './idle-timer.ts';
 
 /** What the shell hands the guest when it connects: the root, the host, the services and the shell's own few doors. */
 export interface GuestContext {
@@ -43,6 +44,11 @@ export interface GuestRenderer extends GuestAnswers {
   compactChanged(compact: boolean): void;
   /** Step C only: the shell's More button asks for the guest's More sheet, deleted by #166 (`<hp-more-sheet>`). */
   openMore(): void;
+  /**
+   * Step D: the idle clock is showing (true) or the panel woke (false). The shell has drawn `.app.idle` and the overlay by
+   * then; the guest draws the clock into `#iwrap`. Told once per change. Deleted with the clock's own move (#187).
+   */
+  idleChanged(idle: boolean): void;
 }
 
 /** One section the phone's More sheet lists, as the registry gives it; deleted by #166 (`<hp-more-sheet>`). */
@@ -66,11 +72,16 @@ export interface ShellForGuest {
   resetFrame(): void;
   /** The sections that sit under More, in rail order; deleted by #166 (`<hp-more-sheet>`). */
   moreSections(): readonly MoreSection[];
+  /**
+   * Step D: the shell's idle timer. `arm` counts as a touch (the guest drew again); `sleepNow` shows the clock at once,
+   * on a phone too. The controller's `start` is the shell's own, at connection. Deleted with the guest's clock (#187).
+   */
+  idle: Pick<IdleTimer, 'arm' | 'sleepNow'>;
 }
 
-// The guest's containers, inside the shell's root: `.guest` (src/shell/home-panel.ts holds it, display: contents). The
-// rule both sides keep: Lit binds nothing inside a guest container, and the guest writes nothing outside its
-// containers. This list only shrinks.
+// The guest's containers, inside the shell's root: `.guest` (src/shell/home-panel.ts holds it, display: contents) and
+// `#iwrap`, the idle clock's, inside the overlay the shell draws (step D). The rule both sides keep: Lit binds nothing
+// inside a guest container, and the guest writes nothing outside its containers. This list only shrinks.
 
 // The one piece of module state in the shell: what src/main.js registers before it defines the element, so the first
 // <home-panel> already has a guest to create and its stylesheet to adopt. It exists for the guest alone.
