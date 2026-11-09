@@ -1,14 +1,10 @@
 // Home panel for Home Assistant: a wall-tablet and phone dashboard (energy, climate, lights, weather, car, air, security, automations).
 // Registered with panel_custom, so it runs inside the HA frontend and uses the signed-in user's connection.
 // Nothing secret lives in this file: the house's entities, rooms and people come from the panel's config (see core/config.ts) or are found in hass.
-import {CSS} from './styles.js';
-import {resolveConfig} from './core/config.ts';
 import {pickStack, inHours, reminderLeft} from './stack.js';
 import {FR_ATTR, createFrench} from './i18n/fr.js';
 import {autoMethods} from './auto.js';
-import {createStore} from './core/store.ts';
-import {createApi, StaleReply} from './core/api.ts';
-import {createSettings} from './core/settings.ts';
+import {StaleReply} from './core/api.ts';
 import {browserDefaults} from './core/i18n/browser.ts';
 import {createFormatters} from './core/i18n/format.ts';
 import {englishLocale, panelLocale} from './core/i18n/locale.ts';
@@ -641,22 +637,19 @@ const z0 = (lo, span, step = 10) =>
     .map(v => `<span class="tick" style="left:${((v - lo) / span) * 100}%">${v}°</span>`)
     .join('');
 
-export class HomePanel extends HTMLElement {
-  // The guest's two doors to the page (spec 14, step B). The class reaches its shadow root through `root` and the element
-  // through `host`; the Lit host (ticket #152) sets both from GuestContext in connect(), and these getters become fields then.
-  get root() {
-    return this.shadow;
-  }
-  get host() {
-    return this;
-  }
+/**
+ * The legacy class, the shell's guest (spec 14, ADR 0016): it implements GuestRenderer structurally (src/shell/guest.ts;
+ * this file may not import the shell). It is not an element: the shell constructs it, hands it the page, the store, the
+ * API client and the settings in connect(), and draws nothing for it. It writes into the shell's `.guest` container and
+ * nowhere else in the shell's root.
+ */
+export class LegacyPanel {
+  // `root` (the shell's shadow root), `host` (the <home-panel> element) and `container` (the guest's container inside the
+  // root) are set by connect(); so are the services the shell owns: `store`, `api` and `settings`.
   constructor() {
-    super();
-    this.shadow = this.attachShadow({mode: 'open'}); // the element's own root, held in a field for `root` to return
-    // the composition root: this panel's store, settings and French layer, none of them shared with another panel (spec 10)
-    this.browser = browserDefaults(); // the zone, locale and hour cycle the browser prefers, which the core does not read itself
-    this.store = createStore({defaultTimeZone: this.browser.timeZone, resolve: resolveConfig});
-    // the four formatter sets (spec 11), named by their language and zone:
+    // the zone, locale and hour cycle the browser prefers, which the core does not read itself
+    this.browser = browserDefaults();
+    // the formatter sets (spec 11), named by their language and zone, are built once the store is known (refreshFormatters):
     //   fmt      the profile's language, the house's zone: the five sites that were already French
     //   fmtEn    English, the house's zone: every other site, because the rewrite layer parses English (deleted in phase 4)
     //   fmtUtc   fmt pinned to UTC, and fmtUtcEn fmtEn pinned to UTC: for a day or month key parsed at UTC noon (dayAt,
@@ -664,23 +657,12 @@ export class HomePanel extends HTMLElement {
     // fmtUtcEn never changes; the other three follow the profile (refreshFormatters)
     this.fmtUtcEn = createFormatters(englishLocale('UTC'));
     this.localeKey = '';
-    this.refreshFormatters();
-    /** @type {import('./core/settings.ts').KeyValueStorage} */
-    let storage = {getItem: () => null, setItem: () => {}};
-    try {
-      storage = localStorage; // the one adapter wiring: the element hands it over, and only src/core/settings.ts reads or writes it
-    } catch {
-      // blocked site data: touching localStorage throws, so the settings keep their defaults
-    }
-    this.api = createApi(this.store); // the one door to Home Assistant's WebSocket (spec 12)
-    this.settings = createSettings(storage);
-    this.french = createFrench(this.store); // the French layer of this panel, read through its store
     this.frDrawn = false; // whether the panel was last drawn in French
     this.onStore = () => {
       this.refreshFormatters(); // before the render, which reads them
       this.tick();
     };
-    this.unsubStore = this.store.subscribe('*', this.onStore); // one path to the one-second render
+    this.unsubStore = null; // the one path to the one-second render, subscribed in connect
     this.H = null; // history-derived data
     this.charts = []; // sheet charts, destroyed on close
     this.ApexCharts = null; // the library, once the lazy chunk has loaded (loadCharts)
@@ -706,20 +688,13 @@ export class HomePanel extends HTMLElement {
       } else if (this.$app && !this.$('setpop').hidden) this.toggleSettings(false);
     };
   }
-  // The setters and the two callbacks are the element's half and forward in one line; connect, disconnect, hassChanged,
-  // panelChanged and narrowChanged are the guest's half (spec 14). The Lit host (ticket #152) feeds the store itself and
-  // calls the same five methods.
-  set narrow(v) {
-    this._narrow = v;
-    this.narrowChanged(v);
-  }
+  // connect, disconnect, hassChanged, panelChanged and narrowChanged are the guest's interface (spec 14, GuestRenderer):
+  // the shell feeds the store itself and calls them after it did.
   narrowChanged(narrow) {
+    this._narrow = narrow; // build() reads it
     if (this.$app) this.$app.classList.toggle('narrow', !!narrow);
   }
-  set panel(v) {
-    this._panel = v;
-    this.panelChanged();
-  }
+  // the shell fed the store the new config; draw again when it is a different one (configure)
   panelChanged() {
     if (this.hass && this.configure()) {
       this.build();
@@ -738,9 +713,6 @@ export class HomePanel extends HTMLElement {
    */
   get hass() {
     return this.store.hass;
-  }
-  set hass(h) {
-    this.hassChanged(this.store.setHass(h));
   }
   /** @param {import('./core/store.ts').HassChange} change what the store found different; the body still reads the store itself */
   // eslint-disable-next-line no-unused-vars -- the guest's signature; the body keeps reading the store until a move rewrites it
@@ -762,13 +734,12 @@ export class HomePanel extends HTMLElement {
       this.loadLightOrder();
     }
   }
-  // (re)read the panel's config; true when it changed after the panel was drawn, so it must be drawn again
+  // true when the store's config changed after the panel was drawn, so it must be drawn again; the store's generation
+  // is the key (the shell fed the store the config, and the store counts its changes)
   configure() {
-    const pc = (this._panel && this._panel.config) || {},
-      key = JSON.stringify(pc);
-    if (key === this.cfgKey) return false;
-    this.cfgKey = key;
-    this.store.setPanelConfig(pc);
+    const gen = this.store.generation;
+    if (gen === this.generation) return false;
+    this.generation = gen;
     if (!this.$app) return false;
     this.teardown();
     this.H = null;
@@ -777,6 +748,7 @@ export class HomePanel extends HTMLElement {
   }
   // forget the drawn panel so build() starts over (the language or the config changed)
   teardown() {
+    this.unsubscribeForecasts(); // the next draw subscribes again, with the config it was drawn from
     this.frStop();
     this.radarStop();
     this.charts.forEach(c => c.destroy());
@@ -788,26 +760,23 @@ export class HomePanel extends HTMLElement {
     this.$app = null;
     this.view = null;
   }
-  connectedCallback() {
-    // properties set before the element was upgraded shadow the setters; replay them
-    for (const k of ['narrow', 'panel', 'hass'])
-      if (Object.prototype.hasOwnProperty.call(this, k)) {
-        const v = this[k];
-        delete this[k];
-        this[k] = v;
-      }
-    this.connect({root: this.root, host: this.host, store: this.store, api: this.api, settings: this.settings});
-  }
   /**
-   * @param {{root: ShadowRoot, host: HTMLElement, store: import('./core/store.ts').PanelStore, api: import('./core/api.ts').PanelApi, settings: import('./core/settings.ts').PanelSettings}} ctx
-   * the guest's context; the class still builds its own store, API client and settings (the Lit host's ticket takes them),
-   * so it reads none of it yet
+   * Once per connection of the host: take the root, the host and the services from the shell's context, then subscribe.
+   * The shell calls hassChanged, panelChanged and narrowChanged after this, which draw the panel the first time.
+   * (A JSDoc type reference is no import for dependency-cruiser, so naming the shell's type here breaks no rule.)
+   * @param {import('./shell/guest.ts').GuestContext} ctx
    */
-  // eslint-disable-next-line no-unused-vars -- the guest's signature; the Lit host's ticket makes the class read it
   connect(ctx) {
+    this.root = ctx.root;
+    this.host = ctx.host;
+    this.container = ctx.root.querySelector('.guest'); // the one container the class draws into
+    this.store = ctx.store;
+    this.api = ctx.api;
+    this.settings = ctx.settings;
+    if (!this.french) this.french = createFrench(this.store); // the French layer of this panel, read through its store
     if (!this.unsubStore) {
-      this.refreshFormatters(); // a hass may have come while the panel was off the page
-      this.unsubStore = this.store.subscribe('*', this.onStore); // back on the page
+      this.refreshFormatters(); // a hass may have come before this connection, or while the panel was off the page
+      this.unsubStore = this.store.subscribe('*', this.onStore);
     }
     this.clockT = setInterval(() => {
       this.renderHeader();
@@ -842,9 +811,6 @@ export class HomePanel extends HTMLElement {
     });
     this.ro.observe(this.root.querySelector('.cols'));
     LAYOUT.forEach(id => this.$(id) && this.ro.observe(this.$(id)));
-  }
-  disconnectedCallback() {
-    this.disconnect();
   }
   disconnect() {
     for (const el of [document.documentElement, document.body]) el.style.removeProperty('background-color');
@@ -1016,8 +982,7 @@ export class HomePanel extends HTMLElement {
   // ---------- skeleton ----------
   build() {
     ensureFonts(); // Montserrat from the panel's own fonts/ folder, declared in the document once
-    this.root.innerHTML = `<style>${CSS}</style>
-<div class="app" id="app"><div class="wrap">
+    this.container.innerHTML = `<div class="app" id="app"><div class="wrap">
   <header class="head">
     <button class="icon menu" id="menu" type="button" aria-label="Open the sidebar">${ico('menu')}</button>
     <div class="hello" id="hello"></div>
@@ -1910,7 +1875,7 @@ export class HomePanel extends HTMLElement {
       this.lensSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       this.lensSvg.setAttribute('aria-hidden', 'true');
       this.lensSvg.style.cssText = 'position:absolute;width:0;height:0';
-      this.root.appendChild(this.lensSvg);
+      this.container.appendChild(this.lensSvg);
       this.lensSvg.innerHTML =
         '<filter id="glass-distortion" x="0%" y="0%" width="100%" height="100%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency="0.008 0.008" numOctaves="2" seed="92" result="noise"/><feGaussianBlur in="noise" stdDeviation="2" result="blurred"/><feDisplacementMap in="SourceGraphic" in2="blurred" scale="150" xChannelSelector="R" yChannelSelector="G"/></filter>';
     }
@@ -8365,4 +8330,4 @@ const merge = (a, b, ...more) => {
   return more.length ? merge(a, ...more) : a;
 };
 
-Object.assign(HomePanel.prototype, autoMethods);
+Object.assign(LegacyPanel.prototype, autoMethods);

@@ -36,9 +36,9 @@ declare global {
   }
 }
 
-// the Automations methods, put on the prototype by `Object.assign(HomePanel.prototype, autoMethods)` in home-panel.js
+// the Automations methods, put on the prototype by `Object.assign(LegacyPanel.prototype, autoMethods)` in home-panel.js
 declare module '../home-panel.js' {
-  interface HomePanel {
+  interface LegacyPanel {
     auAutos(): any[];
     auLoad(force?: boolean): Promise<void>;
     renderAuto(): void;

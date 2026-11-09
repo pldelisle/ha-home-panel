@@ -1,4 +1,9 @@
-// The entry Vite bundles into dist/home-panel.js: define the custom element Home Assistant mounts as the panel.
-import {HomePanel} from './home-panel.js';
+// The entry Vite bundles into dist/home-panel.js: register the legacy class as the shell's guest, then define the
+// custom element Home Assistant mounts as the panel. The guest comes first, so the first <home-panel> already has one.
+import {LegacyPanel} from './home-panel.js';
+import {CSS} from './styles.js';
+import {registerGuest} from './shell/guest.ts';
+import {HomePanel} from './shell/home-panel.ts';
 
+registerGuest(() => new LegacyPanel(), CSS);
 if (!customElements.get('home-panel')) customElements.define('home-panel', HomePanel);

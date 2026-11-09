@@ -199,7 +199,7 @@ Every `uses:` in `.github/workflows/` is pinned to a commit with its version in 
 `npm run size` prints the gzipped size of the main chunk and of the lazy chunks (as `size-limit` counts it). There is no limit: the panel is growing on purpose,
 and a size that jumps without a reason is for the reviewer to notice in the CI log.
 
-The source is ES modules under `src/`, built by Vite (`vite.config.ts`). `src/main.js` is the entry and defines the custom element; the `HomePanel` class is in `src/home-panel.js`, with the
+The source is ES modules under `src/`, built by Vite (`vite.config.ts`). `src/main.js` is the entry: it registers the legacy class as the guest and defines the custom element, `<home-panel>`, a Lit element in `src/shell/home-panel.ts`; the legacy class (`LegacyPanel`) is in `src/home-panel.js`, with the
 Automations tab (`src/auto.js`), the configuration schema (`src/core/config.ts`), the smart-stack rules (`src/stack.js`), the French translations
 (`src/i18n/fr.js`) and the stylesheet (`src/styles.js`, which joins the files in `src/css/`, minified by Lightning CSS for the browsers listed under Browser support) imported from it. `src/legacy/globals.js` holds the state
 and helpers those files used to share as globals; it goes away in the refactor's second phase. ApexCharts and Mermaid come from npm as lazy chunks under
