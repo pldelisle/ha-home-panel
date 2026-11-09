@@ -8,6 +8,18 @@ import type {MessageKey} from './en.ts';
 
 export const fr: Record<MessageKey, string> = {
   'charts.failed': "La bibliothèque de graphiques n'a pas chargé",
+  'home.title': 'Maison',
+  'lights.title': 'Lumières',
+  'climate.title': 'Climat',
+  'weather.title': 'Météo',
+  'car.title': 'Voiture',
+  'energy.title': 'Énergie',
+  'air.title': 'Air',
+  'media.title': 'Médias',
+  'cams.title': 'Sécurité',
+  'auto.title': 'Automatisations',
+  'auto.short': 'Règles',
+  'nav.more': 'Plus',
   'config.title': 'Vérifiez la configuration du panneau',
   'config.intro':
     "{n, plural, one {Un réglage n'a pas pu être utilisé et a été ignoré} other {# réglages n'ont pas pu être utilisés et ont été ignorés}} :",

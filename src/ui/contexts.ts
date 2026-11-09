@@ -1,6 +1,7 @@
 // The three contexts the shell provides: the store, the API client and the settings, one typed key each.
 // Pattern: context protocol (W3C Community Group, Context Protocol; Lit's @lit/context): a provider at the root, a
 // consumer anywhere below finds it by a DOM event, so no level of the tree threads a service through its properties.
+// They live in the kit, not the shell: the kit's controllers consume them, and the kit may not import the shell.
 // Must not: hold a value (the shell's providers do), or be imported by the core, which knows no context.
 import {createContext} from '@lit/context';
 import type {PanelApi} from '../core/api.ts';

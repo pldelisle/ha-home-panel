@@ -11,6 +11,7 @@ export default defineConfig({
     benchmark: {include: ['test/bench/**/*.bench.ts']},
     coverage: {
       provider: 'v8',
+      // the elements and src/ui/controllers/** are humble objects, proven by the harness (ADR 0005), so they are not listed
       include: [
         'src/stack.js',
         'src/fonts.js',
@@ -18,6 +19,9 @@ export default defineConfig({
         'src/providers/**/*.ts',
         'src/features/*/{ids,inputs,model,tiles}.ts', // the pure files; the elements are proven by the harness
         'src/shell/guest.ts',
+        'src/shell/features.ts',
+        'src/shell/legacy-feature.ts',
+        'src/ui/icons.ts',
         'scripts/lib/anonymise.mjs',
       ],
       reporter: [['text', {skipFull: false}], 'html'], // skipFull false lists the files at 100 percent too
@@ -28,6 +32,9 @@ export default defineConfig({
         'src/providers/**/*.ts': {statements: 100},
         'src/features/*/{ids,inputs,model,tiles}.ts': {statements: 100},
         'src/shell/guest.ts': {statements: 100},
+        'src/shell/features.ts': {statements: 100},
+        'src/shell/legacy-feature.ts': {statements: 100},
+        'src/ui/icons.ts': {statements: 100},
         'scripts/lib/anonymise.mjs': {statements: 100},
       },
     },

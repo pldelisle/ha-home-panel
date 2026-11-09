@@ -4,6 +4,20 @@
 // Must not: hold a message that is not here in French, build text from parts (one sentence, one message), or run code.
 export const en = {
   'charts.failed': 'Charts library failed to load',
+  // the ten subjects, in rail order: the rail's label, the pane's heading and the More list; `auto.short` is the fifth
+  // slot of the phone's bar, where "Automations" does not fit
+  'home.title': 'Home',
+  'lights.title': 'Lights',
+  'climate.title': 'Climate',
+  'weather.title': 'Weather',
+  'car.title': 'Car',
+  'energy.title': 'Energy',
+  'air.title': 'Air',
+  'media.title': 'Media',
+  'cams.title': 'Security',
+  'auto.title': 'Automations',
+  'auto.short': 'Rules',
+  'nav.more': 'More',
   // the configuration card: a title, a lead line, one message per kind of problem (src/core/config.ts), a footer;
   // wrongType's {expected} and {got} are plain words (text, number, yesno, list, block, nothing), which the message words
   'config.title': "Check the panel's configuration",

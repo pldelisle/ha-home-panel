@@ -18,6 +18,7 @@
     "src/core/**/*.ts",
     "src/providers/**/*.ts",
     "src/features/**/*.ts",
-    "src/shell/**/*.ts"
+    "src/shell/**/*.ts",
+    "src/ui/**/*.ts"
   ]
 }

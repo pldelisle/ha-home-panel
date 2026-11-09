@@ -37,6 +37,9 @@ const read = (move: string) =>
   (JSON.parse(readFileSync(new URL(`../fixtures/moved/${move}.json`, import.meta.url), 'utf8')) as {messages: Moved[]})
     .messages;
 
+// the rail's label for the subject is the shell's (src/shell/features.ts says it), not a message the move introduced
+const ofMove = (prefix: string) => Object.keys(en).filter(key => key.startsWith(prefix) && key !== `${prefix}title`);
+
 describe.each([['weather', 'weather.']])('the %s move', (move, prefix) => {
   const moved = read(move);
 
@@ -47,7 +50,7 @@ describe.each([['weather', 'weather.']])('the %s move', (move, prefix) => {
   });
 
   test('lists every message the move introduced, and only messages that exist', () => {
-    const introduced = Object.keys(en).filter(key => key.startsWith(prefix));
+    const introduced = ofMove(prefix);
     expect([...new Set(moved.map(m => m.key))].sort()).toEqual(introduced.sort());
   });
 
@@ -57,9 +60,9 @@ describe.each([['weather', 'weather.']])('the %s move', (move, prefix) => {
       .filter(file => file.endsWith('.ts'))
       .map(file => readFileSync(new URL(file, folder), 'utf8'))
       .join('\n');
-    const dead = Object.keys(en)
-      .filter(key => key.startsWith(prefix))
-      .filter(key => !source.includes(`'${key}'`) && !source.includes(`\`${key.replace(/[^.]+$/, '')}$\{`));
+    const dead = ofMove(prefix).filter(
+      key => !source.includes(`'${key}'`) && !source.includes(`\`${key.replace(/[^.]+$/, '')}$\{`),
+    );
     expect(dead).toEqual([]);
   });
 });
