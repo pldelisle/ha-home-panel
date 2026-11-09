@@ -10,6 +10,8 @@ import type {
   HassEntity,
   PanelHass,
 } from './hass.ts';
+import {panelLocale} from './i18n/locale.ts';
+import {createMessages, type Messages} from './i18n/messages.ts';
 
 /** What `setHass` found different from the previous hass. */
 export interface HassChange {
@@ -34,6 +36,8 @@ export interface PanelStore<TConfig = unknown> {
   readonly isFrench: boolean;
   readonly isAdmin: boolean;
   readonly userName: string;
+  /** The panel's own wording in the user's language, from the message catalogs; rebuilt when the locale changes. */
+  readonly t: Messages['t'];
   /** Notifies subscribers synchronously, then returns what changed. */
   setHass(h: PanelHass): HassChange;
   /** True when the config changed (JSON-equal configs do not). */
@@ -73,6 +77,10 @@ export function createStore<TConfig>(opts: StoreOptions<TConfig>): PanelStore<TC
   let configKey: string | null = null;
   let config = opts.resolve(raw, {});
   let generation = 0;
+
+  // t reads only the language and the tag; the defaults panelLocale asks for matter to the formatters, not here
+  let messageTag = 'en';
+  let messages = createMessages({language: 'en', tag: messageTag});
 
   const byId = new Map<string, Set<Subscriber>>();
   const keyed = new Set<Subscriber>(); // every subscriber that listed ids
@@ -129,6 +137,8 @@ export function createStore<TConfig>(opts: StoreOptions<TConfig>): PanelStore<TC
     get userName() {
       return hass?.user?.name ?? '';
     },
+    // one function for the life of the store, so `const {t} = store` keeps working after a language change
+    t: (key, values) => messages.t(key, values),
 
     setHass(next) {
       const prev = hass;
@@ -142,6 +152,11 @@ export function createStore<TConfig>(opts: StoreOptions<TConfig>): PanelStore<TC
         user: next.user !== prev?.user,
       };
       hass = next;
+      const spec = panelLocale(next, {timeZone: timeZoneOf(next), browserLocale: 'en'});
+      if (spec.tag !== messageTag) {
+        messageTag = spec.tag;
+        messages = createMessages(spec);
+      }
       // the config was resolved against no states until now (discovery needs them): resolve it again, same generation
       if (!prev) config = opts.resolve(raw, next.states);
       notify(change);

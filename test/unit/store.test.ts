@@ -319,6 +319,26 @@ describe('accessors', () => {
   });
 });
 
+describe('t', () => {
+  test('speaks English before the first hass, then the language of the hass, rebuilt when it changes', () => {
+    const store = make();
+    expect(store.t('charts.failed')).toBe('Charts library failed to load');
+    store.setHass(fakeHass({locale: {language: 'fr'}}));
+    expect(store.t('charts.failed')).toBe("La bibliothèque de graphiques n'a pas chargé");
+    store.setHass(fakeHass({locale: {language: 'en'}}));
+    expect(store.t('charts.failed')).toBe('Charts library failed to load');
+  });
+
+  test('a language with no catalog reads English, and a taken-apart t keeps working across a language change', () => {
+    const store = make();
+    const {t} = store;
+    store.setHass(fakeHass({locale: {language: 'de'}}));
+    expect(t('charts.failed')).toBe('Charts library failed to load');
+    store.setHass(fakeHass({locale: {language: 'fr'}}));
+    expect(t('charts.failed')).toBe("La bibliothèque de graphiques n'a pas chargé");
+  });
+});
+
 describe('panel config', () => {
   test('the config resolves against empty states before the first hass', () => {
     const store = make();

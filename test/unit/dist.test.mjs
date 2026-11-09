@@ -233,13 +233,18 @@ test('the source map names the original files under src/', () => {
       map.sources.some(s => s.endsWith(f)),
       f,
     ).toBe(true);
-  // relative paths into src/ only: nothing from node_modules, no absolute path of the machine that built it
+  // relative paths only, into src/ or node_modules/ (intl-messageformat is built into the entry), never an absolute
+  // path of the machine that built it
   expect(
-    map.sources.every(s => s.startsWith('../src/')),
+    map.sources.every(s => s.startsWith('../src/') || s.startsWith('../node_modules/')),
     map.sources.join(', '),
   ).toBe(true);
-  // with their text: Home Assistant serves the panel's folder, not src/, so DevTools reads the code from the map
-  expect(map.sourcesContent.every(c => typeof c === 'string' && c.length > 0)).toBe(true);
+  // the panel's files with their text, since Home Assistant serves the panel's folder, not src/, so DevTools reads the
+  // code from the map; the libraries' files by name only, as in the chunk maps
+  map.sources.forEach((s, i) => {
+    if (s.startsWith('../node_modules/')) expect(map.sourcesContent[i], s).toBe(null);
+    else expect(typeof map.sourcesContent[i] === 'string' && map.sourcesContent[i].length > 0, s).toBe(true);
+  });
   expect(readFileSync(BUNDLE, 'utf8')).toMatch(/\n\/\/# sourceMappingURL=home-panel\.js\.map\s*$/);
 });
 
