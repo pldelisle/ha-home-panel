@@ -25,6 +25,7 @@ test('no config and no states: generic defaults, nothing personal', () => {
   expect(c.modes).toStrictEqual([]);
   expect(c.house).toBe(null);
   expect(c.car).toStrictEqual({name: null, color: null, battery_kwh: null});
+  expect(c.names).toStrictEqual({});
   expect(c.entities.sun).toBe('sun.sun');
 });
 
@@ -133,6 +134,15 @@ test('split_light_areas: a list or one area, empty by default', () => {
   expect(resolveConfig({}).splitLightAreas).toStrictEqual([]);
   expect(resolveConfig({split_light_areas: 'living_room'}).splitLightAreas).toStrictEqual(['living_room']);
   expect(resolveConfig({split_light_areas: ['kitchen', 'den']}).splitLightAreas).toStrictEqual(['kitchen', 'den']);
+});
+
+test('names: passed through as the user wrote it, an empty record when it is not a record', () => {
+  const names = {'Living room': {fr: 'Salon'}, 'light.lamp': {en: 'Lamp', fr: 'Lampe'}};
+  expect(resolveConfig({names}).names).toStrictEqual(names);
+  expect(resolveConfig({}).names).toStrictEqual({});
+  expect(resolveConfig({names: ['Salon']}).names).toStrictEqual({});
+  expect(resolveConfig({names: 'Salon'}).names).toStrictEqual({});
+  expect(resolveConfig({names: null}).names).toStrictEqual({});
 });
 
 test('HA adds _panel_custom to the config; it is ignored', () => {

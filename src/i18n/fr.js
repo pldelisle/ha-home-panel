@@ -103,13 +103,19 @@ const frKey = (s, vals) => {
 };
 const FR_UNITS =
   /^(?:\{n\}|[\s°%·–\-−+/,()×]|°C|kWh|MWh|kW|W|V|A|km\/h|km|kPa|ppm|µg\/m³|lx|lux|psi|¢\/kWh|¢|h|min|s|k|RH|AQI|UV|PM\{n\}|CO₂|CO|VOC)+$/;
-// the names people gave in HA: areas, devices and the kinds of entity whose friendly name is theirs
-function houseNames(hass) {
+// the names people gave in HA: areas, devices and the kinds of entity whose friendly name is theirs, each as Home Assistant
+// gives it and as the panel shows it (the store's display names: `Salon` is read `Living room` in English), so the layer
+// leaves both alone
+function houseNames(hass, name) {
   const S = new Set(),
     reg = hass.entities || {},
     keep = /^(scene|script|input_boolean|light|binary_sensor|camera|media_player|person|fan|switch|lock)\./;
-  Object.values(hass.areas || {}).forEach(a => a.name && S.add(a.name));
-  Object.values(hass.devices || {}).forEach(d => d.name_by_user && S.add(d.name_by_user));
+  const add = (id, given) => {
+    S.add(given);
+    S.add(name(id));
+  };
+  Object.entries(hass.areas || {}).forEach(([id, a]) => a.name && add(id, a.name));
+  Object.entries(hass.devices || {}).forEach(([id, d]) => d.name_by_user && add(id, d.name_by_user));
   for (const [id, s] of Object.entries(hass.states)) {
     const p = (reg[id] || {}).platform;
     if (
@@ -117,7 +123,7 @@ function houseNames(hass) {
       !['fordpass', 'wallbox', 'adaptive_lighting', 'hilo', 'unifiprotect'].includes(p) &&
       s.attributes.friendly_name
     )
-      S.add(s.attributes.friendly_name);
+      add(id, s.attributes.friendly_name);
   }
   return S;
 }
@@ -224,17 +230,20 @@ function frApex(o) {
   return o;
 }
 /**
- * The translator for one panel: text, node, tree and apex, reading the names the house gave from the store's hass (with a
+ * The translator for one panel: text, node, tree and apex, reading the names the house gave from the store's hass and its display names (with a
  * cache of their own) and the language from the store, so two panels on a page do not share either.
  * Nothing is translated while the store's language is not French. The module keeps no state of its own.
- * @param {{hass: any, isFrench: boolean}} store
+ * @param {{hass: any, isFrench: boolean, names: {name: (key: string) => string}}} store
  */
 export function createFrench(store) {
   let names = new Set(),
-    namesAt = 0;
+    namesAt = 0,
+    resolver = null;
+  // kept for a minute, and dropped when the store rebuilds its display names (the language or the config changed)
   const houseNamesNow = () => {
-    if (Date.now() - namesAt < 60000 && names.size) return names;
-    names = houseNames(store.hass);
+    if (resolver === store.names && Date.now() - namesAt < 60000 && names.size) return names;
+    resolver = store.names;
+    names = houseNames(store.hass, key => store.names.name(key));
     namesAt = Date.now();
     return names;
   };

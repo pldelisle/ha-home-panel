@@ -51,7 +51,8 @@ for (const lang of ['en', 'fr'] as const) {
         en: phone ? '2 of 3 on · 59%' : '2 of 3 on · 59% · 3000 K',
         fr: phone ? '2 sur 3 allumées · 59\u202f%' : '2 sur 3 allumées · 59\u202f% · 3000 K',
       }[lang];
-      await expect(house.root().locator('.lcell.on .tx small:visible').first()).toHaveText(sub);
+      // (found by its area id: in French the rooms read Bureau, Cuisine, Salon, so the kitchen is no longer the first lit tile)
+      await expect(house.root().locator('.lcell.on[data-lsheet="kitchen"] .tx small:visible').first()).toHaveText(sub);
       const cut = await cutLabels(house, 'lights');
       for (const name of [...NAMED[lang], sub]) expect(cut, `"${name}" is cut`).not.toContain(name);
       expect(cut, 'labels cut on Lights').toEqual([]);

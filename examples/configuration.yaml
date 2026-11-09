@@ -58,6 +58,11 @@ panel_custom:
         - lights: [light.kitchen_island, light.kitchen_sink]
           switch: input_boolean.kitchen_lights_linked
         - [office, hallway]
+      # a name per language, for a Home Assistant name, an entity id, an area id or a device id; beats the built-in room words
+      # (a room Home Assistant calls Salon already reads Living room in English, and the other way round)
+      names:
+        Lampe du salon: {en: Living room lamp}
+        light.kitchen_island: {en: Island, fr: Îlot}
       # the idle clock's smart stack: one card beside the clock that changes with the moment (see the README)
       idle_stack:
         enabled: true # false keeps the clock alone

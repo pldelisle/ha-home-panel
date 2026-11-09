@@ -19,7 +19,7 @@ const TZ = 'America/Toronto';
 const hass = fakeHass({locale: {language: 'fr'}});
 const fr = createFormatters(panelLocale(hass, {timeZone: TZ, browserLocale: 'en-US'}));
 const en = createFormatters(englishLocale(TZ));
-const layer = createFrench({hass, isFrench: true});
+const layer = createFrench({hass, isFrench: true, names: {name: key => key}});
 /** What the layer makes of a whole text node (the layer is untyped JavaScript). */
 const layerText = (s: string): string => layer.text(s) as string;
 

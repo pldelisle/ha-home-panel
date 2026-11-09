@@ -299,6 +299,8 @@ export function resolveConfig(cfg, states) {
         ? {...cfg.adaptive_lighting_areas}
         : {},
     house: house && house.day ? house : null,
+    // a name (or an id) to one name per language; the name resolver in the core reads it, spec 13 will check its shape
+    names: cfg.names && typeof cfg.names === 'object' && !Array.isArray(cfg.names) ? cfg.names : {},
     car: {
       name: car.name ? String(car.name) : null,
       color: car.color ? String(car.color) : null,

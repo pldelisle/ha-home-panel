@@ -13,6 +13,7 @@ import type {
 } from './hass.ts';
 import {panelLocale} from './i18n/locale.ts';
 import {createMessages, type Messages} from './i18n/messages.ts';
+import {createNames, type Names, type NamesConfig} from './i18n/names.ts';
 
 /** What `setHass` found different from the previous hass. */
 export interface HassChange {
@@ -39,6 +40,8 @@ export interface PanelStore<TConfig = unknown> {
   readonly userName: string;
   /** The panel's own wording in the user's language, from the message catalogs; rebuilt on a `locale` change. */
   readonly t: Messages['t'];
+  /** Every name the panel shows, in the user's language: the config's `names:`, the room dictionary, then Home Assistant's. */
+  readonly names: Names;
   /** Notifies subscribers synchronously, then returns what changed. */
   setHass(h: PanelHass): HassChange;
   /** True when the config changed (JSON-equal configs do not). */
@@ -88,6 +91,28 @@ export function createStore<TConfig>(opts: StoreOptions<TConfig>): PanelStore<TC
 
   const timeZoneOf = (h: PanelHass | null) => h?.config.time_zone || opts.defaultTimeZone;
   const languageOf = (h: PanelHass | null) => h?.locale?.language ?? h?.language ?? 'en';
+
+  // what the last hass said, kept here because a host may change the language on the hass object it already handed over,
+  // and then `prev` is that same object and shows no difference
+  let seenLanguage = languageOf(null);
+  let seenTimeZone = timeZoneOf(null);
+
+  // names read the current hass when asked, so a renamed light or area shows at once and only the language or the
+  // config rebuilds them
+  const live = {
+    get states() {
+      return hass?.states ?? {};
+    },
+    get areas() {
+      return hass?.areas;
+    },
+    get devices() {
+      return hass?.devices;
+    },
+  };
+  // spec 13 types the config; until then the resolver's own `names` (an object, or nothing) is what is read
+  const buildNames = () => createNames(config as {names?: NamesConfig}, languageOf(hass), live);
+  let names = buildNames();
 
   const state = (id: string | null | undefined) => (id ? hass?.states[id] : undefined);
   const num = (id: string | null | undefined) => {
@@ -139,6 +164,9 @@ export function createStore<TConfig>(opts: StoreOptions<TConfig>): PanelStore<TC
     },
     // one function for the life of the store, so `const {t} = store` keeps working after a language change
     t: (key, values) => messages.t(key, values),
+    get names() {
+      return names;
+    },
 
     setHass(next) {
       const prev = hass;
@@ -148,15 +176,20 @@ export function createStore<TConfig>(opts: StoreOptions<TConfig>): PanelStore<TC
       const change: HassChange = {
         ids,
         registries: next.entities !== prev?.entities || next.devices !== prev?.devices || next.areas !== prev?.areas,
-        locale: languageOf(next) !== languageOf(prev) || timeZoneOf(next) !== timeZoneOf(prev),
+        locale: languageOf(next) !== seenLanguage || timeZoneOf(next) !== seenTimeZone,
         user: next.user !== prev?.user,
       };
       hass = next;
-      // built from the first hass, then rebuilt on the locale change the subscribers are told of, and on no other
-      if (!prev || change.locale)
-        messages = createMessages(panelLocale(next, {timeZone: timeZoneOf(next), browserLocale: 'en'}));
+      seenLanguage = languageOf(next);
+      seenTimeZone = timeZoneOf(next);
       // the config was resolved against no states until now (discovery needs them): resolve it again, same generation
       if (!prev) config = opts.resolve(raw, next.states);
+      // the messages and the names are built from the first hass, then rebuilt on the locale change the subscribers are
+      // told of, and on no other
+      if (!prev || change.locale) {
+        messages = createMessages(panelLocale(next, {timeZone: seenTimeZone, browserLocale: 'en'}));
+        names = buildNames();
+      }
       notify(change);
       return change;
     },
@@ -167,6 +200,7 @@ export function createStore<TConfig>(opts: StoreOptions<TConfig>): PanelStore<TC
       configKey = key;
       raw = value ?? {};
       config = opts.resolve(raw, hass?.states ?? {});
+      names = buildNames();
       generation++;
       return true;
     },

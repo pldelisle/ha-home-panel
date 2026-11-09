@@ -6,6 +6,14 @@ import {AFTERNOON, FULL_CFG, PHONE_TABS, TABLET_TABS, VIEWPORTS} from '../houses
 
 const TABS = {tablet: TABLET_TABS, phone: PHONE_TABS};
 
+// The French baselines were recorded when the test house's English area names (Living room, Kitchen) were left as they are
+// in French. The room dictionary (#134) now reads them Salon, Cuisine, Bureau, so these runs say, per name, that the house
+// keeps its English wording in French; the names spec covers the translated reading. A baseline is never updated for a
+// structural change.
+const KEEP_ENGLISH_NAMES = Object.fromEntries(
+  ['Living room', 'Kitchen', 'Office', 'Bedroom'].map(name => [name, {fr: name}]),
+);
+
 // every screenshot shows the bundled Montserrat, never the fallback it swaps from, and the charts and flows drawn after
 // this measure their labels in it
 test.beforeEach(({house}) => fontsLoaded(house));
@@ -32,7 +40,15 @@ for (const viewport of ['tablet', 'phone'] as const) {
     for (const theme of ['light', 'dark'] as const) {
       for (const lang of ['en', 'fr'] as const) {
         test.describe(`full house, ${theme}, ${lang}`, () => {
-          test.use({houseOpts: {cfg: FULL_CFG, theme, lang, time: AFTERNOON, frozen: true}});
+          test.use({
+            houseOpts: {
+              cfg: lang === 'fr' ? {...FULL_CFG, names: KEEP_ENGLISH_NAMES} : FULL_CFG,
+              theme,
+              lang,
+              time: AFTERNOON,
+              frozen: true,
+            },
+          });
           test('every tab', async ({house}) => {
             const captured = await captureTabs(house, t => `${t}-${viewport}-${theme}-${lang}.png`, true);
             // the full house shows every tab; one that went missing must fail here, not shrink the baseline set quietly

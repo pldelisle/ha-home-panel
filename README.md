@@ -88,6 +88,16 @@ Two rooms can be linked so that one switch, brightness slider or colour slider m
 
 While something runs, a live-activity pill shows in the header (with nothing running and nothing to check, that spot stays empty): the car charging (battery and time to full), the water heater heating (temperature and about how long is left, from its other cycles in the last 24 hours) and a Hilo challenge (phase and countdown, from pre-heat until recovery ends). Tap it for a card per activity above the usual status checks. When FordPass gives no time to full, the panel works it out from the charger's power and `car: {battery_kwh: …}`, the battery's usable size.
 
+### Names in the panel's language
+
+Every room, light, scene, sensor, camera and player name the panel shows follows the language of the signed-in user's Home Assistant profile. Common room words are translated without any setting: a room Home Assistant calls `Salon` reads `Living room` in English, and one called `Living room` reads `Salon` in French (the whole name only, so `Lampe du salon` is left as it is). To name something yourself in each language, list it under `names`, by its Home Assistant name, an entity id, an area id or a device id, with one name per language; this beats the built-in words.
+
+```yaml
+      names:
+        Lampe du salon: {en: Living room lamp}
+        light.kitchen_island: {en: Island, fr: Îlot}
+```
+
 ### Idle clock and smart stack
 
 On a wall tablet, the panel shows a big clock after 5 minutes without a touch. "Sleep now" in the settings shows it on a phone too. One card sits beside the clock, or under it on a portrait screen, and it changes with the moment. When several cards apply, they take turns every 20 seconds, and small dots show how many there are. Tapping a card wakes the panel and opens what the card is about.
