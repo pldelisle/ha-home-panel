@@ -56,6 +56,7 @@ Home Assistant caches files under `/local/` for 31 days. After each update, chan
 Without a `config:` block, the panel finds what it can by itself: the weather entity, thermostats, people, lights, sensors and a FordPass car.
 Add a `config:` block under the panel to name the rest of your devices, pick the room order or add a picture of your house.
 [examples/configuration.yaml](examples/configuration.yaml) lists every option.
+A setting the panel cannot use (a misspelled key, a value of the wrong type, an icon outside the list) is ignored and the rest of the block still applies; a card at the top of the Home tab, shown to admins only, names each one and the spelling meant when it is close.
 
 ```yaml
     config:
@@ -146,7 +147,7 @@ npm run build          # Vite: dist/home-panel.js (minified), home-panel.js.map,
 npm run dev            # the same build, redone on every save (vite build --watch)
 npm run size           # the gzipped size of the main chunk and of the lazy chunks, for information (run it after a build)
 npm run licenses       # rewrites LICENSES.md from package-lock.json and node_modules, production packages only (run it when apexcharts, mermaid, the font or the lock file changes)
-npm run typecheck      # tsc --checkJs: the config and stack modules strictly, the rest of src/ loosely (tsconfig.legacy.json)
+npm run typecheck      # tsc --checkJs: the core and the stack module strictly, the rest of src/ loosely (tsconfig.legacy.json)
 npm test               # unit tests (Vitest): config, stack, French, the built dist/, a scan for personal data
 npm run test:watch     # the same, re-run on every save
 npm run test:coverage  # the same, with a coverage report in coverage/
@@ -167,8 +168,8 @@ If `npm run format:check` still fails after one `npm run format`, run `npm run f
 `npm run test:e2e -- test/e2e/lights-sheet.spec.ts` runs one file. The first run needs a browser: `npx playwright install chromium`.
 The test server listens on port 4173 unless `E2E_PORT` names another, so several runs can share a machine.
 
-`npm run test:coverage` reports coverage for `src/config.js`, `src/stack.js` and `src/fonts.js` (text in the terminal, HTML in `coverage/`, uploaded by CI). Today: 99.03% of statements
-over the three files (`config.js` 98.21%, `stack.js` and `fonts.js` 100%; the terminal table leaves out a file covered in full). The three files are imported by their tests like any module.
+`npm run test:coverage` reports coverage for `src/core/`, `src/stack.js` and `src/fonts.js` (text in the terminal, HTML in `coverage/`, uploaded by CI). Everything under `src/core/` must stay at 100% of statements
+(the run fails below that). The files are imported by their tests like any module.
 
 `npm run test:visual` runs the screenshot project against the baselines in `test/e2e/__screenshots__/`, and only ever inside the Playwright image
 (Linux arm64, as in CI): compare with `test:visual:docker` or `test:visual:container` (Apple's `container`, after `container system start`), rewrite with
@@ -199,14 +200,14 @@ Every `uses:` in `.github/workflows/` is pinned to a commit with its version in 
 and a size that jumps without a reason is for the reviewer to notice in the CI log.
 
 The source is ES modules under `src/`, built by Vite (`vite.config.ts`). `src/main.js` is the entry and defines the custom element; the `HomePanel` class is in `src/home-panel.js`, with the
-Automations tab (`src/auto.js`), the configuration code (`src/config.js`), the smart-stack rules (`src/stack.js`), the French translations
+Automations tab (`src/auto.js`), the configuration schema (`src/core/config.ts`), the smart-stack rules (`src/stack.js`), the French translations
 (`src/i18n/fr.js`) and the stylesheet (`src/styles.js`, which joins the files in `src/css/`, minified by Lightning CSS for the browsers listed under Browser support) imported from it. `src/legacy/globals.js` holds the state
 and helpers those files used to share as globals; it goes away in the refactor's second phase. ApexCharts and Mermaid come from npm as lazy chunks under
 `dist/chunks/`: ApexCharts (`src/charts/apex.js`) is fetched when the first tab with charts opens, Mermaid when the Automations tab draws its first flow.
 Montserrat comes from npm too: `@fontsource/montserrat`'s woff2 files for weights 400 to 700, latin and latin-ext, are copied into `dist/fonts/` under their own names,
 and `src/fonts.js` declares them with `@font-face` rules in the document (Chromium ignores them inside a shadow root), so the panel never calls Google Fonts.
 No library is committed as a file. `LICENSES.md` at the root lists every production package with its version and licence text; `npm run licenses` generates it (it is not edited by hand, and Prettier skips it), `vite build` copies it into `dist/`, and `test/unit/licenses.test.mjs` fails when it is out of date.
-`npm run typecheck` runs `tsc` twice: `tsconfig.check.json` checks the small modules (`config.js`, `stack.js`, `fonts.js`) strictly, and `tsconfig.legacy.json` checks every
+`npm run typecheck` runs `tsc` twice: `tsconfig.check.json` checks the core and the small modules (`stack.js`, `fonts.js`) strictly, and `tsconfig.legacy.json` checks every
 file under `src/` without `strict`, so a name that does not exist or an import that does not resolve is an error while the untyped class is tolerated.
 `src/legacy/dom-scaffolding.d.ts` holds the ambient declarations that second pass needs (only `tsconfig.legacy.json` lists it); the refactor's second phase deletes it.
 The source map points a stack trace or the browser's DevTools back at the files in `src/`; it ships in the release zip next to `home-panel.js`.
