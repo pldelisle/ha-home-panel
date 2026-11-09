@@ -186,35 +186,35 @@ function frTextWith(s, isName) {
 export const frText = s => frTextWith(s, core => frNames().has(core));
 export const FR_ATTR = ['aria-label', 'title', 'placeholder', 'alt'];
 const frSeen = new WeakMap();
-function frNodeWith(n, frText, frSeen) {
+function frNodeWith(n, translate, seen) {
   if (n.nodeType === 3) {
     const p = n.parentNode;
-    if (!p || p.nodeName === 'STYLE' || p.nodeName === 'SCRIPT' || frSeen.get(n) === n.data) return;
+    if (!p || p.nodeName === 'STYLE' || p.nodeName === 'SCRIPT' || seen.get(n) === n.data) return;
     // song titles and the like are marked translate="no"
     if (p.closest && p.closest('[translate="no"]')) return;
-    const t = frText(n.data);
+    const t = translate(n.data);
     if (t !== n.data) n.data = t;
-    frSeen.set(n, n.data);
+    seen.set(n, n.data);
   } else if (n.nodeType === 1) {
     if (n.nodeName === 'STYLE' || n.nodeName === 'SCRIPT') return;
-    const done = frSeen.get(n) || {};
+    const done = seen.get(n) || {};
     for (const a of FR_ATTR) {
       const v = n.getAttribute(a);
       if (!v || done[a] === v) continue;
-      const t = frText(v);
+      const t = translate(v);
       if (t !== v) n.setAttribute(a, t);
       done[a] = t;
     }
-    frSeen.set(n, done);
+    seen.set(n, done);
   }
 }
 export const frNode = n => frNodeWith(n, frText, frSeen);
-function frTreeWith(root, frNode) {
-  if (root.nodeType === 3) return frNode(root);
-  if (root.nodeType === 1) frNode(root);
+function frTreeWith(root, visit) {
+  if (root.nodeType === 3) return visit(root);
+  if (root.nodeType === 1) visit(root);
   const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
   let n;
-  while ((n = w.nextNode())) frNode(n);
+  while ((n = w.nextNode())) visit(n);
 }
 export const frTree = root => frTreeWith(root, frNode);
 // apex draws its own dates: give it French month and day names and day-first formats
@@ -259,11 +259,16 @@ export function createFrench(store) {
   };
   const seen = new WeakMap();
   const text = s => (store.isFrench ? frTextWith(s, core => houseNamesNow().has(core)) : s);
-  const node = n => frNodeWith(n, text, seen);
+  // an English panel marks nothing as seen, so a switch to French still translates what it already drew
+  const node = n => {
+    if (store.isFrench) frNodeWith(n, text, seen);
+  };
   return {
     text,
     node,
-    tree: root => frTreeWith(root, node),
+    tree: root => {
+      if (store.isFrench) frTreeWith(root, node);
+    },
     apex: o => (store.isFrench ? frApex(o) : o),
   };
 }

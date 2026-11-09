@@ -1,6 +1,5 @@
 // Two panels on one page each show their own house (spec 10, "Entity store, and the module globals leave the old class").
 // The harness's ?two=1 mounts a second panel with two rooms and one person, fed the same hass as the first.
-// Test titles start with the check's number in docs/specs/01-playwright-test.md.
 import type {Locator} from '@playwright/test';
 import {test, expect} from './fixtures';
 import {FULL_CFG} from './houses';

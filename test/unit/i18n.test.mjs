@@ -214,3 +214,16 @@ test('createFrench translates text nodes and attributes, and keeps a name of the
   expect(name.data).toBe('Tap to run');
   expect(attrs).toStrictEqual({'aria-label': 'Bonsoir', title: 'Tap to run'});
 });
+
+test('createFrench translates a node it met while the store was English once the store turns French', async () => {
+  const {createFrench} = await load([]);
+  const store = {hass: fakeHass(), isFrench: false};
+  const fr = createFrench(store);
+  const t = textNode('Good evening');
+  fr.node(t);
+  fr.tree(t);
+  expect(t.data).toBe('Good evening');
+  store.isFrench = true;
+  fr.node(t);
+  expect(t.data).toBe('Bonsoir');
+});
