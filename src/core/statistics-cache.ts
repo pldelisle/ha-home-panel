@@ -23,7 +23,10 @@ interface Entry {
   promise: Promise<unknown>;
 }
 
-/** The ids as the client sends them: the empty ones dropped, each once, in an order that does not change the key. */
+/**
+ * The ids that name the reply: empty ones dropped, each once, sorted. `statistics` sends exactly these; `history` sends the list as
+ * given, but its reply is keyed by id, so the same set reads the same.
+ */
 const idsKey = (ids: readonly (string | null | undefined)[]) => [...new Set(ids.filter(Boolean))].sort();
 
 export function createStatisticsCache(

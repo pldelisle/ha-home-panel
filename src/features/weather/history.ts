@@ -2,7 +2,8 @@
 // Pattern: functional core (Bernhardt, Boundaries), the data half of a humble object (Meszaros): each rule is the legacy
 // panel's own (loadWxHistory, renderSeason, loadWx, wxSheet) and the elements only place what comes out.
 // Numbers come back as numbers, except in the season view and the chart callbacks, which take `fmt`, `t` and `now` as arguments.
-// Must not: call the API client or the cache, read the clock or the DOM, or hold a colour (the caller passes its tokens).
+// Must not: call the API client or the cache, read the clock or the DOM, or pick a colour of its own (every colour is a caller's
+// token; `transparent` is the absence of one, and the sizes are the legacy options' constants).
 import type {EntityKey} from '../../core/entities.ts';
 import type {HistoryPoint, StatisticRow} from '../../core/ha.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
@@ -27,6 +28,16 @@ export const HOT_FROM = 25;
 /** A reading as the legacy panel stored it: two digits at most. */
 const rounded = (value: number) => +value.toFixed(2);
 
+/** A statistic of each row as `[ms, value]`, the row's start moved by `offsetMs`; the rows without it are skipped. */
+const statisticPoints = (rows: readonly StatisticRow[], statistic: 'mean' | 'max', offsetMs: number): Point[] =>
+  rows.flatMap(row => {
+    const value = row[statistic];
+    return value == null ? [] : [[row.start + offsetMs, rounded(value)] as Point];
+  });
+
+/** Where a value falls on a scale that starts at `low` and is `span` wide, in percent. */
+const percentOn = (low: number, span: number) => (value: number) => ((value - low) / span) * 100;
+
 // ---------- the seven days ----------
 
 /** The entity ids of the seven-day charts' series; null for what the house does not have. */
@@ -47,10 +58,7 @@ export function sevenDaySeries(
   ids: SevenDayIds,
 ): SevenDaySeries {
   const series = (id: string | null, statistic: 'mean' | 'max' = 'mean'): Point[] =>
-    (id ? (rows[id] ?? []) : []).flatMap(row => {
-      const value = row[statistic];
-      return value == null ? [] : [[row.start, rounded(value)] as Point];
-    });
+    statisticPoints(id ? (rows[id] ?? []) : [], statistic, 0);
   return {
     temperature: series(ids.temperature),
     dewPoint: series(ids.dewPoint),
@@ -63,7 +71,7 @@ export function sevenDaySeries(
 
 // ---------- the season ----------
 
-/** One day of the daily statistics, with all three figures known. */
+/** One day of the daily statistics. */
 interface Day {
   at: number;
   mean: number;
@@ -71,12 +79,13 @@ interface Day {
   max: number;
 }
 
-/** The days that have a mean, a low and a high. (The legacy panel kept a day with only a mean and read its missing low as 0°.) */
+/**
+ * The days that have a mean. The recorder sends the mean, the low and the high of a day or none of them, so a day with a mean has
+ * all three; one that lacked a low or a high would read it as 0°, as the legacy panel did (`Math.min(x, null)`).
+ */
 const temperatureDays = (rows: readonly StatisticRow[]): Day[] =>
   rows.flatMap(row =>
-    row.mean == null || row.min == null || row.max == null
-      ? []
-      : [{at: row.start + NOON_MS, mean: row.mean, min: row.min, max: row.max}],
+    row.mean == null ? [] : [{at: row.start + NOON_MS, mean: row.mean, min: row.min ?? 0, max: row.max ?? 0}],
   );
 
 /** One calendar month of the record. */
@@ -216,7 +225,7 @@ export function seasonView(
   const low = Math.min(...months.map(month => month.low));
   const high = Math.max(...months.map(month => month.high));
   const span = high - low || 1;
-  const percent = (value: number) => ((value - low) / span) * 100;
+  const percent = percentOn(low, span);
   const current = months.find(month => month.key === fmt.isoDay(now).slice(0, 7));
   const tile = (label: string, value: string, unit: string, sub: string): SeasonTile => ({label, value, unit, sub});
   const freezingAt = percent(0);
@@ -262,9 +271,10 @@ export function seasonView(
 
 /** The degrees marked under the bars: the multiples of `step` between -40 and 40 that the scale reaches, each at its place in percent. */
 export function seasonTicks({low, span}: Pick<SeasonView, 'low' | 'span'>, step: number) {
+  const percent = percentOn(low, span);
   return [-40, -30, -20, -10, 0, 10, 20, 30, 40]
     .filter(value => value % step === 0 && value >= low && value <= low + span)
-    .map(value => ({value, at: ((value - low) / span) * 100}));
+    .map(value => ({value, at: percent(value)}));
 }
 
 // ---------- one tile's history ----------
@@ -297,6 +307,16 @@ function thinned(rows: readonly HistoryPoint[], bucketMs: number): Point[] {
   return points;
 }
 
+/** The recorder has rows for this id: a sensor with some is drawn from them even when none holds a value, one with none from its history. */
+export const hasStatistics = (statRows: Readonly<Record<string, readonly StatisticRow[]>>, id: string): boolean =>
+  (statRows[id]?.length ?? 0) > 0;
+
+/** The ids the recorder has no statistics for: the ones whose plain history to ask for. */
+export const idsWithoutStatistics = (
+  statRows: Readonly<Record<string, readonly StatisticRow[]>>,
+  ids: readonly string[],
+): string[] => ids.filter(id => !hasStatistics(statRows, id));
+
 /**
  * The lines of a tile's chart over a range: each series from the statistics when the recorder has rows for it, else from the
  * plain history of its sensor (Environment Canada's chance, UV and AQHI sensors keep no statistics). A row is drawn at the middle of
@@ -313,12 +333,8 @@ export function tileHistory(
   return definition.series.flatMap(({entity, nameKey, unit, stat, dash = false}) => {
     const id = ids[entity];
     if (!id) return [];
-    const rows = statRows[id] ?? [];
-    const points = rows.length
-      ? rows.flatMap(row => {
-          const value = row[stat ?? 'mean'];
-          return value == null ? [] : [[row.start + bucketMs / 2, rounded(value)] as Point];
-        })
+    const points = hasStatistics(statRows, id)
+      ? statisticPoints(statRows[id], stat ?? 'mean', bucketMs / 2)
       : thinned(historyRows[id] ?? [], bucketMs);
     return [{entity, nameKey, unit, dash, points}];
   });

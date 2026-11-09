@@ -59,7 +59,6 @@ The ranges (a day, a week, a month, a year) are `RANGES` in `src/ui/ranges.ts`, 
 - The weather entity's humidity, pressure and wind now reach the tiles, so a house with only an entity shows them where the legacy panel showed dashes.
 - An alert from a sensor that only counts has no title; the model words it with the count (`weather.alerts.count`), in the alert's own row.
 - Environment Canada's own condition words (`Mainly Sunny`) are the integration's data, not catalog messages: the model capitalises them (`conditionName`), and the rewrite layer still translates them in French until it is deleted.
-- A season day needs a mean, a low and a high. The legacy panel kept a day with only a mean and counted its missing low as 0°.
 - A tonight row has a low and no high (`isTonight`); the model says Tonight only for today's.
 
 ## The patterns

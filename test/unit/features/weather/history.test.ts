@@ -9,7 +9,9 @@ import {panelLocale} from '../../../../src/core/i18n/locale.ts';
 import {createMessages} from '../../../../src/core/i18n/messages.ts';
 import {
   FROST_BELOW,
+  hasStatistics,
   historyChartOptions,
+  idsWithoutStatistics,
   HOT_FROM,
   records,
   seasonMonths,
@@ -43,7 +45,6 @@ const DAYS: StatisticRow[] = [
   day('2026-03-04', -2, -6, 3),
   day('2026-03-05', 1, -1, 6),
   day('2026-03-06', null, 0, 1), // no mean: not a day
-  day('2026-03-07', 3, null, 8), // no low: not a day either
   day('2026-04-01', 8, 2, 14, -4),
   day('2026-04-02', 12, 5, HOT_FROM, -4),
   day('2026-07-10', 24, 18, 31, -4),
@@ -155,19 +156,26 @@ describe('seasonMonths', () => {
     expect(months[0].at).toBe(midnight('2026-03-04') + 12 * 36e5);
   });
 
+  test('a day with a mean and no low or no high reads the missing figure as 0°, as the legacy panel did', () => {
+    const odd = seasonMonths([day('2026-03-07', 3, null, 8), day('2026-03-08', 4, 1, null)], () => '2026-03-07');
+    expect(odd).toEqual([expect.objectContaining({count: 2, low: 0, high: 8, mean: 3.5, frostNights: 0, hotDays: 0})]);
+    expect(records([day('2026-03-07', -3, null, -1)], [])).toMatchObject({warmest: {value: -1}, coldest: {value: 0}});
+    expect(records([day('2026-03-07', 3, 1, null)], [])).toMatchObject({warmest: {value: 0}, coldest: {value: 1}});
+  });
+
   test('takes the day names from the function it is given, not from a zone of its own', () => {
     const moved = seasonMonths(DAYS.slice(0, 2), () => '2030-01-09');
     expect(moved).toEqual([expect.objectContaining({key: '2030-01', firstDay: 9, count: 2})]);
   });
 
   test('sorts the months even when the rows come in another order', () => {
-    const backwards = seasonMonths([DAYS[4], DAYS[0]], ms => deps('en').fmt.isoDay(ms));
+    const backwards = seasonMonths([DAYS[3], DAYS[0]], ms => deps('en').fmt.isoDay(ms));
     expect(backwards.map(month => month.key)).toEqual(['2026-03', '2026-04']);
   });
 
   test('is empty for no rows and for rows with nothing to count', () => {
     expect(seasonMonths([], ms => String(ms))).toEqual([]);
-    expect(seasonMonths([DAYS[2], DAYS[3]], ms => String(ms))).toEqual([]);
+    expect(seasonMonths([DAYS[2]], ms => String(ms))).toEqual([]);
   });
 });
 
@@ -404,6 +412,18 @@ describe('tileHistory', () => {
   });
 });
 
+describe('hasStatistics and idsWithoutStatistics', () => {
+  const rows = {'sensor.a': [stat(0, {mean: null})], 'sensor.b': []};
+
+  test('a sensor has statistics when the recorder sent rows, whatever they hold; none, an empty list or no key is none', () => {
+    expect(['sensor.a', 'sensor.b', 'sensor.c'].map(id => hasStatistics(rows, id))).toEqual([true, false, false]);
+  });
+
+  test('the ids without are the ones to ask the plain history for, in the order given', () => {
+    expect(idsWithoutStatistics(rows, ['sensor.c', 'sensor.a', 'sensor.b'])).toEqual(['sensor.c', 'sensor.b']);
+  });
+});
+
 describe('tileStats', () => {
   const line = (points: [number, number][]): TileSeriesData => ({
     entity: 'wind',
@@ -607,7 +627,13 @@ describe('the copied rules against the legacy panel', () => {
     ['a month bar is at least 2 percent wide', 'Math.max(2, w)'],
     ['a month bar runs from its low to its high on the shared scale', 'w = ((m.hi - m.lo) / span) * 100'],
     ['the scale of the months is the extremes, or 1', 'span = hi - lo || 1'],
-    ['the home panel reads the day statistics of the outdoor temperature at noon', '12 * 36e5'],
+    ['a day is dated at noon of its local day', 'k: this.fmtEn.isoDay(ms(x.start) + 12 * 36e5)'],
+    ['a season day is one with a mean', '.filter(x => x.mean != null)'],
+    ['the tick marks are the multiples of ten between -40 and 40', '[-40, -30, -20, -10, 0, 10, 20, 30, 40]'],
+    [
+      'a tick mark is a multiple of the step inside the scale',
+      '.filter(v => v % step === 0 && v >= lo && v <= lo + span)',
+    ],
     ['a statistic is kept to two digits', '+(+x[f]).toFixed(2)'],
     ['the middle of a bucket is added to a statistic', 'ms(y.start) + R.mid'],
     [
