@@ -287,14 +287,6 @@
   height: 46px;
   margin: 8px 0 2px;
 }
-@media (prefers-reduced-transparency: reduce) {
-  .app.gl .lap .lmain,
-  .app.gl .lap .lbub {
-    background: var(--card);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
-}
 /* 2.8.0: a status problem alone is a pill too */
 .lap .latt {
   padding-left: 5px;
@@ -310,4 +302,18 @@
 }
 .app.gl .lap .latt.lmain {
   background: color-mix(in srgb, var(--ac) 16%, var(--g-dense));
+}
+/* the tinted pills (the Hilo challenge, the attention pill) have more specific glass rules above, so they are listed here too */
+@media (prefers-reduced-transparency: reduce) {
+  .app.gl .lap .lmain,
+  .app.gl .lap .lbub {
+    background: var(--card);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .app.gl .lap .lmain.tint,
+  .app.gl .lap .latt.lmain {
+    background: color-mix(in srgb, var(--ac) 14%, var(--card));
+    backdrop-filter: none;
+  }
 }
