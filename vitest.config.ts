@@ -11,10 +11,23 @@ export default defineConfig({
     benchmark: {include: ['test/bench/**/*.bench.ts']},
     coverage: {
       provider: 'v8',
-      include: ['src/stack.js', 'src/fonts.js', 'src/core/**/*.ts', 'scripts/lib/anonymise.mjs'],
+      include: [
+        'src/stack.js',
+        'src/fonts.js',
+        'src/core/**/*.ts',
+        'src/providers/**/*.ts',
+        'src/features/weather/{ids,inputs,model,tiles}.ts', // the pure files; the elements are proven by the harness
+        'scripts/lib/anonymise.mjs',
+      ],
       reporter: [['text', {skipFull: false}], 'html'], // skipFull false lists the files at 100 percent too
-      // the phase-2 gate: every statement in the core is tested (CI runs `npm test -- --coverage`)
-      thresholds: {'src/core/**/*.ts': {statements: 100}, 'scripts/lib/anonymise.mjs': {statements: 100}},
+      // the phase-2 gate: every statement in the core is tested (CI runs `npm test -- --coverage`); phase 3 holds the providers and
+      // each feature's model, ids, inputs and tiles to the same line
+      thresholds: {
+        'src/core/**/*.ts': {statements: 100},
+        'src/providers/**/*.ts': {statements: 100},
+        'src/features/weather/{ids,inputs,model,tiles}.ts': {statements: 100},
+        'scripts/lib/anonymise.mjs': {statements: 100},
+      },
     },
   },
 });

@@ -1,6 +1,6 @@
 // The readers over a map of states: what counts as no value, and the number, the text and the attribute of an entity.
 import {describe, expect, test} from 'vitest';
-import {attributeOf, isAvailable, numberOf, textOf} from '../../../src/core/states.ts';
+import {attributeOf, isAvailable, numberAttributeOf, numberOf, textOf} from '../../../src/core/states.ts';
 import {entity} from '../fake-hass.ts';
 
 const states = {
@@ -9,6 +9,7 @@ const states = {
   'sensor.gone': entity('sensor.gone', 'unavailable', {unit_of_measurement: '°C'}),
   'sensor.unsure': entity('sensor.unsure', 'unknown'),
   'sensor.zero': entity('sensor.zero', '0'),
+  'weather.home': entity('weather.home', 'cloudy', {temperature: 4.2, wind_bearing: 'SW', humidity: NaN, pressure: '101'}),
 };
 
 describe('isAvailable', () => {
@@ -65,5 +66,21 @@ describe('attributeOf', () => {
     expect(attributeOf(states, 'sensor.absent', 'unit_of_measurement')).toBeUndefined();
     expect(attributeOf(states, null, 'unit_of_measurement')).toBeUndefined();
     expect(attributeOf(undefined, 'sensor.temperature', 'unit_of_measurement')).toBeUndefined();
+  });
+});
+
+describe('numberAttributeOf', () => {
+  test('reads a finite number', () => {
+    expect(numberAttributeOf(states, 'weather.home', 'temperature')).toBe(4.2);
+  });
+
+  test.each([['wind_bearing'], ['humidity'], ['pressure'], ['visibility']])('is null for the attribute %s', name => {
+    expect(numberAttributeOf(states, 'weather.home', name)).toBeNull();
+  });
+
+  test('is null for a missing entity, id or states', () => {
+    expect(numberAttributeOf(states, 'weather.absent', 'temperature')).toBeNull();
+    expect(numberAttributeOf(states, null, 'temperature')).toBeNull();
+    expect(numberAttributeOf(undefined, 'weather.home', 'temperature')).toBeNull();
   });
 });

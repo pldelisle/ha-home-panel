@@ -29,3 +29,9 @@ export function textOf(states: HassEntities | undefined, id: MaybeId): string | 
 export function attributeOf(states: HassEntities | undefined, id: MaybeId, name: string): unknown {
   return id ? states?.[id]?.attributes[name] : undefined;
 }
+
+/** A numeric attribute, or null when it is missing or not a finite number (a text such as `SW` is not one). */
+export function numberAttributeOf(states: HassEntities | undefined, id: MaybeId, name: string): number | null {
+  const v = attributeOf(states, id, name);
+  return typeof v === 'number' && Number.isFinite(v) ? v : null;
+}
