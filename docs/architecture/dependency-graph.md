@@ -10,11 +10,11 @@ subgraph 0["node_modules"]
 2["home-assistant-js-websocket"]
 3["intl-messageformat"]
 4["mermaid"]
+5["superstruct"]
 end
-subgraph 5["src"]
-6["auto.js"]
-7["charts"]
-8["config.js"]
+subgraph 6["src"]
+7["auto.js"]
+8["charts"]
 9["core"]
 A["css"]
 B["env.d.ts"]
@@ -27,13 +27,13 @@ H["stack.js"]
 I["styles.js"]
 J["types.d.ts"]
 end
-6-->9
-6-->F
-6-->4
-7-->1
+7-->9
+7-->F
+7-->4
+8-->1
 9-->2
+9-->5
 9-->3
-D-->6
 D-->7
 D-->8
 D-->9

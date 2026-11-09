@@ -1,6 +1,7 @@
 // The store's cost on a house-sized hass: 5,000 entities, one state changes, 50 subscribers of 10 ids each.
 // Run with `npm run bench` (not in CI: timings on a shared runner are noise); the numbers go into ADR 0012.
 import {test} from 'vitest';
+import {resolveConfig} from '../../src/core/config.ts';
 import {createStore} from '../../src/core/store.ts';
 import {entity, fakeHass} from '../unit/fake-hass.ts';
 
@@ -15,7 +16,7 @@ const a = fakeHass({states});
 const b = a.next({'sensor.s0': {state: 'changed'}});
 
 function storeWith(subscribers: number) {
-  const store = createStore({defaultTimeZone: 'UTC', resolve: () => ({})});
+  const store = createStore({defaultTimeZone: 'UTC', resolve: resolveConfig});
   store.setHass(a);
   // subscriber n reads ten consecutive ids; subscriber 0 reads the one that changes
   for (let n = 0; n < subscribers; n++) {

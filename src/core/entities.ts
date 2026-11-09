@@ -1,0 +1,141 @@
+// The entities each card reads: their keys and defaults, the config's snake_case names for them, and the Environment
+// Canada sensor suffixes discovery looks for under the weather entity's town. null = not set.
+// Pattern: convention over configuration (Heinemeier Hansson, The Rails Doctrine): a name an integration always creates
+// the same way is a default (the sun, Hilo's gateway sensors); a name that carries a device's or a town's name is found
+// from the house's entities or set in the config.
+// Must not: hold logic, read hass, or name one house's devices (those belong in the config or in discovery).
+
+/** The entities each card reads. null = not set; the card or tile that needs it stays hidden or shows a dash. */
+export const DEFAULT_ENTITIES = {
+  // weather: the weather entity, plus Environment Canada's sensors found by the weather entity's prefix (weather.<town>_forecast → sensor.<town>_*)
+  weather: null,
+  cond: null,
+  outT: null,
+  hi: null,
+  lo: null,
+  nhi: null,
+  nlo: null,
+  wind: null,
+  windDir: null,
+  hum: null,
+  uv: null,
+  aqhi: null,
+  warnings: null,
+  dew: null,
+  pres: null,
+  tend: null,
+  gust: null,
+  chill: null,
+  humidex: null,
+  vis: null,
+  pop: null,
+  summary: null,
+  obs: null,
+  bearing: null,
+  watches: null,
+  advisories: null,
+  statements: null,
+  sun: 'sun.sun',
+  setting: 'sensor.sun_next_setting',
+  rising: 'sensor.sun_next_rising',
+  dawn: 'sensor.sun_next_dawn',
+  // energy: whole-house power, energy total, water heater, EV charger
+  grid: null,
+  energy: 'sensor.hilo_energy_total',
+  whP: null,
+  whT: null,
+  whE: null,
+  evP: null,
+  wbStatus: null,
+  wbAmps: null,
+  wbPause: null,
+  wbLock: null,
+  wbPrice: null,
+  // Hilo (Hydro-Québec's demand-response service) and Hydro-Québec's own integration
+  rate: 'sensor.hilo_gateway_hilo_rate_current',
+  rateLow: 'sensor.hilo_gateway_hilo_rate_low',
+  rateMed: 'sensor.hilo_gateway_hilo_rate_medium',
+  rateReward: 'sensor.hilo_gateway_hilo_rate_reward_rate',
+  defi: 'sensor.hilo_gateway_defi_hilo',
+  rewards: 'sensor.hilo_gateway_recompenses_hilo',
+  gateway: 'sensor.hilo_gateway',
+  hq: null,
+  hqPeak: null,
+  hqUpcoming: null,
+  // a heat pump or air conditioner shown beside the rooms
+  hp: null,
+  // an input_boolean that is on while the house is in Away mode (the idle clock shows a card for it)
+  away: null,
+} satisfies Record<string, string | null>;
+/** The keys of DEFAULT_ENTITIES: the entities each card reads. */
+export type EntityKey = keyof typeof DEFAULT_ENTITIES;
+export type EntityMap = Record<EntityKey, string | null>;
+
+/** Environment Canada sensor suffix for each weather key (sensor.<town>_<suffix>). */
+export const EC_SUFFIX: Partial<Record<EntityKey, string>> = {
+  cond: 'current_condition',
+  outT: 'temperature',
+  hi: 'high_temperature',
+  lo: 'low_temperature',
+  nhi: 'normal_high_temperature',
+  nlo: 'normal_low_temperature',
+  wind: 'wind_speed',
+  windDir: 'wind_direction',
+  hum: 'humidity',
+  uv: 'uv_index',
+  aqhi: 'aqhi',
+  warnings: 'warnings',
+  dew: 'dew_point',
+  pres: 'barometric_pressure',
+  tend: 'tendency',
+  gust: 'wind_gust',
+  chill: 'wind_chill',
+  humidex: 'humidex',
+  vis: 'visibility',
+  pop: 'chance_of_precipitation',
+  summary: 'summary',
+  obs: 'observation_time',
+  bearing: 'wind_bearing',
+  watches: 'watches',
+  advisories: 'advisories',
+  statements: 'statements',
+};
+/** The config's snake_case names for the entity keys above (both spellings are accepted). */
+export const ENTITY_ALIAS: Record<string, EntityKey> = {
+  condition: 'cond',
+  outdoor_temperature: 'outT',
+  high: 'hi',
+  low: 'lo',
+  normal_high: 'nhi',
+  normal_low: 'nlo',
+  wind_direction: 'windDir',
+  humidity: 'hum',
+  sun_setting: 'setting',
+  sun_rising: 'rising',
+  sun_dawn: 'dawn',
+  grid_power: 'grid',
+  energy_total: 'energy',
+  water_heater_power: 'whP',
+  water_heater_temperature: 'whT',
+  water_heater_energy: 'whE',
+  ev_charger_power: 'evP',
+  ev_charger_status: 'wbStatus',
+  ev_charger_current: 'wbAmps',
+  ev_charger_pause: 'wbPause',
+  ev_charger_lock: 'wbLock',
+  ev_charger_price: 'wbPrice',
+  hilo_rate: 'rate',
+  hilo_rate_low: 'rateLow',
+  hilo_rate_medium: 'rateMed',
+  hilo_rate_reward: 'rateReward',
+  hilo_challenge: 'defi',
+  hilo_rewards: 'rewards',
+  hilo_gateway: 'gateway',
+  hydro_quebec_balance: 'hq',
+  hydro_quebec_peak: 'hqPeak',
+  hydro_quebec_upcoming_peak: 'hqUpcoming',
+  heat_pump: 'hp',
+  away_mode: 'away',
+};
+/** Every key the `entities:` block accepts: both spellings. */
+export const ENTITY_KEYS = [...Object.keys(ENTITY_ALIAS), ...Object.keys(DEFAULT_ENTITIES)];

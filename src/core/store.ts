@@ -3,6 +3,7 @@
 // frontend data docs); a deep module whose dependencies are accepted, not created (Ousterhout, A Philosophy of Software Design).
 // Must not: touch the DOM, call a hass method, read the clock, or be imported as a singleton; the only `Intl` it reaches
 // is through the message compiler it builds for the locale.
+import {checkConfig, type ConfigProblem, type ResolvedConfig} from './config.ts';
 import type {
   AreaRegistryEntry,
   DeviceRegistryEntry,
@@ -13,7 +14,7 @@ import type {
 } from './hass.ts';
 import {panelLocale} from './i18n/locale.ts';
 import {createMessages, type Messages} from './i18n/messages.ts';
-import {createNames, type Names, type NamesConfig} from './i18n/names.ts';
+import {createNames, type Names} from './i18n/names.ts';
 
 /** What `setHass` found different from the previous hass. */
 export interface HassChange {
@@ -27,10 +28,12 @@ export interface HassChange {
   user: boolean;
 }
 
-/** `TConfig` is what the injected resolver returns (the resolved panel config); spec 13 gives it its type. */
-export interface PanelStore<TConfig = unknown> {
+export interface PanelStore {
   readonly hass: PanelHass | null;
-  readonly config: TConfig;
+  /** The resolved panel config: what the injected resolver made of the config and the house's states. */
+  readonly config: ResolvedConfig;
+  /** What is wrong with the config as written (spec 13); empty when it is clean. The config above ignores all of it. */
+  readonly configProblems: ConfigProblem[];
   /** +1 on every config change; the stale-reply guard of the API client. */
   readonly generation: number;
   readonly timeZone: string;
@@ -61,11 +64,11 @@ export interface PanelStore<TConfig = unknown> {
   subscribe(ids: readonly string[] | '*', cb: (change: HassChange) => void): () => void;
 }
 
-export interface StoreOptions<TConfig> {
+export interface StoreOptions {
   /** The zone used until a hass brings its own; the element passes the browser's. */
   defaultTimeZone: string;
   /** The panel config and the house's states in, the resolved config out (the element passes resolveConfig). */
-  resolve: (raw: unknown, states: HassEntities) => TConfig;
+  resolve: (raw: unknown, states: HassEntities) => ResolvedConfig;
 }
 
 interface Subscriber {
@@ -75,11 +78,12 @@ interface Subscriber {
 const isAvailable = (s: HassEntity | undefined): s is HassEntity =>
   s !== undefined && s.state !== 'unavailable' && s.state !== 'unknown';
 
-export function createStore<TConfig>(opts: StoreOptions<TConfig>): PanelStore<TConfig> {
+export function createStore(opts: StoreOptions): PanelStore {
   let hass: PanelHass | null = null;
   let raw: unknown = {};
   let configKey: string | null = null;
   let config = opts.resolve(raw, {});
+  let configProblems = checkConfig(raw);
   let generation = 0;
 
   // t reads only the language and the tag; the defaults panelLocale asks for matter to the formatters, not here
@@ -110,8 +114,7 @@ export function createStore<TConfig>(opts: StoreOptions<TConfig>): PanelStore<TC
       return hass?.devices;
     },
   };
-  // spec 13 types the config; until then the resolver's own `names` (an object, or nothing) is what is read
-  const buildNames = () => createNames(config as {names?: NamesConfig}, languageOf(hass), live);
+  const buildNames = () => createNames(config, languageOf(hass), live);
   let names = buildNames();
 
   const state = (id: string | null | undefined) => (id ? hass?.states[id] : undefined);
@@ -143,6 +146,9 @@ export function createStore<TConfig>(opts: StoreOptions<TConfig>): PanelStore<TC
     },
     get config() {
       return config;
+    },
+    get configProblems() {
+      return configProblems;
     },
     get generation() {
       return generation;
@@ -200,6 +206,7 @@ export function createStore<TConfig>(opts: StoreOptions<TConfig>): PanelStore<TC
       configKey = key;
       raw = value ?? {};
       config = opts.resolve(raw, hass?.states ?? {});
+      configProblems = checkConfig(raw);
       names = buildNames();
       generation++;
       return true;

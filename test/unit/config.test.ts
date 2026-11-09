@@ -1,8 +1,9 @@
 // resolveConfig(): panel config + the house's states → what the panel runs with
 import {test, expect} from 'vitest';
-import {resolveConfig, guessIcon, DEFAULT_ENTITIES} from '../../src/config.js';
+import {resolveConfig, guessIcon, DEFAULT_ENTITIES} from '../../src/core/config.ts';
 
-const st = (id, attrs = {}) => [id, {entity_id: id, state: 'on', attributes: attrs}];
+const st = (id: string, attrs: Record<string, unknown> = {}) =>
+  [id, {entity_id: id, state: 'on', attributes: attrs}] as const;
 const states = Object.fromEntries([
   st('weather.springfield_forecast'),
   st('weather.other'),
@@ -61,6 +62,12 @@ test('entities from the config win, in snake_case or by their short key', () => 
   expect(c.entities.whT).toBe('sensor.tank');
   expect(c.entities.hp).toBe('climate.heat_pump');
   expect(!('bogus' in c.entities)).toBeTruthy();
+});
+
+test('weather: without a *_forecast entity, the first weather entity', () => {
+  expect(resolveConfig({}, Object.fromEntries([st('weather.home'), st('sensor.x')])).entities.weather).toBe(
+    'weather.home',
+  );
 });
 
 test('Hilo gateway: found under its _2 name', () => {
@@ -188,4 +195,20 @@ test('idle_stack: on by default, reminders need an HH:MM time, away_mode alias',
     sunriseOff: true,
     reminders: [{at: '20:00', title: 'Bedtime', text: 'Lamp to night', lead: 20}],
   });
+});
+
+test('discovery reads a friendly name as the old resolver did: through String(), a falsy value as no name', () => {
+  const named = (name: unknown) =>
+    resolveConfig({}, Object.fromEntries([st('person.x', {friendly_name: name})])).people;
+  expect(named(['Bob'])).toStrictEqual(['Bob']);
+  expect(named(7)).toStrictEqual(['7']);
+  expect(named(0)).toStrictEqual([]);
+  expect(named('')).toStrictEqual([]);
+  expect(named(null)).toStrictEqual([]);
+  expect(named({a: 1})).toStrictEqual(['[object']);
+  expect(guessIcon(['Bedroom'])).toBe('bed');
+  expect(guessIcon(0)).toBe('therm');
+  expect(guessIcon(null)).toBe('therm');
+  const room = resolveConfig({}, Object.fromEntries([st('climate.z', {friendly_name: ['Bedroom']})])).rooms;
+  expect(room.map(r => r.icon)).toStrictEqual(['bed']);
 });

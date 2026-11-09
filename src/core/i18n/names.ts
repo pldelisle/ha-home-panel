@@ -3,11 +3,12 @@
 // house's `names:` block, the built-in room dictionary, then the name as Home Assistant gives it); names are data, never
 // message keys. Home Assistant's own aliases are not used: they carry no language tag, so they cannot say which is English.
 // Must not: translate part of a name (`Lampe du salon` needs an override), read the DOM or a global locale, or cache a hass.
+import type {PanelConfig} from '../config.ts';
 import type {PanelHass} from '../hass.ts';
 import {ROOM_NAMES} from './room-names.ts';
 
-/** The config's `names:` block: a name, an entity id, an area id or a device id, each with one name per language. */
-export type NamesConfig = Record<string, Partial<Record<string, string>>>;
+/** The config's `names:` block, as its schema types it: a name, an entity id, an area id or a device id, each with one name per language. */
+export type NamesConfig = NonNullable<PanelConfig['names']>;
 
 /** What the resolver reads of the hass, so the store can hand it a view that is always the current one. */
 export type NamesHass = Pick<PanelHass, 'states' | 'areas' | 'devices'>;

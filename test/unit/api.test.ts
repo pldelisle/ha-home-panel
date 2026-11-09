@@ -3,12 +3,13 @@
 import {describe, expect, test, vi} from 'vitest';
 import {createApi, StaleReply} from '../../src/core/api.ts';
 import type {ForecastEntry} from '../../src/core/ha.ts';
+import {resolveConfig} from '../../src/core/config.ts';
 import {createStore} from '../../src/core/store.ts';
 import {fakeHass} from './fake-hass.ts';
 
 const setup = (init: Parameters<typeof fakeHass>[0] = {}) => {
   const hass = fakeHass(init);
-  const store = createStore({defaultTimeZone: 'UTC', resolve: raw => raw});
+  const store = createStore({defaultTimeZone: 'UTC', resolve: resolveConfig});
   store.setHass(hass);
   return {hass, store, api: createApi(store)};
 };
@@ -437,7 +438,7 @@ describe('stale replies', () => {
 
 describe('before Home Assistant has handed over a hass', () => {
   test('every method rejects instead of throwing', async () => {
-    const api = createApi(createStore({defaultTimeZone: 'UTC', resolve: raw => raw}));
+    const api = createApi(createStore({defaultTimeZone: 'UTC', resolve: resolveConfig}));
     await expect(api.traceList('automation')).rejects.toThrow('not connected');
     await expect(api.setSystemData('home_panel', {})).rejects.toThrow('not connected');
     await expect(api.runService('light', 'turn_on')).rejects.toThrow('not connected');

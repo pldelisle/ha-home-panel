@@ -11,7 +11,7 @@ export default defineConfig({
     benchmark: {include: ['test/bench/**/*.bench.ts']},
     coverage: {
       provider: 'v8',
-      include: ['src/config.js', 'src/stack.js', 'src/fonts.js', 'src/core/**/*.ts'],
+      include: ['src/stack.js', 'src/fonts.js', 'src/core/**/*.ts'],
       reporter: [['text', {skipFull: false}], 'html'], // skipFull false lists the files at 100 percent too
       // the phase-2 gate: every statement in the core is tested (CI runs `npm test -- --coverage`)
       thresholds: {'src/core/**/*.ts': {statements: 100}},
