@@ -7923,7 +7923,7 @@ export class HomePanel extends HTMLElement {
     if (!H) return;
     const sess = H.sessions,
       tot = sum(sess.map(x => x.kwh)),
-      price = this.num(E.wbPrice) ?? 0.07;
+      price = this.num(this.E.wbPrice) ?? 0.07;
     this.$('sesp').textContent = sess.length
       ? `${sess.length} charging sessions on the Wallbox since ${this.fmtDate(sess[0].a)}. Cost is estimated at the ${(price * 100).toFixed(0)}¢/kWh set in the Wallbox app.`
       : 'No charging sessions in the last year.';
@@ -7968,7 +7968,7 @@ export class HomePanel extends HTMLElement {
     const all = H.sessions.slice().reverse(),
       rows = this.sesAll ? all : all.slice(0, 10),
       mx = Math.max(1, ...all.map(x => x.kwh)),
-      price = this.num(E.wbPrice) ?? 0.07;
+      price = this.num(this.E.wbPrice) ?? 0.07;
     this.$('slist').innerHTML = rows
       .map(
         x => `<tr><td>${new Date(x.a).toLocaleDateString('en-CA', {weekday: 'short', month: 'short', day: 'numeric', timeZone: this.store.timeZone})}</td><td class="hide-s">${this.fmtTime(x.a)} to ${this.fmtTime(x.b)}</td><td class="r hide-s">${Math.round((x.b - x.a) / 36e5)} h</td>
@@ -8179,18 +8179,18 @@ export class HomePanel extends HTMLElement {
   renderCarControls() {
     const C = this.car;
     if (!C || this.open !== 'sh-car') return;
-    const amps = this.st(E.wbAmps),
-      cur = this.pending.amps && Date.now() < this.pending.amps.until ? this.pending.amps.v : this.num(E.wbAmps);
+    const amps = this.st(this.E.wbAmps),
+      cur = this.pending.amps && Date.now() < this.pending.amps.until ? this.pending.amps.v : this.num(this.E.wbAmps);
     const mn = amps ? amps.attributes.min || 6 : 6,
       mx = amps ? amps.attributes.max || 48 : 48;
     const steps = [16, 24, 32, 40, 48].filter(a => a >= mn && a <= mx);
     const c = this.carState(),
-      wb = this.st(E.wbStatus),
-      pause = this.st(E.wbPause),
-      wlock = this.sw(E.wbLock);
+      wb = this.st(this.E.wbStatus),
+      pause = this.st(this.E.wbPause),
+      wlock = this.sw(this.E.wbLock);
     const lim = c.lim,
       limOpts = [50, 60, 70, 80, 90, 100];
-    const charging = this.sw(E.wbPause);
+    const charging = this.sw(this.E.wbPause);
     this.set(
       'car-charger',
       `<h3>Home charger</h3><p>Wallbox Pulsar Plus · ${esc(ok(wb) ? wb.state.toLowerCase() : 'unavailable')}${c.plugged ? '' : ', car not plugged in'}</p>
@@ -8201,7 +8201,7 @@ export class HomePanel extends HTMLElement {
       <div class="seg dis" role="radiogroup" aria-label="Charge limit, read only" aria-disabled="true">${limOpts.map(v => `<button type="button" role="radio" aria-checked="${lim === v}" disabled><b>${v === 100 ? 'Full' : v + '%'}</b></button>`).join('')}</div>
       <div class="hint">Set in the FordPass app. Home Assistant can read it but has no control for it.</div>
       <div class="tgl"><div class="tx"><b>Charging</b><span>${ok(pause) ? (charging ? 'On. Turn off to pause' : 'Paused. Turn on to resume') : 'Available while the car is plugged in'}</span></div><button class="sw" type="button" role="switch" aria-checked="${!!charging}" aria-label="Charging" data-k="pause" ${ok(pause) ? '' : 'disabled'}></button></div>
-      <div class="tgl"><div class="tx"><b>Lock charger</b><span>${wlock ? 'Locked, needs the app or RFID card' : 'Unlocked, anyone can plug in'}</span></div><button class="sw" type="button" role="switch" aria-checked="${!!wlock}" aria-label="Lock charger" data-k="wblock" ${this.st(E.wbLock) && ok(this.st(E.wbLock)) ? '' : 'disabled'}></button></div>`,
+      <div class="tgl"><div class="tx"><b>Lock charger</b><span>${wlock ? 'Locked, needs the app or RFID card' : 'Unlocked, anyone can plug in'}</span></div><button class="sw" type="button" role="switch" aria-checked="${!!wlock}" aria-label="Lock charger" data-k="wblock" ${this.st(this.E.wbLock) && ok(this.st(this.E.wbLock)) ? '' : 'disabled'}></button></div>`,
     );
     const rs = this.sw(C.id('switch', 'ignition')),
       cabin = this.st(C.id('select', 'rcctemperature')),
@@ -8314,12 +8314,12 @@ export class HomePanel extends HTMLElement {
     if (k === 'amps') {
       const a = +b.dataset.a;
       this.pending.amps = {v: a, until: Date.now() + 20000};
-      this.call('number', 'set_value', {entity_id: E.wbAmps, value: a}, `Wallbox limit set to ${a} A`);
-    } else if (k === 'pause') swToggle(E.wbPause, 'Charging');
+      this.call('number', 'set_value', {entity_id: this.E.wbAmps, value: a}, `Wallbox limit set to ${a} A`);
+    } else if (k === 'pause') swToggle(this.E.wbPause, 'Charging');
     else if (k === 'wblock') {
-      const on = !this.sw(E.wbLock);
-      hold(E.wbLock, {on});
-      this.call('lock', on ? 'lock' : 'unlock', {entity_id: E.wbLock}, on ? 'Charger locked' : 'Charger unlocked');
+      const on = !this.sw(this.E.wbLock);
+      hold(this.E.wbLock, {on});
+      this.call('lock', on ? 'lock' : 'unlock', {entity_id: this.E.wbLock}, on ? 'Charger locked' : 'Charger unlocked');
     } else if (k === 'rs') {
       const id = C.id('switch', 'ignition'),
         on = this.sw(id);
