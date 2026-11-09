@@ -8,22 +8,7 @@ import {FR, setFR, FR_ATTR, frNode, frTree, frApex} from './i18n/fr.js';
 import {autoMethods} from './auto.js';
 import {createStore} from './core/store.ts';
 import {createSettings} from './core/settings.ts';
-import {
-  VERSION,
-  setHass,
-  getTZ,
-  setTZ,
-  ok,
-  esc,
-  ampm,
-  fmtTime,
-  fmtDate,
-  localDay,
-  hourNow,
-  tile,
-  plural,
-  cap,
-} from './legacy/globals.js';
+import {VERSION, setHass, setTZ, ok, esc, ampm, tile, plural, cap} from './legacy/globals.js';
 import {loadApex} from './charts/apex.js';
 import {ensureFonts} from './fonts.js';
 // Liquid Glass: the wallpapers the Status popup offers, and whether this engine can run an SVG filter inside backdrop-filter (Chromium only)
@@ -91,10 +76,6 @@ const shortNames = names => {
   return w.map(x => x.slice(k).join(' '));
 };
 const L0kw = v => (v == null ? '–' : v < 1 ? Math.round(v * 1000) + ' W' : v.toFixed(1) + ' kW');
-const ago = t => {
-  const m = Math.round((Date.now() - Date.parse(t)) / 6e4);
-  return m < 1 ? 'just now' : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : fmtDate(t);
-};
 
 // card order for the column packing: first row is weather, cameras, energy
 const LAYOUT = [
@@ -382,20 +363,18 @@ const wxIcon = (c, sz = 28, day = true) => {
   }[k];
   return `<svg class="wxi" width="${sz}" height="${sz}" viewBox="0 0 24 24" role="img" aria-label="${esc(condName(c))}">${g}</svg>`;
 };
-const fmtHour = d =>
-  ampm(new Date(d).toLocaleTimeString('en-CA', {hour: 'numeric', timeZone: getTZ()})).replace(':00', '');
 const isDay = (t, p) => {
   const s = p.sunDay((t - Date.now()) / 864e5);
   return t > s.rise && t < s.set;
 };
 // sunrise, sunset, dawn, dusk and solar noon for the local day containing t (the usual suncalc formulas)
-function sunTimes(t, lat, lon) {
+function sunTimes(t, lat, lon, day) {
   const rad = Math.PI / 180,
     J1970 = 2440588,
     J2000 = 2451545,
     e = rad * 23.4397,
     J0 = 0.0009;
-  const noonGuess = Date.parse(localDay(t) + 'T12:00:00Z') - (lon / 15) * 36e5;
+  const noonGuess = Date.parse(day + 'T12:00:00Z') - (lon / 15) * 36e5;
   const d = noonGuess / 864e5 - 0.5 + J1970 - J2000,
     lw = rad * -lon,
     phi = rad * lat;
@@ -644,56 +623,6 @@ const swingName = m =>
     : /^horizontal_(\d+)$/i.test(m)
       ? `Fixed, horizontal position ${m.split('_')[1]}`
       : cap(m));
-const LP = new Map();
-const localParts = t => {
-  const key = Math.floor(t / 36e5);
-  if (LP.has(key)) return LP.get(key);
-  const p = new Intl.DateTimeFormat('en-CA', {
-    timeZone: getTZ(),
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: 'numeric',
-    hourCycle: 'h23',
-    weekday: 'short',
-  }).formatToParts(new Date(key * 36e5));
-  const g = k => (p.find(x => x.type === k) || {}).value,
-    v = {day: `${g('year')}-${g('month')}-${g('day')}`, h: +g('hour'), wd: g('weekday')};
-  if (LP.size > 20000) LP.clear();
-  LP.set(key, v);
-  return v;
-};
-// group a [t, value] series into heatmap cells: hours (day), 6-hour blocks (week), days (month), weeks (year)
-function bucket(pts, r) {
-  const m = new Map();
-  pts.forEach(([t, v]) => {
-    if (v == null) return;
-    const p = localParts(t);
-    let k, lbl;
-    // labels stay unique (apex groups cells by label); the axis formatter shortens them
-    if (r === 'day') {
-      k = p.day + ' ' + String(p.h).padStart(2, '0');
-      lbl = `${p.wd}, ${fmtHour(t)}`;
-    } else if (r === 'week') {
-      const b = Math.floor(p.h / 6) * 6;
-      k = p.day + ' ' + String(b).padStart(2, '0');
-      lbl = `${p.wd} ${+p.day.slice(8)}, ${['night', 'morning', 'afternoon', 'evening'][b / 6]}`;
-    } else if (r === 'month') {
-      k = p.day;
-      lbl = fmtDay(p.day);
-    } else {
-      const d = new Date(p.day + 'T12:00:00'),
-        mon = new Date(d.getTime() - ((d.getDay() + 6) % 7) * 864e5);
-      k = mon.toISOString().slice(0, 10);
-      lbl = fmtDay(k);
-    }
-    const c = m.get(k) || {k, lbl, s: 0, n: 0};
-    c.s += v;
-    c.n++;
-    m.set(k, c);
-  });
-  return [...m.values()].sort((a, b) => (a.k < b.k ? -1 : 1)).map(c => [c.k, c.lbl, +(c.s / c.n).toFixed(2)]);
-}
 // heat pump readings from state history; a gap with no state means it was offline
 /** @param {(attrs: any, state: string) => any} [get] what to read from a point (the default is the temperature) */
 function hpSeries(rows, get = a => a.current_temperature) {
@@ -739,6 +668,7 @@ export class HomePanel extends HTMLElement {
     }
     this.settings = createSettings(storage);
     this.unsubStore = this.store.subscribe('*', () => this.tick()); // one path to the one-second render
+    this.lp = new Map(); // date parts by hour, see localParts
     this.H = null; // history-derived data
     this.charts = []; // sheet charts, destroyed on close
     this.ApexCharts = null; // the library, once the lazy chunk has loaded (loadCharts)
@@ -934,6 +864,87 @@ export class HomePanel extends HTMLElement {
   up() {
     const s = this.st(E.sun);
     return !s || s.state === 'above_horizon';
+  }
+  // ---------- time-zone helpers: the store's zone; spec 11's formatters replace these ----------
+  ago(t) {
+    const m = Math.round((Date.now() - Date.parse(t)) / 6e4);
+    return m < 1 ? 'just now' : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : this.fmtDate(t);
+  }
+  fmtTime(d) {
+    return ampm(
+      new Date(d).toLocaleTimeString('en-CA', {hour: 'numeric', minute: '2-digit', timeZone: this.store.timeZone}),
+    );
+  }
+  fmtDate(d) {
+    return new Date(d).toLocaleDateString('en-CA', {month: 'short', day: 'numeric', timeZone: this.store.timeZone});
+  }
+  fmtHour(d) {
+    return ampm(new Date(d).toLocaleTimeString('en-CA', {hour: 'numeric', timeZone: this.store.timeZone})).replace(
+      ':00',
+      '',
+    );
+  }
+  localDay(ms) {
+    return new Date(ms).toLocaleDateString('en-CA', {timeZone: this.store.timeZone});
+  }
+  hourNow() {
+    const p = new Intl.DateTimeFormat('en-CA', {
+      timeZone: this.store.timeZone,
+      hour: 'numeric',
+      minute: 'numeric',
+      hourCycle: 'h23',
+    }).formatToParts(new Date());
+    const g = t => +p.find(x => x.type === t).value;
+    return g('hour') + g('minute') / 60;
+  }
+  localParts(t) {
+    const key = Math.floor(t / 36e5);
+    if (this.lp.has(key)) return this.lp.get(key);
+    const p = new Intl.DateTimeFormat('en-CA', {
+      timeZone: this.store.timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: 'numeric',
+      hourCycle: 'h23',
+      weekday: 'short',
+    }).formatToParts(new Date(key * 36e5));
+    const g = k => (p.find(x => x.type === k) || {}).value,
+      v = {day: `${g('year')}-${g('month')}-${g('day')}`, h: +g('hour'), wd: g('weekday')};
+    if (this.lp.size > 20000) this.lp.clear();
+    this.lp.set(key, v);
+    return v;
+  }
+  // group a [t, value] series into heatmap cells: hours (day), 6-hour blocks (week), days (month), weeks (year)
+  bucket(pts, r) {
+    const m = new Map();
+    pts.forEach(([t, v]) => {
+      if (v == null) return;
+      const p = this.localParts(t);
+      let k, lbl;
+      // labels stay unique (apex groups cells by label); the axis formatter shortens them
+      if (r === 'day') {
+        k = p.day + ' ' + String(p.h).padStart(2, '0');
+        lbl = `${p.wd}, ${this.fmtHour(t)}`;
+      } else if (r === 'week') {
+        const b = Math.floor(p.h / 6) * 6;
+        k = p.day + ' ' + String(b).padStart(2, '0');
+        lbl = `${p.wd} ${+p.day.slice(8)}, ${['night', 'morning', 'afternoon', 'evening'][b / 6]}`;
+      } else if (r === 'month') {
+        k = p.day;
+        lbl = fmtDay(p.day);
+      } else {
+        const d = new Date(p.day + 'T12:00:00'),
+          mon = new Date(d.getTime() - ((d.getDay() + 6) % 7) * 864e5);
+        k = mon.toISOString().slice(0, 10);
+        lbl = fmtDay(k);
+      }
+      const c = m.get(k) || {k, lbl, s: 0, n: 0};
+      c.s += v;
+      c.n++;
+      m.set(k, c);
+    });
+    return [...m.values()].sort((a, b) => (a.k < b.k ? -1 : 1)).map(c => [c.k, c.lbl, +(c.s / c.n).toFixed(2)]);
   }
   $(id) {
     return this.shadowRoot.getElementById(id);
@@ -1384,11 +1395,16 @@ export class HomePanel extends HTMLElement {
     const t = FR
       ? [
           now
-            .toLocaleTimeString('fr-CA', {hour: '2-digit', minute: '2-digit', timeZone: getTZ()})
+            .toLocaleTimeString('fr-CA', {hour: '2-digit', minute: '2-digit', timeZone: this.store.timeZone})
             .replace(/\s?h\s?/, ':'),
         ]
-      : fmtTime(now).split(' ');
-    const dateStr = now.toLocaleDateString(loc, {weekday: 'long', month: 'long', day: 'numeric', timeZone: getTZ()}),
+      : this.fmtTime(now).split(' ');
+    const dateStr = now.toLocaleDateString(loc, {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+        timeZone: this.store.timeZone,
+      }),
       L = this.live();
     const ins = L.rooms.map(r => r.t).filter(v => v != null),
       outT = this.attr(E.weather, 'temperature') ?? this.num(E.outT);
@@ -1424,7 +1440,7 @@ export class HomePanel extends HTMLElement {
     }
     this.set(
       'iclk',
-      `${icon ? `<div class="iclk2">${icon}${clock}</div>` : clock}<div class="idate">${esc(dateStr)}</div>${temps ? `<div class="itemps">${temps}</div>` : ''}${next[1] ? `<div class="isun">${next[0]} ${fmtTime(next[1])}</div>` : ''}`,
+      `${icon ? `<div class="iclk2">${icon}${clock}</div>` : clock}<div class="idate">${esc(dateStr)}</div>${temps ? `<div class="itemps">${temps}</div>` : ''}${next[1] ? `<div class="isun">${next[0]} ${this.fmtTime(next[1])}</div>` : ''}`,
     );
     if (pick)
       this.set(
@@ -1450,13 +1466,13 @@ export class HomePanel extends HTMLElement {
   // every card that applies right now, red alerts and amber warnings first. No card ever reads camera motion.
   stackCards() {
     const now = Date.now(),
-      h = hourNow(),
+      h = this.hourNow(),
       out = [],
       S = (CFG && CFG.stack) || {},
       mins = t => Math.round((now - Date.parse(t)) / 6e4);
     const when = t => {
       const d = Date.parse(t);
-      return localDay(d) === localDay(now) ? fmtTime(d) : fmtDate(d);
+      return this.localDay(d) === this.localDay(now) ? this.fmtTime(d) : this.fmtDate(d);
     };
     const chips = names =>
       `<div class="schips">${names
@@ -1571,7 +1587,7 @@ export class HomePanel extends HTMLElement {
             go: 'tab:lights',
             body:
               big(
-                ...fmtTime(rise)
+                ...this.fmtTime(rise)
                   .split(' ')
                   .map((x, i) => (i ? ' ' + x : x)),
               ) +
@@ -1592,7 +1608,7 @@ export class HomePanel extends HTMLElement {
           color: 'var(--m-purple)',
           body:
             big(
-              ...fmtTime(Date.now() + m * 6e4)
+              ...this.fmtTime(Date.now() + m * 6e4)
                 .split(' ')
                 .map((x, j) => (j ? ' ' + x : x)),
             ) + (r.text ? mid(r.text) : ''),
@@ -1671,14 +1687,14 @@ export class HomePanel extends HTMLElement {
     if (moved.some(p => mins(p.at) <= 30)) out.push(this.scard('who', who()));
     // today's calendar events, in the morning
     if (inHours(h, 6, 11)) {
-      const today = localDay(now),
+      const today = this.localDay(now),
         ev = Object.keys(this.hass.states)
           .filter(id => id.startsWith('calendar.') && !(reg[id] || {}).hidden && ok(this.st(id)))
           .map(id => ({id, a: this.st(id).attributes}))
           .filter(
             x =>
               x.a.start_time &&
-              localDay(Date.parse(String(x.a.start_time).replace(' ', 'T'))) === today &&
+              this.localDay(Date.parse(String(x.a.start_time).replace(' ', 'T'))) === today &&
               Date.parse(String(x.a.end_time || x.a.start_time).replace(' ', 'T')) > now,
           )
           .sort((x, y) => String(x.a.start_time).localeCompare(String(y.a.start_time)));
@@ -1693,7 +1709,7 @@ export class HomePanel extends HTMLElement {
               .slice(0, 2)
               .map(
                 (x, i) =>
-                  `<div class="sev"><i style="background:var(--${['c-home', 'm-purple'][i]})"></i><div><b>${esc(x.a.message || this.attr(x.id, 'friendly_name'))}</b><small class="num">${x.a.all_day ? 'All day' : fmtTime(Date.parse(String(x.a.start_time).replace(' ', 'T')))}</small></div></div>`,
+                  `<div class="sev"><i style="background:var(--${['c-home', 'm-purple'][i]})"></i><div><b>${esc(x.a.message || this.attr(x.id, 'friendly_name'))}</b><small class="num">${x.a.all_day ? 'All day' : this.fmtTime(Date.parse(String(x.a.start_time).replace(' ', 'T')))}</small></div></div>`,
               )
               .join(''),
             foot: ev.length > 2 ? `and ${ev.length - 2} more` : 'From your calendars',
@@ -1744,8 +1760,8 @@ export class HomePanel extends HTMLElement {
     // tomorrow's weather, in the evening
     if (inHours(h, 17, 24)) {
       const days = this.wxDays(),
-        tm = days.find(x => x.k === localDay(now + 864e5)),
-        tn = days.find(x => x.k === localDay(now));
+        tm = days.find(x => x.k === this.localDay(now + 864e5)),
+        tn = days.find(x => x.k === this.localDay(now));
       if (tm && (tm.hi != null || tm.lo != null))
         out.push(
           this.scard('tomorrow', {
@@ -1790,7 +1806,7 @@ export class HomePanel extends HTMLElement {
     const T = this.H && this.H.totals,
       F = this.H && this.H.flow;
     if (T && T.today != null && inHours(h, 8, 21)) {
-      const td = (F || []).filter(r => localDay(r[0]) === localDay(now));
+      const td = (F || []).filter(r => this.localDay(r[0]) === this.localDay(now));
       const part = [3, 2, 1, 4].map(i => sum(td.map(r => r[i]))),
         tot = sum(part) || 1,
         col = ['var(--c-heat)', 'var(--c-wh)', 'var(--c-ev)', 'var(--fg3)'];
@@ -2613,7 +2629,7 @@ export class HomePanel extends HTMLElement {
   }
 
   renderHeader() {
-    const h = hourNow(),
+    const h = this.hourNow(),
       part = h < 5 ? 'Good night' : h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
     const name = ((this.hass.user && this.hass.user.name) || '')
       .split(' ')[0]
@@ -2623,7 +2639,7 @@ export class HomePanel extends HTMLElement {
         weekday: 'long',
         month: 'long',
         day: 'numeric',
-        timeZone: getTZ(),
+        timeZone: this.store.timeZone,
       }),
       L0 = this.compact ? this.live() : null;
     const ins = L0 ? L0.rooms.map(r => r.t).filter(v => v != null) : [],
@@ -2642,13 +2658,13 @@ export class HomePanel extends HTMLElement {
     const t = FR
       ? [
           new Date()
-            .toLocaleTimeString('fr-CA', {hour: '2-digit', minute: '2-digit', timeZone: getTZ()})
+            .toLocaleTimeString('fr-CA', {hour: '2-digit', minute: '2-digit', timeZone: this.store.timeZone})
             .replace(/\s?h\s?/, ':'),
         ]
-      : fmtTime(new Date()).split(' ');
+      : this.fmtTime(new Date()).split(' ');
     this.set(
       'clock',
-      `${t[0]}<span style="font-size:.45em;margin-left:4px">${t[1] || ''}</span><small>${this.H ? 'Live · history ' + fmtTime(this.H.at) : 'Live · loading history'}</small>`,
+      `${t[0]}<span style="font-size:.45em;margin-left:4px">${t[1] || ''}</span><small>${this.H ? 'Live · history ' + this.fmtTime(this.H.at) : 'Live · loading history'}</small>`,
     );
     const temp = this.attr(E.weather, 'temperature') ?? this.num(E.outT),
       cond = this.st(E.cond),
@@ -2687,7 +2703,7 @@ export class HomePanel extends HTMLElement {
       nlo = this.num(E.nlo);
     this.set(
       'wx',
-      `<div class="muted" style="font-weight:500">${up ? 'Sunset' : 'Sunrise'} <b style="color:var(--fg)">${ok(next) ? fmtTime(next.state) : '–'}</b></div>
+      `<div class="muted" style="font-weight:500">${up ? 'Sunset' : 'Sunrise'} <b style="color:var(--fg)">${ok(next) ? this.fmtTime(next.state) : '–'}</b></div>
       <div class="num" style="font-size:76px;line-height:1;margin-top:26px">${f1(temp)}°</div>
       <div style="font-weight:600;font-size:16px;margin-top:6px">${esc(condName(ok(cond) ? cond.state : (this.st(E.weather) || {}).state))}</div>
       <div class="muted" style="margin-top:2px">${hi != null ? `High ${Math.round(hi)}°` : ''}${lo != null ? ` · Low ${Math.round(lo)}°` : ''}${nhi != null && nlo != null ? ` · normal ${Math.round(nhi)}° / ${Math.round(nlo)}°` : ''}</div>`,
@@ -2834,7 +2850,7 @@ export class HomePanel extends HTMLElement {
         (this.st(x.id) || {}).state === 'on' &&
         Date.now() - Date.parse(this.st(x.id).last_changed) > 10 * 6e4,
     ).forEach(x =>
-      items.push(['warn', `${x.name} open`, `Open for ${ago(this.st(x.id).last_changed).replace(' ago', '')}.`]),
+      items.push(['warn', `${x.name} open`, `Open for ${this.ago(this.st(x.id).last_changed).replace(' ago', '')}.`]),
     );
     X.filter(x => !ok(this.st(x.id))).forEach(x =>
       items.push(['warn', `${x.name} offline`, 'The sensor is unavailable in Home Assistant.']),
@@ -2926,8 +2942,8 @@ export class HomePanel extends HTMLElement {
             ? (() => {
                 const W = p3 - p0,
                   pc = t => (((t - p0) / W) * 100).toFixed(1);
-                return `<div class="lph" role="img" aria-label="Pre-heat ${fmtTime(p0)}, reduction ${fmtTime(p1)} to ${fmtTime(p2)}, recovery until ${fmtTime(p3)}"><span style="flex:${p1 - p0};--pc:var(--c-grid)">Pre-heat</span><span style="flex:${p2 - p1};--pc:var(--crit)">Reduction</span><span style="flex:${p3 - p2};--pc:var(--c-ev)">Recovery</span><i style="left:${Math.max(0, Math.min(100, +pc(now)))}%"></i></div>
-            <div class="lpt">${[p0, p1, p2, p3].map(t => `<span style="left:${pc(t)}%">${fmtTime(t).replace(/ [ap]m$/, '')}</span>`).join('')}</div>`;
+                return `<div class="lph" role="img" aria-label="Pre-heat ${this.fmtTime(p0)}, reduction ${this.fmtTime(p1)} to ${this.fmtTime(p2)}, recovery until ${this.fmtTime(p3)}"><span style="flex:${p1 - p0};--pc:var(--c-grid)">Pre-heat</span><span style="flex:${p2 - p1};--pc:var(--crit)">Reduction</span><span style="flex:${p3 - p2};--pc:var(--c-ev)">Recovery</span><i style="left:${Math.max(0, Math.min(100, +pc(now)))}%"></i></div>
+            <div class="lpt">${[p0, p1, p2, p3].map(t => `<span style="left:${pc(t)}%">${this.fmtTime(t).replace(/ [ap]m$/, '')}</span>`).join('')}</div>`;
               })()
             : '';
         const used = ev.used_kWh,
@@ -2941,7 +2957,7 @@ export class HomePanel extends HTMLElement {
           .filter(Boolean)
           .join(' · ');
         return (
-          head(a, 'Hilo challenge', `${short}${a0 && b0 ? ` · ${fmtTime(a0)} – ${fmtTime(b0)}` : ''}`) +
+          head(a, 'Hilo challenge', `${short}${a0 && b0 ? ` · ${this.fmtTime(a0)} – ${this.fmtTime(b0)}` : ''}`) +
           bar +
           (left
             ? `<div class="lbig"><span class="n">${left}</span><span class="to">${dst === 'pre_heat' ? 'until heating holds back' : dst === 'reduction' ? 'until the challenge ends' : 'until recovery ends'}</span></div>`
@@ -3014,7 +3030,7 @@ export class HomePanel extends HTMLElement {
       a.card = () => {
         const on = this.sw(E.wbPause);
         const meta = [
-          ok(plug) && plug.state !== 'DISCONNECTED' ? `Plugged in at ${fmtTime(plug.last_changed)}` : '',
+          ok(plug) && plug.state !== 'DISCONNECTED' ? `Plugged in at ${this.fmtTime(plug.last_changed)}` : '',
           cur ? `<b>+${f1(cur.kwh)} kWh</b> so far · about <b>$${(cur.kwh * price).toFixed(2)}</b>` : '',
           c.range != null ? `${Math.round(c.range)} km range` : '',
         ]
@@ -3026,7 +3042,7 @@ export class HomePanel extends HTMLElement {
             `${esc(this.carName())} <span>${paused ? 'paused' : 'charging'}</span>`,
             pw != null && pw > 0.05 ? `${pw.toFixed(1)} kW` : '',
           ) +
-          `<div class="lbig"><span class="n">${f0(soc)}<small>%</small></span><span class="to">→ ${lim}% limit</span>${eta ? `<span class="eta"><b>Full at ${fmtTime(eta)}</b>in ${left}</span>` : ''}</div>
+          `<div class="lbig"><span class="n">${f0(soc)}<small>%</small></span><span class="to">→ ${lim}% limit</span>${eta ? `<span class="eta"><b>Full at ${this.fmtTime(eta)}</b>in ${left}</span>` : ''}</div>
           <div class="lbar" role="img" aria-label="Battery ${f0(soc)} percent, limit ${lim} percent"><i style="width:${soc || 0}%"></i><em style="left:${lim}%"></em></div>
           ${meta ? `<div class="lmeta">${meta}</div>` : ''}
           <div class="lbtns">${E.wbPause && ok(this.st(E.wbPause)) ? `<button type="button" data-la="pause">${on === false ? 'Resume charging' : 'Pause charging'}</button>` : ''}<button type="button" class="go" data-la="car">Open Car ›</button></div>`
@@ -3097,7 +3113,7 @@ export class HomePanel extends HTMLElement {
           head(a, 'Water heater heating', `${wp.toFixed(1)} kW`) +
           spark +
           `<div class="lbig"><span class="n">${f1(t)}<small>°C</small></span>${rate != null && Math.abs(rate) >= 0.05 ? `<span class="to">${rate > 0 ? '↗' : '↘'} ${Math.abs(rate).toFixed(1)}° / 10 min</span>` : ''}${lt ? `<span class="eta"><b>${lt === 'almost done' ? 'Almost done' : lt + ' left'}</b>usual cycle ${durTxt(typ)}</span>` : ''}</div>
-          <div class="lmeta">Started ${fmtTime(start)}${pts.length ? ` · <b>${kwh.toFixed(1)} kWh</b> this cycle` : ''}${nth > 1 ? ` · ${plural(nth, 'cycle')} in 24 h` : ''}</div>`
+          <div class="lmeta">Started ${this.fmtTime(start)}${pts.length ? ` · <b>${kwh.toFixed(1)} kWh</b> this cycle` : ''}${nth > 1 ? ` · ${plural(nth, 'cycle')} in 24 h` : ''}</div>`
         );
       };
       acts.push(a);
@@ -3133,7 +3149,7 @@ export class HomePanel extends HTMLElement {
     };
     const main = a
       ? `<span class="lmain${a.tint ? ' tint' : ''}" style="--ac:${a.ac}">${ring(a, 34)}${this.compact ? a.pill : a.short}</span>`
-      : `<span class="lmain" style="--ac:var(--c-ev)"><span class="lok">${ico('check', 18)}</span><span>${esc(done.text)}</span>${this.compact ? '' : `<span class="ll">${fmtTime(done.at)}</span>`}</span>`;
+      : `<span class="lmain" style="--ac:var(--c-ev)"><span class="lok">${ico('check', 18)}</span><span>${esc(done.text)}</span>${this.compact ? '' : `<span class="ll">${this.fmtTime(done.at)}</span>`}</span>`;
     const bubs =
       acts
         .slice(1)
@@ -3313,7 +3329,7 @@ export class HomePanel extends HTMLElement {
       <div class="socscale"><span>0%</span><span>${c.lim ? 'Limit ' + c.lim + '%' : ''}</span></div>
       <div class="tiles" style="grid-template-columns:repeat(3,minmax(0,1fr));margin-top:12px">${[
         ['Charger', `<span class="wrapv">${esc(ok(wb) ? wb.state : '–')}</span>`, '', 'Wallbox'],
-        ['Last charge', last ? f1(last.kwh) : '–', 'kWh', last ? fmtDate(last.a) : ''],
+        ['Last charge', last ? f1(last.kwh) : '–', 'kWh', last ? this.fmtDate(last.a) : ''],
         ['Odometer', odo == null ? '–' : Math.round(odo).toLocaleString('en-CA'), 'km'],
       ]
         .map(tile)
@@ -3401,19 +3417,21 @@ export class HomePanel extends HTMLElement {
     const pax = txt(w - R + 4, T + 3, `${pmax} kW`) + txt(w - R + 4, T + ph + 3, '0 kW');
     let ticks = '';
     for (let t = Math.ceil(t0 / 36e5) * 36e5; t <= now; t += 36e5) {
-      const hr = +new Intl.DateTimeFormat('en-CA', {timeZone: getTZ(), hour: 'numeric', hourCycle: 'h23'}).format(
-        new Date(t),
-      );
+      const hr = +new Intl.DateTimeFormat('en-CA', {
+        timeZone: this.store.timeZone,
+        hour: 'numeric',
+        hourCycle: 'h23',
+      }).format(new Date(t));
       if (hr % 6 === 0)
         ticks +=
           `<line x1="${X(t).toFixed(1)}" x2="${X(t).toFixed(1)}" y1="${T + ph}" y2="${T + ph + 3}" stroke="var(--ring)"/>` +
-          txt(X(t), h - 4, fmtHour(t), 'middle');
+          txt(X(t), h - 4, this.fmtHour(t), 'middle');
     }
     const bars = pp
       .filter(x => x[1] > 0.05)
       .map(
         x =>
-          `<rect x="${X(x[0]).toFixed(1)}" y="${Yp(x[1]).toFixed(1)}" width="${bw.toFixed(1)}" height="${(T + ph - Yp(x[1])).toFixed(1)}" rx=".6" fill="var(--c-wh)" opacity=".42"><title>${fmtTime(x[0])}: ${x[1].toFixed(1)} kW</title></rect>`,
+          `<rect x="${X(x[0]).toFixed(1)}" y="${Yp(x[1]).toFixed(1)}" width="${bw.toFixed(1)}" height="${(T + ph - Yp(x[1])).toFixed(1)}" rx=".6" fill="var(--c-wh)" opacity=".42"><title>${this.fmtTime(x[0])}: ${x[1].toFixed(1)} kW</title></rect>`,
       )
       .join('');
     const line = tp.map((x, i) => `${i ? 'L' : 'M'}${X(x[0] + 15e4).toFixed(1)},${Yt(x[1]).toFixed(1)}`).join('');
@@ -3488,7 +3506,7 @@ export class HomePanel extends HTMLElement {
               .catch(() => ({})),
       ]);
       const [today, t24] = await Promise.all([
-        this.stats([E.energy], 'hour', new Date(Date.now() - hourNow() * 36e5 - 60e3), ['change']),
+        this.stats([E.energy], 'hour', new Date(Date.now() - this.hourNow() * 36e5 - 60e3), ['change']),
         this.stats([...ROOMS.map(r => r.temp), E.whT, E.whP], '5minute', d(1.05), ['mean']),
       ]);
       if (key !== this.cfgKey) return;
@@ -3551,15 +3569,15 @@ export class HomePanel extends HTMLElement {
       .filter(x => x.mean != null)
       .map(x => [x.t, +x.mean.toFixed(2)]);
     // daily kWh = mean kW x hours; today only counts the hours so far
-    const todayKey = localDay(Date.now()),
-      hrsToday = Math.max(1, Math.floor(hourNow()));
+    const todayKey = this.localDay(Date.now()),
+      hrsToday = Math.max(1, Math.floor(this.hourNow()));
     const dw = byT(day, E.whP),
       de = byT(day, E.evP),
       dr = ROOMS.map(r => byT(day, r.power));
     const daily = ser(day, E.grid)
       .filter(x => x.mean != null)
       .map(x => {
-        const key = localDay(x.t + 12 * 36e5),
+        const key = this.localDay(x.t + 12 * 36e5),
           hrs = key === todayKey ? hrsToday : 24;
         const w = (dw.get(x.t) || 0) * hrs,
           e = (de.get(x.t) || 0) * hrs,
@@ -3592,19 +3610,19 @@ export class HomePanel extends HTMLElement {
       pts: ser(day, r.temp)
         .filter(x => x.mean != null)
         .slice(-30)
-        .map(x => [localDay(x.t + 12 * 36e5), +x.mean.toFixed(1)]),
+        .map(x => [this.localDay(x.t + 12 * 36e5), +x.mean.toFixed(1)]),
     }));
     const out90 = ser(day, E.outT)
       .filter(x => x.mean != null)
       .slice(-90)
       .map(x => [x.t + 12 * 36e5, +x.mean.toFixed(1), +x.min.toFixed(1), +x.max.toFixed(1)]);
     // meter totals
-    const md = ser(meter, E.energy).map(x => [localDay(x.t + 12 * 36e5), x.change || 0]);
+    const md = ser(meter, E.energy).map(x => [this.localDay(x.t + 12 * 36e5), x.change || 0]);
     const wh14 = ser(meter, E.whE)
-      .map(x => [localDay(x.t + 12 * 36e5), x.change || 0])
+      .map(x => [this.localDay(x.t + 12 * 36e5), x.change || 0])
       .filter(r => r[0] !== todayKey)
       .slice(-14);
-    const yKey = localDay(Date.now() - 864e5),
+    const yKey = this.localDay(Date.now() - 864e5),
       mKey = todayKey.slice(0, 7);
     const totals = {
       today: sum(ser(today, E.energy).map(x => x.change)),
@@ -3883,11 +3901,11 @@ export class HomePanel extends HTMLElement {
       ri = this.rateInfo(),
       evDays = H.daily.slice(-30).filter(r => r.ev > 5).length;
     this.$('tot').innerHTML = [
-      ['Today so far', f1(t.today), 'kWh', 'until ' + fmtTime(new Date())],
+      ['Today so far', f1(t.today), 'kWh', 'until ' + this.fmtTime(new Date())],
       ['Yesterday', t.yesterday == null ? '–' : f1(t.yesterday), 'kWh'],
       ['30 days', Math.round(t.d30), 'kWh', (t.d30 / 30).toFixed(1) + ' kWh a day'],
       [
-        new Date().toLocaleDateString('en-CA', {month: 'long', timeZone: getTZ()}),
+        new Date().toLocaleDateString('en-CA', {month: 'long', timeZone: this.store.timeZone}),
         Math.round(t.month),
         'kWh',
         'so far',
@@ -3919,8 +3937,8 @@ export class HomePanel extends HTMLElement {
     }
     const stack = {borderRadius: 3, borderRadiusApplication: 'end', borderRadiusWhenStacked: 'last'};
     if (this.range === 'today' || this.range === 'week') {
-      const todayKey = localDay(Date.now()),
-        rows = this.range === 'today' ? H.flow.filter(r => localDay(r[0]) === todayKey) : H.flow;
+      const todayKey = this.localDay(Date.now()),
+        rows = this.range === 'today' ? H.flow.filter(r => this.localDay(r[0]) === todayKey) : H.flow;
       t.textContent = this.range === 'today' ? 'Today, hour by hour' : 'Last 7 days, hour by hour';
       if (rows.length) {
         const pk = rows.reduce((a, r) => (r[5] > a[5] ? r : a), rows[0]);
@@ -3929,7 +3947,7 @@ export class HomePanel extends HTMLElement {
             weekday: this.range === 'week' ? 'short' : undefined,
             hour: 'numeric',
             minute: '2-digit',
-            timeZone: getTZ(),
+            timeZone: this.store.timeZone,
           }),
         );
         p.textContent = `Busiest hour: ${pk[5].toFixed(1)} kWh, ${when}. Tap a bar to see what was running.`;
@@ -4034,7 +4052,7 @@ export class HomePanel extends HTMLElement {
     // EC sends day and night entries; fold them into one row per local day
     const by = new Map();
     (this.fc.daily || []).forEach(f => {
-      const k = localDay(ms(f.datetime)),
+      const k = this.localDay(ms(f.datetime)),
         r = by.get(k) || {k, t: ms(f.datetime), hi: null, lo: null, cond: null, pop: null, night: null};
       if (f.temperature != null && f.is_daytime !== false)
         r.hi = r.hi == null ? f.temperature : Math.max(r.hi, f.temperature);
@@ -4049,15 +4067,16 @@ export class HomePanel extends HTMLElement {
     return [...by.values()].map(r => ({...r, cond: r.cond || r.night})).slice(0, 7);
   }
   dayName(k, short) {
-    if (k === localDay(Date.now())) return 'Today';
-    if (!short && k === localDay(Date.now() + 864e5)) return 'Tomorrow';
+    if (k === this.localDay(Date.now())) return 'Today';
+    if (!short && k === this.localDay(Date.now() + 864e5)) return 'Tomorrow';
     const d = new Date(k + 'T12:00:00').toLocaleDateString(FR ? 'fr-CA' : 'en-CA', {weekday: short ? 'short' : 'long'});
     return FR ? d.charAt(0).toUpperCase() + d.slice(1) : d;
   }
   sunDay(offset = 0) {
     const lat = (this.hass.config && this.hass.config.latitude) ?? 0,
       lon = (this.hass.config && this.hass.config.longitude) ?? 0;
-    return sunTimes(Date.now() + offset * 864e5, lat, lon);
+    const t = Date.now() + offset * 864e5;
+    return sunTimes(t, lat, lon, this.localDay(t));
   }
   weatherSummary() {
     const cond = this.st(E.cond),
@@ -4067,7 +4086,9 @@ export class HomePanel extends HTMLElement {
       n = this.alerts().length;
     return [
       condName(ok(cond) ? cond.state : w && w.state),
-      ok(obs) ? `observed ${fmtTime(obs.state)}${obs.attributes.station ? ' at ' + obs.attributes.station : ''}` : '',
+      ok(obs)
+        ? `observed ${this.fmtTime(obs.state)}${obs.attributes.station ? ' at ' + obs.attributes.station : ''}`
+        : '',
       ok(tend) ? `pressure ${tend.state.toLowerCase()}` : '',
       n ? plural(n, 'alert') + ' in effect' : 'no alerts',
     ]
@@ -4108,10 +4129,10 @@ export class HomePanel extends HTMLElement {
       (r[id] || []).filter(x => x[f] != null).map(x => [ms(x.start), +(+x[f]).toFixed(2)]);
     const days = (d[E.outT] || [])
       .filter(x => x.mean != null)
-      .map(x => ({k: localDay(ms(x.start) + 12 * 36e5), mean: x.mean, min: x.min, max: x.max}));
+      .map(x => ({k: this.localDay(ms(x.start) + 12 * 36e5), mean: x.mean, min: x.min, max: x.max}));
     const gust = (d[E.gust] || [])
       .filter(x => x.max != null)
-      .map(x => ({k: localDay(ms(x.start) + 12 * 36e5), v: x.max}));
+      .map(x => ({k: this.localDay(ms(x.start) + 12 * 36e5), v: x.max}));
     this.WX = {
       at: now,
       t: ser(h, E.outT),
@@ -4330,9 +4351,14 @@ export class HomePanel extends HTMLElement {
           ${isUp ? `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="11" fill="var(--m-amber)"/><circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="18" fill="var(--m-amber)" opacity=".25"/>` : ''}
         </svg>
         <div class="tiles" style="grid-template-columns:repeat(3,minmax(0,1fr))">${[
-          ['Sunrise', fmtTime(today.rise), '', ok(this.st(E.dawn)) ? 'first light ' + fmtTime(today.dawn) : ''],
-          ['Solar noon', fmtTime(today.noon), '', ''],
-          ['Sunset', fmtTime(today.set), '', 'last light ' + fmtTime(today.dusk)],
+          [
+            'Sunrise',
+            this.fmtTime(today.rise),
+            '',
+            ok(this.st(E.dawn)) ? 'first light ' + this.fmtTime(today.dawn) : '',
+          ],
+          ['Solar noon', this.fmtTime(today.noon), '', ''],
+          ['Sunset', this.fmtTime(today.set), '', 'last light ' + this.fmtTime(today.dusk)],
         ]
           .map(tile)
           .join('')}</div>`,
@@ -4363,7 +4389,7 @@ export class HomePanel extends HTMLElement {
         .filter((h, i) => i % 3 === 0)
         .map(
           h =>
-            `<div><span>${esc(fmtHour(h.datetime))}</span>${wxIcon(h.condition, 28, isDay(ms(h.datetime), this))}<b class="num">${Math.round(h.temperature)}°</b>${h.precipitation_probability ? `<small>${h.precipitation_probability}%</small>` : '<small>&nbsp;</small>'}</div>`,
+            `<div><span>${esc(this.fmtHour(h.datetime))}</span>${wxIcon(h.condition, 28, isDay(ms(h.datetime), this))}<b class="num">${Math.round(h.temperature)}°</b>${h.precipitation_probability ? `<small>${h.precipitation_probability}%</small>` : '<small>&nbsp;</small>'}</div>`,
         )
         .join('')}</div><div id="c-whour"></div>`;
       if (this.ApexCharts) {
@@ -4420,7 +4446,7 @@ export class HomePanel extends HTMLElement {
       return;
     }
     const now = this.num(E.outT),
-      today = localDay(Date.now());
+      today = this.localDay(Date.now());
     // tonight has no high: its bar runs from now down to the low
     const top = d => d.hi ?? (d.k === today && now != null ? Math.max(now, d.lo) : d.lo);
     const lo = Math.min(...days.map(d => d.lo ?? d.hi)),
@@ -4433,7 +4459,7 @@ export class HomePanel extends HTMLElement {
           l = ((a - lo) / span) * 100,
           w = Math.max(4, ((b - a) / span) * 100);
         const dot =
-          d.k === localDay(Date.now()) && now != null
+          d.k === this.localDay(Date.now()) && now != null
             ? `<i style="left:${Math.min(100, Math.max(0, ((now - lo) / span) * 100))}%"></i>`
             : '';
         return `<div class="drow"><span class="dn">${d.hi == null && d.k === today ? 'Tonight' : esc(this.dayName(d.k))}</span>${wxIcon(d.cond, 26, !(d.hi == null && d.k === today))}<span class="dc">${esc(condName(d.cond))}</span><span class="dp">${d.pop >= 20 ? d.pop + '%' : ''}</span>
@@ -4463,13 +4489,13 @@ export class HomePanel extends HTMLElement {
       coldest = W.days.reduce((a, d) => (d.min < a.min ? d : a)),
       g = W.gustDays.length ? W.gustDays.reduce((a, d) => (d.v > a.v ? d : a)) : null;
     const since = fmtDay(W.days[0].k),
-      mk = localDay(Date.now()).slice(0, 7),
+      mk = this.localDay(Date.now()).slice(0, 7),
       cm = mon[mk];
     this.$('wrec').innerHTML = [
       ['Warmest', f1(warmest.max) + '°', '', fmtDay(warmest.k)],
       ['Coldest', f1(coldest.min) + '°', '', fmtDay(coldest.k)],
       [
-        new Date().toLocaleDateString('en-CA', {month: 'long', timeZone: getTZ()}),
+        new Date().toLocaleDateString('en-CA', {month: 'long', timeZone: this.store.timeZone}),
         cm ? f1(cm.s / cm.n) + '°' : '–',
         '',
         cm ? `average, ${plural(cm.frost, 'frosty night')}` : '',
@@ -4561,7 +4587,13 @@ export class HomePanel extends HTMLElement {
             m = c.motion,
             moving = m && m.state === 'on';
           const when =
-            m && ok(m) ? (moving ? 'Motion now' : `Motion ${ago(m.last_changed)}`) : ok(s) ? cap(s.state) : 'Offline';
+            m && ok(m)
+              ? moving
+                ? 'Motion now'
+                : `Motion ${this.ago(m.last_changed)}`
+              : ok(s)
+                ? cap(s.state)
+                : 'Offline';
           return `<button type="button" class="cam" data-cam="${esc(c.id)}" aria-label="Open ${esc(c.name)} live">${ok(s) && pic ? `<img src="${esc(pic)}&t=${stamp}" alt="" loading="lazy">` : `<span class="camoff">${ico('cam', 26)}</span>`}
           <span class="camlbl"><b>${esc(c.name)}</b><small>${moving ? '<i class="mdot"></i>' : ''}${esc(when)}</small></span></button>`;
         })
@@ -5000,7 +5032,7 @@ export class HomePanel extends HTMLElement {
           const s = this.st(id),
             n = this.attr(id, 'friendly_name') || id,
             ran = this.sceneRan && Date.now() - (this.sceneRan[id] || 0) < 4000;
-          return `<button type="button" class="ptile scene${ran ? ' ran' : ''}" data-p="scene" data-id="${esc(id)}"><span class="pic">${ico(sceneIcon(id), 22)}</span><b>${esc(n)}</b><small>${ran ? 'Done' : ok(s) && !isNaN(Date.parse(s.state)) ? 'Last ' + ago(s.state) : 'Tap to run'}</small></button>`;
+          return `<button type="button" class="ptile scene${ran ? ' ran' : ''}" data-p="scene" data-id="${esc(id)}"><span class="pic">${ico(sceneIcon(id), 22)}</span><b>${esc(n)}</b><small>${ran ? 'Done' : ok(s) && !isNaN(Date.parse(s.state)) ? 'Last ' + this.ago(s.state) : 'Tap to run'}</small></button>`;
         })
         .join('') +
       MODES.filter(id => this.st(id))
@@ -5246,7 +5278,7 @@ export class HomePanel extends HTMLElement {
       lux = this.num(x.lux);
     if (!ok(s)) return {cls: 'off', main: 'Offline', sub: ''};
     const on = s.state === 'on',
-      since = ago(s.last_changed);
+      since = this.ago(s.last_changed);
     const low = b != null && b < 20 ? `battery ${Math.round(b)}%` : '';
     if (x.kind === 'door')
       return {
@@ -5913,7 +5945,12 @@ export class HomePanel extends HTMLElement {
       this.set(
         'hsub',
         [
-          new Date().toLocaleDateString('en-CA', {weekday: 'long', month: 'long', day: 'numeric', timeZone: getTZ()}),
+          new Date().toLocaleDateString('en-CA', {
+            weekday: 'long',
+            month: 'long',
+            day: 'numeric',
+            timeZone: this.store.timeZone,
+          }),
           avg == null ? '' : `${avg.toFixed(1)}° inside`,
           out == null ? '' : `${f1(out)}° outside`,
           att.items.length
@@ -6002,7 +6039,7 @@ export class HomePanel extends HTMLElement {
     const hwxWas = this.cache.hwx;
     this.set(
       'hwx',
-      `<div class="muted" style="font-size:13px;font-weight:500">${dayUp ? 'Sunset' : 'Sunrise'} <b style="color:var(--fg)">${ok(nxt) ? fmtTime(nxt.state) : '–'}</b>${ok(nxt2) ? ` · ${dayUp ? 'sunrise' : 'sunset'} <b style="color:var(--fg)">${fmtTime(nxt2.state)}</b>` : ''}</div>
+      `<div class="muted" style="font-size:13px;font-weight:500">${dayUp ? 'Sunset' : 'Sunrise'} <b style="color:var(--fg)">${ok(nxt) ? this.fmtTime(nxt.state) : '–'}</b>${ok(nxt2) ? ` · ${dayUp ? 'sunrise' : 'sunset'} <b style="color:var(--fg)">${this.fmtTime(nxt2.state)}</b>` : ''}</div>
       <div class="hbig"><span class="num">${temp == null ? '–' : Math.round(temp) + '°'}</span><div><div class="hc">${esc(condName(ok(cond) ? cond.state : (this.st(E.weather) || {}).state))}</div><div class="muted">${hi != null ? `High ${Math.round(hi)}°` : ''}${lo != null ? ` · low ${Math.round(lo)}°` : ''}</div></div></div>
       <div class="hhouse">${houseImg()}</div>
       <div class="lbl hwho">Who's home</div>${this.whoHtml() || '<p class="hint">No one is tracked yet.</p>'}${this.compact ? '' : '<div class="hstk" id="hstk" hidden></div>'}`,
@@ -6178,8 +6215,8 @@ export class HomePanel extends HTMLElement {
       day = this.up(),
       set = this.st(E.setting),
       rise = this.st(E.rising);
-    const sunset = () => ok(set) && out.push([fmtTime(set.state), 'Sunset · theme turns dark']),
-      sunrise = () => ok(rise) && out.push([fmtTime(rise.state), 'Sunrise · every light off, night modes off']);
+    const sunset = () => ok(set) && out.push([this.fmtTime(set.state), 'Sunset · theme turns dark']),
+      sunrise = () => ok(rise) && out.push([this.fmtTime(rise.state), 'Sunrise · every light off, night modes off']);
     if (day) {
       sunset();
       sunrise();
@@ -6217,7 +6254,7 @@ export class HomePanel extends HTMLElement {
     if (!als.length) return;
     const S = this.sunDay(0),
       now = Date.now(),
-      h0 = now - hourNow() * 36e5;
+      h0 = now - this.hourNow() * 36e5;
     const cfg = als.map(a => this.attr(a, 'configuration') || {}),
       minK = Math.min(...cfg.map(c => +c.min_color_temp || 2000)),
       maxK = Math.max(...cfg.map(c => +c.max_color_temp || 5500));
@@ -6247,8 +6284,8 @@ export class HomePanel extends HTMLElement {
       'albar',
       `<div class="top"><span class="lbl">Adaptive Lighting today</span><span class="right">${on.length ? `Now <b class="num" style="color:var(--fg)">${nowK} K</b> · ${on.length === als.length ? 'on everywhere' : `on in ${on.length} of ${als.length}`}` : 'Off everywhere'}</span></div>
       <div class="alstrip"><div class="algrad" style="background:linear-gradient(90deg,${stops.join(',')})"></div><i class="alnow" style="left:${x(now)}"></i>
-        ${marks.map(([t, l]) => `<span class="almark" style="left:${x(t)}"><i></i>${this.compact ? '' : l + ' '}${fmtTime(t)}</span>`).join('')}
-        ${[0, 6, 12, 18].map(h => `<span class="alh" style="left:${(h / 24) * 100}%">${fmtHour(h0 + h * 36e5)}</span>`).join('')}</div>`,
+        ${marks.map(([t, l]) => `<span class="almark" style="left:${x(t)}"><i></i>${this.compact ? '' : l + ' '}${this.fmtTime(t)}</span>`).join('')}
+        ${[0, 6, 12, 18].map(h => `<span class="alh" style="left:${(h / 24) * 100}%">${this.fmtHour(h0 + h * 36e5)}</span>`).join('')}</div>`,
     );
   }
   renderScenes() {
@@ -6344,7 +6381,7 @@ export class HomePanel extends HTMLElement {
     if (!H) return null;
     if (m === 'today') {
       const d = H.daily[H.daily.length - 1];
-      if (!d || d.day !== localDay(Date.now())) return null;
+      if (!d || d.day !== this.localDay(Date.now())) return null;
       return {
         fmt: v => v.toFixed(1) + ' kWh',
         total: d.total,
@@ -6839,7 +6876,7 @@ export class HomePanel extends HTMLElement {
       c.motion && ok(c.motion)
         ? c.motion.state === 'on'
           ? 'motion now'
-          : 'last motion ' + ago(c.motion.last_changed)
+          : 'last motion ' + this.ago(c.motion.last_changed)
         : '',
     ]
       .filter(Boolean)
@@ -6950,11 +6987,11 @@ export class HomePanel extends HTMLElement {
           ? `${Math.round(ms / 6e4)} min`
           : `${Math.floor(ms / 36e5)} h ${Math.round(ms / 6e4) % 60} min`;
     const pct = t => ((t - t0) / (now - t0)) * 100,
-      when = t => (r === 'day' ? fmtTime(t) : `${fmtDate(t)} ${fmtTime(t)}`);
+      when = t => (r === 'day' ? this.fmtTime(t) : `${this.fmtDate(t)} ${this.fmtTime(t)}`);
     const n = r === 'day' ? 4 : 7,
       axis = Array.from({length: n + 1}, (_, i) => {
         const t = t0 + ((now - t0) * i) / n;
-        return `<span>${r === 'day' ? fmtTime(t) : fmtDate(t)}</span>`;
+        return `<span>${r === 'day' ? this.fmtTime(t) : this.fmtDate(t)}</span>`;
       }).join('');
     const evs = segs
       .slice()
@@ -6974,7 +7011,7 @@ export class HomePanel extends HTMLElement {
       [door ? 'Times opened' : 'Motion events', segs.length, ''],
       [door ? 'Total open' : 'Total motion', segs.length ? dur(total) : '–', ''],
       ['Longest', segs.length ? dur(longest) : '–', ''],
-      ['Last', last ? ago(new Date(last.live ? last.a : last.b).toISOString()) : '–', ''],
+      ['Last', last ? this.ago(new Date(last.live ? last.a : last.b).toISOString()) : '–', ''],
     ]
       .map(tile)
       .join('');
@@ -7376,7 +7413,7 @@ export class HomePanel extends HTMLElement {
       `<span class="hbar" style="background:linear-gradient(90deg,${Array.from({length: 19}, (_, i) => heatColor(HEAT_LO + i / 2, stops)).join(',')})"></span><span class="hticks">${[17, 19, 21, 23, 25].map(t => `<i style="left:${((t - HEAT_LO) / (HEAT_HI - HEAT_LO)) * 100}%">${t}°</i>`).join('')}</span>`;
     const series = [...ROOMS].reverse().map(x => ({
       name: this.roomName(x),
-      data: bucket(C.rooms[x.k] || [], r).map(([k, lbl, v]) => ({x: lbl, y: v, k})),
+      data: this.bucket(C.rooms[x.k] || [], r).map(([k, lbl, v]) => ({x: lbl, y: v, k})),
     }));
     const cats = (series[0] || {data: []}).data.map(p => p.x);
     // a house without thermostats has no heatmap to draw (ApexCharts throws on an empty heatmap)
@@ -7473,12 +7510,12 @@ export class HomePanel extends HTMLElement {
       pts = C ? C.hp : [];
       tiles = [
         ['Range, ' + R.short, rng(pts), '°'],
-        ['Last update', ok(hp) ? fmtTime(hp.last_updated) : '–', ''],
+        ['Last update', ok(hp) ? this.fmtTime(hp.last_updated) : '–', ''],
       ];
       note =
         'Readings come from the unit itself. A break in the line means the integration was offline. The unit has no power sensor, so its electricity is counted in Rest of home.';
       if (C && C.hpFrom && C.hpFrom > C.start + 864e5)
-        note += ` Home Assistant keeps about 10 days of detailed history, so the heat pump line starts ${fmtDate(C.hpFrom)}.`;
+        note += ` Home Assistant keeps about 10 days of detailed history, so the heat pump line starts ${this.fmtDate(C.hpFrom)}.`;
     } else if (this.climSel === 'house') {
       title = 'Whole house';
       sub = `Average of ${ROOMS.length} rooms`;
@@ -7889,10 +7926,10 @@ export class HomePanel extends HTMLElement {
       tot = sum(sess.map(x => x.kwh)),
       price = this.num(E.wbPrice) ?? 0.07;
     this.$('sesp').textContent = sess.length
-      ? `${sess.length} charging sessions on the Wallbox since ${fmtDate(sess[0].a)}. Cost is estimated at the ${(price * 100).toFixed(0)}¢/kWh set in the Wallbox app.`
+      ? `${sess.length} charging sessions on the Wallbox since ${this.fmtDate(sess[0].a)}. Cost is estimated at the ${(price * 100).toFixed(0)}¢/kWh set in the Wallbox app.`
       : 'No charging sessions in the last year.';
     this.$('sest').innerHTML = [
-      ['Sessions', sess.length, '', sess.length ? 'since ' + fmtDate(sess[0].a) : ''],
+      ['Sessions', sess.length, '', sess.length ? 'since ' + this.fmtDate(sess[0].a) : ''],
       ['Delivered', Math.round(tot).toLocaleString('en-CA'), 'kWh'],
       ['Average', sess.length ? (tot / sess.length).toFixed(1) : '–', 'kWh', 'per session'],
       ['Est. cost', '$' + Math.round(tot * price), '', `at ${(price * 100).toFixed(0)}¢/kWh`],
@@ -7901,7 +7938,7 @@ export class HomePanel extends HTMLElement {
       .join('');
     const mon = {};
     sess.forEach(x => {
-      const k = localDay(x.a).slice(0, 7);
+      const k = this.localDay(x.a).slice(0, 7);
       mon[k] = mon[k] || [0, 0];
       mon[k][0] += x.kwh;
       mon[k][1]++;
@@ -7935,7 +7972,7 @@ export class HomePanel extends HTMLElement {
       price = this.num(E.wbPrice) ?? 0.07;
     this.$('slist').innerHTML = rows
       .map(
-        x => `<tr><td>${new Date(x.a).toLocaleDateString('en-CA', {weekday: 'short', month: 'short', day: 'numeric', timeZone: getTZ()})}</td><td class="hide-s">${fmtTime(x.a)} to ${fmtTime(x.b)}</td><td class="r hide-s">${Math.round((x.b - x.a) / 36e5)} h</td>
+        x => `<tr><td>${new Date(x.a).toLocaleDateString('en-CA', {weekday: 'short', month: 'short', day: 'numeric', timeZone: this.store.timeZone})}</td><td class="hide-s">${this.fmtTime(x.a)} to ${this.fmtTime(x.b)}</td><td class="r hide-s">${Math.round((x.b - x.a) / 36e5)} h</td>
       <td><span class="bar" style="width:${Math.round((x.kwh / mx) * 70) + 4}px"></span>${x.kwh.toFixed(1)} kWh</td><td class="r hide-s">${x.pk.toFixed(1)} kW</td><td class="r">$${(x.kwh * price).toFixed(2)}</td></tr>`,
       )
       .join('');
@@ -7952,7 +7989,7 @@ export class HomePanel extends HTMLElement {
     this.$('carsub').textContent = [
       c.where,
       c.locked == null ? '' : c.locked ? 'locked' : 'unlocked',
-      ok(lr) ? 'the car last checked in at ' + fmtTime(lr.state) : '',
+      ok(lr) ? 'the car last checked in at ' + this.fmtTime(lr.state) : '',
     ]
       .filter(Boolean)
       .join(' · ');
@@ -8064,7 +8101,7 @@ export class HomePanel extends HTMLElement {
           'Software',
           `<span style="font-size:18px">${esc(fw ? fw.attributes.firmwareVersion || '–' : '–')}</span>`,
           '',
-          ok(fw) ? 'since ' + fmtDate(fw.state) : '',
+          ok(fw) ? 'since ' + this.fmtDate(fw.state) : '',
         ],
         ['Auto updates', `<span style="font-size:18px">${ok(au) ? (au.state === 'on' ? 'On' : 'Off') : '–'}</span>`],
       ])}</div>`,
@@ -8075,7 +8112,7 @@ export class HomePanel extends HTMLElement {
       dep = this.st(C.id('switch', 'departuretimes'));
     const rows = msgs.map(
       m =>
-        `<div class="arow"><span class="ic acc" style="--acc:var(--warn)">!</span><div><b>${esc(m.messageSubject)}${m.createdDate ? ', ' + esc(fmtDate(Date.parse(m.createdDate) || m.createdDate)) : ''}</b><span>${esc(m.messageBody)}</span></div></div>`,
+        `<div class="arow"><span class="ic acc" style="--acc:var(--warn)">!</span><div><b>${esc(m.messageSubject)}${m.createdDate ? ', ' + esc(this.fmtDate(Date.parse(m.createdDate) || m.createdDate)) : ''}</b><span>${esc(m.messageBody)}</span></div></div>`,
     );
     rows.push(
       `<div class="arow"><span class="ic acc" style="--acc:var(--fg3);--acc-c:var(--fg2)">${ico('clock', 16)}</span><div><b>Departure times ${ok(dep) && dep.state === 'on' ? 'on' : 'off'}</b><span>${esc(this.schedText())}</span></div></div>`,
@@ -8095,7 +8132,7 @@ export class HomePanel extends HTMLElement {
     this.set(
       'car-last',
       tl
-        ? `<h3>Last plug-in, per Ford</h3><p>${fmtDate(tl.plugInTime)}, ${fmtTime(tl.plugInTime)} to ${fmtDate(tl.plugOutTime)}, ${fmtTime(tl.plugOutTime)}</p>
+        ? `<h3>Last plug-in, per Ford</h3><p>${this.fmtDate(tl.plugInTime)}, ${this.fmtTime(tl.plugInTime)} to ${this.fmtDate(tl.plugOutTime)}, ${this.fmtTime(tl.plugOutTime)}</p>
       <div class="tiles">${[
         [
           'Battery',
