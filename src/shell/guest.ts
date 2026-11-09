@@ -1,14 +1,13 @@
 // The guest interface: what the shell asks of the guest, the legacy class that still draws the panel's content, and what it hands it.
 // Pattern: strangler fig (Fowler, Strangler Fig Application): the host wraps the old code behind an interface the host
 // owns, and the interface only shrinks; registering a factory keeps the shell from importing legacy code (ADR 0011).
-// Must not: grow past what the spec names for a step (an addition says in its note what deletes it), be imported by
-// anything but the shell and src/main.js, or outlive the guest: it is deleted with it, module state included.
+// Must not: grow past what the spec names for a step, except a member whose note names what deletes it; be imported by
+// anything but the shell and src/main.js; or outlive the guest: it is deleted with it, module state included.
 // Lit binds nothing inside a guest container, and the guest writes nothing outside its containers.
 import type {PanelApi} from '../core/api.ts';
 import type {PanelSettings} from '../core/settings.ts';
 import type {HassChange, PanelStore} from '../core/store.ts';
-import type {IconName} from '../ui/icons.ts';
-import type {FeatureKey, GuestAnswers} from './feature.ts';
+import type {FeatureDescriptor, FeatureKey, GuestAnswers} from './feature.ts';
 
 /** What the shell hands the guest when it connects: the root, the host, the services and the shell's own few doors. */
 export interface GuestContext {
@@ -42,36 +41,30 @@ export interface GuestRenderer extends GuestAnswers {
   tabChanged(tab: FeatureKey): void;
   /** Step C: the shell's `compact` changed and its frame already follows; the guest lays its cards out again. Deleted with the last layout the guest keeps. */
   compactChanged(compact: boolean): void;
-  /** Step C only: the shell's More button asks for the guest's More sheet, until `<hp-more-sheet>` replaces the guest's sheet. */
+  /** Step C only: the shell's More button asks for the guest's More sheet, deleted by #166 (`<hp-more-sheet>`). */
   openMore(): void;
 }
 
-/** One section the phone's More sheet lists, as the registry gives it: the guest's sheet draws the list until `<hp-more-sheet>` does. */
-export interface MoreSection {
-  key: FeatureKey;
+/** One section the phone's More sheet lists, as the registry gives it; deleted by #166 (`<hp-more-sheet>`). */
+export type MoreSection = Pick<FeatureDescriptor, 'key' | 'icon' | 'color'> & {
   /** The label, in the panel's language. */
   label: string;
-  icon: IconName;
-  /** A colour token such as `var(--m-blue)`. */
-  color: string;
-}
+};
 
-/** What the guest may ask of the shell, and what it may read of it. */
+/** What the guest may ask of the shell, and what it may read of it. Deleted whole with the guest; `tab`, `compact`, `setTab` and `requestFrame` live as long as it does. */
 export interface ShellForGuest {
   toast(message: string, sticky?: boolean): void;
   /** The tab shown: the one chosen, or Home when this house hides it. */
   readonly tab: FeatureKey;
   /** Under 600 px wide: the phone's shape. */
   readonly compact: boolean;
-  /** Home Assistant's sidebar is collapsed. */
-  readonly narrow: boolean;
   /** Shows a tab, remembers it and tells the guest through `tabChanged` once its pane is on screen. */
   setTab(key: FeatureKey): void;
   /** `availability()` changed: the shell asks the guest again and draws the rail from the answer. */
   requestFrame(): void;
   /** The guest is about to draw its markup again: the shell renders its frame afresh and returns when it is in the DOM. Deleted with the guest's `build`. */
   resetFrame(): void;
-  /** The sections that sit under More, in rail order; deleted with the guest's More sheet. */
+  /** The sections that sit under More, in rail order; deleted by #166 (`<hp-more-sheet>`). */
   moreSections(): readonly MoreSection[];
 }
 

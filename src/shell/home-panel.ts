@@ -119,7 +119,6 @@ export class HomePanel extends LitElement {
   private doors(): ShellForGuest {
     const tab = () => this.tab;
     const compact = () => this.compact;
-    const narrow = () => this.narrow;
     return {
       toast: (message, sticky) => this.guest?.toast(message, sticky),
       setTab: key => this.setTab(key),
@@ -131,9 +130,6 @@ export class HomePanel extends LitElement {
       },
       get compact() {
         return compact();
-      },
-      get narrow() {
-        return narrow();
       },
     };
   }
@@ -152,8 +148,9 @@ export class HomePanel extends LitElement {
   private setTab(key: FeatureKey): void {
     this.selected = isFeatureKey(key) ? key : 'home';
     this.settings.set('tab', this.selected);
+    // the update tells the guest when the tab shown changed (`updated`); only an element not yet drawn skips it
     this.flush();
-    this.tellTab();
+    if (!this.hasUpdated) this.tellTab();
   }
 
   private requestFrame(): void {
@@ -208,6 +205,8 @@ export class HomePanel extends LitElement {
     this.visible = visibleTab(this.selected, this.shown);
   }
 
+  // `.app#app` sits outside `keyed`: it is the one frame element a guest draw keeps, so the guest clears the classes and
+  // data it toggles on it at each draw (where main's fresh `#app` came bare). The wrap inside is new at each draw.
   protected override render() {
     return html`<div class="app ${classMap({narrow: this.narrow, cp: this.compact, tabsv: true})}" id="app">
       ${keyed(this.epoch, this.renderWrap())}

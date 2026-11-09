@@ -19,23 +19,8 @@ const parts = {
   hosts: ['<div id="carhost"></div>'],
 } as const;
 
-/** the markup a pane renders: its static strings, with each plain value and each unsafeHTML string where the template binds it */
-function markup(pane: ReturnType<typeof legacyFeature>['pane']): string {
-  const result = pane();
-  const written = (value: unknown): string => {
-    if (typeof value === 'string') return value;
-    if (value && typeof value === 'object' && '_$litDirective$' in value)
-      return String((value as {values: unknown[]}).values[0]);
-    return ''; // the icon, a nested template
-  };
-  // an attribute bound to a value is written quoted, and one bound to nothing (ifDefined) is left out
-  return result.strings.reduce((text, s, i) => {
-    if (i === 0) return s;
-    const value = written(result.values[i - 1]);
-    if (!text.endsWith('=')) return text + value + s;
-    return value ? `${text}"${value}"${s}` : text.replace(/ [\w-]+=$/, '') + s;
-  }, '');
-}
+/** the markup a pane renders: its static strings, the icon (the one binding) left out */
+const markup = (pane: ReturnType<typeof legacyFeature>['pane']): string => pane().strings.join('');
 
 describe('legacyFeature', () => {
   test('names the title by the key and carries the parts', () => {

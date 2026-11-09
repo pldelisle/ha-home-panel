@@ -1,6 +1,6 @@
 // The panel's icons as Lit templates: `ico(name, size)` draws one, and `IconName` is the set a descriptor may name.
-// Pattern: a typed lookup table of static templates (Lit parses each once), the paths of the legacy class's `ico`;
-// a test compares them with the class's text, so a path cannot drift. A name arrives here with its first user.
+// Pattern: Registry (Fowler, PoEAA) of static templates (Lit docs, Templates: parsed once, never re-rendered); the paths are
+// those of the legacy class's `ico`, and a test compares them with its text. A name arrives here with its first user.
 // Must not: import a feature or the shell, or draw anything but an `<svg>` that takes its colour from `currentColor`.
 import {svg, type SVGTemplateResult} from 'lit';
 

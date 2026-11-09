@@ -615,6 +615,7 @@ export class LegacyPanel {
     this.open = null; // open sheet id
     this.inline = null; // sheet shown inside a tab pane (Tabs view), same id as this.open while it shows
     this.drawnTab = 'home'; // the tab the guest last drew its part of (tabChanged); `tab` is the shell's
+    this.framed = false; // whether build() has drawn once, so the next draw asks the shell for a fresh frame
     this.frameKey = null; // what availability() said when the shell was last asked to draw the rail
     this.range = 'today';
     this.climSel = 'house';
@@ -697,7 +698,6 @@ export class LegacyPanel {
   }
   // forget the drawn panel so build() starts over (the language or the config changed)
   teardown() {
-    this.ctx.shell.resetFrame(); // the frame's elements are new, as the old build wrote new ones: no listener or moved card survives
     this.unsubscribeForecasts(); // the next draw subscribes again, with the config it was drawn from
     this.frStop();
     this.radarStop();
@@ -933,6 +933,10 @@ export class LegacyPanel {
   // ---------- skeleton ----------
   build() {
     ensureFonts(); // Montserrat from the panel's own fonts/ folder, declared in the document once
+    // A second draw starts from new frame elements, as when the class wrote the frame itself: no listener it wired and no card it
+    // moved into a pane survives. The shell renders them at once; the first draw finds the frame the shell rendered.
+    if (this.framed) this.ctx.shell.resetFrame();
+    this.framed = true;
     // the shell drew the frame (the header, the rail, the panes); the guest draws what is not in it: the parked cards, the sheets, the idle clock, the toast
     this.container.innerHTML = `<div class="cols">
     <div class="col c1">
@@ -1065,6 +1069,11 @@ export class LegacyPanel {
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 <span id="txprobe" aria-hidden="true" style="position:absolute;left:-9999px;visibility:hidden;font-size:17px;font:-apple-system-body"></span>`;
     this.$app = this.$('app');
+    // `.app` is the shell's and outlives a draw, where a fresh one used to start bare: clear what the guest toggles on it, then
+    // the applyText, applyTheme and applyGlass below set theirs again
+    this.$app.classList.remove('live', 'idle', 'mc', 'gl', 'txl');
+    delete this.$app.dataset.theme;
+    delete this.$app.dataset.wp;
     this.$app.lang = (this.store.isFrench ? this.locale : this.localeEn).tag;
     this.root
       .querySelectorAll('.sheet>.panel')
@@ -2150,16 +2159,16 @@ export class LegacyPanel {
       if (wx) return this.openWx(wx.dataset.wx);
       const sn = e.target.closest('[data-sens]');
       if (sn) return this.openSens(sn.dataset.sens);
-      const t = e.target.closest('[data-go]');
-      if (t) return this.ctx.shell.setTab(t.dataset.go);
+      const t = e.target.closest('[data-pane]');
+      if (t) return this.ctx.shell.setTab(t.dataset.pane);
     };
     tv.addEventListener('click', onTap);
     this.$('sh-card').addEventListener('click', onTap); // a card moved into the generic sheet keeps its buttons working
     this.$('sh-more').addEventListener('click', e => {
-      const t = e.target.closest('[data-go]');
+      const t = e.target.closest('[data-pane]');
       if (t) {
         this.hide();
-        return this.ctx.shell.setTab(t.dataset.go);
+        return this.ctx.shell.setTab(t.dataset.pane);
       }
     });
     for (const h of ['mtiles'])
@@ -5644,7 +5653,7 @@ export class LegacyPanel {
         .moreSections()
         .map(
           ({key, label, icon, color}) =>
-            `<button type="button" class="stile${this.tab === key ? ' sel' : ''}" data-go="${key}" style="--rc:${color}"><span class="ic">${ico(icon, 22)}</span><span class="tx"><b>${esc(label)}</b><small>${esc(sb[key] || '') || '&nbsp;'}</small></span></button>`,
+            `<button type="button" class="stile${this.tab === key ? ' sel' : ''}" data-pane="${key}" style="--rc:${color}"><span class="ic">${ico(icon, 22)}</span><span class="tx"><b>${esc(label)}</b><small>${esc(sb[key] || '') || '&nbsp;'}</small></span></button>`,
         )
         .join(''),
     );
@@ -5728,7 +5737,7 @@ export class LegacyPanel {
         this.root.querySelectorAll(sel).forEach(el => {
           el.hidden = off;
         });
-    for (const t of ['climate', 'car']) hide(`[data-go="${t}"]`, L[t]);
+    for (const t of ['climate', 'car']) hide(`[data-pane="${t}"]`, L[t]);
     for (const c of ['water', 'hilo']) hide(`#${c}, [data-card="${c}"]`, L[c]);
     const key = JSON.stringify(this.availability());
     if (key !== this.frameKey) {
@@ -6004,7 +6013,7 @@ export class LegacyPanel {
       tiles
         .map(
           ([k, i, col, lbl, v, sb]) =>
-            `<button type="button" class="htile${k === 'car' && c && c.charging ? ' chg' : ''}" data-go="${k}" ${extra(k, i)}><span class="hh"><span style="color:${col}">${ico(i, 22)}</span><span class="lbl">${lbl}</span><span class="go">›</span></span><span class="hv num">${v}</span><span class="hs">${sb}</span></button>`,
+            `<button type="button" class="htile${k === 'car' && c && c.charging ? ' chg' : ''}" data-pane="${k}" ${extra(k, i)}><span class="hh"><span style="color:${col}">${ico(i, 22)}</span><span class="lbl">${lbl}</span><span class="go">›</span></span><span class="hv num">${v}</span><span class="hs">${sb}</span></button>`,
         )
         .join(''),
     );
@@ -6023,7 +6032,7 @@ export class LegacyPanel {
       .join(' · ');
     this.set(
       'hsec',
-      `<button type="button" class="hh" data-go="cams"><span class="hsecico"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l7.5 3.2v5.3c0 4.8-3.2 9-7.5 10.6-4.3-1.6-7.5-5.8-7.5-10.6V5.7z" fill="var(--m-sage)"/><path d="M8.8 12.2l2.2 2.2 4.4-4.4" fill="none" stroke="var(--card)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="lbl">Security</span><span class="right">${esc(secSum)}</span><span class="go">›</span></button>
+      `<button type="button" class="hh" data-pane="cams"><span class="hsecico"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l7.5 3.2v5.3c0 4.8-3.2 9-7.5 10.6-4.3-1.6-7.5-5.8-7.5-10.6V5.7z" fill="var(--m-sage)"/><path d="M8.8 12.2l2.2 2.2 4.4-4.4" fill="none" stroke="var(--card)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="lbl">Security</span><span class="right">${esc(secSum)}</span><span class="go">›</span></button>
       ${
         cams.length
           ? `<div class="hcams">${cams
