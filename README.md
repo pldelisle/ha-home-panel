@@ -29,7 +29,7 @@ Every section is optional. A section shows only when its entities exist, so a ho
 | Media       | TVs (Wake-on-LAN), speakers                                                                                                                                                                            |
 | Automations | your automations' own traces, drawn as flow charts                                                                                                                                                     |
 
-Browser support: Safari and iOS 26, and current Chrome, Edge and Firefox.
+Browser support: Safari and iOS 26, and current Chrome, Edge and Firefox; the JavaScript is built for ES2025 (Safari 26, Chrome 136, Firefox 138) and older browsers are not supported.
 
 ## Install
 
