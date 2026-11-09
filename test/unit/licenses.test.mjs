@@ -66,3 +66,17 @@ test('the bundled font is listed with the SIL Open Font Licence and its text', (
 test('no vendor directory: no library is committed as a file', () => {
   expect(existsSync(join(ROOT, 'vendor'))).toBe(false);
 });
+
+test('package-lock.json names no package outside the repository', () => {
+  // An `npm install` run inside a container with a global tool tree above the repo once left a key such as
+  // `../../../opt/node-tools/node_modules/x` (marked extraneous): a machine layout in a shipped file that npm ci
+  // tolerates but anything walking `packages` trips over
+  const {packages} = json('package-lock.json');
+  for (const [key, entry] of Object.entries(packages)) {
+    expect(
+      key === '' || key.startsWith('node_modules/'),
+      `package-lock.json has a package outside node_modules: ${key}`,
+    ).toBe(true);
+    expect(entry.extraneous, `package-lock.json marks ${key} extraneous`).toBeUndefined();
+  }
+});
