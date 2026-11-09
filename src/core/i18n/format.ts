@@ -53,7 +53,9 @@ const asIs: HouseRule = text => text;
 const englishDayPeriod: HouseRule = text => text.replace(/\s?([ap])\.\s?m\.?/i, ' $1m');
 // Rule 2: French time on the hour, and the bare hour `Intl` gives for fr-* gains " h", as the rewrite layer's `frH`.
 const frenchOnTheHour: HouseRule = text => text.replace(/ 00$/, '');
-const frenchBareHour: HouseRule = text => (/^\d+$/.test(text) ? `${Number(text)} h` : text);
+// (some ICU versions already add the " h", with a leading zero at midnight, and some give the bare digits)
+const frenchBareHour: HouseRule = text =>
+  text.replace(/^(\d+)(?: h)?$/, (_match, digits: string) => `${Number(digits)} h`);
 // Rule 3: the French thousands separator, the character the rewrite layer writes today.
 const frenchThousands: HouseRule = text => text.replace(/\u00a0/g, '\u202f');
 
