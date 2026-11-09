@@ -1245,7 +1245,7 @@ export class HomePanel extends HTMLElement {
   // ---------- theme: dark when the device is, or after sunset, unless overridden ----------
   applyTheme() {
     const {theme: m, glass} = this.settings.get(), // one read of the settings per tick
-      s = this.st(E.sun),
+      s = this.st(this.E.sun),
       sys = this.sysDark ? this.sysDark.matches : matchMedia('(prefers-color-scheme: dark)').matches;
     const dark = m === 'dark' || (m === 'auto' && (sys || (s && s.state === 'below_horizon')));
     const t = dark ? 'dark' : 'light';
@@ -1395,9 +1395,9 @@ export class HomePanel extends HTMLElement {
       }),
       L = this.live();
     const ins = L.rooms.map(r => r.t).filter(v => v != null),
-      outT = this.attr(E.weather, 'temperature') ?? this.num(E.outT);
-    const cond = this.st(E.cond),
-      w = this.st(E.weather),
+      outT = this.attr(this.E.weather, 'temperature') ?? this.num(this.E.outT);
+    const cond = this.st(this.E.cond),
+      w = this.st(this.E.weather),
       c = ok(cond) ? cond.state : ok(w) ? w.state : null;
     const temps = [
       ins.length ? `${(sum(ins) / ins.length).toFixed(1)}° inside` : '',
@@ -1414,7 +1414,7 @@ export class HomePanel extends HTMLElement {
     // smart stack (2.5.0): one contextual card beside the clock, picked by pickStack() from the cards that apply right now
     let pick = null;
     try {
-      pick = CFG && CFG.stack.on ? pickStack(this.stackCards(), ms) : null;
+      pick = this.CFG && this.CFG.stack.on ? pickStack(this.stackCards(), ms) : null;
     } catch (e) {
       console.error('home-panel stack', e);
     }
@@ -1456,7 +1456,7 @@ export class HomePanel extends HTMLElement {
     const now = Date.now(),
       h = this.hourNow(),
       out = [],
-      S = (CFG && CFG.stack) || {},
+      S = this.CFG.stack,
       mins = t => Math.round((now - Date.parse(t)) / 6e4);
     const when = t => {
       const d = Date.parse(t);
@@ -1605,9 +1605,9 @@ export class HomePanel extends HTMLElement {
       );
     });
     // Hydro-Québec critical peaks and Hilo challenges
-    const pk = this.st(E.hqPeak),
-      pu = this.st(E.hqUpcoming),
-      defi = this.st(E.defi);
+    const pk = this.st(this.E.hqPeak),
+      pu = this.st(this.E.hqUpcoming),
+      defi = this.st(this.E.defi);
     if ((pk && pk.state === 'on') || (pu && pu.state === 'on'))
       out.push(
         this.scard('peak', {
@@ -1705,7 +1705,7 @@ export class HomePanel extends HTMLElement {
         );
     }
     // Away mode
-    const aw = this.st(E.away);
+    const aw = this.st(this.E.away);
     if (aw && aw.state === 'on') {
       const on = areas.filter(a => a.ids.some(id => (this.st(id) || {}).state === 'on')).length,
         ins = this.live()
@@ -1771,7 +1771,7 @@ export class HomePanel extends HTMLElement {
     }
     // the car charging overnight
     if (C && C.plugged && C.home !== false && inHours(h, 21, 7)) {
-      const p = this.kw(E.evP),
+      const p = this.kw(this.E.evP),
         dep = (this.st(this.car.id('switch', 'departuretimes')) || {}).state === 'on' ? this.schedText() : '';
       out.push(
         this.scard('car', {
@@ -1829,7 +1829,7 @@ export class HomePanel extends HTMLElement {
     let pick = null;
     try {
       pick =
-        CFG && CFG.stack.on
+        this.CFG && this.CFG.stack.on
           ? pickStack(
               this.stackCards().filter(c => !(c.k === 'who' && c.filler)),
               Date.now(),
@@ -1874,7 +1874,7 @@ export class HomePanel extends HTMLElement {
   skyWp() {
     const now = Date.now(),
       d = this.sunDay(0),
-      w = this.st(E.weather),
+      w = this.st(this.E.weather),
       k = condKind(w && w.state);
     if (!d.rise || !d.set) return 'lake';
     if (now < (d.dawn || d.rise) || now > (d.dusk || d.set)) return 'aurora';
