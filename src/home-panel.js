@@ -30,7 +30,8 @@ const E = {},
   AL_AREAS = {},
   SPLIT_AREAS = [],
   LIGHT_LINKS = [];
-// no longer read: the class reads this.CFG; applyConfig still writes it until contract (spec 10)
+// no longer read: the class reads this.CFG; applyConfig still writes it until contract (spec 10). Contract (#130)
+// deletes this declaration together with the other module globals, and this disable with it.
 // eslint-disable-next-line no-unused-vars
 let CFG = null;
 function applyConfig(panelCfg, states) {
@@ -266,10 +267,10 @@ const ICON = {
 const ico = (k, s = 20) =>
   `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[k]}</svg>`;
 
-// the house picture from the config (house_image), one for the light theme and one for the dark; none by default
-const houseImg = cfg =>
-  cfg && cfg.house
-    ? `<img class="house photo day" alt="" src="${esc(cfg.house.day)}"><img class="house photo night" alt="" src="${esc(cfg.house.night)}">`
+// the house picture from the config (house_image, resolved as config.house), one for the light theme and one for the dark; none by default
+const houseImg = house =>
+  house
+    ? `<img class="house photo day" alt="" src="${esc(house.day)}"><img class="house photo night" alt="" src="${esc(house.night)}">`
     : '';
 const CARSVG = `<svg class="carside" viewBox="0 0 340 128" role="img" aria-label="Car, side view">
   <ellipse cx="172" cy="118" rx="150" ry="6" fill="var(--house-shadow)"/>
@@ -1014,7 +1015,7 @@ export class HomePanel extends HTMLElement {
   <div id="err"></div>
   <div class="cols">
     <div class="col c1">
-      <div class="card wxcard tap" id="open-weather" tabindex="0" role="button" aria-label="Open weather details">${houseImg(this.CFG)}<div class="txt" id="wx"></div><div class="facts wxfacts" id="wxf"></div><div class="wxd" id="wxd"></div></div>
+      <div class="card wxcard tap" id="open-weather" tabindex="0" role="button" aria-label="Open weather details">${houseImg(this.CFG.house)}<div class="txt" id="wx"></div><div class="facts wxfacts" id="wxf"></div><div class="wxd" id="wxd"></div></div>
       <div class="card tap" id="open-energy" tabindex="0" role="button" aria-label="Open home energy details"><div id="energy"></div></div>
     </div>
     <div class="col c2">
@@ -1416,7 +1417,7 @@ export class HomePanel extends HTMLElement {
     // smart stack (2.5.0): one contextual card beside the clock, picked by pickStack() from the cards that apply right now
     let pick = null;
     try {
-      pick = this.CFG && this.CFG.stack.on ? pickStack(this.stackCards(), ms) : null;
+      pick = this.CFG.stack.on ? pickStack(this.stackCards(), ms) : null;
     } catch (e) {
       console.error('home-panel stack', e);
     }
@@ -1830,13 +1831,12 @@ export class HomePanel extends HTMLElement {
     if (!el || this.compact || this.tab !== 'home') return;
     let pick = null;
     try {
-      pick =
-        this.CFG && this.CFG.stack.on
-          ? pickStack(
-              this.stackCards().filter(c => !(c.k === 'who' && c.filler)),
-              Date.now(),
-            )
-          : null;
+      pick = this.CFG.stack.on
+        ? pickStack(
+            this.stackCards().filter(c => !(c.k === 'who' && c.filler)),
+            Date.now(),
+          )
+        : null;
     } catch (e) {
       console.error('home-panel home stack', e);
     }
@@ -2985,7 +2985,7 @@ export class HomePanel extends HTMLElement {
           break;
         }
       }
-      const cap = this.CFG && +this.CFG.car.battery_kwh;
+      const cap = +this.CFG.car.battery_kwh;
       if (!eta && c.charging && cap && soc != null && pw > 0.3 && soc < lim)
         eta = now + ((((lim - soc) / 100) * cap) / pw) * 36e5;
       const left = eta ? durTxt(eta - now) : '';
@@ -3245,13 +3245,13 @@ export class HomePanel extends HTMLElement {
   }
   carName() {
     const fn = this.attr(this.car.id('image', 'vehicleimage'), 'friendly_name') || '';
-    return (this.CFG && this.CFG.car.name) || fn.replace(/\s*Vehicle Picture$/i, '') || 'Car';
+    return this.CFG.car.name || fn.replace(/\s*Vehicle Picture$/i, '') || 'Car';
   }
   carImg() {
     const pic = this.attr(this.car.id('image', 'vehicleimage'), 'entity_picture');
     return pic && !this.imgFail
       ? `<img class="carimg" src="${esc(pic)}" alt="${esc(this.carName())}">`
-      : this.CFG && this.CFG.car.color
+      : this.CFG.car.color
         ? CARSVG.replace('<svg class="carside"', `<svg class="carside" style="--car-body:${esc(this.CFG.car.color)}"`)
         : CARSVG;
   }
@@ -6027,7 +6027,7 @@ export class HomePanel extends HTMLElement {
       'hwx',
       `<div class="muted" style="font-size:13px;font-weight:500">${dayUp ? 'Sunset' : 'Sunrise'} <b style="color:var(--fg)">${ok(nxt) ? this.fmtTime(nxt.state) : '–'}</b>${ok(nxt2) ? ` · ${dayUp ? 'sunrise' : 'sunset'} <b style="color:var(--fg)">${this.fmtTime(nxt2.state)}</b>` : ''}</div>
       <div class="hbig"><span class="num">${temp == null ? '–' : Math.round(temp) + '°'}</span><div><div class="hc">${esc(condName(ok(cond) ? cond.state : (this.st(this.E.weather) || {}).state))}</div><div class="muted">${hi != null ? `High ${Math.round(hi)}°` : ''}${lo != null ? ` · low ${Math.round(lo)}°` : ''}</div></div></div>
-      <div class="hhouse">${houseImg(this.CFG)}</div>
+      <div class="hhouse">${houseImg(this.CFG.house)}</div>
       <div class="lbl hwho">Who's home</div>${this.whoHtml() || '<p class="hint">No one is tracked yet.</p>'}${this.compact ? '' : '<div class="hstk" id="hstk" hidden></div>'}`,
     );
     // 2.9.0: under Who's home, the rest of the card holds the idle clock's smart stack (a fresh card slot whenever the card was rebuilt)
