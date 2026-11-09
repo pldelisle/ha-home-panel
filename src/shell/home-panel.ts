@@ -1,6 +1,6 @@
 // <home-panel>, the one element Home Assistant mounts: it owns the store, the API client and the settings, provides them through context, draws the frame from the registry and hosts the guest in its one shadow root.
 // Pattern: composition root (Seemann, Dependency Injection Principles, Practices, and Patterns); humble object (Meszaros, xUnit Test Patterns): it forwards `hass`, `panel` and `narrow` and decides nothing the registry and the store decide.
-// It reads `localStorage`; the browser's locale defaults are read here and, until the formatters move, by the guest. It owns `tab`, `compact` and which tabs the house shows.
+// It reads `localStorage`; the browser's locale defaults are read here and, until the formatters move, by the guest. It owns `tab`, `compact`, which tabs the house shows and, through its controller, the appearance.
 // Must not: import legacy code (the guest arrives through registerGuest), or decide what the store and the models decide.
 // Lit binds nothing inside a guest container, and the guest writes nothing outside its containers.
 import {
@@ -13,6 +13,7 @@ import {
   type TemplateResult,
 } from 'lit';
 import {classMap} from 'lit/directives/class-map.js';
+import {ifDefined} from 'lit/directives/if-defined.js';
 import {keyed} from 'lit/directives/keyed.js';
 import {repeat} from 'lit/directives/repeat.js';
 import {styleMap} from 'lit/directives/style-map.js';
@@ -25,8 +26,10 @@ import {createSettings, type KeyValueStorage} from '../core/settings.ts';
 import {createStore} from '../core/store.ts';
 import {MediaQueryController} from '../ui/controllers/media-query.ts';
 import {StoreController} from '../ui/controllers/store-controller.ts';
-import {apiContext, settingsContext, storeContext} from '../ui/contexts.ts';
+import {apiContext, settingsContext, storeContext, type Appearance} from '../ui/contexts.ts';
 import {ico} from '../ui/icons.ts';
+import {AppearanceController} from './appearance.ts';
+import {LARGE_TEXT} from './appearance-rules.ts';
 import type {FeatureKey} from './feature.ts';
 import {FEATURES, isFeatureKey, visibleTab} from './features.ts';
 import {createGuest, guestStyles, type GuestContext, type GuestRenderer, type ShellForGuest} from './guest.ts';
@@ -38,6 +41,9 @@ interface PanelInfo {
 
 // The phone's shape: the bar at the bottom, one column. The stylesheet's `.cp` rules are written for the same width.
 const PHONE = '(max-width:599px)';
+// The device's own appearance: dark, and less transparency. The theme follows the first on auto; the glass lens yields to the second.
+const DARK = '(prefers-color-scheme: dark)';
+const REDUCED_TRANSPARENCY = '(prefers-reduced-transparency: reduce)';
 
 // The one adapter wiring for storage: only src/core/settings.ts reads or writes it. Blocked site data makes touching
 // localStorage throw, so the settings then keep their defaults.
@@ -89,6 +95,14 @@ export class HomePanel extends LitElement {
     },
   });
   private readonly phone = new MediaQueryController(this, PHONE);
+  // theme, glass, text size, the page's background and `live`: one controller, which provides the value by context
+  private readonly appearance: AppearanceController = new AppearanceController(this, {
+    store: this.store,
+    settings: this.settings,
+    compact: this.phone,
+    dark: new MediaQueryController(this, DARK),
+    reducedTransparency: new MediaQueryController(this, REDUCED_TRANSPARENCY),
+  });
   private readonly forGuest: ShellForGuest = this.doors();
   private guest: GuestRenderer | undefined;
   private guestConnected = false;
@@ -99,6 +113,9 @@ export class HomePanel extends LitElement {
   private toldTab: FeatureKey | undefined;
   private activeEpoch = -1;
   private toldCompact = false;
+  // the appearance as the last render drew it, and as the guest last heard it: the guest is told once the DOM follows
+  private drawn: Appearance | undefined;
+  private toldAppearance: Appearance | undefined;
   private phoneNow = false;
 
   constructor() {
@@ -119,6 +136,7 @@ export class HomePanel extends LitElement {
   private doors(): ShellForGuest {
     const tab = () => this.tab;
     const compact = () => this.compact;
+    const appearance = () => this.appearance.value;
     return {
       toast: (message, sticky) => this.guest?.toast(message, sticky),
       setTab: key => this.setTab(key),
@@ -130,6 +148,9 @@ export class HomePanel extends LitElement {
       },
       get compact() {
         return compact();
+      },
+      get appearance() {
+        return appearance();
       },
     };
   }
@@ -208,9 +229,27 @@ export class HomePanel extends LitElement {
   // `.app#app` sits outside `keyed`: it is the one frame element a guest draw keeps, so the guest clears the classes and
   // data it toggles on it at each draw (where main's fresh `#app` came bare). The wrap inside is new at each draw.
   protected override render() {
-    return html`<div class="app ${classMap({narrow: this.narrow, cp: this.compact, tabsv: true})}" id="app">
+    const a = (this.drawn = this.appearance.value);
+    return html`<div
+      class="app ${classMap({
+        narrow: this.narrow,
+        cp: this.compact,
+        tabsv: true,
+        gl: a.glass.on,
+        txl: a.textScale >= LARGE_TEXT,
+        live: a.live,
+      })}"
+      id="app"
+      data-theme=${a.theme}
+      data-wp=${ifDefined(a.glass.wallpaper ?? undefined)}
+    >
       ${keyed(this.epoch, this.renderWrap())}
       <div class="guest" style="display:contents"></div>
+      <span
+        id="txprobe"
+        aria-hidden="true"
+        style="position:absolute;left:-9999px;visibility:hidden;font-size:17px;font:-apple-system-body"
+      ></span>
     </div>`;
   }
 
@@ -318,6 +357,7 @@ export class HomePanel extends LitElement {
     this.guestConnected = true;
     this.phoneNow = this.phone.matches;
     this.toldCompact = this.phoneNow;
+    this.toldAppearance = this.drawn;
     this.toldTab = this.visible;
     this.requestFrame(); // the guest answers about the house from here on
   }
@@ -337,6 +377,12 @@ export class HomePanel extends LitElement {
         this.store.setPanelConfig(this.panel?.config);
         guest.panelChanged();
       }
+    }
+    // the DOM follows the appearance now (data-theme, data-wp, gl, txl, live, cp); the guest hears of it once, then of the
+    // phone's shape, whose first act was the glass it has just been told about
+    if (this.drawn && this.drawn !== this.toldAppearance) {
+      this.toldAppearance = this.drawn;
+      guest.appearanceChanged(this.drawn);
     }
     // the frame already follows the phone's shape (`cp`); the guest lays its cards out again
     if (this.compact !== this.toldCompact) {

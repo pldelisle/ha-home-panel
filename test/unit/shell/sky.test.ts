@@ -1,6 +1,7 @@
 // The sky wallpaper (src/shell/sky.ts): one test per branch of the legacy `skyWp()`, with a day written out by hand,
 // and a guard that the wet conditions agree with the legacy class's own `condKind` while both exist.
 import {readFileSync} from 'node:fs';
+import {runInNewContext} from 'node:vm';
 import {describe, expect, test} from 'vitest';
 import {isWetCondition, skyWallpaper} from '../../../src/shell/sky.ts';
 
@@ -130,7 +131,7 @@ describe('isWetCondition', () => {
     const kind = legacy.match(/^const condKind = c => \{[\s\S]*?^\};$/m)?.[0];
     expect(table, 'COND is still in the legacy class: if it is gone, delete this test').toBeDefined();
     expect(kind, 'condKind is still in the legacy class: if it is gone, delete this test').toBeDefined();
-    const condKind = new Function(`${table}\n${kind}\nreturn condKind;`)() as (c: string) => string;
+    const condKind = runInNewContext(`${table}\n${kind}\ncondKind`) as (c: string) => string;
     const wetKinds = ['rain', 'snow', 'sleet', 'storm', 'fog'];
     for (const word of [...HOME_ASSISTANT_CODES, ...CANADA_WORDS, 'constructor', 'toString'])
       expect(isWetCondition(word), word).toBe(wetKinds.includes(condKind(word)));

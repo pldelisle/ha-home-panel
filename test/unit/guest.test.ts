@@ -12,6 +12,7 @@ const guest = (): GuestRenderer => ({
   toast: noop,
   tabChanged: noop,
   compactChanged: noop,
+  appearanceChanged: noop,
   openMore: noop,
   availability: () => ({}),
   moreLine: () => null,
