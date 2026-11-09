@@ -1,5 +1,5 @@
 // The guest registry (src/shell/guest.ts): nothing is created or adopted before main.js registers a guest, and what it
-// registers is what the shell gets. A pure module with literal inputs; the element that uses it is proven by the harness.
+// registers is what the shell gets. A module with one piece of state; the test order exercises it.
 import {expect, test} from 'vitest';
 import {createGuest, guestStyles, registerGuest, type GuestRenderer} from '../../src/shell/guest.ts';
 

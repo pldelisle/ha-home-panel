@@ -1,10 +1,8 @@
-// <home-panel>, the one element Home Assistant mounts: it owns the store, the API client and the settings, provides them
-// through context, and draws the legacy guest into its one shadow root.
-// Pattern: composition root (Seemann, Dependency Injection Principles, Practices, and Patterns), the only place that
-// builds services and wires them; humble object (Meszaros, xUnit Test Patterns), it forwards `hass`, `panel` and `narrow`
-// to the store and the guest and holds no rule of its own.
-// Must not: import legacy code (the guest arrives through registerGuest), bind a Lit part inside a guest container, or
-// decide what the store and the models decide. It reads the browser's time zone and localStorage, and nothing below does.
+// <home-panel>, the one element Home Assistant mounts: it owns the store, the API client and the settings, provides them through context, and hosts the guest in its one shadow root.
+// Pattern: composition root (Seemann, Dependency Injection Principles, Practices, and Patterns); humble object (Meszaros, xUnit Test Patterns): it forwards `hass`, `panel` and `narrow` and decides nothing.
+// It reads `localStorage`; the browser's locale defaults are read here and, until the formatters move, by the guest.
+// Must not: import legacy code (the guest arrives through registerGuest), or decide what the store and the models decide.
+// Lit binds nothing inside a guest container, and the guest writes nothing outside its containers.
 import {LitElement, html, unsafeCSS, type CSSResultGroup, type CSSResultOrNative, type PropertyValues} from 'lit';
 import {ContextProvider} from '@lit/context';
 import {createApi} from '../core/api.ts';
@@ -54,21 +52,20 @@ export class HomePanel extends LitElement {
   private readonly store = createStore({defaultTimeZone: browserDefaults().timeZone, resolve: resolveConfig});
   private readonly api = createApi(this.store);
   private readonly settings = createSettings(browserStorage());
-  // a controller each: they listen for the context requests of every element below
-  private readonly providers = [
-    new ContextProvider(this, {context: storeContext, initialValue: this.store}),
-    new ContextProvider(this, {context: apiContext, initialValue: this.api}),
-    new ContextProvider(this, {context: settingsContext, initialValue: this.settings}),
-  ];
   // the shell's doors for the guest; in step B the shell forwards the toast to the guest, which still draws it
   private readonly forGuest: ShellForGuest = {toast: (message, sticky) => this.guest?.toast(message, sticky)};
   private guest: GuestRenderer | undefined;
+  private guestConnected = false;
 
   constructor() {
     super();
     this.narrow = false;
+    // each provider adds itself to this element as a controller and answers the context requests of every element below
+    new ContextProvider(this, {context: storeContext, initialValue: this.store});
+    new ContextProvider(this, {context: apiContext, initialValue: this.api});
+    new ContextProvider(this, {context: settingsContext, initialValue: this.settings});
     // The store starts from the empty config, so a panel that arrives with none is no change; the store counts its
-    // first config as one even then, which would make the guest draw twice for nothing.
+    // first config as one even then, which would make the guest draw a second time for nothing.
     this.store.setPanelConfig({});
   }
 
@@ -91,23 +88,31 @@ export class HomePanel extends LitElement {
   // the container exists now, which the guest's `connect` needs
   protected override firstUpdated(): void {
     this.guest = createGuest();
-    this.guest.connect(this.guestContext());
+    this.connectGuest();
   }
 
-  // The store takes each new value and the guest is told after it did, in the order Home Assistant sets the properties
-  // (hass, narrow, panel), the order of the setters this replaces: the guest draws once with the config the store
-  // started from and draws again when the panel's config follows. That is today's behaviour, kept on purpose: one draw
-  // with the final config would show the Mercury-drop filter that the guest appends to its container and that every
-  // later draw wipes, which changes the glass in Chromium; the baselines record the panel without it (ADR 0016). The
-  // guest does not exist during the first `willUpdate`, which is why this is `updated` and not there.
+  private connectGuest(): void {
+    if (!this.guest || !this.isConnected) return;
+    this.guest.connect(this.guestContext());
+    this.guestConnected = true;
+  }
+
+  // The store takes each value and the guest is told after it did, in the order the properties were set: Lit keeps the
+  // changed properties in the order they were first set. Home Assistant sets `panel` before `hass`, so there the guest
+  // draws once with the config; the harness sets `hass` first, so there it draws once without it and again with it.
+  // Each environment draws as the element did before it, which the baselines record (ADR 0016). The guest exists only
+  // after `firstUpdated`, so the first update cannot be told in `willUpdate`, and the store is fed here for the same
+  // reason: feeding the config before the guest's first `hassChanged` would turn the harness's two draws into one.
   protected override updated(changed: PropertyValues<this>): void {
     const {guest} = this;
-    if (!guest) return;
-    if (changed.has('hass') && this.hass) guest.hassChanged(this.store.setHass(this.hass));
-    if (changed.has('narrow')) guest.narrowChanged(this.narrow);
-    if (changed.has('panel')) {
-      this.store.setPanelConfig(this.panel?.config);
-      guest.panelChanged();
+    if (!guest || !this.guestConnected) return;
+    for (const key of changed.keys()) {
+      if (key === 'hass' && this.hass) guest.hassChanged(this.store.setHass(this.hass));
+      if (key === 'narrow') guest.narrowChanged(this.narrow);
+      if (key === 'panel') {
+        this.store.setPanelConfig(this.panel?.config);
+        guest.panelChanged();
+      }
     }
   }
 
@@ -115,7 +120,7 @@ export class HomePanel extends LitElement {
   // `firstUpdated` connects it. A later connection is a reconnect, which the guest tolerates.
   override connectedCallback(): void {
     super.connectedCallback();
-    if (this.guest) this.guest.connect(this.guestContext());
+    if (this.guest) this.connectGuest();
   }
 
   override disconnectedCallback(): void {

@@ -1,13 +1,14 @@
-// The guest interface: what the shell asks of the legacy renderer that still draws the panel's content, and what it hands it.
+// The guest interface: what the shell asks of the guest, the legacy class that still draws the panel's content, and what it hands it.
 // Pattern: strangler fig (Fowler, Strangler Fig Application): the host wraps the old code behind an interface the host
 // owns, and the interface only shrinks; registering a factory keeps the shell from importing legacy code (ADR 0011).
-// Must not: grow past what the spec names for a step, be imported by anything but the shell and src/main.js, or outlive
-// the guest: this module is deleted with it, and so is the module state below.
+// Must not: grow past what the spec names for a step (except `toast`, which step E deletes with the shell's own toast), be
+// imported by anything but the shell and src/main.js, or outlive the guest: it is deleted with it, module state included.
+// Lit binds nothing inside a guest container, and the guest writes nothing outside its containers.
 import type {PanelApi} from '../core/api.ts';
 import type {PanelSettings} from '../core/settings.ts';
 import type {HassChange, PanelStore} from '../core/store.ts';
 
-/** What the shell hands the guest when it connects: the page, the services and the shell's own few doors. */
+/** What the shell hands the guest when it connects: the root, the host, the services and the shell's own few doors. */
 export interface GuestContext {
   /** The shell's one shadow root; the guest draws into its containers inside it and nowhere else. */
   root: ShadowRoot;
