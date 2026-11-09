@@ -2774,8 +2774,8 @@ export class HomePanel extends HTMLElement {
       const s = this.st(id);
       return !ok(s) || Date.now() - Date.parse(s.last_updated) > h * 3600e3;
     };
-    if (this.st(E.hq)) {
-      if (stale(E.hq, 36))
+    if (this.st(this.E.hq)) {
+      if (stale(this.E.hq, 36))
         items.push([
           'warn',
           'Hydro-Québec not updating',
@@ -2783,28 +2783,28 @@ export class HomePanel extends HTMLElement {
         ]);
       else clear.push('Hydro-Québec updating');
     }
-    const hp = this.st(E.hp);
+    const hp = this.st(this.E.hp);
     if (hp) {
       if (!ok(hp))
         items.push(['crit', 'Heat pump offline', `The ${this.hpBrand()} unit shows as unavailable in Home Assistant.`]);
       else clear.push('Heat pump online');
     }
-    const gw = this.st(E.gateway);
+    const gw = this.st(this.E.gateway);
     if (gw) {
       if (gw.state !== 'on' || gw.attributes.disconnected)
         items.push(['crit', 'Hilo gateway offline', 'Thermostats and the meter may stop reporting.']);
       else clear.push('Hilo gateway online');
     }
-    const down = ROOMS.filter(r => this.st(r.climate) && !ok(this.st(r.climate))).map(r => this.roomName(r));
+    const down = this.ROOMS.filter(r => this.st(r.climate) && !ok(this.st(r.climate))).map(r => this.roomName(r));
     if (down.length) items.push(['warn', `${plural(down.length, 'thermostat')} not reporting`, down.join(', ')]);
-    const peak = this.st(E.hqPeak),
-      up = this.st(E.hqUpcoming);
+    const peak = this.st(this.E.hqPeak),
+      up = this.st(this.E.hqUpcoming);
     if (peak && peak.state === 'on')
       items.push(['crit', 'Critical peak in progress', 'Hydro-Québec peak period: lower consumption now.']);
     else if (up && up.state === 'on')
       items.push(['warn', 'Critical peak coming', 'Hydro-Québec announced an upcoming critical peak.']);
     else if (ok(peak)) clear.push('No critical peak');
-    const w = this.num(E.warnings);
+    const w = this.num(this.E.warnings);
     if (w) items.push(['warn', 'Weather warning', `Environment Canada has ${plural(w, 'warning')} for your area.`]);
     else if (w === 0) clear.push('No weather alerts');
     const C = this.car;
@@ -2841,7 +2841,7 @@ export class HomePanel extends HTMLElement {
     );
     if (X.some(x => x.kind === 'door') && !X.some(x => x.kind === 'door' && (this.st(x.id) || {}).state === 'on'))
       clear.push('Doors closed');
-    if (this.st(E.wbStatus) && !ok(this.st(E.wbStatus)))
+    if (this.st(this.E.wbStatus) && !ok(this.st(this.E.wbStatus)))
       items.push(['warn', 'Wallbox offline', 'The charger is unavailable in Home Assistant.']);
     return {items, clear};
   }
@@ -2877,7 +2877,7 @@ export class HomePanel extends HTMLElement {
     const head = (a, title, right) =>
       `<div class="lah">${ring(a.ic, a.p, a.ac, 30)}<b>${title}</b><span class="rt">${right}</span></div>`;
     // Hilo challenge: from the start of pre-heat until recovery ends; phase times come from the challenge sensor's next event
-    const defi = this.st(E.defi),
+    const defi = this.st(this.E.defi),
       dst = ok(defi) ? (defi.state === 'on' ? 'reduction' : defi.state) : null;
     if (['pre_heat', 'reduction', 'recovery'].includes(dst)) {
       const ev = (defi.attributes.next_events || [])[0] || {},
@@ -2929,7 +2929,7 @@ export class HomePanel extends HTMLElement {
             : '';
         const used = ev.used_kWh,
           allowed = ev.allowed_kWh,
-          g = this.kw(E.grid);
+          g = this.kw(this.E.grid);
         const meta = [
           inside != null ? `<b>${inside.toFixed(1)}°</b> inside` : '',
           g != null ? `house using <b>${g.toFixed(1)} kW</b>` : '',
@@ -2955,8 +2955,8 @@ export class HomePanel extends HTMLElement {
       c &&
       !c.charging &&
       c.plugged &&
-      E.wbPause &&
-      this.sw(E.wbPause) === false &&
+      this.E.wbPause &&
+      this.sw(this.E.wbPause) === false &&
       (c.soc == null || c.lim == null || c.soc < c.lim - 1)
     );
     if (c && (c.charging || paused)) {
@@ -2964,7 +2964,7 @@ export class HomePanel extends HTMLElement {
         soc = c.soc,
         lim = c.lim || 100;
       const pw =
-        this.kw(E.evP) ??
+        this.kw(this.E.evP) ??
         (() => {
           const k = Object.keys(chg).find(x => /charg.*(power|kw)$/i.test(x));
           return k && Number.isFinite(+chg[k]) ? +chg[k] : null;
@@ -2983,7 +2983,7 @@ export class HomePanel extends HTMLElement {
           break;
         }
       }
-      const cap = CFG && +CFG.car.battery_kwh;
+      const cap = this.CFG && +this.CFG.car.battery_kwh;
       if (!eta && c.charging && cap && soc != null && pw > 0.3 && soc < lim)
         eta = now + ((((lim - soc) / 100) * cap) / pw) * 36e5;
       const left = eta ? durTxt(eta - now) : '';
@@ -2995,7 +2995,7 @@ export class HomePanel extends HTMLElement {
         })();
       // the hourly charging session that started with this plug-in (sessions are built from hourly statistics)
       const cur = ses && ses.b >= now - 2 * 36e5 && (!plugT || ses.a >= plugT - 36e5) ? ses : null;
-      const price = this.num(E.wbPrice) ?? 0.07,
+      const price = this.num(this.E.wbPrice) ?? 0.07,
         plug = this.st(C.id('sensor', 'elvehplug'));
       seen.car = {lim};
       const a = {
@@ -3009,7 +3009,7 @@ export class HomePanel extends HTMLElement {
         label: `${paused ? 'Charging paused' : 'Car charging'}, ${f0(soc)} percent${left ? `, full in ${left}` : ''}`,
       };
       a.card = () => {
-        const on = this.sw(E.wbPause);
+        const on = this.sw(this.E.wbPause);
         const meta = [
           ok(plug) && plug.state !== 'DISCONNECTED' ? `Plugged in at ${this.fmtTime(plug.last_changed)}` : '',
           cur ? `<b>+${f1(cur.kwh)} kWh</b> so far · about <b>$${(cur.kwh * price).toFixed(2)}</b>` : '',
@@ -3026,13 +3026,13 @@ export class HomePanel extends HTMLElement {
           `<div class="lbig"><span class="n">${f0(soc)}<small>%</small></span><span class="to">→ ${lim}% limit</span>${eta ? `<span class="eta"><b>Full at ${this.fmtTime(eta)}</b>in ${left}</span>` : ''}</div>
           <div class="lbar" role="img" aria-label="Battery ${f0(soc)} percent, limit ${lim} percent"><i style="width:${soc || 0}%"></i><em style="left:${lim}%"></em></div>
           ${meta ? `<div class="lmeta">${meta}</div>` : ''}
-          <div class="lbtns">${E.wbPause && ok(this.st(E.wbPause)) ? `<button type="button" data-la="pause">${on === false ? 'Resume charging' : 'Pause charging'}</button>` : ''}<button type="button" class="go" data-la="car">Open Car ›</button></div>`
+          <div class="lbtns">${this.E.wbPause && ok(this.st(this.E.wbPause)) ? `<button type="button" data-la="pause">${on === false ? 'Resume charging' : 'Pause charging'}</button>` : ''}<button type="button" class="go" data-la="car">Open Car ›</button></div>`
         );
       };
       acts.push(a);
     }
     // the water heater: while it draws power; time left from how long its other cycles today lasted
-    const wp = this.kw(E.whP);
+    const wp = this.kw(this.E.whP);
     if (wp != null && wp > 0.2) {
       const W = this.H && this.H.wh24,
         pts = W ? W.p.filter(x => x[0] >= now - 864e5) : [],
@@ -3048,7 +3048,7 @@ export class HomePanel extends HTMLElement {
       });
       const last = runs[runs.length - 1],
         open = last && last[1] >= now - 15 * 6e4;
-      const sPw = this.st(E.whP),
+      const sPw = this.st(this.E.whP),
         start = open ? last[0] : Date.parse(sPw.last_changed);
       const done = runs
         .filter(x => x !== (open ? last : null) && x[1] - x[0] >= 5 * 6e4)
@@ -3057,7 +3057,7 @@ export class HomePanel extends HTMLElement {
       const typ = done.length ? done[Math.floor(done.length / 2)] : null,
         el = now - start;
       const left = typ ? Math.max(0, typ - el) : null,
-        t = this.num(E.whT);
+        t = this.num(this.E.whT);
       const tp = W ? W.t.filter(x => x[0] >= start - 6e5) : [];
       const rate =
         tp.length > 1 && tp[tp.length - 1][0] > tp[0][0]
@@ -3162,13 +3162,13 @@ export class HomePanel extends HTMLElement {
       this.show('sh-car');
       return;
     }
-    if (b.dataset.la === 'pause' && E.wbPause) {
-      const on = !this.sw(E.wbPause);
-      this.pending[E.wbPause] = {on, until: Date.now() + 20000};
+    if (b.dataset.la === 'pause' && this.E.wbPause) {
+      const on = !this.sw(this.E.wbPause);
+      this.pending[this.E.wbPause] = {on, until: Date.now() + 20000};
       this.call(
         'switch',
         on ? 'turn_on' : 'turn_off',
-        {entity_id: E.wbPause},
+        {entity_id: this.E.wbPause},
         on ? 'Charging resumed' : 'Charging paused',
       );
       this.renderAttention();
@@ -3243,14 +3243,14 @@ export class HomePanel extends HTMLElement {
   }
   carName() {
     const fn = this.attr(this.car.id('image', 'vehicleimage'), 'friendly_name') || '';
-    return (CFG && CFG.car.name) || fn.replace(/\s*Vehicle Picture$/i, '') || 'Car';
+    return (this.CFG && this.CFG.car.name) || fn.replace(/\s*Vehicle Picture$/i, '') || 'Car';
   }
   carImg() {
     const pic = this.attr(this.car.id('image', 'vehicleimage'), 'entity_picture');
     return pic && !this.imgFail
       ? `<img class="carimg" src="${esc(pic)}" alt="${esc(this.carName())}">`
-      : CFG && CFG.car.color
-        ? CARSVG.replace('<svg class="carside"', `<svg class="carside" style="--car-body:${esc(CFG.car.color)}"`)
+      : this.CFG && this.CFG.car.color
+        ? CARSVG.replace('<svg class="carside"', `<svg class="carside" style="--car-body:${esc(this.CFG.car.color)}"`)
         : CARSVG;
   }
   carState() {
@@ -3282,10 +3282,10 @@ export class HomePanel extends HTMLElement {
   // heater with neither of its sensors, Hilo with no rate. gateTabs hides them; renderWater and renderHilo draw nothing for them
   lacking() {
     return {
-      climate: !ROOMS.length && !this.st(E.hp),
+      climate: !this.ROOMS.length && !this.st(this.E.hp),
       car: !this.car,
-      water: !(this.st(E.whT) || this.st(E.whP)),
-      hilo: !this.st(E.rate),
+      water: !(this.st(this.E.whT) || this.st(this.E.whP)),
+      hilo: !this.st(this.E.rate),
     };
   }
   renderCarCard() {
@@ -3298,7 +3298,7 @@ export class HomePanel extends HTMLElement {
     }
     const c = this.carState(),
       H = this.H,
-      wb = this.st(E.wbStatus),
+      wb = this.st(this.E.wbStatus),
       odo = this.num(this.car.id('sensor', 'odometer'));
     const last = H && H.sessions.length ? H.sessions[H.sessions.length - 1] : null;
     const ev30 = H ? H.daily.slice(-30) : [];
@@ -3330,13 +3330,13 @@ export class HomePanel extends HTMLElement {
   }
   // the water heater's own name: its sensor's name without the measurement ("Tank Temperature" → "Tank")
   whName() {
-    const fn = this.attr(E.whT, 'friendly_name') || this.attr(E.whP, 'friendly_name') || '';
+    const fn = this.attr(this.E.whT, 'friendly_name') || this.attr(this.E.whP, 'friendly_name') || '';
     return fn.replace(/\s*(water heater\s*)?(temperature|température|power|puissance)$/i, '').trim();
   }
   renderWater() {
     if (this.lacking().water) return;
-    const t = this.num(E.whT),
-      p = this.kw(E.whP),
+    const t = this.num(this.E.whT),
+      p = this.kw(this.E.whP),
       H = this.H,
       d = H ? H.wh14 : [],
       W = H && H.wh24;
@@ -3422,8 +3422,8 @@ export class HomePanel extends HTMLElement {
   renderHilo() {
     if (this.lacking().hilo) return;
     const ri = this.rateInfo(),
-      defi = this.st(E.defi),
-      rw = this.num(E.rewards);
+      defi = this.st(this.E.defi),
+      rw = this.num(this.E.rewards);
     const ch = !ok(defi)
       ? 'Challenge status unknown'
       : defi.state === 'off'
