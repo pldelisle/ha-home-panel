@@ -17,13 +17,14 @@ export type IdleEvent =
   | {type: 'wakeDone'};
 
 /** What the controller does with its timers: run the idle timer, stop it, or run the wake timer; null leaves both alone. */
-export type TimerCommand = 'start' | 'stop' | 'wake' | null;
+type TimerCommand = 'start' | 'stop' | 'wake' | null;
 
 export interface IdleStep {
   state: IdleState;
   timer: TimerCommand;
 }
 
+const TOUCHES = ['pointerdown', 'wheel', 'keydown'] as const;
 const stay = (state: IdleState): IdleStep => ({state, timer: null});
 // a tablet runs the idle timer, a phone never does
 const arming = (compact: boolean): TimerCommand => (compact ? 'stop' : 'start');
@@ -31,25 +32,24 @@ const arming = (compact: boolean): TimerCommand => (compact ? 'stop' : 'start');
 /**
  * The transition table. `compact` is whether the screen is a phone's; for `compactChanged` it is the event's.
  *
- * | State    | touch                      | timeout      | sleepNow     | compact: true  | compact: false  | wakeDone                  |
- * | -------- | -------------------------- | ------------ | ------------ | -------------- | --------------- | ------------------------- |
- * | `active` | `active`, start or stop \*  | `idle`, stop | `idle`, stop | `active`, stop | `active`, start | `active`, nothing         |
- * | `idle`   | `waking`, wake             | nothing      | nothing      | `active`, stop | nothing         | nothing                   |
- * | `waking` | nothing                    | nothing      | nothing      | nothing        | nothing         | `active`, start or stop \* |
+ * | State    | touch                       | timeout      | sleepNow     | compact: true   | compact: false  | wakeDone                    |
+ * | -------- | --------------------------- | ------------ | ------------ | --------------- | --------------- | --------------------------- |
+ * | `active` | `active`, start or stop \*  | `idle`, stop | `idle`, stop | `active`, stop  | `active`, start | `active`, nothing           |
+ * | `idle`   | `waking`, wake              | nothing      | nothing      | `waking`, wake  | `waking`, wake  | nothing                     |
+ * | `waking` | nothing                     | nothing      | nothing      | nothing         | nothing         | `active`, start or stop \*  |
  *
  * \* Start on a tablet, stop on a phone, which never goes idle by itself. "Nothing" is the same state and no timer
  * command. `compact: true` and `compact: false` are the event `compactChanged`. Start runs the 5-minute timer again,
  * stop clears it, wake runs the 400 ms timer whose end is `wakeDone`. A tap that wakes the panel is swallowed because
- * the overlay stays on screen, faded out, until the wake ends.
+ * the overlay stays on screen, faded out, until the wake ends. A change of shape wakes an idle panel like a touch, as
+ * the legacy panel's `compactChanged` did by arming the timer; the wake then ends in start or stop for the new shape.
  */
 export function nextIdle(state: IdleState, event: IdleEvent, env: {compact: boolean}): IdleStep {
   if (state === 'waking') {
     return event.type === 'wakeDone' ? {state: 'active', timer: arming(env.compact)} : stay('waking');
   }
   if (state === 'idle') {
-    if (event.type === 'touch') return {state: 'waking', timer: 'wake'};
-    if (event.type === 'compactChanged' && event.compact) return {state: 'active', timer: 'stop'};
-    return stay('idle');
+    return event.type === 'touch' || event.type === 'compactChanged' ? {state: 'waking', timer: 'wake'} : stay('idle');
   }
   switch (event.type) {
     case 'touch':
@@ -86,8 +86,7 @@ export interface IdleTimerOptions {
   ready: () => boolean;
   /** The state changed (never called for a stay); the shell draws it and tells the guest. */
   onChange: (state: IdleState) => void;
-  /** Where `scroll` is heard, capturing, so a scroll inside a pane counts; the window. A test hands its own. */
-  scrollTarget?: EventTarget;
+  /** Defaults to the page's timers. */
   timers?: Timers;
 }
 
@@ -109,11 +108,8 @@ export class IdleTimer implements ReactiveController {
     host.addController(this);
   }
 
-  get state(): IdleState {
-    return this.current;
-  }
-
-  // The same four touches the guest heard: three on the root, the scroll on the window; all passive.
+  // The same four touches the guest heard: three on the root, the scroll on the window (capturing, so a scroll inside a
+  // pane counts); all passive.
   private readonly touched = (): void => {
     for (const listener of this.touchListeners) listener();
     this.send({type: 'touch'});
@@ -141,24 +137,20 @@ export class IdleTimer implements ReactiveController {
 
   hostConnected(): void {
     const {renderRoot} = this.host;
-    for (const type of ['pointerdown', 'wheel', 'keydown'])
-      renderRoot.addEventListener(type, this.touched, {passive: true});
-    this.scrollTarget().addEventListener('scroll', this.touched, {passive: true, capture: true});
-    this.arm(); // the first arm
+    for (const type of TOUCHES) renderRoot.addEventListener(type, this.touched, {passive: true});
+    window.addEventListener('scroll', this.touched, {passive: true, capture: true});
+    // the first arm; a panel that was idle when it left is idle still, and a touch wakes it
+    if (this.current === 'active') this.arm();
   }
 
   hostDisconnected(): void {
     const {renderRoot} = this.host;
-    for (const type of ['pointerdown', 'wheel', 'keydown']) renderRoot.removeEventListener(type, this.touched);
-    this.scrollTarget().removeEventListener('scroll', this.touched, {capture: true});
+    for (const type of TOUCHES) renderRoot.removeEventListener(type, this.touched);
+    window.removeEventListener('scroll', this.touched, {capture: true});
     this.clearIdle();
     this.clearWake();
-    // nothing would end a wake or a sleep now: the next connection starts from a clock that is not showing
-    if (this.current !== 'active') this.move('active');
-  }
-
-  private scrollTarget(): EventTarget {
-    return this.options.scrollTarget ?? window;
+    // nothing would end a wake now that its timer is gone
+    if (this.current === 'waking') this.move('active');
   }
 
   private send(event: IdleEvent): void {

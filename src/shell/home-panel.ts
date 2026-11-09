@@ -407,5 +407,6 @@ export class HomePanel extends LitElement {
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     this.guest?.disconnect();
+    this.toldIdle = false; // the guest is down: a change of state while away tells it nothing, and a clock still showing is told again on return
   }
 }

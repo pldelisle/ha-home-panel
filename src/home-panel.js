@@ -625,7 +625,7 @@ export class LegacyPanel {
     this.fc = {}; // forecasts by type, from the weather subscription
     this.crange = 'day'; // climate history range (Day by default since v1.18.2)
     this.CR = {}; // climate history by range
-    // the idle overlay is the shell's and outlives a draw: one listener, added at connect and removed at disconnect.
+    // #iwrap, the clock's container, is a static node of the shell's and outlives a draw: one listener, added at connect and removed at disconnect.
     // On the smart stack's card the tap that wakes the panel opens what the card is about
     this.onIdleClick = e => {
       const g = e.target.closest('[data-go]');
@@ -754,7 +754,7 @@ export class LegacyPanel {
     }, 10000);
     this.histT = setInterval(() => this.loadHistory(), 15 * 60000);
     window.addEventListener('keydown', this.onKey);
-    this.$('idle').addEventListener('click', this.onIdleClick);
+    this.$('iwrap').addEventListener('click', this.onIdleClick);
     if (this.hass && this.$app) this.subscribeForecasts();
     if (this.hass && this.$app) this.loadHistory();
     if (this.$app) this.observeLayout();
@@ -780,7 +780,7 @@ export class LegacyPanel {
     this.radarStop();
     clearInterval(this.histT);
     window.removeEventListener('keydown', this.onKey);
-    this.$('idle')?.removeEventListener('click', this.onIdleClick);
+    this.$('iwrap').removeEventListener('click', this.onIdleClick);
     this.unsubscribeForecasts();
     if (this.unsubStore) this.unsubStore();
     this.unsubStore = null;

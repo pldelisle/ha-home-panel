@@ -1,6 +1,8 @@
-// The idle timer (src/shell/idle-timer.ts): the transition table row by row, then the controller around it with timers
-// and targets handed in, so no clock is faked and no element is mounted. Prior art: guest.test.ts, features.test.ts.
-import {describe, expect, test} from 'vitest';
+// The idle timer (src/shell/idle-timer.ts): the transition table cell by cell, then the controller around it with a
+// stub host, scripted timers and a stand-in window, so no clock is faked and no element is mounted. ADR 0005's
+// pure-function seam covers a controller whose host and timers are constructor parameters.
+// Prior art: guest.test.ts, features.test.ts.
+import {afterEach, describe, expect, test} from 'vitest';
 import {
   IdleTimer,
   nextIdle,
@@ -20,7 +22,7 @@ const wakeDone: IdleEvent = {type: 'wakeDone'};
 
 const step = (state: IdleState, timer: IdleStep['timer']): IdleStep => ({state, timer});
 
-describe('nextIdle, the table of docs/specs/14-lit-shell.md', () => {
+describe('nextIdle: every cell of the table (spec 14 and the module header)', () => {
   // [state, event, compact, expected]: every cell of the table in the module's header
   const rows: Array<[IdleState, string, IdleEvent, boolean, IdleStep]> = [
     ['active', 'touch', touch, false, step('active', 'start')],
@@ -35,8 +37,8 @@ describe('nextIdle, the table of docs/specs/14-lit-shell.md', () => {
     ['idle', 'touch (a phone)', touch, true, step('waking', 'wake')],
     ['idle', 'timeout', timeout, false, step('idle', null)],
     ['idle', 'sleepNow', sleepNow, false, step('idle', null)],
-    ['idle', 'compact: true', phone, true, step('active', 'stop')],
-    ['idle', 'compact: false', tablet, false, step('idle', null)],
+    ['idle', 'compact: true', phone, true, step('waking', 'wake')],
+    ['idle', 'compact: false', tablet, false, step('waking', 'wake')],
     ['idle', 'wakeDone', wakeDone, false, step('idle', null)],
     ['waking', 'touch', touch, false, step('waking', null)],
     ['waking', 'timeout', timeout, false, step('waking', null)],
@@ -85,10 +87,18 @@ function clock() {
 
 const MIN = 60_000;
 
+// the stand-in window of the test that is running: the controller hears the scroll on the global `window`
+const realWindow = Object.getOwnPropertyDescriptor(globalThis, 'window');
+afterEach(() => {
+  if (realWindow) Object.defineProperty(globalThis, 'window', realWindow);
+  else Reflect.deleteProperty(globalThis, 'window');
+});
+
 function setup(initial: {compact?: boolean; ready?: boolean} = {}) {
   const c = clock();
   const root = new EventTarget();
   const scroll = new EventTarget();
+  Object.defineProperty(globalThis, 'window', {value: scroll, configurable: true});
   const controllers: Array<{hostConnected?(): void; hostDisconnected?(): void}> = [];
   const host: IdleHost = {
     renderRoot: root,
@@ -105,7 +115,6 @@ function setup(initial: {compact?: boolean; ready?: boolean} = {}) {
     compact: () => env.compact,
     ready: () => env.ready,
     onChange: state => changes.push(state),
-    scrollTarget: scroll,
     timers: c.timers,
   });
   return {
@@ -115,6 +124,8 @@ function setup(initial: {compact?: boolean; ready?: boolean} = {}) {
     env,
     changes,
     timer,
+    /** what the shell would draw now: the last state told, `active` before any */
+    state: (): IdleState => changes.at(-1) ?? 'active',
     connect: () => controllers.forEach(x => x.hostConnected?.()),
     disconnect: () => controllers.forEach(x => x.hostDisconnected?.()),
   };
@@ -125,18 +136,18 @@ describe('IdleTimer', () => {
     const t = setup();
     t.connect();
     t.c.advance(5 * MIN - 1);
-    expect(t.timer.state).toBe('active');
+    expect(t.state()).toBe('active');
     t.c.advance(1);
-    expect(t.timer.state).toBe('idle');
+    expect(t.state()).toBe('idle');
     t.root.dispatchEvent(new Event('pointerdown'));
-    expect(t.timer.state).toBe('waking');
+    expect(t.state()).toBe('waking');
     t.c.advance(399);
-    expect(t.timer.state).toBe('waking');
+    expect(t.state()).toBe('waking');
     t.c.advance(1);
-    expect(t.timer.state).toBe('active');
+    expect(t.state()).toBe('active');
     expect(t.changes).toEqual(['idle', 'waking', 'active']);
     t.c.advance(5 * MIN);
-    expect(t.timer.state).toBe('idle'); // the five minutes run again from the wake
+    expect(t.state()).toBe('idle'); // the five minutes run again from the wake
   });
 
   test('each touch starts the five minutes over: pointer, wheel and key on the root, a scroll on the window', () => {
@@ -153,9 +164,9 @@ describe('IdleTimer', () => {
       expect(t.c.waiting).toBe(1); // one idle timer, never two
     }
     t.c.advance(4 * MIN);
-    expect(t.timer.state).toBe('active');
+    expect(t.state()).toBe('active');
     t.c.advance(MIN);
-    expect(t.timer.state).toBe('idle');
+    expect(t.state()).toBe('idle');
   });
 
   test('the listeners are passive; the scroll is heard while capturing', () => {
@@ -184,12 +195,12 @@ describe('IdleTimer', () => {
     t.connect();
     expect(t.c.waiting).toBe(0);
     t.c.advance(60 * MIN);
-    expect(t.timer.state).toBe('active');
+    expect(t.state()).toBe('active');
     t.timer.sleepNow();
-    expect(t.timer.state).toBe('idle');
+    expect(t.state()).toBe('idle');
     t.root.dispatchEvent(new Event('pointerdown'));
     t.c.advance(400);
-    expect(t.timer.state).toBe('active');
+    expect(t.state()).toBe('active');
     expect(t.c.waiting).toBe(0); // and no timer is left running
   });
 
@@ -197,7 +208,7 @@ describe('IdleTimer', () => {
     const t = setup();
     t.connect();
     t.timer.sleepNow();
-    expect(t.timer.state).toBe('idle');
+    expect(t.state()).toBe('idle');
     expect(t.c.waiting).toBe(0);
     expect(t.changes).toEqual(['idle']);
   });
@@ -219,16 +230,16 @@ describe('IdleTimer', () => {
     const t = setup({ready: false});
     t.connect();
     t.c.advance(5 * MIN);
-    expect(t.timer.state).toBe('active');
+    expect(t.state()).toBe('active');
     expect(t.c.waiting).toBe(1);
     t.timer.sleepNow();
-    expect(t.timer.state).toBe('active');
+    expect(t.state()).toBe('active');
     t.env.ready = true;
     t.c.advance(5 * MIN);
-    expect(t.timer.state).toBe('idle');
+    expect(t.state()).toBe('idle');
   });
 
-  test('becoming a phone stops the timer and wakes an idle panel; becoming a tablet starts it', () => {
+  test('on an active panel, becoming a phone stops the timer and becoming a tablet starts it', () => {
     const t = setup();
     t.connect();
     t.env.compact = true;
@@ -237,12 +248,27 @@ describe('IdleTimer', () => {
     t.env.compact = false;
     t.timer.compactChanged(false);
     expect(t.c.waiting).toBe(1);
+    expect(t.changes).toEqual([]);
+  });
+
+  test('a change of shape wakes an idle panel like a touch, and the wake ends in start or stop for the new shape', () => {
+    const t = setup();
+    t.connect();
     t.timer.sleepNow();
     t.env.compact = true;
     t.timer.compactChanged(true);
-    expect(t.timer.state).toBe('active');
-    expect(t.c.waiting).toBe(0);
-    expect(t.changes).toEqual(['idle', 'active']);
+    expect(t.state()).toBe('waking');
+    t.c.advance(400);
+    expect(t.state()).toBe('active');
+    expect(t.c.waiting).toBe(0); // a phone: no timer
+    t.timer.sleepNow();
+    t.env.compact = false;
+    t.timer.compactChanged(false);
+    expect(t.state()).toBe('waking');
+    t.c.advance(400);
+    expect(t.state()).toBe('active');
+    expect(t.c.waiting).toBe(1); // a tablet: the five minutes
+    expect(t.changes).toEqual(['idle', 'waking', 'active', 'idle', 'waking', 'active']);
   });
 
   test('a phone reached while waking has no idle timer when the wake ends', () => {
@@ -252,9 +278,9 @@ describe('IdleTimer', () => {
     t.root.dispatchEvent(new Event('pointerdown'));
     t.env.compact = true;
     t.timer.compactChanged(true);
-    expect(t.timer.state).toBe('waking');
+    expect(t.state()).toBe('waking');
     t.c.advance(400);
-    expect(t.timer.state).toBe('active');
+    expect(t.state()).toBe('active');
     expect(t.c.waiting).toBe(0);
   });
 
@@ -277,57 +303,40 @@ describe('IdleTimer', () => {
     t.connect();
     t.timer.sleepNow();
     t.root.dispatchEvent(new Event('pointerdown'));
-    expect(t.timer.state).toBe('waking');
+    expect(t.state()).toBe('waking');
     t.disconnect();
     expect(t.c.waiting).toBe(0);
-    expect(t.timer.state).toBe('active');
+    expect(t.state()).toBe('active');
     expect(t.changes).toEqual(['idle', 'waking', 'active']);
     t.root.dispatchEvent(new Event('pointerdown'));
     t.scroll.dispatchEvent(new Event('scroll'));
     expect(t.c.waiting).toBe(0); // nothing hears a touch now
     t.connect();
-    expect(t.c.waiting).toBe(1); // and the next connection arms again
+    expect(t.c.waiting).toBe(1); // and the next connection of an active panel arms again
     t.disconnect();
+    expect(t.c.waiting).toBe(0);
     expect(t.changes).toEqual(['idle', 'waking', 'active']); // an active panel has nothing to tell
   });
 
-  test('without a scroll target it listens to the window', () => {
-    const added: string[] = [];
-    const removed: string[] = [];
-    const fake = {
-      addEventListener: (type: string) => added.push(type),
-      removeEventListener: (type: string) => removed.push(type),
-    };
-    const original = Object.getOwnPropertyDescriptor(globalThis, 'window');
-    Object.defineProperty(globalThis, 'window', {value: fake, configurable: true});
-    try {
-      const host: IdleHost = {
-        renderRoot: new EventTarget(),
-        addController: c => c.hostConnected?.(),
-        removeController: () => {},
-        requestUpdate: () => {},
-        updateComplete: Promise.resolve(true),
-      };
-      const controller = new IdleTimer(host, {
-        delayMs: 1,
-        wakeMs: 1,
-        compact: () => true,
-        ready: () => true,
-        onChange: () => {},
-      });
-      controller.hostDisconnected();
-      expect([added, removed]).toEqual([['scroll'], ['scroll']]);
-    } finally {
-      if (original) Object.defineProperty(globalThis, 'window', original);
-      else Reflect.deleteProperty(globalThis, 'window');
-    }
+  test('an idle panel stays idle across a disconnection, arms nothing on return, and wakes on a touch', () => {
+    const t = setup();
+    t.connect();
+    t.timer.sleepNow();
+    t.disconnect();
+    expect(t.state()).toBe('idle');
+    t.connect();
+    expect(t.c.waiting).toBe(0);
+    t.root.dispatchEvent(new Event('pointerdown'));
+    t.c.advance(400);
+    expect(t.changes).toEqual(['idle', 'waking', 'active']);
+    expect(t.c.waiting).toBe(1);
   });
 
   test('without timers handed in it uses the page globals, read when called', () => {
     const calls: string[] = [];
     const set = globalThis.setTimeout;
     const clear = globalThis.clearTimeout;
-    globalThis.setTimeout = ((run: () => void, ms: number) => {
+    globalThis.setTimeout = ((_run: () => void, ms: number) => {
       calls.push(`set ${ms}`);
       return 7 as unknown as ReturnType<typeof setTimeout>;
     }) as typeof setTimeout;
@@ -346,7 +355,6 @@ describe('IdleTimer', () => {
         compact: () => false,
         ready: () => true,
         onChange: () => {},
-        scrollTarget: new EventTarget(),
       });
       controller.arm();
       controller.arm();
