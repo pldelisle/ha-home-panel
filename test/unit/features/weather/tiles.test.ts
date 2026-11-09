@@ -1,4 +1,4 @@
-// TILES, the condition names and the catalog words, against the old class's own tables (`wxDef`, `COND`), which they copy.
+// TILES, the condition names and the catalog words, against the legacy panel's tables (`wxDef`, `COND`), which they copy.
 // The guard exists while the class still holds those tables: the ticket that deletes `wxDef` (the history move) deletes this
 // file's guard tests with it, and until then a drift in either copy fails here.
 import {readFileSync} from 'node:fs';

@@ -1,7 +1,7 @@
 // weatherModel: the inputs, the forecast and the clock in, the strings and numbers the Weather elements place out.
 // Pattern: a pure view-model function, a humble object's other half (Meszaros, Fowler): it reads no clock and no `hass`,
-// words everything through `deps.t` and formats everything through `deps.fmt`, and returns a tree of strings and numbers.
-// Each rule is the old class's own (weatherSummary, renderWeather, renderWeatherNow, renderForecast, wxDays, dayName).
+// words every message through `deps.t` (units and symbols are literal) and formats everything through `deps.fmt`, and returns a tree of strings and numbers.
+// Each rule is the legacy panel's own (weatherSummary, renderWeather, renderWeatherNow, renderForecast, wxDays, dayName).
 // Must not: import the DOM, a UI kit element or the shell, hold a colour (tiles carry a tone name), or read the clock.
 import type {Formatters} from '../../core/i18n/format.ts';
 import type {Messages} from '../../core/i18n/messages.ts';
@@ -16,7 +16,7 @@ import {
 } from '../../providers/weather-source.ts';
 import {tileDefinition, TILES, type StatTileDefinition, type TileIcon, type TileKey, type Tone} from './tiles.ts';
 
-export type Translate = Messages['t'];
+type Translate = Messages['t'];
 
 export interface WeatherModelDeps {
   /** The instant the model is read at, in milliseconds: passed in, never read. */
@@ -25,8 +25,6 @@ export interface WeatherModelDeps {
   fmt: Formatters;
   /** The store's `t()`. */
   t: Translate;
-  /** `fmt.isoDay`, which the fold of the forecast needs: the house's local day, not UTC's. */
-  isoDay: (ms: number) => string;
   latitude: number;
   longitude: number;
 }
@@ -189,7 +187,7 @@ export function conditionName(condition: string | null, t: Translate): string {
     : capitalise(condition.slice(0, 1) + condition.slice(1).toLowerCase());
 }
 
-/** What every section says and formats with: the catalog, the formats and the rounding the old panel did. */
+/** What every section says and formats with: the catalog, the formats and the rounding the legacy panel did. */
 interface Say {
   t: Translate;
   fmt: Formatters;
@@ -236,7 +234,7 @@ function alertViews(inputs: WeatherInputs, {t}: Say): AlertView[] {
     tone: alert.tone,
     kind: t(`weather.alertKind.${alert.kind}`),
     // a sensor that only counts has no title: the count is worded here
-    title: alert.title ?? t('weather.alerts.count', {n: alert.count ?? 0}),
+    title: alert.title ?? t('weather.alerts.kindCount', {kind: alert.kind, n: alert.count ?? 0}),
     time: alert.time,
   }));
 }
@@ -288,6 +286,8 @@ function feelsSub({feelsLike}: WeatherInputs, lower: boolean, {t}: Say): string 
 function paneTiles(inputs: WeatherInputs, say: Say): StatTileView[] {
   const {t, fmt, int, degrees, fixed, compass} = say;
   const {wind, pressure, today, normals, feelsLike, uv, aqhi, humidity, dewPoint} = inputs;
+  // the pane rounds with `toFixed` where the detail rounds with `Math.round`, so a negative half differs between them; that is
+  // the legacy panel's own behaviour too, kept for parity
   const reading: Record<TileKey, () => Shown> = {
     wind: () => ({
       value: fixed(wind.speed, 0),
@@ -510,7 +510,7 @@ function dayRows(forecastDays: ForecastDay[], days: Days, now: number | null, sa
 // ---------- the next hours ----------
 
 function hourViews(hourly: ForecastEntry[], deps: WeatherModelDeps, say: Say) {
-  const {now, isoDay, latitude, longitude} = deps;
+  const {now, latitude, longitude} = deps;
   const {t, fmt, degrees, icon} = say;
   const upcoming = hourly.filter(entry => forecastTime(entry) > now - HOUR_MS).slice(0, HOURS_KEPT);
   const cells: HourCell[] = upcoming
@@ -521,7 +521,7 @@ function hourViews(hourly: ForecastEntry[], deps: WeatherModelDeps, say: Say) {
       return {
         key: at,
         label: fmt.hour(at),
-        icon: icon(entry.condition ?? null, isDayAt(at, latitude, longitude, isoDay(at))),
+        icon: icon(entry.condition ?? null, isDayAt(at, latitude, longitude, fmt.isoDay(at))),
         temperature: entry.temperature == null ? DASH : degrees(entry.temperature),
         pop: chance ? t('weather.percent', {value: chance}) : '',
       };
@@ -536,10 +536,10 @@ function hourViews(hourly: ForecastEntry[], deps: WeatherModelDeps, say: Say) {
 // ---------- the sun ----------
 
 function sunView(inputs: WeatherInputs, deps: WeatherModelDeps, days: Days, {t, fmt}: Say): SunView | null {
-  const {now, isoDay, latitude, longitude} = deps;
+  const {now, latitude, longitude} = deps;
   const day = sunTimes(latitude, longitude, days.today);
   if (day.rise === null || day.set === null) return null;
-  const before = sunTimes(latitude, longitude, isoDay(now - DAY_MS));
+  const before = sunTimes(latitude, longitude, fmt.isoDay(now - DAY_MS));
   const length = day.set - day.rise;
   // the first day of the sun after the polar night has no day before it to be compared with
   const change = length - (before.rise !== null && before.set !== null ? before.set - before.rise : length);
@@ -586,7 +586,9 @@ export function weatherModel(
   forecast: {daily: ForecastEntry[]; hourly: ForecastEntry[]},
   deps: WeatherModelDeps,
 ): WeatherViewModel {
-  const {now, fmt, t, isoDay} = deps;
+  const {now, fmt, t} = deps;
+  // the house's local day, not UTC's: the fold of the forecast groups by it
+  const isoDay = (ms: number) => fmt.isoDay(ms);
   const say = sayWith(t, fmt);
   const days: Days = {today: isoDay(now), tomorrow: isoDay(now + DAY_MS)};
   const forecastDays = (inputs.foldForecast ?? defaultFold)(forecast.daily, isoDay).slice(0, DAYS_KEPT);

@@ -1,8 +1,8 @@
 // The generic Home Assistant weather entity as a weather source: its reading, its condition and its credit line.
 // Pattern: an adapter behind the WeatherSource strategy (Gamma et al.), first in the list so Environment Canada's sensors
 // override it field by field; it converts the entity's pressure and wind into the panel's kPa and km/h (anti-corruption layer, Evans).
-// Must not: read a sensor, the clock or the DOM, or guess a unit it does not know.
-import {attributeOf, numberAttributeOf, textOf} from '../core/states.ts';
+// Must not: read a sensor, the clock or the DOM, or convert a unit it does not know (a missing unit is the panel's own, an unknown one gives null).
+import {attributeOf, numberAttributeOf, textAttributeOf, textOf} from '../core/states.ts';
 import type {WeatherInputs, WeatherSource} from './weather-source.ts';
 
 // the entity's `pressure_unit` and `wind_speed_unit` name the user's unit system; a missing one is the panel's own
@@ -25,10 +25,7 @@ export const weatherEntitySource: WeatherSource = {
   read(states, config) {
     const id = config.entities.weather;
     const number = (name: string) => numberAttributeOf(states, id, name);
-    const text = (name: string) => {
-      const value = attributeOf(states, id, name);
-      return typeof value === 'string' ? value : null;
-    };
+    const text = (name: string) => textAttributeOf(states, id, name);
     const speed = inPanelUnit(number('wind_speed'), attributeOf(states, id, 'wind_speed_unit'), KMH_PER, 'km/h');
     const kpa = inPanelUnit(number('pressure'), attributeOf(states, id, 'pressure_unit'), KPA_PER, 'kPa');
     // Home Assistant gives the bearing as degrees or as a compass point

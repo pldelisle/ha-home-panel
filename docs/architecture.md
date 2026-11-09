@@ -73,7 +73,7 @@ The shape is the Elm and Flux one of unidirectional data flow. The store is [spe
 | A string                          | The catalog, read through `t()` ([spec 11](specs/11-catalogs-and-formatters.md)) |
 | A DOM event                       | The feature's element                                                            |
 
-Two reminders from the same specs. A provider is a pure function that turns an integration's entities into the generic inputs the models expect, so a model never matches on an integration's entity naming (the anti-corruption layer of Evans). And a name a person gave in Home Assistant is data, not a code string: it goes through the display-name resolver, not the catalog ([spec 11](specs/11-catalogs-and-formatters.md)).
+Two reminders from the same specs. A provider is an adapter in `src/providers/` whose `read` is a pure function turning an integration's entities into the generic inputs the models expect; a feature can have several, applied in a declared order ([ADR 0020](adr/0020-weather-source-strategies.md)), so a model never matches on an integration's entity naming (the anti-corruption layer of Evans). And a name a person gave in Home Assistant is data, not a code string: it goes through the display-name resolver, not the catalog ([spec 11](specs/11-catalogs-and-formatters.md)).
 
 If two features need the same code, it cannot be shared sideways. It moves down into the UI kit, a provider or the core ([ADR 0011](adr/0011-layered-architecture-dependency-rule.md)).
 

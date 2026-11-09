@@ -126,6 +126,62 @@
       }
     },
     {
+      "key": "weather.alerts.kindCount",
+      "values": {
+        "kind": "warning",
+        "n": 1
+      }
+    },
+    {
+      "key": "weather.alerts.kindCount",
+      "values": {
+        "kind": "warning",
+        "n": 2
+      }
+    },
+    {
+      "key": "weather.alerts.kindCount",
+      "values": {
+        "kind": "watch",
+        "n": 1
+      }
+    },
+    {
+      "key": "weather.alerts.kindCount",
+      "values": {
+        "kind": "watch",
+        "n": 2
+      }
+    },
+    {
+      "key": "weather.alerts.kindCount",
+      "values": {
+        "kind": "advisory",
+        "n": 1
+      }
+    },
+    {
+      "key": "weather.alerts.kindCount",
+      "values": {
+        "kind": "advisory",
+        "n": 2
+      }
+    },
+    {
+      "key": "weather.alerts.kindCount",
+      "values": {
+        "kind": "statement",
+        "n": 1
+      }
+    },
+    {
+      "key": "weather.alerts.kindCount",
+      "values": {
+        "kind": "statement",
+        "n": 2
+      }
+    },
+    {
       "key": "weather.alertKind.warning"
     },
     {

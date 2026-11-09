@@ -1,7 +1,7 @@
 // The eight stat tiles of Weather as data: for each, the label and the history sheet's words as message keys, its series, scale and bands.
-// Pattern: data-driven design (a table, not eight branches), after the class's WX_DEF with every string replaced by a
+// Pattern: table-driven design (a table, not eight branches), after the class's WX_DEF with every string replaced by a
 // message key and every colour token by a tone name; a ninth tile is one entry.
-// Must not: hold a string the household reads, a colour, an entity id (a series names the config key) or any logic.
+// Must not: hold a string the household reads, a colour, an entity id (a series names the config key) or any logic beyond `tileDefinition`'s lookup.
 import type {EntityKey} from '../../core/config.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
 

@@ -19,7 +19,7 @@ function readSun(states: HassEntities, config: ResolvedConfig): Pick<WeatherInpu
   const up = state === 'above_horizon';
   const nextAt = Date.parse(textOf(states, up ? setting : rising) ?? '');
   return {
-    // the old panel's rule: a house with no sun entity is taken to be in daylight
+    // the legacy panel's rule: a house with no sun entity is taken to be in daylight
     isDay: state === undefined || up,
     sun: {
       up,

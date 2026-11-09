@@ -44,6 +44,8 @@ export const fr: Record<MessageKey, string> = {
   'weather.tendency': '{tendency, select, rising {en hausse} falling {en baisse} steady {stable} other {{tendency}}}',
   'weather.alerts.none': 'aucune alerte',
   'weather.alerts.count': '{n, plural, one {# alerte en vigueur} other {# alertes en vigueur}}',
+  'weather.alerts.kindCount':
+    '{kind, select, warning {{n, plural, one {# avertissement en vigueur} other {# avertissements en vigueur}}} watch {{n, plural, one {# veille en vigueur} other {# veilles en vigueur}}} advisory {{n, plural, one {# avis en vigueur} other {# avis en vigueur}}} other {{n, plural, one {# bulletin en vigueur} other {# bulletins en vigueur}}}}',
   'weather.alertKind.warning': 'Avertissement',
   'weather.alertKind.watch': 'Veille',
   'weather.alertKind.advisory': 'Avis',

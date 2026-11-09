@@ -42,6 +42,8 @@ export const en = {
   'weather.tendency': '{tendency, select, rising {rising} falling {falling} steady {steady} other {{tendency}}}',
   'weather.alerts.none': 'no alerts',
   'weather.alerts.count': '{n, plural, one {# alert in effect} other {# alerts in effect}}',
+  'weather.alerts.kindCount':
+    '{kind, select, warning {{n, plural, one {# warning in effect} other {# warnings in effect}}} watch {{n, plural, one {# watch in effect} other {# watchs in effect}}} advisory {{n, plural, one {# advisory in effect} other {# advisorys in effect}}} other {{n, plural, one {# statement in effect} other {# statements in effect}}}}',
   'weather.alertKind.warning': 'Warning',
   'weather.alertKind.watch': 'Watch',
   'weather.alertKind.advisory': 'Advisory',

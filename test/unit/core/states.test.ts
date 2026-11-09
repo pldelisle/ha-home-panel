@@ -1,6 +1,13 @@
 // The readers over a map of states: what counts as no value, and the number, the text and the attribute of an entity.
 import {describe, expect, test} from 'vitest';
-import {attributeOf, isAvailable, numberAttributeOf, numberOf, textOf} from '../../../src/core/states.ts';
+import {
+  attributeOf,
+  isAvailable,
+  numberAttributeOf,
+  numberOf,
+  textAttributeOf,
+  textOf,
+} from '../../../src/core/states.ts';
 import {entity} from '../fake-hass.ts';
 
 const states = {
@@ -87,5 +94,25 @@ describe('numberAttributeOf', () => {
     expect(numberAttributeOf(states, 'weather.absent', 'temperature')).toBeNull();
     expect(numberAttributeOf(states, null, 'temperature')).toBeNull();
     expect(numberAttributeOf(undefined, 'weather.home', 'temperature')).toBeNull();
+  });
+});
+
+describe('textAttributeOf', () => {
+  test('reads a text attribute, even of an unavailable entity', () => {
+    expect(textAttributeOf(states, 'weather.home', 'wind_bearing')).toBe('SW');
+    expect(textAttributeOf(states, 'weather.home', 'pressure')).toBe('101');
+  });
+
+  test.each([['temperature'], ['humidity'], ['visibility']])(
+    'is null for the attribute %s (a number or missing)',
+    name => {
+      expect(textAttributeOf(states, 'weather.home', name)).toBeNull();
+    },
+  );
+
+  test('is null for a missing entity, id or states', () => {
+    expect(textAttributeOf(states, 'weather.absent', 'wind_bearing')).toBeNull();
+    expect(textAttributeOf(states, null, 'wind_bearing')).toBeNull();
+    expect(textAttributeOf(undefined, 'weather.home', 'wind_bearing')).toBeNull();
   });
 });

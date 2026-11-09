@@ -41,7 +41,6 @@ export function modelFromInputs(
     now,
     fmt,
     t: createMessages(locale).t,
-    isoDay: ms => fmt.isoDay(ms),
     latitude: where?.latitude ?? house.config.latitude,
     longitude: where?.longitude ?? house.config.longitude,
   });

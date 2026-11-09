@@ -17,7 +17,7 @@ export interface WeatherSource {
   read(states: HassEntities, config: ResolvedConfig): Partial<WeatherInputs>;
 }
 
-/** One alert of Environment Canada's kind of feed: a warning, a watch, an advisory or a statement. */
+/** One alert of an alert feed of warnings, watches, advisories and statements (Environment Canada's shape). */
 export interface WeatherAlert {
   kind: 'warning' | 'watch' | 'advisory' | 'statement';
   tone: 'crit' | 'warn' | 'ok';
@@ -32,7 +32,7 @@ export interface WeatherInputs {
   temperature: number | null;
   /** Home Assistant's condition word (`partlycloudy`, `rainy`), or the integration's own wording. */
   condition: string | null;
-  /** The sun is up, or unknown (the old panel's rule: no sun entity means day). */
+  /** The sun is up, or unknown (the legacy panel's rule: no sun entity means day). */
   isDay: boolean;
   /** `next` is the sun's coming event; `hasFirstLight` is true when the house has a sensor for the first light. */
   sun: {up: boolean; next: {kind: 'rise' | 'set'; at: number} | null; hasFirstLight: boolean};
@@ -83,7 +83,10 @@ export interface ForecastDay {
   isTonight: boolean;
 }
 
-/** What a house with no weather source says: nothing is known, and the sun is taken to be up. */
+/**
+ * What a house with no weather source says: nothing is known. `isDay: true` mirrors the legacy panel's `up()` (no sun entity
+ * means day) and `sun.up: false` mirrors its `renderWeather`, which says Sunrise unless the sun entity says above the horizon.
+ */
 export const EMPTY_INPUTS: WeatherInputs = {
   temperature: null,
   condition: null,

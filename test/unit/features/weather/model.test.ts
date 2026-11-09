@@ -106,7 +106,7 @@ describe('the full test house, in English', () => {
 describe('the full test house, in French', () => {
   const model = modelOf(fullHouse, 'fr');
 
-  test('the pane sub-line (Environment Canada’s own wording, Mainly sunny, is not in the catalog: the layer translates it today)', () => {
+  test('the pane sub-line, except the condition: the -fr baseline reads "Généralement ensoleillé" (#157 maps Environment Canada\'s phrases in its adapter)', () => {
     expect(model.summary).toBe('Mainly sunny · observé à 13 h 30 · pression en hausse · aucune alerte');
   });
 
@@ -270,15 +270,24 @@ describe('alerts', () => {
     ]);
   });
 
-  test('a sensor that only counts is worded here, with the count, in both languages', () => {
-    const counted = inputsWith({alerts: [{kind: 'watch', tone: 'warn', title: null, count: 2, time: null}]});
-    expect(modelFromInputs(counted, 'en').alerts).toEqual([
-      {tone: 'warn', kind: 'Watch', title: '2 alerts in effect', time: null},
-    ]);
-    expect(modelFromInputs(counted, 'fr').alerts).toEqual([
-      {tone: 'warn', kind: 'Veille', title: '2 alertes en vigueur', time: null},
-    ]);
-  });
+  // the wording is the legacy panel's own, misspellings included (watchs, advisorys): the rewrite layer translates them by that text
+  test.each([
+    ['warning', 'Warning', 1, '1 warning in effect', 'Avertissement', '1 avertissement en vigueur'],
+    ['warning', 'Warning', 2, '2 warnings in effect', 'Avertissement', '2 avertissements en vigueur'],
+    ['watch', 'Watch', 1, '1 watch in effect', 'Veille', '1 veille en vigueur'],
+    ['watch', 'Watch', 2, '2 watchs in effect', 'Veille', '2 veilles en vigueur'],
+    ['advisory', 'Advisory', 1, '1 advisory in effect', 'Avis', '1 avis en vigueur'],
+    ['advisory', 'Advisory', 2, '2 advisorys in effect', 'Avis', '2 avis en vigueur'],
+    ['statement', 'Statement', 1, '1 statement in effect', 'Bulletin', '1 bulletin en vigueur'],
+    ['statement', 'Statement', 2, '2 statements in effect', 'Bulletin', '2 bulletins en vigueur'],
+  ] as const)(
+    'a %s sensor that only counts says %s of them, in both languages (%s, %s)',
+    (kind, kindEn, count, wordsEn, kindFr, wordsFr) => {
+      const counted = inputsWith({alerts: [{kind, tone: 'warn', title: null, count, time: null}]});
+      expect(modelFromInputs(counted, 'en').alerts).toEqual([{tone: 'warn', kind: kindEn, title: wordsEn, time: null}]);
+      expect(modelFromInputs(counted, 'fr').alerts).toEqual([{tone: 'warn', kind: kindFr, title: wordsFr, time: null}]);
+    },
+  );
 });
 
 describe('the lines under the temperature', () => {

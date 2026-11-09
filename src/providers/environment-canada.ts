@@ -6,7 +6,7 @@
 import type {EntityKey} from '../core/config.ts';
 import {EC_SUFFIX} from '../core/entities.ts';
 import type {HassEntities} from '../core/hass.ts';
-import {attributeOf, numberOf, textOf} from '../core/states.ts';
+import {attributeOf, numberOf, textAttributeOf, textOf} from '../core/states.ts';
 import {
   forecastTime,
   type ForecastDay,
@@ -29,10 +29,6 @@ const ALERT_KINDS = [
   ['statements', 'statement', 'ok'],
 ] as const satisfies readonly (readonly [EntityKey, WeatherAlert['kind'], WeatherAlert['tone']])[];
 
-/** An attribute's text: Home Assistant gives text, and a number is read as its digits; anything else is no text. */
-const words = (value: unknown): string | null =>
-  typeof value === 'string' ? value : typeof value === 'number' ? String(value) : null;
-
 /**
  * Every alert the four sensors carry: a sensor above zero lists them in `alert_N` and `alert_time_N`; a sensor that only
  * counts gives one row with the count and no title, for the model to word.
@@ -48,13 +44,13 @@ export function readAlerts(
     if (count === null || !(count > 0)) continue;
     const before = alerts.length;
     for (let i = 1; attributeOf(states, id, `alert_${i}`) != null; i++) {
-      const title = words(attributeOf(states, id, `alert_${i}`));
+      const title = textAttributeOf(states, id, `alert_${i}`);
       alerts.push({
         kind,
         tone,
         title: title ?? '',
         count: null,
-        time: words(attributeOf(states, id, `alert_time_${i}`)),
+        time: textAttributeOf(states, id, `alert_time_${i}`),
       });
     }
     if (alerts.length === before) alerts.push({kind, tone, title: null, count, time: null});
@@ -153,7 +149,7 @@ export const environmentCanadaSource: WeatherSource = {
     set('summary', text('summary'));
     const observedAt = Date.parse(text('obs') ?? '');
     if (!Number.isNaN(observedAt)) {
-      read.observation = {at: observedAt, station: words(attributeOf(states, e.obs, 'station')) || null};
+      read.observation = {at: observedAt, station: textAttributeOf(states, e.obs, 'station') || null};
     }
     return read;
   },

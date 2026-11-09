@@ -30,6 +30,12 @@ export function attributeOf(states: HassEntities | undefined, id: MaybeId, name:
   return id ? states?.[id]?.attributes[name] : undefined;
 }
 
+/** A text attribute, or null when it is missing or not text (a number is not read as its digits). */
+export function textAttributeOf(states: HassEntities | undefined, id: MaybeId, name: string): string | null {
+  const v = attributeOf(states, id, name);
+  return typeof v === 'string' ? v : null;
+}
+
 /** A numeric attribute, or null when it is missing or not a finite number (a text such as `SW` is not one). */
 export function numberAttributeOf(states: HassEntities | undefined, id: MaybeId, name: string): number | null {
   const v = attributeOf(states, id, name);

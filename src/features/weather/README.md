@@ -40,8 +40,8 @@ weatherModel(inputs, forecast, deps) → WeatherViewModel
 
 ## Things to know
 
-- A field two sources both know follows list order. The outdoor temperature is Environment Canada's sensor over the weather entity's attribute (the old panel preferred the attribute; Environment Canada publishes the same observation in both).
-- The weather entity's humidity, pressure and wind now reach the tiles, so a house with only an entity shows them where the old panel showed dashes.
+- A field two sources both know follows list order. The outdoor temperature is Environment Canada's sensor over the weather entity's attribute (the legacy panel preferred the attribute; Environment Canada publishes the same observation in both).
+- The weather entity's humidity, pressure and wind now reach the tiles, so a house with only an entity shows them where the legacy panel showed dashes.
 - An alert from a sensor that only counts has no title; the model words it with the count (`weather.alerts.count`), in the alert's own row.
 - Environment Canada's own condition words (`Mainly Sunny`) are the integration's data, not catalog messages: the model capitalises them (`conditionName`), and the rewrite layer still translates them in French until it is deleted.
 - A tonight row has a low and no high (`isTonight`); the model says Tonight only for today's.

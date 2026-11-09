@@ -16,7 +16,7 @@ export default defineConfig({
         'src/fonts.js',
         'src/core/**/*.ts',
         'src/providers/**/*.ts',
-        'src/features/weather/{ids,inputs,model,tiles}.ts', // the pure files; the elements are proven by the harness
+        'src/features/*/{ids,inputs,model,tiles}.ts', // the pure files; the elements are proven by the harness
         'src/shell/guest.ts',
         'scripts/lib/anonymise.mjs',
       ],
@@ -26,7 +26,7 @@ export default defineConfig({
       thresholds: {
         'src/core/**/*.ts': {statements: 100},
         'src/providers/**/*.ts': {statements: 100},
-        'src/features/weather/{ids,inputs,model,tiles}.ts': {statements: 100},
+        'src/features/*/{ids,inputs,model,tiles}.ts': {statements: 100},
         'src/shell/guest.ts': {statements: 100},
         'scripts/lib/anonymise.mjs': {statements: 100},
       },
