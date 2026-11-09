@@ -20,6 +20,7 @@ export default defineConfig({
         'src/features/*/{ids,inputs,model,tiles}.ts', // the pure files; the elements are proven by the harness
         'src/shell/guest.ts',
         'src/shell/features.ts',
+        'src/shell/idle-timer.ts', // the table and its controller; the host is a stub, no element is mounted
         'src/shell/legacy-feature.ts',
         'src/ui/icons.ts',
         'scripts/lib/anonymise.mjs',
@@ -33,6 +34,7 @@ export default defineConfig({
         'src/features/*/{ids,inputs,model,tiles}.ts': {statements: 100},
         'src/shell/guest.ts': {statements: 100},
         'src/shell/features.ts': {statements: 100},
+        'src/shell/idle-timer.ts': {statements: 100, branches: 100},
         'src/shell/legacy-feature.ts': {statements: 100},
         'src/ui/icons.ts': {statements: 100},
         'scripts/lib/anonymise.mjs': {statements: 100},
