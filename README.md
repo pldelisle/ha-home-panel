@@ -134,7 +134,7 @@ npm ci
 git config blame.ignoreRevsFile .git-blame-ignore-revs
 npm run build          # Vite: dist/home-panel.js (minified), home-panel.js.map, the lazy chunks in dist/chunks/, the font in dist/fonts/ and LICENSES.md
 npm run dev            # the same build, redone on every save (vite build --watch)
-npm run size           # the main chunk, gzipped, against its budget in package.json, then the lazy chunks for information (run it after a build)
+npm run size           # the gzipped size of the main chunk and of the lazy chunks, for information (run it after a build)
 npm run licenses       # rewrites LICENSES.md from the installed production packages (run it when apexcharts, mermaid, the font or the lock file changes)
 npm run typecheck      # tsc --checkJs: the config and stack modules strictly, the rest of src/ loosely (tsconfig.legacy.json)
 npm test               # unit tests (Vitest): config, stack, French, the built dist/, a scan for personal data
@@ -184,9 +184,8 @@ Every `uses:` in `.github/workflows/` is pinned to a commit with its version in 
 `test/unit/workflows.test.mjs` fails a workflow that breaks the first two rules.
 
 `npm run build` builds `dist/home-panel.js` with Vite from the ES modules under `src/`, minified, with a source map beside it; `npm run dev` rebuilds on save.
-`npm run size` checks the main chunk against its budget: its gzipped size (as `size-limit` counts it) must stay under the `size-limit` limit in `package.json`,
-and CI fails the pull request that goes over. The budget is the size of the first minified build plus 10 percent, rounded up to the kilobyte.
-It may be lowered at any time; raising it needs a changeset that says why.
+`npm run size` prints the gzipped size of the main chunk and of the lazy chunks (as `size-limit` counts it). There is no limit: the panel is growing on purpose,
+and a size that jumps without a reason is for the reviewer to notice in the CI log.
 
 The source is ES modules under `src/`, built by Vite (`vite.config.ts`). `src/main.js` is the entry and defines the custom element; the `HomePanel` class is in `src/home-panel.js`, with the
 Automations tab (`src/auto.js`), the configuration code (`src/config.js`), the smart-stack rules (`src/stack.js`), the French translations

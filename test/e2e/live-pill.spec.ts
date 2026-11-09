@@ -2,7 +2,8 @@
 // Status checks. With nothing running and nothing to check the spot is empty (2.8.0); a problem shows as an attention pill.
 // State changes go through the harness, the way Home Assistant hands the panel a new hass.
 // Test titles start with the check's number in docs/specs/01-playwright-test.md.
-import {test, expect, expectCall} from './fixtures';
+import type {Locator} from '@playwright/test';
+import {test, expect, expectCall, type House} from './fixtures';
 import {FULL_CFG} from './houses';
 import {pill, stopCharging, openFrontDoor, openPopup} from './live';
 
@@ -83,4 +84,40 @@ test('46 while the car charges, the attention bubble beside the pill stays tinte
   expect(await house.page.evaluate(() => matchMedia('(prefers-reduced-transparency: reduce)').matches)).toBe(true);
   await expect(bubble).toHaveCSS('background-color', 'rgb(255, 255, 255)');
   await expect(bubble).toHaveCSS('backdrop-filter', 'none');
+});
+
+// With transparency reduced the tinted pills turn solid like the plain one (#96). Computed style only: the glass value is read first,
+// so the test knows the pill really was see-through before the preference went on.
+const reduceTransparency = async (house: House) => {
+  const cdp = await house.page.context().newCDPSession(house.page);
+  await cdp.send('Emulation.setEmulatedMedia', {features: [{name: 'prefers-reduced-transparency', value: 'reduce'}]});
+  expect(await house.page.evaluate(() => matchMedia('(prefers-reduced-transparency: reduce)').matches)).toBe(true);
+};
+
+// opaque: rgb(r, g, b), or color(srgb r g b) as Chromium writes a colour-mix() result; any alpha is "rgba(" or "... / a)"
+const OPAQUE = /^(rgb\(|color\(srgb [^/]*\)$)/;
+
+const expectSolidWhenReduced = async (house: House, main: Locator) => {
+  await expect(main).toHaveCount(1);
+  const glass = await main.evaluate(e => getComputedStyle(e).backgroundColor);
+  expect(glass).not.toMatch(OPAQUE); // see-through
+  expect(await main.evaluate(e => getComputedStyle(e).backdropFilter)).not.toBe('none');
+  await reduceTransparency(house);
+  await expect(main).toHaveCSS('backdrop-filter', 'none');
+  await expect(main).toHaveCSS('background-color', OPAQUE);
+  await expect(main).not.toHaveCSS('background-color', glass);
+};
+
+test('50 with transparency reduced, the tinted Hilo challenge pill is solid', async ({house}) => {
+  await expect(house.root().locator('.app.gl')).toHaveCount(1);
+  await house.setState('sensor.hilo_gateway_defi_hilo', {state: 'on', attributes: {next_events: []}}); // a reduction in progress: the tinted pill
+  await expectSolidWhenReduced(house, pill(house).locator('.lmain.tint'));
+});
+
+test('51 with transparency reduced, the attention pill is solid', async ({house}) => {
+  await expect(house.root().locator('.app.gl')).toHaveCount(1);
+  await stopCharging(house);
+  await openFrontDoor(house);
+  await expect(pill(house)).toContainText(/needs attention/);
+  await expectSolidWhenReduced(house, pill(house).locator('.latt.lmain'));
 });
