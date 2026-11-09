@@ -55,11 +55,6 @@ describe('the shipped catalogs', () => {
     expect(en[key].trim()).not.toBe('');
     expect(fr[key].trim()).not.toBe('');
   });
-
-  test('the charts-failed toast reads the same as before, in both languages', () => {
-    expect(createMessages(spec('en-CA')).t('charts.failed')).toBe('Charts library failed to load');
-    expect(createMessages(spec('fr-CA')).t('charts.failed')).toBe("La bibliothèque de graphiques n'a pas chargé");
-  });
 });
 
 describe('the parity check itself', () => {

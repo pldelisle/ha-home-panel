@@ -71,10 +71,15 @@
       "groupName": "Vite and Lightning CSS"
     },
     {
-      "description": "A bump of a dev dependency changes nothing the household receives, so the label skips the changeset job (docs/specs/05); a runtime dependency (apexcharts, mermaid: bundled into the chunks the panel loads; @fontsource/montserrat: copied into dist/fonts/) does ship, so its pull requests are not labelled, and neither are those of the build tools that write the shipped file (vite, lightningcss)",
+      "description": "intl-messageformat compiles the catalog messages (spec 11), and @formatjs/icu-messageformat-parser, the parser it depends on, is a dev dependency pinned to the same version so that test/unit/messages.test.ts parses the catalogs with the parser the panel ships (npm ls shows one copy). The two move together in their own pull request, never in the weekly group; a parser bump intl-messageformat has not taken shows as a second copy nested under node_modules/intl-messageformat, and is not merged. Not labelled no-changeset (the rule below leaves the parser out), since intl-messageformat ships in the entry",
+      "matchPackageNames": ["intl-messageformat", "@formatjs/**"],
+      "groupName": "FormatJS"
+    },
+    {
+      "description": "A bump of a dev dependency changes nothing the household receives, so the label skips the changeset job (docs/specs/05); a runtime dependency (apexcharts, mermaid: bundled into the chunks the panel loads; intl-messageformat: in the entry; @fontsource/montserrat: copied into dist/fonts/) does ship, so its pull requests are not labelled, and neither are those of the build tools that write the shipped file (vite, lightningcss) or of the parser that rides with intl-messageformat",
       "matchManagers": ["npm"],
       "matchDepTypes": ["devDependencies"],
-      "matchPackageNames": ["!vite", "!lightningcss"],
+      "matchPackageNames": ["!vite", "!lightningcss", "!@formatjs/icu-messageformat-parser"],
       "addLabels": ["no-changeset"]
     },
     {

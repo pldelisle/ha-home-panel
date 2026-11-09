@@ -1,6 +1,8 @@
 // t(key, values): the catalog message for the locale's language, compiled once per key and formatted with ICU.
 // Pattern: ICU MessageFormat with CLDR plural rules through intl-messageformat, the FormatJS library Home Assistant's
 // frontend uses; a lazy cache per key; English text when the language has no catalog.
+// A placeholder with no value throws (intl-messageformat's MissingValueError), on purpose: a half-filled sentence on
+// the tablet would hide a bug that a test should catch.
 // Must not: read the DOM, the clock or a global locale, or take a resolved display name as a key (names are values).
 import {IntlMessageFormat} from 'intl-messageformat';
 import {en, type MessageKey} from './en.ts';
@@ -14,7 +16,7 @@ export type MessageValues = Record<string, string | number | Date>;
 export type Catalogs = Record<string, Record<MessageKey, string>>;
 
 export interface Messages {
-  readonly t: <K extends MessageKey>(key: K, values?: MessageValues) => string;
+  readonly t: (key: MessageKey, values?: MessageValues) => string;
 }
 
 const shipped: Catalogs = {en, fr};

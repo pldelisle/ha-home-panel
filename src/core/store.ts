@@ -37,7 +37,7 @@ export interface PanelStore<TConfig = unknown> {
   readonly isFrench: boolean;
   readonly isAdmin: boolean;
   readonly userName: string;
-  /** The panel's own wording in the user's language, from the message catalogs; rebuilt when the locale changes. */
+  /** The panel's own wording in the user's language, from the message catalogs; rebuilt on a `locale` change. */
   readonly t: Messages['t'];
   /** Notifies subscribers synchronously, then returns what changed. */
   setHass(h: PanelHass): HassChange;
@@ -80,8 +80,7 @@ export function createStore<TConfig>(opts: StoreOptions<TConfig>): PanelStore<TC
   let generation = 0;
 
   // t reads only the language and the tag; the defaults panelLocale asks for matter to the formatters, not here
-  let messageTag = 'en';
-  let messages = createMessages({language: 'en', tag: messageTag});
+  let messages = createMessages({language: 'en', tag: 'en'});
 
   const byId = new Map<string, Set<Subscriber>>();
   const keyed = new Set<Subscriber>(); // every subscriber that listed ids
@@ -153,11 +152,9 @@ export function createStore<TConfig>(opts: StoreOptions<TConfig>): PanelStore<TC
         user: next.user !== prev?.user,
       };
       hass = next;
-      const spec = panelLocale(next, {timeZone: timeZoneOf(next), browserLocale: 'en'});
-      if (spec.tag !== messageTag) {
-        messageTag = spec.tag;
-        messages = createMessages(spec);
-      }
+      // built from the first hass, then rebuilt on the locale change the subscribers are told of, and on no other
+      if (!prev || change.locale)
+        messages = createMessages(panelLocale(next, {timeZone: timeZoneOf(next), browserLocale: 'en'}));
       // the config was resolved against no states until now (discovery needs them): resolve it again, same generation
       if (!prev) config = opts.resolve(raw, next.states);
       notify(change);
