@@ -136,6 +136,18 @@ export const en = {
   'weather.series.normalHigh': 'Normal high',
   'weather.series.forecastLow': 'Forecast low',
   'weather.series.normalLow': 'Normal low',
+  // the history ranges (src/ui/ranges.ts)
+  'range.day.label': 'last 24 hours',
+  'range.day.short': '24 h',
+  'range.week.label': 'last 7 days',
+  'range.week.short': '7 days',
+  'range.month.label': 'last 30 days',
+  'range.month.short': '30 days',
+  'range.year.label': 'last 12 months',
+  'range.year.short': '12 months',
+  'range.mean.fiveMinute': '5-minute mean',
+  'range.mean.hourly': 'Hourly mean',
+  'range.mean.daily': 'Daily mean',
 } as const;
 
 /** Every message key; a key exists when it is written in `en`. */

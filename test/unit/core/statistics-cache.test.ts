@@ -202,7 +202,7 @@ describe('clear', () => {
 
   test('a call that fails after a clear() does not forget the newer call for the same key', async () => {
     const {hass, cache, statisticsAsked} = setup();
-    let fail = (_reason: Error) => {};
+    let fail: (reason: Error) => void = () => {};
     hass.replies.set(
       'recorder/statistics_during_period',
       () =>

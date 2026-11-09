@@ -16,6 +16,11 @@ interface Moved {
   values?: MessageValues;
   /** The values the French message takes where the language writes them differently (a time: `1:30 pm`, `13 h 30`). */
   fr?: MessageValues;
+  /**
+   * The sentence the message is read in, when the layer translates it only there (`Range, 12 months` is `Écart, 12 mois`, the
+   * bare `12 months` is left as it is): the layer's output for `en + english` must be `fr + the French message`.
+   */
+  frame?: {en: string; fr: string};
 }
 
 const english = createMessages({language: 'en', tag: 'en-CA'});
@@ -37,13 +42,18 @@ const read = (move: string) =>
   (JSON.parse(readFileSync(new URL(`../fixtures/moved/${move}.json`, import.meta.url), 'utf8')) as {messages: Moved[]})
     .messages;
 
-describe.each([['weather', 'weather.']])('the %s move', (move, prefix) => {
+// a move: its fixture, the prefix of the keys it introduced and the folder that says them
+describe.each([
+  ['weather', 'weather.', 'src/features/weather/'],
+  ['ranges', 'range.', 'src/ui/'],
+])('the %s move', (move, prefix, where) => {
   const moved = read(move);
 
   test.each(moved.map(m => [`${m.key} ${JSON.stringify(m.values ?? {})}`, m] as const))('%s', (_name, m) => {
     const text = english.t(m.key, m.values);
     // the layer is untyped JavaScript
-    expect(french.t(m.key, inFrench(m))).toBe(layer.text(text) as string);
+    if (m.frame) expect(m.frame.fr + french.t(m.key, inFrench(m))).toBe(layer.text(m.frame.en + text) as string);
+    else expect(french.t(m.key, inFrench(m))).toBe(layer.text(text) as string);
   });
 
   test('lists every message the move introduced, and only messages that exist', () => {
@@ -52,7 +62,7 @@ describe.each([['weather', 'weather.']])('the %s move', (move, prefix) => {
   });
 
   test('has no dead message: the feature says every one, by its key or by the prefix of a computed key', () => {
-    const folder = new URL(`../../../src/features/${move}/`, import.meta.url);
+    const folder = new URL(`../../../${where}`, import.meta.url);
     const source = readdirSync(folder)
       .filter(file => file.endsWith('.ts'))
       .map(file => readFileSync(new URL(file, folder), 'utf8'))
