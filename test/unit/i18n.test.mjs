@@ -1,33 +1,31 @@
 // French: the translator turns the panel's English into Québec French, numbers and dates included, and leaves people's own names alone
-import {test, expect, vi} from 'vitest';
+import {test, expect} from 'vitest';
 import {fakeHass, entity} from './fake-hass.ts';
-import {createFrench} from '../../src/i18n/fr.js';
+import {createFrench, FR_MAP} from '../../src/i18n/fr.js';
 
-// frText() looks up the house's own names through the hass its caller hands it and caches them for a minute. The shared
-// fake hass with the house's names (houseWithNames, below), with the module loaded afresh so one test's cache never
-// reaches the next. frText is returned already bound to that hass, as the panel hands its own to the module functions.
-const load = async names => {
-  vi.resetModules();
-  const fr = await import('../../src/i18n/fr.js');
-  const hass = fakeHass(houseWithNames(names));
-  return {...fr, frText: s => fr.frText(s, hass)};
-};
+// The translator looks up the house's own names through its store's hass and caches them for a minute. Each test builds
+// its own layer from a fake store with a tiny fake hass whose names must stay untranslated, so one test's cache never
+// reaches the next and no module has to be loaded afresh.
+const houseWithNames = names => ({
+  areas: {a: {area_id: 'a', name: 'Home'}},
+  states: Object.fromEntries(names.map((n, i) => [`light.l${i}`, entity(`light.l${i}`, 'on', {friendly_name: n})])),
+});
+const frTextFor = names => createFrench({hass: fakeHass(houseWithNames(names)), isFrench: true}).text;
 
-test('greetings, numbers and dates', async () => {
-  const {frText} = await load([]);
+test('greetings, numbers and dates', () => {
+  const frText = frTextFor([]);
   expect(frText('Good evening')).toBe('Bonsoir');
   expect(frText('Live · history 4:07 pm')).toBe('En direct · historique 16 h 07');
   expect(frText('12.5')).toBe('12,5');
   expect(frText('Some text nobody translated')).toBe('Some text nobody translated');
 });
 
-test('a name the house gave in HA is never translated', async () => {
-  const {frText} = await load(['Good evening']);
+test('a name the house gave in HA is never translated', () => {
+  const frText = frTextFor(['Good evening']);
   expect(frText('Good evening')).toBe('Good evening');
 });
 
-test('no French entry is empty, and placeholders match', async () => {
-  const {FR_MAP} = await load([]);
+test('no French entry is empty, and placeholders match', () => {
   for (const [en, fr] of Object.entries(FR_MAP)) {
     expect(typeof fr === 'function' || String(fr).trim(), `empty French for "${en}"`).toBeTruthy();
     if (typeof fr === 'string')
@@ -39,8 +37,8 @@ test('no French entry is empty, and placeholders match', async () => {
 
 // The Security card, the Cams pane and the Home tile join fragments with " · " ("2 cameras · all doors closed · motion now").
 // The expected French is written out in full, never built by the code under test.
-test('the Security line is French in every part and has no stray colon', async () => {
-  const {frText} = await load([]);
+test('the Security line is French in every part and has no stray colon', () => {
+  const frText = frTextFor([]);
   expect(frText('2 cameras · all doors closed · motion now')).toBe(
     '2 caméras · toutes les portes fermées · mouvement en cours',
   );
@@ -61,8 +59,8 @@ test('the Security line is French in every part and has no stray colon', async (
 // The camera sheet's sub-line is the camera's state, then its motion, joined with " · " (camSheet). Its fragments have
 // exact entries so that the sensor-row rule (FR_DOOR) never reads "last" as a sensor name.
 // The date is what fmtDate draws (en-CA, "Oct 3"); frKey turns it into {n}.
-test('the camera sheet line is French in every part and has no stray colon', async () => {
-  const {frText} = await load([]);
+test('the camera sheet line is French in every part and has no stray colon', () => {
+  const frText = frTextFor([]);
   expect(frText('Streaming · last motion just now')).toBe("En direct · dernier mouvement à l'instant");
   expect(frText('Idle · last motion 5 min ago')).toBe('Au repos · dernier mouvement il y a 5 min');
   expect(frText('Recording · motion now')).toBe('Enregistrement · mouvement en cours');
@@ -75,8 +73,8 @@ test('the camera sheet line is French in every part and has no stray colon', asy
 });
 
 // Strings drawn on French screens that had no entry (#91). Names people gave in Home Assistant are not part of this.
-test('the sensor battery note, the empty Cameras card, a camera tile date and the Home kWh fragments are French', async () => {
-  const {frText} = await load([]);
+test('the sensor battery note, the empty Cameras card, a camera tile date and the Home kWh fragments are French', () => {
+  const frText = frTextFor([]);
   expect(frText('5 min ago · battery 12%')).toBe('il y a 5 min · pile à 12\u202f%');
   expect(frText('Motion Oct 3')).toBe('Mouvement le 3 oct.');
   expect(
@@ -93,8 +91,8 @@ test('the sensor battery note, the empty Cameras card, a camera tile date and th
 // A sensor row ("Front door open", "Garage door offline": `${name} open`, `${name} offline` in sensorState and the attention
 // list) keeps the form it had, colon included; the Security line must never reach it. FR_DOOR's motion forms and
 // "Front door closed" are not drawn by the panel today; they are pinned so that FR_DOOR stays as it is.
-test('a sensor row keeps its own form', async () => {
-  const {frText} = await load([]);
+test('a sensor row keeps its own form', () => {
+  const frText = frTextFor([]);
   expect(frText('Front door open')).toBe('Front door : ouverte');
   expect(frText('Garage door offline')).toBe('Garage door hors ligne');
   expect(frText('Front door closed')).toBe('Front door fermée');
@@ -104,23 +102,23 @@ test('a sensor row keeps its own form', async () => {
 });
 
 // "·" separates parts only with a space on each side: a name with a bare "·" in it is still one sensor
-test('a name with a bare middle dot stays one name', async () => {
-  const {frText} = await load([]);
+test('a name with a bare middle dot stays one name', () => {
+  const frText = frTextFor([]);
   expect(frText('Porte·Garage open')).toBe('Porte·Garage : ouverte');
   expect(frText('Porte·Garage offline')).toBe('Porte·Garage hors ligne');
 });
 
 // a name with " · " in it cannot be told from two parts of a line, so it is translated part by part (a part that is
 // not one of ours stays as it is)
-test('a name with " · " in it is read as two parts', async () => {
-  const {frText} = await load([]);
+test('a name with " · " in it is read as two parts', () => {
+  const frText = frTextFor([]);
   expect(frText('Lights · Front door open')).toBe('Lumières · Front door : ouverte');
 });
 
 // #79: the phone's scene tiles, the Dinner scene's "Last 2 h ago" and the movie scene's "Tap to run", and the idle stack's
 // "Now playing" card were cut with an ellipsis in French; shorter words fit. Expected texts are written out, never built.
-test('the scene tile sub-lines are short in French', async () => {
-  const {frText} = await load([]);
+test('the scene tile sub-lines are short in French', () => {
+  const frText = frTextFor([]);
   // the translator capitalises the first letter when the English one is a capital
   expect(frText('Last 2 h ago')).toBe('Il y a 2 h');
   expect(frText('Last 5 min ago')).toBe('Il y a 5 min');
@@ -130,8 +128,8 @@ test('the scene tile sub-lines are short in French', async () => {
   expect(frText('Last Nov 3')).toBe('Lancée le 3 nov.');
 });
 
-test('the idle stack card says "En lecture" and nothing else changed with it', async () => {
-  const {frText} = await load([]);
+test('the idle stack card says "En lecture" and nothing else changed with it', () => {
+  const frText = frTextFor([]);
   expect(frText('Now playing')).toBe('En lecture');
   expect(frText('Tap for the player')).toBe('Toucher pour le lecteur');
   // the other "ago" lines keep their wording
@@ -140,8 +138,8 @@ test('the idle stack card says "En lecture" and nothing else changed with it', a
 });
 
 // the Lights tile's sub-line is "2 of 3 on · 59%", with the colour temperature or the mode after it on a tablet
-test('the Lights tile sub-line is French in every part', async () => {
-  const {frText} = await load([]);
+test('the Lights tile sub-line is French in every part', () => {
+  const frText = frTextFor([]);
   expect(frText('2 of 3 on')).toBe('2 sur 3 allumées');
   expect(frText('2 of 3 on · 59% · 3000 K')).toBe('2 sur 3 allumées · 59 % · 3000 K');
   expect(frText('2 of 3 on · 59% · Auto')).toBe('2 sur 3 allumées · 59 % · Auto');
@@ -149,27 +147,16 @@ test('the Lights tile sub-line is French in every part', async () => {
   expect(frText('2 of 3 on · 59%')).toBe('2 sur 3 allumées · 59 %');
 });
 
-// createFrench(store): the per-panel translator, fed by a store instead of the module globals, so its tests need neither
-// a fresh copy of the module nor the module hass (a fake store is enough)
-const houseWithNames = names => ({
-  areas: {a: {area_id: 'a', name: 'Home'}},
-  states: Object.fromEntries(names.map((n, i) => [`light.l${i}`, entity(`light.l${i}`, 'on', {friendly_name: n})])),
-});
-
-test('createFrench translates for its store and leaves the names the house gave', () => {
-  const store = {hass: fakeHass(houseWithNames(['Good evening'])), isFrench: true};
-  const fr = createFrench(store);
-  expect(fr.text('Good evening')).toBe('Good evening');
-  expect(fr.text('Live · history 4:07 pm')).toBe('En direct · historique 16 h 07');
-  expect(fr.text('12.5')).toBe('12,5');
-  expect(fr.text('Some text nobody translated')).toBe('Some text nobody translated');
-});
-
-test('the module functions read the names from the hass they are given, createFrench from its own store', async () => {
-  const {frText} = await load(['Good evening']);
-  const fr = createFrench({hass: fakeHass(houseWithNames([])), isFrench: true});
-  expect(frText('Good evening')).toBe('Good evening'); // the module's hass names it
-  expect(fr.text('Good evening')).toBe('Bonsoir'); // this store's does not
+// createFrench(store): the per-panel translator, fed by a store (a fake store is enough). Two panels on one page have
+// two layers, and each reads the house's names from its own store: a name one house gave is still translated for the
+// other. The translations themselves are covered above, where every layer is built the same way.
+test('two createFrench layers over two stores each leave only the names their own house gave', () => {
+  const evening = createFrench({hass: fakeHass(houseWithNames(['Good evening'])), isFrench: true});
+  const morning = createFrench({hass: fakeHass(houseWithNames(['Good morning'])), isFrench: true});
+  expect(evening.text('Good evening')).toBe('Good evening');
+  expect(evening.text('Good morning')).toBe('Bonjour');
+  expect(morning.text('Good morning')).toBe('Good morning');
+  expect(morning.text('Good evening')).toBe('Bonsoir');
 });
 
 test('createFrench does nothing while the store is not French', () => {
