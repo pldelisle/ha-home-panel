@@ -3466,20 +3466,20 @@ export class HomePanel extends HTMLElement {
     try {
       const now = new Date(),
         d = n => new Date(now.getTime() - n * 864e5);
-      const powers = [E.grid, E.whP, E.evP, ...ROOMS.map(r => r.power)],
-        temps = [...ROOMS.map(r => r.temp), E.outT];
+      const powers = [this.E.grid, this.E.whP, this.E.evP, ...this.ROOMS.map(r => r.power)],
+        temps = [...this.ROOMS.map(r => r.temp), this.E.outT];
       const [hour7, day, meter, evh, hp] = await Promise.all([
         this.stats([...powers, ...temps], 'hour', d(7), ['mean', 'max']),
         this.stats([...powers, ...temps], 'day', d(400), ['mean', 'min', 'max']),
-        this.stats([E.energy, E.whE], 'day', d(33), ['change']),
-        this.stats([E.evP], 'hour', d(366), ['mean', 'max']),
-        !E.hp
+        this.stats([this.E.energy, this.E.whE], 'day', d(33), ['change']),
+        this.stats([this.E.evP], 'hour', d(366), ['mean', 'max']),
+        !this.E.hp
           ? Promise.resolve({})
           : this.hass
               .callWS({
                 type: 'history/history_during_period',
                 start_time: d(7).toISOString(),
-                entity_ids: [E.hp],
+                entity_ids: [this.E.hp],
                 minimal_response: false,
                 no_attributes: false,
                 significant_changes_only: false,
@@ -3487,8 +3487,8 @@ export class HomePanel extends HTMLElement {
               .catch(() => ({})),
       ]);
       const [today, t24] = await Promise.all([
-        this.stats([E.energy], 'hour', new Date(Date.now() - this.hourNow() * 36e5 - 60e3), ['change']),
-        this.stats([...ROOMS.map(r => r.temp), E.whT, E.whP], '5minute', d(1.05), ['mean']),
+        this.stats([this.E.energy], 'hour', new Date(Date.now() - this.hourNow() * 36e5 - 60e3), ['change']),
+        this.stats([...this.ROOMS.map(r => r.temp), this.E.whT, this.E.whP], '5minute', d(1.05), ['mean']),
       ]);
       if (key !== this.cfgKey) return;
       this.H = this.derive(hour7, day, meter, evh, hp, today, t24);
@@ -3507,10 +3507,10 @@ export class HomePanel extends HTMLElement {
     const ser = (r, id) => (r[id] || []).map(x => ({...x, t: ms(x.start)}));
     const byT = (r, id, f = 'mean') => new Map(ser(r, id).map(x => [x.t, x[f]]));
     // hourly flow, last 7 days: [t, ev, wh, heat, rest, total] in kWh per hour
-    const hw = byT(hour7, E.whP),
-      he = byT(hour7, E.evP),
-      hr = ROOMS.map(r => byT(hour7, r.power));
-    const flow = ser(hour7, E.grid)
+    const hw = byT(hour7, this.E.whP),
+      he = byT(hour7, this.E.evP),
+      hr = this.ROOMS.map(r => byT(hour7, r.power));
+    const flow = ser(hour7, this.E.grid)
       .filter(x => x.mean != null)
       .map(x => {
         const w = hw.get(x.t) || 0,
@@ -3526,36 +3526,36 @@ export class HomePanel extends HTMLElement {
         ];
       });
     const temp7 = {};
-    ROOMS.forEach(r => {
+    this.ROOMS.forEach(r => {
       temp7[r.k] = ser(hour7, r.temp)
         .filter(x => x.mean != null)
         .map(x => [x.t, +x.mean.toFixed(2)]);
     });
     // room temperatures, last 24 hours in 5-minute means
     const wh24 = {
-      t: ser(t24, E.whT)
+      t: ser(t24, this.E.whT)
         .filter(x => x.mean != null)
         .map(x => [x.t, x.mean]),
-      p: ser(t24, E.whP)
+      p: ser(t24, this.E.whP)
         .filter(x => x.mean != null)
         .map(x => [x.t, x.mean]),
     };
     const temp24 = {};
-    ROOMS.forEach(r => {
+    this.ROOMS.forEach(r => {
       temp24[r.k] = ser(t24, r.temp)
         .filter(x => x.mean != null)
         .map(x => [x.t, +x.mean.toFixed(2)]);
     });
-    const out7 = ser(hour7, E.outT)
+    const out7 = ser(hour7, this.E.outT)
       .filter(x => x.mean != null)
       .map(x => [x.t, +x.mean.toFixed(2)]);
     // daily kWh = mean kW x hours; today only counts the hours so far
     const todayKey = this.localDay(Date.now()),
       hrsToday = Math.max(1, Math.floor(this.hourNow()));
-    const dw = byT(day, E.whP),
-      de = byT(day, E.evP),
-      dr = ROOMS.map(r => byT(day, r.power));
-    const daily = ser(day, E.grid)
+    const dw = byT(day, this.E.whP),
+      de = byT(day, this.E.evP),
+      dr = this.ROOMS.map(r => byT(day, r.power));
+    const daily = ser(day, this.E.grid)
       .filter(x => x.mean != null)
       .map(x => {
         const key = this.localDay(x.t + 12 * 36e5),
@@ -3576,7 +3576,7 @@ export class HomePanel extends HTMLElement {
       });
     const last30 = daily.slice(-30),
       g30 = ['heat', 'wh', 'ev', 'rest'].map(k => sum(last30.map(r => r[k])));
-    const room30 = ROOMS.map((r, i) => sum(last30.map(d => d.rooms[i])));
+    const room30 = this.ROOMS.map((r, i) => sum(last30.map(d => d.rooms[i])));
     const months = {};
     daily.forEach(r => {
       const k = r.day.slice(0, 7);
@@ -3586,27 +3586,27 @@ export class HomePanel extends HTMLElement {
       });
     });
     const monthly = Object.entries(months).sort().slice(-12);
-    const heatmap = ROOMS.map(r => ({
+    const heatmap = this.ROOMS.map(r => ({
       k: r.k,
       pts: ser(day, r.temp)
         .filter(x => x.mean != null)
         .slice(-30)
         .map(x => [this.localDay(x.t + 12 * 36e5), +x.mean.toFixed(1)]),
     }));
-    const out90 = ser(day, E.outT)
+    const out90 = ser(day, this.E.outT)
       .filter(x => x.mean != null)
       .slice(-90)
       .map(x => [x.t + 12 * 36e5, +x.mean.toFixed(1), +x.min.toFixed(1), +x.max.toFixed(1)]);
     // meter totals
-    const md = ser(meter, E.energy).map(x => [this.localDay(x.t + 12 * 36e5), x.change || 0]);
-    const wh14 = ser(meter, E.whE)
+    const md = ser(meter, this.E.energy).map(x => [this.localDay(x.t + 12 * 36e5), x.change || 0]);
+    const wh14 = ser(meter, this.E.whE)
       .map(x => [this.localDay(x.t + 12 * 36e5), x.change || 0])
       .filter(r => r[0] !== todayKey)
       .slice(-14);
     const yKey = this.localDay(Date.now() - 864e5),
       mKey = todayKey.slice(0, 7);
     const totals = {
-      today: sum(ser(today, E.energy).map(x => x.change)),
+      today: sum(ser(today, this.E.energy).map(x => x.change)),
       yesterday: (md.find(r => r[0] === yKey) || [0, null])[1],
       d30: sum(md.slice(-30).map(r => r[1])),
       month: sum(md.filter(r => r[0].startsWith(mKey)).map(r => r[1])),
@@ -3614,7 +3614,7 @@ export class HomePanel extends HTMLElement {
     // charging sessions: runs of hours with the Wallbox above 0.3 kW, joined across gaps up to 3 hours
     const sessions = [];
     let cur = null;
-    ser(evh, E.evP).forEach(x => {
+    ser(evh, this.E.evP).forEach(x => {
       if ((x.mean || 0) <= 0.3) return;
       if (cur && x.t - cur.end <= 3 * 36e5) {
         cur.end = x.t;
@@ -3631,7 +3631,7 @@ export class HomePanel extends HTMLElement {
     // heat pump readings from state history; a gap over 6 hours means it was offline
     const hpPts = [];
     let prev = null;
-    ((hp && hp[E.hp]) || []).forEach(x => {
+    ((hp && hp[this.E.hp]) || []).forEach(x => {
       const t = (x.lu || x.lc) * 1000,
         a = x.a || {},
         v = x.s === 'unavailable' ? null : a.current_temperature;
@@ -4007,7 +4007,7 @@ export class HomePanel extends HTMLElement {
   // ---------- weather ----------
   // Forecasts are not in hass.states any more; the frontend subscribes to them like the weather card does.
   subscribeForecasts() {
-    if (this.fcSubs || !this.hass || !this.hass.connection || !this.st(E.weather)) return;
+    if (this.fcSubs || !this.hass || !this.hass.connection || !this.st(this.E.weather)) return;
     this.fcSubs = ['daily', 'hourly'].map(type =>
       this.hass.connection
         .subscribeMessage(
@@ -4017,7 +4017,7 @@ export class HomePanel extends HTMLElement {
             this.renderWeather();
             if (this.open === 'sh-weather') this.renderForecast();
           },
-          {type: 'weather/subscribe_forecast', forecast_type: type, entity_id: E.weather},
+          {type: 'weather/subscribe_forecast', forecast_type: type, entity_id: this.E.weather},
         )
         .catch(e => {
           console.warn('home-panel forecast', type, e);
@@ -4062,10 +4062,10 @@ export class HomePanel extends HTMLElement {
     return sunTimes(lat, lon, this.localDay(t));
   }
   weatherSummary() {
-    const cond = this.st(E.cond),
-      w = this.st(E.weather),
-      obs = this.st(E.obs),
-      tend = this.st(E.tend),
+    const cond = this.st(this.E.cond),
+      w = this.st(this.E.weather),
+      obs = this.st(this.E.obs),
+      tend = this.st(this.E.tend),
       n = this.alerts().length;
     return [
       condName(ok(cond) ? cond.state : w && w.state),
@@ -4081,10 +4081,10 @@ export class HomePanel extends HTMLElement {
   alerts() {
     const out = [];
     [
-      [E.warnings, 'Warning', 'crit'],
-      [E.watches, 'Watch', 'warn'],
-      [E.advisories, 'Advisory', 'warn'],
-      [E.statements, 'Statement', 'ok'],
+      [this.E.warnings, 'Warning', 'crit'],
+      [this.E.watches, 'Watch', 'warn'],
+      [this.E.advisories, 'Advisory', 'warn'],
+      [this.E.statements, 'Statement', 'ok'],
     ].forEach(([id, kind, tone]) => {
       const s = this.st(id);
       if (!ok(s) || !(+s.state > 0)) return;
@@ -4103,27 +4103,27 @@ export class HomePanel extends HTMLElement {
   async loadWxHistory() {
     if (this.WX && Date.now() - this.WX.at < 15 * 60000) return;
     const now = Date.now(),
-      ids = [E.outT, E.dew, E.hum, E.pres, E.wind, E.gust];
+      ids = [this.E.outT, this.E.dew, this.E.hum, this.E.pres, this.E.wind, this.E.gust];
     const [h, d] = await Promise.all([
       this.stats(ids, 'hour', new Date(now - 7 * 864e5), ['mean', 'min', 'max']),
-      this.stats([E.gust, E.outT], 'day', new Date(now - 400 * 864e5), ['mean', 'min', 'max']),
+      this.stats([this.E.gust, this.E.outT], 'day', new Date(now - 400 * 864e5), ['mean', 'min', 'max']),
     ]);
     const ser = (r, id, f = 'mean') =>
       (r[id] || []).filter(x => x[f] != null).map(x => [ms(x.start), +(+x[f]).toFixed(2)]);
-    const days = (d[E.outT] || [])
+    const days = (d[this.E.outT] || [])
       .filter(x => x.mean != null)
       .map(x => ({k: this.localDay(ms(x.start) + 12 * 36e5), mean: x.mean, min: x.min, max: x.max}));
-    const gust = (d[E.gust] || [])
+    const gust = (d[this.E.gust] || [])
       .filter(x => x.max != null)
       .map(x => ({k: this.localDay(ms(x.start) + 12 * 36e5), v: x.max}));
     this.WX = {
       at: now,
-      t: ser(h, E.outT),
-      dew: ser(h, E.dew),
-      hum: ser(h, E.hum),
-      pres: ser(h, E.pres),
-      wind: ser(h, E.wind),
-      gust: ser(h, E.gust, 'max'),
+      t: ser(h, this.E.outT),
+      dew: ser(h, this.E.dew),
+      hum: ser(h, this.E.hum),
+      pres: ser(h, this.E.pres),
+      wind: ser(h, this.E.wind),
+      gust: ser(h, this.E.gust, 'max'),
       days,
       gustDays: gust,
     };
@@ -4220,20 +4220,20 @@ export class HomePanel extends HTMLElement {
     this.renderSeason();
   }
   renderWeatherNow() {
-    const temp = this.attr(E.weather, 'temperature') ?? this.num(E.outT),
-      cond = this.st(E.cond),
-      w = this.st(E.weather),
+    const temp = this.attr(this.E.weather, 'temperature') ?? this.num(this.E.outT),
+      cond = this.st(this.E.cond),
+      w = this.st(this.E.weather),
       c = ok(cond) ? cond.state : w && w.state;
-    const feels = this.num(E.chill) ?? this.num(E.humidex),
-      sum_ = this.st(E.summary),
-      pop = this.num(E.pop),
-      tend = this.st(E.tend);
-    const uv = this.num(E.uv),
-      aq = this.num(E.aqhi),
-      gust = this.num(E.gust),
-      wd = this.st(E.windDir),
-      bear = this.num(E.bearing),
-      vis = this.num(E.vis);
+    const feels = this.num(this.E.chill) ?? this.num(this.E.humidex),
+      sum_ = this.st(this.E.summary),
+      pop = this.num(this.E.pop),
+      tend = this.st(this.E.tend);
+    const uv = this.num(this.E.uv),
+      aq = this.num(this.E.aqhi),
+      gust = this.num(this.E.gust),
+      wd = this.st(this.E.windDir),
+      bear = this.num(this.E.bearing),
+      vis = this.num(this.E.vis);
     const arrow =
       bear == null
         ? ''
@@ -4242,27 +4242,27 @@ export class HomePanel extends HTMLElement {
       'wnow',
       `<div class="wnow"><div class="wicon">${wxIcon(c, 64, this.up())}</div><div><div class="num" style="font-size:64px;line-height:1">${f1(temp)}°</div>
         <div style="font-weight:600;font-size:16px;margin-top:4px">${esc(condName(c))}</div>
-        <div class="muted">${feels != null && Math.abs(feels - temp) >= 1 ? `Feels like ${Math.round(feels)}° · ` : ''}${this.num(E.hi) != null ? `High ${Math.round(this.num(E.hi))}°` : ''}${this.num(E.lo) != null ? ` · Low ${Math.round(this.num(E.lo))}°` : ''}</div></div></div>
+        <div class="muted">${feels != null && Math.abs(feels - temp) >= 1 ? `Feels like ${Math.round(feels)}° · ` : ''}${this.num(this.E.hi) != null ? `High ${Math.round(this.num(this.E.hi))}°` : ''}${this.num(this.E.lo) != null ? ` · Low ${Math.round(this.num(this.E.lo))}°` : ''}</div></div></div>
       ${ok(sum_) ? `<p class="wsum">${esc(sum_.state)}</p>` : ''}
       <div class="tiles" style="margin-top:14px">${[
         [
           'wind',
           'Wind',
-          this.num(E.wind) == null ? '–' : Math.round(this.num(E.wind)),
+          this.num(this.E.wind) == null ? '–' : Math.round(this.num(this.E.wind)),
           'km/h',
           `${ok(wd) ? esc(wd.state) : ''}${arrow}${gust != null ? ` · gusts ${Math.round(gust)}` : ''}`,
         ],
         [
           'hum',
           'Humidity',
-          this.num(E.hum) ?? '–',
+          this.num(this.E.hum) ?? '–',
           '%',
-          this.num(E.dew) != null ? `dew point ${f1(this.num(E.dew))}°` : '',
+          this.num(this.E.dew) != null ? `dew point ${f1(this.num(this.E.dew))}°` : '',
         ],
         [
           'pres',
           'Pressure',
-          this.num(E.pres) == null ? '–' : this.num(E.pres).toFixed(1),
+          this.num(this.E.pres) == null ? '–' : this.num(this.E.pres).toFixed(1),
           'kPa',
           ok(tend) ? esc(tend.state.toLowerCase()) : '',
         ],
@@ -4292,14 +4292,16 @@ export class HomePanel extends HTMLElement {
             ? vis != null
               ? `visibility ${Math.round(vis)} km`
               : 'same as the air'
-            : this.num(E.chill) != null
+            : this.num(this.E.chill) != null
               ? 'wind chill'
               : 'humidex',
         ],
         [
           'normal',
           'Normal',
-          this.num(E.nhi) == null ? '–' : `${Math.round(this.num(E.nhi))}° / ${Math.round(this.num(E.nlo))}°`,
+          this.num(this.E.nhi) == null
+            ? '–'
+            : `${Math.round(this.num(this.E.nhi))}° / ${Math.round(this.num(this.E.nlo))}°`,
           '',
           'high / low for the date',
         ],
@@ -4338,7 +4340,7 @@ export class HomePanel extends HTMLElement {
             'Sunrise',
             this.fmtTime(today.rise),
             '',
-            ok(this.st(E.dawn)) ? 'first light ' + this.fmtTime(today.dawn) : '',
+            ok(this.st(this.E.dawn)) ? 'first light ' + this.fmtTime(today.dawn) : '',
           ],
           ['Solar noon', this.fmtTime(today.noon), '', ''],
           ['Sunset', this.fmtTime(today.set), '', 'last light ' + this.fmtTime(today.dusk)],
@@ -4428,7 +4430,7 @@ export class HomePanel extends HTMLElement {
       dEl.innerHTML = '<p>No daily forecast yet.</p>';
       return;
     }
-    const now = this.num(E.outT),
+    const now = this.num(this.E.outT),
       today = this.localDay(Date.now());
     // tonight has no high: its bar runs from now down to the low
     const top = d => d.hi ?? (d.k === today && now != null ? Math.max(now, d.lo) : d.lo);
