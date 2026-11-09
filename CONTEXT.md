@@ -72,7 +72,7 @@ The words the panel and its code use. One word per concept: use it in issues, te
 
 **Store** — The per-element object that holds the current `hass`, the resolved config, the locale and the formatters, and notifies a subscriber only when one of its entity ids has a new state object (reference equality). It is never a singleton. Avoid: state manager.
 
-**API client** — The one core module that sends every WebSocket message and service call the panel makes, with a typed request and reply for each; nothing else in `src/` calls `callWS`, `callService` or `connection.subscribeMessage`. A read rejects with `StaleReply` if the config changed before the reply came back.
+**API client** — The one core module that sends every WebSocket message and service call the panel makes, with a typed request and reply for each; nothing else in `src/` calls `callWS`, `callService` or `connection.subscribeMessage`; its own method for a service call is `runService`. A read rejects with `StaleReply` if the config changed before the reply came back.
 
 **Catalog** — The set of messages for one language, keyed by message key; the English catalog is the source of keys and the French catalog must have every one, with ICU MessageFormat plurals and placeholders. Avoid: the French map (the rewrite layer's).
 

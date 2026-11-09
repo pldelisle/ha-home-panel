@@ -3424,7 +3424,8 @@ export class HomePanel extends HTMLElement {
   async loadHistory() {
     // one load per config at a time; a load under another config (the panel was redrawn meanwhile) is let go
     const generation = this.store.generation;
-    // loadingGen is an in-flight marker (the generation whose load is running), not a stale guard: the StaleReply is
+    // loadingGen is an in-flight marker (the generation whose load is running), not a stale guard: the StaleReply
+    // caught below is the guard
     if (!this.hass || generation === this.loadingGen) return;
     this.loadingGen = generation;
     try {
@@ -6903,7 +6904,9 @@ export class HomePanel extends HTMLElement {
       this.$('sensstats').innerHTML = '';
       return;
     }
-    // the sheet may have moved on while the history was on its way: another sensor, another range, or closed
+    // the sheet may have moved on while the history was on its way: another sensor, another range, or closed (a config
+    // change is the StaleReply above). Known edge: taps A, B, A let A's first reply draw until its second repaints the
+    // same sensor and range.
     if (this.open !== 'sh-sens' || this.sensX !== x || this.sensRange !== r) return;
     const segs = [];
     /** @type {{a: number, b?: number, live?: boolean} | null} */
