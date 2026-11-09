@@ -147,8 +147,7 @@ test('the Lights tile sub-line is French in every part', () => {
   expect(frText('2 of 3 on · 59%')).toBe('2 sur 3 allumées · 59 %');
 });
 
-// createFrench(store): the per-panel translator, fed by a store instead of the module globals, so its tests need neither
-// a fresh copy of the module nor the module hass (a fake store is enough)
+// createFrench(store): the per-panel translator, fed by a store (a fake store is enough)
 test('createFrench translates for its store and leaves the names the house gave', () => {
   const store = {hass: fakeHass(houseWithNames(['Good evening'])), isFrench: true};
   const fr = createFrench(store);

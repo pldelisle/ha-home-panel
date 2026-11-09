@@ -801,7 +801,7 @@ export class HomePanel extends HTMLElement {
     // French follows the user's profile language; switching it redraws the panel
     // compared with the language this panel was drawn in, not with the previous hass, which a host may change in place
     const fr = this.store.isFrench;
-    setFR(fr); // the old functions read it until contract
+    setFR(fr); // kept only until contract deletes the flag; nothing reads it any more
     if (fr !== this.frDrawn) {
       this.frDrawn = fr;
       if (this.$app) this.teardown();
