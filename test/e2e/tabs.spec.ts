@@ -3,7 +3,7 @@
 import {test, expect, tabletOnly, phoneOnly, eachShownTab, type House} from './fixtures';
 import type {Locator} from '@playwright/test';
 import {FULL_CFG} from './houses';
-import {OFFICE_TILE} from './lights';
+import {openOfficeSheet} from './lights';
 
 // what the bare house lacks, wherever it shows: the Climate and Car tabs (rail buttons, Home tiles), the water heater and Hilo cards
 // and the tiles that open them
@@ -109,10 +109,7 @@ test.describe('full house', () => {
   test('48 under Reduce Motion, opening the light sheet starts no transition or animation on the sheet', async ({
     house,
   }) => {
-    await house.tab('lights');
-    const t = (await house.root().locator(`${OFFICE_TILE}:visible`).boundingBox())!;
-    await house.page.mouse.click(t.x + t.width * 0.7, t.y + t.height / 2);
-    await expect(house.root().locator('#sh-light')).toBeVisible();
+    await openOfficeSheet(house);
     const left = await house.root().evaluate(el => {
       const sheet = el.shadowRoot!.querySelector('#sh-light')!,
         panel = sheet.querySelector(':scope > .panel')!;

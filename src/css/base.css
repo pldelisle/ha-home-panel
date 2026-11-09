@@ -1471,3 +1471,15 @@ button.icon:focus-visible,
   font-weight: 600;
   color: var(--fg);
 }
+/* text for screen readers only: it takes no room and paints nothing */
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

@@ -1,5 +1,5 @@
 // Helpers for the Lights tab specs: what a person reads on the tiles, and what the panel sent to Home Assistant.
-import type {House} from './fixtures';
+import {expect, type House} from './fixtures';
 
 /** opens the Lights tab and returns the names on the tiles on screen, in order (the phone and the tablet each draw their own copy; only one is visible) */
 export const tileNames = async (house: House) => {
@@ -15,3 +15,11 @@ export const callsMessage = (house: House, what: string) => `${what} (calls: ${h
 
 /** the Office tile on the Lights tab (its right part opens the sheet, its left part is the bulb) */
 export const OFFICE_TILE = '#pane-lights .lcell[data-lsheet="office"]';
+
+/** taps the right part of the Office tile (the left part is the bulb) on the Lights tab and waits for the light sheet */
+export const openOfficeSheet = async (house: House) => {
+  await house.tab('lights');
+  const t = (await house.root().locator(`${OFFICE_TILE}:visible`).boundingBox())!;
+  await house.page.mouse.click(t.x + t.width * 0.7, t.y + t.height / 2);
+  await expect(house.root().locator('#sh-light')).toBeVisible();
+};
