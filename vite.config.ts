@@ -22,7 +22,7 @@ export const define = {__VERSION__: JSON.stringify(pkg.version)};
 // release zip. The panel's own files keep their text, in home-panel.js.map and in any chunk. The entry's map is held
 // to the same rule since intl-messageformat, a production library, is built into the entry.
 const chunkMapsWithoutLibrarySources: Plugin = {
-  name: 'chunk-maps-without-library-sources',
+  name: 'maps-without-library-sources',
   generateBundle(_, bundle) {
     for (const f of Object.values(bundle))
       if (f.type === 'asset' && /^(chunks\/.+|home-panel)\.js\.map$/.test(f.fileName)) {

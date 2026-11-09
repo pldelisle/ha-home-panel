@@ -138,15 +138,15 @@ test("the generated LICENSES.md ships as it is, so the release zip carries the l
   expect(readFileSync(join(DIST, 'LICENSES.md')).equals(readFileSync(join(ROOT, 'LICENSES.md')))).toBe(true);
 });
 
-test('every package whose code is in a chunk is listed in LICENSES.md', () => {
-  // the chunks' maps name each node_modules file a chunk was built from; a package inside a pre-bundled file (svg.js
+test('every package whose code is in a chunk or the entry is listed in LICENSES.md', () => {
+  // the maps of the chunks and of the entry name each node_modules file a bundle was built from; a package inside a pre-bundled file (svg.js
   // inside apexcharts.esm.js) has no entry of its own, and the list covers it as part of the production tree
   const rows = read('LICENSES.md')
     .split('\n')
     .filter(l => l.startsWith('| '))
     .map(l => l.split(' | ')[0].slice(2));
   const used = new Set();
-  for (const f of distFiles.filter(f => /^chunks\/.+\.js\.map$/.test(f)))
+  for (const f of distFiles.filter(f => /^(chunks\/.+|home-panel)\.js\.map$/.test(f)))
     for (const s of JSON.parse(readFileSync(join(DIST, f), 'utf8')).sources) {
       const i = s.lastIndexOf('node_modules/');
       if (i < 0) continue;
