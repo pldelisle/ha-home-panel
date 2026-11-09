@@ -2,7 +2,7 @@
 // Registered with panel_custom, so it runs inside the HA frontend and uses the signed-in user's connection.
 // Nothing secret lives in this file: the house's entities, rooms and people come from the panel's config (see config.js) or are found in hass.
 import {CSS} from './styles.js';
-import {resolveConfig} from './config.js';
+import {resolveConfig} from './core/config.ts';
 import {pickStack, inHours, reminderLeft} from './stack.js';
 import {FR_ATTR, createFrench} from './i18n/fr.js';
 import {autoMethods} from './auto.js';

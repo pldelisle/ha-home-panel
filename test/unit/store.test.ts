@@ -1,13 +1,17 @@
 // The store at the hass seam (ADR 0005): hand it hass objects as Home Assistant does, assert what a subscriber is told
 // and what the accessors return. The shared fake hass builds the objects; nothing here reads a private field.
 import {describe, expect, test, vi} from 'vitest';
+import {resolveConfig} from '../../src/core/config.ts';
 import {createStore} from '../../src/core/store.ts';
 import type {HassEntities} from '../../src/core/hass.ts';
-import type {NamesConfig} from '../../src/core/i18n/names.ts';
 import {entity, fakeHass} from './fake-hass.ts';
 
-// the resolver is the legacy resolveConfig in the element; here it records what it was handed
-const resolve = (raw: unknown, states: HassEntities) => ({raw, count: Object.keys(states).length});
+// the resolver is resolveConfig, as in the element; here it also records what it was handed
+const resolve = (raw: unknown, states: HassEntities) => ({
+  ...resolveConfig(raw, states),
+  raw,
+  count: Object.keys(states).length,
+});
 const make = () => createStore({defaultTimeZone: 'UTC', resolve});
 
 const house = () =>
@@ -342,8 +346,7 @@ describe('t', () => {
 
 describe('names', () => {
   const areas = {living: {area_id: 'living', name: 'Living room'}, salon: {area_id: 'salon', name: 'Salon'}};
-  const makeNamed = () =>
-    createStore({defaultTimeZone: 'UTC', resolve: (raw: unknown) => raw as {names?: NamesConfig}});
+  const makeNamed = () => createStore({defaultTimeZone: 'UTC', resolve: resolveConfig});
 
   test('speak English before the first hass, then follow the language of the hass', () => {
     const store = makeNamed();
@@ -398,7 +401,7 @@ describe('panel config', () => {
   test('the config resolves against empty states before the first hass', () => {
     const store = make();
     expect(store.setPanelConfig({rooms: ['a']})).toBe(true);
-    expect(store.config).toEqual({raw: {rooms: ['a']}, count: 0});
+    expect(store.config).toMatchObject({raw: {rooms: ['a']}, count: 0});
     expect(store.generation).toBe(1);
   });
 
@@ -406,7 +409,7 @@ describe('panel config', () => {
     const store = make();
     store.setPanelConfig({rooms: ['a']});
     store.setHass(house());
-    expect(store.config).toEqual({raw: {rooms: ['a']}, count: 3});
+    expect(store.config).toMatchObject({raw: {rooms: ['a']}, count: 3});
     expect(store.generation).toBe(1);
   });
 
@@ -436,6 +439,32 @@ describe('panel config', () => {
     expect(store.setPanelConfig(undefined)).toBe(true); // the first config always applies
     expect(store.setPanelConfig({})).toBe(false);
     expect(store.setPanelConfig(null)).toBe(false);
+  });
+
+  test('configProblems lists what is wrong with the config as written, and the config keeps the rest', () => {
+    const store = make();
+    expect(store.configProblems).toEqual([]);
+    store.setPanelConfig({peoples: ['Alex'], rooms: ['a']});
+    expect(store.configProblems).toEqual([
+      {path: 'peoples', key: 'config.unknownKeyHint', values: {path: 'peoples', hint: 'people'}},
+    ]);
+    expect(store.config.rooms.map(r => r.climate)).toEqual(['a']);
+    expect(store.t(store.configProblems[0].key, store.configProblems[0].values)).toBe(
+      'peoples: unknown setting. Did you mean people?',
+    );
+  });
+
+  test('a changed config bumps the generation and replaces its problems; the first hass changes neither', () => {
+    const store = make();
+    store.setPanelConfig({peoples: []});
+    const problems = store.configProblems;
+    expect(store.generation).toBe(1);
+    store.setHass(house());
+    expect(store.generation).toBe(1);
+    expect(store.configProblems).toBe(problems);
+    store.setPanelConfig({people: []});
+    expect(store.generation).toBe(2);
+    expect(store.configProblems).toEqual([]);
   });
 
   test('a config set after a hass resolves against its states', () => {

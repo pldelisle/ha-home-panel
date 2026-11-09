@@ -233,9 +233,9 @@ test('the bundle carries the package version once and no placeholder', () => {
     expect(js.includes(m), m).toBe(false);
 });
 
-test("the entry's source map names the original files under src/ and intl-messageformat's, no other library's", () => {
+test("the entry's source map names the original files under src/ and the two libraries built in, no other library's", () => {
   const map = JSON.parse(readFileSync(join(DIST, 'home-panel.js.map'), 'utf8'));
-  for (const f of ['src/config.js', 'src/home-panel.js', 'src/i18n/fr.js', 'src/auto.js'])
+  for (const f of ['src/core/config.ts', 'src/home-panel.js', 'src/i18n/fr.js', 'src/auto.js'])
     expect(
       map.sources.some(s => s.endsWith(f)),
       f,
@@ -245,13 +245,15 @@ test("the entry's source map names the original files under src/ and intl-messag
     map.sources.every(s => s.startsWith('../src/') || s.startsWith('../node_modules/')),
     map.sources.join(', '),
   ).toBe(true);
-  // the one library built into the entry, which every page load pays for, is intl-messageformat with its FormatJS
-  // parser and helpers: another library slipping in fails here (the maps test above checks their text is left out)
+  // the libraries built into the entry, which every page load pays for, are intl-messageformat with its FormatJS
+  // parser and helpers, and superstruct (the config schema): another library slipping in fails here (the maps test
+  // above checks their text is left out)
   expect([...new Set(map.sources.map(packageOf).filter(Boolean))].sort()).toStrictEqual([
     '@formatjs/fast-memoize',
     '@formatjs/icu-messageformat-parser',
     '@formatjs/icu-skeleton-parser',
     'intl-messageformat',
+    'superstruct',
   ]);
   expect(readFileSync(BUNDLE, 'utf8')).toMatch(/\n\/\/# sourceMappingURL=home-panel\.js\.map\s*$/);
 });
@@ -303,7 +305,7 @@ test('no personal data: names, places, a house photo or house-specific entity id
       existsSync(join(ROOT, f)) && !/\.(png|woff2|ico|jpe?g|webp|iml)$/i.test(f) && !NOT_SCANNED.has(f),
   );
   const scanned = [
-    ...['src/config.js', 'src/home-panel.js', 'src/auto.js', 'src/i18n/fr.js', 'src/css/base.css'],
+    ...['src/core/config.ts', 'src/home-panel.js', 'src/auto.js', 'src/i18n/fr.js', 'src/css/base.css'],
     ...['houses.ts', 'fixtures.ts', 'harness.html', 'automations.json'].map(f => 'test/e2e/' + f),
     ...['package.json', 'package-lock.json', 'vite.config.ts', 'playwright.config.ts', 'vitest.config.ts'],
     ...['renovate.json', '.github/workflows/ci.yml', 'scripts/licenses.mjs', 'examples/configuration.yaml'],

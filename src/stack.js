@@ -4,7 +4,7 @@
 // in the rotation, filler cards (energy today, who's home) only show when nothing else applies.
 
 /** @typedef {import('./types.d.ts').StackCard} StackCard */
-/** @typedef {import('./types.d.ts').Reminder} Reminder */
+/** @typedef {import('./core/config.ts').Reminder} Reminder */
 
 export const STACK_TURN_MS = 20000; // one card per clock tick
 /** @type {Record<string, number>} */
