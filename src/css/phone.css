@@ -418,6 +418,10 @@
 .app.tabsv.cp .pane-home > .ph {
   display: none;
 }
+/* the configuration card stays the first thing on the Home tab, above the scenes row */
+.app.tabsv.cp .cfgerrh {
+  order: -2;
+}
 .app.tabsv.cp .hscenes {
   order: -1;
   display: flex;

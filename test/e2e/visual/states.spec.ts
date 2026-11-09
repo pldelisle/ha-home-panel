@@ -82,3 +82,27 @@ test.describe('Status checks', () => {
     await expect(house.page).toHaveScreenshot('status-checks-tablet-light-en.png');
   });
 });
+
+// The config-error card (spec 13): an admin's Home tab for a config with one problem of each kind the checker reports, in both
+// languages. The tablet in the light theme is the pinned look (spec 13 asks for exactly these two baselines); the phone and the
+// dark theme are covered by config-error.spec.ts's behaviour and were looked at by hand.
+const BROKEN_CFG = {
+  ...FULL_CFG,
+  peoples: ['Alex'], // unknownKeyHint
+  gizmo: true, // unknownKey
+  entities: {...FULL_CFG.entities, fuel_level: 'sensor.x'}, // unknownEntity
+  car: {color: '#B03A2E', battery_kwh: 'big'}, // wrongType
+  rooms: [{climate: 'climate.office', icon: 'couch'}, {name: 'Den'}], // notOneOf, missingKey
+  light_links: [['office']], // notAPair
+  idle_stack: {reminders: [{at: '8pm'}]}, // notATime
+};
+for (const lang of ['en', 'fr'] as const) {
+  test.describe(`config-error, ${lang}`, () => {
+    test.use({viewport: VIEWPORTS.tablet, houseOpts: {cfg: BROKEN_CFG, lang, time: AFTERNOON, frozen: true}});
+    test('Home tab', async ({house}) => {
+      await house.tab('home');
+      await expect(house.root().locator('.cfgerr li')).toHaveCount(8);
+      await expect(house.page).toHaveScreenshot(`config-error-tablet-light-${lang}.png`);
+    });
+  });
+}

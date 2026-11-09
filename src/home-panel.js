@@ -1017,7 +1017,7 @@ export class HomePanel extends HTMLElement {
   <div class="tabview" id="tabview" hidden>
     <nav class="rail" id="rail" aria-label="Sections">${TABS.map(([k, l, i]) => `<button type="button" class="rtab" data-tab="${k}"${PHONE_TABS.includes(k) ? ' data-ph' : ''} aria-selected="false">${ico(i, 24)}<span>${l}</span></button>`).join('')}<button type="button" class="rtab rmore" id="moretab" data-more aria-selected="false" aria-haspopup="dialog">${ico('more', 24)}<span>More</span></button></nav>
     <div class="panes">
-      <section class="pane pane-home" id="pane-home" hidden><div class="ph"><span class="badge" style="--acc:var(--c-grid)">${ico('house', 26)}</span><div class="grow"><h2>Home</h2><div class="sub" id="hsub"></div></div></div><div class="card hwx" id="hwx"></div><div class="hright"><div class="htiles" id="htiles"></div><div class="card hsec" id="hsec"></div></div><div class="hscenes" id="hscenes" hidden></div></section>
+      <section class="pane pane-home" id="pane-home" hidden><div class="ph"><span class="badge" style="--acc:var(--c-grid)">${ico('house', 26)}</span><div class="grow"><h2>Home</h2><div class="sub" id="hsub"></div></div></div><div class="cfgerrh" id="cfgerr" hidden></div><div class="card hwx" id="hwx"></div><div class="hright"><div class="htiles" id="htiles"></div><div class="card hsec" id="hsec"></div></div><div class="hscenes" id="hscenes" hidden></div></section>
       <section class="pane pane-lights" id="pane-lights" hidden><div class="ph"><span class="badge" style="--acc:var(--warn)">${ico('bulb', 26)}</span><div class="grow"><h2>Lights</h2><div class="sub" id="lsub"></div></div><div class="ledbar" id="ledbar" hidden><button type="button" class="more" id="lreset" hidden>Reset order</button><button type="button" class="more" id="ledit" aria-pressed="false">Arrange</button></div></div><div class="card" id="albar" hidden></div><div class="ltiles" id="ltiles"></div><div id="lhost"></div></section>
       <section class="pane pane-climate" id="pane-climate" hidden><div class="ph cph"><span class="badge" style="--acc:var(--c-wh)">${ico('therm', 26)}</span><div class="grow"><h2 id="ch2">Climate</h2><div class="sub" id="csub2"></div></div></div><div class="ctiles2" id="ctiles2"></div></section>
       <section class="pane pane-weather" id="pane-weather" hidden><div class="ph cph"><span class="badge" style="--acc:var(--m-blue)">${ico('wx', 26)}</span><div class="grow"><h2 id="wh2">Weather</h2><div class="sub" id="wsub2"></div></div></div><div id="wxhost"></div><div class="wxtiles" id="wxtiles"></div></section>
@@ -5938,8 +5938,31 @@ export class HomePanel extends HTMLElement {
     }
   }
   // Home pane, as sketched: weather and the house on the left, six big tiles, then doors and what's coming up
+  // The configuration card (spec 13): one line per setting the panel could not use, for an admin, while the store holds
+  // problems; nothing at all otherwise (the host stays hidden and empty, so a clean config draws exactly what it always drew).
+  // The text is the catalog's, in the user's language, escaped like every legacy string. translate="no": it is already in
+  // that language, and the French layer (which reads English) must not look it up a second time.
+  renderConfigCard() {
+    const host = this.$('cfgerr');
+    if (!host) return;
+    const problems = this.store.isAdmin ? this.store.configProblems : [];
+    const t = this.store.t;
+    // every message opens with its path (`rooms[1].icon: ...`): the path is set in <code>, the rest is the message
+    const line = p => {
+      const msg = t(p.key, p.values);
+      return `<li>${msg.startsWith(p.path) ? `<code>${esc(p.path)}</code>${esc(msg.slice(p.path.length))}` : esc(msg)}</li>`;
+    };
+    this.set(
+      'cfgerr',
+      problems.length
+        ? `<aside class="card cfgerr" aria-labelledby="cfgerr-h" translate="no"><h3 id="cfgerr-h">${esc(t('config.title'))}</h3><p>${esc(t('config.intro', {n: problems.length}))}</p><ul>${problems.map(line).join('')}</ul><p class="s">${esc(t('config.footer'))}</p></aside>`
+        : '',
+    );
+    host.hidden = !problems.length;
+  }
   renderHome() {
     if (this.tab !== 'home') return;
+    this.renderConfigCard();
     const L = this.live(),
       isOn = i => (this.st(i) || {}).state === 'on',
       H = this.H;
