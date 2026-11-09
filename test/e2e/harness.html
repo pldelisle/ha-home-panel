@@ -60,6 +60,7 @@
               : read.ws(m),
         connection: {
           subscribeMessage: async (callback, msg) => {
+            console.log('WS', JSON.stringify(msg)); // the fixture's `ws` lists it, as it lists the system-data writes
             if (params.get('forecast') === '1' && msg.forecast_type === 'daily')
               callback({
                 forecast: Array.from({length: 6}, (_, i) => ({

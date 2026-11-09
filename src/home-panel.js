@@ -644,7 +644,7 @@ const z0 = (lo, span, step = 10) =>
  * nowhere else in the shell's root.
  */
 export class LegacyPanel {
-  // `root` (the shell's shadow root), `host` (the <home-panel> element) and `box` (the guest's container inside the
+  // `root` (the shell's shadow root), `host` (the <home-panel> element) and `container` (the guest's container inside the
   // root) are set by connect(); so are the services the shell owns: `store`, `api` and `settings`.
   constructor() {
     // the zone, locale and hour cycle the browser prefers, which the core does not read itself
@@ -748,6 +748,7 @@ export class LegacyPanel {
   }
   // forget the drawn panel so build() starts over (the language or the config changed)
   teardown() {
+    this.unsubscribeForecasts(); // the next draw subscribes again, with the config it was drawn from
     this.frStop();
     this.radarStop();
     this.charts.forEach(c => c.destroy());
@@ -760,14 +761,15 @@ export class LegacyPanel {
     this.view = null;
   }
   /**
-   * Once per connection of the host: take the page and the services from the shell's context, then subscribe. The shell
-   * calls hassChanged, panelChanged and narrowChanged after this, which draw the panel the first time.
-   * @param {{root: ShadowRoot, host: HTMLElement, store: import('./core/store.ts').PanelStore, api: import('./core/api.ts').PanelApi, settings: import('./core/settings.ts').PanelSettings, shell: {toast: (message: string, sticky?: boolean) => void}}} ctx
+   * Once per connection of the host: take the root, the host and the services from the shell's context, then subscribe.
+   * The shell calls hassChanged, panelChanged and narrowChanged after this, which draw the panel the first time.
+   * (A JSDoc type reference is no import for dependency-cruiser, so naming the shell's type here breaks no rule.)
+   * @param {import('./shell/guest.ts').GuestContext} ctx
    */
   connect(ctx) {
     this.root = ctx.root;
     this.host = ctx.host;
-    this.box = ctx.root.querySelector('.guest'); // the one container the class draws into
+    this.container = ctx.root.querySelector('.guest'); // the one container the class draws into
     this.store = ctx.store;
     this.api = ctx.api;
     this.settings = ctx.settings;
@@ -980,7 +982,7 @@ export class LegacyPanel {
   // ---------- skeleton ----------
   build() {
     ensureFonts(); // Montserrat from the panel's own fonts/ folder, declared in the document once
-    this.box.innerHTML = `<div class="app" id="app"><div class="wrap">
+    this.container.innerHTML = `<div class="app" id="app"><div class="wrap">
   <header class="head">
     <button class="icon menu" id="menu" type="button" aria-label="Open the sidebar">${ico('menu')}</button>
     <div class="hello" id="hello"></div>
@@ -1873,7 +1875,7 @@ export class LegacyPanel {
       this.lensSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       this.lensSvg.setAttribute('aria-hidden', 'true');
       this.lensSvg.style.cssText = 'position:absolute;width:0;height:0';
-      this.box.appendChild(this.lensSvg);
+      this.container.appendChild(this.lensSvg);
       this.lensSvg.innerHTML =
         '<filter id="glass-distortion" x="0%" y="0%" width="100%" height="100%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency="0.008 0.008" numOctaves="2" seed="92" result="noise"/><feGaussianBlur in="noise" stdDeviation="2" result="blurred"/><feDisplacementMap in="SourceGraphic" in2="blurred" scale="150" xChannelSelector="R" yChannelSelector="G"/></filter>';
     }
