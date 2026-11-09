@@ -38,6 +38,10 @@ const asDate = v => {
   const d = new Date(v);
   return Number.isNaN(d.getTime()) ? null : d;
 };
+// a YYYY-MM-DD day key as its UTC noon, and a YYYY-MM month key as the 15th at UTC noon: read by a UTC-pinned set
+// (fmtUtcEn, fmtUtc), a key names its own day and month whatever zone the browser or the house is in
+const dayAt = k => new Date(k + 'T12:00:00Z');
+const monthAt = k => new Date(k + '-15T12:00:00Z');
 // tiles with nothing to show (the car's sensors it doesn't have) are left out rather than shown with a dash
 const tiles = arr =>
   arr
@@ -639,11 +643,13 @@ export class HomePanel extends HTMLElement {
     // the composition root: this panel's store, settings and French layer, none of them shared with another panel (spec 10)
     this.browser = browserDefaults(); // the zone, locale and hour cycle the browser prefers, which the core does not read itself
     this.store = createStore({defaultTimeZone: this.browser.timeZone, resolve: resolveConfig});
-    // the formatters (spec 11): fmtEn is the English the old class reads, because the rewrite layer parses English;
-    // fmt follows the user's profile and serves the sites that are already French; fmtClock formats a time of day or a
-    // calendar day (a YYYY-MM-DD key at UTC noon), in no zone, and fmtUtc is fmt for a day key, so a day key names the
-    // same day whatever the browser's or the house's zone
-    this.fmtClock = createFormatters(englishLocale('UTC'));
+    // the four formatter sets (spec 11), named by their language and zone:
+    //   fmt      the profile's language, the house's zone: the five sites that were already French
+    //   fmtEn    English, the house's zone: every other site, because the rewrite layer parses English (deleted in phase 4)
+    //   fmtUtc   fmt pinned to UTC, and fmtUtcEn fmtEn pinned to UTC: for a day or month key parsed at UTC noon (dayAt,
+    //            monthAt) and for a clock time with no day (clockTime), neither of which belongs to any zone
+    // fmtUtcEn never changes; the other three follow the profile (refreshFormatters)
+    this.fmtUtcEn = createFormatters(englishLocale('UTC'));
     this.localeKey = '';
     this.refreshFormatters();
     /** @type {import('./core/settings.ts').KeyValueStorage} */
@@ -877,7 +883,7 @@ export class HomePanel extends HTMLElement {
     this.localeEn = englishLocale(locale.timeZone);
     this.fmt = createFormatters(this.locale);
     this.fmtEn = createFormatters(this.localeEn);
-    this.fmtUtc = createFormatters({...locale, timeZone: 'UTC'});
+    this.fmtUtc = createFormatters({...locale, timeZone: 'UTC'}); // fmt for a day key, see the constructor
   }
   ago(t) {
     const m = Math.round((Date.now() - Date.parse(t)) / 6e4);
@@ -906,12 +912,12 @@ export class HomePanel extends HTMLElement {
         lbl = `${p.wd} ${+p.day.slice(8)}, ${['night', 'morning', 'afternoon', 'evening'][b / 6]}`;
       } else if (r === 'month') {
         k = p.day;
-        lbl = this.fmtClock.date(new Date(p.day + 'T12:00:00Z'));
+        lbl = this.fmtUtcEn.date(dayAt(p.day));
       } else {
-        const d = new Date(p.day + 'T12:00:00Z'),
+        const d = dayAt(p.day),
           mon = new Date(d.getTime() - ((d.getUTCDay() + 6) % 7) * 864e5);
         k = mon.toISOString().slice(0, 10);
-        lbl = this.fmtClock.date(new Date(k + 'T12:00:00Z'));
+        lbl = this.fmtUtcEn.date(dayAt(k));
       }
       const c = m.get(k) || {k, lbl, s: 0, n: 0};
       c.s += v;
@@ -1529,7 +1535,7 @@ export class HomePanel extends HTMLElement {
             body:
               big(
                 ...this.fmtEn
-                  .time(new Date(rise))
+                  .time(rise)
                   .split(' ')
                   .map((x, i) => (i ? ' ' + x : x)),
               ) +
@@ -1711,10 +1717,7 @@ export class HomePanel extends HTMLElement {
             ic: 'cal',
             label: 'Tomorrow',
             color: 'var(--c-home)',
-            right:
-              this.dayName(tm.k, false) === 'Tomorrow'
-                ? this.fmtClock.weekday(new Date(tm.k + 'T12:00:00Z'), 'long')
-                : '',
+            right: this.dayName(tm.k, false) === 'Tomorrow' ? this.fmtUtcEn.weekday(dayAt(tm.k), 'long') : '',
             go: 'sh-weather',
             body: `<div class="swx">${wxIcon(tm.cond, 76, true)}<div>${big(tm.hi != null ? Math.round(tm.hi) + '°' : '–', tm.lo != null ? ' / ' + Math.round(tm.lo) + '°' : '')}${mid(condName(tm.cond) + (tm.pop ? `, ${Math.round(tm.pop)}%` : ''))}</div></div>`,
             foot:
@@ -2588,7 +2591,7 @@ export class HomePanel extends HTMLElement {
     const t = this.store.isFrench ? [this.fmt.time24(new Date())] : this.fmtEn.time(new Date()).split(' ');
     this.set(
       'clock',
-      `${t[0]}<span style="font-size:.45em;margin-left:4px">${t[1] || ''}</span><small>${this.H ? 'Live · history ' + this.fmtEn.time(new Date(this.H.at)) : 'Live · loading history'}</small>`,
+      `${t[0]}<span style="font-size:.45em;margin-left:4px">${t[1] || ''}</span><small>${this.H ? 'Live · history ' + this.fmtEn.time(this.H.at) : 'Live · loading history'}</small>`,
     );
     const temp = this.attr(this.E.weather, 'temperature') ?? this.num(this.E.outT),
       cond = this.st(this.E.cond),
@@ -2866,7 +2869,7 @@ export class HomePanel extends HTMLElement {
             ? (() => {
                 const W = p3 - p0,
                   pc = t => (((t - p0) / W) * 100).toFixed(1);
-                return `<div class="lph" role="img" aria-label="Pre-heat ${this.fmtEn.time(new Date(p0))}, reduction ${this.fmtEn.time(new Date(p1))} to ${this.fmtEn.time(new Date(p2))}, recovery until ${this.fmtEn.time(new Date(p3))}"><span style="flex:${p1 - p0};--pc:var(--c-grid)">Pre-heat</span><span style="flex:${p2 - p1};--pc:var(--crit)">Reduction</span><span style="flex:${p3 - p2};--pc:var(--c-ev)">Recovery</span><i style="left:${Math.max(0, Math.min(100, +pc(now)))}%"></i></div>
+                return `<div class="lph" role="img" aria-label="Pre-heat ${this.fmtEn.time(p0)}, reduction ${this.fmtEn.time(p1)} to ${this.fmtEn.time(p2)}, recovery until ${this.fmtEn.time(p3)}"><span style="flex:${p1 - p0};--pc:var(--c-grid)">Pre-heat</span><span style="flex:${p2 - p1};--pc:var(--crit)">Reduction</span><span style="flex:${p3 - p2};--pc:var(--c-ev)">Recovery</span><i style="left:${Math.max(0, Math.min(100, +pc(now)))}%"></i></div>
             <div class="lpt">${[p0, p1, p2, p3].map(t => `<span style="left:${pc(t)}%">${this.fmtEn.time(t).replace(/ [ap]m$/, '')}</span>`).join('')}</div>`;
               })()
             : '';
@@ -2881,11 +2884,7 @@ export class HomePanel extends HTMLElement {
           .filter(Boolean)
           .join(' · ');
         return (
-          head(
-            a,
-            'Hilo challenge',
-            `${short}${a0 && b0 ? ` · ${this.fmtEn.time(new Date(a0))} – ${this.fmtEn.time(new Date(b0))}` : ''}`,
-          ) +
+          head(a, 'Hilo challenge', `${short}${a0 && b0 ? ` · ${this.fmtEn.time(a0)} – ${this.fmtEn.time(b0)}` : ''}`) +
           bar +
           (left
             ? `<div class="lbig"><span class="n">${left}</span><span class="to">${dst === 'pre_heat' ? 'until heating holds back' : dst === 'reduction' ? 'until the challenge ends' : 'until recovery ends'}</span></div>`
@@ -2972,7 +2971,7 @@ export class HomePanel extends HTMLElement {
             `${esc(this.carName())} <span>${paused ? 'paused' : 'charging'}</span>`,
             pw != null && pw > 0.05 ? `${pw.toFixed(1)} kW` : '',
           ) +
-          `<div class="lbig"><span class="n">${f0(soc)}<small>%</small></span><span class="to">→ ${lim}% limit</span>${eta ? `<span class="eta"><b>Full at ${this.fmtEn.time(new Date(eta))}</b>in ${left}</span>` : ''}</div>
+          `<div class="lbig"><span class="n">${f0(soc)}<small>%</small></span><span class="to">→ ${lim}% limit</span>${eta ? `<span class="eta"><b>Full at ${this.fmtEn.time(eta)}</b>in ${left}</span>` : ''}</div>
           <div class="lbar" role="img" aria-label="Battery ${f0(soc)} percent, limit ${lim} percent"><i style="width:${soc || 0}%"></i><em style="left:${lim}%"></em></div>
           ${meta ? `<div class="lmeta">${meta}</div>` : ''}
           <div class="lbtns">${this.E.wbPause && ok(this.st(this.E.wbPause)) ? `<button type="button" data-la="pause">${on === false ? 'Resume charging' : 'Pause charging'}</button>` : ''}<button type="button" class="go" data-la="car">Open Car ›</button></div>`
@@ -3043,7 +3042,7 @@ export class HomePanel extends HTMLElement {
           head(a, 'Water heater heating', `${wp.toFixed(1)} kW`) +
           spark +
           `<div class="lbig"><span class="n">${f1(t)}<small>°C</small></span>${rate != null && Math.abs(rate) >= 0.05 ? `<span class="to">${rate > 0 ? '↗' : '↘'} ${Math.abs(rate).toFixed(1)}° / 10 min</span>` : ''}${lt ? `<span class="eta"><b>${lt === 'almost done' ? 'Almost done' : lt + ' left'}</b>usual cycle ${durTxt(typ)}</span>` : ''}</div>
-          <div class="lmeta">Started ${this.fmtEn.time(new Date(start))}${pts.length ? ` · <b>${kwh.toFixed(1)} kWh</b> this cycle` : ''}${nth > 1 ? ` · ${plural(nth, 'cycle')} in 24 h` : ''}</div>`
+          <div class="lmeta">Started ${this.fmtEn.time(start)}${pts.length ? ` · <b>${kwh.toFixed(1)} kWh</b> this cycle` : ''}${nth > 1 ? ` · ${plural(nth, 'cycle')} in 24 h` : ''}</div>`
         );
       };
       acts.push(a);
@@ -3079,7 +3078,7 @@ export class HomePanel extends HTMLElement {
     };
     const main = a
       ? `<span class="lmain${a.tint ? ' tint' : ''}" style="--ac:${a.ac}">${ring(a, 34)}${this.compact ? a.pill : a.short}</span>`
-      : `<span class="lmain" style="--ac:var(--c-ev)"><span class="lok">${ico('check', 18)}</span><span>${esc(done.text)}</span>${this.compact ? '' : `<span class="ll">${this.fmtEn.time(new Date(done.at))}</span>`}</span>`;
+      : `<span class="lmain" style="--ac:var(--c-ev)"><span class="lok">${ico('check', 18)}</span><span>${esc(done.text)}</span>${this.compact ? '' : `<span class="ll">${this.fmtEn.time(done.at)}</span>`}</span>`;
     const bubs =
       acts
         .slice(1)
@@ -3259,7 +3258,7 @@ export class HomePanel extends HTMLElement {
       <div class="socscale"><span>0%</span><span>${c.lim ? 'Limit ' + c.lim + '%' : ''}</span></div>
       <div class="tiles" style="grid-template-columns:repeat(3,minmax(0,1fr));margin-top:12px">${[
         ['Charger', `<span class="wrapv">${esc(ok(wb) ? wb.state : '–')}</span>`, '', 'Wallbox'],
-        ['Last charge', last ? f1(last.kwh) : '–', 'kWh', last ? this.fmtEn.date(new Date(last.a)) : ''],
+        ['Last charge', last ? f1(last.kwh) : '–', 'kWh', last ? this.fmtEn.date(last.a) : ''],
         ['Odometer', odo == null ? '–' : this.fmtEn.integer(odo), 'km'],
       ]
         .map(tile)
@@ -3268,7 +3267,7 @@ export class HomePanel extends HTMLElement {
         H
           ? this.bars(
               ev30.map(r => r.ev),
-              ev30.map(r => this.fmtClock.date(new Date(r.day + 'T12:00:00Z'))),
+              ev30.map(r => this.fmtUtcEn.date(dayAt(r.day))),
               this.css('--c-ev'),
               'kWh',
             )
@@ -3907,7 +3906,7 @@ export class HomePanel extends HTMLElement {
             tooltip: {shared: true, intersect: false, y: {formatter: v => v.toFixed(1) + ' kWh'}},
           },
           this.thin(
-            rows.map(r => this.fmtClock.date(new Date(r.day + 'T12:00:00Z'))),
+            rows.map(r => this.fmtUtcEn.date(dayAt(r.day))),
             5,
           ),
         ),
@@ -3916,7 +3915,7 @@ export class HomePanel extends HTMLElement {
       const rows = H.monthly,
         top = rows.reduce((a, r) => (r[1].heat > a[1].heat ? r : a), rows[0]);
       t.textContent = 'Month by month';
-      p.textContent = `Last 12 months.${top && top[1].heat > 50 ? ` Room heating peaked in ${this.fmtEn.month(new Date(top[0] + '-15'), 'long')}: ${this.fmtEn.integer(top[1].heat)} kWh.` : ''} Months with missing data look shorter.`;
+      p.textContent = `Last 12 months.${top && top[1].heat > 50 ? ` Room heating peaked in ${this.fmtUtcEn.month(monthAt(top[0]), 'long')}: ${this.fmtEn.integer(top[1].heat)} kWh.` : ''} Months with missing data look shorter.`;
       this.mainChart = this.mk(
         'c-main',
         merge(
@@ -3931,7 +3930,7 @@ export class HomePanel extends HTMLElement {
             tooltip: {shared: true, intersect: false, y: {formatter: v => Math.round(v) + ' kWh'}},
           },
           this.thin(
-            rows.map(r => `${this.fmtEn.month(new Date(r[0] + '-15'), 'short')} ${r[0].slice(2, 4)}`),
+            rows.map(r => `${this.fmtUtcEn.month(monthAt(r[0]), 'short')} ${r[0].slice(2, 4)}`),
             4,
           ),
         ),
@@ -3985,9 +3984,9 @@ export class HomePanel extends HTMLElement {
   dayName(k, short) {
     if (k === this.fmtEn.isoDay(Date.now())) return 'Today';
     if (!short && k === this.fmtEn.isoDay(Date.now() + 864e5)) return 'Tomorrow';
-    const at = new Date(k + 'T12:00:00Z'),
+    const at = dayAt(k),
       style = short ? 'short' : 'long';
-    if (!this.store.isFrench) return this.fmtClock.weekday(at, style);
+    if (!this.store.isFrench) return this.fmtUtcEn.weekday(at, style);
     const d = this.fmtUtc.weekday(at, style);
     return d.charAt(0).toUpperCase() + d.slice(1);
   }
@@ -4274,12 +4273,12 @@ export class HomePanel extends HTMLElement {
         <div class="tiles" style="grid-template-columns:repeat(3,minmax(0,1fr))">${[
           [
             'Sunrise',
-            this.fmtEn.time(new Date(today.rise)),
+            this.fmtEn.time(today.rise),
             '',
-            ok(this.st(this.E.dawn)) ? 'first light ' + this.fmtEn.time(new Date(today.dawn)) : '',
+            ok(this.st(this.E.dawn)) ? 'first light ' + this.fmtEn.time(today.dawn) : '',
           ],
-          ['Solar noon', this.fmtEn.time(new Date(today.noon)), '', ''],
-          ['Sunset', this.fmtEn.time(new Date(today.set)), '', 'last light ' + this.fmtEn.time(new Date(today.dusk))],
+          ['Solar noon', this.fmtEn.time(today.noon), '', ''],
+          ['Sunset', this.fmtEn.time(today.set), '', 'last light ' + this.fmtEn.time(today.dusk)],
         ]
           .map(tile)
           .join('')}</div>`,
@@ -4409,19 +4408,19 @@ export class HomePanel extends HTMLElement {
     const warmest = W.days.reduce((a, d) => (d.max > a.max ? d : a)),
       coldest = W.days.reduce((a, d) => (d.min < a.min ? d : a)),
       g = W.gustDays.length ? W.gustDays.reduce((a, d) => (d.v > a.v ? d : a)) : null;
-    const since = this.fmtClock.date(new Date(W.days[0].k + 'T12:00:00Z')),
+    const since = this.fmtUtcEn.date(dayAt(W.days[0].k)),
       mk = this.fmtEn.isoDay(Date.now()).slice(0, 7),
       cm = mon[mk];
     this.$('wrec').innerHTML = [
-      ['Warmest', f1(warmest.max) + '°', '', this.fmtClock.date(new Date(warmest.k + 'T12:00:00Z'))],
-      ['Coldest', f1(coldest.min) + '°', '', this.fmtClock.date(new Date(coldest.k + 'T12:00:00Z'))],
+      ['Warmest', f1(warmest.max) + '°', '', this.fmtUtcEn.date(dayAt(warmest.k))],
+      ['Coldest', f1(coldest.min) + '°', '', this.fmtUtcEn.date(dayAt(coldest.k))],
       [
         this.fmtEn.month(new Date(), 'long'),
         cm ? f1(cm.s / cm.n) + '°' : '–',
         '',
         cm ? `average, ${plural(cm.frost, 'frosty night')}` : '',
       ],
-      ['Strongest gust', g ? Math.round(g.v) : '–', 'km/h', g ? this.fmtClock.date(new Date(g.k + 'T12:00:00Z')) : ''],
+      ['Strongest gust', g ? Math.round(g.v) : '–', 'km/h', g ? this.fmtUtcEn.date(dayAt(g.k)) : ''],
     ]
       .map(tile)
       .join('');
@@ -4435,7 +4434,7 @@ export class HomePanel extends HTMLElement {
             w = ((m.hi - m.lo) / span) * 100,
             avg = m.s / m.n,
             z = ((0 - lo) / span) * 100;
-          const name = this.fmtClock.month(new Date(k + '-15T12:00:00Z'), 'short') + " '" + k.slice(2, 4);
+          const name = this.fmtUtcEn.month(monthAt(k), 'short') + " '" + k.slice(2, 4);
           return `<div class="mrow"><span class="dn">${name}${m.first.endsWith('-01') ? '' : '<small> from ' + +m.first.slice(8) + '</small>'}</span><span class="num dl">${Math.round(m.lo)}°</span>
         <span class="rng season">${z > 0 && z < 100 ? `<em style="left:${z}%"></em>` : ''}<b style="left:${a}%;width:${Math.max(2, w)}%"></b><i style="left:${((avg - lo) / span) * 100}%" title="Average ${avg.toFixed(1)}°"></i></span>
         <span class="num dh">${Math.round(m.hi)}°</span><span class="dp muted">${m.frost ? plural(m.frost, 'frost') : m.hot ? m.hot + ' over 25°' : ''}</span></div>`;
@@ -7439,7 +7438,7 @@ export class HomePanel extends HTMLElement {
       note =
         'Readings come from the unit itself. A break in the line means the integration was offline. The unit has no power sensor, so its electricity is counted in Rest of home.';
       if (C && C.hpFrom && C.hpFrom > C.start + 864e5)
-        note += ` Home Assistant keeps about 10 days of detailed history, so the heat pump line starts ${this.fmtEn.date(new Date(C.hpFrom))}.`;
+        note += ` Home Assistant keeps about 10 days of detailed history, so the heat pump line starts ${this.fmtEn.date(C.hpFrom)}.`;
     } else if (this.climSel === 'house') {
       title = 'Whole house';
       sub = `Average of ${this.ROOMS.length} rooms`;
@@ -7860,10 +7859,10 @@ export class HomePanel extends HTMLElement {
       tot = sum(sess.map(x => x.kwh)),
       price = this.num(this.E.wbPrice) ?? 0.07;
     this.$('sesp').textContent = sess.length
-      ? `${sess.length} charging sessions on the Wallbox since ${this.fmtEn.date(new Date(sess[0].a))}. Cost is estimated at the ${(price * 100).toFixed(0)}¢/kWh set in the Wallbox app.`
+      ? `${sess.length} charging sessions on the Wallbox since ${this.fmtEn.date(sess[0].a)}. Cost is estimated at the ${(price * 100).toFixed(0)}¢/kWh set in the Wallbox app.`
       : 'No charging sessions in the last year.';
     this.$('sest').innerHTML = [
-      ['Sessions', sess.length, '', sess.length ? 'since ' + this.fmtEn.date(new Date(sess[0].a)) : ''],
+      ['Sessions', sess.length, '', sess.length ? 'since ' + this.fmtEn.date(sess[0].a) : ''],
       ['Delivered', this.fmtEn.integer(tot), 'kWh'],
       ['Average', sess.length ? (tot / sess.length).toFixed(1) : '–', 'kWh', 'per session'],
       ['Est. cost', '$' + Math.round(tot * price), '', `at ${(price * 100).toFixed(0)}¢/kWh`],
@@ -7885,7 +7884,7 @@ export class HomePanel extends HTMLElement {
         series: [{name: 'Charged at home', data: ks.map(k => +mon[k][0].toFixed(1))}],
         colors: [s.ev],
         plotOptions: {bar: {borderRadius: 5, borderRadiusApplication: 'end', columnWidth: '56%'}},
-        xaxis: {categories: ks.map(k => this.fmtEn.month(new Date(k + '-15'), 'short'))},
+        xaxis: {categories: ks.map(k => this.fmtUtcEn.month(monthAt(k), 'short'))},
         yaxis: {labels: {formatter: v => v.toFixed(0) + ' kWh'}},
         tooltip: {
           y: {formatter: (v, o) => `${Math.round(v)} kWh in ${plural(mon[ks[o.dataPointIndex]][1], 'session')}`},
@@ -7906,7 +7905,7 @@ export class HomePanel extends HTMLElement {
       price = this.num(this.E.wbPrice) ?? 0.07;
     this.$('slist').innerHTML = rows
       .map(
-        x => `<tr><td>${this.fmtEn.dateWeekday(new Date(x.a))}</td><td class="hide-s">${this.fmtEn.time(new Date(x.a))} to ${this.fmtEn.time(new Date(x.b))}</td><td class="r hide-s">${Math.round((x.b - x.a) / 36e5)} h</td>
+        x => `<tr><td>${this.fmtEn.dateWeekday(x.a)}</td><td class="hide-s">${this.fmtEn.time(x.a)} to ${this.fmtEn.time(x.b)}</td><td class="r hide-s">${Math.round((x.b - x.a) / 36e5)} h</td>
       <td><span class="bar" style="width:${Math.round((x.kwh / mx) * 70) + 4}px"></span>${x.kwh.toFixed(1)} kWh</td><td class="r hide-s">${x.pk.toFixed(1)} kW</td><td class="r">$${(x.kwh * price).toFixed(2)}</td></tr>`,
       )
       .join('');
@@ -8086,12 +8085,17 @@ export class HomePanel extends HTMLElement {
     const d = asDate(v);
     return d ? `${this.fmtEn.date(d)}, ${this.fmtEn.time(d)}` : '–';
   }
+  // a time of day with no date, such as the departure schedule's hours and minutes: placed on a fixed UTC day and read
+  // back by the UTC set, so that neither the browser's zone nor the house's moves it
+  clockTime(h, m) {
+    return this.fmtUtcEn.time(Date.UTC(2026, 0, 1, h, m));
+  }
   schedText() {
     const sch = this.attr(this.car.id('sensor', 'departureschedules'), 'schedule') || {};
     const days = Object.keys(sch);
     if (!days.length) return 'No departure times saved.';
     const t0 = sch[days[0]].timeOfDay || {},
-      time = this.fmtClock.time(Date.UTC(2026, 0, 1, t0.hours || 0, t0.minutes || 0));
+      time = this.clockTime(t0.hours || 0, t0.minutes || 0);
     const wk = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
     const d =
       days.length === 7
@@ -8222,9 +8226,7 @@ export class HomePanel extends HTMLElement {
           : d.map(x => x.slice(0, 3).replace(/^./, c => c.toUpperCase())).join(', ') || 'no days';
     const [h, m] = D.time.split(':').map(Number);
     // a cleared time field is '': no time to name (the formatter throws on an invalid date, and this redraws every second)
-    return Number.isFinite(h) && Number.isFinite(m)
-      ? `${txt} at ${this.fmtClock.time(Date.UTC(2026, 0, 1, h, m))}`
-      : txt;
+    return Number.isFinite(h) && Number.isFinite(m) ? `${txt} at ${this.clockTime(h, m)}` : txt;
   }
   carControl(e) {
     const b = e.target.closest('[data-k]');

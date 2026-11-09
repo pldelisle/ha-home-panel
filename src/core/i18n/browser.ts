@@ -1,6 +1,6 @@
 // The browser's locale defaults: its time zone, locale and 12-hour preference, read once for the element to hand over.
-// Pattern: an adapter at the one place the core reads `Intl` defaults (Cockburn, hexagonal architecture), so the locale
-// derivation stays a pure function that is given them (locale.ts) and the shell stays free of `Intl`.
+// Pattern: the one place that reads the browser's `Intl` defaults, called by the element at construction, so the locale
+// derivation stays a pure function that is given them (locale.ts) and nothing outside src/core/i18n/ touches `Intl`.
 // Must not: read the clock, navigator or the DOM, or be called by a pure function.
 import type {LocaleDefaults} from './locale.ts';
 
