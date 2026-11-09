@@ -36,17 +36,24 @@ export function panelLocale(hass: PanelHass, defaults: LocaleDefaults): PanelLoc
     language: lang.split('-')[0],
     tag,
     timeZone: hass.config.time_zone || defaults.timeZone,
-    hour12:
-      timeFormat === '12'
-        ? true
-        : timeFormat === '24'
-          ? false
-          : timeFormat === 'system'
-            ? defaults.browserHour12
-            : undefined,
+    hour12: hour12(timeFormat, defaults.browserHour12),
     numberLocale: numberLocale(numberFormat, tag, defaults.browserLocale),
     useGrouping: numberFormat !== 'none',
   };
+}
+
+/** Home Assistant's formatTime mapping; `language` and anything unknown leave the tag to decide. */
+function hour12(timeFormat: string | undefined, browserHour12: boolean | undefined): boolean | undefined {
+  switch (timeFormat) {
+    case '12':
+      return true;
+    case '24':
+      return false;
+    case 'system':
+      return browserHour12;
+    default:
+      return undefined;
+  }
 }
 
 /** Home Assistant's formatNumber mapping; `language`, `none` and anything unknown follow the tag. */

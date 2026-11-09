@@ -8,6 +8,13 @@ import type {PanelLocaleSpec} from './locale.ts';
 
 type Instant = Date | number;
 
+/** The local day, hour (0 to 23) and short weekday of an instant. */
+export interface DayParts {
+  day: string;
+  h: number;
+  wd: string;
+}
+
 export interface Formatters {
   /** `4:07 pm`, `16 h 07`, `16:07`. */
   time(d: Instant): string;
@@ -27,8 +34,8 @@ export interface Formatters {
   month(d: Instant, style: 'long' | 'short'): string;
   /** `2026-11-07`, the local day. */
   isoDay(d: Instant): string;
-  /** The local day, hour (0 to 23) and short weekday, cached by hour. */
-  dayParts(d: Instant): {day: string; h: number; wd: string};
+  /** The local day, hour and short weekday, cached by hour. */
+  dayParts(d: Instant): DayParts;
   /** The local time as a fractional hour: `16.12` for 16:07. */
   hourNow(now: Instant): number;
   integer(n: number): string;
@@ -39,31 +46,46 @@ export interface Formatters {
 const PARTS_CACHE_LIMIT = 20_000;
 const HOUR_MS = 36e5;
 
-export function createFormatters(l: PanelLocaleSpec): Formatters {
-  const lang = l.tag.split('-')[0].toLowerCase();
-  const en = lang === 'en';
-  const fr = lang === 'fr';
+type HouseRule = (text: string) => string;
+const asIs: HouseRule = text => text;
+
+// The three house rules, as functions of a formatted string. Rule 1: the English day period, today's `ampm()`.
+const englishDayPeriod: HouseRule = text => text.replace(/\s?([ap])\.\s?m\.?/i, ' $1m');
+// Rule 2: French time on the hour, and the bare hour `Intl` gives for fr-* gains " h", as the rewrite layer's `frH`.
+const frenchOnTheHour: HouseRule = text => text.replace(/ 00$/, '');
+const frenchBareHour: HouseRule = text => (/^\d+$/.test(text) ? `${Number(text)} h` : text);
+// Rule 3: the French thousands separator, the character the rewrite layer writes today.
+const frenchThousands: HouseRule = text => text.replace(/\u00a0/g, '\u202f');
+
+export function createFormatters(locale: PanelLocaleSpec): Formatters {
+  const {language, tag, timeZone, hour12} = locale;
+  // the rules are chosen once, by the tag's language; every other language is `Intl`'s own output
+  const timeRule = language === 'en' ? englishDayPeriod : language === 'fr' ? frenchOnTheHour : asIs;
+  const hourRule = language === 'en' ? englishDayPeriod : language === 'fr' ? frenchBareHour : asIs;
+  const numberRule = language === 'fr' ? frenchThousands : asIs;
 
   // `Intl` formatters are expensive to build: each is built once per instance, and always with the time zone
-  const dtf = (o: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat(l.tag, {timeZone: l.timeZone, ...o});
+  const dateFormat = (options: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat(tag, {timeZone, ...options});
   // a clock or a calendar day is composed from parts, in Latin digits, so no locale puts "h" or "min" into it
-  const partsOf = (o: Intl.DateTimeFormatOptions) => {
-    const f = dtf({numberingSystem: 'latn', ...o});
+  const partsOf = (options: Intl.DateTimeFormatOptions) => {
+    const format = dateFormat({numberingSystem: 'latn', ...options});
     return (d: Instant) => {
-      const parts = f.formatToParts(d);
+      const parts = format.formatToParts(d);
       return (type: Intl.DateTimeFormatPartTypes) => parts.find(p => p.type === type)!.value;
     };
   };
+  type Part = ReturnType<ReturnType<typeof partsOf>>;
+  const isoDayOf = (part: Part) => `${part('year')}-${part('month')}-${part('day')}`;
 
-  const time = dtf({hour: 'numeric', minute: '2-digit', hour12: l.hour12});
-  const hour = dtf({hour: 'numeric', hour12: l.hour12});
+  const time = dateFormat({hour: 'numeric', minute: '2-digit', hour12});
+  const hour = dateFormat({hour: 'numeric', hour12});
   const clock = partsOf({hour: '2-digit', minute: '2-digit', hourCycle: 'h23'});
   const clockS = partsOf({hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23'});
-  const date = dtf({month: 'short', day: 'numeric'});
-  const dateWeekday = dtf({weekday: 'short', month: 'short', day: 'numeric'});
-  const dateLong = dtf({weekday: 'long', month: 'long', day: 'numeric'});
-  const weekday = {long: dtf({weekday: 'long'}), short: dtf({weekday: 'short'})};
-  const month = {long: dtf({month: 'long'}), short: dtf({month: 'short'})};
+  const date = dateFormat({month: 'short', day: 'numeric'});
+  const dateWeekday = dateFormat({weekday: 'short', month: 'short', day: 'numeric'});
+  const dateLong = dateFormat({weekday: 'long', month: 'long', day: 'numeric'});
+  const weekday = {long: dateFormat({weekday: 'long'}), short: dateFormat({weekday: 'short'})};
+  const month = {long: dateFormat({month: 'long'}), short: dateFormat({month: 'short'})};
   const day = partsOf({year: 'numeric', month: '2-digit', day: '2-digit'});
   const local = partsOf({
     year: 'numeric',
@@ -73,64 +95,53 @@ export function createFormatters(l: PanelLocaleSpec): Formatters {
     hourCycle: 'h23',
     weekday: 'short',
   });
-  const clockNow = partsOf({hour: 'numeric', minute: 'numeric', hourCycle: 'h23'});
-  const nf = (maximumFractionDigits: number) =>
-    new Intl.NumberFormat(l.numberLocale, {maximumFractionDigits, useGrouping: l.useGrouping});
-  const integer = nf(0);
+  const numberFormat = (maximumFractionDigits: number) =>
+    new Intl.NumberFormat(locale.numberLocale, {maximumFractionDigits, useGrouping: locale.useGrouping});
+  const integer = numberFormat(0);
   const numbers = new Map<number, Intl.NumberFormat>();
 
-  // the three house rules, in one place and keyed by the tag's language; every other language is `Intl`'s own output
-  const post = (kind: 'time' | 'hour' | 'number', text: string): string => {
-    if (en && kind !== 'number') return text.replace(/\s?([ap])\.\s?m\.?/i, ' $1m');
-    if (fr && kind === 'time') return text.replace(/ 00$/, '');
-    if (fr && kind === 'hour') return /^\d+$/.test(text) ? `${Number(text)} h` : text;
-    if (fr && kind === 'number') return text.replace(/\u00a0/g, '\u202f');
-    return text;
-  };
-
-  const cache = new Map<number, {day: string; h: number; wd: string}>();
+  // the hour-bucket cache of the legacy `localParts`: an instant is formatted at the top of its UTC hour, which is also
+  // the top of its local hour in every whole-hour zone; a half-hour zone (Asia/Kolkata) can be given the previous hour
+  const cache = new Map<number, DayParts>();
 
   return {
-    time: d => post('time', time.format(d)),
-    hour: d => post('hour', hour.format(d)),
+    time: d => timeRule(time.format(d)),
+    hour: d => hourRule(hour.format(d)),
     time24: d => {
-      const p = clock(d);
-      return `${p('hour')}:${p('minute')}`;
+      const part = clock(d);
+      return `${part('hour')}:${part('minute')}`;
     },
     time24s: d => {
-      const p = clockS(d);
-      return `${p('hour')}:${p('minute')}:${p('second')}`;
+      const part = clockS(d);
+      return `${part('hour')}:${part('minute')}:${part('second')}`;
     },
     date: d => date.format(d),
     dateWeekday: d => dateWeekday.format(d),
     dateLong: d => dateLong.format(d),
     weekday: (d, style) => weekday[style].format(d),
     month: (d, style) => month[style].format(d),
-    isoDay: d => {
-      const p = day(d);
-      return `${p('year')}-${p('month')}-${p('day')}`;
-    },
+    isoDay: d => isoDayOf(day(d)),
     dayParts: d => {
       const key = Math.floor(Number(d) / HOUR_MS);
       const hit = cache.get(key);
       if (hit) return hit;
-      const p = local(key * HOUR_MS);
-      const v = {day: `${p('year')}-${p('month')}-${p('day')}`, h: Number(p('hour')), wd: p('weekday')};
+      const part = local(key * HOUR_MS);
+      const parts: DayParts = {day: isoDayOf(part), h: Number(part('hour')), wd: part('weekday')};
       if (cache.size > PARTS_CACHE_LIMIT) cache.clear();
-      cache.set(key, v);
-      return v;
+      cache.set(key, parts);
+      return parts;
     },
     hourNow: now => {
-      const p = clockNow(now);
-      return Number(p('hour')) + Number(p('minute')) / 60;
+      const part = clock(now);
+      return Number(part('hour')) + Number(part('minute')) / 60;
     },
     // Math.round first: Intl rounds a half away from zero, the legacy `Math.round(v).toLocaleString` does not
-    integer: n => post('number', integer.format(Math.round(n))),
+    integer: n => numberRule(integer.format(Math.round(n))),
     number: (n, maxFraction) => {
       const digits = Math.min(maxFraction ?? 1, 2);
-      let f = numbers.get(digits);
-      if (!f) numbers.set(digits, (f = nf(digits)));
-      return post('number', f.format(n));
+      let format = numbers.get(digits);
+      if (!format) numbers.set(digits, (format = numberFormat(digits)));
+      return numberRule(format.format(n));
     },
   };
 }

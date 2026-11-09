@@ -43,15 +43,23 @@ const rows: Row[] = [
   ['time24s', f => f.time24s(T1607S), '16:07:09', '16:07:09', '16:07:09'],
   ['time24s 16:00', f => f.time24s(T1600), '16:00:00', '16:00:00', '16:00:00'],
   ['time24s after midnight', f => f.time24s(T0030), '00:30:00', '00:30:00', '00:30:00'],
-  ['date', f => f.date(T1607), 'Nov 7', '7 nov.', '7. Nov.'],
+  ['date 16:07', f => f.date(T1607), 'Nov 7', '7 nov.', '7. Nov.'],
+  ['date 16:00', f => f.date(T1600), 'Nov 7', '7 nov.', '7. Nov.'],
   ['date of a UTC-next-day instant', f => f.date(T2230), 'Nov 7', '7 nov.', '7. Nov.'],
-  ['dateWeekday', f => f.dateWeekday(T1607), 'Sat, Nov 7', 'sam. 7 nov.', 'Sa., 7. Nov.'],
-  ['dateLong', f => f.dateLong(T1607), 'Saturday, November 7', 'samedi 7 novembre', 'Samstag, 7. November'],
-  ['weekday long', f => f.weekday(T1607, 'long'), 'Saturday', 'samedi', 'Samstag'],
-  ['weekday short', f => f.weekday(T1607, 'short'), 'Sat', 'sam.', 'Sa'],
-  ['month long', f => f.month(T1607, 'long'), 'November', 'novembre', 'November'],
-  ['month short', f => f.month(T1607, 'short'), 'Nov', 'nov.', 'Nov'],
-  ['isoDay', f => f.isoDay(T1607), '2026-11-07', '2026-11-07', '2026-11-07'],
+  ['dateWeekday 16:07', f => f.dateWeekday(T1607), 'Sat, Nov 7', 'sam. 7 nov.', 'Sa., 7. Nov.'],
+  ['dateWeekday 16:00', f => f.dateWeekday(T1600), 'Sat, Nov 7', 'sam. 7 nov.', 'Sa., 7. Nov.'],
+  ['dateLong 16:07', f => f.dateLong(T1607), 'Saturday, November 7', 'samedi 7 novembre', 'Samstag, 7. November'],
+  ['dateLong 16:00', f => f.dateLong(T1600), 'Saturday, November 7', 'samedi 7 novembre', 'Samstag, 7. November'],
+  ['weekday long 16:07', f => f.weekday(T1607, 'long'), 'Saturday', 'samedi', 'Samstag'],
+  ['weekday long 16:00', f => f.weekday(T1600, 'long'), 'Saturday', 'samedi', 'Samstag'],
+  ['weekday short 16:07', f => f.weekday(T1607, 'short'), 'Sat', 'sam.', 'Sa'],
+  ['weekday short 16:00', f => f.weekday(T1600, 'short'), 'Sat', 'sam.', 'Sa'],
+  ['month long 16:07', f => f.month(T1607, 'long'), 'November', 'novembre', 'November'],
+  ['month long 16:00', f => f.month(T1600, 'long'), 'November', 'novembre', 'November'],
+  ['month short 16:07', f => f.month(T1607, 'short'), 'Nov', 'nov.', 'Nov'],
+  ['month short 16:00', f => f.month(T1600, 'short'), 'Nov', 'nov.', 'Nov'],
+  ['isoDay 16:07', f => f.isoDay(T1607), '2026-11-07', '2026-11-07', '2026-11-07'],
+  ['isoDay 16:00', f => f.isoDay(T1600), '2026-11-07', '2026-11-07', '2026-11-07'],
   ['isoDay of an instant that is the next day in UTC', f => f.isoDay(T2230), '2026-11-07', '2026-11-07', '2026-11-07'],
   ['isoDay after midnight', f => f.isoDay(T0030), '2026-11-08', '2026-11-08', '2026-11-08'],
   ['dayParts 16:07', f => f.dayParts(T1607), ...parts('Sat', 'sam.', 'Sa.', 16, '2026-11-07')],
@@ -90,9 +98,10 @@ describe.each([
 
 describe('hourNow', () => {
   test.each(['en-CA', 'fr-CA', 'de-DE'])('%s gives the fractional hour', tag => {
-    expect(make(tag).hourNow(T1607)).toBeCloseTo(16.1167, 4);
-    expect(make(tag).hourNow(T1600)).toBe(16);
-    expect(make(tag).hourNow(T0030)).toBeCloseTo(0.5, 6);
+    const f = make(tag);
+    expect(f.hourNow(T1607)).toBeCloseTo(16.1167, 4);
+    expect(f.hourNow(T1600)).toBe(16);
+    expect(f.hourNow(T0030)).toBeCloseTo(0.5, 6);
   });
 
   test('takes a timestamp as well as a Date', () => {
@@ -100,7 +109,7 @@ describe('hourNow', () => {
   });
 });
 
-describe('every function takes a timestamp as well as a Date', () => {
+describe('a timestamp is accepted as well as a Date', () => {
   test('time, date and isoDay', () => {
     const f = make('fr-CA');
     expect(f.time(T1607.getTime())).toBe('16 h 07');
@@ -111,8 +120,9 @@ describe('every function takes a timestamp as well as a Date', () => {
 
 describe('the time zone is the locale spec', () => {
   test('the same instant reads differently in another zone', () => {
-    expect(make('en-CA', {timeZone: 'Europe/Paris'}).time(T1607)).toBe('10:07 pm');
-    expect(make('en-CA', {timeZone: 'Europe/Paris'}).isoDay(T2230)).toBe('2026-11-08');
+    const f = make('en-CA', {timeZone: 'Europe/Paris'});
+    expect(f.time(T1607)).toBe('10:07 pm');
+    expect(f.isoDay(T2230)).toBe('2026-11-08');
   });
 });
 
@@ -124,7 +134,7 @@ describe('the time_format preference', () => {
     expect(f.hour(T1607)).toBe('16');
   });
 
-  test('12 hours in English is the house style', () => {
+  test('12 hours in English follows the house rule', () => {
     expect(make('en-CA', {hour12: true}).time(T1607)).toBe('4:07 pm');
   });
 
