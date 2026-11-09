@@ -719,6 +719,7 @@ export const FR_MAP = {
   'Outlet on': 'Prise allumée',
   'Outlet off': 'Prise éteinte',
   '{n} of {n} on · {n}%': '{n} sur {n} allumées · {n}%',
+  '{n} of {n} on': '{n} sur {n} allumées',
   '{n} lights on': '{n} lumières allumées',
   '{n} light on': '{n} lumière allumée',
   'lights on ·': 'lumières allumées ·',
@@ -934,11 +935,11 @@ export const FR_MAP = {
   'Streaming · no motion': 'En direct · aucun mouvement',
   // ---- scenes (phone) ----
   Scenes: 'Scènes',
-  'Tap to run': 'Toucher pour lancer',
+  'Tap to run': 'Lancer',
   'Last {n}': 'Lancée le {n}',
-  'Last {n} min ago': 'Lancée il y a {n} min',
-  'Last {n} h ago': 'Lancée il y a {n} h',
-  'Last just now': "Lancée à l'instant",
+  'Last {n} min ago': 'il y a {n} min',
+  'Last {n} h ago': 'il y a {n} h',
+  'Last just now': "à l'instant",
   '{n}° inside · {n} lights on · Doors closed': '{n}° dedans · {n} lumières allumées · Portes fermées',
   Charger: 'Borne',
   'Car not plugged in': 'Voiture non branchée',
@@ -1335,7 +1336,7 @@ export const FR_MAP = {
     'Maximums et minimums prévus en trait plein, normales de la date en pointillé.',
   // ---- footer ----
   // ---- idle clock smart stack (2.5.0) ----
-  'Now playing': 'En cours de lecture',
+  'Now playing': 'En lecture',
   'Tap for the player': 'Toucher pour le lecteur',
   'Lights unreachable': 'Lumières injoignables',
   'They are not answering Home Assistant': 'Elles ne répondent plus à Home Assistant',

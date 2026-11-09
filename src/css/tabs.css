@@ -396,7 +396,7 @@
   border-radius: 10px;
 }
 .htile .hv {
-  font-size: calc(36px * var(--tx));
+  font-size: calc(32px * var(--tx));
   letter-spacing: -0.02em;
   line-height: 1.1;
   margin-top: 10px;

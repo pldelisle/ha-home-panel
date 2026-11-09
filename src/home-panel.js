@@ -6591,13 +6591,14 @@ export class HomePanel extends HTMLElement {
       mode: nightOn && alOn ? 'Night' : alOn && !man ? 'Auto' : a.al ? 'Manual' : '',
     };
   }
-  lightSub(a, s, m) {
+  // `short`: the phone's tile has no room for the colour temperature; the sheet and the tablet keep it
+  lightSub(a, s, m, short = false) {
     if (!s.avail) return 'Unavailable';
     if (!s.any) return 'Off';
     return [
       s.on.length < a.ids.length ? `${s.on.length} of ${a.ids.length} on` : '',
       s.br + '%',
-      m.mode || (s.k ? s.k + ' K' : ''),
+      m.mode || (s.k && !short ? s.k + ' K' : ''),
     ]
       .filter(Boolean)
       .join(' · ');
@@ -6606,9 +6607,9 @@ export class HomePanel extends HTMLElement {
   lightCell(a) {
     const s = this.lightState(a),
       m = this.lightMode(a),
-      sub = this.lightSub(a, s, m),
+      sub = this.lightSub(a, s, m, this.compact),
       aid = esc(a.aid);
-    return `<div class="lcell${s.any ? ' on' : ''}${s.avail ? '' : ' na'}" data-lsheet="${aid}" role="button" tabindex="0" aria-label="${esc(a.name)}: ${sub}"${s.tint ? ` style="--lc:${s.tint}"` : ''}>
+    return `<div class="lcell${s.any ? ' on' : ''}${s.avail ? '' : ' na'}" data-lsheet="${aid}" role="button" tabindex="0" aria-label="${esc(a.name)}: ${this.lightSub(a, s, m)}"${s.tint ? ` style="--lc:${s.tint}"` : ''}>
       <button type="button" class="lbulb" role="switch" aria-checked="${s.any}" aria-label="${esc(a.name)} lights" data-l="area" data-a="${aid}" ${s.avail ? '' : 'disabled'}>${ico('bulb', 22)}</button>
       <span class="tx"><b>${esc(a.name)}</b><small>${sub}${this.linkTag(a)}</small></span><span class="lchev" aria-hidden="true">${ico('chev', 18)}</span><span class="lgrip" aria-hidden="true">${ico('grip', 20)}</span></div>`;
   }

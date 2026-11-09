@@ -377,7 +377,7 @@
   border-radius: 20px;
 }
 .app.tabsv.cp .htile .hv {
-  font-size: calc(28px * var(--tx));
+  font-size: calc(24px * var(--tx));
   margin-top: 8px;
 }
 .app.tabsv.cp .htile .hs {
@@ -398,6 +398,13 @@
 }
 .app.tabsv.cp .hsec {
   padding: 14px;
+}
+/* the Security line holds more than one line in French ("toutes les portes fermées · mouvement en cours"): it wraps to two */
+.app.tabsv.cp .hsec > .hh .right {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  white-space: normal;
 }
 .app.tabsv.cp .hcams {
   grid-template-columns: repeat(2, minmax(0, 1fr));

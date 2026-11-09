@@ -121,3 +121,35 @@ test('a name with " · " in it is read as two parts', async () => {
   const {frText} = await load([]);
   expect(frText('Lights · Front door open')).toBe('Lumières · Front door : ouverte');
 });
+
+// #79: the phone's scene tiles, the Dinner scene's "Last 2 h ago" and the movie scene's "Tap to run", and the idle stack's
+// "Now playing" card were cut with an ellipsis in French; shorter words fit. Expected texts are written out, never built.
+test('the scene tile sub-lines are short in French', async () => {
+  const {frText} = await load([]);
+  // the translator capitalises the first letter when the English one is a capital
+  expect(frText('Last 2 h ago')).toBe('Il y a 2 h');
+  expect(frText('Last 5 min ago')).toBe('Il y a 5 min');
+  expect(frText('Last just now')).toBe("À l'instant");
+  expect(frText('Tap to run')).toBe('Lancer');
+  // a scene run on an earlier day keeps its date wording
+  expect(frText('Last Nov 3')).toBe('Lancée le 3 nov.');
+});
+
+test('the idle stack card says "En lecture" and nothing else changed with it', async () => {
+  const {frText} = await load([]);
+  expect(frText('Now playing')).toBe('En lecture');
+  expect(frText('Tap for the player')).toBe('Toucher pour le lecteur');
+  // the other "ago" lines keep their wording
+  expect(frText('Motion 2 h ago')).toBe('Mouvement il y a 2 h');
+  expect(frText('last motion 5 min ago')).toBe('dernier mouvement il y a 5 min');
+});
+
+// the Lights tile's sub-line is "2 of 3 on · 59%", with the colour temperature or the mode after it on a tablet
+test('the Lights tile sub-line is French in every part', async () => {
+  const {frText} = await load([]);
+  expect(frText('2 of 3 on')).toBe('2 sur 3 allumées');
+  expect(frText('2 of 3 on · 59% · 3000 K')).toBe('2 sur 3 allumées · 59 % · 3000 K');
+  expect(frText('2 of 3 on · 59% · Auto')).toBe('2 sur 3 allumées · 59 % · Auto');
+  expect(frText('2 of 3 on · 59% · Night')).toBe('2 sur 3 allumées · 59 % · Nuit');
+  expect(frText('2 of 3 on · 59%')).toBe('2 sur 3 allumées · 59 %');
+});
