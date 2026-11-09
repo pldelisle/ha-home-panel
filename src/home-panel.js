@@ -6,6 +6,8 @@ import {resolveConfig} from './config.js';
 import {pickStack, inHours, reminderLeft} from './stack.js';
 import {FR, setFR, FR_ATTR, frNode, frTree, frApex} from './i18n/fr.js';
 import {autoMethods} from './auto.js';
+import {createStore} from './core/store.ts';
+import {createSettings} from './core/settings.ts';
 import {
   VERSION,
   getHass,
@@ -732,6 +734,20 @@ export class HomePanel extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({mode: 'open'});
+    // the store and the settings are fed beside the module globals until the migrate steps move every read (spec 10)
+    this.store = createStore({
+      defaultTimeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+      resolve: resolveConfig,
+    });
+    /** @type {import('./core/settings.ts').KeyValueStorage} */
+    let storage = {getItem: () => null, setItem: () => {}};
+    try {
+      storage = localStorage;
+    } catch {
+      // blocked site data: touching localStorage throws, so the settings keep their defaults
+    }
+    this.settings = createSettings(storage);
+    this.unsubStore = this.store.subscribe('*', () => this.tick()); // one path to the one-second render
     this.H = null; // history-derived data
     this.charts = []; // sheet charts, destroyed on close
     this.ApexCharts = null; // the library, once the lazy chunk has loaded (loadCharts)
@@ -773,7 +789,11 @@ export class HomePanel extends HTMLElement {
       this.tick();
     }
   }
+  get hass() {
+    return this.store.hass;
+  }
   set hass(h) {
+    this.store.setHass(h);
     setHass(h);
     setTZ((h.config && h.config.time_zone) || getTZ());
     // French follows the user's profile language; switching it redraws the panel
@@ -789,7 +809,6 @@ export class HomePanel extends HTMLElement {
       this.lightOrderAsked = true;
       this.loadLightOrder();
     }
-    this.tick();
   }
   // (re)read the panel's config; true when it changed after the panel was drawn, so it must be drawn again
   configure() {
@@ -797,6 +816,7 @@ export class HomePanel extends HTMLElement {
       key = JSON.stringify(pc);
     if (key === this.cfgKey) return false;
     this.cfgKey = key;
+    this.store.setPanelConfig(pc);
     applyConfig(pc);
     if (!this.$app) return false;
     this.teardown();
@@ -825,6 +845,7 @@ export class HomePanel extends HTMLElement {
         delete this[k];
         this[k] = v;
       }
+    if (!this.unsubStore) this.unsubStore = this.store.subscribe('*', () => this.tick()); // back on the page
     this.clockT = setInterval(() => {
       this.renderHeader();
       this.renderIdle();
@@ -873,6 +894,48 @@ export class HomePanel extends HTMLElement {
     clearInterval(this.histT);
     window.removeEventListener('keydown', this.onKey);
     this.unsubscribeForecasts();
+    if (this.unsubStore) this.unsubStore();
+    this.unsubStore = null;
+  }
+  // the store's reads, until the migrate steps move every call site off the module globals (spec 10)
+  get E() {
+    return this.store.config.entities;
+  }
+  get ROOMS() {
+    return this.store.config.rooms;
+  }
+  get HOUSEHOLD() {
+    return this.store.config.people;
+  }
+  get SCENE_ORDER() {
+    return this.store.config.scenes;
+  }
+  get MODES() {
+    return this.store.config.modes;
+  }
+  get AL_AREAS() {
+    return this.store.config.alAreas;
+  }
+  get SPLIT_AREAS() {
+    return this.store.config.splitLightAreas;
+  }
+  get LIGHT_LINKS() {
+    return this.store.config.lightLinks;
+  }
+  get CFG() {
+    return this.store.config;
+  }
+  st(id) {
+    return this.store.state(id);
+  }
+  num(id) {
+    return this.store.num(id);
+  }
+  attr(id, a) {
+    return this.store.attr(id, a);
+  }
+  kw(id) {
+    return this.store.kw(id);
   }
   $(id) {
     return this.shadowRoot.getElementById(id);
