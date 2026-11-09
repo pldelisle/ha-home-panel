@@ -56,7 +56,7 @@ Home Assistant caches files under `/local/` for 31 days. After each update, chan
 Without a `config:` block, the panel finds what it can by itself: the weather entity, thermostats, people, lights, sensors and a FordPass car.
 Add a `config:` block under the panel to name the rest of your devices, pick the room order or add a picture of your house.
 [examples/configuration.yaml](examples/configuration.yaml) lists every option.
-A setting the panel cannot use (a misspelled key, a value of the wrong type, an icon outside the list) is ignored and the rest of the block still applies; a card at the top of the Home tab, shown to admins only, names each one and the spelling meant when it is close.
+A setting the panel cannot use (a misspelled key, a value of the wrong type, an icon outside the list) is ignored and the rest of the block still applies; a later release adds a card at the top of the Home tab, shown to admins only, that names each one and the spelling meant when it is close.
 
 ```yaml
     config:

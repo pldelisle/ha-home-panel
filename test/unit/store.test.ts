@@ -3,15 +3,10 @@
 import {describe, expect, test, vi} from 'vitest';
 import {resolveConfig} from '../../src/core/config.ts';
 import {createStore} from '../../src/core/store.ts';
-import type {HassEntities} from '../../src/core/hass.ts';
 import {entity, fakeHass} from './fake-hass.ts';
 
-// the resolver is resolveConfig, as in the element; here it also records what it was handed
-const resolve = (raw: unknown, states: HassEntities) => ({
-  ...resolveConfig(raw, states),
-  raw,
-  count: Object.keys(states).length,
-});
+// the resolver is resolveConfig, as in the element; a spy on it says what it was handed
+const resolve = vi.fn(resolveConfig);
 const make = () => createStore({defaultTimeZone: 'UTC', resolve});
 
 const house = () =>
@@ -401,7 +396,8 @@ describe('panel config', () => {
   test('the config resolves against empty states before the first hass', () => {
     const store = make();
     expect(store.setPanelConfig({rooms: ['a']})).toBe(true);
-    expect(store.config).toEqual({...resolveConfig({rooms: ['a']}, {}), raw: {rooms: ['a']}, count: 0});
+    expect(resolve).toHaveBeenLastCalledWith({rooms: ['a']}, {});
+    expect(store.config).toEqual(resolveConfig({rooms: ['a']}, {}));
     expect(store.generation).toBe(1);
   });
 
@@ -409,12 +405,13 @@ describe('panel config', () => {
     const store = make();
     store.setPanelConfig({rooms: ['a']});
     store.setHass(house());
-    expect(store.config).toEqual({...resolveConfig({rooms: ['a']}, house().states), raw: {rooms: ['a']}, count: 3});
+    expect(resolve).toHaveBeenLastCalledWith({rooms: ['a']}, house().states);
+    expect(store.config).toEqual(resolveConfig({rooms: ['a']}, house().states));
     expect(store.generation).toBe(1);
   });
 
   test('later hass objects do not resolve the config again', () => {
-    const resolver = vi.fn(resolve);
+    const resolver = vi.fn(resolveConfig);
     const store = createStore({defaultTimeZone: 'UTC', resolve: resolver});
     const h = house();
     store.setHass(h);
@@ -471,6 +468,6 @@ describe('panel config', () => {
     const store = make();
     store.setHass(house());
     store.setPanelConfig({rooms: ['a']});
-    expect(store.config.count).toBe(3);
+    expect(resolve).toHaveBeenLastCalledWith({rooms: ['a']}, house().states);
   });
 });

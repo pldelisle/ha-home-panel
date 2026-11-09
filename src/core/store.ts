@@ -28,10 +28,10 @@ export interface HassChange {
   user: boolean;
 }
 
-/** `TConfig` is what the injected resolver returns: the resolved panel config, or an extension of it a test adds to. */
-export interface PanelStore<TConfig extends ResolvedConfig = ResolvedConfig> {
+export interface PanelStore {
   readonly hass: PanelHass | null;
-  readonly config: TConfig;
+  /** The resolved panel config: what the injected resolver made of the config and the house's states. */
+  readonly config: ResolvedConfig;
   /** What is wrong with the config as written (spec 13); empty when it is clean. The config above ignores all of it. */
   readonly configProblems: ConfigProblem[];
   /** +1 on every config change; the stale-reply guard of the API client. */
@@ -64,11 +64,11 @@ export interface PanelStore<TConfig extends ResolvedConfig = ResolvedConfig> {
   subscribe(ids: readonly string[] | '*', cb: (change: HassChange) => void): () => void;
 }
 
-export interface StoreOptions<TConfig extends ResolvedConfig> {
+export interface StoreOptions {
   /** The zone used until a hass brings its own; the element passes the browser's. */
   defaultTimeZone: string;
   /** The panel config and the house's states in, the resolved config out (the element passes resolveConfig). */
-  resolve: (raw: unknown, states: HassEntities) => TConfig;
+  resolve: (raw: unknown, states: HassEntities) => ResolvedConfig;
 }
 
 interface Subscriber {
@@ -78,9 +78,7 @@ interface Subscriber {
 const isAvailable = (s: HassEntity | undefined): s is HassEntity =>
   s !== undefined && s.state !== 'unavailable' && s.state !== 'unknown';
 
-export function createStore<TConfig extends ResolvedConfig = ResolvedConfig>(
-  opts: StoreOptions<TConfig>,
-): PanelStore<TConfig> {
+export function createStore(opts: StoreOptions): PanelStore {
   let hass: PanelHass | null = null;
   let raw: unknown = {};
   let configKey: string | null = null;

@@ -22,12 +22,19 @@ import {
   type Failure,
   type Infer,
 } from 'superstruct';
+import {DEFAULT_ENTITIES, EC_SUFFIX, ENTITY_ALIAS, ENTITY_KEYS, type EntityKey, type EntityMap} from './entities.ts';
 import type {MessageKey} from './i18n/en.ts';
 import {editDistance} from './levenshtein.ts';
+import {guessIcon, ROOM_ICONS, type RoomIcon} from './room-icons.ts';
+
+// the tables the schema and the resolver read live beside this module; the core's config surface stays one import
+export {DEFAULT_ENTITIES, ENTITY_ALIAS, type EntityKey, type EntityMap} from './entities.ts';
+export {guessIcon, ROOM_ICONS, type RoomIcon} from './room-icons.ts';
 
 // ---------- the schema: examples/configuration.yaml, in full ----------
 
-const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
+const isObject = (v: unknown): v is Record<string | number, unknown> => typeof v === 'object' && v !== null;
+const isRecord = (v: unknown): v is Record<string, unknown> => isObject(v) && !Array.isArray(v);
 
 // `any` is how superstruct itself types "a struct of anything"; Struct<T> is invariant in T, so no narrower type holds them
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -72,11 +79,6 @@ const pair = define<[string, string]>(
   'pair',
   value => Array.isArray(value) && value.length === 2 && value.every(v => typeof v === 'string'),
 );
-
-/** The icons a room can have. */
-export const ROOM_ICONS = ['sofa', 'door', 'desk', 'bed', 'bath', 'drop', 'car', 'house', 'therm'] as const;
-/** The icons a room can have (ROOM_ICONS). */
-export type RoomIcon = (typeof ROOM_ICONS)[number];
 
 // a room: its thermostat's entity id, or a block that also names the room and its sensors
 const room = either(
@@ -135,142 +137,6 @@ export type PanelConfig = Infer<typeof panelConfig>;
 
 // ---------- output: what resolveConfig() returns ----------
 
-// Entities each card reads. null = not set; the card or tile that needs it stays hidden or shows a dash.
-// Names that an integration always creates the same way are defaults (the sun, Hilo's gateway sensors);
-// names that carry a device's or a town's name are found from the house's entities or set in the config.
-export const DEFAULT_ENTITIES = {
-  // weather: the weather entity, plus Environment Canada's sensors found by the weather entity's prefix (weather.<town>_forecast → sensor.<town>_*)
-  weather: null,
-  cond: null,
-  outT: null,
-  hi: null,
-  lo: null,
-  nhi: null,
-  nlo: null,
-  wind: null,
-  windDir: null,
-  hum: null,
-  uv: null,
-  aqhi: null,
-  warnings: null,
-  dew: null,
-  pres: null,
-  tend: null,
-  gust: null,
-  chill: null,
-  humidex: null,
-  vis: null,
-  pop: null,
-  summary: null,
-  obs: null,
-  bearing: null,
-  watches: null,
-  advisories: null,
-  statements: null,
-  sun: 'sun.sun',
-  setting: 'sensor.sun_next_setting',
-  rising: 'sensor.sun_next_rising',
-  dawn: 'sensor.sun_next_dawn',
-  // energy: whole-house power, energy total, water heater, EV charger
-  grid: null,
-  energy: 'sensor.hilo_energy_total',
-  whP: null,
-  whT: null,
-  whE: null,
-  evP: null,
-  wbStatus: null,
-  wbAmps: null,
-  wbPause: null,
-  wbLock: null,
-  wbPrice: null,
-  // Hilo (Hydro-Québec's demand-response service) and Hydro-Québec's own integration
-  rate: 'sensor.hilo_gateway_hilo_rate_current',
-  rateLow: 'sensor.hilo_gateway_hilo_rate_low',
-  rateMed: 'sensor.hilo_gateway_hilo_rate_medium',
-  rateReward: 'sensor.hilo_gateway_hilo_rate_reward_rate',
-  defi: 'sensor.hilo_gateway_defi_hilo',
-  rewards: 'sensor.hilo_gateway_recompenses_hilo',
-  gateway: 'sensor.hilo_gateway',
-  hq: null,
-  hqPeak: null,
-  hqUpcoming: null,
-  // a heat pump or air conditioner shown beside the rooms
-  hp: null,
-  // an input_boolean that is on while the house is in Away mode (the idle clock shows a card for it)
-  away: null,
-} satisfies Record<string, string | null>;
-/** The keys of DEFAULT_ENTITIES: the entities each card reads. */
-export type EntityKey = keyof typeof DEFAULT_ENTITIES;
-export type EntityMap = Record<EntityKey, string | null>;
-
-// Environment Canada sensor suffix for each weather key (sensor.<town>_<suffix>)
-const EC_SUFFIX: Partial<Record<EntityKey, string>> = {
-  cond: 'current_condition',
-  outT: 'temperature',
-  hi: 'high_temperature',
-  lo: 'low_temperature',
-  nhi: 'normal_high_temperature',
-  nlo: 'normal_low_temperature',
-  wind: 'wind_speed',
-  windDir: 'wind_direction',
-  hum: 'humidity',
-  uv: 'uv_index',
-  aqhi: 'aqhi',
-  warnings: 'warnings',
-  dew: 'dew_point',
-  pres: 'barometric_pressure',
-  tend: 'tendency',
-  gust: 'wind_gust',
-  chill: 'wind_chill',
-  humidex: 'humidex',
-  vis: 'visibility',
-  pop: 'chance_of_precipitation',
-  summary: 'summary',
-  obs: 'observation_time',
-  bearing: 'wind_bearing',
-  watches: 'watches',
-  advisories: 'advisories',
-  statements: 'statements',
-};
-// the config's snake_case names for the entity keys above (both spellings are accepted)
-export const ENTITY_ALIAS: Record<string, EntityKey> = {
-  condition: 'cond',
-  outdoor_temperature: 'outT',
-  high: 'hi',
-  low: 'lo',
-  normal_high: 'nhi',
-  normal_low: 'nlo',
-  wind_direction: 'windDir',
-  humidity: 'hum',
-  sun_setting: 'setting',
-  sun_rising: 'rising',
-  sun_dawn: 'dawn',
-  grid_power: 'grid',
-  energy_total: 'energy',
-  water_heater_power: 'whP',
-  water_heater_temperature: 'whT',
-  water_heater_energy: 'whE',
-  ev_charger_power: 'evP',
-  ev_charger_status: 'wbStatus',
-  ev_charger_current: 'wbAmps',
-  ev_charger_pause: 'wbPause',
-  ev_charger_lock: 'wbLock',
-  ev_charger_price: 'wbPrice',
-  hilo_rate: 'rate',
-  hilo_rate_low: 'rateLow',
-  hilo_rate_medium: 'rateMed',
-  hilo_rate_reward: 'rateReward',
-  hilo_challenge: 'defi',
-  hilo_rewards: 'rewards',
-  hilo_gateway: 'gateway',
-  hydro_quebec_balance: 'hq',
-  hydro_quebec_peak: 'hqPeak',
-  hydro_quebec_upcoming_peak: 'hqUpcoming',
-  heat_pump: 'hp',
-  away_mode: 'away',
-};
-const ENTITY_KEYS = [...Object.keys(ENTITY_ALIAS), ...Object.keys(DEFAULT_ENTITIES)];
-
 export interface RoomSpec {
   /** The room's key: the config's `key`, else the thermostat's name without climate. and thermostat_. */
   k: string;
@@ -323,18 +189,20 @@ export interface ConfigProblem {
   key: MessageKey;
   values: Record<string, string | number>;
 }
+/** Where a value sits in the config, as superstruct reports it: the keys and list indices down to it. */
 type Place = readonly (string | number)[];
 /** A problem and the place resolveConfig drops to get rid of it. */
-interface Found {
+interface ProblemAt {
   at: Place;
   problem: ConfigProblem;
 }
 
-const show = (at: Place): string =>
+/** A place as the card shows it: `rooms[1].icon`. */
+const pathOf = (at: Place): string =>
   at.reduce<string>((s, k) => (typeof k === 'number' ? `${s}[${k}]` : s ? `${s}.${k}` : k), '');
-const found = (at: Place, key: MessageKey, values: Record<string, string | number> = {}): Found => ({
+const problemAt = (at: Place, key: MessageKey, values: Record<string, string | number> = {}): ProblemAt => ({
   at,
-  problem: {path: show(at), key, values: {path: show(at), ...values}},
+  problem: {path: pathOf(at), key, values: {path: pathOf(at), ...values}},
 });
 
 // plain words for what a value is and what was expected, never type names: the values of a problem hold one of these
@@ -392,12 +260,12 @@ function keysOfBlock(failure: Failure): string[] {
   return Object.keys(shapeOf(struct, branch[path.length - 1]).schema as object).filter(key => key !== '_panel_custom');
 }
 
-const unknownKey = (at: Place, candidates: readonly string[], plain: MessageKey = 'config.unknownKey'): Found => {
+const unknownKey = (at: Place, candidates: readonly string[], plain: MessageKey = 'config.unknownKey'): ProblemAt => {
   const hint = nearest(String(at[at.length - 1]), candidates);
-  return hint ? found(at, 'config.unknownKeyHint', {hint}) : found(at, plain);
+  return hint ? problemAt(at, 'config.unknownKeyHint', {hint}) : problemAt(at, plain);
 };
 
-function problemOf(failure: Failure): Found {
+function problemOf(failure: Failure): ProblemAt {
   const at = failure.path as Place;
   const value: unknown = failure.value;
   if (failure.type === 'never') return unknownKey(at, keysOfBlock(failure));
@@ -405,17 +273,17 @@ function problemOf(failure: Failure): Found {
   // undefined is a wrong type of its own
   const branch = failure.branch as unknown[];
   if (value === undefined && isRecord(branch[branch.length - 2]))
-    return found(at.slice(0, -1), 'config.missingKey', {missing: String(at[at.length - 1])});
-  if (failure.refinement === 'pattern') return found(at, 'config.notATime', {got: String(value)});
+    return problemAt(at.slice(0, -1), 'config.missingKey', {missing: String(at[at.length - 1])});
+  if (failure.refinement === 'pattern') return problemAt(at, 'config.notATime', {got: String(value)});
   if (failure.type === 'enums' && (typeof value === 'string' || typeof value === 'number'))
-    return found(at, 'config.notOneOf', {got: String(value), options: ROOM_ICONS.join(', ')});
-  if (failure.type === 'enums') return found(at, 'config.wrongType', {expected: 'text', got: kindOf(value)});
-  if (failure.type === 'pair') return found(at, 'config.notAPair');
-  return found(at, 'config.wrongType', {expected: WORD_OF_TYPE[failure.type] ?? 'other', got: kindOf(value)});
+    return problemAt(at, 'config.notOneOf', {got: String(value), options: ROOM_ICONS.join(', ')});
+  if (failure.type === 'enums') return problemAt(at, 'config.wrongType', {expected: 'text', got: kindOf(value)});
+  if (failure.type === 'pair') return problemAt(at, 'config.notAPair');
+  return problemAt(at, 'config.wrongType', {expected: WORD_OF_TYPE[failure.type] ?? 'other', got: kindOf(value)});
 }
 
 /** Every problem of a block of settings, each with the place to drop. */
-function findProblems(raw: Record<string, unknown>): Found[] {
+function findProblems(raw: Record<string, unknown>): ProblemAt[] {
   const [error] = validate(raw, panelConfig);
   const problems = (error?.failures() ?? []).map(problemOf);
   // the entity keys are a list of names, not a schema: both spellings are accepted, nothing else
@@ -452,88 +320,61 @@ const defined = (node: unknown): unknown =>
       : node;
 
 /** A copy without the holes `delete` leaves in a list. Anything that is not a list or a block is kept as it is. */
-const tidy = (node: unknown): unknown =>
+const withoutHoles = (node: unknown): unknown =>
   Array.isArray(node)
-    ? node.filter(() => true).map(tidy)
+    ? node.filter(() => true).map(withoutHoles)
     : isRecord(node)
-      ? Object.fromEntries(Object.entries(node).map(([k, v]) => [k, tidy(v)]))
+      ? Object.fromEntries(Object.entries(node).map(([k, v]) => [k, withoutHoles(v)]))
       : node;
 
-const valueAt = (node: unknown, key: string | number): unknown =>
-  typeof node === 'object' && node !== null ? (node as Record<string | number, unknown>)[key] : undefined;
-
-/** What the schema accepts is a PanelConfig; the compiler cannot follow a prune that far, so this says it once. */
-const accepted = (data: unknown) => data as PanelConfig;
+const valueAt = (node: unknown, key: string | number): unknown => (isObject(node) ? node[key] : undefined);
 
 /**
  * `raw` without what `checkConfig` reports: a bad leaf, a bad list element, an unknown key. Dropping a leaf can leave its
  * block without a required key, which the next round drops in turn; three rounds are more than any config needs.
  */
 function prune(raw: Record<string, unknown>): PanelConfig {
-  let data = defined(raw) as Record<string, unknown>;
+  let data = defined(raw);
   for (let round = 0; round < 3; round++) {
-    const problems = findProblems(data);
+    const problems = findProblems(data as Record<string, unknown>);
     if (problems.length === 0) break;
     for (const {at} of problems) {
       const parent = at.slice(0, -1).reduce(valueAt, data);
-      if (typeof parent === 'object' && parent !== null)
-        delete (parent as Record<string | number, unknown>)[at[at.length - 1]];
+      if (isObject(parent)) delete parent[at[at.length - 1]];
     }
-    data = tidy(data) as Record<string, unknown>;
+    data = withoutHoles(data);
   }
-  return accepted(data);
+  // what the schema accepts is a PanelConfig; the compiler cannot follow a prune that far
+  return data as PanelConfig;
 }
 
 // ---------- the resolver ----------
 
-/**
- * What discovery has always made of a value it did not choose (a friendly name can be anything): String() of it, and a
- * falsy value is no text. A list of one name reads as the name, a number as digits.
- */
-// eslint-disable-next-line @typescript-eslint/no-base-to-string -- the old resolver's coercion, kept: discovery keeps every rule
-const lenientText = (v: unknown): string => String(v || '');
-
-// a room's icon from its name, when the config doesn't give one
-/** @param s the room's name, or a value of another type: it goes through String(), and a falsy value is no name */
-export const guessIcon = (s: unknown): RoomIcon => {
-  const n = lenientText(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
-  return /bed|chambre|nursery|kid/.test(n)
-    ? 'bed'
-    : /bath|salle de bain|toilet/.test(n)
-      ? 'bath'
-      : /office|bureau|study|desk/.test(n)
-        ? 'desk'
-        : /powder|salle d.?eau|laundry|lavage/.test(n)
-          ? 'drop'
-          : /living|sejour|salon|family|lounge/.test(n)
-            ? 'sofa'
-            : /entr|hall|foyer|vestibul/.test(n)
-              ? 'door'
-              : /garage/.test(n)
-                ? 'car'
-                : 'therm';
-};
-
 // a room: its thermostat, and the sensors that hold its temperature, setpoint and heating power history
 // (by default the thermostat's own name plus _temperature / _target_temperature / _power, which is how Hilo names them)
 function roomSpec(r: Infer<typeof room>, states: ConfigStates): RoomSpec {
-  const o: Partial<Exclude<typeof r, string>> & {climate: string} = typeof r === 'string' ? {climate: r} : r;
-  const obj = o.climate.replace(/^climate\./, '');
-  const fn = states[o.climate]?.attributes?.friendly_name;
-  const n = o.name ?? null;
+  const settings: Partial<Exclude<typeof r, string>> & {climate: string} = typeof r === 'string' ? {climate: r} : r;
+  const thermostat = settings.climate.replace(/^climate\./, '');
+  const friendlyName = states[settings.climate]?.attributes?.friendly_name;
+  const name = settings.name ?? null;
   return {
-    k: o.key || obj.replace(/^thermostat_/, ''),
-    n,
-    icon: o.icon ?? guessIcon(n || fn || obj),
-    climate: o.climate,
-    temp: o.temperature || `sensor.${obj}_temperature`,
-    target: o.target || `sensor.${obj}_target_temperature`,
-    power: o.power || `sensor.${obj}_power`,
+    k: settings.key || thermostat.replace(/^thermostat_/, ''),
+    n: name,
+    icon: settings.icon ?? guessIcon(name || friendlyName || thermostat),
+    climate: settings.climate,
+    temp: settings.temperature || `sensor.${thermostat}_temperature`,
+    target: settings.target || `sensor.${thermostat}_target_temperature`,
+    power: settings.power || `sensor.${thermostat}_power`,
   };
 }
 
 const asList = <T>(v: T | T[] | undefined): T[] => (v === undefined ? [] : Array.isArray(v) ? v : [v]);
-const firstWord = (s: unknown): string => lenientText(s).trim().split(/\s+/)[0];
+// a person's first name from the friendly name discovery found: String() of it, as the old resolver read it
+const firstWord = (s: unknown): string => {
+  // eslint-disable-next-line @typescript-eslint/no-base-to-string -- the old resolver's coercion, kept: discovery keeps every rule
+  const name = String(s || '');
+  return name.trim().split(/\s+/)[0];
+};
 
 /**
  * panel.config and the house's states → the settings the panel runs with. It runs on the config without what
@@ -546,29 +387,30 @@ export function resolveConfig(raw: unknown, states?: ConfigStates | null): Resol
   const all: ConfigStates = states ?? {};
   const ids = Object.keys(all),
     has = (id: string) => !!all[id];
-  const E: EntityMap = {...DEFAULT_ENTITIES};
+  const entities: EntityMap = {...DEFAULT_ENTITIES};
   const given: Record<string, string | null> = {};
   for (const [k, v] of Object.entries(cfg.entities ?? {})) {
     const key = ENTITY_ALIAS[k] || k;
-    if (key in E) given[key] = v || null;
+    if (key in entities) given[key] = v || null;
   }
   // weather: the configured entity, else the first weather entity (forecast entities first)
-  E.weather =
+  entities.weather =
     given.weather !== undefined
       ? given.weather
       : ids.find(i => /^weather\..+_forecast$/.test(i)) || ids.find(i => i.startsWith('weather.')) || null;
-  const town = E.weather && (E.weather.match(/^weather\.(.+?)(?:_forecast)?$/) || [])[1];
+  const town = entities.weather && (entities.weather.match(/^weather\.(.+?)(?:_forecast)?$/) || [])[1];
   if (town)
     for (const [k, suf] of Object.entries(EC_SUFFIX) as [EntityKey, string][]) {
       const id = `sensor.${town}_${suf}`;
-      if (has(id)) E[k] = id;
+      if (has(id)) entities[k] = id;
     }
   // Hilo's gateway sensor is sensor.hilo_gateway, or _2 after the integration was added twice
   // (it still holds the default here: the config's own value, which may clear it, is applied just below)
-  if (!has(DEFAULT_ENTITIES.gateway)) E.gateway = ids.find(i => /^sensor\.hilo_gateway(_\d+)?$/.test(i)) || E.gateway;
-  Object.assign(E, given);
+  if (!has(DEFAULT_ENTITIES.gateway))
+    entities.gateway = ids.find(i => /^sensor\.hilo_gateway(_\d+)?$/.test(i)) || entities.gateway;
+  Object.assign(entities, given);
   // rooms: the configured list, else every thermostat except the heat pump
-  const rooms = (cfg.rooms ? asList(cfg.rooms) : ids.filter(i => i.startsWith('climate.') && i !== E.hp).sort())
+  const rooms = (cfg.rooms ? asList(cfg.rooms) : ids.filter(i => i.startsWith('climate.') && i !== entities.hp).sort())
     .filter(Boolean)
     .map(r => roomSpec(r, all));
   // people shown in who's home: the configured first names, else each person entity's first name
@@ -587,7 +429,7 @@ export function resolveConfig(raw: unknown, states?: ConfigStates | null): Resol
         : null;
   const kwh = cfg.car?.battery_kwh ?? 0;
   return {
-    entities: E,
+    entities,
     rooms,
     people,
     scenes: asList(cfg.scenes), // scene order; scenes not listed follow alphabetically
