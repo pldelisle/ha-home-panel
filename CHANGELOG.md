@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.13.0
+
+- Room, light and scene names now follow the panel's language: a room Home Assistant calls Salon reads Living room in English, and `names:` in the config sets a name per language.
+- Every request the panel makes to Home Assistant now goes through one typed door, so a change in Home Assistant is caught at build time. Nothing visible changes.
+- The panel's own wording now lives in message catalogs with French checked at build time. Nothing visible changes.
+- Dates, times and numbers are now formatted in one place. Nothing visible changes.
+- Two panels on one page no longer share rooms or entities. Nothing visible changes.
+- The panel keeps its house in one place inside each copy of itself, ready for the next steps of the rewrite. Nothing visible changes.
+- Internal rewiring of the panel's house settings. Nothing visible changes.
+- Internal rewiring of how the panel reads Home Assistant. Nothing visible changes.
+- Internal rewiring of the panel's settings and French layer. Nothing visible changes.
+- The weather history sheet draws its charts again; it had been saying the sensor was missing.
+
 ## 2.12.0
 
 - This release makes the panel modern-browser only (Safari and iOS 26, current Chrome, Edge and Firefox) and changes how it is packaged: the release now has a `chunks/` folder, a `fonts/` folder and compressed copies of the scripts, so when updating by hand replace the whole `home-panel` folder rather than one file.
