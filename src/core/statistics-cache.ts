@@ -1,8 +1,8 @@
 // createStatisticsCache: the one memo for the recorder reads (`statistics` and `history`), shaped like the API client it wraps.
-// Pattern: memoisation (Michie, 1968) as a cache-aside read-through with a time to live; a call is keyed by its arguments, and
-// a hit returns the very promise of the first call. Spec 15 "Notes": it sits in the core because two features cached already.
+// Pattern: memoisation (Michie, 1968), a cache-aside read-through with a time to live: a call is keyed by its arguments and a hit
+// returns the first call's promise. Why here, spec 15 "Notes": "Two features already cache (this.WX, this.CR), so ... the shared module is justified now".
 // A caller that wants hits passes a start it keeps stable (the top of the hour, the start of the day): a start that moves is a new call.
-// Must not: touch the DOM, hold a clock of its own (`now` is injected), keep a rejection (a StaleReply included), or retry.
+// Must not: touch the DOM, read a clock but the `now` it is given (`Date.now` only as the default), keep a rejection (a StaleReply included), or retry.
 import type {PanelApi} from './api.ts';
 
 /** The two reads the cache memoises, with the client's own signatures, so a caller swaps `api` for the cache unchanged. */

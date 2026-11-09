@@ -55,7 +55,7 @@ Each pull request leaves every baseline identical, and the French pane reads the
 ```
 src/core/
   sun.ts                   sunTimes(lat, lon, isoDay): rise, set, dawn, dusk, noon (pure; the suncalc formulas); isDayAt(t, lat, lon, isoDay)
-  statistics-cache.ts      createStatisticsCache(api, {ttlMs, now}): the fifteen- and ten-minute caches of the class, once
+  statistics-cache.ts      createStatisticsCache(api, {ttlMs, now}): the fifteen- and ten-minute caches of the class, once; the client's `statistics` and `history` signatures plus `clear()`, a rejection (a StaleReply too) never kept
 src/providers/
   weather-entity.ts        the Home Assistant weather entity: current reading and forecast entries → WeatherSource
   environment-canada.ts    Environment Canada's sensors: alerts, normals, AQHI, UV, feels-like, tendency, observation → WeatherSource
@@ -77,6 +77,7 @@ src/ui/
   icons.ts                 ico(name, size), weatherIcon(condition, size, day): svg templates (from the class's ico, wxIcon, COND)
   pane-header.ts           <hp-pane-header icon color><h2 slot=title>, <span slot=sub>
   stat-tile.ts             <hp-stat-tile> (today's .stile button)
+  ranges.ts                RANGES: the four history ranges as data (the class's CRANGE, words as message keys), read by every feature's history
   chart.ts                 <hp-chart> (pull request 2)
   range-tabs.ts            <hp-range-tabs> (pull request 3)
   styles/stat-tile.css, pane-header.css, chart.css, range.css
@@ -192,7 +193,7 @@ export interface WeatherViewModel {
 
 - The model is synchronous, has no DOM, reads no clock and formats everything through `deps.fmt` and `deps.t`, so the view model is strings and numbers an element only places. The sun arc geometry (`cx`, `cy` from the percent through the day) is computed in the model, not in the template, so it is tested.
 - `src/features/weather/ids.ts` exports `weatherIds(config) = union(sources.map(s => s.ids(config)), [config.entities.sun, rising, setting])`; the pane's `StoreController` subscribes to exactly these.
-- **History** (pull request 2 and 3) is a second pure module, `history.ts`: `sevenDaySeries(rows, ids)` (temperature, dew point, humidity, pressure, wind, gusts as `[ms, value][]`), `seasonMonths(dayRows, isoDay)` (per month: count, mean, low, high, frost nights, hot days, the first day it covers), `records(dayRows, gustRows)` (warmest, coldest, strongest gust), `tileHistory(def, statRows, historyRows, range)` (statistics when present, else plain history, the class's `loadWx` mapping). Each takes the API client's typed replies (`StatisticRow`, `HistoryPoint` from spec 12) and returns data for `<hp-chart>` and tiles.
+- **History** (pull request 2 and 3) is a second pure module, `history.ts`: `sevenDaySeries(rows, ids)` (temperature, dew point, humidity, pressure, wind, gusts as `[ms, value][]`), `seasonMonths(dayRows, isoDay)` (per month: count, mean, low, high, frost nights, hot days, the first day it covers), `records(dayRows, gustRows)` (warmest, coldest, strongest gust, each with its day), `seasonView(dayRows, gustRows, deps)` (the season block's four tiles, its sentence and a row a month, worded through `t` and `fmt`, with the bars' geometry in percent), `tileHistory(def, ids, statRows, historyRows, range)` (statistics when present, else plain history, the class's `loadWx` mapping), `tileStats(series)` (low, mean and high of each line) and `historyChartOptions(def, series, range, deps)` (the multi-axis options of `wxSheet`, without the theme). Each takes the API client's typed replies (`StatisticRow`, `HistoryPoint` from spec 12) and returns data for `<hp-chart>` and tiles. Where a rule of the class read a missing figure as zero (a day with a mean and no low counted as 0° in the season), the new rule skips the day.
 
 ### The elements
 
