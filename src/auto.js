@@ -638,6 +638,10 @@ export const autoMethods = {
       fg = c('--fg'),
       fg3 = c('--fg3'),
       line = c('--line');
+    // Mermaid's entity pre-pass runs `text.replace(/style.*:\S*#.*;/g, s => s.slice(0, -1))` on each source line and so
+    // drops the last `;` of one that has a `#` after `style…:` with no space between (a label's `100#37;`). Every node and
+    // edge line therefore ends in a `;` of its own (a statement separator to Mermaid), and it must stay the last character
+    // of the line: it is the one the pre-pass eats, so the label's is not. See "As built (#97)" in docs/specs/07.
     // Home Assistant text (aliases, names, trace errors) goes into quoted labels, and Mermaid reads `#nn;` entities in
     // them, `%%{init}%%` directives and `$$…$$` formulas (KaTeX), so each of those is written so it can only be drawn:
     // esc() leaves no `"` to close a label; a # that starts what could be an entity (`#36;`, `#lt;`) becomes `#35;`
@@ -645,8 +649,7 @@ export const autoMethods = {
     // left alone: `#35;` before every one would lose its `;` in a label with no later `;`, see below); every % becomes
     // `#37;` (no `%%{init}%%` directive: theme, CSS, label settings); each $ gets its own <span>, so no two meet (an
     // entity would not do: Mermaid decodes it before it looks for `$$`). Known: Mermaid drops the last `;` of a source
-    // line that has a `#` after a `style…:` with no space between, so a label that ends its line with `100#37;` draws
-    // `100#37`; the labels with a subtitle (a run's time) are spared by the `;` in its style
+    // line that has a `#` after a `style…:` with no space between, see the `;` ending every statement below
     const mermaidText = s =>
       esc(s)
         .replace(/#(?=\w*;)/g, '#35;')
@@ -675,10 +678,10 @@ export const autoMethods = {
                 : `(${L})`;
     };
     const out = [this.compact ? 'flowchart TD' : 'flowchart LR']; // top to bottom on a phone, where the screen is tall
-    for (const n of G.nodes) out.push(`  ${n.id}${shape(n)}:::${n.cls}`);
+    for (const n of G.nodes) out.push(`  ${n.id}${shape(n)}:::${n.cls};`);
     G.edges.forEach(e =>
       out.push(
-        `  ${e.a} ${e.cls === 'off' ? '-.->' : '-->'}${e.label ? `|"<span style='font-size:11px;font-weight:600'>${mermaidText(e.label)}</span>"|` : ''} ${e.b}`,
+        `  ${e.a} ${e.cls === 'off' ? '-.->' : '-->'}${e.label ? `|"<span style='font-size:11px;font-weight:600'>${mermaidText(e.label)}</span>"|` : ''} ${e.b};`,
       ),
     );
     out.push(`  classDef hit fill:${auMix(ok, card, 0.16)},stroke:${ok},stroke-width:2px,color:${fg}`);

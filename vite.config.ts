@@ -9,9 +9,10 @@ import {FONT_FILES} from './src/fonts.js';
 
 // One minified ES module, dist/home-panel.js, with its source map beside it. The CSS is imported as minified text
 // (`?inline`, src/styles.js) and the version is injected here, from package.json. ApexCharts and Mermaid come from npm
-// through dynamic imports, so they are emitted as lazy chunks under dist/chunks/, fetched when a tab first needs them. The
-// generated LICENSES.md (npm run licenses) is emitted beside the entry, so the release zip carries the libraries'
-// licences, and the Montserrat files go to dist/fonts/. Each script gets a .br and a .gz copy (precompress, below). Nothing else is copied: there is no vendor/ directory.
+// through dynamic imports, so they are emitted as lazy chunks under dist/chunks/, fetched when a tab first needs
+// them. The generated LICENSES.md (npm run licenses) is emitted beside the entry, so the release zip carries the
+// libraries' licences, and the Montserrat files go to dist/fonts/. Each script gets a .br and a .gz copy
+// (precompress, below). Nothing else is copied: there is no vendor/ directory.
 
 // The constants the build replaces in src/ (declared in src/env.d.ts); vitest.config.ts uses the same object.
 export const define = {__VERSION__: JSON.stringify(pkg.version)};
@@ -64,15 +65,16 @@ const shipFonts: Plugin = {
 
 // A compressed copy beside every script: X.js.br and X.js.gz. Home Assistant serves <config>/www as /local through
 // aiohttp's FileResponse, which looks for X.br then X.gz beside the file and sends the first whose encoding the request
-// accepts (Content-Encoding, Vary: Accept-Encoding, and the Content-Type of X.js); without such a copy it sends the file
-// uncompressed. There is no mtime check, so a stale copy would be served: README, Install, says to replace the whole
-// folder. The `.map` files are left out because only DevTools fetch them. Written after the files are on disk
+// accepts (Content-Encoding, Vary: Accept-Encoding, and the Content-Type of X.js); without such a copy it sends the
+// file uncompressed. There is no mtime check, so a stale copy would be served: README, Install, says to replace the
+// whole folder. The `.map` files are left out because only DevTools fetch them. Written after the files are on disk
 // (`writeBundle`), so the sourceMappingURL line is in what is compressed; gzip and brotli write no timestamp, so the
 // output is reproducible. Spec 06, As built (#98); test/unit/dist.test.mjs decompresses every copy.
 const precompress: Plugin = {
   name: 'precompress',
   writeBundle(options, bundle) {
-    const dir = options.dir ?? 'dist';
+    if (!options.dir) throw new Error('precompress: the build has no output directory');
+    const {dir} = options;
     for (const name of Object.keys(bundle).filter(n => n.endsWith('.js'))) {
       const file = join(dir, name);
       const buf = readFileSync(file);
@@ -99,7 +101,9 @@ export default defineConfig({
     emptyOutDir: true,
     sourcemap: true,
     minify: 'oxc', // Vite 8's default; `esbuild` would need the esbuild package as well
-    target: 'es2020',
+    // The browser floor as a language level: ES2025 is Vite's row for Safari 26, iOS 26, Chrome 136 and Firefox 138.
+    // Not `esnext`, which is open-ended: a later Vite could emit syntax Safari 26 lacks. Why: spec 06, As built (#103).
+    target: 'es2025',
     // The stylesheet (`?inline` in src/styles.js) is minified by Lightning CSS, named here so that a change of Vite's
     // default cannot switch the minifier. The targets are the browser floor, Safari and iOS 26 and current Chrome, Edge
     // and Firefox (README, Browser support): Lightning CSS drops the vendor prefixes they do not need. Why, and what it
