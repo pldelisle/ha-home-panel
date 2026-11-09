@@ -4745,7 +4745,7 @@ export class HomePanel extends HTMLElement {
         d = this.num(o.dist);
       this.set(
         'aout',
-        `<div class="aqsum lv${ol}"><span class="state"><i></i>${oa == null ? 'No data' : AQ_LVL[ol][0]}</span><span class="why">AQI <b class="num">${oa == null ? '–' : Math.round(oa)}</b>${this.num(E.aqhi) == null ? '' : ` · AQHI ${this.num(E.aqhi)}`}${pm == null ? '' : ` · PM2.5 ${f1(pm)} µg/m³`}${d == null ? '' : ` · station ${Math.round(d)} km away`}</span></div>
+        `<div class="aqsum lv${ol}"><span class="state"><i></i>${oa == null ? 'No data' : AQ_LVL[ol][0]}</span><span class="why">AQI <b class="num">${oa == null ? '–' : Math.round(oa)}</b>${this.num(this.E.aqhi) == null ? '' : ` · AQHI ${this.num(this.E.aqhi)}`}${pm == null ? '' : ` · PM2.5 ${f1(pm)} µg/m³`}${d == null ? '' : ` · station ${Math.round(d)} km away`}</span></div>
         ${o.pollen.some(([, id]) => ok(this.st(id))) ? `<div class="tiles" style="grid-template-columns:repeat(4,minmax(0,1fr));margin-top:10px">${o.pollen.map(([l, id]) => tile([l + ' pollen', ok(this.st(id)) ? esc(cap(this.st(id).state)) : '–'])).join('')}</div>` : '<p class="hint">No pollen report from the station yet; it shows up here once Mila has one.</p>'}`,
       );
     }
@@ -4857,7 +4857,7 @@ export class HomePanel extends HTMLElement {
     const box = this.$('c-aout');
     if (!box) return;
     const o = this.purifiers().outside,
-      aqhi = this.st(E.aqhi) ? E.aqhi : null,
+      aqhi = this.st(this.E.aqhi) ? this.E.aqhi : null,
       ids = [o && o.aqi, aqhi].filter(Boolean);
     if (!ids.length) {
       box.innerHTML = '';
@@ -5010,7 +5010,10 @@ export class HomePanel extends HTMLElement {
       reg = this.hass.entities || {};
     const scenes = Object.keys(this.hass.states)
       .filter(i => i.startsWith('scene.') && !(reg[i] || {}).hidden)
-      .sort((a, b) => (SCENE_ORDER.indexOf(a) + 1 || 99) - (SCENE_ORDER.indexOf(b) + 1 || 99) || a.localeCompare(b));
+      .sort(
+        (a, b) =>
+          (this.SCENE_ORDER.indexOf(a) + 1 || 99) - (this.SCENE_ORDER.indexOf(b) + 1 || 99) || a.localeCompare(b),
+      );
     return (
       scenes
         .map(id => {
@@ -5020,7 +5023,7 @@ export class HomePanel extends HTMLElement {
           return `<button type="button" class="ptile scene${ran ? ' ran' : ''}" data-p="scene" data-id="${esc(id)}"><span class="pic">${ico(sceneIcon(id), 22)}</span><b>${esc(n)}</b><small>${ran ? 'Done' : ok(s) && !isNaN(Date.parse(s.state)) ? 'Last ' + this.ago(s.state) : 'Tap to run'}</small></button>`;
         })
         .join('') +
-      MODES.filter(id => this.st(id))
+      this.MODES.filter(id => this.st(id))
         .map(id => {
           const on = this.pend(id + ':on', isOn(id)) === true;
           return `<button type="button" class="ptile scene${on ? ' on' : ''}" data-p="mode" data-id="${esc(id)}" aria-pressed="${on}" ${ok(this.st(id)) ? '' : 'disabled'}><span class="pic">${ico(sceneIcon(id), 22)}</span><b>${esc(this.attr(id, 'friendly_name') || id)}</b><small>${this.store.isFrench ? (on ? 'Activé' : 'Désactivé') : on ? 'On' : 'Off'}</small></button>`;
@@ -5102,12 +5105,12 @@ export class HomePanel extends HTMLElement {
     // a person entity wins: it follows the trackers chosen in HA's People settings
     for (const id of Object.keys(this.hass.states)) {
       if (!id.startsWith('person.')) continue;
-      const who = HOUSEHOLD.find(h => fold(this.attr(id, 'friendly_name') || '').split(/\s+/)[0] === fold(h)),
+      const who = this.HOUSEHOLD.find(h => fold(this.attr(id, 'friendly_name') || '').split(/\s+/)[0] === fold(h)),
         s = this.st(id);
       if (who && ok(s))
         by.set(who, {name: who, home: s.state === 'home', since: s.state === 'home' ? null : s.last_changed});
     }
-    if (by.size) return HOUSEHOLD.filter(h => by.has(h)).map(h => by.get(h));
+    if (by.size) return this.HOUSEHOLD.filter(h => by.has(h)).map(h => by.get(h));
     for (const id of Object.keys(this.hass.states)) {
       if (!id.startsWith('device_tracker.') || (reg[id] || {}).hidden) continue;
       const n = this.attr(id, 'friendly_name') || '',
@@ -5115,7 +5118,7 @@ export class HomePanel extends HTMLElement {
       if (!m) continue;
       const [owner, dev] = n.match(/^(.+?)[’']s\s/) ? [m[1], m[2]] : [m[2], m[1]];
       if (!/iphone|watch/i.test(dev)) continue;
-      const who = HOUSEHOLD.find(h => fold(owner).split(/\s+/)[0] === fold(h));
+      const who = this.HOUSEHOLD.find(h => fold(owner).split(/\s+/)[0] === fold(h));
       if (!who) continue;
       const s = this.st(id);
       if (!ok(s)) continue;
@@ -5125,7 +5128,7 @@ export class HomePanel extends HTMLElement {
         p.home = true;
       } else if (!p.home) p.since = s.last_changed;
     }
-    return HOUSEHOLD.filter(h => by.has(h)).map(h => by.get(h));
+    return this.HOUSEHOLD.filter(h => by.has(h)).map(h => by.get(h));
   }
   whoHtml() {
     const P = this.presence();
@@ -5548,7 +5551,7 @@ export class HomePanel extends HTMLElement {
   // Climate: the same list as the sheet's, as tiles; a tile opens the sheet on that room
   // the heat pump's maker, from its device (FGLair units are Fujitsu's)
   hpBrand() {
-    const e = (this.hass.entities || {})[E.hp] || {},
+    const e = (this.hass.entities || {})[this.E.hp] || {},
       d = (this.hass.devices || {})[e.device_id] || {};
     return /fglair/.test(e.platform || '') || /fujitsu/i.test(d.manufacturer || '')
       ? 'Fujitsu'
@@ -5591,7 +5594,7 @@ export class HomePanel extends HTMLElement {
         tv: f1(r.t) + '°',
         cls: r.heating ? 'on' : !r.ok ? 'bad' : '',
       })),
-      ...(E.hp
+      ...(this.E.hp
         ? [
             {
               id: 'hp',
@@ -5621,10 +5624,10 @@ export class HomePanel extends HTMLElement {
   // Energy: the water heater and Hilo as rows; each opens its full card in a sheet
   renderEnergyTiles() {
     if (this.tab !== 'energy') return;
-    const whT = this.num(E.whT),
-      whP = this.kw(E.whP) || 0,
+    const whT = this.num(this.E.whT),
+      whP = this.kw(this.E.whP) || 0,
       ri = this.rateInfo(),
-      defi = this.st(E.defi);
+      defi = this.st(this.E.defi);
     const ch = !ok(defi)
       ? 'Challenge status unknown'
       : defi.state === 'off'
@@ -5691,11 +5694,11 @@ export class HomePanel extends HTMLElement {
         const n = this.num(id);
         return n == null ? null : n.toFixed(d);
       },
-      wd = this.st(E.windDir);
-    const feels = this.num(E.chill) ?? this.num(E.humidex),
-      temp = this.attr(E.weather, 'temperature') ?? this.num(E.outT),
-      uv = this.num(E.uv),
-      aq = this.num(E.aqhi);
+      wd = this.st(this.E.windDir);
+    const feels = this.num(this.E.chill) ?? this.num(this.E.humidex),
+      temp = this.attr(this.E.weather, 'temperature') ?? this.num(this.E.outT),
+      uv = this.num(this.E.uv),
+      aq = this.num(this.E.aqhi);
     const band = (bands, x) => {
       const b = x == null ? null : bands.find(([lo, hi]) => x >= lo && x <= hi);
       return b ? b[3] : '';
@@ -5705,29 +5708,31 @@ export class HomePanel extends HTMLElement {
         'wind',
         'wind',
         'Wind',
-        v(E.wind) == null ? '–' : `${v(E.wind)}<small> km/h</small>`,
-        [ok(wd) ? esc(wd.state) : '', v(E.gust) != null ? `gusts ${v(E.gust)} km/h` : ''].filter(Boolean).join(' · '),
+        v(this.E.wind) == null ? '–' : `${v(this.E.wind)}<small> km/h</small>`,
+        [ok(wd) ? esc(wd.state) : '', v(this.E.gust) != null ? `gusts ${v(this.E.gust)} km/h` : '']
+          .filter(Boolean)
+          .join(' · '),
       ],
       [
         'hum',
         'hum',
         'Humidity',
-        v(E.hum) == null ? '–' : `${v(E.hum)}<small>%</small>`,
-        v(E.dew, 1) != null ? `Dew point ${v(E.dew, 1)}°` : '',
+        v(this.E.hum) == null ? '–' : `${v(this.E.hum)}<small>%</small>`,
+        v(this.E.dew, 1) != null ? `Dew point ${v(this.E.dew, 1)}°` : '',
       ],
       [
         'feels',
         'therm',
         'Feels like',
         feels == null ? (temp == null ? '–' : `${Math.round(temp)}°`) : `${Math.round(feels)}°`,
-        feels == null ? 'Same as the air' : this.num(E.chill) != null ? 'Wind chill' : 'Humidex',
+        feels == null ? 'Same as the air' : this.num(this.E.chill) != null ? 'Wind chill' : 'Humidex',
       ],
       [
         'pres',
         'clock',
         'Pressure',
-        v(E.pres, 1) == null ? '–' : `${v(E.pres, 1)}<small> kPa</small>`,
-        ok(this.st(E.tend)) ? esc(cap(this.st(E.tend).state)) : '',
+        v(this.E.pres, 1) == null ? '–' : `${v(this.E.pres, 1)}<small> kPa</small>`,
+        ok(this.st(this.E.tend)) ? esc(cap(this.st(this.E.tend).state)) : '',
       ],
       [
         'uv',
@@ -5737,14 +5742,14 @@ export class HomePanel extends HTMLElement {
         band(WX_DEF.uv.bands, uv) || (uv != null && uv >= 8 ? 'Very high' : ''),
       ],
       ['aqhi', 'aq', 'Air quality', aq == null ? '–' : String(Math.round(aq)), band(WX_DEF.aqhi.bands, aq)],
-      ['pop', 'drop', 'Rain or snow', v(E.pop) == null ? '–' : `${v(E.pop)}<small>%</small>`, 'Chance today'],
+      ['pop', 'drop', 'Rain or snow', v(this.E.pop) == null ? '–' : `${v(this.E.pop)}<small>%</small>`, 'Chance today'],
       [
         'normal',
         'wx',
         'Normal',
-        this.num(E.nhi) == null
+        this.num(this.E.nhi) == null
           ? '–'
-          : `${Math.round(this.num(E.nhi))}°<small> / ${Math.round(this.num(E.nlo))}°</small>`,
+          : `${Math.round(this.num(this.E.nhi))}°<small> / ${Math.round(this.num(this.E.nlo))}°</small>`,
         'For the date',
       ],
     ];
@@ -5773,8 +5778,8 @@ export class HomePanel extends HTMLElement {
   // More: the sections that aren't on the bar, with a word on each, and the view switch
   renderMore() {
     const L = this.live(),
-      temp = this.attr(E.weather, 'temperature') ?? this.num(E.outT),
-      cond = this.st(E.cond),
+      temp = this.attr(this.E.weather, 'temperature') ?? this.num(this.E.outT),
+      cond = this.st(this.E.cond),
       isOn = i => (this.st(i) || {}).state === 'on';
     const P = this.purifiers(),
       air = P.rooms.length ? this.airSummary(P) : null,
@@ -5791,7 +5796,7 @@ export class HomePanel extends HTMLElement {
       weather:
         temp == null
           ? ''
-          : `${Math.round(temp)}° · ${esc(condName(ok(cond) ? cond.state : (this.st(E.weather) || {}).state))}`,
+          : `${Math.round(temp)}° · ${esc(condName(ok(cond) ? cond.state : (this.st(this.E.weather) || {}).state))}`,
       energy: L.grid == null ? '' : `${L.grid < 1 ? Math.round(L.grid * 1000) + ' W' : L.grid.toFixed(2) + ' kW'} now`,
       air: !air ? 'No purifiers' : air.worst < 0 ? 'No data' : AQ_LVL[air.worst][0],
       media:
