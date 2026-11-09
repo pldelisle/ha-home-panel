@@ -1,6 +1,6 @@
 // The entity store: the current hass, the resolved panel config and the locale, and which ids changed for whom.
-// Pattern: functional core; observer with reference-equality change detection (Home Assistant frontend data docs);
-// a deep module whose dependencies are accepted, not created (Ousterhout, A Philosophy of Software Design).
+// Pattern: functional core (Bernhardt, Boundaries); observer with reference-equality change detection (Home Assistant
+// frontend data docs); a deep module whose dependencies are accepted, not created (Ousterhout, A Philosophy of Software Design).
 // Must not: touch the DOM, call a hass method, read the clock or Intl, or be imported as a singleton.
 import type {
   AreaRegistryEntry,

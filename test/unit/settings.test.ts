@@ -1,4 +1,4 @@
-// The settings reader at its Storage seam: a Map-backed fake is one adapter, the browser's localStorage the other.
+// The settings reader, given a Map-backed Storage in place of the browser's localStorage.
 import {describe, expect, test} from 'vitest';
 import {createSettings, type KeyValueStorage} from '../../src/core/settings.ts';
 

@@ -1,6 +1,6 @@
 // The per-browser settings (theme, text size, wallpaper, glass level, last tab) behind a storage parameter.
-// Pattern: a seam with two adapters, the browser's localStorage and a Map in tests (Feathers, Working Effectively
-// with Legacy Code); parse at the edge, so a bad value becomes the default (King, Parse, don't validate).
+// Pattern: a Storage-like parameter (accept dependencies, don't create them: Ousterhout, A Philosophy of Software
+// Design); parse at the edge, so a bad value becomes the default (King, Parse, don't validate).
 // Must not: touch localStorage or any global, throw on a bad or blocked storage, or change a key or a stored value.
 
 /** The slice of the browser's Storage that the settings use; the element passes localStorage. */

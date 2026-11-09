@@ -45,6 +45,7 @@ export interface PanelHass {
   user?: Pick<HassUser, 'name' | 'is_admin'>;
   locale?: PanelLocale;
   language?: string;
+  services?: Record<string, Record<string, unknown>>;
   callService(domain: string, service: string, data?: Record<string, unknown>): Promise<unknown>;
   callWS<T = unknown>(msg: {type: string} & Record<string, unknown>): Promise<T>;
   connection?: Pick<Connection, 'subscribeMessage'>;

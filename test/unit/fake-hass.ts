@@ -1,6 +1,7 @@
 // The one fake `hass` every core test shares: the object shape the e2e harness builds, from a short literal.
 // Pattern: a fake at the hass seam (ADR 0005); `next` hands over a new hass the way Home Assistant does.
-// Must not: grow test-only behaviour the real hass lacks; the API ticket extends callWS here.
+// Must not: grow behaviour beyond `calls` and `next`, which only record and replay what Home Assistant does; the API
+// ticket extends callWS here.
 import type {HassEntity, PanelHass} from '../../src/core/hass.ts';
 
 export type FakeHass = PanelHass & {
