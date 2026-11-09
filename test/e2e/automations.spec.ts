@@ -23,7 +23,10 @@ const ENTITIES = [
   'Room #2', // not an entity at all
 ];
 
-// the test house's automations, with those aliases on the steps of the one the Automations tab draws first
+// the test house's automations, with those aliases on the steps of the one the Automations tab draws first. Every one of
+// its nodes has a subtitle (the time of the run), and a subtitle carries a `;` (`font-weight:500;opacity:.75`) that
+// Mermaid's `style` pre-pass takes in place of a label's own: this flow passed by luck for a `%` or `#` at the end of a
+// label. The flow below, with no run stored, has no subtitles and is the one that tells (#97)
 type Automation = {config: {id: string; triggers: object[]; conditions: object[]; actions: object[]}};
 const automations = (
   JSON.parse(readFileSync(new URL('./automations.json', import.meta.url), 'utf8')) as Automation[]
@@ -77,5 +80,85 @@ test.describe('Home Assistant text in a flow', () => {
     expect(style).toContain(`.node path{fill:${card};stroke:${ring};`);
     expect(style).not.toContain('x.invalid');
     expect(outside, 'requests the flow made outside the house').toEqual([]);
+  });
+});
+
+// What each text below is drawn as. Mermaid's entity pre-pass (`text.replace(/style.*:\S*#.*;/g, …)`) drops the last `;` of
+// a source line that has a `#` after `style…:` with no space between, so `auMermaid` ends every node and edge line in a `;`
+// of its own. These are all the shapes and line kinds the panel writes, without a subtitle: a `%` or `#` that ends a label
+const PERCENT = {
+  trigger: '10%', // a stadium, and (with the second trigger) the ANY circle
+  trigger2: '%',
+  check: 'Room #2', // a node, and an `if` (a diamond), below
+  entity: '#36;#36;y#36;#36;', // typed entities, as in the flow above
+  step: 'Fan at 20%',
+  script: '50%', // the name of a script: a `[[…]]` node
+  ifCheck: 'Sun at 30%',
+  caseA: '40% off', // choice labels: the text on an edge
+  caseB: '60%',
+  caseC: '#9',
+  then: '70%',
+  lamp: 'Lamp 80%',
+  last: '#8',
+};
+const pctFlow = {
+  entity_id: 'automation.percent_flow',
+  noRun: true,
+  config: {
+    id: 'percent_flow',
+    alias: 'Percent flow',
+    mode: 'single',
+    triggers: [
+      {trigger: 'time', at: '07:00:00', alias: PERCENT.trigger},
+      {trigger: 'time', at: '08:00:00', alias: PERCENT.trigger2},
+    ],
+    conditions: [{condition: 'state', entity_id: 'sun.sun', state: 'below_horizon', alias: PERCENT.check}],
+    actions: [
+      {action: 'light.turn_on', target: {entity_id: 'light.living_room_1'}, alias: PERCENT.entity},
+      {action: 'light.turn_off', target: {entity_id: 'light.living_room_1'}, alias: PERCENT.step},
+      {action: 'script.percent_script'},
+      {
+        if: [{condition: 'state', entity_id: 'sun.sun', state: 'above_horizon', alias: PERCENT.ifCheck}],
+        then: [{action: 'light.turn_on', target: {entity_id: 'light.living_room_1'}, alias: PERCENT.then}],
+      },
+      {
+        choose: [
+          {
+            alias: PERCENT.caseA,
+            conditions: [{condition: 'state', entity_id: 'sun.sun', state: 'below_horizon'}],
+            sequence: [{action: 'light.turn_on', target: {entity_id: 'light.living_room_1'}, alias: 'Lamp #7'}],
+          },
+          {
+            alias: PERCENT.caseB,
+            conditions: [{condition: 'state', entity_id: 'sun.sun', state: 'above_horizon'}],
+            sequence: [{action: 'light.turn_off', target: {entity_id: 'light.living_room_1'}, alias: PERCENT.lamp}],
+          },
+          {
+            alias: PERCENT.caseC,
+            conditions: [{condition: 'state', entity_id: 'sun.sun', state: 'above_horizon'}],
+            sequence: [{action: 'light.turn_off', target: {entity_id: 'light.living_room_1'}, alias: PERCENT.last}],
+          },
+        ],
+      },
+    ],
+  },
+};
+
+test.describe('A % or # that ends a label in a flow with no run stored', () => {
+  test.use({houseOpts: {cfg: FULL_CFG, automations: [...automations, pctFlow]}});
+
+  test('is drawn as typed, in every shape, edge and line kind', async ({house}) => {
+    tabletOnly();
+    await house.setState('script.percent_script', {state: 'off', attributes: {friendly_name: PERCENT.script}});
+    await house.tab('auto');
+    await house.root().locator('#pane-auto .auchip[data-au="percent_flow"]').click();
+    const flow = house.root().locator('#pane-auto .auc.ausel'),
+      svg = flow.locator('.augraph svg');
+    await expect(flow.locator('.pill', {hasText: 'no run stored'})).toBeVisible();
+    await expect(svg).toBeVisible({timeout: 10_000});
+    // a label at the end of its source line: `"100%"` is `100#37;`, a `#2` is not an entity and stays as it is
+    // a lone % is in every other label's text, so it is asked for as a whole label
+    await expect.soft(svg.locator('.node', {hasText: /^TRIGGER%$/})).toHaveCount(1, {timeout: 1000});
+    for (const text of Object.values(PERCENT)) await expect.soft(svg, text).toContainText(text, {timeout: 1000});
   });
 });
