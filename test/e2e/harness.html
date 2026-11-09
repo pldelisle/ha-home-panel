@@ -266,6 +266,17 @@
         c.config.actions.forEach((x, j) => {
           tr[`action/${j}`] = [{path: `action/${j}`, timestamp: iso(start + 600 + j * 300)}];
         });
+        if (c.noRun) {
+          // an automation with no run stored since Home Assistant started (its flow has no subtitles)
+          add(c.entity_id, 'on', {
+            id: c.config.id,
+            friendly_name: c.config.alias,
+            last_triggered: null,
+            current: 0,
+            mode: c.config.mode,
+          });
+          return;
+        }
         const sm = {
           item_id: c.config.id,
           run_id,
