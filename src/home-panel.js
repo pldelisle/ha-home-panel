@@ -4,7 +4,7 @@
 import {CSS} from './styles.js';
 import {resolveConfig} from './config.js';
 import {pickStack, inHours, reminderLeft} from './stack.js';
-import {FR, setFR, FR_ATTR, frNode, frTree, frApex} from './i18n/fr.js';
+import {setFR, FR_ATTR, createFrench} from './i18n/fr.js';
 import {autoMethods} from './auto.js';
 import {createStore} from './core/store.ts';
 import {createSettings} from './core/settings.ts';
@@ -747,6 +747,8 @@ export class HomePanel extends HTMLElement {
       // blocked site data: touching localStorage throws, so the settings keep their defaults
     }
     this.settings = createSettings(storage);
+    this.french = createFrench(this.store); // the French layer of this panel, read through its store
+    this.frDrawn = false; // whether the panel was last drawn in French
     this.unsubStore = this.store.subscribe('*', () => this.tick()); // one path to the one-second render
     this.H = null; // history-derived data
     this.charts = []; // sheet charts, destroyed on close
@@ -796,10 +798,14 @@ export class HomePanel extends HTMLElement {
     this.store.setHass(h);
     setHass(h);
     setTZ((h.config && h.config.time_zone) || getTZ());
-    // French follows the user's profile language; switching it redraws the panel
-    const fr = /^fr\b/i.test((h.locale && h.locale.language) || h.language || '');
-    if (fr !== FR) {
-      setFR(fr);
+    // French follows the user's profile language; switching it redraws the panel.
+    // The store's locale change is not enough here: a host may set the new language on the hass object it already
+    // handed over (the harness does, on its first switch), so the store sees the same language before and after.
+    // Comparing with the language this panel was drawn in catches that too.
+    const fr = this.store.isFrench;
+    setFR(fr); // kept only until contract deletes the flag; nothing reads it any more
+    if (fr !== this.frDrawn) {
+      this.frDrawn = fr;
       if (this.$app) this.teardown();
     }
     this.configure();
@@ -951,8 +957,8 @@ export class HomePanel extends HTMLElement {
     const root = this.shadowRoot;
     this.frObs = new MutationObserver(ms => {
       for (const m of ms) {
-        if (m.type === 'childList') m.addedNodes.forEach(frTree);
-        else frNode(m.target);
+        if (m.type === 'childList') m.addedNodes.forEach(this.french.tree);
+        else this.french.node(m.target);
       }
     });
     this.frObs.observe(root, {
@@ -962,7 +968,7 @@ export class HomePanel extends HTMLElement {
       attributes: true,
       attributeFilter: FR_ATTR,
     });
-    frTree(root);
+    this.french.tree(root);
   }
   frStop() {
     if (this.frObs) this.frObs.disconnect();
@@ -1139,12 +1145,12 @@ export class HomePanel extends HTMLElement {
 <span id="txprobe" aria-hidden="true" style="position:absolute;left:-9999px;visibility:hidden;font-size:17px;font:-apple-system-body"></span>
 </div>`;
     this.$app = this.$('app');
-    this.$app.lang = FR ? 'fr-CA' : 'en-CA';
+    this.$app.lang = this.store.isFrench ? 'fr-CA' : 'en-CA';
     this.shadowRoot
       .querySelectorAll('.sheet>.panel')
       .forEach(p => p.insertAdjacentHTML('afterbegin', '<div class="grab" aria-hidden="true"></div>'));
     this.applyText();
-    if (FR) this.frStart();
+    if (this.store.isFrench) this.frStart();
     this.$app.classList.toggle('narrow', !!this._narrow);
     this.applyTheme();
     // the detail panels move into the tab panes in the Tabs view, so they are kept by id
@@ -1224,15 +1230,8 @@ export class HomePanel extends HTMLElement {
   }
 
   // ---------- theme: dark when the device is, or after sunset, unless overridden ----------
-  themeMode() {
-    try {
-      return localStorage.getItem('home-panel-theme') || 'auto';
-    } catch {
-      return 'auto';
-    }
-  }
   applyTheme() {
-    const m = this.themeMode(),
+    const {theme: m, glass} = this.settings.get(), // one read of the settings per tick
       s = st(E.sun),
       sys = this.sysDark ? this.sysDark.matches : matchMedia('(prefers-color-scheme: dark)').matches;
     const dark = m === 'dark' || (m === 'auto' && (sys || (s && s.state === 'below_horizon')));
@@ -1243,7 +1242,7 @@ export class HomePanel extends HTMLElement {
       this.redrawCharts();
       this.pageBg();
     }
-    if (this.glassMode() === 'sky' && this.$app.dataset.wp !== this.skyWp()) this.applyGlass();
+    if (glass === 'sky' && this.$app.dataset.wp !== this.skyWp()) this.applyGlass();
     if (this.$('setpop') && !this.$('setpop').hidden) {
       this.cache.setc = null;
       this.renderSettings();
@@ -1261,10 +1260,8 @@ export class HomePanel extends HTMLElement {
     }
   }
   renderSettings() {
-    const m = this.themeMode(),
-      dark = this.$app.dataset.theme === 'dark',
-      tx = this.textMode(),
-      gl = this.glassMode();
+    const {theme: m, text: tx, glass: gl, glassLevel: gt} = this.settings.get(),
+      dark = this.$app.dataset.theme === 'dark';
     this.set(
       'setc',
       `<div class="cc">
@@ -1297,17 +1294,13 @@ export class HomePanel extends HTMLElement {
             `<button type="button" role="radio" aria-checked="${k === gl}" data-gl="${k}"><b>${l}</b></button>`,
         )
         .join('')}</div>
-        <div class="gtrow"><span>Solid</span><input type="range" class="gtrange" min="0" max="100" step="1" value="${this.glassT()}" style="--p:${this.glassT()}%" aria-label="Transparency"><span>Clear</span></div></div>
+        <div class="gtrow"><span>Solid</span><input type="range" class="gtrange" min="0" max="100" step="1" value="${gt}" style="--p:${gt}%" aria-label="Transparency"><span>Clear</span></div></div>
       <div class="ccv">Home panel v${VERSION}${this.H ? ' · statistics refreshed every 15 minutes' : ''}</div></div>`,
     );
   }
   // ---------- text size: the iOS setting, or Large / Larger picked in the Status popup; every text size in the CSS is multiplied by --tx ----------
   textMode() {
-    try {
-      return localStorage.getItem('home-panel-text') || 'auto';
-    } catch {
-      return 'auto';
-    }
+    return this.settings.get().text;
   }
   applyText() {
     const m = this.textMode();
@@ -1324,19 +1317,10 @@ export class HomePanel extends HTMLElement {
   // ---------- Liquid Glass: the bar, rail, header chips, popup, toasts and phone sheets are glass over a wallpaper (Status popup: Glass) ----------
   // transparency 0..100 (50 = the tuned default): fill alpha x (1.8 - t*0.016), so 0 is 1.8x denser and 100 is 0.2x
   glassT() {
-    try {
-      const v = parseInt(localStorage.getItem('home-panel-glass-t'), 10);
-      return isNaN(v) ? 50 : Math.max(0, Math.min(100, v));
-    } catch {
-      return 50;
-    }
+    return this.settings.get().glassLevel;
   }
   glassMode() {
-    try {
-      return localStorage.getItem('home-panel-glass') || 'dawn';
-    } catch {
-      return 'dawn';
-    }
+    return this.settings.get().glass;
   }
   applyGlass() {
     const m = this.glassMode(),
@@ -1381,9 +1365,9 @@ export class HomePanel extends HTMLElement {
   }
   renderIdle() {
     if (!this.$app || !getHass() || !this.$app.classList.contains('idle')) return;
-    const loc = FR ? 'fr-CA' : 'en-CA',
+    const loc = this.store.isFrench ? 'fr-CA' : 'en-CA',
       now = new Date();
-    const t = FR
+    const t = this.store.isFrench
       ? [
           now
             .toLocaleTimeString('fr-CA', {hour: '2-digit', minute: '2-digit', timeZone: getTZ()})
@@ -1938,9 +1922,7 @@ export class HomePanel extends HTMLElement {
       const r = e.target.closest('.gtrange');
       if (!r) return;
       r.style.setProperty('--p', r.value + '%');
-      try {
-        localStorage.setItem('home-panel-glass-t', r.value);
-      } catch {}
+      this.settings.set('glassLevel', Number(r.value));
       this.applyGlass();
     });
     this.$('setc').addEventListener('click', e => {
@@ -1952,9 +1934,7 @@ export class HomePanel extends HTMLElement {
       const t = e.target.closest('[data-th]');
       if (t) {
         const next = t.dataset.th === 'auto' ? 'auto' : this.$app.dataset.theme === 'dark' ? 'light' : 'dark';
-        try {
-          localStorage.setItem('home-panel-theme', next);
-        } catch {}
+        this.settings.set('theme', next);
         this.applyTheme();
         this.cache.setc = null;
         this.renderSettings();
@@ -1962,9 +1942,7 @@ export class HomePanel extends HTMLElement {
       }
       const g = e.target.closest('[data-gl]');
       if (g) {
-        try {
-          localStorage.setItem('home-panel-glass', g.dataset.gl);
-        } catch {}
+        this.settings.set('glass', g.dataset.gl);
         this.applyGlass();
         this.cache.setc = null;
         this.renderSettings();
@@ -1972,9 +1950,7 @@ export class HomePanel extends HTMLElement {
       }
       const b = e.target.closest('[data-tx]');
       if (!b) return;
-      try {
-        localStorage.setItem('home-panel-text', b.dataset.tx);
-      } catch {}
+      this.settings.set('text', b.dataset.tx);
       this.applyText();
       this.cache.setc = null;
       this.renderSettings();
@@ -2579,7 +2555,8 @@ export class HomePanel extends HTMLElement {
   }
   roomName(r) {
     // in French, the room names from the Hilo thermostats themselves ("Thermostat Salle de Séjour")
-    if (FR) return (attr(r.climate, 'friendly_name') || '').replace(/^Thermostat\s*/i, '') || this.roomNameEn(r);
+    if (this.store.isFrench)
+      return (attr(r.climate, 'friendly_name') || '').replace(/^Thermostat\s*/i, '') || this.roomNameEn(r);
     return this.roomNameEn(r);
   }
   roomNameEn(r) {
@@ -2640,7 +2617,7 @@ export class HomePanel extends HTMLElement {
       'hello',
       `<h1>${part}${name ? `, <span style="white-space:nowrap">${esc(name)}</span>` : ''}</h1><div>${sub}</div>${this.whoHtml()}`,
     );
-    const t = FR
+    const t = this.store.isFrench
       ? [
           new Date()
             .toLocaleTimeString('fr-CA', {hour: '2-digit', minute: '2-digit', timeZone: getTZ()})
@@ -3785,7 +3762,7 @@ export class HomePanel extends HTMLElement {
     };
   }
   mk(id, opt) {
-    if (FR) opt = frApex(opt);
+    if (this.store.isFrench) opt = this.french.apex(opt);
     const el = this.$(id);
     el.innerHTML = '';
     const c = new this.ApexCharts(el, opt);
@@ -4052,8 +4029,10 @@ export class HomePanel extends HTMLElement {
   dayName(k, short) {
     if (k === localDay(Date.now())) return 'Today';
     if (!short && k === localDay(Date.now() + 864e5)) return 'Tomorrow';
-    const d = new Date(k + 'T12:00:00').toLocaleDateString(FR ? 'fr-CA' : 'en-CA', {weekday: short ? 'short' : 'long'});
-    return FR ? d.charAt(0).toUpperCase() + d.slice(1) : d;
+    const d = new Date(k + 'T12:00:00').toLocaleDateString(this.store.isFrench ? 'fr-CA' : 'en-CA', {
+      weekday: short ? 'short' : 'long',
+    });
+    return this.store.isFrench ? d.charAt(0).toUpperCase() + d.slice(1) : d;
   }
   sunDay(offset = 0) {
     const lat = (getHass().config && getHass().config.latitude) ?? 0,
@@ -5001,7 +4980,7 @@ export class HomePanel extends HTMLElement {
       MODES.filter(id => st(id))
         .map(id => {
           const on = this.pend(id + ':on', isOn(id)) === true;
-          return `<button type="button" class="ptile scene${on ? ' on' : ''}" data-p="mode" data-id="${esc(id)}" aria-pressed="${on}" ${ok(st(id)) ? '' : 'disabled'}><span class="pic">${ico(sceneIcon(id), 22)}</span><b>${esc(attr(id, 'friendly_name') || id)}</b><small>${FR ? (on ? 'Activé' : 'Désactivé') : on ? 'On' : 'Off'}</small></button>`;
+          return `<button type="button" class="ptile scene${on ? ' on' : ''}" data-p="mode" data-id="${esc(id)}" aria-pressed="${on}" ${ok(st(id)) ? '' : 'disabled'}><span class="pic">${ico(sceneIcon(id), 22)}</span><b>${esc(attr(id, 'friendly_name') || id)}</b><small>${this.store.isFrench ? (on ? 'Activé' : 'Désactivé') : on ? 'On' : 'Off'}</small></button>`;
         })
         .join('')
     );
@@ -5802,11 +5781,7 @@ export class HomePanel extends HTMLElement {
     mv('hilo', 'eside');
     mv('cams', 'camhost');
     mv('sensors', 'senhost');
-    let t = 'home';
-    try {
-      t = localStorage.getItem('home-panel-tab') || t;
-    } catch {}
-    this.setTab(t);
+    this.setTab(this.settings.get().tab);
   }
   leaveTabs() {
     if (this.inline) this.hide();
@@ -5824,9 +5799,7 @@ export class HomePanel extends HTMLElement {
     if (this.open === 'sh-more') this.hide();
     const prev = this.tab;
     this.tab = t;
-    try {
-      localStorage.setItem('home-panel-tab', t);
-    } catch {}
+    this.settings.set('tab', t);
     if (t === 'lights' && prev !== t) this.loadLightOrder(); // another screen may have rearranged them
     if (t !== 'lights' && this.lightEdit) this.setLightEdit(false);
     this.shadowRoot
@@ -8186,7 +8159,7 @@ export class HomePanel extends HTMLElement {
         <button class="abtn${this.armed === 'lock' ? ' armed' : ''}" type="button" data-k="lock" ${lockOk ? '' : 'disabled'}>${this.armed === 'lock' ? 'Tap again to unlock' : locked ? 'Unlock' : 'Lock'}</button></div>
       <div class="ctl-l" style="margin-top:18px">Departure times</div>
       <div class="tgl" style="margin-top:0"><div class="tx"><b>Precondition for departure</b><span>${D.on ? 'On' : 'Off'} · ${esc(this.depDesc(D))}${D.on ? '' : ' saved'}</span></div><button class="sw" type="button" role="switch" aria-checked="${D.on}" aria-label="Departure times" data-k="dep" ${D.ok ? '' : 'disabled'}></button></div>
-      <div class="deprow"><div class="days" role="group" aria-label="Departure days">${dayN.map((n, i) => `<button type="button" aria-pressed="${D.days.includes(n)}" aria-label="${n}" data-k="day" data-d="${n}">${FR ? 'LMMJVSD'[i] : n[0].toUpperCase()}</button>`).join('')}</div>
+      <div class="deprow"><div class="days" role="group" aria-label="Departure days">${dayN.map((n, i) => `<button type="button" aria-pressed="${D.days.includes(n)}" aria-label="${n}" data-k="day" data-d="${n}">${this.store.isFrench ? 'LMMJVSD'[i] : n[0].toUpperCase()}</button>`).join('')}</div>
         <input class="dtime" id="deptime" type="time" value="${D.time}" step="300" aria-label="Departure time"></div>
       <div class="seg" role="radiogroup" aria-label="Cabin temperature at departure" style="margin-top:8px">${[
         ['low', 'Cool'],
