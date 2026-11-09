@@ -30,6 +30,9 @@ const E = {},
   AL_AREAS = {},
   SPLIT_AREAS = [],
   LIGHT_LINKS = [];
+// no longer read: the class reads this.CFG; applyConfig still writes it until contract (spec 10). Contract (#130)
+// deletes this declaration together with the other module globals, and this disable with it.
+// eslint-disable-next-line no-unused-vars
 let CFG = null;
 function applyConfig(panelCfg, states) {
   const c = resolveConfig(panelCfg, states);
@@ -264,10 +267,10 @@ const ICON = {
 const ico = (k, s = 20) =>
   `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[k]}</svg>`;
 
-// the house picture from the config (house_image), one for the light theme and one for the dark; none by default
-const houseImg = () =>
-  CFG && CFG.house
-    ? `<img class="house photo day" alt="" src="${esc(CFG.house.day)}"><img class="house photo night" alt="" src="${esc(CFG.house.night)}">`
+// the house picture from the config (house_image, resolved as config.house), one for the light theme and one for the dark; none by default
+const houseImg = house =>
+  house
+    ? `<img class="house photo day" alt="" src="${esc(house.day)}"><img class="house photo night" alt="" src="${esc(house.night)}">`
     : '';
 const CARSVG = `<svg class="carside" viewBox="0 0 340 128" role="img" aria-label="Car, side view">
   <ellipse cx="172" cy="118" rx="150" ry="6" fill="var(--house-shadow)"/>
@@ -396,14 +399,14 @@ function sunTimes(lat, lon, day) {
     [dawn, dusk] = at(-6);
   return {rise, set, dawn, dusk, noon: toMs(Jnoon)};
 }
-// weather measures that open a history chart from the Weather sheet's tiles
-const WX_DEF = {
+// weather measures that open a history chart from the Weather sheet's tiles; a function of the entity ids (the panel's config), not a constant of the module
+const wxDef = e => ({
   wind: {
     title: 'Wind',
     sub: 'Environment Canada, hourly observations',
     series: [
-      {id: E.wind, name: 'Wind', unit: 'km/h'},
-      {id: E.gust, name: 'Gusts', unit: 'km/h', stat: 'max', dash: true},
+      {id: e.wind, name: 'Wind', unit: 'km/h'},
+      {id: e.gust, name: 'Gusts', unit: 'km/h', stat: 'max', dash: true},
     ],
     min: 0,
     note: 'Average wind speed, with the strongest gust in each period as the dashed line.',
@@ -412,8 +415,8 @@ const WX_DEF = {
     title: 'Humidity',
     sub: 'Relative humidity and dew point',
     series: [
-      {id: E.hum, name: 'Humidity', unit: '%'},
-      {id: E.dew, name: 'Dew point', unit: '°', dash: true},
+      {id: e.hum, name: 'Humidity', unit: '%'},
+      {id: e.dew, name: 'Dew point', unit: '°', dash: true},
     ],
     note: 'Humidity on the left scale, dew point in degrees on the right. The closer the dew point to the air temperature, the damper it feels.',
     dec: 1,
@@ -421,14 +424,14 @@ const WX_DEF = {
   pres: {
     title: 'Pressure',
     sub: 'Barometric pressure',
-    series: [{id: E.pres, name: 'Pressure', unit: 'kPa'}],
+    series: [{id: e.pres, name: 'Pressure', unit: 'kPa'}],
     dec: 1,
     note: 'A steady fall often means weather is on the way; a rise, clearing.',
   },
   pop: {
     title: 'Rain or snow',
     sub: 'Chance of precipitation, as forecast',
-    series: [{id: E.pop, name: 'Chance', unit: '%'}],
+    series: [{id: e.pop, name: 'Chance', unit: '%'}],
     min: 0,
     max: 100,
     step: true,
@@ -437,7 +440,7 @@ const WX_DEF = {
   uv: {
     title: 'UV index',
     sub: 'Environment Canada',
-    series: [{id: E.uv, name: 'UV index', unit: ''}],
+    series: [{id: e.uv, name: 'UV index', unit: ''}],
     min: 0,
     step: true,
     bands: [
@@ -450,7 +453,7 @@ const WX_DEF = {
   aqhi: {
     title: 'Air quality',
     sub: 'Air Quality Health Index, Environment Canada',
-    series: [{id: E.aqhi, name: 'AQHI', unit: ''}],
+    series: [{id: e.aqhi, name: 'AQHI', unit: ''}],
     min: 0,
     max: 10,
     step: true,
@@ -465,9 +468,9 @@ const WX_DEF = {
     title: 'Feels like',
     sub: 'Wind chill or humidex against the air temperature',
     series: [
-      {id: E.outT, name: 'Air', unit: '°'},
-      {id: E.chill, name: 'Wind chill', unit: '°', dash: true},
-      {id: E.humidex, name: 'Humidex', unit: '°', dash: true},
+      {id: e.outT, name: 'Air', unit: '°'},
+      {id: e.chill, name: 'Wind chill', unit: '°', dash: true},
+      {id: e.humidex, name: 'Humidex', unit: '°', dash: true},
     ],
     dec: 1,
     note: 'Environment Canada only reports wind chill or humidex when they differ from the air temperature.',
@@ -476,15 +479,15 @@ const WX_DEF = {
     title: 'Normal',
     sub: "Today's forecast against the 30-year normals",
     series: [
-      {id: E.hi, name: 'Forecast high', unit: '°'},
-      {id: E.nhi, name: 'Normal high', unit: '°', dash: true},
-      {id: E.lo, name: 'Forecast low', unit: '°'},
-      {id: E.nlo, name: 'Normal low', unit: '°', dash: true},
+      {id: e.hi, name: 'Forecast high', unit: '°'},
+      {id: e.nhi, name: 'Normal high', unit: '°', dash: true},
+      {id: e.lo, name: 'Forecast low', unit: '°'},
+      {id: e.nlo, name: 'Normal low', unit: '°', dash: true},
     ],
     step: true,
     note: 'Forecast highs and lows as solid lines, the normals for the date dashed.',
   },
-};
+});
 // ---------- climate helpers ----------
 // history ranges for the climate sheet: statistics period, span, and how the heatmap groups cells
 const CRANGE = {
@@ -872,7 +875,7 @@ export class HomePanel extends HTMLElement {
   }
   // the sun is up (or unknown)
   up() {
-    const s = this.st(E.sun);
+    const s = this.st(this.E.sun);
     return !s || s.state === 'above_horizon';
   }
   // ---------- time-zone helpers: the store's zone; spec 11's formatters replace these ----------
@@ -1012,7 +1015,7 @@ export class HomePanel extends HTMLElement {
   <div id="err"></div>
   <div class="cols">
     <div class="col c1">
-      <div class="card wxcard tap" id="open-weather" tabindex="0" role="button" aria-label="Open weather details">${houseImg()}<div class="txt" id="wx"></div><div class="facts wxfacts" id="wxf"></div><div class="wxd" id="wxd"></div></div>
+      <div class="card wxcard tap" id="open-weather" tabindex="0" role="button" aria-label="Open weather details">${houseImg(this.CFG.house)}<div class="txt" id="wx"></div><div class="facts wxfacts" id="wxf"></div><div class="wxd" id="wxd"></div></div>
       <div class="card tap" id="open-energy" tabindex="0" role="button" aria-label="Open home energy details"><div id="energy"></div></div>
     </div>
     <div class="col c2">
@@ -1245,7 +1248,7 @@ export class HomePanel extends HTMLElement {
   // ---------- theme: dark when the device is, or after sunset, unless overridden ----------
   applyTheme() {
     const {theme: m, glass} = this.settings.get(), // one read of the settings per tick
-      s = this.st(E.sun),
+      s = this.st(this.E.sun),
       sys = this.sysDark ? this.sysDark.matches : matchMedia('(prefers-color-scheme: dark)').matches;
     const dark = m === 'dark' || (m === 'auto' && (sys || (s && s.state === 'below_horizon')));
     const t = dark ? 'dark' : 'light';
@@ -1395,9 +1398,9 @@ export class HomePanel extends HTMLElement {
       }),
       L = this.live();
     const ins = L.rooms.map(r => r.t).filter(v => v != null),
-      outT = this.attr(E.weather, 'temperature') ?? this.num(E.outT);
-    const cond = this.st(E.cond),
-      w = this.st(E.weather),
+      outT = this.attr(this.E.weather, 'temperature') ?? this.num(this.E.outT);
+    const cond = this.st(this.E.cond),
+      w = this.st(this.E.weather),
       c = ok(cond) ? cond.state : ok(w) ? w.state : null;
     const temps = [
       ins.length ? `${(sum(ins) / ins.length).toFixed(1)}° inside` : '',
@@ -1414,7 +1417,7 @@ export class HomePanel extends HTMLElement {
     // smart stack (2.5.0): one contextual card beside the clock, picked by pickStack() from the cards that apply right now
     let pick = null;
     try {
-      pick = CFG && CFG.stack.on ? pickStack(this.stackCards(), ms) : null;
+      pick = this.CFG.stack.on ? pickStack(this.stackCards(), ms) : null;
     } catch (e) {
       console.error('home-panel stack', e);
     }
@@ -1456,7 +1459,7 @@ export class HomePanel extends HTMLElement {
     const now = Date.now(),
       h = this.hourNow(),
       out = [],
-      S = (CFG && CFG.stack) || {},
+      S = this.CFG.stack,
       mins = t => Math.round((now - Date.parse(t)) / 6e4);
     const when = t => {
       const d = Date.parse(t);
@@ -1605,9 +1608,9 @@ export class HomePanel extends HTMLElement {
       );
     });
     // Hydro-Québec critical peaks and Hilo challenges
-    const pk = this.st(E.hqPeak),
-      pu = this.st(E.hqUpcoming),
-      defi = this.st(E.defi);
+    const pk = this.st(this.E.hqPeak),
+      pu = this.st(this.E.hqUpcoming),
+      defi = this.st(this.E.defi);
     if ((pk && pk.state === 'on') || (pu && pu.state === 'on'))
       out.push(
         this.scard('peak', {
@@ -1705,7 +1708,7 @@ export class HomePanel extends HTMLElement {
         );
     }
     // Away mode
-    const aw = this.st(E.away);
+    const aw = this.st(this.E.away);
     if (aw && aw.state === 'on') {
       const on = areas.filter(a => a.ids.some(id => (this.st(id) || {}).state === 'on')).length,
         ins = this.live()
@@ -1771,7 +1774,7 @@ export class HomePanel extends HTMLElement {
     }
     // the car charging overnight
     if (C && C.plugged && C.home !== false && inHours(h, 21, 7)) {
-      const p = this.kw(E.evP),
+      const p = this.kw(this.E.evP),
         dep = (this.st(this.car.id('switch', 'departuretimes')) || {}).state === 'on' ? this.schedText() : '';
       out.push(
         this.scard('car', {
@@ -1828,13 +1831,12 @@ export class HomePanel extends HTMLElement {
     if (!el || this.compact || this.tab !== 'home') return;
     let pick = null;
     try {
-      pick =
-        CFG && CFG.stack.on
-          ? pickStack(
-              this.stackCards().filter(c => !(c.k === 'who' && c.filler)),
-              Date.now(),
-            )
-          : null;
+      pick = this.CFG.stack.on
+        ? pickStack(
+            this.stackCards().filter(c => !(c.k === 'who' && c.filler)),
+            Date.now(),
+          )
+        : null;
     } catch (e) {
       console.error('home-panel home stack', e);
     }
@@ -1874,7 +1876,7 @@ export class HomePanel extends HTMLElement {
   skyWp() {
     const now = Date.now(),
       d = this.sunDay(0),
-      w = this.st(E.weather),
+      w = this.st(this.E.weather),
       k = condKind(w && w.state);
     if (!d.rise || !d.set) return 'lake';
     if (now < (d.dawn || d.rise) || now > (d.dusk || d.set)) return 'aurora';
@@ -2387,7 +2389,7 @@ export class HomePanel extends HTMLElement {
         this.call(
           'climate',
           'set_swing_mode',
-          {entity_id: E.hp, swing_mode: v},
+          {entity_id: this.E.hp, swing_mode: v},
           `Louvers: ${swingName(v).toLowerCase()}`,
         );
       }
@@ -2555,10 +2557,10 @@ export class HomePanel extends HTMLElement {
 
   // ---------- live values ----------
   live() {
-    const grid = this.kw(E.grid),
-      wh = this.kw(E.whP) || 0,
-      ev = this.kw(E.evP) || 0;
-    const rooms = ROOMS.map(r => {
+    const grid = this.kw(this.E.grid),
+      wh = this.kw(this.E.whP) || 0,
+      ev = this.kw(this.E.evP) || 0;
+    const rooms = this.ROOMS.map(r => {
       const c = this.st(r.climate),
         p = this.kw(r.power) || 0;
       const t =
@@ -2568,7 +2570,7 @@ export class HomePanel extends HTMLElement {
       return {...r, name: this.roomName(r), t, sp, p, heating, ok: ok(c)};
     });
     const heat = sum(rooms.map(r => r.p));
-    const hp = this.st(E.hp),
+    const hp = this.st(this.E.hp),
       hpOn = ok(hp) && ['heating', 'cooling'].includes(hp.attributes.hvac_action);
     return {grid, wh, ev, heat, rest: grid == null ? null : Math.max(0, grid - wh - ev - heat), rooms, hp, hpOn};
   }
@@ -2585,10 +2587,10 @@ export class HomePanel extends HTMLElement {
     return m ? `${m[1]}'s bedroom` : fn.replace(/^Thermostat\s*/i, '') || r.k;
   }
   rateInfo() {
-    const r = this.num(E.rate),
-      lo = this.num(E.rateLow),
-      md = this.num(E.rateMed),
-      rw = this.num(E.rateReward);
+    const r = this.num(this.E.rate),
+      lo = this.num(this.E.rateLow),
+      md = this.num(this.E.rateMed),
+      rw = this.num(this.E.rateReward);
     const tier =
       r == null
         ? 'Rate unknown'
@@ -2624,7 +2626,7 @@ export class HomePanel extends HTMLElement {
       }),
       L0 = this.compact ? this.live() : null;
     const ins = L0 ? L0.rooms.map(r => r.t).filter(v => v != null) : [],
-      outT = this.compact ? (this.attr(E.weather, 'temperature') ?? this.num(E.outT)) : null;
+      outT = this.compact ? (this.attr(this.E.weather, 'temperature') ?? this.num(this.E.outT)) : null;
     const sub = [
       dateStr,
       ins.length ? `${(sum(ins) / ins.length).toFixed(1)}° inside` : '',
@@ -2647,14 +2649,14 @@ export class HomePanel extends HTMLElement {
       'clock',
       `${t[0]}<span style="font-size:.45em;margin-left:4px">${t[1] || ''}</span><small>${this.H ? 'Live · history ' + this.fmtTime(this.H.at) : 'Live · loading history'}</small>`,
     );
-    const temp = this.attr(E.weather, 'temperature') ?? this.num(E.outT),
-      cond = this.st(E.cond),
+    const temp = this.attr(this.E.weather, 'temperature') ?? this.num(this.E.outT),
+      cond = this.st(this.E.cond),
       att = this.attention();
-    const peak = this.st(E.hqPeak);
+    const peak = this.st(this.E.hqPeak);
     const chips = [];
     if (temp != null)
       chips.push(
-        `<div class="chip wxchip"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="9" r="4" fill="var(--m-amber)"/><path d="M8 19h9a4 4 0 0 0 0-8 5 5 0 0 0-9.6 1.6A3.2 3.2 0 0 0 8 19z" fill="var(--fg3)" opacity=".7"/></svg><span class="num">${f1(temp)}°</span><small>${esc(condName(ok(cond) ? cond.state : (this.st(E.weather) || {}).state))}</small></div>`,
+        `<div class="chip wxchip"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="9" r="4" fill="var(--m-amber)"/><path d="M8 19h9a4 4 0 0 0 0-8 5 5 0 0 0-9.6 1.6A3.2 3.2 0 0 0 8 19z" fill="var(--fg3)" opacity=".7"/></svg><span class="num">${f1(temp)}°</span><small>${esc(condName(ok(cond) ? cond.state : (this.st(this.E.weather) || {}).state))}</small></div>`,
       );
     if (peak && peak.state === 'on')
       chips.push(`<div class="chip"><span class="dot" style="background:var(--crit)"></span>Critical peak now</div>`);
@@ -2673,27 +2675,27 @@ export class HomePanel extends HTMLElement {
   }
 
   renderWeather() {
-    const sun = this.st(E.sun),
+    const sun = this.st(this.E.sun),
       up = sun && sun.state === 'above_horizon',
-      next = this.st(up ? E.setting : E.rising);
-    const temp = this.attr(E.weather, 'temperature') ?? this.num(E.outT),
-      cond = this.st(E.cond);
-    const hi = this.num(E.hi),
-      lo = this.num(E.lo),
-      nhi = this.num(E.nhi),
-      nlo = this.num(E.nlo);
+      next = this.st(up ? this.E.setting : this.E.rising);
+    const temp = this.attr(this.E.weather, 'temperature') ?? this.num(this.E.outT),
+      cond = this.st(this.E.cond);
+    const hi = this.num(this.E.hi),
+      lo = this.num(this.E.lo),
+      nhi = this.num(this.E.nhi),
+      nlo = this.num(this.E.nlo);
     this.set(
       'wx',
       `<div class="muted" style="font-weight:500">${up ? 'Sunset' : 'Sunrise'} <b style="color:var(--fg)">${ok(next) ? this.fmtTime(next.state) : '–'}</b></div>
       <div class="num" style="font-size:76px;line-height:1;margin-top:26px">${f1(temp)}°</div>
-      <div style="font-weight:600;font-size:16px;margin-top:6px">${esc(condName(ok(cond) ? cond.state : (this.st(E.weather) || {}).state))}</div>
+      <div style="font-weight:600;font-size:16px;margin-top:6px">${esc(condName(ok(cond) ? cond.state : (this.st(this.E.weather) || {}).state))}</div>
       <div class="muted" style="margin-top:2px">${hi != null ? `High ${Math.round(hi)}°` : ''}${lo != null ? ` · Low ${Math.round(lo)}°` : ''}${nhi != null && nlo != null ? ` · normal ${Math.round(nhi)}° / ${Math.round(nlo)}°` : ''}</div>`,
     );
-    const w = this.num(E.wind),
-      wd = this.st(E.windDir);
+    const w = this.num(this.E.wind),
+      wd = this.st(this.E.windDir);
     this.set(
       'wxf',
-      `<span>Wind<b>${w == null ? '–' : Math.round(w) + ' km/h'} ${ok(wd) ? esc(wd.state) : ''}</b></span><span>Humidity<b>${this.num(E.hum) ?? '–'}%</b></span><span>UV<b>${this.num(E.uv) ?? '–'}</b></span><span>Air quality<b>${this.num(E.aqhi) ?? '–'}</b></span>`,
+      `<span>Wind<b>${w == null ? '–' : Math.round(w) + ' km/h'} ${ok(wd) ? esc(wd.state) : ''}</b></span><span>Humidity<b>${this.num(this.E.hum) ?? '–'}%</b></span><span>UV<b>${this.num(this.E.uv) ?? '–'}</b></span><span>Air quality<b>${this.num(this.E.aqhi) ?? '–'}</b></span>`,
     );
     const days = this.wxDays().slice(0, 4);
     // EC's first entry after mid-afternoon is tonight: a low and no high
@@ -2714,8 +2716,8 @@ export class HomePanel extends HTMLElement {
     const kwTxt = v => (v == null ? '–' : v < 1 ? Math.round(v * 1000) + ' W' : v.toFixed(2));
     const unit = v => (v == null || v < 1 ? '' : 'kW');
     const nHeat = L.rooms.filter(r => r.heating).length,
-      whT = this.num(E.whT),
-      wb = this.st(E.wbStatus);
+      whT = this.num(this.E.whT),
+      wb = this.st(this.E.wbStatus);
     // a live connector's dashes run faster and the line grows thicker with the power on it (motion.css)
     const dash = (on, c, x1, y1, x2, y2, kw) =>
       `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${on ? c : 'var(--ring)'}" stroke-width="${on ? (3 + Math.min(2, (kw || 0) / 2)).toFixed(1) : 3}" class="${on ? 'dash' : ''}"${on ? ` style="animation-duration:${Math.max(0.45, 2.4 - (kw || 0) * 0.4).toFixed(2)}s"` : ''}/>`;
@@ -2736,7 +2738,7 @@ export class HomePanel extends HTMLElement {
         ${node(70, 160, 42, L.grid, 'var(--c-grid)', true)}<text x="70" y="222" text-anchor="middle" class="cap">GRID</text><text x="70" y="238" text-anchor="middle" class="st">${L.grid > 0.02 ? 'Importing' : 'Idle'}</text>
         <g><circle cx="220" cy="160" r="56" fill="var(--card)" stroke="var(--c-home)" stroke-width="4"/><text x="220" y="158" text-anchor="middle" class="big" font-size="28">${L.grid == null ? '–' : L.grid.toFixed(2)}</text><text x="220" y="178" text-anchor="middle" class="st">kW · HOME</text></g>
         ${node(220, 50, 40, L.wh, 'var(--c-wh)', L.wh > 0.02, whT != null ? whT.toFixed(1) + '°' : '')}<text x="300" y="44" class="cap">WATER HEATING</text><text x="300" y="60" class="st">${L.wh > 0.02 ? 'Heating' : 'Idle'}${whT != null && whT >= 48 ? ', hot' : ''}</text>
-        ${node(370, 160, 42, L.heat, 'var(--c-heat)', L.heat > 0.02)}<text x="370" y="222" text-anchor="middle" class="cap">ROOM HEATING</text><text x="370" y="238" text-anchor="middle" class="st">${nHeat} of ${ROOMS.length} rooms on</text>
+        ${node(370, 160, 42, L.heat, 'var(--c-heat)', L.heat > 0.02)}<text x="370" y="222" text-anchor="middle" class="cap">ROOM HEATING</text><text x="370" y="238" text-anchor="middle" class="st">${nHeat} of ${this.ROOMS.length} rooms on</text>
         ${node(220, 276, 40, L.ev, 'var(--c-ev)', L.ev > 0.02)}<text x="300" y="272" class="cap">EV CHARGING</text><text x="300" y="288" class="st">${esc(ok(wb) ? wb.state : 'Unavailable')}</text>
         <text x="120" y="290" text-anchor="end" class="st">Rest of home</text><text x="120" y="306" text-anchor="end" class="big" font-size="15">${L.rest == null ? '–' : L.rest.toFixed(2) + ' kW'}</text>
       </svg>`;
@@ -2774,8 +2776,8 @@ export class HomePanel extends HTMLElement {
       const s = this.st(id);
       return !ok(s) || Date.now() - Date.parse(s.last_updated) > h * 3600e3;
     };
-    if (this.st(E.hq)) {
-      if (stale(E.hq, 36))
+    if (this.st(this.E.hq)) {
+      if (stale(this.E.hq, 36))
         items.push([
           'warn',
           'Hydro-Québec not updating',
@@ -2783,28 +2785,28 @@ export class HomePanel extends HTMLElement {
         ]);
       else clear.push('Hydro-Québec updating');
     }
-    const hp = this.st(E.hp);
+    const hp = this.st(this.E.hp);
     if (hp) {
       if (!ok(hp))
         items.push(['crit', 'Heat pump offline', `The ${this.hpBrand()} unit shows as unavailable in Home Assistant.`]);
       else clear.push('Heat pump online');
     }
-    const gw = this.st(E.gateway);
+    const gw = this.st(this.E.gateway);
     if (gw) {
       if (gw.state !== 'on' || gw.attributes.disconnected)
         items.push(['crit', 'Hilo gateway offline', 'Thermostats and the meter may stop reporting.']);
       else clear.push('Hilo gateway online');
     }
-    const down = ROOMS.filter(r => this.st(r.climate) && !ok(this.st(r.climate))).map(r => this.roomName(r));
+    const down = this.ROOMS.filter(r => this.st(r.climate) && !ok(this.st(r.climate))).map(r => this.roomName(r));
     if (down.length) items.push(['warn', `${plural(down.length, 'thermostat')} not reporting`, down.join(', ')]);
-    const peak = this.st(E.hqPeak),
-      up = this.st(E.hqUpcoming);
+    const peak = this.st(this.E.hqPeak),
+      up = this.st(this.E.hqUpcoming);
     if (peak && peak.state === 'on')
       items.push(['crit', 'Critical peak in progress', 'Hydro-Québec peak period: lower consumption now.']);
     else if (up && up.state === 'on')
       items.push(['warn', 'Critical peak coming', 'Hydro-Québec announced an upcoming critical peak.']);
     else if (ok(peak)) clear.push('No critical peak');
-    const w = this.num(E.warnings);
+    const w = this.num(this.E.warnings);
     if (w) items.push(['warn', 'Weather warning', `Environment Canada has ${plural(w, 'warning')} for your area.`]);
     else if (w === 0) clear.push('No weather alerts');
     const C = this.car;
@@ -2841,7 +2843,7 @@ export class HomePanel extends HTMLElement {
     );
     if (X.some(x => x.kind === 'door') && !X.some(x => x.kind === 'door' && (this.st(x.id) || {}).state === 'on'))
       clear.push('Doors closed');
-    if (this.st(E.wbStatus) && !ok(this.st(E.wbStatus)))
+    if (this.st(this.E.wbStatus) && !ok(this.st(this.E.wbStatus)))
       items.push(['warn', 'Wallbox offline', 'The charger is unavailable in Home Assistant.']);
     return {items, clear};
   }
@@ -2877,7 +2879,7 @@ export class HomePanel extends HTMLElement {
     const head = (a, title, right) =>
       `<div class="lah">${ring(a.ic, a.p, a.ac, 30)}<b>${title}</b><span class="rt">${right}</span></div>`;
     // Hilo challenge: from the start of pre-heat until recovery ends; phase times come from the challenge sensor's next event
-    const defi = this.st(E.defi),
+    const defi = this.st(this.E.defi),
       dst = ok(defi) ? (defi.state === 'on' ? 'reduction' : defi.state) : null;
     if (['pre_heat', 'reduction', 'recovery'].includes(dst)) {
       const ev = (defi.attributes.next_events || [])[0] || {},
@@ -2929,7 +2931,7 @@ export class HomePanel extends HTMLElement {
             : '';
         const used = ev.used_kWh,
           allowed = ev.allowed_kWh,
-          g = this.kw(E.grid);
+          g = this.kw(this.E.grid);
         const meta = [
           inside != null ? `<b>${inside.toFixed(1)}°</b> inside` : '',
           g != null ? `house using <b>${g.toFixed(1)} kW</b>` : '',
@@ -2955,8 +2957,8 @@ export class HomePanel extends HTMLElement {
       c &&
       !c.charging &&
       c.plugged &&
-      E.wbPause &&
-      this.sw(E.wbPause) === false &&
+      this.E.wbPause &&
+      this.sw(this.E.wbPause) === false &&
       (c.soc == null || c.lim == null || c.soc < c.lim - 1)
     );
     if (c && (c.charging || paused)) {
@@ -2964,7 +2966,7 @@ export class HomePanel extends HTMLElement {
         soc = c.soc,
         lim = c.lim || 100;
       const pw =
-        this.kw(E.evP) ??
+        this.kw(this.E.evP) ??
         (() => {
           const k = Object.keys(chg).find(x => /charg.*(power|kw)$/i.test(x));
           return k && Number.isFinite(+chg[k]) ? +chg[k] : null;
@@ -2983,7 +2985,7 @@ export class HomePanel extends HTMLElement {
           break;
         }
       }
-      const cap = CFG && +CFG.car.battery_kwh;
+      const cap = +this.CFG.car.battery_kwh;
       if (!eta && c.charging && cap && soc != null && pw > 0.3 && soc < lim)
         eta = now + ((((lim - soc) / 100) * cap) / pw) * 36e5;
       const left = eta ? durTxt(eta - now) : '';
@@ -2995,7 +2997,7 @@ export class HomePanel extends HTMLElement {
         })();
       // the hourly charging session that started with this plug-in (sessions are built from hourly statistics)
       const cur = ses && ses.b >= now - 2 * 36e5 && (!plugT || ses.a >= plugT - 36e5) ? ses : null;
-      const price = this.num(E.wbPrice) ?? 0.07,
+      const price = this.num(this.E.wbPrice) ?? 0.07,
         plug = this.st(C.id('sensor', 'elvehplug'));
       seen.car = {lim};
       const a = {
@@ -3009,7 +3011,7 @@ export class HomePanel extends HTMLElement {
         label: `${paused ? 'Charging paused' : 'Car charging'}, ${f0(soc)} percent${left ? `, full in ${left}` : ''}`,
       };
       a.card = () => {
-        const on = this.sw(E.wbPause);
+        const on = this.sw(this.E.wbPause);
         const meta = [
           ok(plug) && plug.state !== 'DISCONNECTED' ? `Plugged in at ${this.fmtTime(plug.last_changed)}` : '',
           cur ? `<b>+${f1(cur.kwh)} kWh</b> so far · about <b>$${(cur.kwh * price).toFixed(2)}</b>` : '',
@@ -3026,13 +3028,13 @@ export class HomePanel extends HTMLElement {
           `<div class="lbig"><span class="n">${f0(soc)}<small>%</small></span><span class="to">→ ${lim}% limit</span>${eta ? `<span class="eta"><b>Full at ${this.fmtTime(eta)}</b>in ${left}</span>` : ''}</div>
           <div class="lbar" role="img" aria-label="Battery ${f0(soc)} percent, limit ${lim} percent"><i style="width:${soc || 0}%"></i><em style="left:${lim}%"></em></div>
           ${meta ? `<div class="lmeta">${meta}</div>` : ''}
-          <div class="lbtns">${E.wbPause && ok(this.st(E.wbPause)) ? `<button type="button" data-la="pause">${on === false ? 'Resume charging' : 'Pause charging'}</button>` : ''}<button type="button" class="go" data-la="car">Open Car ›</button></div>`
+          <div class="lbtns">${this.E.wbPause && ok(this.st(this.E.wbPause)) ? `<button type="button" data-la="pause">${on === false ? 'Resume charging' : 'Pause charging'}</button>` : ''}<button type="button" class="go" data-la="car">Open Car ›</button></div>`
         );
       };
       acts.push(a);
     }
     // the water heater: while it draws power; time left from how long its other cycles today lasted
-    const wp = this.kw(E.whP);
+    const wp = this.kw(this.E.whP);
     if (wp != null && wp > 0.2) {
       const W = this.H && this.H.wh24,
         pts = W ? W.p.filter(x => x[0] >= now - 864e5) : [],
@@ -3048,7 +3050,7 @@ export class HomePanel extends HTMLElement {
       });
       const last = runs[runs.length - 1],
         open = last && last[1] >= now - 15 * 6e4;
-      const sPw = this.st(E.whP),
+      const sPw = this.st(this.E.whP),
         start = open ? last[0] : Date.parse(sPw.last_changed);
       const done = runs
         .filter(x => x !== (open ? last : null) && x[1] - x[0] >= 5 * 6e4)
@@ -3057,7 +3059,7 @@ export class HomePanel extends HTMLElement {
       const typ = done.length ? done[Math.floor(done.length / 2)] : null,
         el = now - start;
       const left = typ ? Math.max(0, typ - el) : null,
-        t = this.num(E.whT);
+        t = this.num(this.E.whT);
       const tp = W ? W.t.filter(x => x[0] >= start - 6e5) : [];
       const rate =
         tp.length > 1 && tp[tp.length - 1][0] > tp[0][0]
@@ -3162,13 +3164,13 @@ export class HomePanel extends HTMLElement {
       this.show('sh-car');
       return;
     }
-    if (b.dataset.la === 'pause' && E.wbPause) {
-      const on = !this.sw(E.wbPause);
-      this.pending[E.wbPause] = {on, until: Date.now() + 20000};
+    if (b.dataset.la === 'pause' && this.E.wbPause) {
+      const on = !this.sw(this.E.wbPause);
+      this.pending[this.E.wbPause] = {on, until: Date.now() + 20000};
       this.call(
         'switch',
         on ? 'turn_on' : 'turn_off',
-        {entity_id: E.wbPause},
+        {entity_id: this.E.wbPause},
         on ? 'Charging resumed' : 'Charging paused',
       );
       this.renderAttention();
@@ -3243,14 +3245,14 @@ export class HomePanel extends HTMLElement {
   }
   carName() {
     const fn = this.attr(this.car.id('image', 'vehicleimage'), 'friendly_name') || '';
-    return (CFG && CFG.car.name) || fn.replace(/\s*Vehicle Picture$/i, '') || 'Car';
+    return this.CFG.car.name || fn.replace(/\s*Vehicle Picture$/i, '') || 'Car';
   }
   carImg() {
     const pic = this.attr(this.car.id('image', 'vehicleimage'), 'entity_picture');
     return pic && !this.imgFail
       ? `<img class="carimg" src="${esc(pic)}" alt="${esc(this.carName())}">`
-      : CFG && CFG.car.color
-        ? CARSVG.replace('<svg class="carside"', `<svg class="carside" style="--car-body:${esc(CFG.car.color)}"`)
+      : this.CFG.car.color
+        ? CARSVG.replace('<svg class="carside"', `<svg class="carside" style="--car-body:${esc(this.CFG.car.color)}"`)
         : CARSVG;
   }
   carState() {
@@ -3282,10 +3284,10 @@ export class HomePanel extends HTMLElement {
   // heater with neither of its sensors, Hilo with no rate. gateTabs hides them; renderWater and renderHilo draw nothing for them
   lacking() {
     return {
-      climate: !ROOMS.length && !this.st(E.hp),
+      climate: !this.ROOMS.length && !this.st(this.E.hp),
       car: !this.car,
-      water: !(this.st(E.whT) || this.st(E.whP)),
-      hilo: !this.st(E.rate),
+      water: !(this.st(this.E.whT) || this.st(this.E.whP)),
+      hilo: !this.st(this.E.rate),
     };
   }
   renderCarCard() {
@@ -3298,7 +3300,7 @@ export class HomePanel extends HTMLElement {
     }
     const c = this.carState(),
       H = this.H,
-      wb = this.st(E.wbStatus),
+      wb = this.st(this.E.wbStatus),
       odo = this.num(this.car.id('sensor', 'odometer'));
     const last = H && H.sessions.length ? H.sessions[H.sessions.length - 1] : null;
     const ev30 = H ? H.daily.slice(-30) : [];
@@ -3330,13 +3332,13 @@ export class HomePanel extends HTMLElement {
   }
   // the water heater's own name: its sensor's name without the measurement ("Tank Temperature" → "Tank")
   whName() {
-    const fn = this.attr(E.whT, 'friendly_name') || this.attr(E.whP, 'friendly_name') || '';
+    const fn = this.attr(this.E.whT, 'friendly_name') || this.attr(this.E.whP, 'friendly_name') || '';
     return fn.replace(/\s*(water heater\s*)?(temperature|température|power|puissance)$/i, '').trim();
   }
   renderWater() {
     if (this.lacking().water) return;
-    const t = this.num(E.whT),
-      p = this.kw(E.whP),
+    const t = this.num(this.E.whT),
+      p = this.kw(this.E.whP),
       H = this.H,
       d = H ? H.wh14 : [],
       W = H && H.wh24;
@@ -3422,8 +3424,8 @@ export class HomePanel extends HTMLElement {
   renderHilo() {
     if (this.lacking().hilo) return;
     const ri = this.rateInfo(),
-      defi = this.st(E.defi),
-      rw = this.num(E.rewards);
+      defi = this.st(this.E.defi),
+      rw = this.num(this.E.rewards);
     const ch = !ok(defi)
       ? 'Challenge status unknown'
       : defi.state === 'off'
@@ -3466,20 +3468,20 @@ export class HomePanel extends HTMLElement {
     try {
       const now = new Date(),
         d = n => new Date(now.getTime() - n * 864e5);
-      const powers = [E.grid, E.whP, E.evP, ...ROOMS.map(r => r.power)],
-        temps = [...ROOMS.map(r => r.temp), E.outT];
+      const powers = [this.E.grid, this.E.whP, this.E.evP, ...this.ROOMS.map(r => r.power)],
+        temps = [...this.ROOMS.map(r => r.temp), this.E.outT];
       const [hour7, day, meter, evh, hp] = await Promise.all([
         this.stats([...powers, ...temps], 'hour', d(7), ['mean', 'max']),
         this.stats([...powers, ...temps], 'day', d(400), ['mean', 'min', 'max']),
-        this.stats([E.energy, E.whE], 'day', d(33), ['change']),
-        this.stats([E.evP], 'hour', d(366), ['mean', 'max']),
-        !E.hp
+        this.stats([this.E.energy, this.E.whE], 'day', d(33), ['change']),
+        this.stats([this.E.evP], 'hour', d(366), ['mean', 'max']),
+        !this.E.hp
           ? Promise.resolve({})
           : this.hass
               .callWS({
                 type: 'history/history_during_period',
                 start_time: d(7).toISOString(),
-                entity_ids: [E.hp],
+                entity_ids: [this.E.hp],
                 minimal_response: false,
                 no_attributes: false,
                 significant_changes_only: false,
@@ -3487,8 +3489,8 @@ export class HomePanel extends HTMLElement {
               .catch(() => ({})),
       ]);
       const [today, t24] = await Promise.all([
-        this.stats([E.energy], 'hour', new Date(Date.now() - this.hourNow() * 36e5 - 60e3), ['change']),
-        this.stats([...ROOMS.map(r => r.temp), E.whT, E.whP], '5minute', d(1.05), ['mean']),
+        this.stats([this.E.energy], 'hour', new Date(Date.now() - this.hourNow() * 36e5 - 60e3), ['change']),
+        this.stats([...this.ROOMS.map(r => r.temp), this.E.whT, this.E.whP], '5minute', d(1.05), ['mean']),
       ]);
       if (key !== this.cfgKey) return;
       this.H = this.derive(hour7, day, meter, evh, hp, today, t24);
@@ -3507,10 +3509,10 @@ export class HomePanel extends HTMLElement {
     const ser = (r, id) => (r[id] || []).map(x => ({...x, t: ms(x.start)}));
     const byT = (r, id, f = 'mean') => new Map(ser(r, id).map(x => [x.t, x[f]]));
     // hourly flow, last 7 days: [t, ev, wh, heat, rest, total] in kWh per hour
-    const hw = byT(hour7, E.whP),
-      he = byT(hour7, E.evP),
-      hr = ROOMS.map(r => byT(hour7, r.power));
-    const flow = ser(hour7, E.grid)
+    const hw = byT(hour7, this.E.whP),
+      he = byT(hour7, this.E.evP),
+      hr = this.ROOMS.map(r => byT(hour7, r.power));
+    const flow = ser(hour7, this.E.grid)
       .filter(x => x.mean != null)
       .map(x => {
         const w = hw.get(x.t) || 0,
@@ -3526,36 +3528,36 @@ export class HomePanel extends HTMLElement {
         ];
       });
     const temp7 = {};
-    ROOMS.forEach(r => {
+    this.ROOMS.forEach(r => {
       temp7[r.k] = ser(hour7, r.temp)
         .filter(x => x.mean != null)
         .map(x => [x.t, +x.mean.toFixed(2)]);
     });
     // room temperatures, last 24 hours in 5-minute means
     const wh24 = {
-      t: ser(t24, E.whT)
+      t: ser(t24, this.E.whT)
         .filter(x => x.mean != null)
         .map(x => [x.t, x.mean]),
-      p: ser(t24, E.whP)
+      p: ser(t24, this.E.whP)
         .filter(x => x.mean != null)
         .map(x => [x.t, x.mean]),
     };
     const temp24 = {};
-    ROOMS.forEach(r => {
+    this.ROOMS.forEach(r => {
       temp24[r.k] = ser(t24, r.temp)
         .filter(x => x.mean != null)
         .map(x => [x.t, +x.mean.toFixed(2)]);
     });
-    const out7 = ser(hour7, E.outT)
+    const out7 = ser(hour7, this.E.outT)
       .filter(x => x.mean != null)
       .map(x => [x.t, +x.mean.toFixed(2)]);
     // daily kWh = mean kW x hours; today only counts the hours so far
     const todayKey = this.localDay(Date.now()),
       hrsToday = Math.max(1, Math.floor(this.hourNow()));
-    const dw = byT(day, E.whP),
-      de = byT(day, E.evP),
-      dr = ROOMS.map(r => byT(day, r.power));
-    const daily = ser(day, E.grid)
+    const dw = byT(day, this.E.whP),
+      de = byT(day, this.E.evP),
+      dr = this.ROOMS.map(r => byT(day, r.power));
+    const daily = ser(day, this.E.grid)
       .filter(x => x.mean != null)
       .map(x => {
         const key = this.localDay(x.t + 12 * 36e5),
@@ -3576,7 +3578,7 @@ export class HomePanel extends HTMLElement {
       });
     const last30 = daily.slice(-30),
       g30 = ['heat', 'wh', 'ev', 'rest'].map(k => sum(last30.map(r => r[k])));
-    const room30 = ROOMS.map((r, i) => sum(last30.map(d => d.rooms[i])));
+    const room30 = this.ROOMS.map((r, i) => sum(last30.map(d => d.rooms[i])));
     const months = {};
     daily.forEach(r => {
       const k = r.day.slice(0, 7);
@@ -3586,27 +3588,27 @@ export class HomePanel extends HTMLElement {
       });
     });
     const monthly = Object.entries(months).sort().slice(-12);
-    const heatmap = ROOMS.map(r => ({
+    const heatmap = this.ROOMS.map(r => ({
       k: r.k,
       pts: ser(day, r.temp)
         .filter(x => x.mean != null)
         .slice(-30)
         .map(x => [this.localDay(x.t + 12 * 36e5), +x.mean.toFixed(1)]),
     }));
-    const out90 = ser(day, E.outT)
+    const out90 = ser(day, this.E.outT)
       .filter(x => x.mean != null)
       .slice(-90)
       .map(x => [x.t + 12 * 36e5, +x.mean.toFixed(1), +x.min.toFixed(1), +x.max.toFixed(1)]);
     // meter totals
-    const md = ser(meter, E.energy).map(x => [this.localDay(x.t + 12 * 36e5), x.change || 0]);
-    const wh14 = ser(meter, E.whE)
+    const md = ser(meter, this.E.energy).map(x => [this.localDay(x.t + 12 * 36e5), x.change || 0]);
+    const wh14 = ser(meter, this.E.whE)
       .map(x => [this.localDay(x.t + 12 * 36e5), x.change || 0])
       .filter(r => r[0] !== todayKey)
       .slice(-14);
     const yKey = this.localDay(Date.now() - 864e5),
       mKey = todayKey.slice(0, 7);
     const totals = {
-      today: sum(ser(today, E.energy).map(x => x.change)),
+      today: sum(ser(today, this.E.energy).map(x => x.change)),
       yesterday: (md.find(r => r[0] === yKey) || [0, null])[1],
       d30: sum(md.slice(-30).map(r => r[1])),
       month: sum(md.filter(r => r[0].startsWith(mKey)).map(r => r[1])),
@@ -3614,7 +3616,7 @@ export class HomePanel extends HTMLElement {
     // charging sessions: runs of hours with the Wallbox above 0.3 kW, joined across gaps up to 3 hours
     const sessions = [];
     let cur = null;
-    ser(evh, E.evP).forEach(x => {
+    ser(evh, this.E.evP).forEach(x => {
       if ((x.mean || 0) <= 0.3) return;
       if (cur && x.t - cur.end <= 3 * 36e5) {
         cur.end = x.t;
@@ -3631,7 +3633,7 @@ export class HomePanel extends HTMLElement {
     // heat pump readings from state history; a gap over 6 hours means it was offline
     const hpPts = [];
     let prev = null;
-    ((hp && hp[E.hp]) || []).forEach(x => {
+    ((hp && hp[this.E.hp]) || []).forEach(x => {
       const t = (x.lu || x.lc) * 1000,
         a = x.a || {},
         v = x.s === 'unavailable' ? null : a.current_temperature;
@@ -4007,7 +4009,7 @@ export class HomePanel extends HTMLElement {
   // ---------- weather ----------
   // Forecasts are not in hass.states any more; the frontend subscribes to them like the weather card does.
   subscribeForecasts() {
-    if (this.fcSubs || !this.hass || !this.hass.connection || !this.st(E.weather)) return;
+    if (this.fcSubs || !this.hass || !this.hass.connection || !this.st(this.E.weather)) return;
     this.fcSubs = ['daily', 'hourly'].map(type =>
       this.hass.connection
         .subscribeMessage(
@@ -4017,7 +4019,7 @@ export class HomePanel extends HTMLElement {
             this.renderWeather();
             if (this.open === 'sh-weather') this.renderForecast();
           },
-          {type: 'weather/subscribe_forecast', forecast_type: type, entity_id: E.weather},
+          {type: 'weather/subscribe_forecast', forecast_type: type, entity_id: this.E.weather},
         )
         .catch(e => {
           console.warn('home-panel forecast', type, e);
@@ -4062,10 +4064,10 @@ export class HomePanel extends HTMLElement {
     return sunTimes(lat, lon, this.localDay(t));
   }
   weatherSummary() {
-    const cond = this.st(E.cond),
-      w = this.st(E.weather),
-      obs = this.st(E.obs),
-      tend = this.st(E.tend),
+    const cond = this.st(this.E.cond),
+      w = this.st(this.E.weather),
+      obs = this.st(this.E.obs),
+      tend = this.st(this.E.tend),
       n = this.alerts().length;
     return [
       condName(ok(cond) ? cond.state : w && w.state),
@@ -4081,10 +4083,10 @@ export class HomePanel extends HTMLElement {
   alerts() {
     const out = [];
     [
-      [E.warnings, 'Warning', 'crit'],
-      [E.watches, 'Watch', 'warn'],
-      [E.advisories, 'Advisory', 'warn'],
-      [E.statements, 'Statement', 'ok'],
+      [this.E.warnings, 'Warning', 'crit'],
+      [this.E.watches, 'Watch', 'warn'],
+      [this.E.advisories, 'Advisory', 'warn'],
+      [this.E.statements, 'Statement', 'ok'],
     ].forEach(([id, kind, tone]) => {
       const s = this.st(id);
       if (!ok(s) || !(+s.state > 0)) return;
@@ -4103,27 +4105,27 @@ export class HomePanel extends HTMLElement {
   async loadWxHistory() {
     if (this.WX && Date.now() - this.WX.at < 15 * 60000) return;
     const now = Date.now(),
-      ids = [E.outT, E.dew, E.hum, E.pres, E.wind, E.gust];
+      ids = [this.E.outT, this.E.dew, this.E.hum, this.E.pres, this.E.wind, this.E.gust];
     const [h, d] = await Promise.all([
       this.stats(ids, 'hour', new Date(now - 7 * 864e5), ['mean', 'min', 'max']),
-      this.stats([E.gust, E.outT], 'day', new Date(now - 400 * 864e5), ['mean', 'min', 'max']),
+      this.stats([this.E.gust, this.E.outT], 'day', new Date(now - 400 * 864e5), ['mean', 'min', 'max']),
     ]);
     const ser = (r, id, f = 'mean') =>
       (r[id] || []).filter(x => x[f] != null).map(x => [ms(x.start), +(+x[f]).toFixed(2)]);
-    const days = (d[E.outT] || [])
+    const days = (d[this.E.outT] || [])
       .filter(x => x.mean != null)
       .map(x => ({k: this.localDay(ms(x.start) + 12 * 36e5), mean: x.mean, min: x.min, max: x.max}));
-    const gust = (d[E.gust] || [])
+    const gust = (d[this.E.gust] || [])
       .filter(x => x.max != null)
       .map(x => ({k: this.localDay(ms(x.start) + 12 * 36e5), v: x.max}));
     this.WX = {
       at: now,
-      t: ser(h, E.outT),
-      dew: ser(h, E.dew),
-      hum: ser(h, E.hum),
-      pres: ser(h, E.pres),
-      wind: ser(h, E.wind),
-      gust: ser(h, E.gust, 'max'),
+      t: ser(h, this.E.outT),
+      dew: ser(h, this.E.dew),
+      hum: ser(h, this.E.hum),
+      pres: ser(h, this.E.pres),
+      wind: ser(h, this.E.wind),
+      gust: ser(h, this.E.gust, 'max'),
       days,
       gustDays: gust,
     };
@@ -4220,20 +4222,20 @@ export class HomePanel extends HTMLElement {
     this.renderSeason();
   }
   renderWeatherNow() {
-    const temp = this.attr(E.weather, 'temperature') ?? this.num(E.outT),
-      cond = this.st(E.cond),
-      w = this.st(E.weather),
+    const temp = this.attr(this.E.weather, 'temperature') ?? this.num(this.E.outT),
+      cond = this.st(this.E.cond),
+      w = this.st(this.E.weather),
       c = ok(cond) ? cond.state : w && w.state;
-    const feels = this.num(E.chill) ?? this.num(E.humidex),
-      sum_ = this.st(E.summary),
-      pop = this.num(E.pop),
-      tend = this.st(E.tend);
-    const uv = this.num(E.uv),
-      aq = this.num(E.aqhi),
-      gust = this.num(E.gust),
-      wd = this.st(E.windDir),
-      bear = this.num(E.bearing),
-      vis = this.num(E.vis);
+    const feels = this.num(this.E.chill) ?? this.num(this.E.humidex),
+      sum_ = this.st(this.E.summary),
+      pop = this.num(this.E.pop),
+      tend = this.st(this.E.tend);
+    const uv = this.num(this.E.uv),
+      aq = this.num(this.E.aqhi),
+      gust = this.num(this.E.gust),
+      wd = this.st(this.E.windDir),
+      bear = this.num(this.E.bearing),
+      vis = this.num(this.E.vis);
     const arrow =
       bear == null
         ? ''
@@ -4242,27 +4244,27 @@ export class HomePanel extends HTMLElement {
       'wnow',
       `<div class="wnow"><div class="wicon">${wxIcon(c, 64, this.up())}</div><div><div class="num" style="font-size:64px;line-height:1">${f1(temp)}°</div>
         <div style="font-weight:600;font-size:16px;margin-top:4px">${esc(condName(c))}</div>
-        <div class="muted">${feels != null && Math.abs(feels - temp) >= 1 ? `Feels like ${Math.round(feels)}° · ` : ''}${this.num(E.hi) != null ? `High ${Math.round(this.num(E.hi))}°` : ''}${this.num(E.lo) != null ? ` · Low ${Math.round(this.num(E.lo))}°` : ''}</div></div></div>
+        <div class="muted">${feels != null && Math.abs(feels - temp) >= 1 ? `Feels like ${Math.round(feels)}° · ` : ''}${this.num(this.E.hi) != null ? `High ${Math.round(this.num(this.E.hi))}°` : ''}${this.num(this.E.lo) != null ? ` · Low ${Math.round(this.num(this.E.lo))}°` : ''}</div></div></div>
       ${ok(sum_) ? `<p class="wsum">${esc(sum_.state)}</p>` : ''}
       <div class="tiles" style="margin-top:14px">${[
         [
           'wind',
           'Wind',
-          this.num(E.wind) == null ? '–' : Math.round(this.num(E.wind)),
+          this.num(this.E.wind) == null ? '–' : Math.round(this.num(this.E.wind)),
           'km/h',
           `${ok(wd) ? esc(wd.state) : ''}${arrow}${gust != null ? ` · gusts ${Math.round(gust)}` : ''}`,
         ],
         [
           'hum',
           'Humidity',
-          this.num(E.hum) ?? '–',
+          this.num(this.E.hum) ?? '–',
           '%',
-          this.num(E.dew) != null ? `dew point ${f1(this.num(E.dew))}°` : '',
+          this.num(this.E.dew) != null ? `dew point ${f1(this.num(this.E.dew))}°` : '',
         ],
         [
           'pres',
           'Pressure',
-          this.num(E.pres) == null ? '–' : this.num(E.pres).toFixed(1),
+          this.num(this.E.pres) == null ? '–' : this.num(this.E.pres).toFixed(1),
           'kPa',
           ok(tend) ? esc(tend.state.toLowerCase()) : '',
         ],
@@ -4292,14 +4294,16 @@ export class HomePanel extends HTMLElement {
             ? vis != null
               ? `visibility ${Math.round(vis)} km`
               : 'same as the air'
-            : this.num(E.chill) != null
+            : this.num(this.E.chill) != null
               ? 'wind chill'
               : 'humidex',
         ],
         [
           'normal',
           'Normal',
-          this.num(E.nhi) == null ? '–' : `${Math.round(this.num(E.nhi))}° / ${Math.round(this.num(E.nlo))}°`,
+          this.num(this.E.nhi) == null
+            ? '–'
+            : `${Math.round(this.num(this.E.nhi))}° / ${Math.round(this.num(this.E.nlo))}°`,
           '',
           'high / low for the date',
         ],
@@ -4338,7 +4342,7 @@ export class HomePanel extends HTMLElement {
             'Sunrise',
             this.fmtTime(today.rise),
             '',
-            ok(this.st(E.dawn)) ? 'first light ' + this.fmtTime(today.dawn) : '',
+            ok(this.st(this.E.dawn)) ? 'first light ' + this.fmtTime(today.dawn) : '',
           ],
           ['Solar noon', this.fmtTime(today.noon), '', ''],
           ['Sunset', this.fmtTime(today.set), '', 'last light ' + this.fmtTime(today.dusk)],
@@ -4428,7 +4432,7 @@ export class HomePanel extends HTMLElement {
       dEl.innerHTML = '<p>No daily forecast yet.</p>';
       return;
     }
-    const now = this.num(E.outT),
+    const now = this.num(this.E.outT),
       today = this.localDay(Date.now());
     // tonight has no high: its bar runs from now down to the low
     const top = d => d.hi ?? (d.k === today && now != null ? Math.max(now, d.lo) : d.lo);
@@ -4743,7 +4747,7 @@ export class HomePanel extends HTMLElement {
         d = this.num(o.dist);
       this.set(
         'aout',
-        `<div class="aqsum lv${ol}"><span class="state"><i></i>${oa == null ? 'No data' : AQ_LVL[ol][0]}</span><span class="why">AQI <b class="num">${oa == null ? '–' : Math.round(oa)}</b>${this.num(E.aqhi) == null ? '' : ` · AQHI ${this.num(E.aqhi)}`}${pm == null ? '' : ` · PM2.5 ${f1(pm)} µg/m³`}${d == null ? '' : ` · station ${Math.round(d)} km away`}</span></div>
+        `<div class="aqsum lv${ol}"><span class="state"><i></i>${oa == null ? 'No data' : AQ_LVL[ol][0]}</span><span class="why">AQI <b class="num">${oa == null ? '–' : Math.round(oa)}</b>${this.num(this.E.aqhi) == null ? '' : ` · AQHI ${this.num(this.E.aqhi)}`}${pm == null ? '' : ` · PM2.5 ${f1(pm)} µg/m³`}${d == null ? '' : ` · station ${Math.round(d)} km away`}</span></div>
         ${o.pollen.some(([, id]) => ok(this.st(id))) ? `<div class="tiles" style="grid-template-columns:repeat(4,minmax(0,1fr));margin-top:10px">${o.pollen.map(([l, id]) => tile([l + ' pollen', ok(this.st(id)) ? esc(cap(this.st(id).state)) : '–'])).join('')}</div>` : '<p class="hint">No pollen report from the station yet; it shows up here once Mila has one.</p>'}`,
       );
     }
@@ -4855,7 +4859,7 @@ export class HomePanel extends HTMLElement {
     const box = this.$('c-aout');
     if (!box) return;
     const o = this.purifiers().outside,
-      aqhi = this.st(E.aqhi) ? E.aqhi : null,
+      aqhi = this.st(this.E.aqhi) ? this.E.aqhi : null,
       ids = [o && o.aqi, aqhi].filter(Boolean);
     if (!ids.length) {
       box.innerHTML = '';
@@ -5008,7 +5012,10 @@ export class HomePanel extends HTMLElement {
       reg = this.hass.entities || {};
     const scenes = Object.keys(this.hass.states)
       .filter(i => i.startsWith('scene.') && !(reg[i] || {}).hidden)
-      .sort((a, b) => (SCENE_ORDER.indexOf(a) + 1 || 99) - (SCENE_ORDER.indexOf(b) + 1 || 99) || a.localeCompare(b));
+      .sort(
+        (a, b) =>
+          (this.SCENE_ORDER.indexOf(a) + 1 || 99) - (this.SCENE_ORDER.indexOf(b) + 1 || 99) || a.localeCompare(b),
+      );
     return (
       scenes
         .map(id => {
@@ -5018,7 +5025,7 @@ export class HomePanel extends HTMLElement {
           return `<button type="button" class="ptile scene${ran ? ' ran' : ''}" data-p="scene" data-id="${esc(id)}"><span class="pic">${ico(sceneIcon(id), 22)}</span><b>${esc(n)}</b><small>${ran ? 'Done' : ok(s) && !isNaN(Date.parse(s.state)) ? 'Last ' + this.ago(s.state) : 'Tap to run'}</small></button>`;
         })
         .join('') +
-      MODES.filter(id => this.st(id))
+      this.MODES.filter(id => this.st(id))
         .map(id => {
           const on = this.pend(id + ':on', isOn(id)) === true;
           return `<button type="button" class="ptile scene${on ? ' on' : ''}" data-p="mode" data-id="${esc(id)}" aria-pressed="${on}" ${ok(this.st(id)) ? '' : 'disabled'}><span class="pic">${ico(sceneIcon(id), 22)}</span><b>${esc(this.attr(id, 'friendly_name') || id)}</b><small>${this.store.isFrench ? (on ? 'Activé' : 'Désactivé') : on ? 'On' : 'Off'}</small></button>`;
@@ -5100,12 +5107,12 @@ export class HomePanel extends HTMLElement {
     // a person entity wins: it follows the trackers chosen in HA's People settings
     for (const id of Object.keys(this.hass.states)) {
       if (!id.startsWith('person.')) continue;
-      const who = HOUSEHOLD.find(h => fold(this.attr(id, 'friendly_name') || '').split(/\s+/)[0] === fold(h)),
+      const who = this.HOUSEHOLD.find(h => fold(this.attr(id, 'friendly_name') || '').split(/\s+/)[0] === fold(h)),
         s = this.st(id);
       if (who && ok(s))
         by.set(who, {name: who, home: s.state === 'home', since: s.state === 'home' ? null : s.last_changed});
     }
-    if (by.size) return HOUSEHOLD.filter(h => by.has(h)).map(h => by.get(h));
+    if (by.size) return this.HOUSEHOLD.filter(h => by.has(h)).map(h => by.get(h));
     for (const id of Object.keys(this.hass.states)) {
       if (!id.startsWith('device_tracker.') || (reg[id] || {}).hidden) continue;
       const n = this.attr(id, 'friendly_name') || '',
@@ -5113,7 +5120,7 @@ export class HomePanel extends HTMLElement {
       if (!m) continue;
       const [owner, dev] = n.match(/^(.+?)[’']s\s/) ? [m[1], m[2]] : [m[2], m[1]];
       if (!/iphone|watch/i.test(dev)) continue;
-      const who = HOUSEHOLD.find(h => fold(owner).split(/\s+/)[0] === fold(h));
+      const who = this.HOUSEHOLD.find(h => fold(owner).split(/\s+/)[0] === fold(h));
       if (!who) continue;
       const s = this.st(id);
       if (!ok(s)) continue;
@@ -5123,7 +5130,7 @@ export class HomePanel extends HTMLElement {
         p.home = true;
       } else if (!p.home) p.since = s.last_changed;
     }
-    return HOUSEHOLD.filter(h => by.has(h)).map(h => by.get(h));
+    return this.HOUSEHOLD.filter(h => by.has(h)).map(h => by.get(h));
   }
   whoHtml() {
     const P = this.presence();
@@ -5546,7 +5553,7 @@ export class HomePanel extends HTMLElement {
   // Climate: the same list as the sheet's, as tiles; a tile opens the sheet on that room
   // the heat pump's maker, from its device (FGLair units are Fujitsu's)
   hpBrand() {
-    const e = (this.hass.entities || {})[E.hp] || {},
+    const e = (this.hass.entities || {})[this.E.hp] || {},
       d = (this.hass.devices || {})[e.device_id] || {};
     return /fglair/.test(e.platform || '') || /fujitsu/i.test(d.manufacturer || '')
       ? 'Fujitsu'
@@ -5589,7 +5596,7 @@ export class HomePanel extends HTMLElement {
         tv: f1(r.t) + '°',
         cls: r.heating ? 'on' : !r.ok ? 'bad' : '',
       })),
-      ...(E.hp
+      ...(this.E.hp
         ? [
             {
               id: 'hp',
@@ -5619,10 +5626,10 @@ export class HomePanel extends HTMLElement {
   // Energy: the water heater and Hilo as rows; each opens its full card in a sheet
   renderEnergyTiles() {
     if (this.tab !== 'energy') return;
-    const whT = this.num(E.whT),
-      whP = this.kw(E.whP) || 0,
+    const whT = this.num(this.E.whT),
+      whP = this.kw(this.E.whP) || 0,
       ri = this.rateInfo(),
-      defi = this.st(E.defi);
+      defi = this.st(this.E.defi);
     const ch = !ok(defi)
       ? 'Challenge status unknown'
       : defi.state === 'off'
@@ -5689,11 +5696,11 @@ export class HomePanel extends HTMLElement {
         const n = this.num(id);
         return n == null ? null : n.toFixed(d);
       },
-      wd = this.st(E.windDir);
-    const feels = this.num(E.chill) ?? this.num(E.humidex),
-      temp = this.attr(E.weather, 'temperature') ?? this.num(E.outT),
-      uv = this.num(E.uv),
-      aq = this.num(E.aqhi);
+      wd = this.st(this.E.windDir);
+    const feels = this.num(this.E.chill) ?? this.num(this.E.humidex),
+      temp = this.attr(this.E.weather, 'temperature') ?? this.num(this.E.outT),
+      uv = this.num(this.E.uv),
+      aq = this.num(this.E.aqhi);
     const band = (bands, x) => {
       const b = x == null ? null : bands.find(([lo, hi]) => x >= lo && x <= hi);
       return b ? b[3] : '';
@@ -5703,46 +5710,48 @@ export class HomePanel extends HTMLElement {
         'wind',
         'wind',
         'Wind',
-        v(E.wind) == null ? '–' : `${v(E.wind)}<small> km/h</small>`,
-        [ok(wd) ? esc(wd.state) : '', v(E.gust) != null ? `gusts ${v(E.gust)} km/h` : ''].filter(Boolean).join(' · '),
+        v(this.E.wind) == null ? '–' : `${v(this.E.wind)}<small> km/h</small>`,
+        [ok(wd) ? esc(wd.state) : '', v(this.E.gust) != null ? `gusts ${v(this.E.gust)} km/h` : '']
+          .filter(Boolean)
+          .join(' · '),
       ],
       [
         'hum',
         'hum',
         'Humidity',
-        v(E.hum) == null ? '–' : `${v(E.hum)}<small>%</small>`,
-        v(E.dew, 1) != null ? `Dew point ${v(E.dew, 1)}°` : '',
+        v(this.E.hum) == null ? '–' : `${v(this.E.hum)}<small>%</small>`,
+        v(this.E.dew, 1) != null ? `Dew point ${v(this.E.dew, 1)}°` : '',
       ],
       [
         'feels',
         'therm',
         'Feels like',
         feels == null ? (temp == null ? '–' : `${Math.round(temp)}°`) : `${Math.round(feels)}°`,
-        feels == null ? 'Same as the air' : this.num(E.chill) != null ? 'Wind chill' : 'Humidex',
+        feels == null ? 'Same as the air' : this.num(this.E.chill) != null ? 'Wind chill' : 'Humidex',
       ],
       [
         'pres',
         'clock',
         'Pressure',
-        v(E.pres, 1) == null ? '–' : `${v(E.pres, 1)}<small> kPa</small>`,
-        ok(this.st(E.tend)) ? esc(cap(this.st(E.tend).state)) : '',
+        v(this.E.pres, 1) == null ? '–' : `${v(this.E.pres, 1)}<small> kPa</small>`,
+        ok(this.st(this.E.tend)) ? esc(cap(this.st(this.E.tend).state)) : '',
       ],
       [
         'uv',
         'wx',
         'UV index',
         uv == null ? '–' : String(Math.round(uv)),
-        band(WX_DEF.uv.bands, uv) || (uv != null && uv >= 8 ? 'Very high' : ''),
+        band(this.wxDefs().uv.bands, uv) || (uv != null && uv >= 8 ? 'Very high' : ''),
       ],
-      ['aqhi', 'aq', 'Air quality', aq == null ? '–' : String(Math.round(aq)), band(WX_DEF.aqhi.bands, aq)],
-      ['pop', 'drop', 'Rain or snow', v(E.pop) == null ? '–' : `${v(E.pop)}<small>%</small>`, 'Chance today'],
+      ['aqhi', 'aq', 'Air quality', aq == null ? '–' : String(Math.round(aq)), band(this.wxDefs().aqhi.bands, aq)],
+      ['pop', 'drop', 'Rain or snow', v(this.E.pop) == null ? '–' : `${v(this.E.pop)}<small>%</small>`, 'Chance today'],
       [
         'normal',
         'wx',
         'Normal',
-        this.num(E.nhi) == null
+        this.num(this.E.nhi) == null
           ? '–'
-          : `${Math.round(this.num(E.nhi))}°<small> / ${Math.round(this.num(E.nlo))}°</small>`,
+          : `${Math.round(this.num(this.E.nhi))}°<small> / ${Math.round(this.num(this.E.nlo))}°</small>`,
         'For the date',
       ],
     ];
@@ -5771,8 +5780,8 @@ export class HomePanel extends HTMLElement {
   // More: the sections that aren't on the bar, with a word on each, and the view switch
   renderMore() {
     const L = this.live(),
-      temp = this.attr(E.weather, 'temperature') ?? this.num(E.outT),
-      cond = this.st(E.cond),
+      temp = this.attr(this.E.weather, 'temperature') ?? this.num(this.E.outT),
+      cond = this.st(this.E.cond),
       isOn = i => (this.st(i) || {}).state === 'on';
     const P = this.purifiers(),
       air = P.rooms.length ? this.airSummary(P) : null,
@@ -5789,7 +5798,7 @@ export class HomePanel extends HTMLElement {
       weather:
         temp == null
           ? ''
-          : `${Math.round(temp)}° · ${esc(condName(ok(cond) ? cond.state : (this.st(E.weather) || {}).state))}`,
+          : `${Math.round(temp)}° · ${esc(condName(ok(cond) ? cond.state : (this.st(this.E.weather) || {}).state))}`,
       energy: L.grid == null ? '' : `${L.grid < 1 ? Math.round(L.grid * 1000) + ' W' : L.grid.toFixed(2) + ' kW'} now`,
       air: !air ? 'No purifiers' : air.worst < 0 ? 'No data' : AQ_LVL[air.worst][0],
       media:
@@ -5917,7 +5926,7 @@ export class HomePanel extends HTMLElement {
       alOn = als.filter(isOn).length;
     const temps = L.rooms.map(r => r.t).filter(v => v != null),
       avg = temps.length ? sum(temps) / temps.length : null,
-      out = this.attr(E.weather, 'temperature') ?? this.num(E.outT);
+      out = this.attr(this.E.weather, 'temperature') ?? this.num(this.E.outT);
     if (this.tab === 'home')
       this.set(
         'hsub',
@@ -6005,20 +6014,20 @@ export class HomePanel extends HTMLElement {
     const L = this.live(),
       isOn = i => (this.st(i) || {}).state === 'on',
       H = this.H;
-    const sun = this.st(E.sun),
+    const sun = this.st(this.E.sun),
       dayUp = sun && sun.state === 'above_horizon',
-      nxt = this.st(dayUp ? E.setting : E.rising),
-      nxt2 = this.st(dayUp ? E.rising : E.setting);
-    const temp = this.attr(E.weather, 'temperature') ?? this.num(E.outT),
-      cond = this.st(E.cond),
-      hi = this.num(E.hi),
-      lo = this.num(E.lo);
+      nxt = this.st(dayUp ? this.E.setting : this.E.rising),
+      nxt2 = this.st(dayUp ? this.E.rising : this.E.setting);
+    const temp = this.attr(this.E.weather, 'temperature') ?? this.num(this.E.outT),
+      cond = this.st(this.E.cond),
+      hi = this.num(this.E.hi),
+      lo = this.num(this.E.lo);
     const hwxWas = this.cache.hwx;
     this.set(
       'hwx',
       `<div class="muted" style="font-size:13px;font-weight:500">${dayUp ? 'Sunset' : 'Sunrise'} <b style="color:var(--fg)">${ok(nxt) ? this.fmtTime(nxt.state) : '–'}</b>${ok(nxt2) ? ` · ${dayUp ? 'sunrise' : 'sunset'} <b style="color:var(--fg)">${this.fmtTime(nxt2.state)}</b>` : ''}</div>
-      <div class="hbig"><span class="num">${temp == null ? '–' : Math.round(temp) + '°'}</span><div><div class="hc">${esc(condName(ok(cond) ? cond.state : (this.st(E.weather) || {}).state))}</div><div class="muted">${hi != null ? `High ${Math.round(hi)}°` : ''}${lo != null ? ` · low ${Math.round(lo)}°` : ''}</div></div></div>
-      <div class="hhouse">${houseImg()}</div>
+      <div class="hbig"><span class="num">${temp == null ? '–' : Math.round(temp) + '°'}</span><div><div class="hc">${esc(condName(ok(cond) ? cond.state : (this.st(this.E.weather) || {}).state))}</div><div class="muted">${hi != null ? `High ${Math.round(hi)}°` : ''}${lo != null ? ` · low ${Math.round(lo)}°` : ''}</div></div></div>
+      <div class="hhouse">${houseImg(this.CFG.house)}</div>
       <div class="lbl hwho">Who's home</div>${this.whoHtml() || '<p class="hint">No one is tracked yet.</p>'}${this.compact ? '' : '<div class="hstk" id="hstk" hidden></div>'}`,
     );
     // 2.9.0: under Who's home, the rest of the card holds the idle clock's smart stack (a fresh card slot whenever the card was rebuilt)
@@ -6029,14 +6038,14 @@ export class HomePanel extends HTMLElement {
     const temps = L.rooms.map(r => r.t).filter(v => v != null),
       avg = temps.length ? sum(temps) / temps.length : null,
       nHeat = L.rooms.filter(r => r.heating).length;
-    const hp = this.st(E.hp),
+    const hp = this.st(this.E.hp),
       hpTxt = !ok(hp) ? 'offline' : hp.state === 'off' ? 'off' : hp.attributes.hvac_action || hp.state;
     const c = this.car ? this.carState() : null,
       P = this.purifiers(),
       air = P.rooms.length ? this.airSummary(P) : null,
       ri = this.rateInfo();
-    const whT = this.num(E.whT),
-      whP = this.kw(E.whP),
+    const whT = this.num(this.E.whT),
+      whP = this.kw(this.E.whP),
       wh24 = H && H.wh24 ? sum(H.wh24.p.filter(x => x[0] >= Date.now() - 864e5).map(x => x[1])) / 12 : null;
     const kwTxt = v => (v == null ? '–' : v < 1 ? Math.round(v * 1000) + ' W' : v.toFixed(2) + ' kW');
     const tiles = [
@@ -6068,7 +6077,7 @@ export class HomePanel extends HTMLElement {
         'var(--c-heat)',
         'Climate',
         avg == null ? '–' : avg.toFixed(1) + '°',
-        `Inside · ${plural(nHeat, 'room')} heating${E.hp ? ` · heat pump ${esc(hpTxt)}` : ''}`,
+        `Inside · ${plural(nHeat, 'room')} heating${this.E.hp ? ` · heat pump ${esc(hpTxt)}` : ''}`,
       ],
       [
         'car',
@@ -6190,8 +6199,8 @@ export class HomePanel extends HTMLElement {
   upcoming() {
     const out = [],
       day = this.up(),
-      set = this.st(E.setting),
-      rise = this.st(E.rising);
+      set = this.st(this.E.setting),
+      rise = this.st(this.E.rising);
     const sunset = () => ok(set) && out.push([this.fmtTime(set.state), 'Sunset · theme turns dark']),
       sunrise = () => ok(rise) && out.push([this.fmtTime(rise.state), 'Sunrise · every light off, night modes off']);
     if (day) {
@@ -6201,16 +6210,16 @@ export class HomePanel extends HTMLElement {
       sunrise();
       sunset();
     }
-    const defi = this.st(E.defi);
+    const defi = this.st(this.E.defi);
     if (ok(defi) && defi.state !== 'off') out.push(['Hilo', `Challenge: ${esc(defi.state)}`]);
-    const pk = this.st(E.hqUpcoming);
+    const pk = this.st(this.E.hqUpcoming);
     if (pk && pk.state === 'on') out.push(['Hydro-Québec', 'Critical peak coming']);
     // the departure schedule only counts while its switch is on
     if (this.car && (this.st(this.car.id('switch', 'departuretimes')) || {}).state === 'on') {
       const t = this.schedText();
       if (!/^No /.test(t)) out.push(['Car', esc(t.replace(/ saved\.$/, ' departure'))]);
     }
-    MODES.forEach(id => {
+    this.MODES.forEach(id => {
       const m = this.st(id);
       if (m && m.state === 'on') out.push(['On', esc(this.attr(id, 'friendly_name') || id)]);
     });
@@ -6405,7 +6414,7 @@ export class HomePanel extends HTMLElement {
       k = (H - GAP * (groups.length - 1)) / total,
       top = 24;
     // rooms with their share of the heating; small ones are gathered
-    let rooms = ROOMS.map((r, i) => ({n: this.roomName(r), v: D.rooms[i] || 0}))
+    let rooms = this.ROOMS.map((r, i) => ({n: this.roomName(r), v: D.rooms[i] || 0}))
       .filter(r => r.v > 0)
       .sort((a, b) => b.v - a.v);
     const heat = groups.find(g => g.n === 'Room heating'),
@@ -6501,7 +6510,7 @@ export class HomePanel extends HTMLElement {
           .flatMap(l => [l, ...(this.attr(l, 'entity_id') || [])])
           .some(l => ids.includes(l)),
       ) ||
-      (AL_AREAS[aid] && als.find(a => a === AL_AREAS[aid])) ||
+      (this.AL_AREAS[aid] && als.find(a => a === this.AL_AREAS[aid])) ||
       als.find(a => aid && area(a) === aid) ||
       als.find(
         a =>
@@ -6519,7 +6528,7 @@ export class HomePanel extends HTMLElement {
         labels = shortNames(units.map(i => this.attr(i, 'friendly_name') || i));
       // areas listed in split_light_areas get one tile per light group (or loose light) instead of one for the whole area;
       // each tile keeps the area's Adaptive Lighting switch, so Auto and Night still act on the area
-      if (SPLIT_AREAS.includes(aid) && units.length > 1) {
+      if (this.SPLIT_AREAS.includes(aid) && units.length > 1) {
         const al = alFor(aid, ids);
         units.forEach((u, k) => {
           const mine = ids.filter(i => (owner[i] || i) === u);
@@ -6562,7 +6571,7 @@ export class HomePanel extends HTMLElement {
   lightLinkList() {
     const v = this.sysData && this.sysData.light_links;
     if (Array.isArray(v)) return v.filter(p => Array.isArray(p) && p.length === 2).map(p => p.map(String));
-    return LIGHT_LINKS.filter(l => l.keys.length === 2 && (!l.sw || (this.st(l.sw) || {}).state === 'on')).map(
+    return this.LIGHT_LINKS.filter(l => l.keys.length === 2 && (!l.sw || (this.st(l.sw) || {}).state === 'on')).map(
       l => l.keys,
     );
   }
@@ -6895,8 +6904,17 @@ export class HomePanel extends HTMLElement {
 
   // ---------- weather radar (Weather Radar Card from HACS, RainViewer data) ----------
   // ---------- weather history: one measure from the Weather sheet, Day / Week / Month / Year ----------
+  // the measures built from this panel's entity ids; built again only when the config hands out a new entity map
+  wxDefs() {
+    const e = this.E;
+    if (this.wxDefsFor !== e) {
+      this.wxDefsFor = e;
+      this.wxDefsOf = wxDef(e);
+    }
+    return this.wxDefsOf;
+  }
   openWx(key) {
-    if (!WX_DEF[key]) return;
+    if (!this.wxDefs()[key]) return;
     this.wxKey = key;
     this.wxRange = this.wxRange || 'week';
     this.show('sh-wx');
@@ -6995,7 +7013,7 @@ export class HomePanel extends HTMLElement {
   }
   async wxSheet() {
     if (!this.ApexCharts) return; // a tap while the chunk is loading; buildSheet draws it when it lands
-    const D = WX_DEF[this.wxKey],
+    const D = this.wxDefs()[this.wxKey],
       r = this.wxRange,
       R = CRANGE[r],
       tag = (this.wxTag = Symbol()),
@@ -7226,10 +7244,10 @@ export class HomePanel extends HTMLElement {
   climateSummary() {
     const L = this.live(),
       temps = L.rooms.map(r => r.t).filter(v => v != null),
-      out = this.attr(E.weather, 'temperature') ?? this.num(E.outT);
+      out = this.attr(this.E.weather, 'temperature') ?? this.num(this.E.outT);
     const heating = L.rooms.filter(r => r.heating);
     const hp = L.hp,
-      hpTxt = !E.hp
+      hpTxt = !this.E.hp
         ? ''
         : !ok(hp)
           ? 'heat pump offline'
@@ -7271,16 +7289,21 @@ export class HomePanel extends HTMLElement {
     if (c && Date.now() - c.at < 10 * 60000) return c;
     const R = CRANGE[r],
       start = new Date(Date.now() - R.days * 864e5),
-      ids = [...ROOMS.map(x => x.temp), ...ROOMS.map(x => x.target), ...ROOMS.map(x => x.power), E.outT];
+      ids = [
+        ...this.ROOMS.map(x => x.temp),
+        ...this.ROOMS.map(x => x.target),
+        ...this.ROOMS.map(x => x.power),
+        this.E.outT,
+      ];
     const [stt, hp] = await Promise.all([
       this.stats(ids, R.period, start, ['mean', 'min', 'max']),
-      !E.hp
+      !this.E.hp
         ? Promise.resolve({})
         : this.hass
             .callWS({
               type: 'history/history_during_period',
               start_time: start.toISOString(),
-              entity_ids: [E.hp],
+              entity_ids: [this.E.hp],
               minimal_response: false,
               no_attributes: false,
               significant_changes_only: false,
@@ -7316,20 +7339,20 @@ export class HomePanel extends HTMLElement {
     const rooms = {},
       sp = {},
       kwh = {};
-    ROOMS.forEach(x => {
+    this.ROOMS.forEach(x => {
       rooms[x.k] = ser(x.temp);
       sp[x.k] = spSer(x.target);
       kwh[x.k] = kwhOf(x.power);
     });
-    const hpPts = hpSeries(hp && hp[E.hp]),
-      hpSp = hpSeries(hp && hp[E.hp], (a, m) => (['off', 'fan_only', 'dry'].includes(m) ? null : a.temperature));
+    const hpPts = hpSeries(hp && hp[this.E.hp]),
+      hpSp = hpSeries(hp && hp[this.E.hp], (a, m) => (['off', 'fan_only', 'dry'].includes(m) ? null : a.temperature));
     return (this.CR[r] = {
       at: Date.now(),
       start: start.getTime(),
       rooms,
       sp,
       kwh,
-      out: ser(E.outT),
+      out: ser(this.E.outT),
       hp: hpPts,
       hpSp,
       hpFrom: hpPts.length ? hpPts[0][0] : null,
@@ -7337,7 +7360,7 @@ export class HomePanel extends HTMLElement {
   }
   houseSeries(C) {
     const by = new Map();
-    ROOMS.forEach(r =>
+    this.ROOMS.forEach(r =>
       (C.rooms[r.k] || []).forEach(([x, v]) => {
         const a = by.get(x) || [];
         a.push(v);
@@ -7345,7 +7368,7 @@ export class HomePanel extends HTMLElement {
       }),
     );
     return [...by]
-      .filter(([, v]) => v.length === ROOMS.length)
+      .filter(([, v]) => v.length === this.ROOMS.length)
       .sort((a, b) => a[0] - b[0])
       .map(([x, v]) => [x, +(sum(v) / v.length).toFixed(2)]);
   }
@@ -7388,7 +7411,7 @@ export class HomePanel extends HTMLElement {
     const stops = dark ? HEAT_DARK : HEAT_LIGHT;
     this.$('cheatl').innerHTML =
       `<span class="hbar" style="background:linear-gradient(90deg,${Array.from({length: 19}, (_, i) => heatColor(HEAT_LO + i / 2, stops)).join(',')})"></span><span class="hticks">${[17, 19, 21, 23, 25].map(t => `<i style="left:${((t - HEAT_LO) / (HEAT_HI - HEAT_LO)) * 100}%">${t}°</i>`).join('')}</span>`;
-    const series = [...ROOMS].reverse().map(x => ({
+    const series = [...this.ROOMS].reverse().map(x => ({
       name: this.roomName(x),
       data: this.bucket(C.rooms[x.k] || [], r).map(([k, lbl, v]) => ({x: lbl, y: v, k})),
     }));
@@ -7495,7 +7518,7 @@ export class HomePanel extends HTMLElement {
         note += ` Home Assistant keeps about 10 days of detailed history, so the heat pump line starts ${this.fmtDate(C.hpFrom)}.`;
     } else if (this.climSel === 'house') {
       title = 'Whole house';
-      sub = `Average of ${ROOMS.length} rooms`;
+      sub = `Average of ${this.ROOMS.length} rooms`;
       const ts = L.rooms.filter(r => r.t != null),
         sorted = [...ts].sort((a, b) => b.t - a.t);
       t = ts.length ? sum(ts.map(r => r.t)) / ts.length : null;
@@ -7514,7 +7537,7 @@ export class HomePanel extends HTMLElement {
       ];
       pts = C ? this.houseSeries(C) : [];
     } else {
-      const i = ROOMS.findIndex(r => r.k === this.climSel),
+      const i = this.ROOMS.findIndex(r => r.k === this.climSel),
         r = L.rooms[i];
       title = r.name;
       sub = 'Hilo thermostat';
@@ -7536,13 +7559,13 @@ export class HomePanel extends HTMLElement {
     if (!this.$('chead') || (this.dialDrag && !force)) return;
     const fresh = !this.$('chead').firstChild; // the sheet just opened or changed room: the dial draws itself in (motion.css)
     const {title, sub, t, sp, pill, tiles} = this.climInfo(),
-      out = this.attr(E.weather, 'temperature') ?? this.num(E.outT);
+      out = this.attr(this.E.weather, 'temperature') ?? this.num(this.E.outT);
     if (this.compact) {
       // phone: an Apple Home style dial instead of the big number and the bar
       let d;
       if (this.climSel === 'house') d = {sp: undefined, lo: 5, hi: 30, ed: false, state: `${f1(t)}° average`};
       else if (this.climSel === 'hp') {
-        const hp = this.st(E.hp),
+        const hp = this.st(this.E.hp),
           a = ok(hp) ? hp.attributes : {};
         const mode = this.pend('hp:mode', hp && hp.state);
         d = {
@@ -7553,7 +7576,7 @@ export class HomePanel extends HTMLElement {
           state: pill.replace(/<[^>]+>/g, ''),
         };
       } else {
-        const r = ROOMS.find(x => x.k === this.climSel),
+        const r = this.ROOMS.find(x => x.k === this.climSel),
           c = this.st(r.climate),
           a = ok(c) ? c.attributes : {};
         d = {
@@ -7650,7 +7673,7 @@ export class HomePanel extends HTMLElement {
       `<div class="seg" role="radiogroup" aria-label="${esc(aria)}">${opts.map(([v, l]) => `<button type="button" role="radio" aria-checked="${v === cur}" data-c="${k}" data-v="${esc(v)}"><b>${esc(l)}</b></button>`).join('')}</div>`;
     let html = '';
     if (this.climSel === 'hp') {
-      const hp = this.st(E.hp);
+      const hp = this.st(this.E.hp);
       if (!ok(hp)) {
         html = '<p class="muted">The heat pump is offline, so it can\'t be adjusted right now.</p>';
       } else {
@@ -7692,11 +7715,11 @@ export class HomePanel extends HTMLElement {
     } else if (this.climSel === 'house') {
       const v = this.allSp ?? 21;
       html = `<div class="clbl">All rooms</div><div class="crow">${stepper('allsp', v, 5.5, 30, 'Set every room to')}
-        <button type="button" class="abtn${this.armed === 'allset' ? ' armed' : ''}" data-c="allset">${this.armed === 'allset' ? `Tap again: all ${ROOMS.length} rooms to ${v.toFixed(1)}°` : `Set all to ${v.toFixed(1)}°`}</button>
+        <button type="button" class="abtn${this.armed === 'allset' ? ' armed' : ''}" data-c="allset">${this.armed === 'allset' ? `Tap again: all ${this.ROOMS.length} rooms to ${v.toFixed(1)}°` : `Set all to ${v.toFixed(1)}°`}</button>
         <button type="button" class="abtn${this.armed === 'alloff' ? ' armed' : ''}" data-c="alloff">${this.armed === 'alloff' ? 'Tap again: all rooms off' : 'All off'}</button></div>
         <p class="hint">Off means the 5° frost guard, the lowest a Hilo thermostat goes. Changes to every room need a second tap.</p>`;
     } else {
-      const r = ROOMS.find(x => x.k === this.climSel),
+      const r = this.ROOMS.find(x => x.k === this.climSel),
         c = this.st(r.climate);
       if (!ok(c)) html = '<p class="muted">This thermostat is unavailable, so it can\'t be adjusted right now.</p>';
       else {
@@ -7780,10 +7803,15 @@ export class HomePanel extends HTMLElement {
     if (this.climSel === 'hp') {
       hold('hp:sp', v);
       later('hp', () =>
-        this.call('climate', 'set_temperature', {entity_id: E.hp, temperature: v}, `Heat pump set to ${v.toFixed(1)}°`),
+        this.call(
+          'climate',
+          'set_temperature',
+          {entity_id: this.E.hp, temperature: v},
+          `Heat pump set to ${v.toFixed(1)}°`,
+        ),
       );
     } else {
-      const r = ROOMS.find(x => x.k === this.climSel);
+      const r = this.ROOMS.find(x => x.k === this.climSel);
       if (!r) return;
       hold(r.climate, v);
       later(r.climate, () =>
@@ -7813,7 +7841,7 @@ export class HomePanel extends HTMLElement {
       this.spT[key] = setTimeout(fn, 1100);
     };
     if (k === 'roomsp' || k === 'roomq') {
-      const r = ROOMS.find(x => x.k === this.climSel),
+      const r = this.ROOMS.find(x => x.k === this.climSel),
         c = this.st(r.climate),
         a = c.attributes,
         lo = a.min_temp ?? 5,
@@ -7846,11 +7874,11 @@ export class HomePanel extends HTMLElement {
       } else {
         this.armed = null;
         const v = k === 'alloff' ? 5 : (this.allSp ?? 21);
-        ROOMS.forEach(r => hold(r.climate, v));
+        this.ROOMS.forEach(r => hold(r.climate, v));
         this.call(
           'climate',
           'set_temperature',
-          {entity_id: ROOMS.map(r => r.climate), temperature: v},
+          {entity_id: this.ROOMS.map(r => r.climate), temperature: v},
           k === 'alloff' ? 'All rooms off (5° frost guard)' : `All rooms set to ${v.toFixed(1)}°`,
         );
       }
@@ -7860,25 +7888,30 @@ export class HomePanel extends HTMLElement {
       this.call(
         'climate',
         'set_hvac_mode',
-        {entity_id: E.hp, hvac_mode: v},
+        {entity_id: this.E.hp, hvac_mode: v},
         `Heat pump: ${(HVAC[v] || v).toLowerCase()}`,
       );
     } else if (k === 'hpsp') {
-      const a = this.st(E.hp).attributes,
+      const a = this.st(this.E.hp).attributes,
         v = Math.min(a.max_temp ?? 30, Math.max(a.min_temp ?? 16, +this.pend('hp:sp', a.temperature) + +b.dataset.d));
       hold('hp:sp', v);
       later('hp', () =>
-        this.call('climate', 'set_temperature', {entity_id: E.hp, temperature: v}, `Heat pump set to ${v.toFixed(1)}°`),
+        this.call(
+          'climate',
+          'set_temperature',
+          {entity_id: this.E.hp, temperature: v},
+          `Heat pump set to ${v.toFixed(1)}°`,
+        ),
       );
     } else if (k === 'hpfan') {
       hold('hp:fan', b.dataset.v);
-      this.call('climate', 'set_fan_mode', {entity_id: E.hp, fan_mode: b.dataset.v}, `Fan: ${b.dataset.v}`);
+      this.call('climate', 'set_fan_mode', {entity_id: this.E.hp, fan_mode: b.dataset.v}, `Fan: ${b.dataset.v}`);
     } else if (k === 'hppre') {
       hold('hp:preset', b.dataset.v);
       this.call(
         'climate',
         'set_preset_mode',
-        {entity_id: E.hp, preset_mode: b.dataset.v},
+        {entity_id: this.E.hp, preset_mode: b.dataset.v},
         `Preset: ${b.dataset.v === 'none' ? 'normal' : b.dataset.v}`,
       );
     }
@@ -7901,7 +7934,7 @@ export class HomePanel extends HTMLElement {
     if (!H) return;
     const sess = H.sessions,
       tot = sum(sess.map(x => x.kwh)),
-      price = this.num(E.wbPrice) ?? 0.07;
+      price = this.num(this.E.wbPrice) ?? 0.07;
     this.$('sesp').textContent = sess.length
       ? `${sess.length} charging sessions on the Wallbox since ${this.fmtDate(sess[0].a)}. Cost is estimated at the ${(price * 100).toFixed(0)}¢/kWh set in the Wallbox app.`
       : 'No charging sessions in the last year.';
@@ -7946,7 +7979,7 @@ export class HomePanel extends HTMLElement {
     const all = H.sessions.slice().reverse(),
       rows = this.sesAll ? all : all.slice(0, 10),
       mx = Math.max(1, ...all.map(x => x.kwh)),
-      price = this.num(E.wbPrice) ?? 0.07;
+      price = this.num(this.E.wbPrice) ?? 0.07;
     this.$('slist').innerHTML = rows
       .map(
         x => `<tr><td>${new Date(x.a).toLocaleDateString('en-CA', {weekday: 'short', month: 'short', day: 'numeric', timeZone: this.store.timeZone})}</td><td class="hide-s">${this.fmtTime(x.a)} to ${this.fmtTime(x.b)}</td><td class="r hide-s">${Math.round((x.b - x.a) / 36e5)} h</td>
@@ -8157,18 +8190,18 @@ export class HomePanel extends HTMLElement {
   renderCarControls() {
     const C = this.car;
     if (!C || this.open !== 'sh-car') return;
-    const amps = this.st(E.wbAmps),
-      cur = this.pending.amps && Date.now() < this.pending.amps.until ? this.pending.amps.v : this.num(E.wbAmps);
+    const amps = this.st(this.E.wbAmps),
+      cur = this.pending.amps && Date.now() < this.pending.amps.until ? this.pending.amps.v : this.num(this.E.wbAmps);
     const mn = amps ? amps.attributes.min || 6 : 6,
       mx = amps ? amps.attributes.max || 48 : 48;
     const steps = [16, 24, 32, 40, 48].filter(a => a >= mn && a <= mx);
     const c = this.carState(),
-      wb = this.st(E.wbStatus),
-      pause = this.st(E.wbPause),
-      wlock = this.sw(E.wbLock);
+      wb = this.st(this.E.wbStatus),
+      pause = this.st(this.E.wbPause),
+      wlock = this.sw(this.E.wbLock);
     const lim = c.lim,
       limOpts = [50, 60, 70, 80, 90, 100];
-    const charging = this.sw(E.wbPause);
+    const charging = this.sw(this.E.wbPause);
     this.set(
       'car-charger',
       `<h3>Home charger</h3><p>Wallbox Pulsar Plus · ${esc(ok(wb) ? wb.state.toLowerCase() : 'unavailable')}${c.plugged ? '' : ', car not plugged in'}</p>
@@ -8179,7 +8212,7 @@ export class HomePanel extends HTMLElement {
       <div class="seg dis" role="radiogroup" aria-label="Charge limit, read only" aria-disabled="true">${limOpts.map(v => `<button type="button" role="radio" aria-checked="${lim === v}" disabled><b>${v === 100 ? 'Full' : v + '%'}</b></button>`).join('')}</div>
       <div class="hint">Set in the FordPass app. Home Assistant can read it but has no control for it.</div>
       <div class="tgl"><div class="tx"><b>Charging</b><span>${ok(pause) ? (charging ? 'On. Turn off to pause' : 'Paused. Turn on to resume') : 'Available while the car is plugged in'}</span></div><button class="sw" type="button" role="switch" aria-checked="${!!charging}" aria-label="Charging" data-k="pause" ${ok(pause) ? '' : 'disabled'}></button></div>
-      <div class="tgl"><div class="tx"><b>Lock charger</b><span>${wlock ? 'Locked, needs the app or RFID card' : 'Unlocked, anyone can plug in'}</span></div><button class="sw" type="button" role="switch" aria-checked="${!!wlock}" aria-label="Lock charger" data-k="wblock" ${this.st(E.wbLock) && ok(this.st(E.wbLock)) ? '' : 'disabled'}></button></div>`,
+      <div class="tgl"><div class="tx"><b>Lock charger</b><span>${wlock ? 'Locked, needs the app or RFID card' : 'Unlocked, anyone can plug in'}</span></div><button class="sw" type="button" role="switch" aria-checked="${!!wlock}" aria-label="Lock charger" data-k="wblock" ${this.st(this.E.wbLock) && ok(this.st(this.E.wbLock)) ? '' : 'disabled'}></button></div>`,
     );
     const rs = this.sw(C.id('switch', 'ignition')),
       cabin = this.st(C.id('select', 'rcctemperature')),
@@ -8292,12 +8325,12 @@ export class HomePanel extends HTMLElement {
     if (k === 'amps') {
       const a = +b.dataset.a;
       this.pending.amps = {v: a, until: Date.now() + 20000};
-      this.call('number', 'set_value', {entity_id: E.wbAmps, value: a}, `Wallbox limit set to ${a} A`);
-    } else if (k === 'pause') swToggle(E.wbPause, 'Charging');
+      this.call('number', 'set_value', {entity_id: this.E.wbAmps, value: a}, `Wallbox limit set to ${a} A`);
+    } else if (k === 'pause') swToggle(this.E.wbPause, 'Charging');
     else if (k === 'wblock') {
-      const on = !this.sw(E.wbLock);
-      hold(E.wbLock, {on});
-      this.call('lock', on ? 'lock' : 'unlock', {entity_id: E.wbLock}, on ? 'Charger locked' : 'Charger unlocked');
+      const on = !this.sw(this.E.wbLock);
+      hold(this.E.wbLock, {on});
+      this.call('lock', on ? 'lock' : 'unlock', {entity_id: this.E.wbLock}, on ? 'Charger locked' : 'Charger unlocked');
     } else if (k === 'rs') {
       const id = C.id('switch', 'ignition'),
         on = this.sw(id);
