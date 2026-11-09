@@ -68,7 +68,9 @@ export default defineConfig({
     emptyOutDir: true,
     sourcemap: true,
     minify: 'oxc', // Vite 8's default; `esbuild` would need the esbuild package as well
-    target: 'es2020',
+    // The browser floor as a language level: ES2025 is Vite's row for Safari 26, iOS 26, Chrome 136 and Firefox 138.
+    // Not `esnext`, which is open-ended: a later Vite could emit syntax Safari 26 lacks. Why: spec 06, As built (#103).
+    target: 'es2025',
     // The stylesheet (`?inline` in src/styles.js) is minified by Lightning CSS, named here so that a change of Vite's
     // default cannot switch the minifier. The targets are the browser floor, Safari and iOS 26 and current Chrome, Edge
     // and Firefox (README, Browser support): Lightning CSS drops the vendor prefixes they do not need. Why, and what it

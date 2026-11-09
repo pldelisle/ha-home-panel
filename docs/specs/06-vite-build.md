@@ -84,7 +84,7 @@ The screenshot baselines are the proof that a build-system change is invisible. 
 
 ## Notes
 
-- `es2020` as the target keeps optional chaining and nullish coalescing untouched and lowers nothing the code uses today; it matches the iPad Safari versions a wall tablet is likely to run. Raise it only with a reason.
+- `es2020` as the target keeps optional chaining and nullish coalescing untouched and lowers nothing the code uses today; it matches the iPad Safari versions a wall tablet is likely to run. Raise it only with a reason. Amended in #103: the floor is Safari 26+ / iOS 26+ and current Chrome, Edge and Firefox, and the target is `es2025`.
 - Vite's library mode does not inject CSS; that is why the CSS is imported as text (raw, amended in #69 to `?inline`, minified) and injected by the class exactly as today. Phase 3 moves styles into Lit components.
 - The `legacy/globals.js` module exists to make the imports honest without rewriting logic. Its exports list is the inventory of module-level state phase 2 must remove; keep it short and do not add to it.
 
@@ -127,3 +127,19 @@ This is the one place that says why the stylesheet is minified the way it is; `v
 - **Size budget: 153 kB of gzip.** Measured on `main` with the fonts, the ApexCharts stylesheet change, the Reduce Motion rules and the rest merged in, on Node 26 on a Mac: `npm run size` says 145.23 kB before (entry 507,088 bytes) and 137.92 kB after (entry 467,282 bytes, 7.8 percent less). In CI, the Playwright image on Node 24.20, the same build says 138.35 kB: the figure to compare with. 138.35 kB plus 10 percent is 152.2 kB, rounded up to 153 kB (the limit was 160 kB). The entry is 39.8 KB smaller (the stylesheet is most of it), and the file list of `dist/` is unchanged. Lowering the budget needs no changeset.
 - **Source map.** `home-panel.js.map` now also lists the eight `../src/css/*.css?inline` files with their original text, so DevTools shows the CSS source; the map grew from 877 kB to 1,032 kB. It is only fetched when DevTools opens, but it is in the release zip.
 - **Checked beyond the test.** The computed style of every element (custom properties left out, as their text is rewritten) was compared between the old and the new build in Chromium on every tab of both houses, tablet and phone, light and dark, Glass on and off, plus the idle clock, the light sheet, the settings popup and the live popup: 136 views, 214,566 elements, no difference. That run used Safari 15 targets (the first version of this ticket) and was not repeated for the modern ones, whose only further change is the prefixes they no longer need; the visual project (25 screenshots) shows no pixel changed with them. WebKit 26.6 (Playwright's own build) runs the behaviour suites (80 passed, 8 skipped by design) and renders the glass; two screenshots are on the images-only branch `claude/t69-evidence` (`webkit-home-glass.png`, `webkit-idle-stack.png`).
+
+## As built (#103)
+
+- **`build.target` is `es2025`.** The owner's browser floor is Safari 26+ / iOS 26+ and current Chrome, Edge and Firefox (README, Browser support). Vite 8.3.6's baseline table (`node_modules/vite/dist/node/chunks/node.js`, the `2025:` row) maps ES2025 to `chrome136, edge136, safari26.0, ios26.0, firefox138, opera121`: the floor, stated once as a language level rather than a browser list to keep in step. `esnext` is open-ended (a later Vite could emit syntax Safari 26 lacks), so it is not used. `tsconfig*.json` `target: ES2022` is type checking only and stays; `build.cssTarget` (from #69) is untouched.
+- **What changed in the output.** The source uses nothing above ES2022, so the only difference is the lowering helpers: the Rolldown `defineProperty-*.js` helper chunk (class fields) is gone and the ApexCharts chunk is 273 bytes smaller. Measured on a scratch build of `main` (fresh `npm ci`, Vite 8.3.6):
+
+  | target   | entry bytes | gzip -9 | chunks   | chunk bytes |
+  | -------- | ----------- | ------- | -------- | ----------- |
+  | `es2020` | 507,088     | 145,247 | 90 files | 3,933,648   |
+  | `es2022` | 507,012     | 145,226 | 89 files | 3,930,092   |
+  | `es2025` | 507,012     | 145,226 | 89 files | 3,930,092   |
+  | `esnext` | 507,012     | 145,226 | 89 files | 3,930,092   |
+
+  (Those figures predate the minified stylesheet of #69; the entry is 467,282 bytes with `es2020` and `es2025` on `main` after it, and the table's differences are what carries over.)
+
+- **The guard.** `test/unit/dist.test.mjs` asserts that no chunk is named `defineProperty-*`, so a rollback of the target is caught. The size budget is unchanged.
