@@ -9,6 +9,9 @@ import {fromNow} from './clock.mjs';
 const b = builder(bare);
 const {areas} = b.data;
 
+// a second weather entity with no `_forecast` in its id, which the panel's discovery passes over for the first: a house that
+// names it in its config (`entities: {weather: weather.springfield}`) shows the difference between the entity discovered and the one chosen
+b.add('weather.springfield', 'sunny', {friendly_name: 'Springfield'});
 // Environment Canada style sensors, found from the weather entity's name
 for (const [k, v] of Object.entries({
   current_condition: 'Mainly Sunny',

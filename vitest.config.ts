@@ -17,6 +17,7 @@ export default defineConfig({
         'src/core/**/*.ts',
         'src/providers/**/*.ts',
         'src/features/weather/{ids,inputs,model,tiles}.ts', // the pure files; the elements are proven by the harness
+        'src/shell/guest.ts',
         'scripts/lib/anonymise.mjs',
       ],
       reporter: [['text', {skipFull: false}], 'html'], // skipFull false lists the files at 100 percent too
@@ -26,6 +27,7 @@ export default defineConfig({
         'src/core/**/*.ts': {statements: 100},
         'src/providers/**/*.ts': {statements: 100},
         'src/features/weather/{ids,inputs,model,tiles}.ts': {statements: 100},
+        'src/shell/guest.ts': {statements: 100},
         'scripts/lib/anonymise.mjs': {statements: 100},
       },
     },
