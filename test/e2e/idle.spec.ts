@@ -66,7 +66,7 @@ for (const [name, viewport, direction] of [
   test.describe(`${name} screen`, () => {
     // at night the car charges and the speaker plays, so the idle clock has a stack beside it
     test.use({viewport, houseOpts: {cfg: FULL_CFG, time: NIGHT}});
-    test(`47 on a ${name} screen the idle clock and its stack sit in a ${direction}`, async ({house}) => {
+    test(`49 on a ${name} screen the idle clock and its stack sit in a ${direction}`, async ({house}) => {
       await house.clock.fastForward(IDLE_AFTER_MS + 1_000);
       await expect(house.root().locator('#idle')).toBeVisible();
       await expect(house.root().locator('#iwrap .ss')).toHaveCSS('flex-direction', direction);
