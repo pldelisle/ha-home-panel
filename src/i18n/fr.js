@@ -152,7 +152,7 @@ const frPost = s =>
     .replace(/\$\s?(-?\d[\d\u202f]*(?:,\d+)?)/g, '$1\u00a0$$')
     .replace(/([a-zé]\.)\./g, '$1');
 // `isName(core)`: whether the text is a name the house gave in HA, which is never translated
-function frTextWith(s, isName) {
+function frText(s, isName) {
   const m = /^(\s*)([\s\S]*?)(\s*)$/.exec(s),
     core = m[2];
   if (!core || isName(core)) return s;
@@ -169,7 +169,7 @@ function frTextWith(s, isName) {
   return m[1] + out + m[3];
 }
 export const FR_ATTR = ['aria-label', 'title', 'placeholder', 'alt'];
-function frNodeWith(n, translate, seen) {
+function frNode(n, translate, seen) {
   if (n.nodeType === 3) {
     const p = n.parentNode;
     if (!p || p.nodeName === 'STYLE' || p.nodeName === 'SCRIPT' || seen.get(n) === n.data) return;
@@ -191,7 +191,7 @@ function frNodeWith(n, translate, seen) {
     seen.set(n, done);
   }
 }
-function frTreeWith(root, visit) {
+function frTree(root, visit) {
   if (root.nodeType === 3) return visit(root);
   if (root.nodeType === 1) visit(root);
   const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
@@ -239,16 +239,16 @@ export function createFrench(store) {
     return names;
   };
   const seen = new WeakMap();
-  const text = s => (store.isFrench ? frTextWith(s, core => houseNamesNow().has(core)) : s);
+  const text = s => (store.isFrench ? frText(s, core => houseNamesNow().has(core)) : s);
   // an English panel marks nothing as seen, so a switch to French still translates what it already drew
   const node = n => {
-    if (store.isFrench) frNodeWith(n, text, seen);
+    if (store.isFrench) frNode(n, text, seen);
   };
   return {
     text,
     node,
     tree: root => {
-      if (store.isFrench) frTreeWith(root, node);
+      if (store.isFrench) frTree(root, node);
     },
     apex: o => (store.isFrench ? frApex(o) : o),
   };
