@@ -8,7 +8,8 @@
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "lib": ["ES2022", "DOM"],
-    "types": []
+    "types": [],
+    "allowImportingTsExtensions": true
   },
-  "include": ["src/types.d.ts", "src/config.js", "src/stack.js", "src/fonts.js"]
+  "include": ["src/types.d.ts", "src/config.js", "src/stack.js", "src/fonts.js", "src/core/**/*.ts"]
 }

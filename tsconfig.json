@@ -10,7 +10,8 @@
     "skipLibCheck": true,
     // vite.config.ts imports the font file list from src/fonts.js; this lets TypeScript read that module's types
     // (tsconfig.check.json checks the module itself, strictly)
-    "allowJs": true
+    "allowJs": true,
+    "allowImportingTsExtensions": true
   },
   "include": ["*.ts", "src/**/*.ts", "test/**/*.ts"],
   // loose-pass scaffolding for the legacy files: tsconfig.legacy.json only
