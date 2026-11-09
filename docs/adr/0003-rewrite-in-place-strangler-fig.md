@@ -21,4 +21,4 @@ Rewrite in place, not as a parallel version 3. `main` stays releasable at every 
 
 ## Read
 
-`docs/specs/production-grade-refactor.md`, "Solution" and "Global decisions" (rewrite in place, gates, no behaviour change inside a structural phase, parallel work rule); `docs/production-grade-plan.md`, "Migration plan"; `docs/specs/09-architecture-foundations.md` (the Fowler references).
+`docs/specs/production-grade-refactor.md`, "Solution" and "Global decisions" (rewrite in place, gates, no behaviour change inside a structural phase, parallel work rule).

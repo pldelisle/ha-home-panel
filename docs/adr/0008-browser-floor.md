@@ -20,4 +20,4 @@ The browser floor is Safari 26 and iOS 26, and current Chrome, Edge and Firefox.
 
 ## Read
 
-`docs/specs/06-vite-build.md`, "As built (#69)" and "As built (#103)"; README, "Browser support".
+`docs/specs/06-vite-build.md`, "As built (#69)" and "As built (#103)".

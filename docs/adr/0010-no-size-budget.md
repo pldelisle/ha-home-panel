@@ -8,7 +8,7 @@ The programme spec asked for a size budget on the main chunk: `size-limit` would
 
 ## Decision
 
-Remove the `limit` on the entry in `package.json`. `npm run size` and the CI step stay and print the entry and the lazy chunks for information, so a jump is still visible in the log. The "Size budget" paragraphs in spec 06 are the history, and the programme spec's budget-based gates and user story are superseded by this record.
+Remove the `limit` on the entry in `package.json`. `npm run size` and the CI step stay and print the entry and the lazy chunks for information, so a jump is still visible in the log. The "Size budget" paragraphs in spec 06 are the history, and the programme spec's budget-based gates and user story no longer apply.
 
 ## Consequences
 

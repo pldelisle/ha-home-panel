@@ -21,4 +21,4 @@ TypeScript in strict mode and Lit 3.x. No Vue, Svelte, React or Preact. Types fo
 
 ## Read
 
-`docs/production-grade-plan.md`, "Language and framework options"; `docs/specs/production-grade-refactor.md`, "Global decisions" (Language and framework).
+`docs/production-grade-plan.md`, "Language and framework options".

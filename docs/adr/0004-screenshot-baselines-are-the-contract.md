@@ -21,4 +21,4 @@ Record a reference screenshot of every tab and of the main open states, and comp
 
 ## Read
 
-`docs/specs/02-screenshot-baselines.md`; `docs/specs/production-grade-refactor.md`, "Testing Decisions".
+`docs/specs/02-screenshot-baselines.md`.

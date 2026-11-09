@@ -20,4 +20,4 @@ ApexCharts stays at its 3.x major, installed at exactly `3.45.2`. Renovate skips
 
 ## Read
 
-`docs/specs/production-grade-refactor.md`, "Global decisions" (Charts) and "Further Notes" (ApexCharts licence); `docs/specs/07-npm-packages-replace-vendor.md`, As built (#36); issue #84.
+`docs/specs/07-npm-packages-replace-vendor.md`, As built (#36).

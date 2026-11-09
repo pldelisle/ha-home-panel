@@ -20,4 +20,4 @@ Record each architecturally significant decision as a numbered file in `docs/adr
 
 ## Read
 
-Michael Nygard, _Documenting Architecture Decisions_ (2011); spec 09, "Architecture Decision Records"; `docs/agents/domain.md`.
+Michael Nygard, _Documenting Architecture Decisions_ (2011).

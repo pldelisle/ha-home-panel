@@ -19,4 +19,4 @@ Continuous integration runs on GitHub-hosted runners. There are no self-hosted r
 
 ## Read
 
-`docs/production-grade-plan.md`, "Tooling, tests and CI"; `docs/specs/production-grade-refactor.md`, "Out of Scope".
+`docs/production-grade-plan.md`, "Tooling, tests and CI".
