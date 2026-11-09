@@ -3,6 +3,7 @@
 // Test titles start with the check's number in docs/specs/01-playwright-test.md.
 import {test, expect, tabletOnly, IDLE_AFTER_MS} from './fixtures';
 import {AFTERNOON, FULL_CFG} from './houses';
+import {NIGHT} from './idle';
 
 const CLOCK_TICK_MS = 20_000;
 // how far renderIdle nudges the clock block from where it sits: at most 20 px sideways and 15 px up or down
@@ -55,3 +56,20 @@ test('40 the idle clock drifts a little on every tick, never further than 20 px 
   const moves = offsets.filter((o, i) => i > 0 && o.join(',') !== offsets[i - 1].join(',')).length;
   expect(moves, `the block moves on most ticks (got ${JSON.stringify(offsets)})`).toBeGreaterThanOrEqual(7);
 });
+
+// An upright iPad is a portrait screen: the clock and the stack sit in a column there, side by side on a landscape one.
+// The rule is a media query that Lightning CSS minifies (spec 06, As built #69); this is what notices it breaking.
+for (const [name, viewport, direction] of [
+  ['portrait', {width: 820, height: 1180}, 'column'],
+  ['landscape', {width: 1180, height: 820}, 'row'],
+] as const) {
+  test.describe(`${name} screen`, () => {
+    // at night the car charges and the speaker plays, so the idle clock has a stack beside it
+    test.use({viewport, houseOpts: {cfg: FULL_CFG, time: NIGHT}});
+    test(`47 on a ${name} screen the idle clock and its stack sit in a ${direction}`, async ({house}) => {
+      await house.clock.fastForward(IDLE_AFTER_MS + 1_000);
+      await expect(house.root().locator('#idle')).toBeVisible();
+      await expect(house.root().locator('#iwrap .ss')).toHaveCSS('flex-direction', direction);
+    });
+  });
+}

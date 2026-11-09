@@ -1,14 +1,14 @@
-// The stylesheet is minified by Lightning CSS at build time (src/styles.js imports src/css/*.css with `?inline`, and
+// The stylesheet is minified by Lightning CSS at build time (src/styles.js imports src/css/*.css with `?inline`;
 // vite.config.ts sets `build.cssMinify` and `build.cssTarget`). The Chromium screenshot baselines cannot see what
-// Safari needs, so this test counts it instead: every `-webkit-`/`-moz-` property, value and selector the source
-// writes must still be in the output, above all `-webkit-backdrop-filter`, which iOS and macOS Safari before 18 need
-// for the glass. Without browser targets Lightning CSS drops 16 of the 19 (spec 06, As built #69).
+// Safari needs, so this test counts it: every `-webkit-`/`-moz-` name the source writes is still in the output, above all
+// `-webkit-backdrop-filter` (iOS and macOS Safari before 18 need it for the glass), and no media query was rewritten
+// into a form an older Safari reads as invalid. Why, and what Lightning CSS does and does not do with the targets:
+// docs/specs/06-vite-build.md, "As built (#69)".
 //
 // The expected figures come from the source files (a regex over src/css/*.css, comments removed), never from the
-// output. The output is built here, into a scratch folder, through Vite's own API and the repository's
-// vite.config.ts: once as the whole entry (what ships) and once from src/styles.js alone, which gives the stylesheet
-// as a string, apart from the 468 kB of JavaScript around it (the entry has a few `backdrop-filter` and `color-mix(`
-// of its own in inline styles).
+// output. The output is built here into a scratch folder, through Vite's own API and the repository's vite.config.ts:
+// once as the whole entry (what ships) and once from src/styles.js alone, which gives the stylesheet as a string apart
+// from the JavaScript around it (the entry has a few `backdrop-filter` and `color-mix(` of its own in inline styles).
 import {test, expect, beforeAll, afterAll} from 'vitest';
 import {readFileSync, readdirSync, mkdtempSync, rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
@@ -25,8 +25,8 @@ const source = stripComments(
     .join('\n'),
 );
 
-// how many times each vendor-prefixed name (-webkit-backdrop-filter, -moz-range-thumb, -webkit-scrollbar, …) is in text
-const prefixes = text => {
+// how many times each vendor-prefixed name (-webkit-backdrop-filter, -moz-range-thumb, -ms-…) is in text
+const vendorPrefixed = text => {
   const counts = new Map();
   for (const [token] of text.matchAll(/-(?:webkit|moz|ms)-[a-z-]+/g)) counts.set(token, (counts.get(token) ?? 0) + 1);
   return counts;
@@ -68,17 +68,17 @@ test('the minified stylesheet is the one inside the entry', () => {
   expect(entry).toContain(middle);
 });
 
-test('the source has the vendor prefixes this test guards (so the comparison below cannot pass on an empty list)', () => {
-  const want = prefixes(source);
+test('the source has the vendor prefixes this test guards, so the comparison cannot pass on an empty list', () => {
+  const want = vendorPrefixed(source);
   expect(want.get('-webkit-backdrop-filter')).toBeGreaterThanOrEqual(19);
   expect(want.get('-moz-range-thumb')).toBeGreaterThanOrEqual(3);
   expect(want.size).toBeGreaterThanOrEqual(15);
 });
 
-test('every -webkit- and -moz- name in the source is in the minified stylesheet at least as often', () => {
-  const have = prefixes(css);
+test('every -webkit-, -moz- and -ms- name in the source is in the minified stylesheet at least as often', () => {
+  const have = vendorPrefixed(css);
   // reported as one list of names that lost some, with the source's count and the output's
-  const lost = [...prefixes(source)]
+  const lost = [...vendorPrefixed(source)]
     .filter(([token, n]) => (have.get(token) ?? 0) < n)
     .map(([token, n]) => `${token}: ${have.get(token) ?? 0} in the output, ${n} in the source`);
   expect(lost).toStrictEqual([]);
@@ -107,4 +107,41 @@ test('the stylesheet is minified: no comment, no run of spaces', () => {
   expect(entry).not.toMatch(/\.app\.gl \{\s{2,}/);
   expect(css).not.toMatch(/ {2}|\n/);
   expect(css.length).toBeLessThan(source.length * 0.9);
+});
+
+// The at-rule preludes (`@media (…)`, `@supports (…)`, `@container (…)`), spaces removed. Lightning CSS rewrites some
+// of them whatever the targets are, and Chrome 90 and Safari 15 cannot read every rewrite: it wrote
+// `(max-aspect-ratio: 1/1)` as `(max-aspect-ratio:1)`, which those versions drop with the whole block.
+const preludes = text =>
+  new Set(
+    [...text.matchAll(/@(media|supports|container)\s*([^{]+)\{/g)].map(m => `@${m[1]}${m[2].replace(/\s+/g, '')}`),
+  );
+// what Lightning CSS adds or rewrites, each one looked at and accepted:
+const ADDED = new Set([
+  // `color-scheme: light dark` (.dtime in base.css) comes with `--lightningcss-light` and `--lightningcss-dark` toggles
+  // for light-dark(); the stylesheet has no light-dark(), so they feed nothing
+  '@media(prefers-color-scheme:dark)',
+]);
+const REWRITTEN = new Map([
+  // the container query's `max-height` becomes a range; @container is Safari 16+ and the rule only trims a small card
+  ['@container(max-height:230px)', '@container(height<=230px)'],
+]);
+
+test('no media query lost the a/b form of an aspect ratio, which Chrome 90 and Safari 15 require', () => {
+  expect(css).not.toMatch(/aspect-ratio:[\d.]+\)/);
+  const ratios = [...css.matchAll(/(?:min-|max-)?(?:device-)?aspect-ratio:([^)]*)\)/g)].map(m => m[1]);
+  expect(ratios.filter(r => !r.includes('/'))).toStrictEqual([]);
+});
+
+test('no media query is written in the range syntax, which Safari reads only from 16.4', () => {
+  const ranges = [...preludes(css)].filter(p => p.startsWith('@media') && /[<>]/.test(p));
+  expect(ranges).toStrictEqual([]);
+});
+
+test('every at-rule prelude in the output is one the source wrote, or one rewritten or added on purpose', () => {
+  const want = new Set([...preludes(source)].map(p => REWRITTEN.get(p) ?? p));
+  const have = preludes(css);
+  expect(want.size).toBeGreaterThan(10);
+  expect([...have].filter(p => !want.has(p) && !ADDED.has(p))).toStrictEqual([]);
+  expect([...want].filter(p => !have.has(p))).toStrictEqual([]);
 });

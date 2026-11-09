@@ -63,8 +63,8 @@ export default defineConfig(
   {files: ['src/**/*.js'], languageOptions: {globals: {__VERSION__: 'readonly'}}},
 
   // Imports must resolve, and a name imported from a module must be one it exports (a misspelled import is an error
-  // here, not a blank screen on the tablet). Vite's `?inline` suffix is not part of the file name, so those imports
-  // are skipped.
+  // here, not a blank screen on the tablet). The resolver drops a `?inline` suffix, so a misspelled stylesheet path in
+  // src/styles.js fails too.
   {
     files: ['src/**/*.{js,ts}', 'test/**/*.{js,mjs,ts}'],
     plugins: {'import-x': importX},
@@ -75,7 +75,7 @@ export default defineConfig(
       'import-x/resolver-next': [createNodeResolver({extensions: ['.js', '.mjs', '.ts', '.d.ts', '.json']})],
     },
     rules: {
-      'import-x/no-unresolved': ['error', {ignore: ['\\?inline$']}],
+      'import-x/no-unresolved': ['error'],
       // for .ts files too, through the parser setting above (`import {PHONE_TABZ} from './houses'` fails)
       'import-x/named': ['error'],
     },

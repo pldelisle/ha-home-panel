@@ -54,7 +54,8 @@ beforeAll(() => {
 });
 
 test('dist/ holds the bundle, its source map, the lazy chunks, the fonts and the licence list, and nothing else', () => {
-  // no copied library file (there is no vendor/), no assets/ folder: the stylesheets are imported as minified text (`?inline`)
+  // no copied library file (there is no vendor/), no assets/ folder: the stylesheets are imported as minified text
+  // (`?inline`)
   // the fonts are the eight files src/fonts.js names (fonts.test.mjs pins that list to Fontsource's eight names)
   const rest = distFiles.filter(f => !chunks.some(c => f === c || f === c + '.map'));
   expect(rest).toStrictEqual(

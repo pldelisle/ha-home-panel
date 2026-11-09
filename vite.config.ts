@@ -6,8 +6,8 @@ import pkg from './package.json' with {type: 'json'};
 import {FONT_FILES} from './src/fonts.js';
 
 // One minified ES module, dist/home-panel.js, with its source map beside it. The CSS is imported as minified text
-// (`?inline`, src/styles.js) and the version is injected here, from package.json. ApexCharts and Mermaid come from npm through
-// dynamic imports, so they are emitted as lazy chunks under dist/chunks/, fetched when a tab first needs them. The
+// (`?inline`, src/styles.js) and the version is injected here, from package.json. ApexCharts and Mermaid come from npm
+// through dynamic imports, so they are emitted as lazy chunks under dist/chunks/, fetched when a tab first needs them. The
 // generated LICENSES.md (npm run licenses) is emitted beside the entry, so the release zip carries the libraries'
 // licences, and the Montserrat files go to dist/fonts/. Nothing else is copied: there is no vendor/ directory.
 
@@ -69,12 +69,10 @@ export default defineConfig({
     sourcemap: true,
     minify: 'oxc', // Vite 8's default; `esbuild` would need the esbuild package as well
     target: 'es2020',
-    // The stylesheet (imported with `?inline` in src/styles.js) is minified by Lightning CSS, named here so that a
-    // change of Vite's default cannot switch the minifier. Without browser targets Lightning drops 16 of the 19
-    // `-webkit-backdrop-filter` lines (spec 06), which Safari before 18 needs for the glass; with Safari 15 and iOS 15 in
-    // the targets it keeps them, and every other prefix the stylesheet carries. test/unit/styles.test.mjs counts them.
-    // Lightning also merges a rule that writes `backdrop-filter` before `-webkit-backdrop-filter` into the second
-    // alone, which Chromium ignores, so the stylesheet always writes the prefixed line first.
+    // The stylesheet (`?inline` in src/styles.js) is minified by Lightning CSS, named here so that a change of Vite's
+    // default cannot switch the minifier. A target without Safari before 18 drops every `-webkit-backdrop-filter`, so
+    // the targets stay at Safari 15. What Lightning CSS does with them, and what it rewrites whatever they are: spec 06,
+    // As built (#69); test/unit/styles.test.mjs guards it.
     cssMinify: 'lightningcss',
     cssTarget: ['chrome90', 'safari15', 'ios15'],
     rolldownOptions: {

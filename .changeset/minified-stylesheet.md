@@ -2,4 +2,4 @@
 'ha-home-panel': patch
 ---
 
-The panel's stylesheet is now minified, so the panel downloads about 7 KB less (37 KB before compression); nothing looks different. The glass effect on older iPads is kept on purpose, and a test now checks it stays.
+The panel's stylesheet is now minified, so the panel is about 37 KB smaller (7 KB when compressed); nothing looks different. The glass effect on older iPads, iPhones and Macs is kept on purpose, and a test now checks it stays.

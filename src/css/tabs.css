@@ -1721,7 +1721,7 @@ button.schip:focus-visible {
   opacity: 0.9;
   height: 16px;
 }
-@media (max-aspect-ratio: 1/1) {
+@media (orientation: portrait) {
   .idle .ss {
     flex-direction: column;
     gap: 34px;
