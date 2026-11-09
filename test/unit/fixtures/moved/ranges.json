@@ -1,0 +1,54 @@
+{
+  "about": "The English messages the shared history ranges introduced (src/core/i18n/en.ts, range.*), compared as test/unit/fixtures/moved/weather.json is. A short range name is only ever read inside a sentence (the Climate sheet's 'Range, 12 months'), which is where the rewrite layer translates it, so its entry names the frame the layer is given. Deleted with the layer in phase 4.",
+  "messages": [
+    {
+      "key": "range.day.label"
+    },
+    {
+      "key": "range.week.label"
+    },
+    {
+      "key": "range.month.label"
+    },
+    {
+      "key": "range.year.label"
+    },
+    {
+      "key": "range.day.short",
+      "frame": {
+        "en": "Range, ",
+        "fr": "Écart, "
+      }
+    },
+    {
+      "key": "range.week.short",
+      "frame": {
+        "en": "Range, ",
+        "fr": "Écart, "
+      }
+    },
+    {
+      "key": "range.month.short",
+      "frame": {
+        "en": "Range, ",
+        "fr": "Écart, "
+      }
+    },
+    {
+      "key": "range.year.short",
+      "frame": {
+        "en": "Range, ",
+        "fr": "Écart, "
+      }
+    },
+    {
+      "key": "range.mean.fiveMinute"
+    },
+    {
+      "key": "range.mean.hourly"
+    },
+    {
+      "key": "range.mean.daily"
+    }
+  ]
+}

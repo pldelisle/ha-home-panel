@@ -38,6 +38,21 @@ weatherModel(inputs, forecast, deps) → WeatherViewModel
 
 `TILES` is the eight stat tiles as data: the label, the history sheet's words as message keys, the series, the scale and the bands. A band carries a tone name (`ok`, `warn`, `crit`), never a colour; the element maps it to a token.
 
+## The history
+
+The detail panel and the history sheet draw from `history.ts`, a second pure module: the API client's rows in, data out. It never calls the client; the element asks `createStatisticsCache` (`src/core/statistics-cache.ts`, a time-to-live memo with the client's own signatures) and hands the rows over.
+
+| Function                                              | Gives                                                                                                     |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `sevenDaySeries(rows, ids)`                           | the hourly temperature, dew point, humidity, pressure, wind and gusts as `[ms, value][]`, nulls skipped   |
+| `seasonMonths(dayRows, isoDay)`                       | per month since the records began: days, mean, low, high, frost nights, hot days, the first day it covers |
+| `records(dayRows, gustRows)`                          | the warmest, the coldest and the strongest gust, each with its day                                        |
+| `seasonView(dayRows, gustRows, {fmt, t, now})`        | the season block as words and percentages: four tiles, the sentence, a row a month on one scale           |
+| `tileHistory(def, ids, statRows, historyRows, range)` | the lines of a tile's chart: statistics when the recorder has them, else the plain history thinned        |
+| `tileStats(series)` and `historyChartOptions(...)`    | each line's low, mean and high, and the multi-axis chart options without the theme                        |
+
+The ranges (a day, a week, a month, a year) are `RANGES` in `src/ui/ranges.ts`, shared with every feature that draws a history.
+
 ## Things to know
 
 - A field two sources both know follows list order. The outdoor temperature is Environment Canada's sensor over the weather entity's attribute (the legacy panel preferred the attribute; Environment Canada publishes the same observation in both).
@@ -56,4 +71,4 @@ weatherModel(inputs, forecast, deps) → WeatherViewModel
 
 ## Tests
 
-`test/unit/providers/` (the two sources, the fold, the alerts), `test/unit/features/weather/` (`readWeather`'s order, the ids, the model from the test house in English and French, the forecast), `test/unit/i18n/moved-strings.test.ts` (the French of every `weather.*` message equals what the rewrite layer made of the English). The providers, the model, the ids, the inputs and the tiles are at 100 percent statements.
+`test/unit/providers/` (the two sources, the fold, the alerts), `test/unit/features/weather/` (`readWeather`'s order, the ids, the model from the test house in English and French, the forecast, the history from literal rows), `test/unit/core/statistics-cache.test.ts`, `test/unit/ui/ranges.test.ts`, `test/unit/i18n/moved-strings.test.ts` (the French of every `weather.*` message equals what the rewrite layer made of the English). The providers, the model, the ids, the inputs, the tiles, the history, the cache and the ranges are at 100 percent statements.
