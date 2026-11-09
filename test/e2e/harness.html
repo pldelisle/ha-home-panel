@@ -357,7 +357,9 @@
                         ? {}
                         : m.type === 'camera_thumbnail'
                           ? {}
-                          : {},
+                          : m.type === 'lovelace/resources'
+                            ? []
+                            : {},
         connection: {subscribeMessage: async () => () => {}, subscribeEvents: async () => () => {}},
         hassUrl: p => p,
         formatEntityState: s => s.state,
