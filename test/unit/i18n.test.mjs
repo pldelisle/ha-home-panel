@@ -63,6 +63,22 @@ test('the Security line is French in every part and has no stray colon', async (
   expect(frText('all doors closed')).toBe('toutes les portes fermées');
 });
 
+// The camera sheet's sub-line is the camera's state, then its motion, joined with " · " (camSheet). Its fragments have
+// exact entries so that the sensor-row rule (FR_DOOR) never reads "last" as a sensor name.
+// The date is what fmtDate draws (en-CA, "Oct 3"); frKey turns it into {n}.
+test('the camera sheet line is French in every part and has no stray colon', async () => {
+  const {frText} = await load([]);
+  expect(frText('Streaming · last motion just now')).toBe("En direct · dernier mouvement à l'instant");
+  expect(frText('Idle · last motion 5 min ago')).toBe('Au repos · dernier mouvement il y a 5 min');
+  expect(frText('Recording · motion now')).toBe('Enregistrement · mouvement en cours');
+  expect(frText('Streaming · last motion Oct 3')).toBe('En direct · dernier mouvement le 3 oct.');
+  expect(frText('Idle · last motion 2 h ago')).toBe('Au repos · dernier mouvement il y a 2 h');
+  expect(frText('Recording')).toBe('Enregistrement');
+  expect(frText('The camera is offline.')).toBe('La caméra est hors ligne.');
+  // the sensor-row rule is untouched
+  expect(frText('Hall motion 5 min ago')).toBe('Hall\u00a0: mouvement il y a 5 min');
+});
+
 // A sensor row ("Front door open", "Garage door offline": `${name} open`, `${name} offline` in sensorState and the attention
 // list) keeps the form it had, colon included; the Security line must never reach it. FR_DOOR's motion forms and
 // "Front door closed" are not drawn by the panel today; they are pinned so that FR_DOOR stays as it is.
