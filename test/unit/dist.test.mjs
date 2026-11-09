@@ -8,6 +8,7 @@ import {readFileSync, readdirSync, existsSync, statSync} from 'node:fs';
 import {basename, join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {execFileSync} from 'node:child_process';
+import {brotliDecompressSync, gunzipSync} from 'node:zlib';
 import {createRequire} from 'node:module';
 import {FONT_FILES} from '../../src/fonts.js';
 import {GOOGLE_FONT_HOSTS} from '../google-font-hosts.mjs';
@@ -53,13 +54,24 @@ beforeAll(() => {
   text = c => texts.get(c);
 });
 
-test('dist/ holds the bundle, its source map, the lazy chunks, the fonts and the licence list, and nothing else', () => {
+test('dist/ holds the bundle, its source map, the lazy chunks, a .br and a .gz beside each script, the fonts and the licence list, and nothing else', () => {
   // no copied library file (there is no vendor/), no assets/ folder: the stylesheets are imported as minified text
   // (`?inline`)
   // the fonts are the eight files src/fonts.js names (fonts.test.mjs pins that list to Fontsource's eight names)
-  const rest = distFiles.filter(f => !chunks.some(c => f === c || f === c + '.map'));
+  // every script (the entry and each chunk) has a .br and a .gz beside it (vite.config.ts, precompress) and no map has one
+  const scripts = ['home-panel.js', ...chunks];
+  const rest = distFiles.filter(
+    f => !chunks.some(c => f === c || f === c + '.map') && !/^chunks\/.+\.js\.(br|gz)$/.test(f),
+  );
   expect(rest).toStrictEqual(
-    ['LICENSES.md', ...FONT_FILES.map(f => `fonts/${f}`), 'home-panel.js', 'home-panel.js.map'].sort(),
+    [
+      'LICENSES.md',
+      ...FONT_FILES.map(f => `fonts/${f}`),
+      ...['home-panel.js', 'home-panel.js.map', 'home-panel.js.br', 'home-panel.js.gz'],
+    ].sort(),
+  );
+  expect(distFiles.filter(f => /\.(br|gz)$/.test(f))).toStrictEqual(
+    scripts.flatMap(f => [`${f}.br`, `${f}.gz`]).sort(),
   );
   for (const c of chunks) {
     expect(c).toMatch(/^chunks\/[\w.-]+-[\w-]{8}\.js$/); // [name]-[hash].js
@@ -70,6 +82,18 @@ test('dist/ holds the bundle, its source map, the lazy chunks, the fonts and the
       .trimEnd()
       .endsWith(`//# sourceMappingURL=${c.slice('chunks/'.length)}.map`);
     expect(distFiles.includes(c + '.map'), `${c} and its map`).toBe(named);
+  }
+});
+
+test('every script has a .br and a .gz beside it that decompress to it byte for byte', () => {
+  // Home Assistant sends X.js.br or X.js.gz in place of X.js to a browser that accepts the encoding (vite.config.ts,
+  // precompress), so a copy that does not decompress to the script would break the panel on the tablet
+  const scripts = ['home-panel.js', ...chunks];
+  expect(scripts.length).toBeGreaterThan(50);
+  for (const f of scripts) {
+    const js = readFileSync(join(DIST, f));
+    expect(gunzipSync(readFileSync(join(DIST, `${f}.gz`))).equals(js), `${f}.gz`).toBe(true);
+    expect(brotliDecompressSync(readFileSync(join(DIST, `${f}.br`))).equals(js), `${f}.br`).toBe(true);
   }
 });
 

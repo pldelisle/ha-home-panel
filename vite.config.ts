@@ -1,5 +1,7 @@
 import {defineConfig, type Plugin} from 'vite';
-import {readFileSync} from 'node:fs';
+import {readFileSync, writeFileSync} from 'node:fs';
+import {join} from 'node:path';
+import {brotliCompressSync, constants as zlib, gzipSync} from 'node:zlib';
 import {createRequire} from 'node:module';
 import {fileURLToPath} from 'node:url';
 import pkg from './package.json' with {type: 'json'};
@@ -9,7 +11,7 @@ import {FONT_FILES} from './src/fonts.js';
 // (`?inline`, src/styles.js) and the version is injected here, from package.json. ApexCharts and Mermaid come from npm
 // through dynamic imports, so they are emitted as lazy chunks under dist/chunks/, fetched when a tab first needs them. The
 // generated LICENSES.md (npm run licenses) is emitted beside the entry, so the release zip carries the libraries'
-// licences, and the Montserrat files go to dist/fonts/. Nothing else is copied: there is no vendor/ directory.
+// licences, and the Montserrat files go to dist/fonts/. Each script gets a .br and a .gz copy (precompress, below). Nothing else is copied: there is no vendor/ directory.
 
 // The constants the build replaces in src/ (declared in src/env.d.ts); vitest.config.ts uses the same object.
 export const define = {__VERSION__: JSON.stringify(pkg.version)};
@@ -60,6 +62,35 @@ const shipFonts: Plugin = {
   },
 };
 
+// A compressed copy beside every script: X.js.br and X.js.gz. Home Assistant serves <config>/www as /local through
+// aiohttp's FileResponse, which looks for X.br then X.gz beside the file and sends the first whose encoding the request
+// accepts (Content-Encoding, Vary: Accept-Encoding, and the Content-Type of X.js); without such a copy it sends the file
+// uncompressed. There is no mtime check, so a stale copy would be served: README, Install, says to replace the whole
+// folder. The `.map` files are left out because only DevTools fetch them. Written after the files are on disk
+// (`writeBundle`), so the sourceMappingURL line is in what is compressed; gzip and brotli write no timestamp, so the
+// output is reproducible. Spec 06, As built (#98); test/unit/dist.test.mjs decompresses every copy.
+const precompress: Plugin = {
+  name: 'precompress',
+  writeBundle(options, bundle) {
+    const dir = options.dir ?? 'dist';
+    for (const name of Object.keys(bundle).filter(n => n.endsWith('.js'))) {
+      const file = join(dir, name);
+      const buf = readFileSync(file);
+      writeFileSync(`${file}.gz`, gzipSync(buf, {level: 9}));
+      writeFileSync(
+        `${file}.br`,
+        brotliCompressSync(buf, {
+          params: {
+            [zlib.BROTLI_PARAM_QUALITY]: 11,
+            [zlib.BROTLI_PARAM_MODE]: zlib.BROTLI_MODE_TEXT,
+            [zlib.BROTLI_PARAM_SIZE_HINT]: buf.length,
+          },
+        }),
+      );
+    }
+  },
+};
+
 export default defineConfig({
   define,
   build: {
@@ -94,5 +125,5 @@ export default defineConfig({
       },
     },
   },
-  plugins: [shipLicenses, shipFonts, chunkMapsWithoutLibrarySources],
+  plugins: [shipLicenses, shipFonts, chunkMapsWithoutLibrarySources, precompress],
 });

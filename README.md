@@ -35,6 +35,7 @@ Browser support: Safari and iOS 26, and current Chrome, Edge and Firefox.
 
 1. Download `home-panel.zip` from the [latest release](../../releases/latest), or build it yourself (below).
 2. Unzip it into `<config>/www/home-panel/`, so that `home-panel.js` sits at `<config>/www/home-panel/home-panel.js` with the `chunks/` and `fonts/` folders beside it.
+   To update, replace the whole `home-panel/` folder, do not copy one file over it: each script ships with a compressed copy beside it (`.gz` and `.br`) that Home Assistant sends to browsers, and a new `home-panel.js` copied over an old folder would leave an old compressed copy in charge.
 3. Add the panel to `configuration.yaml`:
 
    ```yaml
