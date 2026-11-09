@@ -1,5 +1,31 @@
 # Changelog
 
+## 2.12.0
+
+- This release makes the panel modern-browser only (Safari and iOS 26, current Chrome, Edge and Firefox) and changes how it is packaged: the release now has a `chunks/` folder, a `fonts/` folder and compressed copies of the scripts, so when updating by hand replace the whole `home-panel` folder rather than one file.
+- Charts now load from the ApexCharts package instead of a copied file; nothing visible changes.
+- The charts' stylesheet was packed twice into the charts download; it is packed once now, so the first tab with a chart loads about 13 KB less. Nothing looks different.
+- The attention pill in the header no longer draws a square tinted box behind its warning mark when the glass look is on; the mark is the same round badge as in the solid look. The Status checks screenshot was re-recorded.
+- The Montserrat font now ships with the panel, so tablets no longer call Google and the font works offline. Screenshots were re-recorded with it; the layout is unchanged. When updating by hand, copy the new fonts/ folder too.
+- In French, the line under a camera's name in its sheet now reads "dernier mouvement il y a 5 min" instead of "last : mouvement il y a 5 min", a camera that is recording says "Enregistrement", and an offline camera's note is in French too.
+- The copied Leaflet files, which the panel never used, are no longer shipped; the licence list is now generated. When updating by hand, leaflet.js and leaflet.css can be deleted.
+- In French, a sensor's low-battery note, the empty Cameras card's explanation, a motion older than a day on a camera tile, and the Home tab's "kWh today" and "rate unknown" fragments are now in French. The French Home and Security screenshots were re-recorded.
+- In a house without thermostats, a car, a water heater or Hilo, their tiles no longer flash up while the panel loads or come back after a change (on a phone, the Energy screen's Water heater and Hilo rows too). The tablet screenshot of the bare test house's Home was re-recorded: the old one had captured the Air and Water heater tiles after that flash had moved them.
+- Versions and the changelog are now produced by Changesets; each pull request states its change.
+- The panel is now built for Safari 26, iOS 26 and current Chrome, Edge and Firefox; older browsers are no longer supported. Nothing looks or behaves differently on a supported browser, and the download is a few hundred bytes smaller.
+- Labels that were cut off with "…" now show in full. On a phone, a light tile's name wraps to a second line ("Living room"), and the Home tab's Security line wraps to two lines in French. A light tile's sub-line ("2 of 3 on · 59% · 3000 K") wraps to a second line on a tablet and up to three on a phone, and the phone no longer lists the colour temperature there (the tablet and the light's sheet still do). The Home tab's tile values are a little smaller (24 px on a phone, 32 px on a tablet), so "4 allumées" fits. In French, a light tile now reads "2 sur 3 allumées" instead of the half-English "2 of 3 : activé", a scene reads "Il y a 2 h" instead of "Lancée il y a 2 h" and "Lancer" instead of "Toucher pour lancer", and the music card on the tablet's Home tab and on the idle screen says "En lecture".
+- The library that draws the automation flow charts was updated (Mermaid 11.4 to 11.17), which brings its security fixes. The flow charts may look very slightly different along the edges of the boxes and arrows; the four Automations screenshots were re-recorded. The new library is larger, so the first time the Automations tab draws a flow it loads about 200 KB more (35 KB more when compressed). An automation step whose name has text between double dollar signs (like $$this$$) now shows it as typed instead of turning it into a formula.
+- Automation flow charts now load from the Mermaid package instead of a copied file. When updating by hand, copy the whole release (with its chunks/ folder), not only home-panel.js; mermaid.min.js can be deleted.
+- In the Automations flow charts, a percent sign at the end of a step's name or of a choice label now shows as "%" instead of "#37", and a "#" followed by digits shows as typed.
+- The panel's stylesheet is now minified for current browsers (Safari and iOS 26, Chrome, Edge, Firefox), so the panel is about 40 KB smaller (7 KB when compressed); nothing visible changes.
+- The release zip now carries a compressed copy of each script beside it. Home Assistant sends that copy to browsers that accept it, so the code behind the Automations flow charts arrives about four times smaller (about 200 KB instead of 770 KB), which shows on a slow connection. When installing by hand, replace the whole `home-panel` folder rather than one file.
+- With Reduce Motion on, sheets on the phone now appear at once instead of sliding up.
+- With Reduce Motion turned on in the device's settings, tabs, buttons and tiles no longer fade, shrink or slide when tapped: they change in one step, as the rest of the panel already does under that setting. Nothing looks different once the tap is done.
+- With Reduce Transparency turned on in the device's settings, the header's tinted pills (the Hilo challenge, the attention pill) are now solid like the plain pill, instead of staying see-through over the wallpaper.
+- In French, the Security card's line under its title no longer mixes English and French or shows a stray colon ("all doors closed · : mouvement en cours" becomes "toutes les portes fermées · mouvement en cours"). The French Home and Security screenshots were re-recorded.
+- The panel's build is now size-checked and fully type-checked behind the scenes; nothing visible changes.
+- The panel is now built with Vite from ES modules, minified, with source maps. Nothing visible changes.
+
 ## 2.11.1
 
 - Linked rooms are two ordinary tiles again, each with its own rounded corners, instead of one glued card. They still sit side by side so Arrange moves them together, and each tile's subtitle names its partner.
