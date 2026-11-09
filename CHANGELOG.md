@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.14.0
+
+- A typo in the panel's configuration now shows admins a card on the Home tab naming the setting and, when it can, the spelling meant. The rest of the panel keeps working with what it understood.
+- The panel's configuration is now read by one schema that also types it. Nothing visible changes for a valid configuration.
+
 ## 2.13.0
 
 - Room, light and scene names now follow the panel's language: a room Home Assistant calls Salon reads Living room in English, and `names:` in the config sets a name per language.
