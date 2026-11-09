@@ -1,8 +1,8 @@
 // Home Assistant text reaches the Mermaid source of a flow (step aliases, entity names, trace errors). It is drawn as
 // text: none of it may act as Mermaid syntax, such as a %%{init}%% directive, a label closed early or a click handler.
-import {readFileSync} from 'node:fs';
 import {test, expect, tabletOnly, KATEX_CHUNK_URL} from './fixtures';
 import {FULL_CFG} from './houses';
+import {automations as houseAutomations} from '../houses/full.mjs';
 
 // what an automation's author could type as the alias of a step, each under the 64 characters a label keeps
 const HOSTILE = {
@@ -28,9 +28,7 @@ const ENTITIES = [
 // Mermaid's `style` pre-pass takes in place of a label's own: this flow passed by luck for a `%` or `#` at the end of a
 // label. The flow below, with no run stored, has no subtitles and is the one that tells (#97)
 type Automation = {config: {id: string; triggers: object[]; conditions: object[]; actions: object[]}};
-const automations = (
-  JSON.parse(readFileSync(new URL('./automations.json', import.meta.url), 'utf8')) as Automation[]
-).map(a => {
+const automations = (houseAutomations as Automation[]).map(a => {
   if (a.config.id !== 'front_door_light') return a;
   const c = structuredClone(a.config),
     alias = (o: object, text: string) => ({...o, alias: text});

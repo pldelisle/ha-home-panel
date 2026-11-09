@@ -1,7 +1,10 @@
-// The one fake `hass` every core test shares: the object shape the e2e harness builds, from a short literal.
-// Pattern: a fake at the hass seam (ADR 0005); `next` hands over a new hass the way Home Assistant does.
+// The one fake `hass` every core test shares: the object shape the e2e harness builds, from a short literal or from a test house.
+// Pattern: a fake at the hass seam (ADR 0005); `next` hands over a new hass the way Home Assistant does; `fromHouse` reads a
+// house module (test/houses/) with the reader the harness uses, so a model test and a screenshot see the same house.
 // Must not: grow behaviour beyond `calls`, `replies` and `next`, which only record and replay what Home Assistant does.
 import type {HassEntity, PanelHass} from '../../src/core/hass.ts';
+import {REFERENCE_MS} from '../houses/clock.mjs';
+import {readHouse} from '../houses/read.mjs';
 
 /** What `callWS` answers for one message type; a test overrides it, and may return a promise to hold the reply back. */
 export type WsReply = (msg: {type: string} & Record<string, unknown>) => unknown;
@@ -80,3 +83,56 @@ export function fakeHass(init: Partial<PanelHass> = {}): FakeHass {
     replies,
   );
 }
+
+/** What a house module exports: plain data, with times as markers (test/houses/clock.mjs). */
+export type HouseModule = {
+  states: object;
+  entities: object;
+  devices: object;
+  areas: object;
+  config: PanelHass['config'];
+  user: NonNullable<PanelHass['user']>;
+  services: NonNullable<PanelHass['services']>;
+  automations: Array<{entity_id: string; config: {id: string; alias?: string; mode?: string}; noRun?: boolean}>;
+};
+
+export type FromHouseOptions = {
+  /** the instant the house is read at (default: the reference instant of test/houses/clock.mjs) */
+  now?: number;
+  /** the areas, and the thermostats named after them, carry the French names (the harness's `french_areas=1`) */
+  frenchAreas?: boolean;
+  /** replaces the house's automations, as the e2e fixture's `automations` option does */
+  automations?: HouseModule['automations'];
+} & Partial<PanelHass>;
+
+/**
+ * The fake `hass` of a house module: its states, registries and zone, and the registry and recorder replies the harness
+ * gives (traces, automation configs, statistics, history, Lovelace resources), read at `now` with wall-clock times in
+ * the house's own time zone, so the result does not depend on the machine running the test.
+ */
+function fromHouse(house: HouseModule, opts: FromHouseOptions = {}): FakeHass {
+  const {now = REFERENCE_MS, frenchAreas, automations, ...init} = opts;
+  const config = {...house.config, ...init.config};
+  const read = readHouse(house, {now, timeZone: config.time_zone, frenchAreas, automations});
+  const hass = fakeHass({
+    states: Object.fromEntries(
+      Object.entries(read.states as Record<string, Omit<HassEntity, 'context'>>).map(([id, s]) => [
+        id,
+        {...s, context: {id: 'ctx', parent_id: null, user_id: null}},
+      ]),
+    ),
+    entities: read.entities as PanelHass['entities'],
+    devices: read.devices as PanelHass['devices'],
+    areas: read.areas as PanelHass['areas'],
+    user: house.user,
+    services: house.services,
+    connection: {subscribeMessage: () => Promise.resolve(() => Promise.resolve())},
+    ...init,
+    config,
+  });
+  // the replies belong to the house; a test may still override one through `replies`
+  for (const type of read.types) hass.replies.set(type, msg => read.ws(msg));
+  return hass;
+}
+
+fakeHass.fromHouse = fromHouse;

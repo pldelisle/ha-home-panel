@@ -1,4 +1,5 @@
-// Panel configs for the made-up house in harness.html. Nothing here belongs to a real house.
+// Panel configs for the made-up house (test/houses/, served by harness.html). Nothing here belongs to a real house.
+import {REFERENCE_INSTANT} from '../houses/clock.mjs';
 
 // the full test house names its energy devices in the config, the way a real install would
 export const FULL_CFG = {
@@ -46,4 +47,5 @@ export const VIEWPORTS = {
 } as const;
 
 // the fake clock most tests start at (a Saturday afternoon, Toronto time), so greetings, the sun, "ago" texts and the day's calendar never move
-export const AFTERNOON = '2026-11-07T14:00:00-05:00';
+// (the unit tests start a house at the same instant: test/houses/clock.mjs holds it)
+export const AFTERNOON = REFERENCE_INSTANT;

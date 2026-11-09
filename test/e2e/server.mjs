@@ -1,5 +1,5 @@
-// Static server for the end-to-end tests: /panel/* comes from dist/ (the built panel), everything else from test/e2e/
-// (the made-up house in harness.html). Started by Playwright as its web server; PORT picks the port (default 4173).
+// Static server for the end-to-end tests: /panel/* comes from dist/ (the built panel), /houses/* from test/houses/ (the made-up
+// houses, plain ES modules the unit tests import too), everything else from test/e2e/ (harness.html). Started by Playwright as its web server; PORT picks the port (default 4173).
 import http from 'node:http';
 import {createReadStream, existsSync, statSync} from 'node:fs';
 import {dirname, extname, resolve} from 'node:path';
@@ -7,6 +7,7 @@ import {fileURLToPath} from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DIST = resolve(HERE, '..', '..', 'dist');
+const HOUSES = resolve(HERE, '..', 'houses');
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript',
@@ -25,8 +26,10 @@ export function createServer() {
     const u = decodeURIComponent((req.url || '/').split('?')[0]);
     const f = u.startsWith('/panel/')
       ? resolve(DIST, '.' + u.slice(6))
-      : resolve(HERE, '.' + (u === '/' ? '/harness.html' : u));
-    const inside = f.startsWith(DIST + '/') || f.startsWith(HERE + '/');
+      : u.startsWith('/houses/')
+        ? resolve(HOUSES, '.' + u.slice(7))
+        : resolve(HERE, '.' + (u === '/' ? '/harness.html' : u));
+    const inside = [DIST, HOUSES, HERE].some(dir => f.startsWith(dir + '/'));
     if (!inside || !existsSync(f) || !statSync(f).isFile()) {
       res.writeHead(404);
       return res.end();

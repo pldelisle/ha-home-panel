@@ -11,6 +11,7 @@ declare global {
   interface Window {
     PANEL_CFG: object | null;
     SYSDATA: object | null;
+    AUTOMATIONS: object[] | null;
     house: {
       setState(entityId: string, patch: object): void;
       setAreaName(areaId: string, name: string): void;
@@ -57,7 +58,7 @@ export type HouseOpts = {
   frozen?: boolean;
   /** the frontend's system data to start from, e.g. {home_panel: {light_order: [...]}} */
   sysdata?: object;
-  /** the full house's automations ({entity_id, config} each), served in place of test/e2e/automations.json */
+  /** the full house's automations ({entity_id, config} each), in place of the `automations` of test/houses/full.mjs */
   automations?: object[];
   /** a daily forecast for today and the next five days, which the weather subscription delivers (spec 11, day names) */
   forecast?: boolean;
@@ -114,16 +115,17 @@ export const test = base.extend<{houseOpts: HouseOpts; house: House}>({
       chunks: Chunk[] = [],
       fonts: House['fonts'] = [];
     await page.addInitScript(
-      ([cfg, sysdata, theme]) => {
+      ([cfg, sysdata, automations, theme]) => {
         window.PANEL_CFG = cfg;
         window.SYSDATA = sysdata;
+        window.AUTOMATIONS = automations;
         try {
           localStorage.setItem('home-panel-theme', theme);
         } catch {
           // storage is blocked: the panel keeps its default theme
         }
       },
-      [o.cfg ?? null, o.sysdata ?? null, o.theme] as const,
+      [o.cfg ?? null, o.sysdata ?? null, o.automations ?? null, o.theme] as const,
     );
     // a Google Fonts request fails the test; it is also aborted, so that a run never depends on the internet
     page.on('request', r => {
@@ -133,10 +135,6 @@ export const test = base.extend<{houseOpts: HouseOpts; house: House}>({
     page.on('response', r => {
       if (r.request().resourceType() === 'font') fonts.push({url: r.url(), status: r.status()});
     });
-    if (o.automations) {
-      const body = JSON.stringify(o.automations);
-      await page.route(/\/automations\.json$/, r => r.fulfill({contentType: 'application/json', body}));
-    }
     // the body is read as the response arrives, so a test can tell the chunk that holds a library from one that does not
     page.on('request', r => {
       if (CHUNK_URL.test(r.url())) chunkRequests.push(r.url());
