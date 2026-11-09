@@ -13,8 +13,12 @@ export type NamesConfig = Record<string, Partial<Record<string, string>>>;
 export type NamesHass = Pick<PanelHass, 'states' | 'areas' | 'devices'>;
 
 export interface Names {
-  /** `key` is an entity id, an area id or a device id; anything else is taken to be a name and resolved as one. */
-  readonly name: (key: string) => string;
+  /**
+   * `key` is an entity id, an area id or a device id; anything else is taken to be a name and resolved as one. With a
+   * `fallback`, `key` is an id, and when Home Assistant has no name for it and the `names:` block no override, the fallback
+   * is the answer (a placeholder such as `Scene`, where the id itself must not show).
+   */
+  readonly name: (key: string, fallback?: string) => string;
 }
 
 /** Case, accents and runs of spaces do not matter to a match. */
@@ -24,21 +28,22 @@ const normalise = (s: string): string =>
 const toFrench = new Map(ROOM_NAMES.map(([en, fr]) => [normalise(en), fr]));
 const toEnglish = new Map(ROOM_NAMES.map(([en, fr]) => [normalise(fr), en]));
 
-const text = (v: unknown): string => (typeof v === 'string' ? v : '');
+/** A Home Assistant attribute is untyped: a string is a name, anything else (a number, a null) is no name. */
+const stringOrEmpty = (v: unknown): string => (typeof v === 'string' ? v : '');
 
 /** A key is an id or a name someone typed: `constructor` must not find a member of Object.prototype. */
 const own = <T>(record: Record<string, T> | undefined, key: string): T | undefined =>
   record && Object.hasOwn(record, key) ? record[key] : undefined;
 
-/** The name Home Assistant gives the key: an entity's friendly name, an area's name, a device's own name; else the key. */
-function haName(key: string, hass: NamesHass | null): string {
+/** The name Home Assistant gives the key: an entity's friendly name, an area's name, a device's own name; else none. */
+function haName(key: string, hass: NamesHass | null): string | undefined {
   const device = own(hass?.devices, key);
   return (
-    text(own(hass?.states, key)?.attributes.friendly_name) ||
-    text(own(hass?.areas, key)?.name) ||
-    text(device?.name_by_user) ||
-    text(device?.name) ||
-    key
+    stringOrEmpty(own(hass?.states, key)?.attributes.friendly_name) ||
+    stringOrEmpty(own(hass?.areas, key)?.name) ||
+    stringOrEmpty(device?.name_by_user) ||
+    stringOrEmpty(device?.name) ||
+    undefined
   );
 }
 
@@ -48,11 +53,16 @@ export function createNames(config: {names?: NamesConfig}, language: string, has
   const names = config.names ?? {};
   const override = (key: string): string => {
     const entry: unknown = own(names, key);
-    return typeof entry === 'object' && entry !== null ? text((entry as Record<string, unknown>)[lang]).trim() : '';
+    return typeof entry === 'object' && entry !== null
+      ? stringOrEmpty((entry as Record<string, unknown>)[lang]).trim()
+      : '';
   };
   return {
-    name: key => {
-      const given = haName(key, hass);
+    name: (key, fallback) => {
+      const ha = haName(key, hass);
+      // an id Home Assistant has no name for: the caller's placeholder, unless the house named the id itself
+      if (ha === undefined && fallback !== undefined) return override(key) || fallback;
+      const given = ha ?? key;
       return override(key) || override(given) || dictionary?.get(normalise(given)) || given;
     },
   };

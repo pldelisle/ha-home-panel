@@ -42,8 +42,8 @@ export type HouseOpts = {
   /** the panel's `config:` block */
   cfg?: object | null;
   lang?: 'en' | 'fr';
-  /** 'fr': the areas carry the French names a French-speaking household gives them (Salon, Cuisine, Bureau) */
-  names?: 'fr';
+  /** the areas carry the French names a French-speaking household gives them (Salon, Cuisine, Bureau) */
+  frenchAreas?: boolean;
   theme?: 'light' | 'dark';
   /** whether the signed-in user is an admin */
   admin?: boolean;
@@ -161,7 +161,7 @@ export const test = base.extend<{houseOpts: HouseOpts; house: House}>({
     if (o.time) await page.clock.install({time: new Date(o.time)});
     if (o.time && o.frozen) await page.clock.setFixedTime(new Date(o.time));
     await page.goto(
-      `/?house=${o.house}&lang=${o.lang}&admin=${o.admin ? 1 : 0}${o.names ? `&names=${o.names}` : ''}${o.two ? '&two=1' : ''}${o.forecast ? '&forecast=1' : ''}`,
+      `/?house=${o.house}&lang=${o.lang}&admin=${o.admin ? 1 : 0}${o.frenchAreas ? '&french_areas=1' : ''}${o.two ? '&two=1' : ''}${o.forecast ? '&forecast=1' : ''}`,
     );
     const root = () => page.locator('home-panel');
     await root().locator('#rail').first().waitFor({state: 'attached'});

@@ -1,5 +1,5 @@
 // Display names follow the panel's language: the config's names: block first, then the room dictionary, then the name
-// Home Assistant gives (spec 11, "Display names"). The test house is English; with `names: 'fr'` its areas carry the French
+// Home Assistant gives (spec 11, "Display names"). The test house is English; with `frenchAreas` its areas carry the French
 // names a French-speaking household gives them, and the English panel reads them as `Living room`.
 import {test, expect} from './fixtures';
 import {AFTERNOON, FULL_CFG} from './houses';
@@ -45,7 +45,7 @@ test.describe('an English house in English', () => {
 
 test.describe('a French house', () => {
   test.describe('in English', () => {
-    test.use({houseOpts: {cfg: FULL_CFG, names: 'fr'}});
+    test.use({houseOpts: {cfg: FULL_CFG, frenchAreas: true}});
 
     test('Salon reads Living room on the Lights tab, with no names: block', async ({house}) => {
       expect(await tileNames(house)).toEqual(['Kitchen', 'Living room', 'Office']);
@@ -64,7 +64,7 @@ test.describe('a French house', () => {
   });
 
   test.describe('in French', () => {
-    test.use({houseOpts: {cfg: FULL_CFG, names: 'fr', lang: 'fr'}});
+    test.use({houseOpts: {cfg: FULL_CFG, frenchAreas: true, lang: 'fr'}});
 
     test('Salon stays Salon, left alone by the French layer', async ({house}) => {
       expect(await tileNames(house)).toEqual(['Bureau', 'Cuisine', 'Salon']);

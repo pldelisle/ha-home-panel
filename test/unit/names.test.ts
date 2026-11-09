@@ -221,6 +221,31 @@ describe('the names: block', () => {
   });
 });
 
+describe('a fallback for an id Home Assistant has no name for', () => {
+  test('is the answer when the house did not name the id either', () => {
+    const {name} = createNames({}, 'en', hass);
+    expect(name('light.nameless', 'Scene')).toBe('Scene');
+    expect(name('light.numeric', '')).toBe('');
+    expect(name('d3', 'TV')).toBe('TV');
+    expect(createNames({}, 'fr', null).name('scene.movie', 'Scene')).toBe('Scene');
+  });
+  test('gives way to an override by that id, the first link of the chain', () => {
+    const {name} = createNames({names: {'light.nameless': {en: 'Reading light'}}}, 'en', hass);
+    expect(name('light.nameless', 'Scene')).toBe('Reading light');
+    expect(createNames({names: {'light.nameless': {fr: 'Liseuse'}}}, 'en', hass).name('light.nameless', 'Scene')).toBe(
+      'Scene',
+    );
+  });
+  test('is not read when Home Assistant has the name: the chain answers as without it', () => {
+    expect(createNames({}, 'en', hass).name('salon', 'Room')).toBe('Living room');
+    expect(createNames({}, 'en', hass).name('gym', 'Room')).toBe('Gym');
+    expect(createNames({names: {Salon: {en: 'Lounge'}}}, 'en', hass).name('salon', 'Room')).toBe('Lounge');
+  });
+  test('a name key with a fallback is an id Home Assistant does not know, so the fallback answers', () => {
+    expect(createNames({}, 'en', hass).name('Salon', 'Room')).toBe('Room');
+  });
+});
+
 describe('the hass is read when a name is asked for', () => {
   test('a name changed in Home Assistant is read at once', () => {
     const live = {...hass, states: {...hass.states}};
