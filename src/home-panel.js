@@ -3415,9 +3415,12 @@ export class HomePanel extends HTMLElement {
           : this.api.history([this.E.hp], d(7), {minimal: false, attributes: true}).catch(noHistory),
       ]);
       const [today, t24] = await Promise.all([
-        this.api.statistics([this.E.energy], 'hour', new Date(Date.now() - this.fmtEn.hourNow(Date.now()) * 36e5 - 60e3), [
-          'change',
-        ]),
+        this.api.statistics(
+          [this.E.energy],
+          'hour',
+          new Date(Date.now() - this.fmtEn.hourNow(Date.now()) * 36e5 - 60e3),
+          ['change'],
+        ),
         this.api.statistics([...this.ROOMS.map(r => r.temp), this.E.whT, this.E.whP], '5minute', d(1.05), ['mean']),
       ]);
       this.H = this.derive(hour7, day, meter, evh, hp, today, t24);
