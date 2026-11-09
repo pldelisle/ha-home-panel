@@ -53,6 +53,8 @@ export type HouseOpts = {
   sysdata?: object;
   /** the full house's automations ({entity_id, config} each), served in place of test/e2e/automations.json */
   automations?: object[];
+  /** a second panel on the same page (`page.locator('home-panel').nth(1)`), with two rooms and one person (spec 10) */
+  two?: boolean;
 };
 
 export type House = {
@@ -148,9 +150,9 @@ export const test = base.extend<{houseOpts: HouseOpts; house: House}>({
     });
     if (o.time) await page.clock.install({time: new Date(o.time)});
     if (o.time && o.frozen) await page.clock.setFixedTime(new Date(o.time));
-    await page.goto(`/?house=${o.house}&lang=${o.lang}&admin=${o.admin ? 1 : 0}`);
+    await page.goto(`/?house=${o.house}&lang=${o.lang}&admin=${o.admin ? 1 : 0}${o.two ? '&two=1' : ''}`);
     const root = () => page.locator('home-panel');
-    await root().locator('#rail').waitFor({state: 'attached'});
+    await root().locator('#rail').first().waitFor({state: 'attached'});
     const house: House = {
       page,
       calls,

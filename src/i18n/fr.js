@@ -110,11 +110,8 @@ const frKey = (s, vals) => {
 };
 const FR_UNITS =
   /^(?:\{n\}|[\s°%·–\-−+/,()×]|°C|kWh|MWh|kW|W|V|A|km\/h|km|kPa|ppm|µg\/m³|lx|lux|psi|¢\/kWh|¢|h|min|s|k|RH|AQI|UV|PM\{n\}|CO₂|CO|VOC)+$/;
-let FR_NAMES = new Set(),
-  FR_NAMES_AT = 0;
-function frNames() {
-  const hass = getHass();
-  if (Date.now() - FR_NAMES_AT < 60000 && FR_NAMES.size) return FR_NAMES;
+// the names people gave in HA: areas, devices and the kinds of entity whose friendly name is theirs
+function houseNames(hass) {
   const S = new Set(),
     reg = hass.entities || {},
     keep = /^(scene|script|input_boolean|light|binary_sensor|camera|media_player|person|fan|switch|lock)\./;
@@ -129,9 +126,15 @@ function frNames() {
     )
       S.add(s.attributes.friendly_name);
   }
-  FR_NAMES = S;
-  FR_NAMES_AT = Date.now();
   return S;
+}
+let FR_NAMES = new Set(),
+  FR_NAMES_AT = 0;
+function frNames() {
+  if (Date.now() - FR_NAMES_AT < 60000 && FR_NAMES.size) return FR_NAMES;
+  FR_NAMES = houseNames(getHass());
+  FR_NAMES_AT = Date.now();
+  return FR_NAMES;
 }
 function frLook(k) {
   let v = FR_MAP[k];
@@ -163,10 +166,11 @@ const frPost = s =>
     .replace(/ :/g, '\u00a0:')
     .replace(/\$\s?(-?\d[\d\u202f]*(?:,\d+)?)/g, '$1\u00a0$$')
     .replace(/([a-zé]\.)\./g, '$1');
-export function frText(s) {
+// `isName(core)`: whether the text is a name the house gave in HA, which is never translated
+function frTextWith(s, isName) {
   const m = /^(\s*)([\s\S]*?)(\s*)$/.exec(s),
     core = m[2];
-  if (!core || frNames().has(core)) return s;
+  if (!core || isName(core)) return s;
   if (!/[A-Za-z]/.test(core))
     return /\d/.test(core) ? m[1] + frPost(core.replace(/\d+(?:[.,]\d+)*/g, frNum)) + m[3] : s;
   const vals = [],
@@ -179,37 +183,40 @@ export function frText(s) {
   out = frPost(out);
   return m[1] + out + m[3];
 }
+export const frText = s => frTextWith(s, core => frNames().has(core));
 export const FR_ATTR = ['aria-label', 'title', 'placeholder', 'alt'];
 const frSeen = new WeakMap();
-export function frNode(n) {
+function frNodeWith(n, translate, seen) {
   if (n.nodeType === 3) {
     const p = n.parentNode;
-    if (!p || p.nodeName === 'STYLE' || p.nodeName === 'SCRIPT' || frSeen.get(n) === n.data) return;
+    if (!p || p.nodeName === 'STYLE' || p.nodeName === 'SCRIPT' || seen.get(n) === n.data) return;
     // song titles and the like are marked translate="no"
     if (p.closest && p.closest('[translate="no"]')) return;
-    const t = frText(n.data);
+    const t = translate(n.data);
     if (t !== n.data) n.data = t;
-    frSeen.set(n, n.data);
+    seen.set(n, n.data);
   } else if (n.nodeType === 1) {
     if (n.nodeName === 'STYLE' || n.nodeName === 'SCRIPT') return;
-    const done = frSeen.get(n) || {};
+    const done = seen.get(n) || {};
     for (const a of FR_ATTR) {
       const v = n.getAttribute(a);
       if (!v || done[a] === v) continue;
-      const t = frText(v);
+      const t = translate(v);
       if (t !== v) n.setAttribute(a, t);
       done[a] = t;
     }
-    frSeen.set(n, done);
+    seen.set(n, done);
   }
 }
-export function frTree(root) {
-  if (root.nodeType === 3) return frNode(root);
-  if (root.nodeType === 1) frNode(root);
+export const frNode = n => frNodeWith(n, frText, frSeen);
+function frTreeWith(root, visit) {
+  if (root.nodeType === 3) return visit(root);
+  if (root.nodeType === 1) visit(root);
   const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
   let n;
-  while ((n = w.nextNode())) frNode(n);
+  while ((n = w.nextNode())) visit(n);
 }
+export const frTree = root => frTreeWith(root, frNode);
 // apex draws its own dates: give it French month and day names and day-first formats
 const APEX_FR = {
   name: 'fr',
@@ -234,6 +241,36 @@ export function frApex(o) {
   if (o.xaxis && o.xaxis.labels && o.xaxis.labels.format)
     o.xaxis.labels = {...o.xaxis.labels, format: frFmt(o.xaxis.labels.format)};
   return o;
+}
+/**
+ * The translator for one panel: the same functions as the module's, reading the names the house gave from the store's
+ * hass (with a cache of their own) and the language from the store, so two panels on a page do not share either.
+ * Nothing is translated while the store's language is not French. The module functions above go at contract (spec 10).
+ * @param {{hass: any, isFrench: boolean}} store
+ */
+export function createFrench(store) {
+  let names = new Set(),
+    namesAt = 0;
+  const houseNamesNow = () => {
+    if (Date.now() - namesAt < 60000 && names.size) return names;
+    names = houseNames(store.hass);
+    namesAt = Date.now();
+    return names;
+  };
+  const seen = new WeakMap();
+  const text = s => (store.isFrench ? frTextWith(s, core => houseNamesNow().has(core)) : s);
+  // an English panel marks nothing as seen, so a switch to French still translates what it already drew
+  const node = n => {
+    if (store.isFrench) frNodeWith(n, text, seen);
+  };
+  return {
+    text,
+    node,
+    tree: root => {
+      if (store.isFrench) frTreeWith(root, node);
+    },
+    apex: o => (store.isFrench ? frApex(o) : o),
+  };
 }
 // English -> Québec French. Keys are the English text with {n} for each number, time or date (see frKey).
 export const FR_MAP = {
