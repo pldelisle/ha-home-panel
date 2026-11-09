@@ -92,7 +92,8 @@ export default defineConfig(
   },
 
   // The core has no DOM: a module that needs the time zone, the locale or a Storage accepts it as a parameter, which is
-  // what lets Node test it with no browser (docs/specs/09-architecture-foundations.md, "Core has no DOM")
+  // what lets Node test it with no browser (docs/specs/09-architecture-foundations.md, "Core has no DOM"). The core is
+  // TypeScript only, hence the glob
   {
     files: ['src/core/**/*.ts'],
     rules: {

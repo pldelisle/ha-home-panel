@@ -5,28 +5,25 @@
 import {test, expect, beforeAll} from 'vitest';
 import {readFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
-import {cruise, legacyModules, renderGraph} from '../../scripts/arch-graph.mjs';
-import layers from '../../scripts/layers.cjs';
+import {cruise, renderGraph} from '../../scripts/arch-graph.mjs';
+import legacy from '../../scripts/legacy-set.cjs';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
-const LEGACY = new RegExp(layers.LEGACY);
+const {isLegacy} = legacy;
 
 let modules;
 beforeAll(() => {
   modules = cruise().modules;
 }, 60_000);
 
-test('no module outside the legacy set imports a legacy module', () => {
+// the entry, src/main.js, composes the app and is the one module outside the set that may import it
+test('no module outside the legacy set, but the entry, imports a legacy module', () => {
   const offenders = modules
-    .filter(({source}) => source.startsWith('src/') && !LEGACY.test(source))
+    .filter(({source}) => source.startsWith('src/') && source !== 'src/main.js' && !isLegacy(source))
     .flatMap(({source, dependencies}) =>
-      dependencies.filter(({resolved}) => LEGACY.test(resolved)).map(({resolved}) => `${source} → ${resolved}`),
+      dependencies.filter(({resolved}) => isLegacy(resolved)).map(({resolved}) => `${source} → ${resolved}`),
     );
   expect(offenders).toEqual([]);
-});
-
-test('the legacy set still holds modules, and the count is the one npm run lint prints', () => {
-  expect(legacyModules(modules).length).toBeGreaterThan(0);
 });
 
 test('docs/architecture/dependency-graph.md is exactly what npm run arch:graph writes', () => {

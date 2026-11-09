@@ -6,9 +6,10 @@
 const CORE = '^src/core/';
 const PROVIDERS = '^src/providers/';
 const UI = '^src/ui/';
+const ENTRY = '^src/main\\.js$';
 const FEATURES = '^src/features/';
 // the strangler's host, shared with scripts/arch-graph.mjs and test/unit/architecture.test.mjs
-const {LEGACY} = require('./scripts/layers.cjs');
+const {LEGACY} = require('./scripts/legacy-set.cjs');
 
 module.exports = {
   forbidden: [
@@ -64,8 +65,8 @@ module.exports = {
       name: 'nothing-imports-legacy-but-entry',
       severity: 'error',
       comment:
-        'Nothing new may depend on legacy code, or it can never be deleted. src/main.js is in the legacy set, so the entry may.',
-      from: {path: '^src/', pathNot: LEGACY},
+        'Nothing new may depend on legacy code, or it can never be deleted. Only the entry, src/main.js, which composes the app, may.',
+      from: {path: '^src/', pathNot: [LEGACY, ENTRY]},
       to: {path: LEGACY},
     },
     {
@@ -79,7 +80,7 @@ module.exports = {
       name: 'no-orphans',
       severity: 'error',
       comment: 'A module nothing imports is dead code. The entry and declaration files are the exceptions.',
-      from: {orphan: true, pathNot: ['(^|/)src/main\\.js$', '\\.d\\.ts$']},
+      from: {orphan: true, pathNot: [ENTRY, '\\.d\\.ts$']},
       to: {},
     },
     {
