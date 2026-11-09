@@ -2,7 +2,8 @@
 // Pattern: a factory returning the instance's functions and its per-hour cache (Ousterhout, deep module), on the same CLDR
 // data as Home Assistant's formatTime and formatNumber. Deliberate overrides of CLDR and `Intl`, and the only
 // post-processing: the three house rules (en-* am/pm without periods, fr-* "16 h" on the hour, fr-* thousands U+202F)
-// and number() clamping its fraction digits to 2. Must not: read the clock, the DOM or a browser default.
+// and number() clamping its fraction digits to 2, and time24 and time24s, which join the parts with a colon and Latin
+// digits in every locale because the table asks for `16:07`. Must not: read the clock, the DOM or a browser default.
 import type {PanelLocaleSpec} from './locale.ts';
 
 type Instant = Date | number;
@@ -123,7 +124,8 @@ export function createFormatters(l: PanelLocaleSpec): Formatters {
       const p = clockNow(now);
       return Number(p('hour')) + Number(p('minute')) / 60;
     },
-    integer: n => post('number', integer.format(n)),
+    // Math.round first: Intl rounds a half away from zero, the legacy `Math.round(v).toLocaleString` does not
+    integer: n => post('number', integer.format(Math.round(n))),
     number: (n, maxFraction) => {
       const digits = Math.min(maxFraction ?? 1, 2);
       let f = numbers.get(digits);

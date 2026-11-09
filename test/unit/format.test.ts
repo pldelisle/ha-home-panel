@@ -149,7 +149,12 @@ describe('the number_format preference', () => {
   test('space_comma in English gives 12,5 and a space', () => {
     const f = make('en-CA', {numberLocale: 'fr'});
     expect(f.number(12.5)).toBe('12,5');
-    expect(f.integer(1234567)).toMatch(/^1\s234\s567$/);
+    expect(f.integer(1234567)).toBe('1\u202f234\u202f567');
+  });
+
+  test('integer rounds a negative half toward zero, as Math.round does', () => {
+    expect(make('en-CA').integer(-1234.5)).toBe('-1,234');
+    expect(make('en-CA').integer(-1234.6)).toBe('-1,235');
   });
 
   test('none gives no grouping in all three locales', () => {
@@ -174,9 +179,7 @@ describe('the three house rules, and only those', () => {
   });
 
   test('French thousands separator is U+202F, not U+00A0', () => {
-    const out = make('fr-CA').integer(1234567);
-    expect(out).not.toContain('\u00a0');
-    expect(out).toContain('\u202f');
+    expect(make('fr-CA').integer(1234567)).toBe('1\u202f234\u202f567');
     expect(make('fr-FR').number(1234.5)).toBe('1\u202f234,5');
   });
 
