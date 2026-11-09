@@ -54,7 +54,8 @@ beforeAll(() => {
 });
 
 test('dist/ holds the bundle, its source map, the lazy chunks, the fonts and the licence list, and nothing else', () => {
-  // no copied library file (there is no vendor/), no assets/ folder: the stylesheets are imported as text
+  // no copied library file (there is no vendor/), no assets/ folder: the stylesheets are imported as minified text
+  // (`?inline`)
   // the fonts are the eight files src/fonts.js names (fonts.test.mjs pins that list to Fontsource's eight names)
   const rest = distFiles.filter(f => !chunks.some(c => f === c || f === c + '.map'));
   expect(rest).toStrictEqual(
@@ -62,6 +63,8 @@ test('dist/ holds the bundle, its source map, the lazy chunks, the fonts and the
   );
   for (const c of chunks) {
     expect(c).toMatch(/^chunks\/[\w.-]+-[\w-]{8}\.js$/); // [name]-[hash].js
+    // `defineProperty` is the helper Rolldown writes when it lowers class fields (build.target below ES2022)
+    expect(c, 'a lowering helper chunk, so build.target is below es2022').not.toMatch(/^chunks\/defineProperty-/);
     // a chunk names its map at its end exactly when the map is there, so a stack trace from a chart or a flow points
     // at the code it came from; Rolldown writes none for a chunk with no code from a source file (one that only
     // re-exports another, or holds its own runtime helpers)

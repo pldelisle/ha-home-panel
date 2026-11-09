@@ -41,6 +41,7 @@
     "eslint-plugin-import-x": "4.18.0",
     "eslint-plugin-lit": "2.3.1",
     "globals": "17.14.0",
+    "lightningcss": "1.33.0",
     "prettier": "3.9.10",
     "size-limit": "14.3.0",
     "typescript": "6.0.3",
@@ -57,7 +58,7 @@
     {
       "name": "entry (budget)",
       "path": "dist/home-panel.js",
-      "limit": "160 kB",
+      "limit": "153 kB",
       "gzip": true
     },
     {
