@@ -150,6 +150,7 @@ export function createApi(store: PanelStore): PanelApi {
         statistic_ids: statisticIds,
         period,
         types,
+        // copied into STATISTIC_UNITS of scripts/record-fixture.mjs: the fixture holds rows in these units
         units: {power: 'kW', energy: 'kWh', temperature: '°C'},
       };
       if (end) msg.end_time = end.toISOString();

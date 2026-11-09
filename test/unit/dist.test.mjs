@@ -12,6 +12,7 @@ import {brotliDecompressSync, gunzipSync} from 'node:zlib';
 import {createRequire} from 'node:module';
 import {FONT_FILES} from '../../src/fonts.js';
 import {GOOGLE_FONT_HOSTS} from '../google-font-hosts.mjs';
+import {bannedHits, scannedFiles} from '../personal-data.mjs';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const DIST = join(ROOT, 'dist');
@@ -262,52 +263,9 @@ test("the entry's source map names the original files under src/ and the three l
   expect(readFileSync(BUNDLE, 'utf8')).toMatch(/\n\/\/# sourceMappingURL=home-panel\.js\.map\s*$/);
 });
 
-// every tracked file that can hold text: what `git ls-files` lists, so there is no directory list to keep by hand and a
-// maintainer's untracked scratch folders are not scanned; an exported tree without .git (or a checkout nested inside
-// another repository, where git lists nothing) is walked from the root instead. The walk skips the .git file of a
-// worktree and the folders below, and the filter in the test drops the same binaries from both lists.
-const SCAN_SKIP_DIRS = [
-  'node_modules',
-  'dist',
-  '.git',
-  'coverage',
-  'test-results',
-  'playwright-report',
-  'graphify-out',
-  '.claude',
-  '__screenshots__',
-];
-const trackedFiles = () => {
-  try {
-    const listed = execFileSync('git', ['ls-files', '-z'], {cwd: ROOT, encoding: 'utf8', stdio: 'pipe'})
-      .split('\0')
-      .filter(Boolean);
-    if (listed.length > 0) return listed;
-  } catch {
-    // no git, or not a repository: walk instead
-  }
-  return walk('.', SCAN_SKIP_DIRS);
-};
-
-// the tracked files that are not scanned, and why
-const NOT_SCANNED = new Map([
-  ['test/unit/dist.test.mjs', 'it holds the patterns'],
-  ['LICENSE', 'the copyright line names the licence holder, by design'],
-  [
-    'LICENSES.md',
-    'third-party licence text generated from node_modules and checked by licenses.test.mjs: a package author who ' +
-      'happens to be called Pierre must not fail this test',
-  ],
-]);
-
 test('no personal data: names, places, a house photo or house-specific entity ids', () => {
-  // every tracked text file is scanned (images, fonts and the IDE module file are not text; the files above are
-  // left out), so a new file needs no edit here. The screenshot baselines are .png, so the extension keeps them out.
-  const files = trackedFiles().filter(
-    f =>
-      // tracked, but deleted in the working tree
-      existsSync(join(ROOT, f)) && !/\.(png|woff2|ico|jpe?g|webp|iml)$/i.test(f) && !NOT_SCANNED.has(f),
-  );
+  // every tracked text file is scanned (test/personal-data.mjs says which are not, and why)
+  const files = scannedFiles(ROOT);
   const scanned = [
     ...['src/core/config.ts', 'src/home-panel.js', 'src/auto.js', 'src/i18n/fr.js', 'src/css/base.css'],
     ...['houses.ts', 'fixtures.ts', 'harness.html'].map(f => 'test/e2e/' + f),
@@ -315,6 +273,8 @@ test('no personal data: names, places, a house photo or house-specific entity id
     ...['package.json', 'package-lock.json', 'vite.config.ts', 'playwright.config.ts', 'vitest.config.ts'],
     ...['renovate.json', '.github/workflows/ci.yml', 'scripts/licenses.mjs', 'examples/configuration.yaml'],
     ...['README.md', 'CHANGELOG.md', '.changeset/config.json'],
+    ...['scripts/record-fixture.mjs', 'scripts/lib/anonymise.mjs', 'test/unit/fixtures/houses/README.md'],
+    ...['test/unit/fixtures/houses/sample.json'],
   ];
   for (const f of scanned) expect(files.includes(f), `scans ${f}`).toBe(true);
   expect(
@@ -329,26 +289,6 @@ test('no personal data: names, places, a house photo or house-specific entity id
     ['dist/home-panel.js', readFileSync(BUNDLE, 'utf8')],
     ['dist/home-panel.js.map', readFileSync(`${BUNDLE}.map`, 'utf8')],
   ];
-  const banned = [
-    /pierre/i,
-    /genevi[eè]ve/i,
-    /\bmilan\b/i,
-    /delisle/i,
-    /mascouche/i,
-    /montr[eé]al/i,
-    /data:image\/(webp|png|jpe?g)/i,
-    /\b10\.0\.\d+\.\d+\b/,
-    /\b192\.168\.\d+\.\d+\b/,
-    /meter00|calypso|pulsar_plus|ac_uty_|hydro_quebec_maison|thermostat_chambre/i,
-  ];
-  const hits = [];
-  for (const [name, raw] of texts) {
-    // the repository's own address holds the owner's handle; it is public by nature
-    const text = raw.replaceAll('pldelisle/ha-home-panel', '<repo>');
-    for (const re of banned) {
-      const m = text.match(re);
-      if (m) hits.push(`${name}: found ${re}: …${text.slice(Math.max(0, m.index - 40), m.index + 40)}…`);
-    }
-  }
+  const hits = bannedHits(texts);
   expect(hits).toEqual([]);
 });

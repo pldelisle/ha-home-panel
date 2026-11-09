@@ -1,0 +1,284 @@
+{
+  "recordedAt": "2026-11-07T19:00:00.000Z",
+  "source": "home-assistant 0.0.0-sample",
+  "states": {
+    "sun.sun": {
+      "entity_id": "sun.sun",
+      "state": "above_horizon",
+      "attributes": {"friendly_name": "sun", "next_rising": "2026-11-08T12:00:00.000Z", "next_setting": "2026-11-07T21:45:00.000Z", "next_midnight": "2026-11-08T04:52:00.000Z"},
+      "last_changed": "2026-11-07T18:00:00.000Z",
+      "last_updated": "2026-11-07T18:59:00.000Z",
+      "context": {"parent_id": null}
+    },
+    "weather.springfield_forecast": {
+      "entity_id": "weather.springfield_forecast",
+      "state": "partlycloudy",
+      "attributes": {"friendly_name": "Springfield", "temperature": 4.2, "humidity": 71, "wind_speed": 14, "pressure": 101.9},
+      "last_changed": "2026-11-07T18:00:00.000Z",
+      "last_updated": "2026-11-07T18:59:00.000Z",
+      "context": {"parent_id": null}
+    },
+    "light.living_room_1": {
+      "entity_id": "light.living_room_1",
+      "state": "on",
+      "attributes": {
+        "friendly_name": "Living room lamp",
+        "brightness": 180,
+        "supported_color_modes": ["color_temp"],
+        "color_mode": "color_temp",
+        "color_temp_kelvin": 2700,
+        "min_color_temp_kelvin": 2000,
+        "max_color_temp_kelvin": 6500
+      },
+      "last_changed": "2026-11-07T18:00:00.000Z",
+      "last_updated": "2026-11-07T18:59:00.000Z",
+      "context": {"parent_id": null}
+    },
+    "sensor.springfield_current_condition": {
+      "entity_id": "sensor.springfield_current_condition",
+      "state": "Mainly Sunny",
+      "attributes": {"friendly_name": "springfield current condition"},
+      "last_changed": "2026-11-07T18:00:00.000Z",
+      "last_updated": "2026-11-07T18:59:00.000Z",
+      "context": {"parent_id": null}
+    },
+    "sensor.springfield_temperature": {
+      "entity_id": "sensor.springfield_temperature",
+      "state": "4.2",
+      "attributes": {"friendly_name": "springfield temperature", "unit_of_measurement": "°C"},
+      "last_changed": "2026-11-07T18:00:00.000Z",
+      "last_updated": "2026-11-07T18:59:00.000Z",
+      "context": {"parent_id": null}
+    },
+    "sensor.springfield_high_temperature": {
+      "entity_id": "sensor.springfield_high_temperature",
+      "state": "7",
+      "attributes": {"friendly_name": "springfield high temperature"},
+      "last_changed": "2026-11-07T18:00:00.000Z",
+      "last_updated": "2026-11-07T18:59:00.000Z",
+      "context": {"parent_id": null}
+    },
+    "sensor.springfield_low_temperature": {
+      "entity_id": "sensor.springfield_low_temperature",
+      "state": "-1",
+      "attributes": {"friendly_name": "springfield low temperature"},
+      "last_changed": "2026-11-07T18:00:00.000Z",
+      "last_updated": "2026-11-07T18:59:00.000Z",
+      "context": {"parent_id": null}
+    },
+    "sensor.springfield_normal_high_temperature": {
+      "entity_id": "sensor.springfield_normal_high_temperature",
+      "state": "6",
+      "attributes": {"friendly_name": "springfield normal high temperature"},
+      "last_changed": "2026-11-07T18:00:00.000Z",
+      "last_updated": "2026-11-07T18:59:00.000Z",
+      "context": {"parent_id": null}
+    },
+    "sensor.springfield_normal_low_temperature": {
+      "entity_id": "sensor.springfield_normal_low_temperature",
+      "state": "-2",
+      "attributes": {"friendly_name": "springfield normal low temperature"},
+      "last_changed": "2026-11-07T18:00:00.000Z",
+      "last_updated": "2026-11-07T18:59:00.000Z",
+      "context": {"parent_id": null}
+    },
+    "sensor.springfield_wind_speed": {
+      "entity_id": "sensor.springfield_wind_speed",
+      "state": "14",
+      "attributes": {"friendly_name": "springfield wind speed"},
+      "last_changed": "2026-11-07T18:00:00.000Z",
+      "last_updated": "2026-11-07T18:59:00.000Z",
+      "context": {"parent_id": null}
+    },
+    "sensor.springfield_wind_direction": {
+      "entity_id": "sensor.springfield_wind_direction",
+      "state": "SW",
+      "attributes": {"friendly_name": "springfield wind direction"},
+      "last_changed": "2026-11-07T18:00:00.000Z",
+      "last_updated": "2026-11-07T18:59:00.000Z",
+      "context": {"parent_id": null}
+    },
+    "sensor.springfield_humidity": {
+      "entity_id": "sensor.springfield_humidity",
+      "state": "71",
+      "attributes": {"friendly_name": "springfield humidity"},
+      "last_changed": "2026-11-07T18:00:00.000Z",
+      "last_updated": "2026-11-07T18:59:00.000Z",
+      "context": {"parent_id": null}
+    },
+    "sensor.springfield_uv_index": {
+      "entity_id": "sensor.springfield_uv_index",
+      "state": "1",
+      "attributes": {"friendly_name": "springfield uv index"},
+      "last_changed": "2026-11-07T18:00:00.000Z",
+      "last_updated": "2026-11-07T18:59:00.000Z",
+      "context": {"parent_id": null}
+    },
+    "sensor.springfield_aqhi": {
+      "entity_id": "sensor.springfield_aqhi",
+      "state": "2",
+      "attributes": {"friendly_name": "springfield aqhi"},
+      "last_changed": "2026-11-07T18:00:00.000Z",
+      "last_updated": "2026-11-07T18:59:00.000Z",
+      "context": {"parent_id": null}
+    },
+    "sensor.springfield_dew_point": {
+      "entity_id": "sensor.springfield_dew_point",
+      "state": "-0.5",
+      "attributes": {"friendly_name": "springfield dew point"},
+      "last_changed": "2026-11-07T18:00:00.000Z",
+      "last_updated": "2026-11-07T18:59:00.000Z",
+      "context": {"parent_id": null}
+    },
+    "sensor.springfield_barometric_pressure": {
+      "entity_id": "sensor.springfield_barometric_pressure",
+      "state": "101.9",
+      "attributes": {"friendly_name": "springfield barometric pressure"},
+      "last_changed": "2026-11-07T18:00:00.000Z",
+      "last_updated": "2026-11-07T18:59:00.000Z",
+      "context": {"parent_id": null}
+    },
+    "sensor.springfield_tendency": {
+      "entity_id": "sensor.springfield_tendency",
+      "state": "rising",
+      "attributes": {"friendly_name": "springfield tendency"},
+      "last_changed": "2026-11-07T18:00:00.000Z",
+      "last_updated": "2026-11-07T18:59:00.000Z",
+      "context": {"parent_id": null}
+    },
+    "sensor.springfield_wind_gust": {
+      "entity_id": "sensor.springfield_wind_gust",
+      "state": "25",
+      "attributes": {"friendly_name": "springfield wind gust"},
+      "last_changed": "2026-11-07T18:00:00.000Z",
+      "last_updated": "2026-11-07T18:59:00.000Z",
+      "context": {"parent_id": null}
+    },
+    "sensor.springfield_observation_time": {
+      "entity_id": "sensor.springfield_observation_time",
+      "state": "2026-11-07T18:30:00.000Z",
+      "attributes": {"friendly_name": "springfield observation time"},
+      "last_changed": "2026-11-07T18:00:00.000Z",
+      "last_updated": "2026-11-07T18:59:00.000Z",
+      "context": {"parent_id": null}
+    },
+    "sensor.springfield_summary": {
+      "entity_id": "sensor.springfield_summary",
+      "state": "Sunny with cloudy periods.",
+      "attributes": {"friendly_name": "springfield summary"},
+      "last_changed": "2026-11-07T18:00:00.000Z",
+      "last_updated": "2026-11-07T18:59:00.000Z",
+      "context": {"parent_id": null}
+    },
+    "sensor.house_power": {
+      "entity_id": "sensor.house_power",
+      "state": "3240",
+      "attributes": {"friendly_name": "house power", "unit_of_measurement": "W"},
+      "last_changed": "2026-11-07T18:00:00.000Z",
+      "last_updated": "2026-11-07T18:59:00.000Z",
+      "context": {"parent_id": null}
+    },
+    "climate.living_room": {
+      "entity_id": "climate.living_room",
+      "state": "heat",
+      "attributes": {"friendly_name": "Living room", "current_temperature": 20, "temperature": 21, "hvac_action": "heating", "min_temp": 5, "max_temp": 30},
+      "last_changed": "2026-11-07T18:00:00.000Z",
+      "last_updated": "2026-11-07T18:59:00.000Z",
+      "context": {"parent_id": null}
+    },
+    "sensor.living_room_temperature": {
+      "entity_id": "sensor.living_room_temperature",
+      "state": "20",
+      "attributes": {"friendly_name": "living room temperature", "unit_of_measurement": "°C"},
+      "last_changed": "2026-11-07T18:00:00.000Z",
+      "last_updated": "2026-11-07T18:59:00.000Z",
+      "context": {"parent_id": null}
+    },
+    "person.alex": {
+      "entity_id": "person.alex",
+      "state": "home",
+      "attributes": {"friendly_name": "Alex Example"},
+      "last_changed": "2026-11-07T18:00:00.000Z",
+      "last_updated": "2026-11-07T18:59:00.000Z",
+      "context": {"parent_id": null}
+    }
+  },
+  "entities": {
+    "light.living_room_1": {"entity_id": "light.living_room_1", "area_id": "living_room", "platform": "hue", "device_id": "device_001"},
+    "climate.living_room": {"entity_id": "climate.living_room", "area_id": "living_room", "platform": "demo"}
+  },
+  "devices": {
+    "device_001": {"area_id": "living_room", "name": "Living room lamp", "id": "device_001"}
+  },
+  "areas": {
+    "living_room": {"area_id": "living_room", "name": "Living room"},
+    "office": {"area_id": "office", "name": "Office"},
+    "bedroom": {"area_id": "bedroom", "name": "Bedroom"},
+    "garage": {"area_id": "garage", "name": "Garage"},
+    "kitchen": {"area_id": "kitchen", "name": "Kitchen"}
+  },
+  "statistics": {
+    "5minute@2026-11-06T17:48:00.000Z": {
+      "sensor.springfield_temperature": [
+        {"start": 1793987280000, "end": 1793987580000, "mean": 10, "min": 9.5, "max": 10.5, "change": 0, "sum": 0},
+        {"start": 1793987580000, "end": 1793987880000, "mean": 10.5, "min": 10, "max": 11, "change": 1, "sum": 0},
+        {"start": 1793987880000, "end": 1793988180000, "mean": 11, "min": 10.5, "max": 11.5, "change": 2, "sum": 0},
+        {"start": 1793988180000, "end": 1793988480000, "mean": 11.5, "min": 11, "max": 12, "change": 0, "sum": 0},
+        {"start": 1793988480000, "end": 1793988780000, "mean": 12, "min": 11.5, "max": 12.5, "change": 1, "sum": 0},
+        {"start": 1793988780000, "end": 1793989080000, "mean": 12.5, "min": 12, "max": 13, "change": 2, "sum": 0},
+        {"start": 1793989080000, "end": 1793989380000, "mean": 13, "min": 12.5, "max": 13.5, "change": 0, "sum": 0},
+        {"start": 1793989380000, "end": 1793989680000, "mean": 10, "min": 9.5, "max": 10.5, "change": 1, "sum": 0},
+        {"start": 1793989680000, "end": 1793989980000, "mean": 10.5, "min": 10, "max": 11, "change": 2, "sum": 0},
+        {"start": 1793989980000, "end": 1793990280000, "mean": 11, "min": 10.5, "max": 11.5, "change": 0, "sum": 0},
+        {"start": 1793990280000, "end": 1793990580000, "mean": 11.5, "min": 11, "max": 12, "change": 1, "sum": 0},
+        {"start": 1793990580000, "end": 1793990880000, "mean": 12, "min": 11.5, "max": 12.5, "change": 2, "sum": 0}
+      ]
+    },
+    "hour@2025-11-06T19:00:00.000Z": {
+      "sensor.springfield_temperature": [
+        {"start": 1762455600000, "end": 1762459200000, "mean": 10, "min": 9.5, "max": 10.5, "change": 0, "sum": 0},
+        {"start": 1762459200000, "end": 1762462800000, "mean": 10.5, "min": 10, "max": 11, "change": 1, "sum": 0},
+        {"start": 1762462800000, "end": 1762466400000, "mean": 11, "min": 10.5, "max": 11.5, "change": 2, "sum": 0},
+        {"start": 1762466400000, "end": 1762470000000, "mean": 11.5, "min": 11, "max": 12, "change": 0, "sum": 0},
+        {"start": 1762470000000, "end": 1762473600000, "mean": 12, "min": 11.5, "max": 12.5, "change": 1, "sum": 0},
+        {"start": 1762473600000, "end": 1762477200000, "mean": 12.5, "min": 12, "max": 13, "change": 2, "sum": 0},
+        {"start": 1762477200000, "end": 1762480800000, "mean": 13, "min": 12.5, "max": 13.5, "change": 0, "sum": 0},
+        {"start": 1762480800000, "end": 1762484400000, "mean": 10, "min": 9.5, "max": 10.5, "change": 1, "sum": 0},
+        {"start": 1762484400000, "end": 1762488000000, "mean": 10.5, "min": 10, "max": 11, "change": 2, "sum": 0},
+        {"start": 1762488000000, "end": 1762491600000, "mean": 11, "min": 10.5, "max": 11.5, "change": 0, "sum": 0},
+        {"start": 1762491600000, "end": 1762495200000, "mean": 11.5, "min": 11, "max": 12, "change": 1, "sum": 0},
+        {"start": 1762495200000, "end": 1762498800000, "mean": 12, "min": 11.5, "max": 12.5, "change": 2, "sum": 0},
+        {"start": 1762498800000, "end": 1762502400000, "mean": 12.5, "min": 12, "max": 13, "change": 0, "sum": 0},
+        {"start": 1762502400000, "end": 1762506000000, "mean": 13, "min": 12.5, "max": 13.5, "change": 1, "sum": 0},
+        {"start": 1762506000000, "end": 1762509600000, "mean": 10, "min": 9.5, "max": 10.5, "change": 2, "sum": 0},
+        {"start": 1762509600000, "end": 1762513200000, "mean": 10.5, "min": 10, "max": 11, "change": 0, "sum": 0},
+        {"start": 1762513200000, "end": 1762516800000, "mean": 11, "min": 10.5, "max": 11.5, "change": 1, "sum": 0},
+        {"start": 1762516800000, "end": 1762520400000, "mean": 11.5, "min": 11, "max": 12, "change": 2, "sum": 0},
+        {"start": 1762520400000, "end": 1762524000000, "mean": 12, "min": 11.5, "max": 12.5, "change": 0, "sum": 0},
+        {"start": 1762524000000, "end": 1762527600000, "mean": 12.5, "min": 12, "max": 13, "change": 1, "sum": 0},
+        {"start": 1762527600000, "end": 1762531200000, "mean": 13, "min": 12.5, "max": 13.5, "change": 2, "sum": 0},
+        {"start": 1762531200000, "end": 1762534800000, "mean": 10, "min": 9.5, "max": 10.5, "change": 0, "sum": 0},
+        {"start": 1762534800000, "end": 1762538400000, "mean": 10.5, "min": 10, "max": 11, "change": 1, "sum": 0},
+        {"start": 1762538400000, "end": 1762542000000, "mean": 11, "min": 10.5, "max": 11.5, "change": 2, "sum": 0}
+      ]
+    },
+    "day@2025-10-03T19:00:00.000Z": {
+      "sensor.springfield_temperature": [
+        {"start": 1759518000000, "end": 1759604400000, "mean": 10, "min": 9.5, "max": 10.5, "change": 0, "sum": 0},
+        {"start": 1759604400000, "end": 1759690800000, "mean": 10.5, "min": 10, "max": 11, "change": 1, "sum": 0},
+        {"start": 1759690800000, "end": 1759777200000, "mean": 11, "min": 10.5, "max": 11.5, "change": 2, "sum": 0},
+        {"start": 1759777200000, "end": 1759863600000, "mean": 11.5, "min": 11, "max": 12, "change": 0, "sum": 0},
+        {"start": 1759863600000, "end": 1759950000000, "mean": 12, "min": 11.5, "max": 12.5, "change": 1, "sum": 0},
+        {"start": 1759950000000, "end": 1760036400000, "mean": 12.5, "min": 12, "max": 13, "change": 2, "sum": 0},
+        {"start": 1760036400000, "end": 1760122800000, "mean": 13, "min": 12.5, "max": 13.5, "change": 0, "sum": 0},
+        {"start": 1760122800000, "end": 1760209200000, "mean": 10, "min": 9.5, "max": 10.5, "change": 1, "sum": 0},
+        {"start": 1760209200000, "end": 1760295600000, "mean": 10.5, "min": 10, "max": 11, "change": 2, "sum": 0},
+        {"start": 1760295600000, "end": 1760382000000, "mean": 11, "min": 10.5, "max": 11.5, "change": 0, "sum": 0},
+        {"start": 1760382000000, "end": 1760468400000, "mean": 11.5, "min": 11, "max": 12, "change": 1, "sum": 0},
+        {"start": 1760468400000, "end": 1760554800000, "mean": 12, "min": 11.5, "max": 12.5, "change": 2, "sum": 0},
+        {"start": 1760554800000, "end": 1760641200000, "mean": 12.5, "min": 12, "max": 13, "change": 0, "sum": 0},
+        {"start": 1760641200000, "end": 1760727600000, "mean": 13, "min": 12.5, "max": 13.5, "change": 1, "sum": 0}
+      ]
+    }
+  }
+}
