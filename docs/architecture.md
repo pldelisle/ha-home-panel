@@ -125,7 +125,7 @@ A pattern named in code uses the glossary's term, and the glossary uses the lite
 
 **No `innerHTML` outside legacy.** The legacy class sets `innerHTML` in dozens of places (52 when this page was written) and escapes values by hand. New code uses Lit templates, with lists keyed by entity id, so no hand escaper is needed and focus, open sheets and drags survive a `hass` update.
 
-**Strings through `t()`.** A string the user reads is a catalog key, looked up with `t(key, values)`. English is the source of keys and French must have every key. A missing key is a compile error and a missing French translation is a test failure ([spec 11](specs/11-catalogs-and-formatters.md), planned).
+**Strings through `t()`.** A string the user reads is a catalog key, looked up with `t(key, values)`. English is the source of keys and French must have every key. A missing key is a compile error and a missing French translation is a test failure ([spec 11](specs/11-catalogs-and-formatters.md); the catalogs and `t` are on the store, the charts-failed toast is the first string through them).
 
 **Formats through the formatters.** Dates, times and numbers go through the formatter set, built on `Intl` from the Home Assistant profile, never through a hard-coded `en-CA`. The formatters are the one place that knows the three house rules: English `pm` without periods, French `16 h` for a time on the hour, and a narrow no-break space as the French thousands separator. Planned in [spec 11](specs/11-catalogs-and-formatters.md).
 

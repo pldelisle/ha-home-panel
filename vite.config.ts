@@ -19,12 +19,13 @@ export const define = {__VERSION__: JSON.stringify(pkg.version)};
 
 // Every chunk with code keeps its map, so a stack trace from a chart or a flow names the file and line it came from,
 // but the maps leave out the libraries' own text: with it they were 9.9 MB for Mermaid alone and nearly tripled the
-// release zip. The panel's own files keep their text, in home-panel.js.map and in any chunk.
+// release zip. The panel's own files keep their text, in home-panel.js.map and in any chunk. The entry's map is held
+// to the same rule since intl-messageformat, a production library, is built into the entry.
 const chunkMapsWithoutLibrarySources: Plugin = {
-  name: 'chunk-maps-without-library-sources',
+  name: 'maps-without-library-sources',
   generateBundle(_, bundle) {
     for (const f of Object.values(bundle))
-      if (f.type === 'asset' && /^chunks\/.+\.js\.map$/.test(f.fileName)) {
+      if (f.type === 'asset' && /^(chunks\/.+|home-panel)\.js\.map$/.test(f.fileName)) {
         const m = JSON.parse(String(f.source)) as {sources: string[]; sourcesContent?: (string | null)[]};
         m.sourcesContent = m.sources.map((s, i) =>
           s.includes('node_modules/') ? null : (m.sourcesContent?.[i] ?? null),
