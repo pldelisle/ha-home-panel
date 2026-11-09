@@ -5937,11 +5937,11 @@ export class HomePanel extends HTMLElement {
       );
     }
   }
-  // Home pane, as sketched: weather and the house on the left, six big tiles, then doors and what's coming up
   // The configuration card (spec 13): one line per setting the panel could not use, for an admin, while the store holds
   // problems; nothing at all otherwise (the host stays hidden and empty, so a clean config draws exactly what it always drew).
   // The text is the catalog's, in the user's language, escaped like every legacy string. translate="no": it is already in
-  // that language, and the French layer (which reads English) must not look it up a second time.
+  // that language, and the French layer (which reads English) must not look it up a second time, neither its text nor any
+  // aria-label or title the aside may one day carry (the layer skips both under that attribute).
   renderConfigCard() {
     const host = this.$('cfgerr');
     if (!host) return;
@@ -5960,6 +5960,7 @@ export class HomePanel extends HTMLElement {
     );
     host.hidden = !problems.length;
   }
+  // Home pane, as sketched: weather and the house on the left, six big tiles, then doors and what's coming up
   renderHome() {
     if (this.tab !== 'home') return;
     this.renderConfigCard();

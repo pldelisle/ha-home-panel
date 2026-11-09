@@ -94,8 +94,9 @@ test.describe('a bad icon', () => {
     // the tablet lists the rooms as `citem` rows, the phone as `stile` tiles
     const office = house.root().locator('#pane-climate :is(.citem, .stile):visible', {hasText: 'Office'});
     await expect(office).toBeVisible();
-    // the glyph the guess draws: a real drawing, not the text "undefined"
-    await expect(office.locator('.ic svg path').first()).toHaveAttribute('d', /\S/);
+    // the glyph the guess draws for an "Office" is the desk (guessIcon in src/core/room-icons.ts; the path is the legacy
+    // class's ICON.desk), not the text "undefined"
+    await expect(office.locator('.ic svg path')).toHaveAttribute('d', 'M3 9h18M5 9v11M19 9v11M14 9v6h5');
     await expect(office.locator('.ic')).not.toContainText('undefined');
   });
 });

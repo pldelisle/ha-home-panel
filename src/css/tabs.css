@@ -311,12 +311,15 @@
   grid-column: 1/-1;
   min-width: 0;
 }
-.cfgerrh[hidden] {
-  display: none;
-}
 .cfgerr {
   outline: 2px solid color-mix(in srgb, var(--warn) 70%, transparent);
   outline-offset: -2px;
+}
+/* Increase Contrast: the edge is decorative (the heading carries the meaning), but it turns solid like the other lines do */
+@media (prefers-contrast: more) {
+  .cfgerr {
+    outline-color: var(--warn);
+  }
 }
 .cfgerr h3 {
   margin: 0 0 6px;
@@ -348,6 +351,9 @@
   font-family: var(--f-mono);
   font-size: 0.92em;
   padding: 1px 6px;
+  /* the pill's right padding sits under the text that follows: the English colon reads attached (`peoples:`), and the
+     French space before its colon (`peoples :`) stays a space */
+  margin-right: -5px;
   border-radius: 6px;
   background: var(--card2);
   color: var(--fg);

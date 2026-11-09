@@ -52,6 +52,8 @@ button,
   --tx: 1;
   --f-num: 'Montserrat', ui-sans-serif, system-ui, sans-serif;
   --f-body: 'Montserrat', ui-sans-serif, system-ui, sans-serif;
+  /* the one place a second face is meant: a config path is code, so the configuration card sets it in the system's monospace
+     (the HIG asks to minimise typefaces; this one is loaded by nothing, the device already has it) */
   --f-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
   --num-w: 600;
   --shadow: 0 0 0 1px rgba(60, 50, 40, 0.03), 0 4px 12px -4px rgba(60, 50, 40, 0.07);

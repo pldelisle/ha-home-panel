@@ -199,6 +199,8 @@ function frNode(n, translate, seen) {
     seen.set(n, n.data);
   } else if (n.nodeType === 1) {
     if (n.nodeName === 'STYLE' || n.nodeName === 'SCRIPT') return;
+    // translate="no" covers the element's own labels too, not only the text under it
+    if (n.closest && n.closest('[translate="no"]')) return;
     const done = seen.get(n) || {};
     for (const a of FR_ATTR) {
       const v = n.getAttribute(a);

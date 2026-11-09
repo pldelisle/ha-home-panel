@@ -97,7 +97,7 @@ const BROKEN_CFG = {
   idle_stack: {reminders: [{at: '8pm'}]}, // notATime
 };
 for (const lang of ['en', 'fr'] as const) {
-  test.describe(`config-error, ${lang}`, () => {
+  test.describe(`The config error card in ${lang === 'en' ? 'English' : 'French'}`, () => {
     test.use({viewport: VIEWPORTS.tablet, houseOpts: {cfg: BROKEN_CFG, lang, time: AFTERNOON, frozen: true}});
     test('Home tab', async ({house}) => {
       await house.tab('home');
