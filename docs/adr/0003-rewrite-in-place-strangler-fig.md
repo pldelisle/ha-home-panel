@@ -14,11 +14,11 @@ Rewrite in place, not as a parallel version 3. `main` stays releasable at every 
 
 - The household keeps a working panel through every release, and a bad step is one small pull request to revert.
 - A pull request touches one feature's folder, so threads rarely conflict.
-- Two styles of code coexist until phase 4: the old class and the new layers. The old renderer only shrinks, and its remaining size is a measured number.
+- Two styles of code coexist until the old class is deleted at the end of phase 3: the old class and the new layers. The old renderer only shrinks, and its remaining size is a number in CI output (spec 09).
 - New fixes land in code that is about to be moved, and the move pull request must rebase over them.
 - No visual improvement can ride along with a restructure, so redesign work waits for its own pull request.
 - The migration is slow by design: each step needs a release, a changeset and a green baseline run.
 
 ## Read
 
-`docs/specs/production-grade-refactor.md`, "Solution" and "Global decisions" (rewrite in place, gates, no behaviour change inside a structural phase, parallel work rule); `docs/production-grade-plan.md`, "Migration plan".
+`docs/specs/production-grade-refactor.md`, "Solution" and "Global decisions" (rewrite in place, gates, no behaviour change inside a structural phase, parallel work rule); `docs/production-grade-plan.md`, "Migration plan"; `docs/specs/09-architecture-foundations.md` (the Fowler references).

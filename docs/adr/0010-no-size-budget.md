@@ -14,7 +14,8 @@ Remove the `limit` on the entry in `package.json`. `npm run size` and the CI ste
 
 - A pull request is never blocked by the size of the bundle, so adding a feature does not start with a negotiation about a number.
 - A size regression no longer fails anything. Noticing it is a reviewer's job, from the figures in the CI log.
-- The main chunk can creep, and the programme's goal of a lighter panel is no longer enforced by a machine.- The tooling stays in place, so a budget can be restored by adding the limit back.
+- The main chunk can creep, and the programme's goal of a lighter panel is no longer enforced by a machine.
+- The tooling stays in place, so a budget can be restored by adding the limit back.
 
 ## Read
 
