@@ -49,7 +49,7 @@ const HOUR_MS = 36e5;
 type HouseRule = (text: string) => string;
 const asIs: HouseRule = text => text;
 
-// The three house rules, as functions of a formatted string. Rule 1: the English day period, today's `ampm()`.
+// The three house rules, as functions of a formatted string. Rule 1: the English day period, the former `ampm()`.
 const englishDayPeriod: HouseRule = text => text.replace(/\s?([ap])\.\s?m\.?/i, ' $1m');
 // Rule 2: French time on the hour, and the bare hour `Intl` gives for fr-* gains " h", as the rewrite layer's `frH`.
 const frenchOnTheHour: HouseRule = text => text.replace(/ 00$/, '');
@@ -102,7 +102,7 @@ export function createFormatters(locale: PanelLocaleSpec): Formatters {
   const integer = numberFormat(0);
   const numbers = new Map<number, Intl.NumberFormat>();
 
-  // the hour-bucket cache of the legacy `localParts`: an instant is formatted at the top of its UTC hour, which is also
+  // the hour-bucket cache of the former `localParts`: an instant is formatted at the top of its UTC hour, which is also
   // the top of its local hour in every whole-hour zone; a half-hour zone (Asia/Kolkata) can be given the previous hour
   const cache = new Map<number, DayParts>();
 
@@ -137,7 +137,7 @@ export function createFormatters(locale: PanelLocaleSpec): Formatters {
       const part = clock(now);
       return Number(part('hour')) + Number(part('minute')) / 60;
     },
-    // Math.round first: Intl rounds a half away from zero, the legacy `Math.round(v).toLocaleString` does not
+    // Math.round first: Intl rounds a half away from zero, the former `Math.round(v).toLocaleString` does not
     integer: n => numberRule(integer.format(Math.round(n))),
     number: (n, maxFraction) => {
       const digits = Math.min(maxFraction ?? 1, 2);

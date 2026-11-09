@@ -26,6 +26,14 @@ export interface LocaleDefaults {
   browserHour12?: boolean;
 }
 
+/**
+ * The English the panel is written in, whatever the profile says: the old class formats with it (the rewrite layer parses English).
+ * Deleted in phase 4 with `fmtEn`.
+ */
+export function englishLocale(timeZone: string): PanelLocaleSpec {
+  return {language: 'en', tag: 'en-CA', timeZone, hour12: true, numberLocale: 'en-CA', useGrouping: true};
+}
+
 export function panelLocale(hass: PanelHass, defaults: LocaleDefaults): PanelLocaleSpec {
   const lang = hass.locale?.language ?? hass.language ?? 'en';
   // the region matters: plain `fr` gives 16:07 where `fr-CA` gives 16 h 07

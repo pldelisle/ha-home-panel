@@ -1,6 +1,6 @@
 // The locale derivation: a Home Assistant profile and the browser's defaults in, the spec `Intl` is given out.
 import {describe, expect, test} from 'vitest';
-import {panelLocale} from '../../src/core/i18n/locale.ts';
+import {englishLocale, panelLocale} from '../../src/core/i18n/locale.ts';
 import type {PanelHass} from '../../src/core/hass.ts';
 import {fakeHass} from './fake-hass.ts';
 
@@ -81,5 +81,18 @@ describe('numberLocale and useGrouping from number_format', () => {
     const spec = panelLocale(profile('fr', 'CA', {number_format}), DEFAULTS);
     expect(spec.numberLocale).toBe(numberLocale);
     expect(spec.useGrouping).toBe(useGrouping);
+  });
+});
+
+describe('englishLocale', () => {
+  test('is the English the old class reads, whatever the profile says, in the given zone', () => {
+    expect(englishLocale('Europe/Paris')).toEqual({
+      language: 'en',
+      tag: 'en-CA',
+      timeZone: 'Europe/Paris',
+      hour12: true,
+      numberLocale: 'en-CA',
+      useGrouping: true,
+    });
   });
 });

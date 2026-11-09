@@ -99,20 +99,8 @@ const auDur = d => {
       ? `${Math.round(s / 60)} min`
       : `${s} s`;
 };
-const auClock = (t, tz) =>
-  new Date(t).toLocaleTimeString('en-CA', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-    timeZone: tz,
-  });
-const auHM = (t, tz) =>
-  new Date(t)
-    .toLocaleTimeString('en-CA', {hour: '2-digit', minute: '2-digit', hour12: false, timeZone: tz})
-    .replace(/^24/, '00');
-const auMins = (t, tz) => {
-  const [h, m] = auHM(t, tz).split(':').map(Number);
+const auMins = (t, fmt) => {
+  const [h, m] = fmt.time24(new Date(t)).split(':').map(Number);
   return h * 60 + m;
 };
 const auShortAlias = a => {
@@ -389,7 +377,6 @@ export const autoMethods = {
   // ---------- the graph: nodes, edges, and what the run lit up ----------
   // cfg = automation config; tr = full trace (or null): returns {def, sentence, failed, waiting}
   auGraph(cfg, tr, sum) {
-    const tz = this.store.timeZone;
     const T = (tr && tr.trace) || {},
       nodes = [],
       edges = [],
@@ -409,7 +396,7 @@ export const autoMethods = {
         vis = hasKey(path);
       let cls = vis ? 'hit' : 'off',
         sub = '';
-      if (vis && e.timestamp) sub = auClock(e.timestamp, tz);
+      if (vis && e.timestamp) sub = this.fmtEn.time24s(new Date(e.timestamp));
       if (vis && r && r.result === false) {
         cls = 'no';
         sub = 'no';
@@ -422,7 +409,7 @@ export const autoMethods = {
         sub = r.wait.completed === false || (r.wait.trigger === null && !r.wait.completed) ? 'timed out' : 'done';
       if (running && lastStep === path) {
         cls = 'run';
-        sub = 'waiting here' + (e && e.timestamp ? ' since ' + auHM(e.timestamp, tz) : '');
+        sub = 'waiting here' + (e && e.timestamp ? ' since ' + this.fmtEn.time24(new Date(e.timestamp)) : '');
       }
       N[id] = {id, path, d, cls, vis, shape, sub, r, ...extra};
       nodes.push(N[id]);
@@ -601,10 +588,10 @@ export const autoMethods = {
     if (tr || sum) {
       parts.push(
         firedNode && firedNode.d.k === 'Every'
-          ? `Every ${firedNode.d.t}${started ? ', at ' + auHM(started, tz) : ''}`
+          ? `Every ${firedNode.d.t}${started ? ', at ' + this.fmtEn.time24(new Date(started)) : ''}`
           : firedNode && firedNode.d.k === 'Time'
             ? `At ${firedNode.d.t}`
-            : `${firedNode ? firedNode.d.t : cap((sum && sum.trigger) || 'Started')}${started ? ' at ' + auHM(started, tz) : ''}`,
+            : `${firedNode ? firedNode.d.t : cap((sum && sum.trigger) || 'Started')}${started ? ' at ' + this.fmtEn.time24(new Date(started)) : ''}`,
       );
       if (failed && exec === 'failed_conditions') parts.push(`stopped at “${auCut(failed.d.t, 60)}”`);
       else if (exec === 'failed_single' || exec === 'failed_max_runs') parts.push('skipped, it was already running');
@@ -801,10 +788,9 @@ export const autoMethods = {
   // upcoming scheduled runs today, from time and sun triggers
   auUpcoming(cfgs, A) {
     const now = Date.now(),
-      today = this.localDay(now),
+      today = this.fmtEn.isoDay(now),
       out = [],
-      tz = this.store.timeZone,
-      nowM = auMins(now, tz);
+      nowM = auMins(now, this.fmtEn);
     for (const a of A) {
       const cfg = cfgs[a.item];
       if (!cfg || !a.on) continue;
@@ -821,8 +807,8 @@ export const autoMethods = {
           const s = this.attr('sun.sun', t.event === 'sunrise' ? 'next_rising' : 'next_setting'),
             id = t.event === 'sunrise' ? 'sensor.sun_next_rising' : 'sensor.sun_next_setting',
             v = s || (ok(this.st(id)) ? this.st(id).state : null);
-          if (v && this.localDay(Date.parse(v)) === today && Date.parse(v) > now)
-            out.push({item: a.item, name: a.name, t: Date.parse(v), mins: auMins(v, tz)});
+          if (v && this.fmtEn.isoDay(Date.parse(v)) === today && Date.parse(v) > now)
+            out.push({item: a.item, name: a.name, t: Date.parse(v), mins: auMins(v, this.fmtEn)});
         }
       }
     }
@@ -831,7 +817,6 @@ export const autoMethods = {
   // ---------- drawing ----------
   renderAuto() {
     if (this.view !== 'tabs' || this.tab !== 'auto' || !this.hass) return;
-    const tz = this.store.timeZone;
     const A = this.auAutos(),
       sig = A.map(a => a.entity + a.last + a.current + a.on).join('|');
     if (sig !== this.auSig) {
@@ -851,7 +836,7 @@ export const autoMethods = {
     this.auLoad(false);
     const cfgs = this.auCfg || {},
       list = (this.auList || []).slice().sort((a, b) => Date.parse(a.timestamp.start) - Date.parse(b.timestamp.start));
-    const midnight = Date.now() - auMins(Date.now(), tz) * 60000 - new Date().getSeconds() * 1000;
+    const midnight = Date.now() - auMins(Date.now(), this.fmtEn) * 60000 - new Date().getSeconds() * 1000;
     const today = list.filter(sm => Date.parse(sm.timestamp.start) >= midnight && !this.auNoise(sm));
     const byItem = Object.fromEntries(A.filter(a => a.item).map(a => [a.item, a]));
     const runs = today.filter(
@@ -876,11 +861,11 @@ export const autoMethods = {
     }
     // Today timeline
     const up = this.auUpcoming(cfgs, A),
-      nowM = auMins(Date.now(), tz);
+      nowM = auMins(Date.now(), this.fmtEn);
     const dots = [
       ...today.map(sm => ({
         sm,
-        mins: auMins(sm.timestamp.start, tz),
+        mins: auMins(sm.timestamp.start, this.fmtEn),
         item: sm.item_id,
         name: (byItem[sm.item_id] || {}).name || sm.item_id,
       })),
@@ -926,7 +911,7 @@ export const autoMethods = {
             : c === 'err'
               ? 'error'
               : 'ran';
-    const timeOf = x => (x.up ? auHM(x.t, tz) : auHM(x.sm.timestamp.start, tz));
+    const timeOf = x => (x.up ? this.fmtEn.time24(new Date(x.t)) : this.fmtEn.time24(new Date(x.sm.timestamp.start)));
     const rowEnd = [-99, -99];
     const dotsH = groups
       .map(g => {
@@ -960,9 +945,9 @@ export const autoMethods = {
     const nextUp = up[0],
       nextUp2 = up[1];
     const skipped = today.filter(sm => sm.script_execution === 'failed_conditions').length;
-    const todayCard = `<section class="card autoday"><div class="shead"><div><h3>Today</h3><p>One dot per run, a number when several ran close together. Filled ran, ringed red checked and did nothing, green is running now, hollow is still to come. Tap one to draw it below.</p></div><span class="pill">${esc(new Date().toLocaleDateString('en-CA', {weekday: 'short', month: 'short', day: 'numeric', timeZone: tz}))} · ${auHM(Date.now(), tz)}</span></div>
+    const todayCard = `<section class="card autoday"><div class="shead"><div><h3>Today</h3><p>One dot per run, a number when several ran close together. Filled ran, ringed red checked and did nothing, green is running now, hollow is still to come. Tap one to draw it below.</p></div><span class="pill">${esc(this.fmtEn.dateWeekday(new Date()))} · ${this.fmtEn.time24(Date.now())}</span></div>
       <div class="autl"><div class="axis"></div><div class="past" style="width:${((nowM / 1440) * 100).toFixed(2)}%"></div><div class="nowl" style="left:${((nowM / 1440) * 100).toFixed(2)}%"></div>${[0, 6, 12, 18].map(h => `<span class="hr" style="left:${(h / 24) * 100}%">${String(h).padStart(2, '0')}:00</span>`).join('')}${dotsH}</div>
-      <div class="tiles" style="grid-template-columns:repeat(3,minmax(0,1fr))">${tile(['Ran today', runs.length, '', skipped ? `${skipped} more checked and did nothing` : 'every run passed its checks'])}${tile(['Next', nextUp ? auHM(nextUp.t, tz) : '–', '', nextUp ? esc(auShortAlias(nextUp.name)) : 'nothing else scheduled today'])}${tile(['Then', nextUp2 ? auHM(nextUp2.t, tz) : '–', '', nextUp2 ? esc(auShortAlias(nextUp2.name)) : '—'])}</div></section>`;
+      <div class="tiles" style="grid-template-columns:repeat(3,minmax(0,1fr))">${tile(['Ran today', runs.length, '', skipped ? `${skipped} more checked and did nothing` : 'every run passed its checks'])}${tile(['Next', nextUp ? this.fmtEn.time24(new Date(nextUp.t)) : '–', '', nextUp ? esc(auShortAlias(nextUp.name)) : 'nothing else scheduled today'])}${tile(['Then', nextUp2 ? this.fmtEn.time24(new Date(nextUp2.t)) : '–', '', nextUp2 ? esc(auShortAlias(nextUp2.name)) : '—'])}</div></section>`;
     // flow cards
     const [sel, runN, dec, done] = this.auPicks(),
       seen = new Set(),
@@ -989,10 +974,10 @@ export const autoMethods = {
         : sm.state === 'running'
           ? `<span class="pill run" data-since="${esc(sm.timestamp.start)}">running ${this.auElapsed(sm.timestamp.start)}</span>`
           : sm.script_execution === 'failed_conditions'
-            ? `<span class="pill no">stopped ${auHM(sm.timestamp.start, tz)}</span>`
+            ? `<span class="pill no">stopped ${this.fmtEn.time24(new Date(sm.timestamp.start))}</span>`
             : sm.script_execution === 'error'
-              ? `<span class="pill no">error ${auHM(sm.timestamp.start, tz)}</span>`
-              : `<span class="pill ok">done ${sm.timestamp.finish ? auClock(sm.timestamp.finish, tz) : auHM(sm.timestamp.start, tz)}</span>`;
+              ? `<span class="pill no">error ${this.fmtEn.time24(new Date(sm.timestamp.start))}</span>`
+              : `<span class="pill ok">done ${sm.timestamp.finish ? this.fmtEn.time24s(new Date(sm.timestamp.finish)) : this.fmtEn.time24(new Date(sm.timestamp.start))}</span>`;
       const runsOf =
         kind === 'Selected'
           ? (this.auList || [])
@@ -1002,7 +987,7 @@ export const autoMethods = {
           : [];
       const picker =
         runsOf.length > 1
-          ? `<div class="aupick">${runsOf.map(x => `<button type="button" class="chip${sm && x.run_id === sm.run_id ? ' sel' : ''}" data-run="${esc(x.run_id)}" data-item="${esc(it)}"><span class="dot" style="background:var(--${x.state === 'running' ? 'warn' : x.script_execution === 'failed_conditions' || x.script_execution === 'error' ? 'crit' : 'ok'})"></span>${this.localDay(Date.parse(x.timestamp.start)) === this.localDay(Date.now()) ? '' : esc(this.fmtDate(x.timestamp.start)) + ' '}${auHM(x.timestamp.start, tz)}</button>`).join('')}</div>`
+          ? `<div class="aupick">${runsOf.map(x => `<button type="button" class="chip${sm && x.run_id === sm.run_id ? ' sel' : ''}" data-run="${esc(x.run_id)}" data-item="${esc(it)}"><span class="dot" style="background:var(--${x.state === 'running' ? 'warn' : x.script_execution === 'failed_conditions' || x.script_execution === 'error' ? 'crit' : 'ok'})"></span>${this.fmtEn.isoDay(Date.parse(x.timestamp.start)) === this.fmtEn.isoDay(Date.now()) ? '' : esc(this.fmtEn.date(new Date(x.timestamp.start))) + ' '}${this.fmtEn.time24(new Date(x.timestamp.start))}</button>`).join('')}</div>`
           : '';
       const sentence =
         G.sentence ||
@@ -1025,7 +1010,7 @@ export const autoMethods = {
       .sort((x, y) => lastOf(y) - lastOf(x))
       .map(
         a =>
-          `<button type="button" class="chip auchip${a.on ? '' : ' offa'}${this.auSel && this.auSel.item === a.item ? ' sel' : ''}" data-au="${esc(a.item || '')}"${a.item ? '' : ' disabled'}>${esc(a.name)}<small>${!a.on ? 'off' : a.current ? 'running' : a.last ? (this.localDay(lastOf(a)) === this.localDay(Date.now()) ? auHM(a.last, tz) : this.fmtDate(a.last)) : 'never'}</small></button>`,
+          `<button type="button" class="chip auchip${a.on ? '' : ' offa'}${this.auSel && this.auSel.item === a.item ? ' sel' : ''}" data-au="${esc(a.item || '')}"${a.item ? '' : ' disabled'}>${esc(a.name)}<small>${!a.on ? 'off' : a.current ? 'running' : a.last ? (this.fmtEn.isoDay(lastOf(a)) === this.fmtEn.isoDay(Date.now()) ? this.fmtEn.time24(new Date(a.last)) : this.fmtEn.date(new Date(a.last))) : 'never'}</small></button>`,
       )
       .join('');
     const all = `<section class="card"><div class="shead"><div><h3>Every automation</h3><p>Latest first. Tap one to draw its flow with its last run lit up.</p></div></div><div class="auchips">${chips}</div></section>`;
