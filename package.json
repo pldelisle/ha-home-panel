@@ -58,7 +58,8 @@
     "@fontsource/montserrat": "5.3.0",
     "apexcharts": "3.45.2",
     "intl-messageformat": "12.1.5",
-    "mermaid": "11.17.2"
+    "mermaid": "11.17.2",
+    "superstruct": "2.0.2"
   },
   "size-limit": [
     {
