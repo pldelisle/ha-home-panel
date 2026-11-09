@@ -187,11 +187,13 @@ test('createFrench does nothing while the store is not French', () => {
 
 // the unit tests run without a DOM: a text node and an element are the few fields the translator reads
 const textNode = data => ({nodeType: 3, data, parentNode: {nodeName: 'P'}});
-const element = attrs => ({
+const element = (attrs, {noTranslate = false} = {}) => ({
   nodeType: 1,
   nodeName: 'BUTTON',
   getAttribute: a => attrs[a] ?? null,
   setAttribute: (a, v) => (attrs[a] = v),
+  // the element itself, or an ancestor, marked translate="no"
+  closest: sel => (noTranslate && sel === '[translate="no"]' ? {} : null),
 });
 
 test('createFrench translates text nodes and attributes, and keeps a name of the house untranslated', () => {
@@ -206,6 +208,15 @@ test('createFrench translates text nodes and attributes, and keeps a name of the
   expect(t.data).toBe('Bonsoir');
   expect(name.data).toBe('Tap to run');
   expect(attrs).toStrictEqual({'aria-label': 'Bonsoir', title: 'Tap to run'});
+});
+
+// the config card is drawn in the user's language already and marked translate="no": the layer leaves its text alone, and
+// would leave an aria-label or title on it alone too, so a label added to it one day cannot be translated twice
+test('createFrench leaves the labels of an element under translate="no" as they are', () => {
+  const fr = createFrench({hass: fakeHass(), isFrench: true, names: plain});
+  const attrs = {'aria-label': 'Good evening', title: 'Good evening'};
+  fr.node(element(attrs, {noTranslate: true}));
+  expect(attrs).toStrictEqual({'aria-label': 'Good evening', title: 'Good evening'});
 });
 
 test('createFrench translates a node it met while the store was English once the store turns French', () => {

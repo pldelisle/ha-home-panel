@@ -418,8 +418,12 @@
 .app.tabsv.cp .pane-home > .ph {
   display: none;
 }
+/* the configuration card stays the first thing on the Home tab: -2 only because the scenes row below is -1 (change both together) */
+.app.tabsv.cp .cfgerrh {
+  order: -2;
+}
 .app.tabsv.cp .hscenes {
-  order: -1;
+  order: -1; /* first of the pane's own content; the configuration card above is -2 to sit before it */
   display: flex;
   gap: 10px;
   margin: 0 -16px;
