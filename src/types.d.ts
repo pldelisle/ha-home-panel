@@ -57,6 +57,11 @@ export interface PanelConfig {
   split_light_areas?: string | string[];
   light_links?: LightLinkInput | LightLinkInput[];
   idle_stack?: {enabled?: boolean; sunrise_lights_off?: boolean; reminders?: ReminderInput | ReminderInput[]};
+  /**
+   * A name per language, for the name Home Assistant gives (the exact name), an entity id, an area id or a device id:
+   * `{'Living room': {fr: 'Salon'}}`. Passed through here; the schema ticket (#136) types and checks it.
+   */
+  names?: Record<string, Record<string, string>>;
 }
 
 // ---------- output: what resolveConfig() returns ----------
@@ -158,6 +163,8 @@ export interface ResolvedConfig {
   /** null when there is no house picture. Both are set when it is not null (one falls back to the other). */
   house: {day: string | null; night: string | null} | null;
   car: {name: string | null; color: string | null; battery_kwh: number | null};
+  /** The `names:` block as written, or an empty record; the store's name resolver reads it. */
+  names: Record<string, Record<string, string>>;
   stack: {on: boolean; sunriseOff: boolean; reminders: Reminder[]};
 }
 

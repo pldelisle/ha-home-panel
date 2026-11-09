@@ -18,6 +18,13 @@ export const FULL_CFG = {
   car: {color: '#B03A2E'},
 };
 
+// The display-name dictionary reads both ways, so the English test house read in French shows Salon, Cuisine, Bureau. The
+// French visual baselines keep the English names through the public `names:` seam, so that #134 (a minor change, whose
+// acceptance says the visual project passes with no baseline update) re-records none; names.spec.ts covers the translated reading.
+export const KEEP_ENGLISH_NAMES = Object.fromEntries(
+  ['Living room', 'Kitchen', 'Office', 'Bedroom'].map(name => [name, {fr: name}]),
+);
+
 // the kitchen's two groups are linked through a switch; the office is linked to the living room with no switch
 export const LINK_CFG = {
   ...FULL_CFG,

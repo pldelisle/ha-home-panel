@@ -868,6 +868,15 @@ export class HomePanel extends HTMLElement {
   attr(id, a) {
     return this.store.attr(id, a);
   }
+  /**
+   * The name the panel shows for an entity, an area or a device, from the store's resolver. With a fallback, an id Home
+   * Assistant has no name for (and the house did not name) shows the fallback instead of the id.
+   * @param {string} key
+   * @param {string} [fallback]
+   */
+  name(key, fallback) {
+    return this.store.names.name(key, fallback);
+  }
   kw(id) {
     return this.store.kw(id);
   }
@@ -1603,7 +1612,7 @@ export class HomePanel extends HTMLElement {
     const sp = this.speakers().find(x => (this.st(x.id) || {}).state === 'playing');
     if (sp) {
       const pic = this.attr(sp.id, 'entity_picture'),
-        area = ((this.hass.areas || {})[sp.aid] || {}).name || sp.name;
+        area = this.areaName(sp.aid, sp.name);
       out.push(
         this.scard('music', {
           ic: 'spk',
@@ -1664,7 +1673,7 @@ export class HomePanel extends HTMLElement {
               .slice(0, 2)
               .map(
                 (x, i) =>
-                  `<div class="sev"><i style="background:var(--${['c-home', 'm-purple'][i]})"></i><div><b>${esc(x.a.message || this.attr(x.id, 'friendly_name'))}</b><small class="num">${x.a.all_day ? 'All day' : this.fmtEn.time(Date.parse(String(x.a.start_time).replace(' ', 'T')))}</small></div></div>`,
+                  `<div class="sev"><i style="background:var(--${['c-home', 'm-purple'][i]})"></i><div><b>${esc(x.a.message || this.name(x.id))}</b><small class="num">${x.a.all_day ? 'All day' : this.fmtEn.time(Date.parse(String(x.a.start_time).replace(' ', 'T')))}</small></div></div>`,
               )
               .join(''),
             foot: ev.length > 2 ? `and ${ev.length - 2} more` : 'From your calendars',
@@ -2536,10 +2545,13 @@ export class HomePanel extends HTMLElement {
     return {grid, wh, ev, heat, rest: grid == null ? null : Math.max(0, grid - wh - ev - heat), rooms, hp, hpOn};
   }
   roomName(r) {
-    // in French, the room names from the Hilo thermostats themselves ("Thermostat Salle de Séjour")
-    if (this.store.isFrench)
-      return (this.attr(r.climate, 'friendly_name') || '').replace(/^Thermostat\s*/i, '') || this.roomNameEn(r);
-    return this.roomNameEn(r);
+    // in French, the room names from the Hilo thermostats themselves ("Thermostat Salle de Séjour"); that rule picks the
+    // name, and the display names then read it (the name it picked is a name, not an id, so only an override by that
+    // exact name or the room dictionary can change it)
+    const given = this.store.isFrench
+      ? (this.attr(r.climate, 'friendly_name') || '').replace(/^Thermostat\s*/i, '') || this.roomNameEn(r)
+      : this.roomNameEn(r);
+    return this.name(given);
   }
   roomNameEn(r) {
     if (r.n) return r.n;
@@ -3196,7 +3208,8 @@ export class HomePanel extends HTMLElement {
     this.car = {pre, id: (dom, key) => `${dom}.${pre}_${key}`};
   }
   carName() {
-    const fn = this.attr(this.car.id('image', 'vehicleimage'), 'friendly_name') || '';
+    const img = this.car.id('image', 'vehicleimage'),
+      fn = this.name(img, '');
     return this.CFG.car.name || fn.replace(/\s*Vehicle Picture$/i, '') || 'Car';
   }
   carImg() {
@@ -3284,7 +3297,8 @@ export class HomePanel extends HTMLElement {
   }
   // the water heater's own name: its sensor's name without the measurement ("Tank Temperature" → "Tank")
   whName() {
-    const fn = this.attr(this.E.whT, 'friendly_name') || this.attr(this.E.whP, 'friendly_name') || '';
+    const id = [this.E.whT, this.E.whP].find(i => this.attr(i, 'friendly_name')),
+      fn = id ? this.name(id) : '';
     return fn.replace(/\s*(water heater\s*)?(temperature|température|power|puissance)$/i, '').trim();
   }
   renderWater() {
@@ -4456,12 +4470,7 @@ export class HomePanel extends HTMLElement {
             !/detection/.test(e.entity_id),
         );
         const motion = mo.find(e => /_motion$/.test(e.entity_id)) || mo[0];
-        const dn =
-          (this.hass.devices &&
-            this.hass.devices[c.dev] &&
-            (this.hass.devices[c.dev].name_by_user || this.hass.devices[c.dev].name)) ||
-          this.attr(c.id, 'friendly_name') ||
-          c.id;
+        const dn = this.deviceName(c.dev, this.name(c.id));
         return {
           ...c,
           name: String(dn).replace(/\s+(High|Medium|Low)( Resolution Channel)?$/i, ''),
@@ -4509,7 +4518,6 @@ export class HomePanel extends HTMLElement {
   purifiers() {
     const reg = this.hass.entities || {},
       dev = this.hass.devices || {},
-      areas = this.hass.areas || {},
       by = {};
     for (const e of Object.values(reg))
       if (e.platform === 'mila' && e.device_id) (by[e.device_id] = by[e.device_id] || []).push(e.entity_id);
@@ -4537,7 +4545,8 @@ export class HomePanel extends HTMLElement {
         fan,
         s,
         aid: D.area_id || '',
-        name: (D.area_id && areas[D.area_id] && areas[D.area_id].name) || D.name_by_user || D.name || fan,
+        // the area's name, else the device's, else the fan's
+        name: this.areaName(D.area_id, this.deviceName(d, this.name(fan))),
       });
     }
     rooms.sort((a, b) => a.name.localeCompare(b.name));
@@ -4940,7 +4949,7 @@ export class HomePanel extends HTMLElement {
       scenes
         .map(id => {
           const s = this.st(id),
-            n = this.attr(id, 'friendly_name') || id,
+            n = this.name(id),
             ran = this.sceneRan && Date.now() - (this.sceneRan[id] || 0) < 4000;
           return `<button type="button" class="ptile scene${ran ? ' ran' : ''}" data-p="scene" data-id="${esc(id)}"><span class="pic">${ico(sceneIcon(id), 22)}</span><b>${esc(n)}</b><small>${ran ? 'Done' : ok(s) && !isNaN(Date.parse(s.state)) ? 'Last ' + this.ago(s.state) : 'Tap to run'}</small></button>`;
         })
@@ -4948,7 +4957,7 @@ export class HomePanel extends HTMLElement {
       this.MODES.filter(id => this.st(id))
         .map(id => {
           const on = this.pend(id + ':on', isOn(id)) === true;
-          return `<button type="button" class="ptile scene${on ? ' on' : ''}" data-p="mode" data-id="${esc(id)}" aria-pressed="${on}" ${ok(this.st(id)) ? '' : 'disabled'}><span class="pic">${ico(sceneIcon(id), 22)}</span><b>${esc(this.attr(id, 'friendly_name') || id)}</b><small>${this.store.isFrench ? (on ? 'Activé' : 'Désactivé') : on ? 'On' : 'Off'}</small></button>`;
+          return `<button type="button" class="ptile scene${on ? ' on' : ''}" data-p="mode" data-id="${esc(id)}" aria-pressed="${on}" ${ok(this.st(id)) ? '' : 'disabled'}><span class="pic">${ico(sceneIcon(id), 22)}</span><b>${esc(this.name(id))}</b><small>${this.store.isFrench ? (on ? 'Activé' : 'Désactivé') : on ? 'On' : 'Off'}</small></button>`;
         })
         .join('')
     );
@@ -5003,19 +5012,14 @@ export class HomePanel extends HTMLElement {
     } else {
       const on = this.pend(id + ':on', s.state === 'on') !== true;
       hold(':on', on);
-      this.call(
-        'input_boolean',
-        on ? 'turn_on' : 'turn_off',
-        {entity_id: id},
-        `${this.attr(id, 'friendly_name') || id} ${on ? 'on' : 'off'}`,
-      );
+      this.call('input_boolean', on ? 'turn_on' : 'turn_off', {entity_id: id}, `${this.name(id)} ${on ? 'on' : 'off'}`);
     }
     this.renderTabs();
   }
   runScene(id) {
     this.sceneRan = this.sceneRan || {};
     this.sceneRan[id] = Date.now();
-    this.call('scene', 'turn_on', {entity_id: id}, `${this.attr(id, 'friendly_name') || 'Scene'} on`);
+    this.call('scene', 'turn_on', {entity_id: id}, `${this.name(id, 'Scene')} on`);
     this.renderTabs();
     setTimeout(() => this.renderTabs(), 4100);
   }
@@ -5076,7 +5080,7 @@ export class HomePanel extends HTMLElement {
       id,
       wol,
       aid: e.area_id || D.area_id || '',
-      name: D.name_by_user || (e.platform === 'samsungtv' ? 'Samsung TV' : this.attr(id, 'friendly_name') || 'TV'),
+      name: D.name_by_user ? this.name(e.device_id) : e.platform === 'samsungtv' ? 'Samsung TV' : this.name(id, 'TV'),
     };
   }
   renderTV() {
@@ -5156,7 +5160,6 @@ export class HomePanel extends HTMLElement {
   sensors() {
     const reg = this.hass.entities || {},
       dev = this.hass.devices || {},
-      areas = this.hass.areas || {},
       out = [];
     for (const id of Object.keys(this.hass.states)) {
       if (!id.startsWith('binary_sensor.')) continue;
@@ -5174,8 +5177,8 @@ export class HomePanel extends HTMLElement {
         kind,
         dc,
         aid,
-        area: aid ? (areas[aid] || {}).name || aid : '',
-        name: sensorName(D.name_by_user || D.name || this.attr(id, 'friendly_name') || id),
+        area: aid ? this.name(aid) : '',
+        name: sensorName(this.deviceName(e.device_id, this.name(id))),
         bat: pick(/^sensor\..*_battery$/),
         lux: pick(/^sensor\..*_illuminance$/),
       });
@@ -5225,6 +5228,17 @@ export class HomePanel extends HTMLElement {
     const e = (this.hass.entities || {})[id] || {};
     return e.area_id || ((this.hass.devices || {})[e.device_id] || {}).area_id || '';
   }
+  // an area's name as the panel shows it; an area that has no name of its own gives the fallback, as it always did
+  areaName(aid, fallback = '') {
+    const a = (this.hass.areas || {})[aid];
+    return a && a.name ? this.name(aid) : fallback;
+  }
+  // a device's name as the panel shows it; a device that has no name of its own (not even its integration's) gives the
+  // fallback, usually the name of the entity that led to it
+  deviceName(devId, fallback) {
+    const D = (this.hass.devices || {})[devId];
+    return D && (D.name_by_user || D.name) ? this.name(devId) : fallback;
+  }
   // speakers by area (HomePods and the like); camera speakers and the TV have their own controls
   speakers() {
     const reg = this.hass.entities || {},
@@ -5244,9 +5258,10 @@ export class HomePanel extends HTMLElement {
           !['unifiprotect', 'samsungtv'].includes((reg[i] || {}).platform),
       )
       .map(i => {
+        // the words of the area's name, as Home Assistant gives it and as the panel shows it, are the ones to drop
         const aid = this.entArea(i),
-          aw = new Set(words((areas[aid] || {}).name || '')),
-          fn = this.attr(i, 'friendly_name') || i;
+          aw = new Set([...words((areas[aid] || {}).name || ''), ...words(this.areaName(aid))]),
+          fn = this.name(i);
         // "HomePod mini Kitchen" in the Kitchen is just "HomePod mini"
         const short = String(fn)
           .split(/\s+/)
@@ -5584,7 +5599,6 @@ export class HomePanel extends HTMLElement {
         `<div class="stile wide home${on ? ' on' : ''}" data-card="mtv" data-title="${esc(T.name)}" data-icon="tv" data-color="var(--c-home)" role="button" tabindex="0" aria-label="${esc(T.name)}: controls"><span class="ic">${ico('tv', 20)}</span><span class="tx"><b>${esc(T.name)}</b><small>${!avail ? 'Not responding' : on ? 'On' + (src ? ' · ' + src : '') : 'Off'}</small></span><button type="button" class="sw" role="switch" aria-checked="${on}" aria-label="${esc(T.name)} power" data-tv="power" ${avail ? '' : 'disabled'}></button></div>`,
       );
     }
-    const areas = this.hass.areas || {};
     this.speakers().forEach(m => {
       const id = esc(m.id),
         sv = this.st(m.id),
@@ -5595,7 +5609,7 @@ export class HomePanel extends HTMLElement {
         f = a.supported_features || 0;
       const can = bit => live && (f & bit) === bit,
         loaded = live && ['playing', 'paused'].includes(state) && !!a.media_title,
-        room = (areas[m.aid] || {}).name || m.name;
+        room = this.areaName(m.aid, m.name);
       const sub = !live
         ? 'Unavailable'
         : state === 'paused' && !loaded
@@ -6137,7 +6151,7 @@ export class HomePanel extends HTMLElement {
     }
     this.MODES.forEach(id => {
       const m = this.st(id);
-      if (m && m.state === 'on') out.push(['On', esc(this.attr(id, 'friendly_name') || id)]);
+      if (m && m.state === 'on') out.push(['On', esc(this.name(id))]);
     });
     return out;
   }
@@ -6232,8 +6246,7 @@ export class HomePanel extends HTMLElement {
         <p class="hint">The TV doesn't report its volume, so there's no slider.</p>`,
       );
     }
-    const areas = this.hass.areas || {},
-      M = this.speakers().map(m => ({...m, room: (areas[m.aid] || {}).name || m.name})),
+    const M = this.speakers().map(m => ({...m, room: this.areaName(m.aid, m.name)})),
       playing = M.filter(m => (this.st(m.id) || {}).state === 'playing').length;
     const pod = m => {
       const id = esc(m.id),
@@ -6383,7 +6396,6 @@ export class HomePanel extends HTMLElement {
   lightAreas() {
     const reg = this.hass.entities || {},
       dev = this.hass.devices || {},
-      areas = this.hass.areas || {},
       by = new Map();
     const area = id => {
       const e = reg[id] || {};
@@ -6433,15 +6445,14 @@ export class HomePanel extends HTMLElement {
           alName(a) &&
           groups.some(g => area(g) === aid && fold(String(this.attr(g, 'friendly_name') || '')).includes(alName(a))),
       );
-    const byName = (x, y) =>
-      String(this.attr(x, 'friendly_name') || x).localeCompare(this.attr(y, 'friendly_name') || y);
+    const byName = (x, y) => this.name(x).localeCompare(this.name(y));
     /** @type {any[]} */
     const out = [];
     for (const [aid, {ids, units}] of by) {
       if (!ids.length) continue;
       units.sort(byName);
-      const area = aid ? (areas[aid] || {}).name || aid : 'Other lights',
-        labels = shortNames(units.map(i => this.attr(i, 'friendly_name') || i));
+      const area = aid ? this.name(aid) : 'Other lights',
+        labels = shortNames(units.map(i => this.name(i)));
       // areas listed in split_light_areas get one tile per light group (or loose light) instead of one for the whole area;
       // each tile keeps the area's Adaptive Lighting switch, so Auto and Night still act on the area
       if (this.SPLIT_AREAS.includes(aid) && units.length > 1) {
@@ -6771,7 +6782,7 @@ export class HomePanel extends HTMLElement {
   camSheet() {
     const id = this.camId,
       s = this.st(id),
-      c = this.cameras().find(x => x.id === id) || {name: this.attr(id, 'friendly_name') || id};
+      c = this.cameras().find(x => x.id === id) || {name: this.name(id)};
     this.$('camh').textContent = c.name;
     this.$('camsub').textContent = [
       ok(s) ? cap(s.state) : 'Offline',

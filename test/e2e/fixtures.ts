@@ -11,7 +11,11 @@ declare global {
   interface Window {
     PANEL_CFG: object | null;
     SYSDATA: object | null;
-    house: {setState(entityId: string, patch: object): void; setLanguage(lang: string): void};
+    house: {
+      setState(entityId: string, patch: object): void;
+      setAreaName(areaId: string, name: string): void;
+      setLanguage(lang: string): void;
+    };
   }
 }
 
@@ -38,6 +42,8 @@ export type HouseOpts = {
   /** the panel's `config:` block */
   cfg?: object | null;
   lang?: 'en' | 'fr';
+  /** the areas carry the French names a French-speaking household gives them (Salon, Cuisine, Bureau) */
+  frenchAreas?: boolean;
   theme?: 'light' | 'dark';
   /** whether the signed-in user is an admin */
   admin?: boolean;
@@ -81,6 +87,8 @@ export type House = {
   tab: (name: string) => Promise<void>;
   /** what Home Assistant does on a state change: a new state object inside a new hass object */
   setState: (entityId: string, patch: object) => Promise<void>;
+  /** an area is renamed in Home Assistant: a new areas registry inside a new hass object */
+  setAreaName: (areaId: string, name: string) => Promise<void>;
   /** the signed-in user's profile language changes ('fr' draws the panel again in French); later setState calls keep it */
   setLanguage: (lang: 'en' | 'fr') => Promise<void>;
   /** setState, with last_changed set `agoMs` before now on the page's own clock (faked or not) */
@@ -153,7 +161,7 @@ export const test = base.extend<{houseOpts: HouseOpts; house: House}>({
     if (o.time) await page.clock.install({time: new Date(o.time)});
     if (o.time && o.frozen) await page.clock.setFixedTime(new Date(o.time));
     await page.goto(
-      `/?house=${o.house}&lang=${o.lang}&admin=${o.admin ? 1 : 0}${o.two ? '&two=1' : ''}${o.forecast ? '&forecast=1' : ''}`,
+      `/?house=${o.house}&lang=${o.lang}&admin=${o.admin ? 1 : 0}${o.frenchAreas ? '&french_areas=1' : ''}${o.two ? '&two=1' : ''}${o.forecast ? '&forecast=1' : ''}`,
     );
     const root = () => page.locator('home-panel');
     await root().locator('#rail').first().waitFor({state: 'attached'});
@@ -176,6 +184,8 @@ export const test = base.extend<{houseOpts: HouseOpts; house: House}>({
         await expect(root().locator(`#pane-${name}`)).toBeVisible();
       },
       setState: (id, patch) => page.evaluate(([id, patch]) => window.house.setState(id, patch), [id, patch] as const),
+      setAreaName: (areaId, name) =>
+        page.evaluate(([areaId, name]) => window.house.setAreaName(areaId, name), [areaId, name] as const),
       setLanguage: lang => page.evaluate(lang => window.house.setLanguage(lang), lang),
       setStateSince: (id, patch, agoMs) =>
         page.evaluate(

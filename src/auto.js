@@ -120,8 +120,7 @@ export const autoMethods = {
     if (id === 'all') return 'every light';
     if (id === 'zone.home') return 'Home zone';
     const s = this.st(id);
-    if (s && s.attributes.friendly_name)
-      return String(s.attributes.friendly_name).replace(/\s+(Door|Occupancy|Motion)$/i, '');
+    if (s && s.attributes.friendly_name) return this.name(id).replace(/\s+(Door|Occupancy|Motion)$/i, '');
     return cap(String(id).split('.').pop());
   },
   auNames(ids) {
@@ -697,7 +696,7 @@ export const autoMethods = {
       .map(s => ({
         entity: s.entity_id,
         item: s.attributes.id,
-        name: s.attributes.friendly_name || s.entity_id,
+        name: this.name(s.entity_id),
         on: s.state === 'on',
         last: s.attributes.last_triggered,
         current: +s.attributes.current || 0,

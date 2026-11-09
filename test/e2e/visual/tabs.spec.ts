@@ -2,7 +2,7 @@
 // Baselines live in test/e2e/__screenshots__/visual/tabs.spec.ts/ and are recorded only inside the Playwright image (Docker or
 // `container`: npm run test:visual:update); a difference is either fixed or approved by updating them in the same pull request.
 import {test, expect, eachShownTab, fontsLoaded, type House} from '../fixtures';
-import {AFTERNOON, FULL_CFG, PHONE_TABS, TABLET_TABS, VIEWPORTS} from '../houses';
+import {AFTERNOON, FULL_CFG, KEEP_ENGLISH_NAMES, PHONE_TABS, TABLET_TABS, VIEWPORTS} from '../houses';
 
 const TABS = {tablet: TABLET_TABS, phone: PHONE_TABS};
 
@@ -32,7 +32,15 @@ for (const viewport of ['tablet', 'phone'] as const) {
     for (const theme of ['light', 'dark'] as const) {
       for (const lang of ['en', 'fr'] as const) {
         test.describe(`full house, ${theme}, ${lang}`, () => {
-          test.use({houseOpts: {cfg: FULL_CFG, theme, lang, time: AFTERNOON, frozen: true}});
+          test.use({
+            houseOpts: {
+              cfg: lang === 'fr' ? {...FULL_CFG, names: KEEP_ENGLISH_NAMES} : FULL_CFG,
+              theme,
+              lang,
+              time: AFTERNOON,
+              frozen: true,
+            },
+          });
           test('every tab', async ({house}) => {
             const captured = await captureTabs(house, t => `${t}-${viewport}-${theme}-${lang}.png`, true);
             // the full house shows every tab; one that went missing must fail here, not shrink the baseline set quietly

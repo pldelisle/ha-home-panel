@@ -1,17 +1,20 @@
 // French: the translator turns the panel's English into Québec French, numbers and dates included, and leaves people's own names alone
-import {test, expect} from 'vitest';
+import {describe, test, expect} from 'vitest';
 import {fakeHass, entity} from './fake-hass.ts';
 import {createFrench, FR_MAP} from '../../src/i18n/fr.js';
 import {createMessages} from '../../src/core/i18n/messages.ts';
+import {createStore} from '../../src/core/store.ts';
 
 // The translator looks up the house's own names through its store's hass and caches them for a minute. Each test builds
 // its own layer from a fake store with a tiny fake hass whose names must stay untranslated, so one test's cache never
 // reaches the next and no module has to be loaded afresh.
+// display names that change nothing: the layer's own tests are about the names Home Assistant gave
+const plain = {name: key => key};
 const houseWithNames = names => ({
   areas: {a: {area_id: 'a', name: 'Home'}},
   states: Object.fromEntries(names.map((n, i) => [`light.l${i}`, entity(`light.l${i}`, 'on', {friendly_name: n})])),
 });
-const frTextFor = names => createFrench({hass: fakeHass(houseWithNames(names)), isFrench: true}).text;
+const frTextFor = names => createFrench({hass: fakeHass(houseWithNames(names)), isFrench: true, names: plain}).text;
 
 test('greetings, numbers and dates', () => {
   const frText = frTextFor([]);
@@ -162,8 +165,8 @@ test('the Lights tile sub-line is French in every part', () => {
 // two layers, and each reads the house's names from its own store: a name one house gave is still translated for the
 // other. The translations themselves are covered above, where every layer is built the same way.
 test('two createFrench layers over two stores each leave only the names their own house gave', () => {
-  const evening = createFrench({hass: fakeHass(houseWithNames(['Good evening'])), isFrench: true});
-  const morning = createFrench({hass: fakeHass(houseWithNames(['Good morning'])), isFrench: true});
+  const evening = createFrench({hass: fakeHass(houseWithNames(['Good evening'])), isFrench: true, names: plain});
+  const morning = createFrench({hass: fakeHass(houseWithNames(['Good morning'])), isFrench: true, names: plain});
   expect(evening.text('Good evening')).toBe('Good evening');
   expect(evening.text('Good morning')).toBe('Bonjour');
   expect(morning.text('Good morning')).toBe('Good morning');
@@ -171,7 +174,7 @@ test('two createFrench layers over two stores each leave only the names their ow
 });
 
 test('createFrench does nothing while the store is not French', () => {
-  const store = {hass: fakeHass(), isFrench: false};
+  const store = {hass: fakeHass(), isFrench: false, names: plain};
   const fr = createFrench(store);
   expect(fr.text('Good evening')).toBe('Good evening');
   const opts = {chart: {}};
@@ -192,7 +195,7 @@ const element = attrs => ({
 });
 
 test('createFrench translates text nodes and attributes, and keeps a name of the house untranslated', () => {
-  const fr = createFrench({hass: fakeHass(houseWithNames(['Tap to run'])), isFrench: true});
+  const fr = createFrench({hass: fakeHass(houseWithNames(['Tap to run'])), isFrench: true, names: plain});
   const t = textNode('Good evening'),
     name = textNode('Tap to run'),
     attrs = {'aria-label': 'Good evening', title: 'Tap to run'};
@@ -206,7 +209,7 @@ test('createFrench translates text nodes and attributes, and keeps a name of the
 });
 
 test('createFrench translates a node it met while the store was English once the store turns French', () => {
-  const store = {hass: fakeHass(), isFrench: false};
+  const store = {hass: fakeHass(), isFrench: false, names: plain};
   const fr = createFrench(store);
   const t = textNode('Good evening');
   fr.node(t);
@@ -215,4 +218,67 @@ test('createFrench translates a node it met while the store was English once the
   store.isFrench = true;
   fr.node(t);
   expect(t.data).toBe('Bonsoir');
+});
+
+// The layer's skip list holds the name Home Assistant gave and the name the panel shows for it (the store's display
+// names), so a resolved name is never run through the map, in either language. Real stores, so the resolver is the real one.
+describe('the layer leaves a display name alone', () => {
+  const house = {
+    areas: {living: {area_id: 'living', name: 'Living room'}, salon: {area_id: 'salon', name: 'Salon'}},
+    devices: {d1: {id: 'd1', name: 'Hub', name_by_user: 'Good morning'}},
+    states: {'light.l1': entity('light.l1', 'on', {friendly_name: 'Good evening'})},
+  };
+  const layerIn = (language, names = {}) => {
+    const store = createStore({defaultTimeZone: 'UTC', resolve: raw => raw});
+    store.setPanelConfig({names});
+    store.setHass(fakeHass({...house, locale: {language}}));
+    return {store, text: createFrench(store).text};
+  };
+
+  test('in French, the name Home Assistant gave and the name the config gives are both left as they are', () => {
+    const {text} = layerIn('fr', {'Good evening': {fr: 'Good night'}, d1: {fr: 'Good afternoon'}});
+    expect(text('Good evening')).toBe('Good evening');
+    expect(text('Good night')).toBe('Good night');
+    expect(text('Good morning')).toBe('Good morning');
+    expect(text('Good afternoon')).toBe('Good afternoon');
+    expect(text('Good night,')).toBe('Bonne nuit,');
+  });
+
+  test('in French, the dictionary reading of an English name and the English name are both left as they are', () => {
+    const {store, text} = layerIn('fr');
+    expect(store.names.name('living')).toBe('Salon');
+    expect(text('Salon')).toBe('Salon');
+    expect(text('Living room')).toBe('Living room');
+  });
+
+  test('in English, nothing is translated, and the dictionary reading of a French name is the name', () => {
+    const {store, text} = layerIn('en');
+    expect(store.names.name('salon')).toBe('Living room');
+    expect(text('Salon')).toBe('Salon');
+    expect(text('Good evening')).toBe('Good evening');
+  });
+
+  test('a name set for a device that has only its own name, or for a thermostat room, is left as it is', () => {
+    const store = createStore({defaultTimeZone: 'UTC', resolve: raw => raw});
+    store.setPanelConfig({names: {d2: {fr: 'Good night'}, Den: {fr: 'Good afternoon'}}});
+    store.setHass(
+      fakeHass({
+        locale: {language: 'fr'},
+        devices: {d2: {id: 'd2', name: 'Hub', name_by_user: null}},
+        states: {'climate.den': entity('climate.den', 'heat', {friendly_name: 'Thermostat Den'})},
+      }),
+    );
+    const {text} = createFrench(store);
+    expect(text('Good night')).toBe('Good night');
+    expect(text('Good afternoon')).toBe('Good afternoon');
+    // a name nobody changed is still the layer's to translate
+    expect(text('Good evening')).toBe('Bonsoir');
+  });
+
+  test('a name the config no longer gives is translated again, the list following the store', () => {
+    const {store, text} = layerIn('fr', {'Good evening': {fr: 'Good night'}});
+    expect(text('Good night')).toBe('Good night');
+    store.setPanelConfig({});
+    expect(text('Good night')).toBe('Bonne nuit');
+  });
 });

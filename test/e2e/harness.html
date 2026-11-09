@@ -18,6 +18,8 @@
       //   ?house=bare  only the sun, one weather entity and one light: every optional section must stay hidden
       //   &forecast=1  a daily forecast for today and the next five days, which the weather subscription delivers (off by default,
       //                so the weather views of the visual baselines stay as they are)
+      //   &french_areas=1  the areas (and the thermostats named after them) carry French names, Salon for Living room, as a
+      //                French-speaking household gives them in Home Assistant; the panel reads them in the language of the profile (#134)
       //   &two=1       a second panel, window.panel2, in the same page and fed the same hass, with the full house limited to two
       //                rooms and one person (spec 10: each panel shows its own house)
       // window.PANEL_CFG (set before the page loads) becomes the panel's config, as panel_custom's `config:` would.
@@ -37,6 +39,15 @@
           garage: {area_id: 'garage', name: 'Garage'},
           kitchen: {area_id: 'kitchen', name: 'Kitchen'},
         };
+      if (params.get('french_areas') === '1')
+        for (const [k, name] of Object.entries({
+          living_room: 'Salon',
+          office: 'Bureau',
+          bedroom: 'Chambre',
+          garage: 'Garage',
+          kitchen: 'Cuisine',
+        }))
+          AREAS[k].name = name;
       const add = (id, state, attributes = {}, reg = null, dev = null) => {
         S[id] = {
           entity_id: id,
@@ -404,6 +415,11 @@
         setState(id, patch) {
           const prev = hass.states[id] || {entity_id: id, state: '', attributes: {}};
           hass.states[id] = {...prev, ...patch, attributes: {...prev.attributes, ...(patch.attributes || {})}};
+          for (const p of panels) p.hass = {...hass};
+        },
+        // an area is renamed in Home Assistant: a new areas registry inside a new hass object
+        setAreaName(id, name) {
+          hass.areas = {...hass.areas, [id]: {...hass.areas[id], name}};
           for (const p of panels) p.hass = {...hass};
         },
         // the profile language changes: Home Assistant hands the panel a new hass with it, and keeps it for every later state change

@@ -3,6 +3,7 @@
 import {describe, expect, test, vi} from 'vitest';
 import {createStore} from '../../src/core/store.ts';
 import type {HassEntities} from '../../src/core/hass.ts';
+import type {NamesConfig} from '../../src/core/i18n/names.ts';
 import {entity, fakeHass} from './fake-hass.ts';
 
 // the resolver is the legacy resolveConfig in the element; here it records what it was handed
@@ -336,6 +337,60 @@ describe('t', () => {
     expect(t('charts.failed')).toBe('Charts library failed to load');
     store.setHass(fakeHass({locale: {language: 'fr'}}));
     expect(t('charts.failed')).toBe("La bibliothèque de graphiques n'a pas chargé");
+  });
+});
+
+describe('names', () => {
+  const areas = {living: {area_id: 'living', name: 'Living room'}, salon: {area_id: 'salon', name: 'Salon'}};
+  const makeNamed = () =>
+    createStore({defaultTimeZone: 'UTC', resolve: (raw: unknown) => raw as {names?: NamesConfig}});
+
+  test('speak English before the first hass, then follow the language of the hass', () => {
+    const store = makeNamed();
+    expect(store.names.name('Salon')).toBe('Living room');
+    expect(store.names.name('Gym')).toBe('Gym');
+    store.setHass(fakeHass({areas, locale: {language: 'en'}}));
+    expect(store.names.name('salon')).toBe('Living room');
+    store.setHass(fakeHass({areas, locale: {language: 'fr'}}));
+    expect(store.names.name('living')).toBe('Salon');
+    store.setHass(fakeHass({areas, locale: {language: 'en'}}));
+    expect(store.names.name('living')).toBe('Living room');
+  });
+
+  test('follow a language set on the hass object the store already holds, and say so once', () => {
+    const store = makeNamed();
+    const all = vi.fn();
+    const h = fakeHass({areas, locale: {language: 'en'}});
+    store.setHass(h);
+    store.subscribe('*', all);
+    h.locale = {language: 'fr'};
+    expect(store.setHass(h).locale).toBe(true);
+    expect(store.names.name('living')).toBe('Salon');
+    expect(store.t('charts.failed')).toBe("La bibliothèque de graphiques n'a pas chargé");
+    expect(store.setHass(h).locale).toBe(false);
+    expect(all).toHaveBeenCalledTimes(2);
+  });
+
+  test('follow the names: block of the config, before and after the first hass', () => {
+    const store = makeNamed();
+    store.setPanelConfig({names: {Salon: {en: 'Lounge'}}});
+    store.setHass(fakeHass({areas, locale: {language: 'en'}}));
+    expect(store.names.name('salon')).toBe('Lounge');
+    store.setPanelConfig({names: {Salon: {en: 'Parlour'}}});
+    expect(store.names.name('salon')).toBe('Parlour');
+    store.setPanelConfig({});
+    expect(store.names.name('salon')).toBe('Living room');
+  });
+
+  test('read a name Home Assistant changed in a state or a registry without waiting for a locale or config change', () => {
+    const store = makeNamed();
+    const h = fakeHass({areas, states: {'light.a': entity('light.a', 'on', {friendly_name: 'Cuisine'})}});
+    store.setHass(h);
+    expect(store.names.name('light.a')).toBe('Kitchen');
+    store.setHass({...h, states: {'light.a': entity('light.a', 'on', {friendly_name: 'Chambre'})}});
+    expect(store.names.name('light.a')).toBe('Bedroom');
+    store.setHass({...h, areas: {salon: {area_id: 'salon', name: 'Bureau'}}});
+    expect(store.names.name('salon')).toBe('Office');
   });
 });
 
