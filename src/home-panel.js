@@ -2387,7 +2387,7 @@ export class HomePanel extends HTMLElement {
         this.call(
           'climate',
           'set_swing_mode',
-          {entity_id: E.hp, swing_mode: v},
+          {entity_id: this.E.hp, swing_mode: v},
           `Louvers: ${swingName(v).toLowerCase()}`,
         );
       }
@@ -2555,10 +2555,10 @@ export class HomePanel extends HTMLElement {
 
   // ---------- live values ----------
   live() {
-    const grid = this.kw(E.grid),
-      wh = this.kw(E.whP) || 0,
-      ev = this.kw(E.evP) || 0;
-    const rooms = ROOMS.map(r => {
+    const grid = this.kw(this.E.grid),
+      wh = this.kw(this.E.whP) || 0,
+      ev = this.kw(this.E.evP) || 0;
+    const rooms = this.ROOMS.map(r => {
       const c = this.st(r.climate),
         p = this.kw(r.power) || 0;
       const t =
@@ -2568,7 +2568,7 @@ export class HomePanel extends HTMLElement {
       return {...r, name: this.roomName(r), t, sp, p, heating, ok: ok(c)};
     });
     const heat = sum(rooms.map(r => r.p));
-    const hp = this.st(E.hp),
+    const hp = this.st(this.E.hp),
       hpOn = ok(hp) && ['heating', 'cooling'].includes(hp.attributes.hvac_action);
     return {grid, wh, ev, heat, rest: grid == null ? null : Math.max(0, grid - wh - ev - heat), rooms, hp, hpOn};
   }
@@ -2585,10 +2585,10 @@ export class HomePanel extends HTMLElement {
     return m ? `${m[1]}'s bedroom` : fn.replace(/^Thermostat\s*/i, '') || r.k;
   }
   rateInfo() {
-    const r = this.num(E.rate),
-      lo = this.num(E.rateLow),
-      md = this.num(E.rateMed),
-      rw = this.num(E.rateReward);
+    const r = this.num(this.E.rate),
+      lo = this.num(this.E.rateLow),
+      md = this.num(this.E.rateMed),
+      rw = this.num(this.E.rateReward);
     const tier =
       r == null
         ? 'Rate unknown'
@@ -2624,7 +2624,7 @@ export class HomePanel extends HTMLElement {
       }),
       L0 = this.compact ? this.live() : null;
     const ins = L0 ? L0.rooms.map(r => r.t).filter(v => v != null) : [],
-      outT = this.compact ? (this.attr(E.weather, 'temperature') ?? this.num(E.outT)) : null;
+      outT = this.compact ? (this.attr(this.E.weather, 'temperature') ?? this.num(this.E.outT)) : null;
     const sub = [
       dateStr,
       ins.length ? `${(sum(ins) / ins.length).toFixed(1)}° inside` : '',
@@ -2647,14 +2647,14 @@ export class HomePanel extends HTMLElement {
       'clock',
       `${t[0]}<span style="font-size:.45em;margin-left:4px">${t[1] || ''}</span><small>${this.H ? 'Live · history ' + this.fmtTime(this.H.at) : 'Live · loading history'}</small>`,
     );
-    const temp = this.attr(E.weather, 'temperature') ?? this.num(E.outT),
-      cond = this.st(E.cond),
+    const temp = this.attr(this.E.weather, 'temperature') ?? this.num(this.E.outT),
+      cond = this.st(this.E.cond),
       att = this.attention();
-    const peak = this.st(E.hqPeak);
+    const peak = this.st(this.E.hqPeak);
     const chips = [];
     if (temp != null)
       chips.push(
-        `<div class="chip wxchip"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="9" r="4" fill="var(--m-amber)"/><path d="M8 19h9a4 4 0 0 0 0-8 5 5 0 0 0-9.6 1.6A3.2 3.2 0 0 0 8 19z" fill="var(--fg3)" opacity=".7"/></svg><span class="num">${f1(temp)}°</span><small>${esc(condName(ok(cond) ? cond.state : (this.st(E.weather) || {}).state))}</small></div>`,
+        `<div class="chip wxchip"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="9" r="4" fill="var(--m-amber)"/><path d="M8 19h9a4 4 0 0 0 0-8 5 5 0 0 0-9.6 1.6A3.2 3.2 0 0 0 8 19z" fill="var(--fg3)" opacity=".7"/></svg><span class="num">${f1(temp)}°</span><small>${esc(condName(ok(cond) ? cond.state : (this.st(this.E.weather) || {}).state))}</small></div>`,
       );
     if (peak && peak.state === 'on')
       chips.push(`<div class="chip"><span class="dot" style="background:var(--crit)"></span>Critical peak now</div>`);
@@ -2673,27 +2673,27 @@ export class HomePanel extends HTMLElement {
   }
 
   renderWeather() {
-    const sun = this.st(E.sun),
+    const sun = this.st(this.E.sun),
       up = sun && sun.state === 'above_horizon',
-      next = this.st(up ? E.setting : E.rising);
-    const temp = this.attr(E.weather, 'temperature') ?? this.num(E.outT),
-      cond = this.st(E.cond);
-    const hi = this.num(E.hi),
-      lo = this.num(E.lo),
-      nhi = this.num(E.nhi),
-      nlo = this.num(E.nlo);
+      next = this.st(up ? this.E.setting : this.E.rising);
+    const temp = this.attr(this.E.weather, 'temperature') ?? this.num(this.E.outT),
+      cond = this.st(this.E.cond);
+    const hi = this.num(this.E.hi),
+      lo = this.num(this.E.lo),
+      nhi = this.num(this.E.nhi),
+      nlo = this.num(this.E.nlo);
     this.set(
       'wx',
       `<div class="muted" style="font-weight:500">${up ? 'Sunset' : 'Sunrise'} <b style="color:var(--fg)">${ok(next) ? this.fmtTime(next.state) : '–'}</b></div>
       <div class="num" style="font-size:76px;line-height:1;margin-top:26px">${f1(temp)}°</div>
-      <div style="font-weight:600;font-size:16px;margin-top:6px">${esc(condName(ok(cond) ? cond.state : (this.st(E.weather) || {}).state))}</div>
+      <div style="font-weight:600;font-size:16px;margin-top:6px">${esc(condName(ok(cond) ? cond.state : (this.st(this.E.weather) || {}).state))}</div>
       <div class="muted" style="margin-top:2px">${hi != null ? `High ${Math.round(hi)}°` : ''}${lo != null ? ` · Low ${Math.round(lo)}°` : ''}${nhi != null && nlo != null ? ` · normal ${Math.round(nhi)}° / ${Math.round(nlo)}°` : ''}</div>`,
     );
-    const w = this.num(E.wind),
-      wd = this.st(E.windDir);
+    const w = this.num(this.E.wind),
+      wd = this.st(this.E.windDir);
     this.set(
       'wxf',
-      `<span>Wind<b>${w == null ? '–' : Math.round(w) + ' km/h'} ${ok(wd) ? esc(wd.state) : ''}</b></span><span>Humidity<b>${this.num(E.hum) ?? '–'}%</b></span><span>UV<b>${this.num(E.uv) ?? '–'}</b></span><span>Air quality<b>${this.num(E.aqhi) ?? '–'}</b></span>`,
+      `<span>Wind<b>${w == null ? '–' : Math.round(w) + ' km/h'} ${ok(wd) ? esc(wd.state) : ''}</b></span><span>Humidity<b>${this.num(this.E.hum) ?? '–'}%</b></span><span>UV<b>${this.num(this.E.uv) ?? '–'}</b></span><span>Air quality<b>${this.num(this.E.aqhi) ?? '–'}</b></span>`,
     );
     const days = this.wxDays().slice(0, 4);
     // EC's first entry after mid-afternoon is tonight: a low and no high
@@ -2714,8 +2714,8 @@ export class HomePanel extends HTMLElement {
     const kwTxt = v => (v == null ? '–' : v < 1 ? Math.round(v * 1000) + ' W' : v.toFixed(2));
     const unit = v => (v == null || v < 1 ? '' : 'kW');
     const nHeat = L.rooms.filter(r => r.heating).length,
-      whT = this.num(E.whT),
-      wb = this.st(E.wbStatus);
+      whT = this.num(this.E.whT),
+      wb = this.st(this.E.wbStatus);
     // a live connector's dashes run faster and the line grows thicker with the power on it (motion.css)
     const dash = (on, c, x1, y1, x2, y2, kw) =>
       `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${on ? c : 'var(--ring)'}" stroke-width="${on ? (3 + Math.min(2, (kw || 0) / 2)).toFixed(1) : 3}" class="${on ? 'dash' : ''}"${on ? ` style="animation-duration:${Math.max(0.45, 2.4 - (kw || 0) * 0.4).toFixed(2)}s"` : ''}/>`;
@@ -2736,7 +2736,7 @@ export class HomePanel extends HTMLElement {
         ${node(70, 160, 42, L.grid, 'var(--c-grid)', true)}<text x="70" y="222" text-anchor="middle" class="cap">GRID</text><text x="70" y="238" text-anchor="middle" class="st">${L.grid > 0.02 ? 'Importing' : 'Idle'}</text>
         <g><circle cx="220" cy="160" r="56" fill="var(--card)" stroke="var(--c-home)" stroke-width="4"/><text x="220" y="158" text-anchor="middle" class="big" font-size="28">${L.grid == null ? '–' : L.grid.toFixed(2)}</text><text x="220" y="178" text-anchor="middle" class="st">kW · HOME</text></g>
         ${node(220, 50, 40, L.wh, 'var(--c-wh)', L.wh > 0.02, whT != null ? whT.toFixed(1) + '°' : '')}<text x="300" y="44" class="cap">WATER HEATING</text><text x="300" y="60" class="st">${L.wh > 0.02 ? 'Heating' : 'Idle'}${whT != null && whT >= 48 ? ', hot' : ''}</text>
-        ${node(370, 160, 42, L.heat, 'var(--c-heat)', L.heat > 0.02)}<text x="370" y="222" text-anchor="middle" class="cap">ROOM HEATING</text><text x="370" y="238" text-anchor="middle" class="st">${nHeat} of ${ROOMS.length} rooms on</text>
+        ${node(370, 160, 42, L.heat, 'var(--c-heat)', L.heat > 0.02)}<text x="370" y="222" text-anchor="middle" class="cap">ROOM HEATING</text><text x="370" y="238" text-anchor="middle" class="st">${nHeat} of ${this.ROOMS.length} rooms on</text>
         ${node(220, 276, 40, L.ev, 'var(--c-ev)', L.ev > 0.02)}<text x="300" y="272" class="cap">EV CHARGING</text><text x="300" y="288" class="st">${esc(ok(wb) ? wb.state : 'Unavailable')}</text>
         <text x="120" y="290" text-anchor="end" class="st">Rest of home</text><text x="120" y="306" text-anchor="end" class="big" font-size="15">${L.rest == null ? '–' : L.rest.toFixed(2) + ' kW'}</text>
       </svg>`;
