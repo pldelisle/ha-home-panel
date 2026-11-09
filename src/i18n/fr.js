@@ -224,8 +224,8 @@ function frApex(o) {
   return o;
 }
 /**
- * The translator for one panel: the same functions as the module's, reading the names the house gave from the store's
- * hass (with a cache of their own) and the language from the store, so two panels on a page do not share either.
+ * The translator for one panel: text, node, tree and apex, reading the names the house gave from the store's hass (with a
+ * cache of their own) and the language from the store, so two panels on a page do not share either.
  * Nothing is translated while the store's language is not French. The module keeps no state of its own.
  * @param {{hass: any, isFrench: boolean}} store
  */

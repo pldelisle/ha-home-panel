@@ -32,7 +32,7 @@ test('two panels on one page show their own houses', async ({house}) => {
   await expect(second.locator('#hello .wp')).toHaveCount(1);
 
   // a state change through the harness reaches both
-  const bulb = (panel: Locator) => panel.locator('#pane-lights .lbulb[data-a="living_room"]').first(); // the phone draws two of them, both on, both following the state
+  const bulb = (panel: Locator) => panel.locator('#pane-lights .lbulb[data-a="living_room"]:visible'); // on the phone the tablet card is in the page too, hidden
   for (const panel of [first, second]) await openTab(panel, 'lights');
   await expect(bulb(first)).toHaveAttribute('aria-checked', 'true');
   await expect(bulb(second)).toHaveAttribute('aria-checked', 'true');

@@ -637,7 +637,7 @@ export class HomePanel extends HTMLElement {
     /** @type {import('./core/settings.ts').KeyValueStorage} */
     let storage = {getItem: () => null, setItem: () => {}};
     try {
-      storage = localStorage; // the one adapter wiring: only src/core/settings.ts reads or writes it
+      storage = localStorage; // the one adapter wiring: the element hands it over, and only src/core/settings.ts reads or writes it
     } catch {
       // blocked site data: touching localStorage throws, so the settings keep their defaults
     }
