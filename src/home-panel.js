@@ -30,6 +30,8 @@ const E = {},
   AL_AREAS = {},
   SPLIT_AREAS = [],
   LIGHT_LINKS = [];
+// no longer read: the class reads this.CFG; applyConfig still writes it until contract (spec 10)
+// eslint-disable-next-line no-unused-vars
 let CFG = null;
 function applyConfig(panelCfg, states) {
   const c = resolveConfig(panelCfg, states);
