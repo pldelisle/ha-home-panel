@@ -367,8 +367,8 @@ const isDay = (t, p) => {
   const s = p.sunDay((t - Date.now()) / 864e5);
   return t > s.rise && t < s.set;
 };
-// sunrise, sunset, dawn, dusk and solar noon for the local day containing t (the usual suncalc formulas)
-function sunTimes(t, lat, lon, day) {
+// sunrise, sunset, dawn, dusk and solar noon for the local day `day` (YYYY-MM-DD) (the usual suncalc formulas)
+function sunTimes(lat, lon, day) {
   const rad = Math.PI / 180,
     J1970 = 2440588,
     J2000 = 2451545,
@@ -654,7 +654,7 @@ export class HomePanel extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({mode: 'open'});
-    // the store and the settings are fed beside the module globals until the migrate steps move every read (spec 10)
+    // the store and the settings are fed beside the module globals until the contract step deletes them (spec 10)
     this.store = createStore({
       defaultTimeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
       resolve: resolveConfig,
@@ -819,7 +819,7 @@ export class HomePanel extends HTMLElement {
     if (this.unsubStore) this.unsubStore();
     this.unsubStore = null;
   }
-  // the store's reads, until the migrate steps move every call site off the module globals (spec 10)
+  // the store's reads: every call site goes through these, and the contract step deletes the module globals (spec 10)
   get E() {
     return this.store.config.entities;
   }
@@ -4076,7 +4076,7 @@ export class HomePanel extends HTMLElement {
     const lat = (this.hass.config && this.hass.config.latitude) ?? 0,
       lon = (this.hass.config && this.hass.config.longitude) ?? 0;
     const t = Date.now() + offset * 864e5;
-    return sunTimes(t, lat, lon, this.localDay(t));
+    return sunTimes(lat, lon, this.localDay(t));
   }
   weatherSummary() {
     const cond = this.st(E.cond),

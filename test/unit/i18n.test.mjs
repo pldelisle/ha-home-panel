@@ -170,7 +170,7 @@ test('createFrench translates for its store and leaves the names the house gave'
   expect(fr.text('Some text nobody translated')).toBe('Some text nobody translated');
 });
 
-test('createFrench reads the names from its own store, not from the module hass', async () => {
+test('the module functions read the names from the hass they are given, createFrench from its own store', async () => {
   const {frText} = await load(['Good evening']);
   const fr = createFrench({hass: fakeHass(houseWithNames([])), isFrench: true});
   expect(frText('Good evening')).toBe('Good evening'); // the module's hass names it
