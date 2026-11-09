@@ -199,13 +199,16 @@ export const test = base.extend<{houseOpts: HouseOpts; house: House}>({
   },
 });
 
+/** whether the page is the phone's narrow screen (the bar holds four tabs and More holds the rest) */
+export const isPhone = (house: House) => house.page.viewportSize()!.width < 600;
+
 // opens each tab the screen offers (a tab button hidden on purpose, no car say, is skipped; one that is merely invisible is not)
 // and runs `each` on it; returns the tabs it opened, in order
 export async function eachShownTab(
   house: House,
   each?: (tab: string, pane: Locator) => Promise<void>,
 ): Promise<string[]> {
-  const tabs = house.page.viewportSize()!.width < 600 ? PHONE_TABS : TABLET_TABS;
+  const tabs = isPhone(house) ? PHONE_TABS : TABLET_TABS;
   const opened: string[] = [];
   for (const t of tabs) {
     const button = house.root().locator(`[data-tab="${t}"]`).first();

@@ -3,11 +3,12 @@
 // Spec: docs/specs/14-lit-shell.md, "axe in the end-to-end run (step A)". Not numbered in docs/specs/01-playwright-test.md:
 // it checks no behaviour, only what a screen reader would be told.
 import AxeBuilder from '@axe-core/playwright';
-import type {Result} from 'axe-core';
-import {test, expect, eachShownTab, phoneOnly, type House} from './fixtures';
+import {test, expect, eachShownTab, isPhone, phoneOnly, type House} from './fixtures';
 import {FULL_CFG, PHONE_TABS} from './houses';
-import {OFFICE_TILE} from './lights';
+import {openOfficeSheet} from './lights';
 import {stopCharging, openFrontDoor, openPopup, pill} from './live';
+
+type Result = Awaited<ReturnType<AxeBuilder['analyze']>>['violations'][number];
 
 const BLOCKING = new Set(['serious', 'critical']);
 
@@ -65,8 +66,6 @@ const scanDialog = async (house: House, state: string, dialog: string) => {
   await house.page.keyboard.press('Escape');
   await expect(open).toBeHidden();
 };
-
-const isPhone = (house: House) => house.page.viewportSize()!.width < 600;
 
 /** opens a tab the way the screen offers it: the rail or bar, or on a phone More for the tabs the bar does not hold */
 const openTab = async (house: House, tab: string) => {
@@ -134,9 +133,7 @@ for (const lang of ['en', 'fr'] as const) {
     });
 
     test('the light sheet has no serious or critical finding', async ({house}) => {
-      await house.tab('lights');
-      const b = (await house.root().locator(`${OFFICE_TILE}:visible`).boundingBox())!;
-      await house.page.mouse.click(b.x + b.width * 0.7, b.y + b.height / 2); // the right part of the tile opens the sheet
+      await openOfficeSheet(house);
       await scanDialog(house, 'the light sheet', '#sh-light');
     });
 

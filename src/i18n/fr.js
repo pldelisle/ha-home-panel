@@ -187,7 +187,7 @@ function frText(s, isName) {
   out = frPost(out);
   return m[1] + out + m[3];
 }
-export const FR_ATTR = ['aria-label', 'title', 'placeholder', 'alt'];
+export const FR_ATTR = ['aria-label', 'aria-description', 'title', 'placeholder', 'alt'];
 function frNode(n, translate, seen) {
   if (n.nodeType === 3) {
     const p = n.parentNode;
@@ -1201,8 +1201,6 @@ export const FR_MAP = {
   '{n} W now': '{n} W maintenant',
   '{n}% · {n} km': '{n} % · {n} km',
   '{n}: details': '{n} : détails',
-  '{n}: controls': '{n} : commandes',
-  '{n}: speaker controls': '{n} : commandes du haut-parleur',
   // ---- v1.17.0: text size, system theme, sticky errors, merged timeline dots ----
   'Theme: automatic, follows your device and the sun. Tap to change':
     'Thème : automatique, suit votre appareil et le soleil. Toucher pour changer',
@@ -1219,6 +1217,9 @@ export const FR_MAP = {
   'Theme: light. Tap to switch': 'Thème : clair. Toucher pour changer',
   'Theme: dark. Following the sun': 'Thème : sombre. Suit le soleil',
   'Theme: light. Following the sun': 'Thème : clair. Suit le soleil',
+  'Opens the history': 'Ouvre l’historique',
+  'Opens the live view': 'Ouvre la vue en direct',
+  'Opens the controls': 'Ouvre les commandes',
   'Vol −, volume down': 'Vol −, baisser le volume',
   'Vol +, volume up': 'Vol +, monter le volume',
   Glass: 'Verre',
@@ -1614,7 +1615,6 @@ const FR_RX = [
       return t == null ? null : t + ' ·';
     },
   ],
-  [/^Open (.+) live$/, x => `Voir ${x} en direct`],
   [
     /^((?:(?! · ).)+?) (closed|open|offline|motion now|no motion|motion \{n\} min ago|motion \{n\} h ago|motion just now)$/,
     (x, s) => `${x} ${FR_DOOR[s]}`,

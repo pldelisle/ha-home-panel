@@ -997,19 +997,19 @@ export class HomePanel extends HTMLElement {
   <div id="err"></div>
   <div class="cols">
     <div class="col c1">
-      <div class="card wxcard tap" id="open-weather" tabindex="0" role="button">${houseImg(this.CFG.house)}<div class="txt" id="wx"></div><div class="facts wxfacts" id="wxf"></div><div class="wxd" id="wxd"></div></div>
-      <div class="card tap" id="open-energy" tabindex="0" role="button"><div id="energy"></div></div>
+      <div class="card wxcard tap" id="open-weather" tabindex="0" role="button" aria-description="Open weather details">${houseImg(this.CFG.house)}<div class="txt" id="wx"></div><div class="facts wxfacts" id="wxf"></div><div class="wxd" id="wxd"></div></div>
+      <div class="card tap" id="open-energy" tabindex="0" role="button" aria-description="Open home energy details"><div id="energy"></div></div>
     </div>
     <div class="col c2">
       <div class="card camcard" id="cams"></div>
       <div class="card" id="sensors" hidden></div>
       <div class="card" id="tv" hidden></div>
       <div class="card" id="lights"></div>
-      <div class="card tap" id="open-climate" tabindex="0" role="button"><div id="climate"></div></div>
-      <div class="card tap" id="open-air" tabindex="0" role="button"><div id="air"></div></div>
+      <div class="card tap" id="open-climate" tabindex="0" role="button" aria-description="Open climate details"><div id="climate"></div></div>
+      <div class="card tap" id="open-air" tabindex="0" role="button" aria-description="Open air quality details"><div id="air"></div></div>
     </div>
     <div class="col c3">
-      <div class="card tap carcard" id="open-car" tabindex="0" role="button"><div id="carcard"></div></div>
+      <div class="card tap carcard" id="open-car" tabindex="0" role="button" aria-description="Open car details"><div id="carcard"></div></div>
       <div class="card" id="water"></div>
       <div class="card" id="hilo"></div>
     </div>
@@ -1260,10 +1260,11 @@ export class HomePanel extends HTMLElement {
   renderSettings() {
     const {theme: m, text: tx, glass: gl, glassLevel: gt} = this.settings.get(),
       dark = this.$app.dataset.theme === 'dark';
+    const hint = m === 'auto' ? 'Following the sun' : 'Tap to switch';
     this.set(
       'setc',
       `<div class="cc">
-      <button type="button" class="cct tog" data-th="toggle" aria-pressed="${dark}" aria-label="Theme: ${dark ? 'dark' : 'light'}. ${m === 'auto' ? 'Following the sun' : 'Tap to switch'}"><span class="ccic">${ico(dark ? 'moon' : 'sun', 22)}</span><b>${dark ? 'Dark' : 'Light'}</b> <small>${m === 'auto' ? 'Following the sun' : 'Tap to switch'}</small></button>
+      <button type="button" class="cct tog" data-th="toggle" aria-pressed="${dark}" aria-label="Theme: ${dark ? 'dark' : 'light'}. ${hint}"><span class="ccic">${ico(dark ? 'moon' : 'sun', 22)}</span><b>${dark ? 'Dark' : 'Light'}</b> <small>${hint}</small></button>
       <button type="button" class="cct tog" data-th="auto" aria-pressed="${m === 'auto'}"><span class="ccic">${ico('sunauto', 22)}</span><b>Auto</b><small>Follows the sun</small></button>
       <button type="button" class="cct tog wide sleepnow" data-sleep="1"><span class="ccic">${ico('moon', 22)}</span><span class="sltx"><b>Sleep now</b><small>Shows the clock until you touch the screen</small></span></button>
       <div class="cct wide"><div class="ccl">Text size</div><div class="seg" role="radiogroup" aria-label="Text size">${[
@@ -2875,6 +2876,7 @@ export class HomePanel extends HTMLElement {
         tint: red,
         pill: `<span class="ll">${name}</span>${left ? `<i class="lsep"></i><span class="lv">${what} ${left}</span>` : ''}`,
         short: `<span class="ll">${short}</span>${left ? `<i class="lsep"></i><span class="lv">${left}</span>` : ''}`,
+        label: `${name}${left ? `, ${what} ${left}` : ''}`,
       };
       a.card = () => {
         const p0 = T('preheat_start'),
@@ -2969,6 +2971,7 @@ export class HomePanel extends HTMLElement {
         p: soc == null ? null : soc / 100,
         pill: `<span class="ll">${paused ? 'Charging paused' : 'Charging'}</span><span class="lv">${f0(soc)}%</span>${left ? `<i class="lsep"></i><span class="lv">${left}</span>` : ''}`,
         short: `<span class="lv">${f0(soc)}%</span><i class="lsep"></i><span class="lv">${paused ? 'paused' : left || 'charging'}</span>`,
+        label: `${paused ? 'Charging paused' : 'Car charging'}, ${f0(soc)} percent${left ? `, full in ${left}` : ''}`,
       };
       a.card = () => {
         const on = this.sw(this.E.wbPause);
@@ -3036,6 +3039,7 @@ export class HomePanel extends HTMLElement {
         p: typ ? el / typ : null,
         pill: `<span class="ll">Water heater</span>${t != null ? `<span class="lv">${Math.round(t)}°</span>` : ''}${lt ? `<i class="lsep"></i><span class="lv">${lt}</span>` : ''}`,
         short: `<span class="ll">Water</span>${lt ? `<i class="lsep"></i><span class="lv">${lt}</span>` : ''}`,
+        label: `Water heater heating${lt ? `, ${lt.replace('~', 'about ')} left` : ''}`,
       };
       a.card = () => {
         const kwh = sum(pts.filter(x => x[0] >= start).map(x => x[1])) / 12,
@@ -3092,12 +3096,12 @@ export class HomePanel extends HTMLElement {
       return `<span class="lring" style="--ac:${x.ac};width:${s}px;height:${s}px"><svg viewBox="0 0 ${s} ${s}" aria-hidden="true"><circle cx="${s / 2}" cy="${s / 2}" r="${r}" fill="color-mix(in srgb,${x.ac} 16%,transparent)" stroke="color-mix(in srgb,${x.ac} 22%,transparent)" stroke-width="3"/>${p == null ? '' : `<circle cx="${s / 2}" cy="${s / 2}" r="${r}" fill="none" stroke="${x.ac}" stroke-width="3" stroke-linecap="round" stroke-dasharray="${(c * p).toFixed(1)} ${c.toFixed(1)}"/>`}</svg><span class="li">${ico(x.ic, Math.round(s * 0.5))}</span></span>`;
     };
     const main = a
-      ? `<span class="lmain${a.tint ? ' tint' : ''}" style="--ac:${a.ac}">${ring(a, 34)}${this.compact ? a.pill : a.short}</span>`
+      ? `<span class="lmain${a.tint ? ' tint' : ''}" style="--ac:${a.ac}">${ring(a, 34)}<span class="sr">${esc(a.label)}</span><span class="lsay" aria-hidden="true">${this.compact ? a.pill : a.short}</span></span>`
       : `<span class="lmain" style="--ac:var(--c-ev)"><span class="lok">${ico('check', 18)}</span><span>${esc(done.text)}</span>${this.compact ? '' : `<span class="ll">${this.fmtEn.time(done.at)}</span>`}</span>`;
     const bubs =
       acts
         .slice(1)
-        .map(x => `<span class="lbub">${ring(x, 36)}</span>`)
+        .map(x => `<span class="lbub">${ring(x, 36)}<span class="sr">${esc(x.label)}</span></span>`)
         .join('') +
       (att.items.length
         ? `<span class="lbub lwarn" style="--ac:var(--${crit ? 'crit' : 'warn'})"><b aria-hidden="true">!</b><span class="sr">${need}</span></span>`
@@ -4229,7 +4233,7 @@ export class HomePanel extends HTMLElement {
       ]
         .map(
           ([key, ...t]) =>
-            `<button type="button" class="tile tilebtn" data-wx="${key}">${tile(t).slice('<div class="tile">'.length, -'</div>'.length)}</button>`,
+            `<button type="button" class="tile tilebtn" data-wx="${key}" aria-description="Opens the history">${tile(t).slice('<div class="tile">'.length, -'</div>'.length)}</button>`,
         )
         .join('')}</div>`,
     );
@@ -4494,7 +4498,7 @@ export class HomePanel extends HTMLElement {
               : ok(s)
                 ? cap(s.state)
                 : 'Offline';
-          return `<button type="button" class="cam" data-cam="${esc(c.id)}">${ok(s) && pic ? `<img src="${esc(pic)}&t=${stamp}" alt="" loading="lazy">` : `<span class="camoff">${ico('cam', 26)}</span>`}
+          return `<button type="button" class="cam" data-cam="${esc(c.id)}" aria-description="Opens the live view">${ok(s) && pic ? `<img src="${esc(pic)}&t=${stamp}" alt="" loading="lazy">` : `<span class="camoff">${ico('cam', 26)}</span>`}
           <span class="camlbl"><b>${esc(c.name)}</b><small>${moving ? '<i class="mdot"></i>' : ''}${esc(when)}</small></span></button>`;
         })
         .join('')}</div>`,
@@ -5193,7 +5197,7 @@ export class HomePanel extends HTMLElement {
   }
   sensorChip(x) {
     const S = this.sensorState(x);
-    return `<button type="button" class="schip ${S.cls}" data-sens="${esc(x.id)}"><span class="sic">${ico(x.kind === 'door' ? 'door' : 'walk', 17)}</span><div><b>${esc(x.name)}</b><span><em>${esc(S.main)}</em>${S.sub ? ' · ' + esc(S.sub) : ''}</span></div></button>`;
+    return `<button type="button" class="schip ${S.cls}" data-sens="${esc(x.id)}" aria-description="Opens the history"><span class="sic">${ico(x.kind === 'door' ? 'door' : 'walk', 17)}</span><div><b>${esc(x.name)}</b><span><em>${esc(S.main)}</em>${S.sub ? ' · ' + esc(S.sub) : ''}</span></div></button>`;
   }
   renderSensors() {
     const X = this.sensors(),
@@ -5582,7 +5586,7 @@ export class HomePanel extends HTMLElement {
             )
           : '';
       tiles.push(
-        `<div class="stile wide home${on ? ' on' : ''}" data-card="mtv" data-title="${esc(T.name)}" data-icon="tv" data-color="var(--c-home)" role="button" tabindex="0"><span class="ic">${ico('tv', 20)}</span><span class="tx"><b>${esc(T.name)}</b><small>${!avail ? 'Not responding' : on ? 'On' + (src ? ' · ' + src : '') : 'Off'}</small></span><button type="button" class="sw" role="switch" aria-checked="${on}" aria-label="${esc(T.name)} power" data-tv="power" ${avail ? '' : 'disabled'}></button></div>`,
+        `<div class="stile wide home${on ? ' on' : ''}" data-card="mtv" data-title="${esc(T.name)}" data-icon="tv" data-color="var(--c-home)" role="button" tabindex="0" aria-description="Opens the controls"><span class="ic">${ico('tv', 20)}</span><span class="tx"><b>${esc(T.name)}</b><small>${!avail ? 'Not responding' : on ? 'On' + (src ? ' · ' + src : '') : 'Off'}</small></span><button type="button" class="sw" role="switch" aria-checked="${on}" aria-label="${esc(T.name)} power" data-tv="power" ${avail ? '' : 'disabled'}></button></div>`,
       );
     }
     this.speakers().forEach(m => {
@@ -5604,7 +5608,7 @@ export class HomePanel extends HTMLElement {
             ? 'Off'
             : 'Not playing';
       tiles.push(
-        `<div class="stile wide home${play ? ' on' : ''}" data-card="media" data-title="Speakers" data-icon="spk" data-color="var(--c-home)" role="button" tabindex="0"><span class="ic${loaded && a.entity_picture ? ' art' : ''}">${loaded && a.entity_picture ? `<img src="${esc(a.entity_picture)}" alt="" loading="lazy">` : ico('spk', 20)}</span><span class="tx"><b>${esc(room)}</b>${loaded ? `<small translate="no">${esc(a.media_title)}${a.media_artist ? ' · ' + esc(a.media_artist) : ''}</small>` : `<small>${esc(m.name)} · ${sub}</small>`}</span><button type="button" class="pp2${play ? ' on' : ''}" data-mp="pp" data-id="${id}" aria-label="${play ? 'Pause' : 'Play'}" ${(loaded || state === 'paused') && can(play ? 1 : 16384) ? '' : 'disabled'}>${ico(play ? 'pause' : 'play', 20)}</button></div>`,
+        `<div class="stile wide home${play ? ' on' : ''}" data-card="media" data-title="Speakers" data-icon="spk" data-color="var(--c-home)" role="button" tabindex="0" aria-description="Opens the controls"><span class="ic${loaded && a.entity_picture ? ' art' : ''}">${loaded && a.entity_picture ? `<img src="${esc(a.entity_picture)}" alt="" loading="lazy">` : ico('spk', 20)}</span><span class="tx"><b>${esc(room)}</b>${loaded ? `<small translate="no">${esc(a.media_title)}${a.media_artist ? ' · ' + esc(a.media_artist) : ''}</small>` : `<small>${esc(m.name)} · ${sub}</small>`}</span><button type="button" class="pp2${play ? ' on' : ''}" data-mp="pp" data-id="${id}" aria-label="${play ? 'Pause' : 'Play'}" ${(loaded || state === 'paused') && can(play ? 1 : 16384) ? '' : 'disabled'}>${ico(play ? 'pause' : 'play', 20)}</button></div>`,
       );
     });
     this.set('mtiles', tiles.join('') || '<p class="hint">No TV or speakers found.</p>');
@@ -6119,7 +6123,7 @@ export class HomePanel extends HTMLElement {
                   pic = cs && cs.attributes.entity_picture,
                   m = c.motion,
                   mv = m && m.state === 'on';
-                return `<button type="button" class="hcam" data-cam="${esc(c.id)}">${ok(cs) && pic ? `<img src="${esc(pic)}&t=${stamp}" alt="" loading="lazy">` : `<span class="camoff">${ico('cam', 24)}</span>`}<span class="hcn">${esc(c.name)}${mv ? ' <b>· motion</b>' : ''}</span></button>`;
+                return `<button type="button" class="hcam" data-cam="${esc(c.id)}" aria-description="Opens the live view">${ok(cs) && pic ? `<img src="${esc(pic)}&t=${stamp}" alt="" loading="lazy">` : `<span class="camoff">${ico('cam', 24)}</span>`}<span class="hcn">${esc(c.name)}${mv ? ' <b>· motion</b>' : ''}</span></button>`;
               })
               .join('')}</div>`
           : ''
@@ -6128,7 +6132,7 @@ export class HomePanel extends HTMLElement {
         X.length
           ? `<div class="hsens">${X.map(x => {
               const S = this.sensorState(x);
-              return `<button type="button" class="hsen" data-sens="${esc(x.id)}"><span class="sic">${ico(x.kind === 'door' ? 'door' : 'walk', 20)}</span><div><b>${esc(x.name)}</b><span class="${S.cls}">${esc(S.main)}${S.sub ? ` <small>· ${esc(S.sub)}</small>` : ''}</span></div></button>`;
+              return `<button type="button" class="hsen" data-sens="${esc(x.id)}" aria-description="Opens the history"><span class="sic">${ico(x.kind === 'door' ? 'door' : 'walk', 20)}</span><div><b>${esc(x.name)}</b><span class="${S.cls}">${esc(S.main)}${S.sub ? ` <small>· ${esc(S.sub)}</small>` : ''}</span></div></button>`;
             }).join('')}</div>`
           : '<p class="hint">No door or motion sensors yet.</p>'
       }`,

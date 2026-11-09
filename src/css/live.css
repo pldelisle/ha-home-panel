@@ -55,6 +55,9 @@
 .app.gl .lap .lwarn:where(.lbub) {
   background: color-mix(in srgb, var(--ac) 20%, var(--g-dense));
 }
+.lap .lsay {
+  display: contents; /* the visible words stay flex items of .lmain; only the spoken copy beside them is for screen readers */
+}
 .lap .ll {
   color: var(--fg2);
   font-weight: 500;

@@ -3,7 +3,7 @@
 // Test titles start with the check's number in docs/specs/01-playwright-test.md.
 import {test, expect, type House} from './fixtures';
 import {FULL_CFG} from './houses';
-import {callData, callsMessage, OFFICE_TILE} from './lights';
+import {callData, callsMessage, OFFICE_TILE, openOfficeSheet} from './lights';
 
 // a fake clock lets the tests run past the panel's timers (the 60 ms drag release, the 1 s render tick) without waiting
 test.use({houseOpts: {cfg: FULL_CFG, time: '2026-11-07T12:00:00-05:00'}});
@@ -16,16 +16,8 @@ const box = async (house: House, selector: string) => {
   return b;
 };
 
-/** taps the right part of the Office tile (the left part is the bulb) and waits for the sheet */
-const openOffice = async (house: House) => {
-  await house.tab('lights');
-  const t = await box(house, OFFICE_TILE);
-  await house.page.mouse.click(t.x + t.width * 0.7, t.y + t.height / 2);
-  await expect(house.root().locator('#sh-light')).toBeVisible();
-};
-
 test('26 tapping the right part of the Office tile opens the sheet and switches nothing', async ({house}) => {
-  await openOffice(house);
+  await openOfficeSheet(house);
   await house.clock.runFor(1_100);
   expect(
     house.calls.filter(c => /^light\./.test(c)),
@@ -34,7 +26,7 @@ test('26 tapping the right part of the Office tile opens the sheet and switches 
 });
 
 test('27 dragging up the brightness slider sends one brightness and takes the room off Auto', async ({house}) => {
-  await openOffice(house);
+  await openOfficeSheet(house);
   const b = await box(house, '#lsheet .lpill[data-lp="br"]');
   const x = b.x + b.width / 2;
   await house.page.mouse.move(x, b.y + b.height * 0.6);
@@ -55,7 +47,7 @@ test('27 dragging up the brightness slider sends one brightness and takes the ro
 });
 
 test('28 tapping near the top of the colour slider picks a cool white', async ({house}) => {
-  await openOffice(house);
+  await openOfficeSheet(house);
   const k = await box(house, '#lsheet .lpill[data-lp="ct"]');
   await house.page.mouse.click(k.x + k.width / 2, k.y + k.height * 0.05);
   const kelvin = () => house.calls.filter(c => /color_temp_kelvin/.test(c)).at(-1);
@@ -69,7 +61,7 @@ test('28 tapping near the top of the colour slider picks a cool white', async ({
 
 test('29 ArrowDown on the brightness slider dims by 10 %', async ({house}) => {
   await house.setState('light.office_1', {attributes: {brightness: 245}}); // the office bulb sits at 96 %
-  await openOffice(house);
+  await openOfficeSheet(house);
   const pill = house.root().locator('#lsheet .lpill[data-lp="br"]');
   await expect(pill).toHaveAttribute('aria-valuenow', '96');
   await pill.focus();
@@ -83,7 +75,7 @@ test('29 ArrowDown on the brightness slider dims by 10 %', async ({house}) => {
 });
 
 test('30 the Auto and Night switches reach Adaptive Lighting', async ({house}) => {
-  await openOffice(house);
+  await openOfficeSheet(house);
   await house.root().locator('#lsheet button.sw[data-l="al"]').click();
   await expect
     .poll(
@@ -101,7 +93,7 @@ test('30 the Auto and Night switches reach Adaptive Lighting', async ({house}) =
 });
 
 test('31 Done closes the sheet and Enter on a tile opens it again', async ({house}) => {
-  await openOffice(house);
+  await openOfficeSheet(house);
   await house.root().locator('#sh-light .ldone').click();
   await expect(house.root().locator('#sh-light')).toBeHidden();
   await house.root().locator(OFFICE_TILE).focus();
