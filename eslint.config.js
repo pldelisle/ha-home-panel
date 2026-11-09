@@ -91,6 +91,23 @@ export default defineConfig(
     },
   },
 
+  // The core has no DOM: a module that needs the time zone, the locale or a Storage accepts it as a parameter, which is
+  // what lets Node test it with no browser (docs/specs/09-architecture-foundations.md, "Core has no DOM")
+  {
+    files: ['src/core/**/*.ts'],
+    rules: {
+      'no-restricted-globals': [
+        'error',
+        ...['document', 'window', 'localStorage', 'sessionStorage', 'navigator', 'location', 'customElements'].map(
+          name => ({
+            name,
+            message: 'The core has no DOM: accept it as a parameter (docs/specs/09-architecture-foundations.md).',
+          }),
+        ),
+      ],
+    },
+  },
+
   // TypeScript and Lit
   {
     files: TS,
