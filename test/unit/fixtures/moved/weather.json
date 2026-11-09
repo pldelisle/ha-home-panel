@@ -641,6 +641,99 @@
     },
     {
       "key": "weather.series.normalLow"
+    },
+    {
+      "key": "weather.season.since",
+      "values": {
+        "date": "Mar 4"
+      },
+      "fr": {
+        "date": "4 mars"
+      }
+    },
+    {
+      "key": "weather.season.warmest"
+    },
+    {
+      "key": "weather.season.coldest"
+    },
+    {
+      "key": "weather.season.gust"
+    },
+    {
+      "key": "weather.season.average",
+      "values": {
+        "n": 0
+      }
+    },
+    {
+      "key": "weather.season.average",
+      "values": {
+        "n": 1
+      }
+    },
+    {
+      "key": "weather.season.average",
+      "values": {
+        "n": 4
+      }
+    },
+    {
+      "key": "weather.season.month",
+      "values": {
+        "month": "Nov",
+        "year": "26"
+      },
+      "fr": {
+        "month": "Nov."
+      }
+    },
+    {
+      "key": "weather.season.month",
+      "values": {
+        "month": "Mar",
+        "year": "25"
+      },
+      "fr": {
+        "month": "Mars"
+      }
+    },
+    {
+      "key": "weather.season.from",
+      "values": {
+        "day": 12
+      }
+    },
+    {
+      "key": "weather.season.averageTitle",
+      "values": {
+        "mean": "3.4"
+      }
+    },
+    {
+      "key": "weather.season.averageTitle",
+      "values": {
+        "mean": "-12.5"
+      }
+    },
+    {
+      "key": "weather.season.frost",
+      "values": {
+        "n": 1
+      }
+    },
+    {
+      "key": "weather.season.frost",
+      "values": {
+        "n": 9
+      }
+    },
+    {
+      "key": "weather.season.hot",
+      "values": {
+        "n": 12,
+        "limit": 25
+      }
     }
   ]
 }

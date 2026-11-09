@@ -138,6 +138,18 @@ export const fr: Record<MessageKey, string> = {
   'weather.series.normalHigh': 'Maximum normal',
   'weather.series.forecastLow': 'Minimum prévu',
   'weather.series.normalLow': 'Minimum normal',
+  'weather.season.since':
+    'Chaque mois depuis le {date}, du minimum le plus froid au maximum le plus chaud. Le point est la moyenne du mois.',
+  'weather.season.warmest': 'Le plus chaud',
+  'weather.season.coldest': 'Le plus froid',
+  'weather.season.gust': 'Plus forte rafale',
+  'weather.season.average':
+    '{n, plural, =0 {moyenne, # nuits de gel} one {moyenne, # nuit de gel} other {moyenne, # nuits de gel}}',
+  'weather.season.month': '{month} 20{year}',
+  'weather.season.from': 'à partir du {day}',
+  'weather.season.averageTitle': 'Moyenne {mean}°',
+  'weather.season.frost': '{n, plural, one {# gel} other {# gels}}',
+  'weather.season.hot': '{n} j au-dessus de {limit}°',
   'range.day.label': 'dernières 24 heures',
   'range.day.short': '24 h',
   'range.week.label': '7 derniers jours',

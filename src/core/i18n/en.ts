@@ -136,6 +136,19 @@ export const en = {
   'weather.series.normalHigh': 'Normal high',
   'weather.series.forecastLow': 'Forecast low',
   'weather.series.normalLow': 'Normal low',
+  // the season: the months since the records began (src/features/weather/history.ts); `=0` keeps the French at "0 nuits", as the rewrite layer wrote it
+  'weather.season.since':
+    'Every month since {date}, from the coldest low to the warmest high. The dot is the monthly average.',
+  'weather.season.warmest': 'Warmest',
+  'weather.season.coldest': 'Coldest',
+  'weather.season.gust': 'Strongest gust',
+  'weather.season.average':
+    '{n, plural, =0 {average, # frosty nights} one {average, # frosty night} other {average, # frosty nights}}',
+  'weather.season.month': "{month} ''{year}",
+  'weather.season.from': 'from {day}',
+  'weather.season.averageTitle': 'Average {mean}°',
+  'weather.season.frost': '{n, plural, one {# frost} other {# frosts}}',
+  'weather.season.hot': '{n} over {limit}°',
   // the history ranges (src/ui/ranges.ts)
   'range.day.label': 'last 24 hours',
   'range.day.short': '24 h',

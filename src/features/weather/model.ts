@@ -140,7 +140,8 @@ export interface WeatherViewModel {
   days: DayRow[];
 }
 
-const DASH = '–';
+/** What a missing figure shows. */
+export const DASH = '–';
 const DAY_MS = 864e5;
 const HOUR_MS = 36e5;
 /** The forecast days the panel keeps; the phone's card shows the first four. */
@@ -174,7 +175,7 @@ const isCondition = (word: string): word is Condition => (CONDITIONS as readonly
 /** The tiles in the order the detail panel shows them; the pane's order is TILES'. */
 const DETAIL_ORDER: readonly TileKey[] = ['wind', 'hum', 'pres', 'pop', 'uv', 'aqhi', 'feels', 'normal'];
 
-const capitalise = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
+export const capitalise = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
 /**
  * The name of a condition: the catalog's word for one Home Assistant knows, else the integration's own word with a capital
@@ -204,12 +205,17 @@ interface Say {
   icon: (word: string | null, day: boolean) => IconSpec;
 }
 
+/** A whole number; the -0 of Math.round(-0.4) is 0, which Intl would otherwise write as `-0`. */
+export const whole = (fmt: Formatters, n: number) => fmt.integer(Math.round(n) + 0);
+/** A whole number of degrees: `12°`. */
+export const degrees = (fmt: Formatters, n: number) => `${whole(fmt, n)}°`;
+
 function sayWith(t: Translate, fmt: Formatters): Say {
   return {
     t,
     fmt,
-    int: n => fmt.integer(Math.round(n) + 0),
-    degrees: n => `${fmt.integer(Math.round(n) + 0)}°`,
+    int: n => whole(fmt, n),
+    degrees: n => degrees(fmt, n),
     raw: n => (n === null ? DASH : fmt.number(n, 2)),
     fixed: (n, digits) => (n === null ? DASH : fmt.fixed(n, digits)),
     compass: point => t('weather.compass', {point}),
