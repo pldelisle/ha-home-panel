@@ -59,7 +59,11 @@ for (const viewport of ['tablet', 'phone'] as const) {
             test('settings popup', async ({house}) => {
               await house.root().locator('#gear').click();
               await expect(house.root().locator('#setpop')).toBeVisible();
-              await expect(house.page).toHaveScreenshot(`settings-${viewport}-${theme}-en.png`);
+              // the footer prints the release ("Home panel v2.12.0"), which every release changes; masked, a version bump
+              // leaves the baseline alone
+              await expect(house.page).toHaveScreenshot(`settings-${viewport}-${theme}-en.png`, {
+                mask: [house.root().locator('#setpop .ccv')],
+              });
             });
           }
         });
