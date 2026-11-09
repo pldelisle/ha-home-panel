@@ -19,7 +19,7 @@ The layers are folders under `src/`. Dependencies point inward, toward the core.
 
 The rules live in one place, [`.dependency-cruiser.cjs`](../.dependency-cruiser.cjs), one rule per row with a comment saying why. Beyond the table it forbids import cycles, modules nothing imports and imports that resolve to nothing. `npm run lint` runs it after ESLint, so a forbidden import fails the build and CI's lint job needs no extra step. An ESLint block also bans `document`, `window`, `localStorage`, `navigator` and similar globals in `src/core/`: a core module that needs the time zone, the locale or a `Storage` takes it as a parameter, which is what lets the core run in Node with no browser.
 
-The folders for providers, UI kit, features and shell do not exist yet. Their rules name them so they apply from each folder's first file.
+The folders for the UI kit and the shell do not exist yet; `src/providers/` and `src/features/weather/` hold the first weather sources and model ([ADR 0020](adr/0020-weather-source-strategies.md)). The rules name every folder so they apply from its first file.
 
 The module graph is drawn from the code, not from a slide: see [the dependency graph](architecture/dependency-graph.md). `npm run arch:graph` regenerates it, and a unit test fails when the committed file is stale, so do not edit it by hand.
 

@@ -3,7 +3,7 @@
 // whose French would differ is a visible change and needs an approved baseline, not an edit here.
 // The list of messages is a fixture the move writes (test/unit/fixtures/moved/<move>.json); this file and the fixtures are
 // deleted with the layer in phase 4.
-import {readFileSync} from 'node:fs';
+import {readdirSync, readFileSync} from 'node:fs';
 import {describe, expect, test} from 'vitest';
 import {en} from '../../../src/core/i18n/en.ts';
 import {createMessages, type MessageValues} from '../../../src/core/i18n/messages.ts';
@@ -49,5 +49,17 @@ describe.each([['weather', 'weather.']])('the %s move', (move, prefix) => {
   test('lists every message the move introduced, and only messages that exist', () => {
     const introduced = Object.keys(en).filter(key => key.startsWith(prefix));
     expect([...new Set(moved.map(m => m.key))].sort()).toEqual(introduced.sort());
+  });
+
+  test('has no dead message: the feature says every one, by its key or by the prefix of a computed key', () => {
+    const folder = new URL(`../../../src/features/${move}/`, import.meta.url);
+    const source = readdirSync(folder)
+      .filter(file => file.endsWith('.ts'))
+      .map(file => readFileSync(new URL(file, folder), 'utf8'))
+      .join('\n');
+    const dead = Object.keys(en)
+      .filter(key => key.startsWith(prefix))
+      .filter(key => !source.includes(`'${key}'`) && !source.includes(`\`${key.replace(/[^.]+$/, '')}$\{`));
+    expect(dead).toEqual([]);
   });
 });
