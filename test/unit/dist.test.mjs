@@ -219,7 +219,7 @@ test('the bundle parses as an ES module', () => {
 test('the bundle carries the package version once and no placeholder', () => {
   const js = readFileSync(BUNDLE, 'utf8');
   // The version as a string of its own is the VERSION constant of src/legacy/globals.js, so it is there exactly once:
-  // twice would mean that module, and the hass it holds, is bundled twice.
+  // twice would mean that module is bundled twice.
   const literal = new RegExp('[`"\']' + version.replaceAll('.', '\\.') + '[`"\']', 'g');
   expect(js.match(literal) ?? [], `the version ${version} as a string`).toHaveLength(1);
   for (const m of ['__CONFIG__', '__STACK__', '__FR__', '__AUTO__', '__CSS__', '__VERSION__'])

@@ -1,57 +1,13 @@
-// Scaffolding, not design: the module-level state and helpers that home-panel.js, auto.js and fr.js used to share as
-// globals in one spliced script. Every export here is something phase 2 (the store, Lit components) must remove, so
-// keep the list short and do not add to it. See docs/specs/06-vite-build.md.
+// Pure helpers only, no state: the small functions home-panel.js and auto.js still share while the rewrite goes on.
+// Nothing here reads Home Assistant or the time zone; those live in the panel's store (src/core/store.ts).
+// Scaffolding, not design: do not add to this list. See docs/specs/06-vite-build.md.
 
 export const VERSION = __VERSION__; // injected from package.json by vite.config.ts (and vitest.config.ts)
 
-// the two mutable variables, behind accessors because an importing module cannot assign to an imported binding
-let hass = null;
-let TZ = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-export const getHass = () => hass;
-export const setHass = h => {
-  hass = h;
-};
-export const getTZ = () => TZ;
-export const setTZ = z => {
-  TZ = z;
-};
-
-// ---------- small helpers ----------
-export const st = id => hass && hass.states[id];
 export const ok = s => s && s.state !== 'unavailable' && s.state !== 'unknown';
-export const num = id => {
-  const s = st(id);
-  if (!ok(s)) return null;
-  const v = parseFloat(s.state);
-  return Number.isFinite(v) ? v : null;
-};
-export const attr = (id, a) => {
-  const s = st(id);
-  return s ? s.attributes[a] : undefined;
-};
-export const kw = id => {
-  const v = num(id);
-  if (v == null) return null;
-  const u = attr(id, 'unit_of_measurement');
-  return u === 'W' ? v / 1000 : v;
-};
 export const esc = s =>
   String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'})[c]);
 export const ampm = s => s.replace(/\s?([ap])\.\s?m\.?/i, ' $1m');
-export const fmtTime = d =>
-  ampm(new Date(d).toLocaleTimeString('en-CA', {hour: 'numeric', minute: '2-digit', timeZone: TZ}));
-export const fmtDate = d => new Date(d).toLocaleDateString('en-CA', {month: 'short', day: 'numeric', timeZone: TZ});
-export const localDay = ms => new Date(ms).toLocaleDateString('en-CA', {timeZone: TZ});
-export const hourNow = () => {
-  const p = new Intl.DateTimeFormat('en-CA', {
-    timeZone: TZ,
-    hour: 'numeric',
-    minute: 'numeric',
-    hourCycle: 'h23',
-  }).formatToParts(new Date());
-  const g = t => +p.find(x => x.type === t).value;
-  return g('hour') + g('minute') / 60;
-};
 /** @param {any[]} t [label, value, unit, sub-line] */
 export const tile = ([k, v, u, sb]) =>
   `<div class="tile"><div class="k">${k}</div><div class="v num">${v}<small>${u || ''}</small></div>${sb ? `<div class="s">${sb}</div>` : ''}</div>`;

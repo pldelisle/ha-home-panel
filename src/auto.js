@@ -6,7 +6,8 @@
 import {ok, esc, cap, plural, tile} from './legacy/globals.js';
 
 // Mermaid is imported the first time a flow is drawn, so the bundle the other tabs load does not carry it; Vite emits
-// it as chunks under chunks/, beside home-panel.js. One import for every panel on the page.
+// it as chunks under chunks/, beside home-panel.js.
+// module-level on purpose: a library loads once per page, not once per panel (spec 10, the one exception to "no module state")
 let mermaidP;
 const loadMermaid = () => (mermaidP ??= import('mermaid').then(m => m.default));
 
