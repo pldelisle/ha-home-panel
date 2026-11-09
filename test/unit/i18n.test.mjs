@@ -3,21 +3,19 @@ import {test, expect, vi} from 'vitest';
 import {fakeHass, entity} from './fake-hass.ts';
 import {createFrench} from '../../src/i18n/fr.js';
 
-// frText() looks up the house's own names through hass and caches them for a minute. A tiny fake hass whose names must
-// stay untranslated, set on a fresh copy of the modules so one test's cache never reaches the next.
-// As in the panel, the module is loaded first and hass is handed over afterwards, so a hass read at import time
-// fails here.
+// frText() looks up the house's own names through the hass its caller hands it and caches them for a minute. A tiny
+// fake hass whose names must stay untranslated, with the module loaded afresh so one test's cache never reaches the next.
+// frText is returned already bound to that hass, as the panel hands its own to the module functions.
 const load = async names => {
   vi.resetModules();
   const fr = await import('../../src/i18n/fr.js');
-  const {setHass} = await import('../../src/legacy/globals.js');
-  setHass({
+  const hass = {
     areas: {a: {name: 'Home'}},
     devices: {},
     entities: {},
     states: Object.fromEntries(names.map((n, i) => [`light.l${i}`, {attributes: {friendly_name: n}}])),
-  });
-  return fr;
+  };
+  return {...fr, frText: s => fr.frText(s, hass)};
 };
 
 test('greetings, numbers and dates', async () => {

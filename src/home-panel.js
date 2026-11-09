@@ -960,8 +960,8 @@ export class HomePanel extends HTMLElement {
     const root = this.shadowRoot;
     this.frObs = new MutationObserver(ms => {
       for (const m of ms) {
-        if (m.type === 'childList') m.addedNodes.forEach(frTree);
-        else frNode(m.target);
+        if (m.type === 'childList') m.addedNodes.forEach(n => frTree(n, this.hass));
+        else frNode(m.target, this.hass);
       }
     });
     this.frObs.observe(root, {
@@ -971,7 +971,7 @@ export class HomePanel extends HTMLElement {
       attributes: true,
       attributeFilter: FR_ATTR,
     });
-    frTree(root);
+    frTree(root, this.hass);
   }
   frStop() {
     if (this.frObs) this.frObs.disconnect();
