@@ -7,7 +7,6 @@ export const VERSION = __VERSION__; // injected from package.json by vite.config
 export const ok = s => s && s.state !== 'unavailable' && s.state !== 'unknown';
 export const esc = s =>
   String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'})[c]);
-export const ampm = s => s.replace(/\s?([ap])\.\s?m\.?/i, ' $1m');
 /** @param {any[]} t [label, value, unit, sub-line] */
 export const tile = ([k, v, u, sb]) =>
   `<div class="tile"><div class="k">${k}</div><div class="v num">${v}<small>${u || ''}</small></div>${sb ? `<div class="s">${sb}</div>` : ''}</div>`;
