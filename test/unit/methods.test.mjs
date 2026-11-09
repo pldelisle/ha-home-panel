@@ -29,19 +29,35 @@ test('no call to a method that no longer exists', () => {
   expect(missing).toStrictEqual([]);
 });
 
-// Spec 14: the class already speaks the guest's interface. The Lit host's ticket (#152) deletes the element half and keeps these
-// by name, so a rename or a removal here fails before it reaches that deletion list.
-test('the class defines the five guest methods and the two getters', () => {
-  for (const m of ['connect', 'disconnect', 'hassChanged', 'panelChanged', 'narrowChanged'])
+// Spec 14, step B: the class is the shell's guest, not an element. It defines the guest's methods by name (a rename or a
+// removal fails here before it reaches the shell), reaches the page through the context's fields, and holds none of
+// the element's half or of the services the shell owns.
+test('the class defines the guest methods', () => {
+  for (const m of ['connect', 'disconnect', 'hassChanged', 'panelChanged', 'narrowChanged', 'toast'])
     expect(panel, m).toMatch(new RegExp(`^  ${m}\\(`, 'm'));
-  for (const g of ['root', 'host']) expect(panel, g).toMatch(new RegExp(`^  get ${g}\\(\\) \\{`, 'm'));
 });
 
-test('the element callbacks and setters only forward to the guest methods', () => {
-  for (const m of ['connectedCallback', 'disconnectedCallback', 'set narrow', 'set panel', 'set hass']) {
-    const at = panel.search(new RegExp(`^  ${m}\\(`, 'm'));
-    expect(at, m).toBeGreaterThan(-1);
-    const end = panel.indexOf('\n  }\n', at);
-    expect(panel.slice(at, end).split('\n').length, `${m} stays under ten lines`).toBeLessThan(10);
-  }
+test('the class takes the page and the services from the context, and is no element', () => {
+  expect(panel).toMatch(/^export class LegacyPanel \{/m);
+  for (const f of ['root', 'host', 'store', 'api', 'settings'])
+    expect(panel, f).toMatch(new RegExp(`this\\.${f} = ctx\\.${f};`));
+  for (const gone of [
+    'extends HTMLElement',
+    'connectedCallback',
+    'disconnectedCallback',
+    'createStore',
+    'createSettings',
+    'createApi',
+    'setPanelConfig',
+    'this.shadowRoot',
+  ])
+    expect(panel.includes(gone), gone).toBe(false);
+  expect(panel).not.toMatch(/\b_panel\b/); // a word: the light-order key 'home_panel' is not the removed field
+  expect(auto.includes('this.shadowRoot')).toBe(false);
+});
+
+test('the config is de-duplicated on the store generation, not on its own copy of the config', () => {
+  const at = panel.search(/^ {2}configure\(\) \{/m);
+  expect(at).toBeGreaterThan(-1);
+  expect(panel.slice(at, panel.indexOf('\n  }\n', at))).toContain('this.store.generation');
 });
