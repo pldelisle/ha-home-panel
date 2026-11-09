@@ -18,6 +18,13 @@ const DIST = join(ROOT, 'dist');
 const BUNDLE = join(DIST, 'home-panel.js');
 const read = f => readFileSync(join(ROOT, f), 'utf8');
 const version = JSON.parse(read('package.json')).version;
+// the package a source map names by its node_modules/ path (`@scope/name` or `name`), or null for a file of the panel
+const packageOf = s => {
+  const i = s.lastIndexOf('node_modules/');
+  if (i < 0) return null;
+  const [a, b] = s.slice(i + 'node_modules/'.length).split('/');
+  return a.startsWith('@') ? `${a}/${b}` : a;
+};
 
 // every file under dir (as paths relative to ROOT), skipping the folders (or, in a git worktree, the .git file) that
 // hold no source text
@@ -99,16 +106,17 @@ test('every script has a .br and a .gz beside it that decompress to it byte for 
   }
 });
 
-test("the chunks' maps name the libraries' files but leave out their text", () => {
-  // vite.config.ts drops each node_modules source's text from the chunk maps (9.9 MB of Mermaid alone); the panel's
-  // own files keep theirs
-  const maps = distFiles.filter(f => /^chunks\/.+\.js\.map$/.test(f));
-  expect(maps.length).toBeGreaterThan(0);
+test("the maps of the chunks and of the entry name the libraries' files but leave out their text", () => {
+  // vite.config.ts drops each node_modules source's text from the maps (9.9 MB of Mermaid alone); the panel's own
+  // files keep theirs, since Home Assistant serves the panel's folder, not src/, so DevTools reads the code from the map
+  const maps = distFiles.filter(f => /^(chunks\/.+|home-panel)\.js\.map$/.test(f));
+  expect(maps.length).toBeGreaterThan(1);
   for (const f of maps) {
     const map = JSON.parse(readFileSync(join(DIST, f), 'utf8'));
     map.sources.forEach((s, i) => {
-      if (s.includes('node_modules/')) expect(map.sourcesContent?.[i] ?? null, `${f}: ${s}`).toBe(null);
-      else expect(typeof map.sourcesContent?.[i], `${f}: ${s}`).toBe('string');
+      const content = map.sourcesContent?.[i] ?? null;
+      if (s.includes('node_modules/')) expect(content, `${f}: ${s}`).toBe(null);
+      else expect(typeof content === 'string' && content.length > 0, `${f}: ${s}`).toBe(true);
     });
   }
 });
@@ -138,20 +146,19 @@ test("the generated LICENSES.md ships as it is, so the release zip carries the l
   expect(readFileSync(join(DIST, 'LICENSES.md')).equals(readFileSync(join(ROOT, 'LICENSES.md')))).toBe(true);
 });
 
-test('every package whose code is in a chunk is listed in LICENSES.md', () => {
-  // the chunks' maps name each node_modules file a chunk was built from; a package inside a pre-bundled file (svg.js
-  // inside apexcharts.esm.js) has no entry of its own, and the list covers it as part of the production tree
+test('every package whose code is in a chunk or the entry is listed in LICENSES.md', () => {
+  // the maps of the chunks and of the entry name each node_modules file a bundle was built from; a package inside a
+  // pre-bundled file (svg.js inside apexcharts.esm.js) has no entry of its own, and the list covers it as part of the
+  // production tree
   const rows = read('LICENSES.md')
     .split('\n')
     .filter(l => l.startsWith('| '))
     .map(l => l.split(' | ')[0].slice(2));
   const used = new Set();
-  for (const f of distFiles.filter(f => /^chunks\/.+\.js\.map$/.test(f)))
+  for (const f of distFiles.filter(f => /^(chunks\/.+|home-panel)\.js\.map$/.test(f)))
     for (const s of JSON.parse(readFileSync(join(DIST, f), 'utf8')).sources) {
-      const i = s.lastIndexOf('node_modules/');
-      if (i < 0) continue;
-      const [a, b] = s.slice(i + 'node_modules/'.length).split('/');
-      used.add(a.startsWith('@') ? `${a}/${b}` : a);
+      const name = packageOf(s);
+      if (name) used.add(name);
     }
   expect(used.size, 'packages named in the maps').toBeGreaterThan(20);
   for (const name of used) expect(rows, name).toContain(name);
@@ -226,20 +233,26 @@ test('the bundle carries the package version once and no placeholder', () => {
     expect(js.includes(m), m).toBe(false);
 });
 
-test('the source map names the original files under src/', () => {
+test("the entry's source map names the original files under src/ and intl-messageformat's, no other library's", () => {
   const map = JSON.parse(readFileSync(join(DIST, 'home-panel.js.map'), 'utf8'));
   for (const f of ['src/config.js', 'src/home-panel.js', 'src/i18n/fr.js', 'src/auto.js'])
     expect(
       map.sources.some(s => s.endsWith(f)),
       f,
     ).toBe(true);
-  // relative paths into src/ only: nothing from node_modules, no absolute path of the machine that built it
+  // relative paths only, into src/ or node_modules/, never an absolute path of the machine that built it
   expect(
-    map.sources.every(s => s.startsWith('../src/')),
+    map.sources.every(s => s.startsWith('../src/') || s.startsWith('../node_modules/')),
     map.sources.join(', '),
   ).toBe(true);
-  // with their text: Home Assistant serves the panel's folder, not src/, so DevTools reads the code from the map
-  expect(map.sourcesContent.every(c => typeof c === 'string' && c.length > 0)).toBe(true);
+  // the one library built into the entry, which every page load pays for, is intl-messageformat with its FormatJS
+  // parser and helpers: another library slipping in fails here (the maps test above checks their text is left out)
+  expect([...new Set(map.sources.map(packageOf).filter(Boolean))].sort()).toStrictEqual([
+    '@formatjs/fast-memoize',
+    '@formatjs/icu-messageformat-parser',
+    '@formatjs/icu-skeleton-parser',
+    'intl-messageformat',
+  ]);
   expect(readFileSync(BUNDLE, 'utf8')).toMatch(/\n\/\/# sourceMappingURL=home-panel\.js\.map\s*$/);
 });
 

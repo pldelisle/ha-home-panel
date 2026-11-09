@@ -359,7 +359,9 @@
                         ? {}
                         : m.type === 'camera_thumbnail'
                           ? {}
-                          : {},
+                          : m.type === 'lovelace/resources'
+                            ? []
+                            : {},
         connection: {
           subscribeMessage: async (callback, msg) => {
             if (params.get('forecast') === '1' && msg.forecast_type === 'daily')

@@ -34,6 +34,7 @@
   "devDependencies": {
     "@changesets/cli": "3.0.3",
     "@eslint/js": "9.39.5",
+    "@formatjs/icu-messageformat-parser": "3.5.23",
     "@playwright/test": "1.63.0",
     "@size-limit/file": "14.3.0",
     "@types/node": "24.19.2",
@@ -56,6 +57,7 @@
   "dependencies": {
     "@fontsource/montserrat": "5.3.0",
     "apexcharts": "3.45.2",
+    "intl-messageformat": "12.1.5",
     "mermaid": "11.17.2"
   },
   "size-limit": [

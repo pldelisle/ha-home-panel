@@ -9,8 +9,38 @@ import globals from 'globals';
 const TS = ['**/*.ts'];
 // The two files the old string-rendering code lives in; the `legacy` block below only shrinks.
 const LEGACY = ['src/home-panel.js', 'src/auto.js'];
+// The one file that may call Home Assistant's socket: the API client (docs/specs/12-api-client.md, ADR 0014).
+const API_CLIENT = 'src/core/api.ts';
 // Code that runs in Node: the tools, the tests and the config files at the root (vite.config.ts among them).
 const NODE = ['scripts/**', '*.config.{js,mjs,ts}', 'test/**'];
+
+const STRING_RENDERING = [
+  {
+    // both `el.innerHTML = x` and `el['innerHTML'] = x`
+    selector:
+      ':matches(AssignmentExpression[left.property.name="innerHTML"], AssignmentExpression[left.property.value="innerHTML"])',
+    message: 'Render with Lit templates, not innerHTML.',
+  },
+  {
+    selector:
+      ':matches(CallExpression[callee.property.name="insertAdjacentHTML"], CallExpression[callee.property.value="insertAdjacentHTML"])',
+    message: 'Render with Lit templates, not insertAdjacentHTML.',
+  },
+];
+// Any way of reaching one of the four socket functions: `hass.callWS(...)`, `hass['callWS'](...)`, a template literal
+// key, `hass.callWS.call(...)` and `.apply`/`.bind` (all member accesses) and `const {callWS} = hass` (a destructuring
+// pattern, key written as a name or a string). A key computed at run time (`hass[name]`) no selector can see.
+const SOCKET = '/^(callWS|callService|subscribeMessage|subscribeEvents)$/';
+const API_DOOR = {
+  selector: [
+    `MemberExpression[property.name=${SOCKET}]`,
+    `MemberExpression[property.value=${SOCKET}]`,
+    `MemberExpression > TemplateLiteral.property[quasis.0.value.cooked=${SOCKET}]`,
+    `ObjectPattern > Property[key.name=${SOCKET}]`,
+    `ObjectPattern > Property[key.value=${SOCKET}]`,
+  ].join(', '),
+  message: 'Call Home Assistant through the API client (src/core/api.ts).',
+};
 
 export default defineConfig(
   {
@@ -41,22 +71,17 @@ export default defineConfig(
   {
     files: ['**/*.js', '**/*.mjs', ...TS],
     ignores: LEGACY,
-    rules: {
-      'no-restricted-syntax': [
-        'error',
-        {
-          // both `el.innerHTML = x` and `el['innerHTML'] = x`
-          selector:
-            ':matches(AssignmentExpression[left.property.name="innerHTML"], AssignmentExpression[left.property.value="innerHTML"])',
-          message: 'Render with Lit templates, not innerHTML.',
-        },
-        {
-          selector:
-            ':matches(CallExpression[callee.property.name="insertAdjacentHTML"], CallExpression[callee.property.value="insertAdjacentHTML"])',
-          message: 'Render with Lit templates, not insertAdjacentHTML.',
-        },
-      ],
-    },
+    rules: {'no-restricted-syntax': ['error', ...STRING_RENDERING]},
+  },
+
+  // Home Assistant's socket has one door, the API client. A rule's options are replaced, not merged, by a later block
+  // that sets the same rule, so each kind of file below lists everything that applies to it: the legacy files (no
+  // string-rendering ban) and the rest of src/ (both). The client itself keeps the string-rendering ban only.
+  {files: LEGACY, rules: {'no-restricted-syntax': ['error', API_DOOR]}},
+  {
+    files: ['src/**/*.{js,ts}'],
+    ignores: [...LEGACY, API_CLIENT],
+    rules: {'no-restricted-syntax': ['error', ...STRING_RENDERING, API_DOOR]},
   },
 
   // The one constant the build injects (vite.config.ts `define`); every other cross-file name is an import now
