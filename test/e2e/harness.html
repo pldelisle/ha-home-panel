@@ -16,6 +16,8 @@
       // A made-up house for the tests: no real people, places or devices. Two modes:
       //   ?house=full  (default) thermostats, lights, sensors, a car, an EV charger, a water heater, Environment Canada weather
       //   ?house=bare  only the sun, one weather entity and one light: every optional section must stay hidden
+      //   &forecast=1  a daily forecast for today and the next five days, which the weather subscription delivers (off by default,
+      //                so the weather views of the visual baselines stay as they are)
       //   &two=1       a second panel, window.panel2, in the same page and fed the same hass, with the full house limited to two
       //                rooms and one person (spec 10: each panel shows its own house)
       // window.PANEL_CFG (set before the page loads) becomes the panel's config, as panel_custom's `config:` would.
@@ -358,7 +360,21 @@
                         : m.type === 'camera_thumbnail'
                           ? {}
                           : {},
-        connection: {subscribeMessage: async () => () => {}, subscribeEvents: async () => () => {}},
+        connection: {
+          subscribeMessage: async (callback, msg) => {
+            if (params.get('forecast') === '1' && msg.forecast_type === 'daily')
+              callback({
+                forecast: Array.from({length: 6}, (_, i) => ({
+                  datetime: iso(now + i * 864e5),
+                  condition: 'cloudy',
+                  temperature: 8 + i,
+                  templow: i - 2,
+                })),
+              });
+            return () => {};
+          },
+          subscribeEvents: async () => () => {},
+        },
         hassUrl: p => p,
         formatEntityState: s => s.state,
       };
