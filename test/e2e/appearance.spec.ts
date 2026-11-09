@@ -122,7 +122,7 @@ test('the text sizes scale the type, and Larger marks the frame as large text', 
 test('the page behind the panel takes the wallpaper colour with glass on and gives it back with glass off', async ({
   house,
 }) => {
-  await expect.poll(() => pageBackground(house.page)).toMatchObject({html: expect.stringMatching(/.+/) as string});
+  await expect.poll(() => pageBackground(house.page)).toMatchObject({html: expect.stringMatching(/.+/)});
   expect((await pageBackground(house.page)).body).not.toBe('');
   await choose(house, '[data-gl="none"]');
   await expect.poll(() => pageBackground(house.page)).toEqual({html: '', body: ''});
@@ -131,7 +131,7 @@ test('the page behind the panel takes the wallpaper colour with glass on and giv
 test('the page gets its own colour back when the panel leaves the page, and the wallpaper when it returns', async ({
   house,
 }) => {
-  await expect.poll(() => pageBackground(house.page)).toMatchObject({html: expect.stringMatching(/.+/) as string});
+  await expect.poll(() => pageBackground(house.page)).toMatchObject({html: expect.stringMatching(/.+/)});
   await house.page.evaluate(() => {
     const panel = document.querySelector('home-panel')!;
     (window as unknown as {parked: Element}).parked = panel;
@@ -139,7 +139,7 @@ test('the page gets its own colour back when the panel leaves the page, and the 
   });
   expect(await pageBackground(house.page)).toEqual({html: '', body: ''});
   await house.page.evaluate(() => document.body.append((window as unknown as {parked: Element}).parked));
-  await expect.poll(() => pageBackground(house.page)).toMatchObject({html: expect.stringMatching(/.+/) as string});
+  await expect.poll(() => pageBackground(house.page)).toMatchObject({html: expect.stringMatching(/.+/)});
 });
 
 test('a touch marks the frame live for a minute', async ({house}) => {
