@@ -143,3 +143,5 @@ This is the one place that says why the stylesheet is minified the way it is; `v
   (Those figures predate the minified stylesheet of #69; the entry is 467,282 bytes with `es2020` and `es2025` on `main` after it, and the table's differences are what carries over.)
 
 - **The guard.** `test/unit/dist.test.mjs` asserts that no chunk is named `defineProperty-*`, so a rollback of the target is caught. The size budget is unchanged.
+
+- **Amended: no size budget.** The `limit` on the entry in `package.json` is gone (it was 160 kB, lowered to 153 kB in #69): the owner has many features coming and an artificial limit only adds friction. `npm run size` and the CI step stay, and print the entry and the lazy chunks for information, so a jump is still visible in the log. The 'Size budget' paragraphs above are the history.
