@@ -87,6 +87,7 @@ How the set shrinks:
 - Until a feature has moved, fixes and new work for it go into the legacy class and the move rebases on top. After it has moved, work goes into its folder.
 - One feature moves per pull request. Each move extracts the model with unit tests against recorded fixtures, writes the Lit elements, subscribes only to the entity ids the model reads, and deletes the matching methods from the legacy class.
 - The regular expression in `scripts/legacy-set.cjs` shrinks as modules move into a layer.
+- The legacy class already speaks the guest's interface ([spec 14](specs/14-lit-shell.md)): it reaches the page through `this.root` and `this.host`, and its lifecycle is `connect`, `disconnect`, `hassChanged`, `panelChanged` and `narrowChanged`, with the element's callbacks and setters reduced to one-line forwarders, so the Lit host that replaces the element is new files and deletions, not a rename.
 
 The move order of phase 3 is fixed and announced in the changelog of the release that starts it:
 

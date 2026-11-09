@@ -645,14 +645,14 @@ export class HomePanel extends HTMLElement {
   // The guest's two doors to the page (spec 14, step B). The class reaches its shadow root through `root` and the element
   // through `host`; the Lit host (ticket #152) sets both from GuestContext in connect(), and these getters become fields then.
   get root() {
-    return this.shadowRoot;
+    return this.shadow;
   }
   get host() {
     return this;
   }
   constructor() {
     super();
-    this.attachShadow({mode: 'open'});
+    this.shadow = this.attachShadow({mode: 'open'}); // the element's own root, held in a field for `root` to return
     // the composition root: this panel's store, settings and French layer, none of them shared with another panel (spec 10)
     this.browser = browserDefaults(); // the zone, locale and hour cycle the browser prefers, which the core does not read itself
     this.store = createStore({defaultTimeZone: this.browser.timeZone, resolve: resolveConfig});
@@ -706,12 +706,21 @@ export class HomePanel extends HTMLElement {
       } else if (this.$app && !this.$('setpop').hidden) this.toggleSettings(false);
     };
   }
+  // The setters and the two callbacks are the element's half and forward in one line; connect, disconnect, hassChanged,
+  // panelChanged and narrowChanged are the guest's half (spec 14). The Lit host (ticket #152) feeds the store itself and
+  // calls the same five methods.
   set narrow(v) {
     this._narrow = v;
-    if (this.$app) this.$app.classList.toggle('narrow', !!v);
+    this.narrowChanged(v);
+  }
+  narrowChanged(narrow) {
+    if (this.$app) this.$app.classList.toggle('narrow', !!narrow);
   }
   set panel(v) {
     this._panel = v;
+    this.panelChanged();
+  }
+  panelChanged() {
     if (this.hass && this.configure()) {
       this.build();
       if (this.host.isConnected) {
@@ -731,7 +740,11 @@ export class HomePanel extends HTMLElement {
     return this.store.hass;
   }
   set hass(h) {
-    this.store.setHass(h);
+    this.hassChanged(this.store.setHass(h));
+  }
+  /** @param {import('./core/store.ts').HassChange} change what the store found different; the body still reads the store itself */
+  // eslint-disable-next-line no-unused-vars -- the guest's signature; the body keeps reading the store until a move rewrites it
+  hassChanged(change) {
     // French follows the user's profile language; switching it redraws the panel.
     // The store's locale change is not enough here: a host may set the new language on the hass object it already
     // handed over (the harness does, on its first switch), so the store sees the same language before and after.
@@ -783,6 +796,15 @@ export class HomePanel extends HTMLElement {
         delete this[k];
         this[k] = v;
       }
+    this.connect({root: this.root, host: this.host, store: this.store, api: this.api, settings: this.settings});
+  }
+  /**
+   * @param {{root: ShadowRoot, host: HTMLElement, store: import('./core/store.ts').PanelStore, api: import('./core/api.ts').PanelApi, settings: import('./core/settings.ts').PanelSettings}} ctx
+   * the guest's context; the class still builds its own store, API client and settings (the Lit host's ticket takes them),
+   * so it reads none of it yet
+   */
+  // eslint-disable-next-line no-unused-vars -- the guest's signature; the Lit host's ticket makes the class read it
+  connect(ctx) {
     if (!this.unsubStore) {
       this.refreshFormatters(); // a hass may have come while the panel was off the page
       this.unsubStore = this.store.subscribe('*', this.onStore); // back on the page
@@ -822,6 +844,9 @@ export class HomePanel extends HTMLElement {
     LAYOUT.forEach(id => this.$(id) && this.ro.observe(this.$(id)));
   }
   disconnectedCallback() {
+    this.disconnect();
+  }
+  disconnect() {
     for (const el of [document.documentElement, document.body]) el.style.removeProperty('background-color');
     clearTimeout(this.liveT);
     clearTimeout(this.idleT);
