@@ -710,7 +710,11 @@ export class HomePanel extends HTMLElement {
       this.tick();
     }
   }
-  /** @returns {any} loose on purpose: the class reads registry fields that PanelHass does not declare yet */
+  /**
+   * @returns {any} loose on purpose: the class reads registry fields (hidden, platform, manufacturer, entity_category)
+   * that PanelHass does not declare; typing it as PanelHass gives 43 loose-pass errors. Spec 12 grows the hass types
+   * to what the panel reads; the class itself goes with phase 3.
+   */
   get hass() {
     return this.store.hass;
   }
@@ -853,7 +857,7 @@ export class HomePanel extends HTMLElement {
   num(id) {
     return this.store.num(id);
   }
-  /** @returns {any} the legacy class reads attributes it does not narrow */
+  /** @returns {any} the store returns unknown; the legacy class reads attributes it does not narrow (see get hass) */
   attr(id, a) {
     return this.store.attr(id, a);
   }

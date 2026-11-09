@@ -181,7 +181,8 @@ function frTextWith(s, isName) {
   out = frPost(out);
   return m[1] + out + m[3];
 }
-// the module functions take the panel's hass from their caller until the contract step deletes them (spec 10)
+// the module functions take the panel's hass from their caller (the ticket's alternative to reading the store: the class
+// still calls them directly until migrate C, #129, moves it to the createFrench instance) and go at contract, #130 (spec 10)
 export const frText = (s, hass) => frTextWith(s, core => frNames(hass).has(core));
 export const FR_ATTR = ['aria-label', 'title', 'placeholder', 'alt'];
 const frSeen = new WeakMap();
