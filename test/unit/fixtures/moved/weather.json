@@ -1,0 +1,590 @@
+{
+  "about": "The English messages the Weather move introduced (src/core/i18n/en.ts, weather.*), each with sample values, and for a French formatting that differs from the English one (times, a plural) the values it takes. test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer made of the English. Deleted with the layer in phase 4.",
+  "messages": [
+    {
+      "key": "weather.cond.clear-night"
+    },
+    {
+      "key": "weather.cond.cloudy"
+    },
+    {
+      "key": "weather.cond.fog"
+    },
+    {
+      "key": "weather.cond.hail"
+    },
+    {
+      "key": "weather.cond.lightning"
+    },
+    {
+      "key": "weather.cond.lightning-rainy"
+    },
+    {
+      "key": "weather.cond.partlycloudy"
+    },
+    {
+      "key": "weather.cond.pouring"
+    },
+    {
+      "key": "weather.cond.rainy"
+    },
+    {
+      "key": "weather.cond.snowy"
+    },
+    {
+      "key": "weather.cond.snowy-rainy"
+    },
+    {
+      "key": "weather.cond.sunny"
+    },
+    {
+      "key": "weather.cond.windy"
+    },
+    {
+      "key": "weather.cond.windy-variant"
+    },
+    {
+      "key": "weather.cond.exceptional"
+    },
+    {
+      "key": "weather.observed",
+      "values": {
+        "time": "1:30 pm"
+      },
+      "fr": {
+        "time": "13 h 30"
+      }
+    },
+    {
+      "key": "weather.observed",
+      "values": {
+        "time": "8:00 am"
+      },
+      "fr": {
+        "time": "8 h"
+      }
+    },
+    {
+      "key": "weather.observedAt",
+      "values": {
+        "time": "1:30 pm",
+        "station": "Springfield"
+      },
+      "fr": {
+        "time": "13 h 30"
+      }
+    },
+    {
+      "key": "weather.pressureTrend",
+      "values": {
+        "tendency": "rising"
+      }
+    },
+    {
+      "key": "weather.pressureTrend",
+      "values": {
+        "tendency": "falling"
+      }
+    },
+    {
+      "key": "weather.pressureTrend",
+      "values": {
+        "tendency": "steady"
+      }
+    },
+    {
+      "key": "weather.tendency",
+      "values": {
+        "tendency": "rising"
+      }
+    },
+    {
+      "key": "weather.tendency",
+      "values": {
+        "tendency": "falling"
+      }
+    },
+    {
+      "key": "weather.tendency",
+      "values": {
+        "tendency": "steady"
+      }
+    },
+    {
+      "key": "weather.alerts.none"
+    },
+    {
+      "key": "weather.alerts.count",
+      "values": {
+        "n": 1
+      }
+    },
+    {
+      "key": "weather.alerts.count",
+      "values": {
+        "n": 3
+      }
+    },
+    {
+      "key": "weather.alertKind.warning"
+    },
+    {
+      "key": "weather.alertKind.watch"
+    },
+    {
+      "key": "weather.alertKind.advisory"
+    },
+    {
+      "key": "weather.alertKind.statement"
+    },
+    {
+      "key": "weather.compass",
+      "values": {
+        "point": "N"
+      }
+    },
+    {
+      "key": "weather.compass",
+      "values": {
+        "point": "NNE"
+      }
+    },
+    {
+      "key": "weather.compass",
+      "values": {
+        "point": "NE"
+      }
+    },
+    {
+      "key": "weather.compass",
+      "values": {
+        "point": "ENE"
+      }
+    },
+    {
+      "key": "weather.compass",
+      "values": {
+        "point": "E"
+      }
+    },
+    {
+      "key": "weather.compass",
+      "values": {
+        "point": "ESE"
+      }
+    },
+    {
+      "key": "weather.compass",
+      "values": {
+        "point": "SE"
+      }
+    },
+    {
+      "key": "weather.compass",
+      "values": {
+        "point": "SSE"
+      }
+    },
+    {
+      "key": "weather.compass",
+      "values": {
+        "point": "S"
+      }
+    },
+    {
+      "key": "weather.compass",
+      "values": {
+        "point": "SSW"
+      }
+    },
+    {
+      "key": "weather.compass",
+      "values": {
+        "point": "SW"
+      }
+    },
+    {
+      "key": "weather.compass",
+      "values": {
+        "point": "WSW"
+      }
+    },
+    {
+      "key": "weather.compass",
+      "values": {
+        "point": "W"
+      }
+    },
+    {
+      "key": "weather.compass",
+      "values": {
+        "point": "WNW"
+      }
+    },
+    {
+      "key": "weather.compass",
+      "values": {
+        "point": "NW"
+      }
+    },
+    {
+      "key": "weather.compass",
+      "values": {
+        "point": "NNW"
+      }
+    },
+    {
+      "key": "weather.today"
+    },
+    {
+      "key": "weather.tomorrow"
+    },
+    {
+      "key": "weather.tonight"
+    },
+    {
+      "key": "weather.lowWord"
+    },
+    {
+      "key": "weather.sunrise"
+    },
+    {
+      "key": "weather.sunset"
+    },
+    {
+      "key": "weather.solarNoon"
+    },
+    {
+      "key": "weather.firstLight",
+      "values": {
+        "time": "6:32 am"
+      },
+      "fr": {
+        "time": "6 h 32"
+      }
+    },
+    {
+      "key": "weather.lastLight",
+      "values": {
+        "time": "5:33 pm"
+      },
+      "fr": {
+        "time": "17 h 33"
+      }
+    },
+    {
+      "key": "weather.daylight",
+      "values": {
+        "hours": 10,
+        "minutes": 0,
+        "changeMinutes": 2,
+        "changeSeconds": 32,
+        "change": "shorter"
+      }
+    },
+    {
+      "key": "weather.daylight",
+      "values": {
+        "hours": 10,
+        "minutes": 0,
+        "changeMinutes": 2,
+        "changeSeconds": 32,
+        "change": "longer"
+      }
+    },
+    {
+      "key": "weather.sunPosition",
+      "values": {
+        "percent": 85
+      }
+    },
+    {
+      "key": "weather.sunBelow"
+    },
+    {
+      "key": "weather.highLow",
+      "values": {
+        "high": 14,
+        "low": 6
+      }
+    },
+    {
+      "key": "weather.highLow",
+      "values": {
+        "high": 7,
+        "low": -1
+      }
+    },
+    {
+      "key": "weather.highLowNormal",
+      "values": {
+        "high": 14,
+        "low": 6,
+        "normalHigh": 9,
+        "normalLow": 1
+      }
+    },
+    {
+      "key": "weather.high",
+      "values": {
+        "temp": 14
+      }
+    },
+    {
+      "key": "weather.low",
+      "values": {
+        "temp": -1
+      }
+    },
+    {
+      "key": "weather.normal",
+      "values": {
+        "high": 9,
+        "low": 1
+      }
+    },
+    {
+      "key": "weather.feelsLike",
+      "values": {
+        "temp": 10
+      }
+    },
+    {
+      "key": "weather.fact.uv"
+    },
+    {
+      "key": "weather.percent",
+      "values": {
+        "value": 71
+      }
+    },
+    {
+      "key": "weather.percent",
+      "values": {
+        "value": "71.5"
+      }
+    },
+    {
+      "key": "weather.aqhi"
+    },
+    {
+      "key": "weather.aqhiRisk",
+      "values": {
+        "risk": "low"
+      }
+    },
+    {
+      "key": "weather.aqhiRisk",
+      "values": {
+        "risk": "moderate"
+      }
+    },
+    {
+      "key": "weather.aqhiRisk",
+      "values": {
+        "risk": "high"
+      }
+    },
+    {
+      "key": "weather.aqhiRisk",
+      "values": {
+        "risk": "veryHigh"
+      }
+    },
+    {
+      "key": "weather.uv.low"
+    },
+    {
+      "key": "weather.uv.moderate"
+    },
+    {
+      "key": "weather.uv.high"
+    },
+    {
+      "key": "weather.uv.veryHigh"
+    },
+    {
+      "key": "weather.uv.extreme"
+    },
+    {
+      "key": "weather.band.low"
+    },
+    {
+      "key": "weather.band.moderate"
+    },
+    {
+      "key": "weather.band.high"
+    },
+    {
+      "key": "weather.band.lowRisk"
+    },
+    {
+      "key": "weather.band.highRisk"
+    },
+    {
+      "key": "weather.band.veryHigh"
+    },
+    {
+      "key": "weather.sub.gustsUnit",
+      "values": {
+        "speed": 25
+      }
+    },
+    {
+      "key": "weather.sub.gusts",
+      "values": {
+        "speed": 25
+      }
+    },
+    {
+      "key": "weather.sub.dewPoint",
+      "values": {
+        "temp": "-0.5"
+      }
+    },
+    {
+      "key": "weather.sub.dewPointLower",
+      "values": {
+        "temp": "-0.5"
+      }
+    },
+    {
+      "key": "weather.sub.sameAir"
+    },
+    {
+      "key": "weather.sub.sameAirLower"
+    },
+    {
+      "key": "weather.sub.windChill"
+    },
+    {
+      "key": "weather.sub.windChillLower"
+    },
+    {
+      "key": "weather.sub.humidex"
+    },
+    {
+      "key": "weather.sub.humidexLower"
+    },
+    {
+      "key": "weather.sub.visibility",
+      "values": {
+        "km": 12
+      }
+    },
+    {
+      "key": "weather.sub.chanceToday"
+    },
+    {
+      "key": "weather.sub.chanceTodayLower"
+    },
+    {
+      "key": "weather.sub.forTheDate"
+    },
+    {
+      "key": "weather.sub.normalHighLow"
+    },
+    {
+      "key": "weather.tile.wind.label"
+    },
+    {
+      "key": "weather.tile.wind.sub"
+    },
+    {
+      "key": "weather.tile.wind.note"
+    },
+    {
+      "key": "weather.tile.hum.label"
+    },
+    {
+      "key": "weather.tile.hum.sub"
+    },
+    {
+      "key": "weather.tile.hum.note"
+    },
+    {
+      "key": "weather.tile.feels.label"
+    },
+    {
+      "key": "weather.tile.feels.sub"
+    },
+    {
+      "key": "weather.tile.feels.note"
+    },
+    {
+      "key": "weather.tile.pres.label"
+    },
+    {
+      "key": "weather.tile.pres.sub"
+    },
+    {
+      "key": "weather.tile.pres.note"
+    },
+    {
+      "key": "weather.tile.uv.label"
+    },
+    {
+      "key": "weather.tile.uv.sub"
+    },
+    {
+      "key": "weather.tile.uv.note"
+    },
+    {
+      "key": "weather.tile.aqhi.label"
+    },
+    {
+      "key": "weather.tile.aqhi.sub"
+    },
+    {
+      "key": "weather.tile.aqhi.note"
+    },
+    {
+      "key": "weather.tile.pop.label"
+    },
+    {
+      "key": "weather.tile.pop.sub"
+    },
+    {
+      "key": "weather.tile.pop.note"
+    },
+    {
+      "key": "weather.tile.normal.label"
+    },
+    {
+      "key": "weather.tile.normal.sub"
+    },
+    {
+      "key": "weather.tile.normal.note"
+    },
+    {
+      "key": "weather.series.gusts"
+    },
+    {
+      "key": "weather.series.dewPoint"
+    },
+    {
+      "key": "weather.series.air"
+    },
+    {
+      "key": "weather.series.windChill"
+    },
+    {
+      "key": "weather.series.humidex"
+    },
+    {
+      "key": "weather.series.chance"
+    },
+    {
+      "key": "weather.series.forecastHigh"
+    },
+    {
+      "key": "weather.series.normalHigh"
+    },
+    {
+      "key": "weather.series.forecastLow"
+    },
+    {
+      "key": "weather.series.normalLow"
+    }
+  ]
+}
