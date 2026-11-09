@@ -108,13 +108,13 @@ const expectSolidWhenReduced = async (house: House, main: Locator) => {
   await expect(main).not.toHaveCSS('background-color', glass);
 };
 
-test('47 with transparency reduced, the tinted Hilo challenge pill is solid', async ({house}) => {
+test('50 with transparency reduced, the tinted Hilo challenge pill is solid', async ({house}) => {
   await expect(house.root().locator('.app.gl')).toHaveCount(1);
   await house.setState('sensor.hilo_gateway_defi_hilo', {state: 'on', attributes: {next_events: []}}); // a reduction in progress: the tinted pill
   await expectSolidWhenReduced(house, pill(house).locator('.lmain.tint'));
 });
 
-test('48 with transparency reduced, the attention pill is solid', async ({house}) => {
+test('51 with transparency reduced, the attention pill is solid', async ({house}) => {
   await expect(house.root().locator('.app.gl')).toHaveCount(1);
   await stopCharging(house);
   await openFrontDoor(house);
