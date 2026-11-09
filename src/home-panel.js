@@ -398,14 +398,14 @@ function sunTimes(lat, lon, day) {
     [dawn, dusk] = at(-6);
   return {rise, set, dawn, dusk, noon: toMs(Jnoon)};
 }
-// weather measures that open a history chart from the Weather sheet's tiles
-const WX_DEF = {
+// weather measures that open a history chart from the Weather sheet's tiles; a function of the entity ids (the panel's config), not a constant of the module
+const wxDef = e => ({
   wind: {
     title: 'Wind',
     sub: 'Environment Canada, hourly observations',
     series: [
-      {id: E.wind, name: 'Wind', unit: 'km/h'},
-      {id: E.gust, name: 'Gusts', unit: 'km/h', stat: 'max', dash: true},
+      {id: e.wind, name: 'Wind', unit: 'km/h'},
+      {id: e.gust, name: 'Gusts', unit: 'km/h', stat: 'max', dash: true},
     ],
     min: 0,
     note: 'Average wind speed, with the strongest gust in each period as the dashed line.',
@@ -414,8 +414,8 @@ const WX_DEF = {
     title: 'Humidity',
     sub: 'Relative humidity and dew point',
     series: [
-      {id: E.hum, name: 'Humidity', unit: '%'},
-      {id: E.dew, name: 'Dew point', unit: '°', dash: true},
+      {id: e.hum, name: 'Humidity', unit: '%'},
+      {id: e.dew, name: 'Dew point', unit: '°', dash: true},
     ],
     note: 'Humidity on the left scale, dew point in degrees on the right. The closer the dew point to the air temperature, the damper it feels.',
     dec: 1,
@@ -423,14 +423,14 @@ const WX_DEF = {
   pres: {
     title: 'Pressure',
     sub: 'Barometric pressure',
-    series: [{id: E.pres, name: 'Pressure', unit: 'kPa'}],
+    series: [{id: e.pres, name: 'Pressure', unit: 'kPa'}],
     dec: 1,
     note: 'A steady fall often means weather is on the way; a rise, clearing.',
   },
   pop: {
     title: 'Rain or snow',
     sub: 'Chance of precipitation, as forecast',
-    series: [{id: E.pop, name: 'Chance', unit: '%'}],
+    series: [{id: e.pop, name: 'Chance', unit: '%'}],
     min: 0,
     max: 100,
     step: true,
@@ -439,7 +439,7 @@ const WX_DEF = {
   uv: {
     title: 'UV index',
     sub: 'Environment Canada',
-    series: [{id: E.uv, name: 'UV index', unit: ''}],
+    series: [{id: e.uv, name: 'UV index', unit: ''}],
     min: 0,
     step: true,
     bands: [
@@ -452,7 +452,7 @@ const WX_DEF = {
   aqhi: {
     title: 'Air quality',
     sub: 'Air Quality Health Index, Environment Canada',
-    series: [{id: E.aqhi, name: 'AQHI', unit: ''}],
+    series: [{id: e.aqhi, name: 'AQHI', unit: ''}],
     min: 0,
     max: 10,
     step: true,
@@ -467,9 +467,9 @@ const WX_DEF = {
     title: 'Feels like',
     sub: 'Wind chill or humidex against the air temperature',
     series: [
-      {id: E.outT, name: 'Air', unit: '°'},
-      {id: E.chill, name: 'Wind chill', unit: '°', dash: true},
-      {id: E.humidex, name: 'Humidex', unit: '°', dash: true},
+      {id: e.outT, name: 'Air', unit: '°'},
+      {id: e.chill, name: 'Wind chill', unit: '°', dash: true},
+      {id: e.humidex, name: 'Humidex', unit: '°', dash: true},
     ],
     dec: 1,
     note: 'Environment Canada only reports wind chill or humidex when they differ from the air temperature.',
@@ -478,15 +478,17 @@ const WX_DEF = {
     title: 'Normal',
     sub: "Today's forecast against the 30-year normals",
     series: [
-      {id: E.hi, name: 'Forecast high', unit: '°'},
-      {id: E.nhi, name: 'Normal high', unit: '°', dash: true},
-      {id: E.lo, name: 'Forecast low', unit: '°'},
-      {id: E.nlo, name: 'Normal low', unit: '°', dash: true},
+      {id: e.hi, name: 'Forecast high', unit: '°'},
+      {id: e.nhi, name: 'Normal high', unit: '°', dash: true},
+      {id: e.lo, name: 'Forecast low', unit: '°'},
+      {id: e.nlo, name: 'Normal low', unit: '°', dash: true},
     ],
     step: true,
     note: 'Forecast highs and lows as solid lines, the normals for the date dashed.',
   },
-};
+});
+// Built from an empty config, as it has always been: every series id is undefined, so the history sheet says the sensor is missing. Deliberately unchanged in this migration; the next commit builds it from the panel's config.
+const WX_DEF = wxDef({});
 // ---------- climate helpers ----------
 // history ranges for the climate sheet: statistics period, span, and how the heatmap groups cells
 const CRANGE = {
