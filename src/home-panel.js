@@ -5924,7 +5924,7 @@ export class HomePanel extends HTMLElement {
       alOn = als.filter(isOn).length;
     const temps = L.rooms.map(r => r.t).filter(v => v != null),
       avg = temps.length ? sum(temps) / temps.length : null,
-      out = this.attr(E.weather, 'temperature') ?? this.num(E.outT);
+      out = this.attr(this.E.weather, 'temperature') ?? this.num(this.E.outT);
     if (this.tab === 'home')
       this.set(
         'hsub',
@@ -6012,19 +6012,19 @@ export class HomePanel extends HTMLElement {
     const L = this.live(),
       isOn = i => (this.st(i) || {}).state === 'on',
       H = this.H;
-    const sun = this.st(E.sun),
+    const sun = this.st(this.E.sun),
       dayUp = sun && sun.state === 'above_horizon',
-      nxt = this.st(dayUp ? E.setting : E.rising),
-      nxt2 = this.st(dayUp ? E.rising : E.setting);
-    const temp = this.attr(E.weather, 'temperature') ?? this.num(E.outT),
-      cond = this.st(E.cond),
-      hi = this.num(E.hi),
-      lo = this.num(E.lo);
+      nxt = this.st(dayUp ? this.E.setting : this.E.rising),
+      nxt2 = this.st(dayUp ? this.E.rising : this.E.setting);
+    const temp = this.attr(this.E.weather, 'temperature') ?? this.num(this.E.outT),
+      cond = this.st(this.E.cond),
+      hi = this.num(this.E.hi),
+      lo = this.num(this.E.lo);
     const hwxWas = this.cache.hwx;
     this.set(
       'hwx',
       `<div class="muted" style="font-size:13px;font-weight:500">${dayUp ? 'Sunset' : 'Sunrise'} <b style="color:var(--fg)">${ok(nxt) ? this.fmtTime(nxt.state) : '–'}</b>${ok(nxt2) ? ` · ${dayUp ? 'sunrise' : 'sunset'} <b style="color:var(--fg)">${this.fmtTime(nxt2.state)}</b>` : ''}</div>
-      <div class="hbig"><span class="num">${temp == null ? '–' : Math.round(temp) + '°'}</span><div><div class="hc">${esc(condName(ok(cond) ? cond.state : (this.st(E.weather) || {}).state))}</div><div class="muted">${hi != null ? `High ${Math.round(hi)}°` : ''}${lo != null ? ` · low ${Math.round(lo)}°` : ''}</div></div></div>
+      <div class="hbig"><span class="num">${temp == null ? '–' : Math.round(temp) + '°'}</span><div><div class="hc">${esc(condName(ok(cond) ? cond.state : (this.st(this.E.weather) || {}).state))}</div><div class="muted">${hi != null ? `High ${Math.round(hi)}°` : ''}${lo != null ? ` · low ${Math.round(lo)}°` : ''}</div></div></div>
       <div class="hhouse">${houseImg(this.CFG)}</div>
       <div class="lbl hwho">Who's home</div>${this.whoHtml() || '<p class="hint">No one is tracked yet.</p>'}${this.compact ? '' : '<div class="hstk" id="hstk" hidden></div>'}`,
     );
@@ -6036,14 +6036,14 @@ export class HomePanel extends HTMLElement {
     const temps = L.rooms.map(r => r.t).filter(v => v != null),
       avg = temps.length ? sum(temps) / temps.length : null,
       nHeat = L.rooms.filter(r => r.heating).length;
-    const hp = this.st(E.hp),
+    const hp = this.st(this.E.hp),
       hpTxt = !ok(hp) ? 'offline' : hp.state === 'off' ? 'off' : hp.attributes.hvac_action || hp.state;
     const c = this.car ? this.carState() : null,
       P = this.purifiers(),
       air = P.rooms.length ? this.airSummary(P) : null,
       ri = this.rateInfo();
-    const whT = this.num(E.whT),
-      whP = this.kw(E.whP),
+    const whT = this.num(this.E.whT),
+      whP = this.kw(this.E.whP),
       wh24 = H && H.wh24 ? sum(H.wh24.p.filter(x => x[0] >= Date.now() - 864e5).map(x => x[1])) / 12 : null;
     const kwTxt = v => (v == null ? '–' : v < 1 ? Math.round(v * 1000) + ' W' : v.toFixed(2) + ' kW');
     const tiles = [
@@ -6075,7 +6075,7 @@ export class HomePanel extends HTMLElement {
         'var(--c-heat)',
         'Climate',
         avg == null ? '–' : avg.toFixed(1) + '°',
-        `Inside · ${plural(nHeat, 'room')} heating${E.hp ? ` · heat pump ${esc(hpTxt)}` : ''}`,
+        `Inside · ${plural(nHeat, 'room')} heating${this.E.hp ? ` · heat pump ${esc(hpTxt)}` : ''}`,
       ],
       [
         'car',
@@ -6197,8 +6197,8 @@ export class HomePanel extends HTMLElement {
   upcoming() {
     const out = [],
       day = this.up(),
-      set = this.st(E.setting),
-      rise = this.st(E.rising);
+      set = this.st(this.E.setting),
+      rise = this.st(this.E.rising);
     const sunset = () => ok(set) && out.push([this.fmtTime(set.state), 'Sunset · theme turns dark']),
       sunrise = () => ok(rise) && out.push([this.fmtTime(rise.state), 'Sunrise · every light off, night modes off']);
     if (day) {
@@ -6208,16 +6208,16 @@ export class HomePanel extends HTMLElement {
       sunrise();
       sunset();
     }
-    const defi = this.st(E.defi);
+    const defi = this.st(this.E.defi);
     if (ok(defi) && defi.state !== 'off') out.push(['Hilo', `Challenge: ${esc(defi.state)}`]);
-    const pk = this.st(E.hqUpcoming);
+    const pk = this.st(this.E.hqUpcoming);
     if (pk && pk.state === 'on') out.push(['Hydro-Québec', 'Critical peak coming']);
     // the departure schedule only counts while its switch is on
     if (this.car && (this.st(this.car.id('switch', 'departuretimes')) || {}).state === 'on') {
       const t = this.schedText();
       if (!/^No /.test(t)) out.push(['Car', esc(t.replace(/ saved\.$/, ' departure'))]);
     }
-    MODES.forEach(id => {
+    this.MODES.forEach(id => {
       const m = this.st(id);
       if (m && m.state === 'on') out.push(['On', esc(this.attr(id, 'friendly_name') || id)]);
     });
@@ -6412,7 +6412,7 @@ export class HomePanel extends HTMLElement {
       k = (H - GAP * (groups.length - 1)) / total,
       top = 24;
     // rooms with their share of the heating; small ones are gathered
-    let rooms = ROOMS.map((r, i) => ({n: this.roomName(r), v: D.rooms[i] || 0}))
+    let rooms = this.ROOMS.map((r, i) => ({n: this.roomName(r), v: D.rooms[i] || 0}))
       .filter(r => r.v > 0)
       .sort((a, b) => b.v - a.v);
     const heat = groups.find(g => g.n === 'Room heating'),
@@ -6508,7 +6508,7 @@ export class HomePanel extends HTMLElement {
           .flatMap(l => [l, ...(this.attr(l, 'entity_id') || [])])
           .some(l => ids.includes(l)),
       ) ||
-      (AL_AREAS[aid] && als.find(a => a === AL_AREAS[aid])) ||
+      (this.AL_AREAS[aid] && als.find(a => a === this.AL_AREAS[aid])) ||
       als.find(a => aid && area(a) === aid) ||
       als.find(
         a =>
@@ -6526,7 +6526,7 @@ export class HomePanel extends HTMLElement {
         labels = shortNames(units.map(i => this.attr(i, 'friendly_name') || i));
       // areas listed in split_light_areas get one tile per light group (or loose light) instead of one for the whole area;
       // each tile keeps the area's Adaptive Lighting switch, so Auto and Night still act on the area
-      if (SPLIT_AREAS.includes(aid) && units.length > 1) {
+      if (this.SPLIT_AREAS.includes(aid) && units.length > 1) {
         const al = alFor(aid, ids);
         units.forEach((u, k) => {
           const mine = ids.filter(i => (owner[i] || i) === u);
@@ -6569,7 +6569,7 @@ export class HomePanel extends HTMLElement {
   lightLinkList() {
     const v = this.sysData && this.sysData.light_links;
     if (Array.isArray(v)) return v.filter(p => Array.isArray(p) && p.length === 2).map(p => p.map(String));
-    return LIGHT_LINKS.filter(l => l.keys.length === 2 && (!l.sw || (this.st(l.sw) || {}).state === 'on')).map(
+    return this.LIGHT_LINKS.filter(l => l.keys.length === 2 && (!l.sw || (this.st(l.sw) || {}).state === 'on')).map(
       l => l.keys,
     );
   }
