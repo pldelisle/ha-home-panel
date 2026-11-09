@@ -7233,10 +7233,10 @@ export class HomePanel extends HTMLElement {
   climateSummary() {
     const L = this.live(),
       temps = L.rooms.map(r => r.t).filter(v => v != null),
-      out = this.attr(E.weather, 'temperature') ?? this.num(E.outT);
+      out = this.attr(this.E.weather, 'temperature') ?? this.num(this.E.outT);
     const heating = L.rooms.filter(r => r.heating);
     const hp = L.hp,
-      hpTxt = !E.hp
+      hpTxt = !this.E.hp
         ? ''
         : !ok(hp)
           ? 'heat pump offline'
@@ -7278,16 +7278,21 @@ export class HomePanel extends HTMLElement {
     if (c && Date.now() - c.at < 10 * 60000) return c;
     const R = CRANGE[r],
       start = new Date(Date.now() - R.days * 864e5),
-      ids = [...ROOMS.map(x => x.temp), ...ROOMS.map(x => x.target), ...ROOMS.map(x => x.power), E.outT];
+      ids = [
+        ...this.ROOMS.map(x => x.temp),
+        ...this.ROOMS.map(x => x.target),
+        ...this.ROOMS.map(x => x.power),
+        this.E.outT,
+      ];
     const [stt, hp] = await Promise.all([
       this.stats(ids, R.period, start, ['mean', 'min', 'max']),
-      !E.hp
+      !this.E.hp
         ? Promise.resolve({})
         : this.hass
             .callWS({
               type: 'history/history_during_period',
               start_time: start.toISOString(),
-              entity_ids: [E.hp],
+              entity_ids: [this.E.hp],
               minimal_response: false,
               no_attributes: false,
               significant_changes_only: false,
@@ -7323,20 +7328,20 @@ export class HomePanel extends HTMLElement {
     const rooms = {},
       sp = {},
       kwh = {};
-    ROOMS.forEach(x => {
+    this.ROOMS.forEach(x => {
       rooms[x.k] = ser(x.temp);
       sp[x.k] = spSer(x.target);
       kwh[x.k] = kwhOf(x.power);
     });
-    const hpPts = hpSeries(hp && hp[E.hp]),
-      hpSp = hpSeries(hp && hp[E.hp], (a, m) => (['off', 'fan_only', 'dry'].includes(m) ? null : a.temperature));
+    const hpPts = hpSeries(hp && hp[this.E.hp]),
+      hpSp = hpSeries(hp && hp[this.E.hp], (a, m) => (['off', 'fan_only', 'dry'].includes(m) ? null : a.temperature));
     return (this.CR[r] = {
       at: Date.now(),
       start: start.getTime(),
       rooms,
       sp,
       kwh,
-      out: ser(E.outT),
+      out: ser(this.E.outT),
       hp: hpPts,
       hpSp,
       hpFrom: hpPts.length ? hpPts[0][0] : null,
@@ -7344,7 +7349,7 @@ export class HomePanel extends HTMLElement {
   }
   houseSeries(C) {
     const by = new Map();
-    ROOMS.forEach(r =>
+    this.ROOMS.forEach(r =>
       (C.rooms[r.k] || []).forEach(([x, v]) => {
         const a = by.get(x) || [];
         a.push(v);
@@ -7352,7 +7357,7 @@ export class HomePanel extends HTMLElement {
       }),
     );
     return [...by]
-      .filter(([, v]) => v.length === ROOMS.length)
+      .filter(([, v]) => v.length === this.ROOMS.length)
       .sort((a, b) => a[0] - b[0])
       .map(([x, v]) => [x, +(sum(v) / v.length).toFixed(2)]);
   }
@@ -7395,7 +7400,7 @@ export class HomePanel extends HTMLElement {
     const stops = dark ? HEAT_DARK : HEAT_LIGHT;
     this.$('cheatl').innerHTML =
       `<span class="hbar" style="background:linear-gradient(90deg,${Array.from({length: 19}, (_, i) => heatColor(HEAT_LO + i / 2, stops)).join(',')})"></span><span class="hticks">${[17, 19, 21, 23, 25].map(t => `<i style="left:${((t - HEAT_LO) / (HEAT_HI - HEAT_LO)) * 100}%">${t}°</i>`).join('')}</span>`;
-    const series = [...ROOMS].reverse().map(x => ({
+    const series = [...this.ROOMS].reverse().map(x => ({
       name: this.roomName(x),
       data: this.bucket(C.rooms[x.k] || [], r).map(([k, lbl, v]) => ({x: lbl, y: v, k})),
     }));
@@ -7502,7 +7507,7 @@ export class HomePanel extends HTMLElement {
         note += ` Home Assistant keeps about 10 days of detailed history, so the heat pump line starts ${this.fmtDate(C.hpFrom)}.`;
     } else if (this.climSel === 'house') {
       title = 'Whole house';
-      sub = `Average of ${ROOMS.length} rooms`;
+      sub = `Average of ${this.ROOMS.length} rooms`;
       const ts = L.rooms.filter(r => r.t != null),
         sorted = [...ts].sort((a, b) => b.t - a.t);
       t = ts.length ? sum(ts.map(r => r.t)) / ts.length : null;
@@ -7521,7 +7526,7 @@ export class HomePanel extends HTMLElement {
       ];
       pts = C ? this.houseSeries(C) : [];
     } else {
-      const i = ROOMS.findIndex(r => r.k === this.climSel),
+      const i = this.ROOMS.findIndex(r => r.k === this.climSel),
         r = L.rooms[i];
       title = r.name;
       sub = 'Hilo thermostat';
@@ -7543,13 +7548,13 @@ export class HomePanel extends HTMLElement {
     if (!this.$('chead') || (this.dialDrag && !force)) return;
     const fresh = !this.$('chead').firstChild; // the sheet just opened or changed room: the dial draws itself in (motion.css)
     const {title, sub, t, sp, pill, tiles} = this.climInfo(),
-      out = this.attr(E.weather, 'temperature') ?? this.num(E.outT);
+      out = this.attr(this.E.weather, 'temperature') ?? this.num(this.E.outT);
     if (this.compact) {
       // phone: an Apple Home style dial instead of the big number and the bar
       let d;
       if (this.climSel === 'house') d = {sp: undefined, lo: 5, hi: 30, ed: false, state: `${f1(t)}° average`};
       else if (this.climSel === 'hp') {
-        const hp = this.st(E.hp),
+        const hp = this.st(this.E.hp),
           a = ok(hp) ? hp.attributes : {};
         const mode = this.pend('hp:mode', hp && hp.state);
         d = {
@@ -7560,7 +7565,7 @@ export class HomePanel extends HTMLElement {
           state: pill.replace(/<[^>]+>/g, ''),
         };
       } else {
-        const r = ROOMS.find(x => x.k === this.climSel),
+        const r = this.ROOMS.find(x => x.k === this.climSel),
           c = this.st(r.climate),
           a = ok(c) ? c.attributes : {};
         d = {
@@ -7657,7 +7662,7 @@ export class HomePanel extends HTMLElement {
       `<div class="seg" role="radiogroup" aria-label="${esc(aria)}">${opts.map(([v, l]) => `<button type="button" role="radio" aria-checked="${v === cur}" data-c="${k}" data-v="${esc(v)}"><b>${esc(l)}</b></button>`).join('')}</div>`;
     let html = '';
     if (this.climSel === 'hp') {
-      const hp = this.st(E.hp);
+      const hp = this.st(this.E.hp);
       if (!ok(hp)) {
         html = '<p class="muted">The heat pump is offline, so it can\'t be adjusted right now.</p>';
       } else {
@@ -7699,11 +7704,11 @@ export class HomePanel extends HTMLElement {
     } else if (this.climSel === 'house') {
       const v = this.allSp ?? 21;
       html = `<div class="clbl">All rooms</div><div class="crow">${stepper('allsp', v, 5.5, 30, 'Set every room to')}
-        <button type="button" class="abtn${this.armed === 'allset' ? ' armed' : ''}" data-c="allset">${this.armed === 'allset' ? `Tap again: all ${ROOMS.length} rooms to ${v.toFixed(1)}°` : `Set all to ${v.toFixed(1)}°`}</button>
+        <button type="button" class="abtn${this.armed === 'allset' ? ' armed' : ''}" data-c="allset">${this.armed === 'allset' ? `Tap again: all ${this.ROOMS.length} rooms to ${v.toFixed(1)}°` : `Set all to ${v.toFixed(1)}°`}</button>
         <button type="button" class="abtn${this.armed === 'alloff' ? ' armed' : ''}" data-c="alloff">${this.armed === 'alloff' ? 'Tap again: all rooms off' : 'All off'}</button></div>
         <p class="hint">Off means the 5° frost guard, the lowest a Hilo thermostat goes. Changes to every room need a second tap.</p>`;
     } else {
-      const r = ROOMS.find(x => x.k === this.climSel),
+      const r = this.ROOMS.find(x => x.k === this.climSel),
         c = this.st(r.climate);
       if (!ok(c)) html = '<p class="muted">This thermostat is unavailable, so it can\'t be adjusted right now.</p>';
       else {
@@ -7787,10 +7792,15 @@ export class HomePanel extends HTMLElement {
     if (this.climSel === 'hp') {
       hold('hp:sp', v);
       later('hp', () =>
-        this.call('climate', 'set_temperature', {entity_id: E.hp, temperature: v}, `Heat pump set to ${v.toFixed(1)}°`),
+        this.call(
+          'climate',
+          'set_temperature',
+          {entity_id: this.E.hp, temperature: v},
+          `Heat pump set to ${v.toFixed(1)}°`,
+        ),
       );
     } else {
-      const r = ROOMS.find(x => x.k === this.climSel);
+      const r = this.ROOMS.find(x => x.k === this.climSel);
       if (!r) return;
       hold(r.climate, v);
       later(r.climate, () =>
@@ -7820,7 +7830,7 @@ export class HomePanel extends HTMLElement {
       this.spT[key] = setTimeout(fn, 1100);
     };
     if (k === 'roomsp' || k === 'roomq') {
-      const r = ROOMS.find(x => x.k === this.climSel),
+      const r = this.ROOMS.find(x => x.k === this.climSel),
         c = this.st(r.climate),
         a = c.attributes,
         lo = a.min_temp ?? 5,
@@ -7853,11 +7863,11 @@ export class HomePanel extends HTMLElement {
       } else {
         this.armed = null;
         const v = k === 'alloff' ? 5 : (this.allSp ?? 21);
-        ROOMS.forEach(r => hold(r.climate, v));
+        this.ROOMS.forEach(r => hold(r.climate, v));
         this.call(
           'climate',
           'set_temperature',
-          {entity_id: ROOMS.map(r => r.climate), temperature: v},
+          {entity_id: this.ROOMS.map(r => r.climate), temperature: v},
           k === 'alloff' ? 'All rooms off (5° frost guard)' : `All rooms set to ${v.toFixed(1)}°`,
         );
       }
@@ -7867,25 +7877,30 @@ export class HomePanel extends HTMLElement {
       this.call(
         'climate',
         'set_hvac_mode',
-        {entity_id: E.hp, hvac_mode: v},
+        {entity_id: this.E.hp, hvac_mode: v},
         `Heat pump: ${(HVAC[v] || v).toLowerCase()}`,
       );
     } else if (k === 'hpsp') {
-      const a = this.st(E.hp).attributes,
+      const a = this.st(this.E.hp).attributes,
         v = Math.min(a.max_temp ?? 30, Math.max(a.min_temp ?? 16, +this.pend('hp:sp', a.temperature) + +b.dataset.d));
       hold('hp:sp', v);
       later('hp', () =>
-        this.call('climate', 'set_temperature', {entity_id: E.hp, temperature: v}, `Heat pump set to ${v.toFixed(1)}°`),
+        this.call(
+          'climate',
+          'set_temperature',
+          {entity_id: this.E.hp, temperature: v},
+          `Heat pump set to ${v.toFixed(1)}°`,
+        ),
       );
     } else if (k === 'hpfan') {
       hold('hp:fan', b.dataset.v);
-      this.call('climate', 'set_fan_mode', {entity_id: E.hp, fan_mode: b.dataset.v}, `Fan: ${b.dataset.v}`);
+      this.call('climate', 'set_fan_mode', {entity_id: this.E.hp, fan_mode: b.dataset.v}, `Fan: ${b.dataset.v}`);
     } else if (k === 'hppre') {
       hold('hp:preset', b.dataset.v);
       this.call(
         'climate',
         'set_preset_mode',
-        {entity_id: E.hp, preset_mode: b.dataset.v},
+        {entity_id: this.E.hp, preset_mode: b.dataset.v},
         `Preset: ${b.dataset.v === 'none' ? 'normal' : b.dataset.v}`,
       );
     }
