@@ -3,8 +3,6 @@
 // numbers, times and dates are lifted out first and come back in French form, so "Oct 27, 4:07 pm" needs no entry of its own,
 // then the rest is looked up whole, by pattern, or piece by piece around " · ". Anything not found stays as it was.
 // Names people gave in Home Assistant (areas, scenes, lights, sensors) are never translated.
-import {getHass} from '../legacy/globals.js';
-
 // the French flag: home-panel.js reads it as a live binding and sets it through setFR() when the user's language is known
 export let FR = false;
 export const setFR = v => {
@@ -130,9 +128,9 @@ function houseNames(hass) {
 }
 let FR_NAMES = new Set(),
   FR_NAMES_AT = 0;
-function frNames() {
+function frNames(hass) {
   if (Date.now() - FR_NAMES_AT < 60000 && FR_NAMES.size) return FR_NAMES;
-  FR_NAMES = houseNames(getHass());
+  FR_NAMES = houseNames(hass);
   FR_NAMES_AT = Date.now();
   return FR_NAMES;
 }
@@ -183,7 +181,9 @@ function frTextWith(s, isName) {
   out = frPost(out);
   return m[1] + out + m[3];
 }
-export const frText = s => frTextWith(s, core => frNames().has(core));
+// the module functions take the panel's hass from their caller (the ticket's alternative to reading the store: the class
+// still calls them directly until migrate C, #129, moves it to the createFrench instance) and go at contract, #130 (spec 10)
+export const frText = (s, hass) => frTextWith(s, core => frNames(hass).has(core));
 export const FR_ATTR = ['aria-label', 'title', 'placeholder', 'alt'];
 const frSeen = new WeakMap();
 function frNodeWith(n, translate, seen) {
@@ -208,7 +208,7 @@ function frNodeWith(n, translate, seen) {
     seen.set(n, done);
   }
 }
-export const frNode = n => frNodeWith(n, frText, frSeen);
+export const frNode = (n, hass) => frNodeWith(n, s => frText(s, hass), frSeen);
 function frTreeWith(root, visit) {
   if (root.nodeType === 3) return visit(root);
   if (root.nodeType === 1) visit(root);
@@ -216,7 +216,7 @@ function frTreeWith(root, visit) {
   let n;
   while ((n = w.nextNode())) visit(n);
 }
-export const frTree = root => frTreeWith(root, frNode);
+export const frTree = (root, hass) => frTreeWith(root, n => frNode(n, hass));
 // apex draws its own dates: give it French month and day names and day-first formats
 const APEX_FR = {
   name: 'fr',

@@ -3,7 +3,7 @@
 // (trace/list, trace/get), which record which trigger fired, each condition's result and each step's time.
 // The graph is laid out by Mermaid (from npm, in lazy chunks imported only when the tab opens);
 // the path a run took is lit green, the step it is waiting on amber, a failed check red, the rest dashed grey.
-import {getHass, getTZ, st, ok, attr, esc, cap, plural, localDay, fmtDate, tile} from './legacy/globals.js';
+import {ok, esc, cap, plural, tile} from './legacy/globals.js';
 
 // Mermaid is imported the first time a flow is drawn, so the bundle the other tabs load does not carry it; Vite emits
 // it as chunks under chunks/, beside home-panel.js. One import for every panel on the page.
@@ -97,20 +97,20 @@ const auDur = d => {
       ? `${Math.round(s / 60)} min`
       : `${s} s`;
 };
-const auClock = t =>
+const auClock = (t, tz) =>
   new Date(t).toLocaleTimeString('en-CA', {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
     hour12: false,
-    timeZone: getTZ(),
+    timeZone: tz,
   });
-const auHM = t =>
+const auHM = (t, tz) =>
   new Date(t)
-    .toLocaleTimeString('en-CA', {hour: '2-digit', minute: '2-digit', hour12: false, timeZone: getTZ()})
+    .toLocaleTimeString('en-CA', {hour: '2-digit', minute: '2-digit', hour12: false, timeZone: tz})
     .replace(/^24/, '00');
-const auMins = t => {
-  const [h, m] = auHM(t).split(':').map(Number);
+const auMins = (t, tz) => {
+  const [h, m] = auHM(t, tz).split(':').map(Number);
   return h * 60 + m;
 };
 const auShortAlias = a => {
@@ -129,7 +129,7 @@ export const autoMethods = {
     }
     if (id === 'all') return 'every light';
     if (id === 'zone.home') return 'Home zone';
-    const s = st(id);
+    const s = this.st(id);
     if (s && s.attributes.friendly_name)
       return String(s.attributes.friendly_name).replace(/\s+(Door|Occupancy|Motion)$/i, '');
     return cap(String(id).split('.').pop());
@@ -139,7 +139,7 @@ export const autoMethods = {
     return a.length > 2 ? `${a.slice(0, 2).join(', ')} +${a.length - 2}` : a.join(' or ');
   },
   auKind(id) {
-    const s = st(id),
+    const s = this.st(id),
       dc = s && s.attributes.device_class;
     const d = String(id || '').split('.')[0];
     if (/door|window|opening|garage_door/.test(dc || '') || /_door$/.test(id)) return 'door';
@@ -387,6 +387,7 @@ export const autoMethods = {
   // ---------- the graph: nodes, edges, and what the run lit up ----------
   // cfg = automation config; tr = full trace (or null): returns {def, sentence, failed, waiting}
   auGraph(cfg, tr, sum) {
+    const tz = this.store.timeZone;
     const T = (tr && tr.trace) || {},
       nodes = [],
       edges = [],
@@ -406,7 +407,7 @@ export const autoMethods = {
         vis = hasKey(path);
       let cls = vis ? 'hit' : 'off',
         sub = '';
-      if (vis && e.timestamp) sub = auClock(e.timestamp);
+      if (vis && e.timestamp) sub = auClock(e.timestamp, tz);
       if (vis && r && r.result === false) {
         cls = 'no';
         sub = 'no';
@@ -419,7 +420,7 @@ export const autoMethods = {
         sub = r.wait.completed === false || (r.wait.trigger === null && !r.wait.completed) ? 'timed out' : 'done';
       if (running && lastStep === path) {
         cls = 'run';
-        sub = 'waiting here' + (e && e.timestamp ? ' since ' + auHM(e.timestamp) : '');
+        sub = 'waiting here' + (e && e.timestamp ? ' since ' + auHM(e.timestamp, tz) : '');
       }
       N[id] = {id, path, d, cls, vis, shape, sub, r, ...extra};
       nodes.push(N[id]);
@@ -598,10 +599,10 @@ export const autoMethods = {
     if (tr || sum) {
       parts.push(
         firedNode && firedNode.d.k === 'Every'
-          ? `Every ${firedNode.d.t}${started ? ', at ' + auHM(started) : ''}`
+          ? `Every ${firedNode.d.t}${started ? ', at ' + auHM(started, tz) : ''}`
           : firedNode && firedNode.d.k === 'Time'
             ? `At ${firedNode.d.t}`
-            : `${firedNode ? firedNode.d.t : cap((sum && sum.trigger) || 'Started')}${started ? ' at ' + auHM(started) : ''}`,
+            : `${firedNode ? firedNode.d.t : cap((sum && sum.trigger) || 'Started')}${started ? ' at ' + auHM(started, tz) : ''}`,
       );
       if (failed && exec === 'failed_conditions') parts.push(`stopped at “${auCut(failed.d.t, 60)}”`);
       else if (exec === 'failed_single' || exec === 'failed_max_runs') parts.push('skipped, it was already running');
@@ -702,7 +703,7 @@ export const autoMethods = {
   },
   // ---------- data ----------
   auAutos() {
-    return Object.values(getHass().states)
+    return Object.values(this.hass.states)
       .filter(s => s.entity_id.startsWith('automation.'))
       .map(s => ({
         entity: s.entity_id,
@@ -721,18 +722,16 @@ export const autoMethods = {
     return /^time pattern/i.test(sm.trigger || '') && sm.script_execution === 'failed_conditions';
   },
   async auLoad(force) {
-    if (this.auBusy || !getHass()) return;
+    if (this.auBusy || !this.hass) return;
     if (!force && Date.now() - (this.auAt || 0) < 20000) return;
     this.auBusy = true;
     this.auCfg = this.auCfg || {};
     this.auTr = this.auTr || {};
     try {
-      const list = await getHass()
-        .callWS({type: 'trace/list', domain: 'automation'})
-        .catch(e => {
-          this.auErr = e && (e.message || e.code);
-          return null;
-        });
+      const list = await this.hass.callWS({type: 'trace/list', domain: 'automation'}).catch(e => {
+        this.auErr = e && (e.message || e.code);
+        return null;
+      });
       if (list) {
         this.auList = list;
         this.auErr = null;
@@ -744,7 +743,7 @@ export const autoMethods = {
       }
       await Promise.all(
         A.filter(a => a.item && (stale || !(a.item in this.auCfg))).map(a =>
-          getHass()
+          this.hass
             .callWS({type: 'automation/config', entity_id: a.entity})
             .then(r => {
               this.auCfg[a.item] = (r && r.config) || r || null;
@@ -760,7 +759,7 @@ export const autoMethods = {
           const k = sm.item_id + '/' + sm.run_id,
             have = this.auTr[k];
           if (have && have.state !== 'running' && sm.state !== 'running') return null;
-          return getHass()
+          return this.hass
             .callWS({type: 'trace/get', domain: 'automation', item_id: sm.item_id, run_id: sm.run_id})
             .then(t => {
               this.auTr[k] = t;
@@ -795,9 +794,10 @@ export const autoMethods = {
   // upcoming scheduled runs today, from time and sun triggers
   auUpcoming(cfgs, A) {
     const now = Date.now(),
-      today = localDay(now),
+      today = this.localDay(now),
       out = [],
-      nowM = auMins(now);
+      tz = this.store.timeZone,
+      nowM = auMins(now, tz);
     for (const a of A) {
       const cfg = cfgs[a.item];
       if (!cfg || !a.on) continue;
@@ -811,11 +811,11 @@ export const autoMethods = {
             if (mins > nowM) out.push({item: a.item, name: a.name, t: now + (mins - nowM) * 60000, mins});
           }
         if (p === 'sun') {
-          const s = attr('sun.sun', t.event === 'sunrise' ? 'next_rising' : 'next_setting'),
+          const s = this.attr('sun.sun', t.event === 'sunrise' ? 'next_rising' : 'next_setting'),
             id = t.event === 'sunrise' ? 'sensor.sun_next_rising' : 'sensor.sun_next_setting',
-            v = s || (ok(st(id)) ? st(id).state : null);
-          if (v && localDay(Date.parse(v)) === today && Date.parse(v) > now)
-            out.push({item: a.item, name: a.name, t: Date.parse(v), mins: auMins(v)});
+            v = s || (ok(this.st(id)) ? this.st(id).state : null);
+          if (v && this.localDay(Date.parse(v)) === today && Date.parse(v) > now)
+            out.push({item: a.item, name: a.name, t: Date.parse(v), mins: auMins(v, tz)});
         }
       }
     }
@@ -823,7 +823,8 @@ export const autoMethods = {
   },
   // ---------- drawing ----------
   renderAuto() {
-    if (this.view !== 'tabs' || this.tab !== 'auto' || !getHass()) return;
+    if (this.view !== 'tabs' || this.tab !== 'auto' || !this.hass) return;
+    const tz = this.store.timeZone;
     const A = this.auAutos(),
       sig = A.map(a => a.entity + a.last + a.current + a.on).join('|');
     if (sig !== this.auSig) {
@@ -843,7 +844,7 @@ export const autoMethods = {
     this.auLoad(false);
     const cfgs = this.auCfg || {},
       list = (this.auList || []).slice().sort((a, b) => Date.parse(a.timestamp.start) - Date.parse(b.timestamp.start));
-    const midnight = Date.now() - auMins(Date.now()) * 60000 - new Date().getSeconds() * 1000;
+    const midnight = Date.now() - auMins(Date.now(), tz) * 60000 - new Date().getSeconds() * 1000;
     const today = list.filter(sm => Date.parse(sm.timestamp.start) >= midnight && !this.auNoise(sm));
     const byItem = Object.fromEntries(A.filter(a => a.item).map(a => [a.item, a]));
     const runs = today.filter(
@@ -868,11 +869,11 @@ export const autoMethods = {
     }
     // Today timeline
     const up = this.auUpcoming(cfgs, A),
-      nowM = auMins(Date.now());
+      nowM = auMins(Date.now(), tz);
     const dots = [
       ...today.map(sm => ({
         sm,
-        mins: auMins(sm.timestamp.start),
+        mins: auMins(sm.timestamp.start, tz),
         item: sm.item_id,
         name: (byItem[sm.item_id] || {}).name || sm.item_id,
       })),
@@ -918,7 +919,7 @@ export const autoMethods = {
             : c === 'err'
               ? 'error'
               : 'ran';
-    const timeOf = x => (x.up ? auHM(x.t) : auHM(x.sm.timestamp.start));
+    const timeOf = x => (x.up ? auHM(x.t, tz) : auHM(x.sm.timestamp.start, tz));
     const rowEnd = [-99, -99];
     const dotsH = groups
       .map(g => {
@@ -952,9 +953,9 @@ export const autoMethods = {
     const nextUp = up[0],
       nextUp2 = up[1];
     const skipped = today.filter(sm => sm.script_execution === 'failed_conditions').length;
-    const todayCard = `<section class="card autoday"><div class="shead"><div><h3>Today</h3><p>One dot per run, a number when several ran close together. Filled ran, ringed red checked and did nothing, green is running now, hollow is still to come. Tap one to draw it below.</p></div><span class="pill">${esc(new Date().toLocaleDateString('en-CA', {weekday: 'short', month: 'short', day: 'numeric', timeZone: getTZ()}))} · ${auHM(Date.now())}</span></div>
+    const todayCard = `<section class="card autoday"><div class="shead"><div><h3>Today</h3><p>One dot per run, a number when several ran close together. Filled ran, ringed red checked and did nothing, green is running now, hollow is still to come. Tap one to draw it below.</p></div><span class="pill">${esc(new Date().toLocaleDateString('en-CA', {weekday: 'short', month: 'short', day: 'numeric', timeZone: tz}))} · ${auHM(Date.now(), tz)}</span></div>
       <div class="autl"><div class="axis"></div><div class="past" style="width:${((nowM / 1440) * 100).toFixed(2)}%"></div><div class="nowl" style="left:${((nowM / 1440) * 100).toFixed(2)}%"></div>${[0, 6, 12, 18].map(h => `<span class="hr" style="left:${(h / 24) * 100}%">${String(h).padStart(2, '0')}:00</span>`).join('')}${dotsH}</div>
-      <div class="tiles" style="grid-template-columns:repeat(3,minmax(0,1fr))">${tile(['Ran today', runs.length, '', skipped ? `${skipped} more checked and did nothing` : 'every run passed its checks'])}${tile(['Next', nextUp ? auHM(nextUp.t) : '–', '', nextUp ? esc(auShortAlias(nextUp.name)) : 'nothing else scheduled today'])}${tile(['Then', nextUp2 ? auHM(nextUp2.t) : '–', '', nextUp2 ? esc(auShortAlias(nextUp2.name)) : '—'])}</div></section>`;
+      <div class="tiles" style="grid-template-columns:repeat(3,minmax(0,1fr))">${tile(['Ran today', runs.length, '', skipped ? `${skipped} more checked and did nothing` : 'every run passed its checks'])}${tile(['Next', nextUp ? auHM(nextUp.t, tz) : '–', '', nextUp ? esc(auShortAlias(nextUp.name)) : 'nothing else scheduled today'])}${tile(['Then', nextUp2 ? auHM(nextUp2.t, tz) : '–', '', nextUp2 ? esc(auShortAlias(nextUp2.name)) : '—'])}</div></section>`;
     // flow cards
     const [sel, runN, dec, done] = this.auPicks(),
       seen = new Set(),
@@ -981,10 +982,10 @@ export const autoMethods = {
         : sm.state === 'running'
           ? `<span class="pill run" data-since="${esc(sm.timestamp.start)}">running ${this.auElapsed(sm.timestamp.start)}</span>`
           : sm.script_execution === 'failed_conditions'
-            ? `<span class="pill no">stopped ${auHM(sm.timestamp.start)}</span>`
+            ? `<span class="pill no">stopped ${auHM(sm.timestamp.start, tz)}</span>`
             : sm.script_execution === 'error'
-              ? `<span class="pill no">error ${auHM(sm.timestamp.start)}</span>`
-              : `<span class="pill ok">done ${sm.timestamp.finish ? auClock(sm.timestamp.finish) : auHM(sm.timestamp.start)}</span>`;
+              ? `<span class="pill no">error ${auHM(sm.timestamp.start, tz)}</span>`
+              : `<span class="pill ok">done ${sm.timestamp.finish ? auClock(sm.timestamp.finish, tz) : auHM(sm.timestamp.start, tz)}</span>`;
       const runsOf =
         kind === 'Selected'
           ? (this.auList || [])
@@ -994,7 +995,7 @@ export const autoMethods = {
           : [];
       const picker =
         runsOf.length > 1
-          ? `<div class="aupick">${runsOf.map(x => `<button type="button" class="chip${sm && x.run_id === sm.run_id ? ' sel' : ''}" data-run="${esc(x.run_id)}" data-item="${esc(it)}"><span class="dot" style="background:var(--${x.state === 'running' ? 'warn' : x.script_execution === 'failed_conditions' || x.script_execution === 'error' ? 'crit' : 'ok'})"></span>${localDay(Date.parse(x.timestamp.start)) === localDay(Date.now()) ? '' : esc(fmtDate(x.timestamp.start)) + ' '}${auHM(x.timestamp.start)}</button>`).join('')}</div>`
+          ? `<div class="aupick">${runsOf.map(x => `<button type="button" class="chip${sm && x.run_id === sm.run_id ? ' sel' : ''}" data-run="${esc(x.run_id)}" data-item="${esc(it)}"><span class="dot" style="background:var(--${x.state === 'running' ? 'warn' : x.script_execution === 'failed_conditions' || x.script_execution === 'error' ? 'crit' : 'ok'})"></span>${this.localDay(Date.parse(x.timestamp.start)) === this.localDay(Date.now()) ? '' : esc(this.fmtDate(x.timestamp.start)) + ' '}${auHM(x.timestamp.start, tz)}</button>`).join('')}</div>`
           : '';
       const sentence =
         G.sentence ||
@@ -1017,7 +1018,7 @@ export const autoMethods = {
       .sort((x, y) => lastOf(y) - lastOf(x))
       .map(
         a =>
-          `<button type="button" class="chip auchip${a.on ? '' : ' offa'}${this.auSel && this.auSel.item === a.item ? ' sel' : ''}" data-au="${esc(a.item || '')}"${a.item ? '' : ' disabled'}>${esc(a.name)}<small>${!a.on ? 'off' : a.current ? 'running' : a.last ? (localDay(lastOf(a)) === localDay(Date.now()) ? auHM(a.last) : fmtDate(a.last)) : 'never'}</small></button>`,
+          `<button type="button" class="chip auchip${a.on ? '' : ' offa'}${this.auSel && this.auSel.item === a.item ? ' sel' : ''}" data-au="${esc(a.item || '')}"${a.item ? '' : ' disabled'}>${esc(a.name)}<small>${!a.on ? 'off' : a.current ? 'running' : a.last ? (this.localDay(lastOf(a)) === this.localDay(Date.now()) ? auHM(a.last, tz) : this.fmtDate(a.last)) : 'never'}</small></button>`,
       )
       .join('');
     const all = `<section class="card"><div class="shead"><div><h3>Every automation</h3><p>Latest first. Tap one to draw its flow with its last run lit up.</p></div></div><div class="auchips">${chips}</div></section>`;
