@@ -84,6 +84,20 @@ export default defineConfig(
     rules: {'no-restricted-syntax': ['error', ...STRING_RENDERING, API_DOOR]},
   },
 
+  // The new layers draw with Lit templates only: not even a read of innerHTML or a call of insertAdjacentHTML (the
+  // string-rendering ban above catches the writes; this one is the "no innerHTML outside legacy" convention of
+  // docs/architecture.md as a lint, for the folders that hold no legacy code)
+  {
+    files: ['src/shell/**/*.ts', 'src/ui/**/*.ts', 'src/features/**/*.ts'],
+    rules: {
+      'no-restricted-properties': [
+        'error',
+        {property: 'innerHTML', message: 'Render with Lit templates, not innerHTML.'},
+        {property: 'insertAdjacentHTML', message: 'Render with Lit templates, not insertAdjacentHTML.'},
+      ],
+    },
+  },
+
   // The one constant the build injects (vite.config.ts `define`); every other cross-file name is an import now
   {files: ['src/**/*.js'], languageOptions: {globals: {__VERSION__: 'readonly'}}},
 

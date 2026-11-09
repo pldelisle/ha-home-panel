@@ -11,5 +11,5 @@
     "types": [],
     "allowImportingTsExtensions": true
   },
-  "include": ["src/types.d.ts", "src/stack.js", "src/fonts.js", "src/core/**/*.ts"]
+  "include": ["src/types.d.ts", "src/stack.js", "src/fonts.js", "src/core/**/*.ts", "src/shell/**/*.ts"]
 }
