@@ -265,9 +265,9 @@ const ico = (k, s = 20) =>
   `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[k]}</svg>`;
 
 // the house picture from the config (house_image), one for the light theme and one for the dark; none by default
-const houseImg = () =>
-  CFG && CFG.house
-    ? `<img class="house photo day" alt="" src="${esc(CFG.house.day)}"><img class="house photo night" alt="" src="${esc(CFG.house.night)}">`
+const houseImg = cfg =>
+  cfg && cfg.house
+    ? `<img class="house photo day" alt="" src="${esc(cfg.house.day)}"><img class="house photo night" alt="" src="${esc(cfg.house.night)}">`
     : '';
 const CARSVG = `<svg class="carside" viewBox="0 0 340 128" role="img" aria-label="Car, side view">
   <ellipse cx="172" cy="118" rx="150" ry="6" fill="var(--house-shadow)"/>
@@ -872,7 +872,7 @@ export class HomePanel extends HTMLElement {
   }
   // the sun is up (or unknown)
   up() {
-    const s = this.st(E.sun);
+    const s = this.st(this.E.sun);
     return !s || s.state === 'above_horizon';
   }
   // ---------- time-zone helpers: the store's zone; spec 11's formatters replace these ----------
@@ -1012,7 +1012,7 @@ export class HomePanel extends HTMLElement {
   <div id="err"></div>
   <div class="cols">
     <div class="col c1">
-      <div class="card wxcard tap" id="open-weather" tabindex="0" role="button" aria-label="Open weather details">${houseImg()}<div class="txt" id="wx"></div><div class="facts wxfacts" id="wxf"></div><div class="wxd" id="wxd"></div></div>
+      <div class="card wxcard tap" id="open-weather" tabindex="0" role="button" aria-label="Open weather details">${houseImg(this.CFG)}<div class="txt" id="wx"></div><div class="facts wxfacts" id="wxf"></div><div class="wxd" id="wxd"></div></div>
       <div class="card tap" id="open-energy" tabindex="0" role="button" aria-label="Open home energy details"><div id="energy"></div></div>
     </div>
     <div class="col c2">
@@ -6018,7 +6018,7 @@ export class HomePanel extends HTMLElement {
       'hwx',
       `<div class="muted" style="font-size:13px;font-weight:500">${dayUp ? 'Sunset' : 'Sunrise'} <b style="color:var(--fg)">${ok(nxt) ? this.fmtTime(nxt.state) : '–'}</b>${ok(nxt2) ? ` · ${dayUp ? 'sunrise' : 'sunset'} <b style="color:var(--fg)">${this.fmtTime(nxt2.state)}</b>` : ''}</div>
       <div class="hbig"><span class="num">${temp == null ? '–' : Math.round(temp) + '°'}</span><div><div class="hc">${esc(condName(ok(cond) ? cond.state : (this.st(E.weather) || {}).state))}</div><div class="muted">${hi != null ? `High ${Math.round(hi)}°` : ''}${lo != null ? ` · low ${Math.round(lo)}°` : ''}</div></div></div>
-      <div class="hhouse">${houseImg()}</div>
+      <div class="hhouse">${houseImg(this.CFG)}</div>
       <div class="lbl hwho">Who's home</div>${this.whoHtml() || '<p class="hint">No one is tracked yet.</p>'}${this.compact ? '' : '<div class="hstk" id="hstk" hidden></div>'}`,
     );
     // 2.9.0: under Who's home, the rest of the card holds the idle clock's smart stack (a fresh card slot whenever the card was rebuilt)
