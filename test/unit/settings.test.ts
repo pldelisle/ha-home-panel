@@ -112,3 +112,46 @@ describe('writing', () => {
     expect(settings.get().theme).toBe('auto');
   });
 });
+
+describe('subscribing', () => {
+  test('a listener is told after each write, and sees the value written', () => {
+    const settings = createSettings(mapStorage().storage);
+    const seen: string[] = [];
+    settings.subscribe(() => seen.push(settings.get().theme));
+    settings.set('theme', 'dark');
+    settings.set('theme', 'light');
+    expect(seen).toEqual(['dark', 'light']);
+  });
+
+  test('a listener that stopped is not told again, and the others still are', () => {
+    const settings = createSettings(mapStorage().storage);
+    const calls: string[] = [];
+    const stop = settings.subscribe(() => calls.push('first'));
+    settings.subscribe(() => calls.push('second'));
+    stop();
+    settings.set('text', 'large');
+    expect(calls).toEqual(['second']);
+  });
+
+  test('a listener that stops another during a write does not change who is told that time', () => {
+    const settings = createSettings(mapStorage().storage);
+    const calls: string[] = [];
+    let stopSecond = () => {};
+    settings.subscribe(() => {
+      calls.push('first');
+      stopSecond();
+    });
+    stopSecond = settings.subscribe(() => calls.push('second'));
+    settings.set('glass', 'lake');
+    settings.set('glass', 'sand');
+    expect(calls).toEqual(['first', 'second', 'first']);
+  });
+
+  test('a write the storage refused still tells the listener, which then reads the unchanged setting', () => {
+    const settings = createSettings(throwing);
+    const seen: string[] = [];
+    settings.subscribe(() => seen.push(settings.get().theme));
+    settings.set('theme', 'dark');
+    expect(seen).toEqual(['auto']);
+  });
+});
