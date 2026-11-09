@@ -3,6 +3,7 @@
 Status: draft, written 2026-11-07 from [docs/production-grade-plan.md](../production-grade-plan.md) and a survey of `main` at 2.11.1.
 Scope: the migration to TypeScript and Lit in phases 0 to 4. Each phase ships as its own release and the panel never stops working.
 Decisions taken after review on 2026-11-07: ApexCharts stays (its replacement by ECharts is dropped), and the HACS integration (phase 5) is deferred, not scheduled.
+Phase 2 specified on 2026-11-08 (specs 09 to 13), with the owner's two additions of that day: the code base must teach the practices it uses (patterns named and sourced, decisions recorded as ADRs, the layering enforced by a linter), and the names people gave in Home Assistant follow the panel's language (`Salon` reads `Living room` in English), which reverses the "names are never translated" rule below; see the amendments in the phase-2 section.
 
 ## Child specs
 
@@ -18,8 +19,13 @@ This document is the programme: the why, the architecture and the rules every pu
 | 06  | [Vite build, ES modules replace text splicing](06-vite-build.md)                     | 1     | 02, 03, 04, 05 | The first change to how the panel is built; needs every guard rail in place             |
 | 07  | [npm packages replace the committed vendor files](07-npm-packages-replace-vendor.md) | 1     | 06             | Needs a module build to emit lazy chunks                                                |
 | 08  | [Montserrat ships with the panel](08-bundled-font.md)                                | 1     | 06             | Needs the module build to copy assets; the one approved visual change of phase 1        |
+| 09  | [Architecture foundations](09-architecture-foundations.md)                           | 2     | phase 1        | The layer rules, ADRs, glossary and conventions must exist before the first core module |
+| 10  | [Entity store, module globals leave the old class](10-entity-store.md)               | 2     | 09             | The store is what every other core module hangs off; expand, migrate, contract          |
+| 11  | [Catalogs, formatters and display names](11-catalogs-and-formatters.md)              | 2     | 10             | Needs the store's language and time zone; new text (spec 13's card) needs the catalog   |
+| 12  | [One typed API client](12-api-client.md)                                             | 2     | 10             | Needs the store's `hass` and config generation; independent of 11 and 13                |
+| 13  | [Config schema and the config-error card](13-config-schema.md)                       | 2     | 10, 11         | The card's text comes from the catalog; the `names:` key is read by 11 and parsed here  |
 
-Written later, one at a time: phase 2 as three or four specs (store and the removal of module globals, typed API client, config schema, catalogs and formatters); phase 3 as one spec per feature in the move order, written when that feature's turn comes; phase 4 as one spec, the deletion of the French rewrite layer.
+Written later, one at a time: phase 3 as one spec per feature in the move order, written when that feature's turn comes (the shell first); phase 4 as one spec, the deletion of the French rewrite layer.
 
 ---
 
@@ -207,6 +213,17 @@ Decisions are grouped by phase. A decision that spans phases is stated where it 
 - **Per-browser settings.** Theme, text size, wallpaper, glass intensity and last tab stay in `localStorage` under the current keys so nothing resets, wrapped in a settings module with a schema version. Reads tolerate missing or malformed values and fall back to the defaults.
 - **Gate check.** Store, API client, config schema, catalogs, formatters and settings at full statement coverage in Vitest; no module-level mutable variable left in the old class; screenshots identical.
 
+Amended 2026-11-08, when the phase-2 specs were written (each item says which spec holds the reasoning):
+
+- **Foundations first (spec 09).** The six layers and the dependency rule are enforced by `dependency-cruiser` in `npm run lint` from the first core module; the decisions already taken are backfilled as ADRs in `docs/adr/`; `CONTEXT.md` and `docs/architecture.md` are written; every new module opens with a header naming the pattern it applies and its source. The owner wants the code base to teach the practices it uses.
+- **The store is not provided through `@lit/context` in phase 2 (spec 10).** There is no consumer before the shell, and `lit` is not a dependency until phase 3; the shell spec adds the provider. The store is still per element and never a singleton. The globals removal is sequenced as expand, migrate, contract (Fowler's Parallel Change) so `main` stays mergeable for the other threads throughout.
+- **`en-CA` leaves the class for one module, but the class keeps formatting in English until phase 4 (spec 11).** The rewrite layer parses English dates, times and numbers out of text before it matches the map's templates; French output from the class would stop them matching. The class uses the formatter module pinned to English; new code and each moved feature use the locale-aware set. The three Québec conventions become explicit "house rules" in the formatter, tested against the layer.
+- **Names follow the panel's language (spec 11), reversing "the names people gave in Home Assistant are never passed through the catalog".** They still do not pass through the catalog (they are data, not code strings); they pass through a display-name resolver: the house's `names:` block in the config, then a built-in dictionary of common room words, then the name as given. `Salon` reads `Living room` in English and `Salon` in French.
+- **The locale tag is the profile's language plus the Home Assistant country (spec 11)**, `CA` when unset, so today's output is the fallback and a German house gets `de-DE`. `time_format` and `number_format` are mapped as Home Assistant's own utilities map them.
+- **No camera WebSocket call (spec 12).** The panel builds a `camera_proxy_stream` URL and never calls `camera_thumbnail`; the client has no camera method.
+- **Stale replies are a typed rejection (spec 12).** Reads reject with `StaleReply` when the config generation moved; writes and subscriptions never do.
+- **The config is parsed, not validated (spec 13).** `superstruct`, the library Home Assistant's frontend uses for card configs, is the single source of the type and the parser; problems are values, the panel is a tolerant reader, and the error card is admin-only.
+
 ### Phase 3: Lit shell, then one feature per release
 
 - **Shell.** The `home-panel` element becomes a `LitElement` with reactive `hass`, `narrow` and `panel` properties. It owns the rail and phone tab bar, the sheet host, the theme (light, dark, follows the sun), the idle clock arming, the settings popup and the header (greeting, chips, live-activity pill). On the first shell release the old renderer mounts into a slot inside the shell and still draws every pane; the shell only replaces the outermost frame.
@@ -256,24 +273,28 @@ A good test states what a household member or Home Assistant would observe, not 
 
 Nothing in between: no tests of Lit component internals, of the store's subscription mechanics in isolation, or of the API client against a mocked socket. The store and client are covered by the models' fixtures feeding them and by the harness exercising them.
 
+Amended 2026-11-08 (decision taken with the owner when the phase-2 specs were written; ADR 0005): the first seam is also used in Vitest. A fake `hass` object of the same shape the harness builds (`test/unit/fake-hass.ts`) is handed to the store and the API client in Node, and a test asserts what a subscriber sees, what message left and what typed value came back. This is a second adapter at the same seam, not a new seam, and it is what makes the phase-2 gate ("full statement coverage in Vitest") a command. No socket is mocked and no private field is read.
+
 ### What is tested where
 
-| Subject                                                                                                                        | Seam                  | Notes                                                                    |
-| ------------------------------------------------------------------------------------------------------------------------------ | --------------------- | ------------------------------------------------------------------------ |
-| Every tab on every matrix cell (viewport × theme × language × house)                                                           | Harness, screenshot   | The contract for phases 0 to 3                                           |
-| Idle clock, smart stack rotation, wake on tap                                                                                  | Harness               | Fake clock advanced past 5 minutes and in 20-second steps                |
-| Live-activity pill, Status checks, attention pill                                                                              | Harness               | State mutation through the harness, then re-assigning `hass`             |
-| Light tiles, sheet sliders (drag, tap, arrows), Auto and Night, linked rooms picker, Arrange, saved order, admin-only controls | Harness               | Asserts the service calls and system-data writes observed on the console |
-| TV and speaker controls, scenes, Pause charging                                                                                | Harness               | Asserts service calls                                                    |
-| Optional sections hidden in the bare house                                                                                     | Harness               | Water heater, Hilo, Car tab, Climate tab                                 |
-| No outbound font request; no page error; nothing covering the Home tab button                                                  | Harness               | Kept from the smoke test                                                 |
-| axe on every tab and open sheet                                                                                                | Harness               | Serious and critical fail                                                |
-| Config resolution, discovery, aliases, schema errors                                                                           | Vitest                | Prior art: the config tests                                              |
-| Smart-stack picking, hour windows, reminders                                                                                   | Vitest                | Prior art: the stack tests                                               |
-| Each feature model and provider                                                                                                | Vitest                | New, written during each phase-3 move, with recorded fixtures            |
-| Catalog completeness, placeholder parity, plural forms, Québec French formatting                                               | Vitest                | Prior art: the French tests                                              |
-| Settings migration                                                                                                             | Vitest                | Malformed and missing values                                             |
-| Build output: version present, source maps present, size budget, no personal data                                              | Vitest and size-limit | Prior art: the build test                                                |
+| Subject                                                                                                                        | Seam                       | Notes                                                                    |
+| ------------------------------------------------------------------------------------------------------------------------------ | -------------------------- | ------------------------------------------------------------------------ |
+| Every tab on every matrix cell (viewport × theme × language × house)                                                           | Harness, screenshot        | The contract for phases 0 to 3                                           |
+| Idle clock, smart stack rotation, wake on tap                                                                                  | Harness                    | Fake clock advanced past 5 minutes and in 20-second steps                |
+| Live-activity pill, Status checks, attention pill                                                                              | Harness                    | State mutation through the harness, then re-assigning `hass`             |
+| Light tiles, sheet sliders (drag, tap, arrows), Auto and Night, linked rooms picker, Arrange, saved order, admin-only controls | Harness                    | Asserts the service calls and system-data writes observed on the console |
+| TV and speaker controls, scenes, Pause charging                                                                                | Harness                    | Asserts service calls                                                    |
+| Optional sections hidden in the bare house                                                                                     | Harness                    | Water heater, Hilo, Car tab, Climate tab                                 |
+| No outbound font request; no page error; nothing covering the Home tab button                                                  | Harness                    | Kept from the smoke test                                                 |
+| axe on every tab and open sheet                                                                                                | Harness                    | Serious and critical fail                                                |
+| Config resolution, discovery, aliases, schema errors                                                                           | Vitest                     | Prior art: the config tests                                              |
+| Smart-stack picking, hour windows, reminders                                                                                   | Vitest                     | Prior art: the stack tests                                               |
+| Each feature model and provider                                                                                                | Vitest                     | New, written during each phase-3 move, with recorded fixtures            |
+| Catalog completeness, placeholder parity, plural forms, Québec French formatting                                               | Vitest                     | Prior art: the French tests                                              |
+| Store change detection and subscriptions, settings defaults, API client messages and replies, display names                    | Vitest, fake `hass`        | Phase 2; the fake is the harness's `hass` shape in Node                  |
+| Layer rules, import cycles, graph drift, legacy footprint                                                                      | dependency-cruiser, Vitest | Phase 2 (spec 09); runs in the lint job                                  |
+| Settings migration                                                                                                             | Vitest                     | Malformed and missing values                                             |
+| Build output: version present, source maps present, size budget, no personal data                                              | Vitest and size-limit      | Prior art: the build test                                                |
 
 ### Fixtures
 
@@ -307,4 +328,4 @@ The config resolver tests and the stack tests show the pure-function style. The 
 - Two things the smoke test does today that the new tests should keep doing: route Google Fonts requests to abort (until phase 1 removes them, then assert none happen), and record the whole console so a test can quote the service calls when an assertion fails.
 - The move order in phase 3 starts with the features that have the least shared state (Weather, Media, Security, Air) and ends with the ones that read everything (Home, Automations, Idle clock), so the old class shrinks from its edges inward.
 - The plan's four open decisions (framework, start now, HACS integration, parallel features during phase 3) are taken here as: TypeScript and Lit; start phase 0 now; HACS integration deferred; keep shipping features in parallel under the parallel-work rule.
-- Recommended pacing from the review: ship phases 0 and 1 now, then live with the result for a month before committing to phases 2 and 3. If merge conflicts and French lapses continue, start phase 3 with Lights alone and decide the rest after one feature has moved.
+- Recommended pacing from the review: ship phases 0 and 1 now, then live with the result for a month before committing to phases 2 and 3. If merge conflicts and French lapses continue, start phase 3 with Lights alone and decide the rest after one feature has moved. Taken on 2026-11-08: the owner chose to specify phase 2 right after phase 1 shipped, with the architecture allowed to go further than the minimum where it teaches something (ADRs, enforced layering, a reading list), since learning the practices is a goal of the project alongside the panel itself.
