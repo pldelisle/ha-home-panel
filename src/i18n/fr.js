@@ -528,6 +528,8 @@ export const FR_MAP = {
   'Grid only · challenge rate': 'Réseau seulement · tarif de défi',
   'Grid only · current rate': 'Réseau seulement · tarif actuel',
   'Grid only · rate unknown': 'Réseau seulement · tarif inconnu',
+  'rate unknown': 'tarif inconnu',
+  '{n} kWh today': "{n} kWh aujourd'hui",
   'Grid supplies {n} W to the home; room heating {n}; water heating {n} W; EV charging {n} W':
     'Le réseau fournit {n} W à la maison; chauffage {n}; chauffe-eau {n} W; recharge VÉ {n} W',
   'Grid supplies {n} to the home; room heating {n}; water heating {n}; EV charging {n}':
@@ -861,8 +863,10 @@ export const FR_MAP = {
   'Motion {n} min ago': 'Mouvement il y a {n} min',
   'Motion {n} h ago': 'Mouvement il y a {n} h',
   'Motion just now': "Mouvement à l'instant",
+  'Motion {n}': 'Mouvement le {n}',
   'No motion': 'Aucun mouvement',
   'battery low': 'pile faible',
+  'battery {n}%': 'pile à {n}%',
   Automations: 'Automatisations',
   Today: "Aujourd'hui",
   'Ran today': "Exécutées aujourd'hui",
@@ -915,6 +919,8 @@ export const FR_MAP = {
   '{n} cameras': '{n} caméras',
   '{n} camera': '{n} caméra',
   'No cameras yet': 'Pas encore de caméras',
+  'Add UniFi Protect in Settings → Devices & services, with a local Protect user. Your cameras show up here on their own.':
+    "Ajoutez UniFi Protect dans Paramètres → Appareils et services, avec un utilisateur Protect local. Vos caméras apparaîtront ici d'elles-mêmes.",
   'Add UniFi Protect': 'Ajoutez UniFi Protect',
   // the camera sheet's fragments (its line is "state · last motion …"); FR_DOOR is for sensor rows
   'last motion {n} min ago': 'dernier mouvement il y a {n} min',

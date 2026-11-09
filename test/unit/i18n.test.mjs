@@ -79,6 +79,22 @@ test('the camera sheet line is French in every part and has no stray colon', asy
   expect(frText('Hall motion 5 min ago')).toBe('Hall\u00a0: mouvement il y a 5 min');
 });
 
+// Strings drawn on French screens that had no entry (#91). Names people gave in Home Assistant are not part of this.
+test('the sensor battery note, the empty Cameras card, a camera tile date and the Home kWh fragments are French', async () => {
+  const {frText} = await load([]);
+  expect(frText('5 min ago · battery 12%')).toBe('il y a 5 min · pile à 12\u202f%');
+  expect(frText('Motion Oct 3')).toBe('Mouvement le 3 oct.');
+  expect(
+    frText(
+      'Add UniFi Protect in Settings → Devices & services, with a local Protect user. Your cameras show up here on their own.',
+    ),
+  ).toBe(
+    "Ajoutez UniFi Protect dans Paramètres → Appareils et services, avec un utilisateur Protect local. Vos caméras apparaîtront ici d'elles-mêmes.",
+  );
+  expect(frText('Now · 0.0 kWh today · rate unknown')).toBe("Maintenant · 0,0 kWh aujourd'hui · tarif inconnu");
+  expect(frText('Idle · 34.5 kWh today')).toBe("Au repos · 34,5 kWh aujourd'hui");
+});
+
 // A sensor row ("Front door open", "Garage door offline": `${name} open`, `${name} offline` in sensorState and the attention
 // list) keeps the form it had, colon included; the Security line must never reach it. FR_DOOR's motion forms and
 // "Front door closed" are not drawn by the panel today; they are pinned so that FR_DOOR stays as it is.
