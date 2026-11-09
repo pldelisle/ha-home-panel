@@ -9,7 +9,12 @@ const states = {
   'sensor.gone': entity('sensor.gone', 'unavailable', {unit_of_measurement: '°C'}),
   'sensor.unsure': entity('sensor.unsure', 'unknown'),
   'sensor.zero': entity('sensor.zero', '0'),
-  'weather.home': entity('weather.home', 'cloudy', {temperature: 4.2, wind_bearing: 'SW', humidity: NaN, pressure: '101'}),
+  'weather.home': entity('weather.home', 'cloudy', {
+    temperature: 4.2,
+    wind_bearing: 'SW',
+    humidity: NaN,
+    pressure: '101',
+  }),
 };
 
 describe('isAvailable', () => {
