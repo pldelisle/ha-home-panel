@@ -16,9 +16,12 @@
       // A made-up house for the tests: no real people, places or devices. Two modes:
       //   ?house=full  (default) thermostats, lights, sensors, a car, an EV charger, a water heater, Environment Canada weather
       //   ?house=bare  only the sun, one weather entity and one light: every optional section must stay hidden
+      //   &two=1       a second panel, window.panel2, in the same page and fed the same hass, with the full house limited to two
+      //                rooms and one person (spec 10: each panel shows its own house)
       // window.PANEL_CFG (set before the page loads) becomes the panel's config, as panel_custom's `config:` would.
       import '/panel/home-panel.js';
-      const house = new URLSearchParams(location.search).get('house') || 'full',
+      const params = new URLSearchParams(location.search),
+        house = params.get('house') || 'full',
         full = house === 'full';
       const now = Date.now(),
         iso = t => new Date(t).toISOString();
@@ -330,8 +333,8 @@
         devices: DEV,
         areas: AREAS,
         config: {time_zone: 'America/Toronto', latitude: 43.65, longitude: -79.38, country: 'CA'},
-        user: {name: 'Alex Example', is_admin: new URLSearchParams(location.search).get('admin') !== '0'},
-        locale: {language: new URLSearchParams(location.search).get('lang') || 'en'},
+        user: {name: 'Alex Example', is_admin: params.get('admin') !== '0'},
+        locale: {language: params.get('lang') || 'en'},
         services: {adaptive_lighting: {}},
         callService: async (d, s, data) => {
           console.log('SERVICE', d + '.' + s, JSON.stringify(data));
@@ -366,17 +369,29 @@
       el.panel = window.PANEL_CFG ? {config: window.PANEL_CFG} : {};
       document.body.appendChild(el);
       window.panel = el;
+      const panels = [el];
+      if (params.get('two') === '1') {
+        const el2 = document.createElement('home-panel');
+        el2.hass = hass;
+        el2.narrow = el.narrow;
+        el2.panel = {
+          config: {...(window.PANEL_CFG || {}), people: ['Alex'], rooms: ['climate.living_room', 'climate.office']},
+        };
+        document.body.appendChild(el2);
+        window.panel2 = el2;
+        panels.push(el2);
+      }
       // the test's side of the boundary: what Home Assistant does on a state change, a new state object inside a new hass object
       window.house = {
         setState(id, patch) {
           const prev = hass.states[id] || {entity_id: id, state: '', attributes: {}};
           hass.states[id] = {...prev, ...patch, attributes: {...prev.attributes, ...(patch.attributes || {})}};
-          el.hass = {...hass};
+          for (const p of panels) p.hass = {...hass};
         },
         // the profile language changes: Home Assistant hands the panel a new hass with it, and keeps it for every later state change
         setLanguage(lang) {
           hass.locale = {language: lang};
-          el.hass = {...hass};
+          for (const p of panels) p.hass = {...hass};
         },
       };
     </script>

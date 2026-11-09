@@ -1,5 +1,7 @@
 // French: the translator turns the panel's English into Québec French, numbers and dates included, and leaves people's own names alone
 import {test, expect, vi} from 'vitest';
+import {fakeHass, entity} from './fake-hass.ts';
+import {createFrench} from '../../src/i18n/fr.js';
 
 // frText() looks up the house's own names through hass and caches them for a minute. A tiny fake hass whose names must
 // stay untranslated, set on a fresh copy of the modules so one test's cache never reaches the next.
@@ -152,4 +154,74 @@ test('the Lights tile sub-line is French in every part', async () => {
   expect(frText('2 of 3 on · 59% · Auto')).toBe('2 sur 3 allumées · 59 % · Auto');
   expect(frText('2 of 3 on · 59% · Night')).toBe('2 sur 3 allumées · 59 % · Nuit');
   expect(frText('2 of 3 on · 59%')).toBe('2 sur 3 allumées · 59 %');
+});
+
+// createFrench(store): the per-panel translator, fed by a store instead of the module globals, so its tests need neither
+// a fresh copy of the module nor the module hass (a fake store is enough)
+const houseWithNames = names => ({
+  areas: {a: {area_id: 'a', name: 'Home'}},
+  states: Object.fromEntries(names.map((n, i) => [`light.l${i}`, entity(`light.l${i}`, 'on', {friendly_name: n})])),
+});
+
+test('createFrench translates for its store and leaves the names the house gave', () => {
+  const store = {hass: fakeHass(houseWithNames(['Good evening'])), isFrench: true};
+  const fr = createFrench(store);
+  expect(fr.text('Good evening')).toBe('Good evening');
+  expect(fr.text('Live · history 4:07 pm')).toBe('En direct · historique 16 h 07');
+  expect(fr.text('12.5')).toBe('12,5');
+  expect(fr.text('Some text nobody translated')).toBe('Some text nobody translated');
+});
+
+test('createFrench reads the names from its own store, not from the module hass', async () => {
+  const {frText} = await load(['Good evening']);
+  const fr = createFrench({hass: fakeHass(houseWithNames([])), isFrench: true});
+  expect(frText('Good evening')).toBe('Good evening'); // the module's hass names it
+  expect(fr.text('Good evening')).toBe('Bonsoir'); // this store's does not
+});
+
+test('createFrench does nothing while the store is not French', () => {
+  const store = {hass: fakeHass(), isFrench: false};
+  const fr = createFrench(store);
+  expect(fr.text('Good evening')).toBe('Good evening');
+  const opts = {chart: {}};
+  expect(fr.apex(opts)).toBe(opts);
+  expect(opts.chart).toStrictEqual({});
+  store.isFrench = true;
+  expect(fr.text('Good evening')).toBe('Bonsoir');
+  expect(fr.apex({chart: {}}).chart.defaultLocale).toBe('fr');
+});
+
+// the unit tests run without a DOM: a text node and an element are the few fields the translator reads
+const textNode = data => ({nodeType: 3, data, parentNode: {nodeName: 'P'}});
+const element = attrs => ({
+  nodeType: 1,
+  nodeName: 'BUTTON',
+  getAttribute: a => attrs[a] ?? null,
+  setAttribute: (a, v) => (attrs[a] = v),
+});
+
+test('createFrench translates text nodes and attributes, and keeps a name of the house untranslated', () => {
+  const fr = createFrench({hass: fakeHass(houseWithNames(['Tap to run'])), isFrench: true});
+  const t = textNode('Good evening'),
+    name = textNode('Tap to run'),
+    attrs = {'aria-label': 'Good evening', title: 'Tap to run'};
+  fr.node(t);
+  fr.node(name);
+  fr.node(element(attrs));
+  fr.tree(t); // a text node as a tree is the node itself
+  expect(t.data).toBe('Bonsoir');
+  expect(name.data).toBe('Tap to run');
+  expect(attrs).toStrictEqual({'aria-label': 'Bonsoir', title: 'Tap to run'});
+});
+
+test('createFrench translates a node it met while the store was English once the store turns French', () => {
+  const store = {hass: fakeHass(), isFrench: false};
+  const fr = createFrench(store);
+  const t = textNode('Good evening');
+  fr.node(t);
+  fr.tree(t);
+  expect(t.data).toBe('Good evening');
+  store.isFrench = true;
+  fr.node(t);
+  expect(t.data).toBe('Bonsoir');
 });
