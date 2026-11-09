@@ -90,6 +90,10 @@ The words the panel and its code use. One word per concept: use it in issues, te
 
 **Guest** — The legacy class while the shell hosts it: not an element but a renderer that implements `GuestRenderer` (`src/shell/guest.ts`), which `src/main.js` registers, the shell constructs and drives, and which draws only into its own container inside the shell's one shadow root. The interface only shrinks, and it is deleted with the guest. Avoid: guest renderer, legacy renderer, the old class.
 
+**Descriptor** — The data for one of the ten subjects in the shell's registry (`src/shell/features.ts`): key, title, icon, colour, whether it sits on the phone's bar, whether this house shows it, and its pane. The rail, the phone's bar and the panes are drawn from the list.
+
+**Controller** — A Lit reactive controller: an object an element owns that hooks into its lifecycle, such as `StoreController` (subscribes the element to the entity ids it reads) and `MediaQueryController`. Avoid: mixin.
+
 **Strangler fig** — The migration shape: rewrite in place, one feature per release, the live panel never going dark, until the legacy class is deleted. After Fowler's Strangler Fig Application.
 
 **Baseline** — A committed reference screenshot in `test/e2e/__screenshots__/`, recorded and compared only inside the pinned Linux arm64 Playwright image, with an exact match. It is the contract of the rewrite: a restructuring pull request must not change one.

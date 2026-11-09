@@ -9,8 +9,12 @@ const guest = (): GuestRenderer => ({
   disconnect: noop,
   hassChanged: noop,
   panelChanged: noop,
-  narrowChanged: noop,
   toast: noop,
+  tabChanged: noop,
+  compactChanged: noop,
+  openMore: noop,
+  availability: () => ({}),
+  moreLine: () => null,
 });
 
 // the registry is module state, so the order of these tests is part of the test: nothing registered, then a guest

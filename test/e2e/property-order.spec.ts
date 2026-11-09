@@ -1,6 +1,7 @@
 // The panel draws as many times as it did when it was the element itself: Home Assistant sets `panel` first, so it draws once with the
 // config; the harness sets `hass` first and the config after, so it draws twice, once without it. The shell replays the properties in
-// the order they were set; a replay in a fixed order would change one of the two. A draw is a new `#app` in the shadow root.
+// the order they were set; a replay in a fixed order would change one of the two. A draw is a new `.cols` in the shadow root:
+// the shell draws the frame once, and the guest writes its own markup, the parked cards among it, again at each draw.
 import {test, expect} from './fixtures';
 import {FULL_CFG} from './houses';
 
@@ -8,7 +9,7 @@ type Property = 'panel' | 'hass' | 'narrow';
 
 test.use({houseOpts: {cfg: FULL_CFG}});
 
-/** a second panel on the page, given its properties in this order, and the number of times it drew its frame */
+/** a second panel on the page, given its properties in this order, and the number of times the guest drew */
 async function draws(page: import('@playwright/test').Page, order: Property[]) {
   return page.evaluate(async order => {
     const el = document.createElement('home-panel');
@@ -20,7 +21,7 @@ async function draws(page: import('@playwright/test').Page, order: Property[]) {
         new MutationObserver(ms =>
           ms.forEach(m =>
             m.addedNodes.forEach(node => {
-              if (node instanceof Element && node.id === 'app') n++;
+              if (node instanceof Element && node.matches('.cols')) n++;
             }),
           ),
         ).observe(root, {childList: true, subtree: true});

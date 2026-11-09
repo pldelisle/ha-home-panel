@@ -33,7 +33,18 @@ test('no call to a method that no longer exists', () => {
 // removal fails here before it reaches the shell), reaches the page through the context's fields, and holds none of
 // the element's half or of the services the shell owns.
 test('the class defines the guest methods', () => {
-  for (const m of ['connect', 'disconnect', 'hassChanged', 'panelChanged', 'narrowChanged', 'toast'])
+  for (const m of [
+    'connect',
+    'disconnect',
+    'hassChanged',
+    'panelChanged',
+    'toast',
+    'tabChanged',
+    'compactChanged',
+    'openMore',
+    'availability',
+    'moreLine',
+  ])
     expect(panel, m).toMatch(new RegExp(`^  ${m}\\(`, 'm'));
 });
 
@@ -54,6 +65,15 @@ test('the class takes the page and the services from the context, and is no elem
     expect(panel.includes(gone), gone).toBe(false);
   expect(panel).not.toMatch(/\b_panel\b/); // a word: the light-order key 'home_panel' is not the removed field
   expect(auto.includes('this.shadowRoot')).toBe(false);
+});
+
+// Spec 14, step C: the rail, the phone's bar, the panes and the phone threshold are the shell's (src/shell/features.ts), so
+// the class holds no list of tabs, no gate on the rail's buttons and no media query of its own for the phone's shape.
+test("the class draws no frame: the tabs, the rail gate and the phone query are the shell's", () => {
+  expect(panel).not.toMatch(/const (TABS|PHONE_TABS|TAB_COLOR)\b/);
+  for (const gone of ['gateTabs', 'data-tab', 'data-more', 'renderMoreTab', 'max-width:599px', 'this.mq'])
+    expect(panel.includes(gone), gone).toBe(false);
+  expect(panel).toMatch(/this\.ctx\.shell\.setTab\(/);
 });
 
 test('the config is de-duplicated on the store generation, not on its own copy of the config', () => {

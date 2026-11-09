@@ -71,7 +71,7 @@ const scanDialog = async (house: House, state: string, dialog: string) => {
 const openTab = async (house: House, tab: string) => {
   if (isPhone(house) && !PHONE_TABS.includes(tab)) {
     await house.root().locator('#moretab').click();
-    await house.root().locator(`#morelist [data-tab="${tab}"]`).click();
+    await house.root().locator(`#morelist [data-go="${tab}"]`).click();
     await expect(house.root().locator(`#pane-${tab}`)).toBeVisible();
   } else await house.tab(tab);
 };
@@ -88,8 +88,8 @@ const everyTab = async (house: House) => {
   await house.root().locator('#moretab').click();
   const held = await house
     .root()
-    .locator('#morelist [data-tab]')
-    .evaluateAll(l => l.map(e => (e as HTMLElement).dataset.tab!));
+    .locator('#morelist [data-go]')
+    .evaluateAll(l => l.map(e => (e as HTMLElement).dataset.go!));
   await house.page.keyboard.press('Escape');
   for (const tab of held) {
     await openTab(house, tab);

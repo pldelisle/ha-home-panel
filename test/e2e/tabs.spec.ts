@@ -7,7 +7,8 @@ import {openOfficeSheet} from './lights';
 
 // what the bare house lacks, wherever it shows: the Climate and Car tabs (rail buttons, Home tiles), the water heater and Hilo cards
 // and the tiles that open them
-const LACKING = '[data-tab="climate"], [data-tab="car"], #water, #hilo, [data-card="water"], [data-card="hilo"]';
+const LACKING =
+  '[data-tab="climate"], [data-tab="car"], [data-go="climate"], [data-go="car"], #water, #hilo, [data-card="water"], [data-card="hilo"]';
 
 // records each of them the panel leaves shown at the end of a task that changes it (window.lackingShown): a MutationObserver's
 // callback runs before the browser may paint the next frame, so what it sees is what a frame can show, whatever the timing
@@ -22,12 +23,21 @@ const recordedTest = test.extend({
         const root = attach.call(this, init);
         new MutationObserver(() =>
           root.querySelectorAll<HTMLElement>(sel).forEach(e => {
-            if (!e.hidden) seen.push(`${e.id ? '#' + e.id : e.className} ${e.dataset.card ?? e.dataset.tab ?? ''}`);
+            if (!e.hidden)
+              seen.push(`${e.id ? '#' + e.id : e.className} ${e.dataset.card ?? e.dataset.tab ?? e.dataset.go ?? ''}`);
           }),
         ).observe(root, {childList: true, subtree: true, attributes: true, attributeFilter: ['hidden']});
         return root;
       };
     }, LACKING);
+    await use(page);
+  },
+});
+
+// a browser that remembers the Car tab, opened on a house with no car
+const rememberedCar = test.extend({
+  page: async ({page}, use) => {
+    await page.addInitScript(() => localStorage.setItem('home-panel-tab', 'car'));
     await use(page);
   },
 });
@@ -149,11 +159,11 @@ test.describe('bare house', () => {
     async ({house}) => {
       await house.tab('home');
       await house.setState('light.living_room_1', {attributes: {brightness: 100}});
-      await expect(house.root().locator('#htiles [data-tab="lights"]')).toContainText('39%');
+      await expect(house.root().locator('#htiles [data-go="lights"]')).toContainText('39%');
       if (test.info().project.name === 'phone') {
         // Energy is under More on a phone; its pane draws the Water heater and Hilo rows
         await house.root().locator('#moretab').click();
-        await house.root().locator('#morelist [data-tab="energy"]').click();
+        await house.root().locator('#morelist [data-go="energy"]').click();
         await expect(house.root().locator('#pane-energy')).toBeVisible();
         await expect(house.root().locator('#etiles [data-card="water"]')).toBeAttached();
       }
@@ -161,6 +171,12 @@ test.describe('bare house', () => {
       expect([...new Set(shown)], 'shown at the end of a task').toEqual([]);
     },
   );
+
+  rememberedCar('4b a remembered tab the house lacks opens Home', async ({house}) => {
+    await expect(house.root().locator('#pane-home')).toBeVisible();
+    await expect(house.root().locator('#pane-car')).toBeHidden();
+    await expect(house.root().locator('#rail [data-tab="home"]')).toHaveAttribute('aria-selected', 'true');
+  });
 
   test('1b every tab that is shown opens a pane', async ({house}) => {
     await eachShownTab(house, tallEnough(false)); // no automations here, so no flow to wait for
@@ -201,7 +217,7 @@ test.describe('French', () => {
   }) => {
     phoneOnly();
     await house.root().locator('#moretab').click();
-    await expect(house.root().locator('#morelist [data-tab="cams"] small')).toHaveText(
+    await expect(house.root().locator('#morelist [data-go="cams"] small')).toHaveText(
       'Portes fermées · mouvement en cours',
     );
   });
