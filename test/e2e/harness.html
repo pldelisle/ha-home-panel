@@ -20,7 +20,8 @@
       //                rooms and one person (spec 10: each panel shows its own house)
       // window.PANEL_CFG (set before the page loads) becomes the panel's config, as panel_custom's `config:` would.
       import '/panel/home-panel.js';
-      const house = new URLSearchParams(location.search).get('house') || 'full',
+      const params = new URLSearchParams(location.search),
+        house = params.get('house') || 'full',
         full = house === 'full';
       const now = Date.now(),
         iso = t => new Date(t).toISOString();
@@ -332,8 +333,8 @@
         devices: DEV,
         areas: AREAS,
         config: {time_zone: 'America/Toronto', latitude: 43.65, longitude: -79.38},
-        user: {name: 'Alex Example', is_admin: new URLSearchParams(location.search).get('admin') !== '0'},
-        locale: {language: new URLSearchParams(location.search).get('lang') || 'en'},
+        user: {name: 'Alex Example', is_admin: params.get('admin') !== '0'},
+        locale: {language: params.get('lang') || 'en'},
         services: {adaptive_lighting: {}},
         callService: async (d, s, data) => {
           console.log('SERVICE', d + '.' + s, JSON.stringify(data));
@@ -369,7 +370,7 @@
       document.body.appendChild(el);
       window.panel = el;
       const panels = [el];
-      if (new URLSearchParams(location.search).get('two') === '1') {
+      if (params.get('two') === '1') {
         const el2 = document.createElement('home-panel');
         el2.hass = hass;
         el2.narrow = el.narrow;
