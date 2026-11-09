@@ -719,6 +719,7 @@ export const FR_MAP = {
   'Outlet on': 'Prise allumée',
   'Outlet off': 'Prise éteinte',
   '{n} of {n} on · {n}%': '{n} sur {n} allumées · {n}%',
+  '{n} of {n} on': '{n} sur {n} allumées',
   '{n} lights on': '{n} lumières allumées',
   '{n} light on': '{n} lumière allumée',
   'lights on ·': 'lumières allumées ·',

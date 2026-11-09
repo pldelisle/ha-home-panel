@@ -28,7 +28,7 @@ const cutLabels = (house: House, tab: 'home' | 'lights') =>
 
 // the labels the issue names, per language: none may be cut
 const NAMED = {
-  en: ['Living room', '2 of 3 on · 59%'],
+  en: ['Living room'],
   fr: ['4 allumées', 'Il y a 2 h', 'Lancer', 'En lecture', 'toutes les portes fermées · mouvement en cours'],
 };
 
@@ -45,11 +45,16 @@ for (const lang of ['en', 'fr'] as const) {
 
     test('the Lights tab cuts none of the labels the issue names', async ({house}) => {
       await house.tab('lights');
+      // the lit kitchen tile: its sub-line is drawn in full (the phone drops the colour temperature) and is not among the cut labels
+      const phone = test.info().project.name === 'phone';
+      const sub = {
+        en: phone ? '2 of 3 on · 59%' : '2 of 3 on · 59% · 3000 K',
+        fr: phone ? '2 sur 3 allumées · 59\u202f%' : '2 sur 3 allumées · 59\u202f% · 3000 K',
+      }[lang];
+      await expect(house.root().locator('.lcell.on .tx small:visible').first()).toHaveText(sub);
       const cut = await cutLabels(house, 'lights');
-      for (const name of NAMED[lang]) expect(cut, `"${name}" is cut`).not.toContain(name);
-      // the tablet's tile sub-line ("2 of 3 on · 59% · 3000 K", and French "2 of 3 : activé · ...") is a pixel or more too wide in the
-      // image's whole-pixel text and stays as it is (#79 keeps the colour temperature there): only the phone is scanned in full
-      if (test.info().project.name === 'phone') expect(cut, 'labels cut on Lights').toEqual([]);
+      for (const name of [...NAMED[lang], sub]) expect(cut, `"${name}" is cut`).not.toContain(name);
+      expect(cut, 'labels cut on Lights').toEqual([]);
     });
   });
 }

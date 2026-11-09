@@ -143,3 +143,13 @@ test('the idle stack card says "En lecture" and nothing else changed with it', a
   expect(frText('Motion 2 h ago')).toBe('Mouvement il y a 2 h');
   expect(frText('last motion 5 min ago')).toBe('dernier mouvement il y a 5 min');
 });
+
+// the Lights tile's sub-line is "2 of 3 on · 59%", with the colour temperature or the mode after it on a tablet
+test('the Lights tile sub-line is French in every part', async () => {
+  const {frText} = await load([]);
+  expect(frText('2 of 3 on')).toBe('2 sur 3 allumées');
+  expect(frText('2 of 3 on · 59% · 3000 K')).toBe('2 sur 3 allumées · 59 % · 3000 K');
+  expect(frText('2 of 3 on · 59% · Auto')).toBe('2 sur 3 allumées · 59 % · Auto');
+  expect(frText('2 of 3 on · 59% · Night')).toBe('2 sur 3 allumées · 59 % · Nuit');
+  expect(frText('2 of 3 on · 59%')).toBe('2 sur 3 allumées · 59 %');
+});
