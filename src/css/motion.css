@@ -1,42 +1,49 @@
 /* ---- Motion (v1.19.1): the native feel. Press feedback, sections that settle in, sheets that spring up, a dial that draws itself,
    a wallpaper that drifts while the panel is in use and a weather icon that moves. Everything here stops under Reduce Motion. ---- */
-/* press feedback: a tappable piece shrinks a touch under the finger and springs back; selected states cross-fade instead of snapping */
-.cct,
-.hsen,
-button.schip,
-.quick button,
-.crow button,
-.senstabs button,
-.seg button,
-.rtab,
-.head button.icon,
-.sheet button.icon.close,
-.ausel .close,
-.lchip,
-.lauto,
-.abtn,
-.stepper button,
-.days button,
-.pp,
-.pp2,
-.tab,
-.go,
-button.chip,
-.dtime,
-.cbtn,
-.tgl,
-.more,
-.ptile,
-.htile,
-.stile,
-.tilebtn,
-.tvctl button,
-.mtvctl button {
-  transition:
-    transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
-    background-color 0.2s ease,
-    box-shadow 0.2s ease,
-    color 0.2s ease;
+/* press feedback: a tappable piece shrinks a touch under the finger and springs back; selected states cross-fade instead of snapping.
+   Under Reduce Motion they snap: a tapped tab's highlight is in its final colour in the frame after the tap, so the glass rail it
+   sits in is not redrawn by a fade still running when the frame is captured (#94) */
+@media (prefers-reduced-motion: no-preference) {
+  .cct,
+  .hsen,
+  button.schip,
+  .quick button,
+  .crow button,
+  .senstabs button,
+  .seg button,
+  .rtab,
+  .head button.icon,
+  .sheet button.icon.close,
+  .ausel .close,
+  .lchip,
+  .lauto,
+  .abtn,
+  .stepper button,
+  .days button,
+  .pp,
+  .pp2,
+  .tab,
+  .go,
+  button.chip,
+  .dtime,
+  .cbtn,
+  .tgl,
+  .more,
+  .ptile,
+  .htile,
+  .stile,
+  .tilebtn,
+  .tvctl button,
+  .mtvctl button {
+    transition:
+      transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+      background-color 0.2s ease,
+      box-shadow 0.2s ease,
+      color 0.2s ease;
+  }
+  .rtab svg {
+    transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
 }
 .cct:active,
 .hsen:active,
@@ -63,9 +70,6 @@ button.chip:active,
 .tgl:active,
 .more:active {
   transform: scale(0.96);
-}
-.rtab svg {
-  transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .rtab:active svg {
   transform: scale(0.86);
@@ -362,5 +366,10 @@ button.chip:active,
   .rtab:active svg,
   .dial.ed:active .dknob {
     transform: none;
+  }
+  /* the switch knob slides and the dial's knob glides only with motion on (base.css gives the knob a slide of its own) */
+  .sw::after,
+  .dial .dknob {
+    transition: none;
   }
 }
