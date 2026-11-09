@@ -3442,6 +3442,7 @@ export class HomePanel extends HTMLElement {
         d = n => new Date(now.getTime() - n * 864e5);
       const powers = [this.E.grid, this.E.whP, this.E.evP, ...this.ROOMS.map(r => r.power)],
         temps = [...this.ROOMS.map(r => r.temp), this.E.outT];
+      // the spans asked here and in CRANGE are copied into STATISTIC_SPANS of scripts/record-fixture.mjs, which a test checks
       const [hour7, day, meter, evh, hp] = await Promise.all([
         this.api.statistics([...powers, ...temps], 'hour', d(7), ['mean', 'max']),
         this.api.statistics([...powers, ...temps], 'day', d(400), ['mean', 'min', 'max']),
