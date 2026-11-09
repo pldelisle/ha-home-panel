@@ -96,39 +96,16 @@ const sensorName = n => String(n).replace(/^d[ée]tecteur\s+(de\s+)?mouvement\s+
 // thermostats without an HA area: the area each Hilo room belongs to
 // areas the Phone tab shows as part of another, the way Apple Home groups them: the parking spot's charger and camera live in the garage
 // AL_AREAS (from the config): HA area → Adaptive Lighting switch, for areas the panel can't match on its own
-// Tabs view: one pane per subject, for a tablet fixed to the wall. Five panes host the detail sheets inline.
-const TABS = [
-  ['home', 'Home', 'house'],
-  ['lights', 'Lights', 'bulb'],
-  ['climate', 'Climate', 'therm'],
-  ['weather', 'Weather', 'wx'],
-  ['car', 'Car', 'car'],
-  ['energy', 'Energy', 'bolt'],
-  ['air', 'Air', 'aq'],
-  ['media', 'Media', 'tv'],
-  ['cams', 'Security', 'shield'],
-  ['auto', 'Automations', 'flow'],
-];
+// Tabs view: one pane per subject, for a tablet fixed to the wall. Five panes host the detail sheets inline. The rail, the
+// phone's bar and the panes are the shell's (src/shell/features.ts); the guest fills what is inside them.
 // the sheets that wait for the charts library before they draw anything; the others never do. The Weather sheet is not
 // one of them: it shows its tiles and forecast at once and fetches the library beside its history (weatherSheet)
 const CHART_SHEETS = new Set(['sh-energy', 'sh-climate', 'sh-car', 'sh-air', 'sh-wx']);
 const TAB_SHEET = {climate: 'sh-climate', weather: 'sh-weather', car: 'sh-car', energy: 'sh-energy', air: 'sh-air'};
-// on a phone the bar at the bottom holds these four; the other sections sit under More
-const PHONE_TABS = ['home', 'lights', 'climate', 'car'];
-const TAB_COLOR = {
-  home: 'var(--c-grid)',
-  lights: 'var(--warn)',
-  climate: 'var(--c-wh)',
-  weather: 'var(--m-blue)',
-  car: 'var(--c-ev)',
-  energy: 'var(--c-grid)',
-  air: 'var(--ok)',
-  media: 'var(--c-home)',
-  cams: 'var(--m-purple)',
-  auto: 'var(--c-heat)',
-};
-const PHONE_MQ = '(max-width:599px)';
-const SHEET_TAB = Object.fromEntries(Object.entries(TAB_SHEET).map(([t, id]) => [id, t]));
+// the tab whose pane hosts a sheet's panel
+const SHEET_TAB = /** @type {Record<string, import('./shell/feature.ts').FeatureKey>} */ (
+  Object.fromEntries(Object.entries(TAB_SHEET).map(([t, id]) => [id, t]))
+);
 // colour of a black body at k kelvin (Tanner Helland's fit), for the colour-temperature strips and sliders
 const kelvinRGB = k => {
   const t = Math.min(40000, Math.max(1000, k)) / 100,
@@ -637,7 +614,9 @@ export class LegacyPanel {
     this.chartsLoad = null; // the one load of the chunk
     this.open = null; // open sheet id
     this.inline = null; // sheet shown inside a tab pane (Tabs view), same id as this.open while it shows
-    this.tab = 'home';
+    this.drawnTab = 'home'; // the tab the guest last drew its part of (tabChanged); `tab` is the shell's
+    this.framed = false; // whether build() has drawn once, so the next draw asks the shell for a fresh frame
+    this.frameKey = null; // what availability() said when the shell was last asked to draw the rail
     this.range = 'today';
     this.climSel = 'house';
     this.sesAll = false;
@@ -656,11 +635,14 @@ export class LegacyPanel {
       } else if (this.$app && !this.$('setpop').hidden) this.toggleSettings(false);
     };
   }
-  // connect, disconnect, hassChanged, panelChanged and narrowChanged are the guest's interface (spec 14, GuestRenderer):
-  // the shell feeds the store itself and calls them after it did.
-  narrowChanged(narrow) {
-    this._narrow = narrow; // build() reads it
-    if (this.$app) this.$app.classList.toggle('narrow', !!narrow);
+  // connect, disconnect, hassChanged, panelChanged, tabChanged, compactChanged and openMore are the guest's interface (spec 14,
+  // GuestRenderer): the shell feeds the store itself and calls them after it did.
+  // The tab and the phone shape belong to the shell, which draws the rail, the bar and the panes from them
+  get tab() {
+    return this.ctx.shell.tab;
+  }
+  get compact() {
+    return this.ctx.shell.compact;
   }
   // the shell fed the store the new config; draw again when it is a different one (configure)
   panelChanged() {
@@ -730,11 +712,12 @@ export class LegacyPanel {
   }
   /**
    * Once per connection of the host: take the root, the host and the services from the shell's context, then subscribe.
-   * The shell calls hassChanged, panelChanged and narrowChanged after this, which draw the panel the first time.
+   * The shell calls hassChanged and panelChanged after this, which draw the panel the first time.
    * (A JSDoc type reference is no import for dependency-cruiser, so naming the shell's type here breaks no rule.)
    * @param {import('./shell/guest.ts').GuestContext} ctx
    */
   connect(ctx) {
+    this.ctx = ctx;
     this.root = ctx.root;
     this.host = ctx.host;
     this.container = ctx.root.querySelector('.guest'); // the one container the class draws into
@@ -950,18 +933,12 @@ export class LegacyPanel {
   // ---------- skeleton ----------
   build() {
     ensureFonts(); // Montserrat from the panel's own fonts/ folder, declared in the document once
-    this.container.innerHTML = `<div class="app" id="app"><div class="wrap">
-  <header class="head">
-    <button class="icon menu" id="menu" type="button" aria-label="Open the sidebar">${ico('menu')}</button>
-    <div class="hello" id="hello"></div>
-    <div class="chips"><div id="chips"></div>
-      <button class="icon" id="gear" type="button" aria-label="Settings" aria-haspopup="dialog" aria-expanded="false">${ico('gear', 20)}</button></div>
-    <div class="clock" id="clock"></div>
-    <div class="pop" id="attpop" hidden role="dialog" aria-label="Status checks"><div id="att"></div></div>
-    <div class="pop" id="setpop" hidden role="dialog" aria-label="Settings"><div id="setc"></div></div>
-  </header>
-  <div id="err"></div>
-  <div class="cols">
+    // A second draw starts from new frame elements, as when the class wrote the frame itself: no listener it wired and no card it
+    // moved into a pane survives. The shell renders them at once; the first draw finds the frame the shell rendered.
+    if (this.framed) this.ctx.shell.resetFrame();
+    this.framed = true;
+    // the shell drew the frame (the header, the rail, the panes); the guest draws what is not in it: the parked cards, the sheets, the idle clock, the toast
+    this.container.innerHTML = `<div class="cols">
     <div class="col c1">
       <div class="card wxcard tap" id="open-weather" tabindex="0" role="button" aria-description="Open weather details">${houseImg(this.CFG.house)}<div class="txt" id="wx"></div><div class="facts wxfacts" id="wxf"></div><div class="wxd" id="wxd"></div></div>
       <div class="card tap" id="open-energy" tabindex="0" role="button" aria-description="Open home energy details"><div id="energy"></div></div>
@@ -980,22 +957,6 @@ export class LegacyPanel {
       <div class="card" id="hilo"></div>
     </div>
   </div>
-  <div class="tabview" id="tabview" hidden>
-    <nav class="rail" id="rail" role="tablist" aria-label="Sections">${TABS.map(([k, l, i]) => `<button type="button" class="rtab" role="tab" data-tab="${k}"${PHONE_TABS.includes(k) ? ' data-ph' : ''} aria-selected="false">${ico(i, 24)}<span>${l}</span></button>`).join('')}<button type="button" class="rtab rmore" role="tab" id="moretab" data-more aria-selected="false" aria-haspopup="dialog">${ico('more', 24)}<span>More</span></button></nav>
-    <div class="panes">
-      <section class="pane pane-home" id="pane-home" hidden><div class="ph"><span class="badge" style="--acc:var(--c-grid)">${ico('house', 26)}</span><div class="grow"><h2>Home</h2><div class="sub" id="hsub"></div></div></div><div class="cfgerrh" id="cfgerr" hidden></div><div class="card hwx" id="hwx"></div><div class="hright"><div class="htiles" id="htiles"></div><div class="card hsec" id="hsec"></div></div><div class="hscenes" id="hscenes" hidden></div></section>
-      <section class="pane pane-lights" id="pane-lights" hidden><div class="ph"><span class="badge" style="--acc:var(--warn)">${ico('bulb', 26)}</span><div class="grow"><h2>Lights</h2><div class="sub" id="lsub"></div></div><div class="ledbar" id="ledbar" hidden><button type="button" class="more" id="lreset" hidden>Reset order</button><button type="button" class="more" id="ledit" aria-pressed="false">Arrange</button></div></div><div class="card" id="albar" hidden></div><div class="ltiles" id="ltiles"></div><div id="lhost"></div></section>
-      <section class="pane pane-climate" id="pane-climate" hidden><div class="ph cph"><span class="badge" style="--acc:var(--c-wh)">${ico('therm', 26)}</span><div class="grow"><h2 id="ch2">Climate</h2><div class="sub" id="csub2"></div></div></div><div class="ctiles2" id="ctiles2"></div></section>
-      <section class="pane pane-weather" id="pane-weather" hidden><div class="ph cph"><span class="badge" style="--acc:var(--m-blue)">${ico('wx', 26)}</span><div class="grow"><h2 id="wh2">Weather</h2><div class="sub" id="wsub2"></div></div></div><div id="wxhost"></div><div class="wxtiles" id="wxtiles"></div></section>
-      <section class="pane pane-car" id="pane-car" hidden><div class="ph cph"><span class="badge" style="--acc:var(--c-ev)">${ico('car', 26)}</span><div class="grow"><h2 id="carh2">Car</h2><div class="sub" id="carsub2"></div></div></div><div id="carhost"></div></section>
-      <section class="pane pane-energy" id="pane-energy" hidden><div class="ph cph"><span class="badge" style="--acc:var(--c-grid)">${ico('bolt', 26)}</span><div class="grow"><h2 id="eh2">Energy</h2><div class="sub" id="esub2"></div></div></div><div id="ehost"></div><div class="etiles" id="etiles"></div><div class="eside" id="eside"></div></section>
-      <section class="pane pane-air" id="pane-air" hidden><div class="ph cph"><span class="badge" style="--acc:var(--ok)">${ico('aq', 26)}</span><div class="grow"><h2 id="ah2">Air</h2><div class="sub" id="asub2"></div></div></div><div id="airhost"></div></section>
-      <section class="pane pane-media" id="pane-media" hidden><div class="ph"><span class="badge" style="--acc:var(--c-home)">${ico('tv', 26)}</span><div class="grow"><h2>Media</h2><div class="sub" id="msub"></div></div></div><div class="mtiles" id="mtiles"></div><div class="card" id="mtv" hidden></div><div class="card" id="media"></div></section>
-      <section class="pane pane-cams" id="pane-cams" hidden><div class="ph"><span class="badge" style="--acc:var(--m-purple)">${ico('shield', 26)}</span><div class="grow"><h2>Security</h2><div class="sub" id="cmsub"></div></div></div><div id="camhost"></div><div id="senhost"></div></section>
-      <section class="pane pane-auto" id="pane-auto" hidden><div class="ph"><span class="badge" style="--acc:var(--c-heat)">${ico('flow', 26)}</span><div class="grow"><h2>Automations</h2><div class="sub" id="ausub"></div></div></div><div id="auhost"></div></section>
-    </div>
-  </div>
-</div>
 
 <div class="sheet" id="sh-energy" hidden><div class="panel" role="dialog" aria-modal="true" aria-labelledby="eh">
   <div class="ph"><span class="badge" style="--acc:var(--c-grid)"><svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z" fill="currentColor"/></svg></span>
@@ -1106,16 +1067,19 @@ export class LegacyPanel {
 </div></div>
 <div class="idle" id="idle" hidden aria-hidden="true"><div class="iwrap" id="iwrap"></div></div>
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-<span id="txprobe" aria-hidden="true" style="position:absolute;left:-9999px;visibility:hidden;font-size:17px;font:-apple-system-body"></span>
-</div>`;
+<span id="txprobe" aria-hidden="true" style="position:absolute;left:-9999px;visibility:hidden;font-size:17px;font:-apple-system-body"></span>`;
     this.$app = this.$('app');
+    // `.app` is the shell's and outlives a draw, where a fresh one used to start bare: clear what the guest toggles on it, then
+    // the applyText, applyTheme and applyGlass below set theirs again
+    this.$app.classList.remove('live', 'idle', 'mc', 'gl', 'txl');
+    delete this.$app.dataset.theme;
+    delete this.$app.dataset.wp;
     this.$app.lang = (this.store.isFrench ? this.locale : this.localeEn).tag;
     this.root
       .querySelectorAll('.sheet>.panel')
       .forEach(p => p.insertAdjacentHTML('afterbegin', '<div class="grab" aria-hidden="true"></div>'));
     this.applyText();
     if (this.store.isFrench) this.frStart();
-    this.$app.classList.toggle('narrow', !!this._narrow);
     this.applyTheme();
     // the detail panels move into the tab panes in the Tabs view, so they are kept by id
     this.panels = {};
@@ -1124,19 +1088,7 @@ export class LegacyPanel {
     });
     this.wire();
     this.observeLayout();
-    // under 600 px the Tabs view takes its phone shape; a browser that still remembers the old Phone view gets Tabs once
-    this.mq = matchMedia(PHONE_MQ);
-    this.compact = this.mq.matches;
-    this.$app.classList.toggle('cp', this.compact);
     this.idleArm();
-    if (!this.mqOn) {
-      this.mqOn = true;
-      try {
-        this.mq.addEventListener('change', () => this.onCompact());
-      } catch {
-        this.mq.addListener(() => this.onCompact());
-      }
-    }
     // the theme follows the device's appearance as well as the sun; the text size is read again when the panel comes back into view
     if (!this.sysOn) {
       this.sysOn = true;
@@ -1789,7 +1741,7 @@ export class LegacyPanel {
     if (go.startsWith('sens:')) return this.openSens(go.slice(5));
     if (go.startsWith('tab:')) {
       const t = go.slice(4);
-      if (this.root.querySelector(`#rail [data-tab="${t}"]:not([hidden])`)) this.setTab(t);
+      if (this.availability()[t] !== false) this.ctx.shell.setTab(t);
       return;
     }
     if (this.$(go)) this.show(go);
@@ -2191,7 +2143,6 @@ export class LegacyPanel {
       if (pc) return this.phoneCmd(pc);
       const sc = e.target.closest('[data-p="scene"]');
       if (sc) return this.runScene(sc.dataset.id);
-      if (e.target.closest('[data-more]')) return this.show('sh-more');
       // phone: tiles open sheets
       const sh = e.target.closest('[data-sheet]');
       if (sh) return this.show(sh.dataset.sheet);
@@ -2208,16 +2159,16 @@ export class LegacyPanel {
       if (wx) return this.openWx(wx.dataset.wx);
       const sn = e.target.closest('[data-sens]');
       if (sn) return this.openSens(sn.dataset.sens);
-      const t = e.target.closest('[data-tab]');
-      if (t) return this.setTab(t.dataset.tab);
+      const t = e.target.closest('[data-pane]');
+      if (t) return this.ctx.shell.setTab(t.dataset.pane);
     };
     tv.addEventListener('click', onTap);
     this.$('sh-card').addEventListener('click', onTap); // a card moved into the generic sheet keeps its buttons working
     this.$('sh-more').addEventListener('click', e => {
-      const t = e.target.closest('[data-tab]');
+      const t = e.target.closest('[data-pane]');
       if (t) {
         this.hide();
-        return this.setTab(t.dataset.tab);
+        return this.ctx.shell.setTab(t.dataset.pane);
       }
     });
     for (const h of ['mtiles'])
@@ -3202,7 +3153,7 @@ export class LegacyPanel {
     };
   }
   // the sections this house has nothing for (true = nothing): Climate with no thermostat and no heat pump, Car with no car, the water
-  // heater with neither of its sensors, Hilo with no rate. gateTabs hides them; renderWater and renderHilo draw nothing for them
+  // heater with neither of its sensors, Hilo with no rate. availability() and gateLacking hide them; renderWater and renderHilo draw nothing for them
   lacking() {
     return {
       climate: !this.ROOMS.length && !this.st(this.E.hp),
@@ -3573,7 +3524,7 @@ export class LegacyPanel {
   show(id) {
     // in the Tabs view the five detail sheets are panes: opening one means switching to its tab
     if (this.view === 'tabs' && !this.compact && SHEET_TAB[id]) {
-      this.setTab(SHEET_TAB[id]);
+      this.ctx.shell.setTab(SHEET_TAB[id]);
       return;
     }
     if (id === 'sh-more') this.renderMore();
@@ -5238,18 +5189,14 @@ export class LegacyPanel {
     // Tabs is the only view since 1.16.0, on the iPad and the iPhone alike; the view switcher is gone
     const prev = this.view;
     this.view = 'tabs';
-    this.$('app').classList.remove('pv');
-    this.$('app').classList.add('tabsv');
     this.root.querySelector('.cols').hidden = true;
     this.$('tabview').hidden = false;
     if (prev !== 'tabs') this.enterTabs();
   }
   // ---------- Phone: the Tabs view under 600 px. Bottom tab bar, one column, summary tiles that open the detail sheets ----------
-  onCompact() {
-    const c = this.mq.matches;
-    if (c === this.compact) return;
-    this.compact = c;
-    this.$app.classList.toggle('cp', c);
+  // the shell's `compact` changed and its frame already follows
+  compactChanged() {
+    if (!this.$app) return; // nothing drawn yet: the first draw reads the shell
     this.applyGlass();
     this.idleArm();
     if (this.open && this.open !== this.inline) this.hide();
@@ -5261,10 +5208,10 @@ export class LegacyPanel {
     this.renderLive();
   }
   // the five detail panels sit inline in their panes on a tablet; on a phone they stay modal sheets and the old summary cards become the panes
-  placePanels() {
+  placePanels(compact = this.compact) {
     for (const [t, id] of Object.entries(TAB_SHEET)) {
       const p = this.panels[id];
-      if (this.compact) {
+      if (compact) {
         p.setAttribute('aria-modal', 'true');
         this.$(id).appendChild(p);
       } else {
@@ -5278,22 +5225,7 @@ export class LegacyPanel {
         if (el && h && el.parentNode !== h) h.appendChild(el);
       };
     const homes = {'open-weather': 'wxhost', 'open-car': 'carhost', 'open-energy': 'ehost', 'open-air': 'airhost'};
-    for (const [id, host] of Object.entries(homes)) mv(id, this.compact ? this.$(host) : col);
-  }
-  // the fifth slot of the bar: More, or the section it holds when one is open
-  renderMoreTab() {
-    const b = this.$('moretab');
-    if (!b) return;
-    const sec = PHONE_TABS.includes(this.tab) ? null : TABS.find(x => x[0] === this.tab);
-    b.setAttribute('aria-selected', String(!!sec));
-    b.style.setProperty('--rc', sec ? TAB_COLOR[sec[0]] : 'var(--c-home)');
-    const html = sec
-      ? `${ico(sec[2], 24)}<span>${sec[0] === 'auto' ? 'Rules' : sec[1]}</span>`
-      : `${ico('more', 24)}<span>More</span>`; // Automations doesn't fit the slot
-    if (this.cache.moretab !== html) {
-      this.cache.moretab = html;
-      b.innerHTML = html;
-    }
+    for (const [id, host] of Object.entries(homes)) mv(id, compact ? this.$(host) : col);
   }
   renderCompact() {
     if (!this.compact || this.view !== 'tabs') return;
@@ -5674,8 +5606,8 @@ export class LegacyPanel {
     this.$('cardh').textContent = title || '';
     this.show('sh-card');
   }
-  // More: the sections that aren't on the bar, with a word on each, and the view switch
-  renderMore() {
+  // the word under each section in the phone's More sheet, raw text, for the registry's summary and for renderMore
+  moreLines() {
     const L = this.live(),
       temp = this.attr(this.E.weather, 'temperature') ?? this.num(this.E.outT),
       cond = this.st(this.E.cond),
@@ -5695,7 +5627,7 @@ export class LegacyPanel {
       weather:
         temp == null
           ? ''
-          : `${Math.round(temp)}° · ${esc(condName(ok(cond) ? cond.state : (this.st(this.E.weather) || {}).state))}`,
+          : `${Math.round(temp)}° · ${condName(ok(cond) ? cond.state : (this.st(this.E.weather) || {}).state)}`,
       energy: L.grid == null ? '' : `${L.grid < 1 ? Math.round(L.grid * 1000) + ' W' : L.grid.toFixed(2) + ' kW'} now`,
       air: !air ? 'No purifiers' : air.worst < 0 ? 'No data' : AQ_LVL[air.worst][0],
       media:
@@ -5707,12 +5639,21 @@ export class LegacyPanel {
         .join(' · '),
       auto: running ? `${running} running` : A.length ? plural(A.length, 'automation') : '',
     };
+    return sb;
+  }
+  moreLine(key) {
+    return this.moreLines()[key] || null;
+  }
+  // More: the sections that aren't on the bar, with a word on each, and the view switch
+  renderMore() {
+    const sb = this.moreLines();
     this.set(
       'morelist',
-      TABS.filter(([k]) => !PHONE_TABS.includes(k))
+      this.ctx.shell
+        .moreSections()
         .map(
-          ([k, l, i]) =>
-            `<button type="button" class="stile${this.tab === k ? ' sel' : ''}" data-tab="${k}" style="--rc:${TAB_COLOR[k]}"><span class="ic">${ico(i, 22)}</span><span class="tx"><b>${l}</b><small>${sb[k] || '&nbsp;'}</small></span></button>`,
+          ({key, label, icon, color}) =>
+            `<button type="button" class="stile${this.tab === key ? ' sel' : ''}" data-pane="${key}" style="--rc:${color}"><span class="ic">${ico(icon, 22)}</span><span class="tx"><b>${esc(label)}</b><small>${esc(sb[key] || '') || '&nbsp;'}</small></span></button>`,
         )
         .join(''),
     );
@@ -5730,34 +5671,23 @@ export class LegacyPanel {
     mv('hilo', 'eside');
     mv('cams', 'camhost');
     mv('sensors', 'senhost');
-    this.setTab(this.settings.get().tab);
+    this.tabChanged(this.tab);
   }
   leaveTabs() {
     if (this.inline) this.hide();
-    const was = this.compact;
-    this.compact = true;
-    this.placePanels();
-    this.compact = false;
-    this.placePanels();
-    this.compact = was; // panels back to their sheets, cards back to the columns
+    this.placePanels(true);
+    this.placePanels(false); // panels back to their sheets, cards back to the columns
     this.plan = null; // the cards go back into the columns on the next layout
   }
-  setTab(t) {
-    if (!TABS.some(x => x[0] === t)) t = 'home';
+  // the shell shows the pane of `t` (it remembered the tab and drew the rail and the panes); this is the guest's part
+  tabChanged(t) {
+    if (!this.$app || this.view !== 'tabs') return; // nothing drawn yet: enterTabs asks again once it is
     if (this.inline) this.hide();
     if (this.open === 'sh-more') this.hide();
-    const prev = this.tab;
-    this.tab = t;
-    this.settings.set('tab', t);
+    const prev = this.drawnTab;
+    this.drawnTab = t;
     if (t === 'lights' && prev !== t) this.loadLightOrder(); // another screen may have rearranged them
     if (t !== 'lights' && this.lightEdit) this.setLightEdit(false);
-    this.root
-      .querySelectorAll('#rail .rtab[data-tab]')
-      .forEach(b => b.setAttribute('aria-selected', b.dataset.tab === t));
-    this.renderMoreTab();
-    TABS.forEach(([k]) => {
-      this.$('pane-' + k).hidden = k !== t;
-    });
     this.openInline(t);
     this.renderTabs();
     // on a phone each section starts at the top, as an app's tabs do
@@ -5766,6 +5696,10 @@ export class LegacyPanel {
         this.$app.scrollIntoView({block: 'start'});
       } catch {}
     }
+  }
+  // the shell's More button asks for the More sheet, which the guest still draws
+  openMore() {
+    this.show('sh-more');
   }
   openInline(t) {
     const id = TAB_SHEET[t];
@@ -5784,7 +5718,7 @@ export class LegacyPanel {
       'renderPaneSubs',
       'renderAuto',
       'renderCompact',
-      'gateTabs',
+      'gateLacking',
     ]) {
       try {
         this[f]();
@@ -5793,17 +5727,29 @@ export class LegacyPanel {
       }
     }
   }
-  // what the house lacks is hidden wherever it shows: the Climate and Car tabs with their rail buttons (the phone's tab bar too) and
-  // Home tiles, the water heater and Hilo cards with the tiles that open them. It runs last in renderTabs because the renderers above
-  // redraw their tiles whole: a hide that ran before a redraw let the new tile show until the next update hid it again
-  gateTabs() {
+  // what the house lacks is hidden wherever it shows. The rail's Climate and Car buttons are the shell's: it asks availability()
+  // and draws the rail from the answer. The Home tiles that open them, the water heater and the Hilo cards with the tiles that
+  // open them are the guest's, and it hides them here. It runs last in renderTabs because the renderers above redraw their
+  // tiles whole: a hide that ran before a redraw let the new tile show until the next update hid it again
+  gateLacking() {
     const L = this.lacking(),
       hide = (sel, off) =>
         this.root.querySelectorAll(sel).forEach(el => {
           el.hidden = off;
         });
-    for (const t of ['climate', 'car']) hide(`[data-tab="${t}"]`, L[t]);
+    for (const t of ['climate', 'car']) hide(`[data-pane="${t}"]`, L[t]);
     for (const c of ['water', 'hilo']) hide(`#${c}, [data-card="${c}"]`, L[c]);
+    const key = JSON.stringify(this.availability());
+    if (key !== this.frameKey) {
+      this.frameKey = key;
+      this.ctx.shell.requestFrame();
+    }
+  }
+  // which tabs this house lacks (false: nothing for it), for the shell's registry; no opinion until a hass arrived
+  availability() {
+    if (!this.hass) return {};
+    const L = this.lacking();
+    return {climate: !L.climate, car: !L.car};
   }
   // one line under each pane title, like the detail sheets have
   renderPaneSubs() {
@@ -6067,7 +6013,7 @@ export class LegacyPanel {
       tiles
         .map(
           ([k, i, col, lbl, v, sb]) =>
-            `<button type="button" class="htile${k === 'car' && c && c.charging ? ' chg' : ''}" data-tab="${k}" ${extra(k, i)}><span class="hh"><span style="color:${col}">${ico(i, 22)}</span><span class="lbl">${lbl}</span><span class="go">›</span></span><span class="hv num">${v}</span><span class="hs">${sb}</span></button>`,
+            `<button type="button" class="htile${k === 'car' && c && c.charging ? ' chg' : ''}" data-pane="${k}" ${extra(k, i)}><span class="hh"><span style="color:${col}">${ico(i, 22)}</span><span class="lbl">${lbl}</span><span class="go">›</span></span><span class="hv num">${v}</span><span class="hs">${sb}</span></button>`,
         )
         .join(''),
     );
@@ -6086,7 +6032,7 @@ export class LegacyPanel {
       .join(' · ');
     this.set(
       'hsec',
-      `<button type="button" class="hh" data-tab="cams"><span class="hsecico"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l7.5 3.2v5.3c0 4.8-3.2 9-7.5 10.6-4.3-1.6-7.5-5.8-7.5-10.6V5.7z" fill="var(--m-sage)"/><path d="M8.8 12.2l2.2 2.2 4.4-4.4" fill="none" stroke="var(--card)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="lbl">Security</span><span class="right">${esc(secSum)}</span><span class="go">›</span></button>
+      `<button type="button" class="hh" data-pane="cams"><span class="hsecico"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l7.5 3.2v5.3c0 4.8-3.2 9-7.5 10.6-4.3-1.6-7.5-5.8-7.5-10.6V5.7z" fill="var(--m-sage)"/><path d="M8.8 12.2l2.2 2.2 4.4-4.4" fill="none" stroke="var(--card)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="lbl">Security</span><span class="right">${esc(secSum)}</span><span class="go">›</span></button>
       ${
         cams.length
           ? `<div class="hcams">${cams

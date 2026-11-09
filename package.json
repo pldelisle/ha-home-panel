@@ -9,7 +9,7 @@
     "dev": "vite build --watch",
     "size": "size-limit",
     "typecheck": "tsc -p tsconfig.check.json && tsc -p tsconfig.legacy.json",
-    "lit-analyzer": "lit-analyzer src/shell --strict",
+    "lit-analyzer": "lit-analyzer src/shell src/ui --strict",
     "test": "vitest run",
     "bench": "vitest bench --run --reporter=verbose",
     "test:watch": "vitest",
