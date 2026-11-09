@@ -729,7 +729,7 @@ export const autoMethods = {
     this.auCfg = this.auCfg || {};
     this.auTr = this.auTr || {};
     try {
-      const list = await this.hass.callWS({type: 'trace/list', domain: 'automation'}).catch(e => {
+      const list = await this.api.traceList('automation').catch(e => {
         this.auErr = e && (e.message || e.code);
         return null;
       });
@@ -744,10 +744,10 @@ export const autoMethods = {
       }
       await Promise.all(
         A.filter(a => a.item && (stale || !(a.item in this.auCfg))).map(a =>
-          this.hass
-            .callWS({type: 'automation/config', entity_id: a.entity})
+          this.api
+            .automationConfig(a.entity)
             .then(r => {
-              this.auCfg[a.item] = (r && r.config) || r || null;
+              this.auCfg[a.item] = r.config;
             })
             .catch(() => {
               if (!(a.item in this.auCfg)) this.auCfg[a.item] = null;
@@ -760,8 +760,8 @@ export const autoMethods = {
           const k = sm.item_id + '/' + sm.run_id,
             have = this.auTr[k];
           if (have && have.state !== 'running' && sm.state !== 'running') return null;
-          return this.hass
-            .callWS({type: 'trace/get', domain: 'automation', item_id: sm.item_id, run_id: sm.run_id})
+          return this.api
+            .traceGet('automation', sm.item_id, sm.run_id)
             .then(t => {
               this.auTr[k] = t;
             })

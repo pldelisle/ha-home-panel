@@ -7,6 +7,7 @@ import {pickStack, inHours, reminderLeft} from './stack.js';
 import {FR_ATTR, createFrench} from './i18n/fr.js';
 import {autoMethods} from './auto.js';
 import {createStore} from './core/store.ts';
+import {createApi, StaleReply} from './core/api.ts';
 import {createSettings} from './core/settings.ts';
 import {VERSION, ok, esc, ampm, tile, plural, cap} from './legacy/globals.js';
 import {loadApex} from './charts/apex.js';
@@ -31,6 +32,11 @@ const durTxt = ms => {
 };
 const fmtDay = s => new Date(s + 'T12:00:00').toLocaleDateString('en-CA', {month: 'short', day: 'numeric'});
 const ms = v => (typeof v === 'number' ? v : Date.parse(v));
+// the optional history of a heat pump or a sensor: a failed read is an empty one, but a StaleReply stays one
+const noHistory = e => {
+  if (e instanceof StaleReply) throw e;
+  return {};
+};
 // tiles with nothing to show (the car's sensors it doesn't have) are left out rather than shown with a dash
 const tiles = arr =>
   arr
@@ -604,9 +610,9 @@ function hpSeries(rows, get = a => a.current_temperature) {
   const out = [];
   let prev = null;
   (rows || []).forEach(x => {
-    const t = (x.lu || x.lc) * 1000,
-      a = x.a || {},
-      v = x.s === 'unavailable' ? null : get(a, x.s);
+    const t = x.lastUpdated,
+      a = x.attributes || {},
+      v = x.state === 'unavailable' ? null : get(a, x.state);
     if (v == null) {
       if (out.length) out.push([t, null]);
       prev = null;
@@ -641,6 +647,7 @@ export class HomePanel extends HTMLElement {
     } catch {
       // blocked site data: touching localStorage throws, so the settings keep their defaults
     }
+    this.api = createApi(this.store); // the one door to Home Assistant's WebSocket (spec 12)
     this.settings = createSettings(storage);
     this.french = createFrench(this.store); // the French layer of this panel, read through its store
     this.frDrawn = false; // whether the panel was last drawn in French
@@ -2452,7 +2459,7 @@ export class HomePanel extends HTMLElement {
   }
   async call(domain, service, data, done) {
     try {
-      await this.hass.callService(domain, service, data);
+      await this.api.runService(domain, service, data);
       if (done) this.toast(done);
     } catch (e) {
       this.toast(`Didn't work: ${e.message || e.code || e}`, true);
@@ -3414,60 +3421,36 @@ export class HomePanel extends HTMLElement {
   }
 
   // ---------- history ----------
-  async stats(ids, period, start, types, end) {
-    ids = [...new Set(ids.filter(Boolean))];
-    if (!ids.length) return {};
-    const msg = {
-      type: 'recorder/statistics_during_period',
-      start_time: start.toISOString(),
-      statistic_ids: ids,
-      period,
-      types,
-      units: {power: 'kW', energy: 'kWh', temperature: '°C'},
-    };
-    if (end) msg.end_time = end.toISOString();
-    return this.hass.callWS(msg);
-  }
   async loadHistory() {
-    // a load started under another config (the panel was redrawn meanwhile) is thrown away
-    const key = this.cfgKey;
-    if (!this.hass || this.loadingH === key) return;
-    this.loadingH = key;
+    // one load per config at a time; a load under another config (the panel was redrawn meanwhile) is a StaleReply
+    const generation = this.store.generation;
+    if (!this.hass || generation === this.loadingH) return;
+    this.loadingH = generation;
     try {
       const now = new Date(),
         d = n => new Date(now.getTime() - n * 864e5);
       const powers = [this.E.grid, this.E.whP, this.E.evP, ...this.ROOMS.map(r => r.power)],
         temps = [...this.ROOMS.map(r => r.temp), this.E.outT];
       const [hour7, day, meter, evh, hp] = await Promise.all([
-        this.stats([...powers, ...temps], 'hour', d(7), ['mean', 'max']),
-        this.stats([...powers, ...temps], 'day', d(400), ['mean', 'min', 'max']),
-        this.stats([this.E.energy, this.E.whE], 'day', d(33), ['change']),
-        this.stats([this.E.evP], 'hour', d(366), ['mean', 'max']),
+        this.api.statistics([...powers, ...temps], 'hour', d(7), ['mean', 'max']),
+        this.api.statistics([...powers, ...temps], 'day', d(400), ['mean', 'min', 'max']),
+        this.api.statistics([this.E.energy, this.E.whE], 'day', d(33), ['change']),
+        this.api.statistics([this.E.evP], 'hour', d(366), ['mean', 'max']),
         !this.E.hp
           ? Promise.resolve({})
-          : this.hass
-              .callWS({
-                type: 'history/history_during_period',
-                start_time: d(7).toISOString(),
-                entity_ids: [this.E.hp],
-                minimal_response: false,
-                no_attributes: false,
-                significant_changes_only: false,
-              })
-              .catch(() => ({})),
+          : this.api.history([this.E.hp], d(7), {minimal: false, attributes: true}).catch(noHistory),
       ]);
       const [today, t24] = await Promise.all([
-        this.stats([this.E.energy], 'hour', new Date(Date.now() - this.hourNow() * 36e5 - 60e3), ['change']),
-        this.stats([...this.ROOMS.map(r => r.temp), this.E.whT, this.E.whP], '5minute', d(1.05), ['mean']),
+        this.api.statistics([this.E.energy], 'hour', new Date(Date.now() - this.hourNow() * 36e5 - 60e3), ['change']),
+        this.api.statistics([...this.ROOMS.map(r => r.temp), this.E.whT, this.E.whP], '5minute', d(1.05), ['mean']),
       ]);
-      if (key !== this.cfgKey) return;
       this.H = this.derive(hour7, day, meter, evh, hp, today, t24);
       this.histErr = null;
     } catch (e) {
+      if (e instanceof StaleReply) return;
       console.error('home-panel history', e);
       this.histErr = e.message || e.code || String(e);
     }
-    if (key !== this.cfgKey) return;
     this.loadingH = false;
     this.cache = {};
     this.renderLive();
@@ -3602,10 +3585,10 @@ export class HomePanel extends HTMLElement {
     const hpPts = [];
     let prev = null;
     ((hp && hp[this.E.hp]) || []).forEach(x => {
-      const t = (x.lu || x.lc) * 1000,
-        a = x.a || {},
-        v = x.s === 'unavailable' ? null : a.current_temperature;
-      if (x.a) this.hpLastAttrs = a;
+      const t = x.lastUpdated,
+        a = x.attributes || {},
+        v = x.state === 'unavailable' ? null : a.current_temperature;
+      if (x.attributes) this.hpLastAttrs = a;
       if (v == null) {
         if (hpPts.length) hpPts.push([t, null]);
         prev = null;
@@ -3978,17 +3961,14 @@ export class HomePanel extends HTMLElement {
   // Forecasts are not in hass.states any more; the frontend subscribes to them like the weather card does.
   subscribeForecasts() {
     if (this.fcSubs || !this.hass || !this.hass.connection || !this.st(this.E.weather)) return;
-    this.fcSubs = ['daily', 'hourly'].map(type =>
-      this.hass.connection
-        .subscribeMessage(
-          m => {
-            this.fc[type] = (m && m.forecast) || [];
-            this.cache.wxd = null;
-            this.renderWeather();
-            if (this.open === 'sh-weather') this.renderForecast();
-          },
-          {type: 'weather/subscribe_forecast', forecast_type: type, entity_id: this.E.weather},
-        )
+    this.fcSubs = /** @type {const} */ (['daily', 'hourly']).map(type =>
+      this.api
+        .subscribeForecast(this.E.weather, type, forecast => {
+          this.fc[type] = forecast;
+          this.cache.wxd = null;
+          this.renderWeather();
+          if (this.open === 'sh-weather') this.renderForecast();
+        })
         .catch(e => {
           console.warn('home-panel forecast', type, e);
           return null;
@@ -4075,8 +4055,8 @@ export class HomePanel extends HTMLElement {
     const now = Date.now(),
       ids = [this.E.outT, this.E.dew, this.E.hum, this.E.pres, this.E.wind, this.E.gust];
     const [h, d] = await Promise.all([
-      this.stats(ids, 'hour', new Date(now - 7 * 864e5), ['mean', 'min', 'max']),
-      this.stats([this.E.gust, this.E.outT], 'day', new Date(now - 400 * 864e5), ['mean', 'min', 'max']),
+      this.api.statistics(ids, 'hour', new Date(now - 7 * 864e5), ['mean', 'min', 'max']),
+      this.api.statistics([this.E.gust, this.E.outT], 'day', new Date(now - 400 * 864e5), ['mean', 'min', 'max']),
     ]);
     const ser = (r, id, f = 'mean') =>
       (r[id] || []).filter(x => x[f] != null).map(x => [ms(x.start), +(+x[f]).toFixed(2)]);
@@ -4111,6 +4091,7 @@ export class HomePanel extends HTMLElement {
       return;
     }
     if (hist.status === 'rejected') {
+      if (hist.reason instanceof StaleReply) return;
       console.error('home-panel weather history', hist.reason);
       this.$('wseason').innerHTML = '<p>History is not available right now.</p>';
       return;
@@ -4730,7 +4711,7 @@ export class HomePanel extends HTMLElement {
       m = this.airMetric;
     const ids = P.rooms.map(x => x.s[m]).filter(Boolean),
       out = m === 'pm2_5' && P.outside && P.outside.pm;
-    const stt = await this.stats(out ? [...ids, out] : ids, R.period, start, ['mean']);
+    const stt = await this.api.statistics(out ? [...ids, out] : ids, R.period, start, ['mean']);
     const ser = id =>
       (stt[id] || []).filter(x => x.mean != null).map(x => [ms(x.start) + R.mid, +(+x.mean).toFixed(1)]);
     return (this.AR[k] = {
@@ -4757,6 +4738,7 @@ export class HomePanel extends HTMLElement {
     try {
       C = await this.loadAirRange(r);
     } catch (e) {
+      if (e instanceof StaleReply) return;
       console.error('home-panel air history', e);
       this.$('c-air').innerHTML = '<p>History is not available right now.</p>';
       return;
@@ -4843,11 +4825,12 @@ export class HomePanel extends HTMLElement {
     if (!C) {
       try {
         const start = new Date(Date.now() - R.days * 864e5),
-          stt = await this.stats(ids, R.period, start, ['mean']);
+          stt = await this.api.statistics(ids, R.period, start, ['mean']);
         const ser = id =>
           id ? (stt[id] || []).filter(x => x.mean != null).map(x => [ms(x.start) + R.mid, +(+x.mean).toFixed(1)]) : [];
         C = this.AR[k] = {at: Date.now(), start: start.getTime(), aqi: ser(o && o.aqi), aqhi: ser(aqhi)};
       } catch (e) {
+        if (e instanceof StaleReply) return;
         console.error('home-panel outdoor air history', e);
         box.innerHTML = '<p>History is not available right now.</p>';
         return;
@@ -5178,7 +5161,7 @@ export class HomePanel extends HTMLElement {
       }
       hold('on', true);
       try {
-        await this.hass.callService('media_player', 'turn_on', {entity_id: id});
+        await this.api.runService('media_player', 'turn_on', {entity_id: id});
         this.toast('Turning the TV on');
       } catch (e) {
         if (T.wol) this.call('button', 'press', {entity_id: T.wol}, 'Turning the TV on');
@@ -6547,18 +6530,18 @@ export class HomePanel extends HTMLElement {
     const v = {...(this.sysData || {}), light_links: pairs};
     this.sysData = v;
     this.tick();
-    this.hass
-      .callWS({type: 'frontend/set_system_data', key: LIGHT_ORDER_KEY, value: v})
+    this.api
+      .setSystemData(LIGHT_ORDER_KEY, v)
       .then(() => this.toast(msg))
       .catch(e => this.toast(`Couldn't save the link: ${e.message || e.code || e}`, true));
   }
   // the light order lives in Home Assistant's frontend system data (one value for every screen; only admins may write it)
   loadLightOrder() {
-    if (!this.hass || !this.hass.callWS) return;
-    this.hass
-      .callWS({type: 'frontend/get_system_data', key: LIGHT_ORDER_KEY})
+    if (!this.hass) return;
+    this.api
+      .getSystemData(LIGHT_ORDER_KEY)
       .then(r => {
-        const v = (r && r.value) || {},
+        const v = r || {},
           o = Array.isArray(v.light_order) ? v.light_order : null;
         const same = JSON.stringify(v) === JSON.stringify(this.sysData || {});
         this.sysData = v;
@@ -6566,14 +6549,17 @@ export class HomePanel extends HTMLElement {
         this.lightOrder = o;
         this.tick();
       })
-      .catch(() => {});
+      .catch(e => {
+        // the config changed while the read was on its way: ask again under the new one
+        if (e instanceof StaleReply) this.loadLightOrder();
+      });
   }
   saveLightOrder(keys) {
     this.lightOrder = keys;
     const v = {...(this.sysData || {}), light_order: keys};
     this.sysData = v;
-    this.hass
-      .callWS({type: 'frontend/set_system_data', key: LIGHT_ORDER_KEY, value: v})
+    this.api
+      .setSystemData(LIGHT_ORDER_KEY, v)
       .then(() => this.toast(keys ? 'Light order saved' : 'Light order reset'))
       .catch(e => this.toast(`Couldn't save the light order: ${e.message || e.code || e}`, true));
   }
@@ -6899,7 +6885,6 @@ export class HomePanel extends HTMLElement {
     const x = this.sensX,
       r = this.sensRange,
       R = CRANGE[r],
-      tag = (this.sensTag = Symbol()),
       door = x.kind === 'door';
     this.$('sensh').textContent = x.name;
     this.$('senssub').textContent = door ? 'Door' : 'Motion';
@@ -6911,28 +6896,23 @@ export class HomePanel extends HTMLElement {
       t0 = now - R.days * 864e5;
     let h;
     try {
-      h = await this.hass.callWS({
-        type: 'history/history_during_period',
-        start_time: new Date(t0).toISOString(),
-        entity_ids: [x.id],
-        minimal_response: true,
-        no_attributes: true,
-        significant_changes_only: false,
-      });
+      h = await this.api.history([x.id], new Date(t0), {minimal: true, attributes: false});
     } catch (e) {
+      if (e instanceof StaleReply) return;
       console.error('home-panel sensor history', e);
       this.$('sensbody').innerHTML = '<p>History is not available right now.</p>';
       this.$('sensstats').innerHTML = '';
       return;
     }
-    if (tag !== this.sensTag || this.open !== 'sh-sens') return;
+    // the sheet may have moved on while the history was on its way: another sensor, another range, or closed
+    if (this.open !== 'sh-sens' || this.sensX !== x || this.sensRange !== r) return;
     const segs = [];
     /** @type {{a: number, b?: number, live?: boolean} | null} */
     let cur = null;
     (h[x.id] || []).forEach(y => {
-      const t = (y.lu || y.lc) * 1000;
-      if (y.s === 'on' && !cur) cur = {a: Math.max(t, t0)};
-      else if (y.s !== 'on' && cur) {
+      const t = y.lastUpdated;
+      if (y.state === 'on' && !cur) cur = {a: Math.max(t, t0)};
+      else if (y.state !== 'on' && cur) {
         cur.b = t;
         segs.push(cur);
         cur = null;
@@ -7001,6 +6981,7 @@ export class HomePanel extends HTMLElement {
     try {
       C = await this.loadWx(ser, r);
     } catch (e) {
+      if (e instanceof StaleReply) return;
       console.error('home-panel weather history', e);
       this.$('c-wx').innerHTML = '<p>History is not available right now.</p>';
       return;
@@ -7101,20 +7082,11 @@ export class HomePanel extends HTMLElement {
     const R = CRANGE[r],
       start = new Date(Date.now() - R.days * 864e5),
       ids = ser.map(x => x.id);
-    const stt = await this.stats(ids, R.period, start, ['mean', 'min', 'max']);
+    const stt = await this.api.statistics(ids, R.period, start, ['mean', 'min', 'max']);
     const missing = ser.filter(x => !(stt[x.id] || []).length).map(x => x.id);
     let hist = {};
     if (missing.length)
-      hist = await this.hass
-        .callWS({
-          type: 'history/history_during_period',
-          start_time: start.toISOString(),
-          entity_ids: missing,
-          minimal_response: true,
-          no_attributes: true,
-          significant_changes_only: false,
-        })
-        .catch(() => ({}));
+      hist = await this.api.history(missing, start, {minimal: true, attributes: false}).catch(noHistory);
     const data = ser.map(x => {
       const rows = stt[x.id] || [];
       if (rows.length)
@@ -7124,9 +7096,7 @@ export class HomePanel extends HTMLElement {
             .filter(y => y[x.stat || 'mean'] != null)
             .map(y => [ms(y.start) + R.mid, +(+y[x.stat || 'mean']).toFixed(2)]),
         };
-      const h = (hist[x.id] || [])
-        .map(y => [(y.lu || y.lc) * 1000, parseFloat(y.s)])
-        .filter(y => Number.isFinite(y[1]));
+      const h = (hist[x.id] || []).map(y => [y.lastUpdated, parseFloat(y.state)]).filter(y => Number.isFinite(y[1]));
       // thin raw history to the range's step so the chart stays light
       const step = R.period === '5minute' ? 3e5 : R.period === 'hour' ? 36e5 : 864e5,
         out = [];
@@ -7148,8 +7118,8 @@ export class HomePanel extends HTMLElement {
     // import it from its Lovelace resource URL so a dashboard that also uses the card doesn't load it twice
     return (this.wrc =
       this.wrc ||
-      this.hass
-        .callWS({type: 'lovelace/resources'})
+      this.api
+        .lovelaceResources()
         .catch(() => [])
         .then(
           rs =>
@@ -7264,19 +7234,10 @@ export class HomePanel extends HTMLElement {
         this.E.outT,
       ];
     const [stt, hp] = await Promise.all([
-      this.stats(ids, R.period, start, ['mean', 'min', 'max']),
+      this.api.statistics(ids, R.period, start, ['mean', 'min', 'max']),
       !this.E.hp
         ? Promise.resolve({})
-        : this.hass
-            .callWS({
-              type: 'history/history_during_period',
-              start_time: start.toISOString(),
-              entity_ids: [this.E.hp],
-              minimal_response: false,
-              no_attributes: false,
-              significant_changes_only: false,
-            })
-            .catch(() => ({})),
+        : this.api.history([this.E.hp], start, {minimal: false, attributes: true}).catch(noHistory),
     ]);
     const ser = id =>
       (stt[id] || [])
@@ -7357,6 +7318,7 @@ export class HomePanel extends HTMLElement {
     try {
       C = await this.loadClimRange(r);
     } catch (e) {
+      if (e instanceof StaleReply) return;
       console.error('home-panel climate history', e);
       this.$('c-heat').innerHTML = '<p>History is not available right now.</p>';
       return;
