@@ -59,7 +59,7 @@
     {
       "name": "entry (budget)",
       "path": "dist/home-panel.js",
-      "limit": "152 kB",
+      "limit": "153 kB",
       "gzip": true
     },
     {

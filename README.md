@@ -29,6 +29,8 @@ Every section is optional. A section shows only when its entities exist, so a ho
 | Media       | TVs (Wake-on-LAN), speakers                                                                                                                                                                            |
 | Automations | your automations' own traces, drawn as flow charts                                                                                                                                                     |
 
+Browser support: Safari and iOS 26, and current Chrome, Edge and Firefox.
+
 ## Install
 
 1. Download `home-panel.zip` from the [latest release](../../releases/latest), or build it yourself (below).
@@ -187,7 +189,7 @@ It may be lowered at any time; raising it needs a changeset that says why.
 
 The source is ES modules under `src/`, built by Vite (`vite.config.ts`). `src/main.js` is the entry and defines the custom element; the `HomePanel` class is in `src/home-panel.js`, with the
 Automations tab (`src/auto.js`), the configuration code (`src/config.js`), the smart-stack rules (`src/stack.js`), the French translations
-(`src/i18n/fr.js`) and the stylesheet (`src/styles.js`, which joins the files in `src/css/`, minified by Lightning CSS with Safari 15 targets) imported from it. `src/legacy/globals.js` holds the state
+(`src/i18n/fr.js`) and the stylesheet (`src/styles.js`, which joins the files in `src/css/`, minified by Lightning CSS for the browsers listed under Browser support) imported from it. `src/legacy/globals.js` holds the state
 and helpers those files used to share as globals; it goes away in the refactor's second phase. ApexCharts and Mermaid come from npm as lazy chunks under
 `dist/chunks/`: ApexCharts (`src/charts/apex.js`) is fetched when the first tab with charts opens, Mermaid when the Automations tab draws its first flow.
 Montserrat comes from npm too: `@fontsource/montserrat`'s woff2 files for weights 400 to 700, latin and latin-ext, are copied into `dist/fonts/` under their own names,

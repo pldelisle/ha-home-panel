@@ -70,11 +70,11 @@ export default defineConfig({
     minify: 'oxc', // Vite 8's default; `esbuild` would need the esbuild package as well
     target: 'es2020',
     // The stylesheet (`?inline` in src/styles.js) is minified by Lightning CSS, named here so that a change of Vite's
-    // default cannot switch the minifier. A target without Safari before 18 drops every `-webkit-backdrop-filter`, so
-    // the targets stay at Safari 15. What Lightning CSS does with them, and what it rewrites whatever they are: spec 06,
-    // As built (#69); test/unit/styles.test.mjs guards it.
+    // default cannot switch the minifier. The targets are the browser floor, Safari and iOS 26 and current Chrome, Edge
+    // and Firefox (README, Browser support): Lightning CSS drops the vendor prefixes they do not need. Why, and what it
+    // does to the rules: spec 06, As built (#69); test/unit/styles.test.mjs guards it.
     cssMinify: 'lightningcss',
-    cssTarget: ['chrome90', 'safari15', 'ios15'],
+    cssTarget: ['safari26', 'ios26', 'chrome140', 'edge140', 'firefox140'],
     rolldownOptions: {
       // apexcharts.esm.js is an ES module that also carries a `typeof module` test (inside its bundled svg.js), which
       // Rolldown warns about on every build; the test is what makes it behave as the <script> build did (see spec 07)
