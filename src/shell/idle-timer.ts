@@ -113,7 +113,7 @@ export class IdleTimer implements ReactiveController {
     return this.current;
   }
 
-  // The same four touches as the class heard: three on the root, the scroll on the window; all passive.
+  // The same four touches the guest heard: three on the root, the scroll on the window; all passive.
   private readonly touched = (): void => {
     for (const listener of this.touchListeners) listener();
     this.send({type: 'touch'});
