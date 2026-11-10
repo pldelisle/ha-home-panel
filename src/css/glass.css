@@ -198,7 +198,6 @@
 .app.gl .facts,
 .app.gl .access,
 .app.gl .arow,
-.app.gl .seg,
 .app.gl .tabs,
 .app.gl .stepper,
 .app.gl .cbtn,
@@ -207,7 +206,6 @@
 .app.gl .more,
 .app.gl .room,
 .app.gl .radar,
-.app.gl .cct,
 .app.gl .aupick .chip,
 .app.gl .auchips .chip,
 .app.gl .inner .chips .chip,
@@ -218,7 +216,6 @@
   background: var(--g-tile);
   box-shadow: var(--g-edge-s);
 }
-.app.gl .seg button[aria-checked='true'],
 .app.gl .stepper button,
 .app.gl .abtn,
 .app.gl .lauto,
@@ -231,10 +228,6 @@
 .app.gl .sic {
   background: var(--g-sel);
   border-color: transparent;
-}
-.app.gl[data-theme='dark'] .seg button[aria-checked='true'] {
-  background: rgba(255, 255, 255, 0.05);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
 }
 .app.gl .aupick .chip.sel,
 .app.gl .auchips .chip.sel {
@@ -370,65 +363,6 @@
   color: var(--fg);
 }
 /* Reduce Transparency, or Increase Contrast: the glass turns back into near-solid cards */
-.app.gl[data-theme='dark'] .seg button[aria-checked='true'] b {
-  color: #66ccae;
-}
-/* Transparency slider in the Status popup (v1.18.2): scales every glass fill; hidden when Glass is None */
-.gtrow {
-  display: none;
-  align-items: center;
-  gap: 10px;
-  margin-top: 10px;
-  font-size: calc(12px * var(--tx));
-  color: var(--fg2);
-}
-.app.gl .gtrow {
-  display: flex;
-}
-.gtrange {
-  flex: 1;
-  height: 44px;
-  margin: 0;
-  -webkit-appearance: none;
-  appearance: none;
-  background: transparent;
-  cursor: pointer;
-  --p: 50%;
-}
-.gtrange::-webkit-slider-runnable-track {
-  height: 6px;
-  border-radius: 3px;
-  background: linear-gradient(90deg, var(--c-home) 0, var(--c-home) var(--p), var(--ring) var(--p));
-}
-.gtrange::-moz-range-track {
-  height: 6px;
-  border-radius: 3px;
-  background: var(--ring);
-}
-.gtrange::-moz-range-progress {
-  height: 6px;
-  border-radius: 3px;
-  background: var(--c-home);
-}
-.gtrange::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  margin-top: -11px;
-  background: #fff;
-  box-shadow:
-    0 1px 4px rgba(0, 0, 0, 0.3),
-    0 0 0 0.5px rgba(0, 0, 0, 0.08);
-}
-.gtrange::-moz-range-thumb {
-  width: 28px;
-  height: 28px;
-  border: 0;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
-}
 @media (prefers-reduced-transparency: reduce) {
   .app.gl .clear span {
     background: var(--card2);
@@ -470,7 +404,6 @@
   .app.gl .facts,
   .app.gl .access,
   .app.gl .arow,
-  .app.gl .seg,
   .app.gl .tabs,
   .app.gl .stepper,
   .app.gl .cbtn,
@@ -502,21 +435,4 @@
 }
 .app.gl #lsheet .larea {
   box-shadow: none;
-}
-.app.gl .cct {
-  box-shadow: var(--g-edge-s);
-}
-.app.gl .cct .seg {
-  background: var(--g-sel);
-  box-shadow: none;
-}
-.app.gl .cct .ccic {
-  background: var(--g-sel);
-}
-.app.gl button.cct[aria-pressed='true'] {
-  background: var(--fg);
-  box-shadow: none;
-}
-.app.gl button.cct[aria-pressed='true'] .ccic {
-  background: rgba(255, 255, 255, 0.22);
 }
