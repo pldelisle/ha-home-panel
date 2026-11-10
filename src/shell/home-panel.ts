@@ -34,6 +34,7 @@ import {FEATURES, UNDER_MORE, isFeatureKey, visibleTab} from './features.ts';
 import {createGuest, guestStyles, type GuestContext, type GuestRenderer, type ShellForGuest} from './guest.ts';
 import {IdleTimer, type IdleState} from './idle-timer.ts';
 import './more-sheet.ts'; // defines <hp-more-sheet>
+import '../ui/pane-header.ts'; // defines <hp-pane-header>, which the legacy panes' headers are
 import type {TabSelectDetail} from './more-sheet.ts';
 
 /** The panel Home Assistant hands over with the config the `panel_custom:` block carried. */
@@ -375,7 +376,7 @@ export class HomePanel extends LitElement {
             f => f.key,
             f =>
               html`<section class="pane pane-${f.key}" id="pane-${f.key}" ?hidden=${this.tab !== f.key}>
-                ${f.pane()}
+                ${f.pane(this.env)}
               </section>`,
           )}
         </div>

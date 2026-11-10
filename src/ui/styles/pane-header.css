@@ -1,0 +1,41 @@
+/* The header every pane opens with, written once for `<hp-pane-header>` and for the legacy sheet: the row, the heading and the
+   sub-line the guest writes (a slotted node, so `::slotted`); the badge is badge.css. The pane's own place (margin, grid
+   column, display) is the host's: see the element's styles and the pane rules of tabs.css. Inside an element `.app.cp` and
+   `.app.gl` read as `:host([compact])` and `:host([glass])` (host.ts). */
+.ph {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px 18px;
+}
+.ph h2,
+::slotted([slot='title']) {
+  margin: 0;
+  font-family: var(--f-num);
+  font-weight: var(--num-w);
+  font-size: calc(28px * var(--tx));
+  letter-spacing: -0.02em;
+}
+::slotted([slot='sub']) {
+  color: var(--fg2);
+  font-size: calc(14px * var(--tx));
+  margin-top: 2px;
+}
+.ph .grow {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+/* pane titles, a size down */
+.app.cp .ph {
+  gap: 8px 12px;
+}
+.app.cp .ph h2,
+.app.cp ::slotted([slot='title']) {
+  font-size: calc(24px * var(--tx));
+}
+.app.cp ::slotted([slot='sub']) {
+  font-size: calc(12.5px * var(--tx));
+}
+.app.gl:not([data-theme='dark']) ::slotted([slot='sub']) {
+  color: var(--fg);
+}
