@@ -18,6 +18,8 @@ The words the panel and its code use. One word per concept: use it in issues, te
 
 **Pill** — The glass capsule in the header that stands for something happening or needing a look; under Reduce Transparency it is solid.
 
+**Mercury drop** — The glass material since v1.19.0: almost no tint, a soft inner glow, a 15 px blur and, in Chromium, the `#glass-distortion` filter the guest appends. Avoid: Liquid Glass.
+
 **Live-activity pill** — The pill shown while something runs: the car charging, the water heater heating or a Hilo challenge. A further activity sits beside it as a small ring, and tapping it opens one card per activity above the Status checks. Avoid: status chip (the "All clear" chip it replaced).
 
 **Attention pill** — The amber pill (red when critical) that appears when a status check has a problem, and opens the Status checks.
