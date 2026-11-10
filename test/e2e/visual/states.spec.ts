@@ -1,9 +1,9 @@
 // One screenshot per state a person sees most, beyond the tabs (spec 02, "The matrix": the state rows): the idle clock with its
-// stack card, the light sheet, the live-activity popup, the settings popup and the Status checks.
+// stack card, the light sheet, the live-activity popup, the settings popup, the Status checks and the phone's More sheet.
 // Baselines live in test/e2e/__screenshots__/visual/states.spec.ts/ and are recorded only inside the Playwright image (Docker or
 // `container`: npm run test:visual:update); a difference is either fixed or approved by updating them in the same pull request.
 import {test, expect, fontsLoaded, type House} from '../fixtures';
-import {AFTERNOON, FULL_CFG, VIEWPORTS} from '../houses';
+import {AFTERNOON, FULL_CFG, KEEP_ENGLISH_NAMES, VIEWPORTS} from '../houses';
 import {OFFICE_TILE} from '../lights';
 import {NIGHT, goIdle} from '../idle';
 import {pill, stopCharging, openFrontDoor, openPopup} from '../live';
@@ -55,6 +55,28 @@ for (const viewport of ['tablet', 'phone'] as const) {
             await expect(house.page).toHaveScreenshot(`live-popup-${viewport}-${theme}-en.png`);
           });
 
+          // the phone's More list: the sections the bar does not hold, a word under each (spec 14, the More sheet)
+          if (viewport === 'phone') {
+            test('More sheet', async ({house}) => {
+              await house.root().locator('#moretab').click();
+              await expect(house.root().getByRole('dialog', {name: 'More'})).toBeVisible();
+              await expect(house.page).toHaveScreenshot(`more-sheet-${viewport}-${theme}-en.png`);
+            });
+
+            // coming back to More from a section: its tile carries the ring of the one shown
+            test('More sheet with a section shown', async ({house}) => {
+              await house.root().locator('#moretab').click();
+              await house
+                .root()
+                .getByRole('button', {name: /^Weather/})
+                .click();
+              await expect(house.root().locator('#pane-weather')).toBeVisible();
+              await house.root().locator('#moretab').click();
+              await expect(house.root().getByRole('dialog', {name: 'More'})).toBeVisible();
+              await expect(house.page).toHaveScreenshot(`more-sheet-weather-${viewport}-${theme}-en.png`);
+            });
+          }
+
           if (viewport === 'tablet') {
             test('settings popup', async ({house}) => {
               await house.root().locator('#gear').click();
@@ -80,6 +102,19 @@ test.describe('Status checks', () => {
     await expect(pill(house)).toContainText(/needs attention/);
     await openPopup(house);
     await expect(house.page).toHaveScreenshot('status-checks-tablet-light-en.png');
+  });
+});
+
+// The More sheet in French: its title, its sections and the word under each are French from the first paint.
+test.describe('The More sheet in French', () => {
+  test.use({
+    viewport: VIEWPORTS.phone,
+    houseOpts: {cfg: {...FULL_CFG, names: KEEP_ENGLISH_NAMES}, lang: 'fr', time: AFTERNOON, frozen: true},
+  });
+  test('phone, light', async ({house}) => {
+    await house.root().locator('#moretab').click();
+    await expect(house.root().getByRole('dialog', {name: 'Plus'})).toBeVisible();
+    await expect(house.page).toHaveScreenshot('more-sheet-phone-light-fr.png');
   });
 });
 
