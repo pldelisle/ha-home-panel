@@ -43,7 +43,16 @@ function selectorsOf(css) {
         : blocks.includes('keyframes')
           ? 'step'
           : 'rule';
-      if (kind === 'rule') out.push(...prelude.split(',').map(s => s.trim()));
+      // spacing around a combinator and the kind of quote are not a different selector
+      if (kind === 'rule')
+        out.push(
+          ...prelude.split(',').map(s =>
+            s
+              .trim()
+              .replace(/\s*([>+~])\s*/g, '$1')
+              .replace(/"/g, "'"),
+          ),
+        );
       blocks.push(kind === 'step' ? 'step' : kind);
       line = '';
     } else if (ch === '}') {
@@ -67,7 +76,11 @@ function sharedSelectors(files) {
 describe('the parser of selectors', () => {
   test('reads a list, a rule in an at-rule and a rule after a comment with a brace in it', () => {
     const css = '/* { */ .a,\n.b > .c { x: 1 } @media (max-width: 1px) { .d { y: 2 } } .e::before { z: 3 }';
-    expect(selectorsOf(css)).toEqual(['.a', '.b > .c', '.d', '.e::before']);
+    expect(selectorsOf(css)).toEqual(['.a', '.b>.c', '.d', '.e::before']);
+  });
+
+  test('reads the same selector spaced or quoted differently as one', () => {
+    expect(selectorsOf('.a > .b + .c { x: 1 } [x="y"] { y: 1 }')).toEqual(selectorsOf(".a>.b+.c{x:1}[x='y']{y:1}"));
   });
 
   test('skips the steps of keyframes and the at-rules themselves', () => {
@@ -107,9 +120,15 @@ describe('the files as written', () => {
     expect(sharedSelectors(files)).toEqual([]);
   });
 
-  test('every file of the kit is in the legacy sheet: src/styles.js imports it', () => {
-    const imported = readFileSync(join(ROOT, 'src/styles.js'), 'utf8');
-    const missing = cssFiles(KIT).filter(file => !imported.includes(`'./${file.replace(/^src\//, '')}?inline'`));
+  test('every file of the kit is in the legacy sheet: src/styles.js imports it and joins it', () => {
+    const text = readFileSync(join(ROOT, 'src/styles.js'), 'utf8').replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
+    const joined = /export const CSS = \[([^\]]*)\]/.exec(text)?.[1] ?? '';
+    const missing = cssFiles(KIT).filter(file => {
+      const name = /^import (\w+) from '(.+)';$/gm;
+      const path = `./${file.replace(/^src\//, '')}?inline`;
+      const id = [...text.matchAll(name)].find(m => m[2] === path)?.[1];
+      return !id || !new RegExp(`\\b${id}\\b`).test(joined);
+    });
     expect(missing).toEqual([]);
   });
 });

@@ -246,7 +246,7 @@ button.icon:focus-visible {
 .sheet button.icon.close:active {
   transform: scale(0.96);
 }
-/* sheets: the scrim fades, the phone sheet springs up with a little overshoot, the iPad modal pops in */
+/* sheets: the scrim fades, the phone sheet springs up with a little overshoot, the tablet's sheet pops in */
 .sheet {
   animation: fadein 0.22s ease-out both;
 }

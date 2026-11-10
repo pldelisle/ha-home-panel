@@ -59,8 +59,16 @@ module.exports = {
       name: 'legacy-imports-core-and-legacy-only',
       severity: 'error',
       comment:
-        "Legacy code is being strangled: it may use the new core, but it must not grow dependencies on the new features, UI kit, providers or shell. The one exception is the kit's stylesheets, text the legacy sheet is made of (ADR 0019).",
-      from: {path: LEGACY},
+        'Legacy code is being strangled: it may use the new core, but it must not grow dependencies on the new features, UI kit, providers or shell. The one exception is the legacy sheet, below.',
+      from: {path: LEGACY, pathNot: '^src/styles\\.js$'},
+      to: {path: '^src/', pathNot: [LEGACY, CORE]},
+    },
+    {
+      name: 'legacy-sheet-joins-kit-styles',
+      severity: 'error',
+      comment:
+        "The legacy sheet is the concatenation of the kit's stylesheets (ADR 0019): plain text with no imports, so it may import those and nothing else of the new layers.",
+      from: {path: '^src/styles\\.js$'},
       to: {path: '^src/', pathNot: [LEGACY, CORE, KIT_STYLES]},
     },
     {

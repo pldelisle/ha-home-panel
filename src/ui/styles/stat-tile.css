@@ -6,7 +6,7 @@
   background: color-mix(in srgb, var(--lc, var(--warn)) 26%, var(--card));
   box-shadow: 0 0 14px color-mix(in srgb, var(--lc, var(--warn)) 45%, transparent);
 }
-/* summary tiles: a square with the value, or a row with a switch; both open a sheet */
+/* summary tiles: a square with the value, or a wide one with a switch; both open a sheet */
 .stile {
   position: relative;
   display: flex;
