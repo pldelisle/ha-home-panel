@@ -34,6 +34,8 @@ export interface Appearance {
   };
   /** The text size multiplier (`--tx`). */
   readonly textScale: number;
+  /** 1.25 or more: a row that no longer fits may wrap. */
+  readonly largeText: boolean;
   /** The device asks for less transparency. */
   readonly reducedTransparency: boolean;
   /** Something was touched in the last minute. */

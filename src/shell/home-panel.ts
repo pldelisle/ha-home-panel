@@ -29,7 +29,6 @@ import {StoreController} from '../ui/controllers/store-controller.ts';
 import {apiContext, settingsContext, storeContext, type Appearance} from '../ui/contexts.ts';
 import {ico} from '../ui/icons.ts';
 import {AppearanceController} from './appearance.ts';
-import {LARGE_TEXT} from './appearance-rules.ts';
 import type {FeatureKey} from './feature.ts';
 import {FEATURES, isFeatureKey, visibleTab} from './features.ts';
 import {createGuest, guestStyles, type GuestContext, type GuestRenderer, type ShellForGuest} from './guest.ts';
@@ -263,7 +262,7 @@ export class HomePanel extends LitElement {
         tabsv: true,
         idle: this.idleState === 'idle',
         gl: a.glass.on,
-        txl: a.textScale >= LARGE_TEXT,
+        txl: a.largeText,
         live: a.live,
       })}"
       id="app"

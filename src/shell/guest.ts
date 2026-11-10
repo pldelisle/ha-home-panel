@@ -46,7 +46,8 @@ export interface GuestRenderer extends GuestAnswers {
   /**
    * Step D: the shell's appearance is a new value and its frame shows it (`data-theme`, `data-wp`, `gl`, `txl`, `live`
    * and the rest). Told once per new value, after the frame shows it, and not for the value the guest connected to; the
-   * guest redraws what it drew from the old theme and fits its glass lens. Deleted with the last guest code that reads the theme or the glass (charts, the lens).
+   * guest redraws what it drew from the old theme and fits its glass lens. Deleted with the guest (the phase-3 gate,
+   * #188); the lens half also waits for #198.
    */
   appearanceChanged(appearance: Appearance): void;
   /** Step C only: the shell's More button asks for the guest's More sheet, deleted by #166 (`<hp-more-sheet>`). */

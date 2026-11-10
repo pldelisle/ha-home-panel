@@ -5,6 +5,9 @@
 
 import type {SunTimes} from '../core/sun.ts';
 
+/** What the sky reads of the sun's day: the instants it rises and sets and the first and last light. */
+export type SunDay = Pick<SunTimes, 'rise' | 'set' | 'dawn' | 'dusk'>;
+
 /** The wallpapers the sky picks among; the other choices (Sand among them) are the setting's own. */
 export type SkyWallpaper = 'lake' | 'aurora' | 'dawn' | 'ember' | 'meadow';
 
@@ -27,11 +30,7 @@ export function isWetCondition(condition: string | undefined): boolean {
  * Dawn from first light to an hour after sunrise, Ember from an hour before sunset to dusk, Aurora at night, Lake by
  * day, Meadow by day when it rains, snows, storms or fogs. A place where the sun does not rise or set today is Lake.
  */
-export function skyWallpaper(
-  condition: string | undefined,
-  day: Pick<SunTimes, 'rise' | 'set' | 'dawn' | 'dusk'>,
-  now: number,
-): SkyWallpaper {
+export function skyWallpaper(condition: string | undefined, day: SunDay, now: number): SkyWallpaper {
   const {rise, set} = day;
   if (!rise || !set) return 'lake';
   if (now < (day.dawn || rise) || now > (day.dusk || set)) return 'aurora';

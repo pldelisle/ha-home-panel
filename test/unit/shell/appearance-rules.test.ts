@@ -1,26 +1,22 @@
 // The appearance rules (src/shell/appearance-rules.ts), over the values the legacy class's apply methods were given.
 import {describe, expect, test} from 'vitest';
-import {LARGE_TEXT, glassDensity, glassWallpaper, isDark, textScale} from '../../../src/shell/appearance-rules.ts';
+import {glassDensity, glassWallpaper, isDark, isLargeText, textScale} from '../../../src/shell/appearance-rules.ts';
 
 describe('isDark', () => {
-  test('dark and light are fixed whatever the device and the sun say', () => {
-    expect(isDark('dark', false, 'above_horizon')).toBe(true);
-    expect(isDark('light', true, 'below_horizon')).toBe(false);
+  test('dark is dark and light is light, whatever the device says', () => {
+    expect(isDark('dark', false)).toBe(true);
+    expect(isDark('dark', true)).toBe(true);
+    expect(isDark('light', false)).toBe(false);
+    expect(isDark('light', true)).toBe(false);
   });
 
-  test('auto follows the device, then the sun', () => {
-    expect(isDark('auto', true, 'above_horizon')).toBe(true);
-    expect(isDark('auto', false, 'below_horizon')).toBe(true);
-    expect(isDark('auto', false, 'above_horizon')).toBe(false);
-  });
-
-  test('auto with no sun entity is light unless the device is dark', () => {
-    expect(isDark('auto', false, undefined)).toBe(false);
-    expect(isDark('auto', true, undefined)).toBe(true);
+  test('auto is exactly the device: dark when it is dark, light when it is light', () => {
+    expect(isDark('auto', true)).toBe(true);
+    expect(isDark('auto', false)).toBe(false);
   });
 
   test('a theme setting nobody wrote is light', () => {
-    expect(isDark('purple', true, 'below_horizon')).toBe(false);
+    expect(isDark('purple', true)).toBe(false);
   });
 });
 
@@ -83,8 +79,9 @@ describe('textScale', () => {
   });
 
   test('large text starts at 1.25', () => {
-    expect(LARGE_TEXT).toBe(1.25);
-    expect(textScale('larger', 17) >= LARGE_TEXT).toBe(true);
-    expect(textScale('large', 17) >= LARGE_TEXT).toBe(false);
+    expect(isLargeText(1.25)).toBe(true);
+    expect(isLargeText(1.24)).toBe(false);
+    expect(isLargeText(textScale('larger', 17))).toBe(true);
+    expect(isLargeText(textScale('large', 17))).toBe(false);
   });
 });

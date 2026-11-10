@@ -1136,12 +1136,9 @@ export class LegacyPanel {
       open = force ?? pop.hidden;
     pop.hidden = !open;
     this.$('gear').setAttribute('aria-expanded', open);
-    if (open) {
-      this.cache.setc = null;
-      this.renderSettings();
-    }
+    if (open) this.refreshSettings();
   }
-  // the popup shows the theme in force, which the sun and the device can change while it is open
+  // the popup is drawn again from the settings and the theme in force, which the device can change while it is open
   refreshSettings() {
     if (this.$('setpop') && !this.$('setpop').hidden) {
       this.cache.setc = null;
@@ -1151,7 +1148,7 @@ export class LegacyPanel {
   renderSettings() {
     const {theme: m, text: tx, glass: gl, glassLevel: gt} = this.settings.get(),
       dark = this.dark();
-    const hint = m === 'auto' ? 'Following the sun' : 'Tap to switch';
+    const hint = m === 'auto' ? 'Following the device' : 'Tap to switch';
     this.set(
       'setc',
       `<div class="cc">
@@ -1726,26 +1723,14 @@ export class LegacyPanel {
         this.ctx.shell.idle.sleepNow();
         return;
       }
-      const t = e.target.closest('[data-th]');
-      if (t) {
-        const next = t.dataset.th === 'auto' ? 'auto' : this.dark() ? 'light' : 'dark';
-        this.settings.set('theme', next);
-        this.cache.setc = null;
-        this.renderSettings();
-        return;
-      }
-      const g = e.target.closest('[data-gl]');
-      if (g) {
-        this.settings.set('glass', g.dataset.gl);
-        this.cache.setc = null;
-        this.renderSettings();
-        return;
-      }
-      const b = e.target.closest('[data-tx]');
-      if (!b) return;
-      this.settings.set('text', b.dataset.tx);
-      this.cache.setc = null;
-      this.renderSettings();
+      const t = e.target.closest('[data-th]'),
+        g = e.target.closest('[data-gl]'),
+        b = e.target.closest('[data-tx]');
+      if (t) this.settings.set('theme', t.dataset.th === 'auto' ? 'auto' : this.dark() ? 'light' : 'dark');
+      else if (g) this.settings.set('glass', g.dataset.gl);
+      else if (b) this.settings.set('text', b.dataset.tx);
+      else return;
+      this.refreshSettings(); // the popup shows the choice just made; the shell's controller applies it
     });
     [
       ['open-weather', 'sh-weather'],

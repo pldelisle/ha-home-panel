@@ -13,16 +13,20 @@ const FIXED_SCALES = new Map([
   ['larger', 1.3],
 ]);
 
-/** The scale from which the frame is told the text is large (`txl`), so a row that no longer fits can wrap. */
-export const LARGE_TEXT = 1.25;
+// The scale from which the frame is told the text is large (`txl`), so a row that no longer fits can wrap.
+const LARGE_TEXT = 1.25;
+
+// The densest glass (transparency 0) and how much each level of transparency lightens it: 50 is 1, 100 is 0.2.
+const DENSEST = 1.8;
+const PER_LEVEL = 0.016;
 
 // The text probe is set in the system body font, which is 17 px at the device's default size.
 const BODY_PX = 17;
 const MAX_AUTO_SCALE = 1.6;
 
-/** Dark when the setting says dark, or when it says auto and the device is dark or the sun is below the horizon. */
-export function isDark(theme: string, deviceDark: boolean, sunState: string | undefined): boolean {
-  return theme === 'dark' || (theme === 'auto' && (deviceDark || sunState === 'below_horizon'));
+/** Dark when the setting says dark; on auto, exactly when the device is dark now. The sun has no part in it. */
+export function isDark(theme: string, deviceDark: boolean): boolean {
+  return theme === 'dark' || (theme === 'auto' && deviceDark);
 }
 
 /** The wallpaper the Glass setting shows, or null for glass off; `sky` asks for the sky's pick only when it is chosen. */
@@ -33,7 +37,12 @@ export function glassWallpaper(glass: string, sky: () => string): string | null 
 
 /** The fill-alpha multiplier (`--g-m`) for a transparency level of 0 to 100: 0 is 1.8 times denser, 50 is 1, 100 is 0.2. */
 export function glassDensity(level: number): number {
-  return 1.8 - level * 0.016;
+  return DENSEST - level * PER_LEVEL;
+}
+
+/** Whether a scale is large text (1.25 or more): a row that no longer fits may wrap. */
+export function isLargeText(scale: number): boolean {
+  return scale >= LARGE_TEXT;
 }
 
 /** The text scale (`--tx`): fixed by the setting, or on auto the probe's size over the body size, from 1 to 1.6. */

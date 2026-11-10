@@ -8,12 +8,12 @@ import {createFormatters} from '../core/i18n/format.ts';
 import {englishLocale} from '../core/i18n/locale.ts';
 import type {PanelSettings} from '../core/settings.ts';
 import type {PanelStore} from '../core/store.ts';
-import {sunTimes, type SunTimes} from '../core/sun.ts';
+import {sunTimes} from '../core/sun.ts';
 import {appearanceContext, type Appearance} from '../ui/contexts.ts';
 import type {MediaQueryController} from '../ui/controllers/media-query.ts';
 import {StoreController} from '../ui/controllers/store-controller.ts';
-import {glassDensity, glassWallpaper, isDark, textScale} from './appearance-rules.ts';
-import {skyWallpaper} from './sky.ts';
+import {glassDensity, glassWallpaper, isDark, isLargeText, textScale} from './appearance-rules.ts';
+import {skyWallpaper, type SunDay} from './sky.ts';
 
 /** The element that hosts the controller: Home Assistant's `narrow` is one of its properties. */
 export type AppearanceHost = LitElement & {narrow: boolean};
@@ -34,7 +34,7 @@ const LIVE_MS = 60000;
 // The sky wallpaper follows the clock, and the sun entity says so only every few minutes: look again once a minute.
 const CLOCK_MS = 60000;
 // Where the sun does not rise or set, or before any hass: the sky is Lake.
-const NO_SUN: Pick<SunTimes, 'rise' | 'set' | 'dawn' | 'dusk'> = {rise: null, set: null, dawn: null, dusk: null};
+const NO_SUN: SunDay = {rise: null, set: null, dawn: null, dusk: null};
 
 const same = (a: Appearance, b: Appearance): boolean =>
   a.theme === b.theme &&
@@ -43,6 +43,7 @@ const same = (a: Appearance, b: Appearance): boolean =>
   a.glass.wallpaper === b.glass.wallpaper &&
   a.glass.density === b.glass.density &&
   a.textScale === b.textScale &&
+  a.largeText === b.largeText &&
   a.reducedTransparency === b.reducedTransparency &&
   a.live === b.live;
 
@@ -70,10 +71,11 @@ export class AppearanceController implements ReactiveController {
     host.addController(this);
     this.current = this.compute();
     this.provider = new ContextProvider(host, {context: appearanceContext, initialValue: this.current});
-    // The sun decides the theme on auto and, with the weather, the sky wallpaper; the ids are asked again when the
-    // config changes, so a house that names its own sun entity is followed. The controller hears of nothing else.
+    // The sun and the weather decide the sky wallpaper; the ids are asked again when the config changes, so a house
+    // that names its own sun entity is followed. The value is made at once, so the guest's first draw finds it right.
     new StoreController(host, {
       store: options.store,
+      onChange: () => this.refresh(),
       ids: ({config}) => [config.entities.sun, config.entities.weather].filter((id): id is string => id !== null),
     });
   }
@@ -155,12 +157,14 @@ export class AppearanceController implements ReactiveController {
     const set = settings.get();
     if (this.staleProbe) this.readProbe();
     const wallpaper = glassWallpaper(set.glass, () => this.sky());
+    const scale = textScale(set.text, this.probePx);
     return Object.freeze({
-      theme: isDark(set.theme, dark.matches, store.state(store.config.entities.sun)?.state) ? 'dark' : 'light',
+      theme: isDark(set.theme, dark.matches) ? 'dark' : 'light',
       compact: compact.matches,
       narrow: Boolean(this.host.narrow), // Lit sets the property after the controllers are built
       glass: Object.freeze({on: wallpaper !== null, wallpaper, density: glassDensity(set.glassLevel)}),
-      textScale: textScale(set.text, this.probePx),
+      textScale: scale,
+      largeText: isLargeText(scale),
       reducedTransparency: reducedTransparency.matches,
       live: this.touched,
     });
