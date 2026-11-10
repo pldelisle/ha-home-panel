@@ -44,6 +44,40 @@ const rememberedCar = test.extend({
   },
 });
 
+// the title each pane opens with, in the order of the rail: `<hp-pane-header>`'s heading, from the catalog, or (Car) the guest's
+const TITLES = {
+  en: {
+    home: 'Home',
+    lights: 'Lights',
+    climate: 'Climate',
+    weather: 'Weather',
+    car: 'Car',
+    energy: 'Energy',
+    air: 'Air',
+    media: 'Media',
+    cams: 'Security',
+    auto: 'Automations',
+  },
+  fr: {
+    home: 'Maison',
+    lights: 'Lumières',
+    climate: 'Climat',
+    weather: 'Météo',
+    car: 'Voiture',
+    energy: 'Énergie',
+    air: 'Air',
+    media: 'Médias',
+    cams: 'Sécurité',
+    auto: 'Automatisations',
+  },
+} as const;
+// every shown tab's pane opens with one heading, in the header's shadow root (or slotted), whatever the language
+const headings = (lang: keyof typeof TITLES) => async (house: House) => {
+  await eachShownTab(house, async (tab, pane) => {
+    await expect(pane.locator('hp-pane-header h2'), tab).toHaveText(TITLES[lang][tab as keyof (typeof TITLES)['en']]);
+  });
+};
+
 // whether the element itself is shown: not `hidden` and not display:none (its pane may be closed, that is not the question)
 const shown = (loc: Locator) =>
   expect.poll(() => loc.evaluate(e => !(e as HTMLElement).hidden && getComputedStyle(e).display !== 'none'));
@@ -168,6 +202,47 @@ test.describe('full house', () => {
     });
     expect(left).toEqual([]);
   });
+
+  // The pane's header is <hp-pane-header> (#167): the heading is in its shadow root and comes from the catalog, and the line under
+  // it is the guest's, a child of the header in the shell's root that its slot shows.
+  test("52 every pane opens with its title as the one heading of its header, and the guest's line under it", async ({
+    house,
+  }) => {
+    await headings('en')(house);
+    await eachShownTab(house, async (tab, pane) => {
+      await expect(pane.locator('hp-pane-header > [slot="sub"]'), tab).toHaveCount(1);
+    });
+  });
+
+  test('53 the Lights line stays in its header and follows the lights: a light going off changes it', async ({
+    house,
+  }) => {
+    await house.tab('lights');
+    const line = house.root().locator('hp-pane-header > #lsub');
+    await expect(line).toBeVisible();
+    const lit = async () => Number(/^(\d+) lights? on/.exec((await line.textContent()) ?? '')?.[1]);
+    const before = await lit();
+    expect(before, 'lights on before').toBeGreaterThan(1);
+    await house.setState('light.office_1', {state: 'off'});
+    await expect.poll(lit).toBe(before - 1);
+  });
+
+  test("54 the Car heading is the guest's: the car's name, written into the header's title slot", async ({house}) => {
+    phoneOnly(); // the summary header, which only the phone shows, is where the guest writes the car's name
+    await house.tab('car');
+    await expect(house.root().locator('hp-pane-header > #carh2')).toHaveText('Car');
+  });
+});
+
+test.describe('a named car', () => {
+  test.use({houseOpts: {cfg: {...FULL_CFG, car: {...FULL_CFG.car, name: 'Roadster'}}}});
+
+  test('55 the Car heading is the name the config gives the car', async ({house}) => {
+    phoneOnly();
+    await house.tab('car');
+    await expect(house.root().locator('hp-pane-header > #carh2')).toHaveText('Roadster');
+    await expect(house.root().locator('#pane-car hp-pane-header h2')).toHaveText('Roadster');
+  });
 });
 
 test.describe('bare house', () => {
@@ -237,6 +312,12 @@ test.describe('French', () => {
     await expect(house.root().locator('#cmsub')).toHaveText(
       'Aucune caméra · toutes les portes fermées · mouvement en cours',
     );
+  });
+
+  test('56 every pane opens with its title in French: from the catalog, and the Car one by the rewrite layer', async ({
+    house,
+  }) => {
+    await headings('fr')(house);
   });
 
   test('44 the Security line under More on a phone reads in French, with no English word and no colon', async ({

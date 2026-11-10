@@ -4,8 +4,9 @@
 // The files of src/ui/styles/ are the kit's (ADR 0019): its elements adopt the same text, and each sits here at the
 // position its first rule held; a rule that followed it in a later legacy file moves up to it, and the computed-style
 // comparison checked what that reordered. The tokens and the common rules open the sheet, as the palette and the resets
-// did; the segmented control follows base.css; the sheet's chrome comes after tabs.css and before phone.css; the tile, the
-// More list and the settings popup's tiles (from the end of extra.css, with their glass rules) come after phone.css and before glass.css. motion.css comes last because it overrides the others.
+// did; the segmented control follows base.css; the sheet's chrome comes after tabs.css and before phone.css, and the header's badge
+// and the pane header follow it; the tile, the More list and the settings popup's tiles (from the end of extra.css, with their
+// glass rules) come after phone.css and before glass.css. motion.css comes last because it overrides the others.
 import tokens from './ui/styles/tokens.css?inline';
 import common from './ui/styles/common.css?inline';
 import base from './css/base.css?inline';
@@ -13,6 +14,8 @@ import seg from './ui/styles/seg.css?inline';
 import extra from './css/extra.css?inline';
 import tabs from './css/tabs.css?inline';
 import sheet from './ui/styles/sheet.css?inline';
+import badge from './ui/styles/badge.css?inline';
+import paneHeader from './ui/styles/pane-header.css?inline';
 import phone from './css/phone.css?inline';
 import statTile from './ui/styles/stat-tile.css?inline';
 import more from './ui/styles/more.css?inline';
@@ -31,6 +34,8 @@ export const CSS = [
   extra,
   tabs,
   sheet,
+  badge,
+  paneHeader,
   phone,
   statTile,
   more,

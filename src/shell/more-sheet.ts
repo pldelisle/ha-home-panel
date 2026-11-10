@@ -1,7 +1,7 @@
 // <hp-more-sheet>: the phone's More sheet, the sections the bar does not hold, one summary tile each, in its own shadow root.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) drawn from the registry; properties down, events up (Lit docs,
-// Events): a tile's `tile-open` becomes `tab-select`, the Close button, Escape and the backdrop become `sheet-close`.
-// Must not: choose the tab or know which sheet is open (the shell does), import a feature, or work out the word under a section.
+// Events): a tile's `tile-open` becomes `tab-select`, the Close button, the backdrop and the swipe become `sheet-close`.
+// Must not: choose the tab, listen for Escape or know which sheet is open (the shell and its sheet host do), or import a feature.
 import {LitElement, css, html, nothing, type PropertyValues} from 'lit';
 import {repeat} from 'lit/directives/repeat.js';
 import {AppearanceConsumer} from '../ui/controllers/appearance-consumer.ts';
@@ -10,7 +10,7 @@ import {SwipeToClose} from '../ui/controllers/swipe-to-close.ts';
 import {ico} from '../ui/icons.ts';
 import '../ui/stat-tile.ts';
 import type {TileOpenDetail} from '../ui/stat-tile.ts';
-import {common, more, motion, sheet} from '../ui/styles/index.ts';
+import {badge, common, more, motion, sheet} from '../ui/styles/index.ts';
 import type {FeatureDescriptor, FeatureKey} from './feature.ts';
 import {isFeatureKey} from './features.ts';
 
@@ -42,6 +42,7 @@ export class MoreSheet extends LitElement {
     common,
     motion,
     sheet,
+    badge,
     more,
     css`
       :host {
@@ -135,29 +136,9 @@ export class MoreSheet extends LitElement {
     if (e.target === e.currentTarget) this.close();
   };
 
-  // Escape is caught on the window while the sheet is open: a redraw can drop focus out of the sheet, so the sheet would miss the key
-  private readonly onKey = (e: KeyboardEvent): void => {
-    if (e.key === 'Escape') this.close();
-  };
-
   protected override updated(changed: PropertyValues<this>): void {
-    if (!changed.has('open')) return;
-    if (this.open) {
-      window.addEventListener('keydown', this.onKey);
-      // the Close button takes focus, as the legacy sheet's did, so a keyboard or a switch is inside the sheet at once
-      this.renderRoot.querySelector<HTMLElement>('.close')?.focus();
-    } else window.removeEventListener('keydown', this.onKey);
-  }
-
-  // a sheet that is open when its element is moved is still open: the listener comes back with it
-  override connectedCallback(): void {
-    super.connectedCallback();
-    if (this.open) window.addEventListener('keydown', this.onKey);
-  }
-
-  override disconnectedCallback(): void {
-    super.disconnectedCallback();
-    window.removeEventListener('keydown', this.onKey);
+    // the Close button takes focus, as the legacy sheet's did, so a keyboard or a switch is inside the sheet at once
+    if (changed.has('open') && this.open) this.renderRoot.querySelector<HTMLElement>('.close')?.focus();
   }
 }
 

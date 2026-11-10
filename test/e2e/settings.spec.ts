@@ -130,10 +130,13 @@ test('keeps following the settings when the panel leaves the page and comes back
   await house.page.evaluate(() => {
     const panel = document.querySelector('home-panel')!;
     (window as unknown as {parked: Element}).parked = panel;
+    panel.shadowRoot!.querySelector('hp-settings-popup')!.setAttribute('data-first', '');
     panel.remove();
   });
   await house.page.evaluate(() => document.body.append((window as unknown as {parked: Element}).parked));
   await open(house);
+  // the same element came back (a popup the frame had drawn again would prove nothing about following the settings again)
+  await expect(popup(house)).toHaveAttribute('data-first', '');
   await popup(house).locator('[data-gl="aurora"]').click();
   await expect(popup(house).locator('[data-gl="aurora"]')).toBeChecked();
   await expect(popup(house).locator('[data-gl="dawn"]')).not.toBeChecked();

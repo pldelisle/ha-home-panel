@@ -22,7 +22,7 @@ export const en = {
   'more.title': 'More',
   'more.sub': 'All sections',
   'more.close': 'Close',
-  // the settings popup behind the gear (src/shell/settings-popup.ts); the dialog's own name is the shell's, in its template
+  // the settings popup behind the gear (src/shell/settings-popup.ts); the popup's own name is the shell's, in its template
   'settings.theme.dark': 'Dark',
   'settings.theme.light': 'Light',
   'settings.theme.following': 'Following the device',
