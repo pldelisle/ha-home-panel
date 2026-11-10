@@ -28,13 +28,13 @@ import {MediaQueryController} from '../ui/controllers/media-query.ts';
 import {StoreController} from '../ui/controllers/store-controller.ts';
 import {apiContext, settingsContext, storeContext, type Appearance} from '../ui/contexts.ts';
 import {ico} from '../ui/icons.ts';
-import type {SheetRequestEvent, ToastEvent} from '../ui/events.ts';
+import type {SheetDismissEvent, SheetRequestEvent, ToastEvent} from '../ui/events.ts';
 import {AppearanceController} from './appearance.ts';
 import type {FeatureEnv, FeatureKey} from '../ui/feature.ts';
 import {FEATURES, UNDER_MORE, isFeatureKey, visibleTab} from './features.ts';
 import {createGuest, guestStyles, type GuestContext, type GuestRenderer, type ShellForGuest} from './guest.ts';
 import {IdleTimer, type IdleState} from './idle-timer.ts';
-import {HISTORY_SHEET} from '../features/weather/weather-pane.ts';
+import {HISTORY_SHEET} from '../features/weather/sheets.ts';
 import type {ForecastEvent} from '../features/weather/forecast-controller.ts';
 import './more-sheet.ts'; // defines <hp-more-sheet>
 import '../ui/pane-header.ts'; // defines <hp-pane-header>, which the legacy panes' headers are
@@ -141,6 +141,7 @@ export class HomePanel extends LitElement {
   private readonly sheets = new SheetMediator(this, {
     root: () => this.renderRoot as ShadowRoot,
     guest: () => this.guest,
+    paneOf: id => FEATURES.find(f => f.detailSheet === id)?.key,
     tab: () => this.tab,
     compact: () => this.compact,
     setTab: key => this.setTab(key),
@@ -168,7 +169,7 @@ export class HomePanel extends LitElement {
 
   /** What a descriptor may read: this panel's store and, until a subject is a feature of its own, the guest's answers. */
   private get env(): FeatureEnv {
-    return {store: this.store, guest: this.guest as GuestRenderer};
+    return {store: this.store, guest: this.guest as GuestRenderer, sheetOpen: id => this.sheets.isOpen(id)};
   }
 
   constructor() {
@@ -281,6 +282,12 @@ export class HomePanel extends LitElement {
     else this.sheets.open(e.detail.id, e.detail.detail);
   };
 
+  // an element's sheet asks to close (its Close button, its backdrop, its swipe)
+  private readonly onSheetDismiss = (e: SheetDismissEvent): void => {
+    e.stopPropagation();
+    this.sheets.close(e.detail.id);
+  };
+
   // the Weather pane's controller owns the forecast; the guest still reads it for the detail panel and Home's card (#158)
   private readonly onForecast = (e: ForecastEvent): void => {
     e.stopPropagation();
@@ -363,6 +370,7 @@ export class HomePanel extends LitElement {
       data-theme=${a.theme}
       data-wp=${ifDefined(a.glass.wallpaper ?? undefined)}
       @sheet-request=${this.onSheetRequest}
+      @sheet-dismiss=${this.onSheetDismiss}
       @toast=${this.onToast}
       @weather-forecast=${this.onForecast}
     >

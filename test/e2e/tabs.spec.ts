@@ -1,6 +1,6 @@
 // Every tab opens, on a tablet and a phone, in the full and the bare house; nothing covers the Home button; no page error.
 // Test titles start with the check's number in docs/specs/01-playwright-test.md.
-import {test, expect, tabletOnly, phoneOnly, eachShownTab, type House} from './fixtures';
+import {test, expect, tabletOnly, phoneOnly, eachShownTab, countAdded, isPhone, type House} from './fixtures';
 import type {Locator} from '@playwright/test';
 import {FULL_CFG} from './houses';
 import {openOfficeSheet} from './lights';
@@ -74,7 +74,10 @@ const TITLES = {
 // every shown tab's pane opens with one heading, in the header's shadow root (or slotted), whatever the language
 const headings = (lang: keyof typeof TITLES) => async (house: House) => {
   await eachShownTab(house, async (tab, pane) => {
-    await expect(pane.locator('hp-pane-header h2'), tab).toHaveText(TITLES[lang][tab as keyof (typeof TITLES)['en']]);
+    // the pane's own header is the first; on a tablet the Weather detail draws one of its own after it, with the same heading
+    await expect(pane.locator('hp-pane-header h2').first(), tab).toHaveText(
+      TITLES[lang][tab as keyof (typeof TITLES)['en']],
+    );
   });
 };
 
@@ -117,29 +120,16 @@ test.describe('full house', () => {
     await shown(house.root().locator('#rail [data-tab="car"]')).toBe(true);
   });
 
-  // The guest draws its part of a pane once per tab change. The Weather pane draws its hours, its days and its radar map when it
-  // opens, and each of those containers is written once; a second draw would write them again (and start the radar twice).
-  test('49 opening the Weather tab draws its inline sheet once', async ({house}) => {
+  // The Weather detail is an element with a root of its own. It mounts its radar map when it opens, and the container is written once;
+  // a second mount would write it again (and start the radar twice). The roots are watched from the moment they are made.
+  test('49 opening the Weather tab draws its inline detail once', async ({house}) => {
     tabletOnly();
-    await house.root().evaluate(el => {
-      const written: Record<string, number> = {};
-      (window as unknown as {written: Record<string, number>}).written = written;
-      new MutationObserver(ms => {
-        for (const m of ms) {
-          const id = (m.target as HTMLElement).id;
-          if (m.addedNodes.length && ['whours', 'wdays', 'wradar'].includes(id)) written[id] = (written[id] ?? 0) + 1;
-        }
-      }).observe(el.shadowRoot!.querySelector('#pane-weather')!, {childList: true, subtree: true});
-    });
+    const written = await countAdded(house, 'rnote');
     await house.tab('weather');
-    await expect(house.root().locator('#pane-weather #whours')).not.toBeEmpty();
+    await expect(house.root().locator('hp-weather-detail .radar .rnote')).toBeVisible();
     // one frame more, in case a second draw was queued behind the first
     await house.page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
-    expect(await house.page.evaluate(() => (window as unknown as {written: object}).written)).toEqual({
-      whours: 1,
-      wdays: 1,
-      wradar: 1,
-    });
+    expect(await written()).toBe(1);
   });
 
   // every project sets Reduce Motion; under it a tap changes the tab bar in one step. A highlight that still faded redrew the glass
@@ -210,7 +200,9 @@ test.describe('full house', () => {
   }) => {
     await headings('en')(house);
     await eachShownTab(house, async (tab, pane) => {
-      await expect(pane.locator('hp-pane-header > [slot="sub"]'), tab).toHaveCount(1);
+      // a tablet's Weather pane has the header of its detail too, with the summary under it
+      const headers = tab === 'weather' && !isPhone(house) ? 2 : 1;
+      await expect(pane.locator('hp-pane-header > [slot="sub"]'), tab).toHaveCount(headers);
     });
   });
 

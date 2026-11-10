@@ -1,10 +1,10 @@
 # Weather
 
-What the Weather tab computes and draws ([spec 15](../../../docs/specs/15-weather.md)). The model and its sources are pure, with no DOM; the pane is the first element that places what they return. The detail panel and the history sheet are still the guest's and arrive in the next two moves.
+What the Weather tab computes and draws ([spec 15](../../../docs/specs/15-weather.md)). The model and its sources are pure, with no DOM; the pane and the detail are the elements that place what they return. The history sheet is still the guest's and arrives in the last move.
 
 ## What it draws
 
-The pane's sub-line, the eight stat tiles, the phone's summary card, the detail panel's first block (the big reading, the eight tiles in the detail's wording, the sun arc, the alerts), the next hours and the days as range bars. All of it comes out of one function, `weatherModel`, as strings and numbers an element only places.
+The pane's sub-line, the eight stat tiles, the phone's summary card, and the detail: the big reading, the eight tiles in the detail's wording, the sun arc, the alerts, the radar, the next hours as a strip and a chart, the days as range bars, three seven-day charts and the season. The words come out of one function, `weatherModel`, as strings and numbers an element only places; the charts and the season come out of `history.ts` over the statistics the cache returns.
 
 ## The providers
 
@@ -24,12 +24,15 @@ A house adds a source with one file and one line in `WEATHER_SOURCES`; the model
 
 ## The elements
 
-| File                     | What                                                                                                                                                                                                                                                                                  |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `index.ts`               | `weatherFeature`, the registry's descriptor: always shown, the More sheet's word from `weatherBrief`, and the pane's template.                                                                                                                                                        |
-| `weather-pane.ts`        | `<hp-weather-pane>`: on the phone the header, the summary card and the eight `<hp-stat-tile>`s, keyed by `dayKey` and tile `key`; on a tablet the place of the detail panel, a slot for `wxhost`. A tile asks for `weather.history`, the card for the detail's sheet.                 |
-| `forecast-controller.ts` | The daily and hourly forecast, subscribed through the API client while the pane is connected and the house has the weather entity; it subscribes again when the entity or the config generation changes. A temporary `ForecastEvent` tells the guest, which still reads the forecast. |
-| `styles.css`             | The pane's rules in the legacy form, adopted through `forShadow`.                                                                                                                                                                                                                     |
+| File                     | What                                                                                                                                                                                                                                                                                                                                                           |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `index.ts`               | `weatherFeature`, the registry's descriptor: always shown, the More sheet's word from `weatherBrief`, and the pane's template.                                                                                                                                                                                                                                 |
+| `weather-pane.ts`        | `<hp-weather-pane>`: on the phone the header, the summary card, the eight `<hp-stat-tile>`s, keyed by `dayKey` and tile `key`, and the detail's `<hp-sheet>`; on a tablet the detail inline. It owns the statistics cache (fifteen minutes) and draws the detail only while it is on screen. A tile asks for `weather.history`, the card for `weather.detail`. |
+| `weather-detail.ts`      | `<hp-weather-detail>`: the blocks in today's order and classes, from the pane's view model and the cache's rows; four `<hp-chart>`; the statistics asked for when it first shows, again when they are fifteen minutes old or the config changed. Everything it holds (the radar, a reply on its way, the charts) goes when it leaves the page.                 |
+| `radar.ts`               | `mountRadar(host, api, {dark, phone, hass, failed})`: loads the HACS card from its Lovelace resource (or HACS's own path), makes it, and returns `{update(hass), destroy()}`; the detail makes a new map only when the theme or the window's shape changes.                                                                                                    |
+| `forecast-controller.ts` | The daily and hourly forecast, subscribed through the API client while the pane is connected and the house has the weather entity; it subscribes again when the entity or the config generation changes. A temporary `ForecastEvent` tells the guest, which still reads the forecast.                                                                          |
+| `sheets.ts`              | The ids of the sheets Weather asks the shell for: `weather.detail` and `weather.history`.                                                                                                                                                                                                                                                                      |
+| `styles.css`             | The pane's and the detail's rules in the legacy form, adopted through `forShadow`.                                                                                                                                                                                                                                                                             |
 
 The pane draws nothing while it is not the tab on screen: the shell sets `active`, a hidden pane has paused its store controller, and its `willUpdate` keeps what it drew. A change to an entity it does not read never reaches it.
 
@@ -51,7 +54,7 @@ weatherModel(inputs, forecast, deps) → WeatherViewModel
 
 ## The history
 
-The detail panel and the history sheet draw from `history.ts`, a second pure module: the API client's rows in, data out. It never calls the client; the element asks `createStatisticsCache` (`src/core/statistics-cache.ts`, a time-to-live memo with the client's own signatures) and hands the rows over.
+The detail and the history sheet draw from `history.ts`, a second pure module: the API client's rows in, data out. It never calls the client; the element asks `createStatisticsCache` (`src/core/statistics-cache.ts`, a time-to-live memo with the client's own signatures) and hands the rows over.
 
 | Function                                              | Gives                                                                                                     |
 | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
@@ -61,6 +64,8 @@ The detail panel and the history sheet draw from `history.ts`, a second pure mod
 | `seasonView(dayRows, gustRows, {fmt, t, now})`        | the season block as words and percentages: four tiles, the sentence, a row a month on one scale           |
 | `tileHistory(def, ids, statRows, historyRows, range)` | the lines of a tile's chart: statistics when the recorder has them, else the plain history thinned        |
 | `tileStats(series)` and `historyChartOptions(...)`    | each line's low, mean and high, and the multi-axis chart options without the theme                        |
+| `detailChartOptions(hours, week, deps)`               | the detail's four charts' options without the theme, every word through `t` and `fmt`                     |
+| `statisticsStart(now, days)`                          | the top of the hour, `days` back: the stable start that lets the cache hit                                |
 
 The ranges (a day, a week, a month, a year) are `RANGES` in `src/ui/ranges.ts`, shared with every feature that draws a history.
 
@@ -82,4 +87,4 @@ The ranges (a day, a week, a month, a year) are `RANGES` in `src/ui/ranges.ts`, 
 
 ## Tests
 
-`test/e2e/weather.spec.ts` (the pane through the harness: tiles, both languages, the forecast, a tile's sheet, mutation counts), `test/unit/providers/` (the two sources, the fold, the alerts), `test/unit/features/weather/` (`readWeather`'s order, the ids, the model from the test house in English and French, the forecast, the history from literal rows), `test/unit/core/statistics-cache.test.ts`, `test/unit/ui/ranges.test.ts`, `test/unit/i18n/moved-strings.test.ts` (the French of every `weather.*` message equals what the rewrite layer made of the English). The providers, the model, the ids, the inputs, the tiles, the history, the cache and the ranges are at 100 percent statements.
+`test/e2e/weather.spec.ts` (the phone's pane through the harness: tiles, both languages, the forecast, the detail's sheet, mutation counts), `test/e2e/weather-detail.spec.ts` (the tablet's detail: the cache, the charts, the radar), `test/unit/providers/` (the two sources, the fold, the alerts), `test/unit/features/weather/` (`readWeather`'s order, the ids, the model from the test house in English and French, the forecast, the history from literal rows), `test/unit/core/statistics-cache.test.ts`, `test/unit/ui/ranges.test.ts`, `test/unit/i18n/moved-strings.test.ts` (the French of every `weather.*` message equals what the rewrite layer made of the English). The providers, the model, the ids, the inputs, the tiles, the history, the cache and the ranges are at 100 percent statements.

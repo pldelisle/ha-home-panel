@@ -24,6 +24,8 @@ export interface GuestAnswers {
 export interface FeatureEnv {
   readonly store: PanelStore;
   readonly guest: GuestAnswers;
+  /** Whether the sheet host has this element's sheet open: a pane binds it to its sheet's `open` (ADR 0021). */
+  sheetOpen(id: string): boolean;
 }
 
 export interface FeatureDescriptor {
@@ -41,6 +43,11 @@ export interface FeatureDescriptor {
   available?: (env: FeatureEnv) => boolean;
   /** The word under the section in More; absent or null means none. */
   summary?: (env: FeatureEnv) => string | null;
+  /**
+   * The id of the element sheet that shows this subject's detail (`weather.detail`): inline in the pane on a tablet, over the page on
+   * a phone, where opening it shows the pane behind it and closing it returns to the tab it was opened from.
+   */
+  detailSheet?: string;
   /** The pane's content: a feature's element, or the markup the guest still fills. */
   pane: (env: FeatureEnv) => TemplateResult;
 }

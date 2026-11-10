@@ -6,6 +6,7 @@
 import {capitalise, DASH, DAY_MS, HOUR_MS} from '../../core/figures.ts';
 import {degrees, whole, type Formatters} from '../../core/i18n/format.ts';
 import type {Messages} from '../../core/i18n/messages.ts';
+import type {MessageKey} from '../../core/i18n/en.ts';
 import {isDayAt, sunTimes} from '../../core/sun.ts';
 import {
   defaultFold,
@@ -103,6 +104,12 @@ export interface SunView {
   events: {key: 'sunrise' | 'noon' | 'sunset'; label: string; time: string; sub: string}[];
 }
 
+/** The next hours' temperature and chance of rain or snow as `[ms, value]` points, for the chart. */
+export interface HourSeries {
+  temperature: [number, number | null][];
+  pop: [number, number][];
+}
+
 export interface AlertView {
   tone: WeatherAlert['tone'];
   kind: string;
@@ -141,7 +148,7 @@ export interface WeatherViewModel {
   /** Every third hour of the next day. */
   hours: HourCell[];
   /** All the hours of the next day, for the chart. */
-  hourSeries: {temperature: [number, number | null][]; pop: [number, number][]};
+  hourSeries: HourSeries;
   days: DayRow[];
 }
 
@@ -338,23 +345,32 @@ function paneTiles(inputs: WeatherInputs, say: Say): StatTileView[] {
   return TILES.map(definition => tileView(definition, {...reading[definition.key](), tone: 'blue'}, say));
 }
 
+/** From this UV index the detail says extreme: the scale goes on past the last band of TILES (8 to 10 is very high). */
+const UV_EXTREME_FROM = 11;
+/** The detail's word for each band of the UV tile, in the order of `TILES`' bands, then the two the bands stop short of. */
+const UV_WORDS = ['weather.uv.low', 'weather.uv.moderate', 'weather.uv.high'] as const;
+
+/**
+ * The detail's word for a UV index, from the bands of the UV tile in `TILES` (a band ends where the next whole number begins, so 2.9 is
+ * low), then very high up to `UV_EXTREME_FROM` and extreme beyond.
+ */
+export function uvWord(value: number): MessageKey {
+  const band = tileDefinition('uv').bands?.findIndex(b => value < b.to + 1) ?? -1;
+  return band >= 0 ? UV_WORDS[band] : value < UV_EXTREME_FROM ? 'weather.uv.veryHigh' : 'weather.uv.extreme';
+}
+
+/** The risk of an AQHI reading, from the bands of the air-quality tile in `TILES` (a band includes its `to`), very high past the last. */
+const AQHI_RISKS = ['low', 'moderate', 'high'] as const;
+export function aqhiRisk(value: number): (typeof AQHI_RISKS)[number] | 'veryHigh' {
+  const band = tileDefinition('aqhi').bands?.findIndex(b => value <= b.to) ?? -1;
+  return band >= 0 ? AQHI_RISKS[band] : 'veryHigh';
+}
+
 /** The detail's tiles: the same readings in the detail's wording, the unit always drawn, sentences in lower case. */
 function detailTiles(inputs: WeatherInputs, say: Say): StatTileView[] {
   const {t, fmt, int, degrees, raw, fixed, compass} = say;
   const {wind, pressure, today, normals, feelsLike, uv, aqhi, humidity, dewPoint, visibility} = inputs;
   const dir = wind.direction ? compass(wind.direction) : '';
-  const uvWord = (value: number) =>
-    t(
-      value < 3
-        ? 'weather.uv.low'
-        : value < 6
-          ? 'weather.uv.moderate'
-          : value < 8
-            ? 'weather.uv.high'
-            : value < 11
-              ? 'weather.uv.veryHigh'
-              : 'weather.uv.extreme',
-    );
   const reading: Record<TileKey, () => Shown> = {
     wind: () => ({
       value: wind.speed === null ? DASH : int(wind.speed),
@@ -373,16 +389,11 @@ function detailTiles(inputs: WeatherInputs, say: Say): StatTileView[] {
       sub: pressure.tendency ? tendencyWord(pressure.tendency, t) : '',
     }),
     pop: () => ({value: raw(today.pop), unit: '%', sub: t('weather.sub.chanceTodayLower')}),
-    uv: () => ({value: raw(uv), unit: '', sub: uv === null ? '' : uvWord(uv)}),
+    uv: () => ({value: raw(uv), unit: '', sub: uv === null ? '' : t(uvWord(uv))}),
     aqhi: () => ({
       value: raw(aqhi),
       unit: '',
-      sub:
-        aqhi === null
-          ? t('weather.aqhi')
-          : t('weather.aqhiRisk', {
-              risk: aqhi <= 3 ? 'low' : aqhi <= 6 ? 'moderate' : aqhi <= 10 ? 'high' : 'veryHigh',
-            }),
+      sub: aqhi === null ? t('weather.aqhi') : t('weather.aqhiRisk', {risk: aqhiRisk(aqhi)}),
     }),
     feels: () => ({
       value: feelsLike ? degrees(feelsLike.value) : `${fixed(inputs.temperature, 1)}°`,

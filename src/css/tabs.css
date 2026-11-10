@@ -896,30 +896,6 @@
     grid-template-columns: 1fr;
   }
 }
-/* weather tiles open a history */
-.tilebtn {
-  border: 0;
-  font: inherit;
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
-  display: block;
-  width: 100%;
-}
-.tilebtn:active {
-  transform: scale(0.98);
-}
-.tilebtn:focus-visible {
-  outline: 2px solid var(--c-home);
-  outline-offset: 2px;
-}
-.tilebtn .v::after {
-  content: '›';
-  float: right;
-  color: var(--fg3);
-  font-size: calc(16px * var(--tx));
-  margin-top: 4px;
-}
 /* Automations pane */
 .rtab[aria-selected='true'][data-tab='auto'] {
   --rc: var(--c-heat);

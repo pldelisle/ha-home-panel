@@ -5,12 +5,13 @@
 // Must not: call the API client or the cache, read the clock or the DOM, or pick a colour of its own (every colour is a caller's
 // token; `transparent` is the absence of one, and the sizes are the legacy options' constants).
 import type {EntityKey} from '../../core/entities.ts';
-import {capitalise, DASH} from '../../core/figures.ts';
+import {capitalise, DASH, DAY_MS, HOUR_MS} from '../../core/figures.ts';
 import type {HistoryPoint, StatisticRow} from '../../core/ha.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
 import {degrees, whole, type Formatters} from '../../core/i18n/format.ts';
 import type {Messages} from '../../core/i18n/messages.ts';
 import {RANGES, type Range} from '../../ui/ranges.ts';
+import type {HourSeries} from './model.ts';
 import {tileDefinition, type StatTileDefinition, type Tone} from './tiles.ts';
 
 type Translate = Messages['t'];
@@ -275,6 +276,147 @@ export function seasonTicks({low, span}: Pick<SeasonView, 'low' | 'span'>, step:
   return [-40, -30, -20, -10, 0, 10, 20, 30, 40]
     .filter(value => value % step === 0 && value >= low && value <= low + span)
     .map(value => ({value, at: percent(value)}));
+}
+
+// ---------- the detail's charts ----------
+
+/**
+ * The start the detail asks the statistics from: the top of the hour, `days` back. A start that moves with the clock is a new call to the
+ * cache (it keys on the exact start), so every request of one hour carries the same one and the next opening of the detail is a hit.
+ */
+export const statisticsStart = (now: number, days: number): Date =>
+  new Date(Math.floor(now / HOUR_MS) * HOUR_MS - days * DAY_MS);
+
+/** How long the statistics stay fresh: the legacy panel's fifteen minutes. The pane's cache and the detail's refresh both read it. */
+export const STATISTICS_TTL_MS = 15 * 60_000;
+
+/** How far back the seven-day charts reach. */
+export const WEEK_DAYS = 7;
+/** How far back the season reaches: every month since the records began, within the recorder's year and more. */
+export const SEASON_DAYS = 400;
+
+/** What the detail's charts take from the page's tokens: the line colours (`--c-wh`, `--c-home`, `--m-purple`) and the muted text (`--fg3`). */
+export interface DetailTokens {
+  warm: string;
+  cool: string;
+  purple: string;
+  muted: string;
+}
+
+export interface DetailChartDeps {
+  fmt: Formatters;
+  t: Translate;
+  tokens: DetailTokens;
+  /** The instant the seven-day axes end at, in milliseconds: passed in, never read. */
+  now: number;
+}
+
+/** The options of the detail's four charts, without the theme. */
+export interface DetailCharts {
+  hours: Record<string, unknown>;
+  temperature: Record<string, unknown>;
+  wind: Record<string, unknown>;
+  pressure: Record<string, unknown>;
+}
+
+/**
+ * The four charts of the detail panel, each as the legacy panel drew it: the next hours (the temperature as a line, the chance of
+ * rain or snow as columns), then the seven days of temperature with the dew point and the freezing line, of wind with its gusts, and of
+ * pressure. Every word and figure goes through `t` and `fmt`, and a time axis names its tooltip's day and hour with `fmt` too, where the
+ * legacy options spelled Apex's English 12-hour format. `<hp-chart>` merges them over its base options.
+ */
+export function detailChartOptions(
+  hours: HourSeries,
+  week: SevenDaySeries,
+  {fmt, t, tokens, now}: DetailChartDeps,
+): DetailCharts {
+  const degreesLabel = (value: number) => degrees(fmt, value);
+  const tooltipDay = {formatter: (at: number) => `${fmt.weekday(at, 'short')} ${fmt.hour(at)}`};
+  const weekAxis = {type: 'datetime', min: now - WEEK_DAYS * DAY_MS, max: now, labels: {datetimeUTC: false}};
+  const percent = (value: number) => t('weather.percent', {value});
+  const celsius = (value: number | null) => (value == null ? DASH : `${fmt.fixed(value, 1)} °C`);
+  return {
+    hours: {
+      chart: {type: 'line'},
+      series: [
+        {name: t('weather.series.temperature'), type: 'line', data: hours.temperature},
+        {name: t('weather.series.chanceOfRain'), type: 'column', data: hours.pop},
+      ],
+      colors: [tokens.warm, tokens.cool],
+      stroke: {width: [2.6, 0], curve: 'smooth'},
+      fill: {opacity: [1, 0.35]},
+      plotOptions: {bar: {columnWidth: '70%', borderRadius: 3}},
+      xaxis: {type: 'datetime', labels: {datetimeUTC: false, formatter: (_label: string, at: number) => fmt.hour(at)}},
+      yaxis: [
+        {tickAmount: 3, labels: {formatter: degreesLabel}},
+        {opposite: true, min: 0, max: 100, tickAmount: 2, labels: {formatter: percent}},
+      ],
+      tooltip: {
+        shared: true,
+        x: tooltipDay,
+        y: {
+          formatter: (value: number, options?: {seriesIndex?: number}) =>
+            options?.seriesIndex === 1 ? percent(value) : celsius(+value),
+        },
+      },
+    },
+    temperature: {
+      chart: {type: 'line'},
+      series: [
+        {name: t('weather.series.temperature'), data: week.temperature},
+        {name: t('weather.series.dewPoint'), data: week.dewPoint},
+      ],
+      colors: [tokens.warm, tokens.cool],
+      stroke: {width: [2.4, 1.6], curve: 'smooth', dashArray: [0, 4]},
+      xaxis: weekAxis,
+      yaxis: {tickAmount: 4, labels: {formatter: degreesLabel}},
+      annotations: {
+        yaxis: [
+          {
+            y: 0,
+            borderColor: tokens.muted,
+            strokeDashArray: 3,
+            label: {
+              text: t('weather.series.freezing'),
+              position: 'right',
+              textAnchor: 'end',
+              offsetX: -4,
+              borderWidth: 0,
+              style: {background: 'transparent', color: tokens.muted, fontSize: '11px'},
+            },
+          },
+        ],
+      },
+      tooltip: {shared: true, x: tooltipDay, y: {formatter: celsius}},
+    },
+    wind: {
+      chart: {type: 'line'},
+      series: [
+        {name: t('weather.series.wind'), type: 'area', data: week.wind},
+        {name: t('weather.series.gusts'), type: 'line', data: week.gusts},
+      ],
+      colors: [tokens.cool, tokens.cool],
+      fill: {type: 'solid', opacity: [0.18, 1]},
+      stroke: {width: [1.8, 0], curve: 'smooth'},
+      markers: {size: [0, 3], strokeWidth: 0},
+      xaxis: weekAxis,
+      yaxis: {min: 0, tickAmount: 3, labels: {formatter: (value: number) => whole(fmt, value)}},
+      tooltip: {
+        shared: true,
+        x: tooltipDay,
+        y: {formatter: (value: number | null) => (value == null ? DASH : `${whole(fmt, value)} km/h`)},
+      },
+    },
+    pressure: {
+      chart: {type: 'line'},
+      series: [{name: t('weather.series.pressure'), data: week.pressure}],
+      colors: [tokens.purple],
+      stroke: {width: 2, curve: 'smooth'},
+      xaxis: weekAxis,
+      yaxis: {tickAmount: 3, labels: {formatter: (value: number) => fmt.fixed(value, 1)}},
+      tooltip: {x: tooltipDay, y: {formatter: (value: number) => `${fmt.fixed(value, 2)} kPa`}},
+    },
+  };
 }
 
 // ---------- one tile's history ----------

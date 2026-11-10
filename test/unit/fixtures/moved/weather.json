@@ -459,7 +459,8 @@
       "key": "weather.sunset"
     },
     {
-      "key": "weather.solarNoon"
+      "key": "weather.solarNoon",
+      "was": "Midi solaire"
     },
     {
       "key": "weather.firstLight",
@@ -468,7 +469,8 @@
       },
       "fr": {
         "time": "6 h 32"
-      }
+      },
+      "was": "aube 6 h 32"
     },
     {
       "key": "weather.lastLight",
@@ -477,7 +479,8 @@
       },
       "fr": {
         "time": "17 h 33"
-      }
+      },
+      "was": "crépuscule 17 h 33"
     },
     {
       "key": "weather.daylight",
@@ -487,7 +490,8 @@
         "changeMinutes": 2,
         "changeSeconds": 32,
         "change": "shorter"
-      }
+      },
+      "was": "10 h 0 min d'ensoleillement, 2 min 32 s de moins qu'hier"
     },
     {
       "key": "weather.daylight",
@@ -497,16 +501,19 @@
         "changeMinutes": 2,
         "changeSeconds": 32,
         "change": "longer"
-      }
+      },
+      "was": "10 h 0 min d'ensoleillement, 2 min 32 s de plus qu'hier"
     },
     {
       "key": "weather.sunPosition",
       "values": {
         "percent": 85
-      }
+      },
+      "was": "Position du soleil : 85 pour cent de la journée"
     },
     {
-      "key": "weather.sunBelow"
+      "key": "weather.sunBelow",
+      "was": "Position du soleil : sous l'horizon"
     },
     {
       "key": "weather.highLow",
@@ -804,34 +811,40 @@
       },
       "fr": {
         "date": "4 mars"
-      }
+      },
+      "was": "Chaque mois depuis le 4 mars, du minimum le plus froid au maximum le plus chaud. Le point est la moyenne du mois."
     },
     {
       "key": "weather.season.warmest"
     },
     {
-      "key": "weather.season.coldest"
+      "key": "weather.season.coldest",
+      "was": "Le plus froid"
     },
     {
-      "key": "weather.season.gust"
+      "key": "weather.season.gust",
+      "was": "Plus forte rafale"
     },
     {
       "key": "weather.season.average",
       "values": {
         "n": 0
-      }
+      },
+      "was": "moyenne, 0 nuits de gel"
     },
     {
       "key": "weather.season.average",
       "values": {
         "n": 1
-      }
+      },
+      "was": "moyenne, 1 nuit de gel"
     },
     {
       "key": "weather.season.average",
       "values": {
         "n": 4
-      }
+      },
+      "was": "moyenne, 4 nuits de gel"
     },
     {
       "key": "weather.season.month",
@@ -875,13 +888,15 @@
       "key": "weather.season.frost",
       "values": {
         "n": 1
-      }
+      },
+      "was": "1 gel"
     },
     {
       "key": "weather.season.frost",
       "values": {
         "n": 9
-      }
+      },
+      "was": "9 gels"
     },
     {
       "key": "weather.season.hot",
@@ -889,6 +904,88 @@
         "n": 12,
         "limit": 25
       }
+    },
+    {
+      "key": "weather.detail.opensHistory"
+    },
+    {
+      "key": "weather.detail.close"
+    },
+    {
+      "key": "weather.detail.sun"
+    },
+    {
+      "key": "weather.detail.radar"
+    },
+    {
+      "key": "weather.detail.radarNote",
+      "was": "RainViewer, les 2 dernières heures par tranches de 10 minutes. La barre au-dessus de la carte montre les couleurs, de faible à forte."
+    },
+    {
+      "key": "weather.detail.radarFailed",
+      "was": "Weather Radar Card ne s'est pas chargée. Vérifiez qu'elle est toujours installée dans HACS."
+    },
+    {
+      "key": "weather.detail.hours",
+      "was": "Prochaines 24 heures"
+    },
+    {
+      "key": "weather.detail.hoursNote",
+      "was": "Prévisions horaires d'Environnement Canada. Les barres indiquent la probabilité de pluie ou de neige."
+    },
+    {
+      "key": "weather.detail.noHours",
+      "was": "Pas encore de prévisions horaires."
+    },
+    {
+      "key": "weather.detail.days",
+      "was": "Prochains jours"
+    },
+    {
+      "key": "weather.detail.daysNote",
+      "was": "Minimums et maximums sur une même échelle. Le point indique la température actuelle."
+    },
+    {
+      "key": "weather.detail.noDays"
+    },
+    {
+      "key": "weather.detail.week"
+    },
+    {
+      "key": "weather.detail.weekNote",
+      "was": "Température et point de rosée à l'heure. Quand les deux courbes se rejoignent, attendez-vous à du brouillard, de la rosée ou du givre."
+    },
+    {
+      "key": "weather.detail.windNote",
+      "was": "Moyenne horaire en km/h. Les points sont les rafales, quand Environnement Canada les signale."
+    },
+    {
+      "key": "weather.detail.pressureNote",
+      "was": "En kPa. Une baisse constante annonce souvent du mauvais temps."
+    },
+    {
+      "key": "weather.detail.season",
+      "was": "La saison jusqu'ici"
+    },
+    {
+      "key": "weather.detail.historyFailed"
+    },
+    {
+      "key": "weather.series.temperature"
+    },
+    {
+      "key": "weather.series.wind"
+    },
+    {
+      "key": "weather.series.pressure"
+    },
+    {
+      "key": "weather.series.freezing",
+      "was": "Gel"
+    },
+    {
+      "key": "weather.series.chanceOfRain",
+      "was": "Probabilité de pluie ou de neige"
     }
   ]
 }

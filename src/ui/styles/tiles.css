@@ -1,0 +1,97 @@
+/* The tiles of a detail panel: a grid of wells, each a label, a figure with its small unit, and a line under it. `.tilebtn` makes one a
+   button that opens a history. Written once for the legacy sheets and for the elements that draw them; inside an element `.app.gl` reads
+   as `:host([glass])` (host.ts). */
+.tile {
+  -webkit-tap-highlight-color: transparent;
+}
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+.tiles:empty {
+  display: none;
+}
+.tile {
+  background: var(--card2);
+  border-radius: 16px;
+  padding: 10px 12px;
+  min-width: 0;
+}
+.tile .k {
+  font-size: calc(12px * var(--tx));
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg2);
+}
+.tile .v {
+  font-size: calc(22px * var(--tx));
+  margin-top: 2px;
+  white-space: nowrap;
+}
+.tile .v small {
+  font-family: var(--f-body);
+  font-size: calc(12px * var(--tx));
+  color: var(--fg2);
+  margin-left: 2px;
+  font-weight: 500;
+}
+.tile .v .wrapv {
+  white-space: normal;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  font-size: calc(16px * var(--tx));
+}
+.tile .s {
+  font-size: calc(11.5px * var(--tx));
+  color: var(--fg2);
+  margin-top: 1px;
+}
+@media (max-width: 520px) {
+  .tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* a tile that opens a history (the weather detail's) */
+.tilebtn {
+  border: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  display: block;
+  width: 100%;
+}
+.tilebtn:active {
+  transform: scale(0.98);
+}
+.tilebtn:focus-visible {
+  outline: 2px solid var(--c-home);
+  outline-offset: 2px;
+}
+.tilebtn .v::after {
+  content: '›';
+  float: right;
+  color: var(--fg3);
+  font-size: calc(16px * var(--tx));
+  margin-top: 4px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .tilebtn {
+    transition:
+      transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+      background-color 0.2s ease,
+      box-shadow 0.2s ease,
+      color 0.2s ease;
+  }
+}
+.app.gl .tile {
+  background: var(--g-tile);
+}
+@media (prefers-reduced-transparency: reduce) {
+  .app.gl .tile {
+    background: var(--card2);
+  }
+}

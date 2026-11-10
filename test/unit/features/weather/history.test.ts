@@ -5,9 +5,11 @@ import {readFileSync} from 'node:fs';
 import {describe, expect, test} from 'vitest';
 import type {HistoryPoint, StatisticRow} from '../../../../src/core/ha.ts';
 import {createFormatters} from '../../../../src/core/i18n/format.ts';
+import {createStatisticsCache} from '../../../../src/core/statistics-cache.ts';
 import {panelLocale} from '../../../../src/core/i18n/locale.ts';
 import {createMessages} from '../../../../src/core/i18n/messages.ts';
 import {
+  detailChartOptions,
   FROST_BELOW,
   hasStatistics,
   historyChartOptions,
@@ -18,10 +20,13 @@ import {
   seasonTicks,
   seasonView,
   sevenDaySeries,
+  statisticsStart,
+  STATISTICS_TTL_MS,
   tileHistory,
   tileStats,
   type ChartTokens,
   type SevenDayIds,
+  type SevenDaySeries,
   type TileSeriesData,
 } from '../../../../src/features/weather/history.ts';
 import {tileDefinition} from '../../../../src/features/weather/tiles.ts';
@@ -615,26 +620,122 @@ describe('historyChartOptions', () => {
   });
 });
 
+// ---------- the detail's charts ----------
+
+describe('statisticsStart', () => {
+  const at = Date.parse('2026-11-09T12:07:31Z');
+
+  test('is the top of the hour, days back: the same for every instant of an hour, another for the next one', () => {
+    expect(statisticsStart(at, 7).toISOString()).toBe('2026-11-02T12:00:00.000Z');
+    expect(statisticsStart(at + 52 * 60_000, 7).getTime()).toBe(statisticsStart(at, 7).getTime());
+    expect(statisticsStart(at + 53 * 60_000, 7).getTime()).toBe(statisticsStart(at, 7).getTime() + HOUR);
+  });
+
+  test('lets the cache answer a second opening within the hour: one call to the client, not two', async () => {
+    const asked: Date[] = [];
+    const client = {
+      statistics: (_ids: unknown, _period: string, start: Date) => (asked.push(start), Promise.resolve({})),
+      history: () => Promise.resolve({}),
+    };
+    const cache = createStatisticsCache(client, {ttlMs: STATISTICS_TTL_MS});
+    for (const now of [at, at + 1234]) await cache.statistics(['sensor.a'], 'hour', statisticsStart(now, 7), ['mean']);
+    expect(asked).toHaveLength(1);
+  });
+});
+
+describe('detailChartOptions', () => {
+  const tokens = {warm: '#warm', cool: '#cool', purple: '#purple', muted: '#muted'};
+  const hours = {temperature: [[1, 5]] as [number, number | null][], pop: [[1, 40]] as [number, number][]};
+  const week = {
+    temperature: [[1, 2]],
+    dewPoint: [[1, 1]],
+    humidity: [],
+    pressure: [[1, 101.94]],
+    wind: [[1, 20]],
+    gusts: [[1, 35]],
+  } as SevenDaySeries;
+  const charts = (language: 'en' | 'fr') => detailChartOptions(hours, week, {...deps(language), tokens});
+  // the options carry functions the chart calls; what the tests need of them is their result
+  type Callback = (...args: unknown[]) => string;
+  const call = (fn: unknown, ...args: unknown[]) => (fn as Callback)(...args);
+  const at = Date.parse('2026-11-09T21:00:00Z'); // a Monday, four in the afternoon in Toronto
+
+  test('draws the lines it is given in the colours of the tokens, the week on an axis that ends now and reaches seven days back', () => {
+    const {hours: h, temperature, wind, pressure} = charts('en');
+    expect(h.series).toEqual([
+      {name: 'Temperature', type: 'line', data: hours.temperature},
+      {name: 'Chance of rain or snow', type: 'column', data: hours.pop},
+    ]);
+    expect(h.colors).toEqual(['#warm', '#cool']);
+    expect(temperature.series).toEqual([
+      {name: 'Temperature', data: week.temperature},
+      {name: 'Dew point', data: week.dewPoint},
+    ]);
+    expect(wind.series).toEqual([
+      {name: 'Wind', type: 'area', data: week.wind},
+      {name: 'Gusts', type: 'line', data: week.gusts},
+    ]);
+    expect(pressure.series).toEqual([{name: 'Pressure', data: week.pressure}]);
+    expect(pressure.colors).toEqual(['#purple']);
+    expect(temperature.xaxis).toMatchObject({type: 'datetime', min: NOW - 7 * 864e5, max: NOW});
+    expect(JSON.stringify(charts('en'))).not.toContain('theme');
+  });
+
+  test('names the freezing line and the series in French, the figures in its format', () => {
+    const {temperature, pressure, hours: h} = charts('fr');
+    expect((temperature.series as {name: string}[]).map(s => s.name)).toEqual(['Température', 'Point de rosée']);
+    const freezing = (temperature.annotations as {yaxis: {label: {text: string}}[]}).yaxis[0];
+    expect(freezing.label.text).toBe('Gel');
+    const yaxis = pressure.yaxis as {labels: {formatter: unknown}};
+    expect(call(yaxis.labels.formatter, 101.94)).toBe('101,9');
+    expect(call((pressure.tooltip as {y: {formatter: unknown}}).y.formatter, 101.94)).toBe('101,94 kPa');
+    expect(call((h.yaxis as {labels: {formatter: unknown}}[])[1].labels.formatter, 40)).toBe('40 %');
+  });
+
+  test('says the degrees whole with no minus on a zero, the tooltips with a dash for no reading, and the tooltip day and hour by the panel format', () => {
+    const {temperature, wind, hours: h} = charts('en');
+    const degreesAxis = (temperature.yaxis as {labels: {formatter: unknown}}).labels.formatter;
+    expect(call(degreesAxis, -4.6)).toBe('-5°');
+    expect(call(degreesAxis, -0.4)).toBe('0°');
+    const celsius = (temperature.tooltip as {y: {formatter: unknown}}).y.formatter;
+    expect(call(celsius, 12.34)).toBe('12.3 °C');
+    expect(call(celsius, null)).toBe('–');
+    const gusts = (wind.tooltip as {y: {formatter: unknown}}).y.formatter;
+    expect(call(gusts, 22.6)).toBe('23 km/h');
+    expect(call(gusts, null)).toBe('–');
+    expect(call((wind.yaxis as {labels: {formatter: unknown}}).labels.formatter, 22.6)).toBe('23');
+    expect(call((temperature.tooltip as {x: {formatter: unknown}}).x.formatter, at)).toBe('Mon 4 pm');
+    expect(call((h.xaxis as {labels: {formatter: unknown}}).labels.formatter, 'ignored', at)).toBe('4 pm');
+    const hourTip = (h.tooltip as {y: {formatter: unknown}}).y.formatter;
+    expect(call(hourTip, 40, {seriesIndex: 1})).toBe('40%');
+    expect(call(hourTip, 4.25, {seriesIndex: 0})).toBe('4.3 °C');
+    expect(call((charts('fr').temperature.tooltip as {x: {formatter: unknown}}).x.formatter, at)).toBe('lun. 16 h');
+  });
+
+  test('does not change the rows it reads: a cached reply is shared by every caller', () => {
+    const frozen = (rows: StatisticRow[]) => Object.freeze(rows.map(row => Object.freeze({...row})));
+    const rows = {'sensor.t': frozen([stat(0, {mean: 1, max: 2})])};
+    expect(() =>
+      sevenDaySeries(rows, {
+        temperature: 'sensor.t',
+        dewPoint: null,
+        humidity: null,
+        pressure: null,
+        wind: null,
+        gusts: null,
+      }),
+    ).not.toThrow();
+    expect(() => seasonView(frozen(DAYS), frozen(GUSTS), deps('en'))).not.toThrow();
+  });
+});
+
 // ---------- against the legacy panel ----------
-// The rules above are copies; until the history move deletes the methods they copy, a change to the source of one fails here, and
-// whoever made it decides whether the copy follows. Deleted with loadWxHistory, renderSeason, loadWx and wxSheet.
+// The rules of one tile's history are copies; until the history move deletes the methods they copy, a change to the source of one fails
+// here, and whoever made it decides whether the copy follows. Deleted with loadWx and wxSheet (#159).
 describe('the copied rules against the legacy panel', () => {
   const panel = readFileSync(new URL('../../../../src/home-panel.js', import.meta.url), 'utf8');
 
   test.each([
-    ['a frost night is a low below 0°', 'if (d.min < 0) m.frost++;'],
-    ['a hot day is a high of 25° or more', 'if (d.max >= 25) m.hot++;'],
-    ['a month bar is at least 2 percent wide', 'Math.max(2, w)'],
-    ['a month bar runs from its low to its high on the shared scale', 'w = ((m.hi - m.lo) / span) * 100'],
-    ['the scale of the months is the extremes, or 1', 'span = hi - lo || 1'],
-    ['a day is dated at noon of its local day', 'k: this.fmtEn.isoDay(ms(x.start) + 12 * 36e5)'],
-    ['a season day is one with a mean', '.filter(x => x.mean != null)'],
-    ['the tick marks are the multiples of ten between -40 and 40', '[-40, -30, -20, -10, 0, 10, 20, 30, 40]'],
-    [
-      'a tick mark is a multiple of the step inside the scale',
-      '.filter(v => v % step === 0 && v >= lo && v <= lo + span)',
-    ],
-    ['a statistic is kept to two digits', '+(+x[f]).toFixed(2)'],
     ['the middle of a bucket is added to a statistic', 'ms(y.start) + R.mid'],
     [
       'plain history is thinned to the range step',
@@ -649,9 +750,5 @@ describe('the copied rules against the legacy panel', () => {
     ['the tooltip keeps the tile digits', 'D.dec ?? 1'],
   ])('%s', (_what, snippet) => {
     expect(panel, `the legacy panel no longer says ${snippet}`).toContain(snippet);
-  });
-
-  test('the frost and hot-day limits are the legacy ones', () => {
-    expect([FROST_BELOW, HOT_FROM]).toEqual([0, 25]);
   });
 });

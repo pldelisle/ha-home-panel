@@ -432,9 +432,6 @@ export const FR_MAP = {
   'Today, hour by hour': "Aujourd'hui, heure par heure",
   'Month by month': 'Mois par mois',
   'Today so far': "Aujourd'hui jusqu'ici",
-  'Next {n} hours': 'Prochaines {n} heures',
-  'Next days': 'Prochains jours',
-  'Season so far': "La saison jusqu'ici",
   // ---- greetings bar: who's home ----
   "Who's home": 'Qui est à la maison',
   home: 'à la maison',
@@ -457,16 +454,7 @@ export const FR_MAP = {
   Sun: 'Soleil',
   Sunrise: 'Lever du soleil',
   Sunset: 'Coucher du soleil',
-  'Solar noon': 'Midi solaire',
-  'first light {n}': 'aube {n}',
-  'last light {n}': 'crépuscule {n}',
   'visibility {n} km': 'visibilité {n} km',
-  '{n} h {n} min of daylight, {n} min {n} s shorter than yesterday':
-    "{n} h {n} min d'ensoleillement, {n} min {n} s de moins qu'hier",
-  '{n} h {n} min of daylight, {n} min {n} s longer than yesterday':
-    "{n} h {n} min d'ensoleillement, {n} min {n} s de plus qu'hier",
-  'Sun position: {n} percent through the day': 'Position du soleil : {n} pour cent de la journée',
-  'Sun position: below the horizon': "Position du soleil : sous l'horizon",
   'High {n}° · Low {n}°': 'Max {n}° · Min {n}°',
   'High {n}° · Low {n}° · normal {n}° / {n}°': 'Max {n}° · Min {n}° · normale {n}° / {n}°',
   'high / low for the date': 'max / min pour la date',
@@ -476,35 +464,9 @@ export const FR_MAP = {
   Medium: 'Moyen',
   'chance today': "probabilité aujourd'hui",
   'Rain or snow': 'Pluie ou neige',
-  'Chance of rain or snow': 'Probabilité de pluie ou de neige',
-  Radar: 'Radar',
   Rain: 'Pluie',
   Snow: 'Neige',
-  'RainViewer, the last {n} hours in {n}-minute steps. The bar above the map shows the colours, from light to heavy.':
-    'RainViewer, les {n} dernières heures par tranches de {n} minutes. La barre au-dessus de la carte montre les couleurs, de faible à forte.',
-  "Weather Radar Card didn't load. Check that it is still installed in HACS.":
-    "Weather Radar Card ne s'est pas chargée. Vérifiez qu'elle est toujours installée dans HACS.",
-  'Environment Canada hourly forecast. Bars are the chance of rain or snow.':
-    "Prévisions horaires d'Environnement Canada. Les barres indiquent la probabilité de pluie ou de neige.",
-  'No hourly forecast yet.': 'Pas encore de prévisions horaires.',
-  'Lows and highs on one scale. The dot is the temperature now.':
-    'Minimums et maximums sur une même échelle. Le point indique la température actuelle.',
-  'Hourly temperature and dew point. When the two lines meet, expect fog, dew or frost.':
-    "Température et point de rosée à l'heure. Quand les deux courbes se rejoignent, attendez-vous à du brouillard, de la rosée ou du givre.",
-  'Hourly average in km/h. Dots are gusts, when Environment Canada reports them.':
-    'Moyenne horaire en km/h. Les points sont les rafales, quand Environnement Canada les signale.',
-  'In kPa. A steady fall often means weather is on the way.':
-    'En kPa. Une baisse constante annonce souvent du mauvais temps.',
-  'Every month since {n}, from the coldest low to the warmest high. The dot is the monthly average.':
-    'Chaque mois depuis le {n}, du minimum le plus froid au maximum le plus chaud. Le point est la moyenne du mois.',
   Warmest: 'Le plus chaud',
-  Coldest: 'Le plus froid',
-  'Strongest gust': 'Plus forte rafale',
-  'average, {n} frosty nights': 'moyenne, {n} nuits de gel',
-  'average, {n} frosty night': 'moyenne, {n} nuit de gel',
-  '{n} frosts': '{n} gels',
-  '{n} frost': '{n} gel',
-  Freezing: 'Gel',
   Cool: 'Frais',
   Comfortable: 'Confortable',
   Warm: 'Chaud',

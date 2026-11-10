@@ -7,16 +7,7 @@ import type {FeatureKey} from '../ui/feature.ts';
 
 /** The ids of the guest's sheets: the id of the `.sheet` element it draws. Deleted with the guest (#188). */
 export type LegacySheetId =
-  | 'sh-energy'
-  | 'sh-climate'
-  | 'sh-air'
-  | 'sh-car'
-  | 'sh-weather'
-  | 'sh-wx'
-  | 'sh-sens'
-  | 'sh-cam'
-  | 'sh-light'
-  | 'sh-card';
+  'sh-energy' | 'sh-climate' | 'sh-air' | 'sh-car' | 'sh-wx' | 'sh-sens' | 'sh-cam' | 'sh-light' | 'sh-card';
 
 /** A legacy sheet is its element's id (a `LegacySheetId`); an element's sheet is `<owner>.<name>` (`shell.more`, later `weather.history`). */
 export type SheetId = string;
@@ -70,6 +61,8 @@ export interface SheetMediatorOptions {
   /** The shell's root: where focus is read, and where the inline hosts are looked up. */
   root: () => ShadowRoot;
   guest: () => LegacySheetGuest | undefined;
+  /** The pane whose detail an element's sheet is (`weather.detail`), from the registry; none for any other. */
+  paneOf: (id: SheetId) => FeatureKey | undefined;
   /** The tab shown, and the phone's shape, as the shell has them now. */
   tab: () => FeatureKey;
   compact: () => boolean;
@@ -93,6 +86,8 @@ export class SheetMediator implements SheetHost, ReactiveController {
   private current: SheetId | null = null; // the sheet over the page
   private inline: LegacySheetId | null = null; // the detail panel shown in its pane
   private lastFocus: HTMLElement | null = null;
+  // the tab a detail sheet was opened from, when opening it showed its pane behind it (a phone's Home card): closing goes back
+  private returnTab: FeatureKey | null = null;
   private readonly legacy = new Map<SheetId, Registered>();
   private readonly popups: Popup[] = [];
 
@@ -128,10 +123,20 @@ export class SheetMediator implements SheetHost, ReactiveController {
       this.options.setTab(inline.pane);
       return;
     }
+    // an element's detail sheet is its pane's: a tablet shows it inline in the pane, a phone over the page with the pane behind it
+    const owner = entry ? undefined : this.options.paneOf(id);
+    if (owner && !this.options.compact()) {
+      this.options.setTab(owner);
+      return;
+    }
     this.closeCurrent();
     this.lastFocus = deepActiveElement(this.options.root());
     this.current = id;
     if (!entry) {
+      if (owner && this.options.tab() !== owner) {
+        this.returnTab = this.options.tab();
+        this.options.setTab(owner);
+      }
       this.host.requestUpdate(); // an element's `open` follows `isOpen` in its owner's template
       return;
     }
@@ -195,6 +200,7 @@ export class SheetMediator implements SheetHost, ReactiveController {
     if (this.current !== id) return;
     this.current = null;
     this.lastFocus = null;
+    this.returnTab = null;
     if (!this.legacy.has(id)) this.host.requestUpdate();
   }
 
@@ -216,7 +222,12 @@ export class SheetMediator implements SheetHost, ReactiveController {
       this.inline = null;
       this.options.guest()?.sheetClosed(entry.sheet.id);
       entry.sheet.element.hidden = true;
-    } else this.host.requestUpdate();
+    } else {
+      this.host.requestUpdate();
+      const back = this.returnTab;
+      this.returnTab = null;
+      if (back) this.options.setTab(back);
+    }
     this.lastFocus?.focus?.();
     return entry !== undefined;
   }

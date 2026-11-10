@@ -1,7 +1,7 @@
 // weatherIds: every entity id the Weather pane reads, so the store tells it about those and no others.
 import {describe, expect, test} from 'vitest';
-import {resolveConfig} from '../../../../src/core/config.ts';
-import {weatherIds} from '../../../../src/features/weather/ids.ts';
+import {resolveConfig, type ResolvedConfig} from '../../../../src/core/config.ts';
+import {sevenDayIds, weatherIds} from '../../../../src/features/weather/ids.ts';
 import type {WeatherSource} from '../../../../src/providers/weather-source.ts';
 import {entity} from '../../fake-hass.ts';
 import {bareHouse, fullHouse} from './support.ts';
@@ -73,5 +73,21 @@ describe('weatherIds', () => {
       'sensor.sun_next_setting',
       'sensor.sun_next_dawn',
     ]);
+  });
+});
+
+describe('sevenDayIds', () => {
+  test('are the outdoor sensors of the config, null for the one the house lacks', () => {
+    const config = {
+      entities: {outT: 'sensor.t', dew: 'sensor.d', hum: 'sensor.h', pres: 'sensor.p', wind: 'sensor.w', gust: null},
+    };
+    expect(sevenDayIds(config as unknown as ResolvedConfig)).toEqual({
+      temperature: 'sensor.t',
+      dewPoint: 'sensor.d',
+      humidity: 'sensor.h',
+      pressure: 'sensor.p',
+      wind: 'sensor.w',
+      gusts: null,
+    });
   });
 });

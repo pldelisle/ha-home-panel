@@ -14,9 +14,16 @@ const lens = html`<svg aria-hidden="true" style="position:absolute;width:0;heigh
   </filter>
 </svg>`;
 
+/** A shadow root: what an element's `getRootNode()` gives when it is inside another element, and its host. */
+const hostOf = (root: Node): Node | null => ('host' in root ? (root.host as Element) : null);
+
 /**
- * The filter, to draw inside an element's own root, when the root the element sits in (`outer`) has one: the guest's redraw
- * wipes its filter without drawing it again (#198), and the glass it draws then has no lens, so neither may the element's.
+ * The filter, to draw inside an element's own root, when the root the element sits in (`outer`) or any root around it has one: the
+ * guest's redraw wipes its filter without drawing it again (#198), and the glass it draws then has no lens, so neither may the
+ * element's. An element inside another element's root (the Weather detail inside its pane) looks outward through the hosts.
  */
-export const lensLike = (outer: Node): TemplateResult | typeof nothing =>
-  (outer as ParentNode).querySelector('#glass-distortion') ? lens : nothing;
+export const lensLike = (outer: Node): TemplateResult | typeof nothing => {
+  for (let root: Node | null = outer; root; root = hostOf(root)?.getRootNode() ?? null)
+    if ((root as ParentNode).querySelector('#glass-distortion')) return lens;
+  return nothing;
+};

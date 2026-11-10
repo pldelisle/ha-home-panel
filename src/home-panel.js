@@ -5,12 +5,12 @@ import {pickStack, inHours, reminderLeft} from './stack.js';
 import {FR_ATTR, createFrench} from './i18n/fr.js';
 import {autoMethods} from './auto.js';
 import {StaleReply} from './core/api.ts';
-import {isDayAt, sunTimes} from './core/sun.ts';
+import {sunTimes} from './core/sun.ts';
 import {browserDefaults} from './core/i18n/browser.ts';
 import {createFormatters} from './core/i18n/format.ts';
 import {englishLocale, panelLocale} from './core/i18n/locale.ts';
 import {ok, esc, tile, plural, cap} from './legacy/globals.js';
-import {loadApex} from './charts/apex.js';
+import {loadApex} from './core/apex.ts';
 import {ensureFonts} from './fonts.js';
 // Liquid Glass: whether this engine can run an SVG filter inside backdrop-filter (Chromium only)
 const LENS_OK =
@@ -96,10 +96,9 @@ const sensorName = n => String(n).replace(/^d[ée]tecteur\s+(de\s+)?mouvement\s+
 // AL_AREAS (from the config): HA area → Adaptive Lighting switch, for areas the panel can't match on its own
 // Tabs view: one pane per subject, for a tablet fixed to the wall. Five panes host the detail sheets inline. The rail, the
 // phone's bar and the panes are the shell's (src/shell/features.ts); the guest fills what is inside them.
-// the sheets that wait for the charts library before they draw anything; the others never do. The Weather sheet is not
-// one of them: it shows its tiles and forecast at once and fetches the library beside its history (weatherSheet)
+// the sheets that wait for the charts library before they draw anything; the others never do
 const CHART_SHEETS = new Set(['sh-energy', 'sh-climate', 'sh-car', 'sh-air', 'sh-wx']);
-const TAB_SHEET = {climate: 'sh-climate', weather: 'sh-weather', car: 'sh-car', energy: 'sh-energy', air: 'sh-air'};
+const TAB_SHEET = {climate: 'sh-climate', car: 'sh-car', energy: 'sh-energy', air: 'sh-air'};
 // the tab whose pane hosts a sheet's panel
 const SHEET_TAB = /** @type {Record<string, import('./ui/feature.ts').FeatureKey>} */ (
   Object.fromEntries(Object.entries(TAB_SHEET).map(([t, id]) => [id, t]))
@@ -573,13 +572,6 @@ function hpSeries(rows, get = a => a.current_temperature) {
   });
   return out;
 }
-// tick labels under the season bars
-const z0 = (lo, span, step = 10) =>
-  [-40, -30, -20, -10, 0, 10, 20, 30, 40]
-    .filter(v => v % step === 0 && v >= lo && v <= lo + span)
-    .map(v => `<span class="tick" style="left:${((v - lo) / span) * 100}%">${v}°</span>`)
-    .join('');
-
 /**
  * The legacy class, the shell's guest (spec 14, ADR 0016): it implements GuestRenderer structurally (src/shell/guest.ts;
  * this file may not import the shell). It is not an element: the shell constructs it, hands it the page, the store, the
@@ -620,7 +612,7 @@ export class LegacyPanel {
     this.sesAll = false;
     this.cache = {}; // last innerHTML per container, to skip identical updates
     this.pending = {}; // optimistic control states until hass catches up
-    this.fc = {}; // forecasts by type, told by the shell (forecastChanged) from the Weather pane's subscription
+    this.fc = {}; // forecasts by type, told by the shell (forecastChanged) from the Weather pane's subscription; Home's card reads them
     this.crange = 'day'; // climate history range (Day by default since v1.18.2)
     this.CR = {}; // climate history by range
     // #iwrap, the clock's container, is a static node of the shell's and outlives a draw: one listener, added at connect and removed at disconnect.
@@ -696,7 +688,6 @@ export class LegacyPanel {
   // forget the drawn panel so build() starts over (the language or the config changed)
   teardown() {
     this.frStop();
-    this.radarStop();
     this.charts.forEach(c => c.destroy());
     this.charts = [];
     this.cache = {};
@@ -763,7 +754,6 @@ export class LegacyPanel {
     if (this.ro) this.ro.disconnect();
     clearInterval(this.clockT);
     clearInterval(this.camT);
-    this.radarStop();
     clearInterval(this.histT);
     this.popupOffs.forEach(off => off());
     this.popupOffs = [];
@@ -1005,21 +995,6 @@ export class LegacyPanel {
     <table class="slist"><thead><tr><th>Date</th><th class="hide-s">Time</th><th class="r hide-s">Length</th><th>Energy</th><th class="r hide-s">Peak</th><th class="r">Est. cost</th></tr></thead><tbody id="slist"></tbody></table>
     <button class="more" type="button" id="smore"></button></div>
   <div class="two"><div class="inner" id="car-ford"></div><div class="inner" id="car-last"></div></div>
-</div></div>
-<div class="sheet" id="sh-weather" hidden><div class="panel" role="dialog" aria-modal="true" aria-labelledby="wh">
-  <div class="ph"><span class="badge" style="--acc:var(--m-amber)">${wxIcon('partlycloudy', 30)}</span>
-    <div class="grow"><h2 id="wh">Weather</h2><div class="sub" id="wsub"></div></div>
-    <button class="icon close" type="button" aria-label="Close">✕</button></div>
-  <div class="walerts" id="walerts"></div>
-  <div class="two"><div class="inner" id="wnow"></div><div class="inner" id="wsun"></div></div>
-  <div class="inner"><h3>Radar</h3><p>RainViewer, the last 2 hours in 10-minute steps. The bar above the map shows the colours, from light to heavy.</p><div class="radar" id="wradar"></div></div>
-  <div class="two"><div class="inner"><h3>Next 24 hours</h3><p>Environment Canada hourly forecast. Bars are the chance of rain or snow.</p><div id="whours"></div></div>
-    <div class="inner"><h3>Next days</h3><p>Lows and highs on one scale. The dot is the temperature now.</p><div id="wdays"></div></div></div>
-  <div class="inner"><h3>Last 7 days</h3><p>Hourly temperature and dew point. When the two lines meet, expect fog, dew or frost.</p>
-    <div class="legend"><span><b style="background:var(--c-wh)"></b>Temperature</span><span><b style="background:var(--c-home)"></b>Dew point</span></div><div id="c-w7"></div></div>
-  <div class="two"><div class="inner"><h3>Wind</h3><p>Hourly average in km/h. Dots are gusts, when Environment Canada reports them.</p><div id="c-wwind"></div></div>
-    <div class="inner"><h3>Pressure</h3><p>In kPa. A steady fall often means weather is on the way.</p><div id="c-wpres"></div></div></div>
-  <div class="inner"><h3>Season so far</h3><p id="wseasonp"></p><div class="tiles" id="wrec" style="margin:12px 0 8px"></div><div id="wseason"></div></div>
 </div></div>
 <div class="sheet" id="sh-wx" hidden><div class="panel" role="dialog" aria-modal="true" aria-labelledby="wxh">
   <div class="ph"><span class="badge" style="--acc:var(--m-blue)">${ico('wx', 26)}</span>
@@ -1280,7 +1255,7 @@ export class LegacyPanel {
           label: warn[0].title,
           color: 'var(--warn)',
           tone: 'amber',
-          go: 'sh-weather',
+          go: 'weather.detail',
           right: 'Env. Canada',
           body: mid(warn.length > 1 ? `${warn.length} warnings in effect` : 'In effect for your area'),
           foot: warn[0].time ? `Issued ${when(warn[0].time)}` : 'Tap for the details',
@@ -1516,7 +1491,7 @@ export class LegacyPanel {
             label: 'Tomorrow',
             color: 'var(--c-home)',
             right: this.dayName(tm.k, false) === 'Tomorrow' ? this.fmtUtcEn.weekday(dayAt(tm.k), 'long') : '',
-            go: 'sh-weather',
+            go: 'weather.detail',
             body: `<div class="swx">${wxIcon(tm.cond, 76, true)}<div>${big(tm.hi != null ? Math.round(tm.hi) + '°' : '–', tm.lo != null ? ' / ' + Math.round(tm.lo) + '°' : '')}${mid(condName(tm.cond) + (tm.pop ? `, ${Math.round(tm.pop)}%` : ''))}</div></div>`,
             foot:
               tn && tn.night
@@ -1608,7 +1583,7 @@ export class LegacyPanel {
       if (this.availability()[t] !== false) this.ctx.shell.setTab(t);
       return;
     }
-    if (this.$(go)) this.sheets.open(go);
+    if (go.includes('.') || this.$(go)) this.sheets.open(go);
   }
   // Attention glow (v1.19.6): when a door opens or motion starts, the Security card's edge pulses amber for about 2.5 s
   secWatch() {
@@ -1943,8 +1918,6 @@ export class LegacyPanel {
         this.climSel = cs.dataset.csel;
         return this.sheets.open('sh-climate');
       }
-      const wx = e.target.closest('[data-wx]');
-      if (wx) return this.openWx(wx.dataset.wx);
       const sn = e.target.closest('[data-sens]');
       if (sn) return this.openSens(sn.dataset.sens);
       const t = e.target.closest('[data-pane]');
@@ -2034,10 +2007,6 @@ export class LegacyPanel {
       n && n.focus();
     });
     this.panels['sh-air'].addEventListener('click', e => this.airControl(e));
-    this.panels['sh-weather'].addEventListener('click', e => {
-      const b = e.target.closest('[data-wx]');
-      if (b) this.openWx(b.dataset.wx);
-    });
     this.$('wxtabs').addEventListener('click', e => {
       const b = e.target.closest('.tab');
       if (!b || b.dataset.r === this.wxRange) return;
@@ -2208,10 +2177,6 @@ export class LegacyPanel {
       if (this.sheets.isOpen('sh-energy')) {
         this.$('esub').textContent = this.energySummary();
         if ((this.smode || 'now') === 'now') this.renderSankey();
-      }
-      if (this.sheets.isOpen('sh-weather')) {
-        this.$('wsub').textContent = this.weatherSummary();
-        this.renderWeatherNow();
       }
       if (this.sheets.isOpen('sh-climate')) {
         this.renderClimateHead();
@@ -3273,7 +3238,6 @@ export class LegacyPanel {
   }
   sheetClosed(id) {
     this.destroyCharts();
-    if (id === 'sh-weather') this.radarStop();
     if (id === 'sh-cam') {
       this.$('camlive').innerHTML = '';
       this.camEl = null;
@@ -3319,10 +3283,6 @@ export class LegacyPanel {
       if (id === 'sh-climate') this.climateSheet();
       if (id === 'sh-car') this.carSheet();
       if (id === 'sh-air') this.airSheet();
-      if (id === 'sh-weather') {
-        this.weatherSheet();
-        this.radarInit();
-      }
       if (id === 'sh-cam') this.camSheet();
       if (id === 'sh-wx') this.wxSheet();
       if (id === 'sh-sens') this.sensSheet();
@@ -3575,16 +3535,15 @@ export class LegacyPanel {
 
   // ---------- weather ----------
   // The Weather pane's ForecastController owns the forecast subscription (spec 15) and the shell tells the guest of each message:
-  // the detail panel, Home's card and the weather lines still read `this.fc`. Deleted with its last reader (#158 and the Home move).
+  // Home's card (`wxDays`) still reads `this.fc`. Deleted with its last reader (the Home move).
   forecastChanged(type, forecast) {
     this.fc[type] = forecast;
-    if (this.sheets.isOpen('sh-weather')) this.renderForecast();
   }
   // a Weather tile of the pane asked for its history (the shell hears the pane's request); deleted with `openWx` (#159)
   openWeatherHistory(key) {
     this.openWx(key);
   }
-  // Temporary until the detail panel (#158) and Home's card move: `wxDays`, `dayName`, `alerts` and `weatherSummary`
+  // Temporary until Home's card and the idle clock move: `wxDays`, `dayName`, `alerts`, `sunDay`
   wxDays() {
     // EC sends day and night entries; fold them into one row per local day
     const by = new Map();
@@ -3618,29 +3577,6 @@ export class LegacyPanel {
     const t = Date.now() + offset * 864e5;
     return sunTimes(lat, lon, this.fmtEn.isoDay(t));
   }
-  // whether the sun is up at instant `t`, by the sun of the house's place on that local day
-  sunUpAt(t) {
-    const lat = (this.hass.config && this.hass.config.latitude) ?? 0,
-      lon = (this.hass.config && this.hass.config.longitude) ?? 0;
-    return isDayAt(t, lat, lon, this.fmtEn.isoDay(t));
-  }
-  weatherSummary() {
-    const cond = this.st(this.E.cond),
-      w = this.st(this.E.weather),
-      obs = this.st(this.E.obs),
-      tend = this.st(this.E.tend),
-      n = this.alerts().length;
-    return [
-      condName(ok(cond) ? cond.state : w && w.state),
-      ok(obs)
-        ? `observed ${this.fmtEn.time(new Date(obs.state))}${obs.attributes.station ? ' at ' + obs.attributes.station : ''}`
-        : '',
-      ok(tend) ? `pressure ${tend.state.toLowerCase()}` : '',
-      n ? plural(n, 'alert') + ' in effect' : 'no alerts',
-    ]
-      .filter(Boolean)
-      .join(' · ');
-  }
   alerts() {
     const out = [];
     [
@@ -3662,414 +3598,6 @@ export class LegacyPanel {
       if (!found) out.push({kind, tone, title: `${plural(+s.state, kind.toLowerCase())} in effect`, time: null});
     });
     return out;
-  }
-  async loadWxHistory() {
-    if (this.WX && Date.now() - this.WX.at < 15 * 60000) return;
-    const now = Date.now(),
-      ids = [this.E.outT, this.E.dew, this.E.hum, this.E.pres, this.E.wind, this.E.gust];
-    const [h, d] = await Promise.all([
-      this.api.statistics(ids, 'hour', new Date(now - 7 * 864e5), ['mean', 'min', 'max']),
-      this.api.statistics([this.E.gust, this.E.outT], 'day', new Date(now - 400 * 864e5), ['mean', 'min', 'max']),
-    ]);
-    const ser = (r, id, f = 'mean') =>
-      (r[id] || []).filter(x => x[f] != null).map(x => [ms(x.start), +(+x[f]).toFixed(2)]);
-    const days = (d[this.E.outT] || [])
-      .filter(x => x.mean != null)
-      .map(x => ({k: this.fmtEn.isoDay(ms(x.start) + 12 * 36e5), mean: x.mean, min: x.min, max: x.max}));
-    const gust = (d[this.E.gust] || [])
-      .filter(x => x.max != null)
-      .map(x => ({k: this.fmtEn.isoDay(ms(x.start) + 12 * 36e5), v: x.max}));
-    this.WX = {
-      at: now,
-      t: ser(h, this.E.outT),
-      dew: ser(h, this.E.dew),
-      hum: ser(h, this.E.hum),
-      pres: ser(h, this.E.pres),
-      wind: ser(h, this.E.wind),
-      gust: ser(h, this.E.gust, 'max'),
-      days,
-      gustDays: gust,
-    };
-  }
-  async weatherSheet() {
-    const tag = this.sheetTag; // buildSheet's; a sheet closed or reopened while the chunk was loading is not drawn twice
-    this.$('wsub').textContent = this.weatherSummary();
-    this.renderWeatherNow();
-    this.renderForecast();
-    // the charts library and the history are fetched together, and each has its own message when it fails
-    const [lib, hist] = await Promise.allSettled([this.loadCharts(), this.loadWxHistory()]);
-    if (tag !== this.sheetTag) return;
-    if (lib.status === 'rejected') {
-      this.toast(this.store.t('charts.failed'), true);
-      return;
-    }
-    if (hist.status === 'rejected') {
-      if (hist.reason instanceof StaleReply) return;
-      console.error('home-panel weather history', hist.reason);
-      this.$('wseason').innerHTML = '<p>History is not available right now.</p>';
-      return;
-    }
-    if (!this.sheets.isOpen('sh-weather')) return;
-    const W = this.WX,
-      s = this.S(),
-      warm = this.css('--c-wh'),
-      cool = this.css('--c-home'),
-      fg3 = this.css('--fg3');
-    const x7 = {type: 'datetime', min: Date.now() - 7 * 864e5, max: Date.now(), labels: {datetimeUTC: false}};
-    this.mk(
-      'c-w7',
-      merge(this.base(250), {
-        chart: {type: 'line'},
-        series: [
-          {name: 'Temperature', data: W.t},
-          {name: 'Dew point', data: W.dew},
-        ],
-        colors: [warm, cool],
-        stroke: {width: [2.4, 1.6], curve: 'smooth', dashArray: [0, 4]},
-        xaxis: x7,
-        yaxis: {tickAmount: 4, labels: {formatter: v => Math.round(v) + '°'}},
-        annotations: {
-          yaxis: [
-            {
-              y: 0,
-              borderColor: fg3,
-              strokeDashArray: 3,
-              label: {
-                text: 'Freezing',
-                position: 'right',
-                textAnchor: 'end',
-                offsetX: -4,
-                borderWidth: 0,
-                style: {background: 'transparent', color: fg3, fontSize: '11px'},
-              },
-            },
-          ],
-        },
-        tooltip: {shared: true, x: {format: 'ddd h tt'}, y: {formatter: v => (v == null ? '–' : v.toFixed(1) + ' °C')}},
-      }),
-    );
-    this.mk(
-      'c-wwind',
-      merge(this.base(200), {
-        chart: {type: 'line'},
-        series: [
-          {name: 'Wind', type: 'area', data: W.wind},
-          {name: 'Gusts', type: 'line', data: W.gust},
-        ],
-        colors: [s.home, s.home],
-        fill: {type: 'solid', opacity: [0.18, 1]},
-        stroke: {width: [1.8, 0], curve: 'smooth'},
-        markers: {size: [0, 3], strokeWidth: 0},
-        xaxis: x7,
-        yaxis: {min: 0, tickAmount: 3, labels: {formatter: v => Math.round(v) + ''}},
-        tooltip: {
-          shared: true,
-          x: {format: 'ddd h tt'},
-          y: {formatter: v => (v == null ? '–' : Math.round(v) + ' km/h')},
-        },
-      }),
-    );
-    this.mk(
-      'c-wpres',
-      merge(this.base(200), {
-        chart: {type: 'line'},
-        series: [{name: 'Pressure', data: W.pres}],
-        colors: [this.css('--m-purple')],
-        stroke: {width: 2, curve: 'smooth'},
-        xaxis: x7,
-        yaxis: {tickAmount: 3, labels: {formatter: v => v.toFixed(1)}},
-        tooltip: {x: {format: 'ddd h tt'}, y: {formatter: v => v.toFixed(2) + ' kPa'}},
-      }),
-    );
-    this.renderSeason();
-  }
-  renderWeatherNow() {
-    const temp = this.attr(this.E.weather, 'temperature') ?? this.num(this.E.outT),
-      cond = this.st(this.E.cond),
-      w = this.st(this.E.weather),
-      c = ok(cond) ? cond.state : w && w.state;
-    const feels = this.num(this.E.chill) ?? this.num(this.E.humidex),
-      sum_ = this.st(this.E.summary),
-      pop = this.num(this.E.pop),
-      tend = this.st(this.E.tend);
-    const uv = this.num(this.E.uv),
-      aq = this.num(this.E.aqhi),
-      gust = this.num(this.E.gust),
-      wd = this.st(this.E.windDir),
-      bear = this.num(this.E.bearing),
-      vis = this.num(this.E.vis);
-    const arrow =
-      bear == null
-        ? ''
-        : `<svg width="14" height="14" viewBox="0 0 24 24" style="transform:rotate(${bear + 180}deg);vertical-align:-2px;margin-left:4px" aria-hidden="true"><path d="M12 3l6 16-6-4-6 4z" fill="currentColor"/></svg>`;
-    this.set(
-      'wnow',
-      `<div class="wnow"><div class="wicon">${wxIcon(c, 64, this.up())}</div><div><div class="num" style="font-size:64px;line-height:1">${f1(temp)}°</div>
-        <div style="font-weight:600;font-size:16px;margin-top:4px">${esc(condName(c))}</div>
-        <div class="muted">${feels != null && Math.abs(feels - temp) >= 1 ? `Feels like ${Math.round(feels)}° · ` : ''}${this.num(this.E.hi) != null ? `High ${Math.round(this.num(this.E.hi))}°` : ''}${this.num(this.E.lo) != null ? ` · Low ${Math.round(this.num(this.E.lo))}°` : ''}</div></div></div>
-      ${ok(sum_) ? `<p class="wsum">${esc(sum_.state)}</p>` : ''}
-      <div class="tiles" style="margin-top:14px">${[
-        [
-          'wind',
-          'Wind',
-          this.num(this.E.wind) == null ? '–' : Math.round(this.num(this.E.wind)),
-          'km/h',
-          `${ok(wd) ? esc(wd.state) : ''}${arrow}${gust != null ? ` · gusts ${Math.round(gust)}` : ''}`,
-        ],
-        [
-          'hum',
-          'Humidity',
-          this.num(this.E.hum) ?? '–',
-          '%',
-          this.num(this.E.dew) != null ? `dew point ${f1(this.num(this.E.dew))}°` : '',
-        ],
-        [
-          'pres',
-          'Pressure',
-          this.num(this.E.pres) == null ? '–' : this.num(this.E.pres).toFixed(1),
-          'kPa',
-          ok(tend) ? esc(tend.state.toLowerCase()) : '',
-        ],
-        ['pop', 'Rain or snow', pop == null ? '–' : pop, '%', 'chance today'],
-        [
-          'uv',
-          'UV index',
-          uv ?? '–',
-          '',
-          uv == null ? '' : uv < 3 ? 'low' : uv < 6 ? 'moderate' : uv < 8 ? 'high' : uv < 11 ? 'very high' : 'extreme',
-        ],
-        [
-          'aqhi',
-          'Air quality',
-          aq ?? '–',
-          '',
-          aq == null
-            ? 'AQHI'
-            : `AQHI, ${aq <= 3 ? 'low risk' : aq <= 6 ? 'moderate risk' : aq <= 10 ? 'high risk' : 'very high risk'}`,
-        ],
-        [
-          'feels',
-          'Feels like',
-          feels == null ? f1(temp) + '°' : Math.round(feels) + '°',
-          '',
-          feels == null
-            ? vis != null
-              ? `visibility ${Math.round(vis)} km`
-              : 'same as the air'
-            : this.num(this.E.chill) != null
-              ? 'wind chill'
-              : 'humidex',
-        ],
-        [
-          'normal',
-          'Normal',
-          this.num(this.E.nhi) == null
-            ? '–'
-            : `${Math.round(this.num(this.E.nhi))}° / ${Math.round(this.num(this.E.nlo))}°`,
-          '',
-          'high / low for the date',
-        ],
-      ]
-        .map(
-          ([key, ...t]) =>
-            `<button type="button" class="tile tilebtn" data-wx="${key}" aria-description="Opens the history">${tile(t).slice('<div class="tile">'.length, -'</div>'.length)}</button>`,
-        )
-        .join('')}</div>`,
-    );
-    // sun: today's arc, daylight and how fast it changes
-    const today = this.sunDay(0),
-      yest = this.sunDay(-1),
-      now = Date.now();
-    if (today.rise && today.set) {
-      const len = today.set - today.rise,
-        dl = len - (yest.set - yest.rise),
-        p = Math.min(1, Math.max(0, (now - today.rise) / len)),
-        isUp = now > today.rise && now < today.set;
-      const ang = Math.PI * (1 - p),
-        cx = 150 + 120 * Math.cos(ang),
-        cy = 130 - 110 * Math.sin(ang);
-      const hm = v => `${Math.floor(v / 36e5)} h ${Math.round(v / 6e4) % 60} min`,
-        mmss = v => `${Math.floor(Math.abs(v) / 6e4)} min ${Math.round(Math.abs(v) / 1e3) % 60} s`;
-      this.set(
-        'wsun',
-        `<h3>Sun</h3><p>${hm(len)} of daylight, ${mmss(dl)} ${dl < 0 ? 'shorter' : 'longer'} than yesterday</p>
-        <svg class="sunarc" viewBox="0 0 300 150" role="img" aria-label="Sun position: ${isUp ? Math.round(p * 100) + ' percent through the day' : 'below the horizon'}">
-          <path d="M30 130 A120 110 0 0 1 270 130" fill="none" stroke="var(--line)" stroke-width="3" stroke-dasharray="2 6" stroke-linecap="round"/>
-          ${isUp ? `<path d="M30 130 A120 110 0 0 1 ${cx.toFixed(1)} ${cy.toFixed(1)}" fill="none" stroke="var(--m-amber)" stroke-width="3" stroke-linecap="round"/>` : ''}
-          <line x1="14" y1="130" x2="286" y2="130" stroke="var(--fg3)" stroke-opacity=".5"/>
-          ${isUp ? `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="11" fill="var(--m-amber)"/><circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="18" fill="var(--m-amber)" opacity=".25"/>` : ''}
-        </svg>
-        <div class="tiles" style="grid-template-columns:repeat(3,minmax(0,1fr))">${[
-          [
-            'Sunrise',
-            this.fmtEn.time(today.rise),
-            '',
-            ok(this.st(this.E.dawn)) ? 'first light ' + this.fmtEn.time(today.dawn) : '',
-          ],
-          ['Solar noon', this.fmtEn.time(today.noon), '', ''],
-          ['Sunset', this.fmtEn.time(today.set), '', 'last light ' + this.fmtEn.time(today.dusk)],
-        ]
-          .map(tile)
-          .join('')}</div>`,
-      );
-    }
-    const al = this.alerts();
-    this.set(
-      'walerts',
-      al.length
-        ? al
-            .map(
-              a =>
-                `<div class="walert ${a.tone}"><b>${esc(a.kind)}</b><span>${esc(a.title)}</span>${a.time ? `<small>${esc(a.time)}</small>` : ''}</div>`,
-            )
-            .join('')
-        : '',
-    );
-  }
-  renderForecast() {
-    const hours = (this.fc.hourly || []).filter(f => ms(f.datetime) > Date.now() - 36e5).slice(0, 24),
-      days = this.wxDays();
-    const hEl = this.$('whours'),
-      dEl = this.$('wdays');
-    if (!hours.length) {
-      hEl.innerHTML = '<p>No hourly forecast yet.</p>';
-    } else {
-      hEl.innerHTML = `<div class="hstrip">${hours
-        .filter((h, i) => i % 3 === 0)
-        .map(
-          h =>
-            `<div><span>${esc(this.fmtEn.hour(new Date(h.datetime)))}</span>${wxIcon(h.condition, 28, this.sunUpAt(ms(h.datetime)))}<b class="num">${Math.round(h.temperature)}°</b>${h.precipitation_probability ? `<small>${h.precipitation_probability}%</small>` : '<small>&nbsp;</small>'}</div>`,
-        )
-        .join('')}</div><div id="c-whour"></div>`;
-      if (this.ApexCharts) {
-        this.charts = this.charts.filter(c => {
-          if (c.__wh) {
-            try {
-              c.destroy();
-            } catch {}
-            return false;
-          }
-          return true;
-        });
-        const warm = this.css('--c-wh'),
-          cool = this.css('--c-home');
-        const c = this.mk(
-          'c-whour',
-          merge(this.base(200), {
-            chart: {type: 'line'},
-            series: [
-              {name: 'Temperature', type: 'line', data: hours.map(h => [ms(h.datetime), h.temperature])},
-              {
-                name: 'Chance of rain or snow',
-                type: 'column',
-                data: hours.map(h => [ms(h.datetime), h.precipitation_probability || 0]),
-              },
-            ],
-            colors: [warm, cool],
-            stroke: {width: [2.6, 0], curve: 'smooth'},
-            fill: {opacity: [1, 0.35]},
-            plotOptions: {bar: {columnWidth: '70%', borderRadius: 3}},
-            xaxis: {type: 'datetime', labels: {datetimeUTC: false, format: 'h tt'}},
-            yaxis: [
-              {tickAmount: 3, labels: {formatter: v => Math.round(v) + '°'}},
-              {opposite: true, min: 0, max: 100, tickAmount: 2, labels: {formatter: v => v + '%'}},
-            ],
-            tooltip: {
-              shared: true,
-              x: {format: 'ddd h tt'},
-              y: {formatter: (v, o) => (o && o.seriesIndex === 1 ? v + '%' : (+v).toFixed(1) + ' °C')},
-            },
-          }),
-        );
-        c.__wh = true;
-      } else {
-        // the first chart of this visit: fetch the library, then draw it
-        this.loadCharts().then(
-          () => this.sheets.isOpen('sh-weather') && this.renderForecast(),
-          () => {}, // weatherSheet says so
-        );
-      }
-    }
-    if (!days.length) {
-      dEl.innerHTML = '<p>No daily forecast yet.</p>';
-      return;
-    }
-    const now = this.num(this.E.outT),
-      today = this.fmtEn.isoDay(Date.now());
-    // tonight has no high: its bar runs from now down to the low
-    const top = d => d.hi ?? (d.k === today && now != null ? Math.max(now, d.lo) : d.lo);
-    const lo = Math.min(...days.map(d => d.lo ?? d.hi)),
-      hi = Math.max(...days.map(top)),
-      span = Math.max(1, hi - lo);
-    dEl.innerHTML = days
-      .map(d => {
-        const a = d.lo ?? d.hi,
-          b = top(d),
-          l = ((a - lo) / span) * 100,
-          w = Math.max(4, ((b - a) / span) * 100);
-        const dot =
-          d.k === this.fmtEn.isoDay(Date.now()) && now != null
-            ? `<i style="left:${Math.min(100, Math.max(0, ((now - lo) / span) * 100))}%"></i>`
-            : '';
-        return `<div class="drow"><span class="dn">${d.hi == null && d.k === today ? 'Tonight' : esc(this.dayName(d.k))}</span>${wxIcon(d.cond, 26, !(d.hi == null && d.k === today))}<span class="dc">${esc(condName(d.cond))}</span><span class="dp">${d.pop >= 20 ? d.pop + '%' : ''}</span>
-        <span class="num dl">${d.lo == null ? '' : Math.round(d.lo) + '°'}</span><span class="rng"><b style="left:${l}%;width:${w}%"></b>${dot}</span><span class="num dh">${d.hi == null ? '' : Math.round(d.hi) + '°'}</span></div>`;
-      })
-      .join('');
-  }
-  renderSeason() {
-    const W = this.WX;
-    if (!W || !W.days.length) return;
-    const mon = {};
-    W.days.forEach(d => {
-      const k = d.k.slice(0, 7),
-        m = (mon[k] = mon[k] || {n: 0, s: 0, lo: Infinity, hi: -Infinity, frost: 0, hot: 0, first: d.k});
-      m.n++;
-      m.s += d.mean;
-      m.lo = Math.min(m.lo, d.min);
-      m.hi = Math.max(m.hi, d.max);
-      if (d.min < 0) m.frost++;
-      if (d.max >= 25) m.hot++;
-    });
-    const ks = Object.keys(mon).sort(),
-      lo = Math.min(...ks.map(k => mon[k].lo)),
-      hi = Math.max(...ks.map(k => mon[k].hi)),
-      span = hi - lo || 1;
-    const warmest = W.days.reduce((a, d) => (d.max > a.max ? d : a)),
-      coldest = W.days.reduce((a, d) => (d.min < a.min ? d : a)),
-      g = W.gustDays.length ? W.gustDays.reduce((a, d) => (d.v > a.v ? d : a)) : null;
-    const since = this.fmtUtcEn.date(dayAt(W.days[0].k)),
-      mk = this.fmtEn.isoDay(Date.now()).slice(0, 7),
-      cm = mon[mk];
-    this.$('wrec').innerHTML = [
-      ['Warmest', f1(warmest.max) + '°', '', this.fmtUtcEn.date(dayAt(warmest.k))],
-      ['Coldest', f1(coldest.min) + '°', '', this.fmtUtcEn.date(dayAt(coldest.k))],
-      [
-        this.fmtEn.month(new Date(), 'long'),
-        cm ? f1(cm.s / cm.n) + '°' : '–',
-        '',
-        cm ? `average, ${plural(cm.frost, 'frosty night')}` : '',
-      ],
-      ['Strongest gust', g ? Math.round(g.v) : '–', 'km/h', g ? this.fmtUtcEn.date(dayAt(g.k)) : ''],
-    ]
-      .map(tile)
-      .join('');
-    this.$('wseasonp').textContent =
-      `Every month since ${since}, from the coldest low to the warmest high. The dot is the monthly average.`;
-    this.$('wseason').innerHTML =
-      ks
-        .map(k => {
-          const m = mon[k],
-            a = ((m.lo - lo) / span) * 100,
-            w = ((m.hi - m.lo) / span) * 100,
-            avg = m.s / m.n,
-            z = ((0 - lo) / span) * 100;
-          const name = this.fmtUtcEn.month(monthAt(k), 'short') + " '" + k.slice(2, 4);
-          return `<div class="mrow"><span class="dn">${name}${m.first.endsWith('-01') ? '' : '<small> from ' + +m.first.slice(8) + '</small>'}</span><span class="num dl">${Math.round(m.lo)}°</span>
-        <span class="rng season">${z > 0 && z < 100 ? `<em style="left:${z}%"></em>` : ''}<b style="left:${a}%;width:${Math.max(2, w)}%"></b><i style="left:${((avg - lo) / span) * 100}%" title="Average ${avg.toFixed(1)}°"></i></span>
-        <span class="num dh">${Math.round(m.hi)}°</span><span class="dp muted">${m.frost ? plural(m.frost, 'frost') : m.hot ? m.hot + ' over 25°' : ''}</span></div>`;
-        })
-        .join('') +
-      `<div class="mrow axis"><span></span><span></span><span class="rng season" style="background:none">${z0(lo, span, this.$app.clientWidth < 600 ? 20 : 10)}</span><span></span><span></span></div>`;
   }
 
   // ---------- cameras (UniFi Protect, or any camera entity) ----------
@@ -5606,7 +5134,7 @@ export class LegacyPanel {
     const hwx = this.$('hwx');
     hwx.classList.toggle('tap', this.compact);
     if (this.compact) {
-      hwx.dataset.opens = 'sh-weather';
+      hwx.dataset.opens = 'weather.detail';
       hwx.setAttribute('role', 'button');
       hwx.tabIndex = 0;
     } else {
@@ -6368,7 +5896,6 @@ export class LegacyPanel {
     if (open) this.renderAttention();
   }
 
-  // ---------- weather radar (Weather Radar Card from HACS, RainViewer data) ----------
   // ---------- weather history: one measure from the Weather sheet, Day / Week / Month / Year ----------
   // the measures built from this panel's entity ids; built again only when the config hands out a new entity map
   wxDefs() {
@@ -6621,70 +6148,6 @@ export class LegacyPanel {
     });
     this.WXR[k] = {at: Date.now(), data};
     return data;
-  }
-  loadRadarCard() {
-    if (customElements.get('weather-radar-card')) return Promise.resolve();
-    // import it from its Lovelace resource URL so a dashboard that also uses the card doesn't load it twice
-    return (this.wrc =
-      this.wrc ||
-      this.api
-        .lovelaceResources()
-        .catch(() => [])
-        .then(
-          rs =>
-            import(
-              ((rs || []).find(r => /\/weather-radar-card\.js/.test(r.url)) || {}).url ||
-                '/hacsfiles/weather-radar-card/weather-radar-card.js'
-            ),
-        )
-        .then(() => customElements.whenDefined('weather-radar-card'))
-        .catch(e => {
-          this.wrc = null;
-          throw e;
-        }));
-  }
-  async radarInit() {
-    if (!this.$('wradar')) return;
-    try {
-      await this.loadRadarCard();
-    } catch {
-      this.$('wradar').innerHTML =
-        '<p class="muted rnote">Weather Radar Card didn\'t load. Check that it is still installed in HACS.</p>';
-      return;
-    }
-    const box = this.$('wradar');
-    if (!this.sheets.isOpen('sh-weather') || !box) return;
-    const phone = matchMedia('(max-width:720px)').matches,
-      key = this.dark() + '/' + phone;
-    // history refreshes redraw the sheet; keep the running loop unless the theme or layout changed
-    if (this.radarCard && this.radarKey === key && box.contains(this.radarCard)) return;
-    const card = document.createElement('weather-radar-card');
-    // wheel and (on phones) drag stay with the sheet so it still scrolls over the map
-    card.setConfig({
-      type: 'custom:weather-radar-card',
-      data_source: 'RainViewer',
-      map_style: this.dark() ? 'GreyDark' : 'Grey',
-      past_minutes: 120,
-      zoom_level: 7,
-      height: phone ? '340px' : '440px',
-      show_zoom: true,
-      show_playback: true,
-      show_recenter: true,
-      show_scale: true,
-      show_snow: true,
-      disable_wheel_zoom: true,
-      disable_scroll: phone,
-    });
-    card.hass = this.hass;
-    this.radarCard = card;
-    this.radarKey = key;
-    box.replaceChildren(card);
-  }
-  radarStop() {
-    if (this.radarCard) {
-      this.radarCard.remove();
-      this.radarCard = null;
-    }
   }
 
   // ---------- climate sheet ----------

@@ -2,7 +2,7 @@
 // the Automations tab fetches Mermaid. `house.chunkRequests` lists what the panel asked for under chunks/ and
 // `house.chunks` what arrived, with its text, so a library is told by what is inside the chunk, not by a file name
 // (names carry a content hash).
-import {test, expect, tabletOnly, CHUNK_URL, KATEX_CHUNK_URL, type House} from './fixtures';
+import {test, expect, tabletOnly, countAdded, CHUNK_URL, KATEX_CHUNK_URL, type House} from './fixtures';
 import {AFTERNOON, FULL_CFG} from './houses';
 
 // ApexCharts' export name; the chunk is the only file under chunks/ that has it
@@ -65,8 +65,8 @@ test.describe('lazy chunks', () => {
     expect(house.chunkRequests, 'chunks asked for on the Home tab').toEqual([]);
     await house.tab('weather');
     await expect.poll(() => house.chunksWith(APEX)).toHaveLength(1);
-    // the seven-day chart, drawn beside the history once the library is there
-    await expect(house.root().locator('#c-w7 .apexcharts-canvas')).toBeVisible();
+    // the seven-day chart, drawn in its own <hp-chart> once the library is there
+    await expect(house.root().locator('hp-weather-detail hp-chart .apexcharts-canvas').first()).toBeVisible();
   });
 
   test('when the chunk cannot be fetched the panel says so, and nothing else breaks', async ({house}) => {
@@ -85,27 +85,21 @@ test.describe('lazy chunks', () => {
       await gate;
       await r.continue();
     });
-    // count the charts the panel puts on screen: a sheet drawn twice adds each canvas twice
-    let canvases = 0;
-    await house.page.exposeFunction('canvasAdded', () => canvases++);
-    await house.root().evaluate(el => {
-      new MutationObserver(records => {
-        for (const r of records)
-          for (const n of r.addedNodes)
-            if (n instanceof Element && n.classList.contains('apexcharts-canvas'))
-              (window as unknown as {canvasAdded(): void}).canvasAdded();
-      }).observe(el.shadowRoot!, {subtree: true, childList: true});
-    });
+    // count the charts the panel draws: a chart that drew after its element left would add a canvas
+    const drawn = await countAdded(house, 'apexcharts-canvas');
     await house.tab('weather');
     await house.tab('home');
     await house.tab('weather');
     release();
-    await expect(house.root().locator('#c-wpres .apexcharts-canvas')).toBeVisible();
+    await expect(house.root().locator('hp-weather-detail hp-chart .apexcharts-canvas')).toHaveCount(3);
     // let a second draw, if there were one, happen before counting
     await house.page.evaluate(
       () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))),
     );
-    expect(canvases, 'charts drawn: the seven-day, wind and pressure charts, once each').toBe(3);
+    expect(
+      await drawn(),
+      'charts drawn: the seven-day, wind and pressure charts, once each, and none by the visit that was left',
+    ).toBe(3);
   });
   test('a tap on a range tab while the chunk is still loading breaks nothing, and the chart is drawn when it lands', async ({
     house,

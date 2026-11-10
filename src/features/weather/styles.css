@@ -1,6 +1,6 @@
-/* The Weather pane's own rules (spec 15, "Styles"): the phone's summary card and the grid of the eight tiles, written in the
-   frame's terms (`.app.cp`, `.app.gl`) and adopted by `<hp-weather-pane>` through `forShadow`, where they read as `:host([compact])`
-   and `:host([glass])`. The card was a `.card.tap`, so it carries that card's look in its own selectors (`.wxcard`, `.wxfacts`):
+/* The Weather feature's own rules (spec 15, "Styles"): the phone's summary card and the grid of the eight tiles, and the detail panel's
+   blocks (alerts, now, sun, hours, days, seasons, radar), written in the frame's terms (`.app.cp`, `.app.gl`) and adopted by
+   `<hp-weather-pane>` and `<hp-weather-detail>` through `forShadow`, where they read as `:host([compact])` and `:host([glass])`. The card was a `.card.tap`, so it carries that card's look in its own selectors (`.wxcard`, `.wxfacts`):
    a selector the feature writes is written nowhere else (ADR 0019). The `.stile` rules are the kit's. */
 .wxcard {
   background: var(--card2);
@@ -143,6 +143,378 @@
     background: var(--card);
   }
   .app.gl .wxfacts {
+    background: var(--card2);
+  }
+}
+
+/* ---- the detail panel (moved from extra.css, motion.css and glass.css with <hp-weather-detail>, #158) ---- */
+.walerts {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.walerts:empty {
+  display: none;
+}
+.walert {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  border-radius: 16px;
+  padding: 12px 16px;
+  background: color-mix(in srgb, var(--warn) 16%, var(--card));
+}
+.walert.crit {
+  background: color-mix(in srgb, var(--crit) 16%, var(--card));
+}
+.walert.crit b {
+  color: var(--crit);
+}
+.walert.warn b {
+  color: var(--t-warn);
+}
+.walert.ok {
+  background: var(--card);
+}
+.walert.none {
+  background: var(--card);
+  color: var(--fg2);
+  box-shadow: var(--shadow);
+}
+.walert b {
+  font-size: calc(11px * var(--tx));
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.walert span {
+  font-weight: 600;
+}
+.walert small {
+  color: var(--fg2);
+  flex-basis: 100%;
+}
+.walert.none span {
+  font-weight: 500;
+}
+.wnow {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.wsum {
+  margin: 12px 0 0 !important;
+  font-size: calc(13.5px * var(--tx)) !important;
+  line-height: 1.5;
+  color: var(--fg) !important;
+}
+.sunarc {
+  display: block;
+  width: 100%;
+  max-width: 340px;
+  height: auto;
+  margin: 6px auto 8px;
+}
+.hstrip {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 4px;
+  margin: 12px 0 0;
+  text-align: center;
+  font-size: calc(12px * var(--tx));
+  color: var(--fg2);
+}
+.hstrip > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+.hstrip b {
+  color: var(--fg);
+  font-size: calc(15px * var(--tx));
+}
+.hstrip small {
+  color: var(--t-home);
+  font-weight: 600;
+  font-size: calc(12px * var(--tx));
+}
+.drow,
+.mrow {
+  display: grid;
+  grid-template-columns: 92px 28px minmax(0, 1fr) 40px 34px minmax(80px, 1.4fr) 34px;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+  border-top: 1px solid var(--line);
+  font-size: calc(13.5px * var(--tx));
+}
+#wdays {
+  margin-top: 8px;
+}
+.drow:first-child {
+  border-top: 0;
+}
+.drow .dn {
+  font-weight: 600;
+}
+.drow .dc {
+  color: var(--fg2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dp {
+  color: var(--t-home);
+  font-weight: 600;
+  font-size: calc(12.5px * var(--tx));
+  text-align: right;
+}
+.dl {
+  color: var(--fg2);
+  text-align: right;
+}
+.dh {
+  text-align: left;
+}
+.rng {
+  position: relative;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--line);
+}
+.rng b {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--c-home), var(--m-amber) 60%, var(--c-wh));
+}
+.rng i {
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border-radius: 50%;
+  background: var(--card);
+  border: 3px solid var(--fg);
+}
+.rng em {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 0;
+  border-left: 1px dashed var(--fg3);
+}
+.mrow {
+  grid-template-columns: 96px 40px minmax(120px, 1fr) 40px 96px;
+  padding: 8px 0;
+}
+.mrow .dn {
+  font-weight: 600;
+}
+.mrow .dn small {
+  font-weight: 500;
+  color: var(--fg2);
+}
+.mrow .dp {
+  color: var(--fg2);
+  font-weight: 500;
+  text-align: left;
+}
+.rng.season b {
+  background: linear-gradient(90deg, var(--c-home), var(--m-amber) 55%, var(--c-wh));
+  opacity: 0.85;
+}
+.rng.season i {
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  border-width: 2px;
+}
+.mrow.axis {
+  border-top: 0;
+  padding-top: 0;
+}
+.mrow.axis .rng {
+  height: 14px;
+}
+.tick {
+  position: absolute;
+  transform: translateX(-50%);
+  font-size: calc(11px * var(--tx));
+  color: var(--fg2);
+}
+@media (max-width: 720px) {
+  .drow {
+    grid-template-columns: 76px 26px 34px 30px minmax(60px, 1fr) 30px;
+    gap: 8px;
+  }
+  .drow .dc {
+    display: none;
+  }
+  .mrow {
+    grid-template-columns: 60px 30px minmax(80px, 1fr) 30px;
+    gap: 8px;
+  }
+  .mrow .dp {
+    display: none;
+  }
+  .hstrip {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    row-gap: 10px;
+  }
+  .wnow .num {
+    font-size: calc(52px * var(--tx)) !important;
+  }
+}
+@media (max-width: 720px) {
+  .mrow .dn small {
+    display: none;
+  }
+}
+/* radar */
+/* Weather Radar Card reads HA's theme variables; these map them onto the panel's palette */
+.radar {
+  margin-top: 12px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--card2);
+  font-family: var(--f-body);
+  --ha-card-background: var(--card2);
+  --card-background-color: var(--card2);
+  --secondary-background-color: var(--card2);
+  --ha-card-border-radius: 0;
+  --ha-card-border-width: 0;
+  --ha-card-box-shadow: none;
+  --primary-text-color: var(--fg);
+  --secondary-text-color: var(--fg2);
+  --primary-color: var(--c-home);
+  --divider-color: var(--line);
+}
+.radar weather-radar-card {
+  display: block;
+}
+.radar .rnote {
+  margin: 0;
+  padding: 16px;
+}
+/* phones: run the map to the card's edges so the card stays wide enough to show the frame time */
+@media (max-width: 720px) {
+  .radar {
+    margin: 12px -18px -18px;
+    border-radius: 0 0 22px 22px;
+  }
+}
+/* the big weather icon on the Weather sheet: the sun's rays turn, clouds breathe, rain falls, snow drifts, lightning flickers, fog and wind slide */
+.wicon .wxi .rays {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: spin 48s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.wicon .wxi .cld {
+  animation: bob 5s ease-in-out infinite;
+}
+@keyframes bob {
+  50% {
+    transform: translate(1px, -0.6px);
+  }
+}
+.wicon .wxi .drp {
+  animation: fall 1.2s linear infinite;
+}
+@keyframes fall {
+  from {
+    transform: translateY(-1px);
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  to {
+    transform: translateY(2.4px);
+    opacity: 0;
+  }
+}
+.wicon .wxi .flk {
+  animation: snow 2.8s ease-in-out infinite;
+}
+@keyframes snow {
+  from {
+    transform: translate(0, -1px);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  50% {
+    transform: translate(0.6px, 0.8px);
+  }
+  to {
+    transform: translate(-0.4px, 2.4px);
+    opacity: 0;
+  }
+}
+.wicon .wxi .bolt {
+  animation: flash 4s ease-in-out infinite;
+}
+@keyframes flash {
+  0%,
+  88%,
+  100% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 0.2;
+  }
+  92% {
+    opacity: 1;
+  }
+  94% {
+    opacity: 0.3;
+  }
+}
+.wicon .wxi .fog {
+  animation: slide 6s ease-in-out infinite;
+}
+@keyframes slide {
+  50% {
+    transform: translateX(1.4px);
+  }
+}
+.wicon .wxi .wnd {
+  stroke-dasharray: 14 5;
+  animation: gust 1.6s linear infinite;
+}
+@keyframes gust {
+  to {
+    stroke-dashoffset: -19;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wicon .wxi .rays,
+  .wicon .wxi .cld,
+  .wicon .wxi .drp,
+  .wicon .wxi .flk,
+  .wicon .wxi .bolt,
+  .wicon .wxi .fog,
+  .wicon .wxi .wnd {
+    animation: none;
+  }
+}
+.app.gl .radar {
+  background: var(--g-tile);
+  box-shadow: var(--g-edge-s);
+}
+@media (prefers-reduced-transparency: reduce) {
+  .app.gl .radar {
     background: var(--card2);
   }
 }

@@ -1,6 +1,6 @@
 // <hp-pane-header>: the block a pane opens with: a badge with the subject's icon and colour, the heading, a sub-line and actions.
-// Pattern: humble object (Meszaros, xUnit Test Patterns) with slots (Lit docs, Shadow DOM: Slots): the sub-line, the actions and
-// a heading someone else writes stay light DOM in the parent's root, where what writes them by id keeps writing them (ADR 0016).
+// Pattern: humble object (Meszaros, xUnit Test Patterns) with slots (Lit docs, Shadow DOM: Slots): the sub-line, the actions, a heading
+// and, for a subject whose icon is drawn in colour (the weather's), the badge's icon stay light DOM in the parent's root (ADR 0016).
 // Must not: write the sub-line or the actions, know the subject it heads, or decide where it sits in a pane (the pane does).
 import {LitElement, css, html, nothing} from 'lit';
 import {styleMap} from 'lit/directives/style-map.js';
@@ -52,7 +52,9 @@ export class PaneHeader extends LitElement {
   // comes last, so the badge's icon is still the first svg of a pane.
   protected override render() {
     return html`<div class="ph">
-        <span class="badge" part="badge" style=${styleMap({'--acc': this.color})}>${ico(this.icon, 26)}</span>
+        <span class="badge" part="badge" style=${styleMap({'--acc': this.color})}
+          ><slot name="icon">${ico(this.icon, 26)}</slot></span
+        >
         <div class="grow">
           <slot name="title">${this.heading ? html`<h2>${this.heading}</h2>` : nothing}</slot>
           <slot name="sub"></slot>
