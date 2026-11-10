@@ -29,7 +29,7 @@ export class HpSheet extends LitElement {
   declare color: string;
   /** The heading, already in the panel's language. */
   declare heading: string;
-  /** The dialog's accessible name; the heading when it is empty. */
+  /** The accessible name of the element with the ARIA role dialog; the heading when it is empty. */
   declare label: string;
   /** The Close button's accessible name, already in the panel's language. */
   declare closeLabel: string;
@@ -57,6 +57,11 @@ export class HpSheet extends LitElement {
       }
       :host([compact]) hp-pane-header {
         margin-bottom: 14px;
+      }
+      /* what a phone's drag may start on, besides the grabber: the badge and the heading block, not the controls */
+      :host([compact]) hp-pane-header::part(badge),
+      :host([compact]) h2,
+      :host([compact]) .subline {
         touch-action: none;
         user-select: none;
         -webkit-user-select: none;

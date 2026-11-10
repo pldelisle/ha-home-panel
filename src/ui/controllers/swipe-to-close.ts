@@ -1,4 +1,4 @@
-// A controller that lets a phone's sheet be dragged down by its grabber or its title to close, as iOS sheets are.
+// A controller that lets a phone's sheet be dragged down by its grabber or its header to close, as iOS sheets are.
 // Pattern: Lit reactive controller (Lit docs, Reactive Controllers) that keeps the drag outside the render, so a drag
 // redraws nothing and moves the panel with a transform; the element binds its four handlers in its template.
 // Must not: render, decide whether the screen is a phone (the host says), or close the sheet itself: it asks.
@@ -51,8 +51,7 @@ export class SwipeToClose implements ReactiveController {
 
   readonly onPointerDown = (e: PointerEvent): void => {
     const panel = e.currentTarget as HTMLElement;
-    const target = e.target as Element;
-    if (!this.options.enabled() || e.button || !target.closest(this.options.handle) || target.closest(CONTROL)) return;
+    if (!this.options.enabled() || e.button || !this.startsOnHandle(e, panel)) return;
     this.drag = {panel, y: e.clientY, at: Date.now(), id: e.pointerId, moving: false};
     try {
       panel.setPointerCapture(e.pointerId);
@@ -60,6 +59,14 @@ export class SwipeToClose implements ReactiveController {
       // a pointer that is gone cannot be captured; the drag simply never moves
     }
   };
+
+  // The path, not `closest`: this listener is on the panel, a shadow root above what an owner slots into the header, so
+  // the event's target is that slotted node and walking up its parents never reaches the header's own element.
+  private startsOnHandle(e: PointerEvent, panel: HTMLElement): boolean {
+    const path = e.composedPath();
+    const inside = path.slice(0, path.indexOf(panel)).filter((n): n is Element => n instanceof Element);
+    return inside.some(n => n.matches(this.options.handle)) && !inside.some(n => n.matches(CONTROL));
+  }
 
   readonly onPointerMove = (e: PointerEvent): void => {
     const d = this.drag;

@@ -49,9 +49,12 @@ export class MoreSheet extends LitElement {
 
   // the sheet's words are catalog messages, so it asks the store for `t`; it reads no entity
   private readonly store = new StoreController(this, {ids: () => []});
+  // `compact` and `large-text` as host attributes, which the list's rule tests
+  private readonly appearance = new AppearanceConsumer(this);
+
   constructor() {
     super();
-    new AppearanceConsumer(this); // `compact` and `large-text` as host attributes, which the list's rule tests
+
     this.features = [];
     this.shown = {};
     this.summaries = {};
@@ -68,7 +71,7 @@ export class MoreSheet extends LitElement {
       .heading=${t('more.title')}
       .closeLabel=${t('more.close')}
     >
-      <div slot="sub" class="sub">${t('more.sub')}</div>
+      <div slot="sub">${t('more.sub')}</div>
       <div class="morelist" id="morelist">${this.open ? this.renderTiles() : nothing}</div>
     </hp-sheet>`;
   }
