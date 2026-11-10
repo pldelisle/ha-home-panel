@@ -4,7 +4,7 @@ import {defineConfig} from 'vitest/config';
 import {define} from './vite.config';
 
 export default defineConfig({
-  define, // the build's own constants (src/legacy/globals.js reads __VERSION__), so the two configs cannot drift
+  define, // the build's own constants (src/shell/home-panel.ts reads __VERSION__), so the two configs cannot drift
   test: {
     include: ['test/unit/**/*.test.{mjs,ts}'],
     environment: 'node',

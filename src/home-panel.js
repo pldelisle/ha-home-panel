@@ -9,7 +9,7 @@ import {isDayAt, sunTimes} from './core/sun.ts';
 import {browserDefaults} from './core/i18n/browser.ts';
 import {createFormatters} from './core/i18n/format.ts';
 import {englishLocale, panelLocale} from './core/i18n/locale.ts';
-import {VERSION, ok, esc, tile, plural, cap} from './legacy/globals.js';
+import {ok, esc, tile, plural, cap} from './legacy/globals.js';
 import {loadApex} from './charts/apex.js';
 import {ensureFonts} from './fonts.js';
 // Liquid Glass: whether this engine can run an SVG filter inside backdrop-filter (Chromium only)
@@ -637,7 +637,7 @@ export class LegacyPanel {
       else if (this.$app && !this.$('attpop').hidden) {
         this.toggleAttention(false);
         this.renderHeader();
-      } else if (this.$app && !this.$('setpop').hidden) this.toggleSettings(false);
+      } else if (this.$app && !this.$('setpop').hidden) this.ctx.shell.closeSettings();
     };
   }
   // connect, disconnect, hassChanged, panelChanged, tabChanged and compactChanged are the guest's interface (spec 14,
@@ -1122,64 +1122,8 @@ export class LegacyPanel {
       this.theme = a.theme;
       this.cache = {};
       this.redrawCharts();
-      this.refreshSettings();
     }
     this.lensAll();
-  }
-  // ---------- settings popup behind the gear: theme, text size, glass, transparency (laid out like iOS Control Center) ----------
-  toggleSettings(force) {
-    const pop = this.$('setpop'),
-      open = force ?? pop.hidden;
-    pop.hidden = !open;
-    this.$('gear').setAttribute('aria-expanded', open);
-    if (open) this.refreshSettings();
-  }
-  // the popup is drawn again from the settings and the theme in force, which the device can change while it is open
-  refreshSettings() {
-    if (this.$('setpop') && !this.$('setpop').hidden) {
-      this.cache.setc = null;
-      this.renderSettings();
-    }
-  }
-  renderSettings() {
-    const {theme: m, text: tx, glass: gl, glassLevel: gt} = this.settings.get(),
-      dark = this.dark();
-    const hint = m === 'auto' ? 'Following the device' : 'Tap to switch';
-    this.set(
-      'setc',
-      `<div class="cc">
-      <button type="button" class="cct tog" data-th="toggle" aria-pressed="${dark}" aria-label="Theme: ${dark ? 'dark' : 'light'}. ${hint}"><span class="ccic">${ico(dark ? 'moon' : 'sun', 22)}</span><b>${dark ? 'Dark' : 'Light'}</b> <small>${hint}</small></button>
-      <button type="button" class="cct tog" data-th="auto" aria-pressed="${m === 'auto'}"><span class="ccic">${ico('sunauto', 22)}</span><b>Auto</b><small>Follows the device</small></button>
-      <button type="button" class="cct tog wide sleepnow" data-sleep="1"><span class="ccic">${ico('moon', 22)}</span><span class="sltx"><b>Sleep now</b><small>Shows the clock until you touch the screen</small></span></button>
-      <div class="cct wide"><div class="ccl">Text size</div><div class="seg" role="radiogroup" aria-label="Text size">${[
-        ['smaller', 'Smaller'],
-        ['auto', 'Auto'],
-        ['large', 'Large'],
-        ['larger', 'Larger'],
-      ]
-        .map(
-          ([k, l]) =>
-            `<button type="button" role="radio" aria-checked="${k === tx}" data-tx="${k}"><b>${l}</b></button>`,
-        )
-        .join('')}</div></div>
-      <div class="cct wide"><div class="ccl">Glass</div><div class="seg wps" role="radiogroup" aria-label="Glass">${[
-        ['none', 'None'],
-        ['dawn', 'Dawn'],
-        ['lake', 'Lake'],
-        ['meadow', 'Meadow'],
-        ['ember', 'Ember'],
-        ['aurora', 'Aurora'],
-        ['sand', 'Sand'],
-        ['sky', 'Sky'],
-      ]
-        .map(
-          ([k, l]) =>
-            `<button type="button" role="radio" aria-checked="${k === gl}" data-gl="${k}"><b>${l}</b></button>`,
-        )
-        .join('')}</div>
-        <div class="gtrow"><span>Solid</span><input type="range" class="gtrange" min="0" max="100" step="1" value="${gt}" style="--p:${gt}%" aria-label="Transparency"><span>Clear</span></div></div>
-      <div class="ccv">Home panel v${VERSION}${this.H ? ' · statistics refreshed every 15 minutes' : ''}</div></div>`,
-    );
   }
   // Idle clock (v1.19.6): after 5 min without a touch the wall iPad shows a big clock with the date, the temperatures and the next sun event.
   // Since 2.2.0 the current outdoor condition's icon (day or night version) sits beside the time.
@@ -1702,31 +1646,9 @@ export class LegacyPanel {
     this.$('gear').addEventListener('click', () => {
       this.toggleAttention(false);
       this.renderHeader();
-      this.toggleSettings();
     });
     this.$('toast').addEventListener('click', () => {
       this.$('toast').hidden = true;
-    });
-    this.$('setc').addEventListener('input', e => {
-      const r = e.target.closest('.gtrange');
-      if (!r) return;
-      r.style.setProperty('--p', r.value + '%');
-      this.settings.set('glassLevel', Number(r.value));
-    });
-    this.$('setc').addEventListener('click', e => {
-      if (e.target.closest('[data-sleep]')) {
-        this.toggleSettings(false);
-        this.ctx.shell.idle.sleepNow();
-        return;
-      }
-      const t = e.target.closest('[data-th]'),
-        g = e.target.closest('[data-gl]'),
-        b = e.target.closest('[data-tx]');
-      if (t) this.settings.set('theme', t.dataset.th === 'auto' ? 'auto' : this.dark() ? 'light' : 'dark');
-      else if (g) this.settings.set('glass', g.dataset.gl);
-      else if (b) this.settings.set('text', b.dataset.tx);
-      else return;
-      this.refreshSettings(); // the popup shows the choice just made; the shell's controller applies it
     });
     [
       ['open-weather', 'sh-weather'],
@@ -1773,7 +1695,7 @@ export class LegacyPanel {
         this.renderHeader();
       }
       const sp = this.$('setpop');
-      if (!sp.hidden && !e.composedPath().some(n => n === sp || n === this.$('gear'))) this.toggleSettings(false);
+      if (!sp.hidden && !e.composedPath().some(n => n === sp || n === this.$('gear'))) this.ctx.shell.closeSettings();
     });
     this.$('cams').addEventListener('click', e => {
       const b = e.target.closest('[data-cam]');
@@ -2252,7 +2174,6 @@ export class LegacyPanel {
   renderLive() {
     if (!this.hass) return;
     this.findCar();
-    this.refreshSettings();
     for (const f of [
       'renderHeader',
       'renderWeather',
@@ -3203,7 +3124,9 @@ export class LegacyPanel {
         ),
         this.api.statistics([...this.ROOMS.map(r => r.temp), this.E.whT, this.E.whP], '5minute', d(1.05), ['mean']),
       ]);
+      const first = !this.H;
       this.H = this.derive(hour7, day, meter, evh, hp, today, t24);
+      if (first) this.ctx.shell.requestFrame(); // the settings popup's version line says the history is kept fresh
       this.histErr = null;
     } catch (e) {
       // a load of an old config is let go whatever went wrong: a network error is no StaleReply, but the new load owns the state
@@ -5595,6 +5518,10 @@ export class LegacyPanel {
     if (!this.hass) return {};
     const L = this.lacking();
     return {climate: !L.climate, car: !L.car};
+  }
+  // whether the history behind the charts has loaded, which the settings popup's version line says
+  statisticsLoaded() {
+    return Boolean(this.H);
   }
   // one line under each pane title, like the detail sheets have
   renderPaneSubs() {

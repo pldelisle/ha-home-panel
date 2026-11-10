@@ -1,0 +1,168 @@
+{
+  "about": "The English messages the settings popup introduced (src/core/i18n/en.ts, settings.*), compared as test/unit/fixtures/moved/weather.json is, except that the move deleted most of their entries from the map: those carry `was`, the French the layer made of them before. The theme toggle's label is read with the hint beside it, which the popup passes already translated. Deleted with the layer in phase 4.",
+  "messages": [
+    {
+      "key": "settings.theme.dark",
+      "was": "Sombre"
+    },
+    {
+      "key": "settings.theme.light",
+      "was": "Clair"
+    },
+    {
+      "key": "settings.theme.following",
+      "was": "Suit l'appareil"
+    },
+    {
+      "key": "settings.theme.tap",
+      "was": "Toucher pour changer"
+    },
+    {
+      "key": "settings.theme.auto"
+    },
+    {
+      "key": "settings.theme.autoCaption",
+      "was": "Suit l'appareil"
+    },
+    {
+      "key": "settings.sleepNow",
+      "was": "Dormir maintenant"
+    },
+    {
+      "key": "settings.sleepNowCaption",
+      "was": "Affiche l’horloge jusqu’au prochain toucher"
+    },
+    {
+      "key": "settings.text.title",
+      "was": "Taille du texte"
+    },
+    {
+      "key": "settings.text.smaller",
+      "was": "Plus petit"
+    },
+    {
+      "key": "settings.text.auto"
+    },
+    {
+      "key": "settings.text.large",
+      "was": "Grand"
+    },
+    {
+      "key": "settings.text.larger",
+      "was": "Plus grand"
+    },
+    {
+      "key": "settings.glass.title",
+      "was": "Verre"
+    },
+    {
+      "key": "settings.glass.none"
+    },
+    {
+      "key": "settings.glass.dawn",
+      "was": "Aube"
+    },
+    {
+      "key": "settings.glass.lake",
+      "was": "Lac"
+    },
+    {
+      "key": "settings.glass.meadow",
+      "was": "Pré"
+    },
+    {
+      "key": "settings.glass.ember",
+      "was": "Braise"
+    },
+    {
+      "key": "settings.glass.aurora",
+      "was": "Aurore"
+    },
+    {
+      "key": "settings.glass.sand",
+      "was": "Sable"
+    },
+    {
+      "key": "settings.glass.sky",
+      "was": "Ciel"
+    },
+    {
+      "key": "settings.transparency",
+      "was": "Transparence"
+    },
+    {
+      "key": "settings.transparency.solid",
+      "was": "Opaque"
+    },
+    {
+      "key": "settings.transparency.clear"
+    },
+    {
+      "key": "settings.theme.label",
+      "values": {
+        "theme": "dark",
+        "hint": "Tap to switch"
+      },
+      "fr": {
+        "theme": "dark",
+        "hint": "Toucher pour changer"
+      },
+      "was": "Thème : sombre. Toucher pour changer"
+    },
+    {
+      "key": "settings.theme.label",
+      "values": {
+        "theme": "dark",
+        "hint": "Following the device"
+      },
+      "fr": {
+        "theme": "dark",
+        "hint": "Suit l'appareil"
+      },
+      "was": "Thème : sombre. Suit l'appareil"
+    },
+    {
+      "key": "settings.theme.label",
+      "values": {
+        "theme": "light",
+        "hint": "Tap to switch"
+      },
+      "fr": {
+        "theme": "light",
+        "hint": "Toucher pour changer"
+      },
+      "was": "Thème : clair. Toucher pour changer"
+    },
+    {
+      "key": "settings.theme.label",
+      "values": {
+        "theme": "light",
+        "hint": "Following the device"
+      },
+      "fr": {
+        "theme": "light",
+        "hint": "Suit l'appareil"
+      },
+      "was": "Thème : clair. Suit l'appareil"
+    },
+    {
+      "key": "settings.version",
+      "values": {
+        "version": "2.14.0"
+      },
+      "fr": {
+        "version": "2.14.0"
+      }
+    },
+    {
+      "key": "settings.versionStatistics",
+      "values": {
+        "version": "2.14.0"
+      },
+      "fr": {
+        "version": "2.14.0"
+      },
+      "was": "Home panel v2.14.0 · statistiques actualisées aux 15 minutes"
+    }
+  ]
+}

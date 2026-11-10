@@ -1,6 +1,7 @@
 // The French of a moved string: for every English message a move introduced, the French catalog renders what the rewrite layer
 // (src/i18n/fr.js) makes of the English text, so moving a feature into the catalog cannot change a French pixel. A string
-// whose French would differ is a visible change and needs an approved baseline, not an edit here.
+// whose French would differ is a visible change and needs an approved baseline, not an edit here. A move that also deleted
+// the map's entry records the layer's old output as `was`, since the layer can no longer say it.
 // The list of messages is a fixture the move writes (test/unit/fixtures/moved/<move>.json); this file and the fixtures are
 // deleted with the layer in phase 4.
 import {readdirSync, readFileSync} from 'node:fs';
@@ -21,6 +22,12 @@ interface Moved {
    * bare `12 months` is left as it is): the layer's output for `en + english` must be `fr + the French message`.
    */
   frame?: {en: string; fr: string};
+  /**
+   * The French the layer made of the English text before the move deleted its entry from the map (src/i18n/fr.js), as the
+   * byte comparison found it. The layer is no oracle for a deleted entry, so this text is: the catalog must say it, and the layer
+   * must no longer translate the text, or the entry was not deleted and `was` is stale.
+   */
+  was?: string;
 }
 
 const english = createMessages({language: 'en', tag: 'en-CA'});
@@ -49,13 +56,17 @@ const ofMove = (prefix: string) => Object.keys(en).filter(key => key.startsWith(
 describe.each([
   ['weather', 'weather.', 'src/features/weather/'],
   ['ranges', 'range.', 'src/ui/'],
+  ['settings', 'settings.', 'src/shell/'],
 ])('the %s move', (move, prefix, where) => {
   const moved = read(move);
 
   test.each(moved.map(m => [`${m.key} ${JSON.stringify(m.values ?? {})}`, m] as const))('%s', (_name, m) => {
     const text = english.t(m.key, m.values);
     // the layer is untyped JavaScript
-    if (m.frame) expect(m.frame.fr + french.t(m.key, inFrench(m))).toBe(layer.text(m.frame.en + text) as string);
+    if (m.was !== undefined) {
+      expect(layer.text(text), 'the map entry is deleted').toBe(text);
+      expect(french.t(m.key, inFrench(m))).toBe(m.was);
+    } else if (m.frame) expect(m.frame.fr + french.t(m.key, inFrench(m))).toBe(layer.text(m.frame.en + text) as string);
     else expect(french.t(m.key, inFrench(m))).toBe(layer.text(text) as string);
   });
 

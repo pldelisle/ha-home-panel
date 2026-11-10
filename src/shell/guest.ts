@@ -55,6 +55,11 @@ export interface GuestRenderer extends GuestAnswers {
    * then; the guest draws the clock into `#iwrap`. Told once per change. Deleted with the clock's own move (#187).
    */
   idleChanged(idle: boolean): void;
+  /**
+   * Step D: whether the history behind the charts has loaded, which the settings popup's version line says. The guest asks
+   * the shell for a frame (`requestFrame`) when it turns true. Deleted with `loadHistory` (spec 21, the Car move, #182).
+   */
+  statisticsLoaded(): boolean;
 }
 
 /** What the guest may ask of the shell, and what it may read of it. Deleted whole with the guest; `tab`, `compact`, `setTab` and `requestFrame` live as long as it does. */
@@ -77,6 +82,11 @@ export interface ShellForGuest {
    * on a phone too. The controller's `start` is the shell's own, at connection. Deleted with the guest's clock (#187).
    */
   idle: Pick<IdleTimer, 'arm' | 'sleepNow'>;
+  /**
+   * Step D: closes the settings popup, which the shell opens with the gear and draws; the guest's Escape and its tap outside
+   * both ask. Deleted with the Status checks' move (#183), when the shell's header takes the taps and the keys of both popups.
+   */
+  closeSettings(): void;
 }
 
 // The guest's containers, inside the shell's root: `.guest` (src/shell/home-panel.ts holds it, display: contents) and
