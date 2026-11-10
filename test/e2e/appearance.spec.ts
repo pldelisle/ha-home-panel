@@ -2,7 +2,7 @@
 // Everything is driven as a person drives it: the gear and its popup, the device's own setting, a new hass from Home Assistant,
 // a touch, time passing. What is read back is what the frame shows: attributes and classes on `.app`, custom properties, the page.
 import type {Page} from '@playwright/test';
-import {test, expect, type House} from './fixtures';
+import {test, expect, tabletOnly, type House} from './fixtures';
 import {AFTERNOON, FULL_CFG} from './houses';
 
 test.use({houseOpts: {cfg: FULL_CFG, time: AFTERNOON}});
@@ -96,6 +96,21 @@ test.describe('the theme on auto', () => {
     await house.page.evaluate(() => document.body.append((window as unknown as {parked: Element}).parked));
     await expect(app(house)).toHaveAttribute('data-theme', 'dark');
   });
+
+  test('is changed by the screen while the panel is off the page: the phone shape is there when it returns', async ({
+    house,
+  }) => {
+    tabletOnly();
+    await expect(app(house)).not.toHaveClass(/\bcp\b/);
+    await house.page.evaluate(() => {
+      const panel = document.querySelector('home-panel')!;
+      (window as unknown as {parked: Element}).parked = panel;
+      panel.remove();
+    });
+    await house.page.setViewportSize({width: 393, height: 852});
+    await house.page.evaluate(() => document.body.append((window as unknown as {parked: Element}).parked));
+    await expect(app(house)).toHaveClass(/\bcp\b/);
+  });
 });
 
 test.describe('an explicit theme', () => {
@@ -139,15 +154,22 @@ const RECORD_THEMES = () => {
   };
 };
 
+// At night, when the sun is below the horizon: under the old rule a light device on Auto opened light and turned dark.
+const NIGHT = '2026-11-07T22:00:00-05:00';
+
 test.describe('the first theme shown', () => {
-  test.use({houseOpts: {cfg: FULL_CFG, time: AFTERNOON, theme: 'auto'}});
+  test.use({houseOpts: {cfg: FULL_CFG, time: NIGHT, theme: 'auto'}});
 
   for (const scheme of ['dark', 'light'] as const)
-    test(`on auto with a ${scheme} device is ${scheme}, with no flash of the other`, async ({house}) => {
+    test(`on auto at night with a ${scheme} device is ${scheme}, with no flash of the other`, async ({house}) => {
       await house.page.addInitScript(RECORD_THEMES);
       await house.page.emulateMedia({colorScheme: scheme});
       await house.page.reload();
       await expect(app(house)).toHaveAttribute('data-theme', scheme);
+      const night = await house.page.evaluate(
+        () => (window as unknown as {hass: {states: Record<string, {state: string}>}}).hass.states['sun.sun'].state,
+      );
+      expect(night, 'the sun is down in the house').toBe('below_horizon');
       expect(await house.page.evaluate(() => (window as unknown as {themes: string[]}).themes)).toEqual([scheme]);
     });
 });
