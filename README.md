@@ -2,7 +2,7 @@
 
 A dashboard for a tablet on the wall and for your phone, installed as its own page in the Home Assistant sidebar.
 It covers energy, climate, lights, weather, the car, air quality, media, security and a timeline of your automations.
-It follows the sun between a light and a dark theme, has a frosted-glass look with animated wallpapers, and speaks French
+It follows your device between a light and a dark theme, has a frosted-glass look with animated wallpapers, and speaks French
 to users whose Home Assistant profile is in French.
 
 ![Home tab on a tablet](docs/tablet-home.png)
