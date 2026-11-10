@@ -1153,7 +1153,7 @@ export class LegacyPanel {
       'setc',
       `<div class="cc">
       <button type="button" class="cct tog" data-th="toggle" aria-pressed="${dark}" aria-label="Theme: ${dark ? 'dark' : 'light'}. ${hint}"><span class="ccic">${ico(dark ? 'moon' : 'sun', 22)}</span><b>${dark ? 'Dark' : 'Light'}</b> <small>${hint}</small></button>
-      <button type="button" class="cct tog" data-th="auto" aria-pressed="${m === 'auto'}"><span class="ccic">${ico('sunauto', 22)}</span><b>Auto</b><small>Follows the device</small></button>
+      <button type="button" class="cct tog" data-th="auto" aria-pressed="${m === 'auto'}"><span class="ccic">${ico('sunauto', 22)}</span><b>Auto</b><small>Follows the sun</small></button>
       <button type="button" class="cct tog wide sleepnow" data-sleep="1"><span class="ccic">${ico('moon', 22)}</span><span class="sltx"><b>Sleep now</b><small>Shows the clock until you touch the screen</small></span></button>
       <div class="cct wide"><div class="ccl">Text size</div><div class="seg" role="radiogroup" aria-label="Text size">${[
         ['smaller', 'Smaller'],

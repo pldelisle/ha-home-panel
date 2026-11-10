@@ -1210,7 +1210,7 @@ export const FR_MAP = {
   Dark: 'Sombre',
   'Following the device': "Suit l'appareil",
   'Tap to switch': 'Toucher pour changer',
-  'Follows the device': "Suit l'appareil",
+  'Follows the sun': 'Suit le soleil',
   'Sleep now': 'Dormir maintenant',
   'Shows the clock until you touch the screen': 'Affiche l’horloge jusqu’au prochain toucher',
   'Theme: dark. Tap to switch': 'Thème : sombre. Toucher pour changer',
