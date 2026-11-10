@@ -8,7 +8,7 @@ import {AFTERNOON, FULL_CFG} from './houses';
 test.use({houseOpts: {cfg: FULL_CFG, time: AFTERNOON}});
 
 const app = (house: House) => house.root().locator('.app');
-const popup = (house: House) => house.root().locator('#setc');
+const popup = (house: House) => house.root().locator('hp-settings-popup');
 // the popup is where a person changes a setting; the clicks are dispatched because on the phone the bar covers part of it
 async function choose(house: House, selector: string) {
   const pop = house.root().locator('#setpop');

@@ -1,0 +1,191 @@
+/* The settings popup's Control Center tiles, in `<hp-settings-popup>`'s root; the popup itself (`.pop`) is the shell's and stays in the legacy sheet. */
+.cc {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.cct {
+  background: var(--card2);
+  border-radius: 20px;
+  padding: 14px;
+  min-width: 0;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+}
+.cct.wide {
+  grid-column: 1/-1;
+}
+button.cct {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  cursor: pointer;
+  min-height: 104px;
+  -webkit-appearance: none;
+  appearance: none;
+}
+button.cct.sleepnow {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  min-height: 60px;
+  padding: 10px 14px;
+}
+.cct.sleepnow .ccic {
+  margin: 0;
+  flex: none;
+}
+.cct.sleepnow .sltx {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+button.cct:focus-visible {
+  outline: 2px solid var(--c-home);
+  outline-offset: 2px;
+}
+.cct .ccic {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--card);
+  color: var(--fg2);
+  margin-bottom: auto;
+}
+.cct b {
+  font-size: calc(15px * var(--tx));
+  font-weight: 600;
+  margin-top: 10px;
+}
+.cct small {
+  font-size: calc(12px * var(--tx));
+  color: var(--fg2);
+}
+button.cct[aria-pressed='true'] {
+  background: var(--fg);
+  color: var(--card);
+}
+button.cct[aria-pressed='true'] .ccic {
+  background: rgba(255, 255, 255, 0.22);
+  color: inherit;
+}
+button.cct[aria-pressed='true'] small {
+  color: inherit;
+  opacity: 0.75;
+}
+.cct .ccl {
+  font-size: calc(12px * var(--tx));
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg2);
+  margin-bottom: 8px;
+}
+.cct .seg {
+  background: var(--card);
+}
+.cct .seg.wps {
+  grid-auto-flow: row;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.cct .gtrow {
+  margin-top: 8px;
+}
+.ccv {
+  grid-column: 1/-1;
+  font-size: calc(12px * var(--tx));
+  color: var(--fg2);
+  padding: 2px 4px 0;
+}
+.app.gl .cct {
+  background: var(--g-tile);
+  box-shadow: var(--g-edge-s);
+}
+/* Transparency slider in the settings popup (v1.18.2): scales every glass fill; hidden when Glass is None */
+.gtrow {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  font-size: calc(12px * var(--tx));
+  color: var(--fg2);
+}
+.app.gl .gtrow {
+  display: flex;
+}
+.gtrange {
+  flex: 1;
+  height: 44px;
+  margin: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  --p: 50%;
+}
+.gtrange::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--c-home) 0, var(--c-home) var(--p), var(--ring) var(--p));
+}
+.gtrange::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--ring);
+}
+.gtrange::-moz-range-progress {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--c-home);
+}
+.gtrange::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  margin-top: -11px;
+  background: #fff;
+  box-shadow:
+    0 1px 4px rgba(0, 0, 0, 0.3),
+    0 0 0 0.5px rgba(0, 0, 0, 0.08);
+}
+.gtrange::-moz-range-thumb {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+.app.gl .cct .seg {
+  background: var(--g-sel);
+  box-shadow: none;
+}
+.app.gl .cct .ccic {
+  background: var(--g-sel);
+}
+.app.gl button.cct[aria-pressed='true'] {
+  background: var(--fg);
+  box-shadow: none;
+}
+.app.gl button.cct[aria-pressed='true'] .ccic {
+  background: rgba(255, 255, 255, 0.22);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .cct {
+    transition:
+      transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+      background-color 0.2s ease,
+      box-shadow 0.2s ease,
+      color 0.2s ease;
+  }
+}
+.cct:active {
+  transform: scale(0.96);
+}
