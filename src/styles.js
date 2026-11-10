@@ -5,7 +5,7 @@
 // position its first rule held; a rule that followed it in a later legacy file moves up to it, and the computed-style
 // comparison checked what that reordered. The tokens and the common rules open the sheet, as the palette and the resets
 // did; the segmented control follows base.css; the sheet's chrome comes after tabs.css and before phone.css; the tile, the
-// More list and the settings popup's tiles come after phone.css and before glass.css. motion.css comes last because it overrides the others.
+// More list and the settings popup's tiles (from the end of extra.css, with their glass rules) come after phone.css and before glass.css. motion.css comes last because it overrides the others.
 import tokens from './ui/styles/tokens.css?inline';
 import common from './ui/styles/common.css?inline';
 import base from './css/base.css?inline';
