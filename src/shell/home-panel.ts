@@ -279,7 +279,7 @@ export class HomePanel extends LitElement {
 
   protected override willUpdate(): void {
     this.phoneNow = this.phone.matches;
-    // More is a phone sheet: the shape left the phone, so it closes, as compactChanged hid every modal
+    // More is a phone sheet: the shape left the phone, so it closes, as compactChanged hid every open sheet
     if (!this.phoneNow) this.sheets.close(MORE_SHEET);
     // told here and not in `updated`: the timer's change lands in this very update
     if (this.phoneNow !== this.idleCompact) {
@@ -493,7 +493,7 @@ export class HomePanel extends LitElement {
     // the frame already follows the phone's shape (`cp`); the guest lays its cards out again
     if (this.compact !== this.toldCompact) {
       this.toldCompact = this.compact;
-      this.sheets.compactChanged(this.compact); // a modal closes and the panels move, before the guest lays its cards out
+      this.sheets.compactChanged(this.compact); // the open sheet closes and the panels move, before the guest lays its cards out
       guest.compactChanged(this.compact);
     }
     // the shell has drawn the overlay by now, so the guest can draw the clock in it; told once, when the clock shows or goes

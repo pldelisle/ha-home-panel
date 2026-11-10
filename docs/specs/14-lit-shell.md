@@ -3,7 +3,7 @@
 Parent: [production-grade-refactor.md](production-grade-refactor.md), phase 3.
 Depends on: phase 2 complete (the gate of [#120](https://github.com/pldelisle/ha-home-panel/issues/120): the globals gone from the class, `t()` and the formatters on the store, one API client, the config parsed). Step A (axe) and step F (the fixture recorder) depend on nothing and may start now.
 Blocks: [15 Weather](15-weather.md) and every later move.
-Ships as: six pull requests (A to F below), each a patch release or no release, each pixel-identical to the release before it. ADRs 0016 and 0018 land with step B, 0017 with step C and 0019 with the More sheet of step C (#166).
+Ships as: six pull requests (A to F below), each a patch release or no release, each pixel-identical to the release before it. ADRs 0016 and 0018 land with step B, 0017 with step C, 0019 with the More sheet of step C (#166) and 0021 with the sheet host of step E (#155).
 
 The key words MUST, MUST NOT, SHOULD, SHOULD NOT and MAY are to be read as in RFC 2119.
 
@@ -126,8 +126,8 @@ Actors as in the programme: household member, admin, maintainer, agent thread, a
     appearanceChanged(a: Appearance): void;
     idleChanged(idle: boolean): void; // the guest draws the clock while the idle feature is its own
     // step E
-    sheetOpened(id: LegacySheetId): void; // buildSheet
-    sheetClosed(id: LegacySheetId): void;
+    sheetOpened(id: LegacySheetId, detail?: unknown): void; // buildSheet
+    sheetClosed(id: LegacySheetId): void; // destroyCharts, radarStop, the camera, the card goes home
   }
   export interface ShellForGuest {
     readonly tab: FeatureKey;
@@ -206,7 +206,7 @@ export const FEATURES: readonly FeatureDescriptor[]; // in rail order, the ten k
 ```
 
 - **Legacy-backed descriptors.** While a feature is still drawn by the guest, its descriptor is built by `legacyFeature(key, {header, hosts})` in `src/shell/legacy-feature.ts`, which returns the same static markup the class writes for that pane today (`<div class="ph">` with the badge, `<h2>` and the `.sub` with its id, then the host divs) and takes `available` and `summary` from the guest (`guest.availability()[key]`, `guest.moreLine(key)`). A move replaces the line `legacyFeature('weather', …)` with `weatherFeature` exported from `src/features/weather/index.ts`. Adding a feature is one folder and one line; deleting one is the reverse.
-- **What the shell renders in step C.** The `.app` wrapper with `classMap({narrow, cp: compact, tabsv: true, live, idle, gl, txl})` and `data-theme`, `data-wp`; the `<header class="head">` with the menu button, the gear and the guest containers it still fills (`#hello`, `#chips`, `#clock`, the two popups); `#err`; `.tabview` with the rail (`repeat(FEATURES, f => f.key, …)`, `?hidden=${!available}`, `aria-selected`), the phone's More button, and the `.panes` with one `<section class="pane pane-${key}" id="pane-${key}" ?hidden>` per descriptor containing `descriptor.pane()`; and the guest container, into which the guest now writes only the `.cols` parking lot (the old cards view that `placePanels` still moves cards through), the sheets, the idle overlay, the toast and the text probe. The phone's More sheet (`#sh-more`) moves to the shell as `<hp-more-sheet>` drawn from the registry (`summary` per feature), opened through the sheet host once step E lands; in step C it is still toggled by the shell's own `hidden`.
+- **What the shell renders in step C.** The `.app` wrapper with `classMap({narrow, cp: compact, tabsv: true, live, idle, gl, txl})` and `data-theme`, `data-wp`; the `<header class="head">` with the menu button, the gear and the guest containers it still fills (`#hello`, `#chips`, `#clock`, the two popups); `#err`; `.tabview` with the rail (`repeat(FEATURES, f => f.key, …)`, `?hidden=${!available}`, `aria-selected`), the phone's More button, and the `.panes` with one `<section class="pane pane-${key}" id="pane-${key}" ?hidden>` per descriptor containing `descriptor.pane()`; and the guest container, into which the guest now writes only the `.cols` parking lot (the old cards view that `placePanels` still moves cards through), the sheets, the idle overlay, the toast and the text probe. The phone's More sheet (`#sh-more`) moves to the shell as `<hp-more-sheet>` drawn from the registry (`summary` per feature), opened through the sheet host (step E; step C toggled it with the shell's own `hidden`).
 - **Tab state.** `@state() tab: FeatureKey` on the shell, read from the settings on first render (`home-panel-tab`, as today) and written on change; `setTab(key)` sets `aria-selected`, `hidden` on panes, `active` on the pane elements, writes the setting, calls `guest.tabChanged(key)`, and re-arms the idle timer (step D). The rail's click handler is Lit's `@click`, not a delegated `data-tab` branch in `wire()`; that branch is deleted.
 - **Availability.** The shell computes `shown[key] = descriptor.available?.(env) ?? true` in `willUpdate`; a legacy descriptor's `available` reads `guest.availability()`, which the guest recomputes from `lacking()` and signals through `shell.requestFrame()` when it changes (the one upward call the guest has; it replaces `gateTabs`). When a hidden tab is the current one, the shell falls back to Home, where today's `setTab` did so only for an unknown key and left a lacking tab's empty pane open.
 - **Compact and narrow.** `compact` comes from a `MediaQueryController` on `(max-width:599px)`; `narrow` is Home Assistant's property. Both are reflected into the appearance context (step D) and told to the guest.
@@ -247,28 +247,30 @@ export const FEATURES: readonly FeatureDescriptor[]; // in rail order, the ten k
 
 ### The sheet host (step E)
 
-- **`SheetHost`**, `src/shell/sheet-host.ts`, is the **mediator** (Gamma et al., _Design Patterns_): the one object that knows which sheet is open, so sheets never know about each other.
+- **`SheetHost`**, `src/shell/sheet-host.ts`, is the **mediator** (Gamma et al., _Design Patterns_): the one object that knows which sheet is open, so sheets never know about each other (ADR 0021). The interface is what the guest and the elements may ask; `SheetMediator` implements it and is a reactive controller on the shell, which owns the window's `keydown` listener from connection to disconnection.
 
   ```ts
-  export type SheetId = LegacySheetId | string; // a feature's sheet id is '<feature>.<name>': 'weather.history'
+  export type LegacySheetId = 'sh-energy' | 'sh-climate' | 'sh-air' | 'sh-car' | 'sh-weather' | 'sh-wx' | 'sh-sens' | 'sh-cam' | 'sh-light' | 'sh-card';
+  export type SheetId = string; // a legacy sheet's id is its element's; an element's sheet is '<feature>.<name>': 'shell.more', 'weather.history'
   export interface SheetHost {
-    readonly current: SheetId | null; // the modal sheet, if one is open
-    readonly inline: SheetId | null; // the detail panel shown inside the current pane (tablet)
-    open(id: SheetId, detail?: unknown): void; // closes the current modal first
-    close(): void; // Escape, the Close button, a tap on the backdrop
-    isOpen(id: SheetId): boolean;
-    registerLegacy(sheet: LegacySheet): () => void; // the guest's sheets, in step E
+    readonly shown: SheetId | null; // the sheet on screen: the one over the page, or else the detail panel inline in the pane (tablet)
+    isOpen(id: SheetId): boolean; // shown === id
+    open(id: SheetId, detail?: unknown): void; // closes the sheet open first
+    close(id?: SheetId): void; // Escape, the Close button, a tap on the backdrop; with an id, only if that sheet is the one open
+    paneShown(tab: FeatureKey): void; // the guest: the pane of `tab` is on screen; its detail panel shows inline (tablet)
+    registerLegacy(sheet: LegacySheet): () => void; // the guest's sheets, once per draw
+    registerPopup(popup: Popup): () => void; // the Status checks and the settings popup, in the order Escape tries them
   }
   export interface LegacySheet {
-    id: LegacySheetId; // 'sh-energy' … 'sh-more'
+    id: LegacySheetId;
     element: HTMLElement; // the .sheet div the guest wrote
-    inlinePane?: FeatureKey; // TAB_SHEET: the pane that hosts the panel inline on a tablet
+    inline?: {pane: FeatureKey; host: string}; // the five detail sheets: the pane and the container (`#ehost`, `#pane-climate`) that hold the panel on a tablet
   }
   ```
 
-  Behaviour, unchanged from `show`, `hide`, `openInline` and `placePanels`: on a tablet, opening a sheet that has an `inlinePane` switches to that tab instead; on a phone it is a modal; one modal at a time; `lastFocus` is saved on open and restored on close; the Close button receives focus on open; Escape on `window` (the reason stays as today: a redraw can drop focus out of the root, so the host would miss the key) closes the modal first, then the Status checks, then the settings popup. For a legacy sheet the host toggles `hidden` and calls `guest.sheetOpened(id)` and `guest.sheetClosed(id)`; the guest's `buildSheet`, `destroyCharts` and `radarStop` run from those. `show()`, `hide()`, `onKey` and the `[data-sheet]` branch of `wire()` are deleted from the class.
+  Behaviour, unchanged from `show`, `hide`, `openInline` and `placePanels`: on a tablet, opening a sheet that has an `inline` placement switches to that tab instead; on a phone it is a sheet over the page; one at a time (opening a sheet closes the one open, which `show` did not); `lastFocus` is saved on open, read through every shadow root, and restored on close; the Close button of a legacy sheet receives focus on open (an element's sheet focuses its own); Escape on `window` (the reason stays as today: a redraw can drop focus out of the root, so the host would miss the key) closes the sheet first, then the Status checks, then the settings popup, one per press. For a legacy sheet the host toggles `hidden`, takes the tap on the backdrop and the Close button, and calls `guest.sheetOpened(id, detail)` and `guest.sheetClosed(id)`; the guest's `buildSheet`, `destroyCharts` and `radarStop` run from those. The host places the five detail panels (inline on a tablet, in their sheets with `aria-modal` on a phone) when a sheet registers and when the shape changes (`compactChanged`, called by the shell before the guest's), and the inline panel of the pane shown follows the tab (`paneShown`, called from the guest's `tabChanged` and `enterTabs`) and the sheet over the page closing. `placePanels` keeps the four Home-card moves. An element's sheet (`shell.more`) is open when `isOpen(id)` says so; its owner's template binds that to `open`. `show()`, `hide()`, `onKey`, `openInline` and the `[data-sheet]` branch of `wire()` are deleted from the class; the Home tiles that carried `data-sheet` carry `data-opens` until spec 24 deletes them.
 
-- **Events up, properties down.** A feature element never imports the shell. It asks for a sheet by dispatching `new SheetRequestEvent('weather.history', {key: 'wind'})`, a `CustomEvent` with `bubbles: true, composed: true` defined in `src/ui/events.ts` beside `ToastEvent`; the shell listens on its root and calls the host. This is Lit's rule (Lit docs, _Events_: "communicate up with events, down with properties"), and it is what keeps `src/features/` free of `src/shell/` imports under the dependency rule.
+- **Events up, properties down.** A feature element never imports the shell. It asks for a sheet by dispatching `new SheetRequestEvent('weather.history', {key: 'wind'})`, a `CustomEvent` with `bubbles: true, composed: true` defined in `src/ui/events.ts` beside `ToastEvent`; the shell listens on its frame, stops the event there and calls the host (or the guest's toast, which stays the toast's renderer until the guest goes). This is Lit's rule (Lit docs, _Events_: "communicate up with events, down with properties"), and it is what keeps `src/features/` free of `src/shell/` imports under the dependency rule.
 - **`<hp-sheet>`**, `src/ui/sheet.ts`: the kit's sheet, drawn with the same markup and classes as the guest's (`.sheet > .grab + .panel[role=dialog][aria-modal]` with `.ph`, the badge, `h2`, `.sub`, the tabs slot and the Close button), `open` reflected, slots `header-tabs` and default, and the modal-or-inline placement decided by the host through a property. The first user is Weather's history sheet (spec 15).
 
 ### The UI kit's shared sheets and the one-source rule for CSS (step C, ADR 0019)
@@ -332,7 +334,7 @@ Step D, appearance and idle:
 
 Step E, sheet host:
 
-17. `SheetHost`, `SheetRequestEvent`, `ToastEvent` and `<hp-sheet>` exist; the class's `show`, `hide`, `onKey`, `openInline`, `placePanels`'s sheet part and the `[data-sheet]` branch are deleted and its sheets are registered as legacy sheets; Escape order, focus return and inline-on-tablet are proven by the existing specs plus one new spec for focus return.
+17. `SheetHost`, `SheetRequestEvent` and `ToastEvent` exist (`<hp-sheet>` is #169); the class's `show`, `hide`, `onKey`, `openInline`, `placePanels`'s sheet part and the `[data-sheet]` branch are deleted and its sheets are registered as legacy sheets; Escape order, focus return and inline-on-tablet are proven by the existing specs plus one new spec for focus return.
 18. ADR 0019 (feature elements in their own shadow roots, the kit's adopted sheets, one rule in one file, events up and properties down) accepted; the one-selector-one-file unit test exists and passes. (Landed earlier, with the More sheet of step C, #166.)
 
 Step F, fixtures:

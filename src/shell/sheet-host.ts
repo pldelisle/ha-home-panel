@@ -45,7 +45,7 @@ export interface Popup {
 
 /** What the host asks of the guest: build a sheet's content when it opens, let go of it when it closes. */
 export interface LegacySheetGuest {
-  /** The sheet is on screen (a modal, or inline in its pane); it may be told again for an inline sheet a modal had covered. */
+  /** The sheet is on screen (over the page, or inline in its pane); it may be told again for an inline sheet another had covered. */
   sheetOpened(id: LegacySheetId, detail?: unknown): void;
   /** The sheet left the screen: charts, the radar and the camera go. */
   sheetClosed(id: LegacySheetId): void;
@@ -53,12 +53,12 @@ export interface LegacySheetGuest {
 
 /** What the guest and the elements may ask of the host. */
 export interface SheetHost {
-  /** The sheet on screen: the modal, or else the detail panel shown inside the pane. Null when there is none. */
+  /** The sheet on screen: the one over the page, or else the detail panel shown inside the pane. Null when there is none. */
   readonly shown: SheetId | null;
   isOpen(id: SheetId): boolean;
-  /** Opens a sheet and closes the modal before it; on a tablet a sheet with an inline panel shows its pane instead. */
+  /** Opens a sheet and closes the one open before it; on a tablet a sheet with an inline panel shows its pane instead. */
   open(id: SheetId, detail?: unknown): void;
-  /** Closes the modal; with an id, only when that sheet is the one open (an element's late `sheet-close` closes nothing else). */
+  /** Closes the sheet over the page; with an id, only when that sheet is the one open (an element's late `sheet-close` closes nothing else). */
   close(id?: SheetId): void;
   /** The pane of `tab` is on screen: the inline panel of the pane before it goes, the one of this pane shows (a tablet). */
   paneShown(tab: FeatureKey): void;
@@ -90,7 +90,7 @@ function deepActiveElement(root: ShadowRoot): HTMLElement | null {
 }
 
 export class SheetMediator implements SheetHost, ReactiveController {
-  private current: SheetId | null = null; // the modal
+  private current: SheetId | null = null; // the sheet over the page
   private inline: LegacySheetId | null = null; // the detail panel shown in its pane
   private lastFocus: HTMLElement | null = null;
   private readonly legacy = new Map<SheetId, Registered>();
@@ -128,7 +128,7 @@ export class SheetMediator implements SheetHost, ReactiveController {
       this.options.setTab(inline.pane);
       return;
     }
-    this.closeModal();
+    this.closeCurrent();
     this.lastFocus = deepActiveElement(this.options.root());
     this.current = id;
     if (!entry) {
@@ -142,19 +142,19 @@ export class SheetMediator implements SheetHost, ReactiveController {
 
   close(id?: SheetId): void {
     if (id !== undefined && this.current !== id) return;
-    if (this.closeModal()) this.showInline(this.options.tab());
+    if (this.closeCurrent()) this.showInline(this.options.tab());
   }
 
   paneShown(tab: FeatureKey): void {
-    // a modal over the panel closes with it, as `hide` did when the tab changed
-    if (this.current !== null && this.inline !== null) this.closeModal();
+    // a sheet over the panel closes with it, as `hide` did when the tab changed
+    if (this.current !== null && this.inline !== null) this.closeCurrent();
     this.dropInline();
     this.showInline(tab);
   }
 
-  /** The phone's shape changed: a modal closes, the inline panel goes, and the panels sit where the new shape wants them. */
+  /** The phone's shape changed: the sheet over the page closes, the inline panel goes, and the panels sit where the new shape wants them. */
   compactChanged(compact: boolean): void {
-    this.closeModal();
+    this.closeCurrent();
     this.dropInline();
     for (const entry of this.legacy.values()) this.place(entry, compact);
   }
@@ -198,16 +198,16 @@ export class SheetMediator implements SheetHost, ReactiveController {
     if (!this.legacy.has(id)) this.host.requestUpdate();
   }
 
-  // Escape closes one thing: the modal sheet, else the first popup that is open
+  // Escape closes one thing: the open sheet, else the first popup that is open
   private readonly onKey = (e: KeyboardEvent): void => {
     if (e.key !== 'Escape') return;
     if (this.current !== null) this.close();
     else this.popups.find(p => p.isOpen())?.close();
   };
 
-  // True when a legacy modal closed. The guest's modal charts and an inline panel's share one list, so closing the modal
+  // True when a legacy sheet closed. The guest's charts for it and for an inline panel share one list, so closing it
   // destroyed the panel's: it is dropped without a word and the caller shows it again, built anew, as `hide` did.
-  private closeModal(): boolean {
+  private closeCurrent(): boolean {
     const id = this.current;
     if (id === null) return false;
     this.current = null;
@@ -238,7 +238,7 @@ export class SheetMediator implements SheetHost, ReactiveController {
     this.options.guest()?.sheetClosed(id);
   }
 
-  // the five detail panels sit inline in their panes on a tablet; on a phone they stay modal sheets
+  // the five detail panels sit inline in their panes on a tablet; on a phone they stay sheets over the page
   private place({sheet, panel}: Registered, compact: boolean): void {
     if (!sheet.inline || !panel) return;
     if (compact) {
