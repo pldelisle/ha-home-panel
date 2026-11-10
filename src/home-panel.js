@@ -12,8 +12,7 @@ import {englishLocale, panelLocale} from './core/i18n/locale.ts';
 import {VERSION, ok, esc, tile, plural, cap} from './legacy/globals.js';
 import {loadApex} from './charts/apex.js';
 import {ensureFonts} from './fonts.js';
-// Liquid Glass: the wallpapers the Status popup offers, and whether this engine can run an SVG filter inside backdrop-filter (Chromium only)
-const GLASS_WP = ['dawn', 'lake', 'meadow', 'ember', 'aurora', 'sand', 'sky']; // sky = picked from the time of day and the weather (skyWp)
+// Liquid Glass: whether this engine can run an SVG filter inside backdrop-filter (Chromium only)
 const LENS_OK =
   typeof navigator !== 'undefined' &&
   'userAgentData' in navigator &&
@@ -740,15 +739,6 @@ export class LegacyPanel {
       this.renderIdle();
       this.renderHomeStack();
     }, 20000);
-    const live = () => {
-      if (!this.$app) return;
-      this.$app.classList.add('live');
-      clearTimeout(this.liveT);
-      this.liveT = setTimeout(() => this.$app.classList.remove('live'), 60000);
-    };
-    for (const t of ['pointerdown', 'wheel', 'keydown']) this.root.addEventListener(t, live, {passive: true});
-    window.addEventListener('scroll', live, {passive: true, capture: true});
-    this.liveOff = () => window.removeEventListener('scroll', live, {capture: true});
     this.camT = setInterval(() => {
       if (this.hass && this.$app && !document.hidden) this.renderCameras();
     }, 10000);
@@ -770,10 +760,7 @@ export class LegacyPanel {
     LAYOUT.forEach(id => this.$(id) && this.ro.observe(this.$(id)));
   }
   disconnect() {
-    for (const el of [document.documentElement, document.body]) el.style.removeProperty('background-color');
-    clearTimeout(this.liveT);
     clearTimeout(this.glowT);
-    if (this.liveOff) this.liveOff();
     if (this.ro) this.ro.disconnect();
     clearInterval(this.clockT);
     clearInterval(this.camT);
@@ -903,7 +890,7 @@ export class LegacyPanel {
     return getComputedStyle(this.$app).getPropertyValue(n).trim();
   }
   dark() {
-    return this.$app.dataset.theme === 'dark';
+    return this.ctx.shell.appearance.theme === 'dark';
   }
   frStart() {
     this.frStop();
@@ -1070,21 +1057,17 @@ export class LegacyPanel {
   <div class="ph"><span class="badge" style="--acc:var(--c-home)">${ico('more', 26)}</span><div class="grow"><h2 id="moreh">More</h2><div class="sub">All sections</div></div><button class="icon close" type="button" aria-label="Close">✕</button></div>
   <div class="morelist" id="morelist"></div>
 </div></div>
-<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-<span id="txprobe" aria-hidden="true" style="position:absolute;left:-9999px;visibility:hidden;font-size:17px;font:-apple-system-body"></span>`;
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>`;
     this.$app = this.$('app');
-    // `.app` is the shell's and outlives a draw, where a fresh one used to start bare: clear what the guest toggles on it, then
-    // the applyText, applyTheme and applyGlass below set theirs again; `idle` is the shell's, from the idle timer
-    this.$app.classList.remove('live', 'mc', 'gl', 'txl');
-    delete this.$app.dataset.theme;
-    delete this.$app.dataset.wp;
+    // `.app` is the shell's and outlives a draw, where a fresh one used to start bare: clear what the guest toggles on it
+    // (the shell owns the theme, the glass wallpaper, `gl`, `txl`, `live` and `idle`)
+    this.$app.classList.remove('mc');
+    this.theme = this.ctx.shell.appearance.theme;
     this.$app.lang = (this.store.isFrench ? this.locale : this.localeEn).tag;
     this.root
       .querySelectorAll('.sheet>.panel')
       .forEach(p => p.insertAdjacentHTML('afterbegin', '<div class="grab" aria-hidden="true"></div>'));
-    this.applyText();
     if (this.store.isFrench) this.frStart();
-    this.applyTheme();
     // the detail panels move into the tab panes in the Tabs view, so they are kept by id
     this.panels = {};
     this.root.querySelectorAll('.sheet').forEach(sh => {
@@ -1093,23 +1076,10 @@ export class LegacyPanel {
     this.wire();
     this.observeLayout();
     this.ctx.shell.idle.arm(); // a draw counts as a touch, as it did: the five minutes start over, and an idle panel wakes
-    // the theme follows the device's appearance as well as the sun; the text size is read again when the panel comes back into view
-    if (!this.sysOn) {
-      this.sysOn = true;
-      this.sysDark = matchMedia('(prefers-color-scheme: dark)');
-      try {
-        this.sysDark.addEventListener('change', () => this.applyTheme());
-      } catch {
-        this.sysDark.addListener(() => this.applyTheme());
-      }
-      document.addEventListener('visibilitychange', () => {
-        if (!document.hidden) this.applyText();
-      });
-    }
     // the first render (setView → renderTabs) gates the Car tab and tile, so it must already know the car; renderLive looks again
     this.findCar();
     this.setView();
-    this.applyGlass();
+    this.lensAll();
     this.loadHistory();
   }
 
@@ -1149,24 +1119,16 @@ export class LegacyPanel {
     cards.forEach((c, i) => cols[plan[i]].appendChild(c));
   }
 
-  // ---------- theme: dark when the device is, or after sunset, unless overridden ----------
-  applyTheme() {
-    const {theme: m, glass} = this.settings.get(), // one read of the settings per tick
-      s = this.st(this.E.sun),
-      sys = this.sysDark ? this.sysDark.matches : matchMedia('(prefers-color-scheme: dark)').matches;
-    const dark = m === 'dark' || (m === 'auto' && (sys || (s && s.state === 'below_horizon')));
-    const t = dark ? 'dark' : 'light';
-    if (this.$app.dataset.theme !== t) {
-      this.$app.dataset.theme = t;
+  // ---------- theme, glass and text size are the shell's (its AppearanceController); the guest hears of a change here ----------
+  appearanceChanged(a) {
+    if (!this.$app) return; // nothing drawn yet: the first draw reads the shell
+    if (a.theme !== this.theme) {
+      this.theme = a.theme;
       this.cache = {};
       this.redrawCharts();
-      this.pageBg();
+      this.refreshSettings();
     }
-    if (glass === 'sky' && this.$app.dataset.wp !== this.skyWp()) this.applyGlass();
-    if (this.$('setpop') && !this.$('setpop').hidden) {
-      this.cache.setc = null;
-      this.renderSettings();
-    }
+    this.lensAll();
   }
   // ---------- settings popup behind the gear: theme, text size, glass, transparency (laid out like iOS Control Center) ----------
   toggleSettings(force) {
@@ -1174,15 +1136,19 @@ export class LegacyPanel {
       open = force ?? pop.hidden;
     pop.hidden = !open;
     this.$('gear').setAttribute('aria-expanded', open);
-    if (open) {
+    if (open) this.refreshSettings();
+  }
+  // the popup is drawn again from the settings and the theme in force, which the device can change while it is open
+  refreshSettings() {
+    if (this.$('setpop') && !this.$('setpop').hidden) {
       this.cache.setc = null;
       this.renderSettings();
     }
   }
   renderSettings() {
     const {theme: m, text: tx, glass: gl, glassLevel: gt} = this.settings.get(),
-      dark = this.$app.dataset.theme === 'dark';
-    const hint = m === 'auto' ? 'Following the sun' : 'Tap to switch';
+      dark = this.dark();
+    const hint = m === 'auto' ? 'Following the device' : 'Tap to switch';
     this.set(
       'setc',
       `<div class="cc">
@@ -1218,40 +1184,6 @@ export class LegacyPanel {
         <div class="gtrow"><span>Solid</span><input type="range" class="gtrange" min="0" max="100" step="1" value="${gt}" style="--p:${gt}%" aria-label="Transparency"><span>Clear</span></div></div>
       <div class="ccv">Home panel v${VERSION}${this.H ? ' · statistics refreshed every 15 minutes' : ''}</div></div>`,
     );
-  }
-  // ---------- text size: the iOS setting, or Large / Larger picked in the Status popup; every text size in the CSS is multiplied by --tx ----------
-  textMode() {
-    return this.settings.get().text;
-  }
-  applyText() {
-    const m = this.textMode();
-    let f = {smaller: 0.9, large: 1.15, larger: 1.3}[m] || 1;
-    // a hidden probe set in the system body font reports the size chosen in Settings (17 px at the default); browsers without that font leave it at 17
-    if (m === 'auto') {
-      const px = parseFloat(getComputedStyle(this.$('txprobe')).fontSize) || 17;
-      f = Math.min(1.6, Math.max(1, px / 17));
-    }
-    this.$app.style.setProperty('--tx', f.toFixed(3));
-    this.$app.classList.toggle('txl', f >= 1.25);
-  }
-
-  // ---------- Liquid Glass: the bar, rail, header chips, popup, toasts and phone sheets are glass over a wallpaper (Status popup: Glass) ----------
-  // transparency 0..100 (50 = the tuned default): fill alpha x (1.8 - t*0.016), so 0 is 1.8x denser and 100 is 0.2x
-  glassT() {
-    return this.settings.get().glassLevel;
-  }
-  glassMode() {
-    return this.settings.get().glass;
-  }
-  applyGlass() {
-    const m = this.glassMode(),
-      on = GLASS_WP.includes(m);
-    this.$app.classList.toggle('gl', on);
-    if (on) this.$app.dataset.wp = m === 'sky' ? this.skyWp() : m;
-    else delete this.$app.dataset.wp;
-    this.$app.style.setProperty('--g-m', (1.8 - this.glassT() * 0.016).toFixed(3));
-    this.lensAll();
-    this.pageBg();
   }
   // Idle clock (v1.19.6): after 5 min without a touch the wall iPad shows a big clock with the date, the temperatures and the next sun event.
   // Since 2.2.0 the current outdoor condition's icon (day or night version) sits beside the time.
@@ -1743,37 +1675,11 @@ export class LegacyPanel {
     clearTimeout(this.glowT);
     this.glowT = setTimeout(() => el.classList.remove('glow'), 2800);
   }
-  // Sky (v1.19.4): the wallpaper follows the day. Dawn from first light to an hour after sunrise, Ember from an hour before sunset to dusk,
-  // Aurora at night, Lake by day, Meadow when it rains, snows, storms or fogs
-  skyWp() {
-    const now = Date.now(),
-      d = this.sunDay(0),
-      w = this.st(this.E.weather),
-      k = condKind(w && w.state);
-    if (!d.rise || !d.set) return 'lake';
-    if (now < (d.dawn || d.rise) || now > (d.dusk || d.set)) return 'aurora';
-    if (now < d.rise + 36e5) return 'dawn';
-    if (now > d.set - 36e5) return 'ember';
-    return ['rain', 'snow', 'sleet', 'storm', 'fog'].includes(k) ? 'meadow' : 'lake';
-  }
-  // the page behind the panel (what shows in the overscroll bounce on iOS) takes the wallpaper's base colour, so the bounce never shows a dark band
-  pageBg() {
-    const on = this.$app.classList.contains('gl'),
-      c = on ? getComputedStyle(this.$app).getPropertyValue('--wbase').trim() : '';
-    if (on && !c) {
-      requestAnimationFrame(() => this.pageBg());
-      return;
-    } // styles not applied yet on the first call
-    for (const el of [document.documentElement, document.body]) {
-      if (c) el.style.setProperty('background-color', c, 'important');
-      else el.style.removeProperty('background-color');
-    }
-  }
   // Mercury drop (v1.19.0): Chromium bends the backdrop of every glass surface with a blurred fractal-noise displacement map (the Aether CSS
   // "glass-distortion" filter, referenced from glass.css through the mc class). WebKit drops url() filters, so it keeps the frosted glass from the CSS
   lensAll() {
-    const on =
-      this.$app.classList.contains('gl') && LENS_OK && !matchMedia('(prefers-reduced-transparency: reduce)').matches;
+    const {glass, reducedTransparency} = this.ctx.shell.appearance,
+      on = glass.on && LENS_OK && !reducedTransparency;
     if (!this.lensSvg) {
       this.lensSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       this.lensSvg.setAttribute('aria-hidden', 'true');
@@ -1810,7 +1716,6 @@ export class LegacyPanel {
       if (!r) return;
       r.style.setProperty('--p', r.value + '%');
       this.settings.set('glassLevel', Number(r.value));
-      this.applyGlass();
     });
     this.$('setc').addEventListener('click', e => {
       if (e.target.closest('[data-sleep]')) {
@@ -1818,29 +1723,14 @@ export class LegacyPanel {
         this.ctx.shell.idle.sleepNow();
         return;
       }
-      const t = e.target.closest('[data-th]');
-      if (t) {
-        const next = t.dataset.th === 'auto' ? 'auto' : this.$app.dataset.theme === 'dark' ? 'light' : 'dark';
-        this.settings.set('theme', next);
-        this.applyTheme();
-        this.cache.setc = null;
-        this.renderSettings();
-        return;
-      }
-      const g = e.target.closest('[data-gl]');
-      if (g) {
-        this.settings.set('glass', g.dataset.gl);
-        this.applyGlass();
-        this.cache.setc = null;
-        this.renderSettings();
-        return;
-      }
-      const b = e.target.closest('[data-tx]');
-      if (!b) return;
-      this.settings.set('text', b.dataset.tx);
-      this.applyText();
-      this.cache.setc = null;
-      this.renderSettings();
+      const t = e.target.closest('[data-th]'),
+        g = e.target.closest('[data-gl]'),
+        b = e.target.closest('[data-tx]');
+      if (t) this.settings.set('theme', t.dataset.th === 'auto' ? 'auto' : this.dark() ? 'light' : 'dark');
+      else if (g) this.settings.set('glass', g.dataset.gl);
+      else if (b) this.settings.set('text', b.dataset.tx);
+      else return;
+      this.refreshSettings(); // the popup shows the choice just made; the shell's controller applies it
     });
     [
       ['open-weather', 'sh-weather'],
@@ -2372,7 +2262,7 @@ export class LegacyPanel {
   renderLive() {
     if (!this.hass) return;
     this.findCar();
-    this.applyTheme();
+    this.refreshSettings();
     for (const f of [
       'renderHeader',
       'renderWeather',
@@ -5175,7 +5065,6 @@ export class LegacyPanel {
   // the shell's `compact` changed and its frame already follows
   compactChanged() {
     if (!this.$app) return; // nothing drawn yet: the first draw reads the shell
-    this.applyGlass();
     if (this.open && this.open !== this.inline) this.hide();
     if (this.view === 'tabs') {
       this.leaveTabs();

@@ -45,7 +45,9 @@ export type HouseOpts = {
   lang?: 'en' | 'fr';
   /** the areas carry the French names a French-speaking household gives them (Salon, Cuisine, Bureau) */
   frenchAreas?: boolean;
-  theme?: 'light' | 'dark';
+  theme?: 'light' | 'dark' | 'auto';
+  /** the device's own appearance (`prefers-color-scheme`), set before the page loads; the browser's default is light */
+  colorScheme?: 'light' | 'dark';
   /** whether the signed-in user is an admin */
   admin?: boolean;
   /** an ISO instant; when set, the page's clock is faked at it before the panel loads */
@@ -156,6 +158,7 @@ export const test = base.extend<{houseOpts: HouseOpts; house: House}>({
       else if (t.startsWith('WS ')) ws.push(JSON.parse(t.slice(3)) as House['ws'][number]);
       else if (m.type() === 'error' && !/Failed to load resource/.test(t)) errors.push(t);
     });
+    if (o.colorScheme) await page.emulateMedia({colorScheme: o.colorScheme});
     if (o.time) await page.clock.install({time: new Date(o.time)});
     if (o.time && o.frozen) await page.clock.setFixedTime(new Date(o.time));
     await page.goto(

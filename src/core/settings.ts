@@ -1,6 +1,7 @@
 // The per-browser settings (theme, text size, wallpaper, glass level, last tab) behind a storage parameter.
 // Pattern: a Storage-like parameter (accept dependencies, don't create them: Ousterhout, A Philosophy of Software
 // Design); parse at the edge, so a bad value becomes the default (King, Parse, don't validate).
+// Observer (Gamma et al., Design Patterns): `subscribe` tells a listener after each write, so what reads a setting need not poll.
 // Must not: touch localStorage or any global, throw on a bad or blocked storage, or change a key or a stored value.
 
 /** The slice of the browser's Storage that the settings use; the element passes localStorage. */
@@ -21,6 +22,8 @@ export interface Settings {
 export interface PanelSettings {
   get(): Settings;
   set<K extends keyof Settings>(key: K, value: Settings[K]): void;
+  /** Calls `listener` synchronously after every `set`, written or not; returns the function that stops it. */
+  subscribe(listener: () => void): () => void;
 }
 
 const KEYS: Record<keyof Settings, string> = {
@@ -35,6 +38,7 @@ const VERSION = '1';
 
 export function createSettings(storage: KeyValueStorage): PanelSettings {
   let versioned = false;
+  const listeners = new Set<() => void>();
 
   const read = (key: keyof Settings): string | null => {
     try {
@@ -69,6 +73,13 @@ export function createSettings(storage: KeyValueStorage): PanelSettings {
       } catch {
         // a full quota or blocked storage: the setting lasts until the page reloads
       }
+      // a copy, so a listener that stops itself or another does not change who is told this time
+      for (const listener of [...listeners]) listener();
+    },
+
+    subscribe(listener) {
+      listeners.add(listener);
+      return () => void listeners.delete(listener);
     },
   };
 }

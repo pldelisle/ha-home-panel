@@ -40,3 +40,60 @@ test('two panels on one page show their own houses', async ({house}) => {
   await expect(bulb(first)).toHaveAttribute('aria-checked', 'false');
   await expect(bulb(second)).toHaveAttribute('aria-checked', 'false');
 });
+
+// The page behind the panels has one colour, and the panel connected last owns it; when it leaves the other's colour
+// comes back, and when none is left the page is its own again.
+test('the page keeps its wallpaper colour until the last panel leaves', async ({house}) => {
+  const background = () =>
+    house.page.evaluate(() => ({
+      html: document.documentElement.style.backgroundColor,
+      body: document.body.style.backgroundColor,
+    }));
+  await expect.poll(background).toMatchObject({html: expect.stringMatching(/.+/), body: expect.stringMatching(/.+/)});
+  await house.page
+    .locator('home-panel')
+    .nth(1)
+    .evaluate(panel => panel.remove());
+  expect(await background()).toMatchObject({html: expect.stringMatching(/.+/), body: expect.stringMatching(/.+/)});
+  await house.page
+    .locator('home-panel')
+    .nth(0)
+    .evaluate(panel => panel.remove());
+  expect(await background()).toEqual({html: '', body: ''});
+});
+
+// The two panels read the same settings but each applies them on its own: the first is given Lake through its own popup
+// and the second is left on Dawn, so their wallpapers (and the colours behind the document) differ.
+test('the colour of the panel that leaves is handed to the one that stays', async ({house}) => {
+  const first = house.page.locator('home-panel').nth(0);
+  const second = house.page.locator('home-panel').nth(1);
+  // the document's background as the browser writes it, and a panel's wallpaper base colour read the same way
+  const documentColour = () => house.page.evaluate(() => document.documentElement.style.backgroundColor);
+  const wallpaperColour = (panel: Locator) =>
+    panel.evaluate(host => {
+      const base = getComputedStyle(host.shadowRoot!.getElementById('app')!).getPropertyValue('--wbase').trim();
+      const probe = document.createElement('i');
+      probe.style.backgroundColor = base;
+      return probe.style.backgroundColor;
+    });
+  const dawn = await wallpaperColour(second);
+  await expect.poll(documentColour).toBe(dawn); // the second panel connected last, so it owns the document
+  await first.locator('#gear').dispatchEvent('click');
+  await first.locator('#setc [data-gl="lake"]').dispatchEvent('click');
+  await expect(first.locator('.app')).toHaveAttribute('data-wp', 'lake');
+  const lake = await wallpaperColour(first);
+  expect(lake).not.toBe(dawn);
+  expect(await documentColour(), 'the first panel does not own the document').toBe(dawn);
+  await second.evaluate(host => host.remove());
+  expect(await documentColour(), 'the first panel gets the document back, in its own colour').toBe(lake);
+});
+
+test.describe('on auto', () => {
+  test.use({houseOpts: {cfg: FULL_CFG, two: true, theme: 'auto'}});
+
+  test('two panels follow the device together', async ({house}) => {
+    await house.page.emulateMedia({colorScheme: 'dark'});
+    for (const index of [0, 1])
+      await expect(house.page.locator('home-panel').nth(index).locator('.app')).toHaveAttribute('data-theme', 'dark');
+  });
+});

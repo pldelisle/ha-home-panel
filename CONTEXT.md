@@ -4,7 +4,7 @@ The words the panel and its code use. One word per concept: use it in issues, te
 
 ## The house, as the panel shows it
 
-**Tab** — A button on the tablet's rail or the phone's bottom bar that picks a subject (Home, Lights, Climate and so on). Avoid: page.
+**Tab** — A button on the tablet's rail or the phone's bottom bar that picks a subject (Home, Lights, Climate and so on). Avoid: page (and the document's background is "the document" in code, `claimDocument`, never "the page").
 
 **Pane** — What a tab shows: the content of one of the ten subjects on the tablet rail. Avoid: page.
 
@@ -92,7 +92,11 @@ The words the panel and its code use. One word per concept: use it in issues, te
 
 **Descriptor** — The data for one of the ten subjects in the shell's registry (`src/shell/features.ts`): key, title, icon, colour, whether it sits on the phone's bar, whether this house shows it, and its pane. The rail, the phone's bar and the panes are drawn from the list.
 
-**Controller** — A Lit reactive controller: an object an element owns that hooks into its lifecycle, such as `StoreController` (subscribes the element to the entity ids it reads), `MediaQueryController` and `IdleTimer` (a state machine: active, idle, waking). Avoid: mixin.
+**Controller** — A Lit reactive controller: an object an element owns that hooks into its lifecycle, such as `StoreController` (subscribes the element to the entity ids it reads), `MediaQueryController`, `IdleTimer` (a state machine: active, idle, waking) and the shell's `AppearanceController`. Avoid: mixin.
+
+**Theme** — Light or dark. Set to Dark or Light it holds; on Auto ("Theme Auto") it is exactly the device's own light or dark setting, as it changes. The sun has no part in it, though it still picks the Sky wallpaper. Not the Auto of a room's lights, which is Adaptive Lighting's. Avoid: mode, skin.
+
+**Appearance** — How the panel looks right now, as one frozen value the shell's `AppearanceController` replaces whenever anything in it changes and provides by context: dark or light, the glass wallpaper and its density, the text scale and whether it is large text, compact, narrow, reduced transparency and `live` (a touch in the last minute). A consumer compares it by reference.
 
 **Strangler fig** — The migration shape: rewrite in place, one feature per release, the live panel never going dark, until the legacy class is deleted. After Fowler's Strangler Fig Application.
 

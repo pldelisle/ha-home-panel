@@ -7,6 +7,7 @@
 import type {PanelApi} from '../core/api.ts';
 import type {PanelSettings} from '../core/settings.ts';
 import type {HassChange, PanelStore} from '../core/store.ts';
+import type {Appearance} from '../ui/contexts.ts';
 import type {FeatureDescriptor, FeatureKey, GuestAnswers} from './feature.ts';
 import type {IdleTimer} from './idle-timer.ts';
 
@@ -42,6 +43,13 @@ export interface GuestRenderer extends GuestAnswers {
   tabChanged(tab: FeatureKey): void;
   /** Step C: the shell's `compact` changed and its frame already follows; the guest lays its cards out again. Deleted with the last layout the guest keeps. */
   compactChanged(compact: boolean): void;
+  /**
+   * Step D: the shell's appearance is a new value and its frame shows it (`data-theme`, `data-wp`, `gl`, `txl`, `live`
+   * and the rest). Told once per new value, after the frame shows it, and not for the value the guest connected to; the
+   * guest redraws what it drew from the old theme and fits its glass lens. Deleted with the guest (the phase-3 gate,
+   * #188); the lens half also waits for #198.
+   */
+  appearanceChanged(appearance: Appearance): void;
   /** Step C only: the shell's More button asks for the guest's More sheet, deleted by #166 (`<hp-more-sheet>`). */
   openMore(): void;
   /**
@@ -64,6 +72,8 @@ export interface ShellForGuest {
   readonly tab: FeatureKey;
   /** Under 600 px wide: the phone's shape. */
   readonly compact: boolean;
+  /** How the panel looks now: always current, where the frame follows in the next render. Deleted with the guest. */
+  readonly appearance: Appearance;
   /** Shows a tab, remembers it and tells the guest through `tabChanged` once its pane is on screen. */
   setTab(key: FeatureKey): void;
   /** `availability()` changed: the shell asks the guest again and draws the rail from the answer. */
@@ -83,8 +93,9 @@ export interface ShellForGuest {
 // `#iwrap`, the idle clock's, inside the overlay the shell draws (step D). The rule both sides keep: Lit binds nothing
 // inside a guest container, and the guest writes nothing outside its containers. This list only shrinks.
 
-// The one piece of module state in the shell: what src/main.js registers before it defines the element, so the first
-// <home-panel> already has a guest to create and its stylesheet to adopt. It exists for the guest alone.
+// The shell's module state: the guest registry here and, in document-background.ts, the claims on the document's
+// background. This is what src/main.js registers before it defines the element, so the first <home-panel> already has a
+// guest to create and its stylesheet to adopt. It exists for the guest alone.
 let registered: {make: () => GuestRenderer; styles: string} | null = null;
 
 /** `styles` is the guest's stylesheet as text; the shell adopts it once, so the shell imports no legacy module. */

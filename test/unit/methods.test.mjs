@@ -41,6 +41,7 @@ test('the class defines the guest methods', () => {
     'toast',
     'tabChanged',
     'compactChanged',
+    'appearanceChanged',
     'openMore',
     'availability',
     'moreLine',
