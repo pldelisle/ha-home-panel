@@ -39,9 +39,9 @@ test.describe('an admin with a typo in the config', () => {
         const top = (e: Element) => e.getBoundingClientRect().top;
         const aside = pane.querySelector('.cfgerr')!;
         const home = pane.querySelector('#hwx')!;
-        // everything else the pane draws, except its own title (the tablet's header line), starts below the card
+        // everything else the pane draws, except its own title (the tablet's pane header), starts below the card
         const others = [...pane.children].filter(
-          e => !e.contains(aside) && !e.classList.contains('ph') && e.getBoundingClientRect().height > 0,
+          e => !e.contains(aside) && e.localName !== 'hp-pane-header' && e.getBoundingClientRect().height > 0,
         );
         return {
           aboveHome: aside.getBoundingClientRect().bottom <= top(home) + 1,

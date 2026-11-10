@@ -41,5 +41,5 @@ export interface FeatureDescriptor {
   /** The word under the section in More; absent or null means none. */
   summary?: (env: FeatureEnv) => string | null;
   /** The pane's content: a feature's element, or the markup the guest still fills. */
-  pane: () => TemplateResult;
+  pane: (env: FeatureEnv) => TemplateResult;
 }

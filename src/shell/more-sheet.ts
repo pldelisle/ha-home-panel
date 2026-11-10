@@ -10,7 +10,7 @@ import {SwipeToClose} from '../ui/controllers/swipe-to-close.ts';
 import {ico} from '../ui/icons.ts';
 import '../ui/stat-tile.ts';
 import type {TileOpenDetail} from '../ui/stat-tile.ts';
-import {common, more, motion, sheet} from '../ui/styles/index.ts';
+import {badge, common, more, motion, sheet} from '../ui/styles/index.ts';
 import type {FeatureDescriptor, FeatureKey} from './feature.ts';
 import {isFeatureKey} from './features.ts';
 
@@ -42,6 +42,7 @@ export class MoreSheet extends LitElement {
     common,
     motion,
     sheet,
+    badge,
     more,
     css`
       :host {

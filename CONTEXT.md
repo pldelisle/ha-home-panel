@@ -8,6 +8,8 @@ The words the panel and its code use. One word per concept: use it in issues, te
 
 **Pane** — What a tab shows: the content of one of the ten subjects on the tablet rail. Avoid: page.
 
+**Pane header** — The block a pane opens with: a badge in the subject's colour, the title, a line under it and, on Lights, the Arrange buttons; the kit's `<hp-pane-header>`, with the line and the buttons as slotted nodes the guest still fills. The summary panes' header (Climate, Weather, Car, Energy, Air) shows on the phone only, since a tablet's pane opens on a detail with its own; Home's shows on a tablet only.
+
 **Sheet** — A detail view opened from a pane by tapping a tile or card, such as a room's light sheet; it slides up on a phone and is a narrow panel on a tablet. Avoid: modal, dialog.
 
 **Tile** — A compact tappable block for one thing, such as a room on the Lights tab (the bulb switches the room, the rest of the tile opens its sheet) or a scene. Avoid: row (the sideways dimmer row that tiles replaced).
@@ -70,7 +72,7 @@ The words the panel and its code use. One word per concept: use it in issues, te
 
 **Provider** — An adapter in `src/providers/`, its `read` a pure function, that turns an integration's entities (Environment Canada, Hilo, Hydro-Québec, FordPass, Wallbox, Mila, UniFi Protect, Adaptive Lighting) into the generic inputs a model expects, so a model never matches on an integration's naming. A feature can have several, applied in a declared order (the weather entity, then Environment Canada over it).
 
-**UI kit** — The layer in `src/ui/` of small shared Lit elements and styles: card, tile, sheet, dial, ring, pill, chip, dimmer slider, chart wrapper and the design tokens.
+**UI kit** — The layer in `src/ui/` of small shared Lit elements and styles: card, tile, pane header, sheet, dial, ring, pill, chip, dimmer slider, chart wrapper and the design tokens.
 
 **Core** — The layer in `src/core/`, the functional core: it imports only itself and npm packages, has no DOM, and is where the only code that touches `hass` lives; whatever it needs from the browser (time zone, locale, storage) it takes as a parameter.
 

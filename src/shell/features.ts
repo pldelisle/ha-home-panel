@@ -24,8 +24,8 @@ export const FEATURES: readonly FeatureDescriptor[] = [
     phoneBar: true,
     header: {
       subId: 'lsub',
-      extra:
-        '<div class="ledbar" id="ledbar" hidden><button type="button" class="more" id="lreset" hidden>Reset order</button><button type="button" class="more" id="ledit" aria-pressed="false">Arrange</button></div>',
+      actions:
+        '<div class="ledbar" id="ledbar" slot="actions" hidden><button type="button" class="more" id="lreset" hidden>Reset order</button><button type="button" class="more" id="ledit" aria-pressed="false">Arrange</button></div>',
     },
     hosts: [
       '<div class="card" id="albar" hidden></div>',
@@ -37,14 +37,14 @@ export const FEATURES: readonly FeatureDescriptor[] = [
     icon: 'therm',
     color: 'var(--c-wh)',
     phoneBar: true,
-    header: {h2Id: 'ch2', subId: 'csub2', compact: true},
+    header: {subId: 'csub2', compact: true},
     hosts: ['<div class="ctiles2" id="ctiles2"></div>'],
   }),
   legacyFeature('weather', {
     icon: 'wx',
     color: 'var(--m-blue)',
     phoneBar: false,
-    header: {h2Id: 'wh2', subId: 'wsub2', compact: true},
+    header: {subId: 'wsub2', compact: true},
     hosts: ['<div id="wxhost"></div>', '<div class="wxtiles" id="wxtiles"></div>'],
   }),
   legacyFeature('car', {
@@ -58,14 +58,14 @@ export const FEATURES: readonly FeatureDescriptor[] = [
     icon: 'bolt',
     color: 'var(--c-grid)',
     phoneBar: false,
-    header: {h2Id: 'eh2', subId: 'esub2', compact: true},
+    header: {subId: 'esub2', compact: true},
     hosts: ['<div id="ehost"></div>', '<div class="etiles" id="etiles"></div>', '<div class="eside" id="eside"></div>'],
   }),
   legacyFeature('air', {
     icon: 'aq',
     color: 'var(--ok)',
     phoneBar: false,
-    header: {h2Id: 'ah2', subId: 'asub2', compact: true},
+    header: {subId: 'asub2', compact: true},
     hosts: ['<div id="airhost"></div>'],
   }),
   legacyFeature('media', {
