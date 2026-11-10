@@ -56,6 +56,11 @@ export interface GuestRenderer extends GuestAnswers, LegacySheetGuest {
    * then; the guest draws the clock into `#iwrap`. Told once per change. Deleted with the clock's own move (#187).
    */
   idleChanged(idle: boolean): void;
+  /**
+   * Step D: whether the history behind the charts has loaded, which the settings popup's version line says. The guest asks
+   * the shell for a frame (`requestFrame`) when it turns true. Deleted with `loadHistory` (spec 21, the Car move, #182).
+   */
+  statisticsLoaded(): boolean;
 }
 
 /** What the guest may ask of the shell, and what it may read of it. Deleted whole with the guest; `tab`, `compact`, `setTab` and `requestFrame` live as long as it does. */
@@ -69,7 +74,7 @@ export interface ShellForGuest {
   readonly appearance: Appearance;
   /** Shows a tab, remembers it and tells the guest through `tabChanged` once its pane is on screen. */
   setTab(key: FeatureKey): void;
-  /** `availability()` changed: the shell asks the guest again and draws the rail from the answer. */
+  /** `availability()` changed, or the history loaded (`statisticsLoaded()`): the shell asks the guest again and draws the rail and the settings popup from the answers. */
   requestFrame(): void;
   /** The guest is about to draw its markup again: the shell renders its frame afresh and returns when it is in the DOM. Deleted with the guest's `build`. */
   resetFrame(): void;
@@ -78,6 +83,11 @@ export interface ShellForGuest {
    * on a phone too. The controller's `start` is the shell's own, at connection. Deleted with the guest's clock (#187).
    */
   idle: Pick<IdleTimer, 'arm' | 'sleepNow'>;
+  /**
+   * Step D: closes the settings popup, which the shell opens with the gear and draws; the guest's tap outside asks.
+   * Deleted with the Status checks' move (#183), when the shell's header takes the taps of both popups.
+   */
+  closeSettings(): void;
   /** Step E: the sheet host. The guest registers its sheets and popups with it, and opens and closes sheets through it. Deleted with the guest. */
   sheets: SheetHost;
 }

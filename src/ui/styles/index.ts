@@ -8,6 +8,8 @@ import commonText from './common.css?inline';
 import moreText from './more.css?inline';
 import motionText from './motion.css?inline';
 import paneHeaderText from './pane-header.css?inline';
+import segText from './seg.css?inline';
+import settingsText from './settings.css?inline';
 import sheetText from './sheet.css?inline';
 import statTileText from './stat-tile.css?inline';
 import {forShadow} from './host.ts';
@@ -28,3 +30,7 @@ export const paneHeader = adopt(paneHeaderText);
 export const statTile = adopt(statTileText);
 /** The More list's grid. */
 export const more = adopt(moreText);
+/** The segmented control: a row or a grid of radio buttons, one chosen. */
+export const seg = adopt(segText);
+/** The settings popup's tiles, its text-size and glass choices and the transparency slider. */
+export const settings = adopt(settingsText);

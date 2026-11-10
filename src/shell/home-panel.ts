@@ -1,6 +1,6 @@
 // <home-panel>, the one element Home Assistant mounts: it owns the store, the API client and the settings, provides them through context, draws the frame from the registry and hosts the guest in its one shadow root.
 // Pattern: composition root (Seemann, Dependency Injection Principles, Practices, and Patterns); humble object (Meszaros, xUnit Test Patterns): it forwards `hass`, `panel` and `narrow` and decides nothing the registry and the store decide.
-// It reads `localStorage`; the browser's locale defaults are read here and, until the formatters move, by the guest. It owns `tab`, `compact`, the idle state, which tabs the house shows and, through controllers, the appearance and the open sheet.
+// It reads `localStorage`; the browser's locale defaults are read here and, until the formatters move, by the guest. It owns `tab`, `compact`, the idle state, which tabs the house shows, whether the settings popup is open and, through controllers, the appearance and the open sheet.
 // Must not: import legacy code (the guest arrives through registerGuest), or decide what the store and the models decide.
 // Lit binds nothing inside a guest container, and the guest writes nothing outside its containers.
 import {
@@ -37,6 +37,7 @@ import {IdleTimer, type IdleState} from './idle-timer.ts';
 import './more-sheet.ts'; // defines <hp-more-sheet>
 import '../ui/pane-header.ts'; // defines <hp-pane-header>, which the legacy panes' headers are
 import type {TabSelectDetail} from './more-sheet.ts';
+import './settings-popup.ts'; // defines <hp-settings-popup>
 import {SheetMediator} from './sheet-host.ts';
 
 /** The panel Home Assistant hands over with the config the `panel_custom:` block carried. */
@@ -72,6 +73,7 @@ export class HomePanel extends LitElement {
     selected: {state: true},
     epoch: {state: true},
     idleState: {state: true},
+    settingsOpen: {state: true},
   };
   declare hass: PanelHass | undefined;
   declare narrow: boolean;
@@ -82,6 +84,8 @@ export class HomePanel extends LitElement {
   declare private epoch: number;
   /** The idle timer's state, drawn as `.app.idle`, the overlay's `hidden` and its `wake` class; the guest draws the clock. */
   declare private idleState: IdleState;
+  /** The settings popup behind the gear is open. */
+  declare private settingsOpen: boolean;
 
   // The legacy stylesheet is the guest's, so it comes with the guest (registerGuest) instead of an import of
   // src/styles.js, which the dependency rule forbids here. Lit adopts it once for every instance, as a constructed
@@ -136,6 +140,7 @@ export class HomePanel extends LitElement {
   private readonly forGuest: ShellForGuest = this.doors();
   private guest: GuestRenderer | undefined;
   private guestConnected = false;
+  private settingsOff: (() => void) | undefined;
   // which tabs this house shows, asked of the descriptors when the answer may have changed (the store told us, or the guest)
   private stale = true;
   private shown: Readonly<Partial<Record<FeatureKey, boolean>>> = {};
@@ -164,6 +169,7 @@ export class HomePanel extends LitElement {
     this.selected = this.settings.get().tab;
     this.epoch = 0;
     this.idleState = 'active';
+    this.settingsOpen = false;
     // each provider adds itself to this element as a controller and answers the context requests of every element below
     new ContextProvider(this, {context: storeContext, initialValue: this.store});
     new ContextProvider(this, {context: apiContext, initialValue: this.api});
@@ -184,6 +190,7 @@ export class HomePanel extends LitElement {
       requestFrame: () => this.requestFrame(),
       resetFrame: () => this.resetFrame(),
       idle: {arm: () => this.idle.arm(), sleepNow: () => this.idle.sleepNow()},
+      closeSettings: () => this.closeSettings(),
       sheets: this.sheets,
       get tab() {
         return tab();
@@ -227,6 +234,7 @@ export class HomePanel extends LitElement {
   private resetFrame(): void {
     // the guest's sheets start over with it, and so does More: it closes, as it did when the guest wrote it
     this.sheets.forget(MORE_SHEET);
+    this.settingsOpen = false;
     this.epoch++;
     this.flush();
   }
@@ -235,6 +243,21 @@ export class HomePanel extends LitElement {
 
   // the sheet's Close button, its backdrop and its swipe: the host closes it, if it is still the sheet that is open
   private readonly onMoreClose = (): void => this.sheets.close(MORE_SHEET);
+
+  // The gear opens and closes the popup; its Sleep now closes it and starts the idle clock. Escape reaches it through the sheet host
+  // (registered after the guest's Status checks, so those close first); the guest's tap outside asks `closeSettings`. Arrow fields, so the template hands the same functions at every render.
+  private readonly toggleSettings = (): void => {
+    this.settingsOpen = !this.settingsOpen;
+  };
+
+  private closeSettings(): void {
+    this.settingsOpen = false;
+  }
+
+  private readonly onSleepNow = (): void => {
+    this.settingsOpen = false;
+    this.idle.sleepNow();
+  };
 
   // a tile of the More sheet: the sheet closes, then the tab shows, as the guest's handler did
   private readonly onTabSelect = (e: CustomEvent<TabSelectDetail>): void => {
@@ -375,14 +398,21 @@ export class HomePanel extends LitElement {
             type="button"
             aria-label="Settings"
             aria-haspopup="dialog"
-            aria-expanded="false"
+            aria-expanded=${this.settingsOpen}
+            @click=${this.toggleSettings}
           >
             ${ico('gear', 20)}
           </button>
         </div>
         <div class="clock" id="clock"></div>
         <div class="pop" id="attpop" hidden role="dialog" aria-label="Status checks"><div id="att"></div></div>
-        <div class="pop" id="setpop" hidden role="dialog" aria-label="Settings"><div id="setc"></div></div>
+        <div class="pop" id="setpop" ?hidden=${!this.settingsOpen} role="dialog" aria-label="Settings">
+          <hp-settings-popup
+            .version=${__VERSION__}
+            .statistics=${this.guestConnected && this.guest?.statisticsLoaded() === true}
+            @sleep-now=${this.onSleepNow}
+          ></hp-settings-popup>
+        </div>
       </header>
       <div id="err"></div>
       <div class="tabview" id="tabview" hidden>
@@ -461,6 +491,9 @@ export class HomePanel extends LitElement {
   private connectGuest(): void {
     if (!this.guest || !this.isConnected) return;
     this.guest.connect(this.guestContext());
+    // Escape tries the popups in the order they registered: the guest's Status checks (registered in connect) close first, then this one
+    this.settingsOff?.();
+    this.settingsOff = this.sheets.registerPopup({isOpen: () => this.settingsOpen, close: () => this.closeSettings()});
     this.guestConnected = true;
     this.phoneNow = this.phone.matches;
     this.toldCompact = this.phoneNow;
@@ -518,6 +551,8 @@ export class HomePanel extends LitElement {
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     this.guest?.disconnect();
+    this.settingsOff?.();
+    this.settingsOff = undefined;
     this.toldIdle = false; // the guest is down: a change of state while away tells it nothing, and a clock still showing is told again on return
   }
 }

@@ -2,8 +2,6 @@
 // Nothing here reads Home Assistant or the time zone; those live in the panel's store (src/core/store.ts).
 // Scaffolding, not design: do not add to this list. See docs/specs/06-vite-build.md.
 
-export const VERSION = __VERSION__; // injected from package.json by vite.config.ts (and vitest.config.ts)
-
 export const ok = s => s && s.state !== 'unavailable' && s.state !== 'unknown';
 export const esc = s =>
   String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'})[c]);
