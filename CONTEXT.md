@@ -26,6 +26,8 @@ The words the panel and its code use. One word per concept: use it in issues, te
 
 **Status checks** — The list of things that need attention, opened from the attention pill or from the live-activity pill's popup. Avoid: status block (removed from the Home card).
 
+**Settings popup** — The popup behind the gear in the header: the theme (Dark or Light, and Auto), Sleep now, the text size, the glass and its transparency, and the version. Each choice is written to the browser's settings, and the shell applies it. Avoid: settings sheet (a sheet is a detail view of a tile), settings dialog.
+
 **Smart stack** — The cards that follow the moment (a door left open, the car charging overnight, tomorrow's weather), taking turns every 20 seconds with dots for how many there are; it sits beside the idle clock and fills the Home card on a tablet. Red cards stay alone and amber cards come first.
 
 **Idle clock** — The big clock shown after 5 minutes without a touch on a wall tablet, or by "Sleep now" in the settings; the smart stack sits beside it, or under it on a portrait screen.

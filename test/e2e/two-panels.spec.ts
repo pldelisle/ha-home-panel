@@ -79,7 +79,7 @@ test('the colour of the panel that leaves is handed to the one that stays', asyn
   const dawn = await wallpaperColour(second);
   await expect.poll(documentColour).toBe(dawn); // the second panel connected last, so it owns the document
   await first.locator('#gear').dispatchEvent('click');
-  await first.locator('#setc [data-gl="lake"]').dispatchEvent('click');
+  await first.locator('hp-settings-popup [data-gl="lake"]').dispatchEvent('click');
   await expect(first.locator('.app')).toHaveAttribute('data-wp', 'lake');
   const lake = await wallpaperColour(first);
   expect(lake).not.toBe(dawn);
