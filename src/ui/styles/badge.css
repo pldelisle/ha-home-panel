@@ -1,0 +1,36 @@
+/* The badge in a header's corner, written once for the pane header, the More sheet and the legacy sheets: the icon on a square
+   tinted with the subject's colour (`--acc`), and glass on the glass look. A header is `.ph` with a `.badge` in it. Inside an
+   element `.app.cp` and `.app.gl` read as `:host([compact])` and `:host([glass])` (host.ts). */
+.ph .badge {
+  width: 54px;
+  height: 54px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  background: color-mix(in srgb, var(--acc, var(--fg3)) 22%, var(--card));
+  color: var(--fg);
+}
+.app.cp .ph .badge {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+}
+.app.cp .ph .badge svg {
+  width: 22px;
+  height: 22px;
+}
+/* pane and sheet title icons are tinted glass instead of a flat colour square */
+.app.gl .ph .badge {
+  background: color-mix(in srgb, var(--acc, var(--fg3)) 22%, var(--g-fill));
+  -webkit-backdrop-filter: var(--g-bd);
+  backdrop-filter: var(--g-bd);
+  box-shadow: var(--g-edge);
+}
+@media (prefers-reduced-transparency: reduce) {
+  .app.gl .ph .badge {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: color-mix(in srgb, var(--acc, var(--fg3)) 22%, var(--card));
+  }
+}
