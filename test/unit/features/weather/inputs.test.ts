@@ -31,6 +31,21 @@ describe('the order of resolution', () => {
     expect(read([second, first])).toMatchObject({temperature: 1, humidity: 50});
   });
 
+  test('a field a source gives way on is filled only when no earlier source did', () => {
+    const entity = source('entity', {temperature: 3});
+    const sensor = {...source('sensor', {temperature: 4.2, humidity: 70}), fallback: ['temperature'] as const};
+    expect(read([entity, sensor])).toMatchObject({temperature: 3, humidity: 70});
+    expect(read([source('empty', {}), sensor])).toMatchObject({temperature: 4.2});
+  });
+
+  test('the outdoor sensor is the temperature only when the weather entity has none', () => {
+    const states = (attributes: object) => fullHouse.next({'weather.springfield_forecast': {attributes}}).states;
+    const temperature = (attributes: object) =>
+      readWeather(states(attributes), resolveConfig({}, states(attributes))).temperature;
+    expect(temperature({temperature: 3})).toBe(3);
+    expect(temperature({temperature: null})).toBe(4.2);
+  });
+
   test('a source that is absent fills nothing', () => {
     expect(read([source('first', {temperature: 1}), source('absent', {temperature: 2}, false)]).temperature).toBe(1);
   });
@@ -58,6 +73,7 @@ describe('the test houses', () => {
     expect(rest).toEqual({
       temperature: 4.2,
       condition: 'Mainly Sunny',
+      conditionWords: 'weather.cond.ec.mainlySunny',
       isDay: true,
       sun: {up: true, next: {kind: 'set', at: Date.parse('2026-11-07T16:45:00-05:00')}, hasFirstLight: true},
       today: {hi: 7, lo: -1, pop: null},

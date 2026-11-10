@@ -8,7 +8,7 @@ import type {HassChange, PanelStore} from '../../core/store.ts';
 import {storeContext} from '../contexts.ts';
 
 export interface StoreControllerOptions {
-  /** The entity ids the host reads, or `'*'` for every change; asked again when the config generation changes. */
+  /** The entity ids the host reads, or `'*'` for every change; asked again before each update, and the host listens to the new answer when the generation or the ids changed. */
   ids: (store: PanelStore) => readonly string[] | '*';
   /** Called before the host's update with what changed; most hosts need nothing here and just render again. */
   onChange?: (change: HassChange) => void;
@@ -23,6 +23,7 @@ export class StoreController implements ReactiveController {
   private resolved: PanelStore | undefined;
   private unsubscribe: (() => void) | undefined;
   private generation = -1;
+  private idsKey = '';
   private paused = false;
 
   constructor(
@@ -58,9 +59,13 @@ export class StoreController implements ReactiveController {
     this.unsubscribe = undefined;
   }
 
-  // the store's index is keyed by the ids a subscriber gave, so a new config generation means asking for the ids again
+  // The store's index is keyed by the ids a subscriber gave, so they are asked for again when the config generation moved and
+  // when the answer changed: the first hass resolves the config again without a new generation (the house's entities are found).
   hostUpdate(): void {
-    if (this.unsubscribe && this.resolved && this.resolved.generation !== this.generation) this.subscribeNow();
+    const store = this.resolved;
+    if (!this.unsubscribe || !store) return;
+    if (store.generation !== this.generation || this.keyOf(this.options.ids(store)) !== this.idsKey)
+      this.subscribeNow();
   }
 
   /** A hidden pane stops listening: no change reaches the host until `resume`. */
@@ -77,13 +82,19 @@ export class StoreController implements ReactiveController {
     this.host.requestUpdate();
   }
 
+  private keyOf(ids: readonly string[] | '*'): string {
+    return ids === '*' ? '*' : ids.join('\n');
+  }
+
   private subscribeNow(): void {
     this.unsubscribe?.();
     this.unsubscribe = undefined;
     const store = this.resolved;
     if (!store || this.paused || !this.host.isConnected) return;
     this.generation = store.generation;
-    this.unsubscribe = store.subscribe(this.options.ids(store), change => {
+    const ids = this.options.ids(store);
+    this.idsKey = this.keyOf(ids);
+    this.unsubscribe = store.subscribe(ids, change => {
       this.options.onChange?.(change);
       this.host.requestUpdate();
     });

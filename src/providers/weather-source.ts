@@ -5,6 +5,7 @@
 // Must not: import a feature or the DOM, hold a string the household reads, or read the clock.
 import type {ResolvedConfig} from '../core/config.ts';
 import type {HassEntities} from '../core/hass.ts';
+import type {MessageKey} from '../core/i18n/en.ts';
 
 export interface WeatherSource {
   /** `weather-entity`, `environment-canada`. */
@@ -13,6 +14,11 @@ export interface WeatherSource {
   ids(config: ResolvedConfig): readonly string[];
   /** True when the house has what this source reads; a source that is absent fills nothing. */
   present(states: HassEntities, config: ResolvedConfig): boolean;
+  /**
+   * Fields this source gives way on: it fills them only when no earlier source did, instead of overriding. Environment Canada's
+   * outdoor sensor is the temperature when the weather entity has none, as the legacy panel read it.
+   */
+  readonly fallback?: readonly (keyof WeatherInputs)[];
   /** The fields this source knows; a later source in the list overrides an earlier one, field by field. */
   read(states: HassEntities, config: ResolvedConfig): Partial<WeatherInputs>;
 }
@@ -32,6 +38,8 @@ export interface WeatherInputs {
   temperature: number | null;
   /** Home Assistant's condition word (`partlycloudy`, `rainy`), or the integration's own wording. */
   condition: string | null;
+  /** The catalog message that words `condition` when the source's own phrase has one (Environment Canada's), else null. */
+  conditionWords: MessageKey | null;
   /** The sun is up, or unknown (the legacy panel's rule: no sun entity means day). */
   isDay: boolean;
   /** `next` is the sun's coming event; `hasFirstLight` is true when the house has a sensor for the first light. */
@@ -90,6 +98,7 @@ export interface ForecastDay {
 export const EMPTY_INPUTS: WeatherInputs = {
   temperature: null,
   condition: null,
+  conditionWords: null,
   isDay: true,
   sun: {up: false, next: null, hasFirstLight: false},
   today: {hi: null, lo: null, pop: null},

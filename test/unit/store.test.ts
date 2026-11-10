@@ -339,6 +339,21 @@ describe('t', () => {
   });
 });
 
+describe('fmt', () => {
+  test("is the formats of the profile, the same object until the locale changes, and the browser's before the first hass", () => {
+    const store = createStore({defaultTimeZone: 'UTC', browserLocale: 'en-CA', browserHour12: false, resolve});
+    const before = store.fmt;
+    expect(store.fmt).toBe(before);
+    store.setHass(fakeHass({locale: {language: 'en'}}));
+    const english = store.fmt;
+    expect(english.integer(1234.5)).toBe('1,235');
+    expect(store.fmt).toBe(english);
+    store.setHass(fakeHass({locale: {language: 'fr'}}));
+    expect(store.fmt).not.toBe(english);
+    expect(store.fmt.fixed(4, 1)).toBe('4,0');
+  });
+});
+
 describe('names', () => {
   const areas = {living: {area_id: 'living', name: 'Living room'}, salon: {area_id: 'salon', name: 'Salon'}};
   const makeNamed = () => createStore({defaultTimeZone: 'UTC', resolve: resolveConfig});

@@ -47,6 +47,153 @@
       "key": "weather.cond.exceptional"
     },
     {
+      "key": "weather.cond.ec.mainlySunny"
+    },
+    {
+      "key": "weather.cond.ec.mainlyClear"
+    },
+    {
+      "key": "weather.cond.ec.mostlyCloudy"
+    },
+    {
+      "key": "weather.cond.ec.mainlyCloudy"
+    },
+    {
+      "key": "weather.cond.ec.overcast"
+    },
+    {
+      "key": "weather.cond.ec.aMixOfSunAndCloud"
+    },
+    {
+      "key": "weather.cond.ec.cloudyPeriods"
+    },
+    {
+      "key": "weather.cond.ec.aFewClouds"
+    },
+    {
+      "key": "weather.cond.ec.increasingCloudiness"
+    },
+    {
+      "key": "weather.cond.ec.clearing"
+    },
+    {
+      "key": "weather.cond.ec.lightRain"
+    },
+    {
+      "key": "weather.cond.ec.lightRainshower"
+    },
+    {
+      "key": "weather.cond.ec.rainShower"
+    },
+    {
+      "key": "weather.cond.ec.rainShowers"
+    },
+    {
+      "key": "weather.cond.ec.heavyRainshower"
+    },
+    {
+      "key": "weather.cond.ec.chanceOfShowers"
+    },
+    {
+      "key": "weather.cond.ec.showers"
+    },
+    {
+      "key": "weather.cond.ec.periodsOfRain"
+    },
+    {
+      "key": "weather.cond.ec.chanceOfRain"
+    },
+    {
+      "key": "weather.cond.ec.drizzle"
+    },
+    {
+      "key": "weather.cond.ec.lightDrizzle"
+    },
+    {
+      "key": "weather.cond.ec.freezingRain"
+    },
+    {
+      "key": "weather.cond.ec.lightFreezingRain"
+    },
+    {
+      "key": "weather.cond.ec.freezingDrizzle"
+    },
+    {
+      "key": "weather.cond.ec.lightSnow"
+    },
+    {
+      "key": "weather.cond.ec.heavySnow"
+    },
+    {
+      "key": "weather.cond.ec.flurries"
+    },
+    {
+      "key": "weather.cond.ec.chanceOfFlurries"
+    },
+    {
+      "key": "weather.cond.ec.lightSnowshower"
+    },
+    {
+      "key": "weather.cond.ec.snowShowers"
+    },
+    {
+      "key": "weather.cond.ec.periodsOfSnow"
+    },
+    {
+      "key": "weather.cond.ec.blowingSnow"
+    },
+    {
+      "key": "weather.cond.ec.driftingSnow"
+    },
+    {
+      "key": "weather.cond.ec.snowGrains"
+    },
+    {
+      "key": "weather.cond.ec.icePellets"
+    },
+    {
+      "key": "weather.cond.ec.lightRainAndSnow"
+    },
+    {
+      "key": "weather.cond.ec.wetSnow"
+    },
+    {
+      "key": "weather.cond.ec.fogPatches"
+    },
+    {
+      "key": "weather.cond.ec.mist"
+    },
+    {
+      "key": "weather.cond.ec.haze"
+    },
+    {
+      "key": "weather.cond.ec.smoke"
+    },
+    {
+      "key": "weather.cond.ec.iceFog"
+    },
+    {
+      "key": "weather.cond.ec.freezingFog"
+    },
+    {
+      "key": "weather.cond.ec.thunderstorm"
+    },
+    {
+      "key": "weather.cond.ec.thunderstormWithLightRain"
+    },
+    {
+      "key": "weather.cond.ec.chanceOfThunderstorms"
+    },
+    {
+      "key": "weather.cond.ec.notObserved"
+    },
+    {
+      "key": "weather.cond.ec.funnelCloud"
+    },
+    {
+      "key": "weather.cond.ec.dust"
+    },
+    {
       "key": "weather.observed",
       "values": {
         "time": "1:30 pm"
@@ -290,6 +437,10 @@
       }
     },
     {
+      "key": "weather.card.open",
+      "was": "Ouvrir les détails de la météo"
+    },
+    {
       "key": "weather.today"
     },
     {
@@ -505,7 +656,9 @@
       }
     },
     {
-      "key": "weather.sub.sameAir"
+      "key": "weather.sub.sameAir",
+      "was": "Comme l'air",
+      "after": "Air : Same as the"
     },
     {
       "key": "weather.sub.sameAirLower"
@@ -529,13 +682,15 @@
       }
     },
     {
-      "key": "weather.sub.chanceToday"
+      "key": "weather.sub.chanceToday",
+      "was": "Probabilité aujourd'hui"
     },
     {
       "key": "weather.sub.chanceTodayLower"
     },
     {
-      "key": "weather.sub.forTheDate"
+      "key": "weather.sub.forTheDate",
+      "was": "Pour la date"
     },
     {
       "key": "weather.sub.normalHighLow"

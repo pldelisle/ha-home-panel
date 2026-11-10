@@ -6,6 +6,7 @@
 import type {EntityKey} from '../core/config.ts';
 import {EC_SUFFIX} from '../core/entities.ts';
 import type {HassEntities} from '../core/hass.ts';
+import type {MessageKey} from '../core/i18n/en.ts';
 import {attributeOf, numberOf, textAttributeOf, textOf} from '../core/states.ts';
 import {
   forecastTime,
@@ -20,6 +21,81 @@ import {
 const KEYS = Object.keys(EC_SUFFIX) as EntityKey[];
 
 type Entities = Record<EntityKey, string | null>;
+
+/**
+ * Environment Canada's condition phrases (its condition sensor sends `Mainly Sunny`), each with the catalog message that words it.
+ * The sensor's text is the integration's data, so the model never matches on it: this table is the anti-corruption layer's part.
+ */
+const CONDITION_WORDS: Readonly<Record<string, MessageKey>> = {
+  sunny: 'weather.cond.sunny',
+  'mainly sunny': 'weather.cond.ec.mainlySunny',
+  clear: 'weather.cond.clear-night',
+  'mainly clear': 'weather.cond.ec.mainlyClear',
+  'partly cloudy': 'weather.cond.partlycloudy',
+  'mostly cloudy': 'weather.cond.ec.mostlyCloudy',
+  'mainly cloudy': 'weather.cond.ec.mainlyCloudy',
+  cloudy: 'weather.cond.cloudy',
+  overcast: 'weather.cond.ec.overcast',
+  'a mix of sun and cloud': 'weather.cond.ec.aMixOfSunAndCloud',
+  'cloudy periods': 'weather.cond.ec.cloudyPeriods',
+  'a few clouds': 'weather.cond.ec.aFewClouds',
+  'increasing cloudiness': 'weather.cond.ec.increasingCloudiness',
+  clearing: 'weather.cond.ec.clearing',
+  'light rain': 'weather.cond.ec.lightRain',
+  rain: 'weather.cond.rainy',
+  'heavy rain': 'weather.cond.pouring',
+  'light rainshower': 'weather.cond.ec.lightRainshower',
+  'rain shower': 'weather.cond.ec.rainShower',
+  'rain showers': 'weather.cond.ec.rainShowers',
+  'heavy rainshower': 'weather.cond.ec.heavyRainshower',
+  'chance of showers': 'weather.cond.ec.chanceOfShowers',
+  showers: 'weather.cond.ec.showers',
+  'periods of rain': 'weather.cond.ec.periodsOfRain',
+  'chance of rain': 'weather.cond.ec.chanceOfRain',
+  drizzle: 'weather.cond.ec.drizzle',
+  'light drizzle': 'weather.cond.ec.lightDrizzle',
+  'freezing rain': 'weather.cond.ec.freezingRain',
+  'light freezing rain': 'weather.cond.ec.lightFreezingRain',
+  'freezing drizzle': 'weather.cond.ec.freezingDrizzle',
+  'light snow': 'weather.cond.ec.lightSnow',
+  snow: 'weather.cond.snowy',
+  'heavy snow': 'weather.cond.ec.heavySnow',
+  flurries: 'weather.cond.ec.flurries',
+  'chance of flurries': 'weather.cond.ec.chanceOfFlurries',
+  'light snowshower': 'weather.cond.ec.lightSnowshower',
+  'snow showers': 'weather.cond.ec.snowShowers',
+  'periods of snow': 'weather.cond.ec.periodsOfSnow',
+  'blowing snow': 'weather.cond.ec.blowingSnow',
+  'drifting snow': 'weather.cond.ec.driftingSnow',
+  'snow grains': 'weather.cond.ec.snowGrains',
+  'ice pellets': 'weather.cond.ec.icePellets',
+  'rain and snow': 'weather.cond.snowy-rainy',
+  'light rain and snow': 'weather.cond.ec.lightRainAndSnow',
+  'wet snow': 'weather.cond.ec.wetSnow',
+  hail: 'weather.cond.hail',
+  fog: 'weather.cond.fog',
+  'fog patches': 'weather.cond.ec.fogPatches',
+  mist: 'weather.cond.ec.mist',
+  haze: 'weather.cond.ec.haze',
+  smoke: 'weather.cond.ec.smoke',
+  'ice fog': 'weather.cond.ec.iceFog',
+  'freezing fog': 'weather.cond.ec.freezingFog',
+  thunderstorm: 'weather.cond.ec.thunderstorm',
+  thunderstorms: 'weather.cond.lightning',
+  'thunderstorm with light rain': 'weather.cond.ec.thunderstormWithLightRain',
+  'thunderstorms and rain': 'weather.cond.lightning-rainy',
+  'chance of thunderstorms': 'weather.cond.ec.chanceOfThunderstorms',
+  windy: 'weather.cond.windy',
+  'windy and cloudy': 'weather.cond.windy-variant',
+  'unusual weather': 'weather.cond.exceptional',
+  'not observed': 'weather.cond.ec.notObserved',
+  'funnel cloud': 'weather.cond.ec.funnelCloud',
+  dust: 'weather.cond.ec.dust',
+};
+
+/** The catalog message for a phrase of the condition sensor, or null for one this table does not know (the model then capitalises it). */
+export const conditionWordsOf = (phrase: string | null): MessageKey | null =>
+  (phrase && CONDITION_WORDS[phrase.trim().toLowerCase()]) || null;
 
 /** The four alert sensors, in the order the panel lists them, with the tone each is drawn in. */
 const ALERT_KINDS = [
@@ -114,6 +190,9 @@ export function foldForecastDays(entries: ForecastEntry[], isoDay: (ms: number) 
 export const environmentCanadaSource: WeatherSource = {
   name: 'environment-canada',
 
+  // the weather entity's temperature comes first, as the legacy panel, the Home card and the idle clock read it
+  fallback: ['temperature'],
+
   ids: config => KEYS.map(key => config.entities[key]).filter((id): id is string => id !== null),
 
   present: (states, config) =>
@@ -133,6 +212,7 @@ export const environmentCanadaSource: WeatherSource = {
 
     set('temperature', number('outT'));
     set('condition', text('cond'));
+    set('conditionWords', conditionWordsOf(text('cond')));
     set('today', group({hi: number('hi'), lo: number('lo'), pop: number('pop')}));
     set('normals', group({hi: number('nhi'), lo: number('nlo')}));
     set(

@@ -2,7 +2,8 @@
 // Pattern: registry (Fowler, Patterns of Enterprise Application Architecture, Registry) of plug-ins (Plugin): adding a
 // subject is one folder and one line here, and a move replaces its legacyFeature(...) line with the feature's own.
 // Must not: hold state, know the guest (a descriptor reads it through its env), or list a subject twice.
-import type {FeatureDescriptor, FeatureKey} from './feature.ts';
+import type {FeatureDescriptor, FeatureKey} from '../ui/feature.ts';
+import {weatherFeature} from '../features/weather/index.ts';
 import {legacyFeature} from './legacy-feature.ts';
 
 export const FEATURES: readonly FeatureDescriptor[] = [
@@ -40,13 +41,7 @@ export const FEATURES: readonly FeatureDescriptor[] = [
     header: {subId: 'csub2', compact: true},
     hosts: ['<div class="ctiles2" id="ctiles2"></div>'],
   }),
-  legacyFeature('weather', {
-    icon: 'wx',
-    color: 'var(--m-blue)',
-    phoneBar: false,
-    header: {subId: 'wsub2', compact: true},
-    hosts: ['<div id="wxhost"></div>', '<div class="wxtiles" id="wxtiles"></div>'],
-  }),
+  weatherFeature,
   legacyFeature('car', {
     icon: 'car',
     color: 'var(--c-ev)',

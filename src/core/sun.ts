@@ -2,6 +2,7 @@
 // Pattern: the suncalc formulas (Agafonkin, after Meeus, Astronomical Algorithms), a pure function of a place and a day
 // key. Its constant J0 puts every time about a minute after NOAA's tables, and the panel has always drawn these.
 // Must not: read the clock or a time zone (the caller names the day), or touch the DOM or `hass`.
+import {DAY_MS} from './figures.ts';
 
 /** The sun's times in milliseconds since the epoch; rise, set, dawn and dusk are null where the sun never crosses the angle. */
 export interface SunTimes {
@@ -16,7 +17,6 @@ export interface SunTimes {
 }
 
 const RAD = Math.PI / 180;
-const DAY_MS = 864e5;
 const J1970 = 2440588;
 const J2000 = 2451545;
 const OBLIQUITY = RAD * 23.4397;

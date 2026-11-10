@@ -1,11 +1,12 @@
 // The shape of a plug-in: what the frame needs to know about one subject of the panel, as data.
 // Pattern: plug-in (Fowler, Patterns of Enterprise Application Architecture, Plugin): configuration, not code, decides
 // which implementation of a subject is linked, and the registry (features.ts) is the list of these descriptors.
+// Lives in the kit so a feature can type its descriptor without importing the shell (ADR 0017); the registry is the shell's.
 // Must not: hold state, import the guest, a feature or the shell's elements, or draw: `pane` only returns a template.
 import type {TemplateResult} from 'lit';
 import type {MessageKey} from '../core/i18n/en.ts';
 import type {PanelStore} from '../core/store.ts';
-import type {IconName} from '../ui/icons.ts';
+import type {IconName} from './icons.ts';
 
 /** The ten subjects of the panel, in rail order. */
 export type FeatureKey =

@@ -3,7 +3,9 @@
 // (weather-tablet-light-en and -fr, bare-weather-tablet-light-en), so this test is those pixels' textual twin.
 import {existsSync} from 'node:fs';
 import {describe, expect, test} from 'vitest';
-import {conditionName} from '../../../../src/features/weather/model.ts';
+import {conditionName, weatherBrief} from '../../../../src/features/weather/model.ts';
+import {createFormatters} from '../../../../src/core/i18n/format.ts';
+import {englishLocale} from '../../../../src/core/i18n/locale.ts';
 import {createMessages} from '../../../../src/core/i18n/messages.ts';
 import {EMPTY_INPUTS, type WeatherInputs} from '../../../../src/providers/weather-source.ts';
 import {REFERENCE_MS} from '../../../houses/clock.mjs';
@@ -64,6 +66,7 @@ describe('the full test house, in English', () => {
 
   test("the phone's card", () => {
     expect(model.card).toEqual({
+      house: null,
       sunLabel: 'Sunset',
       sunTime: '4:45 pm',
       temperature: '4.2°',
@@ -106,8 +109,8 @@ describe('the full test house, in English', () => {
 describe('the full test house, in French', () => {
   const model = modelOf(fullHouse, 'fr');
 
-  test('the pane sub-line, except the condition: the -fr baseline reads "Généralement ensoleillé" (#157 maps Environment Canada\'s phrases in its adapter)', () => {
-    expect(model.summary).toBe('Mainly sunny · observé à 13 h 30 · pression en hausse · aucune alerte');
+  test("the pane sub-line, with Environment Canada's phrase worded by the catalog as the -fr baseline reads it", () => {
+    expect(model.summary).toBe('Généralement ensoleillé · observé à 13 h 30 · pression en hausse · aucune alerte');
   });
 
   test('the pane tiles', () => {
@@ -547,5 +550,39 @@ describe('the recorded house', () => {
     expect(model.tiles).toHaveLength(8);
     expect(model.now.tiles).toHaveLength(8);
     for (const text of strings(model)) expect(text).not.toMatch(/NaN|undefined|\[object/);
+  });
+});
+
+describe('the house picture and the word under Weather in More', () => {
+  test("the card carries the config's picture, the night one falling back to the day one, and none without a day one", () => {
+    const inputs = inputsWith({temperature: 4});
+    expect(modelFromInputs(inputs, 'en', {house: {day: '/d.png', night: '/n.png'}}).card.house).toEqual({
+      day: '/d.png',
+      night: '/n.png',
+    });
+    expect(modelFromInputs(inputs, 'en', {house: {day: '/d.png', night: null}}).card.house).toEqual({
+      day: '/d.png',
+      night: '/d.png',
+    });
+    expect(modelFromInputs(inputs, 'en', {house: {day: null, night: '/n.png'}}).card.house).toBeNull();
+  });
+
+  const deps = {
+    fmt: createFormatters(englishLocale('America/Toronto')),
+    t: createMessages({language: 'en', tag: 'en-CA'}).t,
+  };
+
+  test("is the rounded temperature and the condition, in the catalog's words", () => {
+    expect(weatherBrief(inputsWith({temperature: 4.2, condition: 'partlycloudy'}), deps)).toBe('4° · Partly cloudy');
+    expect(
+      weatherBrief(
+        inputsWith({temperature: -0.4, condition: 'Mainly Sunny', conditionWords: 'weather.cond.ec.mainlySunny'}),
+        deps,
+      ),
+    ).toBe('0° · Mainly sunny');
+  });
+
+  test('is empty when the house has no temperature', () => {
+    expect(weatherBrief(inputsWith({condition: 'rainy'}), deps)).toBe('');
   });
 });

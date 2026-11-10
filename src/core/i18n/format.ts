@@ -4,6 +4,7 @@
 // post-processing: the three house rules (en-* am/pm without periods, fr-* "16 h" on the hour, fr-* thousands U+202F)
 // and number() and fixed() clamping their fraction digits to 2, and time24 and time24s, which join the parts with a colon and Latin
 // digits in every locale because the table asks for `16:07`. Must not: read the clock, the DOM or a browser default.
+import {HOUR_MS} from '../figures.ts';
 import type {PanelLocaleSpec} from './locale.ts';
 
 type Instant = Date | number;
@@ -46,7 +47,6 @@ export interface Formatters {
 }
 
 const PARTS_CACHE_LIMIT = 20_000;
-const HOUR_MS = 36e5;
 
 type HouseRule = (text: string) => string;
 const asIs: HouseRule = text => text;
@@ -60,6 +60,11 @@ const frenchBareHour: HouseRule = text =>
   text.replace(/^(\d+)(?: h)?$/, (_match, digits: string) => `${Number(digits)} h`);
 // Rule 3: the French thousands separator, the character the rewrite layer writes today.
 const frenchThousands: HouseRule = text => text.replace(/\u00a0/g, '\u202f');
+
+/** A whole number; the -0 of Math.round(-0.4) is 0, which Intl would otherwise write as `-0`. */
+export const whole = (fmt: Formatters, n: number): string => fmt.integer(Math.round(n) + 0);
+/** A whole number of degrees: `12°`. */
+export const degrees = (fmt: Formatters, n: number): string => `${whole(fmt, n)}°`;
 
 export function createFormatters(locale: PanelLocaleSpec): Formatters {
   const {language, tag, timeZone, hour12} = locale;

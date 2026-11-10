@@ -35,32 +35,6 @@
   opacity: 0.55;
   pointer-events: none;
 }
-.wxd {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 6px;
-  position: relative;
-  z-index: 1;
-}
-.wxd > div {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  padding: 8px 4px;
-  border-radius: 14px;
-  background: var(--card);
-  font-size: calc(12px * var(--tx));
-  color: var(--fg2);
-}
-.wxd b {
-  color: var(--fg);
-  font-size: calc(14px * var(--tx));
-}
-.wxd small {
-  color: var(--fg2);
-  font-size: calc(11px * var(--tx));
-}
 .walerts {
   display: grid;
   gap: 8px;
@@ -978,23 +952,6 @@ button.schip {
     width: 26px;
     height: 26px;
   }
-}
-.wxcard .house.photo {
-  top: 10px;
-  right: 16px;
-  width: clamp(150px, calc(100% - 240px), 300px);
-  max-width: none;
-  filter: drop-shadow(0 10px 10px rgba(40, 30, 20, 0.18));
-}
-.app[data-theme='dark'] .wxcard .house.photo {
-  filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.5));
-}
-.wxcard .house.night,
-.app[data-theme='dark'] .wxcard .house.day {
-  display: none;
-}
-.app[data-theme='dark'] .wxcard .house.night {
-  display: block;
 }
 .tvbox.on .lic {
   color: var(--c-home);

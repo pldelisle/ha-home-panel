@@ -6,7 +6,7 @@
 import {ifDefined} from 'lit/directives/if-defined.js';
 import {html, unsafeStatic} from 'lit/static-html.js';
 import {en, type MessageKey} from '../core/i18n/en.ts';
-import type {FeatureDescriptor, FeatureKey} from './feature.ts';
+import type {FeatureDescriptor, FeatureKey} from '../ui/feature.ts';
 
 export interface LegacyParts extends Pick<FeatureDescriptor, 'icon' | 'color' | 'phoneBar' | 'shortTitle'> {
   header: {

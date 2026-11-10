@@ -28,6 +28,11 @@ interface Moved {
    * must no longer translate the text, or the entry was not deleted and `was` is stale.
    */
   was?: string;
+  /**
+   * What the layer makes of the English text now that its entry is gone, when that is not the text itself (a pattern of the layer,
+   * `(.+) air` → `Air : …`, still reads it). Nothing shows it: the text is no longer drawn by the guest.
+   */
+  after?: string;
 }
 
 const english = createMessages({language: 'en', tag: 'en-CA'});
@@ -54,17 +59,17 @@ const ofMove = (prefix: string) => Object.keys(en).filter(key => key.startsWith(
 
 // a move: its fixture, the prefix of the keys it introduced and the folder that says them
 describe.each([
-  ['weather', 'weather.', 'src/features/weather/'],
-  ['ranges', 'range.', 'src/ui/'],
-  ['settings', 'settings.', 'src/shell/'],
-])('the %s move', (move, prefix, where) => {
+  ['weather', 'weather.', ['src/features/weather/', 'src/providers/']],
+  ['ranges', 'range.', ['src/ui/']],
+  ['settings', 'settings.', ['src/shell/']],
+])('the %s move', (move, prefix, folders) => {
   const moved = read(move);
 
   test.each(moved.map(m => [`${m.key} ${JSON.stringify(m.values ?? {})}`, m] as const))('%s', (_name, m) => {
     const text = english.t(m.key, m.values);
     // the layer is untyped JavaScript
     if (m.was !== undefined) {
-      expect(layer.text(text), 'the map entry is deleted').toBe(text);
+      expect(layer.text(text), 'the map entry is deleted').toBe(m.after ?? text);
       expect(french.t(m.key, inFrench(m))).toBe(m.was);
     } else if (m.frame) expect(m.frame.fr + french.t(m.key, inFrench(m))).toBe(layer.text(m.frame.en + text) as string);
     else expect(french.t(m.key, inFrench(m))).toBe(layer.text(text) as string);
@@ -76,10 +81,13 @@ describe.each([
   });
 
   test('has no dead message: the feature says every one, by its key or by the prefix of a computed key', () => {
-    const folder = new URL(`../../../${where}`, import.meta.url);
-    const source = readdirSync(folder)
-      .filter(file => file.endsWith('.ts'))
-      .map(file => readFileSync(new URL(file, folder), 'utf8'))
+    const source = folders
+      .map(where => new URL(`../../../${where}`, import.meta.url))
+      .flatMap(folder =>
+        readdirSync(folder)
+          .filter(file => file.endsWith('.ts'))
+          .map(file => readFileSync(new URL(file, folder), 'utf8')),
+      )
       .join('\n');
     const dead = ofMove(prefix).filter(
       key => !source.includes(`'${key}'`) && !source.includes(`\`${key.replace(/[^.]+$/, '')}$\{`),

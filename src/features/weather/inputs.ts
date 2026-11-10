@@ -1,6 +1,6 @@
 // readWeather: the house's weather inputs, from the sun and from every weather source that is present, in list order.
 // Pattern: a composition of strategies (Gamma et al.): start from the empty inputs, fold each present source's fields over
-// them, a later source winning field by field; the list is the order of resolution, and the README of this folder says it.
+// them, a later source winning field by field unless it gives way on that field (`fallback`); the list is the order of resolution, and the README of this folder says it.
 // Must not: know an integration (that is a source), read the clock, or touch the DOM or `hass`.
 import type {ResolvedConfig} from '../../core/config.ts';
 import type {HassEntities} from '../../core/hass.ts';
@@ -41,7 +41,15 @@ export function readWeather(
   const inputs: WeatherInputs = {...EMPTY_INPUTS, ...readSun(states, config)};
   for (const source of sources) {
     if (!source.present(states, config)) continue;
-    const known = Object.entries(source.read(states, config)).filter(([, value]) => value !== undefined);
+    // a field the source gives way on is left out once an earlier source filled it
+    const known = Object.entries(source.read(states, config)).filter(
+      ([field, value]) =>
+        value !== undefined &&
+        !(
+          source.fallback?.includes(field as keyof WeatherInputs) &&
+          inputs[field as keyof WeatherInputs] !== EMPTY_INPUTS[field as keyof WeatherInputs]
+        ),
+    );
     Object.assign(inputs, Object.fromEntries(known));
   }
   return inputs;

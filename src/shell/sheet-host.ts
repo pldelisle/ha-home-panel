@@ -3,7 +3,7 @@
 // reactive controller (Lit docs, Reactive Controllers) on the shell, so the window's keydown listener lives as long as the connection.
 // Must not: draw a sheet, build a legacy sheet's content (the guest does, when told), or choose a tab other than by setTab.
 import type {ReactiveController, ReactiveControllerHost} from 'lit';
-import type {FeatureKey} from './feature.ts';
+import type {FeatureKey} from '../ui/feature.ts';
 
 /** The ids of the guest's sheets: the id of the `.sheet` element it draws. Deleted with the guest (#188). */
 export type LegacySheetId =

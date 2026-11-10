@@ -16,6 +16,15 @@ declare global {
       setState(entityId: string, patch: object): void;
       setAreaName(areaId: string, name: string): void;
       setLanguage(lang: string): void;
+      /** delivers a forecast to the live `weather/subscribe_forecast` subscriptions of that type */
+      forecast(type: 'daily' | 'hourly', entries: object[]): void;
+      /** how many subscriptions with this message `type` the panel holds now */
+      subscribed(type: string): number;
+    };
+    /** installed by the fixture: the DOM mutations seen in the shadow roots (see `House.mutations`) */
+    mutationCount: {
+      count(hostSelector: string): number;
+      reset(): void;
     };
   }
 }
@@ -97,6 +106,16 @@ export type House = {
   /** setState, with last_changed set `agoMs` before now on the page's own clock (faked or not) */
   setStateSince: (entityId: string, patch: object, agoMs: number) => Promise<void>;
   clock: Page['clock'];
+  /**
+   * DOM mutations counted inside the shadow roots whose host matches a selector, since the page loaded or the last `reset`
+   * (spec 14, "Testing Decisions"). It flushes the observers first, so a change that has happened has been counted.
+   */
+  mutations: {
+    count: (hostSelector: string) => Promise<number>;
+    reset: () => Promise<void>;
+  };
+  /** the subscriptions of a message type that are live now (a forecast, `weather/subscribe_forecast`) */
+  subscribed: (type: string) => Promise<number>;
 };
 
 const DEFAULTS: Required<Pick<HouseOpts, 'house' | 'lang' | 'theme' | 'admin'>> = {
@@ -158,6 +177,35 @@ export const test = base.extend<{houseOpts: HouseOpts; house: House}>({
       else if (t.startsWith('WS ')) ws.push(JSON.parse(t.slice(3)) as House['ws'][number]);
       else if (m.type() === 'error' && !/Failed to load resource/.test(t)) errors.push(t);
     });
+    // counts mutations per shadow root: attachShadow is wrapped before the panel defines its elements, as tabs.spec.ts's observer is
+    await page.addInitScript(() => {
+      const observers: Array<{observer: MutationObserver; host: Element}> = [];
+      const counts = new Map<Element, number>();
+      const attach = Object.getOwnPropertyDescriptor(Element.prototype, 'attachShadow')!
+        .value as Element['attachShadow'];
+      Element.prototype.attachShadow = function (this: Element, init: ShadowRootInit) {
+        const root = attach.call(this, init);
+        const host = root.host;
+        const observer = new MutationObserver(records => counts.set(host, (counts.get(host) ?? 0) + records.length));
+        observer.observe(root, {childList: true, subtree: true, attributes: true, characterData: true});
+        observers.push({observer, host});
+        return root;
+      };
+      window.mutationCount = {
+        count(hostSelector) {
+          // records still queued are counted before the answer
+          for (const {observer, host} of observers) {
+            const queued = observer.takeRecords().length;
+            if (queued) counts.set(host, (counts.get(host) ?? 0) + queued);
+          }
+          return [...counts].filter(([host]) => host.matches(hostSelector)).reduce((sum, [, n]) => sum + n, 0);
+        },
+        reset() {
+          for (const {observer} of observers) observer.takeRecords();
+          counts.clear();
+        },
+      };
+    });
     if (o.colorScheme) await page.emulateMedia({colorScheme: o.colorScheme});
     if (o.time) await page.clock.install({time: new Date(o.time)});
     if (o.time && o.frozen) await page.clock.setFixedTime(new Date(o.time));
@@ -188,6 +236,11 @@ export const test = base.extend<{houseOpts: HouseOpts; house: House}>({
       setAreaName: (areaId, name) =>
         page.evaluate(([areaId, name]) => window.house.setAreaName(areaId, name), [areaId, name] as const),
       setLanguage: lang => page.evaluate(lang => window.house.setLanguage(lang), lang),
+      mutations: {
+        count: hostSelector => page.evaluate(selector => window.mutationCount.count(selector), hostSelector),
+        reset: () => page.evaluate(() => window.mutationCount.reset()),
+      },
+      subscribed: type => page.evaluate(type => window.house.subscribed(type), type),
       setStateSince: (id, patch, agoMs) =>
         page.evaluate(
           ([id, patch, agoMs]) =>
