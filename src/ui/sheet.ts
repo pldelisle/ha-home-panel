@@ -2,13 +2,15 @@
 // Pattern: humble object (Meszaros, xUnit Test Patterns) composing <hp-pane-header>, with slots for what varies (Lit docs, Shadow DOM:
 // Slots); properties down (`open`, `inline`), events up (`sheet-close`), the drag to close a controller (Lit docs, Reactive Controllers).
 // Must not: know which sheet is open or listen for Escape (the sheet host does, ADR 0021), fetch anything, or choose `inline` itself.
-import {LitElement, css, html, type PropertyValues} from 'lit';
+import {LitElement, html, type PropertyValues, unsafeCSS} from 'lit';
 import {ifDefined} from 'lit/directives/if-defined.js';
 import {AppearanceConsumer} from './controllers/appearance-consumer.ts';
 import {SwipeToClose} from './controllers/swipe-to-close.ts';
 import {ico, type IconName} from './icons.ts';
 import './pane-header.ts';
 import {common, motion, sheet} from './styles/index.ts';
+import sheetOwn from './sheet.element.css?inline';
+import {forShadow} from './styles/host.ts';
 
 export class HpSheet extends LitElement {
   static override properties = {
@@ -35,78 +37,10 @@ export class HpSheet extends LitElement {
   declare closeLabel: string;
 
   // `display: contents`: the sheet is `position: fixed`, so the host takes no room where its owner puts it. The rules for the
-  // header the legacy sheet's `.ph` carried are here and not in sheet.css, because the header is the pane header's now: the
+  // header the legacy sheet's `.ph` carried are here, in sheet.element.css, and not in sheet.css, because the header is the pane header's now: the
   // heading is slotted so that it can be a size up from a pane's, and the pane header's rules, being the inner tree's, give way.
-  static override styles = [
-    common,
-    motion,
-    sheet,
-    css`
-      :host {
-        display: contents;
-      }
-      hp-pane-header {
-        margin-bottom: 18px;
-      }
-      /* the badge's icon is drawn here, in the slot's fallback, so the pane header's phone size (badge.css) cannot reach it */
-      :host([compact]) slot[name='icon'] > svg {
-        width: 22px;
-        height: 22px;
-      }
-      h2 {
-        margin: 0;
-        font-family: var(--f-num);
-        font-weight: var(--num-w);
-        font-size: calc(30px * var(--tx));
-        letter-spacing: -0.02em;
-      }
-      :host([compact]) hp-pane-header {
-        margin-bottom: 14px;
-      }
-      /* what a phone's drag may start on, besides the grabber: the badge and the heading block, not the controls */
-      :host([compact]) hp-pane-header::part(badge),
-      :host([compact]) h2,
-      :host([compact]) .subline {
-        touch-action: none;
-        user-select: none;
-        -webkit-user-select: none;
-      }
-      :host([compact]) h2 {
-        font-size: calc(22px * var(--tx));
-      }
-      /* a sheet's sub-line keeps its colour on glass, where a pane's goes darker (the pane header's rule) */
-      .subline {
-        color: var(--fg2);
-      }
-      .actions {
-        display: contents;
-      }
-      /* the legacy sheet's rule: Close in the corner, and the heading clear of it, on a phone and on a narrow window */
-      @media (max-width: 720px) {
-        hp-pane-header {
-          position: relative;
-        }
-        h2,
-        .subline {
-          padding-right: 48px;
-        }
-        .close {
-          position: absolute;
-          top: 0;
-          right: 0;
-        }
-      }
-      :host([inline]) .sheet {
-        position: static;
-        display: block;
-        padding: 0;
-        background: none;
-        -webkit-backdrop-filter: none;
-        backdrop-filter: none;
-        animation: none;
-      }
-    `,
-  ];
+  // The element's own rules, its `:host` and what only its tree has, are in sheet.element.css.
+  static override styles = [common, motion, sheet, unsafeCSS(forShadow(sheetOwn))];
 
   private readonly appearance = new AppearanceConsumer(this);
   // on a phone, dragged down by its grabber or its header to close; a press on a control is the control's

@@ -3,7 +3,7 @@
 // what it places; the statistics come through the pane's cache (read-through, spec 15) and the chart through <hp-chart> (ADR 0022).
 // It exists only while the sheet is open, so it loads while connected and lets go on disconnect: a reply on its way is dropped, the chart goes.
 // Must not: read an entity but to ask whether a sensor is there, call the API client but through the cache, mutate a cached reply, or open or close a sheet itself.
-import {LitElement, css, html, nothing} from 'lit';
+import {LitElement, html, nothing, unsafeCSS} from 'lit';
 import {repeat} from 'lit/directives/repeat.js';
 import {StaleReply} from '../../core/api.ts';
 import type {HistoryPoint, StatisticRow} from '../../core/ha.ts';
@@ -30,6 +30,8 @@ import {
 } from './history.ts';
 import {HISTORY_SHEET} from './sheets.ts';
 import {tileDefinition, type TileKey, type Tone} from './tiles.ts';
+import weatherHistoryOwn from './weather-history.element.css?inline';
+import {forShadow} from '../../ui/styles/host.ts';
 
 type Rows = Record<string, readonly StatisticRow[]>;
 
@@ -74,29 +76,10 @@ export class WeatherHistory extends LitElement {
   declare range: Range;
 
   // The host is a block with nothing of its own: the sheet it holds is fixed to the screen. The legacy sheet's rules for the inner cards
-  // on a phone (`.app.cp .sheet .inner`) are here by hand, a known copy: the cards are this element's children and not the sheet's,
+  // on a phone (`.app.cp .sheet .inner`) are in weather-history.element.css by hand, a known copy: the cards are this element's children and not the sheet's,
   // so the kit's rule cannot reach them. The same rule is in weather-detail.ts; both go with the legacy sheets.
-  static override styles = [
-    common,
-    inner,
-    tiles,
-    chart,
-    css`
-      :host {
-        display: contents;
-      }
-      :host([compact]) .inner {
-        padding: 14px;
-        border-radius: 18px;
-      }
-      .over {
-        margin-top: 16px;
-      }
-      .over .tiles {
-        margin-top: 10px;
-      }
-    `,
-  ];
+  // The element's own rules, its `:host` and what only its tree has, are in weather-history.element.css.
+  static override styles = [common, inner, tiles, chart, unsafeCSS(forShadow(weatherHistoryOwn))];
 
   private readonly storeController = new StoreController(this, {ids: store => this.configured(store.config.entities)});
   private readonly appearance = new AppearanceConsumer(this);

@@ -1,0 +1,19 @@
+:host {
+  display: block;
+}
+:host([compact]) {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+/* behind another tab with its sheet open: no box of its own, the sheet is fixed to the screen */
+:host(:not([active])) {
+  display: contents;
+}
+hp-pane-header {
+  display: none;
+}
+:host([compact]) hp-pane-header {
+  display: block;
+  margin-bottom: 0;
+}

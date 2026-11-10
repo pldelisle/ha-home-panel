@@ -3,7 +3,7 @@
 // chart-options.ts; `updateOptions` when `options` changes, a new instance only when the theme or the language did (colours and locale are
 // the library's to read once), `destroy` on disconnect (Lit docs, Lifecycle). The library is fetched on first connect (core/apex.ts).
 // Must not: know what it draws, read an entity, write outside its own root, keep a chart for an element that left the page, or toast twice for one failed load.
-import {LitElement, css, html, type PropertyValues} from 'lit';
+import {LitElement, html, type PropertyValues, unsafeCSS} from 'lit';
 import {loadApex, type ApexChart, type ApexChartConstructor} from '../core/apex.ts';
 import {AppearanceConsumer} from './controllers/appearance-consumer.ts';
 import {MediaQueryController} from './controllers/media-query.ts';
@@ -11,6 +11,8 @@ import {StoreController} from './controllers/store-controller.ts';
 import {baseOptions, frenchAxis, mergeOptions, type ChartOptions} from './chart-options.ts';
 import {ToastEvent} from './events.ts';
 import {chart as chartStyles, common} from './styles/index.ts';
+import chartOwn from './chart.element.css?inline';
+import {forShadow} from './styles/host.ts';
 
 // The four charts of a detail fail together when the chunk does: one toast for the burst. The failed promise is the library's one, so
 // every chart of a visit hears it in the same microtask checkpoint; the latch opens again after it.
@@ -35,15 +37,8 @@ export class HpChart extends LitElement {
   /** What assistive technology reads: a chart is an image, named after its card's title and the line under it. */
   declare label: string;
 
-  static override styles = [
-    common,
-    chartStyles,
-    css`
-      :host {
-        display: block;
-      }
-    `,
-  ];
+  // The element's own rules, its `:host` and what only its tree has, are in chart.element.css.
+  static override styles = [common, chartStyles, unsafeCSS(forShadow(chartOwn))];
 
   private readonly storeController = new StoreController(this, {ids: () => []});
   private readonly appearance = new AppearanceConsumer(this);

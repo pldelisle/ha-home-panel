@@ -1,0 +1,20 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+.blocks {
+  min-width: 0;
+}
+.blocks > * + * {
+  margin-top: 16px;
+}
+:host([compact]) .blocks > * + * {
+  margin-top: 14px;
+}
+:host([compact]) .inner {
+  padding: 14px;
+  border-radius: 18px;
+}
+[slot='icon'] {
+  display: contents;
+}

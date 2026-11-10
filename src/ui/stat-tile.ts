@@ -2,11 +2,13 @@
 // Pattern: humble object (Meszaros, xUnit Test Patterns) of the kit: it draws what its properties say and tells its parent
 // by an event (Lit docs, Events: properties down, events up); its look is the kit's `.stile` rules, adopted (ADR 0019).
 // Must not: know what it stands for (a section, a room), import a feature or the shell, or draw anything the parent should.
-import {LitElement, css, html, nothing} from 'lit';
+import {LitElement, html, nothing, unsafeCSS} from 'lit';
 import {ifDefined} from 'lit/directives/if-defined.js';
 import {AppearanceConsumer} from './controllers/appearance-consumer.ts';
 import {ico, type IconName} from './icons.ts';
 import {common, statTile} from './styles/index.ts';
+import statTileOwn from './stat-tile.element.css?inline';
+import {forShadow} from './styles/host.ts';
 
 /** What a tile says when it is tapped: the key its parent gave it, so one listener serves a list of them. */
 export interface TileOpenDetail {
@@ -50,15 +52,8 @@ export class StatTile extends LitElement {
 
   // `display: contents`: the host has no box of its own, so the button is a child of whatever lays the tiles out, as the
   // legacy tile was
-  static override styles = [
-    common,
-    statTile,
-    css`
-      :host {
-        display: contents;
-      }
-    `,
-  ];
+  // The element's own rules, its `:host` and what only its tree has, are in stat-tile.element.css.
+  static override styles = [common, statTile, unsafeCSS(forShadow(statTileOwn))];
 
   constructor() {
     super();

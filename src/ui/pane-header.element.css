@@ -1,0 +1,7 @@
+:host {
+  display: block;
+  margin-bottom: 18px;
+}
+:host([compact]) {
+  margin-bottom: 12px;
+}

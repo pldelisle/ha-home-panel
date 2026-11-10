@@ -2,12 +2,14 @@
 // Pattern: humble object (Meszaros, xUnit Test Patterns) with slots (Lit docs, Shadow DOM: Slots): the sub-line, the actions, a heading
 // and, for a subject whose icon is drawn in colour (the weather's), the badge's icon stay light DOM in the parent's root (ADR 0016).
 // Must not: write the sub-line or the actions, know the subject it heads, or decide where it sits in a pane (the pane does).
-import {LitElement, css, html, nothing} from 'lit';
+import {LitElement, html, nothing, unsafeCSS} from 'lit';
 import {styleMap} from 'lit/directives/style-map.js';
 import {AppearanceConsumer} from './controllers/appearance-consumer.ts';
 import {ico, type IconName} from './icons.ts';
 import {lensLike} from './lens.ts';
 import {badge, common, paneHeader} from './styles/index.ts';
+import paneHeaderOwn from './pane-header.element.css?inline';
+import {forShadow} from './styles/host.ts';
 
 export class PaneHeader extends LitElement {
   static override properties = {
@@ -23,20 +25,8 @@ export class PaneHeader extends LitElement {
 
   // The host is a block with the pane's gap under it: the pane puts it where it goes (a grid column, a margin, none on a
   // phone's Home) with rules on the element, which win over these.
-  static override styles = [
-    common,
-    badge,
-    paneHeader,
-    css`
-      :host {
-        display: block;
-        margin-bottom: 18px;
-      }
-      :host([compact]) {
-        margin-bottom: 12px;
-      }
-    `,
-  ];
+  // The element's own rules, its `:host` and what only its tree has, are in pane-header.element.css.
+  static override styles = [common, badge, paneHeader, unsafeCSS(forShadow(paneHeaderOwn))];
 
   constructor() {
     super();

@@ -1,0 +1,13 @@
+:host {
+  display: contents;
+}
+:host([compact]) .inner {
+  padding: 14px;
+  border-radius: 18px;
+}
+.over {
+  margin-top: 16px;
+}
+.over .tiles {
+  margin-top: 10px;
+}
