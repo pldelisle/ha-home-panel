@@ -13,6 +13,7 @@ import {appearanceContext, type Appearance} from '../ui/contexts.ts';
 import type {MediaQueryController} from '../ui/controllers/media-query.ts';
 import {StoreController} from '../ui/controllers/store-controller.ts';
 import {glassDensity, glassWallpaper, isDark, isLargeText, textScale} from './appearance-rules.ts';
+import {claimPage, type PageClaim} from './page-background.ts';
 import {skyWallpaper, type SunDay} from './sky.ts';
 
 /** The element that hosts the controller: Home Assistant's `narrow` is one of its properties. */
@@ -57,7 +58,7 @@ export class AppearanceController implements ReactiveController {
   private staleProbe = true;
   private applied: Appearance | undefined;
   private pageKey: string | undefined;
-  private pageFrame = 0;
+  private page: PageClaim | undefined;
   private stops: (() => void)[] = [];
   private clock: ReturnType<typeof setInterval> | undefined;
   private isoDayZone = '';
@@ -98,6 +99,7 @@ export class AppearanceController implements ReactiveController {
     // what the page was given is gone if the panel was off the page; and a setting or the device may have moved
     this.applied = undefined;
     this.pageKey = undefined;
+    this.page = claimPage(document, this.host);
     this.refresh();
     this.host.requestUpdate();
   }
@@ -108,7 +110,8 @@ export class AppearanceController implements ReactiveController {
     clearInterval(this.clock);
     clearTimeout(this.liveTimer);
     this.touched = false;
-    this.paintPage(null);
+    this.page?.release();
+    this.page = undefined;
   }
 
   // The inputs may all have changed (a media query, the store, a setting, `narrow`): ask them once, just before the
@@ -130,7 +133,7 @@ export class AppearanceController implements ReactiveController {
     const key = `${a.theme}/${a.glass.wallpaper}`;
     if (key === this.pageKey) return;
     this.pageKey = key;
-    this.paintPage(app);
+    this.page?.paint(this.pageColour(app));
   }
 
   // Lit makes the root when the host first connects, so the controller built in the host's constructor finds none yet
@@ -199,19 +202,10 @@ export class AppearanceController implements ReactiveController {
   }
 
   // The page behind the panel (what shows in the overscroll bounce on iOS) takes the wallpaper's base colour, so the
-  // bounce never shows a dark band. With no app, or with glass off, it is the page's own colour again. The last panel to
-  // write wins, and each removes what it wrote when it leaves.
-  private paintPage(app: HTMLElement | null): void {
-    cancelAnimationFrame(this.pageFrame);
-    const base = app && this.current.glass.on ? getComputedStyle(app).getPropertyValue('--wbase').trim() : '';
-    if (app && this.current.glass.on && !base) {
-      this.pageFrame = requestAnimationFrame(() => this.paintPage(app)); // styles not applied yet on the first call
-      return;
-    }
-    for (const el of [document.documentElement, document.body]) {
-      if (base) el.style.setProperty('background-color', base, 'important');
-      else el.style.removeProperty('background-color');
-    }
+  // bounce never shows a dark band; with glass off it is the page's own. The stylesheet is adopted before the first
+  // render, so the colour is there to read as soon as the frame is drawn.
+  private pageColour(app: HTMLElement): string | null {
+    return this.current.glass.on ? getComputedStyle(app).getPropertyValue('--wbase').trim() || null : null;
   }
 
   private readonly onTouch = (): void => {
