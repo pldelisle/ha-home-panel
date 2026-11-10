@@ -92,7 +92,7 @@ The words the panel and its code use. One word per concept: use it in issues, te
 
 **Descriptor** — The data for one of the ten subjects in the shell's registry (`src/shell/features.ts`): key, title, icon, colour, whether it sits on the phone's bar, whether this house shows it, and its pane. The rail, the phone's bar and the panes are drawn from the list.
 
-**Controller** — A Lit reactive controller: an object an element owns that hooks into its lifecycle, such as `StoreController` (subscribes the element to the entity ids it reads), `MediaQueryController`, `IdleTimer` (a state machine: active, idle, waking) and the shell's `AppearanceController`. Avoid: mixin.
+**Controller** — A Lit reactive controller: an object an element owns that hooks into its lifecycle, such as `StoreController` (subscribes the element to the entity ids it reads), `MediaQueryController`, `IdleTimer` (a state machine: active, idle, waking), the shell's `AppearanceController` and its counterpart in an element, `AppearanceConsumer`, which reflects the appearance on the element as attributes (`compact`, `glass`) its styles can test. Avoid: mixin.
 
 **Theme** — Light or dark. Set to Dark or Light it holds; on Auto ("Theme Auto") it is exactly the device's own light or dark setting, as it changes. The sun has no part in it, though it still picks the Sky wallpaper. Not the Auto of a room's lights, which is Adaptive Lighting's. Avoid: mode, skin.
 
