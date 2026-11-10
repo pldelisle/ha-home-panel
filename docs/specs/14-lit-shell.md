@@ -136,7 +136,7 @@ Actors as in the programme: household member, admin, maintainer, agent thread, a
     setTab(key: FeatureKey): void;
     toast(message: string, sticky?: boolean): void;
     sheets: SheetHost; // step E
-    idle: IdleTimer; // step D: start(), arm()
+    idle: Pick<IdleTimer, 'arm' | 'sleepNow'>; // step D: a draw is a touch; Sleep now. The first arm is hostConnected's
     requestFrame(): void; // the guest's lacking() changed: redraw the rail from availability()
   }
   ```
@@ -232,15 +232,17 @@ export const FEATURES: readonly FeatureDescriptor[]; // in rail order, the ten k
 
 - **`AppearanceConsumer`**, `src/ui/controllers/appearance-consumer.ts`: a controller a feature element adds to receive the context and reflect `theme`, `compact` and `narrow` as attributes on its host (`this.host.toggleAttribute('compact', a.compact)`, `dataset.theme`), so the element's CSS says `:host([compact]) .wxtiles` where the class's CSS says `.app.cp .wxtiles`. Custom properties (the tokens on `.app[data-theme]`) inherit into a child shadow root on their own; only selectors need the attributes.
 - **`<hp-settings-popup>`**, `src/shell/settings-popup.ts`: the Control-Center layout of `renderSettings` as a Lit template, in its own shadow root, with the kit's sheets adopted; theme toggle and auto, Sleep now, text size and glass radio groups, the transparency range, the version line. Every string is a catalog key (`settings.theme.dark`, `settings.text.larger`, …; the French text is the map's text, mined, and the map entries are deleted). It writes through the settings module and dispatches `appearance-change`; the shell's controller applies. The popup is the first element with catalog strings, so it is also the proof that a French element inside the English-rendering frame reads French from the first paint (its shadow root is outside the rewrite layer's observer).
-- **`IdleTimer`**, `src/shell/idle-timer.ts`, a reactive controller written as a **state machine** with three states, `active`, `idle` and `waking`, and four events, `touch`, `timeout`, `sleepNow` and `compactChanged`:
+- **`IdleTimer`**, `src/shell/idle-timer.ts`, a reactive controller written as a **state machine** with three states, `active`, `idle` and `waking`, and five events, `touch`, `timeout`, `sleepNow`, `compactChanged` and the internal `wakeDone` (the end of the 400 ms wake):
 
-  | State    | touch                                          | timeout | sleepNow | compact becomes true |
-  | -------- | ---------------------------------------------- | ------- | -------- | -------------------- |
-  | `active` | restart the 5-minute timer (unless compact)    | `idle`  | `idle`   | stop the timer       |
-  | `idle`   | `waking` (swallow this tap), 400 ms later back | –       | –        | `active`             |
-  | `waking` | –                                              | –       | –        | –                    |
+  | State    | touch                      | timeout      | sleepNow     | compact: true  | compact: false  | wakeDone                   |
+  | -------- | -------------------------- | ------------ | ------------ | -------------- | --------------- | -------------------------- |
+  | `active` | `active`, start or stop \* | `idle`, stop | `idle`, stop | `active`, stop | `active`, start | `active`, nothing          |
+  | `idle`   | `waking`, wake             | nothing      | nothing      | `waking`, wake | `waking`, wake  | nothing                    |
+  | `waking` | nothing                    | nothing      | nothing      | nothing        | nothing         | `active`, start or stop \* |
 
-  The shell toggles `.app.idle` and the overlay's `hidden` and `wake` class from the state, and calls `guest.idleChanged(idle)` so the guest draws the clock into `#iwrap` as `renderIdle` does today; the 20-second clock interval that redraws the idle clock stays the guest's until the clock moves. The touch events are the same four as today (`pointerdown`, `wheel`, `keydown` on the root, `scroll` on `window`, capture), registered once in `hostConnected`. The table is in the module's header, so the behaviour is readable without running it.
+  \* Start the 5-minute timer on a tablet, stop it on a phone. "Nothing" is the same state and no timer command; wake runs the 400 ms timer whose end is `wakeDone`, and the overlay swallows the tap that woke the panel because it stays on screen, faded out, until then. A change of shape wakes an idle panel like a touch, as the legacy panel's `compactChanged` did by arming the timer. Cells the first draft left empty are filled in from the legacy code: `active` + `compact: false` starts the timer; `active` + `wakeDone` and `idle` + `timeout`, `sleepNow` or `wakeDone` do nothing. This is the table `nextIdle` implements, cell by cell.
+
+  The shell toggles `.app.idle` (in `idle` only; the legacy panel took it off at the touch) and the overlay's `hidden` and `wake` class from the state, and calls `guest.idleChanged(idle)` so the guest draws the clock into `#iwrap` as `renderIdle` does today; the 20-second clock interval that redraws the idle clock stays the guest's until the clock moves. The touch events are the same four as today (`pointerdown`, `wheel`, `keydown` on the root, `scroll` on `window`, capture), registered once in `hostConnected`. The table is in the module's header, so the behaviour is readable without running it.
 
 ### The sheet host (step E, ADR 0019)
 
@@ -293,7 +295,7 @@ Step C adds a section "Anatomy of a feature" to the architecture guide, finished
 - Decorators: `experimentalDecorators` off; Lit 3 supports standard decorators with TypeScript 5.x, and the repository is on TypeScript 6 (`accessor` keyword on decorated fields: `@property() accessor hass`). `useDefineForClassFields` stays at TypeScript's default for the target. `tsconfig.check.json` gains `src/shell/**/*.ts`, `src/ui/**/*.ts`, `src/features/**/*.ts`, `src/providers/**/*.ts`, all strict; `lit-analyzer` is added to `npm run check` (`lit-analyzer src --strict`) to type-check template bindings, as the programme's tooling table says.
 - `eslint-plugin-lit` is already configured (`flat/recommended`); `src/core/**`'s no-DOM rule stays; a new rule forbids `innerHTML` and `insertAdjacentHTML` in `src/shell/`, `src/ui/` and `src/features/` (`no-restricted-properties`), the "no `innerHTML` outside legacy" convention of the architecture guide as a lint.
 - The dependency rules already name `src/shell/`, `src/ui/`, `src/features/`, `src/providers/`; the first file in each folder is what makes them bite. `scripts/arch-graph.mjs` collapses the new folders like the others.
-- Vitest coverage includes `src/shell/**/*.ts` that is not an element (`features.ts`, `sky.ts`, `idle-timer.ts`'s pure transition table, `legacy-feature.ts`), `src/ui/controllers/**` excluded (exercised by the harness), `src/providers/**` and `src/features/**/{model,ids,sources,history}.ts` at 100 percent statements. Elements are not covered by Vitest: they are humble objects proven by the harness, per ADR 0005.
+- Vitest coverage includes `src/shell/**/*.ts` that is not an element (`features.ts`, `sky.ts`, `idle-timer.ts` (table and controller, stub host, injected timers), `legacy-feature.ts`), `src/ui/controllers/**` excluded (exercised by the harness), `src/providers/**` and `src/features/**/{model,ids,sources,history}.ts` at 100 percent statements. Elements are not covered by Vitest: they are humble objects proven by the harness, per ADR 0005.
 
 ## Acceptance Criteria
 

@@ -25,10 +25,10 @@ export interface AppearanceOptions {
   compact: MediaQueryController;
   dark: MediaQueryController;
   reducedTransparency: MediaQueryController;
+  /** Calls the listener on every touch of the panel (the idle timer's four listeners); returns the way out. */
+  touches: (listener: () => void) => () => void;
 }
 
-// The touches that keep `live` on; the scroll, which does not bubble out of a pane, is listened to on the window.
-const TOUCHES = ['pointerdown', 'wheel', 'keydown'];
 // A touch keeps the `live` class for a minute: the frame shows what it shows only while somebody is there.
 const LIVE_MS = 60000;
 // The sky wallpaper follows the clock, and the sun entity says so only every few minutes: look again once a minute.
@@ -85,20 +85,13 @@ export class AppearanceController implements ReactiveController {
 
   hostConnected(): void {
     const {settings} = this.options;
-    const root = this.host.renderRoot;
-    // The four touches the legacy class listened to. The idle timer's ticket (#165) owns the same four and gives them
-    // to this controller through one subscription, which deletes these.
-    for (const type of TOUCHES) root.addEventListener(type, this.onTouch, {passive: true});
-    window.addEventListener('scroll', this.onTouch, {passive: true, capture: true});
     document.addEventListener('visibilitychange', this.onVisible);
     this.clock = setInterval(() => this.refresh(), CLOCK_MS);
     this.stops = [
       settings.subscribe(() => this.refresh()),
-      () => {
-        for (const type of TOUCHES) root.removeEventListener(type, this.onTouch);
-        window.removeEventListener('scroll', this.onTouch, {capture: true});
-        document.removeEventListener('visibilitychange', this.onVisible);
-      },
+      // the idle timer hears the four touches (pointer, wheel, key and scroll) once, and tells every listener
+      this.options.touches(this.onTouch),
+      () => document.removeEventListener('visibilitychange', this.onVisible),
     ];
     // what the page was given is gone if the panel was off the page; and a setting or the device may have moved
     this.applied = undefined;

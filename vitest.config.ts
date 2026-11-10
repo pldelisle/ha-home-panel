@@ -17,9 +17,11 @@ export default defineConfig({
         'src/fonts.js',
         'src/core/**/*.ts',
         'src/providers/**/*.ts',
-        'src/features/*/{ids,inputs,model,tiles}.ts', // the pure files; the elements are proven by the harness
+        'src/features/*/{ids,inputs,model,tiles,history}.ts', // the pure files; the elements are proven by the harness
+        'src/ui/ranges.ts', // the kit's one pure file; its elements are proven by the harness
         'src/shell/guest.ts',
         'src/shell/features.ts',
+        'src/shell/idle-timer.ts', // the table and its controller; the host is a stub, no element is mounted
         'src/shell/legacy-feature.ts',
         'src/shell/sky.ts',
         'src/shell/appearance-rules.ts',
@@ -27,14 +29,16 @@ export default defineConfig({
         'scripts/lib/anonymise.mjs',
       ],
       reporter: [['text', {skipFull: false}], 'html'], // skipFull false lists the files at 100 percent too
-      // the phase-2 gate: every statement in the core is tested (CI runs `npm test -- --coverage`); phase 3 holds the providers and
-      // each feature's model, ids, inputs and tiles to the same line
+      // the phase-2 gate: every statement in the core is tested (CI runs `npm test -- --coverage`); phase 3 holds the providers,
+      // each feature's model, ids, inputs, tiles and history, and the kit's ranges to the same line
       thresholds: {
         'src/core/**/*.ts': {statements: 100},
         'src/providers/**/*.ts': {statements: 100},
-        'src/features/*/{ids,inputs,model,tiles}.ts': {statements: 100},
+        'src/features/*/{ids,inputs,model,tiles,history}.ts': {statements: 100},
+        'src/ui/ranges.ts': {statements: 100},
         'src/shell/guest.ts': {statements: 100},
         'src/shell/features.ts': {statements: 100},
+        'src/shell/idle-timer.ts': {statements: 100, branches: 100},
         'src/shell/legacy-feature.ts': {statements: 100},
         'src/shell/sky.ts': {statements: 100},
         'src/shell/appearance-rules.ts': {statements: 100},

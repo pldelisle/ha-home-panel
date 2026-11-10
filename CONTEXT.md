@@ -88,11 +88,11 @@ The words the panel and its code use. One word per concept: use it in issues, te
 
 **Legacy class** — The `LegacyPanel` class in `src/home-panel.js` and the files around it that the strangler fig is replacing; it only shrinks, and the number of modules it still holds is printed by `npm run lint`.
 
-**Guest** — The legacy class while the shell hosts it: not an element but a renderer that implements `GuestRenderer` (`src/shell/guest.ts`), which `src/main.js` registers, the shell constructs and drives, and which draws only into its own container inside the shell's one shadow root. The interface only shrinks, and it is deleted with the guest. Avoid: guest renderer, legacy renderer, the old class.
+**Guest** — The legacy class while the shell hosts it: not an element but a renderer that implements `GuestRenderer` (`src/shell/guest.ts`), which `src/main.js` registers, the shell constructs and drives, and which draws only into its own containers inside the shell's one shadow root. The interface only shrinks, and it is deleted with the guest. Avoid: guest renderer, legacy renderer, the old class.
 
 **Descriptor** — The data for one of the ten subjects in the shell's registry (`src/shell/features.ts`): key, title, icon, colour, whether it sits on the phone's bar, whether this house shows it, and its pane. The rail, the phone's bar and the panes are drawn from the list.
 
-**Controller** — A Lit reactive controller: an object an element owns that hooks into its lifecycle, such as `StoreController` (subscribes the element to the entity ids it reads), `MediaQueryController` and the shell's `AppearanceController`. Avoid: mixin.
+**Controller** — A Lit reactive controller: an object an element owns that hooks into its lifecycle, such as `StoreController` (subscribes the element to the entity ids it reads), `MediaQueryController`, `IdleTimer` (a state machine: active, idle, waking) and the shell's `AppearanceController`. Avoid: mixin.
 
 **Appearance** — How the panel looks right now, as one frozen value the shell's `AppearanceController` replaces whenever anything in it changes and provides by context: dark or light, the glass wallpaper and its density, the text scale, compact, narrow, reduced transparency and `live` (a touch in the last minute). A consumer compares it by reference.
 

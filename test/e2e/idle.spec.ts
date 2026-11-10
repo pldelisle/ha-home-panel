@@ -55,3 +55,20 @@ test('40 the idle clock drifts a little on every tick, never further than 20 px 
   const moves = offsets.filter((o, i) => i > 0 && o.join(',') !== offsets[i - 1].join(',')).length;
   expect(moves, `the block moves on most ticks (got ${JSON.stringify(offsets)})`).toBeGreaterThanOrEqual(7);
 });
+
+// The controller's timers and listeners belong to the connection: a panel taken off the page counts nothing, and one put back starts its five minutes over.
+test('a panel taken off the page and put back starts its five minutes over', async ({house}) => {
+  await house.clock.fastForward(4 * 60_000);
+  await house.page.evaluate(() => {
+    const el = document.querySelector('home-panel')!;
+    (window as unknown as {parked: Element}).parked = el;
+    el.remove();
+  });
+  await house.clock.fastForward(3 * 60_000); // more than the five minutes in all; nothing happens while it is away
+  await house.page.evaluate(() => document.body.appendChild((window as unknown as {parked: Element}).parked));
+  await house.clock.fastForward(4 * 60_000);
+  await expect(house.root().locator('#idle')).toBeHidden();
+  await house.clock.fastForward(60_000 + 1_000);
+  await expect(house.root().locator('#idle')).toBeVisible();
+  await expect(house.root().locator('#iwrap .iclk2 .wxi')).toHaveAttribute('aria-label', 'Mainly sunny');
+});

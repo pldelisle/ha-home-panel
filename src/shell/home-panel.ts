@@ -1,6 +1,6 @@
 // <home-panel>, the one element Home Assistant mounts: it owns the store, the API client and the settings, provides them through context, draws the frame from the registry and hosts the guest in its one shadow root.
 // Pattern: composition root (Seemann, Dependency Injection Principles, Practices, and Patterns); humble object (Meszaros, xUnit Test Patterns): it forwards `hass`, `panel` and `narrow` and decides nothing the registry and the store decide.
-// It reads `localStorage`; the browser's locale defaults are read here and, until the formatters move, by the guest. It owns `tab`, `compact`, which tabs the house shows and, through its controller, the appearance.
+// It reads `localStorage`; the browser's locale defaults are read here and, until the formatters move, by the guest. It owns `tab`, `compact`, the idle state, which tabs the house shows and, through its controller, the appearance.
 // Must not: import legacy code (the guest arrives through registerGuest), or decide what the store and the models decide.
 // Lit binds nothing inside a guest container, and the guest writes nothing outside its containers.
 import {
@@ -33,6 +33,7 @@ import {LARGE_TEXT} from './appearance-rules.ts';
 import type {FeatureKey} from './feature.ts';
 import {FEATURES, isFeatureKey, visibleTab} from './features.ts';
 import {createGuest, guestStyles, type GuestContext, type GuestRenderer, type ShellForGuest} from './guest.ts';
+import {IdleTimer, type IdleState} from './idle-timer.ts';
 
 /** The panel Home Assistant hands over with the config the `panel_custom:` block carried. */
 interface PanelInfo {
@@ -64,6 +65,7 @@ export class HomePanel extends LitElement {
     panel: {attribute: false},
     selected: {state: true},
     epoch: {state: true},
+    idleState: {state: true},
   };
   declare hass: PanelHass | undefined;
   declare narrow: boolean;
@@ -72,6 +74,8 @@ export class HomePanel extends LitElement {
   declare private selected: string;
   /** Counts the guest's fresh starts: the frame it draws into is keyed on it, so each start finds new elements. */
   declare private epoch: number;
+  /** The idle timer's state, drawn as `.app.idle`, the overlay's `hidden` and its `wake` class; the guest draws the clock. */
+  declare private idleState: IdleState;
 
   // The legacy stylesheet is the guest's, so it comes with the guest (registerGuest) instead of an import of
   // src/styles.js, which the dependency rule forbids here. Lit adopts it once for every instance, as a constructed
@@ -95,6 +99,17 @@ export class HomePanel extends LitElement {
     },
   });
   private readonly phone = new MediaQueryController(this, PHONE);
+  // Five minutes without a touch and a tablet shows the clock; a phone never does by itself. The listeners are the
+  // controller's, on this root and the window, from connection to disconnection.
+  private readonly idle = new IdleTimer(this, {
+    delayMs: 5 * 60_000,
+    wakeMs: 400,
+    compact: () => this.phone.matches,
+    ready: () => this.hass !== undefined,
+    onChange: state => {
+      this.idleState = state;
+    },
+  });
   // theme, glass, text size, the page's background and `live`: one controller, which provides the value by context
   private readonly appearance: AppearanceController = new AppearanceController(this, {
     store: this.store,
@@ -102,6 +117,7 @@ export class HomePanel extends LitElement {
     compact: this.phone,
     dark: new MediaQueryController(this, DARK),
     reducedTransparency: new MediaQueryController(this, REDUCED_TRANSPARENCY),
+    touches: listener => this.idle.onTouch(listener),
   });
   private readonly forGuest: ShellForGuest = this.doors();
   private guest: GuestRenderer | undefined;
@@ -117,12 +133,15 @@ export class HomePanel extends LitElement {
   private drawn: Appearance | undefined;
   private toldAppearance: Appearance | undefined;
   private phoneNow = false;
+  private idleCompact = this.phone.matches; // what the idle timer was last told about the phone's shape
+  private toldIdle = false;
 
   constructor() {
     super();
     this.narrow = false;
     this.selected = this.settings.get().tab;
     this.epoch = 0;
+    this.idleState = 'active';
     // each provider adds itself to this element as a controller and answers the context requests of every element below
     new ContextProvider(this, {context: storeContext, initialValue: this.store});
     new ContextProvider(this, {context: apiContext, initialValue: this.api});
@@ -143,6 +162,7 @@ export class HomePanel extends LitElement {
       requestFrame: () => this.requestFrame(),
       resetFrame: () => this.resetFrame(),
       moreSections: () => this.moreSections(),
+      idle: {arm: () => this.idle.arm(), sleepNow: () => this.idle.sleepNow()},
       get tab() {
         return tab();
       },
@@ -169,6 +189,7 @@ export class HomePanel extends LitElement {
   private setTab(key: FeatureKey): void {
     this.selected = isFeatureKey(key) ? key : 'home';
     this.settings.set('tab', this.selected);
+    this.idle.arm();
     // the update tells the guest when the tab shown changed (`updated`); only an element not yet drawn skips it
     this.flush();
     if (!this.hasUpdated) this.tellTab();
@@ -218,6 +239,11 @@ export class HomePanel extends LitElement {
 
   protected override willUpdate(): void {
     this.phoneNow = this.phone.matches;
+    // told here and not in `updated`: the timer's change lands in this very update
+    if (this.phoneNow !== this.idleCompact) {
+      this.idleCompact = this.phoneNow;
+      this.idle.compactChanged(this.phoneNow);
+    }
     if (this.guestConnected && this.stale) {
       this.stale = false;
       const env = {store: this.store, guest: this.guest as GuestRenderer};
@@ -235,6 +261,7 @@ export class HomePanel extends LitElement {
         narrow: this.narrow,
         cp: this.compact,
         tabsv: true,
+        idle: this.idleState === 'idle',
         gl: a.glass.on,
         txl: a.textScale >= LARGE_TEXT,
         live: a.live,
@@ -245,11 +272,26 @@ export class HomePanel extends LitElement {
     >
       ${keyed(this.epoch, this.renderWrap())}
       <div class="guest" style="display:contents"></div>
+      ${this.renderIdle()}
       <span
         id="txprobe"
         aria-hidden="true"
         style="position:absolute;left:-9999px;visibility:hidden;font-size:17px;font:-apple-system-body"
       ></span>
+    </div>`;
+  }
+
+  // The idle clock's overlay, a child of `.app` so the frame fades behind it (`.app.idle > :not(.idle)`). It is visible while
+  // idle and while waking, when it fades out and swallows the tap that woke the panel; `#iwrap` is the guest's container
+  // and has no binding, so Lit never touches what the guest draws in it.
+  private renderIdle(): TemplateResult {
+    return html`<div
+      class="idle ${classMap({wake: this.idleState === 'waking'})}"
+      id="idle"
+      ?hidden=${this.idleState === 'active'}
+      aria-hidden="true"
+    >
+      <div class="iwrap" id="iwrap"></div>
     </div>`;
   }
 
@@ -389,6 +431,12 @@ export class HomePanel extends LitElement {
       this.toldCompact = this.compact;
       guest.compactChanged(this.compact);
     }
+    // the shell has drawn the overlay by now, so the guest can draw the clock in it; told once, when the clock shows or goes
+    const idle = this.idleState === 'idle';
+    if (idle !== this.toldIdle) {
+      this.toldIdle = idle;
+      guest.idleChanged(idle);
+    }
     // a tab the house does not show gives way to Home, and comes back when the house shows it again
     if (this.visible !== this.toldTab) this.tellTab();
     else if (this.epoch !== this.activeEpoch) this.syncActive();
@@ -404,5 +452,6 @@ export class HomePanel extends LitElement {
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     this.guest?.disconnect();
+    this.toldIdle = false; // the guest is down: a change of state while away tells it nothing, and a clock still showing is told again on return
   }
 }
