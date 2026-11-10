@@ -1,0 +1,54 @@
+/* The range tabs: a pill of buttons, one chosen (Day, Week, Month, Year). Written once for the legacy sheets' tabs and for `<hp-range-tabs>`,
+   in the order the legacy files held the rules (base, glass, motion). Inside an element `.app.gl` reads as `:host([glass])` (host.ts). */
+.tab:focus-visible {
+  outline: 2px solid var(--c-home);
+  outline-offset: 2px;
+}
+.tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--card2);
+  border-radius: 999px;
+  padding: 4px;
+  overflow-x: auto;
+}
+.tab {
+  border: 0;
+  background: transparent;
+  color: var(--fg2);
+  font: 600 calc(14px * var(--tx)) var(--f-body);
+  padding: 12px 16px;
+  min-height: 44px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tab[aria-selected='true'] {
+  background: var(--card);
+  color: var(--fg);
+  box-shadow: var(--shadow);
+}
+.app.gl .tabs {
+  background: var(--g-tile);
+  box-shadow: var(--g-edge-s);
+}
+.app.gl .tab[aria-selected='true'] {
+  background: var(--g-sel);
+}
+@media (prefers-reduced-transparency: reduce) {
+  .app.gl .tabs {
+    background: var(--card2);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .tab {
+    transition:
+      transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+      background-color 0.2s ease,
+      box-shadow 0.2s ease,
+      color 0.2s ease;
+  }
+}
+.tab:active {
+  transform: scale(0.96);
+}

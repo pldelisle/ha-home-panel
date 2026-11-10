@@ -34,7 +34,6 @@ import type {FeatureDescriptor, FeatureEnv, FeatureKey} from '../ui/feature.ts';
 import {FEATURES, UNDER_MORE, isFeatureKey, visibleTab} from './features.ts';
 import {createGuest, guestStyles, type GuestContext, type GuestRenderer, type ShellForGuest} from './guest.ts';
 import {IdleTimer, type IdleState} from './idle-timer.ts';
-import {HISTORY_SHEET} from '../features/weather/sheets.ts';
 import type {ForecastEvent} from '../features/weather/forecast-controller.ts';
 import './more-sheet.ts'; // defines <hp-more-sheet>
 import '../ui/pane-header.ts'; // defines <hp-pane-header>, which the legacy panes' headers are
@@ -169,7 +168,12 @@ export class HomePanel extends LitElement {
 
   /** What a descriptor may read: this panel's store and, until a subject is a feature of its own, the guest's answers. */
   private get env(): FeatureEnv {
-    return {store: this.store, guest: this.guest as GuestRenderer, sheetOpen: id => this.sheets.isOpen(id)};
+    return {
+      store: this.store,
+      guest: this.guest as GuestRenderer,
+      sheetOpen: id => this.sheets.isOpen(id),
+      sheetDetail: id => this.sheets.detail(id),
+    };
   }
 
   constructor() {
@@ -277,15 +281,16 @@ export class HomePanel extends LitElement {
   // an element asked upward for a sheet, or for the toast; the event stops here, it is the panel's business
   private readonly onSheetRequest = (e: SheetRequestEvent): void => {
     e.stopPropagation();
-    // a Weather tile's history is the guest's sheet until the history is an element (#159)
-    if (e.detail.id === HISTORY_SHEET) this.guest?.openWeatherHistory((e.detail.detail as {key: string}).key);
-    else this.sheets.open(e.detail.id, e.detail.detail);
+    this.sheets.open(e.detail.id, e.detail.detail);
   };
 
-  // A pane whose detail sheet is open while another tab is shown (Home's card opens Weather's, on a phone) stays in the page, behind
-  // the sheet, so the sheet is drawn and the tab is not changed; the pane draws only its sheet then.
+  // A pane whose detail sheet is open while another tab is shown (Home's card opens Weather's, on a phone), or one of the sheets it
+  // draws over the screen (a tile's history, opened from that detail), stays in the page, behind the sheet, so the sheet is drawn and
+  // the tab is not changed; the pane draws only its sheets then.
   private sheetBehind(f: FeatureDescriptor): boolean {
-    return this.tab !== f.key && f.detailSheet !== undefined && this.compact && this.sheets.isOpen(f.detailSheet);
+    if (this.tab === f.key) return false;
+    const detail = f.detailSheet !== undefined && this.compact && this.sheets.isOpen(f.detailSheet);
+    return detail || (f.overSheets ?? []).some(id => this.sheets.isOpen(id));
   }
 
   // an element's sheet asks to close (its Close button, its backdrop, its swipe)

@@ -146,8 +146,8 @@ for (const lang of ['en', 'fr'] as const) {
           isPhone(house) ? 'hp-weather-pane hp-stat-tile[key="wind"] button' : '#pane-weather button[data-wx="wind"]',
         )
         .click();
-      await expect(house.root().locator('#sh-wx #c-wx .apexcharts-canvas')).toBeVisible();
-      await scanDialog(house, 'the weather history sheet', '#sh-wx');
+      await expect(house.root().locator('hp-weather-history hp-chart .apexcharts-canvas')).toBeVisible();
+      await scanDialog(house, 'the weather history sheet', 'hp-weather-history hp-sheet .sheet');
     });
 
     test('the weather detail sheet has no serious or critical finding', async ({house}) => {

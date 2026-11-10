@@ -1,6 +1,6 @@
 // Weather's history as pure functions: the API client's rows in, the series, the months, the records and the chart options out.
 // Pattern: functional core (Bernhardt, Boundaries), the data half of a humble object (Meszaros): each rule is the legacy
-// panel's own (loadWxHistory, renderSeason, loadWx, wxSheet) and the elements only place what comes out.
+// panel's own (loadWxHistory, renderSeason, loadWx, wxSheet, all deleted with the history sheet) and the elements only place what comes out.
 // Numbers come back as numbers, except in the season view and the chart callbacks, which take `fmt`, `t` and `now` as arguments.
 // Must not: call the API client or the cache, read the clock or the DOM, or pick a colour of its own (every colour is a caller's
 // token; `transparent` is the absence of one, and the sizes are the legacy options' constants).
@@ -289,6 +289,9 @@ export const statisticsStart = (now: number, days: number): Date =>
 
 /** How long the statistics stay fresh: the legacy panel's fifteen minutes. The pane's cache and the detail's refresh both read it. */
 export const STATISTICS_TTL_MS = 15 * 60_000;
+
+/** How long a tile's history stays fresh in the cache: the ten minutes the legacy sheet kept it. */
+export const HISTORY_TTL_MS = 10 * 60_000;
 
 /** How far back the seven-day charts reach. */
 export const WEEK_DAYS = 7;

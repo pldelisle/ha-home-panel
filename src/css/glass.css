@@ -186,7 +186,6 @@
 .app.gl .mtvscreen,
 .app.gl .access,
 .app.gl .arow,
-.app.gl .tabs,
 .app.gl .stepper,
 .app.gl .cbtn,
 .app.gl .tgl,
@@ -259,9 +258,6 @@
 }
 .app.gl .schip.act .sic {
   background: color-mix(in srgb, var(--c-home) 18%, var(--g-sel));
-}
-.app.gl .tab[aria-selected='true'] {
-  background: var(--g-sel);
 }
 .app.gl .days button,
 .app.gl .mtvctl button {
@@ -387,7 +383,6 @@
   .app.gl .mtvscreen,
   .app.gl .access,
   .app.gl .arow,
-  .app.gl .tabs,
   .app.gl .stepper,
   .app.gl .cbtn,
   .app.gl .tgl,

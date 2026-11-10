@@ -62,11 +62,6 @@ export interface GuestRenderer extends GuestAnswers, LegacySheetGuest {
    */
   statisticsLoaded(): boolean;
   /**
-   * Weather move 1: a Weather tile asked for its history, which the guest still draws (`sh-wx`). Deleted with the history's move
-   * (#159), when `<hp-weather-history>` takes the request.
-   */
-  openWeatherHistory(key: string): void;
-  /**
    * Weather move 1: a forecast message reached the pane's controller, which now owns the subscription; Home's card still reads the
    * forecast here. Deleted with its last reader (the Home move).
    */

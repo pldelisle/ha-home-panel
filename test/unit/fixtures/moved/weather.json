@@ -630,10 +630,12 @@
       "key": "weather.band.high"
     },
     {
-      "key": "weather.band.lowRisk"
+      "key": "weather.band.lowRisk",
+      "was": "Risque faible"
     },
     {
-      "key": "weather.band.highRisk"
+      "key": "weather.band.highRisk",
+      "was": "Risque élevé"
     },
     {
       "key": "weather.band.veryHigh"
@@ -671,7 +673,8 @@
       "key": "weather.sub.sameAirLower"
     },
     {
-      "key": "weather.sub.windChill"
+      "key": "weather.sub.windChill",
+      "was": "Refroidissement éolien"
     },
     {
       "key": "weather.sub.windChillLower"
@@ -706,40 +709,51 @@
       "key": "weather.tile.wind.label"
     },
     {
-      "key": "weather.tile.wind.sub"
+      "key": "weather.tile.wind.sub",
+      "was": "Environnement Canada, observations horaires"
     },
     {
-      "key": "weather.tile.wind.note"
+      "key": "weather.tile.wind.note",
+      "was": "Vent moyen, avec la plus forte rafale de chaque période en pointillé."
     },
     {
       "key": "weather.tile.hum.label"
     },
     {
-      "key": "weather.tile.hum.sub"
+      "key": "weather.tile.hum.sub",
+      "was": "Humidité relative et point de rosée"
     },
     {
-      "key": "weather.tile.hum.note"
+      "key": "weather.tile.hum.note",
+      "was": "Humidité sur l’échelle de gauche, point de rosée en degrés à droite. Plus le point de rosée est près de la température de l’air, plus c’est humide."
     },
     {
-      "key": "weather.tile.feels.label"
+      "key": "weather.tile.feels.label",
+      "was": "Ressenti"
     },
     {
-      "key": "weather.tile.feels.sub"
+      "key": "weather.tile.feels.sub",
+      "was": "Refroidissement éolien ou humidex contre la température de l’air"
     },
     {
-      "key": "weather.tile.feels.note"
+      "key": "weather.tile.feels.note",
+      "was": "Environnement Canada ne donne le refroidissement éolien ou l’humidex que lorsqu’ils diffèrent de la température de l’air."
     },
     {
-      "key": "weather.tile.pres.label"
+      "key": "weather.tile.pres.label",
+      "was": "Pression"
     },
     {
-      "key": "weather.tile.pres.sub"
+      "key": "weather.tile.pres.sub",
+      "was": "Pression barométrique"
     },
     {
-      "key": "weather.tile.pres.note"
+      "key": "weather.tile.pres.note",
+      "was": "Une baisse régulière annonce souvent du mauvais temps; une hausse, une éclaircie."
     },
     {
-      "key": "weather.tile.uv.label"
+      "key": "weather.tile.uv.label",
+      "was": "Indice UV"
     },
     {
       "key": "weather.tile.uv.sub"
@@ -751,19 +765,23 @@
       "key": "weather.tile.aqhi.label"
     },
     {
-      "key": "weather.tile.aqhi.sub"
+      "key": "weather.tile.aqhi.sub",
+      "was": "Cote air santé, Environnement Canada"
     },
     {
       "key": "weather.tile.aqhi.note"
     },
     {
-      "key": "weather.tile.pop.label"
+      "key": "weather.tile.pop.label",
+      "was": "Pluie ou neige"
     },
     {
-      "key": "weather.tile.pop.sub"
+      "key": "weather.tile.pop.sub",
+      "was": "Probabilité de précipitations, selon les prévisions"
     },
     {
-      "key": "weather.tile.pop.note"
+      "key": "weather.tile.pop.note",
+      "was": "Probabilité de pluie ou de neige du jour selon Environnement Canada, telle qu’annoncée."
     },
     {
       "key": "weather.tile.normal.label"
@@ -772,37 +790,46 @@
       "key": "weather.tile.normal.sub"
     },
     {
-      "key": "weather.tile.normal.note"
+      "key": "weather.tile.normal.note",
+      "was": "Maximums et minimums prévus en trait plein, normales de la date en pointillé."
     },
     {
-      "key": "weather.series.gusts"
+      "key": "weather.series.gusts",
+      "was": "Rafales"
     },
     {
-      "key": "weather.series.dewPoint"
+      "key": "weather.series.dewPoint",
+      "was": "Point de rosée"
     },
     {
       "key": "weather.series.air"
     },
     {
-      "key": "weather.series.windChill"
+      "key": "weather.series.windChill",
+      "was": "Refroidissement éolien"
     },
     {
       "key": "weather.series.humidex"
     },
     {
-      "key": "weather.series.chance"
+      "key": "weather.series.chance",
+      "was": "Probabilité"
     },
     {
-      "key": "weather.series.forecastHigh"
+      "key": "weather.series.forecastHigh",
+      "was": "Maximum prévu"
     },
     {
-      "key": "weather.series.normalHigh"
+      "key": "weather.series.normalHigh",
+      "was": "Maximum normal"
     },
     {
-      "key": "weather.series.forecastLow"
+      "key": "weather.series.forecastLow",
+      "was": "Minimum prévu"
     },
     {
-      "key": "weather.series.normalLow"
+      "key": "weather.series.normalLow",
+      "was": "Minimum normal"
     },
     {
       "key": "weather.season.since",
@@ -977,7 +1004,8 @@
       "key": "weather.series.wind"
     },
     {
-      "key": "weather.series.pressure"
+      "key": "weather.series.pressure",
+      "was": "Pression"
     },
     {
       "key": "weather.series.freezing",
@@ -986,6 +1014,65 @@
     {
       "key": "weather.series.chanceOfRain",
       "was": "Probabilité de pluie ou de neige"
+    },
+    {
+      "key": "weather.history.close"
+    },
+    {
+      "key": "weather.history.loading"
+    },
+    {
+      "key": "weather.history.missing",
+      "was": "Ce capteur n’est pas dans Home Assistant pour l’instant."
+    },
+    {
+      "key": "weather.history.empty",
+      "was": "Pas encore d’historique pour cette mesure"
+    },
+    {
+      "key": "weather.history.period"
+    },
+    {
+      "key": "weather.history.low",
+      "values": {
+        "name": "Wind"
+      },
+      "fr": {
+        "name": "Vent"
+      }
+    },
+    {
+      "key": "weather.history.mean",
+      "values": {
+        "name": "Wind"
+      },
+      "fr": {
+        "name": "Vent"
+      },
+      "was": "Vent · moyenne",
+      "after": "Vent · mean"
+    },
+    {
+      "key": "weather.history.high",
+      "values": {
+        "name": "Wind"
+      },
+      "fr": {
+        "name": "Vent"
+      },
+      "was": "Vent · max",
+      "after": "Vent · Élevé"
+    },
+    {
+      "key": "weather.history.title",
+      "values": {
+        "name": "Wind",
+        "range": "last 7 days"
+      },
+      "fr": {
+        "name": "Vent",
+        "range": "7 derniers jours"
+      }
     }
   ]
 }

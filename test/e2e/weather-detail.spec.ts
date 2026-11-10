@@ -165,7 +165,7 @@ test('a tile asks once for its history', async ({house}) => {
     document.addEventListener('sheet-request', e => w.requests.push(JSON.stringify((e as CustomEvent).detail)), true);
   });
   await detail(house).locator('button[data-wx="wind"]').click();
-  await expect(house.root().locator('#sh-wx')).toBeVisible();
+  await expect(house.root().locator('hp-weather-history hp-sheet h2')).toHaveText('Wind');
   expect(await house.page.evaluate(() => (window as unknown as {requests: string[]}).requests)).toEqual([
     '{"id":"weather.history","detail":{"key":"wind"}}',
   ]);

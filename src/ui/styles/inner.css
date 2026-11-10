@@ -1,4 +1,5 @@
-/* The inner card of a detail panel (a section with its own heading and line) and the row that sets two of them side by side. Written once
+/* The inner card of a detail panel (a section with its own heading and line), the row that sets two of them side by side and the line a card says
+   while it waits. Written once
    for the legacy sheets and for the elements that draw them; inside an element `.app.gl` reads as `:host([glass])` (host.ts). */
 .inner {
   background: var(--card2);
@@ -47,4 +48,10 @@
     backdrop-filter: none;
     background: var(--card);
   }
+}
+.loading {
+  color: var(--fg2);
+  font-size: calc(13px * var(--tx));
+  padding: 24px 0;
+  text-align: center;
 }

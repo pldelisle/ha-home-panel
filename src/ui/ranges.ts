@@ -16,6 +16,8 @@ export interface RangeDefinition {
   period: StatisticsPeriod;
   /** The length of one bucket of that period; a row is drawn at the middle of its bucket, and plain history is thinned to one point per bucket. */
   bucketMs: number;
+  /** "Week", on the range's tab. */
+  tabKey: MessageKey;
   /** "last 7 days", under a chart's title. */
   labelKey: MessageKey;
   /** "7 days", to finish a sentence. */
@@ -34,6 +36,7 @@ export const RANGES: Record<Range, RangeDefinition> = {
     days: 1,
     period: '5minute',
     bucketMs: 3e5,
+    tabKey: 'range.day.tab',
     labelKey: 'range.day.label',
     shortKey: 'range.day.short',
     meanKey: 'range.mean.fiveMinute',
@@ -44,6 +47,7 @@ export const RANGES: Record<Range, RangeDefinition> = {
     days: 7,
     period: 'hour',
     bucketMs: 36e5,
+    tabKey: 'range.week.tab',
     labelKey: 'range.week.label',
     shortKey: 'range.week.short',
     meanKey: 'range.mean.hourly',
@@ -54,6 +58,7 @@ export const RANGES: Record<Range, RangeDefinition> = {
     days: 30,
     period: 'hour',
     bucketMs: 36e5,
+    tabKey: 'range.month.tab',
     labelKey: 'range.month.label',
     shortKey: 'range.month.short',
     meanKey: 'range.mean.hourly',
@@ -64,6 +69,7 @@ export const RANGES: Record<Range, RangeDefinition> = {
     days: 365,
     period: 'day',
     bucketMs: 864e5,
+    tabKey: 'range.year.tab',
     labelKey: 'range.year.label',
     shortKey: 'range.year.short',
     meanKey: 'range.mean.daily',

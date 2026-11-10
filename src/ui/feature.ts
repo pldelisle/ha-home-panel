@@ -26,6 +26,8 @@ export interface FeatureEnv {
   readonly guest: GuestAnswers;
   /** Whether the sheet host has this element's sheet open: a pane binds it to its sheet's `open` (ADR 0021). */
   sheetOpen(id: string): boolean;
+  /** What the open sheet was asked to show (the tile of a history: `{key}`), or undefined when it is not the sheet open. */
+  sheetDetail(id: string): unknown;
 }
 
 export interface FeatureDescriptor {
@@ -48,6 +50,11 @@ export interface FeatureDescriptor {
    * a phone, whichever tab is shown (the pane stays behind the sheet and the tab is not changed).
    */
   detailSheet?: string;
+  /**
+   * The ids of the other element sheets this subject's pane draws over the screen (`weather.history`): the pane stays in the page
+   * behind them, whichever tab is shown, so the tab does not change.
+   */
+  overSheets?: readonly string[];
   /** The pane's content: a feature's element, or the markup the guest still fills. */
   pane: (env: FeatureEnv) => TemplateResult;
 }

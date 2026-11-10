@@ -7,7 +7,7 @@ import type {FeatureKey} from '../ui/feature.ts';
 
 /** The ids of the guest's sheets: the id of the `.sheet` element it draws. Deleted with the guest (#188). */
 export type LegacySheetId =
-  'sh-energy' | 'sh-climate' | 'sh-air' | 'sh-car' | 'sh-wx' | 'sh-sens' | 'sh-cam' | 'sh-light' | 'sh-card';
+  'sh-energy' | 'sh-climate' | 'sh-air' | 'sh-car' | 'sh-sens' | 'sh-cam' | 'sh-light' | 'sh-card';
 
 /** A legacy sheet is its element's id (a `LegacySheetId`); an element's sheet is `<owner>.<name>` (`shell.more`, later `weather.history`). */
 export type SheetId = string;
@@ -47,6 +47,8 @@ export interface SheetHost {
   /** The sheet on screen: the one over the page, or else the detail panel shown inside the pane. Null when there is none. */
   readonly shown: SheetId | null;
   isOpen(id: SheetId): boolean;
+  /** What the sheet open was asked to show (`open`'s second argument), for an element's sheet to read; undefined for any other. */
+  detail(id: SheetId): unknown;
   /** Opens a sheet and closes the one open before it; on a tablet a sheet with an inline panel shows its pane instead. */
   open(id: SheetId, detail?: unknown): void;
   /** Closes the sheet over the page; with an id, only when that sheet is the one open (an element's late `sheet-close` closes nothing else). */
@@ -84,6 +86,7 @@ function deepActiveElement(root: ShadowRoot): HTMLElement | null {
 
 export class SheetMediator implements SheetHost, ReactiveController {
   private current: SheetId | null = null; // the sheet over the page
+  private currentDetail: unknown; // what it was asked to show
   private inline: LegacySheetId | null = null; // the detail panel shown in its pane
   private lastFocus: HTMLElement | null = null;
   private readonly legacy = new Map<SheetId, Registered>();
@@ -113,6 +116,10 @@ export class SheetMediator implements SheetHost, ReactiveController {
     return this.shown === id;
   }
 
+  detail(id: SheetId): unknown {
+    return this.current === id ? this.currentDetail : undefined;
+  }
+
   open(id: SheetId, detail?: unknown): void {
     const entry = this.legacy.get(id);
     if (!entry && !id.includes('.')) return; // a guest sheet that is not drawn (any more)
@@ -130,6 +137,7 @@ export class SheetMediator implements SheetHost, ReactiveController {
     this.closeCurrent();
     this.lastFocus = deepActiveElement(this.options.root());
     this.current = id;
+    this.currentDetail = detail;
     if (!entry) {
       this.host.requestUpdate(); // an element's `open` follows `isOpen` in its owner's template
       return;

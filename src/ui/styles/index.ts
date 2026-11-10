@@ -10,6 +10,7 @@ import innerText from './inner.css?inline';
 import moreText from './more.css?inline';
 import motionText from './motion.css?inline';
 import paneHeaderText from './pane-header.css?inline';
+import rangeText from './range.css?inline';
 import segText from './seg.css?inline';
 import settingsText from './settings.css?inline';
 import sheetText from './sheet.css?inline';
@@ -35,6 +36,8 @@ export const statTile = adopt(statTileText);
 export const more = adopt(moreText);
 /** The segmented control: a row or a grid of radio buttons, one chosen. */
 export const seg = adopt(segText);
+/** The range tabs: a pill of buttons, one chosen. */
+export const range = adopt(rangeText);
 /** The settings popup's tiles, its text-size and glass choices and the transparency slider. */
 export const settings = adopt(settingsText);
 /** The tiles of a detail panel, with the one that opens a history. */
