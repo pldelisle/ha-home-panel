@@ -28,6 +28,7 @@ export default defineConfig({
         'src/shell/appearance-rules.ts',
         'src/shell/document-background.ts',
         'src/ui/icons.ts',
+        'src/ui/events.ts',
         'scripts/lib/anonymise.mjs',
       ],
       reporter: [['text', {skipFull: false}], 'html'], // skipFull false lists the files at 100 percent too
@@ -47,6 +48,7 @@ export default defineConfig({
         'src/shell/appearance-rules.ts': {statements: 100},
         'src/shell/document-background.ts': {statements: 100},
         'src/ui/icons.ts': {statements: 100},
+        'src/ui/events.ts': {statements: 100},
         'scripts/lib/anonymise.mjs': {statements: 100},
       },
     },

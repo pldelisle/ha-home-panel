@@ -14,7 +14,7 @@ Each sheet used to look after itself. The legacy class kept `open`, `inline` and
 - **Focus.** The host saves the focused element when a sheet opens, read through every shadow root (a tile of an element is two roots down), and focuses it again when the sheet closes.
 - **Two kinds of sheet.** The guest's sheets register as legacy sheets: the host toggles their `hidden`, tells the guest to build and to let go (`sheetOpened`, `sheetClosed`), and on a tablet moves the five detail panels between their sheets and their panes. An element's sheet has an id `<owner>.<name>`, and its owner's template binds `isOpen(id)` to the element's `open`.
 - **Events up.** An element never imports the shell. It dispatches `SheetRequestEvent` or `ToastEvent` (`src/ui/events.ts`) with `bubbles` and `composed` set, because an event dispatched inside a shadow root is not seen outside it otherwise (Lit docs, _Events_). The shell listens on its frame and stops the event there.
-- **Popups register.** The guest's two popups register with the host, which never reaches into the guest's markup; they leave when the settings popup becomes an element.
+- **Popups register.** The guest's two popups register with the host, which never reaches into the guest's markup; the settings popup leaves when it becomes an element, the Status checks when the guest goes.
 
 ## Consequences
 

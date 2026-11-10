@@ -5,7 +5,7 @@
 import type {ReactiveController, ReactiveControllerHost} from 'lit';
 import type {FeatureKey} from './feature.ts';
 
-/** The ids of the guest's sheets: the id of the `.sheet` element it draws. */
+/** The ids of the guest's sheets: the id of the `.sheet` element it draws. Deleted with the guest (#188). */
 export type LegacySheetId =
   | 'sh-energy'
   | 'sh-climate'
@@ -28,7 +28,7 @@ export interface InlinePlacement {
   host: string;
 }
 
-/** A sheet the guest wrote, registered while its element is in the DOM. */
+/** A sheet the guest wrote, registered while its element is in the DOM. Deleted with the guest (#188). */
 export interface LegacySheet {
   id: LegacySheetId;
   /** the `.sheet` div: the scrim, with the `.panel` and the `.close` button inside */
@@ -43,7 +43,7 @@ export interface Popup {
   close(): void;
 }
 
-/** What the host asks of the guest: build a sheet's content when it opens, let go of it when it closes. */
+/** What the host asks of the guest: build a sheet's content when it opens, let go of it when it closes. Deleted with the guest (#188). */
 export interface LegacySheetGuest {
   /** The sheet is on screen (over the page, or inline in its pane); it may be told again for an inline sheet another had covered. */
   sheetOpened(id: LegacySheetId, detail?: unknown): void;
@@ -61,8 +61,8 @@ export interface SheetHost {
   /** Closes the sheet over the page; with an id, only when that sheet is the one open (an element's late `sheet-close` closes nothing else). */
   close(id?: SheetId): void;
   /** The pane of `tab` is on screen: the inline panel of the pane before it goes, the one of this pane shows (a tablet). */
-  paneShown(tab: FeatureKey): void;
-  registerLegacy(sheet: LegacySheet): () => void;
+  paneShown(tab: FeatureKey): void; // deleted with the guest (#188)
+  registerLegacy(sheet: LegacySheet): () => void; // deleted with the guest (#188)
   registerPopup(popup: Popup): () => void;
 }
 

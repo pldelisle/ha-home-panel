@@ -1764,7 +1764,7 @@ export class LegacyPanel {
         }
       });
     });
-    this.root.querySelectorAll('.sheet').forEach(sh => this.swipeToClose(sh.querySelector('.panel')));
+    this.root.querySelectorAll('.sheet').forEach(sh => this.swipeToClose(sh.querySelector('.panel'), sh.id));
     this.$('etabs').addEventListener('click', e => {
       const b = e.target.closest('.tab');
       if (!b) return;
@@ -2204,7 +2204,7 @@ export class LegacyPanel {
   }
   // on a phone a sheet is dragged down by its grabber or its title to close, as iOS sheets are; a short drag springs back
   // (the kit's SwipeToClose is the same drag for the sheets that are elements; this one goes with the last legacy sheet, #169)
-  swipeToClose(p) {
+  swipeToClose(p, id) {
     let d = null;
     const end = e => {
       if (!d || e.pointerId !== d.id) return;
@@ -2217,7 +2217,7 @@ export class LegacyPanel {
         p.style.transform = `translateY(${p.offsetHeight}px)`;
         setTimeout(() => {
           p.style.transform = '';
-          this.sheets.close();
+          this.sheets.close(id); // a sheet already closed by something else is left alone
         }, 180);
       } else p.style.transform = '';
     };
@@ -3393,7 +3393,7 @@ export class LegacyPanel {
   }
 
   // ---------- sheets ----------
-  // the sheet host calls these two: a legacy sheet is on screen (a modal, or inline in its pane) or left it
+  // the sheet host calls these two: a legacy sheet is on screen (over the page, or inline in its pane) or left it
   sheetOpened(id) {
     if (id === 'sh-car') this.depDraft = null;
     this.buildSheet(id);
@@ -5049,7 +5049,7 @@ export class LegacyPanel {
   // the shell's `compact` changed and its frame already follows
   compactChanged() {
     if (!this.$app) return; // nothing drawn yet: the first draw reads the shell
-    // the sheet host has closed the modal and moved the five detail panels; the cards move here
+    // the sheet host has closed the open sheet and moved the five detail panels; the cards move here
     if (this.view === 'tabs') {
       this.leaveTabs();
       this.enterTabs();

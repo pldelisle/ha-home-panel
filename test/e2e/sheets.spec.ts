@@ -67,7 +67,9 @@ test('Done hands focus back to the tile as well', async ({house}) => {
   expect(await focused(house)).toMatch(/^div\.lcell.*\[office\]$/);
 });
 
-test('on a tablet the energy tile shows the Energy pane with its panel inline, and opens no modal', async ({house}) => {
+test('on a tablet the energy tile shows the Energy pane with its panel inline, and opens no sheet over the page', async ({
+  house,
+}) => {
   tabletOnly();
   await energyTile(house).click();
   await expect(house.root().locator('#pane-energy')).toBeVisible();
