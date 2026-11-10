@@ -8,6 +8,8 @@ const PROVIDERS = '^src/providers/';
 const UI = '^src/ui/';
 const ENTRY = '^src/main\\.js$';
 const FEATURES = '^src/features/';
+// the kit's stylesheets: plain text with no imports, which the legacy sheet joins (src/styles.js) and the elements adopt (ADR 0019)
+const KIT_STYLES = '^src/ui/styles/[^/]+\\.css$';
 // the strangler's host, shared with scripts/arch-graph.mjs and test/unit/architecture.test.mjs
 const {LEGACY} = require('./scripts/legacy-set.cjs');
 
@@ -57,9 +59,9 @@ module.exports = {
       name: 'legacy-imports-core-and-legacy-only',
       severity: 'error',
       comment:
-        'Legacy code is being strangled: it may use the new core, but it must not grow dependencies on the new features, UI kit, providers or shell.',
+        "Legacy code is being strangled: it may use the new core, but it must not grow dependencies on the new features, UI kit, providers or shell. The one exception is the kit's stylesheets, text the legacy sheet is made of (ADR 0019).",
       from: {path: LEGACY},
-      to: {path: '^src/', pathNot: [LEGACY, CORE]},
+      to: {path: '^src/', pathNot: [LEGACY, CORE, KIT_STYLES]},
     },
     {
       name: 'nothing-imports-legacy-but-entry',

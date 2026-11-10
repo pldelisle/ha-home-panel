@@ -1,10 +1,10 @@
-// The stylesheet is minified by Lightning CSS at build time (src/styles.js imports src/css/*.css with `?inline`;
+// The stylesheet is minified by Lightning CSS at build time (src/styles.js imports src/css/*.css and src/ui/styles/*.css with `?inline`;
 // vite.config.ts sets `build.cssMinify` and `build.cssTarget`, for Safari and iOS 26 and current Chrome, Edge and
 // Firefox: docs/specs/06-vite-build.md, "As built (#69)"). The screenshot baselines catch what looks different; this
 // test catches what a minifier can lose without a pixel moving in the test house: an effect dropped, a block merged
 // away, a rule that is no longer there.
 //
-// The expected figures come from the source files (a regex over src/css/*.css, comments removed), never from the
+// The expected figures come from the source files (a regex over src/css/*.css and src/ui/styles/*.css, comments removed), never from the
 // output. The output is built here into a scratch folder, through Vite's own API and the repository's vite.config.ts:
 // once as the whole entry (what ships) and once from src/styles.js alone, which gives the stylesheet as a string apart
 // from the JavaScript around it (the entry has a few `backdrop-filter` and `color-mix(` of its own in inline styles).
@@ -17,10 +17,12 @@ import {build} from 'vite';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const stripComments = css => css.replace(/\/\*[\s\S]*?\*\//g, '');
+// the legacy sheet is src/css/ and the kit's files (src/ui/styles/, ADR 0019), which src/styles.js joins
 const source = stripComments(
-  readdirSync(join(ROOT, 'src/css'))
+  ['src/css', 'src/ui/styles']
+    .flatMap(dir => readdirSync(join(ROOT, dir)).map(f => join(ROOT, dir, f)))
     .filter(f => f.endsWith('.css'))
-    .map(f => readFileSync(join(ROOT, 'src/css', f), 'utf8'))
+    .map(f => readFileSync(f, 'utf8'))
     .join('\n'),
 );
 const count = (text, pattern) => (text.match(pattern) ?? []).length;

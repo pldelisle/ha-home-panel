@@ -1,0 +1,10 @@
+/* The More list's grid, in `<hp-more-sheet>`'s root. Its tiles are `<hp-stat-tile>`s, which lay out as if they were its children. */
+.app.cp.txl .morelist {
+  grid-template-columns: 1fr;
+}
+/* More */
+.morelist {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}

@@ -1,0 +1,19 @@
+/* The keyframes the kit's rules name. A shadow root looks up `@keyframes` in its own styles only, so an element adopts them, and
+   the legacy sheet joins them after motion.css, where `fadein` and `popin` were. */
+@keyframes shup {
+  from {
+    transform: translateY(56px);
+    opacity: 0.4;
+  }
+}
+@keyframes fadein {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes popin {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+}

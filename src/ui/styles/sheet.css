@@ -1,0 +1,268 @@
+/* A sheet's chrome, written once for the legacy sheets and for `<hp-more-sheet>`: the backdrop, the panel, the grabber, the header
+   (badge, title, close button) and their motion, in the order the legacy files held them (base, extra, phone, glass, motion).
+   Inside an element `.app.cp` and `.app.gl` read as `:host([compact])` and `:host([glass])` (host.ts). */
+button.icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 0;
+  background: var(--card);
+  color: var(--fg);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+}
+button.icon:focus-visible {
+  outline: 2px solid var(--c-home);
+  outline-offset: 2px;
+}
+/* sheets */
+.sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px))
+    max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+  background: color-mix(in srgb, var(--bg) 70%, transparent);
+  backdrop-filter: blur(8px);
+}
+.sheet > .panel {
+  width: min(1180px, 100%);
+  max-height: 100%;
+  overflow: auto;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 30px;
+  padding: 24px;
+  box-shadow: 0 30px 80px -30px rgba(0, 0, 0, 0.5);
+}
+.sheet .ph {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px 18px;
+  margin-bottom: 18px;
+}
+.sheet .ph .badge {
+  width: 54px;
+  height: 54px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.ph .badge {
+  background: color-mix(in srgb, var(--acc, var(--fg3)) 22%, var(--card));
+  color: var(--fg);
+}
+.sheet .ph h2 {
+  margin: 0;
+  font-family: var(--f-num);
+  font-weight: var(--num-w);
+  font-size: calc(30px * var(--tx));
+  letter-spacing: -0.02em;
+}
+.sheet .ph .sub {
+  color: var(--fg2);
+  font-size: calc(14px * var(--tx));
+  margin-top: 2px;
+}
+.sheet .ph .grow {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+.sheet {
+  background: color-mix(in srgb, var(--bg) 80%, transparent);
+}
+.sheet > .panel {
+  border: 0;
+  background: var(--bg);
+}
+.sheet[hidden] {
+  display: none;
+}
+@media (max-width: 720px) {
+  .sheet .ph {
+    position: relative;
+  }
+  .sheet .ph .grow {
+    padding-right: 48px;
+  }
+  .sheet .ph .close {
+    position: absolute;
+    top: 0;
+    right: 0;
+  }
+}
+.sheet > .panel > * + * {
+  margin-top: 16px;
+}
+/* sheets rise from the bottom, full width, with a grabber */
+.app.cp .sheet {
+  padding: 0;
+  place-items: end stretch;
+  background: rgba(20, 16, 12, 0.38);
+}
+.app.cp .sheet > .panel {
+  width: 100%;
+  max-width: none;
+  max-height: calc(100% - max(40px, env(safe-area-inset-top, 0px)));
+  border-radius: 26px 26px 0 0;
+  padding: 8px 16px calc(24px + env(safe-area-inset-bottom, 0px));
+  animation: shup 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+  overscroll-behavior: contain;
+  transition: transform 0.2s ease-out;
+}
+/* the grabber: drag it, or the title, down to close the sheet; a short drag springs back */
+.grab {
+  display: none;
+}
+.app.cp .sheet > .panel > .grab {
+  display: block;
+  padding: 6px 0 12px;
+  touch-action: none;
+  cursor: grab;
+}
+.app.cp .sheet > .panel > .grab::before {
+  content: '';
+  display: block;
+  width: 36px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--fg3);
+  margin: 0 auto;
+}
+.sheet > .panel > .grab + *,
+.app.cp .sheet > .panel > .grab + * {
+  margin-top: 0;
+}
+.app.cp .sheet > .panel.dragging {
+  transition: none;
+}
+.app.cp .sheet > .panel > .grab,
+.app.cp .sheet .ph > .badge,
+.app.cp .sheet .ph > .grow {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.app.cp .sheet .ph {
+  position: relative;
+  gap: 8px 12px;
+  margin-bottom: 14px;
+}
+.app.cp .sheet .ph .badge {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+}
+.app.cp .sheet .ph .badge svg {
+  width: 22px;
+  height: 22px;
+}
+.app.cp .sheet .ph h2 {
+  font-size: calc(22px * var(--tx));
+}
+.app.cp .sheet .ph .sub {
+  font-size: calc(12.5px * var(--tx));
+}
+.app.cp .sheet .ph .grow {
+  padding-right: 48px;
+}
+.app.cp .sheet .ph .close {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 44px;
+  height: 44px;
+}
+.app.cp .sheet .ph .tabs {
+  width: 100%;
+}
+.app.cp .sheet > .panel > * + * {
+  margin-top: 14px;
+}
+.app.cp .sheet .inner {
+  padding: 14px;
+  border-radius: 18px;
+}
+.app.gl .sheet > .panel {
+  background: var(--g-dense);
+  border: 0;
+  -webkit-backdrop-filter: var(--g-bd);
+  backdrop-filter: var(--g-bd);
+  box-shadow: var(--g-edge);
+}
+/* phone sheets: a lighter scrim, the sheet frame is glass, the cards inside stay opaque so numbers stay readable */
+.app.gl .sheet {
+  background: rgba(20, 16, 12, 0.18);
+  -webkit-backdrop-filter: blur(6px) saturate(1.3);
+  backdrop-filter: blur(6px) saturate(1.3);
+}
+.app.gl.cp .sheet {
+  background: rgba(20, 16, 12, 0.2);
+}
+.app.gl.cp .sheet > .panel > .grab::before {
+  background: var(--fg2);
+}
+.app.gl .sheet button.icon.close {
+  background: var(--g-tile);
+  box-shadow: var(--g-edge-s);
+}
+.app.gl .sheet button.icon.close {
+  box-shadow: var(--g-edge-s);
+}
+/* pane and sheet title icons are tinted glass instead of a flat colour square */
+.app.gl .ph .badge {
+  background: color-mix(in srgb, var(--acc, var(--fg3)) 22%, var(--g-fill));
+  -webkit-backdrop-filter: var(--g-bd);
+  backdrop-filter: var(--g-bd);
+  box-shadow: var(--g-edge);
+}
+@media (prefers-reduced-transparency: reduce) {
+  .app.gl.cp .sheet > .panel {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--card);
+  }
+  .app.gl .ph .badge {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: color-mix(in srgb, var(--acc, var(--fg3)) 22%, var(--card));
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .sheet button.icon.close {
+    transition:
+      transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+      background-color 0.2s ease,
+      box-shadow 0.2s ease,
+      color 0.2s ease;
+  }
+}
+.sheet button.icon.close:active {
+  transform: scale(0.96);
+}
+/* sheets: the scrim fades, the phone sheet springs up with a little overshoot, the iPad modal pops in */
+.sheet {
+  animation: fadein 0.22s ease-out both;
+}
+.app.cp .sheet > .panel {
+  animation: shup 0.46s cubic-bezier(0.3, 1.22, 0.4, 1);
+}
+.app:not(.cp) .sheet > .panel {
+  animation: popin 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.06) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sheet,
+  .app.cp .sheet > .panel,
+  .app:not(.cp) .sheet > .panel {
+    animation: none;
+  }
+  .app.cp .sheet > .panel {
+    transition: none;
+  }
+}
