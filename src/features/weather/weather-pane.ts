@@ -5,7 +5,7 @@
 // the statistics caches and hands the model and a cache to the detail and the history, which it draws only while they are on screen.
 // Must not: read an entity itself (`readWeather` does, from the states it is handed), format a figure or hold a string the household reads, or open a sheet (it asks).
 import {ContextConsumer} from '@lit/context';
-import {LitElement, css, html, nothing, unsafeCSS, type PropertyValues} from 'lit';
+import {LitElement, html, nothing, unsafeCSS, type PropertyValues} from 'lit';
 import {repeat} from 'lit/directives/repeat.js';
 import {readWeather} from './inputs.ts';
 import {weatherIds} from './ids.ts';
@@ -30,6 +30,7 @@ import '../../ui/stat-tile.ts'; // defines <hp-stat-tile>
 import type {TileOpenDetail} from '../../ui/stat-tile.ts';
 import {common} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
+import weatherPaneOwn from './weather-pane.element.css?inline';
 
 export class WeatherPane extends LitElement {
   static override properties = {
@@ -46,31 +47,8 @@ export class WeatherPane extends LitElement {
 
   // The host lays itself out as the old pane did: a column with the sixteen pixels between its parts on the phone, a block on a
   // tablet, where the detail is its one child.
-  static override styles = [
-    common,
-    unsafeCSS(forShadow(paneStyles)),
-    css`
-      :host {
-        display: block;
-      }
-      :host([compact]) {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-      }
-      /* behind another tab with its sheet open: no box of its own, the sheet is fixed to the screen */
-      :host(:not([active])) {
-        display: contents;
-      }
-      hp-pane-header {
-        display: none;
-      }
-      :host([compact]) hp-pane-header {
-        display: block;
-        margin-bottom: 0;
-      }
-    `,
-  ];
+  // The element's own rules, its `:host` and what only its tree has, are in weather-pane.element.css.
+  static override styles = [common, unsafeCSS(forShadow(paneStyles)), unsafeCSS(forShadow(weatherPaneOwn))];
 
   private readonly storeController = new StoreController(this, {ids: store => weatherIds(store.config)});
   private readonly appearance = new AppearanceConsumer(this);

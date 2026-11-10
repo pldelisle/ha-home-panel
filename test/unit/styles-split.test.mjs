@@ -2,6 +2,10 @@
 // sheet and the elements read one source and a rule cannot drift into two copies. The legacy files (src/css/) are
 // concatenated into one sheet and may still repeat a selector among themselves; it is a selector in a file of a new layer
 // that must be alone. And a file of the kit must be imported by src/styles.js, so the legacy sheet never silently loses it.
+// An element's own rules (`<name>.element.css`, next to the element: its `:host` and what only its tree has) are adopted by that
+// element's root alone, never joined into the legacy sheet; two of them may write the same selector (`:host`), each in its own root,
+// but one may not write what another kind of file writes. A `:host` rule of an element is that root's own: the legacy sheet's
+// `:host` is the frame's root, so a selector that starts with `:host` in an element's file is not compared with the others.
 import {readdirSync, readFileSync} from 'node:fs';
 import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -10,6 +14,7 @@ import {describe, expect, test} from 'vitest';
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const LEGACY = 'src/css';
 const KIT = 'src/ui/styles';
+const ELEMENT = /\.element\.css$/;
 
 /** every `.css` file under a folder, as paths from the repository root; a folder that does not exist yet has none */
 function cssFiles(folder) {
@@ -67,9 +72,12 @@ function selectorsOf(css) {
 function sharedSelectors(files) {
   const where = new Map();
   for (const [file, css] of Object.entries(files))
-    for (const selector of new Set(selectorsOf(css))) where.set(selector, [...(where.get(selector) ?? []), file]);
+    for (const selector of new Set(selectorsOf(css).filter(s => !(ELEMENT.test(file) && s.startsWith(':host')))))
+      where.set(selector, [...(where.get(selector) ?? []), file]);
   return [...where]
-    .filter(([, list]) => list.length > 1 && list.some(f => !f.startsWith(`${LEGACY}/`)))
+    .filter(
+      ([, list]) => list.length > 1 && list.some(f => !f.startsWith(`${LEGACY}/`)) && !list.every(f => ELEMENT.test(f)),
+    )
     .map(([selector, list]) => `${selector}   in ${list.join(', ')}`);
 }
 
@@ -103,6 +111,16 @@ describe('the one-rule-one-file check', () => {
     ]);
   });
 
+  test('lets two elements each write `:host`, and lists one that a file of another kind writes too', () => {
+    expect(
+      sharedSelectors({
+        'src/ui/sheet.element.css': ':host { display: contents } h2 { margin: 0 }',
+        'src/ui/range-tabs.element.css': ':host { display: contents }',
+        [`${LEGACY}/base.css`]: 'h2 { margin: 1px } :host { display: block }',
+      }),
+    ).toEqual([`h2   in src/ui/sheet.element.css, ${LEGACY}/base.css`]);
+  });
+
   test('lets two legacy files repeat a selector between them, as they still do', () => {
     expect(sharedSelectors({[`${LEGACY}/base.css`]: '.x { a: 1 }', [`${LEGACY}/phone.css`]: '.x { b: 1 }'})).toEqual(
       [],
@@ -111,7 +129,7 @@ describe('the one-rule-one-file check', () => {
 });
 
 describe('the files as written', () => {
-  const folders = [LEGACY, KIT, 'src/shell', 'src/features'];
+  const folders = [LEGACY, KIT, 'src/ui', 'src/shell', 'src/features'];
   const files = Object.fromEntries(
     folders.flatMap(folder => cssFiles(folder)).map(file => [file, readFileSync(join(ROOT, file), 'utf8')]),
   );

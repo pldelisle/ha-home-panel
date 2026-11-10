@@ -4,7 +4,7 @@
 // It loads while connected and lets go on disconnect (the radar, a late reply, the charts): the pane shows it only when it is on screen.
 // Must not: read an entity (the pane's model did), call the API client for statistics except through the cache, mutate a cached reply, or open a sheet itself.
 import {ContextConsumer} from '@lit/context';
-import {LitElement, css, html, nothing, svg, unsafeCSS} from 'lit';
+import {LitElement, html, nothing, svg, unsafeCSS} from 'lit';
 import {ifDefined} from 'lit/directives/if-defined.js';
 import {repeat} from 'lit/directives/repeat.js';
 import {StaleReply, type PanelApi} from '../../core/api.ts';
@@ -39,6 +39,7 @@ import type {DayRow, HourCell, StatTileView, WeatherViewModel} from './model.ts'
 import {mountRadar, type RadarMount} from './radar.ts';
 import {HISTORY_SHEET} from './sheets.ts';
 import detailStyles from './styles.css?inline';
+import weatherDetailOwn from './weather-detail.element.css?inline';
 
 type Rows = Record<string, readonly StatisticRow[]>;
 
@@ -64,35 +65,15 @@ export class WeatherDetail extends LitElement {
   declare cache: StatisticsCache | undefined;
 
   // The host is a block; its blocks are one column with the sixteen pixels between them the pane's `.panel` gave (fourteen on the phone).
-  // On a phone the detail sits in a sheet, which draws the heading; the card rules of the old sheet that reached its `.inner` are here.
+  // On a phone the detail sits in a sheet, which draws the heading; the card rules of the old sheet that reached its `.inner` are in weather-detail.element.css.
+  // The element's own rules, its `:host` and what only its tree has, are in weather-detail.element.css.
   static override styles = [
     common,
     inner,
     tiles,
     chart,
     unsafeCSS(forShadow(detailStyles)),
-    css`
-      :host {
-        display: block;
-        min-width: 0;
-      }
-      .blocks {
-        min-width: 0;
-      }
-      .blocks > * + * {
-        margin-top: 16px;
-      }
-      :host([compact]) .blocks > * + * {
-        margin-top: 14px;
-      }
-      :host([compact]) .inner {
-        padding: 14px;
-        border-radius: 18px;
-      }
-      [slot='icon'] {
-        display: contents;
-      }
-    `,
+    unsafeCSS(forShadow(weatherDetailOwn)),
   ];
 
   private readonly storeController = new StoreController(this, {ids: () => []});

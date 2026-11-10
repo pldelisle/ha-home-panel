@@ -2,7 +2,7 @@
 // Pattern: humble object (Meszaros, xUnit Test Patterns) drawn from the registry, composing the kit's <hp-sheet> for its chrome;
 // properties down, events up (Lit docs, Events): a tile's `tile-open` becomes `tab-select`; the sheet's `sheet-close` passes through.
 // Must not: draw a sheet's chrome, choose the tab, listen for Escape or know which sheet is open (the shell and its host do), or import a feature.
-import {LitElement, css, html, nothing} from 'lit';
+import {LitElement, html, nothing, unsafeCSS} from 'lit';
 import {repeat} from 'lit/directives/repeat.js';
 import {AppearanceConsumer} from '../ui/controllers/appearance-consumer.ts';
 import {StoreController} from '../ui/controllers/store-controller.ts';
@@ -12,6 +12,8 @@ import type {TileOpenDetail} from '../ui/stat-tile.ts';
 import {common, more} from '../ui/styles/index.ts';
 import type {FeatureDescriptor, FeatureKey} from '../ui/feature.ts';
 import {isFeatureKey} from './features.ts';
+import moreSheetOwn from './more-sheet.element.css?inline';
+import {forShadow} from '../ui/styles/host.ts';
 
 /** What the sheet says when a tile is tapped: the section to show. */
 export interface TabSelectDetail {
@@ -37,15 +39,8 @@ export class MoreSheet extends LitElement {
   declare open: boolean;
 
   // `display: contents`: the sheet is `position: fixed`, so the host takes no room in the frame it sits in
-  static override styles = [
-    common,
-    more,
-    css`
-      :host {
-        display: contents;
-      }
-    `,
-  ];
+  // The element's own rules, its `:host` and what only its tree has, are in more-sheet.element.css.
+  static override styles = [common, more, unsafeCSS(forShadow(moreSheetOwn))];
 
   // the sheet's words are catalog messages, so it asks the store for `t`; it reads no entity
   private readonly store = new StoreController(this, {ids: () => []});

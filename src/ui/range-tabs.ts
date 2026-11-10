@@ -3,11 +3,13 @@
 // chosen, and a tap is told upward as `range-change` (Lit docs, Events: properties down, events up); the markup is the legacy sheets' own.
 // Must not: hold a range's span or a word (the tabs come from `RANGES` and the catalog, through the owner), fetch anything, or keep the choice itself.
 // A known copy: `:host([compact]) .tabs` is written by hand here, because the legacy rule it follows (`.app.cp .sheet .ph .tabs`, sheet.css) cannot reach a slotted element's root; it goes with the legacy sheet.
-import {LitElement, css, html} from 'lit';
+import {LitElement, html, unsafeCSS} from 'lit';
 import {repeat} from 'lit/directives/repeat.js';
 import {AppearanceConsumer} from './controllers/appearance-consumer.ts';
 import type {Range} from './ranges.ts';
 import {common, range as rangeStyles} from './styles/index.ts';
+import rangeTabsOwn from './range-tabs.element.css?inline';
+import {forShadow} from './styles/host.ts';
 
 /** One tab: the range it chooses and its word, already in the panel's language. */
 export interface RangeTab {
@@ -31,18 +33,8 @@ export class RangeTabs extends LitElement {
 
   // `display: contents`: the host has no box of its own, so the pill is a child of whatever lays it out (a sheet's header), as the
   // legacy tabs were; on a phone the pill takes the header's full width, as the sheet's rule gave it there
-  static override styles = [
-    common,
-    rangeStyles,
-    css`
-      :host {
-        display: contents;
-      }
-      :host([compact]) .tabs {
-        width: 100%;
-      }
-    `,
-  ];
+  // The element's own rules, its `:host` and what only its tree has, are in range-tabs.element.css.
+  static override styles = [common, rangeStyles, unsafeCSS(forShadow(rangeTabsOwn))];
 
   constructor() {
     super();
