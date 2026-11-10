@@ -105,6 +105,24 @@ test('dragging the grabber down closes the sheet, and a short drag springs back'
   await expect(sheet(house)).toBeHidden();
 });
 
+// the heading and the sub-line are the owner's nodes, slotted into the sheet's header: a drag that starts on either closes it
+for (const [name, text] of [
+  ['heading', 'More'],
+  ['sub-line', 'All sections'],
+] as const) {
+  test(`dragging the ${name} down closes the sheet too`, async ({house}) => {
+    await moreTab(house).click();
+    const box = (await house.root().locator('hp-more-sheet').getByText(text, {exact: true}).boundingBox())!;
+    const x = box.x + box.width / 2;
+    const y = box.y + box.height / 2;
+    await house.page.mouse.move(x, y);
+    await house.page.mouse.down();
+    await house.page.mouse.move(x, y + 200, {steps: 8});
+    await house.page.mouse.up();
+    await expect(sheet(house)).toBeHidden();
+  });
+}
+
 test('More is a phone sheet: when the shape leaves the phone it closes', async ({house}) => {
   await moreTab(house).click();
   await expect(sheet(house)).toBeVisible();
@@ -142,7 +160,9 @@ test.describe('in French', () => {
   test('its title, its line, its Close button and the words under the sections are French', async ({house}) => {
     await moreTab(house).click();
     await expect(house.root().locator('hp-more-sheet').getByRole('dialog', {name: 'Plus'})).toBeVisible();
-    await expect(house.root().locator('hp-more-sheet .sub')).toHaveText('Toutes les sections');
+    await expect(house.root().locator('hp-more-sheet').getByText('Toutes les sections')).toHaveText(
+      'Toutes les sections',
+    );
     await expect(
       house.root().locator('hp-more-sheet').getByRole('button', {name: 'Fermer', exact: true}),
     ).toBeVisible();

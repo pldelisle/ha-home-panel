@@ -163,7 +163,7 @@ test('More asked for from an element closes the sheet that is open', async ({hou
   await dispatch(house, 'sheet-request', {id: 'shell.more', detail: null});
   await expect(moreSheet(house)).toBeVisible();
   await expect(energySheet(house)).toBeHidden();
-  await expect(moreSheet(house).locator('hp-stat-tile')).toHaveCount(6); // the words under the sections were asked for
+  await expect(house.root().locator('hp-more-sheet hp-stat-tile')).toHaveCount(6); // the words under the sections were asked for
 });
 
 test('a toast asked for from an element shows, and a sticky one stays until it is tapped', async ({house}) => {

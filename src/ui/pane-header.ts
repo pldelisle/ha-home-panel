@@ -52,7 +52,7 @@ export class PaneHeader extends LitElement {
   // comes last, so the badge's icon is still the first svg of a pane.
   protected override render() {
     return html`<div class="ph">
-        <span class="badge" style=${styleMap({'--acc': this.color})}>${ico(this.icon, 26)}</span>
+        <span class="badge" part="badge" style=${styleMap({'--acc': this.color})}>${ico(this.icon, 26)}</span>
         <div class="grow">
           <slot name="title">${this.heading ? html`<h2>${this.heading}</h2>` : nothing}</slot>
           <slot name="sub"></slot>
