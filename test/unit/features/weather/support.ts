@@ -26,13 +26,15 @@ interface Reading {
   now?: number;
   /** Another place than the house's, for the sun. */
   where?: {latitude: number; longitude: number};
+  /** The config's house picture. */
+  house?: {day: string | null; night: string | null} | null;
 }
 
 /** The model of these inputs, in a language, at an instant (the house's own by default), for a forecast. */
 export function modelFromInputs(
   inputs: WeatherInputs,
   language: Language,
-  {forecast = NO_FORECAST, now = REFERENCE_MS, where}: Reading = {},
+  {forecast = NO_FORECAST, now = REFERENCE_MS, where, house: picture}: Reading = {},
 ): WeatherViewModel {
   const house: FakeHass = {...fullHouse, locale: {language}};
   const locale = panelLocale(house, {timeZone: 'America/Toronto', browserLocale: 'en'});
@@ -43,6 +45,7 @@ export function modelFromInputs(
     t: createMessages(locale).t,
     latitude: where?.latitude ?? house.config.latitude,
     longitude: where?.longitude ?? house.config.longitude,
+    house: picture,
   });
 }
 

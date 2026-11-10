@@ -265,45 +265,6 @@
   }
 }
 
-/* weather */
-.wx {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-}
-.wx .t {
-  font-size: calc(72px * var(--tx));
-  line-height: 0.9;
-}
-.wx .t sup {
-  font-size: calc(26px * var(--tx));
-  vertical-align: top;
-}
-.wx .d {
-  font-size: calc(17px * var(--tx));
-  font-weight: 600;
-}
-.facts {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 6px 12px;
-  background: var(--card2);
-  border-radius: 14px;
-  padding: 10px 14px;
-  margin: 14px 0 10px;
-  font-size: calc(13px * var(--tx));
-  color: var(--fg2);
-}
-.facts.wxfacts {
-  background: var(--card);
-}
-.facts b {
-  color: var(--fg);
-  font-weight: 600;
-  margin-left: 4px;
-}
-
 /* attention */
 .att {
   display: grid;
@@ -580,23 +541,6 @@
 .ichip svg {
   width: 20px;
   height: 20px;
-}
-.wxcard {
-  background: var(--card2);
-  overflow: hidden;
-}
-.wxcard .house {
-  position: absolute;
-  right: -6px;
-  top: 6px;
-  width: 52%;
-  max-width: 260px;
-  height: auto;
-  pointer-events: none;
-}
-.wxcard .txt {
-  position: relative;
-  z-index: 1;
 }
 .carcard .carside {
   width: 50%;

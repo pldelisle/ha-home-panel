@@ -2,8 +2,15 @@
 // weather records print the house's days, whichever zone the browser is in, in English and in French. The house is in
 // Toronto; the browsers are in Toronto (the control), Tokyo and Auckland, a half day and more away. The clock is frozen at
 // Saturday 7 November 12:00 in Toronto, which is already Sunday in Auckland.
-import {test, expect, tabletOnly} from './fixtures';
+import {test, expect, phoneOnly, tabletOnly, type House} from './fixtures';
 import {FULL_CFG} from './houses';
+
+// the phone's summary card is the pane's own: More holds Weather there
+async function openWeather(house: House) {
+  await house.root().locator('#moretab').click();
+  await house.root().locator('#morelist hp-stat-tile[key="weather"] button').click();
+  await expect(house.root().locator('#pane-weather')).toBeVisible();
+}
 
 for (const tz of ['America/Toronto', 'Asia/Tokyo', 'Pacific/Auckland']) {
   test.describe(`a browser in ${tz}`, () => {
@@ -13,8 +20,9 @@ for (const tz of ['America/Toronto', 'Asia/Tokyo', 'Pacific/Auckland']) {
       test.use({houseOpts: {cfg: FULL_CFG, time: '2026-11-07T17:00:00Z', frozen: true, forecast: true}});
 
       test('the forecast names the house days', async ({house}) => {
-        tabletOnly();
-        await expect(house.root().locator('#wxd span')).toHaveText(['Today', 'Sun', 'Mon', 'Tue']);
+        phoneOnly();
+        await openWeather(house);
+        await expect(house.root().locator('hp-weather-pane .wxd span')).toHaveText(['Today', 'Sun', 'Mon', 'Tue']);
       });
 
       test('the season records print the house days', async ({house}) => {
@@ -32,8 +40,14 @@ for (const tz of ['America/Toronto', 'Asia/Tokyo', 'Pacific/Auckland']) {
       test.use({houseOpts: {cfg: FULL_CFG, time: '2026-11-07T17:00:00Z', frozen: true, forecast: true, lang: 'fr'}});
 
       test('the forecast names the house days', async ({house}) => {
-        tabletOnly();
-        await expect(house.root().locator('#wxd span')).toHaveText(["Aujourd'hui", 'Dim.', 'Lun.', 'Mar.']);
+        phoneOnly();
+        await openWeather(house);
+        await expect(house.root().locator('hp-weather-pane .wxd span')).toHaveText([
+          "Aujourd'hui",
+          'Dim.',
+          'Lun.',
+          'Mar.',
+        ]);
       });
     });
   });

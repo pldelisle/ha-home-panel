@@ -442,7 +442,6 @@ export const FR_MAP = {
   Away: 'Absent',
   // ---- weather ----
   Weather: 'Météo',
-  'Open weather details': 'Ouvrir les détails de la météo',
   'Feels like': 'Ressenti',
   'same as the air': "comme l'air",
   'wind chill': 'refroidissement éolien',
@@ -1172,9 +1171,6 @@ export const FR_MAP = {
   Brightness: 'Luminosité',
   Colour: 'Couleur',
   'Night mode': 'Mode nuit',
-  'For the date': 'Pour la date',
-  'Chance today': "Probabilité aujourd'hui",
-  'Same as the air': "Comme l'air",
   'Dew point {n}°': 'Point de rosée {n}°',
   'gusts {n} km/h': 'rafales {n} km/h',
   'Very high': 'Très élevé',

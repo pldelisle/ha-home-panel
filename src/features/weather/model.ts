@@ -3,7 +3,8 @@
 // words every message through `deps.t` (units and symbols are literal) and formats everything through `deps.fmt`, and returns a tree of strings and numbers.
 // Each rule is the legacy panel's own (weatherSummary, renderWeather, renderWeatherNow, renderForecast, wxDays, dayName).
 // Must not: import the DOM, a UI kit element or the shell, hold a colour (tiles carry a tone name), or read the clock.
-import type {Formatters} from '../../core/i18n/format.ts';
+import {capitalise, DASH, DAY_MS, HOUR_MS} from '../../core/figures.ts';
+import {degrees, whole, type Formatters} from '../../core/i18n/format.ts';
 import type {Messages} from '../../core/i18n/messages.ts';
 import {isDayAt, sunTimes} from '../../core/sun.ts';
 import {
@@ -27,6 +28,8 @@ export interface WeatherModelDeps {
   t: Translate;
   latitude: number;
   longitude: number;
+  /** The house picture the config names, one for the light theme and one for the dark; none by default. */
+  house?: {day: string | null; night: string | null} | null;
 }
 
 /** A weather icon to draw: the condition, whether it is day, and the name of the condition for the screen reader. */
@@ -112,6 +115,8 @@ export interface WeatherViewModel {
   summary: string;
   /** The phone's summary card. */
   card: {
+    /** The house picture the card draws behind its text, or null. */
+    house: {day: string; night: string} | null;
     sunLabel: string;
     sunTime: string;
     temperature: string;
@@ -140,10 +145,6 @@ export interface WeatherViewModel {
   days: DayRow[];
 }
 
-/** What a missing figure shows. */
-export const DASH = '–';
-const DAY_MS = 864e5;
-const HOUR_MS = 36e5;
 /** The forecast days the panel keeps; the phone's card shows the first four. */
 const DAYS_KEPT = 7;
 const CARD_DAYS = 4;
@@ -175,8 +176,6 @@ const isCondition = (word: string): word is Condition => (CONDITIONS as readonly
 /** The tiles in the order the detail panel shows them; the pane's order is TILES'. */
 const DETAIL_ORDER: readonly TileKey[] = ['wind', 'hum', 'pres', 'pop', 'uv', 'aqhi', 'feels', 'normal'];
 
-export const capitalise = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
-
 /**
  * The name of a condition: the catalog's word for one Home Assistant knows, else the integration's own word with a capital
  * and the rest in lower case (Environment Canada sends `Mainly Sunny`); nothing for no condition.
@@ -204,11 +203,6 @@ interface Say {
   condition: (word: string | null) => string;
   icon: (word: string | null, day: boolean) => IconSpec;
 }
-
-/** A whole number; the -0 of Math.round(-0.4) is 0, which Intl would otherwise write as `-0`. */
-export const whole = (fmt: Formatters, n: number) => fmt.integer(Math.round(n) + 0);
-/** A whole number of degrees: `12°`. */
-export const degrees = (fmt: Formatters, n: number) => `${whole(fmt, n)}°`;
 
 function sayWith(t: Translate, fmt: Formatters): Say {
   return {
@@ -245,10 +239,10 @@ function alertViews(inputs: WeatherInputs, {t}: Say): AlertView[] {
   }));
 }
 
-function summaryLine(inputs: WeatherInputs, alerts: number, {t, fmt, condition}: Say): string {
+function summaryLine(inputs: WeatherInputs, alerts: number, condition: string, {t, fmt}: Say): string {
   const {observation, pressure} = inputs;
   return [
-    condition(inputs.condition),
+    condition,
     observation
       ? observation.station
         ? t('weather.observedAt', {time: fmt.time(observation.at), station: observation.station})
@@ -587,6 +581,16 @@ function sunView(inputs: WeatherInputs, deps: WeatherModelDeps, days: Days, {t, 
 
 // ---------- the model ----------
 
+/** The current condition: the source's own phrase has its message, else the word is Home Assistant's (or capitalised as it came). */
+const conditionOf = (inputs: WeatherInputs, {t, condition}: Say): string =>
+  inputs.conditionWords ? t(inputs.conditionWords) : condition(inputs.condition);
+
+/** The word under Weather in the phone's More sheet: "4° · Partly cloudy", or nothing when the house has no temperature. */
+export function weatherBrief(inputs: WeatherInputs, {fmt, t}: Pick<WeatherModelDeps, 'fmt' | 't'>): string {
+  if (inputs.temperature === null) return '';
+  return `${degrees(fmt, inputs.temperature)} · ${conditionOf(inputs, sayWith(t, fmt))}`;
+}
+
 export function weatherModel(
   inputs: WeatherInputs,
   forecast: {daily: ForecastEntry[]; hourly: ForecastEntry[]},
@@ -601,10 +605,11 @@ export function weatherModel(
   const alerts = alertViews(inputs, say);
   const hours = hourViews(forecast.hourly, deps, say);
   const temperature = inputs.temperature === null ? `${DASH}°` : `${fmt.fixed(inputs.temperature, 1)}°`;
-  const condition = say.condition(inputs.condition);
+  const condition = conditionOf(inputs, say);
   return {
-    summary: summaryLine(inputs, alerts.length, say),
+    summary: summaryLine(inputs, alerts.length, condition, say),
     card: {
+      house: deps.house?.day ? {day: deps.house.day, night: deps.house.night ?? deps.house.day} : null,
       sunLabel: inputs.sun.up ? t('weather.sunset') : t('weather.sunrise'),
       sunTime: inputs.sun.next ? fmt.time(inputs.sun.next.at) : DASH,
       temperature,
@@ -617,7 +622,7 @@ export function weatherModel(
     now: {
       temperature,
       condition,
-      icon: say.icon(inputs.condition, inputs.isDay),
+      icon: {condition: inputs.condition, day: inputs.isDay, label: condition},
       line: rangeLine(inputs, feelsShown(inputs, say), false, say),
       summary: inputs.summary,
       tiles: detailTiles(inputs, say),

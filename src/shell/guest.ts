@@ -8,7 +8,7 @@ import type {PanelApi} from '../core/api.ts';
 import type {PanelSettings} from '../core/settings.ts';
 import type {HassChange, PanelStore} from '../core/store.ts';
 import type {Appearance} from '../ui/contexts.ts';
-import type {FeatureKey, GuestAnswers} from './feature.ts';
+import type {FeatureKey, GuestAnswers} from '../ui/feature.ts';
 import type {IdleTimer} from './idle-timer.ts';
 import type {LegacySheetGuest, SheetHost} from './sheet-host.ts';
 
@@ -61,6 +61,16 @@ export interface GuestRenderer extends GuestAnswers, LegacySheetGuest {
    * the shell for a frame (`requestFrame`) when it turns true. Deleted with `loadHistory` (spec 21, the Car move, #182).
    */
   statisticsLoaded(): boolean;
+  /**
+   * Weather move 1: a Weather tile asked for its history, which the guest still draws (`sh-wx`). Deleted with the history's move
+   * (#159), when `<hp-weather-history>` takes the request.
+   */
+  openWeatherHistory(key: string): void;
+  /**
+   * Weather move 1: a forecast message reached the pane's controller, which now owns the subscription; the detail panel and Home's
+   * card still read the forecast here. Deleted with the last of them (#158 and the Home move).
+   */
+  forecastChanged(type: 'daily' | 'hourly', forecast: readonly object[]): void;
 }
 
 /** What the guest may ask of the shell, and what it may read of it. Deleted whole with the guest; `tab`, `compact`, `setTab` and `requestFrame` live as long as it does. */

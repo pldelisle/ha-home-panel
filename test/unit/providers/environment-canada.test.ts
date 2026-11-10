@@ -6,6 +6,7 @@ import {createFormatters} from '../../../src/core/i18n/format.ts';
 import {englishLocale} from '../../../src/core/i18n/locale.ts';
 import type {HassEntities} from '../../../src/core/hass.ts';
 import {
+  conditionWordsOf,
   environmentCanadaSource,
   feelsLike,
   foldForecastDays,
@@ -87,6 +88,7 @@ describe('what it reads', () => {
     expect(read).toEqual({
       temperature: 4.2,
       condition: 'Mainly Sunny',
+      conditionWords: 'weather.cond.ec.mainlySunny',
       today: {hi: 7, lo: -1, pop: null},
       normals: {hi: 6, lo: -2},
       wind: {speed: 14, gust: 25, direction: 'SW', bearing: null},
@@ -398,5 +400,18 @@ describe('the fold of day and night entries into one row per local day', () => {
 
   test('an empty forecast is no rows', () => {
     expect(fold([])).toEqual([]);
+  });
+});
+
+describe('the condition phrases', () => {
+  test('a phrase of the sensor has its catalog message, whatever its case', () => {
+    expect(conditionWordsOf('Mainly Sunny')).toBe('weather.cond.ec.mainlySunny');
+    expect(conditionWordsOf(' LIGHT snow ')).toBe('weather.cond.ec.lightSnow');
+  });
+
+  test('a phrase Home Assistant words too uses its message, and an unknown phrase or none has none', () => {
+    expect(conditionWordsOf('Sunny')).toBe('weather.cond.sunny');
+    expect(conditionWordsOf('Volcanic ash')).toBeNull();
+    expect(conditionWordsOf(null)).toBeNull();
   });
 });

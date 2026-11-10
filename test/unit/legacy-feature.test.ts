@@ -4,7 +4,7 @@
 import {nothing} from 'lit';
 import {describe, expect, test} from 'vitest';
 import type {PanelStore} from '../../src/core/store.ts';
-import type {FeatureEnv, FeatureKey} from '../../src/shell/feature.ts';
+import type {FeatureEnv, FeatureKey} from '../../src/ui/feature.ts';
 import {FEATURES} from '../../src/shell/features.ts';
 import {legacyFeature} from '../../src/shell/legacy-feature.ts';
 
@@ -90,15 +90,16 @@ describe('the ten panes', () => {
   test('hold no id twice, and the ones the guest writes into are there', () => {
     const ids = FEATURES.flatMap(f => [...markup(f.pane).matchAll(/ id="([^"]+)"/g)].map(m => m[1]));
     expect(new Set(ids).size).toBe(ids.length);
-    for (const id of ['hsub', 'lsub', 'csub2', 'wsub2', 'carsub2', 'esub2', 'asub2', 'msub', 'cmsub', 'ausub'])
+    for (const id of ['hsub', 'lsub', 'csub2', 'carsub2', 'esub2', 'asub2', 'msub', 'cmsub', 'ausub'])
       expect(ids, id).toContain(id);
-    for (const id of ['carh2', 'lhost', 'ehost', 'eside', 'camhost', 'senhost', 'auhost'])
+    for (const id of ['wxhost', 'carh2', 'lhost', 'ehost', 'eside', 'camhost', 'senhost', 'auhost'])
       expect(ids, id).toContain(id);
   });
 
   // the header's shadow root is closed to the guest (getElementById stops at it), so the lines it writes are slotted nodes
-  test("put the line the guest writes under the heading in the header's sub slot", () => {
-    for (const f of FEATURES) expect(markup(f.pane), f.key).toMatch(/<div slot="sub" id="\w+"><\/div>/);
+  test("put the line the guest writes under the heading in the header's sub slot, but the Weather pane's, which is an element", () => {
+    for (const f of FEATURES.filter(f => f.key !== 'weather'))
+      expect(markup(f.pane), f.key).toMatch(/<div slot="sub" id="\w+"><\/div>/);
   });
 
   test("put the Car heading, which the guest writes, in the header's title slot, and no other", () => {
@@ -114,14 +115,14 @@ describe('the ten panes', () => {
   test("mark the summary panes' header, which only the phone shows", () => {
     expect(FEATURES.filter(f => markup(f.pane).includes('class="cph"')).map(f => f.key)).toEqual([
       'climate',
-      'weather',
       'car',
       'energy',
       'air',
     ]);
   });
 
-  test('head their pane with the catalog title, in the language of the panel, but the Car pane', () => {
-    for (const f of FEATURES.filter(f => f.key !== 'car')) expect(bindings(f.pane)[2], f.key).toBe(`[${f.key}.title]`);
+  test('head their pane with the catalog title, in the language of the panel, but the Car pane and the Weather element', () => {
+    for (const f of FEATURES.filter(f => f.key !== 'car' && f.key !== 'weather'))
+      expect(bindings(f.pane)[2], f.key).toBe(`[${f.key}.title]`);
   });
 });

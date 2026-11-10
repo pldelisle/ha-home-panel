@@ -65,9 +65,8 @@ const shortNames = names => {
 };
 const L0kw = v => (v == null ? '–' : v < 1 ? Math.round(v * 1000) + ' W' : v.toFixed(1) + ' kW');
 
-// card order for the column packing: first row is weather, cameras, energy
+// card order for the column packing: first row is cameras, energy
 const LAYOUT = [
-  'open-weather',
   'cams',
   'sensors',
   'open-energy',
@@ -102,7 +101,7 @@ const sensorName = n => String(n).replace(/^d[ée]tecteur\s+(de\s+)?mouvement\s+
 const CHART_SHEETS = new Set(['sh-energy', 'sh-climate', 'sh-car', 'sh-air', 'sh-wx']);
 const TAB_SHEET = {climate: 'sh-climate', weather: 'sh-weather', car: 'sh-car', energy: 'sh-energy', air: 'sh-air'};
 // the tab whose pane hosts a sheet's panel
-const SHEET_TAB = /** @type {Record<string, import('./shell/feature.ts').FeatureKey>} */ (
+const SHEET_TAB = /** @type {Record<string, import('./ui/feature.ts').FeatureKey>} */ (
   Object.fromEntries(Object.entries(TAB_SHEET).map(([t, id]) => [id, t]))
 );
 // colour of a black body at k kelvin (Tanner Helland's fit), for the colour-temperature strips and sliders
@@ -621,7 +620,7 @@ export class LegacyPanel {
     this.sesAll = false;
     this.cache = {}; // last innerHTML per container, to skip identical updates
     this.pending = {}; // optimistic control states until hass catches up
-    this.fc = {}; // forecasts by type, from the weather subscription
+    this.fc = {}; // forecasts by type, told by the shell (forecastChanged) from the Weather pane's subscription
     this.crange = 'day'; // climate history range (Day by default since v1.18.2)
     this.CR = {}; // climate history by range
     // #iwrap, the clock's container, is a static node of the shell's and outlives a draw: one listener, added at connect and removed at disconnect.
@@ -649,7 +648,6 @@ export class LegacyPanel {
     if (this.hass && this.configure()) {
       this.build();
       if (this.host.isConnected) {
-        this.subscribeForecasts();
         this.loadHistory();
         this.observeLayout();
       }
@@ -678,7 +676,6 @@ export class LegacyPanel {
     }
     this.configure();
     if (!this.$app) this.build();
-    if (!this.fcSubs && this.host.isConnected) this.subscribeForecasts();
     if (!this.lightOrderAsked) {
       this.lightOrderAsked = true;
       this.loadLightOrder();
@@ -698,7 +695,6 @@ export class LegacyPanel {
   }
   // forget the drawn panel so build() starts over (the language or the config changed)
   teardown() {
-    this.unsubscribeForecasts(); // the next draw subscribes again, with the config it was drawn from
     this.frStop();
     this.radarStop();
     this.charts.forEach(c => c.destroy());
@@ -749,7 +745,6 @@ export class LegacyPanel {
       }),
     ];
     this.$('iwrap').addEventListener('click', this.onIdleClick);
-    if (this.hass && this.$app) this.subscribeForecasts();
     if (this.hass && this.$app) this.loadHistory();
     if (this.$app) this.observeLayout();
   }
@@ -773,7 +768,6 @@ export class LegacyPanel {
     this.popupOffs.forEach(off => off());
     this.popupOffs = [];
     this.$('iwrap').removeEventListener('click', this.onIdleClick);
-    this.unsubscribeForecasts();
     if (this.unsubStore) this.unsubStore();
     this.unsubStore = null;
   }
@@ -937,7 +931,6 @@ export class LegacyPanel {
     // the shell drew the frame (the header, the rail, the panes); the guest draws what is not in it: the parked cards, the sheets, the idle clock, the toast
     this.container.innerHTML = `<div class="cols">
     <div class="col c1">
-      <div class="card wxcard tap" id="open-weather" tabindex="0" role="button" aria-description="Open weather details">${houseImg(this.CFG.house)}<div class="txt" id="wx"></div><div class="facts wxfacts" id="wxf"></div><div class="wxd" id="wxd"></div></div>
       <div class="card tap" id="open-energy" tabindex="0" role="button" aria-description="Open home energy details"><div id="energy"></div></div>
     </div>
     <div class="col c2">
@@ -1667,7 +1660,6 @@ export class LegacyPanel {
       this.$('toast').hidden = true;
     });
     [
-      ['open-weather', 'sh-weather'],
       ['open-energy', 'sh-energy'],
       ['open-climate', 'sh-climate'],
       ['open-air', 'sh-air'],
@@ -2186,7 +2178,6 @@ export class LegacyPanel {
     this.findCar();
     for (const f of [
       'renderHeader',
-      'renderWeather',
       'renderEnergy',
       'renderCameras',
       'renderSensors',
@@ -2341,43 +2332,6 @@ export class LegacyPanel {
       ? `<div class="err">History didn't load: ${esc(this.histErr)}. Live values still update.</div>`
       : '';
     this.set('err', err);
-  }
-
-  renderWeather() {
-    const sun = this.st(this.E.sun),
-      up = sun && sun.state === 'above_horizon',
-      next = this.st(up ? this.E.setting : this.E.rising);
-    const temp = this.attr(this.E.weather, 'temperature') ?? this.num(this.E.outT),
-      cond = this.st(this.E.cond);
-    const hi = this.num(this.E.hi),
-      lo = this.num(this.E.lo),
-      nhi = this.num(this.E.nhi),
-      nlo = this.num(this.E.nlo);
-    this.set(
-      'wx',
-      `<div class="muted" style="font-weight:500">${up ? 'Sunset' : 'Sunrise'} <b style="color:var(--fg)">${ok(next) ? this.fmtEn.time(new Date(next.state)) : '–'}</b></div>
-      <div class="num" style="font-size:76px;line-height:1;margin-top:26px">${f1(temp)}°</div>
-      <div style="font-weight:600;font-size:16px;margin-top:6px">${esc(condName(ok(cond) ? cond.state : (this.st(this.E.weather) || {}).state))}</div>
-      <div class="muted" style="margin-top:2px">${hi != null ? `High ${Math.round(hi)}°` : ''}${lo != null ? ` · Low ${Math.round(lo)}°` : ''}${nhi != null && nlo != null ? ` · normal ${Math.round(nhi)}° / ${Math.round(nlo)}°` : ''}</div>`,
-    );
-    const w = this.num(this.E.wind),
-      wd = this.st(this.E.windDir);
-    this.set(
-      'wxf',
-      `<span>Wind<b>${w == null ? '–' : Math.round(w) + ' km/h'} ${ok(wd) ? esc(wd.state) : ''}</b></span><span>Humidity<b>${this.num(this.E.hum) ?? '–'}%</b></span><span>UV<b>${this.num(this.E.uv) ?? '–'}</b></span><span>Air quality<b>${this.num(this.E.aqhi) ?? '–'}</b></span>`,
-    );
-    const days = this.wxDays().slice(0, 4);
-    // EC's first entry after mid-afternoon is tonight: a low and no high
-    this.set(
-      'wxd',
-      days
-        .map(d =>
-          d.hi == null
-            ? `<div><span>Tonight</span>${wxIcon(d.cond, 26, false)}<b class="num">${d.lo == null ? '–' : Math.round(d.lo) + '°'}</b><small>low</small></div>`
-            : `<div><span>${esc(this.dayName(d.k, true))}</span>${wxIcon(d.cond, 26, true)}<b class="num">${Math.round(d.hi)}°</b><small class="num">${d.lo == null ? '' : Math.round(d.lo) + '°'}</small></div>`,
-        )
-        .join(''),
-    );
   }
 
   flowSvg() {
@@ -3620,27 +3574,17 @@ export class LegacyPanel {
   }
 
   // ---------- weather ----------
-  // Forecasts are not in hass.states any more; the frontend subscribes to them like the weather card does.
-  subscribeForecasts() {
-    if (this.fcSubs || !this.hass || !this.hass.connection || !this.st(this.E.weather)) return;
-    this.fcSubs = /** @type {const} */ (['daily', 'hourly']).map(type =>
-      this.api
-        .subscribeForecast(this.E.weather, type, forecast => {
-          this.fc[type] = forecast;
-          this.cache.wxd = null;
-          this.renderWeather();
-          if (this.sheets.isOpen('sh-weather')) this.renderForecast();
-        })
-        .catch(e => {
-          console.warn('home-panel forecast', type, e);
-          return null;
-        }),
-    );
+  // The Weather pane's ForecastController owns the forecast subscription (spec 15) and the shell tells the guest of each message:
+  // the detail panel, Home's card and the weather lines still read `this.fc`. Deleted with its last reader (#158 and the Home move).
+  forecastChanged(type, forecast) {
+    this.fc[type] = forecast;
+    if (this.sheets.isOpen('sh-weather')) this.renderForecast();
   }
-  unsubscribeForecasts() {
-    (this.fcSubs || []).forEach(p => p.then(u => u && u()).catch(() => {}));
-    this.fcSubs = null;
+  // a Weather tile of the pane asked for its history (the shell hears the pane's request); deleted with `openWx` (#159)
+  openWeatherHistory(key) {
+    this.openWx(key);
   }
+  // Temporary until the detail panel (#158) and Home's card move: `wxDays`, `dayName`, `alerts` and `weatherSummary`
   wxDays() {
     // EC sends day and night entries; fold them into one row per local day
     const by = new Map();
@@ -4983,7 +4927,7 @@ export class LegacyPanel {
         const el = this.$(id);
         if (el && h && el.parentNode !== h) h.appendChild(el);
       };
-    const homes = {'open-weather': 'wxhost', 'open-car': 'carhost', 'open-energy': 'ehost', 'open-air': 'airhost'};
+    const homes = {'open-car': 'carhost', 'open-energy': 'ehost', 'open-air': 'airhost'};
     for (const [id, host] of Object.entries(homes)) mv(id, compact ? this.$(host) : col);
   }
   renderCompact() {
@@ -4993,7 +4937,6 @@ export class LegacyPanel {
       'renderClimateTiles',
       'renderEnergyTiles',
       'renderMediaTiles',
-      'renderWxTiles',
       'renderCompactSubs',
     ]) {
       try {
@@ -5006,7 +4949,6 @@ export class LegacyPanel {
   // one line under each summary pane's title, as the sheets have
   renderCompactSubs() {
     if (this.tab === 'climate') this.set('csub2', this.climateSummary());
-    if (this.tab === 'weather') this.set('wsub2', this.weatherSummary());
     if (this.tab === 'energy') this.set('esub2', this.energySummary());
     if (this.tab === 'car') {
       const c = this.car ? this.carState() : null;
@@ -5276,80 +5218,6 @@ export class LegacyPanel {
       );
     });
     this.set('mtiles', tiles.join('') || '<p class="hint">No TV or speakers found.</p>');
-  }
-  // Weather: one tile per measurement, each opening its history
-  renderWxTiles() {
-    if (this.tab !== 'weather') return;
-    const v = (id, d = 0) => {
-        const n = this.num(id);
-        return n == null ? null : n.toFixed(d);
-      },
-      wd = this.st(this.E.windDir);
-    const feels = this.num(this.E.chill) ?? this.num(this.E.humidex),
-      temp = this.attr(this.E.weather, 'temperature') ?? this.num(this.E.outT),
-      uv = this.num(this.E.uv),
-      aq = this.num(this.E.aqhi);
-    const band = (bands, x) => {
-      const b = x == null ? null : bands.find(([lo, hi]) => x >= lo && x <= hi);
-      return b ? b[3] : '';
-    };
-    const T = [
-      [
-        'wind',
-        'wind',
-        'Wind',
-        v(this.E.wind) == null ? '–' : `${v(this.E.wind)}<small> km/h</small>`,
-        [ok(wd) ? esc(wd.state) : '', v(this.E.gust) != null ? `gusts ${v(this.E.gust)} km/h` : '']
-          .filter(Boolean)
-          .join(' · '),
-      ],
-      [
-        'hum',
-        'hum',
-        'Humidity',
-        v(this.E.hum) == null ? '–' : `${v(this.E.hum)}<small>%</small>`,
-        v(this.E.dew, 1) != null ? `Dew point ${v(this.E.dew, 1)}°` : '',
-      ],
-      [
-        'feels',
-        'therm',
-        'Feels like',
-        feels == null ? (temp == null ? '–' : `${Math.round(temp)}°`) : `${Math.round(feels)}°`,
-        feels == null ? 'Same as the air' : this.num(this.E.chill) != null ? 'Wind chill' : 'Humidex',
-      ],
-      [
-        'pres',
-        'clock',
-        'Pressure',
-        v(this.E.pres, 1) == null ? '–' : `${v(this.E.pres, 1)}<small> kPa</small>`,
-        ok(this.st(this.E.tend)) ? esc(cap(this.st(this.E.tend).state)) : '',
-      ],
-      [
-        'uv',
-        'wx',
-        'UV index',
-        uv == null ? '–' : String(Math.round(uv)),
-        band(this.wxDefs().uv.bands, uv) || (uv != null && uv >= 8 ? 'Very high' : ''),
-      ],
-      ['aqhi', 'aq', 'Air quality', aq == null ? '–' : String(Math.round(aq)), band(this.wxDefs().aqhi.bands, aq)],
-      ['pop', 'drop', 'Rain or snow', v(this.E.pop) == null ? '–' : `${v(this.E.pop)}<small>%</small>`, 'Chance today'],
-      [
-        'normal',
-        'wx',
-        'Normal',
-        this.num(this.E.nhi) == null
-          ? '–'
-          : `${Math.round(this.num(this.E.nhi))}°<small> / ${Math.round(this.num(this.E.nlo))}°</small>`,
-        'For the date',
-      ],
-    ];
-    this.set(
-      'wxtiles',
-      T.map(
-        ([k, i, lbl, val, sb]) =>
-          `<button type="button" class="stile blue" data-wx="${k}"><span class="ic">${ico(i, 20)}</span><span class="tv num">${val}</span><span class="tx"><b>${lbl}</b><small>${sb || '&nbsp;'}</small></span></button>`,
-      ).join(''),
-    );
   }
   // any card can open in a sheet: it moves there and keeps updating, then goes back where it was
   openCard(id, title, icon, color) {

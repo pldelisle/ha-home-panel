@@ -71,7 +71,8 @@ describe('the condition names against the class COND', () => {
   test('every Home Assistant condition has the class text in the English catalog, and no other key is there', () => {
     const catalog = Object.fromEntries(
       Object.entries(en)
-        .filter(([key]) => key.startsWith('weather.cond.'))
+        // Environment Canada's own phrases (`weather.cond.ec.*`) are the adapter's, not the class's COND
+        .filter(([key]) => key.startsWith('weather.cond.') && !key.startsWith('weather.cond.ec.'))
         .map(([key, text]) => [key.slice('weather.cond.'.length), text]),
     );
     expect(catalog).toEqual(OLD_COND);

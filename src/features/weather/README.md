@@ -1,6 +1,6 @@
 # Weather
 
-What the Weather tab computes, with no DOM. The elements that draw it come in the next tickets (spec 15, [the pane](../../../docs/specs/15-weather.md)); this folder and `src/providers/` are what they will be given.
+What the Weather tab computes and draws ([spec 15](../../../docs/specs/15-weather.md)). The model and its sources are pure, with no DOM; the pane is the first element that places what they return. The detail panel and the history sheet are still the guest's and arrive in the next two moves.
 
 ## What it draws
 
@@ -21,6 +21,17 @@ Two weather sources sit behind one port, `WeatherSource` ([ADR 0020](../../../do
 2. `environment-canada`: over it. Its outdoor temperature, condition, wind, pressure and the rest replace the entity's.
 
 A house adds a source with one file and one line in `WEATHER_SOURCES`; the model never changes.
+
+## The elements
+
+| File                     | What                                                                                                                                                                                                                                                                                  |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `index.ts`               | `weatherFeature`, the registry's descriptor: always shown, the More sheet's word from `weatherBrief`, and the pane's template.                                                                                                                                                        |
+| `weather-pane.ts`        | `<hp-weather-pane>`: on the phone the header, the summary card and the eight `<hp-stat-tile>`s, keyed by `dayKey` and tile `key`; on a tablet the place of the detail panel, a slot for `wxhost`. A tile asks for `weather.history`, the card for the detail's sheet.                 |
+| `forecast-controller.ts` | The daily and hourly forecast, subscribed through the API client while the pane is connected and the house has the weather entity; it subscribes again when the entity or the config generation changes. A temporary `ForecastEvent` tells the guest, which still reads the forecast. |
+| `styles.css`             | The pane's rules in the legacy form, adopted through `forShadow`.                                                                                                                                                                                                                     |
+
+The pane draws nothing while it is not the tab on screen: the shell sets `active`, a hidden pane has paused its store controller, and its `willUpdate` keeps what it drew. A change to an entity it does not read never reaches it.
 
 ## The ids
 
@@ -56,9 +67,9 @@ The ranges (a day, a week, a month, a year) are `RANGES` in `src/ui/ranges.ts`, 
 ## Things to know
 
 - A field two sources both know follows list order. The outdoor temperature is Environment Canada's sensor over the weather entity's attribute (the legacy panel preferred the attribute; Environment Canada publishes the same observation in both).
-- The weather entity's humidity, pressure and wind now reach the tiles, so a house with only an entity shows them where the legacy panel showed dashes.
+- The weather entity's humidity, pressure and wind now reach the tiles, so a house with only an entity shows them where the legacy panel showed dashes. Only the phone shows the tiles, so no tablet baseline moved.
 - An alert from a sensor that only counts has no title; the model words it with the count (`weather.alerts.count`), in the alert's own row.
-- Environment Canada's own condition words (`Mainly Sunny`) are the integration's data, not catalog messages: the model capitalises them (`conditionName`), and the rewrite layer still translates them in French until it is deleted.
+- Environment Canada's own condition phrases (`Mainly Sunny`) are the integration's data: its adapter maps the ones it knows to `weather.cond.ec.*` messages (`conditionWordsOf`, carried as `conditionWords`), so the French pane reads `Généralement ensoleillé` from the catalog; a phrase it does not know is capitalised by the model (`conditionName`) and stays in English in French.
 - A tonight row has a low and no high (`isTonight`); the model says Tonight only for today's.
 
 ## The patterns
@@ -71,4 +82,4 @@ The ranges (a day, a week, a month, a year) are `RANGES` in `src/ui/ranges.ts`, 
 
 ## Tests
 
-`test/unit/providers/` (the two sources, the fold, the alerts), `test/unit/features/weather/` (`readWeather`'s order, the ids, the model from the test house in English and French, the forecast, the history from literal rows), `test/unit/core/statistics-cache.test.ts`, `test/unit/ui/ranges.test.ts`, `test/unit/i18n/moved-strings.test.ts` (the French of every `weather.*` message equals what the rewrite layer made of the English). The providers, the model, the ids, the inputs, the tiles, the history, the cache and the ranges are at 100 percent statements.
+`test/e2e/weather.spec.ts` (the pane through the harness: tiles, both languages, the forecast, a tile's sheet, mutation counts), `test/unit/providers/` (the two sources, the fold, the alerts), `test/unit/features/weather/` (`readWeather`'s order, the ids, the model from the test house in English and French, the forecast, the history from literal rows), `test/unit/core/statistics-cache.test.ts`, `test/unit/ui/ranges.test.ts`, `test/unit/i18n/moved-strings.test.ts` (the French of every `weather.*` message equals what the rewrite layer made of the English). The providers, the model, the ids, the inputs, the tiles, the history, the cache and the ranges are at 100 percent statements.

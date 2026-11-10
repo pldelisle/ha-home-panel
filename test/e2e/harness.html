@@ -38,6 +38,8 @@
         frenchAreas: params.get('french_areas') === '1',
         automations: full ? (window.AUTOMATIONS ?? blueprint.automations) : blueprint.automations,
       });
+      // the live subscriptions the panel holds (`subscribeMessage`), so the test's side can deliver a message to them
+      const subscriptions = new Set();
       const hass = {
         states: read.states,
         entities: read.entities,
@@ -61,6 +63,8 @@
         connection: {
           subscribeMessage: async (callback, msg) => {
             console.log('WS', JSON.stringify(msg)); // the fixture's `ws` lists it, as it lists the system-data writes
+            const entry = {callback, msg};
+            subscriptions.add(entry);
             if (params.get('forecast') === '1' && msg.forecast_type === 'daily')
               callback({
                 forecast: Array.from({length: 6}, (_, i) => ({
@@ -70,7 +74,7 @@
                   templow: i - 2,
                 })),
               });
-            return () => {};
+            return () => subscriptions.delete(entry);
           },
           subscribeEvents: async () => () => {},
         },
@@ -98,9 +102,22 @@
       }
       // the test's side of the boundary: what Home Assistant does on a state change, a new state object inside a new hass object
       window.house = {
+        // Home Assistant sends a forecast on a `weather/subscribe_forecast` subscription: every live one of this type hears it
+        forecast(type, entries) {
+          for (const {callback, msg} of subscriptions)
+            if (msg.type === 'weather/subscribe_forecast' && msg.forecast_type === type) callback({forecast: entries});
+        },
+        // how many subscriptions of a kind are live: what the panel holds, not what it asked for
+        subscribed(kind) {
+          return [...subscriptions].filter(({msg}) => msg.type === kind).length;
+        },
         setState(id, patch) {
           const prev = hass.states[id] || {entity_id: id, state: '', attributes: {}};
-          hass.states[id] = {...prev, ...patch, attributes: {...prev.attributes, ...(patch.attributes || {})}};
+          // Home Assistant hands over a new states object with the changed state in it, which is how a store tells what changed
+          hass.states = {
+            ...hass.states,
+            [id]: {...prev, ...patch, attributes: {...prev.attributes, ...(patch.attributes || {})}},
+          };
           for (const p of panels) p.hass = {...hass};
         },
         // an area is renamed in Home Assistant: a new areas registry inside a new hass object

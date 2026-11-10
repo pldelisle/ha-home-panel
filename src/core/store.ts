@@ -12,7 +12,8 @@ import type {
   HassEntity,
   PanelHass,
 } from './hass.ts';
-import {panelLocale} from './i18n/locale.ts';
+import {createFormatters, type Formatters} from './i18n/format.ts';
+import {panelLocale, type PanelLocaleSpec} from './i18n/locale.ts';
 import {createMessages, type Messages} from './i18n/messages.ts';
 import {createNames, type Names} from './i18n/names.ts';
 import {attributeOf, numberOf} from './states.ts';
@@ -44,6 +45,11 @@ export interface PanelStore {
   readonly userName: string;
   /** The panel's own wording in the user's language, from the message catalogs; rebuilt on a `locale` change. */
   readonly t: Messages['t'];
+  /**
+   * The dates, times and numbers in the user's language and formats, the same object until the profile's locale changes.
+   * Temporary twin of the guest's own sets (`refreshFormatters`), which go with it (#188).
+   */
+  readonly fmt: Formatters;
   /** Every name the panel shows, in the user's language: the config's `names:`, the room dictionary, then Home Assistant's. */
   readonly names: Names;
   /** Notifies subscribers synchronously, then returns what changed. */
@@ -68,6 +74,9 @@ export interface PanelStore {
 export interface StoreOptions {
   /** The zone used until a hass brings its own; the element passes the browser's. */
   defaultTimeZone: string;
+  /** The browser's own locale and 12-hour preference, which the formats fall back to; the element passes them. */
+  browserLocale?: string;
+  browserHour12?: boolean;
   /** The panel config and the house's states in, the resolved config out (the element passes resolveConfig). */
   resolve: (raw: unknown, states: HassEntities) => ResolvedConfig;
 }
@@ -114,6 +123,25 @@ export function createStore(opts: StoreOptions): PanelStore {
   };
   const buildNames = () => createNames(config, languageOf(hass), live);
   let names = buildNames();
+
+  // the formatters follow the locale by value, as a host may change the language on the hass object it already handed over
+  let spec: PanelLocaleSpec | null = null;
+  let specKey = '';
+  let formatters: Formatters | null = null;
+  const formats = (): Formatters => {
+    const next = panelLocale(hass ?? ({config: {}} as PanelHass), {
+      timeZone: timeZoneOf(hass),
+      browserLocale: opts.browserLocale ?? 'en',
+      browserHour12: opts.browserHour12,
+    });
+    const key = JSON.stringify(next);
+    if (!formatters || key !== specKey) {
+      spec = next;
+      specKey = key;
+      formatters = createFormatters(spec);
+    }
+    return formatters;
+  };
 
   const state = (id: string | null | undefined) => (id ? hass?.states[id] : undefined);
   const num = (id: string | null | undefined) => numberOf(hass?.states, id);
@@ -163,6 +191,9 @@ export function createStore(opts: StoreOptions): PanelStore {
     },
     // one function for the life of the store, so `const {t} = store` keeps working after a language change
     t: (key, values) => messages.t(key, values),
+    get fmt() {
+      return formats();
+    },
     get names() {
       return names;
     },

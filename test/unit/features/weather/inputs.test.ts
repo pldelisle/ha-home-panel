@@ -58,6 +58,7 @@ describe('the test houses', () => {
     expect(rest).toEqual({
       temperature: 4.2,
       condition: 'Mainly Sunny',
+      conditionWords: 'weather.cond.ec.mainlySunny',
       isDay: true,
       sun: {up: true, next: {kind: 'set', at: Date.parse('2026-11-07T16:45:00-05:00')}, hasFirstLight: true},
       today: {hi: 7, lo: -1, pop: null},

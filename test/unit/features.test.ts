@@ -3,6 +3,11 @@
 import {describe, expect, test} from 'vitest';
 import {en} from '../../src/core/i18n/en.ts';
 import {fr} from '../../src/core/i18n/fr.ts';
+import {resolveConfig} from '../../src/core/config.ts';
+import {createStore} from '../../src/core/store.ts';
+import {weatherFeature} from '../../src/features/weather/index.ts';
+import * as full from '../houses/full.mjs';
+import {fakeHass} from './fake-hass.ts';
 import {FEATURES, UNDER_MORE, isFeatureKey, visibleTab} from '../../src/shell/features.ts';
 import {FR_MAP} from '../../src/i18n/fr.js';
 
@@ -90,5 +95,28 @@ describe('visibleTab', () => {
   test('falls back to Home for a tab the panel does not have', () => {
     expect(visibleTab('phone', {})).toBe('home');
     expect(visibleTab('', {})).toBe('home');
+  });
+});
+
+describe('the Weather descriptor', () => {
+  const store = (house?: ReturnType<typeof fakeHass.fromHouse>) => {
+    const s = createStore({defaultTimeZone: 'America/Toronto', resolve: resolveConfig});
+    if (house) s.setHass(house);
+    return s;
+  };
+  const weather = FEATURES.find(f => f.key === 'weather')!;
+  const guest = {availability: () => ({}), moreLine: () => null};
+
+  test("is the registry's own, always shown, with the detail host slotted in its element for the sheet host to fill", () => {
+    expect(weather).toBe(weatherFeature);
+    expect(weather.available).toBeUndefined();
+    expect(weather.pane({store: store(), guest}).strings.join('')).toBe(
+      '<hp-weather-pane><div id="wxhost" slot="detail"></div></hp-weather-pane>',
+    );
+  });
+
+  test('says the temperature and the condition under More, and nothing before the house has been heard', () => {
+    expect(weather.summary?.({store: store(fakeHass.fromHouse(full)), guest})).toBe('4° · Mainly sunny');
+    expect(weather.summary?.({store: store(), guest})).toBeNull();
   });
 });

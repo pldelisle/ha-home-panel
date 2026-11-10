@@ -7,8 +7,7 @@
 .ltiles,
 .ctiles2,
 .etiles,
-.mtiles,
-.wxtiles {
+.mtiles {
   display: none;
 }
 .app.tabsv.cp .wrap {
@@ -128,7 +127,6 @@
   gap: 16px;
 }
 .app.tabsv.cp .pane-climate,
-.app.tabsv.cp .pane-weather,
 .app.tabsv.cp .pane-car,
 .app.tabsv.cp .pane-air {
   display: flex;
@@ -150,8 +148,7 @@
 .ltiles,
 .ctiles2,
 .etiles,
-.mtiles,
-.wxtiles {
+.mtiles {
   gap: 12px;
 }
 .app.tabsv.cp .ltiles,
@@ -160,8 +157,7 @@
   display: grid;
   grid-template-columns: 1fr;
 }
-.app.tabsv.cp .ctiles2,
-.app.tabsv.cp .wxtiles {
+.app.tabsv.cp .ctiles2 {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -203,8 +199,7 @@
 }
 /* at the Larger text size the two-column tiles go to one column, so nothing is cut */
 .app.tabsv.cp.txl .htiles,
-.app.tabsv.cp.txl .ctiles2,
-.app.tabsv.cp.txl .wxtiles {
+.app.tabsv.cp.txl .ctiles2 {
   grid-template-columns: 1fr;
 }
 .app.tabsv.cp .hsec {
@@ -281,11 +276,6 @@
 }
 .app.tabsv.cp #open-air .rooms {
   grid-template-columns: 1fr;
-}
-.app.tabsv.cp .wxcard .house.photo {
-  width: 150px;
-  top: 12px;
-  right: 12px;
 }
 .app.tabsv.cp .pane .card.tap .go {
   display: grid;

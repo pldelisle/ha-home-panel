@@ -5,12 +5,12 @@
 // Must not: call the API client or the cache, read the clock or the DOM, or pick a colour of its own (every colour is a caller's
 // token; `transparent` is the absence of one, and the sizes are the legacy options' constants).
 import type {EntityKey} from '../../core/entities.ts';
+import {capitalise, DASH} from '../../core/figures.ts';
 import type {HistoryPoint, StatisticRow} from '../../core/ha.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
-import type {Formatters} from '../../core/i18n/format.ts';
+import {degrees, whole, type Formatters} from '../../core/i18n/format.ts';
 import type {Messages} from '../../core/i18n/messages.ts';
 import {RANGES, type Range} from '../../ui/ranges.ts';
-import {capitalise, DASH, degrees, whole} from './model.ts';
 import {tileDefinition, type StatTileDefinition, type Tone} from './tiles.ts';
 
 type Translate = Messages['t'];

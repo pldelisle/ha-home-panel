@@ -30,10 +30,12 @@ import {apiContext, settingsContext, storeContext, type Appearance} from '../ui/
 import {ico} from '../ui/icons.ts';
 import type {SheetRequestEvent, ToastEvent} from '../ui/events.ts';
 import {AppearanceController} from './appearance.ts';
-import type {FeatureEnv, FeatureKey} from './feature.ts';
+import type {FeatureEnv, FeatureKey} from '../ui/feature.ts';
 import {FEATURES, UNDER_MORE, isFeatureKey, visibleTab} from './features.ts';
 import {createGuest, guestStyles, type GuestContext, type GuestRenderer, type ShellForGuest} from './guest.ts';
 import {IdleTimer, type IdleState} from './idle-timer.ts';
+import {HISTORY_SHEET} from '../features/weather/weather-pane.ts';
+import type {ForecastEvent} from '../features/weather/forecast-controller.ts';
 import './more-sheet.ts'; // defines <hp-more-sheet>
 import '../ui/pane-header.ts'; // defines <hp-pane-header>, which the legacy panes' headers are
 import type {TabSelectDetail} from './more-sheet.ts';
@@ -61,6 +63,12 @@ function browserStorage(): KeyValueStorage {
   } catch {
     return {getItem: () => null, setItem: () => {}};
   }
+}
+
+// the browser's defaults, read once, for the store's formats
+function storeOptions() {
+  const {timeZone, browserLocale, browserHour12} = browserDefaults();
+  return {defaultTimeZone: timeZone, browserLocale, browserHour12, resolve: resolveConfig};
 }
 
 export class HomePanel extends LitElement {
@@ -95,7 +103,7 @@ export class HomePanel extends LitElement {
   }
 
   // this panel's services, none shared with another panel (ADR 0012)
-  private readonly store = createStore({defaultTimeZone: browserDefaults().timeZone, resolve: resolveConfig});
+  private readonly store = createStore(storeOptions());
   private readonly api = createApi(this.store);
   private readonly settings = createSettings(browserStorage());
   // The shell hears about the store only when a registry, the language or the user changes: it reads no entity, and the
@@ -268,7 +276,15 @@ export class HomePanel extends LitElement {
   // an element asked upward for a sheet, or for the toast; the event stops here, it is the panel's business
   private readonly onSheetRequest = (e: SheetRequestEvent): void => {
     e.stopPropagation();
-    this.sheets.open(e.detail.id, e.detail.detail);
+    // a Weather tile's history is the guest's sheet until the history is an element (#159)
+    if (e.detail.id === HISTORY_SHEET) this.guest?.openWeatherHistory((e.detail.detail as {key: string}).key);
+    else this.sheets.open(e.detail.id, e.detail.detail);
+  };
+
+  // the Weather pane's controller owns the forecast; the guest still reads it for the detail panel and Home's card (#158)
+  private readonly onForecast = (e: ForecastEvent): void => {
+    e.stopPropagation();
+    this.guest?.forecastChanged(e.detail.type, e.detail.forecast);
   };
 
   private readonly onToast = (e: ToastEvent): void => {
@@ -348,6 +364,7 @@ export class HomePanel extends LitElement {
       data-wp=${ifDefined(a.glass.wallpaper ?? undefined)}
       @sheet-request=${this.onSheetRequest}
       @toast=${this.onToast}
+      @weather-forecast=${this.onForecast}
     >
       ${keyed(this.epoch, this.renderWrap())}
       <div class="guest" style="display:contents"></div>

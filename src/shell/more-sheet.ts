@@ -10,7 +10,7 @@ import '../ui/sheet.ts';
 import '../ui/stat-tile.ts';
 import type {TileOpenDetail} from '../ui/stat-tile.ts';
 import {common, more} from '../ui/styles/index.ts';
-import type {FeatureDescriptor, FeatureKey} from './feature.ts';
+import type {FeatureDescriptor, FeatureKey} from '../ui/feature.ts';
 import {isFeatureKey} from './features.ts';
 
 /** What the sheet says when a tile is tapped: the section to show. */

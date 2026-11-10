@@ -22,5 +22,7 @@ test.describe('a house that names its weather entity', () => {
       ['weather.springfield', 'daily'],
       ['weather.springfield', 'hourly'],
     ]);
+    // and the first draw's two were let go of: the panel holds one pair
+    expect(await house.subscribed('weather/subscribe_forecast')).toBe(2);
   });
 });

@@ -139,7 +139,13 @@ for (const lang of ['en', 'fr'] as const) {
 
     test('a weather tile history has no serious or critical finding', async ({house}) => {
       await openTab(house, 'weather');
-      await house.root().locator('#pane-weather button[data-wx="wind"]').click();
+      // the phone's tiles are the pane's elements; the tablet's are the detail panel's buttons
+      await house
+        .root()
+        .locator(
+          isPhone(house) ? 'hp-weather-pane hp-stat-tile[key="wind"] button' : '#pane-weather button[data-wx="wind"]',
+        )
+        .click();
       await expect(house.root().locator('#sh-wx #c-wx .apexcharts-canvas')).toBeVisible();
       await scanDialog(house, 'the weather history sheet', '#sh-wx');
     });
