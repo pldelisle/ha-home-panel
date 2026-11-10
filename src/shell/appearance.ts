@@ -1,4 +1,4 @@
-// AppearanceController: the shell's theme, glass, text size, page background and `live` class, gathered into one frozen Appearance.
+// AppearanceController: the shell's theme, glass, text size, document background and `live` class, gathered into one frozen Appearance.
 // Pattern: Lit reactive controller (Lit docs, Reactive Controllers) wrapping what were six methods of the legacy class; it
 // provides its value by context (ADR 0018, after the Context Protocol) and the pure rules of appearance-rules.ts decide.
 // Must not: read localStorage (the settings module does), hold a rule (the rules do), or write into a guest container.
@@ -13,7 +13,7 @@ import {appearanceContext, type Appearance} from '../ui/contexts.ts';
 import type {MediaQueryController} from '../ui/controllers/media-query.ts';
 import {StoreController} from '../ui/controllers/store-controller.ts';
 import {glassDensity, glassWallpaper, isDark, isLargeText, textScale} from './appearance-rules.ts';
-import {claimPage, type PageClaim} from './page-background.ts';
+import {claimDocument, type DocumentClaim} from './document-background.ts';
 import {skyWallpaper, type SunDay} from './sky.ts';
 
 /** The element that hosts the controller: Home Assistant's `narrow` is one of its properties. */
@@ -57,8 +57,8 @@ export class AppearanceController implements ReactiveController {
   private probePx = Number.NaN; // the text probe's size; NaN is "not read", which the rule takes as the body size
   private staleProbe = true;
   private applied: Appearance | undefined;
-  private pageKey: string | undefined;
-  private page: PageClaim | undefined;
+  private backgroundKey: string | undefined;
+  private background: DocumentClaim | undefined;
   private stops: (() => void)[] = [];
   private clock: ReturnType<typeof setInterval> | undefined;
   private isoDayZone = '';
@@ -96,10 +96,10 @@ export class AppearanceController implements ReactiveController {
       this.options.touches(this.onTouch),
       () => document.removeEventListener('visibilitychange', this.onVisible),
     ];
-    // what the page was given is gone if the panel was off the page; and a setting or the device may have moved
+    // what the document was given is gone if the panel was off the page; and a setting or the device may have moved
     this.applied = undefined;
-    this.pageKey = undefined;
-    this.page = claimPage(document, this.host);
+    this.backgroundKey = undefined;
+    this.background = claimDocument(document, this.host);
     this.refresh();
     this.host.requestUpdate();
   }
@@ -110,8 +110,8 @@ export class AppearanceController implements ReactiveController {
     clearInterval(this.clock);
     clearTimeout(this.liveTimer);
     this.touched = false;
-    this.page?.release();
-    this.page = undefined;
+    this.background?.release();
+    this.background = undefined;
   }
 
   // The inputs may all have changed (a media query, the store, a setting, `narrow`): ask them once, just before the
@@ -120,7 +120,7 @@ export class AppearanceController implements ReactiveController {
     this.refresh();
   }
 
-  // The frame is drawn: the properties a template cannot bind without rewriting the whole style attribute, and the page.
+  // The frame is drawn: the properties a template cannot bind without rewriting the whole style attribute, and the document's background.
   hostUpdated(): void {
     const app = this.app();
     if (!app) return;
@@ -131,9 +131,9 @@ export class AppearanceController implements ReactiveController {
     app.style.setProperty('--g-m', a.glass.density.toFixed(3));
     app.style.setProperty('--tx', a.textScale.toFixed(3));
     const key = `${a.theme}/${a.glass.wallpaper}`;
-    if (key === this.pageKey) return;
-    this.pageKey = key;
-    this.page?.paint(this.pageColour(app));
+    if (key === this.backgroundKey) return;
+    this.backgroundKey = key;
+    this.background?.paint(this.backgroundColour(app));
   }
 
   // Lit makes the root when the host first connects, so the controller built in the host's constructor finds none yet
@@ -201,10 +201,10 @@ export class AppearanceController implements ReactiveController {
     return this.isoDayOf(t);
   }
 
-  // The page behind the panel (what shows in the overscroll bounce on iOS) takes the wallpaper's base colour, so the
-  // bounce never shows a dark band; with glass off it is the page's own. The stylesheet is adopted before the first
+  // The document behind the panel (what shows in the overscroll bounce on iOS) takes the wallpaper's base colour, so the
+  // bounce never shows a dark band; with glass off it is the document's own. The stylesheet is adopted before the first
   // render, so the colour is there to read as soon as the frame is drawn.
-  private pageColour(app: HTMLElement): string | null {
+  private backgroundColour(app: HTMLElement): string | null {
     return this.current.glass.on ? getComputedStyle(app).getPropertyValue('--wbase').trim() || null : null;
   }
 
