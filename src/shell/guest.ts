@@ -93,8 +93,9 @@ export interface ShellForGuest {
 // `#iwrap`, the idle clock's, inside the overlay the shell draws (step D). The rule both sides keep: Lit binds nothing
 // inside a guest container, and the guest writes nothing outside its containers. This list only shrinks.
 
-// The one piece of module state in the shell: what src/main.js registers before it defines the element, so the first
-// <home-panel> already has a guest to create and its stylesheet to adopt. It exists for the guest alone.
+// The shell's module state: the guest registry here and, in document-background.ts, the claims on the document's
+// background. This is what src/main.js registers before it defines the element, so the first <home-panel> already has a
+// guest to create and its stylesheet to adopt. It exists for the guest alone.
 let registered: {make: () => GuestRenderer; styles: string} | null = null;
 
 /** `styles` is the guest's stylesheet as text; the shell adopts it once, so the shell imports no legacy module. */

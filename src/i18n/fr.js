@@ -295,10 +295,6 @@ export const FR_MAP = {
   'Live · history {n}': 'En direct · historique {n}',
   'Live · loading history': "En direct · chargement de l'historique",
   'Open the sidebar': 'Ouvrir le menu latéral',
-  'Theme: follows the sun. Tap for light, dark or automatic':
-    'Thème : suit le soleil. Toucher pour clair, sombre ou automatique',
-  'Theme: follows the sun. Tap to change': 'Thème : suit le soleil. Toucher pour changer',
-  'Theme follows sunrise and sunset': 'Le thème suit le lever et le coucher du soleil',
   'Theme: light. Tap to change': 'Thème : clair. Toucher pour changer',
   'Theme: dark. Tap to change': 'Thème : sombre. Toucher pour changer',
   'Theme: light. Tap for light, dark or automatic': 'Thème : clair. Toucher pour clair, sombre ou automatique',
@@ -1202,9 +1198,6 @@ export const FR_MAP = {
   '{n}% · {n} km': '{n} % · {n} km',
   '{n}: details': '{n} : détails',
   // ---- v1.17.0: text size, system theme, sticky errors, merged timeline dots ----
-  'Theme: automatic, follows your device and the sun. Tap to change':
-    'Thème : automatique, suit votre appareil et le soleil. Toucher pour changer',
-  'Theme follows your device and the sun': 'Le thème suit votre appareil et le soleil',
   Settings: 'Réglages',
   Light: 'Clair',
   Dark: 'Sombre',
