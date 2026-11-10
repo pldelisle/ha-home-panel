@@ -1,7 +1,7 @@
 // <hp-weather-pane>: the Weather tab: on the phone the header, the summary card and the eight stat tiles, on a tablet the place for the detail panel.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over a view model: `weatherModel` runs in `willUpdate` and the template only
 // places what it returns, keyed (Lit docs, repeat); a store controller on the ids it reads (ADR 0012), paused while the pane is hidden.
-// Must not: read `hass` or an entity itself, format a figure or hold a string the household reads, or write in the detail host.
+// Must not: read an entity itself (`readWeather` does, from the states it is handed), format a figure or hold a string the household reads, or write in the detail host.
 import {LitElement, css, html, nothing, unsafeCSS, type PropertyValues} from 'lit';
 import {repeat} from 'lit/directives/repeat.js';
 import {readWeather} from './inputs.ts';
@@ -76,8 +76,9 @@ export class WeatherPane extends LitElement {
       if (this.active) this.storeController.resume();
       else this.storeController.pause();
     }
-    // a hidden pane keeps what it drew: a forecast message or a late context changes nothing in its tree
-    if (!this.active) return;
+    // A pane never shown has nothing to keep fresh. One that was shown and left has paused its store controller, so only a forecast
+    // message reaches it; it draws that and the next change of an entity it reads.
+    if (!this.active && !this.view) return;
     const {store} = this.storeController;
     const {hass} = store;
     if (!hass) return;
@@ -113,7 +114,7 @@ export class WeatherPane extends LitElement {
   // The card is a button that opens the detail's sheet: a tap, Enter and Space. `repeat` keys the days, so a forecast message
   // changes their text and keeps their nodes. The lens is the guest's glass filter, drawn again in this root (see lens.ts): temporary, it goes with the copy there (#198, #188).
   private renderCard({card}: WeatherViewModel, label: string) {
-    // lit-analyzer does not know `aria-description`, which a screen reader reads after the role and the name
+    // lit-analyzer does not know `aria-description` (a screen reader reads it after the role and the name); the ignore covers this one tag
     return html`<!-- @ts-ignore -->
       <div
         class="wxcard"

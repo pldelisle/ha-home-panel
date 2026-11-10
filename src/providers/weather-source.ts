@@ -14,6 +14,11 @@ export interface WeatherSource {
   ids(config: ResolvedConfig): readonly string[];
   /** True when the house has what this source reads; a source that is absent fills nothing. */
   present(states: HassEntities, config: ResolvedConfig): boolean;
+  /**
+   * Fields this source gives way on: it fills them only when no earlier source did, instead of overriding. Environment Canada's
+   * outdoor sensor is the temperature when the weather entity has none, as the legacy panel read it.
+   */
+  readonly fallback?: readonly (keyof WeatherInputs)[];
   /** The fields this source knows; a later source in the list overrides an earlier one, field by field. */
   read(states: HassEntities, config: ResolvedConfig): Partial<WeatherInputs>;
 }

@@ -9,6 +9,15 @@ import {bareHouse, fullHouse} from './support.ts';
 const SUN = ['sun.sun', 'sensor.sun_next_rising', 'sensor.sun_next_setting', 'sensor.sun_next_dawn'];
 
 describe('weatherIds', () => {
+  // the pane is told of these and no others: a thermostat, a light or the grid meter changing never reaches it
+  test('the full house: a thermostat, a light or the meter is outside the list, which is a short list and not the wildcard', () => {
+    const ids = weatherIds(resolveConfig({}, fullHouse.states));
+    const others = Object.keys(fullHouse.states).filter(id => /^(climate|light|switch)\.|house_power/.test(id));
+    expect(others.length).toBeGreaterThan(3);
+    expect(ids.filter(id => others.includes(id))).toEqual([]);
+    expect(ids.length).toBeLessThan(Object.keys(fullHouse.states).length / 2);
+  });
+
   test('the full house: the entity, its seventeen sensors and the sun', () => {
     const ids = weatherIds(resolveConfig({}, fullHouse.states));
     expect([...ids].sort()).toEqual(

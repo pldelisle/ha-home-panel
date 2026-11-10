@@ -5236,8 +5236,6 @@ export class LegacyPanel {
   // the word under each section in the phone's More sheet, in English, for the registry's summary
   moreLines() {
     const L = this.live(),
-      temp = this.attr(this.E.weather, 'temperature') ?? this.num(this.E.outT),
-      cond = this.st(this.E.cond),
       isOn = i => (this.st(i) || {}).state === 'on';
     const P = this.purifiers(),
       air = P.rooms.length ? this.airSummary(P) : null,
@@ -5251,10 +5249,6 @@ export class LegacyPanel {
     const A = this.auAutos ? this.auAutos() : [],
       running = A.filter(a => a.current).length;
     const sb = {
-      weather:
-        temp == null
-          ? ''
-          : `${Math.round(temp)}° · ${condName(ok(cond) ? cond.state : (this.st(this.E.weather) || {}).state)}`,
       energy: L.grid == null ? '' : `${L.grid < 1 ? Math.round(L.grid * 1000) + ' W' : L.grid.toFixed(2) + ' kW'} now`,
       air: !air ? 'No purifiers' : air.worst < 0 ? 'No data' : AQ_LVL[air.worst][0],
       media:

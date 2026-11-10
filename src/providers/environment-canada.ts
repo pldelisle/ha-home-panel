@@ -190,6 +190,9 @@ export function foldForecastDays(entries: ForecastEntry[], isoDay: (ms: number) 
 export const environmentCanadaSource: WeatherSource = {
   name: 'environment-canada',
 
+  // the weather entity's temperature comes first, as the legacy panel, the Home card and the idle clock read it
+  fallback: ['temperature'],
+
   ids: config => KEYS.map(key => config.entities[key]).filter((id): id is string => id !== null),
 
   present: (states, config) =>

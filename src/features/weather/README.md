@@ -18,7 +18,7 @@ Two weather sources sit behind one port, `WeatherSource` ([ADR 0020](../../../do
 `readWeather(states, config, sources = WEATHER_SOURCES)` starts from `EMPTY_INPUTS` plus the sun's part, then applies each present source's fields in list order. **A later source wins a field both know**, field by field and shallowly: a group such as `wind` is replaced whole, so a source leaves a group out when it knows none of it. The order is the order of resolution:
 
 1. `weather-entity`: the first, so every house has a reading.
-2. `environment-canada`: over it. Its outdoor temperature, condition, wind, pressure and the rest replace the entity's.
+2. `environment-canada`: over it. Its condition, wind, pressure and the rest replace the entity's; its outdoor temperature fills only what the entity lacks.
 
 A house adds a source with one file and one line in `WEATHER_SOURCES`; the model never changes.
 
@@ -66,7 +66,7 @@ The ranges (a day, a week, a month, a year) are `RANGES` in `src/ui/ranges.ts`, 
 
 ## Things to know
 
-- A field two sources both know follows list order. The outdoor temperature is Environment Canada's sensor over the weather entity's attribute (the legacy panel preferred the attribute; Environment Canada publishes the same observation in both).
+- A field two sources both know follows list order, except one a source gives way on (`fallback`): the outdoor temperature sensor fills the temperature only when the weather entity has none, as the legacy panel, the Home card and the idle clock read it.
 - The weather entity's humidity, pressure and wind now reach the tiles, so a house with only an entity shows them where the legacy panel showed dashes. Only the phone shows the tiles, so no tablet baseline moved.
 - An alert from a sensor that only counts has no title; the model words it with the count (`weather.alerts.count`), in the alert's own row.
 - Environment Canada's own condition phrases (`Mainly Sunny`) are the integration's data: its adapter maps the ones it knows to `weather.cond.ec.*` messages (`conditionWordsOf`, carried as `conditionWords`), so the French pane reads `Généralement ensoleillé` from the catalog; a phrase it does not know is capitalised by the model (`conditionName`) and stays in English in French.

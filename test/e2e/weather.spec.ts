@@ -9,7 +9,9 @@ test.beforeEach(() => phoneOnly());
 
 const pane = (house: House) => house.root().locator('hp-weather-pane');
 const tiles = (house: House) => pane(house).locator('hp-stat-tile');
-const outdoor = 'sensor.springfield_temperature';
+// the weather entity's own reading comes first, then the outdoor sensor
+const entityId = 'weather.springfield_forecast';
+const warmer = () => ({attributes: {temperature: 9.1}});
 
 // More holds Weather on the phone
 async function openWeather(house: House) {
@@ -89,20 +91,29 @@ test.describe('with a forecast', () => {
     templow: i - 2,
   }));
 
-  test('a forecast message shows four days on the card, and the same message again changes nothing', async ({
-    house,
-  }) => {
+  test('a forecast message shows four days on the card', async ({house}) => {
     await openWeather(house);
     await expect(pane(house).locator('.wxd > div')).toHaveCount(0);
     await house.page.evaluate(entries => window.house.forecast('daily', entries), days);
     await expect(pane(house).locator('.wxd > div')).toHaveCount(4);
     await expect(pane(house).locator('.wxd > div > span')).toHaveText(['Today', 'Sun', 'Mon', 'Tue']);
     await expect(pane(house).locator('.wxd > div > b')).toHaveText(['8°', '9°', '10°', '11°']);
-    // the days are keyed: the same forecast again is the same nodes with the same text
-    await house.mutations.reset();
+  });
+
+  test('a forecast a day later keeps the nodes of the days it still has (the days are keyed)', async ({house}) => {
+    await openWeather(house);
     await house.page.evaluate(entries => window.house.forecast('daily', entries), days);
-    await house.page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
-    expect(await house.mutations.count('hp-weather-pane')).toBe(0);
+    await expect(pane(house).locator('.wxd > div')).toHaveCount(4);
+    // mark the four nodes, then let a day go by in the forecast: the second, third and fourth are now the first, second and third
+    await pane(house)
+      .locator('.wxd > div')
+      .evaluateAll(nodes => nodes.forEach((node, i) => ((node as HTMLElement & {mark?: number}).mark = i)));
+    await house.page.evaluate(entries => window.house.forecast('daily', entries), days.slice(1));
+    await expect(pane(house).locator('.wxd > div > span')).toHaveText(['Sun', 'Mon', 'Tue', 'Wed']);
+    const marks = await pane(house)
+      .locator('.wxd > div')
+      .evaluateAll(nodes => nodes.map(node => (node as HTMLElement & {mark?: number}).mark));
+    expect(marks).toEqual([1, 2, 3, undefined]);
   });
 
   test('the pane holds the one pair of forecast subscriptions, and the guest none of its own', async ({house}) => {
@@ -132,28 +143,20 @@ test('the summary card opens the detail sheet by a tap and by the keyboard', asy
 });
 
 test.describe('what it costs', () => {
-  test('a thermostat change does no work in the pane; a change of the outdoor temperature does, and shows', async ({
-    house,
-  }) => {
+  test('a change of the temperature of the weather entity reaches the pane and shows', async ({house}) => {
     await openWeather(house);
     await expect(pane(house).locator('.wxtemp')).toHaveText('4.2°');
-    await house.mutations.reset();
-    await house.setState('climate.living_room', {state: 'off'});
-    await house.page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
-    expect(await house.mutations.count('hp-weather-pane'), 'a thermostat is not read by Weather').toBe(0);
-    await house.setState(outdoor, {state: '9.1'});
+    await house.setState(entityId, warmer());
     await expect(pane(house).locator('.wxtemp')).toHaveText('9.1°');
-    expect(await house.mutations.count('hp-weather-pane')).toBeGreaterThan(0);
   });
 
-  test('a pane on another tab holds no subscription and does nothing, and is current when it comes back', async ({
-    house,
-  }) => {
+  // a paused pane is not told: without the pause its update would draw the new reading while the tab is hidden
+  test('a pane on another tab is not told of its entities, and is current when it comes back', async ({house}) => {
     await openWeather(house);
     await expect(pane(house).locator('.wxtemp')).toHaveText('4.2°');
     await house.tab('home');
     await house.mutations.reset();
-    await house.setState(outdoor, {state: '9.1'});
+    await house.setState(entityId, warmer());
     await house.page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
     expect(await house.mutations.count('hp-weather-pane'), 'while away').toBe(0);
     await openWeather(house);
