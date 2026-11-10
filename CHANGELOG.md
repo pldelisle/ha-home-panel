@@ -1,5 +1,25 @@
 # Changelog
 
+## 2.14.1
+
+- The Auto theme now follows your phone or tablet's own light or dark setting, as it changes, instead of the sun. Choose Dark or Light to keep one. The Sky wallpaper still follows the sun. The page behind the panel keeps the wallpaper colour when the panel returns to the page. The little caption under Auto will say it follows the device in a following update.
+- The little caption under Auto in the settings now says it follows the device, matching what Auto has done since the last update.
+- Labels and roles tidied for screen readers; nothing visible changes.
+- Internal tidying of the panel's frame. Nothing visible changes.
+- Internal rewiring of the phone's More list. Nothing visible changes.
+- Internal rewiring of the idle clock's timer. Nothing visible changes.
+- Internal rewiring of the panel's frame. Nothing visible changes.
+- Internal rewiring of the phone's More list. Nothing visible changes.
+- Internal rewiring of the pane headings. Nothing visible changes.
+- Internal rewiring of the panel's tabs. One change: a remembered tab this house has nothing for opens Home instead of an empty pane.
+- The settings popup is redrawn with the same look. Nothing visible changes.
+- Internal rewiring of the panel's sheets. Nothing looks different. One thing behaves differently: opening a sheet now closes the one already open, so the More list closes when a sheet opens over it by keyboard.
+- The weather details are redrawn with the same look; they are now an element of their own, with a chart element the later tabs will share. Two small differences you can see: in a house with only a weather entity (no Environment Canada sensors) the details now show the wind, humidity and pressure that entity knows, where they showed dashes, and the dot for the temperature now on the days appears once a forecast arrives; and the hover text of the charts and the hour labels of the next 24 hours write the time as the rest of the panel does ("4 pm", "16 h").
+- Internal tidying of the weather history calculations. Nothing visible changes.
+- The weather history views are redrawn with the same look. Nothing visible changes, except that a tile's history now always opens on the week (it used to open on the range you chose last).
+- The Weather tab on the phone is redrawn: the summary card, its forecast days and the eight tiles keep the same look. One thing you can see changes: a house with only a weather entity, and no Environment Canada sensors, now shows the wind, the humidity and the pressure that entity knows, where those tiles showed dashes. The tablet's Weather tab looks the same.
+- Internal tidying of the weather calculations. Nothing visible changes.
+
 ## 2.14.0
 
 - A typo in the panel's configuration now shows admins a card on the Home tab naming the setting and, when it can, the spelling meant. The rest of the panel keeps working with what it understood.
