@@ -62,7 +62,11 @@ export class HpChart extends LitElement {
 
   override connectedCallback(): void {
     super.connectedCallback();
-    if (this.library) return;
+    // a chart put back on the page (its instance went with its last disconnect) draws again at once, the library being there
+    if (this.library) {
+      this.requestUpdate();
+      return;
+    }
     loadApex().then(
       ({ApexCharts}) => {
         this.library = ApexCharts;

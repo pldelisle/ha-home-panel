@@ -9,7 +9,7 @@ export interface ApexChart {
   render(): Promise<void>;
   updateOptions(options: object, redraw?: boolean, animate?: boolean): Promise<void>;
   destroy(): void;
-  /** Tagged by the legacy class on the charts it draws; deleted with it. */
+  /** Tagged by the legacy class on the charts it draws; deleted with the Climate move (#181), its last user. */
   __clim?: boolean;
 }
 

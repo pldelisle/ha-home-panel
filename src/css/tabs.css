@@ -85,6 +85,11 @@
 .pane[hidden] {
   display: none;
 }
+/* a pane behind another tab's sheet is in the page without a box of its own: only its fixed sheet shows */
+.pane.behind {
+  display: contents;
+  animation: none;
+}
 /* the detail panels keep their sheet header, without the close button; a pane's own header is <hp-pane-header> (pane-header.css),
    which these rules no longer reach */
 .pane .ph {

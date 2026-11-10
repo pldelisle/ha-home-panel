@@ -30,7 +30,7 @@ import {apiContext, settingsContext, storeContext, type Appearance} from '../ui/
 import {ico} from '../ui/icons.ts';
 import type {SheetDismissEvent, SheetRequestEvent, ToastEvent} from '../ui/events.ts';
 import {AppearanceController} from './appearance.ts';
-import type {FeatureEnv, FeatureKey} from '../ui/feature.ts';
+import type {FeatureDescriptor, FeatureEnv, FeatureKey} from '../ui/feature.ts';
 import {FEATURES, UNDER_MORE, isFeatureKey, visibleTab} from './features.ts';
 import {createGuest, guestStyles, type GuestContext, type GuestRenderer, type ShellForGuest} from './guest.ts';
 import {IdleTimer, type IdleState} from './idle-timer.ts';
@@ -282,6 +282,12 @@ export class HomePanel extends LitElement {
     else this.sheets.open(e.detail.id, e.detail.detail);
   };
 
+  // A pane whose detail sheet is open while another tab is shown (Home's card opens Weather's, on a phone) stays in the page, behind
+  // the sheet, so the sheet is drawn and the tab is not changed; the pane draws only its sheet then.
+  private sheetBehind(f: FeatureDescriptor): boolean {
+    return this.tab !== f.key && f.detailSheet !== undefined && this.compact && this.sheets.isOpen(f.detailSheet);
+  }
+
   // an element's sheet asks to close (its Close button, its backdrop, its swipe)
   private readonly onSheetDismiss = (e: SheetDismissEvent): void => {
     e.stopPropagation();
@@ -447,7 +453,11 @@ export class HomePanel extends LitElement {
             FEATURES,
             f => f.key,
             f =>
-              html`<section class="pane pane-${f.key}" id="pane-${f.key}" ?hidden=${this.tab !== f.key}>
+              html`<section
+                class="pane pane-${f.key} ${this.sheetBehind(f) ? 'behind' : ''}"
+                id="pane-${f.key}"
+                ?hidden=${this.tab !== f.key && !this.sheetBehind(f)}
+              >
                 ${f.pane(this.env)}
               </section>`,
           )}

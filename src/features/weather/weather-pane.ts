@@ -30,7 +30,7 @@ import {forShadow} from '../../ui/styles/host.ts';
 
 export class WeatherPane extends LitElement {
   static override properties = {
-    active: {type: Boolean},
+    active: {type: Boolean, reflect: true},
     detailOpen: {type: Boolean},
   };
   /** Set by the shell: this pane is the tab on screen. A hidden pane listens to nothing and draws nothing. */
@@ -51,6 +51,10 @@ export class WeatherPane extends LitElement {
         display: flex;
         flex-direction: column;
         gap: 16px;
+      }
+      /* behind another tab with its sheet open: no box of its own, the sheet is fixed to the screen */
+      :host(:not([active])) {
+        display: contents;
       }
       hp-pane-header {
         display: none;
@@ -123,6 +127,8 @@ export class WeatherPane extends LitElement {
     if (!view) return nothing;
     const compact = this.appearance.value?.compact === true;
     const {t} = this.storeController.store;
+    // The sheet over another tab (Home's card opens it): the pane is behind it and draws nothing but the sheet, so the tab stays.
+    if (!this.active && this.detailOpen && compact) return this.renderSheet(view);
     // On a tablet the pane is the detail's place alone: the header is there and not shown, as the old pane's was, and the card, the
     // tiles and the sheet are the phone's.
     return html`<hp-pane-header .icon=${'wx'} .color=${'var(--m-blue)'} .heading=${t('weather.title')}>

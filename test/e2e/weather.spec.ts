@@ -158,14 +158,24 @@ test('the detail on the phone shows the sun block, and its Close button closes i
   await expect(detail(house)).toHaveCount(0);
 });
 
-test('the Home card opens the detail over Home, and closing it goes back to Home', async ({house}) => {
+test('the Home card opens the detail over Home: Home stays the tab, a reload returns on Home, and Escape gives the focus back to the card', async ({
+  house,
+}) => {
+  const card = house.root().locator('#hwx');
   await expect(house.root().locator('#pane-home')).toBeVisible();
-  await house.root().locator('#hwx').click();
+  await card.click();
+  await expect(detail(house)).toBeVisible();
+  await expect(house.root().locator('#pane-home')).toBeVisible();
+  await expect(house.root().locator('#pane-weather')).toBeHidden();
+  expect(await house.page.evaluate(() => localStorage.getItem('home-panel-tab'))).not.toBe('weather');
+  await house.page.reload();
+  await expect(house.root().locator('#pane-home')).toBeVisible();
+  await expect(house.root().locator('#pane-weather')).toBeHidden();
+  await card.click();
   await expect(detail(house)).toBeVisible();
   await house.page.keyboard.press('Escape');
   await expect(detail(house)).toHaveCount(0);
-  await expect(house.root().locator('#pane-home')).toBeVisible();
-  await expect(house.root().locator('#pane-weather')).toBeHidden();
+  await expect(card).toBeFocused();
 });
 
 test.describe('what it costs', () => {

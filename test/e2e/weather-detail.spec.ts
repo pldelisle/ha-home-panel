@@ -42,6 +42,43 @@ test('the Weather tab shows the detail in its pane: the header, the sun block, t
   await expect(detail(house).locator('#wdays')).toHaveText('No daily forecast yet.');
 });
 
+test('a chart put back on the page draws again, whether the library came while it was away or not', async ({house}) => {
+  // hold the library back, take a chart off the page, let the library through, and put the chart back
+  let release!: () => void;
+  const gate = new Promise<void>(resolve => (release = resolve));
+  await house.page.route(CHUNK_URL, async r => {
+    await gate;
+    await r.continue();
+  });
+  await house.tab('weather');
+  await expect(detail(house).locator('hp-chart')).toHaveCount(3);
+  await detail(house)
+    .locator('hp-chart')
+    .first()
+    .evaluate(chart => {
+      const w = window as unknown as {away: {chart: Element; parent: Node}};
+      w.away = {chart, parent: chart.parentNode!};
+      chart.remove();
+    });
+  release();
+  await expect(canvases(house)).toHaveCount(2);
+  await house.page.evaluate(() => {
+    const {chart, parent} = (window as unknown as {away: {chart: Element; parent: Node}}).away;
+    parent.appendChild(chart);
+  });
+  await expect(canvases(house)).toHaveCount(3);
+  // and a chart that had drawn, taken off and put back
+  await detail(house)
+    .locator('hp-chart')
+    .first()
+    .evaluate(chart => {
+      const parent = chart.parentNode!;
+      chart.remove();
+      parent.append(chart);
+    });
+  await expect(canvases(house)).toHaveCount(3);
+});
+
 test('a pane that is not the tab holds no detail, so no chart and no radar', async ({house}) => {
   await house.tab('weather');
   await expect(canvases(house)).toHaveCount(3);

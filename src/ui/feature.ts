@@ -44,8 +44,8 @@ export interface FeatureDescriptor {
   /** The word under the section in More; absent or null means none. */
   summary?: (env: FeatureEnv) => string | null;
   /**
-   * The id of the element sheet that shows this subject's detail (`weather.detail`): inline in the pane on a tablet, over the page on
-   * a phone, where opening it shows the pane behind it and closing it returns to the tab it was opened from.
+   * The id of the element sheet that shows this subject's detail (`weather.detail`): inline in the pane on a tablet, over the screen on
+   * a phone, whichever tab is shown (the pane stays behind the sheet and the tab is not changed).
    */
   detailSheet?: string;
   /** The pane's content: a feature's element, or the markup the guest still fills. */
