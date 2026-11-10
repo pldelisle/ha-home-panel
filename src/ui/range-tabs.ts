@@ -2,6 +2,7 @@
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over data: `ranges` says which tabs and their words, `value` which one is
 // chosen, and a tap is told upward as `range-change` (Lit docs, Events: properties down, events up); the markup is the legacy sheets' own.
 // Must not: hold a range's span or a word (the tabs come from `RANGES` and the catalog, through the owner), fetch anything, or keep the choice itself.
+// A known copy: `:host([compact]) .tabs` is written by hand here, because the legacy rule it follows (`.app.cp .sheet .ph .tabs`, sheet.css) cannot reach a slotted element's root; it goes with the legacy sheet.
 import {LitElement, css, html} from 'lit';
 import {repeat} from 'lit/directives/repeat.js';
 import {AppearanceConsumer} from './controllers/appearance-consumer.ts';
@@ -22,7 +23,7 @@ export interface RangeChangeDetail {
 export class RangeTabs extends LitElement {
   static override properties = {
     ranges: {attribute: false},
-    value: {reflect: true},
+    value: {},
   };
   declare ranges: readonly RangeTab[];
   /** The range chosen; its tab is the one with `aria-selected`. */

@@ -386,6 +386,33 @@ describe('tileHistory', () => {
     expect(tileHistory(WIND, {wind: 'sensor.wind'}, {}, history, 'year')[0].points).toEqual([[432e5, 1]]);
   });
 
+  test('with `now`, leaves out what is from before the range: the hour-aligned start of the request reaches back up to an hour further', () => {
+    // a week and two and a half hours after the epoch: the range begins at 2:30, the request at 2:00
+    const now = 7 * 864e5 + 2.5 * HOUR;
+    const [wind] = tileHistory(
+      WIND,
+      {wind: 'sensor.wind'},
+      {'sensor.wind': [stat(0, {mean: 1}), stat(2 * HOUR, {mean: 2}), stat(3 * HOUR, {mean: 3})]},
+      {},
+      'week',
+      now,
+    );
+    expect(wind.points).toEqual([[3.5 * HOUR, 3]]);
+    const [plain] = tileHistory(
+      WIND,
+      {wind: 'sensor.wind'},
+      {},
+      {'sensor.wind': [state(2 * HOUR, '1'), state(3 * HOUR + 5, '2')]},
+      'week',
+      now,
+    );
+    expect(plain.points).toEqual([[3.5 * HOUR, 2]]);
+    // without it the rows are all there, as the existing tests read them
+    expect(
+      tileHistory(WIND, {wind: 'sensor.wind'}, {'sensor.wind': [stat(0, {mean: 1})]}, {}, 'week')[0].points,
+    ).toHaveLength(1);
+  });
+
   test('mixes: a series with statistics from them, a series without from its history', () => {
     const lines = tileHistory(
       WIND,

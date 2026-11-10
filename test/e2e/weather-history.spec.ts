@@ -74,7 +74,9 @@ test('a range is read from the recorder once: Month asks, going back to Week is 
   expect(house.chunkRequests, 'the chart library').toHaveLength(1);
 });
 
-test('closing it frees the chart, and each closing, opening and range is one notification', async ({house}) => {
+test('opening it, choosing a range and closing it are one request and one dismissal and no toast, and closing frees the chart', async ({
+  house,
+}) => {
   await house.page.evaluate(() => {
     const w = window as unknown as {heard: string[]};
     w.heard = [];
@@ -83,12 +85,33 @@ test('closing it frees the chart, and each closing, opening and range is one not
   });
   await openWind(house);
   await expect(history(house).locator('hp-chart .apexcharts-canvas')).toBeVisible();
+  await tab(house, 'Month').click();
+  await expect(history(house).locator('.inner h3').first()).toHaveText('Wind, last 30 days');
   await history(house).locator('hp-sheet .close').click();
   await expect(history(house)).toHaveCount(0);
+  await expect(house.root().locator('hp-weather-history hp-chart')).toHaveCount(0);
   expect(await house.page.evaluate(() => (window as unknown as {heard: string[]}).heard)).toEqual([
     'sheet-request {"id":"weather.history","detail":{"key":"wind"}}',
     'sheet-dismiss {"id":"weather.history"}',
   ]);
+});
+
+test('a range whose read failed is asked again when it is chosen again', async ({house}) => {
+  await house.page.evaluate(() => window.house.failStatistics('5minute'));
+  await openWind(house);
+  await tab(house, 'Day').click();
+  await expect(history(house).locator('.inner').first()).toContainText('History is not available right now.');
+  const day = async () => (await mine(house)).filter(m => m.period === '5minute').length;
+  expect(await day()).toBe(1);
+  await house.page.evaluate(() => window.house.failStatistics(null));
+  await tab(house, 'Week').click();
+  await expect(history(house).locator('hp-chart .apexcharts-canvas')).toBeVisible();
+  await tab(house, 'Day').click();
+  await expect(history(house).locator('hp-chart .apexcharts-canvas')).toBeVisible();
+  expect(await day(), 'asked again').toBe(2);
+  // the failure was logged, once, and the fixture would fail on it
+  expect(house.errors).toEqual([expect.stringContaining('home-panel weather history')]);
+  house.errors.length = 0;
 });
 
 test('Escape closes it and gives the focus back to the tile that opened it', async ({house}) => {

@@ -1,5 +1,6 @@
 /* The range tabs: a pill of buttons, one chosen (Day, Week, Month, Year). Written once for the legacy sheets' tabs and for `<hp-range-tabs>`,
-   in the order the legacy files held the rules (base, glass, motion). Inside an element `.app.gl` reads as `:host([glass])` (host.ts). */
+   in the order the legacy files held the rules (base, glass, motion). Inside an element `.app.gl` reads as `:host([glass])` (host.ts).
+   Not here: the phone's full-width pill in a sheet's header, which `<hp-range-tabs>` writes by hand (a slotted element's root is out of the sheet's reach). */
 .tab:focus-visible {
   outline: 2px solid var(--c-home);
   outline-offset: 2px;

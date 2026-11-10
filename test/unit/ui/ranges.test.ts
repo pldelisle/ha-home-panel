@@ -50,7 +50,7 @@ describe('RANGES against the class CRANGE', () => {
     expect([en[now.labelKey], en[now.shortKey], en[now.meanKey]]).toEqual([was.label, was.short, was.meanName]);
   });
 
-  test('plain history is thinned to the bucket of the period', () => {
+  test('each range has the bucket of its statistics period: 5 minutes, an hour, a day', () => {
     expect(Object.values(RANGES).map(range => [range.period, range.bucketMs])).toEqual([
       ['5minute', 3e5],
       ['hour', 36e5],

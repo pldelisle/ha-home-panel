@@ -42,6 +42,8 @@
       const subscriptions = new Set();
       // the messages the panel sent through `callWS`, so a test can say how many times it asked the recorder
       const asked = [];
+      // a recorder that is down for one statistics period (`window.house.failStatistics`), answering with an error as the socket does
+      let failing = null;
       let hass = {
         states: read.states,
         entities: read.entities,
@@ -61,7 +63,9 @@
             ? {value: (window.SYSDATA || {})[m.key] ?? null}
             : m.type === 'frontend/set_system_data'
               ? (console.log('WS', JSON.stringify(m)), ((window.SYSDATA = window.SYSDATA || {})[m.key] = m.value), null)
-              : (asked.push(m), read.ws(m)),
+              : (asked.push(m), m.type === 'recorder/statistics_during_period' && m.period === failing)
+                ? Promise.reject(new Error('the recorder is down'))
+                : read.ws(m),
         connection: {
           subscribeMessage: async (callback, msg) => {
             console.log('WS', JSON.stringify(msg)); // the fixture's `ws` lists it, as it lists the system-data writes
@@ -113,6 +117,10 @@
         // the messages of a type the panel sent so far, whatever the answer
         asked(kind) {
           return asked.filter(m => m.type === kind);
+        },
+        // the recorder fails every statistics request of this period (null: it answers again)
+        failStatistics(period) {
+          failing = period;
         },
         subscribed(kind) {
           return [...subscriptions].filter(({msg}) => msg.type === kind).length;

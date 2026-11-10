@@ -465,7 +465,9 @@ export const idsWithoutStatistics = (
 /**
  * The lines of a tile's chart over a range: each series from the statistics when the recorder has rows for it, else from the
  * plain history of its sensor (Environment Canada's chance, UV and AQHI sensors keep no statistics). A row is drawn at the middle of
- * its bucket, rounded to two digits, using the statistic the series names (the mean unless it asks for the maximum).
+ * its bucket, rounded to two digits, using the statistic the series names (the mean unless it asks for the maximum). The start of
+ * a request is the top of the hour (it must be stable for the cache to hit), so with `now` a row or a state from before `now`
+ * less the range's days is left out: the range is exactly what the legacy sheet drew.
  */
 export function tileHistory(
   definition: StatTileDefinition,
@@ -473,14 +475,23 @@ export function tileHistory(
   statRows: Readonly<Record<string, readonly StatisticRow[]>>,
   historyRows: Readonly<Record<string, readonly HistoryPoint[]>>,
   range: Range,
+  now?: number,
 ): TileSeriesData[] {
-  const {bucketMs} = RANGES[range];
+  const {bucketMs, days} = RANGES[range];
+  const from = now === undefined ? -Infinity : now - days * DAY_MS;
   return definition.series.flatMap(({entity, nameKey, unit, stat, dash = false}) => {
     const id = ids[entity];
     if (!id) return [];
     const points = hasStatistics(statRows, id)
-      ? statisticPoints(statRows[id], stat ?? 'mean', bucketMs / 2)
-      : thinned(historyRows[id] ?? [], bucketMs);
+      ? statisticPoints(
+          statRows[id].filter(row => row.start >= from),
+          stat ?? 'mean',
+          bucketMs / 2,
+        )
+      : thinned(
+          (historyRows[id] ?? []).filter(row => row.lastUpdated >= from),
+          bucketMs,
+        );
     return [{entity, nameKey, unit, dash, points}];
   });
 }

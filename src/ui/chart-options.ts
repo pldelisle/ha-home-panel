@@ -77,7 +77,7 @@ export function axisLocale(fmt: Formatters) {
   };
 }
 
-/** A tooltip's date format in the day-first, 24-hour form: `ddd MMM d, h tt` reads `ddd d MMM HH:mm`, `MMM d, yyyy` reads `d MMM yyyy`. */
+/** A known duplicate of the rewrite layer's `frFmt` (src/i18n/fr.js), which still serves the guest's charts: it goes with the layer in phase 4 (#188). A tooltip's date format in the day-first, 24-hour form: `ddd MMM d, h tt` reads `ddd d MMM HH:mm`, `MMM d, yyyy` reads `d MMM yyyy`. */
 const frenchFormat = (format: string): string =>
   format
     .replace(/MMM d\b/, 'd MMM')

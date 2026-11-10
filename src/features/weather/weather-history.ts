@@ -54,7 +54,7 @@ interface Drawn {
 const LINES = ['--c-home', '--c-wh', '--c-heat', '--c-ev'] as const;
 const TONES: Record<Tone, string> = {ok: '--ok', warn: '--warn', crit: '--crit', blue: '--m-blue'};
 
-/** The tile's history sheet over a range: a failed read of the plain history is an empty one, but a StaleReply stays one. */
+/** What a failed read of the plain history comes to: an empty one (the statistics are the chart's), but a StaleReply stays one, to ask again under the new config. */
 const optional = (error: unknown): Record<string, never> => {
   if (error instanceof StaleReply) throw error;
   return {};
@@ -74,7 +74,8 @@ export class WeatherHistory extends LitElement {
   declare range: Range;
 
   // The host is a block with nothing of its own: the sheet it holds is fixed to the screen. The legacy sheet's rules for the inner cards
-  // on a phone (`.app.cp .sheet .inner`) are here, the cards being this element's children and not the sheet's.
+  // on a phone (`.app.cp .sheet .inner`) are here by hand, a known copy: the cards are this element's children and not the sheet's,
+  // so the kit's rule cannot reach them. The same rule is in weather-detail.ts; both go with the legacy sheets.
   static override styles = [
     common,
     inner,
@@ -149,7 +150,7 @@ export class WeatherHistory extends LitElement {
     if (key === this.drawnKey) return;
     this.drawnKey = key;
     const def = tileDefinition(tile);
-    const series = tileHistory(def, this.present(), loaded.statistics, loaded.history, loaded.range);
+    const series = tileHistory(def, this.present(), loaded.statistics, loaded.history, loaded.range, loaded.at);
     const style = getComputedStyle(this);
     const token = (name: string) => style.getPropertyValue(name).trim();
     const tokens = {
@@ -249,6 +250,8 @@ export class WeatherHistory extends LitElement {
 
   private readonly onRange = (event: CustomEvent<RangeChangeDetail>): void => {
     this.range = event.detail.range;
+    // a range that failed is asked again when it is chosen again, as the legacy sheet asked at every tab
+    this.failed = undefined;
   };
 
   // the sheet's Close button, its backdrop and its swipe: the host closes it, the element only says so
