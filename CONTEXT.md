@@ -64,6 +64,14 @@ The words the panel and its code use. One word per concept: use it in issues, te
 
 **Departure schedule** — The car's departure times, which the Car pane lists with its controls (see the move order in the programme spec); its times go through the formatters.
 
+**Health rules** — The owner's Prometheus recording rules (`home:scope_state`, `home:attention_age_seconds`) that decide when an area of the house's network or home server is Healthy, Checking, Warning, Unknown, a Problem, Recovering or in Maintenance; the panel shows what they decide, through the bridge package, and never sets a threshold of its own (specs 27 and 28). Avoid: alerts.
+
+**Health scope** — One area the health rules judge (Internet, DNS, Pi-hole, UniFi, Synology, Containers), shown on the Network tab as one of five chips, Synology and Containers together as Home server; an issue is one condition within a scope, named by its stable `issue` id and translated from it. Avoid: category, alert.
+
+**Bridge package** — The example Home Assistant package of `rest` sensors (`examples/packages/home-health.yaml`) that queries Prometheus for the health rules and the network's series, so that the panel reads them as sensors and never calls Prometheus. Avoid: integration (the panel's adapters are providers).
+
+**Watched devices** — The devices named under `network.watch` in the panel's config, which the Network tab lists with whether each is online and its link speed. Avoid: favourites.
+
 ## The code, as the programme names it
 
 **Shell** — The layer in `src/shell/` and `src/main.js` that is the composition root: it receives `hass` from Home Assistant, feeds the store, and owns the rail, tab bar, sheet host, theme, idle-clock arming, settings popup and header. Also called the imperative shell.
