@@ -30,6 +30,8 @@ const FLICK_PX = 24;
 const FLICK_SPEED = 0.5;
 // How long the slide off lasts before the sheet is asked to close.
 const SLIDE_MS = 180;
+// A press on a control is the control's: capturing the pointer for a drag would send its click to the panel.
+const CONTROL = 'button, a[href], input, select, textarea, [role="tab"]';
 
 export class SwipeToClose implements ReactiveController {
   private drag: Drag | null = null;
@@ -49,7 +51,8 @@ export class SwipeToClose implements ReactiveController {
 
   readonly onPointerDown = (e: PointerEvent): void => {
     const panel = e.currentTarget as HTMLElement;
-    if (!this.options.enabled() || e.button || !(e.target as Element).closest(this.options.handle)) return;
+    const target = e.target as Element;
+    if (!this.options.enabled() || e.button || !target.closest(this.options.handle) || target.closest(CONTROL)) return;
     this.drag = {panel, y: e.clientY, at: Date.now(), id: e.pointerId, moving: false};
     try {
       panel.setPointerCapture(e.pointerId);

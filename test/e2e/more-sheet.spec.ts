@@ -105,6 +105,19 @@ test('dragging the grabber down closes the sheet, and a short drag springs back'
   await expect(sheet(house)).toBeHidden();
 });
 
+test('dragging the heading down closes the sheet too,', async ({house}) => {
+  await moreTab(house).click();
+  const title = house.root().locator('hp-more-sheet h2');
+  const t = (await title.boundingBox())!;
+  const x = t.x + t.width / 2;
+  const y = t.y + t.height / 2;
+  await house.page.mouse.move(x, y);
+  await house.page.mouse.down();
+  await house.page.mouse.move(x, y + 200, {steps: 8});
+  await house.page.mouse.up();
+  await expect(sheet(house)).toBeHidden();
+});
+
 test('More is a phone sheet: when the shape leaves the phone it closes', async ({house}) => {
   await moreTab(house).click();
   await expect(sheet(house)).toBeVisible();

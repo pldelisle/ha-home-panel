@@ -1,16 +1,15 @@
 // <hp-more-sheet>: the phone's More sheet, the sections the bar does not hold, one summary tile each, in its own shadow root.
-// Pattern: humble object (Meszaros, xUnit Test Patterns) drawn from the registry; properties down, events up (Lit docs,
-// Events): a tile's `tile-open` becomes `tab-select`, the Close button, the backdrop and the swipe become `sheet-close`.
-// Must not: choose the tab, listen for Escape or know which sheet is open (the shell and its sheet host do), or import a feature.
-import {LitElement, css, html, nothing, type PropertyValues} from 'lit';
+// Pattern: humble object (Meszaros, xUnit Test Patterns) drawn from the registry, composing the kit's <hp-sheet> for its chrome;
+// properties down, events up (Lit docs, Events): a tile's `tile-open` becomes `tab-select`; the sheet's `sheet-close` passes through.
+// Must not: draw a sheet's chrome, choose the tab, listen for Escape or know which sheet is open (the shell and its host do), or import a feature.
+import {LitElement, css, html, nothing} from 'lit';
 import {repeat} from 'lit/directives/repeat.js';
 import {AppearanceConsumer} from '../ui/controllers/appearance-consumer.ts';
 import {StoreController} from '../ui/controllers/store-controller.ts';
-import {SwipeToClose} from '../ui/controllers/swipe-to-close.ts';
-import {ico} from '../ui/icons.ts';
+import '../ui/sheet.ts';
 import '../ui/stat-tile.ts';
 import type {TileOpenDetail} from '../ui/stat-tile.ts';
-import {badge, common, more, motion, sheet} from '../ui/styles/index.ts';
+import {common, more} from '../ui/styles/index.ts';
 import type {FeatureDescriptor, FeatureKey} from './feature.ts';
 import {isFeatureKey} from './features.ts';
 
@@ -40,9 +39,6 @@ export class MoreSheet extends LitElement {
   // `display: contents`: the sheet is `position: fixed`, so the host takes no room in the frame it sits in
   static override styles = [
     common,
-    motion,
-    sheet,
-    badge,
     more,
     css`
       :host {
@@ -53,16 +49,9 @@ export class MoreSheet extends LitElement {
 
   // the sheet's words are catalog messages, so it asks the store for `t`; it reads no entity
   private readonly store = new StoreController(this, {ids: () => []});
-  private readonly appearance = new AppearanceConsumer(this);
-  // on a phone, dragged down by its grabber or its title to close, as the legacy sheets are
-  private readonly swipe = new SwipeToClose(this, {
-    enabled: () => this.appearance.value?.compact === true,
-    close: () => this.close(),
-    handle: '.grab, .ph>.badge, .ph>.grow',
-  });
-
   constructor() {
     super();
+    new AppearanceConsumer(this); // `compact` and `large-text` as host attributes, which the list's rule tests
     this.features = [];
     this.shown = {};
     this.summaries = {};
@@ -72,29 +61,16 @@ export class MoreSheet extends LitElement {
 
   protected override render() {
     const {t} = this.store.store;
-    return html`<div class="sheet" ?hidden=${!this.open} @click=${this.onBackdrop}>
-      <div
-        class="panel"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="moreh"
-        @pointerdown=${this.swipe.onPointerDown}
-        @pointermove=${this.swipe.onPointerMove}
-        @pointerup=${this.swipe.onPointerEnd}
-        @pointercancel=${this.swipe.onPointerEnd}
-      >
-        <div class="grab" aria-hidden="true"></div>
-        <div class="ph">
-          <span class="badge" style="--acc:var(--c-home)">${ico('more', 26)}</span>
-          <div class="grow">
-            <h2 id="moreh">${t('more.title')}</h2>
-            <div class="sub">${t('more.sub')}</div>
-          </div>
-          <button class="icon close" type="button" aria-label=${t('more.close')} @click=${this.close}>✕</button>
-        </div>
-        <div class="morelist" id="morelist">${this.open ? this.renderTiles() : nothing}</div>
-      </div>
-    </div>`;
+    return html`<hp-sheet
+      .open=${this.open}
+      .icon=${'more'}
+      .color=${'var(--c-home)'}
+      .heading=${t('more.title')}
+      .closeLabel=${t('more.close')}
+    >
+      <div slot="sub" class="sub">${t('more.sub')}</div>
+      <div class="morelist" id="morelist">${this.open ? this.renderTiles() : nothing}</div>
+    </hp-sheet>`;
   }
 
   // The tiles exist only while the sheet is open: a tablet never opens it, and a phone draws six tiles when it is asked to.
@@ -126,20 +102,6 @@ export class MoreSheet extends LitElement {
         new CustomEvent<TabSelectDetail>('tab-select', {bubbles: true, composed: true, detail: {key}}),
       );
   };
-
-  private readonly close = (): void => {
-    this.dispatchEvent(new CustomEvent('sheet-close', {bubbles: true, composed: true}));
-  };
-
-  // a tap on the backdrop, not on the panel
-  private readonly onBackdrop = (e: Event): void => {
-    if (e.target === e.currentTarget) this.close();
-  };
-
-  protected override updated(changed: PropertyValues<this>): void {
-    // the Close button takes focus, as the legacy sheet's did, so a keyboard or a switch is inside the sheet at once
-    if (changed.has('open') && this.open) this.renderRoot.querySelector<HTMLElement>('.close')?.focus();
-  }
 }
 
 declare global {
@@ -148,7 +110,6 @@ declare global {
   }
   interface HTMLElementEventMap {
     'tab-select': CustomEvent<TabSelectDetail>;
-    'sheet-close': CustomEvent<void>;
   }
 }
 

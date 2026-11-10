@@ -1,4 +1,4 @@
-/* A sheet's chrome, written once for the legacy sheets and for `<hp-more-sheet>`: the backdrop, the panel, the grabber, the header
+/* A sheet's chrome, written once for the legacy sheets and for `<hp-sheet>`: the backdrop, the panel, the grabber, the header
    (badge, title, close button) and their motion, in the order the legacy files held them (base, extra, phone, glass, motion).
    Inside an element `.app.cp` and `.app.gl` read as `:host([compact])` and `:host([glass])` (host.ts). */
 button.icon {
