@@ -283,12 +283,6 @@
     font-size: calc(52px * var(--tx)) !important;
   }
 }
-.app {
-  --house-door: #a98b73;
-}
-.app[data-theme='dark'] {
-  --house-door: #4a3f36;
-}
 .app:not(.narrow) .menu {
   display: none;
 }
@@ -660,8 +654,7 @@
   background: color-mix(in srgb, var(--warn) 18%, var(--card));
 }
 /* v1.19.6: a lit area's icon takes the bulbs' real colour (--lc set by the JS): tinted well, a soft glow, the glyph darkened enough to read */
-.larea.on .lic,
-.stile.ltile.on .ic {
+.larea.on .lic {
   color: color-mix(in srgb, var(--lc, var(--warn)) 55%, var(--fg));
   background: color-mix(in srgb, var(--lc, var(--warn)) 26%, var(--card));
   box-shadow: 0 0 14px color-mix(in srgb, var(--lc, var(--warn)) 45%, transparent);
@@ -1250,9 +1243,6 @@ button.ptile:active {
 .cols,
 .col {
   gap: 16px;
-}
-.sheet > .panel > * + * {
-  margin-top: 16px;
 }
 .two {
   gap: 16px;

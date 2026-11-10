@@ -3,7 +3,7 @@
 import {describe, expect, test} from 'vitest';
 import {en} from '../../src/core/i18n/en.ts';
 import {fr} from '../../src/core/i18n/fr.ts';
-import {FEATURES, isFeatureKey, visibleTab} from '../../src/shell/features.ts';
+import {FEATURES, UNDER_MORE, isFeatureKey, visibleTab} from '../../src/shell/features.ts';
 import {FR_MAP} from '../../src/i18n/fr.js';
 
 describe('the registry', () => {
@@ -49,8 +49,20 @@ describe('the registry', () => {
     const labels: [keyof typeof en, string][] = [
       ...FEATURES.map(f => [f.title, en[f.title]] as [keyof typeof en, string]),
     ];
-    labels.push(['auto.short', en['auto.short']], ['nav.more', en['nav.more']]);
+    labels.push(['auto.short', en['auto.short']]);
+    // the More sheet's Close button, which the sheet draws from the catalog (its title, line and the bar's More left the map
+    // after a byte comparison; the French baseline of the sheet holds them)
+    labels.push(['more.close', en['more.close']]);
     for (const [key, english] of labels) expect(fr[key], key).toBe(FR_MAP[english]);
+  });
+
+  test('says More as the rewrite map did, on the bar and in the sheet', () => {
+    expect(fr['more.title']).toBe('Plus');
+    expect(fr['nav.more']).toBe(fr['more.title']);
+  });
+
+  test('lists under More the six subjects the phone bar does not hold', () => {
+    expect(UNDER_MORE.map(f => f.key)).toEqual(['weather', 'energy', 'air', 'media', 'cams', 'auto']);
   });
 });
 

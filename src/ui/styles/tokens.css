@@ -1,0 +1,162 @@
+/* The frame's tokens: the custom properties on `.app`, light and dark, with Increase Contrast, the glass material's and the house's,
+   and the rule that gives the frame its background, text colour and face from them. Joined into the legacy sheet and adopted by no
+   element: custom properties inherit into a shadow root, so an element reads the values from `.app` and needs none of these rules. */
+/* Palette: Origami (hazymorning/origami) surfaces and muted named colors for chrome; chart series are the same hue families
+   stepped up in chroma so they pass colorblind checks. */
+.app {
+  --bg: #f2f0eb;
+  --bg-glow: #f7f5f0;
+  --card: #ffffff;
+  --card2: #f3f1ed;
+  --line: #ece9e3;
+  --fg: #4f4c49;
+  --fg2: #716d69;
+  --fg3: #8f8b86;
+  --label: #8a7a64;
+  --ring: #eae6df;
+  --chipbg: #ffffff;
+  --c-grid: #b5882f;
+  --c-home: #4a7dba;
+  --c-ev: #1f8c74;
+  --c-wh: #c9683c;
+  --c-heat: #8b5fa8;
+  --c-rest: #a39c92;
+  --m-amber: #e6c68a;
+  --m-sage: #8da399;
+  --m-teal: #527b71;
+  --m-orange: #b27c43;
+  --m-blue: #587397;
+  --m-purple: #8c7185;
+  --ok: #758671;
+  --warn: #b27c43;
+  --crit: #a75050;
+  /* accents used as text, dark enough for 4.5:1 on white and on the cards; the plain accents stay for fills and icons */
+  --t-ev: #0f7c64;
+  --t-home: #3d70ad;
+  --t-wh: #a4522b;
+  --t-warn: #8f5f2a;
+  --t-ok: #5e6f5a;
+  --tx: 1;
+  --f-num: 'Montserrat', ui-sans-serif, system-ui, sans-serif;
+  --f-body: 'Montserrat', ui-sans-serif, system-ui, sans-serif;
+  /* the one place a second face is meant: a config path is code, so the configuration card sets it in the system's monospace
+     (the HIG asks to minimise typefaces; this one is loaded by nothing, the device already has it) */
+  --f-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --num-w: 600;
+  --shadow: 0 0 0 1px rgba(60, 50, 40, 0.03), 0 4px 12px -4px rgba(60, 50, 40, 0.07);
+  --car-body: #2f62b3;
+  --car-hi: #6e9be0;
+  --car-glass: #27303a;
+  --car-trim: #2a2927;
+  --car-clad: #2e2d2b;
+  --car-lamp: #edeff2;
+  --car-tire: #262523;
+  --car-rim: #b7bcc2;
+  --house-wall: #eceae6;
+  --house-side: #d9d6d1;
+  --house-roof: #c9d3dc;
+  --house-win: #55524e;
+  --house-shadow: rgba(60, 50, 40, 0.18);
+}
+.app[data-theme='dark'] {
+  --bg: #181715;
+  --bg-glow: #1d1c19;
+  --card: #2f2d2a;
+  --card2: #383532;
+  --line: #3a3734;
+  --fg: #e5e3dd;
+  --fg2: #a9a6a0;
+  --fg3: #a09d98;
+  --label: #a9a6a0;
+  --ring: #3e3b37;
+  --chipbg: #2f2d2a;
+  --c-grid: #e6c68a;
+  --c-home: #6593d6;
+  --c-ev: #36a487;
+  --c-wh: #d4763f;
+  --c-heat: #a47fcb;
+  --c-rest: #7a746c;
+  --m-amber: #e6c68a;
+  --m-sage: #6a8778;
+  --m-teal: #8eb4ab;
+  --m-orange: #eaba89;
+  --m-blue: #93adcf;
+  --m-purple: #c6abbf;
+  --ok: #afc0ac;
+  --warn: #eaba89;
+  --crit: #da8282;
+  --t-ev: #41af92;
+  --t-home: #719fe2;
+  --t-wh: #e08a5a;
+  --t-warn: #eaba89;
+  --t-ok: #afc0ac;
+  --shadow: 0 0 0 1px rgba(255, 255, 255, 0.03) inset, 0 6px 16px -6px rgba(0, 0, 0, 0.45);
+  --car-body: #2c5caa;
+  --car-hi: #5f8dd6;
+  --car-glass: #12161b;
+  --car-trim: #111;
+  --car-clad: #141413;
+  --car-lamp: #dce3ec;
+  --car-tire: #0e0e0d;
+  --car-rim: #80868d;
+  --house-wall: #3a3835;
+  --house-side: #2a2826;
+  --house-roof: #24272a;
+  --house-win: #f0b35a;
+  --house-shadow: rgba(240, 170, 80, 0.18);
+  color-scheme: dark;
+}
+@media (prefers-contrast: more) {
+  .app {
+    --fg2: #5e5b57;
+    --fg3: #716d69;
+    --line: #d6d2cb;
+    --ring: #d6d2cb;
+  }
+  .app[data-theme='dark'] {
+    --fg2: #cfccc6;
+    --fg3: #b5b2ac;
+    --line: #55514c;
+    --ring: #55514c;
+  }
+}
+.app {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--f-body);
+  font-size: calc(14px * var(--tx));
+  line-height: 1.4;
+}
+.app {
+  --house-door: #a98b73;
+}
+.app[data-theme='dark'] {
+  --house-door: #4a3f36;
+}
+/* ---- Liquid Glass (v1.18.0), Mercury drop material since v1.19.0: almost no tint, a soft white inner glow, a 15 px blur and (Chromium) a noise distortion of the backdrop.
+   .gl on .app = glass on (Status popup: Glass None / Dawn / Lake / Meadow, localStorage home-panel-glass), data-wp = the wallpaper.
+   Material = a thin fill + the backdrop blurred and saturated + a light rim; the lens (Chromium only) is added by lensAll() in the JS. ---- */
+/* the glass material (the rules that use it are in glass.css) */
+.app {
+  --g-fill: rgba(255, 255, 255, calc(0.08 * var(--g-m, 1)));
+  --g-dense: rgba(255, 255, 255, calc(0.3 * var(--g-m, 1)));
+  --g-ring: rgba(255, 255, 255, 0.3);
+  --g-hi: rgba(255, 255, 255, 0.7);
+  --g-glow: rgba(255, 255, 255, 0.3);
+  --g-sel: rgba(255, 255, 255, calc(0.3 * var(--g-m, 1)));
+  --g-shadow: 0 0 21px -8px rgba(255, 255, 255, 0.3);
+  --g-blur: 15px;
+  --g-edge: inset 0 0 12px -4px var(--g-hi), inset 0 0 0 1px var(--g-ring), var(--g-shadow);
+  --g-edge-s: inset 0 0 8px -3px var(--g-hi), inset 0 0 0 1px var(--g-ring);
+  --g-bd: blur(var(--g-blur)) saturate(1.5);
+}
+.app[data-theme='dark'] {
+  --g-fill: rgba(255, 255, 255, calc(0.05 * var(--g-m, 1)));
+  --g-dense: rgba(20, 20, 24, calc(0.4 * var(--g-m, 1)));
+  --g-ring: rgba(255, 255, 255, 0.12);
+  --g-hi: rgba(255, 255, 255, 0.35);
+  --g-glow: rgba(255, 255, 255, 0.08);
+  --g-sel: rgba(255, 255, 255, calc(0.12 * var(--g-m, 1)));
+  --g-shadow: 0 0 21px -8px rgba(255, 255, 255, 0.12);
+}

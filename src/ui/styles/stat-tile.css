@@ -1,0 +1,248 @@
+/* The summary tile of the phone (`.stile`), written once for the guest's tiles and for `<hp-stat-tile>`, in the order the legacy
+   files held it (phone, glass, motion). The `.stile.list` rules are the More list's tiles: a tone of the tile, because a
+   descendant selector (`.morelist .stile`) cannot cross into the tile's own root. */
+.stile.ltile.on .ic {
+  color: color-mix(in srgb, var(--lc, var(--warn)) 55%, var(--fg));
+  background: color-mix(in srgb, var(--lc, var(--warn)) 26%, var(--card));
+  box-shadow: 0 0 14px color-mix(in srgb, var(--lc, var(--warn)) 45%, transparent);
+}
+/* summary tiles: a square with the value, or a wide one with a switch; both open a sheet */
+.stile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  min-height: 112px;
+  padding: 12px 14px;
+  border: 0;
+  border-radius: 20px;
+  background: var(--card);
+  box-shadow: var(--shadow);
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  min-width: 0;
+  cursor: pointer;
+  --rc: var(--c-home);
+}
+.stile:active {
+  transform: scale(0.98);
+}
+.stile:focus-visible {
+  outline: 2px solid var(--c-home);
+  outline-offset: 2px;
+}
+.stile .ic {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: var(--card2);
+  display: grid;
+  place-items: center;
+  color: var(--fg2);
+  flex: none;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+.stile .ic.art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.stile .tv {
+  order: 2;
+  font-size: calc(24px * var(--tx));
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin-top: auto;
+  white-space: nowrap;
+}
+.stile .tv small {
+  font-size: calc(13px * var(--tx));
+  color: var(--fg2);
+  font-family: var(--f-body);
+  font-weight: 500;
+}
+.stile .tx {
+  order: 3;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  max-width: 100%;
+  margin-top: 4px;
+}
+.stile b {
+  font-size: calc(13.5px * var(--tx));
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.stile small {
+  font-size: calc(12px * var(--tx));
+  color: var(--fg2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.stile small em {
+  font-style: normal;
+  color: var(--fg2);
+}
+.stile.on .ic {
+  color: var(--c-wh);
+  background: color-mix(in srgb, var(--c-wh) 18%, var(--card));
+}
+.stile.bad .ic {
+  color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 18%, var(--card));
+}
+.stile.blue .ic {
+  color: var(--m-blue);
+  background: color-mix(in srgb, var(--m-blue) 16%, var(--card));
+}
+.stile.grid .ic {
+  color: var(--c-grid);
+  background: color-mix(in srgb, var(--c-grid) 18%, var(--card));
+}
+.stile.home.on .ic {
+  color: var(--c-home);
+  background: color-mix(in srgb, var(--c-home) 16%, var(--card));
+}
+.stile.ltile.on .ic {
+  color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 18%, var(--card));
+}
+.stile.wide {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  min-height: 0;
+  padding: 12px 14px;
+}
+.stile.wide .ic {
+  margin: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 13px;
+}
+.stile.wide .tx {
+  order: 0;
+  flex: 1;
+  margin: 0;
+}
+.stile.wide .tv {
+  order: 0;
+  margin: 0;
+  font-size: calc(22px * var(--tx));
+}
+.stile.wide b {
+  font-size: calc(15px * var(--tx));
+}
+.stile.wide small {
+  font-size: calc(12.5px * var(--tx));
+}
+.stile .sw {
+  flex: none;
+}
+.stile .pp2 {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 0;
+  background: var(--card2);
+  color: var(--fg);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  flex: none;
+}
+.stile .pp2.on {
+  background: var(--c-home);
+  color: #fff;
+}
+.stile .pp2:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.stile.sel {
+  box-shadow:
+    inset 0 0 0 1.5px color-mix(in srgb, var(--rc) 55%, transparent),
+    var(--shadow);
+}
+.app.tabsv.cp .stile.wide {
+  grid-column: 1/-1;
+}
+.stile.list {
+  min-height: 0;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+}
+.stile.list .ic {
+  margin: 0;
+  color: var(--rc);
+  background: color-mix(in srgb, var(--rc) 16%, var(--card));
+}
+.stile.list .tx {
+  order: 0;
+  margin: 0;
+  flex: 1;
+}
+.app.gl .stile {
+  background: var(--g-card);
+  -webkit-backdrop-filter: var(--g-bd);
+  backdrop-filter: var(--g-bd);
+  box-shadow: var(--g-edge);
+}
+.app.gl .stile .pp2 {
+  background: var(--g-sel);
+  border-color: transparent;
+}
+.app.gl .stile .pp2.on {
+  background: var(--c-home);
+}
+.app.gl .stile .ic {
+  background: var(--g-tile);
+  box-shadow: var(--g-edge-s);
+}
+.app.gl .stile.on .ic {
+  background: color-mix(in srgb, var(--warn) 22%, var(--g-tile));
+}
+.app.gl .stile.ltile.on .ic {
+  background: color-mix(in srgb, var(--lc, var(--warn)) 26%, var(--g-tile));
+}
+.app.gl .stile.on.home .ic {
+  background: color-mix(in srgb, var(--c-home) 20%, var(--g-tile));
+}
+.app.gl .stile.bad .ic {
+  background: color-mix(in srgb, var(--warn) 22%, var(--g-tile));
+}
+.app.gl .stile.blue .ic {
+  background: color-mix(in srgb, var(--m-blue) 20%, var(--g-tile));
+}
+.app.gl .stile.grid .ic {
+  background: color-mix(in srgb, var(--c-grid) 22%, var(--g-tile));
+}
+.app.gl .stile.list .ic {
+  background: color-mix(in srgb, var(--rc) 20%, var(--g-tile));
+}
+@media (prefers-reduced-transparency: reduce) {
+  .app.gl .stile {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--card);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .stile {
+    transition:
+      transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+      background-color 0.2s ease,
+      box-shadow 0.2s ease,
+      color 0.2s ease;
+  }
+}

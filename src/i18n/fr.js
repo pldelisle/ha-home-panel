@@ -1176,8 +1176,6 @@ export const FR_MAP = {
   'Lower setpoint': 'Baisser la consigne',
   'Raise setpoint': 'Monter la consigne',
   // ---- phone shape of the Tabs view (iPhone) ----
-  More: 'Plus',
-  'All sections': 'Toutes les sections',
   Brightness: 'Luminosité',
   Colour: 'Couleur',
   'Night mode': 'Mode nuit',

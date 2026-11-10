@@ -20,6 +20,9 @@ export const fr: Record<MessageKey, string> = {
   'auto.title': 'Automatisations',
   'auto.short': 'Règles',
   'nav.more': 'Plus',
+  'more.title': 'Plus',
+  'more.sub': 'Toutes les sections',
+  'more.close': 'Fermer',
   'config.title': 'Vérifiez la configuration du panneau',
   'config.intro':
     "{n, plural, one {Un réglage n'a pas pu être utilisé et a été ignoré} other {# réglages n'ont pas pu être utilisés et ont été ignorés}} :",

@@ -640,7 +640,7 @@ export class LegacyPanel {
       } else if (this.$app && !this.$('setpop').hidden) this.toggleSettings(false);
     };
   }
-  // connect, disconnect, hassChanged, panelChanged, tabChanged, compactChanged and openMore are the guest's interface (spec 14,
+  // connect, disconnect, hassChanged, panelChanged, tabChanged and compactChanged are the guest's interface (spec 14,
   // GuestRenderer): the shell feeds the store itself and calls them after it did.
   // The tab and the phone shape belong to the shell, which draws the rail, the bar and the panes from them
   get tab() {
@@ -1052,10 +1052,6 @@ export class LegacyPanel {
 <div class="sheet" id="sh-card" hidden><div class="panel" role="dialog" aria-modal="true" aria-labelledby="cardh">
   <div class="ph"><span class="badge" id="cardb"></span><div class="grow"><h2 id="cardh"></h2></div><button class="icon close" type="button" aria-label="Close">✕</button></div>
   <div id="cardhost"></div>
-</div></div>
-<div class="sheet" id="sh-more" hidden><div class="panel" role="dialog" aria-modal="true" aria-labelledby="moreh">
-  <div class="ph"><span class="badge" style="--acc:var(--c-home)">${ico('more', 26)}</span><div class="grow"><h2 id="moreh">More</h2><div class="sub">All sections</div></div><button class="icon close" type="button" aria-label="Close">✕</button></div>
-  <div class="morelist" id="morelist"></div>
 </div></div>
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>`;
     this.$app = this.$('app');
@@ -2032,13 +2028,6 @@ export class LegacyPanel {
     };
     tv.addEventListener('click', onTap);
     this.$('sh-card').addEventListener('click', onTap); // a card moved into the generic sheet keeps its buttons working
-    this.$('sh-more').addEventListener('click', e => {
-      const t = e.target.closest('[data-pane]');
-      if (t) {
-        this.hide();
-        return this.ctx.shell.setTab(t.dataset.pane);
-      }
-    });
     for (const h of ['mtiles'])
       this.$(h).addEventListener('keydown', e => {
         if ((e.key === 'Enter' || e.key === ' ') && /** @type {Element} */ (e.target).matches('[role="button"]')) {
@@ -2200,6 +2189,7 @@ export class LegacyPanel {
     }, 3500);
   }
   // on a phone a sheet is dragged down by its grabber or its title to close, as iOS sheets are; a short drag springs back
+  // (the kit's SwipeToClose is the same drag for the sheets that are elements; this one goes with the last legacy sheet, #169)
   swipeToClose(p) {
     let d = null;
     const end = e => {
@@ -3395,7 +3385,6 @@ export class LegacyPanel {
       this.ctx.shell.setTab(SHEET_TAB[id]);
       return;
     }
-    if (id === 'sh-more') this.renderMore();
     this.lastFocus = /** @type {HTMLElement | null} */ (this.root.activeElement);
     this.open = id;
     const el = this.$(id);
@@ -5472,7 +5461,7 @@ export class LegacyPanel {
     this.$('cardh').textContent = title || '';
     this.show('sh-card');
   }
-  // the word under each section in the phone's More sheet, raw text, for the registry's summary and for renderMore
+  // the word under each section in the phone's More sheet, in English, for the registry's summary
   moreLines() {
     const L = this.live(),
       temp = this.attr(this.E.weather, 'temperature') ?? this.num(this.E.outT),
@@ -5507,22 +5496,17 @@ export class LegacyPanel {
     };
     return sb;
   }
+  // The sheet is an element of the shell, in a shadow root the French layer's observer does not see, so the word comes
+  // over in the panel's language; `text` is the layer's own rewrite of a text node, and leaves English alone. The shell asks
+  // for the six sections one after the other in one task, so one pass over the house serves them all.
+  // (moreMemo goes with moreLine, deleted with the guest)
   moreLine(key) {
-    return this.moreLines()[key] || null;
-  }
-  // More: the sections that aren't on the bar, with a word on each, and the view switch
-  renderMore() {
-    const sb = this.moreLines();
-    this.set(
-      'morelist',
-      this.ctx.shell
-        .moreSections()
-        .map(
-          ({key, label, icon, color}) =>
-            `<button type="button" class="stile${this.tab === key ? ' sel' : ''}" data-pane="${key}" style="--rc:${color}"><span class="ic">${ico(icon, 22)}</span><span class="tx"><b>${esc(label)}</b><small>${esc(sb[key] || '') || '&nbsp;'}</small></span></button>`,
-        )
-        .join(''),
-    );
+    if (!this.moreMemo) {
+      this.moreMemo = this.moreLines();
+      queueMicrotask(() => (this.moreMemo = null));
+    }
+    const line = this.moreMemo[key];
+    return line ? this.french.text(line) : null;
   }
   // ---------- Tabs view: a left rail, one pane per subject; cards and detail panels move into the panes ----------
   enterTabs() {
@@ -5549,7 +5533,6 @@ export class LegacyPanel {
   tabChanged(t) {
     if (!this.$app || this.view !== 'tabs') return; // nothing drawn yet: enterTabs asks again once it is
     if (this.inline) this.hide();
-    if (this.open === 'sh-more') this.hide();
     const prev = this.drawnTab;
     this.drawnTab = t;
     if (t === 'lights' && prev !== t) this.loadLightOrder(); // another screen may have rearranged them
@@ -5562,10 +5545,6 @@ export class LegacyPanel {
         this.$app.scrollIntoView({block: 'start'});
       } catch {}
     }
-  }
-  // the shell's More button asks for the More sheet, which the guest still draws
-  openMore() {
-    this.show('sh-more');
   }
   openInline(t) {
     const id = TAB_SHEET[t];

@@ -13,7 +13,6 @@
   .seg button,
   .rtab,
   .head button.icon,
-  .sheet button.icon.close,
   .ausel .close,
   .lchip,
   .lauto,
@@ -31,7 +30,6 @@
   .more,
   .ptile,
   .htile,
-  .stile,
   .tilebtn,
   .tvctl button,
   .mtvctl button {
@@ -53,7 +51,6 @@ button.schip:active,
 .senstabs button:active,
 .seg button:active,
 .head button.icon:active,
-.sheet button.icon.close:active,
 .ausel .close:active,
 .lchip:active,
 .lauto:active,
@@ -85,27 +82,6 @@ button.chip:active,
   from {
     opacity: 0;
     transform: translateY(10px);
-  }
-}
-/* sheets: the scrim fades, the phone sheet springs up with a little overshoot, the iPad modal pops in */
-.sheet {
-  animation: fadein 0.22s ease-out both;
-}
-@keyframes fadein {
-  from {
-    opacity: 0;
-  }
-}
-.app.cp .sheet > .panel {
-  animation: shup 0.46s cubic-bezier(0.3, 1.22, 0.4, 1);
-}
-.app:not(.cp) .sheet > .panel {
-  animation: popin 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.06) both;
-}
-@keyframes popin {
-  from {
-    opacity: 0;
-    transform: translateY(10px) scale(0.97);
   }
 }
 /* the thermostat dial draws its arc, then the knob and the number land */
@@ -340,9 +316,6 @@ button.chip:active,
 }
 @media (prefers-reduced-motion: reduce) {
   .pane:not([hidden]),
-  .sheet,
-  .app.cp .sheet > .panel,
-  .app:not(.cp) .sheet > .panel,
   .dial.in .dact,
   .dial.in .dknob,
   .dial.in .dialc,
@@ -370,8 +343,7 @@ button.chip:active,
   }
   /* the switch knob slides, the dial's knob glides and a phone sheet springs back after a short drag only with motion on (base.css gives the knob a slide of its own) */
   .sw::after,
-  .dial .dknob,
-  .app.cp .sheet > .panel {
+  .dial .dknob {
     transition: none;
   }
 }

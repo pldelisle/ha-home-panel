@@ -1,0 +1,20 @@
+/* What every element needs of the frame's own rules: the hidden attribute, `box-sizing`, the number face and the tap highlight.
+   Joined into the legacy sheet first, where these rules always were, and adopted by each element. */
+/* the hidden attribute always wins: several controls set display, and an invisible overlay once blocked every tap (v1.19.6) */
+[hidden] {
+  display: none !important;
+}
+/* no grey tap flash on buttons in the iOS web view (v1.18.2); pressed feedback is drawn by each control instead */
+button,
+[role='button'] {
+  -webkit-tap-highlight-color: transparent;
+}
+* {
+  box-sizing: border-box;
+}
+.num {
+  font-family: var(--f-num);
+  font-weight: var(--num-w);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}

@@ -18,6 +18,8 @@ The words the panel and its code use. One word per concept: use it in issues, te
 
 **Pill** — The glass capsule in the header that stands for something happening or needing a look; under Reduce Transparency it is solid.
 
+**Mercury drop** — The glass material since v1.19.0: almost no tint, a soft inner glow, a 15 px blur and, in Chromium, the `#glass-distortion` filter the guest appends. Avoid: Liquid Glass.
+
 **Live-activity pill** — The pill shown while something runs: the car charging, the water heater heating or a Hilo challenge. A further activity sits beside it as a small ring, and tapping it opens one card per activity above the Status checks. Avoid: status chip (the "All clear" chip it replaced).
 
 **Attention pill** — The amber pill (red when critical) that appears when a status check has a problem, and opens the Status checks.
@@ -92,7 +94,7 @@ The words the panel and its code use. One word per concept: use it in issues, te
 
 **Descriptor** — The data for one of the ten subjects in the shell's registry (`src/shell/features.ts`): key, title, icon, colour, whether it sits on the phone's bar, whether this house shows it, and its pane. The rail, the phone's bar and the panes are drawn from the list.
 
-**Controller** — A Lit reactive controller: an object an element owns that hooks into its lifecycle, such as `StoreController` (subscribes the element to the entity ids it reads), `MediaQueryController`, `IdleTimer` (a state machine: active, idle, waking) and the shell's `AppearanceController`. Avoid: mixin.
+**Controller** — A Lit reactive controller: an object an element owns that hooks into its lifecycle, such as `StoreController` (subscribes the element to the entity ids it reads), `MediaQueryController`, `IdleTimer` (a state machine: active, idle, waking), the shell's `AppearanceController` and its counterpart in an element, `AppearanceConsumer`, which reflects the appearance on the element as attributes (`compact`, `glass`) its styles can test. Avoid: mixin.
 
 **Theme** — Light or dark. Set to Dark or Light it holds; on Auto ("Theme Auto") it is exactly the device's own light or dark setting, as it changes. The sun has no part in it, though it still picks the Sky wallpaper. Not the Auto of a room's lights, which is Adaptive Lighting's. Avoid: mode, skin.
 

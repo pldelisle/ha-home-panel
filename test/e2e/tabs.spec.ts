@@ -190,7 +190,7 @@ test.describe('bare house', () => {
       if (test.info().project.name === 'phone') {
         // Energy is under More on a phone; its pane draws the Water heater and Hilo rows
         await house.root().locator('#moretab').click();
-        await house.root().locator('#morelist [data-pane="energy"]').click();
+        await house.root().locator('#morelist hp-stat-tile[key="energy"] button').click();
         await expect(house.root().locator('#pane-energy')).toBeVisible();
         await expect(house.root().locator('#etiles [data-card="water"]')).toBeAttached();
       }
@@ -244,7 +244,7 @@ test.describe('French', () => {
   }) => {
     phoneOnly();
     await house.root().locator('#moretab').click();
-    await expect(house.root().locator('#morelist [data-pane="cams"] small')).toHaveText(
+    await expect(house.root().locator('#morelist hp-stat-tile[key="cams"] small')).toHaveText(
       'Portes fermées · mouvement en cours',
     );
   });
