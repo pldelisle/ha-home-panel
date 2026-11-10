@@ -156,7 +156,7 @@ export class AppearanceController implements ReactiveController {
   }
 
   private compute(): Appearance {
-    const {store, settings, compact, dark, reducedTransparency} = this.options;
+    const {settings, compact, dark, reducedTransparency} = this.options;
     const set = settings.get();
     if (this.staleProbe) this.readProbe();
     const wallpaper = glassWallpaper(set.glass, () => this.sky());

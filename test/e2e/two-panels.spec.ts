@@ -40,3 +40,34 @@ test('two panels on one page show their own houses', async ({house}) => {
   await expect(bulb(first)).toHaveAttribute('aria-checked', 'false');
   await expect(bulb(second)).toHaveAttribute('aria-checked', 'false');
 });
+
+// The page behind the panels has one colour, and the panel connected last owns it; when it leaves the other's colour
+// comes back, and when none is left the page is its own again.
+test('the page keeps its wallpaper colour until the last panel leaves', async ({house}) => {
+  const background = () =>
+    house.page.evaluate(() => ({
+      html: document.documentElement.style.backgroundColor,
+      body: document.body.style.backgroundColor,
+    }));
+  await expect.poll(background).toMatchObject({html: expect.stringMatching(/.+/), body: expect.stringMatching(/.+/)});
+  await house.page
+    .locator('home-panel')
+    .nth(1)
+    .evaluate(panel => panel.remove());
+  expect(await background()).toMatchObject({html: expect.stringMatching(/.+/), body: expect.stringMatching(/.+/)});
+  await house.page
+    .locator('home-panel')
+    .nth(0)
+    .evaluate(panel => panel.remove());
+  expect(await background()).toEqual({html: '', body: ''});
+});
+
+test.describe('on auto', () => {
+  test.use({houseOpts: {cfg: FULL_CFG, two: true, theme: 'auto'}});
+
+  test('two panels follow the device together', async ({house}) => {
+    await house.page.emulateMedia({colorScheme: 'dark'});
+    for (const index of [0, 1])
+      await expect(house.page.locator('home-panel').nth(index).locator('.app')).toHaveAttribute('data-theme', 'dark');
+  });
+});

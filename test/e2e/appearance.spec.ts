@@ -33,42 +33,167 @@ test('the popup switches between dark and light, and the choice stays', async ({
   await expect(popup(house).locator('[data-th="toggle"]')).toHaveAttribute('aria-pressed', 'false');
 });
 
-test('on auto the theme follows the sun: dark below the horizon, light above it', async ({house}) => {
-  await choose(house, '[data-th="auto"]');
-  await expect(app(house)).toHaveAttribute('data-theme', 'light');
-  await house.setState('sun.sun', {state: 'below_horizon'});
-  await expect(app(house)).toHaveAttribute('data-theme', 'dark');
-  await house.setState('sun.sun', {state: 'above_horizon'});
-  await expect(app(house)).toHaveAttribute('data-theme', 'light');
+// Auto is the device's own light or dark setting (`prefers-color-scheme`), as it changes. The sun has no part in the
+// theme; it still picks the Sky wallpaper.
+test.describe('the theme on auto', () => {
+  test.use({houseOpts: {cfg: FULL_CFG, time: AFTERNOON, theme: 'auto', colorScheme: 'light'}});
+
+  test('follows the device as it changes, light to dark and back', async ({house}) => {
+    await expect(app(house)).toHaveAttribute('data-theme', 'light');
+    await house.page.emulateMedia({colorScheme: 'dark'});
+    await expect(app(house)).toHaveAttribute('data-theme', 'dark');
+    await house.page.emulateMedia({colorScheme: 'light'});
+    await expect(app(house)).toHaveAttribute('data-theme', 'light');
+  });
+
+  test('stays light at night on a light device, and the sun changes nothing', async ({house}) => {
+    await house.setState('sun.sun', {state: 'below_horizon'});
+    await expect(app(house)).toHaveAttribute('data-theme', 'light');
+    await house.setState('sun.sun', {state: 'above_horizon'});
+    await expect(app(house)).toHaveAttribute('data-theme', 'light');
+  });
+
+  test('stays dark by day on a dark device', async ({house}) => {
+    await house.page.emulateMedia({colorScheme: 'dark'});
+    await expect(app(house)).toHaveAttribute('data-theme', 'dark');
+    await house.setState('sun.sun', {state: 'above_horizon'});
+    await expect(app(house)).toHaveAttribute('data-theme', 'dark');
+  });
+
+  test('leaves an open settings popup open and showing the theme in force when the device flips', async ({house}) => {
+    await choose(house, '[data-th="auto"]');
+    const toggle = popup(house).locator('[data-th="toggle"]');
+    await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+    await house.page.emulateMedia({colorScheme: 'dark'});
+    await expect(app(house)).toHaveAttribute('data-theme', 'dark');
+    await expect(house.root().locator('#setpop')).toBeVisible();
+    await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+    await expect(toggle.locator('b')).toHaveText('Dark');
+    await house.page.emulateMedia({colorScheme: 'light'});
+    await expect(toggle.locator('b')).toHaveText('Light');
+  });
+
+  test('is changed while the panel is off the page: the new setting is there when it returns', async ({house}) => {
+    await house.page.evaluate(() => {
+      const panel = document.querySelector('home-panel')!;
+      (window as unknown as {parked: Element}).parked = panel;
+      panel.remove();
+      localStorage.setItem('home-panel-theme', 'dark');
+    });
+    await house.page.evaluate(() => document.body.append((window as unknown as {parked: Element}).parked));
+    await expect(app(house)).toHaveAttribute('data-theme', 'dark');
+  });
+
+  test('is changed by the device while the panel is off the page: the new scheme is there when it returns', async ({
+    house,
+  }) => {
+    await house.page.evaluate(() => {
+      const panel = document.querySelector('home-panel')!;
+      (window as unknown as {parked: Element}).parked = panel;
+      panel.remove();
+    });
+    await house.page.emulateMedia({colorScheme: 'dark'});
+    await house.page.evaluate(() => document.body.append((window as unknown as {parked: Element}).parked));
+    await expect(app(house)).toHaveAttribute('data-theme', 'dark');
+  });
 });
 
-test('a dark choice holds when the sun is up, and a light choice when it is down', async ({house}) => {
+test.describe('an explicit theme', () => {
+  test.use({houseOpts: {cfg: FULL_CFG, time: AFTERNOON, theme: 'light', colorScheme: 'dark'}});
+
+  test('Light stays light on a dark device', async ({house}) => {
+    await expect(app(house)).toHaveAttribute('data-theme', 'light');
+    await house.page.emulateMedia({colorScheme: 'light'});
+    await house.page.emulateMedia({colorScheme: 'dark'});
+    await expect(app(house)).toHaveAttribute('data-theme', 'light');
+  });
+});
+
+test.describe('an explicit dark theme', () => {
+  test.use({houseOpts: {cfg: FULL_CFG, time: AFTERNOON, theme: 'dark', colorScheme: 'light'}});
+
+  test('Dark stays dark on a light device, by day or by night', async ({house}) => {
+    await expect(app(house)).toHaveAttribute('data-theme', 'dark');
+    await house.setState('sun.sun', {state: 'above_horizon'});
+    await house.page.emulateMedia({colorScheme: 'dark'});
+    await house.page.emulateMedia({colorScheme: 'light'});
+    await expect(app(house)).toHaveAttribute('data-theme', 'dark');
+  });
+});
+
+// The first theme the frame ever shows is the device's: a panel that opened light and turned dark a moment later would
+// flash. A MutationObserver on the panel's root, hooked before the page loads as property-order.spec hooks `attachShadow`,
+// records each value `data-theme` takes.
+const RECORD_THEMES = () => {
+  const themes: string[] = [];
+  (window as unknown as {themes: string[]}).themes = themes;
+  const attach = Object.getOwnPropertyDescriptor(Element.prototype, 'attachShadow')!.value as Element['attachShadow'];
+  Element.prototype.attachShadow = function (this: Element, init: ShadowRootInit) {
+    const root = attach.call(this, init);
+    if (this.localName === 'home-panel')
+      new MutationObserver(() => {
+        const theme = root.getElementById('app')?.dataset.theme;
+        if (theme && themes.at(-1) !== theme) themes.push(theme);
+      }).observe(root, {subtree: true, childList: true, attributes: true, attributeFilter: ['data-theme']});
+    return root;
+  };
+};
+
+test.describe('the first theme shown', () => {
+  test.use({houseOpts: {cfg: FULL_CFG, time: AFTERNOON, theme: 'auto'}});
+
+  for (const scheme of ['dark', 'light'] as const)
+    test(`on auto with a ${scheme} device is ${scheme}, with no flash of the other`, async ({house}) => {
+      await house.page.addInitScript(RECORD_THEMES);
+      await house.page.emulateMedia({colorScheme: scheme});
+      await house.page.reload();
+      await expect(app(house)).toHaveAttribute('data-theme', scheme);
+      expect(await house.page.evaluate(() => (window as unknown as {themes: string[]}).themes)).toEqual([scheme]);
+    });
+});
+
+test('a redraw of the guest keeps the theme: the language changes and the panel is still dark', async ({house}) => {
   await choose(house, '[data-th="toggle"]');
   await expect(app(house)).toHaveAttribute('data-theme', 'dark');
-  await house.setState('sun.sun', {state: 'above_horizon'});
+  await house.setLanguage('fr');
+  await expect(house.root().locator('#hello')).not.toBeEmpty();
   await expect(app(house)).toHaveAttribute('data-theme', 'dark');
+  await expect(app(house)).toHaveAttribute('lang', /^fr/);
+});
+
+test('the page takes the colour of the wallpaper in force: it changes with the theme', async ({house}) => {
+  // the wallpaper's base colour as the page would show it, which the browser normalises the same way for both reads
+  const wallpaperBase = () =>
+    house.page.evaluate(() => {
+      const panel = document.querySelector('home-panel')!;
+      const base = getComputedStyle(panel.shadowRoot!.getElementById('app')!).getPropertyValue('--wbase').trim();
+      const probe = document.createElement('i');
+      probe.style.backgroundColor = base;
+      return {base: probe.style.backgroundColor, html: document.documentElement.style.backgroundColor};
+    });
+  const light = await wallpaperBase();
+  expect(light.base).not.toBe('');
+  expect(light.html).toBe(light.base);
   await choose(house, '[data-th="toggle"]');
-  await house.setState('sun.sun', {state: 'below_horizon'});
-  await expect(app(house)).toHaveAttribute('data-theme', 'light');
-});
-
-test('on auto the theme follows the device too', async ({house}) => {
-  await choose(house, '[data-th="auto"]');
-  await house.page.emulateMedia({colorScheme: 'dark'});
   await expect(app(house)).toHaveAttribute('data-theme', 'dark');
-  await house.page.emulateMedia({colorScheme: 'light'});
-  await expect(app(house)).toHaveAttribute('data-theme', 'light');
+  await expect.poll(async () => (await wallpaperBase()).html === (await wallpaperBase()).base).toBe(true);
+  const dark = await wallpaperBase();
+  expect(dark.base).not.toBe(light.base);
 });
 
-test('a theme that follows the sun at dusk leaves an open settings popup open and showing the new theme', async ({
+// Playwright cannot emulate prefers-reduced-transparency, so the lens's yielding to it is not tested here. The lens is
+// Chromium's (WebKit drops a url() filter inside backdrop-filter), and the harness runs Chromium.
+test('the glass lens (mc) goes with the glass: present with a wallpaper, gone with None', async ({
   house,
+  browserName,
 }) => {
-  await choose(house, '[data-th="auto"]');
-  await expect(house.root().locator('#setpop')).toBeVisible();
-  await house.setState('sun.sun', {state: 'below_horizon'});
-  await expect(app(house)).toHaveAttribute('data-theme', 'dark');
-  await expect(house.root().locator('#setpop')).toBeVisible();
-  await expect(popup(house).locator('[data-th="toggle"]')).toHaveAttribute('aria-pressed', 'true');
+  test.skip(browserName !== 'chromium', 'the lens is Chromium only');
+  await expect(app(house)).toHaveClass(/\bgl\b/);
+  await expect(app(house)).toHaveClass(/\bmc\b/);
+  await choose(house, '[data-gl="none"]');
+  await expect(app(house)).not.toHaveClass(/\bmc\b/);
+  await choose(house, '[data-gl="lake"]');
+  await expect(app(house)).toHaveClass(/\bmc\b/);
 });
 
 test('the glass choices set the wallpaper and the glass class; None takes both away', async ({house}) => {
