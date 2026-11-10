@@ -2,7 +2,7 @@
 #chips {
   display: contents;
 }
-.pane .ph.cph,
+.pane > .cph,
 .rtab.rmore,
 .ltiles,
 .ctiles2,
@@ -114,28 +114,9 @@
   width: 26px;
   height: 26px;
 }
-/* pane titles, a size down */
-.app.tabsv.cp .pane .ph {
-  gap: 8px 12px;
-  margin-bottom: 12px;
-}
-.app.tabsv.cp .pane .ph .badge {
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
-}
-.app.tabsv.cp .pane .ph .badge svg {
-  width: 22px;
-  height: 22px;
-}
-.app.tabsv.cp .pane .ph h2 {
-  font-size: calc(24px * var(--tx));
-}
-.app.tabsv.cp .pane .ph .sub {
-  font-size: calc(12.5px * var(--tx));
-}
-.app.tabsv.cp .cph {
-  display: flex;
+/* the summary panes' titles show on the phone only; the pane titles' own sizes are in pane-header.css */
+.app.tabsv.cp .pane > .cph {
+  display: block;
 }
 .app.tabsv.cp .pane-home,
 .app.tabsv.cp .pane-lights,
@@ -154,7 +135,7 @@
   flex-direction: column;
   gap: 16px;
 }
-.app.tabsv.cp .pane > .ph {
+.app.tabsv.cp .pane > hp-pane-header {
   margin-bottom: 0;
 }
 .app.tabsv.cp .pane {
@@ -245,7 +226,7 @@
   gap: 10px;
 }
 /* the scenes come first, one row that scrolls sideways; the pane has no title of its own, the header line says the date and temperatures */
-.app.tabsv.cp .pane-home > .ph {
+.app.tabsv.cp .pane-home > hp-pane-header {
   display: none;
 }
 /* the configuration card stays the first thing on the Home tab: -2 only because the scenes row below is -1 (change both together) */

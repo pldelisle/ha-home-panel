@@ -85,7 +85,8 @@
 .pane[hidden] {
   display: none;
 }
-/* the detail panels keep their sheet header, without the close button */
+/* the detail panels keep their sheet header, without the close button; a pane's own header is <hp-pane-header> (pane-header.css),
+   which these rules no longer reach */
 .pane .ph {
   display: flex;
   flex-wrap: wrap;
@@ -120,10 +121,10 @@
 .pane .ph .close {
   display: none;
 }
-.pane-home > .ph,
-.pane-lights > .ph,
-.pane-media > .ph,
-.pane-cams > .ph {
+.pane-home > hp-pane-header,
+.pane-lights > hp-pane-header,
+.pane-media > hp-pane-header,
+.pane-cams > hp-pane-header {
   grid-column: 1/-1;
   margin-bottom: 2px;
 }
@@ -1215,7 +1216,7 @@
     animation: none;
   }
 }
-.pane-auto > .ph {
+.pane-auto > hp-pane-header {
   margin-bottom: 2px;
 }
 .augraph.wide {
@@ -1246,7 +1247,7 @@
   color: var(--fg2) !important;
 }
 /* Home pane: Security card (cameras, doors, motion), same padding and gaps as the tiles */
-.pane-home > .ph {
+.pane-home > hp-pane-header {
   align-self: start;
 }
 .hsec {
@@ -1935,18 +1936,18 @@ button.schip:focus-visible {
   }
 }
 /* Arrange (2.7.0): the Lights tab's tiles can be dragged into the order you want; a linked pair moves as one block */
-.pane-lights > .ph .ledbar {
+.pane-lights > hp-pane-header .ledbar {
   margin-left: auto;
   display: flex;
   gap: 8px;
 }
-.pane-lights > .ph .ledbar .more {
+.pane-lights > hp-pane-header .ledbar .more {
   padding: 8px 16px;
   border-radius: 999px;
   font: inherit;
   font-weight: 600;
 }
-.pane-lights > .ph .ledbar #ledit[aria-pressed='true'] {
+.pane-lights > hp-pane-header .ledbar #ledit[aria-pressed='true'] {
   color: #fff;
   background: var(--c-home);
   border-color: transparent;

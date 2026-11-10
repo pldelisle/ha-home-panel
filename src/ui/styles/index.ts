@@ -3,9 +3,11 @@
 // one source, two views (ADR 0019): src/styles.js concatenates the same files, as written, into the legacy sheet.
 // Must not: hold a rule (the files do), adopt the tokens (they reach an element by inheritance from `.app`), or import the shell.
 import {unsafeCSS, type CSSResult} from 'lit';
+import badgeText from './badge.css?inline';
 import commonText from './common.css?inline';
 import moreText from './more.css?inline';
 import motionText from './motion.css?inline';
+import paneHeaderText from './pane-header.css?inline';
 import sheetText from './sheet.css?inline';
 import statTileText from './stat-tile.css?inline';
 import {forShadow} from './host.ts';
@@ -18,6 +20,10 @@ export const common = adopt(commonText);
 export const motion = adopt(motionText);
 /** A sheet's chrome: the backdrop, the panel, the grabber, the header and its close button. */
 export const sheet = adopt(sheetText);
+/** The badge in a header's corner: the icon on a tinted square, or on glass. */
+export const badge = adopt(badgeText);
+/** A pane's header: its row, its heading and its sub-line. */
+export const paneHeader = adopt(paneHeaderText);
 /** The summary tile. */
 export const statTile = adopt(statTileText);
 /** The More list's grid. */

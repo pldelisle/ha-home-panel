@@ -54,10 +54,6 @@ button.icon:focus-visible {
   place-items: center;
   flex: none;
 }
-.ph .badge {
-  background: color-mix(in srgb, var(--acc, var(--fg3)) 22%, var(--card));
-  color: var(--fg);
-}
 .sheet .ph h2 {
   margin: 0;
   font-family: var(--f-num);
@@ -215,23 +211,11 @@ button.icon:focus-visible {
 .app.gl .sheet button.icon.close {
   box-shadow: var(--g-edge-s);
 }
-/* pane and sheet title icons are tinted glass instead of a flat colour square */
-.app.gl .ph .badge {
-  background: color-mix(in srgb, var(--acc, var(--fg3)) 22%, var(--g-fill));
-  -webkit-backdrop-filter: var(--g-bd);
-  backdrop-filter: var(--g-bd);
-  box-shadow: var(--g-edge);
-}
 @media (prefers-reduced-transparency: reduce) {
   .app.gl.cp .sheet > .panel {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
     background: var(--card);
-  }
-  .app.gl .ph .badge {
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-    background: color-mix(in srgb, var(--acc, var(--fg3)) 22%, var(--card));
   }
 }
 @media (prefers-reduced-motion: no-preference) {
