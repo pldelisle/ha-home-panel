@@ -1,0 +1,11 @@
+{
+  "about": "The English messages the chart element introduced (src/core/i18n/en.ts, chart.*), compared as test/unit/fixtures/moved/weather.json is. Deleted with the layer in phase 4.",
+  "messages": [
+    {
+      "key": "chart.label"
+    },
+    {
+      "key": "chart.noData"
+    }
+  ]
+}

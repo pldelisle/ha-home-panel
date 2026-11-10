@@ -6,7 +6,8 @@
 // comparison checked what that reordered. The tokens and the common rules open the sheet, as the palette and the resets
 // did; the segmented control follows base.css; the sheet's chrome comes after tabs.css and before phone.css, and the header's badge
 // and the pane header follow it; the tile, the More list and the settings popup's tiles (from the end of extra.css, with their
-// glass rules) come after phone.css and before glass.css. motion.css comes last because it overrides the others.
+// glass rules) come after phone.css and before glass.css, followed by the detail panel's tiles, inner cards and chart legend (their rules
+// moved up from base.css, tabs.css, extra.css, motion.css and glass.css with the Weather detail, #158). motion.css comes last because it overrides the others.
 import tokens from './ui/styles/tokens.css?inline';
 import common from './ui/styles/common.css?inline';
 import base from './css/base.css?inline';
@@ -18,6 +19,9 @@ import badge from './ui/styles/badge.css?inline';
 import paneHeader from './ui/styles/pane-header.css?inline';
 import phone from './css/phone.css?inline';
 import statTile from './ui/styles/stat-tile.css?inline';
+import tiles from './ui/styles/tiles.css?inline';
+import inner from './ui/styles/inner.css?inline';
+import chart from './ui/styles/chart.css?inline';
 import more from './ui/styles/more.css?inline';
 import settings from './ui/styles/settings.css?inline';
 import glass from './css/glass.css?inline';
@@ -38,6 +42,9 @@ export const CSS = [
   paneHeader,
   phone,
   statTile,
+  tiles,
+  inner,
+  chart,
   more,
   settings,
   glass,

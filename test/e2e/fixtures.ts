@@ -20,6 +20,8 @@ declare global {
       forecast(type: 'daily' | 'hourly', entries: object[]): void;
       /** how many subscriptions with this message `type` the panel holds now */
       subscribed(type: string): number;
+      /** the messages of this `type` the panel has sent with `callWS` */
+      asked(type: string): Array<{type: string; [field: string]: unknown}>;
     };
     /** installed by the fixture: the DOM mutations seen in the shadow roots (see `House.mutations`) */
     mutationCount: {
@@ -116,6 +118,8 @@ export type House = {
   };
   /** the subscriptions of a message type that are live now (a forecast, `weather/subscribe_forecast`) */
   subscribed: (type: string) => Promise<number>;
+  /** the messages of a type the panel has sent (`recorder/statistics_during_period`): what it cost, not what it drew */
+  asked: (type: string) => Promise<Array<{type: string; [field: string]: unknown}>>;
 };
 
 const DEFAULTS: Required<Pick<HouseOpts, 'house' | 'lang' | 'theme' | 'admin'>> = {
@@ -241,6 +245,7 @@ export const test = base.extend<{houseOpts: HouseOpts; house: House}>({
         reset: () => page.evaluate(() => window.mutationCount.reset()),
       },
       subscribed: type => page.evaluate(type => window.house.subscribed(type), type),
+      asked: type => page.evaluate(type => window.house.asked(type), type),
       setStateSince: (id, patch, agoMs) =>
         page.evaluate(
           ([id, patch, agoMs]) =>
@@ -315,3 +320,29 @@ export const expectCall = (house: House, re: RegExp) =>
   );
 
 export {expect};
+
+/**
+ * Counts, in every shadow root made from now on, the elements with a class that are added to it: what a draw writes, so a second
+ * draw (a chart made twice, a radar mounted twice) shows as a second count. Returns the function that reads the count.
+ */
+export async function countAdded(house: House, className: string): Promise<() => Promise<number>> {
+  await house.page.evaluate(className => {
+    const counts = ((window as unknown as {added?: Record<string, number>}).added ??= {});
+    counts[className] = 0;
+    const attach = Object.getOwnPropertyDescriptor(Element.prototype, 'attachShadow')!.value as Element['attachShadow'];
+    Element.prototype.attachShadow = function (this: Element, init: ShadowRootInit) {
+      const root = attach.call(this, init);
+      new MutationObserver(records => {
+        for (const r of records)
+          for (const n of r.addedNodes)
+            if (n instanceof Element && n.classList.contains(className)) counts[className]++;
+      }).observe(root, {subtree: true, childList: true});
+      return root;
+    };
+  }, className);
+  return () =>
+    house.page.evaluate(
+      className => (window as unknown as {added: Record<string, number>}).added[className],
+      className,
+    );
+}

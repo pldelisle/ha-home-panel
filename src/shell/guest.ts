@@ -67,8 +67,8 @@ export interface GuestRenderer extends GuestAnswers, LegacySheetGuest {
    */
   openWeatherHistory(key: string): void;
   /**
-   * Weather move 1: a forecast message reached the pane's controller, which now owns the subscription; the detail panel and Home's
-   * card still read the forecast here. Deleted with the last of them (#158 and the Home move).
+   * Weather move 1: a forecast message reached the pane's controller, which now owns the subscription; Home's card still reads the
+   * forecast here. Deleted with its last reader (the Home move).
    */
   forecastChanged(type: 'daily' | 'hourly', forecast: readonly object[]): void;
 }

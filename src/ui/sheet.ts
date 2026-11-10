@@ -6,7 +6,7 @@ import {LitElement, css, html, type PropertyValues} from 'lit';
 import {ifDefined} from 'lit/directives/if-defined.js';
 import {AppearanceConsumer} from './controllers/appearance-consumer.ts';
 import {SwipeToClose} from './controllers/swipe-to-close.ts';
-import type {IconName} from './icons.ts';
+import {ico, type IconName} from './icons.ts';
 import './pane-header.ts';
 import {common, motion, sheet} from './styles/index.ts';
 
@@ -47,6 +47,11 @@ export class HpSheet extends LitElement {
       }
       hp-pane-header {
         margin-bottom: 18px;
+      }
+      /* the badge's icon is drawn here, in the slot's fallback, so the pane header's phone size (badge.css) cannot reach it */
+      :host([compact]) slot[name='icon'] > svg {
+        width: 22px;
+        height: 22px;
       }
       h2 {
         margin: 0;
@@ -138,6 +143,7 @@ export class HpSheet extends LitElement {
       >
         <div class="grab" aria-hidden="true"></div>
         <hp-pane-header .icon=${this.icon} .color=${this.color}>
+          <slot name="icon" slot="icon">${ico(this.icon, 26)}</slot>
           <h2 slot="title">${this.heading}</h2>
           <div slot="sub" class="subline"><slot name="sub"></slot></div>
           <div slot="actions" class="actions">

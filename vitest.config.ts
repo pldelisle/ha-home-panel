@@ -32,6 +32,8 @@ export default defineConfig({
         'src/ui/lens.ts',
         'scripts/lib/anonymise.mjs',
       ],
+      // the one module that names the library is loaded by the lazy chunk and proved by chunks.spec.ts, not here
+      exclude: ['src/core/apex-lib.ts'],
       reporter: [['text', {skipFull: false}], 'html'], // skipFull false lists the files at 100 percent too
       // the phase-2 gate: every statement in the core is tested (CI runs `npm test -- --coverage`); phase 3 holds the providers,
       // each feature's model, ids, inputs, tiles and history, and the kit's ranges to the same line

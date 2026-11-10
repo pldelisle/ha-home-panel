@@ -7,16 +7,7 @@ import type {FeatureKey} from '../ui/feature.ts';
 
 /** The ids of the guest's sheets: the id of the `.sheet` element it draws. Deleted with the guest (#188). */
 export type LegacySheetId =
-  | 'sh-energy'
-  | 'sh-climate'
-  | 'sh-air'
-  | 'sh-car'
-  | 'sh-weather'
-  | 'sh-wx'
-  | 'sh-sens'
-  | 'sh-cam'
-  | 'sh-light'
-  | 'sh-card';
+  'sh-energy' | 'sh-climate' | 'sh-air' | 'sh-car' | 'sh-wx' | 'sh-sens' | 'sh-cam' | 'sh-light' | 'sh-card';
 
 /** A legacy sheet is its element's id (a `LegacySheetId`); an element's sheet is `<owner>.<name>` (`shell.more`, later `weather.history`). */
 export type SheetId = string;
@@ -70,6 +61,8 @@ export interface SheetMediatorOptions {
   /** The shell's root: where focus is read, and where the inline hosts are looked up. */
   root: () => ShadowRoot;
   guest: () => LegacySheetGuest | undefined;
+  /** The pane whose detail an element's sheet is (`weather.detail`), from the registry; none for any other. */
+  paneOf: (id: SheetId) => FeatureKey | undefined;
   /** The tab shown, and the phone's shape, as the shell has them now. */
   tab: () => FeatureKey;
   compact: () => boolean;
@@ -126,6 +119,12 @@ export class SheetMediator implements SheetHost, ReactiveController {
     const inline = entry?.sheet.inline;
     if (inline && !this.options.compact()) {
       this.options.setTab(inline.pane);
+      return;
+    }
+    // an element's detail sheet is its pane's: a tablet shows it inline in the pane, a phone over the screen, whatever tab is shown
+    const owner = entry ? undefined : this.options.paneOf(id);
+    if (owner && !this.options.compact()) {
+      this.options.setTab(owner);
       return;
     }
     this.closeCurrent();

@@ -3,7 +3,7 @@
 // (weather-tablet-light-en and -fr, bare-weather-tablet-light-en), so this test is those pixels' textual twin.
 import {existsSync} from 'node:fs';
 import {describe, expect, test} from 'vitest';
-import {conditionName, weatherBrief} from '../../../../src/features/weather/model.ts';
+import {aqhiRisk, conditionName, uvWord, weatherBrief} from '../../../../src/features/weather/model.ts';
 import {createFormatters} from '../../../../src/core/i18n/format.ts';
 import {englishLocale} from '../../../../src/core/i18n/locale.ts';
 import {createMessages} from '../../../../src/core/i18n/messages.ts';
@@ -584,5 +584,34 @@ describe('the house picture and the word under Weather in More', () => {
 
   test('is empty when the house has no temperature', () => {
     expect(weatherBrief(inputsWith({condition: 'rainy'}), deps)).toBe('');
+  });
+});
+
+// the detail's words are read off the bands of the UV and air-quality tiles in TILES, past which the scale goes on
+describe("the detail's UV and air-quality words", () => {
+  test.each([
+    [0, 'weather.uv.low'],
+    [2.9, 'weather.uv.low'],
+    [3, 'weather.uv.moderate'],
+    [5.9, 'weather.uv.moderate'],
+    [6, 'weather.uv.high'],
+    [7.9, 'weather.uv.high'],
+    [8, 'weather.uv.veryHigh'],
+    [10.9, 'weather.uv.veryHigh'],
+    [11, 'weather.uv.extreme'],
+  ])('a UV index of %s is %s', (value, word) => {
+    expect(uvWord(value)).toBe(word);
+  });
+
+  test.each([
+    [1, 'low'],
+    [3, 'low'],
+    [3.5, 'moderate'],
+    [6, 'moderate'],
+    [6.5, 'high'],
+    [10, 'high'],
+    [10.5, 'veryHigh'],
+  ])('an AQHI of %s is %s risk', (value, risk) => {
+    expect(aqhiRisk(value)).toBe(risk);
   });
 });

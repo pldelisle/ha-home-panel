@@ -11,6 +11,7 @@ import {legacyFeature} from '../../src/shell/legacy-feature.ts';
 const env = (availability: Partial<Record<FeatureKey, boolean>>, line: string | null = null): FeatureEnv => ({
   store: {t: (key: string) => `[${key}]`} as unknown as PanelStore,
   guest: {availability: () => availability, moreLine: () => line},
+  sheetOpen: () => false,
 });
 
 const parts = {
@@ -92,7 +93,7 @@ describe('the ten panes', () => {
     expect(new Set(ids).size).toBe(ids.length);
     for (const id of ['hsub', 'lsub', 'csub2', 'carsub2', 'esub2', 'asub2', 'msub', 'cmsub', 'ausub'])
       expect(ids, id).toContain(id);
-    for (const id of ['wxhost', 'carh2', 'lhost', 'ehost', 'eside', 'camhost', 'senhost', 'auhost'])
+    for (const id of ['carh2', 'lhost', 'ehost', 'eside', 'camhost', 'senhost', 'auhost'])
       expect(ids, id).toContain(id);
   });
 

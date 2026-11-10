@@ -244,6 +244,37 @@ export const fr: Record<MessageKey, string> = {
   'weather.season.averageTitle': 'Moyenne {mean}°',
   'weather.season.frost': '{n, plural, one {# gel} other {# gels}}',
   'weather.season.hot': '{n} j au-dessus de {limit}°',
+  'weather.detail.opensHistory': 'Ouvre l’historique',
+  'weather.detail.close': 'Fermer',
+  'weather.detail.sun': 'Soleil',
+  'weather.detail.radar': 'Radar',
+  'weather.detail.radarNote':
+    'RainViewer, les 2 dernières heures par tranches de 10 minutes. La barre au-dessus de la carte montre les couleurs, de faible à forte.',
+  'weather.detail.radarFailed':
+    "Weather Radar Card ne s'est pas chargée. Vérifiez qu'elle est toujours installée dans HACS.",
+  'weather.detail.hours': 'Prochaines 24 heures',
+  'weather.detail.hoursNote':
+    "Prévisions horaires d'Environnement Canada. Les barres indiquent la probabilité de pluie ou de neige.",
+  'weather.detail.noHours': 'Pas encore de prévisions horaires.',
+  'weather.detail.days': 'Prochains jours',
+  'weather.detail.daysNote': 'Minimums et maximums sur une même échelle. Le point indique la température actuelle.',
+  // the legacy layer has no entry for this line, so the French panel reads it in English; the catalog says what the pane showed
+  'weather.detail.noDays': 'No daily forecast yet.',
+  'weather.detail.week': '7 derniers jours',
+  'weather.detail.weekNote':
+    "Température et point de rosée à l'heure. Quand les deux courbes se rejoignent, attendez-vous à du brouillard, de la rosée ou du givre.",
+  'weather.detail.windNote':
+    'Moyenne horaire en km/h. Les points sont les rafales, quand Environnement Canada les signale.',
+  'weather.detail.pressureNote': 'En kPa. Une baisse constante annonce souvent du mauvais temps.',
+  'weather.detail.season': "La saison jusqu'ici",
+  'weather.detail.historyFailed': 'L’historique n’est pas disponible pour le moment.',
+  'weather.series.temperature': 'Température',
+  'weather.series.wind': 'Vent',
+  'weather.series.pressure': 'Pression',
+  'weather.series.freezing': 'Gel',
+  'weather.series.chanceOfRain': 'Probabilité de pluie ou de neige',
+  'chart.label': 'Graphique',
+  'chart.noData': "Pas encore d'historique",
   'range.day.label': 'dernières 24 heures',
   'range.day.short': '24 h',
   'range.week.label': '7 derniers jours',

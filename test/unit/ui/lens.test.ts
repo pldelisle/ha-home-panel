@@ -17,4 +17,12 @@ describe('lensLike', () => {
   test('draws nothing when that root has none, as the glass the guest draws has no lens after a redraw', () => {
     expect(lensLike(root(['other']))).toBe(nothing);
   });
+
+  test("looks outward through the hosts: an element inside a pane's root draws the filter the shell's root has", () => {
+    const shell = root(['glass-distortion']);
+    const pane = Object.assign(root(['other']), {host: {getRootNode: () => shell}});
+    expect(lensLike(pane)).not.toBe(nothing);
+    const bare = Object.assign(root(['other']), {host: {getRootNode: () => root([])}});
+    expect(lensLike(bare)).toBe(nothing);
+  });
 });

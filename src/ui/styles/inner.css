@@ -1,0 +1,50 @@
+/* The inner card of a detail panel (a section with its own heading and line) and the row that sets two of them side by side. Written once
+   for the legacy sheets and for the elements that draw them; inside an element `.app.gl` reads as `:host([glass])` (host.ts). */
+.inner {
+  background: var(--card2);
+  border-radius: 22px;
+  padding: 18px;
+  min-width: 0;
+}
+.inner h3 {
+  margin: 0;
+  font-size: calc(17px * var(--tx));
+  font-weight: 600;
+}
+.inner p {
+  margin: 3px 0 0;
+  color: var(--fg2);
+  font-size: calc(13px * var(--tx));
+}
+.two {
+  display: grid;
+  grid-template-columns: 1fr 1.25fr;
+  gap: 14px;
+  margin-top: 14px;
+}
+@media (max-width: 820px) {
+  .two {
+    grid-template-columns: 1fr;
+  }
+}
+.inner {
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+.two {
+  gap: 16px;
+  margin-top: 16px;
+}
+.app.gl .inner {
+  background: var(--g-card);
+  -webkit-backdrop-filter: var(--g-bd);
+  backdrop-filter: var(--g-bd);
+  box-shadow: var(--g-edge);
+}
+@media (prefers-reduced-transparency: reduce) {
+  .app.gl .inner {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--card);
+  }
+}

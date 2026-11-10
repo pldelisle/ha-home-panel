@@ -150,6 +150,14 @@ for (const lang of ['en', 'fr'] as const) {
       await scanDialog(house, 'the weather history sheet', '#sh-wx');
     });
 
+    test('the weather detail sheet has no serious or critical finding', async ({house}) => {
+      phoneOnly(); // on a tablet the detail is the Weather tab, which every shown tab covers
+      await openTab(house, 'weather');
+      await house.root().locator('hp-weather-pane .wxcard').click();
+      await expect(house.root().locator('hp-weather-detail .sunarc')).toBeVisible();
+      await scanDialog(house, 'the weather detail sheet', 'hp-weather-pane hp-sheet .sheet');
+    });
+
     test('the camera sheet has no serious or critical finding', async ({house}) => {
       // the test house has no camera: Home Assistant adds one the way it adds any entity
       await house.setState('camera.porch', {

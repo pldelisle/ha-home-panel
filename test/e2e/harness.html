@@ -40,6 +40,8 @@
       });
       // the live subscriptions the panel holds (`subscribeMessage`), so the test's side can deliver a message to them
       const subscriptions = new Set();
+      // the messages the panel sent through `callWS`, so a test can say how many times it asked the recorder
+      const asked = [];
       let hass = {
         states: read.states,
         entities: read.entities,
@@ -59,7 +61,7 @@
             ? {value: (window.SYSDATA || {})[m.key] ?? null}
             : m.type === 'frontend/set_system_data'
               ? (console.log('WS', JSON.stringify(m)), ((window.SYSDATA = window.SYSDATA || {})[m.key] = m.value), null)
-              : read.ws(m),
+              : (asked.push(m), read.ws(m)),
         connection: {
           subscribeMessage: async (callback, msg) => {
             console.log('WS', JSON.stringify(msg)); // the fixture's `ws` lists it, as it lists the system-data writes
@@ -108,6 +110,10 @@
             if (msg.type === 'weather/subscribe_forecast' && msg.forecast_type === type) callback({forecast: entries});
         },
         // how many subscriptions of a kind are live: what the panel holds, not what it asked for
+        // the messages of a type the panel sent so far, whatever the answer
+        asked(kind) {
+          return asked.filter(m => m.type === kind);
+        },
         subscribed(kind) {
           return [...subscriptions].filter(({msg}) => msg.type === kind).length;
         },

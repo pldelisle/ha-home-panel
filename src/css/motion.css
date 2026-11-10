@@ -28,7 +28,6 @@
   .more,
   .ptile,
   .htile,
-  .tilebtn,
   .tvctl button,
   .mtvctl button {
     transition:
@@ -183,96 +182,6 @@ button.chip:active,
     filter: drop-shadow(0 0 5px var(--c-ev));
   }
 }
-/* the big weather icon on the Weather sheet: the sun's rays turn, clouds breathe, rain falls, snow drifts, lightning flickers, fog and wind slide */
-.wicon .wxi .rays {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: spin 48s linear infinite;
-}
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-.wicon .wxi .cld {
-  animation: bob 5s ease-in-out infinite;
-}
-@keyframes bob {
-  50% {
-    transform: translate(1px, -0.6px);
-  }
-}
-.wicon .wxi .drp {
-  animation: fall 1.2s linear infinite;
-}
-@keyframes fall {
-  from {
-    transform: translateY(-1px);
-    opacity: 0;
-  }
-  25% {
-    opacity: 1;
-  }
-  to {
-    transform: translateY(2.4px);
-    opacity: 0;
-  }
-}
-.wicon .wxi .flk {
-  animation: snow 2.8s ease-in-out infinite;
-}
-@keyframes snow {
-  from {
-    transform: translate(0, -1px);
-    opacity: 0;
-  }
-  30% {
-    opacity: 1;
-  }
-  50% {
-    transform: translate(0.6px, 0.8px);
-  }
-  to {
-    transform: translate(-0.4px, 2.4px);
-    opacity: 0;
-  }
-}
-.wicon .wxi .bolt {
-  animation: flash 4s ease-in-out infinite;
-}
-@keyframes flash {
-  0%,
-  88%,
-  100% {
-    opacity: 1;
-  }
-  90% {
-    opacity: 0.2;
-  }
-  92% {
-    opacity: 1;
-  }
-  94% {
-    opacity: 0.3;
-  }
-}
-.wicon .wxi .fog {
-  animation: slide 6s ease-in-out infinite;
-}
-@keyframes slide {
-  50% {
-    transform: translateX(1.4px);
-  }
-}
-.wicon .wxi .wnd {
-  stroke-dasharray: 14 5;
-  animation: gust 1.6s linear infinite;
-}
-@keyframes gust {
-  to {
-    stroke-dashoffset: -19;
-  }
-}
 /* Attention glow (v1.19.6): a door opening or motion starting makes the Security card's edge pulse amber twice, then settle */
 .hsec {
   --hsh: var(--shadow);
@@ -317,14 +226,7 @@ button.chip:active,
   .dial.in .dialc,
   .app.gl::before,
   .flow .npulse,
-  .htile.chg .hh > span:first-child,
-  .wicon .wxi .rays,
-  .wicon .wxi .cld,
-  .wicon .wxi .drp,
-  .wicon .wxi .flk,
-  .wicon .wxi .bolt,
-  .wicon .wxi .fog,
-  .wicon .wxi .wnd {
+  .htile.chg .hh > span:first-child {
     animation: none;
   }
   .hsec.glow {

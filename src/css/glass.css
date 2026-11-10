@@ -177,18 +177,7 @@
   backdrop-filter: var(--g-bd);
   box-shadow: var(--g-edge);
 }
-.app.gl .tile {
-  background: var(--g-tile);
-}
 /* v1.18.2: every other surface follows. Top-level panels (sheet sections, air cards, room list) are glass cards; inner wells (rows, segmented controls, tabs, steppers, sensor and speaker rows) take the tile fill; small buttons inside take the selected-bubble fill; tinted "on" states mix their accent into the glass instead of the opaque card */
-.app.gl .inner,
-.app.gl .aqcard,
-.app.gl .citem {
-  background: var(--g-card);
-  -webkit-backdrop-filter: var(--g-bd);
-  backdrop-filter: var(--g-bd);
-  box-shadow: var(--g-edge);
-}
 .app.gl .larea,
 .app.gl .pod,
 .app.gl .hsen,
@@ -204,7 +193,6 @@
 .app.gl .dtime,
 .app.gl .more,
 .app.gl .room,
-.app.gl .radar,
 .app.gl .aupick .chip,
 .app.gl .auchips .chip,
 .app.gl .inner .chips .chip,
@@ -214,6 +202,13 @@
 .app.gl .ausel .close {
   background: var(--g-tile);
   box-shadow: var(--g-edge-s);
+}
+.app.gl .aqcard,
+.app.gl .citem {
+  background: var(--g-card);
+  -webkit-backdrop-filter: var(--g-bd);
+  backdrop-filter: var(--g-bd);
+  box-shadow: var(--g-edge);
 }
 .app.gl .stepper button,
 .app.gl .abtn,
@@ -384,16 +379,6 @@
     backdrop-filter: none;
     background: var(--card);
   }
-  .app.gl .tile {
-    background: var(--card2);
-  }
-  .app.gl .inner,
-  .app.gl .aqcard,
-  .app.gl .citem {
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-    background: var(--card);
-  }
   .app.gl .larea,
   .app.gl .pod,
   .app.gl .hsen,
@@ -408,9 +393,14 @@
   .app.gl .tgl,
   .app.gl .dtime,
   .app.gl .more,
-  .app.gl .room,
-  .app.gl .radar {
+  .app.gl .room {
     background: var(--card2);
+  }
+  .app.gl .aqcard,
+  .app.gl .citem {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--card);
   }
 }
 @media (prefers-contrast: more) {

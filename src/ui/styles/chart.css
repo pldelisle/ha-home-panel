@@ -1,0 +1,29 @@
+/* What a chart needs around it: the legend of a chart's lines (a swatch and a name, or a dashed stroke for a dashed line) and the font of the
+   library's tooltip. Written once for the legacy sheets' charts and for `<hp-chart>`'s own root. */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-size: calc(12.5px * var(--tx));
+  color: var(--fg2);
+  margin-top: 8px;
+}
+.legend b {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  margin-right: 6px;
+  vertical-align: -1px;
+}
+.legend b.dash {
+  width: 14px;
+  height: 0;
+  border-radius: 0;
+  border-top: 2px dashed currentColor;
+  background: none;
+  vertical-align: 3px;
+}
+.apexcharts-tooltip {
+  font-family: var(--f-body) !important;
+}

@@ -107,16 +107,21 @@ describe('the Weather descriptor', () => {
   const weather = FEATURES.find(f => f.key === 'weather')!;
   const guest = {availability: () => ({}), moreLine: () => null};
 
-  test("is the registry's own, always shown, with the detail host slotted in its element for the sheet host to fill", () => {
+  test("is the registry's own, always shown, and binds its pane's detail sheet to the sheet host's answer", () => {
     expect(weather).toBe(weatherFeature);
     expect(weather.available).toBeUndefined();
-    expect(weather.pane({store: store(), guest}).strings.join('')).toBe(
-      '<hp-weather-pane><div id="wxhost" slot="detail"></div></hp-weather-pane>',
-    );
+    expect(weather.detailSheet).toBe('weather.detail');
+    const open = (isOpen: boolean) =>
+      weather.pane({store: store(), guest, sheetOpen: id => isOpen && id === 'weather.detail'});
+    expect(open(false).strings.join('')).toBe('<hp-weather-pane .detailOpen=></hp-weather-pane>');
+    expect(open(false).values).toEqual([false]);
+    expect(open(true).values).toEqual([true]);
   });
 
   test('says the temperature and the condition under More, and nothing before the house has been heard', () => {
-    expect(weather.summary?.({store: store(fakeHass.fromHouse(full)), guest})).toBe('4° · Mainly sunny');
-    expect(weather.summary?.({store: store(), guest})).toBeNull();
+    expect(weather.summary?.({store: store(fakeHass.fromHouse(full)), guest, sheetOpen: () => false})).toBe(
+      '4° · Mainly sunny',
+    );
+    expect(weather.summary?.({store: store(), guest, sheetOpen: () => false})).toBeNull();
   });
 });
