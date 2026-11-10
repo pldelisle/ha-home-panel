@@ -5499,6 +5499,7 @@ export class LegacyPanel {
   // The sheet is an element of the shell, in a shadow root the French layer's observer does not see, so the word comes
   // over in the panel's language; `text` is the layer's own rewrite of a text node, and leaves English alone. The shell asks
   // for the six sections one after the other in one task, so one pass over the house serves them all.
+  // (moreMemo goes with moreLine, deleted with the guest)
   moreLine(key) {
     if (!this.moreMemo) {
       this.moreMemo = this.moreLines();

@@ -13,7 +13,7 @@ export interface TileOpenDetail {
   key: string;
 }
 
-// a line with nothing to say still takes its height, so the tiles of a row stay one height
+// a line with nothing to say still takes its height, so the tiles beside it stay one height
 const NBSP = ' ';
 
 export class StatTile extends LitElement {
@@ -25,7 +25,7 @@ export class StatTile extends LitElement {
     sub: {},
     value: {},
     unit: {},
-    tone: {reflect: true},
+    tone: {},
     color: {},
   };
   /** What the parent calls this tile, sent back in `tile-open`; reflected, so a parent's own markup can find it. */

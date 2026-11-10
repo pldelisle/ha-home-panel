@@ -96,6 +96,9 @@ export const FEATURES: readonly FeatureDescriptor[] = [
   }),
 ];
 
+/** The sections the phone's bar does not hold, which its More sheet lists, in rail order. */
+export const UNDER_MORE: readonly FeatureDescriptor[] = FEATURES.filter(f => !f.phoneBar);
+
 export const isFeatureKey = (value: string): value is FeatureKey => FEATURES.some(f => f.key === value);
 
 /**

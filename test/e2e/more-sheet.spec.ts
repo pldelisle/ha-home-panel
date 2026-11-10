@@ -2,7 +2,7 @@
 // sheet) and acceptance criterion 9; the sheet is `<hp-more-sheet>`, an element of the shell with its own shadow root (ADR 0019).
 // It is a phone sheet: the tablet's rail holds every section, so there is no More button there.
 import {test, expect, phoneOnly, type House} from './fixtures';
-import {FULL_CFG} from './houses';
+import {FULL_CFG, VIEWPORTS} from './houses';
 
 test.use({houseOpts: {cfg: FULL_CFG}});
 test.beforeEach(() => phoneOnly());
@@ -74,8 +74,8 @@ test('a tile closes More and shows its section; coming back, that tile carries t
   await expect(moreTab(house)).toHaveAttribute('aria-selected', 'true');
   await moreTab(house).click();
   await expect(sheet(house)).toBeVisible();
-  await expect(tile(house, 'weather')).toHaveAttribute('tone', 'list sel');
-  await expect(tile(house, 'energy')).toHaveAttribute('tone', 'list');
+  await expect(tile(house, 'weather').locator('button')).toHaveClass(/\bsel\b/);
+  await expect(tile(house, 'energy').locator('button')).not.toHaveClass(/\bsel\b/);
 });
 
 test('a tile takes keyboard focus and Enter opens its section', async ({house}) => {
@@ -103,6 +103,28 @@ test('dragging the grabber down closes the sheet, and a short drag springs back'
   await house.page.mouse.move(x, y + 200, {steps: 8});
   await house.page.mouse.up();
   await expect(sheet(house)).toBeHidden();
+});
+
+test('More is a phone sheet: when the shape leaves the phone it closes', async ({house}) => {
+  await moreTab(house).click();
+  await expect(sheet(house)).toBeVisible();
+  await house.page.setViewportSize(VIEWPORTS.tablet);
+  await expect(house.root().locator('hp-more-sheet .sheet')).toBeHidden();
+  expect(await focused(house)).not.toBe('button.icon.close');
+});
+
+test('a sheet that is open when the panel is moved in the page still closes on Escape', async ({house}) => {
+  await moreTab(house).click();
+  await expect(sheet(house)).toBeVisible();
+  await house.page.evaluate(() => {
+    const p = (window as unknown as {panel: HTMLElement}).panel;
+    const next = p.nextSibling;
+    p.remove();
+    document.body.insertBefore(p, next);
+  });
+  await expect(sheet(house)).toBeVisible();
+  await house.page.keyboard.press('Escape');
+  await expect(house.root().locator('hp-more-sheet .sheet')).toBeHidden();
 });
 
 test('a new language closes the sheet, as the redraw of the panel always did', async ({house}) => {

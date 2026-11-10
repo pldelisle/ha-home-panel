@@ -9,8 +9,10 @@ import {StoreController} from '../ui/controllers/store-controller.ts';
 import {SwipeToClose} from '../ui/controllers/swipe-to-close.ts';
 import {ico} from '../ui/icons.ts';
 import '../ui/stat-tile.ts';
+import type {TileOpenDetail} from '../ui/stat-tile.ts';
 import {common, more, motion, sheet} from '../ui/styles/index.ts';
 import type {FeatureDescriptor, FeatureKey} from './feature.ts';
+import {isFeatureKey} from './features.ts';
 
 /** What the sheet says when a tile is tapped: the section to show. */
 export interface TabSelectDetail {
@@ -25,7 +27,7 @@ export class MoreSheet extends LitElement {
     current: {},
     open: {type: Boolean, reflect: true},
   };
-  /** The registry; the sheet lists the descriptors the phone's bar does not hold. */
+  /** The sections it lists: the registry's descriptors that the phone's bar does not hold. */
   declare features: readonly FeatureDescriptor[];
   /** Which tabs this house shows; a section it hides is not listed. */
   declare shown: Readonly<Partial<Record<FeatureKey, boolean>>>;
@@ -98,7 +100,7 @@ export class MoreSheet extends LitElement {
   private renderTiles() {
     const {t} = this.store.store;
     return repeat(
-      this.features.filter(f => !f.phoneBar && this.shown[f.key] !== false),
+      this.features.filter(f => this.shown[f.key] !== false),
       f => f.key,
       f =>
         html`<hp-stat-tile
@@ -115,15 +117,13 @@ export class MoreSheet extends LitElement {
   }
 
   // A tile says which one was tapped; the shell decides what that does, so the sheet turns it into its own event.
-  private readonly select = (e: CustomEvent<{key: string}>): void => {
+  private readonly select = (e: CustomEvent<TileOpenDetail>): void => {
     e.stopPropagation();
-    this.dispatchEvent(
-      new CustomEvent<TabSelectDetail>('tab-select', {
-        bubbles: true,
-        composed: true,
-        detail: {key: e.detail.key as FeatureKey},
-      }),
-    );
+    const {key} = e.detail;
+    if (isFeatureKey(key))
+      this.dispatchEvent(
+        new CustomEvent<TabSelectDetail>('tab-select', {bubbles: true, composed: true, detail: {key}}),
+      );
   };
 
   private readonly close = (): void => {
@@ -147,6 +147,12 @@ export class MoreSheet extends LitElement {
       // the Close button takes focus, as the legacy sheet's did, so a keyboard or a switch is inside the sheet at once
       this.renderRoot.querySelector<HTMLElement>('.close')?.focus();
     } else window.removeEventListener('keydown', this.onKey);
+  }
+
+  // a sheet that is open when its element is moved is still open: the listener comes back with it
+  override connectedCallback(): void {
+    super.connectedCallback();
+    if (this.open) window.addEventListener('keydown', this.onKey);
   }
 
   override disconnectedCallback(): void {

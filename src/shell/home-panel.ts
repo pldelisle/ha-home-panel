@@ -29,8 +29,8 @@ import {StoreController} from '../ui/controllers/store-controller.ts';
 import {apiContext, settingsContext, storeContext, type Appearance} from '../ui/contexts.ts';
 import {ico} from '../ui/icons.ts';
 import {AppearanceController} from './appearance.ts';
-import type {FeatureKey} from './feature.ts';
-import {FEATURES, isFeatureKey, visibleTab} from './features.ts';
+import type {FeatureEnv, FeatureKey} from './feature.ts';
+import {FEATURES, UNDER_MORE, isFeatureKey, visibleTab} from './features.ts';
 import {createGuest, guestStyles, type GuestContext, type GuestRenderer, type ShellForGuest} from './guest.ts';
 import {IdleTimer, type IdleState} from './idle-timer.ts';
 import './more-sheet.ts'; // defines <hp-more-sheet>
@@ -143,6 +143,11 @@ export class HomePanel extends LitElement {
   private moreSummaries: Readonly<Partial<Record<FeatureKey, string | null>>> = {};
   private moreReturn: HTMLElement | null = null;
 
+  /** What a descriptor may read: this panel's store and, until a subject is a feature of its own, the guest's answers. */
+  private get env(): FeatureEnv {
+    return {store: this.store, guest: this.guest as GuestRenderer};
+  }
+
   constructor() {
     super();
     this.narrow = false;
@@ -220,10 +225,8 @@ export class HomePanel extends LitElement {
   // More opens with the words under its sections as they are now, and remembers what had focus, so Close hands it back
   private openMore(): void {
     this.moreReturn = (this.renderRoot as ShadowRoot).activeElement as HTMLElement | null;
-    const env = {store: this.store, guest: this.guest as GuestRenderer};
-    this.moreSummaries = Object.fromEntries(
-      FEATURES.filter(f => !f.phoneBar).map(f => [f.key, f.summary?.(env) ?? null]),
-    );
+    const {env} = this;
+    this.moreSummaries = Object.fromEntries(UNDER_MORE.map(f => [f.key, f.summary?.(env) ?? null]));
     this.moreOpen = true;
   }
 
@@ -268,6 +271,8 @@ export class HomePanel extends LitElement {
 
   protected override willUpdate(): void {
     this.phoneNow = this.phone.matches;
+    // More is a phone sheet: the shape left the phone, so it closes, as compactChanged hid every modal
+    if (!this.phoneNow) this.closeMore();
     // told here and not in `updated`: the timer's change lands in this very update
     if (this.phoneNow !== this.idleCompact) {
       this.idleCompact = this.phoneNow;
@@ -275,12 +280,13 @@ export class HomePanel extends LitElement {
     }
     if (this.guestConnected && this.stale) {
       this.stale = false;
-      const env = {store: this.store, guest: this.guest as GuestRenderer};
+      const {env} = this;
       this.shown = Object.fromEntries(FEATURES.map(f => [f.key, f.available?.(env) ?? true]));
     }
     const before = this.visible;
     this.visible = visibleTab(this.selected, this.shown);
-    // another tab shows by another road than a tile of More (a card of Home, a house that stopped showing it): More closes
+    // Another tab shows by another road than a tile of More (a card of Home, a house that stopped showing it): More closes,
+    // as the guest's tabChanged hid it. No screen reaches this road today, so no test does.
     if (this.visible !== before) this.closeMore();
   }
 
@@ -305,7 +311,7 @@ export class HomePanel extends LitElement {
       ${keyed(this.epoch, this.renderWrap())}
       <div class="guest" style="display:contents"></div>
       <hp-more-sheet
-        .features=${FEATURES}
+        .features=${UNDER_MORE}
         .shown=${this.shown}
         .summaries=${this.moreSummaries}
         .current=${this.tab}
