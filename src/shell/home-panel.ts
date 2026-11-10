@@ -1,6 +1,6 @@
 // <home-panel>, the one element Home Assistant mounts: it owns the store, the API client and the settings, provides them through context, draws the frame from the registry and hosts the guest in its one shadow root.
 // Pattern: composition root (Seemann, Dependency Injection Principles, Practices, and Patterns); humble object (Meszaros, xUnit Test Patterns): it forwards `hass`, `panel` and `narrow` and decides nothing the registry and the store decide.
-// It reads `localStorage`; the browser's locale defaults are read here and, until the formatters move, by the guest. It owns `tab`, `compact`, the idle state, which tabs the house shows, whether More is open and, through its controller, the appearance.
+// It reads `localStorage`; the browser's locale defaults are read here and, until the formatters move, by the guest. It owns `tab`, `compact`, the idle state, which tabs the house shows and, through controllers, the appearance and the open sheet.
 // Must not: import legacy code (the guest arrives through registerGuest), or decide what the store and the models decide.
 // Lit binds nothing inside a guest container, and the guest writes nothing outside its containers.
 import {
@@ -28,6 +28,7 @@ import {MediaQueryController} from '../ui/controllers/media-query.ts';
 import {StoreController} from '../ui/controllers/store-controller.ts';
 import {apiContext, settingsContext, storeContext, type Appearance} from '../ui/contexts.ts';
 import {ico} from '../ui/icons.ts';
+import type {SheetRequestEvent, ToastEvent} from '../ui/events.ts';
 import {AppearanceController} from './appearance.ts';
 import type {FeatureEnv, FeatureKey} from './feature.ts';
 import {FEATURES, UNDER_MORE, isFeatureKey, visibleTab} from './features.ts';
@@ -35,6 +36,7 @@ import {createGuest, guestStyles, type GuestContext, type GuestRenderer, type Sh
 import {IdleTimer, type IdleState} from './idle-timer.ts';
 import './more-sheet.ts'; // defines <hp-more-sheet>
 import type {TabSelectDetail} from './more-sheet.ts';
+import {SheetMediator} from './sheet-host.ts';
 
 /** The panel Home Assistant hands over with the config the `panel_custom:` block carried. */
 interface PanelInfo {
@@ -46,6 +48,8 @@ const PHONE = '(max-width:599px)';
 // The device's own appearance: dark, and less transparency. The theme follows the first on auto; the glass lens yields to the second.
 const DARK = '(prefers-color-scheme: dark)';
 const REDUCED_TRANSPARENCY = '(prefers-reduced-transparency: reduce)';
+// the phone's More sheet, the first element sheet of the host
+const MORE_SHEET = 'shell.more';
 
 // The one adapter wiring for storage: only src/core/settings.ts reads or writes it. Blocked site data makes touching
 // localStorage throw, so the settings then keep their defaults.
@@ -67,7 +71,6 @@ export class HomePanel extends LitElement {
     selected: {state: true},
     epoch: {state: true},
     idleState: {state: true},
-    moreOpen: {state: true},
   };
   declare hass: PanelHass | undefined;
   declare narrow: boolean;
@@ -78,8 +81,6 @@ export class HomePanel extends LitElement {
   declare private epoch: number;
   /** The idle timer's state, drawn as `.app.idle`, the overlay's `hidden` and its `wake` class; the guest draws the clock. */
   declare private idleState: IdleState;
-  /** The phone's More sheet is open. */
-  declare private moreOpen: boolean;
 
   // The legacy stylesheet is the guest's, so it comes with the guest (registerGuest) instead of an import of
   // src/styles.js, which the dependency rule forbids here. Lit adopts it once for every instance, as a constructed
@@ -123,6 +124,14 @@ export class HomePanel extends LitElement {
     reducedTransparency: new MediaQueryController(this, REDUCED_TRANSPARENCY),
     touches: listener => this.idle.onTouch(listener),
   });
+  // which sheet is open, Escape and where focus goes back to; the guest registers its sheets and popups with it
+  private readonly sheets = new SheetMediator(this, {
+    root: () => this.renderRoot as ShadowRoot,
+    guest: () => this.guest,
+    tab: () => this.tab,
+    compact: () => this.compact,
+    setTab: key => this.setTab(key),
+  });
   private readonly forGuest: ShellForGuest = this.doors();
   private guest: GuestRenderer | undefined;
   private guestConnected = false;
@@ -139,9 +148,9 @@ export class HomePanel extends LitElement {
   private phoneNow = false;
   private idleCompact = this.phone.matches; // what the idle timer was last told about the phone's shape
   private toldIdle = false;
-  // the word under each section of the More sheet, asked of the descriptors when the sheet opens, and where focus goes back to
+  // the word under each section of the More sheet, asked of the descriptors when the sheet opens
   private moreSummaries: Readonly<Partial<Record<FeatureKey, string | null>>> = {};
-  private moreReturn: HTMLElement | null = null;
+  private moreWasOpen = false;
 
   /** What a descriptor may read: this panel's store and, until a subject is a feature of its own, the guest's answers. */
   private get env(): FeatureEnv {
@@ -154,7 +163,6 @@ export class HomePanel extends LitElement {
     this.selected = this.settings.get().tab;
     this.epoch = 0;
     this.idleState = 'active';
-    this.moreOpen = false;
     // each provider adds itself to this element as a controller and answers the context requests of every element below
     new ContextProvider(this, {context: storeContext, initialValue: this.store});
     new ContextProvider(this, {context: apiContext, initialValue: this.api});
@@ -175,6 +183,7 @@ export class HomePanel extends LitElement {
       requestFrame: () => this.requestFrame(),
       resetFrame: () => this.resetFrame(),
       idle: {arm: () => this.idle.arm(), sleepNow: () => this.idle.sleepNow()},
+      sheets: this.sheets,
       get tab() {
         return tab();
       },
@@ -216,32 +225,31 @@ export class HomePanel extends LitElement {
   // moved into a pane survives into its next draw. It needs the elements at once, so the update runs now.
   private resetFrame(): void {
     // the guest's sheets start over with it, and so does More: it closes, as it did when the guest wrote it
-    this.moreOpen = false;
-    this.moreReturn = null;
+    this.sheets.forget(MORE_SHEET);
     this.epoch++;
     this.flush();
   }
 
-  // More opens with the words under its sections as they are now, and remembers what had focus, so Close hands it back
-  private openMore(): void {
-    this.moreReturn = (this.renderRoot as ShadowRoot).activeElement as HTMLElement | null;
-    const {env} = this;
-    this.moreSummaries = Object.fromEntries(UNDER_MORE.map(f => [f.key, f.summary?.(env) ?? null]));
-    this.moreOpen = true;
-  }
+  // arrow fields, so the template hands the same functions at every render
 
-  // arrow fields, so the template hands the sheet the same two functions at every render
-  private readonly closeMore = (): void => {
-    if (!this.moreOpen) return;
-    this.moreOpen = false;
-    this.moreReturn?.focus();
-    this.moreReturn = null;
-  };
+  // the sheet's Close button, its backdrop and its swipe: the host closes it, if it is still the sheet that is open
+  private readonly onMoreClose = (): void => this.sheets.close(MORE_SHEET);
 
   // a tile of the More sheet: the sheet closes, then the tab shows, as the guest's handler did
   private readonly onTabSelect = (e: CustomEvent<TabSelectDetail>): void => {
-    this.closeMore();
+    this.sheets.close(MORE_SHEET);
     this.setTab(e.detail.key);
+  };
+
+  // an element asked upward for a sheet, or for the toast; the event stops here, it is the panel's business
+  private readonly onSheetRequest = (e: SheetRequestEvent): void => {
+    e.stopPropagation();
+    this.sheets.open(e.detail.id, e.detail.detail);
+  };
+
+  private readonly onToast = (e: ToastEvent): void => {
+    e.stopPropagation();
+    this.guest?.toast(e.detail.message, e.detail.sticky);
   };
 
   // Lit renders in a microtask. The guest looks its elements up right after it asks for a change, so these two
@@ -272,7 +280,7 @@ export class HomePanel extends LitElement {
   protected override willUpdate(): void {
     this.phoneNow = this.phone.matches;
     // More is a phone sheet: the shape left the phone, so it closes, as compactChanged hid every modal
-    if (!this.phoneNow) this.closeMore();
+    if (!this.phoneNow) this.sheets.close(MORE_SHEET);
     // told here and not in `updated`: the timer's change lands in this very update
     if (this.phoneNow !== this.idleCompact) {
       this.idleCompact = this.phoneNow;
@@ -287,7 +295,14 @@ export class HomePanel extends LitElement {
     this.visible = visibleTab(this.selected, this.shown);
     // Another tab shows by another road than a tile of More (a card of Home, a house that stopped showing it): More closes,
     // as the guest's tabChanged hid it. No screen reaches this road today, so no test does.
-    if (this.visible !== before) this.closeMore();
+    if (this.visible !== before) this.sheets.close(MORE_SHEET);
+    // More opens with the words under its sections as they are now
+    const more = this.sheets.isOpen(MORE_SHEET);
+    if (more && !this.moreWasOpen) {
+      const {env} = this;
+      this.moreSummaries = Object.fromEntries(UNDER_MORE.map(f => [f.key, f.summary?.(env) ?? null]));
+    }
+    this.moreWasOpen = more;
   }
 
   // `.app#app` sits outside `keyed`: it is the one frame element a guest draw keeps, so the guest clears the classes and
@@ -307,6 +322,8 @@ export class HomePanel extends LitElement {
       id="app"
       data-theme=${a.theme}
       data-wp=${ifDefined(a.glass.wallpaper ?? undefined)}
+      @sheet-request=${this.onSheetRequest}
+      @toast=${this.onToast}
     >
       ${keyed(this.epoch, this.renderWrap())}
       <div class="guest" style="display:contents"></div>
@@ -315,9 +332,9 @@ export class HomePanel extends LitElement {
         .shown=${this.shown}
         .summaries=${this.moreSummaries}
         .current=${this.tab}
-        .open=${this.moreOpen}
+        .open=${this.sheets.isOpen(MORE_SHEET)}
         @tab-select=${this.onTabSelect}
-        @sheet-close=${this.closeMore}
+        @sheet-close=${this.onMoreClose}
       ></hp-more-sheet>
       ${this.renderIdle()}
       <span
@@ -414,7 +431,7 @@ export class HomePanel extends LitElement {
         aria-selected=${section !== undefined}
         aria-haspopup="dialog"
         style=${styleMap({'--rc': section?.color ?? 'var(--c-home)'})}
-        @click=${() => this.openMore()}
+        @click=${() => this.sheets.open(MORE_SHEET)}
       >
         ${ico(section?.icon ?? 'more', 24)}<span
           >${section ? t(section.shortTitle ?? section.title) : t('nav.more')}</span
@@ -476,6 +493,7 @@ export class HomePanel extends LitElement {
     // the frame already follows the phone's shape (`cp`); the guest lays its cards out again
     if (this.compact !== this.toldCompact) {
       this.toldCompact = this.compact;
+      this.sheets.compactChanged(this.compact); // a modal closes and the panels move, before the guest lays its cards out
       guest.compactChanged(this.compact);
     }
     // the shell has drawn the overlay by now, so the guest can draw the clock in it; told once, when the clock shows or goes

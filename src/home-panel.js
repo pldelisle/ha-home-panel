@@ -611,8 +611,8 @@ export class LegacyPanel {
     this.charts = []; // sheet charts, destroyed on close
     this.ApexCharts = null; // the library, once the lazy chunk has loaded (loadCharts)
     this.chartsLoad = null; // the one load of the chunk
-    this.open = null; // open sheet id
-    this.inline = null; // sheet shown inside a tab pane (Tabs view), same id as this.open while it shows
+    this.sheetOffs = []; // what unregisters this draw's sheets from the shell's sheet host (build), run by teardown
+    this.popupOffs = []; // the same for the two popups Escape dismisses (connect, disconnect)
     this.drawnTab = 'home'; // the tab the guest last drew its part of (tabChanged); `tab` is the shell's
     this.framed = false; // whether build() has drawn once, so the next draw asks the shell for a fresh frame
     this.frameKey = null; // what availability() said when the shell was last asked to draw the rail
@@ -630,15 +630,6 @@ export class LegacyPanel {
       const g = e.target.closest('[data-go]');
       if (g) this.stackGo(g.dataset.go);
     };
-    // Escape is caught on window: re-rendered lists drop focus out of the shadow root, so the host would miss the key
-    this.onKey = e => {
-      if (e.key !== 'Escape') return;
-      if (this.open && this.open !== this.inline) this.hide();
-      else if (this.$app && !this.$('attpop').hidden) {
-        this.toggleAttention(false);
-        this.renderHeader();
-      } else if (this.$app && !this.$('setpop').hidden) this.toggleSettings(false);
-    };
   }
   // connect, disconnect, hassChanged, panelChanged, tabChanged and compactChanged are the guest's interface (spec 14,
   // GuestRenderer): the shell feeds the store itself and calls them after it did.
@@ -648,6 +639,10 @@ export class LegacyPanel {
   }
   get compact() {
     return this.ctx.shell.compact;
+  }
+  // the shell's sheet host: which sheet is open, Escape, focus return and where the detail panels sit
+  get sheets() {
+    return this.ctx.shell.sheets;
   }
   // the shell fed the store the new config; draw again when it is a different one (configure)
   panelChanged() {
@@ -709,8 +704,8 @@ export class LegacyPanel {
     this.charts.forEach(c => c.destroy());
     this.charts = [];
     this.cache = {};
-    this.open = null;
-    this.inline = null;
+    this.sheetOffs.forEach(off => off()); // the sheets are about to be written again, and none is open
+    this.sheetOffs = [];
     this.plan = null;
     this.$app = null;
     this.view = null;
@@ -743,7 +738,20 @@ export class LegacyPanel {
       if (this.hass && this.$app && !document.hidden) this.renderCameras();
     }, 10000);
     this.histT = setInterval(() => this.loadHistory(), 15 * 60000);
-    window.addEventListener('keydown', this.onKey);
+    // Escape closes the sheet, then the Status checks, then the settings popup: the host owns the order, these two are its last
+    this.popupOffs = [
+      this.sheets.registerPopup({
+        isOpen: () => !!this.$app && !this.$('attpop').hidden,
+        close: () => {
+          this.toggleAttention(false);
+          this.renderHeader();
+        },
+      }),
+      this.sheets.registerPopup({
+        isOpen: () => !!this.$app && !this.$('setpop').hidden,
+        close: () => this.toggleSettings(false),
+      }),
+    ];
     this.$('iwrap').addEventListener('click', this.onIdleClick);
     if (this.hass && this.$app) this.subscribeForecasts();
     if (this.hass && this.$app) this.loadHistory();
@@ -766,7 +774,8 @@ export class LegacyPanel {
     clearInterval(this.camT);
     this.radarStop();
     clearInterval(this.histT);
-    window.removeEventListener('keydown', this.onKey);
+    this.popupOffs.forEach(off => off());
+    this.popupOffs = [];
     this.$('iwrap').removeEventListener('click', this.onIdleClick);
     this.unsubscribeForecasts();
     if (this.unsubStore) this.unsubStore();
@@ -1070,6 +1079,17 @@ export class LegacyPanel {
       this.panels[sh.id] = sh.querySelector('.panel');
     });
     this.wire();
+    // the host takes the scrim and the Close button of each sheet, and places the five detail panels for the shape of the screen
+    this.sheetOffs = [...this.root.querySelectorAll('.guest .sheet')].map(el =>
+      this.sheets.registerLegacy({
+        id: /** @type {import('./shell/sheet-host.ts').LegacySheetId} */ (el.id),
+        element: el,
+        inline: SHEET_TAB[el.id] && {
+          pane: SHEET_TAB[el.id],
+          host: SHEET_TAB[el.id] === 'energy' ? 'ehost' : 'pane-' + SHEET_TAB[el.id],
+        },
+      }),
+    );
     this.observeLayout();
     this.ctx.shell.idle.arm(); // a draw counts as a touch, as it did: the five minutes start over, and an idle panel wakes
     // the first render (setView → renderTabs) gates the Car tab and tile, so it must already know the car; renderLive looks again
@@ -1655,7 +1675,7 @@ export class LegacyPanel {
       if (this.availability()[t] !== false) this.ctx.shell.setTab(t);
       return;
     }
-    if (this.$(go)) this.show(go);
+    if (this.$(go)) this.sheets.open(go);
   }
   // Attention glow (v1.19.6): when a door opens or motion starts, the Security card's edge pulses amber for about 2.5 s
   secWatch() {
@@ -1736,21 +1756,15 @@ export class LegacyPanel {
       ['open-car', 'sh-car'],
     ].forEach(([b, s]) => {
       const el = this.$(b);
-      el.addEventListener('click', () => this.show(s));
+      el.addEventListener('click', () => this.sheets.open(s));
       el.addEventListener('keydown', e => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
-          this.show(s);
+          this.sheets.open(s);
         }
       });
     });
-    this.root.querySelectorAll('.sheet').forEach(sh => {
-      sh.addEventListener('click', e => {
-        if (e.target === sh) this.hide();
-      });
-      sh.querySelector('.close').addEventListener('click', () => this.hide());
-      this.swipeToClose(sh.querySelector('.panel'));
-    });
+    this.root.querySelectorAll('.sheet').forEach(sh => this.swipeToClose(sh.querySelector('.panel')));
     this.$('etabs').addEventListener('click', e => {
       const b = e.target.closest('.tab');
       if (!b) return;
@@ -2008,8 +2022,8 @@ export class LegacyPanel {
       const sc = e.target.closest('[data-p="scene"]');
       if (sc) return this.runScene(sc.dataset.id);
       // phone: tiles open sheets
-      const sh = e.target.closest('[data-sheet]');
-      if (sh) return this.show(sh.dataset.sheet);
+      const sh = e.target.closest('[data-opens]');
+      if (sh) return this.sheets.open(sh.dataset.opens);
       const cd = e.target.closest('[data-card]');
       if (cd) return this.openCard(cd.dataset.card, cd.dataset.title, cd.dataset.icon, cd.dataset.color);
       const ls = e.target.closest('[data-lsheet]');
@@ -2017,7 +2031,7 @@ export class LegacyPanel {
       const cs = e.target.closest('[data-csel]');
       if (cs) {
         this.climSel = cs.dataset.csel;
-        return this.show('sh-climate');
+        return this.sheets.open('sh-climate');
       }
       const wx = e.target.closest('[data-wx]');
       if (wx) return this.openWx(wx.dataset.wx);
@@ -2155,7 +2169,7 @@ export class LegacyPanel {
           this.imgFail = true;
           this.cache = {};
           this.renderLive();
-          if (this.open === 'sh-car') this.renderCarSheetLive();
+          if (this.sheets.isOpen('sh-car')) this.renderCarSheetLive();
         }
       },
       true,
@@ -2203,7 +2217,7 @@ export class LegacyPanel {
         p.style.transform = `translateY(${p.offsetHeight}px)`;
         setTimeout(() => {
           p.style.transform = '';
-          this.hide();
+          this.sheets.close();
         }, 180);
       } else p.style.transform = '';
     };
@@ -2276,22 +2290,22 @@ export class LegacyPanel {
     }
     this.renderTabs();
     try {
-      if (this.open === 'sh-air') this.renderAirLive();
-      if (this.open === 'sh-light') this.renderLightSheet();
-      if (this.open === 'sh-climate') {
+      if (this.sheets.isOpen('sh-air')) this.renderAirLive();
+      if (this.sheets.isOpen('sh-light')) this.renderLightSheet();
+      if (this.sheets.isOpen('sh-climate')) {
         this.renderClimateList();
         this.$('csub').textContent = this.climateSummary();
       }
-      if (this.open === 'sh-car') this.renderCarSheetLive();
-      if (this.open === 'sh-energy') {
+      if (this.sheets.isOpen('sh-car')) this.renderCarSheetLive();
+      if (this.sheets.isOpen('sh-energy')) {
         this.$('esub').textContent = this.energySummary();
         if ((this.smode || 'now') === 'now') this.renderSankey();
       }
-      if (this.open === 'sh-weather') {
+      if (this.sheets.isOpen('sh-weather')) {
         this.$('wsub').textContent = this.weatherSummary();
         this.renderWeatherNow();
       }
-      if (this.open === 'sh-climate') {
+      if (this.sheets.isOpen('sh-climate')) {
         this.renderClimateHead();
         this.renderClimateControls();
       }
@@ -2890,7 +2904,7 @@ export class LegacyPanel {
     if (b.dataset.la === 'car') {
       this.toggleAttention(false);
       this.renderHeader();
-      this.show('sh-car');
+      this.sheets.open('sh-car');
       return;
     }
     if (b.dataset.la === 'pause' && this.E.wbPause) {
@@ -3214,7 +3228,7 @@ export class LegacyPanel {
     this.loadingGen = false;
     this.cache = {};
     this.renderLive();
-    if (this.open) this.redrawCharts();
+    if (this.sheets.shown) this.redrawCharts();
   }
   derive(hour7, day, meter, evh, hp, today, t24) {
     const ser = (r, id) => (r[id] || []).map(x => ({...x, t: ms(x.start)}));
@@ -3379,43 +3393,23 @@ export class LegacyPanel {
   }
 
   // ---------- sheets ----------
-  show(id) {
-    // in the Tabs view the five detail sheets are panes: opening one means switching to its tab
-    if (this.view === 'tabs' && !this.compact && SHEET_TAB[id]) {
-      this.ctx.shell.setTab(SHEET_TAB[id]);
-      return;
-    }
-    this.lastFocus = /** @type {HTMLElement | null} */ (this.root.activeElement);
-    this.open = id;
-    const el = this.$(id);
-    el.hidden = false;
-    if (id === 'sh-car') {
-      this.depDraft = null;
-    }
+  // the sheet host calls these two: a legacy sheet is on screen (a modal, or inline in its pane) or left it
+  sheetOpened(id) {
+    if (id === 'sh-car') this.depDraft = null;
     this.buildSheet(id);
-    el.querySelector('.close').focus();
   }
-  hide() {
-    if (!this.open) return;
-    const id = this.open,
-      inline = id === this.inline;
+  sheetClosed(id) {
     this.destroyCharts();
     if (id === 'sh-weather') this.radarStop();
     if (id === 'sh-cam') {
       this.$('camlive').innerHTML = '';
       this.camEl = null;
     }
-    this.open = this.inline = null;
-    if (inline) return;
     if (id === 'sh-card' && this.cardBack) {
       const {el, parent, next} = this.cardBack;
       this.cardBack = null;
       parent.insertBefore(el, next && next.parentNode === parent ? next : null);
     }
-    this.$(id).hidden = true;
-    this.lastFocus && this.lastFocus.focus && this.lastFocus.focus();
-    // a modal closed over a tab pane: the pane's own sheet takes over again
-    if (this.view === 'tabs') this.openInline(this.tab);
   }
   destroyCharts() {
     this.charts.forEach(c => {
@@ -3427,9 +3421,10 @@ export class LegacyPanel {
     this.mainChart = this.climChart = null;
   }
   redrawCharts() {
-    if (this.open) {
+    const id = this.sheets.shown;
+    if (id) {
       this.destroyCharts();
-      this.buildSheet(this.open);
+      this.buildSheet(id);
     }
   }
   // ApexCharts is fetched the first time a sheet that draws charts opens, then kept (the chunk is cached by the browser)
@@ -3445,7 +3440,7 @@ export class LegacyPanel {
       this.toast(this.store.t('charts.failed'), true);
       return;
     }
-    if (tag !== this.sheetTag || this.open !== id) return;
+    if (tag !== this.sheetTag || !this.sheets.isOpen(id)) return;
     try {
       if (id === 'sh-energy') this.energySheet();
       if (id === 'sh-climate') this.climateSheet();
@@ -3715,7 +3710,7 @@ export class LegacyPanel {
           this.fc[type] = forecast;
           this.cache.wxd = null;
           this.renderWeather();
-          if (this.open === 'sh-weather') this.renderForecast();
+          if (this.sheets.isOpen('sh-weather')) this.renderForecast();
         })
         .catch(e => {
           console.warn('home-panel forecast', type, e);
@@ -3851,7 +3846,7 @@ export class LegacyPanel {
       this.$('wseason').innerHTML = '<p>History is not available right now.</p>';
       return;
     }
-    if (this.open !== 'sh-weather') return;
+    if (!this.sheets.isOpen('sh-weather')) return;
     const W = this.WX,
       s = this.S(),
       warm = this.css('--c-wh'),
@@ -4127,7 +4122,7 @@ export class LegacyPanel {
       } else {
         // the first chart of this visit: fetch the library, then draw it
         this.loadCharts().then(
-          () => this.open === 'sh-weather' && this.renderForecast(),
+          () => this.sheets.isOpen('sh-weather') && this.renderForecast(),
           () => {}, // weatherSheet says so
         );
       }
@@ -4492,7 +4487,7 @@ export class LegacyPanel {
       this.$('c-air').innerHTML = '<p>History is not available right now.</p>';
       return;
     }
-    if (tag !== this.airTag || this.open !== 'sh-air') return;
+    if (tag !== this.airTag || !this.sheets.isOpen('sh-air')) return;
     if (this.airC) {
       try {
         this.airC.destroy();
@@ -4585,7 +4580,7 @@ export class LegacyPanel {
         return;
       }
     }
-    if (tag !== this.aoTag || this.open !== 'sh-air') return;
+    if (tag !== this.aoTag || !this.sheets.isOpen('sh-air')) return;
     if (this.aoC) {
       try {
         this.aoC.destroy();
@@ -5054,7 +5049,7 @@ export class LegacyPanel {
   // the shell's `compact` changed and its frame already follows
   compactChanged() {
     if (!this.$app) return; // nothing drawn yet: the first draw reads the shell
-    if (this.open && this.open !== this.inline) this.hide();
+    // the sheet host has closed the modal and moved the five detail panels; the cards move here
     if (this.view === 'tabs') {
       this.leaveTabs();
       this.enterTabs();
@@ -5062,18 +5057,8 @@ export class LegacyPanel {
     this.cache = {};
     this.renderLive();
   }
-  // the five detail panels sit inline in their panes on a tablet; on a phone they stay modal sheets and the old summary cards become the panes
+  // on a phone the old summary cards become the panes (the five detail panels are the sheet host's)
   placePanels(compact = this.compact) {
-    for (const [t, id] of Object.entries(TAB_SHEET)) {
-      const p = this.panels[id];
-      if (compact) {
-        p.setAttribute('aria-modal', 'true');
-        this.$(id).appendChild(p);
-      } else {
-        p.removeAttribute('aria-modal');
-        this.$(t === 'energy' ? 'ehost' : 'pane-' + t).appendChild(p);
-      }
-    }
     const col = this.root.querySelector('.col.c1'),
       mv = (id, h) => {
         const el = this.$(id);
@@ -5150,16 +5135,16 @@ export class LegacyPanel {
   openLight(aid) {
     this.lightSel = aid;
     this.lightPick = false;
-    this.show('sh-light');
+    this.sheets.open('sh-light');
   }
   // the room's sheet: power in the header, brightness and colour as two tall sliders, Auto and Night as switches in a list,
   // single bulbs as chips, and "Linked with" as a row that opens a list of the other rooms (the iOS way to pick one value)
   renderLightSheet() {
-    if (this.open !== 'sh-light' || this.lightDrag) return;
+    if (!this.sheets.isOpen('sh-light') || this.lightDrag) return;
     const A = this.lightAreas(),
       a = A.find(x => x.aid === this.lightSel);
     if (!a) {
-      this.hide();
+      this.sheets.close();
       return;
     }
     const s = this.lightState(a),
@@ -5451,7 +5436,7 @@ export class LegacyPanel {
   openCard(id, title, icon, color) {
     const el = this.$(id);
     if (!el) return;
-    if (this.open && this.open !== this.inline) this.hide();
+    this.sheets.close(); // the card of an earlier tap goes home first
     this.cardBack = {el, parent: el.parentNode, next: el.nextSibling};
     this.$('cardhost').appendChild(el);
     el.hidden = false;
@@ -5459,7 +5444,7 @@ export class LegacyPanel {
     b.style.setProperty('--acc', color || 'var(--c-home)');
     b.innerHTML = ico(icon || 'house', 26);
     this.$('cardh').textContent = title || '';
-    this.show('sh-card');
+    this.sheets.open('sh-card');
   }
   // the word under each section in the phone's More sheet, in English, for the registry's summary
   moreLines() {
@@ -5524,7 +5509,6 @@ export class LegacyPanel {
     this.tabChanged(this.tab);
   }
   leaveTabs() {
-    if (this.inline) this.hide();
     this.placePanels(true);
     this.placePanels(false); // panels back to their sheets, cards back to the columns
     this.plan = null; // the cards go back into the columns on the next layout
@@ -5532,12 +5516,11 @@ export class LegacyPanel {
   // the shell shows the pane of `t` (it remembered the tab and drew the rail and the panes); this is the guest's part
   tabChanged(t) {
     if (!this.$app || this.view !== 'tabs') return; // nothing drawn yet: enterTabs asks again once it is
-    if (this.inline) this.hide();
     const prev = this.drawnTab;
     this.drawnTab = t;
     if (t === 'lights' && prev !== t) this.loadLightOrder(); // another screen may have rearranged them
     if (t !== 'lights' && this.lightEdit) this.setLightEdit(false);
-    this.openInline(t);
+    this.sheets.paneShown(t); // the host shows this pane's detail panel inline, on a tablet
     this.renderTabs();
     // on a phone each section starts at the top, as an app's tabs do
     if (this.compact && prev && prev !== t) {
@@ -5545,13 +5528,6 @@ export class LegacyPanel {
         this.$app.scrollIntoView({block: 'start'});
       } catch {}
     }
-  }
-  openInline(t) {
-    const id = TAB_SHEET[t];
-    if (!id || this.view !== 'tabs' || this.compact || this.open) return;
-    this.open = this.inline = id;
-    if (id === 'sh-car') this.depDraft = null;
-    this.buildSheet(id);
   }
   renderTabs() {
     if (this.view !== 'tabs' || !this.hass) return;
@@ -5832,9 +5808,9 @@ export class LegacyPanel {
     // on a phone a tile opens its sheet straight away; Lights goes to its section, the water heater opens its card
     const PH = {
       climate: 'data-csel="house"',
-      car: 'data-sheet="sh-car"',
-      energy: 'data-sheet="sh-energy"',
-      air: 'data-sheet="sh-air"',
+      car: 'data-opens="sh-car"',
+      energy: 'data-opens="sh-energy"',
+      air: 'data-opens="sh-air"',
     };
     const extra = (k, i) =>
       !this.compact
@@ -5845,11 +5821,11 @@ export class LegacyPanel {
     const hwx = this.$('hwx');
     hwx.classList.toggle('tap', this.compact);
     if (this.compact) {
-      hwx.dataset.sheet = 'sh-weather';
+      hwx.dataset.opens = 'sh-weather';
       hwx.setAttribute('role', 'button');
       hwx.tabIndex = 0;
     } else {
-      delete hwx.dataset.sheet;
+      delete hwx.dataset.opens;
       hwx.removeAttribute('role');
       hwx.removeAttribute('tabindex');
     }
@@ -6555,7 +6531,7 @@ export class LegacyPanel {
     const s = this.st(id);
     if (!s) return;
     this.camId = id;
-    this.show('sh-cam');
+    this.sheets.open('sh-cam');
   }
   camSheet() {
     const id = this.camId,
@@ -6622,14 +6598,14 @@ export class LegacyPanel {
     if (!this.wxDefs()[key]) return;
     this.wxKey = key;
     this.wxRange = this.wxRange || 'week';
-    this.show('sh-wx');
+    this.sheets.open('sh-wx');
   }
   openSens(id) {
     const x = this.sensors().find(s => s.id === id);
     if (!x) return;
     this.sensX = x;
     this.sensRange = this.sensRange || 'day';
-    this.show('sh-sens');
+    this.sheets.open('sh-sens');
   }
   // door or motion sensor: an on/off strip over the period, the list of events, and totals
   async sensSheet() {
@@ -6658,7 +6634,7 @@ export class LegacyPanel {
     // the sheet may have moved on while the history was on its way: another sensor, another range, or closed (a config
     // change is the StaleReply above). Known edge: taps A, B, A let A's first reply draw until its second repaints the
     // same sensor and range.
-    if (this.open !== 'sh-sens' || this.sensX !== x || this.sensRange !== r) return;
+    if (!this.sheets.isOpen('sh-sens') || this.sensX !== x || this.sensRange !== r) return;
     const segs = [];
     /** @type {{a: number, b?: number, live?: boolean} | null} */
     let cur = null;
@@ -6739,7 +6715,7 @@ export class LegacyPanel {
       this.$('c-wx').innerHTML = '<p>History is not available right now.</p>';
       return;
     }
-    if (tag !== this.wxTag || this.open !== 'sh-wx') return;
+    if (tag !== this.wxTag || !this.sheets.isOpen('sh-wx')) return;
     if (!C.some(x => x.pts.length)) {
       this.$('c-wx').innerHTML = '<p class="loading">No history yet for this one</p>';
       this.$('wxleg').innerHTML = '';
@@ -6892,7 +6868,7 @@ export class LegacyPanel {
       return;
     }
     const box = this.$('wradar');
-    if (this.open !== 'sh-weather' || !box) return;
+    if (!this.sheets.isOpen('sh-weather') || !box) return;
     const phone = matchMedia('(max-width:720px)').matches,
       key = this.dark() + '/' + phone;
     // history refreshes redraw the sheet; keep the running loop unless the theme or layout changed
@@ -7071,7 +7047,7 @@ export class LegacyPanel {
       this.$('c-heat').innerHTML = '<p>History is not available right now.</p>';
       return;
     }
-    if (tag !== this.climTag || this.open !== 'sh-climate') return;
+    if (tag !== this.climTag || !this.sheets.isOpen('sh-climate')) return;
     this.charts = this.charts.filter(c => {
       if (c.__clim) {
         try {
@@ -7870,7 +7846,7 @@ export class LegacyPanel {
   }
   renderCarControls() {
     const C = this.car;
-    if (!C || this.open !== 'sh-car') return;
+    if (!C || !this.sheets.isOpen('sh-car')) return;
     const amps = this.st(this.E.wbAmps),
       cur = this.pending.amps && Date.now() < this.pending.amps.until ? this.pending.amps.v : this.num(this.E.wbAmps);
     const mn = amps ? amps.attributes.min || 6 : 6,

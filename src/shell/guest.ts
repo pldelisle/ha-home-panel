@@ -10,6 +10,7 @@ import type {HassChange, PanelStore} from '../core/store.ts';
 import type {Appearance} from '../ui/contexts.ts';
 import type {FeatureKey, GuestAnswers} from './feature.ts';
 import type {IdleTimer} from './idle-timer.ts';
+import type {LegacySheetGuest, SheetHost} from './sheet-host.ts';
 
 /** What the shell hands the guest when it connects: the root, the host, the services and the shell's own few doors. */
 export interface GuestContext {
@@ -28,7 +29,7 @@ export interface GuestContext {
  * loose type pass checks the shape where src/main.js registers it). The members of steps D and E are added by their
  * tickets, each with a note on which move deletes it.
  */
-export interface GuestRenderer extends GuestAnswers {
+export interface GuestRenderer extends GuestAnswers, LegacySheetGuest {
   /** Once per connection of the host; the guest takes its services from the context and subscribes here. */
   connect(ctx: GuestContext): void;
   /** Timers, observers and subscriptions down; `connect` may follow again. */
@@ -37,7 +38,7 @@ export interface GuestRenderer extends GuestAnswers {
   hassChanged(change: HassChange): void;
   /** After the store took the new config; the guest draws again only when the store's generation advanced. */
   panelChanged(): void;
-  /** Step B only: the guest still draws the toast, so the shell's `toast` forwards here; step E gives the toast to the shell. */
+  /** The guest still draws the toast: the shell's `toast` and the `ToastEvent` it hears forward here. Deleted with the guest (#188). */
   toast(message: string, sticky?: boolean): void;
   /** Step C: the shell's frame shows the pane of `tab` now; the guest draws its part of it. Deleted with the last pane the guest draws. */
   tabChanged(tab: FeatureKey): void;
@@ -77,6 +78,8 @@ export interface ShellForGuest {
    * on a phone too. The controller's `start` is the shell's own, at connection. Deleted with the guest's clock (#187).
    */
   idle: Pick<IdleTimer, 'arm' | 'sleepNow'>;
+  /** Step E: the sheet host. The guest registers its sheets and popups with it, and opens and closes sheets through it. Deleted with the guest. */
+  sheets: SheetHost;
 }
 
 // The guest's containers, inside the shell's root: `.guest` (src/shell/home-panel.ts holds it, display: contents) and
