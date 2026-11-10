@@ -1,4 +1,4 @@
-// The options every chart shares, as pure functions: the base of the panel's look, the deep merge a chart's own options go through, and French's axis.
+// The options every chart shares, as pure functions: the base of the panel's look, the deep merge a chart's own options go through, and French's axis and tooltip dates.
 // Pattern: functional core (Bernhardt, Boundaries) under a humble object: `<hp-chart>` reads the tokens, the theme and the media query and hands
 // them in; the rules are the legacy class's own (base, merge) and the rewrite layer's (frApex), moved here so a shadow root need not be seen by it.
 // Must not: read the DOM, the clock or a media query, name a chart's content, or hold a string the household reads (`noData` is given).
@@ -77,18 +77,32 @@ export function axisLocale(fmt: Formatters) {
   };
 }
 
+/** A known duplicate of the rewrite layer's `frFmt` (src/i18n/fr.js), which still serves the guest's charts: it goes with the layer in phase 4 (#188). A tooltip's date format in the day-first, 24-hour form: `ddd MMM d, h tt` reads `ddd d MMM HH:mm`, `MMM d, yyyy` reads `d MMM yyyy`. */
+const frenchFormat = (format: string): string =>
+  format
+    .replace(/MMM d\b/, 'd MMM')
+    .replace(/h:mm tt|h tt/g, 'HH:mm')
+    .replace(/, (?=HH)/, ' ')
+    .replace(/MMM d, yyyy/, 'd MMM yyyy');
+
 /**
  * French's date axis: the library draws its own tick labels on a time axis, so it is given the language's month and day names and the
- * day-first, 24-hour formats the household reads. A chart with no time axis is as it came.
+ * day-first, 24-hour formats the household reads, on the axis and in a tooltip's date format. A chart with no time axis is as it came.
  */
 export function frenchAxis(options: ChartOptions, fmt: Formatters): ChartOptions {
   const chart = isObject(options.chart) ? options.chart : {};
   const xaxis = isObject(options.xaxis) ? options.xaxis : undefined;
+  const tooltip = isObject(options.tooltip) ? options.tooltip : undefined;
+  const tipX = isObject(tooltip?.x) ? tooltip.x : undefined;
   const withLocale = {...options, chart: {...chart, locales: [axisLocale(fmt)], defaultLocale: 'fr'}};
-  if (xaxis?.type !== 'datetime') return withLocale;
+  const withTooltip =
+    tooltip && tipX && typeof tipX.format === 'string'
+      ? {...withLocale, tooltip: {...tooltip, x: {...tipX, format: frenchFormat(tipX.format)}}}
+      : withLocale;
+  if (xaxis?.type !== 'datetime') return withTooltip;
   const labels = isObject(xaxis.labels) ? xaxis.labels : {};
   return {
-    ...withLocale,
+    ...withTooltip,
     xaxis: {
       ...xaxis,
       labels: {datetimeFormatter: {year: 'yyyy', month: 'MMM yyyy', day: 'd MMM', hour: 'HH:mm'}, ...labels},

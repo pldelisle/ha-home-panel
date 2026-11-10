@@ -1,7 +1,5 @@
 // Weather's history at the pure-function seam (ADR 0005): literal rows in, the series, the months, the records, a tile's lines and
-// its chart options out; the strings in English and in French through the store's own `t` and formats. The last block pins the
-// copied rules to the legacy panel's source, which holds them until the history move deletes them.
-import {readFileSync} from 'node:fs';
+// its chart options out; the strings in English and in French through the store's own `t` and formats.
 import {describe, expect, test} from 'vitest';
 import type {HistoryPoint, StatisticRow} from '../../../../src/core/ha.ts';
 import {createFormatters} from '../../../../src/core/i18n/format.ts';
@@ -388,6 +386,33 @@ describe('tileHistory', () => {
     expect(tileHistory(WIND, {wind: 'sensor.wind'}, {}, history, 'year')[0].points).toEqual([[432e5, 1]]);
   });
 
+  test('with `now`, leaves out what is from before the range: the hour-aligned start of the request reaches back up to an hour further', () => {
+    // a week and two and a half hours after the epoch: the range begins at 2:30, the request at 2:00
+    const now = 7 * 864e5 + 2.5 * HOUR;
+    const [wind] = tileHistory(
+      WIND,
+      {wind: 'sensor.wind'},
+      {'sensor.wind': [stat(0, {mean: 1}), stat(2 * HOUR, {mean: 2}), stat(3 * HOUR, {mean: 3})]},
+      {},
+      'week',
+      now,
+    );
+    expect(wind.points).toEqual([[3.5 * HOUR, 3]]);
+    const [plain] = tileHistory(
+      WIND,
+      {wind: 'sensor.wind'},
+      {},
+      {'sensor.wind': [state(2 * HOUR, '1'), state(3 * HOUR + 5, '2')]},
+      'week',
+      now,
+    );
+    expect(plain.points).toEqual([[3.5 * HOUR, 2]]);
+    // without it the rows are all there, as the existing tests read them
+    expect(
+      tileHistory(WIND, {wind: 'sensor.wind'}, {'sensor.wind': [stat(0, {mean: 1})]}, {}, 'week')[0].points,
+    ).toHaveLength(1);
+  });
+
   test('mixes: a series with statistics from them, a series without from its history', () => {
     const lines = tileHistory(
       WIND,
@@ -726,29 +751,5 @@ describe('detailChartOptions', () => {
       }),
     ).not.toThrow();
     expect(() => seasonView(frozen(DAYS), frozen(GUSTS), deps('en'))).not.toThrow();
-  });
-});
-
-// ---------- against the legacy panel ----------
-// The rules of one tile's history are copies; until the history move deletes the methods they copy, a change to the source of one fails
-// here, and whoever made it decides whether the copy follows. Deleted with loadWx and wxSheet (#159).
-describe('the copied rules against the legacy panel', () => {
-  const panel = readFileSync(new URL('../../../../src/home-panel.js', import.meta.url), 'utf8');
-
-  test.each([
-    ['the middle of a bucket is added to a statistic', 'ms(y.start) + R.mid'],
-    [
-      'plain history is thinned to the range step',
-      "const step = R.period === '5minute' ? 3e5 : R.period === 'hour' ? 36e5 : 864e5",
-    ],
-    ['a dashed line is thinner and a plain one 2.2', 'x.dash ? 1.6 : 2.2'],
-    ['a dashed line is 5 long', 'x.dash ? 5 : 0'],
-    ['a band is shaded at 9 percent', 'opacity: 0.09'],
-    ['the second unit is on the right', 'opposite: units.indexOf(x.unit) > 0'],
-    ['the band label sits on the left', "position: 'left'"],
-    ['the axis keeps the tile digits', 'D.dec ?? 0'],
-    ['the tooltip keeps the tile digits', 'D.dec ?? 1'],
-  ])('%s', (_what, snippet) => {
-    expect(panel, `the legacy panel no longer says ${snippet}`).toContain(snippet);
   });
 });

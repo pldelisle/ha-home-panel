@@ -73,6 +73,17 @@ describe("French's date axis", () => {
     expect(frenchAxis(input(), fmt)).toEqual((layer as {apex(o: ChartOptions): ChartOptions}).apex(input()));
   });
 
+  test("gives a tooltip's date format the day-first, 24-hour form the layer does, for each range's format", () => {
+    const {fmt, layer} = french();
+    for (const format of ['ddd h:mm tt', 'ddd h tt', 'ddd MMM d, h tt', 'ddd MMM d, yyyy']) {
+      const options = (): ChartOptions => ({...input(), tooltip: {shared: true, x: {format}}});
+      const result = frenchAxis(options(), fmt) as {tooltip: unknown};
+      expect(result.tooltip, format).toEqual(
+        (layer as {apex(o: ChartOptions): {tooltip: unknown}}).apex(options()).tooltip,
+      );
+    }
+  });
+
   test('gives a chart with no time axis the names and no label formats, and keeps the options it had', () => {
     const {fmt} = french();
     const options = frenchAxis({chart: {type: 'donut'}, labels: ['a']}, fmt) as {

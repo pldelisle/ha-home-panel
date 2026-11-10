@@ -1,6 +1,6 @@
 // Weather's history as pure functions: the API client's rows in, the series, the months, the records and the chart options out.
 // Pattern: functional core (Bernhardt, Boundaries), the data half of a humble object (Meszaros): each rule is the legacy
-// panel's own (loadWxHistory, renderSeason, loadWx, wxSheet) and the elements only place what comes out.
+// panel's own (loadWxHistory, renderSeason, loadWx, wxSheet, all deleted with the history sheet) and the elements only place what comes out.
 // Numbers come back as numbers, except in the season view and the chart callbacks, which take `fmt`, `t` and `now` as arguments.
 // Must not: call the API client or the cache, read the clock or the DOM, or pick a colour of its own (every colour is a caller's
 // token; `transparent` is the absence of one, and the sizes are the legacy options' constants).
@@ -290,6 +290,9 @@ export const statisticsStart = (now: number, days: number): Date =>
 /** How long the statistics stay fresh: the legacy panel's fifteen minutes. The pane's cache and the detail's refresh both read it. */
 export const STATISTICS_TTL_MS = 15 * 60_000;
 
+/** How long a tile's history stays fresh in the cache: the ten minutes the legacy sheet kept it. */
+export const HISTORY_TTL_MS = 10 * 60_000;
+
 /** How far back the seven-day charts reach. */
 export const WEEK_DAYS = 7;
 /** How far back the season reaches: every month since the records began, within the recorder's year and more. */
@@ -462,7 +465,9 @@ export const idsWithoutStatistics = (
 /**
  * The lines of a tile's chart over a range: each series from the statistics when the recorder has rows for it, else from the
  * plain history of its sensor (Environment Canada's chance, UV and AQHI sensors keep no statistics). A row is drawn at the middle of
- * its bucket, rounded to two digits, using the statistic the series names (the mean unless it asks for the maximum).
+ * its bucket, rounded to two digits, using the statistic the series names (the mean unless it asks for the maximum). The start of
+ * a request is the top of the hour (it must be stable for the cache to hit), so with `now` a row or a state from before `now`
+ * less the range's days is left out: the range is exactly what the legacy sheet drew.
  */
 export function tileHistory(
   definition: StatTileDefinition,
@@ -470,14 +475,23 @@ export function tileHistory(
   statRows: Readonly<Record<string, readonly StatisticRow[]>>,
   historyRows: Readonly<Record<string, readonly HistoryPoint[]>>,
   range: Range,
+  now?: number,
 ): TileSeriesData[] {
-  const {bucketMs} = RANGES[range];
+  const {bucketMs, days} = RANGES[range];
+  const from = now === undefined ? -Infinity : now - days * DAY_MS;
   return definition.series.flatMap(({entity, nameKey, unit, stat, dash = false}) => {
     const id = ids[entity];
     if (!id) return [];
     const points = hasStatistics(statRows, id)
-      ? statisticPoints(statRows[id], stat ?? 'mean', bucketMs / 2)
-      : thinned(historyRows[id] ?? [], bucketMs);
+      ? statisticPoints(
+          statRows[id].filter(row => row.start >= from),
+          stat ?? 'mean',
+          bucketMs / 2,
+        )
+      : thinned(
+          (historyRows[id] ?? []).filter(row => row.lastUpdated >= from),
+          bucketMs,
+        );
     return [{entity, nameKey, unit, dash, points}];
   });
 }

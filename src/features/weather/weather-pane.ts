@@ -1,7 +1,8 @@
-// <hp-weather-pane>: the Weather tab: on the phone the header, the summary card, the eight stat tiles and the detail's sheet, on a tablet the detail inline.
+// <hp-weather-pane>: the Weather tab: on the phone the header, the summary card, the eight stat tiles and the detail's sheet, on a tablet the detail inline,
+// and, over either, the sheet of the tile whose history is open.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over a view model: `weatherModel` runs in `willUpdate` and the template only
 // places what it returns, keyed (Lit docs, repeat); a store controller on the ids it reads (ADR 0012), paused while the pane is hidden. It owns
-// the statistics cache and hands the model and the cache to the detail, which it draws only while it is on screen.
+// the statistics caches and hands the model and a cache to the detail and the history, which it draws only while they are on screen.
 // Must not: read an entity itself (`readWeather` does, from the states it is handed), format a figure or hold a string the household reads, or open a sheet (it asks).
 import {ContextConsumer} from '@lit/context';
 import {LitElement, css, html, nothing, unsafeCSS, type PropertyValues} from 'lit';
@@ -10,9 +11,11 @@ import {readWeather} from './inputs.ts';
 import {weatherIds} from './ids.ts';
 import {weatherModel, type DayCell, type WeatherViewModel} from './model.ts';
 import {ForecastController} from './forecast-controller.ts';
-import {STATISTICS_TTL_MS} from './history.ts';
+import {HISTORY_TTL_MS, STATISTICS_TTL_MS} from './history.ts';
 import {DETAIL_SHEET, HISTORY_SHEET} from './sheets.ts';
+import type {TileKey} from './tiles.ts';
 import './weather-detail.ts'; // defines <hp-weather-detail>
+import './weather-history.ts'; // defines <hp-weather-history>
 import paneStyles from './styles.css?inline';
 import {createStatisticsCache, type StatisticsCache} from '../../core/statistics-cache.ts';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
@@ -32,11 +35,14 @@ export class WeatherPane extends LitElement {
   static override properties = {
     active: {type: Boolean, reflect: true},
     detailOpen: {type: Boolean},
+    historyTile: {},
   };
   /** Set by the shell: this pane is the tab on screen. A hidden pane listens to nothing and draws nothing. */
   declare active: boolean;
   /** Bound by the registry's template to the sheet host's `isOpen('weather.detail')`: the phone's sheet is on screen. */
   declare detailOpen: boolean;
+  /** Bound by the registry's template to the tile whose history the sheet host has open, or undefined: a sheet over the screen, on any tab. */
+  declare historyTile: TileKey | undefined;
 
   // The host lays itself out as the old pane did: a column with the sixteen pixels between its parts on the phone, a block on a
   // tablet, where the detail is its one child.
@@ -71,19 +77,22 @@ export class WeatherPane extends LitElement {
   private readonly forecast = new ForecastController(this);
   private view: WeatherViewModel | undefined;
   private cache: StatisticsCache | undefined;
+  private historyCache: StatisticsCache | undefined;
   private cacheGeneration = -1;
 
   constructor() {
     super();
     this.active = false;
     this.detailOpen = false;
-    // the cache is the pane's: the detail is drawn and dropped as the pane is shown and left, and a second opening within the
+    this.historyTile = undefined;
+    // the caches are the pane's: the detail is drawn and dropped as the pane is shown and left, and a second opening within the
     // fifteen minutes is the cache's hit; a client never changes for a given tree
     new ContextConsumer(this, {
       context: apiContext,
       subscribe: false,
       callback: api => {
         this.cache = createStatisticsCache(api, {ttlMs: STATISTICS_TTL_MS});
+        this.historyCache = createStatisticsCache(api, {ttlMs: HISTORY_TTL_MS});
       },
     });
   }
@@ -92,8 +101,8 @@ export class WeatherPane extends LitElement {
   // willUpdate is this one, where `updated` would draw twice.
   protected override willUpdate(changed: PropertyValues<this>): void {
     // the sheet over another tab (the Home card opens it) shows the pane's tab behind it, but it is the sheet that is on screen
-    const shown = this.active || this.detailOpen;
-    if (changed.has('active') || changed.has('detailOpen')) {
+    const shown = this.active || this.detailOpen || this.historyTile !== undefined;
+    if (changed.has('active') || changed.has('detailOpen') || changed.has('historyTile')) {
       if (shown) this.storeController.resume();
       else this.storeController.pause();
     }
@@ -106,6 +115,7 @@ export class WeatherPane extends LitElement {
     // the cached replies belong to the config they were asked under
     if (store.generation !== this.cacheGeneration) {
       this.cache?.clear();
+      this.historyCache?.clear();
       this.cacheGeneration = store.generation;
     }
     this.view = weatherModel(
@@ -127,8 +137,10 @@ export class WeatherPane extends LitElement {
     if (!view) return nothing;
     const compact = this.appearance.value?.compact === true;
     const {t} = this.storeController.store;
-    // The sheet over another tab (Home's card opens it): the pane is behind it and draws nothing but the sheet, so the tab stays.
-    if (!this.active && this.detailOpen && compact) return this.renderSheet(view);
+    // The sheets over another tab (Home's card opens the detail's, which opens a tile's history): the pane is behind them and draws
+    // nothing but them, so the tab stays.
+    if (!this.active && (this.detailOpen || this.historyTile !== undefined) && compact)
+      return html`${this.renderSheet(view)}${this.renderHistory()}`;
     // On a tablet the pane is the detail's place alone: the header is there and not shown, as the old pane's was, and the card, the
     // tiles and the sheet are the phone's.
     return html`<hp-pane-header .icon=${'wx'} .color=${'var(--m-blue)'} .heading=${t('weather.title')}>
@@ -136,7 +148,14 @@ export class WeatherPane extends LitElement {
       </hp-pane-header>
       ${compact ? this.renderCard(view, t('weather.card.open')) : this.renderInline(view)}${
         compact ? html`${this.renderSheet(view)}${this.renderTiles(view)}` : nothing
-      }`;
+      }${this.renderHistory()}`;
+  }
+
+  // a tile's history exists only while its sheet is open, so a closed one holds no chart and asks for nothing
+  private renderHistory() {
+    return this.historyTile
+      ? html`<hp-weather-history .tile=${this.historyTile} .cache=${this.historyCache}></hp-weather-history>`
+      : nothing;
   }
 
   // a tablet shows the detail in the pane while the pane is the tab; leaving the tab drops it, charts and radar with it

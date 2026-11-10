@@ -79,8 +79,7 @@
   color: var(--fg2);
   font-size: calc(13px * var(--tx));
 }
-.card:focus-visible,
-.tab:focus-visible {
+.card:focus-visible {
   outline: 2px solid var(--c-home);
   outline-offset: 2px;
 }
@@ -353,30 +352,6 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
-}
-.tabs {
-  display: flex;
-  gap: 4px;
-  background: var(--card2);
-  border-radius: 999px;
-  padding: 4px;
-  overflow-x: auto;
-}
-.tab {
-  border: 0;
-  background: transparent;
-  color: var(--fg2);
-  font: 600 calc(14px * var(--tx)) var(--f-body);
-  padding: 12px 16px;
-  min-height: 44px;
-  border-radius: 999px;
-  cursor: pointer;
-  white-space: nowrap;
-}
-.tab[aria-selected='true'] {
-  background: var(--card);
-  color: var(--fg);
-  box-shadow: var(--shadow);
 }
 .donut {
   display: flex;

@@ -20,6 +20,8 @@ declare global {
       forecast(type: 'daily' | 'hourly', entries: object[]): void;
       /** how many subscriptions with this message `type` the panel holds now */
       subscribed(type: string): number;
+      /** the recorder answers every statistics request of this period with an error (null: it answers again) */
+      failStatistics(period: '5minute' | 'hour' | 'day' | null): void;
       /** the messages of this `type` the panel has sent with `callWS` */
       asked(type: string): Array<{type: string; [field: string]: unknown}>;
     };

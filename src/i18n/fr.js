@@ -439,17 +439,13 @@ export const FR_MAP = {
   Away: 'Absent',
   // ---- weather ----
   Weather: 'Météo',
-  'Feels like': 'Ressenti',
   'same as the air': "comme l'air",
   'wind chill': 'refroidissement éolien',
   humidex: 'humidex',
   Wind: 'Vent',
   '· gusts {n}': '· rafales {n}',
-  Pressure: 'Pression',
   Humidity: 'Humidité',
-  'Dew point': 'Point de rosée',
   'dew point {n}°': 'point de rosée {n}°',
-  'UV index': 'Indice UV',
   UV: 'UV',
   Sun: 'Soleil',
   Sunrise: 'Lever du soleil',
@@ -463,7 +459,6 @@ export const FR_MAP = {
   High: 'Haut',
   Medium: 'Moyen',
   'chance today': "probabilité aujourd'hui",
-  'Rain or snow': 'Pluie ou neige',
   Rain: 'Pluie',
   Snow: 'Neige',
   Warmest: 'Le plus chaud',
@@ -1261,42 +1256,7 @@ export const FR_MAP = {
   History: 'Historique',
   'Over the period': 'Sur la période',
   'Loading history…': 'Chargement de l’historique…',
-  'No history yet for this one': 'Pas encore d’historique pour cette mesure',
-  'That sensor is not in Home Assistant right now.': 'Ce capteur n’est pas dans Home Assistant pour l’instant.',
-  Gusts: 'Rafales',
-  Chance: 'Probabilité',
   Air: 'Air',
-  'Wind chill': 'Refroidissement éolien',
-  Humidex: 'Humidex',
-  'Forecast high': 'Maximum prévu',
-  'Normal high': 'Maximum normal',
-  'Forecast low': 'Minimum prévu',
-  'Normal low': 'Minimum normal',
-  'Low risk': 'Risque faible',
-  'High risk': 'Risque élevé',
-  'Environment Canada, hourly observations': 'Environnement Canada, observations horaires',
-  'Relative humidity and dew point': 'Humidité relative et point de rosée',
-  'Barometric pressure': 'Pression barométrique',
-  'Chance of precipitation, as forecast': 'Probabilité de précipitations, selon les prévisions',
-  'Air Quality Health Index, Environment Canada': 'Cote air santé, Environnement Canada',
-  'Wind chill or humidex against the air temperature':
-    'Refroidissement éolien ou humidex contre la température de l’air',
-  "Today's forecast against the 30-year normals": 'Prévision du jour contre les normales sur 30 ans',
-  'Average wind speed, with the strongest gust in each period as the dashed line.':
-    'Vent moyen, avec la plus forte rafale de chaque période en pointillé.',
-  'Humidity on the left scale, dew point in degrees on the right. The closer the dew point to the air temperature, the damper it feels.':
-    'Humidité sur l’échelle de gauche, point de rosée en degrés à droite. Plus le point de rosée est près de la température de l’air, plus c’est humide.',
-  'A steady fall often means weather is on the way; a rise, clearing.':
-    'Une baisse régulière annonce souvent du mauvais temps; une hausse, une éclaircie.',
-  "Environment Canada's chance of rain or snow for the day, as it was announced.":
-    'Probabilité de pluie ou de neige du jour selon Environnement Canada, telle qu’annoncée.',
-  'Low up to 2, moderate 3 to 5, high 6 to 7, very high 8 to 10.':
-    'Faible jusqu’à 2, modéré de 3 à 5, élevé de 6 à 7, très élevé de 8 à 10.',
-  'Low risk 1 to 3, moderate 4 to 6, high 7 to 10.': 'Risque faible de 1 à 3, modéré de 4 à 6, élevé de 7 à 10.',
-  'Environment Canada only reports wind chill or humidex when they differ from the air temperature.':
-    'Environnement Canada ne donne le refroidissement éolien ou l’humidex que lorsqu’ils diffèrent de la température de l’air.',
-  'Forecast highs and lows as solid lines, the normals for the date dashed.':
-    'Maximums et minimums prévus en trait plein, normales de la date en pointillé.',
   // ---- footer ----
   // ---- idle clock smart stack (2.5.0) ----
   'Now playing': 'En lecture',
@@ -1511,13 +1471,6 @@ const FR_RX = [
   // a row that ends in a state ("Front door open", "Garage door offline") names one sensor; a " · " line
   // (the separator, with its spaces) is never one name, so it falls through to the piece-by-piece rule in frLook() (the same goes for the FR_DOOR rule below)
   [/^((?:(?! · ).)+) open$/, a => `${a} : ouverte`],
-  [
-    /^(.+) · (low|mean|high)$/,
-    (a, b) => {
-      const x = frLook(a);
-      return x == null ? null : `${x} · ${{low: 'min', mean: 'moyenne', high: 'max'}[b]}`;
-    },
-  ],
   [
     /^· (.+)$/,
     x => {

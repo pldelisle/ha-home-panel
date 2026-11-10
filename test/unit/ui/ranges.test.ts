@@ -31,6 +31,11 @@ const OLD = runInNewContext(
 ) as Record<Range, OldRange>;
 
 describe('RANGES against the class CRANGE', () => {
+  test('every range has a tab word, and it is the capitalised name the class gave its tab', () => {
+    for (const range of Object.keys(RANGES) as Range[])
+      expect(en[RANGES[range].tabKey]).toBe(range[0].toUpperCase() + range.slice(1));
+  });
+
   test('the same four ranges, in the order of their tabs', () => {
     expect(Object.keys(RANGES)).toEqual(Object.keys(OLD));
     expect(Object.keys(RANGES)).toEqual(['day', 'week', 'month', 'year']);
@@ -45,8 +50,7 @@ describe('RANGES against the class CRANGE', () => {
     expect([en[now.labelKey], en[now.shortKey], en[now.meanKey]]).toEqual([was.label, was.short, was.meanName]);
   });
 
-  test('the class thins plain history to the bucket of the period', () => {
-    expect(panel).toContain("const step = R.period === '5minute' ? 3e5 : R.period === 'hour' ? 36e5 : 864e5");
+  test('each range has the bucket of its statistics period: 5 minutes, an hour, a day', () => {
     expect(Object.values(RANGES).map(range => [range.period, range.bucketMs])).toEqual([
       ['5minute', 3e5],
       ['hour', 36e5],

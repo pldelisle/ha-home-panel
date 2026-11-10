@@ -1,7 +1,7 @@
 // The eight stat tiles of Weather as data: for each, the label and the history sheet's words as message keys, its series, scale and bands.
 // Pattern: table-driven design (a table, not eight branches), after the class's WX_DEF with every string replaced by a
 // message key and every colour token by a tone name; a ninth tile is one entry.
-// Must not: hold a string the household reads, a colour, an entity id (a series names the config key) or any logic beyond `tileDefinition`'s lookup.
+// Must not: hold a string the household reads, a colour, an entity id (a series names the config key) or any logic beyond the two lookups at the foot.
 import type {EntityKey} from '../../core/config.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
 
@@ -158,3 +158,7 @@ export const TILES: readonly StatTileDefinition[] = [
 
 /** The tile with this key. */
 export const tileDefinition = (key: TileKey): StatTileDefinition => TILES.find(tile => tile.key === key)!;
+
+/** The tile a sheet request names (`{key}`), or none: the request's detail is whatever its asker sent. */
+export const tileKeyOf = (detail: unknown): TileKey | undefined =>
+  TILES.find(tile => tile.key === (detail as {key?: unknown} | null | undefined)?.key)?.key;

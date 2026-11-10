@@ -107,21 +107,34 @@ describe('the Weather descriptor', () => {
   const weather = FEATURES.find(f => f.key === 'weather')!;
   const guest = {availability: () => ({}), moreLine: () => null};
 
-  test("is the registry's own, always shown, and binds its pane's detail sheet to the sheet host's answer", () => {
+  test("is the registry's own, always shown, and binds its pane to the sheet host's answers: the detail's `open`, the tile whose history is open", () => {
     expect(weather).toBe(weatherFeature);
     expect(weather.available).toBeUndefined();
     expect(weather.detailSheet).toBe('weather.detail');
-    const open = (isOpen: boolean) =>
-      weather.pane({store: store(), guest, sheetOpen: id => isOpen && id === 'weather.detail'});
-    expect(open(false).strings.join('')).toBe('<hp-weather-pane .detailOpen=></hp-weather-pane>');
-    expect(open(false).values).toEqual([false]);
-    expect(open(true).values).toEqual([true]);
+    expect(weather.overSheets).toEqual(['weather.history']);
+    const pane = (open: string | null, detail?: unknown) =>
+      weather.pane({
+        store: store(),
+        guest,
+        sheetOpen: id => id === open,
+        sheetDetail: id => (id === open ? detail : undefined),
+      });
+    expect(pane(null).values).toEqual([false, undefined]);
+    expect(pane('weather.detail').values).toEqual([true, undefined]);
+    expect(pane('weather.history', {key: 'wind'}).values).toEqual([false, 'wind']);
+    // a request that names no tile of the table opens nothing the pane could draw
+    expect(pane('weather.history', {key: 'rain'}).values).toEqual([false, undefined]);
   });
 
   test('says the temperature and the condition under More, and nothing before the house has been heard', () => {
-    expect(weather.summary?.({store: store(fakeHass.fromHouse(full)), guest, sheetOpen: () => false})).toBe(
-      '4° · Mainly sunny',
-    );
-    expect(weather.summary?.({store: store(), guest, sheetOpen: () => false})).toBeNull();
+    expect(
+      weather.summary?.({
+        store: store(fakeHass.fromHouse(full)),
+        guest,
+        sheetOpen: () => false,
+        sheetDetail: () => undefined,
+      }),
+    ).toBe('4° · Mainly sunny');
+    expect(weather.summary?.({store: store(), guest, sheetOpen: () => false, sheetDetail: () => undefined})).toBeNull();
   });
 });

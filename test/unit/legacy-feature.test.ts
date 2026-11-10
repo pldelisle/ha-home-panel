@@ -12,6 +12,7 @@ const env = (availability: Partial<Record<FeatureKey, boolean>>, line: string | 
   store: {t: (key: string) => `[${key}]`} as unknown as PanelStore,
   guest: {availability: () => availability, moreLine: () => line},
   sheetOpen: () => false,
+  sheetDetail: () => undefined,
 });
 
 const parts = {

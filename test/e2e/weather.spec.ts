@@ -122,15 +122,6 @@ test.describe('with a forecast', () => {
   });
 });
 
-test('a tile opens its history sheet with its title, and Escape closes it', async ({house}) => {
-  await openWeather(house);
-  await tiles(house).nth(0).locator('button').click();
-  await expect(house.root().locator('#sh-wx')).toBeVisible();
-  await expect(house.root().locator('#sh-wx #wxh')).toHaveText('Wind');
-  await house.page.keyboard.press('Escape');
-  await expect(house.root().locator('#sh-wx')).toBeHidden();
-});
-
 const detail = (house: House) => pane(house).locator('hp-weather-detail');
 const sheet = (house: House) => pane(house).locator('hp-sheet');
 
@@ -176,6 +167,21 @@ test('the Home card opens the detail over Home: Home stays the tab, a reload ret
   await house.page.keyboard.press('Escape');
   await expect(detail(house)).toHaveCount(0);
   await expect(card).toBeFocused();
+});
+
+// the detail over Home has tiles of its own, and one of them opens a history: the pane stays behind both and Home stays the tab
+test("a tile of the detail opened from Home's card opens its history over Home, and Escape closes it", async ({
+  house,
+}) => {
+  await house.root().locator('#hwx').click();
+  await detail(house).locator('button[data-wx="wind"]').click();
+  await expect(house.root().locator('hp-weather-history hp-sheet h2')).toHaveText('Wind');
+  await expect(detail(house)).toHaveCount(0);
+  await expect(house.root().locator('#pane-home')).toBeVisible();
+  await expect(house.root().locator('#pane-weather')).toBeHidden();
+  await house.page.keyboard.press('Escape');
+  await expect(house.root().locator('hp-weather-history')).toHaveCount(0);
+  await expect(house.root().locator('#pane-home')).toBeVisible();
 });
 
 test.describe('what it costs', () => {

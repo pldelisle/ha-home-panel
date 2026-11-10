@@ -97,7 +97,7 @@ const sensorName = n => String(n).replace(/^d[ée]tecteur\s+(de\s+)?mouvement\s+
 // Tabs view: one pane per subject, for a tablet fixed to the wall. Five panes host the detail sheets inline. The rail, the
 // phone's bar and the panes are the shell's (src/shell/features.ts); the guest fills what is inside them.
 // the sheets that wait for the charts library before they draw anything; the others never do
-const CHART_SHEETS = new Set(['sh-energy', 'sh-climate', 'sh-car', 'sh-air', 'sh-wx']);
+const CHART_SHEETS = new Set(['sh-energy', 'sh-climate', 'sh-car', 'sh-air']);
 const TAB_SHEET = {climate: 'sh-climate', car: 'sh-car', energy: 'sh-energy', air: 'sh-air'};
 // the tab whose pane hosts a sheet's panel
 const SHEET_TAB = /** @type {Record<string, import('./ui/feature.ts').FeatureKey>} */ (
@@ -325,95 +325,6 @@ const wxIcon = (c, sz = 28, day = true) => {
   }[k];
   return `<svg class="wxi" width="${sz}" height="${sz}" viewBox="0 0 24 24" role="img" aria-label="${esc(condName(c))}">${g}</svg>`;
 };
-// weather measures that open a history chart from the Weather sheet's tiles; a function of the entity ids (the panel's config), not a constant of the module
-const wxDef = e => ({
-  wind: {
-    title: 'Wind',
-    sub: 'Environment Canada, hourly observations',
-    series: [
-      {id: e.wind, name: 'Wind', unit: 'km/h'},
-      {id: e.gust, name: 'Gusts', unit: 'km/h', stat: 'max', dash: true},
-    ],
-    min: 0,
-    note: 'Average wind speed, with the strongest gust in each period as the dashed line.',
-  },
-  hum: {
-    title: 'Humidity',
-    sub: 'Relative humidity and dew point',
-    series: [
-      {id: e.hum, name: 'Humidity', unit: '%'},
-      {id: e.dew, name: 'Dew point', unit: '°', dash: true},
-    ],
-    note: 'Humidity on the left scale, dew point in degrees on the right. The closer the dew point to the air temperature, the damper it feels.',
-    dec: 1,
-  },
-  pres: {
-    title: 'Pressure',
-    sub: 'Barometric pressure',
-    series: [{id: e.pres, name: 'Pressure', unit: 'kPa'}],
-    dec: 1,
-    note: 'A steady fall often means weather is on the way; a rise, clearing.',
-  },
-  pop: {
-    title: 'Rain or snow',
-    sub: 'Chance of precipitation, as forecast',
-    series: [{id: e.pop, name: 'Chance', unit: '%'}],
-    min: 0,
-    max: 100,
-    step: true,
-    note: "Environment Canada's chance of rain or snow for the day, as it was announced.",
-  },
-  uv: {
-    title: 'UV index',
-    sub: 'Environment Canada',
-    series: [{id: e.uv, name: 'UV index', unit: ''}],
-    min: 0,
-    step: true,
-    bands: [
-      [0, 2, '--ok', 'Low'],
-      [3, 5, '--warn', 'Moderate'],
-      [6, 7, '--crit', 'High'],
-    ],
-    note: 'Low up to 2, moderate 3 to 5, high 6 to 7, very high 8 to 10.',
-  },
-  aqhi: {
-    title: 'Air quality',
-    sub: 'Air Quality Health Index, Environment Canada',
-    series: [{id: e.aqhi, name: 'AQHI', unit: ''}],
-    min: 0,
-    max: 10,
-    step: true,
-    bands: [
-      [1, 3, '--ok', 'Low risk'],
-      [4, 6, '--warn', 'Moderate'],
-      [7, 10, '--crit', 'High risk'],
-    ],
-    note: 'Low risk 1 to 3, moderate 4 to 6, high 7 to 10.',
-  },
-  feels: {
-    title: 'Feels like',
-    sub: 'Wind chill or humidex against the air temperature',
-    series: [
-      {id: e.outT, name: 'Air', unit: '°'},
-      {id: e.chill, name: 'Wind chill', unit: '°', dash: true},
-      {id: e.humidex, name: 'Humidex', unit: '°', dash: true},
-    ],
-    dec: 1,
-    note: 'Environment Canada only reports wind chill or humidex when they differ from the air temperature.',
-  },
-  normal: {
-    title: 'Normal',
-    sub: "Today's forecast against the 30-year normals",
-    series: [
-      {id: e.hi, name: 'Forecast high', unit: '°'},
-      {id: e.nhi, name: 'Normal high', unit: '°', dash: true},
-      {id: e.lo, name: 'Forecast low', unit: '°'},
-      {id: e.nlo, name: 'Normal low', unit: '°', dash: true},
-    ],
-    step: true,
-    note: 'Forecast highs and lows as solid lines, the normals for the date dashed.',
-  },
-});
 // ---------- climate helpers ----------
 // history ranges for the climate sheet: statistics period, span, and how the heatmap groups cells
 const CRANGE = {
@@ -995,14 +906,6 @@ export class LegacyPanel {
     <table class="slist"><thead><tr><th>Date</th><th class="hide-s">Time</th><th class="r hide-s">Length</th><th>Energy</th><th class="r hide-s">Peak</th><th class="r">Est. cost</th></tr></thead><tbody id="slist"></tbody></table>
     <button class="more" type="button" id="smore"></button></div>
   <div class="two"><div class="inner" id="car-ford"></div><div class="inner" id="car-last"></div></div>
-</div></div>
-<div class="sheet" id="sh-wx" hidden><div class="panel" role="dialog" aria-modal="true" aria-labelledby="wxh">
-  <div class="ph"><span class="badge" style="--acc:var(--m-blue)">${ico('wx', 26)}</span>
-    <div class="grow"><h2 id="wxh">History</h2><div class="sub" id="wxsub"></div></div>
-    <div class="tabs" role="tablist" id="wxtabs">${['day', 'week', 'month', 'year'].map(r => `<button class="tab" role="tab" aria-selected="${r === 'week'}" data-r="${r}">${cap(r)}</button>`).join('')}</div>
-    <button class="icon close" type="button" aria-label="Close">✕</button></div>
-  <div class="inner"><h3 id="wxt"></h3><p id="wxp"></p><div class="legend" id="wxleg"></div><div id="c-wx"><p class="loading">Loading history…</p></div></div>
-  <div class="inner" style="margin-top:16px"><h3>Over the period</h3><div class="tiles" id="wxstats" style="margin-top:10px"></div></div>
 </div></div>
 <div class="sheet" id="sh-sens" hidden><div class="panel" role="dialog" aria-modal="true" aria-labelledby="sensh">
   <div class="ph"><span class="badge" id="sensbadge" style="--acc:var(--c-home)">${ico('door', 26)}</span>
@@ -2007,12 +1910,6 @@ export class LegacyPanel {
       n && n.focus();
     });
     this.panels['sh-air'].addEventListener('click', e => this.airControl(e));
-    this.$('wxtabs').addEventListener('click', e => {
-      const b = e.target.closest('.tab');
-      if (!b || b.dataset.r === this.wxRange) return;
-      this.wxRange = b.dataset.r;
-      this.wxSheet();
-    });
     this.$('senstabs').addEventListener('click', e => {
       const b = e.target.closest('.tab');
       if (!b || b.dataset.r === this.sensRange) return;
@@ -3284,7 +3181,6 @@ export class LegacyPanel {
       if (id === 'sh-car') this.carSheet();
       if (id === 'sh-air') this.airSheet();
       if (id === 'sh-cam') this.camSheet();
-      if (id === 'sh-wx') this.wxSheet();
       if (id === 'sh-sens') this.sensSheet();
       if (id === 'sh-light') this.renderLightSheet();
     } catch (e) {
@@ -3538,10 +3434,6 @@ export class LegacyPanel {
   // Home's card (`wxDays`) still reads `this.fc`. Deleted with its last reader (the Home move).
   forecastChanged(type, forecast) {
     this.fc[type] = forecast;
-  }
-  // a Weather tile of the pane asked for its history (the shell hears the pane's request); deleted with `openWx` (#159)
-  openWeatherHistory(key) {
-    this.openWx(key);
   }
   // Temporary until Home's card and the idle clock move: `wxDays`, `dayName`, `alerts`, `sunDay`
   wxDays() {
@@ -5896,22 +5788,7 @@ export class LegacyPanel {
     if (open) this.renderAttention();
   }
 
-  // ---------- weather history: one measure from the Weather sheet, Day / Week / Month / Year ----------
-  // the measures built from this panel's entity ids; built again only when the config hands out a new entity map
-  wxDefs() {
-    const e = this.E;
-    if (this.wxDefsFor !== e) {
-      this.wxDefsFor = e;
-      this.wxDefsOf = wxDef(e);
-    }
-    return this.wxDefsOf;
-  }
-  openWx(key) {
-    if (!this.wxDefs()[key]) return;
-    this.wxKey = key;
-    this.wxRange = this.wxRange || 'week';
-    this.sheets.open('sh-wx');
-  }
+  // ---------- sensor history: a door or motion sensor, Day / Week ----------
   openSens(id) {
     const x = this.sensors().find(s => s.id === id);
     if (!x) return;
@@ -6000,156 +5877,6 @@ export class LegacyPanel {
       .map(tile)
       .join('');
   }
-  async wxSheet() {
-    if (!this.ApexCharts) return; // a tap while the chunk is loading; buildSheet draws it when it lands
-    const D = this.wxDefs()[this.wxKey],
-      r = this.wxRange,
-      R = CRANGE[r],
-      tag = (this.wxTag = Symbol()),
-      s = this.S();
-    this.$('wxh').textContent = D.title;
-    this.$('wxsub').textContent = D.sub;
-    this.root.querySelectorAll('#wxtabs .tab').forEach(t => t.setAttribute('aria-selected', t.dataset.r === r));
-    this.$('wxt').textContent = `${D.title}, ${R.label}`;
-    this.$('wxp').textContent = D.note || '';
-    const ser = D.series.filter(x => this.st(x.id));
-    if (!ser.length) {
-      this.$('c-wx').innerHTML = '<p>That sensor is not in Home Assistant right now.</p>';
-      this.$('wxstats').innerHTML = '';
-      return;
-    }
-    let C;
-    try {
-      C = await this.loadWx(ser, r);
-    } catch (e) {
-      if (e instanceof StaleReply) return;
-      console.error('home-panel weather history', e);
-      this.$('c-wx').innerHTML = '<p>History is not available right now.</p>';
-      return;
-    }
-    if (tag !== this.wxTag || !this.sheets.isOpen('sh-wx')) return;
-    if (!C.some(x => x.pts.length)) {
-      this.$('c-wx').innerHTML = '<p class="loading">No history yet for this one</p>';
-      this.$('wxleg').innerHTML = '';
-      this.$('wxstats').innerHTML = '';
-      return;
-    }
-    const cols = [s.home, s.wh, s.heat, s.ev],
-      units = [...new Set(ser.map(x => x.unit))];
-    this.$('wxleg').innerHTML = this.legend(C.map((x, i) => [cols[i % 4], x.name]));
-    const yax = u => ({
-      min: D.min,
-      max: D.max,
-      forceNiceScale: D.max == null,
-      labels: {
-        formatter: v => (v == null ? '' : `${this.fmtEn.number(+v, D.dec ?? 0)}${u === '°' ? '°' : ''}`),
-      },
-      title: {text: u === '°' ? '' : u, style: {color: this.css('--fg3'), fontWeight: 500}},
-    });
-    const yaxis =
-      units.length === 1
-        ? yax(units[0])
-        : ser.map((x, i) => ({
-            ...yax(x.unit),
-            seriesName: ser.find(y => y.unit === x.unit).name,
-            opposite: units.indexOf(x.unit) > 0,
-            show: ser.findIndex(y => y.unit === x.unit) === i,
-          }));
-    const lbl = t => ({
-      text: t,
-      position: 'left',
-      textAnchor: 'start',
-      offsetX: 8,
-      borderWidth: 0,
-      style: {background: 'transparent', color: this.css('--fg3'), fontSize: '11px'},
-    });
-    this.mk(
-      'c-wx',
-      merge(this.base(300), {
-        chart: {type: 'line'},
-        series: C.map(x => ({name: x.name, data: x.pts})),
-        colors: C.map((x, i) => cols[i % 4]),
-        stroke: {
-          width: C.map(x => (x.dash ? 1.6 : 2.2)),
-          dashArray: C.map(x => (x.dash ? 5 : 0)),
-          curve: D.step ? 'stepline' : 'smooth',
-        },
-        markers: {size: 0},
-        xaxis: {type: 'datetime', min: Date.now() - R.days * 864e5, max: Date.now(), labels: {datetimeUTC: false}},
-        yaxis,
-        annotations: {
-          yaxis: (D.bands || []).map(([y, y2, c, t]) => ({
-            y,
-            y2,
-            fillColor: this.css(c),
-            opacity: 0.09,
-            borderColor: 'transparent',
-            label: lbl(t),
-          })),
-        },
-        tooltip: {
-          shared: true,
-          x: {format: R.tipFmt},
-          y: {
-            formatter: (v, o) =>
-              v == null ? '–' : `${this.fmtEn.number(+v, D.dec ?? 1)} ${(ser[o.seriesIndex] || {}).unit || ''}`,
-          },
-        },
-      }),
-    );
-    this.$('wxstats').innerHTML = C.filter(x => x.pts.length)
-      .flatMap(x => {
-        const v = x.pts.map(p => p[1]).filter(n => n != null),
-          f = n => this.fmtEn.number(+n, D.dec ?? 1);
-        return [
-          [`${x.name} · low`, f(Math.min(...v)), x.unit],
-          [`${x.name} · mean`, f(sum(v) / v.length), x.unit],
-          [`${x.name} · high`, f(Math.max(...v)), x.unit],
-        ];
-      })
-      .map(tile)
-      .join('');
-  }
-  // statistics when the sensor has them, else its plain state history (Environment Canada's chance, UV and AQHI sensors keep no statistics)
-  async loadWx(ser, r) {
-    const k = this.wxKey + ':' + r,
-      c = (this.WXR = this.WXR || {})[k];
-    if (c && Date.now() - c.at < 10 * 60000) return c.data;
-    const R = CRANGE[r],
-      start = new Date(Date.now() - R.days * 864e5),
-      ids = ser.map(x => x.id);
-    const stt = await this.api.statistics(ids, R.period, start, ['mean', 'min', 'max']);
-    const missing = ser.filter(x => !(stt[x.id] || []).length).map(x => x.id);
-    let hist = {};
-    if (missing.length)
-      hist = await this.api.history(missing, start, {minimal: true, attributes: false}).catch(noHistory);
-    const data = ser.map(x => {
-      const rows = stt[x.id] || [];
-      if (rows.length)
-        return {
-          ...x,
-          pts: rows
-            .filter(y => y[x.stat || 'mean'] != null)
-            .map(y => [ms(y.start) + R.mid, +(+y[x.stat || 'mean']).toFixed(2)]),
-        };
-      const h = (hist[x.id] || []).map(y => [y.lastUpdated, parseFloat(y.state)]).filter(y => Number.isFinite(y[1]));
-      // thin raw history to the range's step so the chart stays light
-      const step = R.period === '5minute' ? 3e5 : R.period === 'hour' ? 36e5 : 864e5,
-        out = [];
-      let last = -1;
-      h.forEach(y => {
-        const b = Math.floor(y[0] / step);
-        if (b !== last) {
-          out.push([b * step + step / 2, y[1]]);
-          last = b;
-        }
-      });
-      return {...x, pts: out};
-    });
-    this.WXR[k] = {at: Date.now(), data};
-    return data;
-  }
-
   // ---------- climate sheet ----------
   climateSummary() {
     const L = this.live(),

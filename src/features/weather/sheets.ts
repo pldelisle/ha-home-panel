@@ -4,5 +4,5 @@
 
 /** The detail: inline in the pane on a tablet, a sheet over the screen on a phone. */
 export const DETAIL_SHEET = 'weather.detail';
-/** A tile's history; the shell opens the legacy sheet for it until the history is an element (#159). */
+/** A tile's history, over the screen on every tab: its request says which tile (`{key}`), and the pane draws it. */
 export const HISTORY_SHEET = 'weather.history';

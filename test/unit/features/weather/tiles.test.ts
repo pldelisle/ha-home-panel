@@ -1,12 +1,11 @@
-// TILES, the condition names and the catalog words, against the legacy panel's tables (`wxDef`, `COND`), which they copy.
-// The guard exists while the class still holds those tables: the ticket that deletes `wxDef` (the history move) deletes this
-// file's guard tests with it, and until then a drift in either copy fails here.
+// TILES as data, and the condition names against the legacy panel's `COND`, which they copy (Home and the idle clock still read it:
+// the guard goes with `COND` when the last of them moves). `wxDef`, the class's table of the tiles, went with the history sheet (#159).
 import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
 import {describe, expect, test} from 'vitest';
 import {en} from '../../../../src/core/i18n/en.ts';
 import {EC_SUFFIX} from '../../../../src/core/entities.ts';
-import {tileDefinition, TILES, type Tone} from '../../../../src/features/weather/tiles.ts';
+import {tileDefinition, tileKeyOf, TILES} from '../../../../src/features/weather/tiles.ts';
 
 const panel = readFileSync(new URL('../../../../src/home-panel.js', import.meta.url), 'utf8');
 
@@ -22,50 +21,7 @@ function evaluate(start: string, end: string): unknown {
   return runInNewContext(`(${text})`) as unknown;
 }
 
-interface OldDefinition {
-  title: string;
-  sub: string;
-  note: string;
-  series: {id: string; name: string; unit: string; stat?: string; dash?: boolean}[];
-  min?: number;
-  max?: number;
-  step?: boolean;
-  dec?: number;
-  bands?: [number, number, string, string][];
-}
-
-// the class's table is a function of the entity ids; given each key itself, a series says which key it reads
-const oldTable = (
-  evaluate('const wxDef = ', '\n// ---------- climate helpers') as (
-    e: Record<string, string>,
-  ) => Record<string, OldDefinition>
-)(new Proxy({}, {get: (_, key) => String(key)}));
-
 const OLD_COND = evaluate('const COND = ', '\nconst condName') as Record<string, string>;
-
-const TONES: Record<string, Tone> = {'--ok': 'ok', '--warn': 'warn', '--crit': 'crit'};
-
-describe('TILES against the class wxDef', () => {
-  test('the same eight measures, the pane shows them in its own order', () => {
-    expect(TILES.map(t => t.key).sort()).toEqual(Object.keys(oldTable).sort());
-    expect(TILES.map(t => t.key)).toEqual(['wind', 'hum', 'feels', 'pres', 'uv', 'aqhi', 'pop', 'normal']);
-  });
-
-  test.each(TILES.map(tile => [tile.key] as const))('%s: the words, the series, the scale and the bands', key => {
-    const tile = tileDefinition(key);
-    const was = oldTable[key];
-    expect(en[tile.labelKey]).toBe(was.title);
-    expect(en[tile.subKey]).toBe(was.sub);
-    expect(en[tile.noteKey]).toBe(was.note);
-    expect(
-      tile.series.map(s => ({id: s.entity, name: en[s.nameKey], unit: s.unit, stat: s.stat, dash: s.dash})),
-    ).toEqual(was.series.map(s => ({id: s.id, name: s.name, unit: s.unit, stat: s.stat, dash: s.dash})));
-    expect([tile.min, tile.max, tile.stepline, tile.dec]).toEqual([was.min, was.max, was.step, was.dec]);
-    expect((tile.bands ?? []).map(b => [b.from, b.to, b.tone, en[b.labelKey]])).toEqual(
-      (was.bands ?? []).map(([from, to, token, label]) => [from, to, TONES[token], label]),
-    );
-  });
-});
 
 describe('the condition names against the class COND', () => {
   test('every Home Assistant condition has the class text in the English catalog, and no other key is there', () => {
@@ -98,5 +54,14 @@ describe('TILES as data', () => {
 
   test('tileDefinition finds a tile by its key', () => {
     expect(tileDefinition('uv').labelKey).toBe('weather.tile.uv.label');
+  });
+
+  test('the pane shows the eight in the order of their tiles', () => {
+    expect(TILES.map(t => t.key)).toEqual(['wind', 'hum', 'feels', 'pres', 'uv', 'aqhi', 'pop', 'normal']);
+  });
+
+  test('tileKeyOf reads the key of a sheet request, and nothing from anything else', () => {
+    expect(tileKeyOf({key: 'pres'})).toBe('pres');
+    for (const bad of [undefined, null, 'wind', {}, {key: 'rain'}, {key: 7}]) expect(tileKeyOf(bad)).toBeUndefined();
   });
 });
