@@ -50,6 +50,9 @@ describe('the registry', () => {
       ...FEATURES.map(f => [f.title, en[f.title]] as [keyof typeof en, string]),
     ];
     labels.push(['auto.short', en['auto.short']], ['nav.more', en['nav.more']]);
+    // the More sheet's title and its Close button, which the sheet draws from the catalog (its line under the title,
+    // 'All sections', was compared byte for byte once and left the map; the French baseline of the sheet holds it)
+    labels.push(['more.title', en['more.title']], ['more.close', en['more.close']]);
     for (const [key, english] of labels) expect(fr[key], key).toBe(FR_MAP[english]);
   });
 });

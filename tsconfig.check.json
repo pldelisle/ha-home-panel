@@ -13,6 +13,7 @@
   },
   "include": [
     "src/types.d.ts",
+    "src/env.d.ts",
     "src/stack.js",
     "src/fonts.js",
     "src/core/**/*.ts",

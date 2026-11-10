@@ -8,7 +8,7 @@ import type {PanelApi} from '../core/api.ts';
 import type {PanelSettings} from '../core/settings.ts';
 import type {HassChange, PanelStore} from '../core/store.ts';
 import type {Appearance} from '../ui/contexts.ts';
-import type {FeatureDescriptor, FeatureKey, GuestAnswers} from './feature.ts';
+import type {FeatureKey, GuestAnswers} from './feature.ts';
 import type {IdleTimer} from './idle-timer.ts';
 
 /** What the shell hands the guest when it connects: the root, the host, the services and the shell's own few doors. */
@@ -50,20 +50,12 @@ export interface GuestRenderer extends GuestAnswers {
    * #188); the lens half also waits for #198.
    */
   appearanceChanged(appearance: Appearance): void;
-  /** Step C only: the shell's More button asks for the guest's More sheet, deleted by #166 (`<hp-more-sheet>`). */
-  openMore(): void;
   /**
    * Step D: the idle clock is showing (true) or the panel woke (false). The shell has drawn `.app.idle` and the overlay by
    * then; the guest draws the clock into `#iwrap`. Told once per change. Deleted with the clock's own move (#187).
    */
   idleChanged(idle: boolean): void;
 }
-
-/** One section the phone's More sheet lists, as the registry gives it; deleted by #166 (`<hp-more-sheet>`). */
-export type MoreSection = Pick<FeatureDescriptor, 'key' | 'icon' | 'color'> & {
-  /** The label, in the panel's language. */
-  label: string;
-};
 
 /** What the guest may ask of the shell, and what it may read of it. Deleted whole with the guest; `tab`, `compact`, `setTab` and `requestFrame` live as long as it does. */
 export interface ShellForGuest {
@@ -80,8 +72,6 @@ export interface ShellForGuest {
   requestFrame(): void;
   /** The guest is about to draw its markup again: the shell renders its frame afresh and returns when it is in the DOM. Deleted with the guest's `build`. */
   resetFrame(): void;
-  /** The sections that sit under More, in rail order; deleted by #166 (`<hp-more-sheet>`). */
-  moreSections(): readonly MoreSection[];
   /**
    * Step D: the shell's idle timer. `arm` counts as a touch (the guest drew again); `sleepNow` shows the clock at once,
    * on a phone too. The controller's `start` is the shell's own, at connection. Deleted with the guest's clock (#187).

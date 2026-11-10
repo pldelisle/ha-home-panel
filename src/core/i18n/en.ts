@@ -18,6 +18,10 @@ export const en = {
   'auto.title': 'Automations',
   'auto.short': 'Rules',
   'nav.more': 'More',
+  // the phone's More sheet (src/shell/more-sheet.ts): its title, the line under it and its Close button
+  'more.title': 'More',
+  'more.sub': 'All sections',
+  'more.close': 'Close',
   // the configuration card: a title, a lead line, one message per kind of problem (src/core/config.ts), a footer;
   // wrongType's {expected} and {got} are plain words (text, number, yesno, list, block, nothing), which the message words
   'config.title': "Check the panel's configuration",

@@ -42,7 +42,6 @@ test('the class defines the guest methods', () => {
     'tabChanged',
     'compactChanged',
     'appearanceChanged',
-    'openMore',
     'availability',
     'moreLine',
   ])
@@ -75,6 +74,14 @@ test("the class draws no frame: the tabs, the rail gate and the phone query are 
   for (const gone of ['gateTabs', 'data-tab', 'data-more', 'renderMoreTab', 'max-width:599px', 'this.mq'])
     expect(panel.includes(gone), gone).toBe(false);
   expect(panel).toMatch(/this\.ctx\.shell\.setTab\(/);
+});
+
+// Spec 14, step C (#166): the phone's More sheet is `<hp-more-sheet>`, an element of the shell drawn from the registry, so the
+// class holds no markup, no renderer and no door for it.
+test("the class draws no More sheet: it is the shell's element", () => {
+  for (const gone of ['sh-more', 'morelist', 'moreSections', 'openMore'])
+    expect(panel.includes(gone), gone).toBe(false);
+  expect(panel).not.toMatch(/renderMore\b/);
 });
 
 test('the config is de-duplicated on the store generation, not on its own copy of the config', () => {

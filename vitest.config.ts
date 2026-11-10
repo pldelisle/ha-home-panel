@@ -18,7 +18,8 @@ export default defineConfig({
         'src/core/**/*.ts',
         'src/providers/**/*.ts',
         'src/features/*/{ids,inputs,model,tiles,history}.ts', // the pure files; the elements are proven by the harness
-        'src/ui/ranges.ts', // the kit's one pure file; its elements are proven by the harness
+        'src/ui/ranges.ts', // the kit's pure files; its elements are proven by the harness
+        'src/ui/styles/host.ts',
         'src/shell/guest.ts',
         'src/shell/features.ts',
         'src/shell/idle-timer.ts', // the table and its controller; the host is a stub, no element is mounted
@@ -37,6 +38,7 @@ export default defineConfig({
         'src/providers/**/*.ts': {statements: 100},
         'src/features/*/{ids,inputs,model,tiles,history}.ts': {statements: 100},
         'src/ui/ranges.ts': {statements: 100},
+        'src/ui/styles/host.ts': {statements: 100},
         'src/shell/guest.ts': {statements: 100},
         'src/shell/features.ts': {statements: 100},
         'src/shell/idle-timer.ts': {statements: 100, branches: 100},

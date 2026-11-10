@@ -15,7 +15,7 @@ export type FeatureKey =
 export interface GuestAnswers {
   /** Which subjects this house has something for (false: it lacks them); a missing key means no opinion. */
   availability(): Partial<Record<FeatureKey, boolean>>;
-  /** The word under a section in the phone's More sheet, or null when the section has none. */
+  /** The word under a section in the phone's More sheet, in the panel's language, or null when the section has none. */
   moreLine(key: FeatureKey): string | null;
 }
 
