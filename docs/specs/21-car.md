@@ -2,7 +2,7 @@
 
 Parent: [production-grade-refactor.md](production-grade-refactor.md), phase 3.
 Depends on: [16 Media](16-media.md) (`runCommand`, the overlay, `<hp-switch>`), [19 Energy](19-energy.md) (the Wallbox provider, history on demand, `thinCategories`), [20 Climate](20-climate.md) (`<hp-seg>`, `ArmedController`, `.abtn` in the kit). Blocks: 22 Live pill (the FordPass provider's charging state), 24 Home (the car tile).
-Ships as: three pull requests, each a patch release, each pixel-identical. No new ADR: 0021 to 0025 apply; the notes record the last `pend`/`call` users and why the sessions are the car's.
+Ships as: three pull requests, each a patch release, each pixel-identical. No new ADR: 0021 to 0027 apply; the notes record the last `pend`/`call` users and why the sessions are the car's.
 
 The key words MUST, MUST NOT, SHOULD, SHOULD NOT and MAY are to be read as in RFC 2119.
 
@@ -37,7 +37,7 @@ Each pull request leaves every baseline identical.
 5. As an adopter without a FordPass car, I want no Car tab and no car tile, as today; with another car integration, I want the provider seam to be where my adapter goes.
 6. As a maintainer, I want the FordPass reading (prefix discovery, the charging and plug states, the tire pressure units, the schedule's shape) in one provider with tests, so that Ford's quirks are named where they live.
 7. As a maintainer, I want the charging sessions as a pure function over the Wallbox's hourly rows, tested with literal rows (gaps, the 1 kWh floor), so that the rule is pinned.
-8. As a maintainer, I want the class's `loadHistory` and `derive` gone with this move, so that the history layer is per feature everywhere (ADR 0024 complete).
+8. As a maintainer, I want the class's `loadHistory` and `derive` gone with this move, so that the history layer is per feature everywhere (ADR 0026 complete).
 9. As a maintainer, I want the live pill and the upcoming list to read the FordPass provider, so that the dependency rule holds when they move.
 10. As a maintainer, I want the behaviour tests to open the detail, arm and confirm remote start, change the amps, edit and save a schedule through the harness, and to keep `car-departure.spec.ts`'s cases, so that the tests survive the rewrite.
 11. As a learner, I want the draft-state pattern (edit locally, validate, send once) named and explained, so that the next form in the panel follows it.
@@ -180,7 +180,7 @@ The seams are the two of ADR 0005. New in kind: a custom service call (`fordpass
 
 ## Notes
 
-- **Why the sessions are the car's and not Energy's.** They are derived from the Wallbox's hourly rows, which only the car reads at that resolution; Energy's hourly flow uses the same sensor for seven days, a different window. ADR 0024's rule (a feature loads its own windows) puts the year of Wallbox hours here.
+- **Why the sessions are the car's and not Energy's.** They are derived from the Wallbox's hourly rows, which only the car reads at that resolution; Energy's hourly flow uses the same sensor for seven days, a different window. ADR 0026's rule (a feature loads its own windows) puts the year of Wallbox hours here.
 - **Why the detail stops redrawing every second.** `renderCarSheetLive` was on the tick because the class had no per-entity notification; the store has one. "the car last checked in at" reads a state, not the clock, so nothing in the block depends on now.
 - **Why the draft is element state and not in the store.** It is one person's unsaved edit on one screen; the store holds the house's state. If a second screen needed the draft, it would move to a provider-like module, which is the test the pattern note gives.
 - **Reading**: Fowler, _PoEAA_ (Unit of Work, for the draft); Nielsen Norman Group on confirmation taps; Home Assistant developer docs, _Lock_, _Number_, _Switch_, `image` entities and the image proxy; the FordPass integration's services (`update_departure_schedule`) and sensor attributes.

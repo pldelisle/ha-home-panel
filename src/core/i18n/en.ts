@@ -14,6 +14,9 @@ export const en = {
   'energy.title': 'Energy',
   'air.title': 'Air',
   'media.title': 'Media',
+  // what a television that has no name of its own is called, by its source (src/providers/samsung-tv.ts, tv-entity.ts)
+  'media.samsungTv': 'Samsung TV',
+  'media.tv': 'TV',
   'cams.title': 'Security',
   'auto.title': 'Automations',
   'auto.short': 'Rules',

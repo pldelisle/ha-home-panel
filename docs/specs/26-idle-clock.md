@@ -2,7 +2,7 @@
 
 Parent: [production-grade-refactor.md](production-grade-refactor.md), phase 3.
 Depends on: [14 Lit shell](14-lit-shell.md) step D (the `IdleTimer` controller owns idle; the guest draws the clock), [15 Weather](15-weather.md) (`weatherIcon`, `sunTimes`, the weather provider's condition), [19 Energy](19-energy.md) (`powerNow` for the inside temperature), [24 Home](24-home.md) (`features/stack/` and `<hp-smart-stack>`). Blocks: the phase gate (#188).
-Ships as: two pull requests, each a patch release, each pixel-identical. ADR 0027 (the guest is gone) lands with the second.
+Ships as: two pull requests, each a patch release, each pixel-identical. ADR 0029 (the guest is gone) lands with the second.
 
 The key words MUST, MUST NOT, SHOULD, SHOULD NOT and MAY are to be read as in RFC 2119.
 
@@ -17,7 +17,7 @@ After specs 15 to 25 the class holds the idle clock, the guest's plumbing (`conn
 In two pull requests:
 
 1. **The clock feature and the idle screen.** `src/features/clock/` draws the clock, the date, the temperatures, the weather icon and the next sun event from `clockModel` over the providers; `src/shell/idle-screen.ts` composes `<hp-idle-screen>` from `<hp-clock>` and `<hp-smart-stack>` (spec 24) with the drift as a shell rule, rendered by the shell inside the `.idle` overlay that `IdleTimer` already toggles; the guest's `renderIdle`, its 20-second interval and `idleChanged` go.
-2. **The guest is deleted.** `src/home-panel.js`, `src/legacy/`, `src/charts/`, `src/styles.js`'s legacy concatenation (what remains of `src/css/` is either moved into the kit or deleted as dead), `src/types.d.ts`, `src/shell/guest.ts` with `registerGuest` and the `.guest` container, `test/unit/methods.test.mjs`, the legacy-only entries of `.dependency-cruiser.cjs` and `scripts/legacy-set.cjs`; `src/main.js` defines the element and nothing else; the French rewrite layer (`src/i18n/fr.js` and its observer) is kept for phase 4 but has no DOM to observe until then, so its start is removed from the shell and the module is listed as phase 4's; ADR 0027 records the end of the strangler fig.
+2. **The guest is deleted.** `src/home-panel.js`, `src/legacy/`, `src/charts/`, `src/styles.js`'s legacy concatenation (what remains of `src/css/` is either moved into the kit or deleted as dead), `src/types.d.ts`, `src/shell/guest.ts` with `registerGuest` and the `.guest` container, `test/unit/methods.test.mjs`, the legacy-only entries of `.dependency-cruiser.cjs` and `scripts/legacy-set.cjs`; `src/main.js` defines the element and nothing else; the French rewrite layer (`src/i18n/fr.js` and its observer) is kept for phase 4 but has no DOM to observe until then, so its start is removed from the shell and the module is listed as phase 4's; ADR 0029 records the end of the strangler fig.
 
 Each pull request leaves every baseline identical (`idle-stack-*`, and every other).
 
@@ -29,7 +29,7 @@ Each pull request leaves every baseline identical (`idle-stack-*`, and every oth
 4. As a maintainer, I want the clock's text as a pure model at a given instant, tested in both languages, so that the one view the tablet shows all day is pinned.
 5. As a maintainer, I want the drift to be a pure function of a seed and the tick, so that the "never further than 20 px" rule of `idle.spec.ts` is a unit fact too.
 6. As a maintainer, I want the class, the guest interface, the registration and the methods-exist test deleted in one pull request, with the legacy footprint at zero, so that phase 3's gate is reachable.
-7. As a learner, I want ADR 0027 to tell the story of the strangler fig in numbers (the footprint on each release, the lines deleted per move), so that the method is recorded with its outcome.
+7. As a learner, I want ADR 0029 to tell the story of the strangler fig in numbers (the footprint on each release, the lines deleted per move), so that the method is recorded with its outcome.
 
 ## Implementation Decisions
 
@@ -87,7 +87,7 @@ export function clockModel(inputs: ClockInputs, deps: {t: Translate; fmt: Format
 - `src/styles.js` and `src/css/`: what remains in `src/css/` after the moves is checked rule by rule: a rule the kit or a feature needs was moved by its spec; what is left is dead and is deleted with the file; `src/styles.js` goes; the shell's `static styles` is the kit's sheets only. `src/fonts.js` moves to `src/ui/fonts.ts` (the Montserrat `@font-face` rules; `fonts.test.mjs` adjusted).
 - `src/shell/guest.ts`, `registerGuest`, `createGuest`, the `.guest` container and every `guest.*` call in the shell, `legacy-feature.ts` (no legacy descriptor remains), the `LegacySheet` registration in the sheet host: deleted. `src/main.js`: `import {HomePanel} from './shell/home-panel.ts'; if (!customElements.get('home-panel')) customElements.define('home-panel', HomePanel);` and the version log line.
 - `test/unit/methods.test.mjs`, `tsconfig.legacy.json`, `scripts/legacy-set.cjs` (the set is empty; the lint's footprint line prints 0 from an empty set, then the script and the line go in the gate), the legacy rules of `.dependency-cruiser.cjs` (`not-to-legacy`, the legacy-to-providers and legacy-to-automations allowances), `test/unit/architecture.test.mjs`'s legacy half: deleted or reduced; `scripts/arch-graph.mjs`'s legacy collapse: removed.
-- ADR 0027, "The guest is gone": the date, the footprint by release (from the changelog), the lines of `src/home-panel.js` at the start of phase 3 and after each move (quoted from the pull requests), the bundle size before and after, what the strangler fig cost (the bridge, the allowances, the duplicated rules listed per spec) and what it bought (a panel that never went dark, baselines that never changed except by approval).
+- ADR 0029, "The guest is gone": the date, the footprint by release (from the changelog), the lines of `src/home-panel.js` at the start of phase 3 and after each move (quoted from the pull requests), the bundle size before and after, what the strangler fig cost (the bridge, the allowances, the duplicated rules listed per spec) and what it bought (a panel that never went dark, baselines that never changed except by approval).
 
 ### Strings and styles
 
@@ -117,7 +117,7 @@ Pull request 2, the guest is deleted:
 
 5. The deletion gates hold; `<hp-toast>` exists in the kit with the 3.5-second and sticky rules tested; `src/main.js` is the two lines above; `src/fonts.js` became `src/ui/fonts.ts`; `src/i18n/fr.js` is out of the bundle and still read by the equivalence tests.
 6. Every baseline identical; every behaviour suite green; the two-panel spec green; `npm run lint` prints a footprint of 0; `npm run check` has no legacy tsconfig; the bundle size is quoted against the phase's start.
-7. ADR 0027 accepted with its numbers; the programme spec's status line says the shell is complete and the class is gone; `docs/architecture.md`'s layer table has no legacy row and its strangler section is past tense; changeset (patch): "Internal: the last of the old code is gone. Nothing visible changes."
+7. ADR 0029 accepted with its numbers; the programme spec's status line says the shell is complete and the class is gone; `docs/architecture.md`'s layer table has no legacy row and its strangler section is past tense; changeset (patch): "Internal: the last of the old code is gone. Nothing visible changes."
 
 ## Testing Decisions
 

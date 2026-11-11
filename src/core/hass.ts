@@ -13,6 +13,8 @@ export interface EntityRegistryEntry {
   device_id?: string | null;
   platform?: string;
   name?: string | null;
+  /** True when the entity is hidden in the registry; the panel does not offer a hidden entity. */
+  hidden?: boolean;
 }
 
 /** One row of the device registry (hass.devices). */
@@ -50,3 +52,6 @@ export interface PanelHass {
   callWS<T = unknown>(msg: {type: string} & Record<string, unknown>): Promise<T>;
   connection?: Pick<Connection, 'subscribeMessage'>;
 }
+
+/** The three registries a rule reads to find a platform, a device or an area: what `PanelHass` holds besides the states. */
+export type Registries = Pick<PanelHass, 'entities' | 'devices' | 'areas'>;

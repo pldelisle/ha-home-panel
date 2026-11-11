@@ -60,6 +60,7 @@ const ofMove = (prefix: string) => Object.keys(en).filter(key => key.startsWith(
 // a move: its fixture, the prefix of the keys it introduced and the folder that says them
 describe.each([
   ['weather', 'weather.', ['src/features/weather/', 'src/providers/']],
+  ['media', 'media.', ['src/features/media/', 'src/providers/']],
   ['chart', 'chart.', ['src/ui/']],
   ['ranges', 'range.', ['src/ui/']],
   ['settings', 'settings.', ['src/shell/']],

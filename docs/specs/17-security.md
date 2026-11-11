@@ -1,8 +1,8 @@
 # Spec 17: Security, the third move: the cameras, the doors and the motion, two sheets, and the first provider another feature reads
 
 Parent: [production-grade-refactor.md](production-grade-refactor.md), phase 3.
-Depends on: [15 Weather](15-weather.md) (the recipe, `<hp-sheet>`, `<hp-range-tabs>`, `ranges.ts`), [16 Media](16-media.md) (the Home-card bridge of ADR 0022, `runCommand` is not needed here). Blocks: 18 Air and every later move; 22 Live pill and 24 Home, which read the door and motion sensors through the provider this spec creates.
-Ships as: two pull requests, each a patch release, each pixel-identical except one new baseline (the sensor history sheet, which has none today). ADR 0023 lands with the first.
+Depends on: [15 Weather](15-weather.md) (the recipe, `<hp-sheet>`, `<hp-range-tabs>`, `ranges.ts`), [16 Media](16-media.md) (the Home-card bridge of ADR 0024, `runCommand` is not needed here). Blocks: 18 Air and every later move; 22 Live pill and 24 Home, which read the door and motion sensors through the provider this spec creates.
+Ships as: two pull requests, each a patch release, each pixel-identical except one new baseline (the sensor history sheet, which has none today). ADR 0025 lands with the first.
 
 The key words MUST, MUST NOT, SHOULD, SHOULD NOT and MAY are to be read as in RFC 2119.
 
@@ -23,8 +23,8 @@ Nothing has a unit test; `cams-tablet-*` and `bare-cams-*` are the proof, and th
 
 Move Security into `src/features/security/`, in two pull requests:
 
-1. **The pane and the provider.** `src/providers/door-motion.ts` reads the door and motion sensors into generic inputs (the first provider written for more than one feature, ADR 0023: a reading two features need lives in a provider, and the provider's output is the contract). `src/providers/unifi-protect.ts` reads the cameras. `<hp-security-pane>` draws `<hp-camera-card>` and `<hp-sensor-card>` from `securityModel`; the two cards stop being Home cards moved into the pane and become the pane's children, so `enterTabs`'s `mv` lines for them go. `<hp-camera-sheet>` mounts the live view through a small mount module; `<hp-sensor-history>` draws the strip, the events and the tiles over `<hp-sheet>` and `<hp-range-tabs>` from a pure `history.ts`, with the profile's formats (the sheet gets its first baseline).
-2. **The Home card and the deletion.** `<hp-security-card>` is the feature's Home contribution (`#hsec`), placed by the guest through the bridge; its glow is an element-side rule over the provider's output. `cameras`, `sensors`, `sensorState`, `sensorChip`, `renderCameras`, `renderSensors`, `secWatch`, `openCamera`, `camSheet`, `openSens`, `sensSheet`, the Security line of `renderPaneSubs`, the sheets' markup, the CSS rules and the French entries are deleted; the Status checks, the stack and the More sheet in the class read `doorMotionSensors(...)` from the provider (legacy may import the core and, by this spec, the providers: the dependency rule gains that one allowance, recorded in ADR 0023, so a shared read never has two implementations).
+1. **The pane and the provider.** `src/providers/door-motion.ts` reads the door and motion sensors into generic inputs (the first provider written for more than one feature, ADR 0025: a reading two features need lives in a provider, and the provider's output is the contract). `src/providers/unifi-protect.ts` reads the cameras. `<hp-security-pane>` draws `<hp-camera-card>` and `<hp-sensor-card>` from `securityModel`; the two cards stop being Home cards moved into the pane and become the pane's children, so `enterTabs`'s `mv` lines for them go. `<hp-camera-sheet>` mounts the live view through a small mount module; `<hp-sensor-history>` draws the strip, the events and the tiles over `<hp-sheet>` and `<hp-range-tabs>` from a pure `history.ts`, with the profile's formats (the sheet gets its first baseline).
+2. **The Home card and the deletion.** `<hp-security-card>` is the feature's Home contribution (`#hsec`), placed by the guest through the bridge; its glow is an element-side rule over the provider's output. `cameras`, `sensors`, `sensorState`, `sensorChip`, `renderCameras`, `renderSensors`, `secWatch`, `openCamera`, `camSheet`, `openSens`, `sensSheet`, the Security line of `renderPaneSubs`, the sheets' markup, the CSS rules and the French entries are deleted; the Status checks, the stack and the More sheet in the class read `doorMotionSensors(...)` from the provider (legacy may import the core and, by this spec, the providers: the dependency rule gains that one allowance, recorded in ADR 0025, so a shared read never has two implementations).
 
 Each pull request leaves every baseline identical (`cams-*`, `bare-cams-*`, `home-*`), and adds `sensor-history-tablet-light-en` as a new baseline in the first.
 
@@ -74,7 +74,7 @@ test/unit/
 test/e2e/security.spec.ts
 ```
 
-### The shared provider (ADR 0023)
+### The shared provider (ADR 0025)
 
 ```ts
 // src/providers/door-motion.ts
@@ -181,7 +181,7 @@ Pull request 1, the pane, the sheets and the provider:
 1. `src/providers/{door-motion,unifi-protect,cameras}.ts`, `src/features/security/{README.md,index.ts,ids.ts,inputs.ts,model.ts,history.ts,security-pane.ts,camera-card.ts,sensor-card.ts,camera-sheet.ts,camera-stream.ts,sensor-history.ts,styles.css}`, `src/ui/controllers/tick.ts` exist with headers; `FEATURES` has `securityFeature`.
 2. Vitest: `doorMotionSensors` (classes, the Protect exclusion, hidden and diagnostic exclusions, area from device, siblings, sort), `protectCameras` (platform or attribution, `_radar` and `insecure`, the channel rank, the motion sibling preference, the name suffix), `securityModel` from the test house in `en` and `fr` and from the recorded fixture, `segments` (open at the start, open at the end as live, back to back), `periodStats`, `axisTicks`, `durationText`, `eventRows` (forty cap, newest first); all at 100 percent statements.
 3. Playwright `security.spec.ts`: the tab shows the house's cameras and sensors; a camera tap opens the sheet with its name and an `img` on the proxy URL; a sensor tap opens its history, `Week` switches the range and one `history/history_during_period` message is sent per range (the harness logs WebSocket reads); the four tiles read as literals from the harness's history reply; Escape closes and focus returns; a thermostat change gives zero mutations in `hp-security-pane`'s root; axe clean on the tab and both sheets.
-4. Every existing baseline identical; `sensor-history-tablet-light-en` and `-fr` added as new baselines (the pull request says so and shows them); the French equivalence test passes for `test/unit/fixtures/moved/security.json`; `npm run check`, `npm test -- --coverage`, `npm run lint` green; ADR 0023 accepted; changeset (patch): "The Security tab is redrawn with the same look; a sensor's history shows times in your language. Nothing else changes."
+4. Every existing baseline identical; `sensor-history-tablet-light-en` and `-fr` added as new baselines (the pull request says so and shows them); the French equivalence test passes for `test/unit/fixtures/moved/security.json`; `npm run check`, `npm test -- --coverage`, `npm run lint` green; ADR 0025 accepted; changeset (patch): "The Security tab is redrawn with the same look; a sensor's history shows times in your language. Nothing else changes."
 
 Pull request 2, the Home card and the deletion:
 

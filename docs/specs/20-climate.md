@@ -2,7 +2,7 @@
 
 Parent: [production-grade-refactor.md](production-grade-refactor.md), phase 3.
 Depends on: [15 Weather](15-weather.md) (`<hp-chart>`, the statistics cache, `<hp-range-tabs>`), [16 Media](16-media.md) (`runCommand`, the overlay, the bridge), [18 Air](18-air.md) (`<hp-stepper>`), [19 Energy](19-energy.md) (`powerNow` with the rooms, history on demand, `thinCategories`, the pure-geometry style). Blocks: 21 Car (`<hp-seg>`, `ArmedController`), 24 Home (the climate tile).
-Ships as: three pull requests, each a patch release, each pixel-identical. No new ADR: 0021 to 0025 apply; three notes record the kit promotions.
+Ships as: three pull requests, each a patch release, each pixel-identical. No new ADR: 0021 to 0027 apply; three notes record the kit promotions.
 
 The key words MUST, MUST NOT, SHOULD, SHOULD NOT and MAY are to be read as in RFC 2119.
 
