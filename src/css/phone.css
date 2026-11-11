@@ -6,8 +6,7 @@
 .rtab.rmore,
 .ltiles,
 .ctiles2,
-.etiles,
-.mtiles {
+.etiles {
   display: none;
 }
 .app.tabsv.cp .wrap {
@@ -147,13 +146,11 @@
 }
 .ltiles,
 .ctiles2,
-.etiles,
-.mtiles {
+.etiles {
   gap: 12px;
 }
 .app.tabsv.cp .ltiles,
-.app.tabsv.cp .etiles,
-.app.tabsv.cp .mtiles {
+.app.tabsv.cp .etiles {
   display: grid;
   grid-template-columns: 1fr;
 }
@@ -375,34 +372,6 @@
 }
 .app.cp .citem .tv {
   font-size: calc(16px * var(--tx));
-}
-/* speakers in a sheet: name and play on one row, the volume stepper under */
-.app.cp .pod {
-  flex-wrap: wrap;
-  gap: 10px 12px;
-  padding: 12px;
-}
-.app.cp .pod .pic {
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
-}
-.app.cp .pod .tx {
-  flex: 1 1 0;
-  min-width: 100px;
-}
-.app.cp .pod .pp {
-  order: 1;
-  width: 48px;
-  height: 48px;
-}
-.app.cp .pod .stepper {
-  order: 2;
-  flex: 1 1 100%;
-  justify-content: space-between;
-}
-.app.cp .pod .stepper .sv {
-  flex: 1;
 }
 /* automation chips wrap instead of widening the page */
 .app.tabsv.cp .auchips .chip,

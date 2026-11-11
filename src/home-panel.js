@@ -1663,10 +1663,6 @@ export class LegacyPanel {
         const b = e.target.closest('button[data-l]');
         if (b && !b.disabled) this.lightCmd(b.dataset.l, b.dataset.a ?? b.dataset.id, b.dataset.al);
       });
-    this.$('tv').addEventListener('click', e => {
-      const b = e.target.closest('button[data-tv]');
-      if (b) this.tvCmd(b.dataset.tv);
-    });
     // dimmer rows: a sideways slide dims (relative to where the fill was), an up-down move scrolls the page as usual,
     // and the brightness goes out on release; a linked pair's two rows move together while sliding
     // Arrange: drag whole rows (a linked pair as one block) into the order you want; it's saved for every screen
@@ -1803,9 +1799,7 @@ export class LegacyPanel {
       const hc = e.target.closest('#hsec [data-cam]');
       if (hc) return this.openCamera(hc.dataset.cam);
       if (e.target.closest('button[data-l]')) return; // light switches on the phone rows: the lights listener has them
-      const tb = e.target.closest('button[data-tv]');
-      if (tb) return this.tvCmd(tb.dataset.tv);
-      const pc = e.target.closest('[data-mp],[data-p="mode"]');
+      const pc = e.target.closest('[data-p="mode"]');
       if (pc) return this.phoneCmd(pc);
       const sc = e.target.closest('[data-p="scene"]');
       if (sc) return this.runScene(sc.dataset.id);
@@ -1828,33 +1822,6 @@ export class LegacyPanel {
     };
     tv.addEventListener('click', onTap);
     this.$('sh-card').addEventListener('click', onTap); // a card moved into the generic sheet keeps its buttons working
-    for (const h of ['mtiles'])
-      this.$(h).addEventListener('keydown', e => {
-        if ((e.key === 'Enter' || e.key === ' ') && /** @type {Element} */ (e.target).matches('[role="button"]')) {
-          e.preventDefault();
-          e.target.click();
-        }
-      });
-    // speaker volume sliders: hold off re-rendering while one is dragged, the level goes out on release
-    const isV = e => e.target.dataset && e.target.dataset.mv;
-    tv.addEventListener('pointerdown', e => {
-      if (isV(e)) this.lightDrag = true;
-    });
-    tv.addEventListener('change', e => {
-      if (isV(e)) {
-        this.lightDrag = false;
-        const t = /** @type {HTMLInputElement} */ (e.target);
-        this.mpVol(t.dataset.mv, +t.value / 100);
-      }
-    });
-    for (const t of ['pointerup', 'pointercancel'])
-      tv.addEventListener(t, e => {
-        if (isV(e))
-          setTimeout(() => {
-            this.lightDrag = false;
-            this.tick();
-          }, 60);
-      });
     this.$('stabs').addEventListener('click', e => {
       const b = e.target.closest('.tab');
       if (!b) return;
@@ -4011,13 +3978,6 @@ export class LegacyPanel {
         .join('')
     );
   }
-  mpVol(id, v) {
-    v = Math.min(1, Math.max(0, Math.round(v * 100) / 100));
-    this.pending[id + ':vol'] = {v, until: Date.now() + 20000};
-    clearTimeout(this.volT);
-    this.volT = setTimeout(() => this.call('media_player', 'volume_set', {entity_id: id, volume_level: v}), 450);
-    this.renderTabs();
-  }
   phoneCmd(b) {
     const id = b.dataset.pf || b.dataset.po || b.dataset.wb || b.dataset.id,
       s = this.st(id);
@@ -4034,21 +3994,6 @@ export class LegacyPanel {
         on ? 'turn_on' : 'turn_off',
         {entity_id: id},
         `${room ? room + ' purifier' : 'Purifier'} ${on ? 'on' : 'off'}`,
-      );
-    } else if (b.dataset.mp) {
-      const act = b.dataset.mp;
-      if (act === 'vup' || act === 'vdn')
-        return this.mpVol(id, +this.pend(id + ':vol', s.attributes.volume_level || 0) + (act === 'vup' ? 0.05 : -0.05));
-      if (act === 'prev' || act === 'next')
-        return this.call('media_player', act === 'next' ? 'media_next_track' : 'media_previous_track', {entity_id: id});
-      const play = this.pend(id + ':st', s.state) !== 'playing',
-        name = (this.speakers().find(x => x.id === id) || {}).name || 'Speaker';
-      hold(':st', play ? 'playing' : 'paused');
-      this.call(
-        'media_player',
-        play ? 'media_play' : 'media_pause',
-        {entity_id: id},
-        `${name} ${play ? 'playing' : 'paused'}`,
       );
     } else if (b.dataset.po) {
       const on = this.pend(id + ':on', s.state === 'on') !== true;
@@ -4164,47 +4109,6 @@ export class LegacyPanel {
       }</div>`,
     };
   }
-  async tvCmd(k) {
-    const T = this.tv();
-    if (!T) return;
-    const s = this.st(T.id),
-      id = T.id,
-      on = this.pend(id + ':on', ok(s) && s.state !== 'off') === true,
-      hold = (key, x) => {
-        this.pending[id + ':' + key] = {v: x, until: Date.now() + 15000};
-        this.cache.tv = null;
-        this.renderTV();
-        this.renderTabs();
-      };
-    if (k === 'power') {
-      if (on) {
-        hold('on', false);
-        return this.call('media_player', 'turn_off', {entity_id: id}, 'TV turned off');
-      }
-      hold('on', true);
-      try {
-        await this.api.runService('media_player', 'turn_on', {entity_id: id});
-        this.toast('Turning the TV on');
-      } catch (e) {
-        if (T.wol) this.call('button', 'press', {entity_id: T.wol}, 'Turning the TV on');
-        else {
-          this.pending = {};
-          this.toast(`Didn't work: ${e.message || e}`);
-          this.renderTV();
-        }
-      }
-      return;
-    }
-    if (k === 'vup' || k === 'vdown')
-      return this.call('media_player', k === 'vup' ? 'volume_up' : 'volume_down', {entity_id: id});
-    if (k === 'mute') {
-      const m = !this.pend(id + ':mute', !!(s && s.attributes.is_volume_muted));
-      hold('mute', m);
-      return this.call('media_player', 'volume_mute', {entity_id: id, is_volume_muted: m});
-    }
-    if (k === 'pp') return this.call('media_player', 'media_play_pause', {entity_id: id});
-  }
-
   // ---------- door and motion sensors ----------
   sensors() {
     const reg = this.hass.entities || {},
@@ -4352,13 +4256,7 @@ export class LegacyPanel {
   }
   renderCompact() {
     if (!this.compact || this.view !== 'tabs') return;
-    for (const f of [
-      'renderLightTiles',
-      'renderClimateTiles',
-      'renderEnergyTiles',
-      'renderMediaTiles',
-      'renderCompactSubs',
-    ]) {
+    for (const f of ['renderLightTiles', 'renderClimateTiles', 'renderEnergyTiles', 'renderCompactSubs']) {
       try {
         this[f]();
       } catch (e) {
@@ -4592,53 +4490,6 @@ export class LegacyPanel {
       <button type="button" class="stile wide grid" data-card="hilo" data-title="Hilo" data-icon="bolt" data-color="var(--c-grid)"><span class="ic">${ico('bolt', 20)}</span><span class="tx"><b>Hilo</b><small>${esc(ri.tier)} · ${ch}</small></span><span class="tv num">${ri.r == null ? '–' : (ri.r * 100).toFixed(2)}<small>¢</small></span></button>`,
     );
   }
-  // Media: the TV and each speaker as a row with its one main button; the row opens the full controls
-  renderMediaTiles() {
-    if (this.tab !== 'media' || this.lightDrag) return;
-    const T = this.tv(),
-      tiles = [];
-    if (T) {
-      const sv = this.st(T.id),
-        live = ok(sv),
-        avail = live || !!T.wol,
-        on = this.pend(T.id + ':on', live && sv.state !== 'off') === true,
-        a = (sv && sv.attributes) || {};
-      const src =
-        on && a.source
-          ? esc(
-              String(a.source)
-                .replace(/\s+[-–].*$/, '')
-                .replace(/＆/g, '&'),
-            )
-          : '';
-      tiles.push(
-        `<div class="stile wide home${on ? ' on' : ''}" data-card="mtv" data-title="${esc(T.name)}" data-icon="tv" data-color="var(--c-home)" role="button" tabindex="0" aria-description="Opens the controls"><span class="ic">${ico('tv', 20)}</span><span class="tx"><b>${esc(T.name)}</b><small>${!avail ? 'Not responding' : on ? 'On' + (src ? ' · ' + src : '') : 'Off'}</small></span><button type="button" class="sw" role="switch" aria-checked="${on}" aria-label="${esc(T.name)} power" data-tv="power" ${avail ? '' : 'disabled'}></button></div>`,
-      );
-    }
-    this.speakers().forEach(m => {
-      const id = esc(m.id),
-        sv = this.st(m.id),
-        a = (sv && sv.attributes) || {},
-        live = ok(sv),
-        state = this.pend(m.id + ':st', sv && sv.state),
-        play = state === 'playing',
-        f = a.supported_features || 0;
-      const can = bit => live && (f & bit) === bit,
-        loaded = live && ['playing', 'paused'].includes(state) && !!a.media_title,
-        room = this.areaName(m.aid, m.name);
-      const sub = !live
-        ? 'Unavailable'
-        : state === 'paused' && !loaded
-          ? 'Paused'
-          : ['off', 'standby'].includes(state)
-            ? 'Off'
-            : 'Not playing';
-      tiles.push(
-        `<div class="stile wide home${play ? ' on' : ''}" data-card="media" data-title="Speakers" data-icon="spk" data-color="var(--c-home)" role="button" tabindex="0" aria-description="Opens the controls"><span class="ic${loaded && a.entity_picture ? ' art' : ''}">${loaded && a.entity_picture ? `<img src="${esc(a.entity_picture)}" alt="" loading="lazy">` : ico('spk', 20)}</span><span class="tx"><b>${esc(room)}</b>${loaded ? `<small translate="no">${esc(a.media_title)}${a.media_artist ? ' · ' + esc(a.media_artist) : ''}</small>` : `<small>${esc(m.name)} · ${sub}</small>`}</span><button type="button" class="pp2${play ? ' on' : ''}" data-mp="pp" data-id="${id}" aria-label="${play ? 'Pause' : 'Play'}" ${(loaded || state === 'paused') && can(play ? 1 : 16384) ? '' : 'disabled'}>${ico(play ? 'pause' : 'play', 20)}</button></div>`,
-      );
-    });
-    this.set('mtiles', tiles.join('') || '<p class="hint">No TV or speakers found.</p>');
-  }
   // any card can open in a sheet: it moves there and keeps updating, then goes back where it was
   openCard(id, title, icon, color) {
     const el = this.$(id);
@@ -4729,7 +4580,6 @@ export class LegacyPanel {
       'renderHome',
       'renderAlBar',
       'renderScenes',
-      'renderMedia',
       'renderPaneSubs',
       'renderAuto',
       'renderCompact',
@@ -5142,74 +4992,6 @@ export class LegacyPanel {
     const sc = this.sceneTiles();
     el.hidden = !sc;
     if (sc) this.set('hscenes', sc);
-  }
-  // Media pane, laid out as in the sketch: the TV with big buttons on the left, one wide player per speaker on the right.
-  // The tablet's pane is <hp-media-pane> (#217): these cards are drawn only on the phone, whose tiles open them in the card sheet (#218 deletes them)
-  renderMedia() {
-    if (this.lightDrag || this.tab !== 'media' || !this.compact) return;
-    const T = this.tv(),
-      mt = this.$('mtv');
-    mt.hidden = !T;
-    if (T) {
-      const sv = this.st(T.id),
-        live = ok(sv),
-        avail = live || !!T.wol,
-        on = this.pend(T.id + ':on', live && sv.state !== 'off') === true,
-        a = (sv && sv.attributes) || {},
-        muted = this.pend(T.id + ':mute', !!a.is_volume_muted);
-      const src =
-        on && a.source
-          ? esc(
-              String(a.source)
-                .replace(/\s+[-–].*$/, '')
-                .replace(/＆/g, '&'),
-            )
-          : '';
-      this.set(
-        'mtv',
-        `<div class="mtvhead"><div class="tx"><h3>${esc(T.name)}</h3><p>${!avail ? 'Not responding' : on ? (muted ? 'On · muted' : 'On') : 'Off'}${src ? ' · ' + src : ''}</p></div>
-          <button type="button" class="sw" role="switch" aria-checked="${on}" aria-label="${esc(T.name)} power" data-tv="power" ${avail ? '' : 'disabled'}></button></div>
-        <div class="mtvscreen${on ? ' on' : ''}">${on ? src || 'On' : ico('tv', 40)}</div>
-        <div class="mtvctl" role="group" aria-label="Volume and playback">
-          <button type="button" data-tv="vdown" aria-label="Vol −, volume down" ${on ? '' : 'disabled'}>Vol −</button>
-          <button type="button" data-tv="vup" aria-label="Vol +, volume up" ${on ? '' : 'disabled'}>Vol +</button>
-          <button type="button" data-tv="mute" aria-pressed="${muted}" ${on ? '' : 'disabled'}>Mute</button>
-          <button type="button" data-tv="pp" aria-label="Play or pause" ${on ? '' : 'disabled'}>${ico('pp', 24)}</button></div>
-        <p class="hint">The TV doesn't report its volume, so there's no slider.</p>`,
-      );
-    }
-    const M = this.speakers().map(m => ({...m, room: this.areaName(m.aid, m.name)})),
-      playing = M.filter(m => (this.st(m.id) || {}).state === 'playing').length;
-    const pod = m => {
-      const id = esc(m.id),
-        sv = this.st(m.id),
-        a = (sv && sv.attributes) || {},
-        live = ok(sv),
-        state = this.pend(m.id + ':st', sv && sv.state),
-        play = state === 'playing',
-        f = a.supported_features || 0;
-      const can = bit => live && (f & bit) === bit,
-        loaded = live && ['playing', 'paused'].includes(state) && !!a.media_title,
-        vol = this.pend(m.id + ':vol', a.volume_level);
-      const sub = !live
-        ? 'Unavailable'
-        : loaded
-          ? esc(a.media_artist || a.media_album_name || '')
-          : state === 'paused'
-            ? 'Paused'
-            : ['off', 'standby'].includes(state)
-              ? 'Off'
-              : 'Not playing';
-      return `<div class="pod${play ? ' on' : ''}"><span class="pic">${loaded && a.entity_picture ? `<img src="${esc(a.entity_picture)}" alt="" loading="lazy">` : ico('spk', 34)}</span>
-        <div class="tx"><h3>${esc(m.room)}</h3>${loaded ? `<div class="tr" translate="no">${esc(a.media_title)}</div>` : ''}<div class="sb" translate="no">${loaded ? sub : `<span>${esc(m.name)} · ${sub}</span>`}</div></div>
-        ${can(4) && vol != null ? `<div class="stepper" role="group" aria-label="${esc(m.room)} volume"><button type="button" data-mp="vdn" data-id="${id}" aria-label="Volume down" ${vol <= 0 ? 'disabled' : ''}>−</button><div class="sv"><b class="num">${Math.round(vol * 100)}%</b><small>Volume</small></div><button type="button" data-mp="vup" data-id="${id}" aria-label="Volume up" ${vol >= 1 ? 'disabled' : ''}>+</button></div>` : ''}
-        <button type="button" class="pp${play ? ' on' : ''}" data-mp="pp" data-id="${id}" aria-label="${play ? 'Pause' : 'Play'}" ${(loaded || state === 'paused') && can(play ? 1 : 16384) ? '' : 'disabled'}>${ico(play ? 'pause' : 'play', 26)}</button></div>`;
-    };
-    this.set(
-      'media',
-      `<div class="top"><span class="lbl">Speakers</span><span class="right">${!M.length ? 'None found' : playing ? plural(playing, 'speaker') + ' playing' : 'Nothing playing'}</span></div>
-      ${M.length ? `<div class="pods">${M.map(pod).join('')}</div>` : '<p class="hint">Media players that sit in an HA area show up here.</p>'}`,
-    );
   }
   // ---------- energy Sankey: grid, then the four groups, then the rooms that heat ----------
   sankeyData() {

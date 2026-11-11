@@ -21,6 +21,7 @@ export class HpSheet extends LitElement {
     heading: {},
     label: {},
     closeLabel: {attribute: 'close-label'},
+    hasSub: {state: true},
   };
   /** On screen. Its owner binds it to the sheet host's `isOpen`; the Close button takes focus when it turns true. */
   declare open: boolean;
@@ -35,6 +36,8 @@ export class HpSheet extends LitElement {
   declare label: string;
   /** The Close button's accessible name, already in the panel's language. */
   declare closeLabel: string;
+  /** Something is slotted as the sub-line: without one the header draws no line, so the heading sits where the legacy card sheet's did. */
+  declare private hasSub: boolean;
 
   // `display: contents`: the sheet is `position: fixed`, so the host takes no room where its owner puts it. The rules for the
   // header the legacy sheet's `.ph` carried are here, in sheet.element.css, and not in sheet.css, because the header is the pane header's now: the
@@ -59,6 +62,7 @@ export class HpSheet extends LitElement {
     this.heading = '';
     this.label = '';
     this.closeLabel = '';
+    this.hasSub = false;
   }
 
   // The sub-line and the controls ride in the pane header's own slots, in wrappers: a slot forwarded into a slot is a `<slot>`,
@@ -79,7 +83,9 @@ export class HpSheet extends LitElement {
         <hp-pane-header .icon=${this.icon} .color=${this.color}>
           <slot name="icon" slot="icon">${ico(this.icon, 26)}</slot>
           <h2 slot="title">${this.heading}</h2>
-          <div slot="sub" class="subline"><slot name="sub"></slot></div>
+          <div slot="sub" class="subline" ?hidden=${!this.hasSub}>
+            <slot name="sub" @slotchange=${this.onSubChange}></slot>
+          </div>
           <div slot="actions" class="actions">
             <slot name="tabs"></slot><slot name="actions"></slot>
             <button class="icon close" type="button" aria-label=${this.closeLabel} @click=${this.close}>✕</button>
@@ -89,6 +95,11 @@ export class HpSheet extends LitElement {
       </div>
     </div>`;
   }
+
+  // the slot tells when its nodes change, and an empty one at the first draw says nothing, which `hasSub`'s false already means
+  private readonly onSubChange = (e: Event): void => {
+    this.hasSub = (e.target as HTMLSlotElement).assignedNodes({flatten: true}).length > 0;
+  };
 
   private readonly close = (): void => {
     this.dispatchEvent(new CustomEvent('sheet-close', {bubbles: true, composed: true}));

@@ -179,11 +179,9 @@
 }
 /* v1.18.2: every other surface follows. Top-level panels (sheet sections, air cards, room list) are glass cards; inner wells (rows, segmented controls, tabs, steppers, sensor and speaker rows) take the tile fill; small buttons inside take the selected-bubble fill; tinted "on" states mix their accent into the glass instead of the opaque card */
 .app.gl .larea,
-.app.gl .pod,
 .app.gl .hsen,
 .app.gl .camempty,
 .app.gl .schip,
-.app.gl .mtvscreen,
 .app.gl .access,
 .app.gl .arow,
 .app.gl .stepper,
@@ -212,8 +210,6 @@
 .app.gl .stepper button,
 .app.gl .abtn,
 .app.gl .lauto,
-.app.gl .pod .pp,
-.app.gl .pod .pic,
 .app.gl .hsen .sic,
 .app.gl .cbtn .ic,
 .app.gl .citem .ic,
@@ -225,15 +221,6 @@
 .app.gl .aupick .chip.sel,
 .app.gl .auchips .chip.sel {
   background: var(--fg);
-}
-.app.gl .pod.on {
-  background: color-mix(in srgb, var(--c-home) 14%, var(--g-tile));
-}
-.app.gl .mtvscreen.on {
-  background: color-mix(in srgb, var(--c-home) 14%, var(--g-tile));
-}
-.app.gl .pod .pp.on {
-  background: var(--c-home);
 }
 .app.gl .citem[aria-selected='true'] {
   background: color-mix(in srgb, var(--c-home) 16%, var(--g-card));
@@ -259,16 +246,12 @@
 .app.gl .schip.act .sic {
   background: color-mix(in srgb, var(--c-home) 18%, var(--g-sel));
 }
-.app.gl .days button,
-.app.gl .mtvctl button {
+.app.gl .days button {
   background: var(--g-tile);
   box-shadow: var(--g-edge-s);
 }
 .app.gl .days button[aria-pressed='true'] {
   background: color-mix(in srgb, var(--c-ev) 22%, var(--g-sel));
-}
-.app.gl .mtvctl button[aria-pressed='true'] {
-  background: color-mix(in srgb, var(--warn) 18%, var(--g-sel));
 }
 .app.tabsv.gl .rtab:not([aria-selected='true']):active {
   background: var(--g-fill);
@@ -376,11 +359,9 @@
     background: var(--card);
   }
   .app.gl .larea,
-  .app.gl .pod,
   .app.gl .hsen,
   .app.gl .camempty,
   .app.gl .schip,
-  .app.gl .mtvscreen,
   .app.gl .access,
   .app.gl .arow,
   .app.gl .stepper,

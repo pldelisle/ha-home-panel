@@ -1,5 +1,5 @@
-/* The summary tile of the phone (`.stile`), written once for the guest's tiles and for `<hp-stat-tile>`, in the order the legacy
-   files held it (phone, glass, motion). The `.stile.list` rules are the More list's tiles: a tone of the tile, because a
+/* The summary tile of the phone (`.stile`), written once for the guest's tiles, `<hp-stat-tile>` and `<hp-media-tile>`, in the order
+   the legacy files held it (phone, glass, motion). The `.stile.list` rules are the More list's tiles: a tone of the tile, because a
    descendant selector (`.morelist .stile`) cannot cross into the tile's own root. */
 .stile.ltile.on .ic {
   color: color-mix(in srgb, var(--lc, var(--warn)) 55%, var(--fg));
@@ -238,11 +238,16 @@
   }
 }
 @media (prefers-reduced-motion: no-preference) {
-  .stile {
+  .stile,
+  .stile .pp2 {
     transition:
       transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
       background-color 0.2s ease,
       box-shadow 0.2s ease,
       color 0.2s ease;
   }
+}
+/* the play button of a wide tile shrinks a touch under the finger, inside the tile's own press */
+.stile .pp2:active {
+  transform: scale(0.96);
 }

@@ -18,7 +18,6 @@
   .stepper button,
   .days button,
   .pp,
-  .pp2,
   .go,
   button.chip,
   .dtime,
@@ -27,8 +26,7 @@
   .more,
   .ptile,
   .htile,
-  .tvctl button,
-  .mtvctl button {
+  .tvctl button {
     transition:
       transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
       background-color 0.2s ease,
@@ -52,7 +50,6 @@ button.schip:active,
 .stepper button:active,
 .days button:active,
 .pp:active,
-.pp2:active,
 .go:active,
 button.chip:active,
 .dtime:active,

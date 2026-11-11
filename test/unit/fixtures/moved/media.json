@@ -8,30 +8,30 @@
       "key": "media.tv"
     },
     {
-      "key": "media.summaryTvOn"
+      "key": "media.summaryTvOn",
+      "was": "Télé allumée",
+      "after": "Télé : activé"
     },
     {
-      "key": "media.summaryTvOff"
+      "key": "media.summaryTvOff",
+      "was": "Télé éteinte",
+      "after": "Télé : désactivé"
     },
     {
       "key": "media.summaryPlaying",
       "values": {
         "count": 1
       },
-      "frame": {
-        "en": "TV on · ",
-        "fr": "Télé allumée · "
-      }
+      "was": "1 speaker : en lecture",
+      "after": "1 speaker : en lecture"
     },
     {
       "key": "media.summaryPlaying",
       "values": {
         "count": 2
       },
-      "frame": {
-        "en": "TV on · ",
-        "fr": "Télé allumée · "
-      }
+      "was": "2 speakers : en lecture",
+      "after": "2 speakers : en lecture"
     },
     {
       "key": "media.summaryIdle",
@@ -46,31 +46,41 @@
       }
     },
     {
-      "key": "media.speakers"
+      "key": "media.speakers",
+      "was": "Haut-parleurs"
     },
     {
       "key": "media.speakersPlaying",
       "values": {
         "count": 1
-      }
+      },
+      "was": "1 haut-parleur en lecture",
+      "after": "1 speaker : en lecture"
     },
     {
       "key": "media.speakersPlaying",
       "values": {
         "count": 2
-      }
+      },
+      "was": "2 haut-parleurs en lecture",
+      "after": "2 speakers : en lecture"
     },
     {
-      "key": "media.nothingPlaying"
+      "key": "media.nothingPlaying",
+      "was": "Rien en lecture",
+      "after": "Nothing : en lecture"
     },
     {
-      "key": "media.noneFound"
+      "key": "media.noneFound",
+      "was": "Aucun trouvé"
     },
     {
-      "key": "media.noDevices"
+      "key": "media.noDevices",
+      "was": "Aucune télé ni haut-parleur trouvé."
     },
     {
-      "key": "media.playersHint"
+      "key": "media.playersHint",
+      "was": "Les lecteurs placés dans une pièce de Home Assistant apparaissent ici."
     },
     {
       "key": "media.notResponding"
@@ -115,10 +125,12 @@
       "key": "media.volumeUpShort"
     },
     {
-      "key": "media.volumeDownPane"
+      "key": "media.volumeDownPane",
+      "was": "Vol −, baisser le volume"
     },
     {
-      "key": "media.volumeUpPane"
+      "key": "media.volumeUpPane",
+      "was": "Vol +, monter le volume"
     },
     {
       "key": "media.mute"
@@ -133,7 +145,11 @@
       "key": "media.noVolumeSlider"
     },
     {
-      "key": "media.opensControls"
+      "key": "media.opensControls",
+      "was": "Ouvre les commandes"
+    },
+    {
+      "key": "media.close"
     },
     {
       "key": "media.volume"
@@ -142,7 +158,8 @@
       "key": "media.volumeOf",
       "values": {
         "room": "Living room"
-      }
+      },
+      "was": "Volume de Living room"
     },
     {
       "key": "media.percent",
@@ -168,7 +185,8 @@
       "values": {
         "name": "HomePod mini",
         "state": "paused"
-      }
+      },
+      "was": "HomePod mini · En pause"
     },
     {
       "key": "media.speakerState",
@@ -185,10 +203,14 @@
       }
     },
     {
-      "key": "media.tvTurningOn"
+      "key": "media.tvTurningOn",
+      "was": "Allumage de la télé",
+      "after": "Turning the TV : activé"
     },
     {
-      "key": "media.tvTurnedOff"
+      "key": "media.tvTurnedOff",
+      "was": "Télé éteinte",
+      "after": "TV turned : désactivé"
     },
     {
       "key": "media.speakerPlaying",

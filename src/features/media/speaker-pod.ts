@@ -18,7 +18,7 @@ import {ico} from '../../ui/icons.ts';
 import {common} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
-/** How long the stepper waits for the taps to stop before it sends the level: a copy of the legacy `mpVol`'s 450 ms, until #218 deletes it. */
+/** How long the stepper waits for the taps to stop before it sends the level: the legacy `mpVol`'s 450 ms. */
 const VOLUME_DEBOUNCE_MS = 450;
 
 // the stepper's two glyphs, the same in every language: a screen reader says the buttons' labels, which the catalog words

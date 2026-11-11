@@ -1,0 +1,5 @@
+/* <hp-media-tile>'s own rules: none but its host's. Its look is the kit's `.stile` (stat-tile.css), the play button's included. */
+/* no box of its own: the tile is the item of the pane's list */
+:host {
+  display: contents;
+}

@@ -733,14 +733,8 @@ export const FR_MAP = {
   'Play or pause': 'Lecture ou pause',
   Pause: 'Pause',
   'Volume and playback': 'Volume et lecture',
-  'TV turned off': 'Télé éteinte',
-  'Turning the TV on': 'Allumage de la télé',
   // ---- speakers ----
   Playing: 'En lecture',
-  Paused: 'En pause',
-  'Not playing': 'Aucune lecture',
-  Speaker: 'Haut-parleur',
-  Speakers: 'Haut-parleurs',
   Previous: 'Précédent',
   Play: 'Lecture',
   // ---- room status chips (phone) ----
@@ -1134,9 +1128,7 @@ export const FR_MAP = {
   Rising: 'En hausse',
   Falling: 'En baisse',
   Steady: 'Stable',
-  'TV off': 'Télé éteinte',
   'No lights found.': 'Aucune lumière trouvée.',
-  'No TV or speakers found.': 'Aucune télé ni haut-parleur trouvé.',
   '{n} kW now': '{n} kW maintenant',
   '{n} W now': '{n} W maintenant',
   '{n}% · {n} km': '{n} % · {n} km',
@@ -1145,9 +1137,6 @@ export const FR_MAP = {
   Settings: 'Réglages',
   'Opens the history': 'Ouvre l’historique',
   'Opens the live view': 'Ouvre la vue en direct',
-  'Opens the controls': 'Ouvre les commandes',
-  'Vol −, volume down': 'Vol −, baisser le volume',
-  'Vol +, volume up': 'Vol +, monter le volume',
   Clear: 'Transparent',
   None: 'Aucun',
   Rules: 'Règles',
@@ -1179,11 +1168,6 @@ export const FR_MAP = {
   'Hydro-Québec': 'Hydro-Québec',
   Hilo: 'Hilo',
   On: 'Activé',
-  'Nothing playing': 'Rien en lecture',
-  'None found': 'Aucun trouvé',
-  'TV on': 'Télé allumée',
-  '{n} speaker playing': '{n} haut-parleur en lecture',
-  '{n} speakers playing': '{n} haut-parleurs en lecture',
   '{n} W from the grid': '{n} W du réseau',
   '{n} kW from the grid': '{n} kW du réseau',
   '{n}° inside': '{n}° à l’intérieur',
@@ -1191,8 +1175,6 @@ export const FR_MAP = {
   'No purifiers': 'Aucun purificateur',
   'No readings': 'Aucune mesure',
   'Good in every room': 'Bon dans chaque pièce',
-  'Media players that sit in an HA area show up here.':
-    'Les lecteurs placés dans une pièce de Home Assistant apparaissent ici.',
   'Adaptive Lighting today': 'Éclairage adaptatif aujourd’hui',
   'Off everywhere': 'Éteint partout',
   'on everywhere': 'actif partout',
@@ -1535,7 +1517,6 @@ const FR_RX = [
       return `${x ?? a} : ${y ?? b}`;
     },
   ],
-  [/^(.+) volume$/, x => `Volume de ${x}`],
   [
     /^(.+), (.+)$/,
     (a, b) => {

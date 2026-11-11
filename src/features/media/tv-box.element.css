@@ -1,8 +1,8 @@
 /*
  * <hp-tv-box>'s own rules: the name and status beside the switch, the screen, and the four buttons.
- * Known copies of the legacy `.mtvhead`, `.mtvscreen` and `.mtvctl` rules (tabs.css, glass.css, motion.css), read here as `.tvhead`,
- * `.tvscreen` and `.tvkeys`: the legacy sheet keeps them while the phone's card sheet opens the guest's `#mtv` (#218 deletes them).
- * The selectors differ because the styles-split test lets one file write a selector, and a shadow root cannot reach the legacy rule.
+ * Moved from the legacy `.mtvhead`, `.mtvscreen` and `.mtvctl` rules (tabs.css, glass.css, motion.css), which #218 deleted with the
+ * phone's card sheet, and read here as `.tvhead`, `.tvscreen` and `.tvkeys`; the Home card's `.tvbox` and `.tvctl` stay in the
+ * legacy sheet until #220.
  */
 :host {
   display: block;

@@ -51,6 +51,8 @@ export const en = {
   'media.playOrPause': 'Play or pause',
   'media.noVolumeSlider': "The TV doesn't report its volume, so there's no slider.",
   'media.opensControls': 'Opens the controls',
+  // the sheet a phone's tile opens: its Close button
+  'media.close': 'Close',
   // a speaker: its volume stepper, its play button and the line under its room when it plays nothing
   'media.volume': 'Volume',
   'media.volumeOf': '{room} volume',
