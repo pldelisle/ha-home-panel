@@ -1,7 +1,7 @@
 // The French of a moved string: for every English message a move introduced, the French catalog renders what the rewrite layer
-// (src/i18n/fr.js) makes of the English text, so moving a feature into the catalog cannot change a French pixel. A string
-// whose French would differ is a visible change and needs an approved baseline, not an edit here. A move that also deleted
-// the map's entry records the layer's old output as `was`, since the layer can no longer say it.
+// (src/i18n/fr.js) makes of the English text, so moving a feature into the catalog cannot change a French pixel. A string whose
+// French would differ is a visible change and needs an approved baseline, not an edit here; a `written` one is French the legacy
+// panel wrote itself, where the layer is no oracle, and `was` records the old output of an entry the move deleted from the map.
 // The list of messages is a fixture the move writes (test/unit/fixtures/moved/<move>.json); this file and the fixtures are
 // deleted with the layer in phase 4.
 import {readdirSync, readFileSync} from 'node:fs';

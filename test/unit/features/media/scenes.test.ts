@@ -1,7 +1,8 @@
 // sceneTiles: the Home scenes row, from the test house and from literal scenes; the expected lines are literals, in both languages.
 import {describe, expect, test} from 'vitest';
-import {K} from '../../../../src/features/media/commands.ts';
+import {K, SCENE_RAN_MS} from '../../../../src/features/media/commands.ts';
 import {sceneIcon, sceneTiles} from '../../../../src/features/media/scenes.ts';
+import {OverlayStore} from '../../../../src/ui/overlay-store.ts';
 import {entity, type FakeHass} from '../../fake-hass.ts';
 import {NOW, depsOf, fullHouse, houseOf, readingOf, type Language} from './support.ts';
 
@@ -121,6 +122,24 @@ describe('a scene', () => {
     expect(tile).toMatchObject({subLine: 'Done', active: true});
     expect(line('fr', 'scene.a', held)).toBe('Fait');
     expect(tilesOf(house, 'en', {}, held).find(t => t.id === 'scene.c')).toMatchObject({active: false});
+  });
+
+  test('says Done for four seconds after a run, held in the real store, and then says when it last ran', () => {
+    let clock = 0;
+    const store = new OverlayStore({now: () => clock});
+    const overlay = <T>(key: string, current: T): T => store.read(key, current);
+    store.hold(K.ran('scene.a'), true, SCENE_RAN_MS);
+    expect(tilesOf(house, 'en', {}, overlay).find(t => t.id === 'scene.a')).toMatchObject({
+      subLine: 'Done',
+      active: true,
+    });
+    clock = 3999;
+    expect(line('en', 'scene.a', overlay)).toBe('Done');
+    clock = 4000;
+    expect(tilesOf(house, 'en', {}, overlay).find(t => t.id === 'scene.a')).toMatchObject({
+      subLine: 'Last 1 min ago',
+      active: false,
+    });
   });
 
   test('a hidden scene is not drawn', () => {

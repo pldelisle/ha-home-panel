@@ -31,9 +31,9 @@ const inputsOf = (house: typeof fullHouse) => {
 };
 
 // the features the test house's speaker says, and the bits the model reads
-const PLAY = 1;
+const PLAY = 16384;
 const VOLUME_SET = 4;
-const PAUSE = 16384;
+const PAUSE = 1;
 
 const tv = (over: Partial<TvInputs> = {}): TvInputs => ({
   id: 'media_player.tv',
@@ -43,6 +43,7 @@ const tv = (over: Partial<TvInputs> = {}): TvInputs => ({
   wakeButton: null,
   state: 'on',
   source: 'Netflix',
+  summarySource: 'Netflix',
   muted: false,
   ...over,
 });
@@ -244,28 +245,34 @@ describe('the television', () => {
     expect(vm.tiles[0]).toMatchObject({subLine: 'Off', on: false, control: {checked: false}});
   });
 
+  test('says its input in the sub-line with the dash cut and the full-width ampersand kept, where the box makes it plain', () => {
+    const vm = tvOnly({source: 'Prime&Co', summarySource: 'Prime＆Co'});
+    expect(vm.summary).toBe('TV on · Prime＆Co');
+    expect(vm.tv).toMatchObject({sourceLabel: 'Prime&Co', statusLine: 'On · Prime&Co'});
+  });
+
   test('is on with no input: the screen says On', () => {
-    const vm = tvOnly({source: null});
+    const vm = tvOnly({source: null, summarySource: null});
     expect(vm.tv).toMatchObject({status: 'On', statusLine: 'On', screenLabel: 'On', sourceLabel: ''});
     expect(vm.summary).toBe('TV on');
     expect(vm.tiles[0].subLine).toBe('On');
   });
 
   test('is unavailable without a wake button: not responding, the switch disabled', () => {
-    const vm = tvOnly({state: 'unavailable', source: null});
+    const vm = tvOnly({state: 'unavailable', source: null, summarySource: null});
     expect(vm.tv).toMatchObject({available: false, on: false, status: 'Not responding', cardRight: 'Unavailable'});
     expect(vm.tiles[0]).toMatchObject({subLine: 'Not responding', control: {disabled: true}});
     expect(vm.summary).toBe('TV off');
   });
 
   test('is unavailable with a wake button: still available, so it can be woken', () => {
-    const vm = tvOnly({state: 'unavailable', source: null, wakeButton: 'button.wake_on_lan_tv'});
+    const vm = tvOnly({state: 'unavailable', source: null, summarySource: null, wakeButton: 'button.wake_on_lan_tv'});
     expect(vm.tv).toMatchObject({available: true, on: false, status: 'Off'});
     expect(vm.tiles[0].control).toMatchObject({disabled: false});
   });
 
   test('is muted: the status says it, and so does the line over its input', () => {
-    expect(tvOnly({muted: true, source: null}).tv).toMatchObject({
+    expect(tvOnly({muted: true, source: null, summarySource: null}).tv).toMatchObject({
       muted: true,
       status: 'On · muted',
       statusLine: 'On · muted',
@@ -275,7 +282,7 @@ describe('the television', () => {
   });
 
   test('is muted, in French: the layer leaves "muted" in English over an input, and words it alone', () => {
-    expect(tvOnly({muted: true, source: null}, 'fr').tv?.statusLine).toBe('Allumé · en sourdine');
+    expect(tvOnly({muted: true, source: null, summarySource: null}, 'fr').tv?.statusLine).toBe('Allumé · en sourdine');
     expect(tvOnly({muted: true}, 'fr').tv?.statusLine).toBe('Activé · muted · Netflix');
   });
 
@@ -354,7 +361,10 @@ describe('a speaker', () => {
   test('plays and pauses only the way its features allow', () => {
     const pp = (over: Partial<SpeakerInputs>) => only(over).speakers[0].playPause;
     expect(pp({})).toEqual({enabled: true, label: 'Pause', icon: 'pause'});
+    // Home Assistant's PAUSE is bit 1 and PLAY is bit 16384: a playing speaker needs PAUSE, a paused one needs PLAY
     expect(pp({features: PLAY | VOLUME_SET})).toMatchObject({enabled: false, icon: 'pause'});
+    expect(pp({features: PAUSE})).toMatchObject({enabled: true, icon: 'pause'});
+    expect(pp({state: 'paused', features: PLAY})).toMatchObject({enabled: true, icon: 'play'});
     expect(pp({state: 'paused'})).toEqual({enabled: true, label: 'Play', icon: 'play'});
     expect(pp({state: 'paused', features: PAUSE})).toMatchObject({enabled: false, icon: 'play'});
     expect(pp({state: 'idle', title: null})).toMatchObject({enabled: false, icon: 'play'});
@@ -394,7 +404,7 @@ describe('the sub-line and the speakers line count what Home Assistant says, as 
 
   test("in French, a count alone is worded and after another part it is the layer's quirk", () => {
     expect(summary(house('playing', 'playing'), 'fr')).toBe('2 haut-parleurs en lecture');
-    expect(summary({...house('playing', 'playing'), tv: tv({source: null})}, 'fr')).toBe(
+    expect(summary({...house('playing', 'playing'), tv: tv({source: null, summarySource: null})}, 'fr')).toBe(
       'Télé allumée · 2 speakers : en lecture',
     );
     expect(summary(house('idle', 'idle', 'idle'), 'fr')).toBe('3 speakers · nothing : en lecture');

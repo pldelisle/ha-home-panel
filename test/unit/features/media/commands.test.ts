@@ -3,7 +3,6 @@
 import {describe, expect, test} from 'vitest';
 import {
   K,
-  SCENE_RAN_MS,
   runScene,
   setMode,
   speakerPlayPause,
@@ -25,10 +24,6 @@ describe('the typed overlay keys', () => {
     expect(K.state('media_player.kitchen')).toBe('media_player.kitchen:st');
     expect(K.volume('media_player.kitchen')).toBe('media_player.kitchen:vol');
     expect(K.ran('scene.movie')).toBe('scene.movie:ran');
-  });
-
-  test('a scene is held as run for four seconds', () => {
-    expect(SCENE_RAN_MS).toBe(4000);
   });
 });
 

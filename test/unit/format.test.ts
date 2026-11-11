@@ -232,34 +232,37 @@ describe('dayParts cache', () => {
   });
 });
 
-describe("ago, the legacy panel's rule: minutes under an hour, hours under a day, then the date", () => {
+describe("ago, the legacy panel's rule: a kind and a count, then the date", () => {
   const NOW = T1607.getTime();
   const MIN = 60_000;
-  // [how long before now, en-CA, fr-CA, de-DE (the English words: a third language is a table entry)]
-  const rows = [
-    ['a few seconds', 20_000, 'just now', "à l'instant", 'just now'],
-    ['a moment in the future', -5 * MIN, 'just now', "à l'instant", 'just now'],
-    ['half a minute rounds up', 30_000, '1 min ago', 'il y a 1 min', '1 min ago'],
-    ['five minutes', 5 * MIN, '5 min ago', 'il y a 5 min', '5 min ago'],
-    ['59 minutes', 59 * MIN, '59 min ago', 'il y a 59 min', '59 min ago'],
-    ['an hour', 60 * MIN, '1 h ago', 'il y a 1 h', '1 h ago'],
-    ['90 minutes rounds to two hours', 90 * MIN, '2 h ago', 'il y a 2 h', '2 h ago'],
-    ['23 hours', 23 * 60 * MIN, '23 h ago', 'il y a 23 h', '23 h ago'],
-    ['a day', 24 * 60 * MIN, 'Nov 6', '6 nov.', '6. Nov.'],
-    ['a week', 7 * 24 * 60 * MIN, 'Oct 31', '31 oct.', '31. Okt.'],
+  // the kind and the count do not depend on the locale: the words are the catalog's
+  const spans = [
+    ['a few seconds', 20_000, {kind: 'now'}],
+    ['a moment in the future', -5 * MIN, {kind: 'now'}],
+    ['half a minute rounds up', 30_000, {kind: 'minutes', n: 1}],
+    ['five minutes', 5 * MIN, {kind: 'minutes', n: 5}],
+    ['59 minutes', 59 * MIN, {kind: 'minutes', n: 59}],
+    ['an hour', 60 * MIN, {kind: 'hours', n: 1}],
+    ['90 minutes rounds to two hours', 90 * MIN, {kind: 'hours', n: 2}],
+    ['23 hours', 23 * 60 * MIN, {kind: 'hours', n: 23}],
   ] as const;
-  describe.each([
-    ['en-CA', 2],
-    ['fr-CA', 3],
-    ['de-DE', 4],
-  ] as const)('%s', (tag, col) => {
-    const f = make(tag);
-    test.each(rows)('%s', (_name, before, ...expected) => {
-      expect(f.ago(NOW - before, NOW)).toBe(expected[col - 2]);
+  describe.each(['en-CA', 'fr-CA', 'de-DE'])('%s', tag => {
+    test.each(spans)('%s', (_name, before, expected) => {
+      expect(make(tag).ago(NOW - before, NOW)).toEqual(expected);
     });
   });
 
+  // from a day on, the date as the locale writes it
+  test.each([
+    ['a day', 24 * 60 * MIN, 'Nov 6', '6 nov.', '6. Nov.'],
+    ['a week', 7 * 24 * 60 * MIN, 'Oct 31', '31 oct.', '31. Okt.'],
+  ] as const)('%s is a date', (_name, before, en, fr, de) => {
+    expect(make('en-CA').ago(NOW - before, NOW)).toEqual({kind: 'date', date: en});
+    expect(make('fr-CA').ago(NOW - before, NOW)).toEqual({kind: 'date', date: fr});
+    expect(make('de-DE').ago(NOW - before, NOW)).toEqual({kind: 'date', date: de});
+  });
+
   test('takes a Date as well as a timestamp', () => {
-    expect(make('en-CA').ago(new Date(NOW - 5 * MIN), NOW)).toBe('5 min ago');
+    expect(make('en-CA').ago(new Date(NOW - 5 * MIN), NOW)).toEqual({kind: 'minutes', n: 5});
   });
 });

@@ -12,9 +12,9 @@ import type {TvInputs} from '../../providers/tv-source.ts';
 type Translate = Messages['t'];
 
 // `supported_features` is a bit field: Home Assistant's `MediaPlayerEntityFeature`, of which Media reads three bits
-const PLAY = 1; // MediaPlayerEntityFeature.PLAY = 1
+const PAUSE = 1; // MediaPlayerEntityFeature.PAUSE = 1
 const VOLUME_SET = 4; // MediaPlayerEntityFeature.VOLUME_SET = 4
-const PAUSE = 16384; // MediaPlayerEntityFeature.PAUSE = 16384
+const PLAY = 16384; // MediaPlayerEntityFeature.PLAY = 16384
 
 export interface MediaModelDeps {
   t: Translate;
@@ -151,9 +151,11 @@ function tvView(tv: TvInputs, {t, overlay}: MediaModelDeps): TvView {
     controlsLabel: t('media.volumeAndPlayback'),
     hint: t('media.noVolumeSlider'),
     controls: {
-      // "Vol −" and "Vol +" are abbreviations the layer leaves as they are in French
-      volumeDown: {label: t('media.volumeDown'), pane: {text: 'Vol −', label: t('media.volumeDownPane')}},
-      volumeUp: {label: t('media.volumeUp'), pane: {text: 'Vol +', label: t('media.volumeUpPane')}},
+      volumeDown: {
+        label: t('media.volumeDown'),
+        pane: {text: t('media.volumeDownShort'), label: t('media.volumeDownPane')},
+      },
+      volumeUp: {label: t('media.volumeUp'), pane: {text: t('media.volumeUpShort'), label: t('media.volumeUpPane')}},
       mute: {label: t(muted ? 'media.unmute' : 'media.mute'), pane: {text: t('media.mute'), label: t('media.mute')}},
       playPause: {label: playOrPause, pane: {text: null, label: playOrPause}},
     },
@@ -222,7 +224,8 @@ function summaryOf({tv, speakers}: MediaInputs, t: Translate): string {
   const playing = speakers.filter(speaker => speaker.state === 'playing').length;
   const parts = [
     ...(tv ? [t(tv.state === 'on' ? 'media.summaryTvOn' : 'media.summaryTvOff')] : []),
-    ...(tv?.state === 'on' && tv.source ? [tv.source] : []),
+    // the legacy line cuts only the dash: a full-width ampersand stays in it, where the box and the tile make it plain
+    ...(tv?.state === 'on' && tv.summarySource ? [tv.summarySource] : []),
     ...(speakers.length === 0
       ? []
       : playing > 0

@@ -41,6 +41,7 @@ describe('the test house', () => {
       wakeButton: null,
       state: 'on',
       source: 'Netflix',
+      summarySource: 'Netflix',
       muted: false,
     });
   });
@@ -199,6 +200,15 @@ describe('the state, the input and the volume', () => {
     expect(source('Netflix')).toBe('Netflix');
     expect(source(undefined)).toBeNull();
     expect(source(3)).toBeNull();
+  });
+
+  test("the pane's sub-line takes the input with the dash cut and the full-width ampersand kept, as the legacy line did", () => {
+    const source = (value: unknown) =>
+      tvOf(houseOf([samsung('media_player.a', {}, undefined, {source: value})]))?.summarySource;
+    expect(source('Prime＆Co - Home')).toBe('Prime＆Co');
+    expect(source('HDMI 1 – Cable')).toBe('HDMI 1');
+    expect(source('Netflix')).toBe('Netflix');
+    expect(source(undefined)).toBeNull();
   });
 
   test('muted follows the volume flag', () => {

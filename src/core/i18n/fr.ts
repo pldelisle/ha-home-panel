@@ -44,6 +44,9 @@ export const fr: Record<MessageKey, string> = {
   'media.volumeAndPlayback': 'Volume et lecture',
   'media.volumeDown': 'Baisser le volume',
   'media.volumeUp': 'Monter le volume',
+  // the layer leaves the abbreviations as they are
+  'media.volumeDownShort': 'Vol −',
+  'media.volumeUpShort': 'Vol +',
   'media.volumeDownPane': 'Vol −, baisser le volume',
   'media.volumeUpPane': 'Vol +, monter le volume',
   'media.mute': 'Sourdine',
@@ -68,8 +71,8 @@ export const fr: Record<MessageKey, string> = {
   'media.modeOff': '{name}\u00a0: désactivé',
   'media.tapToRun': 'Lancer',
   'media.done': 'Fait',
-  'media.lastAgo': '{ago}',
-  'media.last': 'Lancée le {date}',
+  'media.last':
+    "{kind, select, now {À l'instant} minutes {Il y a {n} min} hours {Il y a {n} h} other {Lancée le {date}}}",
   // the legacy panel wrote this French itself for a routine that is off (it never went through the layer, which says Éteint)
   'media.modeIsOff': 'Désactivé',
   'cams.title': 'Sécurité',

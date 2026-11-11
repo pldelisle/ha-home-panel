@@ -3,7 +3,6 @@
 // through `deps.t`, the time through `deps.fmt.ago` at an instant it is given. `sceneIcon` and the order rule copy the legacy
 // panel's `sceneIcon` and `sceneTiles`, which the Media move of #220 deletes.
 // Must not: send a command, read `hass` or the clock, hold text for the household, or import the DOM, the kit or the shell.
-import {capitalise} from '../../core/figures.ts';
 import type {ResolvedConfig} from '../../core/config.ts';
 import type {HassEntities, Registries} from '../../core/hass.ts';
 import type {Formatters} from '../../core/i18n/format.ts';
@@ -73,7 +72,7 @@ export function sceneTiles(
         kind: 'scene',
         name: names.name(id),
         icon: sceneIcon(id),
-        subLine: ran ? t('media.done') : ago === null ? t('media.tapToRun') : lastRun(t, fmt, date, ago),
+        subLine: ran ? t('media.done') : ago === null ? t('media.tapToRun') : t('media.last', ago),
         active: ran,
         disabled: false,
       };
@@ -93,12 +92,4 @@ export function sceneTiles(
       };
     });
   return [...scenes, ...modes];
-}
-
-/**
- * "Last 2 h ago", or "Last Nov 7" from a day on (`fmt.ago` says a date, never a relative time, from then). French words the two
- * differently (`Il y a 2 h`, `Lancée le 7 nov.`) and starts the line with a capital, as the rewrite layer did to a text node.
- */
-function lastRun(t: Messages['t'], fmt: Formatters, date: number, ago: string): string {
-  return ago === fmt.date(date) ? t('media.last', {date: ago}) : capitalise(t('media.lastAgo', {ago}));
 }

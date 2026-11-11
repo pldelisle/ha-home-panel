@@ -109,6 +109,12 @@
       "key": "media.volumeUp"
     },
     {
+      "key": "media.volumeDownShort"
+    },
+    {
+      "key": "media.volumeUpShort"
+    },
+    {
       "key": "media.volumeDownPane"
     },
     {
@@ -221,35 +227,29 @@
       "key": "media.done"
     },
     {
-      "key": "media.lastAgo",
+      "key": "media.last",
       "values": {
-        "ago": "5 min ago"
-      },
-      "fr": {
-        "ago": "Il y a 5 min"
-      }
-    },
-    {
-      "key": "media.lastAgo",
-      "values": {
-        "ago": "3 h ago"
-      },
-      "fr": {
-        "ago": "Il y a 3 h"
-      }
-    },
-    {
-      "key": "media.lastAgo",
-      "values": {
-        "ago": "just now"
-      },
-      "fr": {
-        "ago": "À l'instant"
+        "kind": "minutes",
+        "n": 5
       }
     },
     {
       "key": "media.last",
       "values": {
+        "kind": "hours",
+        "n": 3
+      }
+    },
+    {
+      "key": "media.last",
+      "values": {
+        "kind": "now"
+      }
+    },
+    {
+      "key": "media.last",
+      "values": {
+        "kind": "date",
         "date": "Nov 7"
       },
       "fr": {

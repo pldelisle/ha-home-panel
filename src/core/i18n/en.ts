@@ -42,6 +42,8 @@ export const en = {
   'media.volumeAndPlayback': 'Volume and playback',
   'media.volumeDown': 'Volume down',
   'media.volumeUp': 'Volume up',
+  'media.volumeDownShort': 'Vol −',
+  'media.volumeUpShort': 'Vol +',
   'media.volumeDownPane': 'Vol −, volume down',
   'media.volumeUpPane': 'Vol +, volume up',
   'media.mute': 'Mute',
@@ -68,8 +70,7 @@ export const en = {
   // the scenes row: a scene's line, and a routine's (the household's modes), which French words in its own way
   'media.tapToRun': 'Tap to run',
   'media.done': 'Done',
-  'media.lastAgo': 'Last {ago}',
-  'media.last': 'Last {date}',
+  'media.last': 'Last {kind, select, now {just now} minutes {{n} min ago} hours {{n} h ago} other {{date}}}',
   'media.modeIsOff': 'Off',
   'cams.title': 'Security',
   'auto.title': 'Automations',

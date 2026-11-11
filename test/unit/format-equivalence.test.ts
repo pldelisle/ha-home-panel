@@ -93,11 +93,12 @@ describe('the French formatter equals the layer on the English output', () => {
   );
 });
 
-// `ago` is the one formatter that reads two instants; its text is a node on its own or a sentence's tail (`Motion 5 min ago`,
-// where the layer words only the relative forms: it puts `le` before a date, which `ago` does not)
+// `ago` returns a kind and a count for the catalog to word, so the two languages must agree on those, and on a date the French
+// formatter is the layer's reading of the English one (the words themselves are held by the catalog's equivalence test)
 describe('ago', () => {
   const NOW = T1607.getTime();
   const SPANS_MS = [
+    -5 * 60e3,
     0,
     20e3,
     30e3,
@@ -110,12 +111,12 @@ describe('ago', () => {
     40 * 864e5,
   ];
 
-  test.each(SPANS_MS)('%s ms before now, as a node', span => {
-    expect(fr.ago(NOW - span, NOW)).toBe(layerText(en.ago(NOW - span, NOW)));
-  });
-
-  test.each(SPANS_MS.filter(span => span < 864e5))('%s ms before now, after a word', span => {
-    expect(`Mouvement ${fr.ago(NOW - span, NOW)}`).toBe(layerText(`Motion ${en.ago(NOW - span, NOW)}`));
+  test.each(SPANS_MS)('%s ms before now: the same kind and count in both languages', span => {
+    const english = en.ago(NOW - span, NOW);
+    const french = fr.ago(NOW - span, NOW);
+    expect(french.kind).toBe(english.kind);
+    if (english.kind === 'date' && french.kind === 'date') expect(french.date).toBe(layerText(english.date));
+    else expect(french).toEqual(english);
   });
 });
 

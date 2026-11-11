@@ -20,7 +20,7 @@ src/features/media/
 src/core/
   registry.ts              areaOf and isHidden: the registry rules the store, the providers and the features share
   timing.ts                debounce(fn, ms, timers?): the volume's 450 ms, with injected timers and a cancel
-  i18n/format.ts           fmt.ago(instant, now): the relative time of a scene's last run ("5 min ago", "2 h ago", then the date)
+  i18n/format.ts           fmt.ago(instant, now): a scene's last run as a kind and a count (now, minutes, hours) or a date, which `media.last` words
 ```
 
 The pane, the tiles, the sheet and the Home cards (`<hp-media-pane>` and the elements it places) are listed in spec 16 and land with the tickets that build them.
