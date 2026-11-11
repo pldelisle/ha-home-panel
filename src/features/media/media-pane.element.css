@@ -1,9 +1,9 @@
 /*
  * <hp-media-pane>'s own rules: its place in the pane section, the header's, and the two cards with the speakers' line and list.
- * Known copies of legacy rules: `.pane-media` and its header (tabs.css), `.card` and `.card .top` (base.css, glass.css), `.lbl` and
- * `.hint` (base.css), `.pods` (tabs.css). The legacy sheet keeps them for the phone's card sheet, which still opens the guest's
- * `#mtv` and `#media` until #218, and for every other pane's cards; #220 deletes the Media ones. Selectors differ (`.mcard`)
- * because the styles-split test lets one file write a selector, and a shadow root cannot reach the legacy rule anyway.
+ * Known copies of legacy rules: `.pods` (tabs.css), which #218 deletes with the guest's `#media`; `.card` and `.card .top` (base.css,
+ * glass.css), `.lbl` and `.hint` (base.css), which every other legacy pane's cards still draw; `.pane-media` and its header (tabs.css),
+ * the section's own rules, which no Media gate lists. Selectors differ (`.mcard`) because the styles-split test lets one file write a
+ * selector, and a shadow root cannot reach the legacy rule anyway.
  */
 /* the tablet's two columns, the television's card and the speakers' card under the header, one column under 1000 pixels */
 :host {

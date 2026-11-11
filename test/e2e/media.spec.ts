@@ -2,7 +2,7 @@
 // and what the pane costs; on the phone it draws its header and the guest's tiles stay (#218 moves them).
 // Test titles that start with a number are the checks of docs/specs/01-playwright-test.md.
 import {test, expect, expectCall, phoneOnly, tabletOnly, type House} from './fixtures';
-import {FULL_CFG} from './houses';
+import {AFTERNOON, FULL_CFG} from './houses';
 
 test.use({houseOpts: {cfg: FULL_CFG}});
 
@@ -41,7 +41,8 @@ test.describe('the tablet', () => {
     expect(calls(house, 'media_player.volume_set'), 'one call for the burst').toHaveLength(1);
   });
 
-  // the pod cancels its waiting send in disconnectedCallback, and its connectedCallback arms nothing: a fresh tap starts a fresh wait
+  // the pod cancels its waiting send in disconnectedCallback and releases the level it held, and its connectedCallback arms nothing:
+  // a fresh tap starts a fresh wait
   test('a volume tap whose pod leaves the document within the wait sends nothing, even when the panel comes back', async ({
     house,
   }) => {
@@ -55,6 +56,18 @@ test.describe('the tablet', () => {
     });
     await house.page.waitForTimeout(900);
     expect(calls(house, 'media_player.volume_set')).toEqual([]);
+    await expect(pod(house).locator('.sv b'), 'the level Home Assistant reports, not the one never sent').toHaveText(
+      '35%',
+    );
+  });
+
+  // the guest's renderMedia draws only on the phone, whose tiles open these cards; a rule hides them in the pane, so only their
+  // content tells whether the guest drew the tablet's pane a second time
+  test("leaves the guest's Media cards empty: the pane is the tablet's one drawer", async ({house}) => {
+    await house.tab('media');
+    await expect(pod(house).locator('.sv b')).toHaveText('35%');
+    await expect(house.root().locator('#pane-media > #mtv')).toBeEmpty();
+    await expect(house.root().locator('#pane-media > #media')).toBeEmpty();
   });
 
   test('play on a paused speaker shows the pause button at once and sends media_play', async ({house}) => {
@@ -91,6 +104,23 @@ test.describe('the tablet', () => {
       await expect(toast).toHaveAttribute('role', 'alert');
       await expect(power(house)).toHaveAttribute('aria-checked', 'false');
       expect(calls(house, 'button.')).toEqual([]);
+    });
+  });
+
+  test.describe('a tap on the television', () => {
+    test.use({houseOpts: {cfg: FULL_CFG, time: AFTERNOON}});
+
+    // the legacy tvCmd's fifteen seconds, where the other controls hold twenty: Home Assistant never answers here
+    test('holds what it asked for fifteen seconds, then shows what Home Assistant says', async ({house}) => {
+      await house.tab('media');
+      // the page's clock stands still, so only fastForward moves it and an expectation's retries cannot outwait a hold
+      await house.clock.pauseAt((await house.page.evaluate(() => Date.now())) + 1000);
+      await power(house).click();
+      await expect(power(house)).toHaveAttribute('aria-checked', 'false');
+      await house.clock.fastForward(14_000);
+      await expect(power(house)).toHaveAttribute('aria-checked', 'false');
+      await house.clock.fastForward(2_000);
+      await expect(power(house)).toHaveAttribute('aria-checked', 'true');
     });
   });
 

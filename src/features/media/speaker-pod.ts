@@ -1,7 +1,8 @@
 // <hp-speaker-pod>: one speaker in the Media pane: the cover or the speaker icon, the room and the track, the volume stepper, play.
 // Pattern: humble object (Meszaros) over the model's `SpeakerView`; a tap holds the value it asks for in the panel's overlay store and
 // runs the feature's command (ADR 0023); the stepper's taps go through `debounce(450)`, so a burst is one `volume_set` at the last level.
-// A send still waiting is cancelled in `disconnectedCallback`, so a pod that leaves the document sends nothing; connecting arms nothing (a tap does).
+// A send still waiting is cancelled in `disconnectedCallback` and its level released, so a pod that leaves the document sends nothing and
+// never shows an unsent level when it comes back; connecting arms nothing (a tap does).
 // Must not: read an entity or the store's state (the pane hands it `speaker`), word a string, or send a level per tap.
 import {LitElement, html, nothing, unsafeCSS} from 'lit';
 import {classMap} from 'lit/directives/class-map.js';
@@ -41,20 +42,26 @@ export class SpeakerPod extends LitElement {
     overlay: this.optimistic,
     t: () => this.storeController.store.t,
   });
-  // one wait per pod: the last level of a burst is the one sent, for the speaker it was tapped on
+  // one wait per pod: the last level of a burst is the one sent, for the speaker it was tapped on (the legacy `volT` was one wait
+  // for the panel, so a tap on another speaker dropped this one's level)
   private readonly sendVolume = debounce((speaker: SpeakerView, level: number) => {
+    this.waiting = undefined;
     void this.commands.run(speakerVolume(speaker, level));
   }, VOLUME_DEBOUNCE_MS);
+  /** The speaker whose level waits to be sent; its hold is released if the pod leaves the document first. */
+  private waiting: string | undefined;
 
   constructor() {
     super();
-    // `compact` and `glass` come from the shell as host attributes the pod's rules test
+    // `glass` comes from the shell as a host attribute the pod's rules test
     new AppearanceConsumer(this);
   }
 
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     this.sendVolume.cancel();
+    if (this.waiting) this.optimistic.release(K.volume(this.waiting));
+    this.waiting = undefined;
   }
 
   protected override render() {
@@ -99,6 +106,7 @@ export class SpeakerPod extends LitElement {
   private step(level: number): void {
     if (!this.speaker) return;
     this.optimistic.hold(K.volume(this.speaker.id), level);
+    this.waiting = this.speaker.id;
     this.sendVolume(this.speaker, level);
   }
 

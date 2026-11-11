@@ -708,6 +708,12 @@
   gap: 16px;
   align-items: start;
 }
+/* the guest's Media cards show only in the card sheet the phone's tiles open (#218 deletes them); the pane is
+   <hp-media-pane> on every screen (#217) */
+.pane-media > #mtv,
+.pane-media > #media {
+  display: none;
+}
 .mtvhead {
   display: flex;
   align-items: flex-start;

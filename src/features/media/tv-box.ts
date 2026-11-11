@@ -5,7 +5,7 @@
 // Must not: read an entity or the store's state (the pane hands it `tv`), word a string, or show a state it has not held.
 import {LitElement, html, nothing, unsafeCSS} from 'lit';
 import {classMap} from 'lit/directives/class-map.js';
-import {K, tvMute, tvPlayPause, tvPower, tvVolume} from './commands.ts';
+import {K, TV_HOLD_MS, tvMute, tvPlayPause, tvPower, tvVolume} from './commands.ts';
 import type {TvView} from './model.ts';
 import boxOwn from './tv-box.element.css?inline';
 import {CommandRunner} from '../../ui/commands.ts';
@@ -85,14 +85,14 @@ export class TvBox extends LitElement {
   private readonly onPower = (e: CustomEvent<SwitchChangeDetail>): void => {
     e.stopPropagation();
     if (!this.tv) return;
-    this.optimistic.hold(K.on(this.tv.id), e.detail.checked);
+    this.optimistic.hold(K.on(this.tv.id), e.detail.checked, TV_HOLD_MS);
     void this.commands.run(tvPower(this.tv, e.detail.checked));
   };
 
   private readonly onMute = (): void => {
     if (!this.tv) return;
     const muted = !this.tv.muted;
-    this.optimistic.hold(K.mute(this.tv.id), muted);
+    this.optimistic.hold(K.mute(this.tv.id), muted, TV_HOLD_MS);
     void this.commands.run(tvMute(this.tv, muted));
   };
 

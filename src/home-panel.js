@@ -4657,13 +4657,10 @@ export class LegacyPanel {
   moreLines() {
     const L = this.live(),
       isOn = i => (this.st(i) || {}).state === 'on';
+    // Media's line is the feature's own (mediaBrief, #217)
     const P = this.purifiers(),
-      air = P.rooms.length ? this.airSummary(P) : null,
-      T = this.tv(),
-      ts = T && this.st(T.id),
-      tvOn = ts && ok(ts) && ts.state !== 'off';
-    const playing = this.speakers().filter(m => (this.st(m.id) || {}).state === 'playing').length,
-      X = this.sensors(),
+      air = P.rooms.length ? this.airSummary(P) : null;
+    const X = this.sensors(),
       open = X.filter(x => x.kind === 'door' && isOn(x.id)).length,
       moving = X.some(x => x.kind === 'motion' && isOn(x.id));
     const A = this.auAutos ? this.auAutos() : [],
@@ -4671,10 +4668,6 @@ export class LegacyPanel {
     const sb = {
       energy: L.grid == null ? '' : `${L.grid < 1 ? Math.round(L.grid * 1000) + ' W' : L.grid.toFixed(2) + ' kW'} now`,
       air: !air ? 'No purifiers' : air.worst < 0 ? 'No data' : AQ_LVL[air.worst][0],
-      media:
-        [T ? (tvOn ? 'TV on' : 'TV off') : '', playing ? plural(playing, 'speaker') + ' playing' : '']
-          .filter(Boolean)
-          .join(' · ') || 'Nothing playing',
       cams: [open ? plural(open, 'door') + ' open' : 'Doors closed', moving ? 'motion now' : '']
         .filter(Boolean)
         .join(' · '),
@@ -4832,27 +4825,6 @@ export class LegacyPanel {
           this.lightAreas().filter(x => !x.link || x.link.first).length < 2;
       const rs = this.$('lreset');
       if (rs) rs.hidden = !this.lightEdit || !(this.lightOrder && this.lightOrder.length);
-    }
-    if (this.tab === 'media') {
-      const T = this.tv(),
-        ts = T && this.st(T.id),
-        tvOn = ts && ok(ts) && ts.state !== 'off',
-        src = tvOn && ts.attributes.source ? String(ts.attributes.source).replace(/\s+[-–].*$/, '') : '',
-        M = this.speakers(),
-        playing = M.filter(m => (this.st(m.id) || {}).state === 'playing').length;
-      this.set(
-        'msub',
-        [
-          T ? (tvOn ? `TV on${src ? ' · ' + esc(src) : ''}` : 'TV off') : '',
-          M.length
-            ? playing
-              ? plural(playing, 'speaker') + ' playing'
-              : `${plural(M.length, 'speaker')} · nothing playing`
-            : '',
-        ]
-          .filter(Boolean)
-          .join(' · '),
-      );
     }
     if (this.tab === 'cams') {
       const cams = this.cameras(),
