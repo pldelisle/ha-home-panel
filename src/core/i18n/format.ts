@@ -1,9 +1,10 @@
 // The formatters: every date, time and number the panel shows, built once from a locale spec over `Intl` (Unicode CLDR).
 // Pattern: a factory returning the instance's functions and its per-hour cache (Ousterhout, deep module), on the same CLDR
-// data as Home Assistant's formatTime and formatNumber. Deliberate overrides of CLDR and `Intl`, and the only
-// post-processing: the three house rules (en-* am/pm without periods, fr-* "16 h" on the hour, fr-* thousands U+202F)
-// and number() and fixed() clamping their fraction digits to 2, and time24 and time24s, which join the parts with a colon and Latin
-// digits in every locale because the table asks for `16:07`. Must not: read the clock, the DOM or a browser default.
+// data as Home Assistant's formatTime and formatNumber. Deliberate overrides of CLDR and `Intl`, and the only post-processing:
+// the three house rules (en-* am/pm without periods, fr-* "16 h" on the hour, fr-* thousands U+202F), number() and fixed() clamping
+// their fraction digits to 2, time24 and time24s joining the parts with a colon and Latin digits in every locale (the table asks for `16:07`),
+// and `ago`, the one function that returns no text: it cuts a span into a kind and a count (the legacy rule) and formats only the date, so the words stay in the catalog.
+// Must not: read the clock, the DOM or a browser default, or hold a word a person reads.
 import {HOUR_MS} from '../figures.ts';
 import type {PanelLocaleSpec} from './locale.ts';
 
@@ -15,6 +16,13 @@ export interface DayParts {
   h: number;
   wd: string;
 }
+
+/**
+ * How long before `now` an instant was, as a kind and a count for the catalog to word: under a minute (or ahead of now), whole
+ * minutes under an hour, whole hours under a day, then the instant's date as this locale writes it.
+ */
+export type Ago =
+  {kind: 'now'} | {kind: 'minutes'; n: number} | {kind: 'hours'; n: number} | {kind: 'date'; date: string};
 
 export interface Formatters {
   /** `4:07 pm`, `16 h 07`, `16:07`. */
@@ -44,7 +52,11 @@ export interface Formatters {
   number(n: number, maxFraction?: number): string;
   /** Exactly `digits` fraction digits, clamped to 2: `4.0`, `101.9`, `4,0`; the former `toFixed`. */
   fixed(n: number, digits: number): string;
+  /** The legacy panel's `ago` rule (1, 60 and 1440 minutes), which stays there until the last feature that says it has moved; `now` is passed in, never read. */
+  ago(d: Instant, now: number): Ago;
 }
+
+const MINUTE_MS = 6e4;
 
 const PARTS_CACHE_LIMIT = 20_000;
 
@@ -165,6 +177,13 @@ export function createFormatters(locale: PanelLocaleSpec): Formatters {
         fixedFormats.set(exactly, (format = new Intl.NumberFormat(locale.numberLocale, options)));
       }
       return numberRule(format.format(n));
+    },
+    ago: (d, now) => {
+      const minutes = Math.round((now - Number(d)) / MINUTE_MS);
+      if (minutes < 1) return {kind: 'now'};
+      if (minutes < 60) return {kind: 'minutes', n: minutes};
+      if (minutes < 1440) return {kind: 'hours', n: Math.round(minutes / 60)};
+      return {kind: 'date', date: date.format(d)};
     },
   };
 }

@@ -61,7 +61,7 @@ src/features/media/
   ids.ts                   mediaIds(store): the TV, the speakers, the wake button, the scenes and modes
   inputs.ts                TV_SOURCES, findTv, readMedia(states, registries, names, sources): MediaInputs
   speakers.ts              speakers(states, registries, names, tvId): Speaker[] (generic rules, pure; readMedia adds each one's state)
-  model.ts                 mediaModel(inputs, overlay, deps): MediaViewModel
+  model.ts                 mediaModel(inputs, {t, names, overlay}): MediaViewModel
   scenes.ts                sceneTiles(states, registries, config, overlay, deps): SceneTileView[]
   commands.ts              the feature's commands: tvPower, tvVolume, tvMute, tvPlayPause, speakerPlayPause, speakerVolume, speakerSkip, runScene, setMode
   media-pane.ts            <hp-media-pane>
@@ -177,11 +177,11 @@ export class OptimisticController implements ReactiveController {
 }
 ```
 
-The pure `overlay` is the class's `pend` with the string comparison kept (`String(held) !== String(current)`), so a `volume_level` of `0.3` held as `0.3` and reported as `0.30000001` still releases as today. The controller subscribes to the store in `hostConnected` and unsubscribes in `hostDisconnected`, and keeps one timer at the store's earliest expiry (cleared in `hostDisconnected`, set again in `hostConnected` when values are held): when it fires it sweeps what ran out and updates its host, so a held value that Home Assistant never confirms visibly reverts at twenty seconds, which the class only did on the next tick. The clock is the store's (`now`), so one fake clock drives a test. Key names are typed per feature (`media/commands.ts` exports `const K = {on: id => \`${id}:on\`, …}`), so a typo is a compile error.
+The pure `overlay` is the class's `pend` with the string comparison kept (`String(held) !== String(current)`), so a `volume_level` of `0.3` held as `0.3` and reported as `0.30000001` stays held until it expires, as today (the two strings differ). The controller subscribes to the store in `hostConnected` and unsubscribes in `hostDisconnected`, and keeps one timer at the store's earliest expiry (cleared in `hostDisconnected`, set again in `hostConnected` when values are held): when it fires it sweeps what ran out and updates its host, so a held value that Home Assistant never confirms visibly reverts at twenty seconds, which the class only did on the next tick. The clock is the store's (`now`), so one fake clock drives a test. Key names are typed per feature (`media/commands.ts` exports `const K = {on: id => \`${id}:on\`, …}`), so a typo is a compile error.
 
 `src/features/media/commands.ts` is where the feature's intent becomes `Command`s; it is pure (returns a `Command`) and tested as data:
 
-- `tvPower(tv, on)`: hold `K.on(tv.id)`; `media_player.turn_on` with `fallback: {domain: 'button', service: 'press', data: {entity_id: tv.wakeButton}}` when `wakeButton` exists, done `media.tvOn` ("Turning the TV on"); or `media_player.turn_off`, done `media.tvOff`.
+- `tvPower(tv, on)`: hold `K.on(tv.id)`; `media_player.turn_on` with `fallback: {domain: 'button', service: 'press', data: {entity_id: tv.wakeButton}}` when `wakeButton` exists, done `media.tvTurningOn` ("Turning the TV on"); or `media_player.turn_off`, done `media.tvTurnedOff` ("TV turned off").
 - `tvVolume(tv, dir)`: `volume_up`/`volume_down`, silent. `tvMute(tv, muted)`: hold `K.mute`, `volume_mute`. `tvPlayPause(tv)`: `media_play_pause`, silent.
 - `speakerPlayPause(sp, play)`: hold `K.state(id)` as `'playing' | 'paused'`, `media_play`/`media_pause`, done `media.speakerPlaying`/`media.speakerPaused` with the name. `speakerSkip(sp, dir)`: `media_next_track`/`media_previous_track`.
 - `speakerVolume(sp, level)`: hold `K.volume(id)` as the clamped two-decimal level; the element debounces the send by 450 ms through `debounce` in `src/core/timing.ts` (pure factory, injected timers, tested; its `cancel` is what the element calls in `disconnectedCallback` so no send fires after the pane is gone); the command is `volume_set` with the last level, silent.
@@ -197,26 +197,25 @@ export interface MediaInputs {
   speakers: SpeakerInputs[]; // {id, areaId, name, state, available, features: number, title, artist, album, picture, volume}
 }
 export interface MediaModelDeps {
-  now: number;
   t: Translate;
-  fmt: Formatters;
-  names: Names;
-  overlay: <T>(key: string, current: T) => T; // the controller's read, injected so the model stays pure
+  names: Names; // a speaker's room: its area's name as the panel shows it, else the speaker's own name
+  overlay: Overlay; // <T>(key: string, current: T) => T: the controller's or the store's `read`, injected so the model stays pure
 }
 export function mediaModel(inputs: MediaInputs, deps: MediaModelDeps): MediaViewModel;
 
 export interface MediaViewModel {
   summary: string; // "TV on · Netflix · 2 speakers playing" | "TV off · 3 speakers · nothing playing" | ""
-  tv: TvView | null; // {name, on, available, muted, sourceLabel, statusLine, switchLabel, controls: {volumeDown, volumeUp, mute, playPause} labels}
-  speakers: SpeakerView[]; // {id, room, name, playing, available, loaded, title, subLine, picture, volume: {percent, canStep, atMin, atMax} | null, playPause: {enabled, label, icon}}
+  tv: TvView | null; // {name, on, available, muted, sourceLabel, status (the card's line), statusLine (the pane's, with the input), screenLabel, cardRight, switchLabel, controlsLabel, hint, controls: {volumeDown, volumeUp, mute, playPause}: {label, pane: {text, label}}}
+  speakers: SpeakerView[]; // {id, room, name, playing, available, loaded, title, artist, subLine, picture, volume: {percent, text, caption, label, downLabel, upLabel, atMin, atMax} | null (no stepper), playPause: {enabled, label, icon}}
   speakersLine: string; // "2 speakers playing" | "Nothing playing" | "None found"
-  tiles: MediaTileView[]; // the phone: {key, kind: 'tv' | 'speaker', title, subLine, on, picture, control: {kind: 'switch', checked, label, disabled} | {kind: 'play', playing, label, disabled}}
+  tiles: MediaTileView[]; // the phone: {key, kind: 'tv' | 'speaker', title, sheetTitle, description, subLine, on, picture, control: {kind: 'switch', checked, label, disabled} | {kind: 'play', playing, label, disabled}}
+  labels: {speakers: string; noDevices: string; noSpeakers: string}; // the words around the cards
 }
 ```
 
 - The model applies the overlay to `on`, `muted`, `state` and `volume` through `deps.overlay`, so the TV box, the card and the tile read one state, which is user story 6.
-- The `supported_features` bits are named constants in the model (`PLAY = 1`, `VOLUME_SET = 4`, `PAUSE = 16384`) with a comment pointing at Home Assistant's `MediaPlayerEntityFeature`; `canStep` is `VOLUME_SET`, the play button is enabled when `(loaded || paused) && can(play ? PAUSE : PLAY)`, as today.
-- Strings through `deps.t`: `media.title`, `media.tvOn`/`tvOff`/`notResponding`/`onMuted`, `media.speakers`, `media.noneFound`, `media.nothingPlaying`, `media.speakersPlaying` (ICU plural), `media.paused`, `media.notPlaying`, `media.unavailable`, `media.volumeUp`/`volumeDown`/`mute`/`unmute`/`playOrPause`/`volumeAndPlayback`/`volume`, `media.noDevices`, `media.playersHint`, `media.speakerControls` (`{name}: speaker controls`), `media.tvControls`, `media.noVolumeSlider`, `media.scenes`, `media.tapToRun`, `media.last` (`Last {ago}`), `media.done`, `media.on`/`off`, `media.sceneOn`, `media.modeOn`/`modeOff`, `media.samsungTv`, `common.failed`. The "ago" text is `fmt.ago` (spec 11's relative formatter; if it does not exist yet, this spec adds it to the formatters with the class's `ago` rule and its equivalence test).
+- The `supported_features` bits are named constants in the model (`PAUSE = 1`, `VOLUME_SET = 4`, `PLAY = 16384`) with a comment pointing at Home Assistant's `MediaPlayerEntityFeature`; a speaker has a `volume` (the stepper) when it can `VOLUME_SET` and reports a level, else it is null; the play button is enabled when `(loaded || paused) && can(play ? PAUSE : PLAY)`, as today.
+- Strings through `deps.t` (as built in #216, about fifty `media.*` keys: the French is what the rewrite layer made of the English, quirks included, so some sentences are several messages): the pane's sub-line `media.summaryTvOn`/`summaryTvOff`/`summaryPlaying`/`summaryIdle` (a speaker count after a television part, which French words differently from `media.speakersPlaying`, the ICU plural the speakers line says alone), `media.speakers`, `media.nothingPlaying`, `media.noneFound`, `media.noDevices`, `media.playersHint`; the box `media.notResponding`/`unavailable`/`on`/`off`/`onMuted`/`onMutedSource`, `media.tvPower` (`{name} power`), `media.volumeAndPlayback`, `media.volumeDown`/`volumeUp`, the pane's `volumeDownShort`/`volumeUpShort` (`Vol −`, `Vol +`) and `volumeDownPane`/`volumeUpPane`, `media.mute`/`unmute`/`playOrPause`, `media.noVolumeSlider`, `media.opensControls`; a pod `media.volume`/`volumeOf`/`percent`/`play`/`pause` and `media.speakerState` (`{name} · {state}`, an ICU select); the toasts `media.tvTurningOn`/`tvTurnedOff`/`speakerPlaying`/`speakerPaused`/`sceneOn`/`modeOn`/`modeOff`; the scenes row `media.tapToRun`/`done`/`modeIsOff` and `media.last`, an ICU select on the `Ago` that `fmt.ago` returns (`now`, `minutes`, `hours`, else a date: `Last 5 min ago`, `Il y a 5 min`, `Lancée le 7 nov.`) (French writes "Désactivé" itself); and the names `media.samsungTv`/`tv`, `media.title`, `common.failed`. There is no `media.scenes`, `media.speakerControls` or `media.tvControls`: the legacy panel says none of them. `fmt.ago(instant, now)`, added to the formatters in #216, returns no text: it cuts the span by the legacy rule into `{kind: 'now'}`, `{kind: 'minutes', n}`, `{kind: 'hours', n}` or `{kind: 'date', date}` and the catalog words it, with its own equivalence test.
 
 ### The elements
 
@@ -244,7 +243,7 @@ So `renderTV` becomes `this.set('tv', '<hp-tv-card></hp-tv-card>')` once, in `bu
 
 ### Strings and formats
 
-About thirty `media.*` keys, French from the map's entries (`'On · muted'`, `Mute`, `'Volume up'`, `'Play or pause'`, `Paused`, `'Not playing'`, `Speakers`, `'TV turned off'`, `'Turning the TV on'`, `'No TV or speakers found.'`, `'{n}: speaker controls'`, `'Nothing playing'`, `'None found'`, `'TV on'`, `'TV off'`, `'{n} speaker(s) playing'`, `'Media players that sit in an HA area show up here.'`, `'Tap to run'`, `'Last {n}'`, `Done`, `Scenes`, `Media`, `"Didn't work:"`), listed in `test/unit/fixtures/moved/media.json` for the equivalence test, deleted from `src/i18n/fr.js` in pull request 2. `plural(n, 'speaker')` becomes the ICU plural `media.speakersPlaying`. The relative time ("Last 2 h ago") goes through `fmt.ago`.
+About fifty `media.*` keys (#216), French from the map's entries (`'On · muted'`, `Mute`, `'Volume up'`, `'Play or pause'`, `Paused`, `'Not playing'`, `Speakers`, `'TV turned off'`, `'Turning the TV on'`, `'No TV or speakers found.'`, `'Nothing playing'`, `'None found'`, `'TV on'`, `'TV off'`, `'{n} speaker(s) playing'`, `'Media players that sit in an HA area show up here.'`, `'Tap to run'`, `'Last {n}'`, `Done`, `Media`, `"Didn't work:"`), listed in `test/unit/fixtures/moved/media.json` for the equivalence test, deleted from `src/i18n/fr.js` in pull request 2. `plural(n, 'speaker')` becomes the ICU plural `media.speakersPlaying`. The relative time ("Last 2 h ago") goes through `fmt.ago` and `media.last`.
 
 ### Deletion (pull request 2) and grep gates
 

@@ -6,6 +6,7 @@ import {existsSync} from 'node:fs';
 import {resolveConfig} from '../../../../src/core/config.ts';
 import type {DeviceRegistryEntry, EntityRegistryEntry, Registries} from '../../../../src/core/hass.ts';
 import {createStore, type PanelStore} from '../../../../src/core/store.ts';
+import {KEEP_ENGLISH_NAMES} from '../../../e2e/houses.ts'; // the French baselines keep the English room names, so the lines read from them say `Living room`
 import * as full from '../../../houses/full.mjs';
 import {entity, fakeHass, type FakeHass} from '../../fake-hass.ts';
 
@@ -27,6 +28,18 @@ export function readingOf(hass: FakeHass) {
   const store = storeOf(hass);
   const registries: Registries = {entities: hass.entities, devices: hass.devices, areas: hass.areas};
   return {states: hass.states, registries, names: store.names, store};
+}
+
+export type Language = 'en' | 'fr';
+
+/** The instant the test house is read at: its clock, so a scene run two hours before it says so. */
+export {REFERENCE_MS as NOW} from '../../../houses/clock.mjs';
+
+/** What the model and the scenes are given besides the states: the catalog, the formats and the names of a store, in a language. */
+export function depsOf(hass: FakeHass, language: Language) {
+  const french = {...hass, locale: {language}};
+  const store = storeOf(french, language === 'fr' ? {names: KEEP_ENGLISH_NAMES} : {});
+  return {t: store.t, fmt: store.fmt, names: store.names};
 }
 
 /** One player, with the registry rows that place it: `[id, state, attributes, entity row, device row]`. */

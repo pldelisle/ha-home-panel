@@ -93,6 +93,33 @@ describe('the French formatter equals the layer on the English output', () => {
   );
 });
 
+// `ago` returns a kind and a count for the catalog to word, so the two languages must agree on those, and on a date the French
+// formatter is the layer's reading of the English one (the words themselves are held by the catalog's equivalence test)
+describe('ago', () => {
+  const NOW = T1607.getTime();
+  const SPANS_MS = [
+    -5 * 60e3,
+    0,
+    20e3,
+    30e3,
+    5 * 60e3,
+    59 * 60e3,
+    60 * 60e3,
+    90 * 60e3,
+    23 * 60 * 60e3,
+    24 * 60 * 60e3,
+    40 * 864e5,
+  ];
+
+  test.each(SPANS_MS)('%s ms before now: the same kind and count in both languages', span => {
+    const english = en.ago(NOW - span, NOW);
+    const french = fr.ago(NOW - span, NOW);
+    expect(french.kind).toBe(english.kind);
+    if (english.kind === 'date' && french.kind === 'date') expect(french.date).toBe(layerText(english.date));
+    else expect(french).toEqual(english);
+  });
+});
+
 describe('the numbers', () => {
   const VALUES = [0, 7, 12.5, 12.56, 999.99, 1234, 1234.5, 1234567, 0.04, 1.005, -3.5, 1.2345];
 

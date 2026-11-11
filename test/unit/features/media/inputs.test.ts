@@ -23,6 +23,7 @@ describe('the test house', () => {
         wakeButton: null,
         state: 'on',
         source: 'Netflix',
+        summarySource: 'Netflix',
         muted: false,
       },
       speakers: [

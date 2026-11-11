@@ -1,5 +1,5 @@
 {
-  "about": "The English messages the Media move introduced (src/core/i18n/en.ts, media.*), each with sample values. test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer made of the English. The pane's own messages join this list with the pane. Deleted with the layer in phase 4.",
+  "about": "The English messages the Media move introduced (src/core/i18n/en.ts, media.*), each with sample values. test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer made of the English; `written` is French the legacy panel wrote itself, so the layer is no oracle. Deleted with the layer in phase 4.",
   "messages": [
     {
       "key": "media.samsungTv"
@@ -8,8 +8,263 @@
       "key": "media.tv"
     },
     {
+      "key": "media.summaryTvOn"
+    },
+    {
+      "key": "media.summaryTvOff"
+    },
+    {
+      "key": "media.summaryPlaying",
+      "values": {
+        "count": 1
+      },
+      "frame": {
+        "en": "TV on · ",
+        "fr": "Télé allumée · "
+      }
+    },
+    {
+      "key": "media.summaryPlaying",
+      "values": {
+        "count": 2
+      },
+      "frame": {
+        "en": "TV on · ",
+        "fr": "Télé allumée · "
+      }
+    },
+    {
+      "key": "media.summaryIdle",
+      "values": {
+        "count": 1
+      }
+    },
+    {
+      "key": "media.summaryIdle",
+      "values": {
+        "count": 3
+      }
+    },
+    {
+      "key": "media.speakers"
+    },
+    {
+      "key": "media.speakersPlaying",
+      "values": {
+        "count": 1
+      }
+    },
+    {
+      "key": "media.speakersPlaying",
+      "values": {
+        "count": 2
+      }
+    },
+    {
+      "key": "media.nothingPlaying"
+    },
+    {
+      "key": "media.noneFound"
+    },
+    {
+      "key": "media.noDevices"
+    },
+    {
+      "key": "media.playersHint"
+    },
+    {
+      "key": "media.notResponding"
+    },
+    {
+      "key": "media.unavailable"
+    },
+    {
+      "key": "media.on"
+    },
+    {
+      "key": "media.off"
+    },
+    {
+      "key": "media.onMuted"
+    },
+    {
+      "key": "media.onMutedSource",
+      "values": {
+        "source": "Netflix"
+      }
+    },
+    {
+      "key": "media.tvPower",
+      "values": {
+        "name": "Samsung TV"
+      }
+    },
+    {
+      "key": "media.volumeAndPlayback"
+    },
+    {
+      "key": "media.volumeDown"
+    },
+    {
+      "key": "media.volumeUp"
+    },
+    {
+      "key": "media.volumeDownShort"
+    },
+    {
+      "key": "media.volumeUpShort"
+    },
+    {
+      "key": "media.volumeDownPane"
+    },
+    {
+      "key": "media.volumeUpPane"
+    },
+    {
+      "key": "media.mute"
+    },
+    {
+      "key": "media.unmute"
+    },
+    {
+      "key": "media.playOrPause"
+    },
+    {
+      "key": "media.noVolumeSlider"
+    },
+    {
+      "key": "media.opensControls"
+    },
+    {
+      "key": "media.volume"
+    },
+    {
+      "key": "media.volumeOf",
+      "values": {
+        "room": "Living room"
+      }
+    },
+    {
+      "key": "media.percent",
+      "values": {
+        "percent": 35
+      }
+    },
+    {
+      "key": "media.play"
+    },
+    {
+      "key": "media.pause"
+    },
+    {
+      "key": "media.speakerState",
+      "values": {
+        "name": "HomePod mini",
+        "state": "unavailable"
+      }
+    },
+    {
+      "key": "media.speakerState",
+      "values": {
+        "name": "HomePod mini",
+        "state": "paused"
+      }
+    },
+    {
+      "key": "media.speakerState",
+      "values": {
+        "name": "HomePod mini",
+        "state": "off"
+      }
+    },
+    {
+      "key": "media.speakerState",
+      "values": {
+        "name": "HomePod mini",
+        "state": "idle"
+      }
+    },
+    {
+      "key": "media.tvTurningOn"
+    },
+    {
+      "key": "media.tvTurnedOff"
+    },
+    {
+      "key": "media.speakerPlaying",
+      "values": {
+        "name": "HomePod mini"
+      }
+    },
+    {
+      "key": "media.speakerPaused",
+      "values": {
+        "name": "HomePod mini"
+      }
+    },
+    {
+      "key": "media.sceneOn",
+      "values": {
+        "name": "Movie night"
+      }
+    },
+    {
+      "key": "media.modeOn",
+      "values": {
+        "name": "Kids bedtime"
+      }
+    },
+    {
+      "key": "media.modeOff",
+      "values": {
+        "name": "Kids bedtime"
+      }
+    },
+    {
+      "key": "media.tapToRun"
+    },
+    {
+      "key": "media.done"
+    },
+    {
+      "key": "media.last",
+      "values": {
+        "kind": "minutes",
+        "n": 5
+      }
+    },
+    {
+      "key": "media.last",
+      "values": {
+        "kind": "hours",
+        "n": 3
+      }
+    },
+    {
+      "key": "media.last",
+      "values": {
+        "kind": "now"
+      }
+    },
+    {
+      "key": "media.last",
+      "values": {
+        "kind": "date",
+        "date": "Nov 7"
+      },
+      "fr": {
+        "date": "7 nov."
+      }
+    },
+    {
+      "key": "media.modeIsOff",
+      "written": "Désactivé"
+    },
+    {
       "key": "common.failed",
-      "values": {"reason": "the TV is asleep"}
+      "values": {
+        "reason": "the TV is asleep"
+      }
     }
   ]
 }

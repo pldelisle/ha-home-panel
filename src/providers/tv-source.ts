@@ -23,6 +23,8 @@ export interface TvInputs {
   state: 'off' | 'on' | 'unavailable';
   /** The input, as the card shows it: everything from a dash on dropped, a full-width ampersand made plain. */
   source: string | null;
+  /** The input as the pane's sub-line shows it: only what a dash opens is cut, and a full-width ampersand stays (the legacy line's rule). */
+  summarySource: string | null;
   muted: boolean;
 }
 
@@ -47,9 +49,12 @@ const wakeButtonOf = (states: HassEntities): string | null =>
     id => id.startsWith('button.wake_on_lan_') && /tv/i.test(textAttributeOf(states, id, 'friendly_name') ?? ''),
   ) ?? null;
 
-/** The input as the card shows it: what a dash opens is the app's detail, and Home Assistant writes `＆` full width. */
-const cleanSource = (source: unknown): string | null =>
-  typeof source === 'string' ? source.replace(/\s+[-–].*$/, '').replace(/＆/g, '&') : null;
+/** What a dash opens is the app's detail, which no line of the pane shows. */
+const withoutDetail = (source: unknown): string | null =>
+  typeof source === 'string' ? source.replace(/\s+[-–].*$/, '') : null;
+
+/** The input as the card shows it: no detail, and Home Assistant writes `＆` full width. */
+const cleanSource = (source: unknown): string | null => withoutDetail(source)?.replace(/＆/g, '&') ?? null;
 
 /**
  * What every source reads the same way. `fallbackName` is the name a set whose device the household did not name goes by
@@ -72,6 +77,7 @@ export function readSet(
     wakeButton: wakeButtonOf(states),
     state: !isAvailable(state) ? 'unavailable' : state.state === 'off' ? 'off' : 'on',
     source: cleanSource(state.attributes.source),
+    summarySource: withoutDetail(state.attributes.source),
     muted: !!state.attributes.is_volume_muted,
   };
 }
