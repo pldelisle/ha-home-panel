@@ -129,6 +129,7 @@ test('a name with " · " in it is read as two parts', () => {
   expect(frText('Lights · Front door open')).toBe('Lumières · Front door : ouverte');
 });
 
+// The scene sub-lines (#79) are now the `was` rows of test/unit/fixtures/moved/media.json, checked by moved-strings.test.ts.
 // #79: the idle stack's "Now playing" card was cut with an ellipsis in French; shorter words fit. Expected texts are written out, never built.
 test('the idle stack card says "En lecture" and nothing else changed with it', () => {
   const frText = frTextFor([]);
