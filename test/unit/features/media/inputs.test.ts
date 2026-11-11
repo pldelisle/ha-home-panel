@@ -1,15 +1,15 @@
 // readMedia: the television and the speakers of a house, read into the inputs the model will take. The test house gives
 // today's answer as literals; literal players give the readings it does not have; the recorded house is read when it exists.
 import {describe, expect, test} from 'vitest';
-import {readMedia} from '../../../../src/features/media/inputs.ts';
-import {TV_SOURCES, type TvSource} from '../../../../src/providers/tv-source.ts';
+import {TV_SOURCES, readMedia} from '../../../../src/features/media/inputs.ts';
+import type {TvSource} from '../../../../src/providers/tv-source.ts';
 import {fakeHass} from '../../fake-hass.ts';
 import {fullHouse, houseOf, readingOf, recorded, type Player} from './support.ts';
 
 type House = ReturnType<typeof houseOf>;
 const mediaOf = (house: House, sources?: readonly TvSource[]) => {
-  const {states, registries, deps} = readingOf(house);
-  return readMedia(states, registries, deps, sources);
+  const {states, registries, names} = readingOf(house);
+  return readMedia(states, registries, names, sources);
 };
 
 describe('the test house', () => {
@@ -17,7 +17,8 @@ describe('the test house', () => {
     expect(mediaOf(fullHouse)).toEqual({
       tv: {
         id: 'media_player.living_room_tv',
-        name: 'Samsung TV',
+        name: null,
+        defaultName: 'media.samsungTv',
         areaId: 'living_room',
         wakeButton: null,
         state: 'on',
@@ -114,7 +115,7 @@ describe('the television and the speakers do not overlap', () => {
   });
 
   test('the default sources are the shipped list', () => {
-    const {states, registries, deps} = readingOf(fullHouse);
-    expect(readMedia(states, registries, deps)).toEqual(readMedia(states, registries, deps, TV_SOURCES));
+    const {states, registries, names} = readingOf(fullHouse);
+    expect(readMedia(states, registries, names)).toEqual(readMedia(states, registries, names, TV_SOURCES));
   });
 });

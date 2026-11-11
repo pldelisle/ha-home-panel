@@ -2,7 +2,7 @@
 
 Parent: [production-grade-refactor.md](production-grade-refactor.md), phase 3.
 Depends on: [15 Weather](15-weather.md) (the recipe, `<hp-range-tabs>` is not needed; `<hp-chart>` is not either), [17 Security](17-security.md) (the mount-module shape for a third-party element), [24 Home](24-home.md) (the Home pane's "Coming up" list reads `upcomingRuns` from this feature's provider-level module, so it lands before the Home move is complete; see the folder). Blocks: 26 Idle clock.
-Ships as: three pull requests, each a patch release, each pixel-identical. ADR 0026 (Mermaid 12, closing #82) lands with the third.
+Ships as: three pull requests, each a patch release, each pixel-identical. ADR 0028 (Mermaid 12, closing #82) lands with the third.
 
 The key words MUST, MUST NOT, SHOULD, SHOULD NOT and MAY are to be read as in RFC 2119.
 
@@ -24,7 +24,7 @@ Move Automations into `src/features/automations/`, in three pull requests:
 
 1. **The rules and the graph, pure.** `traces.ts` (the list, the noise rule, the picks, the upcoming runs, the fingerprint), `graph.ts` (`automationGraph(config, trace, summary, deps)` → nodes and edges with classes and times), `sentences.ts` (the trigger, condition and action phrases through keys), `mermaid-def.ts` (`toMermaid(graph, tokens)` with the escaping rules, each a named function with a test from #97's cases); `src/providers/automations.ts` exports `upcomingRuns(configs, automations, now, fmt)` for the Home pane's "Coming up" list (the one read another composition needs). `src/auto.js` keeps drawing from the new modules (it imports the feature's pure files: legacy importing a feature's pure module is a second, temporary allowance recorded in the pull request, deleted in pull request 2).
 2. **The elements.** `<hp-automations-pane>`, `<hp-run-timeline>` (the Today card from a pure layout), `<hp-flow-card>` with `mountFlow(box, def, theme)` (the Mermaid mount module: load, initialize per theme, render with a cache, decorate), `<hp-automation-chips>`; the loader as a reactive controller through the API client with the twenty-second and ten-minute rules; `src/auto.js` is deleted and leaves the legacy set, the first whole file to go: the footprint drops.
-3. **Mermaid 12 (ADR 0026).** The library moves to 12.x behind `mountFlow` with `layout: 'dagre', look: 'classic'` and the panel's `classDef`s restyled to today's look as far as the options allow; the four `auto-tablet-*` baselines are re-recorded as an **approved visual change** in this pull request, with the before-and-after images in the description; the `katex` override and the Renovate rules go; `chunks.spec.ts` asserts no `elk-*` chunk is fetched.
+3. **Mermaid 12 (ADR 0028).** The library moves to 12.x behind `mountFlow` with `layout: 'dagre', look: 'classic'` and the panel's `classDef`s restyled to today's look as far as the options allow; the four `auto-tablet-*` baselines are re-recorded as an **approved visual change** in this pull request, with the before-and-after images in the description; the `katex` override and the Renovate rules go; `chunks.spec.ts` asserts no `elk-*` chunk is fetched.
 
 Pull requests 1 and 2 leave every baseline identical; pull request 3 changes the four Automations baselines deliberately, as #82 planned.
 
@@ -39,7 +39,7 @@ Pull requests 1 and 2 leave every baseline identical; pull request 3 changes the
 7. As a maintainer, I want Mermaid behind a mount module that knows only "load, initialize, render, decorate", so that the version change of the third release touches one file and the baselines.
 8. As a maintainer, I want `src/auto.js` deleted and the footprint printed by `npm run lint` to drop by one, so that the number says what it says.
 9. As a maintainer, I want the Home pane's "Coming up" to read the upcoming runs from a module below the features, so that the dependency rule holds when Home composes.
-10. As a learner, I want ADR 0026 to record the Mermaid decision with its measurements and the reason it was not done earlier, so that the next library question follows the same path.
+10. As a learner, I want ADR 0028 to record the Mermaid decision with its measurements and the reason it was not done earlier, so that the next library question follows the same path.
 
 ## Implementation Decisions
 
@@ -102,11 +102,11 @@ export function toMermaid(graph: Graph, tokens: FlowTokens): string;
 - `<hp-flow-card>`: the head (title, sentence), the pill (the running one counts up through `TickController`), the run picker, the legend, the graph box; `mountFlow` on first update and when the definition or the theme changes (`AppearanceConsumer`); `destroy()` on disconnect. The running pill's text updates without redrawing the graph because the definition did not change, which is the cache's job.
 - The class's `renderAuto` and `auDraw` (pull request 1) import `automationGraph`, `toMermaid` and `timelineLayout` from the feature and keep drawing with `innerHTML`; pull request 2 deletes `src/auto.js` and the `Object.assign` line.
 
-### Mermaid 12 (ADR 0026, pull request 3)
+### Mermaid 12 (ADR 0028, pull request 3)
 
 - `mermaid` 12.x exact in `package.json`; `mountFlow`'s `initialize` gains `layout: 'dagre'` and `look: 'classic'` (the least-change starting point #82 measured); the `katex` override of #75 and both Renovate rules for Mermaid are removed; `npm run licenses`; `chunks.spec.ts` asserts no `elk-*` chunk is requested when a flow draws.
 - The `classDef`s are adjusted so the node fills, strokes and the edge styles match today's as closely as 12's `classic` look allows (its thicker outlines and wider stadium shapes remain); the four `auto-tablet-*` baselines and `bare-auto-tablet-light-en` are re-recorded in this pull request as an approved visual change under ADR 0003, with the before-and-after images in the description for the owner's approval before merge.
-- ADR 0026 records: the decision (12.x, classic look, dagre layout), the measurements of #82, why it waited for the feature's move (one rewrite of the flow's styling, not two), the cost (a one-time baseline change on one tab), and the condition to revisit (`look: 'neo'` or a deliberate redesign, in its own pull request). #82 is closed by the pull request.
+- ADR 0028 records: the decision (12.x, classic look, dagre layout), the measurements of #82, why it waited for the feature's move (one rewrite of the flow's styling, not two), the cost (a one-time baseline change on one tab), and the condition to revisit (`look: 'neo'` or a deliberate redesign, in its own pull request). #82 is closed by the pull request.
 
 ### Styles and strings
 
@@ -142,7 +142,7 @@ Pull request 2, the elements and the file's deletion:
 Pull request 3, Mermaid 12:
 
 7. `mermaid` 12.x exact; `mountFlow` initializes with `layout: 'dagre'`, `look: 'classic'`; the `katex` override and the Mermaid Renovate rules are gone; `chunks.spec.ts` asserts no `elk-*` chunk is fetched; `LICENSES.md` updated; `automations.spec.ts` green.
-8. The four `auto-tablet-*` baselines and `bare-auto-tablet-light-en` re-recorded; every other baseline identical; the pull request shows before and after; ADR 0026 accepted; #82 closed; changeset (minor, household voice): "The Automations tab's flow charts are drawn with a newer drawing library: the shapes have slightly thicker outlines and wider rounded boxes; the colours and the reading order are the same."
+8. The four `auto-tablet-*` baselines and `bare-auto-tablet-light-en` re-recorded; every other baseline identical; the pull request shows before and after; ADR 0028 accepted; #82 closed; changeset (minor, household voice): "The Automations tab's flow charts are drawn with a newer drawing library: the shapes have slightly thicker outlines and wider rounded boxes; the colours and the reading order are the same."
 
 ## Testing Decisions
 

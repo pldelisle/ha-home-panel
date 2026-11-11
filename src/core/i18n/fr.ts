@@ -17,6 +17,7 @@ export const fr: Record<MessageKey, string> = {
   'air.title': 'Air',
   'media.title': 'Médias',
   'media.samsungTv': 'Samsung TV',
+  'media.tv': 'Télé',
   'cams.title': 'Sécurité',
   'auto.title': 'Automatisations',
   'auto.short': 'Règles',

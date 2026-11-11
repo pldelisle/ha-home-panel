@@ -1,11 +1,32 @@
-// readMedia: the television and the speakers of the house, read into the inputs the model takes.
-// Pattern: a composition of two rules (Gamma et al.): the television from the TV sources in list order (`findTv`), the
-// speakers from the generic rule, each speaker's state read beside it; the README of this folder names the order.
+// readMedia: the television and the speakers of the house, read into the inputs the model takes; `TV_SOURCES` and `findTv`.
+// Pattern: a composition of strategies (Gamma et al.): the television from the TV sources in list order, the speakers from
+// the generic rule, each speaker's state read beside it; the README of this folder names the order. The adapter lists sit
+// here and not in the providers so a provider never imports its siblings (the weather precedent).
 // Must not: know an integration (that is a source), format a string for the household, read the clock, or touch the DOM or `hass`.
 import type {HassEntities, Registries} from '../../core/hass.ts';
+import type {Names} from '../../core/i18n/names.ts';
 import {isAvailable, numberAttributeOf, textAttributeOf} from '../../core/states.ts';
-import {TV_SOURCES, findTv, type TvInputs, type TvNaming, type TvSource} from '../../providers/tv-source.ts';
+import {samsungTvSource} from '../../providers/samsung-tv.ts';
+import {tvEntitySource} from '../../providers/tv-entity.ts';
+import type {TvInputs, TvSource} from '../../providers/tv-source.ts';
 import {speakers, type Speaker} from './speakers.ts';
+
+/** The sources in the order they are tried: Samsung's platform first, as the legacy panel did, then any television. */
+export const TV_SOURCES: readonly TvSource[] = [samsungTvSource, tvEntitySource];
+
+/** The television of the house: what the first source that has a candidate reads of its first candidate, or null. */
+export function findTv(
+  states: HassEntities,
+  registries: Registries,
+  names: Names,
+  sources: readonly TvSource[] = TV_SOURCES,
+): TvInputs | null {
+  for (const source of sources) {
+    const [id] = source.candidates(states, registries);
+    if (id !== undefined) return source.read(id, states, registries, names);
+  }
+  return null;
+}
 
 /** A speaker and what its player says now. */
 export interface SpeakerInputs extends Speaker {
@@ -33,13 +54,13 @@ export interface MediaInputs {
 export function readMedia(
   states: HassEntities,
   registries: Registries,
-  naming: TvNaming,
+  names: Names,
   sources: readonly TvSource[] = TV_SOURCES,
 ): MediaInputs {
-  const tv = findTv(states, registries, naming, sources);
+  const tv = findTv(states, registries, names, sources);
   return {
     tv,
-    speakers: speakers(states, registries, naming.names, tv?.id ?? null).map(speaker => ({
+    speakers: speakers(states, registries, names, tv?.id ?? null).map(speaker => ({
       ...speaker,
       state: states[speaker.id].state,
       available: isAvailable(states[speaker.id]),

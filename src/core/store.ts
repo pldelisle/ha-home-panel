@@ -16,6 +16,7 @@ import {createFormatters, type Formatters} from './i18n/format.ts';
 import {panelLocale, type PanelLocaleSpec} from './i18n/locale.ts';
 import {createMessages, type Messages} from './i18n/messages.ts';
 import {createNames, type Names} from './i18n/names.ts';
+import {areaOf} from './registry.ts';
 import {attributeOf, numberOf} from './states.ts';
 
 /** What `setHass` found different from the previous hass. */
@@ -247,10 +248,7 @@ export function createStore(opts: StoreOptions): PanelStore {
     entity,
     device,
     area: id => hass?.areas?.[id],
-    areaOf(entityId) {
-      const e = entity(entityId);
-      return e?.area_id || (e?.device_id ? device(e.device_id)?.area_id : undefined) || '';
-    },
+    areaOf: entityId => areaOf(entityId, hass ?? {}),
 
     subscribe(ids, cb) {
       const sub: Subscriber = {cb};

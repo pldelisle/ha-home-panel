@@ -10,7 +10,6 @@ import * as full from '../../../houses/full.mjs';
 import {entity, fakeHass, type FakeHass} from '../../fake-hass.ts';
 
 export const fullHouse = fakeHass.fromHouse(full);
-export const fullHouseInFrench = fakeHass.fromHouse(full, {locale: {language: 'fr'}});
 
 /** The owner's recorded house exists only on the owner's machine (#170); a test of it is skipped with a message otherwise. */
 export const recorded = existsSync(new URL('../../fixtures/houses/main.json', import.meta.url));
@@ -27,7 +26,7 @@ export function storeOf(hass: FakeHass, config: unknown = {}): PanelStore {
 export function readingOf(hass: FakeHass) {
   const store = storeOf(hass);
   const registries: Registries = {entities: hass.entities, devices: hass.devices, areas: hass.areas};
-  return {states: hass.states, registries, deps: {names: store.names, t: store.t}, store};
+  return {states: hass.states, registries, names: store.names, store};
 }
 
 /** One player, with the registry rows that place it: `[id, state, attributes, entity row, device row]`. */

@@ -6,17 +6,17 @@ What the Media tab will compute and draw ([spec 16](../../../docs/specs/16-media
 
 ```
 src/providers/
-  tv-source.ts             TV_SOURCES and findTv; re-exports the port (TvSource, TvInputs, TvNaming)
+  tv-source.ts             TvSource (the port), TvInputs, visibleTvs, readSet and the wake-button rule the adapters share
   tv-entity.ts             any media_player with device_class 'tv': the generic adapter
-  samsung-tv.ts            the Samsung platform: preferred when both exist; finds the wake-on-LAN button
-  tv-port.ts               the port's types and what the two adapters read the same way (the visible televisions, a set's area, name, state, input)
+  samsung-tv.ts            the Samsung platform: preferred when both exist
 src/features/media/
   README.md
   ids.ts                   mediaIds(store): the TV, its wake button, the speakers, the scenes and the modes
-  inputs.ts                readMedia(states, registries, naming, sources): MediaInputs
+  inputs.ts                TV_SOURCES, findTv, readMedia(states, registries, names, sources): MediaInputs
   speakers.ts              speakers(states, registries, names, tvId): Speaker[] (generic rules, pure)
 src/core/
-  timing.ts                debounce(fn, ms, timers?): the volume's 450 ms, with injected timers
+  registry.ts              areaOf and isHidden: the registry rules the store, the providers and the features share
+  timing.ts                debounce(fn, ms, timers?): the volume's 450 ms, with injected timers and a cancel
 ```
 
 The model, the commands, the pane, the cards and the scenes are listed in spec 16 and land with the tickets that build them.
@@ -25,12 +25,14 @@ The model, the commands, the pane, the cards and the scenes are listed in spec 1
 
 Two TV sources sit behind one port, `TvSource`:
 
-| Source       | File                          | Candidates                                                                     | Reads                                                                                                                                                   |
-| ------------ | ----------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `samsung-tv` | `src/providers/samsung-tv.ts` | the visible players of the `samsungtv` platform that say they are a television | its name (the device's own, else the catalog's `Samsung TV`), its state, input and volume flag, and the wake-on-LAN `button.*` whose name mentions a TV |
-| `tv-entity`  | `src/providers/tv-entity.ts`  | every visible player with `device_class` `tv`                                  | the same, named `TV` when Home Assistant has no name; no wake button                                                                                    |
+| Source       | File                          | Candidates                                                                     | Names the set                                                                           |
+| ------------ | ----------------------------- | ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
+| `samsung-tv` | `src/providers/samsung-tv.ts` | the visible players of the `samsungtv` platform that say they are a television | the device's own name; else null, and `defaultName` is `media.samsungTv` (`Samsung TV`) |
+| `tv-entity`  | `src/providers/tv-entity.ts`  | every visible player with `device_class` `tv`                                  | the device's, else the entity's name; else null, and `defaultName` is `media.tv`        |
 
-`findTv(states, registries, naming, sources = TV_SOURCES)` asks the sources in list order and reads the first candidate of the first source that has one, so **a Samsung set is preferred over a generic one** whatever order the house lists them in, and a house with none gives `null`. A hidden player is never a candidate. A house adds a source with one file and one line in `TV_SOURCES`; nothing else changes.
+Both read the set's state, input, volume flag and area the same way, and the wake-on-LAN `button.*` whose name mentions a TV, whichever set was chosen. No adapter calls the catalog: a name is `tv.name ?? t(tv.defaultName)`, and the model does that.
+
+`findTv(states, registries, names, sources = TV_SOURCES)` asks the sources in list order and reads the first candidate of the first source that has one, so **a Samsung set is preferred over a generic one** whatever order the house lists them in, and a house with none gives `null`. A hidden player is never a candidate. A house adds a source with one file and one line in `TV_SOURCES` (in `inputs.ts`, as the weather sources are in theirs); nothing else changes.
 
 ## The speakers
 

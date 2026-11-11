@@ -1,9 +1,11 @@
 // speakers: the media players that are speakers, each with its area and the name it goes by in that room.
 // Pattern: a pure rule over states and registries (Bernhardt, functional core); generic, so it sits in the feature and not in a
 // provider: the two platforms it leaves out have their own controls (a camera's speaker, the television).
+// `NOT_SPEAKERS` and the name rule copy the legacy `speakers()`, which the Media move of #220 deletes.
 // Must not: read the DOM, the clock or `hass` itself, reorder the players (the baselines depend on the house's order) or hold text for the household.
 import type {HassEntities, Registries} from '../../core/hass.ts';
 import type {Names} from '../../core/i18n/names.ts';
+import {areaOf, isHidden} from '../../core/registry.ts';
 
 /** A speaker as the pane lists it, before its state is read. */
 export interface Speaker {
@@ -28,12 +30,6 @@ const words = (text: string): string[] =>
     .split(/[^a-z0-9]+/)
     .filter(Boolean);
 
-/** The entity's area, else its device's area, else none: the store's `areaOf`, on the registries this rule is given. */
-function areaOf(id: string, registries: Registries): string {
-  const entry = registries.entities?.[id];
-  return entry?.area_id || registries.devices?.[entry?.device_id ?? '']?.area_id || '';
-}
-
 /** Every visible player that is not the television (`tvId`, null when there is none) and sits in an area, in the house's order. */
 export function speakers(states: HassEntities, registries: Registries, names: Names, tvId: string | null): Speaker[] {
   return Object.keys(states)
@@ -41,7 +37,7 @@ export function speakers(states: HassEntities, registries: Registries, names: Na
       id =>
         id.startsWith('media_player.') &&
         id !== tvId &&
-        !registries.entities?.[id]?.hidden &&
+        !isHidden(id, registries) &&
         !NOT_SPEAKERS.includes(registries.entities?.[id]?.platform ?? ''),
     )
     .map(id => ({id, areaId: areaOf(id, registries)}))

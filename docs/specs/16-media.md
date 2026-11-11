@@ -52,15 +52,14 @@ Each pull request leaves every baseline identical (`media-tablet-*`, `bare-media
 
 ```
 src/providers/
-  tv-source.ts             TV_SOURCES and findTv; re-exports the port (TvSource: candidates, read(id, states, registries, naming): TvInputs)
+  tv-source.ts             TvSource (the port: candidates, read(id, states, registries, names): TvInputs), TvInputs, visibleTvs, readSet, the wake-button rule
   tv-entity.ts             any media_player with device_class 'tv': the generic adapter
-  samsung-tv.ts            the Samsung platform: preferred when both exist; finds the wake-on-LAN button
-  tv-port.ts               the port's types (TvSource, TvInputs, TvNaming) and what the two adapters read the same way (the visible televisions, a set's area, name, state, input); apart from the list so the list can import the adapters without a cycle
+  samsung-tv.ts            the Samsung platform: preferred when both exist
 src/features/media/
   README.md
   index.ts                 mediaFeature: FeatureDescriptor; exports the Home cards
   ids.ts                   mediaIds(store): the TV, the speakers, the wake button, the scenes and modes
-  inputs.ts                readMedia(states, registries, naming, sources): MediaInputs
+  inputs.ts                TV_SOURCES, findTv, readMedia(states, registries, names, sources): MediaInputs
   speakers.ts              speakers(states, registries, names, tvId): Speaker[] (generic rules, pure; readMedia adds each one's state)
   model.ts                 mediaModel(inputs, overlay, deps): MediaViewModel
   scenes.ts                sceneTiles(states, registries, config, overlay, deps): SceneTileView[]
@@ -89,12 +88,13 @@ test/e2e/media.spec.ts   (extends the existing file)
 Two adapters exist today in one function: `tv()` prefers the `samsungtv` platform and then looks for `button.wake_on_lan_*` whose name mentions the TV; any other `media_player` with `device_class` `tv` is the fallback. That is a **strategy** with two concrete strategies, so the seam is real.
 
 ```ts
-// src/providers/tv-port.ts (the types) and tv-source.ts (the list and findTv, which re-exports them)
+// src/providers/tv-source.ts
 export interface TvInputs {
   id: string; // media_player.*
-  name: string; // the device's name_by_user through the resolver, else the platform's default, else the entity's name
+  name: string | null; // the device's name_by_user through the resolver, else the entity's name (generic set); null when there is none
+  defaultName: MessageKey; // the catalog message that names a set with no name: 'media.samsungTv' or 'media.tv'; the model says tv.name ?? t(tv.defaultName)
   areaId: string | null;
-  wakeButton: string | null; // button.* to press when turn_on fails; null when the set has none
+  wakeButton: string | null; // button.* to press when turn_on fails; null when the house has none (any set, as tv() looks it up)
   state: 'off' | 'on' | 'unavailable'; // 'on' is any state but off
   source: string | null; // the input, cleaned: everything after " - " dropped, "＆" → "&"
   muted: boolean;
@@ -103,14 +103,16 @@ export interface TvSource {
   readonly name: string; // 'tv-entity', 'samsung-tv'
   /** the players this source would pick, in preference order; the first present wins across sources */
   candidates(states: HassEntities, registries: Registries): string[];
-  read(id: string, states: HassEntities, registries: Registries, naming: TvNaming): TvInputs; // TvNaming = {names: Names, t}: the resolver and the catalog
+  read(id: string, states: HassEntities, registries: Registries, names: Names): TvInputs;
 }
+// src/features/media/inputs.ts (the weather precedent: the list sits beside the model, so a provider imports no sibling)
 export const TV_SOURCES = [samsungTvSource, tvEntitySource]; // preference order: Samsung first, as the class does
-export function findTv(states, registries, naming, sources = TV_SOURCES): TvInputs | null;
+export function findTv(states, registries, names, sources = TV_SOURCES): TvInputs | null;
 ```
 
-- `samsungTvSource.candidates` returns the visible `media_player.*` with `platform === 'samsungtv'`; its `read` sets `name` to `names.name(deviceId)` when the device has `name_by_user`, else `t('media.samsungTv')` ("Samsung TV"), and `wakeButton` to the first `button.wake_on_lan_*` whose `friendly_name` matches `/tv/i` (a rule-feeding read of `friendly_name`, allowed by the conventions).
-- `samsungTvSource.candidates` keeps the legacy filter: the player must also say `device_class === 'tv'`, as `tv()` does (a Samsung player that does not is no television and no speaker either). `tvEntitySource.candidates` returns the visible `media_player.*` with `device_class === 'tv'`; `read` names it through the resolver with "TV" as the fallback and leaves `wakeButton` null.
+- `samsungTvSource.candidates` returns the visible `media_player.*` with `platform === 'samsungtv'`; its `read` sets `name` to `names.name(deviceId)` when the device has `name_by_user`, else null, with `defaultName` `media.samsungTv` ("Samsung TV"). No adapter calls `t`: the model words the default.
+- Every source reads `wakeButton` the same way, as `tv()` does whichever set it chose: the first `button.wake_on_lan_*` whose `friendly_name` matches `/tv/i` (a rule-feeding read of `friendly_name`, allowed by the conventions).
+- `samsungTvSource.candidates` keeps the legacy filter: the player must also say `device_class === 'tv'`, as `tv()` does (a Samsung player that does not is no television and no speaker either). `tvEntitySource.candidates` returns the visible `media_player.*` with `device_class === 'tv'`; `read` names it through the resolver (the device's name, else the entity's, else null) with `defaultName` `media.tv` ("TV").
 - The two sit in `src/providers/` and import the core only; a hidden player is one whose registry row says `hidden: true` (the display registry Home Assistant's frontend gives), and is never a candidate. `Registries` is `{entities, devices, areas}` from `PanelHass` (spec 12's types).
 
 ### The speakers, the scenes and the modes are generic
@@ -162,7 +164,7 @@ The pure `overlay` is the class's `pend` with the string comparison kept (`Strin
 - `tvPower(tv, on)`: hold `K.on(tv.id)`; `media_player.turn_on` with `fallback: {domain: 'button', service: 'press', data: {entity_id: tv.wakeButton}}` when `wakeButton` exists, done `media.tvOn` ("Turning the TV on"); or `media_player.turn_off`, done `media.tvOff`.
 - `tvVolume(tv, dir)`: `volume_up`/`volume_down`, silent. `tvMute(tv, muted)`: hold `K.mute`, `volume_mute`. `tvPlayPause(tv)`: `media_play_pause`, silent.
 - `speakerPlayPause(sp, play)`: hold `K.state(id)` as `'playing' | 'paused'`, `media_play`/`media_pause`, done `media.speakerPlaying`/`media.speakerPaused` with the name. `speakerSkip(sp, dir)`: `media_next_track`/`media_previous_track`.
-- `speakerVolume(sp, level)`: hold `K.volume(id)` as the clamped two-decimal level; the element debounces the send by 450 ms through `debounce` in `src/core/timing.ts` (pure factory, injected timers, tested); the command is `volume_set` with the last level, silent.
+- `speakerVolume(sp, level)`: hold `K.volume(id)` as the clamped two-decimal level; the element debounces the send by 450 ms through `debounce` in `src/core/timing.ts` (pure factory, injected timers, tested; its `cancel` is what the element calls in `disconnectedCallback` so no send fires after the pane is gone); the command is `volume_set` with the last level, silent.
 - `runScene(id, name)`: hold `K.ran(id)` for 4000 ms; `scene.turn_on`, done `media.sceneOn` with the name. `setMode(id, on, name)`: hold `K.on(id)`; `input_boolean.turn_on`/`turn_off`, done `media.modeOn`/`modeOff`.
 
 The class's `pend`/`pending`/`call` are **not** deleted by this spec: the climate, car, lights, purifier and outlet controls still use them; each later move deletes its keys, and the Car move (spec 21) deletes `call` and the bag. The two implementations coexist for a few releases with the same twenty-second rule, which is what makes the move invisible.
@@ -241,7 +243,7 @@ Gates: `grep -nE '^  (tv|renderTV|tvBox|tvCmd|speakers|renderMedia|renderMediaTi
 
 Pull request 1, the pane and the command layer:
 
-1. `src/providers/{tv-source,tv-entity,samsung-tv}.ts`, `src/features/media/{README.md,index.ts,ids.ts,inputs.ts,speakers.ts,model.ts,commands.ts,media-pane.ts,tv-box.ts,speaker-pod.ts,media-tile.ts,styles.css}`, `src/ui/{commands.ts,switch.ts}`, `src/ui/controllers/optimistic.ts`, `src/core/timing.ts` exist with module headers; `FEATURES` has `mediaFeature` in place of `legacyFeature('media')`.
+1. `src/providers/{tv-source,tv-entity,samsung-tv}.ts`, `src/core/registry.ts`, `src/features/media/{README.md,index.ts,ids.ts,inputs.ts,speakers.ts,model.ts,commands.ts,media-pane.ts,tv-box.ts,speaker-pod.ts,media-tile.ts,styles.css}`, `src/ui/{commands.ts,switch.ts}`, `src/ui/controllers/optimistic.ts`, `src/core/timing.ts` exist with module headers; `FEATURES` has `mediaFeature` in place of `legacyFeature('media')`.
 2. Vitest: the two TV sources (Samsung preferred over a generic set when both exist; the wake button found by name; the device's `name_by_user` through the resolver; no TV → null), `speakers` (the TV excluded, the UniFi and Samsung platforms excluded, a player without an area excluded, the area's words dropped from the name), `mediaModel` from the full test house in `en` and `fr` (the pane's lines as literals from the baselines) and from the recorded fixture, the feature bits, every command as data (`tvPower` with and without a wake button), the pure `overlay` (held while different, released when equal, expired after ttl, string comparison), `runCommand` with a fake API (success toasts, failure releases only `holds` and toasts sticky, fallback runs once), `debounce`; all at 100 percent statements.
 3. Playwright `media.spec.ts`: check 7 unchanged (mute and power send their services); five taps on a speaker's `+` within 450 ms send one `volume_set` at the final level; play on a paused speaker shows the pause icon at once and `media_player.media_play` is sent; a failing `media_player.turn_on` (a new harness helper `window.house.failNext(/^media_player\.turn_on/)`) with a wake button present sends `button.press`, and without one shows the sticky toast and the switch returns to off; a thermostat change causes zero mutations in `hp-media-pane`'s root; axe clean on the tab and the phone's Media sheet.
 4. The French equivalence test passes for `test/unit/fixtures/moved/media.json`; every baseline identical; `npm run check`, `npm test -- --coverage`, `npm run lint` green; ADR 0023 (commands and the optimistic overlay) accepted; changeset (patch): "The Media tab is redrawn with the same look. Nothing visible changes."
@@ -268,5 +270,5 @@ The seams are the two of ADR 0005. New in kind: the harness's `failNext` helper 
 - **Why the command and the overlay are in the kit and not in the core.** They dispatch events and schedule host updates, which is DOM-side work the core must not do; what is pure in them (`overlay`, `debounce`, the `Command` shape) is tested alone, and `debounce` sits in the core because it has no DOM at all.
 - **Why a `fallback` field rather than a try/catch in the element.** The wake-on-LAN retry is a property of the command, not of the button that sent it; as data it is tested without a DOM and shows up in the command's log line in the harness.
 - **Why the bridge rather than leaving the TV card in the class.** One optimistic state for two boxes (user story 6) needs one owner, and the class's bag and the controller's map cannot be the same owner. The bridge costs two listed exceptions to "the guest writes nothing it does not own", both deleted by spec 24.
-- **Why the TV's naming is in the Samsung adapter.** "Samsung TV" as a default name is integration knowledge; the generic adapter's default is "TV".
+- **Why the TV's naming is in the Samsung adapter.** "Samsung TV" as a default name is integration knowledge; the generic adapter's default is "TV". Each adapter names its default by a catalog key (`defaultName`), as the weather sources name a condition, and the model translates it.
 - **Reading**: Gamma et al., _Design Patterns_ (command, strategy); Richardson, _Microservices Patterns_ (compensating transactions, for the release-on-failure idea in miniature); Lit docs, _Reactive Controllers_, _Events_; Home Assistant developer docs, _Media player entity_ (`MediaPlayerEntityFeature`), _Scene_, _Input boolean_.

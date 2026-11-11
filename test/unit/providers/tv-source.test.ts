@@ -3,15 +3,16 @@
 // read when the owner has one (#170).
 import {describe, expect, test} from 'vitest';
 import {entity, fakeHass} from '../fake-hass.ts';
-import {fullHouse, fullHouseInFrench, houseOf, readingOf, recorded, type Player} from '../features/media/support.ts';
+import {fullHouse, houseOf, readingOf, recorded, type Player} from '../features/media/support.ts';
+import {TV_SOURCES, findTv} from '../../../src/features/media/inputs.ts';
 import {samsungTvSource} from '../../../src/providers/samsung-tv.ts';
 import {tvEntitySource} from '../../../src/providers/tv-entity.ts';
-import {TV_SOURCES, findTv, type TvSource} from '../../../src/providers/tv-source.ts';
+import type {TvSource} from '../../../src/providers/tv-source.ts';
 
 type House = ReturnType<typeof houseOf>;
 const tvOf = (house: House, sources?: readonly TvSource[]) => {
-  const {states, registries, deps} = readingOf(house);
-  return findTv(states, registries, deps, sources);
+  const {states, registries, names} = readingOf(house);
+  return findTv(states, registries, names, sources);
 };
 
 const SET = {device_class: 'tv', friendly_name: 'Den TV'};
@@ -31,20 +32,17 @@ const generic = (id: string, row = {}, device?: Player[4], attributes = {}): Pla
 ];
 
 describe('the test house', () => {
-  test('the television is the Samsung set in the living room, named by its platform because its device has no name of its own', () => {
+  test('the television is the Samsung set in the living room, worded by the catalog message of its platform because its device has no name of its own', () => {
     expect(tvOf(fullHouse)).toEqual({
       id: 'media_player.living_room_tv',
-      name: 'Samsung TV',
+      name: null,
+      defaultName: 'media.samsungTv',
       areaId: 'living_room',
       wakeButton: null,
       state: 'on',
       source: 'Netflix',
       muted: false,
     });
-  });
-
-  test("in French the platform's name is the catalog's", () => {
-    expect(tvOf(fullHouseInFrench)?.name).toBe('Samsung TV');
   });
 
   test('the sources are Samsung first, then the generic entity', () => {
@@ -58,9 +56,19 @@ describe('the recorded house', () => {
     return;
   }
 
-  test('finds a television or none, and a television has a media player id and a name', () => {
-    const tv = tvOf(fakeHass.fromFixture('main'));
-    expect(tv === null || (tv.id.startsWith('media_player.') && tv.name !== '')).toBe(true);
+  test('a house with a visible television gets one, and a Samsung one when it has any', () => {
+    const hass = fakeHass.fromFixture('main');
+    const visible = Object.keys(hass.states).filter(
+      id =>
+        id.startsWith('media_player.') &&
+        hass.states[id].attributes.device_class === 'tv' &&
+        !hass.entities?.[id]?.hidden,
+    );
+    const samsungSets = visible.filter(id => hass.entities?.[id]?.platform === 'samsungtv');
+    const tv = tvOf(hass);
+    if (visible.length === 0) expect(tv).toBeNull();
+    else expect(visible).toContain(tv?.id);
+    if (samsungSets.length > 0) expect(samsungSets).toContain(tv?.id);
   });
 });
 
@@ -111,21 +119,28 @@ describe('what the television is called', () => {
   const device = {id: 'd1', name: 'Samsung Q60', name_by_user: 'Basement screen'};
 
   test('a device the household named gives that name, through the resolver, for either source', () => {
-    expect(tvOf(houseOf([samsung('media_player.a', {device_id: 'd1'}, device)]))?.name).toBe('Basement screen');
-    expect(tvOf(houseOf([generic('media_player.a', {device_id: 'd1'}, device)]))?.name).toBe('Basement screen');
+    expect(tvOf(houseOf([samsung('media_player.a', {device_id: 'd1'}, device)]))).toMatchObject({
+      name: 'Basement screen',
+      defaultName: 'media.samsungTv',
+    });
+    expect(tvOf(houseOf([generic('media_player.a', {device_id: 'd1'}, device)]))).toMatchObject({
+      name: 'Basement screen',
+      defaultName: 'media.tv',
+    });
   });
 
   test("the resolver's overrides apply: the config's names block wins over the device's", () => {
     const house = houseOf([generic('media_player.a', {device_id: 'd1'}, device)]);
     const {states, registries, store} = readingOf(house);
     store.setPanelConfig({names: {d1: {en: 'Movie screen'}}});
-    expect(findTv(states, registries, {names: store.names, t: store.t})?.name).toBe('Movie screen');
+    expect(findTv(states, registries, store.names)?.name).toBe('Movie screen');
   });
 
-  test('a Samsung set with no name of its own is the Samsung TV; a generic one is its entity name, or TV without one', () => {
-    expect(tvOf(houseOf([samsung('media_player.a')]))?.name).toBe('Samsung TV');
-    expect(tvOf(houseOf([generic('media_player.a')]))?.name).toBe('Den TV');
-    expect(tvOf(houseOf([generic('media_player.a', {}, undefined, {friendly_name: undefined})]))?.name).toBe('TV');
+  test("a set the household did not name leaves the name to the catalog's default for its source; a generic one keeps its entity name", () => {
+    expect(tvOf(houseOf([samsung('media_player.a')]))).toMatchObject({name: null, defaultName: 'media.samsungTv'});
+    expect(tvOf(houseOf([generic('media_player.a')]))).toMatchObject({name: 'Den TV', defaultName: 'media.tv'});
+    const unnamed = generic('media_player.a', {}, undefined, {friendly_name: undefined});
+    expect(tvOf(houseOf([unnamed]))).toMatchObject({name: null, defaultName: 'media.tv'});
   });
 
   test('the area comes from the entity, else from its device, else there is none', () => {
@@ -140,7 +155,7 @@ describe('what the television is called', () => {
 describe('the wake-on-LAN button', () => {
   const button = (id: string, name: string) => entity(id, 'unknown', {friendly_name: name});
 
-  test('a Samsung set has the wake-on-LAN button whose name mentions a TV, whatever the case', () => {
+  test('a set has the wake-on-LAN button whose name mentions a TV, whatever the case', () => {
     const house = houseOf(
       [samsung('media_player.a')],
       [button('button.wake_on_lan_laptop', 'Laptop'), button('button.wake_on_lan_set', 'Wake the tv')],
@@ -159,9 +174,9 @@ describe('the wake-on-LAN button', () => {
     ).toBeNull();
   });
 
-  test('a generic television has none: the rule belongs to the Samsung source', () => {
+  test('a generic television has it too: the legacy rule looks for the button whichever set it chose', () => {
     const house = houseOf([generic('media_player.a')], [button('button.wake_on_lan_set', 'TV')]);
-    expect(tvOf(house)?.wakeButton).toBeNull();
+    expect(tvOf(house)?.wakeButton).toBe('button.wake_on_lan_set');
   });
 });
 

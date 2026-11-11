@@ -3,6 +3,9 @@
   "messages": [
     {
       "key": "media.samsungTv"
+    },
+    {
+      "key": "media.tv"
     }
   ]
 }

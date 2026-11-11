@@ -7,8 +7,8 @@ import {fullHouse, houseOf, readingOf, recorded, type Player} from './support.ts
 
 type House = ReturnType<typeof houseOf>;
 const speakersOf = (house: House, tvId: string | null = null) => {
-  const {states, registries, deps} = readingOf(house);
-  return speakers(states, registries, deps.names, tvId);
+  const {states, registries, names} = readingOf(house);
+  return speakers(states, registries, names, tvId);
 };
 const namesOf = (house: House, tvId: string | null = null) => speakersOf(house, tvId).map(s => s.name);
 
@@ -35,8 +35,8 @@ describe('the recorded house', () => {
   }
 
   test('every speaker sits in an area, has a name and is not on a camera or television platform', () => {
-    const {states, registries, deps} = readingOf(fakeHass.fromFixture('main'));
-    for (const speaker of speakers(states, registries, deps.names, null)) {
+    const {states, registries, names} = readingOf(fakeHass.fromFixture('main'));
+    for (const speaker of speakers(states, registries, names, null)) {
       expect(speaker.areaId).not.toBe('');
       expect(speaker.name).not.toBe('');
       expect(['unifiprotect', 'samsungtv']).not.toContain(registries.entities?.[speaker.id]?.platform);

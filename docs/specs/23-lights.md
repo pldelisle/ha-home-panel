@@ -2,7 +2,7 @@
 
 Parent: [production-grade-refactor.md](production-grade-refactor.md), phase 3.
 Depends on: [15 Weather](15-weather.md) (`sunTimes`, the kit's sheets), [16 Media](16-media.md) (`runCommand`, the overlay, `<hp-switch>`, the bridge), [17 Security](17-security.md) (the pane-header actions slot carries the Arrange bar since #167), [20 Climate](20-climate.md) (`<hp-seg>` is not needed; the pointer-driven test style is), [21 Car](21-car.md) (the last reader of `pend`, `pending`, `call` and `sw` before this one). Blocks: 24 Home (the Lights tile and the stack's "Lights unreachable" card read the provider).
-Ships as: three pull requests, each a patch release, each pixel-identical. No new ADR: 0021 to 0023 apply; the notes record why the slider is a feature element and why the order stays in system data.
+Ships as: three pull requests, each a patch release, each pixel-identical. No new ADR: 0021 to 0025 apply; the notes record why the slider is a feature element and why the order stays in system data.
 
 The key words MUST, MUST NOT, SHOULD, SHOULD NOT and MAY are to be read as in RFC 2119.
 
