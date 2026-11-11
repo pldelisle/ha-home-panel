@@ -9,8 +9,8 @@ export interface Timers<Handle = unknown> {
   clear(handle: Handle): void;
 }
 
-/** The platform's timers; the default, so a caller names none. */
-const PLATFORM_TIMERS: Timers = {
+/** The platform's timers; the default, so a caller names none (a controller that schedules for itself takes them too). */
+export const PLATFORM_TIMERS: Timers = {
   set: (run, ms) => setTimeout(run, ms),
   clear: handle => clearTimeout(handle as ReturnType<typeof setTimeout>),
 };

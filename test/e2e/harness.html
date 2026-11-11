@@ -44,6 +44,8 @@
       const asked = [];
       // a recorder that is down for one statistics period (`window.house.failStatistics`), answering with an error as the socket does
       let failing = null;
+      // the pattern `window.house.failNext` set, until the next matching service call has been rejected
+      let failingCall = null;
       let hass = {
         states: read.states,
         entities: read.entities,
@@ -54,6 +56,11 @@
         locale: {language: params.get('lang') || 'en'},
         services: blueprint.services,
         callService: async (d, s, data) => {
+          // the next call whose `domain.service` contains `window.house.failNext`'s pattern rejects once, as Home Assistant's socket does
+          if (failingCall !== null && (d + '.' + s).includes(failingCall)) {
+            failingCall = null;
+            throw {code: 'unknown_error', message: 'the service call failed on purpose'};
+          }
           console.log('SERVICE', d + '.' + s, JSON.stringify(data));
         },
         // the frontend's system data (the panel keeps the house-wide light order there); window.SYSDATA can preset it. Every other
@@ -121,6 +128,10 @@
         // the recorder fails every statistics request of this period (null: it answers again)
         failStatistics(period) {
           failing = period;
+        },
+        // the next service call whose `domain.service` contains the pattern rejects once, then calls work again (null: cancels it)
+        failNext(pattern) {
+          failingCall = pattern;
         },
         subscribed(kind) {
           return [...subscriptions].filter(({msg}) => msg.type === kind).length;

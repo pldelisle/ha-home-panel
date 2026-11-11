@@ -7,6 +7,7 @@
 import type {MessageKey} from './en.ts';
 
 export const fr: Record<MessageKey, string> = {
+  'common.failed': 'Échec : {reason}',
   'charts.failed': "La bibliothèque de graphiques n'a pas chargé",
   'home.title': 'Maison',
   'lights.title': 'Lumières',

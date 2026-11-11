@@ -1,4 +1,4 @@
-// <home-panel>, the one element Home Assistant mounts: it owns the store, the API client and the settings, provides them through context, draws the frame from the registry and hosts the guest in its one shadow root.
+// <home-panel>, the one element Home Assistant mounts: it owns the store, the API client, the settings and the optimistic values, provides them through context, draws the frame from the registry and hosts the guest in its one shadow root.
 // Pattern: composition root (Seemann, Dependency Injection Principles, Practices, and Patterns); humble object (Meszaros, xUnit Test Patterns): it forwards `hass`, `panel` and `narrow` and decides nothing the registry and the store decide.
 // It reads `localStorage`; the browser's locale defaults are read here and, until the formatters move, by the guest. It owns `tab`, `compact`, the idle state, which tabs the house shows, whether the settings popup is open and, through controllers, the appearance and the open sheet.
 // Must not: import legacy code (the guest arrives through registerGuest), or decide what the store and the models decide.
@@ -26,7 +26,8 @@ import {createSettings, type KeyValueStorage} from '../core/settings.ts';
 import {createStore} from '../core/store.ts';
 import {MediaQueryController} from '../ui/controllers/media-query.ts';
 import {StoreController} from '../ui/controllers/store-controller.ts';
-import {apiContext, settingsContext, storeContext, type Appearance} from '../ui/contexts.ts';
+import {apiContext, optimisticContext, settingsContext, storeContext, type Appearance} from '../ui/contexts.ts';
+import {OverlayStore} from '../ui/overlay-store.ts';
 import {ico} from '../ui/icons.ts';
 import type {SheetDismissEvent, SheetRequestEvent, ToastEvent} from '../ui/events.ts';
 import {AppearanceController} from './appearance.ts';
@@ -105,6 +106,8 @@ export class HomePanel extends LitElement {
   private readonly store = createStore(storeOptions());
   private readonly api = createApi(this.store);
   private readonly settings = createSettings(browserStorage());
+  // what the household asked for and Home Assistant has not confirmed yet: the panel's elements share it (ADR 0023)
+  private readonly optimistic = new OverlayStore();
   // The shell hears about the store only when a registry, the language or the user changes: it reads no entity, and the
   // guest tells it through `requestFrame` when its answer about the house changes. It passes the store itself because
   // a context provider never answers its own element.
@@ -187,6 +190,7 @@ export class HomePanel extends LitElement {
     new ContextProvider(this, {context: storeContext, initialValue: this.store});
     new ContextProvider(this, {context: apiContext, initialValue: this.api});
     new ContextProvider(this, {context: settingsContext, initialValue: this.settings});
+    new ContextProvider(this, {context: optimisticContext, initialValue: this.optimistic});
     // The store starts from the empty config, so a panel that arrives with none is no change; the store counts its
     // first config as one even then, which would make the guest draw a second time for nothing.
     this.store.setPanelConfig({});
