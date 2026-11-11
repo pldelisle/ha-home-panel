@@ -92,15 +92,14 @@ describe('the full test house, in English', () => {
       status: 'On',
       statusLine: 'On · Netflix',
       screenLabel: 'Netflix',
-      cardRight: 'Netflix',
       switchLabel: 'Samsung TV power',
       controlsLabel: 'Volume and playback',
       hint: "The TV doesn't report its volume, so there's no slider.",
       controls: {
-        volumeDown: {label: 'Volume down', pane: {text: 'Vol −', label: 'Vol −, volume down'}},
-        volumeUp: {label: 'Volume up', pane: {text: 'Vol +', label: 'Vol +, volume up'}},
-        mute: {label: 'Mute', pane: {text: 'Mute', label: 'Mute'}},
-        playPause: {label: 'Play or pause', pane: {text: null, label: 'Play or pause'}},
+        volumeDown: {text: 'Vol −', label: 'Vol −, volume down'},
+        volumeUp: {text: 'Vol +', label: 'Vol +, volume up'},
+        mute: {text: 'Mute', label: 'Mute'},
+        playPause: {text: null, label: 'Play or pause'},
       },
     });
   });
@@ -197,8 +196,8 @@ describe('the full test house, in French', () => {
       // the layer has no entry for this line: the French pane reads it in English
       hint: "The TV doesn't report its volume, so there's no slider.",
     });
-    expect(vm.tv?.controls.mute.pane.text).toBe('Sourdine');
-    expect(vm.tv?.controls.volumeDown.pane.text).toBe('Vol −');
+    expect(vm.tv?.controls.mute.text).toBe('Sourdine');
+    expect(vm.tv?.controls.volumeDown.text).toBe('Vol −');
     expect(vm.speakers[0].volume).toMatchObject({text: '35 %', caption: 'Volume', label: 'Volume de Living room'});
     expect(vm.speakers[0].playPause.label).toBe('Pause');
   });
@@ -259,7 +258,6 @@ describe('the television', () => {
       status: 'Off',
       statusLine: 'Off',
       sourceLabel: '',
-      cardRight: '',
       screenLabel: null,
     });
     expect(vm.summary).toBe('TV off');
@@ -281,7 +279,7 @@ describe('the television', () => {
 
   test('is unavailable without a wake button: not responding, the switch disabled', () => {
     const vm = tvOnly({state: 'unavailable', source: null, summarySource: null});
-    expect(vm.tv).toMatchObject({available: false, on: false, status: 'Not responding', cardRight: 'Unavailable'});
+    expect(vm.tv).toMatchObject({available: false, on: false, status: 'Not responding'});
     expect(vm.tiles[0]).toMatchObject({subLine: 'Not responding', control: {disabled: true}});
     expect(vm.summary).toBe('TV off');
   });
@@ -299,7 +297,6 @@ describe('the television', () => {
       statusLine: 'On · muted',
     });
     expect(tvOnly({muted: true}).tv).toMatchObject({status: 'On · muted', statusLine: 'On · muted · Netflix'});
-    expect(tvOnly({muted: true}).tv?.controls.mute.label).toBe('Unmute');
   });
 
   test('is muted, in French: the layer leaves "muted" in English over an input, and words it alone', () => {

@@ -1,8 +1,7 @@
 /*
  * <hp-tv-box>'s own rules: the name and status beside the switch, the screen, and the four buttons.
  * Moved from the legacy `.mtvhead`, `.mtvscreen` and `.mtvctl` rules (tabs.css, glass.css, motion.css), which #218 deleted with the
- * phone's card sheet, and read here as `.tvhead`, `.tvscreen` and `.tvkeys`; the Home card's `.tvbox` and `.tvctl` stay in the
- * legacy sheet until #220.
+ * phone's card sheet, and read here as `.tvhead`, `.tvscreen` and `.tvkeys`; the hidden Home card's `.tvbox` and `.tvctl` went with #219.
  */
 :host {
   display: block;

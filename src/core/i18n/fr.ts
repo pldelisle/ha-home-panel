@@ -35,7 +35,6 @@ export const fr: Record<MessageKey, string> = {
   'media.noDevices': 'Aucune télé ni haut-parleur trouvé.',
   'media.playersHint': 'Les lecteurs placés dans une pièce de Home Assistant apparaissent ici.',
   'media.notResponding': 'Ne répond pas',
-  'media.unavailable': 'Indisponible',
   'media.on': 'Activé',
   'media.off': 'Éteint',
   'media.onMuted': 'Allumé · en sourdine',
@@ -50,7 +49,6 @@ export const fr: Record<MessageKey, string> = {
   'media.volumeDownPane': 'Vol −, baisser le volume',
   'media.volumeUpPane': 'Vol +, monter le volume',
   'media.mute': 'Sourdine',
-  'media.unmute': 'Rétablir le son',
   'media.playOrPause': 'Lecture ou pause',
   // the legacy layer has no entry for this line, so the French pane reads it in English; the catalog says what the pane showed
   'media.noVolumeSlider': "The TV doesn't report its volume, so there's no slider.",

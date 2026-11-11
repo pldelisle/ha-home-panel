@@ -1,6 +1,6 @@
-// The events an element sends up (src/ui/events.ts): they must cross shadow roots, and carry what the shell reads.
+// The events an element sends up (src/ui/events.ts): they must cross shadow roots, and carry what the shell or the guest reads.
 import {expect, test} from 'vitest';
-import {SheetDismissEvent, SheetRequestEvent, ToastEvent} from '../../../src/ui/events.ts';
+import {EmptyEvent, SheetDismissEvent, SheetRequestEvent, ToastEvent} from '../../../src/ui/events.ts';
 
 test('a sheet request bubbles and is composed, and carries the id and the detail', () => {
   const e = new SheetRequestEvent('weather.history', {key: 'wind'});
@@ -23,4 +23,12 @@ test('a toast bubbles and is composed, and is not sticky unless it says so', () 
   expect([e.bubbles, e.composed]).toEqual([true, true]);
   expect(e.detail).toEqual({message: 'Saved', sticky: false});
   expect(new ToastEvent('No', true).detail.sticky).toBe(true);
+});
+
+test("the Home-card bridge's hp-empty bubbles and is composed, and says whether the element has anything to show", () => {
+  const e = new EmptyEvent(true);
+  expect(e.type).toBe('hp-empty');
+  expect([e.bubbles, e.composed]).toEqual([true, true]);
+  expect(e.detail).toEqual({empty: true});
+  expect(new EmptyEvent(false).detail.empty).toBe(false);
 });

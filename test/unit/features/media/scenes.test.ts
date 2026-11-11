@@ -38,6 +38,7 @@ describe('the test house', () => {
         icon: 'tv',
         subLine: 'Tap to run',
         active: false,
+        pressed: undefined,
         disabled: false,
       },
       {
@@ -47,6 +48,7 @@ describe('the test house', () => {
         icon: 'dinner',
         subLine: 'Last 2 h ago',
         active: false,
+        pressed: undefined,
         disabled: false,
       },
       {
@@ -56,6 +58,7 @@ describe('the test house', () => {
         icon: 'moon',
         subLine: 'Off',
         active: false,
+        pressed: 'false',
         disabled: false,
       },
     ]);
@@ -162,11 +165,17 @@ describe('a mode', () => {
 
   test('says On or Off, in the order the config gives, and is disabled when it is unavailable', () => {
     expect(
-      tilesOf(house, 'en', {modes}).map(({id, subLine, active, disabled}) => ({id, subLine, active, disabled})),
+      tilesOf(house, 'en', {modes}).map(({id, subLine, active, pressed, disabled}) => ({
+        id,
+        subLine,
+        active,
+        pressed,
+        disabled,
+      })),
     ).toEqual([
-      {id: 'input_boolean.on', subLine: 'On', active: true, disabled: false},
-      {id: 'input_boolean.off', subLine: 'Off', active: false, disabled: false},
-      {id: 'input_boolean.gone', subLine: 'Off', active: false, disabled: true},
+      {id: 'input_boolean.on', subLine: 'On', active: true, pressed: 'true', disabled: false},
+      {id: 'input_boolean.off', subLine: 'Off', active: false, pressed: 'false', disabled: false},
+      {id: 'input_boolean.gone', subLine: 'Off', active: false, pressed: 'false', disabled: true},
     ]);
   });
 
@@ -176,7 +185,7 @@ describe('a mode', () => {
 
   test('shows the value the overlay holds, until Home Assistant agrees', () => {
     const held = holding({[K.on('input_boolean.off')]: true});
-    expect(tilesOf(house, 'en', {modes}, held)[1]).toMatchObject({subLine: 'On', active: true});
+    expect(tilesOf(house, 'en', {modes}, held)[1]).toMatchObject({subLine: 'On', active: true, pressed: 'true'});
   });
 });
 

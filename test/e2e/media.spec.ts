@@ -1,5 +1,5 @@
 // The Media tab (spec 16): <hp-media-pane> on the tablet, its television box and speaker pods, what a tap sends and shows at once,
-// and what the pane costs; on the phone its tiles, what their controls send, and the sheet a tile opens.
+// and what the pane costs; on the phone its tiles, what their controls send, and the sheet a tile opens; the Home tab's scenes row.
 // Test titles that start with a number are the checks of docs/specs/01-playwright-test.md.
 import {test, expect, expectCall, phoneOnly, tabletOnly, type House} from './fixtures';
 import {AFTERNOON, FULL_CFG} from './houses';
@@ -185,6 +185,100 @@ test.describe('the phone', () => {
   test('draws a tile per player, and leaves the box and the pods to the sheets', async ({house}) => {
     await expect(pane(house).locator('hp-media-tile')).toHaveCount(2);
     await expect(pane(house).locator('hp-tv-box, hp-speaker-pod')).toHaveCount(0);
+  });
+});
+
+// The Home tab's scenes row, <hp-scene-tiles>, which the guest places by its tag (ADR 0024); Home Assistant never answers here, so
+// what a tile shows after a tap is what the tap holds
+test.describe('the Home scenes row', () => {
+  test.use({houseOpts: {cfg: FULL_CFG, time: AFTERNOON}});
+
+  const row = (house: House) => house.root().locator('#hscenes hp-scene-tiles');
+  const tile = (house: House, name: string) => row(house).getByRole('button').filter({hasText: name});
+  const line = (house: House, name: string) => tile(house, name).locator('small');
+
+  test('a scene says Done for four seconds after a tap, and scene.turn_on is sent', async ({house}) => {
+    // the page's clock stands still, so only fastForward moves it and an expectation's retries cannot outwait the four seconds
+    await house.clock.pauseAt((await house.page.evaluate(() => Date.now())) + 1000);
+    await tile(house, 'Movie night').click();
+    await expect(line(house, 'Movie night')).toHaveText('Done');
+    await expectCall(house, /^scene\.turn_on \{"entity_id":"scene\.movie_night"\}$/);
+    await expect(house.root().locator('#toast')).toHaveText('Movie night on');
+    await house.clock.fastForward(3_900);
+    await expect(line(house, 'Movie night')).toHaveText('Done');
+    await house.clock.fastForward(200);
+    await expect(line(house, 'Movie night')).toHaveText('Tap to run');
+  });
+
+  test('a mode turns on at once and sends input_boolean.turn_on', async ({house}) => {
+    await tile(house, 'Kids bedtime').click();
+    await expect(tile(house, 'Kids bedtime')).toHaveAttribute('aria-pressed', 'true');
+    await expect(line(house, 'Kids bedtime')).toHaveText('On');
+    await expectCall(house, /^input_boolean\.turn_on \{"entity_id":"input_boolean\.kids_bedtime"\}$/);
+    await expect(house.root().locator('#toast')).toHaveText('Kids bedtime on');
+  });
+
+  test('a scene that fails says why and lets go of its own Done alone: the mode turned on before stays on', async ({
+    house,
+  }) => {
+    await tile(house, 'Kids bedtime').click();
+    await expect(tile(house, 'Kids bedtime')).toHaveAttribute('aria-pressed', 'true');
+    await house.failNext('scene.turn_on');
+    await tile(house, 'Movie night').click();
+    const toast = house.root().locator('#toast');
+    await expect(toast).toContainText("Didn't work: the service call failed on purpose");
+    await expect(toast).toHaveAttribute('role', 'alert');
+    await expect(line(house, 'Movie night')).toHaveText('Tap to run');
+    await expect(tile(house, 'Kids bedtime')).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  // nothing in the house changes, so only the row's own minute redraw can move the line on
+  test('a "Last … ago" line keeps time: a minute later it says one minute more', async ({house}) => {
+    await house.clock.pauseAt((await house.page.evaluate(() => Date.now())) + 1000);
+    const ran = await house.page.evaluate(() => new Date(Date.now() - 5 * 60_000).toISOString());
+    await house.setState('scene.movie_night', {state: ran});
+    await expect(line(house, 'Movie night')).toHaveText('Last 5 min ago');
+    await house.clock.fastForward(60_000);
+    await expect(line(house, 'Movie night')).toHaveText('Last 6 min ago');
+  });
+
+  // The tripwire of the pane's test: the mode's state object is changed in place, which no store notices, so the row shows it only if
+  // it draws again. A thermostat change must not make it draw: the row listens to the Media ids alone.
+  test('a thermostat change draws nothing in the row', async ({house}) => {
+    await expect(line(house, 'Kids bedtime')).toHaveText('Off');
+    await house.page.evaluate(id => {
+      (window as unknown as {hass: {states: Record<string, {state: string}>}}).hass.states[id].state = 'on';
+    }, 'input_boolean.kids_bedtime');
+    await house.mutations.reset();
+    await house.setState('climate.living_room', {attributes: {temperature: 23}});
+    await house.page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
+    expect(await house.mutations.count('hp-scene-tiles'), 'mutations').toBe(0);
+    await expect(line(house, 'Kids bedtime')).toHaveText('Off');
+  });
+});
+
+// The row's container is the guest's: it shows and hides on the element's hp-empty, as renderScenes showed and hid it
+test.describe('the Home scenes row, in a house with no scene and no mode', () => {
+  test.use({houseOpts: {house: 'bare'}});
+
+  // what Home Assistant does to the scene's registry entry: a new entity registry in a new hass object, which every element hears
+  const register = (house: House, entry: object) =>
+    house.page.evaluate(entry => {
+      const w = window as unknown as {panel: {hass: unknown}; hass: {entities: object}};
+      w.panel.hass = {
+        ...w.hass,
+        entities: {...w.hass.entities, 'scene.reading': {entity_id: 'scene.reading', ...entry}},
+      };
+    }, entry);
+
+  test('is hidden, shows when a scene is created, and hides again when the scene is hidden', async ({house}) => {
+    const row = house.root().locator('#hscenes');
+    await expect(row).toBeHidden();
+    await house.setState('scene.reading', {state: 'unknown', attributes: {friendly_name: 'Reading'}});
+    await register(house, {});
+    await expect(row.getByRole('button', {name: /Reading/})).toBeVisible();
+    await register(house, {hidden: true});
+    await expect(row).toBeHidden();
   });
 });
 

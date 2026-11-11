@@ -66,18 +66,7 @@ const shortNames = names => {
 const L0kw = v => (v == null ? '–' : v < 1 ? Math.round(v * 1000) + ' W' : v.toFixed(1) + ' kW');
 
 // card order for the column packing: first row is cameras, energy
-const LAYOUT = [
-  'cams',
-  'sensors',
-  'open-energy',
-  'lights',
-  'tv',
-  'open-climate',
-  'open-air',
-  'open-car',
-  'water',
-  'hilo',
-];
+const LAYOUT = ['cams', 'sensors', 'open-energy', 'lights', 'open-climate', 'open-air', 'open-car', 'water', 'hilo'];
 const sceneIcon = id =>
   /night|nuit|sleep|bedtime|dodo/.test(id) && !/movie/.test(id)
     ? 'moon'
@@ -837,7 +826,6 @@ export class LegacyPanel {
     <div class="col c2">
       <div class="card camcard" id="cams"></div>
       <div class="card" id="sensors" hidden></div>
-      <div class="card" id="tv" hidden></div>
       <div class="card" id="lights"></div>
       <div class="card tap" id="open-climate" tabindex="0" role="button" aria-description="Open climate details"><div id="climate"></div></div>
       <div class="card tap" id="open-air" tabindex="0" role="button" aria-description="Open air quality details"><div id="air"></div></div>
@@ -944,6 +932,13 @@ export class LegacyPanel {
     this.panels = {};
     this.root.querySelectorAll('.sheet').forEach(sh => {
       this.panels[sh.id] = sh.querySelector('.panel');
+    });
+    // The scenes row is Media's element, placed by its tag (the Home-card bridge, ADR 0024): written once a draw and never again, and
+    // hidden while it says it has nothing, as renderScenes hid it. The Home move (#268) deletes both.
+    const hs = this.$('hscenes');
+    hs.innerHTML = '<hp-scene-tiles></hp-scene-tiles>';
+    hs.addEventListener('hp-empty', e => {
+      hs.hidden = e.detail.empty;
     });
     this.wire();
     // the host takes the scrim and the Close button of each sheet, and places the five detail panels for the shape of the screen
@@ -1799,6 +1794,7 @@ export class LegacyPanel {
       const hc = e.target.closest('#hsec [data-cam]');
       if (hc) return this.openCamera(hc.dataset.cam);
       if (e.target.closest('button[data-l]')) return; // light switches on the phone rows: the lights listener has them
+      // the scene and mode branches can no longer fire since #219 (the row is <hp-scene-tiles>, in its own root); #220 deletes them
       const pc = e.target.closest('[data-p="mode"]');
       if (pc) return this.phoneCmd(pc);
       const sc = e.target.closest('[data-p="scene"]');
@@ -2016,7 +2012,6 @@ export class LegacyPanel {
       'renderSensors',
       'secWatch',
       'renderLights',
-      'renderTV',
       'renderClimate',
       'renderAir',
       'renderCarCard',
@@ -4004,6 +3999,7 @@ export class LegacyPanel {
       this.pending[id] = {on, until: Date.now() + 20000};
       this.call('switch', on ? 'turn_on' : 'turn_off', {entity_id: id}, on ? 'Charging resumed' : 'Charging paused');
     } else {
+      // a mode: unreachable since #219, whose <hp-scene-tiles> runs setMode; #220 deletes this branch
       const on = this.pend(id + ':on', s.state === 'on') !== true;
       hold(':on', on);
       this.call('input_boolean', on ? 'turn_on' : 'turn_off', {entity_id: id}, `${this.name(id)} ${on ? 'on' : 'off'}`);
@@ -4057,6 +4053,7 @@ export class LegacyPanel {
   }
 
   // ---------- TV ----------
+  // kept for the now-playing stack card, through speakers(); #266 deletes it with the legacy stack
   tv() {
     const reg = this.hass.entities || {},
       dev = this.hass.devices || {};
@@ -4075,38 +4072,6 @@ export class LegacyPanel {
       wol,
       aid: e.area_id || D.area_id || '',
       name: D.name_by_user ? this.name(e.device_id) : e.platform === 'samsungtv' ? 'Samsung TV' : this.name(id, 'TV'),
-    };
-  }
-  renderTV() {
-    const el = this.$('tv');
-    if (!el) return;
-    const T = this.tv();
-    el.hidden = !T;
-    if (!T) return;
-    const B = this.tvBox(T);
-    this.set('tv', `<div class="top"><span class="lbl">TV</span><span class="right">${B.right}</span></div>${B.html}`);
-  }
-  tvBox(T) {
-    const s = this.st(T.id),
-      live = ok(s),
-      avail = live || !!T.wol,
-      on = this.pend(T.id + ':on', live && s.state !== 'off') === true;
-    const a = (s && s.attributes) || {},
-      muted = this.pend(T.id + ':mute', !!a.is_volume_muted);
-    const label = x => x.replace(/\s+[-–].*$/, '').replace(/＆/g, '&');
-    return {
-      right: !avail ? 'Unavailable' : on && a.source ? esc(label(a.source)) : '',
-      html: `<div class="larea tvbox${on ? ' on' : ''}"><div class="lhead"><span class="lic">${ico('tv', 18)}</span><div class="tx"><b>${esc(T.name)}</b><span>${!avail ? 'Not responding' : on ? (muted ? 'On · muted' : 'On') : 'Off'}</span></div>
-        <button type="button" class="sw" role="switch" aria-checked="${on}" aria-label="${esc(T.name)} power" data-tv="power" ${avail ? '' : 'disabled'}></button></div>
-      ${
-        on
-          ? `<div class="tvctl" role="group" aria-label="Volume and playback">
-        <button type="button" data-tv="vdown" aria-label="Volume down">${ico('voldn', 18)}</button>
-        <button type="button" data-tv="mute" aria-pressed="${muted}" aria-label="${muted ? 'Unmute' : 'Mute'}">${ico(muted ? 'mute' : 'vol', 18)}</button>
-        <button type="button" data-tv="vup" aria-label="Volume up">${ico('volup', 18)}</button>
-        <button type="button" data-tv="pp" aria-label="Play or pause">${ico('pp', 18)}</button></div>`
-          : ''
-      }</div>`,
     };
   }
   // ---------- door and motion sensors ----------
@@ -4193,6 +4158,7 @@ export class LegacyPanel {
     return D && (D.name_by_user || D.name) ? this.name(devId) : fallback;
   }
   // speakers by area (HomePods and the like); camera speakers and the TV have their own controls
+  // kept for the now-playing stack card (stackCards); #266 deletes it with the legacy stack
   speakers() {
     const reg = this.hass.entities || {},
       areas = this.hass.areas || {},
@@ -4576,15 +4542,7 @@ export class LegacyPanel {
   }
   renderTabs() {
     if (this.view !== 'tabs' || !this.hass) return;
-    for (const f of [
-      'renderHome',
-      'renderAlBar',
-      'renderScenes',
-      'renderPaneSubs',
-      'renderAuto',
-      'renderCompact',
-      'gateLacking',
-    ]) {
+    for (const f of ['renderHome', 'renderAlBar', 'renderPaneSubs', 'renderAuto', 'renderCompact', 'gateLacking']) {
       try {
         this[f]();
       } catch (e) {
@@ -4985,6 +4943,7 @@ export class LegacyPanel {
         ${[0, 6, 12, 18].map(h => `<span class="alh" style="left:${(h / 24) * 100}%">${this.fmtEn.hour(h0 + h * 36e5)}</span>`).join('')}</div>`,
     );
   }
+  // uncalled since #219, whose <hp-scene-tiles> draws the row; #220 deletes it with sceneTiles, runScene and sceneIcon
   renderScenes() {
     // scenes sit on the Home tab, one full-width row under everything
     const el = this.$('hscenes');

@@ -19,7 +19,7 @@ export const en = {
   // what a television that has no name of its own is called, by its source (src/providers/samsung-tv.ts, tv-entity.ts)
   'media.samsungTv': 'Samsung TV',
   'media.tv': 'TV',
-  // the Media pane, the phone's tiles and the Home cards (src/features/media/model.ts, scenes.ts, commands.ts): the pane's
+  // the Media pane, the phone's tiles and the Home scenes row (src/features/media/model.ts, scenes.ts, commands.ts): the pane's
   // sub-line, which says the speakers a second way after a television part (the French layer words the two differently)
   'media.summaryTvOn': 'TV on',
   'media.summaryTvOff': 'TV off',
@@ -33,7 +33,6 @@ export const en = {
   'media.noDevices': 'No TV or speakers found.',
   'media.playersHint': 'Media players that sit in an HA area show up here.',
   'media.notResponding': 'Not responding',
-  'media.unavailable': 'Unavailable',
   'media.on': 'On',
   'media.off': 'Off',
   'media.onMuted': 'On · muted',
@@ -47,7 +46,6 @@ export const en = {
   'media.volumeDownPane': 'Vol −, volume down',
   'media.volumeUpPane': 'Vol +, volume up',
   'media.mute': 'Mute',
-  'media.unmute': 'Unmute',
   'media.playOrPause': 'Play or pause',
   'media.noVolumeSlider': "The TV doesn't report its volume, so there's no slider.",
   'media.opensControls': 'Opens the controls',

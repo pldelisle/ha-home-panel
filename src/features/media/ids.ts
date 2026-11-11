@@ -1,4 +1,4 @@
-// mediaIds: the entity ids the Media pane and the Home cards read, so the store tells them only when one of them changes.
+// mediaIds: the entity ids the Media pane and the Home scenes row read, so the store tells them only when one of them changes.
 // Pattern: the union of what the rules read (the television and its wake button, the speakers, the scenes, the modes), with no
 // id twice, after the store's per-element subscription (ADR 0012); it takes the store's public members and nothing else.
 // Must not: read a state's value or the clock, import a feature or the shell, or name an entity id (the house and the config do).

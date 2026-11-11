@@ -1,8 +1,8 @@
-// mediaModel and mediaBrief: the television and the speakers in, the strings and flags the Media pane, the phone's tiles, the Home card
-// and the More sheet's line place out.
+// mediaModel and mediaBrief: the television and the speakers in, the strings and flags the Media pane, the phone's tiles and the More
+// sheet's line place out.
 // Pattern: a pure view-model function, a humble object's other half (Meszaros, Fowler): it reads no clock, no `hass` and no
 // store, words every message through `deps.t`, and reads a held value through `deps.overlay`, the one place a tap shows before Home
-// Assistant agrees. Each rule is the legacy panel's, whose `renderTV` and `tvBox` still say the Home card's until #220 deletes them.
+// Assistant agrees. Each rule is the legacy panel's pane, tiles and box (`renderMedia`, `renderMediaTiles`, `tvBox`), all deleted.
 // Must not: import the DOM, the kit or the shell, send a command, or hold text the household reads (a catalog key says it).
 import type {Messages} from '../../core/i18n/messages.ts';
 import type {Names} from '../../core/i18n/names.ts';
@@ -28,10 +28,10 @@ export interface MediaModelDeps {
   names: Names;
 }
 
-/** One button of the television's box: its label on the Home card (an icon) and what the pane draws (text, or an icon when null). */
+/** One button of the television's box: what it says (text, or an icon when null) and its name for a screen reader. */
 export interface TvControl {
+  text: string | null;
   label: string;
-  pane: {text: string | null; label: string};
 }
 
 export interface TvView {
@@ -45,14 +45,12 @@ export interface TvView {
   muted: boolean;
   /** The input while the set is on, or an empty string. */
   sourceLabel: string;
-  /** "On", "On · muted", "Off" or "Not responding": the Home card's line under the name. */
+  /** "On", "On · muted", "Off" or "Not responding": what the pane's line and the phone's tile start from. */
   status: string;
   /** The pane's line under the name: the status, then the input. */
   statusLine: string;
   /** What the pane's screen says while the set is on (the input, else "On"); null while it is off, and the pane draws an icon. */
   screenLabel: string | null;
-  /** The Home card's top-right: "Unavailable", else the input. */
-  cardRight: string;
   /** The power switch's name for a screen reader. */
   switchLabel: string;
   controlsLabel: string;
@@ -158,7 +156,6 @@ function tvView(tv: TvInputs, {t, overlay}: MediaModelDeps): TvView {
     : available && on && muted
       ? t('media.onMutedSource', {source: sourceLabel})
       : `${status} · ${sourceLabel}`;
-  const playOrPause = t('media.playOrPause');
   return {
     id: tv.id,
     wakeButton: tv.wakeButton,
@@ -170,18 +167,14 @@ function tvView(tv: TvInputs, {t, overlay}: MediaModelDeps): TvView {
     status,
     statusLine,
     screenLabel: on ? sourceLabel || t('media.on') : null,
-    cardRight: !available ? t('media.unavailable') : sourceLabel,
     switchLabel: t('media.tvPower', {name}),
     controlsLabel: t('media.volumeAndPlayback'),
     hint: t('media.noVolumeSlider'),
     controls: {
-      volumeDown: {
-        label: t('media.volumeDown'),
-        pane: {text: t('media.volumeDownShort'), label: t('media.volumeDownPane')},
-      },
-      volumeUp: {label: t('media.volumeUp'), pane: {text: t('media.volumeUpShort'), label: t('media.volumeUpPane')}},
-      mute: {label: t(muted ? 'media.unmute' : 'media.mute'), pane: {text: t('media.mute'), label: t('media.mute')}},
-      playPause: {label: playOrPause, pane: {text: null, label: playOrPause}},
+      volumeDown: {text: t('media.volumeDownShort'), label: t('media.volumeDownPane')},
+      volumeUp: {text: t('media.volumeUpShort'), label: t('media.volumeUpPane')},
+      mute: {text: t('media.mute'), label: t('media.mute')},
+      playPause: {text: null, label: t('media.playOrPause')},
     },
   };
 }

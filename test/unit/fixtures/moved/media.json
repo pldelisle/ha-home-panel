@@ -5,17 +5,18 @@
       "key": "media.samsungTv"
     },
     {
-      "key": "media.tv"
+      "key": "media.tv",
+      "was": "Télé"
     },
     {
       "key": "media.summaryTvOn",
       "was": "Télé allumée",
-      "after": "Télé : activé"
+      "after": "TV : activé"
     },
     {
       "key": "media.summaryTvOff",
       "was": "Télé éteinte",
-      "after": "Télé : désactivé"
+      "after": "TV : désactivé"
     },
     {
       "key": "media.summaryPlaying",
@@ -83,10 +84,8 @@
       "was": "Les lecteurs placés dans une pièce de Home Assistant apparaissent ici."
     },
     {
-      "key": "media.notResponding"
-    },
-    {
-      "key": "media.unavailable"
+      "key": "media.notResponding",
+      "was": "Ne répond pas"
     },
     {
       "key": "media.on"
@@ -95,7 +94,9 @@
       "key": "media.off"
     },
     {
-      "key": "media.onMuted"
+      "key": "media.onMuted",
+      "was": "Allumé · en sourdine",
+      "after": "Activé · muted"
     },
     {
       "key": "media.onMutedSource",
@@ -110,13 +111,16 @@
       }
     },
     {
-      "key": "media.volumeAndPlayback"
+      "key": "media.volumeAndPlayback",
+      "was": "Volume et lecture"
     },
     {
-      "key": "media.volumeDown"
+      "key": "media.volumeDown",
+      "was": "Baisser le volume"
     },
     {
-      "key": "media.volumeUp"
+      "key": "media.volumeUp",
+      "was": "Monter le volume"
     },
     {
       "key": "media.volumeDownShort"
@@ -133,13 +137,12 @@
       "was": "Vol +, monter le volume"
     },
     {
-      "key": "media.mute"
+      "key": "media.mute",
+      "was": "Sourdine"
     },
     {
-      "key": "media.unmute"
-    },
-    {
-      "key": "media.playOrPause"
+      "key": "media.playOrPause",
+      "was": "Lecture ou pause"
     },
     {
       "key": "media.noVolumeSlider"

@@ -30,6 +30,8 @@ export const ICONS = {
   moon: svg`<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>`,
   sun: svg`<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>`,
   sunauto: svg`<path d="M3 18h18M5 18a7 7 0 0 1 14 0M12 3v3M4.2 6.2l2.1 2.1M19.8 6.2l-2.1 2.1"/>`,
+  dinner: svg`<path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M17 3c-2 1-3 3.5-3 7h3v11"/>`,
+  exit: svg`<path d="M14 4h5v16h-5M10 8l-4 4 4 4M6 12h10"/>`,
 } satisfies Record<string, SVGTemplateResult>;
 
 export type IconName = keyof typeof ICONS;
