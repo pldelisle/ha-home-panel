@@ -44,7 +44,7 @@ Browser support: Safari and iOS 26, and current Chrome, Edge and Firefox; the Ja
        sidebar_title: Home panel
        sidebar_icon: mdi:home-analytics
        url_path: home-panel
-       module_url: /local/home-panel/home-panel.js?v=2.14.1
+       module_url: /local/home-panel/home-panel.js?v=2.14.2
    ```
 
 4. Restart Home Assistant. The panel shows up in the sidebar.

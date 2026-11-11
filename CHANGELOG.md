@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.14.2
+
+- Internal groundwork for the controls that send commands. Nothing visible changes.
+- Internal tidying: the old Media code is gone. Nothing visible changes.
+- Internal groundwork for the Media tab. Nothing visible changes.
+- The Media tab is redrawn with the same look. Nothing visible changes.
+- The Media tiles on the phone are redrawn with the same look. Nothing visible changes.
+- Internal rewiring of the scenes row; the hidden TV card is gone. Nothing visible changes.
+- Internal tidying of how the panel finds the TV and the speakers. Nothing visible changes.
+
 ## 2.14.1
 
 - The Auto theme now follows your phone or tablet's own light or dark setting, as it changes, instead of the sun. Choose Dark or Light to keep one. The Sky wallpaper still follows the sun. The page behind the panel keeps the wallpaper colour when the panel returns to the page. The little caption under Auto will say it follows the device in a following update.
