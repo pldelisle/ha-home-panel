@@ -62,10 +62,12 @@ export const speakerPlayPause = (speaker: Pick<Speaker, 'id' | 'name'>, play: bo
 export const speakerSkip = (speaker: Pick<Speaker, 'id'>, direction: 'next' | 'previous'): Command =>
   player(direction === 'next' ? 'media_next_track' : 'media_previous_track', speaker.id);
 
-/** Sets a speaker's volume: the level kept in 0 to 1 and to two decimals, as the legacy `mpVol`; silent, the element debounces it. */
+/** A volume as a player takes it: kept in 0 to 1 and to two decimals, as the legacy `mpVol`; Math.max(0, …) turns a -0 into 0. */
+export const volumeLevel = (level: number): number => Math.min(1, Math.max(0, Math.round(level * 100) / 100));
+
+/** Sets a speaker's volume at `volumeLevel(level)`; silent, the element debounces it. */
 export const speakerVolume = (speaker: Pick<Speaker, 'id'>, level: number): Command => ({
-  // Math.max(0, …) also turns the -0 of a tiny negative level into 0
-  ...player('volume_set', speaker.id, {volume_level: Math.min(1, Math.max(0, Math.round(level * 100) / 100))}),
+  ...player('volume_set', speaker.id, {volume_level: volumeLevel(level)}),
   holds: [K.volume(speaker.id)],
 });
 

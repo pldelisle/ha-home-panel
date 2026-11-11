@@ -3,6 +3,7 @@
 // subject is one folder and one line here, and a move replaces its legacyFeature(...) line with the feature's own.
 // Must not: hold state, know the guest (a descriptor reads it through its env), or list a subject twice.
 import type {FeatureDescriptor, FeatureKey} from '../ui/feature.ts';
+import {mediaFeature} from '../features/media/index.ts';
 import {weatherFeature} from '../features/weather/index.ts';
 import {legacyFeature} from './legacy-feature.ts';
 
@@ -63,17 +64,7 @@ export const FEATURES: readonly FeatureDescriptor[] = [
     header: {subId: 'asub2', compact: true},
     hosts: ['<div id="airhost"></div>'],
   }),
-  legacyFeature('media', {
-    icon: 'tv',
-    color: 'var(--c-home)',
-    phoneBar: false,
-    header: {subId: 'msub'},
-    hosts: [
-      '<div class="mtiles" id="mtiles"></div>',
-      '<div class="card" id="mtv" hidden></div>',
-      '<div class="card" id="media"></div>',
-    ],
-  }),
+  mediaFeature,
   legacyFeature('cams', {
     icon: 'shield',
     color: 'var(--m-purple)',

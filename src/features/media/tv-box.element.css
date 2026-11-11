@@ -1,0 +1,98 @@
+/*
+ * <hp-tv-box>'s own rules: the name and status beside the switch, the screen, and the four buttons.
+ * Known copies of the legacy `.mtvhead`, `.mtvscreen` and `.mtvctl` rules (tabs.css, glass.css, motion.css), read here as `.tvhead`,
+ * `.tvscreen` and `.tvkeys`: the legacy sheet keeps them while the phone's card sheet opens the guest's `#mtv` (#218 deletes them).
+ * The selectors differ because the styles-split test lets one file write a selector, and a shadow root cannot reach the legacy rule.
+ */
+:host {
+  display: block;
+}
+.tvhead {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.tvhead .tx {
+  flex: 1;
+  min-width: 0;
+}
+.tvhead h3 {
+  margin: 0;
+  font-size: calc(19px * var(--tx));
+  font-weight: 600;
+}
+.tvhead p {
+  margin: 2px 0 0;
+  font-size: calc(13px * var(--tx));
+  color: var(--fg2);
+}
+.tvscreen {
+  aspect-ratio: 16/9;
+  border-radius: 20px;
+  background: var(--card2);
+  display: grid;
+  place-items: center;
+  color: var(--fg2);
+  font-size: calc(16px * var(--tx));
+  font-weight: 600;
+  margin: 16px 0;
+}
+.tvscreen.on {
+  background: color-mix(in srgb, var(--c-home) 10%, var(--card2));
+  color: var(--fg);
+}
+.tvkeys {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.tvkeys button {
+  min-height: 72px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--card2);
+  font: 600 calc(16px * var(--tx)) var(--f-body);
+  color: var(--fg);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+.tvkeys button[aria-pressed='true'] {
+  color: var(--t-warn);
+  background: color-mix(in srgb, var(--warn) 16%, var(--card));
+}
+.tvkeys button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.tvkeys button:active {
+  transform: scale(0.97);
+}
+.app.gl .tvscreen {
+  background: var(--g-tile);
+  box-shadow: var(--g-edge-s);
+}
+.app.gl .tvscreen.on {
+  background: color-mix(in srgb, var(--c-home) 14%, var(--g-tile));
+}
+.app.gl .tvkeys button {
+  background: var(--g-tile);
+  box-shadow: var(--g-edge-s);
+}
+.app.gl .tvkeys button[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--warn) 18%, var(--g-sel));
+}
+@media (prefers-reduced-transparency: reduce) {
+  .app.gl .tvscreen {
+    background: var(--card2);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .tvkeys button {
+    transition:
+      transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+      background-color 0.2s ease,
+      box-shadow 0.2s ease,
+      color 0.2s ease;
+  }
+}

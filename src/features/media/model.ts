@@ -1,11 +1,12 @@
-// mediaModel: the television and the speakers in, the strings and flags the Media pane, the phone's tiles and the Home card place out.
+// mediaModel and mediaBrief: the television and the speakers in, the strings and flags the Media pane, the phone's tiles, the Home card
+// and the More sheet's line place out.
 // Pattern: a pure view-model function, a humble object's other half (Meszaros, Fowler): it reads no clock, no `hass` and no
 // store, words every message through `deps.t`, and reads a held value through `deps.overlay`, the one place a tap shows before Home
-// Assistant agrees. Each rule is the legacy panel's (renderMedia, renderMediaTiles, renderTV, tvBox, renderPaneSubs), until #220 deletes them.
+// Assistant agrees. Each rule is the legacy panel's (renderMedia, renderMediaTiles, renderTV, tvBox, renderPaneSubs, moreLines, mpVol), until #218 and #220 delete them.
 // Must not: import the DOM, the kit or the shell, send a command, or hold text the household reads (a catalog key says it).
 import type {Messages} from '../../core/i18n/messages.ts';
 import type {Names} from '../../core/i18n/names.ts';
-import {K, type Overlay} from './commands.ts';
+import {K, volumeLevel, type Overlay} from './commands.ts';
 import type {MediaInputs, SpeakerInputs} from './inputs.ts';
 import type {TvInputs} from '../../providers/tv-source.ts';
 
@@ -15,6 +16,9 @@ type Translate = Messages['t'];
 const PAUSE = 1; // MediaPlayerEntityFeature.PAUSE = 1
 const VOLUME_SET = 4; // MediaPlayerEntityFeature.VOLUME_SET = 4
 const PLAY = 16384; // MediaPlayerEntityFeature.PLAY = 16384
+
+/** A tap on the stepper's − or +: five percent, as the legacy stepper. */
+const VOLUME_STEP = 0.05;
 
 export interface MediaModelDeps {
   t: Translate;
@@ -31,6 +35,9 @@ export interface TvControl {
 }
 
 export interface TvView {
+  /** The player and its wake-on-LAN button, which the box's commands name (`tvPower` and the others). */
+  id: string;
+  wakeButton: string | null;
   name: string;
   on: boolean;
   /** False when the set is `unavailable` and the house has no wake button to try. */
@@ -66,6 +73,9 @@ export interface VolumeView {
   upLabel: string;
   atMin: boolean;
   atMax: boolean;
+  /** The levels a tap on − and on + asks for: the shown level and a step, as a player takes it (`volumeLevel`). */
+  down: number;
+  up: number;
 }
 
 export interface SpeakerView {
@@ -138,6 +148,8 @@ function tvView(tv: TvInputs, {t, overlay}: MediaModelDeps): TvView {
       : `${status} · ${sourceLabel}`;
   const playOrPause = t('media.playOrPause');
   return {
+    id: tv.id,
+    wakeButton: tv.wakeButton,
     name,
     on,
     available,
@@ -205,6 +217,8 @@ function speakerView(speaker: SpeakerInputs, {t, overlay, names}: MediaModelDeps
             upLabel: t('media.volumeUp'),
             atMin: volume <= 0,
             atMax: volume >= 1,
+            down: volumeLevel(volume - VOLUME_STEP),
+            up: volumeLevel(volume + VOLUME_STEP),
           }
         : null,
     playPause: {
@@ -233,6 +247,19 @@ function summaryOf({tv, speakers}: MediaInputs, t: Translate): string {
         : [t('media.summaryIdle', {count: speakers.length})]),
   ];
   return parts.join(' · ');
+}
+
+/**
+ * The word under Media in the phone's More sheet: the legacy `moreLines`, which says the television's state and the speakers that
+ * play, without the input the pane's sub-line names, and "Nothing playing" when that says nothing. It counts what Home Assistant says.
+ */
+export function mediaBrief({tv, speakers}: MediaInputs, t: Translate): string {
+  const playing = speakers.filter(speaker => speaker.state === 'playing').length;
+  const parts = [
+    ...(tv ? [t(tv.state === 'on' ? 'media.summaryTvOn' : 'media.summaryTvOff')] : []),
+    ...(playing > 0 ? [t(tv ? 'media.summaryPlaying' : 'media.speakersPlaying', {count: playing})] : []),
+  ];
+  return parts.join(' · ') || t('media.nothingPlaying');
 }
 
 function tvTile(tv: TvView, t: Translate): MediaTileView {

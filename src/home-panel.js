@@ -5171,9 +5171,10 @@ export class LegacyPanel {
     el.hidden = !sc;
     if (sc) this.set('hscenes', sc);
   }
-  // Media pane, laid out as in the sketch: the TV with big buttons on the left, one wide player per speaker on the right
+  // Media pane, laid out as in the sketch: the TV with big buttons on the left, one wide player per speaker on the right.
+  // The tablet's pane is <hp-media-pane> (#217): these cards are drawn only on the phone, whose tiles open them in the card sheet (#218 deletes them)
   renderMedia() {
-    if (this.lightDrag || this.tab !== 'media') return;
+    if (this.lightDrag || this.tab !== 'media' || !this.compact) return;
     const T = this.tv(),
       mt = this.$('mtv');
     mt.hidden = !T;

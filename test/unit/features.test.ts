@@ -5,6 +5,7 @@ import {en} from '../../src/core/i18n/en.ts';
 import {fr} from '../../src/core/i18n/fr.ts';
 import {resolveConfig} from '../../src/core/config.ts';
 import {createStore} from '../../src/core/store.ts';
+import {mediaFeature} from '../../src/features/media/index.ts';
 import {weatherFeature} from '../../src/features/weather/index.ts';
 import * as full from '../houses/full.mjs';
 import {fakeHass} from './fake-hass.ts';
@@ -136,5 +137,29 @@ describe('the Weather descriptor', () => {
       }),
     ).toBe('4° · Mainly sunny');
     expect(weather.summary?.({store: store(), guest, sheetOpen: () => false, sheetDetail: () => undefined})).toBeNull();
+  });
+});
+
+describe('the Media descriptor', () => {
+  const env = (hass?: ReturnType<typeof fakeHass.fromHouse>) => {
+    const store = createStore({defaultTimeZone: 'America/Toronto', resolve: resolveConfig});
+    if (hass) store.setHass(hass);
+    return {
+      store,
+      guest: {availability: () => ({}), moreLine: () => null},
+      sheetOpen: () => false,
+      sheetDetail: () => undefined,
+    };
+  };
+
+  test("is the registry's own and always shown", () => {
+    expect(FEATURES.find(f => f.key === 'media')).toBe(mediaFeature);
+    expect(mediaFeature.available).toBeUndefined();
+  });
+
+  // the More sheet's baselines read the legacy line, which leaves the input out: the brief, not the pane's sub-line
+  test('says the television and the speakers that play under More, and nothing before the house has been heard', () => {
+    expect(mediaFeature.summary?.(env(fakeHass.fromHouse(full)))).toBe('TV on · 1 speaker playing');
+    expect(mediaFeature.summary?.(env())).toBeNull();
   });
 });

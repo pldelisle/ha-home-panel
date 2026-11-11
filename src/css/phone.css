@@ -280,9 +280,10 @@
 .app.tabsv.cp .pane .card.tap .go {
   display: grid;
 }
-/* Media and Security */
-.app.tabsv.cp .pane-media > #mtv,
-.app.tabsv.cp .pane-media > #media {
+/* Media and Security: the guest's Media cards show only in the card sheet the phone's tiles open (#218 deletes them); the pane is
+   <hp-media-pane> on every screen (#217) */
+.pane-media > #mtv,
+.pane-media > #media {
   display: none;
 }
 .app.tabsv.cp .camgrid {

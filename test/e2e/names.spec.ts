@@ -122,6 +122,6 @@ test.describe('an area with no name of its own', () => {
     test.skip(isPhone(), 'the speakers are on the tablet');
     await house.setAreaName('living_room', '');
     await house.tab('media');
-    await expect(house.root().locator('#pane-media .pod h3')).toHaveText(['Living room speaker']);
+    await expect(house.root().locator('#pane-media hp-speaker-pod h3')).toHaveText(['Living room speaker']);
   });
 });
