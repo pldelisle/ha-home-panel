@@ -1,7 +1,7 @@
 # Spec 19: Energy, the fifth move: three providers, history derived on demand, the flow and the Sankey as pure geometry, and the ApexCharts question answered
 
 Parent: [production-grade-refactor.md](production-grade-refactor.md), phase 3.
-Depends on: [15 Weather](15-weather.md) (`<hp-chart>`, the statistics cache, `<hp-range-tabs>`, `ranges.ts`), [16 Media](16-media.md) (`runCommand`, the overlay, the bridge), [17 Security](17-security.md) (shared reads in providers; legacy may import providers), [18 Air](18-air.md) (`<hp-stepper>`, registry-driven discovery). Blocks: 20 Climate (the rooms' power and the history pattern), 21 Car (the Wallbox provider and the charging sessions), 22 Live pill (the Hilo and power providers), 24 Home (the energy card).
+Depends on: [15 Weather](15-weather.md) (`<hp-chart>`, the statistics cache, `<hp-range-tabs>`, `ranges.ts`), [16 Media](16-media.md) (`CommandRunner`, the overlay, the bridge), [17 Security](17-security.md) (shared reads in providers; legacy may import providers), [18 Air](18-air.md) (`<hp-stepper>`, registry-driven discovery). Blocks: 20 Climate (the rooms' power and the history pattern), 21 Car (the Wallbox provider and the charging sessions), 22 Live pill (the Hilo and power providers), 24 Home (the energy card).
 Ships as: three pull requests, each a patch release, each pixel-identical. ADR 0026 (history derived on demand) and ADR 0027 (ApexCharts, reopening #84) land with the first.
 
 The key words MUST, MUST NOT, SHOULD, SHOULD NOT and MAY are to be read as in RFC 2119.

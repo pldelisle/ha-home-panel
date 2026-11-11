@@ -1,7 +1,7 @@
 # Spec 18: Air, the fourth move: the Mila provider, a rating model, the purifier controls, and the first charts after Weather
 
 Parent: [production-grade-refactor.md](production-grade-refactor.md), phase 3.
-Depends on: [15 Weather](15-weather.md) (`<hp-chart>`, the statistics cache, `<hp-range-tabs>`, `ranges.ts`), [16 Media](16-media.md) (`runCommand`, `OptimisticController`, `debounce`, the Home-card bridge), [17 Security](17-security.md) (the rule that a reading another feature needs lives in a provider). Blocks: 19 Energy and every later move; 24 Home, whose smart stack reads the Mila provider.
+Depends on: [15 Weather](15-weather.md) (`<hp-chart>`, the statistics cache, `<hp-range-tabs>`, `ranges.ts`), [16 Media](16-media.md) (`CommandRunner`, `OptimisticController`, `debounce`, the Home-card bridge), [17 Security](17-security.md) (the rule that a reading another feature needs lives in a provider). Blocks: 19 Energy and every later move; 24 Home, whose smart stack reads the Mila provider.
 Ships as: two pull requests, each a patch release, each pixel-identical. No new ADR: the decisions are 0020 to 0025's, applied; one note records why the stepper is promoted to the kit.
 
 The key words MUST, MUST NOT, SHOULD, SHOULD NOT and MAY are to be read as in RFC 2119.
@@ -24,7 +24,7 @@ The made-up test house has no Mila device, so the `air-tablet-*` baselines show 
 
 Move Air into `src/features/air/`, in two pull requests:
 
-1. **The provider, the model and the pane.** `src/providers/mila.ts` reads the purifiers and the outdoor station into `AirInputs`; `airModel` turns them into ratings and lines through `t()` and `fmt`; `<hp-air-pane>` draws the card's content (the pane on a phone, the top of the pane on a tablet) and hosts `<hp-air-detail>` inline; `<hp-air-detail>` draws the room cards, the controls through `runCommand` and the optimistic overlay, and the two charts through `<hp-chart>` over the statistics cache. `.stepper` is promoted to the kit as `<hp-stepper>` with Media's volume as its first user and the fan speed as its second. The class keeps `purifiers()` for the stack and the phone tile until pull request 2.
+1. **The provider, the model and the pane.** `src/providers/mila.ts` reads the purifiers and the outdoor station into `AirInputs`; `airModel` turns them into ratings and lines through `t()` and `fmt`; `<hp-air-pane>` draws the card's content (the pane on a phone, the top of the pane on a tablet) and hosts `<hp-air-detail>` inline; `<hp-air-detail>` draws the room cards, the controls through the element's `CommandRunner` and the optimistic overlay, and the two charts through `<hp-chart>` over the statistics cache. `.stepper` is promoted to the kit as `<hp-stepper>` with Media's volume as its first user and the fan speed as its second. The class keeps `purifiers()` for the stack and the phone tile until pull request 2.
 2. **The stack's read, the phone tile and the deletion.** The smart-stack card reads `milaRooms(...)` and `rateRoom(...)` from the provider and the feature's pure rating (the legacy-to-providers allowance of ADR 0025; the rating function moves into the provider's output as `level` so the class does not import the feature); the phone's purifier tile branch of `phoneCmd` is deleted with the pane's own tile; every Air method, constant, style and French entry is deleted.
 
 Each pull request leaves every baseline identical (`air-tablet-*`, `bare-air-*`, `home-*`).

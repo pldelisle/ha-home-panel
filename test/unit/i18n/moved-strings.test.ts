@@ -57,14 +57,15 @@ const read = (move: string) =>
 // the rail's label for the subject is the shell's (src/shell/features.ts says it), not a message the move introduced
 const ofMove = (prefix: string) => Object.keys(en).filter(key => key.startsWith(prefix) && key !== `${prefix}title`);
 
-// a move: its fixture, the prefix of the keys it introduced and the folder that says them
+// a move: its fixture, the prefix of the keys it introduced, the folders that say them, and the keys outside the prefix it
+// also introduced (the kit's `common.failed` came with Media's command layer; the kit says it, in src/ui/)
 describe.each([
-  ['weather', 'weather.', ['src/features/weather/', 'src/providers/']],
-  ['media', 'media.', ['src/features/media/', 'src/providers/']],
-  ['chart', 'chart.', ['src/ui/']],
-  ['ranges', 'range.', ['src/ui/']],
-  ['settings', 'settings.', ['src/shell/']],
-])('the %s move', (move, prefix, folders) => {
+  ['weather', 'weather.', ['src/features/weather/', 'src/providers/'], []],
+  ['media', 'media.', ['src/features/media/', 'src/providers/'], ['common.failed']],
+  ['chart', 'chart.', ['src/ui/'], []],
+  ['ranges', 'range.', ['src/ui/'], []],
+  ['settings', 'settings.', ['src/shell/'], []],
+])('the %s move', (move, prefix, folders, extra) => {
   const moved = read(move);
 
   test.each(moved.map(m => [`${m.key} ${JSON.stringify(m.values ?? {})}`, m] as const))('%s', (_name, m) => {
@@ -78,22 +79,22 @@ describe.each([
   });
 
   test('lists every message the move introduced, and only messages that exist', () => {
-    const introduced = ofMove(prefix);
+    const introduced = [...ofMove(prefix), ...extra];
     expect([...new Set(moved.map(m => m.key))].sort()).toEqual(introduced.sort());
   });
 
   test('has no dead message: the feature says every one, by its key or by the prefix of a computed key', () => {
-    const source = folders
-      .map(where => new URL(`../../../${where}`, import.meta.url))
-      .flatMap(folder =>
-        readdirSync(folder)
-          .filter(file => file.endsWith('.ts'))
-          .map(file => readFileSync(new URL(file, folder), 'utf8')),
-      )
-      .join('\n');
-    const dead = ofMove(prefix).filter(
-      key => !source.includes(`'${key}'`) && !source.includes(`\`${key.replace(/[^.]+$/, '')}$\{`),
-    );
-    expect(dead).toEqual([]);
+    const sourceOf = (where: string[]) =>
+      where
+        .map(where => new URL(`../../../${where}`, import.meta.url))
+        .flatMap(folder =>
+          readdirSync(folder)
+            .filter(file => file.endsWith('.ts'))
+            .map(file => readFileSync(new URL(file, folder), 'utf8')),
+        )
+        .join('\n');
+    const unsaid = (keys: string[], source: string) =>
+      keys.filter(key => !source.includes(`'${key}'`) && !source.includes(`\`${key.replace(/[^.]+$/, '')}$\{`));
+    expect([...unsaid(ofMove(prefix), sourceOf(folders)), ...unsaid(extra, sourceOf(['src/ui/']))]).toEqual([]);
   });
 });

@@ -1,7 +1,7 @@
 // A reactive controller that gives its host the panel's optimistic values and updates it when any of them changes.
 // Pattern: Lit reactive controller (Lit docs, Reactive Controllers) over the shared OverlayStore the shell provides by
 // context (ADR 0023): the store holds, this subscribes, and one timer updates the host at the earliest expiry.
-// A host that is off the page has no subscription and no timer: both are set again in hostConnected.
+// A host that is off the page has no subscription and no timer: both are set again in hostConnected, which also draws once.
 // Must not: keep a value itself (the store does), format a string, or be the only way to reach the store.
 import {ContextConsumer} from '@lit/context';
 import type {ReactiveController, ReactiveControllerHost} from 'lit';
@@ -10,8 +10,6 @@ import {optimisticContext} from '../contexts.ts';
 import type {OverlayStore} from '../overlay-store.ts';
 
 export interface OptimisticOptions {
-  /** The store itself, for a host that has no provider above it (a test); every other host receives it from context. */
-  store?: OverlayStore;
   /** The clock of the expiry timer; the platform's unless a test gives its own. The store's `now` decides what is expired. */
   timers?: Timers;
 }
@@ -29,8 +27,6 @@ export class OptimisticController implements ReactiveController {
   ) {
     host.addController(this);
     this.timers = options.timers ?? PLATFORM_TIMERS;
-    this.resolved = options.store;
-    if (this.resolved) return;
     // `subscribe: false`: a panel's store never changes, so one answer at connection is enough
     new ContextConsumer(host, {
       context: optimisticContext,
@@ -67,8 +63,11 @@ export class OptimisticController implements ReactiveController {
     this.store.release(...keys);
   }
 
+  // A value may have been released or may have expired while the host was off the page, so a reconnection draws once
+  // (`StoreController.resume` does the same); the first connection has no store yet, and the context's answer updates the host.
   hostConnected(): void {
     this.listen();
+    if (this.resolved) this.host.requestUpdate();
   }
 
   hostDisconnected(): void {

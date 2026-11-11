@@ -6,6 +6,10 @@
     },
     {
       "key": "media.tv"
+    },
+    {
+      "key": "common.failed",
+      "values": {"reason": "the TV is asleep"}
     }
   ]
 }

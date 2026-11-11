@@ -1,7 +1,7 @@
 /*
  * <hp-switch>'s look: the iOS-style track and knob. A known duplicate of the legacy `.sw` rules (base.css, motion.css): the
- * lights sheet, the Wallbox, the purifier and the TV still draw `.sw` buttons in the legacy sheet, so both are written
- * until none is left; #263 (Lights, the last user of `sw`, spec 23) deletes the `.sw` rules with the last `.sw` button.
+ * TV's power switch (#217, #218, #219), the light sheet (#262) and the Wallbox and precondition switches (#253) still draw
+ * `.sw` buttons in the legacy sheet, so both are written until none is left; #263 (Lights, the deletion) deletes the rules.
  * The selectors differ (`.switch`, not `.sw`) because the styles-split test lets one file write a selector, and a
  * shadow root cannot reach the legacy rule anyway.
  */

@@ -4,7 +4,7 @@ import {LegacyPanel} from './home-panel.js';
 import {CSS} from './styles.js';
 import {registerGuest} from './shell/guest.ts';
 import {HomePanel} from './shell/home-panel.ts';
-// defines <hp-switch> for the controls that move after Media's pane (spec 16); test/e2e/switch.spec.ts mounts it in the harness page
+// defines <hp-switch> for the controls that move after Media's pane (spec 16); test/e2e/command-layer.spec.ts mounts it in the harness page
 import './ui/switch.ts';
 
 registerGuest(() => new LegacyPanel(), CSS);

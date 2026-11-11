@@ -1,10 +1,12 @@
-// runCommand: a service call that tells the person on success, and on failure undoes only what it held and says so.
+// CommandRunner: a service call that tells the person on success, and on failure undoes only what it held and says so.
 import {describe, expect, test, vi} from 'vitest';
 import type {PanelApi} from '../../../src/core/api.ts';
 import {createMessages} from '../../../src/core/i18n/messages.ts';
-import {runCommand, type Command} from '../../../src/ui/commands.ts';
-import {ToastEvent} from '../../../src/ui/events.ts';
+import {CommandRunner, type Command} from '../../../src/ui/commands.ts';
+import {apiContext} from '../../../src/ui/contexts.ts';
+import type {ToastEvent} from '../../../src/ui/events.ts';
 import {OverlayStore} from '../../../src/ui/overlay-store.ts';
+import {fakeHost} from './support.ts';
 
 const {t} = createMessages({language: 'en', tag: 'en-CA'});
 
@@ -19,16 +21,14 @@ function fakeApi(...answers: unknown[]) {
   return {api: {runService} as unknown as PanelApi, runService};
 }
 
-/** What the host heard: the toasts the command dispatched, in order. */
-function fakeHost() {
-  const toasts: ToastEvent[] = [];
-  const host = {
-    dispatchEvent(event: Event) {
-      toasts.push(event as ToastEvent);
-      return true;
-    },
-  } as unknown as HTMLElement;
-  return {host, details: () => toasts.map(e => e.detail)};
+/** A connected host with a runner, whose API answers each call from `answers`, and a store the runner releases from. */
+function setup(...answers: unknown[]) {
+  const {api, runService} = fakeApi(...answers);
+  const store = new OverlayStore();
+  const host = fakeHost([[apiContext, api]]);
+  const runner = new CommandRunner(host, {overlay: store, t: () => t});
+  host.connect();
+  return {runner, runService, store, host, toasts: () => host.events.map(e => (e as ToastEvent).detail)};
 }
 
 const turnOn: Command = {
@@ -39,59 +39,49 @@ const turnOn: Command = {
   holds: ['tv:on'],
 };
 
-describe('runCommand, on success', () => {
+describe('CommandRunner, on success', () => {
   test('sends the service call and toasts the done message, not sticky', async () => {
-    const {api, runService} = fakeApi();
-    const {host, details} = fakeHost();
-    const store = new OverlayStore();
+    const {runner, runService, store, toasts} = setup();
     store.hold('tv:on', true);
 
-    await expect(runCommand(api, host, store, turnOn, t)).resolves.toBe(true);
+    await expect(runner.run(turnOn)).resolves.toBe(true);
 
     expect(runService).toHaveBeenCalledExactlyOnceWith('media_player', 'turn_on', {entity_id: 'media_player.tv'});
-    expect(details()).toEqual([{message: 'TV', sticky: false}]);
+    expect(toasts()).toEqual([{message: 'TV', sticky: false}]);
     expect(store.read('tv:on', false)).toBe(true); // what it held stays until Home Assistant agrees
   });
 
   test('fills the done message with its values', async () => {
-    const {api} = fakeApi();
-    const {host, details} = fakeHost();
-    const cmd: Command = {domain: 'scene', service: 'turn_on', done: {key: 'common.failed', values: {reason: 'x'}}};
-    await runCommand(api, host, new OverlayStore(), cmd, t);
-    expect(details()).toEqual([{message: "Didn't work: x", sticky: false}]);
+    const {runner, toasts} = setup();
+    await runner.run({domain: 'scene', service: 'turn_on', done: {key: 'common.failed', values: {reason: 'x'}}});
+    expect(toasts()).toEqual([{message: "Didn't work: x", sticky: false}]);
   });
 
   test('says nothing for a silent command', async () => {
-    const {api} = fakeApi();
-    const {host, details} = fakeHost();
-    await expect(
-      runCommand(api, host, new OverlayStore(), {domain: 'media_player', service: 'volume_up'}, t),
-    ).resolves.toBe(true);
-    expect(details()).toEqual([]);
+    const {runner, toasts} = setup();
+    await expect(runner.run({domain: 'media_player', service: 'volume_up'})).resolves.toBe(true);
+    expect(toasts()).toEqual([]);
   });
 });
 
-describe('runCommand, on failure', () => {
+describe('CommandRunner, on failure', () => {
   test('releases only its own holds, toasts a sticky failure with the reason, and answers false', async () => {
-    const {api} = fakeApi(new Error('the TV is asleep'));
-    const {host, details} = fakeHost();
-    const store = new OverlayStore();
+    const {runner, store, toasts} = setup(new Error('the TV is asleep'));
     store.hold('tv:on', true);
     store.hold('speaker:volume', 0.4); // another command's value, which a failure here must not touch
 
-    await expect(runCommand(api, host, store, turnOn, t)).resolves.toBe(false);
+    await expect(runner.run(turnOn)).resolves.toBe(false);
 
     expect(store.read('tv:on', false)).toBe(false);
     expect(store.read('speaker:volume', 0)).toBe(0.4);
-    expect(details()).toEqual([{message: "Didn't work: the TV is asleep", sticky: true}]);
+    expect(toasts()).toEqual([{message: "Didn't work: the TV is asleep", sticky: true}]);
   });
 
   test('reads the reason the way the legacy panel did: the message, else the code, else the value', async () => {
     const reasons = async (rejection: unknown) => {
-      const {api} = fakeApi(rejection);
-      const {host, details} = fakeHost();
-      await runCommand(api, host, new OverlayStore(), {domain: 'd', service: 's'}, t);
-      return details()[0].message;
+      const {runner, toasts} = setup(rejection);
+      await runner.run({domain: 'd', service: 's'});
+      return toasts()[0].message;
     };
     expect(await reasons({code: 'not_found', message: 'No such entity'})).toBe("Didn't work: No such entity");
     expect(await reasons({code: 'not_found'})).toBe("Didn't work: not_found");
@@ -99,55 +89,58 @@ describe('runCommand, on failure', () => {
   });
 
   test('releases nothing when the command held nothing, and still says so', async () => {
-    const {api} = fakeApi(new Error('no'));
-    const {host, details} = fakeHost();
-    const store = new OverlayStore();
+    const {runner, store, toasts} = setup(new Error('no'));
     store.hold('other', 1);
-    await expect(runCommand(api, host, store, {domain: 'd', service: 's'}, t)).resolves.toBe(false);
+    await expect(runner.run({domain: 'd', service: 's'})).resolves.toBe(false);
     expect(store.read('other', 0)).toBe(1);
-    expect(details()).toEqual([{message: "Didn't work: no", sticky: true}]);
+    expect(toasts()).toEqual([{message: "Didn't work: no", sticky: true}]);
   });
 });
 
-describe('runCommand, with a fallback', () => {
+describe('CommandRunner, with a fallback', () => {
   const withWake: Command = {
     ...turnOn,
     fallback: {domain: 'button', service: 'press', data: {entity_id: 'button.wake'}},
   };
 
   test('runs the fallback once after a rejection, and its success is the command: the done toast, the holds kept', async () => {
-    const {api, runService} = fakeApi(new Error('the TV is asleep'));
-    const {host, details} = fakeHost();
-    const store = new OverlayStore();
+    const {runner, runService, store, toasts} = setup(new Error('the TV is asleep'));
     store.hold('tv:on', true);
 
-    await expect(runCommand(api, host, store, withWake, t)).resolves.toBe(true);
+    await expect(runner.run(withWake)).resolves.toBe(true);
 
     expect(runService.mock.calls).toEqual([
       ['media_player', 'turn_on', {entity_id: 'media_player.tv'}],
       ['button', 'press', {entity_id: 'button.wake'}],
     ]);
-    expect(details()).toEqual([{message: 'TV', sticky: false}]);
+    expect(toasts()).toEqual([{message: 'TV', sticky: false}]);
     expect(store.read('tv:on', false)).toBe(true);
   });
 
   test('does not run the fallback when the first call succeeds', async () => {
-    const {api, runService} = fakeApi();
-    const {host} = fakeHost();
-    await runCommand(api, host, new OverlayStore(), withWake, t);
+    const {runner, runService} = setup();
+    await runner.run(withWake);
     expect(runService).toHaveBeenCalledTimes(1);
   });
 
-  test('fails with the fallback reason, once, when the fallback rejects too, and releases the holds', async () => {
-    const {api, runService} = fakeApi(new Error('the TV is asleep'), new Error('the button is gone'));
-    const {host, details} = fakeHost();
-    const store = new OverlayStore();
+  test('fails with the fallback reason, once, when the fallback rejects too, releasing only the holds', async () => {
+    const {runner, runService, store, toasts} = setup(new Error('the TV is asleep'), new Error('the button is gone'));
     store.hold('tv:on', true);
+    store.hold('speaker:volume', 0.4); // not in `holds`: it must survive
 
-    await expect(runCommand(api, host, store, withWake, t)).resolves.toBe(false);
+    await expect(runner.run(withWake)).resolves.toBe(false);
 
     expect(runService).toHaveBeenCalledTimes(2);
     expect(store.read('tv:on', false)).toBe(false);
-    expect(details()).toEqual([{message: "Didn't work: the button is gone", sticky: true}]);
+    expect(store.read('speaker:volume', 0)).toBe(0.4);
+    expect(toasts()).toEqual([{message: "Didn't work: the button is gone", sticky: true}]);
+  });
+});
+
+describe('CommandRunner, before its host connects', () => {
+  test('has no client yet, and says so', () => {
+    const host = fakeHost([[apiContext, fakeApi().api]]);
+    const runner = new CommandRunner(host, {overlay: new OverlayStore(), t: () => t});
+    expect(() => runner.run(turnOn)).toThrow('CommandRunner: the client arrives when the host connects.');
   });
 });

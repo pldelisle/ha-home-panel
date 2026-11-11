@@ -1,7 +1,7 @@
 # Spec 21: Car, the seventh move: the FordPass and Wallbox providers, charging sessions from the Wallbox's history, a departure schedule as draft state, and the end of the class's history loader
 
 Parent: [production-grade-refactor.md](production-grade-refactor.md), phase 3.
-Depends on: [16 Media](16-media.md) (`runCommand`, the overlay, `<hp-switch>`), [19 Energy](19-energy.md) (the Wallbox provider, history on demand, `thinCategories`), [20 Climate](20-climate.md) (`<hp-seg>`, `ArmedController`, `.abtn` in the kit). Blocks: 22 Live pill (the FordPass provider's charging state), 24 Home (the car tile).
+Depends on: [16 Media](16-media.md) (`CommandRunner`, the overlay, `<hp-switch>`), [19 Energy](19-energy.md) (the Wallbox provider, history on demand, `thinCategories`), [20 Climate](20-climate.md) (`<hp-seg>`, `ArmedController`, `.abtn` in the kit). Blocks: 22 Live pill (the FordPass provider's charging state), 24 Home (the car tile).
 Ships as: three pull requests, each a patch release, each pixel-identical. No new ADR: 0021 to 0027 apply; the notes record the last `pend`/`call` users and why the sessions are the car's.
 
 The key words MUST, MUST NOT, SHOULD, SHOULD NOT and MAY are to be read as in RFC 2119.

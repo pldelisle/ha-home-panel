@@ -1,11 +1,13 @@
 // <hp-switch>: the kit's on/off switch, a `button[role=switch]` in its own shadow root.
 // Pattern: controlled component over a humble object (Meszaros, xUnit Test Patterns): it draws `checked` and tells its
 // owner what a tap asks for by `change` (Lit docs, Events); the owner holds the optimistic value and sets `checked` back.
-// A known copy: its look duplicates the legacy `.sw` rules until #263 deletes the last of them (switch.element.css).
+// A known copy: its look duplicates the legacy `.sw` rules (switch.element.css) that the TV (#217, #218, #219), the light sheet
+// (#262) and the Wallbox and precondition switches (#253) still draw; #263 deletes the rules.
 // Must not: flip `checked` itself, send a service call, or know what it stands for (a light, a charger, a purifier).
 import {LitElement, html, unsafeCSS} from 'lit';
 import {ifDefined} from 'lit/directives/if-defined.js';
 import {common} from './styles/index.ts';
+import {forShadow} from './styles/host.ts';
 import switchOwn from './switch.element.css?inline';
 
 /** What the switch says when it is tapped, or Space or Enter is pressed on it: the state it asks for. */
@@ -26,7 +28,8 @@ export class HpSwitch extends LitElement {
   declare label: string | undefined;
 
   // `display: contents`: the host has no box of its own, so the button is a child of whatever lays the row out
-  static override styles = [common, unsafeCSS(switchOwn)];
+  // The element's own rules, its `:host` and what only its tree has, are in switch.element.css.
+  static override styles = [common, unsafeCSS(forShadow(switchOwn))];
 
   constructor() {
     super();

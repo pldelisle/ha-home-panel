@@ -1,17 +1,10 @@
 // OptimisticController: a host's view of the panel's overlay store, with a fake host, a fake clock and fake timers.
-import type {ReactiveController, ReactiveControllerHost} from 'lit';
 import {describe, expect, test, vi} from 'vitest';
 import type {Timers} from '../../../src/core/timing.ts';
 import {OptimisticController} from '../../../src/ui/controllers/optimistic.ts';
 import {optimisticContext} from '../../../src/ui/contexts.ts';
 import {OverlayStore} from '../../../src/ui/overlay-store.ts';
-
-/** What the context protocol's request event carries (@lit/context does not export the class). */
-interface ContextRequest {
-  type: string;
-  context: unknown;
-  callback: (value: OverlayStore, unsubscribe: () => void) => void;
-}
+import {fakeHost} from './support.ts';
 
 /** A clock that moves when the test says, with timers that run when it passes them. */
 function fakeClock() {
@@ -40,48 +33,20 @@ function fakeClock() {
   };
 }
 
-/** The part of an element a controller uses: it lists its controllers, counts its updates and can answer a context request. */
-function fakeHost(answer?: OverlayStore) {
-  const controllers: ReactiveController[] = [];
-  const host = {
-    isConnected: false,
-    updates: 0,
-    addController: (c: ReactiveController) => void controllers.push(c),
-    requestUpdate() {
-      host.updates++;
-    },
-    dispatchEvent(event: Event) {
-      // the protocol's request: an event named `context-request` that carries the key and a callback
-      const request = event as unknown as ContextRequest;
-      if (answer && request.type === 'context-request' && request.context === optimisticContext)
-        request.callback(answer, () => {});
-      return true;
-    },
-    connect() {
-      host.isConnected = true;
-      for (const c of controllers) c.hostConnected?.();
-    },
-    disconnect() {
-      host.isConnected = false;
-      for (const c of controllers) c.hostDisconnected?.();
-    },
-  };
-  return host as typeof host & ReactiveControllerHost & HTMLElement;
-}
-
-function setup(answerByContext = false) {
+function setup() {
   const clock = fakeClock();
   const store = new OverlayStore({now: clock.now});
-  const host = fakeHost(answerByContext ? store : undefined);
-  const controller = new OptimisticController(host, {store: answerByContext ? undefined : store, timers: clock.timers});
+  const host = fakeHost([[optimisticContext, store]]);
+  const controller = new OptimisticController(host, {timers: clock.timers});
   return {clock, store, host, controller};
 }
 
 describe('OptimisticController', () => {
-  test('holds, reads and releases through the store, and says how many are held', () => {
-    const {controller, host} = setup();
+  test('holds, reads and releases through the store it finds by context, and says how many are held', () => {
+    const {controller, host, store} = setup();
     host.connect();
     controller.hold('tv:on', true);
+    expect(store.size).toBe(1);
     expect(controller.size).toBe(1);
     expect(controller.read('tv:on', false)).toBe(true);
     controller.release('tv:on');
@@ -92,23 +57,15 @@ describe('OptimisticController', () => {
   test('updates its host when another element holds or releases a value of the same store', () => {
     const {store, host} = setup();
     host.connect();
-    store.hold('tv:on', true);
-    expect(host.updates).toBe(1);
-    store.release('tv:on');
-    expect(host.updates).toBe(2);
-  });
-
-  test('finds the store through the context when it is given none', () => {
-    const {store, host, controller} = setup(true);
-    host.connect();
     const before = host.updates; // the consumer asks for an update itself when the answer arrives
-    store.hold('a', 1);
+    store.hold('tv:on', true);
     expect(host.updates).toBe(before + 1);
-    expect(controller.read('a', 0)).toBe(1);
+    store.release('tv:on');
+    expect(host.updates).toBe(before + 2);
   });
 
   test('has no store before the host connects, and says so', () => {
-    const {controller} = setup(true);
+    const {controller} = setup();
     expect(() => controller.hold('a', 1)).toThrow(/arrives when the host connects/);
   });
 
@@ -118,8 +75,20 @@ describe('OptimisticController', () => {
     expect(host.updates).toBe(0);
     host.connect();
     host.disconnect();
+    const before = host.updates;
     store.hold('b', 2);
-    expect(host.updates).toBe(0);
+    expect(host.updates).toBe(before);
+  });
+
+  test('draws once when its host reconnects, since a value may have been released or expired while it was away', () => {
+    const {store, host, controller} = setup();
+    host.connect();
+    store.hold('a', 1);
+    host.disconnect();
+    store.release('a');
+    const before = host.updates;
+    controller.hostConnected(); // the controller's own part of a reconnection, without the consumer's update
+    expect(host.updates).toBe(before + 1);
   });
 
   test('updates its host once, at the earliest expiry, so an unconfirmed value visibly reverts', () => {
@@ -179,8 +148,8 @@ describe('OptimisticController', () => {
     vi.useFakeTimers();
     try {
       const store = new OverlayStore();
-      const host = fakeHost();
-      new OptimisticController(host, {store});
+      const host = fakeHost([[optimisticContext, store]]);
+      new OptimisticController(host);
       host.connect();
       store.hold('a', 1, 1_000);
       const before = host.updates;

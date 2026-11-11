@@ -7,7 +7,9 @@
 import type {MessageKey} from './en.ts';
 
 export const fr: Record<MessageKey, string> = {
-  'common.failed': 'Échec : {reason}',
+  // English on purpose: the legacy layer leaves this toast in English (no map key matches `Didn't work: <reason>`), so French
+  // here is its own visible change and needs an approved baseline (ADR 0003, test/unit/i18n/moved-strings.test.ts)
+  'common.failed': "Didn't work: {reason}",
   'charts.failed': "La bibliothèque de graphiques n'a pas chargé",
   'home.title': 'Maison',
   'lights.title': 'Lumières',
