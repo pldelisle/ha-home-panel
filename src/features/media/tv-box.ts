@@ -1,7 +1,6 @@
 // <hp-tv-box>: the television's box in the Media pane: its name and status beside the power switch, the screen, and four buttons.
 // Pattern: humble object (Meszaros) over the model's `TvView`, and command (Gamma et al.): a tap holds the value it asks for in the
 // panel's overlay store, then runs the feature's command through `CommandRunner`, whose failure releases that hold alone (ADR 0023).
-// The Home card's smaller variant (`card`, the legacy `.tvbox`) arrives with #219, the box's second user.
 // Must not: read an entity or the store's state (the pane hands it `tv`), word a string, or show a state it has not held.
 import {LitElement, html, nothing, unsafeCSS} from 'lit';
 import {classMap} from 'lit/directives/class-map.js';
@@ -60,22 +59,22 @@ export class TvBox extends LitElement {
       </div>
       <div class=${classMap({tvscreen: true, on: tv.on})}>${tv.screenLabel ?? ico('tv', 40)}</div>
       <div class="tvkeys" role="group" aria-label=${tv.controlsLabel}>
-        <button type="button" aria-label=${volumeDown.pane.label} ?disabled=${!tv.on} @click=${this.onVolumeDown}>
-          ${volumeDown.pane.text}
+        <button type="button" aria-label=${volumeDown.label} ?disabled=${!tv.on} @click=${this.onVolumeDown}>
+          ${volumeDown.text}
         </button>
-        <button type="button" aria-label=${volumeUp.pane.label} ?disabled=${!tv.on} @click=${this.onVolumeUp}>
-          ${volumeUp.pane.text}
+        <button type="button" aria-label=${volumeUp.label} ?disabled=${!tv.on} @click=${this.onVolumeUp}>
+          ${volumeUp.text}
         </button>
         <button
           type="button"
           aria-pressed=${tv.muted ? 'true' : 'false'}
-          aria-label=${mute.pane.label}
+          aria-label=${mute.label}
           ?disabled=${!tv.on}
           @click=${this.onMute}
         >
-          ${mute.pane.text}
+          ${mute.text}
         </button>
-        <button type="button" aria-label=${playPause.pane.label} ?disabled=${!tv.on} @click=${this.onPlayPause}>
+        <button type="button" aria-label=${playPause.label} ?disabled=${!tv.on} @click=${this.onPlayPause}>
           ${ico('pp', 24)}
         </button>
       </div>`;

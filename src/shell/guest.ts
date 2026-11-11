@@ -1,9 +1,9 @@
 // The guest interface: what the shell asks of the guest, the legacy class that still draws the panel's content, and what it hands it.
 // Pattern: strangler fig (Fowler, Strangler Fig Application): the host wraps the old code behind an interface the host
 // owns, and the interface only shrinks; registering a factory keeps the shell from importing legacy code (ADR 0011).
-// Must not: grow past what the spec names for a step, except a member whose note names what deletes it; be imported by
-// anything but the shell and src/main.js; or outlive the guest: it is deleted with it, module state included.
-// Lit binds nothing inside a guest container, and the guest writes nothing outside its containers.
+// Must not: grow past what the spec names for a step, except a member whose note names what deletes it; be imported by anything
+// but the shell and src/main.js; or outlive the guest (module state included). Lit binds nothing inside a guest container, and the
+// guest writes nothing outside them; its one bridge use (ADR 0024) writes a feature's tag, `<hp-scene-tiles>` in `#hscenes`, until #268.
 import type {PanelApi} from '../core/api.ts';
 import type {PanelSettings} from '../core/settings.ts';
 import type {HassChange, PanelStore} from '../core/store.ts';

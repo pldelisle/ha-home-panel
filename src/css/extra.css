@@ -687,51 +687,6 @@ button.schip {
     height: 26px;
   }
 }
-.tvbox.on .lic {
-  color: var(--c-home);
-  background: color-mix(in srgb, var(--c-home) 16%, var(--card));
-}
-.tvctl {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 6px;
-  margin-top: 12px;
-}
-.tvctl button {
-  border: 0;
-  border-radius: 12px;
-  height: 44px;
-  display: grid;
-  place-items: center;
-  background: var(--card);
-  color: var(--fg);
-  cursor: pointer;
-}
-.tvctl button[aria-pressed='true'] {
-  color: var(--warn);
-  background: color-mix(in srgb, var(--warn) 16%, var(--card));
-}
-.tvctl button:active {
-  transform: scale(0.96);
-}
-.tvmore {
-  width: 96px;
-  border: 0;
-  border-radius: 10px;
-  padding: 7px 8px;
-  min-height: 36px;
-  font: inherit;
-  font-size: calc(12.5px * var(--tx));
-  background: var(--card);
-  color: var(--fg2);
-  cursor: pointer;
-  max-width: 100%;
-}
-.tvctl button:focus-visible,
-.tvmore:focus-visible {
-  outline: 2px solid var(--c-home);
-  outline-offset: 2px;
-}
 .who {
   display: flex;
   flex-wrap: wrap;
