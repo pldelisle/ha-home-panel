@@ -29,6 +29,22 @@ export function readingOf(hass: FakeHass) {
   return {states: hass.states, registries, names: store.names, store};
 }
 
+export type Language = 'en' | 'fr';
+
+/** The instant the test house is read at: its clock, so a scene run two hours before it says so. */
+export {REFERENCE_MS as NOW} from '../../../houses/clock.mjs';
+
+// the French baselines keep the English room names through the config's `names:` block (test/e2e/houses.ts, KEEP_ENGLISH_NAMES),
+// so the lines read from them say `Living room`, not the dictionary's `Salon`
+const KEEP_ENGLISH_NAMES = Object.fromEntries(['Living room', 'Kitchen'].map(name => [name, {fr: name}]));
+
+/** What the model and the scenes are given besides the states: the catalog, the formats and the names of a store, in a language. */
+export function depsOf(hass: FakeHass, language: Language) {
+  const french = {...hass, locale: {language}};
+  const store = storeOf(french, language === 'fr' ? {names: KEEP_ENGLISH_NAMES} : {});
+  return {t: store.t, fmt: store.fmt, names: store.names};
+}
+
 /** One player, with the registry rows that place it: `[id, state, attributes, entity row, device row]`. */
 export type Player = [
   id: string,

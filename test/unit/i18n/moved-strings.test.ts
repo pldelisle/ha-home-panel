@@ -29,6 +29,11 @@ interface Moved {
    */
   was?: string;
   /**
+   * The French the legacy panel wrote itself, in its own code (`isFrench ? 'Désactivé' : 'Off'`), so the text never went through
+   * the layer, which says something else of the English (`Éteint`): the catalog must say what the pane showed.
+   */
+  written?: string;
+  /**
    * What the layer makes of the English text now that its entry is gone, when that is not the text itself (a pattern of the layer,
    * `(.+) air` → `Air : …`, still reads it). Nothing shows it: the text is no longer drawn by the guest.
    */
@@ -71,7 +76,8 @@ describe.each([
   test.each(moved.map(m => [`${m.key} ${JSON.stringify(m.values ?? {})}`, m] as const))('%s', (_name, m) => {
     const text = english.t(m.key, m.values);
     // the layer is untyped JavaScript
-    if (m.was !== undefined) {
+    if (m.written !== undefined) expect(french.t(m.key, inFrench(m))).toBe(m.written);
+    else if (m.was !== undefined) {
       expect(layer.text(text), 'the map entry is deleted').toBe(m.after ?? text);
       expect(french.t(m.key, inFrench(m))).toBe(m.was);
     } else if (m.frame) expect(m.frame.fr + french.t(m.key, inFrench(m))).toBe(layer.text(m.frame.en + text) as string);

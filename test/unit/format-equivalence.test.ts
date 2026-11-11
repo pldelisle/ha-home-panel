@@ -93,6 +93,32 @@ describe('the French formatter equals the layer on the English output', () => {
   );
 });
 
+// `ago` is the one formatter that reads two instants; its text is a node on its own or a sentence's tail (`Motion 5 min ago`,
+// where the layer words only the relative forms: it puts `le` before a date, which `ago` does not)
+describe('ago', () => {
+  const NOW = T1607.getTime();
+  const SPANS_MS = [
+    0,
+    20e3,
+    30e3,
+    5 * 60e3,
+    59 * 60e3,
+    60 * 60e3,
+    90 * 60e3,
+    23 * 60 * 60e3,
+    24 * 60 * 60e3,
+    40 * 864e5,
+  ];
+
+  test.each(SPANS_MS)('%s ms before now, as a node', span => {
+    expect(fr.ago(NOW - span, NOW)).toBe(layerText(en.ago(NOW - span, NOW)));
+  });
+
+  test.each(SPANS_MS.filter(span => span < 864e5))('%s ms before now, after a word', span => {
+    expect(`Mouvement ${fr.ago(NOW - span, NOW)}`).toBe(layerText(`Motion ${en.ago(NOW - span, NOW)}`));
+  });
+});
+
 describe('the numbers', () => {
   const VALUES = [0, 7, 12.5, 12.56, 999.99, 1234, 1234.5, 1234567, 0.04, 1.005, -3.5, 1.2345];
 

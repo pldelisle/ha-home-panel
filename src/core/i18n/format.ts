@@ -4,7 +4,7 @@
 // post-processing: the three house rules (en-* am/pm without periods, fr-* "16 h" on the hour, fr-* thousands U+202F)
 // and number() and fixed() clamping their fraction digits to 2, and time24 and time24s, which join the parts with a colon and Latin
 // digits in every locale because the table asks for `16:07`. Must not: read the clock, the DOM or a browser default.
-import {HOUR_MS} from '../figures.ts';
+import {HOUR_MS, MINUTE_MS} from '../figures.ts';
 import type {PanelLocaleSpec} from './locale.ts';
 
 type Instant = Date | number;
@@ -44,7 +44,19 @@ export interface Formatters {
   number(n: number, maxFraction?: number): string;
   /** Exactly `digits` fraction digits, clamped to 2: `4.0`, `101.9`, `4,0`; the former `toFixed`. */
   fixed(n: number, digits: number): string;
+  /**
+   * How long before `now` an instant was: `just now`, `5 min ago`, `2 h ago`, and from a day on its date (`Nov 7`).
+   * The legacy panel's `ago` rule, which stays there until the last feature that says it has moved; `now` is passed in, never read.
+   */
+  ago(d: Instant, now: number): string;
 }
+
+// `ago`'s words, which the rewrite layer makes of the English ones (`just now`, `{n} min ago`, `{n} h ago`); a language
+// with no row says them in English, as the catalog does
+const AGO_WORDS: Record<string, {now: string; min: (n: number) => string; hour: (n: number) => string}> = {
+  en: {now: 'just now', min: n => `${n} min ago`, hour: n => `${n} h ago`},
+  fr: {now: "à l'instant", min: n => `il y a ${n} min`, hour: n => `il y a ${n} h`},
+};
 
 const PARTS_CACHE_LIMIT = 20_000;
 
@@ -72,6 +84,7 @@ export function createFormatters(locale: PanelLocaleSpec): Formatters {
   const timeRule = language === 'en' ? englishDayPeriod : language === 'fr' ? frenchOnTheHour : asIs;
   const hourRule = language === 'en' ? englishDayPeriod : language === 'fr' ? frenchBareHour : asIs;
   const numberRule = language === 'fr' ? frenchThousands : asIs;
+  const agoWords = AGO_WORDS[language] ?? AGO_WORDS.en;
 
   // `Intl` formatters are expensive to build: each is built once per instance, and always with the time zone
   const dateFormat = (options: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat(tag, {timeZone, ...options});
@@ -165,6 +178,13 @@ export function createFormatters(locale: PanelLocaleSpec): Formatters {
         fixedFormats.set(exactly, (format = new Intl.NumberFormat(locale.numberLocale, options)));
       }
       return numberRule(format.format(n));
+    },
+    ago: (d, now) => {
+      const minutes = Math.round((now - Number(d)) / MINUTE_MS);
+      if (minutes < 1) return agoWords.now;
+      if (minutes < 60) return agoWords.min(minutes);
+      if (minutes < 1440) return agoWords.hour(Math.round(minutes / 60));
+      return date.format(d);
     },
   };
 }
