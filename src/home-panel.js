@@ -67,16 +67,6 @@ const L0kw = v => (v == null ? '–' : v < 1 ? Math.round(v * 1000) + ' W' : v.t
 
 // card order for the column packing: first row is cameras, energy
 const LAYOUT = ['cams', 'sensors', 'open-energy', 'lights', 'open-climate', 'open-air', 'open-car', 'water', 'hilo'];
-const sceneIcon = id =>
-  /night|nuit|sleep|bedtime|dodo/.test(id) && !/movie/.test(id)
-    ? 'moon'
-    : /movie|film|tv/.test(id)
-      ? 'tv'
-      : /dinner|souper|meal/.test(id)
-        ? 'dinner'
-        : /away|leav|depart/.test(id)
-          ? 'exit'
-          : 'house';
 const DOOR_DC = ['door', 'window', 'opening', 'garage_door'],
   MOTION_DC = ['motion', 'occupancy', 'presence'];
 const sensorName = n => String(n).replace(/^d[ée]tecteur\s+(de\s+)?mouvement\s+/i, '');
@@ -671,9 +661,6 @@ export class LegacyPanel {
   get HOUSEHOLD() {
     return this.store.config.people;
   }
-  get SCENE_ORDER() {
-    return this.store.config.scenes;
-  }
   get MODES() {
     return this.store.config.modes;
   }
@@ -934,7 +921,7 @@ export class LegacyPanel {
       this.panels[sh.id] = sh.querySelector('.panel');
     });
     // The scenes row is Media's element, placed by its tag (the Home-card bridge, ADR 0024): written once a draw and never again, and
-    // hidden while it says it has nothing, as renderScenes hid it. The Home move (#268) deletes both.
+    // hidden while it says it has nothing, as the legacy row was. The Home move (#268) deletes the Home-card bridge and its host.
     const hs = this.$('hscenes');
     hs.innerHTML = '<hp-scene-tiles></hp-scene-tiles>';
     hs.addEventListener('hp-empty', e => {
@@ -1794,11 +1781,6 @@ export class LegacyPanel {
       const hc = e.target.closest('#hsec [data-cam]');
       if (hc) return this.openCamera(hc.dataset.cam);
       if (e.target.closest('button[data-l]')) return; // light switches on the phone rows: the lights listener has them
-      // the scene and mode branches can no longer fire since #219 (the row is <hp-scene-tiles>, in its own root); #220 deletes them
-      const pc = e.target.closest('[data-p="mode"]');
-      if (pc) return this.phoneCmd(pc);
-      const sc = e.target.closest('[data-p="scene"]');
-      if (sc) return this.runScene(sc.dataset.id);
       // phone: tiles open sheets
       const sh = e.target.closest('[data-opens]');
       if (sh) return this.sheets.open(sh.dataset.opens);
@@ -3946,74 +3928,6 @@ export class LegacyPanel {
     this.cache.arooms = null;
     this.renderAirLive();
   }
-  // scene tiles, plus routines that stay on (the config's modes, like a child's bedtime) as on/off tiles
-  sceneTiles() {
-    const isOn = i => (this.st(i) || {}).state === 'on',
-      reg = this.hass.entities || {};
-    const scenes = Object.keys(this.hass.states)
-      .filter(i => i.startsWith('scene.') && !(reg[i] || {}).hidden)
-      .sort(
-        (a, b) =>
-          (this.SCENE_ORDER.indexOf(a) + 1 || 99) - (this.SCENE_ORDER.indexOf(b) + 1 || 99) || a.localeCompare(b),
-      );
-    return (
-      scenes
-        .map(id => {
-          const s = this.st(id),
-            n = this.name(id),
-            ran = this.sceneRan && Date.now() - (this.sceneRan[id] || 0) < 4000;
-          return `<button type="button" class="ptile scene${ran ? ' ran' : ''}" data-p="scene" data-id="${esc(id)}"><span class="pic">${ico(sceneIcon(id), 22)}</span><b>${esc(n)}</b><small>${ran ? 'Done' : ok(s) && !isNaN(Date.parse(s.state)) ? 'Last ' + this.ago(s.state) : 'Tap to run'}</small></button>`;
-        })
-        .join('') +
-      this.MODES.filter(id => this.st(id))
-        .map(id => {
-          const on = this.pend(id + ':on', isOn(id)) === true;
-          return `<button type="button" class="ptile scene${on ? ' on' : ''}" data-p="mode" data-id="${esc(id)}" aria-pressed="${on}" ${ok(this.st(id)) ? '' : 'disabled'}><span class="pic">${ico(sceneIcon(id), 22)}</span><b>${esc(this.name(id))}</b><small>${this.store.isFrench ? (on ? 'Activé' : 'Désactivé') : on ? 'On' : 'Off'}</small></button>`;
-        })
-        .join('')
-    );
-  }
-  phoneCmd(b) {
-    const id = b.dataset.pf || b.dataset.po || b.dataset.wb || b.dataset.id,
-      s = this.st(id);
-    if (!ok(s)) return;
-    const hold = (k, v) => {
-      this.pending[id + k] = {v, until: Date.now() + 20000};
-    };
-    if (b.dataset.pf) {
-      const on = this.pend(id + ':on', s.state === 'on') !== true,
-        room = (this.purifiers().rooms.find(x => x.fan === id) || {}).name;
-      hold(':on', on);
-      this.call(
-        'fan',
-        on ? 'turn_on' : 'turn_off',
-        {entity_id: id},
-        `${room ? room + ' purifier' : 'Purifier'} ${on ? 'on' : 'off'}`,
-      );
-    } else if (b.dataset.po) {
-      const on = this.pend(id + ':on', s.state === 'on') !== true;
-      hold(':on', on);
-      this.call('switch', on ? 'turn_on' : 'turn_off', {entity_id: id}, `Outlet ${on ? 'on' : 'off'}`);
-    } else if (b.dataset.wb) {
-      const on = !this.sw(id);
-      this.pending[id] = {on, until: Date.now() + 20000};
-      this.call('switch', on ? 'turn_on' : 'turn_off', {entity_id: id}, on ? 'Charging resumed' : 'Charging paused');
-    } else {
-      // a mode: unreachable since #219, whose <hp-scene-tiles> runs setMode; #220 deletes this branch
-      const on = this.pend(id + ':on', s.state === 'on') !== true;
-      hold(':on', on);
-      this.call('input_boolean', on ? 'turn_on' : 'turn_off', {entity_id: id}, `${this.name(id)} ${on ? 'on' : 'off'}`);
-    }
-    this.renderTabs();
-  }
-  runScene(id) {
-    this.sceneRan = this.sceneRan || {};
-    this.sceneRan[id] = Date.now();
-    this.call('scene', 'turn_on', {entity_id: id}, `${this.name(id, 'Scene')} on`);
-    this.renderTabs();
-    setTimeout(() => this.renderTabs(), 4100);
-  }
-
   // ---------- who's home: the household's phones and watches (iPads and laptops stay home, so they don't count) ----------
   presence() {
     const reg = this.hass.entities || {},
@@ -4942,15 +4856,6 @@ export class LegacyPanel {
         ${marks.map(([t, l]) => `<span class="almark" style="left:${x(t)}"><i></i>${this.compact ? '' : l + ' '}${this.fmtEn.time(new Date(t))}</span>`).join('')}
         ${[0, 6, 12, 18].map(h => `<span class="alh" style="left:${(h / 24) * 100}%">${this.fmtEn.hour(h0 + h * 36e5)}</span>`).join('')}</div>`,
     );
-  }
-  // uncalled since #219, whose <hp-scene-tiles> draws the row; #220 deletes it with sceneTiles, runScene and sceneIcon
-  renderScenes() {
-    // scenes sit on the Home tab, one full-width row under everything
-    const el = this.$('hscenes');
-    if (!el || this.tab !== 'home') return;
-    const sc = this.sceneTiles();
-    el.hidden = !sc;
-    if (sc) this.set('hscenes', sc);
   }
   // ---------- energy Sankey: grid, then the four groups, then the rooms that heat ----------
   sankeyData() {

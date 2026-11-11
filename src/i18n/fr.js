@@ -722,10 +722,9 @@ export const FR_MAP = {
   'Night mode on': 'Mode nuit activé',
   'Night mode off': 'Mode nuit désactivé',
   'Night mode: very dim, warm light': 'Mode nuit : lumière très tamisée et chaude',
-  // ---- speakers ----
+  // ---- play and pause (the Automations' media actions, the now-playing stack card) ----
   Pause: 'Pause',
   Playing: 'En lecture',
-  Previous: 'Précédent',
   Play: 'Lecture',
   // ---- room status chips (phone) ----
   Outlet: 'Prise',
@@ -903,13 +902,6 @@ export const FR_MAP = {
   Streaming: 'En direct',
   'Streaming · motion now': 'En direct · mouvement en cours',
   'Streaming · no motion': 'En direct · aucun mouvement',
-  // ---- scenes (phone) ----
-  Scenes: 'Scènes',
-  'Tap to run': 'Lancer',
-  'Last {n}': 'Lancée le {n}',
-  'Last {n} min ago': 'il y a {n} min',
-  'Last {n} h ago': 'il y a {n} h',
-  'Last just now': "à l'instant",
   '{n}° inside · {n} lights on · Doors closed': '{n}° dedans · {n} lumières allumées · Portes fermées',
   Charger: 'Borne',
   'Car not plugged in': 'Voiture non branchée',

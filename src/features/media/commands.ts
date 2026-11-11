@@ -1,7 +1,7 @@
 // The Media commands: what a tap asks Home Assistant for, as `Command` data, and the typed names of the values it holds meanwhile.
 // Pattern: Command (Gamma et al.) built by pure functions; the kit's `CommandRunner` sends them, an element holds the value
 // each `holds` key names in the panel's overlay store (ADR 0023). The rules are the legacy `tvCmd`, `mpVol` and `phoneCmd`'s Media
-// branch, which #218 deleted, and `runScene`, a copy until #220 deletes it.
+// branch, which #218 deleted, and `runScene`, which #220 deleted.
 // Must not: send anything, read the store or the clock, or word a string (`done` is a catalog key, the runner words it).
 import type {Speaker} from './speakers.ts';
 import type {Command} from '../../ui/commands.ts';
