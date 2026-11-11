@@ -1,7 +1,7 @@
 # Spec 23: Lights, the eighth move: area tiles from the registry, the Adaptive Lighting provider, two tall sliders, linked rooms, Arrange, and the last of `pending`
 
 Parent: [production-grade-refactor.md](production-grade-refactor.md), phase 3.
-Depends on: [15 Weather](15-weather.md) (`sunTimes`, the kit's sheets), [16 Media](16-media.md) (`runCommand`, the overlay, `<hp-switch>`, the bridge), [17 Security](17-security.md) (the pane-header actions slot carries the Arrange bar since #167), [20 Climate](20-climate.md) (`<hp-seg>` is not needed; the pointer-driven test style is), [21 Car](21-car.md) (the last reader of `pend`, `pending`, `call` and `sw` before this one). Blocks: 24 Home (the Lights tile and the stack's "Lights unreachable" card read the provider).
+Depends on: [15 Weather](15-weather.md) (`sunTimes`, the kit's sheets), [16 Media](16-media.md) (`CommandRunner`, the overlay, `<hp-switch>`, the bridge), [17 Security](17-security.md) (the pane-header actions slot carries the Arrange bar since #167), [20 Climate](20-climate.md) (`<hp-seg>` is not needed; the pointer-driven test style is), [21 Car](21-car.md) (the last reader of `pend`, `pending`, `call` and `sw` before this one). Blocks: 24 Home (the Lights tile and the stack's "Lights unreachable" card read the provider).
 Ships as: three pull requests, each a patch release, each pixel-identical. No new ADR: 0021 to 0025 apply; the notes record why the slider is a feature element and why the order stays in system data.
 
 The key words MUST, MUST NOT, SHOULD, SHOULD NOT and MAY are to be read as in RFC 2119.
@@ -103,7 +103,7 @@ export function shortNames(names: string[]): string[];
 
 ### Commands as data
 
-Every command of `lightCmd` and `linkTo` is a pure function returning `Command[]` (several calls for one intent, run in order by `runCommand` through `runCommands(api, host, overlay, cmds)` added to the kit for this feature):
+Every command of `lightCmd` and `linkTo` is a pure function returning `Command[]` (several calls for one intent, run in order by the element's `CommandRunner`, which gains `runAll(cmds)` for this feature):
 
 - `allOff(areas)`: one `light.turn_off` with every lit id. `toggleOne(id)`: `light.toggle`. `toggleArea(area)`: `turn_off` or `turn_on` on the pair's ids.
 - `setAuto(pair, on, services)`: on: for each area with a switch, `switch.turn_on` when off and `adaptive_lighting.set_manual_control` with `manual_control: false` when the service exists; off: `switch.turn_off` on the switch and on Night when on; the toast `lights.autoOn/autoOff`.
@@ -151,7 +151,7 @@ Pull request 1, the providers, the model and the tiles:
 
 Pull request 2, the sheet:
 
-5. `<hp-light-sheet>`, `<hp-light-slider>`, `<hp-link-picker>`, `commands.ts` exist; Vitest covers every command as a table (the resume and leave-Auto side rules, the copy onto a partner with and without a hand-set colour, the under-one-percent rule, the colour-capable filter); `runCommands` in the kit runs a list in order and releases the list's holds on a failure.
+5. `<hp-light-sheet>`, `<hp-light-slider>`, `<hp-link-picker>`, `commands.ts` exist; Vitest covers every command as a table (the resume and leave-Auto side rules, the copy onto a partner with and without a hand-set colour, the under-one-percent rule, the colour-capable filter); `CommandRunner.runAll` in the kit runs a list in order and releases the list's holds on a failure.
 6. Playwright: `lights-sheet.spec.ts` (26 to 31) and `lights-links.spec.ts` (33, 34, 36) pass unchanged; a `hass` update during a slider drag does not move the slider (a new case: `window.house.setState` on the room's light mid-drag, the value stays the finger's); the `light-sheet-*` baselines identical; axe clean on the sheet (the sliders' roles and names).
 
 Pull request 3, Arrange and the deletion:

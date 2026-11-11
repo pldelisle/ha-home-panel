@@ -22,6 +22,12 @@ declare global {
       subscribed(type: string): number;
       /** the recorder answers every statistics request of this period with an error (null: it answers again) */
       failStatistics(period: '5minute' | 'hour' | 'day' | null): void;
+      /**
+       * the next `callService` whose `domain.service` contains the pattern (`'media_player.turn_on'`, `'light.'`) rejects once with
+       * `{code: 'unknown_error', message: 'the service call failed on purpose'}`, as Home Assistant's socket does; the rejected call is
+       * not recorded in `House.calls`, and the call after it works again (null: cancels a pattern that has not matched yet)
+       */
+      failNext(pattern: string | null): void;
       /** the messages of this `type` the panel has sent with `callWS` */
       asked(type: string): Array<{type: string; [field: string]: unknown}>;
     };
@@ -105,6 +111,8 @@ export type House = {
   setState: (entityId: string, patch: object) => Promise<void>;
   /** an area is renamed in Home Assistant: a new areas registry inside a new hass object */
   setAreaName: (areaId: string, name: string) => Promise<void>;
+  /** the next service call matching the pattern fails once (`window.house.failNext`): a command's failure path, as Home Assistant sends it */
+  failNext: (pattern: string | null) => Promise<void>;
   /** the signed-in user's profile language changes ('fr' draws the panel again in French); later setState calls keep it */
   setLanguage: (lang: 'en' | 'fr') => Promise<void>;
   /** setState, with last_changed set `agoMs` before now on the page's own clock (faked or not) */
@@ -242,6 +250,7 @@ export const test = base.extend<{houseOpts: HouseOpts; house: House}>({
       setAreaName: (areaId, name) =>
         page.evaluate(([areaId, name]) => window.house.setAreaName(areaId, name), [areaId, name] as const),
       setLanguage: lang => page.evaluate(lang => window.house.setLanguage(lang), lang),
+      failNext: pattern => page.evaluate(pattern => window.house.failNext(pattern), pattern),
       mutations: {
         count: hostSelector => page.evaluate(selector => window.mutationCount.count(selector), hostSelector),
         reset: () => page.evaluate(() => window.mutationCount.reset()),

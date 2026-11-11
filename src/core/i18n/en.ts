@@ -3,6 +3,8 @@
 // the compiler; ICU MessageFormat over Unicode CLDR plural rules, as FormatJS and Home Assistant write messages.
 // Must not: hold a message that is not here in French, build text from parts (one sentence, one message), or run code.
 export const en = {
+  // what the kit says when a command fails (src/ui/commands.ts); the reason is Home Assistant's own words
+  'common.failed': "Didn't work: {reason}",
   'charts.failed': 'Charts library failed to load',
   // the ten subjects, in rail order: the rail's label, the pane's heading and the More list; `auto.short` is the fifth
   // slot of the phone's bar, where "Automations" does not fit
