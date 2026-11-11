@@ -1,7 +1,7 @@
 // <hp-switch>: the kit's on/off switch, a `button[role=switch]` in its own shadow root.
 // Pattern: controlled component over a humble object (Meszaros, xUnit Test Patterns): it draws `checked` and tells its
 // owner what a tap asks for by `change` (Lit docs, Events); the owner holds the optimistic value and sets `checked` back.
-// A known copy: its look duplicates the legacy `.sw` rules (switch.element.css) that the TV (#217, #218, #219), the light sheet
+// A known copy: its look duplicates the legacy `.sw` rules (switch.element.css) that the TV's Home card (#219), the light sheet
 // (#262) and the Wallbox and precondition switches (#253) still draw; #263 deletes the rules.
 // Must not: flip `checked` itself, send a service call, or know what it stands for (a light, a charger, a purifier).
 import {LitElement, html, unsafeCSS} from 'lit';

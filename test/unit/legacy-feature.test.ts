@@ -94,8 +94,7 @@ describe('the ten panes', () => {
     expect(new Set(ids).size).toBe(ids.length);
     for (const id of ['hsub', 'lsub', 'csub2', 'carsub2', 'esub2', 'asub2', 'cmsub', 'ausub'])
       expect(ids, id).toContain(id);
-    // Media's pane is an element, and its descriptor keeps the guest's phone tiles and the cards they open until #218
-    for (const id of ['carh2', 'lhost', 'ehost', 'eside', 'camhost', 'senhost', 'auhost', 'mtiles', 'mtv', 'media'])
+    for (const id of ['carh2', 'lhost', 'ehost', 'eside', 'camhost', 'senhost', 'auhost'])
       expect(ids, id).toContain(id);
   });
 

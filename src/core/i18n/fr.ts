@@ -55,6 +55,7 @@ export const fr: Record<MessageKey, string> = {
   // the legacy layer has no entry for this line, so the French pane reads it in English; the catalog says what the pane showed
   'media.noVolumeSlider': "The TV doesn't report its volume, so there's no slider.",
   'media.opensControls': 'Ouvre les commandes',
+  'media.close': 'Fermer',
   'media.volume': 'Volume',
   'media.volumeOf': 'Volume de {room}',
   'media.percent': '{percent}\u202f%',

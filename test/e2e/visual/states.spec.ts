@@ -1,5 +1,6 @@
 // One screenshot per state a person sees most, beyond the tabs (spec 02, "The matrix": the state rows): the idle clock with its
-// stack card, the light sheet, the live-activity popup, the settings popup, the Status checks and the phone's More sheet.
+// stack card, the light sheet, the live-activity popup, the settings popup, the Status checks, the phone's More sheet, and the
+// phone's Media tab (which More lists, so the tabs' matrix never opens it) with the sheets its tiles open.
 // Baselines live in test/e2e/__screenshots__/visual/states.spec.ts/ and are recorded only inside the Playwright image (Docker or
 // `container`: npm run test:visual:update); a difference is either fixed or approved by updating them in the same pull request.
 import {test, expect, fontsLoaded, type House} from '../fixtures';
@@ -24,6 +25,24 @@ async function idleClock(house: House) {
   });
   await house.clock.pauseAt(new Date(Date.parse(NIGHT) + 60_000));
   await goIdle(house);
+}
+
+// The phone's Media tab, through More, with its two tiles drawn: the television's and the living room speaker's. A tile is found by
+// the name it shows, which says nothing of who draws it.
+async function openMedia(house: House) {
+  await house.root().locator('#moretab').click();
+  await house.root().locator('#morelist hp-stat-tile[key="media"] button').click();
+  await expect(mediaTile(house, 'Samsung TV')).toBeVisible();
+  await expect(mediaTile(house, 'Living room')).toBeVisible();
+}
+const mediaTile = (house: House, name: string) =>
+  house.root().locator('#pane-media').getByText(name, {exact: true}).filter({visible: true});
+
+// a tap on a tile's name, away from its switch or play button, opens its controls in a sheet
+async function openMediaSheet(house: House, tile: string, dialog: string) {
+  await openMedia(house);
+  await mediaTile(house, tile).click();
+  await expect(house.root().getByRole('dialog', {name: dialog})).toBeVisible();
 }
 
 for (const viewport of ['tablet', 'phone'] as const) {
@@ -62,6 +81,25 @@ for (const viewport of ['tablet', 'phone'] as const) {
               await expect(house.root().getByRole('dialog', {name: 'More'})).toBeVisible();
               await expect(house.page).toHaveScreenshot(`more-sheet-${viewport}-${theme}-en.png`);
             });
+
+            // the phone's Media tab: a wide tile per player, the television's with its switch, a speaker's with its play button
+            test('Media tiles', async ({house}) => {
+              await openMedia(house);
+              await expect(house.page).toHaveScreenshot(`media-tiles-${viewport}-${theme}-en.png`);
+            });
+
+            // what a tile opens: the television's box, or the speakers' card, in a sheet over the tab
+            if (theme === 'light') {
+              test('Media sheet of the television', async ({house}) => {
+                await openMediaSheet(house, 'Samsung TV', 'Samsung TV');
+                await expect(house.page).toHaveScreenshot(`media-sheet-tv-${viewport}-${theme}-en.png`);
+              });
+
+              test('Media sheet of the speakers', async ({house}) => {
+                await openMediaSheet(house, 'Living room', 'Speakers');
+                await expect(house.page).toHaveScreenshot(`media-sheet-speakers-${viewport}-${theme}-en.png`);
+              });
+            }
 
             // coming back to More from a section: its tile carries the ring of the one shown
             if (theme === 'light')
@@ -147,6 +185,18 @@ test.describe('The More sheet in French', () => {
     await house.root().locator('#moretab').click();
     await expect(house.root().getByRole('dialog', {name: 'Plus'})).toBeVisible();
     await expect(house.page).toHaveScreenshot('more-sheet-phone-light-fr.png');
+  });
+});
+
+// The phone's Media tiles in French: the names, and the state under each, from the first paint.
+test.describe('The Media tiles in French', () => {
+  test.use({
+    viewport: VIEWPORTS.phone,
+    houseOpts: {cfg: {...FULL_CFG, names: KEEP_ENGLISH_NAMES}, lang: 'fr', time: AFTERNOON, frozen: true},
+  });
+  test('phone, light', async ({house}) => {
+    await openMedia(house);
+    await expect(house.page).toHaveScreenshot('media-tiles-phone-light-fr.png');
   });
 });
 

@@ -140,24 +140,41 @@ describe('the full test house, in English', () => {
       {
         key: 'tv',
         kind: 'tv',
+        icon: 'tv',
         title: 'Samsung TV',
         sheetTitle: 'Samsung TV',
         description: 'Opens the controls',
         subLine: 'On · Netflix',
+        track: false,
         on: true,
         picture: null,
-        control: {kind: 'switch', checked: true, label: 'Samsung TV power', disabled: false},
+        control: {
+          kind: 'switch',
+          checked: true,
+          label: 'Samsung TV power',
+          disabled: false,
+          tv: {id: 'media_player.living_room_tv', wakeButton: null},
+        },
       },
       {
         key: 'media_player.living_room_speaker',
         kind: 'speaker',
+        icon: 'spk',
         title: 'Living room',
         sheetTitle: 'Speakers',
         description: 'Opens the controls',
         subLine: 'Test tone · Nobody',
+        track: true,
         on: true,
         picture: null,
-        control: {kind: 'play', playing: true, label: 'Pause', disabled: false},
+        control: {
+          kind: 'play',
+          playing: true,
+          label: 'Pause',
+          disabled: false,
+          icon: 'pause',
+          speaker: {id: 'media_player.living_room_speaker', name: 'speaker'},
+        },
       },
     ]);
   });
@@ -362,7 +379,7 @@ describe('a speaker', () => {
     expect(only({volume: -0.001}).speakers[0].volume).toMatchObject({percent: 0, text: '0%'});
   });
 
-  // the legacy mpVol: the held or reported level and five percent, kept in 0 to 1 at two decimals
+  // the legacy panel's stepper: the held or reported level and five percent, kept in 0 to 1 at two decimals
   test.each([
     [0.35, 0.3, 0.4],
     [0.333, 0.28, 0.38],
@@ -389,7 +406,7 @@ describe('a speaker', () => {
   test('its tile has a play control that follows', () => {
     expect(only({state: 'paused'}).tiles[0]).toMatchObject({
       on: false,
-      control: {kind: 'play', playing: false, label: 'Play', disabled: false},
+      control: {kind: 'play', playing: false, label: 'Play', disabled: false, icon: 'play'},
     });
     expect(only({state: 'idle', title: null}).tiles[0].control).toMatchObject({disabled: true});
   });

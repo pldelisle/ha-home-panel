@@ -18,8 +18,8 @@ const DISABLED_RULES: {rule: string; issue: number; why: string; states: RegExp}
   {
     rule: 'nested-interactive',
     issue: 192,
-    why: 'a light tile and a media card are a button that holds a switch; fixing it moves markup the arrange mode and the baselines rest on',
-    states: /^the (lights tab|light sheet|media tab)$/, // the sheet opens over the Lights tab, so its tiles are still in the page
+    why: 'a light tile and a media tile are a button that holds a switch; fixing it moves markup the arrange mode and the baselines rest on',
+    states: /^the (lights tab|light sheet|media tab|media sheet)$/, // a sheet opens over its tab, so the tab's tiles are still in the page
   },
   {
     rule: 'color-contrast',
@@ -156,6 +156,13 @@ for (const lang of ['en', 'fr'] as const) {
       await house.root().locator('hp-weather-pane .wxcard').click();
       await expect(house.root().locator('hp-weather-detail .sunarc')).toBeVisible();
       await scanDialog(house, 'the weather detail sheet', 'hp-weather-pane hp-sheet .sheet');
+    });
+
+    test('the Media sheet has no serious or critical finding', async ({house}) => {
+      phoneOnly(); // the tiles that open it are the phone's; a tablet's Media tab is the cards, which every shown tab covers
+      await openTab(house, 'media');
+      await house.root().locator('hp-media-tile .tx').first().click();
+      await scanDialog(house, 'the media sheet', 'hp-media-pane hp-sheet .sheet');
     });
 
     test('the camera sheet has no serious or critical finding', async ({house}) => {

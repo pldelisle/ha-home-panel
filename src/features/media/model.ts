@@ -2,7 +2,7 @@
 // and the More sheet's line place out.
 // Pattern: a pure view-model function, a humble object's other half (Meszaros, Fowler): it reads no clock, no `hass` and no
 // store, words every message through `deps.t`, and reads a held value through `deps.overlay`, the one place a tap shows before Home
-// Assistant agrees. Each rule is the legacy panel's (renderMedia, renderMediaTiles, renderTV, tvBox, mpVol), until #218 and #220 delete them.
+// Assistant agrees. Each rule is the legacy panel's, whose `renderTV` and `tvBox` still say the Home card's until #220 deletes them.
 // Must not: import the DOM, the kit or the shell, send a command, or hold text the household reads (a catalog key says it).
 import type {Messages} from '../../core/i18n/messages.ts';
 import type {Names} from '../../core/i18n/names.ts';
@@ -98,21 +98,33 @@ export interface SpeakerView {
   playPause: {enabled: boolean; label: string; icon: 'play' | 'pause'};
 }
 
+/** A tile's one control, with what its command names: the television's power switch, or a speaker's play button. */
 export type MediaControlView =
-  | {kind: 'switch'; checked: boolean; label: string; disabled: boolean}
-  | {kind: 'play'; playing: boolean; label: string; disabled: boolean};
+  | {kind: 'switch'; checked: boolean; label: string; disabled: boolean; tv: Pick<TvView, 'id' | 'wakeButton'>}
+  | {
+      kind: 'play';
+      playing: boolean;
+      label: string;
+      disabled: boolean;
+      icon: 'play' | 'pause';
+      speaker: Pick<SpeakerView, 'id' | 'name'>;
+    };
 
 /** A tile of the phone's Media list: the television, or a speaker. */
 export interface MediaTileView {
   /** `tv`, or the speaker's id. */
   key: string;
   kind: 'tv' | 'speaker';
+  /** The tile's icon, and the badge of the sheet it opens. */
+  icon: 'tv' | 'spk';
   title: string;
   /** The title of the sheet the tile opens. */
   sheetTitle: string;
   /** The tile's description for a screen reader: it opens the controls. */
   description: string;
   subLine: string;
+  /** The sub-line is a track's title and artist, which a browser's translator leaves as they are. */
+  track: boolean;
   on: boolean;
   picture: string | null;
   control: MediaControlView;
@@ -275,14 +287,22 @@ function tvTile(tv: TvView, t: Translate): MediaTileView {
   return {
     key: 'tv',
     kind: 'tv',
+    icon: 'tv',
     title: tv.name,
     sheetTitle: tv.name,
     description: t('media.opensControls'),
     // not the muted status: the phone's tile never said it
     subLine: tv.available && tv.on ? `${t('media.on')}${tv.sourceLabel ? ` · ${tv.sourceLabel}` : ''}` : tv.status,
+    track: false,
     on: tv.on,
     picture: null,
-    control: {kind: 'switch', checked: tv.on, label: tv.switchLabel, disabled: !tv.available},
+    control: {
+      kind: 'switch',
+      checked: tv.on,
+      label: tv.switchLabel,
+      disabled: !tv.available,
+      tv: {id: tv.id, wakeButton: tv.wakeButton},
+    },
   };
 }
 
@@ -290,10 +310,12 @@ function speakerTile(speaker: SpeakerView, t: Translate): MediaTileView {
   return {
     key: speaker.id,
     kind: 'speaker',
+    icon: 'spk',
     title: speaker.room,
     sheetTitle: t('media.speakers'),
     description: t('media.opensControls'),
     subLine: speaker.loaded ? `${speaker.title}${speaker.artist ? ` · ${speaker.artist}` : ''}` : speaker.subLine,
+    track: speaker.loaded,
     on: speaker.playing,
     picture: speaker.picture,
     control: {
@@ -301,6 +323,8 @@ function speakerTile(speaker: SpeakerView, t: Translate): MediaTileView {
       playing: speaker.playing,
       label: speaker.playPause.label,
       disabled: !speaker.playPause.enabled,
+      icon: speaker.playPause.icon,
+      speaker: {id: speaker.id, name: speaker.name},
     },
   };
 }

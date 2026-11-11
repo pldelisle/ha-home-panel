@@ -1,5 +1,5 @@
 // The sheet host: which sheet is open, Escape, where focus goes back to, and the detail panels inline on a tablet. Spec:
-// docs/specs/14-lit-shell.md, "The sheet host (step E)" and acceptance criterion 17; ADR 0021.
+// docs/specs/14-lit-shell.md, "The sheet host (step E)" and acceptance criterion 17; ADR 0021. Last, the kit's <hp-sheet> header.
 // The panel is driven the way a person drives it (keys, taps, the screen's size) and the way an element drives the shell
 // (the events of src/ui/events.ts, dispatched from inside the panel's root).
 import {test, expect, tabletOnly, phoneOnly, type House} from './fixtures';
@@ -235,4 +235,39 @@ test('Escape does nothing, once, when the panel is off the page', async ({house}
   await expect(lightSheet(house)).toBeVisible(); // the key was not heard while the panel was away
   await house.page.keyboard.press('Escape');
   await expect(lightSheet(house)).toBeHidden();
+});
+
+// <hp-sheet>, mounted in the harness page the way a feature draws one: a sheet with no sub-line draws none, so its heading sits level
+// with the badge, as the legacy card sheet's did (the Media sheets, #218); one with a sub-line shows it under the heading
+test.describe('<hp-sheet>', () => {
+  const mountSheet = (house: House, sub: string | null) =>
+    house.page.evaluate(sub => {
+      const sheet = Object.assign(document.createElement('hp-sheet'), {id: 'probe', heading: 'Probe', open: true});
+      if (sub !== null) sheet.append(Object.assign(document.createElement('div'), {slot: 'sub', textContent: sub}));
+      document.body.append(sheet);
+    }, sub);
+  // how far the heading's middle sits from the badge's, in pixels: the header centres its title block on the badge's row
+  const offCentre = (house: House) =>
+    house.page.locator('#probe').evaluate(sheet => {
+      const middle = (el: Element) => {
+        const box = el.getBoundingClientRect();
+        return box.top + box.height / 2;
+      };
+      const header = sheet.shadowRoot!.querySelector('hp-pane-header')!;
+      return Math.abs(
+        middle(sheet.shadowRoot!.querySelector('h2')!) - middle(header.shadowRoot!.querySelector('.badge')!),
+      );
+    });
+
+  test('with no sub-line draws none, so the heading sits level with the badge', async ({house}) => {
+    await mountSheet(house, null);
+    await expect(house.page.getByRole('dialog', {name: 'Probe'})).toBeVisible();
+    expect(await offCentre(house)).toBeLessThan(0.5);
+  });
+
+  test('shows the sub-line it is given under the heading', async ({house}) => {
+    await mountSheet(house, 'A line under it');
+    // the line is slotted: the sheet's child, not its panel's
+    await expect(house.page.locator('#probe').getByText('A line under it', {exact: true})).toBeVisible();
+  });
 });

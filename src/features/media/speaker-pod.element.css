@@ -1,8 +1,8 @@
 /*
- * <hp-speaker-pod>'s own rules: the cover, the room and the track, the volume stepper and the play button.
- * Known copies of the legacy `.pod` (tabs.css, glass.css), `.stepper` (extra.css, glass.css, motion.css) and `.pp` rules, read here as
- * `.player`, `.vol` and `.play`: #218 deletes the legacy `.pod` with the guest's `#media`, #220 deletes `.pp` with the Home card,
- * and `.stepper` stays while the climate controls and Air draw it (spec 18 promotes it to the kit). The phone's rules come with #218.
+ * <hp-speaker-pod>'s own rules: the cover, the room and the track, the volume stepper and the play button, and on a phone (the sheet a
+ * speaker's tile opens) the room and play on one row with the volume under them, as the legacy `.app.cp .pod` rules had it.
+ * Known copies of the legacy `.stepper` rules (extra.css, glass.css, motion.css), read here as `.vol`, which stay while the climate
+ * controls and Air draw them (spec 18 promotes them to the kit); the play button, `.play`, began as the legacy `.pp`, which #218 deleted.
  * The selectors differ because the styles-split test lets one file write a selector, and a shadow root cannot reach the legacy rule.
  */
 /* no box of its own: the pod is the item of the pane's list */
@@ -135,6 +135,34 @@
 .player .play:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+/* speakers in a phone's sheet: the room and play on one row, the volume stepper under them */
+.app.cp .player {
+  flex-wrap: wrap;
+  gap: 10px 12px;
+  padding: 12px;
+}
+.app.cp .player .pic {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+}
+.app.cp .player .tx {
+  flex: 1 1 0;
+  min-width: 100px;
+}
+.app.cp .player .play {
+  order: 1;
+  width: 48px;
+  height: 48px;
+}
+.app.cp .player .vol {
+  order: 2;
+  flex: 1 1 100%;
+  justify-content: space-between;
+}
+.app.cp .player .vol .sv {
+  flex: 1;
 }
 .app.gl .player,
 .app.gl .vol {

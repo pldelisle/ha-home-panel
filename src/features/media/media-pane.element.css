@@ -1,9 +1,10 @@
 /*
- * <hp-media-pane>'s own rules: its place in the pane section, the header's, and the two cards with the speakers' line and list.
- * Known copies of legacy rules: `.pods` (tabs.css), which #218 deletes with the guest's `#media`; `.card` and `.card .top` (base.css,
- * glass.css), `.lbl` and `.hint` (base.css), which every other legacy pane's cards still draw; `.pane-media` and its header (tabs.css),
- * the section's own rules, which no Media gate lists. Selectors differ (`.mcard`) because the styles-split test lets one file write a
- * selector, and a shadow root cannot reach the legacy rule anyway.
+ * <hp-media-pane>'s own rules: its place in the pane section, the header's, the two cards with the speakers' line and list, the
+ * phone's list of tiles and a card in the sheet a tile opens. Known copies of legacy rules: `.card` and `.card .top` (base.css,
+ * glass.css), `.lbl` and `.hint` (base.css), which every other legacy pane's cards still draw; the card sheet's `#cardhost > .card`
+ * (phone.css), whose last users, the water and Hilo tiles, #239 moves, and which no ticket's gate deletes yet (spec 19's do not
+ * list it); `.pane-media` and its header (tabs.css), the section's own rules, which no Media gate lists. Selectors differ (`.mcard`)
+ * because the styles-split test lets one file write a selector, and a shadow root cannot reach the legacy rule anyway.
  */
 /* the tablet's two columns, the television's card and the speakers' card under the header, one column under 1000 pixels */
 :host {
@@ -18,9 +19,12 @@
     grid-template-columns: 1fr;
   }
 }
-/* the phone's pane is a column the section lays out: the header here, the guest's tiles after it */
+/* the phone's pane is a column: the header, then the tiles, full width and sixteen pixels apart as the section laid them out */
 :host([compact]) {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 16px;
 }
 hp-pane-header {
   grid-column: 1/-1;
@@ -61,7 +65,8 @@ hp-pane-header {
   text-transform: none;
   color: var(--fg);
 }
-.mcard .hint {
+.mcard .hint,
+.mtiles .hint {
   font-size: calc(12px * var(--tx));
   color: var(--fg2);
   margin: 6px 0 0;
@@ -69,6 +74,20 @@ hp-pane-header {
 .mcard .pods {
   display: grid;
   gap: 12px;
+}
+/* the phone's list: one tile a row */
+.mtiles {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+/* a card in the sheet a tile opens, as the legacy card sheet draws one (`#cardhost > .card`, phone.css) */
+hp-sheet > .mcard {
+  padding: 14px;
+  border-radius: 18px;
+}
+hp-sheet > .mcard > .top {
+  margin-bottom: 12px;
 }
 .app.gl .mcard {
   background: var(--g-card);

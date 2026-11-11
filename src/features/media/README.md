@@ -1,6 +1,6 @@
 # Media
 
-What the Media tab computes and draws ([spec 16](../../../docs/specs/16-media.md)). This folder holds the pure half, the rules that find the television and the speakers, the model every Media element draws, the scenes row and the commands, pinned in Vitest against the test house, and the tablet's pane: `<hp-media-pane>` with `<hp-tv-box>` and one `<hp-speaker-pod>` per speaker. The legacy panel still draws the phone's tiles and the cards they open (#218) and the Home card and the scenes row (#219).
+What the Media tab computes and draws ([spec 16](../../../docs/specs/16-media.md)). This folder holds the pure half, the rules that find the television and the speakers, the model every Media element draws, the scenes row and the commands, pinned in Vitest against the test house, and the pane: `<hp-media-pane>` with `<hp-tv-box>` and one `<hp-speaker-pod>` per speaker on a tablet, and one `<hp-media-tile>` per player on a phone, whose tap opens the card in a sheet. The legacy panel still draws the Home card and the scenes row (#219).
 
 ## The folder
 
@@ -18,7 +18,9 @@ src/features/media/
   model.ts                 mediaModel(inputs, {t, names, overlay}): MediaViewModel (summary, tv, speakers, speakersLine, tiles, labels); mediaBrief
   scenes.ts                sceneTiles(states, registries, config, overlay, deps): SceneTileView[]; sceneIcon
   commands.ts              tvPower, tvVolume, tvMute, tvPlayPause, speakerPlayPause, speakerSkip, speakerVolume, runScene, setMode; K, SCENE_RAN_MS, volumeLevel
-  media-pane.ts            <hp-media-pane>: the header, and on a tablet the television's card and the speakers' card; media-pane.element.css
+  sheets.ts                CONTROLS_SHEET ('media.controls'), the sheet a phone's tile asks for, and controlsKeyOf, the reader of its detail
+  media-pane.ts            <hp-media-pane>: the header; the two cards on a tablet, the tiles and the sheet on a phone; media-pane.element.css
+  media-tile.ts            <hp-media-tile>: a player on the phone, its switch or play button; media-tile.element.css
   tv-box.ts                <hp-tv-box>: the name, status and switch, the screen and the four buttons; tv-box.element.css
   speaker-pod.ts           <hp-speaker-pod>: the cover, the track, the volume stepper and play; speaker-pod.element.css
 src/core/
@@ -27,7 +29,7 @@ src/core/
   i18n/format.ts           fmt.ago(instant, now): a scene's last run as a kind and a count (now, minutes, hours) or a date, which `media.last` words
 ```
 
-The phone's tiles and their sheet (`<hp-media-tile>`, #218) and the Home cards (`<hp-tv-card>`, `<hp-scene-tiles>`, #219) are listed in spec 16 and land with the tickets that build them.
+The Home cards (`<hp-tv-card>`, `<hp-scene-tiles>`, #219) are listed in spec 16 and land with the ticket that builds them.
 
 ## The providers
 
@@ -60,12 +62,12 @@ Two rules copy the legacy panel on purpose: the **summary** and the **speakers l
 
 Each command is a pure function returning the kit's `Command`: the service, the optimistic keys it holds (`K`, one typed function per key) and the toast it says on success. The element holds the value the key names and runs the command; nothing here sends. `tvPower(tv, true)` carries the wake-on-LAN button as `fallback` when the house has one, whichever set was chosen, as the legacy `tv()` does.
 
-`sceneIcon` and the other rules copied from `src/home-panel.js` (the television's power path, the scenes' order, the line words) stay in the legacy panel too, because it still draws Media; #220 (the last Media move) deletes the legacy copies.
+`sceneIcon` and the other rules copied from `src/home-panel.js` (the scenes' order, the Home card's line words) stay in the legacy panel too, because it still draws the Home card and the scenes; #220 (the last Media move) deletes the legacy copies.
 
 ## The elements
 
-`<hp-media-pane>` runs `mediaModel` in `willUpdate` with its `OptimisticController`'s `read` as the overlay, so a value a child holds draws the pane again at once, and hands each child its view: `tv` to the box, `speaker` to each pod, keyed by id. Its store controller listens to `mediaIds` alone and is paused while the tab is hidden; a thermostat change draws nothing in the pane, the box or a pod (`media.spec.ts` proves it with a tripwire a redraw would show). On a phone it draws only the header, and the registry's template keeps the guest's `#mtiles`, `#mtv` and `#media` after it until #218.
+`<hp-media-pane>` runs `mediaModel` in `willUpdate` with its `OptimisticController`'s `read` as the overlay, so a value a child holds draws the pane again at once, and hands each child its view: `tv` to the box, `speaker` to each pod, keyed by id. Its store controller listens to `mediaIds` alone and is paused while the tab is hidden; a thermostat change draws nothing in the pane, the box or a pod (`media.spec.ts` proves it with a tripwire a redraw would show). On a phone it draws a `<hp-media-tile>` per player, keyed by `key`, or the hint when the house has none, and the sheet a tile opens: the tile dispatches `SheetRequestEvent('media.controls', {key})`, the descriptor binds the open tile's key to the pane's `controlsKey`, and the pane draws the television's card or the speakers' card in `<hp-sheet>` while it is open, so the sheet host's Escape and focus return apply. The sheet opens only from the Media tab, so the descriptor lists no `overSheets`: the first caller that opens it over another tab adds the id there and a branch that draws the sheet alone while the pane is behind, as Weather's detail does.
 
-`<hp-tv-box>` and `<hp-speaker-pod>` act: a tap holds the value it asks for in the panel's `OverlayStore` (`K.on`, `K.mute`, `K.state`, `K.volume`) and runs the command through their own `CommandRunner`, which releases only that hold and says why in a sticky toast when Home Assistant refuses, after the wake-on-LAN button's try when the house has one. The pod's stepper holds the model's `volume.down` or `volume.up` at each tap and sends one `volume_set` when the taps stop for 450 ms (`debounce`); a send still waiting when the pod leaves the document is cancelled in `disconnectedCallback` and its level released. Each pod waits on its own, where the legacy `volT` was one timer for the panel, so a tap on one speaker no longer drops another's pending level. The television's holds last the legacy `tvCmd`'s fifteen seconds (`TV_HOLD_MS`).
+`<hp-tv-box>`, `<hp-speaker-pod>` and `<hp-media-tile>` act: a tap holds the value it asks for in the panel's `OverlayStore` (`K.on`, `K.mute`, `K.state`, `K.volume`) and runs the command through their own `CommandRunner`, which releases only that hold and says why in a sticky toast when Home Assistant refuses, after the wake-on-LAN button's try when the house has one. The pod's stepper holds the model's `volume.down` or `volume.up` at each tap and sends one `volume_set` when the taps stop for 450 ms (`debounce`); a send still waiting when the pod leaves the document is cancelled in `disconnectedCallback` and its level released. Each pod waits on its own, where the legacy `volT` was one timer for the panel, so a tap on one speaker no longer drops another's pending level. The television's holds last the legacy `tvCmd`'s fifteen seconds (`TV_HOLD_MS`). A tile's switch or play button keeps its tap to itself, so the tile does not open its sheet as well.
 
-Each element's rules are its own `<element>.element.css`, copies of the legacy `.card`, `.mtvhead`, `.mtvscreen`, `.mtvctl`, `.pods`, `.pod`, `.stepper` and `.pp` rules under selectors of their own (`.mcard`, `.tvhead`, `.tvscreen`, `.tvkeys`, `.player`, `.vol`, `.play`), because the legacy sheet keeps the originals for the phone's card sheet and the Home card until #218 and #220 delete them, and one selector is written in one file.
+Each element's rules are its own `<element>.element.css`, under selectors of their own (`.mcard`, `.tvhead`, `.tvscreen`, `.tvkeys`, `.player`, `.vol`, `.play`), because one selector is written in one file. The legacy `.mtvhead`, `.mtvscreen`, `.mtvctl`, `.pods`, `.pod` and `.mtiles` rules they came from were deleted with the phone's card sheet (#218); `.card`, `.hint` and the card sheet's `#cardhost > .card` stay in the legacy sheet for the other panes and the water and Hilo tiles (#239 moves them; no gate deletes the card sheet's rule yet), and `.stepper` for the climate and Air controls; the last `.pp` rules went with #218 too. The tile draws the kit's `.stile` rules (`src/ui/styles/stat-tile.css`), its play button's press included.

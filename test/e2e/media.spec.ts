@@ -1,5 +1,5 @@
 // The Media tab (spec 16): <hp-media-pane> on the tablet, its television box and speaker pods, what a tap sends and shows at once,
-// and what the pane costs; on the phone it draws its header and the guest's tiles stay (#218 moves them).
+// and what the pane costs; on the phone its tiles, what their controls send, and the sheet a tile opens.
 // Test titles that start with a number are the checks of docs/specs/01-playwright-test.md.
 import {test, expect, expectCall, phoneOnly, tabletOnly, type House} from './fixtures';
 import {AFTERNOON, FULL_CFG} from './houses';
@@ -61,15 +61,6 @@ test.describe('the tablet', () => {
     );
   });
 
-  // the guest's renderMedia draws only on the phone, whose tiles open these cards; a rule hides them in the pane, so only their
-  // content tells whether the guest drew the tablet's pane a second time
-  test("leaves the guest's Media cards empty: the pane is the tablet's one drawer", async ({house}) => {
-    await house.tab('media');
-    await expect(pod(house).locator('.sv b')).toHaveText('35%');
-    await expect(house.root().locator('#pane-media > #mtv')).toBeEmpty();
-    await expect(house.root().locator('#pane-media > #media')).toBeEmpty();
-  });
-
   test('play on a paused speaker shows the pause button at once and sends media_play', async ({house}) => {
     await house.setState(SPEAKER, {state: 'paused'});
     await house.tab('media');
@@ -110,7 +101,7 @@ test.describe('the tablet', () => {
   test.describe('a tap on the television', () => {
     test.use({houseOpts: {cfg: FULL_CFG, time: AFTERNOON}});
 
-    // the legacy tvCmd's fifteen seconds, where the other controls hold twenty: Home Assistant never answers here
+    // the television's fifteen seconds (the other controls hold twenty), as the legacy panel's; Home Assistant never answers
     test('holds what it asked for fifteen seconds, then shows what Home Assistant says', async ({house}) => {
       await house.tab('media');
       // the page's clock stands still, so only fastForward moves it and an expectation's retries cannot outwait a hold
@@ -142,11 +133,68 @@ test.describe('the tablet', () => {
   });
 });
 
-test('on a phone the pane draws its header and the guest still draws the tiles', async ({house}) => {
-  phoneOnly();
-  await house.root().locator('#moretab').click();
-  await house.root().locator('#morelist hp-stat-tile[key="media"] button').click();
-  await expect(pane(house).getByRole('heading', {name: 'Media'})).toBeVisible();
-  await expect(house.root().locator('#mtiles .stile')).toHaveCount(2);
-  await expect(pane(house).locator('hp-tv-box, hp-speaker-pod')).toHaveCount(0);
+test.describe('the phone', () => {
+  test.beforeEach(async ({house}) => {
+    phoneOnly();
+    await house.root().locator('#moretab').click();
+    await house.root().locator('#morelist hp-stat-tile[key="media"] button').click();
+  });
+
+  const tile = (house: House, name: string) => pane(house).locator('hp-media-tile').filter({hasText: name});
+  // the sheet's panel, by the name a screen reader gives it, and what the sheet holds: its card is slotted, so it is the
+  // element's child and not the panel's
+  const panel = (house: House, name: string) => house.root().getByRole('dialog', {name});
+  const sheet = (house: House) => pane(house).locator('hp-sheet');
+
+  test("a tap on the television's tile opens its box in a sheet, and Escape closes it and gives the tile its focus back", async ({
+    house,
+  }) => {
+    await tile(house, 'Samsung TV').getByText('Samsung TV', {exact: true}).click();
+    await expect(panel(house, 'Samsung TV')).toBeVisible();
+    await expect(sheet(house).getByRole('switch', {name: 'Samsung TV power'})).toBeVisible();
+    await house.page.keyboard.press('Escape');
+    await expect(panel(house, 'Samsung TV')).toBeHidden();
+    await expect(sheet(house).locator('hp-tv-box'), 'a closed sheet holds no box').toHaveCount(0);
+    await expect(tile(house, 'Samsung TV').getByRole('button', {name: /Samsung TV/})).toBeFocused();
+  });
+
+  test("a speaker's tile opens the speakers' card, Enter as well as a tap", async ({house}) => {
+    await tile(house, 'Living room')
+      .getByRole('button', {name: /Living room/})
+      .press('Enter');
+    await expect(panel(house, 'Speakers')).toBeVisible();
+    await expect(sheet(house).locator('hp-speaker-pod')).toHaveCount(1);
+    await expect(sheet(house).getByText('1 speaker playing', {exact: true})).toBeVisible();
+  });
+
+  test("the switch on the television's tile turns it off at once, and opens nothing", async ({house}) => {
+    const power = tile(house, 'Samsung TV').getByRole('switch', {name: 'Samsung TV power'});
+    await power.click();
+    await expect(power).toHaveAttribute('aria-checked', 'false');
+    await expectCall(house, /^media_player\.turn_off \{"entity_id":"media_player\.living_room_tv"\}$/);
+    await expect(house.root().getByRole('dialog')).toHaveCount(0);
+  });
+
+  test("the play button on a speaker's tile pauses it at once, and opens nothing", async ({house}) => {
+    await tile(house, 'Living room').getByRole('button', {name: 'Pause', exact: true}).click();
+    await expect(tile(house, 'Living room').getByRole('button', {name: 'Play', exact: true})).toBeEnabled();
+    await expectCall(house, /^media_player\.media_pause \{"entity_id":"media_player\.living_room_speaker"\}$/);
+    await expect(house.root().getByRole('dialog')).toHaveCount(0);
+  });
+
+  test('draws a tile per player, and leaves the box and the pods to the sheets', async ({house}) => {
+    await expect(pane(house).locator('hp-media-tile')).toHaveCount(2);
+    await expect(pane(house).locator('hp-tv-box, hp-speaker-pod')).toHaveCount(0);
+  });
+});
+
+test.describe('the phone, in a house with no player', () => {
+  test.use({houseOpts: {house: 'bare'}});
+
+  test('says so where the tiles would be', async ({house}) => {
+    phoneOnly();
+    await house.root().locator('#moretab').click();
+    await house.root().locator('#morelist hp-stat-tile[key="media"] button').click();
+    await expect(pane(house).getByText('No TV or speakers found.', {exact: true})).toBeVisible();
+  });
 });
