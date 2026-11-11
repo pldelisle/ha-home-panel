@@ -1,0 +1,175 @@
+/*
+ * <hp-speaker-pod>'s own rules: the cover, the room and the track, the volume stepper and the play button.
+ * Known copies of the legacy `.pod` (tabs.css, glass.css), `.stepper` (extra.css, glass.css, motion.css) and `.pp` rules, read here as
+ * `.player`, `.vol` and `.play`: #218 deletes the legacy `.pod` with the guest's `#media`, #220 deletes `.pp` with the Home card,
+ * and `.stepper` stays while the climate controls and Air draw it (spec 18 promotes it to the kit). The phone's rules come with #218.
+ * The selectors differ because the styles-split test lets one file write a selector, and a shadow root cannot reach the legacy rule.
+ */
+/* no box of its own: the pod is the item of the pane's list */
+:host {
+  display: contents;
+}
+.vol {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--card2);
+  border-radius: 18px;
+  padding: 5px;
+}
+.vol button {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  border: 0;
+  background: var(--card);
+  color: var(--fg);
+  font: 600 calc(22px * var(--tx)) var(--f-body);
+  cursor: pointer;
+  box-shadow: var(--shadow);
+}
+.vol button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.vol .sv {
+  min-width: 92px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+}
+.vol .sv b {
+  font-size: calc(22px * var(--tx));
+}
+.vol .sv small {
+  font-size: calc(11px * var(--tx));
+  color: var(--fg2);
+}
+.vol button:focus-visible {
+  outline: 2px solid var(--c-home);
+  outline-offset: 2px;
+}
+.player {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--card2);
+  border-radius: 20px;
+  padding: 14px 16px;
+  min-width: 0;
+}
+.player.on {
+  background: color-mix(in srgb, var(--c-home) 9%, var(--card2));
+}
+.player .pic {
+  width: 72px;
+  height: 72px;
+  border-radius: 18px;
+  background: var(--card);
+  display: grid;
+  place-items: center;
+  color: var(--fg2);
+  overflow: hidden;
+  flex: none;
+}
+.player .pic img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.player .tx {
+  flex: 1;
+  min-width: 0;
+}
+.player h3 {
+  margin: 0;
+  font-size: calc(17px * var(--tx));
+  font-weight: 600;
+  line-height: 1.2;
+}
+.player .tr {
+  font-size: calc(15px * var(--tx));
+  font-weight: 600;
+  margin-top: 3px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.player .sb {
+  font-size: calc(13px * var(--tx));
+  color: var(--fg2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.player .vol {
+  flex: none;
+  padding: 4px;
+}
+.player .vol .sv {
+  min-width: 56px;
+}
+.player .vol button {
+  width: 44px;
+  height: 44px;
+  font-size: calc(20px * var(--tx));
+}
+.player .play {
+  width: 60px;
+  height: 60px;
+  border-radius: 30px;
+  border: 0;
+  background: var(--card);
+  display: grid;
+  place-items: center;
+  color: var(--fg);
+  cursor: pointer;
+  flex: none;
+}
+.player .play.on {
+  background: var(--c-home);
+  color: #fff;
+}
+.player .play:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.app.gl .player,
+.app.gl .vol {
+  background: var(--g-tile);
+  box-shadow: var(--g-edge-s);
+}
+.app.gl .vol button,
+.app.gl .player .play,
+.app.gl .player .pic {
+  background: var(--g-sel);
+  border-color: transparent;
+}
+.app.gl .player.on {
+  background: color-mix(in srgb, var(--c-home) 14%, var(--g-tile));
+}
+.app.gl .player .play.on {
+  background: var(--c-home);
+}
+@media (prefers-reduced-transparency: reduce) {
+  .app.gl .player,
+  .app.gl .vol {
+    background: var(--card2);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .vol button,
+  .play {
+    transition:
+      transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+      background-color 0.2s ease,
+      box-shadow 0.2s ease,
+      color 0.2s ease;
+  }
+}
+.vol button:active,
+.play:active {
+  transform: scale(0.96);
+}

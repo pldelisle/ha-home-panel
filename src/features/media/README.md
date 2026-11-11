@@ -1,6 +1,6 @@
 # Media
 
-What the Media tab will compute and draw ([spec 16](../../../docs/specs/16-media.md)). This folder holds the pure half: the rules that find the television and the speakers, the model every Media element will draw, the scenes row and the commands, pinned in Vitest against the test house before the code that draws them moves. The legacy panel still draws Media; no element reads the model yet, and the pane and the Home cards arrive with the next tickets.
+What the Media tab computes and draws ([spec 16](../../../docs/specs/16-media.md)). This folder holds the pure half, the rules that find the television and the speakers, the model every Media element draws, the scenes row and the commands, pinned in Vitest against the test house, and the tablet's pane: `<hp-media-pane>` with `<hp-tv-box>` and one `<hp-speaker-pod>` per speaker. The legacy panel still draws the phone's tiles and the cards they open (#218) and the Home card and the scenes row (#219).
 
 ## The folder
 
@@ -11,19 +11,23 @@ src/providers/
   samsung-tv.ts            the Samsung platform: preferred when both exist
 src/features/media/
   README.md
+  index.ts                 mediaFeature: the registry's descriptor, the pane's template and the More sheet's line (mediaBrief)
   ids.ts                   mediaIds(store): the TV, its wake button, the speakers, the scenes and the modes
   inputs.ts                TV_SOURCES, findTv, readMedia(states, registries, names, sources): MediaInputs
   speakers.ts              speakers(states, registries, names, tvId): Speaker[] (generic rules, pure)
-  model.ts                 mediaModel(inputs, {t, names, overlay}): MediaViewModel (summary, tv, speakers, speakersLine, tiles, labels)
+  model.ts                 mediaModel(inputs, {t, names, overlay}): MediaViewModel (summary, tv, speakers, speakersLine, tiles, labels); mediaBrief
   scenes.ts                sceneTiles(states, registries, config, overlay, deps): SceneTileView[]; sceneIcon
-  commands.ts              tvPower, tvVolume, tvMute, tvPlayPause, speakerPlayPause, speakerSkip, speakerVolume, runScene, setMode; K, SCENE_RAN_MS
+  commands.ts              tvPower, tvVolume, tvMute, tvPlayPause, speakerPlayPause, speakerSkip, speakerVolume, runScene, setMode; K, SCENE_RAN_MS, volumeLevel
+  media-pane.ts            <hp-media-pane>: the header, and on a tablet the television's card and the speakers' card; media-pane.element.css
+  tv-box.ts                <hp-tv-box>: the name, status and switch, the screen and the four buttons; tv-box.element.css
+  speaker-pod.ts           <hp-speaker-pod>: the cover, the track, the volume stepper and play; speaker-pod.element.css
 src/core/
   registry.ts              areaOf and isHidden: the registry rules the store, the providers and the features share
   timing.ts                debounce(fn, ms, timers?): the volume's 450 ms, with injected timers and a cancel
   i18n/format.ts           fmt.ago(instant, now): a scene's last run as a kind and a count (now, minutes, hours) or a date, which `media.last` words
 ```
 
-The pane, the tiles, the sheet and the Home cards (`<hp-media-pane>` and the elements it places) are listed in spec 16 and land with the tickets that build them.
+The phone's tiles and their sheet (`<hp-media-tile>`, #218) and the Home cards (`<hp-tv-card>`, `<hp-scene-tiles>`, #219) are listed in spec 16 and land with the tickets that build them.
 
 ## The providers
 
@@ -57,3 +61,11 @@ Two rules copy the legacy panel on purpose: the **summary** and the **speakers l
 Each command is a pure function returning the kit's `Command`: the service, the optimistic keys it holds (`K`, one typed function per key) and the toast it says on success. The element holds the value the key names and runs the command; nothing here sends. `tvPower(tv, true)` carries the wake-on-LAN button as `fallback` when the house has one, whichever set was chosen, as the legacy `tv()` does.
 
 `sceneIcon` and the other rules copied from `src/home-panel.js` (the television's power path, the scenes' order, the line words) stay in the legacy panel too, because it still draws Media; #220 (the last Media move) deletes the legacy copies.
+
+## The elements
+
+`<hp-media-pane>` runs `mediaModel` in `willUpdate` with its `OptimisticController`'s `read` as the overlay, so a value a child holds draws the pane again at once, and hands each child its view: `tv` to the box, `speaker` to each pod, keyed by id. Its store controller listens to `mediaIds` alone and is paused while the tab is hidden; a thermostat change draws nothing in the pane, the box or a pod (`media.spec.ts` proves it with a tripwire a redraw would show). On a phone it draws only the header, and the registry's template keeps the guest's `#mtiles`, `#mtv` and `#media` after it until #218.
+
+`<hp-tv-box>` and `<hp-speaker-pod>` act: a tap holds the value it asks for in the panel's `OverlayStore` (`K.on`, `K.mute`, `K.state`, `K.volume`) and runs the command through their own `CommandRunner`, which releases only that hold and says why in a sticky toast when Home Assistant refuses, after the wake-on-LAN button's try when the house has one. The pod's stepper holds the model's `volume.down` or `volume.up` at each tap and sends one `volume_set` when the taps stop for 450 ms (`debounce`); a send still waiting when the pod leaves the document is cancelled in `disconnectedCallback` and its level released. Each pod waits on its own, where the legacy `volT` was one timer for the panel, so a tap on one speaker no longer drops another's pending level. The television's holds last the legacy `tvCmd`'s fifteen seconds (`TV_HOLD_MS`).
+
+Each element's rules are its own `<element>.element.css`, copies of the legacy `.card`, `.mtvhead`, `.mtvscreen`, `.mtvctl`, `.pods`, `.pod`, `.stepper` and `.pp` rules under selectors of their own (`.mcard`, `.tvhead`, `.tvscreen`, `.tvkeys`, `.player`, `.vol`, `.play`), because the legacy sheet keeps the originals for the phone's card sheet and the Home card until #218 and #220 delete them, and one selector is written in one file.

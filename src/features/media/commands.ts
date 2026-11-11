@@ -1,7 +1,7 @@
 // The Media commands: what a tap asks Home Assistant for, as `Command` data, and the typed names of the values it holds meanwhile.
 // Pattern: Command (Gamma et al.) built by pure functions; the kit's `CommandRunner` sends them, an element holds the value
 // each `holds` key names in the panel's overlay store (ADR 0023). The legacy `tvCmd`, `phoneCmd`, `runScene` and `mpVol`
-// are the rules copied here, until the Media move of #220 deletes them.
+// are the rules copied here, until #218 (`tvCmd`, `mpVol`, `phoneCmd`'s Media branch) and #220 (`runScene`) delete them.
 // Must not: send anything, read the store or the clock, or word a string (`done` is a catalog key, the runner words it).
 import type {Speaker} from './speakers.ts';
 import type {Command} from '../../ui/commands.ts';
@@ -25,6 +25,9 @@ export type Overlay = <T>(key: string, current: T) => T;
 
 /** How long a scene shows as run: the legacy panel's "Done" for four seconds. */
 export const SCENE_RAN_MS = 4000;
+
+/** How long a tap on the television holds its value: the legacy `tvCmd`'s fifteen seconds (other controls hold twenty), until #218 deletes it. */
+export const TV_HOLD_MS = 15_000;
 
 const player = (service: string, id: string, data: Record<string, unknown> = {}): Command => ({
   domain: 'media_player',
@@ -62,10 +65,12 @@ export const speakerPlayPause = (speaker: Pick<Speaker, 'id' | 'name'>, play: bo
 export const speakerSkip = (speaker: Pick<Speaker, 'id'>, direction: 'next' | 'previous'): Command =>
   player(direction === 'next' ? 'media_next_track' : 'media_previous_track', speaker.id);
 
-/** Sets a speaker's volume: the level kept in 0 to 1 and to two decimals, as the legacy `mpVol`; silent, the element debounces it. */
+/** A volume as a player takes it: kept in 0 to 1 and to two decimals, as the legacy `mpVol`; Math.max(0, …) turns a -0 into 0. */
+export const volumeLevel = (level: number): number => Math.min(1, Math.max(0, Math.round(level * 100) / 100));
+
+/** Sets a speaker's volume at `volumeLevel(level)`; silent, the element debounces it. */
 export const speakerVolume = (speaker: Pick<Speaker, 'id'>, level: number): Command => ({
-  // Math.max(0, …) also turns the -0 of a tiny negative level into 0
-  ...player('volume_set', speaker.id, {volume_level: Math.min(1, Math.max(0, Math.round(level * 100) / 100))}),
+  ...player('volume_set', speaker.id, {volume_level: volumeLevel(level)}),
   holds: [K.volume(speaker.id)],
 });
 

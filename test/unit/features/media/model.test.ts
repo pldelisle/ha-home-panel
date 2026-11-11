@@ -5,7 +5,7 @@ import {describe, expect, test} from 'vitest';
 import {OverlayStore} from '../../../../src/ui/overlay-store.ts';
 import {K} from '../../../../src/features/media/commands.ts';
 import {readMedia, type MediaInputs, type SpeakerInputs} from '../../../../src/features/media/inputs.ts';
-import {mediaModel} from '../../../../src/features/media/model.ts';
+import {mediaBrief, mediaModel} from '../../../../src/features/media/model.ts';
 import type {TvInputs} from '../../../../src/providers/tv-source.ts';
 import {fakeHass} from '../../fake-hass.ts';
 import {depsOf, fullHouse, readingOf, recorded, type Language} from './support.ts';
@@ -82,6 +82,8 @@ describe('the full test house, in English', () => {
 
   test("the television's box", () => {
     expect(vm.tv).toEqual({
+      id: 'media_player.living_room_tv',
+      wakeButton: null,
       name: 'Samsung TV',
       on: true,
       available: true,
@@ -125,6 +127,8 @@ describe('the full test house, in English', () => {
           upLabel: 'Volume up',
           atMin: false,
           atMax: false,
+          down: 0.3,
+          up: 0.4,
         },
         playPause: {enabled: true, label: 'Pause', icon: 'pause'},
       },
@@ -358,6 +362,17 @@ describe('a speaker', () => {
     expect(only({volume: -0.001}).speakers[0].volume).toMatchObject({percent: 0, text: '0%'});
   });
 
+  // the legacy mpVol: the held or reported level and five percent, kept in 0 to 1 at two decimals
+  test.each([
+    [0.35, 0.3, 0.4],
+    [0.333, 0.28, 0.38],
+    [0.98, 0.93, 1],
+    [0.02, 0, 0.07],
+    [1, 0.95, 1],
+  ])('a volume of %s steps down to %s and up to %s', (level, down, up) => {
+    expect(only({volume: level}).speakers[0].volume).toMatchObject({down, up});
+  });
+
   test('plays and pauses only the way its features allow', () => {
     const pp = (over: Partial<SpeakerInputs>) => only(over).speakers[0].playPause;
     expect(pp({})).toEqual({enabled: true, label: 'Pause', icon: 'pause'});
@@ -418,6 +433,28 @@ describe('the sub-line and the speakers line count what Home Assistant says, as 
     const held = holding({'media_player.s0:st': 'playing'});
     expect(modelOf(inputs, 'en', held).summary).toBe('1 speaker · nothing playing');
     expect(modelOf(inputs, 'en', held).speakers[0]).toMatchObject({playing: true});
+  });
+});
+
+// the More sheet's word under Media: what the legacy moreLines said, the input left out, "Nothing playing" when it says nothing else
+describe('the brief line under More', () => {
+  const house = (...states: string[]) =>
+    ({tv: null, speakers: states.map((state, i) => speaker({id: `media_player.s${i}`, state}))}) satisfies MediaInputs;
+  const brief = (inputs: MediaInputs, language: Language = 'en') => mediaBrief(inputs, depsOf(fullHouse, language).t);
+
+  test('the full test house, as the More baselines read it', () => {
+    expect(brief(inputsOf(fullHouse))).toBe('TV on · 1 speaker playing');
+    expect(brief(inputsOf(fullHouse), 'fr')).toBe('Télé allumée · 1 speaker\u00a0: en lecture');
+  });
+
+  test.each([
+    [{...house('playing', 'playing'), tv: null}, '2 speakers playing', '2 haut-parleurs en lecture'],
+    [{...house('idle'), tv: tv({state: 'off'})}, 'TV off', 'Télé éteinte'],
+    [{...house('idle'), tv: tv({state: 'unavailable'})}, 'TV off', 'Télé éteinte'],
+    [house('idle', 'paused'), 'Nothing playing', 'Rien en lecture'],
+    [{tv: null, speakers: []}, 'Nothing playing', 'Rien en lecture'],
+  ])('%j', (inputs, english, french) => {
+    expect([brief(inputs), brief(inputs, 'fr')]).toEqual([english, french]);
   });
 });
 

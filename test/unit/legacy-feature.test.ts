@@ -92,15 +92,16 @@ describe('the ten panes', () => {
   test('hold no id twice, and the ones the guest writes into are there', () => {
     const ids = FEATURES.flatMap(f => [...markup(f.pane).matchAll(/ id="([^"]+)"/g)].map(m => m[1]));
     expect(new Set(ids).size).toBe(ids.length);
-    for (const id of ['hsub', 'lsub', 'csub2', 'carsub2', 'esub2', 'asub2', 'msub', 'cmsub', 'ausub'])
+    for (const id of ['hsub', 'lsub', 'csub2', 'carsub2', 'esub2', 'asub2', 'cmsub', 'ausub'])
       expect(ids, id).toContain(id);
-    for (const id of ['carh2', 'lhost', 'ehost', 'eside', 'camhost', 'senhost', 'auhost'])
+    // Media's pane is an element, and its descriptor keeps the guest's phone tiles and the cards they open until #218
+    for (const id of ['carh2', 'lhost', 'ehost', 'eside', 'camhost', 'senhost', 'auhost', 'mtiles', 'mtv', 'media'])
       expect(ids, id).toContain(id);
   });
 
   // the header's shadow root is closed to the guest (getElementById stops at it), so the lines it writes are slotted nodes
-  test("put the line the guest writes under the heading in the header's sub slot, but the Weather pane's, which is an element", () => {
-    for (const f of FEATURES.filter(f => f.key !== 'weather'))
+  test("put the line the guest writes under the heading in the header's sub slot, but the Weather and Media panes', which are elements", () => {
+    for (const f of FEATURES.filter(f => f.key !== 'weather' && f.key !== 'media'))
       expect(markup(f.pane), f.key).toMatch(/<div slot="sub" id="\w+"><\/div>/);
   });
 
@@ -123,8 +124,8 @@ describe('the ten panes', () => {
     ]);
   });
 
-  test('head their pane with the catalog title, in the language of the panel, but the Car pane and the Weather element', () => {
-    for (const f of FEATURES.filter(f => f.key !== 'car' && f.key !== 'weather'))
+  test('head their pane with the catalog title, in the language of the panel, but the Car pane and the Weather and Media elements', () => {
+    for (const f of FEATURES.filter(f => !['car', 'weather', 'media'].includes(f.key)))
       expect(bindings(f.pane)[2], f.key).toBe(`[${f.key}.title]`);
   });
 });

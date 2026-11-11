@@ -1,11 +1,12 @@
-// mediaModel: the television and the speakers in, the strings and flags the Media pane, the phone's tiles and the Home card place out.
+// mediaModel and mediaBrief: the television and the speakers in, the strings and flags the Media pane, the phone's tiles, the Home card
+// and the More sheet's line place out.
 // Pattern: a pure view-model function, a humble object's other half (Meszaros, Fowler): it reads no clock, no `hass` and no
 // store, words every message through `deps.t`, and reads a held value through `deps.overlay`, the one place a tap shows before Home
-// Assistant agrees. Each rule is the legacy panel's (renderMedia, renderMediaTiles, renderTV, tvBox, renderPaneSubs), until #220 deletes them.
+// Assistant agrees. Each rule is the legacy panel's (renderMedia, renderMediaTiles, renderTV, tvBox, mpVol), until #218 and #220 delete them.
 // Must not: import the DOM, the kit or the shell, send a command, or hold text the household reads (a catalog key says it).
 import type {Messages} from '../../core/i18n/messages.ts';
 import type {Names} from '../../core/i18n/names.ts';
-import {K, type Overlay} from './commands.ts';
+import {K, volumeLevel, type Overlay} from './commands.ts';
 import type {MediaInputs, SpeakerInputs} from './inputs.ts';
 import type {TvInputs} from '../../providers/tv-source.ts';
 
@@ -15,6 +16,9 @@ type Translate = Messages['t'];
 const PAUSE = 1; // MediaPlayerEntityFeature.PAUSE = 1
 const VOLUME_SET = 4; // MediaPlayerEntityFeature.VOLUME_SET = 4
 const PLAY = 16384; // MediaPlayerEntityFeature.PLAY = 16384
+
+/** A tap on the stepper's − or +: five percent, as the legacy stepper. */
+const VOLUME_STEP = 0.05;
 
 export interface MediaModelDeps {
   t: Translate;
@@ -31,6 +35,9 @@ export interface TvControl {
 }
 
 export interface TvView {
+  /** The player and its wake-on-LAN button, which the box's commands name (`tvPower` and the others). */
+  id: string;
+  wakeButton: string | null;
   name: string;
   on: boolean;
   /** False when the set is `unavailable` and the house has no wake button to try. */
@@ -66,6 +73,9 @@ export interface VolumeView {
   upLabel: string;
   atMin: boolean;
   atMax: boolean;
+  /** The levels a tap on − and on + asks for: the shown level and a step, as a player takes it (`volumeLevel`). */
+  down: number;
+  up: number;
 }
 
 export interface SpeakerView {
@@ -138,6 +148,8 @@ function tvView(tv: TvInputs, {t, overlay}: MediaModelDeps): TvView {
       : `${status} · ${sourceLabel}`;
   const playOrPause = t('media.playOrPause');
   return {
+    id: tv.id,
+    wakeButton: tv.wakeButton,
     name,
     on,
     available,
@@ -205,6 +217,8 @@ function speakerView(speaker: SpeakerInputs, {t, overlay, names}: MediaModelDeps
             upLabel: t('media.volumeUp'),
             atMin: volume <= 0,
             atMax: volume >= 1,
+            down: volumeLevel(volume - VOLUME_STEP),
+            up: volumeLevel(volume + VOLUME_STEP),
           }
         : null,
     playPause: {
@@ -220,19 +234,41 @@ function speakerView(speaker: SpeakerInputs, {t, overlay, names}: MediaModelDeps
  * flip at once, this line follows the player. A speaker count after a television part has its own message, which French words
  * differently from the same count alone (the layer's rule for a text that is not the whole line).
  */
+/** How many speakers Home Assistant says are playing: the lines count these, not what a tap holds. */
+const playingCount = (speakers: readonly SpeakerInputs[]): number =>
+  speakers.filter(speaker => speaker.state === 'playing').length;
+
+/** "TV on" or "TV off", the part a line opens with when the house has a television. */
+const tvWord = (tv: TvInputs, t: Translate): string =>
+  t(tv.state === 'on' ? 'media.summaryTvOn' : 'media.summaryTvOff');
+
+/** "2 speakers playing", worded after a television part or alone: French words the two differently. */
+const playingWord = (playing: number, afterTv: boolean, t: Translate): string =>
+  t(afterTv ? 'media.summaryPlaying' : 'media.speakersPlaying', {count: playing});
+
 function summaryOf({tv, speakers}: MediaInputs, t: Translate): string {
-  const playing = speakers.filter(speaker => speaker.state === 'playing').length;
+  const playing = playingCount(speakers);
   const parts = [
-    ...(tv ? [t(tv.state === 'on' ? 'media.summaryTvOn' : 'media.summaryTvOff')] : []),
+    ...(tv ? [tvWord(tv, t)] : []),
     // the legacy line cuts only the dash: a full-width ampersand stays in it, where the box and the tile make it plain
     ...(tv?.state === 'on' && tv.summarySource ? [tv.summarySource] : []),
     ...(speakers.length === 0
       ? []
       : playing > 0
-        ? [t(tv ? 'media.summaryPlaying' : 'media.speakersPlaying', {count: playing})]
+        ? [playingWord(playing, tv !== null, t)]
         : [t('media.summaryIdle', {count: speakers.length})]),
   ];
   return parts.join(' · ');
+}
+
+/**
+ * The word under Media in the phone's More sheet: the legacy `moreLines`, which says the television's state and the speakers that
+ * play, without the input the pane's sub-line names, and "Nothing playing" when that says nothing. It counts what Home Assistant says.
+ */
+export function mediaBrief({tv, speakers}: MediaInputs, t: Translate): string {
+  const playing = playingCount(speakers);
+  const parts = [...(tv ? [tvWord(tv, t)] : []), ...(playing > 0 ? [playingWord(playing, tv !== null, t)] : [])];
+  return parts.join(' · ') || t('media.nothingPlaying');
 }
 
 function tvTile(tv: TvView, t: Translate): MediaTileView {
@@ -273,7 +309,7 @@ export function mediaModel(inputs: MediaInputs, deps: MediaModelDeps): MediaView
   const {t} = deps;
   const tv = inputs.tv ? tvView(inputs.tv, deps) : null;
   const speakers = inputs.speakers.map(speaker => speakerView(speaker, deps));
-  const playing = inputs.speakers.filter(speaker => speaker.state === 'playing').length;
+  const playing = playingCount(inputs.speakers);
   return {
     summary: summaryOf(inputs, t),
     tv,
@@ -281,7 +317,7 @@ export function mediaModel(inputs: MediaInputs, deps: MediaModelDeps): MediaView
     speakersLine: !speakers.length
       ? t('media.noneFound')
       : playing > 0
-        ? t('media.speakersPlaying', {count: playing})
+        ? playingWord(playing, false, t)
         : t('media.nothingPlaying'),
     tiles: [...(tv ? [tvTile(tv, t)] : []), ...speakers.map(speaker => speakerTile(speaker, t))],
     labels: {speakers: t('media.speakers'), noDevices: t('media.noDevices'), noSpeakers: t('media.playersHint')},

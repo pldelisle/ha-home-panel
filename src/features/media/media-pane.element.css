@@ -1,0 +1,85 @@
+/*
+ * <hp-media-pane>'s own rules: its place in the pane section, the header's, and the two cards with the speakers' line and list.
+ * Known copies of legacy rules: `.pods` (tabs.css), which #218 deletes with the guest's `#media`; `.card` and `.card .top` (base.css,
+ * glass.css), `.lbl` and `.hint` (base.css), which every other legacy pane's cards still draw; `.pane-media` and its header (tabs.css),
+ * the section's own rules, which no Media gate lists. Selectors differ (`.mcard`) because the styles-split test lets one file write a
+ * selector, and a shadow root cannot reach the legacy rule anyway.
+ */
+/* the tablet's two columns, the television's card and the speakers' card under the header, one column under 1000 pixels */
+:host {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 1000px) {
+  :host {
+    grid-template-columns: 1fr;
+  }
+}
+/* the phone's pane is a column the section lays out: the header here, the guest's tiles after it */
+:host([compact]) {
+  display: block;
+}
+hp-pane-header {
+  grid-column: 1/-1;
+  margin-bottom: 2px;
+}
+:host([compact]) hp-pane-header {
+  margin-bottom: 0;
+}
+.mcard {
+  background: var(--card);
+  border: 0;
+  border-radius: 22px;
+  padding: 20px;
+  box-shadow: var(--shadow);
+  min-width: 0;
+  position: relative;
+}
+.mcard .top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.mcard .top .right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: calc(13px * var(--tx));
+  color: var(--fg2);
+  font-weight: 500;
+}
+/* the card's label as the legacy sheet's second `.lbl` rule leaves it */
+.mcard .lbl {
+  font-size: calc(15px * var(--tx));
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  color: var(--fg);
+}
+.mcard .hint {
+  font-size: calc(12px * var(--tx));
+  color: var(--fg2);
+  margin: 6px 0 0;
+}
+.mcard .pods {
+  display: grid;
+  gap: 12px;
+}
+.app.gl .mcard {
+  background: var(--g-card);
+  -webkit-backdrop-filter: var(--g-bd);
+  backdrop-filter: var(--g-bd);
+  box-shadow: var(--g-edge);
+}
+@media (prefers-reduced-transparency: reduce) {
+  .app.gl .mcard {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--card);
+  }
+}

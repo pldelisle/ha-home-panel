@@ -280,11 +280,7 @@
 .app.tabsv.cp .pane .card.tap .go {
   display: grid;
 }
-/* Media and Security */
-.app.tabsv.cp .pane-media > #mtv,
-.app.tabsv.cp .pane-media > #media {
-  display: none;
-}
+/* Security */
 .app.tabsv.cp .camgrid {
   grid-template-columns: 1fr;
   gap: 10px;
