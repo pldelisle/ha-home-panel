@@ -71,7 +71,7 @@ export class SceneTiles extends LitElement {
           type="button"
           class=${classMap({scenetile: true, [tile.kind]: true, active: tile.active})}
           data-id=${tile.id}
-          aria-pressed=${ifDefined(tile.kind === 'mode' ? (tile.active ? 'true' : 'false') : undefined)}
+          aria-pressed=${ifDefined(tile.pressed)}
           ?disabled=${tile.disabled}
           @click=${this.onTap}
         >

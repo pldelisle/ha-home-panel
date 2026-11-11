@@ -32,6 +32,8 @@ export interface SceneTileView {
   subLine: string;
   /** A scene that was just run, or a mode that is on. */
   active: boolean;
+  /** A mode's `aria-pressed`, as the attribute is written; a scene is no toggle and has none. */
+  pressed: 'true' | 'false' | undefined;
   /** A mode that is unavailable; a scene can always be tapped. */
   disabled: boolean;
 }
@@ -74,6 +76,7 @@ export function sceneTiles(
         icon: sceneIcon(id),
         subLine: ran ? t('media.done') : ago === null ? t('media.tapToRun') : t('media.last', ago),
         active: ran,
+        pressed: undefined,
         disabled: false,
       };
     });
@@ -88,6 +91,7 @@ export function sceneTiles(
         icon: sceneIcon(id),
         subLine: t(on ? 'media.on' : 'media.modeIsOff'),
         active: on,
+        pressed: on ? 'true' : 'false',
         disabled: !isAvailable(states[id]),
       };
     });

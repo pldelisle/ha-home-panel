@@ -232,6 +232,16 @@ test.describe('the Home scenes row', () => {
     await expect(tile(house, 'Kids bedtime')).toHaveAttribute('aria-pressed', 'true');
   });
 
+  // nothing in the house changes, so only the row's own minute redraw can move the line on
+  test('a "Last … ago" line keeps time: a minute later it says one minute more', async ({house}) => {
+    await house.clock.pauseAt((await house.page.evaluate(() => Date.now())) + 1000);
+    const ran = await house.page.evaluate(() => new Date(Date.now() - 5 * 60_000).toISOString());
+    await house.setState('scene.movie_night', {state: ran});
+    await expect(line(house, 'Movie night')).toHaveText('Last 5 min ago');
+    await house.clock.fastForward(60_000);
+    await expect(line(house, 'Movie night')).toHaveText('Last 6 min ago');
+  });
+
   // The tripwire of the pane's test: the mode's state object is changed in place, which no store notices, so the row shows it only if
   // it draws again. A thermostat change must not make it draw: the row listens to the Media ids alone.
   test('a thermostat change draws nothing in the row', async ({house}) => {
@@ -244,6 +254,31 @@ test.describe('the Home scenes row', () => {
     await house.page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
     expect(await house.mutations.count('hp-scene-tiles'), 'mutations').toBe(0);
     await expect(line(house, 'Kids bedtime')).toHaveText('Off');
+  });
+});
+
+// The row's container is the guest's: it shows and hides on the element's hp-empty, as renderScenes showed and hid it
+test.describe('the Home scenes row, in a house with no scene and no mode', () => {
+  test.use({houseOpts: {house: 'bare'}});
+
+  // what Home Assistant does to the scene's registry entry: a new entity registry in a new hass object, which every element hears
+  const register = (house: House, entry: object) =>
+    house.page.evaluate(entry => {
+      const w = window as unknown as {panel: {hass: unknown}; hass: {entities: object}};
+      w.panel.hass = {
+        ...w.hass,
+        entities: {...w.hass.entities, 'scene.reading': {entity_id: 'scene.reading', ...entry}},
+      };
+    }, entry);
+
+  test('is hidden, shows when a scene is created, and hides again when the scene is hidden', async ({house}) => {
+    const row = house.root().locator('#hscenes');
+    await expect(row).toBeHidden();
+    await house.setState('scene.reading', {state: 'unknown', attributes: {friendly_name: 'Reading'}});
+    await register(house, {});
+    await expect(row.getByRole('button', {name: /Reading/})).toBeVisible();
+    await register(house, {hidden: true});
+    await expect(row).toBeHidden();
   });
 });
 

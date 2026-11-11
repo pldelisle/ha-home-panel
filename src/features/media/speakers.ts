@@ -1,7 +1,7 @@
 // speakers: the media players that are speakers, each with its area and the name it goes by in that room.
 // Pattern: a pure rule over states and registries (Bernhardt, functional core); generic, so it sits in the feature and not in a
 // provider: the two platforms it leaves out have their own controls (a camera's speaker, the television).
-// `NOT_SPEAKERS` and the name rule copy the legacy `speakers()`, which the Media move of #220 deletes.
+// `NOT_SPEAKERS` and the name rule copy the legacy `speakers()`, which #266 deletes with the legacy stack, its last reader.
 // Must not: read the DOM, the clock or `hass` itself, reorder the players (the baselines depend on the house's order) or hold text for the household.
 import type {HassEntities, Registries} from '../../core/hass.ts';
 import type {Names} from '../../core/i18n/names.ts';

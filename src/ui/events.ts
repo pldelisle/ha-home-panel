@@ -1,4 +1,4 @@
-// The events an element sends up: a request to open a sheet, to close one, a message for the toast, and the bridge's `hp-empty`.
+// The events an element sends up: a request to open a sheet, to close one, a message for the toast, and the Home-card bridge's `hp-empty`.
 // Pattern: events up, properties down (Lit docs, Events): an element never imports the shell, it dispatches one of these
 // from itself, and the shell, listening on its root, calls the sheet host or draws the toast; the guest's container hears `hp-empty`.
 // Must not: carry state the shell has to hand back, or be dispatched with `composed: false`: they cross shadow roots.
@@ -37,11 +37,17 @@ export class ToastEvent extends CustomEvent<ToastDetail> {
   }
 }
 
+export interface EmptyDetail {
+  /** the element has nothing to show, and its container hides */
+  empty: boolean;
+}
+
 /**
  * An element the guest placed by its tag has nothing to show, or something again: the guest's container toggles its `hidden`, as it
- * did when it drew the markup. The one event the Home-card bridge lets up (ADR 0024); deleted with the bridge, by the Home move (#268).
+ * did when it drew the markup. The one event the guest hears from an element (ADR 0024); deleted with the Home-card bridge, by the
+ * Home move (#268).
  */
-export class EmptyEvent extends CustomEvent<{empty: boolean}> {
+export class EmptyEvent extends CustomEvent<EmptyDetail> {
   constructor(empty: boolean) {
     super('hp-empty', {bubbles: true, composed: true, detail: {empty}});
   }

@@ -1794,6 +1794,7 @@ export class LegacyPanel {
       const hc = e.target.closest('#hsec [data-cam]');
       if (hc) return this.openCamera(hc.dataset.cam);
       if (e.target.closest('button[data-l]')) return; // light switches on the phone rows: the lights listener has them
+      // the scene and mode branches can no longer fire since #219 (the row is <hp-scene-tiles>, in its own root); #220 deletes them
       const pc = e.target.closest('[data-p="mode"]');
       if (pc) return this.phoneCmd(pc);
       const sc = e.target.closest('[data-p="scene"]');
@@ -3998,6 +3999,7 @@ export class LegacyPanel {
       this.pending[id] = {on, until: Date.now() + 20000};
       this.call('switch', on ? 'turn_on' : 'turn_off', {entity_id: id}, on ? 'Charging resumed' : 'Charging paused');
     } else {
+      // a mode: unreachable since #219, whose <hp-scene-tiles> runs setMode; #220 deletes this branch
       const on = this.pend(id + ':on', s.state === 'on') !== true;
       hold(':on', on);
       this.call('input_boolean', on ? 'turn_on' : 'turn_off', {entity_id: id}, `${this.name(id)} ${on ? 'on' : 'off'}`);
@@ -4051,6 +4053,7 @@ export class LegacyPanel {
   }
 
   // ---------- TV ----------
+  // kept for the now-playing stack card, through speakers(); #266 deletes it with the legacy stack
   tv() {
     const reg = this.hass.entities || {},
       dev = this.hass.devices || {};
@@ -4155,6 +4158,7 @@ export class LegacyPanel {
     return D && (D.name_by_user || D.name) ? this.name(devId) : fallback;
   }
   // speakers by area (HomePods and the like); camera speakers and the TV have their own controls
+  // kept for the now-playing stack card (stackCards); #266 deletes it with the legacy stack
   speakers() {
     const reg = this.hass.entities || {},
       areas = this.hass.areas || {},

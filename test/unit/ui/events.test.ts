@@ -25,7 +25,7 @@ test('a toast bubbles and is composed, and is not sticky unless it says so', () 
   expect(new ToastEvent('No', true).detail.sticky).toBe(true);
 });
 
-test("the bridge's hp-empty bubbles and is composed, and says whether the element has anything to show", () => {
+test("the Home-card bridge's hp-empty bubbles and is composed, and says whether the element has anything to show", () => {
   const e = new EmptyEvent(true);
   expect(e.type).toBe('hp-empty');
   expect([e.bubbles, e.composed]).toEqual([true, true]);
