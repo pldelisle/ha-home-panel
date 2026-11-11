@@ -1,0 +1,8 @@
+{
+  "about": "The English messages the Media move introduced (src/core/i18n/en.ts, media.*), each with sample values. test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer made of the English. The pane's own messages join this list with the pane. Deleted with the layer in phase 4.",
+  "messages": [
+    {
+      "key": "media.samsungTv"
+    }
+  ]
+}

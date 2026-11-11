@@ -14,6 +14,8 @@ export const en = {
   'energy.title': 'Energy',
   'air.title': 'Air',
   'media.title': 'Media',
+  // the default name of a Samsung television that has no name of its own (src/providers/samsung-tv.ts)
+  'media.samsungTv': 'Samsung TV',
   'cams.title': 'Security',
   'auto.title': 'Automations',
   'auto.short': 'Rules',

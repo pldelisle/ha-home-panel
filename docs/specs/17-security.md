@@ -1,7 +1,7 @@
 # Spec 17: Security, the third move: the cameras, the doors and the motion, two sheets, and the first provider another feature reads
 
 Parent: [production-grade-refactor.md](production-grade-refactor.md), phase 3.
-Depends on: [15 Weather](15-weather.md) (the recipe, `<hp-sheet>`, `<hp-range-tabs>`, `ranges.ts`), [16 Media](16-media.md) (the Home-card bridge of ADR 0022, `runCommand` is not needed here). Blocks: 18 Air and every later move; 22 Live pill and 24 Home, which read the door and motion sensors through the provider this spec creates.
+Depends on: [15 Weather](15-weather.md) (the recipe, `<hp-sheet>`, `<hp-range-tabs>`, `ranges.ts`), [16 Media](16-media.md) (the Home-card bridge of ADR 0024, `runCommand` is not needed here). Blocks: 18 Air and every later move; 22 Live pill and 24 Home, which read the door and motion sensors through the provider this spec creates.
 Ships as: two pull requests, each a patch release, each pixel-identical except one new baseline (the sensor history sheet, which has none today). ADR 0023 lands with the first.
 
 The key words MUST, MUST NOT, SHOULD, SHOULD NOT and MAY are to be read as in RFC 2119.

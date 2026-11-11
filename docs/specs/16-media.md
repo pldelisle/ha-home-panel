@@ -2,7 +2,7 @@
 
 Parent: [production-grade-refactor.md](production-grade-refactor.md), phase 3.
 Depends on: [15 Weather](15-weather.md) (the recipe, `<hp-pane-header>`, `<hp-stat-tile>`, the kit's sheets, the French equivalence test). Blocks: 17 Security and every later move that sends a service call or holds an optimistic state, and 24 Home, which composes the cards this spec exports.
-Ships as: two pull requests, each a patch release, each pixel-identical. ADR 0021 and ADR 0022 land with the first.
+Ships as: two pull requests, each a patch release, each pixel-identical. ADR 0023 and ADR 0024 land with the first (they were numbered 0021 and 0022 when this spec was written; the sheet host and `<hp-chart>` took those numbers).
 
 The key words MUST, MUST NOT, SHOULD, SHOULD NOT and MAY are to be read as in RFC 2119.
 
@@ -23,7 +23,7 @@ Two of those pieces are drawn on the **Home** pane (`#tv`, `#hscenes`), which st
 Move Media into `src/features/media/`, in two pull requests:
 
 1. **The pane, and the kit's command layer.** `<hp-media-pane>` draws the pane header, the TV box and the speaker pods on the tablet and the device tiles on the phone, from `mediaModel`. The TV's integration-specific rules (which player is the TV, the Samsung platform, the wake-on-LAN button) sit in two providers behind `TvSource`; the speakers' rules are generic and sit in the feature. The commands go through `runCommand` in the kit, the optimistic state through `OptimisticController`, both reusable by every later control; `<hp-switch>` joins the kit with the TV's power switch as its first user. The class loses `renderMedia`, `renderMediaTiles`, `tvCmd`, `mpVol` and the media branches of `phoneCmd`.
-2. **The Home card, the scenes, and the deletion.** `<hp-tv-card>` and `<hp-scene-tiles>` are the feature's Home contributions; the guest **places them by tag** inside `#tv` and `#hscenes`, the first use of the bridge rule of ADR 0022 (the guest writes a feature element's tag and nothing else; the element gets everything from context). `tv()`, `speakers()`, `renderTV`, `tvBox`, `sceneTiles`, `renderScenes`, `runScene`, the Media line of `renderPaneSubs`, the containers' inner markup, the CSS rules and the French entries are deleted; `pend`, `pending` and `call` stay in the class for the controls that have not moved, and shrink with each move.
+2. **The Home card, the scenes, and the deletion.** `<hp-tv-card>` and `<hp-scene-tiles>` are the feature's Home contributions; the guest **places them by tag** inside `#tv` and `#hscenes`, the first use of the bridge rule of ADR 0024 (the guest writes a feature element's tag and nothing else; the element gets everything from context). `tv()`, `speakers()`, `renderTV`, `tvBox`, `sceneTiles`, `renderScenes`, `runScene`, the Media line of `renderPaneSubs`, the containers' inner markup, the CSS rules and the French entries are deleted; `pend`, `pending` and `call` stay in the class for the controls that have not moved, and shrink with each move.
 
 Each pull request leaves every baseline identical (`media-tablet-*`, `bare-media-tablet-light-en`, the `home-*` eight, the phone's Media sheet under More) and the French pane reads the same text from the catalog.
 
@@ -41,7 +41,7 @@ Each pull request leaves every baseline identical (`media-tablet-*`, `bare-media
 10. As a maintainer, I want the optimistic overlay to be a typed controller with per-key time-to-live, tested in Vitest without the DOM, so that "held until Home Assistant agrees" is a rule in one place.
 11. As a maintainer, I want the TV and speaker rules (which player, which name, which features) in pure functions tested against the test house and the recorded fixture, so that today's output is pinned before the code moves.
 12. As a maintainer, I want the TV, the speakers and the scenes to be elements the Home pane will compose unchanged in spec 24, so that the Home move is layout only.
-13. As a maintainer, I want the rule that lets the guest place a feature element written down (ADR 0022), so that the bridge is a known shape and not a hack, and its two uses are deleted with the Home move.
+13. As a maintainer, I want the rule that lets the guest place a feature element written down (ADR 0024), so that the bridge is a known shape and not a hack, and its two uses are deleted with the Home move.
 14. As a maintainer, I want `<hp-switch>` in the kit with the TV as its first user, so that the lights' Auto and Night switches and the Wallbox switch reuse it.
 15. As a maintainer, I want the behaviour tests to tap and read through the harness alone, including a command that fails, so that the tests survive the rewrite.
 16. As a learner, I want the command runner and the optimistic overlay explained as a **command** with compensation (Gamma et al.; Richardson's _Microservices Patterns_ for the compensating action), so that the shape is named.
@@ -52,15 +52,16 @@ Each pull request leaves every baseline identical (`media-tablet-*`, `bare-media
 
 ```
 src/providers/
-  tv-source.ts             TvSource (the port): present(states, registries), read(states, registries): TvInputs | null
+  tv-source.ts             TV_SOURCES and findTv; re-exports the port (TvSource: candidates, read(id, states, registries, naming): TvInputs)
   tv-entity.ts             any media_player with device_class 'tv': the generic adapter
   samsung-tv.ts            the Samsung platform: preferred when both exist; finds the wake-on-LAN button
+  tv-port.ts               the port's types (TvSource, TvInputs, TvNaming) and what the two adapters read the same way (the visible televisions, a set's area, name, state, input); apart from the list so the list can import the adapters without a cycle
 src/features/media/
   README.md
   index.ts                 mediaFeature: FeatureDescriptor; exports the Home cards
   ids.ts                   mediaIds(store): the TV, the speakers, the wake button, the scenes and modes
-  inputs.ts                readMedia(states, registries, config, sources): MediaInputs
-  speakers.ts              speakers(states, registries, names): SpeakerInputs[] (generic rules, pure)
+  inputs.ts                readMedia(states, registries, naming, sources): MediaInputs
+  speakers.ts              speakers(states, registries, names, tvId): Speaker[] (generic rules, pure; readMedia adds each one's state)
   model.ts                 mediaModel(inputs, overlay, deps): MediaViewModel
   scenes.ts                sceneTiles(states, registries, config, overlay, deps): SceneTileView[]
   commands.ts              the feature's commands: tvPower, tvVolume, tvMute, tvPlayPause, speakerPlayPause, speakerVolume, speakerSkip, runScene, setMode
@@ -88,7 +89,7 @@ test/e2e/media.spec.ts   (extends the existing file)
 Two adapters exist today in one function: `tv()` prefers the `samsungtv` platform and then looks for `button.wake_on_lan_*` whose name mentions the TV; any other `media_player` with `device_class` `tv` is the fallback. That is a **strategy** with two concrete strategies, so the seam is real.
 
 ```ts
-// src/providers/tv-source.ts
+// src/providers/tv-port.ts (the types) and tv-source.ts (the list and findTv, which re-exports them)
 export interface TvInputs {
   id: string; // media_player.*
   name: string; // the device's name_by_user through the resolver, else the platform's default, else the entity's name
@@ -102,23 +103,23 @@ export interface TvSource {
   readonly name: string; // 'tv-entity', 'samsung-tv'
   /** the players this source would pick, in preference order; the first present wins across sources */
   candidates(states: HassEntities, registries: Registries): string[];
-  read(id: string, states: HassEntities, registries: Registries, names: Names): TvInputs;
+  read(id: string, states: HassEntities, registries: Registries, naming: TvNaming): TvInputs; // TvNaming = {names: Names, t}: the resolver and the catalog
 }
 export const TV_SOURCES = [samsungTvSource, tvEntitySource]; // preference order: Samsung first, as the class does
-export function findTv(states, registries, names, sources = TV_SOURCES): TvInputs | null;
+export function findTv(states, registries, naming, sources = TV_SOURCES): TvInputs | null;
 ```
 
 - `samsungTvSource.candidates` returns the visible `media_player.*` with `platform === 'samsungtv'`; its `read` sets `name` to `names.name(deviceId)` when the device has `name_by_user`, else `t('media.samsungTv')` ("Samsung TV"), and `wakeButton` to the first `button.wake_on_lan_*` whose `friendly_name` matches `/tv/i` (a rule-feeding read of `friendly_name`, allowed by the conventions).
-- `tvEntitySource.candidates` returns the visible `media_player.*` with `device_class === 'tv'`; `read` names it through the resolver with "TV" as the fallback and leaves `wakeButton` null.
-- The two sit in `src/providers/` and import the core only. `Registries` is `{entities, devices, areas}` from `PanelHass` (spec 12's types).
+- `samsungTvSource.candidates` keeps the legacy filter: the player must also say `device_class === 'tv'`, as `tv()` does (a Samsung player that does not is no television and no speaker either). `tvEntitySource.candidates` returns the visible `media_player.*` with `device_class === 'tv'`; `read` names it through the resolver with "TV" as the fallback and leaves `wakeButton` null.
+- The two sit in `src/providers/` and import the core only; a hidden player is one whose registry row says `hidden: true` (the display registry Home Assistant's frontend gives), and is never a candidate. `Registries` is `{entities, devices, areas}` from `PanelHass` (spec 12's types).
 
 ### The speakers, the scenes and the modes are generic
 
-- `speakers(states, registries, names, tvId)` in `src/features/media/speakers.ts`: every visible `media_player.*` that is not the TV, not on the `unifiprotect` or `samsungtv` platforms, and sits in an area (`store.areaOf`); the name drops every word that also appears in the area's name as Home Assistant gives it or as the panel shows it ("HomePod mini Kitchen" in the Kitchen is "HomePod mini"); returns `{id, areaId, name}` sorted as `Object.keys` gives them today (insertion order; keep it, the baselines depend on it).
+- `speakers(states, registries, names, tvId)` in `src/features/media/speakers.ts`: every visible `media_player.*` that is not the TV, not on the `unifiprotect` or `samsungtv` platforms, and sits in an area (`store.areaOf`'s rule, over the registries the function is given); the name drops every word that also appears in the area's name as Home Assistant gives it or as the panel shows it ("HomePod mini Kitchen" in the Kitchen is "HomePod mini"); returns `{id, areaId, name}` sorted as `Object.keys` gives them today (insertion order; keep it, the baselines depend on it).
 - `sceneTiles` in `scenes.ts`: the visible `scene.*` ordered by `config.scenes` then alphabetically; then the `config.modes` `input_boolean`s that exist; a scene's sub-line is "Done" for four seconds after a run, else "Last {ago}" when its state parses as a date, else "Tap to run"; a mode's is On or Off with `aria-pressed`. The icon rule `sceneIcon(id)` (night, movie, dinner, away, else house) moves here unchanged.
 - Ids: `mediaIds(store)` is the TV id, the wake button, every speaker id, every scene id and every mode id; the pane and the two Home cards subscribe to the union, and the store's index means a light's change never reaches them.
 
-### Commands and the optimistic overlay (ADR 0021)
+### Commands and the optimistic overlay (ADR 0023)
 
 The class's three mechanisms become two kit modules and a feature file that uses them.
 
@@ -206,7 +207,7 @@ Every element is a humble object with a `StoreController`, an `AppearanceConsume
 - **`<hp-switch>`** (`src/ui/switch.ts`): a `button[role=switch]` with `checked` (reflected, `aria-checked`), `disabled`, `label` (`aria-label`); dispatches `change` with the new value; the `.sw` rules move from `base.css`, `motion.css` and `phone.css` into `src/ui/styles/switch.css` as `:host` rules. The class's `.sw` buttons (lights, Wallbox) keep reading the same text from the legacy concatenation until their moves.
 - **`<hp-tv-card>`** and **`<hp-scene-tiles>`**: the Home contributions; the first is the `#tv` card's `.top` line ("TV", the source on the right) and a `<hp-tv-box card>`; the second is the `#hscenes` row of `.ptile.scene` buttons from `sceneTiles` (`repeat` by id), each tap through `runScene`/`setMode`, the `ran` class for four seconds from the overlay. Both are placed by the guest (below).
 
-### The Home-card bridge (ADR 0022)
+### The Home-card bridge (ADR 0024)
 
 The Home pane and the idle screen are the shell's compositions (ADR 0017) and they move last. Until then the guest writes their markup. The rule that lets a feature's card appear there now:
 
@@ -243,13 +244,13 @@ Pull request 1, the pane and the command layer:
 1. `src/providers/{tv-source,tv-entity,samsung-tv}.ts`, `src/features/media/{README.md,index.ts,ids.ts,inputs.ts,speakers.ts,model.ts,commands.ts,media-pane.ts,tv-box.ts,speaker-pod.ts,media-tile.ts,styles.css}`, `src/ui/{commands.ts,switch.ts}`, `src/ui/controllers/optimistic.ts`, `src/core/timing.ts` exist with module headers; `FEATURES` has `mediaFeature` in place of `legacyFeature('media')`.
 2. Vitest: the two TV sources (Samsung preferred over a generic set when both exist; the wake button found by name; the device's `name_by_user` through the resolver; no TV → null), `speakers` (the TV excluded, the UniFi and Samsung platforms excluded, a player without an area excluded, the area's words dropped from the name), `mediaModel` from the full test house in `en` and `fr` (the pane's lines as literals from the baselines) and from the recorded fixture, the feature bits, every command as data (`tvPower` with and without a wake button), the pure `overlay` (held while different, released when equal, expired after ttl, string comparison), `runCommand` with a fake API (success toasts, failure releases only `holds` and toasts sticky, fallback runs once), `debounce`; all at 100 percent statements.
 3. Playwright `media.spec.ts`: check 7 unchanged (mute and power send their services); five taps on a speaker's `+` within 450 ms send one `volume_set` at the final level; play on a paused speaker shows the pause icon at once and `media_player.media_play` is sent; a failing `media_player.turn_on` (a new harness helper `window.house.failNext(/^media_player\.turn_on/)`) with a wake button present sends `button.press`, and without one shows the sticky toast and the switch returns to off; a thermostat change causes zero mutations in `hp-media-pane`'s root; axe clean on the tab and the phone's Media sheet.
-4. The French equivalence test passes for `test/unit/fixtures/moved/media.json`; every baseline identical; `npm run check`, `npm test -- --coverage`, `npm run lint` green; ADR 0021 (commands and the optimistic overlay) accepted; changeset (patch): "The Media tab is redrawn with the same look. Nothing visible changes."
+4. The French equivalence test passes for `test/unit/fixtures/moved/media.json`; every baseline identical; `npm run check`, `npm test -- --coverage`, `npm run lint` green; ADR 0023 (commands and the optimistic overlay) accepted; changeset (patch): "The Media tab is redrawn with the same look. Nothing visible changes."
 
 Pull request 2, the Home card, the scenes and the deletion:
 
 5. `<hp-tv-card>` and `<hp-scene-tiles>` exist and are placed by the guest through the bridge; `renderTV`, `tvBox`, `sceneTiles`, `renderScenes`, `runScene` are deleted; the `home-*` baselines (eight) and `bare-home-*` identical; the scene's "Done" shows for four seconds after a tap and `scene.turn_on` is sent (a behaviour test with the page clock); the TV card's switch and the pane's switch flip together on one tap (open the pane on a tablet after tapping the card's switch: both read on before the state arrives).
 6. The grep gates hold; the styles-split test passes with the media rules only in the feature's and the kit's files; the French map lost the listed entries; the class's line-count drop is quoted.
-7. ADR 0022 (the Home-card bridge: what the guest may write, what the element may dispatch, when it is deleted) accepted; `src/shell/guest.ts`'s header lists the two bridge uses; every baseline identical; all suites green; changeset (patch): "Internal rewiring of the TV card and the scenes row. Nothing visible changes."
+7. ADR 0024 (the Home-card bridge: what the guest may write, what the element may dispatch, when it is deleted) accepted; `src/shell/guest.ts`'s header lists the two bridge uses; every baseline identical; all suites green; changeset (patch): "Internal rewiring of the TV card and the scenes row. Nothing visible changes."
 
 ## Testing Decisions
 
