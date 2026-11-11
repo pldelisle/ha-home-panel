@@ -246,7 +246,8 @@
       }
     },
     {
-      "key": "media.tapToRun"
+      "key": "media.tapToRun",
+      "was": "Lancer"
     },
     {
       "key": "media.done"
@@ -256,20 +257,23 @@
       "values": {
         "kind": "minutes",
         "n": 5
-      }
+      },
+      "was": "Il y a 5 min"
     },
     {
       "key": "media.last",
       "values": {
         "kind": "hours",
         "n": 3
-      }
+      },
+      "was": "Il y a 3 h"
     },
     {
       "key": "media.last",
       "values": {
         "kind": "now"
-      }
+      },
+      "was": "À l'instant"
     },
     {
       "key": "media.last",
@@ -279,7 +283,8 @@
       },
       "fr": {
         "date": "7 nov."
-      }
+      },
+      "was": "Lancée le 7 nov."
     },
     {
       "key": "media.modeIsOff",

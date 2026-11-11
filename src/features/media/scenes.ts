@@ -1,7 +1,7 @@
 // sceneTiles: the Home scenes row, from the house's scenes and the config's modes, each with its icon and the line under it.
 // Pattern: a pure view-model function (a humble object's other half); the held values come in through `overlay`, the words
-// through `deps.t`, the time through `deps.fmt.ago` at an instant it is given. `sceneIcon` and the order rule copy the legacy
-// panel's `sceneIcon` and `sceneTiles`, which the Media move of #220 deletes.
+// through `deps.t`, the time through `deps.fmt.ago` at an instant it is given. `sceneIcon` and the order rule are the legacy
+// panel's `sceneIcon` and `sceneTiles`, which #220 deleted.
 // Must not: send a command, read `hass` or the clock, hold text for the household, or import the DOM, the kit or the shell.
 import type {ResolvedConfig} from '../../core/config.ts';
 import type {HassEntities, Registries} from '../../core/hass.ts';

@@ -129,19 +129,7 @@ test('a name with " · " in it is read as two parts', () => {
   expect(frText('Lights · Front door open')).toBe('Lumières · Front door : ouverte');
 });
 
-// #79: the phone's scene tiles, the Dinner scene's "Last 2 h ago" and the movie scene's "Tap to run", and the idle stack's
-// "Now playing" card were cut with an ellipsis in French; shorter words fit. Expected texts are written out, never built.
-test('the scene tile sub-lines are short in French', () => {
-  const frText = frTextFor([]);
-  // the translator capitalises the first letter when the English one is a capital
-  expect(frText('Last 2 h ago')).toBe('Il y a 2 h');
-  expect(frText('Last 5 min ago')).toBe('Il y a 5 min');
-  expect(frText('Last just now')).toBe("À l'instant");
-  expect(frText('Tap to run')).toBe('Lancer');
-  // a scene run on an earlier day keeps its date wording
-  expect(frText('Last Nov 3')).toBe('Lancée le 3 nov.');
-});
-
+// #79: the idle stack's "Now playing" card was cut with an ellipsis in French; shorter words fit. Expected texts are written out, never built.
 test('the idle stack card says "En lecture" and nothing else changed with it', () => {
   const frText = frTextFor([]);
   expect(frText('Now playing')).toBe('En lecture');

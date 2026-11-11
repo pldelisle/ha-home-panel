@@ -170,7 +170,6 @@
 }
 .app.gl .card,
 .app.gl .htile,
-.app.gl .ptile,
 .app.gl .hsec {
   background: var(--g-card);
   -webkit-backdrop-filter: var(--g-bd);
@@ -352,7 +351,6 @@
   .app.gl .toast:not(.err),
   .app.gl .card,
   .app.gl .htile,
-  .app.gl .ptile,
   .app.gl .hsec {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;

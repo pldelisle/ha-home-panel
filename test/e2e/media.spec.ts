@@ -257,7 +257,7 @@ test.describe('the Home scenes row', () => {
   });
 });
 
-// The row's container is the guest's: it shows and hides on the element's hp-empty, as renderScenes showed and hid it
+// The row's container is the guest's: it shows and hides on the element's hp-empty, as the legacy panel showed and hid it
 test.describe('the Home scenes row, in a house with no scene and no mode', () => {
   test.use({houseOpts: {house: 'bare'}});
 

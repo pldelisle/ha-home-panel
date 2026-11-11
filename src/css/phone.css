@@ -242,10 +242,6 @@
 .app.tabsv.cp .hscenes[hidden] {
   display: none;
 }
-.app.tabsv.cp .hscenes .ptile {
-  flex: 0 0 158px;
-  scroll-snap-align: start;
-}
 /* Lights: the strip, then the rows */
 .app.tabsv.cp #lhost {
   display: none;

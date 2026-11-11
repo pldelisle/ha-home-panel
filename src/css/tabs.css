@@ -377,40 +377,6 @@
 .hscenes[hidden] {
   display: none;
 }
-.hscenes .ptile {
-  border-radius: 22px;
-  padding: 12px;
-  min-height: 0;
-  display: grid;
-  grid-template-columns: 32px minmax(0, 1fr);
-  grid-template-rows: auto auto;
-  column-gap: 10px;
-  row-gap: 1px;
-  align-items: center;
-}
-.hscenes .ptile .pic {
-  grid-row: 1/3;
-  margin: 0;
-  width: 32px;
-  height: 32px;
-  border-radius: 10px;
-  background: transparent;
-}
-.hscenes .ptile b {
-  margin: 0;
-  align-self: end;
-  white-space: normal;
-  line-height: 1.2;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-}
-.hscenes .ptile small {
-  align-self: start;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
 .htiles {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

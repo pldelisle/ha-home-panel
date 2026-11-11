@@ -5,7 +5,8 @@ Scope: the migration to TypeScript and Lit in phases 0 to 4. Each phase ships as
 Decisions taken after review on 2026-11-07: ApexCharts stays (its replacement by ECharts is dropped), and the HACS integration (phase 5) is deferred, not scheduled.
 Phase 2 specified on 2026-11-08 (specs 09 to 13), with the owner's two additions of that day: the code base must teach the practices it uses (patterns named and sourced, decisions recorded as ADRs, the layering enforced by a linter), and the names people gave in Home Assistant follow the panel's language (`Salon` reads `Living room` in English), which reverses the "names are never translated" rule below; see the amendments in the phase-2 section.
 Phase 3 specified on 2026-11-09 (specs 14 and 15), with the owner's direction of that day: the design may go further than the minimum where it teaches (explicit interfaces, composition, named patterns, performance by construction), see the amendments in the phase-3 section.
-Specs 16 to 26 written on 2026-11-09, the same day, from the recipe of spec 15: every move of phase 3 is specified; the ADRs they land are 0021 to 0029.
+Specs 16 to 26 written on 2026-11-09, the same day, from the recipe of spec 15: every move of phase 3 is specified; the ADRs they land are 0021 to 0029 (Media's landed as 0023 and 0024: the sheet host and `<hp-chart>` took 0021 and 0022).
+Media (spec 16) has moved, 2026-11-11, #215 to #220: the legacy panel keeps only `speakers()` and `tv()` for the now-playing stack card, until #266.
 
 ## Child specs
 
