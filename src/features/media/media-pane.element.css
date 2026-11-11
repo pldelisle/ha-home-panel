@@ -1,10 +1,10 @@
 /*
  * <hp-media-pane>'s own rules: its place in the pane section, the header's, the two cards with the speakers' line and list, the
  * phone's list of tiles and a card in the sheet a tile opens. Known copies of legacy rules: `.card` and `.card .top` (base.css,
- * glass.css), `.lbl` and `.hint` (base.css) and the card sheet's `#cardhost > .card` (phone.css), which every other legacy pane's
- * cards and the water and Hilo tiles' sheet still draw; `.pane-media` and its header (tabs.css), the section's own rules, which no
- * Media gate lists. Selectors differ (`.mcard`) because the styles-split test lets one file write a selector, and a shadow root
- * cannot reach the legacy rule anyway.
+ * glass.css), `.lbl` and `.hint` (base.css), which every other legacy pane's cards still draw; the card sheet's `#cardhost > .card`
+ * (phone.css), whose last users, the water and Hilo tiles, #239 moves, and which no ticket's gate deletes yet (spec 19's do not
+ * list it); `.pane-media` and its header (tabs.css), the section's own rules, which no Media gate lists. Selectors differ (`.mcard`)
+ * because the styles-split test lets one file write a selector, and a shadow root cannot reach the legacy rule anyway.
  */
 /* the tablet's two columns, the television's card and the speakers' card under the header, one column under 1000 pixels */
 :host {
@@ -81,7 +81,7 @@ hp-pane-header {
   grid-template-columns: 1fr;
   gap: 12px;
 }
-/* a card in the sheet a tile opens, as the legacy card sheet draws one */
+/* a card in the sheet a tile opens, as the legacy card sheet draws one (`#cardhost > .card`, phone.css) */
 hp-sheet > .mcard {
   padding: 14px;
   border-radius: 18px;

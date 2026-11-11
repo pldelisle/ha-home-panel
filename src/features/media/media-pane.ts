@@ -51,14 +51,13 @@ export class MediaPane extends LitElement {
   }
 
   // The pause and the resume sit in willUpdate: a resume asks for an update, and one asked for here is this one. A tile's sheet
-  // over another tab shows the pane's tab behind it, but it is the sheet that is on screen, and it follows the players.
+  // opens from the tab and over it, so it is on screen only while the pane is.
   protected override willUpdate(changed: PropertyValues<this>): void {
-    const shown = this.active || this.controlsKey !== undefined;
-    if (changed.has('active') || changed.has('controlsKey')) {
-      if (shown) this.storeController.resume();
+    if (changed.has('active')) {
+      if (this.active) this.storeController.resume();
       else this.storeController.pause();
     }
-    if (!shown) return;
+    if (!this.active) return;
     const {store} = this.storeController;
     const {hass} = store;
     if (!hass) return;
@@ -75,8 +74,6 @@ export class MediaPane extends LitElement {
     if (!view) return nothing;
     const {t} = this.storeController.store;
     const compact = this.appearance.value?.compact === true;
-    // the sheet over another tab: the pane is behind it and draws nothing but the sheet, so the tab stays
-    if (!this.active && this.controlsKey !== undefined && compact) return this.renderSheet(view);
     return html`<hp-pane-header .icon=${'tv'} .color=${'var(--c-home)'} .heading=${t('media.title')}>
         <div slot="sub">${view.summary}</div>
       </hp-pane-header>
@@ -143,8 +140,13 @@ export class MediaPane extends LitElement {
       .closeLabel=${t('media.close')}
       @sheet-close=${this.dismissControls}
     >
-      ${!tile ? nothing : tile.kind === 'tv' && view.tv ? this.renderTvCard(view.tv) : this.renderSpeakersCard(view)}
+      ${tile ? this.sheetCard(tile, view) : nothing}
     </hp-sheet>`;
+  }
+
+  // what a tile's sheet holds: the television's card for its tile, the speakers' card for a speaker's
+  private sheetCard(tile: MediaTileView, view: MediaViewModel) {
+    return tile.kind === 'tv' && view.tv ? this.renderTvCard(view.tv) : this.renderSpeakersCard(view);
   }
 
   // the sheet's Close button, its backdrop and its swipe: the host closes it, the pane only says so

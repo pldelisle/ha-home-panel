@@ -23,8 +23,6 @@ export const mediaFeature: FeatureDescriptor = {
     const registries = {entities: hass.entities, devices: hass.devices, areas: hass.areas};
     return mediaBrief(readMedia(hass.states, registries, store.names), store.t);
   },
-  // a tile's controls are over the screen: the pane stays in the page behind them, whichever tab is shown
-  overSheets: [CONTROLS_SHEET],
   pane: env =>
     html`<hp-media-pane
       .controlsKey=${env.sheetOpen(CONTROLS_SHEET) ? controlsKeyOf(env.sheetDetail(CONTROLS_SHEET)) : undefined}

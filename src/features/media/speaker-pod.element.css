@@ -1,8 +1,8 @@
 /*
  * <hp-speaker-pod>'s own rules: the cover, the room and the track, the volume stepper and the play button, and on a phone (the sheet a
  * speaker's tile opens) the room and play on one row with the volume under them, as the legacy `.app.cp .pod` rules had it.
- * Known copies of the legacy `.stepper` (extra.css, glass.css, motion.css) and `.pp` (motion.css) rules, read here as `.vol` and
- * `.play`: `.stepper` stays while the climate controls and Air draw it (spec 18 promotes it to the kit), and #220 deletes `.pp`.
+ * Known copies of the legacy `.stepper` rules (extra.css, glass.css, motion.css), read here as `.vol`, which stay while the climate
+ * controls and Air draw them (spec 18 promotes them to the kit); the play button, `.play`, began as the legacy `.pp`, which #218 deleted.
  * The selectors differ because the styles-split test lets one file write a selector, and a shadow root cannot reach the legacy rule.
  */
 /* no box of its own: the pod is the item of the pane's list */
