@@ -440,6 +440,7 @@ export const fr: Record<MessageKey, string> = {
   'air.cleanAir': 'Air pur',
   'air.roomWhy': '{name} : {detail}',
   'air.outsideAqi': 'IQA extérieur',
+  'air.open': "Ouvrir les détails de la qualité de l'air",
   'air.purifierOffline': 'Purificateur hors ligne',
   'air.fanOff': 'Ventilateur éteint',
   'air.automagic': 'Automagic',

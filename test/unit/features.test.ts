@@ -5,6 +5,7 @@ import {en} from '../../src/core/i18n/en.ts';
 import {fr} from '../../src/core/i18n/fr.ts';
 import {resolveConfig} from '../../src/core/config.ts';
 import {createStore} from '../../src/core/store.ts';
+import {airFeature} from '../../src/features/air/index.ts';
 import {mediaFeature} from '../../src/features/media/index.ts';
 import {weatherFeature} from '../../src/features/weather/index.ts';
 import * as full from '../houses/full.mjs';
@@ -161,5 +162,25 @@ describe('the Media descriptor', () => {
   test('says the television and the speakers that play under More, and nothing before the house has been heard', () => {
     expect(mediaFeature.summary?.(env(fakeHass.fromHouse(full)))).toBe('TV on · 1 speaker playing');
     expect(mediaFeature.summary?.(env())).toBeNull();
+  });
+});
+
+describe('the Air descriptor', () => {
+  const env = (line: string | null) => ({
+    store: createStore({defaultTimeZone: 'America/Toronto', resolve: resolveConfig}),
+    guest: {availability: () => ({}), moreLine: (key: string) => (key === 'air' ? line : 'other')},
+    sheetOpen: () => false,
+    sheetDetail: () => undefined,
+  });
+
+  test("is the registry's own and always shown", () => {
+    expect(FEATURES.find(f => f.key === 'air')).toBe(airFeature);
+    expect(airFeature.available).toBeUndefined();
+  });
+
+  // the More sheet's baselines read the legacy word ("Good"), not the pane's sub-line ("1 purifier · Good"): it stays the guest's until #234
+  test("says the guest's word for Air under More", () => {
+    expect(airFeature.summary?.(env('Good'))).toBe('Good');
+    expect(airFeature.summary?.(env(null))).toBeNull();
   });
 });

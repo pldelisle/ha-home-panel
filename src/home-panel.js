@@ -800,6 +800,7 @@ export class LegacyPanel {
     if (this.framed) this.ctx.shell.resetFrame();
     this.framed = true;
     // the shell drew the frame (the header, the rail, the panes); the guest draws what is not in it: the parked cards, the sheets, the idle clock, the toast
+    // (the Air card is <hp-air-card>, placed by the Air pane: `#open-air` and `#air` hold nothing, the Home bridge's hosts until the Home move, #268)
     this.container.innerHTML = `<div class="cols">
     <div class="col c1">
       <div class="card tap" id="open-energy" tabindex="0" role="button" aria-description="Open home energy details"><div id="energy"></div></div>
@@ -1949,7 +1950,6 @@ export class LegacyPanel {
       'renderEnergy',
       'renderLights',
       'renderClimate',
-      'renderAir',
       'renderCarCard',
       'renderWater',
       'renderHilo',
@@ -3442,42 +3442,6 @@ export class LegacyPanel {
       .join(' · ');
     return {A, worst, good, why};
   }
-  renderAir() {
-    const P = this.purifiers();
-    if (!P.rooms.length) {
-      this.set(
-        'air',
-        '<div class="top"><span class="lbl">Air quality</span><span class="right">No purifiers found</span></div>',
-      );
-      return;
-    }
-    const {A, worst, good, why} = this.airSummary(P),
-      o = P.outside,
-      oa = o && this.num(o.aqi),
-      ol = outLevel(oa);
-    const head =
-      worst <= 0
-        ? `${good === A.length ? `All ${plural(A.length, 'room')} clean` : `${good} of ${A.length} rooms clean`}`
-        : esc(why);
-    this.set(
-      'air',
-      `<div class="top"><span class="lbl">Air quality</span><span class="right">${oa == null ? '' : `Outside AQI <b class="num" style="color:var(--fg)">${Math.round(oa)}</b> ${AQ_LVL[ol][0]}`}<span class="go">›</span></span></div>
-      <div class="aqsum lv${Math.max(0, worst)}"><span class="state"><i></i>${worst < 0 ? 'No data' : AQ_LVL[worst][0]}</span><span class="why">${head}</span></div>
-      <div class="rooms">${A.map(({r, a}) => {
-        const f = this.st(r.fan),
-          auto = f && f.attributes.preset_mode === 'Automagic',
-          pct = f && f.state === 'on' ? f.attributes.percentage : 0;
-        const m = k => {
-          const v = this.num(r.s[k]);
-          return `<span class="${aqLevel(k, v) > 0 ? 'hi' : ''}"><b class="num">${aqFmt(this.fmtEn, k, v, true)}</b><small>${AQ[k].name}</small></span>`;
-        };
-        return `<div class="room aqroom lv${Math.max(0, a.worst)}"><div class="n"><i></i>${esc(r.name)}</div>
-          <div class="aqm">${m('pm2_5')}${m('co2')}${m('voc')}</div>
-          <div class="s">${!f || !ok(f) ? 'Purifier offline' : f.state !== 'on' ? 'Fan off' : `${auto ? 'Automagic' : 'Manual'} · ${pct}%`}${this.num(r.s.humidity) == null ? '' : ` · ${Math.round(this.num(r.s.humidity))}% RH`}</div></div>`;
-      }).join('')}</div>`,
-    );
-  }
-
   // detail sheet: rooms with their purifier controls, one chart per pollutant, outside air
   airSheet() {
     this.airRange = this.airRange || 'day';
@@ -3935,7 +3899,7 @@ export class LegacyPanel {
         const el = this.$(id);
         if (el && h && el.parentNode !== h) h.appendChild(el);
       };
-    const homes = {'open-car': 'carhost', 'open-energy': 'ehost', 'open-air': 'airhost'};
+    const homes = {'open-car': 'carhost', 'open-energy': 'ehost'};
     for (const [id, host] of Object.entries(homes)) mv(id, compact ? this.$(host) : col);
   }
   renderCompact() {
@@ -3966,22 +3930,6 @@ export class LegacyPanel {
               .filter(Boolean)
               .join(' · ')
           : 'No FordPass car found.',
-      );
-    }
-    if (this.tab === 'air') {
-      const P = this.purifiers(),
-        a = P.rooms.length ? this.airSummary(P) : null;
-      this.set(
-        'asub2',
-        !a
-          ? 'No purifiers found'
-          : [
-              plural(P.rooms.length, 'purifier'),
-              a.worst < 0 ? 'no data' : AQ_LVL[a.worst][0],
-              a.worst > 0 ? esc(a.why) : '',
-            ]
-              .filter(Boolean)
-              .join(' · '),
       );
     }
   }

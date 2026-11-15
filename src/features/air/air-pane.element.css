@@ -1,0 +1,15 @@
+/*
+ * <hp-air-pane>'s own rules: it lays out nothing, so the header and the card are items of the pane section's own column (`.pane-air`,
+ * phone.css: sixteen pixels between them), as the old summary pane's were. On a tablet the header is not shown, as the old summary
+ * panes' were, and the section holds the detail panel the sheet host moves into it. The section's rules stay with the shell's panes.
+ */
+:host {
+  display: contents;
+}
+hp-pane-header {
+  display: none;
+}
+:host([compact]) hp-pane-header {
+  display: block;
+  margin-bottom: 0;
+}

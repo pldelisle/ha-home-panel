@@ -442,6 +442,7 @@ export const en = {
   'air.cleanAir': 'Clean air',
   'air.roomWhy': '{name}: {detail}',
   'air.outsideAqi': 'Outside AQI',
+  'air.open': 'Open air quality details',
   'air.purifierOffline': 'Purifier offline',
   'air.fanOff': 'Fan off',
   'air.automagic': 'Automagic',

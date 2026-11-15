@@ -381,58 +381,18 @@
   color: var(--fg2);
   min-width: 0;
 }
-.lv0 .state i,
-.aqroom.lv0 .n i {
+.lv0 .state i {
   background: var(--ok);
 }
-.lv1 .state i,
-.aqroom.lv1 .n i {
+.lv1 .state i {
   background: var(--warn);
 }
-.lv2 .state i,
-.aqroom.lv2 .n i {
+.lv2 .state i {
   background: var(--crit);
 }
-.aqroom {
-  padding-bottom: 10px;
-}
-.aqroom .n {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.aqroom .n i {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  flex: none;
-}
-.aqm {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 4px;
-  margin: 8px 0 6px;
-}
-.aqm span {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-.aqm b {
-  font-size: calc(17px * var(--tx));
-  line-height: 1.15;
-  white-space: nowrap;
-}
-.aqm small {
-  font-size: calc(11px * var(--tx));
-  color: var(--fg2);
-  font-weight: 600;
-}
-.aqm .hi b,
 .aqt .hi .v {
   color: var(--t-warn);
 }
-.lv2 .aqm .hi b,
 .lv2 .aqt .hi .v {
   color: var(--crit);
 }
