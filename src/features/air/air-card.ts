@@ -17,8 +17,8 @@ import {forShadow} from '../../ui/styles/host.ts';
 
 type Card = AirViewModel['card'];
 /** The card of a house with purifiers; the other is the title with "No purifiers found". */
-type Body = Extract<Card, {empty: false}>;
-const isFilled = (card: Card): card is Body => !card.empty;
+type FilledCard = Extract<Card, {empty: false}>;
+const isFilledCard = (card: Card): card is FilledCard => !card.empty;
 
 export class AirCard extends LitElement {
   static override properties = {
@@ -56,7 +56,7 @@ export class AirCard extends LitElement {
         @click=${this.open}
         @keydown=${this.onKey}
       >
-        ${isFilled(view) ? this.renderBody(view) : this.renderEmpty(view)}
+        ${isFilledCard(view) ? this.renderFilled(view) : this.renderEmpty(view)}
       </div>
       ${lensLike(this.getRootNode())}`;
   }
@@ -66,7 +66,7 @@ export class AirCard extends LitElement {
   }
 
   // the figure's words and the `›` are direct children of `.right`, as the legacy card wrote them: the flex gap is between each
-  private renderBody(view: Body) {
+  private renderFilled(view: FilledCard) {
     const {outside, state, rooms} = view;
     return html`<div class="top">
         <span class="lbl">${view.title}</span
