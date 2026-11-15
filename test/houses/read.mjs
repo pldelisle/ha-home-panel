@@ -90,6 +90,15 @@ function automationRuns(automations, now, timeZone) {
 /** How far apart the recorder's points are, and how many the panel gets, for each period (an unknown period reads as a day). */
 const PERIODS = {'5minute': {step: 3e5, n: 300}, hour: {step: 36e5, n: 170}, day: {step: 864e5, n: 60}};
 
+/** The air sensors' own ranges, `[base, swing]` by id suffix: a reading drifts by `swing` around `base`; the rest keep the generic curve. */
+const AIR_CURVES = [
+  [/_pm2_5$/, 14, 12],
+  [/_co2$/, 560, 260],
+  [/_voc$/, 140, 120],
+  [/_humidity$/, 34, 10],
+  [/_aqi$/, 36, 18],
+];
+
 /** Smooth made-up curves for the recorder's statistics, one series per known entity id. */
 function statisticsOf(states, now, ids, period) {
   const out = {},
@@ -100,7 +109,14 @@ function statisticsOf(states, now, ids, period) {
     for (let i = n; i >= 0; i--) {
       const t = now - i * step,
         w = Math.sin(i / 6) * 0.5 + 0.5;
-      const v = /temperature/.test(id) ? 19 + 3 * w : /power/.test(id) ? 0.4 + 2 * w : 10 + 5 * w;
+      const air = AIR_CURVES.find(([re]) => re.test(id)),
+        v = air
+          ? air[1] + air[2] * w
+          : /temperature/.test(id)
+            ? 19 + 3 * w
+            : /power/.test(id)
+              ? 0.4 + 2 * w
+              : 10 + 5 * w;
       out[id].push({
         start: t,
         end: t + step,
