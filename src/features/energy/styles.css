@@ -1,10 +1,9 @@
 /*
- * The Energy feature's shared rules (spec 19, "Styles"): the box the three cards draw (`.ebox`), its title line (`.etop`) and the card's
- * chevron (`.ego`), adopted by `<hp-energy-card>`, `<hp-water-card>` and `<hp-hilo-card>` through `forShadow`, so a rule is written once
- * (ADR 0019). The box draws on an inner element, so the guest's lens backdrop reaches it from the root the rule's element is in. Known
- * copies of rules the legacy panel's other cards still draw, each read under the Energy cards' own selector: `.card`, `.card .top`,
- * `.card .top .right`, `.lbl` and `.go` (base.css, glass.css), and `#cardhost > .card`, the card inside a sheet (phone.css), which #239
- * deleted with its last users, as `[framed]`. The Home move (#268) deletes the legacy rules the other cards still read.
+ * The Energy feature's shared rules (spec 19, "Styles"): the box the three cards draw (`.ebox`), its title line (`.etop`) and the card's chevron
+ * (`.ego`), adopted by the three card elements through `forShadow`, so each is written once (ADR 0019); the box draws on an inner element, so the
+ * guest's lens backdrop reaches it. Known copies of legacy rules the panel's other cards still draw, each under an Energy selector: `.card`,
+ * `.card .top`, `.card .top .right`, `.lbl` and `.go` (base.css, glass.css), which the Home move (#268) deletes; `:host([framed])`, the card inside
+ * a sheet, is the only copy left of `#cardhost > .card` (phone.css), which #239 deleted along with its last users.
  */
 .ebox {
   background: var(--card);

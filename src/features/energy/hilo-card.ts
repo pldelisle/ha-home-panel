@@ -3,10 +3,10 @@
 // tile opens (`framed`).
 // Must not: read an entity or word a string (the model does), choose the tier's colour from a text (the model says `ok`), or open anything.
 import {LitElement, html, nothing, unsafeCSS} from 'lit';
-import {repeat} from 'lit/directives/repeat.js';
 import type {EnergyViewModel} from './model.ts';
 import ownCss from './hilo-card.element.css?inline';
 import energyShared from './styles.css?inline';
+import {tileList} from './tile-list.ts';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {lensLike} from '../../ui/lens.ts';
 import {common, hero, tiles} from '../../ui/styles/index.ts';
@@ -22,7 +22,7 @@ export class HiloCard extends LitElement {
   /** Drawn inside a sheet, where the box is a little tighter, as the legacy card sheet drew a card. */
   declare framed: boolean;
 
-  // The kit's hero and tiles, the feature's box (styles.css), and the element's own rules last (hilo-card.element.css).
+  // The kit's hero and tiles, the feature's box (styles.css), and the element's own rules, its `:host`, the tiles' three columns and the dot, last (hilo-card.element.css).
   static override styles = [common, hero, tiles, unsafeCSS(forShadow(energyShared)), unsafeCSS(forShadow(ownCss))];
 
   constructor() {
@@ -44,17 +44,7 @@ export class HiloCard extends LitElement {
           <div class="v num">${rate.value}<small>${rate.unit}</small></div>
           <span class="state"><i class=${tier.ok ? 'ok' : 'warn'}></i>${tier.text}</span>
         </div>
-        <div class="tiles" style="grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 14px">
-          ${repeat(
-            view.tiles,
-            tile => tile.label,
-            tile =>
-              html`<div class="tile">
-                <div class="k">${tile.label}</div>
-                <div class="v num">${tile.value}<small>${tile.unit}</small></div>
-              </div>`,
-          )}
-        </div>
+        <div class="tiles">${tileList(view.tiles)}</div>
       </div>
       ${lensLike(this.getRootNode())}`;
   }

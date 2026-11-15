@@ -27,6 +27,7 @@ src/features/energy/
   power-flow.ts            <hp-power-flow>: the five rings and four lines, placed with svg templates from flowLayout
   water-card.ts            <hp-water-card>: the hero, the 24-hour chart from waterChartGeometry, its legend and the cycles line
   hilo-card.ts             <hp-hilo-card>: the hero with the rate and the tier, three tiles
+  tile-list.ts             tileList(tiles): the kit's tile markup the Energy card and Hilo's card both place
   styles.css               the box, the title line and the chevron the three cards share (adopted, not joined into the legacy sheet)
 src/ui/
   thin-axis.ts             thinCategories(cats, phone, wide, compact): the phone's category thinning for a bar chart's axis

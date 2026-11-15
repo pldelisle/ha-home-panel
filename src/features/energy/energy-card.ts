@@ -3,12 +3,12 @@
 // to be placed by any pane, the Home tab's later (spec 24). Its box is a button that asks the shell for the detail (ADR 0021).
 // Must not: read an entity or the clock, word a string (the model does), or open the sheet (it asks).
 import {LitElement, html, nothing, unsafeCSS} from 'lit';
-import {repeat} from 'lit/directives/repeat.js';
 import type {EnergyViewModel} from './model.ts';
 import './power-flow.ts'; // defines <hp-power-flow>
 import {DETAIL_SHEET} from './sheets.ts';
 import cardOwn from './energy-card.element.css?inline';
 import energyShared from './styles.css?inline';
+import {tileList} from './tile-list.ts';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {SheetRequestEvent} from '../../ui/events.ts';
 import {lensLike} from '../../ui/lens.ts';
@@ -20,7 +20,7 @@ export class EnergyCard extends LitElement {
   /** The model's card: the title, the rate line, the flow's geometry, the four tiles and the history's error line. */
   declare view: EnergyViewModel['card'] | undefined;
 
-  // The kit's tiles, the feature's box (styles.css), and the element's own rules, its `:host` and the tap's, last (energy-card.element.css).
+  // The kit's tiles, the feature's box (styles.css), and the element's own rules, its `:host`, the tap's and the tiles' place, last (energy-card.element.css).
   static override styles = [common, tiles, unsafeCSS(forShadow(energyShared)), unsafeCSS(forShadow(cardOwn))];
 
   constructor() {
@@ -49,18 +49,7 @@ export class EnergyCard extends LitElement {
           <span class="elbl">${view.title}</span><span class="eright">${view.topRight}<span class="ego">›</span></span>
         </div>
         <hp-power-flow .geometry=${view.flow}></hp-power-flow>
-        <div class="tiles" style="margin-top: 6px">
-          ${repeat(
-            view.tiles,
-            tile => tile.label,
-            tile =>
-              html`<div class="tile">
-                <div class="k">${tile.label}</div>
-                <div class="v num">${tile.value}<small>${tile.unit}</small></div>
-                ${tile.sub ? html`<div class="s">${tile.sub}</div>` : nothing}
-              </div>`,
-          )}
-        </div>
+        <div class="tiles">${tileList(view.tiles)}</div>
         ${view.error === null ? nothing : html`<p class="enote">${view.error}</p>`}
       </div>
       ${lensLike(this.getRootNode())}`;

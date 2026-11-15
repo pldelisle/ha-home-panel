@@ -32,6 +32,9 @@ const SECTIONS = {
   water: {sheet: WATER_SHEET, icon: 'drop', color: 'var(--c-wh)', tone: 'wide'},
   hilo: {sheet: HILO_SHEET, icon: 'bolt', color: 'var(--c-grid)', tone: 'wide grid'},
 } as const satisfies Record<string, {sheet: string; icon: IconName; color: string; tone: string}>;
+type SectionKey = keyof typeof SECTIONS;
+/** A tile's or a sheet's key names one of the two sections (a stale tile of Home may name another). */
+const isSection = (key: string | undefined): key is SectionKey => key !== undefined && Object.hasOwn(SECTIONS, key);
 
 export class EnergyPane extends LitElement {
   static override properties = {
@@ -175,14 +178,15 @@ export class EnergyPane extends LitElement {
   // The two cards' sheets exist only for the sections the house has and hold their card only while open, so a closed sheet holds no chart.
   private renderSheets({water, hilo}: EnergyViewModel) {
     const {t} = this.storeController.store;
-    const sheet = (key: 'water' | 'hilo', open: boolean, heading: string, card: TemplateResult) =>
+    const sheet = (key: SectionKey, open: boolean, heading: string, card: TemplateResult) =>
       html`<hp-sheet
+        data-key=${key}
         .open=${open}
         .icon=${SECTIONS[key].icon}
         .color=${SECTIONS[key].color}
         .heading=${heading}
         .closeLabel=${t('energy.close')}
-        @sheet-close=${key === 'water' ? this.dismissWater : this.dismissHilo}
+        @sheet-close=${this.dismiss}
       >
         ${open ? card : nothing}
       </hp-sheet>`;
@@ -212,22 +216,18 @@ export class EnergyPane extends LitElement {
 
   // arrow fields, so the template hands the same functions at every render
 
-  // a sheet's Close button, its backdrop and its swipe: the host closes it, the pane only says so
-  private readonly dismissWater = (e: Event): void => {
+  // a sheet's Close button, its backdrop and its swipe: the host closes it, the pane only says so; the sheet's `data-key` names its section
+  private readonly dismiss = (e: Event): void => {
     e.stopPropagation();
-    this.dispatchEvent(new SheetDismissEvent(WATER_SHEET));
-  };
-
-  private readonly dismissHilo = (e: Event): void => {
-    e.stopPropagation();
-    this.dispatchEvent(new SheetDismissEvent(HILO_SHEET));
+    const key = (e.currentTarget as HTMLElement).dataset.key;
+    if (isSection(key)) this.dispatchEvent(new SheetDismissEvent(SECTIONS[key].sheet));
   };
 
   // the tile's event stops here: what it asks for is a sheet, which is the shell's to open
   private readonly onTile = (e: CustomEvent<TileOpenDetail>): void => {
     e.stopPropagation();
-    const key = e.detail.key;
-    if (key === 'water' || key === 'hilo') this.dispatchEvent(new SheetRequestEvent(SECTIONS[key].sheet));
+    const {key} = e.detail;
+    if (isSection(key)) this.dispatchEvent(new SheetRequestEvent(SECTIONS[key].sheet));
   };
 }
 
