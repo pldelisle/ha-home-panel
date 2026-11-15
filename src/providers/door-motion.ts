@@ -5,7 +5,7 @@
 // Must not: word anything a person reads ("Open", "for 12 min"), read the clock, or know a screen.
 import type {HassEntities, Registries} from '../core/hass.ts';
 import type {Names} from '../core/i18n/names.ts';
-import {areaOf, isHidden} from '../core/registry.ts';
+import {areaOf, entitiesByDevice, isHidden, nameOwner} from '../core/registry.ts';
 import {isAvailable, numberOf} from '../core/states.ts';
 
 export type SensorKind = 'door' | 'motion';
@@ -49,16 +49,6 @@ export function sensorKind(deviceClass: unknown): SensorKind | null {
 /** A French house names its motion sensors "Détecteur de mouvement Hall": the kind says so, the name need not. */
 const withoutPrefix = (name: string): string => name.replace(/^d[ée]tecteur\s+(de\s+)?mouvement\s+/i, '');
 
-/** The entity ids of each device, in the registry's order, so a sibling is found without a scan per sensor. */
-function entitiesByDevice(registries: Registries): Map<string, string[]> {
-  const byDevice = new Map<string, string[]>();
-  for (const entry of Object.values(registries.entities ?? {})) {
-    if (!entry.device_id) continue;
-    byDevice.set(entry.device_id, [...(byDevice.get(entry.device_id) ?? []), entry.entity_id]);
-  }
-  return byDevice;
-}
-
 /**
  * Every visible, primary binary sensor with a door or motion class that is not Protect's (its motion shows on the camera
  * tile), doors first, then by name.
@@ -72,9 +62,7 @@ export function doorMotionSensors(states: HassEntities, registries: Registries, 
     const deviceClass = states[id].attributes.device_class;
     const kind = sensorKind(deviceClass);
     if (!kind || entry?.platform === 'unifiprotect' || isHidden(id, registries) || entry?.entity_category) continue;
-    const deviceId = entry?.device_id ?? '';
-    const device = registries.devices?.[deviceId];
-    const siblings = byDevice.get(deviceId) ?? [];
+    const siblings = byDevice.get(entry?.device_id ?? '') ?? [];
     const sibling = (pattern: RegExp): string | null => siblings.find(sibling => pattern.test(sibling)) ?? null;
     const batteryId = sibling(/^sensor\..*_battery$/);
     const illuminanceId = sibling(/^sensor\..*_illuminance$/);
@@ -85,7 +73,7 @@ export function doorMotionSensors(states: HassEntities, registries: Registries, 
       deviceClass: deviceClass as string,
       areaId: areaId || null,
       area: areaId ? names.name(areaId) : '',
-      name: withoutPrefix(device?.name_by_user || device?.name ? names.name(deviceId) : names.name(id)),
+      name: withoutPrefix(names.name(nameOwner(id, registries))),
       on: states[id].state === 'on',
       available: isAvailable(states[id]),
       since: Date.parse(states[id].last_changed),
