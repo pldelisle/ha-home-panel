@@ -7,7 +7,7 @@
 import type {Messages} from '../../core/i18n/messages.ts';
 import type {Names} from '../../core/i18n/names.ts';
 import type {Overlay} from '../../ui/overlay-store.ts';
-import {K, volumeLevel} from './commands.ts';
+import {K} from './commands.ts';
 import type {MediaInputs, SpeakerInputs} from './inputs.ts';
 import type {TvInputs} from '../../providers/tv-source.ts';
 
@@ -17,9 +17,6 @@ type Translate = Messages['t'];
 const PAUSE = 1; // MediaPlayerEntityFeature.PAUSE = 1
 const VOLUME_SET = 4; // MediaPlayerEntityFeature.VOLUME_SET = 4
 const PLAY = 16384; // MediaPlayerEntityFeature.PLAY = 16384
-
-/** A tap on the stepper's − or +: five percent, as the legacy stepper. */
-const VOLUME_STEP = 0.05;
 
 export interface MediaModelDeps {
   t: Translate;
@@ -70,11 +67,8 @@ export interface VolumeView {
   label: string;
   downLabel: string;
   upLabel: string;
-  atMin: boolean;
-  atMax: boolean;
-  /** The levels a tap on − and on + asks for: the shown level and a step, as a player takes it (`volumeLevel`). */
-  down: number;
-  up: number;
+  /** The shown level, 0 to 1: the held or the reported one. The stepper takes its steps and bounds from it. */
+  level: number;
 }
 
 export interface SpeakerView {
@@ -221,10 +215,7 @@ function speakerView(speaker: SpeakerInputs, {t, overlay, names}: MediaModelDeps
             label: t('media.volumeOf', {room}),
             downLabel: t('media.volumeDown'),
             upLabel: t('media.volumeUp'),
-            atMin: volume <= 0,
-            atMax: volume >= 1,
-            down: volumeLevel(volume - VOLUME_STEP),
-            up: volumeLevel(volume + VOLUME_STEP),
+            level: volume,
           }
         : null,
     playPause: {

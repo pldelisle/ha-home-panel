@@ -18,7 +18,7 @@ export default defineConfig({
         'src/core/**/*.ts',
         'src/providers/**/*.ts',
         'src/features/*/{ids,inputs,model,speakers,tiles,history,scenes,commands}.ts', // the pure files; the elements are proven by the harness
-        'src/ui/ranges.ts', // the kit's pure files; its elements are proven by the harness
+        'src/ui/{ranges,steps}.ts', // the kit's pure files; its elements are proven by the harness
         'src/ui/commands.ts', // the command layer: the runner, the store and its controller are tested with fakes (ADR 0023)
         'src/ui/overlay-store.ts',
         'src/ui/controllers/optimistic.ts',
@@ -45,6 +45,7 @@ export default defineConfig({
         'src/providers/**/*.ts': {statements: 100},
         'src/features/*/{ids,inputs,model,speakers,tiles,history,scenes,commands}.ts': {statements: 100},
         'src/ui/ranges.ts': {statements: 100},
+        'src/ui/steps.ts': {statements: 100},
         'src/ui/commands.ts': {statements: 100},
         'src/ui/overlay-store.ts': {statements: 100},
         'src/ui/controllers/optimistic.ts': {statements: 100},

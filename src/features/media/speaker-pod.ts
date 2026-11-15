@@ -15,15 +15,16 @@ import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {OptimisticController} from '../../ui/controllers/optimistic.ts';
 import {StoreController} from '../../ui/controllers/store-controller.ts';
 import {ico} from '../../ui/icons.ts';
+import '../../ui/stepper.ts'; // defines <hp-stepper>
+import type {StepDetail} from '../../ui/stepper.ts';
 import {common} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
 /** How long the stepper waits for the taps to stop before it sends the level: the legacy `mpVol`'s 450 ms. */
 const VOLUME_DEBOUNCE_MS = 450;
 
-// the stepper's two glyphs, the same in every language: a screen reader says the buttons' labels, which the catalog words
-const MINUS = '−';
-const PLUS = '+';
+/** A tap on the stepper's − or +: five percent, as the legacy stepper; the stepper keeps the level in 0 to 1 at two decimals. */
+const VOLUME_STEP = 0.05;
 
 export class SpeakerPod extends LitElement {
   static override properties = {
@@ -79,15 +80,18 @@ export class SpeakerPod extends LitElement {
       </div>
       ${
         volume
-          ? html`<div class="vol" role="group" aria-label=${volume.label}>
-              <button type="button" aria-label=${volume.downLabel} ?disabled=${volume.atMin} @click=${this.onDown}>
-                ${MINUS}
-              </button>
-              <div class="sv"><b class="num">${volume.text}</b><small>${volume.caption}</small></div>
-              <button type="button" aria-label=${volume.upLabel} ?disabled=${volume.atMax} @click=${this.onUp}>
-                ${PLUS}
-              </button>
-            </div>`
+          ? html`<hp-stepper
+              aria-label=${volume.label}
+              .value=${volume.level}
+              .min=${0}
+              .max=${1}
+              .step=${VOLUME_STEP}
+              .valueText=${volume.text}
+              .label=${volume.caption}
+              .decrementLabel=${volume.downLabel}
+              .incrementLabel=${volume.upLabel}
+              @step=${this.onStep}
+            ></hp-stepper>`
           : nothing
       }
       <button
@@ -110,13 +114,7 @@ export class SpeakerPod extends LitElement {
     this.sendVolume(this.speaker, level);
   }
 
-  private readonly onDown = (): void => {
-    if (this.speaker?.volume) this.step(this.speaker.volume.down);
-  };
-
-  private readonly onUp = (): void => {
-    if (this.speaker?.volume) this.step(this.speaker.volume.up);
-  };
+  private readonly onStep = (e: CustomEvent<StepDetail>): void => this.step(e.detail.value);
 
   private readonly onPlay = (): void => {
     if (!this.speaker) return;

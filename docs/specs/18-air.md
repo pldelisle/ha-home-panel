@@ -64,8 +64,7 @@ src/features/air/
   room-card.ts             <hp-air-room> (one .aqcard with its tiles and controls)
   styles.css
 src/ui/
-  stepper.ts               <hp-stepper> (promoted from Media's pod)
-  styles/stepper.css
+  stepper.ts               <hp-stepper> (promoted from Media's pod); stepper.element.css, steps.ts (as built in #231)
 test/unit/
   providers/mila.test.ts, air-quality.test.ts
   features/air/{model,history,commands}.test.ts
@@ -154,12 +153,12 @@ export interface AirViewModel {
 - **`<hp-air-card>`**: the `.top` line (the outside AQI with its level on the right, the `›`), the `.aqsum` with the level class `lv0..2`, the `.rooms` of `.room.aqroom` with the `.n` dot, the `.aqm` metrics and the `.s` line (`repeat` by device id). Also Home's `#air` card content through the bridge from pull request 2 (`#open-air` keeps its `.card.tap` wrapper and its tap opens the detail: the guest's listener becomes the element's `SheetRequestEvent`).
 - **`<hp-air-detail>`**: the `h2`/sub from the model, `<hp-range-tabs .ranges=${[day, week, month]}>` in the header's `tabs` slot, the `.aqrooms` of `<hp-air-room>` (`repeat`), the history block (`h3`, caption, the metric `seg` radio group, the legend, `<hp-chart>`), the outside block (the `.aqsum`, the pollen `.tiles` or the hint, the outdoor `<hp-chart>` with its legend or the "No outdoor history yet" line). Data: on open and on range or metric change, `cache.statistics(ids, range.period, start, ['mean'])` through the statistics cache (ten-minute ttl, as `this.AR` had), a `StaleReply` dropped, a late reply for another range or metric dropped (`this.range === r && this.metric === m`).
 - **`<hp-air-room>`**: one `.aqcard` with the `.aqhead`, the seven `.tile`s, and the `.aqctl`: the `seg` radio group (Automagic, Manual) and, in Manual, `<hp-stepper>`; else the Automagic hint with the current percentage and the air changes; the offline paragraph when the fan is unavailable.
-- **`<hp-stepper>`** (`src/ui/stepper.ts`): `value`, `label` (the small word under the value), `min`, `max`, `step`, `decrementLabel`, `incrementLabel`, `disabled`; renders the `.stepper` markup (`−`, the `.sv` with the bold value and the small label, `+`) with the buttons disabled at the bounds; dispatches `step` with `{value}`; the host debounces. Media's `<hp-speaker-pod>` switches to it in this spec's first pull request (its second user is what promotes it; Media's `.stepper` rules move from the feature's file to `src/ui/styles/stepper.css`).
+- **`<hp-stepper>`** (`src/ui/stepper.ts`): `value`, `label` (the small word under the value), `min`, `max`, `step`, `decrementLabel`, `incrementLabel`, `disabled`; renders the `.stepper` markup (`−`, the `.sv` with the bold value and the small label, `+`) with the buttons disabled at the bounds; dispatches `step` with `{value}`; the host debounces. Media's `<hp-speaker-pod>` switches to it in this spec's first pull request (its second user is what promotes it; Media's `.stepper` rules move from the feature's file to `src/ui/styles/stepper.css`). As built in #231: the element is `src/ui/stepper.ts` with `stepper.element.css` beside it (not `styles/stepper.css`: the legacy fan and climate controls still draw `.stepper`, so the kit's copy reads as `.step` and `.sv`, and an element's own file is adopted by its root alone); the host is the pill (`display: flex`), named by the owner's `aria-label` and given `role="group"`; the next value comes from the pure `stepBy` (`src/ui/steps.ts`), rounded to the step's decimals; the pod sets `flex`, `order` and `padding` on the tag and `::part(button)` and `::part(value)`. Media's model hands it `level` in place of the old `atMin`, `atMax`, `down` and `up`.
 
 ### Styles
 
 - `src/features/air/styles.css` receives `.aqsum`, `.aqroom` and its levels, `.aqm`, `.aqrooms`, `.aqcard`, `.aqhead`, `.aqt`, `.aqctl`, `.aqmetric` (`extra.css` ~771 to 895 and 1265), the `.rooms`/`.room` rules it shares with Climate's list stay in the legacy sheet until spec 20 decides (Climate's room list is their main user; the Air card's `.room.aqroom` reads them from the legacy concatenation through the kit's `room.css` split in spec 20; until then the Air element adopts a copy under a feature-scoped selector `.aqroom` and the duplication is listed in the pull request and removed by spec 20).
-- `.stepper` → `src/ui/styles/stepper.css`. `.app.cp` → `:host([compact])`, `.app.gl` → `:host([glass])`.
+- `.stepper` → `src/ui/stepper.element.css` (as built in #231, see the `<hp-stepper>` entry). `.app.cp` → `:host([compact])`, `.app.gl` → `:host([glass])`.
 
 ### Strings and formats
 
