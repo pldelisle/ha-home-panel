@@ -90,13 +90,14 @@ function automationRuns(automations, now, timeZone) {
 /** How far apart the recorder's points are, and how many the panel gets, for each period (an unknown period reads as a day). */
 const PERIODS = {'5minute': {step: 3e5, n: 300}, hour: {step: 36e5, n: 170}, day: {step: 864e5, n: 60}};
 
-/** The air sensors' own ranges, `[base, swing]` by id suffix: a reading drifts by `swing` around `base`; the rest keep the generic curve. */
+/** The Air sensors' own ranges, `[base, swing]` by id: the purifier's and the station's only, so no other entity's curve moves. */
 const AIR_CURVES = [
-  [/_pm2_5$/, 14, 12],
-  [/_co2$/, 560, 260],
-  [/_voc$/, 140, 120],
-  [/_humidity$/, 34, 10],
-  [/_aqi$/, 36, 18],
+  [/^sensor\.office_purifier_pm2_5$/, 14, 12],
+  [/^sensor\.office_purifier_co2$/, 560, 260],
+  [/^sensor\.office_purifier_voc$/, 140, 120],
+  [/^sensor\.office_purifier_humidity$/, 34, 10],
+  [/^sensor\.outdoor_station_pm2_5$/, 14, 12],
+  [/^sensor\.outdoor_aqi$/, 36, 18],
 ];
 
 /** Smooth made-up curves for the recorder's statistics, one series per known entity id. */
