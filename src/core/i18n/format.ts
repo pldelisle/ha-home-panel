@@ -5,7 +5,7 @@
 // their fraction digits to 2, time24 and time24s joining the parts with a colon and Latin digits in every locale (the table asks for `16:07`),
 // and `ago`, the one function that returns no text: it cuts a span into a kind and a count (the legacy rule) and formats only the date, so the words stay in the catalog.
 // Must not: read the clock, the DOM or a browser default, or hold a word a person reads.
-import {HOUR_MS, MINUTE_MS} from '../figures.ts';
+import {DASH, HOUR_MS, MINUTE_MS} from '../figures.ts';
 import type {PanelLocaleSpec} from './locale.ts';
 
 type Instant = Date | number;
@@ -75,6 +75,9 @@ const frenchThousands: HouseRule = text => text.replace(/\u00a0/g, '\u202f');
 export const whole = (fmt: Formatters, n: number): string => fmt.integer(Math.round(n) + 0);
 /** A whole number of degrees: `12°`. */
 export const degrees = (fmt: Formatters, n: number): string => `${whole(fmt, n)}°`;
+/** `fmt.fixed` of a reading, or the dash when there is none (Energy's six figures; Weather's `fixed` is the same rule). */
+export const fixedOr = (fmt: Formatters, n: number | null, digits: number): string =>
+  n === null ? DASH : fmt.fixed(n, digits);
 
 export function createFormatters(locale: PanelLocaleSpec): Formatters {
   const {language, tag, timeZone, hour12} = locale;
