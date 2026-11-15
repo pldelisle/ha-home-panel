@@ -1,0 +1,29 @@
+/*
+ * <hp-energy-pane>'s own rules: it lays out nothing itself, so the header, the card, the tiles, the legacy detail's slot and the two cards'
+ * grid are items of the pane section's own column (`.pane-energy`, tabs.css and phone.css: sixteen pixels between them), as the old pane's
+ * were; the sheets are fixed to the screen. On a tablet the header is not drawn, as before. Moved from the legacy `.eside` and `.etiles`
+ * rules (tabs.css, phone.css), which this move deleted; the section's rules stay with the shell's panes.
+ */
+:host {
+  display: contents;
+}
+:host([compact]) hp-pane-header {
+  margin-bottom: 0;
+}
+/* the water heater's card and Hilo's side by side, one column on a narrow window */
+.eside {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 720px) {
+  .eside {
+    grid-template-columns: 1fr;
+  }
+}
+/* the phone's two tiles, one under the other */
+.etiles {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}

@@ -308,24 +308,7 @@
   margin-top: 2px;
 }
 
-/* EV / water heater */
-.hero {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 10px;
-}
-.hero .v {
-  font-size: calc(56px * var(--tx));
-  line-height: 0.9;
-}
-.hero .v small {
-  font-size: calc(20px * var(--tx));
-  font-family: var(--f-body);
-  color: var(--fg2);
-  font-weight: 500;
-  margin-left: 4px;
-}
+/* EV / water heater: the hero is the kit's (src/ui/styles/hero.css) */
 .state {
   display: inline-flex;
   align-items: center;

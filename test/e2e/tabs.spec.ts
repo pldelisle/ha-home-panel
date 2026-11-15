@@ -6,9 +6,9 @@ import {FULL_CFG} from './houses';
 import {openOfficeSheet} from './lights';
 
 // what the bare house lacks, wherever it shows: the Climate and Car tabs (rail buttons, Home tiles), the water heater and Hilo cards
-// and the tiles that open them
+// of the Energy pane, the tiles that open them and Home's Water heater tile
 const LACKING =
-  '[data-tab="climate"], [data-tab="car"], [data-pane="climate"], [data-pane="car"], #water, #hilo, [data-card="water"], [data-card="hilo"]';
+  '[data-tab="climate"], [data-tab="car"], [data-pane="climate"], [data-pane="car"], hp-water-card, hp-hilo-card, hp-stat-tile[key="water"], hp-stat-tile[key="hilo"], [data-opens="energy.water"]';
 
 // records each of them the panel leaves shown at the end of a task that changes it (window.lackingShown): a MutationObserver's
 // callback runs before the browser may paint the next frame, so what it sees is what a frame can show, whatever the timing
@@ -74,6 +74,8 @@ const TITLES = {
 // every shown tab's pane opens with one heading, in the header's shadow root (or slotted), whatever the language
 const headings = (lang: keyof typeof TITLES) => async (house: House) => {
   await eachShownTab(house, async (tab, pane) => {
+    // a tablet's Energy pane draws no header: the legacy detail inline has its own heading (#240 makes it an element's)
+    if (tab === 'energy' && !isPhone(house)) return await expect(pane.locator('hp-pane-header')).toHaveCount(0);
     // the pane's own header is the first; on a tablet the Weather and Air details draw one of their own after it
     await expect(pane.locator('hp-pane-header h2').first(), tab).toHaveText(
       TITLES[lang][tab as keyof (typeof TITLES)['en']],
@@ -112,11 +114,12 @@ test.describe('full house', () => {
     await homeButtonUncovered(house);
   });
 
-  test('3 shows who is home, the water heater and the Car tab; Hilo stays hidden', async ({house}) => {
+  test('3 shows who is home, the water heater and the Car tab; Hilo stays out', async ({house}) => {
     tabletOnly();
     await expect(house.root()).toContainText('Alex');
-    await shown(house.root().locator('#water')).toBe(true);
-    await shown(house.root().locator('#hilo')).toBe(false);
+    await house.tab('energy');
+    await expect(house.root().locator('hp-water-card')).toBeVisible();
+    await expect(house.root().locator('hp-hilo-card')).toHaveCount(0);
     await shown(house.root().locator('#rail [data-tab="car"]')).toBe(true);
   });
 
@@ -201,7 +204,8 @@ test.describe('full house', () => {
     await headings('en')(house);
     await eachShownTab(house, async (tab, pane) => {
       // a tablet's Weather and Air panes have the header of their detail too, with the summary under it
-      const headers = (tab === 'weather' || tab === 'air') && !isPhone(house) ? 2 : 1;
+      const headers =
+        (tab === 'weather' || tab === 'air') && !isPhone(house) ? 2 : tab === 'energy' && !isPhone(house) ? 0 : 1;
       await expect(pane.locator('hp-pane-header > [slot="sub"]'), tab).toHaveCount(headers);
     });
   });
@@ -241,13 +245,23 @@ test.describe('bare house', () => {
   test.use({houseOpts: {house: 'bare'}});
 
   test('4 optional sections stay hidden without their entities', async ({house}) => {
-    for (const sel of ['#water', '#hilo', '#rail [data-tab="car"]', '#rail [data-tab="climate"]']) {
+    for (const sel of ['#rail [data-tab="car"]', '#rail [data-tab="climate"]']) {
       await shown(house.root().locator(sel)).toBe(false);
     }
   });
 
-  // the Home tiles, and on a phone the Energy rows, are redrawn whole when their text changes; a hide that ran before the redraw let
-  // these show on load and come back after every change, and the glass tiles that moved for them broke the bare-house screenshot
+  test('4c the Energy pane draws no card and no tile for what the bare house lacks', async ({house}) => {
+    if (isPhone(house)) {
+      await house.root().locator('#moretab').click();
+      await house.root().locator('#morelist hp-stat-tile[key="energy"] button').click();
+      await expect(house.root().locator('#pane-energy')).toBeVisible();
+    } else await house.tab('energy');
+    await expect(house.root().locator('hp-energy-pane')).toBeAttached();
+    await expect(house.root().locator('hp-water-card, hp-hilo-card, hp-stat-tile')).toHaveCount(0);
+  });
+
+  // the Home tiles are redrawn whole when their text changes; a hide that ran before the redraw let these show on load and come
+  // back after every change, and the glass tiles that moved for them broke the bare-house screenshot
   recordedTest(
     '41 what the bare house lacks never shows, on load or when a change redraws its tiles',
     async ({house}) => {
@@ -255,11 +269,11 @@ test.describe('bare house', () => {
       await house.setState('light.living_room_1', {attributes: {brightness: 100}});
       await expect(house.root().locator('#htiles [data-pane="lights"]')).toContainText('39%');
       if (test.info().project.name === 'phone') {
-        // Energy is under More on a phone; its pane draws the Water heater and Hilo rows
+        // Energy is under More on a phone; its pane draws a tile for what the house has, and the bare house has neither
         await house.root().locator('#moretab').click();
         await house.root().locator('#morelist hp-stat-tile[key="energy"] button').click();
         await expect(house.root().locator('#pane-energy')).toBeVisible();
-        await expect(house.root().locator('#etiles [data-card="water"]')).toBeAttached();
+        await expect(house.root().locator('hp-energy-card')).toBeVisible();
       }
       const shown = await house.page.evaluate(() => (window as unknown as {lackingShown: string[]}).lackingShown);
       expect([...new Set(shown)], 'shown at the end of a task').toEqual([]);

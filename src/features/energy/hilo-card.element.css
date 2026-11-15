@@ -1,0 +1,19 @@
+/*
+ * <hp-hilo-card>'s own rules: its `:host`, the tiles' three columns at every width (the kit's grid has four, two on a narrow screen) and
+ * their gap under the hero, and the tier dot's two colours. The box and its title line are the feature's (styles.css), the hero and the tiles the kit's.
+ */
+:host {
+  display: block;
+  min-width: 0;
+}
+/* the card's tile grid, its own name so the kit's `.tiles` is written in one file; the same specificity, adopted later, beats the kit's 520px rule */
+.hilotiles {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 14px;
+}
+.hero .state i.ok {
+  background: var(--ok);
+}
+.hero .state i.warn {
+  background: var(--warn);
+}

@@ -506,6 +506,7 @@ export const fr: Record<MessageKey, string> = {
   // Énergie
   'energy.card.title': 'Énergie de la maison',
   'energy.open': "Ouvrir les détails de l'énergie",
+  'energy.close': 'Fermer',
   'energy.gridOnly': 'Réseau seulement · {rate}',
   'energy.summary': 'Réseau {grid} kW · chauffage {heat} kW · Hilo {rate}',
   'energy.tier.low': 'Palier bas',

@@ -5,8 +5,7 @@
 .pane > .cph,
 .rtab.rmore,
 .ltiles,
-.ctiles2,
-.etiles {
+.ctiles2 {
   display: none;
 }
 .app.tabsv.cp .wrap {
@@ -145,12 +144,10 @@
   display: none;
 }
 .ltiles,
-.ctiles2,
-.etiles {
+.ctiles2 {
   gap: 12px;
 }
-.app.tabsv.cp .ltiles,
-.app.tabsv.cp .etiles {
+.app.tabsv.cp .ltiles {
   display: grid;
   grid-template-columns: 1fr;
 }
@@ -245,10 +242,7 @@
 .app.tabsv.cp #albar .top .right {
   white-space: nowrap;
 }
-/* the cards of the old Home view become the Car and Energy panes */
-.app.tabsv.cp #eside {
-  display: none;
-}
+/* the card of the old Home view becomes the Car pane */
 .app.tabsv.cp .pane .card.tap .go {
   display: grid;
 }
@@ -301,14 +295,6 @@
 #lsheet .lchip {
   padding: 10px 14px;
   font-size: calc(13.5px * var(--tx));
-}
-/* a card inside the generic sheet */
-#cardhost > .card {
-  padding: 14px;
-  border-radius: 18px;
-}
-#cardhost > .card > .top {
-  margin-bottom: 12px;
 }
 /* in the climate sheet the room picked comes first, the list of the others under it */
 .app.cp .clim {

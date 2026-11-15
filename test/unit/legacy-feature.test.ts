@@ -92,13 +92,14 @@ describe('the ten panes', () => {
   test('hold no id twice, and the ones the guest writes into are there', () => {
     const ids = FEATURES.flatMap(f => [...markup(f.pane).matchAll(/ id="([^"]+)"/g)].map(m => m[1]));
     expect(new Set(ids).size).toBe(ids.length);
-    for (const id of ['hsub', 'lsub', 'csub2', 'carsub2', 'esub2', 'ausub']) expect(ids, id).toContain(id);
-    for (const id of ['carh2', 'lhost', 'ehost', 'eside', 'auhost']) expect(ids, id).toContain(id);
+    for (const id of ['hsub', 'lsub', 'csub2', 'carsub2', 'ausub']) expect(ids, id).toContain(id);
+    // Energy's is the element's, which holds the legacy detail's host (`ehost`) until #240
+    for (const id of ['carh2', 'lhost', 'ehost', 'auhost']) expect(ids, id).toContain(id);
   });
 
   // the header's shadow root is closed to the guest (getElementById stops at it), so the lines it writes are slotted nodes
-  test("put the line the guest writes under the heading in the header's sub slot, but the Weather, Air, Media and Security panes', which are elements", () => {
-    for (const f of FEATURES.filter(f => !['weather', 'air', 'media', 'cams'].includes(f.key)))
+  test("put the line the guest writes under the heading in the header's sub slot, but the Weather, Energy, Air, Media and Security panes', which are elements", () => {
+    for (const f of FEATURES.filter(f => !['weather', 'energy', 'air', 'media', 'cams'].includes(f.key)))
       expect(markup(f.pane), f.key).toMatch(/<div slot="sub" id="\w+"><\/div>/);
   });
 
@@ -113,15 +114,11 @@ describe('the ten panes', () => {
   });
 
   test("mark the summary panes' header, which only the phone shows", () => {
-    expect(FEATURES.filter(f => markup(f.pane).includes('class="cph"')).map(f => f.key)).toEqual([
-      'climate',
-      'car',
-      'energy',
-    ]);
+    expect(FEATURES.filter(f => markup(f.pane).includes('class="cph"')).map(f => f.key)).toEqual(['climate', 'car']);
   });
 
-  test('head their pane with the catalog title, in the language of the panel, but the Car pane and the Weather, Air, Media and Security elements', () => {
-    for (const f of FEATURES.filter(f => !['car', 'weather', 'air', 'media', 'cams'].includes(f.key)))
+  test('head their pane with the catalog title, in the language of the panel, but the Car pane and the Weather, Energy, Air, Media and Security elements', () => {
+    for (const f of FEATURES.filter(f => !['car', 'weather', 'energy', 'air', 'media', 'cams'].includes(f.key)))
       expect(bindings(f.pane)[2], f.key).toBe(`[${f.key}.title]`);
   });
 });

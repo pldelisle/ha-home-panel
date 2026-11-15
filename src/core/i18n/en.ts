@@ -513,6 +513,7 @@ export const en = {
   // the card, its top line and the sub-line
   'energy.card.title': 'Home energy',
   'energy.open': 'Open home energy details',
+  'energy.close': 'Close',
   'energy.gridOnly': 'Grid only · {rate}',
   'energy.summary': 'Grid supplying {grid} kW · room heating {heat} kW · Hilo {rate}',
   // Hilo's tier, as a name and as a short form in running text; the rate is `challenge` when it is the reward rate
