@@ -1,0 +1,73 @@
+/*
+ * <hp-stepper>'s look: the pill, its two buttons and the value between them. A known duplicate of the legacy `.stepper` rules
+ * (extra.css, glass.css, motion.css) that the legacy fan and climate controls still draw until #234 (Air's deletion) and #248 (Climate move 7) delete them; Media's speaker pod wrote its own copy
+ * as `.vol`, which moved here. The selectors differ (`.step`, `.sv`) because the styles-split test lets one file write a selector,
+ * and a shadow root cannot reach the legacy rule. An owner sizes it from outside: `flex`, `order` and `padding` on the tag,
+ * `::part(button)` and `::part(value)` for the buttons and the value.
+ */
+:host {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-sizing: border-box;
+  background: var(--card2);
+  border-radius: 18px;
+  padding: 5px;
+}
+.step {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  border: 0;
+  background: var(--card);
+  color: var(--fg);
+  font: 600 calc(22px * var(--tx)) var(--f-body);
+  cursor: pointer;
+  box-shadow: var(--shadow);
+}
+.step:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.sv {
+  min-width: 92px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+}
+.sv b {
+  font-size: calc(22px * var(--tx));
+}
+.sv small {
+  font-size: calc(11px * var(--tx));
+  color: var(--fg2);
+}
+.step:focus-visible {
+  outline: 2px solid var(--c-home);
+  outline-offset: 2px;
+}
+/* glass: the same tokens as src/css/glass.css gives `.app.gl .stepper` */
+:host([glass]) {
+  background: var(--g-tile);
+  box-shadow: var(--g-edge-s);
+}
+:host([glass]) .step {
+  background: var(--g-sel);
+}
+@media (prefers-reduced-transparency: reduce) {
+  :host([glass]) {
+    background: var(--card2);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .step {
+    transition:
+      transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+      background-color 0.2s ease,
+      box-shadow 0.2s ease,
+      color 0.2s ease;
+  }
+}
+.step:active {
+  transform: scale(0.96);
+}

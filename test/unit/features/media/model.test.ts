@@ -124,10 +124,7 @@ describe('the full test house, in English', () => {
           label: 'Living room volume',
           downLabel: 'Volume down',
           upLabel: 'Volume up',
-          atMin: false,
-          atMax: false,
-          down: 0.3,
-          up: 0.4,
+          level: 0.35,
         },
         playPause: {enabled: true, label: 'Pause', icon: 'pause'},
       },
@@ -363,28 +360,13 @@ describe('a speaker', () => {
     expect(only({available: false, state: 'unavailable'}).speakers[0].volume).toBeNull();
   });
 
-  test.each([
-    [0, true, false],
-    [0.004, false, false],
-    [1, false, true],
-    [0.994, false, false],
-  ])('a volume of %s: at the bottom %s, at the top %s', (level, atMin, atMax) => {
-    expect(only({volume: level}).speakers[0].volume).toMatchObject({atMin, atMax});
-  });
-
   test('never shows a negative zero', () => {
     expect(only({volume: -0.001}).speakers[0].volume).toMatchObject({percent: 0, text: '0%'});
   });
 
-  // the legacy panel's stepper: the held or reported level and five percent, kept in 0 to 1 at two decimals
-  test.each([
-    [0.35, 0.3, 0.4],
-    [0.333, 0.28, 0.38],
-    [0.98, 0.93, 1],
-    [0.02, 0, 0.07],
-    [1, 0.95, 1],
-  ])('a volume of %s steps down to %s and up to %s', (level, down, up) => {
-    expect(only({volume: level}).speakers[0].volume).toMatchObject({down, up});
+  // the stepper takes its bounds and steps from the exact level, not the whole percent (the cases of 0.004 and 0.994 are in steps.test.ts)
+  test('hands the stepper the exact level the player reports', () => {
+    expect(only({volume: 0.333}).speakers[0].volume).toMatchObject({level: 0.333, percent: 33});
   });
 
   test('plays and pauses only the way its features allow', () => {

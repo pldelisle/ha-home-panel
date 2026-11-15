@@ -1,53 +1,12 @@
 /*
- * <hp-speaker-pod>'s own rules: the cover, the room and the track, the volume stepper and the play button, and on a phone (the sheet a
- * speaker's tile opens) the room and play on one row with the volume under them, as the legacy `.app.cp .pod` rules had it.
- * Known copies of the legacy `.stepper` rules (extra.css, glass.css, motion.css), read here as `.vol`, which stay while the climate
- * controls and Air draw them (spec 18 promotes them to the kit); the play button, `.play`, began as the legacy `.pp`, which #218 deleted.
- * The selectors differ because the styles-split test lets one file write a selector, and a shadow root cannot reach the legacy rule.
+ * <hp-speaker-pod>'s own rules: the cover, the room and the track, the stepper's place in the row and the play button, and on a phone
+ * (the sheet a speaker's tile opens) the room and play on one row with the volume under them, as the legacy `.app.cp .pod` rules had it.
+ * The stepper's look is the kit's (`<hp-stepper>`, stepper.element.css): the pod sets only what is its own from outside, `flex`, `order`
+ * and `padding` on the tag, `::part(button)` and `::part(value)`. The play button, `.play`, began as the legacy `.pp`, which #218 deleted.
  */
 /* no box of its own: the pod is the item of the pane's list */
 :host {
   display: contents;
-}
-.vol {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--card2);
-  border-radius: 18px;
-  padding: 5px;
-}
-.vol button {
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
-  border: 0;
-  background: var(--card);
-  color: var(--fg);
-  font: 600 calc(22px * var(--tx)) var(--f-body);
-  cursor: pointer;
-  box-shadow: var(--shadow);
-}
-.vol button:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-.vol .sv {
-  min-width: 92px;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-}
-.vol .sv b {
-  font-size: calc(22px * var(--tx));
-}
-.vol .sv small {
-  font-size: calc(11px * var(--tx));
-  color: var(--fg2);
-}
-.vol button:focus-visible {
-  outline: 2px solid var(--c-home);
-  outline-offset: 2px;
 }
 .player {
   display: flex;
@@ -104,16 +63,14 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.player .vol {
+.player hp-stepper {
   flex: none;
   padding: 4px;
 }
-.player .vol .sv {
+.player hp-stepper::part(value) {
   min-width: 56px;
 }
-.player .vol button {
-  width: 44px;
-  height: 44px;
+.player hp-stepper::part(button) {
   font-size: calc(20px * var(--tx));
 }
 .player .play {
@@ -156,20 +113,18 @@
   width: 48px;
   height: 48px;
 }
-.app.cp .player .vol {
+.app.cp .player hp-stepper {
   order: 2;
   flex: 1 1 100%;
   justify-content: space-between;
 }
-.app.cp .player .vol .sv {
+.app.cp .player hp-stepper::part(value) {
   flex: 1;
 }
-.app.gl .player,
-.app.gl .vol {
+.app.gl .player {
   background: var(--g-tile);
   box-shadow: var(--g-edge-s);
 }
-.app.gl .vol button,
 .app.gl .player .play,
 .app.gl .player .pic {
   background: var(--g-sel);
@@ -182,13 +137,11 @@
   background: var(--c-home);
 }
 @media (prefers-reduced-transparency: reduce) {
-  .app.gl .player,
-  .app.gl .vol {
+  .app.gl .player {
     background: var(--card2);
   }
 }
 @media (prefers-reduced-motion: no-preference) {
-  .vol button,
   .play {
     transition:
       transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
@@ -197,7 +150,6 @@
       color 0.2s ease;
   }
 }
-.vol button:active,
 .play:active {
   transform: scale(0.96);
 }
