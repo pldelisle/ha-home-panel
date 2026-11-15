@@ -9,7 +9,7 @@ import {repeat} from 'lit/directives/repeat.js';
 import {mediaIds} from './ids.ts';
 import {readMedia} from './inputs.ts';
 import {mediaModel, type MediaTileView, type MediaViewModel, type TvView} from './model.ts';
-import type {Overlay} from './commands.ts';
+import type {Overlay} from '../../ui/overlay-store.ts';
 import {CONTROLS_SHEET} from './sheets.ts';
 import './media-tile.ts'; // defines <hp-media-tile>
 import './speaker-pod.ts'; // defines <hp-speaker-pod>

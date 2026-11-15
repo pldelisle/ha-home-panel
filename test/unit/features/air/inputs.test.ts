@@ -73,6 +73,18 @@ describe('what is read', () => {
     expect(inputs.aqhi).toBe(3);
   });
 
+  test('the AQHI sensor’s id is kept while its state exists, even when it reads nothing; a state that is missing is null', () => {
+    const unread = HOUSE.map((p): Player => (p[0] === 'sensor.ec_aqhi' ? [p[0], 'unavailable', {}, p[3]] : p));
+    const read = (players: Player[], aqhi: string) => {
+      const hass = houseOf(players);
+      const {states, registries, names} = readingOf(hass);
+      return readAir(states, registries, names, storeOf(hass, {entities: {aqhi}}).config);
+    };
+    expect(read(unread, 'sensor.ec_aqhi')).toMatchObject({aqhi: null, aqhiId: 'sensor.ec_aqhi'});
+    expect(read(HOUSE, 'sensor.ec_aqhi')).toMatchObject({aqhi: 3, aqhiId: 'sensor.ec_aqhi'});
+    expect(read(HOUSE, 'sensor.nowhere')).toMatchObject({aqhi: null, aqhiId: null});
+  });
+
   test('no station and no AQHI entity: null, null', () => {
     const hass = houseOf(HOUSE.slice(0, 3));
     const {states, registries, names, store} = readingOf(hass);

@@ -5,23 +5,21 @@
 // Must not: send anything, read the store or the clock, or word a string (`done` is a catalog key, the runner words it).
 import type {Speaker} from './speakers.ts';
 import type {Command} from '../../ui/commands.ts';
+import {overlayKey} from '../../ui/overlay-store.ts';
 import type {TvInputs} from '../../providers/tv-source.ts';
 
 /** The overlay keys, one function per held value: a typo is a compile error, and two kinds of value never share a key. */
 export const K = {
   /** The television's, a routine's: on or off. */
-  on: (id: string) => `${id}:on`,
-  mute: (id: string) => `${id}:mute`,
+  on: overlayKey('on'),
+  mute: overlayKey('mute'),
   /** A speaker's state: `playing` or `paused`. */
-  state: (id: string) => `${id}:st`,
+  state: overlayKey('st'),
   /** A speaker's volume, from 0 to 1. */
-  volume: (id: string) => `${id}:vol`,
+  volume: overlayKey('vol'),
   /** A scene that was just run. */
-  ran: (id: string) => `${id}:ran`,
+  ran: overlayKey('ran'),
 } as const;
-
-/** The panel's held values as an element reads them (`OptimisticController.read`, `OverlayStore.read`): `key`'s held value, else `current`. */
-export type Overlay = <T>(key: string, current: T) => T;
 
 /** How long a scene shows as run: the legacy panel's "Done" for four seconds. */
 export const SCENE_RAN_MS = 4000;

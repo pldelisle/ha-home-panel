@@ -67,11 +67,12 @@ const station = (over: Partial<OutsideAirInputs['readings']> = {}): OutsideAirIn
   },
 });
 
-const inputsOf = (rooms: AirRoomInputs[], outside: OutsideAirInputs | null = null, aqhi: number | null = null) => ({
-  rooms,
-  outside,
-  aqhi,
-});
+const inputsOf = (
+  rooms: AirRoomInputs[],
+  outside: OutsideAirInputs | null = null,
+  aqhi: number | null = null,
+  aqhiId: string | null = aqhi === null ? null : 'sensor.aqhi',
+) => ({rooms, outside, aqhi, aqhiId});
 
 describe('the test house', () => {
   const {states, registries, names, store} = readingOf(fullHouse);
@@ -340,17 +341,17 @@ describe('the outside air', () => {
     });
   });
 
-  test('the level follows the US scale, and the AQHI has up to two digits', () => {
-    const moderate = outside({aqi: 75}, 3.25).outside;
+  test('the level follows the US scale, and the AQHI prints as the legacy panel printed it: the number as it is', () => {
+    const moderate = outside({aqi: 75}, 3.254).outside;
     expect(moderate).toMatchObject({state: 'Moderate', tone: 1});
-    expect(moderate?.more).toContain('AQHI 3.25');
+    expect(moderate?.more).toContain('AQHI 3.254');
     expect(outside({aqi: 120}).outside).toMatchObject({state: 'Poor', tone: 2});
   });
 
-  test('pollen: the statuses the catalog words, any other capitalised, a dash when one is missing; none reported is the hint', () => {
-    const pollen = outside({pollen: {trees: 'very_high', grass: 'Moderate', weeds: 'extreme', mold: null}}).outside
+  test('pollen: the statuses the catalog words, any other capitalised with its underscores read as spaces, a dash when one is missing; none reported is the hint', () => {
+    const pollen = outside({pollen: {trees: 'very_high', grass: 'very_low', weeds: 'extreme', mold: null}}).outside
       ?.pollen;
-    expect(pollen?.map(p => p.value)).toEqual(['Very high', 'Moderate', 'Extreme', '–']);
+    expect(pollen?.map(p => p.value)).toEqual(['Very high', 'Very low', 'Extreme', '–']);
     const none = outside({pollen: {trees: null, grass: null, weeds: null, mold: null}}).outside;
     expect(none).toMatchObject({
       pollen: null,
@@ -358,11 +359,13 @@ describe('the outside air', () => {
     });
   });
 
-  test('the outdoor chart is offered with a station’s index or an AQHI, and not without either', () => {
+  test('the outdoor chart is offered with a station’s index or an AQHI sensor that exists, and not without either', () => {
     expect(modelOf(inputsOf([room()], station())).detail.outdoorChart).toMatchObject({
       title: 'Outdoor air, last 24 hours',
     });
     expect(modelOf(inputsOf([room()], null, 3)).detail.outdoorChart).not.toBeNull();
+    // the AQHI sensor exists but reads nothing now: the chart is still asked for, as the legacy sheet did
+    expect(modelOf(inputsOf([room()], null, null, 'sensor.aqhi')).detail.outdoorChart).not.toBeNull();
     expect(modelOf(inputsOf([room()], {...station(), aqi: null})).detail.outdoorChart).toBeNull();
   });
 });

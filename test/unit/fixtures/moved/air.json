@@ -43,6 +43,18 @@
       "key": "air.level.poor"
     },
     {
+      "key": "air.noDataLower"
+    },
+    {
+      "key": "air.levelLower.good"
+    },
+    {
+      "key": "air.levelLower.moderate"
+    },
+    {
+      "key": "air.levelLower.poor"
+    },
+    {
       "key": "air.allRoomsClean",
       "values": {
         "n": 1

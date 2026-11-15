@@ -6,7 +6,8 @@
 // Must not: import the DOM, the kit or the shell, send a command, or hold text the household reads (a catalog key says it).
 import type {Messages} from '../../core/i18n/messages.ts';
 import type {Names} from '../../core/i18n/names.ts';
-import {K, volumeLevel, type Overlay} from './commands.ts';
+import type {Overlay} from '../../ui/overlay-store.ts';
+import {K, volumeLevel} from './commands.ts';
 import type {MediaInputs, SpeakerInputs} from './inputs.ts';
 import type {TvInputs} from '../../providers/tv-source.ts';
 

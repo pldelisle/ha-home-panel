@@ -15,6 +15,8 @@ export interface AirInputs {
   outside: OutsideAirInputs | null;
   /** Environment Canada's AQHI, from `config.entities.aqhi`; null when unset or unreadable. */
   aqhi: number | null;
+  /** The AQHI sensor's id when the house has its state, readable or not: the outdoor chart asks the recorder for it, as the legacy sheet did. */
+  aqhiId: string | null;
 }
 
 /** The inputs of the house at these states. */
@@ -24,8 +26,10 @@ export function readAir(
   names: Names,
   config: Pick<ResolvedConfig, 'entities'>,
 ): AirInputs {
+  const aqhiId = config.entities.aqhi;
   return {
     ...milaAir(states, registries, names),
-    aqhi: numberOf(states, config.entities.aqhi),
+    aqhi: numberOf(states, aqhiId),
+    aqhiId: aqhiId && states[aqhiId] ? aqhiId : null,
   };
 }

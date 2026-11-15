@@ -2,13 +2,14 @@
 // Pattern: a pure view-model function, a humble object's other half (Meszaros, Fowler): it reads no clock, no `hass` and no store, words every
 // message through `deps.t` and every number through `deps.fmt`, and a held mode or speed comes from `deps.overlay` (ADR 0023). Each rule is the
 // legacy panel's own (`renderAir`, `renderAirLive`, `roomAir`, `airSummary`), deleted by #234.
-// Must not: import the DOM, the kit or the shell, read the clock, or hold text the household reads (a catalog key says it).
+// Must not: import the DOM, Lit or the shell, read the clock, or hold text the household reads (a catalog key says it).
 import {capitalise, DASH} from '../../core/figures.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
 import {whole, type Formatters} from '../../core/i18n/format.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
 import {outdoorLevel, rateRoom, type Level, type Pollutant, type RoomRating} from '../../providers/air-quality.ts';
 import type {AirRoomInputs, OutsideAirInputs, PollenKind} from '../../providers/mila.ts';
+import type {Overlay} from '../../ui/overlay-store.ts';
 import {RANGES, type Range} from '../../ui/ranges.ts';
 import {K, MAX_PCT, MIN_PCT, type Mode} from './commands.ts';
 import {
@@ -27,6 +28,12 @@ export type Tone = 0 | 1 | 2;
 
 /** The level words, by level. */
 const LEVEL_WORDS: Record<Tone, MessageKey> = {0: 'air.level.good', 1: 'air.level.moderate', 2: 'air.level.poor'};
+/** The level words in running text, in lower case: "CO₂ moderate". */
+const LOWER_WORDS: Record<Tone, MessageKey> = {
+  0: 'air.levelLower.good',
+  1: 'air.levelLower.moderate',
+  2: 'air.levelLower.poor',
+};
 /** The four pollen reports' labels, in the order the panel lists them. */
 const POLLEN_LABELS: Record<PollenKind, MessageKey> = {
   trees: 'air.pollen.trees',
@@ -59,7 +66,7 @@ export interface AirModelDeps {
   t: Translate;
   fmt: Formatters;
   /** The held value of a key while a tap awaits Home Assistant, else the current one (`OptimisticController.read`). */
-  overlay: <T>(key: string, current: T) => T;
+  overlay: Overlay;
   /** The detail's selection, for the chart's title and caption; the legacy sheet's own defaults when it has none. */
   metric?: ChartMetric;
   range?: Range;
@@ -215,7 +222,7 @@ function overallOf(rated: readonly {room: AirRoomInputs; rating: RoomRating}[], 
 const toneOf = (level: Level): Tone => Math.max(0, level) as Tone;
 
 /** The fan's mode and speed as a held tap says them, else as the purifier reports them. */
-function fanOf({fanId, fan}: AirRoomInputs, overlay: AirModelDeps['overlay']) {
+function fanOf({fanId, fan}: AirRoomInputs, overlay: Overlay) {
   const mode = overlay<Mode>(K.mode(fanId), fan.preset === 'Automagic' ? 'Automagic' : 'Manual');
   const pct = overlay(K.pct(fanId), fan.on ? fan.percentage : 0);
   return {mode, pct};
@@ -302,7 +309,7 @@ function roomDetail(room: AirRoomInputs, rating: RoomRating, deps: AirModelDeps)
     rating.level < 0
       ? t('air.noReadings')
       : rating.why.length
-        ? rating.why.map(w => `${t(METRICS[w.k].label)} ${t(LEVEL_WORDS[toneOf(w.level)]).toLowerCase()}`).join(', ')
+        ? rating.why.map(w => `${t(METRICS[w.k].label)} ${t(LOWER_WORDS[toneOf(w.level)])}`).join(', ')
         : rating.level > 0
           ? t('air.milaIndex', {n: Math.round(rating.milaIndex ?? 0)})
           : t('air.cleanAir');
@@ -321,7 +328,7 @@ function roomDetail(room: AirRoomInputs, rating: RoomRating, deps: AirModelDeps)
 function pollenValue(status: string | null, t: Translate): string {
   if (status === null) return DASH;
   const key = POLLEN_STATUSES.get(status.replace(/_/g, ' '));
-  return key ? t(key) : capitalise(status);
+  return key ? t(key) : capitalise(status.replace(/_/g, ' '));
 }
 
 function outsideDetail(outside: OutsideAirInputs, aqhi: number | null, {t, fmt}: AirModelDeps): OutsideDetail {
@@ -335,7 +342,7 @@ function outsideDetail(outside: OutsideAirInputs, aqhi: number | null, {t, fmt}:
     state: aqi === null ? t('air.noData') : t(LEVEL_WORDS[tone]),
     reading: {label: t('air.aqi'), value: aqi === null ? DASH : whole(fmt, aqi)},
     more: joined(
-      aqhi === null ? '' : t('air.aqhiValue', {n: fmt.number(aqhi, 2)}),
+      aqhi === null ? '' : t('air.aqhiValue', {n: String(aqhi)}),
       pm === null ? '' : t('air.stationPm', {n: fmt.fixed(pm, 1)}),
       distance === null ? '' : t('air.station', {n: whole(fmt, distance)}),
     ),
@@ -364,7 +371,7 @@ export function airModel(inputs: AirInputs, deps: AirModelDeps): AirViewModel {
         : t('air.roomsClean', {n: clean, total: rooms});
   return {
     summary: rooms
-      ? joined(t('air.purifiers', {n: rooms}), worst < 0 ? t('air.noData').toLowerCase() : level, worst > 0 ? why : '')
+      ? joined(t('air.purifiers', {n: rooms}), worst < 0 ? t('air.noDataLower') : level, worst > 0 ? why : '')
       : t('air.noPurifiers'),
     card: {
       title: t('air.quality'),
@@ -393,7 +400,7 @@ export function airModel(inputs: AirInputs, deps: AirModelDeps): AirViewModel {
       },
       outside: inputs.outside ? outsideDetail(inputs.outside, inputs.aqhi, deps) : null,
       outdoorChart:
-        inputs.outside?.aqi || inputs.aqhi !== null
+        inputs.outside?.aqi || inputs.aqhiId
           ? {
               title: t('air.outdoorAir', {range: t(RANGES[range].labelKey)}),
               hint: t('air.outdoorHint'),
