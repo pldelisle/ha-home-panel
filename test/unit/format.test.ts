@@ -266,24 +266,3 @@ describe("ago, the legacy panel's rule: a kind and a count, then the date", () =
     expect(make('en-CA').ago(new Date(NOW - 5 * MIN), NOW)).toEqual({kind: 'minutes', n: 5});
   });
 });
-
-describe('agoBare, the same cut as ago, as text without the word', () => {
-  const NOW = T1607.getTime();
-  const MIN = 60_000;
-
-  test.each([
-    ['a few seconds', 20_000, {kind: 'now'}],
-    ['a moment in the future', -5 * MIN, {kind: 'now'}],
-    ['five minutes', 5 * MIN, {kind: 'text', text: '5 min'}],
-    ['an hour', 60 * MIN, {kind: 'text', text: '1 h'}],
-    ['90 minutes rounds to two hours', 90 * MIN, {kind: 'text', text: '2 h'}],
-    ['a day is the date', 24 * 60 * MIN, {kind: 'text', text: 'Nov 6'}],
-  ] as const)('%s', (_name, before, expected) => {
-    expect(make('en-CA').agoBare(NOW - before, NOW)).toEqual(expected);
-  });
-
-  test('a date is the locale’s, the units are the same in French', () => {
-    expect(make('fr-CA').agoBare(NOW - 24 * 60 * MIN, NOW)).toEqual({kind: 'text', text: '6 nov.'});
-    expect(make('fr-CA').agoBare(new Date(NOW - 12 * MIN), NOW)).toEqual({kind: 'text', text: '12 min'});
-  });
-});

@@ -3,7 +3,7 @@
 // data as Home Assistant's formatTime and formatNumber. Deliberate overrides of CLDR and `Intl`, and the only post-processing:
 // the three house rules (en-* am/pm without periods, fr-* "16 h" on the hour, fr-* thousands U+202F), number() and fixed() clamping
 // their fraction digits to 2, time24 and time24s joining the parts with a colon and Latin digits in every locale (the table asks for `16:07`),
-// and `ago` and `agoBare`, which cut a span (the legacy rule) into a kind and a count for the catalog to word, or into `12 min`, `3 h` or a date; only `now` has no text.
+// and `ago`, the one function that returns no text: it cuts a span into a kind and a count (the legacy rule) and formats only the date, so the words stay in the catalog.
 // Must not: read the clock, the DOM or a browser default, or hold a word a person reads.
 import {HOUR_MS} from '../figures.ts';
 import type {PanelLocaleSpec} from './locale.ts';
@@ -23,9 +23,6 @@ export interface DayParts {
  */
 export type Ago =
   {kind: 'now'} | {kind: 'minutes'; n: number} | {kind: 'hours'; n: number} | {kind: 'date'; date: string};
-
-/** The same cut as `Ago`, without "ago": the span's text (`12 min`, `3 h`, a date), or `now` for the catalog to word. */
-export type AgoBare = {kind: 'now'} | {kind: 'text'; text: string};
 
 export interface Formatters {
   /** `4:07 pm`, `16 h 07`, `16:07`. */
@@ -57,8 +54,6 @@ export interface Formatters {
   fixed(n: number, digits: number): string;
   /** The legacy panel's `ago` rule (1, 60 and 1440 minutes), which stays there until the last feature that says it has moved; `now` is passed in, never read. */
   ago(d: Instant, now: number): Ago;
-  /** `ago` without the word: `12 min`, `3 h`, the date, whatever the locale; under a minute (or ahead of now) there is no text. */
-  agoBare(d: Instant, now: number): AgoBare;
 }
 
 const MINUTE_MS = 6e4;
@@ -131,14 +126,6 @@ export function createFormatters(locale: PanelLocaleSpec): Formatters {
   // the top of its local hour in every whole-hour zone; a half-hour zone (Asia/Kolkata) can be given the previous hour
   const cache = new Map<number, DayParts>();
 
-  const ago = (d: Instant, now: number): Ago => {
-    const minutes = Math.round((now - Number(d)) / MINUTE_MS);
-    if (minutes < 1) return {kind: 'now'};
-    if (minutes < 60) return {kind: 'minutes', n: minutes};
-    if (minutes < 1440) return {kind: 'hours', n: Math.round(minutes / 60)};
-    return {kind: 'date', date: date.format(d)};
-  };
-
   return {
     time: d => timeRule(time.format(d)),
     hour: d => hourRule(hour.format(d)),
@@ -191,14 +178,12 @@ export function createFormatters(locale: PanelLocaleSpec): Formatters {
       }
       return numberRule(format.format(n));
     },
-    ago,
-    agoBare: (d, now) => {
-      const span = ago(d, now);
-      if (span.kind === 'now') return span;
-      return {
-        kind: 'text',
-        text: span.kind === 'minutes' ? `${span.n} min` : span.kind === 'hours' ? `${span.n} h` : span.date,
-      };
+    ago: (d, now) => {
+      const minutes = Math.round((now - Number(d)) / MINUTE_MS);
+      if (minutes < 1) return {kind: 'now'};
+      if (minutes < 60) return {kind: 'minutes', n: minutes};
+      if (minutes < 1440) return {kind: 'hours', n: Math.round(minutes / 60)};
+      return {kind: 'date', date: date.format(d)};
     },
   };
 }

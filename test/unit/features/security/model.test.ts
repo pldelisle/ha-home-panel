@@ -182,6 +182,7 @@ describe('the sensor rows', () => {
     });
     expect(row({on: true, since: NOW - 3 * HOUR}).sub).toBe('for 3 h');
     expect(row({on: true, since: NOW - 10_000}).sub).toBe('for just now');
+    expect(row({on: true, since: NOW - 3 * 24 * HOUR}).sub).toBe('for Nov 4');
   });
 
   test('a closed door says since when, and a battery that is not low says nothing', () => {

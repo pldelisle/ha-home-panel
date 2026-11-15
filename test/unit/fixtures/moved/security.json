@@ -155,12 +155,42 @@
     {
       "key": "security.forDuration",
       "values": {
-        "d": "12 min"
+        "kind": "now"
+      },
+      "written": "depuis un instant"
+    },
+    {
+      "key": "security.forDuration",
+      "values": {
+        "kind": "minutes",
+        "n": 12
       },
       "frame": {
         "en": "· ",
         "fr": "· "
       }
+    },
+    {
+      "key": "security.forDuration",
+      "values": {
+        "kind": "hours",
+        "n": 3
+      },
+      "frame": {
+        "en": "· ",
+        "fr": "· "
+      }
+    },
+    {
+      "key": "security.forDuration",
+      "values": {
+        "kind": "date",
+        "date": "Nov 7"
+      },
+      "fr": {
+        "date": "7 nov."
+      },
+      "written": "depuis le 7 nov."
     },
     {
       "key": "security.batteryLow",
@@ -203,10 +233,6 @@
       "fr": {
         "date": "7 nov."
       }
-    },
-    {
-      "key": "security.justNow",
-      "written": "un instant"
     },
     {
       "key": "security.summary.noCameras"

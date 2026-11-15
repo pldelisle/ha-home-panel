@@ -126,10 +126,9 @@ function cameraTile(camera: CameraInputs, {now, t, fmt}: SecurityModelDeps): Cam
   };
 }
 
-/** The for-how-long of a sensor that is on, without "ago": "12 min", "3 h", "just now". */
+/** The for-how-long of a sensor that is on, as the catalog words `fmt.ago`'s kind and count without "ago": "for 12 min". */
 function forDuration(since: number, {now, t, fmt}: SecurityModelDeps): string {
-  const span = fmt.agoBare(since, now);
-  return t('security.forDuration', {d: span.kind === 'now' ? t('security.justNow') : span.text});
+  return t('security.forDuration', fmt.ago(since, now));
 }
 
 function sensorRow(sensor: SensorInputs, deps: SecurityModelDeps): SensorRow {

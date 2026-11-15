@@ -120,21 +120,6 @@ describe('ago', () => {
   });
 });
 
-// `agoBare` gives the text itself, so the French is the layer's reading of the English one: `12 min` and `3 h` stay, a date is translated
-describe('agoBare', () => {
-  const NOW = T1607.getTime();
-
-  test.each([-5 * 60e3, 20e3, 5 * 60e3, 59 * 60e3, 90 * 60e3, 23 * 60 * 60e3, 40 * 864e5])(
-    '%s ms before now: the French is the layer’s reading of the English',
-    span => {
-      const english = en.agoBare(NOW - span, NOW);
-      const french = fr.agoBare(NOW - span, NOW);
-      if (english.kind === 'now') expect(french).toEqual(english);
-      else expect(french).toEqual({kind: 'text', text: layerText((english as {text: string}).text)});
-    },
-  );
-});
-
 describe('the numbers', () => {
   const VALUES = [0, 7, 12.5, 12.56, 999.99, 1234, 1234.5, 1234567, 0.04, 1.005, -3.5, 1.2345];
 

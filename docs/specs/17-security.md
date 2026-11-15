@@ -115,7 +115,7 @@ export interface SecurityInputs {
 export interface SecurityModelDeps {
   now: number;
   t: Translate;
-  fmt: Formatters; // ago, agoBare, time, date
+  fmt: Formatters; // ago, time, date
 }
 export function securityModel(inputs: SecurityInputs, deps: SecurityModelDeps): SecurityViewModel;
 
@@ -143,7 +143,7 @@ export interface SecurityViewModel {
 ```
 
 - The stamp: `Math.floor(now / 10000)` appended to `entity_picture`, computed in the model from `deps.now`; the element re-runs the model on its own ten-second timer (a `TickController` in the kit, `src/ui/controllers/tick.ts`, one interval per host, paused with the pane; it is also what the Weather detail's observation line and the scenes' "Last 2 h ago" will use, so it has three users by the end of phase 3).
-- `sensorState`'s wording becomes keys: `security.open`, `closed`, `motionNow`, `noMotion`, `forDuration` (`for {d}`), `batteryLow` (`battery {n}%`), `offline`, `lux` (`{n} lx`), joined with `·` as today; `fmt.ago` with the `' ago'` suffix stripped for "for 12 min" is `fmt.agoBare` (spec 11's relative formatter gains the bare form: `{kind: 'text', text: '12 min'}`, or `{kind: 'now'}` for the catalog's `security.justNow`; its equivalence test grows). The sheet's `title` key is the feature's `index.ts` (the pane's ticket), not the model's.
+- `sensorState`'s wording becomes keys: `security.open`, `closed`, `motionNow`, `noMotion`, `forDuration` (`for {kind, select, …}`), `batteryLow` (`battery {n}%`), `offline`, `lux` (`{n} lx`), joined with `·` as today; the bare form ("for 12 min") is a catalog message over `fmt.ago`'s kind and count (`security.forDuration`, an ICU select like `security.ago`), not a formatter: formatters hold no words (ADR 0013), so there is no `fmt.agoBare` here (spec 22's `fmt.agoBare` must follow the same rule). The pane's `title` key is the feature's `index.ts` (the pane's ticket), not the model's. The French this ticket writes that the legacy rewrite layer never produced (`security.forDuration`'s "depuis …" forms, including "un instant" under a minute and the date past 24 hours, and `openLive`, `history`) is recorded in `test/unit/fixtures/moved/security.json`, and #225's French baselines are expected to show it.
 - `history.ts`: `segments(points: HistoryPoint[], t0, now): Segment[]` (`{a, b, live}` as the class builds them, the first point clamped to `t0`, an open segment closed at `now` and marked live), `periodStats(segs, now): {count, total, longest, last: number | null}`, `axisTicks(t0, now, n)`, `durationText(ms, t)` (seconds under a minute, minutes under an hour, else `h min`, through `t('security.duration.*')`), `eventRows(segs, kind, range, fmt, t)` (the last forty, newest first, "Still open" or "Open for 3 min"; the kind words a door's rows and a motion sensor's differently), `statTiles(stats, kind, now, fmt, t)` (the four tiles' labels and values) and `sheetTexts(kind, name, rangeLabel, t)` (the sheet's words). All pure over spec 12's `HistoryPoint`; `periodStats` counts a live period up to its `now`, so the tick re-reads it without new segments.
 - `activity.ts`: `newlyActive(prev: Record<string, boolean>, next: Record<string, boolean>): string[]` is `secWatch`'s rule: ids that are on now and were off before (not unknown before). The Home card holds `prev` as element state and adds the `glow` class for 2.8 seconds when the list is not empty.
 
