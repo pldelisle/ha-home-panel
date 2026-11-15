@@ -1,13 +1,14 @@
 // Air's history as pure functions: the statistics rows in, the series per room and for the outdoor air, the chart words and the options out.
 // Pattern: functional core (Bernhardt, Boundaries), the data half of a humble object (Meszaros), after Weather's history; each rule is the
 // legacy panel's own (`loadAirRange`, `airChart`, `airOutChart`, deleted by #234) and options are plain data (ADR 0022): `fmt` and `t` are arguments.
+// The callers are #233's `<hp-air-detail>`: `metricIds` names what it asks the recorder for, the series and options feed its two `<hp-chart>`s.
 // Must not: call the API client or the cache, read the clock or the DOM, or pick a colour of its own (every colour is a caller's token).
 import {DASH, DAY_MS} from '../../core/figures.ts';
 import type {StatisticRow} from '../../core/ha.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
 import {whole, type Formatters} from '../../core/i18n/format.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
-import {AQ_BANDS} from '../../providers/air-quality.ts';
+import {AQ_BANDS, OUTDOOR_BANDS, type Pollutant} from '../../providers/air-quality.ts';
 import {RANGES, type Range} from '../../ui/ranges.ts';
 import type {AirInputs} from './inputs.ts';
 
@@ -36,6 +37,48 @@ export const CHART_METRICS: readonly ChartMetric[] = ['pm2_5', 'co2', 'voc', 'hu
 /** Comfortable indoor humidity, in percent: the chart's band and its caption. */
 const COMFORTABLE_HUMIDITY = [30, 60] as const;
 
+/** How a metric's chart is drawn and read: the band it shades and that band's label, what its caption says, and whether the station's line joins. */
+interface ChartRule {
+  shade: readonly [number, number];
+  shadeLabel: MessageKey;
+  caption: (words: {t: Translate; fmt: Formatters}) => string;
+  /** The station's PM2.5 is charted beside the rooms' for that one metric. */
+  withStation: boolean;
+}
+
+/** A rated pollutant's rule: the good band is shaded from zero, the caption says both edges. */
+const pollutantRule = (k: Pollutant & ChartMetric, withStation: boolean): ChartRule => ({
+  shade: [0, AQ_BANDS[k][0]],
+  shadeLabel: 'air.level.good',
+  caption: ({t, fmt}) =>
+    [
+      t('air.goodUpTo', {
+        good: fmt.integer(AQ_BANDS[k][0]),
+        moderate: fmt.integer(AQ_BANDS[k][1]),
+        unit: METRICS[k].unit,
+      }),
+      ...(withStation ? [t('air.dashedOutdoor')] : []),
+    ].join(' '),
+  withStation,
+});
+
+/** The rule of each charted metric; humidity has no level, only a comfortable band. */
+const CHART_RULES: Record<ChartMetric, ChartRule> = {
+  pm2_5: pollutantRule('pm2_5', true),
+  co2: pollutantRule('co2', false),
+  voc: pollutantRule('voc', false),
+  humidity: {
+    shade: COMFORTABLE_HUMIDITY,
+    shadeLabel: 'air.comfortable',
+    caption: ({t, fmt}) =>
+      t('air.comfortableHumidity', {
+        from: fmt.integer(COMFORTABLE_HUMIDITY[0]),
+        to: fmt.integer(COMFORTABLE_HUMIDITY[1]),
+      }),
+    withStation: false,
+  },
+};
+
 /** The legacy sheet's defaults: the first range tab and the first metric. */
 export const DEFAULT_RANGE: Range = 'day';
 export const DEFAULT_METRIC: ChartMetric = 'pm2_5';
@@ -53,7 +96,7 @@ const pointsOf = (stats: Rows, id: string | null | undefined, range: Range): Poi
 /** The sensor ids a metric's chart asks the recorder for: each room's, and the station's PM2.5 for that one. */
 export function metricIds({rooms, outside}: Pick<AirInputs, 'rooms' | 'outside'>, metric: ChartMetric): string[] {
   const ids = rooms.map(room => room.sensors[metric]);
-  if (metric === 'pm2_5') ids.push(outside?.pm ?? undefined);
+  if (CHART_RULES[metric].withStation) ids.push(outside?.pm ?? undefined);
   return ids.filter((id): id is string => !!id);
 }
 
@@ -71,7 +114,7 @@ export function metricSeries(
   metric: ChartMetric,
   range: Range,
 ): MetricSeries {
-  const station = metric === 'pm2_5' ? (outside?.pm ?? null) : null;
+  const station = CHART_RULES[metric].withStation ? (outside?.pm ?? null) : null;
   return {
     rooms: rooms.map(room => ({name: room.name, points: pointsOf(stats, room.sensors[metric], range)})),
     outside: station ? pointsOf(stats, station, range) : null,
@@ -96,15 +139,13 @@ export const outdoorSeries = (
 export function chartText(
   metric: ChartMetric,
   range: Range,
-  {t, fmt}: {t: Translate; fmt: Formatters},
+  words: {t: Translate; fmt: Formatters},
 ): {title: string; caption: string} {
-  const [low, high] = metric === 'humidity' ? COMFORTABLE_HUMIDITY : AQ_BANDS[metric];
-  const bands = {good: fmt.integer(low), moderate: fmt.integer(high), unit: METRICS[metric].unit};
-  const caption =
-    metric === 'humidity'
-      ? t('air.comfortableHumidity', {from: fmt.integer(low), to: fmt.integer(high)})
-      : [t('air.goodUpTo', bands), ...(metric === 'pm2_5' ? [t('air.dashedOutdoor')] : [])].join(' ');
-  return {title: t('air.chartTitle', {metric: t(METRICS[metric].label), range: t(RANGES[range].labelKey)}), caption};
+  const {t} = words;
+  return {
+    title: t('air.chartTitle', {metric: t(METRICS[metric].label), range: t(RANGES[range].labelKey)}),
+    caption: CHART_RULES[metric].caption(words),
+  };
 }
 
 // ---------- the options ----------
@@ -161,7 +202,7 @@ export function airChartOptions(
     ...(series.outside ? [{name: t('air.outside'), data: series.outside}] : []),
   ];
   const station = (index: number) => series.outside !== null && index === lines.length - 1;
-  const [from, to] = metric === 'humidity' ? COMFORTABLE_HUMIDITY : [0, AQ_BANDS[metric][0]];
+  const {shade, shadeLabel} = CHART_RULES[metric];
   return {
     chart: {type: 'line'},
     series: lines,
@@ -174,12 +215,12 @@ export function airChartOptions(
     annotations: {
       yaxis: [
         {
-          y: from,
-          y2: to,
+          y: shade[0],
+          y2: shade[1],
           fillColor: tokens.ok,
           opacity: 0.1,
           borderColor: 'transparent',
-          label: bandLabel(t(metric === 'humidity' ? 'air.comfortable' : 'air.level.good'), tokens.muted),
+          label: bandLabel(t(shadeLabel), tokens.muted),
         },
       ],
     },
@@ -249,8 +290,8 @@ export function outdoorChartOptions(series: OutdoorSeries, range: Range, {fmt, t
     annotations: series.aqi.length
       ? {
           yaxis: [
-            band(0, 50, tokens.ok, 0.1, t('air.level.good')),
-            band(50, 100, tokens.warn, 0.08, t('air.level.moderate')),
+            band(0, OUTDOOR_BANDS[0], tokens.ok, 0.1, t('air.level.good')),
+            band(OUTDOOR_BANDS[0], OUTDOOR_BANDS[1], tokens.warn, 0.08, t('air.level.moderate')),
           ],
         }
       : {},

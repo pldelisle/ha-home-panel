@@ -1,6 +1,7 @@
 // The Air commands: what a tap on the purifier asks Home Assistant for, as `Command` data, and the typed names of the values it holds.
 // Pattern: Command (Gamma et al.) built by pure functions; the kit's `CommandRunner` sends them, an element holds the value each
 // `holds` key names in the panel's overlay store (ADR 0023). The rules are the legacy `airControl`'s, deleted by #234.
+// The callers are #233's `<hp-air-room>`: the mode radios send `setMode`, the debounced stepper `setSpeed`, the switch `toggleFan`.
 // Must not: send anything, read the store or the clock, or word a string (`done` is a catalog key, the runner words it).
 import type {Command} from '../../ui/commands.ts';
 import {overlayKey} from '../../ui/overlay-store.ts';

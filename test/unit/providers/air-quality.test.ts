@@ -1,7 +1,14 @@
 // aqLevel, outdoorLevel and rateRoom: the bands at each edge, the index on the US scale, and a room's level, index and why.
 // The rules are the legacy panel's (`roomAir`); a room here is a literal of readings, the test house gives today's answer.
 import {describe, expect, test} from 'vitest';
-import {AQ_BANDS, aqLevel, outdoorLevel, rateRoom, type Pollutant} from '../../../src/providers/air-quality.ts';
+import {
+  AQ_BANDS,
+  aqLevel,
+  OUTDOOR_BANDS,
+  outdoorLevel,
+  rateRoom,
+  type Pollutant,
+} from '../../../src/providers/air-quality.ts';
 import {milaRooms, type AirRoomInputs} from '../../../src/providers/mila.ts';
 import {fullHouse, readingOf} from '../features/media/support.ts';
 
@@ -48,6 +55,10 @@ describe('the bands', () => {
 });
 
 describe('outdoorLevel', () => {
+  test('the bands are the US AQI’s, 50 and 100', () => {
+    expect(OUTDOOR_BANDS).toEqual([50, 100]);
+  });
+
   test('up to 50 good, up to 100 moderate, above poor; no reading counts as good', () => {
     expect([null, 0, 50, 50.5, 100, 100.5, 300].map(outdoorLevel)).toEqual([0, 0, 0, 1, 1, 2, 2]);
   });

@@ -8,7 +8,7 @@ import type {MessageKey} from '../../core/i18n/en.ts';
 import {whole, type Formatters} from '../../core/i18n/format.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
 import {outdoorLevel, rateRoom, type Level, type Pollutant, type RoomRating} from '../../providers/air-quality.ts';
-import type {AirRoomInputs, OutsideAirInputs, PollenKind} from '../../providers/mila.ts';
+import {POLLEN_KINDS, type AirRoomInputs, type OutsideAirInputs, type PollenKind} from '../../providers/mila.ts';
 import type {Overlay} from '../../ui/overlay-store.ts';
 import {RANGES, type Range} from '../../ui/ranges.ts';
 import {K, MAX_PCT, MIN_PCT, type Mode} from './commands.ts';
@@ -34,14 +34,15 @@ const LOWER_WORDS: Record<Tone, MessageKey> = {
   1: 'air.levelLower.moderate',
   2: 'air.levelLower.poor',
 };
-/** The four pollen reports' labels, in the order the panel lists them. */
+/** The two modes' words, by mode: the preset's name is Home Assistant's, the word the household's. */
+const MODE_WORDS: Record<Mode, MessageKey> = {Automagic: 'air.automagic', Manual: 'air.manual'};
+/** The four pollen reports' labels, listed in `POLLEN_KINDS`' order. */
 const POLLEN_LABELS: Record<PollenKind, MessageKey> = {
   trees: 'air.pollen.trees',
   grass: 'air.pollen.grass',
   weeds: 'air.pollen.weeds',
   mold: 'air.pollen.mold',
 };
-const POLLEN_KINDS = Object.keys(POLLEN_LABELS) as PollenKind[];
 /** The statuses Mila reports the pollen in, as the catalog words them; any other is shown capitalised. */
 const POLLEN_STATUSES: ReadonlyMap<string, MessageKey> = new Map([
   ['none', 'air.pollenLevel.none'],
@@ -234,7 +235,7 @@ function roomLine(room: AirRoomInputs, rating: RoomRating, {t, fmt, overlay}: Ai
     ? t('air.purifierOffline')
     : !room.fan.on
       ? t('air.fanOff')
-      : t('air.fanLine', {mode: t(mode === 'Automagic' ? 'air.automagic' : 'air.manual'), n: pct});
+      : t('air.fanLine', {mode: t(MODE_WORDS[mode]), n: pct});
   return {
     id: room.fanId,
     name: room.name,
@@ -273,11 +274,7 @@ function controlOf(room: AirRoomInputs, {t, fmt, overlay}: AirModelDeps): RoomCo
   return {
     offline: false,
     modeLabel: t('air.mode', {name: room.name}),
-    modes: (['Automagic', 'Manual'] as const).map(m => ({
-      mode: m,
-      label: t(m === 'Automagic' ? 'air.automagic' : 'air.manual'),
-      checked: m === mode,
-    })),
+    modes: (['Automagic', 'Manual'] as const).map(m => ({mode: m, label: t(MODE_WORDS[m]), checked: m === mode})),
     speed:
       mode === 'Manual'
         ? {

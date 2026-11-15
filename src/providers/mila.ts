@@ -26,7 +26,7 @@ export const AIR_SUFFIXES = [
 export type AirSuffix = (typeof AIR_SUFFIXES)[number];
 
 /** The pollen the station reports, in the order the panel lists them (the legacy `POLLEN`, deleted by #234). */
-const POLLEN_KINDS = ['trees', 'grass', 'weeds', 'mold'] as const;
+export const POLLEN_KINDS = ['trees', 'grass', 'weeds', 'mold'] as const;
 export type PollenKind = (typeof POLLEN_KINDS)[number];
 
 /** The sensors read as numbers, by the key the readings carry them under; `airQuality` is Mila's own index, on the US AQI scale. */
