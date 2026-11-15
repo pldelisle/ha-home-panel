@@ -89,8 +89,9 @@ module.exports = {
     {
       name: 'no-orphans',
       severity: 'error',
-      comment: 'A module nothing imports is dead code. The entry and declaration files are the exceptions.',
-      from: {orphan: true, pathNot: [ENTRY, '\\.d\\.ts$']},
+      comment:
+        'A module nothing imports is dead code. The entry and declaration files are the exceptions; so is the climate gauge until its model (#245) reads it.',
+      from: {orphan: true, pathNot: [ENTRY, '\\.d\\.ts$', '^src/features/climate/gauge-geometry\\.ts$']},
       to: {},
     },
     {

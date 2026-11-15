@@ -135,6 +135,16 @@ describe('a room', () => {
     expect(read([])).toMatchObject({temperature: null, setpoint: null, power: null, available: false});
   });
 
+  test('the range its dial goes over is the thermostat’s min_temp and max_temp, else 5 to 30, and the defaults while it is unavailable', () => {
+    expect(read([thermostat('den', 'heat', {min_temp: 7, max_temp: 28.5})])).toMatchObject({minTemp: 7, maxTemp: 28.5});
+    expect(read([thermostat('den', 'heat', {min_temp: 'cold'})])).toMatchObject({minTemp: 5, maxTemp: 30});
+    expect(read([thermostat('den', 'unavailable', {min_temp: 7, max_temp: 28})])).toMatchObject({
+      minTemp: 5,
+      maxTemp: 30,
+    });
+    expect(read([])).toMatchObject({minTemp: 5, maxTemp: 30});
+  });
+
   test('its name is left to roomName: the key, the config’s name and the thermostat’s own name (empty when it has none)', () => {
     expect(read([thermostat('den')], {name: 'Entry'})).toMatchObject({
       key: 'den',

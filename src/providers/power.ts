@@ -7,19 +7,35 @@
 import type {ResolvedConfig, RoomSpec} from '../core/config.ts';
 import type {HassEntities} from '../core/hass.ts';
 import type {RoomNameInputs} from '../core/i18n/room-name.ts';
+import type {RoomIcon} from '../core/room-icons.ts';
 import {isAvailable, kilowattsOf, numberAttributeOf, numberOf, textAttributeOf} from '../core/states.ts';
 
+/**
+ * Hilo's frost guard, the lowest setpoint a thermostat takes and the default `minTemp` of one that does not say its own range;
+ * a setpoint at or below `OFF_AT_OR_BELOW` is the thermostat off (the legacy wrote `sp > 5.5` for "holding"), the one line the
+ * climate list, dial and gauge read. Both are the legacy panel's values, deleted in #248.
+ */
+export const FROST_GUARD = 5;
+export const OFF_AT_OR_BELOW = 5.5;
+/** A thermostat that does not say its own range goes up to 30 (legacy, #248). */
+const DEFAULT_MAX_TEMP = 30;
 /** A room whose own power sensor reads over 50 W is heating even when its thermostat says otherwise (the legacy `live()`, deleted in #241). */
 const HEATING_KW = 0.05;
 
 export interface RoomPower extends RoomNameInputs {
   climate: string;
+  /** The glyph's name the config gives the room: data a reader keys a drawing by, not a word. */
+  icon: RoomIcon;
   /** The room's power sensor in kW; null when it has none or reports no number. */
   power: number | null;
   /** The thermostat's `current_temperature`, else the room's temperature sensor; null when neither reads. */
   temperature: number | null;
   /** The thermostat's `temperature` attribute; null when it is unavailable or has none. */
   setpoint: number | null;
+  /** The thermostat's `min_temp`, else 5; the lowest setpoint its dial and stepper go to. */
+  minTemp: number;
+  /** The thermostat's `max_temp`, else 30. */
+  maxTemp: number;
   /** The thermostat says `heating`, or the room's power is over 50 W. */
   heating: boolean;
   /** False when the thermostat is missing, `unavailable` or `unknown`. */
@@ -50,9 +66,12 @@ export function roomPower(states: HassEntities, room: RoomSpec): RoomPower {
     configuredName: room.n,
     thermostatName: textAttributeOf(states, room.climate, 'friendly_name') ?? '',
     climate: room.climate,
+    icon: room.icon,
     power,
     temperature: reading ?? numberOf(states, room.temp),
     setpoint: available ? numberAttributeOf(states, room.climate, 'temperature') : null,
+    minTemp: (available ? numberAttributeOf(states, room.climate, 'min_temp') : null) ?? FROST_GUARD,
+    maxTemp: (available ? numberAttributeOf(states, room.climate, 'max_temp') : null) ?? DEFAULT_MAX_TEMP,
     heating:
       (available && textAttributeOf(states, room.climate, 'hvac_action') === 'heating') || (power ?? 0) > HEATING_KW,
     available,
@@ -60,7 +79,7 @@ export function roomPower(states: HassEntities, room: RoomSpec): RoomPower {
 }
 
 /** The live flow, read once for every reader: the grid, the loads, each room, the heat pump. */
-export function powerNow(states: HassEntities, config: ResolvedConfig): PowerNow {
+export function powerNow(states: HassEntities, config: Pick<ResolvedConfig, 'entities' | 'rooms'>): PowerNow {
   const {entities} = config;
   const grid = kilowattsOf(states, entities.grid);
   const waterHeater = kilowattsOf(states, entities.whP);

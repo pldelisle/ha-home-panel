@@ -1,0 +1,35 @@
+{
+  "about": "The English messages the Climate move's pure half introduced (src/core/i18n/en.ts, climate.*, the list's items), each with sample values. test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer makes of the English. The entries the legacy panel still renders stay in src/i18n/fr.js until #248 deletes them.",
+  "messages": [
+    {"key": "climate.wholeHouse"},
+    {"key": "climate.roomsHeating", "values": {"n": 0}},
+    {"key": "climate.roomsHeating", "values": {"n": 1}},
+    {"key": "climate.roomsHeating", "values": {"n": 3}},
+    {"key": "climate.heatPumpPlusRooms", "values": {"n": 0}},
+    {"key": "climate.heatPumpPlusRooms", "values": {"n": 1}},
+    {"key": "climate.heatPumpPlusRooms", "values": {"n": 3}},
+    {"key": "climate.unavailable"},
+    {"key": "climate.heatingKw", "values": {"kw": "1.20"}},
+    {"key": "climate.holding", "values": {"n": "21"}},
+    {"key": "climate.holding", "values": {"n": "20.5"}},
+    {"key": "climate.off"},
+    {"key": "climate.heatPump"},
+    {"key": "climate.notFound"},
+    {"key": "climate.hpOffline", "values": {"brand": "Fujitsu"}},
+    {"key": "climate.hpOff", "values": {"brand": "Fujitsu"}},
+    {"key": "climate.hpAction", "values": {"brand": "Fujitsu", "action": "idle"}, "fr": {"action": "au repos"}},
+    {
+      "key": "climate.hpActionTo",
+      "values": {"brand": "Fujitsu", "action": "heating", "n": "22"},
+      "fr": {"action": "chauffe"}
+    },
+    {"key": "climate.action.heating"},
+    {"key": "climate.action.cooling"},
+    {"key": "climate.action.idle"},
+    {"key": "climate.action.heat"},
+    {"key": "climate.action.cool"},
+    {"key": "climate.action.auto"},
+    {"key": "climate.action.dry"},
+    {"key": "climate.action.fan"}
+  ]
+}

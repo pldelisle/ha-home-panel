@@ -25,6 +25,8 @@ export interface DeviceRegistryEntry {
   area_id?: string | null;
   name?: string | null;
   name_by_user?: string | null;
+  /** The maker the integration reports, as Home Assistant shows it under the device. */
+  manufacturer?: string | null;
 }
 
 /** One row of the area registry (hass.areas). */
