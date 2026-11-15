@@ -1,8 +1,7 @@
 // dialGeometry and dialValueFromPointer: the phone's thermostat dial as geometry, and the pointer's way back to a setpoint.
 // Pattern: pure geometry (a layout returns numbers and path data, the element places them with `svg` templates), as `flowLayout`
 // and `waterChart` do for Energy; the legacy `dial()` and `dialValue()` copied number for number, constants included (deleted in #248).
-// Must not: import Lit or the DOM, read state or the clock, or hold a word (the model words "Off" from `off`).
-import {DASH} from '../../core/figures.ts';
+// Must not: import Lit or the DOM, read state or the clock, or hold a word or a formatted number (the model words "Off" and the figures from `off` and `shown`).
 import {OFF_AT_OR_BELOW} from '../../providers/power.ts';
 
 /** The dial's drawing, in the legacy constants: a 270 degree track opening downwards, 55 ticks and every sixth one long (legacy, #248). */
@@ -32,8 +31,8 @@ export interface DialGeometry {
   now: {cx: number; cy: number} | null;
   /** The setpoint's knob (at the start when off); null while the setpoint is unknown (`undefined`, still loading). */
   knob: {cx: number; cy: number} | null;
-  /** The centre's text: the setpoint, else the temperature, else a dash; empty when `off`, for the model to word. */
-  big: string;
+  /** The setpoint the knob stands for, `lo` while the thermostat is off; null while the setpoint is unknown, when the centre shows the temperature. The model words it. */
+  shown: number | null;
   /** The thermostat is off: a setpoint of `null`, or at or below the frost guard. */
   off: boolean;
 }
@@ -73,9 +72,6 @@ export function dialGeometry(
   // not loaded is not off: the legacy `off` was true there too, but only the house reads it, and its dial is not editable
   const off = sp === null || (sp !== undefined && sp <= OFF_AT_OR_BELOW);
   const shown = sp === undefined ? null : off ? lo : clamp(sp);
-  let big: string;
-  if (shown === null) big = t === null ? DASH : `${t.toFixed(1)}°`;
-  else big = off ? '' : `${shown.toFixed(1)}°`;
   return {
     track: arc(start, start + sweep) as string,
     active: shown === null || off ? null : arc(start, degrees(shown)),
@@ -88,7 +84,7 @@ export function dialGeometry(
     }),
     now: t === null ? null : spot(t),
     knob: shown === null ? null : spot(shown),
-    big,
+    shown,
     off,
   };
 }

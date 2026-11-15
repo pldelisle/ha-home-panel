@@ -16,7 +16,8 @@ const DEFAULT_MODES = ['off', 'heat'];
 /** A unit made by Fujitsu, or through FGLair, whose maker the device does not always say. */
 const FUJITSU_PLATFORM = /fglair/;
 const FUJITSU = /fujitsu/i;
-const BRAND = 'Fujitsu';
+/** The maker's name the provider gives such a unit: data, for the model to compare, not a word. */
+export const FUJITSU_BRAND = 'Fujitsu';
 
 export interface HeatPumpInputs {
   /** The config's `heat_pump` entity. */
@@ -60,7 +61,9 @@ function brandOf(id: string, {entities, devices}: Registries): string | null {
   const entry = entities?.[id];
   const device = entry?.device_id ? devices?.[entry.device_id] : undefined;
   const manufacturer = device?.manufacturer || '';
-  return FUJITSU_PLATFORM.test(entry?.platform || '') || FUJITSU.test(manufacturer) ? BRAND : manufacturer || null;
+  return FUJITSU_PLATFORM.test(entry?.platform || '') || FUJITSU.test(manufacturer)
+    ? FUJITSU_BRAND
+    : manufacturer || null;
 }
 
 /** The heat pump at these states; null when the config has none. */
