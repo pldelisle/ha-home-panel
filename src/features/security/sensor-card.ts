@@ -19,7 +19,7 @@ export class SensorCard extends LitElement {
   static override properties = {
     view: {attribute: false},
   };
-  /** The model's sensors: the title, the doors' line and the rows. The pane draws the card only when there is a sensor. */
+  /** The model's sensors: the title, the doors' line and the rows. The pane places the card only when there is a sensor (`hidden`): the card does not test it again. */
   declare view: SecurityViewModel['sensors'] | undefined;
 
   // The element's own rules, the card's chrome as the host's and what only its tree has, are in sensor-card.element.css.
@@ -33,7 +33,7 @@ export class SensorCard extends LitElement {
 
   protected override render() {
     const view = this.view;
-    if (!view || view.hidden) return nothing;
+    if (!view) return nothing;
     const {line} = view;
     return html`<div class="top">
         <span class="lbl">${view.title}</span

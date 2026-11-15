@@ -1,10 +1,10 @@
 /*
- * <hp-camera-card>'s own rules: the card's chrome as the host's, its title line, the grid of snapshots with each tile's label and
- * motion dot, and the empty state with its link. Moved from the legacy `.camgrid`, `.cam`, `.camlbl`, `.mdot` and `.camempty`
- * rules (extra.css, phone.css, glass.css), which #224 deleted; `.camlive` is the camera sheet's and stays with the legacy sheet
- * until #225. Known copies of rules the guest's other cards still draw: `.card`, `.card .top`, `.card .top .right`, `.lbl` and
- * `.more` (base.css, glass.css, motion.css), read here as the host, `.top`, `.right`, `.lbl` and `.camempty .more`; the
- * styles-split test lets one file write a selector, and a shadow root cannot reach the legacy rule anyway.
+ * <hp-camera-card>'s own rules: the card's chrome as the host's, its title line, the snapshot grid (tile, label, motion dot) and the
+ * empty state with its link. Moved from the legacy `.camgrid`, `.cam`, `.camlbl`, `.mdot` and `.camempty` rules (extra.css, phone.css,
+ * glass.css), which #224 deleted; `.camlive` is the camera sheet's and stays legacy until #225. Known copies of rules the guest's other
+ * cards still draw: `.card`, `.card .top`, `.card .top .right`, `.lbl` and `.more` (base.css, glass.css, motion.css), read here as the
+ * host, `.top`, `.right`, `.lbl` and `.camempty .more`; a shadow root cannot reach the legacy rule. The sensor card has the same chrome:
+ * a kit card sheet waits for a `.card`-to-`:host` view (forShadow turns `.app` only) and for the third card, the Home card (#226).
  */
 :host {
   display: block;

@@ -8,7 +8,10 @@ export const CAMERA_SHEET = 'security.camera';
 /** A sensor's history, over the screen on every tab: its request says which sensor (`{id}`). The guest's sheet until #225. */
 export const HISTORY_SHEET = 'security.history';
 
-/** The id of the camera or sensor a sheet is asked to show, or undefined for any other detail. */
+/**
+ * The id of the camera or sensor a sheet is asked to show, or undefined for any other detail. Exported for the shell's bridge to the
+ * guest's sheets alone, until #225 moves the sheets here and the bridge goes; no other module reads it.
+ */
 export const entityIdOf = (detail: unknown): string | undefined => {
   const id = (detail as {id?: unknown} | null | undefined)?.id;
   return typeof id === 'string' ? id : undefined;
