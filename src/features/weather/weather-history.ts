@@ -35,6 +35,9 @@ import {forShadow} from '../../ui/styles/host.ts';
 
 type Rows = Record<string, readonly StatisticRow[]>;
 
+/** The ranges a tile's history offers, in the order of their tabs; `today` is Energy's. */
+const HISTORY_RANGES: readonly Range[] = ['day', 'week', 'month', 'year'];
+
 /** What a range's request brought back, with what it was asked for. */
 interface Loaded {
   /** `tile/range/generation`: what the rows are for. */
@@ -159,7 +162,7 @@ export class WeatherHistory extends LitElement {
     const heading = t(def.labelKey);
     const title = t('weather.history.title', {name: heading, range: t(RANGES[this.range].labelKey)});
     const note = t(def.noteKey);
-    const tabs: RangeTab[] = (Object.keys(RANGES) as Range[]).map(range => ({range, label: t(RANGES[range].tabKey)}));
+    const tabs: RangeTab[] = HISTORY_RANGES.map(range => ({range, label: t(RANGES[range].tabKey)}));
     const state = this.state();
     const lines = state === 'chart' ? (this.drawn?.series ?? []) : [];
     return html`<hp-sheet
@@ -267,6 +270,7 @@ export class WeatherHistory extends LitElement {
   private async load(cache: StatisticsCache, key: string, ids: string[]): Promise<void> {
     const range = this.range;
     const {days, period} = RANGES[range];
+    if (period === null) return; // `today` is Energy's and has no statistics: the tabs never offer it
     const token = ++this.token;
     this.requested = key;
     const now = Date.now();

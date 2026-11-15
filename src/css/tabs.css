@@ -633,31 +633,6 @@
   justify-content: space-between;
   gap: 10px 16px;
 }
-.sankey {
-  margin-top: 12px;
-}
-.sankey svg {
-  display: block;
-  width: 100%;
-  height: auto;
-  overflow: visible;
-}
-.sk text {
-  font-family: var(--f-body);
-  font-size: calc(13px * var(--tx));
-  font-weight: 600;
-  fill: var(--fg);
-  paint-order: stroke;
-  stroke: var(--card);
-  stroke-width: 5px;
-  stroke-linejoin: round;
-}
-.sk text.v {
-  font-family: var(--f-num);
-  font-weight: var(--num-w);
-  fill: var(--fg2);
-  font-size: calc(12.5px * var(--tx));
-}
 /* Media pane: TV left, speakers right */
 .pane-media {
   display: grid;

@@ -1,6 +1,6 @@
 // flowLayout: the live power flow as geometry: the nodes' centres and radii, the connectors' widths and dash durations, and every text.
 // Pattern: pure geometry (a layout function returns numbers and texts, the element places them with `svg` templates; Climate's dial (#242) and Car's
-// bars (#249) will follow), the legacy `flowSvg` copied number for number (deleted in #240, with the Sankey that still draws it); the powers come from `powerNow`, and each word and figure through `t` and `fmt`.
+// bars (#249) will follow), the legacy `flowSvg` copied number for number (deleted in #240, with the Sankey's Now mode that drew it); the powers come from `powerNow`, and each word and figure through `t` and `fmt`.
 // Must not: import Lit or the DOM, read the clock, state or the registry, or hold a word a person reads (a catalog key says it).
 import {DASH} from '../../core/figures.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';

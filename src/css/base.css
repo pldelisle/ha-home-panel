@@ -173,42 +173,6 @@
   color: var(--fg2);
   flex: none;
 }
-/* energy flow */
-.flow {
-  width: 100%;
-  height: auto;
-  display: block;
-  max-width: 440px;
-  margin: 0 auto;
-}
-.flow text {
-  fill: var(--fg);
-  font-family: var(--f-body);
-}
-.flow .big {
-  font-family: var(--f-num);
-  font-weight: var(--num-w);
-}
-.flow .cap {
-  fill: var(--fg2);
-  font-size: calc(11px * var(--tx));
-  font-weight: 700;
-  letter-spacing: 0.12em;
-}
-.flow .st {
-  fill: var(--fg2);
-  font-size: calc(11.5px * var(--tx));
-  font-weight: 500;
-}
-.dash {
-  stroke-dasharray: 6 7;
-  animation: flowmove 1.2s linear infinite;
-}
-@keyframes flowmove {
-  to {
-    stroke-dashoffset: -26;
-  }
-}
 
 /* attention */
 .att {
@@ -336,40 +300,6 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
-.donut {
-  display: flex;
-  gap: 18px;
-  align-items: center;
-  flex-wrap: wrap;
-  margin-top: 10px;
-}
-.donut table {
-  border-collapse: collapse;
-  font-size: calc(13.5px * var(--tx));
-  flex: 1 1 220px;
-}
-.donut td {
-  padding: 6px 4px;
-}
-.donut td.r {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-.totals {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  margin-top: 10px;
-}
-@media (max-width: 520px) {
-  .totals {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-.totals .tile {
-  background: var(--card);
-}
 .note {
   margin-top: 22px;
   font-size: calc(12.5px * var(--tx));
@@ -377,9 +307,6 @@
   max-width: 90ch;
 }
 @media (prefers-reduced-motion: reduce) {
-  .dash {
-    animation: none;
-  }
   .card.tap {
     transition: none;
   }
@@ -978,9 +905,6 @@
   .cdet .big .t {
     font-size: calc(52px * var(--tx));
   }
-}
-.totals .tile {
-  background: var(--card2);
 }
 .lbl {
   letter-spacing: 0.04em;

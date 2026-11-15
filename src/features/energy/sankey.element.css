@@ -1,0 +1,29 @@
+/*
+ * <hp-sankey>'s own rules: the drawing's size and its labels. Moved from the legacy `.sankey svg`, `.sk text` and `.sk text.v` rules (tabs.css),
+ * which the detail's move (#240) deleted, read under the drawing's own selectors (`svg`, `text`, `text.v`).
+ */
+:host {
+  display: block;
+}
+svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+text {
+  font-family: var(--f-body);
+  font-size: calc(13px * var(--tx));
+  font-weight: 600;
+  fill: var(--fg);
+  paint-order: stroke;
+  stroke: var(--card);
+  stroke-width: 5px;
+  stroke-linejoin: round;
+}
+text.v {
+  font-family: var(--f-num);
+  font-weight: var(--num-w);
+  fill: var(--fg2);
+  font-size: calc(12.5px * var(--tx));
+}

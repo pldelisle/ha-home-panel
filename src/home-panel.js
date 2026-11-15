@@ -76,11 +76,11 @@ const LAYOUT = ['lights', 'open-climate', 'open-air', 'open-car'];
 // thermostats without an HA area: the area each Hilo room belongs to
 // areas the Phone tab shows as part of another, the way Apple Home groups them: the parking spot's charger and camera live in the garage
 // AL_AREAS (from the config): HA area → Adaptive Lighting switch, for areas the panel can't match on its own
-// Tabs view: one pane per subject, for a tablet fixed to the wall. Five panes host the detail sheets inline. The rail, the
+// Tabs view: one pane per subject, for a tablet fixed to the wall. The panes of Climate and Car host their legacy detail sheets inline, until #248 and #253. The rail, the
 // phone's bar and the panes are the shell's (src/shell/features.ts); the guest fills what is inside them.
 // the sheets that wait for the charts library before they draw anything; the others never do
-const CHART_SHEETS = new Set(['sh-energy', 'sh-climate', 'sh-car']);
-const TAB_SHEET = {climate: 'sh-climate', car: 'sh-car', energy: 'sh-energy'};
+const CHART_SHEETS = new Set(['sh-climate', 'sh-car']);
+const TAB_SHEET = {climate: 'sh-climate', car: 'sh-car'};
 // the tab whose pane hosts a sheet's panel
 const SHEET_TAB = /** @type {Record<string, import('./ui/feature.ts').FeatureKey>} */ (
   Object.fromEntries(Object.entries(TAB_SHEET).map(([t, id]) => [id, t]))
@@ -461,7 +461,6 @@ export class LegacyPanel {
     this.drawnTab = 'home'; // the tab the guest last drew its part of (tabChanged); `tab` is the shell's
     this.framed = false; // whether build() has drawn once, so the next draw asks the shell for a fresh frame
     this.frameKey = null; // what availability() said when the shell was last asked to draw the rail
-    this.range = 'today';
     this.climSel = 'house';
     this.sesAll = false;
     this.cache = {}; // last innerHTML per container, to skip identical updates
@@ -778,20 +777,6 @@ export class LegacyPanel {
     </div>
   </div>
 
-<div class="sheet" id="sh-energy" hidden><div class="panel" role="dialog" aria-modal="true" aria-labelledby="eh">
-  <div class="ph"><span class="badge" style="--acc:var(--c-grid)"><svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z" fill="currentColor"/></svg></span>
-    <div class="grow"><h2 id="eh">Home energy</h2><div class="sub" id="esub"></div></div>
-    <div class="tabs" role="tablist" id="etabs"><button class="tab" role="tab" aria-selected="true" data-r="today">Today</button><button class="tab" role="tab" aria-selected="false" data-r="week">Week</button><button class="tab" role="tab" aria-selected="false" data-r="month">Month</button><button class="tab" role="tab" aria-selected="false" data-r="year">Year</button></div>
-    <button class="icon close" type="button" aria-label="Close">✕</button></div>
-  <div class="inner"><h3 id="et"></h3><p id="es"></p><div class="legend" id="el"></div><div id="c-main"></div></div>
-  <div class="inner" style="margin-top:14px"><div class="shead"><div><h3>Where the power goes</h3><p id="skp"></p></div>
-    <div class="tabs" role="tablist" id="stabs" aria-label="Sankey period"><button class="tab" role="tab" aria-selected="true" data-s="now">Now</button><button class="tab" role="tab" aria-selected="false" data-s="today">Today</button><button class="tab" role="tab" aria-selected="false" data-s="d30">30 days</button></div></div>
-    <div class="sankey" id="sankey"></div></div>
-  <div class="two">
-    <div class="inner"><h3>Where it went</h3><p>Last 30 days. Rest of home is everything without its own power sensor, including the heat pump.</p><div class="donut"><div id="c-donut" style="width:190px"></div><table id="dt"></table></div></div>
-    <div class="inner"><h3>Totals</h3><p>From the Hilo smart meter</p><div class="totals" id="tot"></div></div>
-  </div></div></div>
-
 <div class="sheet" id="sh-climate" hidden><div class="panel" role="dialog" aria-modal="true" aria-labelledby="ch">
   <div class="ph"><span class="badge" style="--acc:var(--c-home)"><svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 3a2 2 0 0 1 4 0v10.3a4.5 4.5 0 1 1-4 0z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="17" r="2" fill="currentColor"/></svg></span>
     <div class="grow"><h2 id="ch">Home climate</h2><div class="sub" id="csub"></div></div>
@@ -850,7 +835,7 @@ export class LegacyPanel {
         element: el,
         inline: SHEET_TAB[el.id] && {
           pane: SHEET_TAB[el.id],
-          host: SHEET_TAB[el.id] === 'energy' ? 'ehost' : 'pane-' + SHEET_TAB[el.id],
+          host: 'pane-' + SHEET_TAB[el.id],
         },
       }),
     );
@@ -1166,7 +1151,7 @@ export class LegacyPanel {
           label: pk && pk.state === 'on' ? 'Critical peak now' : 'Critical peak coming',
           color: 'var(--crit)',
           right: 'Hydro-Québec',
-          go: 'sh-energy',
+          go: 'energy.detail',
           body: mid(pk && pk.state === 'on' ? 'Lower consumption now' : 'Hydro-Québec announced a critical peak'),
           foot: `Using ${L0kw(this.live().grid)} right now`,
         }),
@@ -1178,7 +1163,7 @@ export class LegacyPanel {
           label: 'Hilo challenge',
           color: 'var(--crit)',
           right: 'Hilo',
-          go: 'sh-energy',
+          go: 'energy.detail',
           body: mid(String(defi.state)),
           foot: `Using ${L0kw(this.live().grid)} right now`,
         }),
@@ -1347,7 +1332,7 @@ export class LegacyPanel {
           label: 'Energy today',
           color: 'var(--m-orange)',
           right: 'so far',
-          go: 'sh-energy',
+          go: 'energy.detail',
           filler: true,
           body:
             big(f1(T.today), ' kWh') +
@@ -1447,13 +1432,6 @@ export class LegacyPanel {
       });
     });
     this.root.querySelectorAll('.sheet').forEach(sh => this.swipeToClose(sh.querySelector('.panel'), sh.id));
-    this.$('etabs').addEventListener('click', e => {
-      const b = e.target.closest('.tab');
-      if (!b) return;
-      this.root.querySelectorAll('#etabs .tab').forEach(t => t.setAttribute('aria-selected', t === b));
-      this.range = b.dataset.r;
-      this.energyMain();
-    });
     this.$('attpop').addEventListener('click', e => this.laClick(e));
     this.$('chips').addEventListener('click', e => {
       if (e.target.closest('.attchip')) {
@@ -1701,12 +1679,6 @@ export class LegacyPanel {
       if (t) return this.ctx.shell.setTab(t.dataset.pane);
     };
     tv.addEventListener('click', onTap);
-    this.$('stabs').addEventListener('click', e => {
-      const b = e.target.closest('.tab');
-      if (!b) return;
-      this.smode = b.dataset.s;
-      this.renderSankey();
-    });
     this.$('ctabs').addEventListener('click', e => {
       const b = e.target.closest('.tab');
       if (!b || b.dataset.r === this.crange) return;
@@ -1896,10 +1868,6 @@ export class LegacyPanel {
         this.$('csub').textContent = this.climateSummary();
       }
       if (this.sheets.isOpen('sh-car')) this.renderCarSheetLive();
-      if (this.sheets.isOpen('sh-energy')) {
-        this.$('esub').textContent = this.energySummary();
-        if ((this.smode || 'now') === 'now') this.renderSankey();
-      }
       if (this.sheets.isOpen('sh-climate')) {
         this.renderClimateHead();
         this.renderClimateControls();
@@ -2019,44 +1987,6 @@ export class LegacyPanel {
       ? `<div class="err">History didn't load: ${esc(this.histErr)}. Live values still update.</div>`
       : '';
     this.set('err', err);
-  }
-
-  flowSvg() {
-    const L = this.live();
-    const kwTxt = v => (v == null ? '–' : v < 1 ? Math.round(v * 1000) + ' W' : v.toFixed(2));
-    const unit = v => (v == null || v < 1 ? '' : 'kW');
-    const nHeat = L.rooms.filter(r => r.heating).length,
-      whT = this.num(this.E.whT),
-      wb = this.st(this.E.wbStatus);
-    // a live connector's dashes run faster and the line grows thicker with the power on it (motion.css)
-    const dash = (on, c, x1, y1, x2, y2, kw) =>
-      `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${on ? c : 'var(--ring)'}" stroke-width="${on ? (3 + Math.min(2, (kw || 0) / 2)).toFixed(1) : 3}" class="${on ? 'dash' : ''}"${on ? ` style="animation-duration:${Math.max(0.45, 2.4 - (kw || 0) * 0.4).toFixed(2)}s"` : ''}/>`;
-    const node = (
-      cx,
-      cy,
-      r,
-      v,
-      color,
-      on,
-      sub,
-    ) => `<g><circle cx="${cx}" cy="${cy}" r="${r}" fill="var(--card)" stroke="${on ? color : 'var(--ring)'}" stroke-width="3"/>
-      <text x="${cx}" y="${cy + (unit(v) ? -2 : 6)}" text-anchor="middle" class="big" font-size="${r > 41 ? 20 : 18}">${kwTxt(v)}</text>${unit(v) ? `<text x="${cx}" y="${cy + 16}" text-anchor="middle" class="st">kW</text>` : sub ? `<text x="${cx}" y="${cy + 21}" text-anchor="middle" class="st">${sub}</text>` : ''}</g>`;
-    return `<svg class="flow" viewBox="0 0 440 340" role="img" aria-label="Grid supplies ${kwTxt(L.grid)} to the home; room heating ${kwTxt(L.heat)}; water heating ${kwTxt(L.wh)}; EV charging ${kwTxt(L.ev)}">
-        ${dash(L.grid > 0.02, 'var(--c-grid)', 112, 160, 164, 160, L.grid)}${dash(L.heat > 0.02, 'var(--c-heat)', 276, 160, 328, 160, L.heat)}
-        ${dash(L.wh > 0.02, 'var(--c-wh)', 220, 104, 220, 92, L.wh)}${dash(L.ev > 0.02, 'var(--c-ev)', 220, 216, 220, 236, L.ev)}
-        ${L.ev > 0.02 ? '<circle cx="220" cy="276" r="40" class="npulse" fill="none" stroke="var(--c-ev)" stroke-width="3"/>' : ''}
-        ${node(70, 160, 42, L.grid, 'var(--c-grid)', true)}<text x="70" y="222" text-anchor="middle" class="cap">GRID</text><text x="70" y="238" text-anchor="middle" class="st">${L.grid > 0.02 ? 'Importing' : 'Idle'}</text>
-        <g><circle cx="220" cy="160" r="56" fill="var(--card)" stroke="var(--c-home)" stroke-width="4"/><text x="220" y="158" text-anchor="middle" class="big" font-size="28">${L.grid == null ? '–' : L.grid.toFixed(2)}</text><text x="220" y="178" text-anchor="middle" class="st">kW · HOME</text></g>
-        ${node(220, 50, 40, L.wh, 'var(--c-wh)', L.wh > 0.02, whT != null ? whT.toFixed(1) + '°' : '')}<text x="300" y="44" class="cap">WATER HEATING</text><text x="300" y="60" class="st">${L.wh > 0.02 ? 'Heating' : 'Idle'}${whT != null && whT >= 48 ? ', hot' : ''}</text>
-        ${node(370, 160, 42, L.heat, 'var(--c-heat)', L.heat > 0.02)}<text x="370" y="222" text-anchor="middle" class="cap">ROOM HEATING</text><text x="370" y="238" text-anchor="middle" class="st">${nHeat} of ${this.ROOMS.length} rooms on</text>
-        ${node(220, 276, 40, L.ev, 'var(--c-ev)', L.ev > 0.02)}<text x="300" y="272" class="cap">EV CHARGING</text><text x="300" y="288" class="st">${esc(ok(wb) ? wb.state : 'Unavailable')}</text>
-        <text x="120" y="290" text-anchor="end" class="st">Rest of home</text><text x="120" y="306" text-anchor="end" class="big" font-size="15">${L.rest == null ? '–' : L.rest.toFixed(2) + ' kW'}</text>
-      </svg>`;
-  }
-  energySummary() {
-    const L = this.live(),
-      ri = this.rateInfo();
-    return `Grid supplying ${L.grid == null ? '–' : L.grid.toFixed(2)} kW · room heating ${L.heat.toFixed(2)} kW · Hilo ${ri.short}`;
   }
 
   // ---------- attention ----------
@@ -2844,7 +2774,7 @@ export class LegacyPanel {
       } catch {}
     });
     this.charts = [];
-    this.mainChart = this.climChart = null;
+    this.climChart = null;
   }
   redrawCharts() {
     const id = this.sheets.shown;
@@ -2868,7 +2798,6 @@ export class LegacyPanel {
     }
     if (tag !== this.sheetTag || !this.sheets.isOpen(id)) return;
     try {
-      if (id === 'sh-energy') this.energySheet();
       if (id === 'sh-climate') this.climateSheet();
       if (id === 'sh-car') this.carSheet();
       if (id === 'sh-light') this.renderLightSheet();
@@ -2936,186 +2865,6 @@ export class LegacyPanel {
       rest: this.css('--c-rest'),
       card: this.css('--card'),
     };
-  }
-  groups(s) {
-    return [
-      [s.heat, 'Room heating', 'heat'],
-      [s.wh, 'Water heating', 'wh'],
-      [s.ev, 'EV charging', 'ev'],
-      [s.rest, 'Rest of home', 'rest'],
-    ];
-  }
-  legend(items) {
-    return items.map(([c, t]) => `<span><b style="background:${c}"></b>${t}</span>`).join('');
-  }
-
-  energySheet() {
-    this.$('esub').textContent = this.energySummary();
-    const H = this.H,
-      s = this.S();
-    this.energyMain();
-    this.cache.sankey = null;
-    this.renderSankey();
-    if (!H) return;
-    const parts = this.groups(s).map(([c, n], i) => [n, H.g30[i], c]),
-      tot = sum(parts.map(p => p[1]));
-    this.mk(
-      'c-donut',
-      merge(this.base(190), {
-        chart: {type: 'donut', height: 190},
-        series: parts.map(p => +p[1].toFixed(1)),
-        labels: parts.map(p => p[0]),
-        colors: parts.map(p => p[2]),
-        stroke: {width: 3, colors: [s.card]},
-        plotOptions: {
-          pie: {
-            donut: {
-              size: '70%',
-              labels: {
-                show: true,
-                name: {show: true, fontSize: '12px', offsetY: 18},
-                value: {
-                  show: true,
-                  fontSize: '22px',
-                  fontWeight: 600,
-                  fontFamily: this.css('--f-num'),
-                  color: this.css('--fg'),
-                  offsetY: -14,
-                  formatter: v => Math.round(v) + '',
-                },
-                total: {
-                  show: true,
-                  label: 'kWh, 30 days',
-                  fontSize: '11px',
-                  color: this.css('--fg2'),
-                  formatter: () => Math.round(tot) + '',
-                },
-              },
-            },
-          },
-        },
-        tooltip: {y: {formatter: v => v.toFixed(1) + ' kWh'}},
-      }),
-    );
-    this.$('dt').innerHTML = parts
-      .map(
-        ([n, v, c]) =>
-          `<tr><td><b style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${c};margin-right:8px"></b>${n}</td><td class="r">${v.toFixed(1)} kWh</td><td class="r muted">${tot ? Math.round((v / tot) * 100) : 0}%</td></tr>`,
-      )
-      .join('');
-    const t = H.totals,
-      ri = this.rateInfo(),
-      evDays = H.daily.slice(-30).filter(r => r.ev > 5).length;
-    this.$('tot').innerHTML = [
-      ['Today so far', f1(t.today), 'kWh', 'until ' + this.fmtEn.time(new Date())],
-      ['Yesterday', t.yesterday == null ? '–' : f1(t.yesterday), 'kWh'],
-      ['30 days', Math.round(t.d30), 'kWh', (t.d30 / 30).toFixed(1) + ' kWh a day'],
-      [this.fmtEn.month(new Date(), 'long'), Math.round(t.month), 'kWh', 'so far'],
-      ['EV, 30 days', Math.round(H.g30[2]), 'kWh', plural(evDays, 'charging day')],
-      ['Rate now', ri.r == null ? '–' : (ri.r * 100).toFixed(2), '¢', 'Hilo ' + ri.tier.toLowerCase()],
-    ]
-      .map(tile)
-      .join('');
-  }
-  energyMain() {
-    if (!this.ApexCharts) return; // a tap while the chunk is loading; buildSheet draws it when it lands
-    if (this.mainChart) {
-      this.mainChart.destroy();
-      this.charts = this.charts.filter(c => c !== this.mainChart);
-      this.mainChart = null;
-    }
-    const H = this.H,
-      s = this.S(),
-      G = this.groups(s),
-      el = this.$('el'),
-      t = this.$('et'),
-      p = this.$('es');
-    el.innerHTML = this.legend(G);
-    if (!H) {
-      t.textContent = 'Loading history…';
-      p.textContent = '';
-      return;
-    }
-    const stack = {borderRadius: 3, borderRadiusApplication: 'end', borderRadiusWhenStacked: 'last'};
-    if (this.range === 'today' || this.range === 'week') {
-      const todayKey = this.fmtEn.isoDay(Date.now()),
-        rows = this.range === 'today' ? H.flow.filter(r => this.fmtEn.isoDay(r[0]) === todayKey) : H.flow;
-      t.textContent = this.range === 'today' ? 'Today, hour by hour' : 'Last 7 days, hour by hour';
-      if (rows.length) {
-        const pk = rows.reduce((a, r) => (r[5] > a[5] ? r : a), rows[0]);
-        const at = new Date(pk[0]),
-          when = (this.range === 'week' ? this.fmtEn.weekday(at, 'short') + ' ' : '') + this.fmtEn.time(at);
-        p.textContent = `Busiest hour: ${pk[5].toFixed(1)} kWh, ${when}. Tap a bar to see what was running.`;
-      } else p.textContent = 'No complete hour yet today.';
-      const idx = {heat: 3, wh: 2, ev: 1, rest: 4};
-      this.mainChart = this.mk(
-        'c-main',
-        merge(this.base(320), {
-          chart: {type: 'bar', stacked: true},
-          series: G.map(([, n, k]) => ({name: n, data: rows.map(r => [r[0], r[idx[k]]])})),
-          colors: G.map(g => g[0]),
-          plotOptions: {bar: {...stack, columnWidth: this.range === 'today' ? '70%' : '90%'}},
-          stroke: {show: false},
-          fill: {opacity: 1},
-          xaxis: {type: 'datetime', labels: {datetimeUTC: false}},
-          yaxis: {min: 0, tickAmount: 4, forceNiceScale: true, labels: {formatter: v => Math.round(v) + ' kWh'}},
-          tooltip: {
-            shared: true,
-            intersect: false,
-            x: {format: this.range === 'today' ? 'HH:mm' : 'ddd MMM d, HH:mm'},
-            y: {formatter: v => v.toFixed(2) + ' kWh'},
-          },
-        }),
-      );
-    } else if (this.range === 'month') {
-      const rows = H.daily.slice(-30),
-        g = H.g30;
-      t.textContent = 'Last 30 days, day by day';
-      p.textContent = `${Math.round(sum(g))} kWh in 30 days: room heating ${Math.round(g[0])}, water heating ${Math.round(g[1])}, EV charging ${Math.round(g[2])}, rest of home ${Math.round(g[3])}.`;
-      this.mainChart = this.mk(
-        'c-main',
-        merge(
-          this.base(320),
-          {
-            chart: {type: 'bar', stacked: true},
-            series: G.map(([, n, k]) => ({name: n, data: rows.map(r => +r[k].toFixed(1))})),
-            colors: G.map(x => x[0]),
-            plotOptions: {bar: {...stack, borderRadius: 4, columnWidth: '64%'}},
-            stroke: {show: true, width: this.$app.clientWidth < 600 ? 1 : 2, colors: [s.card]},
-            yaxis: {labels: {formatter: v => v.toFixed(0) + ' kWh'}},
-            tooltip: {shared: true, intersect: false, y: {formatter: v => v.toFixed(1) + ' kWh'}},
-          },
-          this.thin(
-            rows.map(r => this.fmtUtcEn.date(dayAt(r.day))),
-            5,
-          ),
-        ),
-      );
-    } else {
-      const rows = H.monthly,
-        top = rows.reduce((a, r) => (r[1].heat > a[1].heat ? r : a), rows[0]);
-      t.textContent = 'Month by month';
-      p.textContent = `Last 12 months.${top && top[1].heat > 50 ? ` Room heating peaked in ${this.fmtUtcEn.month(monthAt(top[0]), 'long')}: ${this.fmtEn.integer(top[1].heat)} kWh.` : ''} Months with missing data look shorter.`;
-      this.mainChart = this.mk(
-        'c-main',
-        merge(
-          this.base(320),
-          {
-            chart: {type: 'bar', stacked: true},
-            series: G.map(([, n, k]) => ({name: n, data: rows.map(r => +r[1][k].toFixed(1))})),
-            colors: G.map(x => x[0]),
-            plotOptions: {bar: {...stack, borderRadius: 6, columnWidth: '58%'}},
-            stroke: {show: true, width: 2, colors: [s.card]},
-            yaxis: {labels: {formatter: v => (v / 1000).toFixed(1) + ' MWh'}},
-            tooltip: {shared: true, intersect: false, y: {formatter: v => Math.round(v) + ' kWh'}},
-          },
-          this.thin(
-            rows.map(r => `${this.fmtUtcEn.month(monthAt(r[0]), 'short')} ${r[0].slice(2, 4)}`),
-            4,
-          ),
-        ),
-      );
-    }
   }
 
   // ---------- weather ----------
@@ -3827,7 +3576,7 @@ export class LegacyPanel {
     const PH = {
       climate: 'data-csel="house"',
       car: 'data-opens="sh-car"',
-      energy: 'data-opens="sh-energy"',
+      energy: 'data-opens="energy.detail"',
       air: 'data-opens="air.detail"',
     };
     const extra = (k, i) => (!this.compact ? '' : i === 'drop' ? 'data-opens="energy.water"' : PH[k] || '');
@@ -3933,119 +3682,6 @@ export class LegacyPanel {
     );
   }
   // ---------- energy Sankey: grid, then the four groups, then the rooms that heat ----------
-  sankeyData() {
-    const m = this.smode || 'now',
-      H = this.H;
-    if (m === 'now') {
-      const L = this.live();
-      return {
-        fmt: v => (v < 1 ? Math.round(v * 1000) + ' W' : v.toFixed(2) + ' kW'),
-        total: L.grid,
-        parts: [L.heat, L.wh, L.ev, L.rest],
-        rooms: L.rooms.map(r => r.p),
-        note: "Live power: the Hilo meter on the left, each device's own sensor on the right.",
-      };
-    }
-    if (!H) return null;
-    if (m === 'today') {
-      const d = H.daily[H.daily.length - 1];
-      if (!d || d.day !== this.fmtEn.isoDay(Date.now())) return null;
-      return {
-        fmt: v => v.toFixed(1) + ' kWh',
-        total: d.total,
-        parts: [d.heat, d.wh, d.ev, d.rest],
-        rooms: d.rooms,
-        note: `Energy since midnight, ${f1(d.total)} kWh so far.`,
-      };
-    }
-    const total = sum(H.g30);
-    return {
-      fmt: v => Math.round(v) + ' kWh',
-      total,
-      parts: H.g30,
-      rooms: H.room30,
-      note: `Last 30 days, ${Math.round(total)} kWh in all.`,
-    };
-  }
-  renderSankey() {
-    const el = this.$('sankey');
-    if (!el) return;
-    this.root
-      .querySelectorAll('#stabs .tab')
-      .forEach(t => t.setAttribute('aria-selected', t.dataset.s === (this.smode || 'now')));
-    const D = this.sankeyData(),
-      s = this.S();
-    if (!D || D.total == null || D.total <= 0) {
-      this.set('skp', 'No data yet.');
-      this.set('sankey', '<p class="loading">No data yet</p>');
-      return;
-    }
-    this.set('skp', D.note);
-    if ((this.smode || 'now') === 'now') {
-      this.set('sankey', this.flowSvg());
-      return;
-    }
-    const H = 300,
-      NW = 20,
-      GAP = 12,
-      X = [0, 400, 800],
-      groups = this.groups(s)
-        .map(([c, n], i) => ({n, c, v: Math.max(0, D.parts[i] || 0)}))
-        .filter(g => g.v > 0);
-    const total = Math.max(D.total, sum(groups.map(g => g.v))),
-      k = (H - GAP * (groups.length - 1)) / total,
-      top = 24;
-    // rooms with their share of the heating; small ones are gathered
-    let rooms = this.ROOMS.map((r, i) => ({n: this.roomName(r), v: D.rooms[i] || 0}))
-      .filter(r => r.v > 0)
-      .sort((a, b) => b.v - a.v);
-    const heat = groups.find(g => g.n === 'Room heating'),
-      small = rooms.filter(r => r.v < 0.03 * (heat ? heat.v : 1));
-    if (small.length > 1)
-      rooms = [...rooms.filter(r => !small.includes(r)), {n: 'Other rooms', v: sum(small.map(r => r.v))}];
-    if (!heat) rooms = [];
-    const kr = rooms.length
-      ? Math.min(k, (H - GAP * (rooms.length - 1)) / Math.max(heat.v, sum(rooms.map(r => r.v))))
-      : k;
-    const rib = (x0, a0, a1, x1, b0, b1, c) => {
-      const xm = (x0 + x1) / 2;
-      return `<path d="M${x0},${a0.toFixed(1)} C${xm},${a0.toFixed(1)} ${xm},${b0.toFixed(1)} ${x1},${b0.toFixed(1)} L${x1},${b1.toFixed(1)} C${xm},${b1.toFixed(1)} ${xm},${a1.toFixed(1)} ${x0},${a1.toFixed(1)} Z" fill="${c}" opacity=".45"/>`;
-    };
-    const node = (x, y, h, c) =>
-      `<rect x="${x}" y="${y.toFixed(1)}" width="${NW}" height="${Math.max(2, h).toFixed(1)}" rx="4" fill="${c}"/>`;
-    const label = (x, y, n, v, anchor = 'start') =>
-      `<text x="${x}" y="${(y - 3).toFixed(1)}" text-anchor="${anchor}">${esc(n)}</text><text x="${x}" y="${(y + 13).toFixed(1)}" text-anchor="${anchor}" class="v">${D.fmt(v)}</text>`;
-    let out = '',
-      gy = top,
-      ly = top + (H - total * k) / 2;
-    out += node(X[0], ly, total * k, s.rest) + label(X[0] + NW + 8, top - 6 + 10, 'Grid', D.total);
-    let ry = top + (H - (sum(rooms.map(r => r.v)) * kr + GAP * (rooms.length - 1))) / 2,
-      hy = 0;
-    groups.forEach(g => {
-      const h = g.v * k;
-      out +=
-        rib(X[0] + NW, ly, ly + h, X[1], gy, gy + h, g.c) +
-        node(X[1], gy, h, g.c) +
-        label(X[1] + NW + 8, gy + h / 2, g.n, g.v);
-      if (g === heat) hy = gy;
-      ly += h;
-      gy += h + GAP;
-    });
-    rooms.forEach(r => {
-      const h = r.v * kr,
-        hs = r.v * k;
-      out +=
-        rib(X[1] + NW, hy, hy + hs, X[2], ry, ry + h, s.heat) +
-        node(X[2], ry, h, s.heat) +
-        label(X[2] + NW + 8, ry + h / 2, r.n, r.v);
-      hy += hs;
-      ry += h + GAP;
-    });
-    this.set(
-      'sankey',
-      `<svg class="sk" viewBox="0 0 980 ${H + top + 8}" role="img" aria-label="Power from the grid, split into room heating, water heating, EV charging and the rest of the home">${out}</svg>`,
-    );
-  }
   lightAreas() {
     const reg = this.hass.entities || {},
       dev = this.hass.devices || {},

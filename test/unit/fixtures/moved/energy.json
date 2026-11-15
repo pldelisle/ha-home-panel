@@ -1,5 +1,5 @@
 {
-  "about": "The English messages the Energy move's model introduced (src/core/i18n/en.ts, energy.*, bar the detail's, which #240 adds), each with sample values. test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer made of the English; `frame` is the sentence a text is read in where the layer translates it only there, `written` is French the layer does not make (a text it left in English, or a combination of words it has no entry for), `fr` the values French writes differently. The legacy panel still draws all of it until #241, so no map entry is deleted yet. Deleted with the layer in phase 4.",
+  "about": "The English messages the Energy move's model introduced (src/core/i18n/en.ts, energy.*, the detail's (#240) included), each with sample values. test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer made of the English; `frame` is the sentence a text is read in where the layer translates it only there, `written` is French the layer does not make (a text it left in English, or a combination of words it has no entry for), `fr` the values French writes differently. The legacy panel still draws all of it until #241, so no map entry is deleted yet. Deleted with the layer in phase 4.",
   "messages": [
     {
       "key": "energy.card.title"
@@ -410,6 +410,230 @@
         "reason": "timeout"
       },
       "written": "L'historique n'a pas pu être chargé\u00a0: timeout. Les valeurs en direct continuent de se mettre à jour."
+    },
+    {
+      "key": "energy.detail.loading"
+    },
+    {
+      "key": "energy.detail.today"
+    },
+    {
+      "key": "energy.detail.week"
+    },
+    {
+      "key": "energy.detail.month"
+    },
+    {
+      "key": "energy.detail.year"
+    },
+    {
+      "key": "energy.detail.busiest",
+      "values": {
+        "kwh": "4.2",
+        "when": "5:00 pm"
+      },
+      "fr": {
+        "when": "17 h"
+      },
+      "written": "Heure la plus chargée\u00a0: 4,2 kWh, 17 h. Touchez une barre pour voir ce qui fonctionnait."
+    },
+    {
+      "key": "energy.detail.busiest",
+      "values": {
+        "kwh": "4.2",
+        "when": "Mon 5:00 pm"
+      },
+      "fr": {
+        "when": "lun. 17 h"
+      },
+      "written": "Heure la plus chargée\u00a0: 4,2 kWh, lun. 17 h. Touchez une barre pour voir ce qui fonctionnait."
+    },
+    {
+      "key": "energy.detail.noHour"
+    },
+    {
+      "key": "energy.detail.monthSum",
+      "values": {
+        "total": 612,
+        "heat": 410,
+        "water": 90,
+        "ev": 52,
+        "rest": 60
+      }
+    },
+    {
+      "key": "energy.detail.yearCaption"
+    },
+    {
+      "key": "energy.detail.yearPeak",
+      "values": {
+        "month": "January",
+        "kwh": "450"
+      },
+      "fr": {
+        "month": "janvier"
+      }
+    },
+    {
+      "key": "energy.sankey.title"
+    },
+    {
+      "key": "energy.sankey.period"
+    },
+    {
+      "key": "energy.sankey.now"
+    },
+    {
+      "key": "energy.days30"
+    },
+    {
+      "key": "energy.sankey.noteNow"
+    },
+    {
+      "key": "energy.sankey.noteToday",
+      "values": {
+        "kwh": "12.3"
+      }
+    },
+    {
+      "key": "energy.sankey.note30",
+      "values": {
+        "kwh": 612
+      },
+      "written": "30 derniers jours, 612 kWh en tout."
+    },
+    {
+      "key": "energy.sankey.noData"
+    },
+    {
+      "key": "energy.sankey.empty"
+    },
+    {
+      "key": "energy.sankey.grid"
+    },
+    {
+      "key": "energy.sankey.otherRooms"
+    },
+    {
+      "key": "energy.sankey.label"
+    },
+    {
+      "key": "energy.donut.title"
+    },
+    {
+      "key": "energy.donut.hint"
+    },
+    {
+      "key": "energy.donut.total"
+    },
+    {
+      "key": "energy.donut.percent",
+      "values": {
+        "n": 45
+      }
+    },
+    {
+      "key": "energy.totals.title"
+    },
+    {
+      "key": "energy.totals.hint"
+    },
+    {
+      "key": "energy.totals.today"
+    },
+    {
+      "key": "energy.totals.until",
+      "values": {
+        "time": "3:45 pm"
+      },
+      "fr": {
+        "time": "15 h 45"
+      }
+    },
+    {
+      "key": "energy.totals.yesterday"
+    },
+    {
+      "key": "energy.totals.perDay",
+      "values": {
+        "kwh": "20.4"
+      }
+    },
+    {
+      "key": "energy.totals.soFar"
+    },
+    {
+      "key": "energy.totals.ev"
+    },
+    {
+      "key": "energy.totals.chargingDays",
+      "values": {
+        "n": 0
+      }
+    },
+    {
+      "key": "energy.totals.chargingDays",
+      "values": {
+        "n": 1
+      }
+    },
+    {
+      "key": "energy.totals.chargingDays",
+      "values": {
+        "n": 6
+      }
+    },
+    {
+      "key": "energy.totals.rate"
+    },
+    {
+      "key": "energy.totals.rateTier",
+      "values": {
+        "tier": "low tier"
+      },
+      "fr": {
+        "tier": "palier bas"
+      }
+    },
+    {
+      "key": "energy.totals.rateTier",
+      "values": {
+        "tier": "medium tier"
+      },
+      "fr": {
+        "tier": "palier moyen"
+      },
+      "written": "Hilo palier moyen"
+    },
+    {
+      "key": "energy.totals.rateTier",
+      "values": {
+        "tier": "challenge rate"
+      },
+      "fr": {
+        "tier": "tarif de défi"
+      },
+      "written": "Hilo tarif de défi"
+    },
+    {
+      "key": "energy.totals.rateTier",
+      "values": {
+        "tier": "rate unknown"
+      },
+      "fr": {
+        "tier": "tarif inconnu"
+      },
+      "written": "Hilo tarif inconnu"
+    },
+    {
+      "key": "energy.totals.rateTier",
+      "values": {
+        "tier": "current rate"
+      },
+      "fr": {
+        "tier": "tarif actuel"
+      },
+      "written": "Hilo tarif actuel"
     }
   ]
 }

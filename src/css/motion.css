@@ -140,23 +140,7 @@ button.chip:active,
       100% 0%;
   }
 }
-/* energy: the EV node breathes a ring while the car charges; the Car tile's icon pulses too */
-.flow .npulse {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: npulse 2.2s ease-out infinite;
-  pointer-events: none;
-}
-@keyframes npulse {
-  from {
-    transform: scale(1);
-    opacity: 0.7;
-  }
-  to {
-    transform: scale(1.4);
-    opacity: 0;
-  }
-}
+/* the Car tile's icon pulses while the car charges */
 .htile.chg .hh > span:first-child {
   display: inline-block;
   animation: chgpulse 2.2s ease-in-out infinite;
@@ -173,7 +157,6 @@ button.chip:active,
   .dial.in .dknob,
   .dial.in .dialc,
   .app.gl::before,
-  .flow .npulse,
   .htile.chg .hh > span:first-child {
     animation: none;
   }

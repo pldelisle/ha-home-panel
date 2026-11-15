@@ -348,6 +348,7 @@ export const fr: Record<MessageKey, string> = {
   'range.week.tab': 'Semaine',
   'range.month.tab': 'Mois',
   'range.year.tab': 'Année',
+  'range.today.tab': "Aujourd'hui",
   'range.day.label': 'dernières 24 heures',
   'range.day.short': '24 h',
   'range.week.label': '7 derniers jours',
@@ -355,7 +356,9 @@ export const fr: Record<MessageKey, string> = {
   'range.month.label': '30 derniers jours',
   'range.month.short': '30 jours',
   'range.year.label': '12 derniers mois',
+  'range.today.label': "aujourd'hui",
   'range.year.short': '12 mois',
+  'range.today.short': "aujourd'hui",
   'range.mean.fiveMinute': 'Moyenne sur 5 minutes',
   'range.mean.hourly': 'Moyenne horaire',
   'range.mean.daily': 'Moyenne quotidienne',
@@ -584,4 +587,50 @@ export const fr: Record<MessageKey, string> = {
   // French the legacy layer never made: it left this line in English
   'energy.historyFailed':
     "L'historique n'a pas pu être chargé\u00a0: {reason}. Les valeurs en direct continuent de se mettre à jour.",
+  // the detail (#240): what the layer made of the legacy texts, and the French it never made (the Sankey's 30 days, the rates after the low tier)
+  'energy.detail.loading': 'Chargement de l’historique…',
+  'energy.detail.today': "Aujourd'hui, heure par heure",
+  'energy.detail.week': '7 derniers jours, heure par heure',
+  'energy.detail.month': '30 derniers jours, jour par jour',
+  'energy.detail.year': 'Mois par mois',
+  'energy.detail.busiest':
+    'Heure la plus chargée\u00a0: {kwh} kWh, {when}. Touchez une barre pour voir ce qui fonctionnait.',
+  'energy.detail.noHour': "Pas encore d'heure complète aujourd'hui.",
+  'energy.detail.monthSum':
+    '{total} kWh en 30 jours\u00a0: chauffage {heat}, chauffe-eau {water}, recharge VÉ {ev}, reste de la maison {rest}.',
+  'energy.detail.yearCaption': '12 derniers mois. Les mois avec des données manquantes paraissent plus courts.',
+  'energy.detail.yearPeak':
+    '12 derniers mois. Le chauffage a culminé en {month}\u00a0: {kwh} kWh. Les mois avec des données manquantes paraissent plus courts.',
+  'energy.sankey.title': 'Où va l’électricité',
+  'energy.sankey.period': 'Période du diagramme',
+  'energy.sankey.now': 'Maintenant',
+  'energy.days30': '30 jours',
+  'energy.sankey.noteNow':
+    'Puissance en direct\u00a0: le compteur Hilo à gauche, le capteur de chaque appareil à droite.',
+  'energy.sankey.noteToday': 'Énergie depuis minuit, {kwh} kWh jusqu’ici.',
+  'energy.sankey.note30': '30 derniers jours, {kwh} kWh en tout.',
+  'energy.sankey.noData': 'Pas encore de données.',
+  'energy.sankey.empty': 'Pas encore de données',
+  'energy.sankey.grid': 'Réseau',
+  'energy.sankey.otherRooms': 'Autres pièces',
+  'energy.sankey.label':
+    'Électricité du réseau, répartie entre le chauffage des pièces, l’eau chaude, la recharge du véhicule et le reste de la maison',
+  'energy.donut.title': "Où est allée l'énergie",
+  'energy.donut.hint':
+    "30 derniers jours. Le reste de la maison comprend tout ce qui n'a pas son propre capteur de puissance, y compris la thermopompe.",
+  'energy.donut.total': 'kWh, 30 jours',
+  'energy.donut.percent': '{n}\u202f%',
+  'energy.totals.title': 'Totaux',
+  'energy.totals.hint': 'Du compteur intelligent Hilo',
+  'energy.totals.today': "Aujourd'hui jusqu'ici",
+  'energy.totals.until': "jusqu'à {time}",
+  'energy.totals.yesterday': 'Hier',
+  'energy.totals.perDay': '{kwh} kWh par jour',
+  'energy.totals.soFar': "jusqu'ici",
+  'energy.totals.ev': 'VÉ, 30 jours',
+  // `=0` repeats `other`: the legacy wrote « 0 jours de recharge », where CLDR's French `one` covers 0
+  'energy.totals.chargingDays':
+    '{n, plural, =0 {# jours de recharge} one {# jour de recharge} other {# jours de recharge}}',
+  'energy.totals.rate': 'Tarif actuel',
+  'energy.totals.rateTier': 'Hilo {tier}',
 };

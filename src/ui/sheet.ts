@@ -112,7 +112,15 @@ export class HpSheet extends LitElement {
 
   protected override updated(changed: PropertyValues<this>): void {
     // the Close button takes focus, as the legacy sheet's did, so a keyboard or a switch is inside the sheet at once
-    if (changed.has('open') && this.open) this.renderRoot.querySelector<HTMLElement>('.close')?.focus();
+    if (changed.has('open') && this.open) void this.focusClose();
+  }
+
+  // The button is slotted into the pane header, whose own tree is drawn after this one's: a sheet made open (a feature draws it only while
+  // it is open) has no slot for the button until the header has rendered, and a button that is not drawn cannot take focus.
+  private async focusClose(): Promise<void> {
+    await this.renderRoot.querySelector<HTMLElement & {updateComplete?: Promise<boolean>}>('hp-pane-header')
+      ?.updateComplete;
+    if (this.open) this.renderRoot.querySelector<HTMLElement>('.close')?.focus();
   }
 }
 

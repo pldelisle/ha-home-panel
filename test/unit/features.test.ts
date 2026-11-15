@@ -202,13 +202,15 @@ describe('the Energy descriptor', () => {
     sheetDetail: () => undefined,
   });
 
-  test("is the registry's own and always shown, and binds its pane to the sheet host's answers: the water heater's `open`, then Hilo's", () => {
+  test("is the registry's own and always shown, and binds its pane to the sheet host's answers: the detail's `open`, then the water heater's and Hilo's", () => {
     expect(FEATURES.find(f => f.key === 'energy')).toBe(energyFeature);
     expect(energyFeature.available).toBeUndefined();
+    expect(energyFeature.detailSheet).toBe('energy.detail');
     expect(energyFeature.overSheets).toEqual(['energy.water', 'energy.hilo']);
-    expect(energyFeature.pane(env()).values).toEqual([false, false]);
-    expect(energyFeature.pane(env('energy.water')).values).toEqual([true, false]);
-    expect(energyFeature.pane(env('energy.hilo')).values).toEqual([false, true]);
+    expect(energyFeature.pane(env()).values).toEqual([false, false, false]);
+    expect(energyFeature.pane(env('energy.detail')).values).toEqual([true, false, false]);
+    expect(energyFeature.pane(env('energy.water')).values).toEqual([false, true, false]);
+    expect(energyFeature.pane(env('energy.hilo')).values).toEqual([false, false, true]);
   });
 
   // the More sheet's baselines read the legacy word ("3.24 kW now"), not the pane's sub-line: the guest's line stays until #241

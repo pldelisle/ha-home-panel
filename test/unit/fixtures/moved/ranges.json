@@ -61,6 +61,17 @@
     },
     {
       "key": "range.mean.daily"
+    },
+    {
+      "key": "range.today.tab"
+    },
+    {
+      "key": "range.today.label",
+      "written": "aujourd'hui"
+    },
+    {
+      "key": "range.today.short",
+      "written": "aujourd'hui"
     }
   ]
 }

@@ -7,7 +7,7 @@ test('a sheet request bubbles and is composed, and carries the id and the detail
   expect(e.type).toBe('sheet-request');
   expect([e.bubbles, e.composed]).toEqual([true, true]);
   expect(e.detail).toEqual({id: 'weather.history', detail: {key: 'wind'}});
-  expect(new SheetRequestEvent('sh-energy').detail).toEqual({id: 'sh-energy', detail: undefined});
+  expect(new SheetRequestEvent('sh-climate').detail).toEqual({id: 'sh-climate', detail: undefined});
 });
 
 test('a dismissal bubbles and is composed, and carries the id of the sheet to close', () => {
