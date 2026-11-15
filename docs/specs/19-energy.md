@@ -2,7 +2,7 @@
 
 Parent: [production-grade-refactor.md](production-grade-refactor.md), phase 3.
 Depends on: [15 Weather](15-weather.md) (`<hp-chart>`, the statistics cache, `<hp-range-tabs>`, `ranges.ts`), [16 Media](16-media.md) (`CommandRunner`, the overlay, the bridge), [17 Security](17-security.md) (shared reads in providers; legacy may import providers), [18 Air](18-air.md) (`<hp-stepper>`, registry-driven discovery). Blocks: 20 Climate (the rooms' power and the history pattern), 21 Car (the Wallbox provider and the charging sessions), 22 Live pill (the Hilo and power providers), 24 Home (the energy card).
-Ships as: three pull requests, each a patch release, each pixel-identical. ADR 0026 (history derived on demand) and ADR 0027 (ApexCharts, reopening #84) land with the first.
+Ships as: three pull requests, each a patch release, each pixel-identical. ADR 0027 (ApexCharts, closing #84) lands with the first, ahead of the move's other tickets; the history ADR (derived on demand) takes the next free number when move 2 (#237) lands.
 
 The key words MUST, MUST NOT, SHOULD, SHOULD NOT and MAY are to be read as in RFC 2119.
 
@@ -21,7 +21,7 @@ Energy is the largest reader in the class and the owner of its history:
 
 Move Energy into `src/features/energy/`, in three pull requests:
 
-1. **The providers, the power read, the history layer, and the two decisions.** `src/providers/hilo.ts`, `hydro-quebec.ts`, `wallbox.ts` (registry-driven discovery and the config's keys), `src/providers/power.ts` (`powerNow`: the live flow every reader shares), `src/features/energy/history.ts` (the energy slices of `derive` as pure functions over statistics rows), and the feature's own loader through the statistics cache: history is derived **on demand, per feature** (ADR 0026). `<hp-energy-pane>` with `<hp-energy-card>`, `<hp-power-flow>` (the flow SVG from a pure layout), the phone tiles, and the water heater and Hilo cards; the class keeps `loadHistory` for the Climate and Car slices only. ADR 0027 answers #84.
+1. **The providers, the power read, the history layer, and the two decisions.** `src/providers/hilo.ts`, `hydro-quebec.ts`, `wallbox.ts` (registry-driven discovery and the config's keys), `src/providers/power.ts` (`powerNow`: the live flow every reader shares), `src/features/energy/history.ts` (the energy slices of `derive` as pure functions over statistics rows), and the feature's own loader through the statistics cache: history is derived **on demand, per feature** (the history ADR, numbered by #237). `<hp-energy-pane>` with `<hp-energy-card>`, `<hp-power-flow>` (the flow SVG from a pure layout), the phone tiles, and the water heater and Hilo cards; the class keeps `loadHistory` for the Climate and Car slices only. ADR 0027 answers #84.
 2. **The detail.** `<hp-energy-detail>`: the range tabs, the main stacked chart through `<hp-chart>`, the Sankey block with its own tabs (`<hp-sankey>` from a pure layout), the donut and its table, the totals. The legacy `#sh-energy` and its methods go.
 3. **The live-pill reads and the deletion.** The header's "Critical peak now" chip, the upcoming list and the live pill read `hilo.ts`, `hydro-quebec.ts` and `power.ts` from the class (the ADR 0025 allowance); `live`, `rateInfo`, `flowSvg`, the chart helpers' last energy use, the French entries and the CSS go; the footprint drops.
 
@@ -89,7 +89,7 @@ test/e2e/energy.spec.ts
 - **`wallbox.ts`**: `{power, status, amps, paused, locked, price, present}` from the six `wb*` keys and `evP`; `present` when `evP` or `wbStatus` resolves. Energy reads `power` and `status`; Car (spec 21) reads the rest and sends the commands.
 - Each is a pure module over `states` and `config.entities`; the config's keys are the discovery here (convention over configuration, as `entities.ts` says), so the registry is not consulted.
 
-### History derived on demand (ADR 0026)
+### History derived on demand (its own ADR, numbered by #237)
 
 ```ts
 // src/features/energy/history.ts (pure)
@@ -189,7 +189,7 @@ Pull request 1, the providers, the history layer, the pane and the cards:
 1. `src/providers/{power,hilo,hydro-quebec,wallbox}.ts`, `src/features/energy/{README.md,index.ts,ids.ts,inputs.ts,model.ts,history.ts,loader.ts,flow-layout.ts,water-chart.ts,energy-pane.ts,energy-card.ts,power-flow.ts,water-card.ts,hilo-card.ts,styles.css}`, `src/ui/styles/hero.css`, `src/ui/thin-axis.ts` exist with headers; `FEATURES` has `energyFeature`.
 2. Vitest: `powerNow` (rest never negative, heating by action or by power, a missing sensor), `hiloRates` (each tier, the comparison order), `hydroQuebec`, `wallbox`; every slice of `history.ts` with literal rows (hours with a missing room, today's hours so far, the noon shift on day keys, months from days, meter totals with today excluded from the 14 days, water cycles joined within five minutes); `flowLayout` (widths, durations, texts), `waterChartGeometry` (the scale rules, the hour ticks); `energyModel` from the test house and the recorded fixture in `en` and `fr`; 100 percent statements on the pure modules.
 3. Playwright `energy.spec.ts`: the tab shows the flow with the house's grid value and the four tiles after the statistics arrive; the water heater and Hilo cards read as before; on the phone the two tiles open their cards as sheets; the statistics requests for the energy windows are sent when the Energy card first connects and not again when the tab is reopened within fifteen minutes (`window.house.reads`); a light change gives zero mutations in `hp-energy-pane`'s root; axe clean.
-4. Every baseline identical; the French equivalence test passes for `test/unit/fixtures/moved/energy.json`; `npm run check`, `npm test -- --coverage`, `npm run lint` green; ADR 0026 and ADR 0027 accepted; #84 closed by the pull request; changeset (patch): "The Energy tab is redrawn with the same look and loads its history when you open it. Nothing visible changes."
+4. Every baseline identical; the French equivalence test passes for `test/unit/fixtures/moved/energy.json`; `npm run check`, `npm test -- --coverage`, `npm run lint` green; the history ADR and ADR 0027 accepted; #84 closed by the pull request; changeset (patch): "The Energy tab is redrawn with the same look and loads its history when you open it. Nothing visible changes."
 
 Pull request 2, the detail:
 
