@@ -172,7 +172,7 @@ for (const lang of ['en', 'fr'] as const) {
         attributes: {friendly_name: 'Porch', attribution: 'UniFi Protect', access_token: 'x'},
       });
       await openTab(house, 'cams');
-      await house.root().locator('#camhost [data-cam]').first().click();
+      await house.root().locator('hp-camera-card button.cam').first().click();
       await scanDialog(house, 'the camera sheet', '#sh-cam');
     });
 

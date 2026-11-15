@@ -1,0 +1,16 @@
+/*
+ * <hp-security-pane>'s own rules: it lays out nothing, so the header and the two cards are items of the pane section's own grid
+ * (`.pane-cams`, tabs.css and phone.css: two columns on a tablet, one under 1000 pixels, a column on a phone), as before the move.
+ * A grid of its own would split columns the section already split and round them differently, which moves the glass's lens. The
+ * section's rules stay until #227. Copies of the header's rules (`.pane-cams > hp-pane-header`, `.pane > hp-pane-header`) are below.
+ */
+:host {
+  display: contents;
+}
+hp-pane-header {
+  grid-column: 1/-1;
+  margin-bottom: 2px;
+}
+:host([compact]) hp-pane-header {
+  margin-bottom: 0;
+}

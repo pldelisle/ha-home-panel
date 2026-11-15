@@ -57,7 +57,7 @@ test('the minified stylesheet is the one inside the entry, and it is smaller tha
   expect(css.length).toBeLessThan(source.length * 0.9);
   // the entry carries the string either between double quotes or in a template; compare a piece from the middle,
   // which has no quote or backslash of its own to escape differently
-  const middle = css.slice(60_000, 60_200);
+  const middle = css.slice(60_300, 60_500);
   expect(middle).not.toMatch(/["'`\\\n]/);
   expect(entry).toContain(middle);
 });

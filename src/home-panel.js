@@ -65,8 +65,8 @@ const shortNames = names => {
 };
 const L0kw = v => (v == null ? '–' : v < 1 ? Math.round(v * 1000) + ' W' : v.toFixed(1) + ' kW');
 
-// card order for the column packing: first row is cameras, energy
-const LAYOUT = ['cams', 'sensors', 'open-energy', 'lights', 'open-climate', 'open-air', 'open-car', 'water', 'hilo'];
+// card order for the column packing: first row is energy
+const LAYOUT = ['open-energy', 'lights', 'open-climate', 'open-air', 'open-car', 'water', 'hilo'];
 const DOOR_DC = ['door', 'window', 'opening', 'garage_door'],
   MOTION_DC = ['motion', 'occupancy', 'presence'];
 const sensorName = n => String(n).replace(/^d[ée]tecteur\s+(de\s+)?mouvement\s+/i, '');
@@ -611,9 +611,6 @@ export class LegacyPanel {
       this.renderIdle();
       this.renderHomeStack();
     }, 20000);
-    this.camT = setInterval(() => {
-      if (this.hass && this.$app && !document.hidden) this.renderCameras();
-    }, 10000);
     this.histT = setInterval(() => this.loadHistory(), 15 * 60000);
     // Escape closes the sheet, then the Status checks, then the settings popup: the host owns the order, these two are its last
     this.popupOffs = [
@@ -643,7 +640,6 @@ export class LegacyPanel {
     clearTimeout(this.glowT);
     if (this.ro) this.ro.disconnect();
     clearInterval(this.clockT);
-    clearInterval(this.camT);
     clearInterval(this.histT);
     this.popupOffs.forEach(off => off());
     this.popupOffs = [];
@@ -811,8 +807,6 @@ export class LegacyPanel {
       <div class="card tap" id="open-energy" tabindex="0" role="button" aria-description="Open home energy details"><div id="energy"></div></div>
     </div>
     <div class="col c2">
-      <div class="card camcard" id="cams"></div>
-      <div class="card" id="sensors" hidden></div>
       <div class="card" id="lights"></div>
       <div class="card tap" id="open-climate" tabindex="0" role="button" aria-description="Open climate details"><div id="climate"></div></div>
       <div class="card tap" id="open-air" tabindex="0" role="button" aria-description="Open air quality details"><div id="air"></div></div>
@@ -1559,10 +1553,6 @@ export class LegacyPanel {
       const sp = this.$('setpop');
       if (!sp.hidden && !e.composedPath().some(n => n === sp || n === this.$('gear'))) this.ctx.shell.closeSettings();
     });
-    this.$('cams').addEventListener('click', e => {
-      const b = e.target.closest('[data-cam]');
-      if (b) this.openCamera(b.dataset.cam);
-    });
     // the light sheet's two tall sliders (Apple Home style): the finger's height is the value, a tap jumps there,
     // the arrows step it; nothing re-renders while one is held, and the value goes out on release
     const sh = this.$('sh-light');
@@ -1990,8 +1980,6 @@ export class LegacyPanel {
     for (const f of [
       'renderHeader',
       'renderEnergy',
-      'renderCameras',
-      'renderSensors',
       'secWatch',
       'renderLights',
       'renderClimate',
@@ -3472,41 +3460,6 @@ export class LegacyPanel {
       })
       .sort((a, b) => a.name.localeCompare(b.name));
   }
-  renderCameras() {
-    const cams = this.cameras(),
-      stamp = Math.floor(Date.now() / 10000);
-    if (!cams.length) {
-      this.set(
-        'cams',
-        `<div class="top"><span class="lbl">Cameras</span><span class="right">Not connected</span></div>
-        <div class="camempty">${ico('cam', 34)}<div><b>No cameras yet</b><span>Add UniFi Protect in Settings → Devices &amp; services, with a local Protect user. Your cameras show up here on their own.</span>
-        <a class="more" href="/config/integrations/dashboard/add?domain=unifiprotect" target="_top">Add UniFi Protect</a></div></div>`,
-      );
-      return;
-    }
-    this.set(
-      'cams',
-      `<div class="top"><span class="lbl">Cameras</span><span class="right">${plural(cams.length, 'camera')}</span></div>
-      <div class="camgrid">${cams
-        .map(c => {
-          const s = this.st(c.id),
-            pic = s && s.attributes.entity_picture,
-            m = c.motion,
-            moving = m && m.state === 'on';
-          const when =
-            m && ok(m)
-              ? moving
-                ? 'Motion now'
-                : `Motion ${this.ago(m.last_changed)}`
-              : ok(s)
-                ? cap(s.state)
-                : 'Offline';
-          return `<button type="button" class="cam" data-cam="${esc(c.id)}" aria-description="Opens the live view">${ok(s) && pic ? `<img src="${esc(pic)}&t=${stamp}" alt="" loading="lazy">` : `<span class="camoff">${ico('cam', 26)}</span>`}
-          <span class="camlbl"><b>${esc(c.name)}</b><small>${moving ? '<i class="mdot"></i>' : ''}${esc(when)}</small></span></button>`;
-        })
-        .join('')}</div>`,
-    );
-  }
   // ---------- air quality (Mila purifiers) ----------
   purifiers() {
     const reg = this.hass.entities || {},
@@ -4037,25 +3990,6 @@ export class LegacyPanel {
       sub: [on ? '' : since, lux == null ? '' : Math.round(lux) + ' lx', low].filter(Boolean).join(' · '),
     };
   }
-  sensorChip(x) {
-    const S = this.sensorState(x);
-    return `<button type="button" class="schip ${S.cls}" data-sens="${esc(x.id)}" aria-description="Opens the history"><span class="sic">${ico(x.kind === 'door' ? 'door' : 'walk', 17)}</span><div><b>${esc(x.name)}</b><span><em>${esc(S.main)}</em>${S.sub ? ' · ' + esc(S.sub) : ''}</span></div></button>`;
-  }
-  renderSensors() {
-    const X = this.sensors(),
-      el = this.$('sensors');
-    if (!el) return;
-    el.hidden = !X.length;
-    if (!X.length) return;
-    const open = X.filter(x => x.kind === 'door' && (this.st(x.id) || {}).state === 'on').length,
-      doors = X.filter(x => x.kind === 'door').length;
-    this.set(
-      'sensors',
-      `<div class="top"><span class="lbl">Doors &amp; motion</span><span class="right">${doors ? (open ? `<b style="color:var(--warn)">${plural(open, 'door')} open</b>` : doors === 1 ? 'Door closed' : 'All doors closed') : ''}</span></div>
-      <div class="sgrid">${X.map(x => this.sensorChip(x)).join('')}</div>`,
-    );
-  }
-
   entArea(id) {
     const e = (this.hass.entities || {})[id] || {};
     return e.area_id || ((this.hass.devices || {})[e.device_id] || {}).area_id || '';
@@ -4429,8 +4363,6 @@ export class LegacyPanel {
     mv('lights', 'lhost');
     mv('water', 'eside');
     mv('hilo', 'eside');
-    mv('cams', 'camhost');
-    mv('sensors', 'senhost');
     this.tabChanged(this.tab);
   }
   leaveTabs() {
@@ -4547,23 +4479,6 @@ export class LegacyPanel {
           this.lightAreas().filter(x => !x.link || x.link.first).length < 2;
       const rs = this.$('lreset');
       if (rs) rs.hidden = !this.lightEdit || !(this.lightOrder && this.lightOrder.length);
-    }
-    if (this.tab === 'cams') {
-      const cams = this.cameras(),
-        X = this.sensors(),
-        doors = X.filter(x => x.kind === 'door'),
-        open = doors.filter(x => isOn(x.id)).length,
-        motion = X.filter(x => x.kind === 'motion' && isOn(x.id)).length;
-      this.set(
-        'cmsub',
-        [
-          cams.length ? plural(cams.length, 'camera') : 'No cameras',
-          doors.length ? (open ? plural(open, 'door') + ' open' : 'all doors closed') : '',
-          motion ? 'motion now' : '',
-        ]
-          .filter(Boolean)
-          .join(' · '),
-      );
     }
   }
   // The configuration card (spec 13): one line per setting the panel could not use, for an admin, while the store holds

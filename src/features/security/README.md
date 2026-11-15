@@ -1,6 +1,6 @@
 # Security
 
-What the Security tab will compute and draw ([spec 17](../../../docs/specs/17-security.md)): the cameras, the door and motion sensors, two sheets and the Home card. This folder holds the pure half so far: the rules that find the cameras and the sensors (in `src/providers/`, because the live pill, the stack and the Home pane read them too, [ADR 0025](../../../docs/adr/0025-shared-reads-live-in-providers.md)), `readSecurity` that composes them, `securityIds` that lists what the pane reads, and the model, the history sheet's rules and the glow rule that word and compute everything the elements will place, pinned in Vitest (#222, #223). The legacy panel keeps drawing Security until the elements and the deletion land (the tickets after #223); the files below that do not exist yet are the spec's plan.
+What the Security tab will compute and draw ([spec 17](../../../docs/specs/17-security.md)): the cameras, the door and motion sensors, two sheets and the Home card. This folder holds the pure half and, since #224, the pane and its two cards (`<hp-security-pane>`, `<hp-camera-card>`, `<hp-sensor-card>`, each with its `.element.css`): the rules that find the cameras and the sensors (in `src/providers/`, because the live pill, the stack and the Home pane read them too, [ADR 0025](../../../docs/adr/0025-shared-reads-live-in-providers.md)), `readSecurity` that composes them, `securityIds` that lists what the pane reads, and the model, the history sheet's rules and the glow rule that word and compute everything the elements will place, pinned in Vitest (#222, #223). The two sheets and the Home card are still the legacy panel's (a tap on a camera or a sensor runs its `openCamera` and `openSens` until #225), and the files below that do not exist yet are the spec's plan.
 
 ## The folder
 
@@ -18,6 +18,7 @@ src/features/security/
   model.ts                 securityModel(inputs, deps): SecurityViewModel (the camera tiles, the sensor rows, the summary lines, the Home card's)
   history.ts               segments, periodStats, axisTicks, durationText, eventRows, statTiles, sheetTexts: the history sheet's rules
   activity.ts              activeOf(sensors), newlyActive(prev, next): string[] (the glow rule), pure
+  sheets.ts                CAMERA_SHEET, HISTORY_SHEET, entityIdOf(detail)
   security-pane.ts         <hp-security-pane>
   camera-card.ts           <hp-camera-card>
   sensor-card.ts           <hp-sensor-card>
@@ -25,7 +26,7 @@ src/features/security/
   camera-stream.ts         mountCameraStream(host, hass, stateObj, cameraName): {destroy()}
   sensor-history.ts        <hp-sensor-history>
   security-card.ts         <hp-security-card> (Home, pull request 2)
-  styles.css
+  *.element.css            each element's own rules, beside it
 ```
 
 ## The providers

@@ -179,8 +179,6 @@
 /* v1.18.2: every other surface follows. Top-level panels (sheet sections, air cards, room list) are glass cards; inner wells (rows, segmented controls, tabs, steppers, sensor and speaker rows) take the tile fill; small buttons inside take the selected-bubble fill; tinted "on" states mix their accent into the glass instead of the opaque card */
 .app.gl .larea,
 .app.gl .hsen,
-.app.gl .camempty,
-.app.gl .schip,
 .app.gl .access,
 .app.gl .arow,
 .app.gl .stepper,
@@ -239,12 +237,6 @@
 .app.gl .larea.on .lic {
   background: color-mix(in srgb, var(--lc, var(--warn)) 26%, var(--g-sel));
 }
-.app.gl .schip.warn .sic {
-  background: color-mix(in srgb, var(--warn) 20%, var(--g-sel));
-}
-.app.gl .schip.act .sic {
-  background: color-mix(in srgb, var(--c-home) 18%, var(--g-sel));
-}
 .app.gl .days button {
   background: var(--g-tile);
   box-shadow: var(--g-edge-s);
@@ -270,8 +262,7 @@
   background: var(--g-tile);
   box-shadow: var(--g-edge-s);
 }
-.app.gl .hsen,
-.app.gl .schip {
+.app.gl .hsen {
   box-shadow: var(--g-edge-s);
 }
 .app.gl .pill.on {
@@ -358,8 +349,6 @@
   }
   .app.gl .larea,
   .app.gl .hsen,
-  .app.gl .camempty,
-  .app.gl .schip,
   .app.gl .access,
   .app.gl .arow,
   .app.gl .stepper,

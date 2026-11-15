@@ -1,0 +1,185 @@
+/*
+ * <hp-sensor-card>'s own rules: the card's box, its title line with the amber count, and the grid of chips with their
+ * icon square, name and line, in the tones of a door that is open, a motion sensor that sees someone and a sensor that is off the air.
+ * Moved from the legacy `.sgrid` and `.schip` rules (extra.css, phone.css, tabs.css, glass.css, motion.css), which #224 deleted. Known
+ * copies of rules the Home card and the other legacy cards still draw: `.card`, `.card .top`, `.card .top .right` and `.lbl` (base.css,
+ * glass.css), and `.sic` (extra.css, glass.css; the Home card's rows draw it until #226), read here as `.sencard`, `.top`, `.right`, `.lbl`
+ * and `.schip .sic`; a shadow root cannot reach the legacy rule. The box is the camera card's too: see its header for the kit sheet.
+ */
+:host {
+  display: block;
+  min-width: 0;
+}
+.sencard {
+  background: var(--card);
+  border: 0;
+  border-radius: 22px;
+  padding: 20px;
+  box-shadow: var(--shadow);
+  min-width: 0;
+  position: relative;
+}
+:host([glass]) .sencard {
+  background: var(--g-card);
+  -webkit-backdrop-filter: var(--g-bd);
+  backdrop-filter: var(--g-bd);
+  box-shadow: var(--g-edge);
+}
+@media (prefers-reduced-transparency: reduce) {
+  :host([glass]) .sencard {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--card);
+  }
+}
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.top .right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: calc(13px * var(--tx));
+  color: var(--fg2);
+  font-weight: 500;
+}
+.top .right .warn {
+  color: var(--warn);
+}
+/* the card's label as the legacy sheet's second `.lbl` rule leaves it */
+.top .lbl {
+  font-size: calc(15px * var(--tx));
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  color: var(--fg);
+}
+/* one column on a tablet, where the card sits beside the cameras'; two on the phone */
+.sgrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+:host([compact]) .sgrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.schip {
+  appearance: none;
+  -webkit-appearance: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  border: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--card2);
+  border-radius: 14px;
+  padding: 9px 12px;
+  min-width: 0;
+}
+.schip:focus-visible {
+  outline: 2px solid var(--c-home);
+  outline-offset: 2px;
+}
+.schip:active {
+  transform: scale(0.96);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .schip {
+    transition:
+      transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+      background-color 0.2s ease,
+      box-shadow 0.2s ease,
+      color 0.2s ease;
+  }
+}
+:host([glass]) .schip {
+  background: var(--g-tile);
+  box-shadow: var(--g-edge-s);
+}
+@media (prefers-reduced-transparency: reduce) {
+  :host([glass]) .schip {
+    background: var(--card2);
+  }
+}
+.schip > div {
+  min-width: 0;
+}
+.schip b {
+  display: block;
+  font-size: calc(13.5px * var(--tx));
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.schip span:not(.sic) {
+  display: block;
+  font-size: calc(12px * var(--tx));
+  color: var(--fg2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.schip em {
+  font-style: normal;
+  font-weight: 600;
+  color: var(--fg);
+}
+.schip .sic {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: var(--card);
+  color: var(--fg3);
+  flex: none;
+}
+:host([glass]) .schip .sic {
+  background: var(--g-sel);
+  border-color: transparent;
+}
+.schip.warn .sic {
+  color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 18%, var(--card));
+}
+.schip.warn em {
+  color: var(--t-warn);
+}
+.schip.act .sic {
+  color: var(--c-home);
+  background: color-mix(in srgb, var(--c-home) 16%, var(--card));
+}
+.schip.act em {
+  color: var(--t-home);
+}
+:host([glass]) .schip.warn .sic {
+  background: color-mix(in srgb, var(--warn) 20%, var(--g-sel));
+}
+:host([glass]) .schip.act .sic {
+  background: color-mix(in srgb, var(--c-home) 18%, var(--g-sel));
+}
+.schip.off {
+  opacity: 0.6;
+}
+@media (max-width: 720px) {
+  .schip {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+  .schip b,
+  .schip span:not(.sic) {
+    white-space: normal;
+  }
+  .schip .sic {
+    width: 26px;
+    height: 26px;
+  }
+}

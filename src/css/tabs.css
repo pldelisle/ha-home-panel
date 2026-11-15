@@ -128,8 +128,7 @@
 }
 .pane-home > hp-pane-header,
 .pane-lights > hp-pane-header,
-.pane-media > hp-pane-header,
-.pane-cams > hp-pane-header {
+.pane-media > hp-pane-header {
   grid-column: 1/-1;
   margin-bottom: 2px;
 }
@@ -680,9 +679,6 @@
   gap: 16px;
   align-items: start;
 }
-.pane-cams #senhost .sgrid {
-  grid-template-columns: 1fr;
-}
 @media (max-width: 1000px) {
   .pane-lights .lareas {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1165,8 +1161,7 @@ button.hsen {
   border: 0;
   cursor: pointer;
 }
-button.hsen:focus-visible,
-button.schip:focus-visible {
+button.hsen:focus-visible {
   outline: 2px solid var(--c-home);
   outline-offset: 2px;
 }

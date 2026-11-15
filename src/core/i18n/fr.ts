@@ -74,7 +74,7 @@ export const fr: Record<MessageKey, string> = {
     "{kind, select, now {À l'instant} minutes {Il y a {n} min} hours {Il y a {n} h} other {Lancée le {date}}}",
   // the legacy panel wrote this French itself for a routine that is off (it never went through the layer, which says Éteint)
   'media.modeIsOff': 'Désactivé',
-  'cams.title': 'Sécurité',
+  'security.title': 'Sécurité',
   'auto.title': 'Automatisations',
   'auto.short': 'Règles',
   'nav.more': 'Plus',

@@ -45,7 +45,7 @@ describe('the registry', () => {
       'var(--m-purple)',
       'var(--c-heat)',
     ]);
-    for (const f of FEATURES) expect(f.title).toBe(`${f.key}.title`);
+    for (const f of FEATURES) expect(f.title).toBe(f.key === 'cams' ? 'security.title' : `${f.key}.title`);
     expect(FEATURES.filter(f => f.shortTitle).map(f => [f.key, f.shortTitle])).toEqual([['auto', 'auto.short']]);
   });
 

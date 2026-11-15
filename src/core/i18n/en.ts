@@ -72,7 +72,7 @@ export const en = {
   'media.done': 'Done',
   'media.last': 'Last {kind, select, now {just now} minutes {{n} min ago} hours {{n} h ago} other {{date}}}',
   'media.modeIsOff': 'Off',
-  'cams.title': 'Security',
+  'security.title': 'Security',
   'auto.title': 'Automations',
   'auto.short': 'Rules',
   'nav.more': 'More',
