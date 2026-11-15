@@ -173,7 +173,7 @@ for (const lang of ['en', 'fr'] as const) {
       });
       await openTab(house, 'cams');
       await house.root().locator('hp-camera-card button.cam').first().click();
-      await scanDialog(house, 'the camera sheet', '#sh-cam');
+      await scanDialog(house, 'the camera sheet', 'hp-camera-sheet hp-sheet .sheet');
     });
 
     test('the More sheet has no serious or critical finding', async ({house}) => {
