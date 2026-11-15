@@ -1,7 +1,7 @@
 // The power history every reader of it shares: which statistics to ask, and the hourly flow, the meter's totals and the water heater's day they make.
-// Pattern: an adapter below the features (ADR 0025), pure over the recorder's rows. Today the legacy `loadHistory` asks its windows and
-// src/features/energy/history.ts cuts its slices; the smart stack (#240), the live pill's water heater and the Home pane (#241, which
-// deletes the legacy `derive` each rule is a block of) read them next, so they are not Energy's to keep (ADR 0028). The numbers are kWh.
+// Pattern: an adapter below the features (ADR 0025), pure over the recorder's rows. The legacy `loadSharedHistory` asks the windows and
+// src/features/energy/history.ts cuts its own slices; the smart stack, the live pill's water heater, the Home tiles and the header's line (#241, which
+// deleted the legacy `derive` each rule is a block of) read these, so they are not Energy's to keep (ADR 0028). The numbers are kWh.
 // The windows start on a stable hour, so the shared cache (ADR 0028) can answer a repeat.
 // Must not: call the API client or the cache, word anything a person reads, or read the clock or the zone (`now` and the formats are passed in).
 import type {ResolvedConfig} from '../core/config.ts';
@@ -107,8 +107,8 @@ export function powerWindows(
 }
 
 /**
- * The daily mean power of the same sensors for 400 days, the window Energy's detail ranges over and the legacy load asks: one
- * definition, so the shared cache answers the second asker (ADR 0028).
+ * The daily mean power of the same sensors for 400 days, the window Energy's detail ranges over: one
+ * definition for the card's loader (ADR 0028). The legacy panel no longer asks it; its Car card's daily bars read the charger in its own temperatures call.
  */
 export const dailyPowerWindow = (now: number, config: Pick<ResolvedConfig, 'entities' | 'rooms'>): StatisticsWindow => {
   const flow = flowIds(config);

@@ -6,7 +6,7 @@
 // Must not: word the tier (`Low tier` is a key in the model), read the registry (the config's keys are the discovery), or read the clock.
 import type {ResolvedConfig} from '../core/config.ts';
 import type {HassEntities} from '../core/hass.ts';
-import {hasState, numberOf, textOf} from '../core/states.ts';
+import {attributeOf, hasState, numberOf, textOf} from '../core/states.ts';
 
 /** `challenge` is the reward rate; `current` is a rate that is none of the three Hilo publishes; `unknown`, no current rate. */
 export type HiloTier = 'low' | 'medium' | 'challenge' | 'current' | 'unknown';
@@ -40,10 +40,45 @@ export function hiloRates(states: HassEntities, config: ResolvedConfig): HiloRat
   return {current, low, medium, reward, tier};
 }
 
-/** The challenge sensor's state (`off`, `pre_heat`, `reduction`, `recovery`, …) and whether one is scheduled (anything but `off`); null when it reads nothing. */
-export function hiloChallenge(states: HassEntities, config: ResolvedConfig): {state: string; active: boolean} | null {
+/** The next event the challenge sensor lists: the times of its phases (`preheat_start`, `reduction_end`, …, as the sensor writes them) and the energy used and allowed, in kWh. */
+export interface ChallengeEvent {
+  phases: Record<string, string>;
+  used: number | null;
+  allowed: number | null;
+}
+
+export interface HiloChallenge {
+  state: string;
+  active: boolean;
+  /** The first of the sensor's `next_events`; null when it lists none. */
+  nextEvent: ChallengeEvent | null;
+}
+
+const numberLike = (value: unknown): number | null => {
+  const n = typeof value === 'number' || (typeof value === 'string' && value.trim() !== '') ? Number(value) : NaN;
+  return Number.isFinite(n) ? n : null;
+};
+
+/** The challenge sensor's state (`off`, `pre_heat`, `reduction`, `recovery`, …), whether one is scheduled (anything but `off`) and its next event; null when it reads nothing. */
+export function hiloChallenge(states: HassEntities, config: ResolvedConfig): HiloChallenge | null {
   const state = textOf(states, config.entities.defi);
-  return state === null ? null : {state, active: state !== 'off'};
+  if (state === null) return null;
+  const events = attributeOf(states, config.entities.defi, 'next_events');
+  const first = Array.isArray(events) ? (events[0] as Record<string, unknown> | null | undefined) : undefined;
+  const phases: Record<string, string> = {};
+  if (first && typeof first.phases === 'object' && first.phases)
+    for (const [name, time] of Object.entries(first.phases)) if (typeof time === 'string') phases[name] = time;
+  return {
+    state,
+    active: state !== 'off',
+    nextEvent: first
+      ? {
+          phases,
+          used: numberLike(first.used_kWh),
+          allowed: numberLike(first.allowed_kWh),
+        }
+      : null,
+  };
 }
 
 /** The rewards Hilo has paid, as the sensor reads them; null when it reads no number. */

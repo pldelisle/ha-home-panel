@@ -213,7 +213,7 @@ describe('the Energy descriptor', () => {
     expect(energyFeature.pane(env('energy.hilo')).values).toEqual([false, false, true]);
   });
 
-  // the More sheet's baselines read the legacy word ("3.24 kW now"), not the pane's sub-line: the guest's line stays until #241
+  // the More sheet's baselines read the legacy word ("3.24 kW now"), not the pane's sub-line: the guest's line stays until the guest goes (#277)
   test("says the guest's word under More", () => {
     expect(energyFeature.summary?.(env(null, '3.24 kW now'))).toBe('3.24 kW now');
   });

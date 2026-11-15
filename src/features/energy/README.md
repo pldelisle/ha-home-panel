@@ -54,7 +54,7 @@ The flow, the water heater's chart and the Sankey are **pure geometry**: a layou
 
 `EnergyHistory` asks the statistics cache for Energy's windows when its host is shown and not before ([ADR 0028](../../../docs/adr/0028-history-on-demand-one-cache.md)); `history.ts` derives the slices from the replies, and `energyModel` reads them: today's meter, the 30-day groups, the water heater's last 24 hours and its daily totals. Until they arrive the tiles read dashes, as the legacy panel's did.
 
-The pane mounts `EnergyHistory` over the panel's statistics cache and wants it while the tab, or one of its sheets, is on screen; nothing is asked while it is hidden. The legacy panel still asks the same cache for the power windows when it starts (its Home tiles, stack and header read them until #241), so each window is read once for the panel and opening the tab, or opening it again within the fifteen minutes, reads none.
+The pane mounts `EnergyHistory` over the panel's statistics cache and wants it while the tab, or one of its sheets, is on screen; nothing is asked while it is hidden. The legacy panel still asks the same cache for the four power windows when it starts (`loadSharedHistory`: its Home tiles, stack and header read what they make until the specs after this one move them), so the hourly week, the meter and the water heater's day are read once for the panel and the card finds them there; the year of daily power is Energy's alone, and is asked when the card first connects and not at start. Opening the tab again within the fifteen minutes reads none.
 
 ## The elements
 

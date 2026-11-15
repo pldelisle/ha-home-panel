@@ -350,3 +350,16 @@ test.describe('dark theme', () => {
     await homeButtonUncovered(house);
   });
 });
+
+test.describe('the Climate detail', () => {
+  test.use({houseOpts: {cfg: FULL_CFG}});
+
+  // a thermostat that heats and reports no setpoint: the missing number reads as a dash, as everywhere else in the legacy panel
+  test('a room heating with no setpoint says "Heating to –°"', async ({house}) => {
+    tabletOnly();
+    await house.tab('climate');
+    await house.setState('climate.living_room', {attributes: {hvac_action: 'heating', temperature: null}});
+    await house.root().locator('#clist [data-id="living_room"]').click();
+    await expect(house.root().locator('#chead .pill')).toHaveText('Heating to –°');
+  });
+});

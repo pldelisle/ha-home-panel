@@ -113,10 +113,32 @@ describe('the challenge, the rewards and the presence', () => {
   const sensors = (challenge: string) => [entity('sensor.challenge', challenge), entity('sensor.rewards', '42.5')];
 
   test('a challenge is active unless the sensor says off; one that reads nothing is none', () => {
-    expect(read(hilo({}, sensors('reduction'))).challenge).toEqual({state: 'reduction', active: true});
-    expect(read(hilo({}, sensors('off'))).challenge).toEqual({state: 'off', active: false});
+    expect(read(hilo({}, sensors('reduction'))).challenge).toEqual({state: 'reduction', active: true, nextEvent: null});
+    expect(read(hilo({}, sensors('off'))).challenge).toEqual({state: 'off', active: false, nextEvent: null});
     expect(read(hilo({}, sensors('unavailable'))).challenge).toBeNull();
     expect(read(hilo({})).challenge).toBeNull();
+  });
+
+  test('the challenge carries its next event: the phases’ times as text, the energy used and allowed as numbers', () => {
+    const event = (attributes: Record<string, unknown>) =>
+      read(hilo({}, [entity('sensor.challenge', 'pre_heat', {next_events: [attributes, {phases: {other: 'x'}}]})]))
+        .challenge;
+    expect(
+      event({
+        phases: {preheat_start: '2026-11-15 05:00:00', reduction_start: 7, bad: null},
+        used_kWh: '1.5',
+        allowed_kWh: 4,
+      }),
+    ).toEqual({
+      state: 'pre_heat',
+      active: true,
+      nextEvent: {phases: {preheat_start: '2026-11-15 05:00:00'}, used: 1.5, allowed: 4},
+    });
+    expect(event({used_kWh: '', allowed_kWh: 'soon'})?.nextEvent).toEqual({phases: {}, used: null, allowed: null});
+    expect(event({phases: null})?.nextEvent?.phases).toEqual({});
+    const none = (next_events: unknown) =>
+      read(hilo({}, [entity('sensor.challenge', 'off', {next_events})])).challenge?.nextEvent;
+    expect([none([]), none('soon'), none(undefined)]).toEqual([null, null, null]);
   });
 
   test('the rewards are the sensor’s number, null when it reads none', () => {
