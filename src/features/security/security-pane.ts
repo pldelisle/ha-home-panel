@@ -2,11 +2,11 @@
 // the sheet of the camera or the sensor that is open.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over a view model: `securityModel` runs in `willUpdate` and the template
 // only places what it returns; a store controller on `securityIds` (ADR 0012), paused while the pane is off screen, and the kit's
-// tick controller, which draws again every ten seconds: that is what asks a camera for a new snapshot. It owns the history cache.
+// tick controller, which draws again every ten seconds: that is what asks a camera for a new snapshot. It owns the history cache and the range the history last showed.
 // Must not: read an entity itself (`readSecurity` does), hold a string the household reads, or open a sheet (its cards ask).
 import {ContextConsumer} from '@lit/context';
 import {LitElement, html, nothing, unsafeCSS, type PropertyValues} from 'lit';
-import {HISTORY_TTL_MS} from './history.ts';
+import {HISTORY_TTL_MS, type SheetRange} from './history.ts';
 import {securityIds} from './ids.ts';
 import {readSecurity} from './inputs.ts';
 import {SNAPSHOT_MS, securityModel, type SecurityViewModel} from './model.ts';
@@ -43,7 +43,8 @@ export class SecurityPane extends LitElement {
   private readonly storeController = new StoreController(this, {ids: store => securityIds(store)});
   private view: SecurityViewModel | undefined;
   private historyCache: StatisticsCache | undefined;
-  private cacheGeneration = -1;
+  /** The range the history sheet last showed, kept for the panel's life and handed to each opening. */
+  private historyRange: SheetRange = 'day';
 
   constructor() {
     super();
@@ -71,11 +72,6 @@ export class SecurityPane extends LitElement {
       else this.storeController.pause();
     }
     const {store} = this.storeController;
-    // the cached replies belong to the config they were asked under
-    if (store.generation !== this.cacheGeneration) {
-      this.historyCache?.clear();
-      this.cacheGeneration = store.generation;
-    }
     if (!this.active) return;
     const {hass} = store;
     if (!hass) return;
@@ -91,10 +87,19 @@ export class SecurityPane extends LitElement {
   private renderSheets() {
     return html`${this.cameraId ? html`<hp-camera-sheet .cameraId=${this.cameraId}></hp-camera-sheet>` : nothing}${
       this.historyId
-        ? html`<hp-sensor-history .sensorId=${this.historyId} .cache=${this.historyCache}></hp-sensor-history>`
+        ? html`<hp-sensor-history
+            .sensorId=${this.historyId}
+            .cache=${this.historyCache}
+            .range=${this.historyRange}
+            @range-chosen=${this.onHistoryRange}
+          ></hp-sensor-history>`
         : nothing
     }`;
   }
+
+  private readonly onHistoryRange = (event: CustomEvent<{range: SheetRange}>): void => {
+    this.historyRange = event.detail.range;
+  };
 
   protected override render() {
     // A sheet over another tab (the Home card opens it): the pane is behind it and draws nothing but it, so the tab stays.

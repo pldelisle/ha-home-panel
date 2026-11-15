@@ -149,6 +149,27 @@ test.describe('a sensor history', () => {
     await expect(sensors(house).getByRole('button', {name: /^Hall motion/})).toBeFocused();
   });
 
+  // the legacy Home card still draws its own rows; they ask the sheet host for the same sheet, which shows over the Home tab
+  test('a tap on a sensor of the Home card opens its history over the Home tab', async ({house}) => {
+    await house.tab('home');
+    await house.root().locator('#hsec [data-sens]').first().click();
+    await expect(history(house).locator('hp-sheet h2')).toBeVisible();
+    await expect(history(house).locator('.sevents li')).toHaveCount(3);
+    await expect(house.root().locator('#pane-home')).toBeVisible();
+  });
+
+  test('the range chosen stays for the next sensor', async ({house}) => {
+    await house.tab('cams');
+    await doorChip(house).click();
+    await history(house).getByRole('tab', {name: 'Week'}).click();
+    await expect(history(house).locator('.saxis span')).toHaveCount(8);
+    await house.page.keyboard.press('Escape');
+    await sensors(house)
+      .getByRole('button', {name: /^Hall motion/})
+      .click();
+    await expect(history(house).locator('[role="tab"][aria-selected="true"]')).toHaveText('Week');
+  });
+
   test('both sheets have no serious or critical accessibility finding', async ({house}) => {
     await addPorch(house);
     await house.tab('cams');

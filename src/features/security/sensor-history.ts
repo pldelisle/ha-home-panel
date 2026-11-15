@@ -35,6 +35,9 @@ import {forShadow} from '../../ui/styles/host.ts';
 /** The colour a kind of sensor is drawn in, for the badge and the strip: a door open is amber, motion is the home colour. */
 const TONE: Record<SensorKind, string> = {door: 'var(--t-warn)', motion: 'var(--t-home)'};
 
+/** The config generation each cache last served, so the first request under a new one empties it. */
+const generations = new WeakMap<StatisticsCache, number>();
+
 /** What a request brought back, with what it was for. */
 interface Loaded {
   range: SheetRange;
@@ -45,16 +48,16 @@ export class SensorHistory extends LitElement {
   static override properties = {
     sensorId: {},
     cache: {attribute: false},
-    range: {state: true},
+    range: {},
   };
   /** Which sensor: the id the tap asked for, bound by the pane from the sheet host's detail. */
   declare sensorId: string | undefined;
   /** The pane's history cache, whose replies are shared: nothing here changes one. */
   declare cache: StatisticsCache | undefined;
-  /** The range chosen; each opening starts at the day. */
+  /** The range chosen: the pane keeps the last choice for the panel's life and passes it in, as the legacy sheet kept its own; told by `range-chosen`. */
   declare range: SheetRange;
 
-  // The host is a block with nothing of its own: the sheet it holds is fixed to the screen. The legacy sheet's rule for the inner cards
+  // The host is `display: contents`: the sheet it holds is fixed to the screen, so it takes no room. The legacy sheet's rule for the inner cards
   // on a phone (`.app.cp .sheet .inner`) is in sensor-history.element.css by hand, a known copy, as weather-history.ts has it.
   // The element's own rules, its `:host`, the strip, the axis and the events, are in sensor-history.element.css.
   static override styles = [common, inner, tiles, unsafeCSS(forShadow(sheetOwn))];
@@ -82,7 +85,6 @@ export class SensorHistory extends LitElement {
     // another sensor is a new opening
     if (changed.has('sensorId')) {
       this.now = Date.now();
-      this.range = 'day';
       this.loaded = undefined;
       this.failed = false;
       this.asked = undefined;
@@ -180,6 +182,7 @@ export class SensorHistory extends LitElement {
     const range = event.detail.range;
     if (range !== 'day' && range !== 'week') return;
     this.range = range;
+    this.dispatchEvent(new CustomEvent<RangeChangeDetail>('range-chosen', {detail: {range}}));
     // a range that failed is asked again when it is chosen again, as the legacy sheet asked at every tab
     this.failed = false;
     this.asked = undefined;
@@ -192,6 +195,11 @@ export class SensorHistory extends LitElement {
   };
 
   protected override updated(): void {
+    // a sensor Home Assistant no longer lists (a stale stack card) has no sheet to show: the host is asked to close it
+    if (!this.sensor) {
+      if (this.sensorId && this.storeController.store.hass) this.dispatchEvent(new SheetDismissEvent(HISTORY_SHEET));
+      return;
+    }
     this.loadIfDue();
   }
 
@@ -200,7 +208,13 @@ export class SensorHistory extends LitElement {
   private loadIfDue(): void {
     const {cache, sensorId, range, sensor} = this;
     if (!cache || !sensorId || !sensor) return;
-    const key = `${sensorId}/${range}/${this.storeController.store.generation}`;
+    const {generation} = this.storeController.store;
+    // cached replies belong to the config they were asked under; the pane may be paused behind this sheet, so the check is made here
+    if (generations.get(cache) !== generation) {
+      if (generations.has(cache)) cache.clear();
+      generations.set(cache, generation);
+    }
+    const key = `${sensorId}/${range}/${generation}`;
     if (this.asked === key) return;
     this.asked = key;
     void this.load(cache, sensorId, range);

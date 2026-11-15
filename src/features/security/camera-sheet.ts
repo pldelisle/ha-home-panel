@@ -23,7 +23,7 @@ export class CameraSheet extends LitElement {
   /** Which camera: the id the tap asked for, bound by the pane from the sheet host's detail. */
   declare cameraId: string | undefined;
 
-  // The host is a block with nothing of its own: the sheet it holds is fixed to the screen.
+  // The host is `display: contents`: the sheet it holds is fixed to the screen, so it takes no room.
   // The element's own rules, its `:host` and the stream's box, are in camera-sheet.element.css.
   static override styles = [common, unsafeCSS(forShadow(sheetOwn))];
 

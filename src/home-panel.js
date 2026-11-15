@@ -1442,7 +1442,7 @@ export class LegacyPanel {
   }
   // a tap on the stack's card wakes the panel and opens what the card is about
   stackGo(go) {
-    if (go.startsWith('sens:')) return this.sheets.open('security.history', {id: go.slice(5)}); // Security's sheet (#225); the stack goes with #266
+    if (go.startsWith('sens:')) return this.sheets.open('security.history', {id: go.slice(5)}); // Security's sheet (#225); the legacy stack goes with #266
     if (go.startsWith('tab:')) {
       const t = go.slice(4);
       if (this.availability()[t] !== false) this.ctx.shell.setTab(t);
