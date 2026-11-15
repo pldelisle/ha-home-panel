@@ -26,8 +26,22 @@ export const AIR_SUFFIXES = [
 export type AirSuffix = (typeof AIR_SUFFIXES)[number];
 
 /** The pollen the station reports, in the order the panel lists them (the legacy `POLLEN`, deleted by #234). */
-export const POLLEN_KINDS = ['trees', 'grass', 'weeds', 'mold'] as const;
+const POLLEN_KINDS = ['trees', 'grass', 'weeds', 'mold'] as const;
 export type PollenKind = (typeof POLLEN_KINDS)[number];
+
+/** The sensors read as numbers, by the key the readings carry them under; `airQuality` is Mila's own index, on the US AQI scale. */
+const READING_SUFFIXES = {
+  pm1: 'pm1',
+  pm2_5: 'pm2_5',
+  pm10: 'pm10',
+  co: 'co',
+  co2: 'co2',
+  voc: 'voc',
+  humidity: 'humidity',
+  temperature: 'temperature',
+  airQuality: 'air_quality',
+  airChanges: 'air_changes',
+} as const satisfies Record<string, AirSuffix>;
 
 export interface AirRoomInputs {
   /** The Mila device; one per room. */
@@ -40,20 +54,8 @@ export interface AirRoomInputs {
   name: string;
   /** The device's sensors, by the suffix that found them; a suffix the device lacks is absent. */
   sensors: Partial<Record<AirSuffix, string>>;
-  /** Each sensor's number; null when it is absent, unavailable or not a number. */
-  readings: {
-    pm1: number | null;
-    pm2_5: number | null;
-    pm10: number | null;
-    co: number | null;
-    co2: number | null;
-    voc: number | null;
-    humidity: number | null;
-    temperature: number | null;
-    /** Mila's own index, on the US AQI scale. */
-    airQuality: number | null;
-    airChanges: number | null;
-  };
+  /** Each sensor of `READING_SUFFIXES` as a number; null when it is absent, unavailable or not a number. */
+  readings: {[K in keyof typeof READING_SUFFIXES]: number | null};
   fan: {
     on: boolean;
     /** False when the fan is missing, `unavailable` or `unknown`. */
@@ -93,19 +95,51 @@ function milaDevices(registries: Registries): Map<string, string[]> {
 }
 
 type Devices = ReturnType<typeof milaDevices>;
+type RoomEntities = Pick<AirRoomInputs, 'fanId' | 'sensors'>;
+type StationEntities = Pick<OutsideAirInputs, 'aqi' | 'pm' | 'distance' | 'pollen'>;
+
+/** A room's entities among a device's: its fan and the sensors found by suffix; null when the device has no fan. */
+function roomEntities(ids: string[]): RoomEntities | null {
+  const fanId = ids.find(id => id.startsWith('fan.'));
+  if (!fanId) return null;
+  const sensors: AirRoomInputs['sensors'] = {};
+  for (const [suffix, pattern] of SUFFIX_PATTERNS) {
+    const id = ids.find(candidate => pattern.test(candidate));
+    if (id) sensors[suffix] = id;
+  }
+  return {fanId, sensors};
+}
+
+/** The station's entities among a device's; null unless the device has no fan and carries the outdoor air index (`…_aqi`). */
+function stationEntities(ids: string[]): StationEntities | null {
+  if (ids.some(id => id.startsWith('fan.')) || !ids.some(id => id.endsWith('_aqi'))) return null;
+  const find = (suffix: string): string | null => ids.find(id => id.endsWith(suffix)) ?? null;
+  return {
+    aqi: find('_aqi'),
+    pm: find('_station_pm2_5'),
+    distance: find('_station_distance'),
+    pollen: POLLEN_KINDS.map(kind => ({kind, id: find(`_pollen_status_${kind}`)})),
+  };
+}
+
+/** The station among the devices given, the last one found when several qualify, as the legacy panel chose. */
+function stationOf(devices: Devices): StationEntities | null {
+  let station: StationEntities | null = null;
+  for (const ids of devices.values()) station = stationEntities(ids) ?? station;
+  return station;
+}
+
+/** The ids a station's reader and the store watch: the three sensors and the pollen reports it has. */
+const stationIds = ({aqi, pm, distance, pollen}: StationEntities): string[] =>
+  [aqi, pm, distance, ...pollen.map(p => p.id)].filter((id): id is string => id !== null);
 
 /** The rooms of the devices given: one per device with a fan, by name. */
 function roomsOf(devices: Devices, states: HassEntities, registries: Registries, names: Names): AirRoomInputs[] {
   const rooms: AirRoomInputs[] = [];
   for (const [deviceId, ids] of devices) {
-    const fanId = ids.find(id => id.startsWith('fan.'));
-    if (!fanId) continue;
-    const sensors: AirRoomInputs['sensors'] = {};
-    for (const [suffix, pattern] of SUFFIX_PATTERNS) {
-      const id = ids.find(candidate => pattern.test(candidate));
-      if (id) sensors[suffix] = id;
-    }
-    const read = (suffix: AirSuffix): number | null => numberOf(states, sensors[suffix]);
+    const room = roomEntities(ids);
+    if (!room) continue;
+    const {fanId, sensors} = room;
     // the device's area, as the legacy panel read it; an area the registry does not name leaves the room to its device
     const areaId = registries.devices?.[deviceId]?.area_id || '';
     const areaNamed = !!registries.areas?.[areaId]?.name;
@@ -115,18 +149,9 @@ function roomsOf(devices: Devices, states: HassEntities, registries: Registries,
       areaId: areaId || null,
       name: names.name(areaNamed ? areaId : nameOwner(fanId, registries)),
       sensors,
-      readings: {
-        pm1: read('pm1'),
-        pm2_5: read('pm2_5'),
-        pm10: read('pm10'),
-        co: read('co'),
-        co2: read('co2'),
-        voc: read('voc'),
-        humidity: read('humidity'),
-        temperature: read('temperature'),
-        airQuality: read('air_quality'),
-        airChanges: read('air_changes'),
-      },
+      readings: Object.fromEntries(
+        Object.entries(READING_SUFFIXES).map(([key, suffix]) => [key, numberOf(states, sensors[suffix])]),
+      ) as AirRoomInputs['readings'],
       fan: {
         on: states[fanId]?.state === 'on',
         available: isAvailable(states[fanId]),
@@ -138,28 +163,17 @@ function roomsOf(devices: Devices, states: HassEntities, registries: Registries,
   return rooms.sort((a, b) => a.name.localeCompare(b.name));
 }
 
-/** The station among the devices given: the one with no fan that carries the outdoor air index (`…_aqi`). */
+/** The station among the devices given, read: its three numbers and the pollen texts. */
 function outsideOf(devices: Devices, states: HassEntities): OutsideAirInputs | null {
-  let station: string[] | null = null;
-  for (const ids of devices.values())
-    if (!ids.some(id => id.startsWith('fan.')) && ids.some(id => id.endsWith('_aqi'))) station = ids;
+  const station = stationOf(devices);
   if (!station) return null;
-  const ids = station;
-  const find = (suffix: string): string | null => ids.find(id => id.endsWith(suffix)) ?? null;
-  const aqi = find('_aqi');
-  const pm = find('_station_pm2_5');
-  const distance = find('_station_distance');
-  const pollen = POLLEN_KINDS.map(kind => ({kind, id: find(`_pollen_status_${kind}`)}));
   return {
-    aqi,
-    pm,
-    distance,
-    pollen,
+    ...station,
     readings: {
-      aqi: numberOf(states, aqi),
-      pm: numberOf(states, pm),
-      distance: numberOf(states, distance),
-      pollen: Object.fromEntries(pollen.map(({kind, id}) => [kind, textOf(states, id)])) as Record<
+      aqi: numberOf(states, station.aqi),
+      pm: numberOf(states, station.pm),
+      distance: numberOf(states, station.distance),
+      pollen: Object.fromEntries(station.pollen.map(({kind, id}) => [kind, textOf(states, id)])) as Record<
         PollenKind,
         string | null
       >,
@@ -183,4 +197,20 @@ export function milaAir(
 ): {rooms: AirRoomInputs[]; outside: OutsideAirInputs | null} {
   const devices = milaDevices(registries);
   return {rooms: roomsOf(devices, states, registries, names), outside: outsideOf(devices, states)};
+}
+
+/**
+ * The entity ids `milaAir` would read, without reading them: each room's fan and sensors in the registry's order, then the
+ * station's; for a store's subscription, which needs no state, no name and no sort.
+ */
+export function milaIds(registries: Registries): string[] {
+  const devices = milaDevices(registries);
+  const ids: string[] = [];
+  for (const entities of devices.values()) {
+    const room = roomEntities(entities);
+    if (room) ids.push(room.fanId, ...Object.values(room.sensors));
+  }
+  const station = stationOf(devices);
+  if (station) ids.push(...stationIds(station));
+  return ids;
 }

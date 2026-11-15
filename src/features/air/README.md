@@ -6,7 +6,7 @@ What the Air tab computes and draws ([spec 18](../../../docs/specs/18-air.md)): 
 
 ```
 src/providers/
-  mila.ts                  milaRooms(states, registries, names): AirRoomInputs[]; milaOutside(states, registries): OutsideAirInputs | null; milaAir(...): both from one pass; AIR_SUFFIXES, POLLEN_KINDS
+  mila.ts                  milaRooms(states, registries, names): AirRoomInputs[]; milaOutside(states, registries): OutsideAirInputs | null; milaAir(...): both from one pass; milaIds(registries): the ids both read, for the store; AIR_SUFFIXES
   air-quality.ts           AQ_BANDS, aqLevel(k, v), outdoorLevel(aqi), rateRoom(room): RoomRating (pure, shared by the stack)
 src/features/air/
   README.md

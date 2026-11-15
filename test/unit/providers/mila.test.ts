@@ -4,7 +4,7 @@
 import {describe, expect, test} from 'vitest';
 import {fakeHass} from '../fake-hass.ts';
 import {fullHouse, houseOf, readingOf, recorded, type Player} from '../features/media/support.ts';
-import {AIR_SUFFIXES, milaOutside, milaRooms} from '../../../src/providers/mila.ts';
+import {AIR_SUFFIXES, milaAir, milaIds, milaOutside, milaRooms} from '../../../src/providers/mila.ts';
 
 type House = ReturnType<typeof houseOf>;
 const roomsOf = (house: House) => {
@@ -227,5 +227,45 @@ describe('the station', () => {
       ['sensor.account_pollen_status_mold', 'high', {}, mila('d0')],
     ]);
     expect(outsideOf(house)?.readings.pollen).toEqual({trees: null, grass: null, weeds: null, mold: 'high'});
+  });
+});
+
+describe('the ids', () => {
+  test('each room’s fan and found sensors in the registry’s order, then the station’s: what milaAir reads, unsorted', () => {
+    const house = houseOf([
+      ...purifier('zed', {id: 'd2', name: 'Zed'}, {pm2_5: '5', mode: 'auto'}),
+      ...purifier('den', {id: 'd1', name: 'Den'}, {co2: '500'}),
+      ['sensor.account_aqi', '30', {}, mila('d0')],
+      ['sensor.account_station_distance', '2', {}, mila('d0')],
+      ['sensor.account_pollen_status_grass', 'low', {}, mila('d0')],
+      ['sensor.other_pm2_5', '9', {}, {platform: 'zha', device_id: 'd9'}],
+    ]);
+    const {states, registries, names} = readingOf(house);
+    const ids = milaIds(registries);
+    expect(ids).toEqual([
+      'fan.zed',
+      'sensor.zed_pm2_5',
+      'sensor.zed_mode',
+      'fan.den',
+      'sensor.den_co2',
+      'sensor.account_aqi',
+      'sensor.account_station_distance',
+      'sensor.account_pollen_status_grass',
+    ]);
+    const {rooms, outside} = milaAir(states, registries, names);
+    const read = [
+      ...rooms.flatMap(room => [room.fanId, ...Object.values(room.sensors)]),
+      outside?.aqi,
+      outside?.pm,
+      outside?.distance,
+      ...(outside?.pollen.map(p => p.id) ?? []),
+    ].filter(id => !!id);
+    expect([...ids].sort()).toEqual([...read].sort());
+  });
+
+  test('a house with no Mila device, or with a station only, lists what it has', () => {
+    expect(milaIds(readingOf(houseOf([])).registries)).toEqual([]);
+    const station = houseOf([['sensor.account_aqi', 'unavailable', {}, mila('d0')]]);
+    expect(milaIds(readingOf(station).registries)).toEqual(['sensor.account_aqi']);
   });
 });
