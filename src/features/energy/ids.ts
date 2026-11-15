@@ -1,6 +1,6 @@
 // energyIds: the entity ids the Energy pane and its cards read, so the store tells them only when one changes.
-// Pattern: the union of what `readEnergy` reads (the grid and the meters, the water heater's three, the Wallbox's two, Hilo's seven, Hydro-Québec's
-// three, each room's power and thermostat), with no id twice, after the store's per-element subscription (ADR 0012); the house names them in
+// Pattern: the union of what `readEnergy` reads (the grid and the meters, the water heater's three, the Wallbox's two, Hilo's six, Hydro-Québec's
+// three, each room's power and thermostat) and Hilo's gateway, subscribed for the Status checks' reader (#254), which `readEnergy` does not read, with no id twice, after the store's per-element subscription (ADR 0012); the house names them in
 // its config (convention over configuration), so the list walks the config and never the states: the store ticks on every change and the list must stay cheap.
 // Must not: read a state's value or the clock, import a feature or the shell, or name an entity id (the house does).
 import type {PanelStore} from '../../core/store.ts';

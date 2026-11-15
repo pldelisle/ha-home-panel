@@ -60,7 +60,7 @@ export interface EnergyTile {
   sub: string;
 }
 
-/** A row of the phone's Energy tab, which opens its card in a sheet. */
+/** A tile of the phone's Energy tab, which opens its card in a sheet. */
 export interface PhoneTile {
   key: 'water' | 'hilo';
   label: string;
@@ -108,7 +108,7 @@ export interface EnergyViewModel {
     /** Medium, Reward, Rewards. */
     tiles: EnergyTile[];
   };
-  /** The phone's rows, for the sections the house has: the water heater, then Hilo. */
+  /** The phone's tiles, for the sections the house has: the water heater, then Hilo. */
   tiles: PhoneTile[];
 }
 

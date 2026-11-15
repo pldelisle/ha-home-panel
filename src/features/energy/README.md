@@ -1,6 +1,6 @@
 # Energy
 
-What the Energy tab computes and draws ([spec 19](../../../docs/specs/19-energy.md)): the live power flow, the water heater, Hilo and the history behind them. This folder holds, since #237 and #238, the pure half: the history's slices and its on-demand loader, `readEnergy` that composes the readers, `energyIds` that lists what the pane reads, `energyModel` that words the card, the two cards and the phone's rows, and the two drawings as geometry. The shared reads are in `src/providers/`, because the header, the live pill and Climate read them too ([ADR 0025](../../../docs/adr/0025-shared-reads-live-in-providers.md)); the elements come with #239.
+What the Energy tab computes and draws ([spec 19](../../../docs/specs/19-energy.md)): the live power flow, the water heater, Hilo and the history behind them. This folder holds, since #237 and #238, the pure half: the history's slices and its on-demand loader, `readEnergy` that composes the readers, `energyIds` that lists what the pane reads, `energyModel` that words the card, the two cards and the phone's tiles, and the two drawings as geometry. The shared reads are in `src/providers/`, because the header, the live pill and Climate read them too ([ADR 0025](../../../docs/adr/0025-shared-reads-live-in-providers.md)); the elements come with #239.
 
 ## The folder
 
@@ -15,7 +15,7 @@ src/features/energy/
   README.md
   ids.ts                   energyIds(store): the grid and the meters, the water heater's, the charger's, Hilo's and Hydro-Québec's sensors, each room's power and thermostat
   inputs.ts                readEnergy(states, config, names): EnergyInputs
-  model.ts                 energyModel(inputs, history, deps): EnergyViewModel: the summary, the card, the water heater and Hilo cards, the phone's rows
+  model.ts                 energyModel(inputs, history, deps): EnergyViewModel: the summary, the card, the water heater and Hilo cards, the phone's tiles
   flow-layout.ts           flowLayout(power, deps): FlowGeometry: the rings, the connectors with their widths and dash durations, the captions
   water-chart.ts           waterChartGeometry(series, now, deps): the 24-hour chart's grid, ticks, bars and line
   history.ts               windows and slices only Energy reads: dailyTotals, groupTotals, roomTotals, monthlyTotals, waterCycles, waterDaily
@@ -26,7 +26,7 @@ src/ui/
 
 ## The model
 
-`energyModel` is a pure function of the inputs, the loaded history and its deps: every word is a catalog key and every figure goes through `fmt`, so the French card reads `3,24` and `Chauffe, chaud`. The tier is a typed table of two catalog keys (`TIER_WORDS`: the name, "Low tier", and the short form for running text, "low rate"), and so are the challenge's phases (`PHASE_WORDS`); no word is cut or recased in code. A house without Hilo still has a summary, whose tier reads "rate unknown", as the legacy panel's did; the Hilo card and its phone row exist only for a house whose rate sensor is in the states, and the water heater's for one whose sensors are.
+`energyModel` is a pure function of the inputs, the loaded history and its deps: every word is a catalog key and every figure goes through `fmt`, so the French card reads `3,24` and `Chauffe, chaud`. The tier is a typed table of two catalog keys (`TIER_WORDS`: the name, "Low tier", and the short form for running text, "low rate"), and so are the challenge's phases (`PHASE_WORDS`); no word is cut or recased in code. A house without Hilo still has a summary, whose tier reads "rate unknown", as the legacy panel's did; the Hilo card and its phone tile exist only for a house whose rate sensor is in the states, and the water heater's for one whose sensors are.
 
 ## The geometry
 

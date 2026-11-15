@@ -158,6 +158,15 @@ describe('the captions', () => {
     expect(words(layout({}, 'en', {chargerStatus: null}))).toContain('Unavailable');
   });
 
+  test('the charger’s status is worded where the catalog knows it, as the integration says it in English, and shown as it is otherwise', () => {
+    const status = (chargerStatus: string, language: Language = 'en') =>
+      words(layout({}, language, {chargerStatus})).at(7);
+    expect(status('Connected: waiting for car demand')).toBe('Connected: waiting for car demand');
+    expect(status('Connected: waiting for car demand', 'fr')).toBe('Branchée : en attente de la voiture');
+    expect(status('Charging', 'fr')).toBe('Recharge');
+    expect(status('Calibrating', 'fr')).toBe('Calibrating');
+  });
+
   test('an absent EV and no grid reading: zero watts for the charger, no pulse, and the grid idle', () => {
     const geometry = layout({ev: null, grid: null});
     expect(geometry.pulse).toBeNull();
@@ -191,7 +200,7 @@ describe('in French', () => {
       'CHAUFFAGE',
       '0 sur 4 pièces en marche',
       'RECHARGE VÉ',
-      'Charging',
+      'Recharge',
       'Reste de la maison',
       '0,50 kW',
     ]);

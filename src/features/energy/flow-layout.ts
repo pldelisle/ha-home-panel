@@ -3,6 +3,7 @@
 // follow), the legacy `flowSvg` copied number for number (deleted in #241); the powers come from `powerNow`, and each word and figure through `t` and `fmt`.
 // Must not: import Lit or the DOM, read the clock, state or the registry, or hold a word a person reads (a catalog key says it).
 import {DASH} from '../../core/figures.ts';
+import type {MessageKey} from '../../core/i18n/en.ts';
 import {whole, type Formatters} from '../../core/i18n/format.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
 import type {PowerNow} from '../../providers/power.ts';
@@ -16,6 +17,29 @@ const WATTS_BELOW_KW = 1;
 /** The drawing's own coordinates, which the element's `viewBox` repeats. */
 const WIDTH = 440;
 const HEIGHT = 340;
+
+/** The charger's statuses the catalog words, by the text the Wallbox integration gives; any other status is shown as the sensor says it. */
+const STATUS_WORDS: ReadonlyMap<string, MessageKey> = new Map([
+  ['Ready', 'energy.status.ready'],
+  ['Charging', 'energy.status.charging'],
+  ['Connected: waiting for car demand', 'energy.status.connectedWaitingForCar'],
+  ['Waiting for car demand', 'energy.status.waitingForCar'],
+  ['Connected: waiting for next schedule', 'energy.status.connectedWaitingForSchedule'],
+  ['Waiting for next schedule', 'energy.status.waitingForSchedule'],
+  ['Paused by user', 'energy.status.pausedByUser'],
+  ['Scheduled', 'energy.status.scheduled'],
+  ['Discharging', 'energy.status.discharging'],
+  ['Error', 'energy.status.error'],
+  ['Disconnected', 'energy.status.disconnected'],
+  ['Locked', 'energy.status.locked'],
+  ['Locked, car connected', 'energy.status.lockedCarConnected'],
+  ['Updating', 'energy.status.updating'],
+  ['Waiting', 'energy.status.waiting'],
+  ['Waiting in queue by Power Sharing', 'energy.status.queuePowerSharing'],
+  ['Waiting in queue by Power Boost', 'energy.status.queuePowerBoost'],
+  ['Waiting in queue by Eco-Smart', 'energy.status.queueEcoSmart'],
+  ['Waiting for MID failed', 'energy.status.midFailed'],
+]);
 
 /** A text of the drawing: `big` is a figure, `cap` a caption, `st` a small line; `size` overrides the class's font size. */
 export interface FlowText {
@@ -70,7 +94,7 @@ export interface FlowDeps {
   fmt: Formatters;
   /** The tank's temperature, written under the water heater's figure when it is idle and in its "hot" word; null when it reads nothing. */
   waterTemperature: number | null;
-  /** The charger's own status text; null when it is unavailable or unset. */
+  /** The charger's own status text (worded where the catalog knows it); null when it is unavailable or unset. */
   chargerStatus: string | null;
 }
 
@@ -124,6 +148,8 @@ export function flowLayout(power: PowerNow, {t, fmt, waterTemperature, chargerSt
     return {key, cx, cy, r, strokeWidth: 3, color, on, texts};
   };
 
+  const word = chargerStatus === null ? undefined : STATUS_WORDS.get(chargerStatus);
+  const chargerText = chargerStatus === null ? t('energy.unavailable') : word ? t(word) : chargerStatus;
   const tank = waterTemperature === null ? '' : `${fmt.fixed(waterTemperature, 1)}°`;
   const waterWord = lit(water) ? t('energy.heating') : t('energy.idle');
   const home: FlowNode = {
@@ -171,7 +197,7 @@ export function flowLayout(power: PowerNow, {t, fmt, waterTemperature, chargerSt
       text(370, 222, t('energy.flow.heat'), 'cap', 'middle'),
       text(370, 238, t('energy.roomsOn', {on: roomsOn, total: power.rooms.length}), 'st', 'middle'),
       text(300, 272, t('energy.flow.ev'), 'cap'),
-      text(300, 288, chargerStatus ?? t('energy.unavailable'), 'st'),
+      text(300, 288, chargerText, 'st'),
       text(120, 290, t('energy.flow.rest'), 'st', 'end'),
       text(120, 306, rest === null ? DASH : t('energy.kw', {n: fmt.fixed(rest, 2)}), 'big', 'end', 15),
     ],

@@ -334,6 +334,63 @@
       }
     },
     {
+      "key": "energy.status.ready"
+    },
+    {
+      "key": "energy.status.charging"
+    },
+    {
+      "key": "energy.status.connectedWaitingForCar"
+    },
+    {
+      "key": "energy.status.waitingForCar"
+    },
+    {
+      "key": "energy.status.connectedWaitingForSchedule"
+    },
+    {
+      "key": "energy.status.waitingForSchedule"
+    },
+    {
+      "key": "energy.status.pausedByUser"
+    },
+    {
+      "key": "energy.status.scheduled"
+    },
+    {
+      "key": "energy.status.discharging"
+    },
+    {
+      "key": "energy.status.error"
+    },
+    {
+      "key": "energy.status.disconnected"
+    },
+    {
+      "key": "energy.status.locked"
+    },
+    {
+      "key": "energy.status.lockedCarConnected"
+    },
+    {
+      "key": "energy.status.updating"
+    },
+    {
+      "key": "energy.status.waiting"
+    },
+    {
+      "key": "energy.status.queuePowerSharing"
+    },
+    {
+      "key": "energy.status.queuePowerBoost"
+    },
+    {
+      "key": "energy.status.queueEcoSmart"
+    },
+    {
+      "key": "energy.status.midFailed"
+    },
+    {
       "key": "energy.hiloTile",
       "values": {
         "tier": "Low tier",

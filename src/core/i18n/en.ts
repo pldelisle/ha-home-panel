@@ -509,7 +509,7 @@ export const en = {
   'air.aqhiSeries': 'AQHI (Environment Canada)',
   'air.axis.aqi': 'US AQI',
   'air.axis.aqhi': 'AQHI',
-  // Energy (src/features/energy): the card, the flow, the water heater and Hilo cards, and the phone's rows
+  // Energy (src/features/energy): the card, the flow, the water heater and Hilo cards, and the phone's tiles
   // the card, its top line and the sub-line
   'energy.card.title': 'Home energy',
   'energy.open': 'Open home energy details',
@@ -572,6 +572,26 @@ export const en = {
   'energy.phase.reduction': 'reduction',
   'energy.phase.recovery': 'recovery',
   'energy.hiloTile': '{tier} · {challenge}',
+  // the charger's statuses as the Wallbox integration says them, worded where the legacy layer worded them; any other status is shown as it is
+  'energy.status.ready': 'Ready',
+  'energy.status.charging': 'Charging',
+  'energy.status.connectedWaitingForCar': 'Connected: waiting for car demand',
+  'energy.status.waitingForCar': 'Waiting for car demand',
+  'energy.status.connectedWaitingForSchedule': 'Connected: waiting for next schedule',
+  'energy.status.waitingForSchedule': 'Waiting for next schedule',
+  'energy.status.pausedByUser': 'Paused by user',
+  'energy.status.scheduled': 'Scheduled',
+  'energy.status.discharging': 'Discharging',
+  'energy.status.error': 'Error',
+  'energy.status.disconnected': 'Disconnected',
+  'energy.status.locked': 'Locked',
+  'energy.status.lockedCarConnected': 'Locked, car connected',
+  'energy.status.updating': 'Updating',
+  'energy.status.waiting': 'Waiting',
+  'energy.status.queuePowerSharing': 'Waiting in queue by Power Sharing',
+  'energy.status.queuePowerBoost': 'Waiting in queue by Power Boost',
+  'energy.status.queueEcoSmart': 'Waiting in queue by Eco-Smart',
+  'energy.status.midFailed': 'Waiting for MID failed',
   // the line under the card when the statistics did not come; the reason is Home Assistant's own words
   'energy.historyFailed': "History didn't load: {reason}. Live values still update.",
 } as const;
