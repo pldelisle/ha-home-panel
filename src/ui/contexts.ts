@@ -1,4 +1,4 @@
-// The five contexts the shell provides: the store, the API client, the settings, the optimistic values and the appearance, one typed key each.
+// The six contexts the shell provides: the store, the API client, the statistics cache, the settings, the optimistic values and the appearance, one typed key each.
 // Pattern: context protocol (W3C Community Group, Context Protocol; Lit's @lit/context): a provider at the root, a
 // consumer anywhere below finds it by a DOM event, so no level of the tree threads a service through its properties.
 // They live in the kit, not the shell: the kit's controllers consume them, and the kit may not import the shell, so
@@ -7,12 +7,18 @@
 import {createContext} from '@lit/context';
 import type {PanelApi} from '../core/api.ts';
 import type {PanelSettings} from '../core/settings.ts';
+import type {StatisticsCache} from '../core/statistics-cache.ts';
 import type {PanelStore} from '../core/store.ts';
 import type {OverlayStore} from './overlay-store.ts';
 
 // A Symbol key is unique to this module, so another library's context named 'store' cannot answer these requests.
 export const storeContext = createContext<PanelStore>(Symbol('home-panel.store'));
 export const apiContext = createContext<PanelApi>(Symbol('home-panel.api'));
+/**
+ * The panel's one memo of the recorder's reads, shared by every feature that loads a history and by the guest (ADR 0028); one per panel,
+ * so two panels stay independent. Weather's and Security's own caches stay as they are.
+ */
+export const statisticsCacheContext = createContext<StatisticsCache>(Symbol('home-panel.statistics'));
 export const settingsContext = createContext<PanelSettings>(Symbol('home-panel.settings'));
 /** The panel's optimistic values, one store per panel so two panels stay independent (ADR 0023). */
 export const optimisticContext = createContext<OverlayStore>(Symbol('home-panel.optimistic'));

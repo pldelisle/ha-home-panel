@@ -712,7 +712,8 @@ describe('the recorded statistics spans', () => {
   }));
 
   test('the panel is read: every call and every range is found', () => {
-    expect(asked.length).toBeGreaterThanOrEqual(5);
+    // the four calls loadHistory makes on the client (its power windows are the provider's, within the same spans)
+    expect(asked.length).toBeGreaterThanOrEqual(4);
     expect(ranges.map(r => r.period).sort()).toEqual(['5minute', 'day', 'hour', 'hour']);
   });
 

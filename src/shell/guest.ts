@@ -6,6 +6,7 @@
 // writes nothing outside them but the Home-card bridge's two tags (ADR 0024: `<hp-scene-tiles>` in `#hscenes`, `<hp-security-card>` in `#hsec`), until #268.
 import type {PanelApi} from '../core/api.ts';
 import type {PanelSettings} from '../core/settings.ts';
+import type {StatisticsCache} from '../core/statistics-cache.ts';
 import type {HassChange, PanelStore} from '../core/store.ts';
 import type {Appearance} from '../ui/contexts.ts';
 import type {FeatureKey, GuestAnswers} from '../ui/feature.ts';
@@ -20,6 +21,8 @@ export interface GuestContext {
   host: HTMLElement;
   store: PanelStore;
   api: PanelApi;
+  /** The panel's one statistics cache (ADR 0028): the legacy `loadHistory` asks it for the power windows Energy's card asks too. Deleted with the guest (#277). */
+  statistics: StatisticsCache;
   settings: PanelSettings;
   shell: ShellForGuest;
 }

@@ -23,10 +23,18 @@ import {resolveConfig} from '../core/config.ts';
 import type {PanelHass} from '../core/hass.ts';
 import {browserDefaults} from '../core/i18n/browser.ts';
 import {createSettings, type KeyValueStorage} from '../core/settings.ts';
+import {createStatisticsCache, STATISTICS_TTL_MS} from '../core/statistics-cache.ts';
 import {createStore} from '../core/store.ts';
 import {MediaQueryController} from '../ui/controllers/media-query.ts';
 import {StoreController} from '../ui/controllers/store-controller.ts';
-import {apiContext, optimisticContext, settingsContext, storeContext, type Appearance} from '../ui/contexts.ts';
+import {
+  apiContext,
+  optimisticContext,
+  settingsContext,
+  statisticsCacheContext,
+  storeContext,
+  type Appearance,
+} from '../ui/contexts.ts';
 import {OverlayStore} from '../ui/overlay-store.ts';
 import {ico} from '../ui/icons.ts';
 import type {SheetDismissEvent, SheetRequestEvent, TabSelectEvent, ToastEvent} from '../ui/events.ts';
@@ -104,6 +112,8 @@ export class HomePanel extends LitElement {
   // this panel's services, none shared with another panel (ADR 0012)
   private readonly store = createStore(storeOptions());
   private readonly api = createApi(this.store);
+  /** The one memo of the recorder's reads for this panel (ADR 0028); a reply stays fresh as long as a feature keeps its history. */
+  private readonly statistics = createStatisticsCache(this.api, {ttlMs: STATISTICS_TTL_MS});
   private readonly settings = createSettings(browserStorage());
   // what the household asked for and Home Assistant has not confirmed yet: the panel's elements share it (ADR 0023)
   private readonly optimistic = new OverlayStore();
@@ -188,6 +198,7 @@ export class HomePanel extends LitElement {
     // each provider adds itself to this element as a controller and answers the context requests of every element below
     new ContextProvider(this, {context: storeContext, initialValue: this.store});
     new ContextProvider(this, {context: apiContext, initialValue: this.api});
+    new ContextProvider(this, {context: statisticsCacheContext, initialValue: this.statistics});
     new ContextProvider(this, {context: settingsContext, initialValue: this.settings});
     new ContextProvider(this, {context: optimisticContext, initialValue: this.optimistic});
     // The store starts from the empty config, so a panel that arrives with none is no change; the store counts its
@@ -521,6 +532,7 @@ export class HomePanel extends LitElement {
       host: this,
       store: this.store,
       api: this.api,
+      statistics: this.statistics,
       settings: this.settings,
       shell: this.forGuest,
     };
@@ -558,7 +570,8 @@ export class HomePanel extends LitElement {
     for (const key of changed.keys()) {
       if (key === 'hass' && this.hass) guest.hassChanged(this.store.setHass(this.hass));
       if (key === 'panel') {
-        this.store.setPanelConfig(this.panel?.config);
+        // a new config is a new generation, and the replies cached under the old one go (StatisticsCache.clear)
+        if (this.store.setPanelConfig(this.panel?.config)) this.statistics.clear();
         guest.panelChanged();
       }
     }

@@ -1,11 +1,11 @@
 // CommandRunner: sends one service call, tells the person on success, and on failure undoes what it held and says so.
 // Pattern: Command (Gamma et al.): `Command` is the data, this is the invoker, `PanelApi` the receiver; compensating action
 // (Richardson): releasing the keys the command set. The legacy `call` empties the whole bag; #263 deletes it, and its wording.
-// A known copy: `Didn't work: {reason}` and `message || code || value` are the legacy `call`'s, until #263.
+// A known copy: `Didn't work: {reason}` is the legacy `call`'s wording, until #263; the reason is read by the API client's `rejectionReason`.
 // Must not: read the store, format a string (the catalog does, through the `t` it is handed), or touch another command's state.
 import {ContextConsumer} from '@lit/context';
 import type {ReactiveControllerHost} from 'lit';
-import type {PanelApi} from '../core/api.ts';
+import {rejectionReason, type PanelApi} from '../core/api.ts';
 import type {MessageKey} from '../core/i18n/en.ts';
 import type {Messages, MessageValues} from '../core/i18n/messages.ts';
 import {apiContext} from './contexts.ts';
@@ -34,12 +34,6 @@ export interface CommandRunnerOptions {
   /** The catalog's `t`, asked for at each run: the store arrives when the host connects, which is after the runner exists. */
   t: () => Messages['t'];
 }
-
-// Home Assistant rejects with `{code, message}`, not an Error; the legacy panel said the message, else the code, else the value
-const reasonOf = (e: unknown): string => {
-  const rejection = e as {message?: unknown; code?: unknown} | null;
-  return String(rejection?.message || rejection?.code || e);
-};
 
 const send = (api: PanelApi, {domain, service, data}: Call) => api.runService(domain, service, data);
 
@@ -78,7 +72,7 @@ export class CommandRunner {
       });
     } catch (e) {
       this.options.overlay.release(...(cmd.holds ?? []));
-      this.host.dispatchEvent(new ToastEvent(t('common.failed', {reason: reasonOf(e)}), true));
+      this.host.dispatchEvent(new ToastEvent(t('common.failed', {reason: rejectionReason(e)}), true));
       return false;
     }
     if (cmd.done) this.host.dispatchEvent(new ToastEvent(t(cmd.done.key, cmd.done.values)));

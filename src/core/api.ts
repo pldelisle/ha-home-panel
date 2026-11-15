@@ -16,6 +16,12 @@ import type {
 import type {PanelHass} from './hass.ts';
 import type {PanelStore} from './store.ts';
 
+/** Why a call failed, as Home Assistant words it: it rejects with `{code, message}`, not an Error; the message, else the code, else the value. */
+export const rejectionReason = (error: unknown): string => {
+  const rejection = error as {message?: unknown; code?: unknown} | null;
+  return String(rejection?.message || rejection?.code || error);
+};
+
 /** A reply arrived under a different config than the call was made under: the panel was reconfigured in between. */
 export class StaleReply extends Error {
   readonly requested: number;

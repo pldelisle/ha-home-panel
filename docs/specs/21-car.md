@@ -37,7 +37,7 @@ Each pull request leaves every baseline identical.
 5. As an adopter without a FordPass car, I want no Car tab and no car tile, as today; with another car integration, I want the provider seam to be where my adapter goes.
 6. As a maintainer, I want the FordPass reading (prefix discovery, the charging and plug states, the tire pressure units, the schedule's shape) in one provider with tests, so that Ford's quirks are named where they live.
 7. As a maintainer, I want the charging sessions as a pure function over the Wallbox's hourly rows, tested with literal rows (gaps, the 1 kWh floor), so that the rule is pinned.
-8. As a maintainer, I want the class's `loadHistory` and `derive` gone with this move, so that the history layer is per feature everywhere (the history ADR, numbered by #237, complete).
+8. As a maintainer, I want the class's `loadHistory` and `derive` gone with this move, so that the history layer is per feature everywhere (ADR 0028, complete).
 9. As a maintainer, I want the live pill and the upcoming list to read the FordPass provider, so that the dependency rule holds when they move.
 10. As a maintainer, I want the behaviour tests to open the detail, arm and confirm remote start, change the amps, edit and save a schedule through the harness, and to keep `car-departure.spec.ts`'s cases, so that the tests survive the rewrite.
 11. As a learner, I want the draft-state pattern (edit locally, validate, send once) named and explained, so that the next form in the panel follows it.
