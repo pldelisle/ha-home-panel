@@ -15,6 +15,8 @@ export interface EntityRegistryEntry {
   name?: string | null;
   /** True when the entity is hidden in the registry; the panel does not offer a hidden entity. */
   hidden?: boolean;
+  /** `diagnostic` or `config` for an entity Home Assistant files under its device's settings; null or missing for a primary one. */
+  entity_category?: string | null;
 }
 
 /** One row of the device registry (hass.devices). */

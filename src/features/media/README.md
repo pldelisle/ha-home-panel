@@ -25,7 +25,7 @@ src/features/media/
   speaker-pod.ts           <hp-speaker-pod>: the cover, the track, the volume stepper and play; speaker-pod.element.css
   scene-tiles.ts           <hp-scene-tiles>: the Home scenes row, placed by the guest through the Home-card bridge; scene-tiles.element.css
 src/core/
-  registry.ts              areaOf and isHidden: the registry rules the store, the providers and the features share
+  registry.ts              areaOf, isHidden, nameOwner, entitiesByDevice: the registry rules the store, the providers and the features share
   timing.ts                debounce(fn, ms, timers?): the volume's 450 ms, with injected timers and a cancel
   i18n/format.ts           fmt.ago(instant, now): a scene's last run as a kind and a count (now, minutes, hours) or a date, which `media.last` words
 ```

@@ -80,7 +80,7 @@ The words the panel and its code use. One word per concept: use it in issues, te
 
 **Model** — A pure, synchronous function `model(states, registries, config, now) → view model` with no DOM and no `hass` methods; `now` is passed in.
 
-**Provider** — An adapter in `src/providers/`, its `read` a pure function, that turns an integration's entities (Environment Canada, Hilo, Hydro-Québec, FordPass, Wallbox, Mila, UniFi Protect, Adaptive Lighting) into the generic inputs a model expects, so a model never matches on an integration's naming. A feature can have several, applied in a declared order (the weather entity, then Environment Canada over it).
+**Provider** — An adapter in `src/providers/`, its `read` a pure function, that turns an integration's entities (Environment Canada, Hilo, Hydro-Québec, FordPass, Wallbox, Mila, UniFi Protect, Adaptive Lighting) into the generic inputs a model expects, so a model never matches on an integration's naming. A feature can have several, applied in a declared order (the weather entity, then Environment Canada over it). A reading that two features need is a provider too, named after what it reads, and the legacy panel may import it (ADR 0025).
 
 **UI kit** — The layer in `src/ui/` of small shared Lit elements and styles: card, tile, pane header, sheet, dial, ring, pill, chip, dimmer slider, chart wrapper and the design tokens.
 
