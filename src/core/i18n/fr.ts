@@ -422,6 +422,7 @@ export const fr: Record<MessageKey, string> = {
   // Air: the rewrite layer's French for each text; where the layer left the English, the French is written (test/unit/fixtures/moved/air.json)
   'air.quality': "Qualité de l'air",
   'air.noPurifiers': 'Aucun purificateur trouvé',
+  'air.noPurifiersBrief': 'Aucun purificateur',
   'air.purifiers': '{n, plural, one {# purificateur} other {# purificateurs}}',
   'air.noData': 'Aucune donnée',
   'air.noReadings': 'Aucune mesure',
@@ -460,8 +461,6 @@ export const fr: Record<MessageKey, string> = {
   'air.mode': '{name} : mode',
   'air.modeSet': '{name} : {mode, select, Manual {Manuel} other {Automagic}}',
   'air.fanSet': '{name} : ventilateur à {pct} %',
-  'air.purifierOn': '{name} : purificateur allumé',
-  'air.purifierOff': '{name} : purificateur éteint',
   'air.metric.pm1': 'PM1',
   'air.metric.pm25': 'PM2,5',
   'air.metric.pm10': 'PM10',

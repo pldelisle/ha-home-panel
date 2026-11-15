@@ -63,6 +63,18 @@ test.describe('tablet', () => {
     await expect(house.root().locator('#idle')).toBeHidden();
     await expect(house.root().locator('#pane-car')).toBeVisible();
   });
+
+  // the stack's air card reads the providers' rating (the legacy `roomAir` is gone): PM2.5 above 35 µg/m³ is poor
+  test('22 a room whose air turns poor joins the stack with its worst pollutant and what to do', async ({house}) => {
+    const stack = house.root().locator('#hstk');
+    await expect(stack.locator('.sdots i')).toHaveCount(2);
+    await house.setState('sensor.office_purifier_pm2_5', {state: '40'});
+    await expect(stack.locator('.sdots i')).toHaveCount(3);
+    for (let i = 0; i < 3 && (await cardKey(house, '#hstk')) !== 'air'; i++) await house.clock.runFor(STACK_TURN_MS);
+    expect(await cardKey(house, '#hstk')).toBe('air');
+    for (const text of ['Office air', '40 µg/m³', 'PM2.5 is high', 'The purifier can run faster'])
+      await expect(stack.locator('.sc')).toContainText(text);
+  });
 });
 
 test.describe('phone', () => {
