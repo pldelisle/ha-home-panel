@@ -8,6 +8,9 @@
       "key": "energy.open"
     },
     {
+      "key": "energy.close"
+    },
+    {
       "key": "energy.gridOnly",
       "values": {
         "rate": "low rate"

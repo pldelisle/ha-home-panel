@@ -6,6 +6,7 @@ import {unsafeCSS, type CSSResult} from 'lit';
 import badgeText from './badge.css?inline';
 import chartText from './chart.css?inline';
 import commonText from './common.css?inline';
+import heroText from './hero.css?inline';
 import innerText from './inner.css?inline';
 import moreText from './more.css?inline';
 import motionText from './motion.css?inline';
@@ -42,6 +43,8 @@ export const range = adopt(rangeText);
 export const settings = adopt(settingsText);
 /** The tiles of a detail panel, with the one that opens a history. */
 export const tiles = adopt(tilesText);
+/** The hero of a card: a big figure with its unit and a state pill. */
+export const hero = adopt(heroText);
 /** The inner card of a detail panel and the row that sets two of them side by side. */
 export const inner = adopt(innerText);
 /** A chart's legend and its tooltip's font. */

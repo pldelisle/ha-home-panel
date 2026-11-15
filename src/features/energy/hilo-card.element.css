@@ -1,0 +1,14 @@
+/*
+ * <hp-hilo-card>'s own rules: its `:host` and the tier dot's two colours. The box and its title line are the feature's (styles.css), the hero
+ * and the tiles the kit's.
+ */
+:host {
+  display: block;
+  min-width: 0;
+}
+.hero .state i.ok {
+  background: var(--ok);
+}
+.hero .state i.warn {
+  background: var(--warn);
+}

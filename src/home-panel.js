@@ -70,9 +70,9 @@ const shortNames = names => {
 };
 const L0kw = v => (v == null ? '–' : v < 1 ? Math.round(v * 1000) + ' W' : v.toFixed(1) + ' kW');
 
-// card order for the column packing: first row is energy
+// card order for the column packing: the lights first
 // 'open-air' is dead until the Home move deletes it (#268): nothing draws in that card any more
-const LAYOUT = ['open-energy', 'lights', 'open-climate', 'open-air', 'open-car', 'water', 'hilo'];
+const LAYOUT = ['lights', 'open-climate', 'open-air', 'open-car'];
 // thermostats without an HA area: the area each Hilo room belongs to
 // areas the Phone tab shows as part of another, the way Apple Home groups them: the parking spot's charger and camera live in the garage
 // AL_AREAS (from the config): HA area → Adaptive Lighting switch, for areas the panel can't match on its own
@@ -767,9 +767,7 @@ export class LegacyPanel {
     // the shell drew the frame (the header, the rail, the panes); the guest draws what is not in it: the parked cards, the sheets, the idle clock, the toast
     // (the Air card is <hp-air-card>, placed by the Air pane: `#open-air` and `#air` are empty legacy containers, kept until the Home move, #268)
     this.container.innerHTML = `<div class="cols">
-    <div class="col c1">
-      <div class="card tap" id="open-energy" tabindex="0" role="button" aria-description="Open home energy details"><div id="energy"></div></div>
-    </div>
+    <div class="col c1"></div>
     <div class="col c2">
       <div class="card" id="lights"></div>
       <div class="card tap" id="open-climate" tabindex="0" role="button" aria-description="Open climate details"><div id="climate"></div></div>
@@ -777,8 +775,6 @@ export class LegacyPanel {
     </div>
     <div class="col c3">
       <div class="card tap carcard" id="open-car" tabindex="0" role="button" aria-description="Open car details"><div id="carcard"></div></div>
-      <div class="card" id="water"></div>
-      <div class="card" id="hilo"></div>
     </div>
   </div>
 
@@ -820,10 +816,6 @@ export class LegacyPanel {
 <div class="sheet" id="sh-light" hidden><div class="panel" role="dialog" aria-modal="true" aria-labelledby="lshh">
   <div class="ph"><button type="button" class="lpwr" id="lshpwr" role="switch" aria-checked="false" data-l="area" data-a="">${ico('lpow', 24)}</button><div class="grow"><h2 id="lshh"></h2><div class="sub" id="lshsub"></div></div><button class="close ldone" type="button">Done</button></div>
   <div class="lsbody" id="lsheet"></div>
-</div></div>
-<div class="sheet" id="sh-card" hidden><div class="panel" role="dialog" aria-modal="true" aria-labelledby="cardh">
-  <div class="ph"><span class="badge" id="cardb"></span><div class="grow"><h2 id="cardh"></h2></div><button class="icon close" type="button" aria-label="Close">✕</button></div>
-  <div id="cardhost"></div>
 </div></div>
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>`;
     this.$app = this.$('app');
@@ -1441,7 +1433,6 @@ export class LegacyPanel {
       this.$('toast').hidden = true;
     });
     [
-      ['open-energy', 'sh-energy'],
       ['open-climate', 'sh-climate'],
       ['open-air', 'air.detail'], // dead until the Home move (#268): the card is empty and parked
       ['open-car', 'sh-car'],
@@ -1699,8 +1690,6 @@ export class LegacyPanel {
       // phone: tiles open sheets
       const sh = e.target.closest('[data-opens]');
       if (sh) return this.sheets.open(sh.dataset.opens);
-      const cd = e.target.closest('[data-card]');
-      if (cd) return this.openCard(cd.dataset.card, cd.dataset.title, cd.dataset.icon, cd.dataset.color);
       const ls = e.target.closest('[data-lsheet]');
       if (ls) return this.openLight(ls.dataset.lsheet);
       const cs = e.target.closest('[data-csel]');
@@ -1712,7 +1701,6 @@ export class LegacyPanel {
       if (t) return this.ctx.shell.setTab(t.dataset.pane);
     };
     tv.addEventListener('click', onTap);
-    this.$('sh-card').addEventListener('click', onTap); // a card moved into the generic sheet keeps its buttons working
     this.$('stabs').addEventListener('click', e => {
       const b = e.target.closest('.tab');
       if (!b) return;
@@ -1893,15 +1881,7 @@ export class LegacyPanel {
   renderLive() {
     if (!this.hass) return;
     this.findCar();
-    for (const f of [
-      'renderHeader',
-      'renderEnergy',
-      'renderLights',
-      'renderClimate',
-      'renderCarCard',
-      'renderWater',
-      'renderHilo',
-    ]) {
+    for (const f of ['renderHeader', 'renderLights', 'renderClimate', 'renderCarCard']) {
       try {
         this[f]();
       } catch (e) {
@@ -2072,25 +2052,6 @@ export class LegacyPanel {
         ${node(220, 276, 40, L.ev, 'var(--c-ev)', L.ev > 0.02)}<text x="300" y="272" class="cap">EV CHARGING</text><text x="300" y="288" class="st">${esc(ok(wb) ? wb.state : 'Unavailable')}</text>
         <text x="120" y="290" text-anchor="end" class="st">Rest of home</text><text x="120" y="306" text-anchor="end" class="big" font-size="15">${L.rest == null ? '–' : L.rest.toFixed(2) + ' kW'}</text>
       </svg>`;
-  }
-  renderEnergy() {
-    const ri = this.rateInfo(),
-      H = this.H;
-    const t = H ? H.totals : null,
-      g30 = H ? H.g30 : null;
-    this.set(
-      'energy',
-      `<div class="top"><span class="lbl">Home energy</span><span class="right">Grid only · ${esc(ri.short)}<span class="go">›</span></span></div>
-      ${this.flowSvg()}
-      <div class="tiles" style="margin-top:6px">${[
-        ['Today', t ? f1(t.today) : '–', 'kWh'],
-        ['Room heating', g30 ? Math.round(g30[0]) : '–', 'kWh', 'last 30 days'],
-        ['Water heating', g30 ? Math.round(g30[1]) : '–', 'kWh', 'last 30 days'],
-        ['EV charging', g30 ? Math.round(g30[2]) : '–', 'kWh', 'last 30 days'],
-      ]
-        .map(tile)
-        .join('')}</div>`,
-    );
   }
   energySummary() {
     const L = this.live(),
@@ -2597,14 +2558,14 @@ export class LegacyPanel {
       where: ok(trk) ? (trk.state === 'home' ? 'Parked at home' : trk.state === 'not_home' ? 'Away' : trk.state) : '',
     };
   }
-  // the sections this house has nothing for (true = nothing): Climate with no thermostat and no heat pump, Car with no car, the water
-  // heater with neither of its sensors, Hilo with no rate. availability() and gateLacking hide them; renderWater and renderHilo draw nothing for them
+  // the sections this house has nothing for (true = nothing): Climate with no thermostat and no heat pump, Car with no car, and the water
+  // heater with neither of its sensors, whose phone tile on Home gateLacking hides (Energy's own cards and tiles are the pane's, #239).
+  // availability() and gateLacking read it; deleted with Home's tile (#268)
   lacking() {
     return {
       climate: !this.ROOMS.length && !this.st(this.E.hp),
       car: !this.car,
       water: !(this.st(this.E.whT) || this.st(this.E.whP)),
-      hilo: !this.st(this.E.rate),
     };
   }
   renderCarCard() {
@@ -2645,116 +2606,6 @@ export class LegacyPanel {
           : ''
       }
       ${H ? `<div class="muted" style="font-size:12px">Daily EV energy, last 30 days: ${ev30.filter(r => r.ev > 5).length} charging days, ${Math.round(H.g30[2])} kWh.</div>` : ''}`,
-    );
-  }
-  // the water heater's own name: its sensor's name without the measurement ("Tank Temperature" → "Tank")
-  whName() {
-    const id = [this.E.whT, this.E.whP].find(i => this.attr(i, 'friendly_name')),
-      fn = id ? this.name(id) : '';
-    return fn.replace(/\s*(water heater\s*)?(temperature|température|power|puissance)$/i, '').trim();
-  }
-  renderWater() {
-    if (this.lacking().water) return;
-    const t = this.num(this.E.whT),
-      p = this.kw(this.E.whP),
-      H = this.H,
-      d = H ? H.wh14 : [],
-      W = H && H.wh24;
-    const pp = W ? W.p.filter(x => x[0] >= Date.now() - 864e5) : [],
-      e24 = sum(pp.map(x => x[1])) / 12;
-    let cyc = 0;
-    pp.forEach((x, i) => {
-      if (x[1] > 0.2 && !(i && pp[i - 1][1] > 0.2 && x[0] - pp[i - 1][0] <= 3e5)) cyc++;
-    });
-    const avg = sum(d.map(r => r[1])) / (d.length || 1);
-    this.set(
-      'water',
-      `<div class="top"><span class="lbl">Water heater</span><span class="right">${esc(this.whName())}</span></div>
-      <div class="hero"><div class="v num">${f1(t)}<small>°C</small></div><span class="state"><i style="background:${p > 0.02 ? 'var(--c-wh)' : 'var(--fg3)'}"></i>${p > 0.02 ? 'Heating · ' + p.toFixed(1) + ' kW' : 'Idle · 0 W'}</span></div>
-      ${
-        W
-          ? this.whChart(W) +
-            `<div class="whleg" style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--fg2);margin-top:6px"><span style="display:inline-flex;align-items:center;gap:6px"><i style="width:14px;height:3px;border-radius:2px;background:var(--c-wh)"></i>Water temperature</span><span style="display:inline-flex;align-items:center;gap:6px"><i style="width:10px;height:10px;border-radius:2px;background:color-mix(in srgb,var(--c-wh) 42%,transparent)"></i>Heating power</span></div>
-      <div class="muted" style="font-size:12px;margin-top:4px">${`Last 24 hours: ${e24.toFixed(1)} kWh over ${cyc} heating ${cyc === 1 ? 'cycle' : 'cycles'}.`}${d.length ? ` ${d.length}-day average: ${avg.toFixed(1)} kWh a day.` : ''}</div>`
-          : ''
-      }`,
-    );
-  }
-  whChart(W) {
-    const w = 320,
-      h = 120,
-      L = 28,
-      R = 34,
-      T = 8,
-      B = 18,
-      pw = w - L - R,
-      ph = h - T - B,
-      now = Date.now(),
-      t0 = now - 864e5;
-    const X = t => L + Math.max(0, Math.min(1, (t - t0) / 864e5)) * pw;
-    const tp = W.t.filter(x => x[0] >= t0 - 3e5),
-      pp = W.p.filter(x => x[0] >= t0);
-    if (tp.length < 2 && !pp.length) return '';
-    const ys = tp.map(x => x[1]);
-    let lo = ys.length ? Math.floor(Math.min(...ys) - 0.5) : 45,
-      hi = ys.length ? Math.ceil(Math.max(...ys) + 0.5) : 55;
-    if (hi - lo < 4) {
-      lo = Math.floor((hi + lo) / 2 - 2);
-      hi = lo + 4;
-    }
-    const Yt = v => T + ((hi - v) / (hi - lo)) * ph;
-    const pmax = Math.max(5, Math.ceil(Math.max(0, ...pp.map(x => x[1])))),
-      Yp = v => T + ph - (v / pmax) * ph,
-      bw = Math.max(1.4, pw / 288);
-    const txt = (x, y, s, a = 'start') =>
-      `<text x="${x}" y="${y}" text-anchor="${a}" font-size="9" fill="var(--fg3)" style="font-family:var(--f-body)">${s}</text>`;
-    const grid = [lo, (lo + hi) / 2, hi]
-      .map(
-        v =>
-          `<line x1="${L}" x2="${w - R}" y1="${Yt(v).toFixed(1)}" y2="${Yt(v).toFixed(1)}" stroke="var(--ring)" stroke-width="1"/>` +
-          txt(L - 4, Yt(v) + 3, `${+v.toFixed(1)}°`, 'end'),
-      )
-      .join('');
-    const pax = txt(w - R + 4, T + 3, `${pmax} kW`) + txt(w - R + 4, T + ph + 3, '0 kW');
-    let ticks = '';
-    for (let t = Math.ceil(t0 / 36e5) * 36e5; t <= now; t += 36e5) {
-      if (this.fmtEn.dayParts(t).h % 6 === 0)
-        ticks +=
-          `<line x1="${X(t).toFixed(1)}" x2="${X(t).toFixed(1)}" y1="${T + ph}" y2="${T + ph + 3}" stroke="var(--ring)"/>` +
-          txt(X(t), h - 4, this.fmtEn.hour(t), 'middle');
-    }
-    const bars = pp
-      .filter(x => x[1] > 0.05)
-      .map(
-        x =>
-          `<rect x="${X(x[0]).toFixed(1)}" y="${Yp(x[1]).toFixed(1)}" width="${bw.toFixed(1)}" height="${(T + ph - Yp(x[1])).toFixed(1)}" rx=".6" fill="var(--c-wh)" opacity=".42"><title>${this.fmtEn.time(x[0])}: ${x[1].toFixed(1)} kW</title></rect>`,
-      )
-      .join('');
-    const line = tp.map((x, i) => `${i ? 'L' : 'M'}${X(x[0] + 15e4).toFixed(1)},${Yt(x[1]).toFixed(1)}`).join('');
-    const last = tp[tp.length - 1];
-    return `<svg viewBox="0 0 ${w} ${h}" style="display:block;width:100%;height:auto;margin-top:12px;overflow:visible" role="img" aria-label="Water temperature ${lo} to ${hi} degrees and heating power, last 24 hours">${grid}${pax}${ticks}${bars}${tp.length > 1 ? `<path d="${line}" fill="none" stroke="var(--c-wh)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>` : ''}${last ? `<circle cx="${X(last[0] + 15e4).toFixed(1)}" cy="${Yt(last[1]).toFixed(1)}" r="3" fill="var(--c-wh)" stroke="var(--card)" stroke-width="1.5"/>` : ''}</svg>`;
-  }
-  renderHilo() {
-    if (this.lacking().hilo) return;
-    const ri = this.rateInfo(),
-      defi = this.st(this.E.defi),
-      rw = this.num(this.E.rewards);
-    const ch = !ok(defi)
-      ? 'Challenge status unknown'
-      : defi.state === 'off'
-        ? 'No challenge scheduled'
-        : `Challenge: ${defi.state}`;
-    this.set(
-      'hilo',
-      `<div class="top"><span class="lbl">Hilo</span><span class="right">${esc(ch)}</span></div>
-      <div class="hero"><div class="v num">${ri.r == null ? '–' : (ri.r * 100).toFixed(2)}<small>¢/kWh</small></div><span class="state"><i style="background:${ri.tier === 'Low tier' ? 'var(--ok)' : 'var(--warn)'}"></i>${esc(ri.tier)}</span></div>
-      <div class="tiles" style="grid-template-columns:repeat(3,minmax(0,1fr));margin-top:14px">${[
-        ['Medium', ri.md == null ? '–' : (ri.md * 100).toFixed(2), '¢'],
-        ['Reward', ri.rw == null ? '–' : (ri.rw * 100).toFixed(2), '¢'],
-        ['Rewards', rw == null ? '–' : rw.toFixed(0), '$'],
-      ]
-        .map(tile)
-        .join('')}</div>`,
     );
   }
 
@@ -2983,13 +2834,8 @@ export class LegacyPanel {
     if (id === 'sh-car') this.depDraft = null;
     this.buildSheet(id);
   }
-  sheetClosed(id) {
+  sheetClosed() {
     this.destroyCharts();
-    if (id === 'sh-card' && this.cardBack) {
-      const {el, parent, next} = this.cardBack;
-      this.cardBack = null;
-      parent.insertBefore(el, next && next.parentNode === parent ? next : null);
-    }
   }
   destroyCharts() {
     this.charts.forEach(c => {
@@ -3470,12 +3316,12 @@ export class LegacyPanel {
         const el = this.$(id);
         if (el && h && el.parentNode !== h) h.appendChild(el);
       };
-    const homes = {'open-car': 'carhost', 'open-energy': 'ehost'};
+    const homes = {'open-car': 'carhost'};
     for (const [id, host] of Object.entries(homes)) mv(id, compact ? this.$(host) : col);
   }
   renderCompact() {
     if (!this.compact || this.view !== 'tabs') return;
-    for (const f of ['renderLightTiles', 'renderClimateTiles', 'renderEnergyTiles', 'renderCompactSubs']) {
+    for (const f of ['renderLightTiles', 'renderClimateTiles', 'renderCompactSubs']) {
       try {
         this[f]();
       } catch (e) {
@@ -3486,7 +3332,6 @@ export class LegacyPanel {
   // one line under each summary pane's title, as the sheets have
   renderCompactSubs() {
     if (this.tab === 'climate') this.set('csub2', this.climateSummary());
-    if (this.tab === 'energy') this.set('esub2', this.energySummary());
     if (this.tab === 'car') {
       const c = this.car ? this.carState() : null;
       this.set('carh2', this.car ? esc(this.carName()) : 'Car');
@@ -3675,38 +3520,6 @@ export class LegacyPanel {
         .join(''),
     );
   }
-  // Energy: the water heater and Hilo as rows; each opens its full card in a sheet
-  renderEnergyTiles() {
-    if (this.tab !== 'energy') return;
-    const whT = this.num(this.E.whT),
-      whP = this.kw(this.E.whP) || 0,
-      ri = this.rateInfo(),
-      defi = this.st(this.E.defi);
-    const ch = !ok(defi)
-      ? 'Challenge status unknown'
-      : defi.state === 'off'
-        ? 'No challenge scheduled'
-        : `Challenge: ${esc(defi.state)}`;
-    this.set(
-      'etiles',
-      `<button type="button" class="stile wide${whP > 0.02 ? ' on' : ''}" data-card="water" data-title="Water heater" data-icon="drop" data-color="var(--c-wh)"><span class="ic">${ico('drop', 20)}</span><span class="tx"><b>Water heater</b><small>${whP > 0.02 ? `Heating · ${whP.toFixed(1)} kW` : 'Idle'}</small></span><span class="tv num">${f1(whT)}°</span></button>
-      <button type="button" class="stile wide grid" data-card="hilo" data-title="Hilo" data-icon="bolt" data-color="var(--c-grid)"><span class="ic">${ico('bolt', 20)}</span><span class="tx"><b>Hilo</b><small>${esc(ri.tier)} · ${ch}</small></span><span class="tv num">${ri.r == null ? '–' : (ri.r * 100).toFixed(2)}<small>¢</small></span></button>`,
-    );
-  }
-  // any card can open in a sheet: it moves there and keeps updating, then goes back where it was
-  openCard(id, title, icon, color) {
-    const el = this.$(id);
-    if (!el) return;
-    this.sheets.close(); // the card of an earlier tap goes home first
-    this.cardBack = {el, parent: el.parentNode, next: el.nextSibling};
-    this.$('cardhost').appendChild(el);
-    el.hidden = false;
-    const b = this.$('cardb');
-    b.style.setProperty('--acc', color || 'var(--c-home)');
-    b.innerHTML = ico(icon || 'house', 26);
-    this.$('cardh').textContent = title || '';
-    this.sheets.open('sh-card');
-  }
   // the word under each section in the phone's More sheet, in English, for the registry's summary
   moreLines() {
     const L = this.live();
@@ -3746,8 +3559,6 @@ export class LegacyPanel {
     };
     this.placePanels();
     mv('lights', 'lhost');
-    mv('water', 'eside');
-    mv('hilo', 'eside');
     this.tabChanged(this.tab);
   }
   leaveTabs() {
@@ -3782,9 +3593,9 @@ export class LegacyPanel {
     }
   }
   // what the house lacks is hidden wherever it shows. The rail's Climate and Car buttons are the shell's: it asks availability()
-  // and draws the rail from the answer. The Home tiles that open them, the water heater and the Hilo cards with the tiles that
-  // open them are the guest's, and it hides them here. It runs last in renderTabs because the renderers above redraw their
-  // tiles whole: a hide that ran before a redraw let the new tile show until the next update hid it again
+  // and draws the rail from the answer. The Home tiles that open them, and the phone's Water heater tile, are the guest's, and it
+  // hides them here. It runs last in renderTabs because the renderers above redraw their tiles whole: a hide that ran before
+  // a redraw let the new tile show until the next update hid it again
   gateLacking() {
     const L = this.lacking(),
       hide = (sel, off) =>
@@ -3792,7 +3603,7 @@ export class LegacyPanel {
           el.hidden = off;
         });
     for (const t of ['climate', 'car']) hide(`[data-pane="${t}"]`, L[t]);
-    for (const c of ['water', 'hilo']) hide(`#${c}, [data-card="${c}"]`, L[c]);
+    hide('[data-opens="energy.water"]', L.water);
     const key = JSON.stringify(this.availability());
     if (key !== this.frameKey) {
       this.frameKey = key;
@@ -4012,19 +3823,14 @@ export class LegacyPanel {
         `${whP > 0.02 ? 'Heating' : 'Idle'}${wh24 != null ? ` · ${wh24.toFixed(1)} kWh today` : ''}`,
       ],
     ];
-    // on a phone a tile opens its sheet straight away; Lights goes to its section, the water heater opens its card
+    // on a phone a tile opens its sheet straight away; Lights goes to its section, the water heater opens its card (Energy's sheet)
     const PH = {
       climate: 'data-csel="house"',
       car: 'data-opens="sh-car"',
       energy: 'data-opens="sh-energy"',
       air: 'data-opens="air.detail"',
     };
-    const extra = (k, i) =>
-      !this.compact
-        ? ''
-        : i === 'drop'
-          ? 'data-card="water" data-title="Water heater" data-icon="drop" data-color="var(--c-wh)"'
-          : PH[k] || '';
+    const extra = (k, i) => (!this.compact ? '' : i === 'drop' ? 'data-opens="energy.water"' : PH[k] || '');
     const hwx = this.$('hwx');
     hwx.classList.toggle('tap', this.compact);
     if (this.compact) {

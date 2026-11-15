@@ -28,7 +28,7 @@ interface Request {
   generation: number;
 }
 
-/** The energy card mounts it (#239); until then only its tests do. */
+/** The Energy pane mounts it (#239), for as long as the tab, or one of its sheets, is on screen. */
 export class EnergyHistory implements ReactiveController {
   data: EnergyHistoryData | null = null;
   /** Why the last load failed (the card words "History didn't load"); null when it did not. */

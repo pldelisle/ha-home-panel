@@ -1,7 +1,7 @@
 // energyModel: the live power, Hilo, the water heater and the loaded history in, every text, figure and shape the Energy card, the two cards and the phone's tiles place out.
 // Pattern: a pure view-model function, a humble object's other half (Meszaros, Fowler): it reads no clock, no `hass` and no store, words every message through
 // `deps.t` and every number through `deps.fmt`, and delegates the two drawings to the pure geometry of flow-layout.ts and water-chart.ts. Each rule is the legacy
-// panel's own (`renderEnergy`, `energySummary`, `renderWater`, `renderHilo`, `renderEnergyTiles`), deleted in #241; the detail's blocks come with #240.
+// panel's own (`renderEnergy`, `renderWater`, `renderHilo` and `renderEnergyTiles`, deleted in #239; `energySummary`, in #241); the detail's blocks come with #240.
 // Must not: import the DOM, Lit or the shell, read the clock, or hold text the household reads (a catalog key says it).
 import {DASH} from '../../core/figures.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';

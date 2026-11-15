@@ -621,18 +621,10 @@
   text-transform: uppercase;
   color: var(--t-warn);
 }
-/* Energy pane: the sheet, then the water heater and Hilo side by side */
+/* Energy pane: the sheet, then the water heater and Hilo side by side (the element's own grid, #239) */
 .pane-energy {
   display: grid;
   gap: 16px;
-}
-.eside {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-.eside:empty {
-  display: none;
 }
 .shead {
   display: flex;
@@ -705,9 +697,6 @@
     flex: 1 0 64px;
   }
   .pane-lights .lareas {
-    grid-template-columns: 1fr;
-  }
-  .eside {
     grid-template-columns: 1fr;
   }
 }

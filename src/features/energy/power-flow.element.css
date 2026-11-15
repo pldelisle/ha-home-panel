@@ -1,0 +1,68 @@
+/*
+ * <hp-power-flow>'s own rules: the drawing's size, its texts, the dashes' run along a live line and the ring that breathes round a charging
+ * car. Known copies of rules the legacy panel's Sankey still draws in its Now mode through `flowSvg` (`.flow`, `.flow text`, `.flow .big`,
+ * `.flow .cap`, `.flow .st`, `.dash` and the `flowmove` and `npulse` keyframes: base.css, motion.css), read here under the drawing's own
+ * selectors (`svg`, `text`, `.run`, `.pulse`) because the styles-split test lets one file write a selector; the detail's move (#240)
+ * deletes the legacy rules with `flowSvg`.
+ */
+:host {
+  display: block;
+}
+svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  max-width: 440px;
+  margin: 0 auto;
+}
+text {
+  fill: var(--fg);
+  font-family: var(--f-body);
+}
+.big {
+  font-family: var(--f-num);
+  font-weight: var(--num-w);
+}
+.cap {
+  fill: var(--fg2);
+  font-size: calc(11px * var(--tx));
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.st {
+  fill: var(--fg2);
+  font-size: calc(11.5px * var(--tx));
+  font-weight: 500;
+}
+/* a live line's dashes run, faster and thicker with the power on it (the model's width and duration) */
+.run {
+  stroke-dasharray: 6 7;
+  animation: run 1.2s linear infinite;
+}
+@keyframes run {
+  to {
+    stroke-dashoffset: -26;
+  }
+}
+.pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pulse 2.2s ease-out infinite;
+  pointer-events: none;
+}
+@keyframes pulse {
+  from {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  to {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .run,
+  .pulse {
+    animation: none;
+  }
+}

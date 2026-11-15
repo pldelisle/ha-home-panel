@@ -1,6 +1,6 @@
 // waterChartGeometry: the water heater's 24-hour chart as geometry: the temperature line, the power bars, the grid and the hour ticks.
 // Pattern: pure geometry (a layout function returns numbers and texts, the element places them with `svg` templates), the legacy `whChart`'s
-// scale rules copied number for number (deleted in #241). It was never ApexCharts: two scales on one 320 by 120 canvas, which a library would not draw.
+// scale rules copied number for number (deleted in #239). It was never ApexCharts: two scales on one 320 by 120 canvas, which a library would not draw.
 // Must not: import Lit or the DOM, read the clock (`now` is passed in), or hold a word a person reads (a catalog key says it).
 import {DAY_MS, HOUR_MS, MINUTE_MS} from '../../core/figures.ts';
 import type {Formatters} from '../../core/i18n/format.ts';

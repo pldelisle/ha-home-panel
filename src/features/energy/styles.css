@@ -1,0 +1,75 @@
+/*
+ * The Energy feature's shared rules (spec 19, "Styles"): the box the three cards draw (`.ebox`), its title line (`.etop`) and the card's
+ * chevron (`.ego`), adopted by `<hp-energy-card>`, `<hp-water-card>` and `<hp-hilo-card>` through `forShadow`, so a rule is written once
+ * (ADR 0019). The box draws on an inner element, so the guest's lens backdrop reaches it from the root the rule's element is in. Known
+ * copies of rules the legacy panel's other cards still draw, each read under the Energy cards' own selector: `.card`, `.card .top`,
+ * `.card .top .right`, `.lbl` and `.go` (base.css, glass.css), and `#cardhost > .card`, the card inside a sheet (phone.css), which #239
+ * deleted with its last users, as `[framed]`. The Home move (#268) deletes the legacy rules the other cards still read.
+ */
+.ebox {
+  background: var(--card);
+  border: 0;
+  border-radius: 22px;
+  padding: 20px;
+  box-shadow: var(--shadow);
+  min-width: 0;
+  position: relative;
+}
+:host([framed]) .ebox {
+  padding: 14px;
+  border-radius: 18px;
+}
+:host([glass]) .ebox {
+  background: var(--g-card);
+  -webkit-backdrop-filter: var(--g-bd);
+  backdrop-filter: var(--g-bd);
+  box-shadow: var(--g-edge);
+}
+.etop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+:host([framed]) .etop {
+  margin-bottom: 12px;
+}
+.etop .eright {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: calc(13px * var(--tx));
+  color: var(--fg2);
+  font-weight: 500;
+}
+/* the card's label as the legacy sheet's second `.lbl` rule leaves it */
+.etop .elbl {
+  font-size: calc(15px * var(--tx));
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  color: var(--fg);
+}
+.ego {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background: var(--card2);
+  display: grid;
+  place-items: center;
+  color: var(--fg2);
+  flex: none;
+}
+:host([glass]) .ego {
+  background: var(--g-tile);
+  box-shadow: var(--g-edge-s);
+}
+/* Reduce Transparency: the glass turns back into a near-solid card, as the legacy rule did (Increase Contrast only sets the glass tokens, which the card inherits) */
+@media (prefers-reduced-transparency: reduce) {
+  :host([glass]) .ebox {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--card);
+  }
+}

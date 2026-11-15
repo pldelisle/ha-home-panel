@@ -6,6 +6,7 @@ import {fr} from '../../src/core/i18n/fr.ts';
 import {resolveConfig} from '../../src/core/config.ts';
 import {createStore} from '../../src/core/store.ts';
 import {airFeature} from '../../src/features/air/index.ts';
+import {energyFeature} from '../../src/features/energy/index.ts';
 import {mediaFeature} from '../../src/features/media/index.ts';
 import {weatherFeature} from '../../src/features/weather/index.ts';
 import * as full from '../houses/full.mjs';
@@ -190,5 +191,28 @@ describe('the Air descriptor', () => {
   test("says the worst room's level under More, and nothing before the house has been heard", () => {
     expect(airFeature.summary?.(env(fakeHass.fromHouse(full)))).toBe('Moderate');
     expect(airFeature.summary?.(env())).toBeNull();
+  });
+});
+
+describe('the Energy descriptor', () => {
+  const env = (open: string | null = null, line: string | null = null) => ({
+    store: createStore({defaultTimeZone: 'America/Toronto', resolve: resolveConfig}),
+    guest: {availability: () => ({}), moreLine: () => line},
+    sheetOpen: (id: string) => id === open,
+    sheetDetail: () => undefined,
+  });
+
+  test("is the registry's own and always shown, and binds its pane to the sheet host's answers: the water heater's `open`, then Hilo's", () => {
+    expect(FEATURES.find(f => f.key === 'energy')).toBe(energyFeature);
+    expect(energyFeature.available).toBeUndefined();
+    expect(energyFeature.overSheets).toEqual(['energy.water', 'energy.hilo']);
+    expect(energyFeature.pane(env()).values).toEqual([false, false]);
+    expect(energyFeature.pane(env('energy.water')).values).toEqual([true, false]);
+    expect(energyFeature.pane(env('energy.hilo')).values).toEqual([false, true]);
+  });
+
+  // the More sheet's baselines read the legacy word ("3.24 kW now"), not the pane's sub-line: the guest's line stays until #241
+  test("says the guest's word under More", () => {
+    expect(energyFeature.summary?.(env(null, '3.24 kW now'))).toBe('3.24 kW now');
   });
 });

@@ -1,0 +1,72 @@
+/*
+ * <hp-water-card>'s own rules: its `:host`, the state dot's two colours, the 24-hour chart's marks, its legend and the cycles line. The box
+ * and its title line are the feature's (styles.css), the hero the kit's. The legacy card wrote these as inline styles and attributes
+ * (renderWater, whChart), deleted in #241; the values are the same.
+ */
+:host {
+  display: block;
+  min-width: 0;
+}
+.hero .state i.on {
+  background: var(--c-wh);
+}
+.hero .state i.off {
+  background: var(--fg3);
+}
+.whchart {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-top: 12px;
+  overflow: visible;
+}
+.axis {
+  font-size: 9px;
+  fill: var(--fg3);
+  font-family: var(--f-body);
+}
+.bar {
+  fill: var(--c-wh);
+  opacity: 0.42;
+}
+.trace {
+  fill: none;
+  stroke: var(--c-wh);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.dot {
+  fill: var(--c-wh);
+  stroke: var(--card);
+  stroke-width: 1.5;
+}
+.whleg {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--fg2);
+  margin-top: 6px;
+}
+.whleg span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.whleg i.line {
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--c-wh);
+}
+.whleg i.bars {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--c-wh) 42%, transparent);
+}
+.whline {
+  font-size: 12px;
+  margin-top: 4px;
+}

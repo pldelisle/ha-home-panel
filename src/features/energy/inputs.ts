@@ -1,6 +1,6 @@
 // readEnergy: the live power, Hilo, Hydro-Québec, the Wallbox and the water heater of the house, read into the inputs the model takes.
 // Pattern: a composition of readers (ADR 0025): the flow, the tier and the charger from the providers, the water heater from the config's two
-// sensors, so the feature knows no integration's naming; the water heater's name is the resolver's, picked by the legacy `whName` rule.
+// sensors, so the feature knows no integration's naming; the water heater's name is the resolver's, picked by the rule of the legacy `whName` (deleted in #239).
 // Must not: word anything a person reads, read the clock, or touch the DOM or `hass`.
 import type {ResolvedConfig} from '../../core/config.ts';
 import type {HassEntities} from '../../core/hass.ts';
@@ -11,7 +11,7 @@ import {hydroQuebec, type HydroQuebecInputs} from '../../providers/hydro-quebec.
 import {powerNow, type PowerNow} from '../../providers/power.ts';
 import {wallbox, type WallboxInputs} from '../../providers/wallbox.ts';
 
-/** The water heater's own name is its sensor's, without the measurement ("Tank Temperature" is "Tank"): the legacy `whName`'s rule, deleted in #241. */
+/** The water heater's own name is its sensor's, without the measurement ("Tank Temperature" is "Tank"): the legacy `whName`'s rule, deleted in #239. */
 const MEASUREMENT = /\s*(water heater\s*)?(temperature|température|power|puissance)$/i;
 
 export interface WaterInputs {
