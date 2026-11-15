@@ -1,7 +1,8 @@
 // <hp-chart>: the kit's chart: one ApexCharts instance in its own shadow root, drawn from an `options` object that has no theme in it.
 // Pattern: adapter (Gamma et al.) hiding the library behind properties (ADR 0006, 0022), a humble object (Meszaros) over the pure options in
-// chart-options.ts; `updateOptions` when `options` changes, a new instance only when the theme or the language did (colours and locale are
-// the library's to read once), `destroy` on disconnect (Lit docs, Lifecycle). The library is fetched on first connect (core/apex.ts).
+// chart-options.ts; `updateOptions` when `options` changes, a new instance only when the theme, the language or the options' `shape` did (colours
+// and locale are the library's to read once; a different shape of axis is not one the library can update into), `destroy` on disconnect (Lit docs,
+// Lifecycle). The library is fetched on first connect (core/apex.ts); a chart is drawn once its place has a width, never into one that has none.
 // Must not: know what it draws, read an entity, write outside its own root, keep a chart for an element that left the page, or toast twice for one failed load.
 import {LitElement, html, type PropertyValues, unsafeCSS} from 'lit';
 import {loadApex, type ApexChart, type ApexChartConstructor} from '../core/apex.ts';
@@ -27,11 +28,18 @@ function toastOnce(host: HTMLElement, message: string): void {
 export class HpChart extends LitElement {
   static override properties = {
     options: {attribute: false},
+    shape: {},
     height: {type: Number},
     label: {},
   };
   /** The chart's own options in the library's shape, without the theme: the base look is merged under them. */
   declare options: ChartOptions | undefined;
+  /**
+   * What kind of chart the options describe, for an owner whose options change in kind and not only in data (Energy's main chart: bars on a time
+   * axis for today and the week, on categories for the month and the year). The library merges new options into its current ones, so a key one
+   * kind sets and the next does not (the axis' type, its labels) would stay; a change of `shape` draws a new instance, as a new chart would be.
+   */
+  declare shape: string;
   /** The chart's height in pixels. */
   declare height: number;
   /** What assistive technology reads: a chart is an image, named after its card's title and the line under it. */
@@ -45,12 +53,15 @@ export class HpChart extends LitElement {
   private readonly motion = new MediaQueryController(this, '(prefers-reduced-motion: reduce)');
   private library: ApexChartConstructor | undefined;
   private chart: ApexChart | undefined;
-  /** What the instance in `chart` was drawn for: a change of either needs a new one. */
+  /** Waits for the chart's place to have a width before it is drawn. */
+  private sizing: ResizeObserver | undefined;
+  /** What the instance in `chart` was drawn for: a change of the theme, the language, the height or the shape needs a new one. */
   private drawnFor = '';
 
   constructor() {
     super();
     this.options = undefined;
+    this.shape = '';
     this.height = 300;
     this.label = '';
   }
@@ -89,18 +100,35 @@ export class HpChart extends LitElement {
     if (!library || !options) return;
     const {store} = this.storeController;
     const theme = this.appearance.value?.theme ?? 'light';
-    const key = `${theme}/${store.language}/${this.height}`;
+    const key = `${theme}/${store.language}/${this.height}/${this.shape}`;
     if (this.chart && key === this.drawnFor) {
       if (changed.has('options')) void this.chart.updateOptions(this.merged(options, key), false, !this.motion.matches);
       return;
     }
     this.dispose();
-    const target = this.renderRoot.querySelector('.chart');
+    const target = this.renderRoot.querySelector<HTMLElement>('.chart');
     if (!target) return;
+    // a place with no width (a pane or a sheet not shown yet) cannot be measured: the library would write NaN into the drawing. It is drawn once the place has one.
+    if (!target.clientWidth) {
+      this.awaitWidth(target);
+      return;
+    }
     this.drawnFor = key;
     this.chart = new library(target, this.merged(options, key));
     // a chart with nothing to draw must not take the panel down with it
     this.chart.render().catch((error: unknown) => console.warn('home-panel chart', error));
+  }
+
+  // asks for an update when the place first has a width: once, and only while the element is on the page
+  private awaitWidth(target: HTMLElement): void {
+    this.sizing?.disconnect();
+    this.sizing = new ResizeObserver(() => {
+      if (!target.clientWidth) return;
+      this.sizing?.disconnect();
+      this.sizing = undefined;
+      this.requestUpdate();
+    });
+    this.sizing.observe(target);
   }
 
   // the base look from the host's computed tokens, the options over it, and French's axis when the panel is in French
@@ -119,6 +147,8 @@ export class HpChart extends LitElement {
   }
 
   private dispose(): void {
+    this.sizing?.disconnect();
+    this.sizing = undefined;
     try {
       this.chart?.destroy();
     } catch {

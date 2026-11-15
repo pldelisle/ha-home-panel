@@ -1,0 +1,80 @@
+/*
+ * <hp-energy-detail>'s own rules: the column of its blocks, the Sankey block's head and tabs, the donut and its table, the totals' grid. Moved from
+ * the legacy `.donut`, `.totals` and `.sankey` rules (base.css, tabs.css), which the detail's move (#240) deleted; the Sankey's head is `.sankeyhead`
+ * because the legacy `.shead` (tabs.css) is still the Automations pane's. The inner cards, the tiles, the tabs' look and the legend are the kit's.
+ */
+:host {
+  display: block;
+  min-width: 0;
+}
+.blocks {
+  min-width: 0;
+}
+[slot='icon'] {
+  display: contents;
+}
+.blocks > * + * {
+  margin-top: 16px;
+}
+:host([compact]) .blocks > * + * {
+  margin-top: 14px;
+}
+:host([compact]) .inner {
+  padding: 14px;
+  border-radius: 18px;
+}
+/* the Sankey's card sits 14 pixels under the chart's on a tablet too, as the legacy panel's inline style put it */
+.blocks > .sankeyblock {
+  margin-top: 14px;
+}
+.sankeyhead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+}
+.sankey {
+  margin-top: 12px;
+}
+.donut {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+.donutchart {
+  width: 190px;
+}
+.donut table {
+  border-collapse: collapse;
+  font-size: calc(13.5px * var(--tx));
+  flex: 1 1 220px;
+}
+.donut td {
+  padding: 6px 4px;
+}
+.donut td.r {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  margin-right: 8px;
+}
+.totals {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+@media (max-width: 520px) {
+  .totals {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

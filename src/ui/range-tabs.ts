@@ -1,7 +1,7 @@
-// <hp-range-tabs>: the kit's range tabs (Day, Week, Month, Year): a pill of buttons with one chosen, in its own shadow root.
+// <hp-range-tabs>: the kit's range tabs (Day, Week, Month, Year, or a feature's own such as Energy's Today): a pill of buttons with one chosen, in its own shadow root.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over data: `ranges` says which tabs and their words, `value` which one is
 // chosen, and a tap is told upward as `range-change` (Lit docs, Events: properties down, events up); the markup is the legacy sheets' own.
-// Must not: hold a range's span or a word (the tabs come from `RANGES` and the catalog, through the owner), fetch anything, or keep the choice itself.
+// Must not: hold a range's span or a word (the tabs come from `RANGES` and the catalog, through the owner), know a range's key beyond its being a string, fetch anything, or keep the choice itself.
 // A known copy: `:host([compact]) .tabs` is written by hand here, because the legacy rule it follows (`.app.cp .sheet .ph .tabs`, sheet.css) cannot reach a slotted element's root; it goes with the legacy sheet.
 import {LitElement, html, unsafeCSS} from 'lit';
 import {repeat} from 'lit/directives/repeat.js';
@@ -11,15 +11,15 @@ import {common, range as rangeStyles} from './styles/index.ts';
 import rangeTabsOwn from './range-tabs.element.css?inline';
 import {forShadow} from './styles/host.ts';
 
-/** One tab: the range it chooses and its word, already in the panel's language. */
-export interface RangeTab {
-  range: Range;
+/** One tab: the range it chooses and its word, already in the panel's language. The key is the kit's `Range` unless the owner names its own. */
+export interface RangeTab<R extends string = Range> {
+  range: R;
   label: string;
 }
 
-/** What the tabs say when another is tapped: the range now chosen. */
-export interface RangeChangeDetail {
-  range: Range;
+/** What the tabs say when another is tapped: the range now chosen, of the owner's keys. */
+export interface RangeChangeDetail<R extends string = Range> {
+  range: R;
 }
 
 export class RangeTabs extends LitElement {
@@ -27,9 +27,9 @@ export class RangeTabs extends LitElement {
     ranges: {attribute: false},
     value: {},
   };
-  declare ranges: readonly RangeTab[];
+  declare ranges: readonly RangeTab<string>[];
   /** The range chosen; its tab is the one with `aria-selected`. */
-  declare value: Range | undefined;
+  declare value: string | undefined;
 
   // `display: contents`: the host has no box of its own, so the pill is a child of whatever lays it out (a sheet's header), as the
   // legacy tabs were; on a phone the pill takes the header's full width, as the sheet's rule gave it there
@@ -64,9 +64,9 @@ export class RangeTabs extends LitElement {
   }
 
   // a tap on the tab already chosen says nothing, as the legacy handler did
-  private choose(range: Range): void {
+  private choose(range: string): void {
     if (range === this.value) return;
-    this.dispatchEvent(new CustomEvent<RangeChangeDetail>('range-change', {detail: {range}}));
+    this.dispatchEvent(new CustomEvent<RangeChangeDetail<string>>('range-change', {detail: {range}}));
   }
 }
 

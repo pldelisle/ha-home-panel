@@ -112,7 +112,7 @@ test.describe('lazy chunks', () => {
     });
     await house.tab('energy');
     // the fixture fails the test on the page error a chart drawn without the library would throw
-    await house.root().locator('#etabs .tab').nth(1).click();
+    await house.root().locator('hp-energy-detail hp-range-tabs').getByRole('tab', {name: 'Week'}).click();
     release();
     await expect(house.root().locator('#pane-energy .apexcharts-canvas').first()).toBeVisible();
   });

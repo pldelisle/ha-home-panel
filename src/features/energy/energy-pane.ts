@@ -1,25 +1,30 @@
 // <hp-energy-pane>: the Energy tab: on a phone the header with the summary, the card that opens the detail, two tiles that open the water heater's and
-// Hilo's cards in sheets; on a tablet the legacy detail inline (the header and the card are not shown there) and the two cards beside it.
+// Hilo's cards in sheets; on a tablet the detail inline (the header and the card are not shown there) and the two cards after it. It keeps the range and the Sankey's period.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over a view model: `energyModel` runs in `willUpdate` and the template places what it returns;
 // a store controller on `energyIds` (ADR 0012), paused while no part of the pane is on screen, and `EnergyHistory`, which loads the history when the pane is shown (ADR 0028).
 // Must not: read an entity itself (`readEnergy` does), hold a string the household reads, call the API (the history controller asks the cache), or open a sheet (it asks).
 import {ContextConsumer} from '@lit/context';
 import {LitElement, html, nothing, unsafeCSS, type PropertyValues, type TemplateResult} from 'lit';
 import './energy-card.ts'; // defines <hp-energy-card>
+import './energy-detail.ts'; // defines <hp-energy-detail>
+import {isEnergyRange, type EnergyRange} from './charts.ts';
+import {detailIcon, type ModeChosenDetail} from './energy-detail.ts';
 import './hilo-card.ts'; // defines <hp-hilo-card>
 import './water-card.ts'; // defines <hp-water-card>
 import paneOwn from './energy-pane.element.css?inline';
 import {energyIds} from './ids.ts';
 import {readEnergy} from './inputs.ts';
 import {EnergyHistory, type EnergyHistoryHost} from './loader.ts';
-import {energyModel, type EnergyViewModel} from './model.ts';
-import {HILO_SHEET, WATER_SHEET} from './sheets.ts';
+import {energyModel, type EnergyViewModel, type SankeyMode} from './model.ts';
+import {DETAIL_SHEET, HILO_SHEET, WATER_SHEET} from './sheets.ts';
 import type {StatisticsCache} from '../../core/statistics-cache.ts';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {StoreController} from '../../ui/controllers/store-controller.ts';
 import {statisticsCacheContext} from '../../ui/contexts.ts';
 import {SheetDismissEvent, SheetRequestEvent} from '../../ui/events.ts';
 import '../../ui/pane-header.ts'; // defines <hp-pane-header>
+import '../../ui/range-tabs.ts'; // defines <hp-range-tabs>
+import type {RangeChangeDetail} from '../../ui/range-tabs.ts';
 import '../../ui/sheet.ts'; // defines <hp-sheet>
 import '../../ui/stat-tile.ts'; // defines <hp-stat-tile>
 import type {TileOpenDetail} from '../../ui/stat-tile.ts';
@@ -39,11 +44,14 @@ const isSection = (key: string | undefined): key is SectionKey => key !== undefi
 export class EnergyPane extends LitElement {
   static override properties = {
     active: {type: Boolean, reflect: true},
+    detailOpen: {type: Boolean},
     waterOpen: {type: Boolean},
     hiloOpen: {type: Boolean},
   };
   /** Set by the shell: this pane is the tab on screen. A hidden pane listens to no entity and asks for no history. */
   declare active: boolean;
+  /** Bound by the registry's template to the sheet host's `isOpen('energy.detail')`: the phone's detail sheet is on screen. */
+  declare detailOpen: boolean;
   /** Bound by the registry's template to the sheet host's `isOpen('energy.water')`: the phone's water heater sheet is on screen. */
   declare waterOpen: boolean;
   /** Bound by the registry's template to the sheet host's `isOpen('energy.hilo')`: the phone's Hilo sheet is on screen. */
@@ -57,10 +65,14 @@ export class EnergyPane extends LitElement {
   private cache: StatisticsCache | undefined;
   private readonly history: EnergyHistory;
   private view: EnergyViewModel | undefined;
+  /** What the detail last showed, kept for the panel's life and handed to each opening, as the legacy sheet kept its own. */
+  private range: EnergyRange = 'today';
+  private sankeyMode: SankeyMode = 'now';
 
   constructor() {
     super();
     this.active = false;
+    this.detailOpen = false;
     this.waterOpen = false;
     this.hiloOpen = false;
     // the panel's one cache is the shell's (ADR 0028): the card and the legacy history ask it, so each window is read once; the
@@ -94,14 +106,19 @@ export class EnergyPane extends LitElement {
     });
   }
 
-  /** The pane is on screen: it is the tab, or a sheet of its own is open over the page (a tile of Home asks for it). */
+  /** One of the pane's sheets is on screen over the page. */
+  private get sheetOpen(): boolean {
+    return this.detailOpen || this.waterOpen || this.hiloOpen;
+  }
+
+  /** The pane is on screen: it is the tab, or a sheet of its own is open over the page (a stack card or a tile of Home asks for it). */
   private get shown(): boolean {
-    return this.active || this.waterOpen || this.hiloOpen;
+    return this.active || this.sheetOpen;
   }
 
   // The pause and the resume sit in willUpdate: a resume asks for an update, and one asked for here is this one.
   protected override willUpdate(changed: PropertyValues<this>): void {
-    if (changed.has('active') || changed.has('waterOpen') || changed.has('hiloOpen')) {
+    if (changed.has('active') || changed.has('detailOpen') || changed.has('waterOpen') || changed.has('hiloOpen')) {
       if (this.shown) this.storeController.resume();
       else this.storeController.pause();
     }
@@ -113,7 +130,11 @@ export class EnergyPane extends LitElement {
       now: Date.now(),
       t: store.t,
       fmt: store.fmt,
+      names: store.names,
+      language: store.language,
       error: this.history.error,
+      range: this.range,
+      sankeyMode: this.sankeyMode,
     });
   }
 
@@ -121,10 +142,9 @@ export class EnergyPane extends LitElement {
     const view = this.view;
     const compact = this.appearance.value?.compact === true;
     // a sheet over another tab: the pane is behind it and draws nothing but it, so the tab stays
-    if (compact && !this.active) return view && (this.waterOpen || this.hiloOpen) ? this.renderSheets(view) : nothing;
-    // On a tablet the pane is the legacy detail's place, and the two cards beside it: the header, the card and the tiles are the phone's,
-    // and the header is not drawn, so its sub-line costs nothing. The slot is there before the model is: the sheet host puts the legacy
-    // panel in it as the tab opens, and the charts it draws need a box to measure. The parts keep their places as the view arrives.
+    if (compact && !this.active) return view && this.sheetOpen ? this.renderSheets(view) : nothing;
+    // On a tablet the pane is the detail's place, and the two cards after it: the header, the card and the tiles are the phone's, and the
+    // header is not drawn, so its sub-line costs nothing.
     return html`${
       compact && view ? html`${this.renderHeader(view)}${this.renderPhone(view)}` : nothing
     }${compact ? nothing : this.renderTablet(view)}`;
@@ -143,18 +163,18 @@ export class EnergyPane extends LitElement {
       >${this.renderTiles(view)}${this.renderSheets(view)}`;
   }
 
-  // The slot is where the sheet host puts the legacy detail's panel (`#ehost`, the registry's markup), until #240 makes the detail an element's.
-  // The cards are drawn while the pane is the tab, and only for the sections the house has; with neither the grid is not drawn.
+  // The detail is drawn while the pane is the tab, so leaving the tab drops its charts. The cards are drawn while the pane is the tab, and only
+  // for the sections the house has; with neither the grid is not drawn.
   private renderTablet(view: EnergyViewModel | undefined) {
     const cards = view !== undefined && this.active && (view.water.present || view.hilo.present);
-    return html`<slot name="detail"></slot>${
-        cards
-          ? html`<div class="eside">
-              ${view.water.present ? html`<hp-water-card .view=${view.water}></hp-water-card>` : nothing}
-              ${view.hilo.present ? html`<hp-hilo-card .view=${view.hilo}></hp-hilo-card>` : nothing}
-            </div>`
-          : nothing
-      }`;
+    return html`${view !== undefined && this.active ? this.renderDetail(view) : nothing}${
+      cards
+        ? html`<div class="eside">
+            ${view.water.present ? html`<hp-water-card .view=${view.water}></hp-water-card>` : nothing}
+            ${view.hilo.present ? html`<hp-hilo-card .view=${view.hilo}></hp-hilo-card>` : nothing}
+          </div>`
+        : nothing
+    }`;
   }
 
   // the phone's two tiles, for the sections the house has: each opens its card in a sheet
@@ -175,8 +195,49 @@ export class EnergyPane extends LitElement {
     </div>`;
   }
 
-  // The two cards' sheets exist only for the sections the house has and hold their card only while open, so a closed sheet holds no chart.
-  private renderSheets({water, hilo}: EnergyViewModel) {
+  // the detail: the history's charts, the Sankey and the totals, from the model, and the range and period the pane keeps
+  private renderDetail({detail}: EnergyViewModel) {
+    return html`<hp-energy-detail
+      .view=${detail}
+      .history=${this.history.data}
+      .range=${this.range}
+      .mode=${this.sankeyMode}
+      @range-chosen=${this.onRange}
+      @mode-chosen=${this.onMode}
+    ></hp-energy-detail>`;
+  }
+
+  // The phone's detail in a sheet: it exists only while open, so a closed sheet holds no chart.
+  private renderDetailSheet(view: EnergyViewModel) {
+    const {t} = this.storeController.store;
+    const {detail} = view;
+    return html`<hp-sheet
+      .open=${this.detailOpen}
+      .icon=${'bolt'}
+      .color=${'var(--c-grid)'}
+      .heading=${detail.title}
+      .closeLabel=${t('energy.close')}
+      @sheet-close=${this.dismissDetail}
+    >
+      ${
+        this.detailOpen
+          ? html`<span slot="icon" style="display:contents">${detailIcon}</span>
+              <div slot="sub">${detail.sub}</div>
+              <hp-range-tabs
+                slot="tabs"
+                .ranges=${detail.ranges}
+                .value=${this.range}
+                @range-change=${this.onRange}
+              ></hp-range-tabs>
+              ${this.renderDetail(view)}`
+          : nothing
+      }
+    </hp-sheet>`;
+  }
+
+  // The cards' sheets exist only for the sections the house has and hold their card only while open, so a closed sheet holds no chart.
+  private renderSheets(view: EnergyViewModel) {
+    const {water, hilo} = view;
     const {t} = this.storeController.store;
     const sheet = (key: SectionKey, open: boolean, heading: string, card: TemplateResult) =>
       html`<hp-sheet
@@ -190,7 +251,7 @@ export class EnergyPane extends LitElement {
       >
         ${open ? card : nothing}
       </hp-sheet>`;
-    return html`${
+    return html`${this.renderDetailSheet(view)}${
       water.present
         ? sheet(
             'water',
@@ -215,6 +276,26 @@ export class EnergyPane extends LitElement {
   }
 
   // arrow fields, so the template hands the same functions at every render
+
+  // the detail sheet's Close button, its backdrop and its swipe: the host closes it, the pane only says so
+  private readonly dismissDetail = (e: Event): void => {
+    e.stopPropagation();
+    this.dispatchEvent(new SheetDismissEvent(DETAIL_SHEET));
+  };
+
+  // the sheet header's tabs and the tablet header's (the detail's `range-chosen`) both tell here; the detail gets the choice back
+  private readonly onRange = (e: CustomEvent<RangeChangeDetail<string>>): void => {
+    e.stopPropagation();
+    if (!isEnergyRange(e.detail.range)) return;
+    this.range = e.detail.range;
+    this.requestUpdate();
+  };
+
+  private readonly onMode = (e: CustomEvent<ModeChosenDetail>): void => {
+    e.stopPropagation();
+    this.sankeyMode = e.detail.mode;
+    this.requestUpdate();
+  };
 
   // a sheet's Close button, its backdrop and its swipe: the host closes it, the pane only says so; the sheet's `data-key` names its section
   private readonly dismiss = (e: Event): void => {

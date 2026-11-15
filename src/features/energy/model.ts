@@ -1,7 +1,7 @@
 // energyModel: the live power, Hilo, the water heater and the loaded history in, every text, figure and shape the Energy card, the two cards and the phone's tiles place out.
 // Pattern: a pure view-model function, a humble object's other half (Meszaros, Fowler): it reads no clock, no `hass` and no store, words every message through
 // `deps.t` and every number through `deps.fmt`, and delegates the two drawings to the pure geometry of flow-layout.ts and water-chart.ts. Each rule is the legacy
-// panel's own (`renderEnergy`, `renderWater`, `renderHilo` and `renderEnergyTiles`, deleted in #239; `energySummary`, in #241); the detail's blocks come with #240.
+// panel's own (`renderEnergy`, `renderWater`, `renderHilo`, `renderEnergyTiles` and, in #240, `energySheet` and `sankeyData`, deleted; `energySummary`, in #241); the detail's blocks, the donut and the totals included.
 // Must not: import the DOM, Lit or the shell, read the clock, or hold text the household reads (a catalog key says it).
 import {DASH} from '../../core/figures.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
@@ -9,9 +9,15 @@ import {fixedOr, whole, type Formatters} from '../../core/i18n/format.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
 import type {HiloTier} from '../../providers/hilo.ts';
 import {sum} from '../../providers/power-history.ts';
+import type {Names} from '../../core/i18n/names.ts';
+import {roomName} from '../../core/i18n/room-name.ts';
+import type {RangeTab} from '../../ui/range-tabs.ts';
+import {RANGES} from '../../ui/ranges.ts';
+import {ENERGY_RANGES, mainRows, middleOf, type EnergyRange} from './charts.ts';
 import {flowLayout, LIVE_KW, type FlowGeometry} from './flow-layout.ts';
-import {waterCycles, type EnergyHistoryData} from './history.ts';
+import {GROUPS, waterCycles, type DailyRow, type EnergyHistoryData, type MonthSplit} from './history.ts';
 import type {EnergyInputs} from './inputs.ts';
+import {sankeyLayout, type GroupKey, type SankeyGeometry} from './sankey-layout.ts';
 import {waterChartGeometry, type WaterChartGeometry} from './water-chart.ts';
 
 /** A tier's name and its short form, in running text ("Low tier", "low rate"), by tier. */
@@ -37,6 +43,30 @@ const LEGEND: readonly {kind: 'line' | 'bars'; label: MessageKey}[] = [
   {kind: 'bars', label: 'energy.water.power'},
 ];
 
+/** The range tabs' words: the kit's for the three ranges it has, Energy's own `Today` (the key the card's tile already uses). */
+const RANGE_WORDS: Record<EnergyRange, MessageKey> = {
+  today: 'energy.today',
+  week: RANGES.week.tabKey,
+  month: RANGES.month.tabKey,
+  year: RANGES.year.tabKey,
+};
+
+/** The four uses' words, by key: the legend, the donut's table and the Sankey's nodes say them. */
+const GROUP_WORDS: Record<GroupKey, MessageKey> = {
+  heat: 'energy.tile.heat',
+  wh: 'energy.tile.water',
+  ev: 'energy.tile.ev',
+  rest: 'energy.flow.rest',
+};
+
+/** The three periods of the Sankey, in the order of its tabs: the live flow, today's energy, the last 30 days. */
+export const SANKEY_MODES = ['now', 'today', 'd30'] as const;
+export type SankeyMode = (typeof SANKEY_MODES)[number];
+
+/** A month's heating over this many kWh is worth naming as the peak, and a day's charging over this many is a charging day (the legacy `energyMain` and `energySheet`'s own). */
+const HEATING_PEAK_KWH = 50;
+const EV_DAY_KWH = 5;
+
 /** The unit symbols the tiles write small after a figure; words ("kW · HOME") are catalog keys. */
 const UNIT = {kwh: 'kWh', degrees: '°', celsius: '°C', cents: '¢', centsPerKwh: '¢/kWh', dollars: '$'} as const;
 
@@ -45,6 +75,12 @@ export interface EnergyModelDeps {
   now: number;
   t: Translate;
   fmt: Formatters;
+  /** A room's name is the resolver's, in the profile's language (`store.names` and `store.language`). */
+  names: Names;
+  language: string;
+  /** The range the detail's main chart shows (today when absent) and the period of its Sankey (now when absent): the pane keeps both for the panel's life. */
+  range?: EnergyRange;
+  sankeyMode?: SankeyMode;
   /** Why the history did not load (`EnergyHistory.error`); null or absent when it did. */
   error?: string | null;
 }
@@ -66,6 +102,41 @@ export interface PhoneTile extends EnergyTile {
   key: 'water' | 'hilo';
   /** The water heater is heating. */
   on: boolean;
+}
+
+/** A use, by its key (which names its colour token) and its word. */
+export interface LegendItem {
+  key: GroupKey;
+  name: string;
+}
+
+/** What the Sankey block draws: the live flow (the card's own geometry), the ribbons of a period, or the line it says when there is nothing to draw. */
+export type SankeyBody =
+  {kind: 'flow'; flow: FlowGeometry} | {kind: 'ribbons'; geometry: SankeyGeometry} | {kind: 'empty'; text: string};
+
+/** A row of the donut's table: a use, its energy and share of the 30 days, already written. */
+export interface DonutRow extends LegendItem {
+  kwh: string;
+  share: string;
+}
+
+export interface EnergyDetailView {
+  title: string;
+  /** The same sentence as the pane's. */
+  sub: string;
+  /** The range tabs, today to year. */
+  ranges: RangeTab<EnergyRange>[];
+  main: {title: string; caption: string; legend: LegendItem[]};
+  sankey: {
+    title: string;
+    /** The tabs' accessible name. */
+    label: string;
+    modes: {mode: SankeyMode; label: string}[];
+    note: string;
+    body: SankeyBody;
+  };
+  donut: {title: string; hint: string; parts: (LegendItem & {kwh: number})[]; rows: DonutRow[]};
+  totals: {title: string; hint: string; tiles: EnergyTile[]};
 }
 
 export interface EnergyViewModel {
@@ -107,6 +178,7 @@ export interface EnergyViewModel {
   };
   /** The phone's tiles, for the sections the house has: the water heater, then Hilo. */
   tiles: PhoneTile[];
+  detail: EnergyDetailView;
 }
 
 /** What the challenge sensor says, in words: its phase when one is scheduled, else that none is (or that the sensor reads nothing). */
@@ -132,10 +204,198 @@ function waterLine(history: EnergyHistoryData, now: number, {t, fmt}: Pick<Energ
   return sentences.join(' ');
 }
 
+type DetailDeps = Required<Pick<EnergyModelDeps, 'now' | 't' | 'fmt' | 'names' | 'language' | 'range' | 'sankeyMode'>>;
+
+const legendOf = (t: Translate): LegendItem[] => GROUPS.map(key => ({key, name: t(GROUP_WORDS[key])}));
+
+/** The main chart's title and caption for a range: the busiest hour of the hours it draws, the 30 days' split, or the month the heating peaked in. */
+function mainBlock(history: EnergyHistoryData | null, {now, t, fmt, range}: DetailDeps): EnergyDetailView['main'] {
+  const legend = legendOf(t);
+  if (!history) return {title: t('energy.detail.loading'), caption: '', legend};
+  const main = mainRows(range, history, {fmt, now});
+  if (main.range === 'month') {
+    const [heat, water, ev, rest] = history.g30.map(kwh => whole(fmt, kwh));
+    const total = whole(fmt, sum(history.g30));
+    return {
+      title: t('energy.detail.month'),
+      caption: t('energy.detail.monthSum', {total, heat, water, ev, rest}),
+      legend,
+    };
+  }
+  if (main.range === 'year') {
+    const top = main.rows.reduce<[string, MonthSplit] | undefined>(
+      (best, row) => (!best || row[1].heat > best[1].heat ? row : best),
+      undefined,
+    );
+    return {
+      title: t('energy.detail.year'),
+      caption:
+        top && top[1].heat > HEATING_PEAK_KWH
+          ? t('energy.detail.yearPeak', {month: fmt.month(middleOf(top[0]), 'long'), kwh: fmt.integer(top[1].heat)})
+          : t('energy.detail.yearCaption'),
+      legend,
+    };
+  }
+  const {rows} = main;
+  const title = t(main.range === 'today' ? 'energy.detail.today' : 'energy.detail.week');
+  if (!rows.length) return {title, caption: t('energy.detail.noHour'), legend};
+  const busiest = rows.reduce((best, row) => (row[5] > best[5] ? row : best), rows[0]);
+  const day = main.range === 'week' ? `${fmt.weekday(busiest[0], 'short')} ` : '';
+  const when = `${day}${fmt.time(busiest[0])}`;
+  return {title, caption: t('energy.detail.busiest', {kwh: fmt.fixed(busiest[5], 1), when}), legend};
+}
+
+/** What a period of the Sankey draws: the grid's total, the four uses in the order of `GROUPS`, the rooms' shares, the figure's format and the note. */
+interface SankeyPeriod {
+  total: number;
+  uses: readonly number[];
+  rooms: readonly number[];
+  format: (kwh: number) => string;
+  note: string;
+}
+
+/** Today's day and the 30 days' totals from the history; null when it is not loaded, or its last day is not today (nothing has been read since midnight). */
+function sankeyPeriod(
+  mode: Exclude<SankeyMode, 'now'>,
+  history: EnergyHistoryData | null,
+  {now, t, fmt}: DetailDeps,
+): SankeyPeriod | null {
+  if (!history) return null;
+  if (mode === 'today') {
+    const day: DailyRow | undefined = history.daily.at(-1);
+    if (!day || day.day !== fmt.isoDay(now)) return null;
+    return {
+      total: day.total,
+      uses: [day.heat, day.wh, day.ev, day.rest],
+      rooms: day.rooms,
+      format: kwh => `${fmt.fixed(kwh, 1)} kWh`,
+      note: t('energy.sankey.noteToday', {kwh: fmt.fixed(day.total, 1)}),
+    };
+  }
+  const total = sum(history.g30);
+  return {
+    total,
+    uses: history.g30,
+    rooms: history.room30,
+    format: kwh => `${whole(fmt, kwh)} kWh`,
+    note: t('energy.sankey.note30', {kwh: whole(fmt, total)}),
+  };
+}
+
+function sankeyBlock(
+  inputs: EnergyInputs,
+  history: EnergyHistoryData | null,
+  flow: FlowGeometry,
+  deps: DetailDeps,
+): EnergyDetailView['sankey'] {
+  const {t, names, language, sankeyMode} = deps;
+  const {power} = inputs;
+  const empty = (): SankeyBody => ({kind: 'empty', text: t('energy.sankey.empty')});
+  const modes = SANKEY_MODES.map(mode => ({
+    mode,
+    label: t(mode === 'now' ? 'energy.sankey.now' : mode === 'today' ? 'energy.today' : 'energy.days30'),
+  }));
+  const block = (note: string, body: SankeyBody) => ({
+    title: t('energy.sankey.title'),
+    label: t('energy.sankey.period'),
+    modes,
+    note,
+    body,
+  });
+  if (sankeyMode === 'now') {
+    // the live flow is the card's own geometry; with no reading from the grid there is nothing to show
+    return (power.grid ?? 0) > 0
+      ? block(t('energy.sankey.noteNow'), {kind: 'flow', flow})
+      : block(t('energy.sankey.noData'), empty());
+  }
+  const period = sankeyPeriod(sankeyMode, history, deps);
+  if (!period || period.total <= 0) return block(t('energy.sankey.noData'), empty());
+  const words = legendOf(t);
+  const geometry = sankeyLayout(
+    {
+      total: period.total,
+      groups: words.map(({key, name}, index) => ({
+        key,
+        name,
+        color: `var(--c-${key})`,
+        value: period.uses[index],
+      })),
+    },
+    power.rooms.map((room, index) => ({
+      name: roomName(room, {names, t, language}),
+      value: period.rooms[index] ?? 0,
+    })),
+    {t, format: period.format},
+  );
+  return block(period.note, {kind: 'ribbons', geometry});
+}
+
+/** The 30 days' split by use, as the donut's slices and its table's rows; none before the history. */
+function donutBlock(history: EnergyHistoryData | null, {t, fmt}: DetailDeps): EnergyDetailView['donut'] {
+  const parts = history ? legendOf(t).map((use, index) => ({...use, kwh: history.g30[index]})) : [];
+  const total = sum(parts.map(part => part.kwh));
+  return {
+    title: t('energy.donut.title'),
+    hint: t('energy.donut.hint'),
+    parts,
+    rows: parts.map(({key, name, kwh}) => ({
+      key,
+      name,
+      kwh: `${fmt.fixed(kwh, 1)} kWh`,
+      share: t('energy.donut.percent', {n: total ? Math.round((kwh / total) * 100) : 0}),
+    })),
+  };
+}
+
+/** The six totals the Hilo meter and the history give: today, yesterday, 30 days, this month, the car's 30 days and the rate now. */
+function totalsBlock(
+  history: EnergyHistoryData | null,
+  rate: {value: string; tier: string},
+  {now, t, fmt}: DetailDeps,
+): EnergyDetailView['totals'] {
+  const title = t('energy.totals.title');
+  const hint = t('energy.totals.hint');
+  if (!history) return {title, hint, tiles: []};
+  const {totals, g30} = history;
+  const chargingDays = history.daily.slice(-30).filter(row => row.ev > EV_DAY_KWH).length;
+  return {
+    title,
+    hint,
+    tiles: [
+      {
+        label: t('energy.totals.today'),
+        value: fmt.fixed(totals.today, 1),
+        unit: UNIT.kwh,
+        sub: t('energy.totals.until', {time: fmt.time(now)}),
+      },
+      {label: t('energy.totals.yesterday'), value: fixedOr(fmt, totals.yesterday, 1), unit: UNIT.kwh, sub: ''},
+      {
+        label: t('energy.days30'),
+        value: whole(fmt, totals.d30),
+        unit: UNIT.kwh,
+        sub: t('energy.totals.perDay', {kwh: fmt.fixed(totals.d30 / 30, 1)}),
+      },
+      {label: fmt.month(now, 'long'), value: whole(fmt, totals.month), unit: UNIT.kwh, sub: t('energy.totals.soFar')},
+      {
+        label: t('energy.totals.ev'),
+        value: whole(fmt, g30[2]),
+        unit: UNIT.kwh,
+        sub: t('energy.totals.chargingDays', {n: chargingDays}),
+      },
+      {
+        label: t('energy.totals.rate'),
+        value: rate.value,
+        unit: UNIT.cents,
+        sub: t('energy.totals.rateTier', {tier: rate.tier}),
+      },
+    ],
+  };
+}
+
 export function energyModel(
   inputs: EnergyInputs,
   history: EnergyHistoryData | null,
-  {now, t, fmt, error = null}: EnergyModelDeps,
+  {now, t, fmt, names, language, error = null, range = 'today', sankeyMode = 'now'}: EnergyModelDeps,
 ): EnergyViewModel {
   const {power, hilo, water} = inputs;
   const tier = TIER_WORDS[hilo.tier];
@@ -145,6 +405,19 @@ export function energyModel(
   const tank = fixedOr(fmt, water.temperature, 1);
   const heatingText = t('energy.water.heating', {kw: fmt.fixed(water.power ?? 0, 1)});
   const last30 = (index: number): string => (history ? whole(fmt, history.g30[index]) : DASH);
+
+  const flow = flowLayout(power, {
+    t,
+    fmt,
+    waterTemperature: water.temperature,
+    chargerStatus: inputs.wallbox.status,
+  });
+  const summary = t('energy.summary', {
+    grid: fixedOr(fmt, power.grid, 2),
+    heat: fmt.fixed(power.heat, 2),
+    rate: t(tier.short),
+  });
+  const detail: DetailDeps = {now, t, fmt, names, language, range, sankeyMode};
 
   const phone: PhoneTile[] = [
     ...(water.present
@@ -174,21 +447,12 @@ export function energyModel(
   ];
 
   return {
-    summary: t('energy.summary', {
-      grid: fixedOr(fmt, power.grid, 2),
-      heat: fmt.fixed(power.heat, 2),
-      rate: t(tier.short),
-    }),
+    summary,
     card: {
       title: t('energy.card.title'),
       open: t('energy.open'),
       topRight: t('energy.gridOnly', {rate: t(tier.short)}),
-      flow: flowLayout(power, {
-        t,
-        fmt,
-        waterTemperature: water.temperature,
-        chargerStatus: inputs.wallbox.status,
-      }),
+      flow,
       tiles: [
         {label: t('energy.today'), value: history ? fmt.fixed(history.totals.today, 1) : DASH, unit: UNIT.kwh, sub: ''},
         {label: t('energy.tile.heat'), value: last30(0), unit: UNIT.kwh, sub: t('energy.last30')},
@@ -220,5 +484,14 @@ export function energyModel(
       ],
     },
     tiles: phone,
+    detail: {
+      title: t('energy.card.title'),
+      sub: summary,
+      ranges: ENERGY_RANGES.map(key => ({range: key, label: t(RANGE_WORDS[key])})),
+      main: mainBlock(history, detail),
+      sankey: sankeyBlock(inputs, history, flow, detail),
+      donut: donutBlock(history, detail),
+      totals: totalsBlock(history, {value: cents(hilo.current), tier: t(tier.name).toLowerCase()}, detail),
+    },
   };
 }

@@ -596,6 +596,48 @@ export const en = {
   'energy.status.midFailed': 'Waiting for MID failed',
   // the line under the card when the statistics did not come; the reason is Home Assistant's own words
   'energy.historyFailed': "History didn't load: {reason}. Live values still update.",
+  // the detail (#240): the main chart's title and caption by range, the Sankey, the donut and the totals
+  'energy.detail.loading': 'Loading history…',
+  'energy.detail.today': 'Today, hour by hour',
+  'energy.detail.week': 'Last 7 days, hour by hour',
+  'energy.detail.month': 'Last 30 days, day by day',
+  'energy.detail.year': 'Month by month',
+  'energy.detail.busiest': 'Busiest hour: {kwh} kWh, {when}. Tap a bar to see what was running.',
+  'energy.detail.noHour': 'No complete hour yet today.',
+  'energy.detail.monthSum':
+    '{total} kWh in 30 days: room heating {heat}, water heating {water}, EV charging {ev}, rest of home {rest}.',
+  'energy.detail.yearCaption': 'Last 12 months. Months with missing data look shorter.',
+  'energy.detail.yearPeak':
+    'Last 12 months. Room heating peaked in {month}: {kwh} kWh. Months with missing data look shorter.',
+  'energy.sankey.title': 'Where the power goes',
+  'energy.sankey.period': 'Sankey period',
+  'energy.sankey.now': 'Now',
+  'energy.sankey.noteNow': "Live power: the Hilo meter on the left, each device's own sensor on the right.",
+  'energy.sankey.noteToday': 'Energy since midnight, {kwh} kWh so far.',
+  'energy.sankey.note30': 'Last 30 days, {kwh} kWh in all.',
+  'energy.sankey.noData': 'No data yet.',
+  'energy.sankey.empty': 'No data yet',
+  'energy.sankey.grid': 'Grid',
+  'energy.sankey.otherRooms': 'Other rooms',
+  'energy.sankey.label':
+    'Power from the grid, split into room heating, water heating, EV charging and the rest of the home',
+  'energy.donut.title': 'Where it went',
+  'energy.donut.hint':
+    'Last 30 days. Rest of home is everything without its own power sensor, including the heat pump.',
+  'energy.donut.total': 'kWh, 30 days',
+  'energy.donut.percent': '{n}%',
+  'energy.totals.title': 'Totals',
+  'energy.totals.hint': 'From the Hilo smart meter',
+  'energy.totals.today': 'Today so far',
+  'energy.totals.until': 'until {time}',
+  'energy.totals.yesterday': 'Yesterday',
+  'energy.days30': '30 days',
+  'energy.totals.perDay': '{kwh} kWh a day',
+  'energy.totals.soFar': 'so far',
+  'energy.totals.ev': 'EV, 30 days',
+  'energy.totals.chargingDays': '{n, plural, =0 {# charging days} one {# charging day} other {# charging days}}',
+  'energy.totals.rate': 'Rate now',
+  'energy.totals.rateTier': 'Hilo {tier}',
 } as const;
 
 /** Every message key; a key exists when it is written in `en`. */

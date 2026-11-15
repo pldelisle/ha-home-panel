@@ -93,8 +93,7 @@ describe('the ten panes', () => {
     const ids = FEATURES.flatMap(f => [...markup(f.pane).matchAll(/ id="([^"]+)"/g)].map(m => m[1]));
     expect(new Set(ids).size).toBe(ids.length);
     for (const id of ['hsub', 'lsub', 'csub2', 'carsub2', 'ausub']) expect(ids, id).toContain(id);
-    // Energy's is the element's, which holds the legacy detail's host (`ehost`) until #240
-    for (const id of ['carh2', 'lhost', 'ehost', 'auhost']) expect(ids, id).toContain(id);
+    for (const id of ['carh2', 'lhost', 'auhost']) expect(ids, id).toContain(id);
   });
 
   // the header's shadow root is closed to the guest (getElementById stops at it), so the lines it writes are slotted nodes
