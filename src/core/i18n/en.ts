@@ -554,6 +554,7 @@ export const en = {
   'energy.water.idle': 'Idle · 0 W',
   'energy.water.temperature': 'Water temperature',
   'energy.water.power': 'Heating power',
+  // `=0` repeats `other` in English; the French needs it (CLDR's `one` covers 0 there, the legacy wrote « 0 cycles »), and both catalogs keep the same branches
   'energy.water.last24':
     'Last 24 hours: {kwh} kWh over {cycles, plural, =0 {# heating cycles} one {# heating cycle} other {# heating cycles}}.',
   'energy.water.average': '{days}-day average: {kwh} kWh a day.',

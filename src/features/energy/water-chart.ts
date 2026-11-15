@@ -122,7 +122,7 @@ export function waterChartGeometry(
     })),
     powerLabels: [
       {x: WIDTH - RIGHT + 4, y: TOP + 3, text: t('energy.kw', {n: fmt.integer(powerMax)}), anchor: 'start'},
-      {x: WIDTH - RIGHT + 4, y: TOP + PLOT_HEIGHT + 3, text: t('energy.kw', {n: '0'}), anchor: 'start'},
+      {x: WIDTH - RIGHT + 4, y: TOP + PLOT_HEIGHT + 3, text: t('energy.kw', {n: fmt.integer(0)}), anchor: 'start'},
     ],
     ticks,
     bars: powers

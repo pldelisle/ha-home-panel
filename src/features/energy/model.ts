@@ -5,7 +5,7 @@
 // Must not: import the DOM, Lit or the shell, read the clock, or hold text the household reads (a catalog key says it).
 import {DASH} from '../../core/figures.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
-import {whole, type Formatters} from '../../core/i18n/format.ts';
+import {fixedOr, whole, type Formatters} from '../../core/i18n/format.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
 import type {HiloTier} from '../../providers/hilo.ts';
 import {sum} from '../../providers/power-history.ts';
@@ -37,6 +37,9 @@ const LEGEND: readonly {kind: 'line' | 'bars'; label: MessageKey}[] = [
   {kind: 'bars', label: 'energy.water.power'},
 ];
 
+/** The unit symbols the tiles write small after a figure; words ("kW · HOME") are catalog keys. */
+const UNIT = {kwh: 'kWh', degrees: '°', celsius: '°C', cents: '¢', centsPerKwh: '¢/kWh', dollars: '$'} as const;
+
 export interface EnergyModelDeps {
   /** The instant the model is read at, in milliseconds: the water heater's 24 hours end here. */
   now: number;
@@ -52,21 +55,15 @@ export interface Reading {
   unit: string;
 }
 
-/** A tile of the card or the Hilo card: a label, a figure with its unit, and a line under it (empty when there is none). */
-export interface EnergyTile {
+/** A tile of the card or the Hilo card: a reading with its label and a line under it (empty when there is none). */
+export interface EnergyTile extends Reading {
   label: string;
-  value: string;
-  unit: string;
   sub: string;
 }
 
 /** A tile of the phone's Energy tab, which opens its card in a sheet. */
-export interface PhoneTile {
+export interface PhoneTile extends EnergyTile {
   key: 'water' | 'hilo';
-  label: string;
-  sub: string;
-  value: string;
-  unit: string;
   /** The water heater is heating. */
   on: boolean;
 }
@@ -144,8 +141,8 @@ export function energyModel(
   const tier = TIER_WORDS[hilo.tier];
   const challenge = challengeText(inputs.challenge, t);
   const heating = (water.power ?? 0) > LIVE_KW;
-  const cents = (rate: number | null): string => (rate === null ? DASH : fmt.fixed(rate * 100, 2));
-  const tank = water.temperature === null ? DASH : fmt.fixed(water.temperature, 1);
+  const cents = (rate: number | null): string => fixedOr(fmt, rate === null ? null : rate * 100, 2);
+  const tank = fixedOr(fmt, water.temperature, 1);
   const heatingText = t('energy.water.heating', {kw: fmt.fixed(water.power ?? 0, 1)});
   const last30 = (index: number): string => (history ? whole(fmt, history.g30[index]) : DASH);
 
@@ -157,7 +154,7 @@ export function energyModel(
             label: t('energy.water.title'),
             sub: heating ? heatingText : t('energy.idle'),
             value: tank,
-            unit: '°',
+            unit: UNIT.degrees,
             on: heating,
           },
         ]
@@ -169,7 +166,7 @@ export function energyModel(
             label: t('energy.hilo.title'),
             sub: t('energy.hiloTile', {tier: t(tier.name), challenge}),
             value: cents(hilo.current),
-            unit: '¢',
+            unit: UNIT.cents,
             on: false,
           },
         ]
@@ -178,7 +175,7 @@ export function energyModel(
 
   return {
     summary: t('energy.summary', {
-      grid: power.grid === null ? DASH : fmt.fixed(power.grid, 2),
+      grid: fixedOr(fmt, power.grid, 2),
       heat: fmt.fixed(power.heat, 2),
       rate: t(tier.short),
     }),
@@ -193,10 +190,10 @@ export function energyModel(
         chargerStatus: inputs.wallbox.status,
       }),
       tiles: [
-        {label: t('energy.today'), value: history ? fmt.fixed(history.totals.today, 1) : DASH, unit: 'kWh', sub: ''},
-        {label: t('energy.tile.heat'), value: last30(0), unit: 'kWh', sub: t('energy.last30')},
-        {label: t('energy.tile.water'), value: last30(1), unit: 'kWh', sub: t('energy.last30')},
-        {label: t('energy.tile.ev'), value: last30(2), unit: 'kWh', sub: t('energy.last30')},
+        {label: t('energy.today'), value: history ? fmt.fixed(history.totals.today, 1) : DASH, unit: UNIT.kwh, sub: ''},
+        {label: t('energy.tile.heat'), value: last30(0), unit: UNIT.kwh, sub: t('energy.last30')},
+        {label: t('energy.tile.water'), value: last30(1), unit: UNIT.kwh, sub: t('energy.last30')},
+        {label: t('energy.tile.ev'), value: last30(2), unit: UNIT.kwh, sub: t('energy.last30')},
       ],
       error: error === null ? null : t('energy.historyFailed', {reason: error}),
     },
@@ -204,7 +201,7 @@ export function energyModel(
       present: water.present,
       title: t('energy.water.title'),
       name: water.name,
-      temperature: {value: tank, unit: '°C'},
+      temperature: {value: tank, unit: UNIT.celsius},
       state: {heating, text: heating ? heatingText : t('energy.water.idle')},
       chart: history ? waterChartGeometry(history.wh24, now, {t, fmt}) : null,
       legend: history ? LEGEND.map(({kind, label}) => ({kind, label: t(label)})) : [],
@@ -214,17 +211,12 @@ export function energyModel(
       present: inputs.hiloPresent,
       title: t('energy.hilo.title'),
       challenge,
-      rate: {value: cents(hilo.current), unit: '¢/kWh'},
+      rate: {value: cents(hilo.current), unit: UNIT.centsPerKwh},
       tier: {text: t(tier.name), ok: hilo.tier === 'low'},
       tiles: [
-        {label: t('energy.hilo.medium'), value: cents(hilo.medium), unit: '¢', sub: ''},
-        {label: t('energy.hilo.reward'), value: cents(hilo.reward), unit: '¢', sub: ''},
-        {
-          label: t('energy.hilo.rewards'),
-          value: inputs.rewards === null ? DASH : fmt.fixed(inputs.rewards, 0),
-          unit: '$',
-          sub: '',
-        },
+        {label: t('energy.hilo.medium'), value: cents(hilo.medium), unit: UNIT.cents, sub: ''},
+        {label: t('energy.hilo.reward'), value: cents(hilo.reward), unit: UNIT.cents, sub: ''},
+        {label: t('energy.hilo.rewards'), value: fixedOr(fmt, inputs.rewards, 0), unit: UNIT.dollars, sub: ''},
       ],
     },
     tiles: phone,

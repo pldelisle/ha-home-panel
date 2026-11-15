@@ -1,6 +1,6 @@
 // Figures the panel writes the same way everywhere: the dash for a missing reading, a capital letter, and the length of a minute, an hour and a day.
 // Pattern: shared kernel (Evans, Domain-Driven Design): a few constants and one pure function every feature may import,
-// so a feature never imports another feature's helpers (ADR 0011). `whole` and `degrees` sit beside `fmt.integer`, in format.ts.
+// so a feature never imports another feature's helpers (ADR 0011). `whole`, `degrees` and `fixedOr` sit beside `fmt.integer`, in format.ts.
 // Must not: read the clock or a locale, or grow into a utility drawer: a name arrives here with its second feature.
 
 /** What a missing figure shows. */

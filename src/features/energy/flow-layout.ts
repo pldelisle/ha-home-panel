@@ -1,10 +1,10 @@
 // flowLayout: the live power flow as geometry: the nodes' centres and radii, the connectors' widths and dash durations, and every text.
-// Pattern: pure geometry (a layout function returns numbers and texts, the element places them with `svg` templates; Climate's dial and Car's battery
-// follow), the legacy `flowSvg` copied number for number (deleted in #241); the powers come from `powerNow`, and each word and figure through `t` and `fmt`.
+// Pattern: pure geometry (a layout function returns numbers and texts, the element places them with `svg` templates; Climate's dial (#242) and Car's
+// bars (#249) will follow), the legacy `flowSvg` copied number for number (deleted in #241); the powers come from `powerNow`, and each word and figure through `t` and `fmt`.
 // Must not: import Lit or the DOM, read the clock, state or the registry, or hold a word a person reads (a catalog key says it).
 import {DASH} from '../../core/figures.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
-import {whole, type Formatters} from '../../core/i18n/format.ts';
+import {fixedOr, whole, type Formatters} from '../../core/i18n/format.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
 import type {PowerNow} from '../../providers/power.ts';
 
@@ -17,6 +17,8 @@ const WATTS_BELOW_KW = 1;
 /** The drawing's own coordinates, which the element's `viewBox` repeats. */
 const WIDTH = 440;
 const HEIGHT = 340;
+/** The unit symbol under a ring's figure of a kilowatt or more; the words beside a unit ("kW · HOME") are catalog keys. */
+const KW = 'kW';
 
 /** The charger's statuses the catalog words, by the text the Wallbox integration gives; any other status is shown as the sensor says it. */
 const STATUS_WORDS: ReadonlyMap<string, MessageKey> = new Map([
@@ -143,7 +145,7 @@ export function flowLayout(power: PowerNow, {t, fmt, waterTemperature, chargerSt
   ): FlowNode => {
     const unit = kw !== null && kw >= WATTS_BELOW_KW;
     const texts = [text(cx, cy + (unit ? -2 : 6), watts(kw), 'big', 'middle', r > 41 ? 20 : 18)];
-    if (unit) texts.push(text(cx, cy + 16, 'kW', 'st', 'middle'));
+    if (unit) texts.push(text(cx, cy + 16, KW, 'st', 'middle'));
     else if (sub) texts.push(text(cx, cy + 21, sub, 'st', 'middle'));
     return {key, cx, cy, r, strokeWidth: 3, color, on, texts};
   };
@@ -161,7 +163,7 @@ export function flowLayout(power: PowerNow, {t, fmt, waterTemperature, chargerSt
     color: 'var(--c-home)',
     on: true,
     texts: [
-      text(220, 158, grid === null ? DASH : fmt.fixed(grid, 2), 'big', 'middle', 28),
+      text(220, 158, fixedOr(fmt, grid, 2), 'big', 'middle', 28),
       text(220, 178, t('energy.flow.home'), 'st', 'middle'),
     ],
   };
