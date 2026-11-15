@@ -705,6 +705,8 @@ export const fr: Record<MessageKey, string> = {
   'climate.word.comfort': 'Confort',
   'climate.word.sleep': 'Sommeil',
   'climate.word.diffuse': 'Diffus',
+  'climate.mode.fanOnly': 'Ventilation',
+  'climate.mode.heatCool': 'Auto',
   'climate.swing.vertical': 'Balayage vertical',
   'climate.swing.horizontal': 'Balayage horizontal',
   'climate.swing.both': 'Balayage dans les deux sens',

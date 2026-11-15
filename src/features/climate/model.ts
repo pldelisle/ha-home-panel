@@ -3,9 +3,9 @@
 // `deps.t` and every number through `deps.fmt`, takes a held setpoint or mode from `deps.overlay` (ADR 0023), and delegates the drawings to the pure geometry of
 // dial-geometry.ts and gauge-geometry.ts. Each rule is the legacy panel's own (`climateSummary`, `climInfo`, `renderClimateHead`, `renderClimateControls`), deleted in #248.
 // Must not: import the DOM, Lit or the shell, read the clock, hold text the household reads (a catalog key says it), or decide the frost guard's commands (#248's).
-import {capitalise, DASH} from '../../core/figures.ts';
+import {capitalWords, DASH} from '../../core/figures.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
-import {degrees, fixedOr, type Formatters} from '../../core/i18n/format.ts';
+import {degrees, fixedOr} from '../../core/i18n/format.ts';
 import {roomName} from '../../core/i18n/room-name.ts';
 import {FUJITSU_BRAND, type HeatPumpInputs} from '../../providers/heat-pump.ts';
 import {DEFAULT_MAX_TEMP, FROST_GUARD, OFF_AT_OR_BELOW, type RoomPower} from '../../providers/power.ts';
@@ -19,6 +19,7 @@ import {
   averageTemperature,
   climateItems,
   heatingCount,
+  tenthDegrees,
   type ClimateItem,
   type ClimateItemsDeps,
   type Tone,
@@ -59,6 +60,14 @@ const SETTING_WORDS: ReadonlyMap<string, MessageKey> = new Map([
   ['sleep', 'climate.word.sleep'],
   ['diffuse', 'climate.word.diffuse'],
 ]);
+/**
+ * The pill's words for a mode standing in for a missing action where they differ from the mode button's: the legacy pill wrote `cap(hp.state)`,
+ * "Fan only" and "Heat cool", where the `HVAC` table's button said "Fan" and "Auto"; the layer translated the pill's to "Ventilation" and "Auto".
+ */
+const PILL_MODE_WORDS: ReadonlyMap<string, MessageKey> = new Map([
+  ['fan_only', 'climate.mode.fanOnly'],
+  ['heat_cool', 'climate.mode.heatCool'],
+]);
 /** The louvers' positions the catalog words; `vertical_3` and `horizontal_2` carry their number. */
 const SWING_WORDS: ReadonlyMap<string, MessageKey> = new Map([
   ['vertical', 'climate.swing.vertical'],
@@ -84,6 +93,13 @@ export interface ClimateModelDeps extends ClimateItemsDeps {
   armed?: 'allset' | 'alloff' | null;
 }
 
+/** A value with the ends of its scale: a stepper's target, a room's setpoint, the dial's knob between `lo` and `hi`. Not the kit's `Range`, a span of time. */
+export interface Bounded<V = number> {
+  value: V;
+  lo: number;
+  hi: number;
+}
+
 /** A choice of a radio group or a select: its value as Home Assistant says it, its words, and whether it is the current one. */
 export interface ControlOption {
   value: string;
@@ -101,7 +117,7 @@ export type ControlsView =
       mode: string;
       modes: ControlOption[];
       /** The target's stepper; null in a mode that has none. A unit that reports no target has one with a null value: the stepper reads a dash, both buttons disabled, as the legacy drew it. */
-      target: {value: number | null; lo: number; hi: number} | null;
+      target: Bounded<number | null> | null;
       /** Null when the unit is off or has no such setting. */
       fan: ControlOption[] | null;
       preset: ControlOption[] | null;
@@ -112,7 +128,7 @@ export type ControlsView =
   | {
       kind: 'room';
       offline?: false;
-      setpoint: {value: number; lo: number; hi: number; off: boolean};
+      setpoint: Bounded & {off: boolean};
       /** The quick setpoints; `off` is a tap for the frost guard. */
       quick: {value: number | 'off'; label: string; pressed: boolean}[];
     };
@@ -199,7 +215,7 @@ interface Head {
   /** The setpoint the gauge marks; the house has none. */
   mark: number | null;
   /** The dial's scale and setpoint: a number, `null` for off, `undefined` for not loaded (the house's). */
-  dial: {sp: number | null | undefined; lo: number; hi: number; editable: boolean};
+  dial: Bounded<number | null | undefined> & {editable: boolean};
   tiles: DetailTile[];
   note: string | null;
   controls: ControlsView;
@@ -217,13 +233,10 @@ function toneOf(on: boolean, bad: boolean): Tone {
   return bad ? 'bad' : '';
 }
 
-/** A temperature to a tenth with its degree sign, the legacy `f1(v) + '°'`. */
-const tenth = (fmt: Formatters, v: number): string => `${fmt.fixed(v, 1)}°`;
-
 /** A setting as the catalog words it, else as Home Assistant says it, capitalised. */
 function settingLabel(value: string, {t}: ClimateModelDeps): string {
   const word = SETTING_WORDS.get(value);
-  return word ? t(word) : capitalise(value.replace(/_/g, ' '));
+  return word ? t(word) : capitalWords(value);
 }
 
 /** A louver position as the catalog words it, else as Home Assistant says it, capitalised (`swingName`). */
@@ -234,7 +247,7 @@ function swingLabel(value: string, {t}: ClimateModelDeps): string {
     const at = pattern.exec(value);
     if (at) return t(key, {n: at[1] ?? ''});
   }
-  return capitalise(value.replace(/_/g, ' '));
+  return capitalWords(value);
 }
 
 /** What the heat pump says in the summary: nothing without one, else offline, off, or what it is doing, to its target. */
@@ -340,7 +353,7 @@ function houseHead(inputs: ClimateInputs, deps: ClimateModelDeps, items: Climate
     pill: {text: house.sub, tone: house.tone},
     temperature: averageTemperature(rooms),
     mark: null,
-    dial: {sp: undefined, lo: FROST_GUARD, hi: DEFAULT_MAX_TEMP, editable: false},
+    dial: {value: undefined, lo: FROST_GUARD, hi: DEFAULT_MAX_TEMP, editable: false},
     tiles: [
       named(warmest, 'climate.warmest'),
       named(coolest, 'climate.coolest'),
@@ -363,10 +376,11 @@ function houseHead(inputs: ClimateInputs, deps: ClimateModelDeps, items: Climate
   };
 }
 
-/** What the heat pump is doing, capitalised: its action, else its mode in the words the mode buttons use, so pill and button agree. */
+/** What the heat pump is doing, capitalised: its action, else its mode as the legacy pill wrote it (`cap(hp.state)`) and the layer translated it. */
 function heatPumpAction(hp: HeatPumpInputs, mode: string, deps: ClimateModelDeps): string {
-  if (!hp.action) return settingLabel(mode, deps);
-  return capitalise(actionWord(hp.action, deps.t).replace(/_/g, ' '));
+  if (hp.action) return capitalWords(actionWord(hp.action, deps.t));
+  const word = PILL_MODE_WORDS.get(mode);
+  return word ? deps.t(word) : settingLabel(mode, deps);
 }
 
 /** The heat pump's pill: offline, off, or what it is doing, to its target when it has one. */
@@ -390,7 +404,7 @@ function heatPumpHead(hp: HeatPumpInputs, inputs: ClimateInputs, deps: ClimateMo
     temperature: hp.temperature,
     mark: hp.available && mode !== 'off' ? hp.target : null,
     dial: {
-      sp: idle ? null : overlay(K.hp.sp(hp.id), hp.target),
+      value: idle ? null : overlay(K.hp.sp(hp.id), hp.target),
       lo: hp.minTemp,
       hi: hp.maxTemp,
       editable: !idle,
@@ -429,7 +443,7 @@ function roomHead(room: RoomPower, deps: ClimateModelDeps, range: Range): Head {
     temperature: room.temperature,
     mark: setpoint,
     dial: {
-      sp: room.available ? overlay(K.sp(room.climate), setpoint) : null,
+      value: room.available ? overlay(K.sp(room.climate), setpoint) : null,
       lo: room.minTemp,
       hi: room.maxTemp,
       editable: room.available,
@@ -452,8 +466,8 @@ function roomHead(room: RoomPower, deps: ClimateModelDeps, range: Range): Head {
 
 /** The dial's centre: the setpoint, "Off", or the temperature while the setpoint is unknown. */
 function dialBig({shown, off}: DialGeometry, reading: number | null, {t, fmt}: ClimateModelDeps): string {
-  if (shown === null) return reading === null ? DASH : tenth(fmt, reading);
-  return off ? t('climate.off') : tenth(fmt, shown);
+  if (shown === null) return reading === null ? DASH : tenthDegrees(fmt, reading);
+  return off ? t('climate.off') : tenthDegrees(fmt, shown);
 }
 
 /** What a screen reader says of the slider's value; empty while the setpoint is unknown. */
@@ -464,7 +478,7 @@ function dialValueText({shown, off}: DialGeometry, {t, fmt}: ClimateModelDeps): 
 
 function dialView(head: Head, outside: number | null, deps: ClimateModelDeps): DialView {
   const {t, fmt} = deps;
-  const {sp, lo, hi, editable} = head.dial;
+  const {value: sp, lo, hi, editable} = head.dial;
   const geometry = dialGeometry(head.temperature, sp, lo, hi);
   const reading = head.temperature;
   return {

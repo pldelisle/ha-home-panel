@@ -57,8 +57,8 @@ export function averageTemperature(rooms: readonly RoomPower[]): number | null {
 /** How many rooms are heating. */
 export const heatingCount = (rooms: readonly RoomPower[]): number => rooms.filter(room => room.heating).length;
 
-/** A temperature to a tenth with its degree sign, the legacy `f1(v) + '°'`; a room with no reading shows `–°` as it did. */
-const degrees = (fmt: Formatters, v: number | null): string => `${v === null ? DASH : fmt.fixed(v, 1)}°`;
+/** A temperature to a tenth with its degree sign, the legacy `f1(v) + '°'`; a room with no reading shows `–°` as it did. The model's dial reads its centre with it. */
+export const tenthDegrees = (fmt: Formatters, v: number | null): string => `${v === null ? DASH : fmt.fixed(v, 1)}°`;
 
 /** A room's status line, the legacy `climItems()`'s order of questions: unavailable, heating, holding a setpoint above the frost guard, else off. */
 function roomStatus(room: RoomPower, {t, fmt}: ClimateItemsDeps): string {
@@ -90,7 +90,7 @@ export function climateItems({rooms, heatPump, heatPumpOn}: ClimateInputs, deps:
       icon: 'house',
       name: t('climate.wholeHouse'),
       sub: t(heatPumpOn ? 'climate.heatPumpPlusRooms' : 'climate.roomsHeating', {n: heating}),
-      value: average === null ? DASH : degrees(fmt, average),
+      value: average === null ? DASH : tenthDegrees(fmt, average),
       tone: heating || heatPumpOn ? 'on' : '',
     },
     ...rooms.map((room): ClimateItem => ({
@@ -98,7 +98,7 @@ export function climateItems({rooms, heatPump, heatPumpOn}: ClimateInputs, deps:
       icon: room.icon,
       name: roomName(room, deps),
       sub: roomStatus(room, deps),
-      value: degrees(fmt, room.temperature),
+      value: tenthDegrees(fmt, room.temperature),
       tone: room.heating ? 'on' : !room.available ? 'bad' : '',
     })),
   ];
@@ -108,7 +108,7 @@ export function climateItems({rooms, heatPump, heatPumpOn}: ClimateInputs, deps:
       icon: 'fan',
       name: t('climate.heatPump'),
       sub: heatPumpStatus(heatPump, heatPump.brand ?? t('climate.heatPump'), deps),
-      value: heatPump.available && heatPump.temperature !== null ? degrees(fmt, heatPump.temperature) : DASH,
+      value: heatPump.available && heatPump.temperature !== null ? tenthDegrees(fmt, heatPump.temperature) : DASH,
       tone: !heatPump.available ? 'bad' : heatPumpOn ? 'on' : '',
     });
   }

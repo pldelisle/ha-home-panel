@@ -697,6 +697,8 @@ export const en = {
   'climate.noteHeatPump':
     'Readings come from the unit itself. A break in the line means the integration was offline. The unit has no power sensor, so its electricity is counted in Rest of home.',
   'climate.normal': 'Normal',
+  // climate.word.* are the heat pump's settings as its buttons name them, capitalised; climate.action.* are what it is doing, lower case inside a line
+  // ({brand} · heating to 22°). Both tables hold the same few words because the legacy layer translated them differently by their case and place.
   'climate.word.heat': 'Heat',
   'climate.word.cool': 'Cool',
   'climate.word.auto': 'Auto',
@@ -711,6 +713,8 @@ export const en = {
   'climate.word.comfort': 'Comfort',
   'climate.word.sleep': 'Sleep',
   'climate.word.diffuse': 'Diffuse',
+  'climate.mode.fanOnly': 'Fan only',
+  'climate.mode.heatCool': 'Heat cool',
   'climate.swing.vertical': 'Swing up and down',
   'climate.swing.horizontal': 'Swing side to side',
   'climate.swing.both': 'Swing both ways',

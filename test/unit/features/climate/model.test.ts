@@ -334,8 +334,10 @@ describe('the heat pump', () => {
     expect(state(pump('heat', {hvac_action: 'idle'}))).toEqual([{text: 'Idle', tone: ''}, 'heat pump idle']);
     expect(state(pump('off', {temperature: 22}))).toEqual([{text: 'Off', tone: ''}, 'heat pump off']);
     expect(state(pump('unavailable'))).toEqual([{text: 'Offline', tone: 'bad'}, 'heat pump offline']);
-    // a mode stands in for a missing action in the mode buttons' words; an action the catalog does not word is capitalised, the underscore a space
-    expect(state(pump('fan_only', {}))[0]).toEqual({text: 'Fan', tone: ''});
+    // a mode stands in for a missing action as the legacy pill wrote it, cap(hp.state): 'Fan only' and 'Heat cool' where the buttons say Fan and Auto;
+    // an action the catalog does not word is capitalised, the underscore a space
+    expect(state(pump('fan_only', {}))[0]).toEqual({text: 'Fan only', tone: ''});
+    expect(state(pump('heat_cool', {}))[0]).toEqual({text: 'Heat cool', tone: ''});
     expect(state(pump('cool', {temperature: 22}))[0]).toEqual({text: 'Cool to 22°', tone: ''});
     expect(state(pump('heat', {hvac_action: 'defrost_mode'}))[0]).toEqual({text: 'Defrost mode', tone: ''});
     // cooling lights the pill as heating does
@@ -454,9 +456,10 @@ describe('the heat pump', () => {
     const vm = pumpOf(pump('heat', ATTRS), {language: 'fr'});
     expect(vm.detail).toMatchObject({title: 'Thermopompe', sub: 'Daikin', pill: {text: 'Chauffe à 22°'}});
     expect(vm.summary).toContain('thermopompe : chauffe à 22°'.replace(' :', ' :'));
-    // a mode standing in for a missing action reads as its button does
+    // a mode standing in for a missing action reads as the layer translated the legacy pill: 'Fan only' was Ventilation, 'Heat cool' was Auto
     expect(pumpOf(pump('cool', {}), {language: 'fr'}).detail.pill.text).toBe('Frais');
-    expect(pumpOf(pump('fan_only', {}), {language: 'fr'}).detail.pill.text).toBe('Ventilateur');
+    expect(pumpOf(pump('fan_only', {}), {language: 'fr'}).detail.pill.text).toBe('Ventilation');
+    expect(pumpOf(pump('heat_cool', {}), {language: 'fr'}).detail.pill.text).toBe('Auto');
     const controls = hp(vm.detail.controls);
     expect(controls.modes.map(m => m.label)).toEqual([
       'Éteint',

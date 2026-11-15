@@ -98,6 +98,8 @@
     {"key": "climate.word.comfort"},
     {"key": "climate.word.sleep"},
     {"key": "climate.word.diffuse"},
+    {"key": "climate.mode.fanOnly"},
+    {"key": "climate.mode.heatCool"},
     {"key": "climate.swing.vertical"},
     {"key": "climate.swing.horizontal"},
     {"key": "climate.swing.both"},
