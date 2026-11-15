@@ -334,8 +334,10 @@ describe('the heat pump', () => {
     expect(state(pump('heat', {hvac_action: 'idle'}))).toEqual([{text: 'Idle', tone: ''}, 'heat pump idle']);
     expect(state(pump('off', {temperature: 22}))).toEqual([{text: 'Off', tone: ''}, 'heat pump off']);
     expect(state(pump('unavailable'))).toEqual([{text: 'Offline', tone: 'bad'}, 'heat pump offline']);
-    // what the unit says when it says an action the catalog does not word: capitalised, the underscore a space
-    expect(state(pump('fan_only', {}))[0]).toEqual({text: 'Fan only', tone: ''});
+    // a mode stands in for a missing action in the mode buttons' words; an action the catalog does not word is capitalised, the underscore a space
+    expect(state(pump('fan_only', {}))[0]).toEqual({text: 'Fan', tone: ''});
+    expect(state(pump('cool', {temperature: 22}))[0]).toEqual({text: 'Cool to 22°', tone: ''});
+    expect(state(pump('heat', {hvac_action: 'defrost_mode'}))[0]).toEqual({text: 'Defrost mode', tone: ''});
     // cooling lights the pill as heating does
     expect(state(pump('cool', {hvac_action: 'cooling', temperature: 22}))[0]).toEqual({
       text: 'Cooling to 22°',
@@ -409,7 +411,12 @@ describe('the heat pump', () => {
       expect(controls.target).toBeNull();
       expect(controls.fan).not.toBeNull();
     }
-    expect(hp(pumpOf(pump('heat', {...ATTRS, temperature: undefined})).detail.controls).target).toBeNull();
+    // a unit that reports no target still has its stepper, which reads a dash
+    expect(hp(pumpOf(pump('heat', {...ATTRS, temperature: undefined})).detail.controls).target).toEqual({
+      value: null,
+      lo: 17,
+      hi: 28,
+    });
     expect(pumpOf(pump('unavailable', ATTRS)).detail.controls).toEqual({kind: 'hp', offline: true});
   });
 
@@ -422,9 +429,10 @@ describe('the heat pump', () => {
       [K.hp.swing('climate.pump')]: 'vertical',
     });
     const held = pumpOf(pump('heat', ATTRS), {overlay, compact: true});
-    // held off: the dial is a picture saying Off, the pill follows the unit
+    // held off: the pill, the gauge's mark and the dial agree on it while the tap is pending
     expect(held.detail.dial).toMatchObject({editable: false, big: 'Off'});
-    expect(held.detail.pill.text).toBe('Heating to 22°');
+    expect(held.detail.pill.text).toBe('Off');
+    expect(pumpOf(pump('heat', ATTRS), {overlay}).detail.gauge?.geometry.setpoint).toBeNull();
     expect(hp(held.detail.controls)).toMatchObject({mode: 'off', fan: null, preset: null, swing: null});
 
     const stillOn = holding({
@@ -446,6 +454,9 @@ describe('the heat pump', () => {
     const vm = pumpOf(pump('heat', ATTRS), {language: 'fr'});
     expect(vm.detail).toMatchObject({title: 'Thermopompe', sub: 'Daikin', pill: {text: 'Chauffe à 22°'}});
     expect(vm.summary).toContain('thermopompe : chauffe à 22°'.replace(' :', ' :'));
+    // a mode standing in for a missing action reads as its button does
+    expect(pumpOf(pump('cool', {}), {language: 'fr'}).detail.pill.text).toBe('Frais');
+    expect(pumpOf(pump('fan_only', {}), {language: 'fr'}).detail.pill.text).toBe('Ventilateur');
     const controls = hp(vm.detail.controls);
     expect(controls.modes.map(m => m.label)).toEqual([
       'Éteint',

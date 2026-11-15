@@ -8,7 +8,7 @@ import type {MessageKey} from '../../core/i18n/en.ts';
 import {degrees, fixedOr, type Formatters} from '../../core/i18n/format.ts';
 import {roomName} from '../../core/i18n/room-name.ts';
 import {FUJITSU_BRAND, type HeatPumpInputs} from '../../providers/heat-pump.ts';
-import {FROST_GUARD, OFF_AT_OR_BELOW, type RoomPower} from '../../providers/power.ts';
+import {DEFAULT_MAX_TEMP, FROST_GUARD, OFF_AT_OR_BELOW, type RoomPower} from '../../providers/power.ts';
 import type {Overlay} from '../../ui/overlay-store.ts';
 import {RANGES, type Range} from '../../ui/ranges.ts';
 import {dialGeometry, type DialGeometry} from './dial-geometry.ts';
@@ -100,8 +100,8 @@ export type ControlsView =
       /** The mode as shown, a held one included. */
       mode: string;
       modes: ControlOption[];
-      /** The target's stepper; null in a mode that has none, or when the unit reports no target. */
-      target: {value: number; lo: number; hi: number} | null;
+      /** The target's stepper; null in a mode that has none. A unit that reports no target has one with a null value: the stepper reads a dash, both buttons disabled, as the legacy drew it. */
+      target: {value: number | null; lo: number; hi: number} | null;
       /** Null when the unit is off or has no such setting. */
       fan: ControlOption[] | null;
       preset: ControlOption[] | null;
@@ -205,6 +205,18 @@ interface Head {
   controls: ControlsView;
 }
 
+/** The words under the gauge's bar, by what its geometry says. */
+const GAUGE_CAPTIONS: Record<'setpoint' | 'off', MessageKey> = {
+  setpoint: 'climate.gauge.setpoint',
+  off: 'climate.gauge.off',
+};
+
+/** A pill's tone: lit when `on`, red when `bad`. */
+function toneOf(on: boolean, bad: boolean): Tone {
+  if (on) return 'on';
+  return bad ? 'bad' : '';
+}
+
 /** A temperature to a tenth with its degree sign, the legacy `f1(v) + '°'`. */
 const tenth = (fmt: Formatters, v: number): string => `${fmt.fixed(v, 1)}°`;
 
@@ -280,7 +292,7 @@ function heatPumpControls(hp: HeatPumpInputs, deps: ClimateModelDeps): ControlsV
     kind: 'hp',
     mode,
     modes: hp.modes.map(value => ({value, label: settingLabel(value, deps), checked: value === mode})),
-    target: NO_TARGET_MODES.has(mode) || target === null ? null : {value: target, lo: hp.minTemp, hi: hp.maxTemp},
+    target: NO_TARGET_MODES.has(mode) ? null : {value: target, lo: hp.minTemp, hi: hp.maxTemp},
     fan: off ? null : options(hp.fanModes, overlay(K.hp.fan(hp.id), hp.fan), value => settingLabel(value, deps)),
     preset: off
       ? null
@@ -310,8 +322,7 @@ function houseHead(inputs: ClimateInputs, deps: ClimateModelDeps, items: Climate
   const {rooms} = inputs;
   const house = items[0];
   const read = rooms
-    .filter(room => room.temperature !== null)
-    .map(room => ({name: roomName(room, deps), temperature: room.temperature as number}))
+    .flatMap(room => (room.temperature === null ? [] : [{name: roomName(room, deps), temperature: room.temperature}]))
     .sort((a, b) => b.temperature - a.temperature);
   const warmest = read[0];
   const coolest = read[read.length - 1];
@@ -329,7 +340,7 @@ function houseHead(inputs: ClimateInputs, deps: ClimateModelDeps, items: Climate
     pill: {text: house.sub, tone: house.tone},
     temperature: averageTemperature(rooms),
     mark: null,
-    dial: {sp: undefined, lo: 5, hi: 30, editable: false},
+    dial: {sp: undefined, lo: FROST_GUARD, hi: DEFAULT_MAX_TEMP, editable: false},
     tiles: [
       named(warmest, 'climate.warmest'),
       named(coolest, 'climate.coolest'),
@@ -352,25 +363,32 @@ function houseHead(inputs: ClimateInputs, deps: ClimateModelDeps, items: Climate
   };
 }
 
+/** What the heat pump is doing, capitalised: its action, else its mode in the words the mode buttons use, so pill and button agree. */
+function heatPumpAction(hp: HeatPumpInputs, mode: string, deps: ClimateModelDeps): string {
+  if (!hp.action) return settingLabel(mode, deps);
+  return capitalise(actionWord(hp.action, deps.t).replace(/_/g, ' '));
+}
+
+/** The heat pump's pill: offline, off, or what it is doing, to its target when it has one. */
+function heatPumpPill(hp: HeatPumpInputs, mode: string, deps: ClimateModelDeps): string {
+  const {t, fmt} = deps;
+  if (!hp.available) return t('climate.offline');
+  if (mode === 'off') return t('climate.off');
+  const action = heatPumpAction(hp, mode, deps);
+  return hp.target === null ? action : t('climate.actionTo', {action, n: fmt.number(hp.target, 2)});
+}
+
 function heatPumpHead(hp: HeatPumpInputs, inputs: ClimateInputs, deps: ClimateModelDeps, range: Range): Head {
   const {t, fmt, overlay} = deps;
-  const mark = hp.available && hp.mode !== 'off' ? hp.target : null;
+  // the mode as shown, a held one included: the pill, the gauge's mark and the dial agree while a tap is pending
   const mode = overlay(K.hp.mode(hp.id), hp.mode);
   const idle = !hp.available || NO_TARGET_MODES.has(mode);
-  const action = capitalise(actionWord(hp.action || hp.mode, t).replace(/_/g, ' '));
-  const text = !hp.available
-    ? t('climate.offline')
-    : hp.mode === 'off'
-      ? t('climate.off')
-      : mark === null
-        ? action
-        : t('climate.actionTo', {action, n: fmt.number(mark, 2)});
   return {
     title: t('climate.heatPump'),
     sub: hp.brand === FUJITSU_BRAND ? t('climate.fujitsuThrough') : (hp.brand ?? t('climate.heatPump')),
-    pill: {text, tone: inputs.heatPumpOn ? 'on' : !hp.available ? 'bad' : ''},
+    pill: {text: heatPumpPill(hp, mode, deps), tone: toneOf(inputs.heatPumpOn, !hp.available)},
     temperature: hp.temperature,
-    mark,
+    mark: hp.available && mode !== 'off' ? hp.target : null,
     dial: {
       sp: idle ? null : overlay(K.hp.sp(hp.id), hp.target),
       lo: hp.minTemp,
@@ -392,20 +410,22 @@ function heatPumpHead(hp: HeatPumpInputs, inputs: ClimateInputs, deps: ClimateMo
   };
 }
 
+/** A room's pill: unavailable, heating to its setpoint, holding one above the frost guard, else off. */
+function roomPill(room: RoomPower, {t, fmt}: ClimateModelDeps): string {
+  const {setpoint} = room;
+  if (!room.available) return t('climate.unavailable');
+  if (room.heating) return t('climate.heatingTo', {n: setpoint === null ? DASH : fmt.number(setpoint, 2)});
+  if (setpoint !== null && setpoint > OFF_AT_OR_BELOW) return t('climate.holding', {n: fmt.number(setpoint, 2)});
+  return t('climate.off');
+}
+
 function roomHead(room: RoomPower, deps: ClimateModelDeps, range: Range): Head {
   const {t, fmt, overlay} = deps;
   const {setpoint} = room;
-  const text = !room.available
-    ? t('climate.unavailable')
-    : room.heating
-      ? t('climate.heatingTo', {n: setpoint === null ? DASH : fmt.number(setpoint, 2)})
-      : setpoint !== null && setpoint > OFF_AT_OR_BELOW
-        ? t('climate.holding', {n: fmt.number(setpoint, 2)})
-        : t('climate.off');
   return {
     title: roomName(room, deps),
     sub: t('climate.hiloThermostat'),
-    pill: {text, tone: room.heating ? 'on' : !room.available ? 'bad' : ''},
+    pill: {text: roomPill(room, deps), tone: toneOf(room.heating, !room.available)},
     temperature: room.temperature,
     mark: setpoint,
     dial: {
@@ -430,18 +450,30 @@ function roomHead(room: RoomPower, deps: ClimateModelDeps, range: Range): Head {
   };
 }
 
-function dialView(head: Head, outside: number | null, {t, fmt}: ClimateModelDeps): DialView {
+/** The dial's centre: the setpoint, "Off", or the temperature while the setpoint is unknown. */
+function dialBig({shown, off}: DialGeometry, reading: number | null, {t, fmt}: ClimateModelDeps): string {
+  if (shown === null) return reading === null ? DASH : tenth(fmt, reading);
+  return off ? t('climate.off') : tenth(fmt, shown);
+}
+
+/** What a screen reader says of the slider's value; empty while the setpoint is unknown. */
+function dialValueText({shown, off}: DialGeometry, {t, fmt}: ClimateModelDeps): string {
+  if (shown === null) return '';
+  return off ? t('climate.off') : t('climate.dial.degrees', {n: fmt.number(shown, 2)});
+}
+
+function dialView(head: Head, outside: number | null, deps: ClimateModelDeps): DialView {
+  const {t, fmt} = deps;
   const {sp, lo, hi, editable} = head.dial;
   const geometry = dialGeometry(head.temperature, sp, lo, hi);
-  const {shown, off} = geometry;
   const reading = head.temperature;
   return {
     editable,
     lo,
     hi,
-    value: shown,
+    value: geometry.shown,
     geometry,
-    big: shown === null ? (reading === null ? DASH : tenth(fmt, reading)) : off ? t('climate.off') : tenth(fmt, shown),
+    big: dialBig(geometry, reading, deps),
     caption: [
       reading === null ? '' : t('climate.now', {n: fixedOr(fmt, reading, 1)}),
       outside === null ? '' : t('climate.dialOutside', {n: fmt.fixed(outside, 1)}),
@@ -449,7 +481,7 @@ function dialView(head: Head, outside: number | null, {t, fmt}: ClimateModelDeps
       .filter(Boolean)
       .join(' · '),
     label: t(editable ? 'climate.dial.setpoint' : 'climate.dial.temperature'),
-    valueText: shown === null ? '' : off ? t('climate.off') : t('climate.dial.degrees', {n: fmt.number(shown, 2)}),
+    valueText: dialValueText(geometry, deps),
   };
 }
 
@@ -466,15 +498,24 @@ function gaugeView(head: Head, {t, fmt}: ClimateModelDeps): GaugeView | null {
         ? t('climate.gauge.label', {temp, ...scale})
         : t('climate.gauge.labelSetpoint', {temp, sp: fmt.number(mark, 2), ...scale}),
     now: t('climate.now', {n: temp}),
-    caption:
-      geometry.caption === 'setpoint'
-        ? t('climate.gauge.setpoint')
-        : geometry.caption === 'off'
-          ? t('climate.gauge.off')
-          : '',
+    caption: geometry.caption === null ? '' : t(GAUGE_CAPTIONS[geometry.caption]),
     lo: degrees(fmt, GAUGE.lo),
     hi: degrees(fmt, GAUGE.hi),
   };
+}
+
+/** The head of the heat pump if it is selected, else of the room, else of the house. */
+function headOf(
+  pump: HeatPumpInputs | null,
+  room: RoomPower | undefined,
+  inputs: ClimateInputs,
+  deps: ClimateModelDeps,
+  items: ClimateItem[],
+): Head {
+  const range = deps.range ?? DEFAULT_RANGE;
+  if (pump) return heatPumpHead(pump, inputs, deps, range);
+  if (room) return roomHead(room, deps, range);
+  return houseHead(inputs, deps, items, range);
 }
 
 /**
@@ -488,15 +529,10 @@ export function climateModel(
   deps: ClimateModelDeps,
 ): ClimateViewModel {
   const items = climateItems(inputs, deps);
-  const range = deps.range ?? DEFAULT_RANGE;
   const {heatPump, rooms, outside} = inputs;
   const room = rooms.find(candidate => candidate.key === sel);
   const pump = sel === 'hp' ? heatPump : null;
-  const head = pump
-    ? heatPumpHead(pump, inputs, deps, range)
-    : room
-      ? roomHead(room, deps, range)
-      : houseHead(inputs, deps, items, range);
+  const head = headOf(pump, room, inputs, deps, items);
   const {t, fmt} = deps;
   return {
     summary: summaryOf(inputs, deps),
