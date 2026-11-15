@@ -46,11 +46,12 @@ describe('the test house', () => {
     expect(items[2]).toMatchObject({sub: 'Maintient 21°'});
   });
 
-  test('its ids: each room’s four entities, the weather entity and the outside sensor, once each, and no heat pump', () => {
+  test('its ids: each room’s thermostat, temperature and power sensors (the target is history, not a state), the weather entity and the outside sensor, once each, and no heat pump', () => {
     const store = storeOf(fullHouse);
     const ids = climateIds(store);
     expect(ids).toHaveLength(new Set(ids).size);
-    expect(ids).toHaveLength(4 * 4 + 2);
+    expect(ids).toHaveLength(4 * 3 + 2);
+    expect(ids).not.toContain('sensor.bedroom_target_temperature');
     expect(ids).toEqual(
       expect.arrayContaining(['climate.bedroom', 'sensor.bedroom_power', store.config.entities.weather]),
     );

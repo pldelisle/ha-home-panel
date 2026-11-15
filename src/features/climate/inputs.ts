@@ -4,18 +4,12 @@
 // Must not: word anything a person reads, read the clock, or touch the DOM or `hass`.
 import type {ResolvedConfig} from '../../core/config.ts';
 import type {HassEntities, Registries} from '../../core/hass.ts';
-import type {RoomIcon} from '../../core/room-icons.ts';
 import {numberAttributeOf, numberOf} from '../../core/states.ts';
 import {heatPump, type HeatPumpInputs} from '../../providers/heat-pump.ts';
 import {powerNow, type RoomPower} from '../../providers/power.ts';
 
-/** A room's reading with the glyph the config gives it. */
-export interface ClimateRoom extends RoomPower {
-  icon: RoomIcon;
-}
-
 export interface ClimateInputs {
-  rooms: ClimateRoom[];
+  rooms: RoomPower[];
   /** Null when the config has no heat pump. */
   heatPump: HeatPumpInputs | null;
   /** The weather entity's temperature, else the outside sensor's; null when neither reads. */
@@ -35,7 +29,7 @@ export function readClimate(
   const flow = powerNow(states, config);
   const {entities} = config;
   return {
-    rooms: flow.rooms.map((room, i) => ({...room, icon: config.rooms[i].icon})),
+    rooms: flow.rooms,
     heatPump: heatPump(states, registries, config),
     outside: numberAttributeOf(states, entities.weather, 'temperature') ?? numberOf(states, entities.outT),
     heat: flow.heat,

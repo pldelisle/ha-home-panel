@@ -3,10 +3,10 @@
 // and `waterChart` do for Energy; the legacy `dial()` and `dialValue()` copied number for number, constants included (deleted in #248).
 // Must not: import Lit or the DOM, read state or the clock, or hold a word (the model words "Off" from `off`).
 import {DASH} from '../../core/figures.ts';
-import {FROST_GUARD} from './gauge-geometry.ts';
+import {OFF_AT_OR_BELOW} from '../../providers/power.ts';
 
 /** The dial's drawing, in the legacy constants: a 270 degree track opening downwards, 55 ticks and every sixth one long (legacy, #248). */
-export const DIAL = {radius: 106, start: 135, sweep: 270, ticks: 55, majorEvery: 6} as const;
+const DIAL = {radius: 106, start: 135, sweep: 270, ticks: 55, majorEvery: 6} as const;
 /** The drawing's side, the legacy `viewBox`. */
 const SIZE = 260;
 /** A tick starts this far in from the track, and ends this far in when short or long (legacy, #248). */
@@ -71,7 +71,7 @@ export function dialGeometry(
     return {cx: tenth(x), cy: tenth(y)};
   };
   // not loaded is not off: the legacy `off` was true there too, but only the house reads it, and its dial is not editable
-  const off = sp === null || (sp !== undefined && sp <= FROST_GUARD);
+  const off = sp === null || (sp !== undefined && sp <= OFF_AT_OR_BELOW);
   const shown = sp === undefined ? null : off ? lo : clamp(sp);
   let big: string;
   if (shown === null) big = t === null ? DASH : `${t.toFixed(1)}°`;
@@ -110,5 +110,5 @@ export function dialValueFromPointer(
   let angle = ((pointer * HALF_TURN) / Math.PI - start + 2 * FULL_TURN) % FULL_TURN;
   if (angle > DEAD_ZONE_START) angle = angle > DEAD_ZONE_MIDDLE ? 0 : sweep;
   const value = Math.round((lo + (angle / sweep) * (hi - lo)) * 2) / 2;
-  return value <= FROST_GUARD ? 'off' : value;
+  return value <= OFF_AT_OR_BELOW ? 'off' : value;
 }

@@ -6,7 +6,8 @@ import {DASH} from '../../core/figures.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
 import type {Formatters} from '../../core/i18n/format.ts';
 import {roomName, type RoomNameDeps} from '../../core/i18n/room-name.ts';
-import {FROST_GUARD} from './gauge-geometry.ts';
+import type {HeatPumpInputs} from '../../providers/heat-pump.ts';
+import {OFF_AT_OR_BELOW, type RoomPower} from '../../providers/power.ts';
 import type {ClimateInputs} from './inputs.ts';
 
 /** The heat pump's actions, and the modes that stand in for a missing action, that the catalog words, by what Home Assistant says; any other is shown as it says it. */
@@ -43,6 +44,27 @@ export interface ClimateItemsDeps extends RoomNameDeps {
 /** A temperature to a tenth with its degree sign, the legacy `f1(v) + '°'`; a room with no reading shows `–°` as it did. */
 const degrees = (fmt: Formatters, v: number | null): string => `${v === null ? DASH : fmt.fixed(v, 1)}°`;
 
+/** A room's status line, the legacy `climItems()`'s order of questions: unavailable, heating, holding a setpoint above the frost guard, else off. */
+function roomStatus(room: RoomPower, {t, fmt}: ClimateItemsDeps): string {
+  if (!room.available) return t('climate.unavailable');
+  if (room.heating) return t('climate.heatingKw', {kw: fmt.fixed(room.power ?? 0, 2)});
+  if (room.setpoint !== null && room.setpoint > OFF_AT_OR_BELOW)
+    return t('climate.holding', {n: fmt.number(room.setpoint, 2)});
+  return t('climate.off');
+}
+
+/** The heat pump's status line: not found, offline, off, else its action, to its setpoint when it has one; `brand` is the maker's name, else the catalog's word. */
+function heatPumpStatus(heatPump: HeatPumpInputs, brand: string, {t, fmt}: ClimateItemsDeps): string {
+  if (!heatPump.present) return t('climate.notFound');
+  if (!heatPump.available) return t('climate.hpOffline', {brand});
+  if (heatPump.mode === 'off') return t('climate.hpOff', {brand});
+  const said = heatPump.action || heatPump.mode;
+  const word = ACTION_WORDS.get(said);
+  const action = word ? t(word) : said;
+  if (heatPump.target === null) return t('climate.hpAction', {brand, action});
+  return t('climate.hpActionTo', {brand, action, n: fmt.number(heatPump.target, 2)});
+}
+
 /** The items in list order: the whole house, each room, then the heat pump when the house has one. */
 export function climateItems({rooms, heatPump, heatPumpOn}: ClimateInputs, deps: ClimateItemsDeps): ClimateItem[] {
   const {t, fmt} = deps;
@@ -62,35 +84,17 @@ export function climateItems({rooms, heatPump, heatPumpOn}: ClimateInputs, deps:
       id: room.key,
       icon: room.icon,
       name: roomName(room, deps),
-      sub: !room.available
-        ? t('climate.unavailable')
-        : room.heating
-          ? t('climate.heatingKw', {kw: fmt.fixed(room.power ?? 0, 2)})
-          : room.setpoint !== null && room.setpoint > FROST_GUARD
-            ? t('climate.holding', {n: fmt.number(room.setpoint, 2)})
-            : t('climate.off'),
+      sub: roomStatus(room, deps),
       value: degrees(fmt, room.temperature),
       tone: room.heating ? 'on' : !room.available ? 'bad' : '',
     })),
   ];
   if (heatPump) {
-    const brand = heatPump.brand ?? t('climate.heatPump');
-    const said = heatPump.action || heatPump.mode;
-    const word = ACTION_WORDS.get(said);
-    const action = word ? t(word) : said;
     items.push({
       id: 'hp',
       icon: 'fan',
       name: t('climate.heatPump'),
-      sub: !heatPump.present
-        ? t('climate.notFound')
-        : !heatPump.available
-          ? t('climate.hpOffline', {brand})
-          : heatPump.mode === 'off'
-            ? t('climate.hpOff', {brand})
-            : heatPump.target === null
-              ? t('climate.hpAction', {brand, action})
-              : t('climate.hpActionTo', {brand, action, n: fmt.number(heatPump.target, 2)}),
+      sub: heatPumpStatus(heatPump, heatPump.brand ?? t('climate.heatPump'), deps),
       value: heatPump.available && heatPump.temperature !== null ? degrees(fmt, heatPump.temperature) : DASH,
       tone: !heatPump.available ? 'bad' : heatPumpOn ? 'on' : '',
     });

@@ -631,6 +631,7 @@ export const fr: Record<MessageKey, string> = {
   'energy.totals.rate': 'Tarif actuel',
   'energy.totals.rateTier': 'Hilo {tier}',
   'climate.wholeHouse': 'Toute la maison',
+  // `=0` repeats `other`, as the charging days do: the legacy wrote « 0 pièces chauffent », where CLDR's French `one` covers 0
   'climate.roomsHeating': '{n, plural, =0 {# pièces chauffent} one {# pièce chauffe} other {# pièces chauffent}}',
   'climate.heatPumpPlusRooms':
     'Thermopompe + {n, plural, =0 {# pièces chauffent} one {# pièce chauffe} other {# pièces chauffent}}',

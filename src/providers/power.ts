@@ -7,16 +7,25 @@
 import type {ResolvedConfig, RoomSpec} from '../core/config.ts';
 import type {HassEntities} from '../core/hass.ts';
 import type {RoomNameInputs} from '../core/i18n/room-name.ts';
+import type {RoomIcon} from '../core/room-icons.ts';
 import {isAvailable, kilowattsOf, numberAttributeOf, numberOf, textAttributeOf} from '../core/states.ts';
 
-/** A thermostat that does not say its own range: Hilo's 5 degree frost guard up to 30 (the legacy panel's defaults, deleted in #248). */
-const DEFAULT_MIN_TEMP = 5;
+/**
+ * Hilo's frost guard, the lowest setpoint a thermostat takes and the default `minTemp` of one that does not say its own range;
+ * a setpoint at or below `OFF_AT_OR_BELOW` is the thermostat off (the legacy wrote `sp > 5.5` for "holding"), the one line the
+ * climate list, dial and gauge read. Both are the legacy panel's values, deleted in #248.
+ */
+export const FROST_GUARD = 5;
+export const OFF_AT_OR_BELOW = 5.5;
+/** A thermostat that does not say its own range goes up to 30 (legacy, #248). */
 const DEFAULT_MAX_TEMP = 30;
 /** A room whose own power sensor reads over 50 W is heating even when its thermostat says otherwise (the legacy `live()`, deleted in #241). */
 const HEATING_KW = 0.05;
 
 export interface RoomPower extends RoomNameInputs {
   climate: string;
+  /** The glyph's name the config gives the room: data a reader keys a drawing by, not a word. */
+  icon: RoomIcon;
   /** The room's power sensor in kW; null when it has none or reports no number. */
   power: number | null;
   /** The thermostat's `current_temperature`, else the room's temperature sensor; null when neither reads. */
@@ -57,10 +66,11 @@ export function roomPower(states: HassEntities, room: RoomSpec): RoomPower {
     configuredName: room.n,
     thermostatName: textAttributeOf(states, room.climate, 'friendly_name') ?? '',
     climate: room.climate,
+    icon: room.icon,
     power,
     temperature: reading ?? numberOf(states, room.temp),
     setpoint: available ? numberAttributeOf(states, room.climate, 'temperature') : null,
-    minTemp: (available ? numberAttributeOf(states, room.climate, 'min_temp') : null) ?? DEFAULT_MIN_TEMP,
+    minTemp: (available ? numberAttributeOf(states, room.climate, 'min_temp') : null) ?? FROST_GUARD,
     maxTemp: (available ? numberAttributeOf(states, room.climate, 'max_temp') : null) ?? DEFAULT_MAX_TEMP,
     heating:
       (available && textAttributeOf(states, room.climate, 'hvac_action') === 'heating') || (power ?? 0) > HEATING_KW,

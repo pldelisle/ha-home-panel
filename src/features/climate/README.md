@@ -13,7 +13,7 @@ src/features/climate/
   ids.ts                   climateIds(store): each room's thermostat, temperature, target and power, the heat pump, the weather entity and the outside sensor
   inputs.ts                readClimate(states, registries, config): ClimateInputs
   items.ts                 climateItems(inputs, deps): the house, each room and the heat pump, with their words, figures and tones
-  dial-geometry.ts         DIAL, dialGeometry(t, sp, lo, hi, size): the track, arc, ticks, dot and knob; dialValueFromPointer(rect, x, y, lo, hi)
+  dial-geometry.ts         dialGeometry(t, sp, lo, hi, size): the track, arc, ticks, dot and knob; dialValueFromPointer(rect, x, y, lo, hi)
   gauge-geometry.ts        gaugeGeometry(t, sp): positions on the 14 to 30 scale and which caption goes under it
 ```
 
