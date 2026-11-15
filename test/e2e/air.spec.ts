@@ -119,6 +119,31 @@ test.describe('on a phone', () => {
   });
 });
 
+test.describe('the detail in the sheet, on a phone', () => {
+  test.beforeEach(() => phoneOnly());
+
+  // The highlighted tile's figure (`--t-warn` on the tile) reads 4.05:1 in the sheet, under 4.5:1. The legacy detail drew the same
+  // colours, so this move changes nothing; only that rule on that element is left out, everything else must be clean.
+  test('has no serious or critical accessibility finding, but the contrast of a highlighted tile’s figure', async ({
+    house,
+  }) => {
+    await openTab(house);
+    await card(house)
+      .getByRole('button', {name: /Air quality/})
+      .click();
+    await expect(detail(house).locator('hp-chart .apexcharts-canvas').first()).toBeVisible();
+    const {violations} = await new AxeBuilder({page: house.page}).include('home-panel').analyze();
+    const found = violations
+      .filter(v => v.impact === 'serious' || v.impact === 'critical')
+      .flatMap(v =>
+        v.nodes
+          .filter(n => !(v.id === 'color-contrast' && String(n.target.at(-1)).includes('.hi.tile')))
+          .map(() => v.id),
+      );
+    expect(found).toEqual([]);
+  });
+});
+
 test.describe('in the bare house, on a phone', () => {
   test.use({houseOpts: {house: 'bare'}});
   test.beforeEach(() => phoneOnly());
@@ -214,6 +239,20 @@ test.describe('on a tablet', () => {
     expect(calls(house, 'fan.set_percentage')).toEqual([]);
   });
 
+  test('the stepper stops at ten and at a hundred: − is disabled at 10 and + at 100', async ({house}) => {
+    await house.tab('air');
+    const down = room(house).getByRole('button', {name: 'Slower'});
+    const up = room(house).getByRole('button', {name: 'Faster'});
+    await house.setState(FAN, {attributes: {preset_mode: 'Manual', percentage: 10}});
+    await expect(room(house).locator('hp-stepper .sv b')).toHaveText('10%');
+    await expect(down).toBeDisabled();
+    await expect(up).toBeEnabled();
+    await house.setState(FAN, {attributes: {preset_mode: 'Manual', percentage: 100}});
+    await expect(room(house).locator('hp-stepper .sv b')).toHaveText('100%');
+    await expect(up).toBeDisabled();
+    await expect(down).toBeEnabled();
+  });
+
   test('a purifier that is off the air says so, and has no control', async ({house}) => {
     await house.tab('air');
     await house.setState(FAN, {state: 'unavailable'});
@@ -229,6 +268,20 @@ test.describe('on a tablet', () => {
     await house.tab('air');
     const canvas = detail(house).locator('hp-chart .apexcharts-canvas').first();
     await expect(canvas).toBeVisible();
+    // what the chart was given: the first line's points and the span of the time axis
+    const drawn = () =>
+      detail(house)
+        .locator('hp-chart')
+        .first()
+        .evaluate(chart => {
+          const {series, xaxis} = (
+            chart as unknown as {options: {series: {data: unknown[]}[]; xaxis: {min: number; max: number}}}
+          ).options;
+          return {points: series[0]!.data.length, days: Math.round((xaxis.max - xaxis.min) / 864e5)};
+        });
+    const day = await drawn();
+    expect(day.days).toBe(1);
+    expect(day.points).toBeGreaterThan(0);
     expect(await periods(house, 'sensor.office_purifier_pm2_5')).toEqual(['5minute']);
     expect(await periods(house, 'sensor.outdoor_aqi')).toEqual(['5minute']);
     await detail(house).locator('hp-range-tabs [role="tab"]', {hasText: 'Week'}).click();
@@ -237,6 +290,8 @@ test.describe('on a tablet', () => {
     await expect.poll(() => periods(house, 'sensor.office_purifier_pm2_5')).toEqual(['5minute', 'hour']);
     await expect.poll(() => periods(house, 'sensor.outdoor_aqi')).toEqual(['5minute', 'hour']);
     await expect(canvas).toBeVisible();
+    await expect.poll(drawn, 'the chart is given the week’s series and axis').toMatchObject({days: 7});
+    expect((await drawn()).points, 'hourly points, not five-minute ones').not.toBe(day.points);
     await detail(house).locator('hp-range-tabs [role="tab"]', {hasText: 'Day'}).click();
     await expect(detail(house).locator('.inner h3').first()).toHaveText('PM2.5, last 24 hours');
     await expect(canvas).toBeVisible();
@@ -281,6 +336,7 @@ test.describe('in French, on a tablet', () => {
   test.use({houseOpts: {cfg: {...FULL_CFG, names: KEEP_ENGLISH_NAMES}, lang: 'fr'}});
   test.beforeEach(() => tabletOnly());
 
+  // starts in French, and does not switch language on the page, because of #325 (a transient `translate(NaN, 0)` from ApexCharts)
   test('the numbers and the words are the profile’s: 1,0 where the detail used to be English', async ({house}) => {
     await house.tab('air');
     await expect(room(house).locator('.tile .v').nth(3)).toHaveText('1,0ppm');
