@@ -17,8 +17,8 @@ export default defineConfig({
         'src/fonts.js',
         'src/core/**/*.ts',
         'src/providers/**/*.ts',
-        'src/features/*/{ids,inputs,model,speakers,tiles,history,scenes,commands}.ts', // the pure files; the elements are proven by the harness
-        'src/ui/{ranges,steps}.ts', // the kit's pure files; its elements are proven by the harness
+        'src/features/*/{ids,inputs,model,speakers,tiles,history,scenes,commands,flow-layout,water-chart}.ts', // the pure files; the elements are proven by the harness
+        'src/ui/{ranges,steps,thin-axis}.ts', // the kit's pure files; its elements are proven by the harness
         'src/ui/commands.ts', // the command layer: the runner, the store and its controller are tested with fakes (ADR 0023)
         'src/ui/overlay-store.ts',
         'src/ui/controllers/optimistic.ts',
@@ -43,9 +43,12 @@ export default defineConfig({
       thresholds: {
         'src/core/**/*.ts': {statements: 100},
         'src/providers/**/*.ts': {statements: 100},
-        'src/features/*/{ids,inputs,model,speakers,tiles,history,scenes,commands}.ts': {statements: 100},
+        'src/features/*/{ids,inputs,model,speakers,tiles,history,scenes,commands,flow-layout,water-chart}.ts': {
+          statements: 100,
+        },
         'src/ui/ranges.ts': {statements: 100},
         'src/ui/steps.ts': {statements: 100},
+        'src/ui/thin-axis.ts': {statements: 100},
         'src/ui/commands.ts': {statements: 100},
         'src/ui/overlay-store.ts': {statements: 100},
         'src/ui/controllers/optimistic.ts': {statements: 100},

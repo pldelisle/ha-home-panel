@@ -69,6 +69,7 @@ describe.each([
   ['media', 'media.', ['src/features/media/', 'src/providers/'], ['common.failed']],
   ['security', 'security.', ['src/features/security/'], []],
   ['air', 'air.', ['src/features/air/', 'src/providers/'], []],
+  ['energy', 'energy.', ['src/features/energy/'], []],
   ['chart', 'chart.', ['src/ui/'], []],
   ['ranges', 'range.', ['src/ui/'], []],
   ['settings', 'settings.', ['src/shell/'], []],

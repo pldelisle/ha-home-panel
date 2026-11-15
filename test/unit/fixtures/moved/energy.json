@@ -1,0 +1,355 @@
+{
+  "about": "The English messages the Energy move's model introduced (src/core/i18n/en.ts, energy.*, bar the detail's, which #240 adds), each with sample values. test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer made of the English; `frame` is the sentence a text is read in where the layer translates it only there, `written` is French the layer does not make (a text it left in English, or a combination of words it has no entry for), `fr` the values French writes differently. The legacy panel still draws all of it until #241, so no map entry is deleted yet. Deleted with the layer in phase 4.",
+  "messages": [
+    {
+      "key": "energy.card.title"
+    },
+    {
+      "key": "energy.open"
+    },
+    {
+      "key": "energy.gridOnly",
+      "values": {
+        "rate": "low rate"
+      },
+      "fr": {
+        "rate": "tarif bas"
+      }
+    },
+    {
+      "key": "energy.gridOnly",
+      "values": {
+        "rate": "rate unknown"
+      },
+      "fr": {
+        "rate": "tarif inconnu"
+      }
+    },
+    {
+      "key": "energy.summary",
+      "values": {
+        "grid": "2.30",
+        "heat": "1.10",
+        "rate": "low rate"
+      },
+      "fr": {
+        "rate": "tarif bas"
+      }
+    },
+    {
+      "key": "energy.summary",
+      "values": {
+        "grid": "2.30",
+        "heat": "1.10",
+        "rate": "current rate"
+      },
+      "fr": {
+        "rate": "tarif actuel"
+      },
+      "written": "Réseau 2,30 kW · chauffage 1,10 kW · Hilo tarif actuel"
+    },
+    {
+      "key": "energy.summary",
+      "values": {
+        "grid": "2.30",
+        "heat": "1.10",
+        "rate": "rate unknown"
+      },
+      "fr": {
+        "rate": "tarif inconnu"
+      },
+      "written": "Réseau 2,30 kW · chauffage 1,10 kW · Hilo tarif inconnu"
+    },
+    {
+      "key": "energy.summary",
+      "values": {
+        "grid": "–",
+        "heat": "0.00",
+        "rate": "medium rate"
+      },
+      "fr": {
+        "rate": "tarif moyen"
+      },
+      "written": "Réseau – kW · chauffage 0,00 kW · Hilo tarif moyen"
+    },
+    {
+      "key": "energy.tier.low"
+    },
+    {
+      "key": "energy.tier.medium"
+    },
+    {
+      "key": "energy.tier.challenge"
+    },
+    {
+      "key": "energy.tier.current"
+    },
+    {
+      "key": "energy.tier.unknown"
+    },
+    {
+      "key": "energy.rate.low"
+    },
+    {
+      "key": "energy.rate.medium"
+    },
+    {
+      "key": "energy.rate.challenge",
+      "frame": {
+        "en": "Grid only · ",
+        "fr": "Réseau seulement · "
+      }
+    },
+    {
+      "key": "energy.rate.current",
+      "frame": {
+        "en": "Grid only · ",
+        "fr": "Réseau seulement · "
+      }
+    },
+    {
+      "key": "energy.rate.unknown"
+    },
+    {
+      "key": "energy.watts",
+      "values": {
+        "n": 850
+      }
+    },
+    {
+      "key": "energy.kw",
+      "values": {
+        "n": "7.10"
+      }
+    },
+    {
+      "key": "energy.flow.label",
+      "values": {
+        "grid": "850 W",
+        "heat": "1.10",
+        "water": "120 W",
+        "ev": "0 W"
+      }
+    },
+    {
+      "key": "energy.flow.label",
+      "values": {
+        "grid": "2.30",
+        "heat": "1.10",
+        "water": "1.20",
+        "ev": "7.10"
+      }
+    },
+    {
+      "key": "energy.flow.label",
+      "values": {
+        "grid": "–",
+        "heat": "0 W",
+        "water": "0 W",
+        "ev": "0 W"
+      },
+      "written": "Le réseau fournit – à la maison; chauffage 0 W; chauffe-eau 0 W; recharge VÉ 0 W"
+    },
+    {
+      "key": "energy.flow.grid"
+    },
+    {
+      "key": "energy.flow.home"
+    },
+    {
+      "key": "energy.flow.water"
+    },
+    {
+      "key": "energy.flow.heat"
+    },
+    {
+      "key": "energy.flow.ev"
+    },
+    {
+      "key": "energy.flow.rest"
+    },
+    {
+      "key": "energy.importing"
+    },
+    {
+      "key": "energy.idle"
+    },
+    {
+      "key": "energy.heating"
+    },
+    {
+      "key": "energy.hot",
+      "values": {
+        "state": "Heating"
+      },
+      "fr": {
+        "state": "Chauffe"
+      }
+    },
+    {
+      "key": "energy.roomsOn",
+      "values": {
+        "on": 3,
+        "total": 6
+      }
+    },
+    {
+      "key": "energy.unavailable"
+    },
+    {
+      "key": "energy.today"
+    },
+    {
+      "key": "energy.tile.heat"
+    },
+    {
+      "key": "energy.tile.water"
+    },
+    {
+      "key": "energy.tile.ev"
+    },
+    {
+      "key": "energy.last30"
+    },
+    {
+      "key": "energy.water.title"
+    },
+    {
+      "key": "energy.water.heating",
+      "values": {
+        "kw": "1.5"
+      }
+    },
+    {
+      "key": "energy.water.idle"
+    },
+    {
+      "key": "energy.water.temperature"
+    },
+    {
+      "key": "energy.water.power"
+    },
+    {
+      "key": "energy.water.last24",
+      "values": {
+        "kwh": "3.2",
+        "cycles": 0
+      }
+    },
+    {
+      "key": "energy.water.last24",
+      "values": {
+        "kwh": "3.2",
+        "cycles": 1
+      }
+    },
+    {
+      "key": "energy.water.last24",
+      "values": {
+        "kwh": "3.2",
+        "cycles": 2
+      }
+    },
+    {
+      "key": "energy.water.average",
+      "values": {
+        "days": 14,
+        "kwh": "4.1"
+      },
+      "frame": {
+        "en": "Last 24 hours: 3.2 kWh over 2 heating cycles. ",
+        "fr": "24 dernières heures\u00a0: 3,2 kWh en 2 cycles de chauffe. "
+      }
+    },
+    {
+      "key": "energy.water.barTitle",
+      "values": {
+        "time": "1:30 pm",
+        "kw": "2.4"
+      },
+      "fr": {
+        "time": "13 h 30"
+      }
+    },
+    {
+      "key": "energy.water.chartLabel",
+      "values": {
+        "low": 45,
+        "high": 55
+      }
+    },
+    {
+      "key": "energy.hilo.title"
+    },
+    {
+      "key": "energy.hilo.medium"
+    },
+    {
+      "key": "energy.hilo.reward"
+    },
+    {
+      "key": "energy.hilo.rewards"
+    },
+    {
+      "key": "energy.challenge.unknown"
+    },
+    {
+      "key": "energy.challenge.none"
+    },
+    {
+      "key": "energy.challenge.phase",
+      "values": {
+        "phase": "pre_heat"
+      },
+      "fr": {
+        "phase": "préchauffage"
+      }
+    },
+    {
+      "key": "energy.phase.appreciation",
+      "frame": {
+        "en": "Challenge: ",
+        "fr": "Défi\u00a0: "
+      }
+    },
+    {
+      "key": "energy.phase.preHeat",
+      "frame": {
+        "en": "Challenge: ",
+        "fr": "Défi\u00a0: "
+      }
+    },
+    {
+      "key": "energy.phase.reduction",
+      "frame": {
+        "en": "Challenge: ",
+        "fr": "Défi\u00a0: "
+      }
+    },
+    {
+      "key": "energy.phase.recovery",
+      "frame": {
+        "en": "Challenge: ",
+        "fr": "Défi\u00a0: "
+      }
+    },
+    {
+      "key": "energy.hiloTile",
+      "values": {
+        "tier": "Low tier",
+        "challenge": "No challenge scheduled"
+      },
+      "fr": {
+        "tier": "Palier bas",
+        "challenge": "Aucun défi prévu"
+      }
+    },
+    {
+      "key": "energy.historyFailed",
+      "values": {
+        "reason": "timeout"
+      },
+      "written": "L'historique n'a pas pu être chargé\u00a0: timeout. Les valeurs en direct continuent de se mettre à jour."
+    }
+  ]
+}
