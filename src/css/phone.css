@@ -245,12 +245,9 @@
 .app.tabsv.cp #albar .top .right {
   white-space: nowrap;
 }
-/* the cards of the old Home view become the Weather, Car, Energy and Air panes */
+/* the cards of the old Home view become the Car and Energy panes */
 .app.tabsv.cp #eside {
   display: none;
-}
-.app.tabsv.cp #open-air .rooms {
-  grid-template-columns: 1fr;
 }
 .app.tabsv.cp .pane .card.tap .go {
   display: grid;

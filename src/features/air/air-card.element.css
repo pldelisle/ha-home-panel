@@ -1,0 +1,195 @@
+/*
+ * <hp-air-card>'s own rules: the card's box, its title line with the outside figure, the state line, and a box per room with its three
+ * metrics. Moved from the legacy `.aqroom` and `.aqm` rules (extra.css), which this move deleted; the state line is a copy of `.aqsum`,
+ * which the legacy detail's outside block still draws, so the card's is `.aqstate` until #233 moves it. Known copies of rules the
+ * legacy panel's other cards still draw, each read here under the card's own selector: `.card`, `.card .top`, `.card .top .right`, `.lbl`,
+ * `.go` (base.css, glass.css), `.state` (base.css, glass.css) and the climate list's `.rooms`/`.room` (base.css, glass.css), read as
+ * `.aqbox`, `.top`, `.right`, `.lbl`, `.aqgo`, `.aqstate .state` and `.aqlist`/`.aqroom`. The Climate move (#248) deletes the `.rooms`/`.room`
+ * rules and this copy of them; the Home move (#268) deletes the others.
+ */
+:host {
+  display: block;
+  min-width: 0;
+}
+.aqbox {
+  background: var(--card);
+  border: 0;
+  border-radius: 22px;
+  padding: 20px;
+  box-shadow: var(--shadow);
+  min-width: 0;
+  position: relative;
+}
+.aqbox.tap {
+  cursor: pointer;
+}
+.aqbox:focus-visible {
+  outline: 2px solid var(--c-home);
+  outline-offset: 2px;
+}
+:host([glass]) .aqbox {
+  background: var(--g-card);
+  -webkit-backdrop-filter: var(--g-bd);
+  backdrop-filter: var(--g-bd);
+  box-shadow: var(--g-edge);
+}
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.top .right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: calc(13px * var(--tx));
+  color: var(--fg2);
+  font-weight: 500;
+}
+.top .right b {
+  color: var(--fg);
+}
+/* the card's label as the legacy sheet's second `.lbl` rule leaves it */
+.top .lbl {
+  font-size: calc(15px * var(--tx));
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  color: var(--fg);
+}
+.aqgo {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background: var(--card2);
+  display: grid;
+  place-items: center;
+  color: var(--fg2);
+  flex: none;
+}
+:host([glass]) .aqgo {
+  background: var(--g-tile);
+  box-shadow: var(--g-edge-s);
+}
+.aqstate {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: -2px 0 12px;
+  min-width: 0;
+}
+.aqstate .state {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-weight: 600;
+  font-size: calc(13px * var(--tx));
+  background: var(--card2);
+}
+:host([glass]) .aqstate .state {
+  background: var(--g-tile);
+  box-shadow: var(--g-edge-s);
+}
+.aqstate .state i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: block;
+}
+.aqstate .why {
+  font-size: calc(13px * var(--tx));
+  color: var(--fg2);
+  min-width: 0;
+}
+.aqstate.lv0 .state i,
+.aqroom.lv0 .n i {
+  background: var(--ok);
+}
+.aqstate.lv1 .state i,
+.aqroom.lv1 .n i {
+  background: var(--warn);
+}
+.aqstate.lv2 .state i,
+.aqroom.lv2 .n i {
+  background: var(--crit);
+}
+.aqlist {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+:host([compact]) .aqlist {
+  grid-template-columns: 1fr;
+}
+.aqroom {
+  background: var(--card2);
+  border-radius: 16px;
+  padding: 11px 12px 10px;
+  min-width: 0;
+}
+:host([glass]) .aqroom {
+  background: var(--g-tile);
+  box-shadow: var(--g-edge-s);
+}
+.aqroom .n {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: calc(13px * var(--tx));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.aqroom .n i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+}
+.aqroom .s {
+  font-size: calc(11.5px * var(--tx));
+  color: var(--fg2);
+}
+.aqm {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  margin: 8px 0 6px;
+}
+.aqm span {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.aqm b {
+  font-size: calc(17px * var(--tx));
+  line-height: 1.15;
+  white-space: nowrap;
+}
+.aqm small {
+  font-size: calc(11px * var(--tx));
+  color: var(--fg2);
+  font-weight: 600;
+}
+.aqm .hi b {
+  color: var(--t-warn);
+}
+.aqroom.lv2 .aqm .hi b {
+  color: var(--crit);
+}
+/* Reduce Transparency: the glass turns back into near-solid cards, as the legacy rules did (Increase Contrast only sets the glass tokens, which the card inherits) */
+@media (prefers-reduced-transparency: reduce) {
+  :host([glass]) .aqbox {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--card);
+  }
+  :host([glass]) .aqroom {
+    background: var(--card2);
+  }
+}

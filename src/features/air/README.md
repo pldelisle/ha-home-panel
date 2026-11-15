@@ -1,6 +1,6 @@
 # Air
 
-What the Air tab computes and draws ([spec 18](../../../docs/specs/18-air.md)): the Mila purifiers, the outdoor station, the rating of each room and the controls. This folder holds, since #230, the pure half: the rules that find the purifiers and the station and rate the air (in `src/providers/`, because the smart stack reads them too, [ADR 0025](../../../docs/adr/0025-shared-reads-live-in-providers.md)), `readAir` that composes them with the AQHI, `airIds` that lists what the pane reads, `airModel` that words the card, the detail and the sub-line, the charts' series and options, and the purifier commands as data. The pane, the detail and the room cards follow in the same spec; the legacy panel draws the tab until then and deletes its own copies of these rules with #234.
+What the Air tab computes and draws ([spec 18](../../../docs/specs/18-air.md)): the Mila purifiers, the outdoor station, the rating of each room and the controls. This folder holds, since #230, the pure half: the rules that find the purifiers and the station and rate the air (in `src/providers/`, because the smart stack reads them too, [ADR 0025](../../../docs/adr/0025-shared-reads-live-in-providers.md)), `readAir` that composes them with the AQHI, `airIds` that lists what the pane reads, `airModel` that words the card, the detail and the sub-line, the charts' series and options, and the purifier commands as data. Since #232 the feature draws the Air tab's header and card: `<hp-air-pane>` and `<hp-air-card>`, on a phone (on a tablet the tab is the detail panel, still the legacy panel's inline in the pane's section, and the pane's header is not shown). The detail and the room cards follow in the same spec (#233); the legacy panel deletes its own copies of the rules with #234.
 
 ## The folder
 
@@ -15,6 +15,10 @@ src/features/air/
   model.ts                 airModel(inputs, deps): AirViewModel: the card, the detail and the sub-line, through `t`, `fmt` and the overlay
   history.ts               metricSeries, outdoorSeries, chartText, airChartOptions, outdoorChartOptions: statistics in, plain-data chart options out
   commands.ts              K (the overlay keys), setMode, setSpeed, toggleFan: `Command` data
+  index.ts                 airFeature: the descriptor; its More word is still the guest's
+  sheets.ts                DETAIL_SHEET: the legacy detail's id, until #233
+  air-pane.ts              <hp-air-pane>: the header with the summary and, on a phone, the card; air-pane.element.css
+  air-card.ts              <hp-air-card>: the outside figure, the state line, a box per room; air-card.element.css
 ```
 
 ## The providers

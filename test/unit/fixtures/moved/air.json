@@ -1,5 +1,5 @@
 {
-  "about": "The English messages the Air move introduced (src/core/i18n/en.ts, air.*), each with sample values. test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer made of the English; `written` is French the layer does not make (a text the legacy panel never drew as one message, or one it left in English), `fr` the values French writes differently. The legacy panel still draws the Air tab, so no map entry is deleted yet (#234). Deleted with the layer in phase 4.",
+  "about": "The English messages the Air move introduced (src/core/i18n/en.ts, air.*), each with sample values. test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer made of the English; `written` is French the layer does not make (a text the legacy panel never drew as one message, or one it left in English), `fr` the values French writes differently. The legacy panel still draws the Air detail and the stack's card, so no map entry is deleted yet (#234). Deleted with the layer in phase 4.",
   "messages": [
     {
       "key": "air.quality"
@@ -98,6 +98,9 @@
     },
     {
       "key": "air.outsideAqi"
+    },
+    {
+      "key": "air.open"
     },
     {
       "key": "air.purifierOffline"
