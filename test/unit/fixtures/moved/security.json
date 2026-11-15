@@ -1,32 +1,39 @@
 {
-  "about": "The English messages the Security move introduced (src/core/i18n/en.ts, security.*), each with sample values. test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer made of the English; `written` is French the layer does not make (a text the legacy panel never drew, or one it left in English), `frame` the sentence a part is read in. The map entries stay until #227 deletes the legacy Security methods. Deleted with the layer in phase 4.",
+  "about": "The English messages the Security move introduced (src/core/i18n/en.ts, security.*), each with sample values. test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer made of the English; `written` is French the layer does not make (a text the legacy panel never drew, or one it left in English), `frame` the sentence a part is read in. #227 deleted the map entries the legacy panel no longer renders: `was` is what the layer made of the English before, `after` what it makes of it now. The entries other screens still render (Close, Idle, Offline, Open, Closed, Door, Motion, the More sheet's line) stay. Deleted with the layer in phase 4.",
   "messages": [
     {
-      "key": "security.cameras"
+      "key": "security.cameras",
+      "was": "Caméras"
     },
     {
-      "key": "security.notConnected"
+      "key": "security.notConnected",
+      "was": "Non connecté"
     },
     {
       "key": "security.camerasCount",
       "values": {
         "n": 1
-      }
+      },
+      "was": "1 caméra"
     },
     {
       "key": "security.camerasCount",
       "values": {
         "n": 2
-      }
+      },
+      "was": "2 caméras"
     },
     {
-      "key": "security.noCamerasYet"
+      "key": "security.noCamerasYet",
+      "was": "Pas encore de caméras"
     },
     {
-      "key": "security.addProtectHint"
+      "key": "security.addProtectHint",
+      "was": "Ajoutez UniFi Protect dans Paramètres → Appareils et services, avec un utilisateur Protect local. Vos caméras apparaîtront ici d'elles-mêmes."
     },
     {
-      "key": "security.addProtect"
+      "key": "security.addProtect",
+      "was": "Ajoutez UniFi Protect"
     },
     {
       "key": "security.openLive",
@@ -36,7 +43,8 @@
       "written": "Ouvrir Porch en direct"
     },
     {
-      "key": "security.cameraOffline"
+      "key": "security.cameraOffline",
+      "was": "La caméra est hors ligne."
     },
     {
       "key": "security.liveView",
@@ -52,36 +60,42 @@
       "key": "security.state.idle"
     },
     {
-      "key": "security.state.recording"
+      "key": "security.state.recording",
+      "was": "Enregistrement"
     },
     {
-      "key": "security.state.streaming"
+      "key": "security.state.streaming",
+      "was": "En direct"
     },
     {
       "key": "security.offline"
     },
     {
-      "key": "security.motionNow"
+      "key": "security.motionNow",
+      "was": "Mouvement en cours"
     },
     {
       "key": "security.motionAgo",
       "values": {
         "kind": "now"
-      }
+      },
+      "was": "Mouvement à l'instant"
     },
     {
       "key": "security.motionAgo",
       "values": {
         "kind": "minutes",
         "n": 5
-      }
+      },
+      "was": "Mouvement il y a 5 min"
     },
     {
       "key": "security.motionAgo",
       "values": {
         "kind": "hours",
         "n": 3
-      }
+      },
+      "was": "Mouvement il y a 3 h"
     },
     {
       "key": "security.motionAgo",
@@ -91,7 +105,8 @@
       },
       "fr": {
         "date": "7 nov."
-      }
+      },
+      "was": "Mouvement le 7 nov."
     },
     {
       "key": "security.motionTag"
@@ -100,21 +115,27 @@
       "key": "security.lastMotion",
       "values": {
         "kind": "now"
-      }
+      },
+      "was": "dernier mouvement à l'instant",
+      "after": "last : mouvement à l'instant"
     },
     {
       "key": "security.lastMotion",
       "values": {
         "kind": "minutes",
         "n": 5
-      }
+      },
+      "was": "dernier mouvement il y a 5 min",
+      "after": "last : mouvement il y a 5 min"
     },
     {
       "key": "security.lastMotion",
       "values": {
         "kind": "hours",
         "n": 3
-      }
+      },
+      "was": "dernier mouvement il y a 3 h",
+      "after": "last : mouvement il y a 3 h"
     },
     {
       "key": "security.lastMotion",
@@ -124,10 +145,12 @@
       },
       "fr": {
         "date": "7 nov."
-      }
+      },
+      "was": "dernier mouvement le 7 nov."
     },
     {
-      "key": "security.doorsMotion"
+      "key": "security.doorsMotion",
+      "was": "Portes et mouvement"
     },
     {
       "key": "security.doorsOpen",
@@ -142,10 +165,14 @@
       }
     },
     {
-      "key": "security.doorClosed"
+      "key": "security.doorClosed",
+      "was": "Porte fermée",
+      "after": "Door fermée"
     },
     {
-      "key": "security.allDoorsClosed"
+      "key": "security.allDoorsClosed",
+      "was": "Toutes les portes fermées",
+      "after": "All doors fermée"
     },
     {
       "key": "security.noSensorsYet"
@@ -157,7 +184,8 @@
       "key": "security.closed"
     },
     {
-      "key": "security.noMotion"
+      "key": "security.noMotion",
+      "was": "Aucun mouvement"
     },
     {
       "key": "security.forDuration",
@@ -203,7 +231,8 @@
       "key": "security.batteryLow",
       "values": {
         "n": 9
-      }
+      },
+      "was": "pile à 9 %"
     },
     {
       "key": "security.lux",
@@ -242,16 +271,20 @@
       }
     },
     {
-      "key": "security.summary.noCameras"
+      "key": "security.summary.noCameras",
+      "was": "Aucune caméra"
     },
     {
-      "key": "security.summary.allDoorsClosed"
+      "key": "security.summary.allDoorsClosed",
+      "was": "toutes les portes fermées",
+      "after": "all doors fermée"
     },
     {
       "key": "security.summary.motionNow"
     },
     {
-      "key": "security.summary.noMotion"
+      "key": "security.summary.noMotion",
+      "was": "aucun mouvement"
     },
     {
       "key": "security.history",
@@ -283,76 +316,95 @@
       "key": "security.unavailable"
     },
     {
-      "key": "security.openPeriods"
+      "key": "security.openPeriods",
+      "was": "Périodes ouvertes"
     },
     {
-      "key": "security.motionPeriods"
+      "key": "security.motionPeriods",
+      "was": "Périodes de mouvement"
     },
     {
-      "key": "security.notOpenedInPeriod"
+      "key": "security.notOpenedInPeriod",
+      "was": "Pas ouverte sur la période"
     },
     {
-      "key": "security.noMotionInPeriod"
+      "key": "security.noMotionInPeriod",
+      "was": "Aucun mouvement sur la période"
     },
     {
-      "key": "security.stillOpen"
+      "key": "security.stillOpen",
+      "was": "Toujours ouverte",
+      "after": "Still : ouverte"
     },
     {
       "key": "security.openFor",
       "values": {
         "d": "40 s"
-      }
+      },
+      "was": "Ouverte 40 s"
     },
     {
       "key": "security.openFor",
       "values": {
         "d": "3 min"
-      }
+      },
+      "was": "Ouverte 3 min"
     },
     {
       "key": "security.openFor",
       "values": {
         "d": "1 h 5 min"
-      }
+      },
+      "was": "Ouverte 1 h 5 min"
     },
     {
       "key": "security.motionFor",
       "values": {
         "d": "40 s"
-      }
+      },
+      "was": "Mouvement 40 s"
     },
     {
       "key": "security.motionFor",
       "values": {
         "d": "3 min"
-      }
+      },
+      "was": "Mouvement 3 min"
     },
     {
       "key": "security.motionFor",
       "values": {
         "d": "1 h 5 min"
-      }
+      },
+      "was": "Mouvement 1 h 5 min"
     },
     {
       "key": "security.overPeriod"
     },
     {
-      "key": "security.timesOpened"
+      "key": "security.timesOpened",
+      "was": "Ouvertures"
     },
     {
-      "key": "security.motionEvents"
+      "key": "security.motionEvents",
+      "was": "Détections"
     },
     {
-      "key": "security.totalOpen"
+      "key": "security.totalOpen",
+      "was": "Temps ouverte",
+      "after": "Total : ouverte"
     },
     {
-      "key": "security.totalMotion"
+      "key": "security.totalMotion",
+      "was": "Temps de mouvement"
     },
     {
-      "key": "security.longest"
+      "key": "security.longest",
+      "was": "Plus longue"
     },
     {
-      "key": "security.last"
+      "key": "security.last",
+      "was": "Dernière"
     },
     {
       "key": "security.duration.seconds",

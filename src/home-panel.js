@@ -11,6 +11,8 @@ import {createFormatters} from './core/i18n/format.ts';
 import {englishLocale, panelLocale} from './core/i18n/locale.ts';
 import {ok, esc, tile, plural, cap} from './legacy/globals.js';
 import {loadApex} from './core/apex.ts';
+import {registriesOf} from './core/registry.ts';
+import {doorMotionSensors} from './providers/door-motion.ts';
 import {ensureFonts} from './fonts.js';
 // Liquid Glass: whether this engine can run an SVG filter inside backdrop-filter (Chromium only)
 const LENS_OK =
@@ -67,9 +69,6 @@ const L0kw = v => (v == null ? '–' : v < 1 ? Math.round(v * 1000) + ' W' : v.t
 
 // card order for the column packing: first row is energy
 const LAYOUT = ['open-energy', 'lights', 'open-climate', 'open-air', 'open-car', 'water', 'hilo'];
-const DOOR_DC = ['door', 'window', 'opening', 'garage_door'],
-  MOTION_DC = ['motion', 'occupancy', 'presence'];
-const sensorName = n => String(n).replace(/^d[ée]tecteur\s+(de\s+)?mouvement\s+/i, '');
 // thermostats without an HA area: the area each Hilo room belongs to
 // areas the Phone tab shows as part of another, the way Apple Home groups them: the parking spot's charger and camera live in the garage
 // AL_AREAS (from the config): HA area → Adaptive Lighting switch, for areas the panel can't match on its own
@@ -1067,12 +1066,13 @@ export class LegacyPanel {
         .join('')}${names.length > 3 ? `<span>+${names.length - 3}</span>` : ''}</div>`;
     const big = (v, u) => `<div class="sbig num">${v}${u ? `<small>${u}</small>` : ''}</div>`,
       mid = t => `<div class="smid">${esc(t)}</div>`;
-    const X = this.sensors(),
-      doors = X.filter(x => x.kind === 'door');
+    const doors = doorMotionSensors(this.store.hass.states, registriesOf(this.store.hass), this.store.names).filter(
+      x => x.kind === 'door',
+    );
     const areas = this.lightAreas();
     // red: a door open 5 min or more, lights that stopped answering for 5 min (pinned until fixed)
     doors
-      .filter(x => (this.st(x.id) || {}).state === 'on' && mins(this.st(x.id).last_changed) >= 5)
+      .filter(x => x.on && mins(this.st(x.id).last_changed) >= 5)
       .forEach(x => {
         const m = mins(this.st(x.id).last_changed);
         out.push(
@@ -2205,23 +2205,19 @@ export class LegacyPanel {
       if (!ok(this.st(C.id('sensor', 'soc'))))
         items.push(['warn', 'Car not reporting', 'The Ford integration has no battery data right now.']);
     }
-    const X = this.hass ? this.sensors() : [];
-    X.filter(
-      x =>
-        x.kind === 'door' &&
-        (this.st(x.id) || {}).state === 'on' &&
-        Date.now() - Date.parse(this.st(x.id).last_changed) > 10 * 6e4,
-    ).forEach(x =>
+    const X = this.hass
+      ? doorMotionSensors(this.store.hass.states, registriesOf(this.store.hass), this.store.names)
+      : [];
+    X.filter(x => x.kind === 'door' && x.on && Date.now() - x.since > 10 * 6e4).forEach(x =>
       items.push(['warn', `${x.name} open`, `Open for ${this.ago(this.st(x.id).last_changed).replace(' ago', '')}.`]),
     );
-    X.filter(x => !ok(this.st(x.id))).forEach(x =>
+    X.filter(x => !x.available).forEach(x =>
       items.push(['warn', `${x.name} offline`, 'The sensor is unavailable in Home Assistant.']),
     );
-    X.filter(x => this.num(x.bat) != null && this.num(x.bat) < 15).forEach(x =>
-      items.push(['warn', `${x.name} battery low`, `${Math.round(this.num(x.bat))}% left.`]),
+    X.filter(x => x.battery != null && x.battery < 15).forEach(x =>
+      items.push(['warn', `${x.name} battery low`, `${Math.round(x.battery)}% left.`]),
     );
-    if (X.some(x => x.kind === 'door') && !X.some(x => x.kind === 'door' && (this.st(x.id) || {}).state === 'on'))
-      clear.push('Doors closed');
+    if (X.some(x => x.kind === 'door') && !X.some(x => x.kind === 'door' && x.on)) clear.push('Doors closed');
     if (this.st(this.E.wbStatus) && !ok(this.st(this.E.wbStatus)))
       items.push(['warn', 'Wallbox offline', 'The charger is unavailable in Home Assistant.']);
     return {items, clear};
@@ -3380,43 +3376,6 @@ export class LegacyPanel {
     return out;
   }
 
-  // ---------- cameras (UniFi Protect, or any camera entity) ----------
-  // nothing calls `cameras()` since #226 moved the Home card out; #227 deletes it
-  cameras() {
-    const reg = this.hass.entities || {},
-      seen = new Map();
-    Object.keys(this.hass.states)
-      .filter(id => id.startsWith('camera.'))
-      .forEach(id => {
-        const r = reg[id] || {};
-        if (r.hidden || (r.platform && r.platform !== 'unifiprotect') || /_radar$/.test(id) || /insecure/.test(id))
-          return;
-        if (!r.platform && !/unifi|protect/i.test(this.attr(id, 'attribution') || '')) return;
-        // one tile per camera: Protect makes a high, medium and low channel per device
-        const dev = r.device_id || id,
-          rank = /_high|high_resolution/.test(id) ? 0 : /_medium/.test(id) ? 1 : /_low/.test(id) ? 3 : 2,
-          prev = seen.get(dev);
-        if (!prev || rank < prev.rank) seen.set(dev, {id, dev, rank});
-      });
-    return [...seen.values()]
-      .map(c => {
-        const mo = Object.values(reg).filter(
-          e =>
-            e.device_id === c.dev &&
-            e.entity_id.startsWith('binary_sensor.') &&
-            /motion/.test(e.entity_id) &&
-            !/detection/.test(e.entity_id),
-        );
-        const motion = mo.find(e => /_motion$/.test(e.entity_id)) || mo[0];
-        const dn = this.deviceName(c.dev, this.name(c.id));
-        return {
-          ...c,
-          name: String(dn).replace(/\s+(High|Medium|Low)( Resolution Channel)?$/i, ''),
-          motion: motion && this.st(motion.entity_id),
-        };
-      })
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }
   // ---------- air quality (Mila purifiers) ----------
   purifiers() {
     const reg = this.hass.entities || {},
@@ -3898,56 +3857,6 @@ export class LegacyPanel {
       name: D.name_by_user ? this.name(e.device_id) : e.platform === 'samsungtv' ? 'Samsung TV' : this.name(id, 'TV'),
     };
   }
-  // ---------- door and motion sensors ----------
-  sensors() {
-    const reg = this.hass.entities || {},
-      dev = this.hass.devices || {},
-      out = [];
-    for (const id of Object.keys(this.hass.states)) {
-      if (!id.startsWith('binary_sensor.')) continue;
-      const e = reg[id] || {},
-        dc = this.attr(id, 'device_class'),
-        kind = DOOR_DC.includes(dc) ? 'door' : MOTION_DC.includes(dc) ? 'motion' : null;
-      // camera motion already shows on the camera tiles
-      if (!kind || e.platform === 'unifiprotect' || e.hidden || e.entity_category) continue;
-      const D = dev[e.device_id] || {},
-        aid = e.area_id || D.area_id || '',
-        sib = e.device_id ? Object.values(reg).filter(x => x.device_id === e.device_id) : [];
-      const pick = re => (sib.find(x => re.test(x.entity_id)) || {}).entity_id;
-      out.push({
-        id,
-        kind,
-        dc,
-        aid,
-        area: aid ? this.name(aid) : '',
-        name: sensorName(this.deviceName(e.device_id, this.name(id))),
-        bat: pick(/^sensor\..*_battery$/),
-        lux: pick(/^sensor\..*_illuminance$/),
-      });
-    }
-    return out.sort((a, b) => (a.kind === b.kind ? 0 : a.kind === 'door' ? -1 : 1) || a.name.localeCompare(b.name));
-  }
-  // nothing calls `sensorState` since #226 moved the Home card out; #227 deletes it
-  sensorState(x) {
-    const s = this.st(x.id),
-      b = this.num(x.bat),
-      lux = this.num(x.lux);
-    if (!ok(s)) return {cls: 'off', main: 'Offline', sub: ''};
-    const on = s.state === 'on',
-      since = this.ago(s.last_changed);
-    const low = b != null && b < 20 ? `battery ${Math.round(b)}%` : '';
-    if (x.kind === 'door')
-      return {
-        cls: on ? 'warn' : '',
-        main: on ? 'Open' : 'Closed',
-        sub: [on ? 'for ' + since.replace(' ago', '') : since, low].filter(Boolean).join(' · '),
-      };
-    return {
-      cls: on ? 'act' : '',
-      main: on ? 'Motion now' : 'No motion',
-      sub: [on ? '' : since, lux == null ? '' : Math.round(lux) + ' lx', low].filter(Boolean).join(' · '),
-    };
-  }
   entArea(id) {
     const e = (this.hass.entities || {})[id] || {};
     return e.area_id || ((this.hass.devices || {})[e.device_id] || {}).area_id || '';
@@ -4278,14 +4187,13 @@ export class LegacyPanel {
   }
   // the word under each section in the phone's More sheet, in English, for the registry's summary
   moreLines() {
-    const L = this.live(),
-      isOn = i => (this.st(i) || {}).state === 'on';
+    const L = this.live();
     // Media's line is the feature's own (mediaBrief, #217)
     const P = this.purifiers(),
       air = P.rooms.length ? this.airSummary(P) : null;
-    const X = this.sensors(),
-      open = X.filter(x => x.kind === 'door' && isOn(x.id)).length,
-      moving = X.some(x => x.kind === 'motion' && isOn(x.id));
+    const X = doorMotionSensors(this.store.hass.states, registriesOf(this.store.hass), this.store.names),
+      open = X.filter(x => x.kind === 'door' && x.on).length,
+      moving = X.some(x => x.kind === 'motion' && x.on);
     const A = this.auAutos ? this.auAutos() : [],
       running = A.filter(a => a.current).length;
     const sb = {

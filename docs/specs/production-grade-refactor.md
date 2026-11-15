@@ -7,6 +7,7 @@ Phase 2 specified on 2026-11-08 (specs 09 to 13), with the owner's two additions
 Phase 3 specified on 2026-11-09 (specs 14 and 15), with the owner's direction of that day: the design may go further than the minimum where it teaches (explicit interfaces, composition, named patterns, performance by construction), see the amendments in the phase-3 section.
 Specs 16 to 26 written on 2026-11-09, the same day, from the recipe of spec 15: every move of phase 3 is specified; the ADRs they land are 0021 to 0029 (Media's landed as 0023 and 0024: the sheet host and `<hp-chart>` took 0021 and 0022).
 Media (spec 16) has moved, 2026-11-11, #215 to #220: the legacy panel keeps only `speakers()` and `tv()` for the now-playing stack card, until #266.
+Security (spec 17) has moved, 2026-11-15, #222 to #227: the legacy panel keeps no Security code; its Status checks, stack and More word read `doorMotionSensors` from the provider.
 
 ## Child specs
 
