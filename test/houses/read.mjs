@@ -90,6 +90,16 @@ function automationRuns(automations, now, timeZone) {
 /** How far apart the recorder's points are, and how many the panel gets, for each period (an unknown period reads as a day). */
 const PERIODS = {'5minute': {step: 3e5, n: 300}, hour: {step: 36e5, n: 170}, day: {step: 864e5, n: 60}};
 
+/** The Air sensors' own ranges, `[base, swing]` by id: the purifier's and the station's only, so no other entity's curve moves. */
+const AIR_CURVES = [
+  [/^sensor\.office_purifier_pm2_5$/, 14, 12],
+  [/^sensor\.office_purifier_co2$/, 560, 260],
+  [/^sensor\.office_purifier_voc$/, 140, 120],
+  [/^sensor\.office_purifier_humidity$/, 34, 10],
+  [/^sensor\.outdoor_station_pm2_5$/, 14, 12],
+  [/^sensor\.outdoor_aqi$/, 36, 18],
+];
+
 /** Smooth made-up curves for the recorder's statistics, one series per known entity id. */
 function statisticsOf(states, now, ids, period) {
   const out = {},
@@ -100,7 +110,15 @@ function statisticsOf(states, now, ids, period) {
     for (let i = n; i >= 0; i--) {
       const t = now - i * step,
         w = Math.sin(i / 6) * 0.5 + 0.5;
-      const v = /temperature/.test(id) ? 19 + 3 * w : /power/.test(id) ? 0.4 + 2 * w : 10 + 5 * w;
+      const [, base, swing] = AIR_CURVES.find(([re]) => re.test(id)) ?? [],
+        v =
+          base !== undefined
+            ? base + swing * w
+            : /temperature/.test(id)
+              ? 19 + 3 * w
+              : /power/.test(id)
+                ? 0.4 + 2 * w
+                : 10 + 5 * w;
       out[id].push({
         start: t,
         end: t + step,

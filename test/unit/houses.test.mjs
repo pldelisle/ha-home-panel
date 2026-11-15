@@ -137,6 +137,26 @@ describe('fakeHass.fromHouse(full)', () => {
     expect(await hass.callWS({type: 'something/else'})).toEqual({});
   });
 
+  test('has one Mila purifier and the outdoor station, the way the panel discovers them, and the bare house has none', async () => {
+    const mila = Object.values(hass.entities).filter(e => e.platform === 'mila');
+    const byDevice = Object.groupBy(mila, e => e.device_id);
+    expect(Object.keys(byDevice).sort()).toEqual(['air0', 'air1']);
+    // the purifier: a fan (Automagic, 40 %) and thirteen sensors by suffix; the station's device has no fan
+    expect(byDevice.air1.filter(e => e.entity_id.startsWith('fan.'))).toHaveLength(1);
+    expect(byDevice.air1.filter(e => e.entity_id.startsWith('sensor.'))).toHaveLength(13);
+    expect(hass.states['fan.office_purifier'].attributes).toMatchObject({preset_mode: 'Automagic', percentage: 40});
+    expect(byDevice.air0.some(e => e.entity_id.startsWith('fan.'))).toBe(false);
+    expect(byDevice.air0.map(e => e.entity_id)).toContain('sensor.outdoor_aqi');
+    // the recorder draws the charts: the purifier's four pollutants and the station's index
+    const ask = statistic_ids =>
+      hass.callWS({type: 'recorder/statistics_during_period', statistic_ids, period: 'hour'});
+    const ids = ['pm2_5', 'co2', 'voc', 'humidity']
+      .map(k => `sensor.office_purifier_${k}`)
+      .concat('sensor.outdoor_aqi');
+    expect(Object.keys(await ask(ids))).toEqual(ids);
+    expect(fakeHass.fromHouse(bare).entities).toEqual({'light.living_room_1': expect.anything()});
+  });
+
   test('keeps the fake hass behaviour: a test may still override a reply, and next() hands over a new hass', async () => {
     const h = fakeHass.fromHouse(full);
     h.replies.set('trace/list', () => []);
