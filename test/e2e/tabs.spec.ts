@@ -301,7 +301,7 @@ test.describe('French', () => {
   test('43 the Security pane reads in French, with no English word and no colon', async ({house}) => {
     tabletOnly();
     await house.tab('cams');
-    await expect(house.root().locator('#cmsub')).toHaveText(
+    await expect(house.root().locator('hp-security-pane [slot="sub"]')).toHaveText(
       'Aucune caméra · toutes les portes fermées · mouvement en cours',
     );
   });

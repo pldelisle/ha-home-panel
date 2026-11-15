@@ -1,0 +1,33 @@
+/*
+ * <hp-security-pane>'s own rules: its place in the pane section and the header's, which the legacy `.pane-cams` rules laid out
+ * when the cards were its children (they are the pane's now, and the section holds this element alone). The tablet's two columns
+ * are the cameras' card and the doors-and-motion card under the header, one column under 1000 pixels, and a phone's pane is a
+ * column. Known copies of legacy rules, as the Media pane's: `.pane-cams`, its media query and the header's (tabs.css, phone.css),
+ * which the section keeps because no gate lists them; the selectors differ (`:host`) because a shadow root cannot reach them.
+ */
+:host {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 1000px) {
+  :host {
+    grid-template-columns: 1fr;
+  }
+}
+/* the phone's pane is a column: the header, then the cards, full width and sixteen pixels apart as the section laid them out */
+:host([compact]) {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 16px;
+}
+hp-pane-header {
+  grid-column: 1/-1;
+  margin-bottom: 2px;
+}
+:host([compact]) hp-pane-header {
+  margin-bottom: 0;
+}

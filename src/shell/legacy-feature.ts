@@ -26,7 +26,8 @@ export interface LegacyParts extends Pick<FeatureDescriptor, 'icon' | 'color' | 
   hosts: readonly string[];
 }
 
-export function legacyFeature<K extends FeatureKey>(key: K, parts: LegacyParts): FeatureDescriptor {
+// a subject whose catalog title is not `<key>.title` (Security's is `security.title`) is not one the guest draws any more
+export function legacyFeature<K extends Exclude<FeatureKey, 'cams'>>(key: K, parts: LegacyParts): FeatureDescriptor {
   const title: MessageKey = `${key}.title`;
   const {header, color, icon} = parts;
   // The tag's start and the rest are static, so Lit parses them once and binds only the header's three properties; every id

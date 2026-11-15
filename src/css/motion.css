@@ -5,7 +5,6 @@
    sits in is not redrawn by a fade still running when the frame is captured (#94) */
 @media (prefers-reduced-motion: no-preference) {
   .hsen,
-  button.schip,
   .quick button,
   .crow button,
   .senstabs button,
@@ -35,7 +34,6 @@
   }
 }
 .hsen:active,
-button.schip:active,
 .quick button:active,
 .crow button:active,
 .senstabs button:active,

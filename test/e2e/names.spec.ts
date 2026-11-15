@@ -111,7 +111,7 @@ test.describe('a name set for a device the house did not rename', () => {
   }) => {
     test.skip(isPhone(), 'the Cameras tab is on the tablet');
     await house.tab('cams');
-    await expect(house.root().locator('#sensors .schip b')).toHaveText(['Front door', 'Away']);
+    await expect(house.root().locator('hp-sensor-card .schip b')).toHaveText(['Front door', 'Away']);
   });
 });
 

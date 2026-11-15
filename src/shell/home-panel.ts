@@ -35,6 +35,7 @@ import type {FeatureDescriptor, FeatureEnv, FeatureKey} from '../ui/feature.ts';
 import {FEATURES, UNDER_MORE, isFeatureKey, visibleTab} from './features.ts';
 import {createGuest, guestStyles, type GuestContext, type GuestRenderer, type ShellForGuest} from './guest.ts';
 import {IdleTimer, type IdleState} from './idle-timer.ts';
+import {CAMERA_SHEET, HISTORY_SHEET, entityIdOf} from '../features/security/sheets.ts';
 import type {ForecastEvent} from '../features/weather/forecast-controller.ts';
 import './more-sheet.ts'; // defines <hp-more-sheet>
 import '../ui/pane-header.ts'; // defines <hp-pane-header>, which the legacy panes' headers are
@@ -285,7 +286,12 @@ export class HomePanel extends LitElement {
   // an element asked upward for a sheet, or for the toast; the event stops here, it is the panel's business
   private readonly onSheetRequest = (e: SheetRequestEvent): void => {
     e.stopPropagation();
-    this.sheets.open(e.detail.id, e.detail.detail);
+    const {id, detail} = e.detail;
+    // Security's two sheets are the guest's until they are elements (#225): the request runs the guest's own opener
+    const entity = entityIdOf(detail);
+    if (id === CAMERA_SHEET && entity) this.guest?.openCamera(entity);
+    else if (id === HISTORY_SHEET && entity) this.guest?.openSens(entity);
+    else this.sheets.open(id, detail);
   };
 
   // A pane whose detail sheet is open while another tab is shown (Home's card opens Weather's, on a phone), or one of the sheets it

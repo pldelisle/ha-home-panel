@@ -66,88 +66,6 @@
   display: none;
 }
 /* cameras */
-.camgrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-}
-.cam {
-  position: relative;
-  border: 0;
-  padding: 0;
-  border-radius: 16px;
-  overflow: hidden;
-  background: var(--card2);
-  aspect-ratio: 16/9;
-  cursor: pointer;
-  color: #fff;
-  font: inherit;
-}
-.cam img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-.cam .camoff {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  color: var(--fg3);
-}
-.camlbl {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  padding: 18px 10px 7px;
-  text-align: left;
-  background: linear-gradient(transparent, rgba(0, 0, 0, 0.6));
-  display: flex;
-  flex-direction: column;
-}
-.camlbl b {
-  font-size: calc(13px * var(--tx));
-  font-weight: 600;
-}
-.camlbl small {
-  font-size: calc(11px * var(--tx));
-  opacity: 0.9;
-}
-.mdot {
-  display: inline-block;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #f26d5b;
-  margin-right: 5px;
-  vertical-align: 1px;
-}
-.camempty {
-  display: flex;
-  gap: 14px;
-  align-items: flex-start;
-  background: var(--card2);
-  border-radius: 16px;
-  padding: 14px;
-  color: var(--fg3);
-}
-.camempty b {
-  display: block;
-  color: var(--fg);
-  font-weight: 600;
-}
-.camempty span {
-  display: block;
-  font-size: calc(13px * var(--tx));
-  color: var(--fg2);
-  margin-top: 2px;
-}
-.camempty .more {
-  display: inline-block;
-  text-decoration: none;
-}
 .camlive {
   background: #000;
   border-radius: 18px;
@@ -267,7 +185,6 @@
 .stepper button:focus-visible,
 .quick button:focus-visible,
 .csel:focus-visible,
-.cam:focus-visible,
 .attchip:focus-visible {
   outline: 2px solid var(--c-home);
   outline-offset: 2px;
@@ -596,53 +513,6 @@
     grid-template-columns: 1fr;
   }
 }
-.sgrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 8px;
-}
-button.schip {
-  appearance: none;
-  -webkit-appearance: none;
-  font: inherit;
-  color: inherit;
-  text-align: left;
-  border: 0;
-  cursor: pointer;
-}
-.schip {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: var(--card2);
-  border-radius: 14px;
-  padding: 9px 12px;
-  min-width: 0;
-}
-.schip > div {
-  min-width: 0;
-}
-.schip b {
-  display: block;
-  font-size: calc(13.5px * var(--tx));
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.schip span:not(.sic) {
-  display: block;
-  font-size: calc(12px * var(--tx));
-  color: var(--fg2);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.schip em {
-  font-style: normal;
-  font-weight: 600;
-  color: var(--fg);
-}
 .sic {
   width: 30px;
   height: 30px;
@@ -653,35 +523,10 @@ button.schip {
   color: var(--fg3);
   flex: none;
 }
-.schip.warn .sic {
-  color: var(--warn);
-  background: color-mix(in srgb, var(--warn) 18%, var(--card));
-}
-.schip.warn em {
-  color: var(--t-warn);
-}
-.schip.act .sic {
-  color: var(--c-home);
-  background: color-mix(in srgb, var(--c-home) 16%, var(--card));
-}
-.schip.act em {
-  color: var(--t-home);
-}
-.schip.off {
-  opacity: 0.6;
-}
 .cols[hidden] {
   display: none;
 }
 @media (max-width: 720px) {
-  .schip {
-    padding: 8px 10px;
-    gap: 8px;
-  }
-  .schip b,
-  .schip span:not(.sic) {
-    white-space: normal;
-  }
   .sic {
     width: 26px;
     height: 26px;

@@ -273,14 +273,6 @@
 .app.tabsv.cp .pane .card.tap .go {
   display: grid;
 }
-/* Security */
-.app.tabsv.cp .camgrid {
-  grid-template-columns: 1fr;
-  gap: 10px;
-}
-.app.tabsv.cp .pane-cams #senhost .sgrid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
 /* Automations: the timeline keeps its dots, the labels would pile up at this width */
 .app.tabsv.cp .aul {
   display: none;
