@@ -30,6 +30,8 @@ declare global {
       failNext(pattern: string | null): void;
       /** the messages of this `type` the panel has sent with `callWS` */
       asked(type: string): Array<{type: string; [field: string]: unknown}>;
+      /** every read message the panel has sent with `callWS`, in order, as `"type {json of the other fields}"` (`"history/history_during_period {...}"`) */
+      readonly reads: string[];
     };
     /** installed by the fixture: the DOM mutations seen in the shadow roots (see `House.mutations`) */
     mutationCount: {
@@ -130,6 +132,11 @@ export type House = {
   subscribed: (type: string) => Promise<number>;
   /** the messages of a type the panel has sent (`recorder/statistics_during_period`): what it cost, not what it drew */
   asked: (type: string) => Promise<Array<{type: string; [field: string]: unknown}>>;
+  /**
+   * every read the panel has sent so far (`window.house.reads`), in order, as `"type {json of the other fields}"`: what a test
+   * counts to say "one request per range" or "a cache hit" (`reads.filter(r => r.startsWith('history/'))`)
+   */
+  reads: () => Promise<string[]>;
 };
 
 const DEFAULTS: Required<Pick<HouseOpts, 'house' | 'lang' | 'theme' | 'admin'>> = {
@@ -257,6 +264,7 @@ export const test = base.extend<{houseOpts: HouseOpts; house: House}>({
       },
       subscribed: type => page.evaluate(type => window.house.subscribed(type), type),
       asked: type => page.evaluate(type => window.house.asked(type), type),
+      reads: () => page.evaluate(() => window.house.reads),
       setStateSince: (id, patch, agoMs) =>
         page.evaluate(
           ([id, patch, agoMs]) =>

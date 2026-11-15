@@ -1,8 +1,9 @@
-// The sensor history sheet's rules (segments, periodStats, axisTicks, durationText, eventRows, statTiles, sheetTexts), as pure
+// The sensor history sheet's rules (segments, stripBars, axisLabels, periodStats, axisTicks, durationText, eventRows, statTiles, sheetTexts), as pure
 // functions over literal points.
 import {describe, expect, test} from 'vitest';
 import {
   EVENT_LIMIT,
+  axisLabels,
   axisTicks,
   durationText,
   eventRows,
@@ -10,6 +11,7 @@ import {
   segments,
   sheetTexts,
   statTiles,
+  stripBars,
   type Segment,
 } from '../../../../src/features/security/history.ts';
 import type {HistoryPoint} from '../../../../src/core/ha.ts';
@@ -70,6 +72,38 @@ describe('axisTicks', () => {
   test('n + 1 instants, evenly from the start to now', () => {
     expect(axisTicks(0, 24 * HOUR, 4)).toEqual([0, 6 * HOUR, 12 * HOUR, 18 * HOUR, 24 * HOUR]);
     expect(axisTicks(T0, NOW, 7)).toHaveLength(8);
+  });
+});
+
+describe('stripBars', () => {
+  test('each period is a bar placed by percent of the window, with two decimals', () => {
+    const bars = stripBars([seg(T0 + 6 * HOUR, T0 + 12 * HOUR), seg(T0 + 18 * HOUR, NOW, true)], T0, NOW);
+    expect(bars).toEqual([
+      {left: '25.00', width: '25.00'},
+      {left: '75.00', width: '25.00'},
+    ]);
+  });
+
+  test('a blink is drawn at least a third of a percent wide', () => {
+    expect(stripBars([seg(T0 + 12 * HOUR, T0 + 12 * HOUR + 1000)], T0, NOW)).toEqual([{left: '50.00', width: '0.35'}]);
+  });
+});
+
+describe('axisLabels', () => {
+  const {fmt} = words();
+  test('the day is four spans labelled by time, the week seven labelled by date', () => {
+    const day = axisLabels('day', T0, NOW, fmt);
+    expect(day).toHaveLength(5);
+    expect(day[0]).toBe(fmt.time(T0));
+    const week = axisLabels('week', NOW - 7 * 24 * HOUR, NOW, fmt);
+    expect(week).toHaveLength(8);
+    expect(week[7]).toBe(fmt.date(NOW));
+  });
+
+  test('French writes them its way', () => {
+    const {fmt: fr} = words('fr');
+    expect(axisLabels('day', T0, NOW, fr)[0]).toBe(fr.time(T0));
+    expect(axisLabels('day', T0, NOW, fr)[0]).toContain('h');
   });
 });
 

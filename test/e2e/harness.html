@@ -125,6 +125,11 @@
         asked(kind) {
           return asked.filter(m => m.type === kind);
         },
+        // every read message the panel sent so far, as "type {json of the rest}" (`history/history_during_period {...}`): what a test
+        // counts to say "one request per range" or "a cache hit"; the system data's own messages are not reads
+        get reads() {
+          return asked.map(({type, ...rest}) => type + ' ' + JSON.stringify(rest));
+        },
         // the recorder fails every statistics request of this period (null: it answers again)
         failStatistics(period) {
           failing = period;

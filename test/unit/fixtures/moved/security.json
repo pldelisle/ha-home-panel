@@ -39,6 +39,16 @@
       "key": "security.cameraOffline"
     },
     {
+      "key": "security.liveView",
+      "values": {
+        "name": "Porch"
+      },
+      "written": "Porch en direct"
+    },
+    {
+      "key": "security.close"
+    },
+    {
       "key": "security.state.idle"
     },
     {

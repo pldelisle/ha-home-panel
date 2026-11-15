@@ -876,20 +876,6 @@ export class LegacyPanel {
     <button class="more" type="button" id="smore"></button></div>
   <div class="two"><div class="inner" id="car-ford"></div><div class="inner" id="car-last"></div></div>
 </div></div>
-<div class="sheet" id="sh-sens" hidden><div class="panel" role="dialog" aria-modal="true" aria-labelledby="sensh">
-  <div class="ph"><span class="badge" id="sensbadge" style="--acc:var(--c-home)">${ico('door', 26)}</span>
-    <div class="grow"><h2 id="sensh">History</h2><div class="sub" id="senssub"></div></div>
-    <div class="tabs" role="tablist" id="senstabs">${['day', 'week'].map(r => `<button class="tab" role="tab" aria-selected="${r === 'day'}" data-r="${r}">${cap(r)}</button>`).join('')}</div>
-    <button class="icon close" type="button" aria-label="Close">✕</button></div>
-  <div class="inner"><h3 id="senst"></h3><div id="sensbody"><p class="loading">Loading history…</p></div></div>
-  <div class="inner" style="margin-top:16px"><h3>Over the period</h3><div class="tiles" id="sensstats" style="margin-top:10px"></div></div>
-</div></div>
-<div class="sheet" id="sh-cam" hidden><div class="panel" role="dialog" aria-modal="true" aria-labelledby="camh">
-  <div class="ph"><span class="badge" style="--acc:var(--c-home)">${ico('cam', 26)}</span>
-    <div class="grow"><h2 id="camh">Camera</h2><div class="sub" id="camsub"></div></div>
-    <button class="icon close" type="button" aria-label="Close">✕</button></div>
-  <div class="camlive" id="camlive"></div>
-</div></div>
 <div class="sheet" id="sh-light" hidden><div class="panel" role="dialog" aria-modal="true" aria-labelledby="lshh">
   <div class="ph"><button type="button" class="lpwr" id="lshpwr" role="switch" aria-checked="false" data-l="area" data-a="">${ico('lpow', 24)}</button><div class="grow"><h2 id="lshh"></h2><div class="sub" id="lshsub"></div></div><button class="close ldone" type="button">Done</button></div>
   <div class="lsbody" id="lsheet"></div>
@@ -1456,7 +1442,7 @@ export class LegacyPanel {
   }
   // a tap on the stack's card wakes the panel and opens what the card is about
   stackGo(go) {
-    if (go.startsWith('sens:')) return this.openSens(go.slice(5));
+    if (go.startsWith('sens:')) return this.sheets.open('security.history', {id: go.slice(5)}); // Security's sheet (#225); the stack goes with #266
     if (go.startsWith('tab:')) {
       const t = go.slice(4);
       if (this.availability()[t] !== false) this.ctx.shell.setTab(t);
@@ -1769,7 +1755,7 @@ export class LegacyPanel {
     });
     const onTap = e => {
       const hc = e.target.closest('#hsec [data-cam]');
-      if (hc) return this.openCamera(hc.dataset.cam);
+      if (hc) return this.sheets.open('security.camera', {id: hc.dataset.cam}); // Security's sheet (#225); the Home card goes with #226
       if (e.target.closest('button[data-l]')) return; // light switches on the phone rows: the lights listener has them
       // phone: tiles open sheets
       const sh = e.target.closest('[data-opens]');
@@ -1784,7 +1770,7 @@ export class LegacyPanel {
         return this.sheets.open('sh-climate');
       }
       const sn = e.target.closest('[data-sens]');
-      if (sn) return this.openSens(sn.dataset.sens);
+      if (sn) return this.sheets.open('security.history', {id: sn.dataset.sens}); // Security's sheet (#225); the Home card goes with #226
       const t = e.target.closest('[data-pane]');
       if (t) return this.ctx.shell.setTab(t.dataset.pane);
     };
@@ -1845,12 +1831,6 @@ export class LegacyPanel {
       n && n.focus();
     });
     this.panels['sh-air'].addEventListener('click', e => this.airControl(e));
-    this.$('senstabs').addEventListener('click', e => {
-      const b = e.target.closest('.tab');
-      if (!b || b.dataset.r === this.sensRange) return;
-      this.sensRange = b.dataset.r;
-      this.sensSheet();
-    });
     this.$('cdet').addEventListener('change', e => {
       const t = /** @type {HTMLInputElement} */ (e.target);
       if (t.id === 'hpswing') {
@@ -3067,10 +3047,6 @@ export class LegacyPanel {
   }
   sheetClosed(id) {
     this.destroyCharts();
-    if (id === 'sh-cam') {
-      this.$('camlive').innerHTML = '';
-      this.camEl = null;
-    }
     if (id === 'sh-card' && this.cardBack) {
       const {el, parent, next} = this.cardBack;
       this.cardBack = null;
@@ -3112,8 +3088,6 @@ export class LegacyPanel {
       if (id === 'sh-climate') this.climateSheet();
       if (id === 'sh-car') this.carSheet();
       if (id === 'sh-air') this.airSheet();
-      if (id === 'sh-cam') this.camSheet();
-      if (id === 'sh-sens') this.sensSheet();
       if (id === 'sh-light') this.renderLightSheet();
     } catch (e) {
       console.error('home-panel sheet', e);
@@ -5266,52 +5240,6 @@ export class LegacyPanel {
       if (rest.length) this.call('light', 'turn_on', {entity_id: rest, brightness_pct: s.br});
     } else this.call('light', 'turn_on', {entity_id: them, brightness_pct: s.br});
   }
-  openCamera(id) {
-    const s = this.st(id);
-    if (!s) return;
-    this.camId = id;
-    this.sheets.open('sh-cam');
-  }
-  camSheet() {
-    const id = this.camId,
-      s = this.st(id),
-      c = this.cameras().find(x => x.id === id) || {name: this.name(id)};
-    this.$('camh').textContent = c.name;
-    this.$('camsub').textContent = [
-      ok(s) ? cap(s.state) : 'Offline',
-      c.motion && ok(c.motion)
-        ? c.motion.state === 'on'
-          ? 'motion now'
-          : 'last motion ' + this.ago(c.motion.last_changed)
-        : '',
-    ]
-      .filter(Boolean)
-      .join(' · ');
-    const box = this.$('camlive');
-    box.innerHTML = '';
-    if (!ok(s)) {
-      box.innerHTML = '<p>The camera is offline.</p>';
-      return;
-    }
-    // HA's own player (WebRTC or HLS) when the frontend has it loaded, else the MJPEG proxy
-    if (customElements.get('ha-camera-stream')) {
-      const v = document.createElement('ha-camera-stream');
-      v.hass = this.hass;
-      v.stateObj = s;
-      v.muted = true;
-      v.controls = true;
-      v.allowExoPlayer = true;
-      box.appendChild(v);
-      this.camEl = v;
-    } else {
-      const img = document.createElement('img');
-      img.alt = c.name + ' live';
-      img.src = `/api/camera_proxy_stream/${id}?token=${encodeURIComponent(s.attributes.access_token || '')}`;
-      box.appendChild(img);
-      this.camEl = img;
-    }
-  }
-
   // ---------- attention, folded into the status chip ----------
   toggleAttention(force) {
     const pop = this.$('attpop'),
@@ -5322,95 +5250,6 @@ export class LegacyPanel {
     if (open) this.renderAttention();
   }
 
-  // ---------- sensor history: a door or motion sensor, Day / Week ----------
-  openSens(id) {
-    const x = this.sensors().find(s => s.id === id);
-    if (!x) return;
-    this.sensX = x;
-    this.sensRange = this.sensRange || 'day';
-    this.sheets.open('sh-sens');
-  }
-  // door or motion sensor: an on/off strip over the period, the list of events, and totals
-  async sensSheet() {
-    const x = this.sensX,
-      r = this.sensRange,
-      R = CRANGE[r],
-      door = x.kind === 'door';
-    this.$('sensh').textContent = x.name;
-    this.$('senssub').textContent = door ? 'Door' : 'Motion';
-    this.$('sensbadge').innerHTML = ico(door ? 'door' : 'walk', 26);
-    this.$('sensbadge').style.setProperty('--acc', door ? 'var(--t-warn)' : 'var(--t-home)');
-    this.root.querySelectorAll('#senstabs .tab').forEach(t => t.setAttribute('aria-selected', t.dataset.r === r));
-    this.$('senst').textContent = `${x.name}, ${R.label}`;
-    const now = Date.now(),
-      t0 = now - R.days * 864e5;
-    let h;
-    try {
-      h = await this.api.history([x.id], new Date(t0), {minimal: true, attributes: false});
-    } catch (e) {
-      if (e instanceof StaleReply) return;
-      console.error('home-panel sensor history', e);
-      this.$('sensbody').innerHTML = '<p>History is not available right now.</p>';
-      this.$('sensstats').innerHTML = '';
-      return;
-    }
-    // the sheet may have moved on while the history was on its way: another sensor, another range, or closed (a config
-    // change is the StaleReply above). Known edge: taps A, B, A let A's first reply draw until its second repaints the
-    // same sensor and range.
-    if (!this.sheets.isOpen('sh-sens') || this.sensX !== x || this.sensRange !== r) return;
-    const segs = [];
-    /** @type {{a: number, b?: number, live?: boolean} | null} */
-    let cur = null;
-    (h[x.id] || []).forEach(y => {
-      const t = y.lastUpdated;
-      if (y.state === 'on' && !cur) cur = {a: Math.max(t, t0)};
-      else if (y.state !== 'on' && cur) {
-        cur.b = t;
-        segs.push(cur);
-        cur = null;
-      }
-    });
-    if (cur) {
-      cur.b = now;
-      cur.live = true;
-      segs.push(cur);
-    }
-    const dur = ms =>
-      ms < 6e4
-        ? `${Math.max(1, Math.round(ms / 1e3))} s`
-        : ms < 36e5
-          ? `${Math.round(ms / 6e4)} min`
-          : `${Math.floor(ms / 36e5)} h ${Math.round(ms / 6e4) % 60} min`;
-    const pct = t => ((t - t0) / (now - t0)) * 100,
-      when = t => (r === 'day' ? this.fmtEn.time(t) : `${this.fmtEn.date(t)} ${this.fmtEn.time(t)}`);
-    const n = r === 'day' ? 4 : 7,
-      axis = Array.from({length: n + 1}, (_, i) => {
-        const t = t0 + ((now - t0) * i) / n;
-        return `<span>${r === 'day' ? this.fmtEn.time(t) : this.fmtEn.date(t)}</span>`;
-      }).join('');
-    const evs = segs
-      .slice()
-      .reverse()
-      .slice(0, 40)
-      .map(
-        s =>
-          `<li><b>${when(s.a)}</b><span>${s.live ? (door ? 'Still open' : 'Motion now') : `${door ? 'Open for' : 'Motion for'} ${dur(s.b - s.a)}`}</span></li>`,
-      )
-      .join('');
-    this.$('sensbody').innerHTML =
-      `<div class="sstrip" style="--acc:${door ? 'var(--t-warn)' : 'var(--t-home)'}" role="img" aria-label="${door ? 'Open' : 'Motion'} periods">${segs.map(s => `<i style="left:${pct(s.a).toFixed(2)}%;width:${Math.max(0.35, pct(s.b) - pct(s.a)).toFixed(2)}%"></i>`).join('')}</div><div class="saxis">${axis}</div>${evs ? `<ul class="sevents">${evs}</ul>` : `<p class="hint">${door ? 'Not opened in this period' : 'No motion in this period'}</p>`}`;
-    const total = segs.reduce((a, s) => a + s.b - s.a, 0),
-      longest = segs.reduce((a, s) => Math.max(a, s.b - s.a), 0),
-      last = segs[segs.length - 1];
-    this.$('sensstats').innerHTML = [
-      [door ? 'Times opened' : 'Motion events', segs.length, ''],
-      [door ? 'Total open' : 'Total motion', segs.length ? dur(total) : '–', ''],
-      ['Longest', segs.length ? dur(longest) : '–', ''],
-      ['Last', last ? this.ago(new Date(last.live ? last.a : last.b).toISOString()) : '–', ''],
-    ]
-      .map(tile)
-      .join('');
-  }
   // ---------- climate sheet ----------
   climateSummary() {
     const L = this.live(),

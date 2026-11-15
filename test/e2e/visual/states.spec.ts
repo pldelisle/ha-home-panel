@@ -175,6 +175,26 @@ test.describe('Status checks', () => {
   });
 });
 
+// The sensor history sheet (spec 17): the door's day, with the strip, the events, the four tiles, and, in French, its times and dates in
+// the profile's formats (`12 h`). The harness answers the door with three fixed on-periods, so the sheet is the same on every run.
+for (const lang of ['en', 'fr'] as const)
+  test.describe(`The sensor history sheet in ${lang === 'en' ? 'English' : 'French'}`, () => {
+    test.use({
+      viewport: VIEWPORTS.tablet,
+      houseOpts: {cfg: {...FULL_CFG, names: KEEP_ENGLISH_NAMES}, lang, time: AFTERNOON, frozen: true},
+    });
+    test('tablet, light', async ({house}) => {
+      await house.tab('cams');
+      await house
+        .root()
+        .locator('hp-sensor-card')
+        .getByRole('button', {name: /^Front door/})
+        .click();
+      await expect(house.root().locator('hp-sensor-history .sevents li')).toHaveCount(3);
+      await expect(house.page).toHaveScreenshot(`sensor-history-tablet-light-${lang}.png`);
+    });
+  });
+
 // The More sheet in French: its title, its sections and the word under each are French from the first paint.
 test.describe('The More sheet in French', () => {
   test.use({

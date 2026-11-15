@@ -191,8 +191,6 @@
 .app.gl .auchips .chip,
 .app.gl .inner .chips .chip,
 .app.gl .card .chips .chip,
-.app.gl .sstrip,
-.app.gl .sevents li,
 .app.gl .ausel .close {
   background: var(--g-tile);
   box-shadow: var(--g-edge-s);

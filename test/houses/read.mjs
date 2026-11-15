@@ -116,6 +116,27 @@ function statisticsOf(states, now, ids, period) {
 }
 
 /**
+ * The history of the door and motion sensors, as `history/history_during_period` sends it with `minimal_response`: three on-periods
+ * in the last eight hours, whatever the window asked (3 min, 40 s and 1 h 5 min, the last ended 48 min ago), each beginning at seven
+ * minutes past an hour so that a time shows its minutes; every other id has none.
+ */
+function historyOf(now, ids) {
+  const MIN = 6e4,
+    HOUR = 36e5,
+    run = (from, length) => [
+      {s: 'on', lu: (now - from) / 1000},
+      {s: 'off', lu: (now - from + length) / 1000},
+    ];
+  const rows = [
+    {s: 'off', lu: (now - 30 * HOUR) / 1000},
+    ...run(7 * HOUR + 53 * MIN, 3 * MIN),
+    ...run(4 * HOUR + 53 * MIN, 40e3),
+    ...run(HOUR + 53 * MIN, 65 * MIN),
+  ];
+  return Object.fromEntries(ids.filter(id => id.startsWith('binary_sensor.')).map(id => [id, rows]));
+}
+
+/**
  * Reads `house` at the instant `now` (milliseconds), with local wall-clock markers resolved in `timeZone` (the host's
  * zone when undefined). Options: `frenchAreas` renames the areas as a French-speaking household does; `automations`
  * replaces the house's own list. Returns `{states, entities, devices, areas}` and the replies of the websocket calls the
@@ -139,7 +160,7 @@ export function readHouse(house, {now, timeZone, frenchAreas = false, automation
     'trace/get': m => runs.traces[m.item_id + '/' + m.run_id],
     'automation/config': m => ({config: (automations.find(c => c.entity_id === m.entity_id) || {}).config}),
     'recorder/statistics_during_period': m => statisticsOf(states, now, m.statistic_ids, m.period),
-    'history/history_during_period': () => ({}),
+    'history/history_during_period': m => historyOf(now, m.entity_ids ?? []),
     camera_thumbnail: () => ({}),
     'lovelace/resources': () => [],
   };

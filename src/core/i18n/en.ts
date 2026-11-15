@@ -369,6 +369,8 @@ export const en = {
   'security.addProtect': 'Add UniFi Protect',
   'security.openLive': 'Open {name} live',
   'security.cameraOffline': 'The camera is offline.',
+  'security.liveView': '{name} live',
+  'security.close': 'Close',
   'security.state.idle': 'Idle',
   'security.state.recording': 'Recording',
   'security.state.streaming': 'Streaming',

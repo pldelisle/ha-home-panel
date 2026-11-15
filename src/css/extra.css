@@ -65,23 +65,6 @@
 .pop[hidden] {
   display: none;
 }
-/* cameras */
-.camlive {
-  background: #000;
-  border-radius: 18px;
-  overflow: hidden;
-  min-height: 200px;
-  display: grid;
-  place-items: center;
-}
-.camlive img,
-.camlive ha-camera-stream {
-  width: 100%;
-  display: block;
-}
-.camlive p {
-  color: #ccc;
-}
 /* climate controls */
 .cctl {
   margin: 4px 0 14px;
@@ -632,54 +615,4 @@
 }
 .aqrooms {
   gap: 16px;
-}
-
-/* sensor history sheet */
-.sstrip {
-  position: relative;
-  height: 30px;
-  border-radius: 9px;
-  background: var(--card2);
-  overflow: hidden;
-  margin-top: 12px;
-}
-.sstrip i {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  background: var(--acc);
-  border-radius: 2px;
-  min-width: 2px;
-}
-.saxis {
-  display: flex;
-  justify-content: space-between;
-  font-size: calc(11px * var(--tx));
-  color: var(--fg2);
-  margin-top: 6px;
-}
-.sevents {
-  list-style: none;
-  margin: 14px 0 0;
-  padding: 0;
-  display: grid;
-  gap: 6px;
-}
-.sevents li {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 9px 12px;
-  border-radius: 12px;
-  background: var(--card2);
-  font-size: calc(13.5px * var(--tx));
-}
-.sevents li b {
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-.sevents li span {
-  color: var(--fg2);
-  margin-left: auto;
-  text-align: right;
 }

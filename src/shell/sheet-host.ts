@@ -6,8 +6,7 @@ import type {ReactiveController, ReactiveControllerHost} from 'lit';
 import type {FeatureKey} from '../ui/feature.ts';
 
 /** The ids of the guest's sheets: the id of the `.sheet` element it draws. Deleted with the guest (#188). */
-export type LegacySheetId =
-  'sh-energy' | 'sh-climate' | 'sh-air' | 'sh-car' | 'sh-sens' | 'sh-cam' | 'sh-light' | 'sh-card';
+export type LegacySheetId = 'sh-energy' | 'sh-climate' | 'sh-air' | 'sh-car' | 'sh-light' | 'sh-card';
 
 /** A legacy sheet is its element's id (a `LegacySheetId`); an element's sheet is `<owner>.<name>` (`shell.more`, later `weather.history`). */
 export type SheetId = string;
