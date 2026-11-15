@@ -10,7 +10,8 @@ import type {Messages} from '../../core/i18n/messages.ts';
 import type {Names} from '../../core/i18n/names.ts';
 import {isHidden} from '../../core/registry.ts';
 import {isAvailable} from '../../core/states.ts';
-import {K, type Overlay} from './commands.ts';
+import type {Overlay} from '../../ui/overlay-store.ts';
+import {K} from './commands.ts';
 
 export interface SceneTilesDeps {
   t: Messages['t'];

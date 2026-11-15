@@ -55,9 +55,9 @@ src/features/air/
   index.ts                 airFeature
   ids.ts                   airIds(store)
   inputs.ts                readAir(states, registries, names, config): AirInputs (the AQHI is config.entities.aqhi)
-  model.ts                 airModel(inputs, overlay, deps): AirViewModel
-  history.ts               metricSeries(rows, rooms, metric, range), outdoorSeries(rows, ids, range), airChartOptions(...), outdoorChartOptions(...)
-  commands.ts              setMode(fan, mode, name), setSpeed(fan, pct, name)
+  model.ts                 airModel(inputs, deps): AirViewModel
+  history.ts               metricSeries, metricIds, outdoorSeries, chartText, airChartOptions, outdoorChartOptions
+  commands.ts              K, setMode(fan, mode, name), setSpeed(fan, pct, name), toggleFan(fan, on, name)
   air-pane.ts              <hp-air-pane>
   air-card.ts              <hp-air-card> (the card's content: summary, rooms; used by the pane and, through the bridge, by Home)
   air-detail.ts            <hp-air-detail>
@@ -108,38 +108,45 @@ export function milaOutside(states, registries): OutsideAirInputs | null;
 export interface AirInputs {
   rooms: AirRoomInputs[];
   outside: OutsideAirInputs | null;
-  aqhi: number | null; // Environment Canada's, from the weather provider's inputs (config.entities.aqhi), for the outside line
+  aqhi: number | null; // Environment Canada's, from the weather provider's inputs (config.entities.aqhi), for the outside line, printed as the legacy panel printed it (the number as it is)
+  aqhiId: string | null; // the sensor's id while its state exists, readable or not: the outdoor chart's gate and its statistics request
 }
 export interface AirModelDeps {
-  now: number;
+  now: number; // the contract of every model; no Air line is dated
   t: Translate;
   fmt: Formatters;
   overlay: <T>(key: string, current: T) => T;
+  metric?: ChartMetric; // the detail's selection, for the chart's title and caption (the legacy sheet's own defaults: PM2.5, day)
+  range?: Range;
 }
 export function airModel(inputs: AirInputs, deps: AirModelDeps): AirViewModel;
 
 export interface AirViewModel {
   summary: string; // the sub-line: "2 purifiers · Good" | "2 purifiers · Moderate · Office: CO₂ 1 050" | "No purifiers found"
-  card: {
-    empty: boolean; // "No purifiers found" on the right, nothing else
-    outside: {aqi: string; level: string} | null;
-    state: {level: 0 | 1 | 2 | -1; text: string; why: string}; // "All 2 rooms clean" | "1 of 2 rooms clean" | the why
-    rooms: {id, name, level, metrics: {k, value, label, high}[], line: string}[]; // the fan line: "Automagic · 40% · 45% RH" | "Fan off" | "Purifier offline"
-  };
+  card: {title: string} & (
+    | {empty: true; message: string} // "No purifiers found" on the right, nothing else
+    | {
+        empty: false;
+        outside: {label: string; aqi: string; level: string} | null; // "Outside AQI", the figure, its level
+        state: {tone: 0 | 1 | 2; text: string; why: string}; // why: "All 2 rooms clean" | "1 of 2 rooms clean" | the why; a room that reads nothing is drawn as good, as before
+        rooms: {id, name, tone, metrics: {metric, label, value, high}[3], line: string}[]; // the fan line: "Automagic · 40% · 45% RH" | "Fan off" | "Purifier offline"
+      }
+  );
   detail: {
+    title: string;
     sub: string; // "Good in every room" | "Moderate · Office: CO₂ 1 050" | "No readings yet"
-    rooms: RoomCardView[]; // {id, name, level, headline, temperature, tiles: {k, label, value, unit, high}[7], control: {offline: true} | {mode: 'Automagic' | 'Manual', speed: {pct, atMin, atMax}, autoHint}}
-    outside: {level, aqi, aqhi, pm, distance, pollen: {label, value}[] | null, pollenHint} | null;
-    chart: {metric, title: string, caption: string}; // "PM2.5, last 24 hours"; "Good is up to 12 µg/m³, moderate up to 35. The dashed line is the outdoor station."
-    outdoorChart: {title: string} | null;
+    rooms: RoomDetail[]; // {id, name, tone, state, headline, tiles: {metric, label, value, unit, high}[7], control: {offline: true, message} | {modeLabel, modes, speed: {pct, text, atMin, atMax, ...} | null (Manual), hint | null (Automagic)}}
+    history: {label, metric, metrics: {metric, label}[], title, caption, unavailable}; // "PM2.5, last 24 hours"; "Good is up to 12 µg/m³, moderate up to 35. The dashed line is the outdoor station."
+    outside: {title, hint, tone, state, reading: {label, value}, more, pollen: {label, value}[] | null, pollenHint} | null; // reading is "AQI" and its figure (the figure in bold), more "AQHI 2 · PM2.5 9.0 µg/m³ · station 6 km away"
+    outdoorChart: {title, hint, empty} | null;
   };
 }
 ```
 
-- Formats: `aqFmt`'s rules become `fmt.integer`, `fmt.number(v, 1)` for CO under ten, and the short `k` form for the card (`12,5k` in French through `fmt.number`), all locale-aware: the one visible change of the spec is French numbers on the Air card and detail, and the French baselines are checked against the fixture-fed test house (the `air-tablet-*-fr` baselines today show the empty state, so no committed pixel changes; the new house baselines are recorded once, below).
+- Formats: `aqFmt`'s rules become `fmt.integer`, `fmt.fixed(v, 1)` for CO under ten (`1.0`, as today: `fmt.number(v, 1)` would drop the zero and change the English baselines), and the short `k` form for the card (`1.5k`, `1,5k` in French, through `fmt.fixed`; from ten thousand it rounds to a whole number), all locale-aware: the one visible change of the spec is French numbers on the Air card and detail, and the French baselines are checked against the fixture-fed test house (the `air-tablet-*-fr` baselines today show the empty state, so no committed pixel changes; the new house baselines are recorded once, below).
 - The overlay applies to the fan's `preset` and `percentage` (keys `K.mode(fan)`, `K.pct(fan)`), so a tap shows at once in the control and the card line alike.
-- `history.ts`: `metricSeries(stats: Record<string, StatisticRow[]>, rooms, metric, range): {rooms: {name, points}[]; outside: points | null; start}` (mean per bucket shifted by `range.mid`, one decimal, nulls dropped), `outdoorSeries(stats, {aqi, aqhi}, range)`, `airChartOptions(series, metric, range, tokens, fmt)` (the line chart: the room colours from the four token slots, the dashed station line, the Good or Comfortable band, the integer axis), `outdoorChartOptions(series, range, tokens)` (two axes, the AQI bands); pure, tested by shape.
-- `commands.ts`: `setMode(fan, mode, name)` holds `K.mode`, `fan.set_preset_mode`, done `air.modeSet` (`{name}: {mode}`); `setSpeed(fan, pct, name)` holds `K.pct` with the clamp (10 to 100 in steps of 10), `fan.set_percentage`, done `air.fanSet` (`{name} fan {pct}%`); the element debounces `setSpeed` by 900 ms with `debounce`. The phone tile's toggle (`fan.turn_on`/`turn_off`, done `air.purifierOn`/`purifierOff`) is `toggleFan(fan, on, name)`.
+- `history.ts`: `metricSeries(stats, {rooms, outside}, metric, range): {rooms: {name, points}[]; outside: points | null}` (mean per bucket shifted by half the range's bucket, one decimal, nulls dropped; the axis starts from `now` in the options, so the series carries no `start`), `metricIds(inputs, metric)` (the ids to ask the recorder for), `outdoorSeries(stats, {aqi, aqhi}, range)`, `chartText(metric, range, {t, fmt})` (the chart's title and caption, which `airModel` places), `airChartOptions(series, metric, range, {fmt, t, tokens, now})` (the line chart: the room colours from the four token slots, the dashed station line, the Good or Comfortable band, the integer axis), `outdoorChartOptions(series, range, {fmt, t, tokens, now})` (two axes, the AQI bands); pure, tested by shape. The options take `t` and `now` besides `fmt`, as Weather's do: the band and series names are words and the axis ends now.
+- `commands.ts`: `K = {mode, pct}` (the typed overlay keys, Air's own: a feature does not import Media's); `setMode(fan, mode, name)` holds `K.mode`, `fan.set_preset_mode`, done `air.modeSet` (`{name}: {mode}`, the mode worded by an ICU select over the two presets); `setSpeed(fan, pct, name)` holds `K.pct` with the clamp (10 to 100 in steps of ten; the held value is `data.percentage`), `fan.set_percentage`, done `air.fanSet` (`{name} fan {pct}%`); the element debounces `setSpeed` by 900 ms with `debounce`. The purifier's toggle (`fan.turn_on`/`turn_off`, done `air.purifierOn`/`purifierOff`) is `toggleFan(fan, on, name)`; it holds nothing, as no model reads a held power.
 
 ### The elements
 
@@ -156,7 +163,7 @@ export interface AirViewModel {
 
 ### Strings and formats
 
-About fifty `air.*` keys (`title`, `quality`, `noPurifiers`, `purifiers` plural, `noData`, `noReadings`, `noReadingsYet`, `goodEveryRoom`, `level.good`/`moderate`/`poor`, `allRoomsClean` plural, `roomsClean` (`{n} of {total} rooms clean`), `milaIndex`, `cleanAir`, `isHigh` (`{name} is high`), `purifierOffline`, `fanOff`, `automagic`, `manual`, `rh`, `offlineHint`, `automagicHint` with optional `{pct}` and `{changes}` clauses as separate keys, `slower`, `faster`, `fan`, `fanSpeed` (`{name} fan speed`), `mode` (`{name} mode`), `modeSet`, `fanSet`, `purifierOn`/`Off`, `history`, `whatToChart`, `metric.pm25`/`co2`/`voc`/`humidity`, `chartTitle` (`{metric}, {range}`), `goodUpTo` (`Good is up to {good} {unit}, moderate up to {moderate}.`), `dashedOutdoor`, `comfortableHumidity`, `outside`, `outsideHint`, `outdoorAir` (`Outdoor air, {range}`), `outdoorHint`, `aqi`, `aqhi`, `station` (`station {n} km away`), `pollen.*` four kinds plus `pollen` (`{kind} pollen`), `noPollenYet`, `noOutdoorHistory`, `historyUnavailable`, `good`, `moderate`, `comfortable`, `outsideSeries` (`Outside`), `aqiSeries` (`AQI (Mila station)`), `aqhiSeries`), French from the map's entries (`src/i18n/fr.js` ~802 to 895), listed in `test/unit/fixtures/moved/air.json`, deleted in pull request 2. `plural(n, 'room')`, `plural(n, 'purifier')` become ICU plurals.
+About seventy `air.*` keys, English and French, in `src/core/i18n/{en,fr}.ts` and listed in `test/unit/fixtures/moved/air.json`: the card and the sub-line (`quality`, `noPurifiers`, `purifiers` plural, `noData`, `noReadings`, `noReadingsYet`, `goodEveryRoom`, `level.good`/`moderate`/`poor`, `allRoomsClean` plural, `roomsClean`, `milaIndex`, `cleanAir`, `roomWhy`, `outsideAqi`, `purifierOffline`, `fanOff`, `automagic`, `manual`, `fanLine`, `rh`), the detail and the controls (`offlineHint`, `automagicHint` with its `{clauses}` made of `hintNow` and `hintChanges`, `slower`, `faster`, `fan`, `percent`, `fanSpeed`, `mode`), the commands (`modeSet`, `fanSet`, `purifierOn`/`Off`), the pollutants (`metric.*`, seven), the history chart (`whatToChart`, `chartTitle`, `goodUpTo`, `dashedOutdoor`, `comfortableHumidity`, `comfortable`, `historyUnavailable`) and the outside block (`outside`, `outsideHint`, `outdoorAir`, `outdoorHint`, `aqi`, `aqhiValue`, `stationPm`, `station`, `pollen.*`, `pollenLevel.*`, `noPollenYet`, `noOutdoorHistory`, `aqiSeries`, `aqhiSeries`, `axis.aqi`/`aqhi`). `isHigh` (the stack's "{name} is high") comes with pull request 2, which is its first reader; the series name "Outside" is `air.outside`. French is the rewrite layer's output for each text (`src/i18n/fr.js` ~740 to 830, deleted in pull request 2); the texts the layer left in English, or never made as one message, are written in the fixture as `written`: `purifiers` (the plural), `allRoomsClean` (its singular reads "La pièce est propre"), `roomsClean`, `milaIndex`, `rh` ("45 % HR": the layer left "RH" after an offline fan's line), `dashedOutdoor`, `hintNow`, `hintChanges`, the Automagic hint with the air changes only, `station`, `outdoorHint`, and the lower-case forms `noDataLower` and `levelLower.*`. The legacy panel still draws the tab, so none of this French shows today: the French Air baselines of #232 and #233, the first to draw the elements, will show these texts beside the French numbers. A mode, a `Moderate` or a `no data` in running text is its own key, never a lower-cased catalog word. `plural(n, 'room')`, `plural(n, 'purifier')` become ICU plurals.
 
 ### Deletion (pull request 2) and grep gates
 

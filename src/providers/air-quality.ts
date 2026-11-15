@@ -41,8 +41,12 @@ export interface RoomRating {
 export const aqLevel = (k: Pollutant, v: number | null): Level =>
   v === null ? -1 : v <= AQ_BANDS[k][0] ? 0 : v <= AQ_BANDS[k][1] ? 1 : 2;
 
-/** The outdoor index on the US scale: up to 50 good, up to 100 moderate; no reading counts as good, as the legacy panel did. */
-export const outdoorLevel = (aqi: number | null): 0 | 1 | 2 => (aqi === null || aqi <= 50 ? 0 : aqi <= 100 ? 1 : 2);
+/** The US AQI's bands: up to the first good, up to the second moderate, above poor; the outdoor chart shades the same two. */
+export const OUTDOOR_BANDS: readonly [number, number] = [50, 100];
+
+/** The outdoor index on the US scale against `OUTDOOR_BANDS`; no reading counts as good, as the legacy panel did. */
+export const outdoorLevel = (aqi: number | null): 0 | 1 | 2 =>
+  aqi === null || aqi <= OUTDOOR_BANDS[0] ? 0 : aqi <= OUTDOOR_BANDS[1] ? 1 : 2;
 
 /**
  * A room's rating: Mila's own index when it has one (so the panel matches the Mila app), else the worst of the four
