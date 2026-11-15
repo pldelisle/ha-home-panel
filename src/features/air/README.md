@@ -21,6 +21,7 @@ src/features/air/
   air-card.ts              <hp-air-card>: the outside figure, the state line, a box per room; air-card.element.css
   air-detail.ts            <hp-air-detail>: the rooms, the metric chart and the outdoor block with its chart; air-detail.element.css
   room-card.ts             <hp-air-room>: a purifier's tiles and its Automagic or Manual control with the debounced stepper; room-card.element.css
+  styles.css               the `.aqsum` state line, adopted by the card and the detail
 ```
 
 ## The providers

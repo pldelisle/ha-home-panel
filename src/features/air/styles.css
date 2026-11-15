@@ -1,0 +1,48 @@
+/*
+ * The Air feature's shared rules (spec 18, "Styles"): the state line `.aqsum`, its `.state` pill with the level dot (`lv0..2`) and its
+ * `.why`, which the card draws under its title line and the detail under the station's heading. Moved from the legacy `.aqsum` rules
+ * (extra.css), which the detail's move (#233) deleted, and adopted by `<hp-air-card>` and `<hp-air-detail>` through `forShadow`, so one
+ * rule is written once (ADR 0019). A known copy of a rule the legacy panel's other cards still draw, read here as `.aqsum .state`:
+ * `.state` (base.css, glass.css), until the Home move (#268) deletes it.
+ */
+.aqsum {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: -2px 0 12px;
+  min-width: 0;
+}
+.aqsum .why {
+  font-size: calc(13px * var(--tx));
+  color: var(--fg2);
+  min-width: 0;
+}
+.aqsum .state {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-weight: 600;
+  font-size: calc(13px * var(--tx));
+  background: var(--card2);
+}
+.app.gl .aqsum .state {
+  background: var(--g-tile);
+  box-shadow: var(--g-edge-s);
+}
+.aqsum .state i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: block;
+}
+.aqsum.lv0 .state i {
+  background: var(--ok);
+}
+.aqsum.lv1 .state i {
+  background: var(--warn);
+}
+.aqsum.lv2 .state i {
+  background: var(--crit);
+}

@@ -12,6 +12,7 @@ import type {StatisticRow} from '../../core/ha.ts';
 import type {StatisticsCache} from '../../core/statistics-cache.ts';
 import './room-card.ts'; // defines <hp-air-room>
 import detailOwn from './air-detail.element.css?inline';
+import airShared from './styles.css?inline';
 import {
   airChartOptions,
   metricIds,
@@ -76,6 +77,36 @@ interface Built<L> {
   legend: LegendItem[];
 }
 
+/** One chart's place: what the last request was for (`generation/range/metric/ids`: answered, failed or in flight), its reply and its options. */
+interface ChartSlot<L extends {at: number}> {
+  asked: string | undefined;
+  load: L | undefined;
+  failed: boolean;
+  built: Built<L> | undefined;
+}
+
+/** The words and the size of a chart's place; `empty` is shown instead of a chart with no line, where the house has no source. */
+interface ChartPlace {
+  height: number;
+  label: string;
+  unavailable: string;
+  empty?: string;
+}
+
+/** What a chart's `make` returns, `airChartOptions` or `outdoorChartOptions`: `<hp-chart>`'s options, with the legend's names and colours. */
+type MadeOptions = ChartOptions & Parameters<typeof legendOf>[0];
+
+const emptySlot = <L extends {at: number}>(): ChartSlot<L> => ({
+  asked: undefined,
+  load: undefined,
+  failed: false,
+  built: undefined,
+});
+
+/** A chart's options are stale when its statistics are not the ones they were built from, or the theme or the language changed. */
+const needsBuild = (slot: ChartSlot<{at: number}>, base: string): boolean =>
+  !!slot.load && (slot.built?.load !== slot.load || slot.built.base !== base);
+
 /** The mean of each sensor over the range, through the cache; no sensor, no request (a house with none has nothing to chart). */
 const rowsOf = (cache: StatisticsCache, ids: readonly string[], range: Range, now: number): Promise<Rows> =>
   ids.length
@@ -119,23 +150,23 @@ export class AirDetail extends LitElement {
   declare range: Range;
   declare metric: ChartMetric;
 
-  // The host is a block; its blocks are one column with the sixteen pixels between them the pane's `.panel` gave (fourteen on the phone).
-  // On a phone the detail sits in a sheet, which draws the heading; the card rules of the old sheet that reached its `.inner` are in air-detail.element.css.
-  // The element's own rules, its `:host` and what only its tree has, are in air-detail.element.css.
-  static override styles = [common, inner, tiles, seg, chart, unsafeCSS(forShadow(detailOwn))];
+  // The kit's wells, tiles, radios and legend; the feature's `.aqsum` state line (styles.css, shared with the card); the element's own rules last.
+  static override styles = [
+    common,
+    inner,
+    tiles,
+    seg,
+    chart,
+    unsafeCSS(forShadow(airShared)),
+    unsafeCSS(forShadow(detailOwn)),
+  ];
 
   private readonly storeController = new StoreController(this, {ids: () => []});
   private readonly appearance = new AppearanceConsumer(this);
 
-  // each chart: what the last request was for (`generation/range/metric/ids`, answered, failed or in flight), its reply and its options
-  private metricAsked: string | undefined;
-  private metricLoad: MetricLoad | undefined;
-  private metricFailed = false;
-  private metricBuilt: Built<MetricLoad> | undefined;
-  private outdoorAsked: string | undefined;
-  private outdoorLoad: OutdoorLoad | undefined;
-  private outdoorFailed = false;
-  private outdoorBuilt: Built<OutdoorLoad> | undefined;
+  // the two charts, the metric's and the outdoor index's: each its own request, reply and options
+  private readonly metricSlot = emptySlot<MetricLoad>();
+  private readonly outdoorSlot = emptySlot<OutdoorLoad>();
 
   constructor() {
     super();
@@ -149,20 +180,16 @@ export class AirDetail extends LitElement {
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     // a reply on its way finds the detail gone and is dropped; coming back asks again
-    this.metricAsked = undefined;
-    this.outdoorAsked = undefined;
+    this.metricSlot.asked = undefined;
+    this.outdoorSlot.asked = undefined;
   }
 
   // The options of a chart are rebuilt only when what they are made of changed: new statistics, the theme or the language. An update for
   // anything else (a room's reading) leaves the charts' `options` the objects they were, so `<hp-chart>` is not asked to draw the same lines again.
   protected override willUpdate(): void {
-    const {metricLoad, outdoorLoad} = this;
-    if (!metricLoad && !outdoorLoad) return;
-    const {store} = this.storeController;
-    const base = `${this.appearance.value?.theme ?? 'light'}/${store.language}`;
-    const staleMetric = metricLoad && (this.metricBuilt?.load !== metricLoad || this.metricBuilt.base !== base);
-    const staleOutdoor = outdoorLoad && (this.outdoorBuilt?.load !== outdoorLoad || this.outdoorBuilt.base !== base);
-    if (!staleMetric && !staleOutdoor) return;
+    const {metricSlot, outdoorSlot} = this;
+    const base = `${this.appearance.value?.theme ?? 'light'}/${this.storeController.store.language}`;
+    if (!needsBuild(metricSlot, base) && !needsBuild(outdoorSlot, base)) return;
     const style = getComputedStyle(this);
     const token = (name: string) => style.getPropertyValue(name).trim();
     const tokens: AirTokens = {
@@ -174,17 +201,22 @@ export class AirDetail extends LitElement {
       aqi: token('--m-orange'),
       aqhi: token('--m-purple'),
     };
-    const {fmt, t} = store;
-    if (staleMetric) {
-      const deps: AirChartDeps = {fmt, t, tokens, now: metricLoad.at};
-      const options = airChartOptions(metricLoad.series, metricLoad.metric, metricLoad.range, deps);
-      this.metricBuilt = {load: metricLoad, base, options, legend: legendOf(options)};
-    }
-    if (staleOutdoor) {
-      const deps: AirChartDeps = {fmt, t, tokens, now: outdoorLoad.at};
-      const options = outdoorChartOptions(outdoorLoad.series, outdoorLoad.range, deps);
-      this.outdoorBuilt = {load: outdoorLoad, base, options, legend: legendOf(options)};
-    }
+    this.rebuild(metricSlot, base, tokens, (load, deps) => airChartOptions(load.series, load.metric, load.range, deps));
+    this.rebuild(outdoorSlot, base, tokens, (load, deps) => outdoorChartOptions(load.series, load.range, deps));
+  }
+
+  // one chart's options, built again only when `needsBuild` says so; the other chart's stay the objects they were
+  private rebuild<L extends {at: number}>(
+    slot: ChartSlot<L>,
+    base: string,
+    tokens: AirTokens,
+    make: (load: L, deps: AirChartDeps) => MadeOptions,
+  ): void {
+    const {load} = slot;
+    if (!load || !needsBuild(slot, base)) return;
+    const {fmt, t} = this.storeController.store;
+    const options = make(load, {fmt, t, tokens, now: load.at});
+    slot.built = {load, base, options, legend: legendOf(options)};
   }
 
   protected override render() {
@@ -230,9 +262,17 @@ export class AirDetail extends LitElement {
     </div>`;
   }
 
+  // a chart's place: the failure word, the loading word, the empty word when a built chart has no line, else the chart
+  private renderChart<L extends {at: number}>(slot: ChartSlot<L>, {height, label, unavailable, empty}: ChartPlace) {
+    const {built} = slot;
+    if (slot.failed) return html`<p>${unavailable}</p>`;
+    if (!built) return html`<p class="loading">${this.storeController.store.t('air.historyLoading')}</p>`;
+    if (empty !== undefined && !built.legend.length) return html`<p class="loading">${empty}</p>`;
+    return html`<hp-chart .height=${height} .label=${label} .options=${built.options}></hp-chart>`;
+  }
+
   private renderHistory(history: Detail['history']) {
-    const {t} = this.storeController.store;
-    const built = this.metricBuilt;
+    const {metricSlot} = this;
     return html`<div class="inner">
       <h3>${history.title}</h3>
       <p>${history.caption}</p>
@@ -251,46 +291,32 @@ export class AirDetail extends LitElement {
             </button>`,
         )}
       </div>
-      ${this.renderLegend(built?.legend)}
-      ${
-        this.metricFailed
-          ? html`<p>${history.unavailable}</p>`
-          : built
-            ? html`<hp-chart
-                .height=${280}
-                .label=${`${history.title}. ${history.caption}`}
-                .options=${built.options}
-              ></hp-chart>`
-            : html`<p class="loading">${t('air.historyLoading')}</p>`
-      }
+      ${this.renderLegend(metricSlot.built?.legend)}
+      ${this.renderChart(metricSlot, {
+        height: 280,
+        label: `${history.title}. ${history.caption}`,
+        unavailable: history.unavailable,
+      })}
     </div>`;
   }
 
   // the station's reading and the pollen, then the outdoor chart: either part is left out of a house that has no source for it
   private renderOutside({outside, outdoorChart, history}: Detail) {
     if (!outside && !outdoorChart) return nothing;
-    const {t} = this.storeController.store;
-    const built = this.outdoorBuilt;
+    const {outdoorSlot} = this;
     return html`<div class="inner">
       ${outside ? this.renderStation(outside) : nothing}
       ${
         outdoorChart
           ? html`<h3 class=${classMap({again: !!outside})}>${outdoorChart.title}</h3>
               <p>${outdoorChart.hint}</p>
-              ${this.renderLegend(built?.legend)}
-              ${
-                this.outdoorFailed
-                  ? html`<p>${history.unavailable}</p>`
-                  : !built
-                    ? html`<p class="loading">${t('air.historyLoading')}</p>`
-                    : built.legend.length
-                      ? html`<hp-chart
-                          .height=${240}
-                          .label=${`${outdoorChart.title}. ${outdoorChart.hint}`}
-                          .options=${built.options}
-                        ></hp-chart>`
-                      : html`<p class="loading">${outdoorChart.empty}</p>`
-              }`
+              ${this.renderLegend(outdoorSlot.built?.legend)}
+              ${this.renderChart(outdoorSlot, {
+                height: 240,
+                label: `${outdoorChart.title}. ${outdoorChart.hint}`,
+                unavailable: history.unavailable,
+                empty: outdoorChart.empty,
+              })}`
           : nothing
       }
     </div>`;
@@ -339,70 +365,50 @@ export class AirDetail extends LitElement {
     const {cache, inputs, view, range, metric} = this;
     if (!cache || !inputs || !view) return;
     const {generation} = this.storeController.store;
-    const metricKey = `${generation}/${range}/${metric}`;
     const ids = metricIds(inputs, metric);
-    const asked = `${metricKey}/${ids.join(',')}`;
-    if (this.metricAsked !== asked) {
-      this.metricAsked = asked;
-      this.metricFailed = false;
-      void this.loadMetric(cache, asked, range, metric, ids, inputs);
+    const metricKey = `${generation}/${range}/${metric}/${ids.join(',')}`;
+    if (this.metricSlot.asked !== metricKey) {
+      const now = Date.now();
+      void this.load(this.metricSlot, metricKey, 'air history', async () => {
+        const rows = await rowsOf(cache, ids, range, now);
+        return {range, metric, series: metricSeries(rows, inputs, metric, range), at: now};
+      });
     }
     const outdoor = {aqi: inputs.outside?.aqi ?? null, aqhi: inputs.aqhiId};
     const outdoorIds = [outdoor.aqi, outdoor.aqhi].filter((id): id is string => !!id);
-    const outdoorAsked = `${generation}/${range}/${outdoorIds.join(',')}`;
-    if (view.outdoorChart && this.outdoorAsked !== outdoorAsked) {
-      this.outdoorAsked = outdoorAsked;
-      this.outdoorFailed = false;
-      void this.loadOutdoor(cache, outdoorAsked, range, outdoor);
+    const outdoorKey = `${generation}/${range}/${outdoorIds.join(',')}`;
+    if (view.outdoorChart && this.outdoorSlot.asked !== outdoorKey) {
+      const now = Date.now();
+      void this.load(this.outdoorSlot, outdoorKey, 'outdoor air history', async () => {
+        const rows = await rowsOf(cache, outdoorIds, range, now);
+        return {range, series: outdoorSeries(rows, outdoor, range), at: now};
+      });
     }
   }
 
   // a reply is stale when the detail left, or another range, metric, config or list of sensors was asked for meanwhile
-  private isStale(asked: string | undefined, key: string): boolean {
-    return !this.isConnected || asked !== key;
+  private isStale(slot: ChartSlot<{at: number}>, key: string): boolean {
+    return !this.isConnected || slot.asked !== key;
   }
 
-  private async loadMetric(
-    cache: StatisticsCache,
+  // One request for one chart: the slot forgets a failure and remembers the key, a stale reply is dropped, a `StaleReply` (the cache's
+  // own word for a request it superseded) is no failure, and any other error is logged with the chart's name and shown as unavailable.
+  private async load<L extends {at: number}>(
+    slot: ChartSlot<L>,
     key: string,
-    range: Range,
-    metric: ChartMetric,
-    ids: readonly string[],
-    inputs: AirInputs,
+    what: string,
+    fetch: () => Promise<L>,
   ): Promise<void> {
-    const now = Date.now();
+    slot.asked = key;
+    slot.failed = false;
     try {
-      const rows = await rowsOf(cache, ids, range, now);
-      if (this.isStale(this.metricAsked, key)) return;
-      this.metricLoad = {range, metric, series: metricSeries(rows, inputs, metric, range), at: now};
+      const load = await fetch();
+      if (this.isStale(slot, key)) return;
+      slot.load = load;
     } catch (error) {
-      if (this.isStale(this.metricAsked, key) || error instanceof StaleReply) return;
-      console.error('home-panel air history', error);
-      this.metricFailed = true;
-    }
-    this.requestUpdate();
-  }
-
-  private async loadOutdoor(
-    cache: StatisticsCache,
-    key: string,
-    range: Range,
-    ids: {aqi: string | null; aqhi: string | null},
-  ): Promise<void> {
-    const now = Date.now();
-    try {
-      const rows = await rowsOf(
-        cache,
-        [ids.aqi, ids.aqhi].filter((id): id is string => !!id),
-        range,
-        now,
-      );
-      if (this.isStale(this.outdoorAsked, key)) return;
-      this.outdoorLoad = {range, series: outdoorSeries(rows, ids, range), at: now};
-    } catch (error) {
-      if (this.isStale(this.outdoorAsked, key) || error instanceof StaleReply) return;
-      console.error('home-panel outdoor air history', error);
-      this.outdoorFailed = true;
+      if (this.isStale(slot, key) || error instanceof StaleReply) return;
+      console.error(`home-panel ${what}`, error);
+      slot.failed = true;
     }
     this.requestUpdate();
   }

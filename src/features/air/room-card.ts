@@ -25,8 +25,6 @@ const SPEED_DEBOUNCE_MS = 900;
 
 /** The control of a purifier that answers: the offline one has no radios and no stepper. */
 type OnlineControl = Extract<RoomControl, {offline: false}>;
-// a guard and not a test of `offline`: the legacy panel's type check (tsconfig.legacy.json) is not strict and cannot narrow on a boolean
-const isOnline = (control: RoomControl): control is OnlineControl => !control.offline;
 
 export class AirRoom extends LitElement {
   static override properties = {
@@ -96,7 +94,9 @@ export class AirRoom extends LitElement {
   }
 
   private renderControl(room: RoomDetail, control: RoomControl) {
-    if (!isOnline(control)) return html`<p class="muted">${control.message}</p>`;
+    // `=== true`, not a truth test: the legacy panel's type check (tsconfig.legacy.json, `strict: false`) reaches this file through
+    // `main.js`'s imports, and without `strictNullChecks` only an equality on the discriminant narrows the union
+    if (control.offline === true) return html`<p class="muted">${control.message}</p>`;
     return html`<div class="aqctl">
       <div class="seg" role="radiogroup" aria-label=${control.modeLabel}>
         ${repeat(

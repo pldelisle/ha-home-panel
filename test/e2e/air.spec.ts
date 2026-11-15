@@ -38,8 +38,8 @@ test.describe('on a phone', () => {
     );
     await expect(card(house).locator('.top .lbl')).toHaveText('Air quality');
     await expect(card(house).locator('.top .right')).toHaveText('Outside AQI 42 Good›');
-    await expect(card(house).locator('.aqstate .state')).toHaveText('Moderate');
-    await expect(card(house).locator('.aqstate .why')).toHaveText('Office: PM2.5 20');
+    await expect(card(house).locator('.aqsum .state')).toHaveText('Moderate');
+    await expect(card(house).locator('.aqsum .why')).toHaveText('Office: PM2.5 20');
     await expect(card(house).locator('.aqroom .n')).toHaveText('Office');
     await expect(card(house).locator('.aqm b')).toHaveText(['20', '640', '180']);
     await expect(card(house).locator('.aqm small')).toHaveText(['PM2.5', 'CO₂', 'VOC']);
