@@ -60,7 +60,7 @@ src/features/security/
   inputs.ts                readSecurity(states, registries, names, sources): SecurityInputs
   model.ts                 securityModel(inputs, deps): SecurityViewModel
   history.ts               segments(points, t0, now), periodStats(segs), axisTicks(t0, now, n), durationText(ms, t)
-  activity.ts              newlyActive(prev, next): string[] (the glow rule), pure
+  activity.ts              activeOf(sensors), newlyActive(prev, next): string[] (the glow rule), pure
   security-pane.ts         <hp-security-pane>
   camera-card.ts           <hp-camera-card>
   sensor-card.ts           <hp-sensor-card>
@@ -115,7 +115,7 @@ export interface SecurityInputs {
 export interface SecurityModelDeps {
   now: number;
   t: Translate;
-  fmt: Formatters; // ago, time, date, integer
+  fmt: Formatters; // ago, time, date
 }
 export function securityModel(inputs: SecurityInputs, deps: SecurityModelDeps): SecurityViewModel;
 
@@ -124,12 +124,13 @@ export interface SecurityViewModel {
   cameras: {
     count: string; // "2 cameras" | "Not connected"
     empty: boolean;
-    tiles: CameraTile[]; // {id, name, picture: string | null (with the ten-second stamp), when: string, moving: boolean, offline: boolean, label}
+    tiles: CameraTile[]; // {id, name, picture: string | null (with the ten-second stamp), when: string, moving: boolean, offline: boolean, label, tag, detail}
+    // and the card's texts the elements place: title, emptyText {title, hint, link}, offlineNote
   };
   sensors: {
     hidden: boolean; // no sensors at all: the card is hidden, as today
     line: {text: string; warn: boolean} | null; // "2 doors open" in amber, "All doors closed", "Door closed", or none without doors
-    rows: SensorRow[]; // {id, kind, name, tone: '' | 'warn' | 'act' | 'off', main, sub, label}
+    rows: SensorRow[]; // {id, kind, name, tone: '' | 'warn' | 'act' | 'off', main, sub, label}; and the card's `title`
   };
   home: {
     // the Home card
@@ -142,13 +143,13 @@ export interface SecurityViewModel {
 ```
 
 - The stamp: `Math.floor(now / 10000)` appended to `entity_picture`, computed in the model from `deps.now`; the element re-runs the model on its own ten-second timer (a `TickController` in the kit, `src/ui/controllers/tick.ts`, one interval per host, paused with the pane; it is also what the Weather detail's observation line and the scenes' "Last 2 h ago" will use, so it has three users by the end of phase 3).
-- `sensorState`'s wording becomes keys: `security.open`, `closed`, `motionNow`, `noMotion`, `forDuration` (`for {d}`), `batteryLow` (`battery {n}%`), `offline`, `lux` (`{n} lx`), joined with `·` as today; `fmt.ago` with the `' ago'` suffix stripped for "for 12 min" is `fmt.agoBare` (spec 11's relative formatter gains the bare form if it lacks one; its equivalence test grows).
-- `history.ts`: `segments(points: HistoryPoint[], t0, now): Segment[]` (`{a, b, live}` as the class builds them, the first point clamped to `t0`, an open segment closed at `now` and marked live), `periodStats(segs, now): {count, total, longest, last: number | null}`, `axisTicks(t0, now, n)`, `durationText(ms, t)` (seconds under a minute, minutes under an hour, else `h min`, through `t('security.duration.*')`), `eventRows(segs, range, fmt, t)` (the last forty, newest first, "Still open" or "Open for 3 min"). All pure over spec 12's `HistoryPoint`.
-- `activity.ts`: `newlyActive(prev: Record<string, boolean>, next: Record<string, boolean>): string[]` is `secWatch`'s rule: ids that are on now and were off before (not unknown before). The Home card holds `prev` as element state and adds the `glow` class for 2.8 seconds when the list is not empty.
+- `sensorState`'s wording becomes keys: `security.open`, `closed`, `motionNow`, `noMotion`, `forDuration` (`for {kind, select, …}`), `batteryLow` (`battery {n}%`), `offline`, `lux` (`{n} lx`), joined with `·` as today; the bare form ("for 12 min") is a catalog message over `fmt.ago`'s kind and count (`security.forDuration`, an ICU select like `security.ago`), not a formatter: formatters hold no words (ADR 0013), so there is no `fmt.agoBare` here (spec 22's `fmt.agoBare` must follow the same rule). The pane's `title` key is the feature's `index.ts` (the pane's ticket), not the model's. The French this ticket writes that the legacy rewrite layer never produced (`security.forDuration`'s "depuis …" forms, including "un instant" under a minute and the date past 24 hours, and `openLive`, `history`) is recorded in `test/unit/fixtures/moved/security.json`, and #225's French baselines are expected to show it.
+- `history.ts`: `segments(points: HistoryPoint[], t0, now): Segment[]` (`{a, b, live}` as the class builds them, the first point clamped to `t0`, an open segment closed at `now` and marked live), `periodStats(segs, now): {count, total, longest, last: number | null}`, `axisTicks(t0, now, n)`, `durationText(ms, t)` (seconds under a minute, minutes under an hour, else `h min`, through `t('security.duration.*')`), `eventRows(segs, kind, range, fmt, t)` (the last forty, newest first, "Still open" or "Open for 3 min"; the kind words a door's rows and a motion sensor's differently), `statTiles(stats, kind, now, fmt, t)` (the four tiles' labels and values) and `sheetTexts(kind, name, rangeLabel, t)` (the sheet's words). All pure over spec 12's `HistoryPoint`; `periodStats` counts a live period up to its `now`, so the tick re-reads it without new segments.
+- `activity.ts`: `newlyActive(prev: Record<string, boolean>, next: Record<string, boolean>): string[]` is `secWatch`'s rule: ids that are on now and were off before (not unknown before). `activeOf(sensors)` is the reading, which the model returns as `home.active`; the Home card holds the previous one as element state and adds the `glow` class for 2.8 seconds when the list is not empty.
 
 ### The elements
 
-- **`<hp-security-pane>`**: `active`; `StoreController({ids: s => securityIds(s)})`; `TickController(10_000)`; renders `<hp-pane-header icon="shield" color="var(--m-purple)">` with `t('security.title')` and `vm.summary`, then `<hp-camera-card .view=${vm.cameras}>` and `<hp-sensor-card .view=${vm.sensors}>`. On the phone the pane is what the More sheet opens; the cards are the same.
+- **`<hp-security-pane>`**: `active`; `StoreController({ids: s => securityIds(s)})`; `TickController(this, 10_000, () => this.active)`; renders `<hp-pane-header icon="shield" color="var(--m-purple)">` with `t('security.title')` and `vm.summary`, then `<hp-camera-card .view=${vm.cameras}>` and `<hp-sensor-card .view=${vm.sensors}>`. On the phone the pane is what the More sheet opens; the cards are the same.
 - **`<hp-camera-card>`**: the `.top` line, the `.camgrid` of `button.cam` (`repeat` by id) with the image (`loading="lazy"`, the stamped URL) or the `.camoff` icon, the `.camlbl` with the `.mdot` when moving; a tap dispatches `SheetRequestEvent('security.camera', {id})`; the empty state with the link to `/config/integrations/dashboard/add?domain=unifiprotect` (`target="_top"`, as today).
 - **`<hp-sensor-card>`**: the `.top` line with the amber count, the `.sgrid` of `button.schip` (`repeat` by id) with the tone class, the icon (`door` or `walk`), the name and the `em` main text; a tap dispatches `SheetRequestEvent('security.history', {id})`; `hidden` when `vm.sensors.hidden`.
 - **`<hp-camera-sheet>`**: an `<hp-sheet id="security.camera">` with the camera's name and the sub-line (`cap(state)` becomes `t('security.state.' + state)` with a capitalised fallback, "motion now" or "last motion 5 min ago"); on open, `mountCameraStream(box, store.hass, state, name)`; on close, `destroy()`. `camera-stream.ts`: if `customElements.get('ha-camera-stream')`, create it and set `hass`, `stateObj`, `muted`, `controls`, `allowExoPlayer` as today (the one place a feature hands the raw `hass` object onward, because Home Assistant's element wants it; the header says so); else an `img` on `/api/camera_proxy_stream/<id>?token=<access_token>`; offline shows `t('security.cameraOffline')`. The harness has neither the element nor the proxy, so the baseline shows the offline or the broken-image state as today; a behaviour test asserts the sub-line and that an `img` with the proxy URL is created.
