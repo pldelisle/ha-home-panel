@@ -1,0 +1,37 @@
+# Security
+
+What the Security tab will compute and draw ([spec 17](../../../docs/specs/17-security.md)): the cameras, the door and motion sensors, two sheets and the Home card. This folder holds the pure half so far: the rules that find the cameras and the sensors (in `src/providers/`, because the live pill, the stack and the Home pane read them too, [ADR 0025](../../../docs/adr/0025-shared-reads-live-in-providers.md)), `readSecurity` that composes them and `securityIds` that lists what the pane reads, pinned in Vitest. The legacy panel keeps drawing Security until the model, the elements and the deletion land (#223 and the tickets after it); the files below that do not exist yet are the spec's plan.
+
+## The folder
+
+```
+src/providers/
+  door-motion.ts           doorMotionSensors(states, registries, names): SensorInputs[]; sensorKind(deviceClass)
+  unifi-protect.ts         protectCameras(states, registries, names): CameraInputs[]; the channel, motion and name rules
+  camera-source.ts         CameraInputs, CameraSource: the port the adapter imports, so no provider imports a cycle
+  cameras.ts               CAMERA_SOURCES = [protectCameras]
+src/features/security/
+  README.md
+  index.ts                 securityFeature; exports <hp-security-card>
+  ids.ts                   securityIds(store): cameras, their motion sensors, the door and motion sensors, their battery and lux siblings
+  inputs.ts                readSecurity(states, registries, names, sources): SecurityInputs
+  model.ts                 securityModel(inputs, deps): SecurityViewModel
+  history.ts               segments(points, t0, now), periodStats(segs), axisTicks(t0, now, n), durationText(ms, t)
+  activity.ts              newlyActive(prev, next): string[] (the glow rule), pure
+  security-pane.ts         <hp-security-pane>
+  camera-card.ts           <hp-camera-card>
+  sensor-card.ts           <hp-sensor-card>
+  camera-sheet.ts          <hp-camera-sheet>
+  camera-stream.ts         mountCameraStream(host, hass, stateObj, cameraName): {destroy()}
+  sensor-history.ts        <hp-sensor-history>
+  security-card.ts         <hp-security-card> (Home, pull request 2)
+  styles.css
+```
+
+## The providers
+
+`doorMotionSensors` lists every visible, primary `binary_sensor` whose `device_class` is a door class (`door`, `window`, `opening`, `garage_door`) or a motion class (`motion`, `occupancy`, `presence`) and that is not on the `unifiprotect` platform (its motion shows on the camera tile). A hidden sensor is left out, and so is one with an `entity_category`, a diagnostic. Each sensor reads its area from the entity, else from its device; its name from the device through the resolver, else the entity's, without a leading "Détecteur de mouvement "; and its battery and illuminance from the `sensor.*_battery` and `sensor.*_illuminance` of the same device. The list is **doors first, then each kind by name**. The output is inputs, not a view: `on`, `available` and `since` are values, and the model words "Open" and "for 12 min".
+
+`protectCameras` reads the `camera.*` entities of the `unifiprotect` platform, or of no platform when the attribution says Unifi or Protect, and skips a hidden one, a `_radar` and an `insecure` stream. Protect makes a stream per resolution of each device, so **one tile per device**, and the channel rank decides which: `_high` (or `high_resolution`) is 0, `_medium` 1, any other 2, `_low` 3, and the lowest rank is kept, the first one listed on a tie. A camera with no device is its own. The motion sensor is the device's `binary_sensor.*motion*` that is not a `*detection*`, preferring one that ends in `_motion`; it gives `motion` as `{on, since}`, null when it is unavailable, and `motionId` always. The name is the device's through the resolver without the `(High|Medium|Low)( Resolution Channel)?` suffix; the list is by name.
+
+`CAMERA_SOURCES` is a list of one, a hypothetical seam by ADR 0005's reasoning: a generic `camera.*` adapter would show cameras the legacy panel hides, a visible change with its own baseline, and the list makes it a one-file addition. `readSecurity` joins the sources in list order and reads the sensors beside them; `securityIds` lists every camera, its motion sensor, every sensor and its two siblings, once each.

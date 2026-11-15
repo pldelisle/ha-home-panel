@@ -56,12 +56,12 @@ module.exports = {
       to: {path: FEATURES, pathNot: '^src/features/$1/'},
     },
     {
-      name: 'legacy-imports-core-and-legacy-only',
+      name: 'legacy-imports-core-providers-and-legacy-only',
       severity: 'error',
       comment:
-        'Legacy code is being strangled: it may use the new core, but it must not grow dependencies on the new features, UI kit, providers or shell. The one exception is the legacy sheet, below.',
+        'Legacy code is being strangled: it may use the new core and the providers (ADR 0025: a reading two features need lives in a provider, so a shared read never has two implementations), but it must not grow dependencies on the new features, UI kit or shell. The one exception is the legacy sheet, below.',
       from: {path: LEGACY, pathNot: '^src/styles\\.js$'},
-      to: {path: '^src/', pathNot: [LEGACY, CORE]},
+      to: {path: '^src/', pathNot: [LEGACY, CORE, PROVIDERS]},
     },
     {
       name: 'legacy-sheet-joins-kit-styles',
