@@ -1,6 +1,6 @@
 // <hp-stepper>: the kit's `−  value  +` control, two buttons round a value with a small word under it, in its own shadow root.
 // Pattern: controlled component over a humble object (Meszaros, xUnit Test Patterns): it draws `value` and tells its owner the next one
-// by `step` (Lit docs, Events); the owner holds the value, debounces and sends. Promoted from Media's speaker pod once Air's fan
+// by `step-change` (Lit docs, Events; named beside `<hp-range-tabs>`' `range-change`, since `step` is the tap size); the owner holds the value, debounces and sends. Promoted from Media's speaker pod once Air's fan
 // speed (steps of ten, minimum ten) was its second user with other bounds; the climate setpoint (spec 20) is the third.
 // A known copy: its look duplicates the legacy `.stepper` rules (stepper.element.css) the legacy fan and climate controls still draw, until #234 (Air's deletion) and #248 (Climate move 7) delete them.
 // Must not: keep the value itself, debounce or send a command, or know what it stands for (a volume, a fan, a setpoint).
@@ -103,7 +103,7 @@ export class HpStepper extends LitElement {
   // the event does not bubble: the owner listens on the tag, as it does for `<hp-range-tabs>`
   private ask(delta: number): void {
     const value = stepBy(this.value, delta, this.min, this.max);
-    this.dispatchEvent(new CustomEvent<StepDetail>('step', {detail: {value}}));
+    this.dispatchEvent(new CustomEvent<StepDetail>('step-change', {detail: {value}}));
   }
 }
 
@@ -112,7 +112,7 @@ declare global {
     'hp-stepper': HpStepper;
   }
   interface HTMLElementEventMap {
-    step: CustomEvent<StepDetail>;
+    'step-change': CustomEvent<StepDetail>;
   }
 }
 

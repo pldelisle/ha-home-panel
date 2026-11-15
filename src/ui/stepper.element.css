@@ -53,7 +53,6 @@
 }
 :host([glass]) .step {
   background: var(--g-sel);
-  border-color: transparent;
 }
 @media (prefers-reduced-transparency: reduce) {
   :host([glass]) {

@@ -10,12 +10,12 @@ test.beforeEach(() => tabletOnly());
 const SPEAKER = 'media_player.living_room_speaker';
 const stepper = (house: House) => house.root().locator('#pane-media hp-speaker-pod hp-stepper');
 
-/** the values the stepper's `step` events carry from now on, read from the page */
+/** the values the stepper's `step-change` events carry from now on, read from the page */
 const listen = (house: House) =>
   stepper(house).evaluate(el => {
     const seen: number[] = [];
     (window as unknown as {seen: number[]}).seen = seen;
-    el.addEventListener('step', e => seen.push((e as CustomEvent<{value: number}>).detail.value));
+    el.addEventListener('step-change', e => seen.push((e as CustomEvent<{value: number}>).detail.value));
   });
 const heard = (house: House) => house.page.evaluate(() => (window as unknown as {seen: number[]}).seen);
 

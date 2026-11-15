@@ -90,7 +90,7 @@ export class SpeakerPod extends LitElement {
               .label=${volume.caption}
               .decrementLabel=${volume.downLabel}
               .incrementLabel=${volume.upLabel}
-              @step=${this.onStep}
+              @step-change=${this.onStep}
             ></hp-stepper>`
           : nothing
       }
