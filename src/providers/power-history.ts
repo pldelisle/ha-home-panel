@@ -1,10 +1,11 @@
 // The power history every reader of it shares: which statistics to ask, and the hourly flow, the meter's totals and the water heater's day they make.
-// Pattern: an adapter below the features (ADR 0025), pure over the recorder's rows; the energy card, the smart stack, the live pill's
-// water heater and the Home pane read these slices, so they are not Energy's to keep (ADR 0028); each rule is a block of the legacy
-// `derive` (#241 deletes it), and the numbers are kWh. The windows start on a stable hour, so the shared cache (ADR 0028) can answer a repeat.
+// Pattern: an adapter below the features (ADR 0025), pure over the recorder's rows. Today the legacy `loadHistory` asks its windows and
+// src/features/energy/history.ts cuts its slices; the smart stack (#240), the live pill's water heater and the Home pane (#241, which
+// deletes the legacy `derive` each rule is a block of) read them next, so they are not Energy's to keep (ADR 0028). The numbers are kWh.
+// The windows start on a stable hour, so the shared cache (ADR 0028) can answer a repeat.
 // Must not: call the API client or the cache, word anything a person reads, or read the clock or the zone (`now` and the formats are passed in).
 import type {ResolvedConfig} from '../core/config.ts';
-import {DAY_MS, HOUR_MS} from '../core/figures.ts';
+import {DAY_MS, HOUR_MS, MINUTE_MS} from '../core/figures.ts';
 import type {StatisticRow} from '../core/ha.ts';
 import type {Formatters} from '../core/i18n/format.ts';
 
@@ -63,7 +64,6 @@ export interface DayKeys {
   hoursToday: number;
 }
 
-const MINUTE_MS = 6e4;
 /** A day's statistic is dated at local midnight, and half a day later it names the same local day in any zone. */
 export const NOON_MS = 12 * HOUR_MS;
 
@@ -131,30 +131,53 @@ export function dayKeys(now: number, fmt: Pick<Formatters, 'isoDay' | 'hourNow'>
   };
 }
 
+/** The sensors' means for one of the grid's rows, in kW: the grid, the water heater, the charger, the heating (the rooms together) and each room. */
+export interface FlowParts {
+  start: number;
+  grid: number;
+  wh: number;
+  ev: number;
+  heat: number;
+  rooms: number[];
+}
+
 /**
- * The hourly flow: for each hour the grid reads, the charger, the water heater and the heating (the rooms together) in kWh, what the
- * grid leaves as `rest` (never below zero) and the grid itself; a sensor with no row for that hour counts for nothing.
+ * The split every flow is cut from: for each row the grid has a mean for, the water heater's, the charger's and the rooms' means of the
+ * same start, a sensor with no row for that start counting for nothing. The hourly flow and Energy's daily totals both read it.
  */
-export function hourlyFlow(stats: StatsReply, ids: FlowIds): FlowRow[] {
+export function flowParts(stats: StatsReply, ids: FlowIds): FlowParts[] {
   const heater = meanByStart(stats, ids.waterHeater);
   const charger = meanByStart(stats, ids.ev);
   const rooms = ids.rooms.map(id => meanByStart(stats, id));
   return rowsOf(stats, ids.grid)
     .filter(row => row.mean != null)
     .map(({start, mean}) => {
-      const grid = mean as number;
-      const wh = heater.get(start) || 0;
-      const ev = charger.get(start) || 0;
-      const heat = sum(rooms.map(room => room.get(start) || 0));
-      return [
+      const each = rooms.map(room => room.get(start) || 0);
+      return {
         start,
-        rounded(ev),
-        rounded(wh),
-        rounded(heat),
-        rounded(Math.max(0, grid - wh - ev - heat)),
-        rounded(grid),
-      ];
+        grid: mean as number,
+        wh: heater.get(start) || 0,
+        ev: charger.get(start) || 0,
+        heat: sum(each),
+        rooms: each,
+      };
     });
+}
+
+/** What the grid leaves once the water heater, the charger and the heating are taken: the rest of the home, never below zero. */
+export const restOf = (grid: number, wh: number, ev: number, heat: number): number =>
+  Math.max(0, grid - wh - ev - heat);
+
+/** The hourly flow: each hour's parts in kWh (an hour's mean kW is its kWh), rounded to the watt-hour. */
+export function hourlyFlow(stats: StatsReply, ids: FlowIds): FlowRow[] {
+  return flowParts(stats, ids).map(({start, grid, wh, ev, heat}) => [
+    start,
+    rounded(ev),
+    rounded(wh),
+    rounded(heat),
+    rounded(restOf(grid, wh, ev, heat)),
+    rounded(grid),
+  ]);
 }
 
 /** What the meter says: today so far, yesterday, the last 30 days and this month, in kWh; yesterday is null when no day says it. */

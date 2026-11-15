@@ -7,7 +7,8 @@ import type {StatisticRow} from '../../../../src/core/ha.ts';
 import {createFormatters} from '../../../../src/core/i18n/format.ts';
 import {panelLocale} from '../../../../src/core/i18n/locale.ts';
 import {deriveEnergyHistory, type EnergyReplies} from '../../../../src/features/energy/history.ts';
-import {EnergyHistory, FRESH_MS, RETRY_MS, type EnergyHistoryDeps} from '../../../../src/features/energy/loader.ts';
+import {STATISTICS_TTL_MS} from '../../../../src/core/statistics-cache.ts';
+import {EnergyHistory, RETRY_MS, type EnergyHistoryDeps} from '../../../../src/features/energy/loader.ts';
 import {fakeHass} from '../../fake-hass.ts';
 
 const fmt = createFormatters(
@@ -102,7 +103,7 @@ describe('EnergyHistory', () => {
     await settle();
     history.hostUpdate();
     history.hostConnected();
-    await vi.advanceTimersByTimeAsync(FRESH_MS - 1);
+    await vi.advanceTimersByTimeAsync(STATISTICS_TTL_MS - 1);
     history.hostUpdate();
     await settle();
     expect(calls).toHaveLength(5);
@@ -111,11 +112,11 @@ describe('EnergyHistory', () => {
   test('loads again once the data is fifteen minutes old', async () => {
     const {history, calls} = setup();
     history.hostConnected();
-    await vi.advanceTimersByTimeAsync(FRESH_MS);
+    await vi.advanceTimersByTimeAsync(STATISTICS_TTL_MS);
     history.hostUpdate();
     await settle();
     expect(calls).toHaveLength(10);
-    expect(history.data?.at).toBe(NOW + FRESH_MS);
+    expect(history.data?.at).toBe(NOW + STATISTICS_TTL_MS);
   });
 
   test('loads again after the config generation changed, once', async () => {

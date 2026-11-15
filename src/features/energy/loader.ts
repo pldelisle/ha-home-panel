@@ -1,17 +1,15 @@
-// EnergyHistory: the controller that loads Energy's history through the panel's statistics cache when its host is shown, and keeps it fifteen minutes.
+// EnergyHistory: the controller that loads Energy's history through the panel's statistics cache when its host is shown, and keeps it as long as the cache would.
 // Pattern: lazy load (Fowler, PoEAA) as a Lit reactive controller; nothing is asked while the host is hidden (ADR 0028). The slices are those of
 // history.ts; the windows are asked together, and a reply that arrives after the host left or the config changed is dropped.
 // Must not: call the API client (only the cache), draw or word anything, retry a failure more than once a minute, or keep what it derived from.
 import type {ReactiveController, ReactiveControllerHost} from 'lit';
-import {StaleReply} from '../../core/api.ts';
-import type {StatisticsCache} from '../../core/statistics-cache.ts';
+import {rejectionReason, StaleReply} from '../../core/api.ts';
+import {STATISTICS_TTL_MS, type StatisticsCache} from '../../core/statistics-cache.ts';
 import type {PanelStore} from '../../core/store.ts';
 import type {Formatters} from '../../core/i18n/format.ts';
 import {deriveEnergyHistory, energyWindows, type EnergyHistoryData, type EnergyReplies} from './history.ts';
 import type {StatisticsWindow} from '../../providers/power-history.ts';
 
-/** How long the derived slices stay fresh, the legacy panel's fifteen minutes. */
-export const FRESH_MS = 15 * 60_000;
 /** How soon after a failure the next update asks again: a failed load must not turn every update into a request. */
 export const RETRY_MS = 60_000;
 
@@ -30,6 +28,7 @@ interface Request {
   generation: number;
 }
 
+/** The energy card mounts it (#239); until then only its tests do. */
 export class EnergyHistory implements ReactiveController {
   data: EnergyHistoryData | null = null;
   /** Why the last load failed (the card words "History didn't load"); null when it did not. */
@@ -63,7 +62,7 @@ export class EnergyHistory implements ReactiveController {
     const {cache, store, fmt} = this.deps();
     const {generation} = store;
     const now = Date.now();
-    if (this.data && generation === this.generation && now - this.data.at < FRESH_MS) return;
+    if (this.data && generation === this.generation && now - this.data.at < STATISTICS_TTL_MS) return;
     if (this.request?.generation === generation) return;
     if (now - this.failedAt < RETRY_MS) return;
     const request: Request = (this.request = {generation});
@@ -88,7 +87,7 @@ export class EnergyHistory implements ReactiveController {
       // a reply of a config that is gone is no failure: the next update asks again under the new one
       if (!(error instanceof StaleReply)) {
         console.error('home-panel energy history', error);
-        this.error = reasonOf(error);
+        this.error = rejectionReason(error);
         this.failedAt = now;
       }
     }
@@ -96,9 +95,3 @@ export class EnergyHistory implements ReactiveController {
     this.host.requestUpdate();
   }
 }
-
-// Home Assistant rejects with `{code, message}`, not an Error; the legacy panel said the message, else the code, else the value
-const reasonOf = (error: unknown): string => {
-  const rejection = error as {message?: unknown; code?: unknown} | null;
-  return String(rejection?.message || rejection?.code || error);
-};

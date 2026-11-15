@@ -5,7 +5,7 @@
 // their fraction digits to 2, time24 and time24s joining the parts with a colon and Latin digits in every locale (the table asks for `16:07`),
 // and `ago`, the one function that returns no text: it cuts a span into a kind and a count (the legacy rule) and formats only the date, so the words stay in the catalog.
 // Must not: read the clock, the DOM or a browser default, or hold a word a person reads.
-import {HOUR_MS} from '../figures.ts';
+import {HOUR_MS, MINUTE_MS} from '../figures.ts';
 import type {PanelLocaleSpec} from './locale.ts';
 
 type Instant = Date | number;
@@ -55,8 +55,6 @@ export interface Formatters {
   /** The legacy panel's `ago` rule (1, 60 and 1440 minutes), which stays there until the last feature that says it has moved; `now` is passed in, never read. */
   ago(d: Instant, now: number): Ago;
 }
-
-const MINUTE_MS = 6e4;
 
 const PARTS_CACHE_LIMIT = 20_000;
 

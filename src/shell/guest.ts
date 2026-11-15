@@ -21,7 +21,7 @@ export interface GuestContext {
   host: HTMLElement;
   store: PanelStore;
   api: PanelApi;
-  /** The panel's one statistics cache (ADR 0028): the legacy `loadHistory` asks it for the power windows Energy's card asks too. Deleted with the guest. */
+  /** The panel's one statistics cache (ADR 0028): the legacy `loadHistory` asks it for the power windows Energy's card asks too. Deleted with the guest (#277). */
   statistics: StatisticsCache;
   settings: PanelSettings;
   shell: ShellForGuest;

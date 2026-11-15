@@ -23,7 +23,7 @@ import {resolveConfig} from '../core/config.ts';
 import type {PanelHass} from '../core/hass.ts';
 import {browserDefaults} from '../core/i18n/browser.ts';
 import {createSettings, type KeyValueStorage} from '../core/settings.ts';
-import {createStatisticsCache} from '../core/statistics-cache.ts';
+import {createStatisticsCache, STATISTICS_TTL_MS} from '../core/statistics-cache.ts';
 import {createStore} from '../core/store.ts';
 import {MediaQueryController} from '../ui/controllers/media-query.ts';
 import {StoreController} from '../ui/controllers/store-controller.ts';
@@ -113,7 +113,7 @@ export class HomePanel extends LitElement {
   private readonly store = createStore(storeOptions());
   private readonly api = createApi(this.store);
   /** The one memo of the recorder's reads for this panel (ADR 0028); a reply stays fresh as long as a feature keeps its history. */
-  private readonly statistics = createStatisticsCache(this.api, {ttlMs: 15 * 60_000});
+  private readonly statistics = createStatisticsCache(this.api, {ttlMs: STATISTICS_TTL_MS});
   private readonly settings = createSettings(browserStorage());
   // what the household asked for and Home Assistant has not confirmed yet: the panel's elements share it (ADR 0023)
   private readonly optimistic = new OverlayStore();

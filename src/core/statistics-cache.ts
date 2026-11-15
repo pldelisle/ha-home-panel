@@ -11,6 +11,9 @@ export type StatisticsCache = Pick<PanelApi, 'statistics' | 'history'> & {
   clear(): void;
 };
 
+/** How long a recorder reply stays fresh, the legacy panel's fifteen minutes: the cache's time to live, and how long a feature keeps what it derived. */
+export const STATISTICS_TTL_MS = 15 * 60_000;
+
 export interface StatisticsCacheOptions {
   /** How long a reply stays fresh, in milliseconds. */
   ttlMs: number;

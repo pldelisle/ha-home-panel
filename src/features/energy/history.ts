@@ -4,19 +4,19 @@
 // src/providers/power-history.ts (ADR 0028); here is what only Energy reads. kWh; a day's key is the local day of the row's noon.
 // Must not: call the API client or the cache, word anything a person reads, or read the clock or the zone (`now` and the formats are passed in).
 import type {ResolvedConfig} from '../../core/config.ts';
-import {DAY_MS} from '../../core/figures.ts';
+import {DAY_MS, MINUTE_MS} from '../../core/figures.ts';
 import type {Formatters} from '../../core/i18n/format.ts';
 import {
   dailyChanges,
   dailyPowerWindow,
   dayKeys,
   flowIds,
+  flowParts,
   hourlyFlow,
-  meanByStart,
   meterTotals,
   NOON_MS,
   powerWindows,
-  rowsOf,
+  restOf,
   sum,
   waterDay,
   type DayKeys,
@@ -69,28 +69,15 @@ export function dailyTotals(
   keys: Pick<DayKeys, 'today' | 'hoursToday'>,
   isoDay: Formatters['isoDay'],
 ): DailyRow[] {
-  const heater = meanByStart(stats, ids.waterHeater);
-  const charger = meanByStart(stats, ids.ev);
-  const rooms = ids.rooms.map(id => meanByStart(stats, id));
-  return rowsOf(stats, ids.grid)
-    .filter(row => row.mean != null)
-    .map(({start, mean}) => {
-      const day = isoDay(start + NOON_MS);
-      const hours = day === keys.today ? keys.hoursToday : 24;
-      const wh = (heater.get(start) || 0) * hours;
-      const ev = (charger.get(start) || 0) * hours;
-      const heat = sum(rooms.map(room => room.get(start) || 0)) * hours;
-      const total = (mean as number) * hours;
-      return {
-        day,
-        heat,
-        wh,
-        ev,
-        rest: Math.max(0, total - wh - ev - heat),
-        total,
-        rooms: rooms.map(room => (room.get(start) || 0) * hours),
-      };
-    });
+  return flowParts(stats, ids).map(({start, grid, wh: whKw, ev: evKw, heat: heatKw, rooms}) => {
+    const day = isoDay(start + NOON_MS);
+    const hours = day === keys.today ? keys.hoursToday : 24;
+    const wh = whKw * hours;
+    const ev = evKw * hours;
+    const heat = heatKw * hours;
+    const total = grid * hours;
+    return {day, heat, wh, ev, rest: restOf(total, wh, ev, heat), total, rooms: rooms.map(kw => kw * hours)};
+  });
 }
 
 /** The heating, the water heater, the charger and the rest over the last `days` days: `[heat, wh, ev, rest]`. */
@@ -115,16 +102,22 @@ export function monthlyTotals(daily: readonly DailyRow[]): [string, MonthSplit][
   return Object.entries(months).sort().slice(-12);
 }
 
-/** Of the last 24 hours of the water heater's power in five-minute means: its kWh, and its heating cycles (a run above 0.2 kW, joined across gaps up to five minutes). */
+/** The power a water heater reads when it heats: the legacy `renderWater`'s threshold, in kW. */
+export const HEATING_KW = 0.2;
+/** Two readings this close, both heating, are one cycle: the gap between five-minute means. */
+export const CYCLE_GAP_MS = 5 * MINUTE_MS;
+/** Five-minute means of kW: twelve to the hour, so their sum over twelve is kWh. */
+const MEANS_PER_HOUR = 12;
+
+/** Of the last 24 hours of the water heater's power in five-minute means: its kWh, and its heating cycles (a run above `HEATING_KW`, joined across gaps up to `CYCLE_GAP_MS`). */
 export function waterCycles(power: readonly Point[], now: number): {kwh24: number; cycles: number} {
   const points = power.filter(([t]) => t >= now - DAY_MS);
   let cycles = 0;
   points.forEach(([t, kw], index) => {
     const before = points[index - 1];
-    if (kw > 0.2 && !(before && before[1] > 0.2 && t - before[0] <= 3e5)) cycles++;
+    if (kw > HEATING_KW && !(before && before[1] > HEATING_KW && t - before[0] <= CYCLE_GAP_MS)) cycles++;
   });
-  // five-minute means of kW: twelve to the hour
-  return {kwh24: sum(points.map(([, kw]) => kw)) / 12, cycles};
+  return {kwh24: sum(points.map(([, kw]) => kw)) / MEANS_PER_HOUR, cycles};
 }
 
 /** The water heater's daily kWh as `[day key, kWh]` for the last 14 days before today. */
