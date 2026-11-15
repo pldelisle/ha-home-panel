@@ -19,8 +19,8 @@ The panel stays on ApexCharts `3.45.2`, exact, behind `<hp-chart>`, through phas
 
 So that a later swap is one module, `<hp-chart>` keeps three things stable:
 
-- **Options are plain data.** Pure functions build them (`detailChartOptions` in Weather's and Air's `history.ts`, the kit's `chart-options.ts`, and Energy's `charts.ts` when it lands), and no feature builds, holds or calls an ApexCharts instance.
-- **Callbacks take `fmt` and `t`.** Every formatter and word is built from the panel's formatters and catalog, never the library's own formats.
+- **Options are plain data.** Pure functions build them (`detailChartOptions` in Weather's `history.ts`, `airChartOptions` and `outdoorChartOptions` in Air's, the kit's `chart-options.ts`, and Energy's `charts.ts` when it lands), and no feature builds, holds or calls an ApexCharts instance.
+- **Callbacks take `fmt` and `t`.** Every formatter and word is built from the panel's formatters and catalog, never the library's own formats. One exception stands: a time axis's date formats are the library's pattern strings (`MMM yyyy`, `d MMM`), with the panel's locale names for months and days (`frenchAxis` in `chart-options.ts`).
 - **The element owns the instance.** It alone creates, updates and destroys it, and `core/apex.ts` is the only door to the library.
 
 ## Consequences
