@@ -43,6 +43,14 @@ const LEGEND: readonly {kind: 'line' | 'bars'; label: MessageKey}[] = [
   {kind: 'bars', label: 'energy.water.power'},
 ];
 
+/** The range tabs' words: the kit's for the three ranges it has, Energy's own `Today` (the key the card's tile already uses). */
+const RANGE_WORDS: Record<EnergyRange, MessageKey> = {
+  today: 'energy.today',
+  week: RANGES.week.tabKey,
+  month: RANGES.month.tabKey,
+  year: RANGES.year.tabKey,
+};
+
 /** The four uses' words, by key: the legend, the donut's table and the Sankey's nodes say them. */
 const GROUP_WORDS: Record<GroupKey, MessageKey> = {
   heat: 'energy.tile.heat',
@@ -117,7 +125,7 @@ export interface EnergyDetailView {
   /** The same sentence as the pane's. */
   sub: string;
   /** The range tabs, today to year. */
-  ranges: RangeTab[];
+  ranges: RangeTab<EnergyRange>[];
   main: {title: string; caption: string; legend: LegendItem[]};
   sankey: {
     title: string;
@@ -479,7 +487,7 @@ export function energyModel(
     detail: {
       title: t('energy.card.title'),
       sub: summary,
-      ranges: ENERGY_RANGES.map(key => ({range: key, label: t(RANGES[key].tabKey)})),
+      ranges: ENERGY_RANGES.map(key => ({range: key, label: t(RANGE_WORDS[key])})),
       main: mainBlock(history, detail),
       sankey: sankeyBlock(inputs, history, flow, detail),
       donut: donutBlock(history, detail),

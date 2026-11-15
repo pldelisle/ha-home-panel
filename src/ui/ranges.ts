@@ -1,11 +1,10 @@
-// RANGES: the history ranges (a day, a week, a month, a year, and Energy's today) as data: how far back, which statistics period, how the axis reads.
+// RANGES: the history ranges (a day, a week, a month, a year) as data: how far back, which statistics period, how the axis reads.
 // Pattern: table-driven design (a table, not four branches), after the legacy panel's CRANGE with every word replaced by a
-// message key; it sits in the UI kit because Weather, Climate, Air and the sensors' sheets all read the same four ranges. `today` is Energy's alone.
+// message key; it sits in the UI kit because Weather, Climate, Air and the sensors' sheets all read the same four ranges.
 // Must not: import anything but types, hold a string the household reads, or format a date (the tooltip format is Apex's own syntax).
 import type {MessageKey} from '../core/i18n/en.ts';
 
-/** `today` has no statistics period: Energy draws it from the hours it loaded for the week; every reader that asks the recorder skips it. */
-export type Range = 'day' | 'week' | 'month' | 'year' | 'today';
+export type Range = 'day' | 'week' | 'month' | 'year';
 
 /** The recorder's statistics periods a range asks for. */
 export type StatisticsPeriod = '5minute' | 'hour' | 'day';
@@ -13,8 +12,8 @@ export type StatisticsPeriod = '5minute' | 'hour' | 'day';
 export interface RangeDefinition {
   /** How far back the range reaches. */
   days: number;
-  /** The statistics period it asks the recorder for; null for `today`, which asks for none. */
-  period: StatisticsPeriod | null;
+  /** The statistics period it asks the recorder for. */
+  period: StatisticsPeriod;
   /** The length of one bucket of that period; a row is drawn at the middle of its bucket, and plain history is thinned to one point per bucket. */
   bucketMs: number;
   /** "Week", on the range's tab. */
@@ -31,7 +30,7 @@ export interface RangeDefinition {
   tooltipFormat: string;
 }
 
-/** The ranges in the order their tabs show them; `today` is last, and each feature that draws tabs names the ones it shows. */
+/** The ranges in the order their tabs show them. */
 export const RANGES: Record<Range, RangeDefinition> = {
   day: {
     days: 1,
@@ -76,16 +75,5 @@ export const RANGES: Record<Range, RangeDefinition> = {
     meanKey: 'range.mean.daily',
     ticks: 12,
     tooltipFormat: 'ddd MMM d, yyyy',
-  },
-  today: {
-    days: 1,
-    period: null,
-    bucketMs: 36e5,
-    tabKey: 'range.today.tab',
-    labelKey: 'range.today.label',
-    shortKey: 'range.today.short',
-    meanKey: 'range.mean.hourly',
-    ticks: 12,
-    tooltipFormat: 'HH:mm',
   },
 };

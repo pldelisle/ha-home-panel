@@ -11,7 +11,7 @@ ADR 0027 keeps ApexCharts behind `<hp-chart>`: the options are plain data, and t
 
 ## Decision
 
-**`<hp-chart>` has a public `shape` property: a string naming the kind of chart the options describe.** A change of `shape` draws a new instance, as a change of theme, language or height does; any other change of `options` stays an `updateOptions`. An owner whose options change only in data leaves `shape` empty and is unchanged. Energy passes the range.
+**`<hp-chart>` has a public `shape` property: a string naming the kind of chart the options describe.** A change of `shape` draws a new instance, as a change of theme, language or height does; any other change of `options` stays an `updateOptions`. An owner whose options change only in data leaves `shape` empty and is unchanged. Energy passes the kind of its axis (`mainShape`: `time` for Today and Week, `category` for Month and Year), not the range: Today to Week is an update of the chart it has.
 
 **The first draw waits for a width.** If the chart's place has none when it would draw, `<hp-chart>` observes it with a `ResizeObserver` and draws, once, when it has one; a new update, a disconnect or a dispose cancels the wait. No owner has to know when its pane is shown.
 
@@ -19,7 +19,7 @@ Both rules live in the element: options stay plain data and never carry an insta
 
 ## Consequences
 
-- A range tap on Energy makes a new chart, with the library's draw animation, as the legacy panel's did; it asks the recorder for nothing.
+- A range tap on Energy that changes the kind of axis makes a new chart, with the library's draw animation, as the legacy panel's did at every tap; one of the same kind updates the bars. Neither asks the recorder for anything.
 - A chart in a closed sheet or a hidden pane costs no draw until it is shown, which also spares the work.
 - Resizing the window under a mounted chart still throws `NaN` as the pane leaves (#333); this ADR does not fix it.
 - The harness proves both rules (`energy.spec.ts`, `chunks.spec.ts`); no Lit element is mounted in Node (ADR 0005).

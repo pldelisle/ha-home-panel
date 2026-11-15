@@ -7,6 +7,7 @@ import {
   isEnergyRange,
   mainChartOptions,
   mainRows,
+  mainShape,
   middleOf,
   noonOf,
   type ChartDeps,
@@ -93,6 +94,10 @@ describe('the ranges', () => {
     expect([...ENERGY_RANGES]).toEqual(['today', 'week', 'month', 'year']);
     expect(ENERGY_RANGES.every(isEnergyRange)).toBe(true);
     expect(isEnergyRange('day')).toBe(false);
+  });
+
+  test('today and the week stand on a time axis, the month and the year on categories: the shape <hp-chart> draws a new chart for', () => {
+    expect(ENERGY_RANGES.map(mainShape)).toEqual(['time', 'time', 'category', 'category']);
   });
 });
 

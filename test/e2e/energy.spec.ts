@@ -379,8 +379,17 @@ test.describe('the detail on a tablet', () => {
       ),
       'same shape',
     ).toBe(true);
-    await rangeTab(house, 'Week').click();
+    await rangeTab(house, 'Week').click(); // the same kind of axis: the instance stays
     await expect(mainTitle(house)).toHaveText('Last 7 days, hour by hour');
+    await house.page.waitForTimeout(300);
+    expect(
+      await mainChart.evaluate(
+        el => (el as unknown as {chart: object; probe: object}).chart === (el as unknown as {probe: object}).probe,
+      ),
+      'same shape, another range',
+    ).toBe(true);
+    await rangeTab(house, 'Month').click(); // categories: a new instance
+    await expect(mainTitle(house)).toHaveText('Last 30 days, day by day');
     await expect
       .poll(
         () =>

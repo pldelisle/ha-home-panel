@@ -7,7 +7,7 @@ import {ifDefined} from 'lit/directives/if-defined.js';
 import {AppearanceConsumer} from './controllers/appearance-consumer.ts';
 import {SwipeToClose} from './controllers/swipe-to-close.ts';
 import {ico, type IconName} from './icons.ts';
-import './pane-header.ts';
+import {type PaneHeader} from './pane-header.ts'; // defines <hp-pane-header>
 import {common, motion, sheet} from './styles/index.ts';
 import sheetOwn from './sheet.element.css?inline';
 import {forShadow} from './styles/host.ts';
@@ -118,8 +118,7 @@ export class HpSheet extends LitElement {
   // The button is slotted into the pane header, whose own tree is drawn after this one's: a sheet made open (a feature draws it only while
   // it is open) has no slot for the button until the header has rendered, and a button that is not drawn cannot take focus.
   private async focusClose(): Promise<void> {
-    await this.renderRoot.querySelector<HTMLElement & {updateComplete?: Promise<boolean>}>('hp-pane-header')
-      ?.updateComplete;
+    await this.renderRoot.querySelector<PaneHeader>('hp-pane-header')?.updateComplete;
     if (this.open) this.renderRoot.querySelector<HTMLElement>('.close')?.focus();
   }
 }

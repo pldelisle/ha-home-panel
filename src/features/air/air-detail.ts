@@ -108,13 +108,10 @@ const needsBuild = (slot: ChartSlot<{at: number}>, base: string): boolean =>
   !!slot.load && (slot.built?.load !== slot.load || slot.built.base !== base);
 
 /** The mean of each sensor over the range, through the cache; no sensor, no request (a house with none has nothing to chart). */
-const rowsOf = (cache: StatisticsCache, ids: readonly string[], range: Range, now: number): Promise<Rows> => {
-  const {period} = RANGES[range];
-  // `today` has no period and is Energy's: Air's tabs never offer it
-  return ids.length && period !== null
-    ? cache.statistics([...ids], period, statisticsStart(now, range), ['mean'])
+const rowsOf = (cache: StatisticsCache, ids: readonly string[], range: Range, now: number): Promise<Rows> =>
+  ids.length
+    ? cache.statistics([...ids], RANGES[range].period, statisticsStart(now, range), ['mean'])
     : Promise.resolve({});
-};
 
 /** The detail's badge, the legacy sheet's own art (the wind's three lines), where the rail and the phone's header draw the `aq` icon. */
 export const detailIcon = svg`<svg

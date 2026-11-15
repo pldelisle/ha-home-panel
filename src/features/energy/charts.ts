@@ -8,16 +8,22 @@ import type {Translate} from '../../core/i18n/messages.ts';
 import type {FlowRow} from '../../providers/power-history.ts';
 import {sum} from '../../providers/power-history.ts';
 import {mergeOptions, type ChartOptions} from '../../ui/chart-options.ts';
-import type {Range} from '../../ui/ranges.ts';
 import {thinCategories} from '../../ui/thin-axis.ts';
 import {GROUPS, type DailyRow, type EnergyHistoryData, type MonthSplit} from './history.ts';
 
-/** The ranges the main chart draws, in the order of its tabs. */
-export const ENERGY_RANGES = ['today', 'week', 'month', 'year'] as const satisfies readonly Range[];
+/** The ranges the main chart draws, in the order of its tabs: Energy's own, since `today` is no range of the kit's `RANGES` (it asks the recorder for nothing). */
+export const ENERGY_RANGES = ['today', 'week', 'month', 'year'] as const;
 export type EnergyRange = (typeof ENERGY_RANGES)[number];
 
-/** The range a tab chose is one the detail draws (the tabs offer no other; the event's type is the kit's whole `Range`). */
-export const isEnergyRange = (range: Range): range is EnergyRange => ENERGY_RANGES.some(one => one === range);
+/** The range a tab chose is one the detail draws (the tabs offer no other; the event carries any string). */
+export const isEnergyRange = (range: string): range is EnergyRange => ENERGY_RANGES.some(one => one === range);
+
+/** The kind of axis a range's bars stand on: a time axis for today and the week, categories for the month and the year. */
+export type MainShape = 'time' | 'category';
+
+/** The shape `<hp-chart>` is told (ADR 0029): a new chart only where the axis changes in kind, an update between two ranges of the same kind. */
+export const mainShape = (range: EnergyRange): MainShape =>
+  range === 'today' || range === 'week' ? 'time' : 'category';
 
 /** The rows a range's bars are drawn from: hours for today and the week, days for the month, months for the year. */
 export type MainRows =

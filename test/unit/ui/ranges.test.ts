@@ -36,14 +36,9 @@ describe('RANGES against the class CRANGE', () => {
       expect(en[RANGES[range].tabKey]).toBe(range[0].toUpperCase() + range.slice(1));
   });
 
-  test('the same four ranges, in the order of their tabs, and Energy’s today after them', () => {
-    expect(Object.keys(RANGES).slice(0, 4)).toEqual(Object.keys(OLD));
-    expect(Object.keys(RANGES)).toEqual(['day', 'week', 'month', 'year', 'today']);
-  });
-
-  test('today has no statistics period: it is drawn from the hours the week loaded, and every reader that asks the recorder skips it', () => {
-    expect(RANGES.today).toMatchObject({days: 1, period: null, bucketMs: 36e5, tooltipFormat: 'HH:mm'});
-    expect(en[RANGES.today.tabKey]).toBe('Today');
+  test('the same four ranges, in the order of their tabs', () => {
+    expect(Object.keys(RANGES)).toEqual(Object.keys(OLD));
+    expect(Object.keys(RANGES)).toEqual(['day', 'week', 'month', 'year']);
   });
 
   test.each(Object.keys(OLD) as Range[])('%s: the span, the period, the ticks, the tooltip and the words', range => {
@@ -61,7 +56,6 @@ describe('RANGES against the class CRANGE', () => {
       ['hour', 36e5],
       ['hour', 36e5],
       ['day', 864e5],
-      [null, 36e5],
     ]);
   });
 });

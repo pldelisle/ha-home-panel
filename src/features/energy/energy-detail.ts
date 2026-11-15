@@ -10,6 +10,7 @@ import {
   donutOptions,
   mainChartOptions,
   mainRows,
+  mainShape,
   type ChartDeps,
   type EnergyRange,
   type EnergyTokens,
@@ -176,7 +177,7 @@ export class EnergyDetail extends LitElement {
         built
           ? html`<hp-chart
               .height=${320}
-              .shape=${built.range}
+              .shape=${mainShape(built.range)}
               .label=${`${main.title}. ${main.caption}`}
               .options=${built.main}
             ></hp-chart>`
@@ -255,8 +256,8 @@ export class EnergyDetail extends LitElement {
   // arrow fields, so the template hands the same function at every render
 
   // the header's tabs (a tablet) tell here; the pane keeps the choice and hands it back
-  private readonly onRange = (event: CustomEvent<RangeChangeDetail>): void => {
-    this.dispatchEvent(new CustomEvent<RangeChangeDetail>('range-chosen', {detail: event.detail}));
+  private readonly onRange = (event: CustomEvent<RangeChangeDetail<string>>): void => {
+    this.dispatchEvent(new CustomEvent<RangeChangeDetail<string>>('range-chosen', {detail: event.detail}));
   };
 
   private onMode(mode: SankeyMode): void {

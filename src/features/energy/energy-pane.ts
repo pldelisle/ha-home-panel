@@ -284,7 +284,7 @@ export class EnergyPane extends LitElement {
   };
 
   // the sheet header's tabs and the tablet header's (the detail's `range-chosen`) both tell here; the detail gets the choice back
-  private readonly onRange = (e: CustomEvent<RangeChangeDetail>): void => {
+  private readonly onRange = (e: CustomEvent<RangeChangeDetail<string>>): void => {
     e.stopPropagation();
     if (!isEnergyRange(e.detail.range)) return;
     this.range = e.detail.range;
