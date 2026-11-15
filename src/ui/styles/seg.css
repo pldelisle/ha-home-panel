@@ -1,5 +1,5 @@
-/* The segmented control: a row or a grid of radio buttons, one chosen. The settings popup draws two in its own root; the Car,
-   Climate and Air panes draw the rest in the guest, so the legacy sheet joins this file where the control's rules were. */
+/* The segmented control: a row or a grid of radio buttons, one chosen. The settings popup and Air's detail draw theirs in their
+   own roots (until `<hp-seg>`, #247); the Car and Climate panes draw the rest in the guest, so the legacy sheet joins this file where the control's rules were. */
 .seg {
   display: grid;
   grid-auto-flow: column;

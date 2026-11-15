@@ -76,8 +76,8 @@ const LAYOUT = ['open-energy', 'lights', 'open-climate', 'open-air', 'open-car',
 // Tabs view: one pane per subject, for a tablet fixed to the wall. Five panes host the detail sheets inline. The rail, the
 // phone's bar and the panes are the shell's (src/shell/features.ts); the guest fills what is inside them.
 // the sheets that wait for the charts library before they draw anything; the others never do
-const CHART_SHEETS = new Set(['sh-energy', 'sh-climate', 'sh-car', 'sh-air']);
-const TAB_SHEET = {climate: 'sh-climate', car: 'sh-car', energy: 'sh-energy', air: 'sh-air'};
+const CHART_SHEETS = new Set(['sh-energy', 'sh-climate', 'sh-car']);
+const TAB_SHEET = {climate: 'sh-climate', car: 'sh-car', energy: 'sh-energy'};
 // the tab whose pane hosts a sheet's panel
 const SHEET_TAB = /** @type {Record<string, import('./ui/feature.ts').FeatureKey>} */ (
   Object.fromEntries(Object.entries(TAB_SHEET).map(([t, id]) => [id, t]))
@@ -842,29 +842,6 @@ export class LegacyPanel {
   <div class="inner" id="coutwrap"><h3 id="couth">Outside</h3><p id="coutp"></p><div class="legend"><span><b style="background:color-mix(in srgb,var(--c-home) 35%,transparent)"></b>Low to high</span><span><b style="background:var(--c-home)"></b>Mean</span></div><div id="c-out90"></div></div>
 </div></div>
 
-<div class="sheet" id="sh-air" hidden><div class="panel" role="dialog" aria-modal="true" aria-labelledby="ah">
-  <div class="ph"><span class="badge" style="--acc:var(--ok)"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 8h10a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h7"/></svg></span>
-    <div class="grow"><h2 id="ah">Air quality</h2><div class="sub" id="asub"></div></div>
-    <div class="tabs" role="tablist" id="atabs"><button class="tab" role="tab" aria-selected="true" data-r="day">Day</button><button class="tab" role="tab" aria-selected="false" data-r="week">Week</button><button class="tab" role="tab" aria-selected="false" data-r="month">Month</button></div>
-    <button class="icon close" type="button" aria-label="Close">✕</button></div>
-  <div class="aqrooms" id="arooms"></div>
-  <div class="inner"><h3 id="aqch">History</h3><p id="aqcp"></p>
-    <div class="seg aqmetric" role="radiogroup" aria-label="What to chart" id="ametric">${[
-      ['pm2_5', 'PM2.5'],
-      ['co2', 'CO₂'],
-      ['voc', 'VOC'],
-      ['humidity', 'Humidity'],
-    ]
-      .map(
-        ([k, l]) =>
-          `<button type="button" role="radio" data-m="${k}" aria-checked="${k === 'pm2_5'}"><b>${l}</b></button>`,
-      )
-      .join('')}</div>
-    <div class="legend" id="alegend"></div><div id="c-air"><p class="loading">Loading history…</p></div></div>
-  <div class="inner"><h3>Outside</h3><p>From the Mila outdoor station nearest your home, and Environment Canada's Air Quality Health Index.</p><div id="aout"></div>
-    <h3 id="aoh" style="margin-top:18px">Outdoor air</h3><p>US AQI from the station (good up to 50, moderate up to 100) and the AQHI on its 1 to 10 scale.</p><div class="legend" id="aolegend"></div><div id="c-aout"></div></div>
-</div></div>
-
 <div class="sheet" id="sh-car" hidden><div class="panel" role="dialog" aria-modal="true" aria-labelledby="carh">
   <div class="ph"><span class="badge" style="--acc:var(--c-ev)">${ico('car', 26)}</span>
     <div class="grow"><h2 id="carh">Car</h2><div class="sub" id="carsub"></div></div>
@@ -1342,7 +1319,7 @@ export class LegacyPanel {
             ic: 'wind',
             label: `${r.name} air`,
             color: 'var(--m-teal)',
-            go: 'sh-air',
+            go: 'air.detail',
             body: big(aqFmt(this.fmtEn, bad.k, bad.v), ' ' + AQ[bad.k].unit) + mid(`${AQ[bad.k].name} is high`),
             foot: bad.k === 'co2' ? 'Open a door or a window a little' : 'The purifier can run faster',
           }),
@@ -1495,7 +1472,7 @@ export class LegacyPanel {
     [
       ['open-energy', 'sh-energy'],
       ['open-climate', 'sh-climate'],
-      ['open-air', 'sh-air'], // dead until the Home move (#268): the card is empty and parked
+      ['open-air', 'air.detail'], // dead until the Home move (#268): the card is empty and parked
       ['open-car', 'sh-car'],
     ].forEach(([b, s]) => {
       const el = this.$(b);
@@ -1819,7 +1796,6 @@ export class LegacyPanel {
       const n = this.$('cdet').querySelector('.dial.ed');
       n && n.focus();
     });
-    this.panels['sh-air'].addEventListener('click', e => this.airControl(e));
     this.$('cdet').addEventListener('change', e => {
       const t = /** @type {HTMLInputElement} */ (e.target);
       if (t.id === 'hpswing') {
@@ -1963,7 +1939,6 @@ export class LegacyPanel {
     }
     this.renderTabs();
     try {
-      if (this.sheets.isOpen('sh-air')) this.renderAirLive();
       if (this.sheets.isOpen('sh-light')) this.renderLightSheet();
       if (this.sheets.isOpen('sh-climate')) {
         this.renderClimateList();
@@ -3069,7 +3044,6 @@ export class LegacyPanel {
       if (id === 'sh-energy') this.energySheet();
       if (id === 'sh-climate') this.climateSheet();
       if (id === 'sh-car') this.carSheet();
-      if (id === 'sh-air') this.airSheet();
       if (id === 'sh-light') this.renderLightSheet();
     } catch (e) {
       console.error('home-panel sheet', e);
@@ -3442,328 +3416,6 @@ export class LegacyPanel {
       )
       .join(' · ');
     return {A, worst, good, why};
-  }
-  // detail sheet: rooms with their purifier controls, one chart per pollutant, outside air
-  airSheet() {
-    this.airRange = this.airRange || 'day';
-    this.airMetric = this.airMetric || 'pm2_5';
-    this.root
-      .querySelectorAll('#atabs .tab')
-      .forEach(t => t.setAttribute('aria-selected', t.dataset.r === this.airRange));
-    this.cache.arooms = this.cache.aout = null;
-    this.renderAirLive();
-    this.airChart();
-  }
-  renderAirLive() {
-    const P = this.purifiers(),
-      {A, worst, why} = this.airSummary(P);
-    this.$('asub').textContent =
-      worst < 0 ? 'No readings yet' : worst === 0 ? `${AQ_LVL[0][0]} in every room` : `${AQ_LVL[worst][0]} · ${why}`;
-    this.set(
-      'arooms',
-      A.map(({r, a}) => {
-        const f = this.st(r.fan),
-          on = f && f.state === 'on',
-          auto = f && f.attributes.preset_mode === 'Automagic',
-          pct = this.pend(r.fan + ':pct', on ? f.attributes.percentage : 0),
-          mode = this.pend(r.fan + ':mode', auto ? 'Automagic' : 'Manual');
-        const t = (k, lbl) => {
-          const v = this.num(r.s[k]);
-          return `<div class="tile${k in AQ && aqLevel(k, v) > 0 ? ' hi' : ''}"><div class="k">${lbl || AQ[k].name}</div><div class="v num">${k in AQ ? aqFmt(this.fmtEn, k, v) : v == null ? '–' : Math.round(v)}<small>${k in AQ ? AQ[k].unit : k === 'humidity' ? '%' : 'µg/m³'}</small></div></div>`;
-        };
-        return `<div class="aqcard lv${Math.max(0, a.worst)}">
-        <div class="aqhead"><div><h3>${esc(r.name)}</h3><p>${a.worst < 0 ? 'No readings' : !a.why.length ? (a.worst > 0 ? `Mila index ${Math.round(a.mila)}` : 'Clean air') : esc(a.why.map(w => `${AQ[w.k].name} ${AQ_LVL[w.l][0].toLowerCase()}`).join(', '))}${this.num(r.s.temperature) == null ? '' : ` · ${f1(this.num(r.s.temperature))}°`}</p></div><span class="state"><i></i>${a.worst < 0 ? '–' : AQ_LVL[a.worst][0]}</span></div>
-        <div class="tiles aqt">${t('pm2_5')}${t('co2')}${t('voc')}${t('co')}${t('pm1', 'PM1')}${t('pm10', 'PM10')}${t('humidity', 'Humidity')}</div>
-        ${
-          !f || !ok(f)
-            ? '<p class="muted">The purifier is offline, so it can\'t be adjusted right now.</p>'
-            : `<div class="aqctl">
-          <div class="seg" role="radiogroup" aria-label="${esc(r.name)} mode">${[
-            ['Automagic', 'Automagic'],
-            ['Manual', 'Manual'],
-          ]
-            .map(
-              ([v, l]) =>
-                `<button type="button" role="radio" aria-checked="${v === mode}" data-a="mode" data-f="${esc(r.fan)}" data-v="${v}"><b>${l}</b></button>`,
-            )
-            .join('')}</div>
-          ${
-            mode === 'Manual'
-              ? `<div class="stepper" role="group" aria-label="${esc(r.name)} fan speed"><button type="button" data-a="pct" data-f="${esc(r.fan)}" data-d="-10" aria-label="Slower" ${pct <= 10 ? 'disabled' : ''}>−</button><div class="sv"><b class="num">${pct}%</b><small>Fan</small></div><button type="button" data-a="pct" data-f="${esc(r.fan)}" data-d="10" aria-label="Faster" ${pct >= 100 ? 'disabled' : ''}>+</button></div>`
-              : `<p class="hint">Automagic sets the fan from the room's sensors${on ? `, now ${pct}%` : ''}${this.num(r.s.air_changes) == null ? '' : `, ${f1(this.num(r.s.air_changes))} air changes an hour`}.</p>`
-          }</div>`
-        }
-      </div>`;
-      }).join(''),
-    );
-    const o = P.outside;
-    if (o) {
-      const oa = this.num(o.aqi),
-        ol = outLevel(oa),
-        pm = this.num(o.pm),
-        d = this.num(o.dist);
-      this.set(
-        'aout',
-        `<div class="aqsum lv${ol}"><span class="state"><i></i>${oa == null ? 'No data' : AQ_LVL[ol][0]}</span><span class="why">AQI <b class="num">${oa == null ? '–' : Math.round(oa)}</b>${this.num(this.E.aqhi) == null ? '' : ` · AQHI ${this.num(this.E.aqhi)}`}${pm == null ? '' : ` · PM2.5 ${f1(pm)} µg/m³`}${d == null ? '' : ` · station ${Math.round(d)} km away`}</span></div>
-        ${o.pollen.some(([, id]) => ok(this.st(id))) ? `<div class="tiles" style="grid-template-columns:repeat(4,minmax(0,1fr));margin-top:10px">${o.pollen.map(([l, id]) => tile([l + ' pollen', ok(this.st(id)) ? esc(cap(this.st(id).state)) : '–'])).join('')}</div>` : '<p class="hint">No pollen report from the station yet; it shows up here once Mila has one.</p>'}`,
-      );
-    }
-  }
-  async loadAirRange(r) {
-    const k = r + ':' + this.airMetric,
-      c = (this.AR = this.AR || {})[k];
-    if (c && Date.now() - c.at < 10 * 60000) return c;
-    const P = this.purifiers(),
-      R = CRANGE[r],
-      start = new Date(Date.now() - R.days * 864e5),
-      m = this.airMetric;
-    const ids = P.rooms.map(x => x.s[m]).filter(Boolean),
-      out = m === 'pm2_5' && P.outside && P.outside.pm;
-    const stt = await this.api.statistics(out ? [...ids, out] : ids, R.period, start, ['mean']);
-    const ser = id =>
-      (stt[id] || []).filter(x => x.mean != null).map(x => [ms(x.start) + R.mid, +(+x.mean).toFixed(1)]);
-    return (this.AR[k] = {
-      at: Date.now(),
-      start: start.getTime(),
-      rooms: P.rooms.map(x => ({name: x.name, pts: ser(x.s[m])})),
-      out: out ? ser(out) : null,
-    });
-  }
-  async airChart() {
-    if (!this.ApexCharts) return; // a tap while the chunk is loading; buildSheet draws it when it lands
-    const r = this.airRange,
-      m = this.airMetric,
-      tag = (this.airTag = Symbol()),
-      R = CRANGE[r],
-      A = AQ[m] || {name: 'Humidity', unit: '%', b: [60, 70]};
-    this.root.querySelectorAll('#ametric button').forEach(b => b.setAttribute('aria-checked', b.dataset.m === m));
-    this.$('aqch').textContent = `${A.name}, ${R.label}`;
-    this.$('aqcp').textContent =
-      m === 'humidity'
-        ? 'Comfortable indoor humidity is 30 to 60%.'
-        : `Good is up to ${A.b[0]} ${A.unit}, moderate up to ${A.b[1]}.${m === 'pm2_5' ? ' The dashed line is the outdoor station.' : ''}`;
-    let C;
-    try {
-      C = await this.loadAirRange(r);
-    } catch (e) {
-      if (e instanceof StaleReply) return;
-      console.error('home-panel air history', e);
-      this.$('c-air').innerHTML = '<p>History is not available right now.</p>';
-      return;
-    }
-    if (tag !== this.airTag || !this.sheets.isOpen('sh-air')) return;
-    if (this.airC) {
-      try {
-        this.airC.destroy();
-      } catch {}
-      this.charts = this.charts.filter(c => c !== this.airC);
-    }
-    const s = this.S(),
-      cols = [s.home, s.wh, s.heat, s.ev],
-      series = C.rooms.map(x => ({name: x.name, data: x.pts}));
-    if (C.out) series.push({name: 'Outside', data: C.out});
-    this.$('alegend').innerHTML = this.legend([
-      ...C.rooms.map((x, i) => [cols[i % 4], esc(x.name)]),
-      ...(C.out ? [[s.rest, 'Outside']] : []),
-    ]);
-    const band = m === 'humidity' ? [{y: 30, y2: 60}] : [{y: 0, y2: A.b[0]}];
-    this.airC = this.mk(
-      'c-air',
-      merge(this.base(280), {
-        chart: {type: 'line'},
-        series,
-        colors: [...C.rooms.map((x, i) => cols[i % 4]), s.rest],
-        stroke: {
-          width: series.map((x, i) => (C.out && i === series.length - 1 ? 1.6 : 2.2)),
-          dashArray: series.map((x, i) => (C.out && i === series.length - 1 ? 5 : 0)),
-          curve: 'smooth',
-        },
-        annotations: {
-          yaxis: band.map(b => ({
-            ...b,
-            fillColor: this.css('--ok'),
-            opacity: 0.1,
-            borderColor: 'transparent',
-            label: {
-              text: m === 'humidity' ? 'Comfortable' : 'Good',
-              position: 'left',
-              textAnchor: 'start',
-              offsetX: 8,
-              borderWidth: 0,
-              style: {background: 'transparent', color: this.css('--fg3'), fontSize: '11px'},
-            },
-          })),
-        },
-        xaxis: {type: 'datetime', min: C.start, max: Date.now(), labels: {datetimeUTC: false}},
-        yaxis: {
-          min: 0,
-          forceNiceScale: true,
-          labels: {formatter: v => (v == null ? '' : this.fmtEn.integer(v))},
-        },
-        tooltip: {
-          shared: true,
-          x: {format: R.tipFmt},
-          y: {
-            formatter: v => (v == null ? '–' : `${this.fmtEn.number(+v, 1)} ${A.unit}`),
-          },
-        },
-      }),
-    );
-    this.airOutChart();
-  }
-  // outdoor air over the same range: the Mila station's US AQI, and Environment Canada's AQHI when it has statistics
-  async airOutChart() {
-    if (!this.ApexCharts) return; // a tap while the chunk is loading; buildSheet draws it when it lands
-    const box = this.$('c-aout');
-    if (!box) return;
-    const o = this.purifiers().outside,
-      aqhi = this.st(this.E.aqhi) ? this.E.aqhi : null,
-      ids = [o && o.aqi, aqhi].filter(Boolean);
-    if (!ids.length) {
-      box.innerHTML = '';
-      this.$('aolegend').innerHTML = '';
-      return;
-    }
-    const r = this.airRange,
-      R = CRANGE[r],
-      tag = (this.aoTag = Symbol()),
-      k = 'out:' + r,
-      c0 = (this.AR = this.AR || {})[k];
-    let C = c0 && Date.now() - c0.at < 10 * 60000 ? c0 : null;
-    if (!C) {
-      try {
-        const start = new Date(Date.now() - R.days * 864e5),
-          stt = await this.api.statistics(ids, R.period, start, ['mean']);
-        const ser = id =>
-          id ? (stt[id] || []).filter(x => x.mean != null).map(x => [ms(x.start) + R.mid, +(+x.mean).toFixed(1)]) : [];
-        C = this.AR[k] = {at: Date.now(), start: start.getTime(), aqi: ser(o && o.aqi), aqhi: ser(aqhi)};
-      } catch (e) {
-        if (e instanceof StaleReply) return;
-        console.error('home-panel outdoor air history', e);
-        box.innerHTML = '<p>History is not available right now.</p>';
-        return;
-      }
-    }
-    if (tag !== this.aoTag || !this.sheets.isOpen('sh-air')) return;
-    if (this.aoC) {
-      try {
-        this.aoC.destroy();
-      } catch {}
-      this.charts = this.charts.filter(c => c !== this.aoC);
-      this.aoC = null;
-    }
-    this.$('aoh').textContent = `Outdoor air, ${R.label}`;
-    if (!C.aqi.length && !C.aqhi.length) {
-      box.innerHTML = '<p class="loading">No outdoor history yet</p>';
-      this.$('aolegend').innerHTML = '';
-      return;
-    }
-    const lbl = t => ({
-      text: t,
-      position: 'left',
-      textAnchor: 'start',
-      offsetX: 8,
-      borderWidth: 0,
-      style: {background: 'transparent', color: this.css('--fg3'), fontSize: '11px'},
-    });
-    const ax = (name, t, extra) => ({
-      seriesName: name,
-      min: 0,
-      title: {text: t, style: {color: this.css('--fg3'), fontWeight: 500}},
-      labels: {formatter: v => Math.round(v) + ''},
-      ...extra,
-    });
-    const series = [],
-      colors = [],
-      yaxis = [];
-    if (C.aqi.length) {
-      series.push({name: 'AQI (Mila station)', data: C.aqi});
-      colors.push(this.css('--m-orange'));
-      yaxis.push(ax('AQI (Mila station)', 'US AQI', {forceNiceScale: true}));
-    }
-    if (C.aqhi.length) {
-      series.push({name: 'AQHI (Environment Canada)', data: C.aqhi});
-      colors.push(this.css('--m-purple'));
-      yaxis.push(ax('AQHI (Environment Canada)', 'AQHI', {opposite: true, max: 10, tickAmount: 5}));
-    }
-    this.$('aolegend').innerHTML = this.legend(series.map((x, i) => [colors[i], x.name]));
-    this.aoC = this.mk(
-      'c-aout',
-      merge(this.base(240), {
-        chart: {type: 'line'},
-        series,
-        colors,
-        stroke: {width: 2, curve: 'smooth'},
-        xaxis: {type: 'datetime', min: C.start, max: Date.now(), labels: {datetimeUTC: false}},
-        yaxis,
-        annotations: C.aqi.length
-          ? {
-              yaxis: [
-                {
-                  y: 0,
-                  y2: 50,
-                  fillColor: this.css('--ok'),
-                  opacity: 0.1,
-                  borderColor: 'transparent',
-                  label: lbl('Good'),
-                },
-                {
-                  y: 50,
-                  y2: 100,
-                  fillColor: this.css('--warn'),
-                  opacity: 0.08,
-                  borderColor: 'transparent',
-                  label: lbl('Moderate'),
-                },
-              ],
-            }
-          : {},
-        tooltip: {shared: true, x: {format: R.tipFmt}, y: {formatter: v => (v == null ? '–' : Math.round(v) + '')}},
-      }),
-    );
-  }
-  airControl(e) {
-    const t = e.target.closest('[data-r]');
-    if (t && t.closest('#atabs')) {
-      this.airRange = t.dataset.r;
-      this.root
-        .querySelectorAll('#atabs .tab')
-        .forEach(x => x.setAttribute('aria-selected', x.dataset.r === this.airRange));
-      this.airChart();
-      return;
-    }
-    const mm = e.target.closest('[data-m]');
-    if (mm) {
-      this.airMetric = mm.dataset.m;
-      this.airChart();
-      return;
-    }
-    const b = e.target.closest('[data-a]');
-    if (!b || b.disabled) return;
-    const fan = b.dataset.f,
-      f = this.st(fan);
-    if (!f) return;
-    const hold = (key, v) => {
-      this.pending[key] = {v, until: Date.now() + 20000};
-    };
-    const name = (this.purifiers().rooms.find(x => x.fan === fan) || {}).name || 'Purifier';
-    if (b.dataset.a === 'mode') {
-      hold(fan + ':mode', b.dataset.v);
-      this.call('fan', 'set_preset_mode', {entity_id: fan, preset_mode: b.dataset.v}, `${name}: ${b.dataset.v}`);
-    } else if (b.dataset.a === 'pct') {
-      const cur = +this.pend(fan + ':pct', f.state === 'on' ? f.attributes.percentage : 0),
-        v = Math.min(100, Math.max(10, cur + +b.dataset.d));
-      hold(fan + ':pct', v);
-      // taps are collected and sent once they stop
-      clearTimeout(this.spT && this.spT[fan]);
-      this.spT = this.spT || {};
-      this.spT[fan] = setTimeout(
-        () => this.call('fan', 'set_percentage', {entity_id: fan, percentage: v}, `${name} fan ${v}%`),
-        900,
-      );
-    }
-    this.cache.arooms = null;
-    this.renderAirLive();
   }
   // ---------- who's home: the household's phones and watches (iPads and laptops stay home, so they don't count) ----------
   presence() {
@@ -4442,7 +4094,7 @@ export class LegacyPanel {
       climate: 'data-csel="house"',
       car: 'data-opens="sh-car"',
       energy: 'data-opens="sh-energy"',
-      air: 'data-opens="sh-air"',
+      air: 'data-opens="air.detail"',
     };
     const extra = (k, i) =>
       !this.compact

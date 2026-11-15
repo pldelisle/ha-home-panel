@@ -290,21 +290,9 @@ describe('the fan’s line and control', () => {
         {mode: 'Automagic', checked: false},
         {mode: 'Manual', checked: true},
       ],
-      speed: {pct: 70, text: '70%', caption: 'Fan', label: 'Den fan speed', atMin: false, atMax: false},
+      speed: {pct: 70, text: '70%', caption: 'Fan', label: 'Den fan speed'},
       hint: null,
     });
-  });
-
-  test('the stepper stops at ten and at a hundred', () => {
-    const speed = (pct: number) => {
-      const control = controlOf(
-        {fan: {on: true, available: true, percentage: 40, preset: 'Manual'}},
-        {overlay: holding({[K.pct('fan.den')]: pct})},
-      );
-      return control.offline ? null : control.speed;
-    };
-    expect(speed(10)).toMatchObject({atMin: true, atMax: false});
-    expect(speed(100)).toMatchObject({atMin: false, atMax: true});
   });
 
   test('Automagic’s hint names the speed only when the fan is on and the air changes only when it reads them', () => {

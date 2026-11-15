@@ -1,0 +1,89 @@
+/*
+ * <hp-air-detail>'s own rules: the column of its blocks, the rooms' grid, the metric radios, the station's line with its level and the
+ * pollen tiles. Moved from the legacy `.aqrooms`, `.aqmetric` and `.aqsum` rules (extra.css), which this move deleted; the inner cards,
+ * the tiles, the radios' look and the legend are the kit's (`.inner`, `.tiles`, `.seg`, `.legend`), the radios staying `.seg` markup
+ * until `<hp-seg>` (#247). A known copy of a rule the legacy panel's other cards still draw, read here as `.aqsum .state`: `.state` (base.css,
+ * glass.css), until the Home move (#268) deletes it.
+ */
+:host {
+  display: block;
+  min-width: 0;
+}
+.blocks {
+  min-width: 0;
+}
+[slot='icon'] {
+  display: contents;
+}
+.blocks > * + * {
+  margin-top: 16px;
+}
+:host([compact]) .blocks > * + * {
+  margin-top: 14px;
+}
+:host([compact]) .inner {
+  padding: 14px;
+  border-radius: 18px;
+}
+.aqrooms {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+@media (max-width: 720px) {
+  .aqrooms {
+    grid-template-columns: 1fr;
+  }
+}
+.aqmetric {
+  max-width: 420px;
+  margin: 10px 0 4px;
+}
+.aqsum {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: -2px 0 12px;
+  min-width: 0;
+}
+.aqsum .why {
+  font-size: calc(13px * var(--tx));
+  color: var(--fg2);
+  min-width: 0;
+}
+.aqsum .state {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-weight: 600;
+  font-size: calc(13px * var(--tx));
+  background: var(--card2);
+}
+:host([glass]) .aqsum .state {
+  background: var(--g-tile);
+  box-shadow: var(--g-edge-s);
+}
+.aqsum .state i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: block;
+}
+.aqsum.lv0 .state i {
+  background: var(--ok);
+}
+.aqsum.lv1 .state i {
+  background: var(--warn);
+}
+.aqsum.lv2 .state i {
+  background: var(--crit);
+}
+.pollen {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 10px;
+}
+.again {
+  margin-top: 18px;
+}

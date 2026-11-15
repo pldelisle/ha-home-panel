@@ -1,7 +1,6 @@
-// The id of the sheet Air asks the shell for, for the card.
-// Pattern: a named constant for the sheet's id (ADR 0021), so the sheet is asked for by a name the compiler checks.
-// Temporary: the detail is still the legacy panel's `#sh-air`, which the sheet host opens by that id; #233 makes it an element's and gives it `air.detail`.
+// The id of the sheet Air asks the shell for: the card asks for it, the registry's descriptor and the pane answer to it.
+// Pattern: a named constant for the `<owner>.<name>` id of ADR 0021, so the sheet is asked for by a name the compiler checks.
 // Must not: hold anything but the id, or be imported by the shell.
 
-/** The legacy detail panel's sheet: over the screen on a phone, inline in the pane on a tablet. Deleted with the detail's move (#233). */
-export const DETAIL_SHEET = 'sh-air';
+/** The detail: inline in the pane on a tablet, a sheet over the screen on a phone. */
+export const DETAIL_SHEET = 'air.detail';

@@ -1,7 +1,7 @@
 // The Air commands: what a tap on the purifier asks Home Assistant for, as `Command` data, and the typed names of the values it holds.
 // Pattern: Command (Gamma et al.) built by pure functions; the kit's `CommandRunner` sends them, an element holds the value each
 // `holds` key names in the panel's overlay store (ADR 0023). The rules are the legacy `airControl`'s, deleted by #234.
-// The callers are #233's `<hp-air-room>`: the mode radios send `setMode`, the debounced stepper `setSpeed`, the switch `toggleFan`.
+// The callers are `<hp-air-room>`: the mode radios send `setMode`, the debounced stepper `setSpeed`; `toggleFan` has none (the legacy detail had no switch).
 // Must not: send anything, read the store or the clock, or word a string (`done` is a catalog key, the runner words it).
 import type {Command} from '../../ui/commands.ts';
 import {overlayKey} from '../../ui/overlay-store.ts';
@@ -20,8 +20,8 @@ export type Mode = 'Automagic' | 'Manual';
 /** The slowest speed a tap sets: the legacy stepper never went under ten, and neither does a step from ten. */
 export const MIN_PCT = 10;
 export const MAX_PCT = 100;
-/** The speed moves in steps of ten. */
-const PCT_STEP = 10;
+/** The speed moves in steps of ten: the stepper's tap size. */
+export const PCT_STEP = 10;
 
 /** A speed as the purifier takes it: in steps of ten, from ten to a hundred. */
 const speedOf = (pct: number): number => Math.min(MAX_PCT, Math.max(MIN_PCT, Math.round(pct / PCT_STEP) * PCT_STEP));

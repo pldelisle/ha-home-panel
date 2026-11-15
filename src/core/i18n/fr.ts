@@ -441,6 +441,7 @@ export const fr: Record<MessageKey, string> = {
   'air.roomWhy': '{name} : {detail}',
   'air.outsideAqi': 'IQA extérieur',
   'air.open': "Ouvrir les détails de la qualité de l'air",
+  'air.close': 'Fermer',
   'air.purifierOffline': 'Purificateur hors ligne',
   'air.fanOff': 'Ventilateur éteint',
   'air.automagic': 'Automagic',
@@ -475,6 +476,7 @@ export const fr: Record<MessageKey, string> = {
   'air.comfortableHumidity': "L'humidité intérieure confortable est de {from} à {to} %.",
   'air.comfortable': 'Confortable',
   'air.historyUnavailable': 'L’historique n’est pas disponible pour le moment.',
+  'air.historyLoading': 'Chargement de l’historique…',
   'air.outside': 'Extérieur',
   'air.outsideHint':
     'De la station extérieure Mila la plus proche de la maison, et de la cote air santé d’Environnement Canada.',

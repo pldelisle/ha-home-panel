@@ -369,94 +369,6 @@
 .card .top .right .more {
   margin: 0;
 }
-/* the legacy detail's outside block still draws .aqsum and .aqsum .why; #233 moves the detail and deletes them */
-.aqsum {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: -2px 0 12px;
-  min-width: 0;
-}
-.aqsum .why {
-  font-size: calc(13px * var(--tx));
-  color: var(--fg2);
-  min-width: 0;
-}
-.lv0 .state i {
-  background: var(--ok);
-}
-.lv1 .state i {
-  background: var(--warn);
-}
-.lv2 .state i {
-  background: var(--crit);
-}
-.aqt .hi .v {
-  color: var(--t-warn);
-}
-.lv2 .aqt .hi .v {
-  color: var(--crit);
-}
-.aqrooms {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-.aqcard {
-  background: var(--card);
-  border-radius: 22px;
-  padding: 16px;
-  box-shadow: var(--shadow);
-  min-width: 0;
-}
-.aqhead {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-.aqhead h3 {
-  margin: 0;
-  font-size: calc(17px * var(--tx));
-}
-.aqhead p {
-  margin: 2px 0 0;
-  font-size: calc(12.5px * var(--tx));
-  color: var(--fg2);
-}
-.aqt {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-}
-.aqt .tile {
-  padding: 8px 10px;
-}
-.aqt .tile .v {
-  font-size: calc(18px * var(--tx));
-}
-.aqctl {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-  margin-top: 12px;
-}
-.aqctl .seg {
-  flex: 1 1 200px;
-}
-.aqctl .hint {
-  flex: 1 1 100%;
-  margin: 0;
-}
-.aqmetric {
-  max-width: 420px;
-  margin: 10px 0 4px;
-}
-@media (max-width: 720px) {
-  .aqrooms {
-    grid-template-columns: 1fr;
-  }
-}
 .cols[hidden] {
   display: none;
 }
@@ -557,7 +469,4 @@
 .clim {
   gap: 16px;
   margin-bottom: 0;
-}
-.aqrooms {
-  gap: 16px;
 }

@@ -1,6 +1,6 @@
 # Air
 
-What the Air tab computes and draws ([spec 18](../../../docs/specs/18-air.md)): the Mila purifiers, the outdoor station, the rating of each room and the controls. This folder holds, since #230, the pure half: the rules that find the purifiers and the station and rate the air (in `src/providers/`, because the smart stack reads them too, [ADR 0025](../../../docs/adr/0025-shared-reads-live-in-providers.md)), `readAir` that composes them with the AQHI, `airIds` that lists what the pane reads, `airModel` that words the card, the detail and the sub-line, the charts' series and options, and the purifier commands as data. Since #232 the feature draws the Air tab's header and card: `<hp-air-pane>` and `<hp-air-card>`, on a phone (on a tablet the tab is the detail panel, still the legacy panel's inline in the pane's section, and the pane's header is not shown). The detail and the room cards follow in the same spec (#233); the legacy panel deletes its own copies of the rules with #234.
+What the Air tab computes and draws ([spec 18](../../../docs/specs/18-air.md)): the Mila purifiers, the outdoor station, the rating of each room and the controls. This folder holds, since #230, the pure half: the rules that find the purifiers and the station and rate the air (in `src/providers/`, because the smart stack reads them too, [ADR 0025](../../../docs/adr/0025-shared-reads-live-in-providers.md)), `readAir` that composes them with the AQHI, `airIds` that lists what the pane reads, `airModel` that words the card, the detail and the sub-line, the charts' series and options, and the purifier commands as data. Since #232 the feature draws the Air tab's header and card: `<hp-air-pane>` and `<hp-air-card>`, on a phone. Since #233 it draws the detail too: `<hp-air-detail>` with a `<hp-air-room>` per purifier, inline in the pane on a tablet (whose pane header is not shown) and in `<hp-sheet>` (`air.detail`) on a phone; the legacy panel's detail is gone, and it deletes its own copies of the rules (the stack's card, the More word) with #234.
 
 ## The folder
 
@@ -13,12 +13,14 @@ src/features/air/
   ids.ts                   airIds(store): each room's fan and sensors, the station's sensors and pollen, the AQHI sensor
   inputs.ts                readAir(states, registries, names, config): AirInputs
   model.ts                 airModel(inputs, deps): AirViewModel: the card, the detail and the sub-line, through `t`, `fmt` and the overlay
-  history.ts               metricSeries, outdoorSeries, chartText, airChartOptions, outdoorChartOptions: statistics in, plain-data chart options out
+  history.ts               metricIds, metricSeries, outdoorSeries, chartText, airChartOptions, outdoorChartOptions, statisticsStart, rangeTabs: statistics in, plain-data chart options out
   commands.ts              K (the overlay keys), setMode, setSpeed, toggleFan: `Command` data
-  index.ts                 airFeature: the descriptor; its More word is still the guest's
-  sheets.ts                DETAIL_SHEET: the legacy detail's id, until #233
-  air-pane.ts              <hp-air-pane>: the header with the summary and, on a phone, the card; air-pane.element.css
+  index.ts                 airFeature: the descriptor, with `detailSheet`; its More word is still the guest's
+  sheets.ts                DETAIL_SHEET = 'air.detail'
+  air-pane.ts              <hp-air-pane>: the header; the card and the detail's sheet on a phone, the detail inline on a tablet; owns the statistics cache, the range and the metric; air-pane.element.css
   air-card.ts              <hp-air-card>: the outside figure, the state line, a box per room; air-card.element.css
+  air-detail.ts            <hp-air-detail>: the rooms, the metric chart and the outdoor block with its chart; air-detail.element.css
+  room-card.ts             <hp-air-room>: a purifier's tiles and its Automagic or Manual control with the debounced stepper; room-card.element.css
 ```
 
 ## The providers
@@ -29,4 +31,6 @@ src/features/air/
 
 `readAir` joins the rooms, the station and the AQHI (`config.entities.aqhi`); `airIds` lists every fan and sensor once each, so the pane redraws only when one changes.
 
-`airModel` is a pure function of the inputs and its deps: the fan's mode and speed come through `deps.overlay`, so a tap shows at once in the control and the card line from one held value (keys `K.mode`, `K.pct`); every word is a catalog key and every figure goes through `fmt`, so the French card reads `1,5k` and `1 234`. The chart options are plain data (ADR 0022): their callbacks close over `fmt`, and the colours are the caller's tokens. The commands are Media's `Command` shape; the element that runs them debounces the speed.
+`airModel` is a pure function of the inputs and its deps: the fan's mode and speed come through `deps.overlay`, so a tap shows at once in the control and the card line from one held value (keys `K.mode`, `K.pct`); every word is a catalog key and every figure goes through `fmt`, so the French card reads `1,5k` and `1 234`. The chart options are plain data (ADR 0022): their callbacks close over `fmt`, and the colours are the caller's tokens. The commands are Media's `Command` shape; `<hp-air-room>` holds each tap in the optimistic store and runs them through `CommandRunner`, and debounces the speed by 900 ms, so a burst of taps is one `fan.set_percentage`.
+
+The detail is a controlled component: the pane keeps the range and the metric for the panel's life (the legacy sheet kept them) and the ten-minute cache, and `<hp-air-detail>` asks the cache for each chart when it shows and when the range, the metric or the config changes, from the top of the hour so a second request within the hour is the cache's hit, dropping a reply that comes late (the detail left, or another range or metric was asked for). A house with no station and no AQHI has no outside block.
