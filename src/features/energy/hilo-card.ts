@@ -44,7 +44,7 @@ export class HiloCard extends LitElement {
           <div class="v num">${rate.value}<small>${rate.unit}</small></div>
           <span class="state"><i class=${tier.ok ? 'ok' : 'warn'}></i>${tier.text}</span>
         </div>
-        <div class="tiles">${tileList(view.tiles)}</div>
+        <div class="tiles hilotiles">${tileList(view.tiles)}</div>
       </div>
       ${lensLike(this.getRootNode())}`;
   }

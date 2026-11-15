@@ -49,7 +49,7 @@ export class EnergyCard extends LitElement {
           <span class="elbl">${view.title}</span><span class="eright">${view.topRight}<span class="ego">›</span></span>
         </div>
         <hp-power-flow .geometry=${view.flow}></hp-power-flow>
-        <div class="tiles">${tileList(view.tiles)}</div>
+        <div class="tiles ctiles">${tileList(view.tiles)}</div>
         ${view.error === null ? nothing : html`<p class="enote">${view.error}</p>`}
       </div>
       ${lensLike(this.getRootNode())}`;

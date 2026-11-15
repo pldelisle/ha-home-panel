@@ -6,7 +6,8 @@
   display: block;
   min-width: 0;
 }
-.tiles {
+/* the card's tile grid, its own name so the kit's `.tiles` is written in one file; the same specificity, adopted later, beats the kit's 520px rule */
+.hilotiles {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   margin-top: 14px;
 }
