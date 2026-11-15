@@ -11,12 +11,22 @@ type MaybeId = string | null | undefined;
 export const isAvailable = (s: HassEntity | undefined): s is HassEntity =>
   s !== undefined && s.state !== 'unavailable' && s.state !== 'unknown';
 
+/** The entity is in the states, whatever its state is: an `unavailable` sensor is there, one the house does not have is not. */
+export const hasState = (states: HassEntities | undefined, id: MaybeId): boolean => !!id && states?.[id] !== undefined;
+
 /** The numeric state, or null when unset, missing, unavailable, unknown or not a number. */
 export function numberOf(states: HassEntities | undefined, id: MaybeId): number | null {
   const s = id ? states?.[id] : undefined;
   if (!isAvailable(s)) return null;
   const v = parseFloat(s.state);
   return Number.isFinite(v) ? v : null;
+}
+
+/** `numberOf`, with watts converted to kilowatts: a sensor in `W` reads its state over a thousand, any other unit as it is. */
+export function kilowattsOf(states: HassEntities | undefined, id: MaybeId): number | null {
+  const v = numberOf(states, id);
+  if (v === null) return null;
+  return attributeOf(states, id, 'unit_of_measurement') === 'W' ? v / 1000 : v;
 }
 
 /** The state text, or null when unset, missing, unavailable or unknown. */

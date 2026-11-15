@@ -17,7 +17,7 @@ import {panelLocale, type PanelLocaleSpec} from './i18n/locale.ts';
 import {createMessages, type Messages} from './i18n/messages.ts';
 import {createNames, type Names} from './i18n/names.ts';
 import {areaOf} from './registry.ts';
-import {attributeOf, numberOf} from './states.ts';
+import {attributeOf, kilowattsOf, numberOf} from './states.ts';
 
 /** What `setHass` found different from the previous hass. */
 export interface HassChange {
@@ -240,11 +240,7 @@ export function createStore(opts: StoreOptions): PanelStore {
     state,
     num,
     attr,
-    kw(id) {
-      const v = num(id);
-      if (v === null) return null;
-      return attr(id, 'unit_of_measurement') === 'W' ? v / 1000 : v;
-    },
+    kw: id => kilowattsOf(hass?.states, id),
     entity,
     device,
     area: id => hass?.areas?.[id],

@@ -11,6 +11,8 @@ export const fr: Record<MessageKey, string> = {
   // here is its own visible change and needs an approved baseline (ADR 0003, test/unit/i18n/moved-strings.test.ts)
   'common.failed': "Didn't work: {reason}",
   'charts.failed': "La bibliothèque de graphiques n'a pas chargé",
+  // English on purpose, as the legacy layer leaves it; the French room name is the thermostat's own, which this is never asked for
+  'room.bedroomOf': "{name}'s bedroom",
   'home.title': 'Maison',
   'lights.title': 'Lumières',
   'climate.title': 'Climat',

@@ -2,7 +2,9 @@
 import {describe, expect, test} from 'vitest';
 import {
   attributeOf,
+  hasState,
   isAvailable,
+  kilowattsOf,
   numberAttributeOf,
   numberOf,
   textAttributeOf,
@@ -78,6 +80,31 @@ describe('attributeOf', () => {
     expect(attributeOf(states, 'sensor.absent', 'unit_of_measurement')).toBeUndefined();
     expect(attributeOf(states, null, 'unit_of_measurement')).toBeUndefined();
     expect(attributeOf(undefined, 'sensor.temperature', 'unit_of_measurement')).toBeUndefined();
+  });
+});
+
+describe('hasState', () => {
+  test('an entity in the states is there even when unavailable; a missing one, an unset id and no states are not', () => {
+    expect(hasState(states, 'sensor.gone')).toBe(true);
+    expect(hasState(states, 'sensor.absent')).toBe(false);
+    expect(hasState(states, null)).toBe(false);
+    expect(hasState(undefined, 'sensor.gone')).toBe(false);
+  });
+});
+
+describe('kilowattsOf', () => {
+  test('converts a sensor in watts and leaves any other unit as it is', () => {
+    const power = {
+      'sensor.w': entity('sensor.w', '1500', {unit_of_measurement: 'W'}),
+      'sensor.kw': entity('sensor.kw', '2.5', {unit_of_measurement: 'kW'}),
+      'sensor.bare': entity('sensor.bare', '3'),
+      'sensor.gone': entity('sensor.gone', 'unavailable', {unit_of_measurement: 'W'}),
+    };
+    expect(
+      [power['sensor.w'], power['sensor.kw'], power['sensor.bare']].map(s => kilowattsOf(power, s.entity_id)),
+    ).toEqual([1.5, 2.5, 3]);
+    expect(kilowattsOf(power, 'sensor.gone')).toBeNull();
+    expect(kilowattsOf(power, null)).toBeNull();
   });
 });
 

@@ -104,7 +104,7 @@ export function heatPump(states, registries, config, names): HeatPumpInputs | nu
 export function hpSeries(points: HistoryPoint[], pick: (attrs, state) => number | null): [number, number | null][]; // the class's hpSeries: a null breaks the line
 ```
 
-The rooms are `powerNow(states, config).rooms` (spec 19): key, name, climate id, power, temperature, setpoint, heating, available, plus `minTemp`/`maxTemp` from the climate entity's attributes, which `powerNow` gains here (`min_temp ?? 5`, `max_temp ?? 30`).
+The rooms are `powerNow(states, config).rooms` (spec 19): key, the name's inputs (`roomName` words them), climate id, power, temperature, setpoint, heating, available, plus `minTemp`/`maxTemp` from the climate entity's attributes, which `powerNow` gains here (`min_temp ?? 5`, `max_temp ?? 30`).
 
 ### Items, the model and the view model
 

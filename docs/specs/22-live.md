@@ -72,12 +72,12 @@ test/e2e/live-pill.spec.ts (unchanged), test/e2e/live.ts (unchanged)
 export interface LiveInputs {
   now: number;
   power: PowerNow; // grid, rooms with availability and temperatures, water heater power
-  hilo: {rates: HiloRates | null; challenge: HiloChallenge | null; gateway: {on: boolean; disconnected: boolean} | null}; // hilo.ts gains `hiloGateway`
+  hilo: {rates: HiloRates; challenge: HiloChallenge | null; gateway: {on: boolean; disconnected: boolean} | null}; // hilo.ts gains `hiloGateway`
   hydroQuebec: {balance: {lastUpdated: number} | null; peakNow: boolean | null; peakUpcoming: boolean | null} | null;
   heatPump: HeatPumpInputs | null;
   weatherWarnings: number | null; // the Environment Canada provider's `warnings` count (environment-canada.ts exports `warningCount(states, config)`)
   car: CarInputs | null; // readCar; null without a car
-  wallbox: WallboxInputs | null;
+  wallbox: WallboxInputs;
   sensors: SensorInputs[]; // doorMotionSensors
   waterHeater: {power: number | null; temperature: number | null; powerLastChanged: number | null};
   config: {carBatteryKwh: number | null};
