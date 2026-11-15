@@ -186,7 +186,7 @@ describe('the Air descriptor', () => {
     expect(pane('air.detail').values).toEqual([true]);
   });
 
-  // the More sheet's baselines read the legacy word ("Moderate"), not the pane's sub-line ("1 purifier · Moderate"): the brief
+  // the More sheet's baselines read the legacy word ("Moderate"), not the pane's sub-line ("1 purifier · Moderate"): `airBrief` words the first, the pane the second
   test("says the worst room's level under More, and nothing before the house has been heard", () => {
     expect(airFeature.summary?.(env(fakeHass.fromHouse(full)))).toBe('Moderate');
     expect(airFeature.summary?.(env())).toBeNull();

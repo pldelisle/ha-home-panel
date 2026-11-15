@@ -738,6 +738,8 @@ export const FR_MAP = {
   Good: 'Bon',
   Moderate: 'Moyen',
   Poor: 'Mauvais',
+  // the Home tile's line when CO₂ and VOC both run high ("Office: CO₂ 1 500, VOC 400"), still drawn by the legacy panel until #268
+  'CO₂ {n}, VOC {n}': 'CO₂ {n}, COV {n}',
   // ---- doors and windows (the car's status, the More sheet) ----
   'A door is open': 'Une porte est ouverte',
   'A window is open': 'Une fenêtre est ouverte',
