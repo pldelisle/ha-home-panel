@@ -4,7 +4,7 @@
  * legacy `.hsec`, `.hcams`, `.hcam`, `.hsens`, `.hsen` and `.glow` rules (tabs.css, phone.css, glass.css, motion.css), which #226 deleted.
  * Known copies of rules the guest's other cards still draw: `.card` (the box), `.lbl`, `.go`, `.hint` and `.sic` (base.css, extra.css,
  * glass.css), read here as `.seccard`, `.hh .lbl`, `.chev`, `.nosens` and `.hsen .sic`; the header's `.hh` rules are the legacy `.hsec > .hh`
- * ones, moved (the glance tiles' `.htile .hh` stays). The Home move (spec 24) deletes the copies when the Home pane composes the card.
+ * ones, moved (the glance tiles' `.htile .hh` stays). The Home move (spec 24, #268) deletes the copies when the Home pane composes the card.
  */
 :host {
   display: contents;

@@ -16,7 +16,7 @@ import {registriesOf} from '../../core/registry.ts';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {StoreController} from '../../ui/controllers/store-controller.ts';
 import {TickController} from '../../ui/controllers/tick.ts';
-import {SheetRequestEvent} from '../../ui/events.ts';
+import {SheetRequestEvent, TabSelectEvent} from '../../ui/events.ts';
 import {ico} from '../../ui/icons.ts';
 import {lensLike} from '../../ui/lens.ts';
 import {common} from '../../ui/styles/index.ts';
@@ -84,7 +84,7 @@ export class SecurityCard extends LitElement {
     const {t} = this.storeController.store;
     // the box is an inner element: the glass's lens is looked up from the root the rule's element is in, and a host is in the guest's
     return html`<div class=${classMap({seccard: true, glow: this.glowing})}>
-        <button type="button" class="hh" data-tab="cams" @click=${this.openTab}>
+        <button type="button" class="hh" @click=${this.openTab}>
           <span class="hsecico">${SHIELD}</span><span class="lbl">${t('security.title')}</span
           ><span class="right">${view.line}</span><span class="chev">›</span>
         </button>
@@ -114,9 +114,11 @@ export class SecurityCard extends LitElement {
       ${lensLike(this.getRootNode())}`;
   }
 
+  // The two buttons below carry `aria-description` (a screen reader reads it after the name), which lit-analyzer does not know:
+  // the `@ts-ignore` comment inside each template covers that one tag.
+
   // a camera with no snapshot (it is offline, or has none) draws the camera's icon in its place
   private renderCamera(tile: CameraTile) {
-    // lit-analyzer does not know `aria-description` (a screen reader reads it after the name); the ignore covers this one tag
     return html`<!-- @ts-ignore -->
       <button type="button" class="hcam" data-id=${tile.id} aria-description=${tile.label} @click=${this.openCamera}>
         ${
@@ -129,7 +131,6 @@ export class SecurityCard extends LitElement {
 
   // a sensor off the air has the tone `off`, which dims its line; a door that is open is `warn`, a motion sensor that sees it `act`
   private renderSensor(row: SensorRow) {
-    // lit-analyzer does not know `aria-description` (a screen reader reads it after the name); the ignore covers this one tag
     return html`<!-- @ts-ignore -->
       <button type="button" class="hsen" data-id=${row.id} aria-description=${row.label} @click=${this.openHistory}>
         <span class="sic">${ico(row.kind === 'door' ? 'door' : 'walk', 20)}</span>
@@ -140,9 +141,9 @@ export class SecurityCard extends LitElement {
       </button>`;
   }
 
-  // arrow fields, so the template hands the same function at every render; the shell listens for `tab-select` on its frame
+  // arrow fields, so the template hands the same function at every render; the shell hears `TabSelectEvent` on its frame (ADR 0026)
   private readonly openTab = (): void => {
-    this.dispatchEvent(new CustomEvent('tab-select', {bubbles: true, composed: true, detail: {key: 'cams'}}));
+    this.dispatchEvent(new TabSelectEvent('cams'));
   };
 
   private readonly openCamera = (e: Event): void => {
