@@ -1,6 +1,8 @@
 // Hilo's rate, its tier, the challenge and the rewards, read into inputs: the words a person reads are the model's.
 // Pattern: an adapter below the features (ADR 0025): the Hilo card, the energy card, the phone tiles and the live pill read
 // one tier rule; the rules are those of the legacy `rateInfo()` and `lacking().hilo`, deleted in #241.
+// `hiloChallenge`, `hiloRewards` and `hiloPresent` are exported as spec 19 names them: the challenge for the header's peak chip
+// and the live pill (specs 22, 24), the rewards and the presence for the Hilo card (#237).
 // Must not: word the tier (`Low tier` is a key in the model), read the registry (the config's keys are the discovery), or read the clock.
 import type {ResolvedConfig} from '../core/config.ts';
 import type {HassEntities} from '../core/hass.ts';

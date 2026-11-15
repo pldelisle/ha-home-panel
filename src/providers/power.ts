@@ -1,7 +1,8 @@
 // The live power flow: the grid, the water heater, the EV and each room's heating, with `rest` as what is left, in kW.
 // Pattern: an adapter below the features (ADR 0025): the energy card, Climate, the header and the live pill read this one rule
 // of "what is the rest of the home"; its rules are those of the legacy `live()`, deleted in #241; a room's name is the
-// inputs of `roomName` (src/core/i18n), worded where the language is known.
+// inputs of `roomName` (src/core/i18n), worded where the language is known. `roomPower` is exported as spec 19 names it
+// in this module's contract: one room's reading for a reader that does not need the whole flow (Climate, spec 20).
 // Must not: word anything a person reads, read the registry (the config's keys are the discovery), or read the clock.
 import type {ResolvedConfig, RoomSpec} from '../core/config.ts';
 import type {HassEntities} from '../core/hass.ts';
@@ -52,7 +53,8 @@ export function roomPower(states: HassEntities, room: RoomSpec): RoomPower {
     power,
     temperature: reading ?? numberOf(states, room.temp),
     setpoint: available ? numberAttributeOf(states, room.climate, 'temperature') : null,
-    heating: (available && states[room.climate].attributes.hvac_action === 'heating') || (power ?? 0) > HEATING_KW,
+    heating:
+      (available && textAttributeOf(states, room.climate, 'hvac_action') === 'heating') || (power ?? 0) > HEATING_KW,
     available,
   };
 }
@@ -66,6 +68,8 @@ export function powerNow(states: HassEntities, config: ResolvedConfig): PowerNow
   const rooms = config.rooms.map(room => roomPower(states, room));
   const heat = rooms.reduce((total, room) => total + (room.power ?? 0), 0);
   const pump = entities.hp ? states[entities.hp] : undefined;
+  const pumpAvailable = isAvailable(pump);
+  const pumpAction = textAttributeOf(states, entities.hp, 'hvac_action');
   return {
     grid,
     waterHeater,
@@ -75,8 +79,8 @@ export function powerNow(states: HassEntities, config: ResolvedConfig): PowerNow
     rest: grid === null ? null : Math.max(0, grid - (waterHeater ?? 0) - (ev ?? 0) - heat),
     heatPump: pump
       ? {
-          available: isAvailable(pump),
-          on: isAvailable(pump) && ['heating', 'cooling'].includes(String(pump.attributes.hvac_action)),
+          available: pumpAvailable,
+          on: pumpAvailable && (pumpAction === 'heating' || pumpAction === 'cooling'),
         }
       : null,
   };
