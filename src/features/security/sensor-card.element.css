@@ -1,13 +1,16 @@
 /*
- * <hp-sensor-card>'s own rules: the card's chrome as the host's, its title line with the amber count, and the grid of chips with their
+ * <hp-sensor-card>'s own rules: the card's box, its title line with the amber count, and the grid of chips with their
  * icon square, name and line, in the tones of a door that is open, a motion sensor that sees someone and a sensor that is off the air.
  * Moved from the legacy `.sgrid` and `.schip` rules (extra.css, phone.css, tabs.css, glass.css, motion.css), which #224 deleted. Known
  * copies of rules the Home card and the other legacy cards still draw: `.card`, `.card .top`, `.card .top .right` and `.lbl` (base.css,
- * glass.css), and `.sic` (extra.css, glass.css; the Home card's rows draw it until #226), read here as the host, `.top`, `.right`, `.lbl`
- * and `.schip .sic`; a shadow root cannot reach the legacy rule. The chrome is the camera card's too: see its header for the kit sheet.
+ * glass.css), and `.sic` (extra.css, glass.css; the Home card's rows draw it until #226), read here as `.sencard`, `.top`, `.right`, `.lbl`
+ * and `.schip .sic`; a shadow root cannot reach the legacy rule. The box is the camera card's too: see its header for the kit sheet.
  */
 :host {
   display: block;
+  min-width: 0;
+}
+.sencard {
   background: var(--card);
   border: 0;
   border-radius: 22px;
@@ -16,14 +19,14 @@
   min-width: 0;
   position: relative;
 }
-:host([glass]) {
+:host([glass]) .sencard {
   background: var(--g-card);
   -webkit-backdrop-filter: var(--g-bd);
   backdrop-filter: var(--g-bd);
   box-shadow: var(--g-edge);
 }
 @media (prefers-reduced-transparency: reduce) {
-  :host([glass]) {
+  :host([glass]) .sencard {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
     background: var(--card);
@@ -97,7 +100,7 @@
   }
 }
 :host([glass]) .schip {
-  background: color-mix(in srgb, var(--c-home) 16%, var(--g-sel));
+  background: var(--g-tile);
   box-shadow: var(--g-edge-s);
 }
 @media (prefers-reduced-transparency: reduce) {

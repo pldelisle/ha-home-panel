@@ -1,5 +1,5 @@
 /*
- * <hp-camera-card>'s own rules: the card's chrome as the host's, its title line, the snapshot grid (tile, label, motion dot) and the
+ * <hp-camera-card>'s own rules: the card's box, its title line, the snapshot grid (tile, label, motion dot) and the
  * empty state with its link. Moved from the legacy `.camgrid`, `.cam`, `.camlbl`, `.mdot` and `.camempty` rules (extra.css, phone.css,
  * glass.css), which #224 deleted; `.camlive` is the camera sheet's and stays legacy until #225. Known copies of rules the guest's other
  * cards still draw: `.card`, `.card .top`, `.card .top .right`, `.lbl` and `.more` (base.css, glass.css, motion.css), read here as the
@@ -8,6 +8,9 @@
  */
 :host {
   display: block;
+  min-width: 0;
+}
+.camcard {
   background: var(--card);
   border: 0;
   border-radius: 22px;
@@ -16,14 +19,14 @@
   min-width: 0;
   position: relative;
 }
-:host([glass]) {
+:host([glass]) .camcard {
   background: var(--g-card);
   -webkit-backdrop-filter: var(--g-bd);
   backdrop-filter: var(--g-bd);
   box-shadow: var(--g-edge);
 }
 @media (prefers-reduced-transparency: reduce) {
-  :host([glass]) {
+  :host([glass]) .camcard {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
     background: var(--card);
@@ -128,7 +131,8 @@
   color: var(--fg3);
 }
 :host([glass]) .camempty {
-  background: color-mix(in srgb, var(--c-home) 16%, var(--g-sel));
+  background: var(--g-tile);
+  box-shadow: var(--g-edge-s);
 }
 @media (prefers-reduced-transparency: reduce) {
   :host([glass]) .camempty {
@@ -170,7 +174,8 @@
   transform: scale(0.96);
 }
 :host([glass]) .camempty .more {
-  background: color-mix(in srgb, var(--c-home) 16%, var(--g-sel));
+  background: var(--g-tile);
+  box-shadow: var(--g-edge-s);
 }
 @media (prefers-reduced-transparency: reduce) {
   :host([glass]) .camempty .more {

@@ -36,8 +36,12 @@ export class CameraCard extends LitElement {
   protected override render() {
     const view = this.view;
     if (!view) return nothing;
-    return html`<div class="top"><span class="lbl">${view.title}</span><span class="right">${view.count}</span></div>
-      ${view.empty ? this.renderEmpty(view.emptyText) : this.renderGrid(view.tiles)}${lensLike(this.getRootNode())}`;
+    // the box is an inner element: the glass's lens is looked up from the root the rule's element is in, and a host is in the pane's
+    return html`<div class="camcard">
+        <div class="top"><span class="lbl">${view.title}</span><span class="right">${view.count}</span></div>
+        ${view.empty ? this.renderEmpty(view.emptyText) : this.renderGrid(view.tiles)}
+      </div>
+      ${lensLike(this.getRootNode())}`;
   }
 
   private renderEmpty({title, hint, link}: SecurityViewModel['cameras']['emptyText']) {

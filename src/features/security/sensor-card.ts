@@ -35,16 +35,21 @@ export class SensorCard extends LitElement {
     const view = this.view;
     if (!view) return nothing;
     const {line} = view;
-    return html`<div class="top">
-        <span class="lbl">${view.title}</span
-        ><span class="right">${line ? (line.warn ? html`<b class="warn">${line.text}</b>` : line.text) : nothing}</span>
-      </div>
-      <div class="sgrid">
-        ${repeat(
-          view.rows,
-          row => row.id,
-          row => this.renderChip(row),
-        )}
+    // the box is an inner element: the glass's lens is looked up from the root the rule's element is in, and a host is in the pane's
+    return html`<div class="sencard">
+        <div class="top">
+          <span class="lbl">${view.title}</span
+          ><span class="right"
+            >${line ? (line.warn ? html`<b class="warn">${line.text}</b>` : line.text) : nothing}</span
+          >
+        </div>
+        <div class="sgrid">
+          ${repeat(
+            view.rows,
+            row => row.id,
+            row => this.renderChip(row),
+          )}
+        </div>
       </div>
       ${lensLike(this.getRootNode())}`;
   }
