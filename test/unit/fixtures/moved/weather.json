@@ -1,5 +1,5 @@
 {
-  "about": "The English messages the Weather move introduced (src/core/i18n/en.ts, weather.*), each with sample values, and for a French formatting that differs from the English one (times, a plural) the values it takes. test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer made of the English. Deleted with the layer in phase 4.",
+  "about": "The English messages the Weather move introduced (src/core/i18n/en.ts, weather.*), each with sample values, and for a French formatting that differs from the English one (times, a plural) the values it takes. test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer made of the English. The AQHI and UV words the Air sheet shared (`aqhi`, `aqhiRisk`, `uv.moderate`, `uv.veryHigh`, `tile.aqhi.label`) lost their map entries with the Air move's deletion (#234): `was` is what the layer made of them before. Deleted with the layer in phase 4.",
   "messages": [
     {
       "key": "weather.cond.clear-night"
@@ -579,43 +579,51 @@
       }
     },
     {
-      "key": "weather.aqhi"
+      "key": "weather.aqhi",
+      "was": "CAS"
     },
     {
       "key": "weather.aqhiRisk",
       "values": {
         "risk": "low"
-      }
+      },
+      "was": "CAS, risque faible"
     },
     {
       "key": "weather.aqhiRisk",
       "values": {
         "risk": "moderate"
-      }
+      },
+      "was": "CAS, risque modéré"
     },
     {
       "key": "weather.aqhiRisk",
       "values": {
         "risk": "high"
-      }
+      },
+      "was": "CAS, risque élevé"
     },
     {
       "key": "weather.aqhiRisk",
       "values": {
         "risk": "veryHigh"
-      }
+      },
+      "was": "CAS, risque très élevé"
     },
     {
       "key": "weather.uv.low"
     },
     {
-      "key": "weather.uv.moderate"
+      "key": "weather.uv.moderate",
+      "was": "moyen"
     },
     {
       "key": "weather.uv.high"
     },
     {
-      "key": "weather.uv.veryHigh"
+      "key": "weather.uv.veryHigh",
+      "was": "très élevé",
+      "after": "Très élevé"
     },
     {
       "key": "weather.uv.extreme"
@@ -762,7 +770,8 @@
       "key": "weather.tile.uv.note"
     },
     {
-      "key": "weather.tile.aqhi.label"
+      "key": "weather.tile.aqhi.label",
+      "was": "Qualité de l'air"
     },
     {
       "key": "weather.tile.aqhi.sub",

@@ -69,6 +69,15 @@ test('the Home kWh fragments are French', () => {
   expect(frText('Idle · 34.5 kWh today')).toBe("Au repos · 34,5 kWh aujourd'hui");
 });
 
+// The Home tile's Air line ("1 purifier · Office: CO₂ 1,500, VOC 400") and the stack's air card are still the legacy panel's own
+// English, so the layer keeps the entry that says COV, as it did before the Air move's deletion (#234).
+test('the Home tile line for a room with poor CO₂ and VOC reads COV, and the stack card keeps its words', () => {
+  const frText = frTextFor([]);
+  expect(frText('1 purifier · Office: CO₂ 1,500, VOC 400')).toBe('1 purifier · Office\u00a0: CO₂ 1\u202f500, COV 400');
+  expect(frText('VOC is high')).toBe('VOC élevé');
+  expect(frText('Office air')).toBe('Air\u00a0: Office');
+});
+
 // A sensor row ("Front door open", "Garage door offline": `${name} open`, `${name} offline` in the attention list and the
 // stack) keeps the form it had, colon included; the Security line must never reach it. FR_DOOR's motion forms and
 // "Front door closed" are not drawn by the panel today; they are pinned so that FR_DOOR stays as it is.

@@ -1,7 +1,7 @@
 // airModel: the purifiers, the station and the AQHI in, the strings, levels and flags the Air card, the detail and the summary place out.
 // Pattern: a pure view-model function, a humble object's other half (Meszaros, Fowler): it reads no clock, no `hass` and no store, words every
 // message through `deps.t` and every number through `deps.fmt`, and a held mode or speed comes from `deps.overlay` (ADR 0023). Each rule is the
-// legacy panel's own (`renderAir`, `renderAirLive`, `roomAir`, `airSummary`), deleted by #234.
+// legacy panel's own (`renderAir`, `renderAirLive`, `roomAir`, `airSummary`), deleted in #234.
 // Must not: import the DOM, Lit or the shell, read the clock, or hold text the household reads (a catalog key says it).
 import {capitalise, DASH} from '../../core/figures.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
@@ -344,6 +344,16 @@ function outsideDetail(outside: OutsideAirInputs, aqhi: number | null, {t, fmt}:
       : null,
     pollenHint: t('air.noPollenYet'),
   };
+}
+
+/**
+ * The word under Air in the phone's More sheet: the legacy `moreLines`, which says the worst room's level, without the purifier
+ * count and the pollutants the pane's sub-line adds, "No data" when no room reads, and "No purifiers" when the house has none.
+ */
+export function airBrief(rooms: readonly AirRoomInputs[], t: Translate): string {
+  if (!rooms.length) return t('air.noPurifiersBrief');
+  const worst = Math.max(-1, ...rooms.map(room => rateRoom(room).level)) as Level;
+  return worst < 0 ? t('air.noData') : t(LEVEL_WORDS[toneOf(worst)]);
 }
 
 /** The Air tab's view: the card, the detail and the sub-line, from the inputs, in the language `deps.t` words. */

@@ -1,11 +1,16 @@
 {
-  "about": "The English messages the Air move introduced (src/core/i18n/en.ts, air.*), each with sample values. test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer made of the English; `written` is French the layer does not make (a text the legacy panel never drew as one message, or one it left in English), `fr` the values French writes differently. The legacy panel still draws the stack's air card and the More word, so no map entry is deleted yet (#234). Deleted with the layer in phase 4.",
+  "about": "The English messages the Air move introduced (src/core/i18n/en.ts, air.*), each with sample values. test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer made of the English; `written` is French the layer does not make (a text the legacy panel never drew as one message, or one it left in English), `fr` the values French writes differently. #234 deleted the map entries the legacy panel no longer renders: `was` is what the layer made of the English before, `after` what it makes of it now. The entries another screen still renders (the level words, No data, No purifiers, Close, Manual, Fan, Outside, Comfortable, the pollen levels, the history words, Open air quality details, Air) or that the patterns of the layer shared stay. Deleted with the layer in phase 4.",
   "messages": [
     {
-      "key": "air.quality"
+      "key": "air.quality",
+      "was": "Qualité de l'air"
     },
     {
-      "key": "air.noPurifiers"
+      "key": "air.noPurifiers",
+      "was": "Aucun purificateur trouvé"
+    },
+    {
+      "key": "air.noPurifiersBrief"
     },
     {
       "key": "air.purifiers",
@@ -25,13 +30,15 @@
       "key": "air.noData"
     },
     {
-      "key": "air.noReadings"
+      "key": "air.noReadings",
+      "was": "Aucune mesure"
     },
     {
       "key": "air.noReadingsYet"
     },
     {
-      "key": "air.goodEveryRoom"
+      "key": "air.goodEveryRoom",
+      "was": "Bon dans chaque pièce"
     },
     {
       "key": "air.level.good"
@@ -46,13 +53,16 @@
       "key": "air.noDataLower"
     },
     {
-      "key": "air.levelLower.good"
+      "key": "air.levelLower.good",
+      "was": "bon"
     },
     {
-      "key": "air.levelLower.moderate"
+      "key": "air.levelLower.moderate",
+      "was": "moyen"
     },
     {
-      "key": "air.levelLower.poor"
+      "key": "air.levelLower.poor",
+      "was": "mauvais"
     },
     {
       "key": "air.allRoomsClean",
@@ -84,7 +94,9 @@
       "written": "Indice Mila 68"
     },
     {
-      "key": "air.cleanAir"
+      "key": "air.cleanAir",
+      "was": "Air pur",
+      "after": "Air : Clean"
     },
     {
       "key": "air.roomWhy",
@@ -97,7 +109,8 @@
       }
     },
     {
-      "key": "air.outsideAqi"
+      "key": "air.outsideAqi",
+      "was": "IQA extérieur"
     },
     {
       "key": "air.open"
@@ -106,10 +119,14 @@
       "key": "air.close"
     },
     {
-      "key": "air.purifierOffline"
+      "key": "air.purifierOffline",
+      "was": "Purificateur hors ligne",
+      "after": "Purifier hors ligne"
     },
     {
-      "key": "air.fanOff"
+      "key": "air.fanOff",
+      "was": "Ventilateur éteint",
+      "after": "Ventilateur : désactivé"
     },
     {
       "key": "air.automagic"
@@ -142,13 +159,15 @@
       "written": "45 % HR"
     },
     {
-      "key": "air.offlineHint"
+      "key": "air.offlineHint",
+      "was": "Le purificateur est hors ligne, il ne peut pas être réglé pour le moment."
     },
     {
       "key": "air.automagicHint",
       "values": {
         "clauses": ""
-      }
+      },
+      "was": "Automagic règle le ventilateur selon les capteurs de la pièce."
     },
     {
       "key": "air.automagicHint",
@@ -157,7 +176,8 @@
       },
       "fr": {
         "clauses": ", en ce moment 40 %"
-      }
+      },
+      "was": "Automagic règle le ventilateur selon les capteurs de la pièce, en ce moment 40 %."
     },
     {
       "key": "air.automagicHint",
@@ -166,7 +186,8 @@
       },
       "fr": {
         "clauses": ", en ce moment 40 %, 2,4 renouvellements d'air à l'heure"
-      }
+      },
+      "was": "Automagic règle le ventilateur selon les capteurs de la pièce, en ce moment 40 %, 2,4 renouvellements d'air à l'heure."
     },
     {
       "key": "air.automagicHint",
@@ -193,10 +214,12 @@
       "written": ", 2,4 renouvellements d'air à l'heure"
     },
     {
-      "key": "air.slower"
+      "key": "air.slower",
+      "was": "Moins vite"
     },
     {
-      "key": "air.faster"
+      "key": "air.faster",
+      "was": "Plus vite"
     },
     {
       "key": "air.fan"
@@ -211,7 +234,8 @@
       "key": "air.fanSpeed",
       "values": {
         "name": "Office"
-      }
+      },
+      "was": "Office : vitesse du ventilateur"
     },
     {
       "key": "air.mode",
@@ -231,26 +255,16 @@
       "values": {
         "name": "Office",
         "mode": "Automagic"
-      }
+      },
+      "was": "Office : Automagic"
     },
     {
       "key": "air.fanSet",
       "values": {
         "name": "Office",
         "pct": 40
-      }
-    },
-    {
-      "key": "air.purifierOn",
-      "values": {
-        "name": "Office"
-      }
-    },
-    {
-      "key": "air.purifierOff",
-      "values": {
-        "name": "Office"
-      }
+      },
+      "was": "Office : ventilateur à 40 %"
     },
     {
       "key": "air.metric.pm1"
@@ -268,13 +282,15 @@
       "key": "air.metric.co2"
     },
     {
-      "key": "air.metric.voc"
+      "key": "air.metric.voc",
+      "was": "COV"
     },
     {
       "key": "air.metric.humidity"
     },
     {
-      "key": "air.whatToChart"
+      "key": "air.whatToChart",
+      "was": "Quoi afficher"
     },
     {
       "key": "air.chartTitle",
@@ -303,7 +319,8 @@
         "good": "12",
         "unit": "µg/m³",
         "moderate": "35"
-      }
+      },
+      "was": "Bon jusqu'à 12 µg/m³, moyen jusqu'à 35."
     },
     {
       "key": "air.goodUpTo",
@@ -314,7 +331,8 @@
       },
       "fr": {
         "moderate": "1 200"
-      }
+      },
+      "was": "Bon jusqu'à 800 ppm, moyen jusqu'à 1 200."
     },
     {
       "key": "air.dashedOutdoor",
@@ -325,7 +343,8 @@
       "values": {
         "from": "30",
         "to": "60"
-      }
+      },
+      "was": "L'humidité intérieure confortable est de 30 à 60 %."
     },
     {
       "key": "air.comfortable"
@@ -340,7 +359,8 @@
       "key": "air.outside"
     },
     {
-      "key": "air.outsideHint"
+      "key": "air.outsideHint",
+      "was": "De la station extérieure Mila la plus proche de la maison, et de la cote air santé d’Environnement Canada."
     },
     {
       "key": "air.outdoorAir",
@@ -349,20 +369,24 @@
       },
       "fr": {
         "range": "7 derniers jours"
-      }
+      },
+      "was": "Air extérieur, 7 derniers jours",
+      "after": "Air : Outdoor, 7 derniers jours"
     },
     {
       "key": "air.outdoorHint",
       "written": "IQA américain de la station (bon jusqu’à 50, modéré jusqu’à 100) et cote air santé sur son échelle de 1 à 10."
     },
     {
-      "key": "air.aqi"
+      "key": "air.aqi",
+      "was": "IQA"
     },
     {
       "key": "air.aqhiValue",
       "values": {
         "n": 2
-      }
+      },
+      "was": "CAS 2"
     },
     {
       "key": "air.stationPm",
@@ -378,16 +402,20 @@
       "written": "station à 6 km"
     },
     {
-      "key": "air.pollen.trees"
+      "key": "air.pollen.trees",
+      "was": "Pollen des arbres"
     },
     {
-      "key": "air.pollen.grass"
+      "key": "air.pollen.grass",
+      "was": "Pollen des graminées"
     },
     {
-      "key": "air.pollen.weeds"
+      "key": "air.pollen.weeds",
+      "was": "Pollen des herbes"
     },
     {
-      "key": "air.pollen.mold"
+      "key": "air.pollen.mold",
+      "was": "Moisissures"
     },
     {
       "key": "air.pollenLevel.none"
@@ -405,22 +433,28 @@
       "key": "air.pollenLevel.veryHigh"
     },
     {
-      "key": "air.noPollenYet"
+      "key": "air.noPollenYet",
+      "was": "Pas encore de relevé de pollen de la station; il s'affichera ici dès que Mila en aura un."
     },
     {
-      "key": "air.noOutdoorHistory"
+      "key": "air.noOutdoorHistory",
+      "was": "Pas encore d’historique extérieur"
     },
     {
-      "key": "air.aqiSeries"
+      "key": "air.aqiSeries",
+      "was": "IQA (station Mila)"
     },
     {
-      "key": "air.aqhiSeries"
+      "key": "air.aqhiSeries",
+      "was": "CAS (Environnement Canada)"
     },
     {
-      "key": "air.axis.aqi"
+      "key": "air.axis.aqi",
+      "was": "IQA américain"
     },
     {
-      "key": "air.axis.aqhi"
+      "key": "air.axis.aqhi",
+      "was": "CAS"
     }
   ]
 }

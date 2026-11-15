@@ -1,6 +1,6 @@
 // Air's history as pure functions: the statistics rows in, the series per room and for the outdoor air, the chart words and the options out.
 // Pattern: functional core (Bernhardt, Boundaries), the data half of a humble object (Meszaros), after Weather's history; each rule is the
-// legacy panel's own (`loadAirRange`, `airChart`, `airOutChart`, deleted by #234) and options are plain data (ADR 0022): `fmt` and `t` are arguments.
+// legacy panel's own (`loadAirRange`, `airChart`, `airOutChart`, deleted in #234) and options are plain data (ADR 0022): `fmt` and `t` are arguments.
 // The caller is `<hp-air-detail>`: `metricIds` and `statisticsStart` say what it asks the recorder for, the series and options feed its two `<hp-chart>`s.
 // Must not: call the API client or the cache, read the clock or the DOM, or pick a colour of its own (every colour is a caller's token).
 import {DASH, DAY_MS, HOUR_MS} from '../../core/figures.ts';

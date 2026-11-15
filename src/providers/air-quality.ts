@@ -1,7 +1,7 @@
 // The air-quality scales and how a room is rated against them: pollutant bands, the US AQI bands and the room's level.
 // Pattern: pure functions over plain data (Bernhardt, functional core), in a provider because the smart stack reads the
 // rating too and a feature cannot be imported by it (ADR 0025); the rules are the legacy `AQ`, `aqLevel`, `outLevel` and
-// `roomAir`, deleted by #234. Bands: PM2.5 US EPA daily, CO2 ventilation guidance, VOC UBA, CO WHO 8-hour.
+// `roomAir`, deleted in #234. Bands: PM2.5 US EPA daily, CO2 ventilation guidance, VOC UBA, CO WHO 8-hour.
 // Must not: word anything a person reads (the model does), read the clock, or know an integration (`mila.ts` does).
 import type {AirRoomInputs} from './mila.ts';
 

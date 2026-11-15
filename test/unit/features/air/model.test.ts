@@ -3,7 +3,7 @@
 import {describe, expect, test} from 'vitest';
 import {readAir, type AirInputs} from '../../../../src/features/air/inputs.ts';
 import {K} from '../../../../src/features/air/commands.ts';
-import {airModel, type AirViewModel} from '../../../../src/features/air/model.ts';
+import {airBrief, airModel, type AirViewModel} from '../../../../src/features/air/model.ts';
 import type {AirRoomInputs, OutsideAirInputs} from '../../../../src/providers/mila.ts';
 import {fakeHass} from '../../fake-hass.ts';
 import {depsOf, fullHouse, readingOf, recorded, type Language} from '../media/support.ts';
@@ -227,6 +227,22 @@ describe('the summary and the card’s state', () => {
     expect(headline({pm2_5: 20, co: 20})).toBe('PM2.5 moderate, CO moderate');
     expect(headline({airQuality: 80})).toBe('Mila index 80');
     expect(headline({co2: 500, temperature: 20})).toBe('Clean air · 20.0°');
+  });
+});
+
+describe('the More sheet’s word', () => {
+  const brief = (rooms: AirRoomInputs[], language: Language = 'en') => airBrief(rooms, depsOf(fullHouse, language).t);
+
+  test('the worst room’s level alone, "No data" when none reads, "No purifiers" without one', () => {
+    expect(brief([])).toBe('No purifiers');
+    expect(brief([room()])).toBe('No data');
+    expect(brief([room({readings: {co2: 500}}), room({fanId: 'fan.b', readings: {pm2_5: 20}})])).toBe('Moderate');
+    expect(brief([room({readings: {pm2_5: 40}}), room({fanId: 'fan.b', readings: {co2: 500}})])).toBe('Poor');
+  });
+
+  test('is French in French', () => {
+    expect(brief([], 'fr')).toBe('Aucun purificateur');
+    expect(brief([room({readings: {co2: 500}})], 'fr')).toBe('Bon');
   });
 });
 

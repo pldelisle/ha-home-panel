@@ -1,6 +1,6 @@
 # Air
 
-What the Air tab computes and draws ([spec 18](../../../docs/specs/18-air.md)): the Mila purifiers, the outdoor station, the rating of each room and the controls. This folder holds, since #230, the pure half: the rules that find the purifiers and the station and rate the air (in `src/providers/`, because the smart stack reads them too, [ADR 0025](../../../docs/adr/0025-shared-reads-live-in-providers.md)), `readAir` that composes them with the AQHI, `airIds` that lists what the pane reads, `airModel` that words the card, the detail and the sub-line, the charts' series and options, and the purifier commands as data. Since #232 the feature draws the Air tab's header and card: `<hp-air-pane>` and `<hp-air-card>`, on a phone. Since #233 it draws the detail too: `<hp-air-detail>` with a `<hp-air-room>` per purifier, inline in the pane on a tablet (whose pane header is not shown) and in `<hp-sheet>` (`air.detail`) on a phone; the legacy panel's detail is gone, and it deletes its own copies of the rules (the stack's card, the More word) with #234.
+What the Air tab computes and draws ([spec 18](../../../docs/specs/18-air.md)): the Mila purifiers, the outdoor station, the rating of each room and the controls. This folder holds, since #230, the pure half: the rules that find the purifiers and the station and rate the air (in `src/providers/`, because the smart stack reads them too, [ADR 0025](../../../docs/adr/0025-shared-reads-live-in-providers.md)), `readAir` that composes them with the AQHI, `airIds` that lists what the pane reads, `airModel` that words the card, the detail and the sub-line, the charts' series and options, and the purifier commands as data. Since #232 the feature draws the Air tab's header and card: `<hp-air-pane>` and `<hp-air-card>`, on a phone. Since #233 it draws the detail too: `<hp-air-detail>` with a `<hp-air-room>` per purifier, inline in the pane on a tablet (whose pane header is not shown) and in `<hp-sheet>` (`air.detail`) on a phone; the legacy panel's detail is gone, and #234 deleted its own copies of the rules: the stack's air card and the Home tile read `milaRooms` and `rateRoom` through one legacy reader, `airRooms()` (until #266 and #268 move them), and the More word is `airBrief`.
 
 ## The folder
 
@@ -12,10 +12,10 @@ src/features/air/
   README.md
   ids.ts                   airIds(store): each room's fan and sensors, the station's sensors and pollen, the AQHI sensor
   inputs.ts                readAir(states, registries, names, config): AirInputs
-  model.ts                 airModel(inputs, deps): AirViewModel: the card, the detail and the sub-line, through `t`, `fmt` and the overlay
+  model.ts                 airModel(inputs, deps): AirViewModel: the card, the detail and the sub-line, through `t`, `fmt` and the overlay; airBrief(rooms, t): the More sheet's word
   history.ts               metricIds, metricSeries, outdoorSeries, chartText, airChartOptions, outdoorChartOptions, statisticsStart, rangeTabs: statistics in, plain-data chart options out
-  commands.ts              K (the overlay keys), setMode, setSpeed, toggleFan: `Command` data
-  index.ts                 airFeature: the descriptor, with `detailSheet`; its More word is still the guest's
+  commands.ts              K (the overlay keys), setMode, setSpeed: `Command` data
+  index.ts                 airFeature: the descriptor, with `detailSheet`; its More word is `airBrief`, the legacy word ("Good", "No data", "No purifiers")
   sheets.ts                DETAIL_SHEET = 'air.detail'
   air-pane.ts              <hp-air-pane>: the header; the card and the detail's sheet on a phone, the detail inline on a tablet; owns the statistics cache, the range and the metric; air-pane.element.css
   air-card.ts              <hp-air-card>: the outside figure, the state line, a box per room; air-card.element.css

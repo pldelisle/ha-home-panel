@@ -1,13 +1,13 @@
 // Mila's purifiers and outdoor station: the rooms and the station found in the registries, read into inputs, not a view.
 // Pattern: registry-driven discovery (devices of a platform, entities of a device, roles by suffix), the shape Hilo, FordPass
-// and Wallbox follow; its rules are those of the legacy `purifiers()`, `AIR_KEYS` and `POLLEN`, deleted by #234.
+// and Wallbox follow; its rules are those of the legacy `purifiers()`, `AIR_KEYS` and `POLLEN`, deleted in #234.
 // Must not: word anything a person reads, rate the air (that is `air-quality.ts`), read the clock, or look past the registries.
 import type {HassEntities, Registries} from '../core/hass.ts';
 import type {Names} from '../core/i18n/names.ts';
 import {entitiesByDevice, nameOwner} from '../core/registry.ts';
 import {isAvailable, numberAttributeOf, numberOf, textAttributeOf, textOf} from '../core/states.ts';
 
-/** The sensors a Mila purifier makes, found by the end of their entity id (the legacy `AIR_KEYS`, deleted by #234). */
+/** The sensors a Mila purifier makes, found by the end of their entity id (the legacy `AIR_KEYS`, deleted in #234). */
 export const AIR_SUFFIXES = [
   'pm1',
   'pm2_5',
@@ -25,7 +25,7 @@ export const AIR_SUFFIXES = [
 ] as const;
 export type AirSuffix = (typeof AIR_SUFFIXES)[number];
 
-/** The pollen the station reports, in the order the panel lists them (the legacy `POLLEN`, deleted by #234). */
+/** The pollen the station reports, in the order the panel lists them (the legacy `POLLEN`, deleted in #234). */
 export const POLLEN_KINDS = ['trees', 'grass', 'weeds', 'mold'] as const;
 export type PollenKind = (typeof POLLEN_KINDS)[number];
 

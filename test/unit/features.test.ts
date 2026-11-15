@@ -166,25 +166,29 @@ describe('the Media descriptor', () => {
 });
 
 describe('the Air descriptor', () => {
-  const env = (line: string | null) => ({
-    store: createStore({defaultTimeZone: 'America/Toronto', resolve: resolveConfig}),
-    guest: {availability: () => ({}), moreLine: (key: string) => (key === 'air' ? line : 'other')},
-    sheetOpen: () => false,
-    sheetDetail: () => undefined,
-  });
+  const env = (hass?: ReturnType<typeof fakeHass.fromHouse>) => {
+    const store = createStore({defaultTimeZone: 'America/Toronto', resolve: resolveConfig});
+    if (hass) store.setHass(hass);
+    return {
+      store,
+      guest: {availability: () => ({}), moreLine: () => null},
+      sheetOpen: () => false,
+      sheetDetail: () => undefined,
+    };
+  };
 
   test("is the registry's own and always shown, and binds its pane to the sheet host's answer: the detail's `open`", () => {
     expect(FEATURES.find(f => f.key === 'air')).toBe(airFeature);
     expect(airFeature.available).toBeUndefined();
     expect(airFeature.detailSheet).toBe('air.detail');
-    const pane = (open: string | null) => airFeature.pane({...env(null), sheetOpen: id => id === open});
+    const pane = (open: string | null) => airFeature.pane({...env(), sheetOpen: id => id === open});
     expect(pane(null).values).toEqual([false]);
     expect(pane('air.detail').values).toEqual([true]);
   });
 
-  // the More sheet's baselines read the legacy word ("Good"), not the pane's sub-line ("1 purifier · Good"): it stays the guest's until #234
-  test("says the guest's word for Air under More", () => {
-    expect(airFeature.summary?.(env('Good'))).toBe('Good');
-    expect(airFeature.summary?.(env(null))).toBeNull();
+  // the More sheet's baselines read the legacy word ("Moderate"), not the pane's sub-line ("1 purifier · Moderate"): `airBrief` words the first, the pane the second
+  test("says the worst room's level under More, and nothing before the house has been heard", () => {
+    expect(airFeature.summary?.(env(fakeHass.fromHouse(full)))).toBe('Moderate');
+    expect(airFeature.summary?.(env())).toBeNull();
   });
 });

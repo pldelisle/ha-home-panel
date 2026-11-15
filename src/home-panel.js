@@ -12,7 +12,9 @@ import {englishLocale, panelLocale} from './core/i18n/locale.ts';
 import {ok, esc, tile, plural, cap} from './legacy/globals.js';
 import {loadApex} from './core/apex.ts';
 import {registriesOf} from './core/registry.ts';
+import {rateRoom} from './providers/air-quality.ts';
 import {doorMotionSensors} from './providers/door-motion.ts';
+import {milaRooms} from './providers/mila.ts';
 import {ensureFonts} from './fonts.js';
 // Liquid Glass: whether this engine can run an SVG filter inside backdrop-filter (Chromium only)
 const LENS_OK =
@@ -91,49 +93,10 @@ const kelvinRGB = k => {
   const b = t >= 66 ? 255 : t <= 19 ? 0 : 138.5177312231 * Math.log(t - 10) - 305.0447927307;
   return `rgb(${c(r)},${c(g)},${c(b)})`;
 };
-// air quality bands per pollutant: [good up to, moderate up to], above that is poor
-// PM2.5 after the US EPA daily bands, CO2 after common ventilation guidance, TVOC after the German UBA levels, CO after the WHO 8-hour limit
-const AQ = {
-  pm2_5: {name: 'PM2.5', unit: 'µg/m³', b: [12, 35]},
-  co2: {name: 'CO₂', unit: 'ppm', b: [800, 1200]},
-  voc: {name: 'VOC', unit: 'µg/m³', b: [300, 3000]},
-  co: {name: 'CO', unit: 'ppm', b: [9, 35]},
-};
-const AQ_LVL = [['Good'], ['Moderate'], ['Poor']];
-const AIR_KEYS = [
-  'pm1',
-  'pm2_5',
-  'pm10',
-  'co',
-  'co2',
-  'voc',
-  'humidity',
-  'temperature',
-  'air_quality',
-  'fan_speed',
-  'air_changes',
-  'mode',
-  'time_to_clean',
-];
-const POLLEN = [
-  ['trees', 'Trees'],
-  ['grass', 'Grass'],
-  ['weeds', 'Weeds'],
-  ['mold', 'Mold'],
-];
-const aqLevel = (k, v) => (v == null ? -1 : v <= AQ[k].b[0] ? 0 : v <= AQ[k].b[1] ? 1 : 2);
-const aqFmt = (fmt, k, v, short) =>
-  v == null
-    ? '–'
-    : short && v >= 10000
-      ? Math.round(v / 1000) + 'k'
-      : short && v >= 1000
-        ? (v / 1000).toFixed(1) + 'k'
-        : k === 'co' && v < 10
-          ? (+v).toFixed(1)
-          : fmt.integer(v);
-// outdoor AQI on the US scale: up to 50 good, up to 100 moderate
-const outLevel = v => (v == null ? 0 : v <= 50 ? 0 : v <= 100 ? 1 : 2);
+// The words the stack's air card and the Home tile say, the legacy panel's own until the stack (#266) and Home (#268) move: the
+// provider rates the air (src/providers/air-quality.ts) and words nothing. [name, unit] by pollutant, and the level words.
+const AIR_WORDS = {pm2_5: ['PM2.5', 'µg/m³'], co2: ['CO₂', 'ppm'], voc: ['VOC', 'µg/m³'], co: ['CO', 'ppm']};
+const AIR_LEVELS = ['Good', 'Moderate', 'Poor'];
 const ICON = {
   chev: '<path d="m9 6 6 6-6 6"/>',
   chevl: '<path d="m15 6-6 6 6 6"/>',
@@ -1033,6 +996,18 @@ export class LegacyPanel {
   doorSensors() {
     return doorMotionSensors(this.store.hass.states, registriesOf(this.store.hass), this.store.names);
   }
+  // Air's one read left in the legacy panel (#234): the provider's rooms, each with its rating, over the store. Its callers
+  // leave with the stack (#266) and the Home tile (#268).
+  airRooms() {
+    return milaRooms(this.store.hass.states, registriesOf(this.store.hass), this.store.names).map(room => ({
+      room,
+      rating: rateRoom(room),
+    }));
+  }
+  // a pollutant's reading as the stack's air card and the Home tile said it (the feature words its own through the formatters)
+  airFigure(k, v) {
+    return v == null ? '–' : k === 'co' && v < 10 ? (+v).toFixed(1) : this.fmtEn.integer(v);
+  }
   stackCards() {
     const now = Date.now(),
       h = this.fmtEn.hourNow(Date.now()),
@@ -1308,26 +1283,21 @@ export class LegacyPanel {
       );
     }
     // a room whose air turned poor
-    try {
-      const P2 = this.purifiers();
-      P2.rooms.forEach(r => {
-        const a = this.roomAir(r),
-          bad = a.lv.filter(x => x.l >= 2).sort((x, y) => y.l - x.l)[0];
-        if (!bad) return;
-        out.push(
-          this.scard('air', {
-            ic: 'wind',
-            label: `${r.name} air`,
-            color: 'var(--m-teal)',
-            go: 'air.detail',
-            body: big(aqFmt(this.fmtEn, bad.k, bad.v), ' ' + AQ[bad.k].unit) + mid(`${AQ[bad.k].name} is high`),
-            foot: bad.k === 'co2' ? 'Open a door or a window a little' : 'The purifier can run faster',
-          }),
-        );
-      });
-    } catch {
-      /* no Mila purifiers */
-    }
+    this.airRooms().forEach(({room, rating}) => {
+      const bad = rating.pollutants.find(p => p.level >= 2);
+      if (!bad) return;
+      const [name, unit] = AIR_WORDS[bad.k];
+      out.push(
+        this.scard('air', {
+          ic: 'wind',
+          label: `${room.name} air`,
+          color: 'var(--m-teal)',
+          go: 'air.detail',
+          body: big(this.airFigure(bad.k, bad.v), ' ' + unit) + mid(`${name} is high`),
+          foot: bad.k === 'co2' ? 'Open a door or a window a little' : 'The purifier can run faster',
+        }),
+      );
+    });
     // tomorrow's weather, in the evening
     if (inHours(h, 17, 24)) {
       const days = this.wxDays(),
@@ -3354,69 +3324,6 @@ export class LegacyPanel {
     return out;
   }
 
-  // ---------- air quality (Mila purifiers) ----------
-  purifiers() {
-    const reg = this.hass.entities || {},
-      dev = this.hass.devices || {},
-      by = {};
-    for (const e of Object.values(reg))
-      if (e.platform === 'mila' && e.device_id) (by[e.device_id] = by[e.device_id] || []).push(e.entity_id);
-    const rooms = [],
-      find = (ids, re) => ids.find(i => re.test(i));
-    let outside = null;
-    for (const [d, ids] of Object.entries(by)) {
-      const fan = find(ids, /^fan\./);
-      if (!fan) {
-        // the account-level device carries the outdoor station and pollen
-        if (find(ids, /_aqi$/))
-          outside = {
-            aqi: find(ids, /_aqi$/),
-            pm: find(ids, /_station_pm2_5$/),
-            dist: find(ids, /_station_distance$/),
-            pollen: POLLEN.map(([k, l]) => [l, find(ids, new RegExp('_pollen_status_' + k + '$'))]),
-          };
-        continue;
-      }
-      const D = dev[d] || {},
-        s = {};
-      for (const k of AIR_KEYS) s[k] = find(ids, new RegExp('^sensor\\..*_' + k + '$'));
-      rooms.push({
-        dev: d,
-        fan,
-        s,
-        aid: D.area_id || '',
-        // the area's name, else the device's, else the fan's
-        name: this.areaName(D.area_id, this.deviceName(d, this.name(fan))),
-      });
-    }
-    rooms.sort((a, b) => a.name.localeCompare(b.name));
-    return {rooms, outside};
-  }
-  // a room's overall rating is Mila's own air quality index (US AQI, mostly particles), so it matches the Mila app;
-  // CO₂ and VOC are still listed when they run high, without changing that rating
-  roomAir(r) {
-    const lv = Object.keys(AQ).map(k => {
-        const v = this.num(r.s[k]);
-        return {k, v, l: aqLevel(k, v)};
-      }),
-      mila = this.num(r.s.air_quality);
-    const worst = mila != null ? outLevel(mila) : Math.max(-1, ...lv.map(x => x.l)),
-      top = Math.max(0, ...lv.map(x => x.l));
-    return {lv, worst, mila, why: top > 0 ? lv.filter(x => x.l === top) : []};
-  }
-  airSummary(P) {
-    const A = P.rooms.map(r => ({r, a: this.roomAir(r)})),
-      worst = Math.max(-1, ...A.map(x => x.a.worst)),
-      good = A.filter(x => x.a.worst === 0).length;
-    const bad = A.filter(x => x.a.worst === worst && worst > 0);
-    const why = bad
-      .map(
-        x =>
-          `${x.r.name}: ${x.a.why.length ? x.a.why.map(w => `${AQ[w.k].name} ${aqFmt(this.fmtEn, w.k, w.v)}`).join(', ') : `Mila index ${Math.round(x.a.mila)}`}`,
-      )
-      .join(' · ');
-    return {A, worst, good, why};
-  }
   // ---------- who's home: the household's phones and watches (iPads and laptops stay home, so they don't count) ----------
   presence() {
     const reg = this.hass.entities || {},
@@ -3792,9 +3699,7 @@ export class LegacyPanel {
   // the word under each section in the phone's More sheet, in English, for the registry's summary
   moreLines() {
     const L = this.live();
-    // Media's line is the feature's own (mediaBrief, #217)
-    const P = this.purifiers(),
-      air = P.rooms.length ? this.airSummary(P) : null;
+    // Media's line is the feature's own (mediaBrief, #217), and so is Air's (airBrief, #234)
     const X = this.doorSensors(),
       open = X.filter(x => x.kind === 'door' && x.on).length,
       moving = X.some(x => x.kind === 'motion' && x.on);
@@ -3802,7 +3707,6 @@ export class LegacyPanel {
       running = A.filter(a => a.current).length;
     const sb = {
       energy: L.grid == null ? '' : `${L.grid < 1 ? Math.round(L.grid * 1000) + ' W' : L.grid.toFixed(2) + ' kW'} now`,
-      air: !air ? 'No purifiers' : air.worst < 0 ? 'No data' : AQ_LVL[air.worst][0],
       cams: [open ? plural(open, 'door') + ' open' : 'Doors closed', moving ? 'motion now' : '']
         .filter(Boolean)
         .join(' · '),
@@ -4008,9 +3912,17 @@ export class LegacyPanel {
     const hp = this.st(this.E.hp),
       hpTxt = !ok(hp) ? 'offline' : hp.state === 'off' ? 'off' : hp.attributes.hvac_action || hp.state;
     const c = this.car ? this.carState() : null,
-      P = this.purifiers(),
-      air = P.rooms.length ? this.airSummary(P) : null,
       ri = this.rateInfo();
+    // the Air tile: the worst room's level, and what is high in the rooms at that level
+    const airs = this.airRooms(),
+      airWorst = Math.max(-1, ...airs.map(x => x.rating.level)),
+      airWhy = airs
+        .filter(x => x.rating.level === airWorst && airWorst > 0)
+        .map(
+          ({room, rating}) =>
+            `${room.name}: ${rating.why.length ? rating.why.map(w => `${AIR_WORDS[w.k][0]} ${this.airFigure(w.k, w.v)}`).join(', ') : `Mila index ${Math.round(rating.milaIndex)}`}`,
+        )
+        .join(' · ');
     const whT = this.num(this.E.whT),
       whP = this.kw(this.E.whP),
       wh24 = H && H.wh24 ? sum(H.wh24.p.filter(x => x[0] >= Date.now() - 864e5).map(x => x[1])) / 12 : null;
@@ -4075,10 +3987,10 @@ export class LegacyPanel {
         'aq',
         'var(--ok)',
         'Air',
-        !air ? '–' : air.worst < 0 ? 'No data' : AQ_LVL[air.worst][0],
-        !air
+        !airs.length ? '–' : airWorst < 0 ? 'No data' : AIR_LEVELS[airWorst],
+        !airs.length
           ? 'No purifiers'
-          : `${plural(P.rooms.length, 'purifier')}${air.worst > 0 ? ' · ' + esc(air.why) : ' · clean air everywhere'}`,
+          : `${plural(airs.length, 'purifier')}${airWorst > 0 ? ' · ' + esc(airWhy) : ' · clean air everywhere'}`,
       ],
       [
         'energy',

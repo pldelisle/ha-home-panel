@@ -424,6 +424,7 @@ export const en = {
   // the card and the sub-line
   'air.quality': 'Air quality',
   'air.noPurifiers': 'No purifiers found',
+  'air.noPurifiersBrief': 'No purifiers',
   'air.purifiers': '{n, plural, one {# purifier} other {# purifiers}}',
   'air.noData': 'No data',
   'air.noReadings': 'No readings',
@@ -464,8 +465,6 @@ export const en = {
   // what a tap says once Home Assistant has accepted it (src/features/air/commands.ts)
   'air.modeSet': '{name}: {mode, select, Manual {Manual} other {Automagic}}',
   'air.fanSet': '{name} fan {pct}%',
-  'air.purifierOn': '{name} purifier on',
-  'air.purifierOff': '{name} purifier off',
   // the pollutants, in the tiles, the card and the chart's choice
   'air.metric.pm1': 'PM1',
   'air.metric.pm25': 'PM2.5',
