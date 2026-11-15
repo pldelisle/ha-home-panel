@@ -570,7 +570,8 @@ export class HomePanel extends LitElement {
     for (const key of changed.keys()) {
       if (key === 'hass' && this.hass) guest.hassChanged(this.store.setHass(this.hass));
       if (key === 'panel') {
-        this.store.setPanelConfig(this.panel?.config);
+        // a new config is a new generation, and the replies cached under the old one go (StatisticsCache.clear)
+        if (this.store.setPanelConfig(this.panel?.config)) this.statistics.clear();
         guest.panelChanged();
       }
     }

@@ -47,7 +47,7 @@ export class EnergyHistory implements ReactiveController {
   }
 
   hostConnected(): void {
-    void this.refresh();
+    if (this.host.active) void this.refresh();
   }
 
   hostUpdate(): void {

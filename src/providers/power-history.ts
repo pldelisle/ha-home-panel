@@ -106,6 +106,20 @@ export function powerWindows(
   };
 }
 
+/**
+ * The daily mean power of the same sensors for 400 days, the window Energy's detail ranges over and the legacy load asks: one
+ * definition, so the shared cache answers the second asker (ADR 0028).
+ */
+export const dailyPowerWindow = (now: number, config: Pick<ResolvedConfig, 'entities' | 'rooms'>): StatisticsWindow => {
+  const flow = flowIds(config);
+  return {
+    start: windowStart(now, 400),
+    period: 'day',
+    ids: [flow.grid, flow.waterHeater, flow.ev, ...flow.rooms],
+    types: ['mean'],
+  };
+};
+
 /** The day keys of `now` in the house's zone, with the hours of today so far (never under one, so the mean of a day's first minutes divides). */
 export function dayKeys(now: number, fmt: Pick<Formatters, 'isoDay' | 'hourNow'>): DayKeys {
   const today = fmt.isoDay(now);

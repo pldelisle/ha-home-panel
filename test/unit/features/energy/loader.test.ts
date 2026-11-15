@@ -129,9 +129,10 @@ describe('EnergyHistory', () => {
     expect(calls).toHaveLength(10);
   });
 
-  test('asks nothing while the host is hidden, and loads when it is shown', async () => {
+  test('asks nothing while the host is hidden, even when it connects, and loads once when it is shown', async () => {
     const {history, host, calls} = setup();
     host.active = false;
+    history.hostConnected();
     history.hostUpdate();
     await settle();
     expect(calls).toHaveLength(0);

@@ -8,6 +8,7 @@ import {DAY_MS} from '../../core/figures.ts';
 import type {Formatters} from '../../core/i18n/format.ts';
 import {
   dailyChanges,
+  dailyPowerWindow,
   dayKeys,
   flowIds,
   hourlyFlow,
@@ -18,7 +19,6 @@ import {
   rowsOf,
   sum,
   waterDay,
-  windowStart,
   type DayKeys,
   type FlowIds,
   type FlowRow,
@@ -39,9 +39,7 @@ export function energyWindows(
   config: Pick<ResolvedConfig, 'entities' | 'rooms'>,
   fmt: Pick<Formatters, 'hourNow'>,
 ): EnergyWindows {
-  const shared = powerWindows(now, config, fmt);
-  // the same sensors as the hourly week, by day
-  return {...shared, day400: {...shared.hour7, start: windowStart(now, 400), period: 'day'}};
+  return {...powerWindows(now, config, fmt), day400: dailyPowerWindow(now, config)};
 }
 
 /** One day's energy by use, in kWh: the heating, the water heater, the charger, the rest of the home, the grid, and each room's own heating. */

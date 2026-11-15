@@ -15,6 +15,7 @@ import {registriesOf} from './core/registry.ts';
 import {rateRoom} from './providers/air-quality.ts';
 import {doorMotionSensors} from './providers/door-motion.ts';
 import {milaRooms} from './providers/mila.ts';
+import {dailyPowerWindow, powerWindows} from './providers/power-history.ts';
 import {ensureFonts} from './fonts.js';
 // Liquid Glass: whether this engine can run an SVG filter inside backdrop-filter (Chromium only)
 const LENS_OK =
@@ -2768,29 +2769,39 @@ export class LegacyPanel {
     try {
       const now = new Date(),
         d = n => new Date(now.getTime() - n * 864e5);
-      const powers = [this.E.grid, this.E.whP, this.E.evP, ...this.ROOMS.map(r => r.power)],
-        temps = [...this.ROOMS.map(r => r.temp), this.E.outT];
+      const temps = [...this.ROOMS.map(r => r.temp), this.E.outT];
+      // the power windows go through the panel-wide cache, the very calls Energy's card makes (ADR 0028); what only the legacy panel
+      // reads (the temperatures, the Wallbox's year, the heat pump) goes to the client. Deleted with this load (#241).
+      const windows = powerWindows(now.getTime(), this.store.config, this.fmtEn),
+        daily = dailyPowerWindow(now.getTime(), this.store.config),
+        ask = ({ids, period, start, types}) => this.ctx.statistics.statistics(ids, period, start, types);
       // the spans asked here and in CRANGE are copied into STATISTIC_SPANS of scripts/record-fixture.mjs, which a test checks
-      const [hour7, day, meter, evh, hp] = await Promise.all([
-        this.api.statistics([...powers, ...temps], 'hour', d(7), ['mean', 'max']),
-        this.api.statistics([...powers, ...temps], 'day', d(400), ['mean', 'min', 'max']),
-        this.api.statistics([this.E.energy, this.E.whE], 'day', d(33), ['change']),
+      const [power7, temp7, powerDay, tempDay, meter, evh, hp] = await Promise.all([
+        ask(windows.hour7),
+        this.api.statistics(temps, 'hour', d(7), ['mean', 'max']),
+        ask(daily),
+        this.api.statistics(temps, 'day', d(400), ['mean', 'min', 'max']),
+        ask(windows.meter33),
         this.api.statistics([this.E.evP], 'hour', d(366), ['mean', 'max']),
         !this.E.hp
           ? Promise.resolve({})
           : this.api.history([this.E.hp], d(7), {minimal: false, attributes: true}).catch(noHistory),
       ]);
-      const [today, t24] = await Promise.all([
+      const [today, power24, temp24] = await Promise.all([
+        ask(windows.today),
+        ask(windows.fiveMin25h),
         this.api.statistics(
-          [this.E.energy],
-          'hour',
-          new Date(Date.now() - this.fmtEn.hourNow(Date.now()) * 36e5 - 60e3),
-          ['change'],
+          this.ROOMS.map(r => r.temp),
+          '5minute',
+          d(1.05),
+          ['mean'],
         ),
-        this.api.statistics([...this.ROOMS.map(r => r.temp), this.E.whT, this.E.whP], '5minute', d(1.05), ['mean']),
       ]);
       const first = !this.H;
-      this.H = this.derive(hour7, day, meter, evh, hp, today, t24);
+      this.H = this.derive({...power7, ...temp7}, {...powerDay, ...tempDay}, meter, evh, hp, today, {
+        ...power24,
+        ...temp24,
+      });
       if (first) this.ctx.shell.requestFrame(); // the settings popup's version line says the history is kept fresh
       this.histErr = null;
     } catch (e) {
