@@ -54,7 +54,7 @@ src/features/air/
   README.md
   index.ts                 airFeature
   ids.ts                   airIds(store)
-  inputs.ts                readAir(states, registries, names, sources): AirInputs
+  inputs.ts                readAir(states, registries, names, config): AirInputs (the AQHI is config.entities.aqhi)
   model.ts                 airModel(inputs, overlay, deps): AirViewModel
   history.ts               metricSeries(rows, rooms, metric, range), outdoorSeries(rows, ids, range), airChartOptions(...), outdoorChartOptions(...)
   commands.ts              setMode(fan, mode, name), setSpeed(fan, pct, name)
@@ -80,9 +80,9 @@ test/houses/full.mjs       gains one Mila purifier and the outdoor station (its 
 export const AIR_SUFFIXES = ['pm1', 'pm2_5', 'pm10', 'co', 'co2', 'voc', 'humidity', 'temperature', 'air_quality', 'fan_speed', 'air_changes', 'mode', 'time_to_clean'] as const;
 export interface AirRoomInputs {
   deviceId: string;
-  fan: string; // fan.*
+  fanId: string; // fan.*
   areaId: string | null;
-  name: string; // the area's name, else the device's, else the fan's, through the resolver
+  name: string; // the area's name, else the device's, else the fan's, through the resolver (`nameOwner`)
   sensors: Partial<Record<(typeof AIR_SUFFIXES)[number], string>>; // entity ids by suffix
   readings: {pm1, pm2_5, pm10, co, co2, voc, humidity, temperature, airQuality, airChanges: number | null};
   fan: {on: boolean; available: boolean; percentage: number; preset: string | null}; // preset 'Automagic' | 'Manual' | other
@@ -98,8 +98,8 @@ export function milaRooms(states, registries, names): AirRoomInputs[]; // sorted
 export function milaOutside(states, registries): OutsideAirInputs | null;
 ```
 
-- Discovery is the class's: every registry entity with `platform === 'mila'` grouped by device; a device with a `fan.*` is a room, the sensors found by `^sensor\..*_<suffix>$`; the device without a fan but with `_aqi` is the station. The header names the pattern: **registry-driven discovery** (devices of a platform, entities of a device, roles by suffix), the shape Hilo, FordPass and Wallbox follow in specs 19 and 21.
-- `src/providers/air-quality.ts` holds what the stack and the feature both need: `AQ_BANDS` (`pm2_5: [12, 35] µg/m³`, `co2: [800, 1200] ppm`, `voc: [300, 3000] µg/m³`, `co: [9, 35] ppm`, with the sources in the header), `aqLevel(k, v): -1 | 0 | 1 | 2`, `outdoorLevel(aqi)`, `rateRoom(room: AirRoomInputs): RoomRating {level, milaIndex, why: {k, v, level}[], pollutants: {k, v, level}[]}` (Mila's index decides the level when present; the why is the pollutants at the highest level above good, as `roomAir` does). It is a provider module because the smart stack (spec 24, and the class until then) reads it; it has no strings.
+- Discovery is the class's: every registry entity with `platform === 'mila'` grouped by device; a device with a `fan.*` is a room, the sensors found by `^sensor\..*_<suffix>$`; the device without a fan but with `_aqi` is the station. The header names the pattern: **registry-driven discovery** (devices of a platform, entities of a device, roles by suffix), the shape Hilo, FordPass and Wallbox follow in specs 19 and 21. As built (#229), a room's area is the fan's (`areaOf`: the entity's, else its device's) where the legacy panel read the device's alone, which differs only for a fan the household placed in another area than its device, and the room's name is the area's, else `nameOwner`'s (the device's when it has a name, else the fan's).
+- `src/providers/air-quality.ts` holds what the stack and the feature both need: `AQ_BANDS` (`pm2_5: [12, 35] µg/m³`, `co2: [800, 1200] ppm`, `voc: [300, 3000] µg/m³`, `co: [9, 35] ppm`, with the sources in the header), `aqLevel(k, v): -1 | 0 | 1 | 2`, `outdoorLevel(aqi)`, `rateRoom(room: AirRoomInputs): RoomRating {level, milaIndex, why: {k, v, level}[], pollutants: {k, v: number | null, level}[]}` (a pollutant with no reading is listed with `v: null` and level -1, so the card shows its dash, and `why` holds only numbers; Mila's index decides the level when present; the why is the pollutants at the highest level above good, as `roomAir` does). It is a provider module because the smart stack (spec 24, and the class until then) reads it; it has no strings.
 - Readers in pull request 2: the class's `stackCards` calls `milaRooms` and `rateRoom`; `renderMore`'s Air summary and `renderCompactSubs`'s Air line are the registry's `summary` from `airModel`. `purifiers()`, `roomAir`, `airSummary` go.
 
 ### The inputs, the model and the view model
