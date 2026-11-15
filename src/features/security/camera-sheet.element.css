@@ -1,0 +1,23 @@
+/*
+ * <hp-camera-sheet>'s own rules: the black box the live view sits in, and the view and the offline line in it. Moved from the legacy
+ * `.camlive` rules (extra.css), which #225 deleted with the guest's camera sheet.
+ */
+:host {
+  display: contents;
+}
+.camlive {
+  background: #000;
+  border-radius: 18px;
+  overflow: hidden;
+  min-height: 200px;
+  display: grid;
+  place-items: center;
+}
+.camlive img,
+.camlive ha-camera-stream {
+  width: 100%;
+  display: block;
+}
+.camlive p {
+  color: #ccc;
+}

@@ -368,6 +368,8 @@ export const fr: Record<MessageKey, string> = {
   'security.addProtect': 'Ajoutez UniFi Protect',
   'security.openLive': 'Ouvrir {name} en direct',
   'security.cameraOffline': 'La caméra est hors ligne.',
+  'security.liveView': '{name} en direct',
+  'security.close': 'Fermer',
   'security.state.idle': 'Au repos',
   'security.state.recording': 'Enregistrement',
   'security.state.streaming': 'En direct',

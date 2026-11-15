@@ -126,7 +126,8 @@ function motionWords(
   return {when: t('security.motionAgo', ago), line: t('security.lastMotion', ago)};
 }
 
-function cameraTile(camera: CameraInputs, deps: SecurityModelDeps): CameraTile {
+/** One camera's tile: the pane's card and the Home card place it, and the camera sheet words its line from it alone. */
+export function cameraTile(camera: CameraInputs, deps: SecurityModelDeps): CameraTile {
   const {now, t} = deps;
   const moving = !!camera.motion?.on;
   const motion = motionWords(camera.motion, deps);

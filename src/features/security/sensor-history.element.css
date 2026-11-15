@@ -1,0 +1,72 @@
+/*
+ * <hp-sensor-history>'s own rules: the strip of on-periods, its axis and the list of events, and the gap between the sheet's two cards.
+ * Moved from the legacy `.sstrip`, `.saxis`, `.sevents` and `.senstabs` rules (extra.css, glass.css, motion.css), which #225 deleted
+ * with the guest's history sheet. A known copy: `.app.cp .sheet .inner` (sheet.css), read here as `:host([compact]) .inner`, because the
+ * cards are this element's children and not the sheet's, so the kit's rule cannot reach them; weather-history.element.css has the same.
+ */
+:host {
+  display: contents;
+}
+:host([compact]) .inner {
+  padding: 14px;
+  border-radius: 18px;
+}
+.over {
+  margin-top: 16px;
+}
+.over .tiles {
+  margin-top: 10px;
+}
+.sstrip {
+  position: relative;
+  height: 30px;
+  border-radius: 9px;
+  background: var(--card2);
+  overflow: hidden;
+  margin-top: 12px;
+}
+.sstrip i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--acc);
+  border-radius: 2px;
+  min-width: 2px;
+}
+.saxis {
+  display: flex;
+  justify-content: space-between;
+  font-size: calc(11px * var(--tx));
+  color: var(--fg2);
+  margin-top: 6px;
+}
+.sevents {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.sevents li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 12px;
+  background: var(--card2);
+  font-size: calc(13.5px * var(--tx));
+}
+.sevents li b {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.sevents li span {
+  color: var(--fg2);
+  margin-left: auto;
+  text-align: right;
+}
+:host([glass]) .sstrip,
+:host([glass]) .sevents li {
+  background: var(--g-tile);
+  box-shadow: var(--g-edge-s);
+}

@@ -1,6 +1,6 @@
-// areaOf, isHidden, nameOwner and entitiesByDevice: the registry rules the store, the providers and the features share.
+// registriesOf, areaOf, isHidden, nameOwner and entitiesByDevice: the registry rules the store, the providers and the features share.
 import {describe, expect, test} from 'vitest';
-import {areaOf, entitiesByDevice, isHidden, nameOwner} from '../../../src/core/registry.ts';
+import {areaOf, entitiesByDevice, isHidden, nameOwner, registriesOf} from '../../../src/core/registry.ts';
 
 const registries = {
   entities: {
@@ -23,6 +23,13 @@ const registries = {
     d5: {id: 'd5', name: '', name_by_user: null},
   },
 };
+
+describe('registriesOf', () => {
+  test('picks the three registries of a hass and nothing else', () => {
+    const areas = {den: {area_id: 'den', name: 'Den'}};
+    expect(registriesOf({...registries, areas, states: {}})).toEqual({...registries, areas});
+  });
+});
 
 describe('areaOf', () => {
   test("the entity's own area wins over its device's", () => {

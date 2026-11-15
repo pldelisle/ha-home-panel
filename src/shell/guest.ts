@@ -66,10 +66,6 @@ export interface GuestRenderer extends GuestAnswers, LegacySheetGuest {
    * forecast here. Deleted with its last reader (the Home move).
    */
   forecastChanged(type: 'daily' | 'hourly', forecast: readonly object[]): void;
-  /** Security move 3: a tap on a camera of `<hp-camera-card>` opens the guest's camera sheet. Deleted with the sheet (#225). */
-  openCamera(id: string): void;
-  /** Security move 3: a tap on a sensor of `<hp-sensor-card>` opens the guest's history sheet. Deleted with the sheet (#225). */
-  openSens(id: string): void;
 }
 
 /** What the guest may ask of the shell, and what it may read of it. Deleted whole with the guest; `tab`, `compact`, `setTab` and `requestFrame` live as long as it does. */

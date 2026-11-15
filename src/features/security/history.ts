@@ -60,6 +60,9 @@ export interface Segment {
   live: boolean;
 }
 
+/** How long a sensor's history stays fresh in the pane's cache: the ten minutes Weather's history keeps its own. */
+export const HISTORY_TTL_MS = 10 * 60_000;
+
 /** The most event rows the sheet lists, newest first. */
 export const EVENT_LIMIT = 40;
 
@@ -108,6 +111,30 @@ export function periodStats(segs: readonly Segment[], now: number): PeriodStats 
 /** `n + 1` instants spread evenly from `t0` to `now`, the labels of the strip's axis (the caller formats them). */
 export function axisTicks(t0: number, now: number, n: number): number[] {
   return Array.from({length: n + 1}, (_, i) => t0 + ((now - t0) * i) / n);
+}
+
+/** One bar of the strip: where it starts and how wide it is, in percent of the window, as the two-decimal text the style takes. */
+export interface StripBar {
+  left: string;
+  width: string;
+}
+
+/** The narrowest a bar is drawn, in percent of the window: a blink of the sensor stays visible. */
+const MIN_BAR = 0.35;
+
+/** The strip's bars: each period placed by percent of the window from `t0` to `now`. */
+export function stripBars(segs: readonly Segment[], t0: number, now: number): StripBar[] {
+  const pct = (t: number) => ((t - t0) / (now - t0)) * 100;
+  return segs.map(s => ({
+    left: pct(s.a).toFixed(2),
+    width: Math.max(MIN_BAR, pct(s.b) - pct(s.a)).toFixed(2),
+  }));
+}
+
+/** The axis under the strip: four spans of the day labelled by time, seven of the week labelled by date, in the profile's formats. */
+export function axisLabels(range: SheetRange, t0: number, now: number, fmt: Formatters): string[] {
+  const day = range === 'day';
+  return axisTicks(t0, now, day ? 4 : 7).map(tick => (day ? fmt.time(tick) : fmt.date(tick)));
 }
 
 /** How long a period lasted: `40 s` under a minute (at least one second), `12 min` under an hour, then `1 h 5 min`. */

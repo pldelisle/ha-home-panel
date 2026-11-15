@@ -9,6 +9,7 @@ import {mediaBrief} from './model.ts';
 import {CONTROLS_SHEET, controlsKeyOf} from './sheets.ts';
 import './media-pane.ts'; // defines <hp-media-pane>
 import './scene-tiles.ts'; // defines <hp-scene-tiles>, which the guest places on the Home tab (ADR 0024)
+import {registriesOf} from '../../core/registry.ts';
 import type {FeatureDescriptor} from '../../ui/feature.ts';
 
 export const mediaFeature: FeatureDescriptor = {
@@ -21,8 +22,7 @@ export const mediaFeature: FeatureDescriptor = {
   summary: ({store}) => {
     const {hass} = store;
     if (!hass) return null;
-    const registries = {entities: hass.entities, devices: hass.devices, areas: hass.areas};
-    return mediaBrief(readMedia(hass.states, registries, store.names), store.t);
+    return mediaBrief(readMedia(hass.states, registriesOf(hass), store.names), store.t);
   },
   pane: env =>
     html`<hp-media-pane
