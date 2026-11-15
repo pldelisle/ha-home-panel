@@ -11,6 +11,7 @@ import {K, SCENE_RAN_MS, runScene, setMode, type Overlay} from './commands.ts';
 import {mediaIds} from './ids.ts';
 import {sceneTiles, type SceneTileView} from './scenes.ts';
 import tilesOwn from './scene-tiles.element.css?inline';
+import {registriesOf} from '../../core/registry.ts';
 import {CommandRunner} from '../../ui/commands.ts';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {OptimisticController} from '../../ui/controllers/optimistic.ts';
@@ -58,8 +59,7 @@ export class SceneTiles extends LitElement {
   protected override willUpdate(): void {
     const {hass, config, t, fmt, names} = this.storeController.store;
     if (!hass) return;
-    const registries = {entities: hass.entities, devices: hass.devices, areas: hass.areas};
-    this.tiles = sceneTiles(hass.states, registries, config, this.overlay, {t, fmt, names, now: Date.now()});
+    this.tiles = sceneTiles(hass.states, registriesOf(hass), config, this.overlay, {t, fmt, names, now: Date.now()});
   }
 
   protected override render() {

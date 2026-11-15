@@ -1,14 +1,19 @@
 // <hp-camera-sheet>: one camera's live view: a sheet with the camera's name, its state and motion line, and the stream.
-// Pattern: humble object (Meszaros, xUnit Test Patterns) over the model: `securityModel` words the line, `mountCameraStream` makes the
-// view (Weather's radar is its model); it exists only while its sheet is open, so the stream starts when it is drawn and `destroy`s on disconnect.
-// Must not: read an entity but the camera's raw state at the moment it mounts, keep that state across two openings, or open or close a sheet itself.
+// Pattern: humble object (Meszaros, xUnit Test Patterns) over the model: `cameraTile` words the line from the one camera `readSecurity`
+// found, `mountCameraStream` makes the view (Weather's radar is its model). It listens to its camera and its motion sensor itself, since
+// it is open over any tab while the pane behind it is paused; it exists only while its sheet is open, so the stream starts when it is
+// drawn and `destroy`s on disconnect.
+// Must not: read an entity itself but the camera's raw state at the moment the stream mounts (the source reads the rest), keep that
+// state across two openings, or open or close a sheet itself.
 import {LitElement, html, nothing, unsafeCSS} from 'lit';
-import {securityIds} from './ids.ts';
 import {readSecurity} from './inputs.ts';
-import {securityModel, type CameraTile} from './model.ts';
+import {cameraTile, type CameraTile} from './model.ts';
 import {mountCameraStream, type CameraStreamMount} from './camera-stream.ts';
 import {CAMERA_SHEET} from './sheets.ts';
 import sheetOwn from './camera-sheet.element.css?inline';
+import {registriesOf} from '../../core/registry.ts';
+import type {PanelStore} from '../../core/store.ts';
+import type {CameraInputs} from '../../providers/camera-source.ts';
 import {StoreController} from '../../ui/controllers/store-controller.ts';
 import {SheetDismissEvent} from '../../ui/events.ts';
 import {lensLike} from '../../ui/lens.ts';
@@ -27,8 +32,14 @@ export class CameraSheet extends LitElement {
   // The element's own rules, its `:host` and the stream's box, are in camera-sheet.element.css.
   static override styles = [common, unsafeCSS(forShadow(sheetOwn))];
 
-  private readonly storeController = new StoreController(this, {ids: store => securityIds(store)});
-  /** The camera's tile in the model, made in `willUpdate`; undefined when Home Assistant does not list it. */
+  // the camera and its motion sensor, and no other entity: a door elsewhere does not redraw the sheet
+  private readonly storeController = new StoreController(this, {
+    ids: store => {
+      const camera = this.find(store);
+      return camera ? [camera.id, ...(camera.motionId ? [camera.motionId] : [])] : [];
+    },
+  });
+  /** The camera's tile, made in `willUpdate`; undefined when Home Assistant does not list it. */
   private camera: CameraTile | undefined;
   private stream: CameraStreamMount | undefined;
   /** The camera the stream shows, so another id mounts again and a redraw for anything else leaves the stream alone. */
@@ -47,18 +58,16 @@ export class CameraSheet extends LitElement {
     this.streamOf = undefined;
   }
 
+  // the camera's inputs as the sources read them now; undefined before hass, without an id or when no source lists it
+  private find({hass, names}: PanelStore): CameraInputs | undefined {
+    if (!this.cameraId || !hass) return undefined;
+    return readSecurity(hass.states, registriesOf(hass), names).cameras.find(camera => camera.id === this.cameraId);
+  }
+
   protected override willUpdate(): void {
     const {store} = this.storeController;
-    const {hass} = store;
-    if (!this.cameraId || !hass) {
-      this.camera = undefined;
-      return;
-    }
-    const view = securityModel(
-      readSecurity(hass.states, {entities: hass.entities, devices: hass.devices, areas: hass.areas}, store.names),
-      {now: Date.now(), t: store.t, fmt: store.fmt},
-    );
-    this.camera = view.cameras.tiles.find(tile => tile.id === this.cameraId);
+    const camera = this.find(store);
+    this.camera = camera && cameraTile(camera, {now: Date.now(), t: store.t, fmt: store.fmt});
   }
 
   protected override render() {

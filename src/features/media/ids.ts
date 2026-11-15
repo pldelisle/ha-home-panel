@@ -3,7 +3,7 @@
 // id twice, after the store's per-element subscription (ADR 0012); it takes the store's public members and nothing else.
 // Must not: read a state's value or the clock, import a feature or the shell, or name an entity id (the house and the config do).
 import type {PanelStore} from '../../core/store.ts';
-import {isHidden} from '../../core/registry.ts';
+import {isHidden, registriesOf} from '../../core/registry.ts';
 import {findTv} from './inputs.ts';
 import {speakers} from './speakers.ts';
 
@@ -11,7 +11,7 @@ import {speakers} from './speakers.ts';
 export function mediaIds({hass, names, config}: Pick<PanelStore, 'hass' | 'names' | 'config'>): string[] {
   if (!hass) return [];
   const {states} = hass;
-  const registries = {entities: hass.entities, devices: hass.devices, areas: hass.areas};
+  const registries = registriesOf(hass);
   const tv = findTv(states, registries, names);
   const scenes = Object.keys(states).filter(id => id.startsWith('scene.') && !isHidden(id, registries));
   const modes = config.modes.filter(id => states[id] !== undefined);

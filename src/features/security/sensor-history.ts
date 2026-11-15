@@ -7,6 +7,7 @@ import {LitElement, html, nothing, unsafeCSS, type PropertyValues} from 'lit';
 import {repeat} from 'lit/directives/repeat.js';
 import {StaleReply} from '../../core/api.ts';
 import type {HistoryPoint} from '../../core/ha.ts';
+import {registriesOf} from '../../core/registry.ts';
 import type {StatisticsCache} from '../../core/statistics-cache.ts';
 import {doorMotionSensors, type SensorInputs, type SensorKind} from '../../providers/door-motion.ts';
 import {
@@ -17,7 +18,9 @@ import {
   sheetTexts,
   statTiles,
   stripBars,
+  type Segment,
   type SheetRange,
+  type SheetTexts,
 } from './history.ts';
 import {HISTORY_SHEET} from './sheets.ts';
 import sheetOwn from './sensor-history.element.css?inline';
@@ -93,11 +96,7 @@ export class SensorHistory extends LitElement {
     const {hass} = store;
     this.sensor =
       this.sensorId && hass
-        ? doorMotionSensors(
-            hass.states,
-            {entities: hass.entities, devices: hass.devices, areas: hass.areas},
-            store.names,
-          ).find(sensor => sensor.id === this.sensorId)
+        ? doorMotionSensors(hass.states, registriesOf(hass), store.names).find(sensor => sensor.id === this.sensorId)
         : undefined;
   }
 
@@ -145,12 +144,7 @@ export class SensorHistory extends LitElement {
   }
 
   // the strip, its axis and the events, or the line that says why there are none
-  private renderBody(
-    texts: ReturnType<typeof sheetTexts>,
-    sensor: SensorInputs,
-    loaded: Loaded | undefined,
-    segs: ReturnType<typeof segments>,
-  ) {
+  private renderBody(texts: SheetTexts, sensor: SensorInputs, loaded: Loaded | undefined, segs: readonly Segment[]) {
     if (this.failed) return html`<p>${texts.unavailable}</p>`;
     if (!loaded) return html`<p class="loading">${texts.loading}</p>`;
     const {t, fmt} = this.storeController.store;
@@ -220,25 +214,26 @@ export class SensorHistory extends LitElement {
     void this.load(cache, sensorId, range);
   }
 
+  // a reply is stale when the sheet left, or another range or sensor was asked for meanwhile
+  private isStale(r: SheetRange, id: string): boolean {
+    return !this.isConnected || this.range !== r || this.sensorId !== id;
+  }
+
   private async load(cache: StatisticsCache, id: string, r: SheetRange): Promise<void> {
     try {
       const rows = await cache.history([id], new Date(this.start(r)), {minimal: true, attributes: false});
-      // the sheet left, or another range or sensor was asked for meanwhile
-      if (!this.isConnected || this.range !== r || this.sensorId !== id) return;
+      if (this.isStale(r, id)) return;
       this.loaded = {range: r, points: rows[id] ?? []};
       this.failed = false;
     } catch (error) {
+      if (this.isStale(r, id)) return;
       // the config changed under the request: it is asked again under the new one
       if (error instanceof StaleReply) {
-        if (this.range === r && this.sensorId === id) {
-          this.asked = undefined;
-          this.requestUpdate();
-        }
-        return;
+        this.asked = undefined;
+      } else {
+        console.error('home-panel sensor history', error);
+        this.failed = true;
       }
-      if (!this.isConnected || this.range !== r || this.sensorId !== id) return;
-      console.error('home-panel sensor history', error);
-      this.failed = true;
     }
     this.requestUpdate();
   }

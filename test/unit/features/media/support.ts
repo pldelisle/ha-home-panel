@@ -5,6 +5,7 @@
 import {existsSync} from 'node:fs';
 import {resolveConfig} from '../../../../src/core/config.ts';
 import type {DeviceRegistryEntry, EntityRegistryEntry, Registries} from '../../../../src/core/hass.ts';
+import {registriesOf} from '../../../../src/core/registry.ts';
 import {createStore, type PanelStore} from '../../../../src/core/store.ts';
 import {KEEP_ENGLISH_NAMES} from '../../../e2e/houses.ts'; // the French baselines keep the English room names, so the lines read from them say `Living room`
 import * as full from '../../../houses/full.mjs';
@@ -26,7 +27,7 @@ export function storeOf(hass: FakeHass, config: unknown = {}): PanelStore {
 /** What a rule is given besides the states: the registries, the names and the catalog of a store over this hass. */
 export function readingOf(hass: FakeHass) {
   const store = storeOf(hass);
-  const registries: Registries = {entities: hass.entities, devices: hass.devices, areas: hass.areas};
+  const registries: Registries = registriesOf(hass);
   return {states: hass.states, registries, names: store.names, store};
 }
 

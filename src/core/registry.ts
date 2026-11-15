@@ -1,8 +1,15 @@
-// Readers over the registries: where an entity sits, whether the household hid it, whose name it goes by and which entities
+// Readers over the registries: the three picked from a `hass`, where an entity sits, whether the household hid it, whose name it goes by and which entities
 // share its device, so the store, the providers and the features share one rule for each.
 // Pattern: pure functions over plain data (Bernhardt, functional core), the registry twin of `states.ts`.
 // Must not: hold state, read `hass` itself or the clock, guess an area from a name, or ask the name resolver (it returns ids).
-import type {Registries} from './hass.ts';
+import type {PanelHass, Registries} from './hass.ts';
+
+/** The three registries of a `hass`, picked once: what every reader over them takes, so no feature writes the three names out. */
+export const registriesOf = ({entities, devices, areas}: Pick<PanelHass, keyof Registries>): Registries => ({
+  entities,
+  devices,
+  areas,
+});
 
 /** The entity's area, else its device's area, else `''`. */
 export const areaOf = (id: string, {entities, devices}: Registries): string => {

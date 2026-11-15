@@ -15,6 +15,7 @@ import './camera-sheet.ts'; // defines <hp-camera-sheet>
 import './sensor-card.ts'; // defines <hp-sensor-card>
 import './sensor-history.ts'; // defines <hp-sensor-history>
 import paneOwn from './security-pane.element.css?inline';
+import {registriesOf} from '../../core/registry.ts';
 import {createStatisticsCache, type StatisticsCache} from '../../core/statistics-cache.ts';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {StoreController} from '../../ui/controllers/store-controller.ts';
@@ -75,8 +76,7 @@ export class SecurityPane extends LitElement {
     if (!this.active) return;
     const {hass} = store;
     if (!hass) return;
-    const registries = {entities: hass.entities, devices: hass.devices, areas: hass.areas};
-    this.view = securityModel(readSecurity(hass.states, registries, store.names), {
+    this.view = securityModel(readSecurity(hass.states, registriesOf(hass), store.names), {
       now: Date.now(),
       t: store.t,
       fmt: store.fmt,

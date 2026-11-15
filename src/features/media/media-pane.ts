@@ -15,6 +15,7 @@ import './media-tile.ts'; // defines <hp-media-tile>
 import './speaker-pod.ts'; // defines <hp-speaker-pod>
 import './tv-box.ts'; // defines <hp-tv-box>
 import paneOwn from './media-pane.element.css?inline';
+import {registriesOf} from '../../core/registry.ts';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {OptimisticController} from '../../ui/controllers/optimistic.ts';
 import {StoreController} from '../../ui/controllers/store-controller.ts';
@@ -61,8 +62,7 @@ export class MediaPane extends LitElement {
     const {store} = this.storeController;
     const {hass} = store;
     if (!hass) return;
-    const registries = {entities: hass.entities, devices: hass.devices, areas: hass.areas};
-    this.view = mediaModel(readMedia(hass.states, registries, store.names), {
+    this.view = mediaModel(readMedia(hass.states, registriesOf(hass), store.names), {
       t: store.t,
       names: store.names,
       overlay: this.overlay,
