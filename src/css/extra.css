@@ -496,24 +496,8 @@
     grid-template-columns: 1fr;
   }
 }
-.sic {
-  width: 30px;
-  height: 30px;
-  border-radius: 10px;
-  display: grid;
-  place-items: center;
-  background: var(--card);
-  color: var(--fg3);
-  flex: none;
-}
 .cols[hidden] {
   display: none;
-}
-@media (max-width: 720px) {
-  .sic {
-    width: 26px;
-    height: 26px;
-  }
 }
 .who {
   display: flex;

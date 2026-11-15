@@ -3,7 +3,7 @@
 // needs one adds it the way Home Assistant adds any entity. The camera's picture is a Home Assistant proxy URL the harness never
 // serves, so a tile with one shows a broken image, as the legacy panel's did; the tests read its `src`, not its pixels.
 import AxeBuilder from '@axe-core/playwright';
-import {test, expect, tabletOnly, type House} from './fixtures';
+import {test, expect, tabletOnly, countAdded, type House} from './fixtures';
 import {AFTERNOON, FULL_CFG, KEEP_ENGLISH_NAMES} from './houses';
 
 test.use({houseOpts: {cfg: FULL_CFG, time: '2026-11-10T12:00:00Z'}});
@@ -149,10 +149,10 @@ test.describe('a sensor history', () => {
     await expect(sensors(house).getByRole('button', {name: /^Hall motion/})).toBeFocused();
   });
 
-  // the legacy Home card still draws its own rows; they ask the sheet host for the same sheet, which shows over the Home tab
+  // the Home card's rows ask the sheet host for the same sheet, which shows over the Home tab
   test('a tap on a sensor of the Home card opens its history over the Home tab', async ({house}) => {
     await house.tab('home');
-    await house.root().locator('#hsec [data-sens]').first().click();
+    await house.root().locator('#hsec hp-security-card .hsen').first().click();
     await expect(history(house).locator('hp-sheet h2')).toBeVisible();
     await expect(history(house).locator('.sevents li')).toHaveCount(3);
     await expect(house.root().locator('#pane-home')).toBeVisible();
@@ -248,4 +248,51 @@ test('the tab has no serious or critical accessibility finding', async ({house})
   await expect(cameras(house).locator('.cam')).toHaveCount(1);
   const {violations} = await new AxeBuilder({page: house.page}).include('home-panel').analyze();
   expect(violations.filter(v => v.impact === 'serious' || v.impact === 'critical').map(v => v.id)).toEqual([]);
+});
+
+// The Home tab's card, <hp-security-card>, which the guest places by its tag in #hsec (ADR 0024): it glows when a sensor turns on
+test.describe('the Home card', () => {
+  const card = (house: House) => house.root().locator('#hsec hp-security-card');
+  const box = (house: House) => card(house).locator('.seccard');
+  const MOTION = 'binary_sensor.hall_motion';
+
+  test('says what the pane says, and its header opens the Security tab', async ({house}) => {
+    await house.tab('home');
+    await expect(card(house).locator('.hh .right')).toHaveText('all doors closed · motion now');
+    await expect(card(house).locator('.hsen b')).toHaveText(['Front door', 'Hall motion']);
+    await card(house).locator('.hh').click();
+    await expect(house.root().locator('#pane-cams')).toBeVisible();
+  });
+
+  // the page's clock stands still, so only fastForward moves it: the glow lasts 2.8 seconds, and the first draw never glows
+  test('glows for under three seconds when a sensor turns on, and not on the first draw', async ({house}) => {
+    await house.tab('home');
+    await house.clock.pauseAt((await house.page.evaluate(() => Date.now())) + 1000);
+    await expect(box(house)).toBeVisible();
+    await expect(box(house)).not.toHaveClass(/glow/);
+    await house.setState(MOTION, {state: 'off'});
+    await expect(card(house).locator('.hsen .act')).toHaveCount(0);
+    await expect(box(house)).not.toHaveClass(/glow/);
+    await house.setState(MOTION, {state: 'on'});
+    await expect(box(house)).toHaveClass(/glow/);
+    await house.clock.fastForward(2_700);
+    await expect(box(house)).toHaveClass(/glow/);
+    await house.clock.fastForward(200);
+    await expect(box(house)).not.toHaveClass(/glow/);
+  });
+
+  // the guest writes the tag once: a card written again would lose the reading it compares with, and glow at every change of the house.
+  // A card made again attaches a new shadow root with a new `.seccard`, which the helper counts from the moment it is installed.
+  test("is not made again by the guest's draws or a trip to another tab", async ({house}) => {
+    await house.tab('home');
+    await expect(box(house)).toBeVisible();
+    const made = await countAdded(house, 'seccard');
+    await house.setState('climate.living_room', {attributes: {temperature: 23}});
+    await house.setState('binary_sensor.front_door', {state: 'on'});
+    await house.tab('lights');
+    await house.tab('home');
+    await expect(card(house)).toHaveCount(1);
+    await house.page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
+    expect(await made()).toBe(0);
+  });
 });

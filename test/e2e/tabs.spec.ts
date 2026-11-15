@@ -295,7 +295,7 @@ test.describe('French', () => {
   // it. The whole line is compared, so an English word or a colon left in it fails the test.
   test('42 the Security card on Home reads in French, with no English word and no colon', async ({house}) => {
     await house.tab('home');
-    await expect(house.root().locator('#hsec .right')).toHaveText('toutes les portes fermées · mouvement en cours');
+    await expect(house.root().locator('#hsec .hh .right')).toHaveText('toutes les portes fermées · mouvement en cours');
   });
 
   test('43 the Security pane reads in French, with no English word and no colon', async ({house}) => {

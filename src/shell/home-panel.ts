@@ -29,7 +29,7 @@ import {StoreController} from '../ui/controllers/store-controller.ts';
 import {apiContext, optimisticContext, settingsContext, storeContext, type Appearance} from '../ui/contexts.ts';
 import {OverlayStore} from '../ui/overlay-store.ts';
 import {ico} from '../ui/icons.ts';
-import type {SheetDismissEvent, SheetRequestEvent, ToastEvent} from '../ui/events.ts';
+import type {SheetDismissEvent, SheetRequestEvent, TabSelectEvent, ToastEvent} from '../ui/events.ts';
 import {AppearanceController} from './appearance.ts';
 import type {FeatureDescriptor, FeatureEnv, FeatureKey} from '../ui/feature.ts';
 import {FEATURES, UNDER_MORE, isFeatureKey, visibleTab} from './features.ts';
@@ -38,7 +38,6 @@ import {IdleTimer, type IdleState} from './idle-timer.ts';
 import type {ForecastEvent} from '../features/weather/forecast-controller.ts';
 import './more-sheet.ts'; // defines <hp-more-sheet>
 import '../ui/pane-header.ts'; // defines <hp-pane-header>, which the legacy panes' headers are
-import type {TabSelectDetail} from './more-sheet.ts';
 import './settings-popup.ts'; // defines <hp-settings-popup>
 import {SheetMediator} from './sheet-host.ts';
 
@@ -276,8 +275,8 @@ export class HomePanel extends LitElement {
     this.idle.sleepNow();
   };
 
-  // a tile of the More sheet: the sheet closes, then the tab shows, as the guest's handler did
-  private readonly onTabSelect = (e: CustomEvent<TabSelectDetail>): void => {
+  // a tile of the More sheet or the Home card's header asks for a tab: the More sheet closes (a no-op when it is not open), then the tab shows
+  private readonly onTabSelect = (e: TabSelectEvent): void => {
     this.sheets.close(MORE_SHEET);
     this.setTab(e.detail.key);
   };
@@ -387,6 +386,7 @@ export class HomePanel extends LitElement {
       data-wp=${ifDefined(a.glass.wallpaper ?? undefined)}
       @sheet-request=${this.onSheetRequest}
       @sheet-dismiss=${this.onSheetDismiss}
+      @tab-select=${this.onTabSelect}
       @toast=${this.onToast}
       @weather-forecast=${this.onForecast}
     >
@@ -398,7 +398,6 @@ export class HomePanel extends LitElement {
         .summaries=${this.moreSummaries}
         .current=${this.tab}
         .open=${this.sheets.isOpen(MORE_SHEET)}
-        @tab-select=${this.onTabSelect}
         @sheet-close=${this.onMoreClose}
       ></hp-more-sheet>
       ${this.renderIdle()}

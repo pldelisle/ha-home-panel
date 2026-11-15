@@ -14,15 +14,19 @@ const cutLabels = (house: House, tab: 'home' | 'lights') =>
     .locator(`#pane-${tab}, #sc`)
     .evaluateAll(panes => {
       const out: string[] = [];
-      for (const pane of panes)
-        for (const e of pane.querySelectorAll<HTMLElement>('*')) {
+      // the elements of a pane that moved to a feature (the Security card) draw in their own shadow roots: the scan goes in
+      const scan = (root: ParentNode) => {
+        for (const e of root.querySelectorAll<HTMLElement>('*')) {
+          if (e.shadowRoot) scan(e.shadowRoot);
           const cs = getComputedStyle(e);
           if (cs.display === 'none' || !e.textContent.trim()) continue;
           const widthCut = cs.textOverflow === 'ellipsis' && e.scrollWidth > e.clientWidth;
           const wrapCut =
-            e.matches('.lcell .tx b, .lcell .tx small, .hsec > .hh .right') && e.scrollHeight > e.clientHeight + 1;
+            e.matches('.lcell .tx b, .lcell .tx small, .hh .right') && e.scrollHeight > e.clientHeight + 1;
           if (widthCut || wrapCut) out.push(e.textContent.trim());
         }
+      };
+      for (const pane of panes) scan(pane);
       return out;
     });
 

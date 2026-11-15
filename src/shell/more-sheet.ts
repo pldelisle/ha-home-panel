@@ -1,6 +1,6 @@
 // <hp-more-sheet>: the phone's More sheet, the sections the bar does not hold, one summary tile each, in its own shadow root.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) drawn from the registry, composing the kit's <hp-sheet> for its chrome;
-// properties down, events up (Lit docs, Events): a tile's `tile-open` becomes `tab-select`; the sheet's `sheet-close` passes through.
+// properties down, events up (Lit docs, Events): a tile's `tile-open` becomes the kit's `TabSelectEvent`; the sheet's `sheet-close` passes through.
 // Must not: draw a sheet's chrome, choose the tab, listen for Escape or know which sheet is open (the shell and its host do), or import a feature.
 import {LitElement, html, nothing, unsafeCSS} from 'lit';
 import {repeat} from 'lit/directives/repeat.js';
@@ -11,14 +11,10 @@ import '../ui/stat-tile.ts';
 import type {TileOpenDetail} from '../ui/stat-tile.ts';
 import {common, more} from '../ui/styles/index.ts';
 import type {FeatureDescriptor, FeatureKey} from '../ui/feature.ts';
+import {TabSelectEvent} from '../ui/events.ts';
 import {isFeatureKey} from './features.ts';
 import moreSheetOwn from './more-sheet.element.css?inline';
 import {forShadow} from '../ui/styles/host.ts';
-
-/** What the sheet says when a tile is tapped: the section to show. */
-export interface TabSelectDetail {
-  key: FeatureKey;
-}
 
 export class MoreSheet extends LitElement {
   static override properties = {
@@ -95,19 +91,13 @@ export class MoreSheet extends LitElement {
   private readonly select = (e: CustomEvent<TileOpenDetail>): void => {
     e.stopPropagation();
     const {key} = e.detail;
-    if (isFeatureKey(key))
-      this.dispatchEvent(
-        new CustomEvent<TabSelectDetail>('tab-select', {bubbles: true, composed: true, detail: {key}}),
-      );
+    if (isFeatureKey(key)) this.dispatchEvent(new TabSelectEvent(key));
   };
 }
 
 declare global {
   interface HTMLElementTagNameMap {
     'hp-more-sheet': MoreSheet;
-  }
-  interface HTMLElementEventMap {
-    'tab-select': CustomEvent<TabSelectDetail>;
   }
 }
 

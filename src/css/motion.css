@@ -4,7 +4,6 @@
    Under Reduce Motion they snap: a tapped tab's highlight is in its final colour in the frame after the tap, so the glass rail it
    sits in is not redrawn by a fade still running when the frame is captured (#94) */
 @media (prefers-reduced-motion: no-preference) {
-  .hsen,
   .quick button,
   .crow button,
   .rtab,
@@ -32,7 +31,6 @@
     transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
 }
-.hsen:active,
 .quick button:active,
 .crow button:active,
 .head button.icon:active,
@@ -169,43 +167,6 @@ button.chip:active,
     filter: drop-shadow(0 0 5px var(--c-ev));
   }
 }
-/* Attention glow (v1.19.6): a door opening or motion starting makes the Security card's edge pulse amber twice, then settle */
-.hsec {
-  --hsh: var(--shadow);
-}
-.app.gl .hsec {
-  --hsh: var(--g-edge);
-}
-.hsec.glow {
-  animation: attn 2.6s ease-out;
-}
-@keyframes attn {
-  0%,
-  100% {
-    box-shadow:
-      var(--hsh),
-      inset 0 0 0 0 transparent,
-      0 0 0 0 transparent;
-  }
-  12% {
-    box-shadow:
-      var(--hsh),
-      inset 0 0 0 2px color-mix(in srgb, var(--warn) 90%, transparent),
-      0 0 28px 4px color-mix(in srgb, var(--warn) 50%, transparent);
-  }
-  45% {
-    box-shadow:
-      var(--hsh),
-      inset 0 0 0 1.5px color-mix(in srgb, var(--warn) 50%, transparent),
-      0 0 12px 0 color-mix(in srgb, var(--warn) 20%, transparent);
-  }
-  60% {
-    box-shadow:
-      var(--hsh),
-      inset 0 0 0 2px color-mix(in srgb, var(--warn) 85%, transparent),
-      0 0 24px 3px color-mix(in srgb, var(--warn) 45%, transparent);
-  }
-}
 @media (prefers-reduced-motion: reduce) {
   .pane:not([hidden]),
   .dial.in .dact,
@@ -215,12 +176,6 @@ button.chip:active,
   .flow .npulse,
   .htile.chg .hh > span:first-child {
     animation: none;
-  }
-  .hsec.glow {
-    animation: none;
-    box-shadow:
-      var(--hsh),
-      inset 0 0 0 2px var(--warn);
   }
   .rtab:active svg,
   .dial.ed:active .dknob {

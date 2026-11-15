@@ -1,7 +1,8 @@
-// The events an element sends up: a request to open a sheet, to close one, a message for the toast, and the Home-card bridge's `hp-empty`.
+// The events an element sends up: a request to open a sheet, to close one, a tab to show, a message for the toast, and the Home-card bridge's `hp-empty`.
 // Pattern: events up, properties down (Lit docs, Events): an element never imports the shell, it dispatches one of these
 // from itself, and the shell, listening on its root, calls the sheet host or draws the toast; the guest's container hears `hp-empty`.
 // Must not: carry state the shell has to hand back, or be dispatched with `composed: false`: they cross shadow roots.
+import type {FeatureKey} from './feature.ts';
 
 export interface SheetRequestDetail {
   /** `<owner>.<name>` for an element's sheet, the element's id for a legacy one (`sh-energy`) */
@@ -21,6 +22,21 @@ export class SheetRequestEvent extends CustomEvent<SheetRequestDetail> {
 export class SheetDismissEvent extends CustomEvent<{id: string}> {
   constructor(id: string) {
     super('sheet-dismiss', {bubbles: true, composed: true, detail: {id}});
+  }
+}
+
+export interface TabSelectDetail {
+  /** the section to show */
+  key: FeatureKey;
+}
+
+/**
+ * An element asks the shell for a tab: a tile of the More sheet, the Home card's header. The shell's frame hears it from anywhere inside
+ * it (ADR 0026), closes the More sheet if it is open and shows the tab.
+ */
+export class TabSelectEvent extends CustomEvent<TabSelectDetail> {
+  constructor(key: FeatureKey) {
+    super('tab-select', {bubbles: true, composed: true, detail: {key}});
   }
 }
 
@@ -57,6 +73,7 @@ declare global {
   interface HTMLElementEventMap {
     'sheet-request': SheetRequestEvent;
     'sheet-dismiss': SheetDismissEvent;
+    'tab-select': TabSelectEvent;
     toast: ToastEvent;
     'hp-empty': EmptyEvent;
   }
