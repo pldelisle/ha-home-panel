@@ -1,6 +1,6 @@
 # 0006: ApexCharts frozen at the 3.x major for licence reasons
 
-Status: accepted (2026-11-07); amended by 0027 (2026-11-15), which keeps the freeze behind `<hp-chart>` through phase 3
+Status: accepted (2026-11-07); amended by 0027
 
 ## Context
 
