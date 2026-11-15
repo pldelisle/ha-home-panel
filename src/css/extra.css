@@ -369,6 +369,7 @@
 .card .top .right .more {
   margin: 0;
 }
+/* the legacy detail's outside block still draws .aqsum and .aqsum .why; #233 moves the detail and deletes them */
 .aqsum {
   display: flex;
   align-items: center;

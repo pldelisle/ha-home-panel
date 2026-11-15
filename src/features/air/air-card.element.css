@@ -182,7 +182,7 @@
 .aqroom.lv2 .aqm .hi b {
   color: var(--crit);
 }
-/* Reduce Transparency, or Increase Contrast: the glass turns back into near-solid cards, as the legacy rules did */
+/* Reduce Transparency: the glass turns back into near-solid cards, as the legacy rules did (Increase Contrast only sets the glass tokens, which the card inherits) */
 @media (prefers-reduced-transparency: reduce) {
   :host([glass]) .aqbox {
     -webkit-backdrop-filter: none;
