@@ -146,12 +146,27 @@ describe('the rooms', () => {
     ]);
   });
 
-  test('the fan’s own area wins over its device’s', () => {
-    const house = houseOf(purifier('a', {id: 'da', area_id: 'kitchen'}, {}, {row: {area_id: 'den'}}), [], {
-      kitchen: 'Kitchen',
-      den: 'Den',
-    });
-    expect(roomsOf(house)[0]).toMatchObject({areaId: 'den', name: 'Den'});
+  test('the area is the device’s alone, as the legacy panel read it: the fan’s own area is not the room’s', () => {
+    const house = houseOf(
+      purifier('a', {id: 'da', name: 'Device A', area_id: 'kitchen'}, {}, {row: {area_id: 'den'}}),
+      [],
+      {
+        kitchen: 'Kitchen',
+        den: 'Den',
+      },
+    );
+    expect(roomsOf(house)[0]).toMatchObject({areaId: 'kitchen', name: 'Kitchen'});
+  });
+
+  test('an area the registry does not name leaves the room to its device, else its fan', () => {
+    const house = houseOf([
+      ...purifier('a', {id: 'da', name: 'Device A', area_id: 'gone'}),
+      ...purifier('b', {id: 'db', area_id: 'gone'}, {}, {attributes: {friendly_name: 'Fan B'}}),
+    ]);
+    expect(roomsOf(house).map(r => [r.areaId, r.name])).toEqual([
+      ['gone', 'Device A'],
+      ['gone', 'Fan B'],
+    ]);
   });
 
   test('the rooms are sorted by name, not by the registry’s order', () => {

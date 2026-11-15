@@ -4,7 +4,7 @@
 // Must not: word anything a person reads, rate the air (that is `air-quality.ts`), read the clock, or look past the registries.
 import type {HassEntities, Registries} from '../core/hass.ts';
 import type {Names} from '../core/i18n/names.ts';
-import {areaOf, nameOwner} from '../core/registry.ts';
+import {entitiesByDevice, nameOwner} from '../core/registry.ts';
 import {isAvailable, numberAttributeOf, numberOf, textAttributeOf, textOf} from '../core/states.ts';
 
 /** The sensors a Mila purifier makes, found by the end of their entity id (the legacy `AIR_KEYS`, deleted by #234). */
@@ -34,9 +34,9 @@ export interface AirRoomInputs {
   deviceId: string;
   /** The room's `fan.*`. */
   fanId: string;
-  /** The fan's area, else its device's; null when it has neither. */
+  /** The device's area; null when it has none. */
   areaId: string | null;
-  /** The area's name through the resolver, else the device's, else the fan's. */
+  /** The area's name through the resolver, else the device's, else the fan's; an area the registry does not name counts as none. */
   name: string;
   /** The device's sensors, by the suffix that found them; a suffix the device lacks is absent. */
   sensors: Partial<Record<AirSuffix, string>>;
@@ -82,22 +82,22 @@ export interface OutsideAirInputs {
 
 const SUFFIX_PATTERNS = AIR_SUFFIXES.map(suffix => [suffix, new RegExp(`^sensor\\..*_${suffix}$`)] as const);
 
-/** The entity ids of each Mila device, in the registry's order, built once per call. */
-function milaDevices({entities}: Registries): Map<string, string[]> {
-  const byDevice = new Map<string, string[]>();
-  for (const entry of Object.values(entities ?? {})) {
-    if (entry.platform !== 'mila' || !entry.device_id) continue;
-    const siblings = byDevice.get(entry.device_id);
-    if (siblings) siblings.push(entry.entity_id);
-    else byDevice.set(entry.device_id, [entry.entity_id]);
+/** The Mila entity ids of each device that has any, in the registry's order: `entitiesByDevice`, built once, kept to the platform. */
+function milaDevices(registries: Registries): Map<string, string[]> {
+  const devices = new Map<string, string[]>();
+  for (const [deviceId, ids] of entitiesByDevice(registries)) {
+    const own = ids.filter(id => registries.entities?.[id]?.platform === 'mila');
+    if (own.length) devices.set(deviceId, own);
   }
-  return byDevice;
+  return devices;
 }
 
-/** One room per Mila device with a fan, by name; a device without a fan is the station, not a room. */
-export function milaRooms(states: HassEntities, registries: Registries, names: Names): AirRoomInputs[] {
+type Devices = ReturnType<typeof milaDevices>;
+
+/** The rooms of the devices given: one per device with a fan, by name. */
+function roomsOf(devices: Devices, states: HassEntities, registries: Registries, names: Names): AirRoomInputs[] {
   const rooms: AirRoomInputs[] = [];
-  for (const [deviceId, ids] of milaDevices(registries)) {
+  for (const [deviceId, ids] of devices) {
     const fanId = ids.find(id => id.startsWith('fan.'));
     if (!fanId) continue;
     const sensors: AirRoomInputs['sensors'] = {};
@@ -106,12 +106,14 @@ export function milaRooms(states: HassEntities, registries: Registries, names: N
       if (id) sensors[suffix] = id;
     }
     const read = (suffix: AirSuffix): number | null => numberOf(states, sensors[suffix]);
-    const areaId = areaOf(fanId, registries);
+    // the device's area, as the legacy panel read it; an area the registry does not name leaves the room to its device
+    const areaId = registries.devices?.[deviceId]?.area_id || '';
+    const areaNamed = !!registries.areas?.[areaId]?.name;
     rooms.push({
       deviceId,
       fanId,
       areaId: areaId || null,
-      name: names.name(areaId || nameOwner(fanId, registries)),
+      name: names.name(areaNamed ? areaId : nameOwner(fanId, registries)),
       sensors,
       readings: {
         pm1: read('pm1'),
@@ -136,10 +138,10 @@ export function milaRooms(states: HassEntities, registries: Registries, names: N
   return rooms.sort((a, b) => a.name.localeCompare(b.name));
 }
 
-/** The account-level device with no fan that carries the outdoor air index (`…_aqi`); null when the house has none. */
-export function milaOutside(states: HassEntities, registries: Registries): OutsideAirInputs | null {
+/** The station among the devices given: the one with no fan that carries the outdoor air index (`…_aqi`). */
+function outsideOf(devices: Devices, states: HassEntities): OutsideAirInputs | null {
   let station: string[] | null = null;
-  for (const ids of milaDevices(registries).values())
+  for (const ids of devices.values())
     if (!ids.some(id => id.startsWith('fan.')) && ids.some(id => id.endsWith('_aqi'))) station = ids;
   if (!station) return null;
   const ids = station;
@@ -163,4 +165,22 @@ export function milaOutside(states: HassEntities, registries: Registries): Outsi
       >,
     },
   };
+}
+
+/** One room per Mila device with a fan, by name; a device without a fan is the station, not a room. */
+export const milaRooms = (states: HassEntities, registries: Registries, names: Names): AirRoomInputs[] =>
+  roomsOf(milaDevices(registries), states, registries, names);
+
+/** The account-level device with no fan that carries the outdoor air index (`…_aqi`); null when the house has none. */
+export const milaOutside = (states: HassEntities, registries: Registries): OutsideAirInputs | null =>
+  outsideOf(milaDevices(registries), states);
+
+/** The rooms and the station from one pass over the registries, for a reader that wants both. */
+export function milaAir(
+  states: HassEntities,
+  registries: Registries,
+  names: Names,
+): {rooms: AirRoomInputs[]; outside: OutsideAirInputs | null} {
+  const devices = milaDevices(registries);
+  return {rooms: roomsOf(devices, states, registries, names), outside: outsideOf(devices, states)};
 }

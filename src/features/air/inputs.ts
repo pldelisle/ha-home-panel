@@ -6,7 +6,7 @@ import type {ResolvedConfig} from '../../core/config.ts';
 import type {HassEntities, Registries} from '../../core/hass.ts';
 import type {Names} from '../../core/i18n/names.ts';
 import {numberOf} from '../../core/states.ts';
-import {milaOutside, milaRooms, type AirRoomInputs, type OutsideAirInputs} from '../../providers/mila.ts';
+import {milaAir, type AirRoomInputs, type OutsideAirInputs} from '../../providers/mila.ts';
 
 export interface AirInputs {
   /** Every purifier, by room name. */
@@ -25,8 +25,7 @@ export function readAir(
   config: Pick<ResolvedConfig, 'entities'>,
 ): AirInputs {
   return {
-    rooms: milaRooms(states, registries, names),
-    outside: milaOutside(states, registries),
+    ...milaAir(states, registries, names),
     aqhi: numberOf(states, config.entities.aqhi),
   };
 }
