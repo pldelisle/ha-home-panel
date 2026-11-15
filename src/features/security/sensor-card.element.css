@@ -3,7 +3,7 @@
  * their icon square, their name and their line, in the tones of a door that is open, a motion sensor that sees someone and a
  * sensor that is off the air. Moved from the legacy `.sgrid` and `.schip` rules (extra.css, phone.css, tabs.css, glass.css,
  * motion.css), which this ticket (#224) deleted. Known copies of rules the Home card and the other legacy cards still draw: `.card`,
- * `.card .top`, `.card .top .right` and `.lbl` (base.css, glass.css), and `.sic` (extra.css, glass.css), read here as the host,
+ * `.card .top`, `.card .top .right` and `.lbl` (base.css, glass.css), and `.sic` (extra.css, glass.css; the Home card's rows draw it until #226), read here as the host,
  * `.top`, `.right`, `.lbl` and `.schip .sic`; the styles-split test lets one file write a selector, and a shadow root cannot reach
  * the legacy rule anyway.
  */

@@ -65,7 +65,7 @@ const shortNames = names => {
 };
 const L0kw = v => (v == null ? '–' : v < 1 ? Math.round(v * 1000) + ' W' : v.toFixed(1) + ' kW');
 
-// card order for the column packing: first row is cameras, energy
+// card order for the column packing: first row is energy
 const LAYOUT = ['open-energy', 'lights', 'open-climate', 'open-air', 'open-car', 'water', 'hilo'];
 const DOOR_DC = ['door', 'window', 'opening', 'garage_door'],
   MOTION_DC = ['motion', 'occupancy', 'presence'];

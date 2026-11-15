@@ -35,8 +35,8 @@ export class SecurityPane extends LitElement {
     this.active = false;
     // `compact` comes from the shell as a host attribute the pane's rules test
     new AppearanceConsumer(this);
-    // its timer starts when the pane connects and is cleared when it disconnects; a tick while the pane is hidden is skipped
-    new TickController(this, SNAPSHOT_MS, () => this.active);
+    // its timer starts when the pane connects and is cleared when it disconnects; a tick while the pane or the browser tab is hidden is skipped, as the legacy interval's was
+    new TickController(this, SNAPSHOT_MS, () => this.active && !document.hidden);
   }
 
   // The pause and the resume sit in willUpdate: a resume asks for an update, and one asked for here is this one.

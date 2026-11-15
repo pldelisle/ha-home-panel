@@ -92,6 +92,16 @@ test('ten seconds on, the snapshot has a new stamp and is the same node', async 
   ).toBe(true);
 });
 
+// a pane on another tab asks for no snapshot: the stamp in the URL, which the browser fetches, stays as it was
+test('a pane on another tab keeps its snapshot stamp when ten seconds pass', async ({house}) => {
+  await addPorch(house);
+  await house.tab('cams');
+  const shown = await stampOf(house);
+  await house.tab('home');
+  await house.clock.fastForward(10_000);
+  expect(await stampOf(house)).toBe(shown);
+});
+
 // the pane listens to the Security ids alone: a thermostat is not one of them
 test('a thermostat change draws nothing in the pane or its cards', async ({house}) => {
   await addPorch(house);

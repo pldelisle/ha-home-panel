@@ -3,7 +3,7 @@
  * when the cards were its children (they are the pane's now, and the section holds this element alone). The tablet's two columns
  * are the cameras' card and the doors-and-motion card under the header, one column under 1000 pixels, and a phone's pane is a
  * column. Known copies of legacy rules, as the Media pane's: `.pane-cams`, its media query and the header's (tabs.css, phone.css),
- * which the section keeps because no gate lists them; the selectors differ (`:host`) because a shadow root cannot reach them.
+ * which the section keeps until #227 deletes them with the rest of Security's legacy rules (no gate lists them before); the selectors differ (`:host`) because a shadow root cannot reach them.
  */
 :host {
   display: grid;

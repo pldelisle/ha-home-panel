@@ -128,8 +128,7 @@
 }
 .pane-home > hp-pane-header,
 .pane-lights > hp-pane-header,
-.pane-media > hp-pane-header,
-.pane-cams > hp-pane-header {
+.pane-media > hp-pane-header {
   grid-column: 1/-1;
   margin-bottom: 2px;
 }
