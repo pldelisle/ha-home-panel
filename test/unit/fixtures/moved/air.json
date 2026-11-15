@@ -1,0 +1,405 @@
+{
+  "about": "The English messages the Air move introduced (src/core/i18n/en.ts, air.*), each with sample values. test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer made of the English; `written` is French the layer does not make (a text the legacy panel never drew as one message, or one it left in English), `fr` the values French writes differently. The legacy panel still draws the Air tab, so no map entry is deleted yet (#234). Deleted with the layer in phase 4.",
+  "messages": [
+    {
+      "key": "air.quality"
+    },
+    {
+      "key": "air.noPurifiers"
+    },
+    {
+      "key": "air.purifiers",
+      "values": {
+        "n": 1
+      },
+      "written": "1 purificateur"
+    },
+    {
+      "key": "air.purifiers",
+      "values": {
+        "n": 2
+      },
+      "written": "2 purificateurs"
+    },
+    {
+      "key": "air.noData"
+    },
+    {
+      "key": "air.noReadings"
+    },
+    {
+      "key": "air.noReadingsYet"
+    },
+    {
+      "key": "air.goodEveryRoom"
+    },
+    {
+      "key": "air.level.good"
+    },
+    {
+      "key": "air.level.moderate"
+    },
+    {
+      "key": "air.level.poor"
+    },
+    {
+      "key": "air.allRoomsClean",
+      "values": {
+        "n": 1
+      },
+      "written": "La pièce est propre"
+    },
+    {
+      "key": "air.allRoomsClean",
+      "values": {
+        "n": 2
+      },
+      "written": "Les 2 pièces sont propres"
+    },
+    {
+      "key": "air.roomsClean",
+      "values": {
+        "n": 1,
+        "total": 2
+      },
+      "written": "1 sur 2 pièces propres"
+    },
+    {
+      "key": "air.milaIndex",
+      "values": {
+        "n": 68
+      },
+      "written": "Indice Mila 68"
+    },
+    {
+      "key": "air.cleanAir"
+    },
+    {
+      "key": "air.roomWhy",
+      "values": {
+        "name": "Office",
+        "detail": "CO₂ 1,050"
+      },
+      "fr": {
+        "detail": "CO₂ 1 050"
+      }
+    },
+    {
+      "key": "air.outsideAqi"
+    },
+    {
+      "key": "air.purifierOffline"
+    },
+    {
+      "key": "air.fanOff"
+    },
+    {
+      "key": "air.automagic"
+    },
+    {
+      "key": "air.manual"
+    },
+    {
+      "key": "air.fanLine",
+      "values": {
+        "mode": "Automagic",
+        "n": 40
+      }
+    },
+    {
+      "key": "air.fanLine",
+      "values": {
+        "mode": "Manual",
+        "n": 40
+      },
+      "fr": {
+        "mode": "Manuel"
+      }
+    },
+    {
+      "key": "air.rh",
+      "values": {
+        "n": 45
+      },
+      "written": "45 % HR"
+    },
+    {
+      "key": "air.offlineHint"
+    },
+    {
+      "key": "air.automagicHint",
+      "values": {
+        "clauses": ""
+      }
+    },
+    {
+      "key": "air.automagicHint",
+      "values": {
+        "clauses": ", now 40%"
+      },
+      "fr": {
+        "clauses": ", en ce moment 40 %"
+      }
+    },
+    {
+      "key": "air.automagicHint",
+      "values": {
+        "clauses": ", now 40%, 2.4 air changes an hour"
+      },
+      "fr": {
+        "clauses": ", en ce moment 40 %, 2,4 renouvellements d'air à l'heure"
+      }
+    },
+    {
+      "key": "air.automagicHint",
+      "values": {
+        "clauses": ", 2.4 air changes an hour"
+      },
+      "fr": {
+        "clauses": ", 2,4 renouvellements d'air à l'heure"
+      },
+      "written": "Automagic règle le ventilateur selon les capteurs de la pièce, 2,4 renouvellements d'air à l'heure."
+    },
+    {
+      "key": "air.hintNow",
+      "values": {
+        "n": 40
+      },
+      "written": ", en ce moment 40 %"
+    },
+    {
+      "key": "air.hintChanges",
+      "values": {
+        "n": "2.4"
+      },
+      "written": ", 2,4 renouvellements d'air à l'heure"
+    },
+    {
+      "key": "air.slower"
+    },
+    {
+      "key": "air.faster"
+    },
+    {
+      "key": "air.fan"
+    },
+    {
+      "key": "air.percent",
+      "values": {
+        "n": 40
+      }
+    },
+    {
+      "key": "air.fanSpeed",
+      "values": {
+        "name": "Office"
+      }
+    },
+    {
+      "key": "air.mode",
+      "values": {
+        "name": "Office"
+      }
+    },
+    {
+      "key": "air.modeSet",
+      "values": {
+        "name": "Office",
+        "mode": "Manual"
+      }
+    },
+    {
+      "key": "air.modeSet",
+      "values": {
+        "name": "Office",
+        "mode": "Automagic"
+      }
+    },
+    {
+      "key": "air.fanSet",
+      "values": {
+        "name": "Office",
+        "pct": 40
+      }
+    },
+    {
+      "key": "air.purifierOn",
+      "values": {
+        "name": "Office"
+      }
+    },
+    {
+      "key": "air.purifierOff",
+      "values": {
+        "name": "Office"
+      }
+    },
+    {
+      "key": "air.metric.pm1"
+    },
+    {
+      "key": "air.metric.pm25"
+    },
+    {
+      "key": "air.metric.pm10"
+    },
+    {
+      "key": "air.metric.co"
+    },
+    {
+      "key": "air.metric.co2"
+    },
+    {
+      "key": "air.metric.voc"
+    },
+    {
+      "key": "air.metric.humidity"
+    },
+    {
+      "key": "air.whatToChart"
+    },
+    {
+      "key": "air.chartTitle",
+      "values": {
+        "metric": "PM2.5",
+        "range": "last 24 hours"
+      },
+      "fr": {
+        "metric": "PM2,5",
+        "range": "dernières 24 heures"
+      }
+    },
+    {
+      "key": "air.chartTitle",
+      "values": {
+        "metric": "CO₂",
+        "range": "last 30 days"
+      },
+      "fr": {
+        "range": "30 derniers jours"
+      }
+    },
+    {
+      "key": "air.goodUpTo",
+      "values": {
+        "good": "12",
+        "unit": "µg/m³",
+        "moderate": "35"
+      }
+    },
+    {
+      "key": "air.goodUpTo",
+      "values": {
+        "good": "800",
+        "unit": "ppm",
+        "moderate": "1,200"
+      },
+      "fr": {
+        "moderate": "1 200"
+      }
+    },
+    {
+      "key": "air.dashedOutdoor",
+      "written": "La ligne pointillée est la station extérieure."
+    },
+    {
+      "key": "air.comfortableHumidity",
+      "values": {
+        "from": "30",
+        "to": "60"
+      }
+    },
+    {
+      "key": "air.comfortable"
+    },
+    {
+      "key": "air.historyUnavailable"
+    },
+    {
+      "key": "air.outside"
+    },
+    {
+      "key": "air.outsideHint"
+    },
+    {
+      "key": "air.outdoorAir",
+      "values": {
+        "range": "last 7 days"
+      },
+      "fr": {
+        "range": "7 derniers jours"
+      }
+    },
+    {
+      "key": "air.outdoorHint",
+      "written": "IQA américain de la station (bon jusqu’à 50, modéré jusqu’à 100) et cote air santé sur son échelle de 1 à 10."
+    },
+    {
+      "key": "air.aqi"
+    },
+    {
+      "key": "air.aqhiValue",
+      "values": {
+        "n": 2
+      }
+    },
+    {
+      "key": "air.stationPm",
+      "values": {
+        "n": "9.0"
+      }
+    },
+    {
+      "key": "air.station",
+      "values": {
+        "n": 6
+      },
+      "written": "station à 6 km"
+    },
+    {
+      "key": "air.pollen.trees"
+    },
+    {
+      "key": "air.pollen.grass"
+    },
+    {
+      "key": "air.pollen.weeds"
+    },
+    {
+      "key": "air.pollen.mold"
+    },
+    {
+      "key": "air.pollenLevel.none"
+    },
+    {
+      "key": "air.pollenLevel.low"
+    },
+    {
+      "key": "air.pollenLevel.moderate"
+    },
+    {
+      "key": "air.pollenLevel.high"
+    },
+    {
+      "key": "air.pollenLevel.veryHigh"
+    },
+    {
+      "key": "air.noPollenYet"
+    },
+    {
+      "key": "air.noOutdoorHistory"
+    },
+    {
+      "key": "air.aqiSeries"
+    },
+    {
+      "key": "air.aqhiSeries"
+    },
+    {
+      "key": "air.axis.aqi"
+    },
+    {
+      "key": "air.axis.aqhi"
+    }
+  ]
+}
