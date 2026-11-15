@@ -3,7 +3,7 @@
  * car. Known copies of rules the legacy panel's Sankey still draws in its Now mode through `flowSvg` (`.flow`, `.flow text`, `.flow .big`,
  * `.flow .cap`, `.flow .st`, `.dash` and the `flowmove` and `npulse` keyframes: base.css, motion.css), read here under the drawing's own
  * selectors (`svg`, `text`, `.run`, `.pulse`) because the styles-split test lets one file write a selector; the detail's move (#240)
- * deletes the legacy rules with `flowSvg`.
+ * deletes the legacy rules with `flowSvg`, whose only reader is the Sankey's Now mode.
  */
 :host {
   display: block;

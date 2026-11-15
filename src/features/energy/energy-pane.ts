@@ -119,12 +119,12 @@ export class EnergyPane extends LitElement {
     const compact = this.appearance.value?.compact === true;
     // a sheet over another tab: the pane is behind it and draws nothing but it, so the tab stays
     if (compact && !this.active) return view && (this.waterOpen || this.hiloOpen) ? this.renderSheets(view) : nothing;
-    // On a tablet the pane is the legacy detail's place, and the two cards beside it: the header is there and not shown, as the old
-    // pane's was, and the card and the tiles are the phone's. The slot is there before the model is: the sheet host puts the legacy
+    // On a tablet the pane is the legacy detail's place, and the two cards beside it: the header, the card and the tiles are the phone's,
+    // and the header is not drawn, so its sub-line costs nothing. The slot is there before the model is: the sheet host puts the legacy
     // panel in it as the tab opens, and the charts it draws need a box to measure. The parts keep their places as the view arrives.
-    return html`${view ? this.renderHeader(view) : nothing}${
-      compact ? (view ? this.renderPhone(view) : nothing) : this.renderTablet(view)
-    }`;
+    return html`${
+      compact && view ? html`${this.renderHeader(view)}${this.renderPhone(view)}` : nothing
+    }${compact ? nothing : this.renderTablet(view)}`;
   }
 
   private renderHeader({summary}: EnergyViewModel) {

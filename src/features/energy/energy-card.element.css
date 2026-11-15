@@ -1,6 +1,6 @@
 /*
  * <hp-energy-card>'s own rules: its `:host`, the tap on the box and the line it says when the history did not load. The box, its title line and
- * the chevron are the feature's (styles.css), the tiles the kit's. Known copy of a legacy rule: `.card.tap` (base.css), read as `.ebox.tap`.
+ * the chevron are the feature's (styles.css), the tiles the kit's. Known copy of a legacy rule the parked Climate and Car cards and Home still draw: `.card.tap` (base.css), read as `.ebox.tap`; the Home move (#268) deletes it.
  */
 :host {
   display: block;
