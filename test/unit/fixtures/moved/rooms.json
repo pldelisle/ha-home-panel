@@ -1,0 +1,9 @@
+{
+  "about": "The English message the room names introduced (src/core/i18n/en.ts, room.*), compared as test/unit/fixtures/moved/weather.json is. The legacy layer leaves it in English, so the French catalog does too. Deleted with the layer in phase 4.",
+  "messages": [
+    {
+      "key": "room.bedroomOf",
+      "values": {"name": "Zoé"}
+    }
+  ]
+}

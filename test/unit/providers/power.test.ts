@@ -1,19 +1,17 @@
-// powerNow and roomPower: the grid, the loads and each room in kW, what `rest` leaves, when a room is heating and what it is
-// called. The test house gives today's answer as literals; literal houses give the rules it does not exercise; the recorded
+// powerNow and roomPower: the grid, the loads and each room in kW, what `rest` leaves, when a room is heating and the inputs of its name
+// (`roomName` words it, test/unit/i18n/room-name.test.ts). The test house gives today's answer as literals; literal houses give the rules it does not exercise; the recorded
 // house is read when the owner has one (#170).
 import {describe, expect, test} from 'vitest';
 import {entity, fakeHass} from '../fake-hass.ts';
-import {fullHouse, houseOf, recorded, storeOf, type Language} from '../features/media/support.ts';
+import {fullHouse, houseOf, recorded, storeOf} from '../features/media/support.ts';
 import {FULL_CFG} from '../../e2e/houses.ts';
 import {powerNow, roomPower} from '../../../src/providers/power.ts';
 
 type State = ReturnType<typeof entity>;
 
-/** The flow read the way the panel reads it: the store's resolved config and names, in a language. */
-function flowOf(hass: ReturnType<typeof fakeHass>, config: unknown = {}, language: Language = 'en') {
-  const store = storeOf({...hass, locale: {language}}, config);
-  return powerNow(hass.states, store.config, store.names, store.isFrench);
-}
+/** The flow read the way the panel reads it: the store's resolved config. */
+const flowOf = (hass: ReturnType<typeof fakeHass>, config: unknown = {}) =>
+  powerNow(hass.states, storeOf(hass, config).config);
 const watts = (id: string, state: string | number) => entity(id, String(state), {unit_of_measurement: 'W'});
 const thermostat = (id: string, state = 'heat', attributes: Record<string, unknown> = {}) =>
   entity(`climate.${id}`, state, {friendly_name: `Thermostat ${id}`, ...attributes});
@@ -24,16 +22,14 @@ describe('the test house', () => {
   test('its meter, its charger and its four thermostats, with the rest clamped at zero', () => {
     const flow = flowOf(fullHouse, FULL_CFG);
     expect(flow).toMatchObject({grid: 3.24, waterHeater: 0, ev: 7.1, heat: 2.4, rest: 0, heatPump: null});
-    expect(flow.rooms.map(r => [r.key, r.name, r.power, r.temperature, r.setpoint, r.heating, r.available])).toEqual([
+    expect(
+      flow.rooms.map(r => [r.key, r.thermostatName, r.power, r.temperature, r.setpoint, r.heating, r.available]),
+    ).toEqual([
       ['bedroom', 'Bedroom', 1.2, 20.8, 21, true, true],
       ['garage', 'Garage', 0, 21.2, 21, false, true],
       ['living_room', 'Living room', 1.2, 20, 21, true, true],
       ['office', 'Office', 0, 20.4, 21, false, true],
     ]);
-  });
-
-  test('read in French, the rooms are called by the dictionary', () => {
-    expect(flowOf(fullHouse, FULL_CFG, 'fr').rooms.map(r => r.name)).toEqual(['Chambre', 'Garage', 'Salon', 'Bureau']);
   });
 });
 
@@ -102,10 +98,9 @@ describe('the flow', () => {
 });
 
 describe('a room', () => {
-  const read = (states: State[], config: object = {}, language: Language = 'en') => {
+  const read = (states: State[], config: object = {}) => {
     const hass = house(...states);
-    const store = storeOf({...hass, locale: {language}}, {rooms: [{climate: 'climate.den', ...config}]});
-    return roomPower(hass.states, store.config.rooms[0], store.names, store.isFrench);
+    return roomPower(hass.states, storeOf(hass, {rooms: [{climate: 'climate.den', ...config}]}).config.rooms[0]);
   };
 
   test('heating is the thermostat’s action or a power over 50 W, and 50 W exactly is not', () => {
@@ -140,20 +135,13 @@ describe('a room', () => {
     expect(read([])).toMatchObject({temperature: null, setpoint: null, power: null, available: false});
   });
 
-  test('its name is the config’s, "Name’s bedroom" for a Chambre de, the thermostat’s without "Thermostat ", else the key', () => {
-    const named = (friendly: string | null, config: object = {}) =>
-      read([entity('climate.den', 'heat', friendly === null ? {} : {friendly_name: friendly})], config).name;
-    expect(named('Thermostat Hall', {name: 'Entry'})).toBe('Entry');
-    expect(named('Thermostat Chambre de Zoé')).toBe("Zoé's bedroom");
-    expect(named('Thermostat Hall')).toBe('Hall');
-    expect(named(null)).toBe('den');
-  });
-
-  test('in French it is the thermostat’s own name, whatever the config calls the room, else the English rule', () => {
-    const named = (friendly: string | null, config: object = {}) =>
-      read([entity('climate.den', 'heat', friendly === null ? {} : {friendly_name: friendly})], config, 'fr').name;
-    expect(named('Thermostat Salle de Séjour', {name: 'Entry'})).toBe('Salle de Séjour');
-    expect(named('Chambre de Zoé')).toBe('Chambre de Zoé');
-    expect(named(null, {name: 'Entry'})).toBe('Entry');
+  test('its name is left to roomName: the key, the config’s name and the thermostat’s own name (empty when it has none)', () => {
+    expect(read([thermostat('den')], {name: 'Entry'})).toMatchObject({
+      key: 'den',
+      configuredName: 'Entry',
+      thermostatName: 'Thermostat den',
+    });
+    expect(read([entity('climate.den', 'heat')])).toMatchObject({configuredName: null, thermostatName: ''});
+    expect(read([])).toMatchObject({key: 'den', thermostatName: ''});
   });
 });

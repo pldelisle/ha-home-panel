@@ -72,6 +72,7 @@ describe.each([
   ['chart', 'chart.', ['src/ui/'], []],
   ['ranges', 'range.', ['src/ui/'], []],
   ['settings', 'settings.', ['src/shell/'], []],
+  ['rooms', 'room.', ['src/core/i18n/'], []],
 ])('the %s move', (move, prefix, folders, extra) => {
   const moved = read(move);
 

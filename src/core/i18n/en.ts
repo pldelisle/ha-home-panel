@@ -6,6 +6,8 @@ export const en = {
   // what the kit says when a command fails (src/ui/commands.ts); the reason is Home Assistant's own words
   'common.failed': "Didn't work: {reason}",
   'charts.failed': 'Charts library failed to load',
+  // a room whose thermostat is "Chambre de <Name>" (the Hilo naming), read in English
+  'room.bedroomOf': "{name}'s bedroom",
   // the ten subjects, in rail order: the rail's label, the pane's heading and the More list; `auto.short` is the fifth
   // slot of the phone's bar, where "Automations" does not fit
   'home.title': 'Home',
