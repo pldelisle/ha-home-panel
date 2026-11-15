@@ -1,6 +1,6 @@
 # 0006: ApexCharts frozen at the 3.x major for licence reasons
 
-Status: accepted (2026-11-07)
+Status: accepted (2026-11-07); amended by 0027
 
 ## Context
 
