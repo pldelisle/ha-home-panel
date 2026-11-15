@@ -276,7 +276,7 @@ export class HomePanel extends LitElement {
     this.idle.sleepNow();
   };
 
-  // a tile of the More sheet: the sheet closes, then the tab shows, as the guest's handler did
+  // a tile of the More sheet or the Home card's header asks for a tab: the More sheet closes (a no-op when it is not open), then the tab shows
   private readonly onTabSelect = (e: CustomEvent<TabSelectDetail>): void => {
     this.sheets.close(MORE_SHEET);
     this.setTab(e.detail.key);
@@ -387,6 +387,7 @@ export class HomePanel extends LitElement {
       data-wp=${ifDefined(a.glass.wallpaper ?? undefined)}
       @sheet-request=${this.onSheetRequest}
       @sheet-dismiss=${this.onSheetDismiss}
+      @tab-select=${this.onTabSelect}
       @toast=${this.onToast}
       @weather-forecast=${this.onForecast}
     >
@@ -398,7 +399,6 @@ export class HomePanel extends LitElement {
         .summaries=${this.moreSummaries}
         .current=${this.tab}
         .open=${this.sheets.isOpen(MORE_SHEET)}
-        @tab-select=${this.onTabSelect}
         @sheet-close=${this.onMoreClose}
       ></hp-more-sheet>
       ${this.renderIdle()}

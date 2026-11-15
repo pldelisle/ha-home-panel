@@ -17,7 +17,7 @@ export const FEATURES: readonly FeatureDescriptor[] = [
     hosts: [
       '<div class="cfgerrh" id="cfgerr" hidden></div>',
       '<div class="card hwx" id="hwx"></div>',
-      '<div class="hright"><div class="htiles" id="htiles"></div><div class="card hsec" id="hsec"></div></div>',
+      '<div class="hright"><div class="htiles" id="htiles"></div><div id="hsec"></div></div>',
       '<div class="hscenes" id="hscenes" hidden></div>',
     ],
   }),

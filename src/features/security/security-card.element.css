@@ -1,0 +1,294 @@
+/*
+ * <hp-security-card>'s own rules: the host lays out nothing, so the card's box is an item of the guest's `.hright` grid, as the legacy
+ * `#hsec` card was; then the box, its header, the camera thumbnails, the sensor rows and the glow with its keyframes. Moved from the
+ * legacy `.hsec`, `.hcams`, `.hcam`, `.hsens`, `.hsen` and `.glow` rules (tabs.css, phone.css, glass.css, motion.css), which #226 deleted.
+ * Known copies of rules the guest's other cards still draw: `.card` (the box), `.lbl`, `.go`, `.hint` and `.sic` (base.css, extra.css,
+ * glass.css), read here as `.seccard`, `.hh .lbl`, `.chev`, `.nosens` and `.hsen .sic`; the header's `.hh` rules are the legacy `.hsec > .hh`
+ * ones, moved (the glance tiles' `.htile .hh` stays). The Home move (spec 24) deletes the copies when the Home pane composes the card.
+ */
+:host {
+  display: contents;
+}
+.seccard {
+  --hsh: var(--shadow);
+  background: var(--card);
+  border: 0;
+  border-radius: 22px;
+  padding: 16px 18px;
+  box-shadow: var(--shadow);
+  min-width: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+:host([compact]) .seccard {
+  padding: 14px;
+}
+:host([glass]) .seccard {
+  --hsh: var(--g-edge);
+  background: var(--g-card);
+  -webkit-backdrop-filter: var(--g-bd);
+  backdrop-filter: var(--g-bd);
+  box-shadow: var(--g-edge);
+}
+@media (prefers-reduced-transparency: reduce) {
+  :host([glass]) .seccard {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--card);
+  }
+}
+/* Attention glow (v1.19.6): a door opening or motion starting makes the card's edge pulse amber twice, then settle */
+.seccard.glow {
+  animation: attn 2.6s ease-out;
+}
+@keyframes attn {
+  0%,
+  100% {
+    box-shadow:
+      var(--hsh),
+      inset 0 0 0 0 transparent,
+      0 0 0 0 transparent;
+  }
+  12% {
+    box-shadow:
+      var(--hsh),
+      inset 0 0 0 2px color-mix(in srgb, var(--warn) 90%, transparent),
+      0 0 28px 4px color-mix(in srgb, var(--warn) 50%, transparent);
+  }
+  45% {
+    box-shadow:
+      var(--hsh),
+      inset 0 0 0 1.5px color-mix(in srgb, var(--warn) 50%, transparent),
+      0 0 12px 0 color-mix(in srgb, var(--warn) 20%, transparent);
+  }
+  60% {
+    box-shadow:
+      var(--hsh),
+      inset 0 0 0 2px color-mix(in srgb, var(--warn) 85%, transparent),
+      0 0 24px 3px color-mix(in srgb, var(--warn) 45%, transparent);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .seccard.glow {
+    animation: none;
+    box-shadow:
+      var(--hsh),
+      inset 0 0 0 2px var(--warn);
+  }
+}
+.hh {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.hh .lbl {
+  flex: none;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  font-size: calc(15px * var(--tx));
+  font-weight: 600;
+  color: var(--fg);
+}
+.hh .right {
+  flex: 1;
+  text-align: right;
+  color: var(--fg2);
+  font-size: calc(13px * var(--tx));
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* the line holds more than one line in French ("toutes les portes fermées · mouvement en cours"): on a phone it wraps to two */
+:host([compact]) .hh .right {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  white-space: normal;
+}
+.chev {
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  background: var(--card2);
+  display: grid;
+  place-items: center;
+  color: var(--fg2);
+  flex: none;
+}
+:host([glass]) .chev {
+  background: var(--g-tile);
+  box-shadow: var(--g-edge-s);
+}
+.chev:active {
+  transform: scale(0.96);
+}
+.hcams {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: 16px;
+}
+:host([compact]) .hcams {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.hcam {
+  position: relative;
+  border: 0;
+  padding: 0;
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--card2);
+  aspect-ratio: 16/9;
+  cursor: pointer;
+  font: inherit;
+  color: #fff;
+}
+.hcam img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.hcam .camoff {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--fg3);
+}
+.hcam .hcn {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 16px 10px 6px;
+  font-size: calc(11.5px * var(--tx));
+  font-weight: 600;
+  text-align: left;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.55));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hcam .hcn b {
+  color: #ffd28a;
+}
+.hsens {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+:host([compact]) .hsens {
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+@media (max-width: 1000px) {
+  .hsens {
+    grid-template-columns: 1fr;
+  }
+}
+.hsen {
+  appearance: none;
+  -webkit-appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--card2);
+  border: 0;
+  border-radius: 16px;
+  padding: 12px 14px;
+  min-width: 0;
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.hsen:focus-visible {
+  outline: 2px solid var(--c-home);
+  outline-offset: 2px;
+}
+.hsen:active {
+  transform: scale(0.96);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .hsen,
+  .chev {
+    transition:
+      transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+      background-color 0.2s ease,
+      box-shadow 0.2s ease,
+      color 0.2s ease;
+  }
+}
+:host([glass]) .hsen {
+  background: var(--g-tile);
+  box-shadow: var(--g-edge-s);
+}
+@media (prefers-reduced-transparency: reduce) {
+  :host([glass]) .hsen {
+    background: var(--card2);
+  }
+}
+.hsen .sic {
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  background: var(--card);
+  display: grid;
+  place-items: center;
+  color: var(--fg2);
+  flex: none;
+}
+:host([glass]) .hsen .sic {
+  background: var(--g-sel);
+  border-color: transparent;
+}
+.hsen > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.hsen b {
+  font-size: calc(13.5px * var(--tx));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hsen > div > span {
+  font-size: calc(12.5px * var(--tx));
+  color: var(--fg2);
+}
+.hsen .warn {
+  color: var(--t-warn);
+  font-weight: 600;
+}
+.hsen .act {
+  color: var(--t-home);
+  font-weight: 600;
+}
+.hsen .off {
+  opacity: 0.6;
+}
+.hsen small {
+  color: var(--fg2);
+  font-weight: 500;
+  font-size: calc(12px * var(--tx));
+}
+.nosens {
+  font-size: calc(12px * var(--tx));
+  color: var(--fg2);
+  margin: 6px 0 0;
+}

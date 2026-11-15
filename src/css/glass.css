@@ -169,8 +169,7 @@
   --g-tile: rgba(255, 255, 255, calc(0.06 * var(--g-m, 1)));
 }
 .app.gl .card,
-.app.gl .htile,
-.app.gl .hsec {
+.app.gl .htile {
   background: var(--g-card);
   -webkit-backdrop-filter: var(--g-bd);
   backdrop-filter: var(--g-bd);
@@ -178,7 +177,6 @@
 }
 /* v1.18.2: every other surface follows. Top-level panels (sheet sections, air cards, room list) are glass cards; inner wells (rows, segmented controls, tabs, steppers, sensor and speaker rows) take the tile fill; small buttons inside take the selected-bubble fill; tinted "on" states mix their accent into the glass instead of the opaque card */
 .app.gl .larea,
-.app.gl .hsen,
 .app.gl .access,
 .app.gl .arow,
 .app.gl .stepper,
@@ -205,11 +203,9 @@
 .app.gl .stepper button,
 .app.gl .abtn,
 .app.gl .lauto,
-.app.gl .hsen .sic,
 .app.gl .cbtn .ic,
 .app.gl .citem .ic,
-.app.gl .lic,
-.app.gl .sic {
+.app.gl .lic {
   background: var(--g-sel);
   border-color: transparent;
 }
@@ -258,9 +254,6 @@
 .app.gl .aud.skip,
 .app.gl .clear span {
   background: var(--g-tile);
-  box-shadow: var(--g-edge-s);
-}
-.app.gl .hsen {
   box-shadow: var(--g-edge-s);
 }
 .app.gl .pill.on {
@@ -339,14 +332,12 @@
   .app.gl .pop,
   .app.gl .toast:not(.err),
   .app.gl .card,
-  .app.gl .htile,
-  .app.gl .hsec {
+  .app.gl .htile {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
     background: var(--card);
   }
   .app.gl .larea,
-  .app.gl .hsen,
   .app.gl .access,
   .app.gl .arow,
   .app.gl .stepper,

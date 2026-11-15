@@ -637,7 +637,6 @@ export class LegacyPanel {
     LAYOUT.forEach(id => this.$(id) && this.ro.observe(this.$(id)));
   }
   disconnect() {
-    clearTimeout(this.glowT);
     if (this.ro) this.ro.disconnect();
     clearInterval(this.clockT);
     clearInterval(this.histT);
@@ -901,12 +900,14 @@ export class LegacyPanel {
       this.panels[sh.id] = sh.querySelector('.panel');
     });
     // The scenes row is Media's element, placed by its tag (the Home-card bridge, ADR 0024): written once a draw and never again, and
-    // hidden while it says it has nothing, as the legacy row was. The Home move (#268) deletes the Home-card bridge and its host.
+    // hidden while it says it has nothing, as the legacy row was. The Home move (#268) deletes the Home-card bridge and its hosts.
     const hs = this.$('hscenes');
     hs.innerHTML = '<hp-scene-tiles></hp-scene-tiles>';
     hs.addEventListener('hp-empty', e => {
       hs.hidden = e.detail.empty;
     });
+    // The Security card is the second use, written the same way: its tag once a draw, and the card keeps its glow's memory (#226).
+    this.$('hsec').innerHTML = '<hp-security-card></hp-security-card>';
     this.wire();
     // the host takes the scrim and the Close button of each sheet, and places the five detail panels for the shape of the screen
     this.sheetOffs = [...this.root.querySelectorAll('.guest .sheet')].map(el =>
@@ -1450,20 +1451,6 @@ export class LegacyPanel {
     }
     if (go.includes('.') || this.$(go)) this.sheets.open(go);
   }
-  // Attention glow (v1.19.6): when a door opens or motion starts, the Security card's edge pulses amber for about 2.5 s
-  secWatch() {
-    const now = {};
-    for (const x of this.sensors()) now[x.id] = (this.st(x.id) || {}).state === 'on';
-    const was = this.secWas;
-    this.secWas = now;
-    if (!was || !Object.keys(now).some(id => now[id] && was[id] === false)) return;
-    const el = this.$('hsec');
-    el.classList.remove('glow');
-    void el.offsetWidth;
-    el.classList.add('glow');
-    clearTimeout(this.glowT);
-    this.glowT = setTimeout(() => el.classList.remove('glow'), 2800);
-  }
   // Mercury drop (v1.19.0): Chromium bends the backdrop of every glass surface with a blurred fractal-noise displacement map (the Aether CSS
   // "glass-distortion" filter, referenced from glass.css through the mc class). WebKit drops url() filters, so it keeps the frosted glass from the CSS
   lensAll() {
@@ -1754,8 +1741,6 @@ export class LegacyPanel {
       }
     });
     const onTap = e => {
-      const hc = e.target.closest('#hsec [data-cam]');
-      if (hc) return this.sheets.open('security.camera', {id: hc.dataset.cam}); // Security's sheet (#225); the Home card goes with #226
       if (e.target.closest('button[data-l]')) return; // light switches on the phone rows: the lights listener has them
       // phone: tiles open sheets
       const sh = e.target.closest('[data-opens]');
@@ -1769,8 +1754,6 @@ export class LegacyPanel {
         this.climSel = cs.dataset.csel;
         return this.sheets.open('sh-climate');
       }
-      const sn = e.target.closest('[data-sens]');
-      if (sn) return this.sheets.open('security.history', {id: sn.dataset.sens}); // Security's sheet (#225); the Home card goes with #226
       const t = e.target.closest('[data-pane]');
       if (t) return this.ctx.shell.setTab(t.dataset.pane);
     };
@@ -1960,7 +1943,6 @@ export class LegacyPanel {
     for (const f of [
       'renderHeader',
       'renderEnergy',
-      'secWatch',
       'renderLights',
       'renderClimate',
       'renderAir',
@@ -3399,6 +3381,7 @@ export class LegacyPanel {
   }
 
   // ---------- cameras (UniFi Protect, or any camera entity) ----------
+  // nothing calls `cameras()` since #226 moved the Home card out; the Home move for Security (#227) deletes it
   cameras() {
     const reg = this.hass.entities || {},
       seen = new Map();
@@ -3944,6 +3927,7 @@ export class LegacyPanel {
     }
     return out.sort((a, b) => (a.kind === b.kind ? 0 : a.kind === 'door' ? -1 : 1) || a.name.localeCompare(b.name));
   }
+  // nothing calls `sensorState` since #226 moved the Home card out; #227 deletes it
   sensorState(x) {
     const s = this.st(x.id),
       b = this.num(x.bat),
@@ -4625,45 +4609,6 @@ export class LegacyPanel {
             `<button type="button" class="htile${k === 'car' && c && c.charging ? ' chg' : ''}" data-pane="${k}" ${extra(k, i)}><span class="hh"><span style="color:${col}">${ico(i, 22)}</span><span class="lbl">${lbl}</span><span class="go">›</span></span><span class="hv num">${v}</span><span class="hs">${sb}</span></button>`,
         )
         .join(''),
-    );
-    const X = this.sensors();
-    const cams = this.cameras(),
-      stamp = Math.floor(Date.now() / 10000),
-      doors = X.filter(x => x.kind === 'door'),
-      open = doors.filter(x => isOn(x.id)).length,
-      moving = X.filter(x => x.kind === 'motion' && isOn(x.id)).length;
-    const secSum = [
-      cams.length ? plural(cams.length, 'camera') : '',
-      doors.length ? (open ? plural(open, 'door') + ' open' : 'all doors closed') : '',
-      moving ? 'motion now' : 'no motion',
-    ]
-      .filter(Boolean)
-      .join(' · ');
-    this.set(
-      'hsec',
-      `<button type="button" class="hh" data-pane="cams"><span class="hsecico"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l7.5 3.2v5.3c0 4.8-3.2 9-7.5 10.6-4.3-1.6-7.5-5.8-7.5-10.6V5.7z" fill="var(--m-sage)"/><path d="M8.8 12.2l2.2 2.2 4.4-4.4" fill="none" stroke="var(--card)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="lbl">Security</span><span class="right">${esc(secSum)}</span><span class="go">›</span></button>
-      ${
-        cams.length
-          ? `<div class="hcams">${cams
-              .slice(0, 4)
-              .map(c => {
-                const cs = this.st(c.id),
-                  pic = cs && cs.attributes.entity_picture,
-                  m = c.motion,
-                  mv = m && m.state === 'on';
-                return `<button type="button" class="hcam" data-cam="${esc(c.id)}" aria-description="Opens the live view">${ok(cs) && pic ? `<img src="${esc(pic)}&t=${stamp}" alt="" loading="lazy">` : `<span class="camoff">${ico('cam', 24)}</span>`}<span class="hcn">${esc(c.name)}${mv ? ' <b>· motion</b>' : ''}</span></button>`;
-              })
-              .join('')}</div>`
-          : ''
-      }
-      ${
-        X.length
-          ? `<div class="hsens">${X.map(x => {
-              const S = this.sensorState(x);
-              return `<button type="button" class="hsen" data-sens="${esc(x.id)}" aria-description="Opens the history"><span class="sic">${ico(x.kind === 'door' ? 'door' : 'walk', 20)}</span><div><b>${esc(x.name)}</b><span class="${S.cls}">${esc(S.main)}${S.sub ? ` <small>· ${esc(S.sub)}</small>` : ''}</span></div></button>`;
-            }).join('')}</div>`
-          : '<p class="hint">No door or motion sensors yet.</p>'
-      }`,
     );
   }
   // what the house has planned: the sun (the theme and the sunrise lights-off follow it), Hilo, Hydro-Québec, the car, routines
