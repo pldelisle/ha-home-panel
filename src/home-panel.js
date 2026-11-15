@@ -1,4 +1,4 @@
-// Home panel for Home Assistant: a wall-tablet and phone dashboard (energy, climate, lights, weather, car, air, security, automations).
+// Home panel for Home Assistant: a wall-tablet and phone dashboard (energy, climate, lights, weather, car, air, automations).
 // Registered with panel_custom, so it runs inside the HA frontend and uses the signed-in user's connection.
 // Nothing secret lives in this file: the house's entities, rooms and people come from the panel's config (see core/config.ts) or are found in hass.
 import {pickStack, inHours, reminderLeft} from './stack.js';
@@ -1049,6 +1049,11 @@ export class LegacyPanel {
     return `<span class="sring" style="width:${size}px;height:${size}px"><svg width="${size}" height="${size}" viewBox="0 0 124 124" aria-hidden="true"><circle cx="62" cy="62" r="${r}" fill="none" stroke="currentColor" stroke-opacity=".14" stroke-width="11"/><circle cx="62" cy="62" r="${r}" fill="none" stroke="${color}" stroke-width="11" stroke-linecap="round" stroke-dasharray="${a.toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 62 62)"/>${lim ? `<circle cx="62" cy="62" r="${r}" fill="none" stroke="currentColor" stroke-opacity=".6" stroke-width="11" stroke-dasharray="1.6 ${c.toFixed(1)}" stroke-dashoffset="${((-c * lim) / 100).toFixed(1)}" transform="rotate(-90 62 62)"/>` : ''}</svg><b class="num">${pct == null ? '–' : Math.round(pct)}<small>%</small></b></span>`;
   }
   // every card that applies right now, red alerts and amber warnings first. No card ever reads camera motion.
+  // Security's one read left in the legacy panel (#227): the provider's door and motion sensors over the store. Its
+  // callers leave with the Status checks (#256, after #254 moves the rules), the legacy stack (#266) and the More word (the guest).
+  doorSensors() {
+    return doorMotionSensors(this.store.hass.states, registriesOf(this.store.hass), this.store.names);
+  }
   stackCards() {
     const now = Date.now(),
       h = this.fmtEn.hourNow(Date.now()),
@@ -1066,11 +1071,10 @@ export class LegacyPanel {
         .join('')}${names.length > 3 ? `<span>+${names.length - 3}</span>` : ''}</div>`;
     const big = (v, u) => `<div class="sbig num">${v}${u ? `<small>${u}</small>` : ''}</div>`,
       mid = t => `<div class="smid">${esc(t)}</div>`;
-    const doors = doorMotionSensors(this.store.hass.states, registriesOf(this.store.hass), this.store.names).filter(
-      x => x.kind === 'door',
-    );
+    const doors = this.doorSensors().filter(x => x.kind === 'door');
     const areas = this.lightAreas();
     // red: a door open 5 min or more, lights that stopped answering for 5 min (pinned until fixed)
+    // (x.since is the same instant as a number; mins and when take the state's ISO string, so the state is read again)
     doors
       .filter(x => x.on && mins(this.st(x.id).last_changed) >= 5)
       .forEach(x => {
@@ -2205,9 +2209,8 @@ export class LegacyPanel {
       if (!ok(this.st(C.id('sensor', 'soc'))))
         items.push(['warn', 'Car not reporting', 'The Ford integration has no battery data right now.']);
     }
-    const X = this.hass
-      ? doorMotionSensors(this.store.hass.states, registriesOf(this.store.hass), this.store.names)
-      : [];
+    const X = this.store.hass ? this.doorSensors() : [];
+    // (x.since is the same instant as a number; ago takes the state's ISO string, so the state is read again)
     X.filter(x => x.kind === 'door' && x.on && Date.now() - x.since > 10 * 6e4).forEach(x =>
       items.push(['warn', `${x.name} open`, `Open for ${this.ago(this.st(x.id).last_changed).replace(' ago', '')}.`]),
     );
@@ -4191,7 +4194,7 @@ export class LegacyPanel {
     // Media's line is the feature's own (mediaBrief, #217)
     const P = this.purifiers(),
       air = P.rooms.length ? this.airSummary(P) : null;
-    const X = doorMotionSensors(this.store.hass.states, registriesOf(this.store.hass), this.store.names),
+    const X = this.doorSensors(),
       open = X.filter(x => x.kind === 'door' && x.on).length,
       moving = X.some(x => x.kind === 'motion' && x.on);
     const A = this.auAutos ? this.auAutos() : [],
