@@ -110,14 +110,15 @@ function statisticsOf(states, now, ids, period) {
     for (let i = n; i >= 0; i--) {
       const t = now - i * step,
         w = Math.sin(i / 6) * 0.5 + 0.5;
-      const air = AIR_CURVES.find(([re]) => re.test(id)),
-        v = air
-          ? air[1] + air[2] * w
-          : /temperature/.test(id)
-            ? 19 + 3 * w
-            : /power/.test(id)
-              ? 0.4 + 2 * w
-              : 10 + 5 * w;
+      const [, base, swing] = AIR_CURVES.find(([re]) => re.test(id)) ?? [],
+        v =
+          base !== undefined
+            ? base + swing * w
+            : /temperature/.test(id)
+              ? 19 + 3 * w
+              : /power/.test(id)
+                ? 0.4 + 2 * w
+                : 10 + 5 * w;
       out[id].push({
         start: t,
         end: t + step,

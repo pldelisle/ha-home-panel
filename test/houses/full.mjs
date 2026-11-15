@@ -1,5 +1,6 @@
 // The full test house: the bare house plus thermostats, lights, sensors, scenes, people, media, a car, an EV charger, a
-// water heater, Environment Canada style weather sensors, one Mila purifier with the outdoor station and three automations (the Hilo card stays hidden).
+// water heater, Environment Canada style weather sensors, one Mila purifier with the outdoor station and three automations
+// (the Hilo card stays hidden).
 // Pattern: Object Mother (Fowler, ObjectMother) written with a Test Data Builder (Meszaros; Freeman and Pryce), exported as plain data.
 // Must not: hold behaviour or read a clock (times are markers from clock.mjs); nothing in it belongs to a real house.
 import * as bare from './bare.mjs';
@@ -180,11 +181,13 @@ b.add('sensor.fordpass_test_lastrefresh', fromNow(-600e3));
 
 // air: one Mila purifier in the office (its fan, Automagic at 40 %, and its thirteen sensors found by suffix, all on the
 // `mila` platform with the device id), and the account-level device with no fan that carries the outdoor station and pollen
+const purifier = {area_id: 'office', platform: 'mila', device_id: 'air1'},
+  station = {platform: 'mila', device_id: 'air0'};
 b.add(
   'fan.office_purifier',
   'on',
   {friendly_name: 'Office purifier', preset_mode: 'Automagic', preset_modes: ['Automagic', 'Manual'], percentage: 40},
-  {area_id: 'office', platform: 'mila', device_id: 'air1'},
+  purifier,
   {id: 'air1', area_id: 'office', name: 'Office purifier'},
 );
 for (const [k, [v, unit]] of Object.entries({
@@ -202,16 +205,12 @@ for (const [k, [v, unit]] of Object.entries({
   mode: ['Automagic', null],
   time_to_clean: [12, 'min'],
 }))
-  b.add(`sensor.office_purifier_${k}`, v, unit ? {unit_of_measurement: unit} : {}, {
-    area_id: 'office',
-    platform: 'mila',
-    device_id: 'air1',
-  });
-b.add('sensor.outdoor_aqi', 42, {}, {platform: 'mila', device_id: 'air0'}, {id: 'air0', name: 'Outdoor air account'});
-b.add('sensor.outdoor_station_pm2_5', 9, {unit_of_measurement: 'µg/m³'}, {platform: 'mila', device_id: 'air0'});
-b.add('sensor.outdoor_station_distance', 6, {unit_of_measurement: 'km'}, {platform: 'mila', device_id: 'air0'});
+  b.add(`sensor.office_purifier_${k}`, v, unit ? {unit_of_measurement: unit} : {}, purifier);
+b.add('sensor.outdoor_aqi', 42, {}, station, {id: 'air0', name: 'Outdoor air account'});
+b.add('sensor.outdoor_station_pm2_5', 9, {unit_of_measurement: 'µg/m³'}, station);
+b.add('sensor.outdoor_station_distance', 6, {unit_of_measurement: 'km'}, station);
 for (const [k, v] of Object.entries({trees: 'low', grass: 'none', weeds: 'none', mold: 'none'}))
-  b.add(`sensor.outdoor_pollen_status_${k}`, v, {}, {platform: 'mila', device_id: 'air0'});
+  b.add(`sensor.outdoor_pollen_status_${k}`, v, {}, station);
 
 export const {states, entities, devices} = b.data;
 export {areas};
