@@ -179,7 +179,7 @@ test('a toast asked for from an element shows, and a sticky one stays until it i
 test('the shape changing from a tablet to a phone moves the open pane’s panel into its sheet, and back', async ({
   house,
 }) => {
-  // Climate's detail is still the legacy panel's (#248); Energy's, Weather's and Air's are elements', which draw inline or in a sheet by the shape
+  // Climate's detail is a legacy panel's sheet, deleted by #248 with this test (the element version is the fixme below, until #333); Energy's, Weather's and Air's are elements'
   tabletOnly();
   await house.tab('climate');
   const inline = house.root().locator('#pane-climate > .panel');
@@ -198,8 +198,7 @@ test('the shape changing from a tablet to a phone moves the open pane’s panel 
 test('a phone sheet that is open when the screen becomes a tablet closes, and Escape then does nothing', async ({
   house,
 }) => {
-  // a light sheet: the charts of Energy's sheet would be redrawn by the library as the window changes, which it does not survive (it throws as the
-  // pane leaves; Air's detail does the same), and this test is about the sheet host
+  // a light sheet: Energy's sheet holds charts, which throw NaN as the window changes under them (#333); the Energy version is the fixme below
   phoneOnly();
   await house.tab('lights');
   await officeTile(house).click();
@@ -208,6 +207,30 @@ test('a phone sheet that is open when the screen becomes a tablet closes, and Es
   await expect(lightSheet(house)).toBeHidden();
   await house.page.keyboard.press('Escape');
   await expect(house.root().locator('#pane-lights')).toBeVisible();
+});
+
+// Energy's detail, the element version of the two tests above: blocked by #333 (the library redraws a chart its pane has just removed and throws NaN)
+test.fixme('Energy’s detail: a phone sheet open when the screen becomes a tablet closes, and the tablet shows it inline (#333)', async ({
+  house,
+}) => {
+  phoneOnly();
+  await energyTile(house).click();
+  await expect(energySheet(house)).toBeVisible();
+  await house.page.setViewportSize(VIEWPORTS.tablet);
+  await expect(energySheet(house)).toBeHidden();
+});
+
+test.fixme('Energy’s detail moves from inline in the pane to the sheet when the screen becomes a phone, and back (#333)', async ({
+  house,
+}) => {
+  tabletOnly();
+  await house.tab('energy');
+  const detail = house.root().locator('#pane-energy hp-energy-detail');
+  await expect(detail).toBeVisible();
+  await house.page.setViewportSize(VIEWPORTS.phone);
+  await expect(detail).toHaveCount(0);
+  await house.page.setViewportSize(VIEWPORTS.tablet);
+  await expect(detail).toBeVisible();
 });
 
 test('a sheet that is open when the panel is moved in the page still closes on Escape', async ({house}) => {

@@ -3681,7 +3681,6 @@ export class LegacyPanel {
         ${[0, 6, 12, 18].map(h => `<span class="alh" style="left:${(h / 24) * 100}%">${this.fmtEn.hour(h0 + h * 36e5)}</span>`).join('')}</div>`,
     );
   }
-  // ---------- energy Sankey: grid, then the four groups, then the rooms that heat ----------
   lightAreas() {
     const reg = this.hass.entities || {},
       dev = this.hass.devices || {},

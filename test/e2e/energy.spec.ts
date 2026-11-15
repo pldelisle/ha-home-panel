@@ -360,6 +360,59 @@ test.describe('the detail on a tablet', () => {
     ]);
   });
 
+  // <hp-chart>'s `shape` and its width-gated first draw (ADR 0029): the element is proven by the harness (ADR 0005)
+  test('a change of shape draws a new chart instance, and a change of options of the same shape updates the one it has', async ({
+    house,
+  }) => {
+    await openDetail(house);
+    const mainChart = detail(house).locator('.inner > hp-chart');
+    // tag the instance the element holds (`chart`, private): the same object after an update, another after a new draw
+    await mainChart.evaluate(el => {
+      const chart = el as unknown as {chart: object; options: object; probe: object};
+      chart.probe = chart.chart;
+      chart.options = {...chart.options}; // new options, same shape
+    });
+    await house.page.waitForTimeout(300);
+    expect(
+      await mainChart.evaluate(
+        el => (el as unknown as {chart: object; probe: object}).chart === (el as unknown as {probe: object}).probe,
+      ),
+      'same shape',
+    ).toBe(true);
+    await rangeTab(house, 'Week').click();
+    await expect(mainTitle(house)).toHaveText('Last 7 days, hour by hour');
+    await expect
+      .poll(
+        () =>
+          mainChart.evaluate(
+            el => (el as unknown as {chart: object; probe: object}).chart !== (el as unknown as {probe: object}).probe,
+          ),
+        'another shape',
+      )
+      .toBe(true);
+  });
+
+  test('a chart in a hidden place is drawn once the place has a width, and writes no error while it waits', async ({
+    house,
+  }) => {
+    await openDetail(house);
+    // a chart of the detail's own kind, put in a hidden box of the detail's root (the context still reaches it), then shown
+    await detail(house).evaluate(el => {
+      const chart = el.shadowRoot!.querySelector('.donutchart hp-chart') as HTMLElement & {options: object};
+      const box = document.createElement('div');
+      box.id = 'probe';
+      box.hidden = true;
+      const probe = Object.assign(document.createElement('hp-chart'), {options: chart.options, height: 190});
+      box.append(probe);
+      el.shadowRoot!.append(box);
+    });
+    const probe = detail(house).locator('#probe hp-chart');
+    await house.page.waitForTimeout(500);
+    await expect(probe.locator('.apexcharts-canvas')).toHaveCount(0);
+    await detail(house).evaluate(el => ((el.shadowRoot!.querySelector('#probe') as HTMLElement).hidden = false));
+    await expect(probe.locator('.apexcharts-canvas')).toBeVisible();
+  });
+
   test('the detail has no serious or critical accessibility finding, charts drawn', async ({house}) => {
     await openDetail(house);
     const {violations} = await new AxeBuilder({page: house.page}).include('home-panel').analyze();
