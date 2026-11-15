@@ -5,11 +5,50 @@
 // Must not: call the API client or the cache, read the clock or the DOM, or keep a state between two calls.
 import {DASH} from '../../core/figures.ts';
 import type {HistoryPoint} from '../../core/ha.ts';
+import type {MessageKey} from '../../core/i18n/en.ts';
 import type {Formatters} from '../../core/i18n/format.ts';
-import type {Messages} from '../../core/i18n/messages.ts';
+import type {Translate} from '../../core/i18n/messages.ts';
 import type {SensorKind} from '../../providers/door-motion.ts';
 
-type Translate = Messages['t'];
+/** The words that differ by kind: a door opens and closes, a motion sensor detects; the rows, the tiles and the sheet read this one table. */
+const KIND_WORDS: Record<
+  SensorKind,
+  {
+    /** The line under the sheet's title. */
+    kind: MessageKey;
+    /** A period still on: "Still open", "Motion now". */
+    live: MessageKey;
+    /** A period that ended, with its length `{d}`: "Open for 3 min". */
+    lasted: MessageKey;
+    /** The count tile's label. */
+    count: MessageKey;
+    /** The total tile's label. */
+    total: MessageKey;
+    /** The strip's name for a screen reader. */
+    periods: MessageKey;
+    /** What the list says without a period. */
+    none: MessageKey;
+  }
+> = {
+  door: {
+    kind: 'security.door',
+    live: 'security.stillOpen',
+    lasted: 'security.openFor',
+    count: 'security.timesOpened',
+    total: 'security.totalOpen',
+    periods: 'security.openPeriods',
+    none: 'security.notOpenedInPeriod',
+  },
+  motion: {
+    kind: 'security.motion',
+    live: 'security.motionNow',
+    lasted: 'security.motionFor',
+    count: 'security.motionEvents',
+    total: 'security.totalMotion',
+    periods: 'security.motionPeriods',
+    none: 'security.noMotionInPeriod',
+  },
+};
 
 /** The two ranges the sheet offers; its axis is four spans of the day, or seven of the week. */
 export type SheetRange = 'day' | 'week';
@@ -95,16 +134,14 @@ export function eventRows(
   fmt: Formatters,
   t: Translate,
 ): EventRow[] {
-  const door = kind === 'door';
+  const words = KIND_WORDS[kind];
   return segs
     .slice(-EVENT_LIMIT)
     .reverse()
     .map(s => ({
       key: s.a,
       when: range === 'day' ? fmt.time(s.a) : `${fmt.date(s.a)} ${fmt.time(s.a)}`,
-      text: s.live
-        ? t(door ? 'security.stillOpen' : 'security.motionNow')
-        : t(door ? 'security.openFor' : 'security.motionFor', {d: durationText(s.b - s.a, t)}),
+      text: s.live ? t(words.live) : t(words.lasted, {d: durationText(s.b - s.a, t)}),
     }));
 }
 
@@ -121,11 +158,11 @@ export function statTiles(
   fmt: Formatters,
   t: Translate,
 ): StatTile[] {
-  const door = kind === 'door';
+  const words = KIND_WORDS[kind];
   const some = stats.count > 0;
   return [
-    {label: t(door ? 'security.timesOpened' : 'security.motionEvents'), value: String(stats.count)},
-    {label: t(door ? 'security.totalOpen' : 'security.totalMotion'), value: some ? durationText(stats.total, t) : DASH},
+    {label: t(words.count), value: String(stats.count)},
+    {label: t(words.total), value: some ? durationText(stats.total, t) : DASH},
     {label: t('security.longest'), value: some ? durationText(stats.longest, t) : DASH},
     {label: t('security.last'), value: stats.last === null ? DASH : t('security.ago', fmt.ago(stats.last, now))},
   ];
@@ -150,13 +187,13 @@ export interface SheetTexts {
 
 /** The sheet's words for a sensor and the range's label ("last 24 hours"). */
 export function sheetTexts(kind: SensorKind, name: string, rangeLabel: string, t: Translate): SheetTexts {
-  const door = kind === 'door';
+  const words = KIND_WORDS[kind];
   return {
     title: name,
-    kind: t(door ? 'security.door' : 'security.motion'),
+    kind: t(words.kind),
     heading: t('security.heading', {name, range: rangeLabel}),
-    strip: t(door ? 'security.openPeriods' : 'security.motionPeriods'),
-    empty: t(door ? 'security.notOpenedInPeriod' : 'security.noMotionInPeriod'),
+    strip: t(words.periods),
+    empty: t(words.none),
     loading: t('security.loading'),
     unavailable: t('security.unavailable'),
     overPeriod: t('security.overPeriod'),

@@ -17,7 +17,7 @@ src/features/security/
   inputs.ts                readSecurity(states, registries, names, sources): SecurityInputs
   model.ts                 securityModel(inputs, deps): SecurityViewModel (the camera tiles, the sensor rows, the summary lines, the Home card's)
   history.ts               segments, periodStats, axisTicks, durationText, eventRows, statTiles, sheetTexts: the history sheet's rules
-  activity.ts              newlyActive(prev, next): string[] (the glow rule), pure
+  activity.ts              activeOf(sensors), newlyActive(prev, next): string[] (the glow rule), pure
   security-pane.ts         <hp-security-pane>
   camera-card.ts           <hp-camera-card>
   sensor-card.ts           <hp-sensor-card>
@@ -38,4 +38,4 @@ src/features/security/
 
 ## The model and the sheet's rules
 
-`securityModel` takes the inputs and `{now, t, fmt}` and returns every string and flag the elements place: the pane's summary, the camera tiles (the snapshot with the ten-second stamp `Math.floor(now / 10000)`, the line under the name, the sheet's line), the sensor rows (`main` and the `sub` joined with " · ", the tone), the card's line and the Home card's. `sensorState`'s rules are copied as they were: a door's "for 12 min" is a catalog message over `fmt.ago`'s kind and count (no "ago", and the formatters hold no words), a closed door or an idle sensor says `fmt.ago` through the catalog, a battery under 20 percent is worth a word, and an unavailable sensor is "Offline" whatever else it says. `history.ts` is `sensSheet`'s data half: the on-periods of a sensor's states, their statistics, the axis, the last forty rows and the four tiles. `newlyActive` is `secWatch`'s rule over two readings. The snapshots, the "ago" lines and the idle clock are redrawn by `TickController` (`src/ui/controllers/tick.ts`).
+`securityModel` takes the inputs and `{now, t, fmt}` and returns every string and flag the elements place: the pane's summary, the camera tiles (the snapshot with the ten-second stamp `Math.floor(now / 10000)`, the line under the name, the sheet's line), the sensor rows (`main` and the `sub` joined with " · ", the tone), the card's line and the Home card's. `sensorState`'s rules are copied as they were: a door's "for 12 min" is a catalog message over `fmt.ago`'s kind and count (no "ago", and the formatters hold no words), a closed door or an idle sensor says `fmt.ago` through the catalog, a battery under 20 percent is worth a word, and an unavailable sensor is "Offline" whatever else it says. `history.ts` is `sensSheet`'s data half: the on-periods of a sensor's states, their statistics, the axis, the last forty rows and the four tiles. `newlyActive` is `secWatch`'s rule over two readings, and `activeOf` the reading the model puts on the Home card's half as `home.active`. The snapshots, the "ago" lines and the idle clock are redrawn by `TickController` (`src/ui/controllers/tick.ts`).

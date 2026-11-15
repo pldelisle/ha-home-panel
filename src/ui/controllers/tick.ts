@@ -1,6 +1,8 @@
-// A reactive controller that asks its host to redraw every `ms` while the host is on the page and active.
+// A reactive controller that asks its host to redraw every `ms` while the host is connected and says it is active.
 // Pattern: Lit reactive controller (Lit docs, Reactive Controllers); one interval per host, started in hostConnected and cleared
-// in hostDisconnected, so a host off the page holds no timer. Its three users: the camera snapshots' stamp, the "ago" lines, the idle clock.
+// in hostDisconnected, so a disconnected host holds no timer. The interval keeps running while the host is not active and each
+// tick is skipped: `active` is a getter the controller polls, it cannot announce a change back, and a skipped tick costs one call
+// where a paused one would need the host to restart it. Its three users: the camera snapshots' stamp, the "ago" lines, the idle clock.
 // Must not: start a timer before the host connects, keep one after it disconnects, or redraw a host that says it is not active.
 import type {ReactiveController, ReactiveControllerHost} from 'lit';
 

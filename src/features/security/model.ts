@@ -7,12 +7,11 @@
 import {capitalise} from '../../core/figures.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
 import type {Formatters} from '../../core/i18n/format.ts';
-import type {Messages} from '../../core/i18n/messages.ts';
+import type {Translate} from '../../core/i18n/messages.ts';
 import type {CameraInputs} from '../../providers/camera-source.ts';
 import type {SensorInputs, SensorKind} from '../../providers/door-motion.ts';
+import {activeOf, type ActiveSnapshot} from './activity.ts';
 import type {SecurityInputs} from './inputs.ts';
-
-type Translate = Messages['t'];
 
 /** How often a camera's snapshot is asked for again: the URL's stamp changes this often, in milliseconds. */
 export const SNAPSHOT_MS = 10_000;
@@ -20,8 +19,12 @@ export const SNAPSHOT_MS = 10_000;
 const BATTERY_LOW = 20;
 /** The Home card shows this many cameras. */
 const HOME_CAMERAS = 4;
-/** Home Assistant's camera states the catalog words; any other is shown capitalised. */
-const CAMERA_STATES = ['idle', 'recording', 'streaming'];
+/** Home Assistant's camera states the catalog words, each with its key; any other state is shown capitalised. */
+const CAMERA_STATES: ReadonlyMap<string, MessageKey> = new Map([
+  ['idle', 'security.state.idle'],
+  ['recording', 'security.state.recording'],
+  ['streaming', 'security.state.streaming'],
+]);
 
 export interface SecurityModelDeps {
   /** The instant the model is read at, in milliseconds: the stamp, every "ago" and every "for". */
@@ -93,8 +96,13 @@ export interface SecurityViewModel {
     rows: SensorRow[];
     /** What the card says without any sensor; null with some. */
     hint: string | null;
+    /** Each sensor on or not: the Home card keeps the previous one and glows for what `newlyActive` finds between the two. */
+    active: ActiveSnapshot;
   };
 }
+
+/** The line the pane, the Home card and the card's header build from the same facts, joined with " · " without the empty ones. */
+const joined = (...parts: string[]): string => parts.filter(Boolean).join(' · ');
 
 /** The snapshot's URL with the stamp the model gives it, so the browser asks again every ten seconds. */
 function stamped(picture: string, now: number): string {
@@ -103,26 +111,36 @@ function stamped(picture: string, now: number): string {
 
 /** A state the catalog words, else the state capitalised. */
 function stateText(state: string, t: Translate): string {
-  return CAMERA_STATES.includes(state) ? t(`security.state.${state}` as MessageKey) : capitalise(state);
+  const key = CAMERA_STATES.get(state);
+  return key ? t(key) : capitalise(state);
 }
 
-function cameraTile(camera: CameraInputs, {now, t, fmt}: SecurityModelDeps): CameraTile {
-  const {motion} = camera;
-  const moving = !!motion?.on;
-  const ago = motion && !moving ? fmt.ago(motion.since, now) : null;
+/** A camera's motion words: the tile's line ("Motion 5 min ago") and the sheet's fragment ("last motion 5 min ago"); null without a motion sensor. */
+function motionWords(
+  motion: CameraInputs['motion'],
+  {now, t, fmt}: SecurityModelDeps,
+): {when: string; line: string} | null {
+  if (!motion) return null;
+  if (motion.on) return {when: t('security.motionNow'), line: t('security.summary.motionNow')};
+  const ago = fmt.ago(motion.since, now);
+  return {when: t('security.motionAgo', ago), line: t('security.lastMotion', ago)};
+}
+
+function cameraTile(camera: CameraInputs, deps: SecurityModelDeps): CameraTile {
+  const {now, t} = deps;
+  const moving = !!camera.motion?.on;
+  const motion = motionWords(camera.motion, deps);
   const state = camera.available ? stateText(camera.state, t) : t('security.offline');
   return {
     id: camera.id,
     name: camera.name,
     picture: camera.available && camera.picture ? stamped(camera.picture, now) : null,
-    when: motion ? (moving ? t('security.motionNow') : t('security.motionAgo', ago!)) : state,
+    when: motion?.when ?? state,
     moving,
     offline: !camera.available,
     label: t('security.openLive', {name: camera.name}),
     tag: moving ? t('security.motionTag') : '',
-    detail: [state, motion ? (moving ? t('security.lineMotionNow') : t('security.lastMotion', ago!)) : '']
-      .filter(Boolean)
-      .join(' · '),
+    detail: joined(state, motion?.line ?? ''),
   };
 }
 
@@ -131,6 +149,8 @@ function forDuration(since: number, {now, t, fmt}: SecurityModelDeps): string {
   return t('security.forDuration', fmt.ago(since, now));
 }
 
+// a door's row and a motion sensor's differ in shape, not only in words (what an open door says, a motion sensor's light), so
+// each is written out rather than read from history.ts's table of keys by kind
 function sensorRow(sensor: SensorInputs, deps: SecurityModelDeps): SensorRow {
   const {now, t, fmt} = deps;
   const label = t('security.history', {name: sensor.name});
@@ -146,19 +166,16 @@ function sensorRow(sensor: SensorInputs, deps: SecurityModelDeps): SensorRow {
       ...base,
       tone: sensor.on ? 'warn' : '',
       main: t(sensor.on ? 'security.open' : 'security.closed'),
-      sub: [sensor.on ? forDuration(sensor.since, deps) : ago, low].filter(Boolean).join(' · '),
+      sub: joined(sensor.on ? forDuration(sensor.since, deps) : ago, low),
     };
   const lux = sensor.illuminance === null ? '' : t('security.lux', {n: String(Math.round(sensor.illuminance))});
   return {
     ...base,
     tone: sensor.on ? 'act' : '',
     main: t(sensor.on ? 'security.motionNow' : 'security.noMotion'),
-    sub: [sensor.on ? '' : ago, lux, low].filter(Boolean).join(' · '),
+    sub: joined(sensor.on ? '' : ago, lux, low),
   };
 }
-
-/** The line the pane, the Home card and the card's header build from the same three facts, joined with " · ". */
-const joined = (...parts: string[]): string => parts.filter(Boolean).join(' · ');
 
 export function securityModel(inputs: SecurityInputs, deps: SecurityModelDeps): SecurityViewModel {
   const {t} = deps;
@@ -168,16 +185,13 @@ export function securityModel(inputs: SecurityInputs, deps: SecurityModelDeps): 
   const open = doors.filter(door => door.on).length;
   const moving = inputs.sensors.some(sensor => sensor.kind === 'motion' && sensor.on);
   const count = t('security.camerasCount', {n: tiles.length});
-  const doorsLine = doors.length
-    ? open
-      ? t('security.doorsOpen', {n: open})
-      : t('security.summary.allDoorsClosed')
-    : '';
+  /** The doors' line, once there is a door: how many are open, else the closed message the line wants. */
+  const doorsLine = (closed: MessageKey): string => (open ? t('security.doorsOpen', {n: open}) : t(closed));
 
   return {
     summary: joined(
       tiles.length ? count : t('security.summary.noCameras'),
-      doorsLine,
+      doors.length ? doorsLine('security.summary.allDoorsClosed') : '',
       moving ? t('security.summary.motionNow') : '',
     ),
     cameras: {
@@ -196,21 +210,20 @@ export function securityModel(inputs: SecurityInputs, deps: SecurityModelDeps): 
       hidden: rows.length === 0,
       title: t('security.doorsMotion'),
       line: doors.length
-        ? open
-          ? {text: t('security.doorsOpen', {n: open}), warn: true}
-          : {text: t(doors.length === 1 ? 'security.doorClosed' : 'security.allDoorsClosed'), warn: false}
+        ? {text: doorsLine(doors.length === 1 ? 'security.doorClosed' : 'security.allDoorsClosed'), warn: open > 0}
         : null,
       rows,
     },
     home: {
       line: joined(
         tiles.length ? count : '',
-        doorsLine,
+        doors.length ? doorsLine('security.summary.allDoorsClosed') : '',
         t(moving ? 'security.summary.motionNow' : 'security.summary.noMotion'),
       ),
       cameras: tiles.slice(0, HOME_CAMERAS),
       rows,
       hint: rows.length ? null : t('security.noSensorsYet'),
+      active: activeOf(inputs.sensors),
     },
   };
 }

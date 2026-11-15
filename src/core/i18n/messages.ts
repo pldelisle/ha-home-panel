@@ -19,6 +19,9 @@ export interface Messages {
   readonly t: (key: MessageKey, values?: MessageValues) => string;
 }
 
+/** The `t` a pure module takes as an argument, so it words its messages without owning a locale. */
+export type Translate = Messages['t'];
+
 const shipped: Catalogs = {en, fr};
 
 export function createMessages(

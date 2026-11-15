@@ -87,9 +87,6 @@
       "key": "security.motionTag"
     },
     {
-      "key": "security.lineMotionNow"
-    },
-    {
       "key": "security.lastMotion",
       "values": {
         "kind": "now"

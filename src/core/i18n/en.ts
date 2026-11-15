@@ -376,7 +376,6 @@ export const en = {
   'security.motionNow': 'Motion now',
   'security.motionAgo': 'Motion {kind, select, now {just now} minutes {{n} min ago} hours {{n} h ago} other {{date}}}',
   'security.motionTag': '· motion',
-  'security.lineMotionNow': 'motion now',
   'security.lastMotion':
     'last motion {kind, select, now {just now} minutes {{n} min ago} hours {{n} h ago} other {{date}}}',
   'security.doorsMotion': 'Doors & motion',

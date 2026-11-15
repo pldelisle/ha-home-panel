@@ -376,7 +376,6 @@ export const fr: Record<MessageKey, string> = {
   'security.motionAgo':
     "Mouvement {kind, select, now {à l'instant} minutes {il y a {n} min} hours {il y a {n} h} other {le {date}}}",
   'security.motionTag': '· motion',
-  'security.lineMotionNow': 'mouvement en cours',
   'security.lastMotion':
     "dernier mouvement {kind, select, now {à l'instant} minutes {il y a {n} min} hours {il y a {n} h} other {le {date}}}",
   'security.doorsMotion': 'Portes et mouvement',

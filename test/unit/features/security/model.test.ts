@@ -75,6 +75,7 @@ describe('the test house (no camera, a closed door and a hall that moves), as th
     expect(vm.sensors.rows[0].label).toBe('Front door history');
     expect(vm.home).toMatchObject({line: 'all doors closed · motion now', cameras: [], hint: null});
     expect(vm.home.rows).toEqual(vm.sensors.rows);
+    expect(vm.home.active).toEqual({'binary_sensor.front_door': false, 'binary_sensor.hall_motion': true});
   });
 
   test('in French, the words of the rewrite layer', () => {
