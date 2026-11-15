@@ -227,11 +227,13 @@ test.describe('on a tablet', () => {
   }) => {
     await expect.poll(() => powerReads(house)).toBe(2);
     const atStart = await energyReads(house);
-    expect(atStart, 'the hourly week, the water heater’s day and the meter’s 33 days').toBeGreaterThanOrEqual(3);
+    // the hourly week and the water heater's day (the two power reads), the meter's 33 days, and the meter's 33 days a second time: the
+    // panel's first load runs under the config it has before the house's own arrives, and the shell empties the cache with the new one
+    expect(atStart, 'the shared windows at start').toBe(4);
     expect(await yearReads(house), 'at start').toBe(0);
     await house.tab('energy');
     await expect(water(house).locator('.whleg')).toBeVisible();
-    expect(await yearReads(house), 'opening Energy').toBe(1);
+    await expect.poll(() => yearReads(house), 'opening Energy').toBe(1);
     expect(await energyReads(house), 'opening Energy').toBe(atStart + 1);
     await house.tab('home');
     await house.tab('energy');

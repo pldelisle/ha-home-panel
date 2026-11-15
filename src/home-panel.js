@@ -1979,6 +1979,7 @@ export class LegacyPanel {
         ]);
       else clear.push('Hydro-Québec updating');
     }
+    // the Hydro-Québec sensor's age, the heat pump and the Hilo gateway are read raw too: #254 (the Status checks' rules over the providers) replaces these reads
     const hp = this.st(this.E.hp);
     if (hp) {
       if (!ok(hp))
@@ -2072,9 +2073,8 @@ export class LegacyPanel {
     const challenge = this.hiloChallenge(),
       dst = challenge ? (challenge.state === 'on' ? 'reduction' : challenge.state) : null;
     if (['pre_heat', 'reduction', 'recovery'].includes(dst)) {
-      // the phases' times are the sensor's attributes, which the provider does not read until the live pill moves (#255)
-      const ev = (this.st(this.E.defi).attributes.next_events || [])[0] || {},
-        ph = ev.phases || {};
+      const ev = challenge.nextEvent ?? {phases: {}, used: null, allowed: null},
+        ph = ev.phases;
       const T = k => {
         const v = Date.parse(String(ph[k] || '').replace(' ', 'T'));
         return Number.isFinite(v) ? v : null;
@@ -2120,8 +2120,8 @@ export class LegacyPanel {
             <div class="lpt">${[p0, p1, p2, p3].map(t => `<span style="left:${pc(t)}%">${this.fmtEn.time(t).replace(/ [ap]m$/, '')}</span>`).join('')}</div>`;
               })()
             : '';
-        const used = ev.used_kWh,
-          allowed = ev.allowed_kWh,
+        const used = ev.used,
+          allowed = ev.allowed,
           g = this.powerNow().grid; // read when the card is drawn, as the meter was
         const meta = [
           inside != null ? `<b>${inside.toFixed(1)}°</b> inside` : '',
@@ -3128,13 +3128,14 @@ export class LegacyPanel {
     const L = this.powerNow(),
       temps = L.rooms.map(r => r.temperature).filter(v => v != null),
       avg = temps.length ? sum(temps) / temps.length : null;
-    const hpOn = !!L.heatPump?.on;
+    const pump = L.heatPump,
+      hpOn = !!pump?.on;
     const n = L.rooms.filter(r => r.heating).length,
-      hp = this.st(this.E.hp);
+      hp = this.st(this.E.hp); // its words and attributes; whether it is there and available is the provider's
     const B = this.hpBrand(),
-      hpSb = !hp
+      hpSb = !pump
         ? 'Not found'
-        : !ok(hp)
+        : !pump.available
           ? `${B} · offline`
           : hp.state === 'off'
             ? `${B} · off`
@@ -3170,8 +3171,10 @@ export class LegacyPanel {
               nm: 'Heat pump',
               sb: hpSb,
               tv:
-                ok(hp) && hp.attributes.current_temperature != null ? f1(hp.attributes.current_temperature) + '°' : '–',
-              cls: !ok(hp) ? 'bad' : hpOn ? 'on' : '',
+                pump?.available && hp.attributes.current_temperature != null
+                  ? f1(hp.attributes.current_temperature) + '°'
+                  : '–',
+              cls: !pump?.available ? 'bad' : hpOn ? 'on' : '',
             },
           ]
         : []),
@@ -4006,7 +4009,7 @@ export class LegacyPanel {
     const hp = this.st(this.E.hp),
       hpTxt = !this.E.hp
         ? ''
-        : !ok(hp)
+        : !L.heatPump?.available
           ? 'heat pump offline'
           : hp.state === 'off'
             ? 'heat pump off'
@@ -4234,7 +4237,8 @@ export class LegacyPanel {
   }
   climInfo() {
     const L = this.powerNow();
-    const hpOn = !!L.heatPump?.on;
+    const up = !!L.heatPump?.available,
+      hpOn = !!L.heatPump?.on;
     const C = this.CR[this.crange],
       R = CRANGE[this.crange],
       rng = pts => {
@@ -4251,16 +4255,16 @@ export class LegacyPanel {
       note = '';
     if (this.climSel === 'hp') {
       const hp = this.st(this.E.hp),
-        a = ok(hp) ? hp.attributes : {};
+        a = up ? hp.attributes : {};
       title = 'Heat pump';
       sub = this.hpBrand() === 'Fujitsu' ? 'Fujitsu, through the FGLair integration' : this.hpBrand();
       t = a.current_temperature != null ? +a.current_temperature : null;
       sp = hp && hp.state !== 'off' ? a.temperature : null;
-      pill = `<span class="pill ${hpOn ? 'on' : !ok(hp) ? 'bad' : ''}">${!ok(hp) ? 'Offline' : hp.state === 'off' ? 'Off' : `${cap(a.hvac_action || hp.state)}${sp != null ? ' to ' + sp + '°' : ''}`}</span>`;
+      pill = `<span class="pill ${hpOn ? 'on' : !up ? 'bad' : ''}">${!up ? 'Offline' : hp.state === 'off' ? 'Off' : `${cap(a.hvac_action || hp.state)}${sp != null ? ' to ' + sp + '°' : ''}`}</span>`;
       pts = C ? C.hp : [];
       tiles = [
         ['Range, ' + R.short, rng(pts), '°'],
-        ['Last update', ok(hp) ? this.fmtEn.time(new Date(hp.last_updated)) : '–', ''],
+        ['Last update', up ? this.fmtEn.time(new Date(hp.last_updated)) : '–', ''],
       ];
       note =
         'Readings come from the unit itself. A break in the line means the integration was offline. The unit has no power sensor, so its electricity is counted in Rest of home.';
@@ -4293,7 +4297,7 @@ export class LegacyPanel {
       sub = 'Hilo thermostat';
       t = r.temperature;
       sp = r.setpoint;
-      pill = `<span class="pill ${r.heating ? 'on' : !r.available ? 'bad' : ''}">${!r.available ? 'Unavailable' : r.heating ? `Heating to ${sp}°` : sp > 5.5 ? `Holding ${sp}°` : 'Off'}</span>`;
+      pill = `<span class="pill ${r.heating ? 'on' : !r.available ? 'bad' : ''}">${!r.available ? 'Unavailable' : r.heating ? `Heating to ${sp ?? '–'}°` : sp > 5.5 ? `Holding ${sp}°` : 'Off'}</span>`;
       pts = C ? (C.rooms[r.key] || []).map(p => [p[0], p[1]]) : [];
       tiles = [
         ['Range, ' + R.short, rng(pts), '°'],
@@ -4316,13 +4320,14 @@ export class LegacyPanel {
       if (this.climSel === 'house') d = {sp: undefined, lo: 5, hi: 30, ed: false, state: `${f1(t)}° average`};
       else if (this.climSel === 'hp') {
         const hp = this.st(this.E.hp),
-          a = ok(hp) ? hp.attributes : {};
+          up = !!this.powerNow().heatPump?.available,
+          a = up ? hp.attributes : {};
         const mode = this.pend('hp:mode', hp && hp.state);
         d = {
-          sp: !ok(hp) || ['off', 'fan_only', 'dry'].includes(mode) ? null : +this.pend('hp:sp', a.temperature),
+          sp: !up || ['off', 'fan_only', 'dry'].includes(mode) ? null : +this.pend('hp:sp', a.temperature),
           lo: a.min_temp ?? 16,
           hi: a.max_temp ?? 30,
-          ed: ok(hp) && !['off', 'fan_only', 'dry'].includes(mode),
+          ed: up && !['off', 'fan_only', 'dry'].includes(mode),
           state: pill.replace(/<[^>]+>/g, ''),
         };
       } else {

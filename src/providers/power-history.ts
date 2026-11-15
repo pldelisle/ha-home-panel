@@ -107,8 +107,8 @@ export function powerWindows(
 }
 
 /**
- * The daily mean power of the same sensors for 400 days, the window Energy's detail ranges over and the legacy load asks: one
- * definition, so the shared cache answers the second asker (ADR 0028).
+ * The daily mean power of the same sensors for 400 days, the window Energy's detail ranges over: one
+ * definition for the card's loader (ADR 0028). The legacy panel no longer asks it; its Car card's daily bars read the charger in its own temperatures call.
  */
 export const dailyPowerWindow = (now: number, config: Pick<ResolvedConfig, 'entities' | 'rooms'>): StatisticsWindow => {
   const flow = flowIds(config);
