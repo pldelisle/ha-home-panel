@@ -30,12 +30,16 @@ const openTab = async (house: House) => {
 };
 
 // the statistics requests of the history's power windows: the grid with the loads for a week by the hour and for a year by the day, and the
-// water heater for a day by five minutes
+// water heater for a day by five minutes (every one names the water heater's power; the legacy panel's own reads, the Car card's daily
+// bars among them, do not)
+const WATER_POWER = 'sensor.water_heater_power';
 const powerReads = async (house: House) =>
-  (await house.asked(STATISTICS)).filter(m => {
-    const ids = m.statistic_ids as string[];
-    return ids.includes(GRID) || (m.period === '5minute' && ids.includes('sensor.water_heater_temperature'));
-  }).length;
+  (await house.asked(STATISTICS)).filter(m => (m.statistic_ids as string[]).includes(WATER_POWER)).length;
+
+// the one window only Energy reads, the year of daily power, which the card asks when it first connects
+const yearReads = async (house: House) =>
+  (await house.asked(STATISTICS)).filter(m => m.period === 'day' && (m.statistic_ids as string[]).includes(WATER_POWER))
+    .length;
 
 // the energy windows as a whole: the power windows and the meter's 33 days (the meter's today, by the hour, is not counted)
 const energyReads = async (house: House) =>
@@ -145,13 +149,18 @@ test.describe('on a phone', () => {
     await expect(water(house)).toHaveCount(0);
   });
 
-  // the card's history is the pane's `EnergyHistory`, which finds every window in the cache the legacy load filled (deferred to #241: the first connect)
-  test('the card’s history reads no window of its own: its tiles fill from the cache', async ({house}) => {
-    await expect.poll(() => powerReads(house)).toBe(3);
+  // the card's history is the pane's `EnergyHistory`: the windows the legacy panel shares are in the cache from the start, and the year of
+  // daily power, which only Energy reads, is asked when the card first connects
+  test('the card’s tiles fill from the shared windows, and the year of days is asked when it first connects', async ({
+    house,
+  }) => {
+    await expect.poll(() => powerReads(house)).toBe(2);
     const atStart = await energyReads(house);
+    expect(await yearReads(house), 'at start').toBe(0);
     await openTab(house);
     await expect(card(house).locator('.tile .v').first()).not.toHaveText(/^–/);
-    expect(await energyReads(house), 'opening Energy').toBe(atStart);
+    await expect.poll(() => yearReads(house), 'opening Energy').toBe(1);
+    expect(await energyReads(house), 'opening Energy').toBe(atStart + 1);
   });
 
   test('a light change gives zero mutations in the pane, its card and the flow', async ({house}) => {
@@ -210,23 +219,24 @@ test.describe('on a tablet', () => {
     expect(cards!.y, 'the cards come after the detail').toBeGreaterThan(inline!.y + inline!.height - 1);
   });
 
-  // The history is one load for the panel (ADR 0028). The ticket asks that the energy windows are requested when the card first connects and
-  // not at start; that is deferred to #241: the legacy `loadHistory` still asks the shared cache for them at start (Home, the stack and the
-  // header read `this.H.*`). What this proves is that the pane's `EnergyHistory` adds no read of its own, so each
-  // window, the meter's 33 days included, is read once for the panel, however often the tab is opened within the fifteen minutes.
-  test('the pane adds no read to the legacy load’s: opening the tab, and opening it again, read no energy window more', async ({
+  // The history is one load for the panel (ADR 0028). The legacy panel asks the shared windows at start (its header, the stack and the Home
+  // tiles read them), and Energy asks the year of daily power when its card first connects, not at start. Each window is read once for the
+  // panel, the meter's 33 days included, however often the tab is opened within the fifteen minutes.
+  test('opening the tab asks the year of days once, the shared windows no more, and opening it again nothing', async ({
     house,
   }) => {
-    await expect.poll(() => powerReads(house)).toBe(3);
+    await expect.poll(() => powerReads(house)).toBe(2);
     const atStart = await energyReads(house);
-    expect(atStart, 'the power windows and the meter’s 33 days').toBeGreaterThanOrEqual(4);
+    expect(atStart, 'the hourly week, the water heater’s day and the meter’s 33 days').toBeGreaterThanOrEqual(3);
+    expect(await yearReads(house), 'at start').toBe(0);
     await house.tab('energy');
     await expect(water(house).locator('.whleg')).toBeVisible();
-    expect(await energyReads(house), 'opening Energy').toBe(atStart);
+    expect(await yearReads(house), 'opening Energy').toBe(1);
+    expect(await energyReads(house), 'opening Energy').toBe(atStart + 1);
     await house.tab('home');
     await house.tab('energy');
     await expect(water(house).locator('.whleg')).toBeVisible();
-    expect(await energyReads(house), 'opening Energy again').toBe(atStart);
+    expect(await energyReads(house), 'opening Energy again').toBe(atStart + 1);
   });
 
   test('a light change gives zero mutations in the pane', async ({house}) => {

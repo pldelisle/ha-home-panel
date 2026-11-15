@@ -1,11 +1,13 @@
 {
-  "about": "The English messages the Energy move's model introduced (src/core/i18n/en.ts, energy.*, the detail's (#240) included), each with sample values. test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer made of the English; `frame` is the sentence a text is read in where the layer translates it only there, `written` is French the layer does not make (a text it left in English, or a combination of words it has no entry for), `fr` the values French writes differently. The legacy panel still draws all of it until #241, so no map entry is deleted yet. Deleted with the layer in phase 4.",
+  "about": "The English messages the Energy move's model introduced (src/core/i18n/en.ts, energy.*, the detail's (#240) included), each with sample values. test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer made of the English; `frame` is the sentence a text is read in where the layer translates it only there, `written` is French the layer does not make (a text it left in English, or a combination of words it has no entry for), `fr` the values French writes differently. #241 deleted the map entries the legacy panel no longer renders: `was` is what the layer made of the English before, `after` what it makes of it now (a pattern of the layer, `(.+): (.+)`, still reads some of the dead texts; nothing shows them). The entries another screen still renders stay: Idle, Heating and Water heater (the Home water tile and the live pill), `{n} kWh today`, `low rate`, `medium rate` and `rate unknown` (the Home energy tile's line), `Heating · {n} kW` and `Heating, {n} days` (the Climate rooms and sheet), `at {n}¢/kWh` (the Car sheet) and `Challenge:` (the upcoming list). Deleted with the layer in phase 4.",
   "messages": [
     {
-      "key": "energy.card.title"
+      "key": "energy.card.title",
+      "was": "Énergie de la maison"
     },
     {
-      "key": "energy.open"
+      "key": "energy.open",
+      "was": "Ouvrir les détails de l'énergie"
     },
     {
       "key": "energy.close"
@@ -17,7 +19,9 @@
       },
       "fr": {
         "rate": "tarif bas"
-      }
+      },
+      "was": "Réseau seulement · tarif bas",
+      "after": "Grid only · tarif bas"
     },
     {
       "key": "energy.gridOnly",
@@ -26,7 +30,9 @@
       },
       "fr": {
         "rate": "tarif inconnu"
-      }
+      },
+      "was": "Réseau seulement · tarif inconnu",
+      "after": "Grid only · tarif inconnu"
     },
     {
       "key": "energy.summary",
@@ -37,7 +43,8 @@
       },
       "fr": {
         "rate": "tarif bas"
-      }
+      },
+      "was": "Réseau 2,30 kW · chauffage 1,10 kW · Hilo tarif bas"
     },
     {
       "key": "energy.summary",
@@ -76,19 +83,24 @@
       "written": "Réseau – kW · chauffage 0,00 kW · Hilo tarif moyen"
     },
     {
-      "key": "energy.tier.low"
+      "key": "energy.tier.low",
+      "was": "Palier bas"
     },
     {
-      "key": "energy.tier.medium"
+      "key": "energy.tier.medium",
+      "was": "Palier moyen"
     },
     {
-      "key": "energy.tier.challenge"
+      "key": "energy.tier.challenge",
+      "was": "Tarif de défi"
     },
     {
-      "key": "energy.tier.current"
+      "key": "energy.tier.current",
+      "was": "Tarif actuel"
     },
     {
-      "key": "energy.tier.unknown"
+      "key": "energy.tier.unknown",
+      "was": "Tarif inconnu"
     },
     {
       "key": "energy.rate.low"
@@ -98,17 +110,11 @@
     },
     {
       "key": "energy.rate.challenge",
-      "frame": {
-        "en": "Grid only · ",
-        "fr": "Réseau seulement · "
-      }
+      "was": "tarif de défi"
     },
     {
       "key": "energy.rate.current",
-      "frame": {
-        "en": "Grid only · ",
-        "fr": "Réseau seulement · "
-      }
+      "was": "tarif actuel"
     },
     {
       "key": "energy.rate.unknown"
@@ -132,7 +138,8 @@
         "heat": "1.10",
         "water": "120 W",
         "ev": "0 W"
-      }
+      },
+      "was": "Le réseau fournit 850 W à la maison; chauffage 1,10; chauffe-eau 120 W; recharge VÉ 0 W"
     },
     {
       "key": "energy.flow.label",
@@ -141,7 +148,8 @@
         "heat": "1.10",
         "water": "1.20",
         "ev": "7.10"
-      }
+      },
+      "was": "Le réseau fournit 2,30 à la maison; chauffage 1,10; chauffe-eau 1,20; recharge VÉ 7,10"
     },
     {
       "key": "energy.flow.label",
@@ -154,25 +162,32 @@
       "written": "Le réseau fournit – à la maison; chauffage 0 W; chauffe-eau 0 W; recharge VÉ 0 W"
     },
     {
-      "key": "energy.flow.grid"
+      "key": "energy.flow.grid",
+      "was": "RÉSEAU"
     },
     {
-      "key": "energy.flow.home"
+      "key": "energy.flow.home",
+      "was": "kW · MAISON"
     },
     {
-      "key": "energy.flow.water"
+      "key": "energy.flow.water",
+      "was": "CHAUFFE-EAU"
     },
     {
-      "key": "energy.flow.heat"
+      "key": "energy.flow.heat",
+      "was": "CHAUFFAGE"
     },
     {
-      "key": "energy.flow.ev"
+      "key": "energy.flow.ev",
+      "was": "RECHARGE VÉ"
     },
     {
-      "key": "energy.flow.rest"
+      "key": "energy.flow.rest",
+      "was": "Reste de la maison"
     },
     {
-      "key": "energy.importing"
+      "key": "energy.importing",
+      "was": "Consomme"
     },
     {
       "key": "energy.idle"
@@ -187,14 +202,17 @@
       },
       "fr": {
         "state": "Chauffe"
-      }
+      },
+      "was": "Chauffe, chaud"
     },
     {
       "key": "energy.roomsOn",
       "values": {
         "on": 3,
         "total": 6
-      }
+      },
+      "was": "3 sur 6 pièces en marche",
+      "after": "3 of 6 rooms : activé"
     },
     {
       "key": "energy.unavailable"
@@ -203,13 +221,18 @@
       "key": "energy.today"
     },
     {
-      "key": "energy.tile.heat"
+      "key": "energy.tile.heat",
+      "was": "Chauffage des pièces",
+      "after": "Chauffage : Room"
     },
     {
-      "key": "energy.tile.water"
+      "key": "energy.tile.water",
+      "was": "Chauffe-eau",
+      "after": "Chauffage : Water"
     },
     {
-      "key": "energy.tile.ev"
+      "key": "energy.tile.ev",
+      "was": "Recharge VÉ"
     },
     {
       "key": "energy.last30"
@@ -227,31 +250,37 @@
       "key": "energy.water.idle"
     },
     {
-      "key": "energy.water.temperature"
+      "key": "energy.water.temperature",
+      "was": "Température de l’eau"
     },
     {
-      "key": "energy.water.power"
+      "key": "energy.water.power",
+      "was": "Puissance de chauffe",
+      "after": "Chauffe : alimentation"
     },
     {
       "key": "energy.water.last24",
       "values": {
         "kwh": "3.2",
         "cycles": 0
-      }
+      },
+      "was": "24 dernières heures : 3,2 kWh en 0 cycles de chauffe."
     },
     {
       "key": "energy.water.last24",
       "values": {
         "kwh": "3.2",
         "cycles": 1
-      }
+      },
+      "was": "24 dernières heures : 3,2 kWh en 1 cycle de chauffe."
     },
     {
       "key": "energy.water.last24",
       "values": {
         "kwh": "3.2",
         "cycles": 2
-      }
+      },
+      "was": "24 dernières heures : 3,2 kWh en 2 cycles de chauffe."
     },
     {
       "key": "energy.water.average",
@@ -259,10 +288,7 @@
         "days": 14,
         "kwh": "4.1"
       },
-      "frame": {
-        "en": "Last 24 hours: 3.2 kWh over 2 heating cycles. ",
-        "fr": "24 dernières heures\u00a0: 3,2 kWh en 2 cycles de chauffe. "
-      }
+      "was": "Moyenne sur 14 jours : 4,1 kWh par jour."
     },
     {
       "key": "energy.water.barTitle",
@@ -279,7 +305,9 @@
       "values": {
         "low": 45,
         "high": 55
-      }
+      },
+      "was": "Température de l’eau de 45 à 55 degrés et puissance de chauffe, 24 dernières heures",
+      "after": "Chauffage : Water temperature 45 to 55 degrees and : alimentation, dernières 24 heures"
     },
     {
       "key": "energy.hilo.title"
@@ -288,16 +316,20 @@
       "key": "energy.hilo.medium"
     },
     {
-      "key": "energy.hilo.reward"
+      "key": "energy.hilo.reward",
+      "was": "Récompense"
     },
     {
-      "key": "energy.hilo.rewards"
+      "key": "energy.hilo.rewards",
+      "was": "Récompenses"
     },
     {
-      "key": "energy.challenge.unknown"
+      "key": "energy.challenge.unknown",
+      "was": "État du défi inconnu"
     },
     {
-      "key": "energy.challenge.none"
+      "key": "energy.challenge.none",
+      "was": "Aucun défi prévu"
     },
     {
       "key": "energy.challenge.phase",
@@ -312,28 +344,28 @@
       "key": "energy.phase.appreciation",
       "frame": {
         "en": "Challenge: ",
-        "fr": "Défi\u00a0: "
+        "fr": "Défi : "
       }
     },
     {
       "key": "energy.phase.preHeat",
       "frame": {
         "en": "Challenge: ",
-        "fr": "Défi\u00a0: "
+        "fr": "Défi : "
       }
     },
     {
       "key": "energy.phase.reduction",
       "frame": {
         "en": "Challenge: ",
-        "fr": "Défi\u00a0: "
+        "fr": "Défi : "
       }
     },
     {
       "key": "energy.phase.recovery",
       "frame": {
         "en": "Challenge: ",
-        "fr": "Défi\u00a0: "
+        "fr": "Défi : "
       }
     },
     {
@@ -402,14 +434,15 @@
       "fr": {
         "tier": "Palier bas",
         "challenge": "Aucun défi prévu"
-      }
+      },
+      "was": "Palier bas · Aucun défi prévu"
     },
     {
       "key": "energy.historyFailed",
       "values": {
         "reason": "timeout"
       },
-      "written": "L'historique n'a pas pu être chargé\u00a0: timeout. Les valeurs en direct continuent de se mettre à jour."
+      "written": "L'historique n'a pas pu être chargé : timeout. Les valeurs en direct continuent de se mettre à jour."
     },
     {
       "key": "energy.detail.loading"
@@ -435,7 +468,7 @@
       "fr": {
         "when": "17 h"
       },
-      "written": "Heure la plus chargée\u00a0: 4,2 kWh, 17 h. Touchez une barre pour voir ce qui fonctionnait."
+      "written": "Heure la plus chargée : 4,2 kWh, 17 h. Touchez une barre pour voir ce qui fonctionnait."
     },
     {
       "key": "energy.detail.busiest",
@@ -446,10 +479,11 @@
       "fr": {
         "when": "lun. 17 h"
       },
-      "written": "Heure la plus chargée\u00a0: 4,2 kWh, lun. 17 h. Touchez une barre pour voir ce qui fonctionnait."
+      "written": "Heure la plus chargée : 4,2 kWh, lun. 17 h. Touchez une barre pour voir ce qui fonctionnait."
     },
     {
-      "key": "energy.detail.noHour"
+      "key": "energy.detail.noHour",
+      "was": "Pas encore d'heure complète aujourd'hui."
     },
     {
       "key": "energy.detail.monthSum",
@@ -459,10 +493,12 @@
         "water": 90,
         "ev": 52,
         "rest": 60
-      }
+      },
+      "was": "612 kWh en 30 jours : chauffage 410, chauffe-eau 90, recharge VÉ 52, reste de la maison 60."
     },
     {
-      "key": "energy.detail.yearCaption"
+      "key": "energy.detail.yearCaption",
+      "was": "12 derniers mois. Les mois avec des données manquantes paraissent plus courts."
     },
     {
       "key": "energy.detail.yearPeak",
@@ -472,13 +508,16 @@
       },
       "fr": {
         "month": "janvier"
-      }
+      },
+      "was": "12 derniers mois. Le chauffage a culminé en janvier : 450 kWh. Les mois avec des données manquantes paraissent plus courts."
     },
     {
-      "key": "energy.sankey.title"
+      "key": "energy.sankey.title",
+      "was": "Où va l’électricité"
     },
     {
-      "key": "energy.sankey.period"
+      "key": "energy.sankey.period",
+      "was": "Période du diagramme"
     },
     {
       "key": "energy.sankey.now"
@@ -487,13 +526,16 @@
       "key": "energy.days30"
     },
     {
-      "key": "energy.sankey.noteNow"
+      "key": "energy.sankey.noteNow",
+      "was": "Puissance en direct : le compteur Hilo à gauche, le capteur de chaque appareil à droite.",
+      "after": "Live : alimentation : the Hilo meter on the left, each device's own sensor on the right."
     },
     {
       "key": "energy.sankey.noteToday",
       "values": {
         "kwh": "12.3"
-      }
+      },
+      "was": "Énergie depuis minuit, 12,3 kWh jusqu’ici."
     },
     {
       "key": "energy.sankey.note30",
@@ -503,25 +545,32 @@
       "written": "30 derniers jours, 612 kWh en tout."
     },
     {
-      "key": "energy.sankey.noData"
+      "key": "energy.sankey.noData",
+      "was": "Pas encore de données."
     },
     {
-      "key": "energy.sankey.empty"
+      "key": "energy.sankey.empty",
+      "was": "Pas encore de données"
     },
     {
-      "key": "energy.sankey.grid"
+      "key": "energy.sankey.grid",
+      "was": "Réseau"
     },
     {
-      "key": "energy.sankey.otherRooms"
+      "key": "energy.sankey.otherRooms",
+      "was": "Autres pièces"
     },
     {
-      "key": "energy.sankey.label"
+      "key": "energy.sankey.label",
+      "was": "Électricité du réseau, répartie entre le chauffage des pièces, l’eau chaude, la recharge du véhicule et le reste de la maison"
     },
     {
-      "key": "energy.donut.title"
+      "key": "energy.donut.title",
+      "was": "Où est allée l'énergie"
     },
     {
-      "key": "energy.donut.hint"
+      "key": "energy.donut.hint",
+      "was": "30 derniers jours. Le reste de la maison comprend tout ce qui n'a pas son propre capteur de puissance, y compris la thermopompe."
     },
     {
       "key": "energy.donut.total"
@@ -536,7 +585,8 @@
       "key": "energy.totals.title"
     },
     {
-      "key": "energy.totals.hint"
+      "key": "energy.totals.hint",
+      "was": "Du compteur intelligent Hilo"
     },
     {
       "key": "energy.totals.today"
@@ -557,34 +607,40 @@
       "key": "energy.totals.perDay",
       "values": {
         "kwh": "20.4"
-      }
+      },
+      "was": "20,4 kWh par jour"
     },
     {
       "key": "energy.totals.soFar"
     },
     {
-      "key": "energy.totals.ev"
+      "key": "energy.totals.ev",
+      "was": "VÉ, 30 jours"
     },
     {
       "key": "energy.totals.chargingDays",
       "values": {
         "n": 0
-      }
+      },
+      "was": "0 jours de recharge"
     },
     {
       "key": "energy.totals.chargingDays",
       "values": {
         "n": 1
-      }
+      },
+      "was": "1 jour de recharge"
     },
     {
       "key": "energy.totals.chargingDays",
       "values": {
         "n": 6
-      }
+      },
+      "was": "6 jours de recharge"
     },
     {
-      "key": "energy.totals.rate"
+      "key": "energy.totals.rate",
+      "was": "Tarif actuel"
     },
     {
       "key": "energy.totals.rateTier",
@@ -593,7 +649,8 @@
       },
       "fr": {
         "tier": "palier bas"
-      }
+      },
+      "was": "Hilo palier bas"
     },
     {
       "key": "energy.totals.rateTier",

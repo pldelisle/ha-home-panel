@@ -69,6 +69,21 @@ test('the Home kWh fragments are French', () => {
   expect(frText('Idle · 34.5 kWh today')).toBe("Au repos · 34,5 kWh aujourd'hui");
 });
 
+// What the legacy panel still says of energy after the Energy move's deletion (#241), written out in full: the Home energy tile's line
+// for each tier it names, the water tile, the Climate rooms' draw and the stack's and the live pill's words. The entries these use stay in the map.
+test('the energy words the legacy panel still draws are French', () => {
+  const frText = frTextFor([]);
+  expect(frText('Now · 12.3 kWh today · low rate')).toBe("Maintenant · 12,3 kWh aujourd'hui · tarif bas");
+  expect(frText('Now · 12.3 kWh today · medium rate')).toBe("Maintenant · 12,3 kWh aujourd'hui · tarif moyen");
+  expect(frText('Now · low rate')).toBe('Maintenant · tarif bas');
+  expect(frText('Heating · 3.2 kWh today')).toBe("Chauffe · 3,2 kWh aujourd'hui");
+  expect(frText('Water heater')).toBe('Chauffe-eau');
+  expect(frText('Heating · 1.2 kW')).toBe('Chauffe · 1,2 kW');
+  expect(frText('Heating, 7 days')).toBe('Chauffage, 7 jours');
+  expect(frText('Challenge: pre_heat')).toBe('Défi\u00a0: préchauffage');
+  expect(frText('at 7¢/kWh')).toBe('à 7 ¢/kWh');
+});
+
 // The Home tile's Air line ("1 purifier · Office: CO₂ 1,500, VOC 400") and the stack's air card are still the legacy panel's own
 // English, so the layer keeps the entry that says COV, as it did before the Air move's deletion (#234).
 test('the Home tile line for a room with poor CO₂ and VOC reads COV, and the stack card keeps its words', () => {

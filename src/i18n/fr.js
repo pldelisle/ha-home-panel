@@ -489,93 +489,16 @@ export const FR_MAP = {
   steady: 'stable',
   'A JavaScript library for interactive maps': 'Une bibliothèque JavaScript pour les cartes interactives',
   // ---- energy ----
-  'Home energy': 'Énergie de la maison',
-  'Open home energy details': "Ouvrir les détails de l'énergie",
-  GRID: 'RÉSEAU',
-  Importing: 'Consomme',
   Idle: 'Au repos',
-  'kW · HOME': 'kW · MAISON',
-  'WATER HEATING': 'CHAUFFE-EAU',
-  'ROOM HEATING': 'CHAUFFAGE',
-  'EV CHARGING': 'RECHARGE VÉ',
-  'Rest of home': 'Reste de la maison',
-  'Room heating': 'Chauffage des pièces',
-  'Water heating': 'Chauffe-eau',
-  'EV charging': 'Recharge VÉ',
   Heating: 'Chauffe',
-  'Heating, hot': 'Chauffe, chaud',
-  'Idle, hot': 'Au repos, chaud',
-  '{n} of {n} rooms on': '{n} sur {n} pièces en marche',
-  'Grid only · low rate': 'Réseau seulement · tarif bas',
-  'Grid only · medium rate': 'Réseau seulement · tarif moyen',
-  'Grid only · challenge rate': 'Réseau seulement · tarif de défi',
-  'Grid only · current rate': 'Réseau seulement · tarif actuel',
-  'Grid only · rate unknown': 'Réseau seulement · tarif inconnu',
   'rate unknown': 'tarif inconnu',
   '{n} kWh today': "{n} kWh aujourd'hui",
-  'Grid supplies {n} W to the home; room heating {n}; water heating {n} W; EV charging {n} W':
-    'Le réseau fournit {n} W à la maison; chauffage {n}; chauffe-eau {n} W; recharge VÉ {n} W',
-  'Grid supplies {n} to the home; room heating {n}; water heating {n}; EV charging {n}':
-    'Le réseau fournit {n} à la maison; chauffage {n}; chauffe-eau {n}; recharge VÉ {n}',
-  'Grid supplying {n} kW · room heating {n} kW · Hilo low rate': 'Réseau {n} kW · chauffage {n} kW · Hilo tarif bas',
-  'Grid supplying {n} kW · room heating {n} kW · Hilo medium rate':
-    'Réseau {n} kW · chauffage {n} kW · Hilo tarif moyen',
-  'Grid supplying {n} kW · room heating {n} kW · Hilo challenge rate':
-    'Réseau {n} kW · chauffage {n} kW · Hilo tarif de défi',
-  'Where it went': "Où est allée l'énergie",
-  'Last {n} days. Rest of home is everything without its own power sensor, including the heat pump.':
-    "{n} derniers jours. Le reste de la maison comprend tout ce qui n'a pas son propre capteur de puissance, y compris la thermopompe.",
-  'From the Hilo smart meter': 'Du compteur intelligent Hilo',
-  'last {n} days ·': '{n} derniers jours ·',
-  '{n} kWh in {n} days: room heating {n}, water heating {n}, EV charging {n}, rest of home {n}.':
-    '{n} kWh en {n} jours : chauffage {n}, chauffe-eau {n}, recharge VÉ {n}, reste de la maison {n}.',
-  'Busiest hour: {n} kWh, {n} Hover a bar to see what was running.':
-    'Heure la plus chargée : {n} kWh, {n}. Survolez une barre pour voir ce qui fonctionnait.',
-  'Busiest hour: {n} kWh, {n}. Hover a bar to see what was running.':
-    'Heure la plus chargée : {n} kWh, {n}. Survolez une barre pour voir ce qui fonctionnait.',
-  'Busiest day: {n} kWh, {n}. Hover a bar to see what was running.':
-    'Journée la plus chargée : {n} kWh, {n}. Survolez une barre pour voir ce qui fonctionnait.',
-  'Last {n} months. Room heating peaked in {n}: {n} kWh. Months with missing data look shorter.':
-    '{n} derniers mois. Le chauffage a culminé en {n} : {n} kWh. Les mois avec des données manquantes paraissent plus courts.',
-  'Last {n} months. Months with missing data look shorter.':
-    '{n} derniers mois. Les mois avec des données manquantes paraissent plus courts.',
-  'No complete hour yet today.': "Pas encore d'heure complète aujourd'hui.",
-  'kWh, {n} days': 'kWh, {n} jours',
-  'EV, {n} days': 'VÉ, {n} jours',
   'Heating, {n} days': 'Chauffage, {n} jours',
-  'Rate now': 'Tarif actuel',
   'at {n}¢/kWh': 'à {n} ¢/kWh',
-  '{n} charging days': '{n} jours de recharge',
-  '{n} charging day': '{n} jour de recharge',
-  'Daily energy, last {n} days: {n} kWh, about {n} kWh a day.':
-    'Énergie quotidienne, {n} derniers jours : {n} kWh, environ {n} kWh par jour.',
-  'Daily kWh bars, highest {n} kWh': 'Barres quotidiennes en kWh, maximum {n} kWh',
-  '{n} kWh a day': '{n} kWh par jour',
-  'Water temperature': 'Température de l’eau',
-  'Heating power': 'Puissance de chauffe',
-  'Last {n} hours: {n} kWh over {n} heating cycles.': '{n} dernières heures : {n} kWh en {n} cycles de chauffe.',
-  'Last {n} hours: {n} kWh over {n} heating cycle.': '{n} dernières heures : {n} kWh en {n} cycle de chauffe.',
-  'Last {n} hours: {n} kWh over {n} heating cycles. {n}-day average: {n} kWh a day.':
-    '{n} dernières heures : {n} kWh en {n} cycles de chauffe. Moyenne sur {n} jours : {n} kWh par jour.',
-  'Last {n} hours: {n} kWh over {n} heating cycle. {n}-day average: {n} kWh a day.':
-    '{n} dernières heures : {n} kWh en {n} cycle de chauffe. Moyenne sur {n} jours : {n} kWh par jour.',
-  'Water temperature {n} to {n} degrees and heating power, last {n} hours':
-    'Température de l’eau de {n} à {n} degrés et puissance de chauffe, {n} dernières heures',
   'Water heater': 'Chauffe-eau',
   'Heating · {n} kW': 'Chauffe · {n} kW',
-  'Idle · {n} W': 'Au repos · {n} W',
-  Reward: 'Récompense',
-  Rewards: 'Récompenses',
-  'Low tier': 'Palier bas',
-  'Medium tier': 'Palier moyen',
-  'Challenge rate': 'Tarif de défi',
-  'Current rate': 'Tarif actuel',
-  'Rate unknown': 'Tarif inconnu',
-  'Hilo low tier': 'Hilo palier bas',
   'low rate': 'tarif bas',
   'medium rate': 'tarif moyen',
-  'No challenge scheduled': 'Aucun défi prévu',
-  'Challenge status unknown': 'État du défi inconnu',
   'Challenge:': 'Défi :',
   // ---- climate ----
   Climate: 'Climat',
@@ -1011,10 +934,6 @@ export const FR_MAP = {
   Rules: 'Règles',
   Dismiss: 'Fermer',
   Chart: 'Graphique',
-  'Busiest hour: {n} kWh, {n}. Tap a bar to see what was running.':
-    'Heure la plus chargée : {n} kWh, {n}. Touchez une barre pour voir ce qui fonctionnait.',
-  'Busiest day: {n} kWh, {n}. Tap a bar to see what was running.':
-    'Journée la plus chargée : {n} kWh, {n}. Touchez une barre pour voir ce qui fonctionnait.',
   'One dot per run, a number when several ran close together. Filled ran, ringed red checked and did nothing, green is running now, hollow is still to come. Tap one to draw it below.':
     'Un point par exécution, un nombre quand plusieurs se suivent de près. Plein : exécutée; cerclé de rouge : vérifiée, rien fait; vert : en cours; vide : à venir. Touchez-en un pour le voir plus bas.',
   '{n} to {n}': 'De {n} à {n}',
@@ -1055,18 +974,6 @@ export const FR_MAP = {
   '{n} colour temperature': 'Température de couleur de {n}',
   'Adaptive Lighting off': 'Éclairage adaptatif désactivé',
   '{n} K, Adaptive Lighting off': '{n} K, éclairage adaptatif désactivé',
-  'Where the power goes': 'Où va l’électricité',
-  'Sankey period': 'Période du diagramme',
-  Grid: 'Réseau',
-  'Other rooms': 'Autres pièces',
-  'No data yet.': 'Pas encore de données.',
-  'No data yet': 'Pas encore de données',
-  "Live power: the Hilo meter on the left, each device's own sensor on the right.":
-    'Puissance en direct : le compteur Hilo à gauche, le capteur de chaque appareil à droite.',
-  'Energy since midnight, {n} kWh so far.': 'Énergie depuis minuit, {n} kWh jusqu’ici.',
-  'Last 30 days, {n} kWh in all.': '30 derniers jours, {n} kWh en tout.',
-  'Power from the grid, split into room heating, water heating, EV charging and the rest of the home':
-    'Électricité du réseau, répartie entre le chauffage des pièces, l’eau chaude, la recharge du véhicule et le reste de la maison',
   'The Tabs view gives each subject its own page, for a tablet on the wall.':
     'La vue Onglets donne à chaque sujet sa propre page, pour une tablette au mur.',
   'Now {n}° · Outside {n}°': 'Maintenant {n}° · Extérieur {n}°',
@@ -1328,11 +1235,6 @@ const FR_RX = [
       const t = frLook(x);
       return t == null ? null : `${o === 'On' ? 'Activé' : 'Désactivé'} · ${t}${sv ? ' enregistré' : ''}`;
     },
-  ],
-  [
-    /^Last \{n\} months\. Room heating peaked in (\w+): \{n\} kWh\. Months with missing data look shorter\.$/,
-    m =>
-      `{n} derniers mois. Le chauffage a culminé en ${frMo(m)} : {n} kWh. Les mois avec des données manquantes paraissent plus courts.`,
   ],
   [/^observed \{n\} at (.+)$/, x => `observé à {n} à ${x}`],
   [
