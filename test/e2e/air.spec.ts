@@ -277,7 +277,7 @@ test.describe('on a tablet', () => {
           const {series, xaxis} = (
             chart as unknown as {options: {series: {data: unknown[]}[]; xaxis: {min: number; max: number}}}
           ).options;
-          return {points: series[0]!.data.length, days: Math.round((xaxis.max - xaxis.min) / 864e5)};
+          return {points: series[0].data.length, days: Math.round((xaxis.max - xaxis.min) / 864e5)};
         });
     const day = await drawn();
     expect(day.days).toBe(1);
