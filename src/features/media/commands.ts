@@ -64,7 +64,7 @@ export const speakerSkip = (speaker: Pick<Speaker, 'id'>, direction: 'next' | 'p
   player(direction === 'next' ? 'media_next_track' : 'media_previous_track', speaker.id);
 
 /** A volume as a player takes it: kept in 0 to 1 and to two decimals, as the legacy `mpVol` did; Math.max(0, …) turns a -0 into 0. */
-export const volumeLevel = (level: number): number => Math.min(1, Math.max(0, Math.round(level * 100) / 100));
+const volumeLevel = (level: number): number => Math.min(1, Math.max(0, Math.round(level * 100) / 100));
 
 /** Sets a speaker's volume at `volumeLevel(level)`; silent, the element debounces it. */
 export const speakerVolume = (speaker: Pick<Speaker, 'id'>, level: number): Command => ({

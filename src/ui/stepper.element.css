@@ -1,6 +1,6 @@
 /*
  * <hp-stepper>'s look: the pill, its two buttons and the value between them. A known duplicate of the legacy `.stepper` rules
- * (extra.css, glass.css, motion.css) that the legacy climate and fan controls still draw; Media's speaker pod wrote its own copy
+ * (extra.css, glass.css, motion.css) that the legacy fan and climate controls still draw until #234 (Air's deletion) and #248 (Climate move 7) delete them; Media's speaker pod wrote its own copy
  * as `.vol`, which moved here. The selectors differ (`.step`, `.sv`) because the styles-split test lets one file write a selector,
  * and a shadow root cannot reach the legacy rule. An owner sizes it from outside: `flex`, `order` and `padding` on the tag,
  * `::part(button)` and `::part(value)` for the buttons and the value.
