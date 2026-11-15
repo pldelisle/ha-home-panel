@@ -1,14 +1,15 @@
 // Air's history as pure functions: the statistics rows in, the series per room and for the outdoor air, the chart words and the options out.
 // Pattern: functional core (Bernhardt, Boundaries), the data half of a humble object (Meszaros), after Weather's history; each rule is the
 // legacy panel's own (`loadAirRange`, `airChart`, `airOutChart`, deleted by #234) and options are plain data (ADR 0022): `fmt` and `t` are arguments.
-// The callers are #233's `<hp-air-detail>`: `metricIds` names what it asks the recorder for, the series and options feed its two `<hp-chart>`s.
+// The caller is `<hp-air-detail>`: `metricIds` and `statisticsStart` say what it asks the recorder for, the series and options feed its two `<hp-chart>`s.
 // Must not: call the API client or the cache, read the clock or the DOM, or pick a colour of its own (every colour is a caller's token).
-import {DASH, DAY_MS} from '../../core/figures.ts';
+import {DASH, DAY_MS, HOUR_MS} from '../../core/figures.ts';
 import type {StatisticRow} from '../../core/ha.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
 import {whole, type Formatters} from '../../core/i18n/format.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
 import {AQ_BANDS, OUTDOOR_BANDS, type Pollutant} from '../../providers/air-quality.ts';
+import type {RangeTab} from '../../ui/range-tabs.ts';
 import {RANGES, type Range} from '../../ui/ranges.ts';
 import type {AirInputs} from './inputs.ts';
 
@@ -82,6 +83,22 @@ const CHART_RULES: Record<ChartMetric, ChartRule> = {
 /** The legacy sheet's defaults: the first range tab and the first metric. */
 export const DEFAULT_RANGE: Range = 'day';
 export const DEFAULT_METRIC: ChartMetric = 'pm2_5';
+/** The ranges the detail's tabs offer, in order. */
+const AIR_RANGES: readonly Range[] = ['day', 'week', 'month'];
+
+/** The detail's range tabs, worded by `t`: the sheet's header and the tablet's both draw them. */
+export const rangeTabs = (t: Translate): RangeTab[] =>
+  AIR_RANGES.map(range => ({range, label: t(RANGES[range].tabKey)}));
+
+/** How long the statistics stay fresh in the pane's cache: the ten minutes the legacy sheet kept them. */
+export const STATISTICS_TTL_MS = 10 * 60_000;
+
+/**
+ * Where a range's statistics start: the top of the hour a range back, so a second request within the hour has the same arguments and is the
+ * cache's hit (a start that moves is a new call); the axis still begins at `now` less the range, so the extra minutes are off the chart.
+ */
+export const statisticsStart = (now: number, range: Range): Date =>
+  new Date(Math.floor(now / HOUR_MS) * HOUR_MS - RANGES[range].days * DAY_MS);
 
 // ---------- the series ----------
 

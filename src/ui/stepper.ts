@@ -2,7 +2,7 @@
 // Pattern: controlled component over a humble object (Meszaros, xUnit Test Patterns): it draws `value` and tells its owner the next one
 // by `step-change` (Lit docs, Events; named beside `<hp-range-tabs>`' `range-change`, since `step` is the tap size); the owner holds the value, debounces and sends. Promoted from Media's speaker pod once Air's fan
 // speed (steps of ten, minimum ten) was its second user with other bounds; the climate setpoint (spec 20) is the third.
-// A known copy: its look duplicates the legacy `.stepper` rules (stepper.element.css) the legacy fan and climate controls still draw, until #234 (Air's deletion) and #248 (Climate move 7) delete them.
+// A known copy: its look duplicates the legacy `.stepper` rules (stepper.element.css) the legacy climate controls still draw, until #248 (Climate move 7) deletes them.
 // Must not: keep the value itself, debounce or send a command, or know what it stands for (a volume, a fan, a setpoint).
 import {LitElement, html, nothing, unsafeCSS} from 'lit';
 import {ifDefined} from 'lit/directives/if-defined.js';

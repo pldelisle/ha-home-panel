@@ -13,6 +13,8 @@ import {
   metricSeries,
   outdoorChartOptions,
   outdoorSeries,
+  rangeTabs,
+  statisticsStart,
   type AirChartDeps,
   type AirTokens,
 } from '../../../../src/features/air/history.ts';
@@ -87,6 +89,33 @@ describe('metricIds', () => {
     ]);
     expect(metricIds({rooms: ROOMS, outside: OUTSIDE}, 'humidity')).toEqual(['sensor.den_rh']);
     expect(metricIds({rooms: ROOMS, outside: null}, 'pm2_5')).toEqual(['sensor.den_pm', 'sensor.bed_pm']);
+  });
+});
+
+describe('rangeTabs', () => {
+  test('are the day, the week and the month, worded in the profile’s language', () => {
+    expect(rangeTabs(depsOf('en').t)).toEqual([
+      {range: 'day', label: 'Day'},
+      {range: 'week', label: 'Week'},
+      {range: 'month', label: 'Month'},
+    ]);
+    expect(rangeTabs(depsOf('fr').t).map(tab => tab.label)).toEqual(['Jour', 'Semaine', 'Mois']);
+  });
+});
+
+describe('statisticsStart', () => {
+  const HOUR = 3_600_000;
+  const NOON = Date.UTC(2026, 10, 15, 12, 0, 0);
+
+  test('is the top of the hour, a range back, so a second request in the hour has the same arguments', () => {
+    expect(statisticsStart(NOON + 41 * 60_000, 'day').getTime()).toBe(NOON - 24 * HOUR);
+    expect(statisticsStart(NOON + 59 * 60_000, 'day').getTime()).toBe(NOON - 24 * HOUR);
+    expect(statisticsStart(NOON + 41 * 60_000, 'week').getTime()).toBe(NOON - 7 * 24 * HOUR);
+    expect(statisticsStart(NOON, 'month').getTime()).toBe(NOON - 30 * 24 * HOUR);
+  });
+
+  test('moves on with the next hour', () => {
+    expect(statisticsStart(NOON + HOUR, 'day').getTime()).toBe(NOON - 23 * HOUR);
   });
 });
 

@@ -74,7 +74,7 @@ const TITLES = {
 // every shown tab's pane opens with one heading, in the header's shadow root (or slotted), whatever the language
 const headings = (lang: keyof typeof TITLES) => async (house: House) => {
   await eachShownTab(house, async (tab, pane) => {
-    // the pane's own header is the first; on a tablet the Weather detail draws one of its own after it, with the same heading
+    // the pane's own header is the first; on a tablet the Weather and Air details draw one of their own after it
     await expect(pane.locator('hp-pane-header h2').first(), tab).toHaveText(
       TITLES[lang][tab as keyof (typeof TITLES)['en']],
     );
@@ -200,8 +200,8 @@ test.describe('full house', () => {
   }) => {
     await headings('en')(house);
     await eachShownTab(house, async (tab, pane) => {
-      // a tablet's Weather pane has the header of its detail too, with the summary under it
-      const headers = tab === 'weather' && !isPhone(house) ? 2 : 1;
+      // a tablet's Weather and Air panes have the header of their detail too, with the summary under it
+      const headers = (tab === 'weather' || tab === 'air') && !isPhone(house) ? 2 : 1;
       await expect(pane.locator('hp-pane-header > [slot="sub"]'), tab).toHaveCount(headers);
     });
   });

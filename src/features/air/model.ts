@@ -11,7 +11,7 @@ import {outdoorLevel, rateRoom, type Level, type Pollutant, type RoomRating} fro
 import {POLLEN_KINDS, type AirRoomInputs, type OutsideAirInputs, type PollenKind} from '../../providers/mila.ts';
 import type {Overlay} from '../../ui/overlay-store.ts';
 import {RANGES, type Range} from '../../ui/ranges.ts';
-import {K, MAX_PCT, MIN_PCT, type Mode} from './commands.ts';
+import {K, type Mode} from './commands.ts';
 import {
   CHART_METRICS,
   chartText,
@@ -115,8 +115,6 @@ export type RoomControl =
         label: string;
         downLabel: string;
         upLabel: string;
-        atMin: boolean;
-        atMax: boolean;
       } | null;
       /** What Automagic is doing, in Automagic; null in Manual. */
       hint: string | null;
@@ -284,8 +282,6 @@ function controlOf(room: AirRoomInputs, {t, fmt, overlay}: AirModelDeps): RoomCo
             label: t('air.fanSpeed', {name: room.name}),
             downLabel: t('air.slower'),
             upLabel: t('air.faster'),
-            atMin: pct <= MIN_PCT,
-            atMax: pct >= MAX_PCT,
           }
         : null,
     hint:

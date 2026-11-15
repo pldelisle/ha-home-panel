@@ -173,9 +173,13 @@ describe('the Air descriptor', () => {
     sheetDetail: () => undefined,
   });
 
-  test("is the registry's own and always shown", () => {
+  test("is the registry's own and always shown, and binds its pane to the sheet host's answer: the detail's `open`", () => {
     expect(FEATURES.find(f => f.key === 'air')).toBe(airFeature);
     expect(airFeature.available).toBeUndefined();
+    expect(airFeature.detailSheet).toBe('air.detail');
+    const pane = (open: string | null) => airFeature.pane({...env(null), sheetOpen: id => id === open});
+    expect(pane(null).values).toEqual([false]);
+    expect(pane('air.detail').values).toEqual([true]);
   });
 
   // the More sheet's baselines read the legacy word ("Good"), not the pane's sub-line ("1 purifier · Good"): it stays the guest's until #234

@@ -443,6 +443,7 @@ export const en = {
   'air.roomWhy': '{name}: {detail}',
   'air.outsideAqi': 'Outside AQI',
   'air.open': 'Open air quality details',
+  'air.close': 'Close',
   'air.purifierOffline': 'Purifier offline',
   'air.fanOff': 'Fan off',
   'air.automagic': 'Automagic',
@@ -481,6 +482,7 @@ export const en = {
   'air.comfortableHumidity': 'Comfortable indoor humidity is {from} to {to}%.',
   'air.comfortable': 'Comfortable',
   'air.historyUnavailable': 'History is not available right now.',
+  'air.historyLoading': 'Loading history…',
   // the outside block and its chart
   'air.outside': 'Outside',
   'air.outsideHint':

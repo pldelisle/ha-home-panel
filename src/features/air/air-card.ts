@@ -9,6 +9,7 @@ import {repeat} from 'lit/directives/repeat.js';
 import type {AirViewModel, RoomLine} from './model.ts';
 import {DETAIL_SHEET} from './sheets.ts';
 import cardOwn from './air-card.element.css?inline';
+import airShared from './styles.css?inline';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {SheetRequestEvent} from '../../ui/events.ts';
 import {lensLike} from '../../ui/lens.ts';
@@ -31,7 +32,7 @@ export class AirCard extends LitElement {
   declare openLabel: string | undefined;
 
   // The element's own rules, the card's chrome as the box's and what only its tree has, are in air-card.element.css.
-  static override styles = [common, unsafeCSS(forShadow(cardOwn))];
+  static override styles = [common, unsafeCSS(forShadow(airShared)), unsafeCSS(forShadow(cardOwn))];
 
   constructor() {
     super();
@@ -77,7 +78,7 @@ export class AirCard extends LitElement {
           ></span
         >
       </div>
-      <div class="aqstate lv${state.tone}">
+      <div class="aqsum lv${state.tone}">
         <span class="state"><i></i>${state.text}</span><span class="why">${state.why}</span>
       </div>
       <div class="aqlist">

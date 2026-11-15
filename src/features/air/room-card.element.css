@@ -1,0 +1,108 @@
+/*
+ * <hp-air-room>'s own rules: a purifier's card, its head with the level's state pill, the seven tiles and the control. Moved from the legacy
+ * `.aqcard`, `.aqhead`, `.aqt` and `.aqctl` rules (extra.css, glass.css), which this move deleted. The tiles, the segmented control and the
+ * stepper are the kit's (`.tiles`, `.seg`, `<hp-stepper>`); the radios stay `.seg` markup until `<hp-seg>` (#247). Known copies of rules the
+ * legacy panel's other cards still draw, each read here under the card's own selector: `.state` (base.css, glass.css) as `.aqhead .state` and
+ * `.hint` (base.css) as `.aqctl .hint`, until the Home move (#268) deletes them.
+ */
+:host {
+  display: block;
+  min-width: 0;
+}
+.aqcard {
+  background: var(--card);
+  border-radius: 22px;
+  padding: 16px;
+  box-shadow: var(--shadow);
+  min-width: 0;
+}
+:host([glass]) .aqcard {
+  background: var(--g-card);
+  -webkit-backdrop-filter: var(--g-bd);
+  backdrop-filter: var(--g-bd);
+  box-shadow: var(--g-edge);
+}
+.aqhead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.aqhead h3 {
+  margin: 0;
+  font-size: calc(17px * var(--tx));
+}
+.aqhead p {
+  margin: 2px 0 0;
+  font-size: calc(12.5px * var(--tx));
+  color: var(--fg2);
+}
+.aqhead .state {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-weight: 600;
+  font-size: calc(13px * var(--tx));
+  background: var(--card2);
+}
+:host([glass]) .aqhead .state {
+  background: var(--g-tile);
+  box-shadow: var(--g-edge-s);
+}
+.aqhead .state i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: block;
+}
+.lv0 .aqhead .state i {
+  background: var(--ok);
+}
+.lv1 .aqhead .state i {
+  background: var(--warn);
+}
+.lv2 .aqhead .state i {
+  background: var(--crit);
+}
+.aqt {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.aqt .tile {
+  padding: 8px 10px;
+}
+.aqt .tile .v {
+  font-size: calc(18px * var(--tx));
+}
+.aqt .hi .v {
+  color: var(--t-warn);
+}
+.lv2 .aqt .hi .v {
+  color: var(--crit);
+}
+.aqctl {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+.aqctl .seg {
+  flex: 1 1 200px;
+}
+.aqctl .hint {
+  flex: 1 1 100%;
+  font-size: calc(12px * var(--tx));
+  color: var(--fg2);
+  margin: 0;
+}
+/* Reduce Transparency: the glass turns back into a near-solid card, as the legacy rules did */
+@media (prefers-reduced-transparency: reduce) {
+  :host([glass]) .aqcard {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--card);
+  }
+}

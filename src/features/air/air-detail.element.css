@@ -1,0 +1,47 @@
+/*
+ * <hp-air-detail>'s own rules: the column of its blocks, the rooms' grid, the metric radios and the pollen tiles. Moved from the legacy
+ * `.aqrooms` and `.aqmetric` rules (extra.css), which this move deleted; the station's state line is the feature's `.aqsum` (styles.css),
+ * shared with the card, and the inner cards, the tiles, the radios' look and the legend are the kit's (`.inner`, `.tiles`, `.seg`,
+ * `.legend`), the radios staying `.seg` markup until `<hp-seg>` (#247).
+ */
+:host {
+  display: block;
+  min-width: 0;
+}
+.blocks {
+  min-width: 0;
+}
+[slot='icon'] {
+  display: contents;
+}
+.blocks > * + * {
+  margin-top: 16px;
+}
+:host([compact]) .blocks > * + * {
+  margin-top: 14px;
+}
+:host([compact]) .inner {
+  padding: 14px;
+  border-radius: 18px;
+}
+.aqrooms {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+@media (max-width: 720px) {
+  .aqrooms {
+    grid-template-columns: 1fr;
+  }
+}
+.aqmetric {
+  max-width: 420px;
+  margin: 10px 0 4px;
+}
+.pollen {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 10px;
+}
+.again {
+  margin-top: 18px;
+}
