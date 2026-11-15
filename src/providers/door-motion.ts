@@ -1,7 +1,7 @@
 // The house's door and motion sensors: every binary sensor of a door or motion class, read into inputs, not a view.
 // Pattern: an adapter below the features (ADR 0025): the Security pane, the live pill, the stack and the Home pane read the
-// one rule, so "which sensors count" has one answer; it copies the legacy `sensors()`, `sensorName`, `DOOR_DC` and
-// `MOTION_DC`, which #227 deletes with the legacy panel's last Security reader.
+// one rule, so "which sensors count" has one answer; its rules are those of the legacy `sensors()`, `sensorName`, `DOOR_DC` and
+// `MOTION_DC`, deleted by #227; the legacy panel's own readers (the stack, the attention list, the More word) call it.
 // Must not: word anything a person reads ("Open", "for 12 min"), read the clock, or know a screen.
 import type {HassEntities, Registries} from '../core/hass.ts';
 import type {Names} from '../core/i18n/names.ts';

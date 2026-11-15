@@ -1,6 +1,6 @@
 // The sensor history sheet's rules as pure functions: a door's or motion sensor's states in, the on-periods, the strip's axis,
 // the event rows, the four tiles and the sheet's words out.
-// Pattern: functional core (Bernhardt, Boundaries), the data half of a humble object (Meszaros); each rule is the legacy
+// Pattern: functional core (Bernhardt, Boundaries), the data half of a humble object (Meszaros); each rule is that of the legacy
 // panel's `sensSheet`, deleted by #227, and the sheet only places what comes out; `fmt`, `t` and `now` are arguments.
 // Must not: call the API client or the cache, read the clock or the DOM, or keep a state between two calls.
 import {DASH} from '../../core/figures.ts';

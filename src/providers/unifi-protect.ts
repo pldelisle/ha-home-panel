@@ -1,6 +1,6 @@
 // UniFi Protect's cameras as a camera source: one per device out of its high, medium and low channels, with its motion sensor.
 // Pattern: an adapter behind the CameraSource strategy (Gamma et al.), the anti-corruption layer for Protect's entity naming
-// (Evans); the rules copy the legacy `cameras()`, which #227 deletes with the legacy panel's last Security reader.
+// (Evans); the rules are those of the legacy panel's `cameras()`, deleted by #227.
 // Must not: word anything a person reads, stamp the picture (the model does), read the clock, or look past the registries.
 import type {HassEntities, Registries} from '../core/hass.ts';
 import type {Names} from '../core/i18n/names.ts';
