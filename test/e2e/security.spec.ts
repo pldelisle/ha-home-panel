@@ -3,7 +3,7 @@
 // needs one adds it the way Home Assistant adds any entity. The camera's picture is a Home Assistant proxy URL the harness never
 // serves, so a tile with one shows a broken image, as the legacy panel's did; the tests read its `src`, not its pixels.
 import AxeBuilder from '@axe-core/playwright';
-import {test, expect, tabletOnly, type House} from './fixtures';
+import {test, expect, tabletOnly, countAdded, type House} from './fixtures';
 import {AFTERNOON, FULL_CFG, KEEP_ENGLISH_NAMES} from './houses';
 
 test.use({houseOpts: {cfg: FULL_CFG, time: '2026-11-10T12:00:00Z'}});
@@ -281,15 +281,18 @@ test.describe('the Home card', () => {
     await expect(box(house)).not.toHaveClass(/glow/);
   });
 
-  // the guest writes the tag once: a card written again would lose the reading it compares with, and glow at every change of the house
-  test("stays the same element through the guest's draws and a trip to another tab", async ({house}) => {
+  // the guest writes the tag once: a card written again would lose the reading it compares with, and glow at every change of the house.
+  // A card made again attaches a new shadow root with a new `.seccard`, which the helper counts from the moment it is installed.
+  test("is not made again by the guest's draws or a trip to another tab", async ({house}) => {
     await house.tab('home');
-    const first = await card(house).elementHandle();
+    await expect(box(house)).toBeVisible();
+    const made = await countAdded(house, 'seccard');
     await house.setState('climate.living_room', {attributes: {temperature: 23}});
     await house.setState('binary_sensor.front_door', {state: 'on'});
     await house.tab('lights');
     await house.tab('home');
     await expect(card(house)).toHaveCount(1);
-    expect(await first?.evaluate(el => el.isConnected)).toBe(true);
+    await house.page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
+    expect(await made()).toBe(0);
   });
 });

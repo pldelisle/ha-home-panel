@@ -3381,7 +3381,7 @@ export class LegacyPanel {
   }
 
   // ---------- cameras (UniFi Protect, or any camera entity) ----------
-  // nothing calls `cameras()` since #226 moved the Home card out; the Home move for Security (#227) deletes it
+  // nothing calls `cameras()` since #226 moved the Home card out; #227 deletes it
   cameras() {
     const reg = this.hass.entities || {},
       seen = new Map();
