@@ -2,7 +2,7 @@
 
 Parent: [production-grade-refactor.md](production-grade-refactor.md), phase 3.
 Depends on: [15 Weather](15-weather.md) (`<hp-chart>`, the statistics cache, `<hp-range-tabs>`, `ranges.ts`), [16 Media](16-media.md) (`CommandRunner`, the overlay, the bridge), [17 Security](17-security.md) (shared reads in providers; legacy may import providers), [18 Air](18-air.md) (`<hp-stepper>`, registry-driven discovery). Blocks: 20 Climate (the rooms' power and the history pattern), 21 Car (the Wallbox provider and the charging sessions), 22 Live pill (the Hilo and power providers), 24 Home (the energy card).
-Ships as: three pull requests, each a patch release, each pixel-identical. ADR 0027 (ApexCharts, closing #84) lands with the first, ahead of the move's other tickets; the history ADR (derived on demand) takes the next free number when move 2 (#237) lands.
+Ships as: three pull requests, each a patch release, each pixel-identical. ADR 0027 (ApexCharts, closing #84) lands with the first, ahead of the move's other tickets; ADR 0028 (history derived on demand) lands with move 2 (#237).
 
 The key words MUST, MUST NOT, SHOULD, SHOULD NOT and MAY are to be read as in RFC 2119.
 
@@ -21,7 +21,7 @@ Energy is the largest reader in the class and the owner of its history:
 
 Move Energy into `src/features/energy/`, in three pull requests:
 
-1. **The providers, the power read, the history layer, and the two decisions.** `src/providers/hilo.ts`, `hydro-quebec.ts`, `wallbox.ts` (registry-driven discovery and the config's keys), `src/providers/power.ts` (`powerNow`: the live flow every reader shares), `src/features/energy/history.ts` (the energy slices of `derive` as pure functions over statistics rows), and the feature's own loader through the statistics cache: history is derived **on demand, per feature** (the history ADR, numbered by #237). `<hp-energy-pane>` with `<hp-energy-card>`, `<hp-power-flow>` (the flow SVG from a pure layout), the phone tiles, and the water heater and Hilo cards; the class keeps `loadHistory` for the Climate and Car slices only. ADR 0027 answers #84.
+1. **The providers, the power read, the history layer, and the two decisions.** `src/providers/hilo.ts`, `hydro-quebec.ts`, `wallbox.ts` (registry-driven discovery and the config's keys), `src/providers/power.ts` (`powerNow`: the live flow every reader shares), `src/providers/power-history.ts` (the slices of `derive` that other readers need) and `src/features/energy/history.ts` (the ones only Energy reads), pure functions over statistics rows, and the feature's own loader through the statistics cache: history is derived **on demand, per feature** (ADR 0028). `<hp-energy-pane>` with `<hp-energy-card>`, `<hp-power-flow>` (the flow SVG from a pure layout), the phone tiles, and the water heater and Hilo cards; the class keeps `loadHistory` for the Climate and Car slices only. ADR 0027 answers #84.
 2. **The detail.** `<hp-energy-detail>`: the range tabs, the main stacked chart through `<hp-chart>`, the Sankey block with its own tabs (`<hp-sankey>` from a pure layout), the donut and its table, the totals. The legacy `#sh-energy` and its methods go.
 3. **The live-pill reads and the deletion.** The header's "Critical peak now" chip, the upcoming list and the live pill read `hilo.ts`, `hydro-quebec.ts` and `power.ts` from the class (the ADR 0025 allowance); `live`, `rateInfo`, `flowSvg`, the chart helpers' last energy use, the French entries and the CSS go; the footprint drops.
 
@@ -51,6 +51,7 @@ src/providers/
   power.ts                 powerNow(states, config): PowerNow; roomPower(states, room); the live flow every reader shares
   hilo.ts                  hiloRates(states, config): HiloRates (tier rule); hiloChallenge(states, config); hiloRewards; hiloPresent
   hydro-quebec.ts          hydroQuebec(states, config): {balance, peakNow, peakUpcoming} | null
+  power-history.ts         powerWindows, hourlyFlow, meterTotals, waterDay: the slices other readers share, pure over statistics rows (ADR 0028)
   wallbox.ts               wallbox(states, config): WallboxInputs (power, status, present; amps, pause, lock, price with spec 21)
 src/features/energy/
   README.md
@@ -58,7 +59,7 @@ src/features/energy/
   ids.ts                   energyIds(store)
   inputs.ts                readEnergy(states, config, sources): EnergyInputs
   model.ts                 energyModel(inputs, history, deps): EnergyViewModel
-  history.ts               the pure slices: hourlyFlow, dailyTotals, groupTotals, monthlyTotals, meterTotals, waterDay, waterCycles; energyWindows(now, fmt)
+  history.ts               the pure slices only Energy reads: dailyTotals, groupTotals, roomTotals, monthlyTotals, waterCycles, waterDaily; energyWindows(now, config, fmt)
   loader.ts                EnergyHistory: a reactive controller that loads the windows through the statistics cache when its host is shown
   flow-layout.ts           flowLayout(power, deps): FlowGeometry (nodes, connectors, labels)
   sankey-layout.ts         sankeyLayout(data, rooms, deps): SankeyGeometry (nodes, ribbons, labels)
@@ -89,7 +90,7 @@ test/e2e/energy.spec.ts
 - **`wallbox.ts`**: `{power, status, present}` from `evP` and `wbStatus` (kW; `present` when either resolves); spec 21 adds the controls' fields from the `wb*` keys. Energy reads `power` and `status`; Car (spec 21) reads the rest and sends the commands.
 - Each is a pure module over `states` and `config.entities`; the config's keys are the discovery here (convention over configuration, as `entities.ts` says), so the registry is not consulted.
 
-### History derived on demand (its own ADR, numbered by #237)
+### History derived on demand (ADR 0028)
 
 ```ts
 // src/features/energy/history.ts (pure)
@@ -189,7 +190,7 @@ Pull request 1, the providers, the history layer, the pane and the cards:
 1. `src/providers/{power,hilo,hydro-quebec,wallbox}.ts`, `src/features/energy/{README.md,index.ts,ids.ts,inputs.ts,model.ts,history.ts,loader.ts,flow-layout.ts,water-chart.ts,energy-pane.ts,energy-card.ts,power-flow.ts,water-card.ts,hilo-card.ts,styles.css}`, `src/ui/styles/hero.css`, `src/ui/thin-axis.ts` exist with headers; `FEATURES` has `energyFeature`.
 2. Vitest: `powerNow` (rest never negative, heating by action or by power, a missing sensor), `hiloRates` (each tier, the comparison order), `hydroQuebec`, `wallbox`; every slice of `history.ts` with literal rows (hours with a missing room, today's hours so far, the noon shift on day keys, months from days, meter totals with today excluded from the 14 days, water cycles joined within five minutes); `flowLayout` (widths, durations, texts), `waterChartGeometry` (the scale rules, the hour ticks); `energyModel` from the test house and the recorded fixture in `en` and `fr`; 100 percent statements on the pure modules.
 3. Playwright `energy.spec.ts`: the tab shows the flow with the house's grid value and the four tiles after the statistics arrive; the water heater and Hilo cards read as before; on the phone the two tiles open their cards as sheets; the statistics requests for the energy windows are sent when the Energy card first connects and not again when the tab is reopened within fifteen minutes (`window.house.reads`); a light change gives zero mutations in `hp-energy-pane`'s root; axe clean.
-4. Every baseline identical; the French equivalence test passes for `test/unit/fixtures/moved/energy.json`; `npm run check`, `npm test -- --coverage`, `npm run lint` green; the history ADR and ADR 0027 accepted; #84 closed by the pull request; changeset (patch): "The Energy tab is redrawn with the same look and loads its history when you open it. Nothing visible changes."
+4. Every baseline identical; the French equivalence test passes for `test/unit/fixtures/moved/energy.json`; `npm run check`, `npm test -- --coverage`, `npm run lint` green; ADRs 0027 and 0028 accepted; #84 closed by the pull request; changeset (patch): "The Energy tab is redrawn with the same look and loads its history when you open it. Nothing visible changes."
 
 Pull request 2, the detail:
 
@@ -213,6 +214,7 @@ The seams are the two of ADR 0005. New in kind: the harness's statistics replies
 ## Notes
 
 - **Why history moves per feature and not into one core "house history" module.** A core module that loads everything is `loadHistory` with a new name: it would still fetch a year of daily rows for a tablet that never leaves Home. Per-feature loaders through one cache keep the fetch proportional to what is shown, and the cache keeps a shared window (the hourly power, which Energy and Climate both want) to one call.
+- **As built in #237** (the history layer; nothing visible changes). The slices that other readers need are not Energy's: `hourlyFlow`, `meterTotals` and `waterDay` (with `powerWindows`, `dayKeys`, `flowIds` and `dailyChanges`) are in `src/providers/power-history.ts`, and the other slices and `energyWindows` are in `src/features/energy/history.ts`. The contract differs from the sketch above in small ways: the windows' `ids` are the config's (an unset one is `null`, which the client drops); `hourlyFlow` and `dailyTotals` take one `FlowIds` that carries the rooms, `dailyTotals` takes `{today, hoursToday}` and `isoDay`, `roomTotals` takes the number of rooms, `meterTotals` takes `{yesterday, month}` and `isoDay`, and `waterDaily` takes `isoDay`; `deriveEnergyHistory` makes the nine slices. `derive`'s day keys use the local `isoDay` with the noon shift, not `fmt.utc`, and so do the slices. `energyWindows` is the four shared windows plus `day400`, and each asks only the sensors its slice reads, by type (`mean` for power, `change` for the meter); a start is the top of the hour (today's, a minute before local midnight), so the cache answers a repeat, and the five-minute window starts 25 hours back where the legacy load's started 25.2. `statisticsCacheContext` is provided by the shell (`createStatisticsCache(api, {ttlMs: 15 * 60_000})`, one per panel) and is `GuestContext.statistics`; the legacy `loadHistory` still asks the client, whose starts move with the clock and would never hit, until #241. `EnergyHistory` drops a reply on a disconnect or a new generation, treats a `StaleReply` as no failure, and asks again after a failure no sooner than a minute. It reads the cache's `statistics` only.
 - **Why the flow and the Sankey are not `<hp-chart>`.** ApexCharts has no Sankey, and the flow is a diagram, not a chart. Pure layout functions make them as testable as the options builders.
 - **Why `powerNow` is a provider though it names no integration.** Four readers in three layers need the same arithmetic; ADR 0025's rule puts a shared read below the features, and the glossary's definition of a provider (entities into generic inputs) covers the config's power sensors.
 - **Why the ApexCharts decision is (a).** The phase's contract is pixel identity; the other options all re-record thirty baselines and two of them are dead ends under MIT. The wrapper makes the later decision cheap, which is what #84 asked for.
