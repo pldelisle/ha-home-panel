@@ -1147,10 +1147,12 @@ export class LegacyPanel {
     });
     // Hydro-Québec critical peaks and Hilo challenges
     const hq = this.hydroQuebec(),
-      defi = this.hiloChallenge();
-    // the grid's reading as these two cards said it: watts under a kilowatt, one decimal above
+      defi = this.hiloChallenge(),
+      L = this.powerNow();
+    // the grid's reading as these two cards said it: watts under a kilowatt, one decimal above; the legacy English, which leaves with the
+    // stack's peak cards (#265), when the model words the figure
     const using = () => {
-      const g = this.powerNow().grid;
+      const g = L.grid;
       return `Using ${g == null ? '–' : g < 1 ? Math.round(g * 1000) + ' W' : g.toFixed(1) + ' kW'} right now`;
     };
     if (hq && (hq.peakNow || hq.peakUpcoming))
@@ -1253,9 +1255,7 @@ export class LegacyPanel {
     const aw = this.st(this.E.away);
     if (aw && aw.state === 'on') {
       const on = areas.filter(a => a.ids.some(id => (this.st(id) || {}).state === 'on')).length,
-        ins = this.powerNow()
-          .rooms.map(r => r.temperature)
-          .filter(v => v != null);
+        ins = L.rooms.map(r => r.temperature).filter(v => v != null);
       out.push(
         this.scard('away', {
           ic: 'shield',
@@ -1903,12 +1903,10 @@ export class LegacyPanel {
   hydroQuebec() {
     return hydroQuebec(this.store.hass?.states ?? {}, this.store.config);
   }
-  // a room's name, by the core's rule over the config's room and its thermostat; the Status checks and the Climate sheet still ask it (#256, #248)
-  roomName(r) {
-    return roomName(
-      {key: r.k, configuredName: r.n ?? null, thermostatName: this.attr(r.climate, 'friendly_name') || ''},
-      {names: this.store.names, t: this.store.t, language: this.store.language},
-    );
+  // a room's name, by the core's rule over the provider's room (powerNow's `RoomPower` carries what the rule reads); the Status checks
+  // and the Climate sheet still ask it (#256, #248)
+  roomName(room) {
+    return roomName(room, {names: this.store.names, t: this.store.t, language: this.store.language});
   }
 
   renderHeader() {
@@ -1992,7 +1990,9 @@ export class LegacyPanel {
         items.push(['crit', 'Hilo gateway offline', 'Thermostats and the meter may stop reporting.']);
       else clear.push('Hilo gateway online');
     }
-    const down = this.ROOMS.filter(r => this.st(r.climate) && !ok(this.st(r.climate))).map(r => this.roomName(r));
+    const down = this.powerNow()
+      .rooms.filter(r => this.st(r.climate) && !ok(this.st(r.climate)))
+      .map(r => this.roomName(r));
     if (down.length) items.push(['warn', `${plural(down.length, 'thermostat')} not reporting`, down.join(', ')]);
     // the peak flags and the Hilo gateway are read as the sensors say them until the Status checks move to the providers (#254)
     const peak = this.st(this.E.hqPeak),
@@ -2369,8 +2369,8 @@ export class LegacyPanel {
       n = L.rooms.filter(r => r.heating).length;
     const right = `${L.heatPump?.on ? 'Heat pump + ' : ''}${plural(n, 'room')} heating`;
     const rooms = L.rooms
-      .map((r, i) => {
-        const name = this.roomName(this.ROOMS[i]);
+      .map(r => {
+        const name = this.roomName(r);
         const s = r.heating
           ? `Heating · ${(r.power ?? 0).toFixed(1)} kW`
           : !r.available
@@ -3131,7 +3131,8 @@ export class LegacyPanel {
     const pump = L.heatPump,
       hpOn = !!pump?.on;
     const n = L.rooms.filter(r => r.heating).length,
-      hp = this.st(this.E.hp); // its words and attributes; whether it is there and available is the provider's
+      hp = this.st(this.E.hp), // its words and attributes; whether it is there and available is the provider's
+      icons = Object.fromEntries(this.ROOMS.map(x => [x.k, x.icon])); // the glyph is the config's, by the room's key
     const B = this.hpBrand(),
       hpSb = !pump
         ? 'Not found'
@@ -3149,10 +3150,10 @@ export class LegacyPanel {
         tv: avg == null ? '–' : avg.toFixed(1) + '°',
         cls: n || hpOn ? 'on' : '',
       },
-      ...L.rooms.map((r, i) => ({
+      ...L.rooms.map(r => ({
         id: r.key,
-        icon: this.ROOMS[i].icon,
-        nm: this.roomName(this.ROOMS[i]),
+        icon: icons[r.key],
+        nm: this.roomName(r),
         sb: !r.available
           ? 'Unavailable'
           : r.heating
@@ -3406,7 +3407,8 @@ export class LegacyPanel {
     const hp = this.st(this.E.hp),
       hpTxt = !ok(hp) ? 'offline' : hp.state === 'off' ? 'off' : hp.attributes.hvac_action || hp.state;
     const c = this.car ? this.carState() : null,
-      // the tier as the tile said it: "low rate", "medium rate", "challenge rate", "current rate", "rate unknown"
+      // the tier as the tile said it: "low rate", "medium rate", "challenge rate", "current rate", "rate unknown"; the legacy English,
+      // which leaves with the Home tiles (#268), when the model's tier wording takes over
       rateShort = {
         low: 'low rate',
         medium: 'medium rate',
@@ -4163,9 +4165,9 @@ export class LegacyPanel {
     const stops = dark ? HEAT_DARK : HEAT_LIGHT;
     this.$('cheatl').innerHTML =
       `<span class="hbar" style="background:linear-gradient(90deg,${Array.from({length: 19}, (_, i) => heatColor(HEAT_LO + i / 2, stops)).join(',')})"></span><span class="hticks">${[17, 19, 21, 23, 25].map(t => `<i style="left:${((t - HEAT_LO) / (HEAT_HI - HEAT_LO)) * 100}%">${t}°</i>`).join('')}</span>`;
-    const series = [...this.ROOMS].reverse().map(x => ({
+    const series = [...this.powerNow().rooms].reverse().map(x => ({
       name: this.roomName(x),
-      data: this.bucket(C.rooms[x.k] || [], r).map(([k, lbl, v]) => ({x: lbl, y: v, k})),
+      data: this.bucket(C.rooms[x.key] || [], r).map(([k, lbl, v]) => ({x: lbl, y: v, k})),
     }));
     const cats = (series[0] || {data: []}).data.map(p => p.x);
     // a house without thermostats has no heatmap to draw (ApexCharts throws on an empty heatmap)
@@ -4273,7 +4275,7 @@ export class LegacyPanel {
     } else if (this.climSel === 'house') {
       title = 'Whole house';
       sub = `Average of ${this.ROOMS.length} rooms`;
-      const ts = L.rooms.map((r, i) => ({...r, name: this.roomName(this.ROOMS[i])})).filter(r => r.temperature != null),
+      const ts = L.rooms.map(r => ({...r, name: this.roomName(r)})).filter(r => r.temperature != null),
         sorted = [...ts].sort((a, b) => b.temperature - a.temperature);
       t = ts.length ? sum(ts.map(r => r.temperature)) / ts.length : null;
       const n = L.rooms.filter(r => r.heating).length;
@@ -4291,9 +4293,8 @@ export class LegacyPanel {
       ];
       pts = C ? this.houseSeries(C) : [];
     } else {
-      const i = this.ROOMS.findIndex(r => r.k === this.climSel),
-        r = L.rooms[i];
-      title = this.roomName(this.ROOMS[i]);
+      const r = L.rooms.find(x => x.key === this.climSel);
+      title = this.roomName(r);
       sub = 'Hilo thermostat';
       t = r.temperature;
       sp = r.setpoint;
@@ -4574,7 +4575,7 @@ export class LegacyPanel {
           'climate',
           'set_temperature',
           {entity_id: r.climate, temperature: v},
-          `${this.roomName(r)} ${v <= 5.5 ? 'off' : 'set to ' + v.toFixed(1) + '°'}`,
+          `${this.roomName(this.powerNow().rooms.find(x => x.key === r.k))} ${v <= 5.5 ? 'off' : 'set to ' + v.toFixed(1) + '°'}`,
         ),
       );
     }
@@ -4611,7 +4612,7 @@ export class LegacyPanel {
           'climate',
           'set_temperature',
           {entity_id: r.climate, temperature: v},
-          `${this.roomName(r)} ${v <= 5.5 ? 'off' : 'set to ' + v.toFixed(1) + '°'}`,
+          `${this.roomName(this.powerNow().rooms.find(x => x.key === r.k))} ${v <= 5.5 ? 'off' : 'set to ' + v.toFixed(1) + '°'}`,
         ),
       );
     } else if (k === 'allsp') {
