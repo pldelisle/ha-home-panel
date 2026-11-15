@@ -647,4 +647,9 @@ export const fr: Record<MessageKey, string> = {
   'climate.action.heating': 'chauffe',
   'climate.action.cooling': 'refroidit',
   'climate.action.idle': 'au repos',
+  'climate.action.heat': 'Chauffage',
+  'climate.action.cool': 'Climatisation',
+  'climate.action.auto': 'Auto',
+  'climate.action.dry': 'Déshumidification',
+  'climate.action.fan': 'Ventilation',
 };

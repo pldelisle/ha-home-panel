@@ -639,7 +639,7 @@ export const en = {
   'energy.totals.rate': 'Rate now',
   'energy.totals.rateTier': 'Hilo {tier}',
   // the Climate list's items, the house, each room and the heat pump (src/features/climate/items.ts); the heat pump's maker is the
-  // device's, so `{brand}` is a name; its action is Home Assistant's own word, worded here for the three the legacy layer translated
+  // device's, so `{brand}` is a name; its action is Home Assistant's own word, worded here for the eight the legacy layer translated: three actions and the modes that stand in for a missing one
   'climate.wholeHouse': 'Whole house',
   'climate.roomsHeating': '{n, plural, =0 {# rooms} one {# room} other {# rooms}} heating',
   'climate.heatPumpPlusRooms': 'Heat pump + {n, plural, =0 {# rooms} one {# room} other {# rooms}} heating',
@@ -656,6 +656,11 @@ export const en = {
   'climate.action.heating': 'heating',
   'climate.action.cooling': 'cooling',
   'climate.action.idle': 'idle',
+  'climate.action.heat': 'heat',
+  'climate.action.cool': 'cool',
+  'climate.action.auto': 'auto',
+  'climate.action.dry': 'dry',
+  'climate.action.fan': 'fan',
 } as const;
 
 /** Every message key; a key exists when it is written in `en`. */

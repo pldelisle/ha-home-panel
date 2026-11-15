@@ -9,11 +9,16 @@ import {roomName, type RoomNameDeps} from '../../core/i18n/room-name.ts';
 import {FROST_GUARD} from './gauge-geometry.ts';
 import type {ClimateInputs} from './inputs.ts';
 
-/** The heat pump's actions the catalog words, by what Home Assistant says; any other action, or a mode standing in for one, is shown as it says it. */
+/** The heat pump's actions, and the modes that stand in for a missing action, that the catalog words, by what Home Assistant says; any other is shown as it says it. */
 const ACTION_WORDS: ReadonlyMap<string, MessageKey> = new Map([
   ['heating', 'climate.action.heating'],
   ['cooling', 'climate.action.cooling'],
   ['idle', 'climate.action.idle'],
+  ['heat', 'climate.action.heat'],
+  ['cool', 'climate.action.cool'],
+  ['auto', 'climate.action.auto'],
+  ['dry', 'climate.action.dry'],
+  ['fan', 'climate.action.fan'],
 ]);
 
 /** `on` for what is heating, `bad` for what is offline or unavailable. */

@@ -23,7 +23,7 @@ src/features/climate/
 
 ## The geometry
 
-`dialGeometry` and `gaugeGeometry` return numbers and path data, never markup: the element places them with `svg` templates, as Energy's `flowLayout` does, so the hardest SVG in the panel is tested with numbers. The dial's setpoint has three states, kept apart: a number (on, or off at the 5 degree frost guard), `null` (off) and `undefined` (not loaded, as on the house's dial, which has no knob). The words ("Off", the gauge's caption) are the model's, from `off` and `caption`. `dialValueFromPointer` is the way back: the angle from the dial's centre, snapped to half degrees, with `'off'` at or below the frost guard, and the quarter turn below the dial read as the nearer end.
+`dialGeometry` and `gaugeGeometry` return numbers and path data, never markup: the element places them with `svg` templates, as Energy's `flowLayout` does, so the hardest SVG in the panel is tested with numbers. The dial's setpoint has three states, kept apart: a number (on, or off at the 5 degree frost guard), `null` (off) and `undefined` (not loaded, as on the house's dial, which has no knob). The words ("Off", the gauge's caption) are the model's, from `off` and `caption`. `dialValueFromPointer` is the way back: the angle from the dial's centre, snapped to half degrees, with `'off'` at or below the frost guard (the legacy returned the lowest step `lo` there, so the command that follows, #243 and #248, sends `lo` for `'off'`), and the quarter turn below the dial read as the nearer end.
 
 ## Words
 

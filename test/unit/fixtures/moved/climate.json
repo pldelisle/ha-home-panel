@@ -25,6 +25,11 @@
     },
     {"key": "climate.action.heating"},
     {"key": "climate.action.cooling"},
-    {"key": "climate.action.idle"}
+    {"key": "climate.action.idle"},
+    {"key": "climate.action.heat"},
+    {"key": "climate.action.cool"},
+    {"key": "climate.action.auto"},
+    {"key": "climate.action.dry"},
+    {"key": "climate.action.fan"}
   ]
 }

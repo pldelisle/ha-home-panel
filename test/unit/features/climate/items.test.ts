@@ -153,6 +153,12 @@ describe('the heat pump', () => {
       sub: 'Daikin · chauffe à 22°',
     });
     expect(french(pump('heat', {hvac_action: 'idle'})).at(-1)).toMatchObject({sub: 'Daikin · au repos'});
+    // a mode stands in for a missing action: the modes the layer translated are worded, the others are shown as Home Assistant says them
+    expect(french(pump('heat', {})).at(-1)).toMatchObject({sub: 'Daikin · Chauffage'});
+    expect(french(pump('cool', {})).at(-1)).toMatchObject({sub: 'Daikin · Climatisation'});
+    expect(french(pump('dry', {})).at(-1)).toMatchObject({sub: 'Daikin · Déshumidification'});
+    expect(french(pump('fan_only', {})).at(-1)).toMatchObject({sub: 'Daikin · fan_only'});
+    expect(french(pump('heat', {temperature: 22})).at(-1)).toMatchObject({sub: 'Daikin · Chauffage à 22°'});
     expect(french(pump('heat', {hvac_action: 'heating'}))[0]).toMatchObject({sub: 'Thermopompe + 0 pièces chauffent'});
   });
 });
