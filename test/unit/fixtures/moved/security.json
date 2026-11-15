@@ -1,0 +1,344 @@
+{
+  "about": "The English messages the Security move introduced (src/core/i18n/en.ts, security.*), each with sample values. test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer made of the English; `written` is French the layer does not make (a text the legacy panel never drew, or one it left in English), `frame` the sentence a part is read in. The map entries stay until #227 deletes the legacy Security methods. Deleted with the layer in phase 4.",
+  "messages": [
+    {
+      "key": "security.cameras"
+    },
+    {
+      "key": "security.notConnected"
+    },
+    {
+      "key": "security.camerasCount",
+      "values": {
+        "n": 1
+      }
+    },
+    {
+      "key": "security.camerasCount",
+      "values": {
+        "n": 2
+      }
+    },
+    {
+      "key": "security.noCamerasYet"
+    },
+    {
+      "key": "security.addProtectHint"
+    },
+    {
+      "key": "security.addProtect"
+    },
+    {
+      "key": "security.openLive",
+      "values": {
+        "name": "Porch"
+      },
+      "written": "Ouvrir Porch en direct"
+    },
+    {
+      "key": "security.cameraOffline"
+    },
+    {
+      "key": "security.state.idle"
+    },
+    {
+      "key": "security.state.recording"
+    },
+    {
+      "key": "security.state.streaming"
+    },
+    {
+      "key": "security.offline"
+    },
+    {
+      "key": "security.motionNow"
+    },
+    {
+      "key": "security.motionAgo",
+      "values": {
+        "kind": "now"
+      }
+    },
+    {
+      "key": "security.motionAgo",
+      "values": {
+        "kind": "minutes",
+        "n": 5
+      }
+    },
+    {
+      "key": "security.motionAgo",
+      "values": {
+        "kind": "hours",
+        "n": 3
+      }
+    },
+    {
+      "key": "security.motionAgo",
+      "values": {
+        "kind": "date",
+        "date": "Nov 7"
+      },
+      "fr": {
+        "date": "7 nov."
+      }
+    },
+    {
+      "key": "security.motionTag"
+    },
+    {
+      "key": "security.lineMotionNow"
+    },
+    {
+      "key": "security.lastMotion",
+      "values": {
+        "kind": "now"
+      }
+    },
+    {
+      "key": "security.lastMotion",
+      "values": {
+        "kind": "minutes",
+        "n": 5
+      }
+    },
+    {
+      "key": "security.lastMotion",
+      "values": {
+        "kind": "hours",
+        "n": 3
+      }
+    },
+    {
+      "key": "security.lastMotion",
+      "values": {
+        "kind": "date",
+        "date": "Nov 7"
+      },
+      "fr": {
+        "date": "7 nov."
+      }
+    },
+    {
+      "key": "security.doorsMotion"
+    },
+    {
+      "key": "security.doorsOpen",
+      "values": {
+        "n": 1
+      }
+    },
+    {
+      "key": "security.doorsOpen",
+      "values": {
+        "n": 2
+      }
+    },
+    {
+      "key": "security.doorClosed"
+    },
+    {
+      "key": "security.allDoorsClosed"
+    },
+    {
+      "key": "security.noSensorsYet"
+    },
+    {
+      "key": "security.open"
+    },
+    {
+      "key": "security.closed"
+    },
+    {
+      "key": "security.noMotion"
+    },
+    {
+      "key": "security.forDuration",
+      "values": {
+        "d": "12 min"
+      },
+      "frame": {
+        "en": "· ",
+        "fr": "· "
+      }
+    },
+    {
+      "key": "security.batteryLow",
+      "values": {
+        "n": 9
+      }
+    },
+    {
+      "key": "security.lux",
+      "values": {
+        "n": 120
+      }
+    },
+    {
+      "key": "security.ago",
+      "values": {
+        "kind": "now"
+      }
+    },
+    {
+      "key": "security.ago",
+      "values": {
+        "kind": "minutes",
+        "n": 5
+      }
+    },
+    {
+      "key": "security.ago",
+      "values": {
+        "kind": "hours",
+        "n": 3
+      }
+    },
+    {
+      "key": "security.ago",
+      "values": {
+        "kind": "date",
+        "date": "Nov 7"
+      },
+      "fr": {
+        "date": "7 nov."
+      }
+    },
+    {
+      "key": "security.justNow",
+      "written": "un instant"
+    },
+    {
+      "key": "security.summary.noCameras"
+    },
+    {
+      "key": "security.summary.allDoorsClosed"
+    },
+    {
+      "key": "security.summary.motionNow"
+    },
+    {
+      "key": "security.summary.noMotion"
+    },
+    {
+      "key": "security.history",
+      "values": {
+        "name": "Hall"
+      },
+      "written": "Historique de Hall"
+    },
+    {
+      "key": "security.door"
+    },
+    {
+      "key": "security.motion"
+    },
+    {
+      "key": "security.heading",
+      "values": {
+        "name": "Front door",
+        "range": "last 24 hours"
+      },
+      "fr": {
+        "range": "dernières 24 heures"
+      }
+    },
+    {
+      "key": "security.loading"
+    },
+    {
+      "key": "security.unavailable"
+    },
+    {
+      "key": "security.openPeriods"
+    },
+    {
+      "key": "security.motionPeriods"
+    },
+    {
+      "key": "security.notOpenedInPeriod"
+    },
+    {
+      "key": "security.noMotionInPeriod"
+    },
+    {
+      "key": "security.stillOpen"
+    },
+    {
+      "key": "security.openFor",
+      "values": {
+        "d": "40 s"
+      }
+    },
+    {
+      "key": "security.openFor",
+      "values": {
+        "d": "3 min"
+      }
+    },
+    {
+      "key": "security.openFor",
+      "values": {
+        "d": "1 h 5 min"
+      }
+    },
+    {
+      "key": "security.motionFor",
+      "values": {
+        "d": "40 s"
+      }
+    },
+    {
+      "key": "security.motionFor",
+      "values": {
+        "d": "3 min"
+      }
+    },
+    {
+      "key": "security.motionFor",
+      "values": {
+        "d": "1 h 5 min"
+      }
+    },
+    {
+      "key": "security.overPeriod"
+    },
+    {
+      "key": "security.timesOpened"
+    },
+    {
+      "key": "security.motionEvents"
+    },
+    {
+      "key": "security.totalOpen"
+    },
+    {
+      "key": "security.totalMotion"
+    },
+    {
+      "key": "security.longest"
+    },
+    {
+      "key": "security.last"
+    },
+    {
+      "key": "security.duration.seconds",
+      "values": {
+        "n": 40
+      }
+    },
+    {
+      "key": "security.duration.minutes",
+      "values": {
+        "n": 12
+      }
+    },
+    {
+      "key": "security.duration.hours",
+      "values": {
+        "n": 1,
+        "m": 5
+      }
+    }
+  ]
+}

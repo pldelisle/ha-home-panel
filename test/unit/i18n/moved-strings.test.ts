@@ -67,6 +67,7 @@ const ofMove = (prefix: string) => Object.keys(en).filter(key => key.startsWith(
 describe.each([
   ['weather', 'weather.', ['src/features/weather/', 'src/providers/'], []],
   ['media', 'media.', ['src/features/media/', 'src/providers/'], ['common.failed']],
+  ['security', 'security.', ['src/features/security/'], []],
   ['chart', 'chart.', ['src/ui/'], []],
   ['ranges', 'range.', ['src/ui/'], []],
   ['settings', 'settings.', ['src/shell/'], []],
