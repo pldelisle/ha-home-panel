@@ -638,6 +638,24 @@ export const en = {
   'energy.totals.chargingDays': '{n, plural, =0 {# charging days} one {# charging day} other {# charging days}}',
   'energy.totals.rate': 'Rate now',
   'energy.totals.rateTier': 'Hilo {tier}',
+  // the Climate list's items, the house, each room and the heat pump (src/features/climate/items.ts); the heat pump's maker is the
+  // device's, so `{brand}` is a name; its action is Home Assistant's own word, worded here for the three the legacy layer translated
+  'climate.wholeHouse': 'Whole house',
+  'climate.roomsHeating': '{n, plural, =0 {# rooms} one {# room} other {# rooms}} heating',
+  'climate.heatPumpPlusRooms': 'Heat pump + {n, plural, =0 {# rooms} one {# room} other {# rooms}} heating',
+  'climate.unavailable': 'Unavailable',
+  'climate.heatingKw': 'Heating · {kw} kW',
+  'climate.holding': 'Holding {n}°',
+  'climate.off': 'Off',
+  'climate.heatPump': 'Heat pump',
+  'climate.notFound': 'Not found',
+  'climate.hpOffline': '{brand} · offline',
+  'climate.hpOff': '{brand} · off',
+  'climate.hpAction': '{brand} · {action}',
+  'climate.hpActionTo': '{brand} · {action} to {n}°',
+  'climate.action.heating': 'heating',
+  'climate.action.cooling': 'cooling',
+  'climate.action.idle': 'idle',
 } as const;
 
 /** Every message key; a key exists when it is written in `en`. */

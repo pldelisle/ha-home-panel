@@ -13,6 +13,8 @@ const room = (heating: boolean): RoomPower => ({
   power: heating ? 1 : 0,
   temperature: 20,
   setpoint: 21,
+  minTemp: 5,
+  maxTemp: 30,
   heating,
   available: true,
 });

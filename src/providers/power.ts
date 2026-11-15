@@ -9,6 +9,9 @@ import type {HassEntities} from '../core/hass.ts';
 import type {RoomNameInputs} from '../core/i18n/room-name.ts';
 import {isAvailable, kilowattsOf, numberAttributeOf, numberOf, textAttributeOf} from '../core/states.ts';
 
+/** A thermostat that does not say its own range: Hilo's 5 degree frost guard up to 30 (the legacy panel's defaults, deleted in #248). */
+const DEFAULT_MIN_TEMP = 5;
+const DEFAULT_MAX_TEMP = 30;
 /** A room whose own power sensor reads over 50 W is heating even when its thermostat says otherwise (the legacy `live()`, deleted in #241). */
 const HEATING_KW = 0.05;
 
@@ -20,6 +23,10 @@ export interface RoomPower extends RoomNameInputs {
   temperature: number | null;
   /** The thermostat's `temperature` attribute; null when it is unavailable or has none. */
   setpoint: number | null;
+  /** The thermostat's `min_temp`, else 5; the lowest setpoint its dial and stepper go to. */
+  minTemp: number;
+  /** The thermostat's `max_temp`, else 30. */
+  maxTemp: number;
   /** The thermostat says `heating`, or the room's power is over 50 W. */
   heating: boolean;
   /** False when the thermostat is missing, `unavailable` or `unknown`. */
@@ -53,6 +60,8 @@ export function roomPower(states: HassEntities, room: RoomSpec): RoomPower {
     power,
     temperature: reading ?? numberOf(states, room.temp),
     setpoint: available ? numberAttributeOf(states, room.climate, 'temperature') : null,
+    minTemp: (available ? numberAttributeOf(states, room.climate, 'min_temp') : null) ?? DEFAULT_MIN_TEMP,
+    maxTemp: (available ? numberAttributeOf(states, room.climate, 'max_temp') : null) ?? DEFAULT_MAX_TEMP,
     heating:
       (available && textAttributeOf(states, room.climate, 'hvac_action') === 'heating') || (power ?? 0) > HEATING_KW,
     available,
@@ -60,7 +69,7 @@ export function roomPower(states: HassEntities, room: RoomSpec): RoomPower {
 }
 
 /** The live flow, read once for every reader: the grid, the loads, each room, the heat pump. */
-export function powerNow(states: HassEntities, config: ResolvedConfig): PowerNow {
+export function powerNow(states: HassEntities, config: Pick<ResolvedConfig, 'entities' | 'rooms'>): PowerNow {
   const {entities} = config;
   const grid = kilowattsOf(states, entities.grid);
   const waterHeater = kilowattsOf(states, entities.whP);
