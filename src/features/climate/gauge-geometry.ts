@@ -3,7 +3,7 @@
 // included (deleted in #248).
 // Must not: import Lit or the DOM, read state or the clock, or hold a word (the model words the caption from its kind).
 /** The scale's ends in degrees (legacy, #248). */
-const GAUGE = {lo: 14, hi: 30} as const;
+export const GAUGE = {lo: 14, hi: 30} as const;
 
 export interface GaugeGeometry {
   /** The room's temperature, as a percentage from the scale's left end, kept in 0 to 100. */

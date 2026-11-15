@@ -18,7 +18,7 @@ import {isAvailable, kilowattsOf, numberAttributeOf, numberOf, textAttributeOf} 
 export const FROST_GUARD = 5;
 export const OFF_AT_OR_BELOW = 5.5;
 /** A thermostat that does not say its own range goes up to 30 (legacy, #248). */
-const DEFAULT_MAX_TEMP = 30;
+export const DEFAULT_MAX_TEMP = 30;
 /** A room whose own power sensor reads over 50 W is heating even when its thermostat says otherwise (the legacy `live()`, deleted in #241). */
 const HEATING_KW = 0.05;
 

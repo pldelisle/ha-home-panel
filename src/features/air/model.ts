@@ -3,7 +3,7 @@
 // message through `deps.t` and every number through `deps.fmt`, and a held mode or speed comes from `deps.overlay` (ADR 0023). Each rule is the
 // legacy panel's own (`renderAir`, `renderAirLive`, `roomAir`, `airSummary`), deleted in #234.
 // Must not: import the DOM, Lit or the shell, read the clock, or hold text the household reads (a catalog key says it).
-import {capitalise, DASH} from '../../core/figures.ts';
+import {capitalWords, DASH} from '../../core/figures.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
 import {whole, type Formatters} from '../../core/i18n/format.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
@@ -321,7 +321,7 @@ function roomDetail(room: AirRoomInputs, rating: RoomRating, deps: AirModelDeps)
 function pollenValue(status: string | null, t: Translate): string {
   if (status === null) return DASH;
   const key = POLLEN_STATUSES.get(status.replace(/_/g, ' '));
-  return key ? t(key) : capitalise(status.replace(/_/g, ' '));
+  return key ? t(key) : capitalWords(status);
 }
 
 function outsideDetail(outside: OutsideAirInputs, aqhi: number | null, {t, fmt}: AirModelDeps): OutsideDetail {

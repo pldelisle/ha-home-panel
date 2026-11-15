@@ -14,7 +14,7 @@ describe('dialGeometry', () => {
     expect(dial.active).toBe('M55.0 205.0A106 106 0 0 1 195.0 46.2');
     expect(dial.now).toEqual({cx: 186.8, cy: 40.5});
     expect(dial.knob).toEqual({cx: 195, cy: 46.2});
-    expect(dial).toMatchObject({big: '21.0°', off: false});
+    expect(dial).toMatchObject({shown: 21, off: false});
   });
 
   test('the knob and the dot sit at the angles of lo, the midpoint and hi', () => {
@@ -28,7 +28,7 @@ describe('dialGeometry', () => {
     const dial = dialGeometry(30, 99, 16, 30);
     expect(dial.knob).toEqual({cx: 205, cy: 205});
     expect(dial.active).toBe('M55.0 205.0A106 106 0 1 1 205.0 205.0');
-    expect(dial.big).toBe('30.0°');
+    expect(dial.shown).toBe(30);
   });
 
   test('a setpoint at lo has no arc to draw, and no reading has no dot', () => {
@@ -39,15 +39,15 @@ describe('dialGeometry', () => {
     });
   });
 
-  test('off: a setpoint at the frost guard, or none, draws the knob at the start and no arc, and the model words it', () => {
+  test('off: a setpoint at the frost guard, or none, draws the knob at the start (shown as lo) and no arc, and the model words it', () => {
     for (const sp of [5, 5.5, null]) {
-      expect(dialGeometry(20.5, sp, 5, 30)).toMatchObject({active: null, knob: {cx: 55, cy: 205}, big: '', off: true});
+      expect(dialGeometry(20.5, sp, 5, 30)).toMatchObject({active: null, knob: {cx: 55, cy: 205}, shown: 5, off: true});
     }
   });
 
-  test('not loaded is not off: the setpoint is undefined, there is no knob, and the centre shows the temperature', () => {
-    expect(dialGeometry(20.5, undefined, 5, 30)).toMatchObject({active: null, knob: null, big: '20.5°', off: false});
-    expect(dialGeometry(null, undefined, 5, 30)).toMatchObject({knob: null, now: null, big: '–', off: false});
+  test('not loaded is not off: the setpoint is undefined, there is no knob, and the centre shows the temperature (the model words it, so `shown` is null)', () => {
+    expect(dialGeometry(20.5, undefined, 5, 30)).toMatchObject({active: null, knob: null, shown: null, off: false});
+    expect(dialGeometry(null, undefined, 5, 30)).toMatchObject({knob: null, now: null, shown: null, off: false});
   });
 
   test('55 ticks, every sixth one long, from the start to the end of the track', () => {

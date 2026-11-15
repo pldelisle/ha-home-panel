@@ -5,6 +5,7 @@
 import {DASH} from '../../core/figures.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
 import type {Formatters} from '../../core/i18n/format.ts';
+import type {Translate} from '../../core/i18n/messages.ts';
 import {roomName, type RoomNameDeps} from '../../core/i18n/room-name.ts';
 import type {HeatPumpInputs} from '../../providers/heat-pump.ts';
 import {OFF_AT_OR_BELOW, type RoomPower} from '../../providers/power.ts';
@@ -23,7 +24,7 @@ const ACTION_WORDS: ReadonlyMap<string, MessageKey> = new Map([
 ]);
 
 /** `on` for what is heating, `bad` for what is offline or unavailable. */
-type Tone = '' | 'on' | 'bad';
+export type Tone = '' | 'on' | 'bad';
 
 export interface ClimateItem {
   /** `house`, `hp`, or the room's key. */
@@ -41,8 +42,23 @@ export interface ClimateItemsDeps extends RoomNameDeps {
   fmt: Formatters;
 }
 
-/** A temperature to a tenth with its degree sign, the legacy `f1(v) + '°'`; a room with no reading shows `–°` as it did. */
-const degrees = (fmt: Formatters, v: number | null): string => `${v === null ? DASH : fmt.fixed(v, 1)}°`;
+/** What Home Assistant says the heat pump is doing, as the catalog words it, else as it says it. */
+export function actionWord(said: string, t: Translate): string {
+  const word = ACTION_WORDS.get(said);
+  return word ? t(word) : said;
+}
+
+/** The mean of the rooms that read a temperature; null when none does. */
+export function averageTemperature(rooms: readonly RoomPower[]): number | null {
+  const temperatures = rooms.flatMap(room => (room.temperature === null ? [] : [room.temperature]));
+  return temperatures.length ? temperatures.reduce((sum, v) => sum + v, 0) / temperatures.length : null;
+}
+
+/** How many rooms are heating. */
+export const heatingCount = (rooms: readonly RoomPower[]): number => rooms.filter(room => room.heating).length;
+
+/** A temperature to a tenth with its degree sign, the legacy `f1(v) + '°'`; a room with no reading shows `–°` as it did. The model's dial reads its centre with it. */
+export const tenthDegrees = (fmt: Formatters, v: number | null): string => `${v === null ? DASH : fmt.fixed(v, 1)}°`;
 
 /** A room's status line, the legacy `climItems()`'s order of questions: unavailable, heating, holding a setpoint above the frost guard, else off. */
 function roomStatus(room: RoomPower, {t, fmt}: ClimateItemsDeps): string {
@@ -58,9 +74,7 @@ function heatPumpStatus(heatPump: HeatPumpInputs, brand: string, {t, fmt}: Clima
   if (!heatPump.present) return t('climate.notFound');
   if (!heatPump.available) return t('climate.hpOffline', {brand});
   if (heatPump.mode === 'off') return t('climate.hpOff', {brand});
-  const said = heatPump.action || heatPump.mode;
-  const word = ACTION_WORDS.get(said);
-  const action = word ? t(word) : said;
+  const action = actionWord(heatPump.action || heatPump.mode, t);
   if (heatPump.target === null) return t('climate.hpAction', {brand, action});
   return t('climate.hpActionTo', {brand, action, n: fmt.number(heatPump.target, 2)});
 }
@@ -68,16 +82,15 @@ function heatPumpStatus(heatPump: HeatPumpInputs, brand: string, {t, fmt}: Clima
 /** The items in list order: the whole house, each room, then the heat pump when the house has one. */
 export function climateItems({rooms, heatPump, heatPumpOn}: ClimateInputs, deps: ClimateItemsDeps): ClimateItem[] {
   const {t, fmt} = deps;
-  const temperatures = rooms.flatMap(room => (room.temperature === null ? [] : [room.temperature]));
-  const average = temperatures.length ? temperatures.reduce((sum, v) => sum + v, 0) / temperatures.length : null;
-  const heating = rooms.filter(room => room.heating).length;
+  const average = averageTemperature(rooms);
+  const heating = heatingCount(rooms);
   const items: ClimateItem[] = [
     {
       id: 'house',
       icon: 'house',
       name: t('climate.wholeHouse'),
       sub: t(heatPumpOn ? 'climate.heatPumpPlusRooms' : 'climate.roomsHeating', {n: heating}),
-      value: average === null ? DASH : degrees(fmt, average),
+      value: average === null ? DASH : tenthDegrees(fmt, average),
       tone: heating || heatPumpOn ? 'on' : '',
     },
     ...rooms.map((room): ClimateItem => ({
@@ -85,7 +98,7 @@ export function climateItems({rooms, heatPump, heatPumpOn}: ClimateInputs, deps:
       icon: room.icon,
       name: roomName(room, deps),
       sub: roomStatus(room, deps),
-      value: degrees(fmt, room.temperature),
+      value: tenthDegrees(fmt, room.temperature),
       tone: room.heating ? 'on' : !room.available ? 'bad' : '',
     })),
   ];
@@ -95,7 +108,7 @@ export function climateItems({rooms, heatPump, heatPumpOn}: ClimateInputs, deps:
       icon: 'fan',
       name: t('climate.heatPump'),
       sub: heatPumpStatus(heatPump, heatPump.brand ?? t('climate.heatPump'), deps),
-      value: heatPump.available && heatPump.temperature !== null ? degrees(fmt, heatPump.temperature) : DASH,
+      value: heatPump.available && heatPump.temperature !== null ? tenthDegrees(fmt, heatPump.temperature) : DASH,
       tone: !heatPump.available ? 'bad' : heatPumpOn ? 'on' : '',
     });
   }

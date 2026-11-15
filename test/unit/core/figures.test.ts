@@ -1,6 +1,6 @@
 // figures.ts and the whole-number formats beside fmt.integer: the dash, the capital, the hour and the day, and the -0 that must not show.
 import {describe, expect, test} from 'vitest';
-import {capitalise, DASH, DAY_MS, HOUR_MS} from '../../../src/core/figures.ts';
+import {capitalise, capitalWords, DASH, DAY_MS, HOUR_MS} from '../../../src/core/figures.ts';
 import {createFormatters, degrees, whole} from '../../../src/core/i18n/format.ts';
 import {englishLocale} from '../../../src/core/i18n/locale.ts';
 
@@ -15,6 +15,14 @@ describe('figures', () => {
     expect(capitalise('mainly sunny')).toBe('Mainly sunny');
     expect(capitalise('LIGHT')).toBe('LIGHT');
     expect(capitalise('')).toBe('');
+  });
+
+  test('capitalWords says a name as a phrase: every underscore a space, the first letter a capital', () => {
+    expect(capitalWords('fan_only')).toBe('Fan only');
+    expect(capitalWords('very_high')).toBe('Very high');
+    expect(capitalWords('eco_boost_max')).toBe('Eco boost max');
+    expect(capitalWords('heating')).toBe('Heating');
+    expect(capitalWords('')).toBe('');
   });
 
   test('whole rounds, and a small negative is 0 and not -0; degrees adds the sign', () => {
