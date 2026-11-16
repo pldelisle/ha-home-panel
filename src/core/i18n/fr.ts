@@ -1083,5 +1083,7 @@ export const fr: Record<MessageKey, string> = {
     '{what, select, scheduled {prévue} skip {vérifiée, rien fait} now {en cours} err {erreur} other {exécutée}}',
   'automations.timeline.one': '{time} {name}, {what}',
   'automations.timeline.item': '{name}, {what}',
+  // a run's time so far: minutes and seconds under an hour, then hours and minutes
+  'automations.elapsed': '{hours, plural, =0 {{minutes}:{seconds}} other {{hours} h {minutes}}}',
   'automations.timeline.group': 'De {from} à {to} · {n, plural, one {# exécution} other {# exécutions}} · {items}',
 };

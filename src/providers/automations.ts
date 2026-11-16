@@ -1,7 +1,7 @@
 // The house's automations as Home Assistant states them, and today's runs still to come from their time and sun triggers.
-// Pattern: an adapter below the features (ADR 0025), the rules of the legacy `auAutos()` and `auUpcoming()`; the Automations
-// feature reads both, and a later composition (the Home pane's "Coming up", spec 24) may read the second: the legacy
-// `upcoming()` does not read it today.
+// Pattern: an adapter below the features (ADR 0025), the rules of the legacy `auAutos()` and `auUpcoming()`; the legacy
+// Automations tab (`src/auto.js`) reads both until the Automations pane does (#273), and a later composition (the Home
+// pane's "Coming up", spec 24) may read the second.
 // Must not: word anything a person reads (a name is the resolver's, a time is a number), or read the clock or the DOM.
 import type {AutomationConfig} from '../core/ha.ts';
 import type {HassEntities} from '../core/hass.ts';
@@ -11,7 +11,7 @@ import {isAvailable} from '../core/states.ts';
 
 export interface Automation {
   entity: string;
-  /** The config's `id`, which the traces are kept under; undefined for an automation written with none. */
+  /** The config's `id` as text, which the traces are kept under; undefined for an automation written with none. */
   item: string | undefined;
   /** The display name, through the resolver. */
   name: string;
@@ -28,7 +28,10 @@ export function automationsOf(states: HassEntities, names: Names): Automation[] 
     .filter(s => s.entity_id.startsWith('automation.'))
     .map(s => ({
       entity: s.entity_id,
-      item: typeof s.attributes.id === 'string' ? s.attributes.id : undefined,
+      item:
+        typeof s.attributes.id === 'string' || typeof s.attributes.id === 'number'
+          ? String(s.attributes.id)
+          : undefined,
       name: names.name(s.entity_id),
       on: s.state === 'on',
       last: typeof s.attributes.last_triggered === 'string' ? s.attributes.last_triggered : null,

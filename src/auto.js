@@ -23,7 +23,7 @@ import {
   shortAlias as auShortAlias,
   triggerText,
 } from './features/automations/sentences.ts';
-import {elapsedText, fingerprint, noiseOf, picks} from './features/automations/traces.ts';
+import {elapsedText, fingerprint, noiseOf, picks, todayRuns} from './features/automations/traces.ts';
 import {isUp, timelineLayout} from './features/automations/timeline-layout.ts';
 
 // English, as `fmtEn` is: the rewrite layer translates what this file draws (#273 draws in the panel's language)
@@ -388,9 +388,6 @@ export const autoMethods = {
   auAutos() {
     return automationsOf(this.hass.states, this.store.names);
   },
-  auNoise(sm) {
-    return noiseOf(this.auCfg || {})(sm);
-  },
   async auLoad(force) {
     if (this.auBusy || !this.hass) return;
     if (!force && Date.now() - (this.auAt || 0) < 20000) return;
@@ -477,12 +474,13 @@ export const autoMethods = {
     const cfgs = this.auCfg || {},
       list = (this.auList || []).slice().sort((a, b) => Date.parse(a.timestamp.start) - Date.parse(b.timestamp.start));
     const midnight = Date.now() - auMins(Date.now(), this.fmtEn) * 60000 - new Date().getSeconds() * 1000;
-    const today = list.filter(sm => Date.parse(sm.timestamp.start) >= midnight && !this.auNoise(sm));
+    const noise = noiseOf(cfgs),
+      today = todayRuns(list, midnight, noise);
     const byItem = Object.fromEntries(A.filter(a => a.item).map(a => [a.item, a]));
     const runs = today.filter(
       sm => sm.script_execution !== 'failed_conditions' && sm.script_execution !== 'failed_single',
     );
-    const running = list.filter(sm => sm.state === 'running' && !this.auNoise(sm));
+    const running = list.filter(sm => sm.state === 'running' && !noise(sm));
     const off = A.filter(a => !a.on).length;
     this.set(
       'ausub',
@@ -509,7 +507,7 @@ export const autoMethods = {
         item: sm.item_id,
         name: (byItem[sm.item_id] || {}).name || sm.item_id,
       })),
-      ...up.map(u => ({up: true, ...u})),
+      ...up.map(u => ({up: /** @type {const} */ (true), ...u})),
     ].sort((a, b) => a.mins - b.mins);
     const tlW = (this.$('auhost') || {}).clientWidth || this.$app.clientWidth || 800;
     const layout = timelineLayout(dots, tlW, Date.now(), {t: tEn, fmt: this.fmtEn});
@@ -555,7 +553,7 @@ export const autoMethods = {
       const pill = !sm
         ? '<span class="pill">no run stored</span>'
         : sm.state === 'running'
-          ? `<span class="pill run" data-since="${esc(sm.timestamp.start)}">running ${elapsedText(Date.parse(sm.timestamp.start), Date.now())}</span>`
+          ? `<span class="pill run" data-since="${esc(sm.timestamp.start)}">running ${elapsedText(Date.parse(sm.timestamp.start), Date.now(), tEn)}</span>`
           : sm.script_execution === 'failed_conditions'
             ? `<span class="pill no">stopped ${this.fmtEn.time24(new Date(sm.timestamp.start))}</span>`
             : sm.script_execution === 'error'
@@ -601,7 +599,7 @@ export const autoMethods = {
     this.auDraw();
     // the running pill counts up without redrawing the graph
     this.root.querySelectorAll('#auhost .pill.run[data-since]').forEach(p => {
-      p.textContent = 'running ' + elapsedText(Date.parse(p.dataset.since), Date.now());
+      p.textContent = 'running ' + elapsedText(Date.parse(p.dataset.since), Date.now(), tEn);
     });
   },
   async auDraw() {

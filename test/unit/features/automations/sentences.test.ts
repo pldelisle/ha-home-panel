@@ -2,7 +2,7 @@
 // (the tables were checked line by line against the legacy `auTrig`, `auCond` and `auAct` before #271 deleted them), the
 // French of the trace fixtures' configs, and the helpers' corners.
 // Pattern: table-driven example tests at the pure function (ADR 0005; Meszaros, xUnit Test Patterns, "Parameterized Test").
-// Must not: mount an element, read the clock, or hold a real name (the made-up house's entities and literal ones only).
+// Must not: mount an element, read the clock, or hold a real name (the made-up house's states only).
 import {readdirSync, readFileSync} from 'node:fs';
 import {describe, expect, test} from 'vitest';
 import type {HassEntities} from '../../../../src/core/hass.ts';
@@ -11,13 +11,11 @@ import {englishLocale} from '../../../../src/core/i18n/locale.ts';
 import {createMessages} from '../../../../src/core/i18n/messages.ts';
 import {
   actionText,
-  capitalise,
   conditionText,
   cut,
   durationText,
   nameOf,
   shortAlias,
-  str,
   triggerText,
   type SentenceDeps,
 } from '../../../../src/features/automations/sentences.ts';
@@ -26,24 +24,8 @@ import {fakeHass} from '../../fake-hass.ts';
 
 type Row = [Record<string, unknown> | string, string, string];
 
-const entity = (id: string, friendly_name: string, device_class?: string) => ({
-  entity_id: id,
-  state: 'off',
-  attributes: {friendly_name, ...(device_class ? {device_class} : {})},
-  last_changed: '',
-  last_updated: '',
-  context: {id: '', parent_id: null, user_id: null},
-});
-const STATES = Object.fromEntries(
-  [
-    entity('binary_sensor.front_door', 'Front Door', 'door'),
-    entity('binary_sensor.hall_motion', 'Hall Motion', 'motion'),
-    entity('light.a', 'Lamp A'),
-    entity('light.b', 'Lamp B'),
-    entity('climate.x', 'Living'),
-    entity('script.bed', 'Bedtime - kids'),
-  ].map(s => [s.entity_id, s]),
-) as unknown as HassEntities;
+// the made-up house's states: its front door and hall motion sensor, its kitchen lights and living room heat pump
+const STATES = fakeHass.fromHouse(full).states;
 
 const depsOf = (language: 'en' | 'fr', states: HassEntities): SentenceDeps => ({
   t: createMessages({language, tag: `${language}-CA`}).t,
@@ -75,12 +57,20 @@ const TRIGGERS: Row[] = [
     'Motion',
     'Hall detects motion for 2 min',
   ],
-  [{platform: 'state', entity_id: 'climate.x', to: 'fan_only'}, 'Climate', 'Living → fan only'],
-  [{trigger: 'state', entity_id: 'light.a', to: 'on', for: 90}, 'Light', 'Lamp A → on for 2 min'],
-  [{trigger: 'state', entity_id: 'light.a', attribute: 'brightness_x'}, 'State', 'Lamp A brightness x changes'],
+  [{platform: 'state', entity_id: 'climate.living_room', to: 'fan_only'}, 'Climate', 'Living room → fan only'],
+  [{trigger: 'state', entity_id: 'light.kitchen_island', to: 'on', for: 90}, 'Light', 'Kitchen Island → on for 2 min'],
+  [
+    {trigger: 'state', entity_id: 'light.kitchen_island', attribute: 'brightness_x'},
+    'State',
+    'Kitchen Island brightness x changes',
+  ],
   [{trigger: 'state', entity_id: 'event.button_1'}, 'Button', 'Button 1 pressed'],
   [{trigger: 'state', entity_id: 'sensor.x', for: '{{ x }}'}, 'State', 'X changes for a while'],
-  [{trigger: 'state', entity_id: ['light.a', 'light.b', 'climate.x']}, 'State', 'Lamp A, Lamp B +1 changes'],
+  [
+    {trigger: 'state', entity_id: ['light.kitchen_island', 'light.kitchen_sink', 'climate.living_room']},
+    'State',
+    'Kitchen Island, Kitchen Sink +1 changes',
+  ],
   [{trigger: 'numeric_state', entity_id: 'zone.home', below: 1}, 'Presence', 'Nobody home'],
   [
     {trigger: 'numeric_state', entity_id: 'zone.home', above: 0, for: '00:01:00'},
@@ -110,49 +100,58 @@ const TRIGGERS: Row[] = [
   [{trigger: 'event', event_type: 'automation_reloaded'}, 'Event', 'Automations reloaded'],
   [{trigger: 'event', event_type: 'my_custom_event'}, 'Event', 'My custom event'],
   [
-    {trigger: 'template', value_template: "{{ is_state('light.a', 'on') and states('sensor.t') | float > 3 }}"},
+    {
+      trigger: 'template',
+      value_template: "{{ is_state('light.kitchen_island', 'on') and states('sensor.t') | float > 3 }}",
+    },
     'When',
-    'Lamp A on and T > 3',
+    'Kitchen Island on and T > 3',
   ],
   [
     {trigger: 'template', value_template: "{{ not is_state('binary_sensor.front_door', 'on') }}", for: 30},
     'When',
     'Front not open for 30 s',
   ],
-  [{trigger: 'zone', entity_id: 'person.alex', zone: 'zone.home', event: 'leave'}, 'Zone', 'Alex leaves Home zone'],
-  [{trigger: 'zone', entity_id: 'person.alex', zone: 'zone.work', event: 'enter'}, 'Zone', 'Alex enters Work'],
-  [{trigger: 'conversation_turn_on', entity_id: 'light.a'}, 'Request', 'Lamp A asked to turn on'],
+  [
+    {trigger: 'zone', entity_id: 'person.alex', zone: 'zone.home', event: 'leave'},
+    'Zone',
+    'Alex Example leaves Home zone',
+  ],
+  [{trigger: 'zone', entity_id: 'person.alex', zone: 'zone.work', event: 'enter'}, 'Zone', 'Alex Example enters Work'],
+  [{trigger: 'conversation_turn_on', entity_id: 'light.kitchen_island'}, 'Request', 'Kitchen Island asked to turn on'],
   [{trigger: 'mqtt'}, 'Trigger', 'Mqtt'],
   [{}, 'Trigger', 'Trigger'],
   [{alias: 'My trigger'}, 'Trigger', 'My trigger'],
 ];
 const CONDITIONS: Row[] = [
-  ["{{ is_state('light.a','on') }}", 'Check', 'Lamp A on'],
+  ["{{ is_state('light.kitchen_island','on') }}", 'Check', 'Kitchen Island on'],
   [{alias: 'Checked'}, 'Check', 'Checked'],
   [{condition: 'state', entity_id: 'zone.home', state: '0'}, 'Presence', 'Nobody home'],
   [{condition: 'state', entity_id: 'zone.home', state: 2, for: '00:10:00'}, 'Presence', '2 at home for 10 min'],
   [{condition: 'state', entity_id: 'binary_sensor.front_door', state: 'off'}, 'Doors', 'Front is closed'],
   [
-    {condition: 'state', entity_id: ['binary_sensor.front_door', 'light.a'], state: 'on'},
+    {condition: 'state', entity_id: ['binary_sensor.front_door', 'light.kitchen_island'], state: 'on'},
     'Doors',
-    'Front and Lamp A are open',
+    'Front and Kitchen Island are open',
   ],
   [
     {
       condition: 'state',
-      entity_id: ['light.a', 'light.b', 'climate.x'],
+      entity_id: ['light.kitchen_island', 'light.kitchen_sink', 'climate.living_room'],
       state: ['on', 'off'],
       attribute: 'x',
       for: {hours: 1},
     },
     'Light',
-    'Lamp A, Lamp B +1 are on or off (x) for 1 h',
+    'Kitchen Island, Kitchen Sink +1 are on or off (x) for 1 h',
   ],
   [{condition: 'state', entity_id: 'binary_sensor.hall_motion', state: 'on'}, 'Motion', 'Hall is motion'],
-  [{condition: 'state', entity_id: 'climate.x', state: 'fan_only'}, 'Climate', 'Living is fan only'],
+  [{condition: 'state', entity_id: 'climate.living_room', state: 'fan_only'}, 'Climate', 'Living room is fan only'],
   [{condition: 'numeric_state', entity_id: 'sensor.t', above: 1, attribute: 'some_attr'}, 'Value', 'T some attr > 1'],
   [{condition: 'trigger', id: 'a'}, 'Started by', 'the “a” trigger'],
   [{condition: 'trigger', id: ['a', 'b']}, 'Started by', 'the “a” or “b” trigger'],
+  [{condition: 'trigger'}, 'Started by', 'the “” trigger'],
+  [{condition: 'state', entity_id: 'binary_sensor.front_door', state: 'not_home'}, 'Doors', 'Front is not_home'],
   [
     {condition: 'time', after: '22:00:00', before: '06:00:00', weekday: ['sat', 'sun']},
     'Time',
@@ -169,10 +168,10 @@ const CONDITIONS: Row[] = [
     {
       condition: 'template',
       value_template:
-        "{{ state_attr('climate.x', 'current_temperature') >= 20 and repeat.index <= 3 or not wait.completed }}",
+        "{{ state_attr('climate.living_room', 'current_temperature') >= 20 and repeat.index <= 3 or not wait.completed }}",
     },
     'Check',
-    'Living current temperature ≥ 20 and try ≤ 3 or the wait timed out',
+    'Living room current temperature ≥ 20 and try ≤ 3 or the wait timed out',
   ],
   [
     {condition: 'template', value_template: "{{ wait.completed and state_attr(trigger, 'to_state') != 'x_y' }}"},
@@ -197,69 +196,73 @@ const CONDITIONS: Row[] = [
   ],
   [{condition: 'sun', after: 'sunset', before: 'sunrise'}, 'Sun', 'after sunset and before sunrise'],
   [
-    {condition: 'or', conditions: [{condition: 'state', entity_id: 'light.a', state: 'on'}, '{{ true }}']},
+    {condition: 'or', conditions: [{condition: 'state', entity_id: 'light.kitchen_island', state: 'on'}, '{{ true }}']},
     'Any of',
-    'Lamp A is on / true',
+    'Kitchen Island is on / true',
   ],
   [
     {
       condition: 'and',
       conditions: [
-        {condition: 'state', entity_id: 'light.a', state: 'on'},
+        {condition: 'state', entity_id: 'light.kitchen_island', state: 'on'},
         {condition: 'time', after: '10:00'},
       ],
     },
     'All of',
-    'Lamp A is on + after 10:00',
+    'Kitchen Island is on + after 10:00',
   ],
-  [{condition: 'not', conditions: {condition: 'state', entity_id: 'light.a', state: 'on'}}, 'None of', 'Lamp A is on'],
+  [
+    {condition: 'not', conditions: {condition: 'state', entity_id: 'light.kitchen_island', state: 'on'}},
+    'None of',
+    'Kitchen Island is on',
+  ],
   [{condition: 'or', conditions: []}, 'Any of', ''],
   [{condition: 'device'}, 'Check', 'Device'],
   [{}, 'Check', 'Condition'],
 ];
 const ACTIONS: Row[] = [
   [{alias: 'Named'}, 'Step', 'Named'],
-  [{action: 'script.bed'}, 'Script', 'kids'],
-  [{action: 'script.turn_on', target: {entity_id: 'script.bed'}}, 'Script', 'Turn on Bedtime - kids'],
+  [{action: 'script.bed'}, 'Script', 'Bed'],
+  [{action: 'script.turn_on', target: {entity_id: 'script.bed'}}, 'Script', 'Turn on Bed'],
   [{action: 'notify.mobile', data: {title: 'Hi'}}, 'Notify', '“Hi” to the phone'],
   [{action: 'notify.mobile'}, 'Notify', 'Message to the phone'],
   [{action: 'persistent_notification.create', data: {title: 'T'}}, 'Notification', 'T'],
   [{action: 'persistent_notification.create'}, 'Notification', 'In Home Assistant'],
   [
-    {action: 'scene.create', data: {snapshot_entities: ['light.a', 'light.b']}},
+    {action: 'scene.create', data: {snapshot_entities: ['light.kitchen_island', 'light.kitchen_sink']}},
     'Snapshot',
-    'Remember Lamp A or Lamp B',
+    'Remember Kitchen Island or Kitchen Sink',
   ],
   [{action: 'scene.turn_on', target: {entity_id: 'scene.x'}}, 'Scene', 'X'],
   [
-    {action: 'climate.set_temperature', target: {entity_id: 'climate.x'}, data: {temperature: 21.5}},
+    {action: 'climate.set_temperature', target: {entity_id: 'climate.living_room'}, data: {temperature: 21.5}},
     'Climate',
-    'Living → 21.5°',
+    'Living room → 21.5°',
   ],
   [
-    {service: 'climate.set_temperature', data: {entity_id: 'climate.x', temperature: '{{ t }}'}},
+    {service: 'climate.set_temperature', data: {entity_id: 'climate.living_room', temperature: '{{ t }}'}},
     'Climate',
-    'Living → by the schedule',
+    'Living room → by the schedule',
   ],
   [
-    {action: 'climate.set_hvac_mode', target: {entity_id: 'climate.x'}, data: {hvac_mode: 'fan_only'}},
+    {action: 'climate.set_hvac_mode', target: {entity_id: 'climate.living_room'}, data: {hvac_mode: 'fan_only'}},
     'Climate',
-    'Living mode fan only',
+    'Living room mode fan only',
   ],
   [
-    {action: 'climate.set_fan_mode', target: {entity_id: 'climate.x'}, data: {fan_mode: 'auto'}},
+    {action: 'climate.set_fan_mode', target: {entity_id: 'climate.living_room'}, data: {fan_mode: 'auto'}},
     'Climate',
-    'Living fan auto',
+    'Living room fan auto',
   ],
   [
-    {action: 'climate.set_swing_mode', target: {entity_id: 'climate.x'}, data: {swing_mode: 'both_ways'}},
+    {action: 'climate.set_swing_mode', target: {entity_id: 'climate.living_room'}, data: {swing_mode: 'both_ways'}},
     'Climate',
-    'Living swing both ways',
+    'Living room swing both ways',
   ],
   [
-    {action: 'adaptive_lighting.set_manual_control', data: {manual_control: true, lights: ['light.a']}},
+    {action: 'adaptive_lighting.set_manual_control', data: {manual_control: true, lights: ['light.kitchen_island']}},
     'Adaptive Lighting',
-    'Manual · Lamp A',
+    'Manual · Kitchen Island',
   ],
   [
     {action: 'adaptive_lighting.set_manual_control', data: {manual_control: false, lights: '{{ x }}'}},
@@ -267,16 +270,20 @@ const ACTIONS: Row[] = [
     'Back to Auto · that light',
   ],
   [
-    {action: 'light.turn_on', target: {entity_id: 'light.a'}, data: {brightness_pct: 40}},
+    {action: 'light.turn_on', target: {entity_id: 'light.kitchen_island'}, data: {brightness_pct: 40}},
     'Light',
-    'Lamp A brightness 40%',
+    'Kitchen Island brightness 40%',
   ],
   [
-    {action: 'light.turn_on', target: {entity_id: 'light.a'}, data: {brightness_pct: '{{ b }}'}},
+    {action: 'light.turn_on', target: {entity_id: 'light.kitchen_island'}, data: {brightness_pct: '{{ b }}'}},
     'Light',
-    'Lamp A brightness ± 5% per notch',
+    'Kitchen Island brightness ± 5% per notch',
   ],
-  [{action: 'light.turn_on', target: {entity_id: ''}, data: {entity_id: 'light.b'}}, 'Light', 'Turn on Lamp B'],
+  [
+    {action: 'light.turn_on', target: {entity_id: ''}, data: {entity_id: 'light.kitchen_sink'}},
+    'Light',
+    'Turn on Kitchen Sink',
+  ],
   [{action: 'input_boolean.turn_on', target: {entity_id: 'input_boolean.away'}}, 'Helper', 'Away → on'],
   [{action: 'input_boolean.turn_off', entity_id: 'input_boolean.away'}, 'Helper', 'Away → off'],
   [{action: 'input_boolean.toggle', target: {entity_id: 'input_boolean.away'}}, 'Helper', 'Away → toggle'],
@@ -309,23 +316,27 @@ const ACTIONS: Row[] = [
   ],
   [{stop: ''}, 'Stop', 'Stop here'],
   [{stop: 'Done'}, 'Stop', 'Done'],
-  [{condition: 'state', entity_id: 'light.a', state: 'on'}, 'Light', 'Lamp A is on'],
+  [{condition: 'state', entity_id: 'light.kitchen_island', state: 'on'}, 'Light', 'Kitchen Island is on'],
   [{variables: {a: 1, b: 2}}, 'Variables', 'a, b'],
   [{event: 'my_event'}, 'Event', 'my_event'],
   [
-    {repeat: {until: [{condition: 'state', entity_id: 'light.a', state: 'on'}, '{{ x }}'], sequence: []}},
+    {repeat: {until: [{condition: 'state', entity_id: 'light.kitchen_island', state: 'on'}, '{{ x }}'], sequence: []}},
     'Repeat',
-    'until Lamp A is on and x',
+    'until Kitchen Island is on and x',
   ],
   [
-    {repeat: {while: {condition: 'state', entity_id: 'light.a', state: 'on'}, sequence: []}},
+    {repeat: {while: {condition: 'state', entity_id: 'light.kitchen_island', state: 'on'}, sequence: []}},
     'Repeat',
-    'while Lamp A is on',
+    'while Kitchen Island is on',
   ],
   [{repeat: {count: 3, sequence: []}}, 'Repeat', '3 times'],
   [{repeat: {count: '{{ n }}', sequence: []}}, 'Repeat', '{{ n }} times'],
   [{repeat: {for_each: [1, 2], sequence: []}}, 'Repeat', 'for each'],
   [{parallel: [{}, {}]}, 'In parallel', '2 branches'],
+  // the legacy panel wrote `1 branches`; the catalog's plural mends it
+  [{parallel: {}}, 'In parallel', '1 branch'],
+  [{repeat: {until: [], sequence: []}}, 'Repeat', 'until '],
+  [{action: '', service: 'light.turn_on', target: {entity_id: 'light.kitchen_sink'}}, 'Light', 'Turn on Kitchen Sink'],
   [{sequence: []}, 'Step', 'sequence'],
   [{}, 'Step', 'step'],
 ];
@@ -385,10 +396,9 @@ describe('the English the legacy panel drew', () => {
 });
 
 describe('the trace fixtures, in English and in French', () => {
-  const house = fakeHass.fromHouse(full);
   const folder = new URL('../../fixtures/traces/', import.meta.url);
   const lines = (language: 'en' | 'fr') => {
-    const deps = depsOf(language, house.states);
+    const deps = depsOf(language, STATES);
     const line = (s: {k: string; t: string}) => `${s.k} · ${s.t}`;
     return Object.fromEntries(
       readdirSync(folder)
@@ -444,20 +454,10 @@ describe('the helpers', () => {
   });
 
   test('the text helpers', () => {
-    expect(capitalise('front_door')).toBe('Front door');
-    expect(capitalise(undefined)).toBe('');
     expect(cut('  a   b  ')).toBe('a b');
     expect(cut('abcdef', 4)).toBe('abc…');
     expect(shortAlias('Heating - evening')).toBe('evening');
     expect(shortAlias('A very long group name, longer - x')).toBe('A very long group name, longer - x');
     expect(shortAlias(undefined)).toBe('');
-    expect([str('a'), str(2), str(true), str(null), str(undefined), str({a: 1})]).toEqual([
-      'a',
-      '2',
-      'true',
-      'null',
-      'undefined',
-      '{"a":1}',
-    ]);
   });
 });

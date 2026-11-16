@@ -4,6 +4,7 @@
 // legacy `auTrig()`, `auCond()`, `auAct()`, `auName()`, `auKind()`, `auState()`, `auTemplate()` and `auDur()`; the domains
 // and services the panel names are the `automations.domain.*` and `automations.verb.*` keys (the legacy AU_DOMAIN, AU_VERB).
 // Must not: read the clock or the DOM, or translate a name a person gave (names are values, through the resolver).
+import {capitalWords} from '../../core/figures.ts';
 import type {HassEntities} from '../../core/hass.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
 import type {Formatters} from '../../core/i18n/format.ts';
@@ -73,7 +74,7 @@ const VERBS = {
  * A config value as text, as `String()` writes it: Home Assistant's configs are untyped, and a value meant as text may be
  * a number; an object (a mistake in the config) is written as JSON rather than `[object Object]`.
  */
-export const str = (v: unknown): string =>
+const str = (v: unknown): string =>
   typeof v === 'string'
     ? v
     : typeof v === 'number' || typeof v === 'boolean' || typeof v === 'bigint' || v == null
@@ -84,13 +85,10 @@ const own = <T extends object>(table: T, key: string): T[keyof T] | undefined =>
   Object.hasOwn(table, key) ? table[key as keyof T] : undefined;
 
 /** An id or a word as a person reads it when the panel has no name for it: `front_door` is `Front door`. */
-export const capitalise = (s: unknown): string =>
-  str(s || '')
-    .replace(/_/g, ' ')
-    .replace(/^./, c => c.toUpperCase());
+const idWords = (s: unknown): string => capitalWords(str(s || ''));
 
 /** Runs of white space as one space, trimmed. */
-export const squash = (s: unknown): string =>
+const squash = (s: unknown): string =>
   str(s ?? '')
     .replace(/\s+/g, ' ')
     .trim();
@@ -111,7 +109,8 @@ export const shortAlias = (alias: unknown): string => {
 const isTemplate = (v: unknown): boolean => /\{\{|\{%/.test(str(v));
 
 /** A list read with a word between each pair: `a or b or c`. */
-const joined = (items: string[], key: MessageKey, t: Translate): string => items.reduce((a, b) => t(key, {a, b}));
+const joined = (items: string[], key: MessageKey, t: Translate): string =>
+  items.length ? items.reduce((a, b) => t(key, {a, b})) : '';
 
 /** `00:15:00`, `{minutes: 5}` or `30` as `15 min`, `5 min`, `30 s`; a template as `a while`; nothing as ''. */
 export function durationText(d: unknown, deps: Pick<SentenceDeps, 't' | 'fmt'>): string {
@@ -130,16 +129,22 @@ export function durationText(d: unknown, deps: Pick<SentenceDeps, 't' | 'fmt'>):
   return s >= 3600
     ? deps.t('automations.duration', {unit: 'hours', n: deps.fmt.number(Number((s / 3600).toFixed(1)))})
     : s >= 60
-      ? deps.t('automations.duration', {unit: 'minutes', n: str(Math.round(s / 60))})
-      : deps.t('automations.duration', {unit: 'seconds', n: str(s)});
+      ? deps.t('automations.duration', {unit: 'minutes', n: deps.fmt.integer(Math.round(s / 60))})
+      : deps.t('automations.duration', {unit: 'seconds', n: deps.fmt.number(s, 2)});
 }
+
+/**
+ * A config's clock time (`18:00:00`) as hours and minutes, `18:00`: the 24-hour form `time24` writes in every language (the
+ * format table asks for `16:07`), cut from Home Assistant's own text so no zone can move it.
+ */
+const clockText = (v: unknown): string => str(v).slice(0, 5);
 
 /** `text` followed by its `for` duration, when it has one. */
 const lasting = (text: string, d: unknown, deps: SentenceDeps): string =>
   d ? deps.t('automations.text.for', {text, duration: durationText(d, deps)}) : text;
 
 /** What an entity is, as far as the words go: `door`, `motion`, or its domain. */
-export function kindOf(id: unknown, states: HassEntities): string {
+function kindOf(id: unknown, states: HassEntities): string {
   const entity = str(id || '');
   const dc = str(states[entity]?.attributes.device_class ?? '');
   if (/door|window|opening|garage_door/.test(dc) || /_door$/.test(entity)) return 'door';
@@ -159,19 +164,19 @@ export function nameOf(id: unknown, deps: SentenceDeps): string {
   if (entity === 'zone.home') return deps.t('automations.name.homeZone');
   if (deps.states[entity]?.attributes.friendly_name)
     return deps.names.name(entity).replace(/\s+(Door|Occupancy|Motion)$/i, '');
-  return capitalise(entity.split('.').pop());
+  return idWords(entity.split('.').pop());
 }
 
 /** One or more entities: `a or b`, and from three on `a, b +1`. */
-export function namesOf(ids: unknown, deps: SentenceDeps, word: 'or' | 'and' = 'or'): string {
+function namesOf(ids: unknown, deps: SentenceDeps, word: 'or' | 'and' = 'or'): string {
   const names = asList(ids).map(i => nameOf(i, deps));
   if (names.length > 2)
     return deps.t('automations.names.more', {first: names[0], second: names[1], n: names.length - 2});
-  return names.length ? joined(names, word === 'or' ? 'automations.list.or' : 'automations.list.and', deps.t) : '';
+  return joined(names, word === 'or' ? 'automations.list.or' : 'automations.list.and', deps.t);
 }
 
 /** A state as words: a door is open or closed, a motion sensor sees motion or is clear; `opened` and `detects motion` for a change. */
-export function stateText(id: unknown, value: unknown, deps: SentenceDeps, change = false): string {
+function stateText(id: unknown, value: unknown, deps: SentenceDeps, change = false): string {
   const kind = kindOf(asList(id)[0], deps.states);
   const one = (raw: unknown): string => {
     const x = str(raw);
@@ -181,14 +186,15 @@ export function stateText(id: unknown, value: unknown, deps: SentenceDeps, chang
       return deps.t(change ? 'automations.state.detectsMotion' : 'automations.state.motion');
     if (kind === 'motion' && x === 'off') return deps.t('automations.state.clear');
     if (kind === 'climate' && x === 'fan_only') return deps.t('automations.state.fanOnly');
-    return x.replace(/_/g, ' ');
+    // a door's or a motion sensor's other states are read as Home Assistant writes them, as the legacy panel did
+    return kind === 'door' || kind === 'motion' ? x : x.replace(/_/g, ' ');
   };
   const values = asList(value).map(one);
-  return values.length ? joined(values, 'automations.list.or', deps.t) : '';
+  return joined(values, 'automations.list.or', deps.t);
 }
 
 /** A Jinja template read as a sentence, as far as its common shapes go; at most 70 characters. */
-export function templateText(template: unknown, deps: SentenceDeps): string {
+function templateText(template: unknown, deps: SentenceDeps): string {
   let s = str(template ?? '');
   if (/next_rising.*next_midnight|next_midnight.*next_rising/s.test(s))
     return deps.t('automations.template.solarNight');
@@ -253,7 +259,7 @@ const sentence = (kind: MessageKey, t: string, deps: SentenceDeps): Sentence => 
 /** The kind of a step that acts on a domain: the panel's word for it, or the domain itself. */
 function domainKind(domain: string, t: string, deps: SentenceDeps): Sentence {
   const key = own(DOMAINS, domain);
-  return key ? sentence(key, t, deps) : {kind: null, k: capitalise(domain), t};
+  return key ? sentence(key, t, deps) : {kind: null, k: idWords(domain), t};
 }
 
 /** The kind of a state check or trigger on an entity: a door, a motion sensor, or its domain. */
@@ -309,9 +315,8 @@ export function triggerText(trigger: Config, deps: SentenceDeps): Sentence {
   if (p === 'time')
     return sentence(
       'automations.kind.time',
-      // a list of clock times is data, read as Home Assistant writes it
       asList(tr.at)
-        .map(a => (/^\d/.test(str(a)) ? str(a).slice(0, 5) : nameOf(a, deps)))
+        .map(a => (/^\d/.test(str(a)) ? clockText(a) : nameOf(a, deps)))
         .join(', '),
       deps,
     );
@@ -348,7 +353,7 @@ export function triggerText(trigger: Config, deps: SentenceDeps): Sentence {
   if (p === 'event')
     return sentence(
       'automations.kind.event',
-      tr.event_type === 'automation_reloaded' ? deps.t('automations.trigger.reloaded') : capitalise(tr.event_type),
+      tr.event_type === 'automation_reloaded' ? deps.t('automations.trigger.reloaded') : idWords(tr.event_type),
       deps,
     );
   if (p === 'template')
@@ -369,7 +374,7 @@ export function triggerText(trigger: Config, deps: SentenceDeps): Sentence {
       deps.t('automations.trigger.askedToTurnOn', {name: namesOf(tr.entity_id, deps)}),
       deps,
     );
-  return sentence('automations.kind.trigger', p ? capitalise(p) : deps.t('automations.kind.trigger'), deps);
+  return sentence('automations.kind.trigger', p ? idWords(p) : deps.t('automations.kind.trigger'), deps);
 }
 
 /** A condition's line; a bare string is a template. */
@@ -419,7 +424,8 @@ export function conditionText(condition: Config | string, deps: SentenceDeps): S
       'automations.kind.startedBy',
       deps.t('automations.condition.trigger', {
         ids: joined(
-          asList(c.id).map(id => deps.t('automations.quoted', {text: str(id)})),
+          // no id reads as an empty quote, as the legacy panel drew it
+          (asList(c.id).length ? asList(c.id) : ['']).map(id => deps.t('automations.quoted', {text: str(id)})),
           'automations.list.or',
           deps.t,
         ),
@@ -427,8 +433,8 @@ export function conditionText(condition: Config | string, deps: SentenceDeps): S
       deps,
     );
   if (p === 'time' || p === 'sun') {
-    // the time condition's clock times lose their seconds; the sun's `after: sunset` is a word of Home Assistant's
-    const at = (v: unknown) => (p === 'time' ? str(v).slice(0, 5) : str(v));
+    // the sun's `after: sunset` is a word of Home Assistant's
+    const at = (v: unknown) => (p === 'time' ? clockText(v) : str(v));
     const parts = [
       c.after ? deps.t('automations.condition.after', {time: at(c.after)}) : '',
       c.before ? deps.t('automations.condition.before', {time: at(c.before)}) : '',
@@ -436,7 +442,7 @@ export function conditionText(condition: Config | string, deps: SentenceDeps): S
     ].filter(Boolean);
     return sentence(
       p === 'time' ? 'automations.kind.time' : 'automations.kind.sun',
-      parts.length ? joined(parts, 'automations.list.and', deps.t) : '',
+      joined(parts, 'automations.list.and', deps.t),
       deps,
     );
   }
@@ -445,11 +451,11 @@ export function conditionText(condition: Config | string, deps: SentenceDeps): S
     const texts = asList(c.conditions).map(x => conditionText(x as Config | string, deps).t);
     return sentence(
       p === 'or' ? 'automations.kind.anyOf' : p === 'and' ? 'automations.kind.allOf' : 'automations.kind.noneOf',
-      texts.length ? joined(texts, p === 'or' ? 'automations.list.any' : 'automations.list.all', deps.t) : '',
+      joined(texts, p === 'or' ? 'automations.list.any' : 'automations.list.all', deps.t),
       deps,
     );
   }
-  return sentence('automations.kind.check', p ? capitalise(p) : deps.t('automations.condition.unnamed'), deps);
+  return sentence('automations.kind.check', p ? idWords(p) : deps.t('automations.condition.unnamed'), deps);
 }
 
 /** A service call's line. */
@@ -528,11 +534,11 @@ function callText(action: Config, service: string, deps: SentenceDeps): Sentence
       named('automations.action.helper', {state: s === 'turn_on' ? 'on' : s === 'turn_off' ? 'off' : 'toggle'}),
       deps,
     );
-  if (d === 'shell_command') return sentence('automations.domain.shellCommand', capitalise(s), deps);
+  if (d === 'shell_command') return sentence('automations.domain.shellCommand', idWords(s), deps);
   if (d === 'homeassistant' && s === 'reload_config_entry')
     return sentence('automations.kind.system', deps.t('automations.verb.reloadConfigEntry'), deps);
   const verbKey = own(VERBS, s);
-  const verb = verbKey ? deps.t(verbKey) : capitalise(s);
+  const verb = verbKey ? deps.t(verbKey) : idWords(s);
   return domainKind(d, target ? deps.t('automations.action.verbTarget', {verb, name: names}) : verb, deps);
 }
 
@@ -540,7 +546,8 @@ function callText(action: Config, service: string, deps: SentenceDeps): Sentence
 export function actionText(action: Config, deps: SentenceDeps): Sentence {
   const a = action;
   if (a.alias) return sentence('automations.kind.step', str(a.alias), deps);
-  const service = a.action ?? a.service;
+  // `||`, as the legacy panel: an empty `action` falls back to `service`
+  const service = a.action || a.service;
   if (service) return callText(a, str(service), deps);
   const upTo = (text: string) =>
     a.timeout ? deps.t('automations.action.upTo', {text, duration: durationText(a.timeout, deps)}) : text;
@@ -558,11 +565,7 @@ export function actionText(action: Config, deps: SentenceDeps): Sentence {
     );
   if (a.wait_for_trigger) {
     const texts = asList(a.wait_for_trigger).map(x => triggerText(x as Config, deps).t);
-    return sentence(
-      'automations.kind.waitFor',
-      upTo(texts.length ? joined(texts, 'automations.list.or', deps.t) : ''),
-      deps,
-    );
+    return sentence('automations.kind.waitFor', upTo(joined(texts, 'automations.list.or', deps.t)), deps);
   }
   if (a.stop != null)
     return sentence('automations.kind.stop', a.stop ? str(a.stop) : deps.t('automations.action.stopHere'), deps);

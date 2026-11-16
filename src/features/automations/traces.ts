@@ -2,8 +2,9 @@
 // fingerprint of the states that asks for a reload, and the running pill's elapsed time.
 // Pattern: pure functions over Home Assistant's `trace/list` rows (Bernhardt, functional core), the rules of the legacy
 // `auNoise()`, `auPicks()`, `renderAuto()`'s filters and `auElapsed()`.
-// Must not: read the clock (`now` and `midnight` are passed in), word anything but the elapsed digits, or ask Home Assistant.
+// Must not: read the clock (`now` and `midnight` are passed in), word anything outside the catalog, or ask Home Assistant.
 import type {AutomationConfig, TraceSummary} from '../../core/ha.ts';
+import type {Translate} from '../../core/i18n/messages.ts';
 import {asList, triggerKind, type Automation} from '../../providers/automations.ts';
 
 /** What the person picked: an automation, and one of its runs or (no `run`) its latest. */
@@ -70,9 +71,12 @@ export function todayRuns(list: TraceSummary[], midnight: number, noise: (s: Tra
 }
 
 /** How long a run has been going: `4:07` under an hour, `1 h 05` from an hour on; never negative. */
-export function elapsedText(startMs: number, now: number): string {
+export function elapsedText(startMs: number, now: number, t: Translate): string {
   const s = Math.max(0, Math.round((now - startMs) / 1000));
-  return s >= 3600
-    ? `${Math.floor(s / 3600)} h ${String(Math.floor(s / 60) % 60).padStart(2, '0')}`
-    : `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  const hours = Math.floor(s / 3600);
+  return t('automations.elapsed', {
+    hours,
+    minutes: hours ? String(Math.floor(s / 60) % 60).padStart(2, '0') : String(Math.floor(s / 60)),
+    seconds: String(s % 60).padStart(2, '0'),
+  });
 }

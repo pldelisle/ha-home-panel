@@ -4,6 +4,7 @@
 // Must not: read the clock (every instant is a literal) or ask Home Assistant.
 import {describe, expect, test} from 'vitest';
 import type {TraceSummary} from '../../../../src/core/ha.ts';
+import {createMessages} from '../../../../src/core/i18n/messages.ts';
 import {
   elapsedText,
   fingerprint,
@@ -99,9 +100,11 @@ test('todayRuns: from midnight on, noise left out, the earliest first', () => {
   expect(todayRuns(list, midnight, s => s.item_id === 'n').map(s => s.run_id)).toEqual(['early', 'late']);
 });
 
+const {t} = createMessages({language: 'en', tag: 'en'});
+
 test('elapsedText: minutes and seconds under an hour, hours and minutes after, never negative', () => {
   const start = Date.parse('2026-11-07T10:00:00Z');
-  expect(elapsedText(start, start + 247_000)).toBe('4:07');
-  expect(elapsedText(start, start + 3_900_000)).toBe('1 h 05');
-  expect(elapsedText(start, start - 5000)).toBe('0:00');
+  expect(elapsedText(start, start + 247_000, t)).toBe('4:07');
+  expect(elapsedText(start, start + 3_900_000, t)).toBe('1 h 05');
+  expect(elapsedText(start, start - 5000, t)).toBe('0:00');
 });

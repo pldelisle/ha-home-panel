@@ -1091,6 +1091,8 @@ export const en = {
     '{what, select, scheduled {scheduled} skip {checked, did nothing} now {running} err {error} other {ran}}',
   'automations.timeline.one': '{time} {name}, {what}',
   'automations.timeline.item': '{name}, {what}',
+  // a run's time so far: minutes and seconds under an hour, then hours and minutes
+  'automations.elapsed': '{hours, plural, =0 {{minutes}:{seconds}} other {{hours} h {minutes}}}',
   'automations.timeline.group': '{from} to {to} · {n, plural, one {# run} other {# runs}} · {items}',
 } as const;
 

@@ -392,6 +392,14 @@
     },
     {"key": "automations.action.unnamed", "translated": "étape"},
     {
+      "key": "automations.elapsed",
+      "values": {"hours": 0, "minutes": "4", "seconds": "07"}
+    },
+    {
+      "key": "automations.elapsed",
+      "values": {"hours": 1, "minutes": "05", "seconds": "00"}
+    },
+    {
       "key": "automations.timeline.what",
       "values": {"what": "scheduled"}
     },
