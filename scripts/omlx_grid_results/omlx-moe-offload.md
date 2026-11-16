@@ -1,6 +1,6 @@
 # oMLX: running models bigger than memory
 
-*Written 2026-11-15 from the installed oMLX 0.8.0rc1 source (`patches/moe_expert_offload.py`, `model_settings.py`).*
+_Written 2026-11-15 from the installed oMLX 0.8.0rc1 source (`patches/moe_expert_offload.py`, `model_settings.py`)._
 
 **Yes, for mixture-of-experts models.** oMLX has its own version of Strata's trick: **MoE expert offload** (`moe_expert_offload_enabled`). It's the same `moe_offload` stage the grid ran on Qwen3.6.
 
@@ -14,12 +14,12 @@
 
 ## Compared with Strata
 
-| | Strata (Mac) | oMLX |
-|---|---|---|
-| Which models | Its one MoE model | Any MoE model with quantized experts in the standard layout |
-| How much stays in memory | Sized from macOS's free memory, filled in 1.5 GB steps | A fixed fraction per layer, set by you |
-| What it reads from disk | A rearranged copy of the experts (~40 GB extra), one read per expert, about 17% faster decode on their M4 | The original files, no extra disk space |
-| Dense models | No | No: the Qwen3.8-27B can't use it |
+|                          | Strata (Mac)                                                                                              | oMLX                                                        |
+| ------------------------ | --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| Which models             | Its one MoE model                                                                                         | Any MoE model with quantized experts in the standard layout |
+| How much stays in memory | Sized from macOS's free memory, filled in 1.5 GB steps                                                    | A fixed fraction per layer, set by you                      |
+| What it reads from disk  | A rearranged copy of the experts (~40 GB extra), one read per expert, about 17% faster decode on their M4 | The original files, no extra disk space                     |
+| Dense models             | No                                                                                                        | No: the Qwen3.8-27B can't use it                            |
 
 ## Limits in oMLX
 

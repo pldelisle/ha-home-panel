@@ -4,16 +4,8 @@
     "host": "127.0.0.1",
     "port": 8000,
     "log_level": "info",
-    "cors_origins": [
-      "*"
-    ],
-    "server_aliases": [
-      "localhost",
-      "127.0.0.1",
-      "Pierre-Lucs-Mac-mini.local",
-      "10.0.3.21",
-      "10.0.5.91"
-    ],
+    "cors_origins": ["*"],
+    "server_aliases": ["localhost", "127.0.0.1", "Pierre-Lucs-Mac-mini.local", "10.0.3.21", "10.0.5.91"],
     "sse_keepalive_mode": "chunk",
     "auto_start_on_launch": true,
     "burst_decode_mode": "balanced",
@@ -27,9 +19,7 @@
     "gpu_keep_warm_idle_window": 300.0
   },
   "model": {
-    "model_dirs": [
-      "/Users/pierre-luc-delisle/.omlx/models"
-    ],
+    "model_dirs": ["/Users/pierre-luc-delisle/.omlx/models"],
     "model_dir": "/Users/pierre-luc-delisle/.omlx/models",
     "model_fallback": false,
     "hide_helper_models": false

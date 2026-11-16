@@ -1,302 +1,812 @@
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Strata vs oMLX</title>
-<meta name="claude:viewport-fit-sides" content="cover">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap">
-<style>
-/* Layout: one reading column; verdict band, then fit on this Mac, then feature tables; matches the oMLX grid analysis page. */
-:root {
-  --bg: #f5f6f4;
-  --surface: #ffffff;
-  --fg: #1b1f1e;
-  --muted: #5d6663;
-  --line: #dde2df;
-  --accent: #1f6d68;
-  --accent-soft: #e2efed;
-  --strata: #6a4fa3;
-  --strata-soft: #ece6f6;
-  --good: #2c7a3f;
-  --good-soft: #e3f1e6;
-  --warn: #9a6400;
-  --warn-soft: #f7ecd6;
-  --bad: #b23a2c;
-  --bad-soft: #f7e3df;
-  --font-display: "Schibsted Grotesk", "Helvetica Neue", Arial, sans-serif;
-  --font-body: "Schibsted Grotesk", "Helvetica Neue", Arial, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #121615; --surface: #1a1f1e; --fg: #e6ebe9; --muted: #98a3a0; --line: #2c3432;
-    --accent: #6cc0b8; --accent-soft: #1d3331; --strata: #b49ae6; --strata-soft: #2a2238;
-    --good: #6fcf86; --good-soft: #19301f; --warn: #e7b04e; --warn-soft: #33290f; --bad: #f08a7c; --bad-soft: #3a1d19;
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #121615; --surface: #1a1f1e; --fg: #e6ebe9; --muted: #98a3a0; --line: #2c3432;
-  --accent: #6cc0b8; --accent-soft: #1d3331; --strata: #b49ae6; --strata-soft: #2a2238;
-  --good: #6fcf86; --good-soft: #19301f; --warn: #e7b04e; --warn-soft: #33290f; --bad: #f08a7c; --bad-soft: #3a1d19;
-  color-scheme: dark;
-}
-* { box-sizing: border-box; }
-body {
-  background: var(--bg); color: var(--fg);
-  font-family: var(--font-body); font-size: 16px; line-height: 1.55;
-  padding-left: max(16px, env(safe-area-inset-left, 0px));
-  padding-right: max(16px, env(safe-area-inset-right, 0px));
-  padding-block: 40px 72px;
-}
-.wrap { max-width: 960px; margin: 0 auto; display: grid; gap: 48px; }
-h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
-h1 { font-size: clamp(2rem, 5vw, 2.8rem); font-weight: 800; line-height: 1.1; }
-h1 .s { color: var(--strata); }
-h1 .o { color: var(--accent); }
-h1 .vs { color: var(--muted); font-weight: 500; }
-h2 { font-size: 1.5rem; font-weight: 700; }
-h3 { font-size: 1.1rem; font-weight: 650; }
-p { margin: 0; max-width: 68ch; }
-code, .mono { font-family: var(--font-mono); font-size: 0.86em; }
-code { background: var(--accent-soft); padding: 0.08em 0.35em; border-radius: 4px; }
-a { color: var(--accent); }
-a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.eyebrow { font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
-section { display: grid; gap: 18px; min-width: 0; }
-.lede { color: var(--muted); }
-header { display: grid; gap: 14px; }
-.meta { display: flex; flex-wrap: wrap; gap: 8px 20px; font-family: var(--font-mono); font-size: 0.8rem; color: var(--muted); }
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Strata vs oMLX</title>
+    <meta name="claude:viewport-fit-sides" content="cover" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    />
+    <style>
+      /* Layout: one reading column; verdict band, then fit on this Mac, then feature tables; matches the oMLX grid analysis page. */
+      :root {
+        --bg: #f5f6f4;
+        --surface: #ffffff;
+        --fg: #1b1f1e;
+        --muted: #5d6663;
+        --line: #dde2df;
+        --accent: #1f6d68;
+        --accent-soft: #e2efed;
+        --strata: #6a4fa3;
+        --strata-soft: #ece6f6;
+        --good: #2c7a3f;
+        --good-soft: #e3f1e6;
+        --warn: #9a6400;
+        --warn-soft: #f7ecd6;
+        --bad: #b23a2c;
+        --bad-soft: #f7e3df;
+        --font-display: 'Schibsted Grotesk', 'Helvetica Neue', Arial, sans-serif;
+        --font-body: 'Schibsted Grotesk', 'Helvetica Neue', Arial, sans-serif;
+        --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme='light']) {
+          --bg: #121615;
+          --surface: #1a1f1e;
+          --fg: #e6ebe9;
+          --muted: #98a3a0;
+          --line: #2c3432;
+          --accent: #6cc0b8;
+          --accent-soft: #1d3331;
+          --strata: #b49ae6;
+          --strata-soft: #2a2238;
+          --good: #6fcf86;
+          --good-soft: #19301f;
+          --warn: #e7b04e;
+          --warn-soft: #33290f;
+          --bad: #f08a7c;
+          --bad-soft: #3a1d19;
+          color-scheme: dark;
+        }
+      }
+      :root[data-theme='dark'] {
+        --bg: #121615;
+        --surface: #1a1f1e;
+        --fg: #e6ebe9;
+        --muted: #98a3a0;
+        --line: #2c3432;
+        --accent: #6cc0b8;
+        --accent-soft: #1d3331;
+        --strata: #b49ae6;
+        --strata-soft: #2a2238;
+        --good: #6fcf86;
+        --good-soft: #19301f;
+        --warn: #e7b04e;
+        --warn-soft: #33290f;
+        --bad: #f08a7c;
+        --bad-soft: #3a1d19;
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        background: var(--bg);
+        color: var(--fg);
+        font-family: var(--font-body);
+        font-size: 16px;
+        line-height: 1.55;
+        padding-left: max(16px, env(safe-area-inset-left, 0px));
+        padding-right: max(16px, env(safe-area-inset-right, 0px));
+        padding-block: 40px 72px;
+      }
+      .wrap {
+        max-width: 960px;
+        margin: 0 auto;
+        display: grid;
+        gap: 48px;
+      }
+      h1,
+      h2,
+      h3 {
+        font-family: var(--font-display);
+        text-wrap: balance;
+        margin: 0;
+        letter-spacing: -0.01em;
+      }
+      h1 {
+        font-size: clamp(2rem, 5vw, 2.8rem);
+        font-weight: 800;
+        line-height: 1.1;
+      }
+      h1 .s {
+        color: var(--strata);
+      }
+      h1 .o {
+        color: var(--accent);
+      }
+      h1 .vs {
+        color: var(--muted);
+        font-weight: 500;
+      }
+      h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+      }
+      h3 {
+        font-size: 1.1rem;
+        font-weight: 650;
+      }
+      p {
+        margin: 0;
+        max-width: 68ch;
+      }
+      code,
+      .mono {
+        font-family: var(--font-mono);
+        font-size: 0.86em;
+      }
+      code {
+        background: var(--accent-soft);
+        padding: 0.08em 0.35em;
+        border-radius: 4px;
+      }
+      a {
+        color: var(--accent);
+      }
+      a:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      .eyebrow {
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      section {
+        display: grid;
+        gap: 18px;
+        min-width: 0;
+      }
+      .lede {
+        color: var(--muted);
+      }
+      header {
+        display: grid;
+        gap: 14px;
+      }
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 20px;
+        font-family: var(--font-mono);
+        font-size: 0.8rem;
+        color: var(--muted);
+      }
 
-.verdict {
-  background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
-  padding: 24px; display: grid; gap: 20px;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
-}
-.verdict .pick { display: grid; gap: 10px; align-content: start; }
-.verdict .pick h2 { font-size: 1.6rem; }
-.reasons { margin: 0; padding-left: 1.2rem; display: grid; gap: 6px; font-size: 0.94rem; }
-@media (max-width: 720px) { .verdict { grid-template-columns: 1fr; } }
+      .verdict {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 24px;
+        display: grid;
+        gap: 20px;
+        grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+      }
+      .verdict .pick {
+        display: grid;
+        gap: 10px;
+        align-content: start;
+      }
+      .verdict .pick h2 {
+        font-size: 1.6rem;
+      }
+      .reasons {
+        margin: 0;
+        padding-left: 1.2rem;
+        display: grid;
+        gap: 6px;
+        font-size: 0.94rem;
+      }
+      @media (max-width: 720px) {
+        .verdict {
+          grid-template-columns: 1fr;
+        }
+      }
 
-.table { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
-table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
-th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
-tr:last-child td { border-bottom: 0; }
-th { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 500; white-space: nowrap; }
-th.s { color: var(--strata); }
-th.o { color: var(--accent); }
-td.num, th.num { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
-td.area { font-weight: 600; white-space: nowrap; }
-.note { font-size: 0.82rem; color: var(--muted); }
+      .table {
+        overflow-x: auto;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--surface);
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 0.9rem;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--line);
+        vertical-align: top;
+      }
+      tr:last-child td {
+        border-bottom: 0;
+      }
+      th {
+        font-family: var(--font-mono);
+        font-size: 0.7rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+        font-weight: 500;
+        white-space: nowrap;
+      }
+      th.s {
+        color: var(--strata);
+      }
+      th.o {
+        color: var(--accent);
+      }
+      td.num,
+      th.num {
+        text-align: right;
+        font-family: var(--font-mono);
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+      td.area {
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      .note {
+        font-size: 0.82rem;
+        color: var(--muted);
+      }
 
-.pill { display: inline-block; font-family: var(--font-mono); font-size: 0.72rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
-.pill.good { color: var(--good); background: var(--good-soft); }
-.pill.warn { color: var(--warn); background: var(--warn-soft); }
-.pill.bad { color: var(--bad); background: var(--bad-soft); }
+      .pill {
+        display: inline-block;
+        font-family: var(--font-mono);
+        font-size: 0.72rem;
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: 999px;
+        white-space: nowrap;
+      }
+      .pill.good {
+        color: var(--good);
+        background: var(--good-soft);
+      }
+      .pill.warn {
+        color: var(--warn);
+        background: var(--warn-soft);
+      }
+      .pill.bad {
+        color: var(--bad);
+        background: var(--bad-soft);
+      }
 
-.chart { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px 18px 14px; display: grid; gap: 14px; min-width: 0; }
-.chart h3 { font-size: 0.95rem; }
-.rows { display: grid; gap: 8px; }
-.row { display: grid; grid-template-columns: 13rem minmax(0, 1fr) 4.5rem; gap: 12px; align-items: center; font-size: 0.85rem; }
-.row .label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.track { position: relative; height: 14px; background: var(--bg); border-radius: 3px; }
-.fill { position: absolute; inset: 0 auto 0 0; border-radius: 3px; }
-.fill.s { background: var(--strata); }
-.fill.o { background: var(--accent); }
-.row .val { font-family: var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; }
-.legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 0.78rem; color: var(--muted); }
-.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
-.charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-@media (max-width: 720px) { .charts { grid-template-columns: 1fr; } }
-@media (max-width: 520px) { .row { grid-template-columns: 8.5rem minmax(0, 1fr) 3.8rem; } }
+      .chart {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 18px 18px 14px;
+        display: grid;
+        gap: 14px;
+        min-width: 0;
+      }
+      .chart h3 {
+        font-size: 0.95rem;
+      }
+      .rows {
+        display: grid;
+        gap: 8px;
+      }
+      .row {
+        display: grid;
+        grid-template-columns: 13rem minmax(0, 1fr) 4.5rem;
+        gap: 12px;
+        align-items: center;
+        font-size: 0.85rem;
+      }
+      .row .label {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .track {
+        position: relative;
+        height: 14px;
+        background: var(--bg);
+        border-radius: 3px;
+      }
+      .fill {
+        position: absolute;
+        inset: 0 auto 0 0;
+        border-radius: 3px;
+      }
+      .fill.s {
+        background: var(--strata);
+      }
+      .fill.o {
+        background: var(--accent);
+      }
+      .row .val {
+        font-family: var(--font-mono);
+        font-variant-numeric: tabular-nums;
+        text-align: right;
+      }
+      .legend {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        font-size: 0.78rem;
+        color: var(--muted);
+      }
+      .legend i {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 2px;
+        margin-right: 6px;
+        vertical-align: -1px;
+      }
+      .charts {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+      }
+      @media (max-width: 720px) {
+        .charts {
+          grid-template-columns: 1fr;
+        }
+      }
+      @media (max-width: 520px) {
+        .row {
+          grid-template-columns: 8.5rem minmax(0, 1fr) 3.8rem;
+        }
+      }
 
-.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-@media (max-width: 720px) { .grid2 { grid-template-columns: 1fr; } }
-.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; display: grid; gap: 8px; align-content: start; min-width: 0; }
-.card.s { border-top: 3px solid var(--strata); }
-.card.o { border-top: 3px solid var(--accent); }
-.card ul { margin: 0; padding-left: 1.1rem; display: grid; gap: 4px; font-size: 0.92rem; }
-ol.steps { margin: 0; padding-left: 1.4rem; display: grid; gap: 10px; }
-ol.steps li { max-width: 72ch; padding-left: 4px; }
-footer { font-size: 0.82rem; color: var(--muted); border-top: 1px solid var(--line); padding-top: 16px; display: grid; gap: 6px; }
-</style>
-</head>
-<body>
+      .grid2 {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+      }
+      @media (max-width: 720px) {
+        .grid2 {
+          grid-template-columns: 1fr;
+        }
+      }
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 16px 18px;
+        display: grid;
+        gap: 8px;
+        align-content: start;
+        min-width: 0;
+      }
+      .card.s {
+        border-top: 3px solid var(--strata);
+      }
+      .card.o {
+        border-top: 3px solid var(--accent);
+      }
+      .card ul {
+        margin: 0;
+        padding-left: 1.1rem;
+        display: grid;
+        gap: 4px;
+        font-size: 0.92rem;
+      }
+      ol.steps {
+        margin: 0;
+        padding-left: 1.4rem;
+        display: grid;
+        gap: 10px;
+      }
+      ol.steps li {
+        max-width: 72ch;
+        padding-left: 4px;
+      }
+      footer {
+        font-size: 0.82rem;
+        color: var(--muted);
+        border-top: 1px solid var(--line);
+        padding-top: 16px;
+        display: grid;
+        gap: 6px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <div class="eyebrow">Local LLM server for the house panel</div>
+        <h1><span class="s">Strata</span> <span class="vs">vs</span> <span class="o">oMLX</span></h1>
+        <p class="lede">
+          Should the Home Assistant panel move from oMLX to Strata? Judged on this machine: an Apple M2 Pro with
+          32&nbsp;GB that also runs a VM.
+        </p>
+        <div class="meta">
+          <span>Strata v0.2.14 (engine 0.1.60)</span>
+          <span>oMLX 0.8.0rc1 (installed)</span>
+          <span>Written 2026-11-15</span>
+        </div>
+      </header>
 
-<div class="wrap">
+      <section class="verdict" aria-label="Verdict">
+        <div class="pick">
+          <div class="eyebrow">Verdict</div>
+          <h2>Stay on oMLX</h2>
+          <p>
+            Strata is built to fit one very large model onto gaming PCs. On a 32&nbsp;GB Mac it can't run the models you
+            tuned, and the one it does run is too big to keep in memory.
+          </p>
+        </div>
+        <ul class="reasons">
+          <li>
+            Strata's Mac engine runs <strong>only Qwen3.8-Flash-Next</strong>. Qwen3.6, Qwen3.8-27B and Gemma 4 don't
+            run on it.
+          </li>
+          <li>
+            Flash-Next's smallest pack is <strong>37.6&nbsp;GB</strong>, so on 32&nbsp;GB the experts stream from the
+            SSD.
+          </li>
+          <li>
+            Strata measured <strong>14&nbsp;tok/s</strong> decode and <strong>94&nbsp;tok/s</strong> prompt reading on a
+            32&nbsp;GB Mac. A cold house prompt would take about 2 minutes.
+          </li>
+          <li>oMLX can already run Flash-Next through its Splash engine if you want to try that model.</li>
+        </ul>
+      </section>
 
-<header>
-  <div class="eyebrow">Local LLM server for the house panel</div>
-  <h1><span class="s">Strata</span> <span class="vs">vs</span> <span class="o">oMLX</span></h1>
-  <p class="lede">Should the Home Assistant panel move from oMLX to Strata? Judged on this machine: an Apple M2 Pro with 32&nbsp;GB that also runs a VM.</p>
-  <div class="meta">
-    <span>Strata v0.2.14 (engine 0.1.60)</span>
-    <span>oMLX 0.8.0rc1 (installed)</span>
-    <span>Written 2026-11-15</span>
-  </div>
-</header>
+      <section>
+        <div class="eyebrow">Overview</div>
+        <h2>What each project is</h2>
+        <div class="table">
+          <table>
+            <thead>
+              <tr>
+                <th></th>
+                <th class="s">Strata</th>
+                <th class="o">oMLX</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="area">Purpose</td>
+                <td>
+                  Run one very large mixture-of-experts model on consumer GPUs by splitting the work across GPU, RAM and
+                  SSD
+                </td>
+                <td>A model server built for Macs that runs many models and is tuned for Apple Silicon</td>
+              </tr>
+              <tr>
+                <td class="area">Main platforms</td>
+                <td>NVIDIA and AMD first; Intel Arc, DGX Spark and Mac also supported</td>
+                <td>Apple Silicon only</td>
+              </tr>
+              <tr>
+                <td class="area">Engine</td>
+                <td>Its own C++ engine with CUDA, HIP, SYCL and Metal kernels, built on parts of llama.cpp</td>
+                <td>Python on MLX with an engine pool; can hand a model to an external engine (Splash)</td>
+              </tr>
+              <tr>
+                <td class="area">Model files</td>
+                <td>GGUF</td>
+                <td>MLX safetensors, plus its own oQ quants</td>
+              </tr>
+              <tr>
+                <td class="area">License</td>
+                <td>MIT</td>
+                <td>Apache-2.0</td>
+              </tr>
+              <tr>
+                <td class="area">Maturity</td>
+                <td>v0.2.14; repo created 2026-09-24; about 44.5K stars; very active</td>
+                <td>0.8.0rc1 installed here</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
 
-<section class="verdict" aria-label="Verdict">
-  <div class="pick">
-    <div class="eyebrow">Verdict</div>
-    <h2>Stay on oMLX</h2>
-    <p>Strata is built to fit one very large model onto gaming PCs. On a 32&nbsp;GB Mac it can't run the models you tuned, and the one it does run is too big to keep in memory.</p>
-  </div>
-  <ul class="reasons">
-    <li>Strata's Mac engine runs <strong>only Qwen3.8-Flash-Next</strong>. Qwen3.6, Qwen3.8-27B and Gemma 4 don't run on it.</li>
-    <li>Flash-Next's smallest pack is <strong>37.6&nbsp;GB</strong>, so on 32&nbsp;GB the experts stream from the SSD.</li>
-    <li>Strata measured <strong>14&nbsp;tok/s</strong> decode and <strong>94&nbsp;tok/s</strong> prompt reading on a 32&nbsp;GB Mac. A cold house prompt would take about 2 minutes.</li>
-    <li>oMLX can already run Flash-Next through its Splash engine if you want to try that model.</li>
-  </ul>
-</section>
+      <section>
+        <div class="eyebrow">Models</div>
+        <h2>Which models run on a Mac</h2>
+        <div class="table">
+          <table>
+            <thead>
+              <tr>
+                <th>Model</th>
+                <th class="s">Strata on a Mac</th>
+                <th class="o">oMLX</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="area">Qwen3.8-Flash-Next</td>
+                <td><span class="pill good">Runs</span> The only model it runs on a Mac</td>
+                <td>
+                  <span class="pill good">Runs</span> Through Splash; a <code>splash-m1</code> port covers M1 and M2
+                </td>
+              </tr>
+              <tr>
+                <td class="area">Qwen3.6-35B-A3B</td>
+                <td><span class="pill bad">No</span> The docs say the Mac engine does not run it</td>
+                <td><span class="pill good">Runs</span> Tuned in your grid</td>
+              </tr>
+              <tr>
+                <td class="area">Qwen3.8-27B</td>
+                <td><span class="pill bad">No</span></td>
+                <td><span class="pill good">Runs</span> Tuned in your grid</td>
+              </tr>
+              <tr>
+                <td class="area">Gemma 4 26B-A4B</td>
+                <td><span class="pill bad">No</span> Not supported on any platform</td>
+                <td><span class="pill good">Runs</span> Your pick for the house</td>
+              </tr>
+              <tr>
+                <td class="area">DeepSeek V4.1-Flash</td>
+                <td><span class="pill bad">No</span> Dropped after 0.2.13</td>
+                <td><span class="note">Cache code for it exists; not tested here</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
 
-<section>
-  <div class="eyebrow">Overview</div>
-  <h2>What each project is</h2>
-  <div class="table">
-    <table>
-      <thead><tr><th></th><th class="s">Strata</th><th class="o">oMLX</th></tr></thead>
-      <tbody>
-        <tr><td class="area">Purpose</td><td>Run one very large mixture-of-experts model on consumer GPUs by splitting the work across GPU, RAM and SSD</td><td>A model server built for Macs that runs many models and is tuned for Apple Silicon</td></tr>
-        <tr><td class="area">Main platforms</td><td>NVIDIA and AMD first; Intel Arc, DGX Spark and Mac also supported</td><td>Apple Silicon only</td></tr>
-        <tr><td class="area">Engine</td><td>Its own C++ engine with CUDA, HIP, SYCL and Metal kernels, built on parts of llama.cpp</td><td>Python on MLX with an engine pool; can hand a model to an external engine (Splash)</td></tr>
-        <tr><td class="area">Model files</td><td>GGUF</td><td>MLX safetensors, plus its own oQ quants</td></tr>
-        <tr><td class="area">License</td><td>MIT</td><td>Apache-2.0</td></tr>
-        <tr><td class="area">Maturity</td><td>v0.2.14; repo created 2026-09-24; about 44.5K stars; very active</td><td>0.8.0rc1 installed here</td></tr>
-      </tbody>
-    </table>
-  </div>
-</section>
+      <section>
+        <div class="eyebrow">This Mac</div>
+        <h2>What Strata would do on 32&nbsp;GB</h2>
+        <p>
+          Flash-Next's smallest pack doesn't fit in 32&nbsp;GB, so Strata keeps the most-used experts in RAM and reads
+          the rest from the SSD for each token. Strata measured that on an M4 Mac mini with 32&nbsp;GB. Nobody has
+          tested an M2 Pro.
+        </p>
 
-<section>
-  <div class="eyebrow">Models</div>
-  <h2>Which models run on a Mac</h2>
-  <div class="table">
-    <table>
-      <thead><tr><th>Model</th><th class="s">Strata on a Mac</th><th class="o">oMLX</th></tr></thead>
-      <tbody>
-        <tr><td class="area">Qwen3.8-Flash-Next</td><td><span class="pill good">Runs</span> The only model it runs on a Mac</td><td><span class="pill good">Runs</span> Through Splash; a <code>splash-m1</code> port covers M1 and M2</td></tr>
-        <tr><td class="area">Qwen3.6-35B-A3B</td><td><span class="pill bad">No</span> The docs say the Mac engine does not run it</td><td><span class="pill good">Runs</span> Tuned in your grid</td></tr>
-        <tr><td class="area">Qwen3.8-27B</td><td><span class="pill bad">No</span></td><td><span class="pill good">Runs</span> Tuned in your grid</td></tr>
-        <tr><td class="area">Gemma 4 26B-A4B</td><td><span class="pill bad">No</span> Not supported on any platform</td><td><span class="pill good">Runs</span> Your pick for the house</td></tr>
-        <tr><td class="area">DeepSeek V4.1-Flash</td><td><span class="pill bad">No</span> Dropped after 0.2.13</td><td><span class="note">Cache code for it exists; not tested here</span></td></tr>
-      </tbody>
-    </table>
-  </div>
-</section>
+        <div class="charts">
+          <div
+            class="chart"
+            role="img"
+            aria-label="Decode speed: Strata Flash-Next 14.1 tok/s, 8.3 with less free memory; oMLX Gemma 39 tok/s"
+          >
+            <h3>Decode, tok/s</h3>
+            <div class="legend">
+              <span><i style="background: var(--strata)"></i>Strata, Flash-Next Q2_0, M4 32&nbsp;GB</span
+              ><span><i style="background: var(--accent)"></i>oMLX, Gemma 4, your M2 Pro</span>
+            </div>
+            <div class="rows">
+              <!-- scale: 40 tok/s = 100% -->
+              <div class="row">
+                <span class="label">oMLX · Gemma 4</span>
+                <div class="track"><div class="fill o" style="width: 97.5%"></div></div>
+                <span class="val">39</span>
+              </div>
+              <div class="row">
+                <span class="label">Strata · Q2_0</span>
+                <div class="track"><div class="fill s" style="width: 35.3%"></div></div>
+                <span class="val">14.1</span>
+              </div>
+              <div class="row">
+                <span class="label">Strata · less RAM free</span>
+                <div class="track"><div class="fill s" style="width: 20.8%"></div></div>
+                <span class="val">8.3</span>
+              </div>
+            </div>
+          </div>
+          <div
+            class="chart"
+            role="img"
+            aria-label="Time to read a cold 11.4K-token house prompt: oMLX Gemma about 30 seconds, Strata about 122 seconds"
+          >
+            <h3>Cold house prompt (11.4K tokens), seconds</h3>
+            <div class="legend"><span>Lower is better</span></div>
+            <div class="rows">
+              <!-- scale: 130 s = 100% -->
+              <div class="row">
+                <span class="label">oMLX · Gemma 4</span>
+                <div class="track"><div class="fill o" style="width: 25%"></div></div>
+                <span class="val">~33</span>
+              </div>
+              <div class="row">
+                <span class="label">Strata · Q2_0</span>
+                <div class="track"><div class="fill s" style="width: 93.8%"></div></div>
+                <span class="val">~122</span>
+              </div>
+            </div>
+            <p class="note">
+              Strata's figure is 11,357 tokens at its measured 93.6 tok/s. Gemma's is your grid's mtp_off cold run (32.6
+              s, including the model load).
+            </p>
+          </div>
+        </div>
 
-<section>
-  <div class="eyebrow">This Mac</div>
-  <h2>What Strata would do on 32&nbsp;GB</h2>
-  <p>Flash-Next's smallest pack doesn't fit in 32&nbsp;GB, so Strata keeps the most-used experts in RAM and reads the rest from the SSD for each token. Strata measured that on an M4 Mac mini with 32&nbsp;GB. Nobody has tested an M2 Pro.</p>
+        <div class="table">
+          <table>
+            <thead>
+              <tr>
+                <th></th>
+                <th class="s">Strata, Flash-Next Q2_0 (M4 32&nbsp;GB)</th>
+                <th class="o">oMLX, Gemma 4 (your M2 Pro)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="area">Decode</td>
+                <td class="num">14.1 tok/s (8.3 with less RAM free)</td>
+                <td class="num">~39 tok/s</td>
+              </tr>
+              <tr>
+                <td class="area">Prompt reading</td>
+                <td class="num">93.6 tok/s at 4K</td>
+                <td class="num">~370 tok/s at 16K</td>
+              </tr>
+              <tr>
+                <td class="area">MTP</td>
+                <td>Off: slower on a Mac that streams</td>
+                <td>Off: slower for Gemma</td>
+              </tr>
+              <tr>
+                <td class="area">Disk space</td>
+                <td class="num">37.6 + 28.8 (n-gram table) + ~40 GB (experts copy)</td>
+                <td class="num">~17 GB</td>
+              </tr>
+              <tr>
+                <td class="area">Requirement</td>
+                <td>macOS 15+, model on the internal SSD</td>
+                <td>Already running</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="note">
+          The dense Qwen3.8-27B you rejected reads prompts at about 90 tok/s, the same class as Strata here. The VM
+          shrinks the RAM Strata can keep experts in, which is how its decode fell to 8.3 tok/s.
+        </p>
+      </section>
 
-  <div class="charts">
-    <div class="chart" role="img" aria-label="Decode speed: Strata Flash-Next 14.1 tok/s, 8.3 with less free memory; oMLX Gemma 39 tok/s">
-      <h3>Decode, tok/s</h3>
-      <div class="legend"><span><i style="background:var(--strata)"></i>Strata, Flash-Next Q2_0, M4 32&nbsp;GB</span><span><i style="background:var(--accent)"></i>oMLX, Gemma 4, your M2 Pro</span></div>
-      <div class="rows">
-        <!-- scale: 40 tok/s = 100% -->
-        <div class="row"><span class="label">oMLX · Gemma 4</span><div class="track"><div class="fill o" style="width:97.5%"></div></div><span class="val">39</span></div>
-        <div class="row"><span class="label">Strata · Q2_0</span><div class="track"><div class="fill s" style="width:35.3%"></div></div><span class="val">14.1</span></div>
-        <div class="row"><span class="label">Strata · less RAM free</span><div class="track"><div class="fill s" style="width:20.8%"></div></div><span class="val">8.3</span></div>
-      </div>
+      <section>
+        <div class="eyebrow">Features</div>
+        <h2>Side by side</h2>
+        <div class="table">
+          <table>
+            <thead>
+              <tr>
+                <th>Area</th>
+                <th class="s">Strata</th>
+                <th class="o">oMLX</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="area">APIs</td>
+                <td>OpenAI Chat Completions, Responses, Anthropic Messages</td>
+                <td>
+                  The same three, plus embeddings, rerank, speech-to-text, text-to-speech, tokenize, MCP and web search
+                </td>
+              </tr>
+              <tr>
+                <td class="area">Several models</td>
+                <td>One model per server</td>
+                <td>A pool of models with load and unload endpoints</td>
+              </tr>
+              <tr>
+                <td class="area">Tool calls</td>
+                <td>
+                  Forgiving parser: fixes near-miss tool names and broken arguments.
+                  <strong><code>tool_choice</code> can't force a call.</strong>
+                </td>
+                <td>Its own tool-call parser</td>
+              </tr>
+              <tr>
+                <td class="area">Structured JSON</td>
+                <td>Schema checked after generation, not enforced while generating</td>
+                <td>Enforced while generating (xgrammar)</td>
+              </tr>
+              <tr>
+                <td class="area">Prompt cache</td>
+                <td>Up to 6 snapshots in RAM; the system prompt is kept for good; conversations parked in RAM</td>
+                <td>Paged KV cache on the SSD, plus the optional hot cache</td>
+              </tr>
+              <tr>
+                <td class="area">Speculative decoding</td>
+                <td>MTP, prompt lookup, DFlash2</td>
+                <td>MTP (Lightning and VLM), DFlash, SpecPrefill</td>
+              </tr>
+              <tr>
+                <td class="area">KV-cache quantization</td>
+                <td>Not documented for the Mac</td>
+                <td>affine8, affine4, TurboQuant</td>
+              </tr>
+              <tr>
+                <td class="area">Requests at once</td>
+                <td><code>--parallel 1–8</code>; on an M5 Max, 4 requests gave 119–125 tok/s in total vs 85 for one</td>
+                <td>Continuous batching; on your Mac it <em>lowered</em> total throughput</td>
+              </tr>
+              <tr>
+                <td class="area">Memory handling</td>
+                <td>
+                  Sizes its expert area under macOS's free memory; locks it in RAM on Macs with 64&nbsp;GB or more
+                </td>
+                <td>Memory-guard tiers and a custom ceiling</td>
+              </tr>
+              <tr>
+                <td class="area">Vision</td>
+                <td>GPU image reader, 0.45 s per picture on an M4</td>
+                <td>Yes; 0.6 s on Gemma in your test</td>
+              </tr>
+              <tr>
+                <td class="area">Apps</td>
+                <td>Tauri desktop app, terminal monitor, <code>strata connect</code> for coding tools</td>
+                <td>Menu-bar app and admin web dashboard</td>
+              </tr>
+              <tr>
+                <td class="area">Privacy</td>
+                <td>No telemetry; checks a signed update feed once a day</td>
+                <td>The built-in benchmark uploads results to omlx.ai (noted in your grid script)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section>
+        <div class="eyebrow">Home Assistant</div>
+        <h2>What matters for the house panel</h2>
+        <div class="grid2">
+          <div class="card s">
+            <h3>Strata</h3>
+            <ul>
+              <li>Works with Home Assistant's OpenAI-style connection through <code>/v1/chat/completions</code>.</li>
+              <li>
+                Its forgiving parser helps a model that makes small formatting slips. It wouldn't fix any of your grid's
+                failures: asking for confirmation, skipping <code>get_history</code>, or claiming an action without
+                calling the tool.
+              </li>
+              <li>You can't force a tool call with <code>tool_choice</code>.</li>
+              <li>The kept system-prompt snapshot suits a long, stable house prompt.</li>
+              <li>
+                Flash-Next is a much bigger model, so tool calling would probably be better. Nobody has measured it on
+                your 10 house cases.
+              </li>
+            </ul>
+          </div>
+          <div class="card o">
+            <h3>oMLX</h3>
+            <ul>
+              <li>Same Home Assistant connection.</li>
+              <li>Gemma 4 passed 10/10 tool cases, the French brief and vision.</li>
+              <li>The SSD prefix cache already gives 1.4 s answers once the house prompt is cached.</li>
+              <li>Can enforce JSON output while generating.</li>
+              <li>Can try Flash-Next later through Splash without a second server.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div class="eyebrow">If you want to try Flash-Next</div>
+        <h2>A cheap way to test it</h2>
+        <ol class="steps">
+          <li>
+            <strong>Try it through oMLX first.</strong> Its Splash engine (<code>splash-m1</code> on an M2) runs
+            Flash-Next without a second server.
+          </li>
+          <li>
+            <strong>Run your house cases against it.</strong> <code>ha_suite</code> in <code>scripts/omlx.py</code> only
+            calls <code>/v1/chat/completions</code>, so it could also point at Strata on
+            <code>127.0.0.1:8080</code> with small changes. The rest of the script depends on oMLX's admin API.
+          </li>
+          <li>
+            <strong>Free memory first.</strong> Stop the VM, or the model will have even less RAM to keep its experts
+            in.
+          </li>
+        </ol>
+      </section>
+
+      <footer>
+        <span
+          >Strata sources: its README, <code>docs/MAC.md</code>, <code>QWEN36.md</code>, <code>CAPABILITIES.md</code>,
+          <code>DETAILS.md</code>, <code>SAFETY.md</code> and <code>AGENTS.md</code> at
+          <a href="https://github.com/Niko1221/Strata" target="_blank" rel="noopener">github.com/Niko1221/Strata</a>.
+          Strata was not installed or run here.</span
+        >
+        <span
+          >oMLX sources: the installed app's modules and API routes, and the grid results from
+          <code>scripts/omlx.py</code>.</span
+        >
+      </footer>
     </div>
-    <div class="chart" role="img" aria-label="Time to read a cold 11.4K-token house prompt: oMLX Gemma about 30 seconds, Strata about 122 seconds">
-      <h3>Cold house prompt (11.4K tokens), seconds</h3>
-      <div class="legend"><span>Lower is better</span></div>
-      <div class="rows">
-        <!-- scale: 130 s = 100% -->
-        <div class="row"><span class="label">oMLX · Gemma 4</span><div class="track"><div class="fill o" style="width:25%"></div></div><span class="val">~33</span></div>
-        <div class="row"><span class="label">Strata · Q2_0</span><div class="track"><div class="fill s" style="width:93.8%"></div></div><span class="val">~122</span></div>
-      </div>
-      <p class="note">Strata's figure is 11,357 tokens at its measured 93.6 tok/s. Gemma's is your grid's mtp_off cold run (32.6 s, including the model load).</p>
-    </div>
-  </div>
-
-  <div class="table">
-    <table>
-      <thead><tr><th></th><th class="s">Strata, Flash-Next Q2_0 (M4 32&nbsp;GB)</th><th class="o">oMLX, Gemma 4 (your M2 Pro)</th></tr></thead>
-      <tbody>
-        <tr><td class="area">Decode</td><td class="num">14.1 tok/s (8.3 with less RAM free)</td><td class="num">~39 tok/s</td></tr>
-        <tr><td class="area">Prompt reading</td><td class="num">93.6 tok/s at 4K</td><td class="num">~370 tok/s at 16K</td></tr>
-        <tr><td class="area">MTP</td><td>Off: slower on a Mac that streams</td><td>Off: slower for Gemma</td></tr>
-        <tr><td class="area">Disk space</td><td class="num">37.6 + 28.8 (n-gram table) + ~40 GB (experts copy)</td><td class="num">~17 GB</td></tr>
-        <tr><td class="area">Requirement</td><td>macOS 15+, model on the internal SSD</td><td>Already running</td></tr>
-      </tbody>
-    </table>
-  </div>
-  <p class="note">The dense Qwen3.8-27B you rejected reads prompts at about 90 tok/s, the same class as Strata here. The VM shrinks the RAM Strata can keep experts in, which is how its decode fell to 8.3 tok/s.</p>
-</section>
-
-<section>
-  <div class="eyebrow">Features</div>
-  <h2>Side by side</h2>
-  <div class="table">
-    <table>
-      <thead><tr><th>Area</th><th class="s">Strata</th><th class="o">oMLX</th></tr></thead>
-      <tbody>
-        <tr><td class="area">APIs</td><td>OpenAI Chat Completions, Responses, Anthropic Messages</td><td>The same three, plus embeddings, rerank, speech-to-text, text-to-speech, tokenize, MCP and web search</td></tr>
-        <tr><td class="area">Several models</td><td>One model per server</td><td>A pool of models with load and unload endpoints</td></tr>
-        <tr><td class="area">Tool calls</td><td>Forgiving parser: fixes near-miss tool names and broken arguments. <strong><code>tool_choice</code> can't force a call.</strong></td><td>Its own tool-call parser</td></tr>
-        <tr><td class="area">Structured JSON</td><td>Schema checked after generation, not enforced while generating</td><td>Enforced while generating (xgrammar)</td></tr>
-        <tr><td class="area">Prompt cache</td><td>Up to 6 snapshots in RAM; the system prompt is kept for good; conversations parked in RAM</td><td>Paged KV cache on the SSD, plus the optional hot cache</td></tr>
-        <tr><td class="area">Speculative decoding</td><td>MTP, prompt lookup, DFlash2</td><td>MTP (Lightning and VLM), DFlash, SpecPrefill</td></tr>
-        <tr><td class="area">KV-cache quantization</td><td>Not documented for the Mac</td><td>affine8, affine4, TurboQuant</td></tr>
-        <tr><td class="area">Requests at once</td><td><code>--parallel 1–8</code>; on an M5 Max, 4 requests gave 119–125 tok/s in total vs 85 for one</td><td>Continuous batching; on your Mac it <em>lowered</em> total throughput</td></tr>
-        <tr><td class="area">Memory handling</td><td>Sizes its expert area under macOS's free memory; locks it in RAM on Macs with 64&nbsp;GB or more</td><td>Memory-guard tiers and a custom ceiling</td></tr>
-        <tr><td class="area">Vision</td><td>GPU image reader, 0.45 s per picture on an M4</td><td>Yes; 0.6 s on Gemma in your test</td></tr>
-        <tr><td class="area">Apps</td><td>Tauri desktop app, terminal monitor, <code>strata connect</code> for coding tools</td><td>Menu-bar app and admin web dashboard</td></tr>
-        <tr><td class="area">Privacy</td><td>No telemetry; checks a signed update feed once a day</td><td>The built-in benchmark uploads results to omlx.ai (noted in your grid script)</td></tr>
-      </tbody>
-    </table>
-  </div>
-</section>
-
-<section>
-  <div class="eyebrow">Home Assistant</div>
-  <h2>What matters for the house panel</h2>
-  <div class="grid2">
-    <div class="card s">
-      <h3>Strata</h3>
-      <ul>
-        <li>Works with Home Assistant's OpenAI-style connection through <code>/v1/chat/completions</code>.</li>
-        <li>Its forgiving parser helps a model that makes small formatting slips. It wouldn't fix any of your grid's failures: asking for confirmation, skipping <code>get_history</code>, or claiming an action without calling the tool.</li>
-        <li>You can't force a tool call with <code>tool_choice</code>.</li>
-        <li>The kept system-prompt snapshot suits a long, stable house prompt.</li>
-        <li>Flash-Next is a much bigger model, so tool calling would probably be better. Nobody has measured it on your 10 house cases.</li>
-      </ul>
-    </div>
-    <div class="card o">
-      <h3>oMLX</h3>
-      <ul>
-        <li>Same Home Assistant connection.</li>
-        <li>Gemma 4 passed 10/10 tool cases, the French brief and vision.</li>
-        <li>The SSD prefix cache already gives 1.4 s answers once the house prompt is cached.</li>
-        <li>Can enforce JSON output while generating.</li>
-        <li>Can try Flash-Next later through Splash without a second server.</li>
-      </ul>
-    </div>
-  </div>
-</section>
-
-<section>
-  <div class="eyebrow">If you want to try Flash-Next</div>
-  <h2>A cheap way to test it</h2>
-  <ol class="steps">
-    <li><strong>Try it through oMLX first.</strong> Its Splash engine (<code>splash-m1</code> on an M2) runs Flash-Next without a second server.</li>
-    <li><strong>Run your house cases against it.</strong> <code>ha_suite</code> in <code>scripts/omlx.py</code> only calls <code>/v1/chat/completions</code>, so it could also point at Strata on <code>127.0.0.1:8080</code> with small changes. The rest of the script depends on oMLX's admin API.</li>
-    <li><strong>Free memory first.</strong> Stop the VM, or the model will have even less RAM to keep its experts in.</li>
-  </ol>
-</section>
-
-<footer>
-  <span>Strata sources: its README, <code>docs/MAC.md</code>, <code>QWEN36.md</code>, <code>CAPABILITIES.md</code>, <code>DETAILS.md</code>, <code>SAFETY.md</code> and <code>AGENTS.md</code> at <a href="https://github.com/Niko1221/Strata" target="_blank" rel="noopener">github.com/Niko1221/Strata</a>. Strata was not installed or run here.</span>
-  <span>oMLX sources: the installed app's modules and API routes, and the grid results from <code>scripts/omlx.py</code>.</span>
-</footer>
-
-</div>
-</body>
+  </body>
 </html>

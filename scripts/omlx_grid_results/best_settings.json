@@ -1,392 +1,224 @@
 {
- "Qwen3.6-35B-A3B-oQ3e-mtp": {
-  "winners": {
-   "ha": [
-    "mtp_off",
-    98.40336134453781
-   ],
-   "mtp": [
-    "fixed3",
-    55.0725
-   ],
-   "kv": [
-    "affine8",
-    56.855
-   ],
-   "burst": [
-    "off",
-    62.51
-   ],
-   "concurrency": [
-    "max1",
-    342.23
-   ],
-   "scheduler": [
-    "chunk0_prefill",
-    62.7183295194508
-   ],
-   "memory": [
-    "aggressive",
-    213
-   ],
-   "prefill_priority": [
-    "context",
-    11.393284797940094
-   ],
-   "cache": [
-    "hot0",
-    30.240414265327907
-   ],
-   "keep_warm": [
-    "window1800",
-    0.7824726134585289
-   ],
-   "moe_offload": [
-    "off",
-    60.3425
-   ],
-   "a8_prefill": [
-    "off",
-    437.9
-   ]
+  "Qwen3.6-35B-A3B-oQ3e-mtp": {
+    "winners": {
+      "ha": ["mtp_off", 98.40336134453781],
+      "mtp": ["fixed3", 55.0725],
+      "kv": ["affine8", 56.855],
+      "burst": ["off", 62.51],
+      "concurrency": ["max1", 342.23],
+      "scheduler": ["chunk0_prefill", 62.7183295194508],
+      "memory": ["aggressive", 213],
+      "prefill_priority": ["context", 11.393284797940094],
+      "cache": ["hot0", 30.240414265327907],
+      "keep_warm": ["window1800", 0.7824726134585289],
+      "moe_offload": ["off", 60.3425],
+      "a8_prefill": ["off", 437.9]
+    },
+    "model_settings": {
+      "qwen35_ane_prefill_enabled": false,
+      "mtp_enabled": true,
+      "mtp_adaptive_max_depth": null,
+      "mtp_fixed_depth": 3,
+      "vlm_mtp_enabled": false,
+      "turboquant_kv_enabled": true,
+      "moe_expert_offload_enabled": false,
+      "a8_prefill_enabled": null,
+      "specprefill_enabled": false,
+      "dflash_enabled": false,
+      "max_context_window": 65536,
+      "turboquant_kv_scheme": "affine8",
+      "turboquant_kv_bits": 8
+    },
+    "global_settings": {
+      "memory_guard_tier": "aggressive",
+      "memory_guard_custom_ceiling_gb": 0.0,
+      "memory_prefill_memory_guard": true,
+      "burst_decode_mode": "off",
+      "max_concurrent_requests": 1,
+      "chunked_prefill": false,
+      "concurrent_priority": "prefill",
+      "prefill_priority": "context",
+      "hot_cache_max_size": "0",
+      "hot_cache_write_through": false,
+      "gpu_keep_warm_interval": 0.5,
+      "gpu_keep_warm_idle_window": 1800.0,
+      "sampling_max_context_window": 65536
+    }
   },
-  "model_settings": {
-   "qwen35_ane_prefill_enabled": false,
-   "mtp_enabled": true,
-   "mtp_adaptive_max_depth": null,
-   "mtp_fixed_depth": 3,
-   "vlm_mtp_enabled": false,
-   "turboquant_kv_enabled": true,
-   "moe_expert_offload_enabled": false,
-   "a8_prefill_enabled": null,
-   "specprefill_enabled": false,
-   "dflash_enabled": false,
-   "max_context_window": 65536,
-   "turboquant_kv_scheme": "affine8",
-   "turboquant_kv_bits": 8
+  "Qwen3.6-35B-A3B-oQ4e-mtp": {
+    "winners": {
+      "ha": ["mtp_off", 98.69565217391305],
+      "mtp": ["fixed3", 55.802499999999995],
+      "kv": ["native", "all options failed"],
+      "burst": ["off", 63.43],
+      "concurrency": ["max1", 340.33000000000004],
+      "scheduler": ["chunk0_prefill", 53.480716581584424],
+      "memory": ["custom26", 205],
+      "prefill_priority": ["context", 8.607259362546372],
+      "cache": ["hot0", 22.74167937727232],
+      "keep_warm": ["window1800", 0.7867820613690009],
+      "moe_offload": ["off", 55.355],
+      "a8_prefill": ["off", 371.4]
+    },
+    "model_settings": {
+      "qwen35_ane_prefill_enabled": false,
+      "mtp_enabled": true,
+      "mtp_adaptive_max_depth": null,
+      "mtp_fixed_depth": 3,
+      "vlm_mtp_enabled": false,
+      "turboquant_kv_enabled": false,
+      "moe_expert_offload_enabled": false,
+      "a8_prefill_enabled": null,
+      "specprefill_enabled": false,
+      "dflash_enabled": false,
+      "max_context_window": 65536
+    },
+    "global_settings": {
+      "memory_guard_tier": "custom",
+      "memory_guard_custom_ceiling_gb": 26.0,
+      "memory_prefill_memory_guard": true,
+      "burst_decode_mode": "off",
+      "max_concurrent_requests": 1,
+      "chunked_prefill": false,
+      "concurrent_priority": "prefill",
+      "prefill_priority": "context",
+      "hot_cache_max_size": "0",
+      "hot_cache_write_through": false,
+      "gpu_keep_warm_interval": 0.5,
+      "gpu_keep_warm_idle_window": 1800.0,
+      "sampling_max_context_window": 65536
+    }
   },
-  "global_settings": {
-   "memory_guard_tier": "aggressive",
-   "memory_guard_custom_ceiling_gb": 0.0,
-   "memory_prefill_memory_guard": true,
-   "burst_decode_mode": "off",
-   "max_concurrent_requests": 1,
-   "chunked_prefill": false,
-   "concurrent_priority": "prefill",
-   "prefill_priority": "context",
-   "hot_cache_max_size": "0",
-   "hot_cache_write_through": false,
-   "gpu_keep_warm_interval": 0.5,
-   "gpu_keep_warm_idle_window": 1800.0,
-   "sampling_max_context_window": 65536
+  "Qwen3.8-27B-oQ3e-fp16-mtp": {
+    "winners": {
+      "ha": ["mtp_off", 103.52733686067019],
+      "mtp": ["adaptive5", 17.5225],
+      "kv": ["native", 14.045],
+      "burst": ["off", 17.75],
+      "concurrency": ["max1", 99.6],
+      "scheduler": ["chunk0_prefill", 12.972384981735793],
+      "memory": ["custom24", 209],
+      "prefill_priority": ["context", 2.630111621937235],
+      "cache": ["hot0", 7.099154476553173],
+      "keep_warm": ["window300", 0.19087612139721322],
+      "a8_prefill": ["off", 91.4]
+    },
+    "model_settings": {
+      "qwen35_ane_prefill_enabled": false,
+      "mtp_enabled": true,
+      "mtp_adaptive_max_depth": 5,
+      "mtp_fixed_depth": null,
+      "vlm_mtp_enabled": false,
+      "turboquant_kv_enabled": false,
+      "moe_expert_offload_enabled": false,
+      "a8_prefill_enabled": null,
+      "specprefill_enabled": false,
+      "dflash_enabled": false,
+      "max_context_window": 65536
+    },
+    "global_settings": {
+      "memory_guard_tier": "custom",
+      "memory_guard_custom_ceiling_gb": 24.0,
+      "memory_prefill_memory_guard": true,
+      "burst_decode_mode": "off",
+      "max_concurrent_requests": 1,
+      "chunked_prefill": false,
+      "concurrent_priority": "prefill",
+      "prefill_priority": "context",
+      "hot_cache_max_size": "0",
+      "hot_cache_write_through": false,
+      "gpu_keep_warm_interval": 0.5,
+      "gpu_keep_warm_idle_window": 300.0,
+      "sampling_max_context_window": 65536
+    }
+  },
+  "Qwen3.8-27B-oQ4e-fp16-mtp": {
+    "winners": {
+      "ha": ["mtp_off", 108.11526479750779],
+      "mtp": ["adaptive5", 19.3875],
+      "kv": ["affine8", 23.635],
+      "burst": ["off", 17.48],
+      "concurrency": ["max4", 104.95],
+      "scheduler": ["chunk1_balanced", 23.43388180530257],
+      "memory": ["custom26", 207],
+      "prefill_priority": ["context", 2.291743535564422],
+      "cache": ["hot0", 6.430002811039705],
+      "keep_warm": ["window1800", 0.19916351324437365],
+      "a8_prefill": ["off", 89.2]
+    },
+    "model_settings": {
+      "qwen35_ane_prefill_enabled": false,
+      "mtp_enabled": true,
+      "mtp_adaptive_max_depth": 5,
+      "mtp_fixed_depth": null,
+      "vlm_mtp_enabled": false,
+      "turboquant_kv_enabled": true,
+      "moe_expert_offload_enabled": false,
+      "a8_prefill_enabled": null,
+      "specprefill_enabled": false,
+      "dflash_enabled": false,
+      "max_context_window": 65536,
+      "turboquant_kv_scheme": "affine8",
+      "turboquant_kv_bits": 8
+    },
+    "global_settings": {
+      "memory_guard_tier": "custom",
+      "memory_guard_custom_ceiling_gb": 26.0,
+      "memory_prefill_memory_guard": true,
+      "burst_decode_mode": "off",
+      "max_concurrent_requests": 4,
+      "chunked_prefill": true,
+      "concurrent_priority": "balanced",
+      "prefill_priority": "context",
+      "hot_cache_max_size": "0",
+      "hot_cache_write_through": false,
+      "gpu_keep_warm_interval": 0.5,
+      "gpu_keep_warm_idle_window": 1800.0,
+      "sampling_max_context_window": 65536
+    }
+  },
+  "gemma-4-26B-A4B-it-oQ4e-mtp": {
+    "winners": {
+      "ha": ["mtp_off", 118.23045267489712],
+      "mtp": ["off", 36.6075],
+      "kv": ["affine8", 37.424],
+      "burst": ["off", 39.08],
+      "concurrency": ["max1", 204.79999999999998],
+      "scheduler": ["chunk0_prefill", 37.16106950223455],
+      "memory": ["custom24", 220],
+      "prefill_priority": ["context", 8.170134888927016],
+      "cache": ["hot0", 32.73147557155808],
+      "keep_warm": ["window1800", 0.8333333333333334]
+    },
+    "model_settings": {
+      "qwen35_ane_prefill_enabled": false,
+      "mtp_enabled": false,
+      "mtp_adaptive_max_depth": null,
+      "mtp_fixed_depth": null,
+      "vlm_mtp_enabled": false,
+      "turboquant_kv_enabled": true,
+      "moe_expert_offload_enabled": false,
+      "a8_prefill_enabled": null,
+      "specprefill_enabled": false,
+      "dflash_enabled": false,
+      "max_context_window": 65536,
+      "turboquant_kv_scheme": "affine8",
+      "turboquant_kv_bits": 8
+    },
+    "global_settings": {
+      "memory_guard_tier": "custom",
+      "memory_guard_custom_ceiling_gb": 24.0,
+      "memory_prefill_memory_guard": true,
+      "burst_decode_mode": "off",
+      "max_concurrent_requests": 1,
+      "chunked_prefill": false,
+      "concurrent_priority": "prefill",
+      "prefill_priority": "context",
+      "hot_cache_max_size": "0",
+      "hot_cache_write_through": false,
+      "gpu_keep_warm_interval": 0.5,
+      "gpu_keep_warm_idle_window": 1800.0,
+      "sampling_max_context_window": 65536
+    }
   }
- },
- "Qwen3.6-35B-A3B-oQ4e-mtp": {
-  "winners": {
-   "ha": [
-    "mtp_off",
-    98.69565217391305
-   ],
-   "mtp": [
-    "fixed3",
-    55.802499999999995
-   ],
-   "kv": [
-    "native",
-    "all options failed"
-   ],
-   "burst": [
-    "off",
-    63.43
-   ],
-   "concurrency": [
-    "max1",
-    340.33000000000004
-   ],
-   "scheduler": [
-    "chunk0_prefill",
-    53.480716581584424
-   ],
-   "memory": [
-    "custom26",
-    205
-   ],
-   "prefill_priority": [
-    "context",
-    8.607259362546372
-   ],
-   "cache": [
-    "hot0",
-    22.74167937727232
-   ],
-   "keep_warm": [
-    "window1800",
-    0.7867820613690009
-   ],
-   "moe_offload": [
-    "off",
-    55.355
-   ],
-   "a8_prefill": [
-    "off",
-    371.4
-   ]
-  },
-  "model_settings": {
-   "qwen35_ane_prefill_enabled": false,
-   "mtp_enabled": true,
-   "mtp_adaptive_max_depth": null,
-   "mtp_fixed_depth": 3,
-   "vlm_mtp_enabled": false,
-   "turboquant_kv_enabled": false,
-   "moe_expert_offload_enabled": false,
-   "a8_prefill_enabled": null,
-   "specprefill_enabled": false,
-   "dflash_enabled": false,
-   "max_context_window": 65536
-  },
-  "global_settings": {
-   "memory_guard_tier": "custom",
-   "memory_guard_custom_ceiling_gb": 26.0,
-   "memory_prefill_memory_guard": true,
-   "burst_decode_mode": "off",
-   "max_concurrent_requests": 1,
-   "chunked_prefill": false,
-   "concurrent_priority": "prefill",
-   "prefill_priority": "context",
-   "hot_cache_max_size": "0",
-   "hot_cache_write_through": false,
-   "gpu_keep_warm_interval": 0.5,
-   "gpu_keep_warm_idle_window": 1800.0,
-   "sampling_max_context_window": 65536
-  }
- },
- "Qwen3.8-27B-oQ3e-fp16-mtp": {
-  "winners": {
-   "ha": [
-    "mtp_off",
-    103.52733686067019
-   ],
-   "mtp": [
-    "adaptive5",
-    17.5225
-   ],
-   "kv": [
-    "native",
-    14.045
-   ],
-   "burst": [
-    "off",
-    17.75
-   ],
-   "concurrency": [
-    "max1",
-    99.6
-   ],
-   "scheduler": [
-    "chunk0_prefill",
-    12.972384981735793
-   ],
-   "memory": [
-    "custom24",
-    209
-   ],
-   "prefill_priority": [
-    "context",
-    2.630111621937235
-   ],
-   "cache": [
-    "hot0",
-    7.099154476553173
-   ],
-   "keep_warm": [
-    "window300",
-    0.19087612139721322
-   ],
-   "a8_prefill": [
-    "off",
-    91.4
-   ]
-  },
-  "model_settings": {
-   "qwen35_ane_prefill_enabled": false,
-   "mtp_enabled": true,
-   "mtp_adaptive_max_depth": 5,
-   "mtp_fixed_depth": null,
-   "vlm_mtp_enabled": false,
-   "turboquant_kv_enabled": false,
-   "moe_expert_offload_enabled": false,
-   "a8_prefill_enabled": null,
-   "specprefill_enabled": false,
-   "dflash_enabled": false,
-   "max_context_window": 65536
-  },
-  "global_settings": {
-   "memory_guard_tier": "custom",
-   "memory_guard_custom_ceiling_gb": 24.0,
-   "memory_prefill_memory_guard": true,
-   "burst_decode_mode": "off",
-   "max_concurrent_requests": 1,
-   "chunked_prefill": false,
-   "concurrent_priority": "prefill",
-   "prefill_priority": "context",
-   "hot_cache_max_size": "0",
-   "hot_cache_write_through": false,
-   "gpu_keep_warm_interval": 0.5,
-   "gpu_keep_warm_idle_window": 300.0,
-   "sampling_max_context_window": 65536
-  }
- },
- "Qwen3.8-27B-oQ4e-fp16-mtp": {
-  "winners": {
-   "ha": [
-    "mtp_off",
-    108.11526479750779
-   ],
-   "mtp": [
-    "adaptive5",
-    19.3875
-   ],
-   "kv": [
-    "affine8",
-    23.635
-   ],
-   "burst": [
-    "off",
-    17.48
-   ],
-   "concurrency": [
-    "max4",
-    104.95
-   ],
-   "scheduler": [
-    "chunk1_balanced",
-    23.43388180530257
-   ],
-   "memory": [
-    "custom26",
-    207
-   ],
-   "prefill_priority": [
-    "context",
-    2.291743535564422
-   ],
-   "cache": [
-    "hot0",
-    6.430002811039705
-   ],
-   "keep_warm": [
-    "window1800",
-    0.19916351324437365
-   ],
-   "a8_prefill": [
-    "off",
-    89.2
-   ]
-  },
-  "model_settings": {
-   "qwen35_ane_prefill_enabled": false,
-   "mtp_enabled": true,
-   "mtp_adaptive_max_depth": 5,
-   "mtp_fixed_depth": null,
-   "vlm_mtp_enabled": false,
-   "turboquant_kv_enabled": true,
-   "moe_expert_offload_enabled": false,
-   "a8_prefill_enabled": null,
-   "specprefill_enabled": false,
-   "dflash_enabled": false,
-   "max_context_window": 65536,
-   "turboquant_kv_scheme": "affine8",
-   "turboquant_kv_bits": 8
-  },
-  "global_settings": {
-   "memory_guard_tier": "custom",
-   "memory_guard_custom_ceiling_gb": 26.0,
-   "memory_prefill_memory_guard": true,
-   "burst_decode_mode": "off",
-   "max_concurrent_requests": 4,
-   "chunked_prefill": true,
-   "concurrent_priority": "balanced",
-   "prefill_priority": "context",
-   "hot_cache_max_size": "0",
-   "hot_cache_write_through": false,
-   "gpu_keep_warm_interval": 0.5,
-   "gpu_keep_warm_idle_window": 1800.0,
-   "sampling_max_context_window": 65536
-  }
- },
- "gemma-4-26B-A4B-it-oQ4e-mtp": {
-  "winners": {
-   "ha": [
-    "mtp_off",
-    118.23045267489712
-   ],
-   "mtp": [
-    "off",
-    36.6075
-   ],
-   "kv": [
-    "affine8",
-    37.424
-   ],
-   "burst": [
-    "off",
-    39.08
-   ],
-   "concurrency": [
-    "max1",
-    204.79999999999998
-   ],
-   "scheduler": [
-    "chunk0_prefill",
-    37.16106950223455
-   ],
-   "memory": [
-    "custom24",
-    220
-   ],
-   "prefill_priority": [
-    "context",
-    8.170134888927016
-   ],
-   "cache": [
-    "hot0",
-    32.73147557155808
-   ],
-   "keep_warm": [
-    "window1800",
-    0.8333333333333334
-   ]
-  },
-  "model_settings": {
-   "qwen35_ane_prefill_enabled": false,
-   "mtp_enabled": false,
-   "mtp_adaptive_max_depth": null,
-   "mtp_fixed_depth": null,
-   "vlm_mtp_enabled": false,
-   "turboquant_kv_enabled": true,
-   "moe_expert_offload_enabled": false,
-   "a8_prefill_enabled": null,
-   "specprefill_enabled": false,
-   "dflash_enabled": false,
-   "max_context_window": 65536,
-   "turboquant_kv_scheme": "affine8",
-   "turboquant_kv_bits": 8
-  },
-  "global_settings": {
-   "memory_guard_tier": "custom",
-   "memory_guard_custom_ceiling_gb": 24.0,
-   "memory_prefill_memory_guard": true,
-   "burst_decode_mode": "off",
-   "max_concurrent_requests": 1,
-   "chunked_prefill": false,
-   "concurrent_priority": "prefill",
-   "prefill_priority": "context",
-   "hot_cache_max_size": "0",
-   "hot_cache_write_through": false,
-   "gpu_keep_warm_interval": 0.5,
-   "gpu_keep_warm_idle_window": 1800.0,
-   "sampling_max_context_window": 65536
-  }
- }
 }
