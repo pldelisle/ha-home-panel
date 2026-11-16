@@ -51,7 +51,7 @@ export const tiles = adopt(tilesText);
 export const hero = adopt(heroText);
 /** The inner card of a detail panel and the row that sets two of them side by side. */
 export const inner = adopt(innerText);
-/** The rows and chips of a status list: the Car detail's Ford messages and the Status checks popup's. */
+/** The rows and chips of a status list: the Car detail's Ford messages and status block (`.clear`), and the legacy Status checks popup's until spec 22 (#256). */
 export const list = adopt(listText);
 /** A chart's legend and its tooltip's font. */
 export const chart = adopt(chartText);

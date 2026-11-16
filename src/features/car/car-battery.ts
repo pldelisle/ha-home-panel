@@ -1,10 +1,11 @@
 // <hp-car-battery>: the Car detail's battery block: the usable energy, the charge beside the car's picture, the bar with the charge limit's mark and four tiles.
-// Pattern: humble object (Meszaros, xUnit Test Patterns) placing the model's `BatteryBlock`; the one state it keeps is whether its photo failed, which the drawn car then replaces for the
-// element's life (the card does the same with its own), through `carArt` and `socBar`, which the card calls too.
+// Pattern: humble object (Meszaros, xUnit Test Patterns) placing the model's `BatteryBlock`; it keeps no state: whether the photo failed is the pane's (`imageFailed`, handed down through the detail; the card is told the same), and the drawn car then replaces it,
+// through `carArt` and `socBar`, which the card calls too.
 // Must not: read an entity or the clock, word a string or place a mark (the model does), or know the detail it is in.
 import {LitElement, html, nothing, unsafeCSS} from 'lit';
 import {carArt} from './car-art.ts';
 import ownCss from './car-battery.element.css?inline';
+import {CarImageFailedEvent} from './events.ts';
 import {carTiles} from './car-tiles.ts';
 import type {BatteryBlock} from './model.ts';
 import {socBar} from './soc-bar.ts';
@@ -16,10 +17,10 @@ import {common, inner, tiles} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
 export class CarBattery extends LitElement {
-  static override properties = {view: {attribute: false}, imageFailed: {state: true}};
+  static override properties = {view: {attribute: false}, imageFailed: {attribute: false}};
   /** The model's battery block. */
   declare view: BatteryBlock | undefined;
-  /** The photo did not load: the drawing stands in for it from now on. */
+  /** The photo did not load, which the pane keeps (for its life) and hands down: the drawing stands in for it. */
   declare imageFailed: boolean;
 
   static override styles = [
@@ -60,7 +61,7 @@ export class CarBattery extends LitElement {
 
   // arrow field, so the template hands the same function at every render
   private readonly onImageError = (): void => {
-    this.imageFailed = true;
+    this.dispatchEvent(new CarImageFailedEvent());
   };
 }
 

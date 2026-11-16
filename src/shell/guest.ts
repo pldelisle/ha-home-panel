@@ -3,7 +3,7 @@
 // owns, and the interface only shrinks; registering a factory keeps the shell from importing legacy code (ADR 0011).
 // Must not: grow past what the spec names for a step, except a member whose note names what deletes it; be imported by anything
 // but the shell and src/main.js; or outlive the guest (module state included). Lit binds nothing inside a guest container, and the guest
-// writes nothing outside them but the Home-card bridge's two tags (ADR 0024: `<hp-scene-tiles>` in `#hscenes`, `<hp-security-card>` in `#hsec`), until #268.
+// writes nothing outside them but the Home-card bridge's two tags (ADR 0024: `<hp-scene-tiles>` in `#hscenes`, `<hp-security-card>` in `#hsec`), until #268, and the Car bridge's one listener: `#car-controls` hears `car-detail-shown` from the Car pane (the event's type is in src/features/car/events.ts), which #253 deletes with the legacy charger and comfort cards.
 import type {PanelApi} from '../core/api.ts';
 import type {PanelSettings} from '../core/settings.ts';
 import type {StatisticsCache} from '../core/statistics-cache.ts';

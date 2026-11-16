@@ -1,6 +1,6 @@
 // carArt, carSide and carTop: the car's picture: Ford's photo, else the car drawn from the side (the card's and the battery block's), and the car drawn from above (the tire pressures' centre).
 // Pattern: template functions (Lit docs, Templates) over constant drawings, in the tokens the frame defines (`--car-body`, `--car-glass`, ...), so the theme recolours them with no redraw;
-// the side view's body colour is the one custom property the config may set on it. The card and the battery block each keep whether their photo failed, and call `carArt` with it.
+// the side view's body colour is the one custom property the config may set on it. The pane keeps whether the photo failed, and the card and the battery block call `carArt` with it.
 // Must not: word a label (the model does, through the catalog), read an entity or the config, or hold state.
 import {html, svg, type SVGTemplateResult} from 'lit';
 import {ifDefined} from 'lit/directives/if-defined.js';
@@ -33,7 +33,8 @@ export const carTop = (label: string): SVGTemplateResult =>
     <rect x="2" y="114" width="10" height="26" rx="4" fill="var(--car-tire)" /><rect x="78" y="114" width="10" height="26" rx="4" fill="var(--car-tire)" />
   </svg>`;
 
-/** Ford's photo through the image proxy, or the drawn car where there is none or `failed` says it did not load; `onError` is told when the photo fails. */
+/** Ford's photo through the image proxy, or the drawn car where there is none or `failed` says it did not load; `onError` is told when the photo fails.
+ * `.carimg` is styled in both the card's and the battery block's element CSS: they are separate shadow roots. */
 export const carArt = ({picture, color, name, drawing}: CarArtView, failed: boolean, onError: () => void) =>
   picture && !failed
     ? html`<img class="carimg" src=${picture} alt=${name} @error=${onError} />`

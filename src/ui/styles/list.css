@@ -1,7 +1,7 @@
 /* The rows and chips of a status list: the grid of rows (`.att`), a row (`.arow`: a tinted icon square, a bold line and the line under it), the tint
-   (`.ic.acc`, which only a row's icon wears) and the chips of what is fine (`.clear`). Written once for the legacy sheet and for the elements that draw
-   them; inside an element `.app.gl` reads as `:host([glass])` (host.ts). Its two users: the Car detail's Ford block (`<hp-car-ford>`, #252) and the
-   Status checks popup, which the guest still draws until the live pill's move (spec 22, #256). */
+   (`.ic.acc`, which only a row's icon wears) and the chips of what is fine (`.clear`). Inside an element `.app.gl` reads as `:host([glass])` (host.ts).
+   Its users: the Car detail's Ford block (`<hp-car-ford>`) and status block (`<hp-car-status>`'s `.clear` chips), and the Status checks popup, which
+   the guest still draws (src/home-panel.js) until spec 22 (#256) moves it. */
 .att {
   display: grid;
   gap: 8px;

@@ -11,6 +11,7 @@ import {carIds} from './ids.ts';
 import {readCarFeature} from './inputs.ts';
 import {CarHistory, type CarHistoryHost} from './loader.ts';
 import {carModel, type CarViewModel} from './model.ts';
+import {CarDetailShownEvent} from './events.ts';
 import {DETAIL_SHEET} from './sheets.ts';
 import type {CarRef} from '../../providers/fordpass.ts';
 import type {StatisticsCache} from '../../core/statistics-cache.ts';
@@ -42,6 +43,8 @@ export class CarPane extends LitElement {
   private view: CarViewModel | undefined;
   // the sessions' table shows every session and not the latest ten: the toggle's state, which the model's rows follow
   private allSessions = false;
+  // Ford's photo did not load: the drawn car stands in for it until the pane goes, on the card and in the battery block alike (the legacy panel's `imgFail`, per session), so a broken photo is asked for once
+  private imageFailed = false;
   // whether the detail was last on screen, which the container of the legacy controls is told (`announce`)
   private told = false;
 
@@ -116,12 +119,27 @@ export class CarPane extends LitElement {
     return html`<hp-pane-header .icon=${'car'} .color=${'var(--c-ev)'} .heading=${summary.title}>
         <div slot="sub">${summary.line}</div>
       </hp-pane-header>
-      ${card === null ? nothing : html`<hp-car-card .view=${card} .error=${view.error}></hp-car-card>`}${this.renderSheet(view)}`;
+      ${
+        card === null
+          ? nothing
+          : html`<hp-car-card
+              .view=${card}
+              .error=${view.error}
+              .imageFailed=${this.imageFailed}
+              @car-image-failed=${this.onImageFailed}
+            ></hp-car-card>`
+      }${this.renderSheet(view)}`;
   }
 
   // the detail, with the legacy controls' container forwarded into its `controls` slot until #253
   private renderDetail({detail, error}: CarViewModel) {
-    return html`<hp-car-detail .detail=${detail ?? undefined} .error=${error} @sessions-toggle=${this.onSessionsToggle}>
+    return html`<hp-car-detail
+      .detail=${detail ?? undefined}
+      .error=${error}
+      .imageFailed=${this.imageFailed}
+      @sessions-toggle=${this.onSessionsToggle}
+      @car-image-failed=${this.onImageFailed}
+    >
       <slot name="controls" slot="controls"></slot>
     </hp-car-detail>`;
   }
@@ -155,13 +173,20 @@ export class CarPane extends LitElement {
     this.told = shown;
     const box = this.querySelector('[slot="controls"]');
     box?.toggleAttribute('data-shown', shown);
-    box?.dispatchEvent(new Event('car-detail-shown'));
+    box?.dispatchEvent(new CarDetailShownEvent());
   }
 
   // arrow fields, so the template hands the same functions at every render
   private readonly onSessionsToggle = (e: Event): void => {
     e.stopPropagation();
     this.allSessions = !this.allSessions;
+    this.requestUpdate();
+  };
+
+  // a photo failed, wherever it drew: the pane keeps it and tells the others
+  private readonly onImageFailed = (e: Event): void => {
+    e.stopPropagation();
+    this.imageFailed = true;
     this.requestUpdate();
   };
 

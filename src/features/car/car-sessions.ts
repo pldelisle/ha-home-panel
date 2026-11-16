@@ -17,8 +17,8 @@ import {lensLike} from '../../ui/lens.ts';
 import {common, inner, tiles} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
-/** The button asks for the table to show every session, or the latest ten again; the pane holds which, and the model's rows follow. */
-export const SESSIONS_TOGGLE = 'sessions-toggle';
+/** The button asks for the table to show every session, or the latest ten again; the pane holds which, and the model's rows follow. Not exported: the pane's `@sessions-toggle` binds by the literal, as a lit template's event name cannot be a constant. */
+const SESSIONS_TOGGLE = 'sessions-toggle';
 
 export class CarSessions extends LitElement {
   static override properties = {view: {attribute: false}, error: {attribute: false}};

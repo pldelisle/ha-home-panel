@@ -142,6 +142,7 @@
 #car-controls.two {
   margin-top: 0;
 }
+/* The same phone padding and radius as `.app.cp .inner` in src/features/car/styles.css: a known copy, since the shadow boundary keeps one sheet out of the other. #253 deletes this one with the legacy cards. */
 .app.cp #car-controls .inner {
   padding: 14px;
   border-radius: 18px;

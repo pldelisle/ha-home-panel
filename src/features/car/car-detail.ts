@@ -17,11 +17,13 @@ import {common, inner} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
 export class CarDetailElement extends LitElement {
-  static override properties = {detail: {attribute: false}, error: {attribute: false}};
+  static override properties = {detail: {attribute: false}, error: {attribute: false}, imageFailed: {attribute: false}};
   /** The model's detail: the title and line, and the five blocks. */
   declare detail: CarDetail | undefined;
   /** Why the history did not load, in words; null when it did, or has not been asked. */
   declare error: string | null;
+  /** Ford's photo did not load (the pane keeps this for its life): the battery block draws the car. */
+  declare imageFailed: boolean;
 
   // The host is a block; its blocks are one column with the sixteen pixels between them the pane's `.panel` gave (fourteen on the phone, where the sheet's did).
   // The element's own rules are in car-detail.element.css.
@@ -33,6 +35,7 @@ export class CarDetailElement extends LitElement {
     super();
     this.detail = undefined;
     this.error = null;
+    this.imageFailed = false;
   }
 
   protected override render() {
@@ -46,7 +49,7 @@ export class CarDetailElement extends LitElement {
     >
       ${compact ? nothing : this.renderHeader(detail)}
       <div class="two">
-        <hp-car-battery .view=${detail.battery}></hp-car-battery>
+        <hp-car-battery .view=${detail.battery} .imageFailed=${this.imageFailed}></hp-car-battery>
         <hp-car-status .view=${detail.status}></hp-car-status>
       </div>
       <div class="controls"><slot name="controls"></slot></div>

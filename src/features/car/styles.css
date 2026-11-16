@@ -6,6 +6,7 @@
   min-width: 0;
 }
 .app.cp .inner {
+  /* the same as `.app.cp #car-controls .inner` in src/css/tabs.css, which styles the legacy cards: a known copy, since the shadow boundary keeps one sheet out of the other; #253 deletes it */
   padding: 14px;
   border-radius: 18px;
 }

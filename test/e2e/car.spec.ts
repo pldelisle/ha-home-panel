@@ -1,7 +1,7 @@
 // The Car tab (spec 21, #251, #252): <hp-car-pane>, <hp-car-card> and <hp-car-detail>. On a phone the pane is the header with the car's name and its summary line and the card, which opens the
 // detail in a sheet; on a tablet the tab is the detail, inline. The test house has a car at 64 percent with 280 km of range, locked and charging, a limit of 90 percent, and a Wallbox that says Charging.
 import AxeBuilder from '@axe-core/playwright';
-import {test, expect, phoneOnly, tabletOnly, type House} from './fixtures';
+import {test, expect, expectCall, phoneOnly, tabletOnly, type House} from './fixtures';
 import {AFTERNOON, FULL_CFG} from './houses';
 
 test.use({houseOpts: {cfg: FULL_CFG}});
@@ -163,6 +163,45 @@ test.describe('on a phone', () => {
     await expect.poll(() => windowReads(house)).toEqual({hours: 1, days: 1});
   });
 
+  // the charger's and comfort's cards stay the legacy panel's until #253: they are slotted into the sheet's detail, and must take a tap there as they did in the legacy sheet
+  test('the legacy charger card, slotted into the phone’s sheet, takes a tap and sends its service call', async ({
+    house,
+  }) => {
+    await house.tab('car');
+    await card(house).locator('.box').click();
+    const amps = house.root().locator('#car-charger [data-k="amps"][data-a="32"]');
+    await expect(amps).toBeVisible();
+    await amps.click();
+    await expectCall(house, /^number\.set_value \{"entity_id":"number\.charger_max_current","value":32\}$/);
+    await expect(amps).toHaveAttribute('aria-checked', 'true');
+  });
+
+  test('a photo that does not load is asked for once: the sheet opened again, from Home or the tab, tries it no more', async ({
+    house,
+  }) => {
+    const asked: string[] = [];
+    house.page.on('request', request => {
+      if (request.url().includes('/missing/')) asked.push(new URL(request.url()).pathname);
+    });
+    await house.setState(PICTURE, {state: 'unknown', attributes: {entity_picture: '/missing/photo.png'}});
+    await house.tab('car');
+    await expect.poll(() => asked, 'the card tries the photo').toEqual(['/missing/photo.png']);
+    const sheet = pane(house).locator('hp-sheet .sheet');
+    for (let opening = 0; opening < 2; opening++) {
+      await card(house).locator('.box').click();
+      await expect(sheet).toBeVisible();
+      await expect(pane(house).locator('hp-car-battery .carside')).toBeVisible();
+      await expect(pane(house).locator('hp-car-battery img.carimg')).toHaveCount(0);
+      await pane(house).locator('hp-sheet .close').click();
+      await expect(sheet).toBeHidden();
+    }
+    await house.tab('home');
+    await house.tab('car');
+    await expect(card(house).locator('.carside')).toBeVisible();
+    await house.page.waitForTimeout(250);
+    expect(asked, 'the photo asked for across two openings and a second visit').toEqual(['/missing/photo.png']);
+  });
+
   test('a light change gives zero mutations in the pane', async ({house}) => {
     await house.tab('car');
     await expect(card(house).locator('.spark rect')).toHaveCount(30);
@@ -220,6 +259,17 @@ test.describe('on a tablet', () => {
     await expect(detail(house).locator('hp-pane-header [slot="sub"]')).toContainText('Parked at home · locked');
     await expect(pane(house).locator('hp-car-card')).toHaveCount(0);
     await expect(house.root().locator('#pane-car > .panel')).toHaveCount(0);
+  });
+
+  // a tablet's tile has no `data-opens` (that is the phone's): it names the pane, and the shell shows the tab, whose detail is inline
+  test('a tap on Home’s car tile lands on the Car tab, with the detail inline', async ({house}) => {
+    await house.tab('home');
+    await expect(house.root().locator('#htiles [data-opens="car.detail"]')).toHaveCount(0);
+    await house.root().locator('#htiles [data-pane="car"]').click();
+    await expect(house.root().locator('#pane-car')).toBeVisible();
+    await expect(detail(house)).toBeVisible();
+    await expect(detail(house).locator('hp-pane-header h2')).toHaveText('Car');
+    await expect(house.root().locator('hp-sheet .sheet:visible')).toHaveCount(0);
   });
 
   test('the detail shows the car’s battery, tires and chips, and the departure line, from the house’s entities', async ({

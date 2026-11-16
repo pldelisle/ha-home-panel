@@ -23,7 +23,7 @@ export interface LegacySheet {
   id: LegacySheetId;
   /** the `.sheet` div: the scrim, with the `.panel` and the `.close` button inside */
   element: HTMLElement;
-  /** Present for the five detail sheets: on a tablet the panel sits in its pane, and opening the sheet shows that pane. */
+  /** Where a legacy detail panel sits in its pane on a tablet, and opening the sheet shows that pane. No sheet has this since #252 moved the last one (the Car's) to its element; #188 deletes it with the guest. */
   inline?: InlinePlacement;
 }
 
@@ -53,7 +53,7 @@ export interface SheetHost {
   /** Closes the sheet over the page; with an id, only when that sheet is the one open (an element's late `sheet-close` closes nothing else). */
   close(id?: SheetId): void;
   /** The pane of `tab` is on screen: the inline panel of the pane before it goes, the one of this pane shows (a tablet). */
-  paneShown(tab: FeatureKey): void; // deleted with the guest (#188)
+  paneShown(tab: FeatureKey): void; // no sheet has an inline panel since #252, so it does nothing; deleted with the guest (#188)
   registerLegacy(sheet: LegacySheet): () => void; // deleted with the guest (#188)
   registerPopup(popup: Popup): () => void;
 }

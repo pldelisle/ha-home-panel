@@ -578,7 +578,7 @@ export class LegacyPanel {
     // The Security card is the second use, written the same way: its tag once a draw, and the card keeps its glow's memory (#226).
     this.$('hsec').innerHTML = '<hp-security-card></hp-security-card>';
     this.wire();
-    // the host takes the scrim and the Close button of each sheet, and places the five detail panels for the shape of the screen
+    // the host takes the scrim and the Close button of each sheet, and places the panels for the shape of the screen (none sits inline in its pane since #252; #188 deletes the placement)
     this.sheetOffs = [...this.root.querySelectorAll('.guest .sheet')].map(el =>
       this.sheets.registerLegacy({
         id: /** @type {import('./shell/sheet-host.ts').LegacySheetId} */ (el.id),
@@ -2450,7 +2450,7 @@ export class LegacyPanel {
     this.drawnTab = t;
     if (t === 'lights' && prev !== t) this.loadLightOrder(); // another screen may have rearranged them
     if (t !== 'lights' && this.lightEdit) this.setLightEdit(false);
-    this.sheets.paneShown(t); // the host shows this pane's detail panel inline, on a tablet
+    this.sheets.paneShown(t); // the host shows this pane's legacy detail panel inline, on a tablet: none has one since #252, and #188 deletes this call
     this.renderTabs();
     // on a phone each section starts at the top, as an app's tabs do
     if (this.compact && prev && prev !== t) {
