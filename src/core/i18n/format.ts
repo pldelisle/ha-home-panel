@@ -4,8 +4,9 @@
 // the three house rules (en-* am/pm without periods, fr-* "16 h" on the hour, fr-* thousands U+202F), number() and fixed() clamping
 // their fraction digits to 2, time24 and time24s joining the parts with a colon and Latin digits in every locale (the table asks for `16:07`),
 // and `ago`, the one function that returns no text: it cuts a span into a kind and a count (the legacy rule) and formats only the date, so the words stay in the catalog.
+// Beside the factory, the module functions over an instance: `fixedOr`, `whole`, `degrees`, and the day keys' `utcNoonOf` and `noonOf`.
 // Must not: read the clock, the DOM or a browser default, or hold a word a person reads.
-import {DASH, HOUR_MS, MINUTE_MS} from '../figures.ts';
+import {DAY_MS, DASH, HOUR_MS, MINUTE_MS} from '../figures.ts';
 import type {PanelLocaleSpec} from './locale.ts';
 
 type Instant = Date | number;
@@ -78,6 +79,15 @@ export const degrees = (fmt: Formatters, n: number): string => `${whole(fmt, n)}
 /** `fmt.fixed` of a reading, or the dash when there is none (Energy's six figures; Weather's `fixed` is the same rule). */
 export const fixedOr = (fmt: Formatters, n: number | null, digits: number): string =>
   n === null ? DASH : fmt.fixed(n, digits);
+
+/** A `2026-11-07` day key's noon in UTC, in milliseconds: the instant arithmetic on day keys starts from (Climate's week starts on the Monday by it). */
+export const utcNoonOf = (day: string): number => Date.parse(`${day}T12:00:00Z`);
+
+/** A day key's noon as an instant that reads as that day in the formatters' zone: UTC noon, or its neighbour in a zone far east or west. Energy and Climate label a day by it. */
+export function noonOf(day: string, fmt: Pick<Formatters, 'isoDay'>): number {
+  const utc = utcNoonOf(day);
+  return [utc, utc - DAY_MS, utc + DAY_MS].find(at => fmt.isoDay(at) === day) ?? utc;
+}
 
 export function createFormatters(locale: PanelLocaleSpec): Formatters {
   const {language, tag, timeZone, hour12} = locale;

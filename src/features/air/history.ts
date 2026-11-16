@@ -9,8 +9,9 @@ import type {MessageKey} from '../../core/i18n/en.ts';
 import {whole, type Formatters} from '../../core/i18n/format.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
 import {AQ_BANDS, OUTDOOR_BANDS, type Pollutant} from '../../providers/air-quality.ts';
+import {timeAxis} from '../../ui/chart-options.ts';
 import type {RangeTab} from '../../ui/range-tabs.ts';
-import {RANGES, type Range} from '../../ui/ranges.ts';
+import {bucketMiddle, RANGES, type Range} from '../../ui/ranges.ts';
 import type {AirInputs} from './inputs.ts';
 
 /** A point of a chart: milliseconds and a value. */
@@ -108,7 +109,7 @@ const meanPoints = (rows: readonly StatisticRow[], offsetMs: number): Point[] =>
 
 type Rows = Readonly<Record<string, readonly StatisticRow[]>>;
 const pointsOf = (stats: Rows, id: string | null | undefined, range: Range): Point[] =>
-  id ? meanPoints(stats[id] ?? [], RANGES[range].bucketMs / 2) : [];
+  id ? meanPoints(stats[id] ?? [], bucketMiddle(range)) : [];
 
 /** The sensor ids a metric's chart asks the recorder for: each room's, and the station's PM2.5 for that one. */
 export function metricIds({rooms, outside}: Pick<AirInputs, 'rooms' | 'outside'>, metric: ChartMetric): string[] {
@@ -196,14 +197,6 @@ const bandLabel = (text: string, muted: string) => ({
   style: {background: 'transparent', color: muted, fontSize: '11px'},
 });
 
-/** The time axis of a range, ending now. */
-const timeAxis = (range: Range, now: number) => ({
-  type: 'datetime',
-  min: now - RANGES[range].days * DAY_MS,
-  max: now,
-  labels: {datetimeUTC: false},
-});
-
 /**
  * The options of a metric's chart, without the theme: a line per room in the four room colours, the station's PM2.5 as a thinner dashed line,
  * the band of the good air (the comfortable humidity for that one), and an integer axis. `<hp-chart>` merges them over its base options.
@@ -241,7 +234,7 @@ export function airChartOptions(
         },
       ],
     },
-    xaxis: timeAxis(range, now),
+    xaxis: timeAxis(RANGES[range].days, now),
     yaxis: {
       min: 0,
       forceNiceScale: true,
@@ -302,7 +295,7 @@ export function outdoorChartOptions(series: OutdoorSeries, range: Range, {fmt, t
     series: lines.map(({name, data}) => ({name, data})),
     colors: lines.map(line => line.color),
     stroke: {width: 2, curve: 'smooth'},
-    xaxis: timeAxis(range, now),
+    xaxis: timeAxis(RANGES[range].days, now),
     yaxis: lines.map(line => line.axis),
     annotations: series.aqi.length
       ? {

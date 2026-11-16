@@ -1,6 +1,7 @@
 // The Energy detail's chart options at the pure-function seam: the rows each range draws, the stacked bars' shape per range, the donut, and the two
 // helpers that make a day or a month key an instant. The numbers and words are what the legacy `energyMain` and `energySheet` wrote (deleted in #240).
 import {describe, expect, test} from 'vitest';
+import {noonOf} from '../../../../src/core/i18n/format.ts';
 import {
   donutOptions,
   ENERGY_RANGES,
@@ -9,7 +10,6 @@ import {
   mainRows,
   mainShape,
   middleOf,
-  noonOf,
   type ChartDeps,
   type EnergyTokens,
   type MainRows,

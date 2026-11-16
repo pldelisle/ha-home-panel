@@ -114,6 +114,33 @@
     {"key": "climate.swing.horizontalAt", "values": {"n": "2"}},
     {"key": "climate.homeClimate"},
     {"key": "climate.rooms"},
-    {"key": "climate.close"}
+    {"key": "climate.close"},
+    {"key": "climate.heatTitle.day"},
+    {"key": "climate.heatTitle.week", "written": "Toutes les pièces, aux 6 heures"},
+    {"key": "climate.heatTitle.month"},
+    {"key": "climate.heatTitle.year"},
+    {
+      "key": "climate.outNote.fiveMinute",
+      "written": "La bande va du minimum au maximum de chaque tranche de 5 minutes, la ligne est la moyenne"
+    },
+    {"key": "climate.outNote.hourly"},
+    {"key": "climate.outNote.daily"},
+    {"key": "climate.block.night", "values": {"day": "Mon 9"}, "fr": {"day": "lun. 9"}, "written": "lun. 9, nuit"},
+    {"key": "climate.block.morning", "values": {"day": "Mon 9"}, "fr": {"day": "lun. 9"}, "written": "lun. 9, matin"},
+    {
+      "key": "climate.block.afternoon",
+      "values": {"day": "Mon 9"},
+      "fr": {"day": "lun. 9"},
+      "written": "lun. 9, après-midi"
+    },
+    {"key": "climate.block.evening", "values": {"day": "Mon 9"}, "fr": {"day": "lun. 9"}, "written": "lun. 9, soir"},
+    {"key": "climate.chart.setpoint"},
+    {"key": "climate.chart.outside"},
+    {"key": "climate.chart.lowToHigh"},
+    {
+      "key": "climate.chart.span",
+      "values": {"low": "12.3", "high": "14.5"},
+      "written": "De 12,3 à 14,5 °C"
+    }
   ]
 }

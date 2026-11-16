@@ -726,6 +726,22 @@ export const en = {
   'climate.homeClimate': 'Home climate',
   'climate.rooms': 'Rooms',
   'climate.close': 'Close',
+  // the history's words (src/features/climate/history.ts): the heatmap's title and the outside chart's note, a week's cells by the part of the day, the chart's lines
+  'climate.heatTitle.day': 'Every room, hour by hour',
+  'climate.heatTitle.week': 'Every room, every 6 hours',
+  'climate.heatTitle.month': 'Every room, every day',
+  'climate.heatTitle.year': 'Every room, week by week',
+  'climate.outNote.fiveMinute': 'Band is each 5 minutes’ low to high, line is the mean',
+  'climate.outNote.hourly': 'Band is each hour’s low to high, line is the hourly mean',
+  'climate.outNote.daily': 'Band is each day’s low to high, line is the daily mean',
+  'climate.block.night': '{day}, night',
+  'climate.block.morning': '{day}, morning',
+  'climate.block.afternoon': '{day}, afternoon',
+  'climate.block.evening': '{day}, evening',
+  'climate.chart.setpoint': 'Setpoint',
+  'climate.chart.outside': 'Outside',
+  'climate.chart.lowToHigh': 'Low to high',
+  'climate.chart.span': '{low} to {high} °C',
 } as const;
 
 /** Every message key; a key exists when it is written in `en`. */

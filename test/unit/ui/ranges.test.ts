@@ -5,7 +5,7 @@ import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
 import {describe, expect, test} from 'vitest';
 import {en} from '../../../src/core/i18n/en.ts';
-import {RANGES, type Range} from '../../../src/ui/ranges.ts';
+import {bucketMiddle, RANGES, type Range} from '../../../src/ui/ranges.ts';
 
 const panel = readFileSync(new URL('../../../src/home-panel.js', import.meta.url), 'utf8');
 
@@ -46,7 +46,7 @@ describe('RANGES against the class CRANGE', () => {
     const now = RANGES[range];
     expect([now.days, now.period, now.ticks, now.tooltipFormat]).toEqual([was.days, was.period, was.ticks, was.tipFmt]);
     // a row is drawn in the middle of its bucket: the class stored that offset, the table stores the bucket
-    expect(now.bucketMs / 2).toBe(was.mid);
+    expect(bucketMiddle(range)).toBe(was.mid);
     expect([en[now.labelKey], en[now.shortKey], en[now.meanKey]]).toEqual([was.label, was.short, was.meanName]);
   });
 
@@ -57,5 +57,9 @@ describe('RANGES against the class CRANGE', () => {
       ['hour', 36e5],
       ['day', 864e5],
     ]);
+  });
+
+  test('bucketMiddle is half the bucket: two and a half minutes, half an hour, half a day', () => {
+    expect((['day', 'week', 'month', 'year'] as const).map(bucketMiddle)).toEqual([15e4, 18e5, 18e5, 432e5]);
   });
 });

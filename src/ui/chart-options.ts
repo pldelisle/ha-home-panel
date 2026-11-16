@@ -2,6 +2,7 @@
 // Pattern: functional core (Bernhardt, Boundaries) under a humble object: `<hp-chart>` reads the tokens, the theme and the media query and hands
 // them in; the rules are the legacy class's own (base, merge) and the rewrite layer's (frApex), moved here so a shadow root need not be seen by it.
 // Must not: read the DOM, the clock or a media query, name a chart's content, or hold a string the household reads (`noData` is given).
+import {DASH, DAY_MS} from '../core/figures.ts';
 import type {Formatters} from '../core/i18n/format.ts';
 
 /** The values a chart's base reads from the page's custom properties. */
@@ -57,6 +58,18 @@ export function baseOptions(height: number, {tokens, dark, reducedMotion, noData
     noData: {text: noData},
   };
 }
+
+/** A chart's time axis: `days` back from `now`, in the house's clock (never UTC). Air, Climate and Weather draw their history on it. */
+export const timeAxis = (days: number, now: number) => ({
+  type: 'datetime',
+  min: now - days * DAY_MS,
+  max: now,
+  labels: {datetimeUTC: false},
+});
+
+/** A temperature in a tooltip: a tenth of a degree and the unit, or the dash when there is no reading. */
+export const celsius = (fmt: Pick<Formatters, 'fixed'>, value: number | null): string =>
+  value == null ? DASH : `${fmt.fixed(value, 1)} °C`;
 
 /** The months and days the library writes on a date axis, in the order it wants them (January and Sunday first), from the panel's formats. */
 export function axisLocale(fmt: Formatters) {
