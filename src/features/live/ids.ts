@@ -1,4 +1,4 @@
-// liveIds: the entity ids the header's Status checks read, so the store tells the pill (#256) only when one changes; #255 adds the activities'.
+// liveIds: the entity ids the header's Status checks and live activities read, so the store tells the pill (#256) only when one changes.
 // Pattern: the union of what `readLive` reads (the config's integration sensors, each room's three, the car's entities, each door and
 // motion sensor and its battery) with no id twice, after the store's per-element subscription (ADR 0012).
 // Must not: read a state's value or the clock, import a feature or the shell, or name an entity id (the providers and the house do).
@@ -11,6 +11,7 @@ import {carEntityIds, findCar} from '../../providers/fordpass.ts';
 const CONFIG_KEYS = [
   'grid',
   'whP',
+  'whT',
   'evP',
   'hp',
   'rate',
@@ -30,7 +31,7 @@ const CONFIG_KEYS = [
   'wbPrice',
 ] as const;
 
-/** The ids the Status checks read; none before Home Assistant's first states. */
+/** The ids the Status checks and the activities read; none before Home Assistant's first states. */
 export function liveIds({hass, config, names}: Pick<PanelStore, 'hass' | 'config' | 'names'>): string[] {
   if (!hass) return [];
   const car = findCar(hass.states);

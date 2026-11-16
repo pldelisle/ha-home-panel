@@ -1,5 +1,5 @@
 {
-  "about": "The English messages the Live move introduced (src/core/i18n/en.ts, live.*), each with sample values: the Status checks' (#254); the activities' and the pill's join in #255. test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer makes of the English (the heat pump's line for a unit whose device names no maker stays English in both, as the layer left it). The legacy panel still draws the checks until #256, so no entry of the rewrite layer is deleted yet. Deleted with the layer in phase 4.",
+  "about": "The English messages the Live move introduced (src/core/i18n/en.ts, live.*), each with sample values: the Status checks' (#254), the activities', the pill's and the popup's (#255). test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer makes of the English (the aria labels the layer left in English, the phase bar's, the car's, the battery bar's and the water heater's, are `translated`: a screen reader hears French, no pixel changes; the water card's cycle count is `translated` too: the layer's entry never matched (it reads the 24 as a number too), so the card said \"3 cycles in 24 h\" in French, a change #256 records if a baseline shows it; the heat pump's line for a unit whose device names no maker stays English in both, as the layer left it). The legacy panel still draws the checks until #256, so no entry of the rewrite layer is deleted yet. Deleted with the layer in phase 4.",
   "messages": [
     {
       "key": "live.hqStale"
@@ -155,6 +155,389 @@
     },
     {
       "key": "live.wallboxOfflineLine"
+    },
+    {
+      "key": "live.hiloName",
+      "values": {
+        "phase": "pre_heat"
+      }
+    },
+    {
+      "key": "live.hiloShort",
+      "values": {
+        "phase": "pre_heat"
+      }
+    },
+    {
+      "key": "live.phase",
+      "values": {
+        "phase": "pre_heat"
+      }
+    },
+    {
+      "key": "live.until",
+      "values": {
+        "phase": "pre_heat"
+      }
+    },
+    {
+      "key": "live.hiloNote",
+      "values": {
+        "phase": "pre_heat"
+      }
+    },
+    {
+      "key": "live.hiloName",
+      "values": {
+        "phase": "reduction"
+      }
+    },
+    {
+      "key": "live.hiloShort",
+      "values": {
+        "phase": "reduction"
+      }
+    },
+    {
+      "key": "live.phase",
+      "values": {
+        "phase": "reduction"
+      }
+    },
+    {
+      "key": "live.until",
+      "values": {
+        "phase": "reduction"
+      }
+    },
+    {
+      "key": "live.hiloNote",
+      "values": {
+        "phase": "reduction"
+      }
+    },
+    {
+      "key": "live.hiloName",
+      "values": {
+        "phase": "recovery"
+      }
+    },
+    {
+      "key": "live.hiloShort",
+      "values": {
+        "phase": "recovery"
+      }
+    },
+    {
+      "key": "live.phase",
+      "values": {
+        "phase": "recovery"
+      }
+    },
+    {
+      "key": "live.until",
+      "values": {
+        "phase": "recovery"
+      }
+    },
+    {
+      "key": "live.hiloNote",
+      "values": {
+        "phase": "recovery"
+      }
+    },
+    {
+      "key": "live.challengeIn",
+      "values": {
+        "d": "52 min"
+      }
+    },
+    {
+      "key": "live.endsIn",
+      "values": {
+        "d": "1 h 50"
+      }
+    },
+    {
+      "key": "live.labelWith",
+      "values": {
+        "name": "Hilo pre-heat",
+        "what": "challenge in 52 min"
+      },
+      "fr": {
+        "name": "Préchauffage Hilo",
+        "what": "défi dans 52 min"
+      }
+    },
+    {
+      "key": "live.hiloCardTitle"
+    },
+    {
+      "key": "live.phaseSpan",
+      "values": {
+        "phase": "Challenge",
+        "from": "4:00 pm",
+        "to": "6:00 pm"
+      },
+      "fr": {
+        "phase": "Défi",
+        "from": "16 h",
+        "to": "18 h"
+      }
+    },
+    {
+      "key": "live.phasesAria",
+      "values": {
+        "p0": "2:00 pm",
+        "p1": "4:00 pm",
+        "p2": "6:00 pm",
+        "p3": "7:30 pm"
+      },
+      "fr": {
+        "p0": "14 h",
+        "p1": "16 h",
+        "p2": "18 h",
+        "p3": "19 h 30"
+      },
+      "translated": "Préchauffage 14 h, réduction de 16 h à 18 h, récupération jusqu'à 19 h 30"
+    },
+    {
+      "key": "live.inside"
+    },
+    {
+      "key": "live.houseUsing"
+    },
+    {
+      "key": "live.ofAllowed",
+      "values": {
+        "n": "3.0"
+      }
+    },
+    {
+      "key": "live.charging"
+    },
+    {
+      "key": "live.chargingPaused"
+    },
+    {
+      "key": "live.chargingShort"
+    },
+    {
+      "key": "live.paused"
+    },
+    {
+      "key": "live.percent",
+      "values": {
+        "n": "64"
+      }
+    },
+    {
+      "key": "live.carAria",
+      "values": {
+        "paused": "no",
+        "n": "64"
+      },
+      "translated": "Voiture en recharge, 64 pour cent"
+    },
+    {
+      "key": "live.carAria",
+      "values": {
+        "paused": "yes",
+        "n": "64"
+      },
+      "translated": "Recharge en pause, 64 pour cent"
+    },
+    {
+      "key": "live.carAriaLeft",
+      "values": {
+        "paused": "no",
+        "n": "64",
+        "left": "1 h 50"
+      },
+      "translated": "Voiture en recharge, 64 pour cent, pleine dans 1 h 50"
+    },
+    {
+      "key": "live.toLimit",
+      "values": {
+        "n": 90
+      }
+    },
+    {
+      "key": "live.fullAt",
+      "values": {
+        "time": "4:07 pm"
+      },
+      "fr": {
+        "time": "16 h 07"
+      }
+    },
+    {
+      "key": "live.inDuration",
+      "values": {
+        "d": "1 h 50"
+      }
+    },
+    {
+      "key": "live.batteryAria",
+      "values": {
+        "n": "64",
+        "limit": 90
+      },
+      "translated": "Batterie 64 pour cent, limite 90 pour cent"
+    },
+    {
+      "key": "live.pluggedInAt",
+      "values": {
+        "time": "4:07 pm"
+      },
+      "fr": {
+        "time": "16 h 07"
+      }
+    },
+    {
+      "key": "live.soFarAbout"
+    },
+    {
+      "key": "live.cost",
+      "values": {
+        "n": "0.22"
+      }
+    },
+    {
+      "key": "live.range",
+      "values": {
+        "n": 280
+      }
+    },
+    {
+      "key": "live.waterHeater"
+    },
+    {
+      "key": "live.water"
+    },
+    {
+      "key": "live.waterHeating"
+    },
+    {
+      "key": "live.waterHeatingLeft",
+      "values": {
+        "left": "about 52 min"
+      },
+      "fr": {
+        "left": "environ 52 min"
+      },
+      "translated": "Chauffe-eau en chauffe, reste environ 52 min"
+    },
+    {
+      "key": "live.about",
+      "values": {
+        "d": "52 min"
+      },
+      "translated": "environ 52 min"
+    },
+    {
+      "key": "live.almostDone"
+    },
+    {
+      "key": "live.almostDoneTitle"
+    },
+    {
+      "key": "live.left",
+      "values": {
+        "d": "~52 min"
+      }
+    },
+    {
+      "key": "live.usualCycle",
+      "values": {
+        "d": "1 h 05"
+      }
+    },
+    {
+      "key": "live.rate",
+      "values": {
+        "up": "yes",
+        "n": "1.2"
+      }
+    },
+    {
+      "key": "live.rate",
+      "values": {
+        "up": "no",
+        "n": "0.4"
+      }
+    },
+    {
+      "key": "live.waterSparkAria",
+      "translated": "Température de l'eau pendant ce cycle"
+    },
+    {
+      "key": "live.started",
+      "values": {
+        "time": "4:07 pm"
+      },
+      "fr": {
+        "time": "16 h 07"
+      }
+    },
+    {
+      "key": "live.thisCycle"
+    },
+    {
+      "key": "live.cyclesIn24h",
+      "values": {
+        "n": 1
+      },
+      "translated": "1 cycle en 24 h"
+    },
+    {
+      "key": "live.cyclesIn24h",
+      "values": {
+        "n": 3
+      },
+      "translated": "3 cycles en 24 h"
+    },
+    {
+      "key": "live.needsAttention",
+      "values": {
+        "n": 1
+      }
+    },
+    {
+      "key": "live.needsAttention",
+      "values": {
+        "n": 2
+      }
+    },
+    {
+      "key": "live.chargedTo",
+      "values": {
+        "n": 90
+      }
+    },
+    {
+      "key": "live.challengeDone"
+    },
+    {
+      "key": "live.status"
+    },
+    {
+      "key": "live.itemsNeedAttention",
+      "values": {
+        "n": 1
+      }
+    },
+    {
+      "key": "live.itemsNeedAttention",
+      "values": {
+        "n": 3
+      }
+    },
+    {
+      "key": "live.allClear"
+    },
+    {
+      "key": "live.reportingNormally"
     }
   ]
 }

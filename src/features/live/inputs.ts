@@ -1,6 +1,7 @@
-// readLive: what the header's Status checks (and, from #255, its live activities) read of the house, composed from the providers.
+// readLive: what the header's Status checks and live activities read of the house, composed from the providers.
 // Pattern: a composition of readers at one place (ADR 0025): powerNow, hiloRates, hiloChallenge, hiloGateway, hydroQuebec, heatPump,
-// warningCount, findCar and readCar, wallbox and doorMotionSensors; this is the one file that knows which providers the header reads.
+// warningCount, findCar and readCar, wallbox, doorMotionSensors and waterHeaterNow;
+// this is the one file that knows which providers the header reads.
 // Must not: import a feature, word anything a person reads, read the clock (`now` is passed in), or touch the DOM or `hass`.
 import type {ResolvedConfig} from '../../core/config.ts';
 import type {HassEntities, Registries} from '../../core/hass.ts';
@@ -18,7 +19,7 @@ import {
   type HiloRates,
 } from '../../providers/hilo.ts';
 import {hydroQuebec, type HydroQuebecInputs} from '../../providers/hydro-quebec.ts';
-import {powerNow, type PowerNow} from '../../providers/power.ts';
+import {powerNow, waterHeaterNow, type PowerNow, type WaterHeaterNow} from '../../providers/power.ts';
 import {wallbox, type WallboxInputs} from '../../providers/wallbox.ts';
 
 export interface LiveInputs {
@@ -38,6 +39,10 @@ export interface LiveInputs {
   wallbox: WallboxInputs;
   /** The door and motion sensors: doors first, then motion, each by name. */
   sensors: SensorInputs[];
+  /** The water heater's power in kW and its temperature; `powerChangedAt` is when its power sensor last changed (a cycle's start when no history says better). */
+  waterHeater: WaterHeaterNow;
+  /** The car's battery capacity in kWh from the config, for the time to full when Ford gives none; null when unset. */
+  carBatteryKwh: number | null;
 }
 
 /** The inputs of the house at these states, at `now`. */
@@ -63,5 +68,7 @@ export function readLive(
     car: car ? readCar(states, config, names, car) : null,
     wallbox: wallbox(states, config),
     sensors: doorMotionSensors(states, registries, names),
+    waterHeater: waterHeaterNow(states, config),
+    carBatteryKwh: config.car.battery_kwh || null,
   };
 }
