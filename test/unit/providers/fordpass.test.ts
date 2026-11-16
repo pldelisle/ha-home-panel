@@ -116,6 +116,8 @@ describe('the charge and the plug', () => {
     const car = (lock: string, tracker: string) =>
       read([entity('lock.fordpass_test_doorlock', lock), entity('device_tracker.fordpass_test_tracker', tracker)]);
     expect(car('locked', 'home')).toMatchObject({locked: true, home: true, tracker: 'home', lockAvailable: true});
+    // the lock's own word, for the Status checks: a jammed lock is not "unlocked"
+    expect(car('jammed', 'home')).toMatchObject({locked: false, lockState: 'jammed'});
     expect(car('unlocked', 'not_home')).toMatchObject({locked: false, home: false, tracker: 'not_home'});
     expect(car('unavailable', 'unknown')).toMatchObject({
       locked: null,
@@ -231,6 +233,7 @@ describe('the tires, the doors and the chips', () => {
       }),
     ]);
     expect(car.tires.frontLeft).toEqual({psi: 43.8, state: 'NORMAL'});
+    expect(car.tireStatus).toBe('NORMAL_OPERATION');
     expect(car.tires.frontRight.state).toBe('LOW');
     expect(car.tires.frontRight.psi).toBeCloseTo(43.5, 1);
     expect(car.tires.rearLeft).toEqual({psi: null, state: null});

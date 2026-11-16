@@ -1,7 +1,8 @@
 // Environment Canada's sensors as a weather source: the reading, the normals, the air quality, the alerts and the fold of its
 // forecast, which sends a day entry and a night entry for each day.
 // Pattern: an adapter behind the WeatherSource strategy (Gamma et al.) and an anti-corruption layer (Evans); the three rules
-// that are the integration's own (the fold, the alert attributes, the feels-like kind) live here, named, and the model asks.
+// that are the integration's own (the fold, the alert attributes, the feels-like kind) live here, named, and the model asks;
+// `warningCount` is the Status checks' read of the warnings sensor (spec 22).
 // Must not: read the clock, format a string the household reads, or import a feature.
 import type {EntityKey} from '../core/config.ts';
 import {EC_SUFFIX} from '../core/entities.ts';
@@ -133,6 +134,10 @@ export function readAlerts(
   }
   return alerts;
 }
+
+/** The warnings sensor's count, as the Status checks read it; null when it is unset or reads no number. */
+export const warningCount = (states: HassEntities, config: {entities: Pick<Entities, 'warnings'>}): number | null =>
+  numberOf(states, config.entities.warnings);
 
 /** Wind chill when the sensor has one, else the humidex, else nothing: Environment Canada reports each only when it differs from the air. */
 export function feelsLike(

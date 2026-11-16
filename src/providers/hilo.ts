@@ -2,7 +2,7 @@
 // Pattern: an adapter below the features (ADR 0025): the Hilo card, the energy card, the phone tiles and the live pill read
 // one tier rule; the rules are those of the legacy `rateInfo()` and `lacking().hilo`, deleted in #241.
 // `hiloChallenge`, `hiloRewards` and `hiloPresent` are exported as spec 19 names them: the challenge for the header's peak chip
-// and the live pill (specs 22, 24), the rewards and the presence for the Hilo card (#237).
+// and the live pill (specs 22, 24), the rewards and the presence for the Hilo card (#237), the gateway for the Status checks (#254).
 // Must not: word the tier (`Low tier` is a key in the model), read the registry (the config's keys are the discovery), or read the clock.
 import type {ResolvedConfig} from '../core/config.ts';
 import type {HassEntities} from '../core/hass.ts';
@@ -89,4 +89,18 @@ export function hiloRewards(states: HassEntities, config: ResolvedConfig): numbe
 /** The house has Hilo: its current-rate sensor is in the states, whatever it reads (the legacy `lacking().hilo` is the opposite). */
 export function hiloPresent(states: HassEntities, config: ResolvedConfig): boolean {
   return hasState(states, config.entities.rate);
+}
+
+/** Hilo's gateway as the Status checks read it: on when its sensor says `on` (so `unavailable` is not), disconnected when its `disconnected` attribute is set. */
+export interface HiloGateway {
+  on: boolean;
+  disconnected: boolean;
+}
+
+/** The gateway sensor, whatever its state; null when it is not in the states (the house has no Hilo, and no gateway check). */
+export function hiloGateway(states: HassEntities, config: ResolvedConfig): HiloGateway | null {
+  const id = config.entities.gateway;
+  const gateway = id ? states[id] : undefined;
+  if (!gateway) return null;
+  return {on: gateway.state === 'on', disconnected: !!gateway.attributes.disconnected};
 }

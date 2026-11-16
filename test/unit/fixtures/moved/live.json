@@ -1,0 +1,170 @@
+{
+  "about": "The English messages the Live move introduced (src/core/i18n/en.ts, live.*), each with sample values: the Status checks' (#254); the activities' and the pill's join in #255. test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer makes of the English, or what is `translated` where the layer left the English: the heat pump's line for a unit whose device names no maker, which the layer knew only with `Fujitsu` in it (a visible change #256 records in its baselines, if a baseline shows it). The legacy panel still draws the checks until #256, so no entry of the rewrite layer is deleted yet. Deleted with the layer in phase 4.",
+  "messages": [
+    {
+      "key": "live.hqStale"
+    },
+    {
+      "key": "live.hqStaleLine"
+    },
+    {
+      "key": "live.hqUpdating"
+    },
+    {
+      "key": "live.heatPumpOffline"
+    },
+    {
+      "key": "live.heatPumpOfflineLine",
+      "values": {
+        "brand": "Fujitsu"
+      }
+    },
+    {
+      "key": "live.heatPumpOfflineLine",
+      "values": {
+        "brand": "Heat pump"
+      },
+      "fr": {
+        "brand": "Thermopompe"
+      },
+      "translated": "L'appareil Thermopompe apparaît comme indisponible dans Home Assistant."
+    },
+    {
+      "key": "live.heatPumpUnit"
+    },
+    {
+      "key": "live.heatPumpOnline"
+    },
+    {
+      "key": "live.gatewayOffline"
+    },
+    {
+      "key": "live.gatewayOfflineLine"
+    },
+    {
+      "key": "live.gatewayOnline"
+    },
+    {
+      "key": "live.thermostatsNotReporting",
+      "values": {
+        "n": 1
+      }
+    },
+    {
+      "key": "live.thermostatsNotReporting",
+      "values": {
+        "n": 2
+      }
+    },
+    {
+      "key": "live.peakInProgress"
+    },
+    {
+      "key": "live.peakInProgressLine"
+    },
+    {
+      "key": "live.peakComing"
+    },
+    {
+      "key": "live.peakComingLine"
+    },
+    {
+      "key": "live.noPeak"
+    },
+    {
+      "key": "live.weatherWarning"
+    },
+    {
+      "key": "live.weatherWarningLine",
+      "values": {
+        "n": 1
+      }
+    },
+    {
+      "key": "live.weatherWarningLine",
+      "values": {
+        "n": 2
+      }
+    },
+    {
+      "key": "live.noWeatherAlerts"
+    },
+    {
+      "key": "live.tirePressureLow"
+    },
+    {
+      "key": "live.tirePressureLowLine"
+    },
+    {
+      "key": "live.carUnlocked"
+    },
+    {
+      "key": "live.carUnlockedLine"
+    },
+    {
+      "key": "live.carLocked"
+    },
+    {
+      "key": "live.carNotReporting"
+    },
+    {
+      "key": "live.carNotReportingLine"
+    },
+    {
+      "key": "live.doorOpen",
+      "values": {
+        "name": "Back door"
+      }
+    },
+    {
+      "key": "live.openFor",
+      "values": {
+        "kind": "now"
+      }
+    },
+    {
+      "key": "live.openFor",
+      "values": {
+        "kind": "minutes",
+        "n": 12
+      }
+    },
+    {
+      "key": "live.openFor",
+      "values": {
+        "kind": "hours",
+        "n": 2
+      }
+    },
+    {
+      "key": "live.sensorOffline",
+      "values": {
+        "name": "Back door"
+      }
+    },
+    {
+      "key": "live.sensorOfflineLine"
+    },
+    {
+      "key": "live.batteryLow",
+      "values": {
+        "name": "Back door"
+      }
+    },
+    {
+      "key": "live.batteryLeft",
+      "values": {
+        "n": 12
+      }
+    },
+    {
+      "key": "live.doorsClosed"
+    },
+    {
+      "key": "live.wallboxOffline"
+    },
+    {
+      "key": "live.wallboxOfflineLine"
+    }
+  ]
+}

@@ -57,6 +57,8 @@ export interface Formatters {
   fixed(n: number, digits: number): string;
   /** The legacy panel's `ago` rule (1, 60 and 1440 minutes), which stays there until the last feature that says it has moved; `now` is passed in, never read. */
   ago(d: Instant, now: number): Ago;
+  /** A span for the live pill: `52 min`, `1 h 50`, `3 h`, at least a minute; the legacy panel's `durTxt` (#257 deletes it), the same in both languages. */
+  durationShort(ms: number): string;
 }
 
 const PARTS_CACHE_LIMIT = 20_000;
@@ -200,6 +202,13 @@ export function createFormatters(locale: PanelLocaleSpec): Formatters {
       if (minutes < 60) return {kind: 'minutes', n: minutes};
       if (minutes < 1440) return {kind: 'hours', n: Math.round(minutes / 60)};
       return {kind: 'date', date: date.format(d)};
+    },
+    // the units both languages abbreviate alike, in Latin digits, so the span needs no catalog message
+    durationShort: span => {
+      const minutes = Math.max(1, Math.round(span / MINUTE_MS));
+      if (minutes < 60) return `${minutes} min`;
+      const rest = minutes % 60;
+      return `${Math.floor(minutes / 60)} h${rest ? ` ${String(rest).padStart(2, '0')}` : ''}`;
     },
   };
 }

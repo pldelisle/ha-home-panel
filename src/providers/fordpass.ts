@@ -130,6 +130,8 @@ export interface CarInputs {
   /** The charging sensor's state, as Ford words it; null when it reads nothing. */
   chargeState: string | null;
   locked: boolean | null;
+  /** The door lock's state (`locked`, `unlocked`, `jammed`, ...); null when it has no value. */
+  lockState: string | null;
   /** At home by the tracker; null when the tracker reads nothing. */
   home: boolean | null;
   /** The tracker's state (`home`, `not_home` or a zone's name); null when it reads nothing. */
@@ -147,6 +149,8 @@ export interface CarInputs {
   cabin: number | null;
   outsideTemp: number | null;
   tires: {frontLeft: TirePressure; frontRight: TirePressure; rearLeft: TirePressure; rearRight: TirePressure};
+  /** The tire-pressure sensor's state (`NORMAL_OPERATION`, ...), as Ford words it; null when it has no value. */
+  tireStatus: string | null;
   doors: {
     /** The four doors are closed (one Ford does not report counts as closed); null when the door sensor reads nothing. */
     closed: boolean | null;
@@ -347,6 +351,7 @@ export function readCar(
     chargingKw: numberAttributeOf(states, charging, 'chargingkW'),
     chargeState,
     locked: isAvailable(states[lock]) ? states[lock].state === 'locked' : null,
+    lockState: textOf(states, lock),
     home: tracker === null ? null : tracker === 'home',
     tracker,
     lastRefresh: lastRefresh === null ? null : asTime(lastRefresh),
@@ -367,6 +372,7 @@ export function readCar(
       rearLeft: tire('rearLeft'),
       rearRight: tire('rearRight'),
     },
+    tireStatus: textOf(states, tirePressure),
     doors: doorsOf(states, ref),
     windowsClosed: windows === null ? null : windows === 'Closed',
     alarm: textOf(states, sensor('alarm')),
