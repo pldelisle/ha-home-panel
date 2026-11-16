@@ -4,6 +4,7 @@
 // Must not: hold a rule (the files do), adopt the tokens (they reach an element by inheritance from `.app`), or import the shell.
 import {unsafeCSS, type CSSResult} from 'lit';
 import badgeText from './badge.css?inline';
+import buttonText from './button.css?inline';
 import chartText from './chart.css?inline';
 import commonText from './common.css?inline';
 import heroText from './hero.css?inline';
@@ -29,6 +30,8 @@ export const motion = adopt(motionText);
 export const sheet = adopt(sheetText);
 /** The badge in a header's corner: the icon on a tinted square, or on glass. */
 export const badge = adopt(badgeText);
+/** The pill button of a control panel, and the ring it wears while it waits for a second tap. */
+export const button = adopt(buttonText);
 /** A pane's header: its row, its heading and its sub-line. */
 export const paneHeader = adopt(paneHeaderText);
 /** The summary tile. */

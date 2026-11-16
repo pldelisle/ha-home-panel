@@ -84,6 +84,24 @@ test('the energy words the legacy panel still draws are French', () => {
   expect(frText('at 7¢/kWh')).toBe('à 7 ¢/kWh');
 });
 
+// What the legacy panel still says of climate after the Climate move's deletion (#248), written out in full: the Home tile's line, the header's inside and
+// outside temperatures, the Status checks' thermostat and heat pump lines and the Lights tile's "All off". The entries these use stay in the map; the Home move (#268) deletes them.
+test('the climate words the legacy panel still draws are French', () => {
+  const frText = frTextFor([]);
+  expect(frText('Climate')).toBe('Climat');
+  // the legacy Home tile's line as it was on 52ae68d: "Inside" is left in English (the map has only the lower-case `inside ·`), which the Home tile's move (#268) words in French
+  expect(frText('Inside · 2 rooms heating · heat pump offline')).toBe(
+    'Inside · 2 pièces chauffent · thermopompe hors ligne',
+  );
+  expect(frText('Inside · 1 room heating · heat pump offline')).toBe(
+    'Inside · 1 pièce chauffe · thermopompe hors ligne',
+  );
+  expect(frText('20.8° inside · 3.1° outside')).toBe('20,8° à l’intérieur · 3,1° dehors');
+  expect(frText('Heat pump offline')).toBe('Thermopompe hors ligne');
+  expect(frText('1 thermostat not reporting')).toBe('1 thermostat ne répond pas');
+  expect(frText('All off')).toBe('Tout éteindre');
+});
+
 // The Home tile's Air line ("1 purifier · Office: CO₂ 1,500, VOC 400") and the stack's air card are still the legacy panel's own
 // English, so the layer keeps the entry that says COV, as it did before the Air move's deletion (#234).
 test('the Home tile line for a room with poor CO₂ and VOC reads COV, and the stack card keeps its words', () => {

@@ -1,8 +1,8 @@
-// dialGeometry, dialValueFromPointer and gaugeGeometry: the numbers the dial and the gauge are drawn from. The path data and the
-// coordinates are literals computed once from the legacy `dial()` formula (src/home-panel.js, deleted in #248) in a scratch
-// script, rounded to one decimal as its SVG string was; the tests do not import the legacy source.
+// dialGeometry, dialValueFromPointer, dialValueFromKey and gaugeGeometry: the numbers the dial and the gauge are drawn from, and the setpoints a
+// pointer and a key ask for. The path data and the coordinates are literals computed once from the legacy `dial()` formula (src/home-panel.js, deleted
+// in #244) in a scratch script, rounded to one decimal as its SVG string was; the tests do not import the legacy source.
 import {describe, expect, test} from 'vitest';
-import {dialGeometry, dialValueFromPointer} from '../../../../src/features/climate/dial-geometry.ts';
+import {dialGeometry, dialValueFromKey, dialValueFromPointer} from '../../../../src/features/climate/dial-geometry.ts';
 import {gaugeGeometry} from '../../../../src/features/climate/gauge-geometry.ts';
 
 describe('dialGeometry', () => {
@@ -100,6 +100,35 @@ describe('dialValueFromPointer', () => {
 
   test('the centre of a dial that is not at the page origin', () => {
     expect(dialValueFromPointer({left: 500, top: 100, width: 260, height: 260}, 630, 100, 16, 30)).toBe(23);
+  });
+});
+
+describe('dialValueFromKey', () => {
+  test('the arrows step by half a degree, up with Up and Right, down with Down and Left', () => {
+    expect(dialValueFromKey('ArrowUp', 21, 5, 30)).toBe(21.5);
+    expect(dialValueFromKey('ArrowRight', 21, 5, 30)).toBe(21.5);
+    expect(dialValueFromKey('ArrowDown', 21, 5, 30)).toBe(20.5);
+    expect(dialValueFromKey('ArrowLeft', 21, 5, 30)).toBe(20.5);
+  });
+
+  test('a step up from off is 15, and a step down to the frost guard is the lowest setpoint', () => {
+    expect(dialValueFromKey('ArrowUp', 5, 5, 30)).toBe(15);
+    expect(dialValueFromKey('ArrowDown', 6, 5, 30), '5.5 is off, which the dial calls the lowest').toBe(5);
+    expect(dialValueFromKey('ArrowDown', 5, 5, 30)).toBe(5);
+  });
+
+  test('stops at the ends of the scale', () => {
+    expect(dialValueFromKey('ArrowUp', 30, 5, 30)).toBe(30);
+    expect(dialValueFromKey('ArrowDown', 16, 16, 30)).toBe(16);
+  });
+
+  test('Home is the lowest setpoint and End the highest', () => {
+    expect(dialValueFromKey('Home', 21, 16, 30)).toBe(16);
+    expect(dialValueFromKey('End', 21, 16, 30)).toBe(30);
+  });
+
+  test('any other key asks for nothing', () => {
+    for (const key of ['Enter', 'a', 'PageUp', 'Tab']) expect(dialValueFromKey(key, 21, 5, 30)).toBeNull();
   });
 });
 

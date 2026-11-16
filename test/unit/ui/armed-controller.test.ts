@@ -73,6 +73,18 @@ describe('ArmedController', () => {
     expect(armed.isArmed('allset')).toBe(false);
   });
 
+  test('clearing drops every arming at once and the host redraws; a stale lapse does not redraw it again', () => {
+    const {armed, host} = setup();
+    armed.arm('allset');
+    armed.arm('alloff');
+    host.requestUpdate.mockClear();
+    armed.clear();
+    expect(armed.isArmed('allset') || armed.isArmed('alloff')).toBe(false);
+    expect(host.requestUpdate).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(ARMED_MS);
+    expect(host.requestUpdate).toHaveBeenCalledTimes(1);
+  });
+
   test('a host that leaves keeps no arming, and no timer fires for it', () => {
     const {armed, host} = setup();
     armed.arm('allset');

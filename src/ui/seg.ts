@@ -1,6 +1,7 @@
 // <hp-seg>: the kit's segmented control: a row of radio buttons, one chosen, in its own shadow root, with the radio group's keys in one place.
 // Pattern: controlled component over a humble object (Meszaros, xUnit Test Patterns), after the WAI-ARIA Authoring Practices' radio group: `options` and `value` down, `change` up,
 // one tab stop (roving tabindex) and the arrow keys, Home and End move the choice; `seg-keys.ts` decides where. The markup and rules are the legacy `.seg`'s own (styles/seg.css).
+// The group (`part="group"`) and each option's word (`part="label"`) are parts, so an owner can size them from outside as it does `<hp-stepper>`'s buttons.
 // Must not: keep the choice itself (its owner holds `value`), know what an option stands for, or send a command.
 import {LitElement, html, nothing, unsafeCSS} from 'lit';
 import {repeat} from 'lit/directives/repeat.js';
@@ -58,6 +59,7 @@ export class HpSeg extends LitElement {
     const stop = tabStop(this.options.map((option, index) => ({...option, checked: index === checked})));
     return html`<div
       class="seg"
+      part="group"
       role="radiogroup"
       aria-label=${this.label ?? nothing}
       aria-disabled=${disabled ? 'true' : 'false'}
@@ -75,7 +77,7 @@ export class HpSeg extends LitElement {
             ?disabled=${disabled || off}
             @click=${() => this.choose(value)}
           >
-            <b>${label}</b>${sub ? html`<small>${sub}</small>` : nothing}
+            <b part="label">${label}</b>${sub ? html`<small>${sub}</small>` : nothing}
           </button>`,
       )}
     </div>`;

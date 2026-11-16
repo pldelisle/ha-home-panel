@@ -4,15 +4,11 @@
    Under Reduce Motion they snap: a tapped tab's highlight is in its final colour in the frame after the tap, so the glass rail it
    sits in is not redrawn by a fade still running when the frame is captured (#94) */
 @media (prefers-reduced-motion: no-preference) {
-  .quick button,
-  .crow button,
   .rtab,
   .head button.icon,
   .ausel .close,
   .lchip,
   .lauto,
-  .abtn,
-  .stepper button,
   .days button,
   .go,
   button.chip,
@@ -31,14 +27,10 @@
     transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
 }
-.quick button:active,
-.crow button:active,
 .head button.icon:active,
 .ausel .close:active,
 .lchip:active,
 .lauto:active,
-.abtn:active,
-.stepper button:active,
 .days button:active,
 .go:active,
 button.chip:active,

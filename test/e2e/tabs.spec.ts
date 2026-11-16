@@ -301,6 +301,23 @@ test.describe('bare house', () => {
   });
 });
 
+// a house with a heat pump and no thermostat: the tab is the Climate descriptor's `available`, which the shell asks again when the guest asks for a frame
+// (`gateLacking`'s key carries `lacking().climate` until #268 deletes it), so a unit that reports after the first hass shows the tab, as Home's tile
+test.describe('a heat pump whose state arrives after the first load', () => {
+  test.use({houseOpts: {house: 'bare', cfg: {entities: {heat_pump: 'climate.heat_pump'}}}});
+
+  test('the Climate tab appears when the unit reports', async ({house}) => {
+    const tab = house.root().locator('#rail [data-tab="climate"]');
+    await shown(tab).toBe(false);
+    await house.setState('climate.heat_pump', {
+      state: 'heat',
+      attributes: {current_temperature: 19.5, temperature: 22},
+    });
+    await shown(tab).toBe(true);
+    await house.tab('climate');
+  });
+});
+
 test.describe('French', () => {
   test.use({houseOpts: {cfg: FULL_CFG, lang: 'fr'}});
 

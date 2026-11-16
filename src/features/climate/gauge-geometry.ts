@@ -1,8 +1,8 @@
 // gaugeGeometry: the tablet's temperature bar as positions on its 14 to 30 degree scale, and which caption sits under it.
 // Pattern: pure geometry (numbers out, the element places them), as the dial's; the legacy `gauge()` copied rule for rule, scale
-// included (deleted in #248).
+// included.
 // Must not: import Lit or the DOM, read state or the clock, or hold a word (the model words the caption from its kind).
-/** The scale's ends in degrees (legacy, #248). */
+/** The scale's ends in degrees. */
 export const GAUGE = {lo: 14, hi: 30} as const;
 
 export interface GaugeGeometry {

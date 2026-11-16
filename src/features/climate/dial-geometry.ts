@@ -1,14 +1,15 @@
-// dialGeometry and dialValueFromPointer: the phone's thermostat dial as geometry, and the pointer's way back to a setpoint.
+// dialGeometry, dialValueFromPointer and dialValueFromKey: the phone's thermostat dial as geometry, and the pointer's and the keys' way back to a setpoint.
 // Pattern: pure geometry (a layout returns numbers and path data, the element places them with `svg` templates), as `flowLayout`
-// and `waterChart` do for Energy; the legacy `dial()` and `dialValue()` copied number for number, constants included (deleted in #248).
+// and `waterChart` do for Energy; the legacy `dial()`, `dialValue()` and arrow keys copied number for number, constants included.
 // Must not: import Lit or the DOM, read state or the clock, or hold a word or a formatted number (the model words "Off" and the figures from `off` and `shown`).
 import {OFF_AT_OR_BELOW} from '../../providers/power.ts';
+import {nextSetpoint, SETPOINT_STEP} from './commands.ts';
 
-/** The dial's drawing, in the legacy constants: a 270 degree track opening downwards, 55 ticks and every sixth one long (legacy, #248). */
+/** The dial's drawing, in the legacy constants: a 270 degree track opening downwards, 55 ticks and every sixth one long. */
 const DIAL = {radius: 106, start: 135, sweep: 270, ticks: 55, majorEvery: 6} as const;
 /** The drawing's side, the legacy `viewBox`. */
 export const DIAL_SIZE = 260;
-/** A tick starts this far in from the track, and ends this far in when short or long (legacy, #248). */
+/** A tick starts this far in from the track, and ends this far in when short or long. */
 const TICK_FROM = 17;
 const TICK_TO_SHORT = 12;
 const TICK_TO_LONG = 9;
@@ -107,4 +108,25 @@ export function dialValueFromPointer(
   if (angle > DEAD_ZONE_START) angle = angle > DEAD_ZONE_MIDDLE ? 0 : sweep;
   const value = Math.round((lo + (angle / sweep) * (hi - lo)) * 2) / 2;
   return value <= OFF_AT_OR_BELOW ? 'off' : value;
+}
+
+/** The keys that move the knob a half degree, up and down. */
+const STEP_KEYS: Readonly<Record<string, number>> = {
+  ArrowUp: SETPOINT_STEP,
+  ArrowRight: SETPOINT_STEP,
+  ArrowDown: -SETPOINT_STEP,
+  ArrowLeft: -SETPOINT_STEP,
+};
+
+/**
+ * The setpoint a key asks for from `value`, or null for a key the dial does not use: the arrows step by half a degree as `nextSetpoint` does (a step down
+ * to the frost guard is `lo`, a step up from off is 15), Home is the lowest setpoint and End the highest. At or below the frost guard the setpoint is `lo`, as the pointer's.
+ */
+export function dialValueFromKey(key: string, value: number, lo: number, hi: number): number | null {
+  if (key === 'Home') return lo;
+  if (key === 'End') return hi;
+  const delta = STEP_KEYS[key];
+  if (delta === undefined) return null;
+  const next = nextSetpoint(value, delta, lo, hi);
+  return next <= OFF_AT_OR_BELOW ? lo : next;
 }

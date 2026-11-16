@@ -179,12 +179,10 @@
 .app.gl .larea,
 .app.gl .access,
 .app.gl .arow,
-.app.gl .stepper,
 .app.gl .cbtn,
 .app.gl .tgl,
 .app.gl .dtime,
 .app.gl .more,
-.app.gl .room,
 .app.gl .aupick .chip,
 .app.gl .auchips .chip,
 .app.gl .inner .chips .chip,
@@ -193,8 +191,6 @@
   background: var(--g-tile);
   box-shadow: var(--g-edge-s);
 }
-.app.gl .stepper button,
-.app.gl .abtn,
 .app.gl .lauto,
 .app.gl .cbtn .ic,
 .app.gl .lic {
@@ -314,12 +310,10 @@
   .app.gl .larea,
   .app.gl .access,
   .app.gl .arow,
-  .app.gl .stepper,
   .app.gl .cbtn,
   .app.gl .tgl,
   .app.gl .dtime,
-  .app.gl .more,
-  .app.gl .room {
+  .app.gl .more {
     background: var(--card2);
   }
 }
