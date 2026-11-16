@@ -1,9 +1,9 @@
 {
-  "about": "The English messages the Home story's people feature introduced (src/core/i18n/en.ts, people.*, #264), each with sample values. test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer makes of the English, or what is `translated` where the layer leaves the English as it stood: the Home card's hint, a visible change that #268 records in its baselines. The legacy panel still draws all of these until #266 and #268, so no entry of the rewrite layer is deleted yet. Deleted with the layer in phase 4.",
+  "about": "The English messages the Home story's people feature introduced (src/core/i18n/en.ts, people.*, #264), each with sample values. test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer makes of the English. The Home card's hint stays English in French, as the layer leaves it: French would be a visible change for the owner to approve. The legacy panel still draws all of these until #266 and #268, so no entry of the rewrite layer is deleted yet. Deleted with the layer in phase 4.",
   "messages": [
     {"key": "people.whosHome"},
     {"key": "people.home"},
     {"key": "people.away"},
-    {"key": "people.noOneTracked", "translated": "Personne n'est suivi pour l'instant."}
+    {"key": "people.noOneTracked"}
   ]
 }

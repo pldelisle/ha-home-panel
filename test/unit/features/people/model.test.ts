@@ -10,7 +10,7 @@ const people = presence(fullHouse.states, registriesOf(fullHouse), PEOPLE);
 
 describe.each([
   ['en', "Who's home", 'home', 'away', 'No one is tracked yet.'],
-  ['fr', 'Qui est à la maison', 'à la maison', 'absent', "Personne n'est suivi pour l'instant."],
+  ['fr', 'Qui est à la maison', 'à la maison', 'absent', 'No one is tracked yet.'],
 ] as const)('in %s', (language, label, home, away, hint) => {
   const deps = depsOf(fullHouse, language);
 

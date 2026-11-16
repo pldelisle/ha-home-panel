@@ -29,12 +29,12 @@ describe('presence', () => {
     const hass = houseOf(
       [],
       [
-        entity('person.a', 'home', {friendly_name: 'ÉLODIE Example'}),
+        entity('person.a', 'home', {friendly_name: 'ÉMILE Example'}),
         entity('person.b', 'unavailable', {friendly_name: 'Sam Example'}),
         phone('sam_iphone', "Sam's iPhone", 'home'),
       ],
     );
-    expect(read(hass, ['Sam', 'Elodie'])).toEqual([{name: 'Elodie', home: true, since: null}]);
+    expect(read(hass, ['Sam', 'Emile'])).toEqual([{name: 'Emile', home: true, since: null}]);
   });
 
   test('without a person entity, iPhones and watches decide in both name shapes; an iPad, a hidden tracker or a stranger does not', () => {

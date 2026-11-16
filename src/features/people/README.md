@@ -7,7 +7,6 @@ Who's home ([spec 24](../../../docs/specs/24-home.md)): the configured people, e
 ```
 src/providers/
   people.ts                presence(states, registries, people): Person[]; presenceIds; frozenPresence(states, registries, now): FrozenTracker[]
-  calendar.ts              todaysEvents(states, registries, now, fmt): CalendarEvent[] (the stack's agenda card, #265)
 src/features/people/
   README.md
   index.ts                 the feature's exports: peopleIds, peopleModel
@@ -20,8 +19,6 @@ src/features/people/
 `presence` answers in **the config's order** (`people`, a list of first names). A `person.*` whose `friendly_name`'s first word folds (`src/core/fold.ts`: case and accents never decide) to a configured name **wins**, because it follows the trackers chosen in Home Assistant's People settings: home when its state is `home`, else away since its `last_changed`. Only when no person entity matches does the fallback run: each `device_tracker.*` named "Alex's iPhone" or "iPhone de Alex" (or "d'Alex"), visible, available, and an **iPhone or a watch** (an iPad or a laptop stays home and would keep its owner home). An owner is home when any of those is home, else away since the last of them that left. A person no tracker knows is not listed.
 
 `frozenPresence` is the smart stack's "presence not updating" reading: the `source` of each person entity, when it is an available tracker of the `icloud` platform that last reported **three hours or more** ago, rounded to the minute as the legacy stack did (179.5 minutes is frozen).
-
-`todaysEvents` reads each visible, available `calendar.*` (a calendar entity holds its next event only): kept when its `start_time` falls on today in the formatters' zone and its `end_time` (or its start when it has none) is after now; an all-day event of today is kept. Home Assistant writes the times without a zone, and they are read in the browser's, as the legacy panel read them. The list is by start.
 
 ## The model
 

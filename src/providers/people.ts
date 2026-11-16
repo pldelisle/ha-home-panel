@@ -44,6 +44,13 @@ function ownerAndDevice(name: string): [string, string] | null {
   return french ? [french[2], french[1]] : null;
 }
 
+/** The configured name that owns a visible iPhone or watch tracker, or undefined for any other entity. */
+function trackerOwner(states: HassEntities, registries: Registries, id: string, people: string[]): string | undefined {
+  if (!id.startsWith('device_tracker.') || isHidden(id, registries)) return undefined;
+  const parts = ownerAndDevice(textAttributeOf(states, id, 'friendly_name') ?? '');
+  return parts && CARRIED.test(parts[1]) ? whoIs(parts[0], people) : undefined;
+}
+
 /**
  * The configured people in the config's order, each home or away. A `person.*` whose name's first word is a configured name wins
  * (it follows the trackers chosen in Home Assistant's People settings); when no person entity matches, each owner's visible
@@ -60,10 +67,7 @@ export function presence(states: HassEntities, registries: Registries, people: s
   }
   if (!by.size)
     for (const id of Object.keys(states)) {
-      if (!id.startsWith('device_tracker.') || isHidden(id, registries)) continue;
-      const parts = ownerAndDevice(textAttributeOf(states, id, 'friendly_name') ?? '');
-      if (!parts || !CARRIED.test(parts[1])) continue;
-      const who = whoIs(parts[0], people);
+      const who = trackerOwner(states, registries, id, people);
       const s = states[id];
       if (!who || !isAvailable(s)) continue;
       const person = by.get(who) ?? {name: who, home: false, since: null};
@@ -79,13 +83,11 @@ export function presence(states: HassEntities, registries: Registries, people: s
  * whichever decides today, because a person entity that appears or goes changes which one does.
  */
 export function presenceIds(states: HassEntities, registries: Registries, people: string[]): string[] {
-  return Object.keys(states).filter(id => {
-    const name = textAttributeOf(states, id, 'friendly_name') ?? '';
-    if (id.startsWith('person.')) return !!whoIs(name, people);
-    if (!id.startsWith('device_tracker.') || isHidden(id, registries)) return false;
-    const parts = ownerAndDevice(name);
-    return !!parts && CARRIED.test(parts[1]) && !!whoIs(parts[0], people);
-  });
+  return Object.keys(states).filter(id =>
+    id.startsWith('person.')
+      ? !!whoIs(textAttributeOf(states, id, 'friendly_name') ?? '', people)
+      : !!trackerOwner(states, registries, id, people),
+  );
 }
 
 /**

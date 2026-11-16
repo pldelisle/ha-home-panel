@@ -3,4 +3,4 @@
 // Home pane and in the header (#266, #268, #269), and the reading itself is the provider's (`src/providers/people.ts`).
 // Must not: draw, hold state, import the guest or another feature, or read an entity.
 export {peopleIds} from './ids.ts';
-export {peopleModel, type PeopleViewModel, type PersonChip} from './model.ts';
+export {peopleModel, type PeopleViewModel} from './model.ts';
