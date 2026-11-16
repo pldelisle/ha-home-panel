@@ -20,6 +20,12 @@ export interface CommandRunnerOptions {
 }
 
 const send = (api: PanelApi, {domain, service, data}: Call) => api.runService(domain, service, data);
+/** One command: its call, else its fallback when there is one. */
+const attempt = (api: PanelApi, cmd: Command) =>
+  send(api, cmd).catch(async (first: unknown) => {
+    if (!cmd.fallback) throw first;
+    await send(api, cmd.fallback);
+  });
 
 export class CommandRunner {
   private api: PanelApi | undefined;
@@ -43,8 +49,7 @@ export class CommandRunner {
    * `holds` and dispatched a sticky toast with the reason.
    */
   run(cmd: Command): Promise<boolean> {
-    if (!this.api) throw new Error('CommandRunner: the client arrives when the host connects.');
-    return this.execute(this.api, cmd);
+    return this.runAll([cmd]);
   }
 
   /** Shows `value` under each of the command's `holds`, then runs it: a tap that is sent at once and shows what it asked for until Home Assistant agrees. */
@@ -54,15 +59,20 @@ export class CommandRunner {
   }
 
   /**
-   * Runs `cmds` in order, each after the last was accepted (one intent that takes several calls: Lights' leave-Auto rule, then the level).
-   * True when all were; after a failure the rest are not sent, the holds of the whole list are released and one sticky toast says why.
-   * On success the last `done` of the list is said, once. An empty list is accepted and says nothing.
+   * Runs `cmds` in order, each (or its fallback) after the last was accepted (one intent that takes several calls: Lights' leave-Auto rule,
+   * then the level). True when all were; after a failure the rest are not sent, the holds of the whole list are released and one sticky toast
+   * says why. On success the last `done` of the list is said, once. An empty list is accepted and says nothing.
    */
-  async runAll(cmds: readonly Command[]): Promise<boolean> {
+  runAll(cmds: readonly Command[]): Promise<boolean> {
     if (!this.api) throw new Error('CommandRunner: the client arrives when the host connects.');
+    return this.execute(this.api, cmds);
+  }
+
+  /** The one failure path of `run` and `runAll`. */
+  private async execute(api: PanelApi, cmds: readonly Command[]): Promise<boolean> {
     const t = this.options.t();
     try {
-      for (const cmd of cmds) await send(this.api, cmd);
+      for (const cmd of cmds) await attempt(api, cmd);
     } catch (e) {
       this.options.overlay.release(...cmds.flatMap(cmd => cmd.holds ?? []));
       this.host.dispatchEvent(new ToastEvent(t('common.failed', {reason: rejectionReason(e)}), true));
@@ -70,22 +80,6 @@ export class CommandRunner {
     }
     const done = [...cmds].reverse().find(cmd => cmd.done)?.done;
     if (done) this.host.dispatchEvent(new ToastEvent(t(done.key, done.values)));
-    return true;
-  }
-
-  private async execute(api: PanelApi, cmd: Command): Promise<boolean> {
-    const t = this.options.t();
-    try {
-      await send(api, cmd).catch(async (first: unknown) => {
-        if (!cmd.fallback) throw first;
-        await send(api, cmd.fallback);
-      });
-    } catch (e) {
-      this.options.overlay.release(...(cmd.holds ?? []));
-      this.host.dispatchEvent(new ToastEvent(t('common.failed', {reason: rejectionReason(e)}), true));
-      return false;
-    }
-    if (cmd.done) this.host.dispatchEvent(new ToastEvent(t(cmd.done.key, cmd.done.values)));
     return true;
   }
 }

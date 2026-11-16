@@ -1,6 +1,6 @@
 // The Lights commands as data: every intent of a tile or a room's sheet is a pure function returning the service calls to run, in order.
 // Pattern: Command (Gamma et al.), the data half (ADR 0023): the kit's `CommandRunner.runAll` is the invoker. The rules are the legacy `lightCmd`
-// and `linkTo`, one table row per branch, whose copies go with the sheet (#262). The legacy commands hold no value while Home Assistant answers,
+// and `linkTo`, one function per intent, whose copies go with the sheet (#262). The legacy commands hold no value while Home Assistant answers,
 // so these carry no `holds` either: a tap still waits for the reply, and the timing stays the legacy panel's.
 // Must not: send a call, read the clock, `hass` or the DOM (a tile carries its state and mode), write the system data (the pane's controller does).
 import type {Command} from '../../core/commands.ts';
@@ -98,7 +98,14 @@ function leaveAuto(pair: CommandTile[], services: LightServices): Command[] {
 }
 
 /** The lights a level is sent to: the lit ones, else all of them. */
-const targets = (pair: CommandTile[]) => (litOf(pair).length ? litOf(pair) : idsOf(pair));
+function targets(pair: CommandTile[]): string[] {
+  const lit = litOf(pair);
+  return lit.length ? lit : idsOf(pair);
+}
+
+/** A level set by hand: the leave-Auto calls, then the light's, with the toast when the room left Auto. */
+const byHand = (leave: Command[], light: Command): Command[] =>
+  leave.length ? saying([...leave, light], 'lights.setByHand') : [light];
 
 /** The brightness slider's release: leave Auto, then off under one percent, else on at `pct` (the lit lights, else all). */
 export function setBrightness(pair: CommandTile[], pct: number, services: LightServices): Command[] {
@@ -107,7 +114,7 @@ export function setBrightness(pair: CommandTile[], pct: number, services: LightS
     pct < 1
       ? call('light', 'turn_off', {entity_id: idsOf(pair)})
       : call('light', 'turn_on', {entity_id: targets(pair), brightness_pct: pct});
-  return leave.length ? saying([...leave, light], 'lights.setByHand') : [light];
+  return byHand(leave, light);
 }
 
 /** The colour slider's release: leave Auto, then the colour temperature to the lit (else all) lights that take one; no light call when none does. */
@@ -116,8 +123,7 @@ export function setColorTemp(pair: CommandTile[], kelvin: number, services: Ligh
   const tunable = new Set(pair.flatMap(x => x.state.tunable));
   const ids = targets(pair).filter(id => tunable.has(id));
   if (!ids.length) return leave;
-  const light = call('light', 'turn_on', {entity_id: ids, color_temp_kelvin: kelvin});
-  return leave.length ? saying([...leave, light], 'lights.setByHand') : [light];
+  return byHand(leave, call('light', 'turn_on', {entity_id: ids, color_temp_kelvin: kelvin}));
 }
 
 /** What picking a partner does: the pairs to save for every screen, the toast once they are saved, and the calls that copy the light. */

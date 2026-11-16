@@ -158,6 +158,11 @@ describe('Night', () => {
         'lights.nightOn',
       ],
     ]);
+    // without the service, on is the sleep mode and the switch back on
+    expect(calls(setNight([tile({mode: 'off'})], true, WITHOUT))).toEqual([
+      ['switch.turn_on', {entity_id: 'switch.adaptive_lighting_den_sleep_mode'}],
+      ['switch.turn_on', {entity_id: 'switch.adaptive_lighting_den'}, 'lights.nightOn'],
+    ]);
     expect(calls(setNight([tile({mode: 'night'})], false, WITH))).toEqual([
       ['switch.turn_off', {entity_id: 'switch.adaptive_lighting_den_sleep_mode'}, 'lights.nightOff'],
     ]);

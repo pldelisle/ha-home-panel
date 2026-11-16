@@ -189,6 +189,23 @@ describe('CommandRunner.runAll', () => {
     expect(toasts()).toEqual([{message: "Didn't work: x", sticky: false}]);
   });
 
+  test('sends a call only once the one before it was accepted, and takes a fallback', async () => {
+    const {runner, runService} = setup();
+    let accept!: () => void;
+    runService.mockImplementationOnce(() => new Promise<void>(resolve => (accept = resolve)));
+    runService.mockRejectedValueOnce({message: 'No service'});
+    const running = runner.runAll([step(1), step(2, {fallback: {domain: 'light', service: 'toggle', data: {}}})]);
+    await Promise.resolve();
+    expect(runService).toHaveBeenCalledTimes(1);
+    accept();
+    expect(await running).toBe(true);
+    expect(runService.mock.calls.map(c => `${c[0]}.${c[1]}`)).toEqual([
+      'light.turn_on',
+      'light.turn_on',
+      'light.toggle',
+    ]);
+  });
+
   test('stops at a failure, releases the holds of the whole list and says why, sticky', async () => {
     const {runner, runService, store, toasts} = setup(undefined, {message: 'Unavailable'});
     store.hold('a', 1);
@@ -212,6 +229,6 @@ describe('CommandRunner.runAll', () => {
     expect(await runner.runAll([])).toBe(true);
     expect(toasts()).toEqual([]);
     const lone = new CommandRunner(fakeHost([]), {overlay: new OverlayStore(), t: () => t});
-    await expect(lone.runAll([])).rejects.toThrow('the client arrives');
+    expect(() => lone.runAll([])).toThrow('the client arrives');
   });
 });
