@@ -23,7 +23,7 @@ export default defineConfig({
         'src/ui/{ranges,seg-keys,steps,thin-axis,toast-schedule}.ts', // the kit's pure files; its elements are proven by the harness
         'src/ui/commands.ts', // the command layer: the runner, the store and its controller are tested with fakes (ADR 0023)
         'src/ui/overlay-store.ts',
-        'src/ui/controllers/{optimistic,armed,windowed-history}.ts',
+        'src/ui/controllers/{optimistic,armed,windowed-history,system-data}.ts',
         'src/ui/styles/host.ts',
         'src/shell/guest.ts',
         'src/shell/features.ts',
@@ -61,6 +61,7 @@ export default defineConfig({
         'src/ui/controllers/optimistic.ts': {statements: 100},
         'src/ui/controllers/armed.ts': {statements: 100},
         'src/ui/controllers/windowed-history.ts': {statements: 100},
+        'src/ui/controllers/system-data.ts': {statements: 100},
         'src/ui/styles/host.ts': {statements: 100},
         'src/shell/guest.ts': {statements: 100},
         'src/shell/features.ts': {statements: 100},

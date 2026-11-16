@@ -84,6 +84,7 @@ describe.each([
   ['car', 'car.', ['src/features/car/', 'src/providers/'], []],
   ['live', 'live.', ['src/features/live/'], []],
   ['automations', 'automations.', ['src/features/automations/'], []],
+  ['lights', 'lights.', ['src/features/lights/'], []],
   ['chart', 'chart.', ['src/ui/'], []],
   ['ranges', 'range.', ['src/ui/'], []],
   ['settings', 'settings.', ['src/shell/'], []],
