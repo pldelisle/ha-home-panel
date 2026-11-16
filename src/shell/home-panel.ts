@@ -48,6 +48,8 @@ import './more-sheet.ts'; // defines <hp-more-sheet>
 import '../ui/pane-header.ts'; // defines <hp-pane-header>, which the legacy panes' headers are
 import './settings-popup.ts'; // defines <hp-settings-popup>
 import {SheetMediator} from './sheet-host.ts';
+import '../ui/toast.ts'; // defines <hp-toast>
+import {expiry, nextToast, type ToastAction, type ToastState} from '../ui/toast-schedule.ts';
 
 /** The panel Home Assistant hands over with the config the `panel_custom:` block carried. */
 interface PanelInfo {
@@ -89,6 +91,7 @@ export class HomePanel extends LitElement {
     epoch: {state: true},
     idleState: {state: true},
     settingsOpen: {state: true},
+    toastNow: {state: true},
   };
   declare hass: PanelHass | undefined;
   declare narrow: boolean;
@@ -101,6 +104,8 @@ export class HomePanel extends LitElement {
   declare private idleState: IdleState;
   /** The settings popup behind the gear is open. */
   declare private settingsOpen: boolean;
+  /** The toast showing, from the last `ToastEvent` through the pure schedule; null when none is. */
+  declare private toastNow: ToastState;
 
   // The legacy stylesheet is the guest's, so it comes with the guest (registerGuest) instead of an import of
   // src/styles.js, which the dependency rule forbids here. Lit adopts it once for every instance, as a constructed
@@ -177,6 +182,8 @@ export class HomePanel extends LitElement {
   // the word under each section of the More sheet, asked of the descriptors when the sheet opens
   private moreSummaries: Readonly<Partial<Record<FeatureKey, string | null>>> = {};
   private moreWasOpen = false;
+  // the one timer of this panel's toast: it sends `expire` when the schedule says a done toast goes
+  private toastTimer: ReturnType<typeof setTimeout> | undefined;
 
   /** What a descriptor may read: this panel's store and, until a subject is a feature of its own, the guest's answers. */
   private get env(): FeatureEnv {
@@ -195,6 +202,7 @@ export class HomePanel extends LitElement {
     this.epoch = 0;
     this.idleState = 'active';
     this.settingsOpen = false;
+    this.toastNow = null;
     // each provider adds itself to this element as a controller and answers the context requests of every element below
     new ContextProvider(this, {context: storeContext, initialValue: this.store});
     new ContextProvider(this, {context: apiContext, initialValue: this.api});
@@ -212,7 +220,6 @@ export class HomePanel extends LitElement {
     const compact = () => this.compact;
     const appearance = () => this.appearance.value;
     return {
-      toast: (message, sticky) => this.guest?.toast(message, sticky),
       setTab: key => this.setTab(key),
       requestFrame: () => this.requestFrame(),
       resetFrame: () => this.resetFrame(),
@@ -320,10 +327,24 @@ export class HomePanel extends LitElement {
     this.guest?.forecastChanged(e.detail.type, e.detail.forecast);
   };
 
+  // Each panel draws its own toast from the events of its own root, so two panels on one page never show each other's.
   private readonly onToast = (e: ToastEvent): void => {
     e.stopPropagation();
-    this.guest?.toast(e.detail.message, e.detail.sticky);
+    this.toastAct({type: 'show', message: e.detail.message, sticky: e.detail.sticky});
   };
+
+  private readonly onToastDismiss = (e: Event): void => {
+    e.stopPropagation();
+    this.toastAct({type: 'dismiss'});
+  };
+
+  // the schedule decides; the shell keeps the one timer it asks for, a new toast's in place of the old one's
+  private toastAct(action: ToastAction): void {
+    this.toastNow = nextToast(this.toastNow, action, Date.now());
+    clearTimeout(this.toastTimer);
+    const at = expiry(this.toastNow);
+    this.toastTimer = at === null ? undefined : setTimeout(() => this.toastAct({type: 'expire'}), at - Date.now());
+  }
 
   // Lit renders in a microtask. The guest looks its elements up right after it asks for a change, so these two
   // requests render at once, through the hook Lit documents for taking over the timing of an update.
@@ -403,6 +424,13 @@ export class HomePanel extends LitElement {
     >
       ${keyed(this.epoch, this.renderWrap())}
       <div class="guest" style="display:contents"></div>
+      <hp-toast
+        .open=${this.toastNow !== null}
+        .message=${this.toastNow?.message ?? ''}
+        .sticky=${this.toastNow?.sticky === true}
+        .dismissLabel=${this.store.t('common.dismiss')}
+        @toast-dismiss=${this.onToastDismiss}
+      ></hp-toast>
       <hp-more-sheet
         .features=${UNDER_MORE}
         .shown=${this.shown}
@@ -611,6 +639,10 @@ export class HomePanel extends LitElement {
     this.guest?.disconnect();
     this.settingsOff?.();
     this.settingsOff = undefined;
+    // the toast goes with the panel: no timer runs for a panel off the page
+    clearTimeout(this.toastTimer);
+    this.toastTimer = undefined;
+    this.toastNow = null;
     this.toldIdle = false; // the guest is down: a change of state while away tells it nothing, and a clock still showing is told again on return
   }
 }

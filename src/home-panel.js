@@ -583,7 +583,7 @@ export class LegacyPanel {
     // moved into a pane survives. The shell renders them at once; the first draw finds the frame the shell rendered.
     if (this.framed) this.ctx.shell.resetFrame();
     this.framed = true;
-    // the shell drew the frame (the header, the rail, the panes); the guest draws what is not in it: the parked cards, the sheets, the idle clock, the toast
+    // the shell drew the frame (the header, the rail, the panes); the guest draws what is not in it: the parked cards, the sheets, the idle clock
     // (the Air card is <hp-air-card>, placed by the Air pane: `#open-air` and `#air` are empty legacy containers, kept until the Home move, #268)
     this.container.innerHTML = `<div class="cols">
     <div class="col c1"></div>
@@ -607,8 +607,7 @@ export class LegacyPanel {
 <div class="sheet" id="sh-light" hidden><div class="panel" role="dialog" aria-modal="true" aria-labelledby="lshh">
   <div class="ph"><button type="button" class="lpwr" id="lshpwr" role="switch" aria-checked="false" data-l="area" data-a="">${ico('lpow', 24)}</button><div class="grow"><h2 id="lshh"></h2><div class="sub" id="lshsub"></div></div><button class="close ldone" type="button">Done</button></div>
   <div class="lsbody" id="lsheet"></div>
-</div></div>
-<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>`;
+</div></div>`;
     this.$app = this.$('app');
     // `.app` is the shell's and outlives a draw, where a fresh one used to start bare: clear what the guest toggles on it
     // (the shell owns the theme, the glass wallpaper, `gl`, `txl`, `live` and `idle`)
@@ -1224,9 +1223,6 @@ export class LegacyPanel {
       this.toggleAttention(false);
       this.renderHeader();
     });
-    this.$('toast').addEventListener('click', () => {
-      this.$('toast').hidden = true;
-    });
     [
       ['open-air', 'air.detail'], // dead until the Home move (#268): the card is empty and parked
     ].forEach(([b, s]) => {
@@ -1506,22 +1502,16 @@ export class LegacyPanel {
     });
   }
 
-  // a confirmation shows for 3.5 s; an error (sticky) stays until it is tapped or dismissed
+  // The shell draws the toast (<hp-toast>, #275): this asks for one as an element does, with a `ToastEvent`'s shape (the legacy code may
+  // not import the kit), in French when the panel is, as the rewrite layer made it of the light DOM. Deleted with the guest (#277).
   toast(msg, sticky) {
-    const t = this.$('toast');
-    clearTimeout(this.toastT);
-    t.classList.toggle('err', !!sticky);
-    t.setAttribute('role', sticky ? 'alert' : 'status');
-    if (sticky) {
-      t.innerHTML = `<span>${esc(msg)}</span><button type="button" class="tdis">Dismiss</button>`;
-      t.hidden = false;
-      return;
-    }
-    t.textContent = msg;
-    t.hidden = false;
-    this.toastT = setTimeout(() => {
-      t.hidden = true;
-    }, 3500);
+    this.container.dispatchEvent(
+      new CustomEvent('toast', {
+        bubbles: true,
+        composed: true,
+        detail: {message: this.french.text(msg), sticky: !!sticky},
+      }),
+    );
   }
   // on a phone a sheet is dragged down by its grabber or its title to close, as iOS sheets are; a short drag springs back
   // (the kit's SwipeToClose is the same drag for the sheets that are elements; this one goes with the last legacy sheet, #169)

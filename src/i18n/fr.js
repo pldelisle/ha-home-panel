@@ -828,7 +828,6 @@ export const FR_MAP = {
   Clear: 'Transparent',
   None: 'Aucun',
   Rules: 'Règles',
-  Dismiss: 'Fermer',
   Chart: 'Graphique',
   'One dot per run, a number when several ran close together. Filled ran, ringed red checked and did nothing, green is running now, hollow is still to come. Tap one to draw it below.':
     'Un point par exécution, un nombre quand plusieurs se suivent de près. Plein : exécutée; cerclé de rouge : vérifiée, rien fait; vert : en cours; vide : à venir. Touchez-en un pour le voir plus bas.',

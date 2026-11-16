@@ -56,8 +56,9 @@ test('the minified stylesheet is the one inside the entry, and it is smaller tha
   expect(css.length).toBeGreaterThan(85_000);
   expect(css.length).toBeLessThan(source.length * 0.9);
   // the entry carries the string either between double quotes or in a template; compare a piece from the middle,
-  // which has no quote or backslash of its own to escape differently
-  const middle = css.slice(59_900, 60_100);
+  // which has no quote or backslash of its own to escape differently. Each file the sheet joins is its own string in the
+  // entry, so the piece must sit inside one file: when a change moves a file boundary into it, move the piece (#275 did).
+  const middle = css.slice(50_000, 50_200);
   expect(middle).not.toMatch(/["'`\\\n]/);
   expect(entry).toContain(middle);
 });

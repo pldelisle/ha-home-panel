@@ -9,7 +9,6 @@ const guest = (): GuestRenderer => ({
   disconnect: noop,
   hassChanged: noop,
   panelChanged: noop,
-  toast: noop,
   tabChanged: noop,
   compactChanged: noop,
   appearanceChanged: noop,
