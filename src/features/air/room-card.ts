@@ -15,9 +15,11 @@ import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {OptimisticController} from '../../ui/controllers/optimistic.ts';
 import {StoreController} from '../../ui/controllers/store-controller.ts';
 import {lensLike} from '../../ui/lens.ts';
+import '../../ui/seg.ts'; // defines <hp-seg>
+import type {SegChangeDetail, SegOption} from '../../ui/seg.ts';
 import '../../ui/stepper.ts'; // defines <hp-stepper>
 import type {StepDetail} from '../../ui/stepper.ts';
-import {common, seg, tiles} from '../../ui/styles/index.ts';
+import {common, tiles} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
 /** How long the stepper waits for the taps to stop before it sends the speed: the legacy `airControl`'s 900 ms. */
@@ -34,7 +36,7 @@ export class AirRoom extends LitElement {
   declare room: RoomDetail | undefined;
 
   // The element's own rules, its card and what only its tree has, are in room-card.element.css.
-  static override styles = [common, seg, tiles, unsafeCSS(forShadow(roomOwn))];
+  static override styles = [common, tiles, unsafeCSS(forShadow(roomOwn))];
 
   // the catalog for the runner's toasts, and no entity: `ids` is empty, so no state change reaches the card
   private readonly storeController = new StoreController(this, {ids: () => []});
@@ -98,21 +100,12 @@ export class AirRoom extends LitElement {
     // `main.js`'s imports, and without `strictNullChecks` only an equality on the discriminant narrows the union
     if (control.offline === true) return html`<p class="muted">${control.message}</p>`;
     return html`<div class="aqctl">
-      <div class="seg" role="radiogroup" aria-label=${control.modeLabel}>
-        ${repeat(
-          control.modes,
-          ({mode}) => mode,
-          ({mode, label, checked}) =>
-            html`<button
-              type="button"
-              role="radio"
-              aria-checked=${checked ? 'true' : 'false'}
-              @click=${() => this.onMode(room, mode)}
-            >
-              <b>${label}</b>
-            </button>`,
-        )}
-      </div>
+      <hp-seg
+        .label=${control.modeLabel}
+        .options=${control.modes.map(({mode, label}): SegOption<Mode> => ({value: mode, label}))}
+        .value=${control.modes.find(({checked}) => checked)?.mode}
+        @change=${(e: CustomEvent<SegChangeDetail<Mode>>) => this.onMode(room, e.detail.value)}
+      ></hp-seg>
       ${this.renderSpeed(room, control)}
     </div>`;
   }

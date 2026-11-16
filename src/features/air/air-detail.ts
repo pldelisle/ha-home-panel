@@ -38,7 +38,9 @@ import '../../ui/pane-header.ts'; // defines <hp-pane-header>
 import '../../ui/range-tabs.ts'; // defines <hp-range-tabs>
 import type {RangeChangeDetail} from '../../ui/range-tabs.ts';
 import {RANGES, type Range} from '../../ui/ranges.ts';
-import {chart, common, inner, seg, tiles} from '../../ui/styles/index.ts';
+import '../../ui/seg.ts'; // defines <hp-seg>
+import type {SegChangeDetail, SegOption} from '../../ui/seg.ts';
+import {chart, common, inner, tiles} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
 type Detail = AirViewModel['detail'];
@@ -155,7 +157,6 @@ export class AirDetail extends LitElement {
     common,
     inner,
     tiles,
-    seg,
     chart,
     unsafeCSS(forShadow(airShared)),
     unsafeCSS(forShadow(detailOwn)),
@@ -276,21 +277,13 @@ export class AirDetail extends LitElement {
     return html`<div class="inner">
       <h3>${history.title}</h3>
       <p>${history.caption}</p>
-      <div class="seg aqmetric" role="radiogroup" aria-label=${history.label}>
-        ${repeat(
-          history.metrics,
-          ({metric}) => metric,
-          ({metric, label}) =>
-            html`<button
-              type="button"
-              role="radio"
-              aria-checked=${metric === history.metric ? 'true' : 'false'}
-              @click=${() => this.onMetric(metric)}
-            >
-              <b>${label}</b>
-            </button>`,
-        )}
-      </div>
+      <hp-seg
+        class="aqmetric"
+        .label=${history.label}
+        .options=${history.metrics.map(({metric, label}): SegOption<ChartMetric> => ({value: metric, label}))}
+        .value=${history.metric}
+        @change=${(e: CustomEvent<SegChangeDetail<ChartMetric>>) => this.onMetric(e.detail.value)}
+      ></hp-seg>
       ${this.renderLegend(metricSlot.built?.legend)}
       ${this.renderChart(metricSlot, {
         height: 280,

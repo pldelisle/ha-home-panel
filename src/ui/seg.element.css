@@ -1,0 +1,17 @@
+/*
+ * <hp-seg>'s own rules: the host is a block its owner sizes from outside (`flex`, `max-width`, `margin` on the tag), and the two read-only looks, a whole group
+ * (`aria-disabled='true'` on the radiogroup, which the legacy sheet's `.seg.dis` copies for Car's groups until #253) and a single option that cannot be chosen. The control itself is the kit's `.seg`.
+ */
+:host {
+  display: block;
+}
+.seg[aria-disabled='true'] button {
+  cursor: default;
+}
+.seg[aria-disabled='true'] button:not([aria-checked='true']) b {
+  color: var(--fg2);
+}
+.seg:not([aria-disabled='true']) button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}

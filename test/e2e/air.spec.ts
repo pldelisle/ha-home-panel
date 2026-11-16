@@ -210,6 +210,35 @@ test.describe('on a tablet', () => {
     await expect(room(house).locator('.hint')).toHaveCount(0);
   });
 
+  // the radio group's keys (<hp-seg>, #247): one tab stop on the chosen option, and an arrow moves the choice and the focus together
+  test('the arrow keys move the mode group: Right chooses Manual and sends the call, Left goes back, End and Home go to the ends, and only the chosen option is a tab stop', async ({
+    house,
+  }) => {
+    await house.tab('air');
+    const automagic = room(house).getByRole('radio', {name: 'Automagic'});
+    const manual = room(house).getByRole('radio', {name: 'Manual'});
+    await expect(automagic).toHaveAttribute('tabindex', '0');
+    await expect(manual).toHaveAttribute('tabindex', '-1');
+    await automagic.focus();
+    await house.page.keyboard.press('ArrowRight');
+    await expectCall(house, /^fan\.set_preset_mode \{"entity_id":"fan\.office_purifier","preset_mode":"Manual"\}$/);
+    await expect(manual).toHaveAttribute('aria-checked', 'true');
+    await expect(manual).toBeFocused();
+    await expect(manual).toHaveAttribute('tabindex', '0');
+    await expect(automagic).toHaveAttribute('tabindex', '-1');
+    await house.page.keyboard.press('ArrowLeft');
+    await expect(automagic).toHaveAttribute('aria-checked', 'true');
+    await expect(automagic).toBeFocused();
+    await expect.poll(() => calls(house, 'fan.set_preset_mode').length, 'one call for each key').toBe(2);
+    await house.page.keyboard.press('End');
+    await expect(manual).toHaveAttribute('aria-checked', 'true');
+    await expect(manual).toBeFocused();
+    await house.page.keyboard.press('Home');
+    await expect(automagic).toHaveAttribute('aria-checked', 'true');
+    await expect(automagic).toBeFocused();
+    await expect.poll(() => calls(house, 'fan.set_preset_mode').length, 'and one for End and for Home').toBe(4);
+  });
+
   test('three quick taps on + show each speed at once and send one fan.set_percentage, at the last speed', async ({
     house,
   }) => {

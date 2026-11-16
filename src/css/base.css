@@ -424,6 +424,7 @@
 .sheet .att {
   margin-top: 4px;
 }
+/* Car's pane draws it until #253; Climate's controls (#248) move it to the kit's seg.css, and #253 deletes this copy (spec 20) */
 .ctl-l {
   font-size: calc(12px * var(--tx));
   font-weight: 700;
@@ -439,6 +440,7 @@
   outline: 2px solid var(--c-home);
   outline-offset: 2px;
 }
+/* a known duplicate of <hp-seg>'s `[aria-disabled='true']` rules (src/ui/seg.element.css), deleted with the last legacy `.seg` (#253) */
 .seg.dis button {
   cursor: default;
 }
