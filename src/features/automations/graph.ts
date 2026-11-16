@@ -1,19 +1,19 @@
 // An automation's flow as a graph: its config's triggers, conditions and actions folded with one run's trace into nodes
 // and edges, each marked with what the run did there (taken, not taken, failed, waiting, stopped), and the run in a sentence.
 // Pattern: a pure fold over Home Assistant's config and trace (Bernhardt, functional core), the legacy `auGraph()`; nodes are
-// keyed by the trace's paths (`trigger/0`, `condition/1/conditions/0`, `action/2/choose/0/sequence/1`), as the
-// _Automation trace_ developer docs name them; the words come from sentences.ts.
+// keyed by the trace's paths (`action/2/choose/0/sequence/1`), as the _Automation trace_ docs name them; a step's words come
+// from sentences.ts, the gates' and the run's from `automations.graph.*` and `automations.sentence.*`.
 // Must not: read the clock or the DOM, change the trace it is given, or write Mermaid (mermaid-def.ts does).
 import {capitalWords} from '../../core/figures.ts';
 import type {AutomationConfig, Trace, TraceStep, TraceSummary} from '../../core/ha.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
-import type {Translate} from '../../core/i18n/messages.ts';
 import {asList} from '../../providers/automations.ts';
 import {
   actionText,
   conditionText,
   cut,
   durationText,
+  joined,
   triggerText,
   type Sentence,
   type SentenceDeps,
@@ -89,10 +89,6 @@ interface Link {
 /** A node id Mermaid accepts, from a trace path: `action/0/choose/1` is `naction_0_choose_1`. */
 const nodeId = (path: string): string => `n${path.replace(/[^a-z0-9]+/gi, '_')}`;
 
-/** A list read with a word between each pair. */
-const joined = (items: string[], key: MessageKey, t: Translate): string =>
-  items.length ? items.reduce((a, b) => t(key, {a, b})) : '';
-
 /**
  * The graph of `config` with the run `trace` (and its row of the list, `summary`) laid over it; with no trace, every step
  * is drawn as not taken and the sentence is empty.
@@ -115,7 +111,7 @@ export function automationGraph(
     return steps?.length ? steps[steps.length - 1] : null;
   };
   const running = summary?.state === 'running',
-    lastStep = summary ? (summary.last_step ?? trace?.last_step) : undefined;
+    lastStep = summary ? summary.last_step || trace?.last_step : undefined;
 
   const add = (path: string, words: Pick<Sentence, 'kind' | 'k' | 't'>, shape: NodeShape = 'round'): string => {
     const id = nodeId(path),
@@ -156,7 +152,7 @@ export function automationGraph(
   };
 
   // the triggers, and the gate that joins them when there are several
-  const triggers = asList(config.triggers ?? config.trigger) as Config[];
+  const triggers = asList(config.triggers || config.trigger) as Config[];
   let fired = Object.keys(T)
     .map(k => /^trigger\/(\d+)$/.exec(k))
     .filter(m => m !== null)
@@ -199,7 +195,7 @@ export function automationGraph(
     chain(from, id);
     return [{id}];
   };
-  (asList(config.conditions ?? config.condition) as (Config | string)[]).forEach((c, i) => {
+  (asList(config.conditions || config.condition) as (Config | string)[]).forEach((c, i) => {
     exits = conditionTree(c, `condition/${i}`, exits);
   });
 
@@ -267,7 +263,7 @@ export function automationGraph(
     chain(from, id);
     return [{id}];
   };
-  exits = sequence(config.actions ?? config.action, 'action', exits);
+  exits = sequence(config.actions || config.action, 'action', exits);
 
   // a failed check ends the run: the last one to fail, its own deepest, gets a STOP node after it
   const timeOf = (n: Folding) => {
@@ -284,7 +280,9 @@ export function automationGraph(
     )
     .sort((x, y) => timeOf(y) - timeOf(x) || y.path.length - x.path.length)[0];
   const exec = summary?.script_execution;
-  if (failedCheck && exec === 'failed_conditions') {
+  // the run ended at that check
+  const stopped = !!failedCheck && exec === 'failed_conditions';
+  if (stopped) {
     const stop = add('stop', gateWords('automations.graph.stop'), 'stop');
     byId[stop].cls = 'stopn';
     byId[stop].visited = true;
@@ -340,8 +338,7 @@ export function automationGraph(
           : t('automations.sentence.started');
       parts.push(at ? t('automations.sentence.startedAt', {what, time: at}) : what);
     }
-    if (failedCheck && exec === 'failed_conditions')
-      parts.push(t('automations.sentence.stoppedAt', {check: cut(failedCheck.label, 60)}));
+    if (stopped && failedCheck) parts.push(t('automations.sentence.stoppedAt', {check: cut(failedCheck.label, 60)}));
     else if (exec === 'failed_single' || exec === 'failed_max_runs') parts.push(t('automations.sentence.skipped'));
     else if (nodes.some(n => n.path.startsWith('condition/'))) parts.push(t('automations.sentence.checksPassed'));
     if (waitNode)
@@ -378,7 +375,7 @@ export function automationGraph(
     nodes: nodes.map(({id, path, kind, k, label, sub, shape, cls}) => ({id, path, kind, k, label, sub, shape, cls})),
     edges,
     sentence: joined(parts, 'automations.list.then', t),
-    failed: !!failedCheck && exec === 'failed_conditions',
+    failed: stopped,
     waiting: !!waitNode,
   };
 }

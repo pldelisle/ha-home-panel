@@ -1,1065 +1,499 @@
 {
-  "about": "The English messages the Automations move's pure rules introduced (src/core/i18n/en.ts, automations.*), each with sample values. test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer makes of the English or, where the layer leaves the English or gets it wrong (`Turn on` is `Turn : activé`), the `translated` French. Nothing visible changes in #271: the legacy panel draws these messages in English (tEn in src/auto.js) and the layer still translates them as before; the translated rows become visible when #273 draws the tab in the panel's language, with its baselines.",
+  "about": "The English messages the Automations move's pure rules introduced (src/core/i18n/en.ts, automations.*), each with sample values. test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer makes of the English or, where the layer leaves the English or gets it wrong (`Turn on` is `Turn : activé`), the `translated` French. Nothing visible changes in #271 and #272: the legacy panel draws these messages in English (tEn in src/auto.js) and the layer still translates them as before; the translated rows become visible when #273 draws the tab in the panel's language, with its baselines.",
   "messages": [
+    {"key": "automations.domain.climate"},
+    {"key": "automations.domain.light", "translated": "Lumière"},
+    {"key": "automations.domain.switch", "translated": "Interrupteur"},
+    {"key": "automations.domain.scene", "translated": "Scène"},
+    {"key": "automations.domain.script"},
+    {"key": "automations.domain.inputBoolean", "translated": "Assistant"},
+    {"key": "automations.domain.notify", "translated": "Avis"},
+    {"key": "automations.domain.mediaPlayer"},
+    {"key": "automations.domain.fan"},
+    {"key": "automations.domain.adaptiveLighting", "translated": "Éclairage adaptatif"},
+    {"key": "automations.domain.homeassistant"},
+    {"key": "automations.domain.persistentNotification"},
+    {"key": "automations.domain.shellCommand", "translated": "Commande"},
+    {"key": "automations.domain.wakeOnLan"},
+    {"key": "automations.domain.icloud"},
+    {"key": "automations.domain.lock", "translated": "Serrure"},
+    {"key": "automations.domain.cover", "translated": "Store"},
+    {"key": "automations.domain.number", "translated": "Nombre"},
+    {"key": "automations.verb.turnOn", "translated": "Allumer"},
+    {"key": "automations.verb.turnOff", "translated": "Éteindre"},
+    {"key": "automations.verb.toggle", "translated": "Basculer"},
+    {"key": "automations.verb.mediaStop", "translated": "Arrêter"},
+    {"key": "automations.verb.mediaPause"},
+    {"key": "automations.verb.mediaPlay"},
+    {"key": "automations.verb.sendMagicPacket", "translated": "Envoyer le paquet magique"},
+    {"key": "automations.verb.reloadConfigEntry", "translated": "Recharger l’intégration"},
+    {"key": "automations.verb.restart", "translated": "Redémarrer Home Assistant"},
+    {"key": "automations.verb.update", "translated": "Actualiser les positions"},
+    {"key": "automations.verb.apply", "translated": "Appliquer selon le moment de la journée"},
+    {"key": "automations.verb.create"},
+    {"key": "automations.verb.lock"},
+    {"key": "automations.verb.unlock"},
+    {"key": "automations.kind.trigger", "translated": "Déclencheur"},
+    {"key": "automations.kind.door"},
+    {"key": "automations.kind.doors", "translated": "Portes"},
+    {"key": "automations.kind.motion"},
+    {"key": "automations.kind.state", "translated": "État"},
+    {"key": "automations.kind.button", "translated": "Bouton"},
+    {"key": "automations.kind.presence", "translated": "Présence"},
+    {"key": "automations.kind.value", "translated": "Valeur"},
+    {"key": "automations.kind.time"},
+    {"key": "automations.kind.every", "translated": "Chaque"},
+    {"key": "automations.kind.sun"},
+    {"key": "automations.kind.system", "translated": "Système"},
+    {"key": "automations.kind.event", "translated": "Événement"},
+    {"key": "automations.kind.when", "translated": "Quand"},
+    {"key": "automations.kind.zone"},
+    {"key": "automations.kind.request", "translated": "Demande"},
+    {"key": "automations.kind.check", "translated": "Vérification"},
+    {"key": "automations.kind.startedBy", "translated": "Lancée par"},
+    {"key": "automations.kind.anyOf", "translated": "L’une de"},
+    {"key": "automations.kind.allOf", "translated": "Toutes"},
+    {"key": "automations.kind.noneOf", "translated": "Aucune de"},
+    {"key": "automations.kind.step", "translated": "Étape"},
+    {"key": "automations.kind.snapshot", "translated": "Instantané"},
+    {"key": "automations.kind.delay", "translated": "Délai"},
+    {"key": "automations.kind.wait", "translated": "Attente"},
+    {"key": "automations.kind.waitFor", "translated": "Attendre"},
+    {"key": "automations.kind.stop", "translated": "Arrêt"},
+    {"key": "automations.kind.variables"},
+    {"key": "automations.kind.repeat", "translated": "Répéter"},
+    {"key": "automations.kind.parallel", "translated": "En parallèle"},
     {
-      "key": "automations.domain.climate"
-    },
-    {
-      "key": "automations.domain.light",
-      "translated": "Lumière"
-    },
-    {
-      "key": "automations.domain.switch",
-      "translated": "Interrupteur"
-    },
-    {
-      "key": "automations.domain.scene",
-      "translated": "Scène"
-    },
-    {
-      "key": "automations.domain.script"
-    },
-    {
-      "key": "automations.domain.inputBoolean",
-      "translated": "Assistant"
-    },
-    {
-      "key": "automations.domain.notify",
-      "translated": "Avis"
-    },
-    {
-      "key": "automations.domain.mediaPlayer"
-    },
-    {
-      "key": "automations.domain.fan"
-    },
-    {
-      "key": "automations.domain.adaptiveLighting",
-      "translated": "Éclairage adaptatif"
-    },
-    {
-      "key": "automations.domain.homeassistant"
-    },
-    {
-      "key": "automations.domain.persistentNotification"
-    },
-    {
-      "key": "automations.domain.shellCommand",
-      "translated": "Commande"
-    },
-    {
-      "key": "automations.domain.wakeOnLan"
-    },
-    {
-      "key": "automations.domain.icloud"
-    },
-    {
-      "key": "automations.domain.lock",
-      "translated": "Serrure"
-    },
-    {
-      "key": "automations.domain.cover",
-      "translated": "Store"
-    },
-    {
-      "key": "automations.domain.number",
-      "translated": "Nombre"
-    },
-    {
-      "key": "automations.verb.turnOn",
-      "translated": "Allumer"
-    },
-    {
-      "key": "automations.verb.turnOff",
-      "translated": "Éteindre"
-    },
-    {
-      "key": "automations.verb.toggle",
-      "translated": "Basculer"
-    },
-    {
-      "key": "automations.verb.mediaStop",
-      "translated": "Arrêter"
-    },
-    {
-      "key": "automations.verb.mediaPause"
-    },
-    {
-      "key": "automations.verb.mediaPlay"
-    },
-    {
-      "key": "automations.verb.sendMagicPacket",
-      "translated": "Envoyer le paquet magique"
-    },
-    {
-      "key": "automations.verb.reloadConfigEntry",
-      "translated": "Recharger l’intégration"
-    },
-    {
-      "key": "automations.verb.restart",
-      "translated": "Redémarrer Home Assistant"
-    },
-    {
-      "key": "automations.verb.update",
-      "translated": "Actualiser les positions"
-    },
-    {
-      "key": "automations.verb.apply",
-      "translated": "Appliquer selon le moment de la journée"
-    },
-    {
-      "key": "automations.verb.create"
-    },
-    {
-      "key": "automations.verb.lock"
-    },
-    {
-      "key": "automations.verb.unlock"
-    },
-    {
-      "key": "automations.kind.trigger",
-      "translated": "Déclencheur"
-    },
-    {
-      "key": "automations.kind.door"
-    },
-    {
-      "key": "automations.kind.doors",
-      "translated": "Portes"
-    },
-    {
-      "key": "automations.kind.motion"
-    },
-    {
-      "key": "automations.kind.state",
-      "translated": "État"
-    },
-    {
-      "key": "automations.kind.button",
-      "translated": "Bouton"
-    },
-    {
-      "key": "automations.kind.presence",
-      "translated": "Présence"
-    },
-    {
-      "key": "automations.kind.value",
-      "translated": "Valeur"
-    },
-    {
-      "key": "automations.kind.time"
-    },
-    {
-      "key": "automations.kind.every",
-      "translated": "Chaque"
-    },
-    {
-      "key": "automations.kind.sun"
-    },
-    {
-      "key": "automations.kind.system",
-      "translated": "Système"
-    },
-    {
-      "key": "automations.kind.event",
-      "translated": "Événement"
-    },
-    {
-      "key": "automations.kind.when",
-      "translated": "Quand"
-    },
-    {
-      "key": "automations.kind.zone"
-    },
-    {
-      "key": "automations.kind.request",
-      "translated": "Demande"
-    },
-    {
-      "key": "automations.kind.check",
-      "translated": "Vérification"
-    },
-    {
-      "key": "automations.kind.startedBy",
-      "translated": "Lancée par"
-    },
-    {
-      "key": "automations.kind.anyOf",
-      "translated": "L’une de"
-    },
-    {
-      "key": "automations.kind.allOf",
-      "translated": "Toutes"
-    },
-    {
-      "key": "automations.kind.noneOf",
-      "translated": "Aucune de"
-    },
-    {
-      "key": "automations.kind.step",
-      "translated": "Étape"
-    },
-    {
-      "key": "automations.kind.snapshot",
-      "translated": "Instantané"
-    },
-    {
-      "key": "automations.kind.delay",
-      "translated": "Délai"
-    },
-    {
-      "key": "automations.kind.wait",
-      "translated": "Attente"
-    },
-    {
-      "key": "automations.kind.waitFor",
-      "translated": "Attendre"
-    },
-    {
-      "key": "automations.kind.stop",
-      "translated": "Arrêt"
-    },
-    {
-      "key": "automations.kind.variables"
-    },
-    {
-      "key": "automations.kind.repeat",
-      "translated": "Répéter"
-    },
-    {
-      "key": "automations.kind.parallel",
-      "translated": "En parallèle"
+      "key": "automations.duration",
+      "values": {"unit": "hours", "n": "1.5"}
     },
     {
       "key": "automations.duration",
-      "values": {
-        "unit": "hours",
-        "n": "1.5"
-      }
+      "values": {"unit": "minutes", "n": "5"}
     },
     {
       "key": "automations.duration",
-      "values": {
-        "unit": "minutes",
-        "n": "5"
-      }
+      "values": {"unit": "seconds", "n": "30"}
     },
     {
       "key": "automations.duration",
-      "values": {
-        "unit": "seconds",
-        "n": "30"
-      }
-    },
-    {
-      "key": "automations.duration",
-      "values": {
-        "unit": "template",
-        "n": ""
-      },
+      "values": {"unit": "template", "n": ""},
       "translated": "un moment"
     },
     {
       "key": "automations.text.for",
-      "values": {
-        "text": "Front door opened",
-        "duration": "5 min"
-      },
+      "values": {"text": "Front door opened", "duration": "5 min"},
       "translated": "Front door opened pendant 5 min"
     },
     {
       "key": "automations.list.or",
-      "values": {
-        "a": "on",
-        "b": "off"
-      },
+      "values": {"a": "on", "b": "off"},
       "translated": "on ou off"
     },
     {
       "key": "automations.list.and",
-      "values": {
-        "a": "after 22:00",
-        "b": "before 06:00"
-      },
+      "values": {"a": "after 22:00", "b": "before 06:00"},
       "translated": "after 22:00 et before 06:00"
     },
     {
       "key": "automations.list.any",
-      "values": {
-        "a": "Lamp is on",
-        "b": "Hall is clear"
-      }
+      "values": {"a": "Lamp is on", "b": "Hall is clear"}
     },
     {
       "key": "automations.list.all",
-      "values": {
-        "a": "Lamp is on",
-        "b": "Hall is clear"
-      }
+      "values": {"a": "Lamp is on", "b": "Hall is clear"}
     },
     {
       "key": "automations.quoted",
-      "values": {
-        "text": "door"
-      },
+      "values": {"text": "door"},
       "translated": "« door »"
     },
     {
       "key": "automations.names.more",
-      "values": {
-        "first": "Lamp",
-        "second": "Desk",
-        "n": 2
-      }
+      "values": {"first": "Lamp", "second": "Desk", "n": 2}
     },
     {
       "key": "automations.name.variable",
-      "values": {
-        "name": "light"
-      },
+      "values": {"name": "light"},
       "translated": "light"
     },
-    {
-      "key": "automations.name.chosen",
-      "translated": "celle choisie"
-    },
-    {
-      "key": "automations.name.everyLight",
-      "translated": "toutes les lumières"
-    },
-    {
-      "key": "automations.name.homeZone",
-      "translated": "Zone Maison"
-    },
-    {
-      "key": "automations.name.thatLight",
-      "translated": "cette lumière"
-    },
-    {
-      "key": "automations.state.open",
-      "translated": "ouverte"
-    },
-    {
-      "key": "automations.state.opened",
-      "translated": "s’ouvre"
-    },
-    {
-      "key": "automations.state.closed",
-      "translated": "fermée"
-    },
-    {
-      "key": "automations.state.motion",
-      "translated": "mouvement"
-    },
-    {
-      "key": "automations.state.detectsMotion",
-      "translated": "détecte un mouvement"
-    },
-    {
-      "key": "automations.state.clear",
-      "translated": "sans mouvement"
-    },
-    {
-      "key": "automations.state.fanOnly",
-      "translated": "ventilation seule"
-    },
-    {
-      "key": "automations.template.solarNight",
-      "translated": "Entre le minuit solaire et le lever du soleil"
-    },
+    {"key": "automations.name.chosen", "translated": "celle choisie"},
+    {"key": "automations.name.everyLight", "translated": "toutes les lumières"},
+    {"key": "automations.name.homeZone", "translated": "Zone Maison"},
+    {"key": "automations.name.thatLight", "translated": "cette lumière"},
+    {"key": "automations.state.open", "translated": "ouverte"},
+    {"key": "automations.state.opened", "translated": "s’ouvre"},
+    {"key": "automations.state.closed", "translated": "fermée"},
+    {"key": "automations.state.motion", "translated": "mouvement"},
+    {"key": "automations.state.detectsMotion", "translated": "détecte un mouvement"},
+    {"key": "automations.state.clear", "translated": "sans mouvement"},
+    {"key": "automations.state.fanOnly", "translated": "ventilation seule"},
+    {"key": "automations.template.solarNight", "translated": "Entre le minuit solaire et le lever du soleil"},
     {
       "key": "automations.template.is",
-      "values": {
-        "name": "Lamp",
-        "state": "on"
-      },
+      "values": {"name": "Lamp", "state": "on"},
       "translated": "Lamp on"
     },
     {
       "key": "automations.template.isNot",
-      "values": {
-        "name": "Lamp",
-        "state": "on"
-      },
+      "values": {"name": "Lamp", "state": "on"},
       "translated": "Lamp pas on"
     },
-    {
-      "key": "automations.template.doorCloses",
-      "translated": "la porte se ferme"
-    },
-    {
-      "key": "automations.template.doorOpen",
-      "translated": "la porte est ouverte"
-    },
-    {
-      "key": "automations.template.waitTimedOut",
-      "translated": "l’attente a expiré"
-    },
-    {
-      "key": "automations.template.waitFinished",
-      "translated": "l’attente est finie"
-    },
-    {
-      "key": "automations.template.try",
-      "translated": "essai"
-    },
-    {
-      "key": "automations.template.fallback",
-      "translated": "Modèle"
-    },
+    {"key": "automations.template.doorCloses", "translated": "la porte se ferme"},
+    {"key": "automations.template.doorOpen", "translated": "la porte est ouverte"},
+    {"key": "automations.template.waitTimedOut", "translated": "l’attente a expiré"},
+    {"key": "automations.template.waitFinished", "translated": "l’attente est finie"},
+    {"key": "automations.template.try", "translated": "essai"},
+    {"key": "automations.template.fallback", "translated": "Modèle"},
     {
       "key": "automations.value.check",
-      "values": {
-        "name": "Outside temperature",
-        "range": "> 5"
-      }
+      "values": {"name": "Outside temperature", "range": "> 5"}
     },
     {
       "key": "automations.value.above",
-      "values": {
-        "n": "5"
-      }
+      "values": {"n": "5"}
     },
     {
       "key": "automations.value.below",
-      "values": {
-        "n": "5"
-      }
+      "values": {"n": "5"}
     },
     {
       "key": "automations.value.between",
-      "values": {
-        "above": "5",
-        "below": "9"
-      },
+      "values": {"above": "5", "below": "9"},
       "translated": "> 5 et < 9"
     },
-    {
-      "key": "automations.presence.nobody",
-      "translated": "Personne à la maison"
-    },
-    {
-      "key": "automations.presence.someoneComes",
-      "translated": "Quelqu’un rentre"
-    },
+    {"key": "automations.presence.nobody", "translated": "Personne à la maison"},
+    {"key": "automations.presence.someoneComes", "translated": "Quelqu’un rentre"},
     {
       "key": "automations.presence.fewer",
-      "values": {
-        "n": "3"
-      },
+      "values": {"n": "3"},
       "translated": "Personnes à la maison < 3"
     },
     {
       "key": "automations.presence.more",
-      "values": {
-        "n": "2"
-      },
+      "values": {"n": "2"},
       "translated": "Personnes à la maison > 2"
     },
     {
       "key": "automations.presence.atHome",
-      "values": {
-        "n": "2"
-      },
+      "values": {"n": "2"},
       "translated": "2 à la maison"
     },
     {
       "key": "automations.trigger.becomes",
-      "values": {
-        "name": "Front",
-        "state": "opened"
-      }
+      "values": {"name": "Front", "state": "opened"}
     },
     {
       "key": "automations.trigger.changesTo",
-      "values": {
-        "name": "Living room",
-        "state": "heat"
-      }
+      "values": {"name": "Living room", "state": "heat"}
     },
     {
       "key": "automations.trigger.attributeChanges",
-      "values": {
-        "name": "Lamp",
-        "attribute": "brightness"
-      },
+      "values": {"name": "Lamp", "attribute": "brightness"},
       "translated": "Lamp brightness change"
     },
     {
       "key": "automations.trigger.pressed",
-      "values": {
-        "name": "Button"
-      },
+      "values": {"name": "Button"},
       "translated": "Button appuyé"
     },
     {
       "key": "automations.trigger.changes",
-      "values": {
-        "name": "Lamp"
-      },
+      "values": {"name": "Lamp"},
       "translated": "Lamp change"
     },
+    {"key": "automations.trigger.pattern", "translated": "motif"},
     {
-      "key": "automations.trigger.pattern",
-      "translated": "motif"
+      "key": "automations.trigger.sun",
+      "values": {"event": "sunrise"}
     },
     {
       "key": "automations.trigger.sun",
-      "values": {
-        "event": "sunrise"
-      }
-    },
-    {
-      "key": "automations.trigger.sun",
-      "values": {
-        "event": "sunset"
-      }
+      "values": {"event": "sunset"}
     },
     {
       "key": "automations.trigger.sunOffset",
-      "values": {
-        "event": "sunrise",
-        "offset": "-00:30:00"
-      },
+      "values": {"event": "sunrise", "offset": "-00:30:00"},
       "translated": "Lever du soleil -00:30:00"
     },
     {
       "key": "automations.trigger.sunOffset",
-      "values": {
-        "event": "sunset",
-        "offset": "00:15:00"
-      },
+      "values": {"event": "sunset", "offset": "00:15:00"},
       "translated": "Coucher du soleil 00:15:00"
     },
     {
       "key": "automations.trigger.homeAssistant",
-      "values": {
-        "event": "start"
-      },
+      "values": {"event": "start"},
       "translated": "Home Assistant démarre"
     },
     {
       "key": "automations.trigger.homeAssistant",
-      "values": {
-        "event": "shutdown"
-      },
+      "values": {"event": "shutdown"},
       "translated": "Home Assistant s’arrête"
     },
-    {
-      "key": "automations.trigger.reloaded",
-      "translated": "Automatisations rechargées"
-    },
+    {"key": "automations.trigger.reloaded", "translated": "Automatisations rechargées"},
     {
       "key": "automations.trigger.zone",
-      "values": {
-        "name": "Alex",
-        "event": "leave",
-        "zone": "Home zone"
-      },
+      "values": {"name": "Alex", "event": "leave", "zone": "Home zone"},
       "translated": "Alex quitte Home zone"
     },
     {
       "key": "automations.trigger.zone",
-      "values": {
-        "name": "Alex",
-        "event": "enter",
-        "zone": "Work"
-      },
+      "values": {"name": "Alex", "event": "enter", "zone": "Work"},
       "translated": "Alex entre dans Work"
     },
     {
       "key": "automations.trigger.askedToTurnOn",
-      "values": {
-        "name": "Lamp"
-      },
+      "values": {"name": "Lamp"},
       "translated": "Lamp : demande d’allumer"
     },
     {
       "key": "automations.condition.state",
-      "values": {
-        "name": "Front",
-        "many": "no",
-        "state": "closed"
-      },
+      "values": {"name": "Front", "many": "no", "state": "closed"},
       "translated": "Front est closed"
     },
     {
       "key": "automations.condition.state",
-      "values": {
-        "name": "Front and Back",
-        "many": "yes",
-        "state": "closed"
-      },
+      "values": {"name": "Front and Back", "many": "yes", "state": "closed"},
       "translated": "Front and Back sont closed"
     },
     {
       "key": "automations.condition.attribute",
-      "values": {
-        "text": "Lamp is on",
-        "attribute": "mode"
-      }
+      "values": {"text": "Lamp is on", "attribute": "mode"}
     },
     {
       "key": "automations.condition.trigger",
-      "values": {
-        "ids": "“door”"
-      },
+      "values": {"ids": "“door”"},
       "translated": "le déclencheur “door”"
     },
     {
       "key": "automations.condition.after",
-      "values": {
-        "time": "22:00"
-      },
+      "values": {"time": "22:00"},
       "translated": "après 22:00"
     },
     {
       "key": "automations.condition.before",
-      "values": {
-        "time": "06:00"
-      },
+      "values": {"time": "06:00"},
       "translated": "avant 06:00"
     },
-    {
-      "key": "automations.condition.unnamed"
-    },
-    {
-      "key": "automations.action.notify",
-      "translated": "Message au téléphone"
-    },
+    {"key": "automations.condition.unnamed"},
+    {"key": "automations.action.notify", "translated": "Message au téléphone"},
     {
       "key": "automations.action.notifyTitled",
-      "values": {
-        "title": "Door open"
-      },
+      "values": {"title": "Door open"},
       "translated": "« Door open » au téléphone"
     },
-    {
-      "key": "automations.action.inHomeAssistant",
-      "translated": "Dans Home Assistant"
-    },
+    {"key": "automations.action.inHomeAssistant", "translated": "Dans Home Assistant"},
     {
       "key": "automations.action.remember",
-      "values": {
-        "name": "Lamp"
-      },
+      "values": {"name": "Lamp"},
       "translated": "Mémoriser Lamp"
     },
     {
       "key": "automations.action.setTemperature",
-      "values": {
-        "name": "Living room",
-        "temperature": "21"
-      }
+      "values": {"name": "Living room", "temperature": "21"}
     },
     {
       "key": "automations.action.setTemperatureScheduled",
-      "values": {
-        "name": "Living room"
-      },
+      "values": {"name": "Living room"},
       "translated": "Living room → selon l’horaire"
     },
     {
       "key": "automations.action.mode",
-      "values": {
-        "name": "Living room",
-        "mode": "heat"
-      }
+      "values": {"name": "Living room", "mode": "heat"}
     },
     {
       "key": "automations.action.fan",
-      "values": {
-        "name": "Living room",
-        "mode": "auto"
-      },
+      "values": {"name": "Living room", "mode": "auto"},
       "translated": "Living room ventilation auto"
     },
     {
       "key": "automations.action.swing",
-      "values": {
-        "name": "Living room",
-        "mode": "both"
-      },
+      "values": {"name": "Living room", "mode": "both"},
       "translated": "Living room oscillation both"
     },
     {
       "key": "automations.action.manualControl",
-      "values": {
-        "manual": "yes",
-        "lights": "Lamp"
-      }
+      "values": {"manual": "yes", "lights": "Lamp"}
     },
     {
       "key": "automations.action.manualControl",
-      "values": {
-        "manual": "no",
-        "lights": "that light"
-      }
+      "values": {"manual": "no", "lights": "that light"}
     },
     {
       "key": "automations.action.brightness",
-      "values": {
-        "name": "Lamp",
-        "pct": "40"
-      },
+      "values": {"name": "Lamp", "pct": "40"},
       "translated": "Lamp luminosité 40 %"
     },
     {
       "key": "automations.action.brightnessStep",
-      "values": {
-        "name": "Lamp"
-      },
+      "values": {"name": "Lamp"},
       "translated": "Lamp luminosité ± 5 % par cran"
     },
     {
       "key": "automations.action.helper",
-      "values": {
-        "name": "Away",
-        "state": "on"
-      },
+      "values": {"name": "Away", "state": "on"},
       "translated": "Away → activé"
     },
     {
       "key": "automations.action.helper",
-      "values": {
-        "name": "Away",
-        "state": "off"
-      },
+      "values": {"name": "Away", "state": "off"},
       "translated": "Away → désactivé"
     },
     {
       "key": "automations.action.helper",
-      "values": {
-        "name": "Away",
-        "state": "toggle"
-      },
+      "values": {"name": "Away", "state": "toggle"},
       "translated": "Away → basculer"
     },
     {
       "key": "automations.action.verbTarget",
-      "values": {
-        "verb": "Turn on",
-        "name": "Lamp"
-      }
+      "values": {"verb": "Turn on", "name": "Lamp"}
     },
     {
       "key": "automations.action.wait",
-      "values": {
-        "duration": "5 min"
-      },
+      "values": {"duration": "5 min"},
       "translated": "Attendre 5 min"
     },
     {
       "key": "automations.action.until",
-      "values": {
-        "text": "Front is closed"
-      },
+      "values": {"text": "Front is closed"},
       "translated": "Jusqu’à ce que Front is closed"
     },
     {
       "key": "automations.action.upTo",
-      "values": {
-        "text": "Until Front is closed",
-        "duration": "10 min"
-      },
+      "values": {"text": "Until Front is closed", "duration": "10 min"},
       "translated": "Until Front is closed, au plus 10 min"
     },
-    {
-      "key": "automations.action.stopHere",
-      "translated": "Arrêter ici"
-    },
+    {"key": "automations.action.stopHere", "translated": "Arrêter ici"},
     {
       "key": "automations.action.repeatUntil",
-      "values": {
-        "checks": "Lamp is on"
-      },
+      "values": {"checks": "Lamp is on"},
       "translated": "jusqu’à ce que Lamp is on"
     },
     {
       "key": "automations.action.repeatWhile",
-      "values": {
-        "checks": "Lamp is on"
-      },
+      "values": {"checks": "Lamp is on"},
       "translated": "tant que Lamp is on"
     },
     {
       "key": "automations.action.repeatCount",
-      "values": {
-        "count": "3"
-      },
+      "values": {"count": "3"},
       "translated": "3 fois"
     },
-    {
-      "key": "automations.action.repeatEach",
-      "translated": "pour chacun"
-    },
+    {"key": "automations.action.repeatEach", "translated": "pour chacun"},
     {
       "key": "automations.action.branches",
-      "values": {
-        "n": 1
-      },
+      "values": {"n": 1},
       "translated": "1 branche"
     },
     {
       "key": "automations.action.branches",
-      "values": {
-        "n": 2
-      }
+      "values": {"n": 2}
     },
+    {"key": "automations.action.unnamed", "translated": "étape"},
     {
-      "key": "automations.action.unnamed",
-      "translated": "étape"
+      "key": "automations.elapsed",
+      "values": {"hours": 0, "minutes": "4", "seconds": "07"}
     },
     {
       "key": "automations.elapsed",
-      "values": {
-        "hours": 0,
-        "minutes": "4",
-        "seconds": "07"
-      }
-    },
-    {
-      "key": "automations.elapsed",
-      "values": {
-        "hours": 1,
-        "minutes": "05",
-        "seconds": "00"
-      }
+      "values": {"hours": 1, "minutes": "05", "seconds": "00"}
     },
     {
       "key": "automations.timeline.what",
-      "values": {
-        "what": "scheduled"
-      }
+      "values": {"what": "scheduled"}
     },
     {
       "key": "automations.timeline.what",
-      "values": {
-        "what": "skip"
-      }
+      "values": {"what": "skip"}
     },
     {
       "key": "automations.timeline.what",
-      "values": {
-        "what": "now"
-      }
+      "values": {"what": "now"}
     },
     {
       "key": "automations.timeline.what",
-      "values": {
-        "what": "err"
-      }
+      "values": {"what": "err"}
     },
     {
       "key": "automations.timeline.what",
-      "values": {
-        "what": "ran"
-      }
+      "values": {"what": "ran"}
     },
     {
       "key": "automations.timeline.one",
-      "values": {
-        "time": "07:02",
-        "name": "Lights off",
-        "what": "ran"
-      },
+      "values": {"time": "07:02", "name": "Lights off", "what": "ran"},
       "translated": "07:02 Lights off, ran"
     },
     {
       "key": "automations.timeline.item",
-      "values": {
-        "name": "Lights off",
-        "what": "ran"
-      },
+      "values": {"name": "Lights off", "what": "ran"},
       "translated": "Lights off, ran"
     },
     {
       "key": "automations.timeline.group",
-      "values": {
-        "from": "07:02",
-        "to": "07:05",
-        "n": 2,
-        "items": "Lights off, ran · evening, ran"
-      },
+      "values": {"from": "07:02", "to": "07:05", "n": 2, "items": "Lights off, ran · evening, ran"},
       "translated": "De 07:02 à 07:05 · 2 exécutions · Lights off, ran · evening, ran"
     },
-    {
-      "key": "automations.kind.if",
-      "translated": "Si"
-    },
-    {
-      "key": "automations.kind.choose",
-      "translated": "Choix"
-    },
-    {
-      "key": "automations.list.then",
-      "values": {
-        "a": "At 18:00",
-        "b": "checks passed"
-      }
-    },
-    {
-      "key": "automations.graph.yes",
-      "translated": "oui"
-    },
-    {
-      "key": "automations.graph.no",
-      "translated": "non"
-    },
-    {
-      "key": "automations.graph.timedOut",
-      "translated": "délai dépassé"
-    },
-    {
-      "key": "automations.graph.done",
-      "translated": "terminé"
-    },
-    {
-      "key": "automations.graph.waiting"
-    },
-    {
-      "key": "automations.graph.waitingSince",
-      "values": {
-        "time": "07:02"
-      },
-      "translated": "en attente ici depuis 07:02"
-    },
-    {
-      "key": "automations.graph.any",
-      "translated": "UN DES"
-    },
-    {
-      "key": "automations.graph.anyOf",
-      "translated": "UN DE"
-    },
-    {
-      "key": "automations.graph.stop",
-      "translated": "ARRÊT"
-    },
-    {
-      "key": "automations.graph.ifQuestion",
-      "values": {
-        "checks": "Front is open"
-      },
-      "translated": "Front is open ?"
-    },
-    {
-      "key": "automations.graph.whichCase",
-      "translated": "Quel cas ?"
-    },
-    {
-      "key": "automations.graph.otherwise",
-      "translated": "sinon"
-    },
-    {
-      "key": "automations.graph.none",
-      "translated": "aucun"
-    },
-    {
-      "key": "automations.graph.again",
-      "translated": "encore"
-    },
-    {
-      "key": "automations.sentence.every",
-      "values": {
-        "what": "5 min"
-      },
-      "translated": "Chaque 5 min"
-    },
+    {"key": "automations.kind.if", "translated": "Si"},
+    {"key": "automations.kind.choose", "translated": "Choix"},
+    {"key": "automations.list.then", "values": {"a": "At 18:00", "b": "checks passed"}},
+    {"key": "automations.graph.yes", "translated": "oui"},
+    {"key": "automations.graph.no", "translated": "non"},
+    {"key": "automations.graph.timedOut", "translated": "délai dépassé"},
+    {"key": "automations.graph.done", "translated": "terminé"},
+    {"key": "automations.graph.waiting"},
+    {"key": "automations.graph.waitingSince", "values": {"time": "07:02"}, "translated": "en attente ici depuis 07:02"},
+    {"key": "automations.graph.any", "translated": "UN DES"},
+    {"key": "automations.graph.anyOf", "translated": "UN DE"},
+    {"key": "automations.graph.stop", "translated": "ARRÊT"},
+    {"key": "automations.graph.ifQuestion", "values": {"checks": "Front is open"}, "translated": "Front is open ?"},
+    {"key": "automations.graph.whichCase", "translated": "Quel cas ?"},
+    {"key": "automations.graph.otherwise", "translated": "sinon"},
+    {"key": "automations.graph.none", "translated": "aucun"},
+    {"key": "automations.graph.again", "translated": "encore"},
+    {"key": "automations.sentence.every", "values": {"what": "5 min"}, "translated": "Chaque 5 min"},
     {
       "key": "automations.sentence.everyAt",
-      "values": {
-        "what": "5 min",
-        "time": "07:02"
-      },
+      "values": {"what": "5 min", "time": "07:02"},
       "translated": "Chaque 5 min, à 07:02"
     },
-    {
-      "key": "automations.sentence.at",
-      "values": {
-        "what": "18:00"
-      },
-      "translated": "À 18:00"
-    },
+    {"key": "automations.sentence.at", "values": {"what": "18:00"}, "translated": "À 18:00"},
     {
       "key": "automations.sentence.startedAt",
-      "values": {
-        "what": "Sunrise",
-        "time": "06:52"
-      },
+      "values": {"what": "Sunrise", "time": "06:52"},
       "translated": "Sunrise à 06:52"
     },
-    {
-      "key": "automations.sentence.started",
-      "translated": "Démarrée"
-    },
+    {"key": "automations.sentence.started", "translated": "Démarrée"},
     {
       "key": "automations.sentence.stoppedAt",
-      "values": {
-        "check": "Heating away is off"
-      },
+      "values": {"check": "Heating away is off"},
       "translated": "arrêtée à « Heating away is off »"
     },
-    {
-      "key": "automations.sentence.skipped",
-      "translated": "sautée, elle tournait déjà"
-    },
-    {
-      "key": "automations.sentence.checksPassed",
-      "translated": "vérifications passées"
-    },
-    {
-      "key": "automations.sentence.inDelay",
-      "values": {
-        "delay": "wait 5 min"
-      },
-      "translated": "en pause : wait 5 min"
-    },
+    {"key": "automations.sentence.skipped", "translated": "sautée, elle tournait déjà"},
+    {"key": "automations.sentence.checksPassed", "translated": "vérifications passées"},
+    {"key": "automations.sentence.inDelay", "values": {"delay": "wait 5 min"}, "translated": "en pause : wait 5 min"},
     {
       "key": "automations.sentence.waiting",
-      "values": {
-        "step": "front closed"
-      },
+      "values": {"step": "front closed"},
       "translated": "en attente : front closed"
     },
-    {
-      "key": "automations.sentence.error"
-    },
+    {"key": "automations.sentence.error"},
     {
       "key": "automations.sentence.errorWith",
-      "values": {
-        "message": "Entity is unavailable"
-      },
+      "values": {"message": "Entity is unavailable"},
       "translated": "erreur : Entity is unavailable"
     },
-    {
-      "key": "automations.sentence.ran",
-      "values": {
-        "n": 1
-      },
-      "translated": "1 étape exécutée"
-    },
-    {
-      "key": "automations.sentence.ranAtOnce",
-      "values": {
-        "n": 3
-      },
-      "translated": "3 étapes exécutées d’un coup"
-    },
+    {"key": "automations.sentence.ran", "values": {"n": 1}, "translated": "1 étape exécutée"},
+    {"key": "automations.sentence.ranAtOnce", "values": {"n": 3}, "translated": "3 étapes exécutées d’un coup"},
     {
       "key": "automations.sentence.ranIn",
-      "values": {
-        "n": 3,
-        "duration": "4 s"
-      },
+      "values": {"n": 3, "duration": "4 s"},
       "translated": "3 étapes exécutées en 4 s"
     },
     {
       "key": "automations.sentence.ended",
-      "values": {
-        "text": "2 steps ran",
-        "how": "aborted"
-      }
+      "values": {"text": "2 steps ran", "how": "aborted"},
+      "translated": "2 steps ran (interrompue)"
     }
   ]
 }

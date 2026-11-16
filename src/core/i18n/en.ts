@@ -1126,7 +1126,7 @@ export const en = {
   'automations.sentence.ran': '{n, plural, one {# step} other {# steps}} ran',
   'automations.sentence.ranAtOnce': '{n, plural, one {# step} other {# steps}} ran at once',
   'automations.sentence.ranIn': '{n, plural, one {# step} other {# steps}} ran in {duration}',
-  'automations.sentence.ended': '{text} ({how})',
+  'automations.sentence.ended': '{text} ({how, select, aborted {aborted} cancelled {cancelled} other {{how}}})',
   // a run's time so far: minutes and seconds under an hour, then hours and minutes
   'automations.elapsed': '{hours, plural, =0 {{minutes}:{seconds}} other {{hours} h {minutes}}}',
   'automations.timeline.group': '{from} to {to} · {n, plural, one {# run} other {# runs}} · {items}',

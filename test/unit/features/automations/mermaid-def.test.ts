@@ -135,3 +135,40 @@ test('mixHex: 6 and 3 digits, with or without #; anything else is the first colo
   expect(mixHex('rgb(0,0,0)', '#fff', 0.5)).toBe('rgb(0,0,0)');
   expect(mixHex('#000', 'white', 0.5)).toBe('#000');
 });
+
+// #97's inputs one by one, each drawn as typed in every shape and on both kinds of edge
+describe.each([
+  ['the issue’s label', '50% ; #living_room $5', '50#37; ; #living_room <span>$</span>5'],
+  ['a typed entity', 'a #36; b', 'a #35;36; b'],
+  ['a percent at the end', 'Fan 100%', 'Fan 100#37;'],
+  ['a directive', '%%{init: {"theme": "dark"}}%%', '#37;#37;{init: {&quot;theme&quot;: &quot;dark&quot;}}#37;#37;'],
+  ['a formula', '$$x^2$$', '<span>$</span><span>$</span>x^2<span>$</span><span>$</span>'],
+  ['a # that ends a label', 'Room #', 'Room #'],
+])('%s', (_name, typed, drawn) => {
+  const shapes: GraphNode['shape'][] = ['stadium', 'circle', 'round', 'diamond', 'sub', 'stop'];
+  const def = toMermaid(
+    {
+      nodes: shapes.map(shape => node(shape, shape, {label: typed, sub: '', k: ''})),
+      edges: [
+        {from: 'stadium', to: 'round', label: typed, cls: 'on'},
+        {from: 'round', to: 'sub', label: typed, cls: 'off'},
+      ],
+      sentence: '',
+      failed: false,
+      waiting: false,
+    },
+    TOKENS,
+    false,
+  ).split('\n');
+  test.each(shapes.map((shape, i) => [shape, i + 1] as const))('in a %s', (_shape, line) => {
+    expect(def[line]).toContain(`>${drawn}</span>`);
+    expect(def[line].endsWith(';')).toBe(true);
+  });
+  test.each([
+    ['a taken edge', 7],
+    ['a dotted edge', 8],
+  ])('on %s', (_edge, line) => {
+    expect(def[line]).toContain(`>${drawn}</span>`);
+    expect(def[line].endsWith(';')).toBe(true);
+  });
+});

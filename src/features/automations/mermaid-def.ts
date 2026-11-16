@@ -2,7 +2,8 @@
 // the run did, and the link styles; Home Assistant's text written so Mermaid can only draw it, never read it as markup.
 // Pattern: a pure printer from the graph to Mermaid's flowchart syntax (Bernhardt, functional core), the legacy `auMermaid()`
 // and `auMix()`; the escaping is #97's (docs/specs/07, "As built (#97)").
-// Must not: read the theme or the DOM (the colours are passed in as tokens), load Mermaid, or word anything (the graph has).
+// Must not: read the theme or the DOM (the colours are passed in as tokens), load Mermaid, or word anything: it only
+// capitalises the graph's words and cuts a long sentence, as the legacy panel drew them.
 import {cut} from './sentences.ts';
 import type {Graph, GraphNode} from './graph.ts';
 

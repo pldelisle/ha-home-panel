@@ -1118,7 +1118,7 @@ export const fr: Record<MessageKey, string> = {
   'automations.sentence.ran': '{n, plural, one {# étape exécutée} other {# étapes exécutées}}',
   'automations.sentence.ranAtOnce': '{n, plural, one {# étape exécutée} other {# étapes exécutées}} d’un coup',
   'automations.sentence.ranIn': '{n, plural, one {# étape exécutée} other {# étapes exécutées}} en {duration}',
-  'automations.sentence.ended': '{text} ({how})',
+  'automations.sentence.ended': '{text} ({how, select, aborted {interrompue} cancelled {annulée} other {{how}}})',
   // a run's time so far: minutes and seconds under an hour, then hours and minutes
   'automations.elapsed': '{hours, plural, =0 {{minutes}:{seconds}} other {{hours} h {minutes}}}',
   'automations.timeline.group': 'De {from} à {to} · {n, plural, one {# exécution} other {# exécutions}} · {items}',
