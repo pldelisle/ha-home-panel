@@ -784,6 +784,20 @@ export const en = {
   'climate.hpFan': 'Fan: {fan}',
   'climate.hpPreset': 'Preset: {preset}',
   'climate.hpSwing': 'Louvers: {swing}',
+  // the Car's first words (src/features/car/schedule.ts and src/providers/wallbox.ts): the departure schedule's draft, its two toasts, and the charging switch's;
+  // the rest of the Car's strings come with its model (#250). The abbreviations of the days are one select, whose `other` says the day as it came
+  'car.chargingOn': 'Charging on',
+  'car.chargingOff': 'Charging off',
+  'car.pickTemperature': 'Pick a cabin temperature first',
+  'car.pickDay': 'Pick at least one day',
+  'car.everyDay': 'every day',
+  'car.weekdays': 'weekdays',
+  'car.noDays': 'no days',
+  'car.dayShort':
+    '{day, select, monday {Mon} tuesday {Tue} wednesday {Wed} thursday {Thu} friday {Fri} saturday {Sat} sunday {Sun} other {{day}}}',
+  'car.at': '{days} at {time}',
+  'car.departureOn': 'On · {when}',
+  'car.departureOff': 'Off · {when} saved',
 } as const;
 
 /** Every message key; a key exists when it is written in `en`. */

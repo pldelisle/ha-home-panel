@@ -1,0 +1,35 @@
+{
+  "about": "The English messages the Car move's pure half introduced (src/core/i18n/en.ts, car.*), each with sample values; the rest of the Car's strings come with its model (#250). test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer makes of the English, or what is `written` where the layer's output depends on the sentence the word sits in (a day's abbreviation is `Lun.` alone and `lun.` in a list: the catalog says the list's). The legacy panel still draws all of these until #253, so no entry of the rewrite layer is deleted yet. Deleted with the layer in phase 4.",
+  "messages": [
+    {"key": "car.chargingOn"},
+    {"key": "car.chargingOff"},
+    {"key": "car.pickTemperature"},
+    {"key": "car.pickDay"},
+    {"key": "car.everyDay"},
+    {"key": "car.weekdays"},
+    {"key": "car.noDays"},
+    {"key": "car.dayShort", "values": {"day": "monday"}, "written": "lun."},
+    {"key": "car.dayShort", "values": {"day": "tuesday"}, "written": "mar."},
+    {"key": "car.dayShort", "values": {"day": "wednesday"}, "written": "mer."},
+    {"key": "car.dayShort", "values": {"day": "thursday"}, "written": "jeu."},
+    {"key": "car.dayShort", "values": {"day": "friday"}, "written": "ven."},
+    {"key": "car.dayShort", "values": {"day": "saturday"}, "written": "sam."},
+    {"key": "car.dayShort", "values": {"day": "sunday"}, "written": "dim."},
+    {"key": "car.dayShort", "values": {"day": "someday"}, "written": "someday"},
+    {
+      "key": "car.at",
+      "values": {"days": "weekdays", "time": "8:30 am"},
+      "fr": {"days": "en semaine", "time": "8 h 30"}
+    },
+    {
+      "key": "car.departureOn",
+      "values": {"when": "weekdays at 8:30 am"},
+      "fr": {"when": "en semaine à 8 h 30"}
+    },
+    {
+      "key": "car.departureOff",
+      "values": {"when": "weekdays at 8:30 am"},
+      "fr": {"when": "en semaine à 8 h 30"}
+    }
+  ]
+}

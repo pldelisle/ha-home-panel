@@ -34,6 +34,9 @@ const rows: Row[] = [
   ['time 16:07', f => f.time(T1607), '4:07 pm', '16 h 07', '16:07'],
   ['time 16:00', f => f.time(T1600), '4:00 pm', '16 h', '16:00'],
   ['time after midnight', f => f.time(T0030), '12:30 am', '0 h 30', '0:30'],
+  ['clock 8:30', f => f.clock(8, 30), '8:30 am', '8 h 30', '8:30'],
+  ['clock 16:00', f => f.clock(16, 0), '4:00 pm', '16 h', '16:00'],
+  ['clock midnight', f => f.clock(0, 0), '12:00 am', '0 h', '0:00'],
   ['hour 16:07', f => f.hour(T1607), '4 pm', '16 h', '16 Uhr'],
   ['hour 16:00', f => f.hour(T1600), '4 pm', '16 h', '16 Uhr'],
   ['hour at midnight', f => f.hour(T0030), '12 am', '0 h', '00 Uhr'],
@@ -129,6 +132,12 @@ describe('the time zone is the locale spec', () => {
     const f = make('en-CA', {timeZone: 'Europe/Paris'});
     expect(f.time(T1607)).toBe('10:07 pm');
     expect(f.isoDay(T2230)).toBe('2026-11-08');
+  });
+
+  test('a time of day is the same in every zone, and follows the hour cycle', () => {
+    expect(make('en-CA', {timeZone: 'Asia/Tokyo'}).clock(8, 30)).toBe('8:30 am');
+    expect(make('fr-CA', {timeZone: 'Pacific/Auckland'}).clock(8, 30)).toBe('8 h 30');
+    expect(make('en-CA', {hour12: false}).clock(8, 30)).toBe('08:30');
   });
 });
 

@@ -2,7 +2,7 @@
 // Pattern: a factory returning the instance's functions and its per-hour cache (Ousterhout, deep module), on the same CLDR
 // data as Home Assistant's formatTime and formatNumber. Deliberate overrides of CLDR and `Intl`, and the only post-processing:
 // the three house rules (en-* am/pm without periods, fr-* "16 h" on the hour, fr-* thousands U+202F), number() and fixed() clamping
-// their fraction digits to 2, time24 and time24s joining the parts with a colon and Latin digits in every locale (the table asks for `16:07`),
+// their fraction digits to 2, `clock` placing a time of day on a fixed UTC day, time24 and time24s joining the parts with a colon and Latin digits in every locale (the table asks for `16:07`),
 // and `ago`, the one function that returns no text: it cuts a span into a kind and a count (the legacy rule) and formats only the date, so the words stay in the catalog.
 // Beside the factory, the module functions over an instance: `fixedOr`, `whole`, `degrees`, and the day keys' `utcNoonOf` and `noonOf`.
 // Must not: read the clock, the DOM or a browser default, or hold a word a person reads.
@@ -28,6 +28,8 @@ export type Ago =
 export interface Formatters {
   /** `4:07 pm`, `16 h 07`, `16:07`. */
   time(d: Instant): string;
+  /** A time of day with no date, such as a schedule's hours and minutes, as `time` writes it; no zone moves it: `8:30 am`, `8 h 30`. */
+  clock(hours: number, minutes: number): string;
   /** `4 pm`, `16 h`, `16 Uhr`. */
   hour(d: Instant): string;
   /** `16:07`, never `24:07`, whatever the locale. */
@@ -111,6 +113,8 @@ export function createFormatters(locale: PanelLocaleSpec): Formatters {
 
   const time = dateFormat({hour: 'numeric', minute: '2-digit', hour12});
   const hour = dateFormat({hour: 'numeric', hour12});
+  // a time of day is placed on a fixed day in UTC and read back by a UTC-pinned format, so neither the browser's zone nor the house's moves it
+  const clockFormat = new Intl.DateTimeFormat(tag, {timeZone: 'UTC', hour: 'numeric', minute: '2-digit', hour12});
   const clock = partsOf({hour: '2-digit', minute: '2-digit', hourCycle: 'h23'});
   const clockS = partsOf({hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23'});
   const date = dateFormat({month: 'short', day: 'numeric'});
@@ -139,6 +143,7 @@ export function createFormatters(locale: PanelLocaleSpec): Formatters {
 
   return {
     time: d => timeRule(time.format(d)),
+    clock: (hours, minutes) => timeRule(clockFormat.format(Date.UTC(2026, 0, 1, hours, minutes))),
     hour: d => hourRule(hour.format(d)),
     time24: d => {
       const part = clock(d);

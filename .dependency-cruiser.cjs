@@ -89,8 +89,9 @@ module.exports = {
     {
       name: 'no-orphans',
       severity: 'error',
-      comment: 'A module nothing imports is dead code. The entry and declaration files are the exceptions.',
-      from: {orphan: true, pathNot: [ENTRY, '\\.d\\.ts$']},
+      comment:
+        'A module nothing imports is dead code. The entry and declaration files are the exceptions; so is the car card’s bars geometry until the card (#251) reads it.',
+      from: {orphan: true, pathNot: [ENTRY, '\\.d\\.ts$', '^src/features/car/bars-geometry\\.ts$']},
       to: {},
     },
     {

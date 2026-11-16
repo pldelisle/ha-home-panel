@@ -774,4 +774,16 @@ export const fr: Record<MessageKey, string> = {
   'climate.hpFan': 'Ventilateur : {fan}',
   'climate.hpPreset': 'Préréglage : {preset}',
   'climate.hpSwing': 'Volets : {swing}',
+  'car.chargingOn': 'Recharge activée',
+  'car.chargingOff': 'Recharge en pause',
+  'car.pickTemperature': "Choisissez d'abord une température d'habitacle",
+  'car.pickDay': 'Choisissez au moins un jour',
+  'car.everyDay': 'tous les jours',
+  'car.weekdays': 'en semaine',
+  'car.noDays': 'aucun jour',
+  'car.dayShort':
+    '{day, select, monday {lun.} tuesday {mar.} wednesday {mer.} thursday {jeu.} friday {ven.} saturday {sam.} sunday {dim.} other {{day}}}',
+  'car.at': '{days} à {time}',
+  'car.departureOn': 'Activé · {when}',
+  'car.departureOff': 'Désactivé · {when} enregistré',
 };
