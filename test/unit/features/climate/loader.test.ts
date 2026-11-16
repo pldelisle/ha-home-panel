@@ -4,12 +4,8 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest';
 import {StaleReply} from '../../../../src/core/api.ts';
 import {DEFAULT_ENTITIES} from '../../../../src/core/entities.ts';
 import type {HistoryPoint, StatisticRow} from '../../../../src/core/ha.ts';
-import {
-  HISTORY_TTL_MS,
-  RETRY_MS,
-  ClimateHistory,
-  type ClimateHistoryDeps,
-} from '../../../../src/features/climate/loader.ts';
+import {HISTORY_RETRY_MS} from '../../../../src/core/statistics-cache.ts';
+import {HISTORY_TTL_MS, ClimateHistory, type ClimateHistoryDeps} from '../../../../src/features/climate/loader.ts';
 import type {Range} from '../../../../src/ui/ranges.ts';
 
 const NOW = Date.parse('2026-11-09T09:45:00-05:00');
@@ -260,7 +256,7 @@ describe('ClimateHistory', () => {
     expect(history.failed('day', 2)).toBe(false);
     expect(console.error).toHaveBeenCalledTimes(1);
     history.hostUpdate();
-    await vi.advanceTimersByTimeAsync(RETRY_MS - 1);
+    await vi.advanceTimersByTimeAsync(HISTORY_RETRY_MS - 1);
     history.hostUpdate();
     await settle();
     expect(calls.statistics).toHaveLength(1);

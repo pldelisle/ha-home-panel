@@ -6,16 +6,13 @@ import type {ReactiveController, ReactiveControllerHost} from 'lit';
 import {StaleReply} from '../../core/api.ts';
 import {MINUTE_MS} from '../../core/figures.ts';
 import type {HistoryPoint} from '../../core/ha.ts';
-import type {StatisticsCache} from '../../core/statistics-cache.ts';
+import {HISTORY_RETRY_MS, type StatisticsCache} from '../../core/statistics-cache.ts';
 import type {PanelStore} from '../../core/store.ts';
 import type {Range} from '../../ui/ranges.ts';
 import {climateWindow, deriveClimateHistory, type ClimateHistoryData} from './history.ts';
 
 /** How long a range's entry is drawn from memory before the next update asks again: the ten minutes of spec 20 and #246, shorter than the cache's own fifteen (`STATISTICS_TTL_MS`), which only bounds how long a read answers a repeated request. */
 export const HISTORY_TTL_MS = 10 * MINUTE_MS;
-
-/** How soon after a failure the next update asks again for the same range: a failed load must not turn every update into a request. */
-export const RETRY_MS = MINUTE_MS;
 
 /** What it asks of the panel and of the pane, read at each use: the cache is there once the pane connects, and the range follows the tabs. */
 export interface ClimateHistoryDeps {
@@ -99,7 +96,7 @@ export class ClimateHistory implements ReactiveController {
     if (entry && entry.generation === generation && now - entry.data.at < HISTORY_TTL_MS) return;
     const {request, failure} = this;
     if (request?.range === range && request.generation === generation) return;
-    if (failure?.range === range && failure.generation === generation && now - failure.at < RETRY_MS) return;
+    if (failure?.range === range && failure.generation === generation && now - failure.at < HISTORY_RETRY_MS) return;
     // asking for another range lets go of the one in flight: its reply would be for what is not shown
     const asked: Request = (this.request = {range, generation});
     try {

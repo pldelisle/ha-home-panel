@@ -1,14 +1,15 @@
 // <hp-climate-detail>: the selection's head (title, line, state pill), then the gauge and the big number on a tablet or the dial on a phone, the tiles, the chart and the note.
-// Pattern: humble object (Meszaros, xUnit Test Patterns) placing the model's `detail` and the options `ClimateCharts` made; the legacy panel's controls, which it still draws until #248,
+// Pattern: humble object (Meszaros, xUnit Test Patterns) placing the model's `detail` and the options `ClimateCharts` made, through `chart-place.ts`; the legacy panel's controls, which it still draws until #248,
 // come through a named slot (Lit docs, Shadow DOM: Slots) forwarded from the pane, in the place the legacy detail had them under the head. The chart is `<hp-chart>` (ADR 0022).
 // Must not: read an entity, compute a figure or word a string (the model does), build the chart's options (the pane's `ClimateCharts` does), or be given the selection by anyone but the pane.
 import {LitElement, html, nothing, svg, unsafeCSS} from 'lit';
 import {keyed} from 'lit/directives/keyed.js';
 import {repeat} from 'lit/directives/repeat.js';
+import {chartPlace, legendItems} from './chart-place.ts';
 import './dial.ts'; // defines <hp-dial>
 import './gauge.ts'; // defines <hp-gauge>
 import detailOwn from './climate-detail.element.css?inline';
-import type {ChartNotice, ClimateSelection, ClimateViewModel, LegendItem} from './model.ts';
+import type {ClimateSelection, ClimateViewModel} from './model.ts';
 import '../../ui/chart.ts'; // defines <hp-chart>
 import type {ChartOptions} from '../../ui/chart-options.ts';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
@@ -17,18 +18,6 @@ import {chart, common, inner, tiles} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
 type Detail = ClimateViewModel['detail'];
-
-/** What stands in a chart's place before there is a line: the paragraph the legacy panel wrote there, the failure's plain and the others as the kit's waiting line. */
-export const noticeLine = ({kind, text}: ChartNotice) =>
-  html`<p class=${kind === 'failed' ? '' : 'loading'}>${text}</p>`;
-
-/** A chart's legend: a swatch and a name, or a dashed stroke for a dashed line. */
-export const legendItems = (items: readonly LegendItem[]) =>
-  items.map(({name, color, dashed}) =>
-    dashed
-      ? html`<span><b class="dash" style=${`color:${color}`}></b>${name}</span>`
-      : html`<span><b style=${`background:${color}`}></b>${name}</span>`,
-  );
 
 /** The detail's badge, the legacy sheet's own art, where the rail and the phone's header draw the `therm` icon. */
 export const detailIcon = svg`<svg
@@ -98,15 +87,8 @@ export class ClimateDetail extends LitElement {
 
   // the legend and the chart; until the range is loaded (or when it failed) the line that says so stands in the chart's place
   private renderChart({title, sub, chart: block}: Detail) {
-    const {chart: options} = this;
     return html`<div class="legend">${legendItems(block.legend)}<span class="muted">${block.rangeLabel}</span></div>
-      ${
-        block.notice
-          ? noticeLine(block.notice)
-          : options
-            ? html`<hp-chart .height=${230} .label=${`${title}. ${sub}`} .options=${options}></hp-chart>`
-            : nothing
-      }`;
+      ${chartPlace(block, this.chart, 230, `${title}. ${sub}`)}`;
   }
 
   // the phone: the dial, an image whose name says its value, redrawn from its first frame for each room chosen

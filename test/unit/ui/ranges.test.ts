@@ -1,5 +1,6 @@
-// RANGES against the legacy panel's CRANGE, which it copied and which #246 deleted: the same four ranges, the same spans, periods, ticks and tooltip
-// formats, and the English words of the catalog equal to the class's. The table below is the class's, as it was, so the numbers and the words stay pinned.
+// RANGES against the legacy panel's CRANGE, which it copied: the same four ranges, the same spans, periods, ticks and tooltip formats, and the English
+// words of the catalog equal to the class's. The guard once read the table from the class's source; #246 deleted CRANGE, and the snapshot below is it
+// as it was, kept so that a change to a range's numbers or words is a deliberate one, made here as well, and not a slip.
 import {describe, expect, test} from 'vitest';
 import {en} from '../../../src/core/i18n/en.ts';
 import {bucketMiddle, RANGES, type Range} from '../../../src/ui/ranges.ts';

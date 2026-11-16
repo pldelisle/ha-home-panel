@@ -28,6 +28,7 @@ src/features/climate/
   climate-pane.ts          <hp-climate-pane>: the header, the phone's tiles and sheet, the tablet's list and detail; keeps the room and the range
   climate-list.ts          <hp-climate-list>: the listbox of the house, the rooms and the heat pump; tells its choice as `select`
   climate-detail.ts        <hp-climate-detail>: the head, the gauge or the dial, the tiles, the chart and the note, with a slot for the legacy controls
+  chart-place.ts           legendItems, noticeLine, chartPlace: a chart's legend and its place (the notice, the <hp-chart>, or nothing) for the detail and the pane
   gauge.ts, dial.ts        <hp-gauge> and <hp-dial>: the geometry placed with svg templates; the dial is an image until #248
   heatmap-legend.ts        <hp-heat-legend>: the heat scale's colour bar and its degrees
   *.element.css            each element's own rules, moved from the legacy sheet

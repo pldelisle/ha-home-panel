@@ -159,6 +159,10 @@ describe('ClimateCharts', () => {
     expect(renamed.heatmap).not.toBe(first.heatmap);
     expect(seriesOf(renamed.heatmap!)[0].name).toBe('Attic');
     expect(renamed.chart).toBe(first.chart);
+    // a room swapped for another with the same name draws its own readings: the slot keys on the room, not only its word
+    const swapped = charts.build({...input, heatmapRooms: [{key: 'den', name: 'Loft'}, ROOMS[1]]}, page);
+    expect(swapped.heatmap).not.toBe(first.heatmap);
+    expect(seriesOf(swapped.heatmap!)[0].data).toEqual(seriesOf(first.heatmap!)[1].data);
   });
 
   test('the phone asks for the room chart only, and a house with no thermostat has no heatmap', () => {

@@ -47,7 +47,7 @@ export interface ClimateOptions {
   outside: ChartOptions | null;
 }
 
-/** A chart's last build: what it was made from (the history by identity, the rest as text) and the options it made. */
+/** A chart's last build: what it was made from (the history by identity, the rest as text: the heatmap's rows by key and name, so a room swapped for another of the same name is drawn) and the options it made. */
 interface Slot {
   history: ClimateHistoryData;
   key: string;
@@ -77,7 +77,7 @@ export class ClimateCharts {
       : this.slot(
           this.heatmap,
           history,
-          `${base}/${deps.compact}/${heatmapRooms.map(room => room.name).join('|')}`,
+          `${base}/${deps.compact}/${heatmapRooms.map(room => `${room.key}=${room.name}`).join('|')}`,
           () => {
             const rows: HeatRow[] = heatmapRooms.map(room => ({
               name: room.name,

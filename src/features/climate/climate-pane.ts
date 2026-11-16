@@ -9,7 +9,8 @@ import {repeat} from 'lit/directives/repeat.js';
 import {ClimateCharts, type ClimateOptions} from './charts.ts';
 import './climate-detail.ts'; // defines <hp-climate-detail>
 import './climate-list.ts'; // defines <hp-climate-list>
-import {detailIcon, legendItems, noticeLine} from './climate-detail.ts';
+import {chartPlace, legendItems} from './chart-place.ts';
+import {detailIcon} from './climate-detail.ts';
 import type {SelectDetail} from './climate-list.ts';
 import paneOwn from './climate-pane.element.css?inline';
 import {ClimateDetailEvent} from './events.ts';
@@ -270,36 +271,22 @@ export class ClimatePane extends LitElement {
   // The heatmap: its title and line, the colour bar, and the chart, or what stands in for it while the range loads
   private renderHeatmap(block: HeatmapBlock | null) {
     if (!block) return nothing;
-    const options = this.drawn?.heatmap;
     return html`<div class="inner">
       <h3>${block.title}</h3>
       <p>${block.hint}</p>
       <hp-heat-legend></hp-heat-legend>
-      ${
-        block.notice
-          ? noticeLine(block.notice)
-          : options
-            ? html`<hp-chart .height=${300} .label=${`${block.title}. ${block.hint}`} .options=${options}></hp-chart>`
-            : nothing
-      }
+      ${chartPlace(block, this.drawn?.heatmap, 300, `${block.title}. ${block.hint}`)}
     </div>`;
   }
 
   // the outside chart: a band from each bucket's low to its high, and the mean's line over it
   private renderOutside(block: OutsideBlock | null) {
     if (!block) return nothing;
-    const options = this.drawn?.outside;
     return html`<div class="inner">
       <h3>${block.title}</h3>
       <p>${block.note}</p>
       <div class="legend">${legendItems(block.legend)}</div>
-      ${
-        block.notice
-          ? noticeLine(block.notice)
-          : options
-            ? html`<hp-chart .height=${260} .label=${`${block.title}. ${block.note}`} .options=${options}></hp-chart>`
-            : nothing
-      }
+      ${chartPlace(block, this.drawn?.outside, 260, `${block.title}. ${block.note}`)}
     </div>`;
   }
 
