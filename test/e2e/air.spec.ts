@@ -211,7 +211,7 @@ test.describe('on a tablet', () => {
   });
 
   // the radio group's keys (<hp-seg>, #247): one tab stop on the chosen option, and an arrow moves the choice and the focus together
-  test('the arrow keys move the mode group: Right chooses Manual and sends the call, Left goes back, and only the chosen option is a tab stop', async ({
+  test('the arrow keys move the mode group: Right chooses Manual and sends the call, Left goes back, End and Home go to the ends, and only the chosen option is a tab stop', async ({
     house,
   }) => {
     await house.tab('air');
@@ -229,7 +229,14 @@ test.describe('on a tablet', () => {
     await house.page.keyboard.press('ArrowLeft');
     await expect(automagic).toHaveAttribute('aria-checked', 'true');
     await expect(automagic).toBeFocused();
-    expect(calls(house, 'fan.set_preset_mode'), 'one call for each key').toHaveLength(2);
+    await expect.poll(() => calls(house, 'fan.set_preset_mode').length, 'one call for each key').toBe(2);
+    await house.page.keyboard.press('End');
+    await expect(manual).toHaveAttribute('aria-checked', 'true');
+    await expect(manual).toBeFocused();
+    await house.page.keyboard.press('Home');
+    await expect(automagic).toHaveAttribute('aria-checked', 'true');
+    await expect(automagic).toBeFocused();
+    await expect.poll(() => calls(house, 'fan.set_preset_mode').length, 'and one for End and for Home').toBe(4);
   });
 
   test('three quick taps on + show each speed at once and send one fan.set_percentage, at the last speed', async ({

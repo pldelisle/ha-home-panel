@@ -74,7 +74,7 @@ src/features/climate/
   styles.css
 src/ui/
   seg.ts                   <hp-seg> (radio group; pull request 3, #247)
-  controllers/armed.ts     ArmedController (pull request 3)
+  controllers/armed.ts     ArmedController (pull request 3, #247)
   styles/seg.css
 test/unit/
   providers/heat-pump.test.ts
@@ -148,7 +148,7 @@ export interface ClimateViewModel {
 - **`<hp-dial>`**: properties `geometry`, `editable`, `lo`, `hi`, `value`, `label`; `role="slider"` with `aria-valuemin/max/now/text` when editable, `role="img"` otherwise; pull request 3 adds the pointer handlers (`pointerdown` sets a capture and dispatches `dial-input` with the value from `dialValueFromPointer`, `pointermove` while captured, `pointerup` dispatches `dial-change`) and the keyboard (arrows by half a degree, Home and End); the host holds the value through the overlay and debounces the command by 1,100 ms.
 - **`<hp-climate-controls>`**: renders `ControlsView`: `<hp-seg>` for the modes, fan, preset and quick setpoints? No: the quick setpoints are `.quick` buttons with `aria-pressed`, kept as they are; `<hp-stepper>` for the targets (step 0.5, the "Off" value text when at the frost guard); a `select.csel` for the louvers; the two `.abtn` with the `armed` class and the "Tap again" text from `ArmedController`.
 - **`<hp-seg>`** (`src/ui/seg.ts`, pull request 3): `options: {value, label, sub?}[]`, `value`, `label` (aria), `disabled`; renders `.seg[role=radiogroup] > button[role=radio][aria-checked]` with arrow-key movement between options (today's markup has none; adding it changes no pixel and axe accepts both; the behaviour is an improvement the pull request names); dispatches `change`. Air's mode group and metric group switch to it in the same pull request (its second and third users; `src/ui/styles/seg.css` takes the `.seg` rules from `base.css` ~935 to 990 and `motion.css` 54).
-- **`ArmedController`** (`src/ui/controllers/armed.ts`): `arm(key)`, `isArmed(key)`, `confirm(key): boolean` (true when the key was armed; clears), a four-second timer that disarms and updates the host; the second tap pattern of the climate "all" buttons and of the car's remote start and unlock (spec 21).
+- **`ArmedController`** (`src/ui/controllers/armed.ts`, #247): `ArmedController(host, {ms})` (no `now`: it never reads the clock, and its tests use Vitest fake timers), `arm(key)`, `isArmed(key)`, `confirm(key): boolean` (true when the key was armed; clears), a four-second timer that disarms and updates the host; the second tap pattern of the climate "all" buttons and of the car's remote start and unlock (spec 21).
 - `commands.ts`: `setRoomTemperature(room, value)` (hold `K.sp(room.climate)`, `climate.set_temperature`, done `climate.roomSet` or `climate.roomOff`); `setAllRooms(rooms, value)` (hold every room; one `set_temperature` with the list of ids; done `climate.allSet`/`allOff`); `hpMode(hp, mode)` (`set_hvac_mode`, done `climate.hpMode` with the HVAC word), `hpTemperature`, `hpFan` (`set_fan_mode`), `hpPreset` (`set_preset_mode`), `hpSwing` (`set_swing_mode`, done with `swingName`'s rule as keys `climate.swing.*`). The stepper rules (below 5.5 going down is `lo`; up from off is 15; snapped to halves) are in `commands.ts` as `nextSetpoint(current, delta, lo, hi)`, pure and tested.
 
 ### Styles

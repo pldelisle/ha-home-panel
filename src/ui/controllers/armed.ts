@@ -1,6 +1,6 @@
 // ArmedController: the second tap that confirms what a stray touch must not do: the first tap arms a key, a second within four seconds confirms it, and the arming lapses.
 // Pattern: Lit reactive controller (Lit docs, Reactive Controllers) holding a small state machine per key; the host redraws when a key is armed or lapses, and the timers go with the host.
-// Climate's "Set all" and "All off" use it, and the car's remote start and unlock will (spec 21). Must not: send a command (the owner does, on `confirm`), word the "Tap again" text, or outlive its host.
+// Climate's controls ("Set all" and "All off", #248) and Car's remote start and unlock (#250) will use it; nothing does yet. Must not: send a command (the owner does, on `confirm`), word the "Tap again" text, or outlive its host.
 import type {ReactiveController, ReactiveControllerHost} from 'lit';
 
 /** How long an armed key waits for its second tap: the legacy panel's four seconds. */

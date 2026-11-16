@@ -11,16 +11,16 @@ import {common, seg} from './styles/index.ts';
 import {forShadow} from './styles/host.ts';
 
 /** One option: the value it chooses, its word, a smaller word under it, and whether it can be chosen. */
-export interface SegOption {
-  value: string;
+export interface SegOption<V extends string = string> {
+  value: V;
   label: string;
   sub?: string;
   disabled?: boolean;
 }
 
 /** What the group says when an option is chosen, by a tap or a key: the value now asked for. */
-export interface SegChangeDetail {
-  value: string;
+export interface SegChangeDetail<V extends string = string> {
+  value: V;
 }
 
 export class HpSeg extends LitElement {
@@ -54,9 +54,10 @@ export class HpSeg extends LitElement {
 
   protected override render() {
     const {disabled} = this;
-    const stop = tabStop(this.options.map(option => ({...option, checked: option.value === this.value})));
+    const checked = this.checkedIndex;
+    const stop = tabStop(this.options.map((option, index) => ({...option, checked: index === checked})));
     return html`<div
-      class=${disabled ? 'seg dis' : 'seg'}
+      class="seg"
       role="radiogroup"
       aria-label=${this.label ?? nothing}
       aria-disabled=${disabled ? 'true' : 'false'}
@@ -69,7 +70,7 @@ export class HpSeg extends LitElement {
           html`<button
             type="button"
             role="radio"
-            aria-checked=${value === this.value ? 'true' : 'false'}
+            aria-checked=${index === checked ? 'true' : 'false'}
             tabindex=${index === stop ? 0 : -1}
             ?disabled=${disabled || off}
             @click=${() => this.choose(value)}
@@ -78,6 +79,11 @@ export class HpSeg extends LitElement {
           </button>`,
       )}
     </div>`;
+  }
+
+  // where the owner's `value` sits among the options, -1 when it names none
+  private get checkedIndex(): number {
+    return this.options.findIndex(({value}) => value === this.value);
   }
 
   // a tap says its option, even the one already chosen: the owner may send the value again, as the legacy buttons did
@@ -91,7 +97,7 @@ export class HpSeg extends LitElement {
     // the buttons are the options, one for one: the focused one is where a key starts, else the chosen one
     const buttons = [...this.renderRoot.querySelectorAll<HTMLButtonElement>('button[role="radio"]')];
     const focused = buttons.findIndex(button => button === this.shadowRoot?.activeElement);
-    const from = focused >= 0 ? focused : this.options.findIndex(({value}) => value === this.value);
+    const from = focused >= 0 ? focused : this.checkedIndex;
     const to = moveTo(this.options, Math.max(from, 0), e.key);
     if (to === null) return;
     e.preventDefault();

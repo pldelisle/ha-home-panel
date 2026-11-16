@@ -1,6 +1,6 @@
 /*
  * <hp-seg>'s own rules: the host is a block its owner sizes from outside (`flex`, `max-width`, `margin` on the tag), and the two read-only looks, a whole group
- * (the legacy `.seg.dis`, which Car's groups still draw in the legacy sheet until #253) and a single option that cannot be chosen. The control itself is the kit's `.seg`.
+ * (`aria-disabled='true'` on the radiogroup, which the legacy sheet's `.seg.dis` copies for Car's groups until #253) and a single option that cannot be chosen. The control itself is the kit's `.seg`.
  */
 :host {
   display: block;

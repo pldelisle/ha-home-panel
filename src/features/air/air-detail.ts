@@ -39,7 +39,7 @@ import '../../ui/range-tabs.ts'; // defines <hp-range-tabs>
 import type {RangeChangeDetail} from '../../ui/range-tabs.ts';
 import {RANGES, type Range} from '../../ui/ranges.ts';
 import '../../ui/seg.ts'; // defines <hp-seg>
-import type {SegChangeDetail} from '../../ui/seg.ts';
+import type {SegChangeDetail, SegOption} from '../../ui/seg.ts';
 import {chart, common, inner, tiles} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
@@ -280,9 +280,9 @@ export class AirDetail extends LitElement {
       <hp-seg
         class="aqmetric"
         .label=${history.label}
-        .options=${history.metrics.map(({metric, label}) => ({value: metric, label}))}
+        .options=${history.metrics.map(({metric, label}): SegOption<ChartMetric> => ({value: metric, label}))}
         .value=${history.metric}
-        @change=${(e: CustomEvent<SegChangeDetail>) => this.onChosen(history.metrics, e.detail.value)}
+        @change=${(e: CustomEvent<SegChangeDetail<ChartMetric>>) => this.onMetric(e.detail.value)}
       ></hp-seg>
       ${this.renderLegend(metricSlot.built?.legend)}
       ${this.renderChart(metricSlot, {
@@ -342,12 +342,6 @@ export class AirDetail extends LitElement {
   private readonly onRange = (event: CustomEvent<RangeChangeDetail>): void => {
     this.dispatchEvent(new CustomEvent<RangeChangeDetail>('range-chosen', {detail: event.detail}));
   };
-
-  // the group says the value of the option chosen; the detail's own list says which metric that is
-  private onChosen(metrics: Detail['history']['metrics'], value: string): void {
-    const chosen = metrics.find(({metric}) => metric === value);
-    if (chosen) this.onMetric(chosen.metric);
-  }
 
   private onMetric(metric: ChartMetric): void {
     if (metric !== this.metric)

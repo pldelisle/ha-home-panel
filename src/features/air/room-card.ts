@@ -16,7 +16,7 @@ import {OptimisticController} from '../../ui/controllers/optimistic.ts';
 import {StoreController} from '../../ui/controllers/store-controller.ts';
 import {lensLike} from '../../ui/lens.ts';
 import '../../ui/seg.ts'; // defines <hp-seg>
-import type {SegChangeDetail} from '../../ui/seg.ts';
+import type {SegChangeDetail, SegOption} from '../../ui/seg.ts';
 import '../../ui/stepper.ts'; // defines <hp-stepper>
 import type {StepDetail} from '../../ui/stepper.ts';
 import {common, tiles} from '../../ui/styles/index.ts';
@@ -102,18 +102,12 @@ export class AirRoom extends LitElement {
     return html`<div class="aqctl">
       <hp-seg
         .label=${control.modeLabel}
-        .options=${control.modes.map(({mode, label}) => ({value: mode, label}))}
+        .options=${control.modes.map(({mode, label}): SegOption<Mode> => ({value: mode, label}))}
         .value=${control.modes.find(({checked}) => checked)?.mode}
-        @change=${(e: CustomEvent<SegChangeDetail>) => this.onChosen(room, control, e.detail.value)}
+        @change=${(e: CustomEvent<SegChangeDetail<Mode>>) => this.onMode(room, e.detail.value)}
       ></hp-seg>
       ${this.renderSpeed(room, control)}
     </div>`;
-  }
-
-  // the group says the value of the option chosen; the control's own list says which mode that is
-  private onChosen(room: RoomDetail, {modes}: OnlineControl, value: string): void {
-    const chosen = modes.find(({mode}) => mode === value);
-    if (chosen) this.onMode(room, chosen.mode);
   }
 
   private renderSpeed(room: RoomDetail, {speed, hint}: OnlineControl) {
