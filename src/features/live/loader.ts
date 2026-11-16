@@ -22,7 +22,7 @@ import {
 import type {LiveHistoryData} from './activities.ts';
 
 /** The two windows: the water heater's five-minute means, and the charger's hours. */
-export interface LiveWindows {
+interface LiveWindows {
   fiveMin25h: StatisticsWindow;
   hours: StatisticsWindow;
 }
@@ -34,7 +34,7 @@ export function liveWindows(now: number, config: ResolvedConfig, fmt: Fmt): Live
 }
 
 /** The water heater's day and the charging sessions, from the two replies. */
-export function deriveLiveHistory(
+function deriveLiveHistory(
   replies: Record<keyof LiveWindows, StatsReply>,
   config: ResolvedConfig,
   now: number,
@@ -47,13 +47,12 @@ export function deriveLiveHistory(
   };
 }
 
-export type LiveHistoryHost = WindowedHistoryHost;
 export type LiveHistoryDeps = WindowedHistoryDeps<Fmt>;
 
 export class LiveHistory implements ReactiveController {
   private readonly history: WindowedHistory<LiveWindows, LiveHistoryData, Fmt>;
 
-  constructor(host: LiveHistoryHost, deps: () => LiveHistoryDeps) {
+  constructor(host: WindowedHistoryHost, deps: () => LiveHistoryDeps) {
     this.history = new WindowedHistory<LiveWindows, LiveHistoryData, Fmt>(host, deps, {
       windows: liveWindows,
       derive: deriveLiveHistory,

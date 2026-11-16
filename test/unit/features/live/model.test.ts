@@ -10,7 +10,14 @@ import {fullHouse, NOW, storeOf} from '../media/support.ts';
 
 const depsOf = (language: 'en' | 'fr', compact = false): LiveModelDeps => {
   const store = storeOf({...fullHouse, locale: {...fullHouse.locale, language}}, FULL_CFG);
-  return {t: store.t, fmt: store.fmt, names: store.names, language: store.language, compact};
+  return {
+    t: store.t,
+    fmt: store.fmt,
+    names: store.names,
+    language: store.language,
+    compact,
+    overlay: (_key, current) => current,
+  };
 };
 const en = depsOf('en');
 const fr = depsOf('fr');

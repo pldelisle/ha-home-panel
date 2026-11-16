@@ -19,15 +19,19 @@ import {
 import {readLive, type LiveInputs} from '../../../../src/features/live/inputs.ts';
 import type {HiloChallenge} from '../../../../src/providers/hilo.ts';
 import type {Point} from '../../../../src/providers/power-history.ts';
+import {pauseHold} from '../../../../src/providers/wallbox.ts';
+import type {Overlay} from '../../../../src/ui/overlay-store.ts';
 import {FULL_CFG} from '../../../e2e/houses.ts';
 import {fullHouse, NOW, storeOf} from '../media/support.ts';
 
 const MIN = 60_000;
 const HOUR = 60 * MIN;
 const store = storeOf(fullHouse, FULL_CFG);
-const deps: ActivityDeps = {t: store.t, fmt: store.fmt};
+/** No value held: each switch reads as Home Assistant says. */
+const unheld: Overlay = (_key, current) => current;
+const deps: ActivityDeps = {t: store.t, fmt: store.fmt, overlay: unheld};
 const french = storeOf({...fullHouse, locale: {...fullHouse.locale, language: 'fr'}}, FULL_CFG);
-const frDeps: ActivityDeps = {t: french.t, fmt: french.fmt};
+const frDeps: ActivityDeps = {t: french.t, fmt: french.fmt, overlay: unheld};
 
 /** The test house at its clock (2 pm in Toronto): the car charging at 64 % to 90 %, the Wallbox at 7.1 kW, the water heater idle at 50°. */
 const house: LiveInputs = readLive(fullHouse.states, registriesOf(fullHouse), store.config, store.names, NOW);
@@ -95,8 +99,10 @@ describe('the Hilo challenge', () => {
     );
   });
 
-  test('the phase bar: four ticks without the day period, the marker at now, the aria in full', () => {
-    const card = hiloActivity(challenge('recovery'), deps)!.card;
+  test('recovery: its progress runs from the recovery’s start to its end; the phase bar: four ticks without the day period, the marker at now, the aria in full', () => {
+    const recovery = hiloActivity(challenge('recovery'), deps)!;
+    expect(recovery).toMatchObject({priority: 1, tint: false, progress: -3});
+    const card = recovery.card;
     expect(card.kind === 'hilo' && card.phases).toEqual({
       segments: [
         {label: 'Pre-heat', flex: 2 * HOUR, color: 'var(--c-grid)'},
@@ -159,11 +165,11 @@ describe('the car', () => {
         car: {...car, charging: false, soc},
         wallbox: {...house.wallbox, pause: {...house.wallbox.pause, on: false, ...over}},
       });
-    expect(chargingPaused(paused(88))).toBe(true);
-    expect(chargingPaused(paused(null))).toBe(true);
-    expect(chargingPaused(paused(89))).toBe(false);
-    expect(chargingPaused(paused(50, {available: false}))).toBe(false);
-    expect(chargingPaused(paused(50, {on: true}))).toBe(false);
+    expect(chargingPaused(paused(88), unheld)).toBe(true);
+    expect(chargingPaused(paused(null), unheld)).toBe(true);
+    expect(chargingPaused(paused(89), unheld)).toBe(false);
+    expect(chargingPaused(paused(50, {available: false}), unheld)).toBe(false);
+    expect(chargingPaused(paused(50, {on: true}), unheld)).toBe(false);
     const activity = carActivity(paused(50), null, deps)!;
     expect(activity).toMatchObject({
       color: 'var(--fg3)',
@@ -172,6 +178,14 @@ describe('the car', () => {
       ariaLabel: 'Charging paused, 50 percent',
     });
     expect(activity.card).toMatchObject({state: 'paused', pause: {resume: true}});
+    // a tap on Resume holds the switch on: the car is no longer paused before Home Assistant says so, and a tap on Pause the reverse
+    const held =
+      (on: boolean): Overlay =>
+      (key, current) =>
+        key === pauseHold(house.wallbox.pause.id!) ? (on as typeof current) : current;
+    expect(chargingPaused(paused(50), held(true))).toBe(false);
+    const pausing = carActivity(house, null, {...deps, overlay: held(false)})!;
+    expect(pausing.card).toMatchObject({pause: {resume: true}});
     expect(carActivity(with_({car: {...car, charging: false}}), null, deps)).toBeNull();
     expect(carActivity(with_({car: null}), null, deps)).toBeNull();
   });

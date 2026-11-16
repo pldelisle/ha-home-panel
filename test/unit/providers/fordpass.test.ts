@@ -178,6 +178,14 @@ describe('the charge and the plug', () => {
       }),
     ).toEqual([{at: Date.parse('2026-11-07T16:00:00Z')}, {minutes: 110}]);
     expect(estimates({completeAt: 45})).toEqual([]);
+    const power = (attributes: Record<string, unknown>) =>
+      read([sensor('elvehcharging', 'CHARGING', attributes)]).chargePowerKw;
+    expect([power({chargingkW: 7.2}), power({chargePower: '6.5'}), power({chargingkW: 'n/a'}), power({})]).toEqual([
+      7.2,
+      6.5,
+      null,
+      null,
+    ]);
     expect(read([]).chargeEstimates).toEqual([]);
     const plug = {...sensor('elvehplug', 'CONNECTED'), last_changed: '2026-11-07T12:30:00Z'};
     expect([read([plug]).plugChangedAt, read([]).plugChangedAt]).toEqual([Date.parse('2026-11-07T12:30:00Z'), null]);

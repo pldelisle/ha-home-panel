@@ -9,7 +9,7 @@ import {FULL_CFG} from '../../../e2e/houses.ts';
 import {fullHouse, NOW, storeOf} from '../media/support.ts';
 
 const store = storeOf(fullHouse, FULL_CFG);
-const deps: ActivityDeps = {t: store.t, fmt: store.fmt};
+const deps: ActivityDeps = {t: store.t, fmt: store.fmt, overlay: (_key, current) => current};
 const house: LiveInputs = readLive(fullHouse.states, registriesOf(fullHouse), store.config, store.names, NOW);
 const car = house.car!;
 const charging = [carActivity(house, null, deps)!];

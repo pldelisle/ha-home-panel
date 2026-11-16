@@ -9,9 +9,9 @@ src/providers/
   hilo.ts                  gains hiloGateway(states, config): {on, disconnected} | null
   environment-canada.ts    gains warningCount(states, config): number | null
   hydro-quebec.ts          gains balancePresent, balanceUpdated and peakReporting on its inputs
-  power.ts                 a room gains present (its thermostat is in the states)
-  fordpass.ts              the car gains lockState, tiresLow, socReporting, chargeEstimates and plugChangedAt
-  wallbox.ts               gains statusPresent
+  power.ts                 a room gains present (its thermostat is in the states); waterHeaterNow(states, config)
+  fordpass.ts              the car gains lockState, tiresLow, socReporting, chargePowerKw, chargeEstimates and plugChangedAt
+  wallbox.ts               gains statusPresent and DEFAULT_KWH_PRICE (shared with Car)
 src/core/i18n/
   format.ts                gains durationShort(ms): `52 min`, `1 h 50`, `3 h`
 src/features/live/
@@ -27,7 +27,7 @@ src/features/live/
 
 ## The activities and the model
 
-An activity is one thing running now: a Hilo challenge, the car charging (or paused) and the water heater heating. Each has a pill text (`{label, value, extra}`: the long one on a tablet, the short one on a phone), a ring (an icon, a color and a progress) and a card for the popup. `sortActivities` keeps the legacy order. `nextDone` follows the legacy `laSeen` and `laDone`: when an activity seen last time ends (the car reached its limit, a challenge's recovery passed), a "finished" state lasts ten minutes (`DONE_MS`). `liveModel` is a Presentation Model (Fowler): pure, it takes the inputs, the history, the kept state and the formats, and returns the pill (`attention`, `activity` or `done`, or null when there is nothing), the popup (the activity cards and the Status block) and the next state, which the element keeps. The water heater's history and the charging sessions come from `LiveHistory`, which asks the very windows Energy's water card and Car's history ask, so the panel-wide cache answers it from what they loaded.
+An activity is one thing running now: a Hilo challenge, the car charging (or paused) and the water heater heating. Each has a pill text (`{label, value, extra}`: the long one on a phone, where the pill has the header to itself, and the short one on a tablet), a ring (an icon, a color and a progress) and a card for the popup. `sortActivities` keeps the legacy order. `nextDone` follows the legacy `laSeen` and `laDone`: when an activity seen last time ends (the car reached its limit, a challenge's recovery passed), a "finished" state lasts ten minutes (`DONE_MS`). `liveModel` is a Presentation Model (Fowler): pure, it takes the inputs, the history, the kept state and the formats, and returns the pill (`attention`, `activity` or `done`, or null when there is nothing), the popup (the activity cards and the Status block) and the next state, which the element keeps. The water heater's history and the charging sessions come from `LiveHistory`, which asks the very windows Energy's water card and Car's history ask, so the panel-wide cache answers it from what they loaded.
 
 ## The Status checks
 

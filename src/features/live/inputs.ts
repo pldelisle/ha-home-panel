@@ -1,12 +1,11 @@
 // readLive: what the header's Status checks and live activities read of the house, composed from the providers.
 // Pattern: a composition of readers at one place (ADR 0025): powerNow, hiloRates, hiloChallenge, hiloGateway, hydroQuebec, heatPump,
-// warningCount, findCar and readCar, wallbox and doorMotionSensors, and the water heater's two config sensors as Energy reads them;
+// warningCount, findCar and readCar, wallbox, doorMotionSensors and waterHeaterNow;
 // this is the one file that knows which providers the header reads.
 // Must not: import a feature, word anything a person reads, read the clock (`now` is passed in), or touch the DOM or `hass`.
 import type {ResolvedConfig} from '../../core/config.ts';
 import type {HassEntities, Registries} from '../../core/hass.ts';
 import type {Names} from '../../core/i18n/names.ts';
-import {isAvailable, numberOf} from '../../core/states.ts';
 import {doorMotionSensors, type SensorInputs} from '../../providers/door-motion.ts';
 import {warningCount} from '../../providers/environment-canada.ts';
 import {findCar, readCar, type CarInputs} from '../../providers/fordpass.ts';
@@ -20,7 +19,7 @@ import {
   type HiloRates,
 } from '../../providers/hilo.ts';
 import {hydroQuebec, type HydroQuebecInputs} from '../../providers/hydro-quebec.ts';
-import {powerNow, type PowerNow} from '../../providers/power.ts';
+import {powerNow, waterHeaterNow, type PowerNow, type WaterHeaterNow} from '../../providers/power.ts';
 import {wallbox, type WallboxInputs} from '../../providers/wallbox.ts';
 
 export interface LiveInputs {
@@ -41,7 +40,7 @@ export interface LiveInputs {
   /** The door and motion sensors: doors first, then motion, each by name. */
   sensors: SensorInputs[];
   /** The water heater's power in kW and its temperature; `powerChangedAt` is when its power sensor last changed (a cycle's start when no history says better). */
-  waterHeater: {power: number | null; temperature: number | null; powerChangedAt: number | null};
+  waterHeater: WaterHeaterNow;
   /** The car's battery capacity in kWh from the config, for the time to full when Ford gives none; null when unset. */
   carBatteryKwh: number | null;
 }
@@ -55,11 +54,9 @@ export function readLive(
   now: number,
 ): LiveInputs {
   const car = findCar(states);
-  const flow = powerNow(states, config);
-  const waterPower = config.entities.whP ? states[config.entities.whP] : undefined;
   return {
     now,
-    power: flow,
+    power: powerNow(states, config),
     hilo: {
       rates: hiloRates(states, config),
       challenge: hiloChallenge(states, config),
@@ -71,11 +68,7 @@ export function readLive(
     car: car ? readCar(states, config, names, car) : null,
     wallbox: wallbox(states, config),
     sensors: doorMotionSensors(states, registries, names),
-    waterHeater: {
-      power: flow.waterHeater,
-      temperature: numberOf(states, config.entities.whT),
-      powerChangedAt: isAvailable(waterPower) ? Date.parse(waterPower.last_changed) : null,
-    },
+    waterHeater: waterHeaterNow(states, config),
     carBatteryKwh: config.car.battery_kwh || null,
   };
 }

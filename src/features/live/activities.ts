@@ -6,7 +6,8 @@ import {MINUTE_MS} from '../../core/figures.ts';
 import type {Formatters} from '../../core/i18n/format.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
 import type {Point} from '../../providers/power-history.ts';
-import type {Session} from '../../providers/wallbox.ts';
+import {DEFAULT_KWH_PRICE, pauseHold, type Session} from '../../providers/wallbox.ts';
+import type {Overlay} from '../../ui/overlay-store.ts';
 import type {LiveInputs} from './inputs.ts';
 
 /** What the activities read of the loaded history: the water heater's last 25 hours and the Wallbox's charging sessions. */
@@ -20,6 +21,8 @@ export interface LiveHistoryData {
 export interface ActivityDeps {
   t: Translate;
   fmt: Formatters;
+  /** The held values (ADR 0023): a tap on "Pause charging" shows at once, as the legacy `sw()` did. */
+  overlay: Overlay;
 }
 
 /** One of the pill's texts: a label, a value, and what follows the separator; any may be absent. */
@@ -123,8 +126,13 @@ const RATE_SHOWN_FROM = 0.05;
 /** The last session is the current one when it ended within two hours and started at most an hour before the plug-in. */
 const SESSION_RECENT_MS = 2 * 60 * MINUTE_MS;
 const SESSION_BEFORE_PLUG_MS = 60 * MINUTE_MS;
-/** The charging price when the Wallbox says none, in dollars per kWh. */
-const DEFAULT_PRICE = 0.07;
+/** A card's meta line: the pieces that apply, joined by a middle dot. */
+function metaLine(pieces: readonly (Rich | false)[]): Rich {
+  return pieces
+    .filter((piece): piece is Rich => piece !== false)
+    .flatMap((piece, i) => (i ? [{text: ' · '}, ...piece] : piece));
+}
+
 /** The capacity rule needs the charger to draw more than this many kW. */
 const CAPACITY_RULE_KW = 0.3;
 /** The car's head shows its power from this many kW. */
@@ -160,15 +168,15 @@ export function hiloActivity(inputs: LiveInputs, {t, fmt}: ActivityDeps): Activi
   const used = challenge.nextEvent?.used ?? null;
   const allowed = challenge.nextEvent?.allowed ?? null;
   const grid = inputs.power.grid;
-  const meta: Rich = [];
-  const piece = (...parts: Rich) => {
-    if (meta.length) meta.push({text: ' · '});
-    meta.push(...parts);
-  };
-  if (inside !== null) piece({text: `${fmt.fixed(inside, 1)}°`, strong: true}, {text: ` ${t('live.inside')}`});
-  if (grid !== null) piece({text: `${t('live.houseUsing')} `}, {text: `${fmt.fixed(grid, 1)} kW`, strong: true});
-  if (used !== null && allowed)
-    piece({text: fmt.fixed(used, 1), strong: true}, {text: ` ${t('live.ofAllowed', {n: fmt.fixed(allowed, 1)})}`});
+  const meta = metaLine([
+    inside !== null && [{text: `${fmt.fixed(inside, 1)}°`, strong: true}, {text: ` ${t('live.inside')}`}],
+    grid !== null && [{text: `${t('live.houseUsing')} `}, {text: `${fmt.fixed(grid, 1)} kW`, strong: true}],
+    used !== null &&
+      !!allowed && [
+        {text: fmt.fixed(used, 1), strong: true},
+        {text: ` ${t('live.ofAllowed', {n: fmt.fixed(allowed, 1)})}`},
+      ],
+  ]);
   return {
     key: 'hilo',
     priority: reduction ? 0 : 1,
@@ -192,7 +200,11 @@ export function hiloActivity(inputs: LiveInputs, {t, fmt}: ActivityDeps): Activi
 }
 
 /** The bar of the four phases, when all four times are known and in order. */
-function phaseBar(phases: Record<string, string>, now: number, {t, fmt}: ActivityDeps): HiloCardView['phases'] {
+function phaseBar(
+  phases: Record<string, string>,
+  now: number,
+  {t, fmt}: Pick<ActivityDeps, 't' | 'fmt'>,
+): HiloCardView['phases'] {
   const [p0, p1, p2, p3] = ['preheat_start', 'reduction_start', 'recovery_start', 'recovery_end'].map(key =>
     phaseTime(phases[key]),
   );
@@ -210,9 +222,20 @@ function phaseBar(phases: Record<string, string>, now: number, {t, fmt}: Activit
   };
 }
 
+/** The Wallbox's charging switch, its held value first: on while it charges, off while it is paused. */
+const pauseOn = ({pause}: LiveInputs['wallbox'], overlay: Overlay): boolean =>
+  pause.id ? overlay(pauseHold(pause.id), pause.on) : pause.on;
+
 /** The car's paused-below-its-limit rule: plugged in, not charging, the Wallbox's pause switch off, and the charge under the limit less one. */
-export function chargingPaused({car, wallbox}: LiveInputs): boolean {
-  if (!car || car.charging || !car.plugged || !wallbox.pause.id || !wallbox.pause.available || wallbox.pause.on)
+export function chargingPaused({car, wallbox}: LiveInputs, overlay: Overlay): boolean {
+  if (
+    !car ||
+    car.charging ||
+    !car.plugged ||
+    !wallbox.pause.id ||
+    !wallbox.pause.available ||
+    pauseOn(wallbox, overlay)
+  )
     return false;
   return car.soc === null || car.limit === null || car.soc < car.limit - 1;
 }
@@ -250,33 +273,28 @@ export function currentSession(sessions: readonly Session[], pluggedAt: number |
 export function carActivity(
   inputs: LiveInputs,
   history: LiveHistoryData | null,
-  {t, fmt}: ActivityDeps,
+  {t, fmt, overlay}: ActivityDeps,
 ): Activity | null {
   const {car, wallbox, now} = inputs;
-  const paused = chargingPaused(inputs);
+  const paused = chargingPaused(inputs, overlay);
   if (!car || !(car.charging || paused)) return null;
   const {soc} = car;
   const limit = car.limit || 100;
-  const power = wallbox.power ?? car.chargingKw;
+  const power = wallbox.power ?? car.chargePowerKw;
   const eta = chargeEta(inputs, power);
   const left = eta ? fmt.durationShort(eta - now) : '';
   const percent = soc === null ? '–' : `${Math.round(soc)}`;
   const session = currentSession(history?.sessions ?? [], car.plugChangedAt, now);
-  const price = wallbox.price ?? DEFAULT_PRICE;
-  const meta: Rich = [];
-  const piece = (...parts: Rich) => {
-    if (meta.length) meta.push({text: ' · '});
-    meta.push(...parts);
-  };
-  if (car.plugged && car.plugChangedAt !== null)
-    piece({text: t('live.pluggedInAt', {time: fmt.time(car.plugChangedAt)})});
-  if (session)
-    piece(
+  const price = wallbox.price ?? DEFAULT_KWH_PRICE;
+  const meta = metaLine([
+    car.plugged && car.plugChangedAt !== null && [{text: t('live.pluggedInAt', {time: fmt.time(car.plugChangedAt)})}],
+    !!session && [
       {text: `+${fmt.fixed(session.kwh, 1)} kWh`, strong: true},
       {text: ` ${t('live.soFarAbout')} `},
       {text: t('live.cost', {n: fmt.fixed(session.kwh * price, 2)}), strong: true},
-    );
-  if (car.range !== null) piece({text: t('live.range', {n: Math.round(car.range)})});
+    ],
+    car.range !== null && [{text: t('live.range', {n: Math.round(car.range)})}],
+  ]);
   return {
     key: 'car',
     priority: 2,
@@ -309,7 +327,7 @@ export function carActivity(
       },
       bar: {soc: soc ?? 0, limit, aria: t('live.batteryAria', {n: percent, limit})},
       meta,
-      pause: {show: wallbox.pause.available, resume: !wallbox.pause.on},
+      pause: {show: wallbox.pause.available, resume: !pauseOn(wallbox, overlay)},
     },
   };
 }
@@ -364,10 +382,11 @@ export function waterActivity(
       ? (latest[1] - first[1]) / ((latest[0] - first[0]) / RATE_PER_MS)
       : null;
   const kwh = points.filter(([at]) => at >= start).reduce((total, [, kw]) => total + kw, 0) / 12;
-  const meta: Rich = [{text: t('live.started', {time: fmt.time(start)})}];
-  if (points.length)
-    meta.push({text: ' · '}, {text: `${fmt.fixed(kwh, 1)} kWh`, strong: true}, {text: ` ${t('live.thisCycle')}`});
-  if (runs.length > 1) meta.push({text: ' · '}, {text: t('live.cyclesIn24h', {n: runs.length})});
+  const meta = metaLine([
+    [{text: t('live.started', {time: fmt.time(start)})}],
+    points.length > 0 && [{text: `${fmt.fixed(kwh, 1)} kWh`, strong: true}, {text: ` ${t('live.thisCycle')}`}],
+    runs.length > 1 && [{text: t('live.cyclesIn24h', {n: runs.length})}],
+  ]);
   return {
     key: 'wh',
     priority: 3,

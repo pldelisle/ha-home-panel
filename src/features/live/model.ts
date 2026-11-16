@@ -3,6 +3,7 @@
 // legacy `laPill()`'s (empty, a problem alone, an activity, a finished one, an activity with a problem's bubble), the popup the legacy `renderAttention()`'s.
 // Must not: read the clock or the states, keep state (the next `LiveState` is returned for the element to keep), or draw.
 import type {Formatters} from '../../core/i18n/format.ts';
+import type {Overlay} from '../../ui/overlay-store.ts';
 import {
   carActivity,
   hiloActivity,
@@ -21,6 +22,8 @@ export interface LiveModelDeps extends CheckDeps {
   fmt: Formatters;
   /** A phone: the pill says the long text, and a finished activity's check has no time. */
   compact: boolean;
+  /** The held values: a tapped pause shows at once. */
+  overlay: Overlay;
 }
 
 /** An activity's ring: what it shows and how far along. */
