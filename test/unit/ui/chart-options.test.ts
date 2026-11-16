@@ -5,7 +5,14 @@ import {describe, expect, test} from 'vitest';
 import {createFormatters} from '../../../src/core/i18n/format.ts';
 import {panelLocale} from '../../../src/core/i18n/locale.ts';
 import {createFrench} from '../../../src/i18n/fr.js';
-import {baseOptions, frenchAxis, mergeOptions, type ChartOptions} from '../../../src/ui/chart-options.ts';
+import {
+  baseOptions,
+  celsius,
+  frenchAxis,
+  mergeOptions,
+  timeAxis,
+  type ChartOptions,
+} from '../../../src/ui/chart-options.ts';
 import {fakeHass} from '../fake-hass.ts';
 
 const french = () => {
@@ -94,5 +101,32 @@ describe("French's date axis", () => {
     expect(options.chart).toMatchObject({type: 'donut', defaultLocale: 'fr'});
     expect(options.labels).toEqual(['a']);
     expect(options.xaxis).toBeUndefined();
+  });
+});
+
+describe('timeAxis', () => {
+  test('is a time axis of the days before now, ending now, on the house clock', () => {
+    expect(timeAxis(7, 10 * 864e5)).toEqual({
+      type: 'datetime',
+      min: 3 * 864e5,
+      max: 10 * 864e5,
+      labels: {datetimeUTC: false},
+    });
+  });
+});
+
+describe('celsius', () => {
+  test('is a tenth of a degree and the unit in the language, or the dash with no reading', () => {
+    const french = createFormatters(
+      panelLocale(fakeHass({locale: {language: 'fr'}}), {timeZone: 'America/Toronto', browserLocale: 'en'}),
+    );
+    const english = createFormatters(
+      panelLocale(fakeHass({locale: {language: 'en'}}), {timeZone: 'America/Toronto', browserLocale: 'en'}),
+    );
+    expect([celsius(english, 20.25), celsius(french, 20.25), celsius(english, null)]).toEqual([
+      '20.3 °C',
+      '20,3 °C',
+      '–',
+    ]);
   });
 });

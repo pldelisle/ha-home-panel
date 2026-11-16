@@ -1,18 +1,18 @@
 // Climate's history as pure functions: the window it asks, the statistics rows in, the series, the heating kWh, the heatmap's cells and heat scale, and the three charts' options out.
 // Pattern: functional core (Bernhardt, Boundaries), the data half of a humble object (Meszaros), after Air's and Energy's history; each rule is the legacy panel's
 // own (`loadClimRange`, `houseSeries`, `bucket`, `heatColor`, `climateSheet`, `climateDetail`, deleted in #248) and options are plain data (ADR 0022): `fmt` and `t` are arguments.
-// The caller is #246's loader and `<hp-climate-detail>`: the legacy constants copied here (the heat scale, the cut-offs) name #248, which deletes theirs.
-// Must not: call the API client or the cache, read the clock, the DOM or a viewport (`now` and `compact` are passed in), or pick a colour of its own (the tokens are the caller's).
+// The caller is #246's loader and `<hp-climate-detail>`: the heat scale's stops, the only colours it owns, are the legacy panel's and name #248, which deletes them.
+// Must not: call the API client or the cache, read the clock, the DOM or a viewport (`now` and `compact` are passed in), or pick a colour but the heat scale's (every other is a token).
 import {oklabBlend} from '../../core/color.ts';
 import type {ResolvedConfig} from '../../core/config.ts';
-import {DASH, DAY_MS, HOUR_MS} from '../../core/figures.ts';
+import {DAY_MS, HOUR_MS, hundredths} from '../../core/figures.ts';
 import type {StatisticRow} from '../../core/ha.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
 import {degrees, noonOf, type Formatters} from '../../core/i18n/format.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
 import {OFF_AT_OR_BELOW} from '../../providers/power.ts';
 import {sum, windowStart, type StatisticsWindow, type StatsReply} from '../../providers/power-history.ts';
-import {mergeOptions, type ChartOptions} from '../../ui/chart-options.ts';
+import {celsius, mergeOptions, timeAxis, type ChartOptions} from '../../ui/chart-options.ts';
 import {RANGES, type Range, type StatisticsPeriod} from '../../ui/ranges.ts';
 import {thinCategories} from '../../ui/thin-axis.ts';
 
@@ -55,7 +55,6 @@ export type RangePoint = [at: number, mean: number, min: number | null, max: num
 /** A setpoint at the middle of its bucket; null is a gap (the thermostat was off). */
 export type SetpointPoint = [at: number, value: number | null];
 
-const hundredths = (value: number): number => +value.toFixed(2);
 const rowsOf = (stats: StatsReply, id: string | null | undefined): readonly StatisticRow[] =>
   id ? (stats[id] ?? []) : [];
 
@@ -283,18 +282,6 @@ export interface ClimateChartDeps {
   compact: boolean;
 }
 
-/** A temperature, as a tooltip writes it. */
-const celsius = (fmt: Formatters, value: number | null): string =>
-  value == null ? DASH : `${fmt.fixed(+value, 1)} °C`;
-
-/** The time axis of a range, ending now. */
-const timeAxis = (range: Range, now: number) => ({
-  type: 'datetime',
-  min: now - RANGES[range].days * DAY_MS,
-  max: now,
-  labels: {datetimeUTC: false},
-});
-
 /** A room's row of the heatmap. */
 export interface HeatRow {
   name: string;
@@ -375,7 +362,7 @@ export function roomChartOptions(
     stroke: hasSetpoint
       ? {width: [2.2, 2, 2.2], curve: [curve, 'stepline', curve], dashArray: [0, 5, 0]}
       : {width: 2.2, curve},
-    xaxis: timeAxis(range, now),
+    xaxis: timeAxis(RANGES[range].days, now),
     yaxis: {labels: {formatter: (value: number | null) => (value == null ? '' : degrees(fmt, value))}},
     tooltip: {
       shared: true,
@@ -411,7 +398,7 @@ export function outsideChartOptions(
     colors: [tokens.outside, tokens.outside],
     fill: {opacity: [0.22, 1]},
     stroke: {width: [0, 2], curve: 'smooth'},
-    xaxis: timeAxis(range, now),
+    xaxis: timeAxis(RANGES[range].days, now),
     yaxis: {labels: {formatter: (value: number) => degrees(fmt, value)}},
     tooltip: {
       shared: true,

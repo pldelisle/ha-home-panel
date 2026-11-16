@@ -5,11 +5,12 @@
 // Must not: call the API client or the cache, read the clock or the DOM, or pick a colour of its own (every colour is a caller's
 // token; `transparent` is the absence of one, and the sizes are the legacy options' constants).
 import type {EntityKey} from '../../core/entities.ts';
-import {capitalise, DASH, DAY_MS, HOUR_MS} from '../../core/figures.ts';
+import {capitalise, DASH, DAY_MS, HOUR_MS, hundredths} from '../../core/figures.ts';
 import type {HistoryPoint, StatisticRow} from '../../core/ha.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
 import {degrees, whole, type Formatters} from '../../core/i18n/format.ts';
 import type {Messages} from '../../core/i18n/messages.ts';
+import {celsius, timeAxis} from '../../ui/chart-options.ts';
 import {RANGES, type Range} from '../../ui/ranges.ts';
 import type {HourSeries} from './model.ts';
 import {tileDefinition, type StatTileDefinition, type Tone} from './tiles.ts';
@@ -26,14 +27,11 @@ export const FROST_BELOW = 0;
 /** A day is a hot day when its high reaches this many degrees. */
 export const HOT_FROM = 25;
 
-/** A reading as the legacy panel stored it: two digits at most. */
-const rounded = (value: number) => +value.toFixed(2);
-
 /** A statistic of each row as `[ms, value]`, the row's start moved by `offsetMs`; the rows without it are skipped. */
 const statisticPoints = (rows: readonly StatisticRow[], statistic: 'mean' | 'max', offsetMs: number): Point[] =>
   rows.flatMap(row => {
     const value = row[statistic];
-    return value == null ? [] : [[row.start + offsetMs, rounded(value)] as Point];
+    return value == null ? [] : [[row.start + offsetMs, hundredths(value)] as Point];
   });
 
 /** Where a value falls on a scale that starts at `low` and is `span` wide, in percent. */
@@ -335,9 +333,9 @@ export function detailChartOptions(
 ): DetailCharts {
   const degreesLabel = (value: number) => degrees(fmt, value);
   const tooltipDay = {formatter: (at: number) => `${fmt.weekday(at, 'short')} ${fmt.hour(at)}`};
-  const weekAxis = {type: 'datetime', min: now - WEEK_DAYS * DAY_MS, max: now, labels: {datetimeUTC: false}};
+  const weekAxis = timeAxis(WEEK_DAYS, now);
   const percent = (value: number) => t('weather.percent', {value});
-  const celsius = (value: number | null) => (value == null ? DASH : `${fmt.fixed(value, 1)} °C`);
+  const tooltipCelsius = (value: number | null) => celsius(fmt, value);
   return {
     hours: {
       chart: {type: 'line'},
@@ -359,7 +357,7 @@ export function detailChartOptions(
         x: tooltipDay,
         y: {
           formatter: (value: number, options?: {seriesIndex?: number}) =>
-            options?.seriesIndex === 1 ? percent(value) : celsius(+value),
+            options?.seriesIndex === 1 ? percent(value) : tooltipCelsius(+value),
         },
       },
     },
@@ -390,7 +388,7 @@ export function detailChartOptions(
           },
         ],
       },
-      tooltip: {shared: true, x: tooltipDay, y: {formatter: celsius}},
+      tooltip: {shared: true, x: tooltipDay, y: {formatter: tooltipCelsius}},
     },
     wind: {
       chart: {type: 'line'},
@@ -583,7 +581,7 @@ export function historyChartOptions(
       curve: definition.stepline ? 'stepline' : 'smooth',
     },
     markers: {size: 0},
-    xaxis: {type: 'datetime', min: now - days * 864e5, max: now, labels: {datetimeUTC: false}},
+    xaxis: timeAxis(days, now),
     yaxis,
     annotations: {
       yaxis: (definition.bands ?? []).map(band => ({

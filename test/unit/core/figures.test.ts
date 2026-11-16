@@ -1,6 +1,6 @@
 // figures.ts and the whole-number formats beside fmt.integer: the dash, the capital, the hour and the day, and the -0 that must not show.
 import {describe, expect, test} from 'vitest';
-import {capitalise, capitalWords, DASH, DAY_MS, HOUR_MS} from '../../../src/core/figures.ts';
+import {capitalise, capitalWords, DASH, DAY_MS, HOUR_MS, hundredths} from '../../../src/core/figures.ts';
 import {createFormatters, degrees, whole} from '../../../src/core/i18n/format.ts';
 import {englishLocale} from '../../../src/core/i18n/locale.ts';
 
@@ -9,6 +9,10 @@ const fmt = createFormatters(englishLocale('America/Toronto'));
 describe('figures', () => {
   test('the dash, the hour and the day', () => {
     expect([DASH, HOUR_MS, DAY_MS]).toEqual(['–', 3_600_000, 86_400_000]);
+  });
+
+  test('hundredths keeps two decimals at most, as a number', () => {
+    expect([hundredths(20.126), hundredths(21), hundredths(0.004), hundredths(-1.005)]).toEqual([20.13, 21, 0, -1]);
   });
 
   test('capitalise raises the first letter only, and leaves an empty text empty', () => {

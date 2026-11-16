@@ -10,6 +10,9 @@ export const MINUTE_MS = 6e4;
 export const HOUR_MS = 36e5;
 export const DAY_MS = 864e5;
 
+/** A reading as the panel keeps it: two decimals at most. */
+export const hundredths = (value: number): number => +value.toFixed(2);
+
 /** The text with its first letter in capitals. */
 export const capitalise = (text: string): string => text.charAt(0).toUpperCase() + text.slice(1);
 
