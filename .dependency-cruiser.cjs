@@ -71,7 +71,12 @@ module.exports = {
       from: {path: '^src/auto\\.js$'},
       to: {
         path: '^src/',
-        pathNot: [LEGACY, CORE, PROVIDERS, '^src/features/automations/(traces|sentences|timeline-layout)\\.ts$'],
+        pathNot: [
+          LEGACY,
+          CORE,
+          PROVIDERS,
+          '^src/features/automations/(traces|sentences|timeline-layout|graph|mermaid-def)\\.ts$',
+        ],
       },
     },
     {

@@ -109,7 +109,7 @@ export const shortAlias = (alias: unknown): string => {
 const isTemplate = (v: unknown): boolean => /\{\{|\{%/.test(str(v));
 
 /** A list read with a word between each pair: `a or b or c`. */
-const joined = (items: string[], key: MessageKey, t: Translate): string =>
+export const joined = (items: string[], key: MessageKey, t: Translate): string =>
   items.length ? items.reduce((a, b) => t(key, {a, b})) : '';
 
 /** `00:15:00`, `{minutes: 5}` or `30` as `15 min`, `5 min`, `30 s`; a template as `a while`; nothing as ''. */

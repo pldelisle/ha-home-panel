@@ -17,14 +17,14 @@ export default defineConfig({
         'src/fonts.js',
         'src/core/**/*.ts',
         'src/providers/**/*.ts',
-        'src/features/*/{ids,inputs,model,speakers,tiles,history,scenes,commands,flow-layout,water-chart,charts,sankey-layout,schedule,bars-geometry,checks,order,state,al-strip-layout,traces,sentences,timeline-layout}.ts', // the pure files; the elements are proven by the harness
+        'src/features/*/{ids,inputs,model,speakers,tiles,history,scenes,commands,flow-layout,water-chart,charts,sankey-layout,schedule,bars-geometry,checks,order,state,al-strip-layout,traces,sentences,timeline-layout,graph,mermaid-def}.ts', // the pure files; the elements are proven by the harness
         'src/features/car/controls.ts', // the controls' view: strings and flags from the inputs, the held values and the draft; the two cards that call it are proven by the harness
         'src/features/car/loader.ts', // a controller over the statistics cache, tested with a fake cache, store and host; the pane that mounts it is proven by the harness
         'src/features/climate/sender.ts', // a controller over the overlay and the runner, tested with fakes and a fake clock; its two elements are proven by the harness
         'src/ui/{ranges,seg-keys,steps,thin-axis,toast-schedule}.ts', // the kit's pure files; its elements are proven by the harness
         'src/ui/commands.ts', // the command layer: the runner, the store and its controller are tested with fakes (ADR 0023)
         'src/ui/overlay-store.ts',
-        'src/ui/controllers/{optimistic,armed,windowed-history}.ts',
+        'src/ui/controllers/{optimistic,armed,windowed-history,system-data}.ts',
         'src/ui/styles/host.ts',
         'src/shell/guest.ts',
         'src/shell/features.ts',
@@ -46,7 +46,7 @@ export default defineConfig({
       thresholds: {
         'src/core/**/*.ts': {statements: 100},
         'src/providers/**/*.ts': {statements: 100},
-        'src/features/*/{ids,inputs,model,speakers,tiles,history,scenes,commands,flow-layout,water-chart,charts,sankey-layout,schedule,bars-geometry,checks,order,state,al-strip-layout,traces,sentences,timeline-layout}.ts':
+        'src/features/*/{ids,inputs,model,speakers,tiles,history,scenes,commands,flow-layout,water-chart,charts,sankey-layout,schedule,bars-geometry,checks,order,state,al-strip-layout,traces,sentences,timeline-layout,graph,mermaid-def}.ts':
           {
             statements: 100,
           },
@@ -63,6 +63,7 @@ export default defineConfig({
         'src/ui/controllers/optimistic.ts': {statements: 100},
         'src/ui/controllers/armed.ts': {statements: 100},
         'src/ui/controllers/windowed-history.ts': {statements: 100},
+        'src/ui/controllers/system-data.ts': {statements: 100},
         'src/ui/styles/host.ts': {statements: 100},
         'src/shell/guest.ts': {statements: 100},
         'src/shell/features.ts': {statements: 100},
