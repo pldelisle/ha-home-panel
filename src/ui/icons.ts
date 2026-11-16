@@ -35,6 +35,11 @@ export const ICONS = {
   sunauto: svg`<path d="M3 18h18M5 18a7 7 0 0 1 14 0M12 3v3M4.2 6.2l2.1 2.1M19.8 6.2l-2.1 2.1"/>`,
   dinner: svg`<path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M17 3c-2 1-3 3.5-3 7h3v11"/>`,
   exit: svg`<path d="M14 4h5v16h-5M10 8l-4 4 4 4M6 12h10"/>`,
+  sofa: svg`<path d="M5 11V8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v3M3 12a2 2 0 0 1 4 0v2h10v-2a2 2 0 0 1 4 0v6H3z"/>`,
+  desk: svg`<path d="M3 9h18M5 9v11M19 9v11M14 9v6h5"/>`,
+  bed: svg`<path d="M3 19V6M3 14h18v5M21 14v-2a3 3 0 0 0-3-3h-7v5M7 11.5h.01"/>`,
+  bath: svg`<path d="M4 12h16v3a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4zM6 12V6a2 2 0 0 1 4 0M7 19l-1 2M17 19l1 2"/>`,
+  fan: svg`<path d="M12 12c0-5 1-8 4-8s2 5-4 8zM12 12c5 0 8 1 8 4s-5 2-8-4zM12 12c0 5-1 8-4 8s-2-5 4-8zM12 12c-5 0-8-1-8-4s5-2 8 4z"/>`,
 } satisfies Record<string, SVGTemplateResult>;
 
 export type IconName = keyof typeof ICONS;

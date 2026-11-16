@@ -1,13 +1,16 @@
 // Display names follow the panel's language: the config's names: block first, then the room dictionary, then the name
 // Home Assistant gives (spec 11, "Display names"). The test house is English; with `frenchAreas` its areas carry the French
 // names a French-speaking household gives them, and the English panel reads them as `Living room`.
-import {test, expect} from './fixtures';
+import {test, expect, type House} from './fixtures';
 import {AFTERNOON, FULL_CFG} from './houses';
 import {tileNames} from './lights';
 
 const NAMES_CFG = {...FULL_CFG, names: {'Living room': {fr: 'Salon'}}};
 const OVERRIDES_CFG = {...FULL_CFG, names: {'Living room': {fr: 'Salon'}, Office: {fr: 'Atelier'}}};
 const isPhone = () => test.info().project.name === 'phone';
+// the rooms the Climate list names, not the whole house or the heat pump
+const rooms = (house: House) =>
+  house.root().locator('#pane-climate hp-climate-list .citem:not([data-id="house"]):not([data-id="hp"]) .nm');
 
 test.describe('an English house in French', () => {
   test.use({houseOpts: {cfg: NAMES_CFG, lang: 'fr'}});
@@ -51,15 +54,10 @@ test.describe('a French house', () => {
       expect(await tileNames(house)).toEqual(['Kitchen', 'Living room', 'Office']);
     });
 
-    test('and on the Climate card, whose rooms are the thermostats', async ({house}) => {
-      test.skip(isPhone(), 'the Climate card is on the tablet');
+    test('and on the Climate list, whose rooms are the thermostats', async ({house}) => {
+      test.skip(isPhone(), 'the Climate list is on the tablet');
       await house.tab('climate');
-      await expect(house.root().locator('#climate .room .n')).toHaveText([
-        'Bedroom',
-        'Garage',
-        'Living room',
-        'Office',
-      ]);
+      await expect(rooms(house)).toHaveText(['Bedroom', 'Garage', 'Living room', 'Office']);
     });
   });
 
@@ -70,10 +68,10 @@ test.describe('a French house', () => {
       expect(await tileNames(house)).toEqual(['Bureau', 'Cuisine', 'Salon']);
     });
 
-    test('the Climate card reads Salon for the living-room thermostat', async ({house}) => {
-      test.skip(isPhone(), 'the Climate card is on the tablet');
+    test('the Climate list reads Salon for the living-room thermostat', async ({house}) => {
+      test.skip(isPhone(), 'the Climate list is on the tablet');
       await house.tab('climate');
-      await expect(house.root().locator('#climate .room .n')).toContainText(['Salon']);
+      await expect(rooms(house)).toContainText(['Salon']);
     });
   });
 });
@@ -92,13 +90,13 @@ test.describe('a house name the French layer would translate, if it were not one
     expect(await tileNames(house)).toEqual(['Away', 'Bureau', 'Cuisine']);
   });
 
-  test('so does the Climate card, where the thermostat is no area, device or light', async ({house}) => {
-    test.skip(isPhone(), 'the Climate card is on the tablet');
+  test('so does the Climate list, where the thermostat is no area, device or light', async ({house}) => {
+    test.skip(isPhone(), 'the Climate list is on the tablet');
     await house.setState('climate.garage', {attributes: {friendly_name: 'Thermostat Den'}});
     // the French layer reads the house's names again a minute later
     await house.clock.fastForward(61_000);
     await house.tab('climate');
-    await expect(house.root().locator('#climate .room .n')).toHaveText(['Chambre', 'Sleep', 'Away', 'Bureau']);
+    await expect(rooms(house)).toHaveText(['Chambre', 'Sleep', 'Away', 'Bureau']);
   });
 });
 

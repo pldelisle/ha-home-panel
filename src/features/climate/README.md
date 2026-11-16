@@ -1,6 +1,6 @@
 # Climate
 
-What the Climate tab computes and draws ([spec 20](../../../docs/specs/20-climate.md)): the Hilo thermostats and the heat pump as a list, the phone's dial and the tablet's gauge. This folder holds the pure half of the first move: the heat pump's reading, the list's items, and the dial and the gauge as geometry (#242), and the model that words and shapes all of it (#243). The pane, the detail, the history and the controls come in the moves after it; until #248 the legacy panel draws the tab and keeps its own copies of these rules.
+What the Climate tab computes and draws ([spec 20](../../../docs/specs/20-climate.md)): the Hilo thermostats and the heat pump as a list, the phone's dial and the tablet's gauge. This folder holds the pure half of the first move: the heat pump's reading, the list's items, and the dial and the gauge as geometry (#242), and the model that words and shapes all of it (#243); and the pane, the list, the detail, the gauge and the dial that draw it (#244). The history and the controls come in the moves after it: until #246 and #248 the legacy panel draws the controls, the chart, the heatmap and the outside chart into containers the pane slots, and keeps its own copies of the rules the model has.
 
 ## The folder
 
@@ -17,6 +17,14 @@ src/features/climate/
   model.ts                 climateModel(inputs, history, sel, deps): the summary, the items, the phone's tiles and the detail's head, dial or gauge, tiles, note and controls
   dial-geometry.ts         dialGeometry(t, sp, lo, hi, size): the track, arc, ticks, dot and knob; dialValueFromPointer(rect, x, y, lo, hi)
   gauge-geometry.ts        gaugeGeometry(t, sp): positions on the 14 to 30 scale and which caption goes under it
+  index.ts                 climateFeature: the descriptor, `available` from hasClimate, the pane's template with the legacy panel's three containers
+  sheets.ts                DETAIL_SHEET: the id of the phone's sheet
+  events.ts                ClimateDetailEvent: the pane tells the shell which room and range its detail shows
+  climate-pane.ts          <hp-climate-pane>: the header, the phone's tiles and sheet, the tablet's list and detail; keeps the room and the range
+  climate-list.ts          <hp-climate-list>: the listbox of the house, the rooms and the heat pump; tells its choice as `select`
+  climate-detail.ts        <hp-climate-detail>: the head, the gauge or the dial, the tiles and the note, with slots for the legacy controls and chart
+  gauge.ts, dial.ts        <hp-gauge> and <hp-dial>: the geometry placed with svg templates; the dial is read-only until #248
+  *.element.css            each element's own rules, moved from the legacy sheet
 ```
 
 ## The heat pump
@@ -34,3 +42,7 @@ src/features/climate/
 ## Words
 
 The words are `climate.*` messages through the `t` the caller gives; the heat pump's own (modes, fan speeds, presets and louver positions) are the catalog's where Home Assistant's name is known and are shown capitalised, with the underscore a space, where it is not. The legacy rules are copied as they were, constants included; each copy names #248, the ticket that deletes the legacy panel's own.
+
+## The pane and the legacy panel
+
+`<hp-climate-pane>` is given three containers by the descriptor, as static light DOM the legacy panel fills and Lit binds nothing in: `#cctl` (the controls, slotted under the detail's head), `#cchart` (the legend and the chart, under its tiles) and `#chost` (where the sheet host puts the legacy sheet's panel on a tablet: the heatmap and the outside chart, under the grid). The pane keeps the room and the range for the panel's life, and tells the shell through `ClimateDetailEvent` when its detail comes on screen, changes or leaves; the shell hands the guest `climateDetailChanged`, and the guest draws for it, so the legacy code has no selection of its own. Until #246 types the history, the guest tells the pane the two figures it reads off its own load, the Range tile's span and the Heating tile's kWh, as `climate-figures` on `#chost`, and `climateModel` takes them as `ClimateFigures` (a figure for another room or range is a dash). On a phone a tile asks for `climate.detail` with its room and the sheet holds the same detail with the dial; Home's Climate tile asks for it with nothing and gets the house. The dial is an image or a slider that does not move until #248 gives it the pointer, the keys and the command.

@@ -721,6 +721,9 @@ export const en = {
   'climate.swing.off': 'Fixed',
   'climate.swing.verticalAt': 'Fixed, vertical position {n}',
   'climate.swing.horizontalAt': 'Fixed, horizontal position {n}',
+  'climate.homeClimate': 'Home climate',
+  'climate.rooms': 'Rooms',
+  'climate.close': 'Close',
 } as const;
 
 /** Every message key; a key exists when it is written in `en`. */

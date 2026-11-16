@@ -132,10 +132,12 @@
   grid-column: 1/-1;
   margin-bottom: 2px;
 }
-.pane > .panel {
+.pane > .panel,
+#chost > .panel {
   min-width: 0;
 }
-.pane > .panel > * + * {
+.pane > .panel > * + *,
+#chost > .panel > * + * {
   margin-top: 16px;
 }
 /* the active section lights up in its own colour */

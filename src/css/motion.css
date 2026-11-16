@@ -64,45 +64,6 @@ button.chip:active,
     transform: translateY(10px);
   }
 }
-/* the thermostat dial draws its arc, then the knob and the number land */
-.dial.in .dact {
-  stroke-dasharray: 600;
-  animation: dialdraw 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-}
-@keyframes dialdraw {
-  from {
-    stroke-dashoffset: 600;
-  }
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-.dial .dknob {
-  transform-box: fill-box;
-  transform-origin: center;
-  transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-.dial.in .dknob {
-  animation: knobin 0.4s 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
-}
-@keyframes knobin {
-  from {
-    opacity: 0;
-    transform: scale(0.3);
-  }
-}
-.dial.ed:active .dknob {
-  transform: scale(1.18);
-}
-.dial.in .dialc {
-  animation: fadeup 0.45s 0.2s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-}
-@keyframes fadeup {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-}
 /* the wallpaper washes drift slowly while the panel is in use (class live for 60 s after a touch or scroll); the wall iPad rests between uses */
 .app.gl::before {
   background-size:
@@ -153,20 +114,15 @@ button.chip:active,
 }
 @media (prefers-reduced-motion: reduce) {
   .pane:not([hidden]),
-  .dial.in .dact,
-  .dial.in .dknob,
-  .dial.in .dialc,
   .app.gl::before,
   .htile.chg .hh > span:first-child {
     animation: none;
   }
-  .rtab:active svg,
-  .dial.ed:active .dknob {
+  .rtab:active svg {
     transform: none;
   }
-  /* the switch knob slides, the dial's knob glides and a phone sheet springs back after a short drag only with motion on (base.css gives the knob a slide of its own) */
-  .sw::after,
-  .dial .dknob {
+  /* the switch knob slides and a phone sheet springs back after a short drag only with motion on (base.css gives the knob a slide of its own) */
+  .sw::after {
     transition: none;
   }
 }

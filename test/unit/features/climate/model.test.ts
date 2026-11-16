@@ -7,6 +7,7 @@ import {readClimate} from '../../../../src/features/climate/inputs.ts';
 import {K} from '../../../../src/features/climate/keys.ts';
 import {
   climateModel,
+  type ClimateFigures,
   type ClimateModelDeps,
   type ClimateSelection,
   type ControlsView,
@@ -24,12 +25,12 @@ const holding =
 function modelOf(
   hass: FakeHass,
   sel: ClimateSelection,
-  extra: Partial<ClimateModelDeps> & {language?: Language; config?: object} = {},
+  extra: Partial<ClimateModelDeps> & {language?: Language; config?: object; figures?: ClimateFigures} = {},
 ) {
-  const {language = 'en', config = {}, ...rest} = extra;
+  const {language = 'en', config = {}, figures = null, ...rest} = extra;
   const store = storeOf(hass, config);
   const inputs = readClimate(hass.states, registriesOf(hass), store.config);
-  return climateModel(inputs, null, sel, {
+  return climateModel(inputs, figures, sel, {
     ...depsOf(hass, language),
     language,
     overlay: unheld,
@@ -101,6 +102,36 @@ describe('the test house, on the tablet', () => {
       {label: 'Heating now', value: '2.40', unit: 'kW', sub: 'all thermostats', range: false},
       {label: 'Heating, 24 h', value: '–', unit: 'kWh', sub: 'all thermostats', range: false},
     ]);
+  });
+
+  test('the legacy panel’s figures fill the Range and Heating tiles, for the room and the range they were read for and no other', () => {
+    const room: ClimateFigures = {sel: 'bedroom', range: 'week', span: {lo: 18.5, hi: 23}, kwh: 12.34};
+    const tiles = (figures: ClimateFigures, extra: Parameters<typeof modelOf>[2] = {}) =>
+      modelOf(fullHouse, figures.sel, {range: figures.range, figures, ...extra}).detail.tiles.map(t => t.value);
+    // a room: the span at one decimal, the kWh at one; the Drawing now tile is the state's
+    expect(tiles(room)).toEqual(['18.5–23.0', '1.20', '12.3']);
+    expect(modelOf(fullHouse, 'bedroom', {range: 'week', figures: room, language: 'fr'}).detail.tiles[0].value).toBe(
+      '18,5–23,0',
+    );
+    // the house has no Range tile, and its Heating tile is a whole number of kWh
+    const house: ClimateFigures = {sel: 'house', range: 'day', span: {lo: 19, hi: 22}, kwh: 139.6};
+    expect(tiles(house)).toEqual(['21.2', '20.0', '2.40', '140']);
+    // a span with no reading and a kWh the load does not have stay dashes
+    expect(tiles({...room, span: null, kwh: null})).toEqual(['–', '1.20', '–']);
+    expect(tiles({...house, kwh: null})[3]).toBe('–');
+    // another room, or another range, than the one the figures were read for: dashes, until the legacy panel reads again
+    expect(modelOf(fullHouse, 'garage', {range: 'week', figures: room}).detail.tiles.map(t => t.value)).toEqual([
+      '–',
+      '0.00',
+      '–',
+    ]);
+    expect(modelOf(fullHouse, 'bedroom', {range: 'day', figures: room}).detail.tiles.map(t => t.value)).toEqual([
+      '–',
+      '1.20',
+      '–',
+    ]);
+    // a selection that names nothing the house has is the house, and the figures read for it are read for the house
+    expect(modelOf(fullHouse, 'nowhere', {figures: house}).detail.tiles[3].value).toBe('140');
   });
 
   test('the house’s gauge has no setpoint mark and no caption; the element’s "set every room" and armed button are passed through', () => {
@@ -289,6 +320,11 @@ describe('a room', () => {
 });
 
 describe('the heat pump', () => {
+  test('the heat pump’s Range tile takes the legacy panel’s span, and it has no heating figure', () => {
+    const figures: ClimateFigures = {sel: 'hp', range: 'day', span: {lo: 17, hi: 24.5}, kwh: null};
+    expect(pumpOf(pump('heat'), {figures}).detail.tiles[0]).toMatchObject({value: '17.0–24.5'});
+  });
+
   const ATTRS = {
     hvac_action: 'heating',
     current_temperature: 19.2,

@@ -713,4 +713,7 @@ export const fr: Record<MessageKey, string> = {
   'climate.swing.off': 'Fixe',
   'climate.swing.verticalAt': 'Fixe, position verticale {n}',
   'climate.swing.horizontalAt': 'Fixe, position horizontale {n}',
+  'climate.homeClimate': 'Climat de la maison',
+  'climate.rooms': 'Pièces',
+  'climate.close': 'Fermer',
 };

@@ -29,6 +29,20 @@ import {K} from './keys.ts';
 /** What the detail shows: `house`, `hp` or a room's key. A key that names nothing the house has shows the house. */
 export type ClimateSelection = string;
 
+/**
+ * The two figures of the detail's tiles that wait for the loaded history, as the legacy chart code read them off its own load: the Range tile's
+ * span and the Heating tile's kWh, for one selection over one range. Until the history is the feature's (#246) the legacy panel tells them
+ * to the pane; a figure for another selection or range than the one shown is not drawn.
+ */
+export interface ClimateFigures {
+  sel: ClimateSelection;
+  range: Range;
+  /** The lowest and highest reading of the selection over the range; null without one. */
+  span: {lo: number; hi: number} | null;
+  /** The heating over the range: the house's total or the room's own; null for the heat pump and while nothing is loaded. */
+  kwh: number | null;
+}
+
 /** The range the tiles are named for until the person picks one (the legacy `crange`'s default). */
 const DEFAULT_RANGE: Range = 'day';
 /** What "set every room" starts at (the legacy `allSp ?? 21`, deleted in #248). */
@@ -276,11 +290,12 @@ function summaryOf({rooms, heatPump, outside}: ClimateInputs, deps: ClimateModel
     .join(' · ');
 }
 
-/** The Range tile: its value waits for the history (#246). */
-function rangeTile({t}: ClimateModelDeps, range: Range): DetailTile {
+/** The Range tile: its span is the loaded history's (#246), a dash before it. */
+function rangeTile({t, fmt}: ClimateModelDeps, range: Range, figures: ClimateFigures | null): DetailTile {
+  const span = figures?.span;
   return {
     label: t('climate.rangeSpan', {span: t(RANGES[range].shortKey)}),
-    value: DASH,
+    value: span ? `${fmt.fixed(span.lo, 1)}–${fmt.fixed(span.hi, 1)}` : DASH,
     unit: '°',
     sub: null,
     range: true,
@@ -330,7 +345,13 @@ function roomControls(room: RoomPower, {overlay, fmt, t}: ClimateModelDeps): Con
   };
 }
 
-function houseHead(inputs: ClimateInputs, deps: ClimateModelDeps, items: ClimateItem[], range: Range): Head {
+function houseHead(
+  inputs: ClimateInputs,
+  deps: ClimateModelDeps,
+  items: ClimateItem[],
+  range: Range,
+  figures: ClimateFigures | null,
+): Head {
   const {t, fmt} = deps;
   const {rooms} = inputs;
   const house = items[0];
@@ -360,7 +381,7 @@ function houseHead(inputs: ClimateInputs, deps: ClimateModelDeps, items: Climate
       {label: t('climate.heatingNow'), value: fmt.fixed(inputs.heat, 2), unit: 'kW', sub: all, range: false},
       {
         label: t('climate.heatingSpan', {span: t(RANGES[range].shortKey)}),
-        value: DASH,
+        value: figures?.kwh == null ? DASH : fmt.integer(figures.kwh),
         unit: 'kWh',
         sub: all,
         range: false,
@@ -392,7 +413,13 @@ function heatPumpPill(hp: HeatPumpInputs, mode: string, deps: ClimateModelDeps):
   return hp.target === null ? action : t('climate.actionTo', {action, n: fmt.number(hp.target, 2)});
 }
 
-function heatPumpHead(hp: HeatPumpInputs, inputs: ClimateInputs, deps: ClimateModelDeps, range: Range): Head {
+function heatPumpHead(
+  hp: HeatPumpInputs,
+  inputs: ClimateInputs,
+  deps: ClimateModelDeps,
+  range: Range,
+  figures: ClimateFigures | null,
+): Head {
   const {t, fmt, overlay} = deps;
   // the mode as shown, a held one included: the pill, the gauge's mark and the dial agree while a tap is pending
   const mode = overlay(K.hp.mode(hp.id), hp.mode);
@@ -410,7 +437,7 @@ function heatPumpHead(hp: HeatPumpInputs, inputs: ClimateInputs, deps: ClimateMo
       editable: !idle,
     },
     tiles: [
-      rangeTile(deps, range),
+      rangeTile(deps, range, figures),
       {
         label: t('climate.lastUpdate'),
         value: hp.available && hp.lastUpdated !== null ? fmt.time(hp.lastUpdated) : DASH,
@@ -433,7 +460,7 @@ function roomPill(room: RoomPower, {t, fmt}: ClimateModelDeps): string {
   return t('climate.off');
 }
 
-function roomHead(room: RoomPower, deps: ClimateModelDeps, range: Range): Head {
+function roomHead(room: RoomPower, deps: ClimateModelDeps, range: Range, figures: ClimateFigures | null): Head {
   const {t, fmt, overlay} = deps;
   const {setpoint} = room;
   return {
@@ -449,11 +476,11 @@ function roomHead(room: RoomPower, deps: ClimateModelDeps, range: Range): Head {
       editable: room.available,
     },
     tiles: [
-      rangeTile(deps, range),
+      rangeTile(deps, range, figures),
       {label: t('climate.drawingNow'), value: fmt.fixed(room.power ?? 0, 2), unit: 'kW', sub: null, range: false},
       {
         label: t('climate.heatingSpan', {span: t(RANGES[range].shortKey)}),
-        value: DASH,
+        value: figures?.kwh == null ? DASH : fmt.fixed(figures.kwh, 1),
         unit: 'kWh',
         sub: null,
         range: false,
@@ -525,20 +552,22 @@ function headOf(
   inputs: ClimateInputs,
   deps: ClimateModelDeps,
   items: ClimateItem[],
+  figures: ClimateFigures | null,
 ): Head {
   const range = deps.range ?? DEFAULT_RANGE;
-  if (pump) return heatPumpHead(pump, inputs, deps, range);
-  if (room) return roomHead(room, deps, range);
-  return houseHead(inputs, deps, items, range);
+  if (pump) return heatPumpHead(pump, inputs, deps, range, figures);
+  if (room) return roomHead(room, deps, range, figures);
+  return houseHead(inputs, deps, items, range, figures);
 }
 
 /**
  * The Climate tab's view for one selection: the summary, the list, the phone's tiles and the detail, from the inputs, in the language
- * `deps.t` words. `history` is the loaded range (#246); until then the charts are null and the tiles that need it show a dash.
+ * `deps.t` words. `history` is the loaded range (#246): until then the charts are null and only the two tiles the legacy panel's own load
+ * fills (`ClimateFigures`) have a figure, a dash before it and for any other selection or range than the one it was read for.
  */
 export function climateModel(
   inputs: ClimateInputs,
-  history: null,
+  history: ClimateFigures | null,
   sel: ClimateSelection,
   deps: ClimateModelDeps,
 ): ClimateViewModel {
@@ -546,13 +575,15 @@ export function climateModel(
   const {heatPump, rooms, outside} = inputs;
   const room = rooms.find(candidate => candidate.key === sel);
   const pump = sel === 'hp' ? heatPump : null;
-  const head = headOf(pump, room, inputs, deps, items);
+  const selection = pump ? 'hp' : (room?.key ?? 'house');
+  const figures = history?.sel === selection && history.range === (deps.range ?? DEFAULT_RANGE) ? history : null;
+  const head = headOf(pump, room, inputs, deps, items, figures);
   const {t, fmt} = deps;
   return {
     summary: summaryOf(inputs, deps),
     items,
     tiles: items.map(item => ({...item, wide: item.id === 'house'})),
-    selection: pump ? 'hp' : (room?.key ?? 'house'),
+    selection,
     detail: {
       title: head.title,
       sub: head.sub,

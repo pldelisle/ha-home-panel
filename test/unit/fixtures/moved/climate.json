@@ -105,6 +105,9 @@
     {"key": "climate.swing.both"},
     {"key": "climate.swing.off"},
     {"key": "climate.swing.verticalAt", "values": {"n": "3"}},
-    {"key": "climate.swing.horizontalAt", "values": {"n": "2"}}
+    {"key": "climate.swing.horizontalAt", "values": {"n": "2"}},
+    {"key": "climate.homeClimate"},
+    {"key": "climate.rooms"},
+    {"key": "climate.close"}
   ]
 }

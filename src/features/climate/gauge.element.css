@@ -1,0 +1,48 @@
+/*
+ * <hp-gauge>'s own rules: the bar with its gradient, the dot at the reading, the mark at the setpoint, the reading's words above the dot and the
+ * scale under the bar. Moved from the legacy `.gauge` and `.gscale` rules (base.css), which this move deleted.
+ */
+:host {
+  display: block;
+}
+.gauge {
+  position: relative;
+  height: 10px;
+  margin: 30px 9px 8px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #5b8fd0, #7fb3a0 35%, #e2c07a 62%, #d4763f);
+}
+.gauge .mk {
+  position: absolute;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--card);
+  border: 3px solid var(--fg);
+}
+.gauge .sp {
+  position: absolute;
+  top: -7px;
+  bottom: -7px;
+  width: 3px;
+  border-radius: 2px;
+  transform: translateX(-50%);
+  background: var(--fg);
+}
+.gauge .lb {
+  position: absolute;
+  bottom: calc(100% + 9px);
+  transform: translateX(-50%);
+  font-size: calc(11.5px * var(--tx));
+  color: var(--fg2);
+  white-space: nowrap;
+}
+.gscale {
+  display: flex;
+  justify-content: space-between;
+  font-size: calc(11px * var(--tx));
+  color: var(--fg2);
+  margin: 0 0 14px;
+}

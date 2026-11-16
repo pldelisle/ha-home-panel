@@ -7,7 +7,7 @@ import {OFF_AT_OR_BELOW} from '../../providers/power.ts';
 /** The dial's drawing, in the legacy constants: a 270 degree track opening downwards, 55 ticks and every sixth one long (legacy, #248). */
 const DIAL = {radius: 106, start: 135, sweep: 270, ticks: 55, majorEvery: 6} as const;
 /** The drawing's side, the legacy `viewBox`. */
-const SIZE = 260;
+export const DIAL_SIZE = 260;
 /** A tick starts this far in from the track, and ends this far in when short or long (legacy, #248). */
 const TICK_FROM = 17;
 const TICK_TO_SHORT = 12;
@@ -49,7 +49,7 @@ export function dialGeometry(
   sp: number | null | undefined,
   lo: number,
   hi: number,
-  size = SIZE,
+  size = DIAL_SIZE,
 ): DialGeometry {
   const {radius, start, sweep} = DIAL;
   const centre = size / 2;
