@@ -129,6 +129,15 @@ export interface CarInputs {
   /** The charging sensor says `CHARGING` and not `NOT_CHARGING`. */
   charging: boolean;
   chargingKw: number | null;
+  /** The charge's power in kW from the first charging attribute that names a power or kW, as the live pill reads it when the Wallbox says none. */
+  chargePowerKw: number | null;
+  /**
+   * Ford's own estimates of the charge's end, in its attributes' order: a date in an attribute that names an end, a completion or a
+   * remainder (`at`, whether past or not), or a number of minutes in one that names minutes or a remainder (`minutes`, 0 to 3,000).
+   */
+  chargeEstimates: ChargeEstimate[];
+  /** When the plug sensor last changed, so when the cable went in or out; null when it has no value. */
+  plugChangedAt: number | null;
   /** The charging sensor's state, as Ford words it; null when it reads nothing. */
   chargeState: string | null;
   locked: boolean | null;
@@ -317,6 +326,39 @@ function honkButtonOf(states: HassEntities, ref: CarRef): string | null {
   return ids.find(id => states[id] !== undefined && states[id].state !== 'unavailable') ?? null;
 }
 
+/** An attribute of the charging sensor that holds the charge's power: the legacy `liveActs`'s rule (#256 deletes it). */
+const CHARGE_POWER_KEY = /charg.*(power|kw)$/i;
+
+function chargePowerOf(states: HassEntities, id: string): number | null {
+  const attributes = states[id]?.attributes ?? {};
+  const key = Object.keys(attributes).find(name => CHARGE_POWER_KEY.test(name));
+  const kw = key === undefined ? NaN : Number(attributes[key]);
+  return Number.isFinite(kw) ? kw : null;
+}
+
+/** One of Ford's estimates of when the charge ends. */
+type ChargeEstimate = {at: number} | {minutes: number};
+
+/** The attributes that may estimate the end, and the ones of those that count minutes: the legacy `liveActs`'s rule (#256 deletes it). */
+const ESTIMATE_KEY = /(end|complete|full|remain)/i;
+const MINUTES_KEY = /(minutes|remain|to.?full)/i;
+const DATE_IN = /\d{4}-\d\d-\d\d/;
+/** Over this many minutes is no estimate (Ford sends 3,000 and more for "unknown"). */
+const MAX_ESTIMATE_MINUTES = 3000;
+
+function chargeEstimatesOf(states: HassEntities, id: string): ChargeEstimate[] {
+  const attributes = states[id]?.attributes ?? {};
+  return Object.entries(attributes).flatMap(([key, value]): ChargeEstimate[] => {
+    if (!ESTIMATE_KEY.test(key)) return [];
+    const at = typeof value === 'string' && DATE_IN.test(value) ? Date.parse(value) : NaN;
+    if (Number.isFinite(at)) return [{at}];
+    const minutes = Number(value);
+    return MINUTES_KEY.test(key) && Number.isFinite(minutes) && minutes > 0 && minutes < MAX_ESTIMATE_MINUTES
+      ? [{minutes}]
+      : [];
+  });
+}
+
 /** Ford's words for tires at their normal pressure: the sensor's and each tire's. */
 const TIRES_NORMAL = 'NORMAL_OPERATION';
 const TIRE_NORMAL = 'NORMAL';
@@ -370,6 +412,9 @@ export function readCar(
     plugged: plug !== null && plug !== 'DISCONNECTED',
     charging: chargeState !== null && /CHARGING/.test(chargeState) && !/NOT/.test(chargeState),
     chargingKw: numberAttributeOf(states, charging, 'chargingkW'),
+    chargePowerKw: chargePowerOf(states, charging),
+    chargeEstimates: chargeEstimatesOf(states, charging),
+    plugChangedAt: plug === null ? null : asTime(states[sensor('elvehplug')].last_changed),
     chargeState,
     locked: isAvailable(states[lock]) ? states[lock].state === 'locked' : null,
     lockState: textOf(states, lock),

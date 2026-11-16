@@ -9,7 +9,7 @@ import {fixedOr, noonOf, whole, type Formatters} from '../../core/i18n/format.ts
 import type {Translate} from '../../core/i18n/messages.ts';
 import type {CarInputs, FordMessage, LastPlug} from '../../providers/fordpass.ts';
 import {sum} from '../../providers/power-history.ts';
-import {chargerStatusKey, type Session, type WallboxInputs} from '../../providers/wallbox.ts';
+import {chargerStatusKey, DEFAULT_KWH_PRICE, type Session, type WallboxInputs} from '../../providers/wallbox.ts';
 import {barsGeometry, type BarsGeometry} from './bars-geometry.ts';
 import {DAILY_DAYS, monthlySessions, type CarHistoryData, type MonthlySessions} from './history.ts';
 import type {CarFeatureInputs} from './inputs.ts';
@@ -25,8 +25,6 @@ export interface CarModelDeps {
   historyError: string | null;
 }
 
-/** The price per kWh the Wallbox's sessions are costed at when the house set none: the legacy `carSheet`'s 7 cents. */
-const DEFAULT_PRICE = 0.07;
 /** The table shows this many sessions, the latest, until "show all". */
 const LATEST_SESSIONS = 10;
 /** A day with more than this many kWh is a charging day in the card's line. */
@@ -572,7 +570,7 @@ function sessionsOf(
   const columns = sessionColumns(t);
   const title = t('car.sessions.title');
   if (!sessions) return {title, summary: '', tiles: [], months: [], columns, rows: [], toggle: null};
-  const price = charger.price ?? DEFAULT_PRICE;
+  const price = charger.price ?? DEFAULT_KWH_PRICE;
   const cents = fmt.fixed(price * 100, 0);
   const since = sessions.length ? fmt.date(sessions[0].start) : '';
   const newest = sessions.slice().reverse();

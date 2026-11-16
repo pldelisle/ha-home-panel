@@ -39,7 +39,7 @@ export interface WallboxInputs {
   pause: WallboxSwitch;
   /** The charger's lock: on while it is locked. */
   lock: WallboxSwitch;
-  /** The price per kWh the house set for the charger; null when it set none (the model estimates at 0.07). */
+  /** The price per kWh the house set for the charger; null when it set none (the models estimate at `DEFAULT_KWH_PRICE`). */
   price: number | null;
 }
 
@@ -135,6 +135,9 @@ export const chargerStatusKey = (status: string): MessageKey | undefined => STAT
 
 /** The overlay key of the charging switch's held value: `wallboxCommands.pause` holds it and the Car's switch reads it (#253). */
 export const pauseHold = overlayKey('pause');
+
+/** The price per kWh the sessions are costed at when the house set none: the legacy panel's 7 cents, which Car and the live pill share. */
+export const DEFAULT_KWH_PRICE = 0.07;
 
 /** What the commands name of the charging switch: its entity id. */
 export interface PauseTarget {
