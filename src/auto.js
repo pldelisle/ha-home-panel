@@ -3,26 +3,15 @@
 // (trace/list, trace/get), which record which trigger fired, each condition's result and each step's time.
 // The graph is laid out by Mermaid (from npm, in lazy chunks imported only when the tab opens);
 // the path a run took is lit green, the step it is waiting on amber, a failed check red, the rest dashed grey.
-import {esc, cap, plural, tile} from './legacy/globals.js';
+import {esc, plural, tile} from './legacy/globals.js';
 import {StaleReply} from './core/api.ts';
 import {createMessages} from './core/i18n/messages.ts';
-import {
-  asList as auArr,
-  automationsOf,
-  minutesOfDay as auMins,
-  sunNext,
-  upcomingRuns,
-} from './providers/automations.ts';
+import {automationsOf, minutesOfDay as auMins, sunNext, upcomingRuns} from './providers/automations.ts';
 // the feature's pure files, which this file draws from until #273 deletes it (the second temporary allowance of
 // .dependency-cruiser.cjs, `auto-reads-its-feature`)
-import {
-  actionText,
-  conditionText,
-  cut as auCut,
-  durationText,
-  shortAlias as auShortAlias,
-  triggerText,
-} from './features/automations/sentences.ts';
+import {automationGraph} from './features/automations/graph.ts';
+import {mixHex, toMermaid} from './features/automations/mermaid-def.ts';
+import {shortAlias as auShortAlias} from './features/automations/sentences.ts';
 import {elapsedText, fingerprint, noiseOf, picks, todayRuns} from './features/automations/traces.ts';
 import {isUp, timelineLayout} from './features/automations/timeline-layout.ts';
 
@@ -35,354 +24,24 @@ const tEn = createMessages({language: 'en', tag: 'en'}).t;
 let mermaidP;
 const loadMermaid = () => (mermaidP ??= import('mermaid').then(m => m.default));
 
-// hex colour mix, for the node fills (Mermaid's classDef can't take color-mix: commas separate its properties)
-const auMix = (a, b, t) => {
-  const p = h => {
-    h = String(h || '')
-      .trim()
-      .replace('#', '');
-    if (h.length === 3)
-      h = h
-        .split('')
-        .map(c => c + c)
-        .join('');
-    const n = parseInt(h, 16);
-    return /^[0-9a-f]{6}$/i.test(h) ? [n >> 16, (n >> 8) & 255, n & 255] : null;
-  };
-  const x = p(a),
-    y = p(b);
-  if (!x || !y) return a;
-  return (
-    '#' +
-    x
-      .map((v, i) =>
-        Math.round(v * t + y[i] * (1 - t))
-          .toString(16)
-          .padStart(2, '0'),
-      )
-      .join('')
-  );
-};
 export const autoMethods = {
   // the words of a flow, in English (see tEn)
   auDeps() {
     return {t: tEn, fmt: this.fmtEn, states: this.hass.states, names: this.store.names};
   },
-  // ---------- the graph: nodes, edges, and what the run lit up ----------
-  // cfg = automation config; tr = full trace (or null): returns {def, sentence, failed, waiting}
-  auGraph(cfg, tr, sum) {
-    const T = (tr && tr.trace) || {},
-      nodes = [],
-      edges = [],
-      N = {};
-    const hasKey = p => Object.prototype.hasOwnProperty.call(T, p),
-      last = p => {
-        const a = T[p];
-        return a && a.length ? a[a.length - 1] : null;
-      };
-    const running = sum && sum.state === 'running',
-      lastStep = sum && (sum.last_step || (tr && tr.last_step));
-    const nid = p => 'n' + p.replace(/[^a-z0-9]+/gi, '_');
-    const add = (path, d, shape = 'round', extra = {}) => {
-      const id = nid(path),
-        e = last(path),
-        r = e && e.result,
-        vis = hasKey(path);
-      let cls = vis ? 'hit' : 'off',
-        sub = '';
-      if (vis && e.timestamp) sub = this.fmtEn.time24s(new Date(e.timestamp));
-      if (vis && r && r.result === false) {
-        cls = 'no';
-        sub = 'no';
-      } else if (vis && r && r.result === true) sub = 'yes';
-      if (vis && e.error) {
-        cls = 'no';
-        sub = auCut(e.error, 40);
-      }
-      if (vis && r && r.wait)
-        sub = r.wait.completed === false || (r.wait.trigger === null && !r.wait.completed) ? 'timed out' : 'done';
-      if (running && lastStep === path) {
-        cls = 'run';
-        sub = 'waiting here' + (e && e.timestamp ? ' since ' + this.fmtEn.time24(new Date(e.timestamp)) : '');
-      }
-      N[id] = {id, path, d, cls, vis, shape, sub, r, ...extra};
-      nodes.push(N[id]);
-      return id;
-    };
-    const link = (a, b, label, when) => edges.push({a, b, label, when});
-    const chain = (prev, next) => {
-      for (const x of prev) link(x.id, next, x.label, x.when);
-    };
-    // triggers
-    const trigs = auArr(cfg.triggers || cfg.trigger);
-    let fired = Object.keys(T)
-      .map(k => k.match(/^trigger\/(\d+)$/))
-      .filter(Boolean)
-      .map(m => +m[1]);
-    const tv = T.trigger && T.trigger[0] && T.trigger[0].changed_variables && T.trigger[0].changed_variables.trigger;
-    if (!fired.length && tv && tv.idx != null) fired = [+tv.idx];
-    trigs.forEach((t, i) => {
-      const p = `trigger/${i}`;
-      if (fired.includes(i) && !hasKey(p)) T[p] = [{timestamp: tr && tr.timestamp && tr.timestamp.start}];
-      add(p, triggerText(t, this.auDeps()), 'stadium');
-    });
-    let exits;
-    if (trigs.length > 1) {
-      const g = add('gate', {k: '', t: 'ANY'}, 'circle');
-      if (fired.length) {
-        T.gate = [{}];
-        N[g].cls = 'hit';
-        N[g].vis = true;
-      }
-      trigs.forEach((t, i) => link(nid(`trigger/${i}`), g));
-      exits = [{id: g}];
-    } else exits = trigs.length ? [{id: nid('trigger/0')}] : [];
-    // conditions: a chain, all must pass; "or" splits and joins again
-    const condTree = (c, path, prev) => {
-      if (
-        c &&
-        typeof c === 'object' &&
-        (c.condition === 'or' || c.condition === 'and') &&
-        !c.alias &&
-        auArr(c.conditions).length > 1
-      ) {
-        if (c.condition === 'and') {
-          let p = prev;
-          auArr(c.conditions).forEach((x, j) => {
-            p = condTree(x, `${path}/conditions/${j}`, p);
-          });
-          return p;
-        }
-        const g = add(path, {k: '', t: 'ANY OF'}, 'circle');
-        chain(prev, g);
-        const outs = [];
-        auArr(c.conditions).forEach((x, j) => outs.push(...condTree(x, `${path}/conditions/${j}`, [{id: g}])));
-        return outs;
-      }
-      const id = add(path, conditionText(c, this.auDeps()));
-      chain(prev, id);
-      return [{id}];
-    };
-    auArr(cfg.conditions || cfg.condition).forEach((c, i) => {
-      exits = condTree(c, `condition/${i}`, exits);
-    });
-    // actions: a sequence; if / choose branch and join
-    const seq = (list, path, prev) => {
-      auArr(list).forEach((a, j) => {
-        prev = step(a, `${path}/${j}`, prev);
-      });
-      return prev;
-    };
-    const step = (a, path, prev) => {
-      if (a && a.if) {
-        const d = {
-            k: 'If',
-            t:
-              auArr(a.if)
-                .map(c => conditionText(c, this.auDeps()).t)
-                .join(' and ') + '?',
-          },
-          id = add(path, d, 'diamond');
-        chain(prev, id);
-        const ch = N[id].r && N[id].r.choice;
-        const outs = seq(a.then, `${path}/then`, [{id, label: 'yes', when: [id, 'then']}]);
-        const els = a.else
-          ? seq(a.else, `${path}/else`, [{id, label: 'no', when: [id, 'else']}])
-          : [{id, label: 'no', when: [id, 'else']}];
-        if (N[id].vis && ch == null && !hasKey(`${path}/then/0`)) N[id].r = {...(N[id].r || {}), choice: 'else'};
-        return [...outs, ...els];
-      }
-      if (a && a.choose) {
-        const id = add(path, {k: 'Choose', t: 'Which case?'}, 'diamond');
-        chain(prev, id);
-        let outs = [];
-        auArr(a.choose).forEach((o, k) => {
-          const lbl = auCut(
-            o.alias ||
-              auArr(o.conditions)
-                .map(c => conditionText(c, this.auDeps()).t)
-                .join(' and '),
-            34,
-          );
-          outs.push(...seq(o.sequence, `${path}/choose/${k}/sequence`, [{id, label: lbl, when: [id, k]}]));
-        });
-        outs.push(
-          ...(a.default
-            ? seq(a.default, `${path}/default`, [{id, label: 'otherwise', when: [id, 'default']}])
-            : [{id, label: 'none', when: [id, 'default']}]),
-        );
-        return outs;
-      }
-      if (a && a.repeat) {
-        const id = add(path, actionText(a, this.auDeps()), 'round');
-        chain(prev, id);
-        const body = seq(a.repeat.sequence, `${path}/repeat/sequence`, [{id}]);
-        body.forEach(x => link(x.id, id, 'again', 'loop'));
-        return [{id}];
-      }
-      if (a && a.sequence && !a.action) return seq(a.sequence, `${path}/sequence`, prev);
-      const d = actionText(a, this.auDeps()),
-        id = add(path, d, d.shape || 'round');
-      chain(prev, id);
-      return [{id}];
-    };
-    exits = seq(cfg.actions || cfg.action, 'action', exits);
-    // a failed check ends the run: say so with a STOP node
-    const tsOf = n => {
-      const e = last(n.path);
-      return e && e.timestamp ? Date.parse(e.timestamp) : 0;
-    };
-    const failed = nodes
-      .filter(
-        n =>
-          n.cls === 'no' &&
-          /^condition/.test(n.path) &&
-          n.r &&
-          n.r.result === false &&
-          !nodes.some(m => m.path.startsWith(n.path + '/') && m.cls === 'no'),
-      )
-      .sort((x, y) => tsOf(y) - tsOf(x) || y.path.length - x.path.length)[0];
-    if (failed && sum && sum.script_execution === 'failed_conditions') {
-      const s = add('stop', {k: '', t: 'STOP'}, 'stop');
-      N[s].cls = 'stopn';
-      N[s].vis = true;
-      link(failed.id, s, '', 'stop');
-    }
-    // edge states
-    const choiceOk = w => {
-      if (!w) return true;
-      if (w === 'loop' || w === 'stop') return true;
-      const [id, v] = w,
-        c = N[id].r && N[id].r.choice;
-      return v === 'default' || v === 'else'
-        ? (c === v || c === 'default' || c === 'else' || c == null) &&
-            N[id].vis &&
-            !(typeof c === 'number' || c === 'then')
-        : String(c) === String(v);
-    };
-    edges.forEach(e => {
-      const A = N[e.a],
-        B = N[e.b];
-      e.cls =
-        e.when === 'stop'
-          ? 'stop'
-          : B.cls === 'run' && A.vis
-            ? 'run'
-            : A.vis && B.vis && A.cls !== 'no' && choiceOk(e.when)
-              ? 'on'
-              : 'off';
-    });
-    // the decision in one sentence
-    const firedNode = nodes.find(n => /^trigger\//.test(n.path) && n.vis),
-      waitN = nodes.find(n => n.cls === 'run');
-    const started = tr && tr.timestamp ? tr.timestamp.start : sum && sum.timestamp && sum.timestamp.start;
-    const ranActs = nodes.filter(n => /^action\//.test(n.path) && n.vis && n.shape !== 'diamond').length;
-    const exec = sum && sum.script_execution;
-    const parts = [];
-    if (tr || sum) {
-      parts.push(
-        firedNode && firedNode.d.kind === 'automations.kind.every'
-          ? `Every ${firedNode.d.t}${started ? ', at ' + this.fmtEn.time24(new Date(started)) : ''}`
-          : firedNode && firedNode.d.kind === 'automations.kind.time'
-            ? `At ${firedNode.d.t}`
-            : `${firedNode ? firedNode.d.t : cap((sum && sum.trigger) || 'Started')}${started ? ' at ' + this.fmtEn.time24(new Date(started)) : ''}`,
-      );
-      if (failed && exec === 'failed_conditions') parts.push(`stopped at “${auCut(failed.d.t, 60)}”`);
-      else if (exec === 'failed_single' || exec === 'failed_max_runs') parts.push('skipped, it was already running');
-      else if (nodes.some(n => /^condition\//.test(n.path))) parts.push('checks passed');
-      if (waitN)
-        parts.push(
-          `now ${waitN.d.kind === 'automations.kind.delay' ? 'in a ' + waitN.d.t.toLowerCase() : 'waiting: ' + auCut(waitN.d.t, 60).toLowerCase()}`,
-        );
-      else if (exec === 'error') parts.push(`error${sum.error ? ': ' + auCut(sum.error, 60) : ''}`);
-      else if (exec === 'finished' || exec === 'aborted' || exec === 'cancelled') {
-        const fin = sum.timestamp && sum.timestamp.finish,
-          d = fin && started ? (Date.parse(fin) - Date.parse(started)) / 1000 : null;
-        parts.push(
-          `${plural(ranActs, 'step')} ran${d == null ? '' : d < 1 ? ' at once' : ' in ' + (d < 60 ? Math.round(d) + ' s' : durationText(Math.round(d), this.auDeps()))}${exec !== 'finished' ? ' (' + exec + ')' : ''}`,
-        );
-      }
-    }
+  // the theme's colours a flow is drawn in
+  auTokens() {
+    const c = n => this.css(n) || '#888';
     return {
-      nodes,
-      edges,
-      sentence: parts.join(' → '),
-      failed: !!failed && exec === 'failed_conditions',
-      waiting: !!waitN,
+      ok: c('--ok'),
+      crit: c('--crit'),
+      warn: c('--warn'),
+      card: c('--card'),
+      ring: c('--ring'),
+      fg: c('--fg'),
+      fg3: c('--fg3'),
+      line: c('--line'),
     };
-  },
-  // Mermaid source for a graph, in the panel's colours
-  auMermaid(G) {
-    const c = n => this.css(n) || '#888',
-      ok = c('--ok'),
-      crit = c('--crit'),
-      warn = c('--warn'),
-      card = c('--card'),
-      ring = c('--ring'),
-      fg = c('--fg'),
-      fg3 = c('--fg3'),
-      line = c('--line');
-    // Mermaid's entity pre-pass runs `text.replace(/style.*:\S*#.*;/g, s => s.slice(0, -1))` on each source line and so
-    // drops the last `;` of one that has a `#` after `style…:` with no space between (a label's `100#37;`). Every node and
-    // edge line therefore ends in a `;` of its own (a statement separator to Mermaid), and it must stay the last character
-    // of the line: it is the one the pre-pass eats, so the label's is not. See "As built (#97)" in docs/specs/07.
-    // Home Assistant text (aliases, names, trace errors) goes into quoted labels, and Mermaid reads `#nn;` entities in
-    // them, `%%{init}%%` directives and `$$…$$` formulas (KaTeX), so each of those is written so it can only be drawn:
-    // esc() leaves no `"` to close a label; a # that starts what could be an entity (`#36;`, `#lt;`) becomes `#35;`
-    // first, so a typed `#36;` or `#37;` stays text instead of turning into the `$` or `%` it names (Mermaid reads only
-    // `#`, word characters and `;` as an entity, so any other # is already plain text and is left alone); every % becomes
-    // `#37;` (no `%%{init}%%` directive: theme, CSS, label settings); each $ gets its own <span>, so no two meet (an
-    // entity would not do: Mermaid decodes it before it looks for `$$`). Known: Mermaid drops the last `;` of a source
-    // line that has a `#` after a `style…:` with no space between, see the `;` ending every statement below
-    const mermaidText = s =>
-      esc(s)
-        .replace(/#(?=\w*;)/g, '#35;')
-        .replace(/%/g, '#37;')
-        .replace(/\$/g, () => '<span>$</span>');
-    const lbl = n => {
-      if (n.shape === 'circle' || n.shape === 'stop')
-        return `<span style='font-size:11px;font-weight:800;letter-spacing:.08em'>${mermaidText(n.d.t)}</span>`;
-      const k = n.d.k
-        ? `<span style='font-size:11px;font-weight:800;letter-spacing:.1em;opacity:.65'>${mermaidText(n.d.k.toUpperCase())}</span><br/>`
-        : '';
-      return `${k}<span style='font-size:12px;font-weight:700'>${mermaidText(auCut(n.d.t, 64))}</span>${n.sub ? `<br/><span style='font-size:11px;font-weight:500;opacity:.75'>${mermaidText(n.sub)}</span>` : ''}`;
-    };
-    const shape = n => {
-      const L = `"${lbl(n)}"`;
-      return n.shape === 'stadium'
-        ? `([${L}])`
-        : n.shape === 'circle'
-          ? `((${L}))`
-          : n.shape === 'diamond'
-            ? `{{${L}}}`
-            : n.shape === 'sub'
-              ? `[[${L}]]`
-              : n.shape === 'stop'
-                ? `([${L}])`
-                : `(${L})`;
-    };
-    const out = [this.compact ? 'flowchart TD' : 'flowchart LR']; // top to bottom on a phone, where the screen is tall
-    for (const n of G.nodes) out.push(`  ${n.id}${shape(n)}:::${n.cls};`);
-    G.edges.forEach(e =>
-      out.push(
-        `  ${e.a} ${e.cls === 'off' ? '-.->' : '-->'}${e.label ? `|"<span style='font-size:11px;font-weight:600'>${mermaidText(e.label)}</span>"|` : ''} ${e.b};`,
-      ),
-    );
-    out.push(`  classDef hit fill:${auMix(ok, card, 0.16)},stroke:${ok},stroke-width:2px,color:${fg}`);
-    out.push(`  classDef no fill:${auMix(crit, card, 0.14)},stroke:${crit},stroke-width:2px,color:${fg}`);
-    out.push(`  classDef run fill:${auMix(warn, card, 0.16)},stroke:${warn},stroke-width:3px,color:${fg}`);
-    out.push(`  classDef off fill:${card},stroke:${ring},stroke-width:2px,stroke-dasharray:5 4,color:${fg3}`);
-    out.push(`  classDef stopn fill:${crit},stroke:${crit},color:${card}`);
-    const idx = k => G.edges.map((e, i) => (e.cls === k ? i : -1)).filter(i => i >= 0);
-    const ls = (k, style) => {
-      const ix = idx(k);
-      if (ix.length) out.push(`  linkStyle ${ix.join(',')} ${style}`);
-    };
-    ls('on', `stroke:${ok},stroke-width:3px`);
-    ls('run', `stroke:${warn},stroke-width:3px`);
-    ls('stop', `stroke:${crit},stroke-width:3px`);
-    ls('off', `stroke:${line === card ? ring : auMix(fg3, card, 0.45)},stroke-width:2px`);
-    return out.join('\n');
   },
   // ---------- data ----------
   auAutos() {
@@ -548,8 +207,8 @@ export const autoMethods = {
         );
         return;
       }
-      const G = this.auGraph(cfg, tr || null, sm || null),
-        def = this.auMermaid(G);
+      const G = automationGraph(cfg, tr || null, sm || null, this.auDeps()),
+        def = toMermaid(G, this.auTokens(), this.compact);
       const pill = !sm
         ? '<span class="pill">no run stored</span>'
         : sm.state === 'running'
@@ -718,7 +377,7 @@ export const autoMethods = {
       on: this.css('--ok'),
       run: this.css('--warn'),
       stop: this.css('--crit'),
-      off: auMix(this.css('--fg3'), this.css('--card'), 0.45),
+      off: mixHex(this.css('--fg3'), this.css('--card'), 0.45),
     };
     Object.entries(col).forEach(([k, c]) => mk(k, c));
     const paths = [...svg.querySelectorAll('.edgePaths path, path.flowchart-link')].filter(
