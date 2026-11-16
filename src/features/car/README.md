@@ -1,6 +1,6 @@
 # Car
 
-What the Car tab reads and computes ([spec 21](../../../docs/specs/21-car.md)): the FordPass car and the Wallbox charger, their charging sessions, the departure schedule's draft and the card's bars. This folder holds the pure half of the first move (#249), the providers' readings, the schedule's rules and the bars as geometry, and the model, the history and the loader of the second (#250). The pane and the card that draw them come in the moves after it (#251 to #253).
+What the Car tab reads and computes ([spec 21](../../../docs/specs/21-car.md)): the FordPass car and the Wallbox charger, their charging sessions, the departure schedule's draft and the card's bars. This folder holds the pure half of the first move (#249), the providers' readings, the schedule's rules and the bars as geometry, the model, the history and the loader of the second (#250), and, since the third (#251), the pane and the card that draw them. The detail and the controls come in the moves after it (#252 and #253).
 
 ## The folder
 
@@ -8,10 +8,16 @@ What the Car tab reads and computes ([spec 21](../../../docs/specs/21-car.md)): 
 src/providers/
   fordpass.ts              findCar(states): CarRef | null; readCar(states, config, names, ref): CarInputs; tirePsi(raw); departureSchedule(states, ref); carEntityIds(ref)
   wallbox.ts               (spec 19) gains amps, pause, lock and price on its inputs, chargingSessions(rows) and wallboxCommands.pause(target, on)
+  power-history.ts         gains sessionsWindow(now, power): the Wallbox's hourly power for the sessions' year
 src/core/i18n/
   format.ts                gains clock(hours, minutes): a time of day with no date, no zone
 src/features/car/
   README.md
+  index.ts                 carFeature: the descriptor, `available` from `findCar`
+  car-pane.ts              <hp-car-pane>: `active`, the store controller on `carIds`, `CarHistory`, the header and the card
+  car-card.ts              <hp-car-card>: the card over the model's `card`, the bars, the photo's fallback
+  car-art.ts               carSide(color, label): the drawn car as an `svg` template
+  sheets.ts                DETAIL_SHEET: the id the card asks for, the legacy panel's `sh-car` until #252
   ids.ts                   carIds(store, ref): the car's entities and the Wallbox's six
   inputs.ts                readCarFeature(states, config, names): the reference, the car and the charger
   schedule.ts              ScheduleDraft, draftFromSchedule, toggleDay, roundToFive, validate, scheduleWords, describe
@@ -50,6 +56,12 @@ The Car asks two windows through the panel's cache (ADR 0028): the Wallbox's hou
 `carModel(inputs, history, deps)` is the whole view in strings and numbers: the phone's line (`Parked at home · 64.0% · 280 km · charging`), the card (name, where, the charge and `280 km range · locked · charging`, the battery bar with its limit, the charger, the last charge and the odometer, the daily bars and their sentence once the history is in), and the detail's blocks (battery, status with the four tires and the chips, Ford's messages and the departure times, the last plug-in, the sessions with their tiles, months, table rows and toggle). Every number goes through `fmt` and every word through the catalog; a tile whose sensor the car does not have is left out. The sessions' cost is at the Wallbox's price, else 7 cents. Nothing in it reads the clock: "the car last checked in at 4:05 pm" is a state, and the sessions' "today" is the history's. What the element holds, the table's "show all" and the failed image's drawing, is not the model's: `allSessions` comes in with the deps and the image fallback is the card's. The controls' view (`chargerControls`, `comfortControls`) comes with #253.
 
 Two texts of Ford's own are worded by the catalog, the tire pressure warning's subject and body, because the legacy rewrite layer knew them; any other message is shown as Ford sent it. The charger's status goes through the same table Energy's flow uses (`chargerStatusKey`, in the Wallbox provider).
+
+## The pane and the card
+
+`<hp-car-pane>` is the tab, since #251. On a phone it draws `<hp-pane-header>` (the car's name, then the model's summary line) and `<hp-car-card>`; on a tablet it draws nothing, because the tab is the legacy detail, which the sheet host puts inline in the pane's section until #252. It reads the car and the charger in `willUpdate` through `readCarFeature`, runs `carModel` and keeps the view; its store controller listens to `carIds` while it is the tab and not otherwise, and a hidden pane keeps what it drew. `CarHistory` asks its two windows when the pane is first shown and not again for fifteen minutes; the Wallbox's hours are also asked at start by the guest's shared load, through the same cache (`sessionsWindow`, one definition), so the hours are read once for the panel and the days when the tab is first opened.
+
+`<hp-car-card>` places the model's card: the title line, the charge and its line beside the photo, the battery bar with the limit's mark, three tiles and the 30 days' bars from `barsGeometry`. Its box is a button that asks the shell for the legacy sheet, `sh-car`. The one state it keeps is the photo's: Ford's picture goes through Home Assistant's image proxy, and an `error` on it sets `imageFailed`, which shows the drawn car (`carSide`, in the config's colour) for the element's life and is never cleared, so a new address from Home Assistant is not tried. The bars take their colours from the frame's tokens, so a light change or a theme change gives the pane no mutation. A history that did not load is its line under the card, "History didn't load: ...", where the legacy panel wrote it at the top of every tab.
 
 ## The tests
 

@@ -12,6 +12,7 @@ import {
   meterTotals,
   powerWindows,
   rowsOf,
+  sessionsWindow,
   sum,
   waterDay,
   windowStart,
@@ -80,6 +81,19 @@ describe('powerWindows', () => {
 
   test('windowStart goes back whole days from the top of the hour', () => {
     expect(windowStart(NOW, 400).toISOString()).toBe('2025-10-05T14:00:00.000Z');
+  });
+});
+
+describe('sessionsWindow', () => {
+  test('the charger’s hourly mean and max for 366 days, from the top of the hour so that a repeat is a cache hit', () => {
+    // 09:45 in Toronto is 14:45 UTC
+    const now = Date.parse('2026-11-09T09:45:00-05:00');
+    expect(sessionsWindow(now, 'sensor.power')).toEqual({
+      start: new Date('2025-11-08T14:00:00Z'),
+      period: 'hour',
+      ids: ['sensor.power'],
+      types: ['mean', 'max'],
+    });
   });
 });
 

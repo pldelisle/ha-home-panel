@@ -1,0 +1,10 @@
+/*
+ * <hp-car-pane>'s own rules: it lays out nothing itself, so the header and the card are items of the pane section's own column (`.pane-car`, phone.css: sixteen pixels between them),
+ * as the legacy pane's were; on a tablet it draws nothing and the legacy detail sits beside it in the section.
+ */
+:host {
+  display: contents;
+}
+:host([compact]) hp-pane-header {
+  margin-bottom: 0;
+}

@@ -32,6 +32,24 @@ describe('statistics', () => {
     expect(statisticsAsked()).toBe(1);
   });
 
+  test('an identical call while the first is still in flight is the same request: one message leaves, and both callers get its reply', async () => {
+    const {hass, cache, statisticsAsked} = setup();
+    let release = () => {};
+    hass.replies.set(
+      'recorder/statistics_during_period',
+      () =>
+        new Promise(resolve => {
+          release = () => resolve({'sensor.a': []});
+        }),
+    );
+    const first = cache.statistics(['sensor.a'], 'hour', START, ['mean']);
+    const second = cache.statistics(['sensor.a'], 'hour', START, ['mean']);
+    expect(statisticsAsked()).toBe(1);
+    release();
+    await expect(Promise.all([first, second])).resolves.toEqual([{'sensor.a': []}, {'sensor.a': []}]);
+    expect(statisticsAsked()).toBe(1);
+  });
+
   test('the message that leaves is the client own, with the end time when there is one', async () => {
     const {hass, cache} = setup();
     await cache.statistics(['sensor.a', 'sensor.b'], 'day', START, ['min', 'max'], END);

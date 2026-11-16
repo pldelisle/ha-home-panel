@@ -1,6 +1,6 @@
-// The Wallbox charger: its power and status for the energy card, its controls' inputs for the Car, the catalog key of each status, and the charging sessions its hourly power makes.
+// The Wallbox charger: its power and status for the energy card, its controls' inputs for the Car, the catalog key of each status and the charging sessions its hourly power makes.
 // Pattern: an adapter below the features (ADR 0025), found by the config's keys (convention over configuration), not the registry; the reads are those of the legacy flow,
-// `attention()` and `renderCarControls` (deleted in #241 and #253); `chargingSessions` is the legacy `derive`'s rule (deleted in #251), here and not in the Car so the live pill can ask it too (spec 22).
+// `attention()` and `renderCarControls` (deleted in #241 and #253); `chargingSessions` is a rule over the charger's hourly rows, here and not in the Car so the live pill can ask it too (spec 22).
 // The pause command is `Command` data (core), which the kit's runner will send; the pill's "Pause charging" (#255) and the Car's switch (#253) will both use it, so it is built once, here.
 // Must not: word the status (it names the catalog key that does), send a command, import the kit, or read the registry or the clock.
 import type {Command} from '../core/commands.ts';

@@ -1,7 +1,7 @@
 // carModel: the car, its charger and its history in, every text, figure and shape the Car card, the phone's line and the detail's read-only blocks place out.
 // Pattern: a pure view-model function, a humble object's other half (Meszaros, Fowler): it reads no clock, no `hass` and no store, words every message through `deps.t` and every number through `deps.fmt`,
 // and delegates the bars to bars-geometry.ts and the schedule's words to schedule.ts. Each rule is the legacy panel's own (`renderCarCard`, `carSheet`, `renderSessions`, `renderCarSheetLive`, `schedText`), which #251 to #253 delete.
-// The card (#251) and the detail's blocks (#252) will draw it; nothing calls it before them.
+// The pane's header and the card draw it since #251; the detail's blocks (#252) will draw the rest, and the controls' view comes with #253.
 // Must not: import the DOM, Lit or the shell, read the clock (the sessions' "today" is the history's), hold text the household reads (a catalog key says it), or build the controls' view (#253).
 import {capitalise, DASH, HOUR_MS, joined} from '../../core/figures.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
@@ -79,6 +79,14 @@ export interface DailyBars {
 
 export interface CarCard {
   name: string;
+  /** Ford's photo of the car, through Home Assistant's image proxy; null when it has none. */
+  picture: string | null;
+  /** The body colour the config gave the drawn car; null for the default. */
+  color: string | null;
+  /** What a screen reader says of the drawn car, which stands where the photo fails to load. */
+  drawing: string;
+  /** What a screen reader says of the card, which opens the detail. */
+  open: string;
   where: string;
   /** The charge, a tenth of a percent; the percent sign is the tile's. */
   charge: string;
@@ -264,6 +272,10 @@ function cardOf(car: CarInputs, charger: WallboxInputs, history: CarHistoryData 
   const rangeWords = car.range === null ? '' : t('car.range', {n: whole(fmt, car.range)});
   return {
     name: car.name || t('car.title'),
+    picture: car.picture,
+    color: car.color,
+    drawing: t('car.art.side'),
+    open: t('car.open'),
     where: whereOf(car, t),
     charge: fixedOr(fmt, car.soc, 1),
     line: joined(rangeWords, lockWord(car.locked, t), stateWord(car, t)),

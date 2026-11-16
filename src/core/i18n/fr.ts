@@ -890,4 +890,6 @@ export const fr: Record<MessageKey, string> = {
   'car.sessions.tooltip': '{kwh} kWh en {n, plural, one {# session} other {# sessions}}',
   'car.historyFailed':
     "L'historique n'a pas pu être chargé\u00a0: {reason}. Les valeurs en direct continuent de se mettre à jour.",
+  'car.open': 'Ouvrir les détails de la voiture',
+  'car.art.side': 'Voiture, vue de côté',
 };

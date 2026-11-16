@@ -71,6 +71,20 @@ export const NOON_MS = 12 * HOUR_MS;
 export const windowStart = (now: number, days: number): Date =>
   new Date(Math.floor(now / HOUR_MS) * HOUR_MS - days * DAY_MS);
 
+/** How far back the Wallbox's hourly power goes for the sessions: a year and a day. */
+const SESSION_DAYS = 366;
+
+/**
+ * The Wallbox's hourly `mean` and `max` power over the sessions' year, one definition for the Car's history and the legacy panel's shared load, so the cache answers the second
+ * (ADR 0028); the live pill reads the same rows.
+ */
+export const sessionsWindow = (now: number, power: string | null): StatisticsWindow => ({
+  start: windowStart(now, SESSION_DAYS),
+  period: 'hour',
+  ids: [power],
+  types: ['mean', 'max'],
+});
+
 /** The sum of a list of numbers, a missing one counting for nothing. */
 export const sum = (values: readonly (number | null | undefined)[]): number =>
   values.reduce<number>((total, value) => total + (value ?? 0), 0);

@@ -681,6 +681,13 @@
         "reason": "timeout"
       },
       "translated": "L'historique n'a pas pu être chargé : timeout. Les valeurs en direct continuent de se mettre à jour."
+    },
+    {
+      "key": "car.open"
+    },
+    {
+      "key": "car.art.side",
+      "translated": "Voiture, vue de côté"
     }
   ]
 }
