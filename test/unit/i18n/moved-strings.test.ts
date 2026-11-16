@@ -19,9 +19,10 @@ interface Moved {
   fr?: MessageValues;
   /**
    * The sentence the message is read in, when the layer translates it only there (`Range, 12 months` is `Écart, 12 mois`, the
-   * bare `12 months` is left as it is): the layer's output for `en + english` must be `fr + the French message`.
+   * bare `12 months` is left as it is): the layer's output for `en + english` must be `fr + the French message`. A piece the layer
+   * knows only as part of a line (`55.0 of 88.0 kWh usable · battery at 20.0°`) has what follows it, `enAfter` and `frAfter`, too.
    */
-  frame?: {en: string; fr: string};
+  frame?: {en: string; fr: string; enAfter?: string; frAfter?: string};
   /**
    * The French the layer made of the English text before the move deleted its entry from the map (src/i18n/fr.js), as the
    * byte comparison found it. The layer is no oracle for a deleted entry, so this text is: the catalog must say it, and the layer
@@ -69,7 +70,7 @@ describe.each([
   ['media', 'media.', ['src/features/media/', 'src/providers/'], ['common.failed']],
   ['security', 'security.', ['src/features/security/'], []],
   ['air', 'air.', ['src/features/air/', 'src/providers/'], []],
-  ['energy', 'energy.', ['src/features/energy/'], []],
+  ['energy', 'energy.', ['src/features/energy/', 'src/providers/'], []],
   ['climate', 'climate.', ['src/features/climate/'], []],
   ['car', 'car.', ['src/features/car/', 'src/providers/'], []],
   ['chart', 'chart.', ['src/ui/'], []],
@@ -86,8 +87,10 @@ describe.each([
     else if (m.was !== undefined) {
       expect(layer.text(text), 'the map entry is deleted').toBe(m.after ?? text);
       expect(french.t(m.key, inFrench(m))).toBe(m.was);
-    } else if (m.frame) expect(m.frame.fr + french.t(m.key, inFrench(m))).toBe(layer.text(m.frame.en + text) as string);
-    else expect(french.t(m.key, inFrench(m))).toBe(layer.text(text) as string);
+    } else if (m.frame) {
+      const {en, fr, enAfter = '', frAfter = ''} = m.frame;
+      expect(fr + french.t(m.key, inFrench(m)) + frAfter).toBe(layer.text(en + text + enAfter) as string);
+    } else expect(french.t(m.key, inFrench(m))).toBe(layer.text(text) as string);
   });
 
   test('lists every message the move introduced, and only messages that exist', () => {

@@ -1,6 +1,6 @@
 // figures.ts and the whole-number formats beside fmt.integer: the dash, the capital, the hour and the day, and the -0 that must not show.
 import {describe, expect, test} from 'vitest';
-import {capitalise, capitalWords, DASH, DAY_MS, HOUR_MS, hundredths} from '../../../src/core/figures.ts';
+import {capitalise, capitalWords, DASH, DAY_MS, HOUR_MS, hundredths, joined} from '../../../src/core/figures.ts';
 import {createFormatters, degrees, whole} from '../../../src/core/i18n/format.ts';
 import {englishLocale} from '../../../src/core/i18n/locale.ts';
 
@@ -27,6 +27,12 @@ describe('figures', () => {
     expect(capitalWords('eco_boost_max')).toBe('Eco boost max');
     expect(capitalWords('heating')).toBe('Heating');
     expect(capitalWords('')).toBe('');
+  });
+
+  test('joined keeps the parts with something to say, in order, with a middle dot between', () => {
+    expect(joined('280 km range', '', 'charging')).toBe('280 km range · charging');
+    expect(joined('', '')).toBe('');
+    expect(joined('locked')).toBe('locked');
   });
 
   test('whole rounds, and a small negative is 0 and not -0; degrees adds the sign', () => {

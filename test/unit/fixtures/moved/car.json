@@ -1,35 +1,634 @@
 {
-  "about": "The English messages the Car move's pure half introduced (src/core/i18n/en.ts, car.*), each with sample values; the rest of the Car's strings come with its model (#250). test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer makes of the English, or what is `written` where the layer's output depends on the sentence the word sits in (a day's abbreviation is `Lun.` alone and `lun.` in a list: the catalog says the list's). The legacy panel still draws all of these until #253, so no entry of the rewrite layer is deleted yet. Deleted with the layer in phase 4.",
+  "about": "The English messages the Car's moves introduced (src/core/i18n/en.ts, car.*), each with sample values: the pure half's (#249) and the model's (#250). test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer makes of the English, or what is `written` where the layer never produced French or produced something else (the sentence the layer read as a whole, a count of one, a day's abbreviation that is `Lun.` alone and `lun.` in a list: the catalog says the list's); a `frame` is the sentence around a piece the layer only knows whole. The legacy panel still draws the controls' words until #253 and all of these until #252, so no entry of the rewrite layer is deleted yet. Deleted with the layer in phase 4.",
   "messages": [
-    {"key": "car.chargingOn"},
-    {"key": "car.chargingOff"},
-    {"key": "car.pickTemperature"},
-    {"key": "car.pickDay"},
-    {"key": "car.everyDay"},
-    {"key": "car.weekdays"},
-    {"key": "car.noDays"},
-    {"key": "car.dayShort", "values": {"day": "monday"}, "written": "lun."},
-    {"key": "car.dayShort", "values": {"day": "tuesday"}, "written": "mar."},
-    {"key": "car.dayShort", "values": {"day": "wednesday"}, "written": "mer."},
-    {"key": "car.dayShort", "values": {"day": "thursday"}, "written": "jeu."},
-    {"key": "car.dayShort", "values": {"day": "friday"}, "written": "ven."},
-    {"key": "car.dayShort", "values": {"day": "saturday"}, "written": "sam."},
-    {"key": "car.dayShort", "values": {"day": "sunday"}, "written": "dim."},
-    {"key": "car.dayShort", "values": {"day": "someday"}, "written": "someday"},
+    {
+      "key": "car.chargingOn"
+    },
+    {
+      "key": "car.chargingOff"
+    },
+    {
+      "key": "car.pickTemperature"
+    },
+    {
+      "key": "car.pickDay"
+    },
+    {
+      "key": "car.everyDay"
+    },
+    {
+      "key": "car.weekdays"
+    },
+    {
+      "key": "car.noDays"
+    },
+    {
+      "key": "car.dayShort",
+      "values": {
+        "day": "monday"
+      },
+      "written": "lun."
+    },
+    {
+      "key": "car.dayShort",
+      "values": {
+        "day": "tuesday"
+      },
+      "written": "mar."
+    },
+    {
+      "key": "car.dayShort",
+      "values": {
+        "day": "wednesday"
+      },
+      "written": "mer."
+    },
+    {
+      "key": "car.dayShort",
+      "values": {
+        "day": "thursday"
+      },
+      "written": "jeu."
+    },
+    {
+      "key": "car.dayShort",
+      "values": {
+        "day": "friday"
+      },
+      "written": "ven."
+    },
+    {
+      "key": "car.dayShort",
+      "values": {
+        "day": "saturday"
+      },
+      "written": "sam."
+    },
+    {
+      "key": "car.dayShort",
+      "values": {
+        "day": "sunday"
+      },
+      "written": "dim."
+    },
+    {
+      "key": "car.dayShort",
+      "values": {
+        "day": "someday"
+      },
+      "written": "someday"
+    },
     {
       "key": "car.at",
-      "values": {"days": "weekdays", "time": "8:30 am"},
-      "fr": {"days": "en semaine", "time": "8 h 30"}
+      "values": {
+        "days": "weekdays",
+        "time": "8:30 am"
+      },
+      "fr": {
+        "days": "en semaine",
+        "time": "8 h 30"
+      }
     },
     {
       "key": "car.departureOn",
-      "values": {"when": "weekdays at 8:30 am"},
-      "fr": {"when": "en semaine à 8 h 30"}
+      "values": {
+        "when": "weekdays at 8:30 am"
+      },
+      "fr": {
+        "when": "en semaine à 8 h 30"
+      }
     },
     {
       "key": "car.departureOff",
-      "values": {"when": "weekdays at 8:30 am"},
-      "fr": {"when": "en semaine à 8 h 30"}
+      "values": {
+        "when": "weekdays at 8:30 am"
+      },
+      "fr": {
+        "when": "en semaine à 8 h 30"
+      }
+    },
+    {
+      "key": "car.noCar"
+    },
+    {
+      "key": "car.where.home"
+    },
+    {
+      "key": "car.where.away"
+    },
+    {
+      "key": "car.range",
+      "values": {
+        "n": 280
+      }
+    },
+    {
+      "key": "car.state.locked"
+    },
+    {
+      "key": "car.state.unlocked"
+    },
+    {
+      "key": "car.state.charging"
+    },
+    {
+      "key": "car.state.pluggedIn"
+    },
+    {
+      "key": "car.state.unplugged"
+    },
+    {
+      "key": "car.percent",
+      "values": {
+        "n": "64.0"
+      }
+    },
+    {
+      "key": "car.limit",
+      "values": {
+        "n": 90
+      }
+    },
+    {
+      "key": "car.limitCharge",
+      "values": {
+        "n": 90
+      }
+    },
+    {
+      "key": "car.socLabel",
+      "values": {
+        "n": "64.0"
+      }
+    },
+    {
+      "key": "car.socLabelLimit",
+      "values": {
+        "n": "64.0",
+        "limit": 90
+      }
+    },
+    {
+      "key": "car.odometer"
+    },
+    {
+      "key": "car.on"
+    },
+    {
+      "key": "car.off"
+    },
+    {
+      "key": "car.since",
+      "values": {
+        "date": "Nov 6"
+      },
+      "fr": {
+        "date": "6 nov."
+      }
+    },
+    {
+      "key": "car.delivered"
+    },
+    {
+      "key": "car.estCost"
+    },
+    {
+      "key": "car.money",
+      "values": {
+        "amount": "123"
+      }
+    },
+    {
+      "key": "car.money",
+      "values": {
+        "amount": "12.34"
+      }
+    },
+    {
+      "key": "car.stamp",
+      "values": {
+        "date": "Nov 6",
+        "time": "5:00 pm"
+      },
+      "fr": {
+        "date": "6 nov.",
+        "time": "17 h"
+      }
+    },
+    {
+      "key": "car.plug.charging"
+    },
+    {
+      "key": "car.plug.pluggedIn"
+    },
+    {
+      "key": "car.plug.unplugged"
+    },
+    {
+      "key": "car.card.charger"
+    },
+    {
+      "key": "car.card.wallbox"
+    },
+    {
+      "key": "car.card.lastCharge"
+    },
+    {
+      "key": "car.card.daily",
+      "values": {
+        "days": 30,
+        "charging": 5,
+        "kwh": 120
+      }
+    },
+    {
+      "key": "car.card.daily",
+      "values": {
+        "days": 30,
+        "charging": 1,
+        "kwh": 8
+      }
+    },
+    {
+      "key": "car.card.daily",
+      "values": {
+        "days": 30,
+        "charging": 0,
+        "kwh": 0
+      }
+    },
+    {
+      "key": "car.card.barsLabel",
+      "values": {
+        "n": "3.2"
+      },
+      "written": "Barres quotidiennes en kWh, maximum 3,2 kWh"
+    },
+    {
+      "key": "car.card.barTitle",
+      "values": {
+        "day": "Nov 6",
+        "kwh": "3.2"
+      },
+      "fr": {
+        "day": "6 nov."
+      }
+    },
+    {
+      "key": "car.checkedIn",
+      "values": {
+        "time": "4:05 pm"
+      },
+      "fr": {
+        "time": "16 h 05"
+      }
+    },
+    {
+      "key": "car.battery.title"
+    },
+    {
+      "key": "car.battery.usable",
+      "values": {
+        "remaining": "55.0",
+        "capacity": "88.0"
+      },
+      "frame": {
+        "en": "",
+        "fr": "",
+        "enAfter": " · battery at 20.0°",
+        "frAfter": " · batterie à 20,0°"
+      }
+    },
+    {
+      "key": "car.battery.temperature",
+      "values": {
+        "n": "20.0"
+      },
+      "frame": {
+        "en": "55.0 of 88.0 kWh usable · ",
+        "fr": "55,0 sur 88,0 kWh utilisables · "
+      }
+    },
+    {
+      "key": "car.battery.fullRange"
+    },
+    {
+      "key": "car.battery.atFull"
+    },
+    {
+      "key": "car.battery.plug"
+    },
+    {
+      "key": "car.battery.acLimit"
+    },
+    {
+      "key": "car.battery.cabin"
+    },
+    {
+      "key": "car.battery.outside",
+      "values": {
+        "n": "5.0"
+      }
+    },
+    {
+      "key": "car.status.title"
+    },
+    {
+      "key": "car.status.tires"
+    },
+    {
+      "key": "car.status.battery12"
+    },
+    {
+      "key": "car.status.software"
+    },
+    {
+      "key": "car.status.autoUpdates"
+    },
+    {
+      "key": "car.tire.frontLeft"
+    },
+    {
+      "key": "car.tire.frontRight"
+    },
+    {
+      "key": "car.tire.rearLeft"
+    },
+    {
+      "key": "car.tire.rearRight"
+    },
+    {
+      "key": "car.tire.normal"
+    },
+    {
+      "key": "car.chip.doorsClosed"
+    },
+    {
+      "key": "car.chip.doorOpen"
+    },
+    {
+      "key": "car.chip.windowsClosed"
+    },
+    {
+      "key": "car.chip.windowOpen"
+    },
+    {
+      "key": "car.chip.hoodClosed"
+    },
+    {
+      "key": "car.chip.hoodOpen"
+    },
+    {
+      "key": "car.chip.locked"
+    },
+    {
+      "key": "car.chip.unlocked"
+    },
+    {
+      "key": "car.chip.alarmOff"
+    },
+    {
+      "key": "car.chip.alarm",
+      "values": {
+        "state": "armed"
+      }
+    },
+    {
+      "key": "car.chip.alarm",
+      "values": {
+        "state": "triggered"
+      }
+    },
+    {
+      "key": "car.chip.alarm",
+      "values": {
+        "state": "arming"
+      },
+      "written": "Alarme arming"
+    },
+    {
+      "key": "car.chip.park"
+    },
+    {
+      "key": "car.chip.gear",
+      "values": {
+        "gear": "drive"
+      },
+      "written": "Rapport drive"
+    },
+    {
+      "key": "car.ford.title"
+    },
+    {
+      "key": "car.ford.subtitle"
+    },
+    {
+      "key": "car.ford.dated",
+      "values": {
+        "subject": "Service due",
+        "date": "Nov 6"
+      },
+      "fr": {
+        "date": "6 nov."
+      },
+      "written": "Service due, 6 nov."
+    },
+    {
+      "key": "car.ford.tpmsSubject",
+      "frame": {
+        "en": "",
+        "fr": "",
+        "enAfter": ", Nov 6",
+        "frAfter": ", 6 nov."
+      }
+    },
+    {
+      "key": "car.ford.tpmsBody"
+    },
+    {
+      "key": "car.ford.departureOn"
+    },
+    {
+      "key": "car.ford.departureOff"
+    },
+    {
+      "key": "car.ford.noSchedule"
+    },
+    {
+      "key": "car.ford.saved",
+      "values": {
+        "when": "Weekdays at 8:30 am"
+      },
+      "fr": {
+        "when": "En semaine à 8 h 30"
+      }
+    },
+    {
+      "key": "car.ford.saved",
+      "values": {
+        "when": "Every day at 8:30 am"
+      },
+      "fr": {
+        "when": "Tous les jours à 8 h 30"
+      },
+      "written": "Tous les jours à 8 h 30, enregistré."
+    },
+    {
+      "key": "car.ford.saved",
+      "values": {
+        "when": "Mon, Tue at 8:30 am"
+      },
+      "fr": {
+        "when": "Lun., mar. à 8 h 30"
+      },
+      "written": "Lun., mar. à 8 h 30, enregistré."
+    },
+    {
+      "key": "car.last.title"
+    },
+    {
+      "key": "car.last.window",
+      "values": {
+        "from": "Nov 6, 5:00 pm",
+        "to": "Nov 6, 7:00 pm"
+      },
+      "fr": {
+        "from": "6 nov., 17 h",
+        "to": "6 nov., 19 h"
+      }
+    },
+    {
+      "key": "car.last.window",
+      "values": {
+        "from": "–",
+        "to": "–"
+      },
+      "written": "– au –"
+    },
+    {
+      "key": "car.last.rangeAdded"
+    },
+    {
+      "key": "car.last.stopped"
+    },
+    {
+      "key": "car.last.perWallbox"
+    },
+    {
+      "key": "car.last.noneTitle",
+      "written": "Dernier branchement"
+    },
+    {
+      "key": "car.last.noneBody",
+      "written": "Ford n'a pas encore signalé de session de recharge."
+    },
+    {
+      "key": "car.sessions.title"
+    },
+    {
+      "key": "car.sessions.summary",
+      "values": {
+        "n": 12,
+        "date": "Aug 6",
+        "cents": 7
+      },
+      "fr": {
+        "date": "6 août"
+      }
+    },
+    {
+      "key": "car.sessions.summary",
+      "values": {
+        "n": 1,
+        "date": "Aug 6",
+        "cents": 7
+      },
+      "fr": {
+        "date": "6 août"
+      },
+      "written": "1 session de recharge sur la Wallbox depuis le 6 août. Le coût est estimé au tarif de 7 ¢/kWh réglé dans l'application Wallbox."
+    },
+    {
+      "key": "car.sessions.none"
+    },
+    {
+      "key": "car.sessions.sessions"
+    },
+    {
+      "key": "car.sessions.average"
+    },
+    {
+      "key": "car.sessions.perSession"
+    },
+    {
+      "key": "car.sessions.rate",
+      "values": {
+        "cents": 7
+      }
+    },
+    {
+      "key": "car.sessions.date"
+    },
+    {
+      "key": "car.sessions.time"
+    },
+    {
+      "key": "car.sessions.length"
+    },
+    {
+      "key": "car.sessions.energy"
+    },
+    {
+      "key": "car.sessions.peak"
+    },
+    {
+      "key": "car.sessions.times",
+      "values": {
+        "from": "4:00 pm",
+        "to": "8:00 pm"
+      },
+      "fr": {
+        "from": "16 h",
+        "to": "20 h"
+      }
+    },
+    {
+      "key": "car.sessions.showAll",
+      "values": {
+        "n": 12
+      }
+    },
+    {
+      "key": "car.sessions.showLatest",
+      "values": {
+        "n": 10
+      }
+    },
+    {
+      "key": "car.sessions.chargedAtHome"
+    },
+    {
+      "key": "car.sessions.tooltip",
+      "values": {
+        "kwh": 12,
+        "n": 3
+      },
+      "written": "12 kWh en 3 sessions"
+    },
+    {
+      "key": "car.sessions.tooltip",
+      "values": {
+        "kwh": 12,
+        "n": 1
+      },
+      "written": "12 kWh en 1 session"
+    },
+    {
+      "key": "car.historyFailed",
+      "values": {
+        "reason": "timeout"
+      },
+      "written": "L'historique n'a pas pu être chargé : timeout. Les valeurs en direct continuent de se mettre à jour."
     }
   ]
 }

@@ -3,7 +3,7 @@
 // message through `deps.t` and every number through `deps.fmt`, and a held mode or speed comes from `deps.overlay` (ADR 0023). Each rule is the
 // legacy panel's own (`renderAir`, `renderAirLive`, `roomAir`, `airSummary`), deleted in #234.
 // Must not: import the DOM, Lit or the shell, read the clock, or hold text the household reads (a catalog key says it).
-import {capitalWords, DASH} from '../../core/figures.ts';
+import {capitalWords, DASH, joined} from '../../core/figures.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
 import {whole, type Formatters} from '../../core/i18n/format.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
@@ -179,8 +179,6 @@ export interface AirViewModel {
     outdoorChart: {title: string; hint: string; empty: string} | null;
   };
 }
-
-const joined = (...parts: string[]): string => parts.filter(Boolean).join(' · ');
 
 /** A reading as the legacy `aqFmt` wrote it: a dash for none, one decimal for carbon monoxide under ten, else whole; `short` writes thousands as `1.5k`. */
 function figure(k: Pollutant, value: number | null, fmt: Formatters, short = false): string {

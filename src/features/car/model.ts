@@ -1,0 +1,609 @@
+// carModel: the car, its charger and its history in, every text, figure and shape the Car card, the phone's line and the detail's read-only blocks place out.
+// Pattern: a pure view-model function, a humble object's other half (Meszaros, Fowler): it reads no clock, no `hass` and no store, words every message through `deps.t` and every number through `deps.fmt`,
+// and delegates the bars to bars-geometry.ts and the schedule's words to schedule.ts. Each rule is the legacy panel's own (`renderCarCard`, `carSheet`, `renderSessions`, `renderCarSheetLive`, `schedText`), which #251 to #253 delete.
+// The card (#251) and the detail's blocks (#252) will draw it; nothing calls it before them.
+// Must not: import the DOM, Lit or the shell, read the clock (the sessions' "today" is the history's), hold text the household reads (a catalog key says it), or build the controls' view (#253).
+import {capitalise, DASH, joined} from '../../core/figures.ts';
+import type {MessageKey} from '../../core/i18n/en.ts';
+import {fixedOr, noonOf, whole, type Formatters} from '../../core/i18n/format.ts';
+import type {Translate} from '../../core/i18n/messages.ts';
+import type {CarInputs, FordMessage, LastPlug} from '../../providers/fordpass.ts';
+import {sum} from '../../providers/power-history.ts';
+import {chargerStatusKey, type Session, type WallboxInputs} from '../../providers/wallbox.ts';
+import {barsGeometry, type BarsGeometry} from './bars-geometry.ts';
+import {DAILY_DAYS, monthlySessions, type CarHistoryData, type MonthlySessions} from './history.ts';
+import type {CarFeatureInputs} from './inputs.ts';
+import {draftFromSchedule, scheduleWords} from './schedule.ts';
+
+/** What the model words and formats with, and what the detail's table is showing. */
+export interface CarModelDeps {
+  t: Translate;
+  fmt: Formatters;
+  /** The sessions' table shows every session and not the latest ten: the detail's toggle, element state. */
+  allSessions: boolean;
+  /** Why the history did not load (the loader's), or null. */
+  historyError: string | null;
+}
+
+/** The price per kWh the Wallbox's sessions are costed at when the house set none: the legacy `carSheet`'s 7 cents. */
+const DEFAULT_PRICE = 0.07;
+/** The table shows this many sessions, the latest, until "show all". */
+const LATEST_SESSIONS = 10;
+/** A day with more than this many kWh is a charging day in the card's line. */
+const CHARGING_DAY_KWH = 5;
+/** The widest the table's energy bar is, in pixels, beyond its four-pixel stub. */
+const SESSION_BAR_PX = 70;
+const SESSION_BAR_STUB_PX = 4;
+/** The units under a figure: symbols, the same in every language. */
+const UNIT = {
+  kwh: 'kWh',
+  kw: 'kW',
+  km: 'km',
+  percent: '%',
+  hours: 'h',
+  psi: 'psi',
+  volts: 'V',
+  amps: 'A',
+  degrees: '°',
+} as const;
+
+/** One tile: a label, a figure and its unit, and the line under it; `word` is a figure that is a word ("Charging"), which the tile writes smaller. */
+export interface CarTile {
+  label: string;
+  value: string;
+  unit: string;
+  sub: string;
+  word: boolean;
+}
+
+/** The battery bar: how full it is, where the charge limit stands, what a screen reader hears, and the words under it. */
+export interface SocBar {
+  /** The charge, 0 to 100. */
+  fill: number;
+  /** The charge limit in percent; null when Ford sends none. */
+  limit: number | null;
+  label: string;
+  /** `end` is empty on the card, which draws no 100%. */
+  scale: {start: string; limit: string; end: string};
+}
+
+/** The card's daily bars: the geometry, a title for each bar and the sentence under them. */
+export interface DailyBars {
+  geometry: BarsGeometry;
+  /** For a screen reader, over the whole drawing. */
+  label: string;
+  /** Each bar's "Nov 6: 3.2 kWh", in the bars' order. */
+  titles: string[];
+  line: string;
+}
+
+export interface CarCard {
+  name: string;
+  where: string;
+  /** The charge, a tenth of a percent; the percent sign is the tile's. */
+  charge: string;
+  /** "280 km range · locked · charging". */
+  line: string;
+  soc: SocBar;
+  /** The charger, the last charge and the odometer. */
+  tiles: CarTile[];
+  /** Null until the history has loaded. */
+  daily: DailyBars | null;
+}
+
+/** One of the four tires: its name, its pressure and unit, and Ford's word for it when it gave one. */
+export interface TireView {
+  label: string;
+  psi: string;
+  unit: string;
+  state: {text: string; ok: boolean} | null;
+}
+
+/** A status chip: "Doors closed", in the warning colour when it is not good. */
+export interface Chip {
+  text: string;
+  good: boolean;
+}
+
+export interface BatteryBlock {
+  title: string;
+  /** "55.0 of 88.0 kWh usable · battery at 20.0°"; empty when the car gives neither. */
+  line: string;
+  charge: string;
+  range: string;
+  soc: SocBar;
+  tiles: CarTile[];
+}
+
+export interface StatusBlock {
+  title: string;
+  caption: string;
+  /** Front left, front right, rear left, rear right. */
+  tires: TireView[];
+  chips: Chip[];
+  tiles: CarTile[];
+}
+
+/** A line of the Ford block: one of Ford's messages, or the departure times' state. */
+export interface FordRow {
+  kind: 'message' | 'departure';
+  title: string;
+  body: string;
+}
+
+export interface FordBlock {
+  title: string;
+  caption: string;
+  rows: FordRow[];
+}
+
+export interface LastBlock {
+  title: string;
+  /** "Nov 6, 5:00 pm to Nov 6, 7:00 pm", or what Ford has not reported yet. */
+  caption: string;
+  /** Empty while Ford has reported no plug-in. */
+  tiles: CarTile[];
+}
+
+/** One row of the sessions' table: the figures a column writes, and the width of the energy bar. */
+export interface SessionRow {
+  /** The session's start, which keys the row. */
+  key: number;
+  date: string;
+  times: string;
+  length: string;
+  energy: string;
+  /** The energy bar's width in pixels. */
+  barPx: number;
+  peak: string;
+  cost: string;
+}
+
+export interface SessionsBlock {
+  title: string;
+  /** The sentence under the title; empty until the history loads. */
+  summary: string;
+  tiles: CarTile[];
+  /** The kWh by month, which the chart draws (`sessionsChartOptions`). */
+  months: MonthlySessions[];
+  columns: {date: string; time: string; length: string; energy: string; peak: string; cost: string};
+  rows: SessionRow[];
+  /** The toggle between the latest ten and all of them; null when there are no more than ten. */
+  toggle: string | null;
+}
+
+export interface CarDetail {
+  title: string;
+  /** "Parked at home · locked · the car last checked in at 4:05 pm". */
+  sub: string;
+  battery: BatteryBlock;
+  status: StatusBlock;
+  sessions: SessionsBlock;
+  ford: FordBlock;
+  last: LastBlock;
+}
+
+export interface CarViewModel {
+  /** The phone's header and the line under it. */
+  summary: {title: string; line: string};
+  /** Null where the house has no FordPass car. */
+  card: CarCard | null;
+  detail: CarDetail | null;
+  /** What stands where a car's card and detail would: "No FordPass car found."; null when there is one. */
+  none: string | null;
+  /** "History didn't load: …", for the card's and the detail's line; null when it did, or has not been asked. */
+  error: string | null;
+}
+
+/** A tile; `value` is a figure, `word` says it is a word instead. */
+const tile = (label: string, value: string, unit = '', sub = '', word = false): CarTile => ({
+  label,
+  value,
+  unit,
+  sub,
+  word,
+});
+
+/** The tiles a car has something for: a dash is a sensor it does not have, left out rather than shown. */
+const present = (tiles: CarTile[]): CarTile[] => tiles.filter(({value}) => value !== DASH);
+
+/** A figure the sensor gave, as written: whole or with a decimal where it has one. */
+const reading = (fmt: Formatters, value: number | null): string => (value === null ? DASH : fmt.number(value));
+
+/** The sentence's own period ends it: "since 6 nov." is not followed by a second one (French writes the month short, with its point). */
+const oneStop = (text: string): string => text.replace(/\.\./g, '.');
+
+/** Where the car is: at home, away, or the zone the tracker names; nothing while the tracker reads nothing. */
+function whereOf(car: CarInputs, t: Translate): string {
+  if (car.tracker === null) return '';
+  if (car.tracker === 'home') return t('car.where.home');
+  return car.tracker === 'not_home' ? t('car.where.away') : car.tracker;
+}
+
+const lockWord = (locked: boolean | null, t: Translate): string =>
+  locked === null ? '' : t(locked ? 'car.state.locked' : 'car.state.unlocked');
+
+const stateWord = (car: CarInputs, t: Translate): string =>
+  t(car.charging ? 'car.state.charging' : car.plugged ? 'car.state.pluggedIn' : 'car.state.unplugged');
+
+/** The battery bar and the words under it: the card's names the limit to a screen reader and says "Limit 90%" under it; the detail's says "Charge limit 90%" and 100%. */
+function socBar(car: CarInputs, {t, fmt}: CarModelDeps, detail: boolean): SocBar {
+  const limit = car.limit || null;
+  const charge = fixedOr(fmt, car.soc, 1);
+  const named = limit === null ? '' : fmt.number(limit);
+  return {
+    fill: car.soc || 0,
+    limit,
+    label:
+      limit === null || detail ? t('car.socLabel', {n: charge}) : t('car.socLabelLimit', {n: charge, limit: named}),
+    scale: {
+      start: t('car.percent', {n: fmt.integer(0)}),
+      limit: limit === null ? '' : t(detail ? 'car.limitCharge' : 'car.limit', {n: named}),
+      end: detail ? t('car.percent', {n: fmt.integer(100)}) : '',
+    },
+  };
+}
+
+/** The charger's status as the Wallbox integration words it, in the household's language where the catalog knows it. */
+function chargerWord(charger: WallboxInputs, t: Translate): string {
+  if (charger.status === null) return DASH;
+  const key = chargerStatusKey(charger.status);
+  return key ? t(key) : charger.status;
+}
+
+function cardOf(car: CarInputs, charger: WallboxInputs, history: CarHistoryData | null, deps: CarModelDeps): CarCard {
+  const {t, fmt} = deps;
+  const last = history?.sessions.at(-1) ?? null;
+  const rangeWords = car.range === null ? '' : t('car.range', {n: whole(fmt, car.range)});
+  return {
+    name: car.name || t('car.title'),
+    where: whereOf(car, t),
+    charge: fixedOr(fmt, car.soc, 1),
+    line: joined(rangeWords, lockWord(car.locked, t), stateWord(car, t)),
+    soc: socBar(car, deps, false),
+    tiles: [
+      tile(t('car.card.charger'), chargerWord(charger, t), '', t('car.card.wallbox'), true),
+      tile(t('car.card.lastCharge'), last ? fmt.fixed(last.kwh, 1) : DASH, UNIT.kwh, last ? fmt.date(last.start) : ''),
+      tile(t('car.odometer'), car.odometer === null ? DASH : fmt.integer(car.odometer), UNIT.km),
+    ],
+    daily: history ? dailyBars(history, deps) : null,
+  };
+}
+
+/** The last 30 days' charging as bars, a title for each, and the line that counts the charging days and the kWh. */
+function dailyBars({daily}: CarHistoryData, {t, fmt}: CarModelDeps): DailyBars {
+  const last = daily.slice(-DAILY_DAYS);
+  const values = last.map(({ev}) => ev);
+  const days = last.map(({day}) => fmt.date(noonOf(day, fmt)));
+  const geometry = barsGeometry(values, days);
+  return {
+    geometry,
+    label: t('car.card.barsLabel', {n: fmt.fixed(geometry.highest, 1)}),
+    titles: values.map((value, index) => t('car.card.barTitle', {day: days[index], kwh: fmt.fixed(value, 1)})),
+    line: t('car.card.daily', {
+      days: DAILY_DAYS,
+      charging: values.filter(value => value > CHARGING_DAY_KWH).length,
+      kwh: whole(fmt, sum(values)),
+    }),
+  };
+}
+
+/** The phone's line: where, the charge and the range, and what the plug is doing; or the missing car. */
+function summaryOf(car: CarInputs, {t, fmt}: CarModelDeps) {
+  const range = car.range === null ? '' : `${whole(fmt, car.range)} ${UNIT.km}`;
+  const charge = t('car.percent', {n: fixedOr(fmt, car.soc, 1)});
+  return {
+    title: car.name || t('car.title'),
+    line: joined(whereOf(car, t), joined(charge, range), stateWord(car, t)),
+  };
+}
+
+function batteryOf(car: CarInputs, deps: CarModelDeps): BatteryBlock {
+  const {t, fmt} = deps;
+  const {battery} = car;
+  const plug = car.charging ? 'car.plug.charging' : car.plugged ? 'car.plug.pluggedIn' : 'car.plug.unplugged';
+  return {
+    title: t('car.battery.title'),
+    line: joined(
+      battery.remainingKwh === null
+        ? ''
+        : t('car.battery.usable', {
+            remaining: fmt.fixed(battery.remainingKwh, 1),
+            capacity: fixedOr(fmt, battery.capacityKwh, 1),
+          }),
+      battery.temperature === null ? '' : t('car.battery.temperature', {n: fmt.fixed(battery.temperature, 1)}),
+    ),
+    charge: fixedOr(fmt, car.soc, 1),
+    range: car.range === null ? '' : t('car.range', {n: whole(fmt, car.range)}),
+    soc: socBar(car, deps, true),
+    tiles: present([
+      tile(
+        t('car.battery.fullRange'),
+        battery.fullRangeKm === null ? DASH : whole(fmt, battery.fullRangeKm),
+        UNIT.km,
+        t('car.battery.atFull'),
+      ),
+      tile(
+        t('car.battery.plug'),
+        t(plug),
+        '',
+        car.charging && car.chargingKw ? `${fmt.fixed(car.chargingKw, 1)} ${UNIT.kw}` : '',
+        true,
+      ),
+      tile(t('car.battery.acLimit'), reading(fmt, car.acLimit), UNIT.amps),
+      tile(
+        t('car.battery.cabin'),
+        fixedOr(fmt, car.cabin, 1),
+        UNIT.degrees,
+        car.outsideTemp === null ? '' : t('car.battery.outside', {n: fmt.fixed(car.outsideTemp, 1)}),
+      ),
+    ]),
+  };
+}
+
+/** The tire's name and the pressure Ford reported, a tenth of a psi; Ford's word for it is shown as it gave it, lower case, unless it is the normal one. */
+function tireOf(label: string, {psi, state}: CarInputs['tires']['frontLeft'], {t, fmt}: CarModelDeps): TireView {
+  const normal = state === 'NORMAL';
+  return {
+    label,
+    psi: psi === null ? DASH : fmt.fixed(psi, 1),
+    unit: UNIT.psi,
+    state: state === null ? null : {text: normal ? t('car.tire.normal') : state.toLowerCase(), ok: normal},
+  };
+}
+
+/** The status chips the car's sensors support, each with whether it is good; a sensor the car does not have gives none. */
+function chipsOf(car: CarInputs, {t}: CarModelDeps): Chip[] {
+  const {doors, windowsClosed, locked, alarm, gear} = car;
+  const chips: (Chip | null)[] = [
+    doors.closed === null
+      ? null
+      : {text: t(doors.closed ? 'car.chip.doorsClosed' : 'car.chip.doorOpen'), good: doors.closed},
+    windowsClosed === null
+      ? null
+      : {text: t(windowsClosed ? 'car.chip.windowsClosed' : 'car.chip.windowOpen'), good: windowsClosed},
+    doors.hoodTailgateClosed === null
+      ? null
+      : {
+          text: t(doors.hoodTailgateClosed ? 'car.chip.hoodClosed' : 'car.chip.hoodOpen'),
+          good: doors.hoodTailgateClosed,
+        },
+    locked === null ? null : {text: t(locked ? 'car.chip.locked' : 'car.chip.unlocked'), good: locked},
+    alarm === null
+      ? null
+      : {
+          text: alarm === 'DISARMED' ? t('car.chip.alarmOff') : t('car.chip.alarm', {state: alarm.toLowerCase()}),
+          good: true,
+        },
+    gear === null
+      ? null
+      : {text: gear === 'PARK' ? t('car.chip.park') : t('car.chip.gear', {gear: gear.toLowerCase()}), good: true},
+  ];
+  return chips.filter((chip): chip is Chip => chip !== null);
+}
+
+function statusOf(car: CarInputs, deps: CarModelDeps): StatusBlock {
+  const {t, fmt} = deps;
+  const {tires, firmware, battery12} = car;
+  const updated = firmware?.since ?? null;
+  return {
+    title: t('car.status.title'),
+    caption: t('car.status.tires'),
+    tires: [
+      tireOf(t('car.tire.frontLeft'), tires.frontLeft, deps),
+      tireOf(t('car.tire.frontRight'), tires.frontRight, deps),
+      tireOf(t('car.tire.rearLeft'), tires.rearLeft, deps),
+      tireOf(t('car.tire.rearRight'), tires.rearRight, deps),
+    ],
+    chips: chipsOf(car, deps),
+    tiles: present([
+      tile(t('car.odometer'), car.odometer === null ? DASH : fmt.integer(car.odometer), UNIT.km),
+      tile(
+        t('car.status.battery12'),
+        reading(fmt, battery12.percent),
+        UNIT.percent,
+        battery12.volts ? `${fmt.fixed(battery12.volts, 1)} ${UNIT.volts}` : '',
+      ),
+      tile(
+        t('car.status.software'),
+        firmware?.version ?? DASH,
+        '',
+        updated === null ? '' : t('car.since', {date: fmt.date(updated)}),
+        true,
+      ),
+      tile(
+        t('car.status.autoUpdates'),
+        car.autoUpdates === null ? DASH : t(car.autoUpdates ? 'car.on' : 'car.off'),
+        '',
+        '',
+        true,
+      ),
+    ]),
+  };
+}
+
+/** Ford's own texts the catalog words in the household's language: the legacy rewrite layer knew these two, and a text it did not know is shown as Ford sent it. */
+const FORD_TEXTS: ReadonlyMap<string, MessageKey> = new Map([
+  ['Tire Pressure Monitor System Warning', 'car.ford.tpmsSubject'],
+  [
+    'The Tire Pressure Monitoring System has detected one or more tires are significantly under-inflated.',
+    'car.ford.tpmsBody',
+  ],
+]);
+
+const fordText = (text: string, t: Translate): string => {
+  const key = FORD_TEXTS.get(text);
+  return key ? t(key) : text;
+};
+
+function messageRow(message: FordMessage, {t, fmt}: CarModelDeps): FordRow {
+  const subject = fordText(message.subject, t);
+  return {
+    kind: 'message',
+    title: message.created === null ? subject : t('car.ford.dated', {subject, date: fmt.date(message.created)}),
+    body: fordText(message.body, t),
+  };
+}
+
+function fordOf(car: CarInputs, deps: CarModelDeps): FordBlock {
+  const {t, fmt} = deps;
+  const saved = car.schedule
+    ? t('car.ford.saved', {when: capitalise(scheduleWords(draftFromSchedule(car.schedule), fmt, t))})
+    : t('car.ford.noSchedule');
+  return {
+    title: t('car.ford.title'),
+    caption: t('car.ford.subtitle'),
+    rows: [
+      ...car.messages.map(message => messageRow(message, deps)),
+      {kind: 'departure', title: t(car.departureOn ? 'car.ford.departureOn' : 'car.ford.departureOff'), body: saved},
+    ],
+  };
+}
+
+/** Ford's plug-in or plug-out time as `Nov 6, 5:00 pm`, or a dash where Ford sent none or something that is not a date. */
+const stamp = (time: number | null, {t, fmt}: CarModelDeps): string =>
+  time === null ? DASH : t('car.stamp', {date: fmt.date(time), time: fmt.time(time)});
+
+/** The kWh the Wallbox's sessions delivered while the car was plugged in; null when the history has not loaded or Ford gave no plug-in or plug-out time. */
+function delivered(plug: LastPlug, sessions: readonly Session[] | undefined): number | null {
+  if (!sessions || plug.plugIn === null || plug.plugOut === null) return null;
+  const {plugIn, plugOut} = plug;
+  return sum(sessions.filter(session => session.end > plugIn && session.start < plugOut).map(session => session.kwh));
+}
+
+function lastOf(car: CarInputs, history: CarHistoryData | null, deps: CarModelDeps): LastBlock {
+  const {t, fmt} = deps;
+  const plug = car.lastPlug;
+  if (!plug) return {title: t('car.last.noneTitle'), caption: t('car.last.noneBody'), tiles: []};
+  const stoppedAtLimit = plug.lastSoc !== null && !!car.limit && plug.lastSoc >= car.limit;
+  const kwh = delivered(plug, history?.sessions);
+  return {
+    title: t('car.last.title'),
+    caption: t('car.last.window', {from: stamp(plug.plugIn, deps), to: stamp(plug.plugOut, deps)}),
+    tiles: [
+      tile(
+        t('car.battery.title'),
+        plug.firstSoc !== null && plug.lastSoc !== null
+          ? `${fmt.number(plug.firstSoc)}→${fmt.number(plug.lastSoc)}`
+          : DASH,
+        UNIT.percent,
+        stoppedAtLimit ? t('car.last.stopped') : '',
+      ),
+      tile(t('car.last.rangeAdded'), plug.rangeAddedKm === null ? DASH : whole(fmt, plug.rangeAddedKm), UNIT.km),
+      tile(t('car.plug.pluggedIn'), plug.pluggedHours === null ? DASH : fmt.fixed(plug.pluggedHours, 1), UNIT.hours),
+      tile(t('car.delivered'), kwh === null ? DASH : fmt.fixed(kwh, 1), UNIT.kwh, t('car.last.perWallbox')),
+    ],
+  };
+}
+
+/** A sum of money as the household's language writes it: whole dollars or with cents. */
+const money = ({t, fmt}: CarModelDeps, amount: number, cents: boolean): string =>
+  t('car.money', {amount: cents ? fmt.fixed(amount, 2) : fmt.integer(Math.round(amount))});
+
+function sessionsOf(
+  sessions: readonly Session[] | undefined,
+  charger: WallboxInputs,
+  deps: CarModelDeps,
+): SessionsBlock {
+  const {t, fmt, allSessions} = deps;
+  const columns = {
+    date: t('car.sessions.date'),
+    time: t('car.sessions.time'),
+    length: t('car.sessions.length'),
+    energy: t('car.sessions.energy'),
+    peak: t('car.sessions.peak'),
+    cost: t('car.estCost'),
+  };
+  const title = t('car.sessions.title');
+  if (!sessions) return {title, summary: '', tiles: [], months: [], columns, rows: [], toggle: null};
+  const price = charger.price ?? DEFAULT_PRICE;
+  const cents = fmt.fixed(price * 100, 0);
+  const total = sum(sessions.map(session => session.kwh));
+  const since = sessions.length ? fmt.date(sessions[0].start) : '';
+  const newest = sessions.slice().reverse();
+  const widest = Math.max(1, ...sessions.map(session => session.kwh));
+  const shown = allSessions ? newest : newest.slice(0, LATEST_SESSIONS);
+  return {
+    title,
+    summary: sessions.length
+      ? oneStop(t('car.sessions.summary', {n: sessions.length, date: since, cents}))
+      : t('car.sessions.none'),
+    tiles: [
+      tile(
+        t('car.sessions.sessions'),
+        fmt.integer(sessions.length),
+        '',
+        sessions.length ? t('car.since', {date: since}) : '',
+      ),
+      tile(t('car.delivered'), fmt.integer(total), UNIT.kwh),
+      tile(
+        t('car.sessions.average'),
+        sessions.length ? fmt.fixed(total / sessions.length, 1) : DASH,
+        UNIT.kwh,
+        t('car.sessions.perSession'),
+      ),
+      tile(t('car.estCost'), money(deps, total * price, false), '', t('car.sessions.rate', {cents})),
+    ],
+    months: monthlySessions(sessions, fmt),
+    columns,
+    rows: shown.map(session => ({
+      key: session.start,
+      date: capitalise(fmt.dateWeekday(session.start)),
+      times: t('car.sessions.times', {from: fmt.time(session.start), to: fmt.time(session.end)}),
+      length: `${whole(fmt, (session.end - session.start) / 36e5)} ${UNIT.hours}`,
+      energy: `${fmt.fixed(session.kwh, 1)} ${UNIT.kwh}`,
+      barPx: Math.round((session.kwh / widest) * SESSION_BAR_PX) + SESSION_BAR_STUB_PX,
+      peak: `${fmt.fixed(session.peak, 1)} ${UNIT.kw}`,
+      cost: money(deps, session.kwh * price, true),
+    })),
+    toggle:
+      newest.length <= LATEST_SESSIONS
+        ? null
+        : allSessions
+          ? t('car.sessions.showLatest', {n: LATEST_SESSIONS})
+          : t('car.sessions.showAll', {n: newest.length}),
+  };
+}
+
+/** The detail's line under the name: where the car is, whether it is locked, and when it last checked in. */
+function subOf(car: CarInputs, {t, fmt}: CarModelDeps): string {
+  return joined(
+    whereOf(car, t),
+    lockWord(car.locked, t),
+    car.lastRefresh === null ? '' : t('car.checkedIn', {time: fmt.time(car.lastRefresh)}),
+  );
+}
+
+/**
+ * The Car tab's view: the card, the phone's line and the detail's read-only blocks, from the inputs, in the language `deps.t` words. `history` is the loader's;
+ * until it arrives the card has no bars and the detail no sessions, and a failed load puts its reason in `error`. A house with no car has only the line that says so.
+ */
+export function carModel(inputs: CarFeatureInputs, history: CarHistoryData | null, deps: CarModelDeps): CarViewModel {
+  const {t} = deps;
+  const {car, charger} = inputs;
+  const error = deps.historyError === null ? null : t('car.historyFailed', {reason: deps.historyError});
+  if (!car) {
+    return {
+      summary: {title: t('car.title'), line: t('car.noCar')},
+      card: null,
+      detail: null,
+      none: t('car.noCar'),
+      error,
+    };
+  }
+  return {
+    summary: summaryOf(car, deps),
+    card: cardOf(car, charger, history, deps),
+    detail: {
+      title: car.name || t('car.title'),
+      sub: subOf(car, deps),
+      battery: batteryOf(car, deps),
+      status: statusOf(car, deps),
+      sessions: sessionsOf(history?.sessions, charger, deps),
+      ford: fordOf(car, deps),
+      last: lastOf(car, history, deps),
+    },
+    none: null,
+    error,
+  };
+}
