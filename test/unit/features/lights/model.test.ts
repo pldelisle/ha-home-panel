@@ -71,7 +71,7 @@ describe('lightsModel', () => {
       ['Office', '78 % · Auto'],
     ]);
     expect(view.tiles[2].label).toBe('Office : 78 % · Auto');
-    expect(view.strip?.right).toBe('Maintenant 3800 K · actif partout');
+    expect(view.strip?.right).toEqual({now: 'Maintenant', kelvin: '3800 K', state: 'actif partout'});
   });
 
   test('a phone’s tile leaves out the colour temperature, and its strip the marks’ names', () => {
@@ -84,7 +84,7 @@ describe('lightsModel', () => {
   test('the strip: the sun’s marks, the live kelvin of a lit switch, else the curve’s; some on, none on', () => {
     expect(lightsModel(inputsOf(), deps()).strip).toMatchObject({
       title: 'Adaptive Lighting today',
-      right: 'Now 3800 K · on everywhere',
+      right: {now: 'Now', kelvin: '3800 K', state: 'on everywhere'},
       now: '58.33%',
       marks: [
         {at: '33.33%', text: 'Sunrise 8:00 am'},
@@ -93,9 +93,9 @@ describe('lightsModel', () => {
       ],
     });
     const curve = withStates(['switch.adaptive_lighting_office', 'on', {color_temp_kelvin: null}]);
-    expect(lightsModel(inputsOf(curve), deps()).strip?.right).toBe('Now 5500 K · on everywhere');
+    expect(lightsModel(inputsOf(curve), deps()).strip?.right.kelvin).toBe('5500 K');
     const off = withStates(['switch.adaptive_lighting_office', 'off']);
-    expect(lightsModel(inputsOf(off), deps()).strip?.right).toBe('Off everywhere');
+    expect(lightsModel(inputsOf(off), deps()).strip?.right).toEqual({now: null, kelvin: null, state: 'Off everywhere'});
     expect(lightsModel(inputsOf(off), deps()).summary).toBe('4 lights on · Adaptive Lighting off everywhere');
   });
 
@@ -112,7 +112,7 @@ describe('lightsModel', () => {
     );
     const view = lightsModel(inputsOf(house, {}), deps());
     expect(view.summary).toBe('1 light on · Adaptive Lighting on in 1 of 2');
-    expect(view.strip?.right).toBe('Now 5500 K · on in 1 of 2');
+    expect(view.strip?.right).toEqual({now: 'Now', kelvin: '5500 K', state: 'on in 1 of 2'});
     expect(subs(view)).toEqual([
       ['Attic', 'Off'],
       ['Den', '100% · Auto'],
@@ -138,6 +138,15 @@ describe('lightsModel', () => {
       ['Other lights', 'Off'],
     ]);
     expect(view.arrange.show).toBe(false);
+    const fr = lightsModel(inputsOf(house, {}), deps('fr', {isAdmin: false}));
+    expect([fr.summary, fr.card.right, ...subs(fr).flat()]).toEqual([
+      'Toutes les lumières éteintes',
+      'Tout éteindre',
+      'Den',
+      'Indisponible',
+      'Autres lumières',
+      'Éteint',
+    ]);
   });
 
   test('a house with no light: the card and the phone say so', () => {
@@ -268,6 +277,12 @@ describe('sheetModel', () => {
       ],
     });
     expect(kitchen.colour).toMatchObject({label: 'Warm white'});
+    expect(sheetModel('kitchen', inputsOf(), deps('fr'))).toMatchObject({
+      power: {label: 'Kitchen\u00a0: lumières'},
+      brightness: {name: 'Luminosité', text: '59\u202f%'},
+      colour: {name: 'Température de couleur', label: 'Blanc chaud'},
+      bulbs: {label: 'Ampoules'},
+    });
     const dark = withStates(['light.kitchen_island_1', 'off'], ['light.kitchen_island_2', 'off']);
     expect(sheetModel('kitchen', inputsOf(dark), deps())).toMatchObject({
       sub: 'Off',

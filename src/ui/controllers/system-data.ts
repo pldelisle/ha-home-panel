@@ -47,10 +47,10 @@ export class SystemDataController implements ReactiveController {
     this.shown = false;
   }
 
-  /** Merges `patch` into the value, tells the host, and saves it; a refused save puts the old value back and rejects with Home Assistant's reason. */
+  /** Merges `patch` into the value, tells the host, and saves it; a refused save puts the old value back and rejects with Home Assistant's reason, and a save before the panel has a connection rejects without a change. */
   async set(patch: Partial<PanelSystemData>): Promise<void> {
     const deps = this.deps();
-    if (!deps) return;
+    if (!deps) throw new Error('The panel is not connected to Home Assistant yet');
     const before = this.value;
     const next = {...before, ...patch};
     this.value = next;

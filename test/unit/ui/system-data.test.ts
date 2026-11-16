@@ -110,7 +110,7 @@ describe('SystemDataController', () => {
     expect(controller.value).toEqual({light_order: ['office']});
   });
 
-  test('a refused write that a later write overtook leaves the later value; with no store yet nothing is written', async () => {
+  test('a refused write that a later write overtook leaves the later value; with no store yet nothing is written and the caller is told', async () => {
     const {controller, api, state} = setup(null);
     state.refuse = new Error('Unauthorized');
     const first = controller.set({light_order: ['a']});
@@ -119,7 +119,8 @@ describe('SystemDataController', () => {
     await expect(first).rejects.toThrow('Unauthorized');
     expect(controller.value).toEqual({light_order: ['b']});
     state.deps = false;
-    await controller.set({light_order: ['c']});
+    await expect(controller.set({light_order: ['c']})).rejects.toThrow('not connected');
+    expect(controller.value).toEqual({light_order: ['b']});
     expect(api.setSystemData).toHaveBeenCalledTimes(2);
   });
 });

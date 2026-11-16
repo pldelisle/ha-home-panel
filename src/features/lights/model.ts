@@ -5,11 +5,12 @@
 // Must not: import the DOM, Lit or the shell, read the clock or `hass`, or hold text the household reads (a catalog key says it).
 import {kelvinRGB} from '../../core/color.ts';
 import {joined} from '../../core/figures.ts';
+import type {MessageKey} from '../../core/i18n/en.ts';
 import type {Formatters} from '../../core/i18n/format.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
 import {alCurve, curveKelvin, type AlCurve} from '../../providers/adaptive-lighting.ts';
 import {alStripLayout} from './al-strip-layout.ts';
-import type {LightsInputs, LightTile, SwitchReading} from './inputs.ts';
+import type {AdaptiveReading, LightsInputs, LightTile, SwitchReading} from './inputs.ts';
 
 export interface LightsDeps {
   t: Translate;
@@ -46,8 +47,11 @@ export interface TileView {
 
 export interface StripView {
   title: string;
-  /** `Now 3800 K · on everywhere`, or `Off everywhere`. */
-  right: string;
+  /**
+   * The right-hand line in three pieces, because the kelvin is drawn bold between them (`Now **3800 K** · on everywhere`): `now` and `kelvin` are
+   * null while every switch is off, and `state` is then `Off everywhere`.
+   */
+  right: {now: string | null; kelvin: string | null; state: string};
   stops: string[];
   now: string;
   marks: {at: string; text: string}[];
@@ -68,11 +72,20 @@ export interface LightsViewModel {
   arrange: {show: boolean; editing: boolean; canReset: boolean; label: string; resetLabel: string};
 }
 
+/** How many of the house's Adaptive Lighting switches are on. */
+type HowMany = 'all' | 'some' | 'none';
+const howMany = ({on, switches}: AdaptiveReading): HowMany => (on === switches ? 'all' : on ? 'some' : 'none');
+/** The words for each, in the pane's line and on the strip. */
+const ON_WORDS: Record<'pane' | 'strip', Record<HowMany, MessageKey>> = {
+  pane: {all: 'lights.alEverywhere', some: 'lights.alSome', none: 'lights.alNowhere'},
+  strip: {all: 'lights.onEverywhere', some: 'lights.onIn', none: 'lights.offEverywhere'},
+};
+
 /** A tile's name: the Other tile's is the catalog's. */
 const nameOf = (tile: LightTile, t: Translate) => tile.name || t('lights.otherLights');
 
 /** The line under a tile's name: Unavailable, Off, or how many are on, the brightness, then the mode, else the colour temperature (not `short`). */
-export function tileSub(tile: LightTile, t: Translate, short: boolean): string {
+function tileSub(tile: LightTile, t: Translate, short: boolean): string {
   const {state, mode, ids} = tile;
   if (!state.avail) return t('lights.unavailable');
   if (!state.any) return t('lights.off');
@@ -97,7 +110,9 @@ function tileView(tile: LightTile, tiles: LightTile[], deps: LightsDeps): TileVi
     key: tile.key,
     name,
     sub: deps.compact ? tileSub(tile, t, true) : full,
-    label: joined(t('lights.tileLabel', {name, sub: full}), linkedWith ?? ''),
+    label: linkedWith
+      ? t('lights.tileLabelLinked', {name, sub: full, partner: linkedWith})
+      : t('lights.tileLabel', {name, sub: full}),
     on: tile.state.any,
     available: tile.state.avail,
     tint: tile.state.tint,
@@ -115,11 +130,7 @@ export function lightsModel(inputs: LightsInputs, deps: LightsDeps): LightsViewM
   const lightsOn = t('lights.lightsOn', {n: lit});
   const alLine = !adaptive
     ? ''
-    : adaptive.on === adaptive.switches
-      ? t('lights.alEverywhere')
-      : adaptive.on
-        ? t('lights.alSome', {on: String(adaptive.on), total: String(adaptive.switches)})
-        : t('lights.alNowhere');
+    : t(ON_WORDS.pane[howMany(adaptive)], {on: String(adaptive.on), total: String(adaptive.switches)});
   const units = tiles.filter(tile => !tile.link || tile.link.first).length;
   return {
     summary: deps.editing ? t('lights.dragHint') : joined(lit ? lightsOn : t('lights.allLightsOff'), alLine),
@@ -151,14 +162,11 @@ function stripView({adaptive}: LightsInputs, deps: LightsDeps): StripView | null
   const nowK = Math.round(adaptive.liveK ?? curveKelvin(curve, deps.now));
   return {
     title: t('lights.adaptiveToday'),
-    right: adaptive.on
-      ? joined(
-          t('lights.nowKelvin', {k: String(nowK)}),
-          adaptive.on === adaptive.switches
-            ? t('lights.onEverywhere')
-            : t('lights.onIn', {on: String(adaptive.on), total: String(adaptive.switches)}),
-        )
-      : t('lights.offEverywhere'),
+    right: {
+      now: adaptive.on ? t('lights.now') : null,
+      kelvin: adaptive.on ? t('lights.kelvin', {k: String(nowK)}) : null,
+      state: t(ON_WORDS.strip[howMany(adaptive)], {on: String(adaptive.on), total: String(adaptive.switches)}),
+    },
     stops: layout.stops,
     now: layout.now,
     marks: layout.marks.map(m => ({

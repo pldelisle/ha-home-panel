@@ -104,10 +104,7 @@
       "key": "lights.adaptiveToday"
     },
     {
-      "key": "lights.nowKelvin",
-      "values": {
-        "k": "3800"
-      }
+      "key": "lights.now"
     },
     {
       "key": "lights.onEverywhere"
@@ -157,6 +154,17 @@
       "values": {
         "name": "Kitchen",
         "sub": "Off"
+      },
+      "fr": {
+        "sub": "Éteint"
+      }
+    },
+    {
+      "key": "lights.tileLabelLinked",
+      "values": {
+        "name": "Kitchen",
+        "sub": "Off",
+        "partner": "Office"
       },
       "fr": {
         "sub": "Éteint"
