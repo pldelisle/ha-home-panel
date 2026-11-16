@@ -118,6 +118,8 @@ export interface CarInputs {
   /** The config's body colour for the drawn car. */
   color: string | null;
   soc: number | null;
+  /** The charge sensor has a value, a number or not: without one, the Status checks say "Car not reporting". */
+  socReporting: boolean;
   /** The `soc` sensor's `batteryRange`, else the `elveh` sensor's state. */
   range: number | null;
   /** The charge limit, in percent (`globalAcTargetSoc`); null when Ford sends none. */
@@ -149,8 +151,8 @@ export interface CarInputs {
   cabin: number | null;
   outsideTemp: number | null;
   tires: {frontLeft: TirePressure; frontRight: TirePressure; rearLeft: TirePressure; rearRight: TirePressure};
-  /** The tire-pressure sensor's state (`NORMAL_OPERATION`, ...), as Ford words it; null when it has no value. */
-  tireStatus: string | null;
+  /** The Status checks' "Tire pressure low": the sensor has a value and says anything but `NORMAL_OPERATION`, or a tire's `<tire>_state` is set and is not `NORMAL`. */
+  tiresLow: boolean;
   doors: {
     /** The four doors are closed (one Ford does not report counts as closed); null when the door sensor reads nothing. */
     closed: boolean | null;
@@ -315,6 +317,24 @@ function honkButtonOf(states: HassEntities, ref: CarRef): string | null {
   return ids.find(id => states[id] !== undefined && states[id].state !== 'unavailable') ?? null;
 }
 
+/** Ford's words for tires at their normal pressure: the sensor's and each tire's. */
+const TIRES_NORMAL = 'NORMAL_OPERATION';
+const TIRE_NORMAL = 'NORMAL';
+const TIRE_KEYS = ['frontLeft', 'frontRight', 'rearLeft', 'rearRight'] as const;
+
+/** The legacy `attention()`'s tire rule (#256 deletes it): any set `<tire>_state` other than `NORMAL` counts, whatever its type. */
+function tiresLowOf(states: HassEntities, id: string): boolean {
+  const status = textOf(states, id);
+  if (status === null) return false;
+  return (
+    status !== TIRES_NORMAL ||
+    TIRE_KEYS.some(key => {
+      const state = attributeOf(states, id, `${key}_state`);
+      return !!state && state !== TIRE_NORMAL;
+    })
+  );
+}
+
 /** The car at these states; `config` gives the name and the colour the house chose, and `names` the picture entity's own name. */
 export function readCar(
   states: HassEntities,
@@ -344,6 +364,7 @@ export function readCar(
     picture: textAttributeOf(states, ref.id('image', 'vehicleimage'), 'entity_picture') || null,
     color: config.car.color,
     soc: numberOf(states, sensor('soc')),
+    socReporting: textOf(states, sensor('soc')) !== null,
     range: numberAttributeOf(states, sensor('soc'), 'batteryRange') ?? numberOf(states, elveh),
     limit: numberAttributeOf(states, charging, 'globalAcTargetSoc'),
     plugged: plug !== null && plug !== 'DISCONNECTED',
@@ -372,7 +393,7 @@ export function readCar(
       rearLeft: tire('rearLeft'),
       rearRight: tire('rearRight'),
     },
-    tireStatus: textOf(states, tirePressure),
+    tiresLow: tiresLowOf(states, tirePressure),
     doors: doorsOf(states, ref),
     windowsClosed: windows === null ? null : windows === 'Closed',
     alarm: textOf(states, sensor('alarm')),

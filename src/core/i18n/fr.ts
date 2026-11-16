@@ -899,7 +899,9 @@ export const fr: Record<MessageKey, string> = {
   'live.hqUpdating': 'Hydro-Québec à jour',
   'live.heatPumpOffline': 'Thermopompe hors ligne',
   'live.heatPumpOfflineLine': "L'appareil {brand} apparaît comme indisponible dans Home Assistant.",
-  'live.heatPumpUnit': 'Thermopompe',
+  // English on purpose: the layer knew this line only with `Fujitsu` in it and left this one in English, so French here
+  // would be its own visible change and need an approved baseline (ADR 0003)
+  'live.heatPumpOfflineLineNoMaker': 'The Heat pump unit shows as unavailable in Home Assistant.',
   'live.heatPumpOnline': 'Thermopompe en ligne',
   'live.gatewayOffline': 'Passerelle Hilo hors ligne',
   'live.gatewayOfflineLine': 'Les thermostats et le compteur pourraient cesser de transmettre.',

@@ -1,5 +1,5 @@
 {
-  "about": "The English messages the Live move introduced (src/core/i18n/en.ts, live.*), each with sample values: the Status checks' (#254); the activities' and the pill's join in #255. test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer makes of the English, or what is `translated` where the layer left the English: the heat pump's line for a unit whose device names no maker, which the layer knew only with `Fujitsu` in it (a visible change #256 records in its baselines, if a baseline shows it). The legacy panel still draws the checks until #256, so no entry of the rewrite layer is deleted yet. Deleted with the layer in phase 4.",
+  "about": "The English messages the Live move introduced (src/core/i18n/en.ts, live.*), each with sample values: the Status checks' (#254); the activities' and the pill's join in #255. test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer makes of the English (the heat pump's line for a unit whose device names no maker stays English in both, as the layer left it). The legacy panel still draws the checks until #256, so no entry of the rewrite layer is deleted yet. Deleted with the layer in phase 4.",
   "messages": [
     {
       "key": "live.hqStale"
@@ -20,17 +20,7 @@
       }
     },
     {
-      "key": "live.heatPumpOfflineLine",
-      "values": {
-        "brand": "Heat pump"
-      },
-      "fr": {
-        "brand": "Thermopompe"
-      },
-      "translated": "L'appareil Thermopompe apparaît comme indisponible dans Home Assistant."
-    },
-    {
-      "key": "live.heatPumpUnit"
+      "key": "live.heatPumpOfflineLineNoMaker"
     },
     {
       "key": "live.heatPumpOnline"

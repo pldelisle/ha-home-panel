@@ -99,7 +99,7 @@ describe('Hydro-Québec not updating', () => {
 describe('the heat pump', () => {
   const pump = (over: Partial<HeatPumpInputs>) => ({heatPump: {...({} as HeatPumpInputs), present: true, ...over}});
 
-  test('offline is critical and names its maker, or "Heat pump" when its device names none', () => {
+  test('offline is critical and names its maker, or says "Heat pump" when its device names none, in English in both languages as before', () => {
     expect(run(heatPumpOffline, pump({available: false, brand: 'Fujitsu'}))).toEqual({
       item: {
         level: 'crit',
@@ -108,9 +108,10 @@ describe('the heat pump', () => {
         line: 'The Fujitsu unit shows as unavailable in Home Assistant.',
       },
     });
-    expect(run(heatPumpOffline, pump({available: false, brand: null}))?.item?.line).toBe(
-      'The Heat pump unit shows as unavailable in Home Assistant.',
-    );
+    for (const d of [deps, frDeps])
+      expect(run(heatPumpOffline, pump({available: false, brand: null}), d)?.item?.line).toBe(
+        'The Heat pump unit shows as unavailable in Home Assistant.',
+      );
   });
 
   test('online says so; a unit the config names but the states lack is no check', () => {
@@ -189,12 +190,9 @@ describe('weather warnings', () => {
 });
 
 describe('the car', () => {
-  test('tire pressure is low when the sensor or any tire is not normal; a sensor with no value says nothing', () => {
+  test('tire pressure is low when the provider says so', () => {
     expect(run(tirePressureLow, {})).toEqual({});
-    expect(run(tirePressureLow, {car: {...car, tireStatus: 'LOW'}})?.item?.title).toBe('Tire pressure low');
-    const low = {...car.tires, rearLeft: {psi: 30, state: 'LOW'}};
-    expect(run(tirePressureLow, {car: {...car, tires: low}})?.item?.title).toBe('Tire pressure low');
-    expect(run(tirePressureLow, {car: {...car, tireStatus: null, tires: low}})).toEqual({});
+    expect(run(tirePressureLow, {car: {...car, tiresLow: true}})?.item?.title).toBe('Tire pressure low');
   });
 
   test('unlocked warns; any other word of the lock is "Car locked"; a lock with no value says nothing', () => {
@@ -206,9 +204,12 @@ describe('the car', () => {
     expect(run(carUnlocked, {car: {...car, lockState: null}})).toEqual({});
   });
 
-  test('not reporting when the charge reads nothing', () => {
+  test('not reporting when the charge sensor has no value (a text one still reports)', () => {
     expect(run(carNotReporting, {})).toEqual({});
-    expect(run(carNotReporting, {car: {...car, soc: null}})?.item?.title).toBe('Car not reporting');
+    expect(run(carNotReporting, {car: {...car, soc: null}})).toEqual({});
+    expect(run(carNotReporting, {car: {...car, soc: null, socReporting: false}})?.item?.title).toBe(
+      'Car not reporting',
+    );
   });
 
   test('a house without a car has none of the three', () => {
@@ -299,7 +300,7 @@ describe('the chain', () => {
       ...house,
       hydroQuebec: hq({peakNow: true}),
       weatherWarnings: 0,
-      car: {...car, soc: null},
+      car: {...car, socReporting: false},
       wallbox: {...house.wallbox, status: null},
     };
     const {items, clear} = runChecks(inputs, deps);

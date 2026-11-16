@@ -10,7 +10,7 @@ src/providers/
   environment-canada.ts    gains warningCount(states, config): number | null
   hydro-quebec.ts          gains balancePresent, balanceUpdated and peakReporting on its inputs
   power.ts                 a room gains present (its thermostat is in the states)
-  fordpass.ts              the car gains lockState and tireStatus (the sensors' own words)
+  fordpass.ts              the car gains lockState, tiresLow and socReporting
   wallbox.ts               gains statusPresent
 src/core/i18n/
   format.ts                gains durationShort(ms): `52 min`, `1 h 50`, `3 h`

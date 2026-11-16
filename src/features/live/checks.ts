@@ -1,7 +1,8 @@
 // The header's fourteen Status checks: one named pure rule each over `LiveInputs`, in the legacy `attention()`'s order, and the fold.
 // Pattern: Chain of Responsibility in its collecting form (Gamma et al.): `CHECKS` is the chain and `runChecks` asks every link,
 // keeping each item and each "all is well" phrase in chain order; a link that returns null does not apply to this house.
-// Must not: import a feature, read the clock or the states (everything comes through `readLive`), or change a threshold.
+// Must not: import a feature, read the clock or the states (everything comes through `readLive`), or change a threshold: the
+// thresholds are copies of the legacy `attention()`'s, which #256 deletes.
 import {HOUR_MS, MINUTE_MS} from '../../core/figures.ts';
 import type {Formatters} from '../../core/i18n/format.ts';
 import {roomName, type RoomNameDeps} from '../../core/i18n/room-name.ts';
@@ -40,10 +41,6 @@ export const DOOR_OPEN_MS = 10 * MINUTE_MS;
 /** A sensor's battery under this percent is a warning. */
 export const BATTERY_LOW_PERCENT = 15;
 
-/** Tire-pressure states Ford sends when all is well: the sensor's and each tire's. */
-const TIRES_NORMAL = 'NORMAL_OPERATION';
-const TIRE_NORMAL = 'NORMAL';
-
 export const hydroQuebecStale: Check = {
   key: 'hydroQuebecStale',
   run: ({hydroQuebec, now}, {t}) => {
@@ -60,13 +57,13 @@ export const heatPumpOffline: Check = {
   run: ({heatPump}, {t}) => {
     if (!heatPump?.present) return null;
     if (heatPump.available) return {clear: t('live.heatPumpOnline')};
-    const brand = heatPump.brand ?? t('live.heatPumpUnit');
+    const {brand} = heatPump;
     return {
       item: {
         level: 'crit',
         key: 'heatPumpOffline',
         title: t('live.heatPumpOffline'),
-        line: t('live.heatPumpOfflineLine', {brand}),
+        line: brand === null ? t('live.heatPumpOfflineLineNoMaker') : t('live.heatPumpOfflineLine', {brand}),
       },
     };
   },
@@ -140,12 +137,7 @@ export const tirePressureLow: Check = {
   key: 'tirePressureLow',
   run: ({car}, {t}) => {
     if (!car) return null;
-    const {tireStatus, tires} = car;
-    const low =
-      tireStatus !== null &&
-      (tireStatus !== TIRES_NORMAL ||
-        Object.values(tires).some(tire => tire.state !== null && tire.state !== TIRE_NORMAL));
-    if (!low) return {};
+    if (!car.tiresLow) return {};
     return {
       item: {
         level: 'warn',
@@ -171,7 +163,7 @@ export const carNotReporting: Check = {
   key: 'carNotReporting',
   run: ({car}, {t}) => {
     if (!car) return null;
-    if (car.soc !== null) return {};
+    if (car.socReporting) return {};
     return {
       item: {
         level: 'warn',
@@ -278,14 +270,10 @@ export const CHECKS: readonly Check[] = [
 ];
 
 /** Every link of the chain asked in order: the items and the phrases, each in chain order. */
-export function runChecks(
-  inputs: LiveInputs,
-  deps: CheckDeps,
-  chain: readonly Check[] = CHECKS,
-): {items: CheckItem[]; clear: string[]} {
+export function runChecks(inputs: LiveInputs, deps: CheckDeps): {items: CheckItem[]; clear: string[]} {
   const items: CheckItem[] = [];
   const clear: string[] = [];
-  for (const check of chain) {
+  for (const check of CHECKS) {
     const result = check.run(inputs, deps);
     if (!result) continue;
     if (result.item) items.push(result.item);

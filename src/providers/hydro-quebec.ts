@@ -27,12 +27,13 @@ export function hydroQuebec(states: HassEntities, config: ResolvedConfig): Hydro
   const {hq, hqPeak, hqUpcoming} = config.entities;
   if (![hq, hqPeak, hqUpcoming].some(id => hasState(states, id))) return null;
   const balanceState = hq ? states[hq] : undefined;
+  const peak = textOf(states, hqPeak);
   return {
     balance: numberOf(states, hq),
-    peakNow: textOf(states, hqPeak) === 'on',
+    peakNow: peak === 'on',
     peakUpcoming: textOf(states, hqUpcoming) === 'on',
     balancePresent: balanceState !== undefined,
     balanceUpdated: isAvailable(balanceState) ? Date.parse(balanceState.last_updated) : null,
-    peakReporting: textOf(states, hqPeak) !== null,
+    peakReporting: peak !== null,
   };
 }

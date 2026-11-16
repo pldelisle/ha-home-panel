@@ -911,8 +911,8 @@ export const en = {
   'live.hqUpdating': 'Hydro-Québec updating',
   'live.heatPumpOffline': 'Heat pump offline',
   'live.heatPumpOfflineLine': 'The {brand} unit shows as unavailable in Home Assistant.',
-  // the unit's name in that line when its device names no maker
-  'live.heatPumpUnit': 'Heat pump',
+  // the line when the unit's device names no maker, as the legacy panel wrote it
+  'live.heatPumpOfflineLineNoMaker': 'The Heat pump unit shows as unavailable in Home Assistant.',
   'live.heatPumpOnline': 'Heat pump online',
   'live.gatewayOffline': 'Hilo gateway offline',
   'live.gatewayOfflineLine': 'Thermostats and the meter may stop reporting.',
