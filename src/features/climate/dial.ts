@@ -72,6 +72,12 @@ export class Dial extends LitElement {
     this.hi = 0;
   }
 
+  // a drag does not outlive the element: the browser lets the pointer go with the node, and a dial put back has no drag on (the owner's controller releases the held value)
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this.dragging = null;
+  }
+
   protected override render() {
     const {geometry} = this;
     if (!geometry) return nothing;

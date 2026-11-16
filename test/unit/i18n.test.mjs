@@ -89,6 +89,7 @@ test('the energy words the legacy panel still draws are French', () => {
 test('the climate words the legacy panel still draws are French', () => {
   const frText = frTextFor([]);
   expect(frText('Climate')).toBe('Climat');
+  // the legacy Home tile's line as it was on 52ae68d: "Inside" is left in English (the map has only the lower-case `inside ·`), which the Home tile's move (#268) words in French
   expect(frText('Inside · 2 rooms heating · heat pump offline')).toBe(
     'Inside · 2 pièces chauffent · thermopompe hors ligne',
   );

@@ -2784,7 +2784,8 @@ export class LegacyPanel {
         });
     for (const t of ['climate', 'car']) hide(`[data-pane="${t}"]`, L[t]);
     hide('[data-opens="energy.water"]', L.water);
-    const key = JSON.stringify(this.availability());
+    // Climate's tab answers from its descriptor, not from availability(), but a change of it must still ask the shell for a frame: this key carries it (deleted with Home's tiles, #268)
+    const key = JSON.stringify([this.availability(), L.climate]);
     if (key !== this.frameKey) {
       this.frameKey = key;
       this.ctx.shell.requestFrame();

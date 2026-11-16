@@ -1,5 +1,5 @@
 /* The pill button of a control panel: "Set all", "All off", the car's Lock. The Climate controls adopt it in their own root, and the Car pane draws it in the guest
-   (until #253), so the legacy sheet joins this file where the button's rules were. `.armed` is the ring a button wears while it waits for its second tap. */
+   (until #250 moves it; #253 deletes the legacy rules), so the legacy sheet joins this file where the button's rules were. `.armed` is the ring a button wears while it waits for its second tap. */
 .abtn {
   border: 0;
   border-radius: 999px;
@@ -22,7 +22,6 @@
 }
 .app.gl .abtn {
   background: var(--g-sel);
-  border-color: transparent;
 }
 @media (prefers-reduced-motion: no-preference) {
   .abtn {

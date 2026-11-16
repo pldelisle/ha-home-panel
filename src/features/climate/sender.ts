@@ -2,6 +2,7 @@
 // Pattern: Lit reactive controller (Lit docs, Reactive Controllers) over the panel's overlay and the kit's `CommandRunner` (ADR 0023), with one wait per target, as the legacy `later(key)`:
 // five taps on a setpoint, or a dial dragged about, are one `set_temperature` 1,100 ms after the last, and a wait on its way never outlives its host.
 // A host that leaves the document sends nothing and releases the values it was holding for a send, so it never comes back showing a value nobody asked Home Assistant for.
+// It does not build on `core/timing`'s `debounce`, which is one wait for one function: this keeps one per target and lets each host release the holds of the waits it leaves.
 // Must not: read an entity, word a string, or decide what a command is (the caller builds it, `holds` says which keys show the value).
 import type {ReactiveController, ReactiveControllerHost} from 'lit';
 import {PLATFORM_TIMERS, type Timers} from '../../core/timing.ts';

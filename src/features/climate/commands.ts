@@ -75,12 +75,26 @@ export const setAllRooms = (ids: readonly string[], value: number, fmt: DegreeFo
       : {key: 'climate.allRoomsSet', values: {n: fmt.fixed(value, 1)}},
 });
 
+/** The heat pump's four word settings, which differ only in names: the service and its field, the overlay key, and the toast's catalog key and value name. */
+const HP_SETTINGS = {
+  mode: {service: 'set_hvac_mode', field: 'hvac_mode', hold: K.hp.mode, done: 'climate.hpMode'},
+  fan: {service: 'set_fan_mode', field: 'fan_mode', hold: K.hp.fan, done: 'climate.hpFan'},
+  preset: {service: 'set_preset_mode', field: 'preset_mode', hold: K.hp.preset, done: 'climate.hpPreset'},
+  swing: {service: 'set_swing_mode', field: 'swing_mode', hold: K.hp.swing, done: 'climate.hpSwing'},
+} as const;
+
+/** Sets one of the heat pump's word settings; `word` is the value as its control says it, the toast says it in lower case. */
+const hpSetting = (setting: keyof typeof HP_SETTINGS, hp: HeatPumpTarget, value: string, word: string): Command => {
+  const {service, field, hold, done} = HP_SETTINGS[setting];
+  return {
+    ...climate(service, {entity_id: hp.id, [field]: value}),
+    holds: [hold(hp.id)],
+    done: {key: done, values: {[setting]: word.toLowerCase()}},
+  };
+};
+
 /** Sets the heat pump's mode; `word` is the mode as its button says it, the toast says it in lower case. */
-export const hpMode = (hp: HeatPumpTarget, mode: string, word: string): Command => ({
-  ...climate('set_hvac_mode', {entity_id: hp.id, hvac_mode: mode}),
-  holds: [K.hp.mode(hp.id)],
-  done: {key: 'climate.hpMode', values: {mode: word.toLowerCase()}},
-});
+export const hpMode = (hp: HeatPumpTarget, mode: string, word: string): Command => hpSetting('mode', hp, mode, word);
 
 /** Sets the heat pump's target. The element debounces it, as a room's. */
 export const hpTemperature = (hp: HeatPumpTarget, value: number, fmt: DegreeFormat): Command => ({
@@ -89,20 +103,13 @@ export const hpTemperature = (hp: HeatPumpTarget, value: number, fmt: DegreeForm
   done: {key: 'climate.hpSet', values: {n: fmt.fixed(value, 1)}},
 });
 
-export const hpFan = (hp: HeatPumpTarget, fan: string, word: string): Command => ({
-  ...climate('set_fan_mode', {entity_id: hp.id, fan_mode: fan}),
-  holds: [K.hp.fan(hp.id)],
-  done: {key: 'climate.hpFan', values: {fan: word.toLowerCase()}},
-});
+/** Sets the heat pump's fan speed, as its mode. */
+export const hpFan = (hp: HeatPumpTarget, fan: string, word: string): Command => hpSetting('fan', hp, fan, word);
 
-export const hpPreset = (hp: HeatPumpTarget, preset: string, word: string): Command => ({
-  ...climate('set_preset_mode', {entity_id: hp.id, preset_mode: preset}),
-  holds: [K.hp.preset(hp.id)],
-  done: {key: 'climate.hpPreset', values: {preset: word.toLowerCase()}},
-});
+/** Sets the heat pump's preset, as its mode. */
+export const hpPreset = (hp: HeatPumpTarget, preset: string, word: string): Command =>
+  hpSetting('preset', hp, preset, word);
 
-export const hpSwing = (hp: HeatPumpTarget, swing: string, word: string): Command => ({
-  ...climate('set_swing_mode', {entity_id: hp.id, swing_mode: swing}),
-  holds: [K.hp.swing(hp.id)],
-  done: {key: 'climate.hpSwing', values: {swing: word.toLowerCase()}},
-});
+/** Sets the heat pump's louver position, as its mode. */
+export const hpSwing = (hp: HeatPumpTarget, swing: string, word: string): Command =>
+  hpSetting('swing', hp, swing, word);

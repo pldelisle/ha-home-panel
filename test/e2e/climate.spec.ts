@@ -19,6 +19,11 @@ const controls = (house: House) => detail(house).locator('hp-climate-controls');
 // every `climate.set_temperature` the panel has sent so far, as the data it carried
 const setpoints = (house: House) =>
   house.calls.filter(c => c.startsWith('climate.set_temperature ')).map(c => callData(c));
+// exactly one setpoint call, counted after the debounce (1,100 ms) has had time to send a second one: the first to arrive is no proof of the only one
+const expectOneSetpoint = async (house: House, what: string) => {
+  await house.page.waitForTimeout(1300);
+  await expect.poll(() => setpoints(house).length, {message: callsMessage(house, what)}).toBe(1);
+};
 const charts = (house: House) => detail(house).locator('hp-chart .apexcharts-canvas');
 const heatmap = (house: House) => pane(house).locator('.cblocks > .inner').first();
 const outside = (house: House) => pane(house).locator('.cblocks > .inner').last();
@@ -210,7 +215,7 @@ test.describe('on a phone', () => {
     await house.page.keyboard.press('ArrowUp');
     await expect(dial).toHaveAttribute('aria-valuenow', '22');
     await expectCall(house, /^climate\.set_temperature \{"entity_id":"climate\.bedroom","temperature":22\}$/);
-    expect(setpoints(house), callsMessage(house, 'two keys in a burst are one call')).toHaveLength(1);
+    await expectOneSetpoint(house, 'two keys in a burst are one call');
     await expect(dial, 'the focus stays on the dial').toBeFocused();
   });
 
@@ -225,7 +230,7 @@ test.describe('on a phone', () => {
     await expect(dial).toHaveAttribute('aria-valuetext', 'Off');
     await expect(detail(house).locator('hp-dial .dialc b')).toHaveText('Off');
     await expectCall(house, /^climate\.set_temperature \{"entity_id":"climate\.bedroom","temperature":5\}$/);
-    expect(setpoints(house), callsMessage(house, 'the two keys are one call, at the last value')).toHaveLength(1);
+    await expectOneSetpoint(house, 'the two keys are one call, at the last value');
     // up from off is 15, as the stepper's
     await house.page.keyboard.press('ArrowUp');
     await expect(dial).toHaveAttribute('aria-valuenow', '15');
@@ -262,7 +267,33 @@ test.describe('on a phone', () => {
       callsMessage(house, 'nothing is sent while the finger is down or has only just lifted'),
     ).toEqual([]);
     await expectCall(house, /^climate\.set_temperature \{"entity_id":"climate\.bedroom","temperature":25\}$/);
-    expect(setpoints(house), callsMessage(house, 'a drag is one call')).toHaveLength(1);
+    await expectOneSetpoint(house, 'a drag is one call');
+  });
+
+  // a dial taken out of the page and put back, with the finger down, is not still being dragged: a move reaching it says nothing
+  test('a dial put back after a drag was under way is not dragged by the next move', async ({house}) => {
+    await tile(house, 'bedroom').click();
+    const box = (await detail(house).locator('hp-dial svg').boundingBox())!;
+    await house.page.mouse.move(box.x + box.width / 2, box.y + box.height * 0.1);
+    await house.page.mouse.down();
+    const inputs = await detail(house)
+      .locator('hp-dial')
+      .evaluate(
+        (dial, at) => {
+          let count = 0;
+          dial.addEventListener('dial-input', () => count++);
+          const {parentNode: parent, nextSibling: next} = dial;
+          dial.remove();
+          parent!.insertBefore(dial, next);
+          dial
+            .shadowRoot!.querySelector('.dial')!
+            .dispatchEvent(new PointerEvent('pointermove', {bubbles: true, clientX: at.x, clientY: at.y}));
+          return count;
+        },
+        {x: box.x + box.width * 0.2, y: box.y + box.height * 0.8},
+      );
+    await house.page.mouse.up();
+    expect(inputs, 'no drag survives the dial leaving the page').toBe(0);
   });
 
   test('the house’s tile opens a dial that is an image, with the average and no knob', async ({house}) => {
@@ -492,7 +523,7 @@ test.describe('the heat pump’s controls, on a tablet', () => {
     for (let tap = 0; tap < 3; tap++) await target.getByRole('button', {name: 'Raise target'}).click();
     await expect(target.locator('.sv b')).toHaveText('23.5°');
     await expectCall(house, /^climate\.set_temperature \{"entity_id":"climate\.heat_pump","temperature":23\.5\}$/);
-    expect(setpoints(house), callsMessage(house, 'three taps are one call')).toHaveLength(1);
+    await expectOneSetpoint(house, 'three taps are one call');
     await controls(house).locator('hp-seg').nth(1).getByRole('radio', {name: 'Quiet'}).click();
     await expectCall(house, /^climate\.set_fan_mode \{"entity_id":"climate\.heat_pump","fan_mode":"quiet"\}$/);
     await controls(house).locator('hp-seg').nth(2).getByRole('radio', {name: 'Boost'}).click();
@@ -536,7 +567,7 @@ test.describe('a room’s and the house’s controls, on a tablet', () => {
     await expect(stepper.locator('.sv b'), 'shown before it is sent').toHaveText('23.5°');
     await expect(controls(house).locator('.quick button[aria-pressed="true"]')).toHaveCount(0);
     await expectCall(house, /^climate\.set_temperature \{"entity_id":"climate\.bedroom","temperature":23\.5\}$/);
-    expect(setpoints(house), callsMessage(house, 'five taps are one call')).toHaveLength(1);
+    await expectOneSetpoint(house, 'five taps are one call');
     await expect(house.root().locator('#toast')).toHaveText('Bedroom set to 23.5°');
   });
 
@@ -575,7 +606,7 @@ test.describe('a room’s and the house’s controls, on a tablet', () => {
     expect(setpoints(house), callsMessage(house, 'one tap changes nothing')).toEqual([]);
     await again.click();
     await expectCall(house, /^climate\.set_temperature /);
-    expect(setpoints(house), callsMessage(house, 'the second tap is one call')).toHaveLength(1);
+    await expectOneSetpoint(house, 'the second tap is one call');
     const [data] = setpoints(house);
     expect(data.temperature).toBe(5);
     expect([...(data.entity_id as string[])].sort()).toEqual([
@@ -606,7 +637,7 @@ test.describe('a room’s and the house’s controls, on a tablet', () => {
     await controls(house).getByRole('button', {name: 'Set all to 21.5°'}).click();
     await controls(house).getByRole('button', {name: 'Tap again: all 4 rooms to 21.5°'}).click();
     await expectCall(house, /^climate\.set_temperature /);
-    expect(setpoints(house)).toHaveLength(1);
+    await expectOneSetpoint(house, 'the second tap of Set all is one call');
     expect(setpoints(house)[0]?.temperature).toBe(21.5);
     await expect(house.root().locator('#toast')).toHaveText('All rooms set to 21.5°');
   });

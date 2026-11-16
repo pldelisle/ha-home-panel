@@ -851,7 +851,8 @@
       "was": "Chaque mois depuis le 4 mars, du minimum le plus froid au maximum le plus chaud. Le point est la moyenne du mois."
     },
     {
-      "key": "weather.season.warmest"
+      "key": "weather.season.warmest",
+      "was": "Le plus chaud"
     },
     {
       "key": "weather.season.coldest",
@@ -1007,7 +1008,8 @@
       "key": "weather.detail.historyFailed"
     },
     {
-      "key": "weather.series.temperature"
+      "key": "weather.series.temperature",
+      "was": "Température"
     },
     {
       "key": "weather.series.wind"

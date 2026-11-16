@@ -45,6 +45,9 @@ type AllKey = 'allset' | 'alloff';
 
 const segOptions = (options: readonly ControlOption[]): SegOption[] =>
   options.map(({value, label}) => ({value, label}));
+/** The word an option says its value with (the toast says it in lower case), or the value itself for one the unit offers that the options lack. */
+const wordOf = (options: readonly ControlOption[], value: string): string =>
+  options.find(option => option.value === value)?.label ?? value;
 const chosen = (options: readonly ControlOption[]): string | undefined => options.find(({checked}) => checked)?.value;
 
 export class ClimateControls extends LitElement {
@@ -160,7 +163,7 @@ export class ClimateControls extends LitElement {
       .value=${chosen(options)}
       @change=${(e: CustomEvent<SegChangeDetail>) => {
         const {value} = e.detail;
-        choose(value, options.find(option => option.value === value)?.label ?? value);
+        choose(value, wordOf(options, value));
       }}
     ></hp-seg>`;
   }
@@ -174,7 +177,7 @@ export class ClimateControls extends LitElement {
         aria-label=${t('climate.louverPosition')}
         @change=${(e: Event) => {
           const {value} = e.target as HTMLSelectElement;
-          this.sender.now(hpSwing(hp, value, swing.find(option => option.value === value)?.label ?? value), value);
+          this.sender.now(hpSwing(hp, value, wordOf(swing, value)), value);
         }}
       >
         ${repeat(

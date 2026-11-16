@@ -1,5 +1,5 @@
 {
-  "about": "The English messages the Climate move's pure half and its model introduced (src/core/i18n/en.ts, climate.*), each with sample values. test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer makes of the English, or what is `written` where the layer never produced French. #248 deleted the entries the legacy panel no longer draws: the message of each has the French the layer made of it as `was` (and `after`, what the layer makes of the English now, when it is not the English itself); the entries the legacy Home tile, header, Status checks and Automations still draw stay in src/i18n/fr.js, with the tests that name them in test/unit/i18n.test.mjs, and so do the ones the other moves' message lists take as their oracle (Range, Temperature, Warmest and the mean lines).",
+  "about": "The English messages the Climate move's pure half and its model introduced (src/core/i18n/en.ts, climate.*), each with sample values. test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer makes of the English, or what is `written` where the layer never produced French. #248 deleted the entries the legacy panel no longer draws: the message of each has the French the layer made of it as `was` (and `after`, what the layer makes of the English now, when it is not the English itself); the entries the legacy Home tile, header, Status checks and Automations still draw stay in src/i18n/fr.js, with the tests that name them in test/unit/i18n.test.mjs. The entries the other moves' message lists took as their oracle (Range, Temperature, Warmest and the mean lines) are gone too, and their rows here, in weather.json and in ranges.json, are `was` rows.",
   "messages": [
     {"key": "climate.wholeHouse", "was": "Toute la maison"},
     {"key": "climate.roomsHeating", "values": {"n": 0}},
@@ -90,7 +90,7 @@
       "frame": {"en": "Now 20.8° · ", "fr": "Maintenant 20,8° · "}
     },
     {"key": "climate.dial.setpoint", "was": "Consigne"},
-    {"key": "climate.dial.temperature"},
+    {"key": "climate.dial.temperature", "was": "Température"},
     {"key": "climate.dial.degrees", "values": {"n": "21"}, "written": "21 degrés"},
     {"key": "climate.dial.degrees", "values": {"n": "20.5"}, "written": "20,5 degrés"},
     {
@@ -110,10 +110,10 @@
     },
     {"key": "climate.gauge.setpoint", "was": "La barre indique la consigne", "after": "Bar marks the : consigne"},
     {"key": "climate.gauge.off", "was": "Thermostat éteint (5° hors gel)"},
-    {"key": "climate.rangeSpan", "values": {"span": "24 h"}, "fr": {"span": "24 h"}},
-    {"key": "climate.rangeSpan", "values": {"span": "7 days"}, "fr": {"span": "7 jours"}},
-    {"key": "climate.rangeSpan", "values": {"span": "30 days"}, "fr": {"span": "30 jours"}},
-    {"key": "climate.rangeSpan", "values": {"span": "12 months"}, "fr": {"span": "12 mois"}},
+    {"key": "climate.rangeSpan", "values": {"span": "24 h"}, "fr": {"span": "24 h"}, "was": "Écart, 24 h"},
+    {"key": "climate.rangeSpan", "values": {"span": "7 days"}, "fr": {"span": "7 jours"}, "was": "Écart, 7 jours"},
+    {"key": "climate.rangeSpan", "values": {"span": "30 days"}, "fr": {"span": "30 jours"}, "was": "Écart, 30 jours"},
+    {"key": "climate.rangeSpan", "values": {"span": "12 months"}, "fr": {"span": "12 mois"}, "was": "Écart, 12 mois"},
     {
       "key": "climate.heatingSpan",
       "values": {"span": "24 h"},
@@ -131,7 +131,7 @@
     },
     {"key": "climate.lastUpdate", "was": "Dernière mise à jour"},
     {"key": "climate.drawingNow", "was": "Puissance actuelle"},
-    {"key": "climate.warmest"},
+    {"key": "climate.warmest", "was": "Le plus chaud"},
     {"key": "climate.coolest", "was": "Le plus frais"},
     {"key": "climate.heatingNow", "was": "Chauffe en ce moment"},
     {"key": "climate.allThermostats", "was": "tous les thermostats"},
