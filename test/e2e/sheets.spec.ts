@@ -179,11 +179,11 @@ test('a toast asked for from an element shows, and a sticky one stays until it i
 test('the shape changing from a tablet to a phone moves the open pane’s panel into its sheet, and back', async ({
   house,
 }) => {
-  // Climate's detail is a legacy panel's sheet, deleted by #248 with this test (the element version is the fixme below, until #333); Energy's, Weather's and Air's are elements'
+  // Car's detail is a legacy panel's sheet, deleted by #253 with this test (the element version is the fixme below, until #333); Climate's, Energy's, Weather's and Air's are elements'
   tabletOnly();
-  await house.tab('climate');
-  const inline = house.root().locator('#pane-climate > .panel');
-  const sheet = house.root().locator('#sh-climate');
+  await house.tab('car');
+  const inline = house.root().locator('#pane-car > .panel');
+  const sheet = house.root().locator('#sh-car');
   await expect(inline).toBeVisible();
   await house.page.setViewportSize(VIEWPORTS.phone);
   await expect(inline).toHaveCount(0);
@@ -192,7 +192,7 @@ test('the shape changing from a tablet to a phone moves the open pane’s panel 
   await house.page.setViewportSize(VIEWPORTS.tablet);
   await expect(inline).toBeVisible();
   await expect(inline).not.toHaveAttribute('aria-modal', /.*/);
-  await expect(inline.locator('#csub')).not.toBeEmpty();
+  await expect(inline.locator('#carsub')).not.toBeEmpty();
 });
 
 test('a phone sheet that is open when the screen becomes a tablet closes, and Escape then does nothing', async ({

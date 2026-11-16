@@ -1,0 +1,94 @@
+/*
+ * <hp-climate-detail>'s own rules: the head with its state pill, the big number on a tablet, the tiles' columns (the phone gives the Range
+ * tile both) and the note. The inner card and the tiles' wells are the kit's (`.inner`, `.tiles`, `.tile`); the slots hold the legacy
+ * controls and chart. Moved from the legacy `.cdet`, `.big` and `#ctiles` rules (base.css, extra.css), which this move deleted; the legacy
+ * `.cctl` rules stay with the controls (#248). The state pill `.cpill` is a known copy of the legacy `.pill` (base.css, glass.css), which
+ * the Automations pane still draws until its move (#273).
+ */
+:host {
+  display: block;
+  min-width: 0;
+}
+.cdet .big {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+.cdet .big.again {
+  margin-top: 4px;
+}
+.cdet .big .t {
+  font-family: var(--f-num);
+  font-weight: var(--num-w);
+  font-size: calc(64px * var(--tx));
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+.cdet .big .t small {
+  font-size: calc(24px * var(--tx));
+  vertical-align: top;
+  margin-left: 2px;
+  color: var(--fg2);
+}
+.cdet .big .out {
+  font-size: 13px;
+  padding-bottom: 6px;
+}
+.cpill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--card2);
+  font-size: calc(12.5px * var(--tx));
+  font-weight: 600;
+}
+.cpill.on {
+  background: color-mix(in srgb, var(--c-wh) 18%, var(--card));
+  color: var(--t-wh);
+}
+.cpill.bad {
+  background: color-mix(in srgb, var(--warn) 18%, var(--card));
+  color: var(--t-warn);
+}
+:host([glass]) .cpill {
+  background: var(--g-tile);
+  box-shadow: var(--g-edge-s);
+}
+:host([glass]) .cpill.on {
+  background: color-mix(in srgb, var(--c-wh) 20%, var(--g-tile));
+}
+:host([glass]) .cpill.bad {
+  background: color-mix(in srgb, var(--warn) 20%, var(--g-tile));
+}
+.cdet .tiles {
+  margin: 6px 0 16px;
+}
+.cdet .note {
+  color: var(--fg2);
+  font-size: calc(14px * var(--tx));
+  line-height: 1.5;
+  margin: 10px 0 0;
+}
+@media (max-width: 720px) {
+  .cdet .big .t {
+    font-size: calc(52px * var(--tx));
+  }
+}
+/* a narrow screen has two columns of tiles, and the Range tile (and the last one after it) spans both, so "18.5–23.0°" is not cut off */
+@media (max-width: 599px) {
+  .cdet .tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  .cdet .tiles .trange,
+  .cdet .tiles .trange + .tile:last-child {
+    grid-column: 1/-1;
+  }
+}
+:host([compact]) .cdet {
+  padding: 14px;
+  border-radius: 18px;
+}

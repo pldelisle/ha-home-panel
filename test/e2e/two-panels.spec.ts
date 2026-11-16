@@ -16,7 +16,7 @@ const climateRooms = async (panel: Locator) => {
   await expect(panel.locator('#pane-climate')).toBeVisible();
   const room = (item: string, key: string, name: string) =>
     `#pane-climate ${item}[${key}]:not([${key}="house"]):not([${key}="hp"]) ${name}`;
-  return panel.locator(`${room('.citem', 'data-id', '.nm')}, ${room('.stile', 'data-csel', 'b')}`);
+  return panel.locator(`${room('.citem', 'data-id', '.nm')}, ${room('hp-stat-tile', 'key', 'b')}`);
 };
 
 test('two panels on one page show their own houses', async ({house}) => {

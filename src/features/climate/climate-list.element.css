@@ -1,0 +1,107 @@
+/*
+ * <hp-climate-list>'s own rules: the column of items, and each one's box, its icon square, its two lines and its figure; the one shown ringed in the
+ * room colour, one lit while it heats and one in amber while it is down, and the glass of each. Moved from the legacy `.clist` and `.citem` rules (base.css,
+ * glass.css), which this move deleted, with the phone's grid of them (phone.css), which the phone's tiles replaced.
+ */
+:host {
+  display: block;
+}
+.clist {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.citem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 11px 14px;
+  border: 0;
+  border-radius: 18px;
+  background: var(--card);
+  box-shadow: var(--shadow);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.citem:focus-visible {
+  outline: 2px solid var(--c-home);
+  outline-offset: 2px;
+}
+.citem[aria-selected='true'] {
+  background: color-mix(in srgb, var(--c-home) 13%, var(--card));
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c-home) 55%, transparent);
+}
+.citem .ic {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  background: var(--card2);
+  color: var(--fg2);
+}
+.citem.on .ic {
+  background: color-mix(in srgb, var(--c-wh) 20%, var(--card));
+  color: var(--c-wh);
+}
+.citem.bad .ic {
+  background: color-mix(in srgb, var(--warn) 20%, var(--card));
+  color: var(--warn);
+}
+.citem .tx {
+  min-width: 0;
+  flex: 1;
+}
+.citem .nm {
+  font-weight: 600;
+  font-size: calc(14px * var(--tx));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.citem .sb {
+  font-size: calc(12px * var(--tx));
+  color: var(--fg2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.citem .tv {
+  font-family: var(--f-num);
+  font-weight: var(--num-w);
+  font-size: calc(19px * var(--tx));
+  flex: none;
+}
+:host([glass]) .citem {
+  background: var(--g-card);
+  -webkit-backdrop-filter: var(--g-bd);
+  backdrop-filter: var(--g-bd);
+  box-shadow: var(--g-edge);
+}
+:host([glass]) .citem .ic {
+  background: var(--g-sel);
+  border-color: transparent;
+}
+:host([glass]) .citem[aria-selected='true'] {
+  background: color-mix(in srgb, var(--c-home) 16%, var(--g-card));
+  box-shadow:
+    inset 0 0 0 1.5px color-mix(in srgb, var(--c-home) 55%, transparent),
+    var(--g-shadow);
+}
+:host([glass]) .citem.on .ic {
+  background: color-mix(in srgb, var(--c-wh) 22%, var(--g-sel));
+}
+:host([glass]) .citem.bad .ic {
+  background: color-mix(in srgb, var(--warn) 22%, var(--g-tile));
+}
+@media (prefers-reduced-transparency: reduce) {
+  :host([glass]) .citem {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--card);
+  }
+}

@@ -8,6 +8,7 @@ import type {Formatters} from '../../core/i18n/format.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
 import {roomName, type RoomNameDeps} from '../../core/i18n/room-name.ts';
 import type {HeatPumpInputs} from '../../providers/heat-pump.ts';
+import type {IconName} from '../../ui/icons.ts';
 import {OFF_AT_OR_BELOW, type RoomPower} from '../../providers/power.ts';
 import type {ClimateInputs} from './inputs.ts';
 
@@ -30,7 +31,7 @@ export interface ClimateItem {
   /** `house`, `hp`, or the room's key. */
   id: string;
   /** The glyph's name: the room's own, `house` for the whole house, `fan` for the heat pump. */
-  icon: string;
+  icon: IconName;
   name: string;
   sub: string;
   value: string;

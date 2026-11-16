@@ -452,21 +452,8 @@
 #lsheet .lhead::after {
   display: none;
 }
-@media (max-width: 599px) {
-  #ctiles {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  }
-  #ctiles .trange,
-  #ctiles .trange + .tile:last-child {
-    grid-column: 1/-1;
-  }
-}
 /* one gap between cards everywhere: 16px between cards and sheet sections, 8px between tiles inside a card */
 .cols,
 .col {
   gap: 16px;
-}
-.clim {
-  gap: 16px;
-  margin-bottom: 0;
 }

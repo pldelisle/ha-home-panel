@@ -36,3 +36,11 @@ export function readClimate(
     heatPumpOn: flow.heatPump?.on ?? false,
   };
 }
+
+/** The house has something for the Climate tab: a thermostat in its config, or a heat pump Home Assistant knows. */
+export function hasClimate(
+  states: HassEntities,
+  {entities, rooms}: Pick<ResolvedConfig, 'entities' | 'rooms'>,
+): boolean {
+  return rooms.length > 0 || (!!entities.hp && states[entities.hp] !== undefined);
+}

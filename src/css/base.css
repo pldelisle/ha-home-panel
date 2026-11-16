@@ -724,107 +724,11 @@
     display: none;
   }
 }
-.clim {
-  display: grid;
-  grid-template-columns: minmax(240px, 330px) minmax(0, 1fr);
-  gap: 14px;
-  margin-bottom: 14px;
-  align-items: start;
-}
-.clist {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.citem {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  padding: 11px 14px;
-  border: 0;
-  border-radius: 18px;
-  background: var(--card);
-  box-shadow: var(--shadow);
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-.citem:focus-visible {
-  outline: 2px solid var(--c-home);
-  outline-offset: 2px;
-}
-.citem[aria-selected='true'] {
-  background: color-mix(in srgb, var(--c-home) 13%, var(--card));
-  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c-home) 55%, transparent);
-}
 .ic.acc {
   background: color-mix(in srgb, var(--acc) 18%, var(--card));
   color: var(--acc-c, var(--acc));
 }
-.citem .ic {
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-  display: grid;
-  place-items: center;
-  flex: none;
-  background: var(--card2);
-  color: var(--fg2);
-}
-.citem.on .ic {
-  background: color-mix(in srgb, var(--c-wh) 20%, var(--card));
-  color: var(--c-wh);
-}
-.citem.bad .ic {
-  background: color-mix(in srgb, var(--warn) 20%, var(--card));
-  color: var(--warn);
-}
-.citem .tx {
-  min-width: 0;
-  flex: 1;
-}
-.citem .nm {
-  font-weight: 600;
-  font-size: calc(14px * var(--tx));
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.citem .sb {
-  font-size: calc(12px * var(--tx));
-  color: var(--fg2);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.citem .tv {
-  font-family: var(--f-num);
-  font-weight: var(--num-w);
-  font-size: calc(19px * var(--tx));
-  flex: none;
-}
-.cdet .big {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px 16px;
-}
-.cdet .big .t {
-  font-family: var(--f-num);
-  font-weight: var(--num-w);
-  font-size: calc(64px * var(--tx));
-  line-height: 1;
-  letter-spacing: -0.03em;
-}
-.cdet .big .t small {
-  font-size: calc(24px * var(--tx));
-  vertical-align: top;
-  margin-left: 2px;
-  color: var(--fg2);
-}
+/* the state pill the Automations pane still draws (`.pane-auto .pill`, tabs.css); the Climate detail's own is a copy in its element (#244), and the Automations move (#273) deletes this one */
 .pill {
   display: inline-flex;
   align-items: center;
@@ -834,72 +738,6 @@
   background: var(--card2);
   font-size: calc(12.5px * var(--tx));
   font-weight: 600;
-}
-.pill.on {
-  background: color-mix(in srgb, var(--c-wh) 18%, var(--card));
-  color: var(--t-wh);
-}
-.pill.bad {
-  background: color-mix(in srgb, var(--warn) 18%, var(--card));
-  color: var(--t-warn);
-}
-.gauge {
-  position: relative;
-  height: 10px;
-  margin: 30px 9px 8px;
-  border-radius: 6px;
-  background: linear-gradient(90deg, #5b8fd0, #7fb3a0 35%, #e2c07a 62%, #d4763f);
-}
-.gauge .mk {
-  position: absolute;
-  top: 50%;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-  background: var(--card);
-  border: 3px solid var(--fg);
-}
-.gauge .sp {
-  position: absolute;
-  top: -7px;
-  bottom: -7px;
-  width: 3px;
-  border-radius: 2px;
-  transform: translateX(-50%);
-  background: var(--fg);
-}
-.gauge .lb {
-  position: absolute;
-  bottom: calc(100% + 9px);
-  transform: translateX(-50%);
-  font-size: calc(11.5px * var(--tx));
-  color: var(--fg2);
-  white-space: nowrap;
-}
-.gscale {
-  display: flex;
-  justify-content: space-between;
-  font-size: calc(11px * var(--tx));
-  color: var(--fg2);
-  margin: 0 0 14px;
-}
-.cdet .tiles {
-  margin: 6px 0 16px;
-}
-.cdet .note {
-  color: var(--fg2);
-  font-size: calc(14px * var(--tx));
-  line-height: 1.5;
-  margin: 10px 0 0;
-}
-@media (max-width: 720px) {
-  .clim {
-    grid-template-columns: 1fr;
-  }
-  .cdet .big .t {
-    font-size: calc(52px * var(--tx));
-  }
 }
 .lbl {
   letter-spacing: 0.04em;

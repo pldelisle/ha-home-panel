@@ -193,17 +193,10 @@
   background: var(--g-tile);
   box-shadow: var(--g-edge-s);
 }
-.app.gl .citem {
-  background: var(--g-card);
-  -webkit-backdrop-filter: var(--g-bd);
-  backdrop-filter: var(--g-bd);
-  box-shadow: var(--g-edge);
-}
 .app.gl .stepper button,
 .app.gl .abtn,
 .app.gl .lauto,
 .app.gl .cbtn .ic,
-.app.gl .citem .ic,
 .app.gl .lic {
   background: var(--g-sel);
   border-color: transparent;
@@ -211,15 +204,6 @@
 .app.gl .aupick .chip.sel,
 .app.gl .auchips .chip.sel {
   background: var(--fg);
-}
-.app.gl .citem[aria-selected='true'] {
-  background: color-mix(in srgb, var(--c-home) 16%, var(--g-card));
-  box-shadow:
-    inset 0 0 0 1.5px color-mix(in srgb, var(--c-home) 55%, transparent),
-    var(--g-shadow);
-}
-.app.gl .citem.on .ic {
-  background: color-mix(in srgb, var(--c-wh) 22%, var(--g-sel));
 }
 .app.gl .cbtn[aria-pressed='true'] {
   background: color-mix(in srgb, var(--c-wh) 18%, var(--g-tile));
@@ -255,12 +239,6 @@
   background: var(--g-tile);
   box-shadow: var(--g-edge-s);
 }
-.app.gl .pill.on {
-  background: color-mix(in srgb, var(--c-wh) 20%, var(--g-tile));
-}
-.app.gl .pill.bad {
-  background: color-mix(in srgb, var(--warn) 20%, var(--g-tile));
-}
 .app.gl .pane-auto .pill.run {
   background: color-mix(in srgb, var(--warn) 18%, var(--g-tile));
 }
@@ -275,9 +253,6 @@
 }
 .app.gl .ic.acc {
   background: color-mix(in srgb, var(--acc) 22%, var(--g-tile));
-}
-.app.gl .citem.bad .ic {
-  background: color-mix(in srgb, var(--warn) 22%, var(--g-tile));
 }
 /* v1.18.3: WebKit leaves ghosts of the previous flow drawing behind a blurred card (stale compositing under backdrop-filter), so on iOS the two Automations cards keep a denser plain translucent fill with no blur, and every flow drawing gets its own layer */
 .augraph {
@@ -346,11 +321,6 @@
   .app.gl .more,
   .app.gl .room {
     background: var(--card2);
-  }
-  .app.gl .citem {
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-    background: var(--card);
   }
 }
 @media (prefers-contrast: more) {

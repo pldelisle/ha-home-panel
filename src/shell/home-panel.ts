@@ -43,6 +43,7 @@ import type {FeatureDescriptor, FeatureEnv, FeatureKey} from '../ui/feature.ts';
 import {FEATURES, UNDER_MORE, isFeatureKey, visibleTab} from './features.ts';
 import {createGuest, guestStyles, type GuestContext, type GuestRenderer, type ShellForGuest} from './guest.ts';
 import {IdleTimer, type IdleState} from './idle-timer.ts';
+import type {ClimateDetailEvent} from '../features/climate/events.ts';
 import type {ForecastEvent} from '../features/weather/forecast-controller.ts';
 import './more-sheet.ts'; // defines <hp-more-sheet>
 import '../ui/pane-header.ts'; // defines <hp-pane-header>, which the legacy panes' headers are
@@ -320,6 +321,12 @@ export class HomePanel extends LitElement {
     this.guest?.forecastChanged(e.detail.type, e.detail.forecast);
   };
 
+  // the Climate pane says which room and range its detail shows while it is on screen; the legacy chart and controls draw for it until #246 and #248
+  private readonly onClimateDetail = (e: ClimateDetailEvent): void => {
+    e.stopPropagation();
+    this.guest?.climateDetailChanged(e.detail.shown);
+  };
+
   private readonly onToast = (e: ToastEvent): void => {
     e.stopPropagation();
     this.guest?.toast(e.detail.message, e.detail.sticky);
@@ -400,6 +407,7 @@ export class HomePanel extends LitElement {
       @tab-select=${this.onTabSelect}
       @toast=${this.onToast}
       @weather-forecast=${this.onForecast}
+      @climate-detail=${this.onClimateDetail}
     >
       ${keyed(this.epoch, this.renderWrap())}
       <div class="guest" style="display:contents"></div>

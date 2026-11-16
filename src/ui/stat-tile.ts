@@ -44,7 +44,7 @@ export class StatTile extends LitElement {
   declare unit: string | undefined;
   /**
    * What the tile looks like, as the words of the modifier classes it grew from, separated by spaces: `blue`, `grid`,
-   * `home`, `on`, `wide`, `sel` (the ring of the one shown) and `list` (an icon beside its words, as the More list sets them).
+   * `home`, `on`, `wide` (with `trail`, its figure after its words), `sel` (the ring of the one shown) and `list` (an icon beside its words, as the More list sets them).
    */
   declare tone: string;
   /** A colour token for the tile's accent (`--rc`), such as `var(--m-blue)`. */

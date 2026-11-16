@@ -16,6 +16,7 @@ import {roomName} from './core/i18n/room-name.ts';
 import {rateRoom} from './providers/air-quality.ts';
 import {doorMotionSensors} from './providers/door-motion.ts';
 import {hiloChallenge, hiloRates} from './providers/hilo.ts';
+import {heatPump} from './providers/heat-pump.ts';
 import {hydroQuebec} from './providers/hydro-quebec.ts';
 import {milaRooms} from './providers/mila.ts';
 import {powerNow} from './providers/power.ts';
@@ -75,19 +76,21 @@ const shortNames = names => {
 
 // card order for the column packing: the lights first
 // 'open-air' is dead until the Home move deletes it (#268): nothing draws in that card any more
-const LAYOUT = ['lights', 'open-climate', 'open-air', 'open-car'];
+const LAYOUT = ['lights', 'open-air', 'open-car'];
 // thermostats without an HA area: the area each Hilo room belongs to
 // areas the Phone tab shows as part of another, the way Apple Home groups them: the parking spot's charger and camera live in the garage
 // AL_AREAS (from the config): HA area → Adaptive Lighting switch, for areas the panel can't match on its own
-// Tabs view: one pane per subject, for a tablet fixed to the wall. The panes of Climate and Car host their legacy detail sheets inline, until #248 and #253. The rail, the
-// phone's bar and the panes are the shell's (src/shell/features.ts); the guest fills what is inside them.
-// the sheets that wait for the charts library before they draw anything; the others never do
-const CHART_SHEETS = new Set(['sh-climate', 'sh-car']);
+// Tabs view: one pane per subject, for a tablet fixed to the wall. The panes of Climate and Car host their legacy detail sheets inline, until #246 and #253 (Climate's
+// is the heatmap and the outside chart, in the container the pane slots). The rail, the phone's bar and the panes are the shell's (src/shell/features.ts); the guest fills what is inside them.
+// the sheets that wait for the charts library before they draw anything; the others never do (Climate's detail waits for it in drawClimate)
+const CHART_SHEETS = new Set(['sh-car']);
 const TAB_SHEET = {climate: 'sh-climate', car: 'sh-car'};
 // the tab whose pane hosts a sheet's panel
 const SHEET_TAB = /** @type {Record<string, import('./ui/feature.ts').FeatureKey>} */ (
   Object.fromEntries(Object.entries(TAB_SHEET).map(([t, id]) => [id, t]))
 );
+// where the sheet host puts a sheet's panel on a tablet: Car's pane is its host, Climate's pane slots a container for it (src/features/climate/index.ts)
+const SHEET_HOST = {'sh-climate': 'chost', 'sh-car': 'pane-car'};
 // colour of a black body at k kelvin (Tanner Helland's fit), for the colour-temperature strips and sliders
 const kelvinRGB = k => {
   const t = Math.min(40000, Math.max(1000, k)) / 100,
@@ -465,7 +468,8 @@ export class LegacyPanel {
     this.drawnTab = 'home'; // the tab the guest last drew its part of (tabChanged); `tab` is the shell's
     this.framed = false; // whether build() has drawn once, so the next draw asks the shell for a fresh frame
     this.frameKey = null; // what availability() said when the shell was last asked to draw the rail
-    this.climSel = 'house';
+    this.climSel = 'house'; // the room the Climate pane's detail shows, told by the pane (climateDetailChanged) until #248
+    this.climOn = false; // that detail is on screen
     this.sesAll = false;
     this.cache = {}; // last innerHTML per container, to skip identical updates
     this.pending = {}; // optimistic control states until hass catches up
@@ -548,6 +552,7 @@ export class LegacyPanel {
     this.frStop();
     this.charts.forEach(c => c.destroy());
     this.charts = [];
+    this.climOn = false; // the pane is about to be drawn again and tells again
     this.cache = {};
     this.sheetOffs.forEach(off => off()); // the sheets are about to be written again, and none is open
     this.sheetOffs = [];
@@ -774,7 +779,6 @@ export class LegacyPanel {
     <div class="col c1"></div>
     <div class="col c2">
       <div class="card" id="lights"></div>
-      <div class="card tap" id="open-climate" tabindex="0" role="button" aria-description="Open climate details"><div id="climate"></div></div>
       <div class="card tap" id="open-air" tabindex="0" role="button" aria-description="Open air quality details"><div id="air"></div></div>
     </div>
     <div class="col c3">
@@ -782,12 +786,7 @@ export class LegacyPanel {
     </div>
   </div>
 
-<div class="sheet" id="sh-climate" hidden><div class="panel" role="dialog" aria-modal="true" aria-labelledby="ch">
-  <div class="ph"><span class="badge" style="--acc:var(--c-home)"><svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 3a2 2 0 0 1 4 0v10.3a4.5 4.5 0 1 1-4 0z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="17" r="2" fill="currentColor"/></svg></span>
-    <div class="grow"><h2 id="ch">Home climate</h2><div class="sub" id="csub"></div></div>
-    <div class="tabs" role="tablist" id="ctabs"><button class="tab" role="tab" aria-selected="true" data-r="day">Day</button><button class="tab" role="tab" aria-selected="false" data-r="week">Week</button><button class="tab" role="tab" aria-selected="false" data-r="month">Month</button><button class="tab" role="tab" aria-selected="false" data-r="year">Year</button></div>
-    <button class="icon close" type="button" aria-label="Close">✕</button></div>
-  <div class="clim"><div class="clist" id="clist" role="listbox" aria-label="Rooms"></div><div class="inner cdet" id="cdet" aria-live="polite"></div></div>
+<div class="sheet" id="sh-climate" hidden><div class="panel">
   <div class="inner" id="cheatwrap"><h3 id="cheath">Every room</h3><p>Mean temperature per room, on a smooth scale from cool blue to warm red.</p><div class="hleg" id="cheatl"></div><div id="c-heat"></div></div>
   <div class="inner" id="coutwrap"><h3 id="couth">Outside</h3><p id="coutp"></p><div class="legend"><span><b style="background:color-mix(in srgb,var(--c-home) 35%,transparent)"></b>Low to high</span><span><b style="background:var(--c-home)"></b>Mean</span></div><div id="c-out90"></div></div>
 </div></div>
@@ -840,7 +839,7 @@ export class LegacyPanel {
         element: el,
         inline: SHEET_TAB[el.id] && {
           pane: SHEET_TAB[el.id],
-          host: 'pane-' + SHEET_TAB[el.id],
+          host: SHEET_HOST[el.id],
         },
       }),
     );
@@ -1427,7 +1426,6 @@ export class LegacyPanel {
       this.$('toast').hidden = true;
     });
     [
-      ['open-climate', 'sh-climate'],
       ['open-air', 'air.detail'], // dead until the Home move (#268): the card is empty and parked
       ['open-car', 'sh-car'],
     ].forEach(([b, s]) => {
@@ -1679,64 +1677,14 @@ export class LegacyPanel {
       if (sh) return this.sheets.open(sh.dataset.opens);
       const ls = e.target.closest('[data-lsheet]');
       if (ls) return this.openLight(ls.dataset.lsheet);
-      const cs = e.target.closest('[data-csel]');
-      if (cs) {
-        this.climSel = cs.dataset.csel;
-        return this.sheets.open('sh-climate');
-      }
       const t = e.target.closest('[data-pane]');
       if (t) return this.ctx.shell.setTab(t.dataset.pane);
     };
     tv.addEventListener('click', onTap);
-    this.$('ctabs').addEventListener('click', e => {
-      const b = e.target.closest('.tab');
-      if (!b || b.dataset.r === this.crange) return;
-      this.crange = b.dataset.r;
-      this.climateSheet();
-    });
-    this.$('cdet').addEventListener('click', e => this.climateControl(e));
-    const cd = this.$('cdet'),
-      dialAt = e => e.target.closest('.dial.ed');
-    cd.addEventListener('pointerdown', e => {
-      const d = dialAt(e);
-      if (!d || e.button) return;
-      e.preventDefault();
-      this.dialDrag = true;
-      d.setPointerCapture(e.pointerId);
-      this.applySp(this.dialValue(d, e.clientX, e.clientY));
-    });
-    cd.addEventListener('pointermove', e => {
-      const d = dialAt(e);
-      if (!d || !this.dialDrag) return;
-      const v = this.dialValue(d, e.clientX, e.clientY);
-      if (v !== this.dialLast) {
-        this.dialLast = v;
-        this.applySp(v);
-      }
-    });
-    for (const t of ['pointerup', 'pointercancel'])
-      cd.addEventListener(t, () => {
-        if (!this.dialDrag) return;
-        this.dialDrag = false;
-        this.dialLast = null;
-        this.cache.chead = null;
-        this.renderClimateHead();
-      });
-    cd.addEventListener('keydown', e => {
-      const d = dialAt(e);
-      if (!d || !['ArrowUp', 'ArrowRight', 'ArrowDown', 'ArrowLeft'].includes(e.key)) return;
-      e.preventDefault();
-      const cur = +d.getAttribute('aria-valuenow'),
-        lo = +d.dataset.lo,
-        hi = +d.dataset.hi;
-      let v = cur + (/Up|Right/.test(e.key) ? 0.5 : -0.5);
-      if (cur <= 5.5 && v > cur) v = 15;
-      v = Math.min(hi, Math.max(lo, v));
-      this.applySp(v <= 5.5 ? lo : v);
-      const n = this.$('cdet').querySelector('.dial.ed');
-      n && n.focus();
-    });
-    this.$('cdet').addEventListener('change', e => {
+    // the controls of the Climate detail, which the pane slots (#248 moves them into an element)
+    const ctl = this.$('cctl');
+    ctl.addEventListener('click', e => this.climateControl(e));
+    ctl.addEventListener('change', e => {
       const t = /** @type {HTMLInputElement} */ (e.target);
       if (t.id === 'hpswing') {
         const v = t.value;
@@ -1748,14 +1696,6 @@ export class LegacyPanel {
           `Louvers: ${swingName(v).toLowerCase()}`,
         );
       }
-    });
-    this.$('clist').addEventListener('click', e => {
-      const b = e.target.closest('.citem');
-      if (!b) return;
-      this.climSel = b.dataset.id;
-      this.cache.clist = null;
-      this.renderClimateList();
-      this.climateDetail();
     });
     // Ford's photo comes through HA's image proxy; if it fails to load, fall back to the drawn car
     this.root.addEventListener(
@@ -1862,7 +1802,7 @@ export class LegacyPanel {
   renderLive() {
     if (!this.hass) return;
     this.findCar();
-    for (const f of ['renderHeader', 'renderLights', 'renderClimate', 'renderCarCard']) {
+    for (const f of ['renderHeader', 'renderLights', 'renderCarCard']) {
       try {
         this[f]();
       } catch (e) {
@@ -1872,15 +1812,8 @@ export class LegacyPanel {
     this.renderTabs();
     try {
       if (this.sheets.isOpen('sh-light')) this.renderLightSheet();
-      if (this.sheets.isOpen('sh-climate')) {
-        this.renderClimateList();
-        this.$('csub').textContent = this.climateSummary();
-      }
       if (this.sheets.isOpen('sh-car')) this.renderCarSheetLive();
-      if (this.sheets.isOpen('sh-climate')) {
-        this.renderClimateHead();
-        this.renderClimateControls();
-      }
+      if (this.climOn) this.renderClimateControls();
       if (!this.$('attpop').hidden) this.renderAttention();
     } catch (e) {
       console.error('home-panel sheet', e);
@@ -1889,7 +1822,7 @@ export class LegacyPanel {
 
   // ---------- live values ----------
   // Energy's reads left in the legacy panel (#241): the providers over the store, in kW, each reader taking the fields it needs
-  // (the provider words nothing). Their callers leave with the Climate moves (#242 to #248: the room list, the heat pump, the sheet),
+  // (the provider words nothing). Their callers leave with the Climate moves (#246 and #248: the chart and the controls),
   // the live pill (#255, #256), the peak chip (#257), the stack (#265, #266), the Home tiles (#268), the header (#269) and the More word (the guest).
   powerNow() {
     return powerNow(this.store.hass?.states ?? {}, this.store.config);
@@ -1904,7 +1837,7 @@ export class LegacyPanel {
     return hydroQuebec(this.store.hass?.states ?? {}, this.store.config);
   }
   // a room's name, by the core's rule over the provider's room (powerNow's `RoomPower` carries what the rule reads); the Status checks
-  // and the Climate sheet still ask it (#256, #248)
+  // and the Climate chart and controls still ask it (#256, #246, #248)
   roomName(room) {
     return roomName(room, {names: this.store.names, t: this.store.t, language: this.store.language});
   }
@@ -1981,7 +1914,11 @@ export class LegacyPanel {
     const hp = this.st(this.E.hp);
     if (hp) {
       if (!ok(hp))
-        items.push(['crit', 'Heat pump offline', `The ${this.hpBrand()} unit shows as unavailable in Home Assistant.`]);
+        items.push([
+          'crit',
+          'Heat pump offline',
+          `The ${heatPump(this.store.hass.states, registriesOf(this.store.hass), this.store.config)?.brand ?? 'Heat pump'} unit shows as unavailable in Home Assistant.`,
+        ]);
       else clear.push('Heat pump online');
     }
     const gw = this.st(this.E.gateway);
@@ -2360,49 +2297,6 @@ export class LegacyPanel {
     }
   }
 
-  // ---------- climate card ----------
-  renderClimate() {
-    const L = this.powerNow(),
-      H = this.H,
-      temps = L.rooms.map(r => r.temperature).filter(v => v != null);
-    const avg = temps.length ? sum(temps) / temps.length : null,
-      n = L.rooms.filter(r => r.heating).length;
-    const right = `${L.heatPump?.on ? 'Heat pump + ' : ''}${plural(n, 'room')} heating`;
-    const rooms = L.rooms
-      .map(r => {
-        const name = this.roomName(r);
-        const s = r.heating
-          ? `Heating · ${(r.power ?? 0).toFixed(1)} kW`
-          : !r.available
-            ? 'Unavailable'
-            : r.setpoint > 5.5
-              ? `Set ${r.setpoint}°`
-              : 'Off · 5°';
-        return `<div class="room ${r.heating ? 'on' : ''}"><div class="n">${esc(name)}</div><div class="row"><span class="t num">${f1(r.temperature)}°</span><span class="s">${s}</span></div>${H ? this.spark(H.temp24[r.key] || [], r.heating ? this.css('--c-wh') : this.css('--c-home'), name + ', last 24 hours') : '<svg></svg>'}</div>`;
-      })
-      .join('');
-    this.set(
-      'climate',
-      `<div class="top"><span class="lbl">Climate <span class="num" style="font-weight:500;color:var(--fg2);margin-left:6px">${avg == null ? '' : avg.toFixed(1) + '° inside'}</span></span><span class="right">${right}<span class="go">›</span></span></div><div class="rooms">${rooms}</div>`,
-    );
-  }
-  spark(pts, color, label) {
-    pts = pts.filter(p => p[1] != null);
-    if (pts.length < 2) return '<svg></svg>';
-    const w = 300,
-      h = 28,
-      ys = pts.map(p => p[1]),
-      lo = Math.min(...ys),
-      hi = Math.max(...ys),
-      sp = hi - lo || 1;
-    const d = pts
-      .map(
-        (p, i) =>
-          `${i ? 'L' : 'M'}${((i / (pts.length - 1)) * w).toFixed(1)},${(h - 3 - ((p[1] - lo) / sp) * (h - 6)).toFixed(1)}`,
-      )
-      .join('');
-    return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="${esc(label)}, ${lo.toFixed(1)} to ${hi.toFixed(1)} degrees"><path d="${d} L${w},${h} L0,${h}Z" fill="${color}" opacity=".12"/><path d="${d}" fill="none" stroke="${color}" stroke-width="1.6" vector-effect="non-scaling-stroke" stroke-linejoin="round"/></svg>`;
-  }
   bars(vals, labels, color, unit) {
     const w = 300,
       h = 56,
@@ -2694,12 +2588,23 @@ export class LegacyPanel {
     this.charts = [];
     this.climChart = null;
   }
+  // Climate's charts alone: the pane's detail leaves as another tab's sheet may be drawing its own
+  destroyClimateCharts() {
+    this.charts = this.charts.filter(c => {
+      if (c !== this.climChart && !c.__clim) return true;
+      try {
+        c.destroy();
+      } catch {}
+      return false;
+    });
+    this.climChart = null;
+  }
   redrawCharts() {
     const id = this.sheets.shown;
-    if (id) {
-      this.destroyCharts();
-      this.buildSheet(id);
-    }
+    if (!id && !this.climOn) return;
+    this.destroyCharts();
+    if (id) this.buildSheet(id);
+    if (this.climOn) this.climateSheet();
   }
   // ApexCharts is fetched the first time a sheet that draws charts opens, then kept (the chunk is cached by the browser)
   loadCharts() {
@@ -2716,7 +2621,6 @@ export class LegacyPanel {
     }
     if (tag !== this.sheetTag || !this.sheets.isOpen(id)) return;
     try {
-      if (id === 'sh-climate') this.climateSheet();
       if (id === 'sh-car') this.carSheet();
       if (id === 'sh-light') this.renderLightSheet();
     } catch (e) {
@@ -2989,7 +2893,7 @@ export class LegacyPanel {
   }
   renderCompact() {
     if (!this.compact || this.view !== 'tabs') return;
-    for (const f of ['renderLightTiles', 'renderClimateTiles', 'renderCompactSubs']) {
+    for (const f of ['renderLightTiles', 'renderCompactSubs']) {
       try {
         this[f]();
       } catch (e) {
@@ -2999,7 +2903,6 @@ export class LegacyPanel {
   }
   // one line under each summary pane's title, as the sheets have
   renderCompactSubs() {
-    if (this.tab === 'climate') this.set('csub2', this.climateSummary());
     if (this.tab === 'car') {
       const c = this.car ? this.carState() : null;
       this.set('carh2', this.car ? esc(this.carName()) : 'Car');
@@ -3115,84 +3018,6 @@ export class LegacyPanel {
       <div class="lgrp" role="radiogroup" aria-label="Link with">${rows.join('')}</div>
       <p class="lfoot">Linked rooms switch, dim and change colour together. Picking a room copies this room's light onto it. A room links with one other room at a time.</p>`;
   }
-  // Climate: the same list as the sheet's, as tiles; a tile opens the sheet on that room
-  // the heat pump's maker, from its device (FGLair units are Fujitsu's)
-  hpBrand() {
-    const e = (this.hass.entities || {})[this.E.hp] || {},
-      d = (this.hass.devices || {})[e.device_id] || {};
-    return /fglair/.test(e.platform || '') || /fujitsu/i.test(d.manufacturer || '')
-      ? 'Fujitsu'
-      : d.manufacturer || 'Heat pump';
-  }
-  climItems() {
-    const L = this.powerNow(),
-      temps = L.rooms.map(r => r.temperature).filter(v => v != null),
-      avg = temps.length ? sum(temps) / temps.length : null;
-    const pump = L.heatPump,
-      hpOn = !!pump?.on;
-    const n = L.rooms.filter(r => r.heating).length,
-      hp = this.st(this.E.hp), // its words and attributes; whether it is there and available is the provider's
-      icons = Object.fromEntries(this.ROOMS.map(x => [x.k, x.icon])); // the glyph is the config's, by the room's key
-    const B = this.hpBrand(),
-      hpSb = !pump
-        ? 'Not found'
-        : !pump.available
-          ? `${B} · offline`
-          : hp.state === 'off'
-            ? `${B} · off`
-            : `${B} · ${hp.attributes.hvac_action || hp.state}${hp.attributes.temperature != null ? ' to ' + hp.attributes.temperature + '°' : ''}`;
-    return [
-      {
-        id: 'house',
-        icon: 'house',
-        nm: 'Whole house',
-        sb: `${hpOn ? 'Heat pump + ' : ''}${plural(n, 'room')} heating`,
-        tv: avg == null ? '–' : avg.toFixed(1) + '°',
-        cls: n || hpOn ? 'on' : '',
-      },
-      ...L.rooms.map(r => ({
-        id: r.key,
-        icon: icons[r.key],
-        nm: this.roomName(r),
-        sb: !r.available
-          ? 'Unavailable'
-          : r.heating
-            ? `Heating · ${(r.power ?? 0).toFixed(2)} kW`
-            : r.setpoint > 5.5
-              ? `Holding ${r.setpoint}°`
-              : 'Off',
-        tv: f1(r.temperature) + '°',
-        cls: r.heating ? 'on' : !r.available ? 'bad' : '',
-      })),
-      ...(this.E.hp
-        ? [
-            {
-              id: 'hp',
-              icon: 'fan',
-              nm: 'Heat pump',
-              sb: hpSb,
-              tv:
-                pump?.available && hp.attributes.current_temperature != null
-                  ? f1(hp.attributes.current_temperature) + '°'
-                  : '–',
-              cls: !pump?.available ? 'bad' : hpOn ? 'on' : '',
-            },
-          ]
-        : []),
-    ];
-  }
-  renderClimateTiles() {
-    if (this.tab !== 'climate') return;
-    this.set(
-      'ctiles2',
-      this.climItems()
-        .map(
-          i =>
-            `<button type="button" class="stile ${i.cls}${i.id === 'house' ? ' wide' : ''}" data-csel="${i.id}"><span class="ic">${ico(i.icon, 20)}</span><span class="tx"><b>${esc(i.nm)}</b><small>${esc(i.sb)}</small></span><span class="tv num">${i.tv}</span></button>`,
-        )
-        .join(''),
-    );
-  }
   // the word under each section in the phone's More sheet, in English, for the registry's summary
   moreLines() {
     const L = this.powerNow();
@@ -3287,6 +3112,7 @@ export class LegacyPanel {
   availability() {
     if (!this.hass) return {};
     const L = this.lacking();
+    // Climate's tab is its descriptor's `available` (hasClimate); the answer stays here because a change of it asks the shell for a frame, which asks that again (#248)
     return {climate: !L.climate, car: !L.car};
   }
   // whether the history behind the charts has loaded, which the settings popup's version line says
@@ -3506,7 +3332,7 @@ export class LegacyPanel {
     ];
     // on a phone a tile opens its sheet straight away; Lights goes to its section, the water heater opens its card (Energy's sheet)
     const PH = {
-      climate: 'data-csel="house"',
+      climate: 'data-opens="climate.detail"',
       car: 'data-opens="sh-car"',
       energy: 'data-opens="energy.detail"',
       air: 'data-opens="air.detail"',
@@ -4003,48 +3829,6 @@ export class LegacyPanel {
   }
 
   // ---------- climate sheet ----------
-  climateSummary() {
-    const L = this.powerNow(),
-      temps = L.rooms.map(r => r.temperature).filter(v => v != null),
-      out = this.attr(this.E.weather, 'temperature') ?? this.num(this.E.outT);
-    const heating = L.rooms.filter(r => r.heating);
-    const hp = this.st(this.E.hp),
-      hpTxt = !this.E.hp
-        ? ''
-        : !L.heatPump?.available
-          ? 'heat pump offline'
-          : hp.state === 'off'
-            ? 'heat pump off'
-            : `heat pump ${hp.attributes.hvac_action || hp.state}${hp.attributes.temperature != null ? ' to ' + hp.attributes.temperature + '°' : ''}`;
-    // short on purpose: the room list sits right under it
-    return [
-      temps.length ? `${(sum(temps) / temps.length).toFixed(1)}° average inside` : '',
-      out != null ? `${f1(out)}° outside` : '',
-      heating.length ? plural(heating.length, 'room') + ' heating' : 'no rooms heating',
-      hpTxt,
-    ]
-      .filter(Boolean)
-      .join(' · ');
-  }
-  renderClimateList() {
-    const items = this.climItems();
-    this.set(
-      'clist',
-      items
-        .map(
-          i =>
-            `<button class="citem ${i.cls}" role="option" type="button" data-id="${i.id}" aria-selected="${i.id === this.climSel}"><span class="ic">${ico(i.icon)}</span><span class="tx"><div class="nm">${esc(i.nm)}</div><div class="sb">${esc(i.sb)}</div></span><span class="tv">${i.tv}</span></button>`,
-        )
-        .join(''),
-    );
-  }
-  gauge(t, sp) {
-    if (t == null) return '';
-    const pos = v => Math.max(0, Math.min(100, ((v - 14) / 16) * 100)),
-      spOn = sp != null && sp >= 14;
-    return `<div class="gauge" role="img" aria-label="Temperature ${t.toFixed(1)} degrees${spOn ? ', setpoint ' + sp + ' degrees' : ''} on a 14 to 30 degree scale">${spOn ? `<span class="sp" style="left:${pos(sp)}%"></span>` : ''}<span class="mk" style="left:${pos(t)}%"></span><span class="lb" style="left:${pos(t)}%">Now ${t.toFixed(1)}°</span></div>
-      <div class="gscale"><span>14°</span><span>${spOn ? 'Bar marks the setpoint' : sp != null ? 'Thermostat off (5° frost guard)' : ''}</span><span>30°</span></div>`;
-  }
   // ---------- climate history by range ----------
   async loadClimRange(r) {
     const c = this.CR[r];
@@ -4126,13 +3910,7 @@ export class LegacyPanel {
       .map(([x, v]) => [x, +(sum(v) / v.length).toFixed(2)]);
   }
   async climateSheet() {
-    if (!this.ApexCharts) return; // a tap while the chunk is loading; buildSheet draws it when it lands
-    this.$('csub').textContent = this.climateSummary();
-    this.root
-      .querySelectorAll('#ctabs .tab')
-      .forEach(t => t.setAttribute('aria-selected', t.dataset.r === this.crange));
-    this.cache.clist = null;
-    this.renderClimateList();
+    if (!this.ApexCharts) return; // the pane told us while the chunk is loading; drawClimate draws it when it lands
     this.climateDetail();
     const r = this.crange,
       tag = (this.climTag = Symbol());
@@ -4147,7 +3925,7 @@ export class LegacyPanel {
       this.$('c-heat').innerHTML = '<p>History is not available right now.</p>';
       return;
     }
-    if (tag !== this.climTag || !this.sheets.isOpen('sh-climate')) return;
+    if (tag !== this.climTag || !this.climOn) return;
     this.charts = this.charts.filter(c => {
       if (c.__clim) {
         try {
@@ -4237,137 +4015,54 @@ export class LegacyPanel {
     o.__clim = true;
     this.$('coutp').textContent = R.outNote;
   }
-  climInfo() {
-    const L = this.powerNow();
-    const up = !!L.heatPump?.available,
-      hpOn = !!L.heatPump?.on;
+  // The part of the old climInfo that the chart still needs (#246 deletes it with the chart): the loaded range, its definition, the selection's series and its name.
+  climChartInfo() {
     const C = this.CR[this.crange],
-      R = CRANGE[this.crange],
-      rng = pts => {
-        const v = pts.map(p => p[1]).filter(x => x != null);
-        return v.length ? `${Math.min(...v).toFixed(1)}–${Math.max(...v).toFixed(1)}` : '–';
-      };
-    let pts = [],
-      title,
-      sub,
-      t,
-      sp = null,
-      pill,
-      tiles,
-      note = '';
-    if (this.climSel === 'hp') {
-      const hp = this.st(this.E.hp),
-        a = up ? hp.attributes : {};
-      title = 'Heat pump';
-      sub = this.hpBrand() === 'Fujitsu' ? 'Fujitsu, through the FGLair integration' : this.hpBrand();
-      t = a.current_temperature != null ? +a.current_temperature : null;
-      sp = hp && hp.state !== 'off' ? a.temperature : null;
-      pill = `<span class="pill ${hpOn ? 'on' : !up ? 'bad' : ''}">${!up ? 'Offline' : hp.state === 'off' ? 'Off' : `${cap(a.hvac_action || hp.state)}${sp != null ? ' to ' + sp + '°' : ''}`}</span>`;
-      pts = C ? C.hp : [];
-      tiles = [
-        ['Range, ' + R.short, rng(pts), '°'],
-        ['Last update', up ? this.fmtEn.time(new Date(hp.last_updated)) : '–', ''],
-      ];
-      note =
-        'Readings come from the unit itself. A break in the line means the integration was offline. The unit has no power sensor, so its electricity is counted in Rest of home.';
-      if (C && C.hpFrom && C.hpFrom > C.start + 864e5)
-        note += ` Home Assistant keeps about 10 days of detailed history, so the heat pump line starts ${this.fmtEn.date(C.hpFrom)}.`;
-    } else if (this.climSel === 'house') {
-      title = 'Whole house';
-      sub = `Average of ${this.ROOMS.length} rooms`;
-      const ts = L.rooms.map(r => ({...r, name: this.roomName(r)})).filter(r => r.temperature != null),
-        sorted = [...ts].sort((a, b) => b.temperature - a.temperature);
-      t = ts.length ? sum(ts.map(r => r.temperature)) / ts.length : null;
-      const n = L.rooms.filter(r => r.heating).length;
-      pill = `<span class="pill ${n || hpOn ? 'on' : ''}">${hpOn ? 'Heat pump + ' : ''}${plural(n, 'room')} heating</span>`;
-      tiles = [
-        ['Warmest', sorted.length ? f1(sorted[0].temperature) : '–', '°', sorted.length ? sorted[0].name : ''],
-        [
-          'Coolest',
-          sorted.length ? f1(sorted[sorted.length - 1].temperature) : '–',
-          '°',
-          sorted.length ? sorted[sorted.length - 1].name : '',
-        ],
-        ['Heating now', L.heat.toFixed(2), 'kW', 'all thermostats'],
-        ['Heating, ' + R.short, C ? Math.round(sum(Object.values(C.kwh))) : '–', 'kWh', 'all thermostats'],
-      ];
-      pts = C ? this.houseSeries(C) : [];
-    } else {
-      const r = L.rooms.find(x => x.key === this.climSel);
-      title = this.roomName(r);
-      sub = 'Hilo thermostat';
-      t = r.temperature;
-      sp = r.setpoint;
-      pill = `<span class="pill ${r.heating ? 'on' : !r.available ? 'bad' : ''}">${!r.available ? 'Unavailable' : r.heating ? `Heating to ${sp ?? '–'}°` : sp > 5.5 ? `Holding ${sp}°` : 'Off'}</span>`;
-      pts = C ? (C.rooms[r.key] || []).map(p => [p[0], p[1]]) : [];
-      tiles = [
-        ['Range, ' + R.short, rng(pts), '°'],
-        ['Drawing now', (r.power ?? 0).toFixed(2), 'kW'],
-        ['Heating, ' + R.short, C ? C.kwh[r.key].toFixed(1) : '–', 'kWh'],
-      ];
-      note = 'The dashed line is the setpoint. Where it stops, the thermostat was off.';
-    }
-    return {C, R, pts, title, sub, t, sp, pill, tiles, note};
+      R = CRANGE[this.crange];
+    if (this.climSel === 'hp') return {C, R, pts: C ? C.hp : [], title: 'Heat pump'};
+    if (this.climSel === 'house') return {C, R, pts: C ? this.houseSeries(C) : [], title: 'Whole house'};
+    const r = this.powerNow().rooms.find(x => x.key === this.climSel);
+    return {C, R, pts: C ? (C.rooms[r.key] || []).map(p => [p[0], p[1]]) : [], title: this.roomName(r)};
   }
-  // the top of the detail (temperature, state, gauge, tiles) follows live states; the chart only redraws on a new selection or range
-  renderClimateHead(force) {
-    if (!this.$('chead') || (this.dialDrag && !force)) return;
-    const fresh = !this.$('chead').firstChild; // the sheet just opened or changed room: the dial draws itself in (motion.css)
-    const {title, sub, t, sp, pill, tiles} = this.climInfo(),
-      out = this.attr(this.E.weather, 'temperature') ?? this.num(this.E.outT);
-    if (this.compact) {
-      // phone: an Apple Home style dial instead of the big number and the bar
-      let d;
-      if (this.climSel === 'house') d = {sp: undefined, lo: 5, hi: 30, ed: false, state: `${f1(t)}° average`};
-      else if (this.climSel === 'hp') {
-        const hp = this.st(this.E.hp),
-          up = !!this.powerNow().heatPump?.available,
-          a = up ? hp.attributes : {};
-        const mode = this.pend('hp:mode', hp && hp.state);
-        d = {
-          sp: !up || ['off', 'fan_only', 'dry'].includes(mode) ? null : +this.pend('hp:sp', a.temperature),
-          lo: a.min_temp ?? 16,
-          hi: a.max_temp ?? 30,
-          ed: up && !['off', 'fan_only', 'dry'].includes(mode),
-          state: pill.replace(/<[^>]+>/g, ''),
-        };
-      } else {
-        const r = this.ROOMS.find(x => x.k === this.climSel),
-          c = this.st(r.climate),
-          a = ok(c) ? c.attributes : {};
-        d = {
-          sp: ok(c) ? +this.pend(r.climate, a.temperature) : null,
-          lo: a.min_temp ?? 5,
-          hi: a.max_temp ?? 30,
-          ed: ok(c),
-          state: pill.replace(/<[^>]+>/g, ''),
-        };
-      }
-      this.set(
-        'chead',
-        `<div class="big"><div><h3>${esc(title)}</h3><p>${esc(sub)}</p></div>${pill}</div>${this.dial(t, d.sp, d.lo, d.hi, d.ed, `${t != null ? 'Now ' + f1(t) + '°' : ''}${out != null ? ' · Outside ' + f1(out) + '°' : ''}`)}`,
-      );
-      if (fresh) {
-        const d = this.$('chead').querySelector('.dial');
-        if (d) d.classList.add('in');
-      }
-    } else
-      this.set(
-        'chead',
-        `<div class="big"><div><h3>${esc(title)}</h3><p>${esc(sub)}</p></div>${pill}</div>
-      <div class="big" style="margin-top:4px"><div class="t">${f1(t)}<small>°C</small></div><div class="muted" style="font-size:13px;padding-bottom:6px">Outside ${f1(out)}°</div></div>
-      ${this.gauge(t, this.climSel === 'house' ? null : sp)}`,
-      );
-    // on a phone the range ("18.5–23.0°") gets a row of its own so it isn't cut off
-    this.set(
-      'ctiles',
-      tiles
-        .map((x, i) =>
-          i === 0 && /^Range/.test(x[0]) ? tile(x).replace('class="tile"', 'class="tile trange"') : tile(x),
-        )
-        .join(''),
+  // The two figures of the detail's tiles that wait for the loaded range (the span of the selection's series, the heating in kWh), told to the Climate pane, which
+  // is the parent of the container we draw in (#246 loads the history in the feature and the pane reads it there). The pane drops a figure for another room or range.
+  climFigures() {
+    const {C, pts} = this.climChartInfo(),
+      read = pts.map(p => p[1]).filter(x => x != null),
+      kwh = this.climSel === 'house' ? sum(Object.values(C.kwh)) : this.climSel === 'hp' ? null : C.kwh[this.climSel];
+    this.$('chost').dispatchEvent(
+      // the type is ClimateFiguresEvent's (src/features/climate/events.ts); the guest imports no feature, so the name is written here
+      new CustomEvent('climate-figures', {
+        bubbles: true,
+        detail: {
+          sel: this.climSel,
+          range: this.crange,
+          span: read.length ? {lo: Math.min(...read), hi: Math.max(...read)} : null,
+          kwh: kwh ?? null,
+          // where the heat pump's line starts, when that is later than the range does: Home Assistant keeps only about ten days of its detailed history
+          hpFrom: this.climSel === 'hp' && C.hpFrom && C.hpFrom > C.start + 864e5 ? C.hpFrom : null,
+        },
+      }),
     );
-    this.$('ctiles').style.gridTemplateColumns = `repeat(${tiles.length},minmax(0,1fr))`;
+  }
+  // the pane (src/features/climate) tells which room and range its detail shows, through the shell, or that it left (#246 and #248 delete this with the chart and the controls)
+  climateDetailChanged(shown) {
+    this.climOn = !!shown;
+    this.climTag = Symbol(); // a history on its way is for what was shown before
+    if (!shown) return this.destroyClimateCharts();
+    this.climSel = shown.sel;
+    this.crange = shown.range;
+    this.drawClimate();
+  }
+  // the chart's library first, as buildSheet does for the sheets; then the detail's chart and the tablet's heatmap and outside chart
+  async drawClimate() {
+    try {
+      await this.loadCharts();
+    } catch {
+      this.toast(this.store.t('charts.failed'), true);
+      return;
+    }
+    if (this.climOn) this.climateSheet();
   }
   climateDetail() {
     if (this.climChart) {
@@ -4376,18 +4071,17 @@ export class LegacyPanel {
       this.climChart = null;
     }
     const s = this.S(),
-      el = this.$('cdet'),
-      {C, R, pts, title, note} = this.climInfo(),
+      el = this.$('cchart'),
+      {C, R, pts, title} = this.climChartInfo(),
       spc = this.css('--fg2');
     // the thermostat's setpoint, stepped and dashed, for a room or the heat pump
     const spPts =
         !C || this.climSel === 'house' ? [] : this.climSel === 'hp' ? C.hpSp || [] : (C.sp || {})[this.climSel] || [],
       hasSp = spPts.some(p => p[1] != null);
-    el.innerHTML = `<div id="chead"></div><div id="cctl" class="cctl"></div><div class="tiles" id="ctiles"></div>
-      <div class="legend"><span><b style="background:${s.wh}"></b>${this.climSel === 'house' ? 'House average' : esc(title)}</span>${this.climSel === 'house' ? '' : `<span><b class="dash" style="color:${spc}"></b>Setpoint</span>`}<span><b style="background:${s.home}"></b>Outside</span><span class="muted">${esc(R.label)}</span></div><div id="c-room">${C ? '' : '<p class="loading">Loading history…</p>'}</div>${note ? `<p class="note">${note}</p>` : ''}`;
-    this.cache.chead = this.cache.ctiles = this.cache.cctl = null;
-    this.renderClimateHead();
+    el.innerHTML = `<div class="legend"><span><b style="background:${s.wh}"></b>${this.climSel === 'house' ? 'House average' : esc(title)}</span>${this.climSel === 'house' ? '' : `<span><b class="dash" style="color:${spc}"></b>Setpoint</span>`}<span><b style="background:${s.home}"></b>Outside</span><span class="muted">${esc(R.label)}</span></div><div id="c-room">${C ? '' : '<p class="loading">Loading history…</p>'}</div>`;
+    this.cache.cctl = null;
     this.renderClimateControls();
+    if (C) this.climFigures();
     if (!C || !this.ApexCharts) return;
     // apex splits 'smooth' lines into pieces once any series has a gap, so with a setpoint the room lines use monotoneCubic instead
     const cv = this.climSel === 'hp' ? 'straight' : hasSp ? 'monotoneCubic' : 'smooth';
@@ -4497,91 +4191,6 @@ export class LegacyPanel {
       }
     }
     this.set('cctl', html);
-  }
-  // Apple Home style thermostat dial: a 270° track, ticks, the setpoint knob (draggable) and a dot at the room temperature
-  dial(t, sp, lo, hi, ed, sub) {
-    const S = 260,
-      c = S / 2,
-      R = 106,
-      a0 = 135,
-      sw = 270,
-      clamp = v => Math.max(lo, Math.min(hi, v)),
-      deg = v => a0 + ((clamp(v) - lo) / (hi - lo)) * sw;
-    const pt = (a, r = R) => [c + r * Math.cos((a * Math.PI) / 180), c + r * Math.sin((a * Math.PI) / 180)];
-    const arc = (a, b) => {
-      if (b - a < 0.5) return '';
-      const [x1, y1] = pt(a),
-        [x2, y2] = pt(b);
-      return `M${x1.toFixed(1)} ${y1.toFixed(1)}A${R} ${R} 0 ${b - a > 180 ? 1 : 0} 1 ${x2.toFixed(1)} ${y2.toFixed(1)}`;
-    };
-    const off = sp == null || sp <= 5.5,
-      spv = sp === undefined ? null : off ? lo : clamp(sp);
-    const ticks = Array.from({length: 55}, (_, i) => {
-      const a = a0 + (i * sw) / 54,
-        [x1, y1] = pt(a, R - 17),
-        [x2, y2] = pt(a, R - (i % 6 ? 12 : 9));
-      return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke-width="${i % 6 ? 1.5 : 2.5}"/>`;
-    }).join('');
-    const now =
-      t == null
-        ? ''
-        : (([x, y]) => `<circle class="dnow" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="5"/>`)(pt(deg(t)));
-    const knob =
-      spv == null
-        ? ''
-        : (([x, y]) => `<circle class="dknob" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="14"/>`)(pt(deg(spv)));
-    const big = spv == null ? (t == null ? '–' : f1(t) + '°') : off ? 'Off' : spv.toFixed(1) + '°';
-    return `<div class="dial${ed ? ' ed' : ''}" data-lo="${lo}" data-hi="${hi}" role="${ed ? 'slider' : 'img'}" ${ed ? `tabindex="0" aria-valuemin="${lo}" aria-valuemax="${hi}" aria-valuenow="${spv}" aria-valuetext="${off ? 'Off' : spv + ' degrees'}"` : ''} aria-label="${ed ? 'Setpoint' : 'Temperature'}">
-      <svg viewBox="0 0 ${S} ${S}" aria-hidden="true"><defs><linearGradient id="dialg" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#5B8FD0"/><stop offset=".38" stop-color="#7FB3A0"/><stop offset=".64" stop-color="#E2C07A"/><stop offset="1" stop-color="#D4763F"/></linearGradient></defs>
-      <path class="dtrack" d="${arc(a0, a0 + sw)}"/>${spv == null || off ? '' : `<path class="dact" stroke="url(#dialg)" d="${arc(a0, deg(spv))}"/>`}<g class="dticks">${ticks}</g>${now}${knob}</svg>
-      <div class="dialc"><b class="num">${big}</b><small>${esc(sub)}</small></div></div>`;
-  }
-  // the dial's value from a pointer position: the angle from the centre, snapped to half degrees; below the lowest step means off
-  dialValue(el, x, y) {
-    const r = el.querySelector('svg').getBoundingClientRect(),
-      lo = +el.dataset.lo,
-      hi = +el.dataset.hi;
-    let a = ((Math.atan2(y - (r.top + r.height / 2), x - (r.left + r.width / 2)) * 180) / Math.PI - 135 + 720) % 360;
-    if (a > 270) a = a > 315 ? 0 : 270;
-    const v = Math.round((lo + (a / 270) * (hi - lo)) * 2) / 2;
-    return v <= 5.5 ? lo : v;
-  }
-  // a setpoint from the dial: held locally, sent once the finger rests (same debounce as the stepper taps)
-  applySp(v) {
-    const hold = (key, val) => {
-      this.pending[key] = {v: val, until: Date.now() + 20000};
-    };
-    const later = (key, fn) => {
-      clearTimeout(this.spT && this.spT[key]);
-      this.spT = this.spT || {};
-      this.spT[key] = setTimeout(fn, 1100);
-    };
-    if (this.climSel === 'hp') {
-      hold('hp:sp', v);
-      later('hp', () =>
-        this.call(
-          'climate',
-          'set_temperature',
-          {entity_id: this.E.hp, temperature: v},
-          `Heat pump set to ${v.toFixed(1)}°`,
-        ),
-      );
-    } else {
-      const r = this.ROOMS.find(x => x.k === this.climSel);
-      if (!r) return;
-      hold(r.climate, v);
-      later(r.climate, () =>
-        this.call(
-          'climate',
-          'set_temperature',
-          {entity_id: r.climate, temperature: v},
-          `${this.roomName(this.powerNow().rooms.find(x => x.key === r.k))} ${v <= 5.5 ? 'off' : 'set to ' + v.toFixed(1) + '°'}`,
-        ),
-      );
-    }
-    this.cache.chead = this.cache.cctl = null;
-    this.renderClimateHead(true);
-    this.renderClimateControls();
   }
   climateControl(e) {
     const b = e.target.closest('[data-c]');

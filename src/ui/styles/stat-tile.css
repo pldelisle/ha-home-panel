@@ -138,6 +138,10 @@
   margin: 0;
   font-size: calc(22px * var(--tx));
 }
+/* a wide tile whose figure follows its words (Climate's whole house), where the others lead with it */
+.stile.wide.trail .tv {
+  order: 1;
+}
 .stile.wide b {
   font-size: calc(15px * var(--tx));
 }

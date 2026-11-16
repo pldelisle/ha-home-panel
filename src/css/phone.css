@@ -4,8 +4,7 @@
 }
 .pane > .cph,
 .rtab.rmore,
-.ltiles,
-.ctiles2 {
+.ltiles {
   display: none;
 }
 .app.tabsv.cp .wrap {
@@ -143,17 +142,12 @@
 .app.tabsv.cp .pane[hidden] {
   display: none;
 }
-.ltiles,
-.ctiles2 {
+.ltiles {
   gap: 12px;
 }
 .app.tabsv.cp .ltiles {
   display: grid;
   grid-template-columns: 1fr;
-}
-.app.tabsv.cp .ctiles2 {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 /* Home: weather and house, then the six tiles two across, Security, the scenes two across */
 .app.tabsv.cp .hwx {
@@ -192,8 +186,7 @@
   display: none;
 }
 /* at the Larger text size the two-column tiles go to one column, so nothing is cut */
-.app.tabsv.cp.txl .htiles,
-.app.tabsv.cp.txl .ctiles2 {
+.app.tabsv.cp.txl .htiles {
   grid-template-columns: 1fr;
 }
 /* the scenes come first, one row that scrolls sideways; the pane has no title of its own, the header line says the date and temperatures */
@@ -296,36 +289,6 @@
   padding: 10px 14px;
   font-size: calc(13.5px * var(--tx));
 }
-/* in the climate sheet the room picked comes first, the list of the others under it */
-.app.cp .clim {
-  display: flex;
-  flex-direction: column;
-}
-.app.cp .clim .cdet {
-  order: -1;
-}
-/* v1.18.4: an even two-column grid of rooms on the phone, Whole house across the top (the wrapped flex row gave ragged widths) */
-.app.cp .clist {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-.app.cp .clist > .citem:first-child {
-  grid-column: 1/-1;
-}
-.app.cp .citem {
-  width: auto;
-  min-width: 0;
-  padding: 9px 12px;
-  gap: 10px;
-}
-.app.cp .citem .ic {
-  width: 32px;
-  height: 32px;
-}
-.app.cp .citem .tv {
-  font-size: calc(16px * var(--tx));
-}
 /* automation chips wrap instead of widening the page */
 .app.tabsv.cp .auchips .chip,
 .app.tabsv.cp .aupick .chip {
@@ -338,92 +301,9 @@
   font-size: calc(18px * var(--tx));
   white-space: normal;
 }
-/* phone climate sheet: one room, a thermostat dial; no room list, heatmap or outside chart */
-.app.cp #sh-climate .clist,
+/* phone climate sheet: no heatmap or outside chart (#246) */
 .app.cp #cheatwrap,
 .app.cp #coutwrap {
-  display: none;
-}
-.dial {
-  position: relative;
-  width: min(260px, 72vw);
-  margin: 4px auto 6px;
-  touch-action: none;
-  user-select: none;
-  -webkit-user-select: none;
-}
-.dial svg {
-  display: block;
-  width: 100%;
-  height: auto;
-  overflow: visible;
-}
-.dial .dtrack {
-  fill: none;
-  stroke: var(--card2);
-  stroke-width: 14;
-  stroke-linecap: round;
-}
-.app.gl .dial .dtrack {
-  stroke: var(--g-tile);
-}
-.dial .dact {
-  fill: none;
-  stroke-width: 14;
-  stroke-linecap: round;
-}
-.dial .dticks line {
-  stroke: var(--fg3);
-  opacity: 0.55;
-}
-.dial .dnow {
-  fill: var(--fg);
-}
-.dial .dknob {
-  fill: var(--card);
-  stroke: var(--fg);
-  stroke-width: 3;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25));
-}
-.dial.ed {
-  cursor: grab;
-}
-.dial.ed:focus-visible {
-  outline: 2px solid var(--c-home);
-  outline-offset: 4px;
-  border-radius: 50%;
-}
-.dialc {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  pointer-events: none;
-  padding: 0 54px;
-  text-align: center;
-}
-.dialc b {
-  font-family: var(--f-num);
-  font-weight: var(--num-w);
-  font-size: calc(46px * var(--tx));
-  line-height: 1;
-  letter-spacing: -0.03em;
-}
-.dialc small {
-  font-size: calc(12.5px * var(--tx));
-  color: var(--fg2);
-}
-.dialc em {
-  font-style: normal;
-  font-size: calc(12px * var(--tx));
-  font-weight: 600;
-  color: var(--fg2);
-}
-.app.cp #cctl .stepper[aria-label='Setpoint'],
-.app.cp #cctl .stepper[aria-label='Target'] {
   display: none;
 }
 .app.cp #cctl .crow {
