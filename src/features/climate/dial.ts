@@ -1,10 +1,9 @@
 // <hp-dial>: the phone's thermostat dial: a 270 degree track, ticks, the arc to the setpoint, a knob at it and a dot at the reading, the figure at its centre.
-// Pattern: humble object (Meszaros, xUnit Test Patterns) placing `dialGeometry`'s numbers with `svg` templates (as Energy's power flow does) and the model's words;
-// a slider (`role="slider"` with `aria-valuemin/max/now/text`) while `editable`, else an image. It draws in on its first render (`in`, motion.css's old rule).
-// Must not: compute a path, word anything, or take a pointer or a key yet (the drag, the arrows and the command that follows are #248's).
+// Pattern: humble object (Meszaros, xUnit Test Patterns) placing `dialGeometry`'s numbers with `svg` templates (as Energy's power flow does) and the model's words; an image
+// (`role="img"`, not focusable) while it does nothing. It draws in on its first render (`in`, motion.css's old rule).
+// Must not: compute a path, word anything, or take a pointer or a key yet: #248 gives it the drag, the arrows, the slider role and the command that follows.
 import {LitElement, html, nothing, svg, unsafeCSS} from 'lit';
 import {classMap} from 'lit/directives/class-map.js';
-import {ifDefined} from 'lit/directives/if-defined.js';
 import dialOwn from './dial.element.css?inline';
 import {DIAL_SIZE, type DialGeometry} from './dial-geometry.ts';
 import {common} from '../../ui/styles/index.ts';
@@ -21,31 +20,17 @@ const ARC_STOPS = [
 export class Dial extends LitElement {
   static override properties = {
     geometry: {attribute: false},
-    editable: {type: Boolean},
-    lo: {type: Number},
-    hi: {type: Number},
-    value: {type: Number},
     label: {},
     big: {},
     caption: {},
-    valueText: {},
   };
   /** The drawing, from `dialGeometry`. */
   declare geometry: DialGeometry | undefined;
-  /** The setpoint can be moved: the thermostat is on. */
-  declare editable: boolean;
-  /** The scale's ends, which the slider says. */
-  declare lo: number;
-  declare hi: number;
-  /** The setpoint the knob stands for; absent while it is unknown. */
-  declare value: number | undefined;
-  /** The slider's name, or the image's. */
+  /** The image's description for a screen reader. */
   declare label: string;
   /** The centre's figure and the line under it. */
   declare big: string;
   declare caption: string;
-  /** What a screen reader says of the slider's value. */
-  declare valueText: string;
 
   // The element's own rules, the dial's box, its drawing and the centre's text, and the motion of its first draw, are in dial.element.css.
   static override styles = [common, unsafeCSS(forShadow(dialOwn))];
@@ -56,29 +41,15 @@ export class Dial extends LitElement {
   constructor() {
     super();
     this.geometry = undefined;
-    this.editable = false;
-    this.lo = 0;
-    this.hi = 0;
-    this.value = undefined;
     this.label = '';
     this.big = '';
     this.caption = '';
-    this.valueText = '';
   }
 
   protected override render() {
-    const {geometry, editable} = this;
+    const {geometry} = this;
     if (!geometry) return nothing;
-    return html`<div
-      class=${classMap({dial: true, ed: editable, in: this.fresh})}
-      role=${editable ? 'slider' : 'img'}
-      tabindex=${ifDefined(editable ? 0 : undefined)}
-      aria-valuemin=${ifDefined(editable ? this.lo : undefined)}
-      aria-valuemax=${ifDefined(editable ? this.hi : undefined)}
-      aria-valuenow=${ifDefined(editable ? this.value : undefined)}
-      aria-valuetext=${ifDefined(editable ? this.valueText : undefined)}
-      aria-label=${this.label}
-    >
+    return html`<div class=${classMap({dial: true, in: this.fresh})} role="img" aria-label=${this.label}>
       <svg viewBox=${`0 0 ${DIAL_SIZE} ${DIAL_SIZE}`} aria-hidden="true">
         <defs>
           <linearGradient id="dialg" x1="0" x2="1" y1="0" y2="0">

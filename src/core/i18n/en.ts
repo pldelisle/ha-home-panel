@@ -696,6 +696,8 @@ export const en = {
   'climate.noteRoom': 'The dashed line is the setpoint. Where it stops, the thermostat was off.',
   'climate.noteHeatPump':
     'Readings come from the unit itself. A break in the line means the integration was offline. The unit has no power sensor, so its electricity is counted in Rest of home.',
+  'climate.historyStarts':
+    'Home Assistant keeps about 10 days of detailed history, so the heat pump line starts {date}.',
   'climate.normal': 'Normal',
   // climate.word.* are the heat pump's settings as its buttons name them, capitalised; climate.action.* are what it is doing, lower case inside a line
   // ({brand} · heating to 22°). Both tables hold the same few words because the legacy layer translated them differently by their case and place.

@@ -306,11 +306,6 @@
 .app.cp #coutwrap {
   display: none;
 }
-/* the dial sets the setpoint and the target on a phone, so the controls' steppers for them are hidden (#248; the dial is read-only until then) */
-.app.cp #cctl .stepper[aria-label='Setpoint'],
-.app.cp #cctl .stepper[aria-label='Target'] {
-  display: none;
-}
 .app.cp #cctl .crow {
   justify-content: center;
 }

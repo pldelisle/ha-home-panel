@@ -728,7 +728,7 @@
   background: color-mix(in srgb, var(--acc) 18%, var(--card));
   color: var(--acc-c, var(--acc));
 }
-/* the state pill the Automations pane still draws (`.pane-auto .pill`, tabs.css); the Climate detail's own is a copy in its element (#244), and the Automations move (spec 25) deletes this one */
+/* the state pill the Automations pane still draws (`.pane-auto .pill`, tabs.css); the Climate detail's own is a copy in its element (#244), and the Automations move (#273) deletes this one */
 .pill {
   display: inline-flex;
   align-items: center;

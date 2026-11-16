@@ -105,7 +105,7 @@ describe('the test house, on the tablet', () => {
   });
 
   test('the legacy panel’s figures fill the Range and Heating tiles, for the room and the range they were read for and no other', () => {
-    const room: ClimateFigures = {sel: 'bedroom', range: 'week', span: {lo: 18.5, hi: 23}, kwh: 12.34};
+    const room: ClimateFigures = {sel: 'bedroom', range: 'week', span: {lo: 18.5, hi: 23}, kwh: 12.34, hpFrom: null};
     const tiles = (figures: ClimateFigures, extra: Parameters<typeof modelOf>[2] = {}) =>
       modelOf(fullHouse, figures.sel, {range: figures.range, figures, ...extra}).detail.tiles.map(t => t.value);
     // a room: the span at one decimal, the kWh at one; the Drawing now tile is the state's
@@ -114,7 +114,7 @@ describe('the test house, on the tablet', () => {
       '18,5–23,0',
     );
     // the house has no Range tile, and its Heating tile is a whole number of kWh
-    const house: ClimateFigures = {sel: 'house', range: 'day', span: {lo: 19, hi: 22}, kwh: 139.6};
+    const house: ClimateFigures = {sel: 'house', range: 'day', span: {lo: 19, hi: 22}, kwh: 139.6, hpFrom: null};
     expect(tiles(house)).toEqual(['21.2', '20.0', '2.40', '140']);
     // a span with no reading and a kWh the load does not have stay dashes
     expect(tiles({...room, span: null, kwh: null})).toEqual(['–', '1.20', '–']);
@@ -321,8 +321,21 @@ describe('a room', () => {
 
 describe('the heat pump', () => {
   test('the heat pump’s Range tile takes the legacy panel’s span, and it has no heating figure', () => {
-    const figures: ClimateFigures = {sel: 'hp', range: 'day', span: {lo: 17, hi: 24.5}, kwh: null};
+    const figures: ClimateFigures = {sel: 'hp', range: 'day', span: {lo: 17, hi: 24.5}, kwh: null, hpFrom: null};
     expect(pumpOf(pump('heat'), {figures}).detail.tiles[0]).toMatchObject({value: '17.0–24.5'});
+  });
+
+  test('the note says where the line starts when the history keeps less than the range, in both languages, and not otherwise', () => {
+    const base: ClimateFigures = {sel: 'hp', range: 'month', span: null, kwh: null, hpFrom: null};
+    const from = Date.UTC(2026, 10, 7, 12);
+    const plain = pumpOf(pump('heat'), {range: 'month', figures: base}).detail.note;
+    expect(plain).not.toContain('Home Assistant keeps');
+    expect(pumpOf(pump('heat'), {range: 'month', figures: {...base, hpFrom: from}}).detail.note).toBe(
+      `${plain} Home Assistant keeps about 10 days of detailed history, so the heat pump line starts Nov 7.`,
+    );
+    expect(
+      pumpOf(pump('heat'), {range: 'month', figures: {...base, hpFrom: from}, language: 'fr'}).detail.note,
+    ).toMatch(/ la courbe de la thermopompe commence donc le 7 nov\.$/);
   });
 
   const ATTRS = {

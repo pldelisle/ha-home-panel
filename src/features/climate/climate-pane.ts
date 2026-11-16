@@ -33,9 +33,6 @@ import type {Translate} from '../../core/i18n/messages.ts';
 
 /** The range the detail starts on, and keeps for the panel's life once another is chosen. */
 const DEFAULT_RANGE: Range = 'day';
-/** What the legacy panel says to the pane when its own history has loaded, on the guest's container (`#chost`): the pane is that container's parent. */
-const FIGURES_EVENT = 'climate-figures';
-
 /** Nothing holds a climate value until the commands of #248, which hold them in the overlay: the legacy panel's own held values draw in its controls. */
 const unheld: Overlay = (_key, current) => current;
 
@@ -75,6 +72,8 @@ export class ClimatePane extends LitElement {
   private figures: ClimateFigures | null = null;
   /** What the shell was last told the detail shows (`room/range`), empty for nothing: it is told again only when this changes. */
   private told = '';
+  /** Where the pane sits while connected, for the event it sends as it leaves. */
+  private parent: HTMLElement | null = null;
 
   constructor() {
     super();
@@ -85,13 +84,18 @@ export class ClimatePane extends LitElement {
 
   override connectedCallback(): void {
     super.connectedCallback();
-    this.addEventListener(FIGURES_EVENT, this.onFigures);
+    this.addEventListener('climate-figures', this.onFigures);
     this.told = ''; // a pane drawn again tells the shell again
+    this.parent = this.parentElement;
   }
 
+  // The shell is told the detail left, from the parent the pane had: an event from a detached element reaches no one. The legacy charts stop with it.
   override disconnectedCallback(): void {
     super.disconnectedCallback();
-    this.removeEventListener(FIGURES_EVENT, this.onFigures);
+    this.removeEventListener('climate-figures', this.onFigures);
+    if (this.told !== '') this.parent?.dispatchEvent(new ClimateDetailEvent(null));
+    this.told = '';
+    this.parent = null;
   }
 
   /** The pane is on screen: it is the tab, or its sheet is open over the page (Home's tile asks for it). */
@@ -262,9 +266,9 @@ export class ClimatePane extends LitElement {
   };
 
   // the legacy panel's history loaded: the two figures its load gives the Range and Heating tiles, until #246
-  private readonly onFigures = (e: Event): void => {
+  private readonly onFigures = (e: CustomEvent<ClimateFigures>): void => {
     e.stopPropagation();
-    this.figures = (e as CustomEvent<ClimateFigures | null>).detail;
+    this.figures = e.detail;
     this.requestUpdate();
   };
 }

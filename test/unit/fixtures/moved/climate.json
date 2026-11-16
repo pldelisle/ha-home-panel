@@ -83,6 +83,12 @@
     {"key": "climate.allThermostats"},
     {"key": "climate.noteRoom"},
     {"key": "climate.noteHeatPump"},
+    {
+      "key": "climate.historyStarts",
+      "values": {"date": "Nov 7"},
+      "fr": {"date": "7 nov."},
+      "written": "Home Assistant garde environ 10 jours d'historique détaillé, la courbe de la thermopompe commence donc le 7 nov."
+    },
     {"key": "climate.normal"},
     {"key": "climate.word.heat"},
     {"key": "climate.word.cool"},

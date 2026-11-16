@@ -690,6 +690,8 @@ export const fr: Record<MessageKey, string> = {
   'climate.noteRoom': "La ligne pointillée est la consigne. Là où elle s'arrête, le thermostat était éteint.",
   'climate.noteHeatPump':
     "Les mesures viennent de l'appareil lui-même. Une coupure dans la ligne veut dire que l'intégration était hors ligne. L'appareil n'a pas de capteur de puissance : son électricité est comptée dans le reste de la maison.",
+  'climate.historyStarts':
+    "Home Assistant garde environ 10 jours d'historique détaillé, la courbe de la thermopompe commence donc le {date}",
   'climate.normal': 'Normal',
   'climate.word.heat': 'Chauffage',
   'climate.word.cool': 'Frais',

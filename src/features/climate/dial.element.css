@@ -50,14 +50,6 @@
   transform-origin: center;
   transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-.dial.ed {
-  cursor: grab;
-}
-.dial.ed:focus-visible {
-  outline: 2px solid var(--c-home);
-  outline-offset: 4px;
-  border-radius: 50%;
-}
 .dialc {
   position: absolute;
   inset: 0;
@@ -103,9 +95,6 @@
     transform: scale(0.3);
   }
 }
-.dial.ed:active .dknob {
-  transform: scale(1.18);
-}
 .dial.in .dialc {
   animation: fadeup 0.45s 0.2s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
@@ -120,9 +109,6 @@
   .dial.in .dknob,
   .dial.in .dialc {
     animation: none;
-  }
-  .dial.ed:active .dknob {
-    transform: none;
   }
   .dial .dknob {
     transition: none;

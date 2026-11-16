@@ -3,7 +3,7 @@
  * tile both) and the note. The inner card and the tiles' wells are the kit's (`.inner`, `.tiles`, `.tile`); the slots hold the legacy
  * controls and chart. Moved from the legacy `.cdet`, `.big` and `#ctiles` rules (base.css, extra.css), which this move deleted; the legacy
  * `.cctl` rules stay with the controls (#248). The state pill `.cpill` is a known copy of the legacy `.pill` (base.css, glass.css), which
- * the Automations pane still draws until its move (spec 25).
+ * the Automations pane still draws until its move (#273).
  */
 :host {
   display: block;

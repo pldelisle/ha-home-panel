@@ -552,6 +552,7 @@ export class LegacyPanel {
     this.frStop();
     this.charts.forEach(c => c.destroy());
     this.charts = [];
+    this.climOn = false; // the pane is about to be drawn again and tells again
     this.cache = {};
     this.sheetOffs.forEach(off => off()); // the sheets are about to be written again, and none is open
     this.sheetOffs = [];
@@ -4030,6 +4031,7 @@ export class LegacyPanel {
       read = pts.map(p => p[1]).filter(x => x != null),
       kwh = this.climSel === 'house' ? sum(Object.values(C.kwh)) : this.climSel === 'hp' ? null : C.kwh[this.climSel];
     this.$('chost').dispatchEvent(
+      // the type is ClimateFiguresEvent's (src/features/climate/events.ts); the guest imports no feature, so the name is written here
       new CustomEvent('climate-figures', {
         bubbles: true,
         detail: {
@@ -4037,6 +4039,8 @@ export class LegacyPanel {
           range: this.crange,
           span: read.length ? {lo: Math.min(...read), hi: Math.max(...read)} : null,
           kwh: kwh ?? null,
+          // where the heat pump's line starts, when that is later than the range does: Home Assistant keeps only about ten days of its detailed history
+          hpFrom: this.climSel === 'hp' && C.hpFrom && C.hpFrom > C.start + 864e5 ? C.hpFrom : null,
         },
       }),
     );

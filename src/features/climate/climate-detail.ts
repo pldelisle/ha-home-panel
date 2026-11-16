@@ -79,20 +79,15 @@ export class ClimateDetail extends LitElement {
       ${lensLike(this.getRootNode())}`;
   }
 
-  // the phone: the dial, redrawn from its first frame for each room chosen
-  private renderDial({geometry, editable, lo, hi, value, label, big, caption, valueText}: NonNullable<Detail['dial']>) {
+  // the phone: the dial, an image whose name says its value, redrawn from its first frame for each room chosen
+  private renderDial({geometry, label, valueText, big, caption}: NonNullable<Detail['dial']>) {
     return keyed(
       this.selection,
       html`<hp-dial
         .geometry=${geometry}
-        .editable=${editable}
-        .lo=${lo}
-        .hi=${hi}
-        .value=${value ?? undefined}
-        .label=${label}
+        .label=${valueText ? `${label}: ${valueText}` : label}
         .big=${big}
         .caption=${caption}
-        .valueText=${valueText}
       ></hp-dial>`,
     );
   }

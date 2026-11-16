@@ -3,7 +3,7 @@
 // the heatmap are the legacy panel's, which draws them into the slots the pane forwards until #246 and #248. The test house has four thermostats (Bedroom 20.8 and Living room 20.0
 // heating, Garage 21.2 and Office 20.4 idle, all at 21 degrees) and no heat pump, which the last test adds.
 import AxeBuilder from '@axe-core/playwright';
-import {test, expect, phoneOnly, tabletOnly, type House} from './fixtures';
+import {test, expect, expectCall, phoneOnly, tabletOnly, type House} from './fixtures';
 import {FULL_CFG} from './houses';
 
 test.use({houseOpts: {cfg: FULL_CFG}});
@@ -136,17 +136,25 @@ test.describe('on a phone', () => {
     await expect(sheet(house)).toHaveAttribute('open', '');
     await expect(sheet(house).locator('hp-pane-header h2, [slot="title"]').first()).toBeVisible();
     await expect(detail(house).locator('h3')).toHaveText('Bedroom');
-    const dial = detail(house).locator('hp-dial [role="slider"]');
-    await expect(dial).toHaveAttribute('aria-valuenow', '21');
-    await expect(dial).toHaveAttribute('aria-valuemin', '5');
-    await expect(dial).toHaveAttribute('aria-valuemax', '30');
-    await expect(dial).toHaveAttribute('aria-valuetext', '21 degrees');
-    await expect(dial).toHaveAccessibleName('Setpoint');
+    // an image, not a focusable slider that ignores the arrows, until #248 gives it the drag and the keys
+    const dial = detail(house).locator('hp-dial [role="img"]');
+    await expect(dial).toHaveAccessibleName('Setpoint: 21 degrees');
+    await expect(dial).not.toHaveAttribute('tabindex', /.*/);
+    await expect(detail(house).locator('hp-dial [role="slider"]')).toHaveCount(0);
     await expect(detail(house).locator('hp-dial .dialc b')).toHaveText('21.0°');
     await expect(detail(house).locator('hp-dial .dialc small')).toHaveText('Now 20.8° · Outside 4.2°');
     await sheet(house).locator('.close').click();
     await expect(sheet(house)).not.toHaveAttribute('open', '');
     await expect(detail(house)).toHaveCount(0);
+  });
+
+  // the dial does nothing until #248, so the legacy controls' steppers stay on the phone: they set a room's setpoint and the heat pump's target
+  test('the sheet shows a working Setpoint stepper, and a tap sends the call once the taps stop', async ({house}) => {
+    await tile(house, 'bedroom').click();
+    const stepper = pane(house).locator('#cctl .stepper[aria-label="Setpoint"]');
+    await expect(stepper).toBeVisible();
+    await stepper.locator('button[data-d="0.5"]').click();
+    await expectCall(house, /^climate\.set_temperature \{"entity_id":"climate\.bedroom","temperature":21\.5\}$/);
   });
 
   test('the house’s tile opens a dial that is an image, with the average and no knob', async ({house}) => {
@@ -219,5 +227,47 @@ test.describe('with a heat pump, on a tablet', () => {
     await expect(detail(house).locator('.note')).toContainText('Readings come from the unit itself.');
     await expect(pane(house).locator('#cctl .seg [role="radio"][aria-checked="true"]')).toHaveText('Heat');
     await expect(pane(house).locator('#cchart .legend')).toContainText('Heat pump');
+  });
+
+  // the test house keeps no history for the unit, so the figure the legacy panel would tell is told as it would
+  test('its note says where the line starts when the legacy panel reads a later start, and only for the range it was read for', async ({
+    house,
+  }) => {
+    tabletOnly();
+    await house.setState('climate.heat_pump', {
+      state: 'heat',
+      attributes: {current_temperature: 19.5, temperature: 22},
+    });
+    await house.tab('climate');
+    await item(house, 'hp').click();
+    await pane(house).locator('hp-range-tabs [role="tab"]', {hasText: 'Month'}).click();
+    await expect(detail(house).locator('.note')).not.toContainText('Home Assistant keeps');
+    const tell = (range: string) =>
+      pane(house)
+        .locator('#chost')
+        .evaluate((el, range) => {
+          const detail = {sel: 'hp', range, span: null, kwh: null, hpFrom: Date.now() - 5 * 864e5};
+          el.dispatchEvent(new CustomEvent('climate-figures', {bubbles: true, detail}));
+        }, range);
+    await tell('week');
+    await expect(detail(house).locator('.note')).not.toContainText('Home Assistant keeps');
+    await tell('month');
+    await expect(detail(house).locator('.note')).toContainText(
+      'Home Assistant keeps about 10 days of detailed history, so the heat pump line starts',
+    );
+  });
+
+  test('on a phone its Target stepper shows and sends the call', async ({house}) => {
+    phoneOnly();
+    await house.setState('climate.heat_pump', {
+      state: 'heat',
+      attributes: {current_temperature: 19.5, temperature: 22, min_temp: 16, max_temp: 30},
+    });
+    await house.tab('climate');
+    await tile(house, 'hp').click();
+    const stepper = pane(house).locator('#cctl .stepper[aria-label="Target"]');
+    await expect(stepper).toBeVisible();
+    await stepper.locator('button[data-d="0.5"]').click();
+    await expectCall(house, /^climate\.set_temperature \{"entity_id":"climate\.heat_pump","temperature":22\.5\}$/);
   });
 });

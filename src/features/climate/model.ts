@@ -41,6 +41,8 @@ export interface ClimateFigures {
   span: {lo: number; hi: number} | null;
   /** The heating over the range: the house's total or the room's own; null for the heat pump and while nothing is loaded. */
   kwh: number | null;
+  /** The instant the heat pump's line starts, when that is later than the range does (the recorder keeps about ten days of its history); null for any other selection. */
+  hpFrom: number | null;
 }
 
 /** The range the tiles are named for until the person picks one (the legacy `crange`'s default). */
@@ -446,7 +448,9 @@ function heatPumpHead(
         range: false,
       },
     ],
-    note: t('climate.noteHeatPump'),
+    note: figures?.hpFrom
+      ? `${t('climate.noteHeatPump')} ${t('climate.historyStarts', {date: fmt.date(figures.hpFrom)})}`
+      : t('climate.noteHeatPump'),
     controls: heatPumpControls(hp, deps),
   };
 }
