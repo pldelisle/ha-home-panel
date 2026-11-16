@@ -167,3 +167,51 @@ describe('CommandRunner, before its host connects', () => {
     expect(() => runner.run(turnOn)).toThrow('CommandRunner: the client arrives when the host connects.');
   });
 });
+
+describe('CommandRunner.runAll', () => {
+  const step = (n: number, extra: Partial<Command> = {}): Command => ({
+    domain: 'light',
+    service: 'turn_on',
+    data: {entity_id: `light.${n}`},
+    ...extra,
+  });
+
+  test('runs the list in order, each after the last, and says the last done once', async () => {
+    const {runner, runService, toasts} = setup();
+    const list = [
+      step(1, {done: {key: 'media.tv'}}),
+      step(2),
+      step(3, {done: {key: 'common.failed', values: {reason: 'x'}}}),
+      step(4),
+    ];
+    expect(await runner.runAll(list)).toBe(true);
+    expect(runService.mock.calls.map(c => c[2])).toEqual([1, 2, 3, 4].map(n => ({entity_id: `light.${n}`})));
+    expect(toasts()).toEqual([{message: "Didn't work: x", sticky: false}]);
+  });
+
+  test('stops at a failure, releases the holds of the whole list and says why, sticky', async () => {
+    const {runner, runService, store, toasts} = setup(undefined, {message: 'Unavailable'});
+    store.hold('a', 1);
+    store.hold('c', 1);
+    store.hold('other', 1);
+    const ok = await runner.runAll([
+      step(1, {holds: ['a']}),
+      step(2, {done: {key: 'media.tv'}}),
+      step(3, {holds: ['c']}),
+    ]);
+    expect(ok).toBe(false);
+    expect(runService).toHaveBeenCalledTimes(2);
+    expect(store.read('a', 0)).toBe(0);
+    expect(store.read('c', 0)).toBe(0);
+    expect(store.read('other', 0)).toBe(1);
+    expect(toasts()).toEqual([{message: "Didn't work: Unavailable", sticky: true}]);
+  });
+
+  test('an empty list is accepted and says nothing; before the host connects there is no client', async () => {
+    const {runner, toasts} = setup();
+    expect(await runner.runAll([])).toBe(true);
+    expect(toasts()).toEqual([]);
+    const lone = new CommandRunner(fakeHost([]), {overlay: new OverlayStore(), t: () => t});
+    await expect(lone.runAll([])).rejects.toThrow('the client arrives');
+  });
+});

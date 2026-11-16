@@ -1,4 +1,4 @@
-// CommandRunner: sends one service call, tells the person on success, and on failure undoes what it held and says so.
+// CommandRunner: sends one service call (or a list, in order), tells the person on success, and on failure undoes what it held and says so.
 // Pattern: Command (Gamma et al.): `Command` is the data (`src/core/commands.ts`), this is the invoker, `PanelApi` the receiver; compensating action
 // (Richardson): releasing the keys the command set. The legacy `call` empties the whole bag; #263 deletes it, and its wording.
 // A known copy: `Didn't work: {reason}` is the legacy `call`'s wording, until #263; the reason is read by the API client's `rejectionReason`.
@@ -51,6 +51,26 @@ export class CommandRunner {
   runHolding(cmd: Command, value: unknown): Promise<boolean> {
     for (const key of cmd.holds ?? []) this.options.overlay.hold(key, value);
     return this.run(cmd);
+  }
+
+  /**
+   * Runs `cmds` in order, each after the last was accepted (one intent that takes several calls: Lights' leave-Auto rule, then the level).
+   * True when all were; after a failure the rest are not sent, the holds of the whole list are released and one sticky toast says why.
+   * On success the last `done` of the list is said, once. An empty list is accepted and says nothing.
+   */
+  async runAll(cmds: readonly Command[]): Promise<boolean> {
+    if (!this.api) throw new Error('CommandRunner: the client arrives when the host connects.');
+    const t = this.options.t();
+    try {
+      for (const cmd of cmds) await send(this.api, cmd);
+    } catch (e) {
+      this.options.overlay.release(...cmds.flatMap(cmd => cmd.holds ?? []));
+      this.host.dispatchEvent(new ToastEvent(t('common.failed', {reason: rejectionReason(e)}), true));
+      return false;
+    }
+    const done = [...cmds].reverse().find(cmd => cmd.done)?.done;
+    if (done) this.host.dispatchEvent(new ToastEvent(t(done.key, done.values)));
+    return true;
   }
 
   private async execute(api: PanelApi, cmd: Command): Promise<boolean> {
