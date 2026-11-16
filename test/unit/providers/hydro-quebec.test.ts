@@ -1,4 +1,4 @@
-// hydroQuebec: the balance and the two critical-peak flags, and null for a house without the integration. The test house has
+// hydroQuebec: the balance, the two critical-peak flags and whether the sensors report, and null for a house without the integration. The test house has
 // none; literal houses give the rules; the recorded house is read when the owner has one (#170).
 import {describe, expect, test} from 'vitest';
 import {entity, fakeHass} from '../fake-hass.ts';
@@ -32,7 +32,15 @@ describe('the recorded house', () => {
   test('is null or reads the three sensors, never half an answer', () => {
     const hass = fakeHass.fromFixture('main');
     const reading = hydroQuebec(hass.states, storeOf(hass).config);
-    if (reading) expect(Object.keys(reading)).toEqual(['balance', 'peakNow', 'peakUpcoming']);
+    if (reading)
+      expect(Object.keys(reading)).toEqual([
+        'balance',
+        'peakNow',
+        'peakUpcoming',
+        'balancePresent',
+        'balanceUpdated',
+        'peakReporting',
+      ]);
   });
 });
 
@@ -44,17 +52,40 @@ describe('the reading', () => {
         entity('binary_sensor.peak', 'on'),
         entity('binary_sensor.upcoming', 'off'),
       ),
-    ).toEqual({balance: -31.5, peakNow: true, peakUpcoming: false});
-    expect(read(entity('binary_sensor.upcoming', 'on'))).toEqual({balance: null, peakNow: false, peakUpcoming: true});
+    ).toMatchObject({balance: -31.5, peakNow: true, peakUpcoming: false});
+    expect(read(entity('binary_sensor.upcoming', 'on'))).toMatchObject({
+      balance: null,
+      peakNow: false,
+      peakUpcoming: true,
+    });
   });
 
   test('is there when any one of the three is in the states, and an unavailable one reads as nothing', () => {
-    expect(read(entity('sensor.balance', 'unavailable'))).toEqual({balance: null, peakNow: false, peakUpcoming: false});
-    expect(read(entity('binary_sensor.peak', 'unavailable'))).toEqual({
+    expect(read(entity('sensor.balance', 'unavailable'))).toMatchObject({
       balance: null,
       peakNow: false,
       peakUpcoming: false,
     });
+    expect(read(entity('binary_sensor.peak', 'unavailable'))).toMatchObject({
+      balance: null,
+      peakNow: false,
+      peakUpcoming: false,
+    });
+  });
+
+  test('says whether the balance sensor is there and when it last updated, and whether the peak sensor has a value', () => {
+    const updated = Date.parse('2026-01-01T00:00:00+00:00');
+    expect(read(entity('sensor.balance', '-31.5'), entity('binary_sensor.peak', 'off'))).toMatchObject({
+      balancePresent: true,
+      balanceUpdated: updated,
+      peakReporting: true,
+    });
+    expect(read(entity('sensor.balance', 'unavailable'), entity('binary_sensor.peak', 'unknown'))).toMatchObject({
+      balancePresent: true,
+      balanceUpdated: null,
+      peakReporting: false,
+    });
+    expect(read(entity('binary_sensor.upcoming', 'on'))).toMatchObject({balancePresent: false, balanceUpdated: null});
   });
 
   test('is null when none of the three is in the states', () => {

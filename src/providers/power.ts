@@ -40,6 +40,8 @@ export interface RoomPower extends RoomNameInputs {
   heating: boolean;
   /** False when the thermostat is missing, `unavailable` or `unknown`. */
   available: boolean;
+  /** The thermostat is in the states, whatever its state: an unavailable one is "not reporting", a missing one is no thermostat. */
+  present: boolean;
 }
 
 export interface PowerNow {
@@ -75,6 +77,7 @@ export function roomPower(states: HassEntities, room: RoomSpec): RoomPower {
     heating:
       (available && textAttributeOf(states, room.climate, 'hvac_action') === 'heating') || (power ?? 0) > HEATING_KW,
     available,
+    present: states[room.climate] !== undefined,
   };
 }
 

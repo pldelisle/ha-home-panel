@@ -66,6 +66,14 @@ describe('the flow', () => {
     expect(flow).toMatchObject({grid: 5, waterHeater: 1.5, ev: 0.5, heat: 1, rest: 2});
   });
 
+  test('a thermostat in the states is present whatever it says; one missing is neither present nor available', () => {
+    const flow = flowOf(house(thermostat('den', 'unavailable')), cfg);
+    expect(flow.rooms.map(r => [r.present, r.available])).toEqual([
+      [true, false],
+      [false, false],
+    ]);
+  });
+
   test('the heat is the sum of the rooms’ power, and a room without a power sensor adds nothing', () => {
     const flow = flowOf(
       house(watts('sensor.grid', 9000), thermostat('den'), watts('sensor.den_power', 1200), thermostat('hall')),

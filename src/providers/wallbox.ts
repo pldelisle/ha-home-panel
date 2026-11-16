@@ -29,6 +29,8 @@ export interface WallboxInputs {
   power: number | null;
   /** The status sensor's text; null when it is unset, unavailable or unknown. */
   status: string | null;
+  /** The status sensor is in the states, whatever it reads: an unavailable one is the Status checks' "Wallbox offline". */
+  statusPresent: boolean;
   /** The house has a charger: its power or its status sensor is in the states, whatever it reads. */
   present: boolean;
   /** The charger's current limit in amps: the `number` entity, its value and its range (6 to 48 where it says none). */
@@ -49,6 +51,7 @@ export function wallbox(states: HassEntities, config: ResolvedConfig): WallboxIn
   return {
     power: kilowattsOf(states, evP),
     status: textOf(states, wbStatus),
+    statusPresent: hasState(states, wbStatus),
     present: hasState(states, evP) || hasState(states, wbStatus),
     amps: {
       id: wbAmps,
