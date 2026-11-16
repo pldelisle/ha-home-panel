@@ -1,7 +1,7 @@
 // The toast's schedule (src/ui/toast-schedule.ts): the 3.5-second rule, sticky, replacement and dismissal at a clock the test
 // passes in, so no timer runs and no element is mounted (ADR 0005's pure-function seam).
 import {describe, expect, test} from 'vitest';
-import {DONE_MS, expiry, nextToast, type ToastState} from '../../../src/ui/toast-schedule.ts';
+import {expiry, nextToast, type ToastState} from '../../../src/ui/toast-schedule.ts';
 
 const show = (message: string, sticky = false) => ({type: 'show', message, sticky}) as const;
 const T = 1_000_000;
@@ -10,7 +10,6 @@ describe('nextToast and expiry', () => {
   test('a done toast is due 3.5 seconds after it shows, and goes then, not before', () => {
     const s = nextToast(null, show('Saved'), T);
     expect(s).toEqual({message: 'Saved', sticky: false, until: T + 3500});
-    expect(DONE_MS).toBe(3500);
     expect(expiry(s)).toBe(T + 3500);
     expect(nextToast(s, {type: 'expire'}, T + 3499)).toBe(s);
     expect(nextToast(s, {type: 'expire'}, T + 3500)).toBeNull();

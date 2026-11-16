@@ -5,10 +5,10 @@
 // Must not: read the clock, run a timer, word a message, or know who asked for the toast.
 
 /** How long a done toast shows, as the legacy panel's `toast()` did. */
-export const DONE_MS = 3500;
+const DONE_MS = 3500;
 
 /** The toast showing: its message, already in the panel's language, whether it stays, and when it goes (`null`: when dismissed). */
-export interface Toast {
+interface Toast {
   readonly message: string;
   readonly sticky: boolean;
   readonly until: number | null;

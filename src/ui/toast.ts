@@ -19,7 +19,7 @@ export class HpToast extends LitElement {
   declare open: boolean;
   /** Already in the panel's language. */
   declare message: string;
-  /** A failure: red, read out at once (`role="alert"`), with a Dismiss button; it stays until it is tapped. */
+  /** A failure: red, with the role alert (politely announced, as the legacy toast was) and a Dismiss button; it stays until it is tapped. */
   declare sticky: boolean;
   /** The Dismiss button's text, already in the panel's language. */
   declare dismissLabel: string;
@@ -64,6 +64,10 @@ export class HpToast extends LitElement {
 declare global {
   interface HTMLElementTagNameMap {
     'hp-toast': HpToast;
+  }
+  interface HTMLElementEventMap {
+    /** A tap on the toast or its Dismiss button; the shell drops it from its schedule. */
+    'toast-dismiss': CustomEvent<undefined>;
   }
 }
 

@@ -134,7 +134,7 @@ Actors as in the programme: household member, admin, maintainer, agent thread, a
     readonly compact: boolean;
     readonly appearance: Appearance;
     setTab(key: FeatureKey): void;
-    toast(message: string, sticky?: boolean): void;
+    toast(message: string, sticky?: boolean): void; // removed by #275: the shell draws <hp-toast> from ToastEvent
     sheets: SheetHost; // step E
     idle: Pick<IdleTimer, 'arm' | 'sleepNow'>; // step D: a draw is a touch; Sleep now. The first arm is hostConnected's
     requestFrame(): void; // the guest's lacking() changed: redraw the rail from availability()
