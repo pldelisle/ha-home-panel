@@ -23,7 +23,7 @@ export interface ControlsDeps {
 }
 
 /** The two buttons that need a second tap: the remote start and the unlock. */
-export type ArmedKey = 'rs' | 'lock';
+export type ArmedKey = 'remoteStart' | 'lock';
 
 /** The current limits the charger offers, as the legacy panel did: the steps its own range holds. */
 const AMPS_STEPS = [16, 24, 32, 40, 48];
@@ -72,7 +72,7 @@ export interface ChargerView {
 
 /** One of the four buttons of the comfort card. */
 export interface ComfortButtonView {
-  key: 'rs' | Heater;
+  key: 'remoteStart' | Heater;
   icon: IconName;
   /** What the button is called, which a toast repeats. */
   name: string;
@@ -203,11 +203,61 @@ function seatWords(seats: string | null, t: Translate): string {
   return cool ? t('car.comfort.seatCool', {level: cool[1]}) : '';
 }
 
-const BUTTONS: readonly {key: ComfortButtonView['key']; icon: IconName; name: MessageKey}[] = [
-  {key: 'rs', icon: 'fan', name: 'car.comfort.remoteStart'},
-  {key: 'windshield', icon: 'wind', name: 'car.heater.windshield'},
-  {key: 'rear', icon: 'rear', name: 'car.heater.rear'},
-  {key: 'wheel', icon: 'wheel', name: 'car.heater.wheel'},
+/** What tells one button from another: its switch under the car's prefix, whether it waits for a second tap, the key it is held by and the line under its name. */
+interface ButtonSpec {
+  key: ComfortButtonView['key'];
+  icon: IconName;
+  name: MessageKey;
+  switchId: string;
+  armable: boolean;
+  held: (id: string) => string;
+  line: (on: boolean, car: CarInputs, t: Translate) => string;
+}
+
+const heaterLine = (on: boolean, _car: CarInputs, t: Translate) =>
+  t('car.comfort.withRemote', {on: on ? 'true' : 'false'});
+
+const BUTTONS: readonly ButtonSpec[] = [
+  {
+    key: 'remoteStart',
+    icon: 'fan',
+    name: 'car.comfort.remoteStart',
+    switchId: 'ignition',
+    armable: true,
+    held: K.ignition,
+    line: (on, car, t) =>
+      joined(
+        on ? t('car.comfort.running') : t('car.off'),
+        car.remoteCabin === null ? '' : t('car.comfort.cabin', {state: car.remoteCabin.toUpperCase()}),
+      ),
+  },
+  {
+    key: 'windshield',
+    icon: 'wind',
+    name: 'car.heater.windshield',
+    switchId: HEATER_SWITCHES.windshield,
+    armable: false,
+    held: K.heater,
+    line: heaterLine,
+  },
+  {
+    key: 'rear',
+    icon: 'rear',
+    name: 'car.heater.rear',
+    switchId: HEATER_SWITCHES.rear,
+    armable: false,
+    held: K.heater,
+    line: heaterLine,
+  },
+  {
+    key: 'wheel',
+    icon: 'wheel',
+    name: 'car.heater.wheel',
+    switchId: HEATER_SWITCHES.wheel,
+    armable: false,
+    held: K.heater,
+    line: heaterLine,
+  },
 ];
 
 /**
@@ -222,30 +272,22 @@ export function comfortControls(
 ): ComfortView | null {
   const {car, ref} = inputs;
   if (!car || !ref) return null;
-  const switches: Record<ComfortButtonView['key'], {on: boolean; available: boolean; held: (id: string) => string}> = {
-    rs: {...car.comfort.ignition, held: K.ignition},
-    windshield: {...car.comfort.defrostFront, held: K.heater},
-    rear: {...car.comfort.defrostRear, held: K.heater},
-    wheel: {...car.comfort.wheel, held: K.heater},
+  const switches: Record<ComfortButtonView['key'], {on: boolean; available: boolean}> = {
+    remoteStart: car.comfort.ignition,
+    windshield: car.comfort.defrostFront,
+    rear: car.comfort.defrostRear,
+    wheel: car.comfort.wheel,
   };
-  const buttons = BUTTONS.map(({key, icon, name}): ComfortButtonView => {
-    const {on: state, available, held} = switches[key];
-    const id = ref.id('switch', key === 'rs' ? 'ignition' : HEATER_SWITCHES[key]);
-    const on = overlay(held(id), state);
-    const isArmed = key === 'rs' && armed('rs');
-    const line =
-      key === 'rs'
-        ? joined(
-            on ? t('car.comfort.running') : t('car.off'),
-            car.remoteCabin === null ? '' : t('car.comfort.cabin', {state: car.remoteCabin.toUpperCase()}),
-          )
-        : t('car.comfort.withRemote', {on: on ? 'true' : 'false'});
+  const buttons = BUTTONS.map(({key, icon, name, switchId, armable, held, line}): ComfortButtonView => {
+    const {on: state, available} = switches[key];
+    const on = overlay(held(ref.id('switch', switchId)), state);
+    const isArmed = armable && armed('remoteStart');
     return {
       key,
       icon,
       name: t(name),
       text: isArmed ? t('car.comfort.tapToStart') : t(name),
-      line,
+      line: line(on, car, t),
       pressed: on,
       armed: isArmed,
       disabled: !available,
@@ -254,7 +296,7 @@ export function comfortControls(
   const doorId = ref.id('lock', 'doorlock');
   const locked = overlay(K.doorLock(doorId), car.locked);
   const depId = ref.id('switch', 'departuretimes');
-  const depOn = overlay(K.dep(depId), car.departureOn === true);
+  const depOn = overlay(K.departure(depId), car.departureOn === true);
   const lockArmed = armed('lock');
   return {
     car: ref,

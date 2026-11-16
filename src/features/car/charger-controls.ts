@@ -104,8 +104,7 @@ export class ChargerControls extends LitElement {
 
   // what a tap asks for shows at once (the overlay holds it, and the card draws again) and the command is sent
   private ask(command: Command, held: unknown): void {
-    for (const key of command.holds ?? []) this.optimistic.hold(key, held);
-    void this.commands.run(command);
+    void this.commands.runHolding(command, held);
   }
 }
 

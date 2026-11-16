@@ -1,6 +1,6 @@
 // <hp-car-comfort>: the Car detail's comfort and access card: remote start and the three heaters, the seat line, the lock and the horn, and the departure schedule (its switch, seven days, time and cabin setting, and "Save schedule").
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over `comfortControls`, the model's pure view; the schedule's draft is its state, edited locally, validated and sent once (a form draft: Fowler's Unit of Work in miniature),
-// created when the card is drawn and begun again when Ford's saved schedule changes. A tap holds the value it asks for in the panel's overlay and runs a `Command` through `CommandRunner` (ADR 0023); remote start and unlock wait for a second tap in `ArmedController`.
+// created when the card is drawn and begun again when Ford's saved schedule changes (the cabin choice kept: Ford does not report it). A tap holds the value it asks for in the panel's overlay and runs a `Command` through `CommandRunner` (ADR 0023); remote start and unlock wait for a second tap in `ArmedController`.
 // Must not: read an entity or the clock (the inputs and the model did), build a command by hand (commands.ts does), send a draft that `validate` refuses, or keep the draft anywhere else (the store never sees it).
 import {LitElement, html, nothing, unsafeCSS} from 'lit';
 import {classMap} from 'lit/directives/class-map.js';
@@ -11,7 +11,7 @@ import {comfortControls, type ArmedKey, type ComfortButtonView, type ComfortView
 import controlsCss from './controls.css?inline';
 import type {CarFeatureInputs} from './inputs.ts';
 import {
-  draftFromSchedule,
+  redraft,
   scheduleKey,
   toggleDay,
   validate,
@@ -88,7 +88,7 @@ export class CarComfort extends LitElement {
     const saved = inputs.car?.schedule ?? null;
     const key = scheduleKey(saved);
     if (!this.draft || key !== this.savedKey) {
-      this.draft = draftFromSchedule(saved);
+      this.draft = redraft(this.draft, saved);
       this.savedKey = key;
     }
     const {t, fmt} = this.storeController.store;
@@ -186,7 +186,7 @@ export class CarComfort extends LitElement {
       class=${classMap({cbtn: true, armed: b.armed})}
       aria-pressed=${b.pressed ? 'true' : 'false'}
       ?disabled=${b.disabled}
-      @click=${() => (b.key === 'rs' ? this.onRemoteStart(view, b) : this.onHeater(view, b))}
+      @click=${() => (b.key === 'remoteStart' ? this.onRemoteStart(view, b) : this.onHeater(view, b))}
     >
       <span class="ic">${ico(b.icon, 18)}</span>
       <div><b>${b.text}</b><br /><span>${b.line}</span></div>
@@ -195,9 +195,9 @@ export class CarComfort extends LitElement {
 
   // Remote start and unlock need a second tap, so a stray touch on a wall panel does nothing; stopping a car that runs does not
   private onRemoteStart({car}: ComfortView, {pressed}: ComfortButtonView): void {
-    if (!pressed && !this.armed.confirm('rs')) {
+    if (!pressed && !this.armed.confirm('remoteStart')) {
       this.armed.clear();
-      this.armed.arm('rs');
+      this.armed.arm('remoteStart');
       return;
     }
     this.armed.clear();
@@ -205,7 +205,7 @@ export class CarComfort extends LitElement {
   }
 
   private onHeater({car}: ComfortView, {key, name, pressed}: ComfortButtonView): void {
-    if (key !== 'rs') this.ask(toggleHeater(car, key, !pressed, name), !pressed);
+    if (key !== 'remoteStart') this.ask(toggleHeater(car, key, !pressed, name), !pressed);
   }
 
   private onLock({car, access}: ComfortView): void {
@@ -243,8 +243,7 @@ export class CarComfort extends LitElement {
 
   // what a tap asks for shows at once (the overlay holds it, and the card draws again) and the command is sent
   private ask(command: Command, held?: unknown): void {
-    for (const key of command.holds ?? []) this.optimistic.hold(key, held);
-    void this.commands.run(command);
+    void this.commands.runHolding(command, held);
   }
 }
 

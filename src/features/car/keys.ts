@@ -16,5 +16,5 @@ export const K = {
   /** One of the three heaters' switches, by its id. */
   heater: overlayKey('heater'),
   /** The departure times' switch, by its id. */
-  dep: overlayKey('dep'),
+  departure: overlayKey('dep'),
 } as const;

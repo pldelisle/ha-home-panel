@@ -239,7 +239,7 @@ describe('the comfort card, from a car with every switch', () => {
         disabled,
       ]),
     ).toEqual([
-      ['rs', 'fan', 'Remote start', 'Remote start', 'Off · cabin HI', false, false, false],
+      ['remoteStart', 'fan', 'Remote start', 'Remote start', 'Off · cabin HI', false, false, false],
       ['windshield', 'wind', 'Heated windshield', 'Heated windshield', 'With remote start: on', true, false, false],
       ['rear', 'rear', 'Rear defrost', 'Rear defrost', 'With remote start: off', false, false, false],
       ['wheel', 'wheel', 'Heated wheel', 'Heated wheel', 'With remote start: off', false, false, false],
@@ -307,7 +307,7 @@ describe('the comfort card, from a car with every switch', () => {
   });
 
   test('a button waiting for its second tap says so, and so does the lock; the other is not waiting', () => {
-    const waiting = comfortControls(inputs, only('rs'), draft(), depsFor(hass))!;
+    const waiting = comfortControls(inputs, only('remoteStart'), draft(), depsFor(hass))!;
     expect(waiting.buttons[0]).toMatchObject({text: 'Tap again to start', name: 'Remote start', armed: true});
     expect(waiting.buttons[1].armed).toBe(false);
     expect(waiting.access.lock.armed).toBe(false);
@@ -389,7 +389,7 @@ describe('the departure schedule', () => {
       on: false,
       line: 'Off · weekdays at 8:30 am saved',
     });
-    const held = depsFor(hass, 'en', {[K.dep(id('switch', 'departuretimes'))]: false});
+    const held = depsFor(hass, 'en', {[K.departure(id('switch', 'departuretimes'))]: false});
     expect(comfortControls(inputs, never, draft(), held)?.departure.row).toMatchObject({
       on: false,
       line: 'Off · weekdays at 8:30 am saved',
@@ -410,7 +410,7 @@ describe('the departure schedule', () => {
   });
 
   test('in French: the initials are the legacy panel’s LMMJVSD, the time is 8 h 30 and the words are French’s', () => {
-    const view = comfortControls(inputs, only('rs'), draft(), depsFor(hass, 'fr'))!;
+    const view = comfortControls(inputs, only('remoteStart'), draft(), depsFor(hass, 'fr'))!;
     expect(view.departure.days.map(({initial}) => initial).join('')).toBe('LMMJVSD');
     expect(view.departure.days[0].name).toBe('lundi');
     expect(view.departure.row.line).toBe('Activé · en semaine à 8 h 30');

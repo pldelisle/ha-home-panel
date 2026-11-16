@@ -13,8 +13,8 @@ import type {OptimisticController} from './controllers/optimistic.ts';
 import {ToastEvent} from './events.ts';
 
 export interface CommandRunnerOptions {
-  /** Where `holds` are released: the host's `OptimisticController`. */
-  overlay: Pick<OptimisticController, 'release'>;
+  /** Where `holds` are held and released: the host's `OptimisticController`. */
+  overlay: Pick<OptimisticController, 'hold' | 'release'>;
   /** The catalog's `t`, asked for at each run: the store arrives when the host connects, which is after the runner exists. */
   t: () => Messages['t'];
 }
@@ -45,6 +45,12 @@ export class CommandRunner {
   run(cmd: Command): Promise<boolean> {
     if (!this.api) throw new Error('CommandRunner: the client arrives when the host connects.');
     return this.execute(this.api, cmd);
+  }
+
+  /** Shows `value` under each of the command's `holds`, then runs it: a tap that is sent at once and shows what it asked for until Home Assistant agrees. */
+  runHolding(cmd: Command, value: unknown): Promise<boolean> {
+    for (const key of cmd.holds ?? []) this.options.overlay.hold(key, value);
+    return this.run(cmd);
   }
 
   private async execute(api: PanelApi, cmd: Command): Promise<boolean> {

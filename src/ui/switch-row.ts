@@ -1,4 +1,5 @@
-// <hp-switch-row>: the kit's row of a switch: a heading and a line of words on a tile, and the kit's `<hp-switch>` at its end.
+// <hp-switch-row>: the kit's row of a switch: a heading and a line of words, and the kit's `<hp-switch>` at its end.
+// A control row inside a card, not a Tile: CONTEXT.md keeps Tile for the compact tappable block and lists "row" under its avoid words, so this is the one "row" the kit has, named for the control it holds.
 // Pattern: controlled component over a humble object (Meszaros, xUnit Test Patterns): it draws what its owner says and lets the switch's `change` (which crosses the shadow root) go up to it;
 // the owner holds the optimistic value and sets `checked` back. It is the legacy `.tgl` row, which the Car's charger and comfort cards drew three times and which every later row of the kind can use.
 // Must not: flip `checked` itself, send a service call, or know what it stands for (a charger, a departure schedule).

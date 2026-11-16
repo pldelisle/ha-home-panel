@@ -98,6 +98,28 @@ describe('CommandRunner, on failure', () => {
   });
 });
 
+describe('CommandRunner, runHolding', () => {
+  test('holds the value under every key the command holds, then sends it', async () => {
+    const {runner, runService, store} = setup();
+    await expect(runner.runHolding({...turnOn, holds: ['tv:on', 'tv:power']}, true)).resolves.toBe(true);
+    expect(store.read('tv:on', false)).toBe(true);
+    expect(store.read('tv:power', false)).toBe(true);
+    expect(runService).toHaveBeenCalledTimes(1);
+  });
+
+  test('a failure releases what it held, as run does', async () => {
+    const {runner, store} = setup(new Error('no'));
+    await expect(runner.runHolding(turnOn, true)).resolves.toBe(false);
+    expect(store.read('tv:on', false)).toBe(false);
+  });
+
+  test('a command that holds nothing is just sent', async () => {
+    const {runner, runService} = setup();
+    await expect(runner.runHolding({domain: 'd', service: 's'}, 1)).resolves.toBe(true);
+    expect(runService).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('CommandRunner, with a fallback', () => {
   const withWake: Command = {
     ...turnOn,

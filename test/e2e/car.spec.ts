@@ -630,6 +630,24 @@ test.describe('the controls', () => {
     await expect(comfort(house).getByLabel('Departure time', {exact: true})).toHaveValue('06:30');
   });
 
+  test('a save followed by Ford’s own schedule update keeps the cabin choice, which Ford does not report', async ({
+    house,
+  }) => {
+    await openDetail(house);
+    const cabin = comfort(house).getByRole('radio', {name: 'Warm'});
+    await cabin.click();
+    await comfort(house).getByRole('button', {name: 'monday'}).click();
+    await button(house, 'Save schedule').click();
+    await expectCall(house, /^fordpass\.update_departure_schedule .*"precondition_temperature":"high"\}$/);
+    // the house answers the save: the schedule sensor now says what was sent
+    await house.setState(SCHEDULE, {
+      state: 'ok',
+      attributes: {schedule: {monday: {timeOfDay: {hours: 8, minutes: 0}}}},
+    });
+    await expect(comfort(house).getByRole('button', {name: 'monday'})).toHaveAttribute('aria-pressed', 'true');
+    await expect(cabin).toHaveAttribute('aria-checked', 'true');
+  });
+
   test('the tab left and come back to begins the draft again and keeps no second tap waiting', async ({house}) => {
     tabletOnly();
     await openDetail(house);

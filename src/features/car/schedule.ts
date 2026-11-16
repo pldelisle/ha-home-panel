@@ -40,6 +40,14 @@ export function draftFromSchedule(schedule: Schedule | null): ScheduleDraft {
   return {days: [...schedule.days], time: `${twoDigits(schedule.hours)}:${twoDigits(schedule.minutes)}`, temp: null};
 }
 
+/**
+ * The draft after Ford's saved schedule changed: the days and the time are Ford's again, and the cabin setting is what the person picked, since Ford does not report it
+ * (a save followed by Ford's own update must not blank the choice that was just sent); none for a draft that was never begun.
+ */
+export function redraft(previous: ScheduleDraft | null, saved: Schedule | null): ScheduleDraft {
+  return {...draftFromSchedule(saved), temp: previous?.temp ?? null};
+}
+
 /** The draft with `day` chosen if it was not, and left out if it was. */
 export function toggleDay(draft: ScheduleDraft, day: string): ScheduleDraft {
   return {...draft, days: draft.days.includes(day) ? draft.days.filter(d => d !== day) : [...draft.days, day]};

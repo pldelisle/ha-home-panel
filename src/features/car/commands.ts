@@ -110,7 +110,7 @@ export const toggleDeparture = (car: CarRef, on: boolean): Command => {
     domain: 'switch',
     service: turn(on),
     data: {entity_id: id},
-    holds: [K.dep(id)],
+    holds: [K.departure(id)],
     done: {key: on ? 'car.departureSwitchedOn' : 'car.departureSwitchedOff'},
   };
 };

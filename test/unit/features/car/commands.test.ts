@@ -134,7 +134,7 @@ describe('the car', () => {
   });
 
   test('every command holds under the key the model reads it by', () => {
-    expect(toggleDeparture(car, true).holds).toEqual([K.dep('switch.fordpass_t_departuretimes')]);
+    expect(toggleDeparture(car, true).holds).toEqual([K.departure('switch.fordpass_t_departuretimes')]);
     expect(lockCar(car).holds).toEqual([K.doorLock('lock.fordpass_t_doorlock')]);
     expect(remoteStart(car, true).holds).toEqual([K.ignition('switch.fordpass_t_ignition')]);
     expect(setAmps({id: 'number.a'}, 16).holds).toEqual([K.amps('number.a')]);

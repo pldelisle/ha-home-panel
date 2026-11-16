@@ -26,7 +26,7 @@ src/features/car/
   sheets.ts                DETAIL_SHEET: `car.detail`, the id the card, Home's tile and the live pill ask for
   ids.ts                   carIds(store, ref): the car's entities and the Wallbox's six
   inputs.ts                readCarFeature(states, config, names): the reference, the car and the charger
-  schedule.ts              ScheduleDraft, draftFromSchedule, scheduleKey, toggleDay, roundToFive, withFiveMinutes, validate, scheduleWords, describe
+  schedule.ts              ScheduleDraft, draftFromSchedule, redraft, scheduleKey, toggleDay, roundToFive, withFiveMinutes, validate, scheduleWords, describe
   commands.ts              setAmps, togglePause, toggleChargerLock, remoteStart, toggleHeater, honk, lockCar, unlockCar, toggleDeparture, saveSchedule: `Command` data
   controls.ts              chargerControls, comfortControls: the two cards as strings and flags, from the inputs, the held values, the armed buttons and the draft
   keys.ts                  K: the overlay keys of the held values (the current, the locks, the ignition, the heaters, the departure switch)
@@ -50,7 +50,7 @@ The car is `sensor.fordpass_<name>_soc`, the first one found, and every other en
 
 ## The departure draft
 
-`ScheduleDraft` is what a person edits before anything is sent: the days, the time and the cabin setting. The pattern is **edit locally, validate, send once**: `draftFromSchedule` starts it from Ford's schedule (`08:00` and no days when there is none, and no cabin setting, which Ford does not report), `toggleDay` and a time field change it, `validate` names the toast that says what is missing (the cabin setting, then a day, then a time: a cleared field has no hour to send, where the legacy panel sent `NaN`), and `withFiveMinutes` makes the time Ford's five-minute steps before it is sent (`roundToFive` is the rule). `describe` is the switch's line in words and `scheduleWords` its days and time alone, both through the catalog and `fmt.clock`, so the time is `8:30 am` in English and `8 h 30` in French. The draft is plain data replaced by new values; `<hp-car-comfort>` holds the one copy, begins it from Ford's schedule when the card is drawn, begins it again when the saved schedule changes (`scheduleKey` says so) and drops it when the card leaves the document. It is never in the store.
+`ScheduleDraft` is what a person edits before anything is sent: the days, the time and the cabin setting. The pattern is **edit locally, validate, send once**: `draftFromSchedule` starts it from Ford's schedule (`08:00` and no days when there is none, and no cabin setting, which Ford does not report), `toggleDay` and a time field change it, `validate` names the toast that says what is missing (the cabin setting, then a day, then a time: a cleared field has no hour to send, where the legacy panel sent `NaN`), and `withFiveMinutes` makes the time Ford's five-minute steps before it is sent (`roundToFive` is the rule). `describe` is the switch's line in words and `scheduleWords` its days and time alone, both through the catalog and `fmt.clock`, so the time is `8:30 am` in English and `8 h 30` in French. The draft is plain data replaced by new values; `<hp-car-comfort>` holds the one copy, begins it from Ford's schedule when the card is drawn, begins it again when the saved schedule changes (`scheduleKey` says so; `redraft` takes Ford's days and time and keeps the cabin setting the person picked, which Ford never reports) and drops it when the card leaves the document. It is never in the store.
 
 ## The bars
 

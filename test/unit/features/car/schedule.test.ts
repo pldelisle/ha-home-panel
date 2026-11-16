@@ -4,6 +4,7 @@ import {describe, expect, test} from 'vitest';
 import {
   describe as describeDraft,
   draftFromSchedule,
+  redraft,
   roundToFive,
   scheduleKey,
   scheduleWords,
@@ -37,6 +38,22 @@ describe('draftFromSchedule', () => {
     const schedule = {days: ['monday'], hours: 8, minutes: 0};
     draftFromSchedule(schedule).days.push('friday');
     expect(schedule.days).toEqual(['monday']);
+  });
+});
+
+describe('redraft', () => {
+  test("takes Ford's new days and time and keeps the cabin setting the person picked, which Ford does not report", () => {
+    const picked: ScheduleDraft = {days: ['monday'], time: '06:00', temp: 'high'};
+    expect(redraft(picked, {days: ['friday'], hours: 7, minutes: 30})).toEqual({
+      days: ['friday'],
+      time: '07:30',
+      temp: 'high',
+    });
+  });
+
+  test('has no cabin setting for a draft that was never begun, and is 08:00 with no days when Ford saved nothing', () => {
+    expect(redraft(null, null)).toEqual({days: [], time: '08:00', temp: null});
+    expect(redraft({days: [], time: '08:00', temp: null}, null).temp).toBeNull();
   });
 });
 
