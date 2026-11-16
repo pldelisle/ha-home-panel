@@ -1,6 +1,6 @@
 // <hp-car-pane>: the Car pane (the rail's Tab is its button): on a phone the header with the car's name and its summary line, the card that opens the detail and the detail's sheet; on a tablet the detail inline.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over a view model: `carModel` runs in `willUpdate` and the template places what it returns; a store controller on `carIds` (ADR 0012), paused while no part of the pane
-// is on screen, and `CarHistory`, which loads the Car's two windows then (ADR 0028). It keeps the sessions table's length for the panel's life and marks, for the legacy controls it forwards until #253, when the detail is shown.
+// is on screen, and `CarHistory`, which loads the Car's two windows then (ADR 0028). It keeps the sessions table's length for the panel's life and hands the inputs down to the detail's two control cards.
 // Must not: read an entity itself (`readCarFeature` does), hold a string the household reads, call the API (the history controller asks the cache), or open the sheet (the card asks).
 import {ContextConsumer} from '@lit/context';
 import {LitElement, html, nothing, unsafeCSS, type PropertyValues} from 'lit';
@@ -8,10 +8,9 @@ import './car-card.ts'; // defines <hp-car-card>
 import './car-detail.ts'; // defines <hp-car-detail>
 import paneOwn from './car-pane.element.css?inline';
 import {carIds} from './ids.ts';
-import {readCarFeature} from './inputs.ts';
+import {readCarFeature, type CarFeatureInputs} from './inputs.ts';
 import {CarHistory, type CarHistoryHost} from './loader.ts';
 import {carModel, type CarViewModel} from './model.ts';
-import {CarDetailShownEvent} from './events.ts';
 import {DETAIL_SHEET} from './sheets.ts';
 import type {CarRef} from '../../providers/fordpass.ts';
 import type {StatisticsCache} from '../../core/statistics-cache.ts';
@@ -41,12 +40,12 @@ export class CarPane extends LitElement {
   private cache: StatisticsCache | undefined;
   private readonly history: CarHistory;
   private view: CarViewModel | undefined;
+  // what the controls are drawn from: the same reading the view was made of
+  private inputs: CarFeatureInputs | undefined;
   // the sessions' table shows every session and not the latest ten: the toggle's state, which the model's rows follow
   private allSessions = false;
   // Ford's photo did not load: the drawn car stands in for it until the pane goes, on the card and in the battery block alike (the legacy panel's `imgFail`, per session), so a broken photo is asked for once
   private imageFailed = false;
-  // whether the detail was last on screen, which the container of the legacy controls is told (`announce`)
-  private told = false;
 
   constructor() {
     super();
@@ -98,6 +97,7 @@ export class CarPane extends LitElement {
     const {hass} = store;
     if (!hass) return;
     const inputs = readCarFeature(hass.states, store.config, store.names);
+    this.inputs = inputs;
     this.ref = inputs.ref;
     this.view = carModel(inputs, this.history.data, {
       t: store.t,
@@ -131,17 +131,15 @@ export class CarPane extends LitElement {
       }${this.renderSheet(view)}`;
   }
 
-  // the detail, with the legacy controls' container forwarded into its `controls` slot until #253
   private renderDetail({detail, error}: CarViewModel) {
     return html`<hp-car-detail
       .detail=${detail ?? undefined}
+      .inputs=${this.inputs}
       .error=${error}
       .imageFailed=${this.imageFailed}
       @sessions-toggle=${this.onSessionsToggle}
       @car-image-failed=${this.onImageFailed}
-    >
-      <slot name="controls" slot="controls"></slot>
-    </hp-car-detail>`;
+    ></hp-car-detail>`;
   }
 
   // a phone shows it in a sheet the host opens; it exists only while open, so a closed sheet holds no chart
@@ -163,17 +161,6 @@ export class CarPane extends LitElement {
           : nothing
       }
     </hp-sheet>`;
-  }
-
-  // The legacy controls draw only while the detail is on screen, and the guest cannot see inside this element: the container they sit in is marked and told when that changes (#253 deletes this).
-  protected override updated(): void {
-    const compact = this.appearance.value?.compact === true;
-    const shown = this.view?.detail != null && (compact ? this.detailOpen : this.active);
-    if (shown === this.told) return;
-    this.told = shown;
-    const box = this.querySelector('[slot="controls"]');
-    box?.toggleAttribute('data-shown', shown);
-    box?.dispatchEvent(new CarDetailShownEvent());
   }
 
   // arrow fields, so the template hands the same functions at every render

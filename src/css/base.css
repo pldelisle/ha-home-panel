@@ -211,54 +211,15 @@
   width: 20px;
   height: 20px;
 }
-/* Car's labels (the Wallbox limit, the charge limit, the departure times): its pane draws them until #253, which deletes this rule; Climate's controls use their own `.clbl` */
-.ctl-l {
-  font-size: calc(12px * var(--tx));
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--fg2);
-  margin: 14px 0 6px;
-}
 .sw:focus-visible,
-.cbtn:focus-visible,
 .more:focus-visible {
   outline: 2px solid var(--c-home);
   outline-offset: 2px;
-}
-/* a known duplicate of <hp-seg>'s `[aria-disabled='true']` rules (src/ui/seg.element.css), deleted with the last legacy `.seg` (#253) */
-.seg.dis button {
-  cursor: default;
-}
-.seg.dis button:not([aria-checked='true']) b {
-  color: var(--fg2);
 }
 .hint {
   font-size: calc(12px * var(--tx));
   color: var(--fg2);
   margin: 6px 0 0;
-}
-.tgl {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: var(--card2);
-  border-radius: 16px;
-  padding: 12px 14px;
-  margin-top: 8px;
-}
-.tgl .tx {
-  flex: 1;
-  min-width: 0;
-}
-.tgl b {
-  display: block;
-  font-weight: 600;
-  font-size: calc(14px * var(--tx));
-}
-.tgl span {
-  font-size: calc(12px * var(--tx));
-  color: var(--fg2);
 }
 .sw {
   width: 51px;
@@ -292,118 +253,6 @@
   opacity: 0.45;
   cursor: not-allowed;
 }
-.ctls {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
-  margin-top: 6px;
-}
-.cbtn {
-  border: 0;
-  border-radius: 16px;
-  background: var(--card2);
-  padding: 12px;
-  text-align: left;
-  font: inherit;
-  color: inherit;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  min-width: 0;
-}
-.cbtn .ic {
-  width: 32px;
-  height: 32px;
-  border-radius: 10px;
-  display: grid;
-  place-items: center;
-  background: var(--card);
-  color: var(--fg2);
-}
-.cbtn b {
-  font-size: calc(13.5px * var(--tx));
-  font-weight: 600;
-}
-.cbtn span {
-  font-size: calc(12px * var(--tx));
-  color: var(--fg2);
-}
-.cbtn[aria-pressed='true'] {
-  background: color-mix(in srgb, var(--c-wh) 16%, var(--card));
-}
-.cbtn[aria-pressed='true'] .ic {
-  color: var(--c-wh);
-}
-.cbtn.armed {
-  box-shadow: inset 0 0 0 2px var(--warn);
-}
-.access {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-top: 14px;
-  background: var(--card2);
-  border-radius: 16px;
-  padding: 12px 14px;
-}
-.access .tx {
-  flex: 1 1 180px;
-  min-width: 0;
-}
-.access b {
-  display: block;
-  font-weight: 600;
-}
-.access span {
-  font-size: calc(12px * var(--tx));
-  color: var(--fg2);
-}
-.deprow {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
-  margin-top: 8px;
-}
-.days {
-  display: flex;
-  gap: 4px;
-  flex: 1 1 220px;
-}
-.days button {
-  flex: 1;
-  min-width: 30px;
-  height: 44px;
-  border: 0;
-  border-radius: 12px;
-  background: var(--card2);
-  color: var(--fg2);
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-}
-.days button[aria-pressed='true'] {
-  background: color-mix(in srgb, var(--c-ev) 20%, var(--card));
-  color: var(--t-ev);
-}
-.dtime {
-  height: 44px;
-  border: 0;
-  border-radius: 12px;
-  background: var(--card2);
-  color: var(--fg);
-  font: inherit;
-  font-weight: 600;
-  padding: 0 10px;
-  color-scheme: light dark;
-}
-.days button:focus-visible,
-.dtime:focus-visible {
-  outline: 2px solid var(--c-home);
-  outline-offset: 2px;
-}
 .more {
   margin-top: 10px;
   border: 0;
@@ -416,11 +265,6 @@
   font-weight: 600;
   color: var(--fg);
   cursor: pointer;
-}
-@media (max-width: 720px) {
-  .ctls {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 /* the state pill the Automations pane still draws (`.pane-auto .pill`, tabs.css); the Climate detail's own is a copy in its element (#244), and the Automations move (#273) deletes this one */
 .pill {

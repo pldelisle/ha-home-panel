@@ -1,9 +1,10 @@
 // The toast (<hp-toast>, #275): the shell draws it from every `ToastEvent`, through the pure schedule (src/ui/toast-schedule.ts).
 // A done toast goes after 3.5 s on the page's clock; a failure stays, in red, until it is dismissed; a legacy toast still says
-// its text in French. Spec: docs/specs/26-idle-clock.md, the deletion's toast.
+// its text in French, and a catalog toast says it as the catalog writes it. Spec: docs/specs/26-idle-clock.md, the deletion's toast.
 import AxeBuilder from '@axe-core/playwright';
 import {test, expect, tabletOnly, type House} from './fixtures';
 import {AFTERNOON, FULL_CFG} from './houses';
+import {openOfficeSheet} from './lights';
 
 test.use({houseOpts: {cfg: FULL_CFG, time: AFTERNOON}});
 
@@ -59,16 +60,24 @@ test('a new toast replaces the one showing: a done one after a failure goes afte
 test.describe('in French', () => {
   test.use({houseOpts: {cfg: FULL_CFG, time: AFTERNOON, lang: 'fr'}});
 
-  // the legacy panel words this toast in English; the rewrite layer used to make it French in the light DOM, the guest does now.
-  // The Car tab's legacy controls are the toast's road here: #253 moves them, and this case with them (Car's toasts are the catalog's then).
-  test('a legacy toast is in French, and so is the Dismiss of a failure', async ({house}) => {
+  // a catalog toast: the Car's comfort card words this one from the catalog (#253), as every feature does
+  test('a catalog toast is in French, and so is the Dismiss of a failure', async ({house}) => {
     tabletOnly();
     await house.tab('car');
-    await house.root().locator('#car-comfort [data-k="depsave"]').click();
+    await house.root().locator('hp-car-comfort').getByRole('button', {name: "Enregistrer l'horaire"}).click();
     await expect(toast(house)).toHaveText("Choisissez d'abord une température d'habitacle");
     await house.failNext('scene.turn_on');
     await house.tab('home');
     await scene(house, 'Movie night').click(); // a name the house gave, which the panel never translates
     await expect(toast(house).getByRole('button')).toHaveText('Fermer');
+  });
+
+  // a legacy toast: the Lights sheet's Auto switch still words its toast in English in home-panel.js, which the French map rewrites.
+  // #263 moves Lights to the catalog, and this case with it (the catalog toast above is then the only road, and this one goes).
+  test('a legacy toast is in French', async ({house}) => {
+    tabletOnly();
+    await openOfficeSheet(house);
+    await house.root().locator('#lsheet button.sw[data-l="al"]').click();
+    await expect(toast(house)).toHaveText('Auto désactivé');
   });
 });

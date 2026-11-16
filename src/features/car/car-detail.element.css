@@ -1,6 +1,6 @@
 /*
  * <hp-car-detail>'s own rules: its `:host` and the column of its blocks, sixteen pixels apart on a tablet and fourteen in a phone's sheet, as the legacy panel's `.pane > .panel > * + *` and
- * `.sheet > .panel > * + *` rules set them. The row that sets two blocks side by side is the kit's `.two`; the legacy charger's and comfort's cards sit in the `controls` slot (#253 draws them as elements).
+ * `.sheet > .panel > * + *` rules set them. The row that sets two blocks side by side is the kit's `.two`, which the charger's and the comfort's cards share too.
  */
 :host {
   display: block;

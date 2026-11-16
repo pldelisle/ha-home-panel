@@ -19,6 +19,8 @@ export default defineConfig({
         'src/providers/**/*.ts',
         'src/features/*/{ids,inputs,model,speakers,tiles,history,scenes,commands,flow-layout,water-chart,charts,sankey-layout,schedule,bars-geometry,checks,order,state,al-strip-layout,traces,sentences,timeline-layout,graph,mermaid-def,activities,done}.ts', // the pure files; the elements are proven by the harness
         'src/features/live/loader.ts', // a controller over the statistics cache through the kit's WindowedHistory, tested with a fake cache, store and host
+        'src/features/car/controls.ts', // the controls' view: strings and flags from the inputs, the held values and the draft; the two cards that call it are proven by the harness
+        'src/features/car/keys.ts', // the overlay keys, one typed function each; proven through the commands' and the controls' unit tests
         'src/features/car/loader.ts', // a controller over the statistics cache, tested with a fake cache, store and host; the pane that mounts it is proven by the harness
         'src/features/climate/sender.ts', // a controller over the overlay and the runner, tested with fakes and a fake clock; its two elements are proven by the harness
         'src/ui/{ranges,seg-keys,steps,thin-axis,toast-schedule}.ts', // the kit's pure files; its elements are proven by the harness
@@ -50,6 +52,8 @@ export default defineConfig({
           {
             statements: 100,
           },
+        'src/features/car/controls.ts': {statements: 100},
+        'src/features/car/keys.ts': {statements: 100},
         'src/features/live/loader.ts': {statements: 100},
         'src/features/car/loader.ts': {statements: 100},
         'src/features/climate/sender.ts': {statements: 100},

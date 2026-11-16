@@ -1,7 +1,7 @@
 /*
  * <hp-car-sessions>'s own rules: its `:host`, the table of the last sessions with its energy bars and the phone's narrower columns, and the button that shows them all. Moved from the legacy `.slist` rules
- * (base.css), which the detail's move (#252) deleted; `.showall` is a known copy of the legacy `.more` (base.css, glass.css, motion.css) that the Lights header and the comfort controls still use, which #253 and
- * the Lights move (spec 23) delete. The inner card and the tiles are the kit's, the shared rules of the blocks are styles.css.
+ * (base.css), which the detail's move (#252) deleted; `.showall` is a known copy of the legacy `.more` (base.css, glass.css, motion.css) that the Lights header still uses, which
+ * the Lights move (spec 23) deletes (the comfort card's `.save` is the same look). The inner card and the tiles are the kit's, the shared rules of the blocks are styles.css.
  */
 :host {
   display: flex;
