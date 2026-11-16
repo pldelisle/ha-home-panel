@@ -202,6 +202,10 @@ test.describe('on a phone', () => {
     await tile(house, 'office').click();
     await expect(pane(house).locator('#cctl .quick button')).toHaveCount(5);
     await expect(charts(house)).toBeVisible();
+    // the heatmap and the outside chart are the tablet's: the sheet holds the room's chart alone
+    await expect(charts(house)).toHaveCount(1);
+    await expect(pane(house).locator('.cblocks')).toHaveCount(0);
+    await expect(pane(house).locator('hp-heat-legend')).toHaveCount(0);
     await sheet(house).locator('hp-range-tabs [role="tab"]', {hasText: 'Week'}).click();
     await expect(detail(house).locator('.legend')).toContainText('last 7 days');
   });
@@ -319,8 +323,15 @@ test.describe('with a heat pump, on a tablet', () => {
     await tab('Week').click();
     await expect(heatmap(house).locator('h3')).toHaveText('Every room, every 6 hours');
     await expect(heatmap(house).locator('hp-chart .apexcharts-canvas')).toBeVisible();
-    expect(await climate('recorder/statistics_during_period'), 'a second week, from memory').toHaveLength(2);
-    expect(await climate('history/history_during_period')).toHaveLength(2);
+    // a request that came late would show after a settle: the reads are polled, once the frames have passed
+    await house.page.evaluate(
+      () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+    );
+    await house.page.waitForTimeout(250);
+    await expect
+      .poll(async () => (await climate('recorder/statistics_during_period')).length, 'a second week, from memory')
+      .toBe(2);
+    await expect.poll(async () => (await climate('history/history_during_period')).length).toBe(2);
   });
 
   test('the heat pump’s chart draws its line and its setpoint from the unit’s history', async ({house}) => {

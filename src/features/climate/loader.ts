@@ -11,7 +11,7 @@ import type {PanelStore} from '../../core/store.ts';
 import type {Range} from '../../ui/ranges.ts';
 import {climateWindow, deriveClimateHistory, type ClimateHistoryData} from './history.ts';
 
-/** How long a range's entry is drawn from memory before the next update asks again. */
+/** How long a range's entry is drawn from memory before the next update asks again: the ten minutes of spec 20 and #246, shorter than the cache's own fifteen (`STATISTICS_TTL_MS`), which only bounds how long a read answers a repeated request. */
 export const HISTORY_TTL_MS = 10 * MINUTE_MS;
 
 /** How soon after a failure the next update asks again for the same range: a failed load must not turn every update into a request. */
@@ -92,6 +92,9 @@ export class ClimateHistory implements ReactiveController {
     const {cache, store, range} = deps;
     const {generation} = store;
     const now = Date.now();
+    // what was derived under another config is let go, not kept for a generation that may never come back
+    for (const [kept, {generation: derivedUnder}] of this.entries)
+      if (derivedUnder !== generation) this.entries.delete(kept);
     const entry = this.entries.get(range);
     if (entry && entry.generation === generation && now - entry.data.at < HISTORY_TTL_MS) return;
     const {request, failure} = this;
@@ -102,9 +105,9 @@ export class ClimateHistory implements ReactiveController {
     try {
       const window = climateWindow(range, store.config, now);
       const hp = store.config.entities.hp;
-      const ids = window.ids.filter(Boolean);
+      const ids = window.ids.filter((id): id is string => !!id);
       const [statistics, history] = await Promise.all([
-        ids.length ? cache.statistics(window.ids, window.period, window.start, window.types) : Promise.resolve({}),
+        ids.length ? cache.statistics(ids, window.period, window.start, window.types) : Promise.resolve({}),
         hp
           ? cache.history([hp], window.start, {minimal: false, attributes: true}).catch(optional)
           : Promise.resolve({}),

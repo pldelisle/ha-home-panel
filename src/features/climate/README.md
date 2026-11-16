@@ -24,7 +24,7 @@ src/features/climate/
   gauge-geometry.ts        gaugeGeometry(t, sp): positions on the 14 to 30 scale and which caption goes under it
   index.ts                 climateFeature: the descriptor, `available` from hasClimate, the pane's template with the legacy panel's container for the controls
   sheets.ts                DETAIL_SHEET: the id of the phone's sheet
-  events.ts                ClimateDetailEvent: the pane tells the shell which room and range its detail shows
+  events.ts                ClimateDetailEvent: the pane tells the shell which room its detail shows
   climate-pane.ts          <hp-climate-pane>: the header, the phone's tiles and sheet, the tablet's list and detail; keeps the room and the range
   climate-list.ts          <hp-climate-list>: the listbox of the house, the rooms and the heat pump; tells its choice as `select`
   climate-detail.ts        <hp-climate-detail>: the head, the gauge or the dial, the tiles, the chart and the note, with a slot for the legacy controls

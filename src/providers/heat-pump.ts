@@ -1,5 +1,5 @@
 // The heat pump (or air conditioner) of the house, read into the inputs the Climate feature takes, and its state history into a line.
-// Pattern: an adapter below the features (ADR 0025), the rules of the legacy `hpBrand()` and `hpSeries()` (deleted in #244 and #246) and of the heat pump's readings (deleted in #248);
+// Pattern: an adapter below the features (ADR 0025), the rules of the legacy `hpBrand()` (deleted in #244) and `hpSeries()` (deleted in #246) and of the heat pump's readings (deleted in #248);
 // the maker comes from the device registry (Fujitsu through FGLair, else the manufacturer), the entity from the config's `heat_pump`.
 // Must not: word anything a person reads (a maker the registry does not give is `null`, for the model to word; a maker's name, `Fujitsu`, is data,
 // as the registry's manufacturer is), or read the clock or the DOM.

@@ -321,7 +321,7 @@ export class HomePanel extends LitElement {
     this.guest?.forecastChanged(e.detail.type, e.detail.forecast);
   };
 
-  // the Climate pane says which room and range its detail shows while it is on screen; the legacy controls draw for it until #248
+  // the Climate pane says which room its detail shows while it is on screen; the legacy controls draw for it until #248
   private readonly onClimateDetail = (e: ClimateDetailEvent): void => {
     e.stopPropagation();
     this.guest?.climateDetailChanged(e.detail.shown);

@@ -87,7 +87,7 @@ export class ClimatePane extends LitElement {
   /** What the detail shows, kept for the panel's life: the house and a day until the person chooses. */
   private selection: ClimateSelection = 'house';
   private range: Range = DEFAULT_RANGE;
-  /** What the shell was last told the detail shows (`room/range`), empty for nothing: it is told again only when this changes. */
+  /** What the shell was last told the detail shows (the room), empty for nothing: it is told again only when this changes. */
   private told = '';
   private readonly history: ClimateHistory;
 
@@ -341,15 +341,15 @@ export class ClimatePane extends LitElement {
     </hp-sheet>`;
   }
 
-  // The shell is told what the detail shows when it comes on screen, when the room or the range changes and when it leaves; the legacy controls follow it.
+  // The shell is told what the detail shows when it comes on screen, when the room changes and when it leaves; the legacy controls follow it.
   protected override updated(): void {
     const {view} = this;
     if (!view) return;
     const on = this.detailShown;
-    const key = on ? `${view.selection}/${this.range}` : '';
+    const key = on ? view.selection : '';
     if (key === this.told) return;
     this.told = key;
-    this.dispatchEvent(new ClimateDetailEvent(on ? {sel: view.selection, range: this.range} : null));
+    this.dispatchEvent(new ClimateDetailEvent(on ? {sel: view.selection} : null));
   }
 
   // arrow fields, so the template hands the same functions at every render

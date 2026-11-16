@@ -71,7 +71,7 @@ export interface GuestRenderer extends GuestAnswers, LegacySheetGuest {
    */
   forecastChanged(type: 'daily' | 'hourly', forecast: readonly object[]): void;
   /**
-   * Climate move 3: the Climate pane's detail is on screen (inline on a tablet, in its sheet on a phone) for this room and range, or it left (`null`). The legacy
+   * Climate move 3: the Climate pane's detail is on screen (inline on a tablet, in its sheet on a phone) for this room, or it left (`null`). The legacy
    * panel draws the controls for it and keeps no selection of its own. Deleted with the legacy controls (#248).
    */
   climateDetailChanged(shown: ClimateShown | null): void;

@@ -206,6 +206,36 @@ describe('ClimateHistory', () => {
     expect(history.data('day', 2)).not.toBeNull();
   });
 
+  test('what was derived under another config is let go, not kept for a generation that may come back', async () => {
+    const {history, world} = setup();
+    history.hostConnected();
+    await settle();
+    world.range = 'week';
+    history.hostUpdate();
+    await settle();
+    world.generation = 2;
+    world.range = 'day';
+    history.hostUpdate();
+    await settle();
+    // the week was never asked again under the new config, yet its old entry is gone: back under the old generation there is nothing
+    expect(history.data('week', 1)).toBeNull();
+    expect(history.data('day', 1)).toBeNull();
+    expect(history.data('day', 2)).not.toBeNull();
+  });
+
+  test('asks the cache for the sensors a house has: a room missing one, or an unset outside sensor, sends no empty id', async () => {
+    const missing = {
+      entities: {...DEFAULT_ENTITIES, outT: null, hp: null},
+      rooms: [{k: 'den', temp: 'sensor.den_t', target: null, power: undefined}],
+    };
+    const {history, calls} = setup({config: missing});
+    history.hostConnected();
+    await settle();
+    expect(calls.statistics).toHaveLength(1);
+    expect(calls.statistics[0].ids).toEqual(['sensor.den_t']);
+    expect(history.data('day', 1)?.rooms.den).toBeDefined();
+  });
+
   test('a StaleReply is no failure: the next update asks again under the new config', async () => {
     const {history, calls, state, world} = setup();
     state.statistics = () => Promise.reject(new StaleReply());
