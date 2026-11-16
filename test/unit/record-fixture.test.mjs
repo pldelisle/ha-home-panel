@@ -705,12 +705,13 @@ describe('the recorded statistics spans', () => {
     ...source('src/providers/power-history.ts').matchAll(
       /windowStart\(now,\s*([\d.]+)\),\s*period:\s*'(5minute|hour|day)'/g,
     ),
-    // the Wallbox's year of hours, which the Car's history and the legacy panel's shared load both ask: `SESSION_DAYS = 366`, by the hour
-    ...[...source('src/providers/wallbox.ts').matchAll(/SESSION_DAYS = ([\d.]+)/g)].map(([, days]) => [
-      null,
-      days,
-      'hour',
-    ]),
+    // the Wallbox's year of hours, which the Car's history and the legacy panel's shared load both ask: `windowStart(now, SESSION_DAYS)` and its `period`, by name
+    ...(() => {
+      const providers = source('src/providers/power-history.ts');
+      const days = providers.match(/SESSION_DAYS = ([\d.]+)/)?.[1];
+      const period = providers.match(/sessionsWindow = [^]*?period: '(5minute|hour|day)'/)?.[1];
+      return days && period ? [[null, days, period]] : [];
+    })(),
   ].map(([, days, period]) => ({period, days: Number(days)}));
   // the ranges Climate's detail asks for, the kit's: `days: 7, period: 'hour'` (the panel's own CRANGE went in #246)
   const ranges = [...kit.matchAll(/days:\s*([\d.]+),\s*period:\s*'(5minute|hour|day)'/g)].map(([, days, period]) => ({

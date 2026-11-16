@@ -3,12 +3,14 @@
 // and charging, a limit of 90 percent, and a Wallbox that says Charging.
 import AxeBuilder from '@axe-core/playwright';
 import {test, expect, phoneOnly, tabletOnly, type House} from './fixtures';
-import {FULL_CFG} from './houses';
+import {AFTERNOON, FULL_CFG} from './houses';
 
 test.use({houseOpts: {cfg: FULL_CFG}});
 
 const pane = (house: House) => house.root().locator('#pane-car hp-car-pane');
 const card = (house: House) => pane(house).locator('hp-car-card');
+/** How long the history is kept before the tab asks again (the statistics cache's own, spec 21). */
+const FIFTEEN_MINUTES = 15 * 60_000;
 const STATISTICS = 'recorder/statistics_during_period';
 const CHARGER = 'sensor.charger_power';
 const GRID = 'sensor.house_power';
@@ -57,7 +59,7 @@ test.describe('on a phone', () => {
     await expect(card(house).locator('.spark rect title').first()).toHaveText(/^[A-Z][a-z]{2} \d{1,2}: \d+\.\d kWh$/);
     await expect(card(house).locator('.spark')).toHaveAttribute('aria-label', /^Daily kWh bars, highest \d+\.\d kWh$/);
     await expect(card(house).locator('.cnote')).toHaveText(
-      /^Daily EV energy, last 30 days: \d+ charging days?, \d+ kWh\.$/,
+      /^Daily EV energy, last 30 days: \d+ charging days?, [\d,]+ kWh\.$/,
     );
   });
 
@@ -78,6 +80,31 @@ test.describe('on a phone', () => {
     );
     await house.page.waitForTimeout(250);
     await expect.poll(() => windowReads(house), 'when it is shown again').toEqual({hours: 1, days: 1});
+  });
+
+  test.describe('after fifteen minutes', () => {
+    test.use({houseOpts: {cfg: FULL_CFG, time: AFTERNOON}});
+
+    // the clock is Playwright's: the history is read when the tab is shown, and again only once what it holds is fifteen minutes old
+    test('the two windows are read again when the tab is shown after fifteen minutes, and not just before', async ({
+      house,
+    }) => {
+      await house.tab('car');
+      await expect(card(house).locator('.spark rect')).toHaveCount(30);
+      await expect.poll(() => windowReads(house), 'the first load').toEqual({hours: 1, days: 1});
+      await house.clock.fastForward(FIFTEEN_MINUTES - 60_000);
+      await house.tab('home');
+      await house.tab('car');
+      await house.page.evaluate(
+        () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+      );
+      await house.page.waitForTimeout(250);
+      await expect.poll(() => windowReads(house), 'a minute short of fifteen').toEqual({hours: 1, days: 1});
+      await house.clock.fastForward(2 * 60_000);
+      await house.tab('home');
+      await house.tab('car');
+      await expect.poll(() => windowReads(house), 'past fifteen').toEqual({hours: 2, days: 2});
+    });
   });
 
   test('a recorder that is down puts the reason under the card, and the live values still draw', async ({house}) => {
@@ -157,8 +184,15 @@ test.describe('on a tablet', () => {
     await expect(pane(house).locator('hp-pane-header, hp-car-card')).toHaveCount(0);
   });
 
-  test('the history is asked when the tab is shown here too', async ({house}) => {
+  test('the pane asks for no window of its own: the pane draws nothing from the history, so the days are not read', async ({
+    house,
+  }) => {
     await house.tab('car');
-    await expect.poll(() => windowReads(house)).toEqual({hours: 1, days: 1});
+    await house.page.evaluate(
+      () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+    );
+    await house.page.waitForTimeout(250);
+    // the Wallbox's year is the legacy panel's shared load, asked at start; the grid's and the charger's days only a pane that draws them asks
+    await expect.poll(() => windowReads(house)).toEqual({hours: 1, days: 0});
   });
 });

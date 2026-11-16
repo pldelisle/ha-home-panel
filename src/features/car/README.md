@@ -7,7 +7,8 @@ What the Car tab reads and computes ([spec 21](../../../docs/specs/21-car.md)): 
 ```
 src/providers/
   fordpass.ts              findCar(states): CarRef | null; readCar(states, config, names, ref): CarInputs; tirePsi(raw); departureSchedule(states, ref); carEntityIds(ref)
-  wallbox.ts               (spec 19) gains amps, pause, lock and price on its inputs, chargingSessions(rows), sessionsWindow(now, power) and wallboxCommands.pause(target, on)
+  wallbox.ts               (spec 19) gains amps, pause, lock and price on its inputs, chargingSessions(rows) and wallboxCommands.pause(target, on)
+  power-history.ts         gains sessionsWindow(now, power): the Wallbox's hourly power for the sessions' year
 src/core/i18n/
   format.ts                gains clock(hours, minutes): a time of day with no date, no zone
 src/features/car/

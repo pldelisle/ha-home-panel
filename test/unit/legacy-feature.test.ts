@@ -15,11 +15,11 @@ const env = (availability: Partial<Record<FeatureKey, boolean>>, line: string | 
 });
 
 const parts = {
-  icon: 'car',
+  icon: 'star',
   color: 'var(--c-ev)',
   phoneBar: true,
-  header: {subId: 'carsub2'},
-  hosts: ['<div id="carhost"></div>'],
+  header: {subId: 'sub-line'},
+  hosts: ['<div id="host-box"></div>'],
 } as const;
 
 type Pane = ReturnType<typeof legacyFeature>['pane'];
@@ -38,7 +38,7 @@ describe('legacyFeature', () => {
     expect([d.key, d.title, d.icon, d.color, d.phoneBar, d.shortTitle]).toEqual([
       'car',
       'car.title',
-      'car',
+      'star',
       'var(--c-ev)',
       true,
       undefined,
@@ -60,7 +60,7 @@ describe('legacyFeature', () => {
 
   test('draws <hp-pane-header> with the guest-written line in its slot, then the host containers', () => {
     expect(markup(legacyFeature('car', parts).pane)).toBe(
-      '<hp-pane-header icon= color= heading=><div slot="sub" id="carsub2"></div></hp-pane-header><div id="carhost"></div>',
+      '<hp-pane-header icon= color= heading=><div slot="sub" id="sub-line"></div></hp-pane-header><div id="host-box"></div>',
     );
   });
 

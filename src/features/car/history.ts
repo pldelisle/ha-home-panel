@@ -11,12 +11,13 @@ import {
   meanByStart,
   NOON_MS,
   rowsOf,
+  sessionsWindow,
   windowStart,
   type DayKeys,
   type StatisticsWindow,
   type StatsReply,
 } from '../../providers/power-history.ts';
-import {chargingSessions, sessionsWindow, type Session} from '../../providers/wallbox.ts';
+import {chargingSessions, type Session} from '../../providers/wallbox.ts';
 import type {ChartOptions} from '../../ui/chart-options.ts';
 
 /** How many days of the charger's daily energy the card's bars draw. */

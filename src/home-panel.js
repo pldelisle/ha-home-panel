@@ -21,8 +21,17 @@ import {heatPump} from './providers/heat-pump.ts';
 import {hydroQuebec} from './providers/hydro-quebec.ts';
 import {milaRooms} from './providers/mila.ts';
 import {powerNow} from './providers/power.ts';
-import {dayKeys, flowIds, hourlyFlow, meterTotals, powerWindows, rowsOf, waterDay} from './providers/power-history.ts';
-import {chargingSessions, sessionsWindow} from './providers/wallbox.ts';
+import {
+  dayKeys,
+  flowIds,
+  hourlyFlow,
+  meterTotals,
+  powerWindows,
+  rowsOf,
+  sessionsWindow,
+  waterDay,
+} from './providers/power-history.ts';
+import {chargingSessions} from './providers/wallbox.ts';
 import {ensureFonts} from './fonts.js';
 // Liquid Glass: whether this engine can run an SVG filter inside backdrop-filter (Chromium only)
 const LENS_OK =

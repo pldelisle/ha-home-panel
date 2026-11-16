@@ -1,6 +1,6 @@
-// The Wallbox charger: its power and status for the energy card, its controls' inputs for the Car, the catalog key of each status, the charging sessions its hourly power makes and the window that reads them.
+// The Wallbox charger: its power and status for the energy card, its controls' inputs for the Car, the catalog key of each status and the charging sessions its hourly power makes.
 // Pattern: an adapter below the features (ADR 0025), found by the config's keys (convention over configuration), not the registry; the reads are those of the legacy flow,
-// `attention()` and `renderCarControls` (deleted in #241 and #253); `chargingSessions` is the legacy `derive`'s rule (deleted in #251), here and not in the Car so the live pill can ask it too (spec 22).
+// `attention()` and `renderCarControls` (deleted in #241 and #253); `chargingSessions` is a rule over the charger's hourly rows, here and not in the Car so the live pill can ask it too (spec 22).
 // The pause command is `Command` data (core), which the kit's runner will send; the pill's "Pause charging" (#255) and the Car's switch (#253) will both use it, so it is built once, here.
 // Must not: word the status (it names the catalog key that does), send a command, import the kit, or read the registry or the clock.
 import type {Command} from '../core/commands.ts';
@@ -11,7 +11,6 @@ import type {HassEntities} from '../core/hass.ts';
 import type {MessageKey} from '../core/i18n/en.ts';
 import {overlayKey} from '../core/overlay-key.ts';
 import {hasState, isAvailable, kilowattsOf, numberAttributeOf, numberOf, switchOf, textOf} from '../core/states.ts';
-import {windowStart, type StatisticsWindow} from './power-history.ts';
 
 /** The range a charger that does not say its own current range is offered: the legacy panel's 6 to 48 amps. */
 const DEFAULT_MIN_AMPS = 6;
@@ -72,20 +71,6 @@ export interface Session {
   kwh: number;
   peak: number;
 }
-
-/** How far back the Wallbox's hourly power goes for the sessions: a year and a day. */
-const SESSION_DAYS = 366;
-
-/**
- * The Wallbox's hourly `mean` and `max` power over the sessions' year, one definition for the Car's history (#251) and the legacy panel's shared load, so the cache answers the second
- * (ADR 0028); the live pill (#255) reads the same rows.
- */
-export const sessionsWindow = (now: number, power: string | null): StatisticsWindow => ({
-  start: windowStart(now, SESSION_DAYS),
-  period: 'hour',
-  ids: [power],
-  types: ['mean', 'max'],
-});
 
 /** An hour is charging when the Wallbox's mean power is above this many kW. */
 const CHARGING_ABOVE_KW = 0.3;

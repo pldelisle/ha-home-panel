@@ -305,8 +305,7 @@ function dailyBars({daily}: CarHistoryData, {t, fmt}: CarModelDeps): DailyBars {
     line: t('car.card.daily', {
       days: DAILY_DAYS,
       charging: values.filter(value => value > CHARGING_DAY_KWH).length,
-      // as the legacy line wrote it, with no thousands separator: the sentence's one figure that was never grouped, and the baselines carry it
-      kwh: Math.round(sum(values)),
+      kwh: whole(fmt, sum(values)),
     }),
   };
 }

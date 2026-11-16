@@ -226,7 +226,7 @@ describe('a car with every sensor', () => {
     expect(daily?.line).toBe('Daily EV energy, last 30 days: 1 charging day, 17 kWh.');
   });
 
-  test('the daily line writes thousands of kWh with no separator, as the legacy line did and the baselines show', () => {
+  test('the daily line groups the thousands of kWh as the locale does, through the formatters', () => {
     const month = history({
       daily: Array.from({length: 30}, (_, index) => ({
         day: new Date(Date.UTC(2026, 9, 11 + index)).toISOString().slice(0, 10),
@@ -234,7 +234,11 @@ describe('a car with every sensor', () => {
       })),
     });
     expect(modelOf(carHouse(), month).card?.daily?.line).toBe(
-      'Daily EV energy, last 30 days: 30 charging days, 1200 kWh.',
+      'Daily EV energy, last 30 days: 30 charging days, 1,200 kWh.',
+    );
+    // French groups with a narrow no-break space
+    expect(modelOf(carHouse(), month, {language: 'fr'}).card?.daily?.line).toContain(
+      '30 jours de recharge, 1\u202f200 kWh.',
     );
   });
 

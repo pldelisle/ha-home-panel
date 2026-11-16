@@ -1,4 +1,4 @@
-// <hp-car-pane>: the Car tab: on a phone the header with the car's name and its summary line, and the card that opens the detail; on a tablet nothing of its own, the detail being the legacy panel's inline until #252.
+// <hp-car-pane>: the Car pane (the rail's Tab is its button): on a phone the header with the car's name and its summary line, and the card that opens the detail; on a tablet nothing of its own, the detail being the legacy panel's inline until #252.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over a view model: `carModel` runs in `willUpdate` and the template places what it returns; a store controller on `carIds` (ADR 0012), paused while the pane is not
 // the tab, and `CarHistory`, which loads the Car's two windows when the pane is shown (ADR 0028).
 // Must not: read an entity itself (`readCarFeature` does), hold a string the household reads, call the API (the history controller asks the cache), or open the sheet (the card asks).
@@ -8,7 +8,7 @@ import './car-card.ts'; // defines <hp-car-card>
 import paneOwn from './car-pane.element.css?inline';
 import {carIds} from './ids.ts';
 import {readCarFeature} from './inputs.ts';
-import {CarHistory} from './loader.ts';
+import {CarHistory, type CarHistoryHost} from './loader.ts';
 import {carModel, type CarViewModel} from './model.ts';
 import type {CarRef} from '../../providers/fordpass.ts';
 import type {StatisticsCache} from '../../core/statistics-cache.ts';
@@ -47,7 +47,21 @@ export class CarPane extends LitElement {
         this.cache = cache;
       },
     });
-    this.history = new CarHistory(this, () => {
+    // The history is wanted while the pane draws from it: it is the tab and the screen is a phone's (a tablet's pane draws nothing until #252), so a tablet asks for no window.
+    const drawing = (): boolean => this.active && this.appearance.value?.compact === true;
+    const settled = (): Promise<boolean> => this.updateComplete;
+    const host: CarHistoryHost = {
+      addController: controller => this.addController(controller),
+      removeController: controller => this.removeController(controller),
+      requestUpdate: () => this.requestUpdate(),
+      get updateComplete() {
+        return settled();
+      },
+      get active() {
+        return drawing();
+      },
+    };
+    this.history = new CarHistory(host, () => {
       const {store} = this.storeController;
       if (!this.cache) throw new Error('CarPane: the cache arrives when the pane connects.');
       return {cache: this.cache, store, fmt: store.fmt};
