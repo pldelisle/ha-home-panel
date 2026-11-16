@@ -147,6 +147,10 @@ describe('the curve', () => {
     expect(alCurve([null, 'x'], {...sun, dawn: 1, dusk: 2} as typeof sun)).toEqual({minK: 2000, maxK: 5500, sun});
   });
 
+  test('no switch, no curve', () => {
+    expect(alCurve([], sun)).toBeNull();
+  });
+
   test('the coolest at noon, a parabola to the warmest at sunrise and sunset, the warmest all night', () => {
     const curve = {minK: 2000, maxK: 6000, sun};
     expect(curveKelvin(curve, 12_000)).toBe(6000);

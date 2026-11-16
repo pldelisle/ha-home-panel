@@ -1,6 +1,7 @@
 // Adaptive Lighting: which of its switches runs an area's lights, what mode the area is in (Auto, Night, by hand), and today's colour curve.
 // Pattern: a provider (ADR 0025) naming the integration's quirks where they live: the switch's entity naming, its `configured_lights` (hidden
-// unless `include_config_in_attributes` is on), `manual_control` and the `_sleep_mode` twin; the rules are the legacy `alFor` and `lightMode`.
+// unless `include_config_in_attributes` is on), `manual_control` and the `_sleep_mode` twin; the rules are the legacy `alFor`,
+// `lightMode` and `renderAlBar`'s curve, whose copies go with the sheet (#262) and the strip (#260).
 // Must not: word anything, read the clock, the DOM or `hass` itself, or send a command (the feature's commands do).
 import type {SunTimes} from '../core/sun.ts';
 import type {HassEntities, PanelHass, Registries} from '../core/hass.ts';
@@ -42,6 +43,9 @@ export const alSwitches = (states: HassEntities): string[] =>
 const record = (v: unknown): Record<string, unknown> =>
   v && typeof v === 'object' ? (v as Record<string, unknown>) : {};
 const list = (v: unknown): string[] => (Array.isArray(v) ? v.map(String) : []);
+/** The sleep-mode twin's id of a main switch, whether or not the house has it. */
+export const sleepSwitchOf = (switchId: string): string => `${switchId}_sleep_mode`;
+
 const isOn = (states: HassEntities, id: string | null): boolean => !!id && states[id]?.state === 'on';
 
 /** The lights a switch runs: `configured_lights`, else the `lights` of its `configuration`, each group with its members. */
@@ -88,7 +92,7 @@ export function adaptiveSwitch(
 /** Who is in charge of the area's lights, given its switch (null when it has none). */
 export function alMode(area: Pick<LightArea, 'ids' | 'units'>, switchId: string | null, states: HassEntities): AlMode {
   const alOn = isOn(states, switchId);
-  const nightSwitch = switchId && states[`${switchId}_sleep_mode`] ? `${switchId}_sleep_mode` : null;
+  const nightSwitch = switchId && states[sleepSwitchOf(switchId)] ? sleepSwitchOf(switchId) : null;
   const nightOn = isOn(states, nightSwitch);
   const manual =
     alOn && list(states[switchId!].attributes.manual_control).some(l => area.ids.includes(l) || area.units.includes(l));
@@ -103,8 +107,9 @@ export function alMode(area: Pick<LightArea, 'ids' | 'units'>, switchId: string 
   };
 }
 
-/** Today's curve from the `configuration` attributes of one switch or more: the lowest `min_color_temp` and the highest `max_color_temp` (2000 and 5500 K where unset). */
-export function alCurve(configurations: unknown[], sun: AlCurve['sun']): AlCurve {
+/** Today's curve from the switches' `configuration` attributes, null when there is no switch (no strip is drawn): the lowest `min_color_temp` and the highest `max_color_temp` (2000 and 5500 K where unset). */
+export function alCurve(configurations: unknown[], sun: AlCurve['sun']): AlCurve | null {
+  if (!configurations.length) return null;
   const configs = configurations.map(record);
   return {
     minK: Math.min(...configs.map(c => Number(c.min_color_temp) || DEFAULT_MIN_K)),

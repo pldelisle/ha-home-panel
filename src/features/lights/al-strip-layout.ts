@@ -57,7 +57,7 @@ export function alStripLayout(
     stops,
     now: x(now),
     marks: sunMarks
-      .filter((m): m is [number, SunMark['kind']] => !!m[0])
+      .filter((m): m is [number, SunMark['kind']] => m[0] !== null)
       .map(([t, kind]) => ({kind, at: x(t), time: fmt.time(new Date(t))})),
     hours: [0, 6, 12, 18].map(h => ({at: `${(h / 24) * 100}%`, label: fmt.hour(midnight + h * HOUR_MS)})),
   };

@@ -11,7 +11,7 @@ src/core/
 src/providers/
   light-areas.ts           lightAreas(states, registries, names, config): LightArea[]; lightGroups(states); shortNames(names)
   adaptive-lighting.ts     alSwitches(states); adaptiveSwitch(area, states, registries, alAreas); alMode(area, switchId, states): AlMode;
-                           alCurve(configurations, sun); curveKelvin(curve, t); hasManualControlService(services)
+                           sleepSwitchOf(id); alCurve(configurations, sun) (null with no switch); curveKelvin(curve, t); hasManualControlService(services)
 src/features/lights/
   README.md
   ids.ts                   lightIds(store): every light, the Adaptive Lighting switches and their sleep modes, the config pairs' switches
