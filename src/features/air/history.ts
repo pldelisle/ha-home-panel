@@ -11,7 +11,7 @@ import type {Translate} from '../../core/i18n/messages.ts';
 import {AQ_BANDS, OUTDOOR_BANDS, type Pollutant} from '../../providers/air-quality.ts';
 import {timeAxis} from '../../ui/chart-options.ts';
 import type {RangeTab} from '../../ui/range-tabs.ts';
-import {RANGES, type Range} from '../../ui/ranges.ts';
+import {bucketMiddle, RANGES, type Range} from '../../ui/ranges.ts';
 import type {AirInputs} from './inputs.ts';
 
 /** A point of a chart: milliseconds and a value. */
@@ -109,7 +109,7 @@ const meanPoints = (rows: readonly StatisticRow[], offsetMs: number): Point[] =>
 
 type Rows = Readonly<Record<string, readonly StatisticRow[]>>;
 const pointsOf = (stats: Rows, id: string | null | undefined, range: Range): Point[] =>
-  id ? meanPoints(stats[id] ?? [], RANGES[range].bucketMs / 2) : [];
+  id ? meanPoints(stats[id] ?? [], bucketMiddle(range)) : [];
 
 /** The sensor ids a metric's chart asks the recorder for: each room's, and the station's PM2.5 for that one. */
 export function metricIds({rooms, outside}: Pick<AirInputs, 'rooms' | 'outside'>, metric: ChartMetric): string[] {

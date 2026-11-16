@@ -11,7 +11,7 @@ import type {MessageKey} from '../../core/i18n/en.ts';
 import {degrees, whole, type Formatters} from '../../core/i18n/format.ts';
 import type {Messages} from '../../core/i18n/messages.ts';
 import {celsius, timeAxis} from '../../ui/chart-options.ts';
-import {RANGES, type Range} from '../../ui/ranges.ts';
+import {bucketMiddle, RANGES, type Range} from '../../ui/ranges.ts';
 import type {HourSeries} from './model.ts';
 import {tileDefinition, type StatTileDefinition, type Tone} from './tiles.ts';
 
@@ -484,7 +484,7 @@ export function tileHistory(
       ? statisticPoints(
           statRows[id].filter(row => row.start >= from),
           stat ?? 'mean',
-          bucketMs / 2,
+          bucketMiddle(range),
         )
       : thinned(
           (historyRows[id] ?? []).filter(row => row.lastUpdated >= from),
