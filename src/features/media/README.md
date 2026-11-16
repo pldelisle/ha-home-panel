@@ -9,12 +9,12 @@ src/providers/
   tv-source.ts             TvSource (the port), TvInputs, visibleTvs, readSet and the wake-button rule the adapters share
   tv-entity.ts             any media_player with device_class 'tv': the generic adapter
   samsung-tv.ts            the Samsung platform: preferred when both exist
+  media-players.ts         speakers(states, registries, names, tvId): Speaker[] (generic rules, pure; a provider since #264)
 src/features/media/
   README.md
   index.ts                 mediaFeature: the registry's descriptor, the pane's template and the More sheet's line (mediaBrief)
   ids.ts                   mediaIds(store): the TV, its wake button, the speakers, the scenes and the modes
   inputs.ts                TV_SOURCES, findTv, readMedia(states, registries, names, sources): MediaInputs
-  speakers.ts              speakers(states, registries, names, tvId): Speaker[] (generic rules, pure)
   model.ts                 mediaModel(inputs, {t, names, overlay}): MediaViewModel (summary, tv, speakers, speakersLine, tiles, labels); mediaBrief
   scenes.ts                sceneTiles(states, registries, config, overlay, deps): SceneTileView[]; sceneIcon
   commands.ts              tvPower, tvVolume, tvMute, tvPlayPause, speakerPlayPause, speakerSkip, speakerVolume, runScene, setMode; K, SCENE_RAN_MS
@@ -45,7 +45,7 @@ Both read the set's state, input, volume flag and area the same way, and the wak
 
 ## The speakers
 
-`speakers(states, registries, names, tvId)` is generic, so it lives here and not in a provider: every visible `media_player.*` that is not the television, not on the `unifiprotect` or `samsungtv` platforms (a camera's speaker and a television have their own controls), and that sits in an area. Its name drops the words of its area's name, as Home Assistant gives it and as the panel shows it (`HomePod mini Kitchen` in the Kitchen is `HomePod mini`); a name that would be emptied is kept whole. **The order is the house's insertion order**: the baselines depend on it, so nothing sorts.
+`speakers(states, registries, names, tvId)` is generic; it lived in this folder until #264 moved it to `src/providers/media-players.ts`, because the smart stack's now-playing card reads it too (ADR 0025): every visible `media_player.*` that is not the television, not on the `unifiprotect` or `samsungtv` platforms (a camera's speaker and a television have their own controls), and that sits in an area. Its name drops the words of its area's name, as Home Assistant gives it and as the panel shows it (`HomePod mini Kitchen` in the Kitchen is `HomePod mini`); a name that would be emptied is kept whole. **The order is the house's insertion order**: the baselines depend on it, so nothing sorts.
 
 `readMedia` composes the two and reads each speaker's state beside it; `mediaIds` lists every id the pane and the scenes row read, so a light changing never reaches them.
 

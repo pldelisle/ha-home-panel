@@ -904,6 +904,11 @@ export const en = {
   'car.historyFailed': "History didn't load: {reason}. Live values still update.",
   'car.open': 'Open car details',
   'car.art.side': 'Car, side view',
+  // Who's home (src/features/people, #264): the header's chips and the Home card's label, each person's state, and the card's hint
+  'people.whosHome': "Who's home",
+  'people.home': 'home',
+  'people.away': 'away',
+  'people.noOneTracked': 'No one is tracked yet.',
 } as const;
 
 /** Every message key; a key exists when it is written in `en`. */

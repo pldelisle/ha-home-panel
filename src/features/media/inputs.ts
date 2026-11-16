@@ -9,7 +9,7 @@ import {isAvailable, numberAttributeOf, textAttributeOf} from '../../core/states
 import {samsungTvSource} from '../../providers/samsung-tv.ts';
 import {tvEntitySource} from '../../providers/tv-entity.ts';
 import type {TvInputs, TvSource} from '../../providers/tv-source.ts';
-import {speakers, type Speaker} from './speakers.ts';
+import {speakers, type Speaker} from '../../providers/media-players.ts';
 
 /** The sources in the order they are tried: Samsung's platform first, as the legacy panel did, then any television. */
 export const TV_SOURCES: readonly TvSource[] = [samsungTvSource, tvEntitySource];

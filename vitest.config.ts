@@ -17,7 +17,7 @@ export default defineConfig({
         'src/fonts.js',
         'src/core/**/*.ts',
         'src/providers/**/*.ts',
-        'src/features/*/{ids,inputs,model,speakers,tiles,history,scenes,commands,flow-layout,water-chart,charts,sankey-layout,schedule,bars-geometry}.ts', // the pure files; the elements are proven by the harness
+        'src/features/*/{ids,inputs,model,tiles,history,scenes,commands,flow-layout,water-chart,charts,sankey-layout,schedule,bars-geometry}.ts', // the pure files; the elements are proven by the harness
         'src/features/car/loader.ts', // a controller over the statistics cache, tested with a fake cache, store and host; the pane that mounts it is proven by the harness
         'src/features/climate/sender.ts', // a controller over the overlay and the runner, tested with fakes and a fake clock; its two elements are proven by the harness
         'src/ui/{ranges,seg-keys,steps,thin-axis}.ts', // the kit's pure files; its elements are proven by the harness
@@ -45,7 +45,7 @@ export default defineConfig({
       thresholds: {
         'src/core/**/*.ts': {statements: 100},
         'src/providers/**/*.ts': {statements: 100},
-        'src/features/*/{ids,inputs,model,speakers,tiles,history,scenes,commands,flow-layout,water-chart,charts,sankey-layout,schedule,bars-geometry}.ts':
+        'src/features/*/{ids,inputs,model,tiles,history,scenes,commands,flow-layout,water-chart,charts,sankey-layout,schedule,bars-geometry}.ts':
           {
             statements: 100,
           },

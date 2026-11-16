@@ -892,4 +892,9 @@ export const fr: Record<MessageKey, string> = {
     "L'historique n'a pas pu être chargé\u00a0: {reason}. Les valeurs en direct continuent de se mettre à jour.",
   'car.open': 'Ouvrir les détails de la voiture',
   'car.art.side': 'Voiture, vue de côté',
+  // Who's home's words, from the rewrite layer's entries; the hint the layer left in English is written here (the fixture says so)
+  'people.whosHome': 'Qui est à la maison',
+  'people.home': 'à la maison',
+  'people.away': 'absent',
+  'people.noOneTracked': "Personne n'est suivi pour l'instant.",
 };
