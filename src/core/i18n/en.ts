@@ -906,6 +906,8 @@ export const en = {
   'car.historyFailed': "History didn't load: {reason}. Live values still update.",
   'car.open': 'Open car details',
   'car.art.side': 'Car, side view',
+  'car.art.top': 'Car seen from above',
+  'car.close': 'Close',
   // the header's Status checks (src/features/live/checks.ts): each check's title and line, and the phrase it says when all is well
   'live.hqStale': 'Hydro-Québec not updating',
   'live.hqStaleLine':

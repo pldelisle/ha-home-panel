@@ -167,7 +167,6 @@
 /* v1.18.2: every other surface follows. Top-level panels (sheet sections, room list) are glass cards; inner wells (rows, segmented controls, tabs, steppers, sensor and speaker rows) take the tile fill; small buttons inside take the selected-bubble fill; tinted "on" states mix their accent into the glass instead of the opaque card */
 .app.gl .larea,
 .app.gl .access,
-.app.gl .arow,
 .app.gl .cbtn,
 .app.gl .tgl,
 .app.gl .dtime,
@@ -217,10 +216,8 @@
 .app.gl .state,
 .app.gl .go,
 .app.gl .lchip,
-.app.gl .ic.acc,
 .app.gl .aud.up,
-.app.gl .aud.skip,
-.app.gl .clear span {
+.app.gl .aud.skip {
   background: var(--g-tile);
   box-shadow: var(--g-edge-s);
 }
@@ -235,9 +232,6 @@
 }
 .app.gl .lchip[aria-pressed='true'] {
   background: color-mix(in srgb, var(--warn) 24%, var(--g-tile));
-}
-.app.gl .ic.acc {
-  background: color-mix(in srgb, var(--acc) 22%, var(--g-tile));
 }
 /* v1.18.3: WebKit leaves ghosts of the previous flow drawing behind a blurred card (stale compositing under backdrop-filter), so on iOS the two Automations cards keep a denser plain translucent fill with no blur, and every flow drawing gets its own layer */
 .augraph {
@@ -277,9 +271,6 @@
 }
 /* Reduce Transparency, or Increase Contrast: the glass turns back into near-solid cards */
 @media (prefers-reduced-transparency: reduce) {
-  .app.gl .clear span {
-    background: var(--card2);
-  }
   .app.gl .inner .chips .chip,
   .app.gl .card .chips .chip {
     background: var(--card2);
@@ -297,7 +288,6 @@
   }
   .app.gl .larea,
   .app.gl .access,
-  .app.gl .arow,
   .app.gl .cbtn,
   .app.gl .tgl,
   .app.gl .dtime,

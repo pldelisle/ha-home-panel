@@ -1,7 +1,7 @@
 // carModel: the car, its charger and its history in, every text, figure and shape the Car card, the phone's line and the detail's read-only blocks place out.
 // Pattern: a pure view-model function, a humble object's other half (Meszaros, Fowler): it reads no clock, no `hass` and no store, words every message through `deps.t` and every number through `deps.fmt`,
-// and delegates the bars to bars-geometry.ts and the schedule's words to schedule.ts. Each rule is the legacy panel's own (`renderCarCard`, `carSheet`, `renderSessions`, `renderCarSheetLive`, `schedText`), which #251 to #253 delete.
-// The pane's header and the card draw it since #251; the detail's blocks (#252) will draw the rest, and the controls' view comes with #253.
+// and delegates the bars to bars-geometry.ts and the schedule's words to schedule.ts. Each rule was the legacy panel's (`renderCarCard`, `carSheet`, `renderSessions`, `renderCarSheetLive`, which #251 and #252 deleted, and `schedText`, which #253 deletes).
+// The pane's header and the card draw it since #251, the detail's blocks since #252; the controls' view comes with #253.
 // Must not: import the DOM, Lit or the shell, read the clock (the sessions' "today" is the history's), hold text the household reads (a catalog key says it), or build the controls' view (#253).
 import {capitalise, DASH, HOUR_MS, joined} from '../../core/figures.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
@@ -77,7 +77,8 @@ export interface DailyBars {
   line: string;
 }
 
-export interface CarCard {
+/** What the car's picture needs, which the card and the battery block both draw: Ford's photo, else the drawn car. */
+export interface CarArtView {
   name: string;
   /** Ford's photo of the car, through Home Assistant's image proxy; null when it has none. */
   picture: string | null;
@@ -85,6 +86,9 @@ export interface CarCard {
   color: string | null;
   /** What a screen reader says of the drawn car, which stands where the photo fails to load. */
   drawing: string;
+}
+
+export interface CarCard extends CarArtView {
   /** What a screen reader says of the card, which opens the detail. */
   open: string;
   where: string;
@@ -113,7 +117,7 @@ export interface Chip {
   good: boolean;
 }
 
-export interface BatteryBlock {
+export interface BatteryBlock extends CarArtView {
   title: string;
   /** "55.0 of 88.0 kWh usable · battery at 20.0°"; empty when the car gives neither. */
   line: string;
@@ -126,6 +130,8 @@ export interface BatteryBlock {
 export interface StatusBlock {
   title: string;
   caption: string;
+  /** What a screen reader says of the car seen from above, between the tires. */
+  drawing: string;
   /** Front left, front right, rear left, rear right. */
   tires: TireView[];
   chips: Chip[];
@@ -325,6 +331,10 @@ function batteryOf(car: CarInputs, deps: CarModelDeps): BatteryBlock {
   const {battery} = car;
   const plug = car.charging ? 'car.plug.charging' : car.plugged ? 'car.plug.pluggedIn' : 'car.plug.unplugged';
   return {
+    name: car.name || t('car.title'),
+    picture: car.picture,
+    color: car.color,
+    drawing: t('car.art.side'),
     title: t('car.battery.title'),
     line: joined(
       battery.remainingKwh === null
@@ -403,6 +413,7 @@ function statusOf(car: CarInputs, deps: CarModelDeps): StatusBlock {
   return {
     title: t('car.status.title'),
     caption: t('car.status.tires'),
+    drawing: t('car.art.top'),
     tires: [
       tireOf(t('car.tire.frontLeft'), tires.frontLeft, deps),
       tireOf(t('car.tire.frontRight'), tires.frontRight, deps),

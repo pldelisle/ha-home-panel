@@ -1,7 +1,7 @@
 /*
- * <hp-car-card>'s own rules: its `:host`, the box and its title line, the photo and the drawn car, the battery bar, the tiles' three columns at every width and the bars.
- * The hero and the tiles are the kit's. Known copies of legacy rules the panel still draws, each under a Car selector: `.card`, `.card .top`, `.card .top .right`, `.lbl` and `.go` (base.css, glass.css),
- * which the Home move (#268) deletes, and `.socbar`, `.socscale` and `.carimg` (base.css, extra.css), which the legacy detail still uses and #252 deletes. The box draws on an inner element, so the guest's lens backdrop reaches it.
+ * <hp-car-card>'s own rules: its `:host`, the box and its title line, the photo and the drawn car, the tiles' three columns at every width and the bars.
+ * The hero and the tiles are the kit's, the battery bar is soc-bar.css. Known copies of legacy rules the panel still draws, each under a Car selector: `.card`, `.card .top`, `.card .top .right`, `.lbl` and `.go` (base.css, glass.css),
+ * which the Home move (#268) deletes. The box draws on an inner element, so the guest's lens backdrop reaches it.
  * The card's own rules in the legacy sheet (`.carcard`, `.spark`, `#carcard .tile .v`) left it with the card.
  */
 :host {
@@ -87,39 +87,12 @@
   height: auto;
   flex: none;
 }
-.cimg {
+.carimg {
   width: 50%;
   max-width: 240px;
   height: auto;
   object-fit: contain;
   flex: none;
-}
-.cbar {
-  position: relative;
-  height: 10px;
-  border-radius: 6px;
-  background: var(--card2);
-  margin: 12px 0 4px;
-}
-.cbar > i {
-  position: absolute;
-  inset: 0 auto 0 0;
-  border-radius: 6px;
-  background: var(--c-ev);
-}
-.cbar > b {
-  position: absolute;
-  top: -5px;
-  bottom: -5px;
-  width: 2px;
-  border-radius: 2px;
-  background: var(--fg2);
-}
-.cscale {
-  display: flex;
-  justify-content: space-between;
-  font-size: calc(11.5px * var(--tx));
-  color: var(--fg2);
 }
 /* the card's tile grid, its own name so the kit's `.tiles` is written in one file; the same specificity, adopted later, beats the kit's 520px rule */
 .ctiles {

@@ -176,23 +176,20 @@ test('a toast asked for from an element shows, and a sticky one stays until it i
   await expect(toast).toContainText('It did not work');
 });
 
-test('the shape changing from a tablet to a phone moves the open pane’s panel into its sheet, and back', async ({
+test('the shape changing from a tablet to a phone moves the Car detail from the pane into its sheet, and back', async ({
   house,
 }) => {
-  // Car's detail is a legacy panel's sheet, deleted by #253 with this test (the element version is the fixme below, until #333); Climate's, Energy's, Weather's and Air's are elements'
+  // Car's detail is an element's now (#252): inline in the pane on a tablet, in its sheet (closed, so empty) on a phone; Energy's version is the fixme below, until #333
   tabletOnly();
   await house.tab('car');
-  const inline = house.root().locator('#pane-car > .panel');
-  const sheet = house.root().locator('#sh-car');
-  await expect(inline).toBeVisible();
+  const detail = house.root().locator('#pane-car hp-car-detail');
+  await expect(detail).toBeVisible();
   await house.page.setViewportSize(VIEWPORTS.phone);
-  await expect(inline).toHaveCount(0);
-  await expect(sheet.locator('> .panel')).toHaveAttribute('aria-modal', 'true');
-  await expect(sheet).toBeHidden();
+  await expect(detail).toHaveCount(0);
+  await expect(house.root().locator('#pane-car hp-car-pane hp-sheet .sheet')).toBeHidden();
   await house.page.setViewportSize(VIEWPORTS.tablet);
-  await expect(inline).toBeVisible();
-  await expect(inline).not.toHaveAttribute('aria-modal', /.*/);
-  await expect(inline.locator('#carsub')).not.toBeEmpty();
+  await expect(detail).toBeVisible();
+  await expect(detail.locator('hp-pane-header [slot="sub"]')).not.toBeEmpty();
 });
 
 test('a phone sheet that is open when the screen becomes a tablet closes, and Escape then does nothing', async ({

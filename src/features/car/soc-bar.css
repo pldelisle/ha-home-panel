@@ -1,0 +1,28 @@
+/* The battery bar of the Car and the scale under it, adopted by `<hp-car-card>` and `<hp-car-battery>` (socBar in soc-bar.ts): a well, the fill in the charger's colour and the limit's mark. */
+.socbar {
+  position: relative;
+  height: 10px;
+  border-radius: 6px;
+  background: var(--card2);
+  margin: 12px 0 4px;
+}
+.socbar > i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 6px;
+  background: var(--c-ev);
+}
+.socbar > b {
+  position: absolute;
+  top: -5px;
+  bottom: -5px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--fg2);
+}
+.socscale {
+  display: flex;
+  justify-content: space-between;
+  font-size: calc(11.5px * var(--tx));
+  color: var(--fg2);
+}

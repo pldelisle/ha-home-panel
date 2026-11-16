@@ -1,0 +1,15 @@
+/* The Car detail's blocks (spec 21, "Styles"): what the five of them share, adopted by `<hp-car-battery>`, `<hp-car-status>`, `<hp-car-ford>`, `<hp-car-last-plug>` and `<hp-car-sessions>`
+   through `forShadow`, where `.app.cp` reads as `:host([compact])`. A block is its host (a flex box, in each element's own rules) and the inner card the kit draws in its own root (`.inner.fill`), so the
+   card stretches to the height of its row in the detail's two-column grids. A tile's figure that is a word is a size down. A selector the feature writes is written nowhere else (ADR 0019). */
+.fill {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.app.cp .inner {
+  /* the same as `.app.cp #car-controls .inner` in src/css/tabs.css, which styles the legacy cards: a known copy, since the shadow boundary keeps one sheet out of the other; #253 deletes it */
+  padding: 14px;
+  border-radius: 18px;
+}
+.tile .v .word {
+  font-size: 18px;
+}

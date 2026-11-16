@@ -1,5 +1,5 @@
-// The departure schedule's time field (Car sheet): clearing it, as the clock icon's "Clear" does on a phone, must not stop
-// the sheet from drawing (it redraws every second while the sheet is open).
+// The departure schedule's time field (the comfort card, the legacy panel's until #253): clearing it, as the clock icon's "Clear" does on a phone, must not stop
+// the card from drawing (it redraws every second while the detail is shown). Ford's malformed data must not stop the detail's blocks either.
 import {test, expect, tabletOnly} from './fixtures';
 import {FULL_CFG} from './houses';
 
@@ -19,7 +19,7 @@ test('a cleared departure time leaves the description without a time and the she
   await expect(description).toHaveText('Off · Mon at 8:30 am saved');
 });
 
-// What Ford sends can be malformed or incomplete; the sheet still draws, and says nothing where it cannot say a date
+// What Ford sends can be malformed or incomplete; the detail still draws, and says nothing where it cannot say a date
 test('a Ford message with a malformed date and a plug-in with no plug-out time still draw', async ({house}) => {
   tabletOnly();
   await house.tab('car');
@@ -36,9 +36,9 @@ test('a Ford message with a malformed date and a plug-in with no plug-out time s
     state: 'done',
     attributes: {plugDetails: {plugInTime: '2026-11-06T22:00:00Z'}, stateOfCharge: 80},
   });
-  const ford = house.root().locator('#car-ford');
+  const ford = house.root().locator('hp-car-ford');
   await expect(ford).toContainText('Service due');
   await expect(ford.locator('.arow b').nth(0)).toHaveText('Service due');
   await expect(ford.locator('.arow b').nth(1)).toHaveText('Tyre check, Nov 6');
-  await expect(house.root().locator('#car-last > p')).toHaveText('Nov 6, 5:00 pm to –');
+  await expect(house.root().locator('hp-car-last-plug p')).toHaveText('Nov 6, 5:00 pm to –');
 });

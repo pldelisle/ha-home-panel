@@ -893,6 +893,8 @@ export const fr: Record<MessageKey, string> = {
     "L'historique n'a pas pu être chargé\u00a0: {reason}. Les valeurs en direct continuent de se mettre à jour.",
   'car.open': 'Ouvrir les détails de la voiture',
   'car.art.side': 'Voiture, vue de côté',
+  'car.art.top': 'Voiture vue de haut',
+  'car.close': 'Fermer',
   // the header's Status checks (src/features/live/checks.ts)
   'live.hqStale': 'Hydro-Québec ne se met pas à jour',
   'live.hqStaleLine':

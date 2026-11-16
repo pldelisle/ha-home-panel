@@ -167,61 +167,6 @@
   flex: none;
 }
 
-/* attention */
-.att {
-  display: grid;
-  gap: 8px;
-}
-.arow {
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-  background: var(--card2);
-  border-radius: 16px;
-  padding: 12px 14px;
-}
-.arow .ic {
-  width: 30px;
-  height: 30px;
-  border-radius: 10px;
-  display: grid;
-  place-items: center;
-  flex: none;
-  font-weight: 700;
-  font-size: calc(13px * var(--tx));
-}
-.arow b {
-  display: block;
-  font-weight: 600;
-}
-.arow span {
-  font-size: calc(12.5px * var(--tx));
-  color: var(--fg2);
-}
-.clear {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 10px 0 12px;
-}
-.clear span {
-  font-size: calc(12px * var(--tx));
-  color: var(--fg2);
-  background: var(--card2);
-  border-radius: 999px;
-  padding: 5px 10px;
-}
-.clear span::before {
-  content: '';
-  display: inline-block;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--ok);
-  margin-right: 6px;
-  vertical-align: 1px;
-}
-
 /* EV / water heater: the hero is the kit's (src/ui/styles/hero.css) */
 .state {
   display: inline-flex;
@@ -265,99 +210,6 @@
 .ichip svg {
   width: 20px;
   height: 20px;
-}
-.socbar {
-  position: relative;
-  height: 10px;
-  border-radius: 6px;
-  background: var(--card2);
-  margin: 12px 0 4px;
-}
-.socbar > i {
-  position: absolute;
-  inset: 0 auto 0 0;
-  border-radius: 6px;
-  background: var(--c-ev);
-}
-.socbar > b {
-  position: absolute;
-  top: -5px;
-  bottom: -5px;
-  width: 2px;
-  border-radius: 2px;
-  background: var(--fg2);
-}
-.socscale {
-  display: flex;
-  justify-content: space-between;
-  font-size: calc(11.5px * var(--tx));
-  color: var(--fg2);
-}
-.carhero {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  flex-wrap: wrap;
-}
-.carhero .carside {
-  flex: 1 1 260px;
-  max-width: 380px;
-  height: auto;
-}
-.carhero .t {
-  font-family: var(--f-num);
-  font-weight: var(--num-w);
-  font-size: calc(64px * var(--tx));
-  line-height: 1;
-  letter-spacing: -0.03em;
-}
-.carhero .t small {
-  font-size: calc(24px * var(--tx));
-  color: var(--fg2);
-  margin-left: 2px;
-}
-.tpms {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  grid-template-rows: 1fr 1fr;
-  align-items: center;
-  gap: 8px 14px;
-  margin: 4px 0 14px;
-}
-.tpms svg {
-  grid-column: 2;
-  grid-row: 1/3;
-}
-.tpms .tp {
-  text-align: center;
-}
-.tpms .tp .k {
-  font-size: calc(12px * var(--tx));
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--fg2);
-}
-.tpms .tp .v {
-  font-family: var(--f-num);
-  font-weight: var(--num-w);
-  font-size: calc(24px * var(--tx));
-}
-.tpms .tp .v small {
-  font-size: calc(12px * var(--tx));
-  color: var(--fg2);
-  margin-left: 2px;
-}
-.tpms .tp .s {
-  font-size: calc(11.5px * var(--tx));
-  color: var(--t-ok);
-  font-weight: 600;
-}
-.sheet .clear {
-  margin: 0 0 14px;
-}
-.sheet .att {
-  margin-top: 4px;
 }
 /* Car's labels (the Wallbox limit, the charge limit, the departure times): its pane draws them until #253, which deletes this rule; Climate's controls use their own `.clbl` */
 .ctl-l {
@@ -552,38 +404,6 @@
   outline: 2px solid var(--c-home);
   outline-offset: 2px;
 }
-.slist {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: calc(13px * var(--tx));
-  margin-top: 10px;
-}
-.slist th {
-  font-size: calc(12px * var(--tx));
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--fg2);
-  text-align: left;
-  padding: 6px 8px;
-}
-.slist td {
-  padding: 9px 8px;
-  border-top: 1px solid var(--line);
-  white-space: nowrap;
-}
-.slist .r {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-.slist .bar {
-  display: inline-block;
-  height: 6px;
-  border-radius: 3px;
-  background: var(--c-ev);
-  vertical-align: middle;
-  margin-right: 8px;
-}
 .more {
   margin-top: 10px;
   border: 0;
@@ -601,13 +421,6 @@
   .ctls {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .slist .hide-s {
-    display: none;
-  }
-}
-.ic.acc {
-  background: color-mix(in srgb, var(--acc) 18%, var(--card));
-  color: var(--acc-c, var(--acc));
 }
 /* the state pill the Automations pane still draws (`.pane-auto .pill`, tabs.css); the Climate detail's own is a copy in its element (#244), and the Automations move (#273) deletes this one */
 .pill {

@@ -5,18 +5,6 @@
 .narrow .menu {
   display: grid;
 }
-.carimg {
-  width: 50%;
-  max-width: 240px;
-  height: auto;
-  object-fit: contain;
-  flex: none;
-}
-.carhero .carimg {
-  flex: 1 1 260px;
-  max-width: 380px;
-  width: auto;
-}
 .busy {
   opacity: 0.55;
   pointer-events: none;

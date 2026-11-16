@@ -166,6 +166,14 @@ for (const lang of ['en', 'fr'] as const) {
       await scanDialog(house, 'the energy detail sheet', 'hp-energy-pane hp-sheet:has(hp-energy-detail) .sheet');
     });
 
+    test('the Car detail sheet has no serious or critical finding', async ({house}) => {
+      phoneOnly(); // on a tablet the detail is the Car tab, which every shown tab covers
+      await openTab(house, 'car');
+      await house.root().locator('hp-car-card .box').click();
+      await expect(house.root().locator('hp-car-sessions .apexcharts-canvas')).toBeVisible();
+      await scanDialog(house, 'the car detail sheet', 'hp-car-pane hp-sheet .sheet');
+    });
+
     test('the Media sheet has no serious or critical finding', async ({house}) => {
       phoneOnly(); // the tiles that open it are the phone's; a tablet's Media tab is the cards, which every shown tab covers
       await openTab(house, 'media');
