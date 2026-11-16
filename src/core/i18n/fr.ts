@@ -10,6 +10,7 @@ export const fr: Record<MessageKey, string> = {
   // English on purpose: the legacy layer leaves this toast in English (no map key matches `Didn't work: <reason>`), so French
   // here is its own visible change and needs an approved baseline (ADR 0003, test/unit/i18n/moved-strings.test.ts)
   'common.failed': "Didn't work: {reason}",
+  'common.dismiss': 'Fermer',
   'charts.failed': "La bibliothèque de graphiques n'a pas chargé",
   // English on purpose, as the legacy layer leaves it; the French room name is the thermostat's own, which this is never asked for
   'room.bedroomOf': "{name}'s bedroom",

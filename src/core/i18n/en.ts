@@ -5,6 +5,8 @@
 export const en = {
   // what the kit says when a command fails (src/ui/commands.ts); the reason is Home Assistant's own words
   'common.failed': "Didn't work: {reason}",
+  // the failure toast's button (src/ui/toast.ts); a tap anywhere on the toast dismisses it too
+  'common.dismiss': 'Dismiss',
   'charts.failed': 'Charts library failed to load',
   // a room whose thermostat is "Chambre de <Name>" (the Hilo naming), read in English
   'room.bedroomOf': "{name}'s bedroom",

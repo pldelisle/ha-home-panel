@@ -41,8 +41,6 @@ export interface GuestRenderer extends GuestAnswers, LegacySheetGuest {
   hassChanged(change: HassChange): void;
   /** After the store took the new config; the guest draws again only when the store's generation advanced. */
   panelChanged(): void;
-  /** The guest still draws the toast: the shell's `toast` and the `ToastEvent` it hears forward here. Deleted with the guest (#188). */
-  toast(message: string, sticky?: boolean): void;
   /** Step C: the shell's frame shows the pane of `tab` now; the guest draws its part of it. Deleted with the last pane the guest draws. */
   tabChanged(tab: FeatureKey): void;
   /** Step C: the shell's `compact` changed and its frame already follows; the guest lays its cards out again. Deleted with the last layout the guest keeps. */
@@ -73,7 +71,6 @@ export interface GuestRenderer extends GuestAnswers, LegacySheetGuest {
 
 /** What the guest may ask of the shell, and what it may read of it. Deleted whole with the guest; `tab`, `compact`, `setTab` and `requestFrame` live as long as it does. */
 export interface ShellForGuest {
-  toast(message: string, sticky?: boolean): void;
   /** The tab shown: the one chosen, or Home when this house hides it. */
   readonly tab: FeatureKey;
   /** Under 600 px wide: the phone's shape. */

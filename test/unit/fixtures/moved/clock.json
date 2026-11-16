@@ -1,0 +1,9 @@
+{
+  "about": "The English messages the Idle clock move introduced (src/core/i18n/en.ts: common.dismiss with the toast, #275; the clock.* keys come with #276), compared as test/unit/fixtures/moved/weather.json is. #275 deleted the map's `Dismiss` entry, which only the legacy toast drew: `was` is what the layer made of it. Deleted with the layer in phase 4.",
+  "messages": [
+    {
+      "key": "common.dismiss",
+      "was": "Fermer"
+    }
+  ]
+}
