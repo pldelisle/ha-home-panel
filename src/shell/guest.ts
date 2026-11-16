@@ -8,9 +8,9 @@ import type {PanelApi} from '../core/api.ts';
 import type {PanelSettings} from '../core/settings.ts';
 import type {StatisticsCache} from '../core/statistics-cache.ts';
 import type {HassChange, PanelStore} from '../core/store.ts';
+import type {ClimateShown} from '../features/climate/events.ts';
 import type {Appearance} from '../ui/contexts.ts';
 import type {FeatureKey, GuestAnswers} from '../ui/feature.ts';
-import type {Range} from '../ui/ranges.ts';
 import type {IdleTimer} from './idle-timer.ts';
 import type {LegacySheetGuest, SheetHost} from './sheet-host.ts';
 
@@ -74,7 +74,7 @@ export interface GuestRenderer extends GuestAnswers, LegacySheetGuest {
    * Climate move 3: the Climate pane's detail is on screen (inline on a tablet, in its sheet on a phone) for this room and range, or it left (`null`). The legacy
    * panel draws the controls, the chart and the heatmap for it and keeps no selection of its own. Deleted with the legacy controls and charts (#246, #248).
    */
-  climateDetailChanged(shown: {sel: string; range: Range} | null): void;
+  climateDetailChanged(shown: ClimateShown | null): void;
 }
 
 /** What the guest may ask of the shell, and what it may read of it. Deleted whole with the guest; `tab`, `compact`, `setTab` and `requestFrame` live as long as it does. */

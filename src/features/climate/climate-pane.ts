@@ -72,6 +72,11 @@ export class ClimatePane extends LitElement {
   private figures: ClimateFigures | null = null;
   /** What the shell was last told the detail shows (`room/range`), empty for nothing: it is told again only when this changes. */
   private told = '';
+
+  /** The phone's layout, as the appearance context says; false until the context is provided. */
+  private get compact(): boolean {
+    return this.appearance.value?.compact === true;
+  }
   /** Where the pane sits while connected, for the event it sends as it leaves. */
   private parent: HTMLElement | null = null;
 
@@ -122,7 +127,7 @@ export class ClimatePane extends LitElement {
       names: store.names,
       language: store.language,
       overlay: unheld,
-      compact: this.appearance.value?.compact === true,
+      compact: this.compact,
       range: this.range,
     });
   }
@@ -130,7 +135,7 @@ export class ClimatePane extends LitElement {
   protected override render() {
     const {view} = this;
     if (!view) return nothing;
-    const compact = this.appearance.value?.compact === true;
+    const {compact} = this;
     // a sheet over another tab: the pane is behind it and draws nothing but it, so the tab stays
     if (compact && !this.active) return this.detailOpen ? this.renderSheet(view) : nothing;
     if (compact) return html`${this.renderHeader(view)}${this.renderTiles(view)}${this.renderSheet(view)}`;
@@ -228,7 +233,7 @@ export class ClimatePane extends LitElement {
   protected override updated(): void {
     const {view} = this;
     if (!view) return;
-    const compact = this.appearance.value?.compact === true;
+    const {compact} = this;
     const on = compact ? this.detailOpen : this.active;
     const key = on ? `${view.selection}/${this.range}` : '';
     if (key === this.told) return;
