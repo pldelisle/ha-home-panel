@@ -1,6 +1,6 @@
 # Live
 
-The header's live-activity pill and its Status checks ([spec 22](../../../docs/specs/22-live.md)). This is the one feature without a tab: it has no `FeatureDescriptor`, because the pill is not a pane. The shell places its elements in the header (#256), and the folder keeps the dependency rule: it reads the providers and the kit, never another feature. This first move (#254) holds the Status checks as pure rules; the activities and the model come in #255, the elements in #256, the peak chip and the deletion in #257.
+The header's live-activity pill and its Status checks ([spec 22](../../../docs/specs/22-live.md)). This is the one feature without a tab: it has no `FeatureDescriptor`, because the pill is not a pane. The shell places its elements in the header (#256), and the folder keeps the dependency rule: it reads the providers and the kit, never another feature. The first move (#254) holds the Status checks as pure rules; the second (#255) the activities, the finished state and the model, the elements in #256, the peak chip and the deletion in #257.
 
 ## The folder
 
@@ -10,7 +10,7 @@ src/providers/
   environment-canada.ts    gains warningCount(states, config): number | null
   hydro-quebec.ts          gains balancePresent, balanceUpdated and peakReporting on its inputs
   power.ts                 a room gains present (its thermostat is in the states)
-  fordpass.ts              the car gains lockState, tiresLow and socReporting
+  fordpass.ts              the car gains lockState, tiresLow, socReporting, chargeEstimates and plugChangedAt
   wallbox.ts               gains statusPresent
 src/core/i18n/
   format.ts                gains durationShort(ms): `52 min`, `1 h 50`, `3 h`
@@ -19,7 +19,15 @@ src/features/live/
   inputs.ts                readLive(states, registries, config, names, now): LiveInputs, the providers composed
   checks.ts                the fourteen checks, CHECKS (the chain) and runChecks(inputs, deps)
   ids.ts                   liveIds(store): every id readLive reads
+  activities.ts            hiloActivity, carActivity, waterActivity: each running activity's pill text, ring and card
+  done.ts                  nextDone(previous, activities, inputs): the ten-minute "finished" state, LiveState
+  model.ts                 liveModel(inputs, history, state, deps): the pill, the popup and the state to keep
+  loader.ts                LiveHistory: the water heater's 25 hours and the charging sessions, through the cache
 ```
+
+## The activities and the model
+
+An activity is one thing running now: a Hilo challenge, the car charging (or paused) and the water heater heating. Each has a pill text (`{label, value, extra}`: the long one on a tablet, the short one on a phone), a ring (an icon, a color and a progress) and a card for the popup. `sortActivities` keeps the legacy order. `nextDone` follows the legacy `laSeen` and `laDone`: when an activity seen last time ends (the car reached its limit, a challenge's recovery passed), a "finished" state lasts ten minutes (`DONE_MS`). `liveModel` is a Presentation Model (Fowler): pure, it takes the inputs, the history, the kept state and the formats, and returns the pill (`attention`, `activity` or `done`, or null when there is nothing), the popup (the activity cards and the Status block) and the next state, which the element keeps. The water heater's history and the charging sessions come from `LiveHistory`, which asks the very windows Energy's water card and Car's history ask, so the panel-wide cache answers it from what they loaded.
 
 ## The Status checks
 

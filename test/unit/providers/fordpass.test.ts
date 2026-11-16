@@ -165,6 +165,23 @@ describe('the charge and the plug', () => {
     expect(read([sensor('lastrefresh', 'unavailable')]).lastRefresh).toBeNull();
     expect(read().lastRefresh).toBeNull();
   });
+  test("Ford's estimates of the end: a date in an end-naming attribute, else minutes under 3,000 in a remaining one; the plug's change time", () => {
+    const estimates = (attributes: Record<string, unknown>) =>
+      read([sensor('elvehcharging', 'CHARGING', attributes)]).chargeEstimates;
+    expect(
+      estimates({
+        estimatedEndTime: '2026-11-07T16:00:00Z',
+        timeToFullCharge: 110,
+        remainingMinutes: '3000',
+        fullAt: 'soon',
+        chargingkW: 7.2,
+      }),
+    ).toEqual([{at: Date.parse('2026-11-07T16:00:00Z')}, {minutes: 110}]);
+    expect(estimates({completeAt: 45})).toEqual([]);
+    expect(read([]).chargeEstimates).toEqual([]);
+    const plug = {...sensor('elvehplug', 'CONNECTED'), last_changed: '2026-11-07T12:30:00Z'};
+    expect([read([plug]).plugChangedAt, read([]).plugChangedAt]).toEqual([Date.parse('2026-11-07T12:30:00Z'), null]);
+  });
 });
 
 describe('the name and the picture', () => {
