@@ -1,0 +1,49 @@
+/*
+ * <hp-switch-row>'s own rules: the tile, its two lines and the press feedback, and the tile's glass look. Moved from the legacy `.tgl` rules (base.css, glass.css, motion.css), which the Car's move (#253) deleted;
+ * the switch is the kit's `<hp-switch>`. The owner puts the row's distance from what is above it on the tag.
+ */
+:host {
+  display: block;
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--card2);
+  border-radius: 16px;
+  padding: 12px 14px;
+}
+.tx {
+  flex: 1;
+  min-width: 0;
+}
+b {
+  display: block;
+  font-weight: 600;
+  font-size: calc(14px * var(--tx));
+}
+span {
+  font-size: calc(12px * var(--tx));
+  color: var(--fg2);
+}
+:host([glass]) .row {
+  background: var(--g-tile);
+  box-shadow: var(--g-edge-s);
+}
+@media (prefers-reduced-transparency: reduce) {
+  :host([glass]) .row {
+    background: var(--card2);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .row {
+    transition:
+      transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+      background-color 0.2s ease,
+      box-shadow 0.2s ease,
+      color 0.2s ease;
+  }
+}
+.row:active {
+  transform: scale(0.96);
+}

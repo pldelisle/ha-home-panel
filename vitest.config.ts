@@ -18,6 +18,7 @@ export default defineConfig({
         'src/core/**/*.ts',
         'src/providers/**/*.ts',
         'src/features/*/{ids,inputs,model,speakers,tiles,history,scenes,commands,flow-layout,water-chart,charts,sankey-layout,schedule,bars-geometry,checks,order,state,al-strip-layout,traces,sentences,timeline-layout}.ts', // the pure files; the elements are proven by the harness
+        'src/features/car/controls.ts', // the controls' view: strings and flags from the inputs, the held values and the draft; the two cards that call it are proven by the harness
         'src/features/car/loader.ts', // a controller over the statistics cache, tested with a fake cache, store and host; the pane that mounts it is proven by the harness
         'src/features/climate/sender.ts', // a controller over the overlay and the runner, tested with fakes and a fake clock; its two elements are proven by the harness
         'src/ui/{ranges,seg-keys,steps,thin-axis,toast-schedule}.ts', // the kit's pure files; its elements are proven by the harness
@@ -49,6 +50,7 @@ export default defineConfig({
           {
             statements: 100,
           },
+        'src/features/car/controls.ts': {statements: 100},
         'src/features/car/loader.ts': {statements: 100},
         'src/features/climate/sender.ts': {statements: 100},
         'src/ui/ranges.ts': {statements: 100},

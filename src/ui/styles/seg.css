@@ -1,5 +1,5 @@
 /* The segmented control: a row or a grid of radio buttons, one chosen. `<hp-seg>` adopts it in its own root (Air's two groups and the Climate controls) and the
-   settings popup draws its two in its own; the Car pane draws the rest in the guest (until #253), so the legacy sheet joins this file where the control's rules were. */
+   settings popup draws its two in its own; the Car's two cards use it through `<hp-seg>`; no legacy markup draws it since #253, but the legacy sheet still joins every kit file (ADR 0019), where the control's rules were, until phase 4. */
 .seg {
   display: grid;
   grid-auto-flow: column;

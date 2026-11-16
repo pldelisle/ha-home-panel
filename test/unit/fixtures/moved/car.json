@@ -1,17 +1,23 @@
 {
-  "about": "The English messages the Car's moves introduced (src/core/i18n/en.ts, car.*), each with sample values: the pure half's (#249) and the model's (#250). test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer makes of the English, or what is `written` where the layer is no oracle (a day's abbreviation is `Lun.` alone and `lun.` in a list: the catalog says the list's), or what is `translated` where the layer leaves the English as it stood or gets it wrong: the sentences it read as a whole (the bars' label, a count of one, the tooltip, the failed history), the words it has no entry for (an alarm or a gear state, the saved schedule, a dated message, the two dashes of a plug-in, the \"Last plug-in\" block with no plug-in yet) and a tire's `low`, which it made `min` and the catalog says `Faible`. A `translated` row is a visible change that #251 and #252 record in their baselines. A `frame` is the sentence around a piece the layer only knows whole. The legacy panel still draws the controls' words until #253 and all of these until #252, so no entry of the rewrite layer is deleted yet. Deleted with the layer in phase 4.",
+  "about": "The English messages the Car's moves introduced (src/core/i18n/en.ts, car.*), each with sample values: the pure half's (#249) and the model's (#250). test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer makes of the English, or what is `written` where the layer is no oracle (a day's abbreviation is `Lun.` alone and `lun.` in a list: the catalog says the list's), or what is `translated` where the layer leaves the English as it stood or gets it wrong: the sentences it read as a whole (the bars' label, a count of one, the tooltip, the failed history), the words it has no entry for (an alarm or a gear state, the saved schedule, a dated message, the two dashes of a plug-in, the \"Last plug-in\" block with no plug-in yet) and a tire's `low`, which it made `min` and the catalog says `Faible`. A `translated` row is a visible change that #251 and #252 record in their baselines. A `frame` is the sentence around a piece the layer only knows whole. The controls' words (#253) are the last of them: their map entries are deleted with the legacy cards, so those rows are `was` (the French the layer made of them), and a row the layer could not translate is `translated` (the saved schedule's toast, the cleared time's, the current limit's hint with its present value, a door that is open, the cabin setting, a status word). A day's initial is `written`: the legacy panel wrote `LMMJVSD` itself. Deleted with the layer in phase 4.",
   "messages": [
     {
-      "key": "car.chargingOn"
+      "key": "car.chargingOn",
+      "was": "Recharge activée",
+      "after": "Recharge : activé"
     },
     {
-      "key": "car.chargingOff"
+      "key": "car.chargingOff",
+      "was": "Recharge en pause",
+      "after": "Recharge : désactivé"
     },
     {
-      "key": "car.pickTemperature"
+      "key": "car.pickTemperature",
+      "was": "Choisissez d'abord une température d'habitacle"
     },
     {
-      "key": "car.pickDay"
+      "key": "car.pickDay",
+      "was": "Choisissez au moins un jour"
     },
     {
       "key": "car.everyDay"
@@ -694,6 +700,434 @@
     },
     {
       "key": "car.close"
+    },
+    {
+      "key": "car.charger.title",
+      "was": "Borne à la maison"
+    },
+    {
+      "key": "car.charger.line",
+      "values": {
+        "status": "charging",
+        "plugged": "yes"
+      },
+      "fr": {
+        "status": "en recharge"
+      }
+    },
+    {
+      "key": "car.charger.line",
+      "values": {
+        "status": "ready",
+        "plugged": "no"
+      },
+      "fr": {
+        "status": "prête"
+      },
+      "was": "Wallbox Pulsar Plus · prête, voiture non branchée",
+      "after": "Wallbox Pulsar Plus · ready, car non branchée"
+    },
+    {
+      "key": "car.charger.status",
+      "values": {
+        "id": "charging",
+        "raw": ""
+      },
+      "fr": {},
+      "written": "en recharge"
+    },
+    {
+      "key": "car.charger.status",
+      "values": {
+        "id": "ready",
+        "raw": ""
+      },
+      "translated": "prête"
+    },
+    {
+      "key": "car.charger.status",
+      "values": {
+        "id": "unavailable",
+        "raw": ""
+      },
+      "translated": "indisponible"
+    },
+    {
+      "key": "car.charger.status",
+      "values": {
+        "id": "pausedByUser",
+        "raw": ""
+      },
+      "translated": "en pause par l'utilisateur"
+    },
+    {
+      "key": "car.charger.status",
+      "values": {
+        "id": "other",
+        "raw": "standby"
+      }
+    },
+    {
+      "key": "car.charger.power",
+      "was": "Limite de puissance"
+    },
+    {
+      "key": "car.charger.currentLabel",
+      "was": "Limite du courant de recharge"
+    },
+    {
+      "key": "car.charger.amps",
+      "values": {
+        "n": 32
+      }
+    },
+    {
+      "key": "car.charger.kw",
+      "values": {
+        "n": "7.7"
+      }
+    },
+    {
+      "key": "car.charger.ampsHint",
+      "was": "Règle le courant maximal de la Wallbox. Les kW supposent 240 V."
+    },
+    {
+      "key": "car.charger.ampsHintNow",
+      "values": {
+        "n": 20
+      },
+      "translated": "Règle le courant maximal de la Wallbox (actuellement 20 A). Les kW supposent 240 V."
+    },
+    {
+      "key": "car.charger.limit"
+    },
+    {
+      "key": "car.charger.limitLabel",
+      "was": "Limite de charge, lecture seule"
+    },
+    {
+      "key": "car.charger.full"
+    },
+    {
+      "key": "car.charger.limitHint",
+      "was": "Se règle dans l'application FordPass. Home Assistant peut la lire mais ne peut pas la changer."
+    },
+    {
+      "key": "car.charger.charging"
+    },
+    {
+      "key": "car.charger.onLine",
+      "was": "En marche. Désactiver pour mettre en pause"
+    },
+    {
+      "key": "car.charger.pausedLine",
+      "was": "En pause. Activer pour reprendre"
+    },
+    {
+      "key": "car.charger.unavailableLine",
+      "was": "Disponible quand la voiture est branchée"
+    },
+    {
+      "key": "car.charger.lock",
+      "was": "Verrouiller la borne"
+    },
+    {
+      "key": "car.charger.locked",
+      "was": "Verrouillée, demande l'application ou la carte RFID"
+    },
+    {
+      "key": "car.charger.unlocked",
+      "was": "Déverrouillée, n'importe qui peut se brancher"
+    },
+    {
+      "key": "car.comfort.title",
+      "was": "Confort et accès"
+    },
+    {
+      "key": "car.comfort.line",
+      "was": "Le démarrage à distance réchauffe ou refroidit l'habitacle pendant environ 15 minutes"
+    },
+    {
+      "key": "car.comfort.remoteStart",
+      "was": "Démarrage à distance"
+    },
+    {
+      "key": "car.comfort.tapToStart",
+      "was": "Toucher de nouveau pour démarrer"
+    },
+    {
+      "key": "car.comfort.running"
+    },
+    {
+      "key": "car.comfort.cabin",
+      "values": {
+        "state": "HI"
+      },
+      "translated": "habitacle HI"
+    },
+    {
+      "key": "car.comfort.withRemote",
+      "values": {
+        "on": "true"
+      },
+      "was": "Au démarrage à distance : activé",
+      "after": "With remote start: : activé"
+    },
+    {
+      "key": "car.comfort.withRemote",
+      "values": {
+        "on": "false"
+      },
+      "was": "Au démarrage à distance : désactivé",
+      "after": "With remote start: : désactivé"
+    },
+    {
+      "key": "car.heater.windshield",
+      "was": "Pare-brise chauffant"
+    },
+    {
+      "key": "car.heater.rear",
+      "was": "Dégivrage arrière"
+    },
+    {
+      "key": "car.heater.wheel",
+      "was": "Volant chauffant"
+    },
+    {
+      "key": "car.comfort.seatHeat",
+      "values": {
+        "level": 2
+      },
+      "was": "Sièges avant chauffés au niveau 2 au démarrage à distance."
+    },
+    {
+      "key": "car.comfort.seatCool",
+      "values": {
+        "level": 1
+      },
+      "was": "Sièges avant ventilés au niveau 1 au démarrage à distance."
+    },
+    {
+      "key": "car.comfort.lockUnknown",
+      "was": "État du verrouillage inconnu"
+    },
+    {
+      "key": "car.comfort.open",
+      "values": {
+        "doors": "driverFront, hood"
+      },
+      "translated": "Ouvert : driverFront, hood"
+    },
+    {
+      "key": "car.comfort.allClosed",
+      "was": "Portes, capot et hayon fermés",
+      "after": "All doors, hood and tailgate fermée"
+    },
+    {
+      "key": "car.comfort.allClosedWindows",
+      "was": "Portes, fenêtres, capot et hayon fermés",
+      "after": "All doors, windows, hood and tailgate fermée"
+    },
+    {
+      "key": "car.comfort.honk",
+      "was": "Klaxon et phares"
+    },
+    {
+      "key": "car.comfort.lock"
+    },
+    {
+      "key": "car.comfort.unlock"
+    },
+    {
+      "key": "car.comfort.tapToUnlock",
+      "was": "Toucher de nouveau pour déverrouiller"
+    },
+    {
+      "key": "car.comfort.departure"
+    },
+    {
+      "key": "car.comfort.precondition",
+      "was": "Préconditionner pour le départ"
+    },
+    {
+      "key": "car.comfort.days",
+      "was": "Jours de départ"
+    },
+    {
+      "key": "car.comfort.dayName",
+      "values": {
+        "day": "monday"
+      }
+    },
+    {
+      "key": "car.comfort.dayName",
+      "values": {
+        "day": "sunday"
+      }
+    },
+    {
+      "key": "car.comfort.dayName",
+      "values": {
+        "day": "someday"
+      }
+    },
+    {
+      "key": "car.comfort.dayInitial",
+      "values": {
+        "day": "monday"
+      },
+      "written": "L"
+    },
+    {
+      "key": "car.comfort.dayInitial",
+      "values": {
+        "day": "tuesday"
+      },
+      "written": "M"
+    },
+    {
+      "key": "car.comfort.dayInitial",
+      "values": {
+        "day": "wednesday"
+      },
+      "written": "M"
+    },
+    {
+      "key": "car.comfort.dayInitial",
+      "values": {
+        "day": "thursday"
+      },
+      "written": "J"
+    },
+    {
+      "key": "car.comfort.dayInitial",
+      "values": {
+        "day": "friday"
+      },
+      "written": "V"
+    },
+    {
+      "key": "car.comfort.dayInitial",
+      "values": {
+        "day": "saturday"
+      },
+      "written": "S"
+    },
+    {
+      "key": "car.comfort.dayInitial",
+      "values": {
+        "day": "sunday"
+      },
+      "written": "D"
+    },
+    {
+      "key": "car.comfort.dayInitial",
+      "values": {
+        "day": "someday"
+      },
+      "written": "someday"
+    },
+    {
+      "key": "car.comfort.time",
+      "was": "Heure de départ"
+    },
+    {
+      "key": "car.comfort.cabinLabel",
+      "was": "Température de l'habitacle au départ"
+    },
+    {
+      "key": "car.comfort.cool"
+    },
+    {
+      "key": "car.comfort.medium"
+    },
+    {
+      "key": "car.comfort.warm"
+    },
+    {
+      "key": "car.comfort.departureHint",
+      "was": "Quand la voiture est branchée, elle réchauffe l'habitacle et la batterie pour être prête à cette heure. Ford ne transmet pas le réglage d'habitacle d'un horaire enregistré, choisissez-en un avant d'enregistrer."
+    },
+    {
+      "key": "car.comfort.save",
+      "was": "Enregistrer l'horaire"
+    },
+    {
+      "key": "car.pickTime",
+      "translated": "Choisissez d'abord une heure de départ"
+    },
+    {
+      "key": "car.ampsSet",
+      "values": {
+        "n": 32
+      },
+      "was": "Limite de la Wallbox réglée à 32 A"
+    },
+    {
+      "key": "car.chargerLocked",
+      "was": "Borne verrouillée"
+    },
+    {
+      "key": "car.chargerUnlocked",
+      "was": "Borne déverrouillée"
+    },
+    {
+      "key": "car.remoteStartSent",
+      "was": "Démarrage à distance envoyé à la voiture"
+    },
+    {
+      "key": "car.remoteStartStopped",
+      "was": "Démarrage à distance arrêté"
+    },
+    {
+      "key": "car.heaterOn",
+      "values": {
+        "name": "Heated wheel"
+      },
+      "fr": {
+        "name": "Volant chauffant"
+      },
+      "was": "Volant chauffant : activé",
+      "after": "Heated wheel : activé"
+    },
+    {
+      "key": "car.heaterOff",
+      "values": {
+        "name": "Rear defrost"
+      },
+      "fr": {
+        "name": "Dégivrage arrière"
+      },
+      "was": "Dégivrage arrière : désactivé",
+      "after": "Rear defrost : désactivé"
+    },
+    {
+      "key": "car.honkSent",
+      "was": "Klaxon et phares envoyés"
+    },
+    {
+      "key": "car.lockSent",
+      "was": "Verrouillage envoyé à la voiture"
+    },
+    {
+      "key": "car.unlockSent",
+      "was": "Déverrouillage envoyé à la voiture"
+    },
+    {
+      "key": "car.departureSwitchedOn"
+    },
+    {
+      "key": "car.departureSwitchedOff"
+    },
+    {
+      "key": "car.scheduleSaved",
+      "values": {
+        "when": "weekdays at 8:30 am"
+      },
+      "fr": {
+        "when": "en semaine à 8 h 30"
+      },
+      "translated": "Horaire de départ enregistré : en semaine à 8 h 30"
     }
   ]
 }

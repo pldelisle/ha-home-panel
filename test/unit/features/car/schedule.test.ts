@@ -5,9 +5,11 @@ import {
   describe as describeDraft,
   draftFromSchedule,
   roundToFive,
+  scheduleKey,
   scheduleWords,
   toggleDay,
   validate,
+  withFiveMinutes,
   type ScheduleDraft,
 } from '../../../../src/features/car/schedule.ts';
 import {depsOf, fullHouse} from '../media/support.ts';
@@ -72,11 +74,40 @@ describe('roundToFive', () => {
 });
 
 describe('validate', () => {
-  test('asks for a cabin setting first, then a day, then lets it go', () => {
+  test('asks for a cabin setting first, then a day, then a time, then lets it go', () => {
     expect(validate(draft([], '08:00', null))).toBe('car.pickTemperature');
     expect(validate(draft(['monday'], '08:00', null))).toBe('car.pickTemperature');
     expect(validate(draft([], '08:00', 'off'))).toBe('car.pickDay');
     expect(validate(draft(['monday'], '08:00', 'off'))).toBeNull();
+    expect(validate(draft([], '', 'off'))).toBe('car.pickDay');
+  });
+
+  test('refuses a cleared time field: the legacy panel sent `NaN` for it', () => {
+    expect(validate(draft(['monday'], '', 'off'))).toBe('car.pickTime');
+    expect(validate(draft(['monday'], 'not a time', 'off'))).toBe('car.pickTime');
+  });
+});
+
+describe('withFiveMinutes', () => {
+  test('puts the time in five-minute steps, which is what a save sends and the field then shows', () => {
+    expect(withFiveMinutes(draft(['monday'], '08:03', 'off'))).toEqual(draft(['monday'], '08:05', 'off'));
+    expect(withFiveMinutes(draft(['monday'], '23:58', 'off')).time).toBe('00:00');
+  });
+
+  test('leaves a draft with no time as it is, and hands back the draft it was given', () => {
+    const cleared = draft(['monday'], '', 'off');
+    expect(withFiveMinutes(cleared)).toBe(cleared);
+  });
+});
+
+describe('scheduleKey', () => {
+  test('is one value for a saved schedule, the same for the same days and time, and none for no schedule', () => {
+    const saved = {days: ['monday', 'friday'], hours: 8, minutes: 30};
+    expect(scheduleKey(saved)).toBe(scheduleKey({...saved, days: [...saved.days]}));
+    expect(scheduleKey(saved)).not.toBe(scheduleKey({...saved, minutes: 35}));
+    expect(scheduleKey(saved)).not.toBe(scheduleKey({...saved, days: ['monday']}));
+    expect(scheduleKey(null)).toBe('');
+    expect(scheduleKey(null)).not.toBe(scheduleKey(saved));
   });
 });
 

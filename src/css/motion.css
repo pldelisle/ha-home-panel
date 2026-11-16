@@ -9,12 +9,8 @@
   .ausel .close,
   .lchip,
   .lauto,
-  .days button,
   .go,
   button.chip,
-  .dtime,
-  .cbtn,
-  .tgl,
   .more,
   .htile {
     transition:
@@ -31,12 +27,8 @@
 .ausel .close:active,
 .lchip:active,
 .lauto:active,
-.days button:active,
 .go:active,
 button.chip:active,
-.dtime:active,
-.cbtn:active,
-.tgl:active,
 .more:active {
   transform: scale(0.96);
 }
