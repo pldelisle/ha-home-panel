@@ -1,14 +1,15 @@
 // The Wallbox charger: its power and status for the energy card, its controls' inputs for the Car, and the charging sessions its hourly power makes.
 // Pattern: an adapter below the features (ADR 0025), found by the config's keys (convention over configuration), not the registry; the reads are those of the legacy flow,
 // `attention()` and `renderCarControls` (deleted in #241 and #253); `chargingSessions` is the legacy `derive`'s rule (deleted in #251), here and not in the Car so the live pill can ask it too (spec 22).
-// A command is `Command`'s data, a plain object the kit's runner sends, built here so the pill's "Pause charging" and the Car's switch are one.
+// The pause command is `Command` data (core), which the kit's runner will send; the pill's "Pause charging" (#255) and the Car's switch (#253) will both use it, so it is built once, here.
 // Must not: word the status, send a command, import the kit, or read the registry or the clock.
+import type {Command} from '../core/commands.ts';
 import type {ResolvedConfig} from '../core/config.ts';
 import {HOUR_MS} from '../core/figures.ts';
 import type {StatisticRow} from '../core/ha.ts';
 import type {HassEntities} from '../core/hass.ts';
-import type {MessageKey} from '../core/i18n/en.ts';
-import {hasState, isAvailable, kilowattsOf, numberAttributeOf, numberOf, textOf} from '../core/states.ts';
+import {overlayKey} from '../core/overlay-key.ts';
+import {hasState, isAvailable, kilowattsOf, numberAttributeOf, numberOf, switchOf, textOf} from '../core/states.ts';
 
 /** The range a charger that does not say its own current range is offered: the legacy panel's 6 to 48 amps. */
 const DEFAULT_MIN_AMPS = 6;
@@ -39,14 +40,8 @@ export interface WallboxInputs {
   price: number | null;
 }
 
-const switchOf = (states: HassEntities, id: string | null): WallboxSwitch => {
-  const state = id ? states[id] : undefined;
-  return {
-    id,
-    on: isAvailable(state) && (state.state === 'on' || state.state === 'locked'),
-    available: isAvailable(state),
-  };
-};
+/** A switch or a lock with the entity it is read from. */
+const switchWithId = (states: HassEntities, id: string | null): WallboxSwitch => ({id, ...switchOf(states, id)});
 
 export function wallbox(states: HassEntities, config: ResolvedConfig): WallboxInputs {
   const {evP, wbStatus, wbAmps, wbPause, wbLock, wbPrice} = config.entities;
@@ -62,16 +57,16 @@ export function wallbox(states: HassEntities, config: ResolvedConfig): WallboxIn
       max: numberAttributeOf(states, wbAmps, 'max') || DEFAULT_MAX_AMPS,
       available: isAvailable(wbAmps ? states[wbAmps] : undefined),
     },
-    pause: switchOf(states, wbPause),
-    lock: switchOf(states, wbLock),
+    pause: switchWithId(states, wbPause),
+    lock: switchWithId(states, wbLock),
     price: numberOf(states, wbPrice),
   };
 }
 
 /** One charging session: when it began and ended (ms), the energy it delivered (kWh) and its peak power (kW). */
 export interface Session {
-  a: number;
-  b: number;
+  start: number;
+  end: number;
   kwh: number;
   peak: number;
 }
@@ -89,7 +84,7 @@ const MIN_SESSION_KWH = 1;
  * Read by the Car's history (#250) and, for the current session, by the live pill (#255).
  */
 export function chargingSessions(rows: readonly StatisticRow[]): Session[] {
-  const runs: {a: number; last: number; kwh: number; peak: number}[] = [];
+  const runs: {start: number; last: number; kwh: number; peak: number}[] = [];
   let current: (typeof runs)[number] | null = null;
   for (const row of rows) {
     const mean = row.mean || 0;
@@ -99,36 +94,27 @@ export function chargingSessions(rows: readonly StatisticRow[]): Session[] {
       current.kwh += mean;
       current.peak = Math.max(current.peak, row.max || 0);
     } else {
-      current = {a: row.start, last: row.start, kwh: mean, peak: row.max || 0};
+      current = {start: row.start, last: row.start, kwh: mean, peak: row.max || 0};
       runs.push(current);
     }
   }
   return runs
-    .map(({a, last, kwh, peak}) => ({a, b: last + HOUR_MS, kwh, peak}))
+    .map(({start, last, kwh, peak}) => ({start, end: last + HOUR_MS, kwh, peak}))
     .filter(session => session.kwh >= MIN_SESSION_KWH);
 }
 
-/** The overlay key `wallboxCommands.pause` holds: the switch's id and `pause`, which is what the kit's `overlayKey('pause')` makes. */
-export const pauseHold = (id: string): string => `${id}:pause`;
+/** The overlay key of the charging switch's held value: `wallboxCommands.pause` holds it and the Car's switch reads it (#253). */
+export const pauseHold = overlayKey('pause');
 
 /** What the commands name of the charging switch: its entity id. */
 export interface PauseTarget {
   id: string;
 }
 
-/** A command as the kit's runner takes it, written here as data because a provider cannot import the kit (a test pins the two shapes together). */
-export interface WallboxCommand {
-  domain: string;
-  service: string;
-  data: Record<string, unknown>;
-  done: {key: MessageKey};
-  holds: readonly string[];
-}
-
-/** The Wallbox's commands as data: run by the Car's charger controls (#253) and by the live pill's "Pause charging" (#255). */
+/** The Wallbox's commands as data: to be run by the Car's charger controls (#253) and by the live pill's "Pause charging" (#255). */
 export const wallboxCommands = {
   /** Turns the charging switch `on` (resumes) or off (pauses), shown at once; the toast says charging on or off. */
-  pause: (target: PauseTarget, on: boolean): WallboxCommand => ({
+  pause: (target: PauseTarget, on: boolean): Command => ({
     domain: 'switch',
     service: on ? 'turn_on' : 'turn_off',
     data: {entity_id: target.id},

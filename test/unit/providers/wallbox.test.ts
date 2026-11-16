@@ -3,8 +3,7 @@
 // literals; literal houses give the rules it does not exercise; the recorded house is read when the owner has one (#170).
 import {describe, expect, test} from 'vitest';
 import type {StatisticRow} from '../../../src/core/ha.ts';
-import type {Command} from '../../../src/ui/commands.ts';
-import {overlayKey} from '../../../src/ui/overlay-store.ts';
+import {overlayKey} from '../../../src/core/overlay-key.ts';
 import {FULL_CFG} from '../../e2e/houses.ts';
 import {entity, fakeHass} from '../fake-hass.ts';
 import {fullHouse, houseOf, recorded, storeOf} from '../features/media/support.ts';
@@ -148,7 +147,7 @@ describe('chargingSessions', () => {
 
   test('a run of hours above 0.3 kW is one session: its energy is the means summed, its peak the highest max, its end an hour after its last hour', () => {
     expect(chargingSessions(rows([1, 0.1], [2, 7, 7.2], [3, 7.1, 7.4], [4, 3.5, 7], [5, 0.2]))).toEqual([
-      {a: T0 + 2 * HOUR, b: T0 + 5 * HOUR, kwh: 17.6, peak: 7.4},
+      {start: T0 + 2 * HOUR, end: T0 + 5 * HOUR, kwh: 17.6, peak: 7.4},
     ]);
   });
 
@@ -157,25 +156,25 @@ describe('chargingSessions', () => {
   });
 
   test('a gap of up to three hours joins two runs; the energy is only the hours above 0.3 kW', () => {
-    expect(chargingSessions(rows([0, 5, 5], [3, 5, 6]))).toEqual([{a: T0, b: T0 + 4 * HOUR, kwh: 10, peak: 6}]);
+    expect(chargingSessions(rows([0, 5, 5], [3, 5, 6]))).toEqual([{start: T0, end: T0 + 4 * HOUR, kwh: 10, peak: 6}]);
   });
 
   test('a gap of over three hours splits them', () => {
     expect(chargingSessions(rows([0, 5, 5], [4, 5, 6]))).toEqual([
-      {a: T0, b: T0 + HOUR, kwh: 5, peak: 5},
-      {a: T0 + 4 * HOUR, b: T0 + 5 * HOUR, kwh: 5, peak: 6},
+      {start: T0, end: T0 + HOUR, kwh: 5, peak: 5},
+      {start: T0 + 4 * HOUR, end: T0 + 5 * HOUR, kwh: 5, peak: 6},
     ]);
   });
 
   test('a session under 1 kWh is dropped, one of exactly 1 kWh is kept', () => {
     expect(chargingSessions(rows([0, 0.9, 1], [10, 1, 1.1]))).toEqual([
-      {a: T0 + 10 * HOUR, b: T0 + 11 * HOUR, kwh: 1, peak: 1.1},
+      {start: T0 + 10 * HOUR, end: T0 + 11 * HOUR, kwh: 1, peak: 1.1},
     ]);
   });
 
   test('a row with no mean or no max counts as zero: it is no hour of charging, or a peak of zero', () => {
     expect(chargingSessions(rows([0, null], [1, 2, undefined], [2, 2]))).toEqual([
-      {a: T0 + HOUR, b: T0 + 3 * HOUR, kwh: 4, peak: 0},
+      {start: T0 + HOUR, end: T0 + 3 * HOUR, kwh: 4, peak: 0},
     ]);
     expect(chargingSessions([])).toEqual([]);
   });
@@ -199,9 +198,10 @@ describe('wallboxCommands.pause', () => {
     });
   });
 
-  test("is a command the kit's runner takes, and its hold is the key the kit's overlayKey makes", () => {
-    const command: Command = wallboxCommands.pause({id: 'switch.charger_pause'}, true);
-    expect(command.holds).toEqual([overlayKey('pause')('switch.charger_pause')]);
-    expect(pauseHold('switch.charger_pause')).toBe(overlayKey('pause')('switch.charger_pause'));
+  test('holds the switch under the key overlayKey makes for `pause`, which the Car reads it by', () => {
+    expect(wallboxCommands.pause({id: 'switch.charger_pause'}, true).holds).toEqual([
+      overlayKey('pause')('switch.charger_pause'),
+    ]);
+    expect(pauseHold('switch.charger_pause')).toBe('switch.charger_pause:pause');
   });
 });

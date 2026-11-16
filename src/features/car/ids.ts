@@ -1,4 +1,4 @@
-// carIds: the entity ids the Car pane reads, so the store tells it only when one changes.
+// carIds: the entity ids the Car pane (#251) will read, so the store tells it only when one changes.
 // Pattern: the union of what `readCarFeature` reads (every FordPass entity the provider reads, and the Wallbox's six: its power, status, current limit, charging switch, lock and price) with no id twice,
 // after the store's per-element subscription (ADR 0012); the car's ids come from its prefix and the Wallbox's from the config, so the list never walks the states: the store ticks on every change and the list must stay cheap.
 // Must not: read a state's value or the clock, import a feature or the shell, or name an entity id (the provider and the house do).

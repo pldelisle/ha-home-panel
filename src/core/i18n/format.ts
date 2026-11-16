@@ -115,7 +115,7 @@ export function createFormatters(locale: PanelLocaleSpec): Formatters {
   const hour = dateFormat({hour: 'numeric', hour12});
   // a time of day is placed on a fixed day in UTC and read back by a UTC-pinned format, so neither the browser's zone nor the house's moves it
   const clockFormat = new Intl.DateTimeFormat(tag, {timeZone: 'UTC', hour: 'numeric', minute: '2-digit', hour12});
-  const clock = partsOf({hour: '2-digit', minute: '2-digit', hourCycle: 'h23'});
+  const clockParts = partsOf({hour: '2-digit', minute: '2-digit', hourCycle: 'h23'});
   const clockS = partsOf({hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23'});
   const date = dateFormat({month: 'short', day: 'numeric'});
   const dateWeekday = dateFormat({weekday: 'short', month: 'short', day: 'numeric'});
@@ -146,7 +146,7 @@ export function createFormatters(locale: PanelLocaleSpec): Formatters {
     clock: (hours, minutes) => timeRule(clockFormat.format(Date.UTC(2026, 0, 1, hours, minutes))),
     hour: d => hourRule(hour.format(d)),
     time24: d => {
-      const part = clock(d);
+      const part = clockParts(d);
       return `${part('hour')}:${part('minute')}`;
     },
     time24s: d => {
@@ -170,7 +170,7 @@ export function createFormatters(locale: PanelLocaleSpec): Formatters {
       return parts;
     },
     hourNow: now => {
-      const part = clock(now);
+      const part = clockParts(now);
       return Number(part('hour')) + Number(part('minute')) / 60;
     },
     // Math.round first: Intl rounds a half away from zero, the former `Math.round(v).toLocaleString` does not

@@ -2,10 +2,19 @@
 // Pattern: an adapter below the features (ADR 0025), by convention over configuration: the car is `sensor.fordpass_<name>_soc` and every other entity is `<domain>.fordpass_<name>_<key>`;
 // the rules are those of the legacy `findCar`, `carName` and `carState` (deleted in #251), `renderCarSheetLive` and `plugStamp` (#252) and `schedText` (#253), with Ford's malformed dates guarded where the legacy `asDate` guarded them.
 // Must not: word anything a person reads (the name Ford does not give is `''`, and the model words "Car"), read the clock, the registry or the DOM, or send a command.
-import type {ResolvedConfig} from '../core/config.ts';
+import {isRecord, type ResolvedConfig} from '../core/config.ts';
 import type {HassEntities} from '../core/hass.ts';
 import type {Names} from '../core/i18n/names.ts';
-import {attributeOf, isAvailable, numberAttributeOf, numberOf, textAttributeOf, textOf} from '../core/states.ts';
+import {
+  attributeOf,
+  isAvailable,
+  numberAttributeOf,
+  numberOf,
+  switchOf,
+  textAttributeOf,
+  textOf,
+  type SwitchState,
+} from '../core/states.ts';
 
 /** `sensor.fordpass_<name>_soc`: the one entity that says a FordPass car is there. */
 const SOC_SENSOR = /^sensor\.fordpass_[a-z0-9]+_soc$/;
@@ -68,12 +77,6 @@ const CAR_ENTITIES: readonly (readonly [string, string])[] = [
 
 /** The ids of every entity `readCar` reads. */
 export const carEntityIds = (ref: CarRef): string[] => CAR_ENTITIES.map(([domain, key]) => ref.id(domain, key));
-
-/** A switch as the car's controls read it: whether it is on, and whether Home Assistant has a value for it (a control is off while it has none). */
-export interface SwitchState {
-  on: boolean;
-  available: boolean;
-}
 
 export interface TirePressure {
   /** Pounds per square inch, unrounded; null when Ford sent no number. */
@@ -218,9 +221,6 @@ const asTime = (value: unknown): number | null => {
   return Number.isNaN(time) ? null : time;
 };
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null && !Array.isArray(value);
-
 /** A field of Ford's JSON as text; `''` when it is not text. */
 const textOfField = (value: unknown): string => (typeof value === 'string' ? value : '');
 
@@ -230,12 +230,6 @@ const numberOfField = (value: unknown): number | null =>
 
 /** The hour or the minute of a time of day, `0` where Ford sends none (the legacy `t0.hours || 0`). */
 const partOfTime = (value: unknown): number => Number(value) || 0;
-
-/** A switch, a lock or a button's state: on, locked or neither, and whether Home Assistant has a value for it. */
-function switchOf(states: HassEntities, id: string): SwitchState {
-  const state = states[id];
-  return {on: isAvailable(state) && (state.state === 'on' || state.state === 'locked'), available: isAvailable(state)};
-}
 
 /** The departure schedule Ford saved (`schedule`, days with a `timeOfDay`); null when it has none. Read by `readCar` and, for the header's upcoming list, by #253. */
 export function departureSchedule(states: HassEntities, ref: CarRef): Schedule | null {
@@ -282,6 +276,35 @@ function lastPlugOf(states: HassEntities, ref: CarRef): LastPlug | null {
   };
 }
 
+/** The four doors, the hood and the tailgate from `doorstatus`'s attributes: which are open or ajar, and whether the doors and the hood and tailgate are closed; all unknown while the sensor has no value. */
+function doorsOf(states: HassEntities, ref: CarRef): CarInputs['doors'] {
+  const doorStatus = ref.id('sensor', 'doorstatus');
+  if (!isAvailable(states[doorStatus])) return {closed: null, open: [], hoodTailgateClosed: null};
+  // a door Ford does not report is closed (the legacy `door == null`)
+  const doorClosed = (key: string) => {
+    const door = attributeOf(states, doorStatus, key);
+    return door == null || door === 'CLOSED';
+  };
+  return {
+    closed: ['driverFront', 'passengerFront', 'rearLeft', 'rearRight'].every(doorClosed),
+    open: Object.entries(states[doorStatus].attributes)
+      .filter(([, value]) => value === 'OPEN' || value === 'AJAR')
+      .map(([key]) => key),
+    hoodTailgateClosed: doorClosed('hood') && doorClosed('tailgate'),
+  };
+}
+
+/** The software: its version from `lastfirmwareupdate`'s attributes and the day of the update from its state; null when the car has no such sensor, a null day while the sensor has no value. */
+function firmwareOf(states: HassEntities, ref: CarRef): CarInputs['firmware'] {
+  const id = ref.id('sensor', 'lastfirmwareupdate');
+  const firmware = states[id];
+  if (!firmware) return null;
+  return {
+    version: textAttributeOf(states, id, 'firmwareVersion') || null,
+    since: isAvailable(firmware) ? asTime(firmware.state) : null,
+  };
+}
+
 /** The first of the car's two honk buttons that Home Assistant has a value for (an `unknown` one counts: a button has no state to read). */
 function honkButtonOf(states: HassEntities, ref: CarRef): string | null {
   const ids = [ref.id('button', 'hafdefault'), ref.id('button', 'hafshort')];
@@ -298,13 +321,7 @@ export function readCar(
   const sensor = (key: string) => ref.id('sensor', key);
   const charging = sensor('elvehcharging');
   const elveh = sensor('elveh');
-  const doorStatus = sensor('doorstatus');
   const tirePressure = sensor('tirepressure');
-  const doorsKnown = isAvailable(states[doorStatus]);
-  const doorClosed = (key: string) => {
-    const door = attributeOf(states, doorStatus, key);
-    return door == null || door === 'CLOSED';
-  };
   const tire = (key: string): TirePressure => ({
     psi: tirePsi(attributeOf(states, tirePressure, key)),
     state: textAttributeOf(states, tirePressure, `${key}_state`) || null,
@@ -312,7 +329,6 @@ export function readCar(
   const lock = ref.id('lock', 'doorlock');
   const tracker = textOf(states, ref.id('device_tracker', 'tracker'));
   const lastRefresh = textOf(states, sensor('lastrefresh'));
-  const firmware = states[sensor('lastfirmwareupdate')];
   const plug = textOf(states, sensor('elvehplug'));
   const chargeState = textOf(states, charging);
   const windows = textOf(states, sensor('windowposition'));
@@ -351,15 +367,7 @@ export function readCar(
       rearLeft: tire('rearLeft'),
       rearRight: tire('rearRight'),
     },
-    doors: {
-      closed: doorsKnown ? ['driverFront', 'passengerFront', 'rearLeft', 'rearRight'].every(doorClosed) : null,
-      open: doorsKnown
-        ? Object.entries(states[doorStatus].attributes)
-            .filter(([, value]) => value === 'OPEN' || value === 'AJAR')
-            .map(([key]) => key)
-        : [],
-      hoodTailgateClosed: doorsKnown ? doorClosed('hood') && doorClosed('tailgate') : null,
-    },
+    doors: doorsOf(states, ref),
     windowsClosed: windows === null ? null : windows === 'Closed',
     alarm: textOf(states, sensor('alarm')),
     gear: textOf(states, sensor('gearleverposition')),
@@ -368,12 +376,7 @@ export function readCar(
       percent: numberOf(states, sensor('battery')),
       volts: numberAttributeOf(states, sensor('battery'), 'batteryVoltage'),
     },
-    firmware: firmware
-      ? {
-          version: textAttributeOf(states, sensor('lastfirmwareupdate'), 'firmwareVersion') || null,
-          since: isAvailable(firmware) ? asTime(firmware.state) : null,
-        }
-      : null,
+    firmware: firmwareOf(states, ref),
     autoUpdates: autoUpdates === null ? null : autoUpdates === 'on',
     messages: messagesOf(states, ref),
     lastPlug: lastPlugOf(states, ref),

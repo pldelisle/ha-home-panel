@@ -1,8 +1,9 @@
 // CommandRunner: a service call that tells the person on success, and on failure undoes only what it held and says so.
 import {describe, expect, test, vi} from 'vitest';
 import type {PanelApi} from '../../../src/core/api.ts';
+import type {Command} from '../../../src/core/commands.ts';
 import {createMessages} from '../../../src/core/i18n/messages.ts';
-import {CommandRunner, type Command} from '../../../src/ui/commands.ts';
+import {CommandRunner} from '../../../src/ui/commands.ts';
 import {apiContext} from '../../../src/ui/contexts.ts';
 import type {ToastEvent} from '../../../src/ui/events.ts';
 import {OverlayStore} from '../../../src/ui/overlay-store.ts';

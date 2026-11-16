@@ -8,7 +8,7 @@ import type {Translate} from '../../core/i18n/messages.ts';
 import type {Schedule} from '../../providers/fordpass.ts';
 
 /** The week as Ford names its days, in the order the day buttons run. */
-export const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const;
+const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const;
 
 /** Ford's four cabin settings for a departure. */
 export type CabinTemperature = 'low' | 'medium' | 'high' | 'off';
@@ -40,6 +40,12 @@ export function toggleDay(draft: ScheduleDraft, day: string): ScheduleDraft {
   return {...draft, days: draft.days.includes(day) ? draft.days.filter(d => d !== day) : [...draft.days, day]};
 }
 
+/** A time of day as a field holds it: `HH:MM`, read into its two numbers; null for a field that is cleared or holds no time. */
+function parseTime(time: string): {hours: number; minutes: number} | null {
+  const [hours, minutes] = time.split(':').map(Number);
+  return Number.isFinite(hours) && Number.isFinite(minutes) ? {hours, minutes} : null;
+}
+
 /** A time of day rounded to Ford's five-minute steps: `23:58` is `00:00`. */
 export interface RoundedTime {
   hour: number;
@@ -48,11 +54,11 @@ export interface RoundedTime {
   time: string;
 }
 
-/** `time` rounded to the nearest five minutes; null for a field that is cleared or holds no time (the legacy panel sent `NaN` for it). */
+/** `time` rounded to the nearest five minutes; null for a field that is cleared or holds no time (the legacy panel sent `NaN` for it), which a save must refuse (#253). */
 export function roundToFive(time: string): RoundedTime | null {
-  const [hours, minutes] = time.split(':').map(Number);
-  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
-  const total = (Math.round((hours * 60 + minutes) / 5) * 5) % MINUTES_PER_DAY;
+  const parsed = parseTime(time);
+  if (!parsed) return null;
+  const total = (Math.round((parsed.hours * 60 + parsed.minutes) / 5) * 5) % MINUTES_PER_DAY;
   const hour = Math.floor(total / 60);
   const minute = total % 60;
   return {hour, minute, time: `${twoDigits(hour)}:${twoDigits(minute)}`};
@@ -78,10 +84,8 @@ const daysWords = (days: readonly string[], t: Translate): string => {
  */
 export function scheduleWords(draft: ScheduleDraft, fmt: Pick<Formatters, 'clock'>, t: Translate): string {
   const days = daysWords(draft.days, t);
-  const [hours, minutes] = draft.time.split(':').map(Number);
-  return Number.isFinite(hours) && Number.isFinite(minutes)
-    ? t('car.at', {days, time: fmt.clock(hours, minutes)})
-    : days;
+  const parsed = parseTime(draft.time);
+  return parsed ? t('car.at', {days, time: fmt.clock(parsed.hours, parsed.minutes)}) : days;
 }
 
 /** The departure switch's line: `On · weekdays at 8:30 am` while it is on, `Off · weekdays at 8:30 am saved` while it is off. */

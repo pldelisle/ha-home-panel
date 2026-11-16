@@ -1,7 +1,7 @@
 // ControlSender at the controller seam (ADR 0005): a fake overlay, a fake runner and Vitest's clock, so "1,100 ms" is a call to advanceTimersByTime and not a wait.
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest';
 import {ControlSender, SETPOINT_WAIT_MS} from '../../../../src/features/climate/sender.ts';
-import type {Command} from '../../../../src/ui/commands.ts';
+import type {Command} from '../../../../src/core/commands.ts';
 
 function setup() {
   const controllers: ControlSender[] = [];

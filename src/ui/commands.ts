@@ -1,32 +1,16 @@
 // CommandRunner: sends one service call, tells the person on success, and on failure undoes what it held and says so.
-// Pattern: Command (Gamma et al.): `Command` is the data, this is the invoker, `PanelApi` the receiver; compensating action
+// Pattern: Command (Gamma et al.): `Command` is the data (`src/core/commands.ts`), this is the invoker, `PanelApi` the receiver; compensating action
 // (Richardson): releasing the keys the command set. The legacy `call` empties the whole bag; #263 deletes it, and its wording.
 // A known copy: `Didn't work: {reason}` is the legacy `call`'s wording, until #263; the reason is read by the API client's `rejectionReason`.
 // Must not: read the store, format a string (the catalog does, through the `t` it is handed), or touch another command's state.
 import {ContextConsumer} from '@lit/context';
 import type {ReactiveControllerHost} from 'lit';
 import {rejectionReason, type PanelApi} from '../core/api.ts';
-import type {MessageKey} from '../core/i18n/en.ts';
-import type {Messages, MessageValues} from '../core/i18n/messages.ts';
+import type {Call, Command} from '../core/commands.ts';
+import type {Messages} from '../core/i18n/messages.ts';
 import {apiContext} from './contexts.ts';
 import type {OptimisticController} from './controllers/optimistic.ts';
 import {ToastEvent} from './events.ts';
-
-/** One service call: what Home Assistant is asked to run. */
-export interface Call {
-  domain: string;
-  service: string;
-  data?: Record<string, unknown>;
-}
-
-export interface Command extends Call {
-  /** The toast on success, a catalog key with its values; none for a silent command (a volume step). */
-  done?: {key: MessageKey; values?: MessageValues};
-  /** The optimistic keys this command set: released on failure, and only they. */
-  holds?: readonly string[];
-  /** A second try when the first rejects (the TV's wake-on-LAN button); its success is the command's, and `done` is said. */
-  fallback?: Call;
-}
 
 export interface CommandRunnerOptions {
   /** Where `holds` are released: the host's `OptimisticController`. */
