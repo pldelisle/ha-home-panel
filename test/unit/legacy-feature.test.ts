@@ -94,8 +94,8 @@ describe('the ten panes', () => {
     expect(new Set(ids).size).toBe(ids.length);
     for (const id of ['hsub', 'lsub', 'carsub2', 'ausub']) expect(ids, id).toContain(id);
     for (const id of ['carh2', 'lhost', 'auhost']) expect(ids, id).toContain(id);
-    // the Climate pane is an element that slots the containers the guest still draws its controls, chart and heatmap in
-    for (const id of ['cctl', 'cchart', 'chost']) expect(ids, id).toContain(id);
+    // the Climate pane is an element that slots the container the guest still draws its controls in (#248)
+    for (const id of ['cctl']) expect(ids, id).toContain(id);
   });
 
   // the header's shadow root is closed to the guest (getElementById stops at it), so the lines it writes are slotted nodes

@@ -7,7 +7,7 @@ import {capitalWords, DASH} from '../../core/figures.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
 import {degrees, fixedOr} from '../../core/i18n/format.ts';
 import {roomName} from '../../core/i18n/room-name.ts';
-import {FUJITSU_BRAND, type HeatPumpInputs} from '../../providers/heat-pump.ts';
+import {FUJITSU_BRAND, NO_TARGET_MODES, type HeatPumpInputs} from '../../providers/heat-pump.ts';
 import {DEFAULT_MAX_TEMP, FROST_GUARD, OFF_AT_OR_BELOW, type RoomPower} from '../../providers/power.ts';
 import type {Overlay} from '../../ui/overlay-store.ts';
 import {RANGES, type Range} from '../../ui/ranges.ts';
@@ -24,33 +24,68 @@ import {
   type ClimateItemsDeps,
   type Tone,
 } from './items.ts';
+import {lateHeatPumpStart, RANGE_WORDS, selectedKwh, selectedSeries, type ClimateHistoryData} from './history.ts';
 import {K} from './keys.ts';
 
 /** What the detail shows: `house`, `hp` or a room's key. A key that names nothing the house has shows the house. */
 export type ClimateSelection = string;
 
 /**
- * The two figures of the detail's tiles that wait for the loaded history, as the legacy chart code read them off its own load: the Range tile's
- * span and the Heating tile's kWh, for one selection over one range. Until the history is the feature's (#246) the legacy panel tells them
- * to the pane; a figure for another selection or range than the one shown is not drawn.
+ * What the detail's tiles and note read off the loaded history, for the selection over the range shown: the Range tile's span and the Heating
+ * tile's kWh (the legacy chart code's `climFigures`), and where the heat pump's line starts when that is late. Null before the load.
  */
-export interface ClimateFigures {
-  sel: ClimateSelection;
-  range: Range;
+interface Figures {
   /** The lowest and highest reading of the selection over the range; null without one. */
   span: {lo: number; hi: number} | null;
-  /** The heating over the range: the house's total or the room's own; null for the heat pump and while nothing is loaded. */
+  /** The heating over the range: the house's total or the room's own; null for the heat pump. */
   kwh: number | null;
   /** The instant the heat pump's line starts, when that is later than the range does (the recorder keeps about ten days of its history); null for any other selection. */
   hpFrom: number | null;
+}
+
+/** One line of a legend: its swatch, a colour as CSS says it (a token, so the theme is the page's), and its name; a dashed one is a dashed stroke. */
+export interface LegendItem {
+  name: string;
+  color: string;
+  dashed: boolean;
+}
+
+/** Why a chart's place has no chart: the loading word, the failure's, or the empty house's; `kind` picks the paragraph's class. */
+export interface ChartNotice {
+  kind: 'loading' | 'failed' | 'empty';
+  text: string;
+}
+
+/** The detail's chart: its legend and the range's words, with what to show in its place until there is a line. */
+export interface ChartBlock {
+  legend: LegendItem[];
+  /** "last 24 hours", at the legend's end. */
+  rangeLabel: string;
+  /** The line's name, the legend's first. */
+  name: string;
+  notice: ChartNotice | null;
+}
+
+/** The tablet's heatmap block: its words, the rooms in the order it draws them (the last room on top) and what stands in for it. */
+export interface HeatmapBlock {
+  title: string;
+  hint: string;
+  rooms: {key: string; name: string}[];
+  notice: ChartNotice | null;
+}
+
+/** The tablet's outside chart block. */
+export interface OutsideBlock {
+  title: string;
+  note: string;
+  legend: LegendItem[];
+  notice: ChartNotice | null;
 }
 
 /** The range the tiles are named for until the person picks one (the legacy `crange`'s default). */
 const DEFAULT_RANGE: Range = 'day';
 /** What "set every room" starts at (the legacy `allSp ?? 21`, deleted in #248). */
 const DEFAULT_ALL_SETPOINT = 21;
-/** The heat pump's modes that have no target to set (the legacy lists, deleted in #248). */
-const NO_TARGET_MODES: ReadonlySet<string> = new Set(['off', 'fan_only', 'dry']);
 /** The room's quick setpoints, `off` first: the frost guard is what a tap on it asks for. */
 const QUICK: readonly (number | 'off')[] = ['off', 19, 20, 21, 22];
 
@@ -107,6 +142,8 @@ export interface ClimateModelDeps extends ClimateItemsDeps {
   allSetpoint?: number;
   /** The "all rooms" button waiting for its second tap, element state. */
   armed?: 'allset' | 'alloff' | null;
+  /** The loader's last read of the range failed, and there is nothing to draw: the charts say so instead of "Loading history…". */
+  historyFailed?: boolean;
 }
 
 /** A value with the ends of its scale: a stepper's target, a room's setpoint, the dial's knob between `lo` and `hi`. Not the kit's `Range`, a span of time. */
@@ -214,10 +251,12 @@ export interface ClimateViewModel {
     tiles: DetailTile[];
     note: string | null;
     controls: ControlsView;
-    /** The charts and the heatmap, drawn from the loaded history (#246): nothing is loaded yet. */
-    chart: null;
-    heatmap: null;
-    outsideChart: null;
+    /** The room, house or heat pump chart's legend and notice; its lines are `ClimateCharts`', from the same history. */
+    chart: ChartBlock;
+    /** The tablet's heatmap block; null on the phone, whose sheet is one room. */
+    heatmap: HeatmapBlock | null;
+    /** The tablet's outside chart block; null on the phone. */
+    outsideChart: OutsideBlock | null;
   };
 }
 
@@ -292,8 +331,8 @@ function summaryOf({rooms, heatPump, outside}: ClimateInputs, deps: ClimateModel
     .join(' · ');
 }
 
-/** The Range tile: its span is the loaded history's (#246), a dash before it. */
-function rangeTile({t, fmt}: ClimateModelDeps, range: Range, figures: ClimateFigures | null): DetailTile {
+/** The Range tile: its span is the loaded history's, a dash before it. */
+function rangeTile({t, fmt}: ClimateModelDeps, range: Range, figures: Figures | null): DetailTile {
   const span = figures?.span;
   return {
     label: t('climate.rangeSpan', {span: t(RANGES[range].shortKey)}),
@@ -352,7 +391,7 @@ function houseHead(
   deps: ClimateModelDeps,
   items: ClimateItem[],
   range: Range,
-  figures: ClimateFigures | null,
+  figures: Figures | null,
 ): Head {
   const {t, fmt} = deps;
   const {rooms} = inputs;
@@ -420,7 +459,7 @@ function heatPumpHead(
   inputs: ClimateInputs,
   deps: ClimateModelDeps,
   range: Range,
-  figures: ClimateFigures | null,
+  figures: Figures | null,
 ): Head {
   const {t, fmt, overlay} = deps;
   // the mode as shown, a held one included: the pill, the gauge's mark and the dial agree while a tap is pending
@@ -464,7 +503,7 @@ function roomPill(room: RoomPower, {t, fmt}: ClimateModelDeps): string {
   return t('climate.off');
 }
 
-function roomHead(room: RoomPower, deps: ClimateModelDeps, range: Range, figures: ClimateFigures | null): Head {
+function roomHead(room: RoomPower, deps: ClimateModelDeps, range: Range, figures: Figures | null): Head {
   const {t, fmt, overlay} = deps;
   const {setpoint} = room;
   return {
@@ -556,7 +595,7 @@ function headOf(
   inputs: ClimateInputs,
   deps: ClimateModelDeps,
   items: ClimateItem[],
-  figures: ClimateFigures | null,
+  figures: Figures | null,
 ): Head {
   const range = deps.range ?? DEFAULT_RANGE;
   if (pump) return heatPumpHead(pump, inputs, deps, range, figures);
@@ -564,14 +603,100 @@ function headOf(
   return houseHead(inputs, deps, items, range, figures);
 }
 
+/** What the tiles and the note read off the range's history for a selection: its span, its heating and where the heat pump's line starts; null before the load. */
+function figuresOf(
+  history: ClimateHistoryData | null,
+  range: Range,
+  selection: ClimateSelection,
+  rooms: readonly RoomPower[],
+): Figures | null {
+  if (!history || history.range !== range) return null;
+  const values = selectedSeries(
+    history,
+    selection,
+    rooms.map(({key}) => key),
+  ).points.flatMap(([, value]) => (value === null ? [] : [value]));
+  return {
+    span: values.length ? {lo: Math.min(...values), hi: Math.max(...values)} : null,
+    kwh: selectedKwh(history, selection),
+    hpFrom: selection === 'hp' ? lateHeatPumpStart(history) : null,
+  };
+}
+
+/** What stands in a chart's place before there is a line: the loading word, or the failure's. */
+function waiting(loaded: boolean, {t, historyFailed}: ClimateModelDeps): ChartNotice | null {
+  if (loaded) return null;
+  return historyFailed
+    ? {kind: 'failed', text: t('climate.historyUnavailable')}
+    : {kind: 'loading', text: t('climate.historyLoading')};
+}
+
+/** The legend's colours are the page's tokens, so the theme is the page's. */
+const ROOM_LINE = 'var(--c-wh)';
+const OUTSIDE_LINE = 'var(--c-home)';
+const SETPOINT_LINE = 'var(--fg2)';
+const OUTSIDE_BAND = 'color-mix(in srgb, var(--c-home) 35%, transparent)';
+
+/** The detail chart's legend and words: the line (the house is "House average"), its setpoint for a room or the heat pump, and the outside. */
+function chartBlock(
+  head: Head,
+  selection: ClimateSelection,
+  range: Range,
+  loaded: boolean,
+  deps: ClimateModelDeps,
+): ChartBlock {
+  const {t} = deps;
+  const house = selection === 'house';
+  const name = house ? t('climate.houseAverage') : head.title;
+  return {
+    name,
+    rangeLabel: t(RANGES[range].labelKey),
+    legend: [
+      {name, color: ROOM_LINE, dashed: false},
+      ...(house ? [] : [{name: t('climate.chart.setpoint'), color: SETPOINT_LINE, dashed: true}]),
+      {name: t('climate.chart.outside'), color: OUTSIDE_LINE, dashed: false},
+    ],
+    notice: waiting(loaded, deps),
+  };
+}
+
+/** The tablet's two blocks under the detail, worded for the range; the last room is drawn on top, as the legacy heatmap's. */
+function wideBlocks(
+  rooms: readonly RoomPower[],
+  range: Range,
+  loaded: boolean,
+  deps: ClimateModelDeps,
+): {heatmap: HeatmapBlock; outsideChart: OutsideBlock} {
+  const {t} = deps;
+  const waits = waiting(loaded, deps);
+  const words = RANGE_WORDS[range];
+  return {
+    heatmap: {
+      title: t(words.heatTitle),
+      hint: t('climate.heatHint'),
+      rooms: [...rooms].reverse().map(room => ({key: room.key, name: roomName(room, deps)})),
+      notice: waits ?? (rooms.length ? null : {kind: 'empty', text: t('climate.noThermostats')}),
+    },
+    outsideChart: {
+      title: t('climate.outsideTitle', {label: t(RANGES[range].labelKey)}),
+      note: t(words.outNote),
+      legend: [
+        {name: t('climate.chart.lowToHigh'), color: OUTSIDE_BAND, dashed: false},
+        {name: t('climate.chart.mean'), color: OUTSIDE_LINE, dashed: false},
+      ],
+      notice: waits,
+    },
+  };
+}
+
 /**
  * The Climate tab's view for one selection: the summary, the list, the phone's tiles and the detail, from the inputs, in the language
- * `deps.t` words. `history` is the loaded range (#246): until then the charts are null and only the two tiles the legacy panel's own load
- * fills (`ClimateFigures`) have a figure, a dash before it and for any other selection or range than the one it was read for.
+ * `deps.t` words. `history` is the range's load (the loader's): until it arrives the tiles show a dash and the charts say they are loading
+ * (or that the load failed, `deps.historyFailed`); a history of another range than `deps.range` is no history.
  */
 export function climateModel(
   inputs: ClimateInputs,
-  history: ClimateFigures | null,
+  history: ClimateHistoryData | null,
   sel: ClimateSelection,
   deps: ClimateModelDeps,
 ): ClimateViewModel {
@@ -580,9 +705,11 @@ export function climateModel(
   const room = rooms.find(candidate => candidate.key === sel);
   const pump = sel === 'hp' ? heatPump : null;
   const selection = pump ? 'hp' : (room?.key ?? 'house');
-  const figures = history?.sel === selection && history.range === (deps.range ?? DEFAULT_RANGE) ? history : null;
+  const range = deps.range ?? DEFAULT_RANGE;
+  const figures = figuresOf(history, range, selection, rooms);
   const head = headOf(pump, room, inputs, deps, items, figures);
   const {t, fmt} = deps;
+  const blocks = deps.compact ? null : wideBlocks(rooms, range, figures !== null, deps);
   return {
     summary: summaryOf(inputs, deps),
     items,
@@ -599,9 +726,9 @@ export function climateModel(
       tiles: head.tiles,
       note: head.note,
       controls: head.controls,
-      chart: null,
-      heatmap: null,
-      outsideChart: null,
+      chart: chartBlock(head, selection, range, figures !== null, deps),
+      heatmap: blocks?.heatmap ?? null,
+      outsideChart: blocks?.outsideChart ?? null,
     },
   };
 }

@@ -1,5 +1,5 @@
 // RANGES: the history ranges (a day, a week, a month, a year) as data: how far back, which statistics period, how the axis reads; and `bucketMiddle`, the one rule over it.
-// Pattern: table-driven design (a table, not four branches), after the legacy panel's CRANGE with every word replaced by a
+// Pattern: table-driven design (a table, not four branches), after the legacy panel's CRANGE (deleted in #246) with every word replaced by a
 // message key; it sits in the UI kit because Weather, Climate, Air and the sensors' sheets all read the same four ranges.
 // Must not: import anything but types, hold a string the household reads, or format a date (the tooltip format is Apex's own syntax).
 import type {MessageKey} from '../core/i18n/en.ts';

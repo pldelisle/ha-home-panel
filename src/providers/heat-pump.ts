@@ -1,5 +1,5 @@
 // The heat pump (or air conditioner) of the house, read into the inputs the Climate feature takes, and its state history into a line.
-// Pattern: an adapter below the features (ADR 0025), the rules of the legacy `hpBrand()`, `hpSeries()` and the heat pump's readings, deleted in #248;
+// Pattern: an adapter below the features (ADR 0025), the rules of the legacy `hpBrand()` (deleted in #244) and `hpSeries()` (deleted in #246) and of the heat pump's readings (deleted in #248);
 // the maker comes from the device registry (Fujitsu through FGLair, else the manufacturer), the entity from the config's `heat_pump`.
 // Must not: word anything a person reads (a maker the registry does not give is `null`, for the model to word; a maker's name, `Fujitsu`, is data,
 // as the registry's manufacturer is), or read the clock or the DOM.
@@ -13,6 +13,8 @@ const DEFAULT_MIN = 16;
 const DEFAULT_MAX = 30;
 /** The modes offered when the unit lists none (legacy, #248). */
 const DEFAULT_MODES = ['off', 'heat'];
+/** The modes that have no target to set or to draw: the target's stepper and dial are idle in them, and the history's target line breaks (legacy, #248). */
+export const NO_TARGET_MODES: ReadonlySet<string> = new Set(['off', 'fan_only', 'dry']);
 /** A unit made by Fujitsu, or through FGLair, whose maker the device does not always say. */
 const FUJITSU_PLATFORM = /fglair/;
 const FUJITSU = /fujitsu/i;
@@ -104,8 +106,8 @@ export function heatPump(
 /**
  * The unit's state history as a line of `[time, value]`: `pick` reads a value from a point's attributes and state. A point
  * the unit was unavailable at, or that has no value, is a `null` that breaks the line, and the value before it carries on
- * to one millisecond before the next, so a gap shows as a gap and a step as a step. Read by the detail's history (#245) for the
- * heat pump's temperature and setpoint lines; the legacy `hpSeries` it copies goes with the legacy panel (#248).
+ * to one millisecond before the next, so a gap shows as a gap and a step as a step. Read by the Climate history's derivation for the
+ * heat pump's temperature and setpoint lines.
  */
 export function hpSeries(
   points: readonly HistoryPoint[],

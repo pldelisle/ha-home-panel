@@ -8,7 +8,8 @@ import {createFormatters} from '../../../../src/core/i18n/format.ts';
 import {panelLocale} from '../../../../src/core/i18n/locale.ts';
 import {deriveEnergyHistory, type EnergyReplies} from '../../../../src/features/energy/history.ts';
 import {STATISTICS_TTL_MS} from '../../../../src/core/statistics-cache.ts';
-import {EnergyHistory, RETRY_MS, type EnergyHistoryDeps} from '../../../../src/features/energy/loader.ts';
+import {HISTORY_RETRY_MS} from '../../../../src/core/statistics-cache.ts';
+import {EnergyHistory, type EnergyHistoryDeps} from '../../../../src/features/energy/loader.ts';
 import {fakeHass} from '../../fake-hass.ts';
 
 const fmt = createFormatters(
@@ -224,12 +225,12 @@ describe('EnergyHistory', () => {
     await settle();
     expect(calls).toHaveLength(asked);
     state.answer = () => Promise.reject(Object.assign(new Error(''), {code: 'timeout'}));
-    await vi.advanceTimersByTimeAsync(RETRY_MS);
+    await vi.advanceTimersByTimeAsync(HISTORY_RETRY_MS);
     history.hostUpdate();
     await settle();
     expect(history.error).toBe('timeout');
     state.answer = answer;
-    await vi.advanceTimersByTimeAsync(RETRY_MS);
+    await vi.advanceTimersByTimeAsync(HISTORY_RETRY_MS);
     history.hostUpdate();
     await settle();
     expect(history.error).toBeNull();

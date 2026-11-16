@@ -5,13 +5,14 @@ import {describe, expect, test} from 'vitest';
 import {registriesOf} from '../../../../src/core/registry.ts';
 import {readClimate} from '../../../../src/features/climate/inputs.ts';
 import {K} from '../../../../src/features/climate/keys.ts';
+import type {ClimateHistoryData} from '../../../../src/features/climate/history.ts';
 import {
   climateModel,
-  type ClimateFigures,
   type ClimateModelDeps,
   type ClimateSelection,
   type ControlsView,
 } from '../../../../src/features/climate/model.ts';
+import type {Range} from '../../../../src/ui/ranges.ts';
 import {depsOf, fullHouse, houseOf, recorded, storeOf, type Language, type Player} from '../media/support.ts';
 import {entity, fakeHass, type FakeHass} from '../../fake-hass.ts';
 
@@ -25,12 +26,12 @@ const holding =
 function modelOf(
   hass: FakeHass,
   sel: ClimateSelection,
-  extra: Partial<ClimateModelDeps> & {language?: Language; config?: object; figures?: ClimateFigures} = {},
+  extra: Partial<ClimateModelDeps> & {language?: Language; config?: object; history?: ClimateHistoryData} = {},
 ) {
-  const {language = 'en', config = {}, figures = null, ...rest} = extra;
+  const {language = 'en', config = {}, history = null, ...rest} = extra;
   const store = storeOf(hass, config);
   const inputs = readClimate(hass.states, registriesOf(hass), store.config);
-  return climateModel(inputs, figures, sel, {
+  return climateModel(inputs, history, sel, {
     ...depsOf(hass, language),
     language,
     overlay: unheld,
@@ -38,6 +39,25 @@ function modelOf(
     ...rest,
   });
 }
+
+const AT = Date.UTC(2026, 10, 10, 17);
+const DAY = 864e5;
+/** A range's history as the loader derives it, with only what a test says: no rows, no heating, a window of the range's own days. */
+const loaded = (over: Partial<ClimateHistoryData> = {}, range: Range = 'day'): ClimateHistoryData => ({
+  range,
+  at: AT,
+  start: AT - DAY,
+  rooms: {},
+  sp: {},
+  kwh: {},
+  out: [],
+  hp: [],
+  hpSp: [],
+  hpFrom: null,
+  ...over,
+});
+const points = (...values: number[]): [number, number, null, null][] =>
+  values.map((value, index) => [AT - (values.length - index) * 36e5, value, null, null]);
 
 const thermostat = (id: string, state = 'heat', attributes: Record<string, unknown> = {}) =>
   entity(`climate.${id}`, state, {friendly_name: `Thermostat ${id}`, ...attributes});
@@ -92,9 +112,6 @@ describe('the test house, on the tablet', () => {
       dial: null,
       note: null,
       controls: {kind: 'house', allSetpoint: 21, armed: null, roomsCount: 4},
-      chart: null,
-      heatmap: null,
-      outsideChart: null,
     });
     expect(detail.tiles).toEqual([
       {label: 'Warmest', value: '21.2', unit: '°', sub: 'Garage', range: false},
@@ -104,34 +121,89 @@ describe('the test house, on the tablet', () => {
     ]);
   });
 
-  test('the legacy panel’s figures fill the Range and Heating tiles, for the room and the range they were read for and no other', () => {
-    const room: ClimateFigures = {sel: 'bedroom', range: 'week', span: {lo: 18.5, hi: 23}, kwh: 12.34, hpFrom: null};
-    const tiles = (figures: ClimateFigures, extra: Parameters<typeof modelOf>[2] = {}) =>
-      modelOf(fullHouse, figures.sel, {range: figures.range, figures, ...extra}).detail.tiles.map(t => t.value);
-    // a room: the span at one decimal, the kWh at one; the Drawing now tile is the state's
-    expect(tiles(room)).toEqual(['18.5–23.0', '1.20', '12.3']);
-    expect(modelOf(fullHouse, 'bedroom', {range: 'week', figures: room, language: 'fr'}).detail.tiles[0].value).toBe(
-      '18,5–23,0',
+  test('the loaded history fills the Range and Heating tiles of the selection, for the range it was loaded for and no other', () => {
+    const week = loaded({rooms: {bedroom: points(18.5, 21, 23)}, kwh: {bedroom: 12.34}}, 'week');
+    const tiles = (history: ClimateHistoryData, sel: string, range: Range = history.range, language: Language = 'en') =>
+      modelOf(fullHouse, sel, {range, history, language}).detail.tiles.map(t => t.value);
+    // a room: the span of its readings at one decimal, the kWh at one; the Drawing now tile is the state's
+    expect(tiles(week, 'bedroom')).toEqual(['18.5–23.0', '1.20', '12.3']);
+    expect(tiles(week, 'bedroom', 'week', 'fr')[0]).toBe('18,5–23,0');
+    // the house has no Range tile: the mean of the rooms is the line the chart draws, and its Heating tile is the rooms' total, a whole number of kWh
+    const everyRoom = {
+      bedroom: points(19, 22),
+      garage: points(19, 22),
+      living_room: points(19, 22),
+      office: points(19, 22),
+    };
+    const house = loaded({rooms: everyRoom, kwh: {bedroom: 100, garage: 39.6, living_room: 0, office: 0}});
+    expect(tiles(house, 'house')).toEqual(['21.2', '20.0', '2.40', '140']);
+    // a room the load has no rows for, or no power sensor for, stays a dash
+    expect(tiles(week, 'garage')).toEqual(['–', '0.00', '–']);
+    // a history of another range than the one shown is no history: dashes until the loader has the range
+    expect(tiles(week, 'bedroom', 'day')).toEqual(['–', '1.20', '–']);
+    // a selection that names nothing the house has is the house, and its figures are the house's
+    expect(modelOf(fullHouse, 'nowhere', {history: house}).detail.tiles[3].value).toBe('140');
+  });
+
+  test('before the range is loaded the charts say so, and a failed load says that; the phone has the room’s chart only', () => {
+    const waiting = modelOf(fullHouse, 'house').detail;
+    expect(waiting.chart).toEqual({
+      name: 'House average',
+      rangeLabel: 'last 24 hours',
+      legend: [
+        {name: 'House average', color: 'var(--c-wh)', dashed: false},
+        {name: 'Outside', color: 'var(--c-home)', dashed: false},
+      ],
+      notice: {kind: 'loading', text: 'Loading history…'},
+    });
+    expect(waiting.heatmap).toEqual({
+      title: 'Every room, hour by hour',
+      hint: 'Mean temperature per room, on a smooth scale from cool blue to warm red.',
+      // the last room is the top row
+      rooms: [
+        {key: 'office', name: 'Office'},
+        {key: 'living_room', name: 'Living room'},
+        {key: 'garage', name: 'Garage'},
+        {key: 'bedroom', name: 'Bedroom'},
+      ],
+      notice: {kind: 'loading', text: 'Loading history…'},
+    });
+    expect(waiting.outsideChart).toMatchObject({
+      title: 'Outside, last 24 hours',
+      note: 'Band is each 5 minutes’ low to high, line is the mean',
+      legend: [
+        {name: 'Low to high', color: 'color-mix(in srgb, var(--c-home) 35%, transparent)'},
+        {name: 'Mean', color: 'var(--c-home)'},
+      ],
+    });
+    const failed = modelOf(fullHouse, 'house', {historyFailed: true}).detail;
+    expect([failed.chart.notice, failed.heatmap?.notice, failed.outsideChart?.notice]).toEqual(
+      Array(3).fill({kind: 'failed', text: 'History is not available right now.'}),
     );
-    // the house has no Range tile, and its Heating tile is a whole number of kWh
-    const house: ClimateFigures = {sel: 'house', range: 'day', span: {lo: 19, hi: 22}, kwh: 139.6, hpFrom: null};
-    expect(tiles(house)).toEqual(['21.2', '20.0', '2.40', '140']);
-    // a span with no reading and a kWh the load does not have stay dashes
-    expect(tiles({...room, span: null, kwh: null})).toEqual(['–', '1.20', '–']);
-    expect(tiles({...house, kwh: null})[3]).toBe('–');
-    // another room, or another range, than the one the figures were read for: dashes, until the legacy panel reads again
-    expect(modelOf(fullHouse, 'garage', {range: 'week', figures: room}).detail.tiles.map(t => t.value)).toEqual([
-      '–',
-      '0.00',
-      '–',
+    // loaded: nothing stands in for a chart, and a week's words follow the range
+    const ready = modelOf(fullHouse, 'house', {range: 'week', history: loaded({}, 'week')}).detail;
+    expect([ready.chart.notice, ready.heatmap?.notice, ready.outsideChart?.notice]).toEqual([null, null, null]);
+    expect([ready.heatmap?.title, ready.outsideChart?.title]).toEqual([
+      'Every room, every 6 hours',
+      'Outside, last 7 days',
     ]);
-    expect(modelOf(fullHouse, 'bedroom', {range: 'day', figures: room}).detail.tiles.map(t => t.value)).toEqual([
-      '–',
-      '1.20',
-      '–',
+    const phone = modelOf(fullHouse, 'bedroom', {compact: true}).detail;
+    expect([phone.heatmap, phone.outsideChart]).toEqual([null, null]);
+    expect(phone.chart.legend.map(item => [item.name, item.dashed])).toEqual([
+      ['Bedroom', false],
+      ['Setpoint', true],
+      ['Outside', false],
     ]);
-    // a selection that names nothing the house has is the house, and the figures read for it are read for the house
-    expect(modelOf(fullHouse, 'nowhere', {figures: house}).detail.tiles[3].value).toBe('140');
+  });
+
+  test('a house with no thermostat has no heatmap to draw, once loaded; the words are French in French', () => {
+    const heatPumpOnly = houseOf([pump('heat')]);
+    const empty = modelOf(heatPumpOnly, 'hp', {config: {entities: {heat_pump: 'climate.pump'}}, history: loaded()});
+    expect(empty.detail.heatmap?.notice).toEqual({kind: 'empty', text: 'No thermostats found.'});
+    const french = modelOf(fullHouse, 'house', {language: 'fr'}).detail;
+    expect(french.chart.name).toBe('Moyenne de la maison');
+    expect(french.outsideChart?.title).toBe('Dehors, dernières 24 heures');
+    expect(french.heatmap?.notice?.text).toBe('Chargement de l’historique…');
   });
 
   test('the house’s gauge has no setpoint mark and no caption; the element’s "set every room" and armed button are passed through', () => {
@@ -320,22 +392,34 @@ describe('a room', () => {
 });
 
 describe('the heat pump', () => {
-  test('the heat pump’s Range tile takes the legacy panel’s span, and it has no heating figure', () => {
-    const figures: ClimateFigures = {sel: 'hp', range: 'day', span: {lo: 17, hi: 24.5}, kwh: null, hpFrom: null};
-    expect(pumpOf(pump('heat'), {figures}).detail.tiles[0]).toMatchObject({value: '17.0–24.5'});
+  test('the heat pump’s Range tile takes the span of its line, a gap in it skipped, and it has no heating figure', () => {
+    const hp: ClimateHistoryData['hp'] = [
+      [AT - 2e6, 17],
+      [AT - 1e6, null],
+      [AT, 24.5],
+    ];
+    const detail = pumpOf(pump('heat'), {history: loaded({hp, kwh: {den: 5}})}).detail;
+    expect(detail.tiles[0]).toMatchObject({value: '17.0–24.5'});
+    expect(detail.chart.legend.map(item => item.name)).toEqual(['Heat pump', 'Setpoint', 'Outside']);
   });
 
   test('the note says where the line starts when the history keeps less than the range, in both languages, and not otherwise', () => {
-    const base: ClimateFigures = {sel: 'hp', range: 'month', span: null, kwh: null, hpFrom: null};
+    // the window starts 30 days back, so a line that starts on Nov 7 starts late; one that starts within a day of the window does not
+    const start = Date.UTC(2026, 9, 11, 17);
     const from = Date.UTC(2026, 10, 7, 12);
-    const plain = pumpOf(pump('heat'), {range: 'month', figures: base}).detail.note;
+    const month = (hpFrom: number | null) =>
+      loaded({start, hp: hpFrom === null ? [] : [[hpFrom, 19]], hpFrom}, 'month');
+    const noteOf = (hpFrom: number | null, language: Language = 'en') =>
+      pumpOf(pump('heat'), {range: 'month', history: month(hpFrom), language}).detail.note;
+    const plain = noteOf(null);
     expect(plain).not.toContain('Home Assistant keeps');
-    expect(pumpOf(pump('heat'), {range: 'month', figures: {...base, hpFrom: from}}).detail.note).toBe(
+    expect(noteOf(start + 36e5)).toBe(plain);
+    expect(noteOf(from)).toBe(
       `${plain} Home Assistant keeps about 10 days of detailed history, so the heat pump line starts Nov 7.`,
     );
-    expect(
-      pumpOf(pump('heat'), {range: 'month', figures: {...base, hpFrom: from}, language: 'fr'}).detail.note,
-    ).toMatch(/ la courbe de la thermopompe commence donc le 7 nov\.$/);
+    expect(noteOf(from, 'fr')).toMatch(/ la courbe de la thermopompe commence donc le 7 nov\.$/);
+    // a room's note says nothing of it, whatever its history
+    expect(modelOf(fullHouse, 'bedroom', {range: 'month', history: month(from)}).detail.note).not.toContain('keeps');
   });
 
   const ATTRS = {

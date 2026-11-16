@@ -4,14 +4,11 @@
 // Must not: call the API client (only the cache), draw or word anything, retry a failure more than once a minute, or keep what it derived from.
 import type {ReactiveController, ReactiveControllerHost} from 'lit';
 import {rejectionReason, StaleReply} from '../../core/api.ts';
-import {STATISTICS_TTL_MS, type StatisticsCache} from '../../core/statistics-cache.ts';
+import {HISTORY_RETRY_MS, STATISTICS_TTL_MS, type StatisticsCache} from '../../core/statistics-cache.ts';
 import type {PanelStore} from '../../core/store.ts';
 import type {Formatters} from '../../core/i18n/format.ts';
 import {deriveEnergyHistory, energyWindows, type EnergyHistoryData, type EnergyReplies} from './history.ts';
 import type {StatisticsWindow} from '../../providers/power-history.ts';
-
-/** How soon after a failure the next update asks again: a failed load must not turn every update into a request. */
-export const RETRY_MS = 60_000;
 
 /** What the controller needs of its host: Lit's, and whether the pane is shown. */
 export type EnergyHistoryHost = ReactiveControllerHost & {active: boolean};
@@ -64,7 +61,7 @@ export class EnergyHistory implements ReactiveController {
     const now = Date.now();
     if (this.data && generation === this.generation && now - this.data.at < STATISTICS_TTL_MS) return;
     if (this.request?.generation === generation) return;
-    if (now - this.failedAt < RETRY_MS) return;
+    if (now - this.failedAt < HISTORY_RETRY_MS) return;
     const request: Request = (this.request = {generation});
     try {
       const windows = energyWindows(now, store.config, fmt);

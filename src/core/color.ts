@@ -1,7 +1,7 @@
 // Colour arithmetic: the blend of two `#rrggbb` colours in OKLab, through the conversion there and back.
 // Pattern: a pure function over values (functional core), after Björn Ottosson, "A perceptual color space for image processing" (OKLab, 2020); the
 // matrices are his. OKLab is perceptually even, so equal steps of the blend look like equal steps and neighbouring cells of a scale join without
-// the dark or grey band that blending in sRGB leaves between two hues. It replaces the legacy panel's `toOk`, `fromOk` and `lin` (deleted in #248).
+// the dark or grey band that blending in sRGB leaves between two hues. It replaces the legacy panel's `toOk`, `fromOk` and `lin` (deleted in #246).
 // It assumes a `#rrggbb` colour of six hex digits in either case (the heat scale's stops are literals; nothing else reaches it), and the conversion
 // is private: `oklabBlend` is the one seam, read by Climate's heat scale.
 // Must not: read the DOM or a computed style, or round before the end (the output's bytes are the only rounding).

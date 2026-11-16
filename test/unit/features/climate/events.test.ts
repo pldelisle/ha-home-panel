@@ -2,9 +2,9 @@
 import {expect, test} from 'vitest';
 import {ClimateDetailEvent} from '../../../../src/features/climate/events.ts';
 
-test('crosses the shadow roots, and carries the room and range shown, or null when the detail left', () => {
-  const shown = new ClimateDetailEvent({sel: 'bedroom', range: 'week'});
+test('crosses the shadow roots, and carries the room shown, or null when the detail left', () => {
+  const shown = new ClimateDetailEvent({sel: 'bedroom'});
   expect([shown.type, shown.bubbles, shown.composed]).toEqual(['climate-detail', true, true]);
-  expect(shown.detail).toEqual({shown: {sel: 'bedroom', range: 'week'}});
+  expect(shown.detail).toEqual({shown: {sel: 'bedroom'}});
   expect(new ClimateDetailEvent(null).detail).toEqual({shown: null});
 });

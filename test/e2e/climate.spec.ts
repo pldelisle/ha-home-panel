@@ -1,10 +1,10 @@
-// The Climate tab (spec 20): <hp-climate-pane>, <hp-climate-list>, <hp-climate-detail>, <hp-gauge> and <hp-dial>. On a tablet the list of the house, its rooms and the heat
-// pump beside the selected item's detail with the gauge; on a phone a grid of tiles that open the detail in a sheet with the dial, read-only until #248. The controls, the chart and
-// the heatmap are the legacy panel's, which draws them into the slots the pane forwards until #246 and #248. The test house has four thermostats (Bedroom 20.8 and Living room 20.0
-// heating, Garage 21.2 and Office 20.4 idle, all at 21 degrees) and no heat pump, which the last test adds.
+// The Climate tab (spec 20): <hp-climate-pane>, <hp-climate-list>, <hp-climate-detail>, <hp-gauge>, <hp-dial>, <hp-heat-legend> and the charts. On a tablet the list of the house, its rooms and the
+// heat pump beside the selected item's detail with the gauge, then the heatmap and the outside chart; on a phone a grid of tiles that open the detail in a sheet with the dial, read-only until #248.
+// The controls are the legacy panel's, which draws them into the slot the pane forwards until #248; the history is the pane's, loaded per range through the panel's cache (#246). The test house
+// has four thermostats (Bedroom 20.8 and Living room 20.0 heating, Garage 21.2 and Office 20.4 idle, all at 21 degrees) and no heat pump, which the last tests add.
 import AxeBuilder from '@axe-core/playwright';
 import {test, expect, expectCall, phoneOnly, tabletOnly, type House} from './fixtures';
-import {FULL_CFG} from './houses';
+import {AFTERNOON, FULL_CFG} from './houses';
 
 test.use({houseOpts: {cfg: FULL_CFG}});
 
@@ -13,7 +13,10 @@ const list = (house: House) => pane(house).locator('hp-climate-list');
 const item = (house: House, id: string) => list(house).locator(`[data-id="${id}"]`);
 const detail = (house: House) => pane(house).locator('hp-climate-detail');
 const sheet = (house: House) => pane(house).locator('hp-sheet');
-// the controls, the chart and the heatmap are the legacy panel's: light children of the pane, slotted into the detail
+// the controls are the legacy panel's: a light child of the pane, slotted into the detail; the charts are `<hp-chart>`s, the detail's under its tiles and the tablet's two blocks under the grid
+const charts = (house: House) => detail(house).locator('hp-chart .apexcharts-canvas');
+const heatmap = (house: House) => pane(house).locator('.cblocks > .inner').first();
+const outside = (house: House) => pane(house).locator('.cblocks > .inner').last();
 // the tile's host has no box of its own (`display: contents`): its button is what a person taps
 const tile = (house: House, key: string) => pane(house).locator(`hp-stat-tile[key="${key}"] button`);
 const tileFigures = (house: House) => detail(house).locator('.tile .v');
@@ -64,25 +67,55 @@ test.describe('on a tablet', () => {
     );
   });
 
-  test('the legacy controls and chart sit in the detail, for the room chosen, and the heatmap and outside chart under it', async ({
+  test('the legacy controls and the chart sit in the detail, for the room chosen, and the heatmap and outside chart under it', async ({
     house,
   }) => {
     await expect(pane(house).locator('#cctl .stepper')).toBeVisible();
-    await expect(pane(house).locator('#cchart .legend')).toContainText('House average');
-    await expect(pane(house).locator('#c-room .apexcharts-canvas')).toBeVisible();
-    await expect(pane(house).locator('#chost #cheatwrap .apexcharts-canvas')).toBeVisible();
-    await expect(pane(house).locator('#chost #coutwrap .apexcharts-canvas')).toBeVisible();
+    await expect(detail(house).locator('.legend')).toContainText('House average');
+    await expect(charts(house)).toHaveCount(1);
+    await expect(heatmap(house).locator('h3')).toHaveText('Every room, hour by hour');
+    await expect(heatmap(house).locator('hp-heat-legend .hticks i')).toHaveText(['17°', '19°', '21°', '23°', '25°']);
+    await expect(heatmap(house).locator('hp-chart .apexcharts-canvas')).toBeVisible();
+    await expect(outside(house).locator('h3')).toHaveText('Outside, last 24 hours');
+    await expect(outside(house).locator('.legend')).toHaveText(/Low to high\s*Mean/);
+    await expect(outside(house).locator('hp-chart .apexcharts-canvas')).toBeVisible();
     await item(house, 'office').click();
-    await expect(pane(house).locator('#cchart .legend')).toContainText('Office');
+    await expect(detail(house).locator('.legend')).toContainText('Office');
     await expect(pane(house).locator('#cctl .quick button')).toHaveCount(5);
   });
 
-  test('a week redraws the tabs, the tiles, the legacy chart and the legacy heatmap for a week', async ({house}) => {
+  test('a week redraws the tabs, the tiles, the chart and the heatmap for a week', async ({house}) => {
     await pane(house).locator('hp-range-tabs [role="tab"]', {hasText: 'Week'}).click();
     await expect(pane(house).locator('hp-range-tabs [aria-selected="true"]')).toHaveText('Week');
     await expect(detail(house).locator('.tile .k').last()).toHaveText('Heating, 7 days');
-    await expect(pane(house).locator('#cchart .legend')).toContainText('last 7 days');
-    await expect(pane(house).locator('#cheath')).toHaveText('Every room, every 6 hours');
+    await expect(detail(house).locator('.legend')).toContainText('last 7 days');
+    await expect(heatmap(house).locator('h3')).toHaveText('Every room, every 6 hours');
+    await expect(outside(house).locator('h3')).toHaveText('Outside, last 7 days');
+  });
+
+  // the heatmap's options depend on the range and the theme only: a setpoint changing, a room chosen, nothing makes its chart again, and the
+  // draws are the DOM mutations in the roots of the charts' elements (`.cblocks hp-chart` are the heatmap's and the outside chart's, in the pane)
+  test('a setpoint change and a room chosen leave the heatmap and the outside chart as they were, and draw the room chart again', async ({
+    house,
+  }) => {
+    await expect(heatmap(house).locator('hp-chart .apexcharts-canvas')).toBeVisible();
+    await expect(outside(house).locator('hp-chart .apexcharts-canvas')).toBeVisible();
+    await expect(charts(house)).toBeVisible();
+    const settle = () =>
+      house.page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    await settle();
+    await house.mutations.reset();
+    await item(house, 'bedroom').click();
+    await expect(detail(house).locator('h3')).toHaveText('Bedroom');
+    await house.setState('climate.bedroom', {attributes: {temperature: 23}});
+    await expect(detail(house).locator('.cpill')).toHaveText('Heating to 23°');
+    await settle();
+    expect(
+      await house.mutations.count('hp-chart'),
+      'mutations in the charts: the room chart is drawn for the bedroom',
+    ).toBeGreaterThan(0);
+    expect(await house.mutations.count('.cblocks hp-chart'), 'mutations in the heatmap and the outside chart').toBe(0);
+    await expect(heatmap(house).locator('hp-chart .apexcharts-canvas')).toHaveCount(1);
   });
 
   test('the history’s two figures fill the tiles once it loads: the house’s heating, and a room’s range', async ({
@@ -103,7 +136,7 @@ test.describe('on a tablet', () => {
   });
 
   test('has no serious or critical accessibility finding: the listbox and the gauge', async ({house}) => {
-    await expect(pane(house).locator('#c-room .apexcharts-canvas')).toBeVisible();
+    await expect(charts(house)).toBeVisible();
     const {violations} = await new AxeBuilder({page: house.page}).include('home-panel').analyze();
     expect(violations.filter(v => v.impact === 'serious' || v.impact === 'critical').map(v => v.id)).toEqual([]);
   });
@@ -168,9 +201,13 @@ test.describe('on a phone', () => {
   test('the sheet holds the legacy controls and chart, for the room, and its range tabs', async ({house}) => {
     await tile(house, 'office').click();
     await expect(pane(house).locator('#cctl .quick button')).toHaveCount(5);
-    await expect(pane(house).locator('#c-room .apexcharts-canvas')).toBeVisible();
+    await expect(charts(house)).toBeVisible();
+    // the heatmap and the outside chart are the tablet's: the sheet holds the room's chart alone
+    await expect(charts(house)).toHaveCount(1);
+    await expect(pane(house).locator('.cblocks')).toHaveCount(0);
+    await expect(pane(house).locator('hp-heat-legend')).toHaveCount(0);
     await sheet(house).locator('hp-range-tabs [role="tab"]', {hasText: 'Week'}).click();
-    await expect(pane(house).locator('#cchart .legend')).toContainText('last 7 days');
+    await expect(detail(house).locator('.legend')).toContainText('last 7 days');
   });
 
   test('a thermostat change updates the room’s tile and gives zero mutations in the security pane', async ({house}) => {
@@ -187,7 +224,7 @@ test.describe('on a phone', () => {
     house,
   }) => {
     await tile(house, 'bedroom').click();
-    await expect(pane(house).locator('#c-room .apexcharts-canvas')).toBeVisible();
+    await expect(charts(house)).toBeVisible();
     const {violations} = await new AxeBuilder({page: house.page}).include('home-panel').analyze();
     const found = violations
       .filter(v => v.impact === 'serious' || v.impact === 'critical')
@@ -208,7 +245,13 @@ test.describe('on a phone', () => {
 });
 
 test.describe('with a heat pump, on a tablet', () => {
-  test.use({houseOpts: {cfg: {...FULL_CFG, entities: {...FULL_CFG.entities, heat_pump: 'climate.heat_pump'}}}});
+  test.use({
+    houseOpts: {
+      cfg: {...FULL_CFG, entities: {...FULL_CFG.entities, heat_pump: 'climate.heat_pump'}},
+      time: AFTERNOON,
+      frozen: true,
+    },
+  });
 
   test('the list ends with it, and its detail has its own head, tiles and note', async ({house}) => {
     tabletOnly();
@@ -226,11 +269,11 @@ test.describe('with a heat pump, on a tablet', () => {
     await expect(detail(house).locator('.tile .k')).toHaveText(['Range, 24 h', 'Last update']);
     await expect(detail(house).locator('.note')).toContainText('Readings come from the unit itself.');
     await expect(pane(house).locator('#cctl .seg [role="radio"][aria-checked="true"]')).toHaveText('Heat');
-    await expect(pane(house).locator('#cchart .legend')).toContainText('Heat pump');
+    await expect(detail(house).locator('.legend')).toContainText('Heat pump');
   });
 
-  // the test house keeps no history for the unit, so the figure the legacy panel would tell is told as it would
-  test('its note says where the line starts when the legacy panel reads a later start, and only for the range it was read for', async ({
+  // the test house keeps the unit's state history from five days ago (test/houses/read.mjs), as a recorder that keeps about ten days would
+  test('its note says where the line starts when its history begins after the range does, and only for such a range', async ({
     house,
   }) => {
     tabletOnly();
@@ -240,21 +283,68 @@ test.describe('with a heat pump, on a tablet', () => {
     });
     await house.tab('climate');
     await item(house, 'hp').click();
+    // a day starts after the unit's first reading: the line covers the range, and its figure reads off it
+    await expect(detail(house).locator('.tile .v').first()).toHaveText(/^19\.0–20\.5°$/);
+    await expect(detail(house).locator('.note')).not.toContainText('Home Assistant keeps');
     await pane(house).locator('hp-range-tabs [role="tab"]', {hasText: 'Month'}).click();
-    await expect(detail(house).locator('.note')).not.toContainText('Home Assistant keeps');
-    const tell = (range: string) =>
-      pane(house)
-        .locator('#chost')
-        .evaluate((el, range) => {
-          const detail = {sel: 'hp', range, span: null, kwh: null, hpFrom: Date.now() - 5 * 864e5};
-          el.dispatchEvent(new CustomEvent('climate-figures', {bubbles: true, detail}));
-        }, range);
-    await tell('week');
-    await expect(detail(house).locator('.note')).not.toContainText('Home Assistant keeps');
-    await tell('month');
     await expect(detail(house).locator('.note')).toContainText(
-      'Home Assistant keeps about 10 days of detailed history, so the heat pump line starts',
+      'Home Assistant keeps about 10 days of detailed history, so the heat pump line starts Nov 2.',
     );
+  });
+
+  // spec 20, "Performance": a range already loaded within ten minutes redraws from memory
+  test('a week sends one statistics request and one history request, and a second week within ten minutes sends none', async ({
+    house,
+  }) => {
+    tabletOnly();
+    await house.setState('climate.heat_pump', {
+      state: 'heat',
+      attributes: {current_temperature: 19.5, temperature: 22},
+    });
+    await house.tab('climate');
+    const climate = async (kind: 'recorder/statistics_during_period' | 'history/history_during_period') =>
+      (await house.reads()).filter(
+        read =>
+          read.startsWith(`${kind} `) &&
+          read.includes(kind.startsWith('h') ? 'climate.heat_pump' : 'sensor.bedroom_target_temperature'),
+      );
+    const tab = (name: string) => pane(house).locator('hp-range-tabs [role="tab"]', {hasText: name});
+    await expect(heatmap(house).locator('hp-chart .apexcharts-canvas')).toBeVisible();
+    expect(await climate('recorder/statistics_during_period'), 'the day, asked once').toHaveLength(1);
+    expect(await climate('history/history_during_period')).toHaveLength(1);
+    await tab('Week').click();
+    await expect(heatmap(house).locator('h3')).toHaveText('Every room, every 6 hours');
+    await expect
+      .poll(async () => (await climate('recorder/statistics_during_period')).length, 'the week, asked once')
+      .toBe(2);
+    expect(await climate('history/history_during_period')).toHaveLength(2);
+    await tab('Day').click();
+    await expect(heatmap(house).locator('h3')).toHaveText('Every room, hour by hour');
+    await tab('Week').click();
+    await expect(heatmap(house).locator('h3')).toHaveText('Every room, every 6 hours');
+    await expect(heatmap(house).locator('hp-chart .apexcharts-canvas')).toBeVisible();
+    // a request that came late would show after a settle: the reads are polled, once the frames have passed
+    await house.page.evaluate(
+      () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+    );
+    await house.page.waitForTimeout(250);
+    await expect
+      .poll(async () => (await climate('recorder/statistics_during_period')).length, 'a second week, from memory')
+      .toBe(2);
+    await expect.poll(async () => (await climate('history/history_during_period')).length).toBe(2);
+  });
+
+  test('the heat pump’s chart draws its line and its setpoint from the unit’s history', async ({house}) => {
+    tabletOnly();
+    await house.setState('climate.heat_pump', {
+      state: 'heat',
+      attributes: {current_temperature: 19.5, temperature: 22},
+    });
+    await house.tab('climate');
+    await item(house, 'hp').click();
+    await expect(detail(house).locator('.legend')).toContainText('Heat pump');
+    await expect(charts(house)).toBeVisible();
+    await expect(detail(house).locator('hp-chart .apexcharts-series')).toHaveCount(3);
   });
 
   test('on a phone its Target stepper shows and sends the call', async ({house}) => {

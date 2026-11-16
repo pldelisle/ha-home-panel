@@ -9,16 +9,21 @@ import {createMessages} from '../../../../src/core/i18n/messages.ts';
 import {
   bucket,
   climateWindow,
+  deriveClimateHistory,
   heatColor,
   heatingKwh,
   heatmapOptions,
+  heatLegend,
   heatRanges,
   heatScale,
   houseSeries,
+  lateHeatPumpStart,
   outsideChartOptions,
   rangeSeries,
   RANGE_WORDS,
   roomChartOptions,
+  selectedKwh,
+  selectedSeries,
   setpointSeries,
   type ClimateChartDeps,
   type HeatRow,
@@ -542,5 +547,123 @@ describe('outsideChartOptions', () => {
     expect(call(options, 'tooltip.y.formatter', null)).toBe('–');
     expect(call(build('fr'), 'tooltip.y.formatter', [2, 7.25])).toBe('De 2,0 à 7,3 °C');
     expect(call(options, 'yaxis.labels.formatter', 3.6)).toBe('4°');
+  });
+});
+
+describe('deriveClimateHistory', () => {
+  const config = {
+    entities: {outT: 'sensor.out', hp: 'climate.pump'},
+    rooms: [
+      {k: 'den', temp: 'sensor.den_t', target: 'sensor.den_sp', power: 'sensor.den_p'},
+      {k: 'loft', temp: 'sensor.loft_t', target: 'sensor.loft_sp', power: 'sensor.loft_p'},
+    ],
+  } as unknown as Pick<ResolvedConfig, 'entities' | 'rooms'>;
+  const HOUR = 36e5;
+  const start = local(10, 6);
+  const statistics = {
+    'sensor.den_t': [row(start, 20.126, 19, 21), row(start + HOUR, 21, 20, 22)],
+    'sensor.den_sp': [row(start, 21, 21, 21), row(start + HOUR, 5, 5, 5)],
+    'sensor.den_p': [row(start, 1.5), row(start + HOUR, 2)],
+    'sensor.loft_t': [row(start, 19.5)],
+    'sensor.out': [row(start, -3, -5, 1)],
+  };
+  const at = start + HOUR + 30 * 60_000;
+  const point = (lastUpdated: number, state: string, attributes?: Record<string, unknown>) => ({
+    state,
+    lastUpdated,
+    lastChanged: lastUpdated,
+    attributes,
+  });
+  const history = {
+    'climate.pump': [
+      point(start + 1_000, 'heat', {current_temperature: 19, temperature: 22}),
+      point(start + 2_000, 'off', {current_temperature: 20, temperature: 22}),
+      point(start + 3_000, 'unavailable'),
+    ],
+  };
+  const derived = deriveClimateHistory({statistics, history}, 'week', config, at, start);
+
+  test('is every room’s series, setpoints and heating, the outside’s series and what the window and the load were', () => {
+    expect([derived.range, derived.at, derived.start]).toEqual(['week', at, start]);
+    expect(derived.rooms).toEqual({
+      den: [
+        [start + HOUR / 2, 20.13, 19, 21],
+        [start + HOUR * 1.5, 21, 20, 22],
+      ],
+      loft: [[start + HOUR / 2, 19.5, null, null]],
+    });
+    // the second hour was off throughout: a gap; a room with no setpoint rows has none
+    expect(derived.sp).toEqual({
+      den: [
+        [start + HOUR / 2, 21],
+        [start + HOUR * 1.5, null],
+      ],
+      loft: [],
+    });
+    // the running hour counts the half hour that has passed
+    expect(derived.kwh.den).toBeCloseTo(1.5 + 2 * 0.5);
+    expect(derived.kwh.loft).toBe(0);
+    expect(derived.out).toEqual([[start + HOUR / 2, -3, -5, 1]]);
+  });
+
+  test('the heat pump’s line breaks where it was unavailable, its target is a gap in the modes that have none, and it starts at its first reading', () => {
+    expect(derived.hp).toEqual([
+      [start + 1_000, 19],
+      [start + 2_000 - 1, 19],
+      [start + 2_000, 20],
+      [start + 3_000, null],
+    ]);
+    expect(derived.hpSp).toEqual([
+      [start + 1_000, 22],
+      [start + 2_000, null],
+      [start + 3_000, null],
+    ]);
+    expect(derived.hpFrom).toBe(start + 1_000);
+  });
+
+  test('a house without a heat pump, or whose history came back empty, has no line and no start', () => {
+    const none = deriveClimateHistory({statistics, history: {}}, 'week', config, at, start);
+    expect([none.hp, none.hpSp, none.hpFrom]).toEqual([[], [], null]);
+    const unset = {...config, entities: {outT: null, hp: null}} as unknown as typeof config;
+    const bare = deriveClimateHistory({statistics, history}, 'week', unset, at, start);
+    expect([bare.hp, bare.out]).toEqual([[], []]);
+  });
+
+  test('an attribute that is no number is no reading', () => {
+    const odd = {'climate.pump': [point(start, 'heat', {current_temperature: '19', temperature: null})]};
+    const result = deriveClimateHistory({statistics, history: odd}, 'week', config, at, start);
+    expect([result.hp, result.hpSp]).toEqual([[], []]);
+  });
+
+  test('selectedSeries: the heat pump’s lines, the mean of the rooms, or a room’s own with its setpoint; selectedKwh: the total, a room’s, or none', () => {
+    const keys = ['den', 'loft'];
+    expect(selectedSeries(derived, 'hp', keys)).toEqual({points: derived.hp, setpoints: derived.hpSp});
+    expect(selectedSeries(derived, 'den', keys)).toEqual({points: derived.rooms.den, setpoints: derived.sp.den});
+    // only the instant both rooms have a reading for, and the house has no setpoint
+    expect(selectedSeries(derived, 'house', keys)).toEqual({points: [[start + HOUR / 2, 19.81]], setpoints: []});
+    expect(selectedSeries(derived, 'nowhere', keys)).toEqual({points: [], setpoints: []});
+    expect(selectedKwh(derived, 'hp')).toBeNull();
+    expect(selectedKwh(derived, 'den')).toBe(derived.kwh.den);
+    expect(selectedKwh(derived, 'house')).toBeCloseTo(derived.kwh.den);
+    expect(selectedKwh(derived, 'nowhere')).toBeNull();
+  });
+
+  test('lateHeatPumpStart: the line’s first instant when it starts over a day after the window, else nothing', () => {
+    const late = (hpFrom: number | null) => lateHeatPumpStart({...derived, hpFrom});
+    expect(late(start + 864e5 + 1)).toBe(start + 864e5 + 1);
+    expect(late(start + 864e5)).toBeNull();
+    expect(late(null)).toBeNull();
+  });
+});
+
+describe('heatLegend', () => {
+  test('is a colour for every half degree of the scale and a tick every two degrees, at their places along the bar', () => {
+    const legend = heatLegend(heatScale(false));
+    expect(legend.colors).toHaveLength(19);
+    expect([legend.colors[0], legend.colors[18]]).toEqual(['#24467f', '#87210f']);
+    expect(legend.colors[2]).toBe(heatColor(18, heatScale(false)));
+    expect(legend.ticks.map(tick => tick.degrees)).toEqual([17, 19, 21, 23, 25]);
+    expect(legend.ticks.map(tick => tick.at)).toEqual([0, 2, 4, 6, 8].map(step => (step / 9) * 100));
+    expect(heatLegend(heatScale(true)).colors[0]).toBe('#3561a8');
   });
 });

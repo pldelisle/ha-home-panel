@@ -15,7 +15,7 @@ const DAY = 864e5;
 
 /**
  * The statistics periods the panel asks for and the longest span it asks of each, in days. A copy of the numbers in
- * src/home-panel.js (loadHistory's `d(n)`, CRANGE's `days`) and of the `units` of src/core/api.ts: when the panel asks
+ * src/home-panel.js (loadHistory's `d(n)`) and of the kit's `RANGES` (src/ui/ranges.ts, `days`) and of the `units` of src/core/api.ts: when the panel asks
  * for more, a test fails here (record-fixture.test.mjs) and this table grows.
  */
 export const STATISTIC_SPANS = {'5minute': 1.05, hour: 366, day: 400};

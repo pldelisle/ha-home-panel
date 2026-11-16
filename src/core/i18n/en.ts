@@ -742,6 +742,14 @@ export const en = {
   'climate.chart.outside': 'Outside',
   'climate.chart.lowToHigh': 'Low to high',
   'climate.chart.span': '{low} to {high} °C',
+  // the charts' own words, drawn with the history (the loader's): the heatmap's line, the outside chart's title and legend, and what stands in for a chart
+  'climate.houseAverage': 'House average',
+  'climate.heatHint': 'Mean temperature per room, on a smooth scale from cool blue to warm red.',
+  'climate.outsideTitle': 'Outside, {label}',
+  'climate.chart.mean': 'Mean',
+  'climate.historyLoading': 'Loading history…',
+  'climate.historyUnavailable': 'History is not available right now.',
+  'climate.noThermostats': 'No thermostats found.',
 } as const;
 
 /** Every message key; a key exists when it is written in `en`. */

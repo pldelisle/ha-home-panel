@@ -14,6 +14,9 @@ export type StatisticsCache = Pick<PanelApi, 'statistics' | 'history'> & {
 /** How long a recorder reply stays fresh, the legacy panel's fifteen minutes: the cache's time to live, and how long a feature keeps what it derived. */
 export const STATISTICS_TTL_MS = 15 * 60_000;
 
+/** How soon after a failed load a feature's history controller (Energy's, Climate's) asks the cache again: a failed load must not turn every update into a request. */
+export const HISTORY_RETRY_MS = 60_000;
+
 export interface StatisticsCacheOptions {
   /** How long a reply stays fresh, in milliseconds. */
   ttlMs: number;

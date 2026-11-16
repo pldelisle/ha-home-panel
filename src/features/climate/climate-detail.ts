@@ -1,17 +1,20 @@
-// <hp-climate-detail>: the selection's head (title, line, state pill), then the gauge and the big number on a tablet or the dial on a phone, the tiles and the note.
-// Pattern: humble object (Meszaros, xUnit Test Patterns) placing the model's `detail`; the legacy panel's controls and chart, which it still draws until #248 and #246,
-// come through two named slots (Lit docs, Shadow DOM: Slots) forwarded from the pane, in the places the legacy detail had them: the controls under the head, the chart under the tiles.
-// Must not: read an entity, compute a figure or word a string (the model does), draw the controls or the chart, or be given the selection by anyone but the pane.
+// <hp-climate-detail>: the selection's head (title, line, state pill), then the gauge and the big number on a tablet or the dial on a phone, the tiles, the chart and the note.
+// Pattern: humble object (Meszaros, xUnit Test Patterns) placing the model's `detail` and the options `ClimateCharts` made, through `chart-place.ts`; the legacy panel's controls, which it still draws until #248,
+// come through a named slot (Lit docs, Shadow DOM: Slots) forwarded from the pane, in the place the legacy detail had them under the head. The chart is `<hp-chart>` (ADR 0022).
+// Must not: read an entity, compute a figure or word a string (the model does), build the chart's options (the pane's `ClimateCharts` does), or be given the selection by anyone but the pane.
 import {LitElement, html, nothing, svg, unsafeCSS} from 'lit';
 import {keyed} from 'lit/directives/keyed.js';
 import {repeat} from 'lit/directives/repeat.js';
+import {chartPlace, legendItems} from './chart-place.ts';
 import './dial.ts'; // defines <hp-dial>
 import './gauge.ts'; // defines <hp-gauge>
 import detailOwn from './climate-detail.element.css?inline';
 import type {ClimateSelection, ClimateViewModel} from './model.ts';
+import '../../ui/chart.ts'; // defines <hp-chart>
+import type {ChartOptions} from '../../ui/chart-options.ts';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {lensLike} from '../../ui/lens.ts';
-import {common, inner, tiles} from '../../ui/styles/index.ts';
+import {chart, common, inner, tiles} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
 type Detail = ClimateViewModel['detail'];
@@ -31,14 +34,17 @@ export class ClimateDetail extends LitElement {
   static override properties = {
     view: {attribute: false},
     selection: {},
+    chart: {attribute: false},
   };
-  /** The pane's view model of the detail: the head, the reading and its drawing, the tiles and the note. */
+  /** The pane's view model of the detail: the head, the reading and its drawing, the tiles, the chart's legend and the note. */
   declare view: Detail | undefined;
   /** What is shown: the dial is drawn again, with its first-draw motion, when another room is chosen. */
   declare selection: ClimateSelection;
+  /** The chart's options, made by the pane's `ClimateCharts` once the range is loaded; null before. */
+  declare chart: ChartOptions | null;
 
-  // The kit's inner card and tiles; the element's own rules, the head, the big number, the tiles' columns and the note, are in climate-detail.element.css.
-  static override styles = [common, inner, tiles, unsafeCSS(forShadow(detailOwn))];
+  // The kit's inner card, tiles and chart legend; the element's own rules, the head, the big number, the tiles' columns and the note, are in climate-detail.element.css.
+  static override styles = [common, inner, tiles, chart, unsafeCSS(forShadow(detailOwn))];
 
   constructor() {
     super();
@@ -46,6 +52,7 @@ export class ClimateDetail extends LitElement {
     new AppearanceConsumer(this);
     this.view = undefined;
     this.selection = 'house';
+    this.chart = null;
   }
 
   protected override render() {
@@ -73,10 +80,15 @@ export class ClimateDetail extends LitElement {
               </div>`,
           )}
         </div>
-        <slot name="chart"></slot>
-        ${view.note ? html`<p class="note">${view.note}</p>` : nothing}
+        ${this.renderChart(view)} ${view.note ? html`<p class="note">${view.note}</p>` : nothing}
       </div>
       ${lensLike(this.getRootNode())}`;
+  }
+
+  // the legend and the chart; until the range is loaded (or when it failed) the line that says so stands in the chart's place
+  private renderChart({title, sub, chart: block}: Detail) {
+    return html`<div class="legend">${legendItems(block.legend)}<span class="muted">${block.rangeLabel}</span></div>
+      ${chartPlace(block, this.chart, 230, `${title}. ${sub}`)}`;
   }
 
   // the phone: the dial, an image whose name says its value, redrawn from its first frame for each room chosen

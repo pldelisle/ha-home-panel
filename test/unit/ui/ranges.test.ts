@@ -1,13 +1,9 @@
-// RANGES against the legacy panel's CRANGE, which it copies: the same four ranges, the same spans, periods, ticks and tooltip
-// formats, and the English words of the catalog equal to the class's. The guard goes with CRANGE when Climate, the last reader of
-// the class's table, has moved.
-import {readFileSync} from 'node:fs';
-import {runInNewContext} from 'node:vm';
+// RANGES against the legacy panel's CRANGE, which it copied: the same four ranges, the same spans, periods, ticks and tooltip formats, and the English
+// words of the catalog equal to the class's. The guard once read the table from the class's source; #246 deleted CRANGE, and the snapshot below is it
+// as it was, kept so that a change to a range's numbers or words is a deliberate one, made here as well, and not a slip.
 import {describe, expect, test} from 'vitest';
 import {en} from '../../../src/core/i18n/en.ts';
 import {bucketMiddle, RANGES, type Range} from '../../../src/ui/ranges.ts';
-
-const panel = readFileSync(new URL('../../../src/home-panel.js', import.meta.url), 'utf8');
 
 interface OldRange {
   days: number;
@@ -20,17 +16,50 @@ interface OldRange {
   meanName: string;
 }
 
-const START = 'const CRANGE = ';
-const from = panel.indexOf(START);
-if (from < 0) throw new Error('the class no longer holds CRANGE: delete this guard with it');
-const OLD = runInNewContext(
-  `(${panel
-    .slice(from + START.length, panel.indexOf('\n// heatmap:', from))
-    .trim()
-    .replace(/;$/, '')})`,
-) as Record<Range, OldRange>;
+const OLD: Record<Range, OldRange> = {
+  day: {
+    days: 1,
+    period: '5minute',
+    mid: 15e4,
+    label: 'last 24 hours',
+    short: '24 h',
+    ticks: 8,
+    tipFmt: 'ddd h:mm tt',
+    meanName: '5-minute mean',
+  },
+  week: {
+    days: 7,
+    period: 'hour',
+    mid: 18e5,
+    label: 'last 7 days',
+    short: '7 days',
+    ticks: 7,
+    tipFmt: 'ddd h tt',
+    meanName: 'Hourly mean',
+  },
+  month: {
+    days: 30,
+    period: 'hour',
+    mid: 18e5,
+    label: 'last 30 days',
+    short: '30 days',
+    ticks: 10,
+    tipFmt: 'ddd MMM d, h tt',
+    meanName: 'Hourly mean',
+  },
+  year: {
+    days: 365,
+    period: 'day',
+    mid: 432e5,
+    label: 'last 12 months',
+    short: '12 months',
+    ticks: 12,
+    tipFmt: 'ddd MMM d, yyyy',
+    meanName: 'Daily mean',
+  },
+};
 
-describe('RANGES against the class CRANGE', () => {
+describe('RANGES against the legacy CRANGE', () => {
   test('every range has a tab word, and it is the capitalised name the class gave its tab', () => {
     for (const range of Object.keys(RANGES) as Range[])
       expect(en[RANGES[range].tabKey]).toBe(range[0].toUpperCase() + range.slice(1));
