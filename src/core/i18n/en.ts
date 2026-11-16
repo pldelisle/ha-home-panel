@@ -1302,6 +1302,14 @@ export const en = {
   'live.itemsNeedAttention': '{n, plural, one {# item needs} other {# items need}} attention',
   'live.allClear': 'All clear',
   'live.reportingNormally': 'Everything is reporting normally.',
+  // the Lights commands' toasts (#261)
+  'lights.autoOn': 'Auto on',
+  'lights.autoOff': 'Auto off',
+  'lights.nightOn': 'Night on',
+  'lights.nightOff': 'Night off',
+  'lights.setByHand': 'Set by hand, Auto off',
+  'lights.roomsLinked': 'Rooms linked',
+  'lights.roomUnlinked': 'Room unlinked',
 } as const;
 
 /** Every message key; a key exists when it is written in `en`. */

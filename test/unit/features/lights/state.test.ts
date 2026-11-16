@@ -30,6 +30,7 @@ describe('areaState', () => {
       ct: {min: 2200, max: 6500, k: 3000, known: true},
       k: 3000,
       tint: 'rgb(255,177,110)',
+      tunable: ['light.kitchen_island_1', 'light.kitchen_island_2', 'light.kitchen_sink_1'],
     });
   });
 

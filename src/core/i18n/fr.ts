@@ -1297,4 +1297,12 @@ export const fr: Record<MessageKey, string> = {
   'live.itemsNeedAttention': '{n, plural, one {# élément} other {# éléments}} à vérifier',
   'live.allClear': 'Tout va bien',
   'live.reportingNormally': 'Tout fonctionne normalement.',
+  // the Lights commands' toasts (#261)
+  'lights.autoOn': 'Auto activé',
+  'lights.autoOff': 'Auto désactivé',
+  'lights.nightOn': 'Nuit activée',
+  'lights.nightOff': 'Nuit désactivée',
+  'lights.setByHand': 'Réglé à la main, Auto désactivé',
+  'lights.roomsLinked': 'Pièces liées',
+  'lights.roomUnlinked': 'Pièce déliée',
 };

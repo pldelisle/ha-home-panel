@@ -1,6 +1,6 @@
 # Lights
 
-What the Lights tab reads and computes ([spec 23](../../../docs/specs/23-lights.md)): the house's lights grouped into one tile per area, the Adaptive Lighting switch that runs each, the linked rooms and the order an admin saved, what a tile's lights are doing, and the Adaptive Lighting strip. This folder holds the pure half of the first move (#258) and the model (#259); the commands (#261), the pane and the tiles (#260), the sheet (#262) and Arrange (#263) follow.
+What the Lights tab reads and computes ([spec 23](../../../docs/specs/23-lights.md)): the house's lights grouped into one tile per area, the Adaptive Lighting switch that runs each, the linked rooms and the order an admin saved, what a tile's lights are doing, and the Adaptive Lighting strip. This folder holds the pure half of the first move (#258), the model (#259) and the commands (#261); the pane and the tiles (#260), the sheet (#262) and Arrange (#263) follow.
 
 ## The folder
 
@@ -22,6 +22,10 @@ src/features/lights/
   order.ts                 linkPairs(systemData, configLinks, states); applyLinks(tiles, pairs); applyOrder(tiles, order)
   state.ts                 areaState(area, states): AreaState; tintOf(on, states)
   al-strip-layout.ts       alStripLayout(curve, now, fmt): the gradient's stops, now, the sun's marks, the hours
+  commands.ts              pairOf, allOff, toggleOne, toggleArea, isAuto, setAuto, isNight, setNight, setBrightness, setColorTemp, link:
+                           each intent as the service calls to run, in order (CommandRunner.runAll runs them)
+src/ui/
+  commands.ts              CommandRunner gains runAll(cmds): a list in order, stopped at a failure
 src/ui/controllers/
   system-data.ts           SystemDataController(host, deps, key): one key of the house's frontend system data, read and written through
 ```
@@ -51,3 +55,7 @@ The pairs in force are the system data's `light_links` once someone has picked a
 `lightsModel(inputs, deps)` words what the pane shows: its line (the lit lights and how many Adaptive Lighting switches are on, or how to drag while arranging), the card's title and right-hand words, the phone's line when the house has no light, the All off button, one `TileView` per tile (its line, short on a phone, its accessible name, its tint and its place in a pair), the strip (`null` without a switch: the live kelvin of the first lit switch, else the curve's at now) and the Arrange bar (an admin's, with two units or more; Reset while arranging a saved order). `sheetModel(key, inputs, deps)` words a room's sheet: the power button, the brightness and colour sliders (the colour's words are Night's, else warm to 3000 K, cool from 5000 K, neutral between), the Auto and Night rows from the switches' readings, the chips for a room of two buttons or more, the Linked with row (an admin's to change) and the picker, which says who a room is now with. Its `deps` carry the clock, the sun, the screen and whether the viewer is an admin, so the model reads none of them.
 
 The order and the links are one key, `home_panel`, of Home Assistant's frontend system data: one value for every screen, which only an admin may write. `SystemDataController` reads it with `stale: false` (the value does not depend on the config) when the config changes and each time the pane is shown, since another screen may have rearranged meanwhile; `set(patch)` changes the value at once, tells the host and saves it, and a refused save puts the old value back and rejects, for the caller's toast.
+
+## The commands
+
+Each intent is a pure function returning the calls to run, in order, which the element hands to `CommandRunner.runAll`: it sends each after the last was accepted, stops at a failure (releasing the list's holds and saying why) and says the last `done` once. A linked pair acts as one room (`pairOf`). The rules are the legacy `lightCmd`'s: a tile's bulb switches the pair off when the tile's own lights are on; **Auto on** turns each switch on when it is off and, when the house has `adaptive_lighting.set_manual_control`, lets go of the lights held by hand, and **Auto off** turns the switch off and Night with it; **Night on** turns each sleep mode on and hands the room back to Auto, **Night off** only turns it off. **By hand**, a room under Auto or Night first leaves it (Night off, then its lights held by hand, or the switch off without the service, and the toast "Set by hand, Auto off"), then the brightness goes to the lit lights (all of them when none is lit), or all of them off under one percent, and a colour temperature only to the lights that take one. **Linking** returns the pairs to save (the two rooms' old pairs gone), the toast to say once they are saved, and the calls that make a new partner match: dark when this room is, else at this room's brightness, with its colour temperature too when it was set by hand. None of the commands holds a value: like the legacy panel, a tap waits for Home Assistant's reply.

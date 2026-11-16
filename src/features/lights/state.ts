@@ -30,6 +30,8 @@ export interface AreaState {
   k: number | null;
   /** The colour the lit lights show (`tintOf`), `''` when none is on. */
   tint: string;
+  /** Its lights that take a colour temperature (`supported_color_modes` has `color_temp`): the ones a colour command is sent to. */
+  tunable: string[];
 }
 
 const STEP_K = 50;
@@ -84,5 +86,6 @@ export function areaState(area: {ids: string[]}, states: HassEntities): AreaStat
     ct,
     k: ct?.known ? ct.k : null,
     tint: any ? tintOf(on, states) : '',
+    tunable: tws,
   };
 }
