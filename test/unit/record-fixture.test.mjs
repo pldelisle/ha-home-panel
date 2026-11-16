@@ -4,11 +4,27 @@
 // Pattern: example-based tests at the pure function and at the shell's parameters (ADR 0005, Meszaros, xUnit Test Patterns).
 // Must not: open a socket, read the environment, or write anywhere but a temporary folder.
 import {afterEach, beforeEach, describe, expect, test} from 'vitest';
-import {existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync} from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
-import {DROPPED_KEYS, anonymise, replacerOf, scan, slug} from '../../scripts/lib/anonymise.mjs';
-import {fetchHouse, main, parseArguments, stringify, STATISTIC_SPANS} from '../../scripts/record-fixture.mjs';
+import {DROPPED_KEYS, anonymise, anonymiseTraces, replacerOf, scan, slug} from '../../scripts/lib/anonymise.mjs';
+import {
+  fetchHouse,
+  fetchTraces,
+  main,
+  parseArguments,
+  stringify,
+  STATISTIC_SPANS,
+} from '../../scripts/record-fixture.mjs';
 import {BANNED_PATTERNS, bannedHits, scannedFiles, scannedTexts} from '../personal-data.mjs';
 import * as full from '../houses/full.mjs';
 import {REFERENCE_MS} from '../houses/clock.mjs';
@@ -270,8 +286,20 @@ describe('parseArguments', () => {
       map: 'm.json',
       out: 'o.json',
       statistics: ['a.b', 'c.d'],
+      traces: [],
     });
     expect(parseArguments(['--map', 'm', '--out', 'o']).statistics).toEqual([]);
+  });
+
+  test('--traces takes a comma list of automations, and nothing but automations or statistics beside it', () => {
+    expect(parseArguments(['--map', 'm', '--out', 'dir', '--traces', 'automation.a, automation.b']).traces).toEqual([
+      'automation.a',
+      'automation.b',
+    ]);
+    expect(() => parseArguments(['--map', 'm', '--out', 'o', '--traces', 'script.a'])).toThrow('automation entity ids');
+    expect(() =>
+      parseArguments(['--map', 'm', '--out', 'o', '--traces', 'automation.a', '--statistics', 'sensor.b']),
+    ).toThrow('leave out --statistics');
   });
 
   test('a missing flag or an unknown one is refused', () => {
@@ -431,6 +459,161 @@ describe('fetchHouse', () => {
   });
 });
 
+/**
+ * One automation's config, run list and traces as Home Assistant sends them, with the installation's ids and the real
+ * names the mapping and the renumbering are there to remove.
+ */
+const recordedTraces = () => {
+  const context = {id: '01JREALCONTEXT', parent_id: '01JREALPARENT', user_id: 'real-user-uuid'};
+  const summary = {
+    item_id: '1700000000001',
+    run_id: 'f00dcafe',
+    state: 'stopped',
+    script_execution: 'finished',
+    timestamp: {start: '2026-11-09T11:00:00+00:00', finish: '2026-11-09T11:00:01+00:00'},
+    trigger: 'state of light.cabin_lamp',
+  };
+  return {
+    'automation.real_town_lights': {
+      config: {
+        id: '1700000000001',
+        alias: 'Real Town lights',
+        triggers: [{trigger: 'state', entity_id: 'light.cabin_lamp', id: 'Cabin on'}],
+        conditions: [{condition: 'trigger', id: 'Cabin on'}],
+        actions: [{action: 'light.turn_on', target: {device_id: ['dev-real-1', 'dev-real-2']}}],
+      },
+      list: [summary],
+      traces: {
+        f00dcafe: {
+          ...summary,
+          context,
+          trace: {
+            'trigger/0': [
+              {
+                path: 'trigger/0',
+                changed_variables: {
+                  this: {
+                    entity_id: 'automation.real_town_lights',
+                    attributes: {id: '1700000000001', friendly_name: 'Real Town lights', entity_picture: '/p.png'},
+                    context: {id: '01JTHISCONTEXT', parent_id: null, user_id: null},
+                  },
+                  trigger: {id: 'Cabin on', idx: '0', description: 'state of light.cabin_lamp'},
+                },
+              },
+            ],
+            'action/0': [
+              {
+                path: 'action/0',
+                changed_variables: {context: {...context, id: '01JCHILD', parent_id: '01JREALCONTEXT'}},
+              },
+            ],
+          },
+        },
+      },
+    },
+  };
+};
+
+describe('anonymiseTraces', () => {
+  const [[entity, out]] = Object.entries(anonymiseTraces(recordedTraces(), MAPPING));
+  const run = out.traces.run_001;
+
+  test('the automation and its names go through the mapping, a trigger id with them', () => {
+    expect(entity).toBe('automation.springfield_lights');
+    expect(out.config.alias).toBe('Springfield lights');
+    expect(out.config.triggers[0]).toEqual({trigger: 'state', entity_id: 'light.shelf_lamp', id: 'Shed on'});
+    // the condition still names the trigger it tests
+    expect(out.config.conditions[0].id).toBe(out.config.triggers[0].id);
+    expect(out.list[0].trigger).toBe('state of light.shelf_lamp');
+  });
+
+  test("the installation's ids become stable fakes, and every link between them still holds", () => {
+    expect(out.config.id).toBe('item_001');
+    expect(out.list[0]).toMatchObject({item_id: 'item_001', run_id: 'run_001'});
+    expect(Object.keys(out.traces)).toEqual(['run_001']);
+    expect(run.item_id).toBe('item_001');
+    const step = run.trace['trigger/0'][0].changed_variables.this;
+    expect(step.attributes.id).toBe('item_001');
+    // contexts in the order of the real ids; a child's parent is its parent's fake
+    expect(run.context).toEqual({id: 'context_002', parent_id: 'context_003', user_id: 'user_001'});
+    expect(run.trace['action/0'][0].changed_variables.context).toEqual({
+      id: 'context_001',
+      parent_id: 'context_002',
+      user_id: 'user_001',
+    });
+    expect(step.context.id).toBe('context_004');
+    expect(out.config.actions[0].target.device_id).toEqual(['device_001', 'device_002']);
+  });
+
+  test('the other dropped keys still go, and nothing is left for the scan', () => {
+    expect(run.trace['trigger/0'][0].changed_variables.this.attributes).not.toHaveProperty('entity_picture');
+    expect(scan(out, MAPPING, BANNED_PATTERNS)).toEqual([]);
+  });
+});
+
+describe('fetchTraces', () => {
+  const tracesConnection = (recorded = recordedTraces()) => {
+    const [[entity, {config, list, traces}]] = Object.entries(recorded);
+    const asked = [];
+    return {
+      asked,
+      sendMessagePromise: async m => {
+        asked.push(m);
+        if (m.type === 'automation/config') return m.entity_id === entity ? {config} : {config: {alias: 'no id'}};
+        if (m.type === 'trace/list') return list.filter(r => r.item_id === m.item_id);
+        return traces[m.run_id];
+      },
+    };
+  };
+
+  test("asks for the config, the item's runs and each run's trace, and keeps the replies as they came", async () => {
+    const connection = tracesConnection();
+    expect(await fetchTraces(connection, ['automation.real_town_lights'])).toEqual(recordedTraces());
+    expect(connection.asked).toEqual([
+      {type: 'automation/config', entity_id: 'automation.real_town_lights'},
+      {type: 'trace/list', domain: 'automation', item_id: '1700000000001'},
+      {type: 'trace/get', domain: 'automation', item_id: '1700000000001', run_id: 'f00dcafe'},
+    ]);
+  });
+
+  test('an automation with no id in its config keeps no traces: the recording stops and says which', async () => {
+    await expect(fetchTraces(tracesConnection(), ['automation.yaml_only'])).rejects.toThrow(
+      'automation.yaml_only has no id in its config',
+    );
+  });
+});
+
+describe('the trace fixtures', () => {
+  const folder = new URL('./fixtures/traces/', import.meta.url);
+  const files = readdirSync(folder).filter(f => f.endsWith('.json'));
+  const read = f => JSON.parse(readFileSync(new URL(f, folder), 'utf8'));
+
+  test.each(files)("%s is in the recorder's shape: one trace per listed run, of the config's item", f => {
+    const {automation, config, list, traces} = read(f);
+    expect(f).toBe(`${automation.slice('automation.'.length)}.json`);
+    expect(list.every(r => r.item_id === config.id)).toBe(true);
+    expect(Object.keys(traces)).toEqual(list.map(r => r.run_id));
+    for (const r of list) expect(traces[r.run_id]).toMatchObject({...r, config});
+    for (const t of Object.values(traces))
+      for (const [path, steps] of Object.entries(t.trace)) {
+        expect(path).toMatch(/^(trigger|condition|action)\/\d+(\/|$)/);
+        expect(steps.every(step => step.path === path)).toBe(true);
+      }
+  });
+
+  test('together they hold the six cases the graph is tested on', () => {
+    const runs = files.flatMap(f => Object.values(read(f).traces));
+    const has = rule => runs.some(rule);
+    const paths = t => Object.keys(t.trace);
+    expect(has(t => t.script_execution === 'finished')).toBe(true);
+    expect(has(t => t.script_execution === 'failed_conditions')).toBe(true);
+    expect(has(t => t.state === 'running' && t.config.actions.some(a => a.wait_for_trigger))).toBe(true);
+    expect(has(t => paths(t).some(p => /\/default\/\d+$/.test(p)))).toBe(true);
+    expect(has(t => paths(t).some(p => /\/repeat\/sequence\//.test(p)))).toBe(true);
+    expect(has(t => t.script_execution === 'error' && t.error)).toBe(true);
+  });
+});
+
 describe('main', () => {
   let dir, mapPath, outPath, logs, errors;
   const run = (args, env = {HASS_URL: 'http://ha.test:8123', HASS_TOKEN: 'secret-token'}, deps = {}) =>
@@ -559,6 +742,56 @@ describe('main', () => {
     expect(errors.join('\n')).toContain('  $.states["…"] (key) still holds mapping.strings["R…n"] (9 chars)');
     expect(errors.join('\n')).not.toMatch(/real.town/i);
     expectNoSecrets();
+  });
+
+  test('--traces writes one file per automation, named by its anonymised id, in the folder it is given', async () => {
+    const recorded = recordedTraces();
+    const [[entity, {config, list, traces}]] = Object.entries(recorded);
+    const connection = {
+      haVersion: '2026.11.0',
+      closed: false,
+      close() {
+        this.closed = true;
+      },
+      sendMessagePromise: async m =>
+        m.type === 'automation/config' ? {config} : m.type === 'trace/list' ? list : traces[m.run_id],
+    };
+    const folder = join(dir, 'traces');
+    const code = await run(['--map', mapPath, '--out', folder, '--traces', entity], undefined, {
+      connect: async () => connection,
+    });
+    expect(code).toBe(0);
+    expect(connection.closed).toBe(true);
+    expect(readdirSync(folder)).toEqual(['springfield_lights.json']);
+    const written = JSON.parse(readFileSync(join(folder, 'springfield_lights.json'), 'utf8'));
+    expect(written).toEqual({
+      recordedAt: '2026-11-09T12:00:00.000Z',
+      source: 'home-assistant 2026.11.0',
+      automation: 'automation.springfield_lights',
+      ...anonymiseTraces(recorded, MAPPING)['automation.springfield_lights'],
+    });
+    expect(logs).toEqual([`wrote 1 trace file(s) in ${folder}: automation.springfield_lights (1 run(s))`]);
+  });
+
+  test('--traces refuses and writes nothing when a leftover remains, naming the file and the path', async () => {
+    const recorded = recordedTraces();
+    const [[, {config, list, traces}]] = Object.entries(recorded);
+    config.description = `near ${BANNED_TOWN}`;
+    const connection = {
+      haVersion: '2026.11.0',
+      close() {},
+      sendMessagePromise: async m =>
+        m.type === 'automation/config' ? {config} : m.type === 'trace/list' ? list : traces[m.run_id],
+    };
+    const folder = join(dir, 'traces');
+    const code = await run(['--map', mapPath, '--out', folder, '--traces', 'automation.real_town_lights'], undefined, {
+      connect: async () => connection,
+    });
+    expect(code).toBe(1);
+    expect(existsSync(folder)).toBe(false);
+    expect(errors.join('\n')).toContain(
+      `springfield_lights.json $.config.description (value) still holds ${TOWN_RULE}`,
+    );
   });
 
   test('the connection is closed when a reply fails, and the failure is reported', async () => {

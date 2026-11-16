@@ -1,0 +1,221 @@
+{
+  "recordedAt": "2026-11-07T18:49:00.000Z",
+  "source": "made up in the reply shape of home-assistant 2026.11.0 (no recording yet)",
+  "automation": "automation.office_light_blink",
+  "config": {
+    "id": "item_005",
+    "alias": "Office - blink when someone moves",
+    "triggers": [{"trigger": "state", "entity_id": "binary_sensor.hall_motion", "to": "on"}],
+    "conditions": [],
+    "actions": [
+      {
+        "repeat": {
+          "count": 3,
+          "sequence": [
+            {
+              "action": "light.toggle",
+              "target": {"entity_id": "light.office_1"}
+            },
+            {
+              "delay": {"seconds": 1}
+            }
+          ]
+        }
+      }
+    ],
+    "mode": "single"
+  },
+  "list": [
+    {
+      "last_step": "action/0/repeat/sequence/1",
+      "run_id": "run_006",
+      "state": "stopped",
+      "script_execution": "finished",
+      "timestamp": {"start": "2026-11-07T15:20:44.903116+00:00", "finish": "2026-11-07T15:20:48.323+00:00"},
+      "domain": "automation",
+      "item_id": "item_005",
+      "trigger": "state of binary_sensor.hall_motion"
+    }
+  ],
+  "traces": {
+    "run_006": {
+      "last_step": "action/0/repeat/sequence/1",
+      "run_id": "run_006",
+      "state": "stopped",
+      "script_execution": "finished",
+      "timestamp": {"start": "2026-11-07T15:20:44.903116+00:00", "finish": "2026-11-07T15:20:48.323+00:00"},
+      "domain": "automation",
+      "item_id": "item_005",
+      "trigger": "state of binary_sensor.hall_motion",
+      "trace": {
+        "trigger/0": [
+          {
+            "path": "trigger/0",
+            "timestamp": "2026-11-07T15:20:44.903116+00:00",
+            "changed_variables": {
+              "this": {
+                "entity_id": "automation.office_light_blink",
+                "state": "on",
+                "attributes": {
+                  "id": "item_005",
+                  "last_triggered": null,
+                  "mode": "single",
+                  "current": 0,
+                  "friendly_name": "Office - blink when someone moves"
+                },
+                "last_changed": "2026-11-06T13:02:11.204311+00:00",
+                "last_reported": "2026-11-06T13:02:11.204311+00:00",
+                "last_updated": "2026-11-06T13:02:11.204311+00:00",
+                "context": {"id": "context_020", "parent_id": null, "user_id": null}
+              },
+              "trigger": {
+                "id": "0",
+                "idx": "0",
+                "alias": null,
+                "platform": "state",
+                "entity_id": "binary_sensor.hall_motion",
+                "from_state": {
+                  "entity_id": "binary_sensor.hall_motion",
+                  "state": "off",
+                  "attributes": {"device_class": "motion", "friendly_name": "Hall motion"},
+                  "last_changed": "2026-11-07T15:02:10.004417+00:00",
+                  "last_reported": "2026-11-07T15:02:10.004417+00:00",
+                  "last_updated": "2026-11-07T15:02:10.004417+00:00",
+                  "context": {"id": "context_018", "parent_id": null, "user_id": null}
+                },
+                "to_state": {
+                  "entity_id": "binary_sensor.hall_motion",
+                  "state": "on",
+                  "attributes": {"device_class": "motion", "friendly_name": "Hall motion"},
+                  "last_changed": "2026-11-07T15:20:44.903116+00:00",
+                  "last_reported": "2026-11-07T15:20:44.903116+00:00",
+                  "last_updated": "2026-11-07T15:20:44.903116+00:00",
+                  "context": {"id": "context_019", "parent_id": null, "user_id": null}
+                },
+                "for": null,
+                "attribute": null,
+                "description": "state of binary_sensor.hall_motion"
+              }
+            }
+          }
+        ],
+        "action/0": [
+          {
+            "path": "action/0",
+            "timestamp": "2026-11-07T15:20:44.905+00:00",
+            "changed_variables": {
+              "context": {"id": "context_021", "parent_id": "context_020", "user_id": null}
+            }
+          }
+        ],
+        "action/0/repeat/sequence/0": [
+          {
+            "path": "action/0/repeat/sequence/0",
+            "timestamp": "2026-11-07T15:20:46.003+00:00",
+            "changed_variables": {
+              "repeat": {"first": true, "index": 1, "last": false}
+            },
+            "result": {
+              "params": {
+                "domain": "light",
+                "service": "toggle",
+                "service_data": {},
+                "target": {
+                  "entity_id": ["light.office_1"]
+                }
+              },
+              "running_script": false
+            }
+          },
+          {
+            "path": "action/0/repeat/sequence/0",
+            "timestamp": "2026-11-07T15:20:47.103+00:00",
+            "changed_variables": {
+              "repeat": {"first": false, "index": 2, "last": false}
+            },
+            "result": {
+              "params": {
+                "domain": "light",
+                "service": "toggle",
+                "service_data": {},
+                "target": {
+                  "entity_id": ["light.office_1"]
+                }
+              },
+              "running_script": false
+            }
+          },
+          {
+            "path": "action/0/repeat/sequence/0",
+            "timestamp": "2026-11-07T15:20:48.203+00:00",
+            "changed_variables": {
+              "repeat": {"first": false, "index": 3, "last": true}
+            },
+            "result": {
+              "params": {
+                "domain": "light",
+                "service": "toggle",
+                "service_data": {},
+                "target": {
+                  "entity_id": ["light.office_1"]
+                }
+              },
+              "running_script": false
+            }
+          }
+        ],
+        "action/0/repeat/sequence/1": [
+          {
+            "path": "action/0/repeat/sequence/1",
+            "timestamp": "2026-11-07T15:20:46.023+00:00",
+            "changed_variables": {
+              "repeat": {"first": true, "index": 1, "last": false}
+            },
+            "result": {"delay": 1, "done": true}
+          },
+          {
+            "path": "action/0/repeat/sequence/1",
+            "timestamp": "2026-11-07T15:20:47.123+00:00",
+            "changed_variables": {
+              "repeat": {"first": false, "index": 2, "last": false}
+            },
+            "result": {"delay": 1, "done": true}
+          },
+          {
+            "path": "action/0/repeat/sequence/1",
+            "timestamp": "2026-11-07T15:20:48.223+00:00",
+            "changed_variables": {
+              "repeat": {"first": false, "index": 3, "last": true}
+            },
+            "result": {"delay": 1, "done": true}
+          }
+        ]
+      },
+      "config": {
+        "id": "item_005",
+        "alias": "Office - blink when someone moves",
+        "triggers": [{"trigger": "state", "entity_id": "binary_sensor.hall_motion", "to": "on"}],
+        "conditions": [],
+        "actions": [
+          {
+            "repeat": {
+              "count": 3,
+              "sequence": [
+                {
+                  "action": "light.toggle",
+                  "target": {"entity_id": "light.office_1"}
+                },
+                {
+                  "delay": {"seconds": 1}
+                }
+              ]
+            }
+          }
+        ],
+        "mode": "single"
+      },
+      "blueprint_inputs": null,
+      "context": {"id": "context_017", "parent_id": null, "user_id": null}
+    }
+  }
+}
