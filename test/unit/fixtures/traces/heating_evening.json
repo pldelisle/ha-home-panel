@@ -1,0 +1,211 @@
+{
+  "recordedAt": "2026-11-07T18:49:00.000Z",
+  "source": "home-assistant 2026.11.0 (made up in its reply shape, not recorded)",
+  "automation": "automation.heating_evening",
+  "config": {
+    "id": "item_002",
+    "alias": "Heating - evening setpoints",
+    "triggers": [{"trigger": "time", "at": "18:00:00"}],
+    "conditions": [{"condition": "state", "entity_id": "input_boolean.heating_away", "state": "off"}],
+    "actions": [
+      {
+        "action": "climate.set_temperature",
+        "target": {"entity_id": "climate.living_room"},
+        "data": {"temperature": 21}
+      }
+    ],
+    "mode": "single"
+  },
+  "list": [
+    {
+      "last_step": "action/0",
+      "run_id": "run_002",
+      "state": "stopped",
+      "script_execution": "finished",
+      "timestamp": {"start": "2026-11-05T23:00:00.001904+00:00", "finish": "2026-11-05T23:00:00.210477+00:00"},
+      "domain": "automation",
+      "item_id": "item_002",
+      "trigger": "time"
+    },
+    {
+      "last_step": "condition/0",
+      "run_id": "run_003",
+      "state": "stopped",
+      "script_execution": "failed_conditions",
+      "timestamp": {"start": "2026-11-06T23:00:00.002315+00:00", "finish": "2026-11-06T23:00:00.006118+00:00"},
+      "domain": "automation",
+      "item_id": "item_002",
+      "trigger": "time"
+    }
+  ],
+  "traces": {
+    "run_002": {
+      "last_step": "action/0",
+      "run_id": "run_002",
+      "state": "stopped",
+      "script_execution": "finished",
+      "timestamp": {"start": "2026-11-05T23:00:00.001904+00:00", "finish": "2026-11-05T23:00:00.210477+00:00"},
+      "domain": "automation",
+      "item_id": "item_002",
+      "trigger": "time",
+      "trace": {
+        "trigger/0": [
+          {
+            "path": "trigger/0",
+            "timestamp": "2026-11-05T23:00:00.001904+00:00",
+            "changed_variables": {
+              "this": {
+                "entity_id": "automation.heating_evening",
+                "state": "on",
+                "attributes": {
+                  "id": "item_002",
+                  "last_triggered": null,
+                  "mode": "single",
+                  "current": 0,
+                  "friendly_name": "Heating - evening setpoints"
+                },
+                "last_changed": "2026-11-06T13:02:11.204311+00:00",
+                "last_reported": "2026-11-06T13:02:11.204311+00:00",
+                "last_updated": "2026-11-06T13:02:11.204311+00:00",
+                "context": {"id": "context_004", "parent_id": null, "user_id": null}
+              },
+              "trigger": {
+                "id": "0",
+                "idx": "0",
+                "alias": null,
+                "platform": "time",
+                "now": "2026-11-05T23:00:00.001904+00:00",
+                "description": "time",
+                "entity_id": null
+              }
+            }
+          }
+        ],
+        "condition/0": [
+          {
+            "path": "condition/0",
+            "timestamp": "2026-11-05T23:00:00.003904+00:00",
+            "result": {"result": true}
+          }
+        ],
+        "condition/0/entity_id/0": [
+          {
+            "path": "condition/0/entity_id/0",
+            "timestamp": "2026-11-05T23:00:00.004904+00:00",
+            "result": {"result": true, "state": "off", "wanted_state": "off"}
+          }
+        ],
+        "action/0": [
+          {
+            "path": "action/0",
+            "timestamp": "2026-11-05T23:00:00.006904+00:00",
+            "changed_variables": {
+              "context": {"id": "context_003", "parent_id": null, "user_id": null}
+            },
+            "result": {
+              "params": {
+                "domain": "climate",
+                "service": "set_temperature",
+                "service_data": {"temperature": 21},
+                "target": {
+                  "entity_id": ["climate.living_room"]
+                }
+              },
+              "running_script": false
+            }
+          }
+        ]
+      },
+      "config": {
+        "id": "item_002",
+        "alias": "Heating - evening setpoints",
+        "triggers": [{"trigger": "time", "at": "18:00:00"}],
+        "conditions": [{"condition": "state", "entity_id": "input_boolean.heating_away", "state": "off"}],
+        "actions": [
+          {
+            "action": "climate.set_temperature",
+            "target": {"entity_id": "climate.living_room"},
+            "data": {"temperature": 21}
+          }
+        ],
+        "mode": "single"
+      },
+      "blueprint_inputs": null,
+      "context": {"id": "context_003", "parent_id": null, "user_id": null}
+    },
+    "run_003": {
+      "last_step": "condition/0",
+      "run_id": "run_003",
+      "state": "stopped",
+      "script_execution": "failed_conditions",
+      "timestamp": {"start": "2026-11-06T23:00:00.002315+00:00", "finish": "2026-11-06T23:00:00.006118+00:00"},
+      "domain": "automation",
+      "item_id": "item_002",
+      "trigger": "time",
+      "trace": {
+        "trigger/0": [
+          {
+            "path": "trigger/0",
+            "timestamp": "2026-11-06T23:00:00.002315+00:00",
+            "changed_variables": {
+              "this": {
+                "entity_id": "automation.heating_evening",
+                "state": "on",
+                "attributes": {
+                  "id": "item_002",
+                  "last_triggered": null,
+                  "mode": "single",
+                  "current": 0,
+                  "friendly_name": "Heating - evening setpoints"
+                },
+                "last_changed": "2026-11-06T13:02:11.204311+00:00",
+                "last_reported": "2026-11-06T13:02:11.204311+00:00",
+                "last_updated": "2026-11-06T13:02:11.204311+00:00",
+                "context": {"id": "context_006", "parent_id": null, "user_id": null}
+              },
+              "trigger": {
+                "id": "0",
+                "idx": "0",
+                "alias": null,
+                "platform": "time",
+                "now": "2026-11-06T23:00:00.002315+00:00",
+                "description": "time",
+                "entity_id": null
+              }
+            }
+          }
+        ],
+        "condition/0": [
+          {
+            "path": "condition/0",
+            "timestamp": "2026-11-06T23:00:00.004315+00:00",
+            "result": {"result": false}
+          }
+        ],
+        "condition/0/entity_id/0": [
+          {
+            "path": "condition/0/entity_id/0",
+            "timestamp": "2026-11-06T23:00:00.005315+00:00",
+            "result": {"result": false, "state": "on", "wanted_state": "off"}
+          }
+        ]
+      },
+      "config": {
+        "id": "item_002",
+        "alias": "Heating - evening setpoints",
+        "triggers": [{"trigger": "time", "at": "18:00:00"}],
+        "conditions": [{"condition": "state", "entity_id": "input_boolean.heating_away", "state": "off"}],
+        "actions": [
+          {
+            "action": "climate.set_temperature",
+            "target": {"entity_id": "climate.living_room"},
+            "data": {"temperature": 21}
+          }
+        ],
+        "mode": "single"
+      },
+      "blueprint_inputs": null,
+      "context": {"id": "context_005", "parent_id": null, "user_id": null}
+    }
+  }
+}

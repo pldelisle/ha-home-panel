@@ -1,0 +1,227 @@
+{
+  "recordedAt": "2026-11-07T18:49:00.000Z",
+  "source": "home-assistant 2026.11.0 (made up in its reply shape, not recorded)",
+  "automation": "automation.heating_morning",
+  "config": {
+    "id": "item_004",
+    "alias": "Heating - morning setpoints",
+    "triggers": [
+      {"trigger": "time", "at": "06:00:00"},
+      {"trigger": "state", "entity_id": "person.alex", "to": "home"}
+    ],
+    "conditions": [],
+    "actions": [
+      {
+        "choose": [
+          {
+            "alias": "Away",
+            "conditions": [{"condition": "state", "entity_id": "input_boolean.heating_away", "state": "on"}],
+            "sequence": [
+              {
+                "action": "climate.set_temperature",
+                "target": {"entity_id": "climate.living_room"},
+                "data": {"temperature": 17}
+              }
+            ]
+          },
+          {
+            "alias": "Weekend",
+            "conditions": [
+              {
+                "condition": "time",
+                "weekday": ["sat", "sun"]
+              }
+            ],
+            "sequence": [
+              {
+                "action": "climate.set_temperature",
+                "target": {"entity_id": "climate.living_room"},
+                "data": {"temperature": 20}
+              }
+            ]
+          }
+        ],
+        "default": [
+          {
+            "action": "climate.set_temperature",
+            "target": {"entity_id": "climate.living_room"},
+            "data": {"temperature": 21}
+          }
+        ]
+      }
+    ],
+    "mode": "queued"
+  },
+  "list": [
+    {
+      "last_step": "action/0/default/0",
+      "run_id": "run_005",
+      "state": "stopped",
+      "script_execution": "finished",
+      "timestamp": {"start": "2026-11-06T11:00:00.001377+00:00", "finish": "2026-11-06T11:00:00.193377+00:00"},
+      "domain": "automation",
+      "item_id": "item_004",
+      "trigger": "time"
+    }
+  ],
+  "traces": {
+    "run_005": {
+      "last_step": "action/0/default/0",
+      "run_id": "run_005",
+      "state": "stopped",
+      "script_execution": "finished",
+      "timestamp": {"start": "2026-11-06T11:00:00.001377+00:00", "finish": "2026-11-06T11:00:00.193377+00:00"},
+      "domain": "automation",
+      "item_id": "item_004",
+      "trigger": "time",
+      "trace": {
+        "trigger/0": [
+          {
+            "path": "trigger/0",
+            "timestamp": "2026-11-06T11:00:00.001377+00:00",
+            "changed_variables": {
+              "this": {
+                "entity_id": "automation.heating_morning",
+                "state": "on",
+                "attributes": {
+                  "id": "item_004",
+                  "last_triggered": null,
+                  "mode": "queued",
+                  "current": 0,
+                  "friendly_name": "Heating - morning setpoints"
+                },
+                "last_changed": "2026-11-06T13:02:11.204311+00:00",
+                "last_reported": "2026-11-06T13:02:11.204311+00:00",
+                "last_updated": "2026-11-06T13:02:11.204311+00:00",
+                "context": {"id": "context_012", "parent_id": null, "user_id": null}
+              },
+              "trigger": {
+                "id": "0",
+                "idx": "0",
+                "alias": null,
+                "platform": "time",
+                "now": "2026-11-06T11:00:00.001377+00:00",
+                "description": "time",
+                "entity_id": null
+              }
+            }
+          }
+        ],
+        "action/0": [
+          {
+            "path": "action/0",
+            "timestamp": "2026-11-06T11:00:00.002377+00:00",
+            "changed_variables": {
+              "context": {"id": "context_011", "parent_id": null, "user_id": null}
+            },
+            "result": {"choice": "default"}
+          }
+        ],
+        "action/0/choose/0": [
+          {
+            "path": "action/0/choose/0",
+            "timestamp": "2026-11-06T11:00:00.003377+00:00",
+            "result": {"result": false}
+          }
+        ],
+        "action/0/choose/0/conditions/0": [
+          {
+            "path": "action/0/choose/0/conditions/0",
+            "timestamp": "2026-11-06T11:00:00.003377+00:00",
+            "result": {"result": false}
+          }
+        ],
+        "action/0/choose/0/conditions/0/entity_id/0": [
+          {
+            "path": "action/0/choose/0/conditions/0/entity_id/0",
+            "timestamp": "2026-11-06T11:00:00.004377+00:00",
+            "result": {"result": false, "state": "off", "wanted_state": "on"}
+          }
+        ],
+        "action/0/choose/1": [
+          {
+            "path": "action/0/choose/1",
+            "timestamp": "2026-11-06T11:00:00.005377+00:00",
+            "result": {"result": false}
+          }
+        ],
+        "action/0/choose/1/conditions/0": [
+          {
+            "path": "action/0/choose/1/conditions/0",
+            "timestamp": "2026-11-06T11:00:00.005377+00:00",
+            "result": {"result": false, "weekday": "fri"}
+          }
+        ],
+        "action/0/default/0": [
+          {
+            "path": "action/0/default/0",
+            "timestamp": "2026-11-06T11:00:00.007377+00:00",
+            "result": {
+              "params": {
+                "domain": "climate",
+                "service": "set_temperature",
+                "service_data": {"temperature": 21},
+                "target": {
+                  "entity_id": ["climate.living_room"]
+                }
+              },
+              "running_script": false
+            }
+          }
+        ]
+      },
+      "config": {
+        "id": "item_004",
+        "alias": "Heating - morning setpoints",
+        "triggers": [
+          {"trigger": "time", "at": "06:00:00"},
+          {"trigger": "state", "entity_id": "person.alex", "to": "home"}
+        ],
+        "conditions": [],
+        "actions": [
+          {
+            "choose": [
+              {
+                "alias": "Away",
+                "conditions": [{"condition": "state", "entity_id": "input_boolean.heating_away", "state": "on"}],
+                "sequence": [
+                  {
+                    "action": "climate.set_temperature",
+                    "target": {"entity_id": "climate.living_room"},
+                    "data": {"temperature": 17}
+                  }
+                ]
+              },
+              {
+                "alias": "Weekend",
+                "conditions": [
+                  {
+                    "condition": "time",
+                    "weekday": ["sat", "sun"]
+                  }
+                ],
+                "sequence": [
+                  {
+                    "action": "climate.set_temperature",
+                    "target": {"entity_id": "climate.living_room"},
+                    "data": {"temperature": 20}
+                  }
+                ]
+              }
+            ],
+            "default": [
+              {
+                "action": "climate.set_temperature",
+                "target": {"entity_id": "climate.living_room"},
+                "data": {"temperature": 21}
+              }
+            ]
+          }
+        ],
+        "mode": "queued"
+      },
+      "blueprint_inputs": null,
+      "context": {"id": "context_011", "parent_id": null, "user_id": null}
+    }
+  }
+}

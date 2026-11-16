@@ -1,0 +1,171 @@
+{
+  "recordedAt": "2026-11-07T18:49:00.000Z",
+  "source": "home-assistant 2026.11.0 (made up in its reply shape, not recorded)",
+  "automation": "automation.entrance_light_until_closed",
+  "config": {
+    "id": "item_003",
+    "alias": "Entrance - light until the door closes",
+    "triggers": [{"trigger": "state", "entity_id": "binary_sensor.front_door", "to": "on"}],
+    "conditions": [{"condition": "state", "entity_id": "sun.sun", "state": "below_horizon"}],
+    "actions": [
+      {
+        "action": "light.turn_on",
+        "target": {"entity_id": "light.living_room_1"}
+      },
+      {
+        "wait_for_trigger": [{"trigger": "state", "entity_id": "binary_sensor.front_door", "to": "off"}],
+        "timeout": "00:10:00",
+        "continue_on_timeout": true
+      },
+      {
+        "action": "light.turn_off",
+        "target": {"entity_id": "light.living_room_1"}
+      }
+    ],
+    "mode": "restart"
+  },
+  "list": [
+    {
+      "last_step": "action/1",
+      "run_id": "run_004",
+      "state": "running",
+      "script_execution": null,
+      "timestamp": {"start": "2026-11-07T18:47:31.552190+00:00", "finish": null},
+      "domain": "automation",
+      "item_id": "item_003",
+      "trigger": "state of binary_sensor.front_door"
+    }
+  ],
+  "traces": {
+    "run_004": {
+      "last_step": "action/1",
+      "run_id": "run_004",
+      "state": "running",
+      "script_execution": null,
+      "timestamp": {"start": "2026-11-07T18:47:31.552190+00:00", "finish": null},
+      "domain": "automation",
+      "item_id": "item_003",
+      "trigger": "state of binary_sensor.front_door",
+      "trace": {
+        "trigger/0": [
+          {
+            "path": "trigger/0",
+            "timestamp": "2026-11-07T18:47:31.552190+00:00",
+            "changed_variables": {
+              "this": {
+                "entity_id": "automation.entrance_light_until_closed",
+                "state": "on",
+                "attributes": {
+                  "id": "item_003",
+                  "last_triggered": null,
+                  "mode": "restart",
+                  "current": 0,
+                  "friendly_name": "Entrance - light until the door closes"
+                },
+                "last_changed": "2026-11-06T13:02:11.204311+00:00",
+                "last_reported": "2026-11-06T13:02:11.204311+00:00",
+                "last_updated": "2026-11-06T13:02:11.204311+00:00",
+                "context": {"id": "context_010", "parent_id": null, "user_id": null}
+              },
+              "trigger": {
+                "id": "0",
+                "idx": "0",
+                "alias": null,
+                "platform": "state",
+                "entity_id": "binary_sensor.front_door",
+                "from_state": {
+                  "entity_id": "binary_sensor.front_door",
+                  "state": "off",
+                  "attributes": {"device_class": "door", "friendly_name": "Front door"},
+                  "last_changed": "2026-11-07T16:12:09.330018+00:00",
+                  "last_reported": "2026-11-07T16:12:09.330018+00:00",
+                  "last_updated": "2026-11-07T16:12:09.330018+00:00",
+                  "context": {"id": "context_008", "parent_id": null, "user_id": null}
+                },
+                "to_state": {
+                  "entity_id": "binary_sensor.front_door",
+                  "state": "on",
+                  "attributes": {"device_class": "door", "friendly_name": "Front door"},
+                  "last_changed": "2026-11-07T18:47:31.552190+00:00",
+                  "last_reported": "2026-11-07T18:47:31.552190+00:00",
+                  "last_updated": "2026-11-07T18:47:31.552190+00:00",
+                  "context": {"id": "context_009", "parent_id": null, "user_id": null}
+                },
+                "for": null,
+                "attribute": null,
+                "description": "state of binary_sensor.front_door"
+              }
+            }
+          }
+        ],
+        "condition/0": [
+          {
+            "path": "condition/0",
+            "timestamp": "2026-11-07T18:47:31.554190+00:00",
+            "result": {"result": true}
+          }
+        ],
+        "condition/0/entity_id/0": [
+          {
+            "path": "condition/0/entity_id/0",
+            "timestamp": "2026-11-07T18:47:31.555190+00:00",
+            "result": {"result": true, "state": "below_horizon", "wanted_state": "below_horizon"}
+          }
+        ],
+        "action/0": [
+          {
+            "path": "action/0",
+            "timestamp": "2026-11-07T18:47:31.557190+00:00",
+            "changed_variables": {
+              "context": {"id": "context_007", "parent_id": "context_009", "user_id": null}
+            },
+            "result": {
+              "params": {
+                "domain": "light",
+                "service": "turn_on",
+                "service_data": {},
+                "target": {
+                  "entity_id": ["light.living_room_1"]
+                }
+              },
+              "running_script": false
+            }
+          }
+        ],
+        "action/1": [
+          {
+            "path": "action/1",
+            "timestamp": "2026-11-07T18:47:31.613190+00:00",
+            "result": {
+              "wait": {"remaining": 600, "trigger": null}
+            }
+          }
+        ]
+      },
+      "config": {
+        "id": "item_003",
+        "alias": "Entrance - light until the door closes",
+        "triggers": [{"trigger": "state", "entity_id": "binary_sensor.front_door", "to": "on"}],
+        "conditions": [{"condition": "state", "entity_id": "sun.sun", "state": "below_horizon"}],
+        "actions": [
+          {
+            "action": "light.turn_on",
+            "target": {"entity_id": "light.living_room_1"}
+          },
+          {
+            "wait_for_trigger": [{"trigger": "state", "entity_id": "binary_sensor.front_door", "to": "off"}],
+            "timeout": "00:10:00",
+            "continue_on_timeout": true
+          },
+          {
+            "action": "light.turn_off",
+            "target": {"entity_id": "light.living_room_1"}
+          }
+        ],
+        "mode": "restart"
+      },
+      "blueprint_inputs": null,
+      "context": {"id": "context_007", "parent_id": "context_009", "user_id": null}
+    }
+  }
+}

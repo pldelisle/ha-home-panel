@@ -68,7 +68,7 @@ src/features/automations/
 test/unit/
   providers/automations.test.ts
   features/automations/{traces,graph,sentences,mermaid-def,timeline-layout,model}.test.ts
-  fixtures/traces/*.json    recorded traces (anonymised: aliases and entity ids through the mapping)
+  fixtures/traces/*.json    automation traces in the recorder's --traces format (made up in #270 until recorded)
 test/e2e/automations.spec.ts (extended)
 ```
 
@@ -129,7 +129,7 @@ Gates (after pull request 2): `ls src/auto.js` fails; `grep -n 'autoMethods\|ren
 
 Pull request 1, the rules and the graph:
 
-1. `src/providers/automations.ts`, `src/features/automations/{README.md,traces.ts,graph.ts,sentences.ts,mermaid-def.ts,timeline-layout.ts}` exist with headers; `src/auto.js` imports them and draws as before; the fixture recorder gains `--traces`; `test/unit/fixtures/traces/` holds at least six anonymised traces (a plain run, a stopped condition, a running wait, a choose, a repeat, an error).
+1. `src/providers/automations.ts`, `src/features/automations/{README.md,traces.ts,graph.ts,sentences.ts,mermaid-def.ts,timeline-layout.ts}` exist with headers; `src/auto.js` imports them and draws as before; the fixture recorder gains `--traces`; `test/unit/fixtures/traces/` holds at least six traces in the recorder's format, made up in #270 until the owner records real ones (a plain run, a stopped condition, a running wait, a choose, a repeat, an error).
 2. Vitest: `automationsOf`, `upcomingRuns` (time and sun triggers, past ones dropped), `isNoise`, `picks` (each of the four with and without a selection), `fingerprint`, `todayRuns`, `elapsedText`; `automationGraph` against every fixture (node classes, the time subs, the sentence); `toMermaid` (the `;` rule, the four escaping functions with #97's inputs, the `linkStyle` lines); `timelineLayout` (grouping, the two rows, the clamps); 100 percent statements.
 3. Every baseline identical; `automations.spec.ts` green; `npm run check`, `npm test -- --coverage`, `npm run lint` green (the temporary legacy-to-feature import allowed by one rule naming `src/features/automations/{graph,mermaid-def,traces,sentences,timeline-layout}.ts`, with the comment that pull request 2 removes it); changeset (patch): "Internal tidying of the Automations tab. Nothing visible changes."
 

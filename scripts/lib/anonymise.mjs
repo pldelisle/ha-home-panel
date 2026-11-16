@@ -1,5 +1,5 @@
-// The anonymiser of the fixture recorder: a pure function from a recorded house and a mapping to the same house with the
-// owner's names, places and ids replaced, and the scan that finds what is left. Nothing here reads a file or the network.
+// The anonymiser of the fixture recorder: pure functions from a recorded house, or recorded automation traces, and a mapping
+// to the same with the owner's names, places and ids replaced, and the scan that finds what is left. No file, no network.
 // Pattern: functional core, imperative shell (Bernhardt, Boundaries), the recorder script being the shell; the scan is the
 // guard the shell obeys (Meyer, Design by Contract: a postcondition checked before anything is written).
 // Must not: touch the file system, the clock or the environment, or print a leftover (the caller decides what to show).
@@ -103,17 +103,20 @@ export function replacerOf(mapping) {
   };
 }
 
-/** A copy of `value` with the replacer applied to every string and every key, the dropped keys removed, coordinates rounded. */
-function clean(value, replace) {
+/**
+ * A copy of `value` with the replacer applied to every string and every key, the `dropped` keys removed, coordinates
+ * rounded.
+ */
+function clean(value, replace, dropped = DROPPED_KEYS) {
   if (typeof value === 'string') return replace(value);
   if (value === null || typeof value !== 'object') return value;
-  if (Array.isArray(value)) return value.map(v => clean(v, replace));
+  if (Array.isArray(value)) return value.map(v => clean(v, replace, dropped));
   return Object.fromEntries(
     Object.entries(value)
-      .filter(([k]) => !DROPPED_KEYS.has(k))
+      .filter(([k]) => !dropped.has(k))
       .map(([k, v]) => [
         replace(k),
-        COORDINATES.has(k) && typeof v === 'number' ? Math.round(v * 10) / 10 : clean(v, replace),
+        COORDINATES.has(k) && typeof v === 'number' ? Math.round(v * 10) / 10 : clean(v, replace, dropped),
       ]),
   );
 }
@@ -156,6 +159,70 @@ export function anonymise(house, mapping) {
   };
   if (house.statistics) out.statistics = clean(house.statistics, replace);
   return out;
+}
+
+// ---- traces ----
+
+/**
+ * The keys of a trace whose value is an identifier of the installation, and the kind of fake id each one becomes. A
+ * context's own `id` is a context too, and the config's `id` is the automation's item id; any other `id` (a trigger's)
+ * is the owner's text and goes through the replacer.
+ */
+const TRACE_ID_KINDS = {item_id: 'item', run_id: 'run', parent_id: 'context', user_id: 'user', device_id: 'device'};
+
+/** Every installation id in `value`, by kind: `{item: Set, run: Set, ...}`; `under` is the key `value` sits under. */
+function collectIds(value, found, under = null) {
+  if (Array.isArray(value)) {
+    for (const v of value) collectIds(v, found, under);
+    return found;
+  }
+  if (value === null || typeof value !== 'object') return found;
+  for (const [k, v] of Object.entries(value)) {
+    const kind = k === 'id' && under === 'context' ? 'context' : TRACE_ID_KINDS[k];
+    for (const id of kind ? [v].flat() : []) if (typeof id === 'string') found[kind].add(id);
+    collectIds(v, found, k);
+  }
+  return found;
+}
+
+/** `value` with every id of a `TRACE_ID_KINDS` key (and every `id` the tables know) swapped for its fake. */
+function renumber(value, fakes) {
+  if (Array.isArray(value)) return value.map(v => renumber(v, fakes));
+  if (value === null || typeof value !== 'object') return value;
+  const swap = v => (typeof v === 'string' && fakes.has(v) ? fakes.get(v) : v);
+  return Object.fromEntries(
+    Object.entries(value).map(([k, v]) => [
+      fakes.get(k) ?? k,
+      k === 'id' || k in TRACE_ID_KINDS ? (Array.isArray(v) ? v.map(swap) : swap(v)) : renumber(v, fakes),
+    ]),
+  );
+}
+
+/**
+ * Recorded automation traces, anonymised: `{[entityId]: {config, list, traces: {[runId]: trace}}}` (the
+ * `automation/config` reply's config, the automation's `trace/list` rows and one `trace/get` reply per run) in, the same
+ * shape out. The installation's ids become stable fakes in the order of the real ones, so the links still hold: the item
+ * id (`item_001`, in the config's `id`, every row's `item_id` and the `this` state's `id` attribute), the run ids
+ * (`run_001`, also the keys of `traces`), the context ids (`context_001`, `id` and `parent_id`), the users (`user_001`)
+ * and the devices (`device_001`). The names then go through the mapping and the rest of the dropped keys go, as for a
+ * house.
+ */
+export function anonymiseTraces(recorded, mapping) {
+  const replace = replacerOf(mapping);
+  const found = collectIds(recorded, {
+    item: new Set(),
+    run: new Set(),
+    context: new Set(),
+    user: new Set(),
+    device: new Set(),
+  });
+  for (const {config} of Object.values(recorded)) if (typeof config?.id === 'string') found.item.add(config.id);
+  const fakes = new Map();
+  for (const [kind, ids] of Object.entries(found))
+    [...ids].sort().forEach((id, i) => fakes.set(id, `${kind}_${String(i + 1).padStart(3, '0')}`));
+  // the ids are fakes now, so `id` and `user_id` stay: a trigger's id is what a `trigger` condition names
+  const dropped = new Set([...DROPPED_KEYS].filter(k => k !== 'id' && k !== 'user_id'));
+  return clean(renumber(recorded, fakes), replace, dropped);
 }
 
 // ---- the scan ----

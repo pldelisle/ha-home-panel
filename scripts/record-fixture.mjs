@@ -1,14 +1,14 @@
-// The fixture recorder: the owner runs it against the real house, it writes one anonymised fixture for the model tests.
+// The fixture recorder: the owner runs it against the real house, it writes anonymised fixtures (the house, or traces) for the tests.
 // Pattern: functional core, imperative shell (Bernhardt, Boundaries); this is the shell (arguments, socket, files, exit code)
 // around scripts/lib/anonymise.mjs, and `main` takes its connection, clock and files as parameters so a test drives it with fakes.
 // Must not: run in CI, read the URL or the token from anywhere but the environment, accept a mapping file inside the repository,
 // or write the output when the scan finds a name, a mapped string or a banned pattern left in it.
 import {mkdirSync, readFileSync, realpathSync, writeFileSync} from 'node:fs';
-import {dirname, relative, resolve, isAbsolute} from 'node:path';
+import {basename, dirname, relative, resolve, isAbsolute} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {parseArgs} from 'node:util';
 import {BANNED_PATTERNS} from '../test/personal-data.mjs';
-import {anonymise, scan, shorten} from './lib/anonymise.mjs';
+import {anonymise, anonymiseTraces, scan, shorten} from './lib/anonymise.mjs';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const DAY = 864e5;
@@ -31,24 +31,33 @@ const LIBRARY_ERRORS = {
 };
 
 const USAGE = `usage: HASS_URL=<url> HASS_TOKEN=<long-lived token> node scripts/record-fixture.mjs --map <mapping.json> --out <fixture.json> [--statistics id,id,...]
+       HASS_URL=<url> HASS_TOKEN=<long-lived token> node scripts/record-fixture.mjs --map <mapping.json> --out <folder> --traces automation.a,automation.b
 
   --map         the anonymisation mapping ({"entities": {from: to}, "strings": {from: to}}); keep it outside the repository
-  --out         where to write the fixture, e.g. test/unit/fixtures/houses/main.json
-  --statistics  entity ids whose statistics are recorded, for each period the panel asks for`;
+  --out         where to write the fixture, e.g. test/unit/fixtures/houses/main.json; with --traces, the folder that
+                gets one <automation>.json per automation, e.g. test/unit/fixtures/traces
+  --statistics  entity ids whose statistics are recorded, for each period the panel asks for
+  --traces      automation entity ids whose config, trace list and stored traces are recorded instead of the house`;
 
-/** The command line as `{map, out, statistics}`; throws a usage error for an unknown flag or a missing one. */
-export function parseArguments(argv) {
-  const {values} = parseArgs({
-    args: argv,
-    options: {map: {type: 'string'}, out: {type: 'string'}, statistics: {type: 'string'}},
-    strict: true,
-  });
-  if (!values.map || !values.out) throw new Error('--map and --out are required');
-  const statistics = (values.statistics ?? '')
+/** A comma list as its trimmed, non-empty items. */
+const commaList = text =>
+  (text ?? '')
     .split(',')
     .map(id => id.trim())
     .filter(Boolean);
-  return {map: values.map, out: values.out, statistics};
+
+/** The command line as `{map, out, statistics, traces}`; throws a usage error for an unknown flag or a missing one. */
+export function parseArguments(argv) {
+  const {values} = parseArgs({
+    args: argv,
+    options: {map: {type: 'string'}, out: {type: 'string'}, statistics: {type: 'string'}, traces: {type: 'string'}},
+    strict: true,
+  });
+  if (!values.map || !values.out) throw new Error('--map and --out are required');
+  const traces = commaList(values.traces);
+  if (traces.length > 0 && values.statistics) throw new Error('--traces records traces only: leave out --statistics');
+  if (traces.some(id => !id.startsWith('automation.'))) throw new Error('--traces takes automation entity ids');
+  return {map: values.map, out: values.out, statistics: commaList(values.statistics), traces};
 }
 
 /** The `{id: row}` map of a registry or states reply, keyed by `key`. */
@@ -122,6 +131,26 @@ export async function fetchHouse(connection, {statisticIds = [], now}) {
   return house;
 }
 
+/**
+ * Asks Home Assistant for each automation's config (`automation/config`), its stored runs (`trace/list` for its item id)
+ * and every run's full trace (`trace/get`): `{[entityId]: {config, list, traces: {[runId]: trace}}}`, the replies as sent.
+ */
+export async function fetchTraces(connection, entityIds) {
+  const ask = message => connection.sendMessagePromise(message);
+  const recorded = {};
+  for (const entityId of entityIds) {
+    const {config} = await ask({type: 'automation/config', entity_id: entityId});
+    // the trace's item id is the config's `id`; an automation without one (written in YAML with no id) keeps no traces
+    if (typeof config?.id !== 'string') throw new Error(`${entityId} has no id in its config, so it keeps no traces`);
+    const list = await ask({type: 'trace/list', domain: 'automation', item_id: config.id});
+    const traces = {};
+    for (const {run_id} of list)
+      traces[run_id] = await ask({type: 'trace/get', domain: 'automation', item_id: config.id, run_id});
+    recorded[entityId] = {config, list, traces};
+  }
+  return recorded;
+}
+
 /** The real connection: a long-lived token over Node's global WebSocket, which the library's own socket uses. */
 async function connectToHomeAssistant({url, token}) {
   const {createConnection, createLongLivedTokenAuth, createSocket} = await import('home-assistant-js-websocket');
@@ -173,15 +202,19 @@ export async function main(argv, env, deps = {}) {
       return 1;
     }
     const connection = await connect({url: env.HASS_URL, token: env.HASS_TOKEN});
+    const recording = args.traces.length > 0 ? TRACES : HOUSE;
+    const instant = now();
     let recorded;
     try {
-      recorded = await fetchHouse(connection, {statisticIds: args.statistics, now: now()});
+      recorded = await recording.fetch(connection, args, instant);
     } finally {
       connection.close();
     }
-    const {recordedAt, source, ...raw} = recorded;
-    const output = {recordedAt, source, ...anonymise(raw, mapping)};
-    const leftovers = scan(output, mapping, BANNED_PATTERNS);
+    const stamp = {recordedAt: instant.toISOString(), source: `home-assistant ${connection.haVersion}`};
+    const files = recording.files(recorded, mapping, args.out, stamp);
+    const leftovers = files.flatMap(({path, output, named}) =>
+      scan(output, mapping, BANNED_PATTERNS).map(l => (named ? {...l, path: `${basename(path)} ${l.path}`} : l)),
+    );
     if (leftovers.length > 0) {
       error(
         `refusing to write ${args.out}: ${leftovers.length} leftover(s), nothing was written. Add each to the mapping:`,
@@ -196,18 +229,43 @@ export async function main(argv, env, deps = {}) {
       }
       return 1;
     }
-    writeFile(resolve(args.out), `${stringify(output)}\n`);
-    log(
-      `wrote ${args.out}: ${Object.keys(output.states).length} states, ${Object.keys(output.entities).length} entities, ` +
-        `${Object.keys(output.devices).length} devices, ${Object.keys(output.areas).length} areas` +
-        (output.statistics ? `, statistics for ${args.statistics.length} id(s)` : ''),
-    );
+    for (const {path, output} of files) writeFile(path, `${stringify(output)}\n`);
+    log(recording.summary(files, args));
     return 0;
   } catch (e) {
     error(`failed: ${LIBRARY_ERRORS[e] ?? e?.message ?? e}`);
     return 1;
   }
 }
+
+/**
+ * The two things the recorder can record, each `{fetch(connection, args, instant), files(recorded, mapping, out, stamp),
+ * summary(files, args)}`; a file is `{path, output, named}`, `named` when a leftover's path must say which file it is in.
+ */
+const HOUSE = {
+  fetch: (connection, args, instant) => fetchHouse(connection, {statisticIds: args.statistics, now: instant}),
+  files: (recorded, mapping, out, stamp) => {
+    const {recordedAt, source, ...raw} = recorded;
+    return [{path: resolve(out), output: {...stamp, recordedAt, source, ...anonymise(raw, mapping)}, named: false}];
+  },
+  summary: ([{output}], args) =>
+    `wrote ${args.out}: ${Object.keys(output.states).length} states, ${Object.keys(output.entities).length} entities, ` +
+    `${Object.keys(output.devices).length} devices, ${Object.keys(output.areas).length} areas` +
+    (output.statistics ? `, statistics for ${args.statistics.length} id(s)` : ''),
+};
+const TRACES = {
+  fetch: (connection, args) => fetchTraces(connection, args.traces),
+  // one file per automation, named by its anonymised object id
+  files: (recorded, mapping, out, stamp) =>
+    Object.entries(anonymiseTraces(recorded, mapping)).map(([entityId, traces]) => ({
+      path: resolve(out, `${entityId.slice(entityId.indexOf('.') + 1)}.json`),
+      output: {...stamp, automation: entityId, ...traces},
+      named: true,
+    })),
+  summary: (files, args) =>
+    `wrote ${files.length} trace file(s) in ${args.out}: ` +
+    files.map(({output}) => `${output.automation} (${output.list.length} run(s))`).join(', '),
+};
 
 // a path's real location when it exists (a link into the repository must not slip past), else the path itself
 function realpathOrSelf(path) {
