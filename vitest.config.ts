@@ -18,6 +18,7 @@ export default defineConfig({
         'src/core/**/*.ts',
         'src/providers/**/*.ts',
         'src/features/*/{ids,inputs,model,speakers,tiles,history,scenes,commands,flow-layout,water-chart,charts,sankey-layout}.ts', // the pure files; the elements are proven by the harness
+        'src/features/climate/sender.ts', // a controller over the overlay and the runner, tested with fakes and a fake clock; its two elements are proven by the harness
         'src/ui/{ranges,seg-keys,steps,thin-axis}.ts', // the kit's pure files; its elements are proven by the harness
         'src/ui/commands.ts', // the command layer: the runner, the store and its controller are tested with fakes (ADR 0023)
         'src/ui/overlay-store.ts',
@@ -47,6 +48,7 @@ export default defineConfig({
           {
             statements: 100,
           },
+        'src/features/climate/sender.ts': {statements: 100},
         'src/ui/ranges.ts': {statements: 100},
         'src/ui/seg-keys.ts': {statements: 100},
         'src/ui/steps.ts': {statements: 100},

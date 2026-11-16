@@ -1,6 +1,6 @@
 # Climate
 
-What the Climate tab computes and draws ([spec 20](../../../docs/specs/20-climate.md)): the Hilo thermostats and the heat pump as a list, the phone's dial and the tablet's gauge. This folder holds the pure half of the first move: the heat pump's reading, the list's items, and the dial and the gauge as geometry (#242), and the model that words and shapes all of it (#243); and the pane, the list, the detail, the gauge and the dial that draw it (#244). The history's rules come as pure functions (#245) and are loaded and drawn in the move after it (#246): the pane loads one range at a time through the panel's cache and draws the chart, the heatmap and the outside chart through `<hp-chart>`. Until #248 the legacy panel draws the controls into a container the pane slots, and keeps its own copies of the rules the model has.
+What the Climate tab computes and draws ([spec 20](../../../docs/specs/20-climate.md)): the Hilo thermostats and the heat pump as a list, the phone's dial and the tablet's gauge. This folder holds the pure half of the first move: the heat pump's reading, the list's items, and the dial and the gauge as geometry (#242), and the model that words and shapes all of it (#243); and the pane, the list, the detail, the gauge and the dial that draw it (#244). The history's rules come as pure functions (#245) and are loaded and drawn in the move after it (#246): the pane loads one range at a time through the panel's cache and draws the chart, the heatmap and the outside chart through `<hp-chart>`. The controls, the draggable dial and the commands (#248) end the move: the legacy panel keeps no Climate code but its Home tile's line and the gate that hides the tile.
 
 ## The folder
 
@@ -19,17 +19,19 @@ src/features/climate/
   loader.ts                ClimateHistory: the per-range loads through the statistics cache, an entry drawn from memory for ten minutes
   charts.ts                ClimateCharts: the three charts' options, made again only when the history, the selection, the theme or the language changed
   keys.ts                  K: the overlay's typed keys, a room's setpoint and the heat pump's mode, target, fan, preset and louvers
+  commands.ts              nextSetpoint, clampSetpoint, quickSetpoint, ALL_ROOMS and the seven commands as `Command` data: setRoomTemperature, setAllRooms, hpMode, hpTemperature, hpFan, hpPreset, hpSwing
+  sender.ts                ControlSender: shows a value at once and sends its command now, or once the asking stops (1,100 ms); the waits go with the host
   model.ts                 climateModel(inputs, history, sel, deps): the summary, the items, the phone's tiles and the detail's head, dial or gauge, tiles, note and controls
-  dial-geometry.ts         dialGeometry(t, sp, lo, hi, size): the track, arc, ticks, dot and knob; dialValueFromPointer(rect, x, y, lo, hi)
+  dial-geometry.ts         dialGeometry(t, sp, lo, hi, size): the track, arc, ticks, dot and knob; dialValueFromPointer(rect, x, y, lo, hi) and dialValueFromKey(key, value, lo, hi)
   gauge-geometry.ts        gaugeGeometry(t, sp): positions on the 14 to 30 scale and which caption goes under it
-  index.ts                 climateFeature: the descriptor, `available` from hasClimate, the pane's template with the legacy panel's container for the controls
+  index.ts                 climateFeature: the descriptor, `available` from hasClimate, the pane's template
   sheets.ts                DETAIL_SHEET: the id of the phone's sheet
-  events.ts                ClimateDetailEvent: the pane tells the shell which room its detail shows
   climate-pane.ts          <hp-climate-pane>: the header, the phone's tiles and sheet, the tablet's list and detail; keeps the room and the range
   climate-list.ts          <hp-climate-list>: the listbox of the house, the rooms and the heat pump; tells its choice as `select`
-  climate-detail.ts        <hp-climate-detail>: the head, the gauge or the dial, the tiles, the chart and the note, with a slot for the legacy controls
+  climate-detail.ts        <hp-climate-detail>: the head, the gauge or the dial, the controls, the tiles, the chart and the note; sends the dial's value
+  climate-controls.ts      <hp-climate-controls>: the heat pump's groups, target and louvers, the house's "set every room" and its two second-tap buttons, a room's stepper and quick buttons
   chart-place.ts           legendItems, noticeLine, chartPlace: a chart's legend and its place (the notice, the <hp-chart>, or nothing) for the detail and the pane
-  gauge.ts, dial.ts        <hp-gauge> and <hp-dial>: the geometry placed with svg templates; the dial is an image until #248
+  gauge.ts, dial.ts        <hp-gauge> and <hp-dial>: the geometry placed with svg templates; the dial is a slider (pointer, arrows, Home and End) while its setpoint can be set
   heatmap-legend.ts        <hp-heat-legend>: the heat scale's colour bar and its degrees
   *.element.css            each element's own rules, moved from the legacy sheet
 ```
@@ -44,7 +46,7 @@ src/features/climate/
 
 ## The model
 
-`climateModel` takes the inputs, the range's loaded history (`ClimateHistoryData`, `null` before the load: the Range and Heating tiles show a dash and the three charts' places say "Loading history…", or that it failed when `historyFailed`), the selection (`house`, `hp` or a room's key; one that names nothing the house has shows the house, and `selection` says which) and the deps: the catalog and formats, the overlay, `compact` (the phone: the dial, not the big number and the gauge), the range, and the two pieces of element state, the "set every room" value and the armed button. It returns the strings and shapes the elements place, and the controls as a discriminated union (`hp`, `house`, `room`, each possibly `offline`) the element switches on and never computes. A held setpoint or target (`K.sp`, `K.hp.sp`) wins in the dial and the controls and not in the pill or the gauge, which follow the unit, as the legacy panel did; the heat pump's held mode is read once and decides the pill, the gauge's mark and the dial together. The frost guard's rule (below 5.5 is off) is read, never applied: the commands that follow it are #248's.
+`climateModel` takes the inputs, the range's loaded history (`ClimateHistoryData`, `null` before the load: the Range and Heating tiles show a dash and the three charts' places say "Loading history…", or that it failed when `historyFailed`), the selection (`house`, `hp` or a room's key; one that names nothing the house has shows the house, and `selection` says which) and the deps: the catalog and formats, the overlay, `compact` (the phone: the dial, not the big number and the gauge), the range, and the two pieces of element state, the "set every room" value and the armed button. It returns the strings and shapes the elements place, and the controls as a discriminated union (`hp`, `house`, `room`, each possibly `offline`) the element switches on and never computes. A held setpoint or target (`K.sp`, `K.hp.sp`) wins in the dial and the controls and not in the pill or the gauge, which follow the unit, as the legacy panel did; the heat pump's held mode is read once and decides the pill, the gauge's mark and the dial together. The frost guard's rule (below 5.5 is off) is read, never applied: the commands that follow it are `commands.ts`'s.
 
 ## The history
 
@@ -56,8 +58,12 @@ src/features/climate/
 
 ## Words
 
-The words are `climate.*` messages through the `t` the caller gives; the heat pump's own (modes, fan speeds, presets and louver positions) are the catalog's where Home Assistant's name is known and are shown capitalised, with the underscore a space, where it is not. The legacy rules are copied as they were, constants included; each copy names #248, the ticket that deletes the legacy panel's own.
+The words are `climate.*` messages through the `t` the caller gives; the heat pump's own (modes, fan speeds, presets and louver positions) are the catalog's where Home Assistant's name is known and are shown capitalised, with the underscore a space, where it is not. The rules are the legacy panel's own, copied as they were, constants included; the legacy panel's copies went with #244 to #248.
 
-## The pane and the legacy controls
+## The pane and the controls
 
-`<hp-climate-pane>` is given one container by the descriptor, as static light DOM the legacy panel fills and Lit binds nothing in: `#cctl` (the controls, slotted under the detail's head, until #248). The pane keeps the room and the range for the panel's life, and tells the shell through `ClimateDetailEvent` when its detail comes on screen, changes or leaves; the shell hands the guest `climateDetailChanged`, and the guest draws the controls for it, so the legacy code has no selection of its own beyond that. The chart is the detail's (`<hp-chart>` under the tiles, with its legend), and the heatmap (a title, `<hp-heat-legend>` and the chart) and the outside chart are the pane's two blocks under the grid, on a tablet only. On a phone a tile asks for `climate.detail` with its room and the sheet holds the same detail with the dial; Home's Climate tile asks for it with nothing and gets the house. The dial is an image until #248 gives it the pointer, the keys, the slider role and the command; the legacy steppers show on the phone until then.
+`<hp-climate-pane>` keeps the room and the range for the panel's life, reads the held values from the panel's overlay (`OptimisticController`) for the model, and draws the header, the phone's tiles and sheet, the tablet's list and detail, and the heatmap and the outside chart under them. The chart is the detail's (`<hp-chart>` under the tiles, with its legend); the heatmap (a title, `<hp-heat-legend>` and the chart) and the outside chart are the pane's two blocks under the grid, on a tablet only. On a phone a tile asks for `climate.detail` with its room and the sheet holds the same detail with the dial; Home's Climate tile asks for it with nothing and gets the house.
+
+## The commands and the controls
+
+A command is data (`commands.ts`): the service, the keys it holds in the overlay and the toast it says when it is done, as a catalog key; it words nothing, so the formatters and the word of a mode, a fan or a louver position come in as arguments. `nextSetpoint(current, delta, lo, hi)` is the stepper's rule, pure and tested: below 5.5 going down is the lowest setpoint, the thermostat off; up from off is 15; everything on the half degrees and inside the thermostat's range. `<hp-climate-controls>` and the detail's dial send through `ControlSender`: a tap shows its value at once, a setpoint is sent 1,100 ms after the last tap (five taps are one `climate.set_temperature`, a drag of the dial is one), a mode, a fan, a preset or a louver position now; a host that leaves the document sends nothing and lets go of the values it was holding. "Set all" and "All off" are `ArmedController` keys: a first tap arms one (and lets the other go), a second within four seconds sends one call with every thermostat's id, and moving the "set every room" stepper lets the arming go, since the button said another value. On a phone the dial is the setpoint and the heat pump's target, so their steppers are not drawn there; the quick buttons, the groups and "set every room" are. The dial's drag is held in the overlay, so a thermostat reporting another setpoint meanwhile does not move the knob under the finger.

@@ -1,8 +1,8 @@
 // <hp-climate-pane>: the Climate tab: on a phone the header with the summary, a grid of tiles and the detail's sheet; on a tablet the header with the range tabs, the list
 // beside the selected item's detail, and the heatmap and the outside chart under them. It keeps the selection and the range the person chose.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over a view model: `climateModel` runs in `willUpdate` and the template places what it returns; a store
-// controller on `climateIds` (ADR 0012), paused while no part of the pane is on screen, and `ClimateHistory`, which loads the range shown (ADR 0028). The legacy controls come through a slot until #248.
-// Must not: read an entity itself (`readClimate` does), hold a string the household reads, call the API (the history controller asks the cache), send a command, or open the sheet (a tile asks).
+// controller on `climateIds` (ADR 0012), paused while no part of the pane is on screen, and `ClimateHistory`, which loads the range shown (ADR 0028). The held values the model reads are the panel's overlay (ADR 0023).
+// Must not: read an entity itself (`readClimate` does), hold a string the household reads, call the API (the history controller asks the cache), send a command (the detail's controls do), or open the sheet (a tile asks).
 import {ContextConsumer} from '@lit/context';
 import {LitElement, html, nothing, unsafeCSS, type PropertyValues, type TemplateResult} from 'lit';
 import {repeat} from 'lit/directives/repeat.js';
@@ -13,7 +13,6 @@ import {chartPlace, legendItems} from './chart-place.ts';
 import {detailIcon} from './climate-detail.ts';
 import type {SelectDetail} from './climate-list.ts';
 import paneOwn from './climate-pane.element.css?inline';
-import {ClimateDetailEvent} from './events.ts';
 import './heatmap-legend.ts'; // defines <hp-heat-legend>
 import {climateIds} from './ids.ts';
 import {readClimate} from './inputs.ts';
@@ -32,6 +31,7 @@ import type {RoomPower} from '../../providers/power.ts';
 import type {StatisticsCache} from '../../core/statistics-cache.ts';
 import '../../ui/chart.ts'; // defines <hp-chart>
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
+import {OptimisticController} from '../../ui/controllers/optimistic.ts';
 import {StoreController} from '../../ui/controllers/store-controller.ts';
 import {statisticsCacheContext} from '../../ui/contexts.ts';
 import {SheetDismissEvent, SheetRequestEvent} from '../../ui/events.ts';
@@ -49,9 +49,6 @@ import type {Translate} from '../../core/i18n/messages.ts';
 
 /** The range the detail starts on, and keeps for the panel's life once another is chosen. */
 const DEFAULT_RANGE: Range = 'day';
-/** Nothing holds a climate value until the commands of #248, which hold them in the overlay: the legacy panel's own held values draw in its controls. */
-const unheld: Overlay = (_key, current) => current;
-
 /** The detail's range tabs, worded by `t`: the tablet's header and the phone sheet's both draw them. */
 const rangeTabs = (t: Translate): RangeTab[] =>
   (Object.keys(RANGES) as Range[]).map(range => ({range, label: t(RANGES[range].tabKey)}));
@@ -81,6 +78,9 @@ export class ClimatePane extends LitElement {
   private cache: StatisticsCache | undefined;
   private readonly storeController = new StoreController(this, {ids: store => climateIds(store)});
   private readonly appearance = new AppearanceConsumer(this);
+  // what the household asked for and Home Assistant has not confirmed: the dial and the controls hold it, the model reads it, and the pane draws again when it changes
+  private readonly optimistic = new OptimisticController(this);
+  private readonly overlay: Overlay = (key, current) => this.optimistic.read(key, current);
   private readonly charts = new ClimateCharts();
   private view: ClimateViewModel | undefined;
   /** The options of the charts the view's range has the history for: null before the load. */
@@ -88,17 +88,12 @@ export class ClimatePane extends LitElement {
   /** What the detail shows, kept for the panel's life: the house and a day until the person chooses. */
   private selection: ClimateSelection = 'house';
   private range: Range = DEFAULT_RANGE;
-  /** What the shell was last told the detail shows (the room), empty for nothing: it is told again only when this changes. */
-  private told = '';
   private readonly history: ClimateHistory;
 
   /** The phone's layout, as the appearance context says; false until the context is provided. */
   private get compact(): boolean {
     return this.appearance.value?.compact === true;
   }
-  /** Where the pane sits while connected, for the event it sends as it leaves. */
-  private parent: HTMLElement | null = null;
-
   constructor() {
     super();
     this.active = false;
@@ -117,20 +112,6 @@ export class ClimatePane extends LitElement {
     this.history = new ClimateHistory(this, () =>
       this.detailShown ? {cache: this.cache, store: this.storeController.store, range: this.range} : null,
     );
-  }
-
-  override connectedCallback(): void {
-    super.connectedCallback();
-    this.told = ''; // a pane drawn again tells the shell again
-    this.parent = this.parentElement;
-  }
-
-  // The shell is told the detail left, from the parent the pane had: an event from a detached element reaches no one. The legacy controls stop with it.
-  override disconnectedCallback(): void {
-    super.disconnectedCallback();
-    if (this.told !== '') this.parent?.dispatchEvent(new ClimateDetailEvent(null));
-    this.told = '';
-    this.parent = null;
   }
 
   /** The pane is on screen: it is the tab, or its sheet is open over the page (Home's tile asks for it). */
@@ -163,7 +144,7 @@ export class ClimatePane extends LitElement {
       fmt: store.fmt,
       names: store.names,
       language: store.language,
-      overlay: unheld,
+      overlay: this.overlay,
       compact,
       range,
       historyFailed: this.history.failed(range, store.generation),
@@ -290,15 +271,13 @@ export class ClimatePane extends LitElement {
     </div>`;
   }
 
-  // The detail is one element on both shapes: the controls are the legacy panel's, which fills the slot the pane forwards (#248).
+  // The detail is one element on both shapes: the head, the controls, the tiles and the chart.
   private renderDetail(view: ClimateViewModel): TemplateResult {
     return html`<hp-climate-detail
       .view=${view.detail}
       .selection=${view.selection}
       .chart=${this.drawn?.chart ?? null}
-    >
-      <slot name="controls" slot="controls"></slot>
-    </hp-climate-detail>`;
+    ></hp-climate-detail>`;
   }
 
   // The phone's detail in a sheet: it exists only while open, so a closed sheet holds no chart.
@@ -328,17 +307,6 @@ export class ClimatePane extends LitElement {
     </hp-sheet>`;
   }
 
-  // The shell is told what the detail shows when it comes on screen, when the room changes and when it leaves; the legacy controls follow it.
-  protected override updated(): void {
-    const {view} = this;
-    if (!view) return;
-    const on = this.detailShown;
-    const key = on ? view.selection : '';
-    if (key === this.told) return;
-    this.told = key;
-    this.dispatchEvent(new ClimateDetailEvent(on ? {sel: view.selection} : null));
-  }
-
   // arrow fields, so the template hands the same functions at every render
 
   // the sheet's Close button, its backdrop and its swipe: the host closes it, the pane only says so
@@ -354,7 +322,7 @@ export class ClimatePane extends LitElement {
     this.requestUpdate();
   };
 
-  // the tablet header's tabs and the sheet header's both tell here; the model, the history and the legacy controls get the choice back
+  // the tablet header's tabs and the sheet header's both tell here; the model and the history get the choice back
   private readonly onRange = (e: CustomEvent<RangeChangeDetail>): void => {
     e.stopPropagation();
     this.range = e.detail.range;

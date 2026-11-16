@@ -1,7 +1,8 @@
 /*
  * <hp-dial>'s own rules: the dial's box, its track, arc, ticks, dot and knob, the figure at its centre, and the motion of its first draw (the arc
- * draws itself, then the knob and the figure land), with the keyframes it names, which a shadow root resolves in its own styles only. Moved from the
- * legacy `.dial` and `.dialc` rules (phone.css, glass.css, motion.css), which this move deleted; the legacy `.dialc em` had no user and is gone.
+ * draws itself, then the knob and the figure land), with the keyframes it names, which a shadow root resolves in its own styles only, and the slider's
+ * cursor, focus ring and the knob's press. Moved from the legacy `.dial` and `.dialc` rules (phone.css, glass.css, motion.css), which this move deleted;
+ * the legacy `.dialc em` had no user and is gone.
  */
 :host {
   display: block;
@@ -49,6 +50,17 @@
   transform-box: fill-box;
   transform-origin: center;
   transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.dial.ed {
+  cursor: grab;
+}
+.dial.ed:focus-visible {
+  outline: 2px solid var(--c-home);
+  outline-offset: 4px;
+  border-radius: 50%;
+}
+.dial.ed:active .dknob {
+  transform: scale(1.18);
 }
 .dialc {
   position: absolute;

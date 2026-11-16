@@ -10,6 +10,7 @@ Media (spec 16) has moved, 2026-11-11, #215 to #220: the legacy panel keeps only
 Security (spec 17) has moved, 2026-11-15, #222 to #227: the legacy panel keeps no Security code; its Status checks, stack and More word read `doorMotionSensors` from the provider.
 Air (spec 18) has moved, 2026-11-15, #228 to #234: the legacy panel keeps no Air code but `airRooms()`, which its stack's air card and its Home tile read from the Mila provider and the rating, until #266 and #268.
 Energy (spec 19) has moved, 2026-11-15, #236 to #241: the legacy panel keeps no Energy code but the readers of `powerNow`, `hiloRates`, `hiloChallenge` and `hydroQuebec` and `loadSharedHistory`, which the header, the stack, the live pill, the Home tiles and Climate's rooms call, until #242 to #248, #255 to #257, #266, #268 and #269.
+Climate (spec 20) has moved, 2026-11-16, #242 to #248: the legacy panel keeps no Climate code but `lacking().climate`, which gates Home's Climate tile, and the tile's own line, until #268; the controls, the draggable dial and the commands are `<hp-climate-controls>`, `<hp-dial>` and `commands.ts`.
 
 ## Child specs
 

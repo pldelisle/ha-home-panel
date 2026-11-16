@@ -229,49 +229,6 @@
   vertical-align: 1px;
 }
 
-/* rooms */
-.rooms {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-}
-.room {
-  background: var(--card2);
-  border-radius: 16px;
-  padding: 11px 12px 6px;
-  min-width: 0;
-}
-.room .n {
-  font-weight: 600;
-  font-size: calc(13px * var(--tx));
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.room .row {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 6px;
-}
-.room .t {
-  font-size: calc(24px * var(--tx));
-}
-.room .s {
-  font-size: calc(11.5px * var(--tx));
-  color: var(--fg2);
-}
-.room.on .s {
-  color: var(--t-wh);
-  font-weight: 600;
-}
-.room svg {
-  display: block;
-  width: 100%;
-  height: 28px;
-  margin-top: 2px;
-}
-
 /* EV / water heater: the hero is the kit's (src/ui/styles/hero.css) */
 .state {
   display: inline-flex;
@@ -424,7 +381,7 @@
 .sheet .att {
   margin-top: 4px;
 }
-/* Car's pane draws it until #253; Climate's controls (#248) move it to the kit's seg.css, and #253 deletes this copy (spec 20) */
+/* Car's labels (the Wallbox limit, the charge limit, the departure times): its pane draws them until #253, which deletes this rule; Climate's controls use their own `.clbl` */
 .ctl-l {
   font-size: calc(12px * var(--tx));
   font-weight: 700;
@@ -435,7 +392,6 @@
 }
 .sw:focus-visible,
 .cbtn:focus-visible,
-.abtn:focus-visible,
 .more:focus-visible {
   outline: 2px solid var(--c-home);
   outline-offset: 2px;
@@ -549,8 +505,7 @@
 .cbtn[aria-pressed='true'] .ic {
   color: var(--c-wh);
 }
-.cbtn.armed,
-.abtn.armed {
+.cbtn.armed {
   box-shadow: inset 0 0 0 2px var(--warn);
 }
 .access {
@@ -574,19 +529,6 @@
 .access span {
   font-size: calc(12px * var(--tx));
   color: var(--fg2);
-}
-.abtn {
-  border: 0;
-  border-radius: 999px;
-  padding: 10px 16px;
-  min-height: 44px;
-  font: inherit;
-  font-weight: 600;
-  font-size: calc(13px * var(--tx));
-  cursor: pointer;
-  background: var(--card);
-  color: var(--fg);
-  box-shadow: var(--shadow);
 }
 .deprow {
   display: flex;

@@ -1,5 +1,5 @@
 // The heat pump (or air conditioner) of the house, read into the inputs the Climate feature takes, and its state history into a line.
-// Pattern: an adapter below the features (ADR 0025), the rules of the legacy `hpBrand()` (deleted in #244) and `hpSeries()` (deleted in #246) and of the heat pump's readings (deleted in #248);
+// Pattern: an adapter below the features (ADR 0025), the rules of the legacy `hpBrand()` (deleted in #244) and `hpSeries()` (deleted in #246) and of the heat pump's readings and controls (deleted in #248);
 // the maker comes from the device registry (Fujitsu through FGLair, else the manufacturer), the entity from the config's `heat_pump`.
 // Must not: word anything a person reads (a maker the registry does not give is `null`, for the model to word; a maker's name, `Fujitsu`, is data,
 // as the registry's manufacturer is), or read the clock or the DOM.
@@ -8,12 +8,12 @@ import type {HassEntities, Registries} from '../core/hass.ts';
 import type {HistoryPoint} from '../core/ha.ts';
 import {attributeOf, isAvailable, numberAttributeOf, textAttributeOf} from '../core/states.ts';
 
-/** Legacy defaults for a unit that does not say its own range (legacy, #248). */
+/** The defaults of a unit that does not say its own range. */
 const DEFAULT_MIN = 16;
 const DEFAULT_MAX = 30;
-/** The modes offered when the unit lists none (legacy, #248). */
+/** The modes offered when the unit lists none. */
 const DEFAULT_MODES = ['off', 'heat'];
-/** The modes that have no target to set or to draw: the target's stepper and dial are idle in them, and the history's target line breaks (legacy, #248). */
+/** The modes that have no target to set or to draw: the target's stepper and dial are idle in them, and the history's target line breaks. */
 export const NO_TARGET_MODES: ReadonlySet<string> = new Set(['off', 'fan_only', 'dry']);
 /** A unit made by Fujitsu, or through FGLair, whose maker the device does not always say. */
 const FUJITSU_PLATFORM = /fglair/;

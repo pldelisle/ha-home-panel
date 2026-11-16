@@ -111,7 +111,10 @@ describe('the test house, on the tablet', () => {
       outside: 'Outside 4.2°',
       dial: null,
       note: null,
-      controls: {kind: 'house', allSetpoint: 21, armed: null, roomsCount: 4},
+      controls: {
+        kind: 'house',
+        rooms: ['climate.bedroom', 'climate.garage', 'climate.living_room', 'climate.office'],
+      },
     });
     expect(detail.tiles).toEqual([
       {label: 'Warmest', value: '21.2', unit: '°', sub: 'Garage', range: false},
@@ -206,8 +209,8 @@ describe('the test house, on the tablet', () => {
     expect(french.heatmap?.notice?.text).toBe('Chargement de l’historique…');
   });
 
-  test('the house’s gauge has no setpoint mark and no caption; the element’s "set every room" and armed button are passed through', () => {
-    const {detail} = modelOf(fullHouse, 'house', {allSetpoint: 19.5, armed: 'alloff'});
+  test('the house’s gauge has no setpoint mark and no caption, and its controls name every thermostat "set every room" asks', () => {
+    const {detail} = modelOf(fullHouse, 'house');
     expect(detail.gauge).toMatchObject({
       geometry: {setpoint: null, caption: null},
       label: 'Temperature 20.6 degrees on a 14 to 30 degree scale',
@@ -216,7 +219,10 @@ describe('the test house, on the tablet', () => {
       lo: '14°',
       hi: '30°',
     });
-    expect(detail.controls).toEqual({kind: 'house', allSetpoint: 19.5, armed: 'alloff', roomsCount: 4});
+    expect(detail.controls).toEqual({
+      kind: 'house',
+      rooms: ['climate.bedroom', 'climate.garage', 'climate.living_room', 'climate.office'],
+    });
   });
 
   test('a room heating: its pill, its setpoint on the gauge, its tiles and note, its setpoint and quick buttons', () => {
@@ -238,7 +244,8 @@ describe('the test house, on the tablet', () => {
       ['Drawing now', '1.20', 'kW', false],
       ['Heating, 7 days', '–', 'kWh', false],
     ]);
-    const {setpoint, quick} = room(detail.controls);
+    const {id, name, setpoint, quick} = room(detail.controls);
+    expect([id, name], 'what the commands and their toasts name').toEqual(['climate.bedroom', 'Bedroom']);
     expect(setpoint).toEqual({value: 21, lo: 5, hi: 30, off: false});
     expect(quick.map(q => [q.value, q.label, q.pressed])).toEqual([
       ['off', 'Off', false],
@@ -271,6 +278,7 @@ describe('the test house, on the phone', () => {
       label: 'Setpoint',
       valueText: '21 degrees',
       geometry: {off: false, knob: {cx: 195, cy: 46.2}},
+      target: {kind: 'room', id: 'climate.bedroom', name: 'Bedroom'},
     });
   });
 
@@ -283,6 +291,7 @@ describe('the test house, on the phone', () => {
       label: 'Temperature',
       valueText: '',
       geometry: {knob: null},
+      target: null,
     });
   });
 });
@@ -374,7 +383,13 @@ describe('a room', () => {
     const {detail} = roomOf([thermostat('den', 'unavailable')], {compact: true});
     expect(detail.pill).toEqual({text: 'Unavailable', tone: 'bad'});
     expect(detail.controls).toEqual({kind: 'room', offline: true});
-    expect(detail.dial).toMatchObject({editable: false, big: 'Off', label: 'Temperature', geometry: {off: true}});
+    expect(detail.dial).toMatchObject({
+      editable: false,
+      target: null,
+      big: 'Off',
+      label: 'Temperature',
+      geometry: {off: true},
+    });
     expect(roomOf([thermostat('den', 'unavailable')]).detail).toMatchObject({
       temperature: '–',
       gauge: null,
@@ -500,6 +515,7 @@ describe('the heat pump', () => {
 
   test('its controls: the modes in words (heat_cool is Auto), the target, the fan, the preset (none is Normal) and the louvers', () => {
     const controls = hp(pumpOf(pump('heat', ATTRS)).detail.controls);
+    expect(controls.id).toBe('climate.pump');
     expect(controls.mode).toBe('heat');
     expect(controls.modes.map(m => [m.value, m.label, m.checked])).toEqual([
       ['off', 'Off', false],
@@ -565,7 +581,7 @@ describe('the heat pump', () => {
     });
     const held = pumpOf(pump('heat', ATTRS), {overlay, compact: true});
     // held off: the pill, the gauge's mark and the dial agree on it while the tap is pending
-    expect(held.detail.dial).toMatchObject({editable: false, big: 'Off'});
+    expect(held.detail.dial).toMatchObject({editable: false, target: null, big: 'Off'});
     expect(held.detail.pill.text).toBe('Off');
     expect(pumpOf(pump('heat', ATTRS), {overlay}).detail.gauge?.geometry.setpoint).toBeNull();
     expect(hp(held.detail.controls)).toMatchObject({mode: 'off', fan: null, preset: null, swing: null});
@@ -577,7 +593,14 @@ describe('the heat pump', () => {
       [K.hp.swing('climate.pump')]: 'vertical',
     });
     const vm = pumpOf(pump('heat', ATTRS), {overlay: stillOn, compact: true});
-    expect(vm.detail.dial).toMatchObject({editable: true, value: 24, lo: 17, hi: 28, big: '24.0°'});
+    expect(vm.detail.dial).toMatchObject({
+      editable: true,
+      target: {kind: 'hp', id: 'climate.pump'},
+      value: 24,
+      lo: 17,
+      hi: 28,
+      big: '24.0°',
+    });
     const controls = hp(vm.detail.controls);
     expect(controls.target?.value).toBe(24);
     expect(controls.fan?.find(o => o.checked)?.value).toBe('quiet');

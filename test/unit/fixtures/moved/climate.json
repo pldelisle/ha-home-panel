@@ -1,27 +1,48 @@
 {
-  "about": "The English messages the Climate move's pure half and its model introduced (src/core/i18n/en.ts, climate.*), each with sample values. test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer makes of the English, or what is `written` where the layer never produced French. The entries the legacy panel still renders stay in src/i18n/fr.js until #248 deletes them.",
+  "about": "The English messages the Climate move's pure half and its model introduced (src/core/i18n/en.ts, climate.*), each with sample values. test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer makes of the English, or what is `written` where the layer never produced French. #248 deleted the entries the legacy panel no longer draws: the message of each has the French the layer made of it as `was` (and `after`, what the layer makes of the English now, when it is not the English itself); the entries the legacy Home tile, header, Status checks and Automations still draw stay in src/i18n/fr.js, with the tests that name them in test/unit/i18n.test.mjs, and so do the ones the other moves' message lists take as their oracle (Range, Temperature, Warmest and the mean lines).",
   "messages": [
-    {"key": "climate.wholeHouse"},
+    {"key": "climate.wholeHouse", "was": "Toute la maison"},
     {"key": "climate.roomsHeating", "values": {"n": 0}},
     {"key": "climate.roomsHeating", "values": {"n": 1}},
     {"key": "climate.roomsHeating", "values": {"n": 3}},
-    {"key": "climate.heatPumpPlusRooms", "values": {"n": 0}},
-    {"key": "climate.heatPumpPlusRooms", "values": {"n": 1}},
-    {"key": "climate.heatPumpPlusRooms", "values": {"n": 3}},
+    {
+      "key": "climate.heatPumpPlusRooms",
+      "values": {"n": 0},
+      "was": "Thermopompe + 0 pièces chauffent",
+      "after": "Chauffage : Heat pump + 0 rooms"
+    },
+    {
+      "key": "climate.heatPumpPlusRooms",
+      "values": {"n": 1},
+      "was": "Thermopompe + 1 pièce chauffe",
+      "after": "Chauffage : Heat pump + 1 room"
+    },
+    {
+      "key": "climate.heatPumpPlusRooms",
+      "values": {"n": 3},
+      "was": "Thermopompe + 3 pièces chauffent",
+      "after": "Chauffage : Heat pump + 3 rooms"
+    },
     {"key": "climate.unavailable"},
     {"key": "climate.heatingKw", "values": {"kw": "1.20"}},
-    {"key": "climate.holding", "values": {"n": "21"}},
-    {"key": "climate.holding", "values": {"n": "20.5"}},
+    {"key": "climate.holding", "values": {"n": "21"}, "was": "Maintient 21°"},
+    {"key": "climate.holding", "values": {"n": "20.5"}, "was": "Maintient 20,5°"},
     {"key": "climate.off"},
     {"key": "climate.heatPump"},
     {"key": "climate.notFound"},
-    {"key": "climate.hpOffline", "values": {"brand": "Fujitsu"}},
-    {"key": "climate.hpOff", "values": {"brand": "Fujitsu"}},
+    {"key": "climate.hpOffline", "values": {"brand": "Fujitsu"}, "was": "Fujitsu · hors ligne"},
+    {
+      "key": "climate.hpOff",
+      "values": {"brand": "Fujitsu"},
+      "was": "Fujitsu · éteinte",
+      "after": "Fujitsu · : désactivé"
+    },
     {"key": "climate.hpAction", "values": {"brand": "Fujitsu", "action": "idle"}, "fr": {"action": "au repos"}},
     {
       "key": "climate.hpActionTo",
       "values": {"brand": "Fujitsu", "action": "heating", "n": "22"},
-      "fr": {"action": "chauffe"}
+      "fr": {"action": "chauffe"},
+      "was": "Fujitsu · chauffe à 22°"
     },
     {"key": "climate.action.heating"},
     {"key": "climate.action.cooling"},
@@ -31,26 +52,36 @@
     {"key": "climate.action.auto"},
     {"key": "climate.action.dry"},
     {"key": "climate.action.fan"},
-    {"key": "climate.averageInside", "values": {"n": "20.8"}},
+    {"key": "climate.averageInside", "values": {"n": "20.8"}, "was": "20,8° en moyenne à l'intérieur"},
     {"key": "climate.outsideTemp", "values": {"n": "3.1"}},
-    {"key": "climate.noRoomsHeating"},
+    {"key": "climate.noRoomsHeating", "was": "aucune pièce ne chauffe", "after": "chauffage : no rooms"},
     {"key": "climate.summaryHpOffline"},
     {"key": "climate.summaryHpOff"},
     {
       "key": "climate.summaryHpAction",
       "values": {"action": "idle"},
       "fr": {"action": "au repos"},
-      "written": "thermopompe\u00a0: au repos"
+      "written": "thermopompe : au repos"
     },
-    {"key": "climate.summaryHpActionTo", "values": {"action": "heating", "n": "22"}, "fr": {"action": "chauffe"}},
-    {"key": "climate.fujitsuThrough"},
-    {"key": "climate.averageOf", "values": {"n": 6}},
+    {
+      "key": "climate.summaryHpActionTo",
+      "values": {"action": "heating", "n": "22"},
+      "fr": {"action": "chauffe"},
+      "was": "thermopompe : chauffe à 22°"
+    },
+    {"key": "climate.fujitsuThrough", "was": "Fujitsu, par l'intégration FGLair"},
+    {"key": "climate.averageOf", "values": {"n": 6}, "was": "Moyenne de 6 pièces"},
     {"key": "climate.averageOf", "values": {"n": 1}, "written": "Moyenne de 1 pièce"},
     {"key": "climate.hiloThermostat", "written": "Thermostat Hilo"},
     {"key": "climate.offline"},
-    {"key": "climate.actionTo", "values": {"action": "Heating", "n": "22"}, "fr": {"action": "Chauffe"}},
-    {"key": "climate.heatingTo", "values": {"n": "22"}},
-    {"key": "climate.heatingTo", "values": {"n": "21.5"}},
+    {
+      "key": "climate.actionTo",
+      "values": {"action": "Heating", "n": "22"},
+      "fr": {"action": "Chauffe"},
+      "was": "Chauffe à 22°"
+    },
+    {"key": "climate.heatingTo", "values": {"n": "22"}, "was": "Chauffe à 22°"},
+    {"key": "climate.heatingTo", "values": {"n": "21.5"}, "was": "Chauffe à 21,5°"},
     {"key": "climate.outsideNow", "values": {"n": "3.1"}},
     {"key": "climate.now", "values": {"n": "20.8"}},
     {
@@ -58,31 +89,60 @@
       "values": {"n": "3.1"},
       "frame": {"en": "Now 20.8° · ", "fr": "Maintenant 20,8° · "}
     },
-    {"key": "climate.dial.setpoint"},
+    {"key": "climate.dial.setpoint", "was": "Consigne"},
     {"key": "climate.dial.temperature"},
     {"key": "climate.dial.degrees", "values": {"n": "21"}, "written": "21 degrés"},
     {"key": "climate.dial.degrees", "values": {"n": "20.5"}, "written": "20,5 degrés"},
-    {"key": "climate.gauge.label", "values": {"temp": "20.8", "lo": 14, "hi": 30}},
-    {"key": "climate.gauge.labelSetpoint", "values": {"temp": "20.8", "sp": "21", "lo": 14, "hi": 30}},
-    {"key": "climate.gauge.labelSetpoint", "values": {"temp": "20.8", "sp": "20.5", "lo": 14, "hi": 30}},
-    {"key": "climate.gauge.setpoint"},
-    {"key": "climate.gauge.off"},
+    {
+      "key": "climate.gauge.label",
+      "values": {"temp": "20.8", "lo": 14, "hi": 30},
+      "was": "Température 20,8 degrés sur une échelle de 14 à 30 degrés"
+    },
+    {
+      "key": "climate.gauge.labelSetpoint",
+      "values": {"temp": "20.8", "sp": "21", "lo": 14, "hi": 30},
+      "was": "Température 20,8 degrés, consigne 21 degrés sur une échelle de 14 à 30 degrés"
+    },
+    {
+      "key": "climate.gauge.labelSetpoint",
+      "values": {"temp": "20.8", "sp": "20.5", "lo": 14, "hi": 30},
+      "was": "Température 20,8 degrés, consigne 20,5 degrés sur une échelle de 14 à 30 degrés"
+    },
+    {"key": "climate.gauge.setpoint", "was": "La barre indique la consigne", "after": "Bar marks the : consigne"},
+    {"key": "climate.gauge.off", "was": "Thermostat éteint (5° hors gel)"},
     {"key": "climate.rangeSpan", "values": {"span": "24 h"}, "fr": {"span": "24 h"}},
     {"key": "climate.rangeSpan", "values": {"span": "7 days"}, "fr": {"span": "7 jours"}},
     {"key": "climate.rangeSpan", "values": {"span": "30 days"}, "fr": {"span": "30 jours"}},
     {"key": "climate.rangeSpan", "values": {"span": "12 months"}, "fr": {"span": "12 mois"}},
-    {"key": "climate.heatingSpan", "values": {"span": "24 h"}, "fr": {"span": "24 h"}},
+    {
+      "key": "climate.heatingSpan",
+      "values": {"span": "24 h"},
+      "fr": {"span": "24 h"},
+      "was": "Chauffage, 24 h",
+      "after": "Chauffe, 24 h"
+    },
     {"key": "climate.heatingSpan", "values": {"span": "7 days"}, "fr": {"span": "7 jours"}},
     {"key": "climate.heatingSpan", "values": {"span": "30 days"}, "fr": {"span": "30 jours"}},
-    {"key": "climate.heatingSpan", "values": {"span": "12 months"}, "fr": {"span": "12 mois"}},
-    {"key": "climate.lastUpdate"},
-    {"key": "climate.drawingNow"},
+    {
+      "key": "climate.heatingSpan",
+      "values": {"span": "12 months"},
+      "fr": {"span": "12 mois"},
+      "was": "Chauffage, 12 mois"
+    },
+    {"key": "climate.lastUpdate", "was": "Dernière mise à jour"},
+    {"key": "climate.drawingNow", "was": "Puissance actuelle"},
     {"key": "climate.warmest"},
-    {"key": "climate.coolest"},
-    {"key": "climate.heatingNow"},
-    {"key": "climate.allThermostats"},
-    {"key": "climate.noteRoom"},
-    {"key": "climate.noteHeatPump"},
+    {"key": "climate.coolest", "was": "Le plus frais"},
+    {"key": "climate.heatingNow", "was": "Chauffe en ce moment"},
+    {"key": "climate.allThermostats", "was": "tous les thermostats"},
+    {
+      "key": "climate.noteRoom",
+      "was": "La ligne pointillée est la consigne. Là où elle s'arrête, le thermostat était éteint."
+    },
+    {
+      "key": "climate.noteHeatPump",
+      "was": "Les mesures viennent de l'appareil lui-même. Une coupure dans la ligne veut dire que l'intégration était hors ligne. L'appareil n'a pas de capteur de puissance : son électricité est comptée dans le reste de la maison."
+    },
     {
       "key": "climate.historyStarts",
       "values": {"date": "Nov 7"},
@@ -110,21 +170,27 @@
     {"key": "climate.swing.horizontal"},
     {"key": "climate.swing.both"},
     {"key": "climate.swing.off"},
-    {"key": "climate.swing.verticalAt", "values": {"n": "3"}},
-    {"key": "climate.swing.horizontalAt", "values": {"n": "2"}},
-    {"key": "climate.homeClimate"},
+    {"key": "climate.swing.verticalAt", "values": {"n": "3"}, "was": "Fixe, position verticale 3"},
+    {"key": "climate.swing.horizontalAt", "values": {"n": "2"}, "was": "Fixe, position horizontale 2"},
+    {"key": "climate.homeClimate", "was": "Climat de la maison"},
     {"key": "climate.rooms"},
     {"key": "climate.close"},
-    {"key": "climate.heatTitle.day"},
+    {"key": "climate.heatTitle.day", "was": "Toutes les pièces, heure par heure"},
     {"key": "climate.heatTitle.week", "written": "Toutes les pièces, aux 6 heures"},
-    {"key": "climate.heatTitle.month"},
-    {"key": "climate.heatTitle.year"},
+    {"key": "climate.heatTitle.month", "was": "Toutes les pièces, chaque jour"},
+    {"key": "climate.heatTitle.year", "was": "Toutes les pièces, semaine par semaine"},
     {
       "key": "climate.outNote.fiveMinute",
       "written": "La bande va du minimum au maximum de chaque tranche de 5 minutes, la ligne est la moyenne"
     },
-    {"key": "climate.outNote.hourly"},
-    {"key": "climate.outNote.daily"},
+    {
+      "key": "climate.outNote.hourly",
+      "was": "La bande va du minimum au maximum de chaque heure, la ligne est la moyenne horaire"
+    },
+    {
+      "key": "climate.outNote.daily",
+      "was": "La bande va du minimum au maximum de chaque jour, la ligne est la moyenne quotidienne"
+    },
     {"key": "climate.block.night", "values": {"day": "Mon 9"}, "fr": {"day": "lun. 9"}, "written": "lun. 9, nuit"},
     {"key": "climate.block.morning", "values": {"day": "Mon 9"}, "fr": {"day": "lun. 9"}, "written": "lun. 9, matin"},
     {
@@ -134,21 +200,167 @@
       "written": "lun. 9, après-midi"
     },
     {"key": "climate.block.evening", "values": {"day": "Mon 9"}, "fr": {"day": "lun. 9"}, "written": "lun. 9, soir"},
-    {"key": "climate.chart.setpoint"},
+    {"key": "climate.chart.setpoint", "was": "Consigne"},
     {"key": "climate.chart.outside"},
     {"key": "climate.chart.lowToHigh"},
+    {"key": "climate.chart.span", "values": {"low": "12.3", "high": "14.5"}, "written": "De 12,3 à 14,5 °C"},
+    {"key": "climate.houseAverage", "was": "Moyenne de la maison"},
     {
-      "key": "climate.chart.span",
-      "values": {"low": "12.3", "high": "14.5"},
-      "written": "De 12,3 à 14,5 °C"
+      "key": "climate.heatHint",
+      "was": "Température moyenne par pièce, sur une échelle continue du bleu frais au rouge chaud."
     },
-    {"key": "climate.houseAverage"},
-    {"key": "climate.heatHint"},
-    {"key": "climate.outsideTitle", "values": {"label": "last 24 hours"}, "fr": {"label": "dernières 24 heures"}},
-    {"key": "climate.outsideTitle", "values": {"label": "last 7 days"}, "fr": {"label": "7 derniers jours"}},
+    {
+      "key": "climate.outsideTitle",
+      "values": {"label": "last 24 hours"},
+      "fr": {"label": "dernières 24 heures"},
+      "was": "Dehors, dernières 24 heures",
+      "after": "Extérieur, dernières 24 heures"
+    },
+    {
+      "key": "climate.outsideTitle",
+      "values": {"label": "last 7 days"},
+      "fr": {"label": "7 derniers jours"},
+      "was": "Dehors, 7 derniers jours",
+      "after": "Extérieur, 7 derniers jours"
+    },
     {"key": "climate.chart.mean"},
     {"key": "climate.historyLoading"},
     {"key": "climate.historyUnavailable"},
-    {"key": "climate.noThermostats", "written": "Aucun thermostat trouvé."}
+    {"key": "climate.noThermostats", "written": "Aucun thermostat trouvé."},
+    {"key": "climate.mode"},
+    {"key": "climate.fan"},
+    {"key": "climate.preset", "was": "Préréglage"},
+    {"key": "climate.louvers", "was": "Volets"},
+    {"key": "climate.hpModeLabel", "was": "Mode de la thermopompe", "after": "Thermopompe : mode"},
+    {"key": "climate.fanSpeed", "was": "Vitesse du ventilateur"},
+    {"key": "climate.louverPosition", "was": "Position des volets"},
+    {"key": "climate.target", "was": "Cible"},
+    {"key": "climate.lowerTarget", "was": "Baisser la cible"},
+    {"key": "climate.raiseTarget", "was": "Monter la cible"},
+    {"key": "climate.lowerSetpoint", "was": "Baisser la consigne", "after": "Lower : consigne"},
+    {"key": "climate.raiseSetpoint", "was": "Monter la consigne", "after": "Raise : consigne"},
+    {"key": "climate.allRooms", "was": "Toutes les pièces"},
+    {"key": "climate.setEveryRoomTo", "was": "Régler toutes les pièces à"},
+    {"key": "climate.lowerAll", "was": "Baisser la consigne de toutes les pièces"},
+    {"key": "climate.raiseAll", "was": "Monter la consigne de toutes les pièces"},
+    {"key": "climate.allOff"},
+    {
+      "key": "climate.tapAgainOff",
+      "was": "Toucher de nouveau : toutes les pièces éteintes",
+      "after": "Tap again: all rooms : désactivé"
+    },
+    {
+      "key": "climate.frostGuardHint",
+      "was": "Éteint veut dire 5° hors gel, le minimum d'un thermostat Hilo. Les changements pour toutes les pièces demandent un deuxième toucher."
+    },
+    {
+      "key": "climate.thermostatUnavailable",
+      "was": "Ce thermostat est indisponible, il ne peut pas être réglé pour le moment."
+    },
+    {
+      "key": "climate.heatPumpOffline",
+      "was": "La thermopompe est hors ligne, elle ne peut pas être réglée pour le moment."
+    },
+    {"key": "climate.allRoomsOff", "was": "Toutes les pièces éteintes (5° hors gel)"},
+    {"key": "climate.setAllTo", "values": {"n": "21.0"}, "was": "Tout régler à 21,0°"},
+    {
+      "key": "climate.tapAgainAll",
+      "values": {"rooms": 4, "n": "21.0"},
+      "was": "Toucher de nouveau : les 4 pièces à 21,0°"
+    },
+    {"key": "climate.roomSet", "values": {"name": "Bedroom", "n": "21.5"}},
+    {"key": "climate.roomOff", "values": {"name": "Bedroom"}},
+    {
+      "key": "climate.allRoomsSet",
+      "values": {"n": "21.0"},
+      "was": "Toutes les pièces réglées à 21,0°",
+      "after": "All rooms : 21,0°"
+    },
+    {
+      "key": "climate.hpSet",
+      "values": {"n": "22.5"},
+      "was": "Thermopompe réglée à 22,5°",
+      "after": "Thermopompe : 22,5°"
+    },
+    {"key": "climate.hpMode", "values": {"mode": "heat"}, "fr": {"mode": "chauffage"}},
+    {"key": "climate.hpMode", "values": {"mode": "cool"}, "fr": {"mode": "climatisation"}},
+    {"key": "climate.hpMode", "values": {"mode": "dry"}, "fr": {"mode": "déshumidification"}},
+    {"key": "climate.hpMode", "values": {"mode": "fan"}, "fr": {"mode": "ventilation"}},
+    {"key": "climate.hpMode", "values": {"mode": "auto"}, "fr": {"mode": "auto"}},
+    {"key": "climate.hpMode", "values": {"mode": "off"}, "fr": {"mode": "éteint"}, "written": "Thermopompe : éteint"},
+    {"key": "climate.hpFan", "values": {"fan": "auto"}, "fr": {"fan": "auto"}},
+    {"key": "climate.hpFan", "values": {"fan": "quiet"}, "fr": {"fan": "silencieux"}},
+    {"key": "climate.hpFan", "values": {"fan": "low"}, "fr": {"fan": "faible"}, "written": "Ventilateur : faible"},
+    {"key": "climate.hpFan", "values": {"fan": "medium"}, "fr": {"fan": "moyen"}},
+    {"key": "climate.hpFan", "values": {"fan": "high"}, "fr": {"fan": "élevé"}},
+    {"key": "climate.hpFan", "values": {"fan": "diffuse"}, "fr": {"fan": "diffus"}},
+    {
+      "key": "climate.hpPreset",
+      "values": {"preset": "normal"},
+      "fr": {"preset": "normal"},
+      "was": "Préréglage : normal"
+    },
+    {
+      "key": "climate.hpPreset",
+      "values": {"preset": "eco"},
+      "fr": {"preset": "éco"},
+      "was": "Préréglage : éco",
+      "after": "Preset : éco"
+    },
+    {
+      "key": "climate.hpPreset",
+      "values": {"preset": "boost"},
+      "fr": {"preset": "boost"},
+      "was": "Préréglage : boost",
+      "after": "Preset : boost"
+    },
+    {
+      "key": "climate.hpPreset",
+      "values": {"preset": "comfort"},
+      "fr": {"preset": "confort"},
+      "was": "Préréglage : confort",
+      "after": "Preset : confort"
+    },
+    {
+      "key": "climate.hpPreset",
+      "values": {"preset": "sleep"},
+      "fr": {"preset": "sommeil"},
+      "was": "Préréglage : sommeil",
+      "after": "Preset : sommeil"
+    },
+    {
+      "key": "climate.hpSwing",
+      "values": {"swing": "swing up and down"},
+      "fr": {"swing": "balayage vertical"},
+      "was": "Volets : balayage vertical",
+      "after": "Louvers : balayage vertical"
+    },
+    {
+      "key": "climate.hpSwing",
+      "values": {"swing": "swing side to side"},
+      "fr": {"swing": "balayage horizontal"},
+      "was": "Volets : balayage horizontal",
+      "after": "Louvers : balayage horizontal"
+    },
+    {
+      "key": "climate.hpSwing",
+      "values": {"swing": "swing both ways"},
+      "fr": {"swing": "balayage dans les deux sens"},
+      "was": "Volets : balayage dans les deux sens",
+      "after": "Louvers : balayage dans les deux sens"
+    },
+    {
+      "key": "climate.hpSwing",
+      "values": {"swing": "fixed"},
+      "fr": {"swing": "fixe"},
+      "was": "Volets : fixe",
+      "after": "Louvers : fixe"
+    },
+    {
+      "key": "climate.hpSwing",
+      "values": {"swing": "fixed, vertical position 3"},
+      "fr": {"swing": "fixe, position verticale 3"},
+      "written": "Volets : fixe, position verticale 3"
+    }
   ]
 }

@@ -1,6 +1,6 @@
 // climateItems: the climate list's items, the house, each room and the heat pump, with their status words, figures and tones.
 // Pattern: a pure function at the language seam (ADR 0013), a humble object's other half (Meszaros, Fowler): inputs in, the strings
-// the list and the phone's tiles place out, every word through `deps.t`; the legacy `climItems()`'s rules, deleted in #248.
+// the list and the phone's tiles place out, every word through `deps.t`; the legacy `climItems()`'s rules.
 // Must not: import Lit or the DOM, read state or the clock, or hold a word a person reads (a catalog key says it).
 import {DASH} from '../../core/figures.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';

@@ -1,0 +1,105 @@
+/*
+ * <hp-climate-controls>' own rules: the controls' box, the section labels, the line of a stepper and its buttons, the room's quick buttons, the louvers' select, the groups' sizes and the
+ * line that says why the house's two buttons need a second tap. Moved from the legacy `.cctl`, `.clbl`, `.crow`, `.quick`, `.csel` and `.cctl .hint` rules (extra.css, phone.css, motion.css),
+ * which this move deleted. The radio groups, the steppers and the pill buttons are the kit's (`<hp-seg>`, `<hp-stepper>`, `.abtn`); the groups are sized from here through their parts.
+ * `.chint` is a known copy of the legacy `.hint` (base.css), which the Car, Lights and Home panes still draw (#253, #268).
+ */
+:host {
+  display: block;
+  margin: 4px 0 14px;
+}
+/* the one line the controls say in place of themselves: the card's own line, as the legacy `.inner p` set it */
+p {
+  margin: 3px 0 0;
+  color: var(--fg2);
+  font-size: calc(13px * var(--tx));
+}
+.clbl {
+  font-size: calc(12px * var(--tx));
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg2);
+  margin: 12px 0 6px;
+}
+.crow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-top: 10px;
+}
+/* the phone's line is centred, and so are the quick buttons under the dial */
+:host([compact]) .crow {
+  justify-content: center;
+}
+:host([compact]) .quick {
+  justify-content: center;
+  width: 100%;
+}
+.quick {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.quick button {
+  border: 0;
+  background: var(--card2);
+  border-radius: 999px;
+  padding: 9px 13px;
+  min-height: 40px;
+  font: 600 calc(13px * var(--tx)) var(--f-body);
+  color: var(--fg);
+  cursor: pointer;
+}
+.quick button[aria-pressed='true'] {
+  background: var(--card);
+  box-shadow: var(--shadow);
+  color: var(--t-wh);
+}
+.quick button:focus-visible,
+.csel:focus-visible {
+  outline: 2px solid var(--c-home);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .quick button {
+    transition:
+      transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+      background-color 0.2s ease,
+      box-shadow 0.2s ease,
+      color 0.2s ease;
+  }
+}
+.quick button:active {
+  transform: scale(0.96);
+}
+.csel {
+  width: 100%;
+  border: 0;
+  background: var(--card2);
+  color: var(--fg);
+  border-radius: 14px;
+  padding: 11px 12px;
+  font: 500 calc(14px * var(--tx)) var(--f-body);
+}
+/* the radio groups: equal columns, the words in the body face, and on a narrow window three to a row */
+hp-seg::part(group) {
+  grid-auto-columns: minmax(0, 1fr);
+}
+hp-seg::part(label) {
+  font-size: calc(13px * var(--tx));
+  font-family: var(--f-body);
+  font-weight: 600;
+}
+@media (max-width: 720px) {
+  hp-seg::part(group) {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+.chint {
+  font-size: calc(12px * var(--tx));
+  color: var(--fg2);
+  margin: 8px 0 0;
+}

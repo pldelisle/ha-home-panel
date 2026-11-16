@@ -9,7 +9,7 @@ import {sunTimes} from './core/sun.ts';
 import {browserDefaults} from './core/i18n/browser.ts';
 import {createFormatters} from './core/i18n/format.ts';
 import {englishLocale, panelLocale} from './core/i18n/locale.ts';
-import {ok, esc, tile, plural, cap} from './legacy/globals.js';
+import {ok, esc, tile, plural} from './legacy/globals.js';
 import {loadApex} from './core/apex.ts';
 import {registriesOf} from './core/registry.ts';
 import {roomName} from './core/i18n/room-name.ts';
@@ -269,15 +269,6 @@ const wxIcon = (c, sz = 28, day = true) => {
   }[k];
   return `<svg class="wxi" width="${sz}" height="${sz}" viewBox="0 0 24 24" role="img" aria-label="${esc(condName(c))}">${g}</svg>`;
 };
-// ---------- climate helpers: the heat pump controls' words, which #248 deletes with the controls ----------
-const HVAC = {off: 'Off', heat: 'Heat', cool: 'Cool', auto: 'Auto', heat_cool: 'Auto', dry: 'Dry', fan_only: 'Fan'};
-const swingName = m =>
-  ({vertical: 'Swing up and down', horizontal: 'Swing side to side', both: 'Swing both ways', off: 'Fixed'})[m] ||
-  (/^vertical_(\d+)$/i.test(m)
-    ? `Fixed, vertical position ${m.split('_')[1]}`
-    : /^horizontal_(\d+)$/i.test(m)
-      ? `Fixed, horizontal position ${m.split('_')[1]}`
-      : cap(m));
 /**
  * The legacy class, the shell's guest (spec 14, ADR 0016): it implements GuestRenderer structurally (src/shell/guest.ts;
  * this file may not import the shell). It is not an element: the shell constructs it, hands it the page, the store, the
@@ -304,7 +295,7 @@ export class LegacyPanel {
       this.tick();
     };
     this.unsubStore = null; // the one path to the one-second render, subscribed in connect
-    this.H = null; // history-derived data of Climate and Car (loadHistory)
+    this.H = null; // history-derived data of the Car (loadHistory)
     this.shared = null; // the energy history the readers left in this panel share (loadSharedHistory)
     this.charts = []; // sheet charts, destroyed on close
     this.ApexCharts = null; // the library, once the lazy chunk has loaded (loadCharts)
@@ -314,8 +305,6 @@ export class LegacyPanel {
     this.drawnTab = 'home'; // the tab the guest last drew its part of (tabChanged); `tab` is the shell's
     this.framed = false; // whether build() has drawn once, so the next draw asks the shell for a fresh frame
     this.frameKey = null; // what availability() said when the shell was last asked to draw the rail
-    this.climSel = 'house'; // the room the Climate pane's detail shows, told by the pane (climateDetailChanged) until #248
-    this.climOn = false; // that detail is on screen
     this.sesAll = false;
     this.cache = {}; // last innerHTML per container, to skip identical updates
     this.pending = {}; // optimistic control states until hass catches up
@@ -395,7 +384,6 @@ export class LegacyPanel {
     this.frStop();
     this.charts.forEach(c => c.destroy());
     this.charts = [];
-    this.climOn = false; // the pane is about to be drawn again and tells again
     this.cache = {};
     this.sheetOffs.forEach(off => off()); // the sheets are about to be written again, and none is open
     this.sheetOffs = [];
@@ -1488,22 +1476,6 @@ export class LegacyPanel {
       if (t) return this.ctx.shell.setTab(t.dataset.pane);
     };
     tv.addEventListener('click', onTap);
-    // the controls of the Climate detail, which the pane slots (#248 moves them into an element)
-    const ctl = this.$('cctl');
-    ctl.addEventListener('click', e => this.climateControl(e));
-    ctl.addEventListener('change', e => {
-      const t = /** @type {HTMLInputElement} */ (e.target);
-      if (t.id === 'hpswing') {
-        const v = t.value;
-        this.pending['hp:swing'] = {v, until: Date.now() + 20000};
-        this.call(
-          'climate',
-          'set_swing_mode',
-          {entity_id: this.E.hp, swing_mode: v},
-          `Louvers: ${swingName(v).toLowerCase()}`,
-        );
-      }
-    });
     // Ford's photo comes through HA's image proxy; if it fails to load, fall back to the drawn car
     this.root.addEventListener(
       'error',
@@ -1620,7 +1592,6 @@ export class LegacyPanel {
     try {
       if (this.sheets.isOpen('sh-light')) this.renderLightSheet();
       if (this.sheets.isOpen('sh-car')) this.renderCarSheetLive();
-      if (this.climOn) this.renderClimateControls();
       if (!this.$('attpop').hidden) this.renderAttention();
     } catch (e) {
       console.error('home-panel sheet', e);
@@ -1629,8 +1600,8 @@ export class LegacyPanel {
 
   // ---------- live values ----------
   // Energy's reads left in the legacy panel (#241): the providers over the store, in kW, each reader taking the fields it needs
-  // (the provider words nothing). Their callers leave with the Climate moves (#246 and #248: the chart and the controls),
-  // the live pill (#255, #256), the peak chip (#257), the stack (#265, #266), the Home tiles (#268), the header (#269) and the More word (the guest).
+  // (the provider words nothing). Their callers leave with the live pill (#255, #256), the peak chip (#257), the stack (#265, #266),
+  // the Home tiles (#268), the header (#269) and the More word (the guest).
   powerNow() {
     return powerNow(this.store.hass?.states ?? {}, this.store.config);
   }
@@ -1644,7 +1615,7 @@ export class LegacyPanel {
     return hydroQuebec(this.store.hass?.states ?? {}, this.store.config);
   }
   // a room's name, by the core's rule over the provider's room (powerNow's `RoomPower` carries what the rule reads); the Status checks
-  // and the Climate chart and controls still ask it (#256, #246, #248)
+  // still ask it (#256)
   roomName(room) {
     return roomName(room, {names: this.store.names, t: this.store.t, language: this.store.language});
   }
@@ -2165,9 +2136,9 @@ export class LegacyPanel {
       where: ok(trk) ? (trk.state === 'home' ? 'Parked at home' : trk.state === 'not_home' ? 'Away' : trk.state) : '',
     };
   }
-  // the sections this house has nothing for (true = nothing): Climate with no thermostat and no heat pump, Car with no car, and the water
-  // heater with neither of its sensors, whose phone tile on Home gateLacking hides (Energy's own cards and tiles are the pane's, #239).
-  // availability() and gateLacking read it; deleted with Home's tile (#268)
+  // the sections this house has nothing for (true = nothing), for the Home tiles gateLacking hides: Climate with no thermostat and no heat pump,
+  // Car with no car, and the water heater with neither of its sensors (the Climate tab is its descriptor's `available`, #248, and Energy's own cards
+  // and tiles are the pane's, #239). availability() answers for Car from it; deleted with Home's tiles (#268)
   lacking() {
     return {
       climate: !this.ROOMS.length && !this.st(this.E.hp),
@@ -2801,8 +2772,8 @@ export class LegacyPanel {
       }
     }
   }
-  // what the house lacks is hidden wherever it shows. The rail's Climate and Car buttons are the shell's: it asks availability()
-  // and draws the rail from the answer. The Home tiles that open them, and the phone's Water heater tile, are the guest's, and it
+  // what the house lacks is hidden wherever it shows. The rail's Climate and Car buttons are the shell's: it asks the Climate descriptor's `available`
+  // and availability() (Car) and draws the rail from the answers. The Home tiles that open them, and the phone's Water heater tile, are the guest's, and it
   // hides them here. It runs last in renderTabs because the renderers above redraw their tiles whole: a hide that ran before
   // a redraw let the new tile show until the next update hid it again
   gateLacking() {
@@ -2822,9 +2793,8 @@ export class LegacyPanel {
   // which tabs this house lacks (false: nothing for it), for the shell's registry; no opinion until a hass arrived
   availability() {
     if (!this.hass) return {};
-    const L = this.lacking();
-    // Climate's tab is its descriptor's `available` (hasClimate); the answer stays here because a change of it asks the shell for a frame, which asks that again (#248)
-    return {climate: !L.climate, car: !L.car};
+    // the Climate tab is its descriptor's `available` (hasClimate, #248); Car's is still this answer, and a change of it asks the shell for a frame
+    return {car: !this.lacking().car};
   }
   // whether the history behind the charts has loaded, which the settings popup's version line says
   statisticsLoaded() {
@@ -3537,193 +3507,6 @@ export class LegacyPanel {
     const b = this.root.querySelector('#chips .attchip');
     if (b) b.setAttribute('aria-expanded', open);
     if (open) this.renderAttention();
-  }
-
-  // ---------- climate controls ----------
-  // the pane (src/features/climate) tells which room its detail shows, through the shell, or that it left; the controls follow it (#248 deletes this with them)
-  climateDetailChanged(shown) {
-    this.climOn = !!shown;
-    if (!shown) return;
-    this.climSel = shown.sel;
-    this.cache.cctl = null;
-    this.renderClimateControls();
-  }
-  pend(key, cur) {
-    const p = this.pending[key];
-    if (p && p.until > Date.now() && String(p.v) !== String(cur)) return p.v;
-    if (p) delete this.pending[key];
-    return cur;
-  }
-  renderClimateControls() {
-    const el = this.$('cctl');
-    if (!el) return;
-    const stepper = (k, v, lo, hi, label, off) => `<div class="stepper" role="group" aria-label="${esc(label)}">
-        <button type="button" data-c="${k}" data-d="-0.5" aria-label="Lower ${esc(label.toLowerCase())}" ${v == null || v <= lo ? 'disabled' : ''}>−</button>
-        <div class="sv"><b class="num">${v == null ? '–' : off ? 'Off' : (+v).toFixed(1) + '°'}</b><small>${esc(label)}</small></div>
-        <button type="button" data-c="${k}" data-d="0.5" aria-label="Raise ${esc(label.toLowerCase())}" ${v == null || v >= hi ? 'disabled' : ''}>+</button></div>`;
-    const seg = (k, opts, cur, aria) =>
-      `<div class="seg" role="radiogroup" aria-label="${esc(aria)}">${opts.map(([v, l]) => `<button type="button" role="radio" aria-checked="${v === cur}" data-c="${k}" data-v="${esc(v)}"><b>${esc(l)}</b></button>`).join('')}</div>`;
-    let html = '';
-    if (this.climSel === 'hp') {
-      const hp = this.st(this.E.hp);
-      if (!ok(hp)) {
-        html = '<p class="muted">The heat pump is offline, so it can\'t be adjusted right now.</p>';
-      } else {
-        const a = hp.attributes,
-          mode = this.pend('hp:mode', hp.state),
-          spv = this.pend('hp:sp', a.temperature),
-          fan = this.pend('hp:fan', a.fan_mode),
-          pre = this.pend('hp:preset', a.preset_mode),
-          sw = this.pend('hp:swing', a.swing_mode);
-        const modes = (a.hvac_modes || ['off', 'heat']).map(m => [m, HVAC[m] || cap(m)]);
-        html = `<div class="clbl">Mode</div>${seg('hpmode', modes, mode, 'Heat pump mode')}
-          ${['off', 'fan_only', 'dry'].includes(mode) ? '' : `<div class="crow">${stepper('hpsp', spv, a.min_temp ?? 16, a.max_temp ?? 30, 'Target')}</div>`}
-          ${
-            mode === 'off'
-              ? ''
-              : `${
-                  a.fan_modes
-                    ? `<div class="clbl">Fan</div>${seg(
-                        'hpfan',
-                        a.fan_modes.map(m => [m, cap(m)]),
-                        fan,
-                        'Fan speed',
-                      )}`
-                    : ''
-                }
-          ${
-            a.preset_modes
-              ? `<div class="clbl">Preset</div>${seg(
-                  'hppre',
-                  a.preset_modes.map(m => [m, m === 'none' ? 'Normal' : cap(m)]),
-                  pre,
-                  'Preset',
-                )}`
-              : ''
-          }
-          ${a.swing_modes ? `<div class="clbl">Louvers</div><select class="csel" id="hpswing" aria-label="Louver position">${a.swing_modes.map(m => `<option value="${esc(m)}" ${m === sw ? 'selected' : ''}>${esc(swingName(m))}</option>`).join('')}</select>` : ''}`
-          }`;
-      }
-    } else if (this.climSel === 'house') {
-      const v = this.allSp ?? 21;
-      html = `<div class="clbl">All rooms</div><div class="crow">${stepper('allsp', v, 5.5, 30, 'Set every room to')}
-        <button type="button" class="abtn${this.armed === 'allset' ? ' armed' : ''}" data-c="allset">${this.armed === 'allset' ? `Tap again: all ${this.ROOMS.length} rooms to ${v.toFixed(1)}°` : `Set all to ${v.toFixed(1)}°`}</button>
-        <button type="button" class="abtn${this.armed === 'alloff' ? ' armed' : ''}" data-c="alloff">${this.armed === 'alloff' ? 'Tap again: all rooms off' : 'All off'}</button></div>
-        <p class="hint">Off means the 5° frost guard, the lowest a Hilo thermostat goes. Changes to every room need a second tap.</p>`;
-    } else {
-      const r = this.ROOMS.find(x => x.k === this.climSel),
-        c = this.st(r.climate);
-      if (!ok(c)) html = '<p class="muted">This thermostat is unavailable, so it can\'t be adjusted right now.</p>';
-      else {
-        const a = c.attributes,
-          v = this.pend(r.climate, a.temperature),
-          off = v <= 5.5;
-        html = `<div class="crow">${stepper('roomsp', v, a.min_temp ?? 5, a.max_temp ?? 30, 'Setpoint', off)}
-          <div class="quick">${[
-            [5, 'Off'],
-            [19, '19°'],
-            [20, '20°'],
-            [21, '21°'],
-            [22, '22°'],
-          ]
-            .map(
-              ([q, l]) => `<button type="button" data-c="roomq" data-v="${q}" aria-pressed="${+v === q}">${l}</button>`,
-            )
-            .join('')}</div></div>`;
-      }
-    }
-    this.set('cctl', html);
-  }
-  climateControl(e) {
-    const b = e.target.closest('[data-c]');
-    if (!b || b.disabled) return;
-    const k = b.dataset.c,
-      hold = (key, v) => {
-        this.pending[key] = {v, until: Date.now() + 20000};
-      };
-    // setpoint taps are collected and sent once the taps stop, so five quick taps are one change
-    const later = (key, fn) => {
-      clearTimeout(this.spT && this.spT[key]);
-      this.spT = this.spT || {};
-      this.spT[key] = setTimeout(fn, 1100);
-    };
-    if (k === 'roomsp' || k === 'roomq') {
-      const r = this.ROOMS.find(x => x.k === this.climSel),
-        c = this.st(r.climate),
-        a = c.attributes,
-        lo = a.min_temp ?? 5,
-        hi = a.max_temp ?? 30;
-      let v = k === 'roomq' ? +b.dataset.v : +this.pend(r.climate, a.temperature) + +b.dataset.d;
-      if (k === 'roomsp' && v < 5.5 && +b.dataset.d < 0) v = lo;
-      if (k === 'roomsp' && +this.pend(r.climate, a.temperature) <= 5.5 && +b.dataset.d > 0) v = 15;
-      v = Math.min(hi, Math.max(lo, Math.round(v * 2) / 2));
-      hold(r.climate, v);
-      later(r.climate, () =>
-        this.call(
-          'climate',
-          'set_temperature',
-          {entity_id: r.climate, temperature: v},
-          `${this.roomName(this.powerNow().rooms.find(x => x.key === r.k))} ${v <= 5.5 ? 'off' : 'set to ' + v.toFixed(1) + '°'}`,
-        ),
-      );
-    } else if (k === 'allsp') {
-      this.allSp = Math.min(30, Math.max(5.5, (this.allSp ?? 21) + +b.dataset.d));
-      this.armed = null;
-    } else if (k === 'allset' || k === 'alloff') {
-      if (this.armed !== k) {
-        this.armed = k;
-        clearTimeout(this.armT);
-        this.armT = setTimeout(() => {
-          this.armed = null;
-          this.cache.cctl = null;
-          this.renderClimateControls();
-        }, 4000);
-      } else {
-        this.armed = null;
-        const v = k === 'alloff' ? 5 : (this.allSp ?? 21);
-        this.ROOMS.forEach(r => hold(r.climate, v));
-        this.call(
-          'climate',
-          'set_temperature',
-          {entity_id: this.ROOMS.map(r => r.climate), temperature: v},
-          k === 'alloff' ? 'All rooms off (5° frost guard)' : `All rooms set to ${v.toFixed(1)}°`,
-        );
-      }
-    } else if (k === 'hpmode') {
-      const v = b.dataset.v;
-      hold('hp:mode', v);
-      this.call(
-        'climate',
-        'set_hvac_mode',
-        {entity_id: this.E.hp, hvac_mode: v},
-        `Heat pump: ${(HVAC[v] || v).toLowerCase()}`,
-      );
-    } else if (k === 'hpsp') {
-      const a = this.st(this.E.hp).attributes,
-        v = Math.min(a.max_temp ?? 30, Math.max(a.min_temp ?? 16, +this.pend('hp:sp', a.temperature) + +b.dataset.d));
-      hold('hp:sp', v);
-      later('hp', () =>
-        this.call(
-          'climate',
-          'set_temperature',
-          {entity_id: this.E.hp, temperature: v},
-          `Heat pump set to ${v.toFixed(1)}°`,
-        ),
-      );
-    } else if (k === 'hpfan') {
-      hold('hp:fan', b.dataset.v);
-      this.call('climate', 'set_fan_mode', {entity_id: this.E.hp, fan_mode: b.dataset.v}, `Fan: ${b.dataset.v}`);
-    } else if (k === 'hppre') {
-      hold('hp:preset', b.dataset.v);
-      this.call(
-        'climate',
-        'set_preset_mode',
-        {entity_id: this.E.hp, preset_mode: b.dataset.v},
-        `Preset: ${b.dataset.v === 'none' ? 'normal' : b.dataset.v}`,
-      );
-    }
-    this.cache.cctl = null;
-    this.renderClimateControls();
   }
 
   // ---------- car sheet ----------

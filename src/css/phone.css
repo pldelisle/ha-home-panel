@@ -301,10 +301,3 @@
   font-size: calc(18px * var(--tx));
   white-space: normal;
 }
-.app.cp #cctl .crow {
-  justify-content: center;
-}
-.app.cp #cctl .quick {
-  justify-content: center;
-  width: 100%;
-}

@@ -2,9 +2,8 @@
  * <hp-air-card>'s own rules: the card's box, its title line with the outside figure, and a box per room with its three metrics. Moved
  * from the legacy `.aqroom` and `.aqm` rules (extra.css), which this move deleted; the state line is the feature's `.aqsum` (styles.css),
  * shared with the detail. Known copies of rules the legacy panel's other cards still draw, each read here under the card's own selector:
- * `.card`, `.card .top`, `.card .top .right`, `.lbl`, `.go` (base.css, glass.css) and the climate list's `.rooms`/`.room` (base.css,
- * glass.css), read as `.aqbox`, `.top`, `.right`, `.lbl`, `.aqgo` and `.aqlist`/`.aqroom`. The Climate move (#248) deletes the
- * `.rooms`/`.room` rules and this copy of them; the Home move (#268) deletes the others.
+ * `.card`, `.card .top`, `.card .top .right`, `.lbl`, `.go` (base.css, glass.css), read as `.aqbox`, `.top`, `.right`, `.lbl` and `.aqgo`; the Home move (#268)
+ * deletes them. `.aqlist` and `.aqroom` were the climate list's `.rooms`/`.room` too; the Climate move (#248) deleted those, so they are the only copy.
  */
 :host {
   display: block;
