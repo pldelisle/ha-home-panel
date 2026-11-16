@@ -6,7 +6,8 @@
 // Must not: read an entity, word a string, or decide what a command is (the caller builds it, `holds` says which keys show the value).
 import type {ReactiveController, ReactiveControllerHost} from 'lit';
 import {PLATFORM_TIMERS, type Timers} from '../../core/timing.ts';
-import type {Command, CommandRunner} from '../../ui/commands.ts';
+import type {Command} from '../../core/commands.ts';
+import type {CommandRunner} from '../../ui/commands.ts';
 import type {OptimisticController} from '../../ui/controllers/optimistic.ts';
 
 /** How long a setpoint waits for the asking to stop: the legacy panel's 1,100 ms, a little over a second. */

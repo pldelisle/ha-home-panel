@@ -4,8 +4,8 @@
 // branch, which #218 deleted, and `runScene`, which #220 deleted.
 // Must not: send anything, read the store or the clock, or word a string (`done` is a catalog key, the runner words it).
 import type {Speaker} from './speakers.ts';
-import type {Command} from '../../ui/commands.ts';
-import {overlayKey} from '../../ui/overlay-store.ts';
+import type {Command} from '../../core/commands.ts';
+import {overlayKey} from '../../core/overlay-key.ts';
 import type {TvInputs} from '../../providers/tv-source.ts';
 
 /** The overlay keys, one function per held value: a typo is a compile error, and two kinds of value never share a key. */

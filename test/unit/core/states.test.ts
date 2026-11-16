@@ -7,6 +7,7 @@ import {
   kilowattsOf,
   numberAttributeOf,
   numberOf,
+  switchOf,
   textAttributeOf,
   textOf,
 } from '../../../src/core/states.ts';
@@ -141,5 +142,35 @@ describe('textAttributeOf', () => {
     expect(textAttributeOf(states, 'weather.absent', 'wind_bearing')).toBeNull();
     expect(textAttributeOf(states, null, 'wind_bearing')).toBeNull();
     expect(textAttributeOf(undefined, 'weather.home', 'wind_bearing')).toBeNull();
+  });
+});
+
+describe('switchOf', () => {
+  const switches = {
+    'switch.lamp': entity('switch.lamp', 'on'),
+    'switch.fan': entity('switch.fan', 'off'),
+    'lock.door': entity('lock.door', 'locked'),
+    'lock.gate': entity('lock.gate', 'unlocked'),
+    'switch.gone': entity('switch.gone', 'unavailable'),
+    'button.honk': entity('button.honk', 'unknown'),
+  };
+
+  test('a switch that is on and a lock that is locked are on, with a value', () => {
+    expect(switchOf(switches, 'switch.lamp')).toEqual({on: true, available: true});
+    expect(switchOf(switches, 'lock.door')).toEqual({on: true, available: true});
+  });
+
+  test('a switch that is off and a lock that is unlocked are off, with a value', () => {
+    expect(switchOf(switches, 'switch.fan')).toEqual({on: false, available: true});
+    expect(switchOf(switches, 'lock.gate')).toEqual({on: false, available: true});
+  });
+
+  test('an unavailable or unknown one, a missing one and an unset id are off and have no value', () => {
+    const none = {on: false, available: false};
+    expect(switchOf(switches, 'switch.gone')).toEqual(none);
+    expect(switchOf(switches, 'button.honk')).toEqual(none);
+    expect(switchOf(switches, 'switch.missing')).toEqual(none);
+    expect(switchOf(switches, null)).toEqual(none);
+    expect(switchOf(undefined, 'switch.lamp')).toEqual(none);
   });
 });

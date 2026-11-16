@@ -1,18 +1,8 @@
 // The optimistic overlay: the pure rule (the legacy `pend`) and the store that holds the values the person asked for.
 import {describe, expect, test, vi} from 'vitest';
-import {overlay, overlayKey, OverlayStore, TTL_MS, type Held} from '../../../src/ui/overlay-store.ts';
+import {overlay, OverlayStore, TTL_MS, type Held} from '../../../src/ui/overlay-store.ts';
 
 const held = (entries: Record<string, Held>) => new Map(Object.entries(entries));
-
-describe('overlayKey', () => {
-  test('is the id and the suffix of a kind, so two kinds of one entity never share a key', () => {
-    const mode = overlayKey('mode');
-    const level = overlayKey('lvl');
-    expect(mode('fan.den')).toBe('fan.den:mode');
-    expect(level('fan.den')).toBe('fan.den:lvl');
-    expect(mode('fan.den')).not.toBe(mode('fan.bed'));
-  });
-});
 
 describe('overlay, the rule', () => {
   test('answers what Home Assistant says when nothing is held', () => {

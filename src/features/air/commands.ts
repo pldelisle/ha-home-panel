@@ -3,8 +3,8 @@
 // `holds` key names in the panel's overlay store (ADR 0023). The rules are the legacy `airControl`'s, deleted in #234.
 // The callers are `<hp-air-room>`: the mode radios send `setMode`, the debounced stepper `setSpeed`.
 // Must not: send anything, read the store or the clock, or word a string (`done` is a catalog key, the runner words it).
-import type {Command} from '../../ui/commands.ts';
-import {overlayKey} from '../../ui/overlay-store.ts';
+import type {Command} from '../../core/commands.ts';
+import {overlayKey} from '../../core/overlay-key.ts';
 
 /** The overlay keys, one function per held value: a typo is a compile error, and the mode and the speed never share a key. */
 export const K = {

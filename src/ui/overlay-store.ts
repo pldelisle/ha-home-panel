@@ -13,12 +13,6 @@ export interface Held {
 /** The panel's held values as an element reads them (`OptimisticController.read`, `OverlayStore.read`): `key`'s held value, else `current`. */
 export type Overlay = <T>(key: string, current: T) => T;
 
-/** One kind of held value's key, as a function of the entity id: two kinds never share a suffix, so two kinds never share a key. */
-export const overlayKey =
-  (suffix: string) =>
-  (id: string): string =>
-    `${id}:${suffix}`;
-
 /** How long a value is held when its command says nothing else: twenty seconds, as the legacy `pend` did. */
 export const TTL_MS = 20_000;
 

@@ -51,3 +51,15 @@ export function numberAttributeOf(states: HassEntities | undefined, id: MaybeId,
   const v = attributeOf(states, id, name);
   return typeof v === 'number' && Number.isFinite(v) ? v : null;
 }
+
+/** A switch, a lock or a button as a control reads it: on (a switch that is on, a lock that is locked) and whether Home Assistant has a value for it. */
+export interface SwitchState {
+  on: boolean;
+  available: boolean;
+}
+
+/** The switch or lock at `id` (`on` for `on` and `locked`); a missing or unset one is off and unavailable. */
+export function switchOf(states: HassEntities | undefined, id: MaybeId): SwitchState {
+  const s = id ? states?.[id] : undefined;
+  return {on: isAvailable(s) && (s.state === 'on' || s.state === 'locked'), available: isAvailable(s)};
+}

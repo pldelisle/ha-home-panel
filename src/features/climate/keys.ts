@@ -2,7 +2,7 @@
 // Pattern: typed keys over the optimistic overlay (ADR 0023), as Air's `K`; a key is the entity's id and a suffix no other kind shares.
 // The model (model.ts) reads these, and the commands (commands.ts) name the same ones in their `holds`.
 // Must not: hold a value, read the store or the clock, or name an entity id (the caller gives it).
-import {overlayKey} from '../../ui/overlay-store.ts';
+import {overlayKey} from '../../core/overlay-key.ts';
 
 export const K = {
   /** A room's setpoint, by its thermostat's id. */

@@ -34,7 +34,8 @@ export {guessIcon, ROOM_ICONS, type RoomIcon} from './room-icons.ts';
 // ---------- the schema: examples/configuration.yaml, in full ----------
 
 const isObject = (v: unknown): v is Record<string | number, unknown> => typeof v === 'object' && v !== null;
-const isRecord = (v: unknown): v is Record<string, unknown> => isObject(v) && !Array.isArray(v);
+/** A plain object: not null and not an array. */
+export const isRecord = (v: unknown): v is Record<string, unknown> => isObject(v) && !Array.isArray(v);
 
 // `any` is how superstruct itself types "a struct of anything"; Struct<T> is invariant in T, so no narrower type holds them
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

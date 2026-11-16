@@ -71,6 +71,7 @@ describe.each([
   ['air', 'air.', ['src/features/air/', 'src/providers/'], []],
   ['energy', 'energy.', ['src/features/energy/'], []],
   ['climate', 'climate.', ['src/features/climate/'], []],
+  ['car', 'car.', ['src/features/car/', 'src/providers/'], []],
   ['chart', 'chart.', ['src/ui/'], []],
   ['ranges', 'range.', ['src/ui/'], []],
   ['settings', 'settings.', ['src/shell/'], []],

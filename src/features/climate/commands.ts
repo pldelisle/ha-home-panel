@@ -4,7 +4,7 @@
 // Must not: send anything, read the store or the clock, or word a string (`done` is a catalog key, the runner words it; a number or a word arrives already written).
 import type {Formatters} from '../../core/i18n/format.ts';
 import {FROST_GUARD, OFF_AT_OR_BELOW} from '../../providers/power.ts';
-import type {Command} from '../../ui/commands.ts';
+import type {Command} from '../../core/commands.ts';
 import {K} from './keys.ts';
 
 /** What a tap on a stepper adds or takes away, and the grid the thermostats' setpoints and the dial's snap to: half a degree. */
