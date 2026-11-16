@@ -18,11 +18,12 @@ export default defineConfig({
         'src/core/**/*.ts',
         'src/providers/**/*.ts',
         'src/features/*/{ids,inputs,model,speakers,tiles,history,scenes,commands,flow-layout,water-chart,charts,sankey-layout,schedule,bars-geometry}.ts', // the pure files; the elements are proven by the harness
+        'src/features/car/loader.ts', // a controller over the statistics cache, tested with a fake cache, store and host; the pane that mounts it is proven by the harness
         'src/features/climate/sender.ts', // a controller over the overlay and the runner, tested with fakes and a fake clock; its two elements are proven by the harness
         'src/ui/{ranges,seg-keys,steps,thin-axis}.ts', // the kit's pure files; its elements are proven by the harness
         'src/ui/commands.ts', // the command layer: the runner, the store and its controller are tested with fakes (ADR 0023)
         'src/ui/overlay-store.ts',
-        'src/ui/controllers/{optimistic,armed}.ts',
+        'src/ui/controllers/{optimistic,armed,windowed-history}.ts',
         'src/ui/styles/host.ts',
         'src/shell/guest.ts',
         'src/shell/features.ts',
@@ -48,6 +49,7 @@ export default defineConfig({
           {
             statements: 100,
           },
+        'src/features/car/loader.ts': {statements: 100},
         'src/features/climate/sender.ts': {statements: 100},
         'src/ui/ranges.ts': {statements: 100},
         'src/ui/seg-keys.ts': {statements: 100},
@@ -57,6 +59,7 @@ export default defineConfig({
         'src/ui/overlay-store.ts': {statements: 100},
         'src/ui/controllers/optimistic.ts': {statements: 100},
         'src/ui/controllers/armed.ts': {statements: 100},
+        'src/ui/controllers/windowed-history.ts': {statements: 100},
         'src/ui/styles/host.ts': {statements: 100},
         'src/shell/guest.ts': {statements: 100},
         'src/shell/features.ts': {statements: 100},

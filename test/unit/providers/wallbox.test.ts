@@ -7,7 +7,13 @@ import {overlayKey} from '../../../src/core/overlay-key.ts';
 import {FULL_CFG} from '../../e2e/houses.ts';
 import {entity, fakeHass} from '../fake-hass.ts';
 import {fullHouse, houseOf, recorded, storeOf} from '../features/media/support.ts';
-import {chargingSessions, pauseHold, wallbox, wallboxCommands} from '../../../src/providers/wallbox.ts';
+import {
+  chargerStatusKey,
+  chargingSessions,
+  pauseHold,
+  wallbox,
+  wallboxCommands,
+} from '../../../src/providers/wallbox.ts';
 
 const CFG = {entities: {ev_charger_power: 'sensor.power', ev_charger_status: 'sensor.status'}};
 const read = (...states: ReturnType<typeof entity>[]) => {
@@ -203,5 +209,14 @@ describe('wallboxCommands.pause', () => {
       overlayKey('pause')('switch.charger_pause'),
     ]);
     expect(pauseHold('switch.charger_pause')).toBe('switch.charger_pause:pause');
+  });
+});
+
+describe('chargerStatusKey', () => {
+  test('the statuses the Wallbox integration gives have a catalog key, as it spells them; any other is left to the sensor', () => {
+    expect(chargerStatusKey('Charging')).toBe('energy.status.charging');
+    expect(chargerStatusKey('Connected: waiting for car demand')).toBe('energy.status.connectedWaitingForCar');
+    expect(chargerStatusKey('Waiting in queue by Eco-Smart')).toBe('energy.status.queueEcoSmart');
+    expect(chargerStatusKey('Something new')).toBeUndefined();
   });
 });

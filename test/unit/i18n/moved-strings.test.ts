@@ -1,6 +1,7 @@
 // The French of a moved string: for every English message a move introduced, the French catalog renders what the rewrite layer
 // (src/i18n/fr.js) makes of the English text, so moving a feature into the catalog cannot change a French pixel. A string whose
-// French would differ is a visible change and needs an approved baseline, not an edit here; a `written` one is French the legacy
+// French would differ is a visible change and needs an approved baseline, not an edit here: a `translated` one records that change
+// (the layer left the English, or got it wrong); a `written` one is French the legacy
 // panel wrote itself, where the layer is no oracle, and `was` records the old output of an entry the move deleted from the map.
 // The list of messages is a fixture the move writes (test/unit/fixtures/moved/<move>.json); this file and the fixtures are
 // deleted with the layer in phase 4.
@@ -19,9 +20,10 @@ interface Moved {
   fr?: MessageValues;
   /**
    * The sentence the message is read in, when the layer translates it only there (`Range, 12 months` is `Écart, 12 mois`, the
-   * bare `12 months` is left as it is): the layer's output for `en + english` must be `fr + the French message`.
+   * bare `12 months` is left as it is): the layer's output for `en + english` must be `fr + the French message`. A piece the layer
+   * knows only as part of a line (`55.0 of 88.0 kWh usable · battery at 20.0°`) has what follows it, `enAfter` and `frAfter`, too.
    */
-  frame?: {en: string; fr: string};
+  frame?: {en: string; fr: string; enAfter?: string; frAfter?: string};
   /**
    * The French the layer made of the English text before the move deleted its entry from the map (src/i18n/fr.js), as the
    * byte comparison found it. The layer is no oracle for a deleted entry, so this text is: the catalog must say it, and the layer
@@ -29,10 +31,18 @@ interface Moved {
    */
   was?: string;
   /**
-   * The French the legacy panel wrote itself, in its own code (`isFrench ? 'Désactivé' : 'Off'`), so the text never went through
-   * the layer, which says something else of the English (`Éteint`): the catalog must say what the pane showed.
+   * The French the catalog says where the layer is no oracle and nothing visible changes: French the legacy panel wrote itself, in
+   * its own code (`isFrench ? 'Désactivé' : 'Off'`), so the text never went through the layer, which says something else of the
+   * English (`Éteint`); or French the layer makes only in the sentence a piece is read in (a day's abbreviation is `Lun.` alone and
+   * `lun.` in a list). The catalog must say what the pane showed. Where the layer left the English or got it wrong, use `translated`.
    */
   written?: string;
+  /**
+   * The French the catalog writes where the layer's is the English text as it stood, or is wrong (a tire's `low` is `min`): a visible
+   * change that the pane that draws the message (#251, #252) records in its baselines. The layer is no oracle, but it must differ
+   * from the catalog, or the row is `written` or a plain one. Earlier moves' fixtures wrote such rows as `written`.
+   */
+  translated?: string;
   /**
    * What the layer makes of the English text now that its entry is gone, when that is not the text itself (a pattern of the layer,
    * `(.+) air` → `Air : …`, still reads it). Nothing shows it: the text is no longer drawn by the guest.
@@ -69,7 +79,7 @@ describe.each([
   ['media', 'media.', ['src/features/media/', 'src/providers/'], ['common.failed']],
   ['security', 'security.', ['src/features/security/'], []],
   ['air', 'air.', ['src/features/air/', 'src/providers/'], []],
-  ['energy', 'energy.', ['src/features/energy/'], []],
+  ['energy', 'energy.', ['src/features/energy/', 'src/providers/'], []],
   ['climate', 'climate.', ['src/features/climate/'], []],
   ['car', 'car.', ['src/features/car/', 'src/providers/'], []],
   ['chart', 'chart.', ['src/ui/'], []],
@@ -83,11 +93,16 @@ describe.each([
     const text = english.t(m.key, m.values);
     // the layer is untyped JavaScript
     if (m.written !== undefined) expect(french.t(m.key, inFrench(m))).toBe(m.written);
-    else if (m.was !== undefined) {
+    else if (m.translated !== undefined) {
+      expect(french.t(m.key, inFrench(m))).toBe(m.translated);
+      expect(layer.text(text), 'the layer makes no French of it').not.toBe(m.translated);
+    } else if (m.was !== undefined) {
       expect(layer.text(text), 'the map entry is deleted').toBe(m.after ?? text);
       expect(french.t(m.key, inFrench(m))).toBe(m.was);
-    } else if (m.frame) expect(m.frame.fr + french.t(m.key, inFrench(m))).toBe(layer.text(m.frame.en + text) as string);
-    else expect(french.t(m.key, inFrench(m))).toBe(layer.text(text) as string);
+    } else if (m.frame) {
+      const {en, fr, enAfter = '', frAfter = ''} = m.frame;
+      expect(fr + french.t(m.key, inFrench(m)) + frAfter).toBe(layer.text(en + text + enAfter) as string);
+    } else expect(french.t(m.key, inFrench(m))).toBe(layer.text(text) as string);
   });
 
   test('lists every message the move introduced, and only messages that exist', () => {

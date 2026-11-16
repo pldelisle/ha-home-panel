@@ -3,10 +3,10 @@
 // bars (#249) will follow), the legacy `flowSvg` copied number for number (deleted in #240, with the Sankey's Now mode that drew it); the powers come from `powerNow`, and each word and figure through `t` and `fmt`.
 // Must not: import Lit or the DOM, read the clock, state or the registry, or hold a word a person reads (a catalog key says it).
 import {DASH} from '../../core/figures.ts';
-import type {MessageKey} from '../../core/i18n/en.ts';
 import {fixedOr, whole, type Formatters} from '../../core/i18n/format.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
 import type {PowerNow} from '../../providers/power.ts';
+import {chargerStatusKey} from '../../providers/wallbox.ts';
 
 /** A load over this many kW is flowing: the node is lit, the connector's dashes run (the legacy flow's own threshold). */
 export const LIVE_KW = 0.02;
@@ -19,29 +19,6 @@ const WIDTH = 440;
 const HEIGHT = 340;
 /** The unit symbol under a ring's figure of a kilowatt or more; the words beside a unit ("kW · HOME") are catalog keys. */
 const KW = 'kW';
-
-/** The charger's statuses the catalog words, by the text the Wallbox integration gives; any other status is shown as the sensor says it. */
-const STATUS_WORDS: ReadonlyMap<string, MessageKey> = new Map([
-  ['Ready', 'energy.status.ready'],
-  ['Charging', 'energy.status.charging'],
-  ['Connected: waiting for car demand', 'energy.status.connectedWaitingForCar'],
-  ['Waiting for car demand', 'energy.status.waitingForCar'],
-  ['Connected: waiting for next schedule', 'energy.status.connectedWaitingForSchedule'],
-  ['Waiting for next schedule', 'energy.status.waitingForSchedule'],
-  ['Paused by user', 'energy.status.pausedByUser'],
-  ['Scheduled', 'energy.status.scheduled'],
-  ['Discharging', 'energy.status.discharging'],
-  ['Error', 'energy.status.error'],
-  ['Disconnected', 'energy.status.disconnected'],
-  ['Locked', 'energy.status.locked'],
-  ['Locked, car connected', 'energy.status.lockedCarConnected'],
-  ['Updating', 'energy.status.updating'],
-  ['Waiting', 'energy.status.waiting'],
-  ['Waiting in queue by Power Sharing', 'energy.status.queuePowerSharing'],
-  ['Waiting in queue by Power Boost', 'energy.status.queuePowerBoost'],
-  ['Waiting in queue by Eco-Smart', 'energy.status.queueEcoSmart'],
-  ['Waiting for MID failed', 'energy.status.midFailed'],
-]);
 
 /** A text of the drawing: `big` is a figure, `cap` a caption, `st` a small line; `size` overrides the class's font size. */
 export interface FlowText {
@@ -150,7 +127,7 @@ export function flowLayout(power: PowerNow, {t, fmt, waterTemperature, chargerSt
     return {key, cx, cy, r, strokeWidth: 3, color, on, texts};
   };
 
-  const word = chargerStatus === null ? undefined : STATUS_WORDS.get(chargerStatus);
+  const word = chargerStatus === null ? undefined : chargerStatusKey(chargerStatus);
   const chargerText = chargerStatus === null ? t('energy.unavailable') : word ? t(word) : chargerStatus;
   const tank = waterTemperature === null ? '' : `${fmt.fixed(waterTemperature, 1)}°`;
   const waterWord = lit(water) ? t('energy.heating') : t('energy.idle');

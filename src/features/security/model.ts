@@ -4,7 +4,7 @@
 // store, words every message through `deps.t` and times through `deps.fmt`, and takes the providers' inputs as the contract (ADR 0025).
 // Each rule is the legacy panel's own (`renderCameras`, `renderSensors`, `sensorState`, the summary lines), deleted by #227.
 // Must not: import the DOM, the kit or the shell, read the clock, or hold text the household reads (a catalog key says it).
-import {capitalise} from '../../core/figures.ts';
+import {capitalise, joined} from '../../core/figures.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
 import type {Formatters} from '../../core/i18n/format.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
@@ -100,9 +100,6 @@ export interface SecurityViewModel {
     active: ActiveSnapshot;
   };
 }
-
-/** The line the pane, the Home card and the card's header build from the same facts, joined with " · " without the empty ones. */
-const joined = (...parts: string[]): string => parts.filter(Boolean).join(' · ');
 
 /** The snapshot's URL with the stamp the model gives it, so the browser asks again every ten seconds. */
 function stamped(picture: string, now: number): string {

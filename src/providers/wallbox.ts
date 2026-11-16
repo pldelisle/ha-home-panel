@@ -1,13 +1,14 @@
-// The Wallbox charger: its power and status for the energy card, its controls' inputs for the Car, and the charging sessions its hourly power makes.
+// The Wallbox charger: its power and status for the energy card, its controls' inputs for the Car, the catalog key of each status, and the charging sessions its hourly power makes.
 // Pattern: an adapter below the features (ADR 0025), found by the config's keys (convention over configuration), not the registry; the reads are those of the legacy flow,
 // `attention()` and `renderCarControls` (deleted in #241 and #253); `chargingSessions` is the legacy `derive`'s rule (deleted in #251), here and not in the Car so the live pill can ask it too (spec 22).
 // The pause command is `Command` data (core), which the kit's runner will send; the pill's "Pause charging" (#255) and the Car's switch (#253) will both use it, so it is built once, here.
-// Must not: word the status, send a command, import the kit, or read the registry or the clock.
+// Must not: word the status (it names the catalog key that does), send a command, import the kit, or read the registry or the clock.
 import type {Command} from '../core/commands.ts';
 import type {ResolvedConfig} from '../core/config.ts';
 import {HOUR_MS} from '../core/figures.ts';
 import type {StatisticRow} from '../core/ha.ts';
 import type {HassEntities} from '../core/hass.ts';
+import type {MessageKey} from '../core/i18n/en.ts';
 import {overlayKey} from '../core/overlay-key.ts';
 import {hasState, isAvailable, kilowattsOf, numberAttributeOf, numberOf, switchOf, textOf} from '../core/states.ts';
 
@@ -102,6 +103,32 @@ export function chargingSessions(rows: readonly StatisticRow[]): Session[] {
     .map(({start, last, kwh, peak}) => ({start, end: last + HOUR_MS, kwh, peak}))
     .filter(session => session.kwh >= MIN_SESSION_KWH);
 }
+
+/** The charger's statuses the catalog words, by the text the Wallbox integration gives. */
+const STATUS_KEYS: ReadonlyMap<string, MessageKey> = new Map([
+  ['Ready', 'energy.status.ready'],
+  ['Charging', 'energy.status.charging'],
+  ['Connected: waiting for car demand', 'energy.status.connectedWaitingForCar'],
+  ['Waiting for car demand', 'energy.status.waitingForCar'],
+  ['Connected: waiting for next schedule', 'energy.status.connectedWaitingForSchedule'],
+  ['Waiting for next schedule', 'energy.status.waitingForSchedule'],
+  ['Paused by user', 'energy.status.pausedByUser'],
+  ['Scheduled', 'energy.status.scheduled'],
+  ['Discharging', 'energy.status.discharging'],
+  ['Error', 'energy.status.error'],
+  ['Disconnected', 'energy.status.disconnected'],
+  ['Locked', 'energy.status.locked'],
+  ['Locked, car connected', 'energy.status.lockedCarConnected'],
+  ['Updating', 'energy.status.updating'],
+  ['Waiting', 'energy.status.waiting'],
+  ['Waiting in queue by Power Sharing', 'energy.status.queuePowerSharing'],
+  ['Waiting in queue by Power Boost', 'energy.status.queuePowerBoost'],
+  ['Waiting in queue by Eco-Smart', 'energy.status.queueEcoSmart'],
+  ['Waiting for MID failed', 'energy.status.midFailed'],
+]);
+
+/** The catalog message that words a status the Wallbox integration gives; undefined for any other, which is shown as the sensor says it. Energy's flow and the Car's card word the status so. */
+export const chargerStatusKey = (status: string): MessageKey | undefined => STATUS_KEYS.get(status);
 
 /** The overlay key of the charging switch's held value: `wallboxCommands.pause` holds it and the Car's switch reads it (#253). */
 export const pauseHold = overlayKey('pause');
