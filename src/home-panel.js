@@ -49,11 +49,6 @@ const asDate = v => {
 // (fmtUtcEn, fmtUtc), a key names its own day and month whatever zone the browser or the house is in
 const dayAt = k => new Date(k + 'T12:00:00Z');
 const monthAt = k => new Date(k + '-15T12:00:00Z');
-// the optional history of a heat pump or a sensor: a failed read is an empty one, but a StaleReply stays one
-const noHistory = e => {
-  if (e instanceof StaleReply) throw e;
-  return {};
-};
 // tiles with nothing to show (the car's sensors it doesn't have) are left out rather than shown with a dash
 const tiles = arr =>
   arr
@@ -80,17 +75,17 @@ const LAYOUT = ['lights', 'open-air', 'open-car'];
 // thermostats without an HA area: the area each Hilo room belongs to
 // areas the Phone tab shows as part of another, the way Apple Home groups them: the parking spot's charger and camera live in the garage
 // AL_AREAS (from the config): HA area → Adaptive Lighting switch, for areas the panel can't match on its own
-// Tabs view: one pane per subject, for a tablet fixed to the wall. The panes of Climate and Car host their legacy detail sheets inline, until #246 and #253 (Climate's
-// is the heatmap and the outside chart, in the container the pane slots). The rail, the phone's bar and the panes are the shell's (src/shell/features.ts); the guest fills what is inside them.
-// the sheets that wait for the charts library before they draw anything; the others never do (Climate's detail waits for it in drawClimate)
+// Tabs view: one pane per subject, for a tablet fixed to the wall. Car's pane hosts its legacy detail sheet inline, until #253. The rail, the phone's bar and the panes
+// are the shell's (src/shell/features.ts); the guest fills what is inside them.
+// the sheets that wait for the charts library before they draw anything; the others never do
 const CHART_SHEETS = new Set(['sh-car']);
-const TAB_SHEET = {climate: 'sh-climate', car: 'sh-car'};
+const TAB_SHEET = {car: 'sh-car'};
 // the tab whose pane hosts a sheet's panel
 const SHEET_TAB = /** @type {Record<string, import('./ui/feature.ts').FeatureKey>} */ (
   Object.fromEntries(Object.entries(TAB_SHEET).map(([t, id]) => [id, t]))
 );
-// where the sheet host puts a sheet's panel on a tablet: Car's pane is its host, Climate's pane slots a container for it (src/features/climate/index.ts)
-const SHEET_HOST = {'sh-climate': 'chost', 'sh-car': 'pane-car'};
+// where the sheet host puts a sheet's panel on a tablet: Car's pane is its host
+const SHEET_HOST = {'sh-car': 'pane-car'};
 // colour of a black body at k kelvin (Tanner Helland's fit), for the colour-temperature strips and sliders
 const kelvinRGB = k => {
   const t = Math.min(40000, Math.max(1000, k)) / 100,
@@ -274,136 +269,7 @@ const wxIcon = (c, sz = 28, day = true) => {
   }[k];
   return `<svg class="wxi" width="${sz}" height="${sz}" viewBox="0 0 24 24" role="img" aria-label="${esc(condName(c))}">${g}</svg>`;
 };
-// ---------- climate helpers ----------
-// history ranges for the climate sheet: statistics period, span, and how the heatmap groups cells
-const CRANGE = {
-  day: {
-    days: 1,
-    period: '5minute',
-    mid: 15e4,
-    label: 'last 24 hours',
-    short: '24 h',
-    heatTitle: 'Every room, hour by hour',
-    ticks: 8,
-    tipFmt: 'ddd h:mm tt',
-    meanName: '5-minute mean',
-    outNote: 'Band is each 5 minutes’ low to high, line is the mean',
-  },
-  week: {
-    days: 7,
-    period: 'hour',
-    mid: 18e5,
-    label: 'last 7 days',
-    short: '7 days',
-    heatTitle: 'Every room, every 6 hours',
-    ticks: 7,
-    tipFmt: 'ddd h tt',
-    meanName: 'Hourly mean',
-    outNote: 'Band is each hour’s low to high, line is the hourly mean',
-  },
-  month: {
-    days: 30,
-    period: 'hour',
-    mid: 18e5,
-    label: 'last 30 days',
-    short: '30 days',
-    heatTitle: 'Every room, every day',
-    ticks: 10,
-    tipFmt: 'ddd MMM d, h tt',
-    meanName: 'Hourly mean',
-    outNote: 'Band is each hour’s low to high, line is the hourly mean',
-  },
-  year: {
-    days: 365,
-    period: 'day',
-    mid: 432e5,
-    label: 'last 12 months',
-    short: '12 months',
-    heatTitle: 'Every room, week by week',
-    ticks: 12,
-    tipFmt: 'ddd MMM d, yyyy',
-    meanName: 'Daily mean',
-    outNote: 'Band is each day’s low to high, line is the daily mean',
-  },
-};
-// heatmap: blue (cool) through a neutral 21–22° to red (warm); each step checked for colour-blind separation
-// continuous temperature scale for the all-rooms heatmap: [°C, colour] stops, blended in OKLab
-const HEAT_LO = 17,
-  HEAT_HI = 26;
-const HEAT_LIGHT = [
-  [17, '#24467F'],
-  [19, '#3F7DBF'],
-  [20.5, '#8DBAD8'],
-  [21.5, '#E6D9A2'],
-  [23, '#EE9A52'],
-  [24.5, '#CF592B'],
-  [26, '#87210F'],
-];
-const HEAT_DARK = [
-  [17, '#3561A8'],
-  [19, '#4F8BCB'],
-  [20.5, '#8FBAD6'],
-  [21.5, '#D9C98E'],
-  [23, '#EE9A52'],
-  [24.5, '#D4602F'],
-  [26, '#9A2C17'],
-];
-const lin = c => ((c /= 255) <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
-const toOk = hex => {
-  const [r, g, b] = [1, 3, 5].map(i => lin(parseInt(hex.slice(i, i + 2), 16)));
-  const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b),
-    m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b),
-    q = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
-  return [
-    0.2104542553 * l + 0.793617785 * m - 0.0040720468 * q,
-    1.9779984951 * l - 2.428592205 * m + 0.4505937099 * q,
-    0.0259040371 * l + 0.7827717662 * m - 0.808675766 * q,
-  ];
-};
-/** @param {number[]} lab */
-const fromOk = ([L, A, B]) => {
-  const l = (L + 0.3963377774 * A + 0.2158037573 * B) ** 3,
-    m = (L - 0.1055613458 * A - 0.0638541728 * B) ** 3,
-    q = (L - 0.0894841775 * A - 1.291485548 * B) ** 3;
-  const g = c =>
-    Math.round(255 * Math.min(1, Math.max(0, c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055)))
-      .toString(16)
-      .padStart(2, '0');
-  return (
-    '#' +
-    [
-      4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * q,
-      -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * q,
-      -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * q,
-    ]
-      .map(g)
-      .join('')
-  );
-};
-const heatColor = (v, stops) => {
-  v = Math.min(HEAT_HI, Math.max(HEAT_LO, v));
-  let i = 1;
-  while (i < stops.length - 1 && v > stops[i][0]) i++;
-  const [t0, c0] = stops[i - 1],
-    [t1, c1] = stops[i],
-    f = (v - t0) / (t1 - t0),
-    a = toOk(c0),
-    b = toOk(c1);
-  return fromOk(a.map((x, k) => x + (b[k] - x) * f));
-};
-// 0.1° steps so neighbouring cells blend instead of jumping between bands
-const heatRanges = stops => {
-  const out = [];
-  for (let k = 0; k < (HEAT_HI - HEAT_LO) * 10; k++) {
-    const v = HEAT_LO + k / 10;
-    out.push({
-      from: k ? v : -99,
-      to: k === (HEAT_HI - HEAT_LO) * 10 - 1 ? 99 : v + 0.0999,
-      color: heatColor(v + 0.05, stops),
-    });
-  }
-  return out;
-};
+// ---------- climate helpers: the heat pump controls' words, which #248 deletes with the controls ----------
 const HVAC = {off: 'Off', heat: 'Heat', cool: 'Cool', auto: 'Auto', heat_cool: 'Auto', dry: 'Dry', fan_only: 'Fan'};
 const swingName = m =>
   ({vertical: 'Swing up and down', horizontal: 'Swing side to side', both: 'Swing both ways', off: 'Fixed'})[m] ||
@@ -412,26 +278,6 @@ const swingName = m =>
     : /^horizontal_(\d+)$/i.test(m)
       ? `Fixed, horizontal position ${m.split('_')[1]}`
       : cap(m));
-// heat pump readings from state history; a gap with no state means it was offline
-/** @param {(attrs: any, state: string) => any} [get] what to read from a point (the default is the temperature) */
-function hpSeries(rows, get = a => a.current_temperature) {
-  const out = [];
-  let prev = null;
-  (rows || []).forEach(x => {
-    const t = x.lastUpdated,
-      a = x.attributes || {},
-      v = x.state === 'unavailable' ? null : get(a, x.state);
-    if (v == null) {
-      if (out.length) out.push([t, null]);
-      prev = null;
-      return;
-    }
-    if (prev != null) out.push([t - 1, prev]);
-    out.push([t, v]);
-    prev = v;
-  });
-  return out;
-}
 /**
  * The legacy class, the shell's guest (spec 14, ADR 0016): it implements GuestRenderer structurally (src/shell/guest.ts;
  * this file may not import the shell). It is not an element: the shell constructs it, hands it the page, the store, the
@@ -474,8 +320,6 @@ export class LegacyPanel {
     this.cache = {}; // last innerHTML per container, to skip identical updates
     this.pending = {}; // optimistic control states until hass catches up
     this.fc = {}; // forecasts by type, told by the shell (forecastChanged) from the Weather pane's subscription; Home's card reads them
-    this.crange = 'day'; // climate history range (Day by default since v1.18.2)
-    this.CR = {}; // climate history by range
     // #iwrap, the clock's container, is a static node of the shell's and outlives a draw: one listener, added at connect and removed at disconnect.
     // On the smart stack's card the tap that wakes the panel opens what the card is about
     this.onIdleClick = e => {
@@ -544,7 +388,6 @@ export class LegacyPanel {
     this.teardown();
     this.H = null;
     this.shared = null;
-    this.CR = {};
     return true; // the caller draws it again
   }
   // forget the drawn panel so build() starts over (the language or the config changed)
@@ -696,37 +539,6 @@ export class LegacyPanel {
           ? `${Math.round(m / 60)} h ago`
           : this.fmtEn.date(new Date(t));
   }
-  // group a [t, value] series into heatmap cells: hours (day), 6-hour blocks (week), days (month), weeks (year)
-  bucket(pts, r) {
-    const m = new Map();
-    pts.forEach(([t, v]) => {
-      if (v == null) return;
-      const p = this.fmtEn.dayParts(t);
-      let k, lbl;
-      // labels stay unique (apex groups cells by label); the axis formatter shortens them
-      if (r === 'day') {
-        k = p.day + ' ' + String(p.h).padStart(2, '0');
-        lbl = `${p.wd}, ${this.fmtEn.hour(t)}`;
-      } else if (r === 'week') {
-        const b = Math.floor(p.h / 6) * 6;
-        k = p.day + ' ' + String(b).padStart(2, '0');
-        lbl = `${p.wd} ${+p.day.slice(8)}, ${['night', 'morning', 'afternoon', 'evening'][b / 6]}`;
-      } else if (r === 'month') {
-        k = p.day;
-        lbl = this.fmtUtcEn.date(dayAt(p.day));
-      } else {
-        const d = dayAt(p.day),
-          mon = new Date(d.getTime() - ((d.getUTCDay() + 6) % 7) * 864e5);
-        k = mon.toISOString().slice(0, 10);
-        lbl = this.fmtUtcEn.date(dayAt(k));
-      }
-      const c = m.get(k) || {k, lbl, s: 0, n: 0};
-      c.s += v;
-      c.n++;
-      m.set(k, c);
-    });
-    return [...m.values()].sort((a, b) => (a.k < b.k ? -1 : 1)).map(c => [c.k, c.lbl, +(c.s / c.n).toFixed(2)]);
-  }
   $(id) {
     return this.root.getElementById(id);
   }
@@ -785,11 +597,6 @@ export class LegacyPanel {
       <div class="card tap carcard" id="open-car" tabindex="0" role="button" aria-description="Open car details"><div id="carcard"></div></div>
     </div>
   </div>
-
-<div class="sheet" id="sh-climate" hidden><div class="panel">
-  <div class="inner" id="cheatwrap"><h3 id="cheath">Every room</h3><p>Mean temperature per room, on a smooth scale from cool blue to warm red.</p><div class="hleg" id="cheatl"></div><div id="c-heat"></div></div>
-  <div class="inner" id="coutwrap"><h3 id="couth">Outside</h3><p id="coutp"></p><div class="legend"><span><b style="background:color-mix(in srgb,var(--c-home) 35%,transparent)"></b>Low to high</span><span><b style="background:var(--c-home)"></b>Mean</span></div><div id="c-out90"></div></div>
-</div></div>
 
 <div class="sheet" id="sh-car" hidden><div class="panel" role="dialog" aria-modal="true" aria-labelledby="carh">
   <div class="ph"><span class="badge" style="--acc:var(--c-ev)">${ico('car', 26)}</span>
@@ -2420,28 +2227,17 @@ export class LegacyPanel {
     try {
       const now = new Date(),
         d = n => new Date(now.getTime() - n * 864e5);
-      const temps = [...this.ROOMS.map(r => r.temp), this.E.outT];
-      // the spans asked here and in CRANGE are copied into STATISTIC_SPANS of scripts/record-fixture.mjs, which a test checks
-      // Climate's (the room temperatures, the heat pump: #246) and Car's (the Wallbox's year, and its day read on the grid's rows for the
-      // card's daily bars: #253); the energy windows are loadSharedHistory's. Each of the two leaves with its feature.
-      const [shared, temp7, tempDay, evh, hp, temp24] = await Promise.all([
+      // the spans asked here are copied into STATISTIC_SPANS of scripts/record-fixture.mjs, which a test checks (the Climate ranges are the kit's RANGES)
+      // What is asked here is Car's (the Wallbox's year, and its day read on the grid's rows for the card's daily bars: #253); the energy windows are
+      // loadSharedHistory's, and Climate's are its pane's, through the panel's cache (#246). It leaves with its feature.
+      const [shared, tempDay, evh] = await Promise.all([
         this.loadSharedHistory(now.getTime()),
-        this.api.statistics(temps, 'hour', d(7), ['mean', 'max']),
-        this.api.statistics([...temps, this.E.grid, this.E.evP], 'day', d(400), ['mean', 'min', 'max']),
+        this.api.statistics([this.E.grid, this.E.evP], 'day', d(400), ['mean', 'min', 'max']),
         this.api.statistics([this.E.evP], 'hour', d(366), ['mean', 'max']),
-        !this.E.hp
-          ? Promise.resolve({})
-          : this.api.history([this.E.hp], d(7), {minimal: false, attributes: true}).catch(noHistory),
-        this.api.statistics(
-          this.ROOMS.map(r => r.temp),
-          '5minute',
-          d(1.05),
-          ['mean'],
-        ),
       ]);
       const first = !this.H;
       this.shared = shared;
-      this.H = this.derive(temp7, tempDay, evh, hp, temp24);
+      this.H = this.derive(tempDay, evh);
       if (first) this.ctx.shell.requestFrame(); // the settings popup's version line says the history is kept fresh
       this.histErr = null;
     } catch (e) {
@@ -2483,26 +2279,10 @@ export class LegacyPanel {
       wh24: waterDay(fiveMin25h, {temperature: config.entities.whT, power: config.entities.whP}),
     };
   }
-  // Climate's slices (the temperatures and the heat pump: #246) and Car's (the sessions, and the charger's daily energy for the card's bars:
-  // #253): the energy slices are the providers', cut by loadSharedHistory and Energy's own load.
-  derive(hour7, day, evh, hp, t24) {
+  // Car's slices (the sessions, and the charger's daily energy for the card's bars: #253): the energy slices are the providers', cut by
+  // loadSharedHistory and Energy's own load, and Climate's are its pane's.
+  derive(day, evh) {
     const ser = (r, id) => (r[id] || []).map(x => ({...x, t: ms(x.start)}));
-    const temp7 = {};
-    this.ROOMS.forEach(r => {
-      temp7[r.k] = ser(hour7, r.temp)
-        .filter(x => x.mean != null)
-        .map(x => [x.t, +x.mean.toFixed(2)]);
-    });
-    // room temperatures, last 24 hours in 5-minute means
-    const temp24 = {};
-    this.ROOMS.forEach(r => {
-      temp24[r.k] = ser(t24, r.temp)
-        .filter(x => x.mean != null)
-        .map(x => [x.t, +x.mean.toFixed(2)]);
-    });
-    const out7 = ser(hour7, this.E.outT)
-      .filter(x => x.mean != null)
-      .map(x => [x.t, +x.mean.toFixed(2)]);
     // the charger's daily kWh = mean kW x hours (today only counts the hours so far), on the days the grid has a mean for
     const todayKey = this.fmtEn.isoDay(Date.now()),
       hrsToday = Math.max(1, Math.floor(this.fmtEn.hourNow(Date.now())));
@@ -2513,17 +2293,6 @@ export class LegacyPanel {
         const key = this.fmtEn.isoDay(x.t + 12 * 36e5);
         return {day: key, ev: (de.get(x.t) || 0) * (key === todayKey ? hrsToday : 24)};
       });
-    const heatmap = this.ROOMS.map(r => ({
-      k: r.k,
-      pts: ser(day, r.temp)
-        .filter(x => x.mean != null)
-        .slice(-30)
-        .map(x => [this.fmtEn.isoDay(x.t + 12 * 36e5), +x.mean.toFixed(1)]),
-    }));
-    const out90 = ser(day, this.E.outT)
-      .filter(x => x.mean != null)
-      .slice(-90)
-      .map(x => [x.t + 12 * 36e5, +x.mean.toFixed(1), +x.min.toFixed(1), +x.max.toFixed(1)]);
     // charging sessions: runs of hours with the Wallbox above 0.3 kW, joined across gaps up to 3 hours
     const sessions = [];
     let cur = null;
@@ -2541,33 +2310,7 @@ export class LegacyPanel {
     sessions.forEach(s => {
       s.b = s.end + 36e5;
     });
-    // heat pump readings from state history; a gap over 6 hours means it was offline
-    const hpPts = [];
-    let prev = null;
-    ((hp && hp[this.E.hp]) || []).forEach(x => {
-      const t = x.lastUpdated,
-        a = x.attributes || {},
-        v = x.state === 'unavailable' ? null : a.current_temperature;
-      if (x.attributes) this.hpLastAttrs = a;
-      if (v == null) {
-        if (hpPts.length) hpPts.push([t, null]);
-        prev = null;
-        return;
-      }
-      if (prev != null) hpPts.push([t - 1, prev]);
-      hpPts.push([t, v]);
-      prev = v;
-    });
-    return {
-      temp7,
-      temp24,
-      out7,
-      evDaily,
-      heatmap,
-      out90,
-      sessions: sessions.filter(s => s.kwh >= 1),
-      hpPts,
-    };
+    return {evDaily, sessions: sessions.filter(s => s.kwh >= 1)};
   }
 
   // ---------- sheets ----------
@@ -2586,25 +2329,12 @@ export class LegacyPanel {
       } catch {}
     });
     this.charts = [];
-    this.climChart = null;
-  }
-  // Climate's charts alone: the pane's detail leaves as another tab's sheet may be drawing its own
-  destroyClimateCharts() {
-    this.charts = this.charts.filter(c => {
-      if (c !== this.climChart && !c.__clim) return true;
-      try {
-        c.destroy();
-      } catch {}
-      return false;
-    });
-    this.climChart = null;
   }
   redrawCharts() {
     const id = this.sheets.shown;
-    if (!id && !this.climOn) return;
+    if (!id) return;
     this.destroyCharts();
-    if (id) this.buildSheet(id);
-    if (this.climOn) this.climateSheet();
+    this.buildSheet(id);
   }
   // ApexCharts is fetched the first time a sheet that draws charts opens, then kept (the chunk is cached by the browser)
   loadCharts() {
@@ -2646,18 +2376,6 @@ export class LegacyPanel {
       noData: {text: 'No history yet'},
     };
   }
-  // category axes on a phone: label every few bars instead of letting apex rotate or pile them up
-  thin(cats, n, wide = cats.length) {
-    const step = Math.ceil(cats.length / (this.$app.clientWidth < 600 ? n : wide)),
-      keep = new Set(cats.filter((c, i) => i % step === 0));
-    return {
-      xaxis: {
-        categories: cats,
-        labels: {rotate: 0, hideOverlappingLabels: true, formatter: v => (keep.has(v) ? v : '')},
-      },
-      tooltip: {x: {formatter: v => v}},
-    };
-  }
   mk(id, opt) {
     if (this.store.isFrench) opt = this.french.apex(opt);
     const el = this.$(id);
@@ -2678,16 +2396,9 @@ export class LegacyPanel {
     );
     return c;
   }
-  // the colours of the legacy charts, which Climate (#246) and Car (#253) still draw; Energy's are the element's own (#240)
+  // the colours of the legacy charts, which Car (#253) still draws; the elements' own are theirs (Energy's #240, Climate's #246)
   S() {
-    return {
-      ev: this.css('--c-ev'),
-      heat: this.css('--c-heat'),
-      wh: this.css('--c-wh'),
-      home: this.css('--c-home'),
-      rest: this.css('--c-rest'),
-      card: this.css('--card'),
-    };
+    return {ev: this.css('--c-ev')};
   }
 
   // ---------- weather ----------
@@ -3828,284 +3539,15 @@ export class LegacyPanel {
     if (open) this.renderAttention();
   }
 
-  // ---------- climate sheet ----------
-  // ---------- climate history by range ----------
-  async loadClimRange(r) {
-    const c = this.CR[r];
-    if (c && Date.now() - c.at < 10 * 60000) return c;
-    const R = CRANGE[r],
-      start = new Date(Date.now() - R.days * 864e5),
-      ids = [
-        ...this.ROOMS.map(x => x.temp),
-        ...this.ROOMS.map(x => x.target),
-        ...this.ROOMS.map(x => x.power),
-        this.E.outT,
-      ];
-    const [stt, hp] = await Promise.all([
-      this.api.statistics(ids, R.period, start, ['mean', 'min', 'max']),
-      !this.E.hp
-        ? Promise.resolve({})
-        : this.api.history([this.E.hp], start, {minimal: false, attributes: true}).catch(noHistory),
-    ]);
-    const ser = id =>
-      (stt[id] || [])
-        .filter(x => x.mean != null)
-        .map(x => [
-          ms(x.start) + R.mid,
-          +(+x.mean).toFixed(2),
-          x.min == null ? null : +(+x.min).toFixed(2),
-          x.max == null ? null : +(+x.max).toFixed(2),
-        ]);
-    // setpoints: a stretch that was partly off shows its highest setpoint, one off throughout is a gap (5° is Hilo's frost guard)
-    const spSer = id =>
-      (stt[id] || [])
-        .filter(x => x.max != null)
-        .map(x => [
-          ms(x.start) + R.mid,
-          x.max <= 5.5 ? null : +(x.min > 5.5 && x.mean != null ? +x.mean : +x.max).toFixed(2),
-        ]);
-    // heating energy over the range: mean kW of each stat period x its hours (the running period counts only the hours so far)
-    const ph = R.period === '5minute' ? 1 / 12 : R.period === 'hour' ? 1 : 24,
-      now = Date.now();
-    const kwhOf = id =>
-      sum(
-        (stt[id] || [])
-          .filter(x => x.mean != null)
-          .map(x => x.mean * Math.max(0, Math.min(ph, (now - ms(x.start)) / 36e5))),
-      );
-    const rooms = {},
-      sp = {},
-      kwh = {};
-    this.ROOMS.forEach(x => {
-      rooms[x.k] = ser(x.temp);
-      sp[x.k] = spSer(x.target);
-      kwh[x.k] = kwhOf(x.power);
-    });
-    const hpPts = hpSeries(hp && hp[this.E.hp]),
-      hpSp = hpSeries(hp && hp[this.E.hp], (a, m) => (['off', 'fan_only', 'dry'].includes(m) ? null : a.temperature));
-    return (this.CR[r] = {
-      at: Date.now(),
-      start: start.getTime(),
-      rooms,
-      sp,
-      kwh,
-      out: ser(this.E.outT),
-      hp: hpPts,
-      hpSp,
-      hpFrom: hpPts.length ? hpPts[0][0] : null,
-    });
-  }
-  houseSeries(C) {
-    const by = new Map();
-    this.ROOMS.forEach(r =>
-      (C.rooms[r.k] || []).forEach(([x, v]) => {
-        const a = by.get(x) || [];
-        a.push(v);
-        by.set(x, a);
-      }),
-    );
-    return [...by]
-      .filter(([, v]) => v.length === this.ROOMS.length)
-      .sort((a, b) => a[0] - b[0])
-      .map(([x, v]) => [x, +(sum(v) / v.length).toFixed(2)]);
-  }
-  async climateSheet() {
-    if (!this.ApexCharts) return; // the pane told us while the chunk is loading; drawClimate draws it when it lands
-    this.climateDetail();
-    const r = this.crange,
-      tag = (this.climTag = Symbol());
-    this.$('cheath').textContent = CRANGE[r].heatTitle;
-    this.$('couth').textContent = `Outside, ${CRANGE[r].label}`;
-    let C;
-    try {
-      C = await this.loadClimRange(r);
-    } catch (e) {
-      if (e instanceof StaleReply) return;
-      console.error('home-panel climate history', e);
-      this.$('c-heat').innerHTML = '<p>History is not available right now.</p>';
-      return;
-    }
-    if (tag !== this.climTag || !this.climOn) return;
-    this.charts = this.charts.filter(c => {
-      if (c.__clim) {
-        try {
-          c.destroy();
-        } catch {}
-        return false;
-      }
-      return true;
-    });
-    this.climateDetail();
-    if (this.compact) return; // the phone sheet is one room: no heatmap, no outside chart
-    const s = this.S(),
-      R = CRANGE[r],
-      dark = this.dark();
-    const stops = dark ? HEAT_DARK : HEAT_LIGHT;
-    this.$('cheatl').innerHTML =
-      `<span class="hbar" style="background:linear-gradient(90deg,${Array.from({length: 19}, (_, i) => heatColor(HEAT_LO + i / 2, stops)).join(',')})"></span><span class="hticks">${[17, 19, 21, 23, 25].map(t => `<i style="left:${((t - HEAT_LO) / (HEAT_HI - HEAT_LO)) * 100}%">${t}°</i>`).join('')}</span>`;
-    const series = [...this.powerNow().rooms].reverse().map(x => ({
-      name: this.roomName(x),
-      data: this.bucket(C.rooms[x.key] || [], r).map(([k, lbl, v]) => ({x: lbl, y: v, k})),
-    }));
-    const cats = (series[0] || {data: []}).data.map(p => p.x);
-    // a house without thermostats has no heatmap to draw (ApexCharts throws on an empty heatmap)
-    if (!series.length) this.$('c-heat').innerHTML = '<p class="hint">No thermostats found.</p>';
-    else {
-      const h = this.mk(
-        'c-heat',
-        merge(
-          this.base(300),
-          {
-            chart: {type: 'heatmap'},
-            series,
-            plotOptions: {
-              heatmap: {
-                radius: r === 'week' || r === 'year' ? 2 : 4,
-                enableShades: false,
-                colorScale: {ranges: heatRanges(stops)},
-              },
-            },
-            stroke: {width: r === 'week' || r === 'year' ? 1 : 2, colors: [s.card]},
-            legend: {show: false},
-            tooltip: {y: {formatter: v => (v == null ? '–' : v.toFixed(1) + ' °C')}},
-          },
-          this.thin(cats, 4, R.ticks),
-          r === 'week'
-            ? {xaxis: {labels: {formatter: v => (/ night$/.test(v || '') ? v.split(',')[0] : '')}}}
-            : r === 'day'
-              ? {
-                  xaxis: {
-                    labels: {
-                      formatter: (() => {
-                        const keep = new Set(cats.filter((c, i) => i % (this.$app.clientWidth < 600 ? 6 : 3) === 0));
-                        return x => (keep.has(x) ? x.split(', ')[1] : '');
-                      })(),
-                    },
-                  },
-                }
-              : {},
-        ),
-      );
-      h.__clim = true;
-    }
-    const band = C.out.filter(p => p[2] != null && p[3] != null);
-    const o = this.mk(
-      'c-out90',
-      merge(this.base(260), {
-        chart: {type: 'rangeArea'},
-        series: [
-          {name: 'Low to high', type: 'rangeArea', data: band.map(p => ({x: p[0], y: [p[2], p[3]]}))},
-          {name: R.meanName, type: 'line', data: C.out.map(p => ({x: p[0], y: p[1]}))},
-        ],
-        colors: [s.home, s.home],
-        fill: {opacity: [0.22, 1]},
-        stroke: {width: [0, 2], curve: 'smooth'},
-        xaxis: {type: 'datetime', min: C.start, max: Date.now(), labels: {datetimeUTC: false}},
-        yaxis: {labels: {formatter: v => v.toFixed(0) + '°'}},
-        tooltip: {
-          shared: true,
-          x: {format: R.tipFmt},
-          y: {
-            formatter: v =>
-              Array.isArray(v) ? v.map(n => (+n).toFixed(1)).join(' to ') + ' °C' : (+v).toFixed(1) + ' °C',
-          },
-        },
-      }),
-    );
-    o.__clim = true;
-    this.$('coutp').textContent = R.outNote;
-  }
-  // The part of the old climInfo that the chart still needs (#246 deletes it with the chart): the loaded range, its definition, the selection's series and its name.
-  climChartInfo() {
-    const C = this.CR[this.crange],
-      R = CRANGE[this.crange];
-    if (this.climSel === 'hp') return {C, R, pts: C ? C.hp : [], title: 'Heat pump'};
-    if (this.climSel === 'house') return {C, R, pts: C ? this.houseSeries(C) : [], title: 'Whole house'};
-    const r = this.powerNow().rooms.find(x => x.key === this.climSel);
-    return {C, R, pts: C ? (C.rooms[r.key] || []).map(p => [p[0], p[1]]) : [], title: this.roomName(r)};
-  }
-  // The two figures of the detail's tiles that wait for the loaded range (the span of the selection's series, the heating in kWh), told to the Climate pane, which
-  // is the parent of the container we draw in (#246 loads the history in the feature and the pane reads it there). The pane drops a figure for another room or range.
-  climFigures() {
-    const {C, pts} = this.climChartInfo(),
-      read = pts.map(p => p[1]).filter(x => x != null),
-      kwh = this.climSel === 'house' ? sum(Object.values(C.kwh)) : this.climSel === 'hp' ? null : C.kwh[this.climSel];
-    this.$('chost').dispatchEvent(
-      // the type is ClimateFiguresEvent's (src/features/climate/events.ts); the guest imports no feature, so the name is written here
-      new CustomEvent('climate-figures', {
-        bubbles: true,
-        detail: {
-          sel: this.climSel,
-          range: this.crange,
-          span: read.length ? {lo: Math.min(...read), hi: Math.max(...read)} : null,
-          kwh: kwh ?? null,
-          // where the heat pump's line starts, when that is later than the range does: Home Assistant keeps only about ten days of its detailed history
-          hpFrom: this.climSel === 'hp' && C.hpFrom && C.hpFrom > C.start + 864e5 ? C.hpFrom : null,
-        },
-      }),
-    );
-  }
-  // the pane (src/features/climate) tells which room and range its detail shows, through the shell, or that it left (#246 and #248 delete this with the chart and the controls)
+  // ---------- climate controls ----------
+  // the pane (src/features/climate) tells which room its detail shows, through the shell, or that it left; the controls follow it (#248 deletes this with them)
   climateDetailChanged(shown) {
     this.climOn = !!shown;
-    this.climTag = Symbol(); // a history on its way is for what was shown before
-    if (!shown) return this.destroyClimateCharts();
+    if (!shown) return;
     this.climSel = shown.sel;
-    this.crange = shown.range;
-    this.drawClimate();
-  }
-  // the chart's library first, as buildSheet does for the sheets; then the detail's chart and the tablet's heatmap and outside chart
-  async drawClimate() {
-    try {
-      await this.loadCharts();
-    } catch {
-      this.toast(this.store.t('charts.failed'), true);
-      return;
-    }
-    if (this.climOn) this.climateSheet();
-  }
-  climateDetail() {
-    if (this.climChart) {
-      this.climChart.destroy();
-      this.charts = this.charts.filter(c => c !== this.climChart);
-      this.climChart = null;
-    }
-    const s = this.S(),
-      el = this.$('cchart'),
-      {C, R, pts, title} = this.climChartInfo(),
-      spc = this.css('--fg2');
-    // the thermostat's setpoint, stepped and dashed, for a room or the heat pump
-    const spPts =
-        !C || this.climSel === 'house' ? [] : this.climSel === 'hp' ? C.hpSp || [] : (C.sp || {})[this.climSel] || [],
-      hasSp = spPts.some(p => p[1] != null);
-    el.innerHTML = `<div class="legend"><span><b style="background:${s.wh}"></b>${this.climSel === 'house' ? 'House average' : esc(title)}</span>${this.climSel === 'house' ? '' : `<span><b class="dash" style="color:${spc}"></b>Setpoint</span>`}<span><b style="background:${s.home}"></b>Outside</span><span class="muted">${esc(R.label)}</span></div><div id="c-room">${C ? '' : '<p class="loading">Loading history…</p>'}</div>`;
     this.cache.cctl = null;
     this.renderClimateControls();
-    if (C) this.climFigures();
-    if (!C || !this.ApexCharts) return;
-    // apex splits 'smooth' lines into pieces once any series has a gap, so with a setpoint the room lines use monotoneCubic instead
-    const cv = this.climSel === 'hp' ? 'straight' : hasSp ? 'monotoneCubic' : 'smooth';
-    this.climChart = this.mk(
-      'c-room',
-      merge(this.base(230), {
-        chart: {type: 'line'},
-        series: [
-          {name: this.climSel === 'house' ? 'House average' : title, data: pts},
-          ...(hasSp ? [{name: 'Setpoint', data: spPts}] : []),
-          {name: 'Outside', data: C.out.map(p => [p[0], p[1]])},
-        ],
-        colors: [s.wh, ...(hasSp ? [spc] : []), s.home],
-        stroke: hasSp
-          ? {width: [2.2, 2, 2.2], curve: [cv, 'stepline', cv], dashArray: [0, 5, 0]}
-          : {width: 2.2, curve: cv},
-        xaxis: {type: 'datetime', min: C.start, max: Date.now(), labels: {datetimeUTC: false}},
-        yaxis: {labels: {formatter: v => (v == null ? '' : v.toFixed(0) + '°')}},
-        tooltip: {shared: true, x: {format: R.tipFmt}, y: {formatter: v => (v == null ? '–' : v.toFixed(1) + ' °C')}},
-      }),
-    );
   }
-
-  // ---------- climate controls ----------
   pend(key, cur) {
     const p = this.pending[key];
     if (p && p.until > Date.now() && String(p.v) !== String(cur)) return p.v;

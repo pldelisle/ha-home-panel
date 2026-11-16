@@ -301,11 +301,6 @@
   font-size: calc(18px * var(--tx));
   white-space: normal;
 }
-/* phone climate sheet: no heatmap or outside chart (#246) */
-.app.cp #cheatwrap,
-.app.cp #coutwrap {
-  display: none;
-}
 .app.cp #cctl .crow {
   justify-content: center;
 }

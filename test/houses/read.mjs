@@ -136,7 +136,9 @@ function statisticsOf(states, now, ids, period) {
 /**
  * The history of the door and motion sensors, as `history/history_during_period` sends it with `minimal_response`: three on-periods
  * in the last eight hours, whatever the window asked (3 min, 40 s and 1 h 5 min, the last ended 48 min ago), each beginning at seven
- * minutes past an hour so that a time shows its minutes; every other id has none.
+ * minutes past an hour so that a time shows its minutes. A thermostat or heat pump (`climate.`) has two readings with their
+ * attributes, five days ago and two hours ago (the recorder keeps about ten days of state history, so a month's line starts late);
+ * every other id has none.
  */
 function historyOf(now, ids) {
   const MIN = 6e4,
@@ -151,7 +153,13 @@ function historyOf(now, ids) {
     ...run(4 * HOUR + 53 * MIN, 40e3),
     ...run(HOUR + 53 * MIN, 65 * MIN),
   ];
-  return Object.fromEntries(ids.filter(id => id.startsWith('binary_sensor.')).map(id => [id, rows]));
+  const unit = [
+    {s: 'heat', a: {current_temperature: 19, temperature: 22}, lu: (now - 120 * HOUR) / 1000},
+    {s: 'heat', a: {current_temperature: 20.5, temperature: 22}, lu: (now - 2 * HOUR) / 1000},
+  ];
+  return Object.fromEntries(
+    ids.flatMap(id => (id.startsWith('binary_sensor.') ? [[id, rows]] : id.startsWith('climate.') ? [[id, unit]] : [])),
+  );
 }
 
 /**

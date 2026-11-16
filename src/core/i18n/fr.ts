@@ -734,4 +734,11 @@ export const fr: Record<MessageKey, string> = {
   'climate.chart.outside': 'Extérieur',
   'climate.chart.lowToHigh': 'Du plus bas au plus haut',
   'climate.chart.span': 'De {low} à {high} °C',
+  'climate.houseAverage': 'Moyenne de la maison',
+  'climate.heatHint': 'Température moyenne par pièce, sur une échelle continue du bleu frais au rouge chaud.',
+  'climate.outsideTitle': 'Dehors, {label}',
+  'climate.chart.mean': 'Moyenne',
+  'climate.historyLoading': 'Chargement de l’historique…',
+  'climate.historyUnavailable': 'L’historique n’est pas disponible pour le moment.',
+  'climate.noThermostats': 'Aucun thermostat trouvé.',
 };

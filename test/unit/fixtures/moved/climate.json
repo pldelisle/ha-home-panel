@@ -141,6 +141,14 @@
       "key": "climate.chart.span",
       "values": {"low": "12.3", "high": "14.5"},
       "written": "De 12,3 à 14,5 °C"
-    }
+    },
+    {"key": "climate.houseAverage"},
+    {"key": "climate.heatHint"},
+    {"key": "climate.outsideTitle", "values": {"label": "last 24 hours"}, "fr": {"label": "dernières 24 heures"}},
+    {"key": "climate.outsideTitle", "values": {"label": "last 7 days"}, "fr": {"label": "7 derniers jours"}},
+    {"key": "climate.chart.mean"},
+    {"key": "climate.historyLoading"},
+    {"key": "climate.historyUnavailable"},
+    {"key": "climate.noThermostats", "written": "Aucun thermostat trouvé."}
   ]
 }
