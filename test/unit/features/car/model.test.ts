@@ -140,6 +140,10 @@ describe('the test house, in English', () => {
     expect(vm.summary).toEqual({title: 'Car', line: 'Parked at home · 64.0% · 280 km · charging'});
     expect(vm.card).toMatchObject({
       name: 'Car',
+      picture: null,
+      color: '#B03A2E',
+      drawing: 'Car, side view',
+      open: 'Open car details',
       where: 'Parked at home',
       charge: '64.0',
       line: '280 km range · locked · charging',
@@ -186,6 +190,8 @@ describe('the test house, in French', () => {
     expect(vm.summary.line).toBe('Stationnée à la maison · 64,0 % · 280 km · en recharge');
     expect(vm.card).toMatchObject({
       line: "280 km d'autonomie · verrouillée · en recharge",
+      drawing: 'Voiture, vue de côté',
+      open: 'Ouvrir les détails de la voiture',
       soc: {label: 'Batterie 64,0 pour cent, limite de charge 90 pour cent'},
     });
     expect(vm.card?.soc.scale.limit).toBe('Limite 90 %');
@@ -204,7 +210,7 @@ describe('a car with every sensor', () => {
   const detail = vm.detail!;
 
   test('the card’s name is the picture’s without "Vehicle Picture"; the line, the tiles and the bars from the history', () => {
-    expect(vm.card).toMatchObject({name: 'Test', where: 'Parked at home'});
+    expect(vm.card).toMatchObject({name: 'Test', picture: '/api/image_proxy/image.t', where: 'Parked at home'});
     expect(vm.card?.tiles).toEqual([
       {label: 'Charger', value: 'Charging', unit: '', sub: 'Wallbox', word: true},
       {label: 'Last charge', value: '6.0', unit: 'kWh', sub: 'Nov 8', word: false},
@@ -218,6 +224,18 @@ describe('a car with every sensor', () => {
     expect(daily?.titles[0]).toBe('Oct 11: 0.0 kWh');
     // only one day is over 5 kWh; 12.34 + 4.5 is 17 kWh
     expect(daily?.line).toBe('Daily EV energy, last 30 days: 1 charging day, 17 kWh.');
+  });
+
+  test('the daily line writes thousands of kWh with no separator, as the legacy line did and the baselines show', () => {
+    const month = history({
+      daily: Array.from({length: 30}, (_, index) => ({
+        day: new Date(Date.UTC(2026, 9, 11 + index)).toISOString().slice(0, 10),
+        ev: 40,
+      })),
+    });
+    expect(modelOf(carHouse(), month).card?.daily?.line).toBe(
+      'Daily EV energy, last 30 days: 30 charging days, 1200 kWh.',
+    );
   });
 
   test('the title and the line under it say where the car is and when it last checked in, from the sensor and not the clock', () => {

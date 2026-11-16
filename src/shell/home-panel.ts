@@ -434,8 +434,9 @@ export class HomePanel extends LitElement {
     </div>`;
   }
 
-  // The header, the error line and the tabs, whose containers the guest fills (#hello, #chips, #clock, #att, #setc, #err,
-  // the hosts inside the panes); what it draws itself comes after, in the guest container.
+  // The header, the error line and the tabs, whose containers the guest fills (#hello, #chips, #clock, #att, #setc, the hosts inside the panes);
+  // #err is empty since #251, when the Energy and Car cards took their own history error lines, and goes with Home (#268); what the guest
+  // draws itself comes after, in the guest container.
   private renderWrap(): TemplateResult {
     return html`<div class="wrap">
       <header class="head">

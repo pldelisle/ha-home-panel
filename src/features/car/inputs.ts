@@ -1,6 +1,6 @@
 // readCarFeature: the FordPass car and the Wallbox of the house, read into the inputs the model takes.
 // Pattern: a composition of readers (ADR 0025): the car from the FordPass provider and the charger from the Wallbox's, so the feature knows no integration's naming;
-// a house with no FordPass car reads `car: null`, and the Car tab will be hidden for it (#251).
+// a house with no FordPass car reads `car: null`, and the Car tab is hidden for it (the descriptor's `available` asks `findCar`).
 // Must not: word anything a person reads, read the clock, or touch the DOM or `hass`.
 import type {ResolvedConfig} from '../../core/config.ts';
 import type {HassEntities} from '../../core/hass.ts';

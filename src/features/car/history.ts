@@ -16,13 +16,11 @@ import {
   type StatisticsWindow,
   type StatsReply,
 } from '../../providers/power-history.ts';
-import {chargingSessions, type Session} from '../../providers/wallbox.ts';
+import {chargingSessions, sessionsWindow, type Session} from '../../providers/wallbox.ts';
 import type {ChartOptions} from '../../ui/chart-options.ts';
 
 /** How many days of the charger's daily energy the card's bars draw. */
 export const DAILY_DAYS = 30;
-/** How far back the Wallbox's hourly power goes: a year and a day, for the sessions. */
-const SESSION_DAYS = 366;
 
 /** The two windows the Car asks: the Wallbox's hourly power for the sessions, and the daily means of the grid and the charger for the bars. */
 export interface CarWindows {
@@ -35,7 +33,7 @@ export interface CarWindows {
 export function carWindows(now: number, config: Pick<ResolvedConfig, 'entities'>): CarWindows {
   const {grid, evP} = config.entities;
   return {
-    hours: {start: windowStart(now, SESSION_DAYS), period: 'hour', ids: [evP], types: ['mean', 'max']},
+    hours: sessionsWindow(now, evP),
     days: {start: windowStart(now, DAILY_DAYS), period: 'day', ids: [grid, evP], types: ['mean']},
   };
 }

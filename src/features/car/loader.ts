@@ -1,6 +1,6 @@
 // CarHistory: the Car's two windows through the panel's statistics cache when its host is shown, kept as long as the cache would.
 // Pattern: composition over the kit's `WindowedHistory` (lazy load, Fowler, PoEAA), which Energy's `EnergyHistory` is given the same way: this says which windows and what derives them, the kit
-// says when to ask (nothing while the host is hidden, ADR 0028, a late reply dropped, a failure retried at most once a minute). The Car pane (#251) will mount it, and the detail (#252) read the same one through its parent.
+// says when to ask (nothing while the host is hidden, ADR 0028, a late reply dropped, a failure retried at most once a minute). The Car pane mounts it, and the detail (#252) will read the same one through its parent.
 // Must not: call the API client (only the cache, through the kit), draw or word anything, or keep the replies it derived from.
 import type {ReactiveController} from 'lit';
 import type {Formatters} from '../../core/i18n/format.ts';

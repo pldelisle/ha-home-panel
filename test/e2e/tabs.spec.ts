@@ -44,7 +44,7 @@ const rememberedCar = test.extend({
   },
 });
 
-// the title each pane opens with, in the order of the rail: `<hp-pane-header>`'s heading, from the catalog, or (Car) the guest's
+// the title each pane opens with, in the order of the rail: `<hp-pane-header>`'s heading, from the catalog (the Car's is the car's name, and the catalog's "Car" where it has none)
 const TITLES = {
   en: {
     home: 'Home',
@@ -78,6 +78,8 @@ const headings = (lang: keyof typeof TITLES) => async (house: House) => {
     // a tablet's Energy pane draws no header of its own: the one in the pane is the detail's, titled Home energy
     if (tab === 'energy' && !isPhone(house))
       return await expect(pane.locator('hp-energy-detail hp-pane-header h2')).toHaveCount(1);
+    // a tablet's Car pane draws no header: its tab is the legacy detail, inline, until #252
+    if (tab === 'car' && !isPhone(house)) return await expect(pane.locator('hp-pane-header')).toHaveCount(0);
     // a tablet's Climate pane has one header, titled Home climate, which carries the range tabs, as the legacy detail's header did
     if (tab === 'climate' && !isPhone(house))
       return await expect(pane.locator('hp-pane-header h2')).toHaveText(HOME_CLIMATE[lang]);
@@ -209,9 +211,13 @@ test.describe('full house', () => {
     await headings('en')(house);
     await eachShownTab(house, async (tab, pane) => {
       // a tablet's Weather and Air panes have the header of their detail too, with the summary under it; Energy's has only its detail's; a phone's
-      // Climate pane has the header of its sheet, closed, after its own
+      // Climate pane has the header of its sheet, closed, after its own; a tablet's Car pane has none
       const headers =
-        ((tab === 'weather' || tab === 'air') && !isPhone(house)) || (tab === 'climate' && isPhone(house)) ? 2 : 1;
+        ((tab === 'weather' || tab === 'air') && !isPhone(house)) || (tab === 'climate' && isPhone(house))
+          ? 2
+          : tab === 'car' && !isPhone(house)
+            ? 0
+            : 1;
       await expect(pane.locator('hp-pane-header > [slot="sub"]'), tab).toHaveCount(headers);
     });
   });
@@ -229,10 +235,12 @@ test.describe('full house', () => {
     await expect.poll(lit).toBe(before - 1);
   });
 
-  test("54 the Car heading is the guest's: the car's name, written into the header's title slot", async ({house}) => {
-    phoneOnly(); // the summary header, which only the phone shows, is where the guest writes the car's name
+  test('54 the Car heading is the catalog\'s "Car" where neither the config nor Ford names the car', async ({
+    house,
+  }) => {
+    phoneOnly(); // the summary header, which only the phone shows, is where the car is named
     await house.tab('car');
-    await expect(house.root().locator('hp-pane-header > #carh2')).toHaveText('Car');
+    await expect(house.root().locator('#pane-car hp-pane-header h2')).toHaveText('Car');
   });
 });
 
@@ -242,7 +250,6 @@ test.describe('a named car', () => {
   test('55 the Car heading is the name the config gives the car', async ({house}) => {
     phoneOnly();
     await house.tab('car');
-    await expect(house.root().locator('hp-pane-header > #carh2')).toHaveText('Roadster');
     await expect(house.root().locator('#pane-car hp-pane-header h2')).toHaveText('Roadster');
   });
 });
@@ -318,6 +325,21 @@ test.describe('a heat pump whose state arrives after the first load', () => {
   });
 });
 
+// a house whose car reports after the first load: the tab is the Car descriptor's `available` (`findCar`), which the shell asks again when the guest asks for a
+// frame (`gateLacking`'s key carries whether the car is found, until #268 deletes it), so the car's tab and Home's tile appear when its sensor does
+test.describe('a car whose sensor appears after the first load', () => {
+  test.use({houseOpts: {house: 'bare'}});
+
+  test('the Car tab appears when the sensor does', async ({house}) => {
+    const tab = house.root().locator('#rail [data-tab="car"]');
+    await shown(tab).toBe(false);
+    await house.setState('sensor.fordpass_test_soc', {state: '50'});
+    await shown(tab).toBe(true);
+    await house.tab('car');
+    await expect(house.root().locator('#pane-car')).toBeVisible();
+  });
+});
+
 test.describe('French', () => {
   test.use({houseOpts: {cfg: FULL_CFG, lang: 'fr'}});
 
@@ -343,9 +365,7 @@ test.describe('French', () => {
     );
   });
 
-  test('56 every pane opens with its title in French: from the catalog, and the Car one by the rewrite layer', async ({
-    house,
-  }) => {
+  test('56 every pane opens with its title in French, from the catalog', async ({house}) => {
     await headings('fr')(house);
   });
 

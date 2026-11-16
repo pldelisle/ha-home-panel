@@ -15,12 +15,14 @@ import {registriesOf} from './core/registry.ts';
 import {roomName} from './core/i18n/room-name.ts';
 import {rateRoom} from './providers/air-quality.ts';
 import {doorMotionSensors} from './providers/door-motion.ts';
+import {findCar, readCar} from './providers/fordpass.ts';
 import {hiloChallenge, hiloRates} from './providers/hilo.ts';
 import {heatPump} from './providers/heat-pump.ts';
 import {hydroQuebec} from './providers/hydro-quebec.ts';
 import {milaRooms} from './providers/mila.ts';
 import {powerNow} from './providers/power.ts';
-import {dayKeys, flowIds, hourlyFlow, meterTotals, powerWindows, waterDay} from './providers/power-history.ts';
+import {dayKeys, flowIds, hourlyFlow, meterTotals, powerWindows, rowsOf, waterDay} from './providers/power-history.ts';
+import {chargingSessions, sessionsWindow} from './providers/wallbox.ts';
 import {ensureFonts} from './fonts.js';
 // Liquid Glass: whether this engine can run an SVG filter inside backdrop-filter (Chromium only)
 const LENS_OK =
@@ -71,7 +73,7 @@ const shortNames = names => {
 
 // card order for the column packing: the lights first
 // 'open-air' is dead until the Home move deletes it (#268): nothing draws in that card any more
-const LAYOUT = ['lights', 'open-air', 'open-car'];
+const LAYOUT = ['lights', 'open-air'];
 // thermostats without an HA area: the area each Hilo room belongs to
 // areas the Phone tab shows as part of another, the way Apple Home groups them: the parking spot's charger and camera live in the garage
 // AL_AREAS (from the config): HA area → Adaptive Lighting switch, for areas the panel can't match on its own
@@ -175,6 +177,7 @@ const houseImg = house =>
   house
     ? `<img class="house photo day" alt="" src="${esc(house.day)}"><img class="house photo night" alt="" src="${esc(house.night)}">`
     : '';
+// The drawn car and the car seen from above, which the legacy detail still draws (the card's drawing is <hp-car-card>'s, src/features/car/car-art.ts); #252 deletes both
 const CARSVG = `<svg class="carside" viewBox="0 0 340 128" role="img" aria-label="Car, side view">
   <ellipse cx="172" cy="118" rx="150" ry="6" fill="var(--house-shadow)"/>
   <path d="M28 100V82c0-8 4-13 12-15l16-4c20-15 52-28 94-30 30-1 52 3 72 13l26 15c26 2 50 6 64 10 8 3 12 9 12 17v12z" fill="var(--car-body)"/>
@@ -295,8 +298,7 @@ export class LegacyPanel {
       this.tick();
     };
     this.unsubStore = null; // the one path to the one-second render, subscribed in connect
-    this.H = null; // history-derived data of the Car (loadHistory)
-    this.shared = null; // the energy history the readers left in this panel share (loadSharedHistory)
+    this.shared = null; // the history the readers left in this panel share: the energy slices and the Wallbox's sessions (loadSharedHistory)
     this.charts = []; // sheet charts, destroyed on close
     this.ApexCharts = null; // the library, once the lazy chunk has loaded (loadCharts)
     this.chartsLoad = null; // the one load of the chunk
@@ -334,7 +336,7 @@ export class LegacyPanel {
     if (this.hass && this.configure()) {
       this.build();
       if (this.host.isConnected) {
-        this.loadHistory();
+        this.refreshShared();
         this.observeLayout();
       }
       this.tick();
@@ -375,7 +377,6 @@ export class LegacyPanel {
     this.generation = gen;
     if (!this.$app) return false;
     this.teardown();
-    this.H = null;
     this.shared = null;
     return true; // the caller draws it again
   }
@@ -415,7 +416,7 @@ export class LegacyPanel {
       this.renderIdle();
       this.renderHomeStack();
     }, 20000);
-    this.histT = setInterval(() => this.loadHistory(), 15 * 60000);
+    this.histT = setInterval(() => this.refreshShared(), 15 * 60000);
     // Escape closes the sheet, then the Status checks, then the settings popup: the host owns the order, these two are its last
     this.popupOffs = [
       this.sheets.registerPopup({
@@ -427,7 +428,7 @@ export class LegacyPanel {
       }),
     ];
     this.$('iwrap').addEventListener('click', this.onIdleClick);
-    if (this.hass && this.$app) this.loadHistory();
+    if (this.hass && this.$app) this.refreshShared();
     if (this.$app) this.observeLayout();
   }
   // repack the cards whenever the page width or a card's height changes
@@ -581,9 +582,6 @@ export class LegacyPanel {
       <div class="card" id="lights"></div>
       <div class="card tap" id="open-air" tabindex="0" role="button" aria-description="Open air quality details"><div id="air"></div></div>
     </div>
-    <div class="col c3">
-      <div class="card tap carcard" id="open-car" tabindex="0" role="button" aria-description="Open car details"><div id="carcard"></div></div>
-    </div>
   </div>
 
 <div class="sheet" id="sh-car" hidden><div class="panel" role="dialog" aria-modal="true" aria-labelledby="carh">
@@ -644,7 +642,7 @@ export class LegacyPanel {
     this.findCar();
     this.setView();
     this.lensAll();
-    this.loadHistory();
+    this.refreshShared();
   }
 
   // ---------- layout: cards packed into the shortest column, so no column runs long ----------
@@ -862,12 +860,12 @@ export class LegacyPanel {
           foot: warn[0].time ? `Issued ${when(warn[0].time)}` : 'Tap for the details',
         }),
       );
-    const C = this.car ? this.carState() : null;
+    const C = this.carInputs();
     if (C && C.home !== false && !C.plugged && C.soc != null && C.soc < 40 && inHours(h, 21, 6))
       out.push(
         this.scard('carlow', {
           ic: 'car',
-          label: `${this.carName()} not plugged in`,
+          label: `${C.name || 'Car'} not plugged in`,
           color: 'var(--warn)',
           tone: 'amber',
           go: 'sh-car',
@@ -1107,16 +1105,16 @@ export class LegacyPanel {
       out.push(
         this.scard('car', {
           ic: 'car',
-          label: this.carName(),
+          label: C.name || 'Car',
           color: 'var(--c-ev)',
           right: C.charging ? 'Charging' : 'Plugged in',
           go: 'sh-car',
-          body: `<div class="srow">${this.sring(C.soc, C.lim, 'var(--ok)')}<div class="skv">${p != null && p > 0.05 ? `<div><small>Power</small><b class="num">${p.toFixed(1)} kW</b></div>` : ''}${C.range != null ? `<div><small>Range</small><b class="num">${Math.round(C.range)} km</b></div>` : ''}${C.lim ? `<div><small>Limit</small><b class="num">${C.lim}%</b></div>` : ''}</div></div>`,
+          body: `<div class="srow">${this.sring(C.soc, C.limit, 'var(--ok)')}<div class="skv">${p != null && p > 0.05 ? `<div><small>Power</small><b class="num">${p.toFixed(1)} kW</b></div>` : ''}${C.range != null ? `<div><small>Range</small><b class="num">${Math.round(C.range)} km</b></div>` : ''}${C.limit ? `<div><small>Limit</small><b class="num">${C.limit}%</b></div>` : ''}</div></div>`,
           foot:
             dep && !/^No /.test(dep)
               ? `Departure: ${dep.replace(/ saved\.$/, '')}`
               : C.charging
-                ? `Charging to ${C.lim || 100}%`
+                ? `Charging to ${C.limit || 100}%`
                 : 'Not charging right now',
         }),
       );
@@ -1222,7 +1220,6 @@ export class LegacyPanel {
     });
     [
       ['open-air', 'air.detail'], // dead until the Home move (#268): the card is empty and parked
-      ['open-car', 'sh-car'],
     ].forEach(([b, s]) => {
       const el = this.$(b);
       el.addEventListener('click', () => this.sheets.open(s));
@@ -1581,7 +1578,7 @@ export class LegacyPanel {
   renderLive() {
     if (!this.hass) return;
     this.findCar();
-    for (const f of ['renderHeader', 'renderLights', 'renderCarCard']) {
+    for (const f of ['renderHeader', 'renderLights']) {
       try {
         this[f]();
       } catch (e) {
@@ -1665,10 +1662,6 @@ export class LegacyPanel {
         chips[0] = chips[0].replace('chip wxchip', 'chip wxchip slim');
     } else if (open) this.toggleAttention(false);
     this.set('chips', chips.join(''));
-    const err = this.histErr
-      ? `<div class="err">History didn't load: ${esc(this.histErr)}. Live values still update.</div>`
-      : '';
-    this.set('err', err);
   }
 
   // ---------- attention ----------
@@ -1858,19 +1851,19 @@ export class LegacyPanel {
     }
     // the car: while FordPass says it's charging, or while it's plugged in with the Wallbox paused below its limit
     const C = this.car,
-      c = C ? this.carState() : null;
+      c = this.carInputs();
     const paused = !!(
       c &&
       !c.charging &&
       c.plugged &&
       this.E.wbPause &&
       this.sw(this.E.wbPause) === false &&
-      (c.soc == null || c.lim == null || c.soc < c.lim - 1)
+      (c.soc == null || c.limit == null || c.soc < c.limit - 1)
     );
     if (c && (c.charging || paused)) {
-      const chg = c.chg ? c.chg.attributes : {},
+      const chg = (this.st(C.id('sensor', 'elvehcharging')) || {}).attributes || {},
         soc = c.soc,
-        lim = c.lim || 100;
+        lim = c.limit || 100;
       const pw =
         this.kw(this.E.evP) ??
         (() => {
@@ -1895,14 +1888,14 @@ export class LegacyPanel {
       if (!eta && c.charging && cap && soc != null && pw > 0.3 && soc < lim)
         eta = now + ((((lim - soc) / 100) * cap) / pw) * 36e5;
       const left = eta ? durTxt(eta - now) : '';
-      const H = this.H,
+      const H = this.shared,
         ses = H && H.sessions.length ? H.sessions[H.sessions.length - 1] : null,
         plugT = (() => {
           const x = this.st(C.id('sensor', 'elvehplug'));
           return ok(x) ? Date.parse(x.last_changed) : null;
         })();
       // the hourly charging session that started with this plug-in (sessions are built from hourly statistics)
-      const cur = ses && ses.b >= now - 2 * 36e5 && (!plugT || ses.a >= plugT - 36e5) ? ses : null;
+      const cur = ses && ses.end >= now - 2 * 36e5 && (!plugT || ses.start >= plugT - 36e5) ? ses : null;
       const price = this.num(this.E.wbPrice) ?? 0.07,
         plug = this.st(C.id('sensor', 'elvehplug'));
       seen.car = {lim};
@@ -1930,7 +1923,7 @@ export class LegacyPanel {
         return (
           head(
             a,
-            `${esc(this.carName())} <span>${paused ? 'paused' : 'charging'}</span>`,
+            `${esc(c.name || 'Car')} <span>${paused ? 'paused' : 'charging'}</span>`,
             pw != null && pw > 0.05 ? `${pw.toFixed(1)} kW` : '',
           ) +
           `<div class="lbig"><span class="n">${f0(soc)}<small>%</small></span><span class="to">→ ${lim}% limit</span>${eta ? `<span class="eta"><b>Full at ${this.fmtEn.time(eta)}</b>in ${left}</span>` : ''}</div>
@@ -2075,167 +2068,70 @@ export class LegacyPanel {
     }
   }
 
-  bars(vals, labels, color, unit) {
-    const w = 300,
-      h = 56,
-      n = vals.length || 1,
-      gap = 2,
-      bw = (w - gap * (n - 1)) / n,
-      hi = Math.max(...vals, 0) || 1;
-    return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="Daily ${unit} bars, highest ${hi.toFixed(1)} ${unit}">${vals
-      .map((v, i) => {
-        const bh = Math.max(v > 0 ? 2 : 1, (v / hi) * (h - 4));
-        return `<rect x="${(i * (bw + gap)).toFixed(1)}" y="${(h - bh).toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" rx="2" fill="${v > 0 ? color : this.css('--ring')}"><title>${labels[i]}: ${v.toFixed(1)} ${unit}</title></rect>`;
-      })
-      .join('')}</svg>`;
-  }
-
   // ---------- car discovery ----------
+  // the car's entities by the provider's rule, found once; the legacy readers (the stack, the live pill, the detail and its controls) read it through carInputs until #253
   findCar() {
-    if (this.car) return;
-    const id = Object.keys(this.hass.states).find(e => /^sensor\.fordpass_[a-z0-9]+_soc$/.test(e));
-    if (!id) return;
-    const pre = id.slice('sensor.'.length, -'_soc'.length);
-    this.car = {pre, id: (dom, key) => `${dom}.${pre}_${key}`};
+    if (!this.car) this.car = findCar(this.hass.states);
   }
-  carName() {
-    const img = this.car.id('image', 'vehicleimage'),
-      fn = this.name(img, '');
-    return this.CFG.car.name || fn.replace(/\s*Vehicle Picture$/i, '') || 'Car';
+  // the car as the provider reads it, null when the house has none; deleted with its last reader, #253
+  carInputs() {
+    return this.car ? readCar(this.hass.states, this.store.config, this.store.names, this.car) : null;
   }
-  carImg() {
-    const pic = this.attr(this.car.id('image', 'vehicleimage'), 'entity_picture');
-    return pic && !this.imgFail
-      ? `<img class="carimg" src="${esc(pic)}" alt="${esc(this.carName())}">`
-      : this.CFG.car.color
-        ? CARSVG.replace('<svg class="carside"', `<svg class="carside" style="--car-body:${esc(this.CFG.car.color)}"`)
+  // Ford's photo through HA's image proxy, else the drawn car in the config's colour; the legacy detail's, until #252 (the card's is <hp-car-card>'s)
+  carImg(c) {
+    return c.picture && !this.imgFail
+      ? `<img class="carimg" src="${esc(c.picture)}" alt="${esc(c.name || 'Car')}">`
+      : c.color
+        ? CARSVG.replace('<svg class="carside"', `<svg class="carside" style="--car-body:${esc(c.color)}"`)
         : CARSVG;
   }
-  carState() {
-    const C = this.car,
-      A = (k, a) => this.attr(C.id('sensor', k), a),
-      S = k => this.st(C.id('sensor', k));
-    const soc = this.num(C.id('sensor', 'soc')),
-      range = A('soc', 'batteryRange') ?? this.num(C.id('sensor', 'elveh'));
-    const chg = S('elvehcharging'),
-      plug = this.st(C.id('sensor', 'elvehplug'));
-    const lim = chg ? chg.attributes.globalAcTargetSoc : null;
-    const lock = this.st(C.id('lock', 'doorlock')),
-      trk = this.st(C.id('device_tracker', 'tracker'));
-    const plugged = ok(plug) && plug.state !== 'DISCONNECTED';
-    const charging = ok(chg) && /CHARGING/.test(chg.state) && !/NOT/.test(chg.state);
-    return {
-      soc,
-      range,
-      lim,
-      chg,
-      plugged,
-      charging,
-      locked: ok(lock) ? lock.state === 'locked' : null,
-      home: ok(trk) ? trk.state === 'home' : null,
-      where: ok(trk) ? (trk.state === 'home' ? 'Parked at home' : trk.state === 'not_home' ? 'Away' : trk.state) : '',
-    };
-  }
-  // the sections this house has nothing for (true = nothing), for the Home tiles gateLacking hides: Climate with no thermostat and no heat pump,
-  // Car with no car, and the water heater with neither of its sensors (the Climate tab is its descriptor's `available`, #248, and Energy's own cards
-  // and tiles are the pane's, #239). availability() answers for Car from it; deleted with Home's tiles (#268)
+  // the sections this house has nothing for (true = nothing), for the Home tiles gateLacking hides: Climate with no thermostat and no heat pump, and the
+  // water heater with neither of its sensors (the Climate tab is its descriptor's `available`, #248, Car's is its own, #251, and Energy's own cards
+  // and tiles are the pane's, #239). Deleted with Home's tiles (#268)
   lacking() {
     return {
       climate: !this.ROOMS.length && !this.st(this.E.hp),
-      car: !this.car,
       water: !(this.st(this.E.whT) || this.st(this.E.whP)),
     };
   }
-  renderCarCard() {
-    if (!this.car) {
-      this.set(
-        'carcard',
-        `<div class="top"><span class="lbl">Car</span></div><div class="muted">No FordPass car found.</div>`,
-      );
-      return;
-    }
-    const c = this.carState(),
-      H = this.H,
-      wb = this.st(this.E.wbStatus),
-      odo = this.num(this.car.id('sensor', 'odometer'));
-    const last = H && H.sessions.length ? H.sessions[H.sessions.length - 1] : null;
-    const ev30 = H ? H.evDaily.slice(-30) : [];
-    this.set(
-      'carcard',
-      `<div class="top"><span class="lbl">${esc(this.carName())}</span><span class="right">${esc(c.where)}<span class="go">›</span></span></div>
-      <div class="hero"><div><div class="v num">${f1(c.soc)}<small>%</small></div><div class="muted" style="margin-top:6px;font-size:13px">${c.range != null ? Math.round(c.range) + ' km range' : ''}${c.locked != null ? ` · ${c.locked ? 'locked' : 'unlocked'}` : ''} · ${c.charging ? 'charging' : c.plugged ? 'plugged in' : 'unplugged'}</div></div>${this.carImg()}</div>
-      <div class="socbar" role="img" aria-label="Battery ${f1(c.soc)} percent${c.lim ? ', charge limit ' + c.lim + ' percent' : ''}"><i style="width:${c.soc || 0}%"></i>${c.lim ? `<b style="left:${c.lim}%"></b>` : ''}</div>
-      <div class="socscale"><span>0%</span><span>${c.lim ? 'Limit ' + c.lim + '%' : ''}</span></div>
-      <div class="tiles" style="grid-template-columns:repeat(3,minmax(0,1fr));margin-top:12px">${[
-        ['Charger', `<span class="wrapv">${esc(ok(wb) ? wb.state : '–')}</span>`, '', 'Wallbox'],
-        ['Last charge', last ? f1(last.kwh) : '–', 'kWh', last ? this.fmtEn.date(last.a) : ''],
-        ['Odometer', odo == null ? '–' : this.fmtEn.integer(odo), 'km'],
-      ]
-        .map(tile)
-        .join('')}</div>
-      ${
-        H
-          ? this.bars(
-              ev30.map(r => r.ev),
-              ev30.map(r => this.fmtUtcEn.date(dayAt(r.day))),
-              this.css('--c-ev'),
-              'kWh',
-            )
-          : ''
-      }
-      ${H ? `<div class="muted" style="font-size:12px">Daily EV energy, last 30 days: ${ev30.filter(r => r.ev > 5).length} charging days, ${Math.round(sum(ev30.map(r => r.ev)))} kWh.</div>` : ''}`,
-    );
-  }
 
   // ---------- history ----------
-  async loadHistory() {
-    // one load per config at a time; a load under another config (the panel was redrawn meanwhile) is let go
+  // The panel's shared history, read at start, when the config changes and every fifteen minutes; the cache answers a repeat within them (ADR 0028). Each pane loads
+  // its own windows (ADR 0024); this one is what the readers below the features still use. It leaves with its last reader: #256, #266, #268 and #269.
+  async refreshShared() {
+    // a load under another config (the panel was redrawn meanwhile) is let go: the cache rejects its replies as StaleReply
     const generation = this.store.generation;
-    // loadingGen is an in-flight marker (the generation whose load is running), not a stale guard: the StaleReply
-    // caught below is the guard
-    if (!this.hass || generation === this.loadingGen) return;
-    this.loadingGen = generation;
+    if (!this.hass) return;
     try {
-      const now = new Date(),
-        d = n => new Date(now.getTime() - n * 864e5);
-      // the spans asked here are copied into STATISTIC_SPANS of scripts/record-fixture.mjs, which a test checks (the Climate ranges are the kit's RANGES)
-      // What is asked here is Car's (the Wallbox's year, and its day read on the grid's rows for the card's daily bars: #253); the energy windows are
-      // loadSharedHistory's, and Climate's are its pane's, through the panel's cache (#246). It leaves with its feature.
-      const [shared, tempDay, evh] = await Promise.all([
-        this.loadSharedHistory(now.getTime()),
-        this.api.statistics([this.E.grid, this.E.evP], 'day', d(400), ['mean', 'min', 'max']),
-        this.api.statistics([this.E.evP], 'hour', d(366), ['mean', 'max']),
-      ]);
-      const first = !this.H;
+      const shared = await this.loadSharedHistory(Date.now());
+      const first = !this.shared;
       this.shared = shared;
-      this.H = this.derive(tempDay, evh);
       if (first) this.ctx.shell.requestFrame(); // the settings popup's version line says the history is kept fresh
-      this.histErr = null;
     } catch (e) {
       // a load of an old config is let go whatever went wrong: a network error is no StaleReply, but the new load owns the state
       if (e instanceof StaleReply || generation !== this.store.generation) return;
       console.error('home-panel history', e);
-      this.histErr = e.message || e.code || String(e);
+      return;
     }
-    this.loadingGen = false;
     this.cache = {};
     this.renderLive();
     if (this.sheets.shown) this.redrawCharts();
   }
-  // What the energy readers left in this panel still read: the stack's Energy-today card (the hourly flow and the meter's today), the
-  // live pill's water heater and the Home water tile (the water heater's day), and the header's "Live · history" line (`at`). The
-  // power windows are asked through the panel-wide cache, the very calls Energy's card makes, so each is read once for the panel
-  // (ADR 0028), and cut by the providers' slices; the energy-only windows are the card's, asked when it first connects. It is
-  // deleted with its last reader: #256 (liveActs), #266 (the stack), #268 (the Home tile) and #269 (the header).
+  // What the readers left in this panel still read: the stack's Energy-today card (the hourly flow and the meter's today), the live pill's water heater and
+  // the Home water tile (the water heater's day), the live pill's car and the legacy detail's sessions (the Wallbox's year of hours, which the Car's history asks
+  // too, so it is one read), and the header's "Live · history" line (`at`). The power windows are asked through the panel-wide cache, the very calls Energy's
+  // card makes, so each is read once for the panel (ADR 0028), and cut by the providers' slices; the energy-only windows are the card's, asked when it first
+  // connects. It is deleted with its last reader: #252 (the detail's sessions), #256 (liveActs), #266 (the stack), #268 (the Home tile) and #269 (the header).
   async loadSharedHistory(now) {
     const {config} = this.store,
       ask = ({ids, period, start, types}) => this.ctx.statistics.statistics(ids, period, start, types);
     const w = powerWindows(now, config, this.fmtEn);
-    const [hour7, today, meter33, fiveMin25h] = await Promise.all([
+    const [hour7, today, meter33, fiveMin25h, hours] = await Promise.all([
       ask(w.hour7),
       ask(w.today),
       ask(w.meter33),
       ask(w.fiveMin25h),
+      ask(sessionsWindow(now, config.entities.evP)),
     ]);
     return {
       at: new Date(),
@@ -2248,40 +2144,8 @@ export class LegacyPanel {
         this.fmtEn.isoDay,
       ),
       wh24: waterDay(fiveMin25h, {temperature: config.entities.whT, power: config.entities.whP}),
+      sessions: chargingSessions(rowsOf(hours, config.entities.evP)),
     };
-  }
-  // Car's slices (the sessions, and the charger's daily energy for the card's bars: #253): the energy slices are the providers', cut by
-  // loadSharedHistory and Energy's own load, and Climate's are its pane's.
-  derive(day, evh) {
-    const ser = (r, id) => (r[id] || []).map(x => ({...x, t: ms(x.start)}));
-    // the charger's daily kWh = mean kW x hours (today only counts the hours so far), on the days the grid has a mean for
-    const todayKey = this.fmtEn.isoDay(Date.now()),
-      hrsToday = Math.max(1, Math.floor(this.fmtEn.hourNow(Date.now())));
-    const de = new Map(ser(day, this.E.evP).map(x => [x.t, x.mean]));
-    const evDaily = ser(day, this.E.grid)
-      .filter(x => x.mean != null)
-      .map(x => {
-        const key = this.fmtEn.isoDay(x.t + 12 * 36e5);
-        return {day: key, ev: (de.get(x.t) || 0) * (key === todayKey ? hrsToday : 24)};
-      });
-    // charging sessions: runs of hours with the Wallbox above 0.3 kW, joined across gaps up to 3 hours
-    const sessions = [];
-    let cur = null;
-    ser(evh, this.E.evP).forEach(x => {
-      if ((x.mean || 0) <= 0.3) return;
-      if (cur && x.t - cur.end <= 3 * 36e5) {
-        cur.end = x.t;
-        cur.kwh += x.mean;
-        cur.pk = Math.max(cur.pk, x.max || 0);
-      } else {
-        cur = {a: x.t, end: x.t, kwh: x.mean, pk: x.max || 0};
-        sessions.push(cur);
-      }
-    });
-    sessions.forEach(s => {
-      s.b = s.end + 36e5;
-    });
-    return {evDaily, sessions: sessions.filter(s => s.kwh >= 1)};
   }
 
   // ---------- sheets ----------
@@ -2563,43 +2427,14 @@ export class LegacyPanel {
     this.cache = {};
     this.renderLive();
   }
-  // on a phone the old summary cards become the panes (the five detail panels are the sheet host's)
-  placePanels(compact = this.compact) {
-    const col = this.root.querySelector('.col.c1'),
-      mv = (id, h) => {
-        const el = this.$(id);
-        if (el && h && el.parentNode !== h) h.appendChild(el);
-      };
-    const homes = {'open-car': 'carhost'};
-    for (const [id, host] of Object.entries(homes)) mv(id, compact ? this.$(host) : col);
-  }
   renderCompact() {
     if (!this.compact || this.view !== 'tabs') return;
-    for (const f of ['renderLightTiles', 'renderCompactSubs']) {
+    for (const f of ['renderLightTiles']) {
       try {
         this[f]();
       } catch (e) {
         console.error('home-panel phone', f, e);
       }
-    }
-  }
-  // one line under each summary pane's title, as the sheets have
-  renderCompactSubs() {
-    if (this.tab === 'car') {
-      const c = this.car ? this.carState() : null;
-      this.set('carh2', this.car ? esc(this.carName()) : 'Car');
-      this.set(
-        'carsub2',
-        c
-          ? [
-              c.where,
-              `${f1(c.soc)}%${c.range != null ? ' · ' + Math.round(c.range) + ' km' : ''}`,
-              c.charging ? 'charging' : c.plugged ? 'plugged in' : 'unplugged',
-            ]
-              .filter(Boolean)
-              .join(' · ')
-          : 'No FordPass car found.',
-      );
     }
   }
   // Lights on the phone: the same tiles as the tablet, two to a row; a tile opens the room's controls in a sheet
@@ -2737,13 +2572,10 @@ export class LegacyPanel {
         h = this.$(host);
       if (el && h) first ? h.prepend(el) : h.appendChild(el);
     };
-    this.placePanels();
     mv('lights', 'lhost');
     this.tabChanged(this.tab);
   }
   leaveTabs() {
-    this.placePanels(true);
-    this.placePanels(false); // panels back to their sheets, cards back to the columns
     this.plan = null; // the cards go back into the columns on the next layout
   }
   // the shell shows the pane of `t` (it remembered the tab and drew the rail and the panes); this is the guest's part
@@ -2782,20 +2614,19 @@ export class LegacyPanel {
         this.root.querySelectorAll(sel).forEach(el => {
           el.hidden = off;
         });
-    for (const t of ['climate', 'car']) hide(`[data-pane="${t}"]`, L[t]);
+    hide('[data-pane="climate"]', L.climate);
+    hide('[data-pane="car"]', !this.car);
     hide('[data-opens="energy.water"]', L.water);
-    // Climate's tab answers from its descriptor, not from availability(), but a change of it must still ask the shell for a frame: this key carries it (deleted with Home's tiles, #268)
-    const key = JSON.stringify([this.availability(), L.climate]);
+    // Climate's and Car's tabs answer from their descriptors, not from availability(), but a change of either must still ask the shell for a frame: this key carries them (deleted with Home's tiles, #268)
+    const key = JSON.stringify([!this.car, L.climate]);
     if (key !== this.frameKey) {
       this.frameKey = key;
       this.ctx.shell.requestFrame();
     }
   }
-  // which tabs this house lacks (false: nothing for it), for the shell's registry; no opinion until a hass arrived
+  // which tabs this house lacks (false: nothing for it), for the shell's registry: none of the tabs the guest still draws has an opinion, Climate's and Car's are their descriptors' `available`
   availability() {
-    if (!this.hass) return {};
-    // the Climate tab is its descriptor's `available` (hasClimate, #248); Car's is still this answer, and a change of it asks the shell for a frame
-    return {car: !this.lacking().car};
+    return {};
   }
   // whether the history behind the charts has loaded, which the settings popup's version line says
   statisticsLoaded() {
@@ -2914,7 +2745,7 @@ export class LegacyPanel {
       nHeat = L.rooms.filter(r => r.heating).length;
     const hp = this.st(this.E.hp),
       hpTxt = !ok(hp) ? 'offline' : hp.state === 'off' ? 'off' : hp.attributes.hvac_action || hp.state;
-    const c = this.car ? this.carState() : null,
+    const c = this.carInputs(),
       // the tier as the tile said it: "low rate", "medium rate", "challenge rate", "current rate", "rate unknown"; the legacy English,
       // which leaves with the Home tiles (#268), when the model's tier wording takes over
       rateShort = {
@@ -3516,21 +3347,21 @@ export class LegacyPanel {
       this.$('car-bat').innerHTML = '<div class="muted">No FordPass car found.</div>';
       return;
     }
-    this.$('carh').textContent = this.carName();
+    this.$('carh').textContent = this.carInputs().name || 'Car';
     this.cache['car-charger'] = this.cache['car-comfort'] = null;
     this.renderCarSheetLive();
     this.renderSessions();
-    const H = this.H,
+    const H = this.shared,
       s = this.S();
     if (!H) return;
     const sess = H.sessions,
       tot = sum(sess.map(x => x.kwh)),
       price = this.num(this.E.wbPrice) ?? 0.07;
     this.$('sesp').textContent = sess.length
-      ? `${sess.length} charging sessions on the Wallbox since ${this.fmtEn.date(sess[0].a)}. Cost is estimated at the ${(price * 100).toFixed(0)}¢/kWh set in the Wallbox app.`
+      ? `${sess.length} charging sessions on the Wallbox since ${this.fmtEn.date(sess[0].start)}. Cost is estimated at the ${(price * 100).toFixed(0)}¢/kWh set in the Wallbox app.`
       : 'No charging sessions in the last year.';
     this.$('sest').innerHTML = [
-      ['Sessions', sess.length, '', sess.length ? 'since ' + this.fmtEn.date(sess[0].a) : ''],
+      ['Sessions', sess.length, '', sess.length ? 'since ' + this.fmtEn.date(sess[0].start) : ''],
       ['Delivered', this.fmtEn.integer(tot), 'kWh'],
       ['Average', sess.length ? (tot / sess.length).toFixed(1) : '–', 'kWh', 'per session'],
       ['Est. cost', '$' + Math.round(tot * price), '', `at ${(price * 100).toFixed(0)}¢/kWh`],
@@ -3539,7 +3370,7 @@ export class LegacyPanel {
       .join('');
     const mon = {};
     sess.forEach(x => {
-      const k = this.fmtEn.isoDay(x.a).slice(0, 7);
+      const k = this.fmtEn.isoDay(x.start).slice(0, 7);
       mon[k] = mon[k] || [0, 0];
       mon[k][0] += x.kwh;
       mon[k][1]++;
@@ -3561,7 +3392,7 @@ export class LegacyPanel {
     );
   }
   renderSessions() {
-    const H = this.H;
+    const H = this.shared;
     if (!H) {
       this.$('slist').innerHTML = '';
       this.$('smore').hidden = true;
@@ -3573,8 +3404,8 @@ export class LegacyPanel {
       price = this.num(this.E.wbPrice) ?? 0.07;
     this.$('slist').innerHTML = rows
       .map(
-        x => `<tr><td>${this.fmtEn.dateWeekday(x.a)}</td><td class="hide-s">${this.fmtEn.time(x.a)} to ${this.fmtEn.time(x.b)}</td><td class="r hide-s">${Math.round((x.b - x.a) / 36e5)} h</td>
-      <td><span class="bar" style="width:${Math.round((x.kwh / mx) * 70) + 4}px"></span>${x.kwh.toFixed(1)} kWh</td><td class="r hide-s">${x.pk.toFixed(1)} kW</td><td class="r">$${(x.kwh * price).toFixed(2)}</td></tr>`,
+        x => `<tr><td>${this.fmtEn.dateWeekday(x.start)}</td><td class="hide-s">${this.fmtEn.time(x.start)} to ${this.fmtEn.time(x.end)}</td><td class="r hide-s">${Math.round((x.end - x.start) / 36e5)} h</td>
+      <td><span class="bar" style="width:${Math.round((x.kwh / mx) * 70) + 4}px"></span>${x.kwh.toFixed(1)} kWh</td><td class="r hide-s">${x.peak.toFixed(1)} kW</td><td class="r">$${(x.kwh * price).toFixed(2)}</td></tr>`,
       )
       .join('');
     const m = this.$('smore');
@@ -3585,10 +3416,18 @@ export class LegacyPanel {
     if (!this.car) return;
     const C = this.car,
       A = (k, a) => this.attr(C.id('sensor', k), a),
-      c = this.carState();
-    const lr = this.st(C.id('sensor', 'lastrefresh'));
+      c = this.carInputs();
+    const lr = this.st(C.id('sensor', 'lastrefresh')),
+      where =
+        c.tracker === null
+          ? ''
+          : c.tracker === 'home'
+            ? 'Parked at home'
+            : c.tracker === 'not_home'
+              ? 'Away'
+              : c.tracker;
     this.$('carsub').textContent = [
-      c.where,
+      where,
       c.locked == null ? '' : c.locked ? 'locked' : 'unlocked',
       ok(lr) ? 'the car last checked in at ' + this.fmtEn.time(new Date(lr.state)) : '',
     ]
@@ -3596,15 +3435,15 @@ export class LegacyPanel {
       .join(' · ');
     const el = this.st(C.id('sensor', 'elveh')),
       ea = el ? el.attributes : {},
-      ch = c.chg ? c.chg.attributes : {};
+      ch = (this.st(C.id('sensor', 'elvehcharging')) || {}).attributes || {};
     const cab = this.num(C.id('sensor', 'cabintemperature')),
       outc = this.num(C.id('sensor', 'outsidetemp'));
     this.set(
       'car-bat',
       `<h3>Battery</h3><p>${ea.batteryEnergyRemaining != null ? `${f1(ea.batteryEnergyRemaining)} of ${f1(ea.maximumBatteryCapacity)} kWh usable` : ''}${ch.batteryTemperature != null ? ` · battery at ${f1(ch.batteryTemperature)}°` : ''}</p>
-      <div class="carhero"><div><div class="t">${f1(c.soc)}<small>%</small></div><div class="muted" style="font-size:14px;margin-top:4px">${c.range != null ? Math.round(c.range) + ' km range' : ''}</div></div>${this.carImg()}</div>
-      <div class="socbar" role="img" aria-label="Battery ${f1(c.soc)} percent"><i style="width:${c.soc || 0}%"></i>${c.lim ? `<b style="left:${c.lim}%"></b>` : ''}</div>
-      <div class="socscale"><span>0%</span><span>${c.lim ? 'Charge limit ' + c.lim + '%' : ''}</span><span>100%</span></div>
+      <div class="carhero"><div><div class="t">${f1(c.soc)}<small>%</small></div><div class="muted" style="font-size:14px;margin-top:4px">${c.range != null ? Math.round(c.range) + ' km range' : ''}</div></div>${this.carImg(c)}</div>
+      <div class="socbar" role="img" aria-label="Battery ${f1(c.soc)} percent"><i style="width:${c.soc || 0}%"></i>${c.limit ? `<b style="left:${c.limit}%"></b>` : ''}</div>
+      <div class="socscale"><span>0%</span><span>${c.limit ? 'Charge limit ' + c.limit + '%' : ''}</span><span>100%</span></div>
       <div class="tiles" style="margin-top:14px">${tiles([
         ['Full range', ea.maximumBatteryRange != null ? Math.round(ea.maximumBatteryRange) : '–', 'km', 'at 100%'],
         [
@@ -3723,10 +3562,10 @@ export class LegacyPanel {
     const tl = A('energytransferlogentry', 'plugDetails'),
       soc2 = A('energytransferlogentry', 'stateOfCharge');
     let delivered = null;
-    if (tl && this.H) {
+    if (tl && this.shared) {
       const a = Date.parse(tl.plugInTime),
         b = Date.parse(tl.plugOutTime);
-      delivered = sum(this.H.sessions.filter(x => x.b > a && x.a < b).map(x => x.kwh));
+      delivered = sum(this.shared.sessions.filter(x => x.end > a && x.start < b).map(x => x.kwh));
     }
     this.set(
       'car-last',
@@ -3737,7 +3576,7 @@ export class LegacyPanel {
           'Battery',
           soc2 ? `${soc2.firstSOC}→${soc2.lastSOC}` : '–',
           '%',
-          soc2 && c.lim && soc2.lastSOC >= c.lim ? 'stopped at the limit' : '',
+          soc2 && c.limit && soc2.lastSOC >= c.limit ? 'stopped at the limit' : '',
         ],
         ['Range added', tl.totalDistanceAdded != null ? Math.round(tl.totalDistanceAdded) : '–', 'km'],
         ['Plugged in', tl.totalPluggedInTime ? (tl.totalPluggedInTime / 3600).toFixed(1) : '–', 'h'],
@@ -3789,11 +3628,11 @@ export class LegacyPanel {
     const mn = amps ? amps.attributes.min || 6 : 6,
       mx = amps ? amps.attributes.max || 48 : 48;
     const steps = [16, 24, 32, 40, 48].filter(a => a >= mn && a <= mx);
-    const c = this.carState(),
+    const c = this.carInputs(),
       wb = this.st(this.E.wbStatus),
       pause = this.st(this.E.wbPause),
       wlock = this.sw(this.E.wbLock);
-    const lim = c.lim,
+    const lim = c.limit,
       limOpts = [50, 60, 70, 80, 90, 100];
     const charging = this.sw(this.E.wbPause);
     this.set(

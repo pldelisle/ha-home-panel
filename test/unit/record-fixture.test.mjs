@@ -698,23 +698,29 @@ describe('the personal-data scan over a fixture folder', () => {
 describe('the recorded statistics spans', () => {
   // STATISTIC_SPANS copies what the panel asks for (the comments at both places say so): when the panel asks for a longer
   // span of a period, the fixture would hold too little for the model, and this fails
-  const panel = readFileSync(new URL('../../src/home-panel.js', import.meta.url), 'utf8');
-  const kit = readFileSync(new URL('../../src/ui/ranges.ts', import.meta.url), 'utf8');
+  const source = file => readFileSync(new URL(`../../${file}`, import.meta.url), 'utf8');
+  const kit = source('src/ui/ranges.ts');
   const asked = [
-    // loadHistory (Car): this.api.statistics(ids, 'hour', d(366), [...])
-    ...panel.matchAll(/api\.statistics\([^;]*?'(5minute|hour|day)',\s*d\(([\d.]+)\)/g),
-    // the weather history: this.api.statistics(ids, 'day', new Date(now - 400 * 864e5), [...])
-    ...panel.matchAll(/'(5minute|hour|day)',\s*new Date\(now - ([\d.]+) \* 864e5\)/g),
-  ].map(([, period, days]) => ({period, days: Number(days)}));
+    // the shared power windows and the year of daily power, in the provider: `start: windowStart(now, 400), period: 'day'`
+    ...source('src/providers/power-history.ts').matchAll(
+      /windowStart\(now,\s*([\d.]+)\),\s*period:\s*'(5minute|hour|day)'/g,
+    ),
+    // the Wallbox's year of hours, which the Car's history and the legacy panel's shared load both ask: `SESSION_DAYS = 366`, by the hour
+    ...[...source('src/providers/wallbox.ts').matchAll(/SESSION_DAYS = ([\d.]+)/g)].map(([, days]) => [
+      null,
+      days,
+      'hour',
+    ]),
+  ].map(([, days, period]) => ({period, days: Number(days)}));
   // the ranges Climate's detail asks for, the kit's: `days: 7, period: 'hour'` (the panel's own CRANGE went in #246)
   const ranges = [...kit.matchAll(/days:\s*([\d.]+),\s*period:\s*'(5minute|hour|day)'/g)].map(([, days, period]) => ({
     period,
     days: Number(days),
   }));
 
-  test('the panel is read: every call and every range is found', () => {
-    // the two calls loadHistory makes on the client, Car's (the power windows are loadSharedHistory's, the provider's, within the same spans)
-    expect(asked.length).toBeGreaterThanOrEqual(2);
+  test('the panel is read: every window and every range is found', () => {
+    // the providers' windows: the week by the hour, the month and the year by the day, and the Wallbox's year by the hour
+    expect(asked.length).toBeGreaterThanOrEqual(4);
     expect(ranges.map(r => r.period).sort()).toEqual(['5minute', 'day', 'hour', 'hour']);
   });
 

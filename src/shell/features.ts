@@ -4,6 +4,7 @@
 // Must not: hold state, know the guest (a descriptor reads it through its env), or list a subject twice.
 import type {FeatureDescriptor, FeatureKey} from '../ui/feature.ts';
 import {airFeature} from '../features/air/index.ts';
+import {carFeature} from '../features/car/index.ts';
 import {climateFeature} from '../features/climate/index.ts';
 import {energyFeature} from '../features/energy/index.ts';
 import {mediaFeature} from '../features/media/index.ts';
@@ -41,13 +42,7 @@ export const FEATURES: readonly FeatureDescriptor[] = [
   }),
   climateFeature,
   weatherFeature,
-  legacyFeature('car', {
-    icon: 'car',
-    color: 'var(--c-ev)',
-    phoneBar: true,
-    header: {h2Id: 'carh2', subId: 'carsub2', compact: true},
-    hosts: ['<div id="carhost"></div>'],
-  }),
+  carFeature,
   energyFeature,
   airFeature,
   mediaFeature,

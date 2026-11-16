@@ -2,7 +2,6 @@
 #chips {
   display: contents;
 }
-.pane > .cph,
 .rtab.rmore,
 .ltiles {
   display: none;
@@ -109,10 +108,6 @@
 .app.tabsv.cp .rtab svg {
   width: 26px;
   height: 26px;
-}
-/* the summary panes' titles show on the phone only; the pane titles' own sizes are in pane-header.css */
-.app.tabsv.cp .pane > .cph {
-  display: block;
 }
 .app.tabsv.cp .pane-home,
 .app.tabsv.cp .pane-lights,
@@ -296,8 +291,4 @@
   max-width: 100%;
   text-align: left;
   line-height: 1.3;
-}
-.app.cp #carcard .tile .v {
-  font-size: calc(18px * var(--tx));
-  white-space: normal;
 }
