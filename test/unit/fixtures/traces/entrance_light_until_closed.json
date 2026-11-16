@@ -1,6 +1,6 @@
 {
   "recordedAt": "2026-11-07T18:49:00.000Z",
-  "source": "made up in the reply shape of home-assistant 2026.11.0 (no recording yet)",
+  "source": "home-assistant 2026.11.0 (made up in its reply shape, not recorded)",
   "automation": "automation.entrance_light_until_closed",
   "config": {
     "id": "item_003",
@@ -65,7 +65,7 @@
                 "last_changed": "2026-11-06T13:02:11.204311+00:00",
                 "last_reported": "2026-11-06T13:02:11.204311+00:00",
                 "last_updated": "2026-11-06T13:02:11.204311+00:00",
-                "context": {"id": "context_012", "parent_id": null, "user_id": null}
+                "context": {"id": "context_010", "parent_id": null, "user_id": null}
               },
               "trigger": {
                 "id": "0",
@@ -80,7 +80,7 @@
                   "last_changed": "2026-11-07T16:12:09.330018+00:00",
                   "last_reported": "2026-11-07T16:12:09.330018+00:00",
                   "last_updated": "2026-11-07T16:12:09.330018+00:00",
-                  "context": {"id": "context_010", "parent_id": null, "user_id": null}
+                  "context": {"id": "context_008", "parent_id": null, "user_id": null}
                 },
                 "to_state": {
                   "entity_id": "binary_sensor.front_door",
@@ -89,7 +89,7 @@
                   "last_changed": "2026-11-07T18:47:31.552190+00:00",
                   "last_reported": "2026-11-07T18:47:31.552190+00:00",
                   "last_updated": "2026-11-07T18:47:31.552190+00:00",
-                  "context": {"id": "context_011", "parent_id": null, "user_id": null}
+                  "context": {"id": "context_009", "parent_id": null, "user_id": null}
                 },
                 "for": null,
                 "attribute": null,
@@ -101,23 +101,23 @@
         "condition/0": [
           {
             "path": "condition/0",
-            "timestamp": "2026-11-07T18:47:31.554+00:00",
+            "timestamp": "2026-11-07T18:47:31.554190+00:00",
             "result": {"result": true}
           }
         ],
         "condition/0/entity_id/0": [
           {
             "path": "condition/0/entity_id/0",
-            "timestamp": "2026-11-07T18:47:31.555+00:00",
+            "timestamp": "2026-11-07T18:47:31.555190+00:00",
             "result": {"result": true, "state": "below_horizon", "wanted_state": "below_horizon"}
           }
         ],
         "action/0": [
           {
             "path": "action/0",
-            "timestamp": "2026-11-07T18:47:31.557+00:00",
+            "timestamp": "2026-11-07T18:47:31.557190+00:00",
             "changed_variables": {
-              "context": {"id": "context_013", "parent_id": "context_012", "user_id": null}
+              "context": {"id": "context_007", "parent_id": "context_009", "user_id": null}
             },
             "result": {
               "params": {
@@ -132,7 +132,15 @@
             }
           }
         ],
-        "action/1": [{"path": "action/1", "timestamp": "2026-11-07T18:47:31.613+00:00"}]
+        "action/1": [
+          {
+            "path": "action/1",
+            "timestamp": "2026-11-07T18:47:31.613190+00:00",
+            "result": {
+              "wait": {"remaining": 600, "trigger": null}
+            }
+          }
+        ]
       },
       "config": {
         "id": "item_003",
@@ -157,7 +165,7 @@
         "mode": "restart"
       },
       "blueprint_inputs": null,
-      "context": {"id": "context_009", "parent_id": null, "user_id": null}
+      "context": {"id": "context_007", "parent_id": "context_009", "user_id": null}
     }
   }
 }

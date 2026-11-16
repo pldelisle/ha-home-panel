@@ -588,18 +588,21 @@ describe('the trace fixtures', () => {
   const files = readdirSync(folder).filter(f => f.endsWith('.json'));
   const read = f => JSON.parse(readFileSync(new URL(f, folder), 'utf8'));
 
-  test.each(files)("%s is in the recorder's shape: one trace per listed run, of the config's item", f => {
-    const {automation, config, list, traces} = read(f);
-    expect(f).toBe(`${automation.slice('automation.'.length)}.json`);
-    expect(list.every(r => r.item_id === config.id)).toBe(true);
-    expect(Object.keys(traces)).toEqual(list.map(r => r.run_id));
-    for (const r of list) expect(traces[r.run_id]).toMatchObject({...r, config});
-    for (const t of Object.values(traces))
-      for (const [path, steps] of Object.entries(t.trace)) {
-        expect(path).toMatch(/^(trigger|condition|action)\/\d+(\/|$)/);
-        expect(steps.every(step => step.path === path)).toBe(true);
-      }
-  });
+  test.each(files)(
+    "%s holds one trace per listed run, of the config's item (the data's shape, not the recorder)",
+    f => {
+      const {automation, config, list, traces} = read(f);
+      expect(f).toBe(`${automation.slice('automation.'.length)}.json`);
+      expect(list.every(r => r.item_id === config.id)).toBe(true);
+      expect(Object.keys(traces)).toEqual(list.map(r => r.run_id));
+      for (const r of list) expect(traces[r.run_id]).toMatchObject({...r, config});
+      for (const t of Object.values(traces))
+        for (const [path, steps] of Object.entries(t.trace)) {
+          expect(path).toMatch(/^(trigger|condition|action)\/\d+(\/|$)/);
+          expect(steps.every(step => step.path === path)).toBe(true);
+        }
+    },
+  );
 
   test('together they hold the six cases the graph is tested on', () => {
     const runs = files.flatMap(f => Object.values(read(f).traces));

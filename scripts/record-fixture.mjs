@@ -202,27 +202,18 @@ export async function main(argv, env, deps = {}) {
       return 1;
     }
     const connection = await connect({url: env.HASS_URL, token: env.HASS_TOKEN});
+    const recording = args.traces.length > 0 ? TRACES : HOUSE;
     const instant = now();
     let recorded;
     try {
-      recorded =
-        args.traces.length > 0
-          ? await fetchTraces(connection, args.traces)
-          : await fetchHouse(connection, {statisticIds: args.statistics, now: instant});
+      recorded = await recording.fetch(connection, args, instant);
     } finally {
       connection.close();
     }
-    // the files to write, each `[path, content]`: one house, or one file per automation named by its anonymised id
-    const files = args.traces.length > 0 ? traceFiles(recorded, mapping, args.out, instant, connection) : [];
-    if (args.traces.length === 0) {
-      const {recordedAt, source, ...raw} = recorded;
-      files.push([resolve(args.out), {recordedAt, source, ...anonymise(raw, mapping)}]);
-    }
-    // a leftover's path starts with its file's name when there are several files
-    const leftovers = files.flatMap(([path, output]) =>
-      scan(output, mapping, BANNED_PATTERNS).map(l =>
-        args.traces.length > 0 ? {...l, path: `${basename(path)} ${l.path}`} : l,
-      ),
+    const stamp = {recordedAt: instant.toISOString(), source: `home-assistant ${connection.haVersion}`};
+    const files = recording.files(recorded, mapping, args.out, stamp);
+    const leftovers = files.flatMap(({path, output, named}) =>
+      scan(output, mapping, BANNED_PATTERNS).map(l => (named ? {...l, path: `${basename(path)} ${l.path}`} : l)),
     );
     if (leftovers.length > 0) {
       error(
@@ -238,20 +229,8 @@ export async function main(argv, env, deps = {}) {
       }
       return 1;
     }
-    for (const [path, output] of files) writeFile(path, `${stringify(output)}\n`);
-    if (args.traces.length > 0)
-      log(
-        `wrote ${files.length} trace file(s) in ${args.out}: ` +
-          files.map(([, o]) => `${o.automation} (${o.list.length} run(s))`).join(', '),
-      );
-    else {
-      const [[, output]] = files;
-      log(
-        `wrote ${args.out}: ${Object.keys(output.states).length} states, ${Object.keys(output.entities).length} entities, ` +
-          `${Object.keys(output.devices).length} devices, ${Object.keys(output.areas).length} areas` +
-          (output.statistics ? `, statistics for ${args.statistics.length} id(s)` : ''),
-      );
-    }
+    for (const {path, output} of files) writeFile(path, `${stringify(output)}\n`);
+    log(recording.summary(files, args));
     return 0;
   } catch (e) {
     error(`failed: ${LIBRARY_ERRORS[e] ?? e?.message ?? e}`);
@@ -259,14 +238,34 @@ export async function main(argv, env, deps = {}) {
   }
 }
 
-/** The `[path, content]` of each automation's trace file: `<out>/<object id>.json`, the anonymised traces stamped. */
-function traceFiles(recorded, mapping, out, instant, connection) {
-  const stamp = {recordedAt: instant.toISOString(), source: `home-assistant ${connection.haVersion}`};
-  return Object.entries(anonymiseTraces(recorded, mapping)).map(([entityId, traces]) => [
-    resolve(out, `${entityId.slice(entityId.indexOf('.') + 1)}.json`),
-    {...stamp, automation: entityId, ...traces},
-  ]);
-}
+/**
+ * The two things the recorder can record, each `{fetch(connection, args, instant), files(recorded, mapping, out, stamp),
+ * summary(files, args)}`; a file is `{path, output, named}`, `named` when a leftover's path must say which file it is in.
+ */
+const HOUSE = {
+  fetch: (connection, args, instant) => fetchHouse(connection, {statisticIds: args.statistics, now: instant}),
+  files: (recorded, mapping, out, stamp) => {
+    const {recordedAt, source, ...raw} = recorded;
+    return [{path: resolve(out), output: {...stamp, recordedAt, source, ...anonymise(raw, mapping)}, named: false}];
+  },
+  summary: ([{output}], args) =>
+    `wrote ${args.out}: ${Object.keys(output.states).length} states, ${Object.keys(output.entities).length} entities, ` +
+    `${Object.keys(output.devices).length} devices, ${Object.keys(output.areas).length} areas` +
+    (output.statistics ? `, statistics for ${args.statistics.length} id(s)` : ''),
+};
+const TRACES = {
+  fetch: (connection, args) => fetchTraces(connection, args.traces),
+  // one file per automation, named by its anonymised object id
+  files: (recorded, mapping, out, stamp) =>
+    Object.entries(anonymiseTraces(recorded, mapping)).map(([entityId, traces]) => ({
+      path: resolve(out, `${entityId.slice(entityId.indexOf('.') + 1)}.json`),
+      output: {...stamp, automation: entityId, ...traces},
+      named: true,
+    })),
+  summary: (files, args) =>
+    `wrote ${files.length} trace file(s) in ${args.out}: ` +
+    files.map(({output}) => `${output.automation} (${output.list.length} run(s))`).join(', '),
+};
 
 // a path's real location when it exists (a link into the repository must not slip past), else the path itself
 function realpathOrSelf(path) {

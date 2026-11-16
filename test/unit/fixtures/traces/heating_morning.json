@@ -1,6 +1,6 @@
 {
   "recordedAt": "2026-11-07T18:49:00.000Z",
-  "source": "made up in the reply shape of home-assistant 2026.11.0 (no recording yet)",
+  "source": "home-assistant 2026.11.0 (made up in its reply shape, not recorded)",
   "automation": "automation.heating_morning",
   "config": {
     "id": "item_004",
@@ -58,7 +58,7 @@
       "run_id": "run_005",
       "state": "stopped",
       "script_execution": "finished",
-      "timestamp": {"start": "2026-11-06T11:00:00.001377+00:00", "finish": "2026-11-06T11:00:00.193+00:00"},
+      "timestamp": {"start": "2026-11-06T11:00:00.001377+00:00", "finish": "2026-11-06T11:00:00.193377+00:00"},
       "domain": "automation",
       "item_id": "item_004",
       "trigger": "time"
@@ -70,7 +70,7 @@
       "run_id": "run_005",
       "state": "stopped",
       "script_execution": "finished",
-      "timestamp": {"start": "2026-11-06T11:00:00.001377+00:00", "finish": "2026-11-06T11:00:00.193+00:00"},
+      "timestamp": {"start": "2026-11-06T11:00:00.001377+00:00", "finish": "2026-11-06T11:00:00.193377+00:00"},
       "domain": "automation",
       "item_id": "item_004",
       "trigger": "time",
@@ -93,7 +93,7 @@
                 "last_changed": "2026-11-06T13:02:11.204311+00:00",
                 "last_reported": "2026-11-06T13:02:11.204311+00:00",
                 "last_updated": "2026-11-06T13:02:11.204311+00:00",
-                "context": {"id": "context_015", "parent_id": null, "user_id": null}
+                "context": {"id": "context_012", "parent_id": null, "user_id": null}
               },
               "trigger": {
                 "id": "0",
@@ -110,9 +110,9 @@
         "action/0": [
           {
             "path": "action/0",
-            "timestamp": "2026-11-06T11:00:00.002+00:00",
+            "timestamp": "2026-11-06T11:00:00.002377+00:00",
             "changed_variables": {
-              "context": {"id": "context_016", "parent_id": "context_015", "user_id": null}
+              "context": {"id": "context_011", "parent_id": null, "user_id": null}
             },
             "result": {"choice": "default"}
           }
@@ -120,42 +120,42 @@
         "action/0/choose/0": [
           {
             "path": "action/0/choose/0",
-            "timestamp": "2026-11-06T11:00:00.003+00:00",
+            "timestamp": "2026-11-06T11:00:00.003377+00:00",
             "result": {"result": false}
           }
         ],
         "action/0/choose/0/conditions/0": [
           {
             "path": "action/0/choose/0/conditions/0",
-            "timestamp": "2026-11-06T11:00:00.003+00:00",
+            "timestamp": "2026-11-06T11:00:00.003377+00:00",
             "result": {"result": false}
           }
         ],
         "action/0/choose/0/conditions/0/entity_id/0": [
           {
             "path": "action/0/choose/0/conditions/0/entity_id/0",
-            "timestamp": "2026-11-06T11:00:00.004+00:00",
+            "timestamp": "2026-11-06T11:00:00.004377+00:00",
             "result": {"result": false, "state": "off", "wanted_state": "on"}
           }
         ],
         "action/0/choose/1": [
           {
             "path": "action/0/choose/1",
-            "timestamp": "2026-11-06T11:00:00.005+00:00",
+            "timestamp": "2026-11-06T11:00:00.005377+00:00",
             "result": {"result": false}
           }
         ],
         "action/0/choose/1/conditions/0": [
           {
             "path": "action/0/choose/1/conditions/0",
-            "timestamp": "2026-11-06T11:00:00.005+00:00",
+            "timestamp": "2026-11-06T11:00:00.005377+00:00",
             "result": {"result": false, "weekday": "fri"}
           }
         ],
         "action/0/default/0": [
           {
             "path": "action/0/default/0",
-            "timestamp": "2026-11-06T11:00:00.007+00:00",
+            "timestamp": "2026-11-06T11:00:00.007377+00:00",
             "result": {
               "params": {
                 "domain": "climate",
@@ -221,7 +221,7 @@
         "mode": "queued"
       },
       "blueprint_inputs": null,
-      "context": {"id": "context_014", "parent_id": null, "user_id": null}
+      "context": {"id": "context_011", "parent_id": null, "user_id": null}
     }
   }
 }

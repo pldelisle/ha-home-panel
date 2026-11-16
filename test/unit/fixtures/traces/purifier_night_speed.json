@@ -1,6 +1,6 @@
 {
   "recordedAt": "2026-11-07T18:49:00.000Z",
-  "source": "made up in the reply shape of home-assistant 2026.11.0 (no recording yet)",
+  "source": "home-assistant 2026.11.0 (made up in its reply shape, not recorded)",
   "automation": "automation.purifier_night_speed",
   "config": {
     "id": "item_006",
@@ -26,7 +26,7 @@
       "run_id": "run_007",
       "state": "stopped",
       "script_execution": "error",
-      "timestamp": {"start": "2026-11-07T03:00:00.000962+00:00", "finish": "2026-11-07T03:00:00.057+00:00"},
+      "timestamp": {"start": "2026-11-07T03:00:00.000962+00:00", "finish": "2026-11-07T03:00:00.057962+00:00"},
       "domain": "automation",
       "item_id": "item_006",
       "trigger": "time",
@@ -39,7 +39,7 @@
       "run_id": "run_007",
       "state": "stopped",
       "script_execution": "error",
-      "timestamp": {"start": "2026-11-07T03:00:00.000962+00:00", "finish": "2026-11-07T03:00:00.057+00:00"},
+      "timestamp": {"start": "2026-11-07T03:00:00.000962+00:00", "finish": "2026-11-07T03:00:00.057962+00:00"},
       "domain": "automation",
       "item_id": "item_006",
       "trigger": "time",
@@ -63,7 +63,7 @@
                 "last_changed": "2026-11-06T13:02:11.204311+00:00",
                 "last_reported": "2026-11-06T13:02:11.204311+00:00",
                 "last_updated": "2026-11-06T13:02:11.204311+00:00",
-                "context": {"id": "context_023", "parent_id": null, "user_id": null}
+                "context": {"id": "context_018", "parent_id": null, "user_id": null}
               },
               "trigger": {
                 "id": "0",
@@ -80,9 +80,9 @@
         "action/0": [
           {
             "path": "action/0",
-            "timestamp": "2026-11-07T03:00:00.003+00:00",
+            "timestamp": "2026-11-07T03:00:00.003962+00:00",
             "changed_variables": {
-              "context": {"id": "context_024", "parent_id": "context_023", "user_id": null}
+              "context": {"id": "context_017", "parent_id": null, "user_id": null}
             },
             "error": "Entity fan.office_purifier is unavailable",
             "result": {
@@ -118,7 +118,7 @@
         "mode": "single"
       },
       "blueprint_inputs": null,
-      "context": {"id": "context_022", "parent_id": null, "user_id": null}
+      "context": {"id": "context_017", "parent_id": null, "user_id": null}
     }
   }
 }

@@ -186,14 +186,14 @@ function collectIds(value, found, under = null) {
 }
 
 /** `value` with every id of a `TRACE_ID_KINDS` key (and every `id` the tables know) swapped for its fake. */
-function renumber(value, fakes, under = null) {
-  if (Array.isArray(value)) return value.map(v => renumber(v, fakes, under));
+function renumber(value, fakes) {
+  if (Array.isArray(value)) return value.map(v => renumber(v, fakes));
   if (value === null || typeof value !== 'object') return value;
   const swap = v => (typeof v === 'string' && fakes.has(v) ? fakes.get(v) : v);
   return Object.fromEntries(
     Object.entries(value).map(([k, v]) => [
       fakes.get(k) ?? k,
-      k === 'id' || k in TRACE_ID_KINDS ? (Array.isArray(v) ? v.map(swap) : swap(v)) : renumber(v, fakes, k),
+      k === 'id' || k in TRACE_ID_KINDS ? (Array.isArray(v) ? v.map(swap) : swap(v)) : renumber(v, fakes),
     ]),
   );
 }

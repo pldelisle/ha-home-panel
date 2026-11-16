@@ -1,6 +1,6 @@
 {
   "recordedAt": "2026-11-07T18:49:00.000Z",
-  "source": "made up in the reply shape of home-assistant 2026.11.0 (no recording yet)",
+  "source": "home-assistant 2026.11.0 (made up in its reply shape, not recorded)",
   "automation": "automation.heating_evening",
   "config": {
     "id": "item_002",
@@ -67,7 +67,7 @@
                 "last_changed": "2026-11-06T13:02:11.204311+00:00",
                 "last_reported": "2026-11-06T13:02:11.204311+00:00",
                 "last_updated": "2026-11-06T13:02:11.204311+00:00",
-                "context": {"id": "context_006", "parent_id": null, "user_id": null}
+                "context": {"id": "context_004", "parent_id": null, "user_id": null}
               },
               "trigger": {
                 "id": "0",
@@ -84,23 +84,23 @@
         "condition/0": [
           {
             "path": "condition/0",
-            "timestamp": "2026-11-05T23:00:00.003+00:00",
+            "timestamp": "2026-11-05T23:00:00.003904+00:00",
             "result": {"result": true}
           }
         ],
         "condition/0/entity_id/0": [
           {
             "path": "condition/0/entity_id/0",
-            "timestamp": "2026-11-05T23:00:00.004+00:00",
+            "timestamp": "2026-11-05T23:00:00.004904+00:00",
             "result": {"result": true, "state": "off", "wanted_state": "off"}
           }
         ],
         "action/0": [
           {
             "path": "action/0",
-            "timestamp": "2026-11-05T23:00:00.006+00:00",
+            "timestamp": "2026-11-05T23:00:00.006904+00:00",
             "changed_variables": {
-              "context": {"id": "context_007", "parent_id": "context_006", "user_id": null}
+              "context": {"id": "context_003", "parent_id": null, "user_id": null}
             },
             "result": {
               "params": {
@@ -131,7 +131,7 @@
         "mode": "single"
       },
       "blueprint_inputs": null,
-      "context": {"id": "context_004", "parent_id": null, "user_id": null}
+      "context": {"id": "context_003", "parent_id": null, "user_id": null}
     },
     "run_003": {
       "last_step": "condition/0",
@@ -161,7 +161,7 @@
                 "last_changed": "2026-11-06T13:02:11.204311+00:00",
                 "last_reported": "2026-11-06T13:02:11.204311+00:00",
                 "last_updated": "2026-11-06T13:02:11.204311+00:00",
-                "context": {"id": "context_008", "parent_id": null, "user_id": null}
+                "context": {"id": "context_006", "parent_id": null, "user_id": null}
               },
               "trigger": {
                 "id": "0",
@@ -178,14 +178,14 @@
         "condition/0": [
           {
             "path": "condition/0",
-            "timestamp": "2026-11-06T23:00:00.004+00:00",
+            "timestamp": "2026-11-06T23:00:00.004315+00:00",
             "result": {"result": false}
           }
         ],
         "condition/0/entity_id/0": [
           {
             "path": "condition/0/entity_id/0",
-            "timestamp": "2026-11-06T23:00:00.005+00:00",
+            "timestamp": "2026-11-06T23:00:00.005315+00:00",
             "result": {"result": false, "state": "on", "wanted_state": "off"}
           }
         ]
