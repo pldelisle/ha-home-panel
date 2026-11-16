@@ -3,7 +3,7 @@
 // and delegates the bars to bars-geometry.ts and the schedule's words to schedule.ts. Each rule is the legacy panel's own (`renderCarCard`, `carSheet`, `renderSessions`, `renderCarSheetLive`, `schedText`), which #251 to #253 delete.
 // The card (#251) and the detail's blocks (#252) will draw it; nothing calls it before them.
 // Must not: import the DOM, Lit or the shell, read the clock (the sessions' "today" is the history's), hold text the household reads (a catalog key says it), or build the controls' view (#253).
-import {capitalise, DASH, joined} from '../../core/figures.ts';
+import {capitalise, DASH, HOUR_MS, joined} from '../../core/figures.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
 import {fixedOr, noonOf, whole, type Formatters} from '../../core/i18n/format.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
@@ -195,8 +195,15 @@ export interface CarViewModel {
   error: string | null;
 }
 
-/** A tile; `value` is a figure, `word` says it is a word instead. */
-const tile = (label: string, value: string, unit = '', sub = '', word = false): CarTile => ({
+/** What a tile may add to its label and figure: the unit after the figure, the line under it, and whether the figure is a word. */
+interface TileExtras {
+  unit?: string;
+  sub?: string;
+  word?: boolean;
+}
+
+/** A tile; `value` is a figure, and `word` says it is a word instead. */
+const tile = (label: string, value: string, {unit = '', sub = '', word = false}: TileExtras = {}): CarTile => ({
   label,
   value,
   unit,
@@ -210,8 +217,8 @@ const present = (tiles: CarTile[]): CarTile[] => tiles.filter(({value}) => value
 /** A figure the sensor gave, as written: whole or with a decimal where it has one. */
 const reading = (fmt: Formatters, value: number | null): string => (value === null ? DASH : fmt.number(value));
 
-/** The sentence's own period ends it: "since 6 nov." is not followed by a second one (French writes the month short, with its point). */
-const oneStop = (text: string): string => text.replace(/\.\./g, '.');
+/** The period that ends the sentence "since {date}": none after a date that ends with one ("6 nov."; French writes the month short), so the sentence has one point and not two. */
+const stopAfter = (date: string): string => (date.endsWith('.') ? '' : '.');
 
 /** Where the car is: at home, away, or the zone the tracker names; nothing while the tracker reads nothing. */
 function whereOf(car: CarInputs, t: Translate): string {
@@ -262,9 +269,12 @@ function cardOf(car: CarInputs, charger: WallboxInputs, history: CarHistoryData 
     line: joined(rangeWords, lockWord(car.locked, t), stateWord(car, t)),
     soc: socBar(car, deps, false),
     tiles: [
-      tile(t('car.card.charger'), chargerWord(charger, t), '', t('car.card.wallbox'), true),
-      tile(t('car.card.lastCharge'), last ? fmt.fixed(last.kwh, 1) : DASH, UNIT.kwh, last ? fmt.date(last.start) : ''),
-      tile(t('car.odometer'), car.odometer === null ? DASH : fmt.integer(car.odometer), UNIT.km),
+      tile(t('car.card.charger'), chargerWord(charger, t), {sub: t('car.card.wallbox'), word: true}),
+      tile(t('car.card.lastCharge'), last ? fmt.fixed(last.kwh, 1) : DASH, {
+        unit: UNIT.kwh,
+        sub: last ? fmt.date(last.start) : '',
+      }),
+      tile(t('car.odometer'), car.odometer === null ? DASH : fmt.integer(car.odometer), {unit: UNIT.km}),
     ],
     daily: history ? dailyBars(history, deps) : null,
   };
@@ -317,38 +327,30 @@ function batteryOf(car: CarInputs, deps: CarModelDeps): BatteryBlock {
     range: car.range === null ? '' : t('car.range', {n: whole(fmt, car.range)}),
     soc: socBar(car, deps, true),
     tiles: present([
-      tile(
-        t('car.battery.fullRange'),
-        battery.fullRangeKm === null ? DASH : whole(fmt, battery.fullRangeKm),
-        UNIT.km,
-        t('car.battery.atFull'),
-      ),
-      tile(
-        t('car.battery.plug'),
-        t(plug),
-        '',
-        car.charging && car.chargingKw ? `${fmt.fixed(car.chargingKw, 1)} ${UNIT.kw}` : '',
-        true,
-      ),
-      tile(t('car.battery.acLimit'), reading(fmt, car.acLimit), UNIT.amps),
-      tile(
-        t('car.battery.cabin'),
-        fixedOr(fmt, car.cabin, 1),
-        UNIT.degrees,
-        car.outsideTemp === null ? '' : t('car.battery.outside', {n: fmt.fixed(car.outsideTemp, 1)}),
-      ),
+      tile(t('car.battery.fullRange'), battery.fullRangeKm === null ? DASH : whole(fmt, battery.fullRangeKm), {
+        unit: UNIT.km,
+        sub: t('car.battery.atFull'),
+      }),
+      tile(t('car.battery.plug'), t(plug), {
+        sub: car.charging && car.chargingKw ? `${fmt.fixed(car.chargingKw, 1)} ${UNIT.kw}` : '',
+        word: true,
+      }),
+      tile(t('car.battery.acLimit'), reading(fmt, car.acLimit), {unit: UNIT.amps}),
+      tile(t('car.battery.cabin'), fixedOr(fmt, car.cabin, 1), {
+        unit: UNIT.degrees,
+        sub: car.outsideTemp === null ? '' : t('car.battery.outside', {n: fmt.fixed(car.outsideTemp, 1)}),
+      }),
     ]),
   };
 }
 
-/** The tire's name and the pressure Ford reported, a tenth of a psi; Ford's word for it is shown as it gave it, lower case, unless it is the normal one. */
+/** The tire's name and the pressure Ford reported, a tenth of a psi; Ford's word for it is the catalog's where it knows it, and as Ford gave it, lower case, where it does not. */
 function tireOf(label: string, {psi, state}: CarInputs['tires']['frontLeft'], {t, fmt}: CarModelDeps): TireView {
-  const normal = state === 'NORMAL';
   return {
     label,
     psi: psi === null ? DASH : fmt.fixed(psi, 1),
     unit: UNIT.psi,
-    state: state === null ? null : {text: normal ? t('car.tire.normal') : state.toLowerCase(), ok: normal},
+    state: state === null ? null : {text: t('car.tire.state', {state: state.toLowerCase()}), ok: state === 'NORMAL'},
   };
 }
 
@@ -397,27 +399,18 @@ function statusOf(car: CarInputs, deps: CarModelDeps): StatusBlock {
     ],
     chips: chipsOf(car, deps),
     tiles: present([
-      tile(t('car.odometer'), car.odometer === null ? DASH : fmt.integer(car.odometer), UNIT.km),
-      tile(
-        t('car.status.battery12'),
-        reading(fmt, battery12.percent),
-        UNIT.percent,
-        battery12.volts ? `${fmt.fixed(battery12.volts, 1)} ${UNIT.volts}` : '',
-      ),
-      tile(
-        t('car.status.software'),
-        firmware?.version ?? DASH,
-        '',
-        updated === null ? '' : t('car.since', {date: fmt.date(updated)}),
-        true,
-      ),
-      tile(
-        t('car.status.autoUpdates'),
-        car.autoUpdates === null ? DASH : t(car.autoUpdates ? 'car.on' : 'car.off'),
-        '',
-        '',
-        true,
-      ),
+      tile(t('car.odometer'), car.odometer === null ? DASH : fmt.integer(car.odometer), {unit: UNIT.km}),
+      tile(t('car.status.battery12'), reading(fmt, battery12.percent), {
+        unit: UNIT.percent,
+        sub: battery12.volts ? `${fmt.fixed(battery12.volts, 1)} ${UNIT.volts}` : '',
+      }),
+      tile(t('car.status.software'), firmware?.version ?? DASH, {
+        sub: updated === null ? '' : t('car.since', {date: fmt.date(updated)}),
+        word: true,
+      }),
+      tile(t('car.status.autoUpdates'), car.autoUpdates === null ? DASH : t(car.autoUpdates ? 'car.on' : 'car.off'), {
+        word: true,
+      }),
     ]),
   };
 }
@@ -486,12 +479,18 @@ function lastOf(car: CarInputs, history: CarHistoryData | null, deps: CarModelDe
         plug.firstSoc !== null && plug.lastSoc !== null
           ? `${fmt.number(plug.firstSoc)}→${fmt.number(plug.lastSoc)}`
           : DASH,
-        UNIT.percent,
-        stoppedAtLimit ? t('car.last.stopped') : '',
+        {unit: UNIT.percent, sub: stoppedAtLimit ? t('car.last.stopped') : ''},
       ),
-      tile(t('car.last.rangeAdded'), plug.rangeAddedKm === null ? DASH : whole(fmt, plug.rangeAddedKm), UNIT.km),
-      tile(t('car.plug.pluggedIn'), plug.pluggedHours === null ? DASH : fmt.fixed(plug.pluggedHours, 1), UNIT.hours),
-      tile(t('car.delivered'), kwh === null ? DASH : fmt.fixed(kwh, 1), UNIT.kwh, t('car.last.perWallbox')),
+      tile(t('car.last.rangeAdded'), plug.rangeAddedKm === null ? DASH : whole(fmt, plug.rangeAddedKm), {
+        unit: UNIT.km,
+      }),
+      tile(t('car.plug.pluggedIn'), plug.pluggedHours === null ? DASH : fmt.fixed(plug.pluggedHours, 1), {
+        unit: UNIT.hours,
+      }),
+      tile(t('car.delivered'), kwh === null ? DASH : fmt.fixed(kwh, 1), {
+        unit: UNIT.kwh,
+        sub: t('car.last.perWallbox'),
+      }),
     ],
   };
 }
@@ -500,25 +499,58 @@ function lastOf(car: CarInputs, history: CarHistoryData | null, deps: CarModelDe
 const money = ({t, fmt}: CarModelDeps, amount: number, cents: boolean): string =>
   t('car.money', {amount: cents ? fmt.fixed(amount, 2) : fmt.integer(Math.round(amount))});
 
+/** The columns' titles of the sessions' table. */
+const sessionColumns = (t: Translate): SessionsBlock['columns'] => ({
+  date: t('car.sessions.date'),
+  time: t('car.sessions.time'),
+  length: t('car.sessions.length'),
+  energy: t('car.sessions.energy'),
+  peak: t('car.sessions.peak'),
+  cost: t('car.estCost'),
+});
+
+/** One row of the table: the session's figures as the columns write them, its energy bar scaled to the `widest` session's kWh, and its cost at `price` dollars a kWh. */
+function sessionRow(session: Session, widest: number, price: number, deps: CarModelDeps): SessionRow {
+  const {t, fmt} = deps;
+  return {
+    key: session.start,
+    date: capitalise(fmt.dateWeekday(session.start)),
+    times: t('car.sessions.times', {from: fmt.time(session.start), to: fmt.time(session.end)}),
+    length: `${whole(fmt, (session.end - session.start) / HOUR_MS)} ${UNIT.hours}`,
+    energy: `${fmt.fixed(session.kwh, 1)} ${UNIT.kwh}`,
+    barPx: Math.round((session.kwh / widest) * SESSION_BAR_PX) + SESSION_BAR_STUB_PX,
+    peak: `${fmt.fixed(session.peak, 1)} ${UNIT.kw}`,
+    cost: money(deps, session.kwh * price, true),
+  };
+}
+
+/** The four tiles over the table: how many sessions and since when, the kWh delivered, the average, and the estimated cost at `price` dollars a kWh (`cents` is it, written). */
+function sessionTiles(sessions: readonly Session[], price: number, cents: string, deps: CarModelDeps): CarTile[] {
+  const {t, fmt} = deps;
+  const total = sum(sessions.map(session => session.kwh));
+  const since = sessions.length ? t('car.since', {date: fmt.date(sessions[0].start)}) : '';
+  return [
+    tile(t('car.sessions.sessions'), fmt.integer(sessions.length), {sub: since}),
+    tile(t('car.delivered'), fmt.integer(total), {unit: UNIT.kwh}),
+    tile(t('car.sessions.average'), sessions.length ? fmt.fixed(total / sessions.length, 1) : DASH, {
+      unit: UNIT.kwh,
+      sub: t('car.sessions.perSession'),
+    }),
+    tile(t('car.estCost'), money(deps, total * price, false), {sub: t('car.sessions.rate', {cents})}),
+  ];
+}
+
 function sessionsOf(
   sessions: readonly Session[] | undefined,
   charger: WallboxInputs,
   deps: CarModelDeps,
 ): SessionsBlock {
   const {t, fmt, allSessions} = deps;
-  const columns = {
-    date: t('car.sessions.date'),
-    time: t('car.sessions.time'),
-    length: t('car.sessions.length'),
-    energy: t('car.sessions.energy'),
-    peak: t('car.sessions.peak'),
-    cost: t('car.estCost'),
-  };
+  const columns = sessionColumns(t);
   const title = t('car.sessions.title');
   if (!sessions) return {title, summary: '', tiles: [], months: [], columns, rows: [], toggle: null};
   const price = charger.price ?? DEFAULT_PRICE;
   const cents = fmt.fixed(price * 100, 0);
-  const total = sum(sessions.map(session => session.kwh));
   const since = sessions.length ? fmt.date(sessions[0].start) : '';
   const newest = sessions.slice().reverse();
   const widest = Math.max(1, ...sessions.map(session => session.kwh));
@@ -526,36 +558,12 @@ function sessionsOf(
   return {
     title,
     summary: sessions.length
-      ? oneStop(t('car.sessions.summary', {n: sessions.length, date: since, cents}))
+      ? t('car.sessions.summary', {n: sessions.length, date: since, stop: stopAfter(since), cents})
       : t('car.sessions.none'),
-    tiles: [
-      tile(
-        t('car.sessions.sessions'),
-        fmt.integer(sessions.length),
-        '',
-        sessions.length ? t('car.since', {date: since}) : '',
-      ),
-      tile(t('car.delivered'), fmt.integer(total), UNIT.kwh),
-      tile(
-        t('car.sessions.average'),
-        sessions.length ? fmt.fixed(total / sessions.length, 1) : DASH,
-        UNIT.kwh,
-        t('car.sessions.perSession'),
-      ),
-      tile(t('car.estCost'), money(deps, total * price, false), '', t('car.sessions.rate', {cents})),
-    ],
+    tiles: sessionTiles(sessions, price, cents, deps),
     months: monthlySessions(sessions, fmt),
     columns,
-    rows: shown.map(session => ({
-      key: session.start,
-      date: capitalise(fmt.dateWeekday(session.start)),
-      times: t('car.sessions.times', {from: fmt.time(session.start), to: fmt.time(session.end)}),
-      length: `${whole(fmt, (session.end - session.start) / 36e5)} ${UNIT.hours}`,
-      energy: `${fmt.fixed(session.kwh, 1)} ${UNIT.kwh}`,
-      barPx: Math.round((session.kwh / widest) * SESSION_BAR_PX) + SESSION_BAR_STUB_PX,
-      peak: `${fmt.fixed(session.peak, 1)} ${UNIT.kw}`,
-      cost: money(deps, session.kwh * price, true),
-    })),
+    rows: shown.map(session => sessionRow(session, widest, price, deps)),
     toggle:
       newest.length <= LATEST_SESSIONS
         ? null

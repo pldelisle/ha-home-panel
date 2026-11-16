@@ -1,5 +1,6 @@
 // ClimateHistory: the controller that loads the Climate detail's history, one entry per range, through the panel's statistics cache when the detail is shown.
-// Pattern: lazy load (Fowler, PoEAA) as a Lit reactive controller, after Energy's `EnergyHistory`: nothing is asked while the pane is hidden (ADR 0028), an entry
+// Pattern: lazy load (Fowler, PoEAA) as a Lit reactive controller, after the kit's `WindowedHistory` (Energy's and the Car's): it is not one, because it keeps an entry and a failure per range, which that
+// controller's single `data` would need a flag for; nothing is asked while the pane is hidden (ADR 0028), an entry
 // younger than ten minutes is drawn from memory, and a reply for a range, a config or a visit that has gone since it was asked is dropped.
 // Must not: call the API client (only the cache), draw or word anything, retry a failure more than once a minute, or keep what it derived from past a change of config.
 import type {ReactiveController, ReactiveControllerHost} from 'lit';

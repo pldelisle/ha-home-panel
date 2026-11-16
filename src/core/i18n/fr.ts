@@ -839,7 +839,8 @@ export const fr: Record<MessageKey, string> = {
   'car.tire.frontRight': 'Avant droit',
   'car.tire.rearLeft': 'Arrière gauche',
   'car.tire.rearRight': 'Arrière droit',
-  'car.tire.normal': 'Normal',
+  'car.tire.state':
+    '{state, select, normal {Normal} low {Faible} high {Élevé} unknown {Inconnu} unavailable {Indisponible} other {{state}}}',
   'car.chip.doorsClosed': 'Portes fermées',
   'car.chip.doorOpen': 'Une porte est ouverte',
   'car.chip.windowsClosed': 'Fenêtres fermées',
@@ -871,7 +872,7 @@ export const fr: Record<MessageKey, string> = {
   'car.last.noneBody': "Ford n'a pas encore signalé de session de recharge.",
   'car.sessions.title': 'Historique de recharge',
   'car.sessions.summary':
-    "{n, plural, one {# session de recharge} other {# sessions de recharge}} sur la Wallbox depuis le {date}. Le coût est estimé au tarif de {cents} ¢/kWh réglé dans l'application Wallbox.",
+    "{n, plural, one {# session de recharge} other {# sessions de recharge}} sur la Wallbox depuis le {date}{stop} Le coût est estimé au tarif de {cents} ¢/kWh réglé dans l'application Wallbox.",
   'car.sessions.none': 'Aucune session de recharge dans la dernière année.',
   'car.sessions.sessions': 'Sessions',
   'car.sessions.average': 'Moyenne',

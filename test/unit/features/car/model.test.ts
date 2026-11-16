@@ -393,6 +393,35 @@ describe('a car with every sensor, in French', () => {
   const vm = modelOf(carHouse(), history(), {language: 'fr'});
   const detail = vm.detail!;
 
+  test('Ford’s tire words are French: "low" is Faible, as the layer’s state words said it for the lower-cased word and not its "min"', () => {
+    expect(detail.status.tires.map(({state}) => state)).toEqual([
+      {text: 'Normal', ok: true},
+      null,
+      null,
+      {text: 'Faible', ok: false},
+    ]);
+  });
+
+  test('every state Ford reports for a tire has its French, and one the catalog does not know is shown as Ford sent it', () => {
+    const house = (states: Record<string, string>) =>
+      carHouse({
+        'sensor.tirepressure': car(
+          'sensor',
+          'tirepressure',
+          'NORMAL_OPERATION',
+          Object.fromEntries(Object.entries(states).map(([tire, state]) => [`${tire}_state`, state])),
+        ),
+      });
+    const words = (language: Language, hass: FakeHass) =>
+      modelOf(hass, null, {language}).detail?.status.tires.map(tire => tire.state?.text);
+    const known = house({frontLeft: 'NORMAL', frontRight: 'LOW', rearLeft: 'HIGH', rearRight: 'UNKNOWN'});
+    expect(words('fr', known)).toEqual(['Normal', 'Faible', 'Élevé', 'Inconnu']);
+    expect(words('en', known)).toEqual(['Normal', 'low', 'high', 'unknown']);
+    const odd = house({frontLeft: 'UNAVAILABLE', frontRight: 'UNDER_INFLATED'});
+    expect(words('fr', odd)?.slice(0, 2)).toEqual(['Indisponible', 'under_inflated']);
+    expect(words('en', odd)?.slice(0, 2)).toEqual(['unavailable', 'under_inflated']);
+  });
+
   test('the sentences, the tiles and the chips are the rewrite layer’s French', () => {
     expect(vm.card?.daily?.line).toBe('Énergie VÉ quotidienne, 30 derniers jours : 1 jour de recharge, 17 kWh.');
     expect(detail.sub).toBe('Stationnée à la maison · verrouillée · dernier contact de la voiture à 16 h 05');
@@ -440,6 +469,17 @@ describe('a car with every sensor, in French', () => {
     );
     expect(sessions.tiles[3]).toMatchObject({label: 'Coût estimé', value: '3 $', sub: 'à 7 ¢/kWh'});
     expect(sessions.rows[0]).toMatchObject({date: 'Dim. 8 nov.', times: 'De 9 h à 10 h', cost: '0,42 $'});
+  });
+
+  test('a month that French writes with a point ends the sentence with it: "depuis le 6 nov." once, and "depuis le 6 août." where there is none', () => {
+    const since = (iso: string) =>
+      modelOf(carHouse(), history({sessions: [session(iso, 2, 14.46)]}), {language: 'fr'}).detail?.sessions.summary;
+    expect(since('2026-11-06T17:00:00-05:00')).toBe(
+      "1 session de recharge sur la Wallbox depuis le 6 nov. Le coût est estimé au tarif de 7 ¢/kWh réglé dans l'application Wallbox.",
+    );
+    expect(since('2026-08-06T17:00:00-04:00')).toBe(
+      "1 session de recharge sur la Wallbox depuis le 6 août. Le coût est estimé au tarif de 7 ¢/kWh réglé dans l'application Wallbox.",
+    );
   });
 });
 

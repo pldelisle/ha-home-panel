@@ -17,7 +17,7 @@ src/features/car/
   schedule.ts              ScheduleDraft, draftFromSchedule, toggleDay, roundToFive, validate, scheduleWords, describe
   bars-geometry.ts         barsGeometry(values, labels): the 30-day bars as numbers
   history.ts               carWindows(now, config), dailyEv, deriveCarHistory, monthlySessions, sessionsChartOptions
-  loader.ts                CarHistory: the two windows through the statistics cache, kept fifteen minutes
+  loader.ts                CarHistory: the two windows through the statistics cache, kept fifteen minutes (a WindowedHistory of the kit)
   model.ts                 carModel(inputs, history, deps): the summary, the card and the detail's read-only blocks
 ```
 
@@ -43,7 +43,7 @@ The car is `sensor.fordpass_<name>_soc`, the first one found, and every other en
 
 ## The history
 
-The Car asks two windows through the panel's cache (ADR 0028): the Wallbox's hourly `mean` and `max` for 366 days, which `chargingSessions` turns into the sessions, and the grid's and the charger's daily mean for 30 days, which `dailyEv` turns into the card's bars (the charger's mean kW times 24 hours, or the hours so far for today, on the days the grid has a mean for). `deriveCarHistory` makes both from the replies; `monthlySessions` groups the sessions by the month they began in, and `sessionsChartOptions` is the monthly bar chart as data, its colour handed in by the element (#252). `CarHistory` is the controller: it loads both windows together when its host is shown, not again for fifteen minutes, nothing while the host is hidden, drops a reply that is late (the host left, or the config changed) and says why a load failed at most once a minute, as `EnergyHistory` does.
+The Car asks two windows through the panel's cache (ADR 0028): the Wallbox's hourly `mean` and `max` for 366 days, which `chargingSessions` turns into the sessions, and the grid's and the charger's daily mean for 30 days, which `dailyEv` turns into the card's bars (the charger's mean kW times 24 hours, or the hours so far for today, on the days the grid has a mean for). `deriveCarHistory` makes both from the replies; `monthlySessions` groups the sessions by the month they began in, and `sessionsChartOptions` is the monthly bar chart as data, its colour handed in by the element (#252). `CarHistory` is the controller: it loads both windows together when its host is shown, not again for fifteen minutes, nothing while the host is hidden, drops a reply that is late (the host left, or the config changed) and says why a load failed at most once a minute. It is the kit's `WindowedHistory` given the Car's windows and what derives them, as `EnergyHistory` is given Energy's.
 
 ## The model
 

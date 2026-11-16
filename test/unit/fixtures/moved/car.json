@@ -1,5 +1,5 @@
 {
-  "about": "The English messages the Car's moves introduced (src/core/i18n/en.ts, car.*), each with sample values: the pure half's (#249) and the model's (#250). test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer makes of the English, or what is `written` where the layer never produced French or produced something else (the sentence the layer read as a whole, a count of one, a day's abbreviation that is `Lun.` alone and `lun.` in a list: the catalog says the list's); a `frame` is the sentence around a piece the layer only knows whole. The legacy panel still draws the controls' words until #253 and all of these until #252, so no entry of the rewrite layer is deleted yet. Deleted with the layer in phase 4.",
+  "about": "The English messages the Car's moves introduced (src/core/i18n/en.ts, car.*), each with sample values: the pure half's (#249) and the model's (#250). test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer makes of the English, or what is `written` where the layer is no oracle (a day's abbreviation is `Lun.` alone and `lun.` in a list: the catalog says the list's), or what is `translated` where the layer leaves the English as it stood or gets it wrong: the sentences it read as a whole (the bars' label, a count of one, the tooltip, the failed history), the words it has no entry for (an alarm or a gear state, the saved schedule, a dated message, the two dashes of a plug-in, the \"Last plug-in\" block with no plug-in yet) and a tire's `low`, which it made `min` and the catalog says `Faible`. A `translated` row is a visible change that #251 and #252 record in their baselines. A `frame` is the sentence around a piece the layer only knows whole. The legacy panel still draws the controls' words until #253 and all of these until #252, so no entry of the rewrite layer is deleted yet. Deleted with the layer in phase 4.",
   "messages": [
     {
       "key": "car.chargingOn"
@@ -262,7 +262,7 @@
       "values": {
         "n": "3.2"
       },
-      "written": "Barres quotidiennes en kWh, maximum 3,2 kWh"
+      "translated": "Barres quotidiennes en kWh, maximum 3,2 kWh"
     },
     {
       "key": "car.card.barTitle",
@@ -358,7 +358,41 @@
       "key": "car.tire.rearRight"
     },
     {
-      "key": "car.tire.normal"
+      "key": "car.tire.state",
+      "values": {
+        "state": "normal"
+      }
+    },
+    {
+      "key": "car.tire.state",
+      "values": {
+        "state": "low"
+      },
+      "translated": "Faible"
+    },
+    {
+      "key": "car.tire.state",
+      "values": {
+        "state": "high"
+      }
+    },
+    {
+      "key": "car.tire.state",
+      "values": {
+        "state": "unknown"
+      }
+    },
+    {
+      "key": "car.tire.state",
+      "values": {
+        "state": "unavailable"
+      }
+    },
+    {
+      "key": "car.tire.state",
+      "values": {
+        "state": "under_inflated"
+      }
     },
     {
       "key": "car.chip.doorsClosed"
@@ -404,7 +438,7 @@
       "values": {
         "state": "arming"
       },
-      "written": "Alarme arming"
+      "translated": "Alarme arming"
     },
     {
       "key": "car.chip.park"
@@ -414,7 +448,7 @@
       "values": {
         "gear": "drive"
       },
-      "written": "Rapport drive"
+      "translated": "Rapport drive"
     },
     {
       "key": "car.ford.title"
@@ -431,7 +465,7 @@
       "fr": {
         "date": "6 nov."
       },
-      "written": "Service due, 6 nov."
+      "translated": "Service due, 6 nov."
     },
     {
       "key": "car.ford.tpmsSubject",
@@ -471,7 +505,7 @@
       "fr": {
         "when": "Tous les jours à 8 h 30"
       },
-      "written": "Tous les jours à 8 h 30, enregistré."
+      "translated": "Tous les jours à 8 h 30, enregistré."
     },
     {
       "key": "car.ford.saved",
@@ -481,7 +515,7 @@
       "fr": {
         "when": "Lun., mar. à 8 h 30"
       },
-      "written": "Lun., mar. à 8 h 30, enregistré."
+      "translated": "Lun., mar. à 8 h 30, enregistré."
     },
     {
       "key": "car.last.title"
@@ -503,7 +537,7 @@
         "from": "–",
         "to": "–"
       },
-      "written": "– au –"
+      "translated": "– au –"
     },
     {
       "key": "car.last.rangeAdded"
@@ -516,11 +550,11 @@
     },
     {
       "key": "car.last.noneTitle",
-      "written": "Dernier branchement"
+      "translated": "Dernier branchement"
     },
     {
       "key": "car.last.noneBody",
-      "written": "Ford n'a pas encore signalé de session de recharge."
+      "translated": "Ford n'a pas encore signalé de session de recharge."
     },
     {
       "key": "car.sessions.title"
@@ -530,10 +564,12 @@
       "values": {
         "n": 12,
         "date": "Aug 6",
-        "cents": 7
+        "cents": 7,
+        "stop": "."
       },
       "fr": {
-        "date": "6 août"
+        "date": "6 août",
+        "stop": "."
       }
     },
     {
@@ -541,12 +577,28 @@
       "values": {
         "n": 1,
         "date": "Aug 6",
+        "cents": 7,
+        "stop": "."
+      },
+      "fr": {
+        "date": "6 août",
+        "stop": "."
+      },
+      "translated": "1 session de recharge sur la Wallbox depuis le 6 août. Le coût est estimé au tarif de 7 ¢/kWh réglé dans l'application Wallbox."
+    },
+    {
+      "key": "car.sessions.summary",
+      "values": {
+        "n": 1,
+        "date": "Nov 6",
+        "stop": ".",
         "cents": 7
       },
       "fr": {
-        "date": "6 août"
+        "date": "6 nov.",
+        "stop": ""
       },
-      "written": "1 session de recharge sur la Wallbox depuis le 6 août. Le coût est estimé au tarif de 7 ¢/kWh réglé dans l'application Wallbox."
+      "translated": "1 session de recharge sur la Wallbox depuis le 6 nov. Le coût est estimé au tarif de 7 ¢/kWh réglé dans l'application Wallbox."
     },
     {
       "key": "car.sessions.none"
@@ -613,7 +665,7 @@
         "kwh": 12,
         "n": 3
       },
-      "written": "12 kWh en 3 sessions"
+      "translated": "12 kWh en 3 sessions"
     },
     {
       "key": "car.sessions.tooltip",
@@ -621,14 +673,14 @@
         "kwh": 12,
         "n": 1
       },
-      "written": "12 kWh en 1 session"
+      "translated": "12 kWh en 1 session"
     },
     {
       "key": "car.historyFailed",
       "values": {
         "reason": "timeout"
       },
-      "written": "L'historique n'a pas pu être chargé : timeout. Les valeurs en direct continuent de se mettre à jour."
+      "translated": "L'historique n'a pas pu être chargé : timeout. Les valeurs en direct continuent de se mettre à jour."
     }
   ]
 }

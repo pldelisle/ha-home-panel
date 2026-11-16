@@ -850,7 +850,9 @@ export const en = {
   'car.tire.frontRight': 'Front right',
   'car.tire.rearLeft': 'Rear left',
   'car.tire.rearRight': 'Rear right',
-  'car.tire.normal': 'Normal',
+  // Ford's word for a tire, lower-cased: English shows it as the legacy panel did, and a word the catalog does not know is shown as Ford sent it
+  'car.tire.state':
+    '{state, select, normal {Normal} low {low} high {high} unknown {unknown} unavailable {unavailable} other {{state}}}',
   'car.chip.doorsClosed': 'Doors closed',
   'car.chip.doorOpen': 'A door is open',
   'car.chip.windowsClosed': 'Windows closed',
@@ -881,8 +883,9 @@ export const en = {
   'car.last.noneTitle': 'Last plug-in',
   'car.last.noneBody': "Ford hasn't reported a charging session yet.",
   'car.sessions.title': 'Charging history',
+  // `stop` is the sentence's period, empty after a date that ends with one (French writes the month short: "6 nov.")
   'car.sessions.summary':
-    '{n, plural, one {# charging session} other {# charging sessions}} on the Wallbox since {date}. Cost is estimated at the {cents}¢/kWh set in the Wallbox app.',
+    '{n, plural, one {# charging session} other {# charging sessions}} on the Wallbox since {date}{stop} Cost is estimated at the {cents}¢/kWh set in the Wallbox app.',
   'car.sessions.none': 'No charging sessions in the last year.',
   'car.sessions.sessions': 'Sessions',
   'car.sessions.average': 'Average',
