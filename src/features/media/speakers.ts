@@ -3,6 +3,7 @@
 // provider: the two platforms it leaves out have their own controls (a camera's speaker, the television).
 // `NOT_SPEAKERS` and the name rule copy the legacy `speakers()`, which #266 deletes with the legacy stack, its last reader.
 // Must not: read the DOM, the clock or `hass` itself, reorder the players (the baselines depend on the house's order) or hold text for the household.
+import {fold} from '../../core/fold.ts';
 import type {HassEntities, Registries} from '../../core/hass.ts';
 import type {Names} from '../../core/i18n/names.ts';
 import {areaOf, isHidden} from '../../core/registry.ts';
@@ -19,9 +20,6 @@ export interface Speaker {
 
 /** Platforms whose players are not speakers for this list: a camera's speaker and a television have controls of their own. */
 const NOT_SPEAKERS = ['unifiprotect', 'samsungtv'];
-
-/** Case and accents do not matter to a match. */
-const fold = (text: string): string => text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
 
 /** The words of a name, folded; a possessive's `'s` is not part of a word (`Mom's` is `Mom`). */
 const words = (text: string): string[] =>
