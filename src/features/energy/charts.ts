@@ -2,8 +2,7 @@
 // Pattern: functional core (Bernhardt, Boundaries) behind <hp-chart> (ADR 0027): options are data, never ApexCharts instances, every number is written
 // by `fmt`, and the colours are the tokens the element resolved. The options are those of the legacy `energyMain` and `energySheet` (deleted in #240), field for field.
 // Must not: import Lit, the DOM or the library, read the clock or a token itself (the element hands them in), or write a word a person reads outside `t`.
-import {DAY_MS} from '../../core/figures.ts';
-import {whole, type Formatters} from '../../core/i18n/format.ts';
+import {noonOf, whole, type Formatters} from '../../core/i18n/format.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
 import type {FlowRow} from '../../providers/power-history.ts';
 import {sum} from '../../providers/power-history.ts';
@@ -84,12 +83,6 @@ export function mainRows(
   if (range === 'week') return {range, rows: history.flow};
   if (range === 'month') return {range, rows: history.daily.slice(-30)};
   return {range, rows: history.monthly};
-}
-
-/** A day key's noon as an instant that reads as that day in the formatters' zone: UTC noon, or its neighbour in a zone far east or west. */
-export function noonOf(day: string, fmt: Pick<Formatters, 'isoDay'>): number {
-  const utc = Date.parse(`${day}T12:00:00Z`);
-  return [utc, utc - DAY_MS, utc + DAY_MS].find(at => fmt.isoDay(at) === day) ?? utc;
 }
 
 /** A month key's middle, which no zone moves to another month. */
