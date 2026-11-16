@@ -60,8 +60,19 @@ module.exports = {
       severity: 'error',
       comment:
         'Legacy code is being strangled: it may use the new core and the providers (ADR 0025: a reading two features need lives in a provider, so a shared read never has two implementations), but it must not grow dependencies on the new features, UI kit or shell. The one exception is the legacy sheet, below.',
-      from: {path: LEGACY, pathNot: '^src/styles\\.js$'},
+      from: {path: LEGACY, pathNot: ['^src/styles\\.js$', '^src/auto\\.js$']},
       to: {path: '^src/', pathNot: [LEGACY, CORE, PROVIDERS]},
+    },
+    {
+      name: 'auto-reads-its-feature',
+      severity: 'error',
+      comment:
+        "A second temporary allowance (spec 25): src/auto.js draws from the Automations feature's pure files until #273 deletes it, so a rule is never kept twice. It names the files one by one; #273 removes this rule with the file.",
+      from: {path: '^src/auto\\.js$'},
+      to: {
+        path: '^src/',
+        pathNot: [LEGACY, CORE, PROVIDERS, '^src/features/automations/(traces|sentences|timeline-layout)\\.ts$'],
+      },
     },
     {
       name: 'legacy-sheet-joins-kit-styles',

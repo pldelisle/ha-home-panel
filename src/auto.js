@@ -3,8 +3,31 @@
 // (trace/list, trace/get), which record which trigger fired, each condition's result and each step's time.
 // The graph is laid out by Mermaid (from npm, in lazy chunks imported only when the tab opens);
 // the path a run took is lit green, the step it is waiting on amber, a failed check red, the rest dashed grey.
-import {ok, esc, cap, plural, tile} from './legacy/globals.js';
+import {esc, cap, plural, tile} from './legacy/globals.js';
 import {StaleReply} from './core/api.ts';
+import {createMessages} from './core/i18n/messages.ts';
+import {
+  asList as auArr,
+  automationsOf,
+  minutesOfDay as auMins,
+  sunNext,
+  upcomingRuns,
+} from './providers/automations.ts';
+// the feature's pure files, which this file draws from until #273 deletes it (the second temporary allowance of
+// .dependency-cruiser.cjs, `auto-reads-its-feature`)
+import {
+  actionText,
+  conditionText,
+  cut as auCut,
+  durationText,
+  shortAlias as auShortAlias,
+  triggerText,
+} from './features/automations/sentences.ts';
+import {elapsedText, fingerprint, noiseOf, picks} from './features/automations/traces.ts';
+import {isUp, timelineLayout} from './features/automations/timeline-layout.ts';
+
+// English, as `fmtEn` is: the rewrite layer translates what this file draws (#273 draws in the panel's language)
+const tEn = createMessages({language: 'en', tag: 'en'}).t;
 
 // Mermaid is imported the first time a flow is drawn, so the bundle the other tabs load does not carry it; Vite emits
 // it as chunks under chunks/, beside home-panel.js.
@@ -12,42 +35,6 @@ import {StaleReply} from './core/api.ts';
 let mermaidP;
 const loadMermaid = () => (mermaidP ??= import('mermaid').then(m => m.default));
 
-const AU_DOMAIN = {
-  climate: 'Climate',
-  light: 'Light',
-  switch: 'Switch',
-  scene: 'Scene',
-  script: 'Script',
-  input_boolean: 'Helper',
-  notify: 'Notify',
-  media_player: 'Media',
-  fan: 'Fan',
-  adaptive_lighting: 'Adaptive Lighting',
-  homeassistant: 'Home Assistant',
-  persistent_notification: 'Notification',
-  shell_command: 'Command',
-  wake_on_lan: 'Wake-on-LAN',
-  icloud: 'iCloud',
-  lock: 'Lock',
-  cover: 'Cover',
-  number: 'Number',
-};
-const AU_VERB = {
-  turn_on: 'Turn on',
-  turn_off: 'Turn off',
-  toggle: 'Toggle',
-  media_stop: 'Stop',
-  media_pause: 'Pause',
-  media_play: 'Play',
-  send_magic_packet: 'Send magic packet',
-  reload_config_entry: 'Reload the integration',
-  restart: 'Restart Home Assistant',
-  update: 'Refresh locations',
-  apply: 'Apply for the time of day',
-  create: 'Notification',
-  lock: 'Lock',
-  unlock: 'Unlock',
-};
 // hex colour mix, for the node fills (Mermaid's classDef can't take color-mix: commas separate its properties)
 const auMix = (a, b, t) => {
   const p = h => {
@@ -76,303 +63,11 @@ const auMix = (a, b, t) => {
       .join('')
   );
 };
-const auArr = v => (v == null ? [] : Array.isArray(v) ? v : [v]);
-const auTxt = s =>
-  String(s ?? '')
-    .replace(/\s+/g, ' ')
-    .trim();
-const auCut = (s, n = 64) => ((s = auTxt(s)).length > n ? s.slice(0, n - 1) + '…' : s);
-// "00:15:00", {minutes: 5}, 30 → "15 min", "5 min", "30 s"
-const auDur = d => {
-  if (d == null || d === '') return '';
-  let s = 0;
-  if (typeof d === 'number') s = d;
-  else if (typeof d === 'string') {
-    if (/\{\{/.test(d)) return 'a while';
-    const p = d.split(':').map(Number);
-    s = p.length === 3 ? p[0] * 3600 + p[1] * 60 + p[2] : p.length === 2 ? p[0] * 60 + p[1] : +d;
-  } else s = (d.days || 0) * 86400 + (d.hours || 0) * 3600 + (d.minutes || 0) * 60 + (d.seconds || 0);
-  if (!Number.isFinite(s)) return '';
-  return s >= 3600
-    ? `${+(s / 3600).toFixed(1).replace(/\.0$/, '')} h`
-    : s >= 60
-      ? `${Math.round(s / 60)} min`
-      : `${s} s`;
-};
-const auMins = (t, fmt) => {
-  const [h, m] = fmt.time24(new Date(t)).split(':').map(Number);
-  return h * 60 + m;
-};
-const auShortAlias = a => {
-  a = String(a || '');
-  const i = a.indexOf(' - ');
-  return i > 0 && i < 24 ? a.slice(i + 3) : a;
-};
-
 export const autoMethods = {
-  // ---------- names in plain words ----------
-  auName(id) {
-    if (!id) return '';
-    if (/\{\{|\{%/.test(id)) {
-      const v = /^\{\{\s*(\w+)\s*\}\}$/.exec(String(id).trim());
-      return v ? 'the ' + v[1] : 'the chosen one';
-    }
-    if (id === 'all') return 'every light';
-    if (id === 'zone.home') return 'Home zone';
-    const s = this.st(id);
-    if (s && s.attributes.friendly_name) return this.name(id).replace(/\s+(Door|Occupancy|Motion)$/i, '');
-    return cap(String(id).split('.').pop());
+  // the words of a flow, in English (see tEn)
+  auDeps() {
+    return {t: tEn, fmt: this.fmtEn, states: this.hass.states, names: this.store.names};
   },
-  auNames(ids) {
-    const a = auArr(ids).map(i => this.auName(i));
-    return a.length > 2 ? `${a.slice(0, 2).join(', ')} +${a.length - 2}` : a.join(' or ');
-  },
-  auKind(id) {
-    const s = this.st(id),
-      dc = s && s.attributes.device_class;
-    const d = String(id || '').split('.')[0];
-    if (/door|window|opening|garage_door/.test(dc || '') || /_door$/.test(id)) return 'door';
-    if (/motion|occupancy|presence/.test(dc || '') || /_(motion|occupancy)(_\d+)?$/.test(id)) return 'motion';
-    return d;
-  },
-  auState(id, v, verb) {
-    const k = this.auKind(auArr(id)[0]),
-      vs = auArr(v);
-    const one = x => {
-      x = String(x);
-      if (k === 'door') return x === 'on' ? (verb ? 'opened' : 'open') : x === 'off' ? (verb ? 'closed' : 'closed') : x;
-      if (k === 'motion')
-        return x === 'on' ? (verb ? 'detects motion' : 'motion') : x === 'off' ? (verb ? 'clear' : 'clear') : x;
-      if (k === 'climate' && x === 'fan_only') return 'fan only';
-      return x.replace(/_/g, ' ');
-    };
-    return vs.map(one).join(' or ');
-  },
-  auTemplate(t) {
-    let s = String(t ?? '');
-    if (/next_rising.*next_midnight|next_midnight.*next_rising/s.test(s)) return 'Between solar midnight and sunrise';
-    s = s
-      .replace(/\{%.*?%\}/gs, ' ')
-      .replace(/\{\{|\}\}/g, '')
-      .replace(
-        /not is_state\(\s*'([^']+)'\s*,\s*'([^']+)'\s*\)/g,
-        (m, id, v) => `${this.auName(id)} not ${this.auState(id, v)}`,
-      )
-      .replace(
-        /is_state\(\s*'([^']+)'\s*,\s*'([^']+)'\s*\)/g,
-        (m, id, v) => `${this.auName(id)} ${this.auState(id, v)}`,
-      )
-      .replace(/not is_state\(\s*trigger\.entity_id\s*,\s*'on'\s*\)/g, 'the door closes')
-      .replace(/is_state\(\s*trigger\.entity_id\s*,\s*'on'\s*\)/g, 'the door is open')
-      .replace(
-        /state_attr\(\s*'([^']+)'\s*,\s*'([^']+)'\s*\)/g,
-        (m, id, a) => `${this.auName(id)} ${a.replace(/_/g, ' ')}`,
-      )
-      .replace(/state_attr\(\s*(\w+)\s*,\s*'([^']+)'\s*\)/g, (m, v, a) => `${v} ${a.replace(/_/g, ' ')}`)
-      .replace(/states\(\s*'([^']+)'\s*\)/g, (m, id) => this.auName(id))
-      .replace(/\|\s*(float|int|default|round|lower|string)(\([^)]*\))?/g, '')
-      .replace(/>=/g, '≥')
-      .replace(/<=/g, '≤')
-      .replace(/==/g, '=')
-      .replace(/!=/g, '≠')
-      .replace(/not wait\.completed\b/g, 'the wait timed out')
-      .replace(/\bwait\.completed\b/g, 'the wait finished')
-      .replace(/\brepeat\.index\b/g, 'try')
-      .replace(/'([^']*)'/g, (m, x) => x.replace(/_/g, ' '))
-      .replace(/[()[\]]/g, ' ')
-      .replace(/\b(and|or)\b/g, ' $1 ')
-      .replace(/\s+/g, ' ')
-      .trim();
-    return auCut(s || 'Template', 70);
-  },
-  // ---------- one line per trigger, condition, action: {k: small caps kind, t: the sentence} ----------
-  auTrig(t) {
-    if (t.alias) return {k: 'Trigger', t: t.alias};
-    const p = t.trigger || t.platform,
-      f = t.for ? ` for ${auDur(t.for)}` : '';
-    if (p === 'state') {
-      const n = this.auNames(t.entity_id);
-      if (t.to != null) {
-        const k = this.auKind(auArr(t.entity_id)[0]);
-        return {
-          k: k === 'door' ? 'Door' : k === 'motion' ? 'Motion' : AU_DOMAIN[k] || cap(k),
-          t: `${n} ${k === 'door' || k === 'motion' ? this.auState(t.entity_id, t.to, true) : '→ ' + this.auState(t.entity_id, t.to)}${f}`,
-        };
-      }
-      if (t.attribute) return {k: 'State', t: `${n} ${t.attribute.replace(/_/g, ' ')} changes`};
-      return {
-        k: /^event\./.test(auArr(t.entity_id)[0]) ? 'Button' : 'State',
-        t: `${n} ${/^event\./.test(auArr(t.entity_id)[0]) ? 'pressed' : 'changes'}${f}`,
-      };
-    }
-    if (p === 'numeric_state') {
-      if (t.entity_id === 'zone.home')
-        return {
-          k: 'Presence',
-          t:
-            (t.below != null && +t.below <= 1
-              ? 'Nobody home'
-              : t.above != null && +t.above === 0
-                ? 'Someone comes home'
-                : `People home ${t.below != null ? '< ' + t.below : '> ' + t.above}`) + f,
-        };
-      return {
-        k: 'Value',
-        t: `${this.auNames(t.entity_id)}${t.attribute ? ' ' + t.attribute : ''} ${t.above != null ? '> ' + t.above : ''}${t.above != null && t.below != null ? ' and ' : ''}${t.below != null ? '< ' + t.below : ''}${f}`,
-      };
-    }
-    if (p === 'time')
-      return {
-        k: 'Time',
-        t: auArr(t.at)
-          .map(a => (/^\d/.test(a) ? String(a).slice(0, 5) : this.auName(a)))
-          .join(', '),
-      };
-    if (p === 'time_pattern')
-      return {
-        k: 'Every',
-        t: t.minutes
-          ? `${String(t.minutes).replace('/', '')} min`
-          : t.hours
-            ? `${String(t.hours).replace('/', '')} h`
-            : t.seconds
-              ? `${String(t.seconds).replace('/', '')} s`
-              : 'pattern',
-      };
-    if (p === 'sun')
-      return {k: 'Sun', t: `${t.event === 'sunrise' ? 'Sunrise' : 'Sunset'}${t.offset ? ' ' + t.offset : ''}`};
-    if (p === 'homeassistant')
-      return {k: 'System', t: t.event === 'shutdown' ? 'Home Assistant stops' : 'Home Assistant starts'};
-    if (p === 'event')
-      return {k: 'Event', t: t.event_type === 'automation_reloaded' ? 'Automations reloaded' : cap(t.event_type)};
-    if (p === 'template') return {k: 'When', t: this.auTemplate(t.value_template) + f};
-    if (p === 'zone')
-      return {
-        k: 'Zone',
-        t: `${this.auNames(t.entity_id)} ${t.event === 'leave' ? 'leaves' : 'enters'} ${this.auName(t.zone)}`,
-      };
-    if (/turn_on$/.test(p || '')) return {k: 'Request', t: `${this.auNames(t.entity_id)} asked to turn on`};
-    return {k: 'Trigger', t: cap(p || 'trigger')};
-  },
-  auCond(c) {
-    if (typeof c === 'string') return {k: 'Check', t: this.auTemplate(c)};
-    if (c.alias) return {k: 'Check', t: c.alias};
-    const p = c.condition,
-      f = c.for ? ` for ${auDur(c.for)}` : '';
-    if (p === 'state') {
-      if (c.entity_id === 'zone.home')
-        return {k: 'Presence', t: String(c.state) === '0' ? `Nobody home${f}` : `${c.state} at home${f}`};
-      const k = this.auKind(auArr(c.entity_id)[0]);
-      return {
-        k: k === 'door' ? 'Doors' : k === 'motion' ? 'Motion' : AU_DOMAIN[k] || cap(k),
-        t: `${this.auNames(c.entity_id).replace(' or ', ' and ')} ${auArr(c.entity_id).length > 1 ? 'are' : 'is'} ${this.auState(c.entity_id, c.state)}${c.attribute ? ' (' + c.attribute + ')' : ''}${f}`,
-      };
-    }
-    if (p === 'numeric_state')
-      return {
-        k: 'Value',
-        t: `${this.auNames(c.entity_id)}${c.attribute ? ' ' + c.attribute.replace(/_/g, ' ') : ''} ${c.above != null ? '> ' + c.above : ''}${c.above != null && c.below != null ? ' and ' : ''}${c.below != null ? '< ' + c.below : ''}`,
-      };
-    if (p === 'trigger') return {k: 'Started by', t: `the “${auArr(c.id).join('” or “')}” trigger`};
-    if (p === 'time')
-      return {
-        k: 'Time',
-        t: [
-          c.after ? `after ${String(c.after).slice(0, 5)}` : '',
-          c.before ? `before ${String(c.before).slice(0, 5)}` : '',
-          c.weekday ? auArr(c.weekday).join(', ') : '',
-        ]
-          .filter(Boolean)
-          .join(' and '),
-      };
-    if (p === 'template') return {k: 'Check', t: this.auTemplate(c.value_template)};
-    if (p === 'sun')
-      return {
-        k: 'Sun',
-        t: [c.after ? `after ${c.after}` : '', c.before ? `before ${c.before}` : ''].filter(Boolean).join(' and '),
-      };
-    if (p === 'or' || p === 'and' || p === 'not')
-      return {
-        k: p === 'or' ? 'Any of' : p === 'and' ? 'All of' : 'None of',
-        t: auArr(c.conditions)
-          .map(x => this.auCond(x).t)
-          .join(p === 'or' ? ' / ' : ' + '),
-      };
-    return {k: 'Check', t: cap(p || 'condition')};
-  },
-  auAct(a) {
-    if (a.alias) return {k: 'Step', t: a.alias};
-    const svc = a.action || a.service;
-    if (svc) {
-      const [d, s] = svc.split('.'),
-        data = a.data || {},
-        tg = (a.target && a.target.entity_id) || data.entity_id || a.entity_id,
-        n = this.auNames(tg),
-        tmpl = v => /\{\{|\{%/.test(String(v));
-      if (d === 'script' && s !== 'turn_on')
-        return {k: 'Script', t: auShortAlias(this.auName('script.' + s)), shape: 'sub'};
-      if (d === 'notify') return {k: 'Notify', t: data.title ? `“${data.title}” to the phone` : 'Message to the phone'};
-      if (d === 'persistent_notification') return {k: 'Notification', t: data.title || 'In Home Assistant'};
-      if (d === 'scene' && s === 'create')
-        return {k: 'Snapshot', t: `Remember ${this.auNames(data.snapshot_entities)}`};
-      if (d === 'scene' && s === 'turn_on') return {k: 'Scene', t: n};
-      if (s === 'set_temperature')
-        return {k: 'Climate', t: `${n} → ${tmpl(data.temperature) ? 'by the schedule' : data.temperature + '°'}`};
-      if (s === 'set_hvac_mode') return {k: 'Climate', t: `${n} mode ${String(data.hvac_mode).replace(/_/g, ' ')}`};
-      if (s === 'set_fan_mode') return {k: 'Climate', t: `${n} fan ${data.fan_mode}`};
-      if (s === 'set_swing_mode') return {k: 'Climate', t: `${n} swing ${String(data.swing_mode).replace(/_/g, ' ')}`};
-      if (d === 'adaptive_lighting' && s === 'set_manual_control')
-        return {
-          k: 'Adaptive Lighting',
-          t: `${data.manual_control ? 'Manual' : 'Back to Auto'} · ${tmpl(data.lights) ? 'that light' : this.auNames(data.lights)}`,
-        };
-      if (d === 'light' && s === 'turn_on' && data.brightness_pct != null)
-        return {
-          k: 'Light',
-          t: `${n} brightness ${tmpl(data.brightness_pct) ? '± 5% per notch' : data.brightness_pct + '%'}`,
-        };
-      if (d === 'input_boolean')
-        return {k: 'Helper', t: `${n} → ${s === 'turn_on' ? 'on' : s === 'turn_off' ? 'off' : 'toggle'}`};
-      if (d === 'shell_command') return {k: 'Command', t: cap(s)};
-      if (d === 'homeassistant' && s === 'reload_config_entry') return {k: 'System', t: 'Reload the integration'};
-      return {k: AU_DOMAIN[d] || cap(d), t: `${AU_VERB[s] || cap(s)}${tg ? ' ' + n : ''}`};
-    }
-    if (a.delay != null) return {k: 'Delay', t: `Wait ${auDur(a.delay)}`};
-    if (a.wait_template != null)
-      return {
-        k: 'Wait',
-        t: `Until ${this.auTemplate(a.wait_template)}${a.timeout ? `, up to ${auDur(a.timeout)}` : ''}`,
-      };
-    if (a.wait_for_trigger)
-      return {
-        k: 'Wait for',
-        t: `${auArr(a.wait_for_trigger)
-          .map(x => this.auTrig(x).t)
-          .join(' or ')}${a.timeout ? `, up to ${auDur(a.timeout)}` : ''}`,
-      };
-    if (a.stop != null) return {k: 'Stop', t: a.stop || 'Stop here'};
-    if (a.condition) return this.auCond(a);
-    if (a.variables) return {k: 'Variables', t: Object.keys(a.variables).join(', ')};
-    if (a.event) return {k: 'Event', t: a.event};
-    if (a.repeat)
-      return {
-        k: 'Repeat',
-        t: a.repeat.until
-          ? `until ${auArr(a.repeat.until)
-              .map(c => this.auCond(c).t)
-              .join(' and ')}`
-          : a.repeat.while
-            ? `while ${auArr(a.repeat.while)
-                .map(c => this.auCond(c).t)
-                .join(' and ')}`
-            : a.repeat.count
-              ? `${a.repeat.count} times`
-              : 'for each',
-      };
-    if (a.parallel) return {k: 'In parallel', t: `${auArr(a.parallel).length} branches`};
-    return {k: 'Step', t: Object.keys(a)[0] || 'step'};
-  },
-
   // ---------- the graph: nodes, edges, and what the run lit up ----------
   // cfg = automation config; tr = full trace (or null): returns {def, sentence, failed, waiting}
   auGraph(cfg, tr, sum) {
@@ -429,7 +124,7 @@ export const autoMethods = {
     trigs.forEach((t, i) => {
       const p = `trigger/${i}`;
       if (fired.includes(i) && !hasKey(p)) T[p] = [{timestamp: tr && tr.timestamp && tr.timestamp.start}];
-      add(p, this.auTrig(t), 'stadium');
+      add(p, triggerText(t, this.auDeps()), 'stadium');
     });
     let exits;
     if (trigs.length > 1) {
@@ -464,7 +159,7 @@ export const autoMethods = {
         auArr(c.conditions).forEach((x, j) => outs.push(...condTree(x, `${path}/conditions/${j}`, [{id: g}])));
         return outs;
       }
-      const id = add(path, this.auCond(c));
+      const id = add(path, conditionText(c, this.auDeps()));
       chain(prev, id);
       return [{id}];
     };
@@ -484,7 +179,7 @@ export const autoMethods = {
             k: 'If',
             t:
               auArr(a.if)
-                .map(c => this.auCond(c).t)
+                .map(c => conditionText(c, this.auDeps()).t)
                 .join(' and ') + '?',
           },
           id = add(path, d, 'diamond');
@@ -505,7 +200,7 @@ export const autoMethods = {
           const lbl = auCut(
             o.alias ||
               auArr(o.conditions)
-                .map(c => this.auCond(c).t)
+                .map(c => conditionText(c, this.auDeps()).t)
                 .join(' and '),
             34,
           );
@@ -519,14 +214,14 @@ export const autoMethods = {
         return outs;
       }
       if (a && a.repeat) {
-        const id = add(path, this.auAct(a), 'round');
+        const id = add(path, actionText(a, this.auDeps()), 'round');
         chain(prev, id);
         const body = seq(a.repeat.sequence, `${path}/repeat/sequence`, [{id}]);
         body.forEach(x => link(x.id, id, 'again', 'loop'));
         return [{id}];
       }
       if (a && a.sequence && !a.action) return seq(a.sequence, `${path}/sequence`, prev);
-      const d = this.auAct(a),
+      const d = actionText(a, this.auDeps()),
         id = add(path, d, d.shape || 'round');
       chain(prev, id);
       return [{id}];
@@ -586,9 +281,9 @@ export const autoMethods = {
     const parts = [];
     if (tr || sum) {
       parts.push(
-        firedNode && firedNode.d.k === 'Every'
+        firedNode && firedNode.d.kind === 'automations.kind.every'
           ? `Every ${firedNode.d.t}${started ? ', at ' + this.fmtEn.time24(new Date(started)) : ''}`
-          : firedNode && firedNode.d.k === 'Time'
+          : firedNode && firedNode.d.kind === 'automations.kind.time'
             ? `At ${firedNode.d.t}`
             : `${firedNode ? firedNode.d.t : cap((sum && sum.trigger) || 'Started')}${started ? ' at ' + this.fmtEn.time24(new Date(started)) : ''}`,
       );
@@ -597,14 +292,14 @@ export const autoMethods = {
       else if (nodes.some(n => /^condition\//.test(n.path))) parts.push('checks passed');
       if (waitN)
         parts.push(
-          `now ${waitN.d.k === 'Delay' ? 'in a ' + waitN.d.t.toLowerCase() : 'waiting: ' + auCut(waitN.d.t, 60).toLowerCase()}`,
+          `now ${waitN.d.kind === 'automations.kind.delay' ? 'in a ' + waitN.d.t.toLowerCase() : 'waiting: ' + auCut(waitN.d.t, 60).toLowerCase()}`,
         );
       else if (exec === 'error') parts.push(`error${sum.error ? ': ' + auCut(sum.error, 60) : ''}`);
       else if (exec === 'finished' || exec === 'aborted' || exec === 'cancelled') {
         const fin = sum.timestamp && sum.timestamp.finish,
           d = fin && started ? (Date.parse(fin) - Date.parse(started)) / 1000 : null;
         parts.push(
-          `${plural(ranActs, 'step')} ran${d == null ? '' : d < 1 ? ' at once' : ' in ' + (d < 60 ? Math.round(d) + ' s' : auDur(Math.round(d)))}${exec !== 'finished' ? ' (' + exec + ')' : ''}`,
+          `${plural(ranActs, 'step')} ran${d == null ? '' : d < 1 ? ' at once' : ' in ' + (d < 60 ? Math.round(d) + ' s' : durationText(Math.round(d), this.auDeps()))}${exec !== 'finished' ? ' (' + exec + ')' : ''}`,
         );
       }
     }
@@ -691,23 +386,10 @@ export const autoMethods = {
   },
   // ---------- data ----------
   auAutos() {
-    return Object.values(this.hass.states)
-      .filter(s => s.entity_id.startsWith('automation.'))
-      .map(s => ({
-        entity: s.entity_id,
-        item: s.attributes.id,
-        name: this.name(s.entity_id),
-        on: s.state === 'on',
-        last: s.attributes.last_triggered,
-        current: +s.attributes.current || 0,
-      }));
+    return automationsOf(this.hass.states, this.store.names);
   },
   auNoise(sm) {
-    // routine checks: the 5-minute iCloud refresh, and time-pattern re-checks that found nothing to do
-    const cfg = this.auCfg[sm.item_id],
-      trigs = cfg ? auArr(cfg.triggers || cfg.trigger) : [];
-    if (trigs.length && trigs.every(t => (t.trigger || t.platform) === 'time_pattern')) return true;
-    return /^time pattern/i.test(sm.trigger || '') && sm.script_execution === 'failed_conditions';
+    return noiseOf(this.auCfg || {})(sm);
   },
   async auLoad(force) {
     if (this.auBusy || !this.hass) return;
@@ -769,55 +451,14 @@ export const autoMethods = {
   },
   // the runs the cards show: selected, running, last decision, last completed
   auPicks() {
-    const L = (this.auList || [])
-      .filter(sm => !this.auNoise(sm))
-      .sort((a, b) => Date.parse(b.timestamp.start) - Date.parse(a.timestamp.start));
-    const sel = this.auSel
-      ? this.auSel.run
-        ? L.concat(this.auList || []).find(x => x.run_id === this.auSel.run && x.item_id === this.auSel.item)
-        : L.concat(this.auList || [])
-            .filter(x => x.item_id === this.auSel.item)
-            .sort((a, b) => Date.parse(b.timestamp.start) - Date.parse(a.timestamp.start))[0]
-      : null;
-    const runN = L.find(x => x.state === 'running'),
-      dec = L.find(x => x.script_execution === 'failed_conditions'),
-      done = L.find(x => x.state !== 'running' && x.script_execution !== 'failed_conditions');
-    return [sel, runN, dec, done];
-  },
-  // upcoming scheduled runs today, from time and sun triggers
-  auUpcoming(cfgs, A) {
-    const now = Date.now(),
-      today = this.fmtEn.isoDay(now),
-      out = [],
-      nowM = auMins(now, this.fmtEn);
-    for (const a of A) {
-      const cfg = cfgs[a.item];
-      if (!cfg || !a.on) continue;
-      for (const t of auArr(cfg.triggers || cfg.trigger)) {
-        const p = t.trigger || t.platform;
-        if (p === 'time')
-          for (const at of auArr(t.at)) {
-            const m = /^(\d{1,2}):(\d{2})/.exec(String(at));
-            if (!m) continue;
-            const mins = +m[1] * 60 + +m[2];
-            if (mins > nowM) out.push({item: a.item, name: a.name, t: now + (mins - nowM) * 60000, mins});
-          }
-        if (p === 'sun') {
-          const s = this.attr('sun.sun', t.event === 'sunrise' ? 'next_rising' : 'next_setting'),
-            id = t.event === 'sunrise' ? 'sensor.sun_next_rising' : 'sensor.sun_next_setting',
-            v = s || (ok(this.st(id)) ? this.st(id).state : null);
-          if (v && this.fmtEn.isoDay(Date.parse(v)) === today && Date.parse(v) > now)
-            out.push({item: a.item, name: a.name, t: Date.parse(v), mins: auMins(v, this.fmtEn)});
-        }
-      }
-    }
-    return out.sort((x, y) => x.t - y.t);
+    const p = picks(this.auList || [], this.auSel || null, noiseOf(this.auCfg || {}));
+    return [p.selected, p.running, p.decision, p.completed];
   },
   // ---------- drawing ----------
   renderAuto() {
     if (this.view !== 'tabs' || this.tab !== 'auto' || !this.hass) return;
     const A = this.auAutos(),
-      sig = A.map(a => a.entity + a.last + a.current + a.on).join('|');
+      sig = fingerprint(A);
     if (sig !== this.auSig) {
       const first = !this.auSig;
       this.auSig = sig;
@@ -858,94 +499,37 @@ export const autoMethods = {
       );
       return;
     }
-    // Today timeline
-    const up = this.auUpcoming(cfgs, A),
-      nowM = auMins(Date.now(), this.fmtEn);
+    // Today timeline: runs closer together than a dot is wide share one dot, with the count on it; the labels under the
+    // dots give the time only, on two rows
+    const up = upcomingRuns(cfgs, A, Date.now(), sunNext(this.hass.states), this.fmtEn);
     const dots = [
       ...today.map(sm => ({
-        sm,
+        summary: sm,
         mins: auMins(sm.timestamp.start, this.fmtEn),
         item: sm.item_id,
         name: (byItem[sm.item_id] || {}).name || sm.item_id,
       })),
       ...up.map(u => ({up: true, ...u})),
     ].sort((a, b) => a.mins - b.mins);
-    // runs closer together than a dot is wide share one dot, with the count on it; the labels under the dots give the time only, on two rows
-    const tlW = (this.$('auhost') || {}).clientWidth || this.$app.clientWidth || 800,
-      gapPct = Math.max(2.2, 3000 / Math.max(tlW, 240));
-    const groups = [];
-    dots.forEach(d => {
-      const g = groups[groups.length - 1],
-        pct = (d.mins / 1440) * 100;
-      if (g && pct - g.last < gapPct * 0.55) {
-        g.items.push(d);
-        g.last = pct;
-      } else groups.push({pct, last: pct, items: [d]});
-    });
-    groups.forEach(g => {
-      g.x = g.items.length > 1 ? (g.pct + g.last) / 2 : g.pct;
-    });
-    for (let i = 1; i < groups.length; i++) groups[i].x = Math.max(groups[i].x, groups[i - 1].x + gapPct);
-    for (let i = groups.length - 1, r = 100 + gapPct; i >= 0; i--) {
-      groups[i].x = Math.min(groups[i].x, r - gapPct);
-      r = groups[i].x;
-    }
-    const clsOf = x =>
-      x.up
-        ? 'up'
-        : x.sm.state === 'running'
-          ? 'now'
-          : x.sm.script_execution === 'failed_conditions'
-            ? 'skip'
-            : x.sm.script_execution === 'error'
-              ? 'err'
-              : '';
-    const whatOf = c =>
-      c === 'up'
-        ? 'scheduled'
-        : c === 'skip'
-          ? 'checked, did nothing'
-          : c === 'now'
-            ? 'running'
-            : c === 'err'
-              ? 'error'
-              : 'ran';
-    const timeOf = x => (x.up ? this.fmtEn.time24(new Date(x.t)) : this.fmtEn.time24(new Date(x.sm.timestamp.start)));
-    const rowEnd = [-99, -99];
-    const dotsH = groups
+    const tlW = (this.$('auhost') || {}).clientWidth || this.$app.clientWidth || 800;
+    const layout = timelineLayout(dots, tlW, Date.now(), {t: tEn, fmt: this.fmtEn});
+    const dotsH = layout.groups
       .map(g => {
-        const items = g.items,
-          d = items[0],
-          n = items.length,
-          pct = g.x;
-        const all = items.map(clsOf),
-          cls = all.includes('now')
-            ? 'now'
-            : all.includes('err')
-              ? 'err'
-              : all.every(c => c === 'skip')
-                ? 'skip'
-                : all.every(c => c === 'up')
-                  ? 'up'
-                  : '';
-        const time = timeOf(d),
-          time2 = timeOf(items[n - 1]),
-          need = n > 1 ? 7.5 : 4.5;
-        let row = rowEnd[0] < pct - need ? 0 : rowEnd[1] < pct - need ? 1 : -1;
-        if (row >= 0) rowEnd[row] = pct;
-        const desc =
-          n > 1
-            ? `${time} to ${time2} · ${plural(n, 'run')} · ${items.map(x => `${auShortAlias(x.name)}, ${whatOf(clsOf(x))}`).join(' · ')}`
-            : `${time} ${d.name}, ${whatOf(cls)}`;
-        const data = d.up ? `data-au="${esc(d.item)}"` : `data-run="${esc(d.sm.run_id)}" data-item="${esc(d.item)}"`;
-        return `<button type="button" class="aud ${cls}" style="left:${pct.toFixed(2)}%" ${data} aria-label="${esc(desc)}" title="${esc(desc)}">${n > 1 ? `<span class="n">${n}</span>` : ''}</button>${row >= 0 ? `<span class="aul r${row}${cls === 'now' ? ' now' : cls === 'skip' ? ' skip' : ''}" style="left:${pct.toFixed(2)}%"><b>${n > 1 ? `${time}–${time2}` : time}</b></span>` : ''}`;
+        const d = g.dots[0],
+          n = g.dots.length,
+          pct = g.x,
+          cls = g.cls;
+        const data = isUp(d)
+          ? `data-au="${esc(d.item)}"`
+          : `data-run="${esc(d.summary.run_id)}" data-item="${esc(d.item)}"`;
+        return `<button type="button" class="aud ${cls}" style="left:${pct.toFixed(2)}%" ${data} aria-label="${esc(g.description)}" title="${esc(g.description)}">${n > 1 ? `<span class="n">${n}</span>` : ''}</button>${g.row >= 0 ? `<span class="aul r${g.row}${cls === 'now' ? ' now' : cls === 'skip' ? ' skip' : ''}" style="left:${pct.toFixed(2)}%"><b>${g.label}</b></span>` : ''}`;
       })
       .join('');
     const nextUp = up[0],
       nextUp2 = up[1];
     const skipped = today.filter(sm => sm.script_execution === 'failed_conditions').length;
     const todayCard = `<section class="card autoday"><div class="shead"><div><h3>Today</h3><p>One dot per run, a number when several ran close together. Filled ran, ringed red checked and did nothing, green is running now, hollow is still to come. Tap one to draw it below.</p></div><span class="pill">${esc(this.fmtEn.dateWeekday(new Date()))} · ${this.fmtEn.time24(Date.now())}</span></div>
-      <div class="autl"><div class="axis"></div><div class="past" style="width:${((nowM / 1440) * 100).toFixed(2)}%"></div><div class="nowl" style="left:${((nowM / 1440) * 100).toFixed(2)}%"></div>${[0, 6, 12, 18].map(h => `<span class="hr" style="left:${(h / 24) * 100}%">${String(h).padStart(2, '0')}:00</span>`).join('')}${dotsH}</div>
+      <div class="autl"><div class="axis"></div><div class="past" style="width:${layout.nowPct.toFixed(2)}%"></div><div class="nowl" style="left:${layout.nowPct.toFixed(2)}%"></div>${[0, 6, 12, 18].map(h => `<span class="hr" style="left:${(h / 24) * 100}%">${String(h).padStart(2, '0')}:00</span>`).join('')}${dotsH}</div>
       <div class="tiles" style="grid-template-columns:repeat(3,minmax(0,1fr))">${tile(['Ran today', runs.length, '', skipped ? `${skipped} more checked and did nothing` : 'every run passed its checks'])}${tile(['Next', nextUp ? this.fmtEn.time24(new Date(nextUp.t)) : '–', '', nextUp ? esc(auShortAlias(nextUp.name)) : 'nothing else scheduled today'])}${tile(['Then', nextUp2 ? this.fmtEn.time24(new Date(nextUp2.t)) : '–', '', nextUp2 ? esc(auShortAlias(nextUp2.name)) : '—'])}</div></section>`;
     // flow cards
     const [sel, runN, dec, done] = this.auPicks(),
@@ -971,7 +555,7 @@ export const autoMethods = {
       const pill = !sm
         ? '<span class="pill">no run stored</span>'
         : sm.state === 'running'
-          ? `<span class="pill run" data-since="${esc(sm.timestamp.start)}">running ${this.auElapsed(sm.timestamp.start)}</span>`
+          ? `<span class="pill run" data-since="${esc(sm.timestamp.start)}">running ${elapsedText(Date.parse(sm.timestamp.start), Date.now())}</span>`
           : sm.script_execution === 'failed_conditions'
             ? `<span class="pill no">stopped ${this.fmtEn.time24(new Date(sm.timestamp.start))}</span>`
             : sm.script_execution === 'error'
@@ -1017,14 +601,8 @@ export const autoMethods = {
     this.auDraw();
     // the running pill counts up without redrawing the graph
     this.root.querySelectorAll('#auhost .pill.run[data-since]').forEach(p => {
-      p.textContent = 'running ' + this.auElapsed(p.dataset.since);
+      p.textContent = 'running ' + elapsedText(Date.parse(p.dataset.since), Date.now());
     });
-  },
-  auElapsed(t) {
-    const s = Math.max(0, Math.round((Date.now() - Date.parse(t)) / 1000));
-    return s >= 3600
-      ? `${Math.floor(s / 3600)} h ${String(Math.floor(s / 60) % 60).padStart(2, '0')}`
-      : `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
   },
   async auDraw() {
     const boxes = [...this.root.querySelectorAll('#auhost .augraph')].filter(b => b.dataset.drawn !== b.dataset.def);
