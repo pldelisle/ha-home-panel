@@ -1,7 +1,7 @@
 /*
  * <hp-air-room>'s own rules: a purifier's card, its head with the level's state pill, the seven tiles and the control. Moved from the legacy
- * `.aqcard`, `.aqhead`, `.aqt` and `.aqctl` rules (extra.css, glass.css), which this move deleted. The tiles, the segmented control and the
- * stepper are the kit's (`.tiles`, `.seg`, `<hp-stepper>`); the radios stay `.seg` markup until `<hp-seg>` (#247). Known copies of rules the
+ * `.aqcard`, `.aqhead`, `.aqt` and `.aqctl` rules (extra.css, glass.css), which this move deleted. The tiles, the
+ * mode group and the stepper are the kit's (`.tiles`, `<hp-seg>`, `<hp-stepper>`), and the group is sized from here (`.aqctl hp-seg`). Known copies of rules the
  * legacy panel's other cards still draw, each read here under the card's own selector: `.state` (base.css, glass.css) as `.aqhead .state` and
  * `.hint` (base.css) as `.aqctl .hint`, until the Home move (#268) deletes them.
  */
@@ -89,7 +89,7 @@
   gap: 10px;
   margin-top: 12px;
 }
-.aqctl .seg {
+.aqctl hp-seg {
   flex: 1 1 200px;
 }
 .aqctl .hint {
