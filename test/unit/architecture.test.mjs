@@ -38,7 +38,7 @@ test('docs/architecture/dependency-graph.md is exactly what npm run arch:graph w
 test('the legacy set imports only the core, the providers and itself, and its sheet the kit’s stylesheets (ADR 0025)', () => {
   const allowed = /^src\/(core|providers)\//;
   const kitStyles = /^src\/ui\/styles\/[^/]+\.css$/;
-  const autoReads = /^src\/features\/automations\/(traces|sentences|timeline-layout)\.ts$/;
+  const autoReads = /^src\/features\/automations\/(traces|sentences|timeline-layout|graph|mermaid-def)\.ts$/;
   const offenders = modules
     .filter(({source}) => isLegacy(source))
     .flatMap(({source, dependencies}) =>
