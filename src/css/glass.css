@@ -11,20 +11,13 @@
   backdrop-filter: var(--g-bd);
   box-shadow: var(--g-edge);
 }
-/* dense glass: surfaces that carry text (the Status popup, confirmation toasts, phone sheets) fill and blur more */
-.app.gl .pop,
-.app.gl .toast:not(.err) {
+/* dense glass: surfaces that carry text (the Status popup, phone sheets) fill and blur more; the toast's own rules are <hp-toast>'s */
+.app.gl .pop {
   background: var(--g-dense);
   border: 0;
   -webkit-backdrop-filter: var(--g-bd);
   backdrop-filter: var(--g-bd);
   box-shadow: var(--g-edge);
-}
-.app.gl .toast:not(.err) {
-  color: var(--fg);
-  border-radius: 999px;
-  padding: 12px 18px;
-  font-weight: 600;
 }
 /* phone: the bar floats as a capsule; the open section sits in a lighter capsule of its own, tinted with the section's colour */
 .app.tabsv.gl.cp .rail {
@@ -50,10 +43,6 @@
 }
 .app.tabsv.gl:not(.cp) .rtab[aria-selected='true'] {
   background: color-mix(in srgb, var(--rc) 20%, var(--g-sel));
-}
-/* phone: toasts sit above the floating capsule */
-.app.gl.cp .toast {
-  bottom: calc(86px + env(safe-area-inset-bottom, 0px));
 }
 /* the wallpaper: a fixed layer behind the page (iOS ignores background-attachment:fixed), soft colour washes for the glass to bend */
 .app.gl {
@@ -291,7 +280,6 @@
   .app.gl .head .chip,
   .app.gl .head button.icon,
   .app.gl .pop,
-  .app.gl .toast:not(.err),
   .app.gl .card,
   .app.gl .htile {
     -webkit-backdrop-filter: none;

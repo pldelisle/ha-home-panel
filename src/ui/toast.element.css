@@ -1,0 +1,73 @@
+/*
+ * <hp-toast>'s look, moved from the legacy sheet (base.css, glass.css) with the toast (#275): the dark pill of a confirmation,
+ * the red bar of a failure with its Dismiss button, the glass pill, and its place above the phone's floating bar.
+ * Written in the frame's terms (`.app.gl`, `.app.gl.cp`); forShadow reads them as the host's `glass` and `compact`.
+ */
+:host {
+  display: contents;
+}
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: max(20px, env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  z-index: 40;
+  background: var(--fg);
+  color: var(--bg);
+  padding: 10px 16px;
+  border-radius: 14px;
+  font-size: calc(13px * var(--tx));
+  width: max-content;
+  max-width: calc(100% - 32px);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.4);
+}
+.toast[hidden] {
+  display: none;
+}
+/* an error stays until it is dismissed; the dark toast is for confirmations */
+.toast.err {
+  background: var(--crit);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 12px 12px 16px;
+  font-size: calc(14px * var(--tx));
+  text-align: left;
+}
+.toast .tdis {
+  border: 0;
+  border-radius: 10px;
+  min-height: 36px;
+  padding: 8px 12px;
+  font: inherit;
+  font-weight: 700;
+  background: color-mix(in srgb, var(--bg) 18%, transparent);
+  color: inherit;
+  cursor: pointer;
+  flex: none;
+}
+/* dense glass, as the Status popup's: a confirmation fills and blurs more, and is a capsule */
+.app.gl .toast:not(.err) {
+  background: var(--g-dense);
+  border: 0;
+  -webkit-backdrop-filter: var(--g-bd);
+  backdrop-filter: var(--g-bd);
+  box-shadow: var(--g-edge);
+  color: var(--fg);
+  border-radius: 999px;
+  padding: 12px 18px;
+  font-weight: 600;
+}
+/* phone: toasts sit above the floating capsule */
+.app.gl.cp .toast {
+  bottom: calc(86px + env(safe-area-inset-bottom, 0px));
+}
+/* Reduce Transparency: the glass turns back into a near-solid card */
+@media (prefers-reduced-transparency: reduce) {
+  .app.gl .toast:not(.err) {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--card);
+  }
+}

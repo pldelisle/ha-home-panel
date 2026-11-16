@@ -1,9 +1,7 @@
-// Colour arithmetic: the blend of two `#rrggbb` colours in OKLab, through the conversion there and back.
-// Pattern: a pure function over values (functional core), after Björn Ottosson, "A perceptual color space for image processing" (OKLab, 2020); the
-// matrices are his. OKLab is perceptually even, so equal steps of the blend look like equal steps and neighbouring cells of a scale join without
-// the dark or grey band that blending in sRGB leaves between two hues. It replaces the legacy panel's `toOk`, `fromOk` and `lin` (deleted in #246).
-// It assumes a `#rrggbb` colour of six hex digits in either case (the heat scale's stops are literals; nothing else reaches it), and the conversion
-// is private: `oklabBlend` is the one seam, read by Climate's heat scale.
+// Colour arithmetic: the blend of two `#rrggbb` colours in OKLab, and a colour temperature as the white it looks like.
+// Pattern: pure functions over values (functional core): the blend after Björn Ottosson, "A perceptual color space for image processing" (OKLab, 2020),
+// perceptually even so neighbouring cells of a scale join without a grey band (it replaced the legacy `toOk`, `fromOk` and `lin`, #246); `kelvinRGB`
+// after Tanner Helland's fit (the legacy panel's copy goes with its sheet, #262). The OKLab conversion is private; `oklabBlend` assumes `#rrggbb` literals.
 // Must not: read the DOM or a computed style, or round before the end (the output's bytes are the only rounding).
 
 /** A colour in OKLab: lightness, then the green-red and blue-yellow axes. */
@@ -58,4 +56,17 @@ export function oklabBlend(from: string, to: string, f: number): string {
   const start = toOklab(from);
   const end = toOklab(to);
   return fromOklab(start.map((value, axis) => value + (end[axis] - value) * f) as Oklab);
+}
+
+/**
+ * The colour of a black body at `kelvin` as `rgb(r,g,b)`, after Tanner Helland's fit ("How to Convert Temperature (K) to RGB", 2012), clamped to
+ * 1,000 to 40,000 K: the warm-to-cool white a bulb's colour temperature is drawn in, on the Lights tiles, the sheet's slider and the strip.
+ */
+export function kelvinRGB(kelvin: number): string {
+  const t = Math.min(40000, Math.max(1000, kelvin)) / 100;
+  const byte = (v: number) => Math.round(Math.min(255, Math.max(0, v)));
+  const r = t <= 66 ? 255 : 329.698727446 * Math.pow(t - 60, -0.1332047592);
+  const g = t <= 66 ? 99.4708025861 * Math.log(t) - 161.1195681661 : 288.1221695283 * Math.pow(t - 60, -0.0755148492);
+  const b = t >= 66 ? 255 : t <= 19 ? 0 : 138.5177312231 * Math.log(t - 10) - 305.0447927307;
+  return `rgb(${byte(r)},${byte(g)},${byte(b)})`;
 }

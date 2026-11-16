@@ -10,6 +10,7 @@ export const fr: Record<MessageKey, string> = {
   // English on purpose: the legacy layer leaves this toast in English (no map key matches `Didn't work: <reason>`), so French
   // here is its own visible change and needs an approved baseline (ADR 0003, test/unit/i18n/moved-strings.test.ts)
   'common.failed': "Didn't work: {reason}",
+  'common.dismiss': 'Fermer',
   'charts.failed': "La bibliothèque de graphiques n'a pas chargé",
   // English on purpose, as the legacy layer leaves it; the French room name is the thermostat's own, which this is never asked for
   'room.bedroomOf': "{name}'s bedroom",
@@ -894,4 +895,46 @@ export const fr: Record<MessageKey, string> = {
   'car.art.side': 'Voiture, vue de côté',
   'car.art.top': 'Voiture vue de haut',
   'car.close': 'Fermer',
+  // the header's Status checks (src/features/live/checks.ts)
+  'live.hqStale': 'Hydro-Québec ne se met pas à jour',
+  'live.hqStaleLine':
+    "Les données de facturation et de pointe sont indisponibles. Vérifiez l'intégration Hydro-Québec : elle demande peut-être à nouveau votre mot de passe.",
+  'live.hqUpdating': 'Hydro-Québec à jour',
+  'live.heatPumpOffline': 'Thermopompe hors ligne',
+  'live.heatPumpOfflineLine': "L'appareil {brand} apparaît comme indisponible dans Home Assistant.",
+  // English on purpose: the layer knew this line only with `Fujitsu` in it and left this one in English, so French here
+  // would be its own visible change and need an approved baseline (ADR 0003)
+  'live.heatPumpOfflineLineNoMaker': 'The Heat pump unit shows as unavailable in Home Assistant.',
+  'live.heatPumpOnline': 'Thermopompe en ligne',
+  'live.gatewayOffline': 'Passerelle Hilo hors ligne',
+  'live.gatewayOfflineLine': 'Les thermostats et le compteur pourraient cesser de transmettre.',
+  'live.gatewayOnline': 'Passerelle Hilo en ligne',
+  'live.thermostatsNotReporting':
+    '{n, plural, one {# thermostat ne répond pas} other {# thermostats ne répondent pas}}',
+  'live.peakInProgress': 'Pointe critique en cours',
+  'live.peakInProgressLine': 'Période de pointe Hydro-Québec : réduisez la consommation maintenant.',
+  'live.peakComing': 'Pointe critique à venir',
+  'live.peakComingLine': 'Hydro-Québec a annoncé une pointe critique à venir.',
+  'live.noPeak': 'Aucune pointe critique',
+  'live.weatherWarning': 'Avertissement météo',
+  'live.weatherWarningLine':
+    'Environnement Canada a émis {n, plural, one {# avertissement} other {# avertissements}} pour votre secteur.',
+  'live.noWeatherAlerts': 'Aucune alerte météo',
+  'live.tirePressureLow': 'Pression des pneus basse',
+  'live.tirePressureLowLine': 'La voiture signale un pneu sous sa pression normale.',
+  'live.carUnlocked': 'Voiture déverrouillée',
+  'live.carUnlockedLine': 'Verrouillez-la depuis la vue de la voiture.',
+  'live.carLocked': 'Voiture verrouillée',
+  'live.carNotReporting': 'La voiture ne répond pas',
+  'live.carNotReportingLine': "L'intégration Ford n'a pas de données de batterie pour le moment.",
+  'live.doorOpen': '{name} : ouverte',
+  'live.openFor':
+    "{kind, select, now {Ouverte à l'instant.} minutes {Ouverte depuis {n} min.} hours {Ouverte depuis {n} h.} other {Ouverte depuis {date}.}}",
+  'live.sensorOffline': '{name} hors ligne',
+  'live.sensorOfflineLine': 'Le capteur est indisponible dans Home Assistant.',
+  'live.batteryLow': '{name} : pile faible',
+  'live.batteryLeft': '{n} % restant.',
+  'live.doorsClosed': 'Portes fermées',
+  'live.wallboxOffline': 'Wallbox hors ligne',
+  'live.wallboxOfflineLine': 'La borne est indisponible dans Home Assistant.',
 };

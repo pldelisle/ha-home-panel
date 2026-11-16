@@ -1,10 +1,17 @@
-// hiloRates, hiloChallenge, hiloRewards and hiloPresent: the tier the current rate is, the challenge, the rewards, and whether
-// the house has Hilo. The test house has none; literal houses give the tiers; the recorded house is read when the owner has
+// hiloRates, hiloChallenge, hiloRewards, hiloPresent and hiloGateway: the tier the current rate is, the challenge, the rewards,
+// whether the house has Hilo, and its gateway. The test house has none; literal houses give the tiers; the recorded house is read when the owner has
 // one (#170).
 import {describe, expect, test} from 'vitest';
 import {entity, fakeHass} from '../fake-hass.ts';
 import {fullHouse, houseOf, recorded, storeOf} from '../features/media/support.ts';
-import {hiloChallenge, hiloPresent, hiloRates, hiloRewards, type HiloTier} from '../../../src/providers/hilo.ts';
+import {
+  hiloChallenge,
+  hiloGateway,
+  hiloPresent,
+  hiloRates,
+  hiloRewards,
+  type HiloTier,
+} from '../../../src/providers/hilo.ts';
 
 const CFG = {
   entities: {
@@ -150,5 +157,23 @@ describe('the challenge, the rewards and the presence', () => {
     expect(read(hilo({current: '0.06'})).present).toBe(true);
     expect(read(hilo({current: 'unavailable'})).present).toBe(true);
     expect(read(hilo({low: '0.06'}, sensors('off'))).present).toBe(false);
+  });
+});
+
+describe('the gateway', () => {
+  const gateway = (...states: ReturnType<typeof entity>[]) => {
+    const hass = houseOf([], states);
+    return hiloGateway(hass.states, storeOf(hass).config);
+  };
+
+  test('is on only when its sensor says on, and disconnected when the attribute is set', () => {
+    expect(gateway(entity('sensor.hilo_gateway', 'on'))).toEqual({on: true, disconnected: false});
+    expect(gateway(entity('sensor.hilo_gateway', 'on', {disconnected: true}))).toEqual({on: true, disconnected: true});
+    expect(gateway(entity('sensor.hilo_gateway', 'unavailable'))).toEqual({on: false, disconnected: false});
+  });
+
+  test('is null where the house has no gateway sensor', () => {
+    expect(gateway()).toBeNull();
+    expect(hiloGateway(fullHouse.states, storeOf(fullHouse).config)).toBeNull();
   });
 });

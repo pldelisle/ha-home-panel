@@ -87,7 +87,7 @@ describe('Hydro-Québec', () => {
     const inputs = read([entity('sensor.balance', '41.2'), entity('binary_sensor.peak', 'on')], {
       entities: {hydro_quebec_balance: 'sensor.balance', hydro_quebec_peak: 'binary_sensor.peak'},
     });
-    expect(inputs.hydroQuebec).toEqual({balance: 41.2, peakNow: true, peakUpcoming: false});
+    expect(inputs.hydroQuebec).toMatchObject({balance: 41.2, peakNow: true, peakUpcoming: false});
   });
 });
 

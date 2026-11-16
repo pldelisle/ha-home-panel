@@ -17,10 +17,10 @@ export default defineConfig({
         'src/fonts.js',
         'src/core/**/*.ts',
         'src/providers/**/*.ts',
-        'src/features/*/{ids,inputs,model,speakers,tiles,history,scenes,commands,flow-layout,water-chart,charts,sankey-layout,schedule,bars-geometry}.ts', // the pure files; the elements are proven by the harness
+        'src/features/*/{ids,inputs,model,speakers,tiles,history,scenes,commands,flow-layout,water-chart,charts,sankey-layout,schedule,bars-geometry,checks,order,state,al-strip-layout}.ts', // the pure files; the elements are proven by the harness
         'src/features/car/loader.ts', // a controller over the statistics cache, tested with a fake cache, store and host; the pane that mounts it is proven by the harness
         'src/features/climate/sender.ts', // a controller over the overlay and the runner, tested with fakes and a fake clock; its two elements are proven by the harness
-        'src/ui/{ranges,seg-keys,steps,thin-axis}.ts', // the kit's pure files; its elements are proven by the harness
+        'src/ui/{ranges,seg-keys,steps,thin-axis,toast-schedule}.ts', // the kit's pure files; its elements are proven by the harness
         'src/ui/commands.ts', // the command layer: the runner, the store and its controller are tested with fakes (ADR 0023)
         'src/ui/overlay-store.ts',
         'src/ui/controllers/{optimistic,armed,windowed-history}.ts',
@@ -45,7 +45,7 @@ export default defineConfig({
       thresholds: {
         'src/core/**/*.ts': {statements: 100},
         'src/providers/**/*.ts': {statements: 100},
-        'src/features/*/{ids,inputs,model,speakers,tiles,history,scenes,commands,flow-layout,water-chart,charts,sankey-layout,schedule,bars-geometry}.ts':
+        'src/features/*/{ids,inputs,model,speakers,tiles,history,scenes,commands,flow-layout,water-chart,charts,sankey-layout,schedule,bars-geometry,checks,order,state,al-strip-layout}.ts':
           {
             statements: 100,
           },
@@ -55,6 +55,7 @@ export default defineConfig({
         'src/ui/seg-keys.ts': {statements: 100},
         'src/ui/steps.ts': {statements: 100},
         'src/ui/thin-axis.ts': {statements: 100},
+        'src/ui/toast-schedule.ts': {statements: 100},
         'src/ui/commands.ts': {statements: 100},
         'src/ui/overlay-store.ts': {statements: 100},
         'src/ui/controllers/optimistic.ts': {statements: 100},
