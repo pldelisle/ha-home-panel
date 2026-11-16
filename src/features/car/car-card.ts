@@ -4,11 +4,13 @@
 // Must not: read an entity or the clock, word a string (the model does), place a bar itself (`barsGeometry` does), or open the sheet (it asks).
 import {LitElement, html, nothing, svg, unsafeCSS} from 'lit';
 import {repeat} from 'lit/directives/repeat.js';
-import {carSide} from './car-art.ts';
+import {carArt} from './car-art.ts';
 import ownCss from './car-card.element.css?inline';
 import type {Bar} from './bars-geometry.ts';
 import type {CarCard, DailyBars} from './model.ts';
 import {DETAIL_SHEET} from './sheets.ts';
+import {socBar} from './soc-bar.ts';
+import socBarCss from './soc-bar.css?inline';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {SheetRequestEvent} from '../../ui/events.ts';
 import {lensLike} from '../../ui/lens.ts';
@@ -28,8 +30,8 @@ export class CarCardElement extends LitElement {
   /** The photo did not load: the drawing stands in for it from now on. */
   declare imageFailed: boolean;
 
-  // The kit's hero and tiles, then the element's own rules: its `:host`, the box, the title line, the bar, the tiles' three columns and the bars (car-card.element.css).
-  static override styles = [common, hero, tiles, unsafeCSS(forShadow(ownCss))];
+  // The kit's hero and tiles, the battery bar's rules (soc-bar.css, which the battery block adopts too), then the element's own: its `:host`, the box, the title line, the tiles' three columns and the bars (car-card.element.css).
+  static override styles = [common, hero, tiles, unsafeCSS(forShadow(socBarCss)), unsafeCSS(forShadow(ownCss))];
 
   constructor() {
     super();
@@ -65,10 +67,7 @@ export class CarCardElement extends LitElement {
           </div>
           ${this.renderArt(card)}
         </div>
-        <div class="cbar" role="img" aria-label=${soc.label}>
-          <i style="width:${soc.fill}%"></i>${soc.limit ? html`<b style="left:${soc.limit}%"></b>` : nothing}
-        </div>
-        <div class="cscale"><span>${soc.scale.start}</span><span>${soc.scale.limit}</span></div>
+        ${socBar(soc)}
         <div class="tiles ctiles">
           ${repeat(
             card.tiles,
@@ -90,10 +89,8 @@ export class CarCardElement extends LitElement {
   }
 
   // Ford's photo through the image proxy; the drawn car where there is none, or where the photo failed
-  private renderArt({picture, color, name, drawing}: CarCard) {
-    return picture && !this.imageFailed
-      ? html`<img class="cimg" src=${picture} alt=${name} @error=${this.onImageError} />`
-      : carSide(color, drawing);
+  private renderArt(card: CarCard) {
+    return carArt(card, this.imageFailed, this.onImageError);
   }
 
   // the bars the model's geometry places and its sentence under them; the colours are the frame's tokens, so a theme change redraws nothing

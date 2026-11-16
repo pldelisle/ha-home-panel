@@ -1,0 +1,5 @@
+---
+'ha-home-panel': patch
+---
+
+The Car detail is redrawn with the same look, and it no longer redraws every second: it changes when something it shows changes. A few words change: the battery line has no leading dot when the car gives no battery temperature (nor Ford's battery line when it is partial), one charging session or one day is singular ("1 charging session", "1 session" in French), a last plug-in with no plug-in or plug-out time shows a dash for what the Wallbox delivered where it showed 0.0, a tire Ford calls low reads "Faible" in French, and the words the French screens left in English are French: the alarm and gear states ("Alarm armed", "Gear drive"), Ford's saved departure line, a dated message ("Service due, 6 nov." with the month once), the last plug-in's title and its "Ford hasn't reported…" line, and the sessions chart's tooltip. The charging history says "History didn't load: …" in the place of its sentence when the recorder does not answer. A photo of the car that fails to load gives way to the drawing for as long as the detail is open, and is tried again the next time it opens.

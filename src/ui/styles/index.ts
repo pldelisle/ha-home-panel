@@ -9,6 +9,7 @@ import chartText from './chart.css?inline';
 import commonText from './common.css?inline';
 import heroText from './hero.css?inline';
 import innerText from './inner.css?inline';
+import listText from './list.css?inline';
 import moreText from './more.css?inline';
 import motionText from './motion.css?inline';
 import paneHeaderText from './pane-header.css?inline';
@@ -50,5 +51,7 @@ export const tiles = adopt(tilesText);
 export const hero = adopt(heroText);
 /** The inner card of a detail panel and the row that sets two of them side by side. */
 export const inner = adopt(innerText);
+/** The rows and chips of a status list: the Car detail's Ford messages and the Status checks popup's. */
+export const list = adopt(listText);
 /** A chart's legend and its tooltip's font. */
 export const chart = adopt(chartText);

@@ -138,6 +138,14 @@
 .pane > .panel > * + * {
   margin-top: 16px;
 }
+/* the charger's and comfort's cards, which the Car detail holds in its `controls` slot (the pane's light DOM, #252): the detail's column spaces them, and a phone's sheet has the sheet's inner card; deleted by #253 */
+#car-controls.two {
+  margin-top: 0;
+}
+.app.cp #car-controls .inner {
+  padding: 14px;
+  border-radius: 18px;
+}
 /* the active section lights up in its own colour */
 .rtab[aria-selected='true'] {
   --rc: var(--c-home);

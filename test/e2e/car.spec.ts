@@ -1,6 +1,5 @@
-// The Car tab (spec 21, #251): <hp-car-pane> and <hp-car-card>. On a phone the pane is the header with the car's name and its summary line and the card, which opens the
-// detail; on a tablet it draws nothing of its own and the tab is the legacy detail, inline, until #252. The test house has a car at 64 percent with 280 km of range, locked
-// and charging, a limit of 90 percent, and a Wallbox that says Charging.
+// The Car tab (spec 21, #251, #252): <hp-car-pane>, <hp-car-card> and <hp-car-detail>. On a phone the pane is the header with the car's name and its summary line and the card, which opens the
+// detail in a sheet; on a tablet the tab is the detail, inline. The test house has a car at 64 percent with 280 km of range, locked and charging, a limit of 90 percent, and a Wallbox that says Charging.
 import AxeBuilder from '@axe-core/playwright';
 import {test, expect, phoneOnly, tabletOnly, type House} from './fixtures';
 import {AFTERNOON, FULL_CFG} from './houses';
@@ -33,19 +32,19 @@ test.describe('on a phone', () => {
     house,
   }) => {
     await house.tab('car');
-    await expect(pane(house).locator('hp-pane-header h2')).toHaveText('Car');
-    await expect(pane(house).locator('hp-pane-header [slot="sub"]')).toHaveText(
+    await expect(pane(house).locator('hp-pane-header h2').first()).toHaveText('Car');
+    await expect(pane(house).locator(':scope > hp-pane-header > [slot="sub"]')).toHaveText(
       'Parked at home · 64.0% · 280 km · charging',
     );
     await expect(card(house).locator('.clbl')).toHaveText('Car');
     await expect(card(house).locator('.cright')).toHaveText('Parked at home›');
     await expect(card(house).locator('.hero .v')).toHaveText('64.0%');
     await expect(card(house).locator('.cline')).toHaveText('280 km range · locked · charging');
-    await expect(card(house).locator('.cbar')).toHaveAttribute(
+    await expect(card(house).locator('.socbar')).toHaveAttribute(
       'aria-label',
       'Battery 64.0 percent, charge limit 90 percent',
     );
-    await expect(card(house).locator('.cscale')).toHaveText('0%Limit 90%');
+    await expect(card(house).locator('.socscale')).toHaveText('0%Limit 90%');
     await expect(card(house).locator('.tile .k')).toHaveText(['Charger', 'Last charge', 'Odometer']);
     await expect(card(house).locator('.tile .v').first()).toHaveText('Charging');
     await expect(card(house).locator('.tile .v').last()).toHaveText('12,000km');
@@ -120,17 +119,48 @@ test.describe('on a phone', () => {
     house.errors.length = 0;
   });
 
-  test('a tap on the card, and Enter on it, open the detail, the legacy sheet over the page', async ({house}) => {
+  test('a tap on the card, and Enter on it, open the detail in a sheet over the page, and Close shuts it', async ({
+    house,
+  }) => {
     await house.tab('car');
-    const sheet = house.root().locator('#sh-car');
+    const sheet = pane(house).locator('hp-sheet .sheet');
     await expect(sheet).toBeHidden();
     await card(house).locator('.box').click();
     await expect(sheet).toBeVisible();
-    await sheet.locator('.close').click();
+    await expect(pane(house).locator('hp-sheet hp-car-detail')).toHaveCount(1);
+    await pane(house).locator('hp-sheet .close').click();
     await expect(sheet).toBeHidden();
+    // a closed sheet holds no detail, so no chart and no request is made for it
+    await expect(pane(house).locator('hp-sheet hp-car-detail')).toHaveCount(0);
     await card(house).locator('.box').focus();
     await house.page.keyboard.press('Enter');
     await expect(sheet).toBeVisible();
+  });
+
+  test('the sheet shows the same blocks as the tablet, and the legacy controls between them, from the sheet’s first draw', async ({
+    house,
+  }) => {
+    await house.tab('car');
+    await card(house).locator('.box').click();
+    const detail = pane(house).locator('hp-car-detail');
+    await expect(detail.locator('hp-car-battery h3')).toHaveText('Battery');
+    await expect(detail.locator('hp-car-status h3')).toHaveText('Car status');
+    await expect(detail.locator('hp-car-sessions h3')).toHaveText('Charging history');
+    await expect(detail.locator('hp-car-ford h3')).toHaveText('From Ford');
+    await expect(detail.locator('hp-car-last-plug h3')).toHaveText('Last plug-in'); // Ford has reported no plug-in in the test house
+    // the charger's and comfort's cards are the legacy panel's until #253: drawn into the pane's light DOM, shown through the detail's slot
+    await expect(house.root().locator('#car-charger h3')).toHaveText('Home charger');
+    await expect(house.root().locator('#car-comfort h3')).toHaveText('Comfort and access');
+  });
+
+  test('the detail opens from Home’s car tile on a phone, over Home, with the history asked for it', async ({
+    house,
+  }) => {
+    await house.tab('home');
+    await house.root().locator('[data-opens="car.detail"]').first().click();
+    await expect(pane(house).locator('hp-sheet .sheet')).toBeVisible();
+    await expect(pane(house).locator('hp-car-sessions .stiles .tile')).toHaveCount(4);
+    await expect.poll(() => windowReads(house)).toEqual({hours: 1, days: 1});
   });
 
   test('a light change gives zero mutations in the pane', async ({house}) => {
@@ -156,7 +186,7 @@ test.describe('on a phone', () => {
     await house.setState(PICTURE, {state: 'unknown', attributes: {entity_picture: '/missing/first.png'}});
     await expect.poll(() => asked, 'the first picture is tried').toEqual(['/missing/first.png']);
     await expect(card(house).locator('.carside')).toBeVisible();
-    await expect(card(house).locator('img.cimg')).toHaveCount(0);
+    await expect(card(house).locator('img.carimg')).toHaveCount(0);
     // Home Assistant sends the picture again at another address: the broken one is not retried, nor is the new one
     await house.setState(PICTURE, {state: 'unknown', attributes: {entity_picture: '/missing/second.png'}});
     await house.page.evaluate(
@@ -164,7 +194,7 @@ test.describe('on a phone', () => {
     );
     await house.page.waitForTimeout(250);
     expect(asked, 'the pictures asked for').toEqual(['/missing/first.png']);
-    await expect(card(house).locator('img.cimg')).toHaveCount(0);
+    await expect(card(house).locator('img.carimg')).toHaveCount(0);
   });
 
   test('the tab has no serious or critical accessibility finding', async ({house}) => {
@@ -178,21 +208,120 @@ test.describe('on a phone', () => {
 test.describe('on a tablet', () => {
   test.beforeEach(() => tabletOnly());
 
-  test('the tab is the legacy detail, inline: the pane draws no header and no card', async ({house}) => {
+  const detail = (house: House) => pane(house).locator('hp-car-detail');
+  /** every element of the detail that has a shadow root of its own, for the mutation counter */
+  const DETAIL_HOSTS =
+    'hp-car-pane, hp-car-detail, hp-car-battery, hp-car-status, hp-car-sessions, hp-car-ford, hp-car-last-plug';
+
+  test('the tab is the detail, inline, with its own header and no card', async ({house}) => {
     await house.tab('car');
-    await expect(house.root().locator('#pane-car > .panel')).toBeVisible();
-    await expect(pane(house).locator('hp-pane-header, hp-car-card')).toHaveCount(0);
+    await expect(detail(house)).toBeVisible();
+    await expect(detail(house).locator('hp-pane-header h2')).toHaveText('Car');
+    await expect(detail(house).locator('hp-pane-header [slot="sub"]')).toContainText('Parked at home · locked');
+    await expect(pane(house).locator('hp-car-card')).toHaveCount(0);
+    await expect(house.root().locator('#pane-car > .panel')).toHaveCount(0);
   });
 
-  test('the pane asks for no window of its own: the pane draws nothing from the history, so the days are not read', async ({
+  test('the detail shows the car’s battery, tires and chips, and the departure line, from the house’s entities', async ({
     house,
   }) => {
     await house.tab('car');
+    const d = detail(house);
+    await expect(d.locator('hp-car-battery .carhero .t')).toHaveText('64.0%');
+    await expect(d.locator('hp-car-battery .autonomy')).toHaveText('280 km range');
+    await expect(d.locator('hp-car-battery .socscale')).toHaveText('0%Charge limit 90%100%');
+    await expect(d.locator('hp-car-battery .tile .k', {hasText: 'Plug'})).toHaveCount(1);
+    await expect(d.locator('hp-car-status .tp .k')).toHaveText([
+      'Front left',
+      'Front right',
+      'Rear left',
+      'Rear right',
+    ]);
+    await expect(d.locator('hp-car-status .clear span').first()).toBeVisible();
+    await expect(d.locator('hp-car-status svg[role="img"]')).toHaveAttribute('aria-label', 'Car seen from above');
+    await expect(d.locator('hp-car-ford .arow').last().locator('b')).toHaveText(/^Departure times (on|off)$/);
+  });
+
+  // twelve runs of charging twelve hours apart, each three hours at 7.2 kW (the recorder's hourly rows go back a week): the rule keeps a run of at least one kWh as a session
+  test.describe('with twelve charging sessions', () => {
+    test.use({
+      houseOpts: {
+        cfg: FULL_CFG,
+        charges: {id: CHARGER, runs: Array.from({length: 12}, (_, i) => ({hoursAgo: 20 + 12 * i, hours: 3, kw: 7.2}))},
+      },
+    });
+
+    test('the sessions table shows the latest ten, “Show all 12 sessions” shows every one, and “Show the latest 10” goes back', async ({
+      house,
+    }) => {
+      await house.tab('car');
+      const sessions = detail(house).locator('hp-car-sessions');
+      const rows = sessions.locator('tbody tr');
+      const toggle = sessions.locator('.showall');
+      await expect(sessions.locator('.stiles .tile .v').first()).toHaveText('12');
+      await expect(rows).toHaveCount(10);
+      await expect(toggle).toHaveText('Show all 12 sessions');
+      const newest = await rows.first().locator('td').first().textContent();
+      await toggle.click();
+      await expect(rows).toHaveCount(12);
+      await expect(toggle).toHaveText('Show the latest 10');
+      await expect(rows.first().locator('td').first()).toHaveText(newest ?? '');
+      await toggle.click();
+      await expect(rows).toHaveCount(10);
+      await expect(toggle).toHaveText('Show all 12 sessions');
+    });
+  });
+
+  test('the monthly chart draws from the sessions, in the charger’s colour', async ({house}) => {
+    await house.tab('car');
+    const chart = detail(house).locator('hp-car-sessions hp-chart');
+    await expect(chart.locator('.apexcharts-bar-area').first()).toBeVisible();
+  });
+
+  test('the tab asks for both windows when it is shown, the detail being drawn from them', async ({house}) => {
+    await house.tab('car');
+    await expect(detail(house).locator('hp-car-sessions tbody tr').first()).toBeVisible();
     await house.page.evaluate(
       () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))),
     );
     await house.page.waitForTimeout(250);
-    // the Wallbox's year is the legacy panel's shared load, asked at start; the grid's and the charger's days only a pane that draws them asks
-    await expect.poll(() => windowReads(house)).toEqual({hours: 1, days: 0});
+    await expect.poll(() => windowReads(house)).toEqual({hours: 1, days: 1});
+  });
+
+  test('nothing is drawn again while nothing the detail shows changes: a light and the clock give zero mutations', async ({
+    house,
+  }) => {
+    await house.tab('car');
+    await expect(detail(house).locator('hp-car-sessions tbody tr').first()).toBeVisible();
+    await expect(detail(house).locator('hp-car-sessions .apexcharts-bar-area').first()).toBeVisible();
+    await house.mutations.reset();
+    await house.setState('light.living_room_1', {attributes: {brightness: 100}});
+    // the legacy panel redraws once a second: more than two ticks pass, and the detail's blocks stay as they were
+    await house.page.waitForTimeout(2500);
+    expect(await house.mutations.count(DETAIL_HOSTS), 'mutations').toBe(0);
+  });
+
+  test('a change of one entity redraws only the block that shows it', async ({house}) => {
+    await house.tab('car');
+    await expect(detail(house).locator('hp-car-status .tiles .tile').first()).toBeVisible();
+    await house.mutations.reset();
+    await house.setState('sensor.fordpass_test_odometer', {state: '12010'});
+    await expect(detail(house).locator('hp-car-status .tile', {hasText: 'Odometer'}).locator('.v')).toContainText(
+      '12,010',
+    );
+    await house.page.waitForTimeout(250);
+    expect(await house.mutations.count('hp-car-status'), 'the status block').toBeGreaterThan(0);
+    expect(
+      await house.mutations.count('hp-car-battery, hp-car-sessions, hp-car-ford, hp-car-last-plug'),
+      'the other blocks',
+    ).toBe(0);
+  });
+
+  test('the detail has no serious or critical accessibility finding', async ({house}) => {
+    await house.tab('car');
+    await expect(detail(house).locator('hp-car-sessions tbody tr').first()).toBeVisible();
+    await expect(detail(house).locator('hp-car-sessions .apexcharts-bar-area').first()).toBeVisible();
+    const {violations} = await new AxeBuilder({page: house.page}).include('home-panel').analyze();
+    expect(violations.filter(v => v.impact === 'serious' || v.impact === 'critical').map(v => v.id)).toEqual([]);
   });
 });

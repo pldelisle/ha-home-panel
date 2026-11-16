@@ -58,7 +58,7 @@ src/features/live/
   status-popup.ts          <hp-status-popup>
   activity-card.ts         <hp-activity-card>
   peak-chip.ts             <hp-peak-chip> (pull request 2)
-  styles.css               live.css, .attchip, .att, .arow
+  styles.css               live.css, .attchip (.att, .arow and .clear are the kit's list.css since #252)
 src/ui/
   ring.ts                  <hp-ring> (percent, color, size; the kit's ring)
   styles/ring.css
@@ -142,7 +142,7 @@ export interface LiveViewModel {
 
 ### Styles and strings
 
-- `src/features/live/styles.css` receives all of `src/css/live.css` (319 lines; `.lap`, `.lmain`, `.lbub`, `.lwarn`, `.ll`, `.lv`, `.lsep`, `.lact`, `.lah`, `.lph`, `.lpt`, `.lbig`, `.lmeta`, `.lbar`, `.lbtns`, `.lspark`, `.latt`, `.lstat`), `.attchip` (`extra.css` ~304 to 320, 536), `.att`, `.arow` (`base.css` ~464 to 495; the car's `#car-ford` rows use `.arow` too, so they go to the kit's `list.css` as a shared row style with two users), `.lring` → `ring.css`. `.app.gl` → `:host([glass])` (check 45's rule about the bare round badge is a `:host([glass])` rule now; the test's computed-style assertion is unchanged). `src/css/live.css` is deleted and leaves the legacy set (the footprint drops by one file; `scripts/legacy-set.cjs` keeps `css/` as a folder pattern, so the count is by file).
+- `src/features/live/styles.css` receives all of `src/css/live.css` (319 lines; `.lap`, `.lmain`, `.lbub`, `.lwarn`, `.ll`, `.lv`, `.lsep`, `.lact`, `.lah`, `.lph`, `.lpt`, `.lbig`, `.lmeta`, `.lbar`, `.lbtns`, `.lspark`, `.latt`, `.lstat`), `.attchip` (`extra.css` ~304 to 320, 536), `.att`, `.arow` and `.clear` (already the kit's `list.css` since #252, which the Car's Ford and status blocks share with the Status checks popup: nothing to move, the popup's markup keeps drawing them), `.lring` → `ring.css`. `.app.gl` → `:host([glass])` (check 45's rule about the bare round badge is a `:host([glass])` rule now; the test's computed-style assertion is unchanged). `src/css/live.css` is deleted and leaves the legacy set (the footprint drops by one file; `scripts/legacy-set.cjs` keeps `css/` as a folder pattern, so the count is by file).
 - About eighty `live.*` keys (the checks' titles and lines, the clear phrases, `needsAttention` plural, `allClear`, `status`, `reportingNormally`, the activities' words (`hiloPreheat`, `hiloChallenge`, `hiloRecovery`, `preheat`, `challenge`, `recovery`, `challengeIn`, `endsIn`, `untilHolds`, `untilEnds`, `untilRecovery`, `heldBack`, `warmingUp`, `inside`, `houseUsing`, `ofAllowed`, `charging`, `chargingPaused`, `fullIn`, `fullAt`, `limit`, `pluggedInAt`, `soFarAbout`, `range`, `resumeCharging`, `pauseCharging`, `openCar`, `waterHeater`, `water`, `almostDone`, `started`, `thisCycle`, `cyclesIn24h`, `chargedTo`, `challengeDone`), `criticalPeakNow`), French from the map's entries (`src/i18n/fr.js` ~307 to 331, 1541 to 1700), listed in `test/unit/fixtures/moved/live.json`.
 
 ### Deletion and grep gates

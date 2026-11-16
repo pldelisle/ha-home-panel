@@ -688,6 +688,12 @@
     {
       "key": "car.art.side",
       "translated": "Voiture, vue de côté"
+    },
+    {
+      "key": "car.art.top"
+    },
+    {
+      "key": "car.close"
     }
   ]
 }

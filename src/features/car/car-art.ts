@@ -1,9 +1,10 @@
-// carSide: the drawn car, seen from the side, which the Car card shows in the house's colour when Ford sends no photo or the photo fails to load.
-// Pattern: a template function (Lit docs, Templates) over a constant drawing: the shapes are the legacy panel's `CARSVG`, in the tokens the frame defines (`--car-body`, `--car-glass`, ...),
-// so the theme recolours it with no redraw; the body colour is the one custom property the config may set on it. The legacy detail keeps its own copy until #252, which adds the top view here.
-// Must not: word its label (the card does, through the catalog), read an entity or the config, or hold state.
-import {svg, type SVGTemplateResult} from 'lit';
+// carArt, carSide and carTop: the car's picture: Ford's photo, else the car drawn from the side (the card's and the battery block's), and the car drawn from above (the tire pressures' centre).
+// Pattern: template functions (Lit docs, Templates) over constant drawings, in the tokens the frame defines (`--car-body`, `--car-glass`, ...), so the theme recolours them with no redraw;
+// the side view's body colour is the one custom property the config may set on it. The card and the battery block each keep whether their photo failed, and call `carArt` with it.
+// Must not: word a label (the model does, through the catalog), read an entity or the config, or hold state.
+import {html, svg, type SVGTemplateResult} from 'lit';
 import {ifDefined} from 'lit/directives/if-defined.js';
+import type {CarArtView} from './model.ts';
 
 /** The car from the side: `color` is the body's, null for the frame's default; `label` is what a screen reader says. */
 export const carSide = (color: string | null, label: string): SVGTemplateResult =>
@@ -23,3 +24,17 @@ export const carSide = (color: string | null, label: string): SVGTemplateResult 
     <g><circle cx="90" cy="101" r="22" fill="var(--car-tire)" /><circle cx="90" cy="101" r="14" fill="var(--car-rim)" /><circle cx="90" cy="101" r="4" fill="var(--car-tire)" /></g>
     <g><circle cx="264" cy="101" r="22" fill="var(--car-tire)" /><circle cx="264" cy="101" r="14" fill="var(--car-rim)" /><circle cx="264" cy="101" r="4" fill="var(--car-tire)" /></g>
   </svg>`;
+
+/** The car from above, 90 by 170 pixels, in the frame's body colour; `label` is what a screen reader says. */
+export const carTop = (label: string): SVGTemplateResult =>
+  svg`<svg viewBox="0 0 90 170" width="90" height="170" role="img" aria-label=${label}>
+    <rect x="12" y="6" width="66" height="158" rx="26" fill="var(--car-body)" /><path d="M20 52c8-6 42-6 50 0l-4 22H24zM24 112h42l4 20c-8 6-42 6-50 0z" fill="var(--car-glass)" />
+    <rect x="2" y="30" width="10" height="26" rx="4" fill="var(--car-tire)" /><rect x="78" y="30" width="10" height="26" rx="4" fill="var(--car-tire)" />
+    <rect x="2" y="114" width="10" height="26" rx="4" fill="var(--car-tire)" /><rect x="78" y="114" width="10" height="26" rx="4" fill="var(--car-tire)" />
+  </svg>`;
+
+/** Ford's photo through the image proxy, or the drawn car where there is none or `failed` says it did not load; `onError` is told when the photo fails. */
+export const carArt = ({picture, color, name, drawing}: CarArtView, failed: boolean, onError: () => void) =>
+  picture && !failed
+    ? html`<img class="carimg" src=${picture} alt=${name} @error=${onError} />`
+    : carSide(color, drawing);

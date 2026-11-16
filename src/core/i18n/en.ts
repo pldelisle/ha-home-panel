@@ -904,6 +904,8 @@ export const en = {
   'car.historyFailed': "History didn't load: {reason}. Live values still update.",
   'car.open': 'Open car details',
   'car.art.side': 'Car, side view',
+  'car.art.top': 'Car seen from above',
+  'car.close': 'Close',
 } as const;
 
 /** Every message key; a key exists when it is written in `en`. */

@@ -38,6 +38,20 @@
         frenchAreas: params.get('french_areas') === '1',
         automations: full ? (window.AUTOMATIONS ?? blueprint.automations) : blueprint.automations,
       });
+      // window.CHARGES (set before the page loads) is one charger's hours of charging: its hourly rows say 0 kW outside each run and the run's power inside it, in place of the made-up curve
+      const answer = m => {
+        const reply = read.ws(m),
+          {id, runs} = window.CHARGES ?? {};
+        if (m.type === 'recorder/statistics_during_period' && m.period === 'hour' && reply[id])
+          reply[id] = reply[id].map(row => {
+            const run = runs.find(({hoursAgo, hours}) => {
+              const from = now - hoursAgo * 36e5;
+              return row.start >= from && row.start < from + hours * 36e5;
+            });
+            return {...row, mean: run ? run.kw : 0, max: run ? run.kw + 0.5 : 0};
+          });
+        return reply;
+      };
       // the live subscriptions the panel holds (`subscribeMessage`), so the test's side can deliver a message to them
       const subscriptions = new Set();
       // the messages the panel sent through `callWS`, so a test can say how many times it asked the recorder
@@ -72,7 +86,7 @@
               ? (console.log('WS', JSON.stringify(m)), ((window.SYSDATA = window.SYSDATA || {})[m.key] = m.value), null)
               : (asked.push(m), m.type === 'recorder/statistics_during_period' && m.period === failing)
                 ? Promise.reject(new Error('the recorder is down'))
-                : read.ws(m),
+                : answer(m),
         connection: {
           subscribeMessage: async (callback, msg) => {
             console.log('WS', JSON.stringify(msg)); // the fixture's `ws` lists it, as it lists the system-data writes
