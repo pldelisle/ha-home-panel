@@ -59,9 +59,8 @@ export interface EmptyDetail {
 }
 
 /**
- * An element the guest placed by its tag has nothing to show, or something again: the guest's container toggles its `hidden`, as it
- * did when it drew the markup. The one event the guest hears from an element (ADR 0024); deleted with the Home-card bridge, by the
- * Home move (#268).
+ * An element has nothing to show, or something again: its container toggles its `hidden`, as the legacy panel did when it drew the
+ * markup. The Home pane hears it from the stack and the scenes row (#268), and the guest from the idle stack (ADR 0031) until spec 26.
  */
 export class EmptyEvent extends CustomEvent<EmptyDetail> {
   constructor(empty: boolean) {

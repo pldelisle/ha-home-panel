@@ -459,6 +459,28 @@
       "key": "weather.sunset"
     },
     {
+      "key": "weather.card.thenSunrise",
+      "translated": "lever du soleil"
+    },
+    {
+      "key": "weather.card.thenSunset",
+      "translated": "coucher du soleil"
+    },
+    {
+      "key": "weather.card.high",
+      "values": {
+        "n": 14
+      },
+      "translated": "Max 14°"
+    },
+    {
+      "key": "weather.card.low",
+      "values": {
+        "n": 3
+      },
+      "translated": "min 3°"
+    },
+    {
       "key": "weather.solarNoon",
       "was": "Midi solaire"
     },

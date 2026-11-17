@@ -1,7 +1,7 @@
 // <hp-security-card>: the Home tab's compact security card: the shield header that opens the Security tab, up to four camera
 // thumbnails, and a row per door and motion sensor (or the hint); its box glows for 2.8 seconds when a door opens or motion starts.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over the model's `home` view; the glow is element state: it keeps the last
-// reading and asks `newlyActive`, a pure rule, what turned on since. The guest places it by its tag (ADR 0024), until the Home move (#268).
+// reading and asks `newlyActive`, a pure rule, what turned on since. The Home pane composes it (#268).
 // Must not: read an entity itself (`readSecurity` does), glow on its first draw, keep a timer past its disconnection, or open a sheet (it asks).
 import {LitElement, html, nothing, svg, unsafeCSS} from 'lit';
 import {classMap} from 'lit/directives/class-map.js';

@@ -74,7 +74,6 @@ test("the class draws no frame: the tabs, the rail gate and the phone query are 
   expect(panel).not.toMatch(/const (TABS|PHONE_TABS|TAB_COLOR)\b/);
   for (const gone of ['gateTabs', 'data-tab', 'data-more', 'renderMoreTab', 'max-width:599px', 'this.mq'])
     expect(panel.includes(gone), gone).toBe(false);
-  expect(panel).toMatch(/this\.ctx\.shell\.setTab\(/);
 });
 
 // Spec 14, step C (#166): the phone's More sheet is `<hp-more-sheet>`, an element of the shell drawn from the registry, so the

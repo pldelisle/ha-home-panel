@@ -1,8 +1,8 @@
-// <hp-scene-tiles>: the Home tab's scenes row, one tile per scene and per mode, which the guest places by its tag (ADR 0024).
+// <hp-scene-tiles>: the Home tab's scenes row, one tile per scene and per mode, which the Home pane composes (#268).
 // Pattern: humble object (Meszaros) over `sceneTiles`, run in `willUpdate` with the panel's held values (ADR 0023); a tap holds what
 // it asks for and runs `runScene` or `setMode` through its `CommandRunner`; the row says `hp-empty` when it has nothing to show.
 // A store controller on `mediaIds` (ADR 0012), and a redraw each minute while connected, so a "Last 5 min ago" line keeps time.
-// Must not: read an entity itself (`sceneTiles` does), hold a string the household reads, or reach the guest past `hp-empty`.
+// Must not: read an entity itself (`sceneTiles` does), hold a string the household reads, or tell its container more than `hp-empty`.
 import {LitElement, html, unsafeCSS} from 'lit';
 import {classMap} from 'lit/directives/class-map.js';
 import {ifDefined} from 'lit/directives/if-defined.js';

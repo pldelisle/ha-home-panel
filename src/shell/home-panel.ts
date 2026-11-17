@@ -45,8 +45,9 @@ import type {FeatureDescriptor, FeatureEnv, FeatureKey} from '../ui/feature.ts';
 import {FEATURES, UNDER_MORE, isFeatureKey, visibleTab} from './features.ts';
 import {createGuest, guestStyles, type GuestContext, type GuestRenderer, type ShellForGuest} from './guest.ts';
 import {IdleTimer, type IdleState} from './idle-timer.ts';
-import '../features/people/index.ts'; // defines <hp-who-chips> and <hp-who-card>, which the guest places (ADR 0031)
-import '../features/stack/index.ts'; // defines <hp-smart-stack>, which the guest places (ADR 0031)
+import '../features/people/index.ts'; // defines <hp-who-chips>, which the guest places in the header (ADR 0031)
+import '../features/stack/index.ts'; // defines <hp-smart-stack>, which the guest places beside the idle clock (ADR 0031)
+import {homePaneStyles} from './home-pane.ts';
 import type {ForecastEvent} from '../features/weather/forecast-controller.ts';
 import {STATUS_SHEET, type LiveActivitiesEvent} from '../features/live/index.ts'; // defines <hp-live-pill> and <hp-status-popup>
 import './more-sheet.ts'; // defines <hp-more-sheet>
@@ -121,6 +122,8 @@ export class HomePanel extends LitElement {
   protected static override finalizeStyles(styles?: CSSResultGroup): CSSResultOrNative[] {
     return super.finalizeStyles([unsafeCSS(guestStyles()), styles ?? []]);
   }
+  // The Home pane draws in this root's light DOM (ADR 0032): its rules follow the legacy sheet here.
+  static override styles = homePaneStyles;
 
   // this panel's services, none shared with another panel (ADR 0012)
   private readonly store = createStore(storeOptions());
@@ -132,8 +135,8 @@ export class HomePanel extends LitElement {
   private readonly optimistic = new OverlayStore();
   /** The daily forecast the Weather pane's subscription last heard, for the elements that read tomorrow (ADR 0030). */
   private readonly forecast: ContextProvider<typeof forecastContext>;
-  // The shell hears about the store only when a registry, the language or the user changes: it reads no entity, and the
-  // guest tells it through `requestFrame` when its answer about the house changes. It passes the store itself because
+  // The shell draws again when a registry, the language or the user changes: it reads no entity itself; the descriptors' `available`
+  // is asked at every change (`onAvailability`), and the guest tells it through `requestFrame` when its answer about the house changes. It passes the store itself because
   // a context provider never answers its own element.
   private readonly storeController = new StoreController(this, {
     store: this.store,
@@ -177,6 +180,7 @@ export class HomePanel extends LitElement {
   private guestConnected = false;
   private settingsOff: (() => void) | undefined;
   private statusOff: (() => void) | undefined;
+  private availabilityOff: (() => void) | undefined;
   // which tabs this house shows, asked of the descriptors when the answer may have changed (the store told us, or the guest)
   private stale = true;
   private shown: Readonly<Partial<Record<FeatureKey, boolean>>> = {};
@@ -632,7 +636,16 @@ export class HomePanel extends LitElement {
     this.toldAppearance = this.drawn;
     this.toldTab = this.visible;
     this.requestFrame(); // the guest answers about the house from here on
+    this.availabilityOff?.();
+    this.availabilityOff = this.store.subscribe('*', this.onAvailability);
   }
+
+  // A tab a descriptor's `available` gates (Climate, Car) appears when its entity does: every change asks those descriptors, and the
+  // rail is drawn again only when an answer moved, as the legacy tiles' check asked the shell until the Home move (#268).
+  private readonly onAvailability = (): void => {
+    const {env} = this;
+    if (FEATURES.some(f => f.available && f.available(env) !== (this.shown[f.key] ?? true))) this.requestFrame();
+  };
 
   // The store takes each value and the guest is told after it did, in the order the properties were set: Lit keeps the
   // changed properties in the order they were first set. Home Assistant sets `panel` before `hass`, so there the guest
@@ -686,6 +699,8 @@ export class HomePanel extends LitElement {
     this.guest?.disconnect();
     this.statusOff?.();
     this.statusOff = undefined;
+    this.availabilityOff?.();
+    this.availabilityOff = undefined;
     this.settingsOff?.();
     this.settingsOff = undefined;
     // the toast goes with the panel: no timer runs for a panel off the page

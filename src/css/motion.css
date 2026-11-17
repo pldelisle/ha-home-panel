@@ -9,8 +9,7 @@
   .ausel .close,
   .go,
   button.chip,
-  .more,
-  .htile {
+  .more {
     transition:
       transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
       background-color 0.2s ease,
@@ -78,21 +77,9 @@ button.chip:active,
       100% 0%;
   }
 }
-/* the Car tile's icon pulses while the car charges */
-.htile.chg .hh > span:first-child {
-  display: inline-block;
-  animation: chgpulse 2.2s ease-in-out infinite;
-}
-@keyframes chgpulse {
-  50% {
-    transform: scale(1.15);
-    filter: drop-shadow(0 0 5px var(--c-ev));
-  }
-}
 @media (prefers-reduced-motion: reduce) {
   .pane:not([hidden]),
-  .app.gl::before,
-  .htile.chg .hh > span:first-child {
+  .app.gl::before {
     animation: none;
   }
   .rtab:active svg {

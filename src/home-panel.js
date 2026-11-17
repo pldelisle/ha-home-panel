@@ -10,15 +10,12 @@ import {createFormatters} from './core/i18n/format.ts';
 import {englishLocale, panelLocale} from './core/i18n/locale.ts';
 import {ok, esc, plural} from './legacy/globals.js';
 import {registriesOf} from './core/registry.ts';
-import {rateRoom} from './providers/air-quality.ts';
 import {doorMotionSensors} from './providers/door-motion.ts';
-import {departureSchedule, findCar, readCar} from './providers/fordpass.ts';
-import {hiloChallenge, hiloRates} from './providers/hilo.ts';
+import {departureSchedule, findCar} from './providers/fordpass.ts';
+import {hiloChallenge} from './providers/hilo.ts';
 import {hydroQuebec} from './providers/hydro-quebec.ts';
-import {lightAreas} from './providers/light-areas.ts';
-import {milaRooms} from './providers/mila.ts';
 import {powerNow} from './providers/power.ts';
-import {dayKeys, meterTotals, powerWindows, waterDay} from './providers/power-history.ts';
+import {powerWindows} from './providers/power-history.ts';
 import {ensureFonts} from './fonts.js';
 // Liquid Glass: whether this engine can run an SVG filter inside backdrop-filter (Chromium only)
 const LENS_OK =
@@ -30,84 +27,12 @@ const LENS_OK =
 const sum = a => a.reduce((x, y) => x + (y || 0), 0);
 const f1 = v => (v == null ? '–' : (+v).toFixed(1));
 
-// card order for the column packing
-// 'open-air' is dead until the Home move deletes it (#268): nothing draws in that card any more
-const LAYOUT = ['open-air'];
+// card order for the column packing: none is left since the Home move (#268); #269 deletes it with the columns
+const LAYOUT = [];
 // thermostats without an HA area: the area each Hilo room belongs to
 // areas the Phone tab shows as part of another, the way Apple Home groups them: the parking spot's charger and camera live in the garage
 // Tabs view: one pane per subject, for a tablet fixed to the wall. The rail, the phone's bar and the panes
 // are the shell's (src/shell/features.ts); the guest fills what is inside them.
-// The words the stack's air card and the Home tile say, the legacy panel's own until the stack (#266) and Home (#268) move: the
-// provider rates the air (src/providers/air-quality.ts) and words nothing. [name, unit] by pollutant, and the level words.
-const AIR_WORDS = {pm2_5: ['PM2.5', 'µg/m³'], co2: ['CO₂', 'ppm'], voc: ['VOC', 'µg/m³'], co: ['CO', 'ppm']};
-const AIR_LEVELS = ['Good', 'Moderate', 'Poor'];
-const ICON = {
-  unlink:
-    '<path d="M15.5 13l3.2-3.2a4 4 0 0 0-5.7-5.6l-1.6 1.6"/><path d="M8.5 11l-3.2 3.2a4 4 0 0 0 5.7 5.6l1.6-1.6"/><path d="M8 3v2.5M3 8h2.5M16 21v-2.5M21 16h-2.5"/>',
-  more: '<rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/>',
-  therm: '<path d="M10 3a2 2 0 0 1 4 0v10.3a4.5 4.5 0 1 1-4 0z"/><circle cx="12" cy="17" r="1.6" fill="currentColor"/>',
-  bolt: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
-  wx: '<path d="M9 3v1.5M3.5 5.5l1 1M2 10h1.5M13.5 6.5l1-1M5.5 10a3.5 3.5 0 0 1 6.4-2M8 20h9a3.5 3.5 0 0 0 .3-7 5 5 0 0 0-9.6 1.4A2.8 2.8 0 0 0 8 20z"/>',
-  moon: '<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>',
-  hp: '<rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="10" cy="12" r="3.5"/><path d="M10 8.5v7M6.5 12h7M17 9v6"/>',
-  plug: '<path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4"/>',
-  dinner: '<path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M17 3c-2 1-3 3.5-3 7h3v11"/>',
-  exit: '<path d="M14 4h5v16h-5M10 8l-4 4 4 4M6 12h10"/>',
-  tv: '<rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 20h8"/>',
-  vol: '<path d="M4 10v4h4l5 4V6L8 10z"/><path d="M16.5 9a4.5 4.5 0 0 1 0 6"/>',
-  mute: '<path d="M4 10v4h4l5 4V6L8 10z"/><path d="M17 10l4 4M21 10l-4 4"/>',
-  volup: '<path d="M4 10v4h4l5 4V6L8 10z"/><path d="M19 9v6M16 12h6"/>',
-  voldn: '<path d="M4 10v4h4l5 4V6L8 10z"/><path d="M16 12h6"/>',
-  pp: '<path d="M5 6v12l8-6zM16 6v12M20 6v12"/>',
-  walk: '<circle cx="13" cy="4.5" r="1.8"/><path d="M9 21l2.5-6.5L14 17v4M7.5 12.5l2-4.2 3.6.7 2.2 3.5h2.2M11.5 14.5l-1.3-6"/>',
-  bulb: '<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/>',
-  house: '<path d="M4 11 12 4l8 7v9h-5v-6H9v6H4z"/>',
-  sofa: '<path d="M5 11V8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v3M3 12a2 2 0 0 1 4 0v2h10v-2a2 2 0 0 1 4 0v6H3z"/>',
-  door: '<path d="M6 21V4h12v17M4 21h16M14 12h.01"/>',
-  desk: '<path d="M3 9h18M5 9v11M19 9v11M14 9v6h5"/>',
-  bed: '<path d="M3 19V6M3 14h18v5M21 14v-2a3 3 0 0 0-3-3h-7v5M7 11.5h.01"/>',
-  bath: '<path d="M4 12h16v3a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4zM6 12V6a2 2 0 0 1 4 0M7 19l-1 2M17 19l1 2"/>',
-  drop: '<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/>',
-  car: '<path d="M5 16 6.5 10a2 2 0 0 1 2-1.5h7a2 2 0 0 1 2 1.5L19 16M4 16h16v3H4zM7 19v2M17 19v2"/>',
-  fan: '<path d="M12 12c0-5 1-8 4-8s2 5-4 8zM12 12c5 0 8 1 8 4s-5 2-8-4zM12 12c0 5-1 8-4 8s-2-5 4-8zM12 12c-5 0-8-1-8-4s5-2 8 4z"/>',
-  wind: '<path d="M4 17c2-6 14-6 16 0M7 13l-1-3M12 12V8M17 13l1-3"/>',
-  rear: '<rect x="4" y="6" width="16" height="12" rx="3"/><path d="M8 10h8M8 14h8"/>',
-  wheel: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2"/><path d="M4.5 10h5M14.5 10h5M12 14v6"/>',
-  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
-  // the room status chips, after Apple Home's: gauges for humidity and air, a plug face, a purifier tower, a motion diamond, a CO detector, a speaker
-  hum: '<path d="M7.5 19.8a9 9 0 1 1 9 0"/><path d="M12 7.5s3 3.2 3 5.4a3 3 0 0 1-6 0c0-2.2 3-5.4 3-5.4z"/>',
-  aq: '<path d="M7.5 19.8a9 9 0 1 1 9 0"/><path d="M10 9h.01M14 9h.01M8.5 12h.01M12 11h.01M15.5 12h.01M10 15h.01M14 15h.01M12 13.8h.01"/>',
-  outlet:
-    '<rect x="4" y="4" width="16" height="16" rx="4.5" fill="currentColor"/><path d="M9.5 8.5V12M14.5 8.5V12M11 16.3a1 1 0 0 1 2 0" stroke="var(--bg)" stroke-width="2"/>',
-  purifier:
-    '<rect x="5" y="5" width="11" height="16" rx="2"/><path d="M8 9h5M8 12h5M8 15h5M8 18h5M19 4c1.2.8 1.2 1.7 0 2.5s-1.2 1.7 0 2.5"/>',
-  motion: '<path d="M15 4.5 22.5 12 15 19.5 7.5 12z"/><path d="M8.5 7 3.5 12l5 5"/>',
-  co: '<rect x="3" y="7" width="18" height="10" rx="3"/><path d="M7 10.5v3M9.5 10.5v3M12 10.5v3"/><circle cx="16.5" cy="12" r="1.5"/>',
-  lux: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/>',
-  spk: '<rect x="6" y="3" width="12" height="18" rx="3"/><circle cx="12" cy="7.8" r="1.3"/><circle cx="12" cy="14.5" r="3"/>',
-  prev: '<path d="M6 6v12"/><path d="M19 6.5v11L10 12z" fill="currentColor"/>',
-  next: '<path d="M18 6v12"/><path d="M5 6.5v11l9-5.5z" fill="currentColor"/>',
-  play: '<path d="M7.5 5.5v13l11-6.5z" fill="currentColor"/>',
-  pause: '<path d="M8.5 5.5v13M15.5 5.5v13" stroke-width="3.2"/>',
-  gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
-  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
-  sunauto: '<path d="M3 18h18M5 18a7 7 0 0 1 14 0M12 3v3M4.2 6.2l2.1 2.1M19.8 6.2l-2.1 2.1"/>',
-  cal: '<rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
-  warn: '<path d="M12 3.5 2.5 20h19z"/><path d="M12 10v4.5M12 17.2v.3"/>',
-  sunup: '<path d="M12 3v4.5M9.5 5.5 12 3l2.5 2.5M4.9 11.4l1.6 1.6M19.1 11.4l-1.6 1.6M3 19h18M7 19a5 5 0 0 1 10 0"/>',
-  menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
-  flow: '<circle cx="5" cy="6" r="2"/><circle cx="5" cy="18" r="2"/><circle cx="19" cy="12" r="2.2"/><path d="M7 6c5 0 5 6 9.8 6M7 18c5 0 5-6 9.8-6"/>',
-  shield: '<path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/>',
-  cam: '<path d="M3 7h12a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H3zM17 10.5l4-2.5v8l-4-2.5"/><circle cx="9" cy="12" r="2.5"/>',
-};
-const ico = (k, s = 20) =>
-  `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[k]}</svg>`;
-
-// the house picture from the config (house_image, resolved as config.house), one for the light theme and one for the dark; none by default
-const houseImg = house =>
-  house
-    ? `<img class="house photo day" alt="" src="${esc(house.day)}"><img class="house photo night" alt="" src="${esc(house.night)}">`
-    : '';
 // ---------- weather helpers ----------
 const COND = {
   'clear-night': 'Clear',
@@ -214,11 +139,10 @@ export class LegacyPanel {
       this.tick();
     };
     this.unsubStore = null; // the one path to the one-second render, subscribed in connect
-    this.shared = null; // the history the readers left in this panel share: the meter's totals and the water heater's day (loadSharedHistory)
+    this.shared = null; // when the header's history line last loaded (loadSharedHistory)
     this.drawnTab = 'home'; // the tab the guest last drew its part of (tabChanged); `tab` is the shell's
     this.framed = false; // whether build() has drawn once, so the next draw asks the shell for a fresh frame
-    this.frameKey = null; // what availability() said when the shell was last asked to draw the rail
-    this.car = null; // the car's entities by the provider's rule (findCar), found once there are states: the stack and the Home tile read it through carInputs, until #269
+    this.car = null; // the car's entities by the provider's rule (findCar), found once there are states: the header's upcoming list reads it, until #269
     this.cache = {}; // last innerHTML per container, to skip identical updates
     this.attentionCount = 0; // how many Status checks need attention, told by the shell from the live pill (liveChanged)
     this.liveRunning = false; // whether the live pill shows an activity, told by the shell (liveChanged): the weather chip slims beside it
@@ -441,12 +365,9 @@ export class LegacyPanel {
     if (this.framed) this.ctx.shell.resetFrame();
     this.framed = true;
     // the shell drew the frame (the header, the rail, the panes); the guest draws what is not in it: the parked cards and the idle clock
-    // (the Air card is <hp-air-card>, placed by the Air pane: `#open-air` and `#air` are empty legacy containers, kept until the Home move, #268)
     this.container.innerHTML = `<div class="cols">
     <div class="col c1"></div>
-    <div class="col c2">
-      <div class="card tap" id="open-air" tabindex="0" role="button" aria-description="Open air quality details"><div id="air"></div></div>
-    </div>
+    <div class="col c2"></div>
   </div>`;
     this.$app = this.$('app');
     // `.app` is the shell's and outlives a draw, where a fresh one used to start bare: clear what the guest toggles on it
@@ -455,22 +376,11 @@ export class LegacyPanel {
     this.theme = this.ctx.shell.appearance.theme;
     this.$app.lang = (this.store.isFrench ? this.locale : this.localeEn).tag;
     if (this.store.isFrench) this.frStart();
-    // The scenes row is Media's element, placed by its tag (the Home-card bridge, ADR 0024): written once a draw and never again, and
-    // hidden while it says it has nothing, as the legacy row was. The Home move (#268) deletes the Home-card bridge and its hosts.
-    const hs = this.$('hscenes');
-    hs.innerHTML = '<hp-scene-tiles></hp-scene-tiles>';
-    hs.addEventListener('hp-empty', e => {
-      hs.hidden = e.detail.empty;
-    });
-    // The Security card is the second use, written the same way: its tag once a draw, and the card keeps its glow's memory (#226).
-    this.$('hsec').innerHTML = '<hp-security-card></hp-security-card>';
-    // Who's home and the smart stack are the people and stack features' elements (#266), placed the same way (ADR 0031): the header's
-    // chips after the greeting, the Home card's Who's home and, on a tablet, its stack under the weather, and the stack beside the idle
-    // clock. Each container the guest still fills is a sibling of theirs, so a redraw of the greeting or the weather keeps them.
+    // Who's home and the smart stack are the people and stack features' elements (#266), placed by their tags (the Home-card bridge, ADR 0031):
+    // the header's chips after the greeting and the stack beside the idle clock. Each container the guest still fills is a sibling of
+    // theirs, so a redraw of the greeting keeps them. The Home pane's cards are its own since #268.
     this.$('hello').innerHTML =
       '<h1 id="hello-h"></h1><div id="hello-sub"></div><hp-who-chips place="header"></hp-who-chips>';
-    this.$('hwx').innerHTML = '<div id="hwx-wx" style="display:contents"></div><hp-who-card></hp-who-card>';
-    this.placeHomeStack();
     this.$('iwrap').innerHTML =
       '<div id="iss"><div class="ssc" id="iclk"></div><div class="ssk" id="istk" hidden><hp-smart-stack mode="idle"></hp-smart-stack></div></div>';
     this.idleStackShown = false;
@@ -590,18 +500,6 @@ export class LegacyPanel {
   doorSensors() {
     return doorMotionSensors(this.store.hass.states, registriesOf(this.store.hass), this.store.names);
   }
-  // Air's one read left in the legacy panel (#234): the provider's rooms, each with its rating, over the store. Its last caller
-  // is the Home tile, which leaves with #268.
-  airRooms() {
-    return milaRooms(this.store.hass.states, registriesOf(this.store.hass), this.store.names).map(room => ({
-      room,
-      rating: rateRoom(room),
-    }));
-  }
-  // a pollutant's reading as the Home tile says it (the feature words its own through the formatters)
-  airFigure(k, v) {
-    return v == null ? '–' : k === 'co' && v < 10 ? (+v).toFixed(1) : this.fmtEn.integer(v);
-  }
   // Mercury drop (v1.19.0): Chromium bends the backdrop of every glass surface with a blurred fractal-noise displacement map (the Aether CSS
   // "glass-distortion" filter, referenced from glass.css through the mc class). WebKit drops url() filters, so it keeps the frosted glass from the CSS
   lensAll() {
@@ -623,18 +521,6 @@ export class LegacyPanel {
     this.$('menu').addEventListener('click', () =>
       this.host.dispatchEvent(new Event('hass-toggle-menu', {bubbles: true, composed: true})),
     );
-    [
-      ['open-air', 'air.detail'], // dead until the Home move (#268): the card is empty and parked
-    ].forEach(([b, s]) => {
-      const el = this.$(b);
-      el.addEventListener('click', () => this.sheets.open(s));
-      el.addEventListener('keydown', e => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          this.sheets.open(s);
-        }
-      });
-    });
     this.root.addEventListener('click', e => {
       // a tap outside the Status popup closes it (the shell keeps it); a tap on the pill stops at the pill
       if (!e.composedPath().some(n => n instanceof Element && n.localName === 'hp-status-popup'))
@@ -642,8 +528,6 @@ export class LegacyPanel {
       const sp = this.$('setpop');
       if (!sp.hidden && !e.composedPath().some(n => n === sp || n === this.$('gear'))) this.ctx.shell.closeSettings();
     });
-    // Tabs view: the rail and the glance tiles switch panes; scenes and speakers work as on the phone view
-    const tv = this.$('tabview');
     this.$('pane-auto').addEventListener('click', e => {
       const r = e.target.closest('[data-run]'),
         c = e.target.closest('[data-au]'),
@@ -659,14 +543,6 @@ export class LegacyPanel {
         if (card) card.scrollIntoView({behavior: 'smooth', block: 'start'});
       }
     });
-    const onTap = e => {
-      // phone: tiles open sheets
-      const sh = e.target.closest('[data-opens]');
-      if (sh) return this.sheets.open(sh.dataset.opens);
-      const t = e.target.closest('[data-pane]');
-      if (t) return this.ctx.shell.setTab(t.dataset.pane);
-    };
-    tv.addEventListener('click', onTap);
   }
 
   // The shell draws the toast (<hp-toast>, #275): this asks for one as an element does, with a `ToastEvent`'s shape (the legacy code may
@@ -705,12 +581,9 @@ export class LegacyPanel {
   // ---------- live values ----------
   // Energy's reads left in the legacy panel (#241): the providers over the store, in kW, each reader taking the fields it needs
   // (the provider words nothing). Their callers leave with the peak chip (#257), the stack (#265, #266),
-  // the Home tiles (#268), the header (#269) and the More word (the guest).
+  // the header (#269) and the More word (the guest).
   powerNow() {
     return powerNow(this.store.hass?.states ?? {}, this.store.config);
-  }
-  hiloRates() {
-    return hiloRates(this.store.hass?.states ?? {}, this.store.config);
   }
   hiloChallenge() {
     return hiloChallenge(this.store.hass?.states ?? {}, this.store.config);
@@ -756,24 +629,9 @@ export class LegacyPanel {
     );
   }
 
-  // ---------- the car, for the legacy readers ----------
-  // the car as the provider reads it, null when the house has none; the stack and the Home tile read it until #269 (Home)
-  carInputs() {
-    return this.car ? readCar(this.hass.states, this.store.config, this.store.names, this.car) : null;
-  }
-  // the sections this house has nothing for (true = nothing), for the Home tiles gateLacking hides: Climate with no thermostat and no heat pump, and the
-  // water heater with neither of its sensors (the Climate tab is its descriptor's `available`, #248, Car's is its own, #251, and Energy's own cards
-  // and tiles are the pane's, #239). Deleted with Home's tiles (#268)
-  lacking() {
-    return {
-      climate: !this.ROOMS.length && !this.st(this.E.hp),
-      water: !(this.st(this.E.whT) || this.st(this.E.whP)),
-    };
-  }
-
   // ---------- history ----------
   // The panel's shared history, read at start, when the config changes and every fifteen minutes; the cache answers a repeat within them (ADR 0028). Each pane loads
-  // its own windows (ADR 0024); this one is what the readers below the features still use. It leaves with its last reader: #256, #266, #268 and #269.
+  // its own windows (ADR 0024); this one is what the readers below the features still use. It leaves with its last reader, the header (#269).
   async refreshShared() {
     // a load under another config (the panel was redrawn meanwhile) is let go: the cache rejects its replies as StaleReply
     const generation = this.store.generation;
@@ -792,26 +650,15 @@ export class LegacyPanel {
     this.cache = {};
     this.renderLive();
   }
-  // What the readers left in this panel still read: the Home tiles (the meter's today and the water heater's day) and the header's "Live · history" line
-  // (`at`); the live pill reads its own through the cache since #256, and the smart stack its own since #266. The power windows are asked through the
-  // panel-wide cache, the very calls Energy's card makes, so each is read once for the panel (ADR 0028), and cut by the providers' slices; the energy-only
-  // windows are the card's, asked when it first connects. It is deleted with its last reader: #268 (the Home tiles) and #269 (the header).
+  // What the header's "Live · history" line reads (`at`): the time the power windows last loaded, asked through the panel-wide cache, the
+  // very calls Energy's card and the Home tiles make, so each is read once for the panel (ADR 0028). The Home tiles read their own since #268;
+  // this is deleted with its last reader, the header (#269).
   async loadSharedHistory(now) {
     const {config} = this.store,
       ask = ({ids, period, start, types}) => this.ctx.statistics.statistics(ids, period, start, types);
     const w = powerWindows(now, config, this.fmtEn);
-    const [today, meter33, fiveMin25h] = await Promise.all([ask(w.today), ask(w.meter33), ask(w.fiveMin25h)]);
-    return {
-      at: new Date(),
-      totals: meterTotals(
-        meter33,
-        today,
-        {energy: config.entities.energy},
-        dayKeys(now, this.fmtEn),
-        this.fmtEn.isoDay,
-      ),
-      wh24: waterDay(fiveMin25h, {temperature: config.entities.whT, power: config.entities.whP}),
-    };
+    await Promise.all([ask(w.today), ask(w.meter33), ask(w.fiveMin25h)]);
+    return {at: new Date()};
   }
 
   // ---------- sheets ----------
@@ -861,26 +708,8 @@ export class LegacyPanel {
       this.leaveTabs();
       this.enterTabs();
     }
-    this.placeHomeStack();
     this.cache = {};
     this.renderLive();
-  }
-  // The Home card's stack slot, on a tablet only, as the legacy `renderHome` drew it: written when the card is drawn and when the
-  // shape changes, never in a redraw, with the stack's element inside (the Home-card bridge, ADR 0031); hidden while it has no card.
-  placeHomeStack() {
-    const slot = this.$('hstk');
-    if (this.compact) return slot?.remove();
-    if (slot) return;
-    this.$('hwx').insertAdjacentHTML(
-      'beforeend',
-      '<div class="hstk" id="hstk" hidden><hp-smart-stack mode="home"></hp-smart-stack></div>',
-    );
-    const added = this.$('hstk');
-    added.addEventListener('hp-empty', e => {
-      added.hidden = e.detail.empty;
-    });
-    // a tap on a card stays in the Home card, as the legacy handler kept it: the page's own click closes the popups
-    added.addEventListener('click', e => e.stopPropagation());
   }
   // the word under each section in the phone's More sheet, in English, for the registry's summary
   moreLines() {
@@ -935,32 +764,12 @@ export class LegacyPanel {
   }
   renderTabs() {
     if (this.view !== 'tabs' || !this.hass) return;
-    for (const f of ['renderHome', 'renderPaneSubs', 'renderAuto', 'gateLacking']) {
+    for (const f of ['renderPaneSubs', 'renderAuto']) {
       try {
         this[f]();
       } catch (e) {
         console.error('home-panel tabs', f, e);
       }
-    }
-  }
-  // what the house lacks is hidden wherever it shows. The rail's Climate and Car buttons are the shell's: it asks the Climate descriptor's `available`
-  // and availability() (Car) and draws the rail from the answers. The Home tiles that open them, and the phone's Water heater tile, are the guest's, and it
-  // hides them here. It runs last in renderTabs because the renderers above redraw their tiles whole: a hide that ran before
-  // a redraw let the new tile show until the next update hid it again
-  gateLacking() {
-    const L = this.lacking(),
-      hide = (sel, off) =>
-        this.root.querySelectorAll(sel).forEach(el => {
-          el.hidden = off;
-        });
-    hide('[data-pane="climate"]', L.climate);
-    hide('[data-pane="car"]', !this.car);
-    hide('[data-opens="energy.water"]', L.water);
-    // Climate's and Car's tabs answer from their descriptors, not from availability(), but a change of either must still ask the shell for a frame: this key carries them (deleted with Home's tiles, #268)
-    const key = JSON.stringify([!this.car, L.climate]);
-    if (key !== this.frameKey) {
-      this.frameKey = key;
-      this.ctx.shell.requestFrame();
     }
   }
   // which tabs this house lacks (false: nothing for it), for the shell's registry: none of the tabs the guest still draws has an opinion, Climate's and Car's are their descriptors' `available`
@@ -990,185 +799,6 @@ export class LegacyPanel {
           .filter(Boolean)
           .join(' · '),
       );
-  }
-  // The configuration card (spec 13): one line per setting the panel could not use, for an admin, while the store holds
-  // problems; nothing at all otherwise (the host stays hidden and empty, so a clean config draws exactly what it always drew).
-  // The text is the catalog's, in the user's language, escaped like every legacy string. translate="no": it is already in
-  // that language, and the French layer (which reads English) must not look it up a second time, neither its text nor any
-  // aria-label or title the aside may one day carry (the layer skips both under that attribute).
-  renderConfigCard() {
-    const host = this.$('cfgerr');
-    if (!host) return;
-    const problems = this.store.isAdmin ? this.store.configProblems : [];
-    const t = this.store.t;
-    // every message opens with its path (`rooms[1].icon: ...`): the path is set in <code>, the rest is the message
-    const line = p => {
-      const msg = t(p.key, p.values);
-      return `<li>${msg.startsWith(p.path) ? `<code>${esc(p.path)}</code>${esc(msg.slice(p.path.length))}` : esc(msg)}</li>`;
-    };
-    this.set(
-      'cfgerr',
-      problems.length
-        ? `<aside class="card cfgerr" aria-labelledby="cfgerr-h" translate="no"><h3 id="cfgerr-h">${esc(t('config.title'))}</h3><p>${esc(t('config.intro', {n: problems.length}))}</p><ul>${problems.map(line).join('')}</ul><p class="s">${esc(t('config.footer'))}</p></aside>`
-        : '',
-    );
-    host.hidden = !problems.length;
-  }
-  // Home pane, as sketched: weather and the house on the left, six big tiles, then doors and what's coming up
-  renderHome() {
-    if (this.tab !== 'home') return;
-    this.renderConfigCard();
-    const L = this.powerNow(),
-      isOn = i => (this.st(i) || {}).state === 'on',
-      SH = this.shared;
-    const sun = this.st(this.E.sun),
-      dayUp = sun && sun.state === 'above_horizon',
-      nxt = this.st(dayUp ? this.E.setting : this.E.rising),
-      nxt2 = this.st(dayUp ? this.E.rising : this.E.setting);
-    const temp = this.attr(this.E.weather, 'temperature') ?? this.num(this.E.outT),
-      cond = this.st(this.E.cond),
-      hi = this.num(this.E.hi),
-      lo = this.num(this.E.lo);
-    this.set(
-      'hwx-wx',
-      `<div class="muted" style="font-size:13px;font-weight:500">${dayUp ? 'Sunset' : 'Sunrise'} <b style="color:var(--fg)">${ok(nxt) ? this.fmtEn.time(new Date(nxt.state)) : '–'}</b>${ok(nxt2) ? ` · ${dayUp ? 'sunrise' : 'sunset'} <b style="color:var(--fg)">${this.fmtEn.time(new Date(nxt2.state))}</b>` : ''}</div>
-      <div class="hbig"><span class="num">${temp == null ? '–' : Math.round(temp) + '°'}</span><div><div class="hc">${esc(condName(ok(cond) ? cond.state : (this.st(this.E.weather) || {}).state))}</div><div class="muted">${hi != null ? `High ${Math.round(hi)}°` : ''}${lo != null ? ` · low ${Math.round(lo)}°` : ''}</div></div></div>
-      <div class="hhouse">${houseImg(this.CFG.house)}</div>
-`,
-    );
-    const A = this.houseLights(),
-      onAreas = A.map(a => ({a, on: a.ids.filter(isOn)})).filter(x => x.on.length);
-    const temps = L.rooms.map(r => r.temperature).filter(v => v != null),
-      avg = temps.length ? sum(temps) / temps.length : null,
-      nHeat = L.rooms.filter(r => r.heating).length;
-    const hp = this.st(this.E.hp),
-      hpTxt = !ok(hp) ? 'offline' : hp.state === 'off' ? 'off' : hp.attributes.hvac_action || hp.state;
-    const c = this.carInputs(),
-      // the tier as the tile said it: "low rate", "medium rate", "challenge rate", "current rate", "rate unknown"; the legacy English,
-      // which leaves with the Home tiles (#268), when the model's tier wording takes over
-      rateShort = {
-        low: 'low rate',
-        medium: 'medium rate',
-        challenge: 'challenge rate',
-        current: 'current rate',
-        unknown: 'rate unknown',
-      }[this.hiloRates().tier];
-    // the Air tile: the worst room's level, and what is high in the rooms at that level
-    const airs = this.airRooms(),
-      airWorst = Math.max(-1, ...airs.map(x => x.rating.level)),
-      airWhy = airs
-        .filter(x => x.rating.level === airWorst && airWorst > 0)
-        .map(
-          ({room, rating}) =>
-            `${room.name}: ${rating.why.length ? rating.why.map(w => `${AIR_WORDS[w.k][0]} ${this.airFigure(w.k, w.v)}`).join(', ') : `Mila index ${Math.round(rating.milaIndex)}`}`,
-        )
-        .join(' · ');
-    const whT = this.num(this.E.whT),
-      whP = this.kw(this.E.whP),
-      wh24 = SH ? sum(SH.wh24.p.filter(x => x[0] >= Date.now() - 864e5).map(x => x[1])) / 12 : null;
-    const kwTxt = v => (v == null ? '–' : v < 1 ? Math.round(v * 1000) + ' W' : v.toFixed(2) + ' kW');
-    const tiles = [
-      [
-        'lights',
-        'bulb',
-        'var(--warn)',
-        'Lights',
-        onAreas.length
-          ? plural(
-              onAreas.reduce((n, x) => n + x.on.length, 0),
-              'light',
-            ).replace(/^(\d+) lights?$/, '$1 on')
-          : 'All off',
-        onAreas.length
-          ? esc(
-              onAreas
-                .map(
-                  x =>
-                    `${x.a.name} ${Math.round(sum(x.on.map(i => this.attr(i, 'brightness') || 0)) / x.on.length / 2.55)}%`,
-                )
-                .join(' · '),
-            )
-          : 'Nothing on',
-      ],
-      [
-        'climate',
-        'therm',
-        'var(--c-heat)',
-        'Climate',
-        avg == null ? '–' : avg.toFixed(1) + '°',
-        `Inside · ${plural(nHeat, 'room')} heating${this.E.hp ? ` · heat pump ${esc(hpTxt)}` : ''}`,
-      ],
-      [
-        'car',
-        'car',
-        'var(--c-ev)',
-        'Car',
-        c ? f1(c.soc) + '%' : '–',
-        c
-          ? [
-              c.range != null ? Math.round(c.range) + ' km' : '',
-              c.charging ? 'charging' : c.plugged ? 'plugged in' : 'unplugged',
-              c.locked == null ? '' : c.locked ? 'locked' : 'unlocked',
-            ]
-              .filter(Boolean)
-              .join(' · ')
-          : 'No car found',
-      ],
-      [
-        'energy',
-        'bolt',
-        'var(--c-grid)',
-        'Energy',
-        kwTxt(L.grid),
-        `Now${SH ? ` · ${f1(SH.totals.today)} kWh today` : ''} · ${esc(rateShort)}`,
-      ],
-      [
-        'air',
-        'aq',
-        'var(--ok)',
-        'Air',
-        !airs.length ? '–' : airWorst < 0 ? 'No data' : AIR_LEVELS[airWorst],
-        !airs.length
-          ? 'No purifiers'
-          : `${plural(airs.length, 'purifier')}${airWorst > 0 ? ' · ' + esc(airWhy) : ' · clean air everywhere'}`,
-      ],
-      [
-        'energy',
-        'drop',
-        'var(--c-wh)',
-        'Water heater',
-        whT == null ? '–' : f1(whT) + '°',
-        `${whP > 0.02 ? 'Heating' : 'Idle'}${wh24 != null ? ` · ${wh24.toFixed(1)} kWh today` : ''}`,
-      ],
-    ];
-    // on a phone a tile opens its sheet straight away; Lights goes to its section, the water heater opens its card (Energy's sheet)
-    const PH = {
-      climate: 'data-opens="climate.detail"',
-      car: 'data-opens="car.detail"',
-      energy: 'data-opens="energy.detail"',
-      air: 'data-opens="air.detail"',
-    };
-    const extra = (k, i) => (!this.compact ? '' : i === 'drop' ? 'data-opens="energy.water"' : PH[k] || '');
-    const hwx = this.$('hwx');
-    hwx.classList.toggle('tap', this.compact);
-    if (this.compact) {
-      hwx.dataset.opens = 'weather.detail';
-      hwx.setAttribute('role', 'button');
-      hwx.tabIndex = 0;
-    } else {
-      delete hwx.dataset.opens;
-      hwx.removeAttribute('role');
-      hwx.removeAttribute('tabindex');
-    }
-    this.set(
-      'htiles',
-      tiles
-        .map(
-          ([k, i, col, lbl, v, sb]) =>
-            `<button type="button" class="htile${k === 'car' && c && c.charging ? ' chg' : ''}" data-pane="${k}" ${extra(k, i)}><span class="hh"><span style="color:${col}">${ico(i, 22)}</span><span class="lbl">${lbl}</span><span class="go">›</span></span><span class="hv num">${v}</span><span class="hs">${sb}</span></button>`,
-        )
-        .join(''),
-    );
   }
   // what the house has planned: the sun (the theme and the sunrise lights-off follow it), Hilo, Hydro-Québec, the car, routines
   upcoming() {
@@ -1200,15 +830,6 @@ export class LegacyPanel {
     });
     return out;
   }
-  // the house's light areas by the provider, for the stack's card and the Home tile, which need no link or order (#266, #268)
-  houseLights() {
-    const {hass, names, config} = this.store;
-    return lightAreas(hass.states, registriesOf(hass), names, config).map(a => ({
-      ...a,
-      name: a.name || 'Other lights',
-    }));
-  }
-
   // ---------- the departure schedule's words, which the stack's car card and the header's upcoming list still read until #269 ----------
   // a time of day with no date, such as the departure schedule's hours and minutes: placed on a fixed UTC day and read
   // back by the UTC set, so that neither the browser's zone nor the house's moves it

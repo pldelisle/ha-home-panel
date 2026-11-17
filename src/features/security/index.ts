@@ -6,7 +6,7 @@
 import {html} from 'lit';
 import {CAMERA_SHEET, HISTORY_SHEET, entityIdOf} from './sheets.ts';
 import './security-pane.ts'; // defines <hp-security-pane>
-import './security-card.ts'; // defines <hp-security-card>, which the guest places on the Home tab (ADR 0024)
+import './security-card.ts'; // defines <hp-security-card>, which the Home pane places
 import type {FeatureDescriptor} from '../../ui/feature.ts';
 
 export const securityFeature: FeatureDescriptor = {

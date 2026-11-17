@@ -225,6 +225,10 @@ export const en = {
   'weather.lowWord': 'low',
   'weather.sunrise': 'Sunrise',
   'weather.sunset': 'Sunset',
+  'weather.card.thenSunrise': 'sunrise', // the Home pane's weather card (#268)
+  'weather.card.thenSunset': 'sunset',
+  'weather.card.high': 'High {n}°',
+  'weather.card.low': 'low {n}°',
   'weather.solarNoon': 'Solar noon',
   'weather.firstLight': 'first light {time}',
   'weather.lastLight': 'last light {time}',

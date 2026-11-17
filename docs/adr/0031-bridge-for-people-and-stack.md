@@ -1,6 +1,6 @@
 # 0031: The Home-card bridge also places Who's home and the smart stack, with a static attribute, in slots the guest writes once
 
-Status: accepted (2026-11-17)
+Status: accepted (2026-11-17); its `#hwx` uses closed on 2026-11-17 by the Home move (#268)
 
 ## Context
 

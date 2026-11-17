@@ -3,7 +3,7 @@
 // words every message through `deps.t` (units and symbols are literal) and formats everything through `deps.fmt`, and returns a tree of strings and numbers.
 // Each rule is the legacy panel's own (weatherSummary, renderWeather, renderWeatherNow, renderForecast, wxDays, dayName).
 // Must not: import the DOM, a UI kit element or the shell, hold a colour (tiles carry a tone name), or read the clock.
-import {capitalise, DASH, DAY_MS, HOUR_MS} from '../../core/figures.ts';
+import {capitalise, DASH, DAY_MS, HOUR_MS, joined} from '../../core/figures.ts';
 import {conditionName} from '../../core/i18n/condition-name.ts';
 import {degrees, whole, type Formatters} from '../../core/i18n/format.ts';
 import type {Messages} from '../../core/i18n/messages.ts';
@@ -564,6 +564,43 @@ function sunView(inputs: WeatherInputs, deps: WeatherModelDeps, days: Days, {t, 
 /** The current condition: the source's own phrase has its message, else the word is Home Assistant's (or capitalised as it came). */
 const conditionOf = (inputs: WeatherInputs, {t, condition}: Say): string =>
   inputs.conditionWords ? t(inputs.conditionWords) : condition(inputs.condition);
+
+/** The Home pane's weather card (#268): the next sun event and the one after, the big temperature, the condition, the high and low. */
+export interface WeatherCardView {
+  /** "Sunset" or "Sunrise", whichever comes next, and its time (a dash when the sensor reads nothing). */
+  next: {label: string; time: string};
+  /** The other event, lower case after the first ("sunrise"), when its sensor reads a time. */
+  then: {label: string; time: string} | null;
+  temperature: string;
+  condition: string;
+  /** "High 7° · low -1°", or what of it the sensors give. */
+  range: string;
+}
+
+/** The legacy `renderHome`'s weather part, which #268 deletes: the sun's two events in the order they come, by the sun entity. */
+export function weatherCardModel(
+  inputs: WeatherInputs,
+  sun: {set: number | null; rise: number | null},
+  {t, fmt}: Pick<WeatherModelDeps, 't' | 'fmt'>,
+): WeatherCardView {
+  const say = sayWith(t, fmt);
+  const up = inputs.sun.up;
+  const [first, second] = up ? [sun.set, sun.rise] : [sun.rise, sun.set];
+  const {hi, lo} = inputs.today;
+  return {
+    next: {label: t(up ? 'weather.sunset' : 'weather.sunrise'), time: first === null ? DASH : fmt.time(first)},
+    then:
+      second === null
+        ? null
+        : {label: t(up ? 'weather.card.thenSunrise' : 'weather.card.thenSunset'), time: fmt.time(second)},
+    temperature: inputs.temperature === null ? DASH : degrees(fmt, inputs.temperature),
+    condition: conditionOf(inputs, say),
+    range: joined(
+      hi === null ? '' : t('weather.card.high', {n: whole(fmt, hi)}),
+      lo === null ? '' : t('weather.card.low', {n: whole(fmt, lo)}),
+    ),
+  };
+}
 
 /** The word under Weather in the phone's More sheet: "4° · Partly cloudy", or nothing when the house has no temperature. */
 export function weatherBrief(inputs: WeatherInputs, {fmt, t}: Pick<WeatherModelDeps, 'fmt' | 't'>): string {

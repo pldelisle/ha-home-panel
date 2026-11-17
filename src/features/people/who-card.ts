@@ -1,6 +1,6 @@
 // <hp-who-card>: the Home card's Who's home, its label above the chips, or the hint when no one is tracked.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over `peopleModel`; the chips are `<hp-who-chips place="card">`, so the two
-// places draw one row. The guest places it in the Home card through the Home-card bridge (ADR 0031) until the Home pane composes it (#268).
+// places draw one row. The Home pane composes it in its card (#268).
 // Must not: read an entity itself (`presence` does), word anything (the model does), or draw the chips' row itself.
 import {LitElement, html, unsafeCSS} from 'lit';
 import './who-chips.ts'; // defines <hp-who-chips>
