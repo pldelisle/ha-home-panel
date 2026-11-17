@@ -78,12 +78,10 @@ const headings = (lang: keyof typeof TITLES) => async (house: House) => {
     // a tablet's Energy pane draws no header of its own: the one in the pane is the detail's, titled Home energy
     if (tab === 'energy' && !isPhone(house))
       return await expect(pane.locator('hp-energy-detail hp-pane-header h2')).toHaveCount(1);
-    // a tablet's Car pane draws no header: its tab is the legacy detail, inline, until #252
-    if (tab === 'car' && !isPhone(house)) return await expect(pane.locator('hp-pane-header')).toHaveCount(0);
     // a tablet's Climate pane has one header, titled Home climate, which carries the range tabs, as the legacy detail's header did
     if (tab === 'climate' && !isPhone(house))
       return await expect(pane.locator('hp-pane-header h2')).toHaveText(HOME_CLIMATE[lang]);
-    // the pane's own header is the first; on a tablet the Weather and Air details draw one of their own after it
+    // the pane's own header is the first; on a tablet the Weather and Air details draw one of their own after it, and the Car pane's only is its detail's
     await expect(pane.locator('hp-pane-header h2').first(), tab).toHaveText(
       TITLES[lang][tab as keyof (typeof TITLES)['en']],
     );
@@ -211,13 +209,12 @@ test.describe('full house', () => {
     await headings('en')(house);
     await eachShownTab(house, async (tab, pane) => {
       // a tablet's Weather and Air panes have the header of their detail too, with the summary under it; Energy's has only its detail's; a phone's
-      // Climate pane has the header of its sheet, closed, after its own; a tablet's Car pane has none
+      // Climate and Car panes have the header of their sheet, closed, after their own; a tablet's Car pane has only its detail's
       const headers =
-        ((tab === 'weather' || tab === 'air') && !isPhone(house)) || (tab === 'climate' && isPhone(house))
+        ((tab === 'weather' || tab === 'air') && !isPhone(house)) ||
+        ((tab === 'climate' || tab === 'car') && isPhone(house))
           ? 2
-          : tab === 'car' && !isPhone(house)
-            ? 0
-            : 1;
+          : 1;
       await expect(pane.locator('hp-pane-header > [slot="sub"]'), tab).toHaveCount(headers);
     });
   });
@@ -240,7 +237,7 @@ test.describe('full house', () => {
   }) => {
     phoneOnly(); // the summary header, which only the phone shows, is where the car is named
     await house.tab('car');
-    await expect(house.root().locator('#pane-car hp-pane-header h2')).toHaveText('Car');
+    await expect(house.root().locator('#pane-car hp-pane-header h2').first()).toHaveText('Car');
   });
 });
 
@@ -250,7 +247,7 @@ test.describe('a named car', () => {
   test('55 the Car heading is the name the config gives the car', async ({house}) => {
     phoneOnly();
     await house.tab('car');
-    await expect(house.root().locator('#pane-car hp-pane-header h2')).toHaveText('Roadster');
+    await expect(house.root().locator('#pane-car hp-pane-header h2').first()).toHaveText('Roadster');
   });
 });
 

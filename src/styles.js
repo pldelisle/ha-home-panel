@@ -7,10 +7,11 @@
 // did; the segmented control and the range tabs follow base.css (the tabs' rules moved up from base.css, glass.css and motion.css with the Weather history, #159); the sheet's chrome comes after tabs.css and before phone.css, and the header's badge
 // and the pane header follow it; the tile, the More list and the settings popup's tiles (from the end of extra.css, with their
 // glass rules) come after phone.css and before glass.css, followed by the detail panel's tiles, inner cards and chart legend (their rules
-// moved up from base.css, tabs.css, extra.css, motion.css and glass.css with the Weather detail, #158). The hero follows base.css, where its rules were (#239), and the pill button after it (#248). motion.css comes last because it overrides the others.
+// moved up from base.css, tabs.css, extra.css, motion.css and glass.css with the Weather detail, #158). The hero follows base.css, where its rules were (#239), and the pill button after it (#248); the status list's rows and chips (`.att`, `.arow`, `.clear`, #252) come right after base.css, where they began. motion.css comes last because it overrides the others.
 import tokens from './ui/styles/tokens.css?inline';
 import common from './ui/styles/common.css?inline';
 import base from './css/base.css?inline';
+import list from './ui/styles/list.css?inline';
 import button from './ui/styles/button.css?inline';
 import hero from './ui/styles/hero.css?inline';
 import seg from './ui/styles/seg.css?inline';
@@ -37,6 +38,7 @@ export const CSS = [
   tokens,
   common,
   base,
+  list,
   button,
   hero,
   seg,

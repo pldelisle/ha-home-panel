@@ -11,20 +11,13 @@
   backdrop-filter: var(--g-bd);
   box-shadow: var(--g-edge);
 }
-/* dense glass: surfaces that carry text (the Status popup, confirmation toasts, phone sheets) fill and blur more */
-.app.gl .pop,
-.app.gl .toast:not(.err) {
+/* dense glass: surfaces that carry text (the Status popup, phone sheets) fill and blur more; the toast's own rules are <hp-toast>'s */
+.app.gl .pop {
   background: var(--g-dense);
   border: 0;
   -webkit-backdrop-filter: var(--g-bd);
   backdrop-filter: var(--g-bd);
   box-shadow: var(--g-edge);
-}
-.app.gl .toast:not(.err) {
-  color: var(--fg);
-  border-radius: 999px;
-  padding: 12px 18px;
-  font-weight: 600;
 }
 /* phone: the bar floats as a capsule; the open section sits in a lighter capsule of its own, tinted with the section's colour */
 .app.tabsv.gl.cp .rail {
@@ -50,10 +43,6 @@
 }
 .app.tabsv.gl:not(.cp) .rtab[aria-selected='true'] {
   background: color-mix(in srgb, var(--rc) 20%, var(--g-sel));
-}
-/* phone: toasts sit above the floating capsule */
-.app.gl.cp .toast {
-  bottom: calc(86px + env(safe-area-inset-bottom, 0px));
 }
 /* the wallpaper: a fixed layer behind the page (iOS ignores background-attachment:fixed), soft colour washes for the glass to bend */
 .app.gl {
@@ -177,11 +166,6 @@
 }
 /* v1.18.2: every other surface follows. Top-level panels (sheet sections, room list) are glass cards; inner wells (rows, segmented controls, tabs, steppers, sensor and speaker rows) take the tile fill; small buttons inside take the selected-bubble fill; tinted "on" states mix their accent into the glass instead of the opaque card */
 .app.gl .larea,
-.app.gl .access,
-.app.gl .arow,
-.app.gl .cbtn,
-.app.gl .tgl,
-.app.gl .dtime,
 .app.gl .more,
 .app.gl .aupick .chip,
 .app.gl .auchips .chip,
@@ -192,7 +176,6 @@
   box-shadow: var(--g-edge-s);
 }
 .app.gl .lauto,
-.app.gl .cbtn .ic,
 .app.gl .lic {
   background: var(--g-sel);
   border-color: transparent;
@@ -201,21 +184,11 @@
 .app.gl .auchips .chip.sel {
   background: var(--fg);
 }
-.app.gl .cbtn[aria-pressed='true'] {
-  background: color-mix(in srgb, var(--c-wh) 18%, var(--g-tile));
-}
 .app.gl .lauto[aria-pressed='true'] {
   background: color-mix(in srgb, var(--c-home) 16%, var(--g-sel));
 }
 .app.gl .larea.on .lic {
   background: color-mix(in srgb, var(--lc, var(--warn)) 26%, var(--g-sel));
-}
-.app.gl .days button {
-  background: var(--g-tile);
-  box-shadow: var(--g-edge-s);
-}
-.app.gl .days button[aria-pressed='true'] {
-  background: color-mix(in srgb, var(--c-ev) 22%, var(--g-sel));
 }
 .app.tabsv.gl .rtab:not([aria-selected='true']):active {
   background: var(--g-fill);
@@ -228,10 +201,8 @@
 .app.gl .state,
 .app.gl .go,
 .app.gl .lchip,
-.app.gl .ic.acc,
 .app.gl .aud.up,
-.app.gl .aud.skip,
-.app.gl .clear span {
+.app.gl .aud.skip {
   background: var(--g-tile);
   box-shadow: var(--g-edge-s);
 }
@@ -246,9 +217,6 @@
 }
 .app.gl .lchip[aria-pressed='true'] {
   background: color-mix(in srgb, var(--warn) 24%, var(--g-tile));
-}
-.app.gl .ic.acc {
-  background: color-mix(in srgb, var(--acc) 22%, var(--g-tile));
 }
 /* v1.18.3: WebKit leaves ghosts of the previous flow drawing behind a blurred card (stale compositing under backdrop-filter), so on iOS the two Automations cards keep a denser plain translucent fill with no blur, and every flow drawing gets its own layer */
 .augraph {
@@ -288,9 +256,6 @@
 }
 /* Reduce Transparency, or Increase Contrast: the glass turns back into near-solid cards */
 @media (prefers-reduced-transparency: reduce) {
-  .app.gl .clear span {
-    background: var(--card2);
-  }
   .app.gl .inner .chips .chip,
   .app.gl .card .chips .chip {
     background: var(--card2);
@@ -300,7 +265,6 @@
   .app.gl .head .chip,
   .app.gl .head button.icon,
   .app.gl .pop,
-  .app.gl .toast:not(.err),
   .app.gl .card,
   .app.gl .htile {
     -webkit-backdrop-filter: none;
@@ -308,11 +272,6 @@
     background: var(--card);
   }
   .app.gl .larea,
-  .app.gl .access,
-  .app.gl .arow,
-  .app.gl .cbtn,
-  .app.gl .tgl,
-  .app.gl .dtime,
   .app.gl .more {
     background: var(--card2);
   }

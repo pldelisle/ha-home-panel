@@ -254,6 +254,14 @@ describe('a car with every sensor', () => {
       charge: '64.0',
       range: '280 km range',
     });
+    // the picture the block draws is the card's: Ford's photo, else the drawing, with the name and the label that go with it
+    expect(detail.battery).toMatchObject({
+      name: 'Test',
+      picture: '/api/image_proxy/image.t',
+      color: '#B03A2E',
+      drawing: 'Car, side view',
+    });
+    expect(detail.status.drawing).toBe('Car seen from above');
     expect(detail.battery.soc).toEqual({
       fill: 64,
       limit: 90,
@@ -448,6 +456,7 @@ describe('a car with every sensor, in French', () => {
     expect(vm.card?.daily?.line).toBe('Énergie VÉ quotidienne, 30 derniers jours : 1 jour de recharge, 17 kWh.');
     expect(detail.sub).toBe('Stationnée à la maison · verrouillée · dernier contact de la voiture à 16 h 05');
     expect(detail.battery.line).toBe('55,0 sur 88,0 kWh utilisables · batterie à 20,0°');
+    expect([detail.battery.drawing, detail.status.drawing]).toEqual(['Voiture, vue de côté', 'Voiture vue de haut']);
     expect(detail.battery.tiles.map(({label, value, sub}) => [label, value, sub])).toEqual([
       ['Autonomie complète', '400', 'à 100 %'],
       ['Prise', 'Recharge', '7,2 kW'],

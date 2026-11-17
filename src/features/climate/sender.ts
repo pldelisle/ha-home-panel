@@ -15,7 +15,7 @@ export const SETPOINT_WAIT_MS = 1100;
 
 export interface ControlSenderOptions {
   overlay: Pick<OptimisticController, 'hold' | 'release'>;
-  commands: Pick<CommandRunner, 'run'>;
+  commands: Pick<CommandRunner, 'run' | 'runHolding'>;
   ms?: number;
   /** The clock of the wait; the platform's unless a test gives its own. */
   timers?: Timers;
@@ -42,8 +42,7 @@ export class ControlSender implements ReactiveController {
 
   /** Shows `value` under each of the command's `holds` and sends it now: a mode, a fan, a louver position, or a second tap. */
   now(command: Command, value: unknown): void {
-    this.hold(command, value);
-    void this.options.commands.run(command);
+    void this.options.commands.runHolding(command, value);
   }
 
   /** Shows `value` and sends nothing: a dial being dragged shows where the finger is, and `later` sends where it rests. */

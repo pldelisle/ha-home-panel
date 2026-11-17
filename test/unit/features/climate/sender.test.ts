@@ -12,7 +12,7 @@ function setup() {
     updateComplete: Promise.resolve(true),
   };
   const overlay = {hold: vi.fn(), release: vi.fn()};
-  const commands = {run: vi.fn(() => Promise.resolve(true))};
+  const commands = {run: vi.fn(() => Promise.resolve(true)), runHolding: vi.fn(() => Promise.resolve(true))};
   return {sender: new ControlSender(host, {overlay, commands}), overlay, commands, controllers};
 }
 
@@ -33,15 +33,11 @@ describe('ControlSender', () => {
     expect(SETPOINT_WAIT_MS).toBe(1100);
   });
 
-  test('now shows the value under every key the command holds and sends at once', () => {
-    const {sender, overlay, commands} = setup();
+  test('now hands the command and its value to the runner, which holds them and sends at once', () => {
+    const {sender, commands} = setup();
     const command: Command = {...set('climate.den', 5), holds: ['climate.den:sp', 'climate.hall:sp']};
     sender.now(command, 5);
-    expect(overlay.hold.mock.calls).toEqual([
-      ['climate.den:sp', 5],
-      ['climate.hall:sp', 5],
-    ]);
-    expect(commands.run).toHaveBeenCalledWith(command);
+    expect(commands.runHolding).toHaveBeenCalledExactlyOnceWith(command, 5);
   });
 
   test('a command with nothing to hold is still sent', () => {
@@ -50,7 +46,8 @@ describe('ControlSender', () => {
     sender.later({domain: 'climate', service: 'turn_on'}, 'on');
     vi.advanceTimersByTime(SETPOINT_WAIT_MS);
     expect(overlay.hold).not.toHaveBeenCalled();
-    expect(commands.run).toHaveBeenCalledTimes(2);
+    expect(commands.runHolding).toHaveBeenCalledTimes(1);
+    expect(commands.run).toHaveBeenCalledTimes(1);
   });
 
   test('show holds and sends nothing, however long it waits', () => {

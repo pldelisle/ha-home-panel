@@ -275,3 +275,18 @@ describe("ago, the legacy panel's rule: a kind and a count, then the date", () =
     expect(make('en-CA').ago(new Date(NOW - 5 * MIN), NOW)).toEqual({kind: 'minutes', n: 5});
   });
 });
+
+describe("durationShort, the live pill's span: minutes under an hour, then hours and two-digit minutes", () => {
+  const MIN = 60_000;
+  test.each([
+    ['nothing is a minute', 0, '1 min'],
+    ['29 seconds is still a minute', 29_000, '1 min'],
+    ['52 minutes', 52 * MIN, '52 min'],
+    ['59 and a half minutes rounds to the hour', 59.5 * MIN, '1 h'],
+    ['an hour and five minutes', 65 * MIN, '1 h 05'],
+    ['an hour and fifty', 110 * MIN, '1 h 50'],
+    ['three hours', 180 * MIN, '3 h'],
+  ] as const)('%s', (_name, span, text) => {
+    for (const tag of ['en-CA', 'fr-CA']) expect(make(tag).durationShort(span)).toBe(text);
+  });
+});

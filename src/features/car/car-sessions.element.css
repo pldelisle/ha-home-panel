@@ -1,0 +1,87 @@
+/*
+ * <hp-car-sessions>'s own rules: its `:host`, the table of the last sessions with its energy bars and the phone's narrower columns, and the button that shows them all. Moved from the legacy `.slist` rules
+ * (base.css), which the detail's move (#252) deleted; `.showall` is a known copy of the legacy `.more` (base.css, glass.css, motion.css) that the Lights header still uses, which
+ * the Lights move (spec 23) deletes (the comfort card's `.save` is the same look). The inner card and the tiles are the kit's, the shared rules of the blocks are styles.css.
+ */
+:host {
+  display: flex;
+  min-width: 0;
+}
+.stiles {
+  margin-bottom: 6px;
+}
+.slist {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: calc(13px * var(--tx));
+  margin-top: 10px;
+}
+.slist th {
+  font-size: calc(12px * var(--tx));
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg2);
+  text-align: left;
+  padding: 6px 8px;
+}
+.slist td {
+  padding: 9px 8px;
+  border-top: 1px solid var(--line);
+  white-space: nowrap;
+}
+.slist .r {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.slist .bar {
+  display: inline-block;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--c-ev);
+  vertical-align: middle;
+  margin-right: 8px;
+}
+@media (max-width: 720px) {
+  .slist .hide-s {
+    display: none;
+  }
+}
+.showall {
+  margin-top: 10px;
+  border: 0;
+  background: var(--card2);
+  border-radius: 999px;
+  padding: 10px 16px;
+  min-height: 44px;
+  font: inherit;
+  font-size: calc(13px * var(--tx));
+  font-weight: 600;
+  color: var(--fg);
+  cursor: pointer;
+}
+.showall:focus-visible {
+  outline: 2px solid var(--c-home);
+  outline-offset: 2px;
+}
+:host([glass]) .showall {
+  background: var(--g-tile);
+  box-shadow: var(--g-edge-s);
+}
+@media (prefers-reduced-transparency: reduce) {
+  :host([glass]) .showall {
+    background: var(--card2);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .showall {
+    transition:
+      transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+      background-color 0.2s ease,
+      box-shadow 0.2s ease,
+      color 0.2s ease;
+  }
+}
+.showall:active {
+  transform: scale(0.96);
+}

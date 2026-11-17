@@ -1,0 +1,11 @@
+/*
+ * <hp-car-ford>'s own rules: its `:host` and the list's gap from the heading in a sheet. The rows are the kit's list.css (`.att`, `.arow`), shared with the Status checks popup (spec 22, #256);
+ * the inner card is the kit's, the shared rules of the blocks are styles.css. Moved from the legacy `.sheet .att` rule (base.css), which the detail's move (#252) deleted.
+ */
+:host {
+  display: flex;
+  min-width: 0;
+}
+:host([compact]) .att {
+  margin-top: 4px;
+}

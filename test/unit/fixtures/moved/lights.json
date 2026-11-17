@@ -1,0 +1,271 @@
+{
+  "about": "The English messages the Lights move introduced (src/core/i18n/en.ts, lights.*), each with sample values: the model's (#259) and the commands' toasts (#261). test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer makes of the English, or what is `translated` where the layer left the English as it stood: \"No lights found\" on the tablet's card, the pane's three Adaptive Lighting lines and the picker's \"now with\", a visible change that #260 and #262 record in their baselines. A tile's accessible name is read with its line in French, as the layer read the whole label. The legacy panel draws all of these until #260 and #262, so no entry of the rewrite layer is deleted yet. Deleted with the layer in phase 4.",
+  "messages": [
+    {
+      "key": "lights.noLights",
+      "translated": "Aucune lumière trouvée"
+    },
+    {
+      "key": "lights.noLightsHint"
+    },
+    {
+      "key": "lights.lightsOn",
+      "values": {
+        "n": 1
+      }
+    },
+    {
+      "key": "lights.lightsOn",
+      "values": {
+        "n": 2
+      }
+    },
+    {
+      "key": "lights.allOff"
+    },
+    {
+      "key": "lights.allLightsOff"
+    },
+    {
+      "key": "lights.alEverywhere",
+      "translated": "Éclairage adaptatif actif partout"
+    },
+    {
+      "key": "lights.alSome",
+      "values": {
+        "on": "1",
+        "total": "2"
+      },
+      "translated": "Éclairage adaptatif actif dans 1 sur 2"
+    },
+    {
+      "key": "lights.alNowhere",
+      "translated": "Éclairage adaptatif éteint partout"
+    },
+    {
+      "key": "lights.dragHint"
+    },
+    {
+      "key": "lights.arrange"
+    },
+    {
+      "key": "lights.done"
+    },
+    {
+      "key": "lights.resetOrder"
+    },
+    {
+      "key": "lights.otherLights"
+    },
+    {
+      "key": "lights.unavailable"
+    },
+    {
+      "key": "lights.off"
+    },
+    {
+      "key": "lights.someOn",
+      "values": {
+        "on": "1",
+        "total": "3"
+      }
+    },
+    {
+      "key": "lights.percent",
+      "values": {
+        "n": "59"
+      }
+    },
+    {
+      "key": "lights.kelvin",
+      "values": {
+        "k": "3000"
+      }
+    },
+    {
+      "key": "lights.mode",
+      "values": {
+        "mode": "Night"
+      }
+    },
+    {
+      "key": "lights.mode",
+      "values": {
+        "mode": "Auto"
+      }
+    },
+    {
+      "key": "lights.mode",
+      "values": {
+        "mode": "Manual"
+      }
+    },
+    {
+      "key": "lights.adaptiveToday"
+    },
+    {
+      "key": "lights.now"
+    },
+    {
+      "key": "lights.onEverywhere"
+    },
+    {
+      "key": "lights.onIn",
+      "values": {
+        "on": "1",
+        "total": "2"
+      }
+    },
+    {
+      "key": "lights.offEverywhere"
+    },
+    {
+      "key": "lights.sunMark",
+      "values": {
+        "kind": "sunrise",
+        "time": "6:43 am"
+      },
+      "fr": {
+        "time": "6 h 43"
+      }
+    },
+    {
+      "key": "lights.sunMark",
+      "values": {
+        "kind": "noon",
+        "time": "12:01 pm"
+      },
+      "fr": {
+        "time": "12 h 01"
+      }
+    },
+    {
+      "key": "lights.sunMark",
+      "values": {
+        "kind": "sunset",
+        "time": "4:30 pm"
+      },
+      "fr": {
+        "time": "16 h 30"
+      }
+    },
+    {
+      "key": "lights.tileLabel",
+      "values": {
+        "name": "Kitchen",
+        "sub": "Off"
+      },
+      "fr": {
+        "sub": "Éteint"
+      }
+    },
+    {
+      "key": "lights.tileLabelLinked",
+      "values": {
+        "name": "Kitchen",
+        "sub": "Off",
+        "partner": "Office"
+      },
+      "fr": {
+        "sub": "Éteint"
+      }
+    },
+    {
+      "key": "lights.areaLights",
+      "values": {
+        "name": "Kitchen"
+      }
+    },
+    {
+      "key": "lights.brightness"
+    },
+    {
+      "key": "lights.colourTemperature"
+    },
+    {
+      "key": "lights.night"
+    },
+    {
+      "key": "lights.nightLook"
+    },
+    {
+      "key": "lights.white",
+      "values": {
+        "tone": "warm"
+      }
+    },
+    {
+      "key": "lights.white",
+      "values": {
+        "tone": "cool"
+      }
+    },
+    {
+      "key": "lights.white",
+      "values": {
+        "tone": "neutral"
+      }
+    },
+    {
+      "key": "lights.auto"
+    },
+    {
+      "key": "lights.autoDesc"
+    },
+    {
+      "key": "lights.nightDesc"
+    },
+    {
+      "key": "lights.bulbs"
+    },
+    {
+      "key": "lights.linkedWith"
+    },
+    {
+      "key": "lights.linkedDesc"
+    },
+    {
+      "key": "lights.adminOnly"
+    },
+    {
+      "key": "lights.none"
+    },
+    {
+      "key": "lights.noneDesc"
+    },
+    {
+      "key": "lights.nowWith",
+      "values": {
+        "name": "Office"
+      },
+      "translated": "maintenant avec Office"
+    },
+    {
+      "key": "lights.linkWith"
+    },
+    {
+      "key": "lights.linkFoot"
+    },
+    {
+      "key": "lights.autoOn"
+    },
+    {
+      "key": "lights.autoOff"
+    },
+    {
+      "key": "lights.nightOn"
+    },
+    {
+      "key": "lights.nightOff"
+    },
+    {
+      "key": "lights.setByHand"
+    },
+    {
+      "key": "lights.roomsLinked"
+    },
+    {
+      "key": "lights.roomUnlinked"
+    }
+  ]
+}

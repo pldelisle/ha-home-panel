@@ -12,6 +12,7 @@ declare global {
     PANEL_CFG: object | null;
     SYSDATA: object | null;
     AUTOMATIONS: object[] | null;
+    CHARGES: HouseOpts['charges'] | null;
     house: {
       setState(entityId: string, patch: object): void;
       setAreaName(areaId: string, name: string): void;
@@ -87,6 +88,8 @@ export type HouseOpts = {
   forecast?: boolean;
   /** a second panel on the same page (`page.locator('home-panel').nth(1)`), with two rooms and one person (spec 10) */
   two?: boolean;
+  /** one charger's hours of charging, for the recorder's hourly rows of that sensor: 0 kW outside each run, the run's power inside it (`hoursAgo` is when it began) */
+  charges?: {id: string; runs: Array<{hoursAgo: number; hours: number; kw: number}>};
 };
 
 export type House = {
@@ -157,17 +160,18 @@ export const test = base.extend<{houseOpts: HouseOpts; house: House}>({
       chunks: Chunk[] = [],
       fonts: House['fonts'] = [];
     await page.addInitScript(
-      ([cfg, sysdata, automations, theme]) => {
+      ([cfg, sysdata, automations, theme, charges]) => {
         window.PANEL_CFG = cfg;
         window.SYSDATA = sysdata;
         window.AUTOMATIONS = automations;
+        window.CHARGES = charges;
         try {
           localStorage.setItem('home-panel-theme', theme);
         } catch {
           // storage is blocked: the panel keeps its default theme
         }
       },
-      [o.cfg ?? null, o.sysdata ?? null, o.automations ?? null, o.theme] as const,
+      [o.cfg ?? null, o.sysdata ?? null, o.automations ?? null, o.theme, o.charges ?? null] as const,
     );
     // a Google Fonts request fails the test; it is also aborted, so that a run never depends on the internet
     page.on('request', r => {

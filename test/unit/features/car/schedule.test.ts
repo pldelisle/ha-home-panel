@@ -4,10 +4,13 @@ import {describe, expect, test} from 'vitest';
 import {
   describe as describeDraft,
   draftFromSchedule,
+  redraft,
   roundToFive,
+  scheduleKey,
   scheduleWords,
   toggleDay,
   validate,
+  withFiveMinutes,
   type ScheduleDraft,
 } from '../../../../src/features/car/schedule.ts';
 import {depsOf, fullHouse} from '../media/support.ts';
@@ -35,6 +38,22 @@ describe('draftFromSchedule', () => {
     const schedule = {days: ['monday'], hours: 8, minutes: 0};
     draftFromSchedule(schedule).days.push('friday');
     expect(schedule.days).toEqual(['monday']);
+  });
+});
+
+describe('redraft', () => {
+  test("takes Ford's new days and time and keeps the cabin setting the person picked, which Ford does not report", () => {
+    const picked: ScheduleDraft = {days: ['monday'], time: '06:00', temp: 'high'};
+    expect(redraft(picked, {days: ['friday'], hours: 7, minutes: 30})).toEqual({
+      days: ['friday'],
+      time: '07:30',
+      temp: 'high',
+    });
+  });
+
+  test('has no cabin setting for a draft that was never begun, and is 08:00 with no days when Ford saved nothing', () => {
+    expect(redraft(null, null)).toEqual({days: [], time: '08:00', temp: null});
+    expect(redraft({days: [], time: '08:00', temp: null}, null).temp).toBeNull();
   });
 });
 
@@ -72,11 +91,40 @@ describe('roundToFive', () => {
 });
 
 describe('validate', () => {
-  test('asks for a cabin setting first, then a day, then lets it go', () => {
+  test('asks for a cabin setting first, then a day, then a time, then lets it go', () => {
     expect(validate(draft([], '08:00', null))).toBe('car.pickTemperature');
     expect(validate(draft(['monday'], '08:00', null))).toBe('car.pickTemperature');
     expect(validate(draft([], '08:00', 'off'))).toBe('car.pickDay');
     expect(validate(draft(['monday'], '08:00', 'off'))).toBeNull();
+    expect(validate(draft([], '', 'off'))).toBe('car.pickDay');
+  });
+
+  test('refuses a cleared time field: the legacy panel sent `NaN` for it', () => {
+    expect(validate(draft(['monday'], '', 'off'))).toBe('car.pickTime');
+    expect(validate(draft(['monday'], 'not a time', 'off'))).toBe('car.pickTime');
+  });
+});
+
+describe('withFiveMinutes', () => {
+  test('puts the time in five-minute steps, which is what a save sends and the field then shows', () => {
+    expect(withFiveMinutes(draft(['monday'], '08:03', 'off'))).toEqual(draft(['monday'], '08:05', 'off'));
+    expect(withFiveMinutes(draft(['monday'], '23:58', 'off')).time).toBe('00:00');
+  });
+
+  test('leaves a draft with no time as it is, and hands back the draft it was given', () => {
+    const cleared = draft(['monday'], '', 'off');
+    expect(withFiveMinutes(cleared)).toBe(cleared);
+  });
+});
+
+describe('scheduleKey', () => {
+  test('is one value for a saved schedule, the same for the same days and time, and none for no schedule', () => {
+    const saved = {days: ['monday', 'friday'], hours: 8, minutes: 30};
+    expect(scheduleKey(saved)).toBe(scheduleKey({...saved, days: [...saved.days]}));
+    expect(scheduleKey(saved)).not.toBe(scheduleKey({...saved, minutes: 35}));
+    expect(scheduleKey(saved)).not.toBe(scheduleKey({...saved, days: ['monday']}));
+    expect(scheduleKey(null)).toBe('');
+    expect(scheduleKey(null)).not.toBe(scheduleKey(saved));
   });
 });
 

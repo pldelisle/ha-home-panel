@@ -1,6 +1,6 @@
 // The departure schedule's draft: the days, the time and the cabin temperature a person edits before anything is sent, and the rules around it.
-// Pattern: edit locally, validate, send once (a form draft; Fowler's Unit of Work in miniature): plain data, replaced by new values, so the element that will hold it owns the one copy. Nothing calls it until that element (#253).
-// The rules are the legacy `depState`, `depDesc`, `clockTime` and the save branch of `carControl` (deleted in #253); the words are catalog messages, the time of day is `fmt.clock`'s.
+// Pattern: edit locally, validate, send once (a form draft; Fowler's Unit of Work in miniature): plain data, replaced by new values, so the element that holds it, `<hp-car-comfort>`, owns the one copy.
+// The rules are the legacy `depState`, `depDesc` and the save branch of `carControl` (deleted in #253) and `clockTime` (until #269); the words are catalog messages, the time of day is `fmt.clock`'s.
 // Must not: send a command, read the store or the clock, or write a time of day or a day's name by hand.
 import type {Formatters} from '../../core/i18n/format.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
@@ -8,7 +8,7 @@ import type {Translate} from '../../core/i18n/messages.ts';
 import type {Schedule} from '../../providers/fordpass.ts';
 
 /** The week as Ford names its days, in the order the day buttons run. */
-const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const;
+export const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const;
 
 /** Ford's four cabin settings for a departure. */
 export type CabinTemperature = 'low' | 'medium' | 'high' | 'off';
@@ -29,10 +29,23 @@ const MINUTES_PER_DAY = 24 * 60;
 
 const twoDigits = (n: number) => String(n).padStart(2, '0');
 
+/** What a saved schedule is, as one value: the draft starts over when it changes, and not before. */
+export function scheduleKey(schedule: Schedule | null): string {
+  return schedule ? `${schedule.days.join(',')}@${schedule.hours}:${schedule.minutes}` : '';
+}
+
 /** The draft that starts from what Ford saved: its days and time, no cabin setting; `08:00` and no days when it saved nothing. */
 export function draftFromSchedule(schedule: Schedule | null): ScheduleDraft {
   if (!schedule) return {days: [], time: DEFAULT_TIME, temp: null};
   return {days: [...schedule.days], time: `${twoDigits(schedule.hours)}:${twoDigits(schedule.minutes)}`, temp: null};
+}
+
+/**
+ * The draft after Ford's saved schedule changed: the days and the time are Ford's again, and the cabin setting is what the person picked, since Ford does not report it
+ * (a save followed by Ford's own update must not blank the choice that was just sent); none for a draft that was never begun.
+ */
+export function redraft(previous: ScheduleDraft | null, saved: Schedule | null): ScheduleDraft {
+  return {...draftFromSchedule(saved), temp: previous?.temp ?? null};
 }
 
 /** The draft with `day` chosen if it was not, and left out if it was. */
@@ -54,7 +67,7 @@ export interface RoundedTime {
   time: string;
 }
 
-/** `time` rounded to the nearest five minutes; null for a field that is cleared or holds no time (the legacy panel sent `NaN` for it), which a save must refuse (#253). */
+/** `time` rounded to the nearest five minutes; null for a field that is cleared or holds no time (the legacy panel sent `NaN` for it), which `validate` refuses. */
 export function roundToFive(time: string): RoundedTime | null {
   const parsed = parseTime(time);
   if (!parsed) return null;
@@ -64,10 +77,20 @@ export function roundToFive(time: string): RoundedTime | null {
   return {hour, minute, time: `${twoDigits(hour)}:${twoDigits(minute)}`};
 }
 
-/** The key of the toast that says what is missing before the draft can be saved; null when it can. The cabin setting is asked for before the days. */
+/** The draft with its time as Ford takes it, in five-minute steps, which is what a save sends and what the field then shows; a time that is not one is left as it is. */
+export function withFiveMinutes(draft: ScheduleDraft): ScheduleDraft {
+  const rounded = roundToFive(draft.time);
+  return rounded ? {...draft, time: rounded.time} : draft;
+}
+
+/**
+ * The key of the toast that says what is missing before the draft can be saved; null when it can. The cabin setting is asked for first, then the days, then the time: a cleared
+ * time field has no hour to send (the legacy panel sent `NaN`).
+ */
 export function validate(draft: ScheduleDraft): MessageKey | null {
   if (!draft.temp) return 'car.pickTemperature';
   if (!draft.days.length) return 'car.pickDay';
+  if (!roundToFive(draft.time)) return 'car.pickTime';
   return null;
 }
 
@@ -80,7 +103,7 @@ const daysWords = (days: readonly string[], t: Translate): string => {
 
 /**
  * What the draft says it will do, `weekdays at 8:30 am`: the days, and the time the way the household's language writes it
- * (`8 h 30`); a cleared time field names no time, only the days. Read by `describe` and by the toast that says a schedule was saved (#253).
+ * (`8 h 30`); a cleared time field names no time, only the days. Read by `describe` and by the toast that says a schedule was saved.
  */
 export function scheduleWords(draft: ScheduleDraft, fmt: Pick<Formatters, 'clock'>, t: Translate): string {
   const days = daysWords(draft.days, t);

@@ -5,7 +5,7 @@ import {describe, expect, test} from 'vitest';
 import {entity, fakeHass} from '../fake-hass.ts';
 import {fullHouse, houseOf, recorded, storeOf} from '../features/media/support.ts';
 import {FULL_CFG} from '../../e2e/houses.ts';
-import {powerNow, roomPower} from '../../../src/providers/power.ts';
+import {powerNow, roomPower, waterHeaterNow} from '../../../src/providers/power.ts';
 
 type State = ReturnType<typeof entity>;
 
@@ -64,6 +64,14 @@ describe('the flow', () => {
       cfg,
     );
     expect(flow).toMatchObject({grid: 5, waterHeater: 1.5, ev: 0.5, heat: 1, rest: 2});
+  });
+
+  test('a thermostat in the states is present whatever it says; one missing is neither present nor available', () => {
+    const flow = flowOf(house(thermostat('den', 'unavailable')), cfg);
+    expect(flow.rooms.map(r => [r.present, r.available])).toEqual([
+      [true, false],
+      [false, false],
+    ]);
   });
 
   test('the heat is the sum of the rooms’ power, and a room without a power sensor adds nothing', () => {
@@ -153,5 +161,27 @@ describe('a room', () => {
     });
     expect(read([entity('climate.den', 'heat')])).toMatchObject({configuredName: null, thermostatName: ''});
     expect(read([])).toMatchObject({key: 'den', thermostatName: ''});
+  });
+});
+
+describe('waterHeaterNow', () => {
+  test('its power in kW, its temperature, and when its power last changed; nothing while the power is unavailable', () => {
+    const cfg = {entities: {water_heater_power: 'sensor.wh', water_heater_temperature: 'sensor.wh_t'}};
+    const read = (...states: State[]) => {
+      const hass = house(...states);
+      return waterHeaterNow(hass.states, storeOf(hass, cfg).config);
+    };
+    const power = {...watts('sensor.wh', 4500), last_changed: '2026-11-07T18:40:00Z'};
+    expect(read(power, entity('sensor.wh_t', '48'))).toEqual({
+      power: 4.5,
+      temperature: 48,
+      powerChangedAt: Date.parse('2026-11-07T18:40:00Z'),
+    });
+    expect(read(entity('sensor.wh', 'unavailable'))).toEqual({power: null, temperature: null, powerChangedAt: null});
+    expect(waterHeaterNow({}, {entities: {whP: null, whT: null}} as never)).toEqual({
+      power: null,
+      temperature: null,
+      powerChangedAt: null,
+    });
   });
 });

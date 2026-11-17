@@ -1,7 +1,7 @@
 // The Wallbox charger: its power and status for the energy card, its controls' inputs for the Car, the catalog key of each status and the charging sessions its hourly power makes.
 // Pattern: an adapter below the features (ADR 0025), found by the config's keys (convention over configuration), not the registry; the reads are those of the legacy flow,
 // `attention()` and `renderCarControls` (deleted in #241 and #253); `chargingSessions` is a rule over the charger's hourly rows, here and not in the Car so the live pill can ask it too (spec 22).
-// The pause command is `Command` data (core), which the kit's runner will send; the pill's "Pause charging" (#255) and the Car's switch (#253) will both use it, so it is built once, here.
+// The pause command is `Command` data (core), which the kit's runner sends; the Car's charging switch (since #253) and the pill's "Pause charging" (#255) both use it, so it is built once, here.
 // Must not: word the status (it names the catalog key that does), send a command, import the kit, or read the registry or the clock.
 import type {Command} from '../core/commands.ts';
 import type {ResolvedConfig} from '../core/config.ts';
@@ -29,6 +29,8 @@ export interface WallboxInputs {
   power: number | null;
   /** The status sensor's text; null when it is unset, unavailable or unknown. */
   status: string | null;
+  /** The status sensor is in the states, whatever it reads: an unavailable one is the Status checks' "Wallbox offline". */
+  statusPresent: boolean;
   /** The house has a charger: its power or its status sensor is in the states, whatever it reads. */
   present: boolean;
   /** The charger's current limit in amps: the `number` entity, its value and its range (6 to 48 where it says none). */
@@ -37,7 +39,7 @@ export interface WallboxInputs {
   pause: WallboxSwitch;
   /** The charger's lock: on while it is locked. */
   lock: WallboxSwitch;
-  /** The price per kWh the house set for the charger; null when it set none (the model estimates at 0.07). */
+  /** The price per kWh the house set for the charger; null when it set none (the models estimate at `DEFAULT_KWH_PRICE`). */
   price: number | null;
 }
 
@@ -49,6 +51,7 @@ export function wallbox(states: HassEntities, config: ResolvedConfig): WallboxIn
   return {
     power: kilowattsOf(states, evP),
     status: textOf(states, wbStatus),
+    statusPresent: hasState(states, wbStatus),
     present: hasState(states, evP) || hasState(states, wbStatus),
     amps: {
       id: wbAmps,
@@ -130,15 +133,18 @@ const STATUS_KEYS: ReadonlyMap<string, MessageKey> = new Map([
 /** The catalog message that words a status the Wallbox integration gives; undefined for any other, which is shown as the sensor says it. Energy's flow and the Car's card word the status so. */
 export const chargerStatusKey = (status: string): MessageKey | undefined => STATUS_KEYS.get(status);
 
-/** The overlay key of the charging switch's held value: `wallboxCommands.pause` holds it and the Car's switch reads it (#253). */
+/** The overlay key of the charging switch's held value: `wallboxCommands.pause` holds it and the Car's switch reads it. */
 export const pauseHold = overlayKey('pause');
+
+/** The price per kWh the sessions are costed at when the house set none: the legacy panel's 7 cents, which Car and the live pill share. */
+export const DEFAULT_KWH_PRICE = 0.07;
 
 /** What the commands name of the charging switch: its entity id. */
 export interface PauseTarget {
   id: string;
 }
 
-/** The Wallbox's commands as data: to be run by the Car's charger controls (#253) and by the live pill's "Pause charging" (#255). */
+/** The Wallbox's commands as data: run by the Car's charger controls and, from #255, by the live pill's "Pause charging". */
 export const wallboxCommands = {
   /** Turns the charging switch `on` (resumes) or off (pauses), shown at once; the toast says charging on or off. */
   pause: (target: PauseTarget, on: boolean): Command => ({

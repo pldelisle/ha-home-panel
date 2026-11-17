@@ -120,6 +120,13 @@ describe('ago', () => {
   });
 });
 
+// the live pill's span (the legacy `durTxt`): the layer leaves `52 min` and `1 h 50` as they are, and the French formatter writes the same
+describe('durationShort', () => {
+  test.each([0, 52 * 60e3, 60 * 60e3, 65 * 60e3, 110 * 60e3, 180 * 60e3])('%s ms', span => {
+    expect(fr.durationShort(span)).toBe(layerText(en.durationShort(span)));
+  });
+});
+
 describe('the numbers', () => {
   const VALUES = [0, 7, 12.5, 12.56, 999.99, 1234, 1234.5, 1234567, 0.04, 1.005, -3.5, 1.2345];
 

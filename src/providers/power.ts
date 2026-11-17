@@ -3,6 +3,7 @@
 // of "what is the rest of the home"; its rules are those of the legacy `live()`, deleted in #241; a room's name is the
 // inputs of `roomName` (src/core/i18n), worded where the language is known. `roomPower` is exported as spec 19 names it
 // in this module's contract: one room's reading for a reader that does not need the whole flow (Climate, spec 20).
+// `waterHeaterNow` is the water heater's two config sensors as the live pill reads them (#255).
 // Must not: word anything a person reads, read the registry (the config's keys are the discovery), or read the clock.
 import type {ResolvedConfig, RoomSpec} from '../core/config.ts';
 import type {HassEntities} from '../core/hass.ts';
@@ -40,6 +41,8 @@ export interface RoomPower extends RoomNameInputs {
   heating: boolean;
   /** False when the thermostat is missing, `unavailable` or `unknown`. */
   available: boolean;
+  /** The thermostat is in the states, whatever its state: an unavailable one is "not reporting", a missing one is no thermostat. */
+  present: boolean;
 }
 
 export interface PowerNow {
@@ -75,10 +78,28 @@ export function roomPower(states: HassEntities, room: RoomSpec): RoomPower {
     heating:
       (available && textAttributeOf(states, room.climate, 'hvac_action') === 'heating') || (power ?? 0) > HEATING_KW,
     available,
+    present: states[room.climate] !== undefined,
   };
 }
 
 /** The live flow, read once for every reader: the grid, the loads, each room, the heat pump. */
+/** The water heater now: its power in kW, its temperature, and when its power sensor last changed (null while it is unavailable). */
+export interface WaterHeaterNow {
+  power: number | null;
+  temperature: number | null;
+  powerChangedAt: number | null;
+}
+
+export function waterHeaterNow(states: HassEntities, config: Pick<ResolvedConfig, 'entities'>): WaterHeaterNow {
+  const {whP, whT} = config.entities;
+  const power = whP ? states[whP] : undefined;
+  return {
+    power: kilowattsOf(states, whP),
+    temperature: numberOf(states, whT),
+    powerChangedAt: isAvailable(power) ? Date.parse(power.last_changed) : null,
+  };
+}
+
 export function powerNow(states: HassEntities, config: Pick<ResolvedConfig, 'entities' | 'rooms'>): PowerNow {
   const {entities} = config;
   const grid = kilowattsOf(states, entities.grid);

@@ -26,6 +26,7 @@ describe('the test house', () => {
     expect(wallbox(fullHouse.states, storeOf(fullHouse, FULL_CFG).config)).toEqual({
       power: 7.1,
       status: 'Charging',
+      statusPresent: true,
       present: true,
       amps: {id: 'number.charger_max_current', value: 32, min: 6, max: 40, available: true},
       pause: {id: 'switch.charger_pause', on: true, available: true},
@@ -72,7 +73,12 @@ describe('the reading', () => {
       status: 'Disconnected',
       present: true,
     });
-    expect(read(entity('sensor.status', 'unavailable'))).toMatchObject({power: null, status: null, present: true});
+    expect(read(entity('sensor.status', 'unavailable'))).toMatchObject({
+      power: null,
+      status: null,
+      statusPresent: true,
+      present: true,
+    });
   });
 
   test('is absent when neither sensor is in the states', () => {

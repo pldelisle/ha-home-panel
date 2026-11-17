@@ -1,14 +1,17 @@
 // <hp-car-card>: the Car card: the car's name and where it is, the charge with its range beside the photo (or the drawn car), the battery bar with the charge limit's mark, three tiles and the 30 days' charging as bars.
-// Pattern: humble object (Meszaros, xUnit Test Patterns) over the model's `card` view; its box is a button that asks the shell for the detail (ADR 0021). The one state it keeps is the photo's failure: the drawing
-// replaces a photo that did not load for the element's life, and a new picture address from Home Assistant does not try it again (the legacy panel's `imgFail`, per session).
+// Pattern: humble object (Meszaros, xUnit Test Patterns) over the model's `card` view; its box is a button that asks the shell for the detail (ADR 0021). It keeps no state: the photo's failure is the pane's (`imageFailed`, handed down), the drawing
+// replaces a photo that did not load for the pane's life, and a new picture address from Home Assistant does not try it again (the legacy panel's `imgFail`, per session).
 // Must not: read an entity or the clock, word a string (the model does), place a bar itself (`barsGeometry` does), or open the sheet (it asks).
 import {LitElement, html, nothing, svg, unsafeCSS} from 'lit';
 import {repeat} from 'lit/directives/repeat.js';
-import {carSide} from './car-art.ts';
+import {carArt} from './car-art.ts';
+import {CarImageFailedEvent} from './events.ts';
 import ownCss from './car-card.element.css?inline';
 import type {Bar} from './bars-geometry.ts';
 import type {CarCard, DailyBars} from './model.ts';
 import {DETAIL_SHEET} from './sheets.ts';
+import {socBar} from './soc-bar.ts';
+import socBarCss from './soc-bar.css?inline';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {SheetRequestEvent} from '../../ui/events.ts';
 import {lensLike} from '../../ui/lens.ts';
@@ -20,16 +23,16 @@ const barOf = ({x, y, width, height, filled}: Bar, title: string) =>
   svg`<rect x=${x} y=${y} width=${width} height=${height} rx="2" fill=${filled ? 'var(--c-ev)' : 'var(--ring)'}><title>${title}</title></rect>`;
 
 export class CarCardElement extends LitElement {
-  static override properties = {view: {attribute: false}, error: {attribute: false}, imageFailed: {state: true}};
+  static override properties = {view: {attribute: false}, error: {attribute: false}, imageFailed: {attribute: false}};
   /** The model's card: the name, the charge, the bar, the tiles and, once the history is in, the daily bars. */
   declare view: CarCard | undefined;
   /** Why the history did not load, in words ("History didn't load: ..."); null when it did, or has not been asked. */
   declare error: string | null;
-  /** The photo did not load: the drawing stands in for it from now on. */
+  /** The photo did not load, which the pane keeps (for its life) and hands back: the drawing stands in for it. */
   declare imageFailed: boolean;
 
-  // The kit's hero and tiles, then the element's own rules: its `:host`, the box, the title line, the bar, the tiles' three columns and the bars (car-card.element.css).
-  static override styles = [common, hero, tiles, unsafeCSS(forShadow(ownCss))];
+  // The kit's hero and tiles, the battery bar's rules (soc-bar.css, which the battery block adopts too), then the element's own: its `:host`, the box, the title line, the tiles' three columns and the bars (car-card.element.css).
+  static override styles = [common, hero, tiles, unsafeCSS(forShadow(socBarCss)), unsafeCSS(forShadow(ownCss))];
 
   constructor() {
     super();
@@ -65,10 +68,7 @@ export class CarCardElement extends LitElement {
           </div>
           ${this.renderArt(card)}
         </div>
-        <div class="cbar" role="img" aria-label=${soc.label}>
-          <i style="width:${soc.fill}%"></i>${soc.limit ? html`<b style="left:${soc.limit}%"></b>` : nothing}
-        </div>
-        <div class="cscale"><span>${soc.scale.start}</span><span>${soc.scale.limit}</span></div>
+        ${socBar(soc)}
         <div class="tiles ctiles">
           ${repeat(
             card.tiles,
@@ -90,10 +90,8 @@ export class CarCardElement extends LitElement {
   }
 
   // Ford's photo through the image proxy; the drawn car where there is none, or where the photo failed
-  private renderArt({picture, color, name, drawing}: CarCard) {
-    return picture && !this.imageFailed
-      ? html`<img class="cimg" src=${picture} alt=${name} @error=${this.onImageError} />`
-      : carSide(color, drawing);
+  private renderArt(card: CarCard) {
+    return carArt(card, this.imageFailed, this.onImageError);
   }
 
   // the bars the model's geometry places and its sentence under them; the colours are the frame's tokens, so a theme change redraws nothing
@@ -122,9 +120,9 @@ export class CarCardElement extends LitElement {
     this.open();
   };
 
-  // the photo did not load: from here on the drawing shows, and a hass update that names a picture again does not bring it back
+  // the photo did not load: the pane is told, and from here on the drawing shows; a hass update that names a picture again does not bring it back
   private readonly onImageError = (): void => {
-    this.imageFailed = true;
+    this.dispatchEvent(new CarImageFailedEvent());
   };
 }
 

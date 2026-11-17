@@ -82,7 +82,7 @@ test.describe('Home Assistant text in a flow', () => {
 });
 
 // What each text below is drawn as. Mermaid's entity pre-pass (`text.replace(/style.*:\S*#.*;/g, …)`) drops the last `;` of
-// a source line that has a `#` after `style…:` with no space between, so `auMermaid` ends every node and edge line in a `;`
+// a source line that has a `#` after `style…:` with no space between, so `toMermaid` ends every node and edge line in a `;`
 // of its own. These are all the shapes and line kinds the panel writes, without a subtitle: a `%` or `#` that ends a label
 const PERCENT = {
   trigger: '10%', // a stadium, and (with the second trigger) the ANY circle

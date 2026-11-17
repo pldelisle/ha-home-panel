@@ -1,6 +1,6 @@
 // The FordPass car, found by its entity ids and read into the inputs the Car feature takes: the charge, the plug, the tires, the doors, Ford's messages and the departure schedule.
 // Pattern: an adapter below the features (ADR 0025), by convention over configuration: the car is `sensor.fordpass_<name>_soc` and every other entity is `<domain>.fordpass_<name>_<key>`;
-// the rules are those of the legacy `findCar`, `carName` and `carState` (deleted in #251), `renderCarSheetLive` and `plugStamp` (#252) and `schedText` (#253), with Ford's malformed dates guarded where the legacy `asDate` guarded them.
+// the rules are those of the legacy `findCar`, `carName` and `carState` (deleted in #251), `renderCarSheetLive` and `plugStamp` (#252) and `schedText`, which now reads it (#269 deletes that), with Ford's malformed dates guarded where the legacy `asDate` guarded them.
 // Must not: word anything a person reads (the name Ford does not give is `''`, and the model words "Car"), read the clock, the registry or the DOM, or send a command.
 import {isRecord, type ResolvedConfig} from '../core/config.ts';
 import type {HassEntities} from '../core/hass.ts';
@@ -118,6 +118,8 @@ export interface CarInputs {
   /** The config's body colour for the drawn car. */
   color: string | null;
   soc: number | null;
+  /** The charge sensor has a value, a number or not: without one, the Status checks say "Car not reporting". */
+  socReporting: boolean;
   /** The `soc` sensor's `batteryRange`, else the `elveh` sensor's state. */
   range: number | null;
   /** The charge limit, in percent (`globalAcTargetSoc`); null when Ford sends none. */
@@ -127,9 +129,20 @@ export interface CarInputs {
   /** The charging sensor says `CHARGING` and not `NOT_CHARGING`. */
   charging: boolean;
   chargingKw: number | null;
+  /** The charge's power in kW from the first charging attribute that names a power or kW, as the live pill reads it when the Wallbox says none. */
+  chargePowerKw: number | null;
+  /**
+   * Ford's own estimates of the charge's end, in its attributes' order: a date in an attribute that names an end, a completion or a
+   * remainder (`at`, whether past or not), or a number of minutes in one that names minutes or a remainder (`minutes`, 0 to 3,000).
+   */
+  chargeEstimates: ChargeEstimate[];
+  /** When the plug sensor last changed, so when the cable went in or out; null when it has no value. */
+  plugChangedAt: number | null;
   /** The charging sensor's state, as Ford words it; null when it reads nothing. */
   chargeState: string | null;
   locked: boolean | null;
+  /** The door lock's state (`locked`, `unlocked`, `jammed`, ...); null when it has no value. */
+  lockState: string | null;
   /** At home by the tracker; null when the tracker reads nothing. */
   home: boolean | null;
   /** The tracker's state (`home`, `not_home` or a zone's name); null when it reads nothing. */
@@ -147,6 +160,8 @@ export interface CarInputs {
   cabin: number | null;
   outsideTemp: number | null;
   tires: {frontLeft: TirePressure; frontRight: TirePressure; rearLeft: TirePressure; rearRight: TirePressure};
+  /** The Status checks' "Tire pressure low": the sensor has a value and says anything but `NORMAL_OPERATION`, or a tire's `<tire>_state` is set and is not `NORMAL`. */
+  tiresLow: boolean;
   doors: {
     /** The four doors are closed (one Ford does not report counts as closed); null when the door sensor reads nothing. */
     closed: boolean | null;
@@ -231,7 +246,7 @@ const numberOfField = (value: unknown): number | null =>
 /** The hour or the minute of a time of day, `0` where Ford sends none (the legacy `t0.hours || 0`). */
 const partOfTime = (value: unknown): number => Number(value) || 0;
 
-/** The departure schedule Ford saved (`schedule`, days with a `timeOfDay`); null when it has none. Read by `readCar` and, for the header's upcoming list, by #253. */
+/** The departure schedule Ford saved (`schedule`, days with a `timeOfDay`); null when it has none. Read by `readCar` and, for the header's upcoming list, by the legacy `schedText`. */
 export function departureSchedule(states: HassEntities, ref: CarRef): Schedule | null {
   const saved = attributeOf(states, ref.id('sensor', 'departureschedules'), 'schedule');
   const days = isRecord(saved) ? Object.keys(saved) : [];
@@ -311,6 +326,57 @@ function honkButtonOf(states: HassEntities, ref: CarRef): string | null {
   return ids.find(id => states[id] !== undefined && states[id].state !== 'unavailable') ?? null;
 }
 
+/** An attribute of the charging sensor that holds the charge's power: the legacy `liveActs`'s rule (#256 deletes it). */
+const CHARGE_POWER_KEY = /charg.*(power|kw)$/i;
+
+function chargePowerOf(states: HassEntities, id: string): number | null {
+  const attributes = states[id]?.attributes ?? {};
+  const key = Object.keys(attributes).find(name => CHARGE_POWER_KEY.test(name));
+  const kw = key === undefined ? NaN : Number(attributes[key]);
+  return Number.isFinite(kw) ? kw : null;
+}
+
+/** One of Ford's estimates of when the charge ends. */
+type ChargeEstimate = {at: number} | {minutes: number};
+
+/** The attributes that may estimate the end, and the ones of those that count minutes: the legacy `liveActs`'s rule (#256 deletes it). */
+const ESTIMATE_KEY = /(end|complete|full|remain)/i;
+const MINUTES_KEY = /(minutes|remain|to.?full)/i;
+const DATE_IN = /\d{4}-\d\d-\d\d/;
+/** Over this many minutes is no estimate (Ford sends 3,000 and more for "unknown"). */
+const MAX_ESTIMATE_MINUTES = 3000;
+
+function chargeEstimatesOf(states: HassEntities, id: string): ChargeEstimate[] {
+  const attributes = states[id]?.attributes ?? {};
+  return Object.entries(attributes).flatMap(([key, value]): ChargeEstimate[] => {
+    if (!ESTIMATE_KEY.test(key)) return [];
+    const at = typeof value === 'string' && DATE_IN.test(value) ? Date.parse(value) : NaN;
+    if (Number.isFinite(at)) return [{at}];
+    const minutes = Number(value);
+    return MINUTES_KEY.test(key) && Number.isFinite(minutes) && minutes > 0 && minutes < MAX_ESTIMATE_MINUTES
+      ? [{minutes}]
+      : [];
+  });
+}
+
+/** Ford's words for tires at their normal pressure: the sensor's and each tire's. */
+const TIRES_NORMAL = 'NORMAL_OPERATION';
+const TIRE_NORMAL = 'NORMAL';
+const TIRE_KEYS = ['frontLeft', 'frontRight', 'rearLeft', 'rearRight'] as const;
+
+/** The legacy `attention()`'s tire rule (#256 deletes it): any set `<tire>_state` other than `NORMAL` counts, whatever its type. */
+function tiresLowOf(states: HassEntities, id: string): boolean {
+  const status = textOf(states, id);
+  if (status === null) return false;
+  return (
+    status !== TIRES_NORMAL ||
+    TIRE_KEYS.some(key => {
+      const state = attributeOf(states, id, `${key}_state`);
+      return !!state && state !== TIRE_NORMAL;
+    })
+  );
+}
+
 /** The car at these states; `config` gives the name and the colour the house chose, and `names` the picture entity's own name. */
 export function readCar(
   states: HassEntities,
@@ -340,13 +406,18 @@ export function readCar(
     picture: textAttributeOf(states, ref.id('image', 'vehicleimage'), 'entity_picture') || null,
     color: config.car.color,
     soc: numberOf(states, sensor('soc')),
+    socReporting: textOf(states, sensor('soc')) !== null,
     range: numberAttributeOf(states, sensor('soc'), 'batteryRange') ?? numberOf(states, elveh),
     limit: numberAttributeOf(states, charging, 'globalAcTargetSoc'),
     plugged: plug !== null && plug !== 'DISCONNECTED',
     charging: chargeState !== null && /CHARGING/.test(chargeState) && !/NOT/.test(chargeState),
     chargingKw: numberAttributeOf(states, charging, 'chargingkW'),
+    chargePowerKw: chargePowerOf(states, charging),
+    chargeEstimates: chargeEstimatesOf(states, charging),
+    plugChangedAt: plug === null ? null : asTime(states[sensor('elvehplug')].last_changed),
     chargeState,
     locked: isAvailable(states[lock]) ? states[lock].state === 'locked' : null,
+    lockState: textOf(states, lock),
     home: tracker === null ? null : tracker === 'home',
     tracker,
     lastRefresh: lastRefresh === null ? null : asTime(lastRefresh),
@@ -367,6 +438,7 @@ export function readCar(
       rearLeft: tire('rearLeft'),
       rearRight: tire('rearRight'),
     },
+    tiresLow: tiresLowOf(states, tirePressure),
     doors: doorsOf(states, ref),
     windowsClosed: windows === null ? null : windows === 'Closed',
     alarm: textOf(states, sensor('alarm')),

@@ -1,0 +1,5 @@
+/* <hp-car-last-plug>'s own rules: its `:host`. The inner card and the tiles are the kit's, the shared rules of the blocks are styles.css. */
+:host {
+  display: flex;
+  min-width: 0;
+}

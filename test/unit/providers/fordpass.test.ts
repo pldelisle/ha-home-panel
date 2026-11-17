@@ -116,6 +116,8 @@ describe('the charge and the plug', () => {
     const car = (lock: string, tracker: string) =>
       read([entity('lock.fordpass_test_doorlock', lock), entity('device_tracker.fordpass_test_tracker', tracker)]);
     expect(car('locked', 'home')).toMatchObject({locked: true, home: true, tracker: 'home', lockAvailable: true});
+    // the lock's own word, for the Status checks: a jammed lock is not "unlocked"
+    expect(car('jammed', 'home')).toMatchObject({locked: false, lockState: 'jammed'});
     expect(car('unlocked', 'not_home')).toMatchObject({locked: false, home: false, tracker: 'not_home'});
     expect(car('unavailable', 'unknown')).toMatchObject({
       locked: null,
@@ -162,6 +164,31 @@ describe('the charge and the plug', () => {
     expect(read([sensor('lastrefresh', 'yesterday')]).lastRefresh).toBeNull();
     expect(read([sensor('lastrefresh', 'unavailable')]).lastRefresh).toBeNull();
     expect(read().lastRefresh).toBeNull();
+  });
+  test("Ford's estimates of the end: a date in an end-naming attribute, else minutes under 3,000 in a remaining one; the plug's change time", () => {
+    const estimates = (attributes: Record<string, unknown>) =>
+      read([sensor('elvehcharging', 'CHARGING', attributes)]).chargeEstimates;
+    expect(
+      estimates({
+        estimatedEndTime: '2026-11-07T16:00:00Z',
+        timeToFullCharge: 110,
+        remainingMinutes: '3000',
+        fullAt: 'soon',
+        chargingkW: 7.2,
+      }),
+    ).toEqual([{at: Date.parse('2026-11-07T16:00:00Z')}, {minutes: 110}]);
+    expect(estimates({completeAt: 45})).toEqual([]);
+    const power = (attributes: Record<string, unknown>) =>
+      read([sensor('elvehcharging', 'CHARGING', attributes)]).chargePowerKw;
+    expect([power({chargingkW: 7.2}), power({chargePower: '6.5'}), power({chargingkW: 'n/a'}), power({})]).toEqual([
+      7.2,
+      6.5,
+      null,
+      null,
+    ]);
+    expect(read([]).chargeEstimates).toEqual([]);
+    const plug = {...sensor('elvehplug', 'CONNECTED'), last_changed: '2026-11-07T12:30:00Z'};
+    expect([read([plug]).plugChangedAt, read([]).plugChangedAt]).toEqual([Date.parse('2026-11-07T12:30:00Z'), null]);
   });
 });
 
@@ -220,6 +247,21 @@ describe('tirePsi', () => {
 });
 
 describe('the tires, the doors and the chips', () => {
+  test('the tires are low when the sensor is not NORMAL_OPERATION or a tire’s state is set and not NORMAL, whatever its type', () => {
+    const low = (state: string, attributes: Record<string, unknown> = {}) =>
+      read([sensor('tirepressure', state, attributes)]).tiresLow;
+    expect(low('NORMAL_OPERATION', {frontLeft_state: 'NORMAL'})).toBe(false);
+    expect(low('LOW_PRESSURE')).toBe(true);
+    expect(low('NORMAL_OPERATION', {rearRight_state: 1})).toBe(true);
+    expect(low('NORMAL_OPERATION', {rearRight_state: ''})).toBe(false);
+    expect(low('unavailable', {rearRight_state: 'LOW'})).toBe(false);
+  });
+
+  test('the charge sensor reports when it has any value, a number or not', () => {
+    expect(read([sensor('soc', 'n/a')])).toMatchObject({soc: null, socReporting: true});
+    expect(read([sensor('soc', 'unavailable')])).toMatchObject({soc: null, socReporting: false});
+  });
+
   test('each tire is its pressure in psi and Ford’s word for it', () => {
     const car = read([
       sensor('tirepressure', 'NORMAL_OPERATION', {
@@ -231,6 +273,7 @@ describe('the tires, the doors and the chips', () => {
       }),
     ]);
     expect(car.tires.frontLeft).toEqual({psi: 43.8, state: 'NORMAL'});
+    expect(car.tiresLow).toBe(true);
     expect(car.tires.frontRight.state).toBe('LOW');
     expect(car.tires.frontRight.psi).toBeCloseTo(43.5, 1);
     expect(car.tires.rearLeft).toEqual({psi: null, state: null});

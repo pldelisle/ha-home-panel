@@ -11,6 +11,7 @@ import {
   feelsLike,
   foldForecastDays,
   readAlerts,
+  warningCount,
 } from '../../../src/providers/environment-canada.ts';
 import type {ForecastEntry} from '../../../src/providers/weather-source.ts';
 import {entity, fakeHass} from '../fake-hass.ts';
@@ -413,5 +414,21 @@ describe('the condition phrases', () => {
     expect(conditionWordsOf('Sunny')).toBe('weather.cond.sunny');
     expect(conditionWordsOf('Volcanic ash')).toBeNull();
     expect(conditionWordsOf(null)).toBeNull();
+  });
+});
+
+describe('the warnings count the Status checks read', () => {
+  test('is the warnings sensor as a number, zero included', () => {
+    const two = sensors({warnings: 2});
+    expect(warningCount(two, configOf(two))).toBe(2);
+    const none = sensors({warnings: 0});
+    expect(warningCount(none, configOf(none))).toBe(0);
+  });
+
+  test('is null when the sensor is missing or reads no number', () => {
+    const missing = sensors({});
+    expect(warningCount(missing, configOf(missing))).toBeNull();
+    const down = sensors({warnings: 'unavailable'});
+    expect(warningCount(down, configOf(down))).toBeNull();
   });
 });

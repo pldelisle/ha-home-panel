@@ -9,13 +9,12 @@ import {sunTimes} from './core/sun.ts';
 import {browserDefaults} from './core/i18n/browser.ts';
 import {createFormatters} from './core/i18n/format.ts';
 import {englishLocale, panelLocale} from './core/i18n/locale.ts';
-import {ok, esc, tile, plural} from './legacy/globals.js';
-import {loadApex} from './core/apex.ts';
+import {ok, esc, plural} from './legacy/globals.js';
 import {registriesOf} from './core/registry.ts';
 import {roomName} from './core/i18n/room-name.ts';
 import {rateRoom} from './providers/air-quality.ts';
 import {doorMotionSensors} from './providers/door-motion.ts';
-import {findCar, readCar} from './providers/fordpass.ts';
+import {departureSchedule, findCar, readCar} from './providers/fordpass.ts';
 import {hiloChallenge, hiloRates} from './providers/hilo.ts';
 import {heatPump} from './providers/heat-pump.ts';
 import {hydroQuebec} from './providers/hydro-quebec.ts';
@@ -51,21 +50,8 @@ const durTxt = ms => {
   return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h${m % 60 ? ' ' + String(m % 60).padStart(2, '0') : ''}`;
 };
 const ms = v => (typeof v === 'number' ? v : Date.parse(v));
-// a value from Home Assistant as a Date, or null when it is missing or not a date (the formatters throw on an invalid one)
-const asDate = v => {
-  const d = new Date(v);
-  return Number.isNaN(d.getTime()) ? null : d;
-};
-// a YYYY-MM-DD day key as its UTC noon, and a YYYY-MM month key as the 15th at UTC noon: read by a UTC-pinned set
-// (fmtUtcEn, fmtUtc), a key names its own day and month whatever zone the browser or the house is in
+// a YYYY-MM-DD day key as its UTC noon: read by a UTC-pinned set (fmtUtcEn, fmtUtc), a key names its own day whatever zone the browser or the house is in
 const dayAt = k => new Date(k + 'T12:00:00Z');
-const monthAt = k => new Date(k + '-15T12:00:00Z');
-// tiles with nothing to show (the car's sensors it doesn't have) are left out rather than shown with a dash
-const tiles = arr =>
-  arr
-    .filter(([, v]) => v !== '–' && !/>–<\/span>$/.test(String(v)))
-    .map(tile)
-    .join('');
 // drop the leading words every name shares ("Lumière Dessus Piano", "Lumiere Dessus Porte" -> "Piano", "Porte")
 const fold = x =>
   x
@@ -86,17 +72,8 @@ const LAYOUT = ['lights', 'open-air'];
 // thermostats without an HA area: the area each Hilo room belongs to
 // areas the Phone tab shows as part of another, the way Apple Home groups them: the parking spot's charger and camera live in the garage
 // AL_AREAS (from the config): HA area → Adaptive Lighting switch, for areas the panel can't match on its own
-// Tabs view: one pane per subject, for a tablet fixed to the wall. Car's pane hosts its legacy detail sheet inline, until #253. The rail, the phone's bar and the panes
+// Tabs view: one pane per subject, for a tablet fixed to the wall. The rail, the phone's bar and the panes
 // are the shell's (src/shell/features.ts); the guest fills what is inside them.
-// the sheets that wait for the charts library before they draw anything; the others never do
-const CHART_SHEETS = new Set(['sh-car']);
-const TAB_SHEET = {car: 'sh-car'};
-// the tab whose pane hosts a sheet's panel
-const SHEET_TAB = /** @type {Record<string, import('./ui/feature.ts').FeatureKey>} */ (
-  Object.fromEntries(Object.entries(TAB_SHEET).map(([t, id]) => [id, t]))
-);
-// where the sheet host puts a sheet's panel on a tablet: Car's pane is its host
-const SHEET_HOST = {'sh-car': 'pane-car'};
 // colour of a black body at k kelvin (Tanner Helland's fit), for the colour-temperature strips and sliders
 const kelvinRGB = k => {
   const t = Math.min(40000, Math.max(1000, k)) / 100,
@@ -186,20 +163,6 @@ const houseImg = house =>
   house
     ? `<img class="house photo day" alt="" src="${esc(house.day)}"><img class="house photo night" alt="" src="${esc(house.night)}">`
     : '';
-// The drawn car and the car seen from above, which the legacy detail still draws (the card's drawing is <hp-car-card>'s, src/features/car/car-art.ts); #252 deletes both
-const CARSVG = `<svg class="carside" viewBox="0 0 340 128" role="img" aria-label="Car, side view">
-  <ellipse cx="172" cy="118" rx="150" ry="6" fill="var(--house-shadow)"/>
-  <path d="M28 100V82c0-8 4-13 12-15l16-4c20-15 52-28 94-30 30-1 52 3 72 13l26 15c26 2 50 6 64 10 8 3 12 9 12 17v12z" fill="var(--car-body)"/>
-  <path d="M60 64c22-12 50-22 90-24 26-1 48 2 68 11l18 11c-50-4-120-4-176 2z" fill="var(--car-hi)" opacity=".55"/>
-  <path d="M86 60c20-11 42-17 66-18l2 18zM161 42c22 0 40 4 56 12l14 7-70-1z" fill="var(--car-glass)"/><path d="M157 41h5v20h-5z" fill="var(--car-body)"/>
-  <path d="M40 68h14v4H40z" fill="#C8463C"/><path d="M302 72l16 2v3l-16-1z" fill="var(--car-lamp)"/>
-  <path d="M116 94h120v6H116zM28 94h14v6H28zM312 94h14v6h-14z" fill="var(--car-clad)"/><path d="M58 100a32 30 0 0 1 64 0zM232 100a32 30 0 0 1 64 0z" fill="var(--car-clad)"/>
-  <g><circle cx="90" cy="101" r="22" fill="var(--car-tire)"/><circle cx="90" cy="101" r="14" fill="var(--car-rim)"/><circle cx="90" cy="101" r="4" fill="var(--car-tire)"/></g>
-  <g><circle cx="264" cy="101" r="22" fill="var(--car-tire)"/><circle cx="264" cy="101" r="14" fill="var(--car-rim)"/><circle cx="264" cy="101" r="4" fill="var(--car-tire)"/></g></svg>`;
-const CARTOP = `<svg viewBox="0 0 90 170" width="90" height="170" role="img" aria-label="Car seen from above">
-  <rect x="12" y="6" width="66" height="158" rx="26" fill="var(--car-body)"/><path d="M20 52c8-6 42-6 50 0l-4 22H24zM24 112h42l4 20c-8 6-42 6-50 0z" fill="var(--car-glass)"/>
-  <rect x="2" y="30" width="10" height="26" rx="4" fill="var(--car-tire)"/><rect x="78" y="30" width="10" height="26" rx="4" fill="var(--car-tire)"/>
-  <rect x="2" y="114" width="10" height="26" rx="4" fill="var(--car-tire)"/><rect x="78" y="114" width="10" height="26" rx="4" fill="var(--car-tire)"/></svg>`;
 // ---------- weather helpers ----------
 const COND = {
   'clear-night': 'Clear',
@@ -296,8 +259,8 @@ export class LegacyPanel {
     // the formatter sets (spec 11), named by their language and zone, are built once the store is known (refreshFormatters):
     //   fmt      the profile's language, the house's zone: the five sites that were already French
     //   fmtEn    English, the house's zone: every other site, because the rewrite layer parses English (deleted in phase 4)
-    //   fmtUtc   fmt pinned to UTC, and fmtUtcEn fmtEn pinned to UTC: for a day or month key parsed at UTC noon (dayAt,
-    //            monthAt) and for a clock time with no day (clockTime), neither of which belongs to any zone
+    //   fmtUtc   fmt pinned to UTC, and fmtUtcEn fmtEn pinned to UTC: for a day key parsed at UTC noon (dayAt)
+    //            and for a clock time with no day (clockTime), neither of which belongs to any zone
     // fmtUtcEn never changes; the other three follow the profile (refreshFormatters)
     this.fmtUtcEn = createFormatters(englishLocale('UTC'));
     this.localeKey = '';
@@ -308,15 +271,12 @@ export class LegacyPanel {
     };
     this.unsubStore = null; // the one path to the one-second render, subscribed in connect
     this.shared = null; // the history the readers left in this panel share: the energy slices and the Wallbox's sessions (loadSharedHistory)
-    this.charts = []; // sheet charts, destroyed on close
-    this.ApexCharts = null; // the library, once the lazy chunk has loaded (loadCharts)
-    this.chartsLoad = null; // the one load of the chunk
     this.sheetOffs = []; // what unregisters this draw's sheets from the shell's sheet host (build), run by teardown
     this.popupOffs = []; // the same for the two popups Escape dismisses (connect, disconnect)
     this.drawnTab = 'home'; // the tab the guest last drew its part of (tabChanged); `tab` is the shell's
     this.framed = false; // whether build() has drawn once, so the next draw asks the shell for a fresh frame
     this.frameKey = null; // what availability() said when the shell was last asked to draw the rail
-    this.sesAll = false;
+    this.car = null; // the car's entities by the provider's rule (findCar), found once there are states: the stack, the live pill and the Home tile read it through carInputs, until #256 and #269
     this.cache = {}; // last innerHTML per container, to skip identical updates
     this.pending = {}; // optimistic control states until hass catches up
     this.fc = {}; // forecasts by type, told by the shell (forecastChanged) from the Weather pane's subscription; Home's card reads them
@@ -392,8 +352,6 @@ export class LegacyPanel {
   // forget the drawn panel so build() starts over (the language or the config changed)
   teardown() {
     this.frStop();
-    this.charts.forEach(c => c.destroy());
-    this.charts = [];
     this.cache = {};
     this.sheetOffs.forEach(off => off()); // the sheets are about to be written again, and none is open
     this.sheetOffs = [];
@@ -543,9 +501,6 @@ export class LegacyPanel {
   css(n) {
     return getComputedStyle(this.$app).getPropertyValue(n).trim();
   }
-  dark() {
-    return this.ctx.shell.appearance.theme === 'dark';
-  }
   frStart() {
     this.frStop();
     const root = this.root;
@@ -583,7 +538,7 @@ export class LegacyPanel {
     // moved into a pane survives. The shell renders them at once; the first draw finds the frame the shell rendered.
     if (this.framed) this.ctx.shell.resetFrame();
     this.framed = true;
-    // the shell drew the frame (the header, the rail, the panes); the guest draws what is not in it: the parked cards, the sheets, the idle clock, the toast
+    // the shell drew the frame (the header, the rail, the panes); the guest draws what is not in it: the parked cards, the sheets, the idle clock
     // (the Air card is <hp-air-card>, placed by the Air pane: `#open-air` and `#air` are empty legacy containers, kept until the Home move, #268)
     this.container.innerHTML = `<div class="cols">
     <div class="col c1"></div>
@@ -593,22 +548,10 @@ export class LegacyPanel {
     </div>
   </div>
 
-<div class="sheet" id="sh-car" hidden><div class="panel" role="dialog" aria-modal="true" aria-labelledby="carh">
-  <div class="ph"><span class="badge" style="--acc:var(--c-ev)">${ico('car', 26)}</span>
-    <div class="grow"><h2 id="carh">Car</h2><div class="sub" id="carsub"></div></div>
-    <button class="icon close" type="button" aria-label="Close">✕</button></div>
-  <div class="two"><div class="inner" id="car-bat"></div><div class="inner" id="car-status"></div></div>
-  <div class="two"><div class="inner" id="car-charger"></div><div class="inner" id="car-comfort"></div></div>
-  <div class="inner"><h3>Charging history</h3><p id="sesp"></p><div class="tiles" id="sest" style="margin-bottom:6px"></div><div id="c-carmon"></div>
-    <table class="slist"><thead><tr><th>Date</th><th class="hide-s">Time</th><th class="r hide-s">Length</th><th>Energy</th><th class="r hide-s">Peak</th><th class="r">Est. cost</th></tr></thead><tbody id="slist"></tbody></table>
-    <button class="more" type="button" id="smore"></button></div>
-  <div class="two"><div class="inner" id="car-ford"></div><div class="inner" id="car-last"></div></div>
-</div></div>
 <div class="sheet" id="sh-light" hidden><div class="panel" role="dialog" aria-modal="true" aria-labelledby="lshh">
   <div class="ph"><button type="button" class="lpwr" id="lshpwr" role="switch" aria-checked="false" data-l="area" data-a="">${ico('lpow', 24)}</button><div class="grow"><h2 id="lshh"></h2><div class="sub" id="lshsub"></div></div><button class="close ldone" type="button">Done</button></div>
   <div class="lsbody" id="lsheet"></div>
-</div></div>
-<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>`;
+</div></div>`;
     this.$app = this.$('app');
     // `.app` is the shell's and outlives a draw, where a fresh one used to start bare: clear what the guest toggles on it
     // (the shell owns the theme, the glass wallpaper, `gl`, `txl`, `live` and `idle`)
@@ -634,21 +577,17 @@ export class LegacyPanel {
     // The Security card is the second use, written the same way: its tag once a draw, and the card keeps its glow's memory (#226).
     this.$('hsec').innerHTML = '<hp-security-card></hp-security-card>';
     this.wire();
-    // the host takes the scrim and the Close button of each sheet, and places the five detail panels for the shape of the screen
+    // the host takes the scrim and the Close button of each sheet, and places the panels for the shape of the screen (none sits inline in its pane since #252; #188 deletes the placement)
     this.sheetOffs = [...this.root.querySelectorAll('.guest .sheet')].map(el =>
       this.sheets.registerLegacy({
         id: /** @type {import('./shell/sheet-host.ts').LegacySheetId} */ (el.id),
         element: el,
-        inline: SHEET_TAB[el.id] && {
-          pane: SHEET_TAB[el.id],
-          host: SHEET_HOST[el.id],
-        },
       }),
     );
     this.observeLayout();
     this.ctx.shell.idle.arm(); // a draw counts as a touch, as it did: the five minutes start over, and an idle panel wakes
     // the first render (setView → renderTabs) gates the Car tab and tile, so it must already know the car; renderLive looks again
-    this.findCar();
+    this.car ||= findCar(this.hass.states);
     this.setView();
     this.lensAll();
     this.refreshShared();
@@ -696,7 +635,6 @@ export class LegacyPanel {
     if (a.theme !== this.theme) {
       this.theme = a.theme;
       this.cache = {};
-      this.redrawCharts();
     }
     this.lensAll();
   }
@@ -877,7 +815,7 @@ export class LegacyPanel {
           label: `${C.name || 'Car'} not plugged in`,
           color: 'var(--warn)',
           tone: 'amber',
-          go: 'sh-car',
+          go: 'car.detail',
           body: `<div class="srow">${this.sring(C.soc, 0, 'var(--warn)', 108)}<div class="skv">${C.range != null ? `<div><small>Range</small><b class="num">${Math.round(C.range)} km</b></div>` : ''}</div></div>`,
           foot: 'Plug in before bed',
         }),
@@ -1117,7 +1055,7 @@ export class LegacyPanel {
           label: C.name || 'Car',
           color: 'var(--c-ev)',
           right: C.charging ? 'Charging' : 'Plugged in',
-          go: 'sh-car',
+          go: 'car.detail',
           body: `<div class="srow">${this.sring(C.soc, C.limit, 'var(--ok)')}<div class="skv">${p != null && p > 0.05 ? `<div><small>Power</small><b class="num">${p.toFixed(1)} kW</b></div>` : ''}${C.range != null ? `<div><small>Range</small><b class="num">${Math.round(C.range)} km</b></div>` : ''}${C.limit ? `<div><small>Limit</small><b class="num">${C.limit}%</b></div>` : ''}</div></div>`,
           foot:
             dep && !/^No /.test(dep)
@@ -1223,9 +1161,6 @@ export class LegacyPanel {
     this.$('gear').addEventListener('click', () => {
       this.toggleAttention(false);
       this.renderHeader();
-    });
-    this.$('toast').addEventListener('click', () => {
-      this.$('toast').hidden = true;
     });
     [
       ['open-air', 'air.detail'], // dead until the Home move (#268): the card is empty and parked
@@ -1482,46 +1417,18 @@ export class LegacyPanel {
       if (t) return this.ctx.shell.setTab(t.dataset.pane);
     };
     tv.addEventListener('click', onTap);
-    // Ford's photo comes through HA's image proxy; if it fails to load, fall back to the drawn car
-    this.root.addEventListener(
-      'error',
-      e => {
-        if (e.target.classList && e.target.classList.contains('carimg') && !this.imgFail) {
-          this.imgFail = true;
-          this.cache = {};
-          this.renderLive();
-          if (this.sheets.isOpen('sh-car')) this.renderCarSheetLive();
-        }
-      },
-      true,
-    );
-    this.$('smore').addEventListener('click', () => {
-      this.sesAll = !this.sesAll;
-      this.renderSessions();
-    });
-    this.panels['sh-car'].addEventListener('click', e => this.carControl(e));
-    this.panels['sh-car'].addEventListener('change', e => {
-      if (e.target.id === 'deptime') this.depDraft.time = e.target.value;
-      this.renderCarControls();
-    });
   }
 
-  // a confirmation shows for 3.5 s; an error (sticky) stays until it is tapped or dismissed
+  // The shell draws the toast (<hp-toast>, #275): this asks for one as an element does, with a `ToastEvent`'s shape (the legacy code may
+  // not import the kit), in French when the panel is, as the rewrite layer made it of the light DOM. Deleted with the guest (#277).
   toast(msg, sticky) {
-    const t = this.$('toast');
-    clearTimeout(this.toastT);
-    t.classList.toggle('err', !!sticky);
-    t.setAttribute('role', sticky ? 'alert' : 'status');
-    if (sticky) {
-      t.innerHTML = `<span>${esc(msg)}</span><button type="button" class="tdis">Dismiss</button>`;
-      t.hidden = false;
-      return;
-    }
-    t.textContent = msg;
-    t.hidden = false;
-    this.toastT = setTimeout(() => {
-      t.hidden = true;
-    }, 3500);
+    this.container.dispatchEvent(
+      new CustomEvent('toast', {
+        bubbles: true,
+        composed: true,
+        detail: {message: this.french.text(msg), sticky: !!sticky},
+      }),
+    );
   }
   // on a phone a sheet is dragged down by its grabber or its title to close, as iOS sheets are; a short drag springs back
   // (the kit's SwipeToClose is the same drag for the sheets that are elements; this one goes with the last legacy sheet, #169)
@@ -1570,7 +1477,6 @@ export class LegacyPanel {
     } catch (e) {
       this.toast(`Didn't work: ${e.message || e.code || e}`, true);
       this.pending = {};
-      this.renderCarControls();
     }
   }
 
@@ -1586,7 +1492,7 @@ export class LegacyPanel {
   }
   renderLive() {
     if (!this.hass) return;
-    this.findCar();
+    this.car ||= findCar(this.hass.states);
     for (const f of ['renderHeader', 'renderLights']) {
       try {
         this[f]();
@@ -1597,7 +1503,6 @@ export class LegacyPanel {
     this.renderTabs();
     try {
       if (this.sheets.isOpen('sh-light')) this.renderLightSheet();
-      if (this.sheets.isOpen('sh-car')) this.renderCarSheetLive();
       if (!this.$('attpop').hidden) this.renderAttention();
     } catch (e) {
       console.error('home-panel sheet', e);
@@ -2060,7 +1965,7 @@ export class LegacyPanel {
     if (b.dataset.la === 'car') {
       this.toggleAttention(false);
       this.renderHeader();
-      this.sheets.open('sh-car');
+      this.sheets.open('car.detail');
       return;
     }
     if (b.dataset.la === 'pause' && this.E.wbPause) {
@@ -2077,22 +1982,10 @@ export class LegacyPanel {
     }
   }
 
-  // ---------- car discovery ----------
-  // the car's entities by the provider's rule, found once; the legacy readers (the stack, the live pill, the detail and its controls) read it through carInputs until #253
-  findCar() {
-    if (!this.car) this.car = findCar(this.hass.states);
-  }
-  // the car as the provider reads it, null when the house has none; deleted with its last reader, #253
+  // ---------- the car, for the legacy readers ----------
+  // the car as the provider reads it, null when the house has none; the stack, the live pill and the Home tile read it until #256 (live pill) and #269 (Home)
   carInputs() {
     return this.car ? readCar(this.hass.states, this.store.config, this.store.names, this.car) : null;
-  }
-  // Ford's photo through HA's image proxy, else the drawn car in the config's colour; the legacy detail's, until #252 (the card's is <hp-car-card>'s)
-  carImg(c) {
-    return c.picture && !this.imgFail
-      ? `<img class="carimg" src="${esc(c.picture)}" alt="${esc(c.name || 'Car')}">`
-      : c.color
-        ? CARSVG.replace('<svg class="carside"', `<svg class="carside" style="--car-body:${esc(c.color)}"`)
-        : CARSVG;
   }
   // the sections this house has nothing for (true = nothing), for the Home tiles gateLacking hides: Climate with no thermostat and no heat pump, and the
   // water heater with neither of its sensors (the Climate tab is its descriptor's `available`, #248, Car's is its own, #251, and Energy's own cards
@@ -2124,13 +2017,12 @@ export class LegacyPanel {
     }
     this.cache = {};
     this.renderLive();
-    if (this.sheets.shown) this.redrawCharts();
   }
   // What the readers left in this panel still read: the stack's Energy-today card (the hourly flow and the meter's today), the live pill's water heater and
-  // the Home water tile (the water heater's day), the live pill's car and the legacy detail's sessions (the Wallbox's year of hours, which the Car's history asks
+  // the Home water tile (the water heater's day), the live pill's car (the Wallbox's year of hours, which the Car's history asks
   // too, so it is one read), and the header's "Live · history" line (`at`). The power windows are asked through the panel-wide cache, the very calls Energy's
   // card makes, so each is read once for the panel (ADR 0028), and cut by the providers' slices; the energy-only windows are the card's, asked when it first
-  // connects. It is deleted with its last reader: #252 (the detail's sessions), #256 (liveActs), #266 (the stack), #268 (the Home tile) and #269 (the header).
+  // connects. It is deleted with its last reader: #256 (liveActs), #266 (the stack), #268 (the Home tile) and #269 (the header).
   async loadSharedHistory(now) {
     const {config} = this.store,
       ask = ({ids, period, start, types}) => this.ctx.statistics.statistics(ids, period, start, types);
@@ -2160,91 +2052,17 @@ export class LegacyPanel {
   // ---------- sheets ----------
   // the sheet host calls these two: a legacy sheet is on screen (over the page, or inline in its pane) or left it
   sheetOpened(id) {
-    if (id === 'sh-car') this.depDraft = null;
     this.buildSheet(id);
   }
-  sheetClosed() {
-    this.destroyCharts();
-  }
-  destroyCharts() {
-    this.charts.forEach(c => {
-      try {
-        c.destroy();
-      } catch {}
-    });
-    this.charts = [];
-  }
-  redrawCharts() {
-    const id = this.sheets.shown;
-    if (!id) return;
-    this.destroyCharts();
-    this.buildSheet(id);
-  }
-  // ApexCharts is fetched the first time a sheet that draws charts opens, then kept (the chunk is cached by the browser)
-  loadCharts() {
-    this.chartsLoad ??= loadApex().then(({ApexCharts}) => (this.ApexCharts = ApexCharts));
-    return this.chartsLoad;
-  }
-  async buildSheet(id) {
-    const tag = (this.sheetTag = Symbol());
+  sheetClosed() {}
+  buildSheet(id) {
+    if (!this.sheets.isOpen(id)) return;
     try {
-      if (CHART_SHEETS.has(id)) await this.loadCharts();
-    } catch {
-      this.toast(this.store.t('charts.failed'), true);
-      return;
-    }
-    if (tag !== this.sheetTag || !this.sheets.isOpen(id)) return;
-    try {
-      if (id === 'sh-car') this.carSheet();
       if (id === 'sh-light') this.renderLightSheet();
     } catch (e) {
       console.error('home-panel sheet', e);
     }
   }
-  base(h) {
-    return {
-      chart: {
-        height: h || 300,
-        toolbar: {show: false},
-        zoom: {enabled: false},
-        fontFamily: this.css('--f-body'),
-        foreColor: this.css('--fg2'),
-        background: 'transparent',
-        animations: {enabled: !matchMedia('(prefers-reduced-motion: reduce)').matches},
-      },
-      grid: {borderColor: this.css('--line'), padding: {left: 6, right: 8}},
-      legend: {show: false},
-      dataLabels: {enabled: false},
-      tooltip: {theme: this.dark() ? 'dark' : 'light'},
-      xaxis: {axisBorder: {color: this.css('--line')}, axisTicks: {color: this.css('--line')}},
-      noData: {text: 'No history yet'},
-    };
-  }
-  mk(id, opt) {
-    if (this.store.isFrench) opt = this.french.apex(opt);
-    const el = this.$(id);
-    el.innerHTML = '';
-    const c = new this.ApexCharts(el, opt);
-    this.charts.push(c);
-    // a chart with nothing to draw must not take the panel down with it
-    const done = c.render();
-    if (done && done.catch) done.catch(e => console.warn('home-panel chart', id, e && e.message));
-    // to assistive tech a chart is an image, named after its card's title and the line under it
-    const box = el.closest('.inner, .card'),
-      h = box && box.querySelector('h3, .lbl'),
-      p = box && box.querySelector('p');
-    el.setAttribute('role', 'img');
-    el.setAttribute(
-      'aria-label',
-      [h && h.textContent.trim(), p && p.textContent.trim()].filter(Boolean).join('. ') || 'Chart',
-    );
-    return c;
-  }
-  // the colours of the legacy charts, which Car (#253) still draws; the elements' own are theirs (Energy's #240, Climate's #246)
-  S() {
-    return {ev: this.css('--c-ev')};
-  }
-
   // ---------- weather ----------
   // The Weather pane's ForecastController owns the forecast subscription (spec 15) and the shell tells the guest of each message:
   // Home's card (`wxDays`) still reads `this.fc`. Deleted with its last reader (the Home move).
@@ -2594,7 +2412,7 @@ export class LegacyPanel {
     this.drawnTab = t;
     if (t === 'lights' && prev !== t) this.loadLightOrder(); // another screen may have rearranged them
     if (t !== 'lights' && this.lightEdit) this.setLightEdit(false);
-    this.sheets.paneShown(t); // the host shows this pane's detail panel inline, on a tablet
+    this.sheets.paneShown(t); // the host shows this pane's legacy detail panel inline, on a tablet: none has one since #252, and #188 deletes this call
     this.renderTabs();
     // on a phone each section starts at the top, as an app's tabs do
     if (this.compact && prev && prev !== t) {
@@ -2855,7 +2673,7 @@ export class LegacyPanel {
     // on a phone a tile opens its sheet straight away; Lights goes to its section, the water heater opens its card (Energy's sheet)
     const PH = {
       climate: 'data-opens="climate.detail"',
-      car: 'data-opens="sh-car"',
+      car: 'data-opens="car.detail"',
       energy: 'data-opens="energy.detail"',
       air: 'data-opens="air.detail"',
     };
@@ -3350,510 +3168,34 @@ export class LegacyPanel {
     if (open) this.renderAttention();
   }
 
-  // ---------- car sheet ----------
-  carSheet() {
-    if (!this.car) {
-      this.$('car-bat').innerHTML = '<div class="muted">No FordPass car found.</div>';
-      return;
-    }
-    this.$('carh').textContent = this.carInputs().name || 'Car';
-    this.cache['car-charger'] = this.cache['car-comfort'] = null;
-    this.renderCarSheetLive();
-    this.renderSessions();
-    const H = this.shared,
-      s = this.S();
-    if (!H) return;
-    const sess = H.sessions,
-      tot = sum(sess.map(x => x.kwh)),
-      price = this.num(this.E.wbPrice) ?? 0.07;
-    this.$('sesp').textContent = sess.length
-      ? `${sess.length} charging sessions on the Wallbox since ${this.fmtEn.date(sess[0].start)}. Cost is estimated at the ${(price * 100).toFixed(0)}¢/kWh set in the Wallbox app.`
-      : 'No charging sessions in the last year.';
-    this.$('sest').innerHTML = [
-      ['Sessions', sess.length, '', sess.length ? 'since ' + this.fmtEn.date(sess[0].start) : ''],
-      ['Delivered', this.fmtEn.integer(tot), 'kWh'],
-      ['Average', sess.length ? (tot / sess.length).toFixed(1) : '–', 'kWh', 'per session'],
-      ['Est. cost', '$' + Math.round(tot * price), '', `at ${(price * 100).toFixed(0)}¢/kWh`],
-    ]
-      .map(tile)
-      .join('');
-    const mon = {};
-    sess.forEach(x => {
-      const k = this.fmtEn.isoDay(x.start).slice(0, 7);
-      mon[k] = mon[k] || [0, 0];
-      mon[k][0] += x.kwh;
-      mon[k][1]++;
-    });
-    const ks = Object.keys(mon).sort();
-    this.mk(
-      'c-carmon',
-      merge(this.base(220), {
-        chart: {type: 'bar'},
-        series: [{name: 'Charged at home', data: ks.map(k => +mon[k][0].toFixed(1))}],
-        colors: [s.ev],
-        plotOptions: {bar: {borderRadius: 5, borderRadiusApplication: 'end', columnWidth: '56%'}},
-        xaxis: {categories: ks.map(k => this.fmtUtcEn.month(monthAt(k), 'short'))},
-        yaxis: {labels: {formatter: v => v.toFixed(0) + ' kWh'}},
-        tooltip: {
-          y: {formatter: (v, o) => `${Math.round(v)} kWh in ${plural(mon[ks[o.dataPointIndex]][1], 'session')}`},
-        },
-      }),
-    );
-  }
-  renderSessions() {
-    const H = this.shared;
-    if (!H) {
-      this.$('slist').innerHTML = '';
-      this.$('smore').hidden = true;
-      return;
-    }
-    const all = H.sessions.slice().reverse(),
-      rows = this.sesAll ? all : all.slice(0, 10),
-      mx = Math.max(1, ...all.map(x => x.kwh)),
-      price = this.num(this.E.wbPrice) ?? 0.07;
-    this.$('slist').innerHTML = rows
-      .map(
-        x => `<tr><td>${this.fmtEn.dateWeekday(x.start)}</td><td class="hide-s">${this.fmtEn.time(x.start)} to ${this.fmtEn.time(x.end)}</td><td class="r hide-s">${Math.round((x.end - x.start) / 36e5)} h</td>
-      <td><span class="bar" style="width:${Math.round((x.kwh / mx) * 70) + 4}px"></span>${x.kwh.toFixed(1)} kWh</td><td class="r hide-s">${x.peak.toFixed(1)} kW</td><td class="r">$${(x.kwh * price).toFixed(2)}</td></tr>`,
-      )
-      .join('');
-    const m = this.$('smore');
-    m.hidden = all.length <= 10;
-    m.textContent = this.sesAll ? 'Show the latest 10' : `Show all ${all.length} sessions`;
-  }
-  renderCarSheetLive() {
-    if (!this.car) return;
-    const C = this.car,
-      A = (k, a) => this.attr(C.id('sensor', k), a),
-      c = this.carInputs();
-    const lr = this.st(C.id('sensor', 'lastrefresh')),
-      where =
-        c.tracker === null
-          ? ''
-          : c.tracker === 'home'
-            ? 'Parked at home'
-            : c.tracker === 'not_home'
-              ? 'Away'
-              : c.tracker;
-    this.$('carsub').textContent = [
-      where,
-      c.locked == null ? '' : c.locked ? 'locked' : 'unlocked',
-      ok(lr) ? 'the car last checked in at ' + this.fmtEn.time(new Date(lr.state)) : '',
-    ]
-      .filter(Boolean)
-      .join(' · ');
-    const el = this.st(C.id('sensor', 'elveh')),
-      ea = el ? el.attributes : {},
-      ch = (this.st(C.id('sensor', 'elvehcharging')) || {}).attributes || {};
-    const cab = this.num(C.id('sensor', 'cabintemperature')),
-      outc = this.num(C.id('sensor', 'outsidetemp'));
-    this.set(
-      'car-bat',
-      `<h3>Battery</h3><p>${ea.batteryEnergyRemaining != null ? `${f1(ea.batteryEnergyRemaining)} of ${f1(ea.maximumBatteryCapacity)} kWh usable` : ''}${ch.batteryTemperature != null ? ` · battery at ${f1(ch.batteryTemperature)}°` : ''}</p>
-      <div class="carhero"><div><div class="t">${f1(c.soc)}<small>%</small></div><div class="muted" style="font-size:14px;margin-top:4px">${c.range != null ? Math.round(c.range) + ' km range' : ''}</div></div>${this.carImg(c)}</div>
-      <div class="socbar" role="img" aria-label="Battery ${f1(c.soc)} percent"><i style="width:${c.soc || 0}%"></i>${c.limit ? `<b style="left:${c.limit}%"></b>` : ''}</div>
-      <div class="socscale"><span>0%</span><span>${c.limit ? 'Charge limit ' + c.limit + '%' : ''}</span><span>100%</span></div>
-      <div class="tiles" style="margin-top:14px">${tiles([
-        ['Full range', ea.maximumBatteryRange != null ? Math.round(ea.maximumBatteryRange) : '–', 'km', 'at 100%'],
-        [
-          'Plug',
-          `<span style="font-size:18px">${c.charging ? 'Charging' : c.plugged ? 'Plugged in' : 'Unplugged'}</span>`,
-          '',
-          c.charging && ch.chargingkW ? f1(ch.chargingkW) + ' kW' : '',
-        ],
-        ['AC limit', this.num(C.id('number', 'globalaccurrentlimit')) ?? ch.globalAcCurrentLimit ?? '–', 'A'],
-        ['Cabin', f1(cab), '°', outc != null ? `outside ${f1(outc)}°` : ''],
-      ])}</div>`,
-    );
-    const tp = this.st(C.id('sensor', 'tirepressure')),
-      ta = tp ? tp.attributes : {};
-    const psi = k => {
-      const m = String(ta[k] ?? '').match(/(-?[\d.]+)\s*([a-z]*)/i);
-      if (!m) return '–';
-      const v = +m[1],
-        u = m[2].toLowerCase();
-      // fordpass reports "3.02 bar" / "302 kPa" / "43.8 psi" depending on HA's unit system; bare numbers are guessed by size
-      const p =
-        u === 'psi'
-          ? v
-          : u === 'bar'
-            ? v * 14.5038
-            : u === 'kpa'
-              ? v * 0.145038
-              : u === 'pa'
-                ? v / 6894.757
-                : v > 1000
-                  ? v / 6894.757
-                  : v > 100
-                    ? v * 0.145038
-                    : v < 10
-                      ? v * 14.5038
-                      : v;
-      return Number.isFinite(p) ? p.toFixed(1) : '–';
-    };
-    const tst = k =>
-      ta[k + '_state']
-        ? `<div class="s" style="${ta[k + '_state'] === 'NORMAL' ? '' : 'color:var(--warn)'}">${ta[k + '_state'] === 'NORMAL' ? 'Normal' : esc(String(ta[k + '_state']).toLowerCase())}</div>`
-        : '';
-    const tpc = (k, n) =>
-      `<div class="tp"><div class="k">${n}</div><div class="v">${psi(k)}<small>psi</small></div>${tst(k)}</div>`;
-    const ds = this.st(C.id('sensor', 'doorstatus')),
-      win = this.st(C.id('sensor', 'windowposition')),
-      alarm = this.st(C.id('sensor', 'alarm')),
-      gear = this.st(C.id('sensor', 'gearleverposition'));
-    const da = ds ? ds.attributes : {},
-      closed = k => da[k] == null || da[k] === 'CLOSED';
-    const chips = [
-      [
-        ok(ds)
-          ? ['driverFront', 'passengerFront', 'rearLeft', 'rearRight'].every(closed)
-            ? 'Doors closed'
-            : 'A door is open'
-          : null,
-        ['driverFront', 'passengerFront', 'rearLeft', 'rearRight'].every(closed),
-      ],
-      [
-        ok(win) ? (win.state === 'Closed' ? 'Windows closed' : 'A window is open') : null,
-        ok(win) && win.state === 'Closed',
-      ],
-      [
-        ok(ds) ? (closed('hood') && closed('tailgate') ? 'Hood and tailgate closed' : 'Hood or tailgate open') : null,
-        closed('hood') && closed('tailgate'),
-      ],
-      [c.locked == null ? null : c.locked ? 'Locked' : 'Unlocked', !!c.locked],
-      [ok(alarm) ? (alarm.state === 'DISARMED' ? 'Alarm off' : 'Alarm ' + alarm.state.toLowerCase()) : null, true],
-      [ok(gear) ? (gear.state === 'PARK' ? 'In park' : 'Gear ' + gear.state.toLowerCase()) : null, true],
-    ].filter(x => x[0]);
-    const b12 = this.num(C.id('sensor', 'battery')),
-      fw = this.st(C.id('sensor', 'lastfirmwareupdate')),
-      au = this.st(C.id('switch', 'autosoftwareupdates'));
-    this.set(
-      'car-status',
-      `<h3>Car status</h3><p>Tire pressures from the car's sensors</p>
-      <div class="tpms">${tpc('frontLeft', 'Front left')}${CARTOP}${tpc('frontRight', 'Front right')}${tpc('rearLeft', 'Rear left')}${tpc('rearRight', 'Rear right')}</div>
-      <div class="clear">${chips.map(([t, good]) => `<span${good ? '' : ' style="color:var(--warn)"'}>${t}</span>`).join('')}</div>
-      <div class="tiles">${tiles([
-        [
-          'Odometer',
-          this.num(C.id('sensor', 'odometer')) == null ? '–' : this.fmtEn.integer(this.num(C.id('sensor', 'odometer'))),
-          'km',
-        ],
-        [
-          '12 V battery',
-          b12 ?? '–',
-          '%',
-          A('battery', 'batteryVoltage') ? (+A('battery', 'batteryVoltage')).toFixed(1) + ' V' : '',
-        ],
-        [
-          'Software',
-          `<span style="font-size:18px">${esc(fw ? fw.attributes.firmwareVersion || '–' : '–')}</span>`,
-          '',
-          ok(fw) ? 'since ' + this.fmtEn.date(new Date(fw.state)) : '',
-        ],
-        ['Auto updates', `<span style="font-size:18px">${ok(au) ? (au.state === 'on' ? 'On' : 'Off') : '–'}</span>`],
-      ])}</div>`,
-    );
-    this.renderCarControls();
-    // From Ford + last plug-in
-    const msgs = (A('messages', 'json_src') || []).slice(0, 3),
-      dep = this.st(C.id('switch', 'departuretimes'));
-    const rows = msgs.map(m => {
-      const created = m.createdDate ? asDate(Date.parse(m.createdDate) || m.createdDate) : null; // Ford's text, not always a date
-      return `<div class="arow"><span class="ic acc" style="--acc:var(--warn)">!</span><div><b>${esc(m.messageSubject)}${created ? ', ' + esc(this.fmtEn.date(created)) : ''}</b><span>${esc(m.messageBody)}</span></div></div>`;
-    });
-    rows.push(
-      `<div class="arow"><span class="ic acc" style="--acc:var(--fg3);--acc-c:var(--fg2)">${ico('clock', 16)}</span><div><b>Departure times ${ok(dep) && dep.state === 'on' ? 'on' : 'off'}</b><span>${esc(this.schedText())}</span></div></div>`,
-    );
-    this.set(
-      'car-ford',
-      `<h3>From Ford</h3><p>Messages and schedules from the FordPass app</p><div class="att">${rows.join('')}</div>`,
-    );
-    const tl = A('energytransferlogentry', 'plugDetails'),
-      soc2 = A('energytransferlogentry', 'stateOfCharge');
-    let delivered = null;
-    if (tl && this.shared) {
-      const a = Date.parse(tl.plugInTime),
-        b = Date.parse(tl.plugOutTime);
-      delivered = sum(this.shared.sessions.filter(x => x.end > a && x.start < b).map(x => x.kwh));
-    }
-    this.set(
-      'car-last',
-      tl
-        ? `<h3>Last plug-in, per Ford</h3><p>${this.plugStamp(tl.plugInTime)} to ${this.plugStamp(tl.plugOutTime)}</p>
-      <div class="tiles">${[
-        [
-          'Battery',
-          soc2 ? `${soc2.firstSOC}→${soc2.lastSOC}` : '–',
-          '%',
-          soc2 && c.limit && soc2.lastSOC >= c.limit ? 'stopped at the limit' : '',
-        ],
-        ['Range added', tl.totalDistanceAdded != null ? Math.round(tl.totalDistanceAdded) : '–', 'km'],
-        ['Plugged in', tl.totalPluggedInTime ? (tl.totalPluggedInTime / 3600).toFixed(1) : '–', 'h'],
-        ['Delivered', delivered != null ? delivered.toFixed(1) : '–', 'kWh', 'per the Wallbox'],
-      ]
-        .map(tile)
-        .join('')}</div>`
-        : "<h3>Last plug-in</h3><p>Ford hasn't reported a charging session yet.</p>",
-    );
-  }
-  // Ford's plug-in or plug-out time as `Nov 6, 5:00 pm`, or a dash where Ford sent none or sent something that is not a date
-  plugStamp(v) {
-    const d = asDate(v);
-    return d ? `${this.fmtEn.date(d)}, ${this.fmtEn.time(d)}` : '–';
-  }
+  // ---------- the departure schedule's words, which the stack's car card and the live pill's upcoming list still read until #269 ----------
   // a time of day with no date, such as the departure schedule's hours and minutes: placed on a fixed UTC day and read
   // back by the UTC set, so that neither the browser's zone nor the house's moves it
   clockTime(h, m) {
     return this.fmtUtcEn.time(Date.UTC(2026, 0, 1, h, m));
   }
+  // read from the provider's schedule; the Car's controls say the same in the catalog (src/features/car/schedule.ts). Deleted by #269, the Home move, with its last readers
   schedText() {
-    const sch = this.attr(this.car.id('sensor', 'departureschedules'), 'schedule') || {};
-    const days = Object.keys(sch);
-    if (!days.length) return 'No departure times saved.';
-    const t0 = sch[days[0]].timeOfDay || {},
-      time = this.clockTime(t0.hours || 0, t0.minutes || 0);
+    const sch = this.car && departureSchedule(this.hass.states, this.car);
+    if (!sch) return 'No departure times saved.';
     const wk = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
     const d =
-      days.length === 7
+      sch.days.length === 7
         ? 'Every day'
-        : days.length === 5 && wk.every(x => days.includes(x))
+        : sch.days.length === 5 && wk.every(x => sch.days.includes(x))
           ? 'Weekdays'
-          : days.map(x => x.slice(0, 3).replace(/^./, c => c.toUpperCase())).join(', ');
-    return `${d} at ${time} saved.`;
+          : sch.days.map(x => x.slice(0, 3).replace(/^./, c => c.toUpperCase())).join(', ');
+    return `${d} at ${this.clockTime(sch.hours, sch.minutes)} saved.`;
   }
 
-  // ---------- car + charger controls ----------
+  // ---------- the switch's optimistic read ----------
+  // `sw`, `pending` and `call` stay for the Lights pane and the live pill's "Pause charging" until Lights moves (spec 23, #263); the Car's controls hold their values in the panel's overlay since #253
   sw(id) {
     const p = this.pending[id];
     if (p != null && Date.now() < p.until) return p.on;
     const s = this.st(id);
     return ok(s) ? ['on', 'locked'].includes(s.state) : null;
   }
-  renderCarControls() {
-    const C = this.car;
-    if (!C || !this.sheets.isOpen('sh-car')) return;
-    const amps = this.st(this.E.wbAmps),
-      cur = this.pending.amps && Date.now() < this.pending.amps.until ? this.pending.amps.v : this.num(this.E.wbAmps);
-    const mn = amps ? amps.attributes.min || 6 : 6,
-      mx = amps ? amps.attributes.max || 48 : 48;
-    const steps = [16, 24, 32, 40, 48].filter(a => a >= mn && a <= mx);
-    const c = this.carInputs(),
-      wb = this.st(this.E.wbStatus),
-      pause = this.st(this.E.wbPause),
-      wlock = this.sw(this.E.wbLock);
-    const lim = c.limit,
-      limOpts = [50, 60, 70, 80, 90, 100];
-    const charging = this.sw(this.E.wbPause);
-    this.set(
-      'car-charger',
-      `<h3>Home charger</h3><p>Wallbox Pulsar Plus · ${esc(ok(wb) ? wb.state.toLowerCase() : 'unavailable')}${c.plugged ? '' : ', car not plugged in'}</p>
-      <div class="ctl-l">Power limit</div>
-      <div class="seg${ok(amps) ? '' : ' dis'}" role="radiogroup" aria-label="Charging current limit">${steps.map(a => `<button type="button" role="radio" aria-checked="${Math.round(cur) === a}" data-k="amps" data-a="${a}" ${ok(amps) ? '' : 'disabled'}><b>${a} A</b><small>${(a * 0.24).toFixed(1)} kW</small></button>`).join('')}</div>
-      <div class="hint">Sets the Wallbox maximum current${cur != null && !steps.includes(Math.round(cur)) ? ` (now ${Math.round(cur)} A)` : ''}. kW assumes 240 V.</div>
-      <div class="ctl-l">Charge limit</div>
-      <div class="seg dis" role="radiogroup" aria-label="Charge limit, read only" aria-disabled="true">${limOpts.map(v => `<button type="button" role="radio" aria-checked="${lim === v}" disabled><b>${v === 100 ? 'Full' : v + '%'}</b></button>`).join('')}</div>
-      <div class="hint">Set in the FordPass app. Home Assistant can read it but has no control for it.</div>
-      <div class="tgl"><div class="tx"><b>Charging</b><span>${ok(pause) ? (charging ? 'On. Turn off to pause' : 'Paused. Turn on to resume') : 'Available while the car is plugged in'}</span></div><button class="sw" type="button" role="switch" aria-checked="${!!charging}" aria-label="Charging" data-k="pause" ${ok(pause) ? '' : 'disabled'}></button></div>
-      <div class="tgl"><div class="tx"><b>Lock charger</b><span>${wlock ? 'Locked, needs the app or RFID card' : 'Unlocked, anyone can plug in'}</span></div><button class="sw" type="button" role="switch" aria-checked="${!!wlock}" aria-label="Lock charger" data-k="wblock" ${this.st(this.E.wbLock) && ok(this.st(this.E.wbLock)) ? '' : 'disabled'}></button></div>`,
-    );
-    const rs = this.sw(C.id('switch', 'ignition')),
-      cabin = this.st(C.id('select', 'rcctemperature')),
-      seat = this.st(C.id('select', 'rccseatfrontleft'));
-    const opt = (k, key, icon, name) => {
-      const on = this.sw(C.id('switch', key)),
-        s = this.st(C.id('switch', key));
-      return `<button class="cbtn${this.armed === k ? ' armed' : ''}" type="button" aria-pressed="${!!on}" data-k="${k}" ${ok(s) ? '' : 'disabled'}><span class="ic">${ico(icon, 18)}</span><div><b>${this.armed === k ? 'Tap again to start' : name}</b><br><span>${k === 'rs' ? (rs ? 'Running' : 'Off') + (ok(cabin) ? ' · cabin ' + esc(cabin.state.toUpperCase()) : '') : 'With remote start: ' + (on ? 'on' : 'off')}</span></div></button>`;
-    };
-    const seatTxt =
-      ok(seat) && /heated(\d)/.test(seat.state)
-        ? `Front seats heat at level ${seat.state.match(/heated(\d)/)[1]} with remote start.`
-        : ok(seat) && /cooled(\d)/.test(seat.state)
-          ? `Front seats cool at level ${seat.state.match(/cooled(\d)/)[1]} with remote start.`
-          : '';
-    const lockOk = ok(this.st(C.id('lock', 'doorlock'))),
-      locked = this.sw(C.id('lock', 'doorlock'));
-    const honk = [C.id('button', 'hafdefault'), C.id('button', 'hafshort')].find(
-      id => ok(this.st(id)) || (this.st(id) && this.st(id).state === 'unknown'),
-    );
-    const D = this.depState();
-    const dayN = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-    this.set(
-      'car-comfort',
-      `<h3>Comfort and access</h3><p>Remote start warms or cools the cabin for about 15 minutes</p>
-      <div class="ctls">${opt('rs', 'ignition', 'fan', 'Remote start')}${opt('deff', 'rccdefrostfront', 'wind', 'Heated windshield')}${opt('defr', 'rccdefrostrear', 'rear', 'Rear defrost')}${opt('wheel', 'rccsteeringwheel', 'wheel', 'Heated wheel')}</div>
-      ${seatTxt ? `<div class="hint">${seatTxt}</div>` : ''}
-      <div class="access"><div class="tx"><b>${locked == null ? 'Lock status unknown' : locked ? 'Locked' : 'Unlocked'}</b><span>${esc(this.closedText())}</span></div>
-        ${honk ? `<button class="abtn" type="button" data-k="honk" data-id="${honk}">Honk &amp; flash</button>` : ''}
-        <button class="abtn${this.armed === 'lock' ? ' armed' : ''}" type="button" data-k="lock" ${lockOk ? '' : 'disabled'}>${this.armed === 'lock' ? 'Tap again to unlock' : locked ? 'Unlock' : 'Lock'}</button></div>
-      <div class="ctl-l" style="margin-top:18px">Departure times</div>
-      <div class="tgl" style="margin-top:0"><div class="tx"><b>Precondition for departure</b><span>${D.on ? 'On' : 'Off'} · ${esc(this.depDesc(D))}${D.on ? '' : ' saved'}</span></div><button class="sw" type="button" role="switch" aria-checked="${D.on}" aria-label="Departure times" data-k="dep" ${D.ok ? '' : 'disabled'}></button></div>
-      <div class="deprow"><div class="days" role="group" aria-label="Departure days">${dayN.map((n, i) => `<button type="button" aria-pressed="${D.days.includes(n)}" aria-label="${n}" data-k="day" data-d="${n}">${this.store.isFrench ? 'LMMJVSD'[i] : n[0].toUpperCase()}</button>`).join('')}</div>
-        <input class="dtime" id="deptime" type="time" value="${D.time}" step="300" aria-label="Departure time"></div>
-      <div class="seg" role="radiogroup" aria-label="Cabin temperature at departure" style="margin-top:8px">${[
-        ['low', 'Cool'],
-        ['medium', 'Medium'],
-        ['high', 'Warm'],
-        ['off', 'Off'],
-      ]
-        .map(
-          ([v, l]) =>
-            `<button type="button" role="radio" aria-checked="${D.temp === v}" data-k="deptemp" data-t="${v}"><b>${l}</b></button>`,
-        )
-        .join('')}</div>
-      <div class="hint">When the car is plugged in, it warms the cabin and the battery to be ready at this time. Ford doesn't report the cabin setting of a saved schedule, so pick one before saving.</div>
-      <button class="more" type="button" data-k="depsave" style="margin-top:10px">Save schedule</button>`,
-    );
-  }
-  closedText() {
-    const ds = this.st(this.car.id('sensor', 'doorstatus')),
-      win = this.st(this.car.id('sensor', 'windowposition'));
-    if (!ok(ds)) return '';
-    const open = Object.entries(ds.attributes)
-      .filter(([, v]) => v === 'OPEN' || v === 'AJAR')
-      .map(([k]) => k);
-    return open.length
-      ? 'Open: ' + open.join(', ')
-      : `All doors${ok(win) && win.state === 'Closed' ? ', windows' : ''}, hood and tailgate closed`;
-  }
-  depState() {
-    const sch = this.attr(this.car.id('sensor', 'departureschedules'), 'schedule') || {},
-      s = this.st(this.car.id('switch', 'departuretimes'));
-    if (!this.depDraft) {
-      const days = Object.keys(sch),
-        t0 = days.length ? sch[days[0]].timeOfDay || {} : {hours: 8, minutes: 0};
-      this.depDraft = {
-        days,
-        time: `${String(t0.hours || 0).padStart(2, '0')}:${String(t0.minutes || 0).padStart(2, '0')}`,
-        temp: null,
-      };
-    }
-    const p = this.pending.dep,
-      on = p && Date.now() < p.until ? p.on : ok(s) && s.state === 'on';
-    return {...this.depDraft, on, ok: ok(s)};
-  }
-  depDesc(D) {
-    const wk = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
-      d = D.days;
-    const txt =
-      d.length === 7
-        ? 'every day'
-        : d.length === 5 && wk.every(x => d.includes(x))
-          ? 'weekdays'
-          : d.map(x => x.slice(0, 3).replace(/^./, c => c.toUpperCase())).join(', ') || 'no days';
-    const [h, m] = D.time.split(':').map(Number);
-    // a cleared time field is '': no time to name (the formatter throws on an invalid date, and this redraws every second)
-    return Number.isFinite(h) && Number.isFinite(m) ? `${txt} at ${this.clockTime(h, m)}` : txt;
-  }
-  carControl(e) {
-    const b = e.target.closest('[data-k]');
-    if (!b || b.disabled || !this.car) return;
-    const C = this.car,
-      k = b.dataset.k,
-      hold = (key, v) => {
-        this.pending[key] = {...v, until: Date.now() + 20000};
-      };
-    const swToggle = (id, label) => {
-      const on = !this.sw(id);
-      hold(id, {on});
-      this.call('switch', on ? 'turn_on' : 'turn_off', {entity_id: id}, `${label} ${on ? 'on' : 'off'}`);
-    };
-    const arm = key => {
-      this.armed = key;
-      clearTimeout(this.armT);
-      this.armT = setTimeout(() => {
-        this.armed = null;
-        this.renderCarControls();
-      }, 4000);
-    };
-    if (k === 'amps') {
-      const a = +b.dataset.a;
-      this.pending.amps = {v: a, until: Date.now() + 20000};
-      this.call('number', 'set_value', {entity_id: this.E.wbAmps, value: a}, `Wallbox limit set to ${a} A`);
-    } else if (k === 'pause') swToggle(this.E.wbPause, 'Charging');
-    else if (k === 'wblock') {
-      const on = !this.sw(this.E.wbLock);
-      hold(this.E.wbLock, {on});
-      this.call('lock', on ? 'lock' : 'unlock', {entity_id: this.E.wbLock}, on ? 'Charger locked' : 'Charger unlocked');
-    } else if (k === 'rs') {
-      const id = C.id('switch', 'ignition'),
-        on = this.sw(id);
-      // Remote start and unlock need a second tap, so a stray touch on a wall panel does nothing.
-      if (!on && this.armed !== 'rs') {
-        arm('rs');
-      } else {
-        this.armed = null;
-        hold(id, {on: !on});
-        this.call(
-          'switch',
-          on ? 'turn_off' : 'turn_on',
-          {entity_id: id},
-          on ? 'Remote start stopped' : 'Remote start sent to the car',
-        );
-      }
-    } else if (k === 'deff') swToggle(C.id('switch', 'rccdefrostfront'), 'Heated windshield');
-    else if (k === 'defr') swToggle(C.id('switch', 'rccdefrostrear'), 'Rear defrost');
-    else if (k === 'wheel') swToggle(C.id('switch', 'rccsteeringwheel'), 'Heated wheel');
-    else if (k === 'honk') this.call('button', 'press', {entity_id: b.dataset.id}, 'Honk and flash sent');
-    else if (k === 'lock') {
-      const id = C.id('lock', 'doorlock'),
-        locked = this.sw(id);
-      if (locked && this.armed !== 'lock') arm('lock');
-      else {
-        this.armed = null;
-        hold(id, {on: !locked});
-        this.call(
-          'lock',
-          locked ? 'unlock' : 'lock',
-          {entity_id: id},
-          locked ? 'Unlock sent to the car' : 'Lock sent to the car',
-        );
-      }
-    } else if (k === 'dep') {
-      const on = !this.depState().on;
-      this.pending.dep = {on, until: Date.now() + 20000};
-      this.call(
-        'switch',
-        on ? 'turn_on' : 'turn_off',
-        {entity_id: C.id('switch', 'departuretimes')},
-        `Departure times ${on ? 'on' : 'off'}`,
-      );
-    } else if (k === 'day') {
-      const d = b.dataset.d,
-        D = this.depDraft;
-      D.days = D.days.includes(d) ? D.days.filter(x => x !== d) : [...D.days, d];
-    } else if (k === 'deptemp') {
-      this.depDraft.temp = b.dataset.t;
-    } else if (k === 'depsave') {
-      const D = this.depDraft;
-      if (!D.temp) {
-        this.toast('Pick a cabin temperature first');
-        return;
-      }
-      if (!D.days.length) {
-        this.toast('Pick at least one day');
-        return;
-      }
-      const [h, m] = D.time.split(':').map(Number),
-        t = (Math.round((h * 60 + m) / 5) * 5) % 1440;
-      D.time = `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`; // Ford takes 5-minute steps
-      this.call(
-        'fordpass',
-        'update_departure_schedule',
-        {hour: Math.floor(t / 60), minute: t % 60, schedule_days: D.days, precondition_temperature: D.temp},
-        `Departure schedule saved: ${this.depDesc(D)}`,
-      );
-    }
-    this.renderCarControls();
-  }
 }
-
-const merge = (a, b, ...more) => {
-  for (const k in b)
-    a[k] =
-      b[k] && typeof b[k] === 'object' && !Array.isArray(b[k]) && a[k] && typeof a[k] === 'object'
-        ? merge({...a[k]}, b[k])
-        : b[k];
-  return more.length ? merge(a, ...more) : a;
-};
 
 Object.assign(LegacyPanel.prototype, autoMethods);

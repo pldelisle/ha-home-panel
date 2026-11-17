@@ -1,0 +1,11 @@
+/*
+ * <hp-charger-controls>' own rules: its `:host` and the groups' and rows' places in the card. The card is the kit's inner card with the blocks' shared rules (styles.css) and the controls' labels and
+ * hints (controls.css); the radio groups and the switch rows are the kit's, spaced from here as the legacy panel's `.seg` and `.tgl` were.
+ */
+:host {
+  display: flex;
+  min-width: 0;
+}
+hp-switch-row {
+  margin-top: 8px;
+}
