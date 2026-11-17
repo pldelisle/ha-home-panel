@@ -1,7 +1,7 @@
 // <home-panel>, the one element Home Assistant mounts: it owns the store, the API client, the settings and the optimistic values, provides them through context and draws the frame from the registry in its one shadow root.
 // Pattern: composition root (Seemann, Dependency Injection Principles, Practices, and Patterns); humble object (Meszaros, xUnit Test Patterns): it forwards `hass`, `panel` and `narrow` and decides nothing the registry and the store decide.
 // It reads `localStorage` and the browser's locale defaults. It owns `tab`, `compact`, the idle state, which tabs the house shows, whether the settings popup and the Status checks are open, whether a live activity runs and, through controllers, the appearance and the open sheet.
-// Must not: decide what the store and the models decide. The legacy panel it hosted as its guest is gone (#277, ADR 0034).
+// Must not: decide what the store and the models decide. The legacy panel it hosted as its guest is gone (#277, ADR 0035).
 import {LitElement, html, unsafeCSS, type PropertyValues, type TemplateResult} from 'lit';
 import {classMap} from 'lit/directives/class-map.js';
 import {ifDefined} from 'lit/directives/if-defined.js';

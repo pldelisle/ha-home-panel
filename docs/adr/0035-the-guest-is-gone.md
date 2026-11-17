@@ -1,4 +1,4 @@
-# 0034: The guest is gone: the shell draws the whole panel, and the legacy sheet becomes the frame's
+# 0035: The guest is gone: the shell draws the whole panel, and the legacy sheet becomes the frame's
 
 Status: accepted (2026-11-17)
 

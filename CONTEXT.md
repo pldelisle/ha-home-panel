@@ -100,7 +100,7 @@ The words the panel and its code use. One word per concept: use it in issues, te
 
 **Display name** — A name given to an entity, area or device after it passes through the display-name resolver: the config's `names:` block first, then the built-in dictionary of room words, then the name as Home Assistant gives it. Names are data, never message keys. Avoid: friendly name (the raw name Home Assistant gives, the last fallback).
 
-**Legacy class** — The `LegacyPanel` class that was `src/home-panel.js`, and the files around it, which the strangler fig replaced; deleted with the guest in #277 (ADR 0034). `npm run lint` still prints the legacy footprint, now 0 modules.
+**Legacy class** — The `LegacyPanel` class that was `src/home-panel.js`, and the files around it, which the strangler fig replaced; deleted with the guest in #277 (ADR 0035). `npm run lint` still prints the legacy footprint, now 0 modules.
 
 **Guest** — The legacy class while the shell hosts it: not an element but a renderer that implements `GuestRenderer` (`src/shell/guest.ts`), which `src/main.js` registers, the shell constructs and drives, and which draws only into its own containers inside the shell's one shadow root. The interface only shrinks, and it is deleted with the guest. Avoid: guest renderer, legacy renderer, the old class.
 

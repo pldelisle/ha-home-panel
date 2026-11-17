@@ -66,7 +66,7 @@
     "apexcharts": "3.45.2",
     "intl-messageformat": "12.1.5",
     "lit": "3.3.3",
-    "mermaid": "11.17.2",
+    "mermaid": "12.3.0",
     "superstruct": "2.0.2"
   },
   "size-limit": [
@@ -85,8 +85,5 @@
       "path": "dist/chunks/*.js",
       "gzip": true
     }
-  ],
-  "overrides": {
-    "katex": "0.18.10"
-  }
+  ]
 }
