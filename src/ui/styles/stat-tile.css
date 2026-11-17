@@ -1,4 +1,4 @@
-/* The summary tile of the phone (`.stile`), written once for the guest's tiles, `<hp-stat-tile>` and `<hp-media-tile>`, in the order
+/* The summary tile of the phone (`.stile`), written once for `<hp-stat-tile>` and `<hp-media-tile>`, in the order
    the legacy files held it (phone, glass, motion). The `.stile.list` rules are the More list's tiles: a tone of the tile, because a
    descendant selector (`.morelist .stile`) cannot cross into the tile's own root. */
 .stile.ltile.on .ic {

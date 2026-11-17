@@ -7,8 +7,6 @@ import prettier from 'eslint-config-prettier';
 import globals from 'globals';
 
 const TS = ['**/*.ts'];
-// The two files the old string-rendering code lives in; the `legacy` block below only shrinks.
-const LEGACY = ['src/home-panel.js', 'src/auto.js'];
 // The one file that may call Home Assistant's socket: the API client (docs/specs/12-api-client.md, ADR 0014).
 const API_CLIENT = 'src/core/api.ts';
 // Code that runs in Node: the tools, the tests and the config files at the root (vite.config.ts among them).
@@ -48,7 +46,6 @@ export default defineConfig(
       'dist/',
       'node_modules/',
       'coverage/',
-      'src/legacy/dom-scaffolding.d.ts', // declarations for tsconfig.legacy.json only; tsconfig.json excludes it, so the typed project cannot parse it
       'test/e2e/__screenshots__/',
       'playwright-report/',
       'test-results/',
@@ -67,26 +64,22 @@ export default defineConfig(
   },
   {files: NODE, languageOptions: {globals: globals.node}},
 
-  // String rendering is banned everywhere except the legacy files.
+  // String rendering is banned everywhere.
   {
     files: ['**/*.js', '**/*.mjs', ...TS],
-    ignores: LEGACY,
     rules: {'no-restricted-syntax': ['error', ...STRING_RENDERING]},
   },
 
   // Home Assistant's socket has one door, the API client. A rule's options are replaced, not merged, by a later block
-  // that sets the same rule, so each kind of file below lists everything that applies to it: the legacy files (no
-  // string-rendering ban) and the rest of src/ (both). The client itself keeps the string-rendering ban only.
-  {files: LEGACY, rules: {'no-restricted-syntax': ['error', API_DOOR]}},
+  // that sets the same rule, so src/ lists both bans; the client itself keeps the string-rendering ban only.
   {
     files: ['src/**/*.{js,ts}'],
-    ignores: [...LEGACY, API_CLIENT],
+    ignores: [API_CLIENT],
     rules: {'no-restricted-syntax': ['error', ...STRING_RENDERING, API_DOOR]},
   },
 
   // The new layers draw with Lit templates only: not even a read of innerHTML or a call of insertAdjacentHTML (the
-  // string-rendering ban above catches the writes; this one is the "no innerHTML outside legacy" convention of
-  // docs/architecture.md as a lint, for the folders that hold no legacy code)
+  // string-rendering ban above catches the writes; this one is the "no innerHTML" convention of docs/architecture.md as a lint)
   {
     files: ['src/shell/**/*.ts', 'src/ui/**/*.ts', 'src/features/**/*.ts'],
     rules: {
@@ -103,7 +96,7 @@ export default defineConfig(
 
   // Imports must resolve, and a name imported from a module must be one it exports (a misspelled import is an error
   // here, not a blank screen on the tablet). The resolver drops a `?inline` suffix, so a misspelled stylesheet path in
-  // src/styles.js fails too.
+  // src/shell/frame-styles.ts fails too.
   {
     files: ['src/**/*.{js,ts}', 'test/**/*.{js,mjs,ts}'],
     plugins: {'import-x': importX},
@@ -117,16 +110,6 @@ export default defineConfig(
       'import-x/no-unresolved': ['error'],
       // for .ts files too, through the parser setting above (`import {PHONE_TABZ} from './houses'` fails)
       'import-x/named': ['error'],
-    },
-  },
-
-  // legacy: rules that fire on idioms in the old class; each entry says why; this block only shrinks
-  {
-    name: 'legacy',
-    files: LEGACY,
-    rules: {
-      // `catch {}` is deliberate in the best-effort calls (storage, JSON.parse, a library that may not load)
-      'no-empty': ['error', {allowEmptyCatch: true}],
     },
   },
 

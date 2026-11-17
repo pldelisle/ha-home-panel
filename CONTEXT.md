@@ -8,7 +8,7 @@ The words the panel and its code use. One word per concept: use it in issues, te
 
 **Pane** — What a tab shows: the content of one of the ten subjects on the tablet rail. Avoid: page.
 
-**Pane header** — The block a pane opens with: a badge in the subject's colour, the title, a line under it and, on Lights, the Arrange buttons; the kit's `<hp-pane-header>`, with the line and the buttons as slotted nodes the guest still fills. The summary panes' header (Climate, Weather, Car, Energy, Air) shows on the phone only, since a tablet's pane opens on a detail with its own; Home's shows on a tablet only.
+**Pane header** — The block a pane opens with: a badge in the subject's colour, the title, a line under it and, on Lights, the Arrange buttons; the kit's `<hp-pane-header>`, with the line and the buttons as slotted nodes its pane fills. The summary panes' header (Climate, Weather, Car, Energy, Air) shows on the phone only, since a tablet's pane opens on a detail with its own; Home's shows on a tablet only.
 
 **Sheet** — A detail view opened from a pane by tapping a tile or card, such as a room's light sheet; it slides up on a phone and is a narrow panel on a tablet. Avoid: modal, dialog.
 
@@ -20,7 +20,7 @@ The words the panel and its code use. One word per concept: use it in issues, te
 
 **Pill** — The glass capsule in the header that stands for something happening or needing a look; under Reduce Transparency it is solid.
 
-**Mercury drop** — The glass material since v1.19.0: almost no tint, a soft inner glow, a 15 px blur and, in Chromium, the `#glass-distortion` filter the guest appends. Avoid: Liquid Glass.
+**Mercury drop** — The glass material since v1.19.0: almost no tint, a soft inner glow, a 15 px blur and, in Chromium, the `#glass-distortion` filter the shell draws (`lens`). Avoid: Liquid Glass.
 
 **Live-activity pill** — The pill shown while something runs: the car charging, the water heater heating or a Hilo challenge. A further activity sits beside it as a small ring, and tapping it opens one card per activity above the Status checks. Avoid: status chip (the "All clear" chip it replaced).
 
@@ -80,7 +80,7 @@ The words the panel and its code use. One word per concept: use it in issues, te
 
 **Model** — A pure, synchronous function `model(states, registries, config, now) → view model` with no DOM and no `hass` methods; `now` is passed in.
 
-**Provider** — An adapter in `src/providers/`, its `read` a pure function, that turns an integration's entities (Environment Canada, Hilo, Hydro-Québec, FordPass, Wallbox, Mila, UniFi Protect, Adaptive Lighting) into the generic inputs a model expects, so a model never matches on an integration's naming. A feature can have several, applied in a declared order (the weather entity, then Environment Canada over it). A reading that two features need is a provider too, named after what it reads, and the legacy panel may import it (ADR 0025).
+**Provider** — An adapter in `src/providers/`, its `read` a pure function, that turns an integration's entities (Environment Canada, Hilo, Hydro-Québec, FordPass, Wallbox, Mila, UniFi Protect, Adaptive Lighting) into the generic inputs a model expects, so a model never matches on an integration's naming. A feature can have several, applied in a declared order (the weather entity, then Environment Canada over it). A reading that two features need is a provider too, named after what it reads (ADR 0025).
 
 **UI kit** — The layer in `src/ui/` of small shared Lit elements and styles: card, tile, pane header, sheet, dial, ring, pill, chip, dimmer slider, chart wrapper and the design tokens.
 
@@ -100,11 +100,11 @@ The words the panel and its code use. One word per concept: use it in issues, te
 
 **Display name** — A name given to an entity, area or device after it passes through the display-name resolver: the config's `names:` block first, then the built-in dictionary of room words, then the name as Home Assistant gives it. Names are data, never message keys. Avoid: friendly name (the raw name Home Assistant gives, the last fallback).
 
-**Legacy class** — The `LegacyPanel` class in `src/home-panel.js` and the files around it that the strangler fig is replacing; it only shrinks, and the number of modules it still holds is printed by `npm run lint`.
+**Legacy class** — The `LegacyPanel` class that was `src/home-panel.js`, and the files around it, which the strangler fig replaced; deleted with the guest in #277 (ADR 0035). `npm run lint` still prints the legacy footprint, now 0 modules.
 
 **Guest** — The legacy class while the shell hosts it: not an element but a renderer that implements `GuestRenderer` (`src/shell/guest.ts`), which `src/main.js` registers, the shell constructs and drives, and which draws only into its own containers inside the shell's one shadow root. The interface only shrinks, and it is deleted with the guest. Avoid: guest renderer, legacy renderer, the old class.
 
-**Home-card bridge** — The rule (ADR 0024) by which the guest writes a feature element's tag, and nothing else, into a Home container it still draws, once per draw, and hears only `hp-empty` back. Each use is listed in `src/shell/guest.ts` with the move that deletes it; the idle screen's `<hp-smart-stack mode="idle">` in `#iwrap` is the last, until spec 26. Avoid: the bridge, alone (the bridge package is the Home Assistant YAML package).
+**Home-card bridge** — The rule (ADR 0024) by which the guest wrote a feature element's tag, and nothing else, into a Home container it still drew, once per draw, and heard only `hp-empty` back. The idle screen's `<hp-smart-stack mode="idle">` was the last use, until spec 26 (#276); gone with the guest (#277). Avoid: the bridge, alone (the bridge package is the Home Assistant YAML package).
 
 **Sheet host** — The shell's one mediator (`SheetHost`, `src/shell/sheet-host.ts`) for which sheet is open, Escape, focus return and where the five detail panels sit. The guest's sheets register with it as legacy sheets; an element's sheet is opened by its owner's template. Elements ask for a sheet with a `SheetRequestEvent` rather than importing the shell.
 

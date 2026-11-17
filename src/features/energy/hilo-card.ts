@@ -8,7 +8,7 @@ import ownCss from './hilo-card.element.css?inline';
 import energyShared from './styles.css?inline';
 import {tileList} from './tile-list.ts';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
-import {lensLike} from '../../ui/lens.ts';
+import {lens} from '../../ui/lens.ts';
 import {common, hero, tiles} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
@@ -46,7 +46,7 @@ export class HiloCard extends LitElement {
         </div>
         <div class="tiles hilotiles">${tileList(view.tiles)}</div>
       </div>
-      ${lensLike(this.getRootNode())}`;
+      ${lens}`;
   }
 }
 

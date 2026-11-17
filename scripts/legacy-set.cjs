@@ -1,9 +1,7 @@
-// The legacy set of docs/specs/09-architecture-foundations.md: the files the strangler's new layers replace, one
-// regular expression over the path from the repository root (src/main.js is the shell's entry, not legacy).
-// .dependency-cruiser.cjs enforces the rules around it; scripts/arch-graph.mjs counts its modules and
-// test/unit/architecture.test.mjs checks nothing else imports it. A module leaves the set when phase 3 moves it into a
-// layer, and this expression shrinks with it.
-const LEGACY = '^src/(home-panel\\.js|styles\\.js|fonts\\.js|types\\.d\\.ts|env\\.d\\.ts|i18n/|legacy/|css/)';
+// The legacy set of docs/specs/09-architecture-foundations.md: the files the strangler's new layers replaced, one
+// regular expression over the path from the repository root. It is empty since the guest went (#277): the expression matches
+// no path, the lint prints `legacy footprint: 0 modules`, and the gate (#188) deletes this file and that line.
+const LEGACY = '^$';
 const LEGACY_RE = new RegExp(LEGACY);
 
 module.exports = {LEGACY, isLegacy: path => LEGACY_RE.test(path)};

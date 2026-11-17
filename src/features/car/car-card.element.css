@@ -1,7 +1,7 @@
 /*
  * <hp-car-card>'s own rules: its `:host`, the box and its title line, the photo and the drawn car, the tiles' three columns at every width and the bars.
  * The hero and the tiles are the kit's, the battery bar is soc-bar.css. Known copies of legacy rules the panel still draws, each under a Car selector: `.card`, `.card .top`, `.card .top .right`, `.lbl` and `.go` (base.css, glass.css),
- * which the Home move (#268) deletes. The box draws on an inner element, so the guest's lens backdrop reaches it.
+ * which the Home move (#268) deletes. The box draws on an inner element, so the frame's lens backdrop reaches it.
  * The card's own rules in the legacy sheet (`.carcard`, `.spark`, `#carcard .tile .v`) left it with the card.
  */
 :host {

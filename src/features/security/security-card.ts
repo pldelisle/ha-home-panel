@@ -18,7 +18,7 @@ import {StoreController} from '../../ui/controllers/store-controller.ts';
 import {TickController} from '../../ui/controllers/tick.ts';
 import {SheetRequestEvent, TabSelectEvent} from '../../ui/events.ts';
 import {ico} from '../../ui/icons.ts';
-import {lensLike} from '../../ui/lens.ts';
+import {lens} from '../../ui/lens.ts';
 import {common} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
@@ -82,7 +82,7 @@ export class SecurityCard extends LitElement {
     const view = this.view;
     if (!view) return nothing;
     const {t} = this.storeController.store;
-    // the box is an inner element: the glass's lens is looked up from the root the rule's element is in, and a host is in the guest's
+    // the box is an inner element: the glass's lens is looked up from the root the rule's element is in, and a host is in the shell's
     return html`<div class=${classMap({seccard: true, glow: this.glowing})}>
         <button type="button" class="hh" @click=${this.openTab}>
           <span class="hsecico">${SHIELD}</span><span class="lbl">${t('security.title')}</span
@@ -111,7 +111,7 @@ export class SecurityCard extends LitElement {
             : html`<p class="nosens">${view.hint}</p>`
         }
       </div>
-      ${lensLike(this.getRootNode())}`;
+      ${lens}`;
   }
 
   // The two buttons below carry `aria-description` (a screen reader reads it after the name), which lit-analyzer does not know:

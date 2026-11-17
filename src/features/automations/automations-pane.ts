@@ -23,7 +23,7 @@ import {ResizeController} from '../../ui/controllers/resize.ts';
 import {StoreController} from '../../ui/controllers/store-controller.ts';
 import {TickController} from '../../ui/controllers/tick.ts';
 import '../../ui/pane-header.ts'; // defines <hp-pane-header>
-import {lensLike} from '../../ui/lens.ts';
+import {lens} from '../../ui/lens.ts';
 import {common, inner} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
@@ -112,7 +112,7 @@ export class AutomationsPane extends LitElement {
         <div slot="sub">${view.sub}</div>
       </hp-pane-header>
       <div class="auhost" @select-run=${this.onSelect} @close-selection=${this.onClose}>${this.renderBody(view)}</div>
-      ${lensLike(this.getRootNode())}`;
+      ${lens}`;
   }
 
   private renderBody(view: AutomationsViewModel) {

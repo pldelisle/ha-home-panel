@@ -1,4 +1,4 @@
-// src/fonts.js declares the bundled faces, Manrope and JetBrains Mono (spec 08). Their file names and unicode ranges must
+// src/ui/fonts.ts declares the bundled faces, Manrope and JetBrains Mono (spec 08). Their file names and unicode ranges must
 // be the ones the installed Fontsource packages ship and declare, so that a bump which renames a file or moves a range
 // fails here rather than on a tablet; and the rules go into the document once, however often the panel redraws itself.
 import {test, expect, afterEach} from 'vitest';
@@ -13,7 +13,7 @@ import {
   FONT_WEIGHTS,
   fontFaces,
   ensureFonts,
-} from '../../src/fonts.js';
+} from '../../src/ui/fonts.ts';
 
 const require = createRequire(import.meta.url);
 const pkgDir = pkg => dirname(require.resolve(`@fontsource/${pkg}/package.json`));
@@ -126,6 +126,6 @@ test('ensureFonts puts the rules into the document once, pointing beside the mod
   expect(doc.head.children).toHaveLength(1);
   const [style] = doc.head.children;
   expect(style).toMatchObject({tagName: 'style', id: 'home-panel-fonts'});
-  // here the module is src/fonts.js, so its fonts/ is src/fonts/; built, it is dist/home-panel.js and dist/fonts/
-  expect(style.textContent).toBe(fontFaces(new URL('../../src/fonts/', import.meta.url).href));
+  // here the module is src/ui/fonts.ts, so its fonts/ is src/ui/fonts/; built, it is dist/home-panel.js and dist/fonts/
+  expect(style.textContent).toBe(fontFaces(new URL('../../src/ui/fonts/', import.meta.url).href));
 });

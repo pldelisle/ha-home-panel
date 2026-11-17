@@ -5,7 +5,7 @@ import {brotliCompressSync, constants as zlib, gzipSync} from 'node:zlib';
 import {createRequire} from 'node:module';
 import {fileURLToPath} from 'node:url';
 import pkg from './package.json' with {type: 'json'};
-import {FONT_SOURCES} from './src/fonts.js';
+import {FONT_SOURCES} from './src/ui/fonts.ts';
 
 // One minified ES module, dist/home-panel.js, with its source map beside it. The CSS is imported as minified text
 // (`?inline`, src/styles.js) and the version is injected here, from package.json. ApexCharts and Mermaid come from npm
@@ -48,9 +48,9 @@ const shipLicenses: Plugin = {
   },
 };
 
-// The fonts (spec 08): the woff2 files src/fonts.js declares, Manrope and JetBrains Mono, copied from their Fontsource
+// The fonts (spec 08): the woff2 files src/ui/fonts.ts declares, Manrope and JetBrains Mono, copied from their Fontsource
 // packages into dist/fonts/ under Fontsource's own names. Not imported through CSS, where Vite would inline or hash them: the names
-// stay stable, so a tablet's cached font outlives an update, and src/fonts.js can name them.
+// stay stable, so a tablet's cached font outlives an update, and src/ui/fonts.ts can name them.
 const requireFontsource = createRequire(import.meta.url);
 const shipFonts: Plugin = {
   name: 'ship-fonts',

@@ -12,7 +12,7 @@ import {socBar} from './soc-bar.ts';
 import socBarCss from './soc-bar.css?inline';
 import blockCss from './styles.css?inline';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
-import {lensLike} from '../../ui/lens.ts';
+import {lens} from '../../ui/lens.ts';
 import {common, inner, tiles} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
@@ -56,7 +56,7 @@ export class CarBattery extends LitElement {
         ${socBar(block.soc)}
         <div class="tiles btiles">${carTiles(block.tiles)}</div>
       </div>
-      ${lensLike(this.getRootNode())}`;
+      ${lens}`;
   }
 
   // arrow field, so the template hands the same function at every render

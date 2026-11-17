@@ -48,7 +48,7 @@ export interface PanelStore {
   readonly t: Messages['t'];
   /**
    * The dates, times and numbers in the user's language and formats, the same object until the profile's locale changes.
-   * Temporary twin of the guest's own sets (`refreshFormatters`), which go with it (#188).
+   * The one set since the guest's own (`refreshFormatters`) went with it (#277).
    */
   readonly fmt: Formatters;
   /** Every name the panel shows, in the user's language: the config's `names:`, the room dictionary, then Home Assistant's. */

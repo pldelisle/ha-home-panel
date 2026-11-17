@@ -14,7 +14,7 @@ import {socBar} from './soc-bar.ts';
 import socBarCss from './soc-bar.css?inline';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {SheetRequestEvent} from '../../ui/events.ts';
-import {lensLike} from '../../ui/lens.ts';
+import {lens} from '../../ui/lens.ts';
 import {common, hero, tiles} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
@@ -86,7 +86,7 @@ export class CarCardElement extends LitElement {
         ${daily === null ? nothing : this.renderBars(daily)}
         ${this.error === null ? nothing : html`<p class="cerr">${this.error}</p>`}
       </div>
-      ${lensLike(this.getRootNode())}`;
+      ${lens}`;
   }
 
   // Ford's photo through the image proxy; the drawn car where there is none, or where the photo failed

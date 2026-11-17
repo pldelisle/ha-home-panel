@@ -11,7 +11,7 @@ import energyShared from './styles.css?inline';
 import {tileList} from './tile-list.ts';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {SheetRequestEvent} from '../../ui/events.ts';
-import {lensLike} from '../../ui/lens.ts';
+import {lens} from '../../ui/lens.ts';
 import {common, tiles} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
@@ -52,7 +52,7 @@ export class EnergyCard extends LitElement {
         <div class="tiles ctiles">${tileList(view.tiles)}</div>
         ${view.error === null ? nothing : html`<p class="enote">${view.error}</p>`}
       </div>
-      ${lensLike(this.getRootNode())}`;
+      ${lens}`;
   }
 
   // arrow fields, so the template hands the same function at every render

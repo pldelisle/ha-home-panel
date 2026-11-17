@@ -10,7 +10,7 @@ import {weatherChipModel} from './model.ts';
 import ownCss from './weather-chip.element.css?inline';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {StoreController} from '../../ui/controllers/store-controller.ts';
-import {lensLike} from '../../ui/lens.ts';
+import {lens} from '../../ui/lens.ts';
 import {common} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
@@ -39,7 +39,7 @@ export class WeatherChip extends LitElement {
           <path d="M8 19h9a4 4 0 0 0 0-8 5 5 0 0 0-9.6 1.6A3.2 3.2 0 0 0 8 19z" fill="var(--fg3)" opacity=".7" /></svg
         ><span class="num">${view.temperature}</span><small>${view.condition}</small>
       </div>
-      ${lensLike(this.getRootNode())}`;
+      ${lens}`;
   }
 }
 

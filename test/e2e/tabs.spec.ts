@@ -93,7 +93,8 @@ const shown = (loc: Locator) =>
   expect.poll(() => loc.evaluate(e => !(e as HTMLElement).hidden && getComputedStyle(e).display !== 'none'));
 // the pane is at least 50 px tall; in a house with automations the Automations pane has drawn its flow first
 const tallEnough = (withFlows: boolean) => async (tab: string, pane: Locator) => {
-  if (tab === 'auto' && withFlows) await expect(pane.locator('svg').first()).toBeVisible({timeout: 10_000});
+  if (tab === 'auto' && withFlows)
+    await expect(pane.locator('svg:not([aria-hidden])').first()).toBeVisible({timeout: 10_000});
   expect((await pane.boundingBox())!.height, `${tab} pane height`).toBeGreaterThan(50);
 };
 // nothing invisible may sit on top of the panel and swallow taps (the v1.19.6 idle overlay did); checked in every house

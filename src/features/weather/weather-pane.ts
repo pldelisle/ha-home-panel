@@ -23,7 +23,7 @@ import {StoreController} from '../../ui/controllers/store-controller.ts';
 import {apiContext} from '../../ui/contexts.ts';
 import {SheetDismissEvent, SheetRequestEvent} from '../../ui/events.ts';
 import {weatherIcon} from '../../ui/icons.ts';
-import {lensLike} from '../../ui/lens.ts';
+import {lens} from '../../ui/lens.ts';
 import '../../ui/pane-header.ts'; // defines <hp-pane-header>
 import '../../ui/sheet.ts'; // defines <hp-sheet>
 import '../../ui/stat-tile.ts'; // defines <hp-stat-tile>
@@ -165,7 +165,7 @@ export class WeatherPane extends LitElement {
   }
 
   // The card is a button that opens the detail's sheet: a tap, Enter and Space. `repeat` keys the days, so a forecast message
-  // changes their text and keeps their nodes. The lens is the guest's glass filter, drawn again in this root (see lens.ts): temporary, it goes with the copy there (#198, #188).
+  // changes their text and keeps their nodes. The lens is the frame's glass filter, drawn again in this root (see lens.ts).
   private renderCard({card}: WeatherViewModel, label: string) {
     // lit-analyzer does not know `aria-description` (a screen reader reads it after the role and the name); the ignore covers this one tag
     return html`<!-- @ts-ignore -->
@@ -201,7 +201,7 @@ export class WeatherPane extends LitElement {
           )}
         </div>
       </div>
-      ${lensLike(this.getRootNode())}`;
+      ${lens}`;
   }
 
   // a night with no high is Tonight: its low is the figure, with the word under it

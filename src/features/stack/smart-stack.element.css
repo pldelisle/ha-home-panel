@@ -2,7 +2,7 @@
  * <hp-smart-stack>'s own rules: the host lays out nothing, so the card's frame and the dots are items of the slot that holds it (`.hstk` in the
  * Home card, a column; `.ssk` beside the idle clock, a row, the idle screen's since #276), as the legacy `.scw` and `.sdots` divs were. Moved from the legacy
  * `.hwx .hstk .scw`, `.hwx .hstk .sdots` and the `:is(.idle, .hstk)` rules of `.scw`, `.speek` and `.sdots` (tabs.css), which #266
- * deleted, read here as `:host([mode='home'])` and `:host`, which weigh the same; the slots' own rules stay with the guest.
+ * deleted, read here as `:host([mode='home'])` and `:host`, which weigh the same; the slots' own rules are their owners' (the Home pane's, the idle screen's).
  */
 :host {
   display: contents;
