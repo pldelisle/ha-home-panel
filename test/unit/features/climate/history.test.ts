@@ -486,7 +486,7 @@ describe('roomChartOptions', () => {
     });
     expect(call(options, 'yaxis.labels.formatter', 20.4)).toBe('20°');
     expect(call(options, 'yaxis.labels.formatter', null)).toBe('');
-    expect(at(options, 'tooltip.x.format')).toBe('ddd h tt');
+    expect(call(options, 'tooltip.x.formatter', Date.parse('2026-11-09T21:07:00Z'))).toBe('Mon 4 pm');
     expect(at(options, 'tooltip.shared')).toBe(true);
     expect(call(options, 'tooltip.y.formatter', 20.25)).toBe('20.3 °C');
     expect(call(options, 'tooltip.y.formatter', null)).toBe('–');

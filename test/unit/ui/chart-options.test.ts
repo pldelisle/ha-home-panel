@@ -1,25 +1,18 @@
-// The pure half of <hp-chart> (src/ui/chart-options.ts): the base look, the merge a chart's options go through, and French's date axis.
-// French is compared with the rewrite layer's own output (`apex` of src/i18n/fr.js), which is what the legacy charts showed; the oracle
-// and this comparison are deleted with the layer in phase 4.
+// The pure half of <hp-chart> (src/ui/chart-options.ts): the base look, the merge a chart's options go through, and the time axis and tooltip dates in the house's formats.
 import {describe, expect, test} from 'vitest';
 import {createFormatters} from '../../../src/core/i18n/format.ts';
 import {panelLocale} from '../../../src/core/i18n/locale.ts';
-import {createFrench} from '../../../src/i18n/fr.js';
 import {
   baseOptions,
   celsius,
-  frenchAxis,
+  houseAxis,
   mergeOptions,
   timeAxis,
+  tooltipDate,
   type ChartOptions,
 } from '../../../src/ui/chart-options.ts';
+import {RANGES} from '../../../src/ui/ranges.ts';
 import {fakeHass} from '../fake-hass.ts';
-
-const french = () => {
-  const hass = fakeHass({locale: {language: 'fr'}});
-  const fmt = createFormatters(panelLocale(hass, {timeZone: 'America/Toronto', browserLocale: 'fr'}));
-  return {fmt, layer: createFrench({hass, isFrench: true, names: {name: (key: string) => key}})};
-};
 
 describe('mergeOptions', () => {
   test('merges objects key by key, replaces anything else, and changes neither argument', () => {
@@ -69,38 +62,58 @@ describe('baseOptions', () => {
   });
 });
 
-describe("French's date axis", () => {
+const houseFmt = (language: 'en' | 'fr') =>
+  createFormatters(panelLocale(fakeHass({locale: {language}}), {timeZone: 'America/Toronto', browserLocale: 'en'}));
+// Toronto is five hours behind UTC after 1 November 2026
+const FOUR_PM = Date.parse('2026-11-11T21:00:00Z');
+const HALF_PAST_FOUR = Date.parse('2026-11-11T21:30:00Z');
+const MIDNIGHT = Date.parse('2026-11-11T05:00:00Z');
+
+describe("the time axis in the house's formats", () => {
   const input = (): ChartOptions => ({
     chart: {type: 'line'},
     xaxis: {type: 'datetime', min: 1, labels: {datetimeUTC: false}},
   });
+  const labelOf = (options: ChartOptions) =>
+    (options.xaxis as {labels: {formatter: (text: string, at: number) => string}}).labels.formatter;
 
-  test("is the rewrite layer's own: the month and day names, the day-first formats on a time axis", () => {
-    const {fmt, layer} = french();
-    expect(frenchAxis(input(), fmt)).toEqual((layer as {apex(o: ChartOptions): ChartOptions}).apex(input()));
+  test('writes the hours and the days of the English house: 4 pm, 4:30 pm, Nov 11', () => {
+    const label = labelOf(houseAxis(input(), houseFmt('en')));
+    expect([FOUR_PM, HALF_PAST_FOUR, MIDNIGHT].map(at => label('ignored', at))).toEqual(['4 pm', '4:30 pm', 'Nov 11']);
   });
 
-  test("gives a tooltip's date format the day-first, 24-hour form the layer does, for each range's format", () => {
-    const {fmt, layer} = french();
-    for (const format of ['ddd h:mm tt', 'ddd h tt', 'ddd MMM d, h tt', 'ddd MMM d, yyyy']) {
-      const options = (): ChartOptions => ({...input(), tooltip: {shared: true, x: {format}}});
-      const result = frenchAxis(options(), fmt) as {tooltip: unknown};
-      expect(result.tooltip, format).toEqual(
-        (layer as {apex(o: ChartOptions): {tooltip: unknown}}).apex(options()).tooltip,
-      );
-    }
+  test('writes the hours and the days of the French house: 16 h, 16 h 30, 11 nov.', () => {
+    const label = labelOf(houseAxis(input(), houseFmt('fr')));
+    expect([FOUR_PM, HALF_PAST_FOUR, MIDNIGHT].map(at => label('ignored', at))).toEqual(['16 h', '16 h 30', '11 nov.']);
   });
 
-  test('gives a chart with no time axis the names and no label formats, and keeps the options it had', () => {
-    const {fmt} = french();
-    const options = frenchAxis({chart: {type: 'donut'}, labels: ['a']}, fmt) as {
-      chart: ChartOptions;
-      labels: string[];
-      xaxis?: unknown;
-    };
-    expect(options.chart).toMatchObject({type: 'donut', defaultLocale: 'fr'});
-    expect(options.labels).toEqual(['a']);
-    expect(options.xaxis).toBeUndefined();
+  test('keeps the options it had, and a formatter the chart wrote itself', () => {
+    const own = () => 'mine';
+    const options = houseAxis(
+      {...input(), xaxis: {type: 'datetime', labels: {datetimeUTC: false, formatter: own}}},
+      houseFmt('en'),
+    );
+    expect(options.xaxis).toEqual({type: 'datetime', labels: {datetimeUTC: false, formatter: own}});
+    expect(houseAxis(input(), houseFmt('en')).chart).toEqual({type: 'line'});
+  });
+
+  test('leaves a chart with no time axis as it came', () => {
+    const donut = {chart: {type: 'donut'}, labels: ['a']};
+    expect(houseAxis(donut, houseFmt('fr'))).toBe(donut);
+  });
+});
+
+describe('tooltipDate', () => {
+  test('names the day and the clock a range asks for, in each language', () => {
+    const heading = (language: 'en' | 'fr') =>
+      Object.values(RANGES).map(range => tooltipDate(range.tooltip, houseFmt(language))(HALF_PAST_FOUR));
+    expect(heading('en')).toEqual(['Wed 4:30 pm', 'Wed 4 pm', 'Wed, Nov 11 4 pm', 'Wed, Nov 11']);
+    expect(heading('fr')).toEqual(['mer. 16 h 30', 'mer. 16 h', 'mer. 11 nov. 16 h', 'mer. 11 nov.']);
+  });
+
+  test('can name the clock alone, or the date and the time', () => {
+    expect(tooltipDate({day: null, clock: 'time'}, houseFmt('en'))(HALF_PAST_FOUR)).toBe('4:30 pm');
+    expect(tooltipDate({day: 'date', clock: 'time'}, houseFmt('fr'))(HALF_PAST_FOUR)).toBe('mer. 11 nov. 16 h 30');
   });
 });
 

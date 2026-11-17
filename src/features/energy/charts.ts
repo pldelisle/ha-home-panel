@@ -6,7 +6,7 @@ import {noonOf, whole, type Formatters} from '../../core/i18n/format.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
 import type {FlowRow} from '../../providers/power-history.ts';
 import {sum} from '../../providers/power-history.ts';
-import {mergeOptions, type ChartOptions} from '../../ui/chart-options.ts';
+import {mergeOptions, tooltipDate, type TooltipDate, type ChartOptions} from '../../ui/chart-options.ts';
 import {thinCategories} from '../../ui/thin-axis.ts';
 import {GROUPS, type DailyRow, type EnergyHistoryData, type MonthSplit} from './history.ts';
 
@@ -65,8 +65,11 @@ const MWH = 'MWh';
 const COLUMN = {heat: 3, wh: 2, ev: 1, rest: 4} as const;
 /** The bars' rounded top, shared by the four ranges. */
 const STACK = {borderRadius: 3, borderRadiusApplication: 'end', borderRadiusWhenStacked: 'last'} as const;
-/** A time axis' tooltip, in the library's date syntax: the clock for today, the day and the clock for the week. */
-const TOOLTIP_DATE = {today: 'HH:mm', week: 'ddd MMM d, HH:mm'} as const;
+/** What a time axis' tooltip names: the clock for today, the day and the clock for the week. */
+const TOOLTIP_DATE: Record<'today' | 'week', TooltipDate> = {
+  today: {day: null, clock: 'time'},
+  week: {day: 'date', clock: 'time'},
+};
 /** About how many labels a category axis writes on a phone, for the month's days and the year's months. */
 const PHONE_LABELS = {month: 5, year: 4} as const;
 
@@ -122,7 +125,11 @@ export function mainChartOptions(main: MainRows, names: readonly string[], deps:
         forceNiceScale: true,
         labels: {formatter: (value: number) => `${whole(fmt, value)} ${KWH}`},
       },
-      tooltip: {...shared, x: {format: TOOLTIP_DATE[range]}, y: {formatter: (value: number) => kwh(value, 2)}},
+      tooltip: {
+        ...shared,
+        x: {formatter: tooltipDate(TOOLTIP_DATE[range], fmt)},
+        y: {formatter: (value: number) => kwh(value, 2)},
+      },
     };
   }
   const stroke = {show: true, colors: [tokens.card]};

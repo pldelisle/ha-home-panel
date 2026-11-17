@@ -14,8 +14,6 @@ import {lensLike} from '../../ui/lens.ts';
 import {common, pill, tiles} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
-const HOURS = [0, 6, 12, 18];
-
 export class RunTimeline extends LitElement {
   static override properties = {view: {attribute: false}};
   declare view: TodayView | undefined;
@@ -44,7 +42,7 @@ export class RunTimeline extends LitElement {
           <div class="axis"></div>
           <div class="past" style="width:${now}"></div>
           <div class="nowl" style="left:${now}"></div>
-          ${HOURS.map(h => html`<span class="hr" style="left:${(h / 24) * 100}%">${String(h).padStart(2, '0')}:00</span>`)}
+          ${v.hours.map(h => html`<span class="hr" style="left:${h.pct}%">${h.label}</span>`)}
           ${repeat(
             v.dots,
             d => d.key,

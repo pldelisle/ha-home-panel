@@ -9,7 +9,7 @@ import type {MessageKey} from '../../core/i18n/en.ts';
 import {whole, type Formatters} from '../../core/i18n/format.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
 import {AQ_BANDS, OUTDOOR_BANDS, type Pollutant} from '../../providers/air-quality.ts';
-import {timeAxis} from '../../ui/chart-options.ts';
+import {timeAxis, tooltipDate} from '../../ui/chart-options.ts';
 import type {RangeTab} from '../../ui/range-tabs.ts';
 import {bucketMiddle, RANGES, type Range} from '../../ui/ranges.ts';
 import type {AirInputs} from './inputs.ts';
@@ -242,7 +242,7 @@ export function airChartOptions(
     },
     tooltip: {
       shared: true,
-      x: {format: RANGES[range].tooltipFormat},
+      x: {formatter: tooltipDate(RANGES[range].tooltip, fmt)},
       y: {
         formatter: (value: number | null) =>
           value == null ? DASH : `${fmt.number(+value, 1)} ${METRICS[metric].unit}`,
@@ -307,7 +307,7 @@ export function outdoorChartOptions(series: OutdoorSeries, range: Range, {fmt, t
       : {},
     tooltip: {
       shared: true,
-      x: {format: RANGES[range].tooltipFormat},
+      x: {formatter: tooltipDate(RANGES[range].tooltip, fmt)},
       y: {formatter: (value: number | null) => (value == null ? DASH : whole(fmt, value))},
     },
   };

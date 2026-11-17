@@ -1,6 +1,6 @@
-// The options every chart shares, as pure functions: the base of the panel's look, the deep merge a chart's own options go through, and French's axis and tooltip dates.
+// The options every chart shares, as pure functions: the base of the panel's look, the deep merge a chart's own options go through, and the time axis in the house's formats.
 // Pattern: functional core (Bernhardt, Boundaries) under a humble object: `<hp-chart>` reads the tokens, the theme and the media query and hands
-// them in; the rules are the legacy class's own (base, merge) and the rewrite layer's (frApex), moved here so a shadow root need not be seen by it.
+// them in; the rules are the legacy class's own (base, merge), moved here so a shadow root need not be seen by it; the axis and tooltip dates are `fmt`'s, not the library's English tokens.
 // Must not: read the DOM, the clock or a media query, name a chart's content, or hold a string the household reads (`noData` is given).
 import {DASH, DAY_MS} from '../core/figures.ts';
 import type {Formatters} from '../core/i18n/format.ts';
@@ -71,54 +71,41 @@ export const timeAxis = (days: number, now: number) => ({
 export const celsius = (fmt: Pick<Formatters, 'fixed'>, value: number | null): string =>
   value == null ? DASH : `${fmt.fixed(value, 1)} °C`;
 
-/** The months and days the library writes on a date axis, in the order it wants them (January and Sunday first), from the panel's formats. */
-export function axisLocale(fmt: Formatters) {
-  // mid-month, at noon, so no time zone changes the month; 2021-01-03 was a Sunday
-  const month = (index: number) => Date.UTC(2021, index, 15, 12);
-  const day = (index: number) => Date.UTC(2021, 0, 3 + index, 12);
-  const names = (count: number, at: (index: number) => number, name: (ms: number) => string) =>
-    Array.from({length: count}, (_, index) => name(at(index)));
-  return {
-    name: 'fr',
-    options: {
-      months: names(12, month, ms => fmt.month(ms, 'long')),
-      shortMonths: names(12, month, ms => fmt.month(ms, 'short')),
-      days: names(7, day, ms => fmt.weekday(ms, 'long')),
-      shortDays: names(7, day, ms => fmt.weekday(ms, 'short')),
-      toolbar: {},
-    },
-  };
+/** How a tooltip names an instant: its day (a short weekday, or the weekday and the date) and its clock (the hour, or the hour and minutes), either left out. */
+export interface TooltipDate {
+  day: 'weekday' | 'date' | null;
+  clock: 'hour' | 'time' | null;
 }
 
-/** A known duplicate of the rewrite layer's `frFmt` (src/i18n/fr.js), which still serves the guest's charts: it goes with the layer in phase 4 (#188). A tooltip's date format in the day-first, 24-hour form: `ddd MMM d, h tt` reads `ddd d MMM HH:mm`, `MMM d, yyyy` reads `d MMM yyyy`. */
-const frenchFormat = (format: string): string =>
-  format
-    .replace(/MMM d\b/, 'd MMM')
-    .replace(/h:mm tt|h tt/g, 'HH:mm')
-    .replace(/, (?=HH)/, ' ')
-    .replace(/MMM d, yyyy/, 'd MMM yyyy');
+/** The text a tooltip's heading writes for an instant, in the house's format: `Sat 4:07 pm`, `sam. 7 nov. 16 h`. */
+export const tooltipDate =
+  ({day, clock}: TooltipDate, fmt: Pick<Formatters, 'weekday' | 'dateWeekday' | 'hour' | 'time'>) =>
+  (at: number): string =>
+    [
+      day === 'weekday' ? fmt.weekday(at, 'short') : day === 'date' ? fmt.dateWeekday(at) : '',
+      clock === 'hour' ? fmt.hour(at) : clock === 'time' ? fmt.time(at) : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
 
 /**
- * French's date axis: the library draws its own tick labels on a time axis, so it is given the language's month and day names and the
- * day-first, 24-hour formats the household reads, on the axis and in a tooltip's date format. A chart with no time axis is as it came.
+ * What a tick of a time axis says: the day (`Nov 11`, `11 nov.`) at midnight, otherwise the hour (`4 pm`, `16 h`), or the time when it is
+ * not on the hour (`4:30 pm`). The library's own tick text (its formats are English tokens) is never used.
  */
-export function frenchAxis(options: ChartOptions, fmt: Formatters): ChartOptions {
-  const chart = isObject(options.chart) ? options.chart : {};
-  const xaxis = isObject(options.xaxis) ? options.xaxis : undefined;
-  const tooltip = isObject(options.tooltip) ? options.tooltip : undefined;
-  const tipX = isObject(tooltip?.x) ? tooltip.x : undefined;
-  const withLocale = {...options, chart: {...chart, locales: [axisLocale(fmt)], defaultLocale: 'fr'}};
-  const withTooltip =
-    tooltip && tipX && typeof tipX.format === 'string'
-      ? {...withLocale, tooltip: {...tooltip, x: {...tipX, format: frenchFormat(tipX.format)}}}
-      : withLocale;
-  if (xaxis?.type !== 'datetime') return withTooltip;
-  const labels = isObject(xaxis.labels) ? xaxis.labels : {};
-  return {
-    ...withTooltip,
-    xaxis: {
-      ...xaxis,
-      labels: {datetimeFormatter: {year: 'yyyy', month: 'MMM yyyy', day: 'd MMM', hour: 'HH:mm'}, ...labels},
-    },
+export const axisLabel =
+  (fmt: Pick<Formatters, 'date' | 'hour' | 'time' | 'hourNow'>) =>
+  (_text: string, at: number): string => {
+    const hours = fmt.hourNow(at);
+    return hours === 0 ? fmt.date(at) : Number.isInteger(hours) ? fmt.hour(at) : fmt.time(at);
   };
+
+/**
+ * A time axis in the house's formats, in every language: its ticks are written with `axisLabel` unless the chart wrote its own.
+ * A chart with no time axis is as it came.
+ */
+export function houseAxis(options: ChartOptions, fmt: Formatters): ChartOptions {
+  const xaxis = isObject(options.xaxis) ? options.xaxis : undefined;
+  if (xaxis?.type !== 'datetime') return options;
+  const labels = isObject(xaxis.labels) ? xaxis.labels : {};
+  return {...options, xaxis: {...xaxis, labels: {formatter: axisLabel(fmt), ...labels}}};
 }

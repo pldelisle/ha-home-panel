@@ -120,7 +120,7 @@ export function automationGraph(
       visited = hasStep(path);
     let cls: NodeClass = visited ? 'hit' : 'off',
       sub = '';
-    if (visited && step?.timestamp) sub = fmt.time24s(new Date(step.timestamp));
+    if (visited && step?.timestamp) sub = fmt.timeSeconds(new Date(step.timestamp));
     if (visited && result?.result === false) {
       cls = 'no';
       sub = t('automations.graph.no');
@@ -137,7 +137,7 @@ export function automationGraph(
     if (running && lastStep === path) {
       cls = 'run';
       sub = step?.timestamp
-        ? t('automations.graph.waitingSince', {time: fmt.time24(new Date(step.timestamp))})
+        ? t('automations.graph.waitingSince', {time: fmt.time(new Date(step.timestamp))})
         : t('automations.graph.waiting');
     }
     const node: Folding = {id, path, kind: words.kind, k: words.k, label: words.t, sub, shape, cls, visited, result};
@@ -321,7 +321,7 @@ export function automationGraph(
   const ranSteps = nodes.filter(n => n.path.startsWith('action/') && n.visited && n.shape !== 'diamond').length;
   const parts: string[] = [];
   if (trace || summary) {
-    const at = started ? fmt.time24(new Date(started)) : '';
+    const at = started ? fmt.time(new Date(started)) : '';
     if (firedNode?.kind === 'automations.kind.every')
       parts.push(
         at

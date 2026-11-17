@@ -177,8 +177,9 @@ describe('the main chart, today and the week', () => {
     expect(at(today, 'yaxis')).toMatchObject({min: 0, tickAmount: 4, forceNiceScale: true});
     expect(call(today, 'yaxis.labels.formatter', 12.4)).toBe('12 kWh');
     expect(at(today, 'tooltip')).toMatchObject({shared: true, intersect: false});
-    expect(at(today, 'tooltip.x.format')).toBe('HH:mm');
-    expect(at(week, 'tooltip.x.format')).toBe('ddd MMM d, HH:mm');
+    const instant = Date.parse('2026-11-09T21:07:00Z');
+    expect(call(today, 'tooltip.x.formatter', instant)).toBe('4:07 pm');
+    expect(call(week, 'tooltip.x.formatter', instant)).toBe('Mon, Nov 9 4:07 pm');
     expect(call(today, 'tooltip.y.formatter', 1.256)).toBe('1.26 kWh');
   });
 

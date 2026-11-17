@@ -624,7 +624,10 @@ describe('historyChartOptions', () => {
 
   test('the tooltip shows the date in the range format, and each value with its own unit and the tile digits', () => {
     const chart = options('hum', [line('hum', '%'), line('dew', '°', true)], 'en', 'day');
-    expect(chart.tooltip).toMatchObject({shared: true, x: {format: 'ddd h:mm tt'}});
+    expect(chart.tooltip).toMatchObject({shared: true});
+    expect(
+      (chart.tooltip as {x: {formatter: (at: number) => string}}).x.formatter(Date.parse('2026-11-09T21:07:00Z')),
+    ).toBe('Mon 4:07 pm');
     const format = (chart.tooltip as {y: {formatter: (value: number, opts: {seriesIndex: number}) => string}}).y
       .formatter;
     expect(format(71.25, {seriesIndex: 0})).toBe('71.3 %');
@@ -638,10 +641,15 @@ describe('historyChartOptions', () => {
   });
 
   test('every range has its tooltip format', () => {
-    const formats = (['day', 'week', 'month', 'year'] as const).map(
-      range => (options('wind', [line('wind', 'km/h')], 'en', range).tooltip as {x: {format: string}}).x.format,
-    );
-    expect(formats).toEqual(['ddd h:mm tt', 'ddd h tt', 'ddd MMM d, h tt', 'ddd MMM d, yyyy']);
+    const monday = Date.parse('2026-11-09T21:07:00Z'); // 4:07 pm in Toronto
+    const heading = (language: 'en' | 'fr') =>
+      (['day', 'week', 'month', 'year'] as const).map(range =>
+        (
+          options('wind', [line('wind', 'km/h')], language, range).tooltip as {x: {formatter: (at: number) => string}}
+        ).x.formatter(monday),
+      );
+    expect(heading('en')).toEqual(['Mon 4:07 pm', 'Mon 4 pm', 'Mon, Nov 9 4 pm', 'Mon, Nov 9']);
+    expect(heading('fr')).toEqual(['lun. 16 h 07', 'lun. 16 h', 'lun. 9 nov. 16 h', 'lun. 9 nov.']);
   });
 });
 

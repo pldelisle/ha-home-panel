@@ -15,6 +15,7 @@ import type {Automation} from '../../../../src/providers/automations.ts';
 
 const t = createMessages({language: 'en', tag: 'en-CA'}).t;
 const deps = {t, fmt: createFormatters(englishLocale('UTC')), names: {name: (k: string) => k}};
+const frenchUtc = {...englishLocale('UTC'), language: 'fr', tag: 'fr-CA', hour12: undefined, numberLocale: 'fr-CA'};
 const NOW = Date.parse('2026-11-07T12:00:00Z');
 const TOKENS = {
   ok: '#0a0',
@@ -105,10 +106,34 @@ describe('automationsModel: the Today card', () => {
     ]);
     expect(view.today.tiles).toEqual([
       {label: 'Ran today', value: '1', sub: '1 more checked and did nothing'},
-      {label: 'Next', value: '13:00', sub: 'Auto a'},
-      {label: 'Then', value: '15:30', sub: 'Auto a'},
+      {label: 'Next', value: '1:00 pm', sub: 'Auto a'},
+      {label: 'Then', value: '3:30 pm', sub: 'Auto a'},
     ]);
-    expect(view.today.pill).toMatch(/ · 12:00$/);
+    expect(view.today.pill).toMatch(/ · 12:00 pm$/);
+  });
+  test('the hour marks of the line and the pill follow the house format, in English and in French', () => {
+    const en = automationsModel(inputs([auto('a')]), data(), null, deps).today;
+    expect(en.hours).toEqual([
+      {pct: 0, label: '12 am'},
+      {pct: 25, label: '6 am'},
+      {pct: 50, label: '12 pm'},
+      {pct: 75, label: '6 pm'},
+    ]);
+    const fr = {...deps, t: createMessages({language: 'fr', tag: 'fr-CA'}).t, fmt: createFormatters(frenchUtc)};
+    const done = run('a', 'r1', '2026-11-07T08:05:00Z', {
+      timestamp: {start: '2026-11-07T08:05:00Z', finish: '2026-11-07T08:05:09Z'},
+    });
+    const view = automationsModel(
+      inputs([auto('a', {last: '2026-11-07T08:05:00Z'})]),
+      data({list: [done], configs: {a: lamp}}),
+      null,
+      fr,
+    );
+    expect(view.today.hours.map(h => h.label)).toEqual(['0 h', '6 h', '12 h', '18 h']);
+    expect(view.today.pill).toMatch(/ · 12 h$/);
+    expect(view.today.tiles.slice(1).map(x => x.value)).toEqual(['13 h', '15 h 30']);
+    expect(view.cards[0].flow?.pill.text).toBe('terminée 8 h 05 min 09 s');
+    expect(view.chips[0].sub).toBe('8 h 05');
   });
   test('nothing to come: dashes, and every run passed its checks', () => {
     const view = automationsModel(inputs([auto('a')]), data(), null, deps);
@@ -138,8 +163,8 @@ describe('automationsModel: the flow cards', () => {
         'Running now · Auto a',
         {tone: 'run', text: 'running 2:00', since: Date.parse('2026-11-07T11:58:00Z')},
       ],
-      ['decision', 'stop', 'Last decision · Auto a', {tone: 'no', text: 'stopped 09:00'}],
-      ['completed', 'done', 'Last completed · Auto a', {tone: 'ok', text: 'done 08:00:05'}],
+      ['decision', 'stop', 'Last decision · Auto a', {tone: 'no', text: 'stopped 9:00 am'}],
+      ['completed', 'done', 'Last completed · Auto a', {tone: 'ok', text: 'done 8:00:05 am'}],
     ]);
     expect(view.cards[0].flow?.def).toMatch(/^flowchart LR/);
     expect(view.empty).toBeNull();
@@ -147,12 +172,12 @@ describe('automationsModel: the flow cards', () => {
   test('a selected run first, with the picker of its automation’s runs (another day’s with its date) and an error’s pill', () => {
     const view = automationsModel(inputs([auto('a')]), data({list, configs: {a: lamp}}), {item: 'a', run: 'err'}, deps);
     const [selected] = view.cards;
-    expect([selected.kind, selected.flow?.pill]).toEqual(['selected', {tone: 'no', text: 'error 10:00'}]);
+    expect([selected.kind, selected.flow?.pill]).toEqual(['selected', {tone: 'no', text: 'error 10:00 am'}]);
     expect(selected.flow?.picker.map(c => [c.run, c.sel, c.dot, c.label])).toEqual([
-      ['now', false, 'warn', '11:58'],
-      ['stop', false, 'crit', '09:00'],
-      ['done', false, 'ok', '08:00'],
-      ['err', true, 'crit', 'Nov 6 10:00'],
+      ['now', false, 'warn', '11:58 am'],
+      ['stop', false, 'crit', '9:00 am'],
+      ['done', false, 'ok', '8:00 am'],
+      ['err', true, 'crit', 'Nov 6 10:00 am'],
     ]);
     // a finished run without its finish says its start
     const plain = automationsModel(
@@ -161,7 +186,7 @@ describe('automationsModel: the flow cards', () => {
       null,
       deps,
     );
-    expect(plain.cards[0].flow?.pill).toEqual({tone: 'ok', text: 'done 07:00'});
+    expect(plain.cards[0].flow?.pill).toEqual({tone: 'ok', text: 'done 7:00 am'});
   });
   test('a run is drawn once: the selected running run is not drawn again as running now', () => {
     const view = automationsModel(inputs([auto('a')]), data({list, configs: {a: lamp}}), {item: 'a', run: 'now'}, deps);
@@ -226,7 +251,7 @@ test('the chips: the latest first, what each last did, the selected and the off 
   expect(chips.map(c => [c.item, c.sub, c.off, c.sel])).toEqual([
     ['busy', 'running', false, false],
     ['off', 'off', true, false],
-    ['today', '09:30', false, true],
+    ['today', '9:30 am', false, true],
     ['old', 'Nov 1', false, false],
     ['never', 'never', false, false],
     [undefined, 'never', false, false],

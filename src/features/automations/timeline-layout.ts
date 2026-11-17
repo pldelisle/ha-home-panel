@@ -102,7 +102,7 @@ export function timelineLayout(
     xs[i] = Math.min(xs[i], r - gapPct);
     r = xs[i];
   }
-  const timeOf = (d: TimelineDot) => deps.fmt.time24(new Date(isUp(d) ? d.t : d.summary.timestamp.start));
+  const timeOf = (d: TimelineDot) => deps.fmt.time(new Date(isUp(d) ? d.t : d.summary.timestamp.start));
   const what = (c: DotClass) => deps.t('automations.timeline.what', {what: WHAT[c]});
   const rowEnd = [-99, -99];
   const groups = raw.map((g, i): TimelineGroup => {

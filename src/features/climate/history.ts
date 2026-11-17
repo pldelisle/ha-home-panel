@@ -13,7 +13,7 @@ import type {Translate} from '../../core/i18n/messages.ts';
 import {hpSeries, NO_TARGET_MODES} from '../../providers/heat-pump.ts';
 import {OFF_AT_OR_BELOW} from '../../providers/power.ts';
 import {sum, windowStart, type StatisticsWindow, type StatsReply} from '../../providers/power-history.ts';
-import {celsius, mergeOptions, timeAxis, type ChartOptions} from '../../ui/chart-options.ts';
+import {celsius, mergeOptions, timeAxis, tooltipDate, type ChartOptions} from '../../ui/chart-options.ts';
 import {bucketMiddle, RANGES, type Range, type StatisticsPeriod} from '../../ui/ranges.ts';
 import {thinCategories} from '../../ui/thin-axis.ts';
 
@@ -528,7 +528,7 @@ export function roomChartOptions(
     yaxis: {labels: {formatter: (value: number | null) => (value == null ? '' : degrees(fmt, value))}},
     tooltip: {
       shared: true,
-      x: {format: RANGES[range].tooltipFormat},
+      x: {formatter: tooltipDate(RANGES[range].tooltip, fmt)},
       y: {formatter: (value: number | null) => celsius(fmt, value)},
     },
   };

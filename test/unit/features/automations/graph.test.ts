@@ -19,6 +19,7 @@ const depsOf = (language: 'en' | 'fr'): SentenceDeps => ({
   t: createMessages({language, tag: `${language}-CA`}).t,
   fmt: createFormatters({
     ...englishLocale('America/Toronto'),
+    hour12: language === 'en' ? true : undefined,
     language,
     tag: `${language}-CA`,
     numberLocale: `${language}-CA`,
@@ -49,14 +50,14 @@ const FIXTURES = readdirSync(folder)
 
 const RUNS: Record<string, ReturnType<typeof lines>> = {
   'entrance_light_until_closed.json run_004': {
-    sentence: 'Front opened at 13:47 → checks passed → now waiting: front closed, up to 10 min',
+    sentence: 'Front opened at 1:47 pm → checks passed → now waiting: front closed, up to 10 min',
     failed: false,
     waiting: true,
     nodes: [
-      'ntrigger_0 hit 13:47:31',
+      'ntrigger_0 hit 1:47:31 pm',
       'ncondition_0 hit yes',
-      'naction_0 hit 13:47:31',
-      'naction_1 run waiting here since 13:47',
+      'naction_0 hit 1:47:31 pm',
+      'naction_1 run waiting here since 1:47 pm',
       'naction_2 off ',
     ],
     edges: [
@@ -67,31 +68,31 @@ const RUNS: Record<string, ReturnType<typeof lines>> = {
     ],
   },
   'heating_evening.json run_002': {
-    sentence: 'At 18:00 → checks passed → 1 step ran at once',
+    sentence: 'At 6:00 pm → checks passed → 1 step ran at once',
     failed: false,
     waiting: false,
-    nodes: ['ntrigger_0 hit 18:00:00', 'ncondition_0 hit yes', 'naction_0 hit 18:00:00'],
+    nodes: ['ntrigger_0 hit 6:00:00 pm', 'ncondition_0 hit yes', 'naction_0 hit 6:00:00 pm'],
     edges: ['ntrigger_0 on ncondition_0', 'ncondition_0 on naction_0'],
   },
   'heating_evening.json run_003': {
-    sentence: 'At 18:00 → stopped at “Heating away is off”',
+    sentence: 'At 6:00 pm → stopped at “Heating away is off”',
     failed: true,
     waiting: false,
-    nodes: ['ntrigger_0 hit 18:00:00', 'ncondition_0 no no', 'naction_0 off ', 'nstop stopn '],
+    nodes: ['ntrigger_0 hit 6:00:00 pm', 'ncondition_0 no no', 'naction_0 off ', 'nstop stopn '],
     edges: ['ntrigger_0 on ncondition_0', 'ncondition_0 off naction_0', 'ncondition_0 stop nstop'],
   },
   'heating_morning.json run_005': {
-    sentence: 'At 06:00 → 1 step ran at once',
+    sentence: 'At 6:00 am → 1 step ran at once',
     failed: false,
     waiting: false,
     nodes: [
-      'ntrigger_0 hit 06:00:00',
+      'ntrigger_0 hit 6:00:00 am',
       'ntrigger_1 off ',
       'ngate hit ',
-      'naction_0 hit 06:00:00',
+      'naction_0 hit 6:00:00 am',
       'naction_0_choose_0_sequence_0 off ',
       'naction_0_choose_1_sequence_0 off ',
-      'naction_0_default_0 hit 06:00:00',
+      'naction_0_default_0 hit 6:00:00 am',
     ],
     edges: [
       'ntrigger_0 on ngate',
@@ -103,21 +104,21 @@ const RUNS: Record<string, ReturnType<typeof lines>> = {
     ],
   },
   'lights_off_at_sunrise.json run_001': {
-    sentence: 'Sunrise at 06:52 → 1 step ran at once',
+    sentence: 'Sunrise at 6:52 am → 1 step ran at once',
     failed: false,
     waiting: false,
-    nodes: ['ntrigger_0 hit 06:52:04', 'naction_0 hit 06:52:04'],
+    nodes: ['ntrigger_0 hit 6:52:04 am', 'naction_0 hit 6:52:04 am'],
     edges: ['ntrigger_0 on naction_0'],
   },
   'office_light_blink.json run_006': {
-    sentence: 'Hall detects motion at 10:20 → 3 steps ran in 4 s',
+    sentence: 'Hall detects motion at 10:20 am → 3 steps ran in 4 s',
     failed: false,
     waiting: false,
     nodes: [
-      'ntrigger_0 hit 10:20:44',
-      'naction_0 hit 10:20:44',
-      'naction_0_repeat_sequence_0 hit 10:20:48',
-      'naction_0_repeat_sequence_1 hit 10:20:48',
+      'ntrigger_0 hit 10:20:44 am',
+      'naction_0 hit 10:20:44 am',
+      'naction_0_repeat_sequence_0 hit 10:20:48 am',
+      'naction_0_repeat_sequence_1 hit 10:20:48 am',
     ],
     edges: [
       'ntrigger_0 on naction_0',
@@ -127,10 +128,10 @@ const RUNS: Record<string, ReturnType<typeof lines>> = {
     ],
   },
   'purifier_night_speed.json run_007': {
-    sentence: 'At 22:00 → error: Entity fan.office_purifier is unavailable',
+    sentence: 'At 10:00 pm → error: Entity fan.office_purifier is unavailable',
     failed: false,
     waiting: false,
-    nodes: ['ntrigger_0 hit 22:00:00', 'naction_0 no Entity fan.office_purifier is unavailab…', 'naction_1 off '],
+    nodes: ['ntrigger_0 hit 10:00:00 pm', 'naction_0 no Entity fan.office_purifier is unavailab…', 'naction_1 off '],
     edges: ['ntrigger_0 on naction_0', 'naction_0 off naction_1'],
   },
 };
@@ -277,31 +278,31 @@ const SHAPES: [string, AutomationConfig, Trace | null, TraceSummary | null][] = 
 
 const SHAPED: Record<string, ReturnType<typeof lines>> = {
   'a run through every shape': {
-    sentence: 'Every 5 min, at 07:00 → checks passed → 5 steps ran in 2 min',
+    sentence: 'Every 5 min, at 7:00 am → checks passed → 5 steps ran in 2 min',
     failed: false,
     waiting: false,
     nodes: [
       'ntrigger_0 off ',
-      'ntrigger_1 hit 07:00:00',
+      'ntrigger_1 hit 7:00:00 am',
       'ngate hit ',
       'ncondition_0 hit yes',
       'ncondition_0_conditions_0 hit yes',
       'ncondition_0_conditions_1 off ',
       'ncondition_1_conditions_0 off ',
       'ncondition_1_conditions_1 off ',
-      'naction_0 hit 07:00:02',
-      'naction_0_then_0 hit 07:00:02',
+      'naction_0 hit 7:00:02 am',
+      'naction_0_then_0 hit 7:00:02 am',
       'naction_0_else_0 off ',
       'naction_1 no no',
       'naction_1_then_0 off ',
-      'naction_2 hit 07:00:04',
-      'naction_2_choose_0_sequence_0 hit 07:00:04',
+      'naction_2 hit 7:00:04 am',
+      'naction_2_choose_0_sequence_0 hit 7:00:04 am',
       'naction_2_choose_1_sequence_0 off ',
       'naction_2_default_0 off ',
-      'naction_3 hit 07:00:05',
-      'naction_4 hit 07:00:06',
+      'naction_3 hit 7:00:05 am',
+      'naction_4 hit 7:00:06 am',
       'naction_4_repeat_sequence_0 hit done',
-      'naction_5_sequence_0 hit 07:00:08',
+      'naction_5_sequence_0 hit 7:00:08 am',
     ],
     edges: [
       'ntrigger_0 off ngate',
@@ -334,11 +335,11 @@ const SHAPED: Record<string, ReturnType<typeof lines>> = {
     ],
   },
   'a run stopped by its first check': {
-    sentence: 'Front opened at 07:00 → stopped at “Kitchen Sink is on”',
+    sentence: 'Front opened at 7:00 am → stopped at “Kitchen Sink is on”',
     failed: true,
     waiting: false,
     nodes: [
-      'ntrigger_0 hit 07:00:00',
+      'ntrigger_0 hit 7:00:00 am',
       'ntrigger_1 off ',
       'ngate hit ',
       'ncondition_0 no no',
@@ -393,31 +394,31 @@ const SHAPED: Record<string, ReturnType<typeof lines>> = {
     ],
   },
   'a run waiting in its repeat': {
-    sentence: 'Every 5 min, at 07:00 → checks passed → now waiting: until v, up to 30 s',
+    sentence: 'Every 5 min, at 7:00 am → checks passed → now waiting: until v, up to 30 s',
     failed: false,
     waiting: true,
     nodes: [
       'ntrigger_0 off ',
-      'ntrigger_1 hit 07:00:00',
+      'ntrigger_1 hit 7:00:00 am',
       'ngate hit ',
       'ncondition_0 hit yes',
       'ncondition_0_conditions_0 hit yes',
       'ncondition_0_conditions_1 off ',
       'ncondition_1_conditions_0 off ',
       'ncondition_1_conditions_1 off ',
-      'naction_0 hit 07:00:02',
-      'naction_0_then_0 hit 07:00:02',
+      'naction_0 hit 7:00:02 am',
+      'naction_0_then_0 hit 7:00:02 am',
       'naction_0_else_0 off ',
       'naction_1 no no',
       'naction_1_then_0 off ',
-      'naction_2 hit 07:00:04',
-      'naction_2_choose_0_sequence_0 hit 07:00:04',
+      'naction_2 hit 7:00:04 am',
+      'naction_2_choose_0_sequence_0 hit 7:00:04 am',
       'naction_2_choose_1_sequence_0 off ',
       'naction_2_default_0 off ',
-      'naction_3 hit 07:00:05',
-      'naction_4 hit 07:00:06',
-      'naction_4_repeat_sequence_0 run waiting here since 07:00',
-      'naction_5_sequence_0 hit 07:00:08',
+      'naction_3 hit 7:00:05 am',
+      'naction_4 hit 7:00:06 am',
+      'naction_4_repeat_sequence_0 run waiting here since 7:00 am',
+      'naction_5_sequence_0 hit 7:00:08 am',
     ],
     edges: [
       'ntrigger_0 off ngate',
@@ -450,21 +451,21 @@ const SHAPED: Record<string, ReturnType<typeof lines>> = {
     ],
   },
   'a run in a delay': {
-    sentence: 'At 07:00 → now in a wait 5 min',
+    sentence: 'At 7:00 am → now in a wait 5 min',
     failed: false,
     waiting: true,
-    nodes: ['ntrigger_0 hit 07:00:00', 'naction_0 run waiting here'],
+    nodes: ['ntrigger_0 hit 7:00:00 am', 'naction_0 run waiting here'],
     edges: ['ntrigger_0 run naction_0'],
   },
   'an older trace, its trigger by index': {
-    sentence: 'At 10:00',
+    sentence: 'At 10:00 am',
     failed: false,
     waiting: false,
-    nodes: ['ntrigger_0 off ', 'ntrigger_1 hit 07:00:00', 'ngate hit ', 'naction_0 hit 07:00:02'],
+    nodes: ['ntrigger_0 off ', 'ntrigger_1 hit 7:00:00 am', 'ngate hit ', 'naction_0 hit 7:00:02 am'],
     edges: ['ntrigger_0 off ngate', 'ntrigger_1 on ngate', 'ngate on naction_0'],
   },
   'a run skipped': {
-    sentence: 'Time pattern at 07:00 → skipped, it was already running',
+    sentence: 'Time pattern at 7:00 am → skipped, it was already running',
     failed: false,
     waiting: false,
     nodes: [
@@ -528,14 +529,14 @@ const SHAPED: Record<string, ReturnType<typeof lines>> = {
     edges: [],
   },
   'an aborted run of 2 minutes': {
-    sentence: 'Kitchen Sink changes at 07:00 → 1 step ran in 2 min (aborted)',
+    sentence: 'Kitchen Sink changes at 7:00 am → 1 step ran in 2 min (aborted)',
     failed: false,
     waiting: false,
-    nodes: ['ntrigger_0 hit 07:00:00', 'naction_0 no Lost'],
+    nodes: ['ntrigger_0 hit 7:00:00 am', 'naction_0 no Lost'],
     edges: ['ntrigger_0 on naction_0'],
   },
   'a cancelled run with no finish': {
-    sentence: 'State of x at 07:00 → 0 steps ran (cancelled)',
+    sentence: 'State of x at 7:00 am → 0 steps ran (cancelled)',
     failed: false,
     waiting: false,
     nodes: ['ntrigger_0 off ', 'naction_0 off '],
@@ -586,6 +587,8 @@ describe('the shapes and the ends of a run', () => {
   });
   test('in French', () => {
     const g = automationGraph(CONFIG, SHAPES[1][2], SHAPES[1][3], depsOf('fr'));
-    expect(g.sentence).toBe('Front s’ouvre à 07:00 → arrêtée à «\u00a0Kitchen Sink est on\u00a0»');
+    expect(g.sentence).toBe('Front s’ouvre à 7 h → arrêtée à «\u00a0Kitchen Sink est on\u00a0»');
+    // the step times are 24-hour in French, with their seconds
+    expect(g.nodes.find(n => n.id === 'ntrigger_0')?.sub).toBe('7 h 00 min 00 s');
   });
 });

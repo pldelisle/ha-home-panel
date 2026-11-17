@@ -10,7 +10,7 @@ import type {HistoryPoint, StatisticRow} from '../../core/ha.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
 import {degrees, whole, type Formatters} from '../../core/i18n/format.ts';
 import type {Messages} from '../../core/i18n/messages.ts';
-import {celsius, timeAxis} from '../../ui/chart-options.ts';
+import {celsius, timeAxis, tooltipDate} from '../../ui/chart-options.ts';
 import {bucketMiddle, RANGES, type Range} from '../../ui/ranges.ts';
 import type {HourSeries} from './model.ts';
 import {tileDefinition, type StatTileDefinition, type Tone} from './tiles.ts';
@@ -548,7 +548,7 @@ export function historyChartOptions(
   range: Range,
   {fmt, t, tokens, now}: ChartDeps,
 ) {
-  const {days, tooltipFormat} = RANGES[range];
+  const {days, tooltip} = RANGES[range];
   const names = series.map(line => t(line.nameKey));
   const units = [...new Set(series.map(line => line.unit))];
   const axis = (unit: string) => ({
@@ -602,7 +602,7 @@ export function historyChartOptions(
     },
     tooltip: {
       shared: true,
-      x: {format: tooltipFormat},
+      x: {formatter: tooltipDate(tooltip, fmt)},
       y: {
         formatter: (value: number, {seriesIndex}: {seriesIndex: number}) =>
           value == null ? DASH : `${fmt.number(+value, definition.dec ?? 1)} ${series[seriesIndex]?.unit ?? ''}`,

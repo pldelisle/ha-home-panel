@@ -1,8 +1,9 @@
 // RANGES: the history ranges (a day, a week, a month, a year) as data: how far back, which statistics period, how the axis reads; and `bucketMiddle`, the one rule over it.
 // Pattern: table-driven design (a table, not four branches), after the legacy panel's CRANGE (deleted in #246) with every word replaced by a
 // message key; it sits in the UI kit because Weather, Climate, Air and the sensors' sheets all read the same four ranges.
-// Must not: import anything but types, hold a string the household reads, or format a date (the tooltip format is Apex's own syntax).
+// Must not: import anything but types, hold a string the household reads, or format a date (`tooltipDate` does, from the parts a range names).
 import type {MessageKey} from '../core/i18n/en.ts';
+import type {TooltipDate} from './chart-options.ts';
 
 export type Range = 'day' | 'week' | 'month' | 'year';
 
@@ -26,8 +27,8 @@ export interface RangeDefinition {
   meanKey: MessageKey;
   /** The number of ticks the time axis labels. */
   ticks: number;
-  /** The tooltip's date format, in ApexCharts' syntax. */
-  tooltipFormat: string;
+  /** What a tooltip's heading names: the day and the clock, written by `tooltipDate`. */
+  tooltip: TooltipDate;
 }
 
 /** The ranges in the order their tabs show them. */
@@ -41,7 +42,7 @@ export const RANGES: Record<Range, RangeDefinition> = {
     shortKey: 'range.day.short',
     meanKey: 'range.mean.fiveMinute',
     ticks: 8,
-    tooltipFormat: 'ddd h:mm tt',
+    tooltip: {day: 'weekday', clock: 'time'},
   },
   week: {
     days: 7,
@@ -52,7 +53,7 @@ export const RANGES: Record<Range, RangeDefinition> = {
     shortKey: 'range.week.short',
     meanKey: 'range.mean.hourly',
     ticks: 7,
-    tooltipFormat: 'ddd h tt',
+    tooltip: {day: 'weekday', clock: 'hour'},
   },
   month: {
     days: 30,
@@ -63,7 +64,7 @@ export const RANGES: Record<Range, RangeDefinition> = {
     shortKey: 'range.month.short',
     meanKey: 'range.mean.hourly',
     ticks: 10,
-    tooltipFormat: 'ddd MMM d, h tt',
+    tooltip: {day: 'date', clock: 'hour'},
   },
   year: {
     days: 365,
@@ -74,7 +75,7 @@ export const RANGES: Record<Range, RangeDefinition> = {
     shortKey: 'range.year.short',
     meanKey: 'range.mean.daily',
     ticks: 12,
-    tooltipFormat: 'ddd MMM d, yyyy',
+    tooltip: {day: 'date', clock: null},
   },
 };
 

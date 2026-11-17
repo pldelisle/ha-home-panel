@@ -33,11 +33,28 @@ test('dotClass: still to come, running, stopped by a check, failed, ran', () => 
 });
 
 describe('timelineLayout', () => {
+  test('in French the times are 24-hour, as the panel writes them elsewhere', () => {
+    const fr = {
+      t: createMessages({language: 'fr', tag: 'fr-CA'}).t,
+      fmt: createFormatters({
+        ...englishLocale('UTC'),
+        language: 'fr',
+        tag: 'fr-CA',
+        hour12: undefined,
+        numberLocale: 'fr-CA',
+      }),
+    };
+    const [one] = timelineLayout([ran(18, 5)], 800, NOW, fr).groups;
+    expect(one.label).toBe('18 h 05');
+    const [group] = timelineLayout([ran(6), ran(6, 10)], 800, NOW, fr).groups;
+    expect(group.label).toBe('6 h–6 h 10');
+  });
+
   test('one run alone: at its time, on the first row, said with its time, name and what it did; the now line', () => {
     const layout = timelineLayout([ran(6)], 800, NOW, deps);
     expect(layout.nowPct).toBe(50);
     expect(layout.groups).toEqual([
-      {x: 25, dots: [ran(6)], cls: '', row: 0, label: '06:00', description: '06:00 Group - lights, ran'},
+      {x: 25, dots: [ran(6)], cls: '', row: 0, label: '6:00 am', description: '6:00 am Group - lights, ran'},
     ]);
   });
 
@@ -47,8 +64,8 @@ describe('timelineLayout', () => {
     expect(g.x).toBeCloseTo(((360 + 370) / 2 / 1440) * 100);
     expect(g).toMatchObject({
       cls: '',
-      label: '06:00–06:10',
-      description: '06:00 to 06:10 · 2 runs · lights, ran · lights, checked, did nothing',
+      label: '6:00 am–6:10 am',
+      description: '6:00 am to 6:10 am · 2 runs · lights, ran · lights, checked, did nothing',
     });
   });
 

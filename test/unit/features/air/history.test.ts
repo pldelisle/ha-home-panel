@@ -206,7 +206,7 @@ describe('airChartOptions', () => {
   test('a week’s axis ends now, the tooltip is the range’s, and the numbers are the profile’s', () => {
     const en = options(null);
     expect(en.xaxis).toEqual({type: 'datetime', min: NOW - 7 * 864e5, max: NOW, labels: {datetimeUTC: false}});
-    expect(en.tooltip.x).toEqual({format: 'ddd h tt'});
+    expect(en.tooltip.x.formatter(Date.parse('2026-11-09T21:07:00Z'))).toBe('Mon 4 pm');
     expect(en.yaxis.labels.formatter(1234)).toBe('1,234');
     expect(en.yaxis.labels.formatter(null)).toBe('');
     expect(en.tooltip.y.formatter(12.34)).toBe('12.3 µg/m³');
@@ -233,7 +233,7 @@ describe('outdoorChartOptions', () => {
       {y: 50, y2: 100, fillColor: '#warn', opacity: 0.08, label: {text: 'Moderate'}},
     ]);
     expect(o.xaxis).toMatchObject({min: NOW - 864e5, max: NOW});
-    expect(o.tooltip.x).toEqual({format: 'ddd h:mm tt'});
+    expect(o.tooltip.x.formatter(Date.parse('2026-11-09T21:07:00Z'))).toBe('Mon 4:07 pm');
   });
 
   test('a line with no points is left out, and the bands go with the index', () => {
