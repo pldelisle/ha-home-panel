@@ -1,5 +1,5 @@
 // <hp-smart-stack mode="home" | "idle">: the smart stack, one card at a time that takes turns every twenty seconds, with a dot for
-// each card taking turns; in the Home card's slot on a tablet, and beside the idle clock.
+// each card taking turns; in a card of its own on the Home pane on a tablet, and beside the idle clock.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over `readStack`, `stackCards` and `stackModel`; a store controller on
 // `stackIds` (ADR 0012), `StackHistory` (ADR 0028) and the shell's daily forecast (ADR 0030); the cards are kept in a `CardCache` and a
 // twenty-second `TickController` only picks among them. It says `hp-empty` when no card applies, and its container (the Home pane's `#hstk`, the idle screen's `#istk`) hides it.

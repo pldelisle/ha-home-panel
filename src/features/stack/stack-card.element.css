@@ -1,6 +1,6 @@
 /*
  * <hp-stack-card>'s own rules: the host lays out nothing, so the card is the item of the smart stack's `.scw`, as the legacy `.sc` div
- * was; then the card in the Home card's slot (`mode="home"`, smaller on a short card), the card and its parts in both places, and the
+ * was; then the card in the Home pane's slot, a card of its own (`mode="home"`, smaller on a short card), the card and its parts in both places, and the
  * narrow screen's size. Moved from the legacy `.hwx .hstk .sc` and its parts and the `:is(.idle, .hstk) .sc` rules and its parts
  * (tabs.css), which #266 deleted: `.hwx .hstk` is read here as `:host([mode='home'])` and `:is(.idle, .hstk)` as `:host`, which weigh
  * the same, so the cascade is the legacy one in the legacy order.
@@ -14,17 +14,26 @@
   min-height: 0;
   flex: 1;
   padding: 16px 18px;
-  border-radius: 16px;
-  /* a tap opens the card's subject, so on the Home card it is a control, raised above the card's wells */
-  background: var(--ctl-bg);
+  /* the stack is a card of its own on the Home pane, the surface the other cards have; a tap opens its subject */
+  border-radius: 22px;
+  background: var(--card);
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
-  box-shadow: var(--ctl-edge);
+  box-shadow: var(--shadow);
   animation-duration: 0.45s;
 }
 :host([glass][mode='home']) .sc:not(.amber, .red) {
-  background: var(--ctl-bg);
-  box-shadow: var(--ctl-edge);
+  background: var(--g-card);
+  -webkit-backdrop-filter: var(--m-bd);
+  backdrop-filter: var(--m-bd);
+  box-shadow: var(--m-edge);
+}
+@media (prefers-reduced-transparency: reduce) {
+  :host([glass][mode='home']) .sc:not(.amber, .red) {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--card);
+  }
 }
 @container (max-height:230px) {
   :host([mode='home']) .sft {

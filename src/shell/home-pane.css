@@ -1,7 +1,7 @@
 /*
  * The Home pane's own rules (ADR 0032): <hp-home-pane> draws in light DOM, so these join the shell's root after the legacy sheet.
  * The host lays out nothing, so the header and the four parts are items of the `.pane-home` grid (tabs.css) as the legacy hosts were;
- * then the weather card, its smart stack, the right column of tiles and the Security card, the configuration card and the scenes row.
+ * then the left column (the weather card, Who's home, the smart stack), the right column of tiles and the Security card, the configuration card and the scenes row.
  * Moved from tabs.css and phone.css by the Home move (#268); the tile's and the weather card's own rules are in their `*.element.css`.
  */
 hp-home-pane {
@@ -12,20 +12,27 @@ hp-home-pane > hp-pane-header {
   margin-bottom: 2px;
   align-self: start;
 }
+/* the left column: one card per subject (the weather, Who's home, the stack), each its own box; on a phone the column's box goes
+   and its cards are items of the pane, as the tiles' column is */
+.hleft {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
 .hwx {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
-/* smart stack in the Home card (2.9.0): it takes whatever height the tiles beside it leave under Who's home, never more, so the
-   row never grows for it (size containment); on a short card the footer line goes and the big numbers shrink */
+/* smart stack (2.9.0), a card of its own: it takes whatever height the tiles beside it leave under the weather and Who's home, never more,
+   so the row never grows for it (size containment); on a short card the footer line goes and the big numbers shrink */
 .hstk {
   flex: 1 1 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
   min-height: 150px;
-  margin-top: 10px;
   container-type: size;
 }
 .hstk[hidden] {
@@ -123,7 +130,8 @@ hp-home-pane > hp-pane-header {
 .app.tabsv.cp .hwx {
   cursor: pointer;
 }
-.app.tabsv.cp .hright {
+.app.tabsv.cp .hright,
+.app.tabsv.cp .hleft {
   display: contents;
 }
 .app.tabsv.cp .htiles {

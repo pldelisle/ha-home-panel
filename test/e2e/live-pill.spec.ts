@@ -38,11 +38,11 @@ test('14 a door left open shows as an attention pill', async ({house}) => {
   await expect(pill(house)).toContainText(/needs attention/);
 });
 
-test("15 the Home card ends at Who's home: the pill says the rest (2.8.1)", async ({house}) => {
+test("15 the Who's home card has no Status block: the pill says the rest (2.8.1)", async ({house}) => {
   await stopCharging(house);
   await openFrontDoor(house);
   await expect(pill(house)).toContainText(/needs attention/); // there is a problem, and still no Status block on the Home card
-  const home = house.root().locator('#hwx');
+  const home = house.root().locator('#hwho');
   await expect(home).toContainText(/Who's home/);
   await expect(home).not.toContainText(/Status|All clear/);
 });

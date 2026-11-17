@@ -13,18 +13,19 @@ test.describe('tablet', () => {
   test.beforeEach(tabletOnly);
   test.use({houseOpts: {cfg: FULL_CFG, time: NIGHT}});
 
-  test('16 the Home card shows the stack without growing taller than the tiles beside it', async ({house}) => {
+  test('16 the Home column shows the stack without growing taller than the tiles beside it', async ({house}) => {
     const stack = house.root().locator('#hstk');
     await expect(stack).toBeVisible();
     expect(['car', 'music']).toContain(await cardKey(house, '#hstk'));
     await expect(stack.locator('.sdots i')).toHaveCount(2);
     const [card, tiles] = await Promise.all([
-      house.root().locator('#hwx').boundingBox(),
+      house.root().locator('#hleft').boundingBox(),
       house.root().locator('.hright').boundingBox(),
     ]);
-    expect(card!.height, 'the Home card is no taller than the tiles and Security beside it').toBeLessThanOrEqual(
-      tiles!.height + 1,
-    );
+    expect(
+      card!.height,
+      'the weather, Who’s home and the stack are no taller than the tiles and Security beside them',
+    ).toBeLessThanOrEqual(tiles!.height + 1);
   });
 
   test('17 a tap on the Home card opens what it is about', async ({house}) => {
