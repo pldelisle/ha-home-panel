@@ -599,3 +599,21 @@ test.describe('Home’s tiles with no reading', () => {
     await expect(energy.locator('.hv')).toBeVisible();
   });
 });
+
+// The phone's Energy tiles say "No reading" in the line's style when their sensor reads nothing, never a dash as the big figure (#396).
+test.describe('the phone’s Energy tiles with no reading', () => {
+  test.use({houseOpts: {house: 'bare', cfg: {entities: {water_heater_temperature: 'sensor.tank_temperature'}}}});
+  test.beforeEach(() => phoneOnly());
+
+  test('the water heater tile says "No reading" in its line style, and its figure comes back with a reading', async ({
+    house,
+  }) => {
+    await house.setState('sensor.tank_temperature', {state: 'unavailable'});
+    await openTab(house);
+    const tile = pane(house).locator('hp-stat-tile[key="water"]');
+    await expect(tile.locator('.tv.num')).toHaveCount(0);
+    await expect(tile.locator('.tv')).toHaveText('No reading');
+    await house.setState('sensor.tank_temperature', {state: '48.5', attributes: {unit_of_measurement: '°C'}});
+    await expect(tile.locator('.tv.num')).toHaveText('48.5°');
+  });
+});

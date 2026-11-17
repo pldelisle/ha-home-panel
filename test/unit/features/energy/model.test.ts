@@ -192,6 +192,37 @@ describe('Hilo', () => {
     expect(challenge('scheduled')).toBe('Challenge: scheduled');
   });
 
+  test('a tile whose sensor reads nothing says "No reading", in French "Aucune mesure", flagged missing and with no unit', () => {
+    const noTank = (rate: string): EnergyInputs => {
+      const hass = houseOf(
+        [],
+        [
+          entity('sensor.tank_temperature', 'unavailable'),
+          entity('sensor.tank_power', '0', {unit_of_measurement: 'W'}),
+          ...hiloStates(rate),
+        ],
+      );
+      const store = storeOf(hass, {entities: ENTITIES});
+      return readEnergy(hass.states, store.config, store.names);
+    };
+    expect(modelOf(noTank('unknown')).tiles).toEqual([
+      {key: 'water', label: 'Water heater', sub: 'Idle', value: 'No reading', unit: '', missing: true, on: false},
+      {
+        key: 'hilo',
+        label: 'Hilo',
+        sub: 'Rate unknown · No challenge scheduled',
+        value: 'No reading',
+        unit: '',
+        missing: true,
+        on: false,
+      },
+    ]);
+    expect(modelOf(noTank('unknown'), null, 'fr').tiles.map(tile => tile.value)).toEqual([
+      'Aucune mesure',
+      'Aucune mesure',
+    ]);
+  });
+
   test('the phone’s two rows: the tank heating, and Hilo with its tier and its challenge', () => {
     expect(modelOf(inputsOf(hiloStates('0.0759', 'pre_heat'))).tiles).toEqual([
       {key: 'water', label: 'Water heater', sub: 'Heating · 1.2 kW', value: '49.5', unit: '°', on: true},

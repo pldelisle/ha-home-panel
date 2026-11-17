@@ -121,6 +121,8 @@ export interface EnergyTile extends Reading {
 /** A tile of the phone's Energy tab, which opens its card in a sheet. */
 export interface PhoneTile extends EnergyTile {
   key: 'water' | 'hilo';
+  /** The sensor reads nothing: `value` is the word that says so (with no unit), which the tile draws in the line's style, never a dash as its big figure. */
+  missing?: boolean;
   /** The water heater is heating. */
   on: boolean;
 }
@@ -443,6 +445,9 @@ export function energyModel(
   });
   const detail: DetailDeps = {now, t, fmt, names, language, range};
 
+  // a tile's figure and unit, or the word for no reading flagged `missing`, so the tile never draws a dash as its big figure
+  const figure = (value: string | null, unit: string): Pick<PhoneTile, 'value' | 'unit' | 'missing'> =>
+    value === null ? {value: t('energy.noReading'), unit: '', missing: true} : {value, unit};
   const phone: PhoneTile[] = [
     ...(water.present
       ? [
@@ -450,8 +455,7 @@ export function energyModel(
             key: 'water' as const,
             label: t('energy.water.title'),
             sub: heating ? heatingText : t('energy.idle'),
-            value: tank,
-            unit: UNIT.degrees,
+            ...figure(water.temperature === null ? null : tank, UNIT.degrees),
             on: heating,
           },
         ]
@@ -462,8 +466,7 @@ export function energyModel(
             key: 'hilo' as const,
             label: t('energy.hilo.title'),
             sub: t('energy.hiloTile', {tier: t(tier.name), challenge}),
-            value: cents(hilo.current),
-            unit: UNIT.cents,
+            ...figure(hilo.current === null ? null : cents(hilo.current), UNIT.cents),
             on: false,
           },
         ]
