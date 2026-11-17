@@ -26,9 +26,10 @@
 .rtab:active svg {
   transform: scale(0.86);
 }
-/* a section settles in when its tab is chosen */
+/* a section settles in when its tab is chosen. `backwards`, not `both`: kept after the end, even an identity transform makes the pane the containing
+   block of the `position: fixed` sheets it draws, which then stop at the pane's box (docs/apple-hig-audit-tabs-2026-11-17.md, finding 1) */
 .pane:not([hidden]) {
-  animation: panein 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation: panein 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
 }
 @keyframes panein {
   from {

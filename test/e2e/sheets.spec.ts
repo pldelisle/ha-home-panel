@@ -296,3 +296,30 @@ test.describe('<hp-sheet>', () => {
     await expect(house.page.locator('#probe').getByText('A line under it', {exact: true})).toBeVisible();
   });
 });
+
+// A sheet is `position: fixed` and covers the screen: no ancestor may become its containing block. The pane's entrance animation once kept an
+// identity transform after it ended (`animation-fill-mode: both`), which trapped every sheet a phone tab opened in the pane's box (docs/apple-hig-audit-tabs-2026-11-17.md, finding 1).
+test('on a phone a sheet opened from a tab covers the screen, its backdrop from top to bottom', async ({house}) => {
+  phoneOnly();
+  // the suite runs with Reduce Motion (playwright.config.ts), which has no entrance animation and so never had the bug: motion is on here, as on most phones
+  await house.page.emulateMedia({reducedMotion: 'no-preference'});
+  for (const [tab, room] of [
+    ['climate', 'Bedroom'],
+    ['lights', 'Kitchen'],
+  ] as const) {
+    await house.tab(tab);
+    await house.root().locator(`#pane-${tab}`).getByText(room).first().click();
+    const sheet = house.root().locator(`#pane-${tab} .sheet`).filter({visible: true}).first();
+    await expect(sheet).toBeVisible();
+    const box = await sheet.boundingBox();
+    const viewport = house.page.viewportSize()!;
+    expect(box, `${tab}: the sheet's backdrop`).toMatchObject({
+      x: 0,
+      y: 0,
+      width: viewport.width,
+      height: viewport.height,
+    });
+    await house.page.keyboard.press('Escape');
+    await expect(sheet).toBeHidden();
+  }
+});
