@@ -93,9 +93,9 @@
 /* on glass a tile is a glass card, a scene run or a mode on included, as the legacy rule's later place in the sheet left it */
 .app.gl .scenetile {
   background: var(--g-card);
-  -webkit-backdrop-filter: var(--g-bd);
-  backdrop-filter: var(--g-bd);
-  box-shadow: var(--g-edge);
+  -webkit-backdrop-filter: var(--m-bd);
+  backdrop-filter: var(--m-bd);
+  box-shadow: var(--m-edge);
 }
 @media (prefers-reduced-transparency: reduce) {
   .app.gl .scenetile {

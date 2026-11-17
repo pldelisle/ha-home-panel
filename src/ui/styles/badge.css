@@ -20,12 +20,12 @@
   width: 22px;
   height: 22px;
 }
-/* pane and sheet title icons are tinted glass instead of a flat colour square */
+/* pane and sheet title icons are content: the same tinted square with glass on (HIG, Materials: no Liquid Glass in the content layer) */
 .app.gl .ph .badge {
-  background: color-mix(in srgb, var(--acc, var(--fg3)) 22%, var(--g-fill));
-  -webkit-backdrop-filter: var(--g-bd);
-  backdrop-filter: var(--g-bd);
-  box-shadow: var(--g-edge);
+  background: color-mix(in srgb, var(--acc, var(--fg3)) 22%, var(--card));
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
 }
 @media (prefers-reduced-transparency: reduce) {
   .app.gl .ph .badge {

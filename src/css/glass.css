@@ -31,9 +31,9 @@
   padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px));
 }
 .app.tabsv.gl.cp .rtab[aria-selected='true'] {
-  background: color-mix(in srgb, var(--rc) 20%, var(--g-sel));
+  background: color-mix(in srgb, var(--rc) 20%, var(--g-nav-sel));
   border-radius: 24px;
-  box-shadow: var(--g-edge-s);
+  box-shadow: var(--g-nav-rim-s);
 }
 /* iPad: the rail is the same capsule, standing on the page */
 .app.tabsv.gl:not(.cp) .rail {
@@ -41,7 +41,7 @@
   padding: 10px 6px;
 }
 .app.tabsv.gl:not(.cp) .rtab[aria-selected='true'] {
-  background: color-mix(in srgb, var(--rc) 20%, var(--g-sel));
+  background: color-mix(in srgb, var(--rc) 20%, var(--g-nav-sel));
 }
 /* the wallpaper: a fixed layer behind the page (iOS ignores background-attachment:fixed), soft colour washes for the glass to bend */
 .app.gl {
@@ -147,23 +147,27 @@
     radial-gradient(55% 48% at 86% 24%, rgba(150, 70, 40, 0.5), transparent 70%),
     radial-gradient(50% 42% at 60% 90%, rgba(40, 80, 140, 0.45), transparent 70%);
 }
-/* cards and tiles are glass too (v1.18.1): a denser fill than the bar, so numbers and captions keep their contrast over the washes */
+/* The content layer (HIG, Materials: "Don't use Liquid Glass in the content layer"; docs/design.md). Liquid Glass is the navigation
+   layer only: the rail and tab bar, the header's round buttons and capsules, popovers, toasts and the sheet frame. Cards are a
+   standard material: the card colour nearly opaque over a plain blur (--m-bd), with the plain edge (--m-edge); wells are the solid
+   secondary fill with no rim; a chosen segment or tab and every control inside a card are drawn as with glass off (--ctl-bg,
+   --ctl-edge from tokens.css). The glass strength setting (--g-m) moves the navigation layer only. */
 .app.gl {
-  --g-card: rgba(255, 255, 255, calc(0.14 * var(--g-m, 1)));
-  --g-tile: rgba(255, 255, 255, calc(0.12 * var(--g-m, 1)));
-  /* a control is raised glass: the selection fill and a rim, where a well is the tile fill alone */
-  --ctl-bg: var(--g-sel);
-  --ctl-edge: var(--g-edge-s);
+  --g-card: rgba(255, 255, 255, 0.86);
+  --g-tile: rgba(243, 241, 237, 0.92);
+  --g-sel: var(--card);
+  --g-edge-s: 0 0 #0000;
 }
 .app.gl[data-theme='dark'] {
-  --g-card: rgba(255, 255, 255, calc(0.06 * var(--g-m, 1)));
-  --g-tile: rgba(255, 255, 255, calc(0.06 * var(--g-m, 1)));
+  --g-card: rgba(47, 45, 42, 0.86);
+  --g-tile: rgba(56, 53, 50, 0.92);
+  --g-sel: var(--card);
 }
 .app.gl .card {
   background: var(--g-card);
-  -webkit-backdrop-filter: var(--g-bd);
-  backdrop-filter: var(--g-bd);
-  box-shadow: var(--g-edge);
+  -webkit-backdrop-filter: var(--m-bd);
+  backdrop-filter: var(--m-bd);
+  box-shadow: var(--m-edge);
 }
 /* v1.18.2: every other surface follows. Top-level panels (sheet sections, room list) are glass cards; inner wells (rows, segmented controls, tabs, steppers, sensor and speaker rows) take the tile fill; small buttons inside take the selected-bubble fill; tinted "on" states mix their accent into the glass instead of the opaque card */
 .app.gl .more {
@@ -211,12 +215,6 @@
   }
   .app.gl .more {
     background: var(--card2);
-  }
-}
-@media (prefers-reduced-transparency: reduce) {
-  .app.gl {
-    --ctl-bg: var(--card);
-    --ctl-edge: var(--shadow);
   }
 }
 @media (prefers-contrast: more) {

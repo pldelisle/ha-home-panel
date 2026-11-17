@@ -17,9 +17,9 @@
 }
 .app.gl .aubox {
   background: var(--g-card);
-  -webkit-backdrop-filter: var(--g-bd);
-  backdrop-filter: var(--g-bd);
-  box-shadow: var(--g-edge);
+  -webkit-backdrop-filter: var(--m-bd);
+  backdrop-filter: var(--m-bd);
+  box-shadow: var(--m-edge);
 }
 /* WebKit leaves ghosts of the previous flow drawing behind a blurred card (stale compositing under backdrop-filter), so on iOS the two
    Automations cards keep a denser plain translucent fill with no blur, and every flow drawing gets its own layer (v1.18.3) */

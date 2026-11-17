@@ -154,6 +154,13 @@
   --g-edge: inset 0 0 12px -4px var(--g-hi), inset 0 0 0 1px var(--g-ring), var(--g-shadow);
   --g-edge-s: inset 0 0 8px -3px var(--g-hi), inset 0 0 0 1px var(--g-ring);
   --g-bd: blur(var(--g-blur)) saturate(1.5);
+  /* the navigation layer's own glass: the chosen rail tab and the round buttons over a sheet (the content layer's tokens change under
+     .app.gl, glass.css) */
+  --g-nav-sel: var(--g-sel);
+  --g-nav-rim-s: inset 0 0 8px -3px var(--g-hi), inset 0 0 0 1px var(--g-ring);
+  /* the content layer's material: a plain blur, no lens, and the plain edge (glass.css sets them under .app.gl) */
+  --m-bd: blur(var(--g-blur)) saturate(1.2);
+  --m-edge: var(--shadow);
 }
 .app[data-theme='dark'] {
   --g-fill: rgba(255, 255, 255, calc(0.05 * var(--g-m, 1)));
@@ -162,5 +169,6 @@
   --g-hi: rgba(255, 255, 255, 0.35);
   --g-glow: rgba(255, 255, 255, 0.08);
   --g-sel: rgba(255, 255, 255, calc(0.12 * var(--g-m, 1)));
+  --g-nav-sel: rgba(255, 255, 255, calc(0.12 * var(--g-m, 1)));
   --g-shadow: 0 0 21px -8px rgba(255, 255, 255, 0.12);
 }
