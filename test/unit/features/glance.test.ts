@@ -48,7 +48,7 @@ describe('the test houses', () => {
     expect(all(full({}, FULL_CFG, 'fr'))).toStrictEqual([
       ['lights', '4 allumées', 'Bureau 78% · Cuisine 59% · Salon 71%'],
       ['climate', '20,6°', 'Intérieur · 2 pièces chauffent'],
-      ['car', '64,0%', '280 km · en recharge · verrouillée'],
+      ['car', '64,0\u202f%', '280 km · en recharge · verrouillée'],
       ['energy', '3,24 kW', "Maintenant · 12,3 kWh aujourd'hui · tarif inconnu"],
       ['water', '50,0°', "Au repos · 0,2 kWh aujourd'hui"],
       ['air', 'Moyen', '1 purificateur · Bureau : PM2,5 20'],

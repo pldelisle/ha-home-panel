@@ -16,7 +16,8 @@ export function glance({hass, config, names, t, fmt}: GlanceStore): GlanceView |
     icon: 'car',
     color: 'var(--c-ev)',
     label: t('car.title'),
-    value: `${car.soc === null ? DASH : fmt.fixed(car.soc, 1)}%`,
+    // the catalog's percent, as the layer wrote the legacy tile's in French (`64,0 %`, a narrow no-break space)
+    value: t('car.percent', {n: car.soc === null ? DASH : fmt.fixed(car.soc, 1)}),
     line: [
       car.range === null ? '' : t('car.glance.range', {n: Math.round(car.range)}),
       t(car.charging ? 'car.state.charging' : car.plugged ? 'car.state.pluggedIn' : 'car.state.unplugged'),
