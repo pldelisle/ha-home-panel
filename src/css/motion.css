@@ -7,7 +7,6 @@
   .rtab,
   .head button.icon,
   .ausel .close,
-  .lchip,
   .lauto,
   .go,
   button.chip,
@@ -25,7 +24,6 @@
 }
 .head button.icon:active,
 .ausel .close:active,
-.lchip:active,
 .lauto:active,
 .go:active,
 button.chip:active,

@@ -179,25 +179,28 @@ test.describe('full house', () => {
     house,
   }) => {
     await openOfficeSheet(house);
-    const left = await house.root().evaluate(el => {
-      const sheet = el.shadowRoot!.querySelector('#sh-light')!,
-        panel = sheet.querySelector(':scope > .panel')!;
-      return [sheet, panel].flatMap(e => {
-        const c = getComputedStyle(e),
-          running = e
-            .getAnimations()
-            .map(
-              a =>
-                `${a.constructor.name} ${(a as CSSAnimation).animationName ?? (a as CSSTransition).transitionProperty}`,
-            ),
-          // a transition starts only when a property changes, so what the panel would run on a drag's release counts too
-          set =
-            c.animationName !== 'none' || c.transitionDuration.split(', ').some(d => parseFloat(d) > 0)
-              ? [`${e.className || e.id}: ${c.animationName} ${c.transitionProperty} ${c.transitionDuration}`]
-              : [];
-        return [...running, ...set];
+    // the sheet is in its element's root, which the locator reaches through the shadow roots
+    const left = await house
+      .root()
+      .locator('#sh-light')
+      .evaluate(sheet => {
+        const panel = sheet.querySelector(':scope > .panel')!;
+        return [sheet, panel].flatMap(e => {
+          const c = getComputedStyle(e),
+            running = e
+              .getAnimations()
+              .map(
+                a =>
+                  `${a.constructor.name} ${(a as CSSAnimation).animationName ?? (a as CSSTransition).transitionProperty}`,
+              ),
+            // a transition starts only when a property changes, so what the panel would run on a drag's release counts too
+            set =
+              c.animationName !== 'none' || c.transitionDuration.split(', ').some(d => parseFloat(d) > 0)
+                ? [`${e.className || e.id}: ${c.animationName} ${c.transitionProperty} ${c.transitionDuration}`]
+                : [];
+          return [...running, ...set];
+        });
       });
-    });
     expect(left).toEqual([]);
   });
 

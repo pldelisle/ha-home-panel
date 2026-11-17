@@ -46,6 +46,11 @@ export const ICONS = {
   chev: svg`<path d="m9 6 6 6-6 6"/>`,
   grip: svg`<path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" stroke-width="3"/>`,
   link: svg`<path d="M10 13.5a4 4 0 0 0 5.7.3l3-3a4 4 0 0 0-5.7-5.6l-1.2 1.2"/><path d="M14 10.5a4 4 0 0 0-5.7-.3l-3 3a4 4 0 0 0 5.7 5.6l1.2-1.2"/>`,
+  chevl: svg`<path d="m15 6-6 6 6 6"/>`,
+  lsun: svg`<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>`,
+  lpow: svg`<path d="M12 3v8M6.4 6.6a8 8 0 1 0 11.2 0"/>`,
+  lsnow: svg`<path d="M12 2v20M4 7l16 10M20 7 4 17"/>`,
+  lflame: svg`<path d="M12 22a7 7 0 0 0 7-7c0-4-3-6-4-10-2 2-3 4-3 6-1-1-2-2-2-4-2 2-5 5-5 8a7 7 0 0 0 7 7z"/>`,
 } satisfies Record<string, SVGTemplateResult>;
 
 export type IconName = keyof typeof ICONS;

@@ -1,0 +1,51 @@
+/*
+ * <hp-link-picker>'s own rules: the header with Back to the room, and the line under the list. The rows are the sheet's (sheet-rows.css).
+ * Moved from the legacy sheet's rules (lights.css) in #262. The host has no box: its three parts are rows of the sheet's body.
+ */
+:host {
+  display: contents;
+}
+/* the "Link with" list, pushed inside the sheet with a Back button to the room */
+.lpkh {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+}
+.lpkh b {
+  font-size: calc(17px * var(--tx));
+  font-weight: 600;
+}
+.lback {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 44px;
+  padding: 0 8px 0 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: calc(16px * var(--tx));
+  color: var(--t-home, var(--c-home));
+  cursor: pointer;
+  max-width: 40%;
+}
+.lback span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lback:focus-visible {
+  outline: 2px solid var(--c-home);
+  outline-offset: 2px;
+}
+.lfoot {
+  margin: -8px 6px 0;
+  font-size: calc(12.5px * var(--tx));
+  color: var(--fg2);
+  line-height: 1.45;
+}

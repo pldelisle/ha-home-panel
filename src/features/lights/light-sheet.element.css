@@ -1,0 +1,139 @@
+/*
+ * <hp-light-sheet>'s own rules: the sheet narrow on a tablet, power on the left of the title and Done on the right, the body's column,
+ * the row of the two pills, and the bulbs' chips. Moved from the legacy sheet's rules (lights.css, extra.css, glass.css, motion.css) in
+ * #262; the chrome is the kit's (sheet.css) and the grouped rows the feature's (sheet-rows.css).
+ */
+:host {
+  display: contents;
+}
+/* the sheet: narrow on a tablet; power on the left of the title, Done on the right (changes apply as you go) */
+.app:not(.cp) #sh-light > .panel {
+  width: min(560px, 100%);
+}
+#sh-light .ph {
+  align-items: center;
+}
+.lpwr {
+  width: 48px;
+  height: 48px;
+  flex: none;
+  border-radius: 50%;
+  border: 0;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  color: var(--fg2);
+  background: var(--card2);
+}
+.app.gl .lpwr {
+  background: var(--g-sel);
+  box-shadow: var(--g-edge-s);
+}
+.lpwr[aria-checked='true'],
+.app.gl .lpwr[aria-checked='true'] {
+  color: #3a2410;
+  background: var(--lc, var(--warn));
+  box-shadow: 0 0 16px color-mix(in srgb, var(--lc, var(--warn)) 65%, transparent);
+}
+.lpwr:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.lpwr:focus-visible,
+.ldone:focus-visible {
+  outline: 2px solid var(--c-home);
+  outline-offset: 2px;
+}
+#sh-light .ldone {
+  min-width: 64px;
+  height: 44px;
+  padding: 0 18px;
+  border-radius: 999px;
+  border: 0;
+  font: inherit;
+  font-size: calc(15px * var(--tx));
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--fg);
+  background: var(--card2);
+}
+.app.gl #sh-light .ldone {
+  background: var(--g-sel);
+  box-shadow: var(--g-edge-s);
+}
+.lsbody {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+/* the two tall sliders side by side (light-slider.element.css draws each) */
+.lpills {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  padding: 4px 0 0;
+}
+/* single bulbs: toggle buttons outside the list; on = filled with a check mark, so state isn't colour alone */
+.lchips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+.lcl {
+  font-size: calc(13px * var(--tx));
+  color: var(--fg2);
+  margin-right: 4px;
+}
+.lchip {
+  min-height: 44px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: inherit;
+  font-size: calc(14px * var(--tx));
+  font-weight: 600;
+  color: var(--fg2);
+  background: var(--card2);
+  cursor: pointer;
+}
+.app.gl .lchip {
+  background: var(--g-tile);
+  box-shadow: var(--g-edge-s);
+}
+.lchip[aria-pressed='true'],
+.app.gl .lchip[aria-pressed='true'] {
+  color: var(--bg);
+  background: var(--fg);
+  box-shadow: none;
+}
+.lchip:disabled {
+  opacity: 0.45;
+}
+.lchip:focus-visible {
+  outline: 2px solid var(--c-home);
+  outline-offset: 2px;
+}
+.lchip .ck {
+  display: none;
+}
+.lchip[aria-pressed='true'] .ck {
+  display: inline-grid;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .lchip {
+    transition:
+      transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+      background-color 0.2s ease,
+      box-shadow 0.2s ease,
+      color 0.2s ease;
+  }
+}
+.lchip:active {
+  transform: scale(0.96);
+}

@@ -72,12 +72,11 @@ test.describe('in French', () => {
     await expect(toast(house).getByRole('button')).toHaveText('Fermer');
   });
 
-  // a legacy toast: the Lights sheet's Auto switch still words its toast in English in home-panel.js, which the French map rewrites.
-  // #263 moves Lights to the catalog, and this case with it (the catalog toast above is then the only road, and this one goes).
-  test('a legacy toast is in French', async ({house}) => {
+  // the room sheet's Auto switch, a command's toast from the catalog since the sheet moved to its element (#262)
+  test("the light sheet's Auto toast is in French", async ({house}) => {
     tabletOnly();
     await openOfficeSheet(house);
-    await house.root().locator('#lsheet button.sw[data-l="al"]').click();
+    await house.root().locator('#lsheet hp-switch[data-l="al"] button').click();
     await expect(toast(house)).toHaveText('Auto désactivé');
   });
 });

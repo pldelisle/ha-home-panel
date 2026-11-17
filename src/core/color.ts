@@ -1,7 +1,7 @@
 // Colour arithmetic: the blend of two `#rrggbb` colours in OKLab, and a colour temperature as the white it looks like.
 // Pattern: pure functions over values (functional core): the blend after Björn Ottosson, "A perceptual color space for image processing" (OKLab, 2020),
 // perceptually even so neighbouring cells of a scale join without a grey band (it replaced the legacy `toOk`, `fromOk` and `lin`, #246); `kelvinRGB`
-// after Tanner Helland's fit (the legacy panel's copy goes with its sheet, #262). The OKLab conversion is private; `oklabBlend` assumes `#rrggbb` literals.
+// after Tanner Helland's fit (the legacy panel's copy went with its sheet, #262). The OKLab conversion is private; `oklabBlend` assumes `#rrggbb` literals.
 // Must not: read the DOM or a computed style, or round before the end (the output's bytes are the only rounding).
 
 /** A colour in OKLab: lightness, then the green-red and blue-yellow axes. */

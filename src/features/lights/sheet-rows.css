@@ -1,0 +1,84 @@
+/* The room sheet's grouped rows (an iOS inset list), adopted by `<hp-light-sheet>` (Auto, Night, Linked with) and `<hp-link-picker>` (the rooms to
+   link with) through `forShadow`, where `.app.gl` reads as `:host([glass])`. Moved from the legacy sheet's rules (lights.css) in #262.
+   A selector the feature writes is written nowhere else (ADR 0019). */
+.lgrp {
+  border-radius: 18px;
+  overflow: hidden;
+  background: var(--card2);
+}
+.app.gl .lgrp {
+  background: var(--g-tile);
+  box-shadow: var(--g-edge-s);
+}
+.lgr {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 60px;
+  padding: 10px 14px;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+}
+.lgr + .lgr {
+  border-top: 1px solid var(--ring);
+}
+button.lgr {
+  cursor: pointer;
+}
+button.lgr:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+button.lgr:focus-visible {
+  outline: 2px solid var(--c-home);
+  outline-offset: -3px;
+}
+.lgr .lgi {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: var(--gi);
+}
+.lgr .tx {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.lgr .tx b {
+  font-size: calc(15.5px * var(--tx));
+  font-weight: 600;
+}
+.lgr .tx small {
+  font-size: calc(13px * var(--tx));
+  color: var(--fg2);
+  line-height: 1.35;
+}
+.lgr .lval {
+  font-size: calc(15px * var(--tx));
+  color: var(--fg2);
+  white-space: nowrap;
+}
+.lgr > svg:last-child {
+  flex: none;
+  color: var(--fg3);
+}
+.lgr .lck {
+  width: 24px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  color: var(--t-home, var(--c-home));
+}
+.lgr .lnow {
+  color: var(--t-warn, var(--warn));
+}

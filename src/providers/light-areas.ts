@@ -2,7 +2,7 @@
 // one tile per group (or loose light), and the lights with no area share an "Other" tile, last.
 // Pattern: a provider over the registries (ADR 0025): it names no integration but turns the entity, device and area registries into generic
 // inputs, so the Lights pane, the Home tile and the stack's card (spec 24) read one rule. The rules are
-// the legacy `lightAreas`'s first half and its `shortNames`, whose copies go with the sheet (#262), their last legacy reader.
+// the legacy `lightAreas`'s first half and its `shortNames`, whose copies went with the sheet (#262), their last legacy reader.
 // Must not: word anything (the "Other lights" name is the model's), read the clock, the DOM or `hass` itself, or read a light's state.
 import type {HassEntities, Registries} from '../core/hass.ts';
 import type {Names} from '../core/i18n/names.ts';

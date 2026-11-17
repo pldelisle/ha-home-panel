@@ -1,6 +1,7 @@
 // A reactive controller that subscribes its host to the entity ids it reads and updates it when one of them changes.
 // Pattern: Lit reactive controller (Lit docs, Reactive Controllers) over the store's observer (ADR 0012); the store
-// arrives by context (ADR 0018). A hidden pane calls pause(), so a wall tablet does no work for what it does not show.
+// arrives by context (ADR 0018). A hidden pane calls pause(), so a wall tablet does no work for what it does not show; a
+// host that is `held` (a slider under a finger) keeps listening but draws a change only when `release` is called.
 // Must not: read an entity itself, keep a store past its host's disconnection, or be the only way to reach the store.
 import {ContextConsumer} from '@lit/context';
 import type {ReactiveController, ReactiveControllerHost} from 'lit';
@@ -17,6 +18,8 @@ export interface StoreControllerOptions {
    * so the shell has nothing to ask for. Every other host leaves this out and receives the store from context.
    */
   store?: PanelStore;
+  /** While true a change is noted but the host is not asked to update; `release` asks once for what came meanwhile. */
+  held?: () => boolean;
 }
 
 export class StoreController implements ReactiveController {
@@ -25,6 +28,7 @@ export class StoreController implements ReactiveController {
   private generation = -1;
   private idsKey = '';
   private paused = false;
+  private missed = false;
 
   constructor(
     private readonly host: ReactiveControllerHost & HTMLElement,
@@ -78,7 +82,15 @@ export class StoreController implements ReactiveController {
   /** Listens again and asks the host for one update, since changes were missed while paused. */
   resume(): void {
     this.paused = false;
+    this.missed = false; // the update below draws it
     this.subscribeNow();
+    this.host.requestUpdate();
+  }
+
+  /** The hold is over: one update when a change came while the host was held, none otherwise. */
+  release(): void {
+    if (!this.missed) return;
+    this.missed = false;
     this.host.requestUpdate();
   }
 
@@ -96,7 +108,8 @@ export class StoreController implements ReactiveController {
     this.idsKey = this.keyOf(ids);
     this.unsubscribe = store.subscribe(ids, change => {
       this.options.onChange?.(change);
-      this.host.requestUpdate();
+      if (this.options.held?.()) this.missed = true;
+      else this.host.requestUpdate();
     });
   }
 }

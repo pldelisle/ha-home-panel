@@ -1,11 +1,11 @@
 // The sheet host: the one object that knows which sheet is open, and with it Escape, where focus returns and where a detail panel sits.
 // Pattern: mediator (Gamma et al., Design Patterns): sheets and popups never know about each other, they register or ask; a Lit
 // reactive controller (Lit docs, Reactive Controllers) on the shell, so the window's keydown listener lives as long as the connection.
-// Must not: draw a sheet, build a legacy sheet's content (the guest does, when told), or choose a tab other than by setTab.
+// Must not: draw a sheet, build a legacy sheet's content (the guest did, when told; it has none since #262), or choose a tab other than by setTab.
 import type {ReactiveController, ReactiveControllerHost} from 'lit';
 import type {FeatureKey} from '../ui/feature.ts';
 
-/** The ids of the guest's sheets: the id of the `.sheet` element it draws. Deleted with the guest (#188). */
+/** The ids of the guest's sheets: the id of the `.sheet` element it draws. The guest draws none since the room's light sheet moved to its element (#262); deleted with the guest (#188). */
 export type LegacySheetId = 'sh-light';
 
 /** A legacy sheet is its element's id (a `LegacySheetId`); an element's sheet is `<owner>.<name>` (`shell.more`, later `weather.history`). */

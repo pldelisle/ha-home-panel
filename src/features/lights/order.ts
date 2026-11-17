@@ -1,6 +1,6 @@
 // The Lights tab's arrangement: which rooms are linked, a linked pair drawn side by side, and the order an admin saved for every screen.
 // Pattern: pure functions over plain data (Bernhardt, functional core); the rules are the second half of the legacy `lightAreas` and its
-// `lightLinkList`, whose copies go with the sheet (#262). The saved order and links arrive as Home Assistant's frontend system data, read by the pane.
+// `lightLinkList`, whose copies went with the sheet (#262). The saved order and links arrive as Home Assistant's frontend system data, read by the pane.
 // Must not: read the clock, the DOM or `hass` itself, write the system data, or drop a tile (a key nobody knows sorts last).
 import type {LightLink} from '../../core/config.ts';
 import type {HassEntities} from '../../core/hass.ts';

@@ -200,7 +200,6 @@
 .app.gl .pane-auto .pill,
 .app.gl .state,
 .app.gl .go,
-.app.gl .lchip,
 .app.gl .aud.up,
 .app.gl .aud.skip {
   background: var(--g-tile);
@@ -214,9 +213,6 @@
 }
 .app.gl .pane-auto .pill.ok {
   background: color-mix(in srgb, var(--ok) 18%, var(--g-tile));
-}
-.app.gl .lchip[aria-pressed='true'] {
-  background: color-mix(in srgb, var(--warn) 24%, var(--g-tile));
 }
 /* v1.18.3: WebKit leaves ghosts of the previous flow drawing behind a blurred card (stale compositing under backdrop-filter), so on iOS the two Automations cards keep a denser plain translucent fill with no blur, and every flow drawing gets its own layer */
 .augraph {
@@ -293,7 +289,4 @@
     --g-card: rgba(47, 45, 42, 0.95);
     --g-tile: rgba(56, 53, 50, 0.95);
   }
-}
-.app.gl #lsheet .larea {
-  box-shadow: none;
 }

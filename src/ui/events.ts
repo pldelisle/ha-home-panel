@@ -5,7 +5,7 @@
 import type {FeatureKey} from './feature.ts';
 
 export interface SheetRequestDetail {
-  /** `<owner>.<name>` for an element's sheet, the element's id for a legacy one (`sh-light`) */
+  /** `<owner>.<name>` for an element's sheet (`lights.room`), the element's id for a legacy one (none is left since #262) */
   id: string;
   /** what the sheet is asked to show, which the element and the sheet agree on */
   detail: unknown;

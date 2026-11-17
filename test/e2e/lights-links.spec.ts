@@ -77,6 +77,17 @@ test.describe('as an admin', () => {
     await expect(root.locator('#lsheet .lpill').first()).toBeVisible();
   });
 
+  test('61 the Linked with row moves focus to Back, and Back moves it to the row again', async ({house}) => {
+    tabletOnly();
+    const root = house.root();
+    await house.tab('lights');
+    await root.locator('#pane-lights .lcell[data-lsheet="light.kitchen_island"] .tx').click();
+    await root.locator('#lsheet .lnav').click();
+    await expect(root.locator('#lsheet .lback')).toBeFocused();
+    await root.locator('#lsheet .lback').click();
+    await expect(root.locator('#lsheet .lnav')).toBeFocused();
+  });
+
   test('35 on the phone the pairs are joined and a tap on the tile opens the sheet with a Linked with row', async ({
     house,
   }) => {
