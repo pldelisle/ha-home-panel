@@ -1,6 +1,6 @@
 # People
 
-Who's home ([spec 24](../../../docs/specs/24-home.md)): the configured people, each home or away, as the header's chips, the Home card and the smart stack show them. Who's home is no tab, so the folder has no descriptor: the shell composes its elements on the Home pane and in the header. This folder holds the model and the ids (#264); the elements `<hp-who-chips>` and `<hp-who-card>` come with #266. The reading is the provider's, because three places read it (ADR 0025).
+Who's home ([spec 24](../../../docs/specs/24-home.md)): the configured people, each home or away, as the header's chips, the Home card and the smart stack show them. Who's home is no tab, so the folder has no descriptor: the shell composes its elements on the Home pane and in the header. This folder holds the model and the ids (#264) and the elements `<hp-who-chips>` and `<hp-who-card>` (#266). The reading is the provider's, because three places read it (ADR 0025).
 
 ## The folder
 
@@ -9,7 +9,11 @@ src/providers/
   people.ts                presence(states, registries, people): Person[]; presenceIds; frozenPresence(states, registries, now): FrozenTracker[]
 src/features/people/
   README.md
-  index.ts                 the feature's exports: peopleIds, peopleModel
+  index.ts                 the feature's exports: peopleIds, peopleModel, WhoChips, WhoCard
+  who-chips.ts             <hp-who-chips place="header"|"card">: one chip per person, home or away
+  who-chips.element.css    its own rules (ADR 0019)
+  who-card.ts              <hp-who-card>: the Home card's label, then the chips or the hint
+  who-card.element.css     its own rules
   ids.ts                   peopleIds(store): the configured people's person entities and their iPhones and watches
   model.ts                 peopleModel(people, {t}): PeopleViewModel (the chips' label and words, the Home card's hint)
 ```
@@ -24,4 +28,6 @@ src/features/people/
 
 `peopleModel(people, {t})` gives `label` ("Who's home", the chips' accessible name and the Home card's label), `chips` (each person's name as the config gives it, `home`, and the lower-case word "home" or "away") and `hint` ("No one is tracked yet." when no one is, else null). The French of each is the rewrite layer's (`test/unit/fixtures/moved/people.json`), except the hint, which the layer left in English: its French is a visible change that #268 records.
 
-The legacy `presence()` and `whoHtml()` still draw the header and the Home card until #266 and #268 delete them.
+## The elements
+
+Each subscribes to `peopleIds` (ADR 0012). The guest writes them once in its own slots (ADR 0031): the chips in the header, the card in the Home card. The legacy `presence()` and `whoHtml()` are gone (#266).

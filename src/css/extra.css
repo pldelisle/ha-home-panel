@@ -67,45 +67,6 @@
 .cols[hidden] {
   display: none;
 }
-.who {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 8px;
-}
-.wp {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: calc(13px * var(--tx));
-  font-weight: 600;
-  color: var(--fg2);
-  background: var(--card);
-  border-radius: 999px;
-  padding: 4px 10px 4px 8px;
-}
-.wp i {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--fg3);
-  opacity: 0.6;
-}
-.wp small {
-  font-weight: 500;
-  color: var(--fg2);
-  font-size: calc(12px * var(--tx));
-}
-.wp.home {
-  color: var(--fg);
-}
-.wp.home i {
-  background: var(--ok);
-  opacity: 1;
-}
-.wp.home small {
-  color: var(--fg2);
-}
 .lnight[aria-pressed='true'] {
   color: var(--c-heat);
   background: color-mix(in srgb, var(--c-heat) 16%, var(--card));

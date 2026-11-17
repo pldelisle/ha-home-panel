@@ -86,7 +86,8 @@ test('every color-mix() the source writes is still in the stylesheet, as written
   const expressions = text => new Set([...text.matchAll(/color-mix\([^;}]*/g)].map(m => m[0].replace(/\s+/g, '')));
   const have = expressions(css);
   const want = expressions(source);
-  expect(want.size).toBeGreaterThan(40);
+  // a floor that proves the pattern still finds them; the smart stack's took six to its elements' own sheets (#266)
+  expect(want.size).toBeGreaterThan(30);
   expect([...want].filter(e => !have.has(e))).toStrictEqual([]);
 });
 

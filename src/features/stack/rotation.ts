@@ -1,6 +1,5 @@
 // The smart stack's rotation: which card shows at an instant, and the two clock rules the cards' windows use.
-// Pattern: pure functions over plain data (functional core), a typed copy of `src/stack.js`; the legacy panel may not import a feature,
-// so `src/stack.js` and `test/unit/stack.test.mjs` stay for the legacy stack until #266 deletes them both with the legacy stack.
+// Pattern: pure functions over plain data (functional core), moved from the legacy `src/stack.js`, which #266 deleted with the legacy stack.
 // Must not: read the clock (`now` and the hour are passed in), the states or the DOM, or reorder cards of the same tone.
 import type {Reminder} from '../../core/config.ts';
 

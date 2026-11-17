@@ -19,8 +19,8 @@ export interface ForecastDetail {
 }
 
 /**
- * A forecast message arrived. The guest's detail panel and Home's card still read the forecast until their moves, so the shell
- * hears this and tells it. Temporary: deleted with the guest's last reader of the forecast (#158 and the Home move).
+ * A forecast message arrived. The shell hears it and hands the daily forecast on, by a context, to the elements outside Weather that
+ * read tomorrow: the smart stack (ADR 0030).
  */
 export class ForecastEvent extends CustomEvent<ForecastDetail> {
   constructor(detail: ForecastDetail) {

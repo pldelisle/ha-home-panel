@@ -219,10 +219,6 @@
 .app[data-theme='dark'] .hhouse .house.night {
   display: block;
 }
-/* Who's home sits at the bottom of the weather card when the card is stretched beside the tiles */
-.hwx .hwho {
-  padding-top: 4px;
-}
 /* smart stack in the Home card (2.9.0): it takes whatever height the tiles beside it leave under Who's home, never more, so the
    row never grows for it (size containment); on a short card the footer line goes and the big numbers shrink */
 .hstk {
@@ -237,70 +233,11 @@
 .hstk[hidden] {
   display: none;
 }
-.hwx .hstk .scw {
-  flex: 1;
-  display: flex;
-  min-height: 0;
-}
-.hwx .hstk .sc {
-  width: 100%;
-  height: auto;
-  min-height: 0;
-  flex: 1;
-  padding: 16px 18px;
-  border-radius: 24px;
-  background: var(--card2);
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  box-shadow: none;
-  animation-duration: 0.45s;
-}
-.app.gl .hwx .hstk .sc:not(.amber, .red) {
-  background: var(--g-tile);
-  box-shadow: var(--g-edge-s);
-}
-.hwx .hstk .sdots {
-  flex-direction: row;
-  justify-content: center;
-}
-.hwx .hstk .sdots i.on {
-  height: 6px;
-  width: 16px;
-}
-@container (max-height:230px) {
-  .hwx .hstk .sft {
-    display: none;
-  }
-  .hwx .hstk .sbig {
-    font-size: 42px;
-    margin-top: 10px;
-  }
-  .hwx .hstk .smid {
-    font-size: 15px;
-    margin-top: 4px;
-  }
-  .hwx .hstk :is(.srow, .snp, .spl, .sev, .schips, .swx, .sbar) {
-    margin-top: 10px;
-  }
-  .hwx .hstk .snp :is(img, .sart) {
-    width: 64px;
-    height: 64px;
-  }
-  .hwx .hstk .sring {
-    zoom: 0.78;
-  }
-}
 @media (max-width: 1000px) {
   .hstk {
     flex: none;
     height: 220px;
   }
-}
-.hwx .who {
-  margin: 0;
-}
-.hwx .wp {
-  background: var(--card2);
 }
 .hright {
   display: grid;
@@ -969,292 +906,8 @@
   gap: 14px;
   text-align: left;
 }
-:is(.idle, .hstk) .scw {
-  position: relative;
-}
-:is(.idle, .hstk) .speek {
-  position: absolute;
-  left: 18px;
-  right: 18px;
-  top: -9px;
-  height: 24px;
-  border-radius: 22px 22px 0 0;
-  background: var(--g-card, var(--card));
-  opacity: 0.55;
-}
-:is(.idle, .hstk) .sc {
-  position: relative;
-  width: 340px;
-  height: 300px;
-  box-sizing: border-box;
-  padding: 22px 24px;
-  border-radius: 34px;
-  background: var(--g-card, var(--card));
-  -webkit-backdrop-filter: var(--g-bd, none);
-  backdrop-filter: var(--g-bd, none);
-  box-shadow: var(--g-edge, var(--shadow));
-  display: flex;
-  flex-direction: column;
-  color: var(--fg);
-  overflow: hidden;
-  animation: scin 0.6s ease-out both;
-}
-:is(.idle, .hstk) .sc[data-go] {
-  cursor: pointer;
-}
-:is(.idle, .hstk) .sc.amber {
-  box-shadow:
-    var(--g-edge, var(--shadow)),
-    0 0 0 2px color-mix(in srgb, var(--warn) 70%, transparent),
-    0 0 40px -6px color-mix(in srgb, var(--warn) 60%, transparent);
-}
-:is(.idle, .hstk) .sc.red {
-  box-shadow:
-    var(--g-edge, var(--shadow)),
-    0 0 0 2px color-mix(in srgb, var(--crit) 75%, transparent),
-    0 0 44px -6px color-mix(in srgb, var(--crit) 60%, transparent);
-}
-@keyframes scin {
-  from {
-    opacity: 0;
-    transform: translateY(14px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-:is(.idle, .hstk) .sh {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  color: var(--fg2);
-  min-width: 0;
-}
-:is(.idle, .hstk) .sh .si {
-  flex: none;
-  width: 28px;
-  height: 28px;
-  border-radius: 9px;
-  display: grid;
-  place-items: center;
-  color: #fff;
-}
-:is(.idle, .hstk) .sh b {
-  font-weight: 700;
-  color: var(--fg);
-  font-size: 16px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-:is(.idle, .hstk) .sh em {
-  margin-left: auto;
-  font-style: normal;
-  white-space: nowrap;
-  padding-left: 6px;
-}
-:is(.idle, .hstk) .sbig {
-  font-family: var(--f-num);
-  font-weight: var(--num-w);
-  font-size: 56px;
-  line-height: 1;
-  letter-spacing: -0.02em;
-  margin-top: 18px;
-}
-:is(.idle, .hstk) .sbig small,
-:is(.idle, .hstk) .sring b small {
-  font-size: 0.42em;
-  font-weight: 600;
-}
-:is(.idle, .hstk) .smid {
-  font-size: 17px;
-  font-weight: 600;
-  margin-top: 8px;
-  line-height: 1.3;
-}
-:is(.idle, .hstk) .sft {
-  margin-top: auto;
-  font-size: 14px;
-  color: var(--fg2);
-  line-height: 1.35;
-}
-:is(.idle, .hstk) .schips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 14px;
-}
-:is(.idle, .hstk) .schips span {
-  font-size: 13px;
-  font-weight: 600;
-  padding: 5px 10px;
-  border-radius: 99px;
-  background: color-mix(in srgb, var(--fg) 10%, transparent);
-}
-:is(.idle, .hstk) .swx {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-top: 12px;
-}
-:is(.idle, .hstk) .swx .sbig {
-  margin-top: 0;
-  font-size: 50px;
-}
-:is(.idle, .hstk) .swx .sbig small {
-  color: var(--fg2);
-  font-size: 0.55em;
-}
-:is(.idle, .hstk) .swx .wxi {
-  flex: none;
-}
-:is(.idle, .hstk) .srow {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  margin-top: 14px;
-}
-:is(.idle, .hstk) .sring {
-  position: relative;
-  display: grid;
-  place-items: center;
-  flex: none;
-}
-:is(.idle, .hstk) .sring svg {
-  position: absolute;
-  inset: 0;
-}
-:is(.idle, .hstk) .sring b {
-  font-family: var(--f-num);
-  font-weight: var(--num-w);
-  font-size: 32px;
-}
-:is(.idle, .hstk) .skv {
-  display: grid;
-  gap: 8px;
-}
-:is(.idle, .hstk) .skv small {
-  display: block;
-  font-size: 12.5px;
-  color: var(--fg2);
-}
-:is(.idle, .hstk) .skv b {
-  font-size: 18px;
-}
-:is(.idle, .hstk) .spl {
-  display: grid;
-  gap: 12px;
-  margin-top: 18px;
-}
-:is(.idle, .hstk) .sp {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-:is(.idle, .hstk) .sp b {
-  display: block;
-  font-size: 16px;
-}
-:is(.idle, .hstk) .sp small {
-  font-size: 13.5px;
-  color: var(--fg2);
-}
-:is(.idle, .hstk) .sav {
-  flex: none;
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  background: var(--m-orange);
-  color: #fff;
-  font-weight: 700;
-  font-size: 17px;
-}
-:is(.idle, .hstk) .sav.away {
-  filter: grayscale(0.9);
-  opacity: 0.55;
-}
-:is(.idle, .hstk) .stag {
-  margin-left: auto;
-  font-size: 12.5px;
-  font-weight: 700;
-  padding: 4px 10px;
-  border-radius: 99px;
-  background: color-mix(in srgb, var(--fg) 10%, transparent);
-  color: var(--fg2);
-}
-:is(.idle, .hstk) .stag.ok {
-  background: color-mix(in srgb, var(--ok) 22%, transparent);
-  color: var(--ok);
-}
-:is(.idle, .hstk) .sev {
-  display: flex;
-  gap: 12px;
-  margin-top: 16px;
-}
-:is(.idle, .hstk) .sev i {
-  flex: none;
-  width: 4px;
-  border-radius: 2px;
-}
-:is(.idle, .hstk) .sev b {
-  display: block;
-  font-size: 16px;
-}
-:is(.idle, .hstk) .sev small {
-  font-size: 13.5px;
-  color: var(--fg2);
-}
-:is(.idle, .hstk) .snp {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-top: 18px;
-}
-:is(.idle, .hstk) .snp img,
-:is(.idle, .hstk) .snp .sart {
-  flex: none;
-  width: 84px;
-  height: 84px;
-  border-radius: 14px;
-  object-fit: cover;
-  background: linear-gradient(135deg, var(--m-amber), var(--m-purple));
-}
-:is(.idle, .hstk) .snp b {
-  display: block;
-  font-size: 18px;
-}
-:is(.idle, .hstk) .snp small {
-  font-size: 14px;
-  color: var(--fg2);
-}
-:is(.idle, .hstk) .sbar {
-  display: flex;
-  gap: 3px;
-  height: 12px;
-  margin-top: 18px;
-}
-:is(.idle, .hstk) .sbar i {
-  border-radius: 4px;
-}
-:is(.idle, .hstk) .sdots {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-:is(.idle, .hstk) .sdots i {
-  width: 6px;
-  height: 6px;
-  border-radius: 3px;
-  background: var(--fg);
-  opacity: 0.25;
-}
-:is(.idle, .hstk) .sdots i.on {
-  opacity: 0.9;
-  height: 16px;
+.idle .ssk[hidden] {
+  display: none;
 }
 @media (max-aspect-ratio: 1/1) {
   .idle .ss {
@@ -1271,13 +924,6 @@
     padding-left: 20px;
   }
 }
-@media (max-width: 380px) {
-  :is(.idle, .hstk) .sc {
-    width: 300px;
-    height: 280px;
-    padding: 20px;
-  }
-}
 .app.idle > :not(.idle) {
   opacity: 0;
   transition: opacity 0.9s ease-out;
@@ -1287,8 +933,7 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .idle,
-  .idle.wake,
-  :is(.idle, .hstk) .sc {
+  .idle.wake {
     animation: none;
     transition: none;
   }

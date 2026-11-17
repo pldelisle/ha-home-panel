@@ -1,4 +1,5 @@
-// The six contexts the shell provides: the store, the API client, the statistics cache, the settings, the optimistic values and the appearance, one typed key each.
+// The seven contexts the shell provides: the store, the API client, the statistics cache, the settings, the optimistic values, the daily
+// forecast and the appearance, one typed key each.
 // Pattern: context protocol (W3C Community Group, Context Protocol; Lit's @lit/context): a provider at the root, a
 // consumer anywhere below finds it by a DOM event, so no level of the tree threads a service through its properties.
 // They live in the kit, not the shell: the kit's controllers consume them, and the kit may not import the shell, so
@@ -6,6 +7,7 @@
 // Must not: hold a value (the shell's providers do), or be imported by the core, which knows no context.
 import {createContext} from '@lit/context';
 import type {PanelApi} from '../core/api.ts';
+import type {ForecastEntry} from '../core/ha.ts';
 import type {PanelSettings} from '../core/settings.ts';
 import type {StatisticsCache} from '../core/statistics-cache.ts';
 import type {PanelStore} from '../core/store.ts';
@@ -22,6 +24,11 @@ export const statisticsCacheContext = createContext<StatisticsCache>(Symbol('hom
 export const settingsContext = createContext<PanelSettings>(Symbol('home-panel.settings'));
 /** The panel's optimistic values, one store per panel so two panels stay independent (ADR 0023). */
 export const optimisticContext = createContext<OverlayStore>(Symbol('home-panel.optimistic'));
+/**
+ * The weather entity's daily forecast, as the Weather pane's subscription last heard it (ADR 0030): the shell keeps it and hands it to
+ * every element below that reads tomorrow, the smart stack today; empty until the first message.
+ */
+export const forecastContext = createContext<readonly ForecastEntry[]>(Symbol('home-panel.forecast'));
 
 /**
  * How the panel looks now, as one value the shell replaces whole when anything in it changes, so a consumer compares

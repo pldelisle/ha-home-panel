@@ -11,6 +11,7 @@ import type {Translate} from '../../core/i18n/messages.ts';
 import type {Pollutant} from '../../providers/air-quality.ts';
 import type {Schedule} from '../../providers/fordpass.ts';
 import type {FlowRow} from '../../providers/power-history.ts';
+import type {IconName} from '../../ui/icons.ts';
 import type {StackInputs} from './inputs.ts';
 import {inHours, reminderLeft, type Tone} from './rotation.ts';
 
@@ -30,8 +31,8 @@ export type BodyPart =
   | {kind: 'nowPlaying'; picture: string | null; title: string; artist: string}
   /** The shares of a bar, in percent, each with its colour; only the parts above zero. */
   | {kind: 'bar'; parts: {share: number; color: string}[]}
-  /** Tomorrow: the condition's icon, the high and the low, and the condition's words. */
-  | {kind: 'weather'; condition: string | null; value: string; unit: string; text: string};
+  /** Tomorrow: the condition's icon with its name (`label`), the high and the low, and the condition's words. */
+  | {kind: 'weather'; condition: string | null; label: string; value: string; unit: string; text: string};
 
 export interface Figure {
   label: string;
@@ -62,7 +63,7 @@ export interface StackCard {
   tone: Tone;
   /** A filler shows only when no other card applies. */
   filler: boolean;
-  icon: string;
+  icon: IconName;
   label: string;
   color: string;
   right: string;
@@ -332,7 +333,13 @@ export const peak: StackRule = {
   run: (inputs, deps) => {
     const {hydroQuebec: hq, challenge} = inputs;
     const {t} = deps;
-    const base = {key: 'peak', icon: 'bolt', color: CRIT, go: {sheet: 'energy.detail'}, foot: using(inputs, deps)};
+    const base = {
+      key: 'peak',
+      icon: 'bolt' as const,
+      color: CRIT,
+      go: {sheet: 'energy.detail'},
+      foot: using(inputs, deps),
+    };
     if (hq && (hq.peakNow || hq.peakUpcoming))
       return [
         card({
@@ -521,6 +528,7 @@ export const tomorrow: StackRule = {
           {
             kind: 'weather',
             condition: next.condition,
+            label: condition,
             value: next.hi === null ? DASH : `${whole(fmt, next.hi)}°`,
             unit: next.lo === null ? '' : `/ ${whole(fmt, next.lo)}°`,
             text: next.pop ? t('stack.tomorrow.chance', {condition, pop: Math.round(next.pop)}) : condition,

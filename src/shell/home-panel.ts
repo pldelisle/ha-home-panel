@@ -24,11 +24,13 @@ import type {PanelHass} from '../core/hass.ts';
 import {browserDefaults} from '../core/i18n/browser.ts';
 import {createSettings, type KeyValueStorage} from '../core/settings.ts';
 import {createStatisticsCache, STATISTICS_TTL_MS} from '../core/statistics-cache.ts';
+import type {ForecastEntry} from '../core/ha.ts';
 import {createStore} from '../core/store.ts';
 import {MediaQueryController} from '../ui/controllers/media-query.ts';
 import {StoreController} from '../ui/controllers/store-controller.ts';
 import {
   apiContext,
+  forecastContext,
   optimisticContext,
   settingsContext,
   statisticsCacheContext,
@@ -43,6 +45,8 @@ import type {FeatureDescriptor, FeatureEnv, FeatureKey} from '../ui/feature.ts';
 import {FEATURES, UNDER_MORE, isFeatureKey, visibleTab} from './features.ts';
 import {createGuest, guestStyles, type GuestContext, type GuestRenderer, type ShellForGuest} from './guest.ts';
 import {IdleTimer, type IdleState} from './idle-timer.ts';
+import '../features/people/index.ts'; // defines <hp-who-chips> and <hp-who-card>, which the guest places (ADR 0031)
+import '../features/stack/index.ts'; // defines <hp-smart-stack>, which the guest places (ADR 0031)
 import type {ForecastEvent} from '../features/weather/forecast-controller.ts';
 import {STATUS_SHEET, type LiveActivitiesEvent} from '../features/live/index.ts'; // defines <hp-live-pill> and <hp-status-popup>
 import './more-sheet.ts'; // defines <hp-more-sheet>
@@ -126,6 +130,8 @@ export class HomePanel extends LitElement {
   private readonly settings = createSettings(browserStorage());
   // what the household asked for and Home Assistant has not confirmed yet: the panel's elements share it (ADR 0023)
   private readonly optimistic = new OverlayStore();
+  /** The daily forecast the Weather pane's subscription last heard, for the elements that read tomorrow (ADR 0030). */
+  private readonly forecast: ContextProvider<typeof forecastContext>;
   // The shell hears about the store only when a registry, the language or the user changes: it reads no entity, and the
   // guest tells it through `requestFrame` when its answer about the house changes. It passes the store itself because
   // a context provider never answers its own element.
@@ -215,6 +221,7 @@ export class HomePanel extends LitElement {
     new ContextProvider(this, {context: statisticsCacheContext, initialValue: this.statistics});
     new ContextProvider(this, {context: settingsContext, initialValue: this.settings});
     new ContextProvider(this, {context: optimisticContext, initialValue: this.optimistic});
+    this.forecast = new ContextProvider(this, {context: forecastContext, initialValue: []});
     // The store starts from the empty config, so a panel that arrives with none is no change; the store counts its
     // first config as one even then, which would make the guest draw a second time for nothing.
     this.store.setPanelConfig({});
@@ -346,10 +353,11 @@ export class HomePanel extends LitElement {
     if (this.guestConnected) this.guest?.liveChanged(e.detail.count > 0, e.detail.attention);
   };
 
-  // the Weather pane's controller owns the forecast; the guest still reads it for the detail panel and Home's card (#158)
+  // the Weather pane's controller owns the forecast: the shell hands the daily one on to the elements that read tomorrow (ADR 0030)
   private readonly onForecast = (e: ForecastEvent): void => {
     e.stopPropagation();
-    this.guest?.forecastChanged(e.detail.type, e.detail.forecast);
+    // the entries are the API client's, which the weather provider's type only widens (`datetime` may be a number there)
+    if (e.detail.type === 'daily') this.forecast.setValue(e.detail.forecast as readonly ForecastEntry[]);
   };
 
   // Each panel draws its own toast from the events of its own root, so two panels on one page never show each other's.
