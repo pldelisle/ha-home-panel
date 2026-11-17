@@ -593,15 +593,21 @@ describe('historyChartOptions', () => {
     expect(french[1].labels.formatter(-3.5)).toBe('-3,5°');
   });
 
-  test('the time axis ends now and reaches back as far as the range', () => {
+  test('the time axis ends on a round boundary after now and reaches back as far as the range', () => {
+    const midnight = Date.parse('2026-11-10T00:00:00-05:00'); // after noon on the 9th
     expect(options('wind', [line('wind', 'km/h')], 'en', 'week').xaxis).toEqual({
       type: 'datetime',
-      min: NOW - 7 * 864e5,
-      max: NOW,
+      min: midnight - 7 * 864e5,
+      max: midnight,
+      tickAmount: 7, // a day's step: every tick on a midnight
       labels: {datetimeUTC: false},
     });
-    expect(options('wind', [line('wind', 'km/h')], 'en', 'day').xaxis).toMatchObject({min: NOW - 864e5});
-    expect(options('wind', [line('wind', 'km/h')], 'en', 'year').xaxis).toMatchObject({min: NOW - 365 * 864e5});
+    expect(options('wind', [line('wind', 'km/h')], 'en', 'day').xaxis).toMatchObject({
+      min: NOW - 864e5,
+      max: NOW,
+      tickAmount: 8,
+    });
+    expect(options('wind', [line('wind', 'km/h')], 'en', 'year').xaxis).toMatchObject({min: midnight - 365 * 864e5});
   });
 
   test('shades the bands of the scale in the colour of their tone, with their word', () => {
@@ -710,7 +716,11 @@ describe('detailChartOptions', () => {
     ]);
     expect(pressure.series).toEqual([{name: 'Pressure', data: week.pressure}]);
     expect(pressure.colors).toEqual(['#purple']);
-    expect(temperature.xaxis).toMatchObject({type: 'datetime', min: NOW - 7 * 864e5, max: NOW});
+    expect(temperature.xaxis).toMatchObject({
+      type: 'datetime',
+      max: Date.parse('2026-11-10T00:00:00-05:00'),
+      tickAmount: 7,
+    });
     expect(JSON.stringify(charts('en'))).not.toContain('theme');
   });
 
@@ -723,6 +733,13 @@ describe('detailChartOptions', () => {
     expect(call(yaxis.labels.formatter, 101.94)).toBe('101,9');
     expect(call((pressure.tooltip as {y: {formatter: unknown}}).y.formatter, 101.94)).toBe('101,94 kPa');
     expect(call((h.yaxis as {labels: {formatter: unknown}}[])[1].labels.formatter, 40)).toBe('40 %');
+  });
+
+  test('the next hours stand on whole-hour ticks: 24 rows from the hour reach 23 hours, steps of three hours stretched to 24', () => {
+    const from = Date.parse('2026-11-09T21:00:00Z');
+    const rows = Array.from({length: 24}, (_, i): [number, number | null] => [from + i * 36e5, 5]);
+    const {hours: h} = detailChartOptions({temperature: rows, pop: []}, week, {...deps('en'), tokens});
+    expect(h.xaxis).toMatchObject({min: from, max: from + 24 * 36e5, tickAmount: 8});
   });
 
   test('says the degrees whole with no minus on a zero, the tooltips with a dash for no reading, and the tooltip day and hour by the panel format', () => {

@@ -559,12 +559,12 @@ describe('the shapes and the ends of a run', () => {
       ]),
     ).toEqual([
       ['stadium', 'Door', 'Front opened'],
-      ['circle', '', 'ANY'],
+      ['circle', '', 'Any'],
       ['diamond', 'If', 'Kitchen Sink is on?'],
       ['diamond', 'Choose', 'Which case?'],
-      ['stop', '', 'STOP'],
+      ['stop', '', 'Stop'],
     ]);
-    expect(of('ncondition_0')?.label).toBe('ANY OF');
+    expect(of('ncondition_0')?.label).toBe('Any of');
   });
   test('a choose that took its default lights the default and leaves its options dark', () => {
     const config: AutomationConfig = {

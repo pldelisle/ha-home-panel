@@ -10,7 +10,7 @@ import type {HistoryPoint, StatisticRow} from '../../core/ha.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
 import {degrees, whole, type Formatters} from '../../core/i18n/format.ts';
 import type {Messages} from '../../core/i18n/messages.ts';
-import {celsius, timeAxis, tooltipDate} from '../../ui/chart-options.ts';
+import {celsius, hourRowsAxis, timeAxis, tooltipDate} from '../../ui/chart-options.ts';
 import {bucketMiddle, RANGES, type Range} from '../../ui/ranges.ts';
 import type {HourSeries} from './model.ts';
 import {tileDefinition, type StatTileDefinition, type Tone} from './tiles.ts';
@@ -333,7 +333,7 @@ export function detailChartOptions(
 ): DetailCharts {
   const degreesLabel = (value: number) => degrees(fmt, value);
   const tooltipDay = {formatter: (at: number) => `${fmt.weekday(at, 'short')} ${fmt.hour(at)}`};
-  const weekAxis = timeAxis(WEEK_DAYS, now);
+  const weekAxis = timeAxis(WEEK_DAYS, now, fmt);
   const percent = (value: number) => t('weather.percent', {value});
   const tooltipCelsius = (value: number | null) => celsius(fmt, value);
   return {
@@ -347,7 +347,14 @@ export function detailChartOptions(
       stroke: {width: [2.6, 0], curve: 'smooth'},
       fill: {opacity: [1, 0.35]},
       plotOptions: {bar: {columnWidth: '70%', borderRadius: 3}},
-      xaxis: {type: 'datetime', labels: {datetimeUTC: false, formatter: (_label: string, at: number) => fmt.hour(at)}},
+      xaxis: {
+        type: 'datetime',
+        labels: {datetimeUTC: false, formatter: (_label: string, at: number) => fmt.hour(at)},
+        // the ticks fall on whole hours, as every other time axis' do
+        ...(hours.temperature.length
+          ? hourRowsAxis(hours.temperature[0][0], hours.temperature[hours.temperature.length - 1][0], fmt)
+          : undefined),
+      },
       yaxis: [
         {tickAmount: 3, labels: {formatter: degreesLabel}},
         {opposite: true, min: 0, max: 100, tickAmount: 2, labels: {formatter: percent}},
@@ -581,7 +588,7 @@ export function historyChartOptions(
       curve: definition.stepline ? 'stepline' : 'smooth',
     },
     markers: {size: 0},
-    xaxis: timeAxis(days, now),
+    xaxis: timeAxis(days, now, fmt),
     yaxis,
     annotations: {
       yaxis: (definition.bands ?? []).map(band => ({

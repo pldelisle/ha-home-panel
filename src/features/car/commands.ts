@@ -54,7 +54,7 @@ export const toggleChargerLock = (lock: Target, on: boolean): Command => ({
   done: {key: on ? 'car.chargerLocked' : 'car.chargerUnlocked'},
 });
 
-/** Starts the car's remote start or stops it, shown at once. The element asks for a second tap before it starts. */
+/** Starts the car's remote start or stops it, shown at once. The element asks first, in a dialog (ADR 0035). */
 export const remoteStart = (car: CarRef, on: boolean): Command => {
   const id = car.id('switch', 'ignition');
   return {
@@ -89,7 +89,7 @@ export const honk = (button: Target): Command => ({
 /** Locks the car's doors, shown at once. */
 export const lockCar = (car: CarRef): Command => doors(car, true);
 
-/** Unlocks the car's doors, shown at once. The element asks for a second tap first. */
+/** Unlocks the car's doors, shown at once. The element asks first, in a dialog (ADR 0035). */
 export const unlockCar = (car: CarRef): Command => doors(car, false);
 
 function doors(car: CarRef, locked: boolean): Command {

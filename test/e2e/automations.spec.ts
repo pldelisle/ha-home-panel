@@ -169,7 +169,7 @@ test.describe('A % or # that ends a label in a flow with no run stored', () => {
     // a label at the end of its source line: `"100%"` is `100#37;` and a `#2;` is `#35;2;`, as it reads as an entity (the
     // `Room #2` of ENTITIES does not, and stays as it is)
     // a lone % is in every other label's text, so it is asked for as a whole label
-    await expect.soft(svg.locator('.node', {hasText: /^TRIGGER%$/})).toHaveCount(1, {timeout: 1000});
+    await expect.soft(svg.locator('.node', {hasText: /^Trigger%$/})).toHaveCount(1, {timeout: 1000});
     for (const text of [...Object.values(PERCENT), ...Object.values(HOSTILE), ...ENTITIES])
       await expect.soft(svg, text).toContainText(text, {timeout: 1000});
   });
@@ -257,7 +257,7 @@ test.describe('the Automations pane', () => {
     await house.mutations.reset();
     await house.setState('light.living_room_1', {state: 'on'});
     await house.page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
-    expect(await house.mutations.count('hp-automations-pane, hp-run-timeline, hp-flow-card, hp-automation-chips')).toBe(
+    expect(await house.mutations.count('hp-automations-pane, hp-run-timeline, hp-flow-card, hp-automation-list')).toBe(
       0,
     );
   });

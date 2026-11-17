@@ -28,6 +28,8 @@ export const en = {
   'home.upcoming.on': 'On',
   // the header (src/shell/header.ts, #269): the greeting by the hour, the date line's temperatures (also the Home pane's heading),
   // the Status checks that need attention (the pane's heading), and the clock's small line
+  // the heading every tab but Home has, hidden: the page's one h1 names the panel (the tab's own title is the pane's h2)
+  'header.panel': 'Home panel',
   'home.greeting.night': 'Good night',
   'home.greeting.morning': 'Good morning',
   'home.greeting.afternoon': 'Good afternoon',
@@ -521,7 +523,6 @@ export const en = {
   'air.historyUnavailable': 'History is not available right now.',
   'air.historyLoading': 'Loading history…',
   'air.noBand': 'Mila rates no band for this reading.',
-  'air.noReadingHistory': 'No history for this reading yet.',
   // a reading's tile in the room's card, which opens its history
   'air.tile.opens': '{name} {value}, opens its history',
   // the outside block and its chart
@@ -1209,9 +1210,9 @@ export const en = {
   'automations.graph.done': 'done',
   'automations.graph.waiting': 'waiting here',
   'automations.graph.waitingSince': 'waiting here since {time}',
-  'automations.graph.any': 'ANY',
-  'automations.graph.anyOf': 'ANY OF',
-  'automations.graph.stop': 'STOP',
+  'automations.graph.any': 'Any',
+  'automations.graph.anyOf': 'Any of',
+  'automations.graph.stop': 'Stop',
   'automations.graph.ifQuestion': '{checks}?',
   'automations.graph.whichCase': 'Which case?',
   'automations.graph.otherwise': 'otherwise',

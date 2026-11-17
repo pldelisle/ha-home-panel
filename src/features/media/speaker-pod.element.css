@@ -1,6 +1,7 @@
 /*
- * <hp-speaker-pod>'s own rules: the cover, the room and the track, the volume slider with its − and + and the play button, and on a
- * phone (the sheet a speaker's tile opens) the room and play on one row with the volume under them, as the legacy `.app.cp .pod` rules had it.
+ * <hp-speaker-pod>'s own rules: the cover, the room and the track, the volume slider with its − and + and the play button: the cover, the
+ * room and play on one row with the volume under them, on a tablet and in a phone's sheet alike (#376 review: beside the name, the volume left the room
+ * a few letters wide and "Living room" wrapped and was clipped), as the legacy `.app.cp .pod` rules had it for the phone.
  * The volume is a native range input drawn with the level in `--v`: the track fills up to the thumb. The play button, `.play`, began as
  * the legacy `.pp`, which #218 deleted.
  */
@@ -11,7 +12,8 @@
 .player {
   display: flex;
   align-items: center;
-  gap: 14px;
+  flex-wrap: wrap;
+  gap: 10px 14px;
   background: var(--card2);
   border-radius: 20px;
   padding: 14px 16px;
@@ -38,8 +40,8 @@
   display: block;
 }
 .player .tx {
-  flex: 1;
-  min-width: 0;
+  flex: 1 1 0;
+  min-width: 140px;
 }
 .player h3 {
   margin: 0;
@@ -64,7 +66,8 @@
   text-overflow: ellipsis;
 }
 .player .vol {
-  flex: 0 1 300px;
+  order: 2;
+  flex: 1 1 100%;
   min-width: 0;
   display: flex;
   align-items: center;
@@ -136,6 +139,7 @@
   border-radius: 8px;
 }
 .player .play {
+  order: 1;
   width: 60px;
   height: 60px;
   border-radius: 30px;
@@ -155,9 +159,8 @@
   opacity: 0.45;
   cursor: not-allowed;
 }
-/* speakers in a phone's sheet: the room and play on one row, the volume slider under them */
+/* speakers in a phone's sheet: a size down */
 .app.cp .player {
-  flex-wrap: wrap;
   gap: 10px 12px;
   padding: 12px;
 }
@@ -167,17 +170,11 @@
   border-radius: 14px;
 }
 .app.cp .player .tx {
-  flex: 1 1 0;
   min-width: 100px;
 }
 .app.cp .player .play {
-  order: 1;
   width: 48px;
   height: 48px;
-}
-.app.cp .player .vol {
-  order: 2;
-  flex: 1 1 100%;
 }
 .app.gl .player {
   background: var(--g-tile);

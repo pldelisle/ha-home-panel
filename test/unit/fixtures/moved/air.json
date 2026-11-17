@@ -353,10 +353,6 @@
       "written": "Mila ne définit aucune zone pour cette mesure."
     },
     {
-      "key": "air.noReadingHistory",
-      "written": "Pas encore d’historique pour cette mesure."
-    },
-    {
       "key": "air.tile.opens",
       "values": {
         "name": "CO₂",

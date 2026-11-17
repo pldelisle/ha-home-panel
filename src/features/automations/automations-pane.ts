@@ -6,7 +6,7 @@
 // Must not: read Home Assistant's records itself (the loader does), word anything (the model does), or draw a flow (the cards do).
 import {LitElement, html, nothing, unsafeCSS, type PropertyValues} from 'lit';
 import {repeat} from 'lit/directives/repeat.js';
-import './automation-chips.ts'; // defines <hp-automation-chips>
+import './automation-list.ts'; // defines <hp-automation-list>
 import type {SelectRunEvent} from './events.ts';
 import type {FlowCard} from './flow-card.ts';
 import './flow-card.ts'; // defines <hp-flow-card>
@@ -130,11 +130,11 @@ export class AutomationsPane extends LitElement {
         card => html`<hp-flow-card .view=${card}></hp-flow-card>`,
       )}
       ${view.empty ? html`<section class="aubox"><p class="hint">${view.empty}</p></section>` : nothing}
-      <hp-automation-chips
-        .chips=${view.chips}
+      <hp-automation-list
+        .rows=${view.rows}
         .heading=${t('automations.chips.title')}
         .caption=${t('automations.chips.caption')}
-      ></hp-automation-chips>`;
+      ></hp-automation-list>`;
   }
 
   // a dot, a chip or a run of the picker: its card is drawn first and scrolled to

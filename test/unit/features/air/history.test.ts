@@ -233,7 +233,13 @@ describe('airChartOptions', () => {
 
   test('a week’s axis ends now, the tooltip is the range’s, and the numbers are the profile’s', () => {
     const en = options(null);
-    expect(en.xaxis).toEqual({type: 'datetime', min: NOW - 7 * 864e5, max: NOW, labels: {datetimeUTC: false}});
+    expect(en.xaxis).toEqual({
+      type: 'datetime',
+      min: Date.parse('2026-11-03T00:00:00-05:00'),
+      max: Date.parse('2026-11-10T00:00:00-05:00'), // the midnight after noon on the 9th: seven days, seven ticks
+      tickAmount: 7,
+      labels: {datetimeUTC: false},
+    });
     expect(en.tooltip.x.formatter(Date.parse('2026-11-09T21:07:00Z'))).toBe('Mon 4 pm');
     expect(en.yaxis.labels.formatter(1234)).toBe('1,234');
     expect(en.yaxis.labels.formatter(null)).toBe('');

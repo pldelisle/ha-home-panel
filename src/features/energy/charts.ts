@@ -6,7 +6,7 @@ import {noonOf, whole, type Formatters} from '../../core/i18n/format.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
 import type {FlowRow} from '../../providers/power-history.ts';
 import {sum} from '../../providers/power-history.ts';
-import {mergeOptions, tooltipDate, type TooltipDate, type ChartOptions} from '../../ui/chart-options.ts';
+import {hourRowsAxis, mergeOptions, tooltipDate, type TooltipDate, type ChartOptions} from '../../ui/chart-options.ts';
 import {thinCategories} from '../../ui/thin-axis.ts';
 import {GROUPS, type DailyRow, type EnergyHistoryData, type MonthSplit} from './history.ts';
 
@@ -121,7 +121,12 @@ export function mainChartOptions(main: MainRows, names: readonly string[], deps:
       plotOptions: {bar: {...STACK, columnWidth: range === 'today' ? '70%' : '90%'}},
       stroke: {show: false},
       fill: {opacity: 1},
-      xaxis: {type: 'datetime', labels: {datetimeUTC: false}},
+      // the ticks fall on whole hours, every two hours for a morning, every day for the week (`hourRowsAxis`)
+      xaxis: {
+        type: 'datetime',
+        labels: {datetimeUTC: false},
+        ...(rows.length ? hourRowsAxis(rows[0][0], rows[rows.length - 1][0], fmt) : undefined),
+      },
       yaxis: {
         min: 0,
         tickAmount: 4,

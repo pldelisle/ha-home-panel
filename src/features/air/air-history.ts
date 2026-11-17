@@ -27,6 +27,7 @@ import type {AirInputs} from './inputs.ts';
 import {HISTORY_SHEET} from './sheets.ts';
 import '../../ui/chart.ts'; // defines <hp-chart>
 import type {ChartOptions} from '../../ui/chart-options.ts';
+import {emptyChartText} from '../../ui/chart-notice.ts';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {StoreController} from '../../ui/controllers/store-controller.ts';
 import {SheetDismissEvent} from '../../ui/events.ts';
@@ -165,7 +166,7 @@ export class AirHistory extends LitElement {
     if (!built) return html`<p class="loading">${t('air.historyLoading')}</p>`;
     const {series} = built.loaded;
     if (!series.rooms.some(line => line.points.length) && !series.outside?.length)
-      return html`<p class="loading">${t('air.noReadingHistory')}</p>`;
+      return html`<p class="loading">${emptyChartText(t)}</p>`;
     return html`<div class="legend">
         ${built.legend.map(({color, name}) => html`<span><b style=${`background:${color}`}></b>${name}</span>`)}
       </div>

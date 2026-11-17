@@ -524,7 +524,7 @@ export function roomChartOptions(
     stroke: hasSetpoint
       ? {width: [2.2, 2, 2.2], curve: [curve, 'stepline', curve], dashArray: [0, 5, 0]}
       : {width: 2.2, curve},
-    xaxis: timeAxis(RANGES[range].days, now),
+    xaxis: timeAxis(RANGES[range].days, now, fmt),
     yaxis: {labels: {formatter: (value: number | null) => (value == null ? '' : degrees(fmt, value))}},
     tooltip: {
       shared: true,

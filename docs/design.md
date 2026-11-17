@@ -8,7 +8,8 @@ mirrors them.
 
 Apple's rule (HIG, Materials): "Don't use Liquid Glass in the content layer." Liquid Glass is the **navigation layer** only: the
 rail and the phone's tab bar, the header's round buttons and capsules (the live pill, the peak chip, Settings), popovers, toasts,
-and a sheet's frame and its close button. Everything a pane shows is the **content layer**, and stays opaque with glass on: the
+dialogs (`<hp-dialog>`, ADR 0035: a question over the page, in the top layer) and a sheet's frame and its close button.
+Everything a pane shows is the **content layer**, and stays opaque with glass on: the
 wallpaper shows faintly through a card's near-opaque fill and plain blur, never through its wells or controls. The glass tokens of
 the navigation layer are `--g-fill`, `--g-dense`, `--g-edge`, `--g-bd` (with the Chromium lens), `--nav-sel-bg` and
 `--g-nav-rim-s`; the content layer's are `--g-card`, `--g-tile`, `--m-bd` and `--m-edge` (`src/css/glass.css`). The glass

@@ -6,6 +6,10 @@ import {
   baseOptions,
   celsius,
   houseAxis,
+  hourRowsAxis,
+  hourTicks,
+  midnightAtOrAfter,
+  midnightBefore,
   mergeOptions,
   timeAxis,
   tooltipDate,
@@ -75,7 +79,7 @@ describe("the time axis in the house's formats", () => {
     xaxis: {type: 'datetime', min: 1, labels: {datetimeUTC: false}},
   });
   const labelOf = (options: ChartOptions) =>
-    (options.xaxis as {labels: {formatter: (text: string, at: number) => string}}).labels.formatter;
+    (options.xaxis as {labels: {formatter: (text: string, at: number, opts?: unknown) => string}}).labels.formatter;
 
   test('writes the hours and the days of the English house: 4 pm, 4:30 pm, Nov 11', () => {
     const label = labelOf(houseAxis(input(), houseFmt('en')));
@@ -85,6 +89,32 @@ describe("the time axis in the house's formats", () => {
   test('writes the hours and the days of the French house: 16 h, 16 h 30, 11 nov.', () => {
     const label = labelOf(houseAxis(input(), houseFmt('fr')));
     expect([FOUR_PM, HALF_PAST_FOUR, MIDNIGHT].map(at => label('ignored', at))).toEqual(['16 h', '16 h 30', '11 nov.']);
+  });
+
+  // what the library hands a formatter as its third argument: the axis' real range
+  const within = (hours: number) => ({w: {globals: {minX: MIDNIGHT, maxX: MIDNIGHT + hours * 36e5}}});
+
+  test('a chart within one day writes midnight as the hour, "12 am" and "0 h", never a date', () => {
+    const en = labelOf(houseAxis(input(), houseFmt('en')));
+    const fr = labelOf(houseAxis(input(), houseFmt('fr')));
+    expect(en('ignored', MIDNIGHT, within(14))).toBe('12 am');
+    expect(fr('ignored', MIDNIGHT, within(14))).toBe('0 h');
+    expect(en('ignored', MIDNIGHT, within(24))).toBe('12 am');
+  });
+
+  test('a chart of several days still writes the date at midnight', () => {
+    const label = labelOf(houseAxis(input(), houseFmt('en')));
+    expect(label('ignored', MIDNIGHT, within(7 * 24))).toBe('Nov 11');
+  });
+
+  test('on a chart of several days a tick an hour either side of midnight is that midnight, as the clocks changing puts the ticks', () => {
+    const label = labelOf(houseAxis(input(), houseFmt('en')));
+    const elevenPm = MIDNIGHT - 36e5;
+    const onePm = MIDNIGHT + 36e5;
+    expect(label('ignored', elevenPm, within(7 * 24))).toBe('Nov 11');
+    expect(label('ignored', onePm, within(7 * 24))).toBe('Nov 11');
+    expect(label('ignored', MIDNIGHT + 3 * 36e5, within(7 * 24))).toBe('3 am');
+    expect(label('ignored', elevenPm, within(14))).toBe('11 pm'); // within a day it is the hour it is
   });
 
   test('keeps the options it had, and a formatter the chart wrote itself', () => {
@@ -118,13 +148,89 @@ describe('tooltipDate', () => {
 });
 
 describe('timeAxis', () => {
-  test('is a time axis of the days before now, ending now, on the house clock', () => {
-    expect(timeAxis(7, 10 * 864e5)).toEqual({
+  const fmt = houseFmt('en');
+  // 2:48 pm in Toronto
+  const now = Date.parse('2026-11-11T19:48:00Z');
+
+  test('a day ends on the hour after now, so every tick lands on a whole hour: eight steps of three hours', () => {
+    expect(timeAxis(1, now, fmt)).toEqual({
       type: 'datetime',
-      min: 3 * 864e5,
-      max: 10 * 864e5,
+      min: Date.parse('2026-11-10T20:00:00Z'), // 3 pm
+      max: Date.parse('2026-11-11T20:00:00Z'),
+      tickAmount: 8,
       labels: {datetimeUTC: false},
     });
+  });
+
+  test('a week ends on the midnight after now, in the house clock, so its seven ticks are midnights', () => {
+    expect(timeAxis(7, now, fmt)).toEqual({
+      type: 'datetime',
+      min: Date.parse('2026-11-05T05:00:00Z'), // midnight in Toronto, after the clocks went back
+      max: Date.parse('2026-11-12T05:00:00Z'),
+      tickAmount: 7,
+      labels: {datetimeUTC: false},
+    });
+  });
+
+  test('a month and a year step by whole days: six steps of five days, five of seventy-three', () => {
+    expect(timeAxis(30, now, fmt).tickAmount).toBe(6);
+    expect(timeAxis(365, now, fmt).tickAmount).toBe(5);
+  });
+
+  test('at midnight exactly the week ends there', () => {
+    const midnight = Date.parse('2026-11-12T05:00:00Z');
+    expect(timeAxis(7, midnight, fmt).max).toBe(midnight);
+  });
+});
+
+describe('hourRowsAxis', () => {
+  const fmt = houseFmt('en');
+  test('within a day it begins at the first row and takes steps of whole hours: fifteen rows, steps of two hours', () => {
+    const first = Date.parse('2026-11-11T05:00:00Z'); // midnight
+    expect(hourRowsAxis(first, first + 14 * 36e5, fmt)).toEqual({min: first, max: first + 14 * 36e5, tickAmount: 7});
+  });
+
+  test('over several days it begins at the first midnight and takes steps of whole days', () => {
+    const first = Date.parse('2026-11-05T18:00:00Z'); // 1 pm, Nov 5
+    const last = Date.parse('2026-11-12T19:00:00Z'); // 2 pm, Nov 12
+    const midnight = Date.parse('2026-11-06T05:00:00Z'); // the 6th, which leaves six days and fourteen hours: seven steps
+    expect(hourRowsAxis(first, last, fmt)).toEqual({min: midnight, max: midnight + 7 * 864e5, tickAmount: 7});
+  });
+
+  test('has no axis to propose for a single row', () => {
+    expect(hourRowsAxis(5 * 36e5, 5 * 36e5, fmt)).toBeUndefined();
+  });
+});
+
+describe('midnightAtOrAfter and midnightBefore', () => {
+  const fmt = houseFmt('en');
+  test('find the house midnights, not the UTC ones', () => {
+    const afternoon = Date.parse('2026-11-11T19:48:00Z');
+    expect(midnightBefore(afternoon, fmt)).toBe(Date.parse('2026-11-11T05:00:00Z'));
+    expect(midnightAtOrAfter(afternoon, fmt)).toBe(Date.parse('2026-11-12T05:00:00Z'));
+    expect(midnightAtOrAfter(Date.parse('2026-11-11T05:00:00Z'), fmt)).toBe(Date.parse('2026-11-11T05:00:00Z'));
+  });
+});
+
+describe('hourTicks', () => {
+  const HOUR = 36e5;
+  test('splits a span of whole hours into steps that are whole hours, as few steps as the room allows', () => {
+    expect(hourTicks(14 * HOUR)).toEqual({intervals: 7, span: 14 * HOUR}); // every two hours
+    expect(hourTicks(24 * HOUR)).toEqual({intervals: 8, span: 24 * HOUR}); // every three
+    expect(hourTicks(7 * 24 * HOUR)).toEqual({intervals: 7, span: 7 * 24 * HOUR}); // every day
+  });
+
+  test('stretches a span that no step divides to the next that one does, losing the fewest hours', () => {
+    // 158 h: days of 24 h give seven steps, 168 h
+    expect(hourTicks(158 * HOUR)).toEqual({intervals: 7, span: 168 * HOUR});
+    // 13 h: steps of two hours give seven, 14 h
+    expect(hourTicks(13 * HOUR)).toEqual({intervals: 7, span: 14 * HOUR});
+    // 15 h is divided as it is: five steps of three hours
+    expect(hourTicks(15 * HOUR)).toEqual({intervals: 5, span: 15 * HOUR});
+  });
+
+  test('has nothing to say of a span with no hours in it', () => {
+    expect(hourTicks(0)).toBeUndefined();
   });
 });
 

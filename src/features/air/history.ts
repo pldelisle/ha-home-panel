@@ -271,7 +271,7 @@ export function airChartOptions(
           ]
         : [],
     },
-    xaxis: timeAxis(RANGES[range].days, now),
+    xaxis: timeAxis(RANGES[range].days, now, fmt),
     yaxis: {
       min: 0,
       forceNiceScale: true,
@@ -332,7 +332,7 @@ export function outdoorChartOptions(series: OutdoorSeries, range: Range, {fmt, t
     series: lines.map(({name, data}) => ({name, data})),
     colors: lines.map(line => line.color),
     stroke: {width: 2, curve: 'smooth'},
-    xaxis: timeAxis(RANGES[range].days, now),
+    xaxis: timeAxis(RANGES[range].days, now, fmt),
     yaxis: lines.map(line => line.axis),
     annotations: series.aqi.length
       ? {

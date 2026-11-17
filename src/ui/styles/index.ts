@@ -33,7 +33,7 @@ export const motion = adopt(motionText);
 export const sheet = adopt(sheetText);
 /** The badge in a header's corner: the icon on a tinted square, or on glass. */
 export const badge = adopt(badgeText);
-/** The pill button of a control panel, and the ring it wears while it waits for a second tap. */
+/** The pill button of a control panel. */
 export const button = adopt(buttonText);
 /** A pane's header: its row, its heading and its sub-line. */
 export const paneHeader = adopt(paneHeaderText);

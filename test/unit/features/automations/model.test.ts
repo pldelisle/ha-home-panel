@@ -1,5 +1,5 @@
 // What the Automations pane shows: the line under the heading while loading, refused or read; the Today card's tiles and dots; the
-// four flow cards with their pills, the selected one's picker and the shape-only sentence; the chips; the More word; the ids.
+// four flow cards with their pills, the selected one's picker and the shape-only sentence; the rows of the list; the More word; the ids.
 // Pattern: example tests at the pure view model (ADR 0005), over literal `trace/list` rows and configs at a fixed instant.
 // Must not: read the clock (every instant is a literal), the DOM or Home Assistant.
 import {describe, expect, test} from 'vitest';
@@ -133,7 +133,7 @@ describe('automationsModel: the Today card', () => {
     expect(view.today.pill).toMatch(/ · 12 h$/);
     expect(view.today.tiles.slice(1).map(x => x.value)).toEqual(['13 h', '15 h 30']);
     expect(view.cards[0].flow?.pill.text).toBe('terminée 8 h 05 min 09 s');
-    expect(view.chips[0].sub).toBe('8 h 05');
+    expect(view.rows[0].sub).toBe('8 h 05');
   });
   test('nothing to come: dashes, and every run passed its checks', () => {
     const view = automationsModel(inputs([auto('a')]), data(), null, deps);
@@ -234,8 +234,8 @@ describe('automationsModel: the flow cards', () => {
   });
 });
 
-test('the chips: the latest first, what each last did, the selected and the off ones marked', () => {
-  const chips = automationsModel(
+test('the rows: the latest first, what each last did, the selected and the off ones marked', () => {
+  const rows = automationsModel(
     inputs([
       auto('never'),
       auto('off', {on: false, last: '2026-11-07T10:00:00Z'}),
@@ -247,8 +247,8 @@ test('the chips: the latest first, what each last did, the selected and the off 
     data(),
     {item: 'today'},
     deps,
-  ).chips;
-  expect(chips.map(c => [c.item, c.sub, c.off, c.sel])).toEqual([
+  ).rows;
+  expect(rows.map(c => [c.item, c.sub, c.off, c.sel])).toEqual([
     ['busy', 'running', false, false],
     ['off', 'off', true, false],
     ['today', '9:30 am', false, true],

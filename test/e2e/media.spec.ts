@@ -68,6 +68,20 @@ test.describe('the tablet', () => {
     await expect(slider(house)).toHaveValue('30');
   });
 
+  test('the room name has a line to itself, whole, with the volume on a row under it', async ({house}) => {
+    await house.tab('media');
+    const name = pod(house).getByRole('heading', {name: 'Living room'});
+    const {height, clipped} = await name.evaluate(el => ({
+      height: el.getBoundingClientRect().height,
+      clipped: el.scrollHeight > el.clientHeight + 1 || el.scrollWidth > el.clientWidth, // a pixel of rounding is no clip
+    }));
+    expect(height, 'one line').toBeLessThan(24);
+    expect(clipped, 'not clipped').toBe(false);
+    const title = (await name.boundingBox())!;
+    const volume = (await pod(house).getByRole('button', {name: 'Volume down'}).boundingBox())!;
+    expect(volume.y, 'the volume sits under the name').toBeGreaterThanOrEqual(title.y + title.height);
+  });
+
   // the pod cancels its waiting send in disconnectedCallback and releases the level it held, and its connectedCallback arms nothing:
   // a fresh tap starts a fresh wait
   test('a volume tap whose pod leaves the document within the wait sends nothing, even when the panel comes back', async ({

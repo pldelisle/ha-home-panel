@@ -1,24 +1,24 @@
-// <hp-automation-chips>: the "Every automation" card of the Automations tab: a plain list, a row per automation, the latest to run
+// <hp-automation-list>: the "Every automation" card of the Automations tab: a plain list, a row per automation, the latest to run
 // first: its name, when it last ran (or that it is off, running or never ran) and a chevron; the selected row filled with the
-// neutral selection fill, an automation that is off greyed. (The name and the model's `ChipView` keep "chip", from the chips it was.)
+// neutral selection fill, an automation that is off greyed.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over the model's rows, telling its parent by an event (Lit docs, Events)
 // which automation was picked; a list of buttons, the selected one `aria-pressed` (HIG, Lists and tables; Buttons: 44 pt).
 // Must not: order or word the rows (the model does), or hold the selection.
 import {LitElement, html, unsafeCSS} from 'lit';
 import {repeat} from 'lit/directives/repeat.js';
 import {SelectRunEvent} from './events.ts';
-import type {ChipView} from './model.ts';
+import type {AutomationRowView} from './model.ts';
 import shared from './styles.css?inline';
-import own from './automation-chips.element.css?inline';
+import own from './automation-list.element.css?inline';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {ico} from '../../ui/icons.ts';
 import {lensLike} from '../../ui/lens.ts';
 import {common} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
-export class AutomationChips extends LitElement {
-  static override properties = {chips: {attribute: false}, heading: {}, caption: {}};
-  declare chips: readonly ChipView[];
+export class AutomationList extends LitElement {
+  static override properties = {rows: {attribute: false}, heading: {}, caption: {}};
+  declare rows: readonly AutomationRowView[];
   declare heading: string;
   declare caption: string;
 
@@ -27,7 +27,7 @@ export class AutomationChips extends LitElement {
   constructor() {
     super();
     new AppearanceConsumer(this);
-    this.chips = [];
+    this.rows = [];
     this.heading = '';
     this.caption = '';
   }
@@ -42,7 +42,7 @@ export class AutomationChips extends LitElement {
         </div>
         <ul class="aulist">
           ${repeat(
-            this.chips,
+            this.rows,
             c => c.item ?? `-${c.name}`,
             c =>
               html`<li>
@@ -67,8 +67,8 @@ export class AutomationChips extends LitElement {
 
 declare global {
   interface HTMLElementTagNameMap {
-    'hp-automation-chips': AutomationChips;
+    'hp-automation-list': AutomationList;
   }
 }
 
-if (!customElements.get('hp-automation-chips')) customElements.define('hp-automation-chips', AutomationChips);
+if (!customElements.get('hp-automation-list')) customElements.define('hp-automation-list', AutomationList);

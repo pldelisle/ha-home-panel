@@ -1,5 +1,5 @@
 // automationsModel: what the Automations pane shows, from the automations' states and what the loader read: the line under the
-// heading, the Today card (the timeline's dots and the three tiles), the flow cards with their Mermaid definitions, and the chips.
+// heading, the Today card (the timeline's dots and the three tiles), the flow cards with their Mermaid definitions, and the list of every automation.
 // Pattern: a view model (Fowler, Presentation Model) the pane places, the rules of the legacy `renderAuto()`, worded in the panel's
 // language through the catalog, so French is the catalog's from the first paint.
 // Must not: read the clock or the DOM (the time, the width and the theme's colours are passed in), load anything, or draw.
@@ -93,7 +93,7 @@ export interface FlowCardView {
   } | null;
 }
 
-export interface ChipView {
+export interface AutomationRowView {
   item: string | undefined;
   name: string;
   sub: string;
@@ -111,7 +111,7 @@ export interface AutomationsViewModel {
   cards: FlowCardView[];
   /** The line when no card has anything to draw. */
   empty: string | null;
-  chips: ChipView[];
+  rows: AutomationRowView[];
 }
 
 const KIND: Record<CardKind, MessageKey> = {
@@ -309,7 +309,7 @@ export function automationsModel(
   // every automation, the latest first
   const lastOf = (a: Automation) => (a.last ? Date.parse(a.last) : 0);
   const day = fmt.isoDay(now);
-  const chips = automations
+  const rows = automations
     .slice()
     .sort((x, y) => lastOf(y) - lastOf(x))
     .map(a => ({
@@ -335,6 +335,6 @@ export function automationsModel(
     today: todayView,
     cards,
     empty: cards.length ? null : t('automations.noRuns'),
-    chips,
+    rows,
   };
 }

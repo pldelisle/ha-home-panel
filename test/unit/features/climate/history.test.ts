@@ -480,8 +480,9 @@ describe('roomChartOptions', () => {
     const options = build();
     expect(at(options, 'xaxis')).toEqual({
       type: 'datetime',
-      min: NOW - 7 * 864e5,
-      max: NOW,
+      min: local(4, 0),
+      max: local(11, 0), // the midnight after noon on the 10th: seven days, every tick on a midnight
+      tickAmount: 7,
       labels: {datetimeUTC: false},
     });
     expect(call(options, 'yaxis.labels.formatter', 20.4)).toBe('20°');

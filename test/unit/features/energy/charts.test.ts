@@ -160,7 +160,7 @@ describe('the main chart, today and the week', () => {
   test('on a time axis in local time, bars 70 percent wide for today and 90 for the week, no stroke', () => {
     const today = mainChartOptions(rows('today'), NAMES, deps());
     const week = mainChartOptions(rows('week'), NAMES, deps());
-    expect(at(today, 'xaxis')).toEqual({type: 'datetime', labels: {datetimeUTC: false}});
+    expect(at(today, 'xaxis')).toMatchObject({type: 'datetime', labels: {datetimeUTC: false}});
     expect(at(today, 'plotOptions.bar')).toEqual({
       borderRadius: 3,
       borderRadiusApplication: 'end',
@@ -170,6 +170,30 @@ describe('the main chart, today and the week', () => {
     expect(at(week, 'plotOptions.bar.columnWidth')).toBe('90%');
     expect(at(today, 'stroke')).toEqual({show: false});
     expect(at(today, 'fill')).toEqual({opacity: 1});
+  });
+
+  // the library splits the span of the data in five by itself ("2:48 am, 5:36 am"): the options choose steps of whole hours
+  test('the time axis is cut in steps of whole hours: every two hours over a morning, every day over a week', () => {
+    const hours = (range: 'today' | 'week', from: string, count: number): MainRows => {
+      const first = Date.parse(from);
+      return {range, rows: Array.from({length: count}, (_, i): FlowRow => [first + i * 36e5, 1, 1, 1, 1, 4])};
+    };
+    // fifteen rows from midnight reach fourteen hours: seven steps of two hours
+    const midnight = Date.parse('2026-11-07T00:00:00-05:00');
+    expect(at(mainChartOptions(hours('today', '2026-11-07T00:00:00-05:00', 15), NAMES, deps()), 'xaxis')).toMatchObject(
+      {
+        min: midnight,
+        max: midnight + 14 * 36e5,
+        tickAmount: 7,
+      },
+    );
+    // 159 rows from 1 pm on 5 November reach 3 am on the 12th: the axis begins at the first midnight, the 6th, and takes seven days of steps
+    const week = mainChartOptions(hours('week', '2026-11-05T13:00:00-05:00', 159), NAMES, deps());
+    expect(at(week, 'xaxis')).toMatchObject({
+      min: Date.parse('2026-11-06T00:00:00-05:00'),
+      max: Date.parse('2026-11-13T00:00:00-05:00'),
+      tickAmount: 7,
+    });
   });
 
   test('the axis counts whole kWh from zero and the tooltip reads the hour and two decimals', () => {

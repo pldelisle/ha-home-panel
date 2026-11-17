@@ -1,9 +1,9 @@
-// <hp-header>: the panel's header: the sidebar button, the greeting with Who's home (on Home only, #380), the chips (weather, peak, the live pill), the gear,
+// <hp-header>: the panel's header: the sidebar button, the greeting with Who's home (on Home only, #380; every other tab has a hidden h1 naming the panel, so a page has exactly one), the chips (weather, peak, the live pill), the gear,
 // the clock, and the two popups the shell keeps open or shut (the Status checks under the pill, the settings under the gear).
 // Pattern: a humble composition (Meszaros, xUnit Test Patterns), the composition root's child, drawn in light DOM (ADR 0033) so the legacy
 // `.head` rules still lay out its row, as the Home pane is (ADR 0032); its own rules are header.css. It replaced the guest's header (#269).
 // Its three aria-labels are still English, which the French map translates until phase 4. Must not: decide whether a popup is open (the shell does, from the events the gear, the pill and the popups send up), or read an entity.
-import {LitElement, html, unsafeCSS} from 'lit';
+import {LitElement, html, nothing, unsafeCSS} from 'lit';
 import {keyed} from 'lit/directives/keyed.js';
 import './clock-line.ts'; // defines <hp-clock-line>
 import './greeting.ts'; // defines <hp-greeting>
@@ -11,6 +11,7 @@ import headerCss from './header.css?inline';
 import './settings-popup.ts'; // defines <hp-settings-popup>
 import '../features/live/index.ts'; // defines <hp-peak-chip>, <hp-live-pill> and <hp-status-popup>
 import '../features/weather/index.ts'; // defines <hp-weather-chip>
+import {StoreController} from '../ui/controllers/store-controller.ts';
 import {ico} from '../ui/icons.ts';
 
 /** The header's rules, joined after the legacy sheet in the shell's root, where the header draws (ADR 0033). */
@@ -45,6 +46,9 @@ export class Header extends LitElement {
   /** The tab shown: the greeting, the date and Who's home are Home's, every other tab's title is the page's large title (#380). */
   declare tab: string;
 
+  // the catalog's words only: the header reads no entity
+  private readonly storeController = new StoreController(this, {ids: () => []});
+
   constructor() {
     super();
     this.statusOpen = false;
@@ -75,6 +79,7 @@ export class Header extends LitElement {
         ${ico('menu')}
       </button>
       <hp-greeting class="hello" id="hello" ?hidden=${this.tab !== 'home'}></hp-greeting>
+      ${this.tab === 'home' ? nothing : html`<h1 class="sr">${this.storeController.store.t('header.panel')}</h1>`}
       <div class="chips">
         <div id="chips">
           ${keyed(this.liveKey, html`<hp-weather-chip .slim=${this.live}></hp-weather-chip>`)}<hp-peak-chip

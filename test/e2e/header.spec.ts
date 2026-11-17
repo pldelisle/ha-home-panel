@@ -46,6 +46,18 @@ test.describe('the greeting belongs to Home', () => {
     await expect(house.root().locator('#gear')).toBeVisible();
   });
 
+  test('every tab has exactly one h1: the greeting on Home, a hidden name for the panel everywhere else', async ({
+    house,
+  }) => {
+    const headings = house.root().getByRole('heading', {level: 1}); // the greeting's, hidden off Home, is not in the page's outline
+    await expect(headings).toHaveCount(1);
+    await expect(headings).toContainText('Good afternoon');
+    await house.tab('lights');
+    await expect(headings).toHaveCount(1);
+    await expect(headings).toHaveText('Home panel');
+    expect(await headings.boundingBox().then(box => (box ? box.width * box.height : 0))).toBeLessThanOrEqual(1);
+  });
+
   test('on a tablet the clock and Settings stay above the tab header', async ({house}) => {
     tabletOnly();
     await house.tab('lights');
