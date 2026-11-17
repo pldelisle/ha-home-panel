@@ -104,7 +104,7 @@ The words the panel and its code use. One word per concept: use it in issues, te
 
 **Guest** — The legacy class while the shell hosts it: not an element but a renderer that implements `GuestRenderer` (`src/shell/guest.ts`), which `src/main.js` registers, the shell constructs and drives, and which draws only into its own containers inside the shell's one shadow root. The interface only shrinks, and it is deleted with the guest. Avoid: guest renderer, legacy renderer, the old class.
 
-**Home-card bridge** — The rule (ADR 0024) by which the guest writes a feature element's tag, and nothing else, into a Home container it still draws, once per draw, and hears only `hp-empty` back. Each use is listed in `src/shell/guest.ts` with the move that deletes it; the scenes row and the Security card are the two today. Avoid: the bridge, alone (the bridge package is the Home Assistant YAML package).
+**Home-card bridge** — The rule (ADR 0024) by which the guest writes a feature element's tag, and nothing else, into a Home container it still draws, once per draw, and hears only `hp-empty` back. Each use is listed in `src/shell/guest.ts` with the move that deletes it; the idle screen's `<hp-smart-stack mode="idle">` in `#iwrap` is the last, until spec 26. Avoid: the bridge, alone (the bridge package is the Home Assistant YAML package).
 
 **Sheet host** — The shell's one mediator (`SheetHost`, `src/shell/sheet-host.ts`) for which sheet is open, Escape, focus return and where the five detail panels sit. The guest's sheets register with it as legacy sheets; an element's sheet is opened by its owner's template. Elements ask for a sheet with a `SheetRequestEvent` rather than importing the shell.
 

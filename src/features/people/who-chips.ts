@@ -1,7 +1,7 @@
 // <hp-who-chips place="header" | "card">: Who's home as chips, a dot, the first name and "home" or "away" for each configured person.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over `peopleModel`, run in `willUpdate` on the provider's `presence`, with a
 // store controller on `peopleIds` (ADR 0012); `place` picks the header's or the Home card's look, as the legacy `.hello div` and `.hwx .wp` did.
-// The guest places it in the header through the Home-card bridge (ADR 0031) until #269; `<hp-who-card>` places it in the Home card.
+// The header's `<hp-greeting>` places it (#269); `<hp-who-card>` places it in the Home card.
 // Must not: read an entity itself (`presence` does), word anything (the model does), or draw anything when no one is tracked.
 import {LitElement, html, nothing, unsafeCSS} from 'lit';
 import {repeat} from 'lit/directives/repeat.js';

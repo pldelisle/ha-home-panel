@@ -602,6 +602,21 @@ export function weatherCardModel(
   };
 }
 
+/** The header's weather chip (#269): the outside temperature to a tenth, as the legacy chip wrote it, and the condition. */
+export interface WeatherChipView {
+  temperature: string;
+  condition: string;
+}
+
+/** The chip's words, or null when the house reads no temperature (the legacy header drew no chip then). */
+export function weatherChipModel(
+  inputs: WeatherInputs,
+  {t, fmt}: Pick<WeatherModelDeps, 't' | 'fmt'>,
+): WeatherChipView | null {
+  if (inputs.temperature === null) return null;
+  return {temperature: `${fmt.fixed(inputs.temperature, 1)}°`, condition: conditionOf(inputs, sayWith(t, fmt))};
+}
+
 /** The word under Weather in the phone's More sheet: "4° · Partly cloudy", or nothing when the house has no temperature. */
 export function weatherBrief(inputs: WeatherInputs, {fmt, t}: Pick<WeatherModelDeps, 'fmt' | 't'>): string {
   if (inputs.temperature === null) return '';

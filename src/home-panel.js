@@ -3,7 +3,6 @@
 // Nothing secret lives in this file: the house's entities, rooms and people come from the panel's config (see core/config.ts) or are found in hass.
 import {FR_ATTR, createFrench} from './i18n/fr.js';
 import {autoMethods} from './auto.js';
-import {StaleReply} from './core/api.ts';
 import {sunTimes} from './core/sun.ts';
 import {browserDefaults} from './core/i18n/browser.ts';
 import {createFormatters} from './core/i18n/format.ts';
@@ -11,11 +10,7 @@ import {englishLocale, panelLocale} from './core/i18n/locale.ts';
 import {ok, esc, plural} from './legacy/globals.js';
 import {registriesOf} from './core/registry.ts';
 import {doorMotionSensors} from './providers/door-motion.ts';
-import {departureSchedule, findCar} from './providers/fordpass.ts';
-import {hiloChallenge} from './providers/hilo.ts';
-import {hydroQuebec} from './providers/hydro-quebec.ts';
 import {powerNow} from './providers/power.ts';
-import {powerWindows} from './providers/power-history.ts';
 import {ensureFonts} from './fonts.js';
 // Liquid Glass: whether this engine can run an SVG filter inside backdrop-filter (Chromium only)
 const LENS_OK =
@@ -27,8 +22,6 @@ const LENS_OK =
 const sum = a => a.reduce((x, y) => x + (y || 0), 0);
 const f1 = v => (v == null ? '–' : (+v).toFixed(1));
 
-// card order for the column packing: none is left since the Home move (#268); #269 deletes it with the columns
-const LAYOUT = [];
 // thermostats without an HA area: the area each Hilo room belongs to
 // areas the Phone tab shows as part of another, the way Apple Home groups them: the parking spot's charger and camera live in the garage
 // Tabs view: one pane per subject, for a tablet fixed to the wall. The rail, the phone's bar and the panes
@@ -129,9 +122,6 @@ export class LegacyPanel {
     // the formatter sets (spec 11), named by their language and zone, are built once the store is known (refreshFormatters):
     //   fmt      the profile's language, the house's zone: the five sites that were already French
     //   fmtEn    English, the house's zone: every other site, because the rewrite layer parses English (deleted in phase 4)
-    //   fmtUtcEn fmtEn pinned to UTC: for a clock time with no day (clockTime), which belongs to no zone
-    // fmtUtcEn never changes; the other two follow the profile (refreshFormatters)
-    this.fmtUtcEn = createFormatters(englishLocale('UTC'));
     this.localeKey = '';
     this.frDrawn = false; // whether the panel was last drawn in French
     this.onStore = () => {
@@ -139,13 +129,9 @@ export class LegacyPanel {
       this.tick();
     };
     this.unsubStore = null; // the one path to the one-second render, subscribed in connect
-    this.shared = null; // when the header's history line last loaded (loadSharedHistory)
     this.drawnTab = 'home'; // the tab the guest last drew its part of (tabChanged); `tab` is the shell's
     this.framed = false; // whether build() has drawn once, so the next draw asks the shell for a fresh frame
-    this.car = null; // the car's entities by the provider's rule (findCar), found once there are states: the header's upcoming list reads it, until #269
     this.cache = {}; // last innerHTML per container, to skip identical updates
-    this.attentionCount = 0; // how many Status checks need attention, told by the shell from the live pill (liveChanged)
-    this.liveRunning = false; // whether the live pill shows an activity, told by the shell (liveChanged): the weather chip slims beside it
   }
   // connect, disconnect, hassChanged, panelChanged, tabChanged and compactChanged are the guest's interface (spec 14,
   // GuestRenderer): the shell feeds the store itself and calls them after it did.
@@ -164,10 +150,6 @@ export class LegacyPanel {
   panelChanged() {
     if (this.hass && this.configure()) {
       this.build();
-      if (this.host.isConnected) {
-        this.refreshShared();
-        this.observeLayout();
-      }
       this.tick();
     }
   }
@@ -202,16 +184,13 @@ export class LegacyPanel {
     this.generation = gen;
     if (!this.$app) return false;
     this.teardown();
-    this.shared = null;
     return true; // the caller draws it again
   }
   // forget the drawn panel so build() starts over (the language or the config changed)
   teardown() {
     this.frStop();
     this.cache = {};
-    this.plan = null;
     this.$app = null;
-    this.view = null;
   }
   /**
    * Once per connection of the host: take the root, the host and the services from the shell's context, then subscribe.
@@ -232,28 +211,10 @@ export class LegacyPanel {
       this.refreshFormatters(); // a hass may have come before this connection, or while the panel was off the page
       this.unsubStore = this.store.subscribe('*', this.onStore);
     }
-    this.clockT = setInterval(() => {
-      this.renderHeader();
-      this.renderIdle();
-    }, 20000);
-    this.histT = setInterval(() => this.refreshShared(), 15 * 60000);
-    if (this.hass && this.$app) this.refreshShared();
-    if (this.$app) this.observeLayout();
-  }
-  // repack the cards whenever the page width or a card's height changes
-  observeLayout() {
-    if (this.ro) this.ro.disconnect();
-    this.ro = new ResizeObserver(() => {
-      clearTimeout(this.layT);
-      this.layT = setTimeout(() => this.layout(), 120);
-    });
-    this.ro.observe(this.root.querySelector('.cols'));
-    LAYOUT.forEach(id => this.$(id) && this.ro.observe(this.$(id)));
+    this.clockT = setInterval(() => this.renderIdle(), 20000);
   }
   disconnect() {
-    if (this.ro) this.ro.disconnect();
     clearInterval(this.clockT);
-    clearInterval(this.histT);
     if (this.unsubStore) this.unsubStore();
     this.unsubStore = null;
   }
@@ -291,11 +252,6 @@ export class LegacyPanel {
   }
   kw(id) {
     return this.store.kw(id);
-  }
-  // the sun is up (or unknown)
-  up() {
-    const s = this.st(this.E.sun);
-    return !s || s.state === 'above_horizon';
   }
   // ---------- time ----------
   // Rebuilds both formatter sets when the language, the time zone or the profile's formats changed. Compared by value, not
@@ -364,11 +320,9 @@ export class LegacyPanel {
     // moved into a pane survives. The shell renders them at once; the first draw finds the frame the shell rendered.
     if (this.framed) this.ctx.shell.resetFrame();
     this.framed = true;
-    // the shell drew the frame (the header, the rail, the panes); the guest draws what is not in it: the parked cards and the idle clock
-    this.container.innerHTML = `<div class="cols">
-    <div class="col c1"></div>
-    <div class="col c2"></div>
-  </div>`;
+    // the shell drew the frame (the header, the rail, the panes); the guest draws what is not in it: the idle clock. Its own container
+    // starts empty at each draw, the lens filter with it, as it did since the columns went (#269); #198 draws the filter again
+    this.container.innerHTML = '';
     this.$app = this.$('app');
     // `.app` is the shell's and outlives a draw, where a fresh one used to start bare: clear what the guest toggles on it
     // (the shell owns the theme, the glass wallpaper, `gl`, `txl`, `live` and `idle`)
@@ -376,11 +330,8 @@ export class LegacyPanel {
     this.theme = this.ctx.shell.appearance.theme;
     this.$app.lang = (this.store.isFrench ? this.locale : this.localeEn).tag;
     if (this.store.isFrench) this.frStart();
-    // Who's home and the smart stack are the people and stack features' elements (#266), placed by their tags (the Home-card bridge, ADR 0031):
-    // the header's chips after the greeting and the stack beside the idle clock. Each container the guest still fills is a sibling of
-    // theirs, so a redraw of the greeting keeps them. The Home pane's cards are its own since #268.
-    this.$('hello').innerHTML =
-      '<h1 id="hello-h"></h1><div id="hello-sub"></div><hp-who-chips place="header"></hp-who-chips>';
+    // The smart stack is the stack feature's element (#266), placed by its tag beside the idle clock (the Home-card bridge, ADR 0031), its
+    // last use until the idle screen moves (spec 26). The header and the Home pane are the shell's since #268 and #269.
     this.$('iwrap').innerHTML =
       '<div id="iss"><div class="ssc" id="iclk"></div><div class="ssk" id="istk" hidden><hp-smart-stack mode="idle"></hp-smart-stack></div></div>';
     this.idleStackShown = false;
@@ -389,49 +340,9 @@ export class LegacyPanel {
       this.placeIdleStack();
     });
     this.wire();
-    this.observeLayout();
     this.ctx.shell.idle.arm(); // a draw counts as a touch, as it did: the five minutes start over, and an idle panel wakes
-    // the first render (setView → renderTabs) gates the Car tab and tile, so it must already know the car; renderLive looks again
-    this.car ||= findCar(this.hass.states);
-    this.setView();
+    this.tabChanged(this.tab);
     this.lensAll();
-    this.refreshShared();
-  }
-
-  // ---------- layout: cards packed into the shortest column, so no column runs long ----------
-  layout() {
-    const box = this.root.querySelector('.cols');
-    if (!box || !box.clientWidth) return;
-    const w = box.clientWidth,
-      n = w >= 1250 ? 3 : w >= 700 ? 2 : 1,
-      gap = 18;
-    const cols = [...box.querySelectorAll(':scope > .col')],
-      cards = LAYOUT.map(id => this.$(id)).filter(Boolean),
-      hs = cards.map(c => c.offsetHeight + gap);
-    const tallest = plan => {
-      const h = new Array(n).fill(0);
-      plan.forEach((k, i) => {
-        h[k] += hs[i];
-      });
-      return Math.max(...h);
-    };
-    const h = new Array(n).fill(0),
-      plan = hs.map(v => {
-        const k = h.indexOf(Math.min(...h));
-        h[k] += v;
-        return k;
-      });
-    box.style.gridTemplateColumns = `repeat(${n}, minmax(0, 1fr))`;
-    cols.forEach((c, i) => {
-      c.style.display = i < n ? '' : 'none';
-      c.style.gridColumn = 'auto';
-      c.style.gridTemplateColumns = 'minmax(0, 1fr)';
-    });
-    // keep the current arrangement unless the new one is clearly shorter, so cards don't hop around on small changes
-    const cur = this.plan && this.plan.n === n && this.plan.k.length === plan.length ? this.plan.k : null;
-    if (cur && (cur.join() === plan.join() || tallest(cur) - tallest(plan) < 80)) return;
-    this.plan = {n, k: plan};
-    cards.forEach((c, i) => cols[plan[i]].appendChild(c));
   }
 
   // ---------- theme, glass and text size are the shell's (its AppearanceController); the guest hears of a change here ----------
@@ -480,7 +391,9 @@ export class LegacyPanel {
     ]
       .filter(Boolean)
       .join(' · ');
-    const icon = c ? `<span class="iwx">${wxIcon(c, 120, this.up())}</span>` : '';
+    const sun = this.st(this.E.sun),
+      day = !sun || sun.state === 'above_horizon'; // the sun is up (or unknown)
+    const icon = c ? `<span class="iwx">${wxIcon(c, 120, day)}</span>` : '';
     const ms = now.getTime(),
       d = this.sunDay(0),
       d1 = this.sunDay(1);
@@ -518,16 +431,6 @@ export class LegacyPanel {
 
   // ---------- events ----------
   wire() {
-    this.$('menu').addEventListener('click', () =>
-      this.host.dispatchEvent(new Event('hass-toggle-menu', {bubbles: true, composed: true})),
-    );
-    this.root.addEventListener('click', e => {
-      // a tap outside the Status popup closes it (the shell keeps it); a tap on the pill stops at the pill
-      if (!e.composedPath().some(n => n instanceof Element && n.localName === 'hp-status-popup'))
-        this.ctx.shell.closeStatus();
-      const sp = this.$('setpop');
-      if (!sp.hidden && !e.composedPath().some(n => n === sp || n === this.$('gear'))) this.ctx.shell.closeSettings();
-    });
     this.$('pane-auto').addEventListener('click', e => {
       const r = e.target.closest('[data-run]'),
         c = e.target.closest('[data-au]'),
@@ -569,96 +472,14 @@ export class LegacyPanel {
   }
   renderLive() {
     if (!this.hass) return;
-    this.car ||= findCar(this.hass.states);
-    try {
-      this.renderHeader();
-    } catch (e) {
-      console.error('home-panel', 'renderHeader', e);
-    }
     this.renderTabs();
   }
 
   // ---------- live values ----------
-  // Energy's reads left in the legacy panel (#241): the providers over the store, in kW, each reader taking the fields it needs
-  // (the provider words nothing). Their callers leave with the peak chip (#257), the stack (#265, #266),
-  // the header (#269) and the More word (the guest).
+  // Energy's read left in the legacy panel (#241): the provider over the store, in kW (the provider words nothing). Its callers leave
+  // with the idle clock (spec 26) and the More word (the guest).
   powerNow() {
     return powerNow(this.store.hass?.states ?? {}, this.store.config);
-  }
-  hiloChallenge() {
-    return hiloChallenge(this.store.hass?.states ?? {}, this.store.config);
-  }
-  hydroQuebec() {
-    return hydroQuebec(this.store.hass?.states ?? {}, this.store.config);
-  }
-
-  renderHeader() {
-    const h = this.fmtEn.hourNow(Date.now()),
-      part = h < 5 ? 'Good night' : h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
-    const name = ((this.hass.user && this.hass.user.name) || '')
-      .split(' ')[0]
-      .replace(/(^|-)(\p{L})/gu, (m, a, b) => a + b.toUpperCase());
-    // on a phone the Home pane has no title line of its own, so the header carries what it said: the date, inside and outside
-    const dateStr = this.fmtEn.dateLong(new Date()),
-      L0 = this.compact ? this.powerNow() : null;
-    const ins = L0 ? L0.rooms.map(r => r.temperature).filter(v => v != null) : [],
-      outT = this.compact ? (this.attr(this.E.weather, 'temperature') ?? this.num(this.E.outT)) : null;
-    const sub = [
-      dateStr,
-      ins.length ? `${(sum(ins) / ins.length).toFixed(1)}° inside` : '',
-      outT == null ? '' : `${f1(outT)}° outside`,
-    ]
-      .filter(Boolean)
-      .join(' · ');
-    // the chips after them are the people feature's <hp-who-chips>, which build() placed (#266)
-    this.set('hello-h', `${part}${name ? `, <span style="white-space:nowrap">${esc(name)}</span>` : ''}`);
-    this.set('hello-sub', sub);
-    const t = this.store.isFrench ? [this.fmt.time24(new Date())] : this.fmtEn.time(new Date()).split(' ');
-    this.set(
-      'clock',
-      `${t[0]}<span style="font-size:.45em;margin-left:4px">${t[1] || ''}</span><small>${this.shared ? 'Live · history ' + this.fmtEn.time(this.shared.at) : 'Live · loading history'}</small>`,
-    );
-    const temp = this.attr(this.E.weather, 'temperature') ?? this.num(this.E.outT),
-      cond = this.st(this.E.cond);
-    // the peak chip and the live pill after it are the feature's <hp-peak-chip> and <hp-live-pill>, which the shell places (#256, #257)
-    this.set(
-      'wxchip-host',
-      temp == null
-        ? ''
-        : `<div class="chip wxchip${this.liveRunning ? ' slim' : ''}"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="9" r="4" fill="var(--m-amber)"/><path d="M8 19h9a4 4 0 0 0 0-8 5 5 0 0 0-9.6 1.6A3.2 3.2 0 0 0 8 19z" fill="var(--fg3)" opacity=".7"/></svg><span class="num">${f1(temp)}°</span><small>${esc(condName(ok(cond) ? cond.state : (this.st(this.E.weather) || {}).state))}</small></div>`,
-    );
-  }
-
-  // ---------- history ----------
-  // The panel's shared history, read at start, when the config changes and every fifteen minutes; the cache answers a repeat within them (ADR 0028). Each pane loads
-  // its own windows (ADR 0024); this one is what the readers below the features still use. It leaves with its last reader, the header (#269).
-  async refreshShared() {
-    // a load under another config (the panel was redrawn meanwhile) is let go: the cache rejects its replies as StaleReply
-    const generation = this.store.generation;
-    if (!this.hass) return;
-    try {
-      const shared = await this.loadSharedHistory(Date.now());
-      const first = !this.shared;
-      this.shared = shared;
-      if (first) this.ctx.shell.requestFrame(); // the settings popup's version line says the history is kept fresh
-    } catch (e) {
-      // a load of an old config is let go whatever went wrong: a network error is no StaleReply, but the new load owns the state
-      if (e instanceof StaleReply || generation !== this.store.generation) return;
-      console.error('home-panel history', e);
-      return;
-    }
-    this.cache = {};
-    this.renderLive();
-  }
-  // What the header's "Live · history" line reads (`at`): the time the power windows last loaded, asked through the panel-wide cache, the
-  // very calls Energy's card and the Home tiles make, so each is read once for the panel (ADR 0028). The Home tiles read their own since #268;
-  // this is deleted with its last reader, the header (#269).
-  async loadSharedHistory(now) {
-    const {config} = this.store,
-      ask = ({ids, period, start, types}) => this.ctx.statistics.statistics(ids, period, start, types);
-    const w = powerWindows(now, config, this.fmtEn);
-    await Promise.all([ask(w.today), ask(w.meter33), ask(w.fiveMin25h)]);
-    return {at: new Date()};
   }
 
   // ---------- sheets ----------
@@ -666,24 +487,6 @@ export class LegacyPanel {
   // deletes the two with the host's legacy half
   sheetOpened() {}
   sheetClosed() {}
-  // ---------- the live pill's counts ----------
-  // The live pill (#256) runs the activities and the Status checks, and the shell tells the guest whether an activity shows and how many
-  // checks need attention: the weather chip slims beside an activity, redrawn as the legacy header redrew it, and the Home pane's sub-line
-  // says the count. Deleted with its last readers, `renderHeader` and `renderPaneSubs` (the Home move, #269).
-  liveChanged(running, attention) {
-    this.liveRunning = running;
-    this.attentionCount = attention;
-    if (!this.hass || !this.$app) return; // drawn with both at the first render
-    // the chips are drawn again even when unchanged: the pill beside them has just changed and moved them, and Chromium keeps a moved
-    // glass chip's old sub-pixel raster, where the legacy header drew the chip and the pill together
-    delete this.cache['wxchip-host'];
-    for (const f of ['renderHeader', 'renderPaneSubs'])
-      try {
-        this[f]();
-      } catch (e) {
-        console.error('home-panel ' + f, e);
-      }
-  }
   // Temporary until the idle clock moves (spec 26): the sun's day at the house
   sunDay(offset = 0) {
     const lat = (this.hass.config && this.hass.config.latitude) ?? 0,
@@ -691,23 +494,10 @@ export class LegacyPanel {
     const t = Date.now() + offset * 864e5;
     return sunTimes(lat, lon, this.fmtEn.isoDay(t));
   }
-  setView() {
-    // Tabs is the only view since 1.16.0, on the iPad and the iPhone alike; the view switcher is gone
-    const prev = this.view;
-    this.view = 'tabs';
-    this.root.querySelector('.cols').hidden = true;
-    this.$('tabview').hidden = false;
-    if (prev !== 'tabs') this.enterTabs();
-  }
   // ---------- Phone: the Tabs view under 600 px. Bottom tab bar, one column, summary tiles that open the detail sheets ----------
   // the shell's `compact` changed and its frame already follows
   compactChanged() {
     if (!this.$app) return; // nothing drawn yet: the first draw reads the shell
-    // the sheet host has closed the open sheet and moved the five detail panels; the cards move here
-    if (this.view === 'tabs') {
-      this.leaveTabs();
-      this.enterTabs();
-    }
     this.cache = {};
     this.renderLive();
   }
@@ -741,16 +531,9 @@ export class LegacyPanel {
     const line = this.moreMemo[key];
     return line ? this.french.text(line) : null;
   }
-  // ---------- Tabs view: a left rail, one pane per subject; cards and detail panels move into the panes ----------
-  enterTabs() {
-    this.tabChanged(this.tab);
-  }
-  leaveTabs() {
-    this.plan = null; // the cards go back into the columns on the next layout
-  }
   // the shell shows the pane of `t` (it remembered the tab and drew the rail and the panes); this is the guest's part
   tabChanged(t) {
-    if (!this.$app || this.view !== 'tabs') return; // nothing drawn yet: enterTabs asks again once it is
+    if (!this.$app) return; // nothing drawn yet: build() asks again once it is
     const prev = this.drawnTab;
     this.drawnTab = t;
     this.sheets.paneShown(t); // the host shows this pane's legacy detail panel inline, on a tablet: none has one since #252, and #188 deletes this call
@@ -763,91 +546,16 @@ export class LegacyPanel {
     }
   }
   renderTabs() {
-    if (this.view !== 'tabs' || !this.hass) return;
-    for (const f of ['renderPaneSubs', 'renderAuto']) {
-      try {
-        this[f]();
-      } catch (e) {
-        console.error('home-panel tabs', f, e);
-      }
+    if (!this.$app || !this.hass) return;
+    try {
+      this.renderAuto();
+    } catch (e) {
+      console.error('home-panel tabs', 'renderAuto', e);
     }
   }
   // which tabs this house lacks (false: nothing for it), for the shell's registry: none of the tabs the guest still draws has an opinion, Climate's and Car's are their descriptors' `available`
   availability() {
     return {};
-  }
-  // whether the history behind the charts has loaded, which the settings popup's version line says
-  statisticsLoaded() {
-    return Boolean(this.shared);
-  }
-  // one line under each pane title, like the detail sheets have
-  renderPaneSubs() {
-    const L = this.powerNow(),
-      att = this.attentionCount;
-    const temps = L.rooms.map(r => r.temperature).filter(v => v != null),
-      avg = temps.length ? sum(temps) / temps.length : null,
-      out = this.attr(this.E.weather, 'temperature') ?? this.num(this.E.outT);
-    if (this.tab === 'home')
-      this.set(
-        'hsub',
-        [
-          // no date: the greeting above the pane already says it
-          avg == null ? '' : `${avg.toFixed(1)}° inside`,
-          out == null ? '' : `${f1(out)}° outside`,
-          att ? plural(att, 'item') + (att === 1 ? ' needs' : ' need') + ' attention' : '',
-        ]
-          .filter(Boolean)
-          .join(' · '),
-      );
-  }
-  // what the house has planned: the sun (the theme and the sunrise lights-off follow it), Hilo, Hydro-Québec, the car, routines
-  upcoming() {
-    const out = [],
-      day = this.up(),
-      set = this.st(this.E.setting),
-      rise = this.st(this.E.rising);
-    const sunset = () => ok(set) && out.push([this.fmtEn.time(new Date(set.state)), 'Sunset · theme turns dark']),
-      sunrise = () =>
-        ok(rise) && out.push([this.fmtEn.time(new Date(rise.state)), 'Sunrise · every light off, night modes off']);
-    if (day) {
-      sunset();
-      sunrise();
-    } else {
-      sunrise();
-      sunset();
-    }
-    const defi = this.hiloChallenge();
-    if (defi && defi.active) out.push(['Hilo', `Challenge: ${esc(defi.state)}`]);
-    if (this.hydroQuebec()?.peakUpcoming) out.push(['Hydro-Québec', 'Critical peak coming']);
-    // the departure schedule only counts while its switch is on
-    if (this.car && (this.st(this.car.id('switch', 'departuretimes')) || {}).state === 'on') {
-      const t = this.schedText();
-      if (!/^No /.test(t)) out.push(['Car', esc(t.replace(/ saved\.$/, ' departure'))]);
-    }
-    this.MODES.forEach(id => {
-      const m = this.st(id);
-      if (m && m.state === 'on') out.push(['On', esc(this.name(id))]);
-    });
-    return out;
-  }
-  // ---------- the departure schedule's words, which the stack's car card and the header's upcoming list still read until #269 ----------
-  // a time of day with no date, such as the departure schedule's hours and minutes: placed on a fixed UTC day and read
-  // back by the UTC set, so that neither the browser's zone nor the house's moves it
-  clockTime(h, m) {
-    return this.fmtUtcEn.time(Date.UTC(2026, 0, 1, h, m));
-  }
-  // read from the provider's schedule; the Car's controls say the same in the catalog (src/features/car/schedule.ts). Deleted by #269, the Home move, with its last readers
-  schedText() {
-    const sch = this.car && departureSchedule(this.hass.states, this.car);
-    if (!sch) return 'No departure times saved.';
-    const wk = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
-    const d =
-      sch.days.length === 7
-        ? 'Every day'
-        : sch.days.length === 5 && wk.every(x => sch.days.includes(x))
-          ? 'Weekdays'
-          : sch.days.map(x => x.slice(0, 3).replace(/^./, c => c.toUpperCase())).join(', ');
-    return `${d} at ${this.clockTime(sch.hours, sch.minutes)} saved.`;
   }
 }
 

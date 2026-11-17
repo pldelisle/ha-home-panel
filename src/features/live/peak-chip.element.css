@@ -1,6 +1,6 @@
 /* <hp-peak-chip>: the header's peak chip, the legacy sheet's `.chip` and `.chip .dot` (base.css), the header chips' glass (glass.css) and the
    phone's header chip (phone.css) as they drew it, written on `.peak` so no selector of the legacy sheet is written twice; those legacy rules go
-   with the legacy header (#269). `.app.gl` reads as `:host([glass])`, `.app.cp` as `:host([compact])`. */
+   with the legacy header (deleted in #269). `.app.gl` reads as `:host([glass])`, `.app.cp` as `:host([compact])`. */
 :host {
   display: contents; /* the chip is a flex item of the header's chips, as it was */
 }

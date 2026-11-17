@@ -121,6 +121,7 @@ describe('the Weather descriptor', () => {
         guest,
         sheetOpen: id => id === open,
         sheetDetail: id => (id === open ? detail : undefined),
+        attention: 0,
       });
     expect(pane(null).values).toEqual([false, undefined]);
     expect(pane('weather.detail').values).toEqual([true, undefined]);
@@ -136,9 +137,12 @@ describe('the Weather descriptor', () => {
         guest,
         sheetOpen: () => false,
         sheetDetail: () => undefined,
+        attention: 0,
       }),
     ).toBe('4° · Mainly sunny');
-    expect(weather.summary?.({store: store(), guest, sheetOpen: () => false, sheetDetail: () => undefined})).toBeNull();
+    expect(
+      weather.summary?.({store: store(), guest, sheetOpen: () => false, sheetDetail: () => undefined, attention: 0}),
+    ).toBeNull();
   });
 });
 
@@ -151,6 +155,7 @@ describe('the Media descriptor', () => {
       guest: {availability: () => ({}), moreLine: () => null},
       sheetOpen: () => false,
       sheetDetail: () => undefined,
+      attention: 0,
     };
   };
 
@@ -175,6 +180,7 @@ describe('the Air descriptor', () => {
       guest: {availability: () => ({}), moreLine: () => null},
       sheetOpen: () => false,
       sheetDetail: () => undefined,
+      attention: 0,
     };
   };
 
@@ -200,6 +206,7 @@ describe('the Energy descriptor', () => {
     guest: {availability: () => ({}), moreLine: () => line},
     sheetOpen: (id: string) => id === open,
     sheetDetail: () => undefined,
+    attention: 0,
   });
 
   test("is the registry's own and always shown, and binds its pane to the sheet host's answers: the detail's `open`, then the water heater's and Hilo's", () => {

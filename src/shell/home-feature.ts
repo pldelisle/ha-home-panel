@@ -12,5 +12,5 @@ export const homeFeature: FeatureDescriptor = {
   icon: 'house',
   color: 'var(--c-grid)',
   phoneBar: true,
-  pane: () => html`<hp-home-pane></hp-home-pane>`,
+  pane: env => html`<hp-home-pane .attention=${env.attention}></hp-home-pane>`,
 };
