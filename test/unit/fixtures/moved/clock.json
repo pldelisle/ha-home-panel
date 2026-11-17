@@ -1,9 +1,39 @@
 {
-  "about": "The English messages the Idle clock move introduced (src/core/i18n/en.ts: common.dismiss with the toast, #275; the clock.* keys come with #276), compared as test/unit/fixtures/moved/weather.json is. #275 deleted the map's `Dismiss` entry, which only the legacy toast drew: `was` is what the layer made of it. Deleted with the layer in phase 4.",
+  "about": "The English messages the Idle clock move introduced (src/core/i18n/en.ts: common.dismiss with the toast, #275; the clock.* keys with the clock, #276), compared as test/unit/fixtures/moved/weather.json is. #275 deleted the map's `Dismiss` entry, which only the legacy toast drew: `was` is what the layer made of it. The map's `Sunrise {n}`, `Sunset {n}` and `{n}° inside` entries stay: the layer is phase 4's, and these rows compare against them. Deleted with the layer in phase 4.",
   "messages": [
     {
       "key": "common.dismiss",
       "was": "Fermer"
+    },
+    {
+      "key": "clock.inside",
+      "values": {
+        "n": "20.8"
+      }
+    },
+    {
+      "key": "clock.outside",
+      "values": {
+        "n": "-3.1"
+      }
+    },
+    {
+      "key": "clock.sunrise",
+      "values": {
+        "time": "7:02 am"
+      },
+      "fr": {
+        "time": "7 h 02"
+      }
+    },
+    {
+      "key": "clock.sunset",
+      "values": {
+        "time": "4:31 pm"
+      },
+      "fr": {
+        "time": "16 h 31"
+      }
     }
   ]
 }

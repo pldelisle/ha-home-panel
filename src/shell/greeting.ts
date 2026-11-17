@@ -5,7 +5,8 @@
 // Must not: read an entity `homeTemperatureIds` does not list, or word anything but through the catalog.
 import {ContextConsumer} from '@lit/context';
 import {LitElement, html, nothing} from 'lit';
-import {firstName, greetingKey, homeLine, homeTemperatureIds, readHomeTemperatures} from './home-line.ts';
+import {firstName, greetingKey, homeLine} from './home-line.ts';
+import {homeTemperatureIds, readHomeTemperatures} from '../providers/home-temperatures.ts';
 import '../features/people/index.ts'; // defines <hp-who-chips>
 import {StoreController} from '../ui/controllers/store-controller.ts';
 import {TickController} from '../ui/controllers/tick.ts';

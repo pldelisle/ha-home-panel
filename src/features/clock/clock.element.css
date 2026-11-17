@@ -1,0 +1,60 @@
+/*
+ * <hp-clock>'s own rules: the time, the condition's icon beside it, the date, the temperatures and the next sun event. Moved from the
+ * legacy `.idle .iclock` to `.idle .isun` and the `.idle .ss` sizes (tabs.css) by #276; `.idle .ss` is read as `:host([beside])`, which
+ * weighs the same. The overlay's own rules stay the frame's.
+ */
+:host {
+  display: contents;
+}
+.iclock {
+  font-family: var(--f-num);
+  font-weight: var(--num-w);
+  font-size: clamp(96px, 16vw, 200px);
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+.iclock small {
+  font-size: 0.32em;
+  margin-left: 10px;
+  font-weight: 600;
+}
+.idate {
+  font-size: clamp(18px, 2.4vw, 28px);
+  font-weight: 600;
+  margin-top: 10px;
+}
+.itemps {
+  font-size: clamp(16px, 2vw, 24px);
+  color: var(--fg2);
+  margin-top: 18px;
+}
+.iclk2 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(16px, 2.4vw, 32px);
+}
+.iclk2 .wxi {
+  width: clamp(80px, 11vw, 140px);
+  height: auto;
+  display: block;
+}
+.isun {
+  font-size: clamp(14px, 1.6vw, 19px);
+  color: var(--fg2);
+  margin-top: 8px;
+}
+:host([beside]) .iclock {
+  font-size: clamp(80px, 11.5vw, 168px);
+}
+:host([beside]) .iclk2 .wxi {
+  width: clamp(62px, 8.5vw, 116px);
+}
+@media (max-aspect-ratio: 1/1) {
+  :host([beside]) .iclock {
+    font-size: min(84px, 21vw);
+  }
+  :host([beside]) .iclk2 .wxi {
+    width: min(62px, 16vw);
+  }
+}

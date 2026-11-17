@@ -135,3 +135,10 @@ The seams are the two of ADR 0005. New in kind: nothing; the clock is the simple
 - **Why the drift becomes deterministic.** `Math.random()` in a render is a hidden input; a seeded function has the same effect on the screen and a provable bound, and it keeps the baselines stable by construction instead of by a fixed clock alone.
 - **Why the French map stays in the repository.** It is phase 4's input: the catalogs' French came from it, the equivalence tests prove they still agree, and spec 27 deletes it when the catalogs are the only source. Shipping it is what stops here.
 - **Reading**: Fowler, _Strangler Fig Application_ (the end state); Meszaros, _xUnit Test Patterns_ (the humble object, now the whole panel); Apple HIG, _Always-on displays_ (the drift's purpose).
+
+## As built (#276)
+
+- **The French time is `16:07`, not `16 h 07`.** The legacy clock drew `fmt.time24` in French, and the move keeps what the screen showed; `clockModel` does the same.
+- **The stylesheets follow ADR 0019's naming.** The clock's rules are in `src/features/clock/clock.element.css` and the idle screen's in `src/shell/idle-screen.element.css`, both in the elements' own shadow roots.
+- **The overlay stays in the frame.** `.idle`, `.idle[hidden]`, `.idle.wake` and `.app.idle > :not(.idle)` are rules of the shell's frame (the overlay is the frame's child, and the fade is the frame's keyframes), so they stay in `tabs.css`; `<hp-idle-screen>` draws `#iwrap` and what is inside it.
+- **The house's temperatures moved to a provider.** `readHomeTemperatures` and `homeTemperatureIds` moved from `src/shell/home-line.ts` to `src/providers/home-temperatures.ts`, because a feature may not import the shell; the greeting's line and the clock read the same function.

@@ -2,8 +2,8 @@
 // Pattern: strangler fig (Fowler, Strangler Fig Application): the host wraps the old code behind an interface the host
 // owns, and the interface only shrinks; registering a factory keeps the shell from importing legacy code (ADR 0011).
 // Must not: grow past what the spec names for a step, except a member whose note names what deletes it; be imported by anything but the shell and src/main.js; or outlive the guest (module state included).
-// Lit binds nothing inside a guest container, and the guest writes nothing outside them but the Home-card bridge's last tag (ADR 0024, ADR 0031):
-// `<hp-smart-stack mode="idle">` in `#iwrap`, until spec 26. The Home pane and the header are the shell's since #268 and #269.
+// Lit binds nothing inside the guest container, and the guest writes nothing outside it. The Home pane and the header are the
+// shell's since #268 and #269, the idle clock and its `#iwrap` since #276.
 import type {PanelApi} from '../core/api.ts';
 import type {PanelSettings} from '../core/settings.ts';
 import type {HassChange, PanelStore} from '../core/store.ts';
@@ -49,11 +49,6 @@ export interface GuestRenderer extends GuestAnswers, LegacySheetGuest {
    * #188); the lens half also waits for #198.
    */
   appearanceChanged(appearance: Appearance): void;
-  /**
-   * Step D: the idle clock is showing (true) or the panel woke (false). The shell has drawn `.app.idle` and the overlay by
-   * then; the guest draws the clock into `#iwrap`. Told once per change. Deleted with the clock's own move (#187).
-   */
-  idleChanged(idle: boolean): void;
 }
 
 /** What the guest may ask of the shell, and what it may read of it. Deleted whole with the guest; `tab`, `compact`, `setTab` and `requestFrame` live as long as it does. */
@@ -79,9 +74,9 @@ export interface ShellForGuest {
   sheets: SheetHost;
 }
 
-// The guest's containers, inside the shell's root: `.guest` (src/shell/home-panel.ts holds it, display: contents) and
-// `#iwrap`, the idle clock's, inside the overlay the shell draws (step D). The rule both sides keep: Lit binds nothing
-// inside a guest container, and the guest writes nothing outside its containers. This list only shrinks.
+// The guest's container, inside the shell's root: `.guest` (src/shell/home-panel.ts holds it, display: contents); `#iwrap`,
+// the idle clock's, was the second until #276. The rule both sides keep: Lit binds nothing inside the guest's container,
+// and the guest writes nothing outside it.
 
 // The shell's module state: the guest registry here and, in document-background.ts, the claims on the document's
 // background. This is what src/main.js registers before it defines the element, so the first <home-panel> already has a

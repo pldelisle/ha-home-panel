@@ -1,38 +1,11 @@
 // The line the header's greeting and the Home pane's heading share: today's date (the greeting's; the pane leaves it to the greeting), then the
 // average inside and the outside temperature, then (the pane's) how many Status checks need attention, as the legacy `renderHeader` and
 // `renderPaneSubs` wrote them (deleted in #269).
-// Pattern: a pure model with its reading beside it (Fowler, Presentation Model): `readHomeTemperatures` reads the store's states, `homeLine` words.
-// Must not: draw, read the clock (`now` is given), or read an entity `homeTemperatureIds` does not list.
-import type {ResolvedConfig} from '../core/config.ts';
-import type {HassEntities} from '../core/hass.ts';
+// Pattern: a pure model (Fowler, Presentation Model) over the provider's `readHomeTemperatures` (src/providers/home-temperatures.ts, since #276).
+// Must not: draw, read the clock (`now` is given), or read an entity.
 import type {Formatters} from '../core/i18n/format.ts';
 import type {Translate} from '../core/i18n/messages.ts';
-import {numberAttributeOf, numberOf} from '../core/states.ts';
-import {powerNow} from '../providers/power.ts';
-
-export interface HomeTemperatures {
-  /** The rooms' average temperature, null when no room reads one. */
-  inside: number | null;
-  /** The weather entity's temperature, else the outdoor sensor's; null when neither reads. */
-  outside: number | null;
-}
-
-/** What `readHomeTemperatures` reads: each room's thermostat and temperature sensor, the weather entity and the outdoor sensor. */
-export function homeTemperatureIds(config: ResolvedConfig): string[] {
-  const {weather, outT} = config.entities;
-  return [...config.rooms.flatMap(room => [room.climate, room.temp]), weather, outT].filter((id): id is string => !!id);
-}
-
-export function readHomeTemperatures(states: HassEntities, config: ResolvedConfig): HomeTemperatures {
-  const temps = powerNow(states, config)
-    .rooms.map(room => room.temperature)
-    .filter((t): t is number => t !== null);
-  const {weather, outT} = config.entities;
-  return {
-    inside: temps.length ? temps.reduce((a, b) => a + b, 0) / temps.length : null,
-    outside: numberAttributeOf(states, weather, 'temperature') ?? numberOf(states, outT),
-  };
-}
+import type {HomeTemperatures} from '../providers/home-temperatures.ts';
 
 export interface HomeLineInputs extends Partial<HomeTemperatures> {
   /** Today, which the line opens with; absent, it says no date (the pane's, under the greeting that already says it). */

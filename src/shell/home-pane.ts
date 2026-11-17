@@ -11,7 +11,8 @@ import {repeat} from 'lit/directives/repeat.js';
 import './config-card.ts'; // defines <hp-config-card>
 import './glance-tile.ts'; // defines <hp-glance-tile>
 import {HomeHistory} from './home-history.ts';
-import {homeLine, homeTemperatureIds, readHomeTemperatures} from './home-line.ts';
+import {homeLine} from './home-line.ts';
+import {homeTemperatureIds, readHomeTemperatures} from '../providers/home-temperatures.ts';
 import paneCss from './home-pane.css?inline';
 import {GLANCE_SOURCES, type GlanceDeps} from './home-tiles.ts';
 import type {StatisticsCache} from '../core/statistics-cache.ts';

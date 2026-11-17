@@ -5,7 +5,7 @@ import {test, expect, tabletOnly, IDLE_AFTER_MS} from './fixtures';
 import {AFTERNOON, FULL_CFG} from './houses';
 
 const CLOCK_TICK_MS = 20_000;
-// how far renderIdle nudges the clock block from where it sits: at most 20 px sideways and 15 px up or down
+// how far the idle screen (src/shell/drift.ts) nudges the clock block from where it sits: at most 20 px sideways and 15 px up or down
 const MAX_DRIFT_X = 20,
   MAX_DRIFT_Y = 15;
 

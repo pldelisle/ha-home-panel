@@ -1,0 +1,35 @@
+/*
+ * <hp-idle-screen>'s own rules: the block that drifts, and the clock with the stack card beside it (below it on a portrait screen).
+ * Moved from the legacy `.idle .iwrap`, `.idle .ss` and `.idle .ssk` rules (tabs.css) by #276, which weigh the same here. The overlay
+ * (`.idle`, `[hidden]`, `.wake`) is the shell's frame and keeps its rules there.
+ */
+:host {
+  display: contents;
+}
+.iwrap {
+  transition: transform 3s ease-in-out;
+}
+.ss {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(32px, 5vw, 72px);
+}
+.ssk {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+}
+.ssk[hidden] {
+  display: none;
+}
+@media (max-aspect-ratio: 1/1) {
+  .ss {
+    flex-direction: column;
+    gap: 34px;
+  }
+  .ssk {
+    padding-left: 20px;
+  }
+}
