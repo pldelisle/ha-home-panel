@@ -1,5 +1,5 @@
 /* <hp-weather-chip>: the header's weather chip, the legacy sheet's `.chip` and `.chip small` (base.css, which the Automations' chips still
-   wear), the header chips' glass (glass.css), the phone's header chip (phone.css) and the slim chip (extra.css) as they drew it, written on
+   wear until spec 25 deletes them), the header chips' glass (glass.css), the phone's header chip (phone.css) and the slim chip (extra.css) as they drew it, written on
    `.wx`; the header's copies went with the legacy header (#269). `.app.gl` reads as `:host([glass])`, `.app.cp` as `:host([compact])`. */
 :host {
   display: contents; /* the chip is a flex item of the header's chips, as it was */

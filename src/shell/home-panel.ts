@@ -135,10 +135,10 @@ export class HomePanel extends LitElement {
   private readonly store = createStore(storeOptions());
   private readonly api = createApi(this.store);
   /** The one memo of the recorder's reads for this panel (ADR 0028); a reply stays fresh as long as a feature keeps its history. */
-  /** Its first reply turns the settings popup's version line to "kept fresh". */
+  /** Each reply moves the header's "Live · history" time, and the first turns the settings popup's version line to "kept fresh". */
   private readonly statistics = createStatisticsCache(this.api, {
     ttlMs: STATISTICS_TTL_MS,
-    onFirstLoad: () => this.requestUpdate(),
+    onLoad: () => this.requestUpdate(),
   });
   private readonly settings = createSettings(browserStorage());
   // what the household asked for and Home Assistant has not confirmed yet: the panel's elements share it (ADR 0023)
@@ -535,7 +535,7 @@ export class HomePanel extends LitElement {
         .settingsOpen=${this.settingsOpen}
         .live=${this.liveRunning}
         .liveKey=${this.liveKey}
-        .historyLoaded=${this.statistics.lastLoadedAt !== null}
+        .historyAt=${this.statistics.lastLoadedAt}
       ></hp-header>
       <div class="tabview" id="tabview">
         ${this.renderRail()}

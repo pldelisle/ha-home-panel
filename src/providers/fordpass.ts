@@ -246,7 +246,7 @@ const numberOfField = (value: unknown): number | null =>
 /** The hour or the minute of a time of day, `0` where Ford sends none (the legacy `t0.hours || 0`). */
 const partOfTime = (value: unknown): number => Number(value) || 0;
 
-/** The departure schedule Ford saved (`schedule`, days with a `timeOfDay`); null when it has none. Read by `readCar` and, for the header's upcoming list, by the legacy `schedText`. */
+/** The departure schedule Ford saved (`schedule`, days with a `timeOfDay`); null when it has none. Read by `readCar` and the shell's `readUpcoming`. */
 export function departureSchedule(states: HassEntities, ref: CarRef): Schedule | null {
   const saved = attributeOf(states, ref.id('sensor', 'departureschedules'), 'schedule');
   const days = isRecord(saved) ? Object.keys(saved) : [];

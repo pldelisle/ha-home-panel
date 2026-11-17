@@ -30,4 +30,4 @@ src/features/people/
 
 ## The elements
 
-Each subscribes to `peopleIds` (ADR 0012). The guest writes them once in its own slots (ADR 0031): the chips in the header, the card in the Home card. The legacy `presence()` and `whoHtml()` are gone (#266).
+Each subscribes to `peopleIds` (ADR 0012). The header's `<hp-greeting>` places the chips (#269), and the Home pane places the card, which places its own chips (#268). The legacy `presence()` and `whoHtml()` are gone (#266).

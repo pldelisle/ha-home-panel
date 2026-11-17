@@ -253,20 +253,20 @@ describe('the clock', () => {
 });
 
 describe('the last reply', () => {
-  test("is the time of the last reply, told once at the first, and forgotten by clear(); a failure or an old config's reply does not count", async () => {
+  test("is the time of the last reply, told at each, and forgotten by clear(); a failure or an old config's reply does not count", async () => {
     const {hass, store, clock} = setup();
-    let first = 0;
+    let told = 0;
     const cache = createStatisticsCache(createApi(store), {
       ttlMs: TTL,
       now: () => clock.at,
-      onFirstLoad: () => first++,
+      onLoad: () => told++,
     });
     expect(cache.lastLoadedAt).toBeNull();
     await cache.statistics(['sensor.a'], 'hour', START, ['mean']);
     expect(cache.lastLoadedAt).toBe(1_000_000);
     clock.at += 60_000;
     await cache.history(['sensor.a'], START, MINIMAL);
-    expect([cache.lastLoadedAt, first]).toEqual([1_060_000, 1]);
+    expect([cache.lastLoadedAt, told]).toEqual([1_060_000, 2]);
 
     let release = () => {};
     hass.replies.set(
@@ -285,6 +285,6 @@ describe('the last reply', () => {
 
     hass.replies.set('recorder/statistics_during_period', () => Promise.reject(new Error('down')));
     await expect(cache.statistics(['sensor.c'], 'hour', START, ['mean'])).rejects.toThrow();
-    expect([cache.lastLoadedAt, first]).toEqual([null, 1]);
+    expect([cache.lastLoadedAt, told]).toEqual([null, 2]);
   });
 });

@@ -2,7 +2,7 @@
 // the clock, and the two popups the shell keeps open or shut (the Status checks under the pill, the settings under the gear).
 // Pattern: a humble composition (Meszaros, xUnit Test Patterns), the composition root's child, drawn in light DOM (ADR 0033) so the legacy
 // `.head` rules still lay out its row, as the Home pane is (ADR 0032); its own rules are header.css. It replaced the guest's header (#269).
-// Must not: decide whether a popup is open (the shell does, from the events the gear, the pill and the popups send up), or read an entity.
+// Its three aria-labels are still English, which the French map translates until phase 4. Must not: decide whether a popup is open (the shell does, from the events the gear, the pill and the popups send up), or read an entity.
 import {LitElement, html, unsafeCSS} from 'lit';
 import {keyed} from 'lit/directives/keyed.js';
 import './clock-line.ts'; // defines <hp-clock-line>
@@ -29,7 +29,7 @@ export class Header extends LitElement {
     settingsOpen: {type: Boolean},
     live: {type: Boolean},
     liveKey: {type: Number},
-    historyLoaded: {type: Boolean},
+    historyAt: {attribute: false},
   };
   /** The Status checks are open under the pill. */
   declare statusOpen: boolean;
@@ -39,8 +39,8 @@ export class Header extends LitElement {
   declare live: boolean;
   /** Counts the pill's changes: the weather chip is drawn anew at each, see `render`. */
   declare liveKey: number;
-  /** The statistics cache has answered once, which the settings popup's version line says. */
-  declare historyLoaded: boolean;
+  /** When the statistics cache last answered, null before its first reply: the clock's small line and the settings popup's version line. */
+  declare historyAt: number | null;
 
   constructor() {
     super();
@@ -48,7 +48,7 @@ export class Header extends LitElement {
     this.settingsOpen = false;
     this.live = false;
     this.liveKey = 0;
-    this.historyLoaded = false;
+    this.historyAt = null;
   }
 
   protected override createRenderRoot(): HTMLElement {
@@ -89,7 +89,7 @@ export class Header extends LitElement {
           ${ico('gear', 20)}
         </button>
       </div>
-      <hp-clock-line class="clock" id="clock"></hp-clock-line>
+      <hp-clock-line class="clock" id="clock" .at=${this.historyAt}></hp-clock-line>
       <hp-status-popup
         class="pop"
         id="attpop"
@@ -99,7 +99,7 @@ export class Header extends LitElement {
         .open=${this.statusOpen}
       ></hp-status-popup>
       <div class="pop" id="setpop" ?hidden=${!this.settingsOpen} role="dialog" aria-label="Settings">
-        <hp-settings-popup .version=${__VERSION__} .statistics=${this.historyLoaded}></hp-settings-popup>
+        <hp-settings-popup .version=${__VERSION__} .statistics=${this.historyAt !== null}></hp-settings-popup>
       </div>
     </header>`;
   }

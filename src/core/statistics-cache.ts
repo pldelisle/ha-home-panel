@@ -25,8 +25,8 @@ export interface StatisticsCacheOptions {
   ttlMs: number;
   /** The clock, in milliseconds (default `Date.now`); a test drives it. */
   now?: () => number;
-  /** Called when the first reply arrives (`lastLoadedAt` leaves null): the shell draws the settings popup's version line again. */
-  onFirstLoad?: () => void;
+  /** Called at each reply that moves `lastLoadedAt`: the shell draws the header's clock line and the settings popup's version line again. */
+  onLoad?: () => void;
 }
 
 interface Entry {
@@ -42,7 +42,7 @@ const idsKey = (ids: readonly (string | null | undefined)[]) => [...new Set(ids.
 
 export function createStatisticsCache(
   api: Pick<PanelApi, 'statistics' | 'history'>,
-  {ttlMs, now = Date.now, onFirstLoad}: StatisticsCacheOptions,
+  {ttlMs, now = Date.now, onLoad}: StatisticsCacheOptions,
 ): StatisticsCache {
   const entries = new Map<string, Entry>();
   let lastLoadedAt: number | null = null;
@@ -61,9 +61,8 @@ export function createStatisticsCache(
     promise.then(
       () => {
         if (asked !== generation) return;
-        const first = lastLoadedAt === null;
         lastLoadedAt = now();
-        if (first) onFirstLoad?.();
+        onLoad?.();
       },
       () => {},
     );

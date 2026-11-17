@@ -190,8 +190,8 @@ export const test = base.extend<{houseOpts: HouseOpts; house: House}>({
         r.text().then(
           body => chunks.push({url: r.url(), body}),
           (e: Error) => {
-            // the page closed before the body arrived (the test is over); any other failure is the fixture's to report
-            if (!/closed/i.test(e.message)) errors.push(`reading ${r.url()}: ${e.message}`);
+            // the page closed or reloaded before the body arrived; any other failure is the fixture's to report
+            if (!/closed|navigated away/i.test(e.message)) errors.push(`reading ${r.url()}: ${e.message}`);
           },
         );
     });
