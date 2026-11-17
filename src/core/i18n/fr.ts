@@ -498,7 +498,6 @@ export const fr: Record<MessageKey, string> = {
   'air.metric.co2': 'CO₂',
   'air.metric.voc': 'COV',
   'air.metric.humidity': 'Humidité',
-  'air.whatToChart': 'Quoi afficher',
   'air.chartTitle': '{metric}, {range}',
   'air.goodUpTo': "Bon jusqu'à {good} {unit}, moyen jusqu'à {moderate}.",
   'air.dashedOutdoor': 'La ligne pointillée est la station extérieure.',
@@ -506,6 +505,9 @@ export const fr: Record<MessageKey, string> = {
   'air.comfortable': 'Confortable',
   'air.historyUnavailable': 'L’historique n’est pas disponible pour le moment.',
   'air.historyLoading': 'Chargement de l’historique…',
+  'air.noBand': 'Mila ne définit aucune zone pour cette mesure.',
+  'air.noReadingHistory': 'Pas encore d’historique pour cette mesure.',
+  'air.tile.opens': '{name} {value}, ouvre l’historique',
   'air.outside': 'Extérieur',
   'air.outsideHint':
     'De la station extérieure Mila la plus proche de la maison, et de la cote air santé d’Environnement Canada.',

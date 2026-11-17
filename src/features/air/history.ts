@@ -1,7 +1,8 @@
 // Air's history as pure functions: the statistics rows in, the series per room and for the outdoor air, the chart words and the options out.
 // Pattern: functional core (Bernhardt, Boundaries), the data half of a humble object (Meszaros), after Weather's history; each rule is the
 // legacy panel's own (`loadAirRange`, `airChart`, `airOutChart`, deleted in #234) and options are plain data (ADR 0022): `fmt` and `t` are arguments.
-// The caller is `<hp-air-detail>`: `metricIds` and `statisticsStart` say what it asks the recorder for, the series and options feed its two `<hp-chart>`s.
+// The callers are `<hp-air-history>` (a tile's sheet: `metricIds` and `statisticsStart` say what it asks the recorder for, the series and options feed its
+// chart) and `<hp-air-detail>` (the outdoor air's chart).
 // Must not: call the API client or the cache, read the clock or the DOM, or pick a colour of its own (every colour is a caller's token).
 import {DASH, DAY_MS, HOUR_MS} from '../../core/figures.ts';
 import type {StatisticRow} from '../../core/ha.ts';
@@ -19,8 +20,6 @@ export type Point = [number, number];
 
 /** What a room's card and tiles read, by the suffix of its sensor. */
 export type Metric = 'pm1' | 'pm2_5' | 'pm10' | 'co' | 'co2' | 'voc' | 'humidity';
-/** The four the history charts. */
-export type ChartMetric = 'pm2_5' | 'co2' | 'voc' | 'humidity';
 
 /** A metric's name, as a catalog key, and its unit, which is a symbol and not a word. */
 export const METRICS: Record<Metric, {label: MessageKey; unit: string}> = {
@@ -33,15 +32,30 @@ export const METRICS: Record<Metric, {label: MessageKey; unit: string}> = {
   humidity: {label: 'air.metric.humidity', unit: '%'},
 };
 
-/** The metrics the chart offers, in the order of its radio group. */
-export const CHART_METRICS: readonly ChartMetric[] = ['pm2_5', 'co2', 'voc', 'humidity'];
+/** What a tile asks the history sheet for: a reading of one purifier's room, named by the fan, which names the room for a tap. */
+export interface HistoryRequest {
+  metric: Metric;
+  room: string;
+}
+
+/** Whether what the sheet host holds is a tile's request: any of the seven readings and a room. A type guard, so the detail's own object is handed on and stays the same one. */
+export const isHistoryRequest = (detail: unknown): detail is HistoryRequest => {
+  const {metric, room} = (detail ?? {}) as Partial<Record<keyof HistoryRequest, unknown>>;
+  return typeof metric === 'string' && metric in METRICS && typeof room === 'string';
+};
+
+/** The inputs of the one room a tile was tapped in, with the station: the chart is that room's reading, and the station's PM2.5 beside it. */
+export const forRoom = ({rooms, outside}: Pick<AirInputs, 'rooms' | 'outside'>, room: string) => ({
+  rooms: rooms.filter(candidate => candidate.fanId === room),
+  outside,
+});
 
 /** Comfortable indoor humidity, in percent: the chart's band and its caption. */
 const COMFORTABLE_HUMIDITY = [30, 60] as const;
 
-/** How a metric's chart is drawn and read: the band it shades and that band's label, what its caption says, and whether the station's line joins. */
+/** How a metric's chart is drawn and read: the band it shades and that band's label (none for a reading Mila rates no band for), what its caption says, and whether the station's line joins. */
 interface ChartRule {
-  shade: readonly [number, number];
+  shade: readonly [number, number] | null;
   shadeLabel: MessageKey;
   caption: (words: {t: Translate; fmt: Formatters}) => string;
   /** The station's PM2.5 is charted beside the rooms' for that one metric. */
@@ -49,7 +63,7 @@ interface ChartRule {
 }
 
 /** A rated pollutant's rule: the good band is shaded from zero, the caption says both edges. */
-const pollutantRule = (k: Pollutant & ChartMetric, withStation: boolean): ChartRule => ({
+const pollutantRule = (k: Pollutant, withStation: boolean): ChartRule => ({
   shade: [0, AQ_BANDS[k][0]],
   shadeLabel: 'air.level.good',
   caption: ({t, fmt}) =>
@@ -64,9 +78,20 @@ const pollutantRule = (k: Pollutant & ChartMetric, withStation: boolean): ChartR
   withStation,
 });
 
-/** The rule of each charted metric; humidity has no level, only a comfortable band. */
-const CHART_RULES: Record<ChartMetric, ChartRule> = {
+/** A reading with no band: the chart has its line and its caption says so. */
+const unratedRule: ChartRule = {
+  shade: null,
+  shadeLabel: 'air.level.good',
+  caption: ({t}) => t('air.noBand'),
+  withStation: false,
+};
+
+/** The rule of each reading's chart; humidity has no level, only a comfortable band, and the two particle sizes have none at all. */
+const CHART_RULES: Record<Metric, ChartRule> = {
+  pm1: unratedRule,
   pm2_5: pollutantRule('pm2_5', true),
+  pm10: unratedRule,
+  co: pollutantRule('co', false),
   co2: pollutantRule('co2', false),
   voc: pollutantRule('voc', false),
   humidity: {
@@ -81,9 +106,8 @@ const CHART_RULES: Record<ChartMetric, ChartRule> = {
   },
 };
 
-/** The legacy sheet's defaults: the first range tab and the first metric. */
+/** The legacy sheet's default: the first range tab. */
 export const DEFAULT_RANGE: Range = 'day';
-export const DEFAULT_METRIC: ChartMetric = 'pm2_5';
 /** The ranges the detail's tabs offer, in order. */
 const AIR_RANGES: readonly Range[] = ['day', 'week', 'month'];
 
@@ -112,7 +136,7 @@ const pointsOf = (stats: Rows, id: string | null | undefined, range: Range): Poi
   id ? meanPoints(stats[id] ?? [], bucketMiddle(range)) : [];
 
 /** The sensor ids a metric's chart asks the recorder for: each room's, and the station's PM2.5 for that one. */
-export function metricIds({rooms, outside}: Pick<AirInputs, 'rooms' | 'outside'>, metric: ChartMetric): string[] {
+export function metricIds({rooms, outside}: Pick<AirInputs, 'rooms' | 'outside'>, metric: Metric): string[] {
   const ids = rooms.map(room => room.sensors[metric]);
   if (CHART_RULES[metric].withStation) ids.push(outside?.pm ?? undefined);
   return ids.filter((id): id is string => !!id);
@@ -129,7 +153,7 @@ export interface MetricSeries {
 export function metricSeries(
   stats: Rows,
   {rooms, outside}: Pick<AirInputs, 'rooms' | 'outside'>,
-  metric: ChartMetric,
+  metric: Metric,
   range: Range,
 ): MetricSeries {
   const station = CHART_RULES[metric].withStation ? (outside?.pm ?? null) : null;
@@ -155,7 +179,7 @@ export const outdoorSeries = (
 
 /** A chart's title and its caption: "PM2.5, last 24 hours", and what its band means. */
 export function chartText(
-  metric: ChartMetric,
+  metric: Metric,
   range: Range,
   words: {t: Translate; fmt: Formatters},
 ): {title: string; caption: string} {
@@ -178,6 +202,17 @@ export interface AirTokens {
   aqi: string;
   aqhi: string;
 }
+
+/** The tokens read from the page by name, `token('--c-home')` being the custom property's value: the detail and the sheet read them the same way. */
+export const airTokensFrom = (token: (name: string) => string): AirTokens => ({
+  rooms: [token('--c-home'), token('--c-wh'), token('--c-heat'), token('--c-ev')],
+  station: token('--c-rest'),
+  ok: token('--ok'),
+  warn: token('--warn'),
+  muted: token('--fg3'),
+  aqi: token('--m-orange'),
+  aqhi: token('--m-purple'),
+});
 
 export interface AirChartDeps {
   fmt: Formatters;
@@ -203,7 +238,7 @@ const bandLabel = (text: string, muted: string) => ({
  */
 export function airChartOptions(
   series: MetricSeries,
-  metric: ChartMetric,
+  metric: Metric,
   range: Range,
   {fmt, t, tokens, now}: AirChartDeps,
 ) {
@@ -223,16 +258,18 @@ export function airChartOptions(
       curve: 'smooth',
     },
     annotations: {
-      yaxis: [
-        {
-          y: shade[0],
-          y2: shade[1],
-          fillColor: tokens.ok,
-          opacity: 0.1,
-          borderColor: 'transparent',
-          label: bandLabel(t(shadeLabel), tokens.muted),
-        },
-      ],
+      yaxis: shade
+        ? [
+            {
+              y: shade[0],
+              y2: shade[1],
+              fillColor: tokens.ok,
+              opacity: 0.1,
+              borderColor: 'transparent',
+              label: bandLabel(t(shadeLabel), tokens.muted),
+            },
+          ]
+        : [],
     },
     xaxis: timeAxis(RANGES[range].days, now),
     yaxis: {

@@ -8,7 +8,8 @@ import {createMessages} from '../../../../src/core/i18n/messages.ts';
 import {
   airChartOptions,
   chartText,
-  CHART_METRICS,
+  forRoom,
+  isHistoryRequest,
   metricIds,
   metricSeries,
   outdoorChartOptions,
@@ -156,6 +157,9 @@ describe('chartText', () => {
     ['co2', 'CO₂, last 24 hours', 'Good is up to 800 ppm, moderate up to 1,200.'],
     ['voc', 'VOC, last 24 hours', 'Good is up to 300 µg/m³, moderate up to 3,000.'],
     ['humidity', 'Humidity, last 24 hours', 'Comfortable indoor humidity is 30 to 60%.'],
+    ['co', 'CO, last 24 hours', 'Good is up to 9 ppm, moderate up to 35.'],
+    ['pm1', 'PM1, last 24 hours', 'Mila rates no band for this reading.'],
+    ['pm10', 'PM10, last 24 hours', 'Mila rates no band for this reading.'],
   ] as const)('%s in English', (metric, title, caption) => {
     const {t, fmt} = depsOf('en');
     expect(chartText(metric, 'day', {t, fmt})).toEqual({title, caption});
@@ -168,9 +172,29 @@ describe('chartText', () => {
       caption: "Bon jusqu'à 800 ppm, moyen jusqu'à 1 200.",
     });
   });
+});
 
-  test('the chart offers four metrics', () => {
-    expect(CHART_METRICS).toEqual(['pm2_5', 'co2', 'voc', 'humidity']);
+describe('what a tile asks the sheet for', () => {
+  test('a reading of a room is a request; anything else the sheet host holds is not', () => {
+    expect(isHistoryRequest({metric: 'co2', room: 'fan.den'})).toBe(true);
+    expect(isHistoryRequest({metric: 'pm10', room: 'fan.den'})).toBe(true);
+    expect(isHistoryRequest({metric: 'temperature', room: 'fan.den'})).toBe(false);
+    expect(isHistoryRequest({metric: 'co2'})).toBe(false);
+    expect(isHistoryRequest(undefined)).toBe(false);
+    expect(isHistoryRequest(null)).toBe(false);
+  });
+
+  test('forRoom keeps that room and the station, so the chart is the tapped room’s', () => {
+    const inputs = {rooms: ROOMS.map((r, i) => ({...r, fanId: `fan.${i}`})), outside: OUTSIDE};
+    expect(forRoom(inputs, 'fan.1').rooms.map(r => r.name)).toEqual(['Bed']);
+    expect(forRoom(inputs, 'fan.1').outside).toBe(OUTSIDE);
+    expect(forRoom(inputs, 'fan.gone').rooms).toEqual([]);
+  });
+
+  test('the room’s own sensor is asked for, for any of the seven readings; PM2.5 adds the station’s', () => {
+    const den = {rooms: [{...ROOMS[0], sensors: {pm10: 'sensor.den_pm10', co: 'sensor.den_co'}}], outside: OUTSIDE};
+    expect(metricIds(den, 'pm10')).toEqual(['sensor.den_pm10']);
+    expect(metricIds(den, 'co')).toEqual(['sensor.den_co']);
   });
 });
 
@@ -181,7 +205,7 @@ describe('airChartOptions', () => {
   });
   const options = (
     outside: [number, number][] | null,
-    metric: 'pm2_5' | 'humidity' = 'pm2_5',
+    metric: 'pm2_5' | 'humidity' | 'pm10' = 'pm2_5',
     language: 'en' | 'fr' = 'en',
   ) => airChartOptions(series(outside), metric, 'week', depsOf(language));
 
@@ -201,6 +225,10 @@ describe('airChartOptions', () => {
   test('the band: good air up to the first limit, the comfortable humidity from 30 to 60', () => {
     expect(options(null).annotations.yaxis[0]).toMatchObject({y: 0, y2: 12, fillColor: '#ok', label: {text: 'Good'}});
     expect(options(null, 'humidity').annotations.yaxis[0]).toMatchObject({y: 30, y2: 60, label: {text: 'Comfortable'}});
+  });
+
+  test('a reading Mila rates no band for draws no band', () => {
+    expect(options(null, 'pm10').annotations.yaxis).toEqual([]);
   });
 
   test('a week’s axis ends now, the tooltip is the range’s, and the numbers are the profile’s', () => {

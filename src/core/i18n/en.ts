@@ -509,7 +509,6 @@ export const en = {
   'air.metric.voc': 'VOC',
   'air.metric.humidity': 'Humidity',
   // the history chart (src/features/air/history.ts)
-  'air.whatToChart': 'What to chart',
   'air.chartTitle': '{metric}, {range}',
   'air.goodUpTo': 'Good is up to {good} {unit}, moderate up to {moderate}.',
   'air.dashedOutdoor': 'The dashed line is the outdoor station.',
@@ -517,6 +516,10 @@ export const en = {
   'air.comfortable': 'Comfortable',
   'air.historyUnavailable': 'History is not available right now.',
   'air.historyLoading': 'Loading history…',
+  'air.noBand': 'Mila rates no band for this reading.',
+  'air.noReadingHistory': 'No history for this reading yet.',
+  // a reading's tile in the room's card, which opens its history
+  'air.tile.opens': '{name} {value}, opens its history',
   // the outside block and its chart
   'air.outside': 'Outside',
   'air.outsideHint':

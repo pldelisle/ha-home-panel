@@ -1,14 +1,16 @@
 // <hp-air-pane>: the Air tab: the detail inline, under the header with the summary and the range tabs on a phone (the detail's own header on a tablet, the
-// pane's not shown); over another tab on a phone (Home's tile, the live pill) the detail's sheet. It owns the statistics cache and the range and metric the detail last showed.
+// pane's not shown); over another tab on a phone (Home's tile, the live pill) the detail's sheet; and, over either, the history of the reading whose tile was tapped.
+// It owns the statistics cache and the range the detail and the history last showed.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over a view model: `airModel` runs in `willUpdate` and the template places what it
 // returns; a store controller on `airIds` (ADR 0012), paused while the pane is off screen, and an optimistic one (ADR 0023) so a tap draws it again.
-// Must not: read an entity itself (`readAir` does), hold a string the household reads, or open the sheet (a tile or a card elsewhere asks).
+// Must not: read an entity itself (`readAir` does), hold a string the household reads, or open a sheet (a tile or a card elsewhere asks).
 import {ContextConsumer} from '@lit/context';
 import {LitElement, html, nothing, unsafeCSS, type PropertyValues} from 'lit';
 import './air-detail.ts'; // defines <hp-air-detail>
-import {detailIcon, type MetricChosenDetail} from './air-detail.ts';
+import {detailIcon} from './air-detail.ts';
+import './air-history.ts'; // defines <hp-air-history>
 import paneOwn from './air-pane.element.css?inline';
-import {DEFAULT_METRIC, DEFAULT_RANGE, rangeTabs, STATISTICS_TTL_MS, type ChartMetric} from './history.ts';
+import {DEFAULT_RANGE, rangeTabs, STATISTICS_TTL_MS, type HistoryRequest} from './history.ts';
 import {airIds} from './ids.ts';
 import {readAir, type AirInputs} from './inputs.ts';
 import {airModel, type AirViewModel} from './model.ts';
@@ -33,11 +35,14 @@ export class AirPane extends LitElement {
   static override properties = {
     active: {type: Boolean, reflect: true},
     detailOpen: {type: Boolean},
+    historyRequest: {attribute: false},
   };
   /** Set by the shell: this pane is the tab on screen. A hidden pane listens to no entity and keeps what it drew. */
   declare active: boolean;
   /** Bound by the registry's template to the sheet host's `isOpen('air.detail')`: the phone's sheet is on screen. */
   declare detailOpen: boolean;
+  /** Bound by the registry's template to what the sheet host's `air.history` was asked for, or undefined: a sheet over the screen, on any tab. */
+  declare historyRequest: HistoryRequest | undefined;
 
   // The element's own rules, its `:host` and the header's place, are in air-pane.element.css.
   static override styles = [common, unsafeCSS(forShadow(paneOwn))];
@@ -50,14 +55,14 @@ export class AirPane extends LitElement {
   private view: AirViewModel | undefined;
   private cache: StatisticsCache | undefined;
   private cacheGeneration = -1;
-  /** What the detail last showed, kept for the panel's life and handed to each opening, as the legacy sheet kept its own. */
+  /** What the detail and the history last showed, kept for the panel's life and handed to each opening, as the legacy sheet kept its own. */
   private range: Range = DEFAULT_RANGE;
-  private metric: ChartMetric = DEFAULT_METRIC;
 
   constructor() {
     super();
     this.active = false;
     this.detailOpen = false;
+    this.historyRequest = undefined;
     // the cache is the pane's: the detail is drawn and dropped as the pane is shown and left, and a second opening within the ten
     // minutes is the cache's hit; a client never changes for a given tree
     new ContextConsumer(this, {
@@ -72,8 +77,8 @@ export class AirPane extends LitElement {
   // The pause and the resume sit in willUpdate: a resume asks for an update, and one asked for here is this one.
   protected override willUpdate(changed: PropertyValues<this>): void {
     // the sheet over another tab (a stack card opens it) shows the pane's tab behind it, but it is the sheet that is on screen
-    const shown = this.active || this.detailOpen;
-    if (changed.has('active') || changed.has('detailOpen')) {
+    const shown = this.active || this.detailOpen || this.historyRequest !== undefined;
+    if (changed.has('active') || changed.has('detailOpen') || changed.has('historyRequest')) {
       if (shown) this.storeController.resume();
       else this.storeController.pause();
     }
@@ -92,7 +97,6 @@ export class AirPane extends LitElement {
       t: store.t,
       fmt: store.fmt,
       overlay: this.overlay,
-      metric: this.metric,
       range: this.range,
     });
   }
@@ -102,8 +106,8 @@ export class AirPane extends LitElement {
     if (!view) return nothing;
     const {t} = this.storeController.store;
     const compact = this.appearance.value?.compact === true;
-    // the sheet over another tab (Home's tile, the stack's card): the pane is behind it and draws nothing but it, so the tab stays
-    if (compact && !this.active) return this.renderSheet(view);
+    // the sheets over another tab (Home's tile, the stack's card): the pane is behind them and draws nothing but them, so the tab stays
+    if (compact && !this.active) return html`${this.renderSheet(view)}${this.renderHistory()}`;
     // The header: on a phone the tab's own, with the range tabs the detail's header has on a tablet; on a tablet it is there and not shown
     // (the detail draws its own), as the old pane's was. The detail is under it, inline, while the pane is the tab; leaving the tab drops it, charts with it.
     return html`<hp-pane-header .icon=${'aq'} .color=${'var(--ok)'} .heading=${t('air.title')}>
@@ -119,7 +123,20 @@ export class AirPane extends LitElement {
             : nothing
         }
       </hp-pane-header>
-      ${this.active ? this.renderDetail(view) : nothing}`;
+      ${this.active ? this.renderDetail(view) : nothing}${this.renderHistory()}`;
+  }
+
+  // a reading's history exists only while its sheet is open, so a closed one holds no chart and asks for nothing
+  private renderHistory() {
+    return this.historyRequest
+      ? html`<hp-air-history
+          .request=${this.historyRequest}
+          .inputs=${this.inputs}
+          .cache=${this.cache}
+          .range=${this.range}
+          @range-chosen=${this.onRange}
+        ></hp-air-history>`
+      : nothing;
   }
 
   // the tab shows the detail in the pane while the pane is the tab
@@ -129,9 +146,7 @@ export class AirPane extends LitElement {
       .inputs=${this.inputs}
       .cache=${this.cache}
       .range=${this.range}
-      .metric=${this.metric}
       @range-chosen=${this.onRange}
-      @metric-chosen=${this.onMetric}
     ></hp-air-detail>`;
   }
 
@@ -170,16 +185,10 @@ export class AirPane extends LitElement {
     this.dispatchEvent(new SheetDismissEvent(DETAIL_SHEET));
   };
 
-  // the sheet header's tabs and the tablet header's (the detail's `range-chosen`) both tell here; the model and the detail get the choice back
+  // the sheet header's tabs, the tablet header's (the detail's `range-chosen`) and the history's both tell here; the model, the detail and the history get the choice back
   private readonly onRange = (e: CustomEvent<RangeChangeDetail>): void => {
     e.stopPropagation();
     this.range = e.detail.range;
-    this.requestUpdate();
-  };
-
-  private readonly onMetric = (e: CustomEvent<MetricChosenDetail>): void => {
-    e.stopPropagation();
-    this.metric = e.detail.metric;
     this.requestUpdate();
   };
 }

@@ -1,19 +1,23 @@
-// <hp-air-room>: one purifier's card in the Air detail: the room and its state, seven tiles, and the Automagic or Manual control with the fan's stepper.
+// <hp-air-room>: one purifier's card in the Air detail: the room and its state, seven tiles that open their reading's history, and the Automagic or Manual control with the fan's stepper.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over the model's `RoomDetail`; a tap holds the value it asks for in the panel's overlay
 // store and runs the feature's command (ADR 0023); the stepper's taps go through `debounce(900)`, so a burst is one `fan.set_percentage`.
 // A send still waiting is cancelled in `disconnectedCallback` and its speed released, as Media's pods do; connecting arms nothing.
-// Must not: read an entity or the store's state (the detail hands it `room`), word a string, or send a speed per tap.
+// A tile is a button: a tap asks the shell for the history's sheet (`air.history`, `{metric, room}`), which the pane draws.
+// Must not: read an entity or the store's state (the detail hands it `room`), word a string, send a speed per tap, or draw the history (the pane does).
 import {LitElement, html, nothing, unsafeCSS} from 'lit';
 import {classMap} from 'lit/directives/class-map.js';
 import {repeat} from 'lit/directives/repeat.js';
 import {K, MAX_PCT, MIN_PCT, PCT_STEP, setMode, setSpeed, type Mode} from './commands.ts';
+import type {HistoryRequest, Metric} from './history.ts';
 import type {RoomControl, RoomDetail} from './model.ts';
 import roomOwn from './room-card.element.css?inline';
+import {HISTORY_SHEET} from './sheets.ts';
 import {debounce} from '../../core/timing.ts';
 import {CommandRunner} from '../../ui/commands.ts';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {OptimisticController} from '../../ui/controllers/optimistic.ts';
 import {StoreController} from '../../ui/controllers/store-controller.ts';
+import {SheetRequestEvent} from '../../ui/events.ts';
 import {lensLike} from '../../ui/lens.ts';
 import '../../ui/seg.ts'; // defines <hp-seg>
 import type {SegChangeDetail, SegOption} from '../../ui/seg.ts';
@@ -84,10 +88,15 @@ export class AirRoom extends LitElement {
             room.tiles,
             tile => tile.metric,
             tile =>
-              html`<div class=${classMap({tile: true, hi: tile.high})}>
+              html`<button
+                type="button"
+                class=${classMap({tile: true, tilebtn: true, hi: tile.high})}
+                aria-label=${tile.opens}
+                @click=${() => this.openHistory(room, tile.metric)}
+              >
                 <div class="k">${tile.label}</div>
                 <div class="v num">${tile.value}<small>${tile.unit}</small></div>
-              </div>`,
+              </button>`,
           )}
         </div>
         ${this.renderControl(room, room.control)}
@@ -124,6 +133,11 @@ export class AirRoom extends LitElement {
       .incrementLabel=${speed.upLabel}
       @step-change=${(e: CustomEvent<StepDetail>) => this.onStep(room, e.detail.value)}
     ></hp-stepper>`;
+  }
+
+  // a tile asks for its reading's history: the shell opens the sheet, and the pane draws it
+  private openHistory(room: RoomDetail, metric: Metric): void {
+    this.dispatchEvent(new SheetRequestEvent(HISTORY_SHEET, {metric, room: room.id} satisfies HistoryRequest));
   }
 
   // the mode shows at once (the hold draws the pane again) and is sent at once

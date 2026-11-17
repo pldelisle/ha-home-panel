@@ -136,10 +136,6 @@ describe('the test house', () => {
         {label: 'Mold pollen', value: 'None'},
       ],
     });
-    expect(detail.history).toMatchObject({
-      title: 'PM2.5, last 24 hours',
-      caption: 'Good is up to 12 µg/m³, moderate up to 35. The dashed line is the outdoor station.',
-    });
     expect(detail.outdoorChart?.title).toBe('Outdoor air, last 24 hours');
   });
 
@@ -374,21 +370,39 @@ describe('the outside air', () => {
   });
 });
 
-describe('the detail’s chart text follows its selection', () => {
-  test('the metric and the range, with the legacy sheet’s as the default', () => {
-    const vm = modelOf(inputsOf([room()]), 'en', {metric: 'humidity', range: 'week'});
-    expect(vm.detail.history).toMatchObject({
-      metric: 'humidity',
-      title: 'Humidity, last 7 days',
-      caption: 'Comfortable indoor humidity is 30 to 60%.',
-    });
-    expect(vm.detail.history.metrics.map(m => m.label)).toEqual(['PM2.5', 'CO₂', 'VOC', 'Humidity']);
-    expect(vm.detail.outdoorChart).toBeNull();
-    const co2 = modelOf(inputsOf([room()], station()), 'en', {metric: 'co2', range: 'month'});
-    expect(co2.detail.history).toMatchObject({
-      title: 'CO₂, last 30 days',
-      caption: 'Good is up to 800 ppm, moderate up to 1,200.',
-    });
-    expect(co2.detail.outdoorChart?.title).toBe('Outdoor air, last 30 days');
+describe('the detail’s outdoor chart follows the range', () => {
+  test('the range words the outdoor chart’s title, and the detail carries no metric chart: the tiles open it', () => {
+    const week = modelOf(inputsOf([room()], station()), 'en', {range: 'week'});
+    expect(week.detail.outdoorChart?.title).toBe('Outdoor air, last 7 days');
+    expect(modelOf(inputsOf([room()], station()), 'en', {range: 'month'}).detail.outdoorChart?.title).toBe(
+      'Outdoor air, last 30 days',
+    );
+    expect(Object.keys(week.detail)).not.toContain('history');
+  });
+});
+
+describe('a tile opens its history', () => {
+  test('each of the seven tiles is named for a screen reader: the reading, its value and unit, and what a tap does', () => {
+    const {states, registries, names, store} = readingOf(fullHouse);
+    const {detail} = modelOf(readAir(states, registries, names, store.config));
+    expect(detail.rooms[0].tiles.map(tile => tile.opens)).toEqual([
+      'PM2.5 20µg/m³, opens its history',
+      'CO₂ 640ppm, opens its history',
+      'VOC 180µg/m³, opens its history',
+      'CO 1.0ppm, opens its history',
+      'PM1 6µg/m³, opens its history',
+      'PM10 24µg/m³, opens its history',
+      'Humidity 38%, opens its history',
+    ]);
+  });
+
+  test('a reading with no value is named without a unit', () => {
+    const {tiles} = modelOf(inputsOf([room()])).detail.rooms[0];
+    expect(tiles[0].opens).toBe('PM2.5 –, opens its history');
+  });
+
+  test('in French, the words and the number are French’s own', () => {
+    const fr = modelOf(inputsOf([room({readings: {co: 1}})]), 'fr').detail.rooms[0].tiles;
+    expect(fr[3].opens).toBe('CO 1,0ppm, ouvre l’historique');
   });
 });

@@ -1,0 +1,12 @@
+/*
+ * <hp-air-history>'s own rules: the host is a block with nothing of its own, the sheet it holds is fixed to the screen. The legacy sheet's rule for
+ * the inner card on a phone (`.app.cp .sheet .inner`) is written here by hand, a known copy, as weather-history.element.css has it: the card is
+ * this element's child and not the sheet's, so the kit's rule cannot reach it.
+ */
+:host {
+  display: contents;
+}
+:host([compact]) .inner {
+  padding: 14px;
+  border-radius: 18px;
+}

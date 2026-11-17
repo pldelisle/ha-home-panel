@@ -12,15 +12,7 @@ import {POLLEN_KINDS, type AirRoomInputs, type OutsideAirInputs, type PollenKind
 import type {Overlay} from '../../ui/overlay-store.ts';
 import {RANGES, type Range} from '../../ui/ranges.ts';
 import {K, type Mode} from './commands.ts';
-import {
-  CHART_METRICS,
-  chartText,
-  DEFAULT_METRIC,
-  DEFAULT_RANGE,
-  METRICS,
-  type ChartMetric,
-  type Metric,
-} from './history.ts';
+import {DEFAULT_RANGE, METRICS, type Metric} from './history.ts';
 import type {AirInputs} from './inputs.ts';
 
 /** The colour of a level: 0 good, 1 moderate, 2 poor; a room that reads nothing is drawn as good, as the legacy panel drew it. */
@@ -68,8 +60,7 @@ export interface AirModelDeps {
   fmt: Formatters;
   /** The held value of a key while a tap awaits Home Assistant, else the current one (`OptimisticController.read`). */
   overlay: Overlay;
-  /** The detail's selection, for the chart's title and caption; the legacy sheet's own defaults when it has none. */
-  metric?: ChartMetric;
+  /** The range the detail's outdoor chart shows, for its title; the legacy sheet's own default when it has none. */
   range?: Range;
 }
 
@@ -98,6 +89,8 @@ export interface Tile {
   value: string;
   unit: string;
   high: boolean;
+  /** What a screen reader says of the tile, a button: "PM2.5 20 µg/m³, opens its history". */
+  opens: string;
 }
 
 export type RoomControl =
@@ -164,16 +157,6 @@ export interface AirViewModel {
     /** "Good in every room", "Moderate · Office: CO₂ 1,050", "No readings yet". */
     sub: string;
     rooms: RoomDetail[];
-    history: {
-      label: string;
-      metric: ChartMetric;
-      metrics: {metric: ChartMetric; label: string}[];
-      /** "PM2.5, last 24 hours". */
-      title: string;
-      /** What the band means: "Good is up to 12 µg/m³, moderate up to 35." */
-      caption: string;
-      unavailable: string;
-    };
     /** The station and the AQHI; null without a station. */
     outside: OutsideDetail | null;
     outdoorChart: {title: string; hint: string; empty: string} | null;
@@ -255,13 +238,16 @@ function tilesOf(room: AirRoomInputs, rating: RoomRating, {t, fmt}: AirModelDeps
   return TILES.map(metric => {
     const {label, unit} = METRICS[metric];
     const rated = rating.pollutants.find(p => p.k === metric);
-    const value = room.readings[metric];
+    const reading = room.readings[metric];
+    const name = t(label);
+    const value = rated ? figure(rated.k, rated.v, fmt) : reading === null ? DASH : whole(fmt, reading);
     return {
       metric,
-      label: t(label),
-      value: rated ? figure(rated.k, rated.v, fmt) : value === null ? DASH : whole(fmt, value),
+      label: name,
+      value,
       unit,
       high: !!rated && rated.level > 0,
+      opens: t('air.tile.opens', {name, value: value === DASH ? value : `${value}${unit}`}),
     };
   });
 }
@@ -382,7 +368,6 @@ export function airModel(inputs: AirInputs, deps: AirModelDeps): AirViewModel {
   const {t, fmt} = deps;
   const rated = inputs.rooms.map(room => ({room, rating: rateRoom(room)}));
   const {worst, clean, why} = overallOf(rated, deps);
-  const metric = deps.metric ?? DEFAULT_METRIC;
   const range = deps.range ?? DEFAULT_RANGE;
   const level = worst < 0 ? '' : t(LEVEL_WORDS[toneOf(worst)]);
   const station = inputs.outside?.readings.aqi ?? null;
@@ -415,13 +400,6 @@ export function airModel(inputs: AirInputs, deps: AirModelDeps): AirViewModel {
       title: t('air.quality'),
       sub: worst < 0 ? t('air.noReadingsYet') : worst === 0 ? t('air.goodEveryRoom') : joined(level, why),
       rooms: rated.map(({room, rating}) => roomDetail(room, rating, deps)),
-      history: {
-        label: t('air.whatToChart'),
-        metric,
-        metrics: CHART_METRICS.map(m => ({metric: m, label: t(METRICS[m].label)})),
-        ...chartText(metric, range, deps),
-        unavailable: t('air.historyUnavailable'),
-      },
       outside: inputs.outside ? outsideDetail(inputs.outside, inputs.aqhi, deps) : null,
       outdoorChart:
         inputs.outside?.aqi || inputs.aqhiId
