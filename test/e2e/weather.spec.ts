@@ -45,6 +45,17 @@ test("the Weather tab shows the eight tiles with the house's readings", async ({
   ]);
 });
 
+test('the summary card keeps the temperature, the range and the sun, and says nothing the tiles say', async ({
+  house,
+}) => {
+  await openWeather(house);
+  const card = pane(house).locator('.wxcard');
+  await expect(card.locator('.wxtemp')).toBeVisible();
+  await expect(card.locator('.wxrange')).toContainText('normal');
+  await expect(card.locator('.wxsun')).toContainText(/Sun(rise|set)/);
+  for (const word of ['Wind', 'Humidity', 'UV', 'Air quality']) await expect(card).not.toContainText(word);
+});
+
 test.describe('the bare house', () => {
   test.use({houseOpts: {house: 'bare'}});
 

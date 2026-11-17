@@ -598,9 +598,6 @@
       }
     },
     {
-      "key": "weather.fact.uv"
-    },
-    {
       "key": "weather.percent",
       "values": {
         "value": 71

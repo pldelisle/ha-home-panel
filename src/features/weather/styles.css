@@ -1,6 +1,6 @@
 /* The Weather feature's own rules (spec 15, "Styles"): the phone's summary card and the grid of the eight tiles, and the detail panel's
    blocks (alerts, now, sun, hours, days, seasons, radar), written in the frame's terms (`.app.cp`, `.app.gl`) and adopted by
-   `<hp-weather-pane>` and `<hp-weather-detail>` through `forShadow`, where they read as `:host([compact])` and `:host([glass])`. The card was a `.card.tap`, so it carries that card's look in its own selectors (`.wxcard`, `.wxfacts`):
+   `<hp-weather-pane>` and `<hp-weather-detail>` through `forShadow`, where they read as `:host([compact])` and `:host([glass])`. The card was a `.card.tap`, so it carries that card's look in its own selectors (`.wxcard`):
    a selector the feature writes is written nowhere else (ADR 0019). The `.stile` rules are the kit's. */
 .wxcard {
   background: var(--card2);
@@ -50,23 +50,6 @@
 .wxrange {
   color: var(--fg2);
   margin-top: 2px;
-}
-.wxfacts {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 6px 12px;
-  background: var(--card);
-  border-radius: 14px;
-  padding: 10px 14px;
-  margin: 14px 0 10px;
-  font-size: calc(13px * var(--tx));
-  color: var(--fg2);
-}
-.wxfacts b {
-  color: var(--fg);
-  font-weight: 600;
-  margin-left: 4px;
 }
 .wxd {
   display: grid;
@@ -125,25 +108,18 @@
 .app.txl .wxtiles {
   grid-template-columns: 1fr;
 }
-/* glass: the card and the facts are glass as the other cards and wells are (glass.css), solid again under Reduce Transparency */
+/* glass: the card is glass as the other cards are (glass.css), solid again under Reduce Transparency */
 .app.gl .wxcard {
   background: var(--g-card);
   -webkit-backdrop-filter: var(--m-bd);
   backdrop-filter: var(--m-bd);
   box-shadow: var(--m-edge);
 }
-.app.gl .wxfacts {
-  background: var(--g-tile);
-  box-shadow: var(--g-edge-s);
-}
 @media (prefers-reduced-transparency: reduce) {
   .app.gl .wxcard {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
     background: var(--card);
-  }
-  .app.gl .wxfacts {
-    background: var(--card2);
   }
 }
 

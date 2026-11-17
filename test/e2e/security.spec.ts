@@ -48,6 +48,10 @@ test('a house without a camera shows the empty state and its link to the integra
   const link = cameras(house).getByRole('link', {name: 'Add UniFi Protect'});
   await expect(link).toHaveAttribute('href', '/config/integrations/dashboard/add?domain=unifiprotect');
   await expect(link).toHaveAttribute('target', '_top');
+  // a bordered button the size of a finger, not text in a well
+  await expect(link).not.toHaveCSS('border-top-width', '0px');
+  await expect(link).not.toHaveCSS('border-top-style', 'none');
+  expect((await link.boundingBox())!.height).toBeGreaterThanOrEqual(44);
 });
 
 test('a door that opens shows in amber, and the chip takes its tone', async ({house}) => {

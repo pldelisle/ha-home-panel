@@ -192,7 +192,6 @@ export class WeatherPane extends LitElement {
           <div class="wxcond">${card.condition}</div>
           <div class="wxrange">${card.range}</div>
         </div>
-        <div class="wxfacts">${card.facts.map(fact => html`<span>${fact.label}<b>${fact.value}</b></span>`)}</div>
         <div class="wxd">
           ${repeat(
             card.days,

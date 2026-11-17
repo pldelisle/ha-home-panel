@@ -150,13 +150,13 @@
   color: var(--fg2);
   margin-top: 2px;
 }
-/* the link is the legacy `.more` button's look, as an anchor */
+/* the link is a bordered pill button, as an anchor: it is the thing to tap, not text in a well */
 .camempty .more {
   display: inline-block;
   text-decoration: none;
   margin-top: 10px;
-  border: 0;
-  background: var(--card2);
+  border: 1.5px solid var(--c-home);
+  background: var(--card);
   border-radius: 999px;
   padding: 10px 16px;
   min-height: 44px;
@@ -179,7 +179,7 @@
 }
 @media (prefers-reduced-transparency: reduce) {
   :host([glass]) .camempty .more {
-    background: var(--card2);
+    background: var(--card);
   }
 }
 @media (prefers-reduced-motion: no-preference) {

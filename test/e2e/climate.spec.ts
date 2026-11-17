@@ -59,6 +59,23 @@ test.describe('on a tablet', () => {
     );
   });
 
+  test('the selected room is a neutral filled row, with no outline and no blue ring', async ({house}) => {
+    const selected = item(house, 'house');
+    await expect(selected).toHaveAttribute('aria-selected', 'true');
+    const look = await selected.evaluate(el => {
+      const probe = document.createElement('div');
+      probe.style.background = 'var(--nav-sel-bg)';
+      el.parentElement!.append(probe);
+      const fill = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+      const style = getComputedStyle(el);
+      return {fill, background: style.backgroundColor, outline: style.outlineStyle, shadow: style.boxShadow};
+    });
+    expect(look.background).toBe(look.fill);
+    expect(look.outline).toBe('none');
+    expect(look.shadow).not.toContain('inset');
+  });
+
   test('selecting a room changes the head and the tiles', async ({house}) => {
     await item(house, 'bedroom').click();
     await expect(item(house, 'bedroom')).toHaveAttribute('aria-selected', 'true');

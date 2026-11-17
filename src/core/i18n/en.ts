@@ -266,7 +266,6 @@ export const en = {
   'weather.low': 'Low {temp}°',
   'weather.normal': 'normal {high}° / {low}°',
   'weather.feelsLike': 'Feels like {temp}°',
-  'weather.fact.uv': 'UV',
   'weather.percent': '{value}%',
   'weather.aqhi': 'AQHI',
   'weather.aqhiRisk':

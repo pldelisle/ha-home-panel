@@ -258,7 +258,6 @@ export const fr: Record<MessageKey, string> = {
   'weather.low': 'Low {temp}°',
   'weather.normal': 'normal {high}° / {low}°',
   'weather.feelsLike': 'Feels like {temp}°',
-  'weather.fact.uv': 'UV',
   'weather.percent': '{value}\u202f%',
   'weather.aqhi': 'CAS',
   'weather.aqhiRisk':

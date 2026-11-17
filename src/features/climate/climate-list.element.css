@@ -1,6 +1,6 @@
 /*
- * <hp-climate-list>'s own rules: the column of items, and each one's box, its icon square, its two lines and its figure; the one shown ringed in the
- * room colour, one lit while it heats and one in amber while it is down, and the glass of each. Moved from the legacy `.clist` and `.citem` rules (base.css,
+ * <hp-climate-list>'s own rules: the column of items, and each one's box, its icon square, its two lines and its figure; the one shown in the neutral
+ * selection fill (`--nav-sel-bg`, as the sidebar does), one lit while it heats and one in amber while it is down, and the glass of each. Moved from the legacy `.clist` and `.citem` rules (base.css,
  * glass.css), which this move deleted, with the phone's grid of them (phone.css), which the phone's tiles replaced.
  */
 :host {
@@ -31,8 +31,8 @@
   outline-offset: 2px;
 }
 .citem[aria-selected='true'] {
-  background: color-mix(in srgb, var(--c-home) 13%, var(--card));
-  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c-home) 55%, transparent);
+  background: var(--nav-sel-bg);
+  box-shadow: none;
 }
 .citem .ic {
   width: 38px;
@@ -87,10 +87,8 @@
   border-color: transparent;
 }
 :host([glass]) .citem[aria-selected='true'] {
-  background: color-mix(in srgb, var(--c-home) 16%, var(--g-card));
-  box-shadow:
-    inset 0 0 0 1.5px color-mix(in srgb, var(--c-home) 55%, transparent),
-    var(--g-shadow);
+  background: var(--nav-sel-bg);
+  box-shadow: var(--g-shadow);
 }
 :host([glass]) .citem.on .ic {
   background: color-mix(in srgb, var(--c-wh) 22%, var(--g-sel));
