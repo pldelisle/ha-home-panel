@@ -16,7 +16,7 @@ export default defineConfig({
         'src/fonts.js',
         'src/core/**/*.ts',
         'src/providers/**/*.ts',
-        'src/features/*/{ids,inputs,model,tiles,history,scenes,commands,flow-layout,water-chart,charts,sankey-layout,schedule,bars-geometry,checks,order,state,al-strip-layout,traces,sentences,timeline-layout,graph,mermaid-def,activities,done,cards,rotation,card-cache}.ts', // the pure files; the elements are proven by the harness
+        'src/features/*/{ids,inputs,model,tiles,history,scenes,commands,flow-layout,water-chart,charts,sankey-layout,schedule,bars-geometry,checks,order,state,al-strip-layout,traces,sentences,timeline-layout,graph,mermaid-def,activities,done,cards,rotation,card-cache,glance}.ts', // the pure files; the elements are proven by the harness
         'src/features/stack/loader.ts', // the same, for the smart stack's Energy-today filler
         'src/features/live/loader.ts', // a controller over the statistics cache through the kit's WindowedHistory, tested with a fake cache, store and host
         'src/features/car/controls.ts', // the controls' view: strings and flags from the inputs, the held values and the draft; the two cards that call it are proven by the harness
@@ -33,6 +33,7 @@ export default defineConfig({
         'src/shell/idle-timer.ts', // the table and its controller; the host is a stub, no element is mounted
         'src/shell/legacy-feature.ts',
         'src/shell/sky.ts',
+        'src/shell/upcoming.ts',
         'src/shell/appearance-rules.ts',
         'src/shell/document-background.ts',
         'src/ui/icons.ts',
@@ -48,7 +49,7 @@ export default defineConfig({
       thresholds: {
         'src/core/**/*.ts': {statements: 100},
         'src/providers/**/*.ts': {statements: 100},
-        'src/features/*/{ids,inputs,model,tiles,history,scenes,commands,flow-layout,water-chart,charts,sankey-layout,schedule,bars-geometry,checks,order,state,al-strip-layout,traces,sentences,timeline-layout,graph,mermaid-def,activities,done,cards,rotation,card-cache}.ts':
+        'src/features/*/{ids,inputs,model,tiles,history,scenes,commands,flow-layout,water-chart,charts,sankey-layout,schedule,bars-geometry,checks,order,state,al-strip-layout,traces,sentences,timeline-layout,graph,mermaid-def,activities,done,cards,rotation,card-cache,glance}.ts':
           {
             statements: 100,
           },
@@ -75,6 +76,7 @@ export default defineConfig({
         'src/shell/idle-timer.ts': {statements: 100, branches: 100},
         'src/shell/legacy-feature.ts': {statements: 100},
         'src/shell/sky.ts': {statements: 100},
+        'src/shell/upcoming.ts': {statements: 100},
         'src/shell/appearance-rules.ts': {statements: 100},
         'src/shell/document-background.ts': {statements: 100},
         'src/ui/icons.ts': {statements: 100},

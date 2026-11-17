@@ -1,6 +1,7 @@
 // climateFeature: the descriptor of the Climate subject, which the registry lists and the shell draws the rail, the pane and the More word from.
 // Pattern: plug-in (Fowler, PoEAA, Plugin): the feature's folder says what it is as data and one `pane` template, and its element is linked by importing this module.
 // The pane binds its detail's sheet to the sheet host's answers (ADR 0021); the tab is on the phone's bar, so it has no More word.
+// It re-exports `glance`, the Home pane's tile reader (glance.ts, #267).
 // Must not: draw or hold state, import the guest or another feature, or read an entity beyond what `hasClimate` reads.
 import {html} from 'lit';
 import './climate-pane.ts'; // defines <hp-climate-pane>
@@ -23,3 +24,4 @@ export const climateFeature: FeatureDescriptor = {
       .detail=${env.sheetDetail(DETAIL_SHEET)}
     ></hp-climate-pane>`,
 };
+export {glance} from './glance.ts';

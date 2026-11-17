@@ -323,6 +323,34 @@
       "values": {
         "reason": "42"
       }
+    },
+    {
+      "key": "lights.glance.on",
+      "values": {
+        "n": 3
+      }
+    },
+    {
+      "key": "lights.glance.on",
+      "values": {
+        "n": 1
+      },
+      "translated": "1 allumée"
+    },
+    {
+      "key": "lights.glance.allOff",
+      "translated": "Tout éteint"
+    },
+    {
+      "key": "lights.glance.nothingOn",
+      "translated": "Rien d'allumé"
+    },
+    {
+      "key": "lights.glance.room",
+      "values": {
+        "name": "Office",
+        "percent": 54
+      }
     }
   ]
 }

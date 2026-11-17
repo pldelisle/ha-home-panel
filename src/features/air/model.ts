@@ -197,7 +197,10 @@ interface Overall {
   why: string;
 }
 
-function overallOf(rated: readonly {room: AirRoomInputs; rating: RoomRating}[], {t, fmt}: AirModelDeps): Overall {
+function overallOf(
+  rated: readonly {room: AirRoomInputs; rating: RoomRating}[],
+  {t, fmt}: Pick<AirModelDeps, 't' | 'fmt'>,
+): Overall {
   const worst = Math.max(-1, ...rated.map(({rating}) => rating.level)) as Level;
   const high = worst > 0 ? rated.filter(({rating}) => rating.level === worst) : [];
   return {
@@ -352,6 +355,26 @@ export function airBrief(rooms: readonly AirRoomInputs[], t: Translate): string 
   if (!rooms.length) return t('air.noPurifiersBrief');
   const worst = Math.max(-1, ...rooms.map(room => rateRoom(room).level)) as Level;
   return worst < 0 ? t('air.noData') : t(LEVEL_WORDS[toneOf(worst)]);
+}
+
+/**
+ * The Home pane's Air tile (#267): the worst room's level, and the purifiers with what is high in the rooms at that level, or that
+ * the air is clean everywhere; the legacy `renderHome`'s rule. Null for a house with no purifier, which has no tile.
+ */
+export function airGlance(
+  rooms: readonly AirRoomInputs[],
+  deps: Pick<AirModelDeps, 't' | 'fmt'>,
+): {value: string; line: string} | null {
+  if (!rooms.length) return null;
+  const {t} = deps;
+  const {worst, why} = overallOf(
+    rooms.map(room => ({room, rating: rateRoom(room)})),
+    deps,
+  );
+  return {
+    value: worst < 0 ? t('air.noData') : t(LEVEL_WORDS[toneOf(worst)]),
+    line: joined(t('air.purifiers', {n: rooms.length}), worst > 0 ? why : t('air.glance.clean')),
+  };
 }
 
 /** The Air tab's view: the card, the detail and the sub-line, from the inputs, in the language `deps.t` words. */

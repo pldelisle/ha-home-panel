@@ -87,6 +87,7 @@ describe.each([
   ['lights', 'lights.', ['src/features/lights/'], []],
   ['people', 'people.', ['src/features/people/'], []],
   ['stack', 'stack.', ['src/features/stack/'], []],
+  ['home', 'home.', ['src/shell/'], []],
   ['chart', 'chart.', ['src/ui/'], []],
   ['ranges', 'range.', ['src/ui/'], []],
   ['settings', 'settings.', ['src/shell/'], []],

@@ -691,6 +691,35 @@
         "tier": "tarif actuel"
       },
       "written": "Hilo tarif actuel"
+    },
+    {
+      "key": "energy.glance.line",
+      "values": {
+        "kwh": "12.3",
+        "rate": "low rate"
+      },
+      "fr": {
+        "rate": "tarif bas"
+      }
+    },
+    {
+      "key": "energy.glance.lineNow",
+      "values": {
+        "rate": "rate unknown"
+      },
+      "fr": {
+        "rate": "tarif inconnu"
+      }
+    },
+    {
+      "key": "energy.glance.water",
+      "values": {
+        "state": "Heating",
+        "kwh": "4.2"
+      },
+      "fr": {
+        "state": "Chauffe"
+      }
     }
   ]
 }

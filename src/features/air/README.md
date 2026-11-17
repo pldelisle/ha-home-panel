@@ -15,6 +15,7 @@ src/features/air/
   model.ts                 airModel(inputs, deps): AirViewModel: the card, the detail and the sub-line, through `t`, `fmt` and the overlay; airBrief(rooms, t): the More sheet's word
   history.ts               metricIds, metricSeries, outdoorSeries, chartText, airChartOptions, outdoorChartOptions, statisticsStart, rangeTabs: statistics in, plain-data chart options out
   commands.ts              K (the overlay keys), setMode, setSpeed: `Command` data
+  glance.ts                glance(store): the Home pane's Air tile, worded by the model's airGlance, #267
   index.ts                 airFeature: the descriptor, with `detailSheet`; its More word is `airBrief`, the legacy word ("Good", "No data", "No purifiers")
   sheets.ts                DETAIL_SHEET = 'air.detail'
   air-pane.ts              <hp-air-pane>: the header; the card and the detail's sheet on a phone, the detail inline on a tablet; owns the statistics cache, the range and the metric; air-pane.element.css

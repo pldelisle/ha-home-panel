@@ -1,0 +1,40 @@
+{
+  "about": "The English messages of the phone's \"Coming up\" list (src/core/i18n/en.ts, home.upcoming.*, #267), each with sample values, and the new Home tile keys sit in their features' fixtures. test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer makes of the English; `translated` is French where the layer left the English or got it wrong, a visible change #268 and #269 record when they draw these. The legacy panel still draws all of them until #268 and #269, so no entry of the rewrite layer is deleted yet. Deleted with the layer in phase 4.",
+  "messages": [
+    {
+      "key": "home.upcoming.sunset"
+    },
+    {
+      "key": "home.upcoming.sunrise"
+    },
+    {
+      "key": "home.upcoming.challenge",
+      "values": {
+        "phase": "reduction"
+      },
+      "fr": {
+        "phase": "Réduction"
+      },
+      "translated": "Défi : Réduction"
+    },
+    {
+      "key": "home.upcoming.peak"
+    },
+    {
+      "key": "home.upcoming.car"
+    },
+    {
+      "key": "home.upcoming.departure",
+      "values": {
+        "schedule": "Weekdays at 7:30 am"
+      },
+      "fr": {
+        "schedule": "En semaine à 7 h 30"
+      },
+      "translated": "Départ : En semaine à 7 h 30"
+    },
+    {
+      "key": "home.upcoming.on"
+    }
+  ]
+}

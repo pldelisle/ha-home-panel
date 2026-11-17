@@ -22,6 +22,7 @@ src/features/energy/
   water-chart.ts           waterChartGeometry(series, now, deps): the 24-hour chart's grid, ticks, bars and line
   history.ts               windows and slices only Energy reads: dailyTotals, groupTotals, roomTotals, monthlyTotals, waterCycles, waterDaily
   loader.ts                EnergyHistory: a reactive controller that loads the windows through the statistics cache when its host is shown
+  glance.ts                glance(store, deps), waterGlance(store, deps): the Home pane's Energy and Water heater tiles, from the loaded history, #267
   index.ts                 energyFeature: the descriptor the registry lists, with the two sheets the pane binds
   sheets.ts                the ids of the sheets: the detail's, the water heater's and Hilo's
   energy-pane.ts           <hp-energy-pane>: the header, the card and the tiles on a phone; the detail and the two cards on a tablet; the range and the Sankey's period
