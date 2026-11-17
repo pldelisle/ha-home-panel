@@ -11,21 +11,11 @@ import {lightsFeature} from '../features/lights/index.ts';
 import {mediaFeature} from '../features/media/index.ts';
 import {securityFeature} from '../features/security/index.ts';
 import {weatherFeature} from '../features/weather/index.ts';
+import {homeFeature} from './home-feature.ts';
 import {legacyFeature} from './legacy-feature.ts';
 
 export const FEATURES: readonly FeatureDescriptor[] = [
-  legacyFeature('home', {
-    icon: 'house',
-    color: 'var(--c-grid)',
-    phoneBar: true,
-    header: {subId: 'hsub'},
-    hosts: [
-      '<div class="cfgerrh" id="cfgerr" hidden></div>',
-      '<div class="card hwx" id="hwx"></div>',
-      '<div class="hright"><div class="htiles" id="htiles"></div><div id="hsec"></div></div>',
-      '<div class="hscenes" id="hscenes" hidden></div>',
-    ],
-  }),
+  homeFeature,
   lightsFeature,
   climateFeature,
   weatherFeature,

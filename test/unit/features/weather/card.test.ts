@@ -1,0 +1,84 @@
+// The Home pane's weather card (#268): `readSunTimes` reads the next sunset and sunrise, and `weatherCardModel` words the sun line in the
+// order the events come, the big temperature, the condition and the high and low, as the legacy `renderHome` did, in English and French.
+import {describe, expect, test} from 'vitest';
+import {resolveConfig} from '../../../../src/core/config.ts';
+import {createFormatters} from '../../../../src/core/i18n/format.ts';
+import {panelLocale} from '../../../../src/core/i18n/locale.ts';
+import {createMessages} from '../../../../src/core/i18n/messages.ts';
+import {readSunTimes, readWeather} from '../../../../src/features/weather/inputs.ts';
+import {weatherCardModel} from '../../../../src/features/weather/model.ts';
+import {fullHouse, inputsWith, type Language} from './support.ts';
+
+const SET = Date.UTC(2026, 10, 7, 21, 45);
+const RISE = Date.UTC(2026, 10, 8, 12, 0);
+
+function say(language: Language) {
+  const locale = panelLocale({...fullHouse, locale: {language}}, {timeZone: 'America/Toronto', browserLocale: 'en'});
+  return {t: createMessages(locale).t, fmt: createFormatters(locale)};
+}
+
+describe('readSunTimes', () => {
+  test('reads the two sun sensors of the house, in milliseconds', () => {
+    const config = resolveConfig({}, fullHouse.states);
+    const times = readSunTimes(fullHouse.states, config);
+    expect(typeof times.set).toBe('number');
+    expect(typeof times.rise).toBe('number');
+  });
+
+  test('says null for a sensor that reads nothing or is not set', () => {
+    const config = resolveConfig({}, fullHouse.states);
+    const id = config.entities.setting!;
+    const states = {...fullHouse.states, [id]: {...fullHouse.states[id], state: 'unknown'}};
+    expect(readSunTimes(states, config).set).toBeNull();
+    expect(readSunTimes(fullHouse.states, {...config, entities: {...config.entities, rising: null}}).rise).toBeNull();
+  });
+});
+
+describe('weatherCardModel', () => {
+  test('by day: sunset first, then sunrise, with the high and the low', () => {
+    const inputs = inputsWith({
+      temperature: 4.2,
+      condition: 'partlycloudy',
+      today: {...inputsWith({}).today, hi: 7.4, lo: -1.2},
+      sun: {up: true, next: null, hasFirstLight: false},
+    });
+    const view = weatherCardModel(inputs, {set: SET, rise: RISE}, say('en'));
+    expect(view).toEqual({
+      next: {label: 'Sunset', time: '4:45 pm'},
+      then: {label: 'sunrise', time: '7:00 am'},
+      temperature: '4°',
+      condition: 'Partly cloudy',
+      range: 'High 7° · low -1°',
+    });
+  });
+
+  test('by night, in French: sunrise first, then sunset', () => {
+    const inputs = inputsWith({
+      today: {...inputsWith({}).today, hi: 7.4, lo: null},
+      sun: {up: false, next: null, hasFirstLight: false},
+    });
+    const view = weatherCardModel(inputs, {set: SET, rise: RISE}, say('fr'));
+    expect(view.next.label).toBe('Lever du soleil');
+    expect(view.then?.label).toBe('coucher du soleil');
+    expect(view.range).toBe('Max 7°');
+  });
+
+  test('a dash for a sensor that reads nothing, and no second event', () => {
+    const inputs = inputsWith({sun: {up: true, next: null, hasFirstLight: false}});
+    const view = weatherCardModel(inputs, {set: null, rise: null}, say('en'));
+    expect(view.next.time).toBe('–');
+    expect(view.then).toBeNull();
+    expect(view.temperature).toBe('–');
+    expect(view.range).toBe('');
+  });
+
+  test('the full house reads a card', () => {
+    const config = resolveConfig({}, fullHouse.states);
+    const view = weatherCardModel(
+      readWeather(fullHouse.states, config),
+      readSunTimes(fullHouse.states, config),
+      say('en'),
+    );
+    expect(view.next.label).toMatch(/^Sun(set|rise)$/);
+  });
+});

@@ -1,5 +1,5 @@
 // glance: the Climate tile of the Home pane, the rooms' mean temperature, how many heat and what the heat pump does (spec 24, #267).
-// Pattern: a pure reader over the store (a view model, Meszaros' humble object's other half); the legacy `renderHome`'s rule, which #268 deletes.
+// Pattern: a pure reader over the store (a view model, Meszaros' humble object's other half); the legacy `renderHome`'s rule, deleted in #268.
 // Must not: read the clock, import the DOM, Lit, the shell or another feature, or hold text the household reads (a catalog key says it).
 import {DASH} from '../../core/figures.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';

@@ -1,0 +1,56 @@
+/*
+ * <hp-weather-card>'s own rules: the host lays out nothing, so its three parts are items of the Home pane's `.hwx` card, as the legacy
+ * `#hwx-wx` was; then the sun line, the big figure with the condition, and the house picture by theme. Moved from the legacy `.hbig`
+ * and `.hhouse` rules (tabs.css, phone.css) and the sun line's inline styles, which the Home move (#268) deleted.
+ */
+:host {
+  display: contents;
+}
+.sunline {
+  font-size: 13px;
+  font-weight: 500;
+}
+.sunline b {
+  color: var(--fg);
+}
+.hbig {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+.hbig .num {
+  font-size: calc(78px * var(--tx));
+  line-height: 0.9;
+}
+.hbig .hc {
+  font-size: calc(18px * var(--tx));
+  font-weight: 600;
+}
+.hbig .muted {
+  font-size: calc(13px * var(--tx));
+}
+.hhouse .house {
+  display: block;
+  width: 100%;
+  max-width: 300px;
+  height: auto;
+  margin: 6px auto;
+  filter: drop-shadow(0 10px 10px rgba(40, 30, 20, 0.18));
+}
+.app[data-theme='dark'] .hhouse .house {
+  filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.5));
+}
+.hhouse .house.night,
+.app[data-theme='dark'] .hhouse .house.day {
+  display: none;
+}
+.app[data-theme='dark'] .hhouse .house.night {
+  display: block;
+}
+.app.tabsv.cp .hbig .num {
+  font-size: calc(60px * var(--tx));
+}
+.app.tabsv.cp .hhouse .house {
+  max-width: 220px;
+  margin: 2px auto;
+}

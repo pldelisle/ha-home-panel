@@ -84,14 +84,15 @@ describe('the ten panes', () => {
   test('hold no id twice, and the ones the guest writes into are there', () => {
     const ids = FEATURES.flatMap(f => [...markup(f.pane).matchAll(/ id="([^"]+)"/g)].map(m => m[1]));
     expect(new Set(ids).size).toBe(ids.length);
-    for (const id of ['hsub', 'ausub']) expect(ids, id).toContain(id);
+    // Home's `#hsub` is drawn by <hp-home-pane> since #268, in its light DOM, where the guest still writes it
+    for (const id of ['ausub']) expect(ids, id).toContain(id);
     for (const id of ['auhost']) expect(ids, id).toContain(id);
   });
 
   // the header's shadow root is closed to the guest (getElementById stops at it), so the lines it writes are slotted nodes
-  test("put the line the guest writes under the heading in the header's sub slot, but the Lights, Weather, Climate, Car, Energy, Air, Media and Security panes', which are elements", () => {
+  test("put the line the guest writes under the heading in the header's sub slot, but the Home, Lights, Weather, Climate, Car, Energy, Air, Media and Security panes', which are elements", () => {
     for (const f of FEATURES.filter(
-      f => !['lights', 'weather', 'climate', 'car', 'energy', 'air', 'media', 'cams'].includes(f.key),
+      f => !['home', 'lights', 'weather', 'climate', 'car', 'energy', 'air', 'media', 'cams'].includes(f.key),
     ))
       expect(markup(f.pane), f.key).toMatch(/<div slot="sub" id="\w+"><\/div>/);
   });
@@ -105,9 +106,9 @@ describe('the ten panes', () => {
     expect(FEATURES.filter(f => markup(f.pane).includes('slot="actions"')).map(f => f.key)).toEqual([]);
   });
 
-  test('head their pane with the catalog title, in the language of the panel, but the Lights, Weather, Climate, Car, Energy, Air, Media and Security elements', () => {
+  test('head their pane with the catalog title, in the language of the panel, but the Home, Lights, Weather, Climate, Car, Energy, Air, Media and Security elements', () => {
     for (const f of FEATURES.filter(
-      f => !['lights', 'car', 'weather', 'climate', 'energy', 'air', 'media', 'cams'].includes(f.key),
+      f => !['home', 'lights', 'car', 'weather', 'climate', 'energy', 'air', 'media', 'cams'].includes(f.key),
     ))
       expect(bindings(f.pane)[2], f.key).toBe(`[${f.key}.title]`);
   });

@@ -157,8 +157,7 @@
   --g-card: rgba(255, 255, 255, calc(0.06 * var(--g-m, 1)));
   --g-tile: rgba(255, 255, 255, calc(0.06 * var(--g-m, 1)));
 }
-.app.gl .card,
-.app.gl .htile {
+.app.gl .card {
   background: var(--g-card);
   -webkit-backdrop-filter: var(--g-bd);
   backdrop-filter: var(--g-bd);
@@ -247,8 +246,7 @@
   .app.gl .head .chip,
   .app.gl .head button.icon,
   .app.gl .pop,
-  .app.gl .card,
-  .app.gl .htile {
+  .app.gl .card {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
     background: var(--card);

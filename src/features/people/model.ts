@@ -1,7 +1,7 @@
 // peopleModel: the configured people in, the strings and flags Who's home places out: the header's chips and the Home card.
 // Pattern: a pure view-model function, a humble object's other half (Meszaros, Fowler): it reads no clock, no `hass` and no store,
 // words every message through `deps.t`, and takes the provider's `presence` as the contract (ADR 0025). The wording is the legacy
-// `whoHtml` and the Home card's hint, which #266 and #268 delete.
+// `whoHtml` and the Home card's hint, deleted in #266 and #268.
 // Must not: import the DOM, the kit or the shell, read the clock, or hold text the household reads (a catalog key says it).
 import type {Translate} from '../../core/i18n/messages.ts';
 import type {Person} from '../../providers/people.ts';

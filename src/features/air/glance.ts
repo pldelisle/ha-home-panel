@@ -1,6 +1,6 @@
 // glance: the Air tile of the Home pane, the worst room's level and why (spec 24, #267).
 // Pattern: a pure reader over the store (a view model, Meszaros' humble object's other half); the words are the model's `airGlance`,
-// the legacy `renderHome`'s rule, which #268 deletes.
+// the legacy `renderHome`'s rule, deleted in #268.
 // Must not: read the clock, import the DOM, Lit, the shell or another feature, or hold text the household reads (a catalog key says it).
 import {registriesOf} from '../../core/registry.ts';
 import {milaRooms} from '../../providers/mila.ts';

@@ -8,7 +8,7 @@ import {readMedia} from './inputs.ts';
 import {mediaBrief} from './model.ts';
 import {CONTROLS_SHEET, controlsKeyOf} from './sheets.ts';
 import './media-pane.ts'; // defines <hp-media-pane>
-import './scene-tiles.ts'; // defines <hp-scene-tiles>, which the guest places on the Home tab (ADR 0024)
+import './scene-tiles.ts'; // defines <hp-scene-tiles>, which the Home pane places
 import {registriesOf} from '../../core/registry.ts';
 import type {FeatureDescriptor} from '../../ui/feature.ts';
 

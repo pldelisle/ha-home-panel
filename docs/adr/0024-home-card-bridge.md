@@ -1,6 +1,6 @@
 # 0024: The guest may place a feature element by its tag on the Home pane; the hidden Home TV card is deleted, not moved
 
-Status: accepted (2026-11-11)
+Status: accepted (2026-11-11); its Home pane uses closed on 2026-11-17 by the Home move (#268), which composes the cards itself
 
 ## Context
 

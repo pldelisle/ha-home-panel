@@ -2,8 +2,8 @@
 // Pattern: strangler fig (Fowler, Strangler Fig Application): the host wraps the old code behind an interface the host
 // owns, and the interface only shrinks; registering a factory keeps the shell from importing legacy code (ADR 0011).
 // Must not: grow past what the spec names for a step, except a member whose note names what deletes it; be imported by anything but the shell and src/main.js; or outlive the guest (module state included).
-// Lit binds nothing inside a guest container, and the guest writes nothing outside them but the Home-card bridge's tags (ADR 0024, ADR 0031): `<hp-scene-tiles>` in `#hscenes`, `<hp-security-card>` in `#hsec`,
-// `<hp-who-card>` and `<hp-smart-stack mode="home">` in `#hwx` until #268, `<hp-who-chips place="header">` in `#hello` until #269, and `<hp-smart-stack mode="idle">` in `#iwrap`, the last, until spec 26.
+// Lit binds nothing inside a guest container, and the guest writes nothing outside them but the Home-card bridge's tags (ADR 0024, ADR 0031): `<hp-who-chips place="header">`
+// in `#hello` until #269, and `<hp-smart-stack mode="idle">` in `#iwrap`, the last, until spec 26. The Home pane composes its own cards since #268.
 import type {PanelApi} from '../core/api.ts';
 import type {PanelSettings} from '../core/settings.ts';
 import type {StatisticsCache} from '../core/statistics-cache.ts';

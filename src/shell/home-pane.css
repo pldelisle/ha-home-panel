@@ -1,0 +1,161 @@
+/*
+ * The Home pane's own rules (ADR 0032): <hp-home-pane> draws in light DOM, so these join the shell's root after the legacy sheet.
+ * The host lays out nothing, so the header and the four parts are items of the `.pane-home` grid (tabs.css) as the legacy hosts were;
+ * then the weather card, its smart stack, the right column of tiles and the Security card, the configuration card and the scenes row.
+ * Moved from tabs.css and phone.css by the Home move (#268); the tile's and the weather card's own rules are in their `*.element.css`.
+ */
+hp-home-pane {
+  display: contents;
+}
+hp-home-pane > hp-pane-header {
+  grid-column: 1/-1;
+  margin-bottom: 2px;
+  align-self: start;
+}
+.hwx {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+/* smart stack in the Home card (2.9.0): it takes whatever height the tiles beside it leave under Who's home, never more, so the
+   row never grows for it (size containment); on a short card the footer line goes and the big numbers shrink */
+.hstk {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 150px;
+  margin-top: 10px;
+  container-type: size;
+}
+.hstk[hidden] {
+  display: none;
+}
+@media (max-width: 1000px) {
+  .hstk {
+    flex: none;
+    height: 220px;
+  }
+}
+.hright {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  grid-template-rows: auto 1fr;
+  align-content: start;
+}
+/* the configuration card (spec 13): an ordinary card with an amber edge, the colour the attention glow uses, across the pane's
+   top; the host stays hidden and empty while the config is clean */
+.cfgerrh {
+  grid-column: 1/-1;
+  min-width: 0;
+}
+.cfgerr {
+  outline: 2px solid color-mix(in srgb, var(--warn) 70%, transparent);
+  outline-offset: -2px;
+}
+/* Increase Contrast: the edge is decorative (the heading carries the meaning), but it turns solid like the other lines do */
+@media (prefers-contrast: more) {
+  .cfgerr {
+    outline-color: var(--warn);
+  }
+}
+.cfgerr h3 {
+  margin: 0 0 6px;
+  font-family: var(--f-num);
+  font-weight: var(--num-w);
+  font-size: calc(17px * var(--tx));
+  color: var(--t-warn);
+}
+.cfgerr p,
+.cfgerr li {
+  margin: 0;
+  font-size: calc(14px * var(--tx));
+  line-height: 1.45;
+}
+.cfgerr p {
+  color: var(--fg2);
+}
+.cfgerr ul {
+  margin: 10px 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+.cfgerr li {
+  overflow-wrap: anywhere;
+}
+.cfgerr code {
+  font-family: var(--f-mono);
+  font-size: 0.92em;
+  padding: 1px 6px;
+  /* the pill's right padding sits under the text that follows: the English colon reads attached (`peoples:`), and the
+     French space before its colon (`peoples :`) stays a space */
+  margin-right: -5px;
+  border-radius: 6px;
+  background: var(--card2);
+  color: var(--fg);
+}
+.cfgerr p.s {
+  font-size: calc(13px * var(--tx));
+}
+.hscenes {
+  grid-column: 1/-1;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+.hscenes[hidden] {
+  display: none;
+}
+.htiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+/* the card's box is <hp-security-card>'s; its container takes no box of its own */
+#hsec {
+  display: contents;
+}
+/* the phone: the weather card opens its sheet, the six tiles go two across, the Security card follows, the scenes row comes first */
+.app.tabsv.cp .hwx {
+  cursor: pointer;
+}
+.app.tabsv.cp .hright {
+  display: contents;
+}
+.app.tabsv.cp .htiles {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+/* at the Larger text size the two-column tiles go to one column, so nothing is cut */
+.app.tabsv.cp.txl .htiles {
+  grid-template-columns: 1fr;
+}
+/* the scenes come first, one row that scrolls sideways; the pane has no title of its own, the header line says the date and temperatures */
+.app.tabsv.cp hp-home-pane > hp-pane-header {
+  display: none;
+}
+/* the configuration card stays the first thing on the Home tab: -2 only because the scenes row below is -1 (change both together) */
+.app.tabsv.cp .cfgerrh {
+  order: -2;
+}
+.app.tabsv.cp .hscenes {
+  order: -1; /* first of the pane's own content; the configuration card above is -2 to sit before it */
+  display: flex;
+  gap: 10px;
+  margin: 0 -16px;
+  padding: 0 16px 2px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.app.tabsv.cp .hscenes::-webkit-scrollbar {
+  display: none;
+}
+.app.tabsv.cp .hscenes[hidden] {
+  display: none;
+}
