@@ -94,7 +94,6 @@ export class HomePanel extends LitElement {
     settingsOpen: {state: true},
     statusOpen: {state: true},
     toastNow: {state: true},
-    liveRunning: {state: true},
   };
   declare hass: PanelHass | undefined;
   declare narrow: boolean;
@@ -111,8 +110,6 @@ export class HomePanel extends LitElement {
   declare private statusOpen: boolean;
   /** The toast showing, from the last `ToastEvent` through the pure schedule; null when none is. */
   declare private toastNow: ToastState;
-  /** An activity runs in the live pill: `#chips` says so, and the weather chip beside it slims down. */
-  declare private liveRunning: boolean;
 
   // The legacy stylesheet is the guest's, so it comes with the guest (registerGuest) instead of an import of
   // src/styles.js, which the dependency rule forbids here. Lit adopts it once for every instance, as a constructed
@@ -212,7 +209,6 @@ export class HomePanel extends LitElement {
     this.settingsOpen = false;
     this.statusOpen = false;
     this.toastNow = null;
-    this.liveRunning = false;
     // each provider adds itself to this element as a controller and answers the context requests of every element below
     new ContextProvider(this, {context: storeContext, initialValue: this.store});
     new ContextProvider(this, {context: apiContext, initialValue: this.api});
@@ -343,11 +339,11 @@ export class HomePanel extends LitElement {
     else this.sheets.close(e.detail.id);
   };
 
-  // The live pill counts what runs and what needs attention: the weather chip slims while an activity shows, and the guest's Home sub-line says the count.
+  // The live pill counts what runs and what needs attention; the guest draws both: its weather chip slims while an activity shows (redrawn,
+  // as the legacy header was, since a chip restyled in place after the row moves kept a stale sub-pixel raster in Chromium), and its Home sub-line says the count.
   private readonly onLiveActivities = (e: LiveActivitiesEvent): void => {
     e.stopPropagation();
-    this.liveRunning = e.detail.count > 0;
-    if (this.guestConnected) this.guest?.attentionChanged(e.detail.attention);
+    if (this.guestConnected) this.guest?.liveChanged(e.detail.count > 0, e.detail.attention);
   };
 
   // the Weather pane's controller owns the forecast; the guest still reads it for the detail panel and Home's card (#158)
@@ -502,7 +498,7 @@ export class HomePanel extends LitElement {
         <button class="icon menu" id="menu" type="button" aria-label="Open the sidebar">${ico('menu')}</button>
         <div class="hello" id="hello"></div>
         <div class="chips">
-          <div id="chips" ?data-live=${this.liveRunning}>
+          <div id="chips">
             <span id="wxchip-host"></span>
             <hp-live-pill .open=${this.statusOpen}></hp-live-pill>
           </div>

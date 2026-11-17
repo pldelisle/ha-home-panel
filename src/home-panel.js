@@ -260,7 +260,8 @@ export class LegacyPanel {
     this.car = null; // the car's entities by the provider's rule (findCar), found once there are states: the stack and the Home tile read it through carInputs, until #269
     this.cache = {}; // last innerHTML per container, to skip identical updates
     this.pending = {}; // optimistic control states until hass catches up
-    this.attentionCount = 0; // how many Status checks need attention, told by the shell from the live pill (attentionChanged)
+    this.attentionCount = 0; // how many Status checks need attention, told by the shell from the live pill (liveChanged)
+    this.liveRunning = false; // whether the live pill shows an activity, told by the shell (liveChanged): the weather chip slims beside it
     this.fc = {}; // forecasts by type, told by the shell (forecastChanged) from the Weather pane's subscription; Home's card reads them
     // #iwrap, the clock's container, is a static node of the shell's and outlives a draw: one listener, added at connect and removed at disconnect.
     // On the smart stack's card the tap that wakes the panel opens what the card is about
@@ -1513,7 +1514,7 @@ export class LegacyPanel {
     const chips = [];
     if (temp != null)
       chips.push(
-        `<div class="chip wxchip"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="9" r="4" fill="var(--m-amber)"/><path d="M8 19h9a4 4 0 0 0 0-8 5 5 0 0 0-9.6 1.6A3.2 3.2 0 0 0 8 19z" fill="var(--fg3)" opacity=".7"/></svg><span class="num">${f1(temp)}°</span><small>${esc(condName(ok(cond) ? cond.state : (this.st(this.E.weather) || {}).state))}</small></div>`,
+        `<div class="chip wxchip${this.liveRunning ? ' slim' : ''}"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="9" r="4" fill="var(--m-amber)"/><path d="M8 19h9a4 4 0 0 0 0-8 5 5 0 0 0-9.6 1.6A3.2 3.2 0 0 0 8 19z" fill="var(--fg3)" opacity=".7"/></svg><span class="num">${f1(temp)}°</span><small>${esc(condName(ok(cond) ? cond.state : (this.st(this.E.weather) || {}).state))}</small></div>`,
       );
     if (this.hydroQuebec()?.peakNow)
       chips.push(`<div class="chip"><span class="dot" style="background:var(--crit)"></span>Critical peak now</div>`);
@@ -1605,17 +1606,23 @@ export class LegacyPanel {
   forecastChanged(type, forecast) {
     this.fc[type] = forecast;
   }
-  // ---------- the Status checks' count ----------
-  // The live pill (#256) runs the Status checks and the shell tells the guest how many need attention: the Home pane's sub-line says it. Deleted with
-  // its last reader, `renderPaneSubs` (the Home move, #269).
-  attentionChanged(count) {
-    this.attentionCount = count;
-    if (!this.hass || !this.$app) return; // drawn with the count at the first render
-    try {
-      this.renderPaneSubs();
-    } catch (e) {
-      console.error('home-panel renderPaneSubs', e);
-    }
+  // ---------- the live pill's counts ----------
+  // The live pill (#256) runs the activities and the Status checks, and the shell tells the guest whether an activity shows and how many
+  // checks need attention: the weather chip slims beside an activity, redrawn as the legacy header redrew it, and the Home pane's sub-line
+  // says the count. Deleted with its last readers, `renderHeader` and `renderPaneSubs` (the Home move, #269).
+  liveChanged(running, attention) {
+    this.liveRunning = running;
+    this.attentionCount = attention;
+    if (!this.hass || !this.$app) return; // drawn with both at the first render
+    // the chips are drawn again even when unchanged: the pill beside them has just changed and moved them, and Chromium keeps a moved
+    // glass chip's old sub-pixel raster, where the legacy header drew the chip and the pill together
+    delete this.cache['wxchip-host'];
+    for (const f of ['renderHeader', 'renderPaneSubs'])
+      try {
+        this[f]();
+      } catch (e) {
+        console.error('home-panel ' + f, e);
+      }
   }
   // Temporary until Home's card and the idle clock move: `wxDays`, `dayName`, `alerts`, `sunDay`
   wxDays() {

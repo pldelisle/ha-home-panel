@@ -1,20 +1,10 @@
 /* ---- Live activities (2.5.0): the pill and its cards are feature elements since #256 (src/features/live); what stays here is the popup's box and the weather chip beside the pill ---- */
-/* the guest's chips sit in a box of their own before the pill (#256): on a tablet a flex row as the header's chips are, since a
-   `display: contents` box drew the weather chip's text a shade differently there; empty, it takes no place and no gap. On a phone,
-   where the weather chip is hidden, the box is no box, so a box holding only a hidden chip adds no gap either. */
+/* the guest's chips sit in a box of their own before the pill (#256), a box that is no box, so they are the row's own items as before */
 #wxchip-host {
-  display: flex;
-  align-self: stretch; /* as tall as the chips' row, so a chip is centred in that row once, as it was when it was the row's own item */
-  align-items: center;
-  gap: 10px;
-}
-#wxchip-host:empty {
-  display: none;
-}
-.app.tabsv.cp .head #wxchip-host {
   display: contents;
 }
-#chips[data-live] .wxchip small {
+/* beside a running activity the weather chip shows only its temperature: the guest adds `slim` (liveChanged) */
+.wxchip.slim small {
   display: none;
 }
 /* the popup: one card per activity, then the usual Status checks */
