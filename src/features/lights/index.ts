@@ -2,7 +2,8 @@
 // Pattern: plug-in (Fowler, PoEAA, Plugin): the feature's folder says what it is as data and one `pane` template, and its element is
 // linked by importing this module. Lights sits on the phone's bar, so the More sheet never lists it and it has no summary. The pane
 // binds the room whose sheet is open to the sheet host's answer (ADR 0021).
-// Must not: draw or hold state, import the guest or another feature, or read an entity.
+// It re-exports `glance`, the Home pane's tile reader (glance.ts, #267).
+// Must not: draw or hold state, import the guest or another feature, or read an entity itself.
 import {html} from 'lit';
 import {ROOM_SHEET, roomKeyOf} from './sheets.ts';
 import './lights-pane.ts'; // defines <hp-lights-pane>
@@ -21,3 +22,4 @@ export const lightsFeature: FeatureDescriptor = {
       .roomKey=${env.sheetOpen(ROOM_SHEET) ? roomKeyOf(env.sheetDetail(ROOM_SHEET)) : undefined}
     ></hp-lights-pane>`,
 };
+export {glance} from './glance.ts';

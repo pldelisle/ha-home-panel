@@ -455,6 +455,10 @@
     {
       "key": "air.axis.aqhi",
       "was": "CAS"
+    },
+    {
+      "key": "air.glance.clean",
+      "translated": "air pur partout"
     }
   ]
 }

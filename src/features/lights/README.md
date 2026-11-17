@@ -24,6 +24,7 @@ src/features/lights/
   al-strip-layout.ts       alStripLayout(curve, now, fmt): the gradient's stops, now, the sun's marks, the hours
   commands.ts              pairOf, allOff, toggleOne, toggleArea, isAuto, setAuto, isNight, setNight, setBrightness, setColorTemp, link:
                            each intent as the service calls to run, in order (CommandRunner.runAll runs them)
+  glance.ts                glance(store): the Home pane's Lights tile (how many are on, each lit room's brightness), #267
   index.ts                 lightsFeature: the registry's descriptor (on the phone's bar, so no More word)
   lights-pane.ts           <hp-lights-pane>: the header with Arrange and Reset order, the strip, the rows or the phone's grid, a pair
                            side by side; runs the commands and saves the order and the links

@@ -1128,6 +1128,12 @@
         "when": "en semaine à 8 h 30"
       },
       "translated": "Horaire de départ enregistré : en semaine à 8 h 30"
+    },
+    {
+      "key": "car.glance.range",
+      "values": {
+        "n": 312
+      }
     }
   ]
 }

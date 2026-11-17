@@ -361,6 +361,29 @@
       "values": {"swing": "fixed, vertical position 3"},
       "fr": {"swing": "fixe, position verticale 3"},
       "written": "Volets : fixe, position verticale 3"
+    },
+    {"key": "climate.glance.heating", "values": {"n": 2}},
+    {"key": "climate.glance.heating", "values": {"n": 1}},
+    {"key": "climate.glance.heating", "values": {"n": 0}, "translated": "0 pièce chauffe"},
+    {
+      "key": "climate.glance.line",
+      "values": {"heating": "2 rooms heating"},
+      "fr": {"heating": "2 pièces chauffent"},
+      "translated": "Intérieur · 2 pièces chauffent"
+    },
+    {
+      "key": "climate.glance.lineHp",
+      "values": {"heating": "2 rooms heating", "hp": "heat pump off"},
+      "fr": {"heating": "2 pièces chauffent", "hp": "thermopompe éteinte"},
+      "translated": "Intérieur · 2 pièces chauffent · thermopompe éteinte"
+    },
+    {"key": "climate.glance.hp", "values": {"kind": "off", "action": ""}},
+    {"key": "climate.glance.hp", "values": {"kind": "offline", "action": ""}},
+    {
+      "key": "climate.glance.hp",
+      "values": {"kind": "other", "action": "heating"},
+      "fr": {"action": "chauffe"},
+      "translated": "thermopompe\u00a0: chauffe"
     }
   ]
 }

@@ -13,6 +13,7 @@ src/core/i18n/
   format.ts                gains clock(hours, minutes): a time of day with no date, no zone
 src/features/car/
   README.md
+  glance.ts                glance(store): the Home pane's Car tile (the charge, the range, the plug, the locks), #267
   index.ts                 carFeature: the descriptor, `available` from `findCar`
   car-pane.ts              <hp-car-pane>: `active`, `detailOpen`, the store controller on `carIds`, `CarHistory`, the header, the card, the detail inline or in its sheet
   car-card.ts              <hp-car-card>: the card over the model's `card`, the bars, the photo's fallback

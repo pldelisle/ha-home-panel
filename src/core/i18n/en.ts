@@ -13,6 +13,15 @@ export const en = {
   // the ten subjects, in rail order: the rail's label, the pane's heading and the More list; `auto.short` is the fifth
   // slot of the phone's bar, where "Automations" does not fit
   'home.title': 'Home',
+  // the phone's "Coming up" list on the Home pane (src/shell/upcoming.ts, #267)
+  'home.upcoming.sunset': 'Sunset · theme turns dark',
+  'home.upcoming.sunrise': 'Sunrise · every light off, night modes off',
+  'home.upcoming.challenge':
+    '{phase, select, appreciation {Challenge: appreciation} pre_heat {Challenge: pre_heat} reduction {Challenge: reduction} recovery {Challenge: recovery} scheduled {Challenge: scheduled} on {Challenge: on} other {Challenge: {phase}}}',
+  'home.upcoming.peak': 'Critical peak coming',
+  'home.upcoming.car': 'Car',
+  'home.upcoming.departure': '{schedule} departure',
+  'home.upcoming.on': 'On',
   'lights.title': 'Lights',
   'climate.title': 'Climate',
   'weather.title': 'Weather',
@@ -446,6 +455,7 @@ export const en = {
   'air.milaIndex': 'Mila index {n}',
   'air.cleanAir': 'Clean air',
   'air.roomWhy': '{name}: {detail}',
+  'air.glance.clean': 'clean air everywhere', // the Home pane's Air tile (#267)
   'air.outsideAqi': 'Outside AQI',
   'air.open': 'Open air quality details',
   'air.close': 'Close',
@@ -553,6 +563,10 @@ export const en = {
   'energy.last30': 'last 30 days',
   // the water heater's card and its 24-hour chart (src/features/energy/water-chart.ts)
   'energy.water.title': 'Water heater',
+  // the Home pane's Energy and Water heater tiles (src/features/energy/glance.ts, #267)
+  'energy.glance.line': 'Now · {kwh} kWh today · {rate}',
+  'energy.glance.lineNow': 'Now · {rate}',
+  'energy.glance.water': '{state} · {kwh} kWh today',
   'energy.water.heating': 'Heating · {kw} kW',
   'energy.water.idle': 'Idle · 0 W',
   'energy.water.temperature': 'Water temperature',
@@ -663,6 +677,11 @@ export const en = {
   'climate.action.auto': 'auto',
   'climate.action.dry': 'dry',
   'climate.action.fan': 'fan',
+  // the Home pane's Climate tile (src/features/climate/glance.ts, #267)
+  'climate.glance.heating': '{n, plural, one {# room heating} other {# rooms heating}}',
+  'climate.glance.line': 'Inside · {heating}',
+  'climate.glance.lineHp': 'Inside · {heating} · {hp}',
+  'climate.glance.hp': '{kind, select, off {heat pump off} offline {heat pump offline} other {heat pump {action}}}',
   // the Climate model's words (src/features/climate/model.ts): the summary, the detail's head, tiles and note, the dial and the gauge, and the heat pump's settings
   'climate.averageInside': '{n}° average inside',
   'climate.outsideTemp': '{n}° outside',
@@ -810,6 +829,7 @@ export const en = {
   'car.state.charging': 'charging',
   'car.state.pluggedIn': 'plugged in',
   'car.state.unplugged': 'unplugged',
+  'car.glance.range': '{n} km', // the Home pane's Car tile (#267)
   'car.percent': '{n}%',
   'car.limit': 'Limit {n}%',
   'car.limitCharge': 'Charge limit {n}%',
@@ -1216,6 +1236,11 @@ export const en = {
   'lights.done': 'Done',
   'lights.resetOrder': 'Reset order',
   'lights.otherLights': 'Other lights',
+  // the Home pane's Lights tile (src/features/lights/glance.ts, #267)
+  'lights.glance.on': '{n, plural, one {# on} other {# on}}',
+  'lights.glance.allOff': 'All off',
+  'lights.glance.nothingOn': 'Nothing on',
+  'lights.glance.room': '{name} {percent}%',
   'lights.unavailable': 'Unavailable',
   'lights.off': 'Off',
   'lights.someOn': '{on} of {total} on',

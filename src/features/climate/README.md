@@ -24,6 +24,7 @@ src/features/climate/
   model.ts                 climateModel(inputs, history, sel, deps): the summary, the items, the phone's tiles and the detail's head, dial or gauge, tiles, note and controls
   dial-geometry.ts         dialGeometry(t, sp, lo, hi, size): the track, arc, ticks, dot and knob; dialValueFromPointer(rect, x, y, lo, hi) and dialValueFromKey(key, value, lo, hi)
   gauge-geometry.ts        gaugeGeometry(t, sp): positions on the 14 to 30 scale and which caption goes under it
+  glance.ts                glance(store): the Home pane's Climate tile (the mean temperature, the rooms heating, the heat pump), #267
   index.ts                 climateFeature: the descriptor, `available` from hasClimate, the pane's template
   sheets.ts                DETAIL_SHEET: the id of the phone's sheet
   climate-pane.ts          <hp-climate-pane>: the header, the phone's tiles and sheet, the tablet's list and detail; keeps the room and the range
