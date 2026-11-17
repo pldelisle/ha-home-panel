@@ -204,6 +204,10 @@ function overallOf(
 
 const toneOf = (level: Level): Tone => Math.max(0, level) as Tone;
 
+const TONE_CLASS = ['ok', 'warn', 'bad'] as const;
+/** The kit's status tone (`.status.ok`, `.warn`, `.bad`) for a level: the dot's colour of the rating word beside it. */
+export const toneClass = (tone: Tone): (typeof TONE_CLASS)[Tone] => TONE_CLASS[tone];
+
 /** The fan's mode and speed as a held tap says them, else as the purifier reports them. */
 function fanOf({fanId, fan}: AirRoomInputs, overlay: Overlay) {
   const mode = overlay<Mode>(K.mode(fanId), fan.preset === 'Automagic' ? 'Automagic' : 'Manual');

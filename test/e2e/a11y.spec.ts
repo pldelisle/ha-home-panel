@@ -14,14 +14,7 @@ const BLOCKING = new Set(['serious', 'critical']);
 
 // A rule is disabled only with the reason and the issue that owns it, and only in the states where it finds something: everywhere
 // else it still runs. The list is expected to empty out; the phase-3 gate (#150) is "no serious or critical finding".
-const DISABLED_RULES: {rule: string; issue: number; why: string; states: RegExp}[] = [
-  {
-    rule: 'color-contrast',
-    issue: 191,
-    why: "the Automations 'done' pill is 3.92:1 in the light theme; a colour change moves pixels, so it needs its own baselines",
-    states: /^the auto tab$/,
-  },
-];
+const DISABLED_RULES: {rule: string; issue: number; why: string; states: RegExp}[] = [];
 
 /** one finding as a line the report reads without opening the trace: id, impact, help, then the first three targets */
 const describeViolation = (v: Result) =>

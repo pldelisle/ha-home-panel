@@ -7,6 +7,7 @@ import tokens from '../ui/styles/tokens.css?inline';
 import common from '../ui/styles/common.css?inline';
 import base from './frame/base.css?inline';
 import pill from '../ui/styles/pill.css?inline';
+import status from '../ui/styles/status.css?inline';
 import list from '../ui/styles/list.css?inline';
 import button from '../ui/styles/button.css?inline';
 import hero from '../ui/styles/hero.css?inline';
@@ -34,6 +35,7 @@ export const FRAME_CSS: string = [
   common,
   base,
   pill,
+  status,
   list,
   button,
   hero,

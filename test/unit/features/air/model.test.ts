@@ -3,7 +3,7 @@
 import {describe, expect, test} from 'vitest';
 import {readAir, type AirInputs} from '../../../../src/features/air/inputs.ts';
 import {K} from '../../../../src/features/air/commands.ts';
-import {airBrief, airModel, type AirViewModel} from '../../../../src/features/air/model.ts';
+import {airBrief, airModel, toneClass, type AirViewModel} from '../../../../src/features/air/model.ts';
 import type {AirRoomInputs, OutsideAirInputs} from '../../../../src/providers/mila.ts';
 import {fakeHass} from '../../fake-hass.ts';
 import {depsOf, fullHouse, readingOf, recorded, type Language} from '../media/support.ts';
@@ -404,5 +404,11 @@ describe('a tile opens its history', () => {
   test('in French, the words and the number are French’s own', () => {
     const fr = modelOf(inputsOf([room({readings: {co: 1}})]), 'fr').detail.rooms[0].tiles;
     expect(fr[3].opens).toBe('CO 1,0ppm, ouvre l’historique');
+  });
+});
+
+describe('toneClass: the kit’s dotted text for an Air level', () => {
+  test('good is ok, moderate is warn, poor is bad', () => {
+    expect(([0, 1, 2] as const).map(toneClass)).toEqual(['ok', 'warn', 'bad']);
   });
 });

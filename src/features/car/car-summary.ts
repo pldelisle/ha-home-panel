@@ -14,7 +14,7 @@ import socBarCss from './soc-bar.css?inline';
 import blockCss from './styles.css?inline';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {lens} from '../../ui/lens.ts';
-import {common, inner} from '../../ui/styles/index.ts';
+import {common, inner, status} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
 export class CarSummary extends LitElement {
@@ -27,6 +27,7 @@ export class CarSummary extends LitElement {
   static override styles = [
     common,
     inner,
+    status,
     unsafeCSS(forShadow(socBarCss)),
     unsafeCSS(forShadow(blockCss)),
     unsafeCSS(forShadow(ownCss)),
@@ -56,7 +57,7 @@ export class CarSummary extends LitElement {
           ${repeat(
             block.facts,
             fact => fact.text,
-            fact => html`<li class=${fact.tone}><i aria-hidden="true"></i>${fact.text}</li>`,
+            fact => html`<li class=${`status ${fact.tone}`}><i aria-hidden="true"></i>${fact.text}</li>`,
           )}
         </ul>
       </div>

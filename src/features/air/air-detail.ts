@@ -24,7 +24,7 @@ import {
   type OutdoorSeries,
 } from './history.ts';
 import type {AirInputs} from './inputs.ts';
-import type {AirViewModel, OutsideDetail} from './model.ts';
+import {toneClass, type AirViewModel, type OutsideDetail} from './model.ts';
 import '../../ui/chart.ts'; // defines <hp-chart>
 import type {ChartOptions} from '../../ui/chart-options.ts';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
@@ -34,7 +34,7 @@ import '../../ui/pane-header.ts'; // defines <hp-pane-header>
 import '../../ui/range-tabs.ts'; // defines <hp-range-tabs>
 import type {RangeChangeDetail} from '../../ui/range-tabs.ts';
 import {RANGES, type Range} from '../../ui/ranges.ts';
-import {chart, common, inner, tiles} from '../../ui/styles/index.ts';
+import {chart, common, inner, status, tiles} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
 type Detail = AirViewModel['detail'];
@@ -132,10 +132,11 @@ export class AirDetail extends LitElement {
   /** The range chosen: the pane keeps the last choice for the panel's life and passes it in, as the legacy sheet kept its own. */
   declare range: Range;
 
-  // The kit's wells, tiles, radios and legend; the feature's `.aqsum` state line (styles.css, shared with the card); the element's own rules last.
+  // The kit's wells, status text, tiles, radios and legend; the feature's `.aqsum` state line (styles.css); the element's own rules last.
   static override styles = [
     common,
     inner,
+    status,
     tiles,
     chart,
     unsafeCSS(forShadow(airShared)),
@@ -264,8 +265,8 @@ export class AirDetail extends LitElement {
   private renderStation({title, hint, tone, state, reading, more, pollen, pollenHint}: OutsideDetail) {
     return html`<h3>${title}</h3>
       <p>${hint}</p>
-      <div class=${`aqsum lv${tone}`}>
-        <span class="state"><i></i>${state}</span
+      <div class="aqsum">
+        <span class=${`status ${toneClass(tone)}`}><i aria-hidden="true"></i>${state}</span
         ><span class="why">${reading.label} <b class="num">${reading.value}</b>${more ? ` · ${more}` : ''}</span>
       </div>
       ${

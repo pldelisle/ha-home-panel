@@ -1,6 +1,6 @@
 /*
  * The Automations feature's rules (spec 25, "Styles"), adopted by its four elements through `forShadow` (ADR 0019): the card box, its
- * head with the title, the line under it and the pill, the Today line and its dots, the run picker and the chips, the legend and the
+ * head with the title, the line under it and the status (the kit's dotted text), the Today line and its dots, the run picker and the chips, the legend and the
  * flow's box. Moved from tabs.css, glass.css, motion.css, phone.css and base.css (`.chip`, `.shead`) with the Automations move (#273).
  * Known copies of legacy rules, each under an Automations selector: `.card` (base.css, glass.css) as `.aubox`, `.card .top` and the
  * second `.lbl` (base.css) as `.aubox .top` and `.aulbl`, and `.hint` (base.css) as `.aubox .hint`. The legacy rules moved to
@@ -57,7 +57,7 @@
   color: var(--fg2);
   margin: 6px 0 0;
 }
-/* a card's head: its title and the line under it, the pill (and the selected card's close) on the right */
+/* a card's head: its title and the line under it, the status (and the selected card's close) on the right */
 .auhead {
   display: flex;
   flex-wrap: wrap;
@@ -75,39 +75,8 @@
   font-size: calc(13px * var(--tx));
   line-height: 1.45;
 }
-.auhead .pill {
-  font-size: calc(11.5px * var(--tx));
-  font-weight: 700;
-  padding: 5px 11px;
-  border-radius: 999px;
+.auhead .status {
   white-space: nowrap;
-  background: var(--card2);
-  color: var(--fg2);
-}
-.auhead .pill.run {
-  background: color-mix(in srgb, var(--warn) 16%, var(--card));
-  color: var(--t-warn);
-}
-.auhead .pill.no {
-  background: color-mix(in srgb, var(--crit) 14%, var(--card));
-  color: var(--crit);
-}
-.auhead .pill.ok {
-  background: color-mix(in srgb, var(--ok) 16%, var(--card));
-  color: var(--t-ok);
-}
-.app.gl .auhead .pill {
-  background: var(--g-tile);
-  box-shadow: var(--g-edge-s);
-}
-.app.gl .auhead .pill.run {
-  background: color-mix(in srgb, var(--warn) 18%, var(--g-tile));
-}
-.app.gl .auhead .pill.no {
-  background: color-mix(in srgb, var(--crit) 16%, var(--g-tile));
-}
-.app.gl .auhead .pill.ok {
-  background: color-mix(in srgb, var(--ok) 18%, var(--g-tile));
 }
 /* the chips of the run picker: a run's time */
 .aupick {
@@ -228,7 +197,7 @@
 .aurow:active {
   background: var(--nav-sel-bg);
 }
-/* the head's right side: the pill and the selected card's close */
+/* the head's right side: the status and the selected card's close */
 .auhr {
   display: flex;
   align-items: center;

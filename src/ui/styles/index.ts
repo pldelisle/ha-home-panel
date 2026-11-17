@@ -20,6 +20,7 @@ import segText from './seg.css?inline';
 import settingsText from './settings.css?inline';
 import sheetText from './sheet.css?inline';
 import statTileText from './stat-tile.css?inline';
+import statusText from './status.css?inline';
 import tilesText from './tiles.css?inline';
 import {forShadow} from './host.ts';
 
@@ -59,5 +60,7 @@ export const inner = adopt(innerText);
 export const list = adopt(listText);
 /** The state pill beside a heading, without its tones (each user writes its own). */
 export const pill = adopt(pillText);
+/** A status as plain text with a coloured dot (`.status`, tones `.ok`, `.warn`, `.bad`): never a filled capsule, which means "tap me". */
+export const status = adopt(statusText);
 /** A chart's legend and its tooltip's font. */
 export const chart = adopt(chartText);

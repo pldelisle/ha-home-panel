@@ -194,7 +194,7 @@ test.describe('on a tablet', () => {
     await expect(room(house)).toHaveCount(1);
     await expect(room(house).locator('.aqhead h3')).toHaveText('Office');
     await expect(room(house).locator('.aqhead p')).toHaveText('PM2.5 moderate · 21.4°');
-    await expect(room(house).locator('.aqhead .state')).toHaveText('Moderate');
+    await expect(room(house).locator('.aqhead .status')).toHaveText('Moderate');
     await expect(room(house).locator('.tile .k')).toHaveText(['PM2.5', 'CO₂', 'VOC', 'CO', 'PM1', 'PM10', 'Humidity']);
     await expect(room(house).locator('.tile .v').first()).toHaveText('20µg/m³');
     await expect(room(house).locator('.tile.hi')).toHaveCount(1);

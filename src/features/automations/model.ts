@@ -68,7 +68,7 @@ export interface TodayView {
 }
 
 export type CardKind = 'selected' | 'running' | 'decision' | 'completed';
-export type PillTone = '' | 'run' | 'no' | 'ok';
+export type PillTone = 'plain' | 'warn' | 'bad' | 'ok';
 
 export interface PickChip {
   run: string;
@@ -164,13 +164,13 @@ function pillOf(
   deps: AutomationsDeps,
 ): {tone: PillTone; text: string; since?: number} {
   const {t, fmt} = deps;
-  if (!run) return {tone: '', text: t('automations.pill.none')};
+  if (!run) return {tone: 'plain', text: t('automations.pill.none')};
   const start = startOf(run);
-  if (run.state === 'running') return {tone: 'run', text: runningText(start, now, t), since: start};
+  if (run.state === 'running') return {tone: 'warn', text: runningText(start, now, t), since: start};
   if (run.script_execution === 'failed_conditions')
-    return {tone: 'no', text: t('automations.pill.stopped', {time: fmt.time(new Date(start))})};
+    return {tone: 'bad', text: t('automations.pill.stopped', {time: fmt.time(new Date(start))})};
   if (run.script_execution === 'error')
-    return {tone: 'no', text: t('automations.pill.error', {time: fmt.time(new Date(start))})};
+    return {tone: 'bad', text: t('automations.pill.error', {time: fmt.time(new Date(start))})};
   const finish = run.timestamp.finish;
   return {
     tone: 'ok',

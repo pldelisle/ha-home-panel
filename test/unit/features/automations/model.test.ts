@@ -161,9 +161,9 @@ describe('automationsModel: the flow cards', () => {
         'running',
         'now',
         'Running now · Auto a',
-        {tone: 'run', text: 'running 2:00', since: Date.parse('2026-11-07T11:58:00Z')},
+        {tone: 'warn', text: 'running 2:00', since: Date.parse('2026-11-07T11:58:00Z')},
       ],
-      ['decision', 'stop', 'Last decision · Auto a', {tone: 'no', text: 'stopped 9:00 am'}],
+      ['decision', 'stop', 'Last decision · Auto a', {tone: 'bad', text: 'stopped 9:00 am'}],
       ['completed', 'done', 'Last completed · Auto a', {tone: 'ok', text: 'done 8:00:05 am'}],
     ]);
     expect(view.cards[0].flow?.def).toMatch(/^flowchart LR/);
@@ -172,7 +172,7 @@ describe('automationsModel: the flow cards', () => {
   test('a selected run first, with the picker of its automation’s runs (another day’s with its date) and an error’s pill', () => {
     const view = automationsModel(inputs([auto('a')]), data({list, configs: {a: lamp}}), {item: 'a', run: 'err'}, deps);
     const [selected] = view.cards;
-    expect([selected.kind, selected.flow?.pill]).toEqual(['selected', {tone: 'no', text: 'error 10:00 am'}]);
+    expect([selected.kind, selected.flow?.pill]).toEqual(['selected', {tone: 'bad', text: 'error 10:00 am'}]);
     expect(selected.flow?.picker.map(c => [c.run, c.sel, c.dot, c.label])).toEqual([
       ['now', false, 'warn', '11:58 am'],
       ['stop', false, 'crit', '9:00 am'],

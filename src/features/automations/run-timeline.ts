@@ -11,14 +11,14 @@ import shared from './styles.css?inline';
 import own from './run-timeline.element.css?inline';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {lens} from '../../ui/lens.ts';
-import {common, pill, tiles} from '../../ui/styles/index.ts';
+import {common, status, tiles} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
 export class RunTimeline extends LitElement {
   static override properties = {view: {attribute: false}};
   declare view: TodayView | undefined;
 
-  static override styles = [common, pill, tiles, unsafeCSS(forShadow(shared)), unsafeCSS(forShadow(own))];
+  static override styles = [common, status, tiles, unsafeCSS(forShadow(shared)), unsafeCSS(forShadow(own))];
 
   constructor() {
     super();
@@ -36,7 +36,7 @@ export class RunTimeline extends LitElement {
             <h3>${v.title}</h3>
             <p>${v.caption}</p>
           </div>
-          <span class="pill">${v.pill}</span>
+          <span class="status">${v.pill}</span>
         </div>
         <div class="autl">
           <div class="axis"></div>

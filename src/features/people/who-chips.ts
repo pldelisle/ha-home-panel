@@ -1,4 +1,4 @@
-// <hp-who-chips place="header" | "card">: Who's home as chips, a dot, the first name and "home" or "away" for each configured person.
+// <hp-who-chips place="header" | "card">: Who's home as plain text, a dot, the first name and "home" or "away" for each configured person.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over `peopleModel`, run in `willUpdate` on the provider's `presence`, with a
 // store controller on `peopleIds` (ADR 0012); `place` picks the header's or the Home card's look, as the legacy `.hello div` and `.hwx .wp` did.
 // The header's `<hp-greeting>` places it (#269); `<hp-who-card>` places it in the Home card.
@@ -12,7 +12,7 @@ import {registriesOf} from '../../core/registry.ts';
 import {presence} from '../../providers/people.ts';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {StoreController} from '../../ui/controllers/store-controller.ts';
-import {common} from '../../ui/styles/index.ts';
+import {common, status} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
 export class WhoChips extends LitElement {
@@ -21,7 +21,7 @@ export class WhoChips extends LitElement {
   declare place: 'header' | 'card';
 
   // The element's own rules, its `:host`, the chips and the two places' differences, are in who-chips.element.css.
-  static override styles = [common, unsafeCSS(forShadow(chipsOwn))];
+  static override styles = [common, status, unsafeCSS(forShadow(chipsOwn))];
 
   private readonly storeController = new StoreController(this, {ids: store => peopleIds(store)});
   private view: PeopleViewModel | undefined;
@@ -46,7 +46,9 @@ export class WhoChips extends LitElement {
         view.chips,
         chip => chip.name,
         chip =>
-          html`<span class=${chip.home ? 'wp home' : 'wp'}><i></i>${chip.name}<small>${chip.state}</small></span>`,
+          html`<span class=${chip.home ? 'status ok' : 'status'}
+            ><i aria-hidden="true"></i>${chip.name}<small>${chip.state}</small></span
+          >`,
       )}
     </div>`;
   }

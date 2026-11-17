@@ -9,7 +9,7 @@ import {classMap} from 'lit/directives/class-map.js';
 import {repeat} from 'lit/directives/repeat.js';
 import {K, MAX_PCT, MIN_PCT, PCT_STEP, setMode, setSpeed, type Mode} from './commands.ts';
 import type {HistoryRequest, Metric} from './history.ts';
-import type {RoomControl, RoomDetail} from './model.ts';
+import {toneClass, type RoomControl, type RoomDetail} from './model.ts';
 import roomOwn from './room-card.element.css?inline';
 import {HISTORY_SHEET} from './sheets.ts';
 import {debounce} from '../../core/timing.ts';
@@ -23,7 +23,7 @@ import '../../ui/seg.ts'; // defines <hp-seg>
 import type {SegChangeDetail, SegOption} from '../../ui/seg.ts';
 import '../../ui/stepper.ts'; // defines <hp-stepper>
 import type {StepDetail} from '../../ui/stepper.ts';
-import {common, tiles} from '../../ui/styles/index.ts';
+import {common, status, tiles} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
 /** How long the stepper waits for the taps to stop before it sends the speed: the legacy `airControl`'s 900 ms. */
@@ -40,7 +40,7 @@ export class AirRoom extends LitElement {
   declare room: RoomDetail | undefined;
 
   // The element's own rules, its card and what only its tree has, are in room-card.element.css.
-  static override styles = [common, tiles, unsafeCSS(forShadow(roomOwn))];
+  static override styles = [common, status, tiles, unsafeCSS(forShadow(roomOwn))];
 
   // the catalog for the runner's toasts, and no entity: `ids` is empty, so no state change reaches the card
   private readonly storeController = new StoreController(this, {ids: () => []});
@@ -81,7 +81,7 @@ export class AirRoom extends LitElement {
             <h3>${room.name}</h3>
             <p>${room.headline}</p>
           </div>
-          <span class="state"><i></i>${room.state}</span>
+          <span class=${`status ${toneClass(room.tone)}`}><i aria-hidden="true"></i>${room.state}</span>
         </div>
         <div class="tiles aqt">
           ${repeat(
