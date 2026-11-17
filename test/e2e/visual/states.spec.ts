@@ -105,9 +105,10 @@ for (const viewport of ['tablet', 'phone'] as const) {
             if (theme === 'light')
               test('More sheet with a section shown', async ({house}) => {
                 await house.root().locator('#moretab').click();
+                // the More sheet's tile ("Weather 4° · …"); Home's weather card is named "Weather: 4°, …" and is matched by no space after the word
                 await house
                   .root()
-                  .getByRole('button', {name: /^Weather/})
+                  .getByRole('button', {name: /^Weather \d/})
                   .click();
                 await expect(house.root().locator('#pane-weather')).toBeVisible();
                 await house.root().locator('#moretab').click();
