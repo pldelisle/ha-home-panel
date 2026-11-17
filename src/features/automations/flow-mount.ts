@@ -45,6 +45,10 @@ function themeOf(box: Element) {
     // flows flake. Any fixed non-zero seed makes the drawing repeatable.
     handDrawnSeed: 1,
     theme: 'base' as const,
+    // Mermaid 12's least change from 11 (ADR 0034): the dagre layout, whose chunk is the small one (ELK's is never fetched), and the
+    // classic look, without the `neo` look's gradient outlines
+    layout: 'dagre',
+    look: 'classic' as const,
     fontFamily: font,
     themeVariables: {
       fontFamily: font,
@@ -64,6 +68,8 @@ function themeOf(box: Element) {
       padding: 10,
       useMaxWidth: false,
       diagramPadding: 6,
+      // Mermaid 12 wraps a label at 200 pixels, 11 did not: a step's line stays on one line, as it was
+      wrappingWidth: 400,
     },
   };
 }
