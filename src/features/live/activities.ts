@@ -1,6 +1,6 @@
 // The header's three live activities (the Hilo challenge, the car's charge, the water heater's cycle) as pure functions at a known instant.
 // Pattern: functional core (Bernhardt): each reads `LiveInputs` and the loaded history and returns data (texts through `t()`, a card as a view
-// model); the rules are the legacy `liveActs()`'s three blocks (#256 deletes it), its thresholds and its order copied and named.
+// model); the rules are the legacy `liveActs()`'s three blocks (deleted in #256), its thresholds and its order copied and named.
 // Must not: import a feature, read the clock or the states, hold a callable (a button is a flag, the element runs the command), or draw.
 import {MINUTE_MS} from '../../core/figures.ts';
 import type {Formatters} from '../../core/i18n/format.ts';
@@ -61,8 +61,10 @@ export interface CarCardView {
   big: {soc: string; limit: string; eta: {at: string; inText: string} | null};
   bar: {soc: number; limit: number; aria: string};
   meta: Rich;
-  /** The Wallbox's pause switch has a value: the card offers it, as "Resume charging" when the charger is paused. */
-  pause: {show: boolean; resume: boolean};
+  /** The Wallbox's pause switch, when it has a value: the button turns it on (`resume`, while the charger is paused) or off. */
+  pause: {id: string; resume: boolean; label: string} | null;
+  /** The button that opens the Car's detail. */
+  openCar: string;
 }
 
 export interface WaterCardView {
@@ -327,7 +329,15 @@ export function carActivity(
       },
       bar: {soc: soc ?? 0, limit, aria: t('live.batteryAria', {n: percent, limit})},
       meta,
-      pause: {show: wallbox.pause.available, resume: !pauseOn(wallbox, overlay)},
+      pause:
+        wallbox.pause.id && wallbox.pause.available
+          ? {
+              id: wallbox.pause.id,
+              resume: !pauseOn(wallbox, overlay),
+              label: t(pauseOn(wallbox, overlay) ? 'live.pauseCharging' : 'live.resumeCharging'),
+            }
+          : null,
+      openCar: t('live.openCar'),
     },
   };
 }

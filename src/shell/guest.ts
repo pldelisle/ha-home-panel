@@ -67,6 +67,11 @@ export interface GuestRenderer extends GuestAnswers, LegacySheetGuest {
    * forecast here. Deleted with its last reader (the Home move).
    */
   forecastChanged(type: 'daily' | 'hourly', forecast: readonly object[]): void;
+  /**
+   * Live move 3 (#256): whether the live pill shows an activity and how many Status checks need attention; the weather chip slims beside an
+   * activity and the Home pane's sub-line says the count. Deleted with its last readers (the Home move, #269).
+   */
+  liveChanged(running: boolean, attention: number): void;
 }
 
 /** What the guest may ask of the shell, and what it may read of it. Deleted whole with the guest; `tab`, `compact`, `setTab` and `requestFrame` live as long as it does. */
@@ -90,9 +95,11 @@ export interface ShellForGuest {
   idle: Pick<IdleTimer, 'arm' | 'sleepNow'>;
   /**
    * Step D: closes the settings popup, which the shell opens with the gear and draws; the guest's tap outside asks.
-   * Deleted with the Status checks' move (#183), when the shell's header takes the taps of both popups.
+   * Deleted with the guest's tap-outside listener, when the shell's header takes the taps outside both popups (#269).
    */
   closeSettings(): void;
+  /** Closes the Status checks under the live pill, which the shell keeps open since #256; the guest's tap outside asks, as for the settings. Deleted with `closeSettings` (#269). */
+  closeStatus(): void;
   /** Step E: the sheet host. The guest registers its sheets and popups with it, and opens and closes sheets through it. Deleted with the guest. */
   sheets: SheetHost;
 }

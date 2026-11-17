@@ -1,0 +1,4 @@
+/* <hp-ring> is not a box of its own: its ring is the flex item of the row it sits in, as the legacy `.lring` span was. */
+:host {
+  display: contents;
+}

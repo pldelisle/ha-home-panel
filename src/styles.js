@@ -7,7 +7,7 @@
 // did; the segmented control and the range tabs follow base.css (the tabs' rules moved up from base.css, glass.css and motion.css with the Weather history, #159); the sheet's chrome comes after tabs.css and before phone.css, and the header's badge
 // and the pane header follow it; the tile, the More list and the settings popup's tiles (from the end of extra.css, with their
 // glass rules) come after phone.css and before glass.css, followed by the detail panel's tiles, inner cards and chart legend (their rules
-// moved up from base.css, tabs.css, extra.css, motion.css and glass.css with the Weather detail, #158). The hero follows base.css, where its rules were (#239), and the pill button after it (#248); the status list's rows and chips (`.att`, `.arow`, `.clear`, #252) come right after base.css, where they began. motion.css comes last because it overrides the others.
+// moved up from base.css, tabs.css, extra.css, motion.css and glass.css with the Weather detail, #158). The hero follows base.css, where its rules were (#239), and the pill button after it (#248); the status list's rows and chips (`.att`, `.arow`, `.clear`, #252) come right after base.css, where they began. motion.css comes last because it overrides the others. The progress ring (`.lring`) follows lights.css, where live.css held it (#256).
 import tokens from './ui/styles/tokens.css?inline';
 import common from './ui/styles/common.css?inline';
 import base from './css/base.css?inline';
@@ -30,6 +30,7 @@ import more from './ui/styles/more.css?inline';
 import settings from './ui/styles/settings.css?inline';
 import glass from './css/glass.css?inline';
 import lights from './css/lights.css?inline';
+import ring from './ui/styles/ring.css?inline';
 import live from './css/live.css?inline';
 import motion from './css/motion.css?inline';
 import keyframes from './ui/styles/motion.css?inline';
@@ -57,6 +58,7 @@ export const CSS = [
   settings,
   glass,
   lights,
+  ring,
   live,
   motion,
   keyframes,

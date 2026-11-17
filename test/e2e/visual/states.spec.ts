@@ -170,6 +170,9 @@ test.describe('Status checks', () => {
     await stopCharging(house); // while the car charges, the charging pill wins over the attention pill
     await openFrontDoor(house);
     await expect(pill(house)).toContainText(/needs attention/);
+    // the pill is an element and follows at once; Home's tiles and stack are still the guest's, which redraws within a second (#256)
+    await expect(house.root().locator('#pane-home')).toContainText('unplugged');
+    await expect(house.root().locator('#pane-home')).toContainText('Front door open');
     await openPopup(house);
     await expect(house.page).toHaveScreenshot('status-checks-tablet-light-en.png');
   });

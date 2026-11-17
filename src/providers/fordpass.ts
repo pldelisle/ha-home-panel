@@ -326,7 +326,7 @@ function honkButtonOf(states: HassEntities, ref: CarRef): string | null {
   return ids.find(id => states[id] !== undefined && states[id].state !== 'unavailable') ?? null;
 }
 
-/** An attribute of the charging sensor that holds the charge's power: the legacy `liveActs`'s rule (#256 deletes it). */
+/** An attribute of the charging sensor that holds the charge's power: the legacy `liveActs`'s rule (deleted in #256). */
 const CHARGE_POWER_KEY = /charg.*(power|kw)$/i;
 
 function chargePowerOf(states: HassEntities, id: string): number | null {
@@ -339,7 +339,7 @@ function chargePowerOf(states: HassEntities, id: string): number | null {
 /** One of Ford's estimates of when the charge ends. */
 type ChargeEstimate = {at: number} | {minutes: number};
 
-/** The attributes that may estimate the end, and the ones of those that count minutes: the legacy `liveActs`'s rule (#256 deletes it). */
+/** The attributes that may estimate the end, and the ones of those that count minutes: the legacy `liveActs`'s rule (deleted in #256). */
 const ESTIMATE_KEY = /(end|complete|full|remain)/i;
 const MINUTES_KEY = /(minutes|remain|to.?full)/i;
 const DATE_IN = /\d{4}-\d\d-\d\d/;
@@ -364,7 +364,7 @@ const TIRES_NORMAL = 'NORMAL_OPERATION';
 const TIRE_NORMAL = 'NORMAL';
 const TIRE_KEYS = ['frontLeft', 'frontRight', 'rearLeft', 'rearRight'] as const;
 
-/** The legacy `attention()`'s tire rule (#256 deletes it): any set `<tire>_state` other than `NORMAL` counts, whatever its type. */
+/** The legacy `attention()`'s tire rule (deleted in #256): any set `<tire>_state` other than `NORMAL` counts, whatever its type. */
 function tiresLowOf(states: HassEntities, id: string): boolean {
   const status = textOf(states, id);
   if (status === null) return false;

@@ -13,6 +13,7 @@ export const ICONS = {
   car: svg`<path d="M5 16 6.5 10a2 2 0 0 1 2-1.5h7a2 2 0 0 1 2 1.5L19 16M4 16h16v3H4zM7 19v2M17 19v2"/>`,
   bolt: svg`<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>`,
   wind: svg`<path d="M4 17c2-6 14-6 16 0M7 13l-1-3M12 12V8M17 13l1-3"/>`,
+  check: svg`<path d="m5 12.5 4.5 4.5L19 7.5" stroke-width="2.6"/>`,
   drop: svg`<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/>`,
   clock: svg`<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>`,
   hum: svg`<path d="M7.5 19.8a9 9 0 1 1 9 0"/><path d="M12 7.5s3 3.2 3 5.4a3 3 0 0 1-6 0c0-2.2 3-5.4 3-5.4z"/>`,
