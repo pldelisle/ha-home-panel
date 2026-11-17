@@ -533,9 +533,7 @@ export const fr: Record<MessageKey, string> = {
   'air.axis.aqhi': 'CAS',
   // Énergie
   'energy.card.title': 'Énergie de la maison',
-  'energy.open': "Ouvrir les détails de l'énergie",
   'energy.close': 'Fermer',
-  'energy.gridOnly': 'Réseau seulement · {rate}',
   'energy.summary': 'Réseau {grid} kW · chauffage {heat} kW · Hilo {rate}',
   'energy.tier.low': 'Palier bas',
   'energy.tier.medium': 'Palier moyen',
@@ -566,7 +564,6 @@ export const fr: Record<MessageKey, string> = {
   'energy.tile.heat': 'Chauffage des pièces',
   'energy.tile.water': 'Chauffe-eau',
   'energy.tile.ev': 'Recharge VÉ',
-  'energy.last30': '30 derniers jours',
   'energy.water.title': 'Chauffe-eau',
   'energy.glance.line': "Maintenant · {kwh} kWh aujourd'hui · {rate}",
   'energy.glance.lineNow': 'Maintenant · {rate}',

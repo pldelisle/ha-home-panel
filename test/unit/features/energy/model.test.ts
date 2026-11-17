@@ -1,4 +1,4 @@
-// energyModel: the summary, the card, the water heater and Hilo cards and the phone's rows from the test house, from literal houses for each shape it does not show,
+// energyModel: the summary, the detail, the water heater and Hilo cards and the phone's rows from the test house, from literal houses for each shape it does not show,
 // from literal history, and from the recorded house when the owner has one; in English and in French, where the numbers are French's own.
 import {describe, expect, test} from 'vitest';
 import {HOUR_MS, MINUTE_MS} from '../../../../src/core/figures.ts';
@@ -96,27 +96,22 @@ const history = (over: Partial<EnergyHistoryData> = {}): EnergyHistoryData => ({
 describe('the test house', () => {
   const vm = modelOf(testHouse());
 
-  test('no Hilo: the summary and the card’s top line say the tier is unknown, as the legacy panel did', () => {
+  test('no Hilo: the summary says the tier is unknown, as the legacy panel did, and the detail is the one title and no error', () => {
     expect(vm.summary).toBe('Grid supplying 3.24 kW · room heating 2.40 kW · Hilo rate unknown');
-    expect(vm.card.topRight).toBe('Grid only · rate unknown');
-    expect(vm.card).toMatchObject({title: 'Home energy', open: 'Open home energy details', error: null});
+    expect(vm.detail).toMatchObject({title: 'Home energy', sub: vm.summary, error: null});
   });
 
-  test('the card’s flow is the layout of the same power, the charger’s own status included', () => {
-    expect(vm.card.flow.label).toBe(
+  test('the detail’s live flow is the layout of the same power, the charger’s own status included', () => {
+    const {body} = vm.detail.sankey;
+    if (body.kind !== 'flow') throw new Error('the Sankey of now is the live flow');
+    expect(body.flow.label).toBe(
       'Grid supplies 3.24 to the home; room heating 2.40; water heating 0 W; EV charging 7.10',
     );
-    expect(vm.card.flow.labels.map(l => l.text)).toContain('Charging');
-    expect(vm.card.flow.nodes.find(n => n.key === 'water')!.texts[1].text).toBe('50.0°');
+    expect(body.flow.labels.map(l => l.text)).toContain('Charging');
+    expect(body.flow.nodes.find(n => n.key === 'water')!.texts[1].text).toBe('50.0°');
   });
 
-  test('before the history, four tiles of dashes with their units and the 30-day caption', () => {
-    expect(vm.card.tiles).toEqual([
-      {label: 'Today', value: '–', unit: 'kWh', sub: ''},
-      {label: 'Room heating', value: '–', unit: 'kWh', sub: 'last 30 days'},
-      {label: 'Water heating', value: '–', unit: 'kWh', sub: 'last 30 days'},
-      {label: 'EV charging', value: '–', unit: 'kWh', sub: 'last 30 days'},
-    ]);
+  test('before the history, the water heater has no chart, legend or line', () => {
     expect(vm.water).toMatchObject({chart: null, legend: [], line: null});
   });
 
@@ -137,7 +132,6 @@ describe('Hilo', () => {
   test('the low tier: the summary, the top line, the hero and the rate’s tier word, in the "ok" colour', () => {
     const vm = modelOf(inputsOf());
     expect(vm.summary).toBe('Grid supplying 2.30 kW · room heating 0.00 kW · Hilo low rate');
-    expect(vm.card.topRight).toBe('Grid only · low rate');
     expect(vm.hilo).toMatchObject({
       present: true,
       title: 'Hilo',
@@ -170,7 +164,6 @@ describe('Hilo', () => {
     const vm = modelOf(inputsOf(hiloStates(rate)));
     expect(vm.hilo.tier).toEqual({text: tier, ok: false});
     expect(vm.summary).toBe(`Grid supplying 2.30 kW · room heating 0.00 kW · Hilo ${short}`);
-    expect(vm.card.topRight).toBe(`Grid only · ${short}`);
   });
 
   test('no reading at all: dashes, the unknown tier, and a challenge sensor that is missing says so', () => {
@@ -244,36 +237,20 @@ describe('the water heater', () => {
   });
 });
 
-describe('the tiles and the error line', () => {
-  test('with history: today to a decimal, the groups rounded to whole kWh', () => {
-    expect(modelOf(testHouse(), history()).card.tiles.map(t => [t.label, t.value])).toEqual([
-      ['Today', '12.3'],
-      ['Room heating', '120'],
-      ['Water heating', '56'],
-      ['EV charging', '8'],
-    ]);
-  });
-
-  test('the error line words the reason, and no error leaves none', () => {
-    expect(modelOf(testHouse(), null, 'en', 'timeout').card.error).toBe(
+describe('the error line', () => {
+  test('words the reason, and no error leaves none', () => {
+    expect(modelOf(testHouse(), null, 'en', 'timeout').detail.error).toBe(
       "History didn't load: timeout. Live values still update.",
     );
-    expect(modelOf(testHouse(), history()).card.error).toBeNull();
+    expect(modelOf(testHouse(), history()).detail.error).toBeNull();
   });
 });
 
 describe('in French', () => {
-  test('the test house: the summary, the top line, the tiles and the water heater', () => {
+  test('the test house: the summary, the error line and the water heater', () => {
     const vm = modelOf(testHouse(), history(), 'fr', 'délai dépassé');
     expect(vm.summary).toBe('Réseau 3,24 kW · chauffage 2,40 kW · Hilo tarif inconnu');
-    expect(vm.card.topRight).toBe('Réseau seulement · tarif inconnu');
-    expect(vm.card.tiles.map(t => [t.label, t.value, t.sub])).toEqual([
-      ["Aujourd'hui", '12,3', ''],
-      ['Chauffage des pièces', '120', '30 derniers jours'],
-      ['Chauffe-eau', '56', '30 derniers jours'],
-      ['Recharge VÉ', '8', '30 derniers jours'],
-    ]);
-    expect(vm.card.error).toBe(
+    expect(vm.detail.error).toBe(
       "L'historique n'a pas pu être chargé : délai dépassé. Les valeurs en direct continuent de se mettre à jour.",
     );
     expect(vm.water).toMatchObject({title: 'Chauffe-eau', state: {text: 'Au repos · 0 W'}});
@@ -411,7 +388,7 @@ describe('the detail', () => {
   });
 
   describe('the Sankey', () => {
-    test('now: the card’s own flow, with the live note and the three tabs', () => {
+    test('now: the live flow, with the live note and the three tabs', () => {
       const vm = modelOf(testHouse(), loaded());
       const {sankey} = vm.detail;
       expect(sankey).toMatchObject({title: 'Where the power goes', label: 'Sankey period'});
@@ -421,9 +398,7 @@ describe('the detail', () => {
         {mode: 'd30', label: '30 days'},
       ]);
       expect(sankey.note).toBe("Live power: the Hilo meter on the left, each device's own sensor on the right.");
-      // the same geometry the card draws: no second layout
       expect(sankey.body.kind).toBe('flow');
-      expect((sankey.body as {flow: unknown}).flow).toBe(vm.card.flow);
     });
 
     test('now without a grid reading says there is no data', () => {
@@ -569,12 +544,13 @@ describe('the recorded house', () => {
     return;
   }
 
-  test.each(['en', 'fr'] as const)('gives a summary, four tiles and a flow, in %s', language => {
+  test.each(['en', 'fr'] as const)('gives a summary and the live flow, in %s', language => {
     const hass = fakeHass.fromFixture('main');
     const store = storeOf(hass);
     const vm = modelOf(readEnergy(hass.states, store.config, store.names), null, language);
     expect(vm.summary).not.toBe('');
-    expect(vm.card.tiles).toHaveLength(4);
-    expect(vm.card.flow.nodes).toHaveLength(5);
+    const {body} = vm.detail.sankey;
+    if (body.kind !== 'flow') throw new Error('the Sankey of now is the live flow');
+    expect(body.flow.nodes).toHaveLength(5);
   });
 });

@@ -6,33 +6,7 @@
       "was": "Énergie de la maison"
     },
     {
-      "key": "energy.open",
-      "was": "Ouvrir les détails de l'énergie"
-    },
-    {
       "key": "energy.close"
-    },
-    {
-      "key": "energy.gridOnly",
-      "values": {
-        "rate": "low rate"
-      },
-      "fr": {
-        "rate": "tarif bas"
-      },
-      "was": "Réseau seulement · tarif bas",
-      "after": "Grid only · tarif bas"
-    },
-    {
-      "key": "energy.gridOnly",
-      "values": {
-        "rate": "rate unknown"
-      },
-      "fr": {
-        "rate": "tarif inconnu"
-      },
-      "was": "Réseau seulement · tarif inconnu",
-      "after": "Grid only · tarif inconnu"
     },
     {
       "key": "energy.summary",
@@ -233,9 +207,6 @@
     {
       "key": "energy.tile.ev",
       "was": "Recharge VÉ"
-    },
-    {
-      "key": "energy.last30"
     },
     {
       "key": "energy.water.title"

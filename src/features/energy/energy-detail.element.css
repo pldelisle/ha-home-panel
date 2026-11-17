@@ -2,6 +2,7 @@
  * <hp-energy-detail>'s own rules: the column of its blocks, the Sankey block's head and tabs, the donut and its table, the totals' grid. Moved from
  * the legacy `.donut`, `.totals` and `.sankey` rules (base.css, tabs.css), which the detail's move (#240) deleted; the Sankey's head is `.sankeyhead`
  * because the legacy `.shead` (tabs.css) was the Automations pane's until its move (#273). The inner cards, the tiles, the tabs' look and the legend are the kit's.
+ * The line it says when the history did not load (`.histnote`) was the Energy card's before the phone showed the detail inline.
  */
 :host {
   display: block;
@@ -26,6 +27,11 @@
 /* the Sankey's card sits 14 pixels under the chart's on a tablet too, as the legacy panel's inline style put it */
 .blocks > .sankeyblock {
   margin-top: 14px;
+}
+.histnote {
+  margin: 0;
+  font-size: calc(12px * var(--tx));
+  color: var(--fg2);
 }
 .sankeyhead {
   display: flex;

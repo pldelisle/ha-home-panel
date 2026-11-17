@@ -131,7 +131,9 @@ export class EnergyDetail extends LitElement {
         role=${ifDefined(compact ? undefined : 'dialog')}
         aria-label=${ifDefined(compact ? undefined : view.title)}
       >
-        ${compact ? nothing : this.renderHeader(view)} ${this.renderMain(view, built)} ${this.renderSankey(view)}
+        ${compact ? nothing : this.renderHeader(view)}
+        ${view.error === null ? nothing : html`<p class="histnote">${view.error}</p>`} ${this.renderMain(view, built)}
+        ${this.renderSankey(view)}
         <div class="two">
           ${this.renderDonut(view, built)}
           <div class="inner">
@@ -144,7 +146,7 @@ export class EnergyDetail extends LitElement {
       ${lensLike(this.getRootNode())}`;
   }
 
-  // On a tablet the detail opens with its own header, the pane's being the phone's; on a phone the sheet draws it, tabs included.
+  // On a tablet the detail opens with its own header, the pane's being the phone's; on a phone the pane or the sheet draws it, tabs included.
   private renderHeader({title, sub, ranges}: EnergyDetailView) {
     return html`<hp-pane-header .icon=${'bolt'} .color=${'var(--c-grid)'} .heading=${title}>
       <span slot="icon">${detailIcon}</span>

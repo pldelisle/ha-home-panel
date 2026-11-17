@@ -545,9 +545,7 @@ export const en = {
   // Energy (src/features/energy): the card, the flow, the water heater and Hilo cards, and the phone's tiles
   // the card, its top line and the sub-line
   'energy.card.title': 'Home energy',
-  'energy.open': 'Open home energy details',
   'energy.close': 'Close',
-  'energy.gridOnly': 'Grid only · {rate}',
   'energy.summary': 'Grid supplying {grid} kW · room heating {heat} kW · Hilo {rate}',
   // Hilo's tier, as a name and as a short form in running text; the rate is `challenge` when it is the reward rate
   'energy.tier.low': 'Low tier',
@@ -581,7 +579,6 @@ export const en = {
   'energy.tile.heat': 'Room heating',
   'energy.tile.water': 'Water heating',
   'energy.tile.ev': 'EV charging',
-  'energy.last30': 'last 30 days',
   // the water heater's card and its 24-hour chart (src/features/energy/water-chart.ts)
   'energy.water.title': 'Water heater',
   // the Home pane's Energy and Water heater tiles (src/features/energy/glance.ts, #267)
