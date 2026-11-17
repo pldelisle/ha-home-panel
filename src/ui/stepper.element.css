@@ -44,7 +44,7 @@
   outline: 2px solid var(--c-home);
   outline-offset: 2px;
 }
-/* glass: the same tokens as src/css/glass.css gives `.app.gl .stepper` */
+/* glass: the same tokens as src/shell/frame/glass.css gives `.app.gl .stepper` */
 :host([glass]) {
   background: var(--g-tile);
   box-shadow: var(--g-edge-s);

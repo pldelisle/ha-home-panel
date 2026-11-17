@@ -13,7 +13,7 @@ import '../../ui/chart.ts'; // defines <hp-chart>
 import type {ChartOptions} from '../../ui/chart-options.ts';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {StoreController} from '../../ui/controllers/store-controller.ts';
-import {lensLike} from '../../ui/lens.ts';
+import {lens} from '../../ui/lens.ts';
 import {common, inner, tiles} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
@@ -92,7 +92,7 @@ export class CarSessions extends LitElement {
         </table>
         ${toggle === null ? nothing : html`<button class="showall" type="button" @click=${this.onToggle}>${toggle}</button>`}
       </div>
-      ${lensLike(this.getRootNode())}`;
+      ${lens}`;
   }
 
   private renderRow(row: SessionRow) {

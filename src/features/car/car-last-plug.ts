@@ -7,7 +7,7 @@ import {carTiles} from './car-tiles.ts';
 import type {LastBlock} from './model.ts';
 import blockCss from './styles.css?inline';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
-import {lensLike} from '../../ui/lens.ts';
+import {lens} from '../../ui/lens.ts';
 import {common, inner, tiles} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
@@ -33,7 +33,7 @@ export class CarLastPlug extends LitElement {
         <p>${block.caption}</p>
         ${block.tiles.length ? html`<div class="tiles">${carTiles(block.tiles)}</div>` : nothing}
       </div>
-      ${lensLike(this.getRootNode())}`;
+      ${lens}`;
   }
 }
 

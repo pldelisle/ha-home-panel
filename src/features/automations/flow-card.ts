@@ -12,7 +12,7 @@ import own from './flow-card.element.css?inline';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {StoreController} from '../../ui/controllers/store-controller.ts';
 import {TickController} from '../../ui/controllers/tick.ts';
-import {lensLike} from '../../ui/lens.ts';
+import {lens} from '../../ui/lens.ts';
 import {common, pill} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
@@ -55,7 +55,7 @@ export class FlowCard extends LitElement {
             </div>
           </div>
         </section>
-        ${lensLike(this.getRootNode())}`;
+        ${lens}`;
     const {flow} = v;
     const selected = v.kind === 'selected';
     const pillText = flow.pill.since === undefined ? flow.pill.text : runningText(flow.pill.since, Date.now(), t);
@@ -104,7 +104,7 @@ export class FlowCard extends LitElement {
         </div>
         <div class="augraph"></div>
       </section>
-      ${lensLike(this.getRootNode())}`;
+      ${lens}`;
   }
 
   protected override updated(): void {

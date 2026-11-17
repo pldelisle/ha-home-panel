@@ -1,7 +1,7 @@
 // The registry of the panel's ten subjects, in rail order: the rail, the phone's bar and the panes are drawn from it.
 // Pattern: registry (Fowler, Patterns of Enterprise Application Architecture, Registry) of plug-ins (Plugin): adding a
 // subject is one folder and one line here; every subject is a feature's own descriptor since the Automations move (#273).
-// Must not: hold state, know the guest (a descriptor reads it through its env), or list a subject twice.
+// Must not: hold state, or list a subject twice.
 import type {FeatureDescriptor, FeatureKey} from '../ui/feature.ts';
 import {airFeature} from '../features/air/index.ts';
 import {automationsFeature} from '../features/automations/index.ts';

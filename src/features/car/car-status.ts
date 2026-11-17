@@ -9,7 +9,7 @@ import {carTiles} from './car-tiles.ts';
 import type {StatusBlock, TireView} from './model.ts';
 import blockCss from './styles.css?inline';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
-import {lensLike} from '../../ui/lens.ts';
+import {lens} from '../../ui/lens.ts';
 import {common, inner, list, tiles} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
@@ -46,7 +46,7 @@ export class CarStatus extends LitElement {
         </div>
         <div class="tiles">${carTiles(block.tiles)}</div>
       </div>
-      ${lensLike(this.getRootNode())}`;
+      ${lens}`;
   }
 
   // a tire: its name, its pressure, and Ford's word for it when it gave one, in the warning colour unless it is normal

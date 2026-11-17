@@ -23,7 +23,7 @@ import {forShadow} from '../../ui/styles/host.ts';
 const MAIN_RING = 34;
 const BUBBLE_RING = 36;
 
-/** How many activities run and how many checks need attention, sent up whenever either changes: the shell slims the weather chip while an activity runs, and tells the guest the count. */
+/** How many activities run and how many checks need attention, sent up whenever either changes: the shell slims the weather chip while an activity runs, and the Home pane's heading says the count. */
 export class LiveActivitiesEvent extends CustomEvent<{count: number; attention: number}> {
   constructor(count: number, attention: number) {
     super('live-activities', {bubbles: true, composed: true, detail: {count, attention}});

@@ -1,7 +1,7 @@
 // The television port: what a TV source must answer (`TvSource`), the generic inputs it fills (`TvInputs`) and what the sources share.
 // Pattern: strategy (Gamma et al., Design Patterns), one interface and two adapters; each adapter is an anti-corruption layer
 // (Evans). A set with no name of its own is worded by a catalog key (`defaultName`) that the model translates; the TV and
-// wake-button rules copy the legacy panel's `tv()`, kept for its stack card until #266 deletes it with the legacy stack.
+// wake-button rules are the legacy panel's `tv()`'s, which #266 deleted with the legacy stack.
 // Must not: import an adapter, a feature or the DOM, call the catalog (the model does), or read the clock.
 import type {HassEntities, Registries} from '../core/hass.ts';
 import type {MessageKey} from '../core/i18n/en.ts';

@@ -6,7 +6,7 @@ import {LitElement, html, nothing, unsafeCSS} from 'lit';
 import {styleMap} from 'lit/directives/style-map.js';
 import {AppearanceConsumer} from './controllers/appearance-consumer.ts';
 import {ico, type IconName} from './icons.ts';
-import {lensLike} from './lens.ts';
+import {lens} from './lens.ts';
 import {badge, common, paneHeader} from './styles/index.ts';
 import paneHeaderOwn from './pane-header.element.css?inline';
 import {forShadow} from './styles/host.ts';
@@ -51,7 +51,7 @@ export class PaneHeader extends LitElement {
         </div>
         <slot name="actions"></slot>
       </div>
-      ${lensLike(this.getRootNode())}`;
+      ${lens}`;
   }
 }
 

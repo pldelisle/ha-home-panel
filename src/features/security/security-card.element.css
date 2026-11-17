@@ -2,9 +2,9 @@
  * <hp-security-card>'s own rules: the host lays out nothing, so the card's box is an item of the Home pane's `.hright` grid, as the legacy
  * `#hsec` card was; then the box, its header, the camera thumbnails, the sensor rows and the glow with its keyframes. Moved from the
  * legacy `.hsec`, `.hcams`, `.hcam`, `.hsens`, `.hsen` and `.glow` rules (tabs.css, phone.css, glass.css, motion.css), which #226 deleted.
- * Known copies of rules the guest's other cards still draw: `.card` (the box), `.lbl`, `.go`, `.hint` and `.sic` (base.css, extra.css,
+ * Known copies of rules the frame's sheet still holds: `.card` (the box), `.lbl`, `.go`, `.hint` and `.sic` (base.css, extra.css,
  * glass.css), read here as `.seccard`, `.hh .lbl`, `.chev`, `.nosens` and `.hsen .sic`; the header's `.hh` rules are the legacy `.hsec > .hh`
- * ones, moved (the glance tiles' `.htile .hh` stays). The copies stay while the legacy sheet draws the originals, until the guest goes (#277).
+ * ones, moved (the glance tiles' `.htile .hh` stays). The copies stay while the frame's sheet (src/shell/frame/) holds the originals.
  */
 :host {
   display: contents;

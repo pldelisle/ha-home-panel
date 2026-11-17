@@ -1,7 +1,8 @@
 // One rule, one file (ADR 0019): a selector the kit, the shell or a feature writes is written nowhere else, so the legacy
-// sheet and the elements read one source and a rule cannot drift into two copies. The legacy files (src/css/) are
-// concatenated into one sheet and may still repeat a selector among themselves; it is a selector in a file of a new layer
-// that must be alone. And a file of the kit must be imported by src/styles.js, so the legacy sheet never silently loses it.
+// sheet and the elements read one source and a rule cannot drift into two copies. The frame's files (src/shell/frame/, the legacy
+// panel's sheet that outlived it, #277) are concatenated into one sheet and may still repeat a selector among themselves; it is a
+// selector in a file of another kind that must be alone. And a file of the kit must be imported by src/shell/frame-styles.ts, so
+// the frame's sheet never silently loses it.
 // An element's own rules (`<name>.element.css`, next to the element: its `:host` and what only its tree has) are adopted by that
 // element's root alone, never joined into the legacy sheet; two of them may write the same selector (`:host`), each in its own root,
 // but one may not write what another kind of file writes. A `:host` rule of an element is that root's own: the legacy sheet's
@@ -12,7 +13,7 @@ import {fileURLToPath} from 'node:url';
 import {describe, expect, test} from 'vitest';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
-const LEGACY = 'src/css';
+const LEGACY = 'src/shell/frame';
 const KIT = 'src/ui/styles';
 const ELEMENT = /\.element\.css$/;
 
@@ -121,7 +122,7 @@ describe('the one-rule-one-file check', () => {
     ).toEqual([`h2   in src/ui/sheet.element.css, ${LEGACY}/base.css`]);
   });
 
-  test('lets two legacy files repeat a selector between them, as they still do', () => {
+  test('lets two frame files repeat a selector between them, as they still do', () => {
     expect(sharedSelectors({[`${LEGACY}/base.css`]: '.x { a: 1 }', [`${LEGACY}/phone.css`]: '.x { b: 1 }'})).toEqual(
       [],
     );
@@ -138,12 +139,15 @@ describe('the files as written', () => {
     expect(sharedSelectors(files)).toEqual([]);
   });
 
-  test('every file of the kit is in the legacy sheet: src/styles.js imports it and joins it', () => {
-    const text = readFileSync(join(ROOT, 'src/styles.js'), 'utf8').replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
-    const joined = /export const CSS = \[([^\]]*)\]/.exec(text)?.[1] ?? '';
+  test('every file of the kit is in the frame sheet: src/shell/frame-styles.ts imports it and joins it', () => {
+    const text = readFileSync(join(ROOT, 'src/shell/frame-styles.ts'), 'utf8').replace(
+      /\/\*[\s\S]*?\*\/|\/\/.*$/gm,
+      '',
+    );
+    const joined = /export const FRAME_CSS(?::\s*string)?\s*=\s*\[([^\]]*)\]/.exec(text)?.[1] ?? '';
     const missing = cssFiles(KIT).filter(file => {
       const name = /^import (\w+) from '(.+)';$/gm;
-      const path = `./${file.replace(/^src\//, '')}?inline`;
+      const path = `../${file.replace(/^src\//, '')}?inline`;
       const id = [...text.matchAll(name)].find(m => m[2] === path)?.[1];
       return !id || !new RegExp(`\\b${id}\\b`).test(joined);
     });

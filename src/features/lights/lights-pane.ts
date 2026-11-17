@@ -49,7 +49,7 @@ import {StoreController} from '../../ui/controllers/store-controller.ts';
 import {SystemDataController} from '../../ui/controllers/system-data.ts';
 import {TickController} from '../../ui/controllers/tick.ts';
 import {SheetDismissEvent, ToastEvent} from '../../ui/events.ts';
-import {lensLike} from '../../ui/lens.ts';
+import {lens} from '../../ui/lens.ts';
 import '../../ui/pane-header.ts'; // defines <hp-pane-header>
 import {common} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
@@ -225,7 +225,7 @@ export class LightsPane extends LitElement {
         </div>
       </hp-pane-header>
       ${view.strip ? html`<hp-al-strip .strip=${view.strip}></hp-al-strip>` : nothing}
-      ${compact ? this.renderTiles(view) : this.renderRows(view)}${this.renderSheet()}${lensLike(this.getRootNode())}`;
+      ${compact ? this.renderTiles(view) : this.renderRows(view)}${this.renderSheet()}${lens}`;
   }
 
   // the room's sheet, over the page while it is open; what it asks comes back here

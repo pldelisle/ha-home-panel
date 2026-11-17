@@ -26,12 +26,12 @@ export interface LocaleDefaults {
   browserHour12?: boolean;
 }
 
-/**
- * The English the panel is written in, whatever the profile says: the old class formats with it (the rewrite layer parses English).
- * Deleted in phase 4 with `fmtEn`.
- */
+/** The English the panel speaks: Canadian, as the house is. */
+export const ENGLISH_TAG = 'en-CA';
+
+/** The English the panel is written in, whatever the profile says. Deleted in phase 4 with `fmtEn`. */
 export function englishLocale(timeZone: string): PanelLocaleSpec {
-  return {language: 'en', tag: 'en-CA', timeZone, hour12: true, numberLocale: 'en-CA', useGrouping: true};
+  return {language: 'en', tag: ENGLISH_TAG, timeZone, hour12: true, numberLocale: ENGLISH_TAG, useGrouping: true};
 }
 
 export function panelLocale(hass: PanelHass, defaults: LocaleDefaults): PanelLocaleSpec {

@@ -1,9 +1,9 @@
 /*
- * <hp-scene-tiles>'s own rules: the host lays out nothing, so each tile is an item of the guest's `.hscenes` row, as the legacy
+ * <hp-scene-tiles>'s own rules: the host lays out nothing, so each tile is an item of the Home pane's `.hscenes` row, as the legacy
  * buttons were; then a tile, its icon, its name and its line, and the looks of a scene just run and of a mode that is on.
  * Moved from the legacy `.ptile`, `.ptile.scene` and `.hscenes .ptile` rules (extra.css, tabs.css, phone.css, glass.css, motion.css),
  * merged as the cascade left them inside `.hscenes`, read here as `.scenetile`, `.scene.active` and `.mode.active`; #220 deleted
- * them. `.hscenes` itself is the guest's container (the Home-card bridge's host) and stays until the Home move (#268).
+ * them. `.hscenes` itself is the Home pane's (#268).
  */
 :host {
   display: contents;

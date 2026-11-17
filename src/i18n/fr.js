@@ -1,3 +1,5 @@
+// Phase 4's input, not shipped: the legacy panel's French rewrite layer. Nothing in src/ imports it since the guest went (#277), so
+// it is not in dist/; the equivalence tests import it, and spec 27 deletes it when the catalogs are the only source.
 // ---------- French: Québec French when the signed-in HA user's language is French ----------
 // The panel is written in English. In French, every text node and label is translated as it is drawn:
 // numbers, times and dates are lifted out first and come back in French form, so "Oct 27, 4:07 pm" needs no entry of its own,

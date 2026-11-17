@@ -20,7 +20,7 @@ import {CommandRunner} from '../../ui/commands.ts';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {OptimisticController} from '../../ui/controllers/optimistic.ts';
 import {StoreController} from '../../ui/controllers/store-controller.ts';
-import {lensLike} from '../../ui/lens.ts';
+import {lens} from '../../ui/lens.ts';
 import {chart, common, inner, pill, tiles} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
@@ -98,7 +98,7 @@ export class ClimateDetail extends LitElement {
         </div>
         ${this.renderChart(view)} ${view.note ? html`<p class="note">${view.note}</p>` : nothing}
       </div>
-      ${lensLike(this.getRootNode())}`;
+      ${lens}`;
   }
 
   // the legend and the chart; until the range is loaded (or when it failed) the line that says so stands in the chart's place

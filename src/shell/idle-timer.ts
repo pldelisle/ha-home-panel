@@ -1,8 +1,8 @@
 // The idle timer: after five minutes without a touch the tablet shows its clock; a touch wakes it. A state machine
 // (`nextIdle`, a pure transition table) inside a Lit reactive controller that owns the timers and the four listeners.
 // Pattern: State, in its table form (Gamma et al., Design Patterns); reactive controller (Lit docs, Reactive Controllers).
-// The table below is the specification and the code; the shell draws the state, the guest still draws the clock.
-// Must not: touch the DOM beyond its listeners, know what the shell draws, or call the guest (the shell does, on change).
+// The table below is the specification and the code; the shell draws the state and the idle screen (#276).
+// Must not: touch the DOM beyond its listeners, know what the shell draws, or draw (the shell does, on change).
 
 import type {ReactiveController, ReactiveControllerHost} from 'lit';
 
@@ -84,7 +84,7 @@ export interface IdleTimerOptions {
   compact: () => boolean;
   /** Whether Home Assistant has handed over `hass`: before it there is no clock to show, so the idle moment is a touch. */
   ready: () => boolean;
-  /** The state changed (never called for a stay); the shell draws it and tells the guest. */
+  /** The state changed (never called for a stay); the shell draws it. */
   onChange: (state: IdleState) => void;
   /** Defaults to the page's timers. */
   timers?: Timers;
@@ -108,7 +108,7 @@ export class IdleTimer implements ReactiveController {
     host.addController(this);
   }
 
-  // The same four touches the guest heard: three on the root, the scroll on the window (capturing, so a scroll inside a
+  // The same four touches the legacy panel heard: three on the root, the scroll on the window (capturing, so a scroll inside a
   // pane counts); all passive.
   private readonly touched = (): void => {
     for (const listener of this.touchListeners) listener();
@@ -121,7 +121,7 @@ export class IdleTimer implements ReactiveController {
     return () => this.touchListeners.delete(listener);
   }
 
-  /** A touch that did not come from the pointer, such as the guest drawing again or a tab shown by code. */
+  /** A touch that did not come from the pointer, such as the frame drawing again or a tab shown by code. */
   arm(): void {
     this.send({type: 'touch'});
   }

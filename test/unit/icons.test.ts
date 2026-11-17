@@ -1,16 +1,9 @@
 // The icons of src/ui/icons.ts: `ico` draws one at the size asked. The legacy class's own icon table, which each path was checked
-// against while the class drew it, went with its last reader, the Home tiles (#268), so the class draws no icon of its own.
-import {readFileSync} from 'node:fs';
+// against while the class drew it, went with its last reader, the Home tiles (#268), and the class itself with the guest (#277).
 import {describe, expect, test} from 'vitest';
 import {ICONS, conditionKind, ico, weatherIcon} from '../../src/ui/icons.ts';
 
-const legacy = readFileSync(new URL('../../src/home-panel.js', import.meta.url), 'utf8');
-
 describe('the icons', () => {
-  test('the class keeps no icon table of its own', () => {
-    expect(legacy).not.toMatch(/const ICON = \{/);
-  });
-
   test('ico draws an svg of the size asked, and 20 pixels by default', () => {
     expect(ico('menu', 24).values[0]).toBe(24);
     expect(ico('menu').values).toEqual([20, 20, ICONS.menu]);

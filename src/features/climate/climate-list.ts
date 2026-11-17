@@ -9,7 +9,7 @@ import type {ClimateItem} from './items.ts';
 import type {ClimateSelection} from './model.ts';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {ico} from '../../ui/icons.ts';
-import {lensLike} from '../../ui/lens.ts';
+import {lens} from '../../ui/lens.ts';
 import {common} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
@@ -65,7 +65,7 @@ export class ClimateList extends LitElement {
             </button>`,
         )}
       </div>
-      ${lensLike(this.getRootNode())}`;
+      ${lens}`;
   }
 
   // a tap on the item already shown is told as well: the pane keeps its choice and nothing changes
