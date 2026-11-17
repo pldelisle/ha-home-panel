@@ -107,7 +107,14 @@ export class AirDetail extends LitElement {
   declare range: Range;
 
   // The kit's wells, status text, tiles and radios; the feature's `.aqsum` state line (styles.css); the element's own rules last.
-  static override styles = [common, inner, status, tiles, unsafeCSS(forShadow(airShared)), unsafeCSS(forShadow(detailOwn))];
+  static override styles = [
+    common,
+    inner,
+    status,
+    tiles,
+    unsafeCSS(forShadow(airShared)),
+    unsafeCSS(forShadow(detailOwn)),
+  ];
 
   private readonly storeController = new StoreController(this, {ids: () => []});
   private readonly appearance = new AppearanceConsumer(this);
