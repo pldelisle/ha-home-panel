@@ -1,6 +1,6 @@
 // The Car commands: what a tap on the charger's or the car's controls asks Home Assistant for, as `Command` data, and the departure schedule's save.
 // Pattern: Command (Gamma et al.) built by pure functions; the kit's `CommandRunner` sends them, an element holds the value each `holds` key names in the panel's overlay (ADR 0023). The pause switch is
-// the provider's (`wallboxCommands.pause`: the live pill runs it too). The rules are the legacy `carControl`'s, deleted in #253; the two-tap rule of remote start and unlock is the element's `ArmedController`.
+// the provider's (`wallboxCommands.pause`: the live pill runs it too). The rules are the legacy `carControl`'s, deleted in #253; the question before remote start and unlock is the element's `<hp-dialog>`.
 // Must not: send anything, read the store or the clock, or word a string (`done` is a catalog key, the runner words it; a name or a time arrives already written).
 import type {Command} from '../../core/commands.ts';
 import type {Formatters} from '../../core/i18n/format.ts';

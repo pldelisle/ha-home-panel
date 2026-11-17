@@ -785,7 +785,7 @@ export const en = {
   'climate.historyLoading': 'Loading history…',
   'climate.historyUnavailable': 'History is not available right now.',
   'climate.noThermostats': 'No thermostats found.',
-  // the controls (#248): the section words, the groups' and steppers' aria text, the second tap's words, and what the commands say when they are done
+  // the controls (#248): the section words, the groups' and steppers' aria text, the two questions' words, and what the commands say when they are done
   'climate.mode': 'Mode',
   'climate.fan': 'Fan',
   'climate.preset': 'Preset',
@@ -803,11 +803,15 @@ export const en = {
   'climate.lowerAll': 'Lower set every room to',
   'climate.raiseAll': 'Raise set every room to',
   'climate.setAllTo': 'Set all to {n}°',
-  'climate.tapAgainAll': 'Tap again: all {rooms} rooms to {n}°',
   'climate.allOff': 'All off',
-  'climate.tapAgainOff': 'Tap again: all rooms off',
-  'climate.frostGuardHint':
-    'Off means the 5° frost guard, the lowest a Hilo thermostat goes. Changes to every room need a second tap.',
+  'climate.frostGuardHint': 'Off means the 5° frost guard, the lowest a Hilo thermostat goes.',
+  'climate.askSetAll': 'Set every room to {n}°?',
+  'climate.askSetAllLine': '{rooms, plural, one {# room changes} other {All # rooms change}} to {n}°.',
+  'climate.askSetAllConfirm': 'Set all',
+  'climate.askOff': 'Turn every room off?',
+  'climate.askOffLine': 'Each room drops to the 5° frost guard.',
+  'climate.askOffConfirm': 'Turn off',
+  'climate.askCancel': 'Cancel',
   'climate.thermostatUnavailable': "This thermostat is unavailable, so it can't be adjusted right now.",
   'climate.heatPumpOffline': "The heat pump is offline, so it can't be adjusted right now.",
   'climate.roomSet': '{name} set to {n}°',

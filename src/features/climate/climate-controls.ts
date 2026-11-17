@@ -1,9 +1,9 @@
-// <hp-climate-controls>: what a person sets in the Climate detail: the heat pump's mode, target, fan, preset and louvers; the house's "set every room" with its two buttons that need a second tap; a room's setpoint and quick buttons.
+// <hp-climate-controls>: what a person sets in the Climate detail: the heat pump's mode, target, fan, preset and louvers; the house's "set every room" with its two buttons, which ask in a dialog before they change every room; a room's setpoint and quick buttons.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over the model's `ControlsView`: it switches on `kind` and computes nothing but the next setpoint (commands.ts). A tap shows its value at once in the panel's overlay and runs a
-// `Command` through the kit's `CommandRunner` (ADR 0023), through `ControlSender`: a setpoint waits 1,100 ms for the taps to stop, a mode goes now. `ArmedController` holds the second tap, `<hp-seg>` and `<hp-stepper>` the kit's controls.
-// Must not: read an entity or the store's states (the view has what it needs), build a command by hand (commands.ts does), send a setpoint per tap, or keep a thermostat's value (the overlay does).
+// `Command` through the kit's `CommandRunner` (ADR 0023), through `ControlSender`: a setpoint waits 1,100 ms for the taps to stop, a mode goes now. the two questions are the kit's `<hp-dialog>` (ADR 0035), opened by `asking`;
+// `<hp-seg>` and `<hp-stepper>` are the kit's controls.
+// Must not: read an entity or the store's states (the view has what it needs), build a command by hand (commands.ts does), word a question (the model does), send a setpoint per tap, send "all rooms" before its dialog's button, or keep a thermostat's value (the overlay does).
 import {LitElement, html, nothing, unsafeCSS, type TemplateResult} from 'lit';
-import {classMap} from 'lit/directives/class-map.js';
 import {repeat} from 'lit/directives/repeat.js';
 import {DASH} from '../../core/figures.ts';
 import {FROST_GUARD} from '../../providers/power.ts';
@@ -23,12 +23,12 @@ import {
 } from './commands.ts';
 import {tenthDegrees} from './items.ts';
 import {ControlSender} from './sender.ts';
-import type {ControlOption, ControlsView} from './model.ts';
+import type {AskView, ControlOption, ControlsView} from './model.ts';
 import {CommandRunner} from '../../ui/commands.ts';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
-import {ArmedController} from '../../ui/controllers/armed.ts';
 import {OptimisticController} from '../../ui/controllers/optimistic.ts';
 import {StoreController} from '../../ui/controllers/store-controller.ts';
+import '../../ui/dialog.ts'; // defines <hp-dialog>
 import '../../ui/seg.ts'; // defines <hp-seg>
 import type {SegChangeDetail, SegOption} from '../../ui/seg.ts';
 import '../../ui/stepper.ts'; // defines <hp-stepper>
@@ -40,7 +40,7 @@ type Hp = Extract<ControlsView, {kind: 'hp'; offline?: false}>;
 type House = Extract<ControlsView, {kind: 'house'}>;
 type Room = Extract<ControlsView, {kind: 'room'; offline?: false}>;
 
-/** The two buttons of "all rooms": each waits for its second tap. */
+/** The two buttons of "all rooms": each asks first, in a dialog of its own. */
 type AllKey = 'allset' | 'alloff';
 
 const segOptions = (options: readonly ControlOption[]): SegOption[] =>
@@ -54,11 +54,14 @@ export class ClimateControls extends LitElement {
   static override properties = {
     view: {attribute: false},
     allSetpoint: {state: true},
+    asking: {state: true},
   };
   /** The model's controls for what the detail shows; the element draws it and changes nothing in it. */
   declare view: ControlsView | undefined;
   /** The "set every room" stepper's value: the element's own state, until the person moves it. */
   declare allSetpoint: number;
+  /** The question on screen, if any: the dialog that is open. */
+  declare private asking: AllKey | null;
 
   // The kit's pill button; the element's own rules, its `:host`, the labels, the lines of controls, the quick buttons and the louvers' select, are in climate-controls.element.css.
   static override styles = [common, button, unsafeCSS(forShadow(controlsOwn))];
@@ -72,12 +75,12 @@ export class ClimateControls extends LitElement {
     t: () => this.storeController.store.t,
   });
   private readonly sender = new ControlSender(this, {overlay: this.optimistic, commands: this.commands});
-  private readonly armed = new ArmedController(this);
 
   constructor() {
     super();
     this.view = undefined;
     this.allSetpoint = ALL_ROOMS.start;
+    this.asking = null;
   }
 
   /** The phone's detail has the dial, which sets a room's setpoint and the heat pump's target: their steppers are not drawn there. */
@@ -190,18 +193,22 @@ export class ClimateControls extends LitElement {
 
   // ---- the house ----
 
-  private renderHouse({rooms}: House) {
+  private renderHouse({rooms, asks}: House) {
     const {t, fmt} = this.storeController.store;
     const {allSetpoint: value} = this;
     const degrees = fmt.fixed(value, 1);
-    const pill = (key: AllKey, say: string, armedSay: string) =>
-      html`<button
-        type="button"
-        class=${classMap({abtn: true, armed: this.armed.isArmed(key)})}
-        @click=${() => this.onAll(key, rooms, value)}
-      >
-        ${this.armed.isArmed(key) ? armedSay : say}
-      </button>`;
+    // a dialog per button: the set one's words follow the stepper's value, which cannot move while the dialog is open
+    const dialog = (key: AllKey, ask: AskView) =>
+      html`<hp-dialog
+        data-ask=${key}
+        .open=${this.asking === key}
+        .heading=${ask.title}
+        .line=${ask.line}
+        .cancelLabel=${ask.cancel}
+        .confirmLabel=${ask.confirm}
+        @dialog-cancel=${this.dismiss}
+        @dialog-confirm=${() => this.onConfirm(key, rooms, value)}
+      ></hp-dialog>`;
     return html`<div class="clbl">${t('climate.allRooms')}</div>
       <div class="crow">
         <hp-stepper
@@ -216,25 +223,26 @@ export class ClimateControls extends LitElement {
           .incrementLabel=${t('climate.raiseAll')}
           @step-change=${this.onAllStep}
         ></hp-stepper>
-        ${pill('allset', t('climate.setAllTo', {n: degrees}), t('climate.tapAgainAll', {rooms: rooms.length, n: degrees}))}
-        ${pill('alloff', t('climate.allOff'), t('climate.tapAgainOff'))}
+        <button type="button" class="abtn" @click=${() => (this.asking = 'allset')}>
+          ${t('climate.setAllTo', {n: degrees})}
+        </button>
+        <button type="button" class="abtn" @click=${() => (this.asking = 'alloff')}>${t('climate.allOff')}</button>
       </div>
-      <p class="chint">${t('climate.frostGuardHint')}</p>`;
+      <p class="chint">${t('climate.frostGuardHint')}</p>
+      ${dialog('allset', asks.set(value))} ${dialog('alloff', asks.off)}`;
   }
 
-  // a changed value is not what a button waiting for its second tap said: the arming lapses
   private readonly onAllStep = (e: CustomEvent<StepDetail>): void => {
     this.allSetpoint = e.detail.value;
-    this.armed.clear();
   };
 
-  // the first tap arms the button (and lapses the other); the second, within four seconds, sends one call for every room
-  private onAll(key: AllKey, rooms: readonly string[], value: number): void {
-    if (!this.armed.confirm(key)) {
-      this.armed.clear();
-      this.armed.arm(key);
-      return;
-    }
+  private readonly dismiss = (): void => {
+    this.asking = null;
+  };
+
+  // the dialog's button: one call for every room, shown at once
+  private onConfirm(key: AllKey, rooms: readonly string[], value: number): void {
+    this.asking = null;
     const to = key === 'alloff' ? FROST_GUARD : value;
     this.sender.now(setAllRooms(rooms, to, this.storeController.store.fmt), to);
   }

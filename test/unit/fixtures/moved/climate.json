@@ -675,13 +675,8 @@
       "key": "climate.allOff"
     },
     {
-      "key": "climate.tapAgainOff",
-      "was": "Toucher de nouveau : toutes les pièces éteintes",
-      "after": "Tap again: all rooms : désactivé"
-    },
-    {
       "key": "climate.frostGuardHint",
-      "was": "Éteint veut dire 5° hors gel, le minimum d'un thermostat Hilo. Les changements pour toutes les pièces demandent un deuxième toucher."
+      "written": "Éteint veut dire 5° hors gel, le minimum d'un thermostat Hilo."
     },
     {
       "key": "climate.thermostatUnavailable",
@@ -703,12 +698,39 @@
       "was": "Tout régler à 21,0°"
     },
     {
-      "key": "climate.tapAgainAll",
+      "key": "climate.askSetAll",
+      "values": {
+        "n": "21.5"
+      },
+      "written": "Régler toutes les pièces à 21,5° ?"
+    },
+    {
+      "key": "climate.askSetAllLine",
       "values": {
         "rooms": 4,
-        "n": "21.0"
+        "n": "21.5"
       },
-      "was": "Toucher de nouveau : les 4 pièces à 21,0°"
+      "written": "Les 4 pièces passent à 21,5°."
+    },
+    {
+      "key": "climate.askSetAllConfirm",
+      "written": "Tout régler"
+    },
+    {
+      "key": "climate.askOff",
+      "written": "Éteindre toutes les pièces ?"
+    },
+    {
+      "key": "climate.askOffLine",
+      "written": "Chaque pièce descend à 5° hors gel."
+    },
+    {
+      "key": "climate.askOffConfirm",
+      "written": "Éteindre"
+    },
+    {
+      "key": "climate.askCancel",
+      "written": "Annuler"
     },
     {
       "key": "climate.roomSet",

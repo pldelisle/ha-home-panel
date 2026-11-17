@@ -80,6 +80,10 @@ const room = (controls: ControlsView) => {
   if (controls.kind !== 'room' || controls.offline) throw new Error('not a room with a thermostat');
   return controls;
 };
+const house = (controls: ControlsView) => {
+  if (controls.kind !== 'house') throw new Error('not the house');
+  return controls;
+};
 const hp = (controls: ControlsView) => {
   if (controls.kind !== 'hp' || controls.offline) throw new Error('not a heat pump that is up');
   return controls;
@@ -209,10 +213,35 @@ describe('the test house, on the tablet', () => {
       lo: '14°',
       hi: '30°',
     });
-    expect(detail.controls).toEqual({
+    expect(detail.controls).toMatchObject({
       kind: 'house',
       rooms: ['climate.bedroom', 'climate.garage', 'climate.living_room', 'climate.office'],
     });
+  });
+
+  test('the house’s two buttons ask in a dialog: Set all names the value and the rooms, All off names the frost guard', () => {
+    const {asks} = house(modelOf(fullHouse, 'house').detail.controls);
+    expect(asks.set(21)).toEqual({
+      title: 'Set every room to 21.0°?',
+      line: 'All 4 rooms change to 21.0°.',
+      confirm: 'Set all',
+      cancel: 'Cancel',
+    });
+    expect(asks.set(21.5).title).toBe('Set every room to 21.5°?');
+    expect(asks.off).toEqual({
+      title: 'Turn every room off?',
+      line: 'Each room drops to the 5° frost guard.',
+      confirm: 'Turn off',
+      cancel: 'Cancel',
+    });
+    const french = house(modelOf(fullHouse, 'house', {language: 'fr'}).detail.controls).asks;
+    expect(french.set(21.5)).toEqual({
+      title: 'Régler toutes les pièces à 21,5°\u202f?',
+      line: 'Les 4 pièces passent à 21,5°.',
+      confirm: 'Tout régler',
+      cancel: 'Annuler',
+    });
+    expect(french.off.title).toBe('Éteindre toutes les pièces\u202f?');
   });
 
   test('a room heating: its pill, its setpoint on the gauge, its tiles and note, its setpoint and quick buttons', () => {

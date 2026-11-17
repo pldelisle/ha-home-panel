@@ -147,6 +147,20 @@ export interface ControlOption {
   checked: boolean;
 }
 
+/** A question asked before a change that is hard to take back: what it is, what follows, and the two buttons (HIG, Alerts). */
+export interface AskView {
+  title: string;
+  line: string;
+  confirm: string;
+  cancel: string;
+}
+
+/** The house's two questions: "set every room" names the value the stepper holds (the element's own state), "all off" has nothing to name. */
+export interface AllAsks {
+  set: (degrees: number) => AskView;
+  off: AskView;
+}
+
 /** What the controls draw; the element switches on `kind` and never computes. */
 export type ControlsView =
   | {kind: 'hp'; offline: true}
@@ -165,8 +179,8 @@ export type ControlsView =
       preset: ControlOption[] | null;
       swing: ControlOption[] | null;
     }
-  /** Every room's thermostat, for "set every room"; the value and the armed button are the controls' own state. */
-  | {kind: 'house'; rooms: string[]}
+  /** Every room's thermostat, for "set every room", and the two questions its buttons ask first; the value is the controls' own state. */
+  | {kind: 'house'; rooms: string[]; asks: AllAsks}
   | {kind: 'room'; offline: true}
   | {
       kind: 'room';
@@ -386,6 +400,27 @@ function roomControls(room: RoomPower, deps: ClimateModelDeps): ControlsView {
   };
 }
 
+function allAsks(rooms: number, {t, fmt}: ClimateModelDeps): AllAsks {
+  const cancel = t('climate.askCancel');
+  return {
+    set: degrees => {
+      const n = fmt.fixed(degrees, 1);
+      return {
+        title: t('climate.askSetAll', {n}),
+        line: t('climate.askSetAllLine', {rooms, n}),
+        confirm: t('climate.askSetAllConfirm'),
+        cancel,
+      };
+    },
+    off: {
+      title: t('climate.askOff'),
+      line: t('climate.askOffLine'),
+      confirm: t('climate.askOffConfirm'),
+      cancel,
+    },
+  };
+}
+
 function houseHead(
   inputs: ClimateInputs,
   deps: ClimateModelDeps,
@@ -429,7 +464,7 @@ function houseHead(
       },
     ],
     note: null,
-    controls: {kind: 'house', rooms: rooms.map(room => room.climate)},
+    controls: {kind: 'house', rooms: rooms.map(room => room.climate), asks: allAsks(rooms.length, deps)},
   };
 }
 
