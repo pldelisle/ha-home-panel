@@ -16,6 +16,8 @@ export interface Settings {
   glass: string;
   /** Glass transparency, 0 to 100. */
   glassLevel: number;
+  /** With glass on, the cards are opaque (`solid`, Apple's rule) or glass too (`glass`, the panel's older look). */
+  cards: string;
   tab: string;
 }
 
@@ -31,6 +33,7 @@ const KEYS: Record<keyof Settings, string> = {
   text: 'home-panel-text',
   glass: 'home-panel-glass',
   glassLevel: 'home-panel-glass-t',
+  cards: 'home-panel-cards',
   tab: 'home-panel-tab',
 };
 const VERSION_KEY = 'home-panel-settings';
@@ -59,6 +62,7 @@ export function createSettings(storage: KeyValueStorage): PanelSettings {
       text: read('text') || 'auto',
       glass: read('glass') || 'dawn',
       glassLevel: glassLevel(),
+      cards: read('cards') === 'glass' ? 'glass' : 'solid',
       tab: read('tab') || 'home',
     }),
 

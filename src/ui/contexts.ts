@@ -47,6 +47,8 @@ export interface Appearance {
     readonly wallpaper: string | null;
     /** The fill-alpha multiplier (`--g-m`) the transparency setting gives. */
     readonly density: number;
+    /** The cards are glass too (the Transparent cards setting); otherwise only the navigation layer is. */
+    readonly cards: boolean;
   };
   /** The text size multiplier (`--tx`). */
   readonly textScale: number;

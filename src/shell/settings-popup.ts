@@ -11,6 +11,8 @@ import {AppearanceConsumer} from '../ui/controllers/appearance-consumer.ts';
 import {StoreController} from '../ui/controllers/store-controller.ts';
 import {settingsContext} from '../ui/contexts.ts';
 import {ico} from '../ui/icons.ts';
+import type {SwitchChangeDetail} from '../ui/switch.ts';
+import '../ui/switch.ts'; // defines <hp-switch>
 import {common, seg, settings} from '../ui/styles/index.ts';
 
 // the choices, in the order the popup lists them: the value the settings keep and the message that names it
@@ -67,7 +69,7 @@ export class SettingsPopup extends LitElement {
 
   protected override render() {
     const {t} = this.store.store;
-    const {theme, text, glass, glassLevel} = this.settingsNow();
+    const {theme, text, glass, glassLevel, cards} = this.settingsNow();
     const dark = this.appearance.value?.theme === 'dark';
     const hint = t(theme === 'auto' ? 'settings.theme.following' : 'settings.theme.tap');
     // the foot of the popup: the version, and that the charts' history is kept fresh once it has loaded
@@ -127,6 +129,14 @@ export class SettingsPopup extends LitElement {
             @input=${this.onRange}
           /><span>${t('settings.transparency.clear')}</span>
         </div>
+        <div class="gcrow">
+          <span>${t('settings.glassCards')}</span>
+          <hp-switch
+            .checked=${cards === 'glass'}
+            .label=${t('settings.glassCards')}
+            @change=${this.onCards}
+          ></hp-switch>
+        </div>
       </div>
       <div class="ccv">${foot}</div>
     </div>`;
@@ -155,6 +165,12 @@ export class SettingsPopup extends LitElement {
       source.set('theme', theme === 'auto' ? 'auto' : dark ? 'light' : 'dark');
     } else if (glass !== undefined) source.set('glass', glass);
     else if (text !== undefined) source.set('text', text);
+  };
+
+  // the switch tells what a tap asks for; the setting is written and the popup draws it back from the settings
+  private readonly onCards = (e: CustomEvent<SwitchChangeDetail>): void => {
+    e.stopPropagation();
+    this.source?.set('cards', e.detail.checked ? 'glass' : 'solid');
   };
 
   private readonly onRange = (e: Event): void => {

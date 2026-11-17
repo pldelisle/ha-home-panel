@@ -136,6 +136,8 @@ export const en = {
   'settings.transparency': 'Transparency',
   'settings.transparency.solid': 'Solid',
   'settings.transparency.clear': 'Clear',
+  // the switch under the glass settings: the cards turn to glass too, as before 2026-11 (the content layer is opaque by default)
+  'settings.glassCards': 'Transparent cards',
   'settings.version': 'Home panel v{version}',
   'settings.versionStatistics': 'Home panel v{version} · statistics refreshed every 15 minutes',
   // the configuration card: a title, a lead line, one message per kind of problem (src/core/config.ts), a footer;

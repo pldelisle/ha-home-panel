@@ -469,6 +469,7 @@ export class HomePanel extends LitElement {
         tabsv: true,
         idle: this.idleState === 'idle',
         gl: a.glass.on,
+        gc: a.glass.cards,
         txl: a.largeText,
         live: a.live,
       })}"

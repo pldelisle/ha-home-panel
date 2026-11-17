@@ -119,6 +119,21 @@ button.cct[aria-pressed='true'] small {
 .app.gl .gtrow {
   display: flex;
 }
+/* Transparent cards (2026-11): a list row with its switch, under the slider; hidden when Glass is None */
+.gcrow {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 44px;
+  margin-top: 4px;
+  font-size: calc(13px * var(--tx));
+  font-weight: 600;
+  color: var(--fg);
+}
+.app.gl .gcrow {
+  display: flex;
+}
 .gtrange {
   flex: 1;
   height: 44px;

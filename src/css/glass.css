@@ -216,6 +216,25 @@
     background: var(--card2);
   }
 }
+/* Transparent cards (the setting, the panel's look before 2026-11): the content layer is glass too, its tokens back to their
+   glass values; the owner's choice over Apple's rule, so it is off by default and gives way to Increase Contrast */
+@media not (prefers-contrast: more) {
+  .app.gl.gc {
+    --g-card: rgba(255, 255, 255, calc(0.14 * var(--g-m, 1)));
+    --g-tile: rgba(255, 255, 255, calc(0.12 * var(--g-m, 1)));
+    --g-sel: rgba(255, 255, 255, calc(0.3 * var(--g-m, 1)));
+    --g-edge-s: inset 0 0 8px -3px var(--g-hi), inset 0 0 0 1px var(--g-ring);
+    --m-bd: var(--g-bd);
+    --m-edge: var(--g-edge);
+    --ctl-bg: var(--g-sel);
+    --ctl-edge: var(--g-edge-s);
+  }
+  .app.gl.gc[data-theme='dark'] {
+    --g-card: rgba(255, 255, 255, calc(0.06 * var(--g-m, 1)));
+    --g-tile: rgba(255, 255, 255, calc(0.06 * var(--g-m, 1)));
+    --g-sel: rgba(255, 255, 255, calc(0.12 * var(--g-m, 1)));
+  }
+}
 @media (prefers-contrast: more) {
   .app.gl {
     --g-m: 1 !important;

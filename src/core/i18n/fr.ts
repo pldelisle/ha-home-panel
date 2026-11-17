@@ -131,6 +131,7 @@ export const fr: Record<MessageKey, string> = {
   'settings.transparency': 'Transparence',
   'settings.transparency.solid': 'Opaque',
   'settings.transparency.clear': 'Transparent',
+  'settings.glassCards': 'Cartes transparentes',
   'settings.version': 'Home panel v{version}',
   'settings.versionStatistics': 'Home panel v{version} · statistiques actualisées aux 15 minutes',
   'config.title': 'Vérifiez la configuration du panneau',
