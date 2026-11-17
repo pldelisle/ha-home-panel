@@ -36,8 +36,8 @@ strength setting moves the navigation layer only.
   everywhere. Used by Weather's tiles, Air's readings (which carry the words in their name, "CO₂ 640 ppm, opens its history"),
   Climate's Warmest and Coolest, and Energy's totals. Enforced by `test/e2e/climate.spec.ts` (the description), `test/e2e/energy.spec.ts` (four of the six totals are buttons, the car and the
   rate are not) and `test/e2e/air.spec.ts` (the names); `test/e2e/a11y.spec.ts` fails a button that holds another (`nestedInteractive`).
-- A whole card is tappable only when the whole card goes to one place (the Home tiles, which show the `›` square in their
-  top-right corner). A card with controls inside it is not itself tappable; if it also leads somewhere, its header row carries the
+- A whole card is tappable only when the whole card goes to one place (the Home tiles, which show a plain `›` in their
+  top-right corner, in `--fg3`, with no box: a boxed chevron reads as a second button). A card with controls inside it is not itself tappable; if it also leads somewhere, its header row carries the
   `›` (the Security card). A row that opens something ends in a plain `›` (a light tile's row, the Car's departure and charging
   history, the Automations list); a tile that acts and opens nothing (a scene, a bulb) has none, and a light tile is two sibling
   buttons, the row that opens the room and the bulb that switches it, never one inside the other.
