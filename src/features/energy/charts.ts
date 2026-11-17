@@ -1,4 +1,4 @@
-// The Energy detail's two charts as plain data: the main stacked bars by range, the 30-day donut, and the rows the bars are drawn from.
+// The Energy detail's two charts as plain data: the main stacked bars by range, the donut of the range's period, and the rows the bars are drawn from.
 // Pattern: functional core (Bernhardt, Boundaries) behind <hp-chart> (ADR 0027): options are data, never ApexCharts instances, every number is written
 // by `fmt`, and the colours are the tokens the element resolved. The options are those of the legacy `energyMain` and `energySheet` (deleted in #240), field for field.
 // Must not: import Lit, the DOM or the library, read the clock or a token itself (the element hands them in), or write a word a person reads outside `t`.
@@ -6,23 +6,26 @@ import {noonOf, whole, type Formatters} from '../../core/i18n/format.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
 import type {FlowRow} from '../../providers/power-history.ts';
 import {sum} from '../../providers/power-history.ts';
-import {mergeOptions, type ChartOptions} from '../../ui/chart-options.ts';
+import {hourRowsAxis, mergeOptions, tooltipDate, type TooltipDate, type ChartOptions} from '../../ui/chart-options.ts';
 import {thinCategories} from '../../ui/thin-axis.ts';
 import {GROUPS, type DailyRow, type EnergyHistoryData, type MonthSplit} from './history.ts';
 
-/** The ranges the main chart draws, in the order of its tabs: Energy's own, since `today` is no range of the kit's `RANGES` (it asks the recorder for nothing). */
-export const ENERGY_RANGES = ['today', 'week', 'month', 'year'] as const;
+/**
+ * The tab's ranges, in the order of its tabs: Energy's own, since `now` and `today` are no ranges of the kit's `RANGES` (they ask the recorder for
+ * nothing). `now` is the live flow, and the hours chart draws today's for it, as for `today`.
+ */
+export const ENERGY_RANGES = ['now', 'today', 'week', 'month', 'year'] as const;
 export type EnergyRange = (typeof ENERGY_RANGES)[number];
 
 /** The range a tab chose is one the detail draws (the tabs offer no other; the event carries any string). */
 export const isEnergyRange = (range: string): range is EnergyRange => ENERGY_RANGES.some(one => one === range);
 
-/** The kind of axis a range's bars stand on: a time axis for today and the week, categories for the month and the year. */
+/** The kind of axis a range's bars stand on: a time axis for now, today and the week, categories for the month and the year. */
 export type MainShape = 'time' | 'category';
 
 /** The shape `<hp-chart>` is told (ADR 0029): a new chart only where the axis changes in kind, an update between two ranges of the same kind. */
 export const mainShape = (range: EnergyRange): MainShape =>
-  range === 'today' || range === 'week' ? 'time' : 'category';
+  range === 'month' || range === 'year' ? 'category' : 'time';
 
 /** The rows a range's bars are drawn from: hours for today and the week, days for the month, months for the year. */
 export type MainRows =
@@ -65,20 +68,23 @@ const MWH = 'MWh';
 const COLUMN = {heat: 3, wh: 2, ev: 1, rest: 4} as const;
 /** The bars' rounded top, shared by the four ranges. */
 const STACK = {borderRadius: 3, borderRadiusApplication: 'end', borderRadiusWhenStacked: 'last'} as const;
-/** A time axis' tooltip, in the library's date syntax: the clock for today, the day and the clock for the week. */
-const TOOLTIP_DATE = {today: 'HH:mm', week: 'ddd MMM d, HH:mm'} as const;
+/** What a time axis' tooltip names: the clock for today, the day and the clock for the week. */
+const TOOLTIP_DATE: Record<'today' | 'week', TooltipDate> = {
+  today: {day: null, clock: 'time'},
+  week: {day: 'date', clock: 'time'},
+};
 /** About how many labels a category axis writes on a phone, for the month's days and the year's months. */
 const PHONE_LABELS = {month: 5, year: 4} as const;
 
-/** The rows a range draws: today's hours, the week's, the last 30 days or the last 12 months, from what the history derived. */
+/** The rows a range draws: today's hours (for now too), the week's, the last 30 days or the last 12 months, from what the history derived. */
 export function mainRows(
   range: EnergyRange,
   history: Pick<EnergyHistoryData, 'flow' | 'daily' | 'monthly'>,
   {fmt, now}: {fmt: Pick<Formatters, 'isoDay'>; now: number},
 ): MainRows {
-  if (range === 'today') {
+  if (range === 'now' || range === 'today') {
     const today = fmt.isoDay(now);
-    return {range, rows: history.flow.filter(([start]) => fmt.isoDay(start) === today)};
+    return {range: 'today', rows: history.flow.filter(([start]) => fmt.isoDay(start) === today)};
   }
   if (range === 'week') return {range, rows: history.flow};
   if (range === 'month') return {range, rows: history.daily.slice(-30)};
@@ -115,14 +121,23 @@ export function mainChartOptions(main: MainRows, names: readonly string[], deps:
       plotOptions: {bar: {...STACK, columnWidth: range === 'today' ? '70%' : '90%'}},
       stroke: {show: false},
       fill: {opacity: 1},
-      xaxis: {type: 'datetime', labels: {datetimeUTC: false}},
+      // the ticks fall on whole hours, every two hours for a morning, every day for the week (`hourRowsAxis`)
+      xaxis: {
+        type: 'datetime',
+        labels: {datetimeUTC: false},
+        ...(rows.length ? hourRowsAxis(rows[0][0], rows[rows.length - 1][0], fmt) : undefined),
+      },
       yaxis: {
         min: 0,
         tickAmount: 4,
         forceNiceScale: true,
         labels: {formatter: (value: number) => `${whole(fmt, value)} ${KWH}`},
       },
-      tooltip: {...shared, x: {format: TOOLTIP_DATE[range]}, y: {formatter: (value: number) => kwh(value, 2)}},
+      tooltip: {
+        ...shared,
+        x: {formatter: tooltipDate(TOOLTIP_DATE[range], fmt)},
+        y: {formatter: (value: number) => kwh(value, 2)},
+      },
     };
   }
   const stroke = {show: true, colors: [tokens.card]};
@@ -156,7 +171,7 @@ export function mainChartOptions(main: MainRows, names: readonly string[], deps:
   );
 }
 
-/** The options of the donut, without the theme: a ring at 70 percent with the figure of each slice and the total of the 30 days in its middle. */
+/** The options of the donut, without the theme: a ring at 70 percent with the figure of each slice and the total of the period in its middle. */
 export function donutOptions(parts: readonly DonutPart[], {fmt, t, tokens}: Omit<ChartDeps, 'compact'>): ChartOptions {
   const total = sum(parts.map(part => part.kwh));
   return {

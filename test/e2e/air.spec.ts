@@ -1,5 +1,6 @@
-// The Air tab (spec 18): <hp-air-pane>, <hp-air-card>, <hp-air-detail> and <hp-air-room>. The card is the phone's, where a tap opens the
-// detail's sheet; on a tablet the tab is the detail inline and the pane draws no card. The test house has one purifier in the office
+// The Air tab (spec 18): <hp-air-pane>, <hp-air-detail>, <hp-air-room> and <hp-air-history>. The tab is the detail inline, on a tablet and on a phone alike
+// (the phone's under its header, which holds the range tabs); Home's Air tile opens it as a sheet over Home. Each reading's tile in the room's
+// card is a button that opens that reading's history in a sheet over the screen (#382). The test house has one purifier in the office
 // (Automagic at 40 %, PM2.5 moderate, Mila's index 68) and the outdoor station (US AQI 42).
 import AxeBuilder from '@axe-core/playwright';
 import {test, expect, expectCall, phoneOnly, tabletOnly, type House} from './fixtures';
@@ -8,15 +9,18 @@ import {FULL_CFG, KEEP_ENGLISH_NAMES} from './houses';
 test.use({houseOpts: {cfg: FULL_CFG}});
 
 const pane = (house: House) => house.root().locator('#pane-air hp-air-pane');
-const card = (house: House) => pane(house).locator('hp-air-card');
+const card = (house: House) => pane(house).locator('hp-air-card'); // gone with the phone's summary card: the tab is the detail
 const sheet = (house: House) => pane(house).locator('hp-sheet');
 const detail = (house: House) => pane(house).locator('hp-air-detail');
 const room = (house: House) => detail(house).locator('hp-air-room');
+const history = (house: House) => pane(house).locator('hp-air-history');
+const tile = (house: House, name: string) => room(house).getByRole('button', {name});
+const CO2 = 'CO₂ 640ppm, opens its history';
 const calls = (house: House, prefix: string) => house.calls.filter(c => c.startsWith(prefix));
 const STATISTICS = 'recorder/statistics_during_period';
 const FAN = 'fan.office_purifier';
 
-// the statistics requests that name a sensor: the metric chart's (the room's PM2.5 and the station's) and the outdoor chart's (the index)
+// the statistics requests that name a sensor: a tile's history (the room's reading, and the station's PM2.5 for that one) and the outdoor chart's (the index)
 const asked = async (house: House, sensor: string) =>
   (await house.asked(STATISTICS)).filter(m => (m.statistic_ids as string[]).includes(sensor));
 const periods = async (house: House, sensor: string) => (await asked(house, sensor)).map(m => m.period);
@@ -31,106 +35,128 @@ const openTab = async (house: House) => {
 test.describe('on a phone', () => {
   test.beforeEach(() => phoneOnly());
 
-  test('the tab shows the house room with its metrics, the state line and the outside figure', async ({house}) => {
+  test('the tab is the header and the detail inline, in one column: the purifier, the outside block and its chart; no card, no sheet, no metric control', async ({
+    house,
+  }) => {
     await openTab(house);
     await expect(pane(house).locator(':scope > hp-pane-header > [slot="sub"]')).toHaveText(
       '1 purifier · Moderate · Office: PM2.5 20',
     );
-    await expect(card(house).locator('.top .lbl')).toHaveText('Air quality');
-    await expect(card(house).locator('.top .right')).toHaveText('Outside AQI 42 Good›');
-    await expect(card(house).locator('.aqsum .state')).toHaveText('Moderate');
-    await expect(card(house).locator('.aqsum .why')).toHaveText('Office: PM2.5 20');
-    await expect(card(house).locator('.aqroom .n')).toHaveText('Office');
-    await expect(card(house).locator('.aqm b')).toHaveText(['20', '640', '180']);
-    await expect(card(house).locator('.aqm small')).toHaveText(['PM2.5', 'CO₂', 'VOC']);
-    await expect(card(house).locator('.aqm .hi b')).toHaveText(['20']);
-    await expect(card(house).locator('.aqroom .s')).toHaveText('Automagic · 40% · 38% RH');
+    await expect(detail(house)).toBeVisible();
+    await expect(room(house).locator('.aqhead h3')).toHaveText('Office');
+    await expect(room(house).locator('.tile .k')).toHaveText(['PM2.5', 'CO₂', 'VOC', 'CO', 'PM1', 'PM10', 'Humidity']);
+    await expect(room(house).getByRole('radio', {name: 'Automagic'})).toHaveAttribute('aria-checked', 'true');
+    await expect(pane(house).locator(':scope > hp-pane-header hp-range-tabs [role="tab"]')).toHaveText([
+      'Day',
+      'Week',
+      'Month',
+    ]);
+    await expect(detail(house).locator('hp-chart')).toHaveCount(1);
+    await expect(detail(house).locator('hp-chart .apexcharts-canvas')).toBeVisible();
+    await expect(detail(house).locator('.aqmetric')).toHaveCount(0);
+    await expect(room(house).getByRole('button', {name: /, opens its history$/})).toHaveCount(7);
+    await expect(detail(house).locator('.aqsum').first()).toContainText('AQI 42');
+    await expect(card(house)).toHaveCount(0);
+    await expect(sheet(house)).toHaveCount(0);
+    // one column: the blocks are stacked, none beside another
+    const lefts = await detail(house)
+      .locator('.blocks > *')
+      .evaluateAll(els => els.map(e => Math.round(e.getBoundingClientRect().left)));
+    expect(new Set(lefts).size, 'one left edge').toBe(1);
   });
 
-  test('a reading follows the entity, and the numbers are in the profile’s language: 1.5k and 1,5k', async ({
-    house,
-  }) => {
+  test('a reading follows the entity, and the numbers are in the profile’s language: 1.0 and 1,0', async ({house}) => {
     await openTab(house);
-    await house.setState('sensor.office_purifier_co2', {state: '1530'});
-    await expect(card(house).locator('.aqm b').nth(1)).toHaveText('1.5k');
+    await expect(room(house).locator('.tile .v').nth(3)).toHaveText('1.0ppm');
     await house.setLanguage('fr');
-    await expect(card(house).locator('.aqm b').nth(1)).toHaveText('1,5k');
-    await expect(card(house).locator('.top .lbl')).toHaveText("Qualité de l'air");
+    await expect(room(house).locator('.tile .v').nth(3)).toHaveText('1,0ppm');
   });
 
-  test('a purifier that is off the air says so on its line', async ({house}) => {
+  test('a purifier that is off the air says so, and has no control', async ({house}) => {
     await openTab(house);
     await house.setState(FAN, {state: 'unavailable'});
-    await expect(card(house).locator('.aqroom .s')).toHaveText('Purifier offline · 38% RH');
+    await expect(room(house).locator('.aqctl')).toHaveCount(0);
+    await expect(room(house).locator('p.muted')).toHaveText(
+      "The purifier is offline, so it can't be adjusted right now.",
+    );
   });
 
-  test('a tap on the card opens the detail sheet, and so do Enter and Space; Escape closes it', async ({house}) => {
-    await openTab(house);
-    const box = card(house).getByRole('button', {name: /Air quality/});
-    await expect(box).toHaveAttribute('aria-description', 'Open air quality details');
-    await expect(sheet(house)).not.toHaveAttribute('open', '');
-    await expect(detail(house)).toHaveCount(0);
-    await box.click();
-    await expect(sheet(house)).toHaveAttribute('open', '');
-    await expect(sheet(house).locator('h2')).toHaveText('Air quality');
-    await house.page.keyboard.press('Escape');
-    await expect(sheet(house)).not.toHaveAttribute('open', '');
-    await box.focus();
-    await house.page.keyboard.press('Enter');
-    await expect(sheet(house)).toHaveAttribute('open', '');
-    await house.page.keyboard.press('Escape');
-    await box.focus();
-    await house.page.keyboard.press('Space');
-    await expect(sheet(house)).toHaveAttribute('open', '');
-  });
-
-  test('the sheet holds the detail with its Day, Week and Month tabs; the range chosen is kept for the next opening, and Close closes it', async ({
+  test('the Day, Week and Month tabs are in the header: the range chosen asks for the chart again and stays when the tab is left', async ({
     house,
   }) => {
     await openTab(house);
-    const open = card(house).getByRole('button', {name: /Air quality/});
-    await open.click();
-    await expect(sheet(house).locator('hp-range-tabs [role="tab"]')).toHaveText(['Day', 'Week', 'Month']);
-    await expect(room(house).locator('h3')).toHaveText('Office');
-    await sheet(house).locator('hp-range-tabs [role="tab"]', {hasText: 'Month'}).click();
-    await expect(detail(house).locator('.inner h3').first()).toHaveText('PM2.5, last 30 days');
-    await sheet(house).locator('.close').click();
-    await expect(sheet(house)).not.toHaveAttribute('open', '');
-    await expect(detail(house)).toHaveCount(0);
-    await open.click();
-    await expect(sheet(house).locator('hp-range-tabs [aria-selected="true"]')).toHaveText('Month');
-    await expect(detail(house).locator('.inner h3').first()).toHaveText('PM2.5, last 30 days');
+    const tabs = pane(house).locator(':scope > hp-pane-header hp-range-tabs');
+    const outdoor = detail(house).getByRole('heading', {name: /^Outdoor air/});
+    await expect(outdoor).toHaveText('Outdoor air, last 24 hours');
+    await tabs.locator('[role="tab"]', {hasText: 'Month'}).click();
+    await expect(outdoor).toHaveText('Outdoor air, last 30 days');
+    await expect(tabs.locator('[aria-selected="true"]')).toHaveText('Month');
+    await house.tab('home');
+    await openTab(house);
+    await expect(tabs.locator('[aria-selected="true"]')).toHaveText('Month');
+    await expect(outdoor).toHaveText('Outdoor air, last 30 days');
   });
 
-  test('a thermostat change gives zero mutations in the pane and its card', async ({house}) => {
+  test('the outdoor history is asked for when the tab is shown, and not again when it is shown again; a room’s readings are asked for only when a tile is tapped', async ({
+    house,
+  }) => {
+    expect(await asked(house, 'sensor.outdoor_aqi'), 'before the tab').toHaveLength(0);
     await openTab(house);
-    await expect(card(house).locator('.aqroom')).toHaveCount(1);
+    await expect(detail(house).locator('hp-chart .apexcharts-canvas').first()).toBeVisible();
+    expect(await periods(house, 'sensor.outdoor_aqi')).toEqual(['5minute']);
+    expect(await asked(house, 'sensor.office_purifier_pm2_5'), 'no tile tapped').toHaveLength(0);
+    await house.tab('home');
+    await openTab(house);
+    await expect(detail(house).locator('hp-chart .apexcharts-canvas').first()).toBeVisible();
+    await house.page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
+    expect(await periods(house, 'sensor.outdoor_aqi'), 'shown again').toEqual(['5minute']);
+  });
+
+  test('a tap on a tile opens that reading’s history in a sheet over the screen, with its own range tabs; Escape closes it', async ({
+    house,
+  }) => {
+    await openTab(house);
+    await tile(house, CO2).click();
+    await expect(history(house).locator('hp-sheet')).toHaveAttribute('open', '');
+    await expect(history(house).locator('hp-sheet h2')).toHaveText('CO₂');
+    await expect(history(house).locator('hp-range-tabs [role="tab"]')).toHaveText(['Day', 'Week', 'Month']);
+    await expect(history(house).locator('hp-chart .apexcharts-canvas')).toBeVisible();
+    await house.page.keyboard.press('Escape');
+    await expect(history(house)).toHaveCount(0);
+    await expect(house.root().locator('#pane-air')).toBeVisible();
+  });
+
+  test('Home’s Air tile opens the detail as a sheet over Home, with its tabs, and Escape closes it', async ({
+    house,
+  }) => {
+    await house.tab('home');
+    await house.root().locator('[data-opens="air.detail"]').first().click();
+    await expect(sheet(house)).toHaveAttribute('open', '');
+    await expect(sheet(house).locator('h2')).toHaveText('Air quality');
+    await expect(sheet(house).locator('hp-range-tabs [role="tab"]')).toHaveText(['Day', 'Week', 'Month']);
+    await expect(room(house).locator('h3').first()).toHaveText('Office');
+    await expect(house.root().locator('#pane-home')).toBeVisible();
+    await house.page.keyboard.press('Escape');
+    await expect(sheet(house)).not.toHaveAttribute('open', '');
+    await expect(detail(house)).toHaveCount(0);
+  });
+
+  test('a thermostat change gives zero mutations in the pane', async ({house}) => {
+    await openTab(house);
+    await expect(room(house)).toHaveCount(1);
+    await expect(detail(house).locator('hp-chart .apexcharts-canvas').first()).toBeVisible();
     await house.mutations.reset();
     await house.setState('climate.living_room', {attributes: {temperature: 23}});
     await house.page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
-    expect(await house.mutations.count('hp-air-pane, hp-air-card'), 'mutations').toBe(0);
+    expect(await house.mutations.count('hp-air-pane'), 'mutations').toBe(0);
   });
 
-  test('the tab has no serious or critical accessibility finding', async ({house}) => {
-    await openTab(house);
-    await expect(card(house).locator('.aqroom')).toHaveCount(1);
-    const {violations} = await new AxeBuilder({page: house.page}).include('home-panel').analyze();
-    expect(violations.filter(v => v.impact === 'serious' || v.impact === 'critical').map(v => v.id)).toEqual([]);
-  });
-});
-
-test.describe('the detail in the sheet, on a phone', () => {
-  test.beforeEach(() => phoneOnly());
-
-  // The highlighted tile's figure (`--t-warn` on the tile) reads 4.05:1 in the sheet, under 4.5:1. The legacy detail drew the same
-  // colours, so this move changes nothing; only that rule on that element is left out, everything else must be clean.
-  test('has no serious or critical accessibility finding, but the contrast of a highlighted tile’s figure', async ({
+  // The highlighted tile's figure (`--t-warn` on the tile) reads 4.05:1, under 4.5:1. The legacy detail drew the same
+  // colours, so only that rule on that element is left out, everything else must be clean.
+  test('the tab has no serious or critical accessibility finding, but the contrast of a highlighted tile’s figure', async ({
     house,
   }) => {
     await openTab(house);
-    await card(house)
-      .getByRole('button', {name: /Air quality/})
-      .click();
     await expect(detail(house).locator('hp-chart .apexcharts-canvas').first()).toBeVisible();
     const {violations} = await new AxeBuilder({page: house.page}).include('home-panel').analyze();
     const found = violations
@@ -148,11 +174,11 @@ test.describe('in the bare house, on a phone', () => {
   test.use({houseOpts: {house: 'bare'}});
   test.beforeEach(() => phoneOnly());
 
-  test('the card says there are no purifiers and the tab has nothing else to show', async ({house}) => {
+  test('the header says there are no purifiers and the tab has no room to show', async ({house}) => {
     await openTab(house);
     await expect(pane(house).locator(':scope > hp-pane-header > [slot="sub"]')).toHaveText('No purifiers found');
-    await expect(card(house).locator('.top')).toHaveText('Air qualityNo purifiers found');
-    await expect(card(house).locator('.aqroom')).toHaveCount(0);
+    await expect(room(house)).toHaveCount(0);
+    await expect(sheet(house)).toHaveCount(0);
   });
 });
 
@@ -179,11 +205,11 @@ test.describe('on a tablet', () => {
     await expect(card(house)).toHaveCount(0);
   });
 
-  test('the outside block shows the station, its pollen and the outdoor chart; the history shows the chart, its legend and the four metrics', async ({
+  test('the outside block shows the station, its pollen and the outdoor chart, the only chart of the detail', async ({
     house,
   }) => {
     await house.tab('air');
-    const outside = detail(house).locator('.inner').nth(1);
+    const outside = detail(house).locator('.inner').first();
     await expect(outside.locator('h3').first()).toHaveText('Outside');
     await expect(outside.locator('.aqsum')).toContainText('AQI 42 · AQHI 2 · PM2.5 9.0 µg/m³ · station 6 km away');
     await expect(outside.locator('.pollen .k')).toHaveText([
@@ -192,11 +218,10 @@ test.describe('on a tablet', () => {
       'Weeds pollen',
       'Mold pollen',
     ]);
-    await expect(detail(house).locator('hp-chart')).toHaveCount(2);
-    await expect(detail(house).locator('hp-chart .apexcharts-canvas').first()).toBeVisible();
-    await expect(detail(house).locator('hp-chart .apexcharts-canvas').nth(1)).toBeVisible();
-    await expect(detail(house).locator('.legend').first()).toHaveText('OfficeOutside');
-    await expect(detail(house).locator('.aqmetric [role="radio"]')).toHaveText(['PM2.5', 'CO₂', 'VOC', 'Humidity']);
+    await expect(detail(house).locator('hp-chart')).toHaveCount(1);
+    await expect(detail(house).locator('hp-chart .apexcharts-canvas')).toBeVisible();
+    await expect(detail(house).locator('.legend')).toHaveText('AQI (Mila station)AQHI (Environment Canada)');
+    await expect(detail(house).locator('.aqmetric')).toHaveCount(0);
   });
 
   test('a tap on Manual sends fan.set_preset_mode and shows the stepper at once, at the fan’s speed', async ({
@@ -291,7 +316,7 @@ test.describe('on a tablet', () => {
     );
   });
 
-  test('Week asks the recorder once for each chart and the chart redraws; going back to Day is the cache, and the library came once', async ({
+  test('Week asks the recorder once for the outdoor chart and the chart redraws; going back to Day is the cache, and the library came once', async ({
     house,
   }) => {
     await house.tab('air');
@@ -311,38 +336,62 @@ test.describe('on a tablet', () => {
     const day = await drawn();
     expect(day.days).toBe(1);
     expect(day.points).toBeGreaterThan(0);
-    expect(await periods(house, 'sensor.office_purifier_pm2_5')).toEqual(['5minute']);
     expect(await periods(house, 'sensor.outdoor_aqi')).toEqual(['5minute']);
     await detail(house).locator('hp-range-tabs [role="tab"]', {hasText: 'Week'}).click();
-    await expect(detail(house).locator('.inner h3').first()).toHaveText('PM2.5, last 7 days');
+    await expect(detail(house).getByRole('heading', {name: /^Outdoor air/})).toHaveText('Outdoor air, last 7 days');
     await expect(detail(house).locator('hp-range-tabs [aria-selected="true"]')).toHaveText('Week');
-    await expect.poll(() => periods(house, 'sensor.office_purifier_pm2_5')).toEqual(['5minute', 'hour']);
     await expect.poll(() => periods(house, 'sensor.outdoor_aqi')).toEqual(['5minute', 'hour']);
     await expect(canvas).toBeVisible();
     await expect.poll(drawn, 'the chart is given the week’s series and axis').toMatchObject({days: 7});
     expect((await drawn()).points, 'hourly points, not five-minute ones').not.toBe(day.points);
     await detail(house).locator('hp-range-tabs [role="tab"]', {hasText: 'Day'}).click();
-    await expect(detail(house).locator('.inner h3').first()).toHaveText('PM2.5, last 24 hours');
+    await expect(detail(house).getByRole('heading', {name: /^Outdoor air/})).toHaveText('Outdoor air, last 24 hours');
     await expect(canvas).toBeVisible();
-    expect(await periods(house, 'sensor.office_purifier_pm2_5'), 'the day again is the cache').toEqual([
-      '5minute',
-      'hour',
-    ]);
+    expect(await periods(house, 'sensor.outdoor_aqi'), 'the day again is the cache').toEqual(['5minute', 'hour']);
     expect(house.chunkRequests, 'the chart library').toHaveLength(1);
   });
 
-  test('a metric changes the chart’s title, its caption and its request, and the outdoor chart is not asked again', async ({
+  test('a tap on CO₂ opens its history: the chart over the day, and Week asks the recorder again; Escape closes it', async ({
     house,
   }) => {
     await house.tab('air');
-    await expect(detail(house).locator('hp-chart .apexcharts-canvas').first()).toBeVisible();
-    const co2 = detail(house).locator('.aqmetric').getByRole('radio', {name: 'CO₂'});
-    await co2.click();
-    await expect(detail(house).locator('.inner h3').first()).toHaveText('CO₂, last 24 hours');
-    await expect(detail(house).locator('.inner p').first()).toHaveText('Good is up to 800 ppm, moderate up to 1,200.');
-    await expect(co2).toHaveAttribute('aria-checked', 'true');
+    await expect(detail(house).locator('hp-chart .apexcharts-canvas')).toBeVisible();
+    await tile(house, CO2).click();
+    const sheetEl = history(house);
+    await expect(sheetEl.locator('hp-sheet h2')).toHaveText('CO₂');
+    await expect(sheetEl.locator('hp-sheet > [slot="sub"]')).toHaveText('Office');
+    await expect(sheetEl.locator('.inner h3').first()).toHaveText('CO₂, last 24 hours');
+    await expect(sheetEl.locator('.inner p').first()).toHaveText('Good is up to 800 ppm, moderate up to 1,200.');
+    await expect(sheetEl.locator('hp-chart .apexcharts-canvas')).toBeVisible();
     await expect.poll(async () => (await asked(house, 'sensor.office_purifier_co2')).length).toBe(1);
-    expect((await asked(house, 'sensor.outdoor_aqi')).length).toBe(1);
+    await sheetEl.locator('hp-range-tabs [role="tab"]', {hasText: 'Week'}).click();
+    await expect(sheetEl.locator('.inner h3').first()).toHaveText('CO₂, last 7 days');
+    await expect.poll(() => periods(house, 'sensor.office_purifier_co2')).toEqual(['5minute', 'hour']);
+    await house.page.keyboard.press('Escape');
+    await expect(sheetEl).toHaveCount(0);
+  });
+
+  test('the PM2.5 tile’s history has the outdoor station’s dashed line beside the room’s', async ({house}) => {
+    await house.tab('air');
+    await tile(house, 'PM2.5 20µg/m³, opens its history').click();
+    await expect(history(house).locator('hp-chart .apexcharts-canvas')).toBeVisible();
+    await expect(history(house).locator('.legend')).toHaveText('OfficeOutside');
+    await expect(history(house).locator('.inner p').first()).toContainText('The dashed line is the outdoor station.');
+  });
+
+  test('every tile opens a history, and a reading no band is rated for says so', async ({house}) => {
+    await house.tab('air');
+    await tile(house, 'PM10 24µg/m³, opens its history').click();
+    await expect(history(house).locator('hp-sheet h2')).toHaveText('PM10');
+    await expect(history(house).locator('.inner p').first()).toHaveText('Mila rates no band for this reading.');
+  });
+
+  test('the history’s sheet has no serious or critical accessibility finding while it is open', async ({house}) => {
+    await house.tab('air');
+    await tile(house, CO2).click();
+    await expect(history(house).locator('hp-chart .apexcharts-canvas')).toBeVisible();
+    const {violations} = await new AxeBuilder({page: house.page}).include('home-panel').analyze();
+    expect(violations.filter(v => v.impact === 'serious' || v.impact === 'critical').map(v => v.id)).toEqual([]);
   });
 
   test('a thermostat change gives zero mutations in the pane', async ({house}) => {
@@ -370,6 +419,6 @@ test.describe('in French, on a tablet', () => {
     await house.tab('air');
     await expect(room(house).locator('.tile .v').nth(3)).toHaveText('1,0ppm');
     await expect(room(house).getByRole('radio', {name: 'Manuel'})).toHaveAttribute('aria-checked', 'false');
-    await expect(detail(house).locator('.aqmetric [role="radio"]').last()).toHaveText('Humidité');
+    await expect(room(house).getByRole('button', {name: /^Humidité .*, ouvre l’historique$/})).toBeVisible();
   });
 });

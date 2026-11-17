@@ -2,14 +2,14 @@
 // every shape it does not show (a car with all its switches, held values, a second tap waiting, a current outside the steps, a charger that is gone), in English and in French.
 import {describe, expect, test} from 'vitest';
 import {
+  carActions,
   chargerControls,
-  comfortControls,
-  type ArmedKey,
+  departureControls,
   type ControlsDeps,
 } from '../../../../src/features/car/controls.ts';
 import {readCarFeature} from '../../../../src/features/car/inputs.ts';
 import {K} from '../../../../src/features/car/keys.ts';
-import {draftFromSchedule, type ScheduleDraft} from '../../../../src/features/car/schedule.ts';
+import {draftFromSchedule} from '../../../../src/features/car/schedule.ts';
 import {pauseHold} from '../../../../src/providers/wallbox.ts';
 import {FULL_CFG} from '../../../e2e/houses.ts';
 import {entity, type FakeHass} from '../../fake-hass.ts';
@@ -68,31 +68,11 @@ const depsFor = (hass: FakeHass, language: Language = 'en', held: Record<string,
   ...depsOf(hass, language),
   overlay: <T>(key: string, current: T): T => (key in held ? (held[key] as T) : current),
 });
-const never = (): boolean => false;
-const only =
-  (...keys: ArmedKey[]) =>
-  (key: ArmedKey): boolean =>
-    keys.includes(key);
-const draft = (over: Partial<ScheduleDraft> = {}): ScheduleDraft => ({
-  days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
-  time: '08:30',
-  temp: null,
-  ...over,
-});
-
 describe('the charger’s card, from the test house', () => {
   const view = chargerControls(inputsOf(fullHouse), depsFor(fullHouse))!;
 
-  test('says what the charger is and does, in the words the legacy card did', () => {
-    expect(view).toMatchObject({title: 'Home charger', line: 'Wallbox Pulsar Plus · charging'});
-    expect(view.charging).toEqual({
-      id: 'switch.charger_pause',
-      title: 'Charging',
-      line: 'On. Turn off to pause',
-      on: true,
-      disabled: false,
-      label: 'Charging',
-    });
+  test('says what the charger is and does, and offers its lock; the pause is the actions row’s', () => {
+    expect(view).toMatchObject({title: 'Home charger', line: 'Wallbox Pulsar Plus · charging', available: true});
     expect(view.lock).toEqual({
       id: 'lock.charger_lock',
       title: 'Lock charger',
@@ -101,6 +81,8 @@ describe('the charger’s card, from the test house', () => {
       disabled: false,
       label: 'Lock charger',
     });
+    expect(view).not.toHaveProperty('charging');
+    expect(view).not.toHaveProperty('limit');
   });
 
   test('offers the steps the charger’s own range holds, each with its kilowatts, and chooses the one it is at', () => {
@@ -110,7 +92,7 @@ describe('the charger’s card, from the test house', () => {
       id: 'number.charger_max_current',
       chosen: '32',
       disabled: false,
-      hint: 'Sets the Wallbox maximum current. kW assumes 240 V.',
+      hint: 'kW at 240 V.',
     });
     // the range is 6 to 40: 48 is not offered
     expect(view.power.options).toEqual([
@@ -120,13 +102,6 @@ describe('the charger’s card, from the test house', () => {
       {value: '40', label: '40 A', sub: '9.6 kW'},
     ]);
   });
-
-  test('shows the car’s charge limit, which the panel cannot change', () => {
-    expect(view.limit.chosen).toBe('90');
-    expect(view.limit.options.map(({label}) => label)).toEqual(['50%', '60%', '70%', '80%', '90%', 'Full']);
-    expect(view.limit).toMatchObject({heading: 'Charge limit', label: 'Charge limit, read only'});
-    expect(view.limit.hint).toBe('Set in the FordPass app. Home Assistant can read it but has no control for it.');
-  });
 });
 
 describe('the charger’s card, from literal houses', () => {
@@ -135,16 +110,11 @@ describe('the charger’s card, from literal houses', () => {
     expect(chargerControls(inputsOf(hass), depsFor(hass))).toBeNull();
   });
 
-  test('a held value stands for the entity’s own while it is held: the current, the switch and the lock', () => {
+  test('a held value stands for the entity’s own while it is held: the current and the lock', () => {
     const hass = carHouse();
-    const held = {
-      [K.amps('number.charger_max_current')]: 24,
-      [pauseHold('switch.charger_pause')]: false,
-      [K.chargerLock('lock.charger_lock')]: true,
-    };
+    const held = {[K.amps('number.charger_max_current')]: 24, [K.chargerLock('lock.charger_lock')]: true};
     const view = chargerControls(inputsOf(hass), depsFor(hass, 'en', held))!;
     expect(view.power.chosen).toBe('24');
-    expect(view.charging).toMatchObject({on: false, line: 'Paused. Turn on to resume'});
     expect(view.lock).toMatchObject({on: true, line: 'Locked, needs the app or RFID card'});
   });
 
@@ -154,24 +124,34 @@ describe('the charger’s card, from literal houses', () => {
     });
     const view = chargerControls(inputsOf(hass), depsFor(hass))!;
     expect(view.power.chosen).toBe('20');
-    expect(view.power.hint).toBe('Sets the Wallbox maximum current (now 20 A). kW assumes 240 V.');
+    expect(view.power.hint).toBe('Now 20 A · kW at 240 V.');
     expect(view.power.options.at(-1)).toEqual({value: '48', label: '48 A', sub: '11.5 kW'});
   });
 
-  test('a current that is not reported is disabled and chooses nothing; a switch that is gone says when it is available', () => {
+  test('a charger that does not answer is unavailable: one line instead of controls that cannot be used', () => {
     const hass = carHouse({
+      'sensor.charger_status': {
+        ...entity('sensor.charger_status', 'unavailable'),
+        last_changed: '2026-11-07T18:38:00+00:00',
+      },
       'number.charger_max_current': entity('number.charger_max_current', 'unavailable'),
       'switch.charger_pause': entity('switch.charger_pause', 'unavailable'),
       'lock.charger_lock': entity('lock.charger_lock', 'unavailable'),
     });
     const view = chargerControls(inputsOf(hass), depsFor(hass))!;
-    expect(view.power).toMatchObject({chosen: undefined, disabled: true});
-    expect(view.power.hint).toBe('Sets the Wallbox maximum current. kW assumes 240 V.');
-    expect(view.charging).toMatchObject({on: false, disabled: true, line: 'Available while the car is plugged in'});
-    expect(view.lock).toMatchObject({on: false, disabled: true});
+    expect(view).toMatchObject({
+      available: false,
+      unavailable: {
+        title: 'Wallbox unavailable',
+        line: 'Not answering since Nov 7 at 1:38 pm. Its controls come back when it answers.',
+      },
+    });
+    expect(chargerControls(inputsOf(hass), depsFor(hass, 'fr'))?.unavailable.line).toBe(
+      'Ne répond plus depuis le 7 nov. à 13 h 38. Ses commandes reviennent dès qu’elle répond.',
+    );
   });
 
-  test('a house that names no charger entity has none to ask: no ids, the controls disabled, the card still there', () => {
+  test('a house that names no charger entity has none to ask: unavailable, the card still there', () => {
     const hass = carHouse({
       'sensor.charger_status': null,
       'number.charger_max_current': null,
@@ -179,10 +159,10 @@ describe('the charger’s card, from literal houses', () => {
       'lock.charger_lock': null,
     });
     const view = chargerControls(inputsOf(hass, {}), depsFor(hass))!;
-    expect([view.power.id, view.charging.id, view.lock.id]).toEqual([null, null, null]);
-    expect(view.power).toMatchObject({disabled: true, chosen: undefined});
-    expect(view.charging.disabled).toBe(true);
+    expect(view.available).toBe(false);
     expect(view.line).toBe('Wallbox Pulsar Plus · unavailable');
+    // no status sensor, so no time it stopped answering
+    expect(view.unavailable.line).toBe('Its controls come back when it answers.');
   });
 
   test('the line says the status in lower case, the car’s plug, and a status it does not know as the sensor says it', () => {
@@ -195,228 +175,190 @@ describe('the charger’s card, from literal houses', () => {
     );
     const odd = carHouse({'sensor.charger_status': entity('sensor.charger_status', 'Standing By')});
     expect(chargerControls(inputsOf(odd), depsFor(odd))?.line).toBe('Wallbox Pulsar Plus · standing by');
-    const long = carHouse({
-      'sensor.charger_status': entity('sensor.charger_status', 'Connected: waiting for car demand'),
-    });
-    expect(chargerControls(inputsOf(long), depsFor(long))?.line).toBe(
-      'Wallbox Pulsar Plus · connected: waiting for car demand',
-    );
   });
 
-  test('a charge limit the car does not report chooses none', () => {
-    const hass = carHouse({[id('sensor', 'elvehcharging')]: car('sensor', 'elvehcharging', 'CHARGING')});
-    expect(chargerControls(inputsOf(hass), depsFor(hass))?.limit.chosen).toBeUndefined();
-  });
-
-  test('in French the words are French’s, the kilowatts take a comma and the limit its narrow space', () => {
+  test('in French the words are French’s and the kilowatts take a comma', () => {
     const view = chargerControls(inputsOf(fullHouse), depsFor(fullHouse, 'fr'))!;
     expect(view).toMatchObject({title: 'Borne à la maison', line: 'Wallbox Pulsar Plus · en recharge'});
     expect(view.power.options[0]).toEqual({value: '16', label: '16 A', sub: '3,8 kW'});
-    expect(view.limit.options.map(({label}) => label)).toEqual(['50 %', '60 %', '70 %', '80 %', '90 %', 'Pleine']);
-    expect(view.charging.line).toBe('En marche. Désactiver pour mettre en pause');
+    expect(view.power.hint).toBe('kW à 240 V.');
   });
 });
 
-describe('the comfort card, from a car with every switch', () => {
+describe('the departure row and its editor', () => {
   const hass = carHouse();
-  const inputs = inputsOf(hass);
-  const view = comfortControls(inputs, never, draftFromSchedule(inputs.car!.schedule), depsFor(hass))!;
+  const saved = draftFromSchedule(inputsOf(hass).car!.schedule);
+  const view = departureControls(inputsOf(hass), saved, depsFor(hass))!;
 
-  test('has the four buttons in order, each as the legacy card said it', () => {
-    expect(view).toMatchObject({
-      title: 'Comfort and access',
-      line: 'Remote start warms or cools the cabin for about 15 minutes',
-    });
-    expect(
-      view.buttons.map(({key, icon, name, text, line, pressed, armed, disabled}) => [
-        key,
-        icon,
-        name,
-        text,
-        line,
-        pressed,
-        armed,
-        disabled,
-      ]),
-    ).toEqual([
-      ['remoteStart', 'fan', 'Remote start', 'Remote start', 'Off · cabin HI', false, false, false],
-      ['windshield', 'wind', 'Heated windshield', 'Heated windshield', 'With remote start: on', true, false, false],
-      ['rear', 'rear', 'Rear defrost', 'Rear defrost', 'With remote start: off', false, false, false],
-      ['wheel', 'wheel', 'Heated wheel', 'Heated wheel', 'With remote start: off', false, false, false],
-    ]);
-  });
-
-  test('says how the front seats heat and cool, and nothing for any other setting', () => {
-    expect(view.seats).toBe('Front seats heat at level 2 with remote start.');
-    const cooled = carHouse({[id('select', 'rccseatfrontleft')]: car('select', 'rccseatfrontleft', 'cooled1')});
-    expect(comfortControls(inputsOf(cooled), never, draft(), depsFor(cooled))?.seats).toBe(
-      'Front seats cool at level 1 with remote start.',
-    );
-    const off = carHouse({[id('select', 'rccseatfrontleft')]: car('select', 'rccseatfrontleft', 'off')});
-    expect(comfortControls(inputsOf(off), never, draft(), depsFor(off))?.seats).toBe('');
-    const none = carHouse({[id('select', 'rccseatfrontleft')]: null, [id('select', 'rcctemperature')]: null});
-    const bare = comfortControls(inputsOf(none), never, draft(), depsFor(none))!;
-    expect(bare.seats).toBe('');
-    expect(bare.buttons[0].line).toBe('Off');
-  });
-
-  test('the access row: the lock, the doors and the horn', () => {
-    expect(view.access).toEqual({
-      title: 'Locked',
-      line: 'All doors, windows, hood and tailgate closed',
-      honk: {id: id('button', 'hafdefault'), label: 'Honk & flash'},
-      lock: {label: 'Unlock', armed: false, disabled: false, locked: true},
-    });
-  });
-
-  test('a door that is open is named, and a window that is not closed is left out of "closed"', () => {
-    const open = carHouse({
-      [id('sensor', 'doorstatus')]: car('sensor', 'doorstatus', 'OPEN', {
-        driverFront: 'OPEN',
-        hood: 'AJAR',
-        tailgate: 'CLOSED',
-      }),
-    });
-    expect(comfortControls(inputsOf(open), never, draft(), depsFor(open))?.access.line).toBe('Open: driverFront, hood');
-    const windows = carHouse({[id('sensor', 'windowposition')]: car('sensor', 'windowposition', 'Open')});
-    expect(comfortControls(inputsOf(windows), never, draft(), depsFor(windows))?.access.line).toBe(
-      'All doors, hood and tailgate closed',
-    );
-    const none = carHouse({[id('sensor', 'doorstatus')]: null});
-    expect(comfortControls(inputsOf(none), never, draft(), depsFor(none))?.access.line).toBe('');
-  });
-
-  test('an unlocked car says so and offers Lock at once; a lock with no value is unknown and disabled; the horn is the car’s first button that answers', () => {
-    const unlocked = carHouse({[id('lock', 'doorlock')]: car('lock', 'doorlock', 'unlocked')});
-    expect(comfortControls(inputsOf(unlocked), never, draft(), depsFor(unlocked))?.access).toMatchObject({
-      title: 'Unlocked',
-      lock: {label: 'Lock', locked: false},
-    });
-    const unknown = carHouse({
-      [id('lock', 'doorlock')]: car('lock', 'doorlock', 'unavailable'),
-      [id('button', 'hafdefault')]: null,
-      [id('button', 'hafshort')]: car('button', 'hafshort', 'unknown'),
-    });
-    expect(comfortControls(inputsOf(unknown), never, draft(), depsFor(unknown))?.access).toMatchObject({
-      title: 'Lock status unknown',
-      honk: {id: id('button', 'hafshort')},
-      lock: {label: 'Lock', disabled: true, locked: false},
-    });
-    const none = carHouse({[id('button', 'hafdefault')]: null});
-    expect(comfortControls(inputsOf(none), never, draft(), depsFor(none))?.access.honk).toBeNull();
-  });
-
-  test('a button waiting for its second tap says so, and so does the lock; the other is not waiting', () => {
-    const waiting = comfortControls(inputs, only('remoteStart'), draft(), depsFor(hass))!;
-    expect(waiting.buttons[0]).toMatchObject({text: 'Tap again to start', name: 'Remote start', armed: true});
-    expect(waiting.buttons[1].armed).toBe(false);
-    expect(waiting.access.lock.armed).toBe(false);
-    const lockWaiting = comfortControls(inputs, only('lock'), draft(), depsFor(hass))!;
-    expect(lockWaiting.access.lock).toMatchObject({label: 'Tap again to unlock', armed: true});
-    expect(lockWaiting.buttons[0].armed).toBe(false);
-  });
-
-  test('a held value shows at once: the remote start running, a heater off, the car locked', () => {
-    const held = {
-      [K.ignition(id('switch', 'ignition'))]: true,
-      [K.heater(id('switch', 'rccdefrostfront'))]: false,
-      [K.doorLock(id('lock', 'doorlock'))]: false,
-    };
-    const shown = comfortControls(inputs, never, draft(), depsFor(hass, 'en', held))!;
-    expect(shown.buttons[0]).toMatchObject({pressed: true, line: 'Running · cabin HI'});
-    expect(shown.buttons[1]).toMatchObject({pressed: false, line: 'With remote start: off'});
-    expect(shown.access.lock).toMatchObject({label: 'Lock', locked: false});
-  });
-
-  test('a switch the car does not have is disabled', () => {
-    const lacking = carHouse({[id('switch', 'rccsteeringwheel')]: null});
-    expect(comfortControls(inputsOf(lacking), never, draft(), depsFor(lacking))?.buttons[3].disabled).toBe(true);
-  });
-});
-
-describe('the departure schedule', () => {
-  const hass = carHouse();
-  const inputs = inputsOf(hass);
-
-  test('is the switch, the seven days, the time and the four cabin settings, from the draft', () => {
-    const view = comfortControls(inputs, never, draft({temp: 'high'}), depsFor(hass))!;
-    const {departure} = view;
-    expect(departure.heading).toBe('Departure times');
-    expect(departure.row).toEqual({
+  test('the row says what Ford saved, has the switch, and opens the editor', () => {
+    expect(view.row).toEqual({
       id: id('switch', 'departuretimes'),
-      title: 'Precondition for departure',
-      line: 'On · weekdays at 8:30 am',
+      title: 'Departure',
+      line: 'Weekdays at 8:30 am',
       on: true,
       disabled: false,
       label: 'Departure times',
     });
-    expect(departure.days.map(({day, initial, pressed}) => [day, initial, pressed])).toEqual([
-      ['monday', 'M', true],
-      ['tuesday', 'T', true],
-      ['wednesday', 'W', true],
-      ['thursday', 'T', true],
-      ['friday', 'F', true],
-      ['saturday', 'S', false],
-      ['sunday', 'S', false],
-    ]);
-    expect(departure.days[0].name).toBe('monday');
-    expect(departure).toMatchObject({
-      daysLabel: 'Departure days',
-      timeLabel: 'Departure time',
-      time: '08:30',
-      save: 'Save schedule',
-    });
-    expect(departure.cabinLabel).toBe('Cabin temperature at departure');
-    expect(departure.cabin).toEqual([
-      {value: 'low', label: 'Cool'},
-      {value: 'medium', label: 'Medium'},
-      {value: 'high', label: 'Warm'},
-      {value: 'off', label: 'Off'},
-    ]);
-    expect(departure.chosen).toBe('high');
-    expect(departure.hint).toMatch(/^When the car is plugged in, it warms the cabin/);
   });
 
-  test('chooses no cabin setting until one is picked, and says its line from the draft with a cleared time too', () => {
-    const view = comfortControls(inputs, never, draft({days: [], time: ''}), depsFor(hass))!;
-    expect(view.departure.chosen).toBeUndefined();
-    expect(view.departure.row.line).toBe('On · no days');
+  test('the editor: Cancel and Save, the time, the cabin to choose, and the seven days as a checkmark list', () => {
+    expect(view.editor).toMatchObject({
+      title: 'Departure',
+      cancel: 'Cancel',
+      save: 'Save',
+      time: {label: 'Time', value: '08:30'},
+      cabin: {label: 'Cabin', chosen: undefined, choose: 'Choose'},
+      repeat: 'Repeat',
+      foot: "Ford doesn't report the cabin setting of a saved schedule.",
+    });
+    expect(view.editor.cabin.options.map(({label}) => label)).toEqual(['Cool', 'Medium', 'Warm', 'Off']);
+    expect(view.editor.days[0]).toEqual({day: 'monday', name: 'Every Monday', checked: true});
+    expect(view.editor.days.map(({checked}) => checked)).toEqual([true, true, true, true, true, false, false]);
   });
 
-  test('a switch that is off says its schedule is saved, and one that is held shows at once', () => {
-    const off = carHouse({[id('switch', 'departuretimes')]: car('switch', 'departuretimes', 'off')});
-    expect(comfortControls(inputsOf(off), never, draft(), depsFor(off))?.departure.row).toMatchObject({
-      on: false,
-      line: 'Off · weekdays at 8:30 am saved',
-    });
-    const held = depsFor(hass, 'en', {[K.departure(id('switch', 'departuretimes'))]: false});
-    expect(comfortControls(inputs, never, draft(), held)?.departure.row).toMatchObject({
-      on: false,
-      line: 'Off · weekdays at 8:30 am saved',
-    });
+  test('Save waits for what is missing and says what it is: the cabin first, then a day', () => {
+    expect(view.editor).toMatchObject({canSave: false, reason: 'Pick a cabin temperature first'});
+    const noDays = departureControls(inputsOf(hass), {...saved, temp: 'high', days: []}, depsFor(hass))!;
+    expect(noDays.editor).toMatchObject({canSave: false, reason: 'Pick at least one day'});
+    const ready = departureControls(inputsOf(hass), {...saved, temp: 'high'}, depsFor(hass))!;
+    expect(ready.editor).toMatchObject({canSave: true, reason: '', cabin: {chosen: 'high'}});
   });
 
-  test('a car with no departure switch has it disabled and off', () => {
+  test('with no schedule saved the row says so, not the editor’s default time', () => {
+    const none = carHouse({[id('sensor', 'departureschedules')]: null});
+    expect(departureControls(inputsOf(none), draftFromSchedule(null), depsFor(none))?.row.line).toBe('No times saved');
+    expect(departureControls(inputsOf(none), draftFromSchedule(null), depsFor(none, 'fr'))?.row.line).toBe(
+      'Aucun horaire enregistré',
+    );
+  });
+
+  test('a car with no departure switch has the row disabled and off; a house with no car has none', () => {
     const none = carHouse({[id('switch', 'departuretimes')]: null});
-    expect(comfortControls(inputsOf(none), never, draft(), depsFor(none))?.departure.row).toMatchObject({
-      on: false,
-      disabled: true,
+    expect(departureControls(inputsOf(none), saved, depsFor(none))?.row).toMatchObject({on: false, disabled: true});
+    expect(departureControls(inputsOf(houseOf([], [])), saved, depsFor(houseOf([], [])))).toBeNull();
+  });
+
+  test('in French', () => {
+    const fr = departureControls(inputsOf(hass), saved, depsFor(hass, 'fr'))!;
+    expect(fr.row.title).toBe('Départ');
+    expect(fr.editor.days[0].name).toBe('Chaque lundi');
+    expect(fr.editor).toMatchObject({cancel: 'Annuler', save: 'Enregistrer', repeat: 'Répéter'});
+  });
+});
+
+describe('the actions row, from a car with every switch', () => {
+  const hass = carHouse({'sensor.charger_power': entity('sensor.charger_power', '7.2')});
+  const view = carActions(inputsOf(hass), depsFor(hass));
+
+  test('Unlock says the car is locked now and asks first; Start says the engine is off and asks first; Pause charging says the power', () => {
+    expect(view?.lock).toEqual({
+      label: 'Unlock',
+      line: 'Locked now',
+      locked: true,
+      confirm: {title: 'Unlock the car?', line: 'Anyone at the car can open it.', confirm: 'Unlock', cancel: 'Cancel'},
+    });
+    expect(view?.start).toMatchObject({label: 'Start…', line: 'Engine off', running: false});
+    expect(view?.pause).toEqual({id: 'switch.charger_pause', label: 'Pause charging', line: '7.2 kW', paused: false});
+  });
+});
+
+describe('the actions row, from literal houses', () => {
+  test('a car with no remote start has no Start; a charger whose pause switch is gone has no Pause; a house with no car has no row', () => {
+    const hass = carHouse({[id('switch', 'ignition')]: null, 'switch.charger_pause': null});
+    const view = carActions(inputsOf(hass), depsFor(hass));
+    expect(view?.start).toBeNull();
+    expect(view?.pause).toBeNull();
+    expect(view?.lock?.label).toBe('Unlock');
+    expect(carActions(inputsOf(houseOf([], [])), depsFor(houseOf([], [])))).toBeNull();
+  });
+
+  test('a charger that answers but draws nothing says no power under Pause charging, rather than 0.0 kW', () => {
+    const hass = carHouse({'sensor.charger_power': entity('sensor.charger_power', '0')});
+    expect(carActions(inputsOf(hass), depsFor(hass))?.pause).toMatchObject({label: 'Pause charging', line: ''});
+  });
+
+  test('a lock the car does not answer for is not offered: the row shows only what the house can do', () => {
+    const hass = carHouse({[id('lock', 'doorlock')]: entity(id('lock', 'doorlock'), 'unavailable')});
+    expect(carActions(inputsOf(hass), depsFor(hass))?.lock).toBeNull();
+  });
+
+  test('Honk & flash is the car’s first button that answers, and none when the car has none', () => {
+    const hass = carHouse();
+    expect(carActions(inputsOf(hass), depsFor(hass))?.honk).toEqual({
+      id: id('button', 'hafdefault'),
+      label: 'Honk & flash',
+    });
+    const none = carHouse({[id('button', 'hafdefault')]: null});
+    expect(carActions(inputsOf(none), depsFor(none))?.honk).toBeNull();
+  });
+
+  test('a held tap shows at once: the car unlocked asks nothing to lock, the engine running offers Stop, the charger paused offers Resume', () => {
+    const hass = carHouse();
+    const view = carActions(
+      inputsOf(hass),
+      depsFor(hass, 'en', {
+        [K.doorLock(id('lock', 'doorlock'))]: false,
+        [K.ignition(id('switch', 'ignition'))]: true,
+        [pauseHold('switch.charger_pause')]: false,
+      }),
+    );
+    expect(view?.lock).toMatchObject({label: 'Lock', line: 'Unlocked now', locked: false, confirm: null});
+    expect(view?.start).toMatchObject({label: 'Stop engine', line: 'Running', running: true});
+    expect(view?.pause).toMatchObject({label: 'Resume charging', line: 'Paused', paused: true});
+  });
+
+  test('in French', () => {
+    const hass = carHouse({'sensor.charger_power': entity('sensor.charger_power', '7.2')});
+    const view = carActions(inputsOf(hass), depsFor(hass, 'fr'));
+    expect(view?.lock).toMatchObject({
+      label: 'Déverrouiller',
+      line: 'Verrouillée',
+      confirm: {title: 'Déverrouiller la voiture ?', cancel: 'Annuler'},
+    });
+    expect(view?.start?.label).toBe('Démarrer…');
+    expect(view?.pause).toMatchObject({label: 'Suspendre la recharge', line: '7,2 kW'});
+  });
+});
+
+describe('the Start confirmation', () => {
+  test('asks first, says what follows, and offers the heaters the car has as switches, with the seats’ own setting', () => {
+    const hass = carHouse();
+    const start = carActions(inputsOf(hass), depsFor(hass))?.start;
+    expect(start?.confirm).toEqual({
+      title: 'Start the car?',
+      line: 'The engine runs 15 minutes to warm or cool the cabin, then stops.',
+      confirm: 'Start',
+      cancel: 'Cancel',
+    });
+    expect(start?.options).toEqual([
+      {key: 'windshield', name: 'Heated windshield', on: true},
+      {key: 'rear', name: 'Rear defrost', on: false},
+      {key: 'wheel', name: 'Heated wheel', on: false},
+    ]);
+    expect(start?.seats).toBe('Front seats heat at level 2 with remote start.');
+  });
+
+  test('the heaters say they run with every start and are saved to the car as they are switched, so Cancel is not their undo', () => {
+    const hass = carHouse();
+    expect(carActions(inputsOf(hass), depsFor(hass))?.start).toMatchObject({
+      optionsLabel: 'Runs with every start',
+      optionsFoot: 'Saved to the car as you switch them, whether or not you start now.',
+    });
+    expect(carActions(inputsOf(hass), depsFor(hass, 'fr'))?.start).toMatchObject({
+      optionsLabel: 'Avec chaque démarrage',
+      optionsFoot: 'Enregistré dans la voiture dès que vous les basculez, que vous démarriez maintenant ou non.',
     });
   });
 
-  test('is nothing while the house has no car', () => {
-    const bare = houseOf([], [entity('sensor.charger_status', 'Charging')]);
-    expect(comfortControls(inputsOf(bare), never, draft(), depsFor(bare))).toBeNull();
-  });
-
-  test('in French: the initials are the legacy panel’s LMMJVSD, the time is 8 h 30 and the words are French’s', () => {
-    const view = comfortControls(inputs, only('remoteStart'), draft(), depsFor(hass, 'fr'))!;
-    expect(view.departure.days.map(({initial}) => initial).join('')).toBe('LMMJVSD');
-    expect(view.departure.days[0].name).toBe('lundi');
-    expect(view.departure.row.line).toBe('Activé · en semaine à 8 h 30');
-    expect(view.title).toBe('Confort et accès');
-    expect(view.buttons[0]).toMatchObject({text: 'Toucher de nouveau pour démarrer', line: 'Éteint · habitacle HI'});
-    expect(view.departure.cabin.map(({label}) => label)).toEqual(['Frais', 'Moyen', 'Chaud', 'Éteint']);
-    expect(view.access.line).toBe('Portes, fenêtres, capot et hayon fermés');
+  test('a heater the car does not have is left out, and a held one shows at once', () => {
+    const hass = carHouse({[id('switch', 'rccsteeringwheel')]: null});
+    const start = carActions(
+      inputsOf(hass),
+      depsFor(hass, 'en', {[K.heater(id('switch', 'rccdefrostrear'))]: true}),
+    )?.start;
+    expect(start?.options.map(({key, on}) => [key, on])).toEqual([
+      ['windshield', true],
+      ['rear', true],
+    ]);
   });
 });

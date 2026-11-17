@@ -23,7 +23,7 @@ src/features/automations/
   automations-pane.ts      <hp-automations-pane>
   run-timeline.ts          <hp-run-timeline>
   flow-card.ts             <hp-flow-card>
-  automation-chips.ts      <hp-automation-chips>
+  automation-list.ts      <hp-automation-list>: the list of every automation
   styles.css               the feature's rules, adopted by the four elements
 test/unit/
   providers/automations.test.ts
@@ -36,5 +36,5 @@ test/unit/
 
 - A run is noise when its automation's every trigger is a `time_pattern`, or when a time-pattern run stopped at its condition: the tab leaves it out of today's line and the cards, but draws it when it is picked.
 - The sentences say what Home Assistant's config says, never more: a name is the resolver's, a state the panel has no word for is Home Assistant's own, with underscores as spaces (a door's or a motion sensor's as Home Assistant writes it).
-- A config's clock time is read as hours and minutes cut from Home Assistant's text (`18:00:00` is `18:00`), the 24-hour form `time24` writes in every language, so no zone moves it.
+- A config's clock time is read as hours and minutes cut from Home Assistant's text (`18:00:00` is `6:00 pm` in English, `18 h` in French), written by `fmt.clock`, so no zone moves it. Every other time the tab shows is `fmt.time` (`fmt.timeSeconds` for a flow step, `fmt.hourOfDay` for the line's marks).
 - A label in the flow is drawn as typed: `safeText` escapes it (`escapeLabel`, then `protectEntities`, `protectPercent`, `splitDollars`, in that order), and every node and edge line ends in its own `;`, the one Mermaid's entity pre-pass may eat (#97).

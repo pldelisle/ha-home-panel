@@ -78,6 +78,24 @@ test('a tile closes More and shows its section; coming back, that tile carries t
   await expect(tile(house, 'energy').locator('button')).not.toHaveClass(/\bsel\b/);
 });
 
+// the fifth button is the way to the other tabs, not a tab for the one on show: it keeps its icon and its word (HIG, Tab bars)
+test('the fifth button keeps saying More, and stays selected, while an overflow tab is shown', async ({house}) => {
+  await expect(moreTab(house)).toHaveText('More');
+  await moreTab(house).click();
+  await tile(house, 'weather').locator('button').click();
+  await expect(house.root().locator('#pane-weather')).toBeVisible();
+  await expect(moreTab(house)).toHaveText('More');
+  await expect(moreTab(house)).toHaveAttribute('aria-selected', 'true');
+  await moreTab(house).click();
+  await tile(house, 'auto').locator('button').click();
+  await expect(house.root().locator('#pane-auto')).toBeVisible();
+  await expect(moreTab(house)).toHaveText('More');
+  await expect(moreTab(house)).toHaveAttribute('aria-selected', 'true');
+  await expect(sheet(house)).toBeHidden();
+  await moreTab(house).click();
+  await expect(sheet(house)).toBeVisible();
+});
+
 test('a tile takes keyboard focus and Enter opens its section', async ({house}) => {
   await moreTab(house).click();
   await tile(house, 'air').locator('button').focus();
@@ -168,5 +186,12 @@ test.describe('in French', () => {
     ).toBeVisible();
     await expect(tile(house, 'cams').locator('b')).toHaveText('Sécurité');
     await expect(tile(house, 'cams').locator('small')).toHaveText('Portes fermées · mouvement en cours');
+  });
+
+  test('the fifth button says Plus while an overflow tab is shown', async ({house}) => {
+    await moreTab(house).click();
+    await tile(house, 'auto').locator('button').click();
+    await expect(house.root().locator('#pane-auto')).toBeVisible();
+    await expect(moreTab(house)).toHaveText('Plus');
   });
 });

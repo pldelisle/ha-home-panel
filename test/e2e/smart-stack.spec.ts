@@ -37,6 +37,19 @@ test.describe('tablet', () => {
     ).toBeHidden();
   });
 
+  test('a Now playing card is a button with a name, not a plain box', async ({house}) => {
+    for (let i = 0; i < 2 && (await cardKey(house, '#hstk')) !== 'music'; i++) await house.clock.runFor(STACK_TURN_MS);
+    expect(await cardKey(house, '#hstk')).toBe('music');
+    const card = house
+      .root()
+      .locator('#hstk')
+      .getByRole('button', {name: /^Now playing/});
+    await expect(card).toHaveAccessibleName('Now playing: Test tone, Living room. Opens Media');
+    await card.focus();
+    await house.page.keyboard.press('Enter');
+    await expect(house.root().locator('#pane-media')).toBeVisible();
+  });
+
   test('18 the car and the speaker take turns beside the idle clock', async ({house}) => {
     await goIdle(house);
     const seen: Array<[string | null, number]> = [];

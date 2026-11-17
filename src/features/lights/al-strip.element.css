@@ -18,9 +18,9 @@
 }
 .app.gl .alcard {
   background: var(--g-card);
-  -webkit-backdrop-filter: var(--g-bd);
-  backdrop-filter: var(--g-bd);
-  box-shadow: var(--g-edge);
+  -webkit-backdrop-filter: var(--m-bd);
+  backdrop-filter: var(--m-bd);
+  box-shadow: var(--m-edge);
 }
 @media (prefers-reduced-transparency: reduce) {
   .app.gl .alcard {

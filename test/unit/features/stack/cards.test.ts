@@ -342,6 +342,18 @@ describe('now playing', () => {
     ]);
     expect(run(nowPlaying, {playing: null})).toEqual([]);
   });
+
+  test('is named by what a screen reader needs: the title, the room and where a tap goes', () => {
+    expect(one(nowPlaying, {}).name).toBe('Now playing: Test tone, Living room. Opens Media');
+    expect(one(nowPlaying, {playing: {place: 'Kitchen', picture: null, title: null, artist: null}}).name).toBe(
+      'Now playing: Kitchen. Opens Media',
+    );
+    expect(one(nowPlaying, {}, frDeps).name).toBe('En lecture\u00a0: Test tone, Living room. Ouvre Médias');
+  });
+
+  test('is the only card that brings a name: the others are named by their words', () => {
+    expect(one(doorOpen, {doors: [door({on: true, since: NOW - 5 * MINUTE_MS})]}).name).toBe('');
+  });
 });
 
 describe('someone came or left', () => {

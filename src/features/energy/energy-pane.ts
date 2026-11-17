@@ -1,21 +1,20 @@
-// <hp-energy-pane>: the Energy tab: on a phone the header with the summary, the card that opens the detail, two tiles that open the water heater's and
-// Hilo's cards in sheets; on a tablet the detail inline (the header and the card are not shown there) and the two cards after it. It keeps the range and the Sankey's period.
+// <hp-energy-pane>: the Energy tab: on a phone the header with the summary, the range and the detail inline, then two tiles that open the water heater's and
+// Hilo's cards in sheets (the detail's own sheet is Home's tile's); on a tablet the detail inline (the header and the tiles are not shown there) and the two cards after it. It keeps the one range, which every card of the detail follows.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over a view model: `energyModel` runs in `willUpdate` and the template places what it returns;
 // a store controller on `energyIds` (ADR 0012), paused while no part of the pane is on screen, and `EnergyHistory`, which loads the history when the pane is shown (ADR 0028).
 // Must not: read an entity itself (`readEnergy` does), hold a string the household reads, call the API (the history controller asks the cache), or open a sheet (it asks).
 import {ContextConsumer} from '@lit/context';
 import {LitElement, html, nothing, unsafeCSS, type PropertyValues, type TemplateResult} from 'lit';
-import './energy-card.ts'; // defines <hp-energy-card>
 import './energy-detail.ts'; // defines <hp-energy-detail>
 import {isEnergyRange, type EnergyRange} from './charts.ts';
-import {detailIcon, type ModeChosenDetail} from './energy-detail.ts';
+import {detailIcon} from './energy-detail.ts';
 import './hilo-card.ts'; // defines <hp-hilo-card>
 import './water-card.ts'; // defines <hp-water-card>
 import paneOwn from './energy-pane.element.css?inline';
 import {energyIds} from './ids.ts';
 import {readEnergy} from './inputs.ts';
 import {EnergyHistory, type EnergyHistoryHost} from './loader.ts';
-import {energyModel, type EnergyViewModel, type SankeyMode} from './model.ts';
+import {energyModel, type EnergyViewModel} from './model.ts';
 import {DETAIL_SHEET, HILO_SHEET, WATER_SHEET} from './sheets.ts';
 import type {StatisticsCache} from '../../core/statistics-cache.ts';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
@@ -66,8 +65,7 @@ export class EnergyPane extends LitElement {
   private readonly history: EnergyHistory;
   private view: EnergyViewModel | undefined;
   /** What the detail last showed, kept for the panel's life and handed to each opening, as the legacy sheet kept its own. */
-  private range: EnergyRange = 'today';
-  private sankeyMode: SankeyMode = 'now';
+  private range: EnergyRange = 'now';
 
   constructor() {
     super();
@@ -134,33 +132,31 @@ export class EnergyPane extends LitElement {
       language: store.language,
       error: this.history.error,
       range: this.range,
-      sankeyMode: this.sankeyMode,
     });
   }
 
   protected override render() {
     const view = this.view;
     const compact = this.appearance.value?.compact === true;
-    // a sheet over another tab: the pane is behind it and draws nothing but it, so the tab stays
-    if (compact && !this.active) return view && this.sheetOpen ? this.renderSheets(view) : nothing;
-    // On a tablet the pane is the detail's place, and the two cards after it: the header, the card and the tiles are the phone's, and the
-    // header is not drawn, so its sub-line costs nothing.
-    return html`${
-      compact && view ? html`${this.renderHeader(view)}${this.renderPhone(view)}` : nothing
-    }${compact ? nothing : this.renderTablet(view)}`;
+    // a sheet over another tab (Home's tile asks for the detail's, a tile of Home or the stack for a card's): the pane is behind it and
+    // draws nothing but it, so the tab stays
+    if (compact && !this.active) {
+      return view && this.sheetOpen ? html`${this.renderDetailSheet(view)}${this.renderSheets(view)}` : nothing;
+    }
+    // On a phone the tab is the header, the range and the detail inline, then the two tiles that open the cards in sheets; the detail's own
+    // sheet is Home's. On a tablet the pane is the detail's place, and the two cards after it: the header and the tiles are the phone's, and
+    // the header is not drawn, so its sub-line costs nothing.
+    return compact ? (view ? this.renderPhone(view) : nothing) : this.renderTablet(view);
   }
 
-  private renderHeader({summary}: EnergyViewModel) {
+  // the phone's tab: the header with the summary, the range, the detail, the two tiles and their sheets
+  private renderPhone(view: EnergyViewModel) {
     const {t} = this.storeController.store;
     return html`<hp-pane-header .icon=${'bolt'} .color=${'var(--c-grid)'} .heading=${t('energy.title')}>
-      <div slot="sub">${summary}</div>
-    </hp-pane-header>`;
-  }
-
-  // the card, the two tiles and their sheets
-  private renderPhone(view: EnergyViewModel) {
-    return html`<hp-energy-card .view=${view.card}></hp-energy-card
-      >${this.renderTiles(view)}${this.renderSheets(view)}`;
+        <div slot="sub">${view.summary}</div>
+      </hp-pane-header>
+      <hp-range-tabs .ranges=${view.detail.ranges} .value=${this.range} @range-change=${this.onRange}></hp-range-tabs>
+      ${this.renderDetail(view)}${this.renderTiles(view)}${this.renderSheets(view)}`;
   }
 
   // The detail is drawn while the pane is the tab, so leaving the tab drops its charts. The cards are drawn while the pane is the tab, and only
@@ -195,15 +191,13 @@ export class EnergyPane extends LitElement {
     </div>`;
   }
 
-  // the detail: the history's charts, the Sankey and the totals, from the model, and the range and period the pane keeps
+  // the detail: the history's charts, the Sankey and the totals, from the model, and the range the pane keeps
   private renderDetail({detail}: EnergyViewModel) {
     return html`<hp-energy-detail
       .view=${detail}
       .history=${this.history.data}
       .range=${this.range}
-      .mode=${this.sankeyMode}
       @range-chosen=${this.onRange}
-      @mode-chosen=${this.onMode}
     ></hp-energy-detail>`;
   }
 
@@ -251,7 +245,7 @@ export class EnergyPane extends LitElement {
       >
         ${open ? card : nothing}
       </hp-sheet>`;
-    return html`${this.renderDetailSheet(view)}${
+    return html`${
       water.present
         ? sheet(
             'water',
@@ -288,12 +282,6 @@ export class EnergyPane extends LitElement {
     e.stopPropagation();
     if (!isEnergyRange(e.detail.range)) return;
     this.range = e.detail.range;
-    this.requestUpdate();
-  };
-
-  private readonly onMode = (e: CustomEvent<ModeChosenDetail>): void => {
-    e.stopPropagation();
-    this.sankeyMode = e.detail.mode;
     this.requestUpdate();
   };
 

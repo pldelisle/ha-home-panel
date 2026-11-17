@@ -18,7 +18,6 @@ import {
   heatScale,
   houseSeries,
   lateHeatPumpStart,
-  outsideChartOptions,
   rangeSeries,
   RANGE_WORDS,
   roomChartOptions,
@@ -27,7 +26,6 @@ import {
   setpointSeries,
   type ClimateChartDeps,
   type HeatRow,
-  type RangePoint,
   type RoomLines,
   type SetpointPoint,
 } from '../../../../src/features/climate/history.ts';
@@ -324,7 +322,7 @@ describe('heatRanges', () => {
 });
 
 describe('RANGE_WORDS', () => {
-  test('every range has a title and a note the English catalog says', () => {
+  test('every range has a heatmap title the English catalog says', () => {
     const {t} = deps();
     expect((['day', 'week', 'month', 'year'] as const).map(range => t(RANGE_WORDS[range].heatTitle))).toEqual([
       'Every room, hour by hour',
@@ -332,8 +330,6 @@ describe('RANGE_WORDS', () => {
       'Every room, every day',
       'Every room, week by week',
     ]);
-    expect(t(RANGE_WORDS.day.outNote)).toBe('Band is each 5 minutes’ low to high, line is the mean');
-    expect(RANGE_WORDS.week.outNote).toBe(RANGE_WORDS.month.outNote);
   });
 });
 
@@ -484,69 +480,17 @@ describe('roomChartOptions', () => {
     const options = build();
     expect(at(options, 'xaxis')).toEqual({
       type: 'datetime',
-      min: NOW - 7 * 864e5,
-      max: NOW,
+      min: local(4, 0),
+      max: local(11, 0), // the midnight after noon on the 10th: seven days, every tick on a midnight
+      tickAmount: 7,
       labels: {datetimeUTC: false},
     });
     expect(call(options, 'yaxis.labels.formatter', 20.4)).toBe('20°');
     expect(call(options, 'yaxis.labels.formatter', null)).toBe('');
-    expect(at(options, 'tooltip.x.format')).toBe('ddd h tt');
+    expect(call(options, 'tooltip.x.formatter', Date.parse('2026-11-09T21:07:00Z'))).toBe('Mon 4 pm');
     expect(at(options, 'tooltip.shared')).toBe(true);
     expect(call(options, 'tooltip.y.formatter', 20.25)).toBe('20.3 °C');
     expect(call(options, 'tooltip.y.formatter', null)).toBe('–');
-  });
-});
-
-describe('outsideChartOptions', () => {
-  const out: RangePoint[] = [
-    [1, 3, 1, 5],
-    [2, 4, null, null],
-    [3, 5, 2, 7.25],
-  ];
-  const build = (language: 'en' | 'fr' = 'en', range: Range = 'day') =>
-    outsideChartOptions(out, range, chartDeps(language));
-  const names = (options: object) => (at(options, 'series') as {name: string}[]).map(line => line.name);
-
-  test('is a band from each low to high, a bucket without both left out, and the mean line over it', () => {
-    const options = build();
-    expect(at(options, 'chart')).toEqual({type: 'rangeArea'});
-    expect(at(options, 'series')).toEqual([
-      {
-        name: 'Low to high',
-        type: 'rangeArea',
-        data: [
-          {x: 1, y: [1, 5]},
-          {x: 3, y: [2, 7.25]},
-        ],
-      },
-      {
-        name: '5-minute mean',
-        type: 'line',
-        data: [
-          {x: 1, y: 3},
-          {x: 2, y: 4},
-          {x: 3, y: 5},
-        ],
-      },
-    ]);
-    expect(at(options, 'colors')).toEqual(['#out', '#out']);
-    expect(at(options, 'fill')).toEqual({opacity: [0.22, 1]});
-    expect(at(options, 'stroke')).toEqual({width: [0, 2], curve: 'smooth'});
-    expect(at(options, 'xaxis')).toEqual({type: 'datetime', min: NOW - 864e5, max: NOW, labels: {datetimeUTC: false}});
-  });
-
-  test('the lines are named for the range, in the language', () => {
-    expect(names(build('en', 'year'))).toEqual(['Low to high', 'Daily mean']);
-    expect(names(build('fr', 'year'))).toEqual(['Du plus bas au plus haut', 'Moyenne quotidienne']);
-  });
-
-  test('the tooltip writes a band as "low to high" and a mean as one figure, and the axis whole degrees', () => {
-    const options = build();
-    expect(call(options, 'tooltip.y.formatter', [2, 7.25])).toBe('2.0 to 7.3 °C');
-    expect(call(options, 'tooltip.y.formatter', 4)).toBe('4.0 °C');
-    expect(call(options, 'tooltip.y.formatter', null)).toBe('–');
-    expect(call(build('fr'), 'tooltip.y.formatter', [2, 7.25])).toBe('De 2,0 à 7,3 °C');
-    expect(call(options, 'yaxis.labels.formatter', 3.6)).toBe('4°');
   });
 });
 

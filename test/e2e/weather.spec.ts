@@ -166,7 +166,7 @@ test('the Home card opens the detail over Home: Home stays the tab, a reload ret
   await expect(detail(house)).toBeVisible();
   await house.page.keyboard.press('Escape');
   await expect(detail(house)).toHaveCount(0);
-  await expect(card).toBeFocused();
+  await expect(card.locator('.hwx-open')).toBeFocused();
 });
 
 // the detail over Home has tiles of its own, and one of them opens a history: the pane stays behind both and Home stays the tab

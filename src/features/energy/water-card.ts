@@ -40,7 +40,7 @@ export class WaterCard extends LitElement {
     const view = this.view;
     if (!view) return nothing;
     const {temperature, state} = view;
-    // the inner box carries the glass: see <hp-energy-card>
+    // the inner box carries the glass: see <hp-hilo-card>
     return html`<div class="ebox">
         <div class="etop"><span class="elbl">${view.title}</span><span class="eright">${view.name}</span></div>
         <div class="hero">

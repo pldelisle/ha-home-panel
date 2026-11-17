@@ -43,6 +43,7 @@ const same = (a: Appearance, b: Appearance): boolean =>
   a.narrow === b.narrow &&
   a.glass.wallpaper === b.glass.wallpaper &&
   a.glass.density === b.glass.density &&
+  a.glass.cards === b.glass.cards &&
   a.textScale === b.textScale &&
   a.largeText === b.largeText &&
   a.reducedTransparency === b.reducedTransparency &&
@@ -165,7 +166,12 @@ export class AppearanceController implements ReactiveController {
       theme: isDark(set.theme, dark.matches) ? 'dark' : 'light',
       compact: compact.matches,
       narrow: Boolean(this.host.narrow), // Lit sets the property after the controllers are built
-      glass: Object.freeze({on: wallpaper !== null, wallpaper, density: glassDensity(set.glassLevel)}),
+      glass: Object.freeze({
+        on: wallpaper !== null,
+        wallpaper,
+        density: glassDensity(set.glassLevel),
+        cards: wallpaper !== null && set.cards === 'glass',
+      }),
       textScale: scale,
       largeText: isLargeText(scale),
       reducedTransparency: reducedTransparency.matches,

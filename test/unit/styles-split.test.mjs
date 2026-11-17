@@ -154,3 +154,13 @@ describe('the files as written', () => {
     expect(missing).toEqual([]);
   });
 });
+
+// iOS 26 writes labels in sentence case (#390): the catalog's words are drawn as written, so no rule capitalises them.
+describe('labels in sentence case', () => {
+  test('no stylesheet writes text-transform: uppercase', () => {
+    const offenders = [LEGACY, KIT, 'src/ui', 'src/shell', 'src/features']
+      .flatMap(folder => cssFiles(folder))
+      .filter(file => /text-transform:\s*uppercase/.test(readFileSync(join(ROOT, file), 'utf8')));
+    expect(offenders).toEqual([]);
+  });
+});

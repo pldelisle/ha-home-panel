@@ -1,7 +1,7 @@
-// <hp-air-detail>: the Air detail: a card per purifier, the metric's history over a range, the outside air and its history.
+// <hp-air-detail>: the Air detail: a card per purifier (its tiles open their reading's history, which the pane draws), the outside air and its history.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) placing the view model the pane hands down and the pure history.ts, rooms keyed (Lit docs,
-// repeat); the statistics come through the pane's cache (read-through, spec 15) and the charts through <hp-chart> (ADR 0022). The range and the
-// metric are the pane's (controlled component): a tap is told upward as `range-chosen` and `metric-chosen`, and the pane hands the choice back.
+// repeat); the statistics come through the pane's cache (read-through, spec 15) and the chart through <hp-chart> (ADR 0022). The range is the
+// pane's (controlled component): a tap is told upward as `range-chosen`, and the pane hands the choice back.
 // Must not: read an entity (the pane's model did), call the API client for statistics but through the cache, mutate a cached reply, or open a sheet itself.
 import {LitElement, html, nothing, svg, unsafeCSS} from 'lit';
 import {classMap} from 'lit/directives/class-map.js';
@@ -14,17 +14,13 @@ import './room-card.ts'; // defines <hp-air-room>
 import detailOwn from './air-detail.element.css?inline';
 import airShared from './styles.css?inline';
 import {
-  airChartOptions,
-  metricIds,
-  metricSeries,
+  airTokensFrom,
   outdoorChartOptions,
   outdoorSeries,
   rangeTabs,
   statisticsStart,
   type AirChartDeps,
   type AirTokens,
-  type ChartMetric,
-  type MetricSeries,
   type OutdoorSeries,
 } from './history.ts';
 import type {AirInputs} from './inputs.ts';
@@ -38,27 +34,13 @@ import '../../ui/pane-header.ts'; // defines <hp-pane-header>
 import '../../ui/range-tabs.ts'; // defines <hp-range-tabs>
 import type {RangeChangeDetail} from '../../ui/range-tabs.ts';
 import {RANGES, type Range} from '../../ui/ranges.ts';
-import '../../ui/seg.ts'; // defines <hp-seg>
-import type {SegChangeDetail, SegOption} from '../../ui/seg.ts';
 import {chart, common, inner, tiles} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
 type Detail = AirViewModel['detail'];
 type Rows = Readonly<Record<string, readonly StatisticRow[]>>;
 
-/** What a tap on a metric says: the metric now chosen. */
-export interface MetricChosenDetail {
-  metric: ChartMetric;
-}
-
-/** The metric's statistics as they arrived, with what they were asked for and the instant they were asked at (the axis ends there). */
-interface MetricLoad {
-  range: Range;
-  metric: ChartMetric;
-  series: MetricSeries;
-  at: number;
-}
-
+/** The outdoor air's statistics as they arrived, with what they were asked for and the instant they were asked at (the axis ends there). */
 interface OutdoorLoad {
   range: Range;
   series: OutdoorSeries;
@@ -79,7 +61,7 @@ interface Built<L> {
   legend: LegendItem[];
 }
 
-/** One chart's place: what the last request was for (`generation/range/metric/ids`: answered, failed or in flight), its reply and its options. */
+/** One chart's place: what the last request was for (`generation/range/ids`: answered, failed or in flight), its reply and its options. */
 interface ChartSlot<L extends {at: number}> {
   asked: string | undefined;
   load: L | undefined;
@@ -95,7 +77,7 @@ interface ChartPlace {
   empty?: string;
 }
 
-/** What a chart's `make` returns, `airChartOptions` or `outdoorChartOptions`: `<hp-chart>`'s options, with the legend's names and colours. */
+/** What a chart's `make` returns, `outdoorChartOptions`: `<hp-chart>`'s options, with the legend's names and colours. */
 type MadeOptions = ChartOptions & Parameters<typeof legendOf>[0];
 
 const emptySlot = <L extends {at: number}>(): ChartSlot<L> => ({
@@ -129,7 +111,7 @@ export const detailIcon = svg`<svg
   <path d="M3 8h10a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h7" />
 </svg>`;
 
-/** The names and colours of the lines of options built by `airChartOptions` or `outdoorChartOptions`: the colours list may run one over. */
+/** The names and colours of the lines of options built by `outdoorChartOptions`: the colours list may run one over. */
 function legendOf(options: {series: {name: string}[]; colors: string[]}): LegendItem[] {
   return options.series.map(({name}, index) => ({name, color: options.colors[index]}));
 }
@@ -140,7 +122,6 @@ export class AirDetail extends LitElement {
     inputs: {attribute: false},
     cache: {attribute: false},
     range: {},
-    metric: {},
   };
   /** The pane's view model of the detail: the rooms, the history's words, the outside block. */
   declare view: Detail | undefined;
@@ -148,9 +129,8 @@ export class AirDetail extends LitElement {
   declare inputs: AirInputs | undefined;
   /** The pane's statistics cache. */
   declare cache: StatisticsCache | undefined;
-  /** The range and the metric chosen: the pane keeps the last choice for the panel's life and passes it in, as the legacy sheet kept its own. */
+  /** The range chosen: the pane keeps the last choice for the panel's life and passes it in, as the legacy sheet kept its own. */
   declare range: Range;
-  declare metric: ChartMetric;
 
   // The kit's wells, tiles, radios and legend; the feature's `.aqsum` state line (styles.css, shared with the card); the element's own rules last.
   static override styles = [
@@ -165,8 +145,7 @@ export class AirDetail extends LitElement {
   private readonly storeController = new StoreController(this, {ids: () => []});
   private readonly appearance = new AppearanceConsumer(this);
 
-  // the two charts, the metric's and the outdoor index's: each its own request, reply and options
-  private readonly metricSlot = emptySlot<MetricLoad>();
+  // the outdoor index's chart: its request, reply and options
   private readonly outdoorSlot = emptySlot<OutdoorLoad>();
 
   constructor() {
@@ -175,38 +154,26 @@ export class AirDetail extends LitElement {
     this.inputs = undefined;
     this.cache = undefined;
     this.range = 'day';
-    this.metric = 'pm2_5';
   }
 
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     // a reply on its way finds the detail gone and is dropped; coming back asks again
-    this.metricSlot.asked = undefined;
     this.outdoorSlot.asked = undefined;
   }
 
-  // The options of a chart are rebuilt only when what they are made of changed: new statistics, the theme or the language. An update for
-  // anything else (a room's reading) leaves the charts' `options` the objects they were, so `<hp-chart>` is not asked to draw the same lines again.
+  // The options of the chart are rebuilt only when what they are made of changed: new statistics, the theme or the language. An update for
+  // anything else (a room's reading) leaves the chart's `options` the object it was, so `<hp-chart>` is not asked to draw the same lines again.
   protected override willUpdate(): void {
-    const {metricSlot, outdoorSlot} = this;
+    const {outdoorSlot} = this;
     const base = `${this.appearance.value?.theme ?? 'light'}/${this.storeController.store.language}`;
-    if (!needsBuild(metricSlot, base) && !needsBuild(outdoorSlot, base)) return;
+    if (!needsBuild(outdoorSlot, base)) return;
     const style = getComputedStyle(this);
-    const token = (name: string) => style.getPropertyValue(name).trim();
-    const tokens: AirTokens = {
-      rooms: [token('--c-home'), token('--c-wh'), token('--c-heat'), token('--c-ev')],
-      station: token('--c-rest'),
-      ok: token('--ok'),
-      warn: token('--warn'),
-      muted: token('--fg3'),
-      aqi: token('--m-orange'),
-      aqhi: token('--m-purple'),
-    };
-    this.rebuild(metricSlot, base, tokens, (load, deps) => airChartOptions(load.series, load.metric, load.range, deps));
+    const tokens = airTokensFrom(name => style.getPropertyValue(name).trim());
     this.rebuild(outdoorSlot, base, tokens, (load, deps) => outdoorChartOptions(load.series, load.range, deps));
   }
 
-  // one chart's options, built again only when `needsBuild` says so; the other chart's stay the objects they were
+  // the chart's options, built again only when `needsBuild` says so
   private rebuild<L extends {at: number}>(
     slot: ChartSlot<L>,
     base: string,
@@ -237,12 +204,12 @@ export class AirDetail extends LitElement {
             room => html`<hp-air-room .room=${room}></hp-air-room>`,
           )}
         </div>
-        ${this.renderHistory(view.history)} ${this.renderOutside(view)}
+        ${this.renderOutside(view)}
       </div>
       ${lens}`;
   }
 
-  // On a tablet the detail opens with its own header, the pane's being the phone's; on a phone the sheet draws it, tabs included.
+  // On a tablet the detail opens with its own header, the pane's being the phone's; on a phone the pane's header (inline) or the sheet's (over another tab) draws it, tabs included.
   private renderHeader({title, sub}: Detail) {
     const {t} = this.storeController.store;
     return html`<hp-pane-header .icon=${'aq'} .color=${'var(--ok)'} .heading=${title}>
@@ -272,29 +239,8 @@ export class AirDetail extends LitElement {
     return html`<hp-chart .height=${height} .label=${label} .options=${built.options}></hp-chart>`;
   }
 
-  private renderHistory(history: Detail['history']) {
-    const {metricSlot} = this;
-    return html`<div class="inner">
-      <h3>${history.title}</h3>
-      <p>${history.caption}</p>
-      <hp-seg
-        class="aqmetric"
-        .label=${history.label}
-        .options=${history.metrics.map(({metric, label}): SegOption<ChartMetric> => ({value: metric, label}))}
-        .value=${history.metric}
-        @change=${(e: CustomEvent<SegChangeDetail<ChartMetric>>) => this.onMetric(e.detail.value)}
-      ></hp-seg>
-      ${this.renderLegend(metricSlot.built?.legend)}
-      ${this.renderChart(metricSlot, {
-        height: 280,
-        label: `${history.title}. ${history.caption}`,
-        unavailable: history.unavailable,
-      })}
-    </div>`;
-  }
-
   // the station's reading and the pollen, then the outdoor chart: either part is left out of a house that has no source for it
-  private renderOutside({outside, outdoorChart, history}: Detail) {
+  private renderOutside({outside, outdoorChart}: Detail) {
     if (!outside && !outdoorChart) return nothing;
     const {outdoorSlot} = this;
     return html`<div class="inner">
@@ -307,7 +253,7 @@ export class AirDetail extends LitElement {
               ${this.renderChart(outdoorSlot, {
                 height: 240,
                 label: `${outdoorChart.title}. ${outdoorChart.hint}`,
-                unavailable: history.unavailable,
+                unavailable: this.storeController.store.t('air.historyUnavailable'),
                 empty: outdoorChart.empty,
               })}`
           : nothing
@@ -343,30 +289,16 @@ export class AirDetail extends LitElement {
     this.dispatchEvent(new CustomEvent<RangeChangeDetail>('range-chosen', {detail: event.detail}));
   };
 
-  private onMetric(metric: ChartMetric): void {
-    if (metric !== this.metric)
-      this.dispatchEvent(new CustomEvent<MetricChosenDetail>('metric-chosen', {detail: {metric}}));
-  }
-
   protected override updated(): void {
     this.loadIfDue();
   }
 
-  // The statistics are asked for when the detail first shows and when the range or the metric chosen, the config or the sensors listed change;
+  // The statistics are asked for when the detail first shows and when the range chosen, the config or the sensors listed change;
   // a pair seen before, within the ten minutes the pane's cache keeps, is the cache's hit, the start being the hour's top.
   private loadIfDue(): void {
-    const {cache, inputs, view, range, metric} = this;
+    const {cache, inputs, view, range} = this;
     if (!cache || !inputs || !view) return;
     const {generation} = this.storeController.store;
-    const ids = metricIds(inputs, metric);
-    const metricKey = `${generation}/${range}/${metric}/${ids.join(',')}`;
-    if (this.metricSlot.asked !== metricKey) {
-      const now = Date.now();
-      void this.load(this.metricSlot, metricKey, 'air history', async () => {
-        const rows = await rowsOf(cache, ids, range, now);
-        return {range, metric, series: metricSeries(rows, inputs, metric, range), at: now};
-      });
-    }
     const outdoor = {aqi: inputs.outside?.aqi ?? null, aqhi: inputs.aqhiId};
     const outdoorIds = [outdoor.aqi, outdoor.aqhi].filter((id): id is string => !!id);
     const outdoorKey = `${generation}/${range}/${outdoorIds.join(',')}`;
@@ -379,12 +311,12 @@ export class AirDetail extends LitElement {
     }
   }
 
-  // a reply is stale when the detail left, or another range, metric, config or list of sensors was asked for meanwhile
+  // a reply is stale when the detail left, or another range, config or list of sensors was asked for meanwhile
   private isStale(slot: ChartSlot<{at: number}>, key: string): boolean {
     return !this.isConnected || slot.asked !== key;
   }
 
-  // One request for one chart: the slot forgets a failure and remembers the key, a stale reply is dropped, a `StaleReply` (the cache's
+  // One request for the chart: the slot forgets a failure and remembers the key, a stale reply is dropped, a `StaleReply` (the cache's
   // own word for a request it superseded) is no failure, and any other error is logged with the chart's name and shown as unavailable.
   private async load<L extends {at: number}>(
     slot: ChartSlot<L>,

@@ -24,7 +24,6 @@ const OLD: Record<Range, OldRange> = {
     label: 'last 24 hours',
     short: '24 h',
     ticks: 8,
-    tipFmt: 'ddd h:mm tt',
     meanName: '5-minute mean',
   },
   week: {
@@ -34,7 +33,6 @@ const OLD: Record<Range, OldRange> = {
     label: 'last 7 days',
     short: '7 days',
     ticks: 7,
-    tipFmt: 'ddd h tt',
     meanName: 'Hourly mean',
   },
   month: {
@@ -44,7 +42,6 @@ const OLD: Record<Range, OldRange> = {
     label: 'last 30 days',
     short: '30 days',
     ticks: 10,
-    tipFmt: 'ddd MMM d, h tt',
     meanName: 'Hourly mean',
   },
   year: {
@@ -54,7 +51,6 @@ const OLD: Record<Range, OldRange> = {
     label: 'last 12 months',
     short: '12 months',
     ticks: 12,
-    tipFmt: 'ddd MMM d, yyyy',
     meanName: 'Daily mean',
   },
 };
@@ -70,10 +66,10 @@ describe('RANGES against the legacy CRANGE', () => {
     expect(Object.keys(RANGES)).toEqual(['day', 'week', 'month', 'year']);
   });
 
-  test.each(Object.keys(OLD) as Range[])('%s: the span, the period, the ticks, the tooltip and the words', range => {
+  test.each(Object.keys(OLD) as Range[])('%s: the span, the period, the ticks and the words', range => {
     const was = OLD[range];
     const now = RANGES[range];
-    expect([now.days, now.period, now.ticks, now.tooltipFormat]).toEqual([was.days, was.period, was.ticks, was.tipFmt]);
+    expect([now.days, now.period, now.ticks]).toEqual([was.days, was.period, was.ticks]);
     // a row is drawn in the middle of its bucket: the class stored that offset, the table stores the bucket
     expect(bucketMiddle(range)).toBe(was.mid);
     expect([en[now.labelKey], en[now.shortKey], en[now.meanKey]]).toEqual([was.label, was.short, was.meanName]);

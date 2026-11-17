@@ -113,9 +113,6 @@
       "was": "IQA extérieur"
     },
     {
-      "key": "air.open"
-    },
-    {
       "key": "air.close"
     },
     {
@@ -289,10 +286,6 @@
       "key": "air.metric.humidity"
     },
     {
-      "key": "air.whatToChart",
-      "was": "Quoi afficher"
-    },
-    {
       "key": "air.chartTitle",
       "values": {
         "metric": "PM2.5",
@@ -354,6 +347,18 @@
     },
     {
       "key": "air.historyLoading"
+    },
+    {
+      "key": "air.noBand",
+      "written": "Mila ne définit aucune zone pour cette mesure."
+    },
+    {
+      "key": "air.tile.opens",
+      "values": {
+        "name": "CO₂",
+        "value": "640ppm"
+      },
+      "written": "CO₂ 640ppm, ouvre l’historique"
     },
     {
       "key": "air.outside"

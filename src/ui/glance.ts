@@ -19,8 +19,10 @@ export interface GlanceView {
   /** The icon's colour, a CSS colour. */
   color: string;
   label: string;
-  /** The big figure. */
+  /** The big figure; when the sensor reads nothing (`missing`), the word that says so. */
   value: string;
+  /** The tile has no reading: `value` is a word, which the tile draws in the line's style, not as a big figure (never a dash as the big number). */
+  missing?: boolean;
   /** The line under it. */
   line: string;
   /** The car charges: the tile glows. */

@@ -80,10 +80,8 @@ button.cct[aria-pressed='true'] small {
   opacity: 0.75;
 }
 .cct .ccl {
-  font-size: calc(12px * var(--tx));
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: calc(13px * var(--tx));
+  font-weight: 600;
   color: var(--fg2);
   margin-bottom: 8px;
 }
@@ -117,6 +115,21 @@ button.cct[aria-pressed='true'] small {
   color: var(--fg2);
 }
 .app.gl .gtrow {
+  display: flex;
+}
+/* Transparent cards (2026-11): a list row with its switch, under the slider; hidden when Glass is None */
+.gcrow {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 44px;
+  margin-top: 4px;
+  font-size: calc(13px * var(--tx));
+  font-weight: 600;
+  color: var(--fg);
+}
+.app.gl .gcrow {
   display: flex;
 }
 .gtrange {

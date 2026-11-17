@@ -41,6 +41,8 @@ export interface WallboxInputs {
   lock: WallboxSwitch;
   /** The price per kWh the house set for the charger; null when it set none (the models estimate at `DEFAULT_KWH_PRICE`). */
   price: number | null;
+  /** When the status sensor last changed, in milliseconds: since when the charger says what it says, unavailable included; null without the sensor. */
+  statusSince: number | null;
 }
 
 /** A switch or a lock with the entity it is read from. */
@@ -64,6 +66,7 @@ export function wallbox(states: HassEntities, config: ResolvedConfig): WallboxIn
     pause: switchWithId(states, wbPause),
     lock: switchWithId(states, wbLock),
     price: numberOf(states, wbPrice),
+    statusSince: wbStatus && states[wbStatus] ? Date.parse(states[wbStatus].last_changed) : null,
   };
 }
 

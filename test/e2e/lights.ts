@@ -15,6 +15,8 @@ export const callsMessage = (house: House, what: string) => `${what} (calls: ${h
 
 /** the Office tile on the Lights tab (its right part opens the sheet, its left part is the bulb) */
 export const OFFICE_TILE = '#pane-lights .lcell[data-lsheet="office"]';
+/** the Office tile's row button: the keyboard's stop that opens the sheet (the bulb is the tile's other button) */
+export const OFFICE_ROW = `${OFFICE_TILE} .lrow`;
 
 /** taps the right part of the Office tile (the left part is the bulb) on the Lights tab and waits for the light sheet */
 export const openOfficeSheet = async (house: House) => {

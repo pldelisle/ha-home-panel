@@ -3,3 +3,28 @@
 :host {
   display: contents;
 }
+/* the tile is a box of two sibling buttons: the row (picture, name, line) opens the sheet and the control beside it acts. The row
+   grows over the tile's padding on the three sides it shares, so a tap anywhere but on the control is still the row's. */
+.stile .mrow {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: -12px 0 -12px -14px;
+  padding: 12px 0 12px 14px;
+  border: 0;
+  border-radius: inherit;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.stile .mrow:focus-visible {
+  outline: 2px solid var(--c-home);
+  outline-offset: 2px;
+}

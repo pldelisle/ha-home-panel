@@ -74,13 +74,13 @@ const request = (over: Partial<ClimateChartsRequest> = {}): ClimateChartsRequest
 const seriesOf = (options: Record<string, unknown>) => options.series as {name: string; data: unknown[]}[];
 
 describe('ClimateCharts', () => {
-  test('makes the room chart of the selection, the heatmap of every room in the order given, and the outside chart', () => {
+  test('makes the room chart of the selection, and the heatmap of every room in the order given: no outside chart, the outside being the room chart’s line', () => {
     const {page} = deps();
     const made = new ClimateCharts().build(request(), page);
     expect(seriesOf(made.chart).map(series => series.name)).toEqual(['Den', 'Setpoint', 'Outside']);
     expect(seriesOf(made.heatmap!).map(series => series.name)).toEqual(['Loft', 'Den']);
     expect(seriesOf(made.heatmap!)[1].data).toHaveLength(2);
-    expect(seriesOf(made.outside!).map(series => series.name)).toEqual(['Low to high', '5-minute mean']);
+    expect(made).not.toHaveProperty('outside');
     expect(made.chart.colors).toEqual(['#room', '#sp', '#out']);
   });
 
@@ -109,12 +109,11 @@ describe('ClimateCharts', () => {
     const again = charts.build({...input}, {...page});
     expect(again.chart).toBe(first.chart);
     expect(again.heatmap).toBe(first.heatmap);
-    expect(again.outside).toBe(first.outside);
-    // the page's colours were read for the one build of the three charts, not for the second
-    expect(tokens).toHaveBeenCalledTimes(3);
+    // the page's colours were read for the one build of the two charts, not for the second
+    expect(tokens).toHaveBeenCalledTimes(2);
   });
 
-  test('another selection makes the room chart again and leaves the heatmap and the outside chart as they were', () => {
+  test('another selection makes the room chart again and leaves the heatmap as it was', () => {
     const {page} = deps();
     const charts = new ClimateCharts();
     const input = request();
@@ -122,32 +121,28 @@ describe('ClimateCharts', () => {
     const second = charts.build({...input, selection: 'loft', name: 'Loft'}, page);
     expect(second.chart).not.toBe(first.chart);
     expect(second.heatmap).toBe(first.heatmap);
-    expect(second.outside).toBe(first.outside);
   });
 
   test('another load of the range, the theme or the language makes every chart again; a narrow screen only the heatmap', () => {
     const charts = new ClimateCharts();
     const first = charts.build(request(), deps().page);
     const reloaded = charts.build(request({history: history()}), deps().page);
-    expect(
-      [reloaded.chart, reloaded.heatmap, reloaded.outside].map(
-        (options, i) => options === [first.chart, first.heatmap, first.outside][i],
-      ),
-    ).toEqual([false, false, false]);
+    expect([reloaded.chart, reloaded.heatmap].map((options, i) => options === [first.chart, first.heatmap][i])).toEqual(
+      [false, false],
+    );
     const dark = charts.build(request({history: history()}), deps({dark: true}).page);
     expect(dark.heatmap).not.toBe(reloaded.heatmap);
     const input = request({history: history()});
     const wide = charts.build(input, deps().page);
     const narrow = charts.build(input, deps({compact: true}).page);
     expect(narrow.heatmap).not.toBe(wide.heatmap);
-    expect([narrow.chart, narrow.outside]).toEqual([wide.chart, wide.outside]);
     expect(narrow.chart).toBe(wide.chart);
     const french = charts.build(
       input,
       deps({language: 'fr', fmt: createFormatters(locale('fr')), t: createMessages(locale('fr')).t}).page,
     );
     expect(seriesOf(french.chart).map(series => series.name)).toEqual(['Den', 'Consigne', 'Extérieur']);
-    expect(french.outside).not.toBe(narrow.outside);
+    expect(french.chart).not.toBe(narrow.chart);
   });
 
   test('a room renamed makes the heatmap again, and nothing else', () => {
@@ -169,11 +164,10 @@ describe('ClimateCharts', () => {
     const {page} = deps();
     const charts = new ClimateCharts();
     const phone = charts.build(request({heatmapRooms: null}), page);
-    expect([phone.heatmap, phone.outside]).toEqual([null, null]);
+    expect(phone.heatmap).toBeNull();
     expect(phone.chart).toBeTruthy();
     const none = charts.build(request({heatmapRooms: [], selection: 'hp', name: 'Heat pump'}), page);
     expect(none.heatmap).toBeNull();
-    expect(none.outside).not.toBeNull();
   });
 
   test('draws the axis to the instant of the load, not to the one of the draw', () => {

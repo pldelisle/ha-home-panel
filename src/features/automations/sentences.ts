@@ -134,10 +134,14 @@ export function durationText(d: unknown, deps: Pick<SentenceDeps, 't' | 'fmt'>):
 }
 
 /**
- * A config's clock time (`18:00:00`) as hours and minutes, `18:00`: the 24-hour form `time24` writes in every language (the
- * format table asks for `16:07`), cut from Home Assistant's own text so no zone can move it.
+ * A config's clock time (`18:00:00`) as the house writes a time of day (`6:00 pm`, `18 h`), read from Home Assistant's own text
+ * (hours and minutes cut from it) and placed by `clock`, so no zone can move it; text that is no time is left as it is.
  */
-const clockText = (v: unknown): string => str(v).slice(0, 5);
+const clockText = (v: unknown, fmt: Pick<Formatters, 'clock'>): string => {
+  const text = str(v);
+  const match = /^(\d{1,2}):(\d{2})/.exec(text);
+  return match ? fmt.clock(Number(match[1]), Number(match[2])) : text.slice(0, 5);
+};
 
 /** `text` followed by its `for` duration, when it has one. */
 const lasting = (text: string, d: unknown, deps: SentenceDeps): string =>
@@ -316,7 +320,7 @@ export function triggerText(trigger: Config, deps: SentenceDeps): Sentence {
     return sentence(
       'automations.kind.time',
       asList(tr.at)
-        .map(a => (/^\d/.test(str(a)) ? clockText(a) : nameOf(a, deps)))
+        .map(a => (/^\d/.test(str(a)) ? clockText(a, deps.fmt) : nameOf(a, deps)))
         .join(', '),
       deps,
     );
@@ -434,7 +438,7 @@ export function conditionText(condition: Config | string, deps: SentenceDeps): S
     );
   if (p === 'time' || p === 'sun') {
     // the sun's `after: sunset` is a word of Home Assistant's
-    const at = (v: unknown) => (p === 'time' ? clockText(v) : str(v));
+    const at = (v: unknown) => (p === 'time' ? clockText(v, deps.fmt) : str(v));
     const parts = [
       c.after ? deps.t('automations.condition.after', {time: at(c.after)}) : '',
       c.before ? deps.t('automations.condition.before', {time: at(c.before)}) : '',

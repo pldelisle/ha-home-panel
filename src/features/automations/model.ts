@@ -1,5 +1,5 @@
 // automationsModel: what the Automations pane shows, from the automations' states and what the loader read: the line under the
-// heading, the Today card (the timeline's dots and the three tiles), the flow cards with their Mermaid definitions, and the chips.
+// heading, the Today card (the timeline's dots and the three tiles), the flow cards with their Mermaid definitions, and the list of every automation.
 // Pattern: a view model (Fowler, Presentation Model) the pane places, the rules of the legacy `renderAuto()`, worded in the panel's
 // language through the catalog, so French is the catalog's from the first paint.
 // Must not: read the clock or the DOM (the time, the width and the theme's colours are passed in), load anything, or draw.
@@ -61,6 +61,8 @@ export interface TodayView {
   caption: string;
   pill: string;
   nowPct: number;
+  /** The hour marks of the line: where each sits (percent) and its label in the house's format. */
+  hours: {pct: number; label: string}[];
   dots: DotView[];
   tiles: [TileView, TileView, TileView];
 }
@@ -91,7 +93,7 @@ export interface FlowCardView {
   } | null;
 }
 
-export interface ChipView {
+export interface AutomationRowView {
   item: string | undefined;
   name: string;
   sub: string;
@@ -109,7 +111,7 @@ export interface AutomationsViewModel {
   cards: FlowCardView[];
   /** The line when no card has anything to draw. */
   empty: string | null;
-  chips: ChipView[];
+  rows: AutomationRowView[];
 }
 
 const KIND: Record<CardKind, MessageKey> = {
@@ -118,6 +120,9 @@ const KIND: Record<CardKind, MessageKey> = {
   decision: 'automations.card.decision',
   completed: 'automations.card.completed',
 };
+
+/** The hours the Today line marks. */
+const TIMELINE_HOURS = [0, 6, 12, 18];
 
 const startOf = (s: TraceSummary): number => Date.parse(s.timestamp.start);
 
@@ -163,13 +168,13 @@ function pillOf(
   const start = startOf(run);
   if (run.state === 'running') return {tone: 'run', text: runningText(start, now, t), since: start};
   if (run.script_execution === 'failed_conditions')
-    return {tone: 'no', text: t('automations.pill.stopped', {time: fmt.time24(new Date(start))})};
+    return {tone: 'no', text: t('automations.pill.stopped', {time: fmt.time(new Date(start))})};
   if (run.script_execution === 'error')
-    return {tone: 'no', text: t('automations.pill.error', {time: fmt.time24(new Date(start))})};
+    return {tone: 'no', text: t('automations.pill.error', {time: fmt.time(new Date(start))})};
   const finish = run.timestamp.finish;
   return {
     tone: 'ok',
-    text: t('automations.pill.done', {time: finish ? fmt.time24s(new Date(finish)) : fmt.time24(new Date(start))}),
+    text: t('automations.pill.done', {time: finish ? fmt.timeSeconds(new Date(finish)) : fmt.time(new Date(start))}),
   };
 }
 
@@ -206,8 +211,9 @@ export function automationsModel(
   const todayView: TodayView = {
     title: t('automations.today.title'),
     caption: t('automations.today.caption'),
-    pill: `${fmt.dateWeekday(new Date(now))} · ${fmt.time24(now)}`,
+    pill: `${fmt.dateWeekday(new Date(now))} · ${fmt.time(now)}`,
     nowPct: layout.nowPct,
+    hours: TIMELINE_HOURS.map(h => ({pct: (h / 24) * 100, label: fmt.hourOfDay(h)})),
     dots: layout.groups.map((g, i) => {
       const d = g.dots[0];
       return {
@@ -230,12 +236,12 @@ export function automationsModel(
       },
       {
         label: t('automations.tile.next'),
-        value: next ? fmt.time24(new Date(next.t)) : '–',
+        value: next ? fmt.time(new Date(next.t)) : '–',
         sub: next ? shortAlias(next.name) : t('automations.tile.nothingElse'),
       },
       {
         label: t('automations.tile.then'),
-        value: then ? fmt.time24(new Date(then.t)) : '–',
+        value: then ? fmt.time(new Date(then.t)) : '–',
         sub: then ? shortAlias(then.name) : '—',
       },
     ],
@@ -288,7 +294,7 @@ export function automationsModel(
                     : x.script_execution === 'failed_conditions' || x.script_execution === 'error'
                       ? 'crit'
                       : 'ok',
-                label: `${fmt.isoDay(startOf(x)) === day ? '' : `${fmt.date(new Date(x.timestamp.start))} `}${fmt.time24(new Date(x.timestamp.start))}`,
+                label: `${fmt.isoDay(startOf(x)) === day ? '' : `${fmt.date(new Date(x.timestamp.start))} `}${fmt.time(new Date(x.timestamp.start))}`,
               }))
             : [],
         def: toMermaid(graph, inputs.tokens, inputs.compact),
@@ -303,7 +309,7 @@ export function automationsModel(
   // every automation, the latest first
   const lastOf = (a: Automation) => (a.last ? Date.parse(a.last) : 0);
   const day = fmt.isoDay(now);
-  const chips = automations
+  const rows = automations
     .slice()
     .sort((x, y) => lastOf(y) - lastOf(x))
     .map(a => ({
@@ -317,7 +323,7 @@ export function automationsModel(
           ? t('automations.chip.running')
           : a.last
             ? fmt.isoDay(lastOf(a)) === day
-              ? fmt.time24(new Date(a.last))
+              ? fmt.time(new Date(a.last))
               : fmt.date(new Date(a.last))
             : t('automations.chip.never'),
     }));
@@ -329,6 +335,6 @@ export function automationsModel(
     today: todayView,
     cards,
     empty: cards.length ? null : t('automations.noRuns'),
-    chips,
+    rows,
   };
 }

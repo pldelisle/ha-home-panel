@@ -2,7 +2,6 @@
 // line in words in both languages (the legacy `depDesc`), with the time as the household writes it: `8:30 am`, `8 h 30`.
 import {describe, expect, test} from 'vitest';
 import {
-  describe as describeDraft,
   draftFromSchedule,
   redraft,
   roundToFive,
@@ -128,54 +127,48 @@ describe('scheduleKey', () => {
   });
 });
 
-describe('describe, in English', () => {
-  const line = (d: ScheduleDraft, on = false) => describeDraft(d, on, en.fmt, en.t);
+describe('scheduleWords, in English', () => {
+  const line = (d: ScheduleDraft) => scheduleWords(d, en.fmt, en.t);
 
   test('every day, weekdays, a list, and no days', () => {
-    expect(line(draft(WEEK))).toBe('Off · every day at 8:30 am saved');
-    expect(line(draft(WEEK.slice(0, 5)))).toBe('Off · weekdays at 8:30 am saved');
-    expect(line(draft(['friday', 'monday', 'sunday']))).toBe('Off · Fri, Mon, Sun at 8:30 am saved');
-    expect(line(draft([]))).toBe('Off · no days at 8:30 am saved');
+    expect(line(draft(WEEK))).toBe('every day at 8:30 am');
+    expect(line(draft(WEEK.slice(0, 5)))).toBe('weekdays at 8:30 am');
+    expect(line(draft(['friday', 'monday', 'sunday']))).toBe('Fri, Mon, Sun at 8:30 am');
+    expect(line(draft([]))).toBe('no days at 8:30 am');
   });
 
   test('weekdays are Monday to Friday and no other five days; six days are a list', () => {
     expect(line(draft(['monday', 'tuesday', 'wednesday', 'thursday', 'saturday']))).toBe(
-      'Off · Mon, Tue, Wed, Thu, Sat at 8:30 am saved',
+      'Mon, Tue, Wed, Thu, Sat at 8:30 am',
     );
-    expect(line(draft(['friday', 'thursday', 'wednesday', 'tuesday', 'monday']))).toBe(
-      'Off · weekdays at 8:30 am saved',
-    );
-    expect(line(draft(WEEK.slice(0, 6)))).toBe('Off · Mon, Tue, Wed, Thu, Fri, Sat at 8:30 am saved');
+    expect(line(draft(['friday', 'thursday', 'wednesday', 'tuesday', 'monday']))).toBe('weekdays at 8:30 am');
+    expect(line(draft(WEEK.slice(0, 6)))).toBe('Mon, Tue, Wed, Thu, Fri, Sat at 8:30 am');
   });
 
   test('a cleared time names no time, and a time that is not one does not throw', () => {
-    expect(line(draft([], ''))).toBe('Off · no days saved');
-    expect(line(draft(['monday'], ''))).toBe('Off · Mon saved');
-    expect(line(draft(['monday'], 'soon'))).toBe('Off · Mon saved');
-  });
-
-  test('a switch that is on says On and has nothing saved to say', () => {
-    expect(line(draft(WEEK.slice(0, 5)), true)).toBe('On · weekdays at 8:30 am');
+    expect(line(draft([], ''))).toBe('no days');
+    expect(line(draft(['monday'], ''))).toBe('Mon');
+    expect(line(draft(['monday'], 'soon'))).toBe('Mon');
   });
 
   test('the time is the field’s, in 12 hours', () => {
-    expect(line(draft(['monday'], '00:05'))).toBe('Off · Mon at 12:05 am saved');
-    expect(line(draft(['monday'], '13:45'))).toBe('Off · Mon at 1:45 pm saved');
+    expect(line(draft(['monday'], '00:05'))).toBe('Mon at 12:05 am');
+    expect(line(draft(['monday'], '13:45'))).toBe('Mon at 1:45 pm');
   });
 
   test('a day Ford names that the panel does not know is said as it came', () => {
-    expect(line(draft(['someday']))).toBe('Off · someday at 8:30 am saved');
+    expect(line(draft(['someday']))).toBe('someday at 8:30 am');
   });
 });
 
-describe('describe, in French', () => {
-  const line = (d: ScheduleDraft, on = false) => describeDraft(d, on, fr.fmt, fr.t);
+describe('scheduleWords, in French', () => {
+  const line = (d: ScheduleDraft) => scheduleWords(d, fr.fmt, fr.t);
 
   test('says 8 h 30, tous les jours, en semaine and the days in short form', () => {
-    expect(line(draft(WEEK))).toBe('Désactivé · tous les jours à 8 h 30 enregistré');
-    expect(line(draft(WEEK.slice(0, 5)), true)).toBe('Activé · en semaine à 8 h 30');
-    expect(line(draft(['monday', 'sunday']))).toBe('Désactivé · lun., dim. à 8 h 30 enregistré');
-    expect(line(draft([], ''))).toBe('Désactivé · aucun jour enregistré');
+    expect(line(draft(WEEK))).toBe('tous les jours à 8 h 30');
+    expect(line(draft(WEEK.slice(0, 5)))).toBe('en semaine à 8 h 30');
+    expect(line(draft(['monday', 'sunday']))).toBe('lun., dim. à 8 h 30');
+    expect(line(draft([], ''))).toBe('aucun jour');
   });
 });
 

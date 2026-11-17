@@ -23,9 +23,7 @@
 }
 .tpms .tp .k {
   font-size: calc(12px * var(--tx));
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-weight: 600;
   color: var(--fg2);
 }
 .tpms .tp .v {
@@ -43,11 +41,39 @@
   color: var(--t-ok);
   font-weight: 600;
 }
-.tpms .tp .s.warn,
-.clear span.warn {
+.tpms .tp .s.warn {
   color: var(--warn);
 }
-/* in a phone's sheet the chips sit flush under the drawing, as the legacy sheet's `.sheet .clear` set them */
-:host([compact]) .clear {
-  margin: 0 0 14px;
+/* the details as value rows: the label (and the line under it) left, the figure right, a hairline between rows (HIG, Lists and tables) */
+.rows {
+  border-radius: 16px;
+  background: var(--card2);
+  overflow: hidden;
+}
+.vrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  padding: 8px 14px;
+}
+.vrow + .vrow {
+  border-top: 1px solid var(--line);
+}
+.vrow .lbl {
+  display: flex;
+  flex-direction: column;
+  font-weight: 600;
+}
+.vrow small {
+  font-weight: 500;
+  font-size: calc(12px * var(--tx));
+  color: var(--fg2);
+}
+.vrow .val small {
+  margin-left: 3px;
+}
+:host([glass]) .rows {
+  background: var(--g-tile);
 }

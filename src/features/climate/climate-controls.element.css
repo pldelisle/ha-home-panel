@@ -1,6 +1,6 @@
 /*
  * <hp-climate-controls>' own rules: the controls' box, the section labels, the line of a stepper and its buttons, the room's quick buttons, the louvers' select, the groups' sizes and the
- * line that says why the house's two buttons need a second tap. Moved from the legacy `.cctl`, `.clbl`, `.crow`, `.quick`, `.csel` and `.cctl .hint` rules (extra.css, phone.css, motion.css),
+ * line that says what Off means for the house's two buttons. Moved from the legacy `.cctl`, `.clbl`, `.crow`, `.quick`, `.csel` and `.cctl .hint` rules (extra.css, phone.css, motion.css),
  * which this move deleted. The radio groups, the steppers and the pill buttons are the kit's (`<hp-seg>`, `<hp-stepper>`, `.abtn`); the groups are sized from here through their parts.
  * `.chint` is a known copy of the legacy `.hint` (base.css), which the Home and Automations panes still draw.
  */
@@ -15,10 +15,8 @@ p {
   font-size: calc(13px * var(--tx));
 }
 .clbl {
-  font-size: calc(12px * var(--tx));
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: calc(13px * var(--tx));
+  font-weight: 600;
   color: var(--fg2);
   margin: 12px 0 6px;
 }

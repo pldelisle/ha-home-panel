@@ -31,6 +31,7 @@ const depsOf = (language: 'en' | 'fr', states: HassEntities): SentenceDeps => ({
   t: createMessages({language, tag: `${language}-CA`}).t,
   fmt: createFormatters({
     ...englishLocale('America/Toronto'),
+    hour12: language === 'en' ? true : undefined,
     language,
     tag: `${language}-CA`,
     numberLocale: `${language}-CA`,
@@ -87,8 +88,8 @@ const TRIGGERS: Row[] = [
   ],
   [{trigger: 'numeric_state', entity_id: 'sensor.t', above: 5, below: 9}, 'Value', 'T > 5 and < 9'],
   [{trigger: 'numeric_state', entity_id: 'sensor.t'}, 'Value', 'T '],
-  [{trigger: 'time', at: '06:00:00'}, 'Time', '06:00'],
-  [{trigger: 'time', at: ['06:00:00', 'input_datetime.wake']}, 'Time', '06:00, Wake'],
+  [{trigger: 'time', at: '06:00:00'}, 'Time', '6:00 am'],
+  [{trigger: 'time', at: ['06:00:00', 'input_datetime.wake']}, 'Time', '6:00 am, Wake'],
   [{trigger: 'time_pattern', minutes: '/5'}, 'Every', '5 min'],
   [{trigger: 'time_pattern', hours: 2}, 'Every', '2 h'],
   [{trigger: 'time_pattern', seconds: '/30'}, 'Every', '30 s'],
@@ -155,7 +156,7 @@ const CONDITIONS: Row[] = [
   [
     {condition: 'time', after: '22:00:00', before: '06:00:00', weekday: ['sat', 'sun']},
     'Time',
-    'after 22:00 and before 06:00 and sat, sun',
+    'after 10:00 pm and before 6:00 am and sat, sun',
   ],
   [{condition: 'time', weekday: 'mon'}, 'Time', 'mon'],
   [{condition: 'time'}, 'Time', ''],
@@ -209,7 +210,7 @@ const CONDITIONS: Row[] = [
       ],
     },
     'All of',
-    'Kitchen Island is on + after 10:00',
+    'Kitchen Island is on + after 10:00 am',
   ],
   [
     {condition: 'not', conditions: {condition: 'state', entity_id: 'light.kitchen_island', state: 'on'}},
@@ -348,11 +349,15 @@ const EN_FIXTURES = {
     'Wait for · Front closed, up to 10 min',
     'Light · Turn off Living room lamp',
   ],
-  'heating_evening.json': ['Time · 18:00', 'Helper · Heating away is off', 'Climate · Living room → 21°'],
-  'heating_morning.json': ['Time · 06:00', 'Person · Alex Example → home', 'Step · choose'],
+  'heating_evening.json': ['Time · 6:00 pm', 'Helper · Heating away is off', 'Climate · Living room → 21°'],
+  'heating_morning.json': ['Time · 6:00 am', 'Person · Alex Example → home', 'Step · choose'],
   'lights_off_at_sunrise.json': ['Sun · Sunrise', 'Light · Turn off every light'],
   'office_light_blink.json': ['Motion · Hall detects motion', 'Repeat · 3 times'],
-  'purifier_night_speed.json': ['Time · 22:00', 'Fan · Set percentage Office purifier', 'Helper · Kids bedtime → on'],
+  'purifier_night_speed.json': [
+    'Time · 10:00 pm',
+    'Fan · Set percentage Office purifier',
+    'Helper · Kids bedtime → on',
+  ],
 };
 const FR_FIXTURES = {
   'entrance_light_until_closed.json': [
@@ -362,12 +367,12 @@ const FR_FIXTURES = {
     'Attendre · Front fermée, au plus 10 min',
     'Lumière · Éteindre Living room lamp',
   ],
-  'heating_evening.json': ['Heure · 18:00', 'Assistant · Heating away est off', 'Climat · Living room → 21°'],
-  'heating_morning.json': ['Heure · 06:00', 'Person · Alex Example → home', 'Étape · choose'],
+  'heating_evening.json': ['Heure · 18 h', 'Assistant · Heating away est off', 'Climat · Living room → 21°'],
+  'heating_morning.json': ['Heure · 6 h', 'Person · Alex Example → home', 'Étape · choose'],
   'lights_off_at_sunrise.json': ['Soleil · Lever du soleil', 'Lumière · Éteindre toutes les lumières'],
   'office_light_blink.json': ['Mouvement · Hall détecte un mouvement', 'Répéter · 3 fois'],
   'purifier_night_speed.json': [
-    'Heure · 22:00',
+    'Heure · 22 h',
     'Ventilateur · Set percentage Office purifier',
     'Assistant · Kids bedtime → activé',
   ],

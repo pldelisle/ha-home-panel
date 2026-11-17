@@ -50,6 +50,17 @@ test.describe('the tiles', () => {
   });
 });
 
+test('a tile is named without the "›" read aloud', async ({house}) => {
+  await house.tab('home');
+  await expect(tile(house, 'lights').locator('.go')).toHaveAttribute('aria-hidden', 'true');
+  await expect(
+    house
+      .root()
+      .locator('#htiles')
+      .getByRole('button', {name: /^Lights\W*4 on/}),
+  ).toBeVisible();
+});
+
 test.describe('on a tablet', () => {
   test.beforeEach(() => tabletOnly());
 
@@ -90,6 +101,13 @@ test.describe('on a phone', () => {
     await house.tab('home');
     await tile(house, 'lights').click();
     await expect(house.root().locator('#pane-lights')).toBeVisible();
+  });
+
+  test('the Home card is one button named for the weather and where it leads', async ({house}) => {
+    await house.tab('home');
+    await expect(
+      house.root().locator('#pane-home').getByRole('button', {name: 'Weather: 4°, mainly sunny. Opens the forecast'}),
+    ).toBeVisible();
   });
 
   test('the Home card opens the weather detail, and has no stack', async ({house}) => {

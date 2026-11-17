@@ -19,10 +19,8 @@
   min-width: 0;
 }
 .tile .k {
-  font-size: calc(12px * var(--tx));
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: calc(13px * var(--tx));
+  font-weight: 600;
   color: var(--fg2);
 }
 .tile .v {

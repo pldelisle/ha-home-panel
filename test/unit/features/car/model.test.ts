@@ -1,4 +1,4 @@
-// carModel: the card, the phone's line and the detail's read-only blocks from the test house, from literal houses for each shape the test house does not show (a car with all its
+// carModel: the phone's line and the detail's read-only blocks (the summary, the status, the history row and its bars, the sessions, the last plug-in, Ford's messages) from the test house, from literal houses for each shape the test house does not show (a car with all its
 // sensors, one plugged in, one unplugged, one with none), and from the recorded house when the owner has one; in English and in French, where the words and the numbers are French's own.
 import {describe, expect, test} from 'vitest';
 import type {CarHistoryData} from '../../../../src/features/car/history.ts';
@@ -136,45 +136,41 @@ const history = (over: Partial<CarHistoryData> = {}): CarHistoryData => ({
 describe('the test house, in English', () => {
   const vm = modelOf(fullHouse);
 
-  test('the phone’s line and the card: where, charge, range, lock and plug; the charger, no last charge yet, the odometer', () => {
+  test('the phone’s line, and the summary: the charge, the range, the bar with the limit Ford sets, charging and locked', () => {
     expect(vm.summary).toEqual({title: 'Car', line: 'Parked at home · 64.0% · 280 km · charging'});
-    expect(vm.card).toMatchObject({
+    expect(vm).not.toHaveProperty('card');
+    expect(vm.detail?.summary).toMatchObject({
       name: 'Car',
       picture: null,
       color: '#B03A2E',
       drawing: 'Car, side view',
-      open: 'Open car details',
-      where: 'Parked at home',
       charge: '64.0',
-      line: '280 km range · locked · charging',
+      range: '280 km range',
       soc: {fill: 64, limit: 90, label: 'Battery 64.0 percent, charge limit 90 percent'},
-      daily: null,
+      facts: [
+        {text: 'Charging', tone: 'ok'},
+        {text: 'Locked', tone: 'plain'},
+      ],
     });
-    expect(vm.card?.soc.scale).toEqual({start: '0%', limit: 'Limit 90%', end: ''});
-    expect(vm.card?.tiles).toEqual([
-      {label: 'Charger', value: 'Charging', unit: '', sub: 'Wallbox', word: true},
-      {label: 'Last charge', value: '–', unit: 'kWh', sub: '', word: false},
-      {label: 'Odometer', value: '12,000', unit: 'km', sub: '', word: false},
-    ]);
+    expect(vm.detail?.summary.soc.scale).toEqual({start: '0%', limit: 'Limit 90% · set in FordPass', end: '100%'});
     expect(vm.none).toBeNull();
     expect(vm.error).toBeNull();
   });
 
-  test('the detail has only what the house’s sensors give: the plug tile, the tire pressures it has, the lock chip, and no plug-in yet', () => {
+  test('the detail has only what the house’s sensors give: the tire pressures and the odometer, no message from Ford, no plug-in yet', () => {
     const {detail} = vm;
     expect(detail?.sub).toMatch(/^Parked at home · locked · the car last checked in at \d+:\d\d [ap]m$/);
-    expect(detail?.battery).toMatchObject({line: '', range: '280 km range'});
-    expect(detail?.battery.tiles).toEqual([{label: 'Plug', value: 'Charging', unit: '', sub: '', word: true}]);
     expect(detail?.status.tires.map(({label, psi, state}) => [label, psi, state])).toEqual([
       ['Front left', '34.8', null],
       ['Front right', '35.0', null],
       ['Rear left', '34.5', null],
       ['Rear right', '34.7', null],
     ]);
-    expect(detail?.status.chips).toEqual([{text: 'Locked', good: true}]);
-    expect(detail?.ford.rows).toEqual([
-      {kind: 'departure', title: 'Departure times off', body: 'No departure times saved.'},
-    ]);
+    expect(detail?.status.title).toBe('Car status');
+    expect(detail?.status).not.toHaveProperty('caption');
+    expect(detail?.status.rows).toEqual([{label: 'Odometer', value: '12,000', unit: 'km', sub: '', word: false}]);
+    expect(detail?.ford).toBeNull();
+    expect(detail?.history).toEqual({title: 'Charging history', done: 'Done', line: '', value: '', daily: null});
     expect(detail?.last).toEqual({
       title: 'Last plug-in',
       caption: "Ford hasn't reported a charging session yet.",
@@ -188,19 +184,15 @@ describe('the test house, in French', () => {
 
   test('the words are French’s and the numbers too: a comma, a narrow space before the percent sign, a thin space in thousands', () => {
     expect(vm.summary.line).toBe('Stationnée à la maison · 64,0 % · 280 km · en recharge');
-    expect(vm.card).toMatchObject({
-      line: "280 km d'autonomie · verrouillée · en recharge",
+    expect(vm.detail?.summary).toMatchObject({
       drawing: 'Voiture, vue de côté',
-      open: 'Ouvrir les détails de la voiture',
+      range: "280 km d'autonomie",
       soc: {label: 'Batterie 64,0 pour cent, limite de charge 90 pour cent'},
     });
-    expect(vm.card?.soc.scale.limit).toBe('Limite 90 %');
-    expect(vm.card?.tiles.map(({label, value, sub}) => [label, value, sub])).toEqual([
-      ['Borne', 'Recharge', 'Wallbox'],
-      ['Dernière recharge', '–', ''],
-      ['Odomètre', '12 000', ''],
-    ]);
+    expect(vm.detail?.summary.soc.scale.limit).toBe('Limite 90 % · réglée dans FordPass');
+    expect(vm.detail?.summary.facts.map(({text}) => text)).toEqual(['Recharge', 'Verrouillée']);
     expect(vm.detail?.status.tires[0].psi).toBe('34,8');
+    expect(vm.detail?.status.rows.map(({label, value}) => [label, value])).toEqual([['Odomètre', '12 000']]);
     expect(vm.detail?.last.caption).toBe("Ford n'a pas encore signalé de session de recharge.");
   });
 });
@@ -209,14 +201,10 @@ describe('a car with every sensor', () => {
   const vm = modelOf(carHouse(), history());
   const detail = vm.detail!;
 
-  test('the card’s name is the picture’s without "Vehicle Picture"; the line, the tiles and the bars from the history', () => {
-    expect(vm.card).toMatchObject({name: 'Test', picture: '/api/image_proxy/image.t', where: 'Parked at home'});
-    expect(vm.card?.tiles).toEqual([
-      {label: 'Charger', value: 'Charging', unit: '', sub: 'Wallbox', word: true},
-      {label: 'Last charge', value: '6.0', unit: 'kWh', sub: 'Nov 8', word: false},
-      {label: 'Odometer', value: '12,345', unit: 'km', sub: '', word: false},
-    ]);
-    const daily = vm.card?.daily;
+  test('the summary’s name is the picture’s without "Vehicle Picture"; the history row and its 30 days of bars', () => {
+    expect(detail.summary).toMatchObject({name: 'Test', picture: '/api/image_proxy/image.t'});
+    expect(detail.history).toMatchObject({title: 'Charging history', line: '3 sessions · 39 kWh', value: '$3'});
+    const daily = detail.history.daily;
     expect(daily?.geometry.highest).toBe(12.34);
     expect(daily?.geometry.bars).toHaveLength(30);
     expect(daily?.label).toBe('Daily kWh bars, highest 12.3 kWh');
@@ -233,11 +221,11 @@ describe('a car with every sensor', () => {
         ev: 40,
       })),
     });
-    expect(modelOf(carHouse(), month).card?.daily?.line).toBe(
+    expect(modelOf(carHouse(), month).detail?.history.daily?.line).toBe(
       'Daily EV energy, last 30 days: 30 charging days, 1,200 kWh.',
     );
     // French groups with a narrow no-break space
-    expect(modelOf(carHouse(), month, {language: 'fr'}).card?.daily?.line).toContain(
+    expect(modelOf(carHouse(), month, {language: 'fr'}).detail?.history.daily?.line).toContain(
       '30 jours de recharge, 1\u202f200 kWh.',
     );
   });
@@ -247,70 +235,61 @@ describe('a car with every sensor', () => {
     expect(detail.sub).toBe('Parked at home · locked · the car last checked in at 4:05 pm');
   });
 
-  test('the battery: kWh usable and its temperature, the bar with the limit, and the four tiles', () => {
-    expect(detail.battery).toMatchObject({
-      title: 'Battery',
-      line: '55.0 of 88.0 kWh usable · battery at 20.0°',
+  test('the summary: the charge and the range, the bar with the limit, and the facts, charging with its power first', () => {
+    expect(detail.summary).toMatchObject({
       charge: '64.0',
       range: '280 km range',
-    });
-    // the picture the block draws is the card's: Ford's photo, else the drawing, with the name and the label that go with it
-    expect(detail.battery).toMatchObject({
       name: 'Test',
       picture: '/api/image_proxy/image.t',
       color: '#B03A2E',
       drawing: 'Car, side view',
     });
     expect(detail.status.drawing).toBe('Car seen from above');
-    expect(detail.battery.soc).toEqual({
+    expect(detail.summary.soc).toEqual({
       fill: 64,
       limit: 90,
-      label: 'Battery 64.0 percent',
-      scale: {start: '0%', limit: 'Charge limit 90%', end: '100%'},
+      label: 'Battery 64.0 percent, charge limit 90 percent',
+      scale: {start: '0%', limit: 'Limit 90% · set in FordPass', end: '100%'},
     });
-    expect(detail.battery.tiles).toEqual([
-      {label: 'Full range', value: '400', unit: 'km', sub: 'at 100%', word: false},
-      {label: 'Plug', value: 'Charging', unit: '', sub: '7.2 kW', word: true},
-      {label: 'AC limit', value: '32', unit: 'A', sub: '', word: false},
-      {label: 'Cabin', value: '21.5', unit: '°', sub: 'outside 5.0°', word: false},
+    expect(detail.summary.facts).toEqual([
+      {text: 'Charging · 7.2 kW', tone: 'ok'},
+      {text: 'Doors closed', tone: 'plain'},
+      {text: 'Windows closed', tone: 'plain'},
+      {text: 'Hood and tailgate closed', tone: 'plain'},
+      {text: 'Locked', tone: 'plain'},
+      {text: 'Alarm off', tone: 'plain'},
+      {text: 'In park', tone: 'plain'},
     ]);
   });
 
-  test('the status: four tires in psi whatever unit Ford sent, Ford’s word for the ones that gave one, the chips and the four tiles', () => {
+  test('the status: four tires in psi, Ford’s word for the ones that gave one, and the details as rows, the battery’s kWh and temperature among them', () => {
     expect(detail.status.title).toBe('Car status');
-    expect(detail.status.caption).toBe("Tire pressures from the car's sensors");
     expect(detail.status.tires).toEqual([
       {label: 'Front left', psi: '43.8', unit: 'psi', state: {text: 'Normal', ok: true}},
       {label: 'Front right', psi: '43.8', unit: 'psi', state: null},
       {label: 'Rear left', psi: '43.8', unit: 'psi', state: null},
       {label: 'Rear right', psi: '45.0', unit: 'psi', state: {text: 'low', ok: false}},
     ]);
-    expect(detail.status.chips.map(({text}) => text)).toEqual([
-      'Doors closed',
-      'Windows closed',
-      'Hood and tailgate closed',
-      'Locked',
-      'Alarm off',
-      'In park',
-    ]);
-    expect(detail.status.chips.every(({good}) => good)).toBe(true);
-    expect(detail.status.tiles).toEqual([
+    expect(detail.status.rows).toEqual([
       {label: 'Odometer', value: '12,345', unit: 'km', sub: '', word: false},
+      {label: 'Full range', value: '400', unit: 'km', sub: 'at 100%', word: false},
+      {label: 'AC limit', value: '32', unit: 'A', sub: '', word: false},
+      {label: 'Cabin', value: '21.5', unit: '°', sub: 'outside 5.0°', word: false},
       {label: '12 V battery', value: '87', unit: '%', sub: '12.4 V', word: false},
+      {label: 'Usable energy', value: '55.0', unit: 'kWh', sub: 'of 88.0 kWh', word: false},
+      {label: 'Battery temperature', value: '20.0', unit: '°', sub: '', word: false},
       {label: 'Software', value: '3.4.1', unit: '', sub: 'since Nov 1', word: true},
       {label: 'Auto updates', value: 'On', unit: '', sub: '', word: true},
     ]);
   });
 
-  test('from Ford: the warning in the household’s words, a message whose date is not one, and the departure times with what is saved', () => {
-    expect(detail.ford.rows).toEqual([
+  test('from Ford: the warning in the household’s words and a message whose date is not one; the departure is its own row now', () => {
+    expect(detail.ford?.rows).toEqual([
       {
-        kind: 'message',
         title: 'Tire Pressure Monitor System Warning, Nov 6',
         body: 'The Tire Pressure Monitoring System has detected one or more tires are significantly under-inflated.',
       },
-      {kind: 'message', title: 'Service due', body: 'Book a visit'},
-      {kind: 'departure', title: 'Departure times on', body: 'Weekdays at 8:30 am saved.'},
+      {title: 'Service due', body: 'Book a visit'},
     ]);
   });
 
@@ -367,7 +346,7 @@ describe('a car with every sensor', () => {
 
   test('a house with no history yet has no bars, no sessions and nothing delivered', () => {
     const early = modelOf(carHouse());
-    expect(early.card?.daily).toBeNull();
+    expect(early.detail?.history).toEqual({title: 'Charging history', done: 'Done', line: '', value: '', daily: null});
     expect(early.detail?.sessions).toMatchObject({summary: '', tiles: [], months: [], rows: [], toggle: null});
     expect(early.detail?.last.tiles[3]).toMatchObject({label: 'Delivered', value: '–'});
   });
@@ -452,18 +431,13 @@ describe('a car with every sensor, in French', () => {
     expect(words('en', odd)?.slice(0, 2)).toEqual(['unavailable', 'under_inflated']);
   });
 
-  test('the sentences, the tiles and the chips are the rewrite layer’s French', () => {
-    expect(vm.card?.daily?.line).toBe('Énergie VÉ quotidienne, 30 derniers jours : 1 jour de recharge, 17 kWh.');
+  test('the sentences, the rows and the facts are the rewrite layer’s French', () => {
+    expect(detail.history.daily?.line).toBe('Énergie VÉ quotidienne, 30 derniers jours : 1 jour de recharge, 17 kWh.');
+    expect(detail.history).toMatchObject({title: 'Historique de recharge', line: '3 sessions · 39 kWh', value: '3 $'});
     expect(detail.sub).toBe('Stationnée à la maison · verrouillée · dernier contact de la voiture à 16 h 05');
-    expect(detail.battery.line).toBe('55,0 sur 88,0 kWh utilisables · batterie à 20,0°');
-    expect([detail.battery.drawing, detail.status.drawing]).toEqual(['Voiture, vue de côté', 'Voiture vue de haut']);
-    expect(detail.battery.tiles.map(({label, value, sub}) => [label, value, sub])).toEqual([
-      ['Autonomie complète', '400', 'à 100 %'],
-      ['Prise', 'Recharge', '7,2 kW'],
-      ['Limite CA', '32', ''],
-      ['Habitacle', '21,5', 'dehors 5,0°'],
-    ]);
-    expect(detail.status.chips.map(({text}) => text)).toEqual([
+    expect([detail.summary.drawing, detail.status.drawing]).toEqual(['Voiture, vue de côté', 'Voiture vue de haut']);
+    expect(detail.summary.facts.map(({text}) => text)).toEqual([
+      'Recharge · 7,2 kW',
       'Portes fermées',
       'Fenêtres fermées',
       'Capot et hayon fermés',
@@ -471,25 +445,25 @@ describe('a car with every sensor, in French', () => {
       'Alarme désactivée',
       'En position P',
     ]);
-    expect(detail.status.tiles.map(({label, value, sub}) => [label, value, sub])).toEqual([
+    expect(detail.status.rows.map(({label, value, sub}) => [label, value, sub])).toEqual([
       ['Odomètre', '12 345', ''],
+      ['Autonomie complète', '400', 'à 100 %'],
+      ['Limite CA', '32', ''],
+      ['Habitacle', '21,5', 'dehors 5,0°'],
       ['Batterie 12 V', '87', '12,4 V'],
+      ['Énergie utilisable', '55,0', 'sur 88,0 kWh'],
+      ['Température de la batterie', '20,0', ''],
       ['Logiciel', '3.4.1', 'depuis le 1 nov.'],
       ['Mises à jour automatiques', 'Activé', ''],
     ]);
   });
 
-  test('Ford’s warning and the saved departure are in French, and the last plug-in writes its two times as the layer did', () => {
-    expect(detail.ford.rows[0]).toEqual({
-      kind: 'message',
+  test('Ford’s warning is in French, and the last plug-in writes its two times as the layer did', () => {
+    expect(detail.ford?.rows[0]).toEqual({
       title: 'Avertissement du système de surveillance de la pression des pneus, 6 nov.',
       body: 'Le système de surveillance de la pression des pneus a détecté un ou plusieurs pneus nettement sous-gonflés.',
     });
-    expect(detail.ford.rows[2]).toEqual({
-      kind: 'departure',
-      title: 'Heures de départ : activé',
-      body: 'En semaine à 8 h 30, enregistré.',
-    });
+    expect(detail.ford?.rows).toHaveLength(2);
     expect(detail.last.caption).toBe('6 nov., 17 h au 6 nov., 19 h');
   });
 
@@ -515,7 +489,7 @@ describe('a car with every sensor, in French', () => {
 });
 
 describe('the other shapes of a car', () => {
-  test('plugged in and not charging, away, unlocked: the words, and the plug tile with no power', () => {
+  test('plugged in and not charging, away, unlocked: the words, and the plug and the lock as facts', () => {
     const vm = modelOf(
       carHouse({
         'sensor.elvehcharging': car('sensor', 'elvehcharging', 'NOT_CHARGING', {globalAcTargetSoc: 90, chargingkW: 0}),
@@ -523,10 +497,9 @@ describe('the other shapes of a car', () => {
         'device_tracker.tracker': car('device_tracker', 'tracker', 'not_home'),
       }),
     );
-    expect(vm.card).toMatchObject({where: 'Away', line: '280 km range · unlocked · plugged in'});
     expect(vm.summary.line).toBe('Away · 64.0% · 280 km · plugged in');
-    expect(vm.detail?.battery.tiles[1]).toEqual({label: 'Plug', value: 'Plugged in', unit: '', sub: '', word: true});
-    expect(vm.detail?.status.chips[3]).toEqual({text: 'Unlocked', good: false});
+    expect(vm.detail?.summary.facts[0]).toEqual({text: 'Plugged in', tone: 'plain'});
+    expect(vm.detail?.summary.facts).toContainEqual({text: 'Unlocked', tone: 'warn'});
   });
 
   test('unplugged, a zone’s own name, no range and no lock: no leading dot, the zone as the tracker names it', () => {
@@ -540,15 +513,18 @@ describe('the other shapes of a car', () => {
         'device_tracker.tracker': car('device_tracker', 'tracker', 'Work'),
       }),
     );
-    expect(vm.card).toMatchObject({where: 'Work', line: 'unplugged', charge: '12.0'});
-    expect(vm.card?.soc).toMatchObject({fill: 12, limit: null, label: 'Battery 12.0 percent'});
-    expect(vm.card?.soc.scale.limit).toBe('');
+    expect(vm.detail?.summary).toMatchObject({
+      charge: '12.0',
+      range: '',
+      soc: {fill: 12, limit: null, label: 'Battery 12.0 percent'},
+    });
+    expect(vm.detail?.summary.soc.scale.limit).toBe('');
+    expect(vm.detail?.summary.facts[0]).toEqual({text: 'Unplugged', tone: 'plain'});
     expect(vm.summary.line).toBe('Work · 12.0% · unplugged');
-    expect(vm.detail?.battery).toMatchObject({line: '', range: ''});
-    expect(vm.detail?.battery.tiles.map(tile => tile.label)).toEqual(['Plug', 'AC limit', 'Cabin']);
+    expect(vm.detail?.status.rows.map(row => row.label)).not.toContain('Full range');
   });
 
-  test('a car with nothing to say for its tracker, charge, odometer and sensors shows dashes and leaves its tiles out', () => {
+  test('a car with nothing to say for its tracker, charge, odometer and sensors shows dashes and leaves its rows out', () => {
     const vm = modelOf(
       carHouse({
         'sensor.soc': car('sensor', 'soc', 64), // no range
@@ -578,26 +554,21 @@ describe('the other shapes of a car', () => {
       }),
     );
     const detail = vm.detail!;
-    expect(vm.card).toMatchObject({where: '', line: 'plugged in'});
-    expect(vm.card?.tiles[2]).toMatchObject({label: 'Odometer', value: '–'});
     expect(vm.summary.line).toBe('64.0% · plugged in');
     expect(detail.sub).toBe('');
-    expect(detail.battery.tiles.map(tile => tile.label)).toEqual(['Plug']);
+    expect(detail.summary.facts).toEqual([{text: 'Plugged in', tone: 'plain'}]);
     expect(detail.status.tires.map(tire => [tire.psi, tire.state])).toEqual([
       ['–', null],
       ['–', null],
       ['–', null],
       ['–', null],
     ]);
-    expect(detail.status.chips).toEqual([]);
-    expect(detail.status.tiles).toEqual([]);
-    expect(detail.ford.rows).toEqual([
-      {kind: 'departure', title: 'Departure times off', body: 'No departure times saved.'},
-    ]);
+    expect(detail.status.rows).toEqual([]);
+    expect(detail.ford).toBeNull();
     expect(detail.last.title).toBe('Last plug-in');
   });
 
-  test('what is open, armed or in gear is a chip in the warning colour or Ford’s own word, lower case', () => {
+  test('what is open or unlocked is a fact in the warning colour; the alarm and the gear are Ford’s own word, lower case', () => {
     const vm = modelOf(
       carHouse({
         'sensor.doorstatus': car('sensor', 'doorstatus', 'OPEN', {driverFront: 'OPEN', hood: 'AJAR'}),
@@ -607,60 +578,25 @@ describe('the other shapes of a car', () => {
         'lock.doorlock': car('lock', 'doorlock', 'unlocked'),
       }),
     );
-    expect(vm.detail?.status.chips).toEqual([
-      {text: 'A door is open', good: false},
-      {text: 'A window is open', good: false},
-      {text: 'Hood or tailgate open', good: false},
-      {text: 'Unlocked', good: false},
-      {text: 'Alarm armed', good: true},
-      {text: 'Gear drive', good: true},
+    expect(vm.detail?.summary.facts.slice(1)).toEqual([
+      {text: 'A door is open', tone: 'warn'},
+      {text: 'A window is open', tone: 'warn'},
+      {text: 'Hood or tailgate open', tone: 'warn'},
+      {text: 'Unlocked', tone: 'warn'},
+      {text: 'Alarm armed', tone: 'plain'},
+      {text: 'Gear drive', tone: 'plain'},
     ]);
     const other = modelOf(carHouse({'sensor.alarm': car('sensor', 'alarm', 'ARMING')}), null, {language: 'fr'});
-    expect(other.detail?.status.chips.find(chip => chip.text.startsWith('Alarme'))?.text).toBe('Alarme arming');
-  });
-
-  test('the departure times off, with every day, or with a list of days, saved', () => {
-    const days = (...names: string[]) =>
-      car('sensor', 'departureschedules', 'ok', {
-        schedule: Object.fromEntries(names.map(name => [name, {timeOfDay: {hours: 17, minutes: 5}}])),
-      });
-    const week = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-    const departure = (schedule: ReturnType<typeof days>, on = 'off') =>
-      modelOf(
-        carHouse({'sensor.departureschedules': schedule, 'switch.departuretimes': car('switch', 'departuretimes', on)}),
-      ).detail!.ford.rows.at(-1);
-    expect(departure(days(...week))).toEqual({
-      kind: 'departure',
-      title: 'Departure times off',
-      body: 'Every day at 5:05 pm saved.',
-    });
-    expect(departure(days('monday', 'wednesday'), 'on')).toEqual({
-      kind: 'departure',
-      title: 'Departure times on',
-      body: 'Mon, Wed at 5:05 pm saved.',
-    });
-  });
-
-  test('the charger’s status is worded where the catalog knows it and shown as the sensor says it where not; no status is a dash', () => {
-    const word = (status: string | null, language: Language = 'en') => {
-      const house = carHouse();
-      if (status === null) delete house.states['sensor.charger_status'];
-      else house.states['sensor.charger_status'] = entity('sensor.charger_status', status);
-      return modelOf(house, null, {language}).card?.tiles[0].value;
-    };
-    expect(word('Connected: waiting for car demand', 'fr')).toBe('Branchée : en attente de la voiture');
-    expect(word('Something new', 'fr')).toBe('Something new');
-    expect(word(null)).toBe('–');
+    expect(other.detail?.summary.facts.find(fact => fact.text.startsWith('Alarme'))?.text).toBe('Alarme arming');
   });
 });
 
 describe('a house with no car', () => {
   const vm = modelOf(houseOf([], [entity('sensor.charger_power', '3', {unit_of_measurement: 'kW'})]));
 
-  test('has the line that says so for the phone and the card, and no card and no detail', () => {
+  test('has the line that says so for the phone, and no detail', () => {
     expect(vm).toEqual({
       summary: {title: 'Car', line: 'No FordPass car found.'},
-      card: null,
       detail: null,
       none: 'No FordPass car found.',
       error: null,
@@ -674,7 +610,7 @@ describe('a house with no car', () => {
 });
 
 describe('a history that did not load', () => {
-  test('says why in the household’s language, and the card and the detail are as they were without it', () => {
+  test('says why in the household’s language, and the detail is as it was without it', () => {
     const house = carHouse();
     expect(modelOf(house, null, {historyError: 'timeout'}).error).toBe(
       "History didn't load: timeout. Live values still update.",
@@ -682,7 +618,7 @@ describe('a history that did not load', () => {
     expect(modelOf(house, null, {historyError: 'timeout', language: 'fr'}).error).toBe(
       "L'historique n'a pas pu être chargé : timeout. Les valeurs en direct continuent de se mettre à jour.",
     );
-    expect(modelOf(house, null, {historyError: 'timeout'}).card?.daily).toBeNull();
+    expect(modelOf(house, null, {historyError: 'timeout'}).detail?.history.daily).toBeNull();
   });
 });
 
@@ -696,7 +632,7 @@ describe('the recorded house', () => {
     const hass = fakeHass.fromFixture('main');
     for (const language of ['en', 'fr'] as const) {
       const vm = modelOf(hass, null, {language, config: {}});
-      if (vm.card) expect(vm.detail?.title).toBe(vm.card.name);
+      if (vm.detail) expect(vm.detail.title).toBeTruthy();
       else expect(vm.none).toBeTruthy();
     }
   });

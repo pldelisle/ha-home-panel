@@ -1,5 +1,5 @@
 /* The pill button of a control panel: "Set all", "All off", the car's Lock. The Climate and Car controls adopt it in their own roots; no legacy markup draws it since #253,
-   but the legacy sheet still joins every kit file (ADR 0019), where the button's rules were, until phase 4. `.armed` is the ring a button wears while it waits for its second tap. */
+   but the legacy sheet still joins every kit file (ADR 0019), where the button's rules were, until phase 4. */
 .abtn {
   border: 0;
   border-radius: 999px;
@@ -12,9 +12,6 @@
   background: var(--card);
   color: var(--fg);
   box-shadow: var(--shadow);
-}
-.abtn.armed {
-  box-shadow: inset 0 0 0 2px var(--warn);
 }
 .abtn:focus-visible {
   outline: 2px solid var(--c-home);

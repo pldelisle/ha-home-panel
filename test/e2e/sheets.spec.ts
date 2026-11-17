@@ -4,7 +4,7 @@
 // (the events of src/ui/events.ts, dispatched from inside the panel's root).
 import {test, expect, tabletOnly, phoneOnly, type House} from './fixtures';
 import {FULL_CFG, VIEWPORTS} from './houses';
-import {OFFICE_TILE} from './lights';
+import {OFFICE_ROW} from './lights';
 import {openPopup} from './live';
 
 test.use({houseOpts: {cfg: FULL_CFG}});
@@ -18,7 +18,7 @@ const lightSheet = (house: House) => house.root().locator('#sh-light');
 // Energy's detail is an element's sheet (#240): its panel (the ARIA dialog) is in the page only while the sheet is open
 const energySheet = (house: House) => house.root().getByRole('dialog', {name: 'Home energy'});
 const moreSheet = (house: House) => house.root().locator('hp-more-sheet .sheet');
-const officeTile = (house: House) => house.root().locator(`${OFFICE_TILE}:visible`);
+const officeTile = (house: House) => house.root().locator(`${OFFICE_ROW}:visible`);
 
 // the element that has focus, through every shadow root, as the tag, the class and the id or data attribute that name it
 const focused = (house: House) =>
@@ -57,7 +57,7 @@ test('Enter on a tile opens the light sheet, Close takes focus, and Escape hands
   expect(await focused(house)).toBe('button.close.ldone');
   await house.page.keyboard.press('Escape');
   await expect(lightSheet(house)).toBeHidden();
-  expect(await focused(house)).toMatch(/^div\.lcell.*\[office\]$/);
+  expect(await focused(house)).toMatch(/^button\.lrow\[office\]$/);
 });
 
 test('Done hands focus back to the tile as well', async ({house}) => {
@@ -65,7 +65,7 @@ test('Done hands focus back to the tile as well', async ({house}) => {
   await house.page.keyboard.press('Enter');
   await house.root().locator('#sh-light .ldone').click();
   await expect(lightSheet(house)).toBeHidden();
-  expect(await focused(house)).toMatch(/^div\.lcell.*\[office\]$/);
+  expect(await focused(house)).toMatch(/^button\.lrow\[office\]$/);
 });
 
 test('on a tablet the energy tile shows the Energy pane with its panel inline, and opens no sheet over the page', async ({
@@ -117,8 +117,8 @@ test('a tap on the scrim and the Close button close a phone sheet', async ({hous
 test('Escape with the Status checks and a sheet both open closes the sheet first', async ({house}) => {
   await house.tab('lights');
   const popup = await openPopup(house);
-  await officeTile(house).focus();
-  await house.page.keyboard.press('Enter'); // a key, not a tap: a tap elsewhere would close the popup by itself
+  // asked for the way the tile asks, not by a key or a tap on it: either is a click, and a click elsewhere closes the popup by itself
+  await dispatch(house, 'sheet-request', {id: 'lights.room', detail: {key: 'office'}});
   await expect(lightSheet(house)).toBeVisible();
   await expect(popup).toBeVisible();
   await house.page.keyboard.press('Escape');
@@ -133,8 +133,7 @@ test('Escape with the settings popup and a sheet both open closes the sheet firs
   await house.root().locator('#gear').click();
   const popup = house.root().locator('#setpop');
   await expect(popup).toBeVisible();
-  await officeTile(house).focus();
-  await house.page.keyboard.press('Enter');
+  await dispatch(house, 'sheet-request', {id: 'lights.room', detail: {key: 'office'}});
   await expect(lightSheet(house)).toBeVisible();
   await house.page.keyboard.press('Escape');
   await expect(lightSheet(house)).toBeHidden();
@@ -176,17 +175,18 @@ test('a toast asked for from an element shows, and a sticky one stays until it i
   await expect(toast).toContainText('It did not work');
 });
 
-test('the shape changing from a tablet to a phone moves the Car detail from the pane into its sheet, and back', async ({
+test('the shape changing from a tablet to a phone keeps the Car detail inline in the tab, under the phone’s header, and back', async ({
   house,
 }) => {
-  // Car's detail is an element's now (#252): inline in the pane on a tablet, in its sheet (closed, so empty) on a phone; Energy's version is the fixme below, until #333
+  // Car's detail is an element's (#252): inline in the tab on a tablet and, since the Car rework, on a phone too (its sheet is the Home tile's); Energy's version is the fixme below, until #333
   tabletOnly();
   await house.tab('car');
   const detail = house.root().locator('#pane-car hp-car-detail');
   await expect(detail).toBeVisible();
   await house.page.setViewportSize(VIEWPORTS.phone);
-  await expect(detail).toHaveCount(0);
-  await expect(house.root().locator('#pane-car hp-car-pane hp-sheet .sheet')).toBeHidden();
+  await expect(detail).toHaveCount(1);
+  await expect(detail).toBeVisible();
+  await expect(house.root().locator('#pane-car hp-car-pane hp-sheet.detail .sheet')).toBeHidden();
   await house.page.setViewportSize(VIEWPORTS.tablet);
   await expect(detail).toBeVisible();
   await expect(detail.locator('hp-pane-header [slot="sub"]')).not.toBeEmpty();
@@ -294,4 +294,31 @@ test.describe('<hp-sheet>', () => {
     // the line is slotted: the sheet's child, not its panel's
     await expect(house.page.locator('#probe').getByText('A line under it', {exact: true})).toBeVisible();
   });
+});
+
+// A sheet is `position: fixed` and covers the screen: no ancestor may become its containing block. The pane's entrance animation once kept an
+// identity transform after it ended (`animation-fill-mode: both`), which trapped every sheet a phone tab opened in the pane's box (docs/apple-hig-audit-tabs-2026-11-17.md, finding 1).
+test('on a phone a sheet opened from a tab covers the screen, its backdrop from top to bottom', async ({house}) => {
+  phoneOnly();
+  // the suite runs with Reduce Motion (playwright.config.ts), which has no entrance animation and so never had the bug: motion is on here, as on most phones
+  await house.page.emulateMedia({reducedMotion: 'no-preference'});
+  for (const [tab, room] of [
+    ['climate', 'Bedroom'],
+    ['lights', 'Kitchen'],
+  ] as const) {
+    await house.tab(tab);
+    await house.root().locator(`#pane-${tab}`).getByText(room).first().click();
+    const sheet = house.root().locator(`#pane-${tab} .sheet`).filter({visible: true}).first();
+    await expect(sheet).toBeVisible();
+    const box = await sheet.boundingBox();
+    const viewport = house.page.viewportSize()!;
+    expect(box, `${tab}: the sheet's backdrop`).toMatchObject({
+      x: 0,
+      y: 0,
+      width: viewport.width,
+      height: viewport.height,
+    });
+    await house.page.keyboard.press('Escape');
+    await expect(sheet).toBeHidden();
+  }
 });

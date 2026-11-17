@@ -90,8 +90,8 @@ describe('the full test house, in English', () => {
       muted: false,
       sourceLabel: 'Netflix',
       status: 'On',
-      statusLine: 'On · Netflix',
-      screenLabel: 'Netflix',
+      nowOn: 'Now on Netflix',
+      powerLabel: 'Turn the TV off',
       switchLabel: 'Samsung TV power',
       controlsLabel: 'Volume and playback',
       hint: "The TV doesn't report its volume, so there's no slider.",
@@ -187,7 +187,8 @@ describe('the full test house, in French', () => {
     expect(vm.tv).toMatchObject({
       name: 'Samsung TV',
       status: 'Activé',
-      statusLine: 'Activé · Netflix',
+      nowOn: 'Sur Netflix en ce moment',
+      powerLabel: 'Éteindre la télé',
       switchLabel: 'Samsung TV : alimentation',
       controlsLabel: 'Volume et lecture',
       // the layer has no entry for this line: the French pane reads it in English
@@ -247,15 +248,15 @@ describe('the recorded house', () => {
 });
 
 describe('the television', () => {
-  test('is off: no source, a screen with no label, the switch unchecked', () => {
+  test('is off: no source, no "Now on" line, the switch unchecked and the power button offering to turn it on', () => {
     const vm = tvOnly({state: 'off'});
     expect(vm.tv).toMatchObject({
       on: false,
       available: true,
       status: 'Off',
-      statusLine: 'Off',
       sourceLabel: '',
-      screenLabel: null,
+      nowOn: null,
+      powerLabel: 'Turn the TV on',
     });
     expect(vm.summary).toBe('TV off');
     expect(vm.tiles[0]).toMatchObject({subLine: 'Off', on: false, control: {checked: false}});
@@ -264,12 +265,12 @@ describe('the television', () => {
   test('says its input in the sub-line with the dash cut and the full-width ampersand kept, where the box makes it plain', () => {
     const vm = tvOnly({source: 'Prime&Co', summarySource: 'Prime＆Co'});
     expect(vm.summary).toBe('TV on · Prime＆Co');
-    expect(vm.tv).toMatchObject({sourceLabel: 'Prime&Co', statusLine: 'On · Prime&Co'});
+    expect(vm.tv).toMatchObject({sourceLabel: 'Prime&Co', nowOn: 'Now on Prime&Co'});
   });
 
-  test('is on with no input: the screen says On', () => {
+  test('is on with no input: no "Now on" line', () => {
     const vm = tvOnly({source: null, summarySource: null});
-    expect(vm.tv).toMatchObject({status: 'On', statusLine: 'On', screenLabel: 'On', sourceLabel: ''});
+    expect(vm.tv).toMatchObject({status: 'On', nowOn: null, sourceLabel: ''});
     expect(vm.summary).toBe('TV on');
     expect(vm.tiles[0].subLine).toBe('On');
   });
@@ -287,18 +288,17 @@ describe('the television', () => {
     expect(vm.tiles[0].control).toMatchObject({disabled: false});
   });
 
-  test('is muted: the status says it, and so does the line over its input', () => {
+  test('is muted: the status says it, and the input keeps its own line', () => {
     expect(tvOnly({muted: true, source: null, summarySource: null}).tv).toMatchObject({
       muted: true,
       status: 'On · muted',
-      statusLine: 'On · muted',
     });
-    expect(tvOnly({muted: true}).tv).toMatchObject({status: 'On · muted', statusLine: 'On · muted · Netflix'});
+    expect(tvOnly({muted: true}).tv).toMatchObject({status: 'On · muted', nowOn: 'Now on Netflix'});
   });
 
-  test('is muted, in French: the layer leaves "muted" in English over an input, and words it alone', () => {
-    expect(tvOnly({muted: true, source: null, summarySource: null}, 'fr').tv?.statusLine).toBe('Allumé · en sourdine');
-    expect(tvOnly({muted: true}, 'fr').tv?.statusLine).toBe('Activé · muted · Netflix');
+  test('is muted, in French: the status is worded the same with or without an input', () => {
+    expect(tvOnly({muted: true, source: null, summarySource: null}, 'fr').tv?.status).toBe('Allumé · en sourdine');
+    expect(tvOnly({muted: true}, 'fr').tv?.status).toBe('Allumé · en sourdine');
   });
 
   test('takes the default name of its source when the household named it nothing', () => {
@@ -457,7 +457,13 @@ describe('the brief line under More', () => {
 describe('the model applies the held values the overlay gives', () => {
   test('a television held as off is off in the box, the tile, and the switch', () => {
     const vm = tvOnly({}, 'en', holding({'media_player.tv:on': false}));
-    expect(vm.tv).toMatchObject({on: false, status: 'Off', screenLabel: null, sourceLabel: ''});
+    expect(vm.tv).toMatchObject({
+      on: false,
+      status: 'Off',
+      nowOn: null,
+      sourceLabel: '',
+      powerLabel: 'Turn the TV on',
+    });
     expect(vm.tiles[0]).toMatchObject({on: false, subLine: 'Off', control: {checked: false}});
   });
 

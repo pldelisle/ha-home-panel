@@ -59,11 +59,11 @@ describe('toMermaid', () => {
   const graph: Graph = {
     nodes: [
       node('t', 'stadium'),
-      node('g', 'circle', {k: '', label: 'ANY', sub: ''}),
+      node('g', 'circle', {k: '', label: 'Any', sub: ''}),
       node('c', 'round', {cls: 'no', k: ''}),
       node('d', 'diamond', {cls: 'run'}),
       node('s', 'sub', {cls: 'off', sub: '', label: 'x'.repeat(70)}),
-      node('x', 'stop', {cls: 'stopn', k: '', label: 'STOP', sub: ''}),
+      node('x', 'stop', {cls: 'stopn', k: '', label: 'Stop', sub: ''}),
     ],
     edges: [
       {from: 't', to: 'g', label: '', cls: 'on'},
@@ -77,11 +77,10 @@ describe('toMermaid', () => {
     waiting: true,
   };
   const lines = toMermaid(graph, TOKENS, false).split('\n');
-  const word = (k: string) =>
-    `<span style='font-size:11px;font-weight:800;letter-spacing:.1em;opacity:.65'>${k}</span><br/>`;
+  const word = (k: string) => `<span style='font-size:11px;font-weight:800;opacity:.65'>${k}</span><br/>`;
   const text = (t: string) => `<span style='font-size:12px;font-weight:700'>${t}</span>`;
   const sub = `<br/><span style='font-size:11px;font-weight:500;opacity:.75'>${SAFE}</span>`;
-  const gate = (t: string) => `<span style='font-size:11px;font-weight:800;letter-spacing:.08em'>${t}</span>`;
+  const gate = (t: string) => `<span style='font-size:11px;font-weight:800'>${t}</span>`;
 
   test('left to right, or top to bottom when compact', () => {
     expect(lines[0]).toBe('flowchart LR');
@@ -89,12 +88,12 @@ describe('toMermaid', () => {
   });
   test('a line per node in its shape, its word, its sentence cut to 64 and its sub, all escaped', () => {
     expect(lines.slice(1, 7)).toEqual([
-      `  t(["${word('STEP')}${text(SAFE)}${sub}"]):::hit;`,
-      `  g(("${gate('ANY')}")):::hit;`,
+      `  t(["${word('Step')}${text(SAFE)}${sub}"]):::hit;`,
+      `  g(("${gate('Any')}")):::hit;`,
       `  c("${text(SAFE)}${sub}"):::no;`,
-      `  d{{"${word('STEP')}${text(SAFE)}${sub}"}}:::run;`,
-      `  s[["${word('STEP')}${text(`${'x'.repeat(63)}…`)}"]]:::off;`,
-      `  x(["${gate('STOP')}"]):::stopn;`,
+      `  d{{"${word('Step')}${text(SAFE)}${sub}"}}:::run;`,
+      `  s[["${word('Step')}${text(`${'x'.repeat(63)}…`)}"]]:::off;`,
+      `  x(["${gate('Stop')}"]):::stopn;`,
     ]);
   });
   test('a line per edge, dotted when not taken, its label escaped', () => {

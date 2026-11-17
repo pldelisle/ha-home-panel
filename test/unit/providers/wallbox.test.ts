@@ -32,6 +32,7 @@ describe('the test house', () => {
       pause: {id: 'switch.charger_pause', on: true, available: true},
       lock: {id: 'lock.charger_lock', on: false, available: true},
       price: null,
+      statusSince: Date.parse('2026-11-07T18:00:00.000Z'),
     });
   });
 });
@@ -52,6 +53,12 @@ describe('the recorded house', () => {
 });
 
 describe('the reading', () => {
+  test('the status sensor’s last change is when the charger began to say what it says, unavailable included; none without the sensor', () => {
+    const since = {...entity('sensor.status', 'unavailable'), last_changed: '2026-11-07T18:38:00+00:00'};
+    expect(read(entity('sensor.power', '0'), since).statusSince).toBe(Date.parse('2026-11-07T18:38:00+00:00'));
+    expect(read(entity('sensor.power', '0')).statusSince).toBeNull();
+  });
+
   test('a charger in watts reads in kW', () => {
     expect(
       read(entity('sensor.power', '7200', {unit_of_measurement: 'W'}), entity('sensor.status', 'Charging')),

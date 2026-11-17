@@ -1,13 +1,18 @@
-// The Car tab (spec 21, #251 to #253): <hp-car-pane>, <hp-car-card>, <hp-car-detail> and the control cards, <hp-charger-controls> and <hp-car-comfort>. On a phone the pane is the header with the car's name and its summary line and the card, which opens the
-// detail in a sheet; on a tablet the tab is the detail, inline. The test house has a car at 64 percent with 280 km of range, locked and charging, a limit of 90 percent, and a Wallbox that says Charging.
+// The Car tab (spec 21, #251 to #253, reworked after docs/apple-hig-audit-car-2026-11-17.md): <hp-car-pane> and <hp-car-detail> with the summary, the actions row, the charger, the departure and
+// the charging history's rows (each opening a sheet), the status and Ford's messages. The tab shows the detail inline on a phone as on a tablet; the phone's sheet is only for the Home tile and the
+// live pill. The test house has a car at 64 percent with 280 km of range, locked and charging, a limit of 90 percent, and a Wallbox that says Charging (32 A of 6 to 40, unlocked).
 import AxeBuilder from '@axe-core/playwright';
-import {test, expect, expectCall, isPhone, phoneOnly, tabletOnly, type House} from './fixtures';
+import {test, expect, expectCall, phoneOnly, tabletOnly, type House} from './fixtures';
 import {AFTERNOON, FULL_CFG} from './houses';
 
 test.use({houseOpts: {cfg: FULL_CFG}});
 
 const pane = (house: House) => house.root().locator('#pane-car hp-car-pane');
-const card = (house: House) => pane(house).locator('hp-car-card');
+const detail = (house: House) => pane(house).locator('hp-car-detail');
+const summary = (house: House) => detail(house).locator('hp-car-summary');
+const history = (house: House) => detail(house).locator('hp-car-history');
+/** The charging history's sheet: the pane draws it (the kit's `<hp-sheet>`), and what it holds only while it is open. */
+const historySheet = (house: House) => pane(house).locator('hp-car-history-sheet');
 /** How long the history is kept before the tab asks again (the statistics cache's own, spec 21). */
 const FIFTEEN_MINUTES = 15 * 60_000;
 const STATISTICS = 'recorder/statistics_during_period';
@@ -24,11 +29,15 @@ const windowReads = async (house: House) => {
     days: asked.filter(m => m.period === 'day' && ids(m.statistic_ids) === ids([GRID, CHARGER])).length,
   };
 };
+const settle = (house: House) =>
+  house.page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+/** The history row says how the year went once the history is in. */
+const historyLoaded = (house: House) => expect(history(house).locator('.hist .tx small')).not.toBeEmpty();
 
 test.describe('on a phone', () => {
   test.beforeEach(() => phoneOnly());
 
-  test('the card shows the house’s charge, range, lock, charger state and odometer, and the header says where the car is', async ({
+  test('the tab is the detail, inline, under the header that says where the car is: no card and no sheet', async ({
     house,
   }) => {
     await house.tab('car');
@@ -36,30 +45,16 @@ test.describe('on a phone', () => {
     await expect(pane(house).locator(':scope > hp-pane-header > [slot="sub"]')).toHaveText(
       'Parked at home · 64.0% · 280 km · charging',
     );
-    await expect(card(house).locator('.clbl')).toHaveText('Car');
-    await expect(card(house).locator('.cright')).toHaveText('Parked at home›');
-    await expect(card(house).locator('.hero .v')).toHaveText('64.0%');
-    await expect(card(house).locator('.cline')).toHaveText('280 km range · locked · charging');
-    await expect(card(house).locator('.socbar')).toHaveAttribute(
+    await expect(detail(house)).toBeVisible();
+    await expect(pane(house).locator('hp-car-card')).toHaveCount(0);
+    await expect(pane(house).locator('hp-sheet .sheet:visible')).toHaveCount(0);
+    await expect(summary(house).locator('.carhero .t')).toHaveText('64.0%');
+    await expect(summary(house).locator('.socbar')).toHaveAttribute(
       'aria-label',
       'Battery 64.0 percent, charge limit 90 percent',
     );
-    await expect(card(house).locator('.socscale')).toHaveText('0%Limit 90%');
-    await expect(card(house).locator('.tile .k')).toHaveText(['Charger', 'Last charge', 'Odometer']);
-    await expect(card(house).locator('.tile .v').first()).toHaveText('Charging');
-    await expect(card(house).locator('.tile .v').last()).toHaveText('12,000km');
-  });
-
-  test('the bars draw once the statistics arrive: thirty of them, each with its day, and the line that counts the charging days', async ({
-    house,
-  }) => {
-    await house.tab('car');
-    await expect(card(house).locator('.spark rect')).toHaveCount(30);
-    await expect(card(house).locator('.spark rect title').first()).toHaveText(/^[A-Z][a-z]{2} \d{1,2}: \d+\.\d kWh$/);
-    await expect(card(house).locator('.spark')).toHaveAttribute('aria-label', /^Daily kWh bars, highest \d+\.\d kWh$/);
-    await expect(card(house).locator('.cnote')).toHaveText(
-      /^Daily EV energy, last 30 days: \d+ charging days?, [\d,]+ kWh\.$/,
-    );
+    await expect(summary(house).locator('.socscale')).toHaveText('0%Limit 90% · set in FordPass100%');
+    await expect(summary(house).locator('.facts li')).toHaveText(['Charging', 'Locked']);
   });
 
   // spec 21, "Performance": the Wallbox's year is the legacy panel's shared load too and the cache answers the second; the grid's and the charger's days are the Car's alone
@@ -68,15 +63,11 @@ test.describe('on a phone', () => {
   }) => {
     await expect.poll(() => windowReads(house), 'at start, before the tab').toEqual({hours: 1, days: 0});
     await house.tab('car');
-    await expect(card(house).locator('.spark rect')).toHaveCount(30);
+    await historyLoaded(house);
     await expect.poll(() => windowReads(house), 'when the tab is shown').toEqual({hours: 1, days: 1});
     await house.tab('home');
     await house.tab('car');
-    await expect(card(house).locator('.spark rect')).toHaveCount(30);
-    // a request that came late would show after a settle: the reads are polled, once the frames have passed
-    await house.page.evaluate(
-      () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))),
-    );
+    await settle(house);
     await house.page.waitForTimeout(250);
     await expect.poll(() => windowReads(house), 'when it is shown again').toEqual({hours: 1, days: 1});
   });
@@ -89,14 +80,12 @@ test.describe('on a phone', () => {
       house,
     }) => {
       await house.tab('car');
-      await expect(card(house).locator('.spark rect')).toHaveCount(30);
+      await historyLoaded(house);
       await expect.poll(() => windowReads(house), 'the first load').toEqual({hours: 1, days: 1});
       await house.clock.fastForward(FIFTEEN_MINUTES - 60_000);
       await house.tab('home');
       await house.tab('car');
-      await house.page.evaluate(
-        () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))),
-      );
+      await settle(house);
       await house.page.waitForTimeout(250);
       await expect.poll(() => windowReads(house), 'a minute short of fifteen').toEqual({hours: 1, days: 1});
       await house.clock.fastForward(2 * 60_000);
@@ -106,50 +95,18 @@ test.describe('on a phone', () => {
     });
   });
 
-  test('a recorder that is down puts the reason under the card, and the live values still draw', async ({house}) => {
+  test('a recorder that is down puts the reason on the history row, and the live values still draw', async ({
+    house,
+  }) => {
     await house.page.evaluate(() => window.house.failStatistics('day'));
     await house.tab('car');
-    await expect(card(house).locator('.cerr')).toHaveText(
+    await expect(history(house).locator('.hist .err')).toHaveText(
       "History didn't load: the recorder is down. Live values still update.",
     );
-    await expect(card(house).locator('.hero .v')).toHaveText('64.0%');
-    await expect(card(house).locator('.spark')).toHaveCount(0);
+    await expect(summary(house).locator('.carhero .t')).toHaveText('64.0%');
     // the failure is logged once, and the fixture would fail on it
     expect(house.errors).toEqual([expect.stringContaining('home-panel car history')]);
     house.errors.length = 0;
-  });
-
-  test('a tap on the card, and Enter on it, open the detail in a sheet over the page, and Close shuts it', async ({
-    house,
-  }) => {
-    await house.tab('car');
-    const sheet = pane(house).locator('hp-sheet .sheet');
-    await expect(sheet).toBeHidden();
-    await card(house).locator('.box').click();
-    await expect(sheet).toBeVisible();
-    await expect(pane(house).locator('hp-sheet hp-car-detail')).toHaveCount(1);
-    await pane(house).locator('hp-sheet .close').click();
-    await expect(sheet).toBeHidden();
-    // a closed sheet holds no detail, so no chart and no request is made for it
-    await expect(pane(house).locator('hp-sheet hp-car-detail')).toHaveCount(0);
-    await card(house).locator('.box').focus();
-    await house.page.keyboard.press('Enter');
-    await expect(sheet).toBeVisible();
-  });
-
-  test('the sheet shows the same blocks as the tablet, and the charger’s and comfort’s cards between them, from the sheet’s first draw', async ({
-    house,
-  }) => {
-    await house.tab('car');
-    await card(house).locator('.box').click();
-    const detail = pane(house).locator('hp-car-detail');
-    await expect(detail.locator('hp-car-battery h3')).toHaveText('Battery');
-    await expect(detail.locator('hp-car-status h3')).toHaveText('Car status');
-    await expect(detail.locator('hp-car-sessions h3')).toHaveText('Charging history');
-    await expect(detail.locator('hp-car-ford h3')).toHaveText('From Ford');
-    await expect(detail.locator('hp-car-last-plug h3')).toHaveText('Last plug-in'); // Ford has reported no plug-in in the test house
-    await expect(detail.locator('hp-charger-controls h3')).toHaveText('Home charger');
-    await expect(detail.locator('hp-car-comfort h3')).toHaveText('Comfort and access');
   });
 
   test('the detail opens from Home’s car tile on a phone, over Home, with the history asked for it', async ({
@@ -157,85 +114,55 @@ test.describe('on a phone', () => {
   }) => {
     await house.tab('home');
     await house.root().locator('[data-opens="car.detail"]').first().click();
-    await expect(pane(house).locator('hp-sheet .sheet')).toBeVisible();
-    await expect(pane(house).locator('hp-car-sessions .stiles .tile')).toHaveCount(4);
+    const sheet = pane(house).locator('hp-sheet.detail .sheet');
+    await expect(sheet).toBeVisible();
+    await expect(pane(house).locator('hp-sheet hp-car-summary .carhero .t')).toHaveText('64.0%');
     await expect.poll(() => windowReads(house)).toEqual({hours: 1, days: 1});
   });
 
-  // the cards are elements of the detail, so they take a tap in the phone's sheet as they do inline on a tablet
-  test('the charger card in the phone’s sheet takes a tap and sends its service call', async ({house}) => {
+  test('the charger takes a tap on the phone’s tab and sends its service call', async ({house}) => {
     await house.tab('car');
-    await card(house).locator('.box').click();
-    const amps = pane(house).locator('hp-charger-controls hp-seg button', {hasText: '32 A'});
-    await expect(amps).toBeVisible();
+    const amps = detail(house).locator('hp-charger-controls hp-seg button', {hasText: '24 A'});
     await amps.click();
-    await expectCall(house, /^number\.set_value \{"entity_id":"number\.charger_max_current","value":32\}$/);
+    await expectCall(house, /^number\.set_value \{"entity_id":"number\.charger_max_current","value":24\}$/);
     await expect(amps).toHaveAttribute('aria-checked', 'true');
   });
 
-  test('a photo that does not load is asked for once: the sheet opened again, from Home or the tab, tries it no more', async ({
+  test('a photo that does not load gives way to the drawn car for the panel’s life, and a new picture is not tried', async ({
     house,
   }) => {
     const asked: string[] = [];
     house.page.on('request', request => {
       if (request.url().includes('/missing/')) asked.push(new URL(request.url()).pathname);
     });
-    await house.setState(PICTURE, {state: 'unknown', attributes: {entity_picture: '/missing/photo.png'}});
     await house.tab('car');
-    await expect.poll(() => asked, 'the card tries the photo').toEqual(['/missing/photo.png']);
-    const sheet = pane(house).locator('hp-sheet .sheet');
-    for (let opening = 0; opening < 2; opening++) {
-      await card(house).locator('.box').click();
-      await expect(sheet).toBeVisible();
-      await expect(pane(house).locator('hp-car-battery .carside')).toBeVisible();
-      await expect(pane(house).locator('hp-car-battery img.carimg')).toHaveCount(0);
-      await pane(house).locator('hp-sheet .close').click();
-      await expect(sheet).toBeHidden();
-    }
+    await expect(summary(house).locator('.carside')).toBeVisible();
+    await house.setState(PICTURE, {state: 'unknown', attributes: {entity_picture: '/missing/first.png'}});
+    await expect.poll(() => asked, 'the first picture is tried').toEqual(['/missing/first.png']);
+    await expect(summary(house).locator('.carside')).toBeVisible();
+    await expect(summary(house).locator('img.carimg')).toHaveCount(0);
+    // Home Assistant sends the picture again at another address: the broken one is not retried, nor is the new one
+    await house.setState(PICTURE, {state: 'unknown', attributes: {entity_picture: '/missing/second.png'}});
     await house.tab('home');
     await house.tab('car');
-    await expect(card(house).locator('.carside')).toBeVisible();
+    await settle(house);
     await house.page.waitForTimeout(250);
-    expect(asked, 'the photo asked for across two openings and a second visit').toEqual(['/missing/photo.png']);
+    expect(asked, 'the pictures asked for').toEqual(['/missing/first.png']);
+    await expect(summary(house).locator('img.carimg')).toHaveCount(0);
   });
 
   test('a light change gives zero mutations in the pane', async ({house}) => {
     await house.tab('car');
-    await expect(card(house).locator('.spark rect')).toHaveCount(30);
+    await historyLoaded(house);
     await house.mutations.reset();
     await house.setState('light.living_room_1', {attributes: {brightness: 100}});
-    await house.page.evaluate(
-      () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))),
-    );
-    expect(await house.mutations.count('hp-car-pane, hp-car-card'), 'mutations').toBe(0);
-  });
-
-  test('a photo that does not load gives way to the drawn car for the card’s life, and a new picture is not tried', async ({
-    house,
-  }) => {
-    const asked: string[] = [];
-    house.page.on('request', request => {
-      if (request.url().includes('/missing/')) asked.push(new URL(request.url()).pathname);
-    });
-    await house.tab('car');
-    await expect(card(house).locator('.carside')).toBeVisible();
-    await house.setState(PICTURE, {state: 'unknown', attributes: {entity_picture: '/missing/first.png'}});
-    await expect.poll(() => asked, 'the first picture is tried').toEqual(['/missing/first.png']);
-    await expect(card(house).locator('.carside')).toBeVisible();
-    await expect(card(house).locator('img.carimg')).toHaveCount(0);
-    // Home Assistant sends the picture again at another address: the broken one is not retried, nor is the new one
-    await house.setState(PICTURE, {state: 'unknown', attributes: {entity_picture: '/missing/second.png'}});
-    await house.page.evaluate(
-      () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))),
-    );
-    await house.page.waitForTimeout(250);
-    expect(asked, 'the pictures asked for').toEqual(['/missing/first.png']);
-    await expect(card(house).locator('img.carimg')).toHaveCount(0);
+    await settle(house);
+    expect(await house.mutations.count('hp-car-pane, hp-car-detail, hp-car-summary'), 'mutations').toBe(0);
   });
 
   test('the tab has no serious or critical accessibility finding', async ({house}) => {
     await house.tab('car');
-    await expect(card(house).locator('.spark rect')).toHaveCount(30);
+    await historyLoaded(house);
     const {violations} = await new AxeBuilder({page: house.page}).include('home-panel').analyze();
     expect(violations.filter(v => v.impact === 'serious' || v.impact === 'critical').map(v => v.id)).toEqual([]);
   });
@@ -244,10 +171,9 @@ test.describe('on a phone', () => {
 test.describe('on a tablet', () => {
   test.beforeEach(() => tabletOnly());
 
-  const detail = (house: House) => pane(house).locator('hp-car-detail');
   /** every element of the detail that has a shadow root of its own, for the mutation counter */
   const DETAIL_HOSTS =
-    'hp-car-pane, hp-car-detail, hp-car-battery, hp-car-status, hp-car-sessions, hp-car-ford, hp-car-last-plug, hp-charger-controls, hp-car-comfort, hp-switch-row, hp-seg';
+    'hp-car-pane, hp-car-detail, hp-car-summary, hp-car-actions, hp-car-status, hp-car-departure, hp-car-history, hp-car-ford, hp-charger-controls, hp-switch, hp-seg';
 
   test('the tab is the detail, inline, with its own header and no card', async ({house}) => {
     await house.tab('car');
@@ -265,28 +191,29 @@ test.describe('on a tablet', () => {
     await house.root().locator('#htiles [data-pane="car"]').click();
     await expect(house.root().locator('#pane-car')).toBeVisible();
     await expect(detail(house)).toBeVisible();
-    await expect(detail(house).locator('hp-pane-header h2')).toHaveText('Car');
     await expect(house.root().locator('hp-sheet .sheet:visible')).toHaveCount(0);
   });
 
-  test('the detail shows the car’s battery, tires and chips, and the departure line, from the house’s entities', async ({
+  test('the detail shows each fact once: the summary, the tires and the odometer, the departure row, and no message from Ford', async ({
     house,
   }) => {
     await house.tab('car');
     const d = detail(house);
-    await expect(d.locator('hp-car-battery .carhero .t')).toHaveText('64.0%');
-    await expect(d.locator('hp-car-battery .autonomy')).toHaveText('280 km range');
-    await expect(d.locator('hp-car-battery .socscale')).toHaveText('0%Charge limit 90%100%');
-    await expect(d.locator('hp-car-battery .tile .k', {hasText: 'Plug'})).toHaveCount(1);
+    await expect(d.locator('hp-car-summary .carhero .t')).toHaveText('64.0%');
+    await expect(d.locator('hp-car-summary .autonomy')).toHaveText('280 km range');
+    await expect(d.locator('hp-car-summary .socscale')).toHaveText('0%Limit 90% · set in FordPass100%');
     await expect(d.locator('hp-car-status .tp .k')).toHaveText([
       'Front left',
       'Front right',
       'Rear left',
       'Rear right',
     ]);
-    await expect(d.locator('hp-car-status .clear span').first()).toBeVisible();
     await expect(d.locator('hp-car-status svg[role="img"]')).toHaveAttribute('aria-label', 'Car seen from above');
-    await expect(d.locator('hp-car-ford .arow').last().locator('b')).toHaveText(/^Departure times (on|off)$/);
+    await expect(d.locator('hp-car-status .vrow', {hasText: 'Odometer'})).toContainText('12,000');
+    await expect(d.locator('hp-car-departure .open b')).toHaveText('Departure');
+    await expect(d.locator('hp-car-ford')).toHaveCount(0);
+    // the read-only charge limit is the bar's, not a control
+    await expect(d.getByRole('radiogroup', {name: /Charge limit/})).toHaveCount(0);
   });
 
   // twelve runs of charging twelve hours apart, each three hours at 7.2 kW (the recorder's hourly rows go back a week): the rule keeps a run of at least one kWh as a session
@@ -298,39 +225,40 @@ test.describe('on a tablet', () => {
       },
     });
 
-    test('the sessions table shows the latest ten, “Show all 12 sessions” shows every one, and “Show the latest 10” goes back', async ({
+    test('the history row counts them, and its sheet, the host’s, shows the latest ten, all twelve, and the latest ten again', async ({
       house,
     }) => {
       await house.tab('car');
-      const sessions = detail(house).locator('hp-car-sessions');
+      await expect(history(house).locator('.hist .tx small')).toHaveText(/^12 sessions · \d+ kWh$/);
+      await history(house).locator('.hist').click();
+      const sessions = historySheet(house).locator('hp-car-sessions');
       const rows = sessions.locator('tbody tr');
       const toggle = sessions.locator('.showall');
       await expect(sessions.locator('.stiles .tile .v').first()).toHaveText('12');
       await expect(rows).toHaveCount(10);
       await expect(toggle).toHaveText('Show all 12 sessions');
-      const newest = await rows.first().locator('td').first().textContent();
       await toggle.click();
       await expect(rows).toHaveCount(12);
       await expect(toggle).toHaveText('Show the latest 10');
-      await expect(rows.first().locator('td').first()).toHaveText(newest ?? '');
       await toggle.click();
       await expect(rows).toHaveCount(10);
-      await expect(toggle).toHaveText('Show all 12 sessions');
+      // the bars of the last 30 days and the monthly chart, in the charger's colour
+      await expect(historySheet(house).locator('.spark rect')).toHaveCount(30);
+      await expect(sessions.locator('hp-chart .apexcharts-bar-area').first()).toBeVisible();
+      // Done closes the sheet, and its charts go with it; Escape does too, the host's one key for the sheet open
+      await pane(house).getByRole('button', {name: 'Done'}).click();
+      await expect(historySheet(house)).toHaveCount(0);
+      await history(house).locator('.hist').click();
+      await expect(historySheet(house).locator('hp-car-sessions')).toBeVisible();
+      await house.page.keyboard.press('Escape');
+      await expect(historySheet(house)).toHaveCount(0);
     });
-  });
-
-  test('the monthly chart draws from the sessions, in the charger’s colour', async ({house}) => {
-    await house.tab('car');
-    const chart = detail(house).locator('hp-car-sessions hp-chart');
-    await expect(chart.locator('.apexcharts-bar-area').first()).toBeVisible();
   });
 
   test('the tab asks for both windows when it is shown, the detail being drawn from them', async ({house}) => {
     await house.tab('car');
-    await expect(detail(house).locator('hp-car-sessions tbody tr').first()).toBeVisible();
-    await house.page.evaluate(
-      () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))),
-    );
+    await historyLoaded(house);
+    await settle(house);
     await house.page.waitForTimeout(250);
     await expect.poll(() => windowReads(house)).toEqual({hours: 1, days: 1});
   });
@@ -339,8 +267,7 @@ test.describe('on a tablet', () => {
     house,
   }) => {
     await house.tab('car');
-    await expect(detail(house).locator('hp-car-sessions tbody tr').first()).toBeVisible();
-    await expect(detail(house).locator('hp-car-sessions .apexcharts-bar-area').first()).toBeVisible();
+    await historyLoaded(house);
     await house.mutations.reset();
     await house.setState('light.living_room_1', {attributes: {brightness: 100}});
     // the legacy panel redraws once a second: more than two ticks pass, and the detail's blocks stay as they were
@@ -350,51 +277,45 @@ test.describe('on a tablet', () => {
 
   test('a change of one entity redraws only the block that shows it', async ({house}) => {
     await house.tab('car');
-    await expect(detail(house).locator('hp-car-status .tiles .tile').first()).toBeVisible();
+    await expect(detail(house).locator('hp-car-status .vrow').first()).toBeVisible();
     await house.mutations.reset();
     await house.setState('sensor.fordpass_test_odometer', {state: '12010'});
-    await expect(detail(house).locator('hp-car-status .tile', {hasText: 'Odometer'}).locator('.v')).toContainText(
-      '12,010',
-    );
+    await expect(detail(house).locator('hp-car-status .vrow', {hasText: 'Odometer'})).toContainText('12,010');
     await house.page.waitForTimeout(250);
     expect(await house.mutations.count('hp-car-status'), 'the status block').toBeGreaterThan(0);
     expect(
-      await house.mutations.count(
-        'hp-car-battery, hp-car-sessions, hp-car-ford, hp-car-last-plug, hp-charger-controls, hp-car-comfort',
-      ),
-      'the other blocks, the control cards too',
+      await house.mutations.count('hp-car-summary, hp-car-history, hp-car-ford, hp-charger-controls'),
+      'the other blocks',
     ).toBe(0);
   });
 
   test('the detail has no serious or critical accessibility finding', async ({house}) => {
     await house.tab('car');
-    await expect(detail(house).locator('hp-car-sessions tbody tr').first()).toBeVisible();
-    await expect(detail(house).locator('hp-car-sessions .apexcharts-bar-area').first()).toBeVisible();
+    await historyLoaded(house);
     const {violations} = await new AxeBuilder({page: house.page}).include('home-panel').analyze();
     expect(violations.filter(v => v.impact === 'serious' || v.impact === 'critical').map(v => v.id)).toEqual([]);
   });
 });
 
-// The controls (#253): the charger's card and the comfort and access card are elements of the detail, on a tablet inline and on a phone in the sheet, with every control in both. The test house has
-// the Wallbox (32 A of 6 to 40, charging, unlocked) and a locked car with none of the comfort switches, which these tests add as Ford's integration would.
+// The controls: the actions row, the charger and the departure, on a tablet and on a phone alike (the tab is the detail on both). The test house has a locked car with none of the comfort
+// switches, which these tests add as Ford's integration would.
 test.describe('the controls', () => {
   const IGNITION = 'switch.fordpass_test_ignition';
   const DEPARTURE = 'switch.fordpass_test_departuretimes';
   const SCHEDULE = 'sensor.fordpass_test_departureschedules';
 
-  const charger = (house: House) => pane(house).locator('hp-charger-controls');
-  const comfort = (house: House) => pane(house).locator('hp-car-comfort');
-  /** the detail on screen: a tablet's tab is it, a phone's card opens it in a sheet */
-  const openDetail = async (house: House) => {
-    await house.tab('car');
-    if (isPhone(house)) await card(house).locator('.box').click();
-    await expect(charger(house).locator('h3')).toHaveText('Home charger');
-  };
-  const button = (house: House, name: string | RegExp) => comfort(house).getByRole('button', {name});
-  const departureRow = (house: House) => comfort(house).locator('hp-switch-row');
+  const actions = (house: House) => detail(house).locator('hp-car-actions');
+  const charger = (house: House) => detail(house).locator('hp-charger-controls');
+  const departure = (house: House) => detail(house).locator('hp-car-departure');
+  const editor = (house: House) => departure(house).locator('dialog');
+  const action = (house: House, name: string | RegExp) => actions(house).getByRole('button', {name});
   const toast = (house: House) => house.root().locator('#toast');
   /** the service calls the panel has sent that start with `prefix`: a command the panel did not send is not in the list */
   const sent = (house: House, prefix: string) => house.calls.filter(c => c.startsWith(prefix));
+  const openTab = async (house: House) => {
+    await house.tab('car');
+    await expect(charger(house).locator('h3')).toHaveText('Home charger');
+  };
   /** the switches, the select and the horn of a car whose integration has them: a remote start that is off, the departure times off */
   const addComfort = async (house: House) => {
     await house.setState(IGNITION, {state: 'off'});
@@ -407,57 +328,39 @@ test.describe('the controls', () => {
     await house.setState(DEPARTURE, {state: 'off'});
   };
 
-  test('the charger’s card has the current limit, the charge limit the car reports and the two switches, as the legacy card did', async ({
+  test('the charger has the current limit and its lock; the charge limit is the bar’s and the pause the actions row’s', async ({
     house,
   }) => {
-    await openDetail(house);
-    const cardOf = charger(house);
-    await expect(cardOf.locator('p').first()).toHaveText('Wallbox Pulsar Plus · charging');
+    await openTab(house);
+    const card = charger(house);
+    await expect(card.locator('p').first()).toHaveText('Wallbox Pulsar Plus · charging');
     // the Wallbox's own range is 6 to 40 amps: 48 is not offered
-    await expect(cardOf.getByRole('radiogroup', {name: 'Charging current limit'}).getByRole('radio')).toHaveText([
+    await expect(card.getByRole('radiogroup', {name: 'Charging current limit'}).getByRole('radio')).toHaveText([
       '16 A3.8 kW',
       '24 A5.8 kW',
       '32 A7.7 kW',
       '40 A9.6 kW',
     ]);
-    await expect(cardOf.getByRole('radio', {name: /^32 A/})).toHaveAttribute('aria-checked', 'true');
-    await expect(cardOf.locator('.hint').first()).toHaveText('Sets the Wallbox maximum current. kW assumes 240 V.');
-    const limit = cardOf.getByRole('radiogroup', {name: 'Charge limit, read only'});
-    await expect(limit.getByRole('radio')).toHaveText(['50%', '60%', '70%', '80%', '90%', 'Full']);
-    await expect(limit.getByRole('radio', {name: '90%'})).toHaveAttribute('aria-checked', 'true');
-    await expect(limit.getByRole('radio').first()).toBeDisabled();
-    await expect(cardOf.getByRole('switch', {name: 'Charging'})).toHaveAttribute('aria-checked', 'true');
-    await expect(cardOf.getByRole('switch', {name: 'Lock charger'})).toHaveAttribute('aria-checked', 'false');
-    await expect(cardOf.locator('hp-switch-row').first()).toContainText('On. Turn off to pause');
+    await expect(card.getByRole('radio', {name: /^32 A/})).toHaveAttribute('aria-checked', 'true');
+    await expect(card.locator('.hint').first()).toHaveText('kW at 240 V.');
+    await expect(card.getByRole('switch', {name: 'Lock charger'})).toHaveAttribute('aria-checked', 'false');
+    await expect(card.getByRole('switch', {name: 'Charging'})).toHaveCount(0);
+    await expect(action(house, /^Pause charging/)).toBeVisible();
   });
 
-  test('the comfort card has the four buttons, the lock row, the seven days, the time, the cabin settings and Save', async ({
+  test('the actions row: Unlock says the car is locked now; with the car’s comfort switches, Start… and Honk & flash', async ({
     house,
   }) => {
+    await openTab(house);
+    await expect(action(house, /^Unlock/)).toHaveText(/Unlock\s*Locked now/);
+    await expect(action(house, /^Start/)).toHaveCount(0);
     await addComfort(house);
-    await openDetail(house);
-    await expect(comfort(house).locator('h3')).toHaveText('Comfort and access');
-    await expect(comfort(house).locator('.ctls button')).toHaveCount(4);
-    await expect(button(house, /^Remote start/)).toContainText('Off · cabin HI');
-    await expect(button(house, /^Heated windshield/)).toContainText('With remote start: off');
-    await expect(comfort(house).locator('.hint').first()).toHaveText('Front seats heat at level 2 with remote start.');
-    await expect(comfort(house).locator('.access b')).toHaveText('Locked');
-    await expect(button(house, 'Honk & flash')).toBeVisible();
-    await expect(button(house, 'Unlock')).toBeVisible();
-    await expect(comfort(house).getByRole('switch', {name: 'Departure times'})).toHaveAttribute(
-      'aria-checked',
-      'false',
-    );
-    await expect(comfort(house).getByRole('group', {name: 'Departure days'}).getByRole('button')).toHaveCount(7);
-    await expect(comfort(house).getByLabel('Departure time', {exact: true})).toHaveValue('08:00');
-    await expect(
-      comfort(house).getByRole('radiogroup', {name: 'Cabin temperature at departure'}).getByRole('radio'),
-    ).toHaveText(['Cool', 'Medium', 'Warm', 'Off']);
-    await expect(button(house, 'Save schedule')).toBeVisible();
+    await expect(action(house, /^Start…/)).toHaveText(/Start…\s*Engine off/);
+    await expect(action(house, 'Honk & flash')).toBeVisible();
   });
 
   test('a tap on 24 A sends number.set_value once, shows it at once and says so', async ({house}) => {
-    await openDetail(house);
+    await openTab(house);
     await charger(house).getByRole('radio', {name: /^24 A/}).click();
     await expectCall(house, /^number\.set_value \{"entity_id":"number\.charger_max_current","value":24\}$/);
     await expect(charger(house).getByRole('radio', {name: /^24 A/})).toHaveAttribute('aria-checked', 'true');
@@ -466,250 +369,295 @@ test.describe('the controls', () => {
     expect(sent(house, 'number.')).toHaveLength(1);
   });
 
-  test('the charging switch sends switch.turn_off, flips at once and says what it does now', async ({house}) => {
-    await openDetail(house);
-    const charging = charger(house).getByRole('switch', {name: 'Charging'});
-    await charging.click();
+  test('Pause charging sends switch.turn_off, turns into Resume charging at once and says so', async ({house}) => {
+    await openTab(house);
+    await action(house, /^Pause charging/).click();
     await expectCall(house, /^switch\.turn_off \{"entity_id":"switch\.charger_pause"\}$/);
-    await expect(charging).toHaveAttribute('aria-checked', 'false');
-    await expect(charger(house).locator('hp-switch-row').first()).toContainText('Paused. Turn on to resume');
+    await expect(action(house, /^Resume charging/)).toHaveText(/Resume charging\s*Paused/);
     await expect(toast(house)).toHaveText('Charging off');
   });
 
   test('the charger’s lock sends lock.lock and flips at once', async ({house}) => {
-    await openDetail(house);
+    await openTab(house);
     const lock = charger(house).getByRole('switch', {name: 'Lock charger'});
     await lock.click();
     await expectCall(house, /^lock\.lock \{"entity_id":"lock\.charger_lock"\}$/);
     await expect(lock).toHaveAttribute('aria-checked', 'true');
-    await expect(charger(house).locator('hp-switch-row').nth(1)).toContainText('Locked, needs the app or RFID card');
+    await expect(charger(house).locator('hp-switch-row')).toContainText('Locked, needs the app or RFID card');
     await expect(toast(house)).toHaveText('Charger locked');
   });
 
-  test('remote start once says “Tap again to start” and sends nothing; twice sends switch.turn_on', async ({house}) => {
+  test('Start… asks first and sends nothing until Start; Cancel sends nothing; a running engine stops with one tap', async ({
+    house,
+  }) => {
     await addComfort(house);
-    await openDetail(house);
-    await button(house, /^Remote start/).click();
-    const again = button(house, /^Tap again to start/);
-    await expect(again).toHaveClass(/armed/);
+    await openTab(house);
+    const dialog = actions(house).locator('hp-dialog[data-ask="start"] dialog');
+    await action(house, /^Start…/).click();
+    await expect(dialog).toBeVisible();
+    await expect(dialog.locator('h4')).toHaveText('Start the car?');
     await house.page.waitForTimeout(300);
-    expect(sent(house, 'switch.'), 'one tap changes nothing').toEqual([]);
-    await again.click();
+    expect(sent(house, 'switch.'), 'opening the question changes nothing').toEqual([]);
+    await dialog.getByRole('button', {name: 'Cancel'}).click();
+    await expect(dialog).toBeHidden();
+    expect(sent(house, 'switch.'), 'Cancel changes nothing').toEqual([]);
+    await action(house, /^Start…/).click();
+    await dialog.getByRole('button', {name: 'Start', exact: true}).click();
     await expectCall(house, /^switch\.turn_on \{"entity_id":"switch\.fordpass_test_ignition"\}$/);
-    await expect(button(house, /^Remote start/)).not.toHaveClass(/armed/);
-    await expect(button(house, /^Remote start/)).toHaveAttribute('aria-pressed', 'true');
-    await expect(button(house, /^Remote start/)).toContainText('Running · cabin HI');
     await expect(toast(house)).toHaveText('Remote start sent to the car');
-    // a car that runs is stopped with one tap
-    await button(house, /^Remote start/).click();
+    await expect(action(house, /^Stop engine/)).toHaveText(/Stop engine\s*Running/);
+    await action(house, /^Stop engine/).click();
     await expectCall(house, /^switch\.turn_off \{"entity_id":"switch\.fordpass_test_ignition"\}$/);
     await expect(toast(house)).toHaveText('Remote start stopped');
   });
 
-  test('unlock needs a second tap too, a lock does not, and the status line follows what was sent', async ({house}) => {
-    await openDetail(house);
-    await button(house, 'Unlock').click();
-    await expect(button(house, 'Tap again to unlock')).toHaveClass(/armed/);
-    await house.page.waitForTimeout(300);
-    expect(sent(house, 'lock.'), 'one tap changes nothing').toEqual([]);
-    await button(house, 'Tap again to unlock').click();
-    await expectCall(house, /^lock\.unlock \{"entity_id":"lock\.fordpass_test_doorlock"\}$/);
-    await expect(comfort(house).locator('.access b')).toHaveText('Unlocked');
-    await expect(toast(house)).toHaveText('Unlock sent to the car');
-    await button(house, 'Lock').click();
-    await expectCall(house, /^lock\.lock \{"entity_id":"lock\.fordpass_test_doorlock"\}$/);
-    await expect(comfort(house).locator('.access b')).toHaveText('Locked');
-    await expect(toast(house)).toHaveText('Lock sent to the car');
-  });
-
-  test('arming the unlock then the remote start leaves only the second armed', async ({house}) => {
+  test('the heaters are switches in the Start question, each sending its own; Honk & flash presses its button', async ({
+    house,
+  }) => {
     await addComfort(house);
-    await openDetail(house);
-    await button(house, 'Unlock').click();
-    await button(house, /^Remote start/).click();
-    await expect(button(house, /^Tap again to start/)).toBeVisible();
-    await expect(button(house, 'Unlock')).toBeVisible();
-    expect(sent(house, 'lock.')).toEqual([]);
-  });
-
-  test('a heater turns its own switch and says its name; the horn presses its button', async ({house}) => {
-    await addComfort(house);
-    await openDetail(house);
-    await button(house, /^Heated wheel/).click();
+    await openTab(house);
+    await action(house, /^Start…/).click();
+    const question = actions(house).locator('hp-dialog[data-ask="start"]');
+    const dialog = question.locator('dialog');
+    await expect(question.getByRole('switch')).toHaveCount(3);
+    await question.getByRole('switch', {name: 'Heated wheel'}).click();
     await expectCall(house, /^switch\.turn_on \{"entity_id":"switch\.fordpass_test_rccsteeringwheel"\}$/);
-    await expect(button(house, /^Heated wheel/)).toHaveAttribute('aria-pressed', 'true');
+    await expect(question.getByRole('switch', {name: 'Heated wheel'})).toHaveAttribute('aria-checked', 'true');
     await expect(toast(house)).toHaveText('Heated wheel on');
-    await button(house, 'Honk & flash').click();
+    expect(sent(house, 'switch.turn_on {"entity_id":"switch.fordpass_test_ignition"'), 'no start').toEqual([]);
+    await dialog.getByRole('button', {name: 'Cancel'}).click();
+    await action(house, 'Honk & flash').click();
     await expectCall(house, /^button\.press \{"entity_id":"button\.fordpass_test_hafdefault"\}$/);
     await expect(toast(house)).toHaveText('Honk and flash sent');
   });
 
-  test('a rejected unlock says why in a toast that stays, and the status goes back to locked', async ({house}) => {
-    await openDetail(house);
-    await button(house, 'Unlock').click();
+  test('Unlock asks first and sends nothing until Unlock; Lock does not ask', async ({house}) => {
+    await openTab(house);
+    const dialog = actions(house).locator('hp-dialog[data-ask="unlock"] dialog');
+    await action(house, /^Unlock/).click();
+    await expect(dialog.locator('h4')).toHaveText('Unlock the car?');
+    await house.page.waitForTimeout(300);
+    expect(sent(house, 'lock.'), 'opening the question changes nothing').toEqual([]);
+    await dialog.getByRole('button', {name: 'Unlock'}).click();
+    await expectCall(house, /^lock\.unlock \{"entity_id":"lock\.fordpass_test_doorlock"\}$/);
+    await expect(action(house, /^Lock/)).toHaveText(/Lock\s*Unlocked now/);
+    await expect(toast(house)).toHaveText('Unlock sent to the car');
+    await action(house, /^Lock/).click();
+    await expectCall(house, /^lock\.lock \{"entity_id":"lock\.fordpass_test_doorlock"\}$/);
+    await expect(toast(house)).toHaveText('Lock sent to the car');
+  });
+
+  test('a tap on the backdrop cancels the Unlock question and sends nothing; a tap inside it does not', async ({
+    house,
+  }) => {
+    await openTab(house);
+    const dialog = actions(house).locator('hp-dialog[data-ask="unlock"] dialog');
+    await action(house, /^Unlock/).click();
+    await dialog.locator('p').click();
+    await expect(dialog).toBeVisible();
+    await house.page.mouse.click(5, 5);
+    await expect(dialog).toBeHidden();
+    expect(sent(house, 'lock.')).toEqual([]);
+  });
+
+  test('Escape cancels the Unlock question and sends nothing, and the question opens again on the next tap', async ({
+    house,
+  }) => {
+    await openTab(house);
+    const dialog = actions(house).locator('hp-dialog[data-ask="unlock"] dialog');
+    await action(house, /^Unlock/).click();
+    await expect(dialog).toBeVisible();
+    await house.page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
+    expect(sent(house, 'lock.')).toEqual([]);
+    await action(house, /^Unlock/).click();
+    await expect(dialog).toBeVisible();
+  });
+
+  test('Escape in the editor opened in the phone’s detail sheet closes the editor alone, and the sheet stays', async ({
+    house,
+  }) => {
+    phoneOnly();
+    await house.tab('home');
+    await house.root().locator('[data-opens="car.detail"]').first().click();
+    const sheet = pane(house).locator('hp-sheet.detail .sheet');
+    await expect(sheet).toBeVisible();
+    const inSheet = pane(house).locator('hp-sheet.detail hp-car-departure');
+    await inSheet.locator('button.open').click();
+    await expect(inSheet.locator('dialog')).toBeVisible();
+    await house.page.keyboard.press('Escape');
+    await expect(inSheet.locator('dialog')).toBeHidden();
+    await expect(sheet).toBeVisible();
+  });
+
+  test('a rejected unlock says why in a toast that stays, and the button goes back to Unlock', async ({house}) => {
+    await openTab(house);
+    await action(house, /^Unlock/).click();
     await house.failNext('lock.unlock');
-    await button(house, 'Tap again to unlock').click();
+    await actions(house).locator('hp-dialog[data-ask="unlock"] dialog').getByRole('button', {name: 'Unlock'}).click();
     await expect(toast(house)).toContainText("Didn't work: the service call failed on purpose");
     await expect(toast(house)).toHaveAttribute('role', 'alert');
-    await expect(comfort(house).locator('.access b')).toHaveText('Locked');
-    await expect(button(house, 'Unlock')).toBeVisible();
+    await expect(action(house, /^Unlock/)).toHaveText(/Locked now/);
     expect(sent(house, 'lock.'), 'a failed call is not recorded').toEqual([]);
   });
 
-  test('the departure switch sends switch.turn_on and flips at once, with its line', async ({house}) => {
+  test('the departure switch sends switch.turn_on and flips at once', async ({house}) => {
     await addComfort(house);
-    await openDetail(house);
-    const row = departureRow(house);
-    await row.getByRole('switch', {name: 'Departure times'}).click();
+    await openTab(house);
+    const toggle = departure(house).getByRole('switch', {name: 'Departure times'});
+    await toggle.click();
     await expectCall(house, /^switch\.turn_on \{"entity_id":"switch\.fordpass_test_departuretimes"\}$/);
-    await expect(row.getByRole('switch')).toHaveAttribute('aria-checked', 'true');
-    await expect(row.locator('.tx span')).toHaveText('On · no days at 8:00 am');
+    await expect(toggle).toHaveAttribute('aria-checked', 'true');
     await expect(toast(house)).toHaveText('Departure times on');
   });
 
-  test('a cleared departure time leaves the description without a time and the card alive', async ({house}) => {
-    await openDetail(house);
-    const description = departureRow(house).locator('.tx span');
-    await comfort(house).getByLabel('Departure time', {exact: true}).fill('');
-    await expect(description).toHaveText('Off · no days saved');
-    // still alive: a day tapped after the time was cleared is drawn
-    await comfort(house).getByRole('button', {name: 'monday'}).click();
-    await expect(description).toHaveText('Off · Mon saved');
-    await comfort(house).getByLabel('Departure time', {exact: true}).fill('08:30');
-    await expect(description).toHaveText('Off · Mon at 8:30 am saved');
-    await expect(comfort(house).getByRole('button', {name: 'monday'})).toHaveAttribute('aria-pressed', 'true');
-  });
-
-  test('saving with no cabin setting, no day or no time says what is missing and sends nothing; with all three it sends one call, the time in five-minute steps', async ({
+  test('the editor saves only on Save: it waits for a cabin and a day and says why, then sends one call in five-minute steps', async ({
     house,
   }) => {
-    await openDetail(house);
-    const save = button(house, 'Save schedule');
-    await save.click();
-    await expect(toast(house)).toHaveText('Pick a cabin temperature first');
-    await comfort(house).getByRole('radio', {name: 'Medium'}).click();
-    await save.click();
-    await expect(toast(house)).toHaveText('Pick at least one day');
-    await comfort(house).getByRole('button', {name: 'monday'}).click();
-    await comfort(house).getByLabel('Departure time', {exact: true}).fill('');
-    await save.click();
-    await expect(toast(house)).toHaveText('Pick a departure time first');
+    await openTab(house);
+    await departure(house).locator('button.open').click();
+    const sheet = editor(house);
+    const save = sheet.getByRole('button', {name: 'Save'});
+    await expect(save).toBeDisabled();
+    await expect(sheet.locator('.foot b')).toHaveText('Pick a cabin temperature first.');
+    await sheet.getByRole('combobox').selectOption('medium');
+    await expect(sheet.locator('.foot b')).toHaveText('Pick at least one day.');
+    await sheet.getByRole('checkbox', {name: 'Every Monday'}).click();
+    await expect(sheet.getByRole('checkbox', {name: 'Every Monday'})).toHaveAttribute('aria-checked', 'true');
+    await sheet.locator('input[type="time"]').fill('08:03');
+    await expect(save).toBeEnabled();
     await house.page.waitForTimeout(300);
-    expect(sent(house, 'fordpass.'), 'a draft that is refused is not sent').toEqual([]);
-    await comfort(house).getByLabel('Departure time', {exact: true}).fill('08:03');
+    expect(sent(house, 'fordpass.'), 'nothing is sent before Save').toEqual([]);
     await save.click();
     await expectCall(
       house,
       /^fordpass\.update_departure_schedule \{"hour":8,"minute":5,"schedule_days":\["monday"\],"precondition_temperature":"medium"\}$/,
     );
     await expect(toast(house)).toHaveText('Departure schedule saved: Mon at 8:05 am');
-    await expect(comfort(house).getByLabel('Departure time', {exact: true})).toHaveValue('08:05');
+    await expect(sheet).toBeHidden();
     expect(sent(house, 'fordpass.')).toHaveLength(1);
   });
 
-  test('the draft starts from Ford’s saved schedule, keeps an edit through other changes, and starts again when the saved schedule changes', async ({
+  test('Cancel sends nothing and starts the draft again from what Ford saved', async ({house}) => {
+    await house.setState(SCHEDULE, {
+      state: 'ok',
+      attributes: {schedule: {tuesday: {timeOfDay: {hours: 7, minutes: 15}}}},
+    });
+    await openTab(house);
+    await expect(departure(house).locator('.open small')).toHaveText('Tue at 7:15 am');
+    await departure(house).locator('button.open').click();
+    const day = (name: string) => editor(house).getByRole('checkbox', {name});
+    await expect(day('Every Tuesday')).toHaveAttribute('aria-checked', 'true');
+    await expect(editor(house).locator('input[type="time"]')).toHaveValue('07:15');
+    await day('Every Monday').click();
+    await expect(day('Every Monday')).toHaveAttribute('aria-checked', 'true');
+    await editor(house).getByRole('button', {name: 'Cancel'}).click();
+    await expect(editor(house)).toBeHidden();
+    await departure(house).locator('button.open').click();
+    await expect(day('Every Monday')).toHaveAttribute('aria-checked', 'false');
+    expect(sent(house, 'fordpass.')).toEqual([]);
+  });
+
+  test('the draft keeps an edit through other changes, and starts again when Ford’s saved schedule changes', async ({
     house,
   }) => {
     const saved = (days: Record<string, object>) => ({state: 'ok', attributes: {schedule: days}});
     await house.setState(SCHEDULE, saved({tuesday: {timeOfDay: {hours: 7, minutes: 15}}}));
-    await openDetail(house);
-    const day = (name: string) => comfort(house).getByRole('button', {name});
-    await expect(day('tuesday')).toHaveAttribute('aria-pressed', 'true');
-    await expect(day('monday')).toHaveAttribute('aria-pressed', 'false');
-    await expect(comfort(house).getByLabel('Departure time', {exact: true})).toHaveValue('07:15');
-    await day('monday').click();
-    await expect(day('monday')).toHaveAttribute('aria-pressed', 'true');
+    await openTab(house);
+    await departure(house).locator('button.open').click();
+    const day = (name: string) => editor(house).getByRole('checkbox', {name});
+    await day('Every Monday').click();
     // an entity that is none of the schedule's changes: the edit stays
     await house.setState('sensor.fordpass_test_odometer', {state: '12010'});
     await house.page.waitForTimeout(250);
-    await expect(day('monday')).toHaveAttribute('aria-pressed', 'true');
+    await expect(day('Every Monday')).toHaveAttribute('aria-checked', 'true');
     // Ford's schedule changes: the draft begins again from it
     await house.setState(SCHEDULE, saved({friday: {timeOfDay: {hours: 6, minutes: 30}}}));
-    await expect(day('friday')).toHaveAttribute('aria-pressed', 'true');
-    await expect(day('monday')).toHaveAttribute('aria-pressed', 'false');
-    await expect(comfort(house).getByLabel('Departure time', {exact: true})).toHaveValue('06:30');
+    await expect(day('Every Friday')).toHaveAttribute('aria-checked', 'true');
+    await expect(day('Every Monday')).toHaveAttribute('aria-checked', 'false');
+    await expect(editor(house).locator('input[type="time"]')).toHaveValue('06:30');
   });
 
   test('a save followed by Ford’s own schedule update keeps the cabin choice, which Ford does not report', async ({
     house,
   }) => {
-    await openDetail(house);
-    const cabin = comfort(house).getByRole('radio', {name: 'Warm'});
-    await cabin.click();
-    await comfort(house).getByRole('button', {name: 'monday'}).click();
-    await button(house, 'Save schedule').click();
+    await openTab(house);
+    await departure(house).locator('button.open').click();
+    await editor(house).getByRole('combobox').selectOption('high');
+    await editor(house).getByRole('checkbox', {name: 'Every Monday'}).click();
+    await editor(house).getByRole('button', {name: 'Save'}).click();
     await expectCall(house, /^fordpass\.update_departure_schedule .*"precondition_temperature":"high"\}$/);
     // the house answers the save: the schedule sensor now says what was sent
     await house.setState(SCHEDULE, {
       state: 'ok',
       attributes: {schedule: {monday: {timeOfDay: {hours: 8, minutes: 0}}}},
     });
-    await expect(comfort(house).getByRole('button', {name: 'monday'})).toHaveAttribute('aria-pressed', 'true');
-    await expect(cabin).toHaveAttribute('aria-checked', 'true');
+    await expect(departure(house).locator('.open small')).toHaveText('Mon at 8:00 am');
+    await departure(house).locator('button.open').click();
+    await expect(editor(house).getByRole('combobox')).toHaveValue('high');
   });
 
-  test('the tab left and come back to begins the draft again and keeps no second tap waiting', async ({house}) => {
+  test('the tab left and come back to begins the draft again', async ({house}) => {
     tabletOnly();
-    await openDetail(house);
-    await comfort(house).getByRole('button', {name: 'wednesday'}).click();
-    await button(house, 'Unlock').click();
-    await expect(button(house, 'Tap again to unlock')).toBeVisible();
+    await openTab(house);
+    await departure(house).locator('button.open').click();
+    await editor(house).getByRole('checkbox', {name: 'Every Wednesday'}).click();
+    await editor(house).getByRole('button', {name: 'Cancel'}).click();
     await house.tab('home');
     await house.tab('car');
-    await expect(comfort(house).getByRole('button', {name: 'wednesday'})).toHaveAttribute('aria-pressed', 'false');
-    await expect(button(house, 'Unlock')).toBeVisible();
+    await departure(house).locator('button.open').click();
+    await expect(editor(house).getByRole('checkbox', {name: 'Every Wednesday'})).toHaveAttribute(
+      'aria-checked',
+      'false',
+    );
   });
 
-  test('the controls have no serious or critical accessibility finding', async ({house}) => {
+  test('the controls and their sheets have no serious or critical accessibility finding', async ({house}) => {
     await addComfort(house);
-    await openDetail(house);
-    const {violations} = await new AxeBuilder({page: house.page}).include('home-panel').analyze();
-    expect(violations.filter(v => v.impact === 'serious' || v.impact === 'critical').map(v => v.id)).toEqual([]);
-  });
-});
-
-test.describe('the second tap lapses after four seconds', () => {
-  test.use({houseOpts: {cfg: FULL_CFG, time: AFTERNOON, frozen: true}});
-
-  test('“Unlock” says “Unlock” again, and a tap then arms it again and sends nothing', async ({house}) => {
-    await house.tab('car');
-    if (isPhone(house)) await card(house).locator('.box').click();
-    const unlock = pane(house).locator('hp-car-comfort').getByRole('button', {name: 'Unlock'});
-    await unlock.click();
-    const again = pane(house).locator('hp-car-comfort').getByRole('button', {name: 'Tap again to unlock'});
-    await expect(again).toBeVisible();
-    await house.clock.runFor(3900);
-    await expect(again).toBeVisible();
-    await house.clock.runFor(200);
-    await expect(unlock).toBeVisible();
-    await unlock.click();
-    await expect(again).toBeVisible();
-    expect(house.calls.filter(c => c.startsWith('lock.'))).toEqual([]);
+    await openTab(house);
+    const scan = async () => {
+      const {violations} = await new AxeBuilder({page: house.page}).include('home-panel').analyze();
+      return violations.filter(v => v.impact === 'serious' || v.impact === 'critical').map(v => v.id);
+    };
+    expect(await scan(), 'the tab').toEqual([]);
+    await departure(house).locator('button.open').click();
+    expect(await scan(), 'the departure editor').toEqual([]);
+    await editor(house).getByRole('button', {name: 'Cancel'}).click();
+    await action(house, /^Start…/).click();
+    expect(await scan(), 'the Start question').toEqual([]);
   });
 });
 
 test.describe('in French', () => {
   test.use({houseOpts: {cfg: FULL_CFG, time: AFTERNOON, lang: 'fr'}});
 
-  test('the cards say their words in French, the days with the initials LMMJVSD, and a refused save says why', async ({
+  test('the charger, the actions and the editor say their words in French, and Save says why it waits', async ({
     house,
   }) => {
     await house.tab('car');
-    if (isPhone(house)) await card(house).locator('.box').click();
-    const comfort = pane(house).locator('hp-car-comfort');
-    await expect(pane(house).locator('hp-charger-controls h3')).toHaveText('Borne à la maison');
-    await expect(pane(house).locator('hp-charger-controls p').first()).toHaveText('Wallbox Pulsar Plus · en recharge');
-    await expect(comfort.locator('h3')).toHaveText('Confort et accès');
-    await expect(comfort.getByRole('group', {name: 'Jours de départ'}).getByRole('button')).toHaveText([
-      'L',
-      'M',
-      'M',
-      'J',
-      'V',
-      'S',
-      'D',
+    await expect(detail(house).locator('hp-charger-controls h3')).toHaveText('Borne à la maison');
+    await expect(detail(house).locator('hp-charger-controls p').first()).toHaveText(
+      'Wallbox Pulsar Plus · en recharge',
+    );
+    await expect(
+      detail(house)
+        .locator('hp-car-actions')
+        .getByRole('button', {name: /^Déverrouiller/}),
+    ).toHaveText(/Déverrouiller\s*Verrouillée/);
+    const departure = detail(house).locator('hp-car-departure');
+    await departure.locator('button.open').click();
+    const sheet = departure.locator('dialog');
+    await expect(sheet.locator('h4')).toHaveText('Départ');
+    await expect(sheet.getByRole('checkbox')).toHaveText([
+      'Chaque lundi',
+      'Chaque mardi',
+      'Chaque mercredi',
+      'Chaque jeudi',
+      'Chaque vendredi',
+      'Chaque samedi',
+      'Chaque dimanche',
     ]);
-    await comfort.getByRole('button', {name: "Enregistrer l'horaire"}).click();
-    await expect(house.root().locator('#toast')).toHaveText("Choisissez d'abord une température d'habitacle");
+    await expect(sheet.locator('.foot b')).toHaveText("Choisissez d'abord une température d'habitacle.");
+    await expect(sheet.getByRole('button', {name: 'Enregistrer'})).toBeDisabled();
   });
 });

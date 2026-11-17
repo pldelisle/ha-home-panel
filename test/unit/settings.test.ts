@@ -20,19 +20,20 @@ const throwing: KeyValueStorage = {
   },
 };
 
-const DEFAULTS = {theme: 'auto', text: 'auto', glass: 'dawn', glassLevel: 50, tab: 'home'};
+const DEFAULTS = {theme: 'auto', text: 'auto', glass: 'dawn', glassLevel: 50, cards: 'solid', tab: 'home'};
 
 describe('reading', () => {
   test('a missing key gives the default', () => {
     expect(createSettings(mapStorage().storage).get()).toEqual(DEFAULTS);
   });
 
-  test('stored values are read from the five keys', () => {
+  test('stored values are read from the six keys', () => {
     const {storage} = mapStorage({
       'home-panel-theme': 'dark',
       'home-panel-text': 'large',
       'home-panel-glass': 'night',
       'home-panel-glass-t': '20',
+      'home-panel-cards': 'glass',
       'home-panel-tab': 'climate',
     });
     expect(createSettings(storage).get()).toEqual({
@@ -40,8 +41,14 @@ describe('reading', () => {
       text: 'large',
       glass: 'night',
       glassLevel: 20,
+      cards: 'glass',
       tab: 'climate',
     });
+  });
+
+  test('cards are solid unless the stored value says glass', () => {
+    expect(createSettings(mapStorage({'home-panel-cards': 'nonsense'}).storage).get().cards).toBe('solid');
+    expect(createSettings(mapStorage({'home-panel-cards': 'glass'}).storage).get().cards).toBe('glass');
   });
 
   test('an empty string gives the default, as the old reads did', () => {
@@ -80,7 +87,14 @@ describe('writing', () => {
       'home-panel-glass': 'noon',
       'home-panel-tab': 'energy',
     });
-    expect(settings.get()).toEqual({theme: 'dark', text: 'small', glass: 'noon', glassLevel: 30, tab: 'energy'});
+    expect(settings.get()).toEqual({
+      theme: 'dark',
+      text: 'small',
+      glass: 'noon',
+      glassLevel: 30,
+      cards: 'solid',
+      tab: 'energy',
+    });
   });
 
   test('reading writes nothing', () => {

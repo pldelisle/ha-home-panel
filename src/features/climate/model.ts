@@ -9,6 +9,7 @@ import {degrees, fixedOr} from '../../core/i18n/format.ts';
 import {roomName} from '../../core/i18n/room-name.ts';
 import {FUJITSU_BRAND, NO_TARGET_MODES, type HeatPumpInputs} from '../../providers/heat-pump.ts';
 import {DEFAULT_MAX_TEMP, FROST_GUARD, OFF_AT_OR_BELOW, type RoomPower} from '../../providers/power.ts';
+import {emptyChartText} from '../../ui/chart-notice.ts';
 import type {Overlay} from '../../ui/overlay-store.ts';
 import {RANGES, type Range} from '../../ui/ranges.ts';
 import {dialGeometry, type DialGeometry} from './dial-geometry.ts';
@@ -72,14 +73,6 @@ export interface HeatmapBlock {
   title: string;
   hint: string;
   rooms: {key: string; name: string}[];
-  notice: ChartNotice | null;
-}
-
-/** The tablet's outside chart block. */
-export interface OutsideBlock {
-  title: string;
-  note: string;
-  legend: LegendItem[];
   notice: ChartNotice | null;
 }
 
@@ -155,6 +148,20 @@ export interface ControlOption {
   checked: boolean;
 }
 
+/** A question asked before a change that is hard to take back: what it is, what follows, and the two buttons (HIG, Alerts). */
+export interface AskView {
+  title: string;
+  line: string;
+  confirm: string;
+  cancel: string;
+}
+
+/** The house's two questions: "set every room" names the value the stepper holds (the element's own state), "all off" has nothing to name. */
+export interface AllAsks {
+  set: (degrees: number) => AskView;
+  off: AskView;
+}
+
 /** What the controls draw; the element switches on `kind` and never computes. */
 export type ControlsView =
   | {kind: 'hp'; offline: true}
@@ -173,8 +180,8 @@ export type ControlsView =
       preset: ControlOption[] | null;
       swing: ControlOption[] | null;
     }
-  /** Every room's thermostat, for "set every room"; the value and the armed button are the controls' own state. */
-  | {kind: 'house'; rooms: string[]}
+  /** Every room's thermostat, for "set every room", and the two questions its buttons ask first; the value is the controls' own state. */
+  | {kind: 'house'; rooms: string[]; asks: AllAsks}
   | {kind: 'room'; offline: true}
   | {
       kind: 'room';
@@ -261,8 +268,6 @@ export interface ClimateViewModel {
     chart: ChartBlock;
     /** The tablet's heatmap block; null on the phone, whose sheet is one room. */
     heatmap: HeatmapBlock | null;
-    /** The tablet's outside chart block; null on the phone. */
-    outsideChart: OutsideBlock | null;
   };
 }
 
@@ -396,6 +401,27 @@ function roomControls(room: RoomPower, deps: ClimateModelDeps): ControlsView {
   };
 }
 
+function allAsks(rooms: number, {t, fmt}: ClimateModelDeps): AllAsks {
+  const cancel = t('climate.askCancel');
+  return {
+    set: degrees => {
+      const n = fmt.fixed(degrees, 1);
+      return {
+        title: t('climate.askSetAll', {n}),
+        line: t('climate.askSetAllLine', {rooms, n}),
+        confirm: t('climate.askSetAllConfirm'),
+        cancel,
+      };
+    },
+    off: {
+      title: t('climate.askOff'),
+      line: t('climate.askOffLine'),
+      confirm: t('climate.askOffConfirm'),
+      cancel,
+    },
+  };
+}
+
 function houseHead(
   inputs: ClimateInputs,
   deps: ClimateModelDeps,
@@ -439,7 +465,7 @@ function houseHead(
       },
     ],
     note: null,
-    controls: {kind: 'house', rooms: rooms.map(room => room.climate)},
+    controls: {kind: 'house', rooms: rooms.map(room => room.climate), asks: allAsks(rooms.length, deps)},
   };
 }
 
@@ -631,9 +657,9 @@ function figuresOf(
   };
 }
 
-/** What stands in a chart's place before there is a line: the loading word, or the failure's. */
-function waiting(loaded: boolean, {t, historyFailed}: ClimateModelDeps): ChartNotice | null {
-  if (loaded) return null;
+/** What stands in a chart's place before there is a line: the loading word, the failure's, or, once loaded with nothing to draw (`dry`), the kit's empty sentence. */
+function waiting(loaded: boolean, {t, historyFailed}: ClimateModelDeps, dry = false): ChartNotice | null {
+  if (loaded) return dry ? {kind: 'empty', text: emptyChartText(t)} : null;
   return historyFailed
     ? {kind: 'failed', text: t('climate.historyUnavailable')}
     : {kind: 'loading', text: t('climate.historyLoading')};
@@ -643,7 +669,6 @@ function waiting(loaded: boolean, {t, historyFailed}: ClimateModelDeps): ChartNo
 const ROOM_LINE = 'var(--c-wh)';
 const OUTSIDE_LINE = 'var(--c-home)';
 const SETPOINT_LINE = 'var(--fg2)';
-const OUTSIDE_BAND = 'color-mix(in srgb, var(--c-home) 35%, transparent)';
 
 /** The detail chart's legend and words: the line (the house is "House average"), its setpoint for a room or the heat pump, and the outside. */
 function chartBlock(
@@ -652,6 +677,7 @@ function chartBlock(
   range: Range,
   loaded: boolean,
   deps: ClimateModelDeps,
+  dry: boolean,
 ): ChartBlock {
   const {t} = deps;
   const house = selection === 'house';
@@ -664,36 +690,26 @@ function chartBlock(
       ...(house ? [] : [{name: t('climate.chart.setpoint'), color: SETPOINT_LINE, dashed: true}]),
       {name: t('climate.chart.outside'), color: OUTSIDE_LINE, dashed: false},
     ],
-    notice: waiting(loaded, deps),
+    notice: waiting(loaded, deps, dry),
   };
 }
 
-/** The tablet's two blocks under the detail, worded for the range; the last room is drawn on top, as the legacy heatmap's. */
-function wideBlocks(
+/** The tablet's heatmap under the detail, worded for the range; the last room is drawn on top, as the legacy heatmap's. The outside's temperature is the detail chart's line, so it has no chart of its own. */
+function heatmapBlock(
   rooms: readonly RoomPower[],
   range: Range,
   loaded: boolean,
   deps: ClimateModelDeps,
-): {heatmap: HeatmapBlock; outsideChart: OutsideBlock} {
+  dry: boolean,
+): HeatmapBlock {
   const {t} = deps;
-  const waits = waiting(loaded, deps);
-  const words = RANGE_WORDS[range];
   return {
-    heatmap: {
-      title: t(words.heatTitle),
-      hint: t('climate.heatHint'),
-      rooms: [...rooms].reverse().map(room => ({key: room.key, name: roomName(room, deps)})),
-      notice: waits ?? (rooms.length ? null : {kind: 'empty', text: t('climate.noThermostats')}),
-    },
-    outsideChart: {
-      title: t('climate.outsideTitle', {label: t(RANGES[range].labelKey)}),
-      note: t(words.outNote),
-      legend: [
-        {name: t('climate.chart.lowToHigh'), color: OUTSIDE_BAND, dashed: false},
-        {name: t('climate.chart.mean'), color: OUTSIDE_LINE, dashed: false},
-      ],
-      notice: waits,
-    },
+    title: t(RANGE_WORDS[range].heatTitle),
+    hint: t('climate.heatHint'),
+    rooms: [...rooms].reverse().map(room => ({key: room.key, name: roomName(room, deps)})),
+    notice:
+      waiting(loaded, deps, dry && rooms.length > 0) ??
+      (rooms.length ? null : {kind: 'empty', text: t('climate.noThermostats')}),
   };
 }
 
@@ -717,7 +733,9 @@ export function climateModel(
   const figures = figuresOf(history, range, selection, rooms);
   const head = headOf(pump, room, inputs, deps, items, figures);
   const {t, fmt} = deps;
-  const blocks = deps.compact ? null : wideBlocks(rooms, range, figures !== null, deps);
+  // loaded, and no room read anything over the range: the heatmap is empty; the chart is when its own selection has no reading
+  const dry = !!history && figures !== null && Object.values(history.rooms).every(readings => readings.length === 0);
+  const heatmap = deps.compact ? null : heatmapBlock(rooms, range, figures !== null, deps, dry);
   return {
     summary: summaryOf(inputs, deps),
     items,
@@ -734,9 +752,8 @@ export function climateModel(
       tiles: head.tiles,
       note: head.note,
       controls: head.controls,
-      chart: chartBlock(head, selection, range, figures !== null, deps),
-      heatmap: blocks?.heatmap ?? null,
-      outsideChart: blocks?.outsideChart ?? null,
+      chart: chartBlock(head, selection, range, figures !== null, deps, figures !== null && figures.span === null),
+      heatmap,
     },
   };
 }

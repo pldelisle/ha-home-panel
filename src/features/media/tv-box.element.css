@@ -1,7 +1,8 @@
 /*
- * <hp-tv-box>'s own rules: the name and status beside the switch, the screen, and the four buttons.
- * Moved from the legacy `.mtvhead`, `.mtvscreen` and `.mtvctl` rules (tabs.css, glass.css, motion.css), which #218 deleted with the
- * phone's card sheet, and read here as `.tvhead`, `.tvscreen` and `.tvkeys`; the hidden Home card's `.tvbox` and `.tvctl` went with #219.
+ * <hp-tv-box>'s own rules: the name, status and app beside the power button, and the four buttons.
+ * Moved from the legacy `.mtvhead` and `.mtvctl` rules (tabs.css, glass.css, motion.css), which #218 deleted with the phone's card
+ * sheet, and read here as `.tvhead` and `.tvkeys`; the hidden Home card's `.tvbox` and `.tvctl` went with #219. The legacy grey
+ * `.mtvscreen` box, which only repeated the app's name, is gone: the app is the `.now` line under the status.
  */
 :host {
   display: block;
@@ -25,20 +26,37 @@
   font-size: calc(13px * var(--tx));
   color: var(--fg2);
 }
-.tvscreen {
-  aspect-ratio: 16/9;
-  border-radius: 16px;
-  background: var(--card2);
+.tvhead p.now {
+  color: var(--fg);
+  font-weight: 600;
+}
+.tvhead + .tvkeys {
+  margin-top: 16px;
+}
+/* the power: a toggle button, filled while the set is on; 56 pt, above the 44 pt floor */
+.power {
+  flex: none;
+  width: 56px;
+  height: 56px;
+  border: 0;
+  border-radius: 28px;
+  background: var(--ctl-bg);
+  box-shadow: var(--ctl-edge);
+  color: var(--fg);
+  cursor: pointer;
   display: grid;
   place-items: center;
-  color: var(--fg2);
-  font-size: calc(16px * var(--tx));
-  font-weight: 600;
-  margin: 16px 0;
 }
-.tvscreen.on {
-  background: color-mix(in srgb, var(--c-home) 10%, var(--card2));
-  color: var(--fg);
+.power.on {
+  background: var(--c-home);
+  color: #fff;
+}
+.power:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.power:active {
+  transform: scale(0.97);
 }
 .tvkeys {
   display: grid;
@@ -68,21 +86,11 @@
 .tvkeys button:active {
   transform: scale(0.97);
 }
-.app.gl .tvscreen {
-  background: var(--g-tile);
-}
-.app.gl .tvscreen.on {
-  background: color-mix(in srgb, var(--c-home) 14%, var(--g-tile));
-}
 .app.gl .tvkeys button[aria-pressed='true'] {
   background: color-mix(in srgb, var(--warn) 18%, var(--ctl-bg));
 }
-@media (prefers-reduced-transparency: reduce) {
-  .app.gl .tvscreen {
-    background: var(--card2);
-  }
-}
 @media (prefers-reduced-motion: no-preference) {
+  .power,
   .tvkeys button {
     transition:
       transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),

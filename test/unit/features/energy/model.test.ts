@@ -1,4 +1,4 @@
-// energyModel: the summary, the card, the water heater and Hilo cards and the phone's rows from the test house, from literal houses for each shape it does not show,
+// energyModel: the summary, the detail, the water heater and Hilo cards and the phone's rows from the test house, from literal houses for each shape it does not show,
 // from literal history, and from the recorded house when the owner has one; in English and in French, where the numbers are French's own.
 import {describe, expect, test} from 'vitest';
 import {HOUR_MS, MINUTE_MS} from '../../../../src/core/figures.ts';
@@ -6,7 +6,12 @@ import type {DailyRow, EnergyHistoryData} from '../../../../src/features/energy/
 import type {SankeyGeometry, SankeyLabel} from '../../../../src/features/energy/sankey-layout.ts';
 import type {FlowRow} from '../../../../src/providers/power-history.ts';
 import {readEnergy, type EnergyInputs} from '../../../../src/features/energy/inputs.ts';
-import {energyModel, type EnergyModelDeps, type EnergyViewModel} from '../../../../src/features/energy/model.ts';
+import {
+  energyModel,
+  periodsOf,
+  type EnergyModelDeps,
+  type EnergyViewModel,
+} from '../../../../src/features/energy/model.ts';
 import {FULL_CFG} from '../../../e2e/houses.ts';
 import {entity, fakeHass} from '../../fake-hass.ts';
 import {depsOf, fullHouse, houseOf, NOW, readingOf, recorded, storeOf, type Language} from '../media/support.ts';
@@ -59,7 +64,7 @@ const modelOf = (
   history: EnergyHistoryData | null = null,
   language: Language = 'en',
   error: string | null = null,
-  detail: Pick<EnergyModelDeps, 'range' | 'sankeyMode'> = {},
+  detail: Pick<EnergyModelDeps, 'range'> = {},
 ): EnergyViewModel => {
   const {t, fmt, names} = depsOf(fullHouse, language);
   return energyModel(inputs, history, {now: NOW, t, fmt, names, language, error, ...detail});
@@ -96,27 +101,22 @@ const history = (over: Partial<EnergyHistoryData> = {}): EnergyHistoryData => ({
 describe('the test house', () => {
   const vm = modelOf(testHouse());
 
-  test('no Hilo: the summary and the card’s top line say the tier is unknown, as the legacy panel did', () => {
+  test('no Hilo: the summary says the tier is unknown, as the legacy panel did, and the detail is the one title and no error', () => {
     expect(vm.summary).toBe('Grid supplying 3.24 kW · room heating 2.40 kW · Hilo rate unknown');
-    expect(vm.card.topRight).toBe('Grid only · rate unknown');
-    expect(vm.card).toMatchObject({title: 'Home energy', open: 'Open home energy details', error: null});
+    expect(vm.detail).toMatchObject({title: 'Home energy', sub: vm.summary, error: null});
   });
 
-  test('the card’s flow is the layout of the same power, the charger’s own status included', () => {
-    expect(vm.card.flow.label).toBe(
+  test('the detail’s live flow is the layout of the same power, the charger’s own status included', () => {
+    const {body} = vm.detail.sankey;
+    if (body.kind !== 'flow') throw new Error('the Sankey of now is the live flow');
+    expect(body.flow.label).toBe(
       'Grid supplies 3.24 to the home; room heating 2.40; water heating 0 W; EV charging 7.10',
     );
-    expect(vm.card.flow.labels.map(l => l.text)).toContain('Charging');
-    expect(vm.card.flow.nodes.find(n => n.key === 'water')!.texts[1].text).toBe('50.0°');
+    expect(body.flow.labels.map(l => l.text)).toContain('Charging');
+    expect(body.flow.nodes.find(n => n.key === 'water')!.texts[1].text).toBe('50.0°');
   });
 
-  test('before the history, four tiles of dashes with their units and the 30-day caption', () => {
-    expect(vm.card.tiles).toEqual([
-      {label: 'Today', value: '–', unit: 'kWh', sub: ''},
-      {label: 'Room heating', value: '–', unit: 'kWh', sub: 'last 30 days'},
-      {label: 'Water heating', value: '–', unit: 'kWh', sub: 'last 30 days'},
-      {label: 'EV charging', value: '–', unit: 'kWh', sub: 'last 30 days'},
-    ]);
+  test('before the history, the water heater has no chart, legend or line', () => {
     expect(vm.water).toMatchObject({chart: null, legend: [], line: null});
   });
 
@@ -137,7 +137,6 @@ describe('Hilo', () => {
   test('the low tier: the summary, the top line, the hero and the rate’s tier word, in the "ok" colour', () => {
     const vm = modelOf(inputsOf());
     expect(vm.summary).toBe('Grid supplying 2.30 kW · room heating 0.00 kW · Hilo low rate');
-    expect(vm.card.topRight).toBe('Grid only · low rate');
     expect(vm.hilo).toMatchObject({
       present: true,
       title: 'Hilo',
@@ -170,7 +169,6 @@ describe('Hilo', () => {
     const vm = modelOf(inputsOf(hiloStates(rate)));
     expect(vm.hilo.tier).toEqual({text: tier, ok: false});
     expect(vm.summary).toBe(`Grid supplying 2.30 kW · room heating 0.00 kW · Hilo ${short}`);
-    expect(vm.card.topRight).toBe(`Grid only · ${short}`);
   });
 
   test('no reading at all: dashes, the unknown tier, and a challenge sensor that is missing says so', () => {
@@ -244,36 +242,20 @@ describe('the water heater', () => {
   });
 });
 
-describe('the tiles and the error line', () => {
-  test('with history: today to a decimal, the groups rounded to whole kWh', () => {
-    expect(modelOf(testHouse(), history()).card.tiles.map(t => [t.label, t.value])).toEqual([
-      ['Today', '12.3'],
-      ['Room heating', '120'],
-      ['Water heating', '56'],
-      ['EV charging', '8'],
-    ]);
-  });
-
-  test('the error line words the reason, and no error leaves none', () => {
-    expect(modelOf(testHouse(), null, 'en', 'timeout').card.error).toBe(
+describe('the error line', () => {
+  test('words the reason, and no error leaves none', () => {
+    expect(modelOf(testHouse(), null, 'en', 'timeout').detail.error).toBe(
       "History didn't load: timeout. Live values still update.",
     );
-    expect(modelOf(testHouse(), history()).card.error).toBeNull();
+    expect(modelOf(testHouse(), history()).detail.error).toBeNull();
   });
 });
 
 describe('in French', () => {
-  test('the test house: the summary, the top line, the tiles and the water heater', () => {
+  test('the test house: the summary, the error line and the water heater', () => {
     const vm = modelOf(testHouse(), history(), 'fr', 'délai dépassé');
     expect(vm.summary).toBe('Réseau 3,24 kW · chauffage 2,40 kW · Hilo tarif inconnu');
-    expect(vm.card.topRight).toBe('Réseau seulement · tarif inconnu');
-    expect(vm.card.tiles.map(t => [t.label, t.value, t.sub])).toEqual([
-      ["Aujourd'hui", '12,3', ''],
-      ['Chauffage des pièces', '120', '30 derniers jours'],
-      ['Chauffe-eau', '56', '30 derniers jours'],
-      ['Recharge VÉ', '8', '30 derniers jours'],
-    ]);
-    expect(vm.card.error).toBe(
+    expect(vm.detail.error).toBe(
       "L'historique n'a pas pu être chargé : délai dépassé. Les valeurs en direct continuent de se mettre à jour.",
     );
     expect(vm.water).toMatchObject({title: 'Chauffe-eau', state: {text: 'Au repos · 0 W'}});
@@ -300,6 +282,9 @@ describe('in French', () => {
 });
 
 describe('the detail', () => {
+  const NO_HISTORY = 'No history yet. It fills in as Home Assistant records the next hour.';
+  const NO_HISTORY_FR =
+    'Pas encore d’historique. Il se remplit à mesure que Home Assistant enregistre la prochaine heure.';
   const {fmt} = depsOf(fullHouse, 'en');
   const today = fmt.isoDay(NOW);
   const day = (key: string, over: Partial<DailyRow> = {}): DailyRow => ({
@@ -323,12 +308,11 @@ describe('the detail', () => {
       flow,
       daily: [day('2026-11-06'), day(today)],
       g30: [300, 90, 40, 70],
-      room30: [150, 100, 40, 10],
       ...over,
     });
   const detail = (
     over: Partial<EnergyHistoryData> | null,
-    deps: Pick<EnergyModelDeps, 'range' | 'sankeyMode'> = {},
+    deps: Pick<EnergyModelDeps, 'range'> = {},
     language: Language = 'en',
   ) => modelOf(testHouse(), over === null ? null : loaded(over), language, null, deps).detail;
   const labelsOf = (view: ReturnType<typeof detail>['sankey']) =>
@@ -336,10 +320,11 @@ describe('the detail', () => {
       (item): item is SankeyLabel => item.kind === 'label',
     );
 
-  test('the header: the title, the pane’s sentence under it, the four tabs from today to year', () => {
+  test('the header: the title, the pane’s sentence under it, the five tabs from now to year', () => {
     const vm = modelOf(testHouse());
     expect(vm.detail).toMatchObject({title: 'Home energy', sub: vm.summary});
     expect(vm.detail.ranges.map(tab => [tab.range, tab.label])).toEqual([
+      ['now', 'Now'],
       ['today', 'Today'],
       ['week', 'Week'],
       ['month', 'Month'],
@@ -361,12 +346,13 @@ describe('the detail', () => {
   });
 
   describe('the main chart’s words', () => {
-    test('today: the busiest hour of the day’s hours, and none when there is no complete hour', () => {
+    test('today: the busiest hour of the day’s hours, and the one empty-state sentence when there is no complete hour', () => {
       expect(detail({}).main).toMatchObject({
+        notice: null,
         title: 'Today, hour by hour',
         caption: 'Busiest hour: 10.0 kWh, 1:00 pm. Tap a bar to see what was running.',
       });
-      expect(detail({flow: []}).main.caption).toBe('No complete hour yet today.');
+      expect(detail({flow: []}).main).toMatchObject({caption: '', notice: NO_HISTORY});
     });
 
     test('the week: the same, with the day of the hour, over the last seven days', () => {
@@ -395,7 +381,7 @@ describe('the detail', () => {
       });
       const quiet = detail({monthly: [['2026-01', {heat: 50, wh: 0, ev: 0, rest: 0}]]}, {range: 'year'});
       expect(quiet.main.caption).toBe('Last 12 months. Months with missing data look shorter.');
-      expect(detail({monthly: []}, {range: 'year'}).main.caption).toBe(quiet.main.caption);
+      expect(detail({monthly: []}, {range: 'year'}).main).toMatchObject({caption: '', notice: NO_HISTORY});
     });
 
     test('in French the words and the figures are French’s own', () => {
@@ -410,20 +396,77 @@ describe('the detail', () => {
     });
   });
 
-  describe('the Sankey', () => {
-    test('now: the card’s own flow, with the live note and the three tabs', () => {
-      const vm = modelOf(testHouse(), loaded());
-      const {sankey} = vm.detail;
-      expect(sankey).toMatchObject({title: 'Where the power goes', label: 'Sankey period'});
-      expect(sankey.modes).toEqual([
-        {mode: 'now', label: 'Now'},
-        {mode: 'today', label: 'Today'},
-        {mode: 'd30', label: '30 days'},
+  describe('no history yet: each chart card says so once', () => {
+    // what the bare house's recorder replies: no hour, no day, no month, a meter that read nothing
+    const blank: Partial<EnergyHistoryData> = {
+      flow: [],
+      daily: [],
+      monthly: [],
+      g30: [0, 0, 0, 0],
+      totals: {today: 0, yesterday: null, d30: 0, month: 0},
+    };
+
+    test.each(['now', 'today', 'week', 'month', 'year'] as const)(
+      '%s: the main chart, the Sankey, the donut and the totals are a title and the one sentence',
+      range => {
+        const view = detail(blank, {range});
+        expect(view.main).toMatchObject({caption: '', legend: [], notice: NO_HISTORY});
+        expect(view.donut).toMatchObject({parts: [], rows: [], hint: '', notice: NO_HISTORY});
+        expect(view.totals).toMatchObject({tiles: [], hint: '', notice: NO_HISTORY});
+        if (range !== 'now') expect(view.sankey).toMatchObject({note: '', body: {kind: 'empty', text: NO_HISTORY}});
+      },
+    );
+
+    test('in French the sentence is French’s own', () => {
+      const view = detail(blank, {}, 'fr');
+      expect([view.main.notice, view.donut.notice, view.totals.notice]).toEqual([
+        NO_HISTORY_FR,
+        NO_HISTORY_FR,
+        NO_HISTORY_FR,
       ]);
+    });
+
+    test('with history nothing changes: no card has a notice', () => {
+      const view = detail({}, {range: 'week'});
+      expect([view.main.notice, view.donut.notice, view.totals.notice]).toEqual([null, null, null]);
+    });
+
+    test('while the history loads the cards say loading, not that there is none', () => {
+      const view = detail(null);
+      expect([view.main.notice, view.donut.notice, view.totals.notice]).toEqual([null, null, null]);
+    });
+  });
+
+  describe('the periods of the tab’s range', () => {
+    test('now is the live flow and today’s donut; each other range is one period for both cards', () => {
+      expect(periodsOf('now')).toEqual({sankey: 'live', donut: 1});
+      expect(periodsOf('today')).toEqual({sankey: 1, donut: 1});
+      expect(periodsOf('week')).toEqual({sankey: 7, donut: 7});
+      expect(periodsOf('month')).toEqual({sankey: 30, donut: 30});
+      expect(periodsOf('year')).toEqual({sankey: 365, donut: 365});
+    });
+  });
+
+  describe('the Sankey', () => {
+    // nine days: the two oldest are heavy and outside a week, the seven newest are the test day
+    const nine = [
+      ...['2026-10-29', '2026-10-30'].map(key =>
+        day(key, {heat: 100, wh: 40, ev: 10, rest: 50, rooms: [100, 0, 0, 0]}),
+      ),
+      ...['2026-10-31', '2026-11-01', '2026-11-02', '2026-11-03', '2026-11-04', '2026-11-05', today].map(key =>
+        day(key),
+      ),
+    ];
+
+    test('the tab has no control of its own: the block is a title, a note and a body', () => {
+      expect(Object.keys(detail({}).sankey).sort()).toEqual(['body', 'note', 'title']);
+      expect(detail({}).sankey.title).toBe('Where the power goes');
+    });
+
+    test('now: the live flow, with the live note', () => {
+      const {sankey} = modelOf(testHouse(), loaded(), 'en', null, {range: 'now'}).detail;
       expect(sankey.note).toBe("Live power: the Hilo meter on the left, each device's own sensor on the right.");
-      // the same geometry the card draws: no second layout
       expect(sankey.body.kind).toBe('flow');
-      expect((sankey.body as {flow: unknown}).flow).toBe(vm.card.flow);
     });
 
     test('now without a grid reading says there is no data', () => {
@@ -431,11 +474,11 @@ describe('the detail', () => {
       const dead = {...inputs, power: {...inputs.power, grid: 0}};
       const {t, fmt: formats, names} = depsOf(fullHouse, 'en');
       const {sankey} = energyModel(dead, null, {now: NOW, t, fmt: formats, names, language: 'en'}).detail;
-      expect(sankey).toMatchObject({note: 'No data yet.', body: {kind: 'empty', text: 'No data yet'}});
+      expect(sankey).toMatchObject({note: '', body: {kind: 'empty', text: 'No reading'}});
     });
 
     test('today: the day’s uses and rooms as ribbons, the rooms named, and the note with the day’s total', () => {
-      const {sankey} = detail({}, {sankeyMode: 'today'});
+      const {sankey} = detail({}, {range: 'today'});
       expect(sankey.note).toBe('Energy since midnight, 20.0 kWh so far.');
       expect(labelsOf(sankey).map(label => [label.name, label.value])).toEqual([
         ['Grid', '20.0 kWh'],
@@ -450,73 +493,105 @@ describe('the detail', () => {
     });
 
     test('today without a day that is today, or without the history, has nothing to draw', () => {
-      const yesterday = detail({daily: [day('2026-11-06')]}, {sankeyMode: 'today'}).sankey;
-      expect(yesterday).toMatchObject({note: 'No data yet.', body: {kind: 'empty', text: 'No data yet'}});
-      expect(detail({daily: []}, {sankeyMode: 'today'}).sankey.body.kind).toBe('empty');
-      expect(detail(null, {sankeyMode: 'today'}).sankey.body.kind).toBe('empty');
-      expect(detail(null, {sankeyMode: 'd30'}).sankey.body.kind).toBe('empty');
+      const yesterday = detail({daily: [day('2026-11-06')]}, {range: 'today'}).sankey;
+      expect(yesterday).toMatchObject({note: '', body: {kind: 'empty', text: NO_HISTORY}});
+      expect(detail({daily: []}, {range: 'today'}).sankey.body.kind).toBe('empty');
+      expect(detail(null, {range: 'today'}).sankey.body).toEqual({kind: 'empty', text: 'Loading history…'});
+      expect(detail(null, {range: 'month'}).sankey.body.kind).toBe('empty');
     });
 
-    test('30 days: the groups and rooms of the 30 days in whole kWh, and nothing when they add up to nothing', () => {
-      const {sankey} = detail({}, {sankeyMode: 'd30'});
-      expect(sankey.note).toBe('Last 30 days, 500 kWh in all.');
-      expect(labelsOf(sankey).map(label => label.value)).toEqual([
-        '500 kWh',
-        '300 kWh',
-        '90 kWh',
-        '40 kWh',
-        '70 kWh',
-        '150 kWh',
-        '100 kWh',
-        '40 kWh',
-        '10 kWh',
+    test('the week is the last seven days of the history, in whole kWh, and the note says so', () => {
+      const {sankey} = detail({daily: nine}, {range: 'week'});
+      expect(sankey.note).toBe('Last 7 days, 140 kWh in all.');
+      expect(labelsOf(sankey).map(label => [label.name, label.value])).toEqual([
+        ['Grid', '140 kWh'],
+        ['Room heating', '70 kWh'],
+        ['Water heating', '28 kWh'],
+        ['Rest of home', '42 kWh'],
+        ['Bedroom', '28 kWh'],
+        ['Garage', '21 kWh'],
+        ['Living room', '14 kWh'],
+        ['Office', '7 kWh'],
       ]);
-      expect(detail({g30: [0, 0, 0, 0]}, {sankeyMode: 'd30'}).sankey.body.kind).toBe('empty');
     });
 
-    test('a room the history has no figure for is a room with nothing', () => {
-      const {sankey} = detail({room30: [150]}, {sankeyMode: 'd30'});
+    test('the month is the last 30 days and the year the last 365: here, every day there is', () => {
+      const month = detail({daily: nine}, {range: 'month'}).sankey;
+      expect(month.note).toBe('Last 30 days, 540 kWh in all.');
+      expect(labelsOf(month)[0].value).toBe('540 kWh');
+      const year = detail({daily: nine}, {range: 'year'}).sankey;
+      expect(year.note).toBe('Last 365 days, 540 kWh in all.');
+    });
+
+    test('nothing in the days has nothing to draw', () => {
+      const none = [day('2026-11-06', {heat: 0, wh: 0, ev: 0, rest: 0, rooms: [0, 0, 0, 0]})];
+      expect(detail({daily: none}, {range: 'month'}).sankey.body.kind).toBe('empty');
+    });
+
+    test('a room with nothing over the period has no ribbon', () => {
+      const {sankey} = detail({daily: [day(today, {rooms: [150, 0, 0, 0]})]}, {range: 'week'});
       expect(labelsOf(sankey).map(label => label.name)).toEqual([
         'Grid',
         'Room heating',
         'Water heating',
-        'EV charging',
         'Rest of home',
         'Bedroom',
       ]);
     });
 
-    test('in French the tabs, the note and the title are French', () => {
-      const {sankey} = detail({}, {sankeyMode: 'd30'}, 'fr');
-      expect(sankey.modes.map(mode => mode.label)).toEqual(['Maintenant', "Aujourd'hui", '30 jours']);
-      expect(sankey.note).toBe('30 derniers jours, 500 kWh en tout.');
+    test('in French the note and the title are French', () => {
+      const {sankey} = detail({daily: nine}, {range: 'week'}, 'fr');
+      expect(sankey.note).toBe('7 derniers jours, 140 kWh en tout.');
       expect(sankey.title).toBe('Où va l’électricité');
     });
   });
 
   describe('the donut and the totals', () => {
-    test('the 30 days’ four slices with a tenth of a kWh and their share of the total', () => {
-      const {donut} = detail({g30: [120.44, 55.5, 8.2, 300]});
-      expect(donut.hint).toBe(
-        'Last 30 days. Rest of home is everything without its own power sensor, including the heat pump.',
-      );
-      expect(donut.parts.map(part => [part.key, part.kwh])).toEqual([
-        ['heat', 120.44],
-        ['wh', 55.5],
-        ['ev', 8.2],
-        ['rest', 300],
-      ]);
-      expect(donut.rows).toEqual([
-        {key: 'heat', name: 'Room heating', kwh: '120.4 kWh', share: '25%'},
-        {key: 'wh', name: 'Water heating', kwh: '55.5 kWh', share: '11%'},
-        {key: 'ev', name: 'EV charging', kwh: '8.2 kWh', share: '2%'},
-        {key: 'rest', name: 'Rest of home', kwh: '300.0 kWh', share: '62%'},
-      ]);
+    test('today’s four slices with a tenth of a kWh and their share of the total; now draws today’s', () => {
+      const daily = [day('2026-11-06'), day(today, {heat: 120.44, wh: 55.5, ev: 8.2, rest: 300})];
+      for (const range of ['now', 'today'] as const) {
+        const {donut} = detail({daily}, {range});
+        expect(donut.hint).toBe(
+          'Today so far. Rest of home is everything without its own power sensor, including the heat pump.',
+        );
+        expect(donut.parts.map(part => [part.key, part.kwh])).toEqual([
+          ['heat', 120.44],
+          ['wh', 55.5],
+          ['ev', 8.2],
+          ['rest', 300],
+        ]);
+        expect(donut.rows).toEqual([
+          {key: 'heat', name: 'Room heating', kwh: '120.4 kWh', share: '25%'},
+          {key: 'wh', name: 'Water heating', kwh: '55.5 kWh', share: '11%'},
+          {key: 'ev', name: 'EV charging', kwh: '8.2 kWh', share: '2%'},
+          {key: 'rest', name: 'Rest of home', kwh: '300.0 kWh', share: '62%'},
+        ]);
+      }
     });
 
-    test('with nothing in the 30 days every share is zero, and French puts a narrow space before the sign', () => {
-      expect(detail({g30: [0, 0, 0, 0]}).donut.rows.map(row => row.share)).toEqual(['0%', '0%', '0%', '0%']);
-      expect(detail({g30: [1, 1, 1, 1]}, {}, 'fr').donut.rows[0]).toMatchObject({kwh: '1,0 kWh', share: '25 %'});
+    test('the week, the month and the year sum the last 7, 30 and 365 days, and the hint says which', () => {
+      // 400 days: the oldest 35 weigh 100 kWh of heating each, and the last 365 days 10
+      const days = Array.from({length: 400}, (_, index) => {
+        const stamp = new Date(Date.UTC(2025, 9, 1) + index * 864e5).toISOString().slice(0, 10);
+        return day(stamp, {heat: index < 35 ? 100 : 10});
+      });
+      const heat = (range: 'week' | 'month' | 'year') => detail({daily: days}, {range}).donut.parts[0].kwh;
+      expect([heat('week'), heat('month'), heat('year')]).toEqual([70, 300, 3650]);
+      expect(detail({daily: days}, {range: 'week'}).donut.hint).toMatch(/^Last 7 days\. Rest of home/);
+      expect(detail({daily: days}, {range: 'month'}).donut.hint).toMatch(/^Last 30 days\. /);
+      expect(detail({daily: days}, {range: 'year'}).donut.hint).toMatch(/^Last 365 days\. /);
+    });
+
+    test('today with no day that is today draws no donut but the one sentence; in French the share has a narrow space before the sign', () => {
+      const old = day('2026-11-06', {heat: 1, wh: 1, ev: 1, rest: 1});
+      expect(detail({daily: [old]}).donut).toMatchObject({notice: NO_HISTORY, parts: [], rows: [], hint: ''});
+      expect(detail({daily: [day(today, {heat: 1, wh: 1, ev: 1, rest: 1})]}, {}, 'fr').donut.rows[0]).toMatchObject({
+        kwh: '1,0 kWh',
+        share: '25\u202f%',
+      });
+      expect(detail({daily: [day(today, {heat: 1, wh: 1, ev: 1, rest: 1})]}, {}, 'fr').donut.hint).toMatch(
+        /^Aujourd'hui jusqu'ici\. Le reste de la maison/,
+      );
     });
 
     test('the six totals: today to a decimal until the time, yesterday, the 30 days with their daily mean, the month, the car and the rate', () => {
@@ -532,6 +607,18 @@ describe('the detail', () => {
         {label: 'EV, 30 days', value: '40', unit: 'kWh', sub: '3 charging days'},
         {label: 'Rate now', value: '–', unit: '¢', sub: 'Hilo rate unknown'},
       ]);
+    });
+
+    test('a meter that read nothing and no day: the totals are the one sentence, no tile of 0 kWh', () => {
+      const none = {today: 0, yesterday: null, d30: 0, month: 0};
+      expect(detail({daily: [], totals: none}).totals).toEqual({
+        title: 'Totals',
+        hint: '',
+        notice: NO_HISTORY,
+        tiles: [],
+      });
+      expect(detail({daily: [], totals: none}, {}, 'fr').totals.notice).toBe(NO_HISTORY_FR);
+      expect(detail({}).totals.notice).toBeNull();
     });
 
     test('yesterday is a dash when no day says it, and one charging day is singular, none plural', () => {
@@ -569,12 +656,13 @@ describe('the recorded house', () => {
     return;
   }
 
-  test.each(['en', 'fr'] as const)('gives a summary, four tiles and a flow, in %s', language => {
+  test.each(['en', 'fr'] as const)('gives a summary and the live flow, in %s', language => {
     const hass = fakeHass.fromFixture('main');
     const store = storeOf(hass);
     const vm = modelOf(readEnergy(hass.states, store.config, store.names), null, language);
     expect(vm.summary).not.toBe('');
-    expect(vm.card.tiles).toHaveLength(4);
-    expect(vm.card.flow.nodes).toHaveLength(5);
+    const {body} = vm.detail.sankey;
+    if (body.kind !== 'flow') throw new Error('the Sankey of now is the live flow');
+    expect(body.flow.nodes).toHaveLength(5);
   });
 });

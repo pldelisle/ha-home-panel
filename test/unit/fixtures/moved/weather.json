@@ -441,6 +441,18 @@
       "was": "Ouvrir les détails de la météo"
     },
     {
+      "key": "weather.card.name",
+      "values": {
+        "temperature": "4°",
+        "condition": "mainly sunny"
+      },
+      "written": "Météo\u00a0: 4°, mainly sunny. Ouvre les prévisions"
+    },
+    {
+      "key": "weather.card.nameBare",
+      "written": "Météo. Ouvre les prévisions"
+    },
+    {
       "key": "weather.today"
     },
     {

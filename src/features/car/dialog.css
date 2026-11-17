@@ -1,0 +1,93 @@
+/*
+ * What the Car's dialogs hold beyond the kit's (src/ui/dialog.element.css): the departure editor's sheet (`.dsheet`, the bar with Cancel, the title and Save, and its body) and the grouped rows
+ * of the editor and of the Start question's heaters (`.list`, `.lrow`, `.gl`, `.foot`). On a phone the editor fills the screen as a sheet (HIG, Sheets).
+ */
+dialog.dsheet {
+  width: min(560px, calc(100vw - 32px));
+  height: min(760px, calc(100vh - 48px));
+  padding: 0;
+  overflow: auto;
+}
+:host([compact]) dialog.dsheet {
+  margin: auto 0 0;
+  width: 100vw;
+  max-width: none;
+  height: calc(100vh - 40px);
+  border-radius: 30px 30px 0 0;
+}
+/* a sheet's bar: Cancel, the title, and the action (or Done) */
+.nav {
+  position: sticky;
+  top: 0;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+  min-height: 60px;
+  padding: 8px 14px;
+  background: inherit;
+  z-index: 1;
+}
+.nav h4 {
+  margin: 0;
+  text-align: center;
+}
+.nav .l {
+  justify-self: start;
+}
+.nav .r {
+  justify-self: end;
+}
+.sb {
+  padding: 0 16px 20px;
+}
+/* grouped rows, as a list's: a hairline between them */
+/* a list of rows to tap (the days, the heaters): a control's surface, not a well (docs/design.md, "Three surfaces") */
+.list {
+  border-radius: 16px;
+  background: var(--ctl-bg);
+  box-shadow: var(--ctl-edge);
+  overflow: hidden;
+}
+.lrow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 52px;
+  padding: 8px 14px;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+}
+.lrow + .lrow {
+  border-top: 1px solid var(--line);
+}
+.lrow .lbl {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+}
+.lrow .val {
+  color: var(--fg2);
+}
+button.lrow {
+  cursor: pointer;
+}
+button.lrow:focus-visible {
+  outline: 2px solid var(--c-home);
+  outline-offset: -2px;
+}
+.gl {
+  margin: 16px 4px 6px;
+  font-size: calc(13px * var(--tx));
+  font-weight: 600;
+  color: var(--fg2);
+}
+.foot {
+  margin: 8px 4px 0;
+  font-size: calc(12.5px * var(--tx));
+  color: var(--fg2);
+}

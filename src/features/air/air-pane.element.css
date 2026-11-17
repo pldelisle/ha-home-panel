@@ -1,6 +1,6 @@
 /*
- * <hp-air-pane>'s own rules: it lays out nothing, so the header, the card and the inline detail are items of the pane section's own column
- * (`.pane-air`, phone.css: sixteen pixels between them), as the old summary pane's were; the sheet is fixed to the screen. On a tablet the
+ * <hp-air-pane>'s own rules: it lays out nothing, so the header and the inline detail are items of the pane section's own column
+ * (`.pane-air`, phone.css: sixteen pixels between them), as the old summary pane's were; the sheet (over another tab) is fixed to the screen. On a tablet the
  * header is not shown, as the old summary panes' were, and the detail draws its own. The section's rules stay with the shell's panes.
  */
 :host {

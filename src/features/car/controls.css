@@ -1,10 +1,8 @@
-/* What the Car's two control cards share (spec 21, #253): the label over a group and the line of words under it, adopted by `<hp-charger-controls>` and `<hp-car-comfort>` through `forShadow`.
+/* The label over a group and the line of words under it (spec 21, #253), adopted by `<hp-charger-controls>` through `forShadow`.
    Moved from the legacy `.ctl-l` and `.hint` rules (base.css); `.hint` stays in the legacy sheet for the Home and Automations panes, so the card's copy is written `.inner .hint` (a known copy, until the Home and Automations moves delete the legacy one). */
 .ctl-l {
-  font-size: calc(12px * var(--tx));
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: calc(13px * var(--tx));
+  font-weight: 600;
   color: var(--fg2);
   margin: 14px 0 6px;
 }

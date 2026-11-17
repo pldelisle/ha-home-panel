@@ -76,8 +76,9 @@ describe('mainRows', () => {
   const {fmt} = depsOf(fullHouse, 'en');
   const rows = (range: (typeof ENERGY_RANGES)[number]) => mainRows(range, history(), {fmt, now: NOW});
 
-  test('today is the hours of the local day, the week all the hours', () => {
+  test('today is the hours of the local day, and so is now; the week all the hours', () => {
     expect(rows('today')).toEqual({range: 'today', rows: FLOW.slice(0, 2)});
+    expect(rows('now')).toEqual({range: 'today', rows: FLOW.slice(0, 2)});
     expect(rows('week')).toEqual({range: 'week', rows: FLOW});
   });
 
@@ -90,14 +91,14 @@ describe('mainRows', () => {
 });
 
 describe('the ranges', () => {
-  test('are today, week, month and year, and a tab of the kit’s other ranges is not one', () => {
-    expect([...ENERGY_RANGES]).toEqual(['today', 'week', 'month', 'year']);
+  test('are now, today, week, month and year, and a tab of the kit’s other ranges is not one', () => {
+    expect([...ENERGY_RANGES]).toEqual(['now', 'today', 'week', 'month', 'year']);
     expect(ENERGY_RANGES.every(isEnergyRange)).toBe(true);
     expect(isEnergyRange('day')).toBe(false);
   });
 
-  test('today and the week stand on a time axis, the month and the year on categories: the shape <hp-chart> draws a new chart for', () => {
-    expect(ENERGY_RANGES.map(mainShape)).toEqual(['time', 'time', 'category', 'category']);
+  test('now, today and the week stand on a time axis, the month and the year on categories: the shape <hp-chart> draws a new chart for', () => {
+    expect(ENERGY_RANGES.map(mainShape)).toEqual(['time', 'time', 'time', 'category', 'category']);
   });
 });
 
@@ -159,7 +160,7 @@ describe('the main chart, today and the week', () => {
   test('on a time axis in local time, bars 70 percent wide for today and 90 for the week, no stroke', () => {
     const today = mainChartOptions(rows('today'), NAMES, deps());
     const week = mainChartOptions(rows('week'), NAMES, deps());
-    expect(at(today, 'xaxis')).toEqual({type: 'datetime', labels: {datetimeUTC: false}});
+    expect(at(today, 'xaxis')).toMatchObject({type: 'datetime', labels: {datetimeUTC: false}});
     expect(at(today, 'plotOptions.bar')).toEqual({
       borderRadius: 3,
       borderRadiusApplication: 'end',
@@ -171,14 +172,39 @@ describe('the main chart, today and the week', () => {
     expect(at(today, 'fill')).toEqual({opacity: 1});
   });
 
+  // the library splits the span of the data in five by itself ("2:48 am, 5:36 am"): the options choose steps of whole hours
+  test('the time axis is cut in steps of whole hours: every two hours over a morning, every day over a week', () => {
+    const hours = (range: 'today' | 'week', from: string, count: number): MainRows => {
+      const first = Date.parse(from);
+      return {range, rows: Array.from({length: count}, (_, i): FlowRow => [first + i * 36e5, 1, 1, 1, 1, 4])};
+    };
+    // fifteen rows from midnight reach fourteen hours: seven steps of two hours
+    const midnight = Date.parse('2026-11-07T00:00:00-05:00');
+    expect(at(mainChartOptions(hours('today', '2026-11-07T00:00:00-05:00', 15), NAMES, deps()), 'xaxis')).toMatchObject(
+      {
+        min: midnight,
+        max: midnight + 14 * 36e5,
+        tickAmount: 7,
+      },
+    );
+    // 159 rows from 1 pm on 5 November reach 3 am on the 12th: the axis begins at the first midnight, the 6th, and takes seven days of steps
+    const week = mainChartOptions(hours('week', '2026-11-05T13:00:00-05:00', 159), NAMES, deps());
+    expect(at(week, 'xaxis')).toMatchObject({
+      min: Date.parse('2026-11-06T00:00:00-05:00'),
+      max: Date.parse('2026-11-13T00:00:00-05:00'),
+      tickAmount: 7,
+    });
+  });
+
   test('the axis counts whole kWh from zero and the tooltip reads the hour and two decimals', () => {
     const today = mainChartOptions(rows('today'), NAMES, deps());
     const week = mainChartOptions(rows('week'), NAMES, deps());
     expect(at(today, 'yaxis')).toMatchObject({min: 0, tickAmount: 4, forceNiceScale: true});
     expect(call(today, 'yaxis.labels.formatter', 12.4)).toBe('12 kWh');
     expect(at(today, 'tooltip')).toMatchObject({shared: true, intersect: false});
-    expect(at(today, 'tooltip.x.format')).toBe('HH:mm');
-    expect(at(week, 'tooltip.x.format')).toBe('ddd MMM d, HH:mm');
+    const instant = Date.parse('2026-11-09T21:07:00Z');
+    expect(call(today, 'tooltip.x.formatter', instant)).toBe('4:07 pm');
+    expect(call(week, 'tooltip.x.formatter', instant)).toBe('Mon, Nov 9 4:07 pm');
     expect(call(today, 'tooltip.y.formatter', 1.256)).toBe('1.26 kWh');
   });
 
@@ -254,11 +280,11 @@ describe('the donut', () => {
     expect(at(options, 'plotOptions.pie.donut.size')).toBe('70%');
   });
 
-  test('writes a slice in whole kWh in its middle, the total of the 30 days under its label, and a tenth in the tooltip', () => {
+  test('writes a slice in whole kWh in its middle, the total of the period under its label, and a tenth in the tooltip', () => {
     const options = donutOptions(parts, deps());
     const labels = 'plotOptions.pie.donut.labels';
     expect(at(options, `${labels}.value`)).toMatchObject({fontFamily: 'Num', color: 'black'});
-    expect(at(options, `${labels}.total`)).toMatchObject({label: 'kWh, 30 days', color: 'dim'});
+    expect(at(options, `${labels}.total`)).toMatchObject({label: 'kWh', color: 'dim'});
     expect(call(options, `${labels}.value.formatter`, 120.6)).toBe('121');
     expect(call(options, `${labels}.total.formatter`)).toBe('476');
     expect(call(options, 'tooltip.y.formatter', 55.55)).toBe('55.6 kWh');
@@ -266,7 +292,7 @@ describe('the donut', () => {
 
   test('in French the total’s label is French', () => {
     const options = donutOptions(parts, deps('fr'));
-    expect(at(options, 'plotOptions.pie.donut.labels.total.label')).toBe('kWh, 30 jours');
+    expect(at(options, 'plotOptions.pie.donut.labels.total.label')).toBe('kWh');
     expect(call(options, 'tooltip.y.formatter', 55.55)).toBe('55,6 kWh');
   });
 });

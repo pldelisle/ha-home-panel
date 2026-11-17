@@ -39,8 +39,9 @@
   background: var(--card);
   box-shadow: var(--shadow);
 }
+/* the chosen option is the raised white segment, its words in the text colour, as iOS draws a segmented control: the fill and the shadow say it, no tint does */
 .seg button[aria-checked='true'] b {
-  color: var(--t-ev);
+  color: var(--fg);
 }
 .seg button:focus-visible {
   outline: 2px solid var(--c-home);
@@ -57,9 +58,6 @@
 .app.gl[data-theme='dark'] .seg button[aria-checked='true'] {
   background: rgba(255, 255, 255, 0.05);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
-}
-.app.gl[data-theme='dark'] .seg button[aria-checked='true'] b {
-  color: #66ccae;
 }
 @media (prefers-reduced-transparency: reduce) {
   .app.gl .seg {

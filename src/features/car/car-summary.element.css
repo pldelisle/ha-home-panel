@@ -1,0 +1,76 @@
+/*
+ * <hp-car-summary>'s own rules: its `:host`, the charge beside the picture, the picture, and the facts under the bar. The charge and the picture are the old battery block's (`.carhero`,
+ * from the legacy base.css and extra.css), the bar is soc-bar.css, the shared rules of the blocks are styles.css. A fact's dot is green for the good news of the moment, the warning colour for
+ * what needs a look, and grey for the rest; the word beside it always says it too (HIG, Color: never colour alone).
+ */
+:host {
+  display: flex;
+  min-width: 0;
+}
+.carhero {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+.carhero .carside {
+  flex: 1 1 240px;
+  max-width: 380px;
+  height: auto;
+}
+.carhero .carimg {
+  flex: 1 1 240px;
+  max-width: 380px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+.carhero .t {
+  font-family: var(--f-num);
+  font-weight: var(--num-w);
+  font-size: calc(64px * var(--tx));
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+.carhero .t small {
+  font-size: calc(24px * var(--tx));
+  color: var(--fg2);
+  margin-left: 2px;
+}
+.autonomy {
+  font-size: calc(14px * var(--tx));
+  margin-top: 4px;
+}
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: calc(13.5px * var(--tx));
+}
+.facts li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.facts i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--fg3);
+}
+.facts .ok i {
+  background: var(--c-ev);
+}
+.facts .warn i {
+  background: var(--warn);
+}
+.facts .warn {
+  color: var(--t-warn);
+  font-weight: 600;
+}
+:host([compact]) .carhero .t {
+  font-size: calc(52px * var(--tx));
+}

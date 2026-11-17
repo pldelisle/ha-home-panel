@@ -27,8 +27,6 @@ export interface FeatureDescriptor {
   key: FeatureKey;
   /** The rail label, the pane heading and the More list. */
   title: MessageKey;
-  /** The phone's fifth slot when it holds this section, for a title that does not fit ('auto.short' is "Rules"). */
-  shortTitle?: MessageKey;
   icon: IconName;
   /** A colour token such as `var(--m-blue)`. */
   color: string;

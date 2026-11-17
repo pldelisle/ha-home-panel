@@ -2,11 +2,10 @@
 // the Security card, and the scenes row. The shell imports features; a feature never imports the shell or another feature (ADR 0017).
 // Pattern: a humble composition (Meszaros, xUnit Test Patterns), the composition root's child: each card is its feature's element on its
 // own ids (ADR 0012), drawn in light DOM (ADR 0032) so the pane's parts stay items of the `.pane-home` grid, styled by home-pane.css.
-// It loads the Energy and Water heater tiles' history (`HomeHistory`) and hands it down, and its heading's line is `homeLine`'s. Must not: read
+// On a phone the weather card carries a button over it, named by `weatherCardLabel`, rather than being a button around its words. It loads the Energy and Water heater tiles' history (`HomeHistory`) and hands it down, and its heading's line is `homeLine`'s. Must not: read
 // an entity but through `readHomeTemperatures`, word anything (the cards, the readers and `homeLine` do), or hold logic beyond placing them and that load.
 import {ContextConsumer} from '@lit/context';
 import {LitElement, html, nothing, unsafeCSS} from 'lit';
-import {ifDefined} from 'lit/directives/if-defined.js';
 import {repeat} from 'lit/directives/repeat.js';
 import './config-card.ts'; // defines <hp-config-card>
 import './glance-tile.ts'; // defines <hp-glance-tile>
@@ -20,7 +19,7 @@ import '../features/media/index.ts'; // defines <hp-scene-tiles>
 import '../features/people/index.ts'; // defines <hp-who-card>
 import '../features/security/index.ts'; // defines <hp-security-card>
 import '../features/stack/index.ts'; // defines <hp-smart-stack>
-import {weatherFeature} from '../features/weather/index.ts'; // defines <hp-weather-card>
+import {weatherCardLabel, weatherCardLabelIds, weatherFeature} from '../features/weather/index.ts'; // defines <hp-weather-card>
 import {StoreController} from '../ui/controllers/store-controller.ts';
 import {TickController} from '../ui/controllers/tick.ts';
 import {appearanceContext, statisticsCacheContext} from '../ui/contexts.ts';
@@ -45,8 +44,10 @@ export class HomePane extends LitElement {
   declare private stackEmpty: boolean;
   declare private scenesEmpty: boolean;
 
-  // the heading's line: the rooms' and the outside temperatures
-  private readonly storeController = new StoreController(this, {ids: store => homeTemperatureIds(store.config)});
+  // the heading's line: the rooms' and the outside temperatures; and the phone's weather card's name, which the weather entities move
+  private readonly storeController = new StoreController(this, {
+    ids: store => [...homeTemperatureIds(store.config), ...weatherCardLabelIds(store)],
+  });
   private readonly appearance = new ContextConsumer(this, {context: appearanceContext, subscribe: true});
   private cache: StatisticsCache | undefined;
   private readonly history: HomeHistory;
@@ -87,12 +88,6 @@ export class HomePane extends LitElement {
       this.dispatchEvent(new SheetRequestEvent(weatherFeature.detailSheet));
   };
 
-  private readonly onWeatherKey = (e: KeyboardEvent): void => {
-    if (!this.compact || (e.key !== 'Enter' && e.key !== ' ')) return;
-    e.preventDefault();
-    this.openWeather();
-  };
-
   protected override render() {
     const {hass, config, t, fmt} = this.storeController.store;
     const compact = this.compact;
@@ -108,12 +103,17 @@ export class HomePane extends LitElement {
         class="card hwx${compact ? ' tap' : ''}"
         id="hwx"
         data-opens=${compact ? (weatherFeature.detailSheet ?? nothing) : nothing}
-        role=${ifDefined(compact ? 'button' : undefined)}
-        tabindex=${ifDefined(compact ? 0 : undefined)}
-        @click=${this.openWeather}
-        @keydown=${this.onWeatherKey}
       >
         <hp-weather-card></hp-weather-card><hp-who-card></hp-who-card>${
+          compact
+            ? html`<button
+                type="button"
+                class="hwx-open"
+                aria-label=${weatherCardLabel(this.storeController.store)}
+                @click=${this.openWeather}
+              ></button>`
+            : nothing
+        }${
           compact
             ? nothing
             : html`<div

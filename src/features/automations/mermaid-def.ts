@@ -3,7 +3,7 @@
 // Pattern: a pure printer from the graph to Mermaid's flowchart syntax (Bernhardt, functional core), the legacy `auMermaid()`
 // and `auMix()`; the escaping is #97's (docs/specs/07, "As built (#97)").
 // Must not: read the theme or the DOM (the colours are passed in as tokens), load Mermaid, or word anything: it only
-// capitalises the graph's words and cuts a long sentence, as the legacy panel drew them.
+// cuts a long sentence, as the legacy panel drew them (the kind and gate words are written as the catalog has them, in sentence case).
 import {cut} from './sentences.ts';
 import type {Graph, GraphNode} from './graph.ts';
 
@@ -67,10 +67,8 @@ export const safeText = (s: string): string => splitDollars(protectPercent(prote
 
 const label = (n: GraphNode): string => {
   if (n.shape === 'circle' || n.shape === 'stop')
-    return `<span style='font-size:11px;font-weight:800;letter-spacing:.08em'>${safeText(n.label)}</span>`;
-  const k = n.k
-    ? `<span style='font-size:11px;font-weight:800;letter-spacing:.1em;opacity:.65'>${safeText(n.k.toUpperCase())}</span><br/>`
-    : '';
+    return `<span style='font-size:11px;font-weight:800'>${safeText(n.label)}</span>`;
+  const k = n.k ? `<span style='font-size:11px;font-weight:800;opacity:.65'>${safeText(n.k)}</span><br/>` : '';
   const sub = n.sub ? `<br/><span style='font-size:11px;font-weight:500;opacity:.75'>${safeText(n.sub)}</span>` : '';
   return `${k}<span style='font-size:12px;font-weight:700'>${safeText(cut(n.label, 64))}</span>${sub}`;
 };

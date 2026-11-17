@@ -6,33 +6,7 @@
       "was": "Énergie de la maison"
     },
     {
-      "key": "energy.open",
-      "was": "Ouvrir les détails de l'énergie"
-    },
-    {
       "key": "energy.close"
-    },
-    {
-      "key": "energy.gridOnly",
-      "values": {
-        "rate": "low rate"
-      },
-      "fr": {
-        "rate": "tarif bas"
-      },
-      "was": "Réseau seulement · tarif bas",
-      "after": "Grid only · tarif bas"
-    },
-    {
-      "key": "energy.gridOnly",
-      "values": {
-        "rate": "rate unknown"
-      },
-      "fr": {
-        "rate": "tarif inconnu"
-      },
-      "was": "Réseau seulement · tarif inconnu",
-      "after": "Grid only · tarif inconnu"
     },
     {
       "key": "energy.summary",
@@ -163,23 +137,23 @@
     },
     {
       "key": "energy.flow.grid",
-      "was": "RÉSEAU"
+      "written": "Réseau"
     },
     {
       "key": "energy.flow.home",
-      "was": "kW · MAISON"
+      "written": "kW · Maison"
     },
     {
       "key": "energy.flow.water",
-      "was": "CHAUFFE-EAU"
+      "written": "Chauffe-eau"
     },
     {
       "key": "energy.flow.heat",
-      "was": "CHAUFFAGE"
+      "written": "Chauffage"
     },
     {
       "key": "energy.flow.ev",
-      "was": "RECHARGE VÉ"
+      "written": "Recharge VÉ"
     },
     {
       "key": "energy.flow.rest",
@@ -218,7 +192,12 @@
       "key": "energy.unavailable"
     },
     {
-      "key": "energy.today"
+      "key": "energy.now",
+      "written": "Direct"
+    },
+    {
+      "key": "energy.today",
+      "written": "Jour"
     },
     {
       "key": "energy.tile.heat",
@@ -233,9 +212,6 @@
     {
       "key": "energy.tile.ev",
       "was": "Recharge VÉ"
-    },
-    {
-      "key": "energy.last30"
     },
     {
       "key": "energy.water.title"
@@ -482,10 +458,6 @@
       "written": "Heure la plus chargée : 4,2 kWh, lun. 17 h. Touchez une barre pour voir ce qui fonctionnait."
     },
     {
-      "key": "energy.detail.noHour",
-      "was": "Pas encore d'heure complète aujourd'hui."
-    },
-    {
       "key": "energy.detail.monthSum",
       "values": {
         "total": 612,
@@ -516,13 +488,6 @@
       "was": "Où va l’électricité"
     },
     {
-      "key": "energy.sankey.period",
-      "was": "Période du diagramme"
-    },
-    {
-      "key": "energy.sankey.now"
-    },
-    {
       "key": "energy.days30"
     },
     {
@@ -538,19 +503,12 @@
       "was": "Énergie depuis minuit, 12,3 kWh jusqu’ici."
     },
     {
-      "key": "energy.sankey.note30",
+      "key": "energy.sankey.noteDays",
       "values": {
+        "days": 7,
         "kwh": 612
       },
-      "written": "30 derniers jours, 612 kWh en tout."
-    },
-    {
-      "key": "energy.sankey.noData",
-      "was": "Pas encore de données."
-    },
-    {
-      "key": "energy.sankey.empty",
-      "was": "Pas encore de données"
+      "written": "7 derniers jours, 612 kWh en tout."
     },
     {
       "key": "energy.sankey.grid",
@@ -570,7 +528,10 @@
     },
     {
       "key": "energy.donut.hint",
-      "was": "30 derniers jours. Le reste de la maison comprend tout ce qui n'a pas son propre capteur de puissance, y compris la thermopompe."
+      "values": {
+        "days": 30
+      },
+      "written": "30 derniers jours. Le reste de la maison comprend tout ce qui n'a pas son propre capteur de puissance, y compris la thermopompe."
     },
     {
       "key": "energy.donut.total"
@@ -720,6 +681,10 @@
       "fr": {
         "state": "Chauffe"
       }
+    },
+    {
+      "key": "energy.noReading",
+      "written": "Aucune mesure"
     },
     {
       "key": "energy.more.watts",

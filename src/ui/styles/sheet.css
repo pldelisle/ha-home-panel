@@ -205,11 +205,11 @@ button.icon:focus-visible {
   background: var(--fg2);
 }
 .app.gl .sheet button.icon.close {
-  background: var(--g-tile);
-  box-shadow: var(--g-edge-s);
+  background: var(--g-fill);
+  box-shadow: var(--g-nav-rim-s);
 }
 .app.gl .sheet button.icon.close {
-  box-shadow: var(--g-edge-s);
+  box-shadow: var(--g-nav-rim-s);
 }
 @media (prefers-reduced-transparency: reduce) {
   .app.gl.cp .sheet > .panel {

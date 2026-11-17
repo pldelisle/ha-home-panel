@@ -9,7 +9,6 @@ import {
   bucket,
   heatmapOptions,
   heatScale,
-  outsideChartOptions,
   roomChartOptions,
   selectedSeries,
   type ClimateHistoryData,
@@ -36,7 +35,7 @@ export interface ClimateChartsRequest {
   name: string;
   /** Every room's key: the house's line is their mean. */
   roomKeys: readonly string[];
-  /** The tablet draws the heatmap, a row per room in the order given, and the outside chart; the phone's sheet only the room's chart, so it gives none. */
+  /** The tablet draws the heatmap, a row per room in the order given; the phone's sheet only the room's chart, so it gives none. */
   heatmapRooms: readonly {key: string; name: string}[] | null;
 }
 
@@ -44,7 +43,6 @@ export interface ClimateChartsRequest {
 export interface ClimateOptions {
   chart: ChartOptions;
   heatmap: ChartOptions | null;
-  outside: ChartOptions | null;
 }
 
 /** A chart's last build: what it was made from (the history by identity, the rest as text: the heatmap's rows by key and name, so a room swapped for another of the same name is drawn) and the options it made. */
@@ -57,9 +55,8 @@ interface Slot {
 export class ClimateCharts {
   private chart: Slot | undefined;
   private heatmap: Slot | undefined;
-  private outside: Slot | undefined;
 
-  /** The three charts' options for this request: a chart whose slot is for the same history, selection, theme and language keeps its options. */
+  /** The two charts' options for this request: a chart whose slot is for the same history, selection, theme and language keeps its options. */
   build(request: ClimateChartsRequest, deps: ClimateChartsDeps): ClimateOptions {
     const {history, selection, name, roomKeys, heatmapRooms} = request;
     const {range} = history;
@@ -86,10 +83,7 @@ export class ClimateCharts {
             return heatmapOptions(rows, range, heatScale(deps.dark), own());
           },
         );
-    this.outside = heatmapRooms
-      ? this.slot(this.outside, history, base, () => outsideChartOptions(history.out, range, own()))
-      : undefined;
-    return {chart: this.chart.options, heatmap: this.heatmap?.options ?? null, outside: this.outside?.options ?? null};
+    return {chart: this.chart.options, heatmap: this.heatmap?.options ?? null};
   }
 
   // the slot as it was when it is for the same history and key, else a new one made by `make`

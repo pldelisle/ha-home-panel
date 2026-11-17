@@ -13,13 +13,13 @@ import type {Translate} from '../../core/i18n/messages.ts';
 import {hpSeries, NO_TARGET_MODES} from '../../providers/heat-pump.ts';
 import {OFF_AT_OR_BELOW} from '../../providers/power.ts';
 import {sum, windowStart, type StatisticsWindow, type StatsReply} from '../../providers/power-history.ts';
-import {celsius, mergeOptions, timeAxis, type ChartOptions} from '../../ui/chart-options.ts';
+import {celsius, mergeOptions, timeAxis, tooltipDate, type ChartOptions} from '../../ui/chart-options.ts';
 import {bucketMiddle, RANGES, type Range, type StatisticsPeriod} from '../../ui/ranges.ts';
 import {thinCategories} from '../../ui/thin-axis.ts';
 
 // ---------- the window ----------
 
-/** The statistics the rooms' charts ask of the recorder: the mean, and the low and high of each bucket (the outside chart's band). */
+/** The statistics the rooms' charts ask of the recorder: the mean, and the low and high of each bucket. */
 const TYPES = ['mean', 'min', 'max'];
 
 /**
@@ -422,12 +422,12 @@ export function heatLegend(stops: HeatStops): HeatLegend {
 
 // ---------- the words ----------
 
-/** The words a range gives the heatmap's title and the outside chart's note, as catalog keys: Climate's own, since no other feature reads them (the kit's `RANGES` holds what every user needs). Read by the model. */
-export const RANGE_WORDS: Record<Range, {heatTitle: MessageKey; outNote: MessageKey}> = {
-  day: {heatTitle: 'climate.heatTitle.day', outNote: 'climate.outNote.fiveMinute'},
-  week: {heatTitle: 'climate.heatTitle.week', outNote: 'climate.outNote.hourly'},
-  month: {heatTitle: 'climate.heatTitle.month', outNote: 'climate.outNote.hourly'},
-  year: {heatTitle: 'climate.heatTitle.year', outNote: 'climate.outNote.daily'},
+/** The words a range gives the heatmap's title, as catalog keys: Climate's own, since no other feature reads them (the kit's `RANGES` holds what every user needs). Read by the model. */
+export const RANGE_WORDS: Record<Range, {heatTitle: MessageKey}> = {
+  day: {heatTitle: 'climate.heatTitle.day'},
+  week: {heatTitle: 'climate.heatTitle.week'},
+  month: {heatTitle: 'climate.heatTitle.month'},
+  year: {heatTitle: 'climate.heatTitle.year'},
 };
 
 // ---------- the options ----------
@@ -524,48 +524,12 @@ export function roomChartOptions(
     stroke: hasSetpoint
       ? {width: [2.2, 2, 2.2], curve: [curve, 'stepline', curve], dashArray: [0, 5, 0]}
       : {width: 2.2, curve},
-    xaxis: timeAxis(RANGES[range].days, now),
+    xaxis: timeAxis(RANGES[range].days, now, fmt),
     yaxis: {labels: {formatter: (value: number | null) => (value == null ? '' : degrees(fmt, value))}},
     tooltip: {
       shared: true,
-      x: {format: RANGES[range].tooltipFormat},
+      x: {formatter: tooltipDate(RANGES[range].tooltip, fmt)},
       y: {formatter: (value: number | null) => celsius(fmt, value)},
-    },
-  };
-}
-
-/** The outside chart's tooltip value: a band is "low to high", a mean one figure. */
-const outsideValue = (fmt: Formatters, t: Translate, value: number | number[] | null): string =>
-  Array.isArray(value)
-    ? t('climate.chart.span', {low: fmt.fixed(+value[0], 1), high: fmt.fixed(+value[1], 1)})
-    : celsius(fmt, value);
-
-/** The outside chart's options, without the theme: a band from each bucket's low to its high (a bucket without both is left out of it) and the mean's line over it. Read by `ClimateCharts`. */
-export function outsideChartOptions(
-  out: readonly RangePoint[],
-  range: Range,
-  {fmt, t, tokens, now}: Pick<ClimateChartDeps, 'fmt' | 't' | 'tokens' | 'now'>,
-): ChartOptions {
-  const band = out.filter((point): point is [number, number, number, number] => point[2] != null && point[3] != null);
-  return {
-    chart: {type: 'rangeArea'},
-    series: [
-      {
-        name: t('climate.chart.lowToHigh'),
-        type: 'rangeArea',
-        data: band.map(([at, , low, high]) => ({x: at, y: [low, high]})),
-      },
-      {name: t(RANGES[range].meanKey), type: 'line', data: out.map(([at, mean]) => ({x: at, y: mean}))},
-    ],
-    colors: [tokens.outside, tokens.outside],
-    fill: {opacity: [0.22, 1]},
-    stroke: {width: [0, 2], curve: 'smooth'},
-    xaxis: timeAxis(RANGES[range].days, now),
-    yaxis: {labels: {formatter: (value: number) => degrees(fmt, value)}},
-    tooltip: {
-      shared: true,
-      x: {format: RANGES[range].tooltipFormat},
-      y: {formatter: (value: number | number[] | null) => outsideValue(fmt, t, value)},
     },
   };
 }

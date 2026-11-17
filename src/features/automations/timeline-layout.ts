@@ -1,7 +1,7 @@
-// The Today card's line as geometry: one dot per run, or per runs closer together than a dot is wide, on a 24-hour axis,
+// The Today card's line as geometry: one dot per run, or per runs closer together than a touch target (44 px), on a 24-hour axis,
 // each with its class, its time label on one of two rows and the sentence a screen reader says.
 // Pattern: a pure layout function (Bernhardt, functional core) the way the dial's and the gauge's geometry are, the rules
-// of the legacy `renderAuto()`'s timeline: the grouping by proximity, the clamps that keep the dots apart and inside the line.
+// of the legacy `renderAuto()`'s timeline: the grouping by proximity, which keeps the dots a touch target apart.
 // Must not: read the clock (`now` is passed in) or the DOM (the width in pixels is passed in), or draw.
 import type {TraceSummary} from '../../core/ha.ts';
 import type {Formatters} from '../../core/i18n/format.ts';
@@ -75,10 +75,13 @@ function groupClass(classes: DotClass[]): DotClass {
 
 const WHAT: Record<DotClass, string> = {up: 'scheduled', skip: 'skip', now: 'now', err: 'err', '': 'ran'};
 
+/** A dot's touch target, in px: the gap two dots keep, so that no two targets overlap (HIG, Buttons: 44x44 pt). */
+const TARGET_PX = 44;
+
 /**
- * The line's layout for `dots` sorted by time, on a line `widthPx` wide: dots closer than about half a dot's gap share a
- * group, each group at least a gap from the last and the line's end, and the labels on two rows, a group taking the first
- * row with room for its label.
+ * The line's layout for `dots` sorted by time, on a line `widthPx` wide: dots closer than a touch target (44 px) share a
+ * group, so every group is at least a target from the next, and the labels on two rows, a group taking the first row
+ * with room for its label.
  */
 export function timelineLayout(
   dots: TimelineDot[],
@@ -86,23 +89,19 @@ export function timelineLayout(
   now: number,
   deps: {t: Translate; fmt: Formatters},
 ): TimelineLayout {
-  const gapPct = Math.max(2.2, 3000 / Math.max(widthPx, 240));
+  const gapPct = (TARGET_PX / Math.max(widthPx, 240)) * 100;
   const raw: {pct: number; last: number; dots: TimelineDot[]}[] = [];
   for (const d of dots) {
     const g = raw[raw.length - 1],
       pct = (d.mins / 1440) * 100;
-    if (g && pct - g.last < gapPct * 0.55) {
+    if (g && pct - g.last < gapPct) {
       g.dots.push(d);
       g.last = pct;
     } else raw.push({pct, last: pct, dots: [d]});
   }
+  // a group sits at the middle of its runs: the next group starts a gap after the last of them, so two are always a gap apart
   const xs = raw.map(g => (g.dots.length > 1 ? (g.pct + g.last) / 2 : g.pct));
-  for (let i = 1; i < xs.length; i++) xs[i] = Math.max(xs[i], xs[i - 1] + gapPct);
-  for (let i = xs.length - 1, r = 100 + gapPct; i >= 0; i--) {
-    xs[i] = Math.min(xs[i], r - gapPct);
-    r = xs[i];
-  }
-  const timeOf = (d: TimelineDot) => deps.fmt.time24(new Date(isUp(d) ? d.t : d.summary.timestamp.start));
+  const timeOf = (d: TimelineDot) => deps.fmt.time(new Date(isUp(d) ? d.t : d.summary.timestamp.start));
   const what = (c: DotClass) => deps.t('automations.timeline.what', {what: WHAT[c]});
   const rowEnd = [-99, -99];
   const groups = raw.map((g, i): TimelineGroup => {

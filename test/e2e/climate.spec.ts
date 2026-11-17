@@ -1,5 +1,5 @@
 // The Climate tab (spec 20): <hp-climate-pane>, <hp-climate-list>, <hp-climate-detail>, <hp-climate-controls>, <hp-gauge>, <hp-dial>, <hp-heat-legend> and the charts. On a tablet the list of the house, its rooms and the
-// heat pump beside the selected item's detail with the gauge and the controls, then the heatmap and the outside chart; on a phone a grid of tiles that open the detail in a sheet with the dial, which is the slider
+// heat pump beside the selected item's detail with the gauge and the controls, then the heatmap; on a phone a grid of tiles that open the detail in a sheet with the dial, which is the slider
 // that sets a room's setpoint and the heat pump's target. The history is the pane's, loaded per range through the panel's cache (#246). The test house
 // has four thermostats (Bedroom 20.8 and Living room 20.0 heating, Garage 21.2 and Office 20.4 idle, all at 21 degrees) and no heat pump, which the last tests add.
 import AxeBuilder from '@axe-core/playwright';
@@ -26,7 +26,6 @@ const expectOneSetpoint = async (house: House, what: string) => {
 };
 const charts = (house: House) => detail(house).locator('hp-chart .apexcharts-canvas');
 const heatmap = (house: House) => pane(house).locator('.cblocks > .inner').first();
-const outside = (house: House) => pane(house).locator('.cblocks > .inner').last();
 // the tile's host has no box of its own (`display: contents`): its button is what a person taps
 const tile = (house: House, key: string) => pane(house).locator(`hp-stat-tile[key="${key}"] button`);
 const tileFigures = (house: House) => detail(house).locator('.tile .v');
@@ -77,7 +76,7 @@ test.describe('on a tablet', () => {
     );
   });
 
-  test('the controls and the chart sit in the detail, for the room chosen, and the heatmap and outside chart under it', async ({
+  test('the controls and the chart sit in the detail, for the room chosen, and the heatmap alone under it (the outside is the chart’s line)', async ({
     house,
   }) => {
     await expect(controls(house).locator('hp-stepper')).toBeVisible();
@@ -86,9 +85,8 @@ test.describe('on a tablet', () => {
     await expect(heatmap(house).locator('h3')).toHaveText('Every room, hour by hour');
     await expect(heatmap(house).locator('hp-heat-legend .hticks i')).toHaveText(['17°', '19°', '21°', '23°', '25°']);
     await expect(heatmap(house).locator('hp-chart .apexcharts-canvas')).toBeVisible();
-    await expect(outside(house).locator('h3')).toHaveText('Outside, last 24 hours');
-    await expect(outside(house).locator('.legend')).toHaveText(/Low to high\s*Mean/);
-    await expect(outside(house).locator('hp-chart .apexcharts-canvas')).toBeVisible();
+    await expect(pane(house).locator('.cblocks > .inner')).toHaveCount(1);
+    await expect(detail(house).locator('.legend')).toContainText('Outside');
     await item(house, 'office').click();
     await expect(detail(house).locator('.legend')).toContainText('Office');
     await expect(controls(house).locator('.quick button')).toHaveCount(5);
@@ -100,16 +98,14 @@ test.describe('on a tablet', () => {
     await expect(detail(house).locator('.tile .k').last()).toHaveText('Heating, 7 days');
     await expect(detail(house).locator('.legend')).toContainText('last 7 days');
     await expect(heatmap(house).locator('h3')).toHaveText('Every room, every 6 hours');
-    await expect(outside(house).locator('h3')).toHaveText('Outside, last 7 days');
   });
 
   // the heatmap's options depend on the range and the theme only: a setpoint changing, a room chosen, nothing makes its chart again, and the
-  // draws are the DOM mutations in the roots of the charts' elements (`.cblocks hp-chart` are the heatmap's and the outside chart's, in the pane)
-  test('a setpoint change and a room chosen leave the heatmap and the outside chart as they were, and draw the room chart again', async ({
+  // draws are the DOM mutations in the roots of the charts' elements (`.cblocks hp-chart` is the heatmap's, in the pane)
+  test('a setpoint change and a room chosen leave the heatmap as it was, and draw the room chart again', async ({
     house,
   }) => {
     await expect(heatmap(house).locator('hp-chart .apexcharts-canvas')).toBeVisible();
-    await expect(outside(house).locator('hp-chart .apexcharts-canvas')).toBeVisible();
     await expect(charts(house)).toBeVisible();
     const settle = () =>
       house.page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
@@ -124,7 +120,7 @@ test.describe('on a tablet', () => {
       await house.mutations.count('hp-chart'),
       'mutations in the charts: the room chart is drawn for the bedroom',
     ).toBeGreaterThan(0);
-    expect(await house.mutations.count('.cblocks hp-chart'), 'mutations in the heatmap and the outside chart').toBe(0);
+    expect(await house.mutations.count('.cblocks hp-chart'), 'mutations in the heatmap').toBe(0);
     await expect(heatmap(house).locator('hp-chart .apexcharts-canvas')).toHaveCount(1);
   });
 
@@ -308,7 +304,7 @@ test.describe('on a phone', () => {
     await tile(house, 'office').click();
     await expect(controls(house).locator('.quick button')).toHaveCount(5);
     await expect(charts(house)).toBeVisible();
-    // the heatmap and the outside chart are the tablet's: the sheet holds the room's chart alone
+    // the heatmap is the tablet's: the sheet holds the room's chart alone
     await expect(charts(house)).toHaveCount(1);
     await expect(pane(house).locator('.cblocks')).toHaveCount(0);
     await expect(pane(house).locator('hp-heat-legend')).toHaveCount(0);
@@ -550,7 +546,7 @@ test.describe('the heat pump’s controls, on a tablet', () => {
   });
 });
 
-// a room's controls and the house's: the quick buttons, the setpoint stepper with the frost guard's rules, and the two buttons that need a second tap
+// a room's controls and the house's: the quick buttons, the setpoint stepper with the frost guard's rules, and the two buttons that ask in a dialog
 test.describe('a room’s and the house’s controls, on a tablet', () => {
   test.beforeEach(async ({house}) => {
     tabletOnly();
@@ -596,17 +592,21 @@ test.describe('a room’s and the house’s controls, on a tablet', () => {
     await expect(controls(house).locator('hp-stepper, .quick')).toHaveCount(0);
   });
 
-  test('“All off” once says to tap again and sends nothing; twice sends one call with every room’s id', async ({
+  test('“All off” asks in a dialog and sends nothing; its Turn off sends one call with every room’s id', async ({
     house,
   }) => {
+    const dialog = controls(house).locator('hp-dialog[data-ask="alloff"] dialog');
+    await expect(dialog).toBeHidden();
     await controls(house).getByRole('button', {name: 'All off'}).click();
-    const again = controls(house).getByRole('button', {name: 'Tap again: all rooms off'});
-    await expect(again).toHaveClass(/armed/);
+    await expect(dialog).toBeVisible();
+    await expect(dialog.locator('h4')).toHaveText('Turn every room off?');
+    await expect(dialog.locator('p')).toHaveText('Each room drops to the 5° frost guard.');
     await house.page.waitForTimeout(300);
-    expect(setpoints(house), callsMessage(house, 'one tap changes nothing')).toEqual([]);
-    await again.click();
+    expect(setpoints(house), callsMessage(house, 'the question alone changes nothing')).toEqual([]);
+    await dialog.getByRole('button', {name: 'Turn off'}).click();
+    await expect(dialog).toBeHidden();
     await expectCall(house, /^climate\.set_temperature /);
-    await expectOneSetpoint(house, 'the second tap is one call');
+    await expectOneSetpoint(house, 'the confirmation is one call');
     const [data] = setpoints(house);
     expect(data.temperature).toBe(5);
     expect([...(data.entity_id as string[])].sort()).toEqual([
@@ -615,56 +615,60 @@ test.describe('a room’s and the house’s controls, on a tablet', () => {
       'climate.living_room',
       'climate.office',
     ]);
-    await expect(controls(house).getByRole('button', {name: 'All off'}), 'the arming is spent').not.toHaveClass(
-      /armed/,
-    );
     await expect(house.root().locator('#toast')).toHaveText('All rooms off (5° frost guard)');
   });
 
-  test('“Set all” says its value, a stepper changes it and lets the arming go, and a second tap sends it to every room', async ({
+  test('“Set all” names its value in the dialog, a stepper changes it, and Set all sends it to every room', async ({
     house,
   }) => {
     const stepper = controls(house).locator('hp-stepper[aria-label="Set every room to"]');
+    const dialog = controls(house).locator('hp-dialog[data-ask="allset"] dialog');
     await expect(stepper.locator('.sv b')).toHaveText('21.0°');
     await controls(house).getByRole('button', {name: 'Set all to 21.0°'}).click();
-    await expect(controls(house).getByRole('button', {name: 'Tap again: all 4 rooms to 21.0°'})).toHaveClass(/armed/);
+    await expect(dialog.locator('h4')).toHaveText('Set every room to 21.0°?');
+    await dialog.getByRole('button', {name: 'Cancel'}).click();
+    await expect(dialog).toBeHidden();
     await stepper.getByRole('button', {name: 'Raise set every room to'}).click();
     await expect(stepper.locator('.sv b')).toHaveText('21.5°');
-    await expect(
-      controls(house).getByRole('button', {name: 'Set all to 21.5°'}),
-      'a changed value disarms',
-    ).not.toHaveClass(/armed/);
     await controls(house).getByRole('button', {name: 'Set all to 21.5°'}).click();
-    await controls(house).getByRole('button', {name: 'Tap again: all 4 rooms to 21.5°'}).click();
+    await expect(dialog.locator('h4')).toHaveText('Set every room to 21.5°?');
+    await dialog.getByRole('button', {name: 'Set all', exact: true}).click();
     await expectCall(house, /^climate\.set_temperature /);
-    await expectOneSetpoint(house, 'the second tap of Set all is one call');
+    await expectOneSetpoint(house, 'the confirmation of Set all is one call');
     expect(setpoints(house)[0]?.temperature).toBe(21.5);
     await expect(house.root().locator('#toast')).toHaveText('All rooms set to 21.5°');
   });
 
-  test('arming “All off” then “Set all” leaves only the second armed', async ({house}) => {
-    await controls(house).getByRole('button', {name: 'All off'}).click();
-    await controls(house).getByRole('button', {name: 'Set all to 21.0°'}).click();
-    await expect(controls(house).getByRole('button', {name: 'All off'})).not.toHaveClass(/armed/);
-    await expect(controls(house).getByRole('button', {name: 'Tap again: all 4 rooms to 21.0°'})).toHaveClass(/armed/);
-    expect(setpoints(house)).toEqual([]);
+  test('Cancel, Escape and the backdrop send nothing, and a tap inside the dialog does not close it', async ({
+    house,
+  }) => {
+    const dialog = controls(house).locator('hp-dialog[data-ask="alloff"] dialog');
+    const open = () => controls(house).getByRole('button', {name: 'All off'}).click();
+    await open();
+    await dialog.getByRole('button', {name: 'Cancel'}).click();
+    await expect(dialog).toBeHidden();
+    await open();
+    await house.page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
+    await open();
+    await dialog.locator('p').click();
+    await expect(dialog).toBeVisible();
+    await house.page.mouse.click(5, 5);
+    await expect(dialog).toBeHidden();
+    await house.page.waitForTimeout(1300);
+    expect(setpoints(house), callsMessage(house, 'a question that was not confirmed')).toEqual([]);
   });
-});
 
-test.describe('the controls’ second tap lapses after four seconds', () => {
-  test.use({houseOpts: {cfg: FULL_CFG, time: AFTERNOON, frozen: true}});
+  test('the tab no longer asks for a second tap, and the frost guard’s note stays', async ({house}) => {
+    await expect(controls(house)).not.toContainText('second tap');
+    await expect(controls(house)).not.toContainText('Tap again');
+    await expect(controls(house)).toContainText('Off means the 5° frost guard');
+  });
 
-  test('“All off” says “All off” again, and a tap then arms it again and sends nothing', async ({house}) => {
-    tabletOnly();
-    await house.tab('climate');
+  test('the dialog open has no serious or critical accessibility finding', async ({house}) => {
     await controls(house).getByRole('button', {name: 'All off'}).click();
-    await expect(controls(house).getByRole('button', {name: 'Tap again: all rooms off'})).toBeVisible();
-    await house.clock.runFor(3900);
-    await expect(controls(house).getByRole('button', {name: 'Tap again: all rooms off'})).toBeVisible();
-    await house.clock.runFor(200);
-    await expect(controls(house).getByRole('button', {name: 'All off'})).toBeVisible();
-    await controls(house).getByRole('button', {name: 'All off'}).click();
-    await expect(controls(house).getByRole('button', {name: 'Tap again: all rooms off'})).toBeVisible();
-    expect(setpoints(house)).toEqual([]);
+    await expect(controls(house).locator('hp-dialog[data-ask="alloff"] dialog')).toBeVisible();
+    const {violations} = await new AxeBuilder({page: house.page}).include('home-panel').analyze();
+    expect(violations.filter(v => v.impact === 'serious' || v.impact === 'critical').map(v => v.id)).toEqual([]);
   });
 });

@@ -96,24 +96,6 @@
       }
     },
     {
-      "key": "car.departureOn",
-      "values": {
-        "when": "weekdays at 8:30 am"
-      },
-      "fr": {
-        "when": "en semaine à 8 h 30"
-      }
-    },
-    {
-      "key": "car.departureOff",
-      "values": {
-        "when": "weekdays at 8:30 am"
-      },
-      "fr": {
-        "when": "en semaine à 8 h 30"
-      }
-    },
-    {
       "key": "car.noCar"
     },
     {
@@ -147,18 +129,6 @@
       "key": "car.percent",
       "values": {
         "n": "64.0"
-      }
-    },
-    {
-      "key": "car.limit",
-      "values": {
-        "n": 90
-      }
-    },
-    {
-      "key": "car.limitCharge",
-      "values": {
-        "n": 90
       }
     },
     {
@@ -231,15 +201,6 @@
       "key": "car.plug.unplugged"
     },
     {
-      "key": "car.card.charger"
-    },
-    {
-      "key": "car.card.wallbox"
-    },
-    {
-      "key": "car.card.lastCharge"
-    },
-    {
       "key": "car.card.daily",
       "values": {
         "days": 30,
@@ -293,36 +254,10 @@
       "key": "car.battery.title"
     },
     {
-      "key": "car.battery.usable",
-      "values": {
-        "remaining": "55.0",
-        "capacity": "88.0"
-      },
-      "frame": {
-        "en": "",
-        "fr": "",
-        "enAfter": " · battery at 20.0°",
-        "frAfter": " · batterie à 20,0°"
-      }
-    },
-    {
-      "key": "car.battery.temperature",
-      "values": {
-        "n": "20.0"
-      },
-      "frame": {
-        "en": "55.0 of 88.0 kWh usable · ",
-        "fr": "55,0 sur 88,0 kWh utilisables · "
-      }
-    },
-    {
       "key": "car.battery.fullRange"
     },
     {
       "key": "car.battery.atFull"
-    },
-    {
-      "key": "car.battery.plug"
     },
     {
       "key": "car.battery.acLimit"
@@ -338,9 +273,6 @@
     },
     {
       "key": "car.status.title"
-    },
-    {
-      "key": "car.status.tires"
     },
     {
       "key": "car.status.battery12"
@@ -484,44 +416,6 @@
     },
     {
       "key": "car.ford.tpmsBody"
-    },
-    {
-      "key": "car.ford.departureOn"
-    },
-    {
-      "key": "car.ford.departureOff"
-    },
-    {
-      "key": "car.ford.noSchedule"
-    },
-    {
-      "key": "car.ford.saved",
-      "values": {
-        "when": "Weekdays at 8:30 am"
-      },
-      "fr": {
-        "when": "En semaine à 8 h 30"
-      }
-    },
-    {
-      "key": "car.ford.saved",
-      "values": {
-        "when": "Every day at 8:30 am"
-      },
-      "fr": {
-        "when": "Tous les jours à 8 h 30"
-      },
-      "translated": "Tous les jours à 8 h 30, enregistré."
-    },
-    {
-      "key": "car.ford.saved",
-      "values": {
-        "when": "Mon, Tue at 8:30 am"
-      },
-      "fr": {
-        "when": "Lun., mar. à 8 h 30"
-      },
-      "translated": "Lun., mar. à 8 h 30, enregistré."
     },
     {
       "key": "car.last.title"
@@ -689,9 +583,6 @@
       "translated": "L'historique n'a pas pu être chargé : timeout. Les valeurs en direct continuent de se mettre à jour."
     },
     {
-      "key": "car.open"
-    },
-    {
       "key": "car.art.side",
       "translated": "Voiture, vue de côté"
     },
@@ -789,43 +680,18 @@
     },
     {
       "key": "car.charger.ampsHint",
-      "was": "Règle le courant maximal de la Wallbox. Les kW supposent 240 V."
+      "written": "kW à 240 V."
     },
     {
       "key": "car.charger.ampsHintNow",
       "values": {
         "n": 20
       },
-      "translated": "Règle le courant maximal de la Wallbox (actuellement 20 A). Les kW supposent 240 V."
-    },
-    {
-      "key": "car.charger.limit"
-    },
-    {
-      "key": "car.charger.limitLabel",
-      "was": "Limite de charge, lecture seule"
-    },
-    {
-      "key": "car.charger.full"
-    },
-    {
-      "key": "car.charger.limitHint",
-      "was": "Se règle dans l'application FordPass. Home Assistant peut la lire mais ne peut pas la changer."
-    },
-    {
-      "key": "car.charger.charging"
-    },
-    {
-      "key": "car.charger.onLine",
-      "was": "En marche. Désactiver pour mettre en pause"
-    },
-    {
-      "key": "car.charger.pausedLine",
-      "was": "En pause. Activer pour reprendre"
+      "written": "Actuellement 20 A · kW à 240 V."
     },
     {
       "key": "car.charger.unavailableLine",
-      "was": "Disponible quand la voiture est branchée"
+      "written": "Ses commandes reviennent dès qu’elle répond."
     },
     {
       "key": "car.charger.lock",
@@ -840,46 +706,7 @@
       "was": "Déverrouillée, n'importe qui peut se brancher"
     },
     {
-      "key": "car.comfort.title",
-      "was": "Confort et accès"
-    },
-    {
-      "key": "car.comfort.line",
-      "was": "Le démarrage à distance réchauffe ou refroidit l'habitacle pendant environ 15 minutes"
-    },
-    {
-      "key": "car.comfort.remoteStart",
-      "was": "Démarrage à distance"
-    },
-    {
-      "key": "car.comfort.tapToStart",
-      "was": "Toucher de nouveau pour démarrer"
-    },
-    {
       "key": "car.comfort.running"
-    },
-    {
-      "key": "car.comfort.cabin",
-      "values": {
-        "state": "HI"
-      },
-      "translated": "habitacle HI"
-    },
-    {
-      "key": "car.comfort.withRemote",
-      "values": {
-        "on": "true"
-      },
-      "was": "Au démarrage à distance : activé",
-      "after": "With remote start: : activé"
-    },
-    {
-      "key": "car.comfort.withRemote",
-      "values": {
-        "on": "false"
-      },
-      "was": "Au démarrage à distance : désactivé",
-      "after": "With remote start: : désactivé"
     },
     {
       "key": "car.heater.windshield",
@@ -912,23 +739,6 @@
       "was": "État du verrouillage inconnu"
     },
     {
-      "key": "car.comfort.open",
-      "values": {
-        "doors": "driverFront, hood"
-      },
-      "translated": "Ouvert : driverFront, hood"
-    },
-    {
-      "key": "car.comfort.allClosed",
-      "was": "Portes, capot et hayon fermés",
-      "after": "All doors, hood and tailgate fermée"
-    },
-    {
-      "key": "car.comfort.allClosedWindows",
-      "was": "Portes, fenêtres, capot et hayon fermés",
-      "after": "All doors, windows, hood and tailgate fermée"
-    },
-    {
       "key": "car.comfort.honk",
       "was": "Klaxon et phares"
     },
@@ -939,101 +749,7 @@
       "key": "car.comfort.unlock"
     },
     {
-      "key": "car.comfort.tapToUnlock",
-      "was": "Toucher de nouveau pour déverrouiller"
-    },
-    {
       "key": "car.comfort.departure"
-    },
-    {
-      "key": "car.comfort.precondition",
-      "was": "Préconditionner pour le départ"
-    },
-    {
-      "key": "car.comfort.days",
-      "was": "Jours de départ"
-    },
-    {
-      "key": "car.comfort.dayName",
-      "values": {
-        "day": "monday"
-      }
-    },
-    {
-      "key": "car.comfort.dayName",
-      "values": {
-        "day": "sunday"
-      }
-    },
-    {
-      "key": "car.comfort.dayName",
-      "values": {
-        "day": "someday"
-      }
-    },
-    {
-      "key": "car.comfort.dayInitial",
-      "values": {
-        "day": "monday"
-      },
-      "written": "L"
-    },
-    {
-      "key": "car.comfort.dayInitial",
-      "values": {
-        "day": "tuesday"
-      },
-      "written": "M"
-    },
-    {
-      "key": "car.comfort.dayInitial",
-      "values": {
-        "day": "wednesday"
-      },
-      "written": "M"
-    },
-    {
-      "key": "car.comfort.dayInitial",
-      "values": {
-        "day": "thursday"
-      },
-      "written": "J"
-    },
-    {
-      "key": "car.comfort.dayInitial",
-      "values": {
-        "day": "friday"
-      },
-      "written": "V"
-    },
-    {
-      "key": "car.comfort.dayInitial",
-      "values": {
-        "day": "saturday"
-      },
-      "written": "S"
-    },
-    {
-      "key": "car.comfort.dayInitial",
-      "values": {
-        "day": "sunday"
-      },
-      "written": "D"
-    },
-    {
-      "key": "car.comfort.dayInitial",
-      "values": {
-        "day": "someday"
-      },
-      "written": "someday"
-    },
-    {
-      "key": "car.comfort.time",
-      "was": "Heure de départ"
-    },
-    {
-      "key": "car.comfort.cabinLabel",
-      "was": "Température de l'habitacle au départ"
     },
     {
       "key": "car.comfort.cool"
@@ -1043,14 +759,6 @@
     },
     {
       "key": "car.comfort.warm"
-    },
-    {
-      "key": "car.comfort.departureHint",
-      "was": "Quand la voiture est branchée, elle réchauffe l'habitacle et la batterie pour être prête à cette heure. Ford ne transmet pas le réglage d'habitacle d'un horaire enregistré, choisissez-en un avant d'enregistrer."
-    },
-    {
-      "key": "car.comfort.save",
-      "was": "Enregistrer l'horaire"
     },
     {
       "key": "car.pickTime",
@@ -1134,6 +842,155 @@
       "values": {
         "n": 312
       }
+    },
+    {
+      "key": "car.charger.unavailableTitle",
+      "written": "Wallbox indisponible"
+    },
+    {
+      "key": "car.limitFord",
+      "values": {
+        "n": "90"
+      },
+      "written": "Limite 90 % · réglée dans FordPass"
+    },
+    {
+      "key": "car.history.line",
+      "values": {
+        "n": 3,
+        "kwh": "39"
+      },
+      "written": "3 sessions · 39 kWh"
+    },
+    {
+      "key": "car.history.done",
+      "written": "OK"
+    },
+    {
+      "key": "car.action.lockedNow",
+      "written": "Verrouillée"
+    },
+    {
+      "key": "car.action.unlockedNow",
+      "written": "Déverrouillée"
+    },
+    {
+      "key": "car.action.unlockTitle",
+      "written": "Déverrouiller la voiture ?"
+    },
+    {
+      "key": "car.action.unlockLine",
+      "written": "N’importe qui près de la voiture pourra l’ouvrir."
+    },
+    {
+      "key": "car.action.cancel",
+      "written": "Annuler"
+    },
+    {
+      "key": "car.action.start",
+      "written": "Démarrer…"
+    },
+    {
+      "key": "car.action.startTitle",
+      "written": "Démarrer la voiture ?"
+    },
+    {
+      "key": "car.action.startLine",
+      "written": "Le moteur tourne 15 minutes pour chauffer ou rafraîchir l’habitacle, puis s’arrête."
+    },
+    {
+      "key": "car.action.startConfirm",
+      "written": "Démarrer"
+    },
+    {
+      "key": "car.action.stop",
+      "written": "Arrêter le moteur"
+    },
+    {
+      "key": "car.action.engineOff",
+      "written": "Moteur arrêté"
+    },
+    {
+      "key": "car.action.pause",
+      "written": "Suspendre la recharge"
+    },
+    {
+      "key": "car.action.resume",
+      "written": "Reprendre la recharge"
+    },
+    {
+      "key": "car.action.paused",
+      "written": "En pause"
+    },
+    {
+      "key": "car.departure.title",
+      "written": "Départ"
+    },
+    {
+      "key": "car.departure.none",
+      "written": "Aucun horaire enregistré"
+    },
+    {
+      "key": "car.departure.save",
+      "written": "Enregistrer"
+    },
+    {
+      "key": "car.departure.time",
+      "written": "Heure"
+    },
+    {
+      "key": "car.departure.cabin",
+      "written": "Habitacle"
+    },
+    {
+      "key": "car.departure.choose",
+      "written": "Choisir"
+    },
+    {
+      "key": "car.departure.repeat",
+      "written": "Répéter"
+    },
+    {
+      "key": "car.departure.every",
+      "values": {
+        "day": "monday"
+      },
+      "written": "Chaque lundi"
+    },
+    {
+      "key": "car.departure.foot",
+      "written": "Ford ne transmet pas le réglage d’habitacle d’un horaire enregistré."
+    },
+    {
+      "key": "car.action.startOptions",
+      "written": "Avec chaque démarrage"
+    },
+    {
+      "key": "car.action.startOptionsFoot",
+      "written": "Enregistré dans la voiture dès que vous les basculez, que vous démarriez maintenant ou non."
+    },
+    {
+      "key": "car.status.usable",
+      "written": "Énergie utilisable"
+    },
+    {
+      "key": "car.status.ofCapacity",
+      "values": {
+        "n": "88,0"
+      },
+      "written": "sur 88,0 kWh"
+    },
+    {
+      "key": "car.status.batteryTemp",
+      "written": "Température de la batterie"
+    },
+    {
+      "key": "car.charger.unavailableSince",
+      "values": {
+        "date": "7 nov.",
+        "time": "13 h 38"
+      },
+      "written": "Ne répond plus depuis le 7 nov. à 13 h 38. Ses commandes reviennent dès qu’elle répond."
     }
   ]
 }

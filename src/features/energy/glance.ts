@@ -3,7 +3,6 @@
 // Pattern: pure readers over the store (view models, Meszaros' humble object's other half); the legacy `renderHome`'s rules, deleted in #268. The
 // history is the Energy card's loaded slices, given by the caller: a reader never loads.
 // Must not: read the clock, load, import the DOM, Lit, the shell or another feature, or hold text the household reads.
-import {DASH} from '../../core/figures.ts';
 import {whole} from '../../core/i18n/format.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
 import type {GlanceStore, GlanceView} from '../../ui/glance.ts';
@@ -21,7 +20,7 @@ export interface GlanceDeps {
 /** Under a kilowatt the grid is said in watts. */
 const WATTS_BELOW_KW = 1;
 
-/** The Energy tile: always there, a dash while the grid reads nothing. Null only before the first states. */
+/** The Energy tile: always there, "No reading" in the line's style while the grid reads nothing. Null only before the first states. */
 export function glance({hass, config, names, t, fmt}: GlanceStore, {history}: GlanceDeps): GlanceView | null {
   if (!hass) return null;
   const {power, hilo} = readEnergy(hass.states, config, names);
@@ -34,10 +33,11 @@ export function glance({hass, config, names, t, fmt}: GlanceStore, {history}: Gl
     label: t('energy.title'),
     value:
       kw === null
-        ? DASH
+        ? t('energy.noReading')
         : kw < WATTS_BELOW_KW
           ? t('energy.watts', {n: String(Math.round(kw * 1000))}) // as the legacy tile wrote it: no thousands separator below −1 kW
           : t('energy.kw', {n: fmt.fixed(kw, 2)}),
+    ...(kw === null ? {missing: true} : {}),
     line: history
       ? t('energy.glance.line', {kwh: fmt.fixed(history.totals.today, 1), rate})
       : t('energy.glance.lineNow', {rate}),
@@ -47,7 +47,7 @@ export function glance({hass, config, names, t, fmt}: GlanceStore, {history}: Gl
 
 /**
  * The Water heater tile: null for a house with neither of its sensors, unless `evenAbsent` (the tablet's grid, which the legacy panel
- * never hid: a dash and "Idle").
+ * never hid: "No reading" and "Idle").
  */
 export function waterGlance(
   {hass, config, names, t, fmt}: GlanceStore,
@@ -63,7 +63,8 @@ export function waterGlance(
     icon: 'drop',
     color: 'var(--c-wh)',
     label: t('energy.water.title'),
-    value: water.temperature === null ? DASH : `${fmt.fixed(water.temperature, 1)}°`,
+    value: water.temperature === null ? t('energy.noReading') : `${fmt.fixed(water.temperature, 1)}°`,
+    ...(water.temperature === null ? {missing: true} : {}),
     line: history
       ? t('energy.glance.water', {state, kwh: fmt.fixed(waterCycles(history.wh24.p, now).kwh24, 1)})
       : state,

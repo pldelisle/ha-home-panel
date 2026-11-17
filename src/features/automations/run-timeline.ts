@@ -1,5 +1,5 @@
-// <hp-run-timeline>: the Today card of the Automations tab: the day's line with a dot per run (several close together share one, the
-// ones still to come hollow), the now line and the hour marks, then the three tiles (ran today, next, then).
+// <hp-run-timeline>: the Today card of the Automations tab: the day's line with a dot per run (several close together share one, each a 44 pt button
+// round the drawn dot, the ones still to come hollow), the now line and the hour marks, then the three tiles (ran today, next, then).
 // Pattern: humble object (Meszaros, xUnit Test Patterns): it places the `TodayView` the model laid out (`timelineLayout`) and tells
 // its parent by an event (Lit docs, Events: properties down, events up) which run or automation a dot picks.
 // Must not: lay the dots out, word anything, or select a run itself (the pane holds the selection).
@@ -13,8 +13,6 @@ import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {lens} from '../../ui/lens.ts';
 import {common, pill, tiles} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
-
-const HOURS = [0, 6, 12, 18];
 
 export class RunTimeline extends LitElement {
   static override properties = {view: {attribute: false}};
@@ -44,7 +42,7 @@ export class RunTimeline extends LitElement {
           <div class="axis"></div>
           <div class="past" style="width:${now}"></div>
           <div class="nowl" style="left:${now}"></div>
-          ${HOURS.map(h => html`<span class="hr" style="left:${(h / 24) * 100}%">${String(h).padStart(2, '0')}:00</span>`)}
+          ${v.hours.map(h => html`<span class="hr" style="left:${h.pct}%">${h.label}</span>`)}
           ${repeat(
             v.dots,
             d => d.key,
@@ -76,7 +74,7 @@ export class RunTimeline extends LitElement {
         title=${d.description}
         @click=${() => this.dispatchEvent(new SelectRunEvent({item: d.item, run: d.run}))}
       >
-        ${d.n > 1 ? html`<span class="n">${d.n}</span>` : nothing}</button
+        <span class="d">${d.n > 1 ? html`<span class="n">${d.n}</span>` : nothing}</span></button
       >${d.row >= 0 ? html`<span class="aul r${d.row}${tone}" style=${left}><b>${d.label}</b></span>` : nothing}`;
   }
 }

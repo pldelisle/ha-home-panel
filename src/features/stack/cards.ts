@@ -68,6 +68,8 @@ export interface StackCard {
   color: string;
   right: string;
   go: Go | null;
+  /** What a screen reader calls the card when its words do not make a name of their own; empty lets them. */
+  name: string;
   body: BodyPart[];
   foot: string;
 }
@@ -150,6 +152,7 @@ const card = (
   filler: false,
   right: '',
   go: null,
+  name: '',
   foot: '',
   ...fields,
 });
@@ -374,6 +377,7 @@ export const nowPlaying: StackRule = {
             color: 'var(--m-purple)',
             right: playing.place,
             go: {tab: 'media'},
+            name: t('stack.music.name', {detail: [playing.title, playing.place].filter(Boolean).join(', ')}),
             body: [
               {
                 kind: 'nowPlaying',

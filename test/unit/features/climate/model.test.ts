@@ -80,6 +80,10 @@ const room = (controls: ControlsView) => {
   if (controls.kind !== 'room' || controls.offline) throw new Error('not a room with a thermostat');
   return controls;
 };
+const house = (controls: ControlsView) => {
+  if (controls.kind !== 'house') throw new Error('not the house');
+  return controls;
+};
 const hp = (controls: ControlsView) => {
   if (controls.kind !== 'hp' || controls.offline) throw new Error('not a heat pump that is up');
   return controls;
@@ -171,32 +175,46 @@ describe('the test house, on the tablet', () => {
       ],
       notice: {kind: 'loading', text: 'Loading history…'},
     });
-    expect(waiting.outsideChart).toMatchObject({
-      title: 'Outside, last 24 hours',
-      note: 'Band is each 5 minutes’ low to high, line is the mean',
-      legend: [
-        {name: 'Low to high', color: 'color-mix(in srgb, var(--c-home) 35%, transparent)'},
-        {name: 'Mean', color: 'var(--c-home)'},
-      ],
-    });
     const failed = modelOf(fullHouse, 'house', {historyFailed: true}).detail;
-    expect([failed.chart.notice, failed.heatmap?.notice, failed.outsideChart?.notice]).toEqual(
-      Array(3).fill({kind: 'failed', text: 'History is not available right now.'}),
+    expect([failed.chart.notice, failed.heatmap?.notice]).toEqual(
+      Array(2).fill({kind: 'failed', text: 'History is not available right now.'}),
     );
     // loaded: nothing stands in for a chart, and a week's words follow the range
-    const ready = modelOf(fullHouse, 'house', {range: 'week', history: loaded({}, 'week')}).detail;
-    expect([ready.chart.notice, ready.heatmap?.notice, ready.outsideChart?.notice]).toEqual([null, null, null]);
-    expect([ready.heatmap?.title, ready.outsideChart?.title]).toEqual([
-      'Every room, every 6 hours',
-      'Outside, last 7 days',
-    ]);
+    const everyRoom = {
+      bedroom: points(18, 19, 20),
+      garage: points(18, 19, 20),
+      living_room: points(18),
+      office: points(18),
+    };
+    const readings = {rooms: everyRoom};
+    const ready = modelOf(fullHouse, 'house', {range: 'week', history: loaded(readings, 'week')}).detail;
+    expect([ready.chart.notice, ready.heatmap?.notice]).toEqual([null, null]);
+    expect(ready.heatmap?.title).toBe('Every room, every 6 hours');
+    // the outside's temperature is the detail chart's line: the tablet has no outside chart of its own
+    expect(ready).not.toHaveProperty('outsideChart');
     const phone = modelOf(fullHouse, 'bedroom', {compact: true}).detail;
-    expect([phone.heatmap, phone.outsideChart]).toEqual([null, null]);
+    expect(phone.heatmap).toBeNull();
     expect(phone.chart.legend.map(item => [item.name, item.dashed])).toEqual([
       ['Bedroom', false],
       ['Setpoint', true],
       ['Outside', false],
     ]);
+  });
+
+  test('a loaded range with no reading at all says so once, in the kit’s sentence, where the chart and the heatmap would be', () => {
+    const sentence = 'No history yet. It fills in as Home Assistant records the next hour.';
+    const dry = modelOf(fullHouse, 'house', {history: loaded()}).detail;
+    expect(dry.chart.notice).toEqual({kind: 'empty', text: sentence});
+    expect(dry.heatmap?.notice).toEqual({kind: 'empty', text: sentence});
+    // a room with readings keeps its chart even when another room has none
+    const one = modelOf(fullHouse, 'bedroom', {history: loaded({rooms: {bedroom: points(18, 19)}})}).detail;
+    expect([one.chart.notice, one.heatmap?.notice]).toEqual([null, null]);
+    expect(
+      modelOf(fullHouse, 'garage', {history: loaded({rooms: {bedroom: points(18, 19)}})}).detail.chart.notice,
+    ).toEqual({kind: 'empty', text: sentence});
+    expect(modelOf(fullHouse, 'house', {history: loaded(), language: 'fr'}).detail.chart.notice?.text).toBe(
+      'Pas encore d’historique. Il se remplit à mesure que Home Assistant enregistre la prochaine heure.',
+    );
   });
 
   test('a house with no thermostat has no heatmap to draw, once loaded; the words are French in French', () => {
@@ -205,7 +223,6 @@ describe('the test house, on the tablet', () => {
     expect(empty.detail.heatmap?.notice).toEqual({kind: 'empty', text: 'No thermostats found.'});
     const french = modelOf(fullHouse, 'house', {language: 'fr'}).detail;
     expect(french.chart.name).toBe('Moyenne de la maison');
-    expect(french.outsideChart?.title).toBe('Dehors, dernières 24 heures');
     expect(french.heatmap?.notice?.text).toBe('Chargement de l’historique…');
   });
 
@@ -219,10 +236,35 @@ describe('the test house, on the tablet', () => {
       lo: '14°',
       hi: '30°',
     });
-    expect(detail.controls).toEqual({
+    expect(detail.controls).toMatchObject({
       kind: 'house',
       rooms: ['climate.bedroom', 'climate.garage', 'climate.living_room', 'climate.office'],
     });
+  });
+
+  test('the house’s two buttons ask in a dialog: Set all names the value and the rooms, All off names the frost guard', () => {
+    const {asks} = house(modelOf(fullHouse, 'house').detail.controls);
+    expect(asks.set(21)).toEqual({
+      title: 'Set every room to 21.0°?',
+      line: 'All 4 rooms change to 21.0°.',
+      confirm: 'Set all',
+      cancel: 'Cancel',
+    });
+    expect(asks.set(21.5).title).toBe('Set every room to 21.5°?');
+    expect(asks.off).toEqual({
+      title: 'Turn every room off?',
+      line: 'Each room drops to the 5° frost guard.',
+      confirm: 'Turn off',
+      cancel: 'Cancel',
+    });
+    const french = house(modelOf(fullHouse, 'house', {language: 'fr'}).detail.controls).asks;
+    expect(french.set(21.5)).toEqual({
+      title: 'Régler toutes les pièces à 21,5°\u202f?',
+      line: 'Les 4 pièces passent à 21,5°.',
+      confirm: 'Tout régler',
+      cancel: 'Annuler',
+    });
+    expect(french.off.title).toBe('Éteindre toutes les pièces\u202f?');
   });
 
   test('a room heating: its pill, its setpoint on the gauge, its tiles and note, its setpoint and quick buttons', () => {

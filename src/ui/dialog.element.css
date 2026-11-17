@@ -1,0 +1,86 @@
+/*
+ * The kit's dialog (ADR 0036): a native `<dialog>` opened with `showModal()`, so the browser gives it the top layer, the focus, Escape and the backdrop. A dialog floats above the content, so it is
+ * the navigation layer and takes the glass when glass is on (docs/design.md, "Two layers"); what a feature slots into it is content and stays opaque. On a phone a confirmation rises from the bottom as an
+ * action sheet does, and a feature's editor (`.dsheet`, in the feature's own file) fills the screen as a sheet (HIG, Sheets and Alerts).
+ */
+:host {
+  display: contents;
+}
+dialog {
+  border: 0;
+  padding: 18px;
+  border-radius: 26px;
+  width: min(400px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  background: var(--card);
+  color: var(--fg);
+  box-shadow: var(--pop-shadow);
+  font: inherit;
+}
+:host([glass]) dialog {
+  background: var(--g-dense);
+  -webkit-backdrop-filter: var(--g-bd);
+  backdrop-filter: var(--g-bd);
+  box-shadow: var(--pop-shadow), var(--g-edge);
+}
+/* the kit sheet's own scrim (sheet.css), so a dialog and a sheet dim the page alike */
+dialog::backdrop {
+  background: color-mix(in srgb, var(--bg) 70%, transparent);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+:host([compact]) dialog {
+  margin: auto 12px 18px;
+  width: auto;
+  max-width: none;
+}
+@media (prefers-reduced-transparency: reduce) {
+  :host([glass]) dialog {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--card);
+  }
+}
+dialog h4 {
+  outline: none;
+  margin: 0 0 2px;
+  font-size: calc(17px * var(--tx));
+  font-weight: 600;
+}
+dialog p {
+  margin: 0 0 12px;
+  color: var(--fg2);
+  font-size: calc(13.5px * var(--tx));
+}
+/* the two buttons of a confirmation: Cancel, and the action as the prominent one (HIG, Buttons: style tells the preferred choice) */
+.btns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+.dbtn {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--ctl-bg);
+  color: var(--fg);
+  box-shadow: var(--ctl-edge);
+}
+.dbtn.prim {
+  background: var(--fg);
+  color: var(--bg);
+  box-shadow: none;
+}
+.dbtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.dbtn:focus-visible {
+  outline: 2px solid var(--c-home);
+  outline-offset: 2px;
+}

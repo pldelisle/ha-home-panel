@@ -69,6 +69,35 @@
 :host .sc[data-go] {
   cursor: pointer;
 }
+/* a card that opens something is a button: it takes its own colour, type and alignment, as the box it was did */
+:host .scgo {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  padding: 0;
+  border: 0;
+  border-radius: inherit;
+  background: none;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+:host .scgo:focus-visible {
+  outline: 2px solid var(--c-home);
+  outline-offset: 2px;
+}
+:host button.sc {
+  margin: 0;
+  border: 0;
+  font: inherit;
+  text-align: start;
+  -webkit-appearance: none;
+  appearance: none;
+}
+:host button.sc:focus-visible {
+  outline: 2px solid var(--c-home);
+  outline-offset: 2px;
+}
 :host .sc.amber {
   box-shadow:
     var(--g-edge, var(--shadow)),

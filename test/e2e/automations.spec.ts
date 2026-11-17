@@ -1,6 +1,7 @@
 // Home Assistant text reaches the Mermaid source of a flow (step aliases, entity names, trace errors). It is drawn as
 // text: none of it may act as Mermaid syntax, such as a %%{init}%% directive, a label closed early or a click handler.
 import AxeBuilder from '@axe-core/playwright';
+import type {Locator} from '@playwright/test';
 import {test, expect, tabletOnly, KATEX_CHUNK_URL, type House} from './fixtures';
 import {AFTERNOON, FULL_CFG} from './houses';
 import {automations as houseAutomations} from '../houses/full.mjs';
@@ -160,7 +161,7 @@ test.describe('A % or # that ends a label in a flow with no run stored', () => {
     tabletOnly();
     await house.setState('script.percent_script', {state: 'off', attributes: {friendly_name: PERCENT.script}});
     await house.tab('auto');
-    await house.root().locator('#pane-auto .auchip[data-au="percent_flow"]').click();
+    await house.root().locator('#pane-auto .aurow[data-au="percent_flow"]').click();
     const flow = house.root().locator('#pane-auto .auc.ausel'),
       svg = flow.locator('.augraph svg');
     await expect(flow.locator('.pill', {hasText: 'no run stored'})).toBeVisible();
@@ -168,7 +169,7 @@ test.describe('A % or # that ends a label in a flow with no run stored', () => {
     // a label at the end of its source line: `"100%"` is `100#37;` and a `#2;` is `#35;2;`, as it reads as an entity (the
     // `Room #2` of ENTITIES does not, and stays as it is)
     // a lone % is in every other label's text, so it is asked for as a whole label
-    await expect.soft(svg.locator('.node', {hasText: /^TRIGGER%$/})).toHaveCount(1, {timeout: 1000});
+    await expect.soft(svg.locator('.node', {hasText: /^Trigger%$/})).toHaveCount(1, {timeout: 1000});
     for (const text of [...Object.values(PERCENT), ...Object.values(HOSTILE), ...ENTITIES])
       await expect.soft(svg, text).toContainText(text, {timeout: 1000});
   });
@@ -188,19 +189,57 @@ test.describe('the Automations pane', () => {
       'nothing running · 3 runs today · 3 enabled',
     );
     await expect(pane(house).locator('.aud:not(.up)')).toHaveCount(3);
-    await expect(pane(house).locator('.aud.up')).not.toHaveCount(0);
+    // the 5 pm run still to come is a dot of its own with the 6 pm one, or in a group with a run: either way one says it is scheduled
+    await expect(pane(house).locator('.aud[aria-label*="scheduled"]')).not.toHaveCount(0);
   });
 
-  test('a chip selects its automation, and its card comes first with its flow', async ({house}) => {
+  test('a row of the list selects its automation, and its card comes first with its flow', async ({house}) => {
     await house.tab('auto');
-    const chip = pane(house).locator('.auchip[data-au="front_door_light"]');
-    await chip.click();
-    await expect(chip).toHaveClass(/\bsel\b/);
+    const row = pane(house).locator('.aurow[data-au="front_door_light"]');
+    await expect(row).toHaveAttribute('aria-pressed', 'false');
+    await row.click();
+    await expect(row).toHaveAttribute('aria-pressed', 'true');
     const card = pane(house).locator('.auc.ausel');
     await expect(card.locator('h3')).toHaveText(/^Selected · Entrance/);
     await expect(card.locator('.augraph svg')).toBeVisible({timeout: 10_000});
     await card.locator('.close').click();
     await expect(pane(house).locator('.auc.ausel')).toHaveCount(0);
+  });
+
+  // HIG, Buttons: 44x44 pt. A dot is a 44 pt button round a smaller drawn dot, a row of the list is as tall; no sentence tells
+  // to tap, and the list is rows with a name, when it last ran and a chevron, the selected one filled
+  test('the dots and the rows are 44 pt targets, and the list has no tap hint', async ({house}) => {
+    await house.tab('auto');
+    const size = (l: Locator) =>
+      l.evaluateAll(els => els.map(e => e.getBoundingClientRect()).map(r => [r.width, r.height]));
+    const dots = await size(pane(house).locator('.aud'));
+    expect(dots.length).toBeGreaterThan(0);
+    for (const [w, h] of dots) expect([w, h]).toEqual([44, 44]);
+    // the drawn dot stays 28 pt (20 when the run was skipped), or the same with a count
+    for (const w of (await size(pane(house).locator('.aud:not(.skip) .d'))).map(([w]) => w)) expect(w).toBe(28);
+    const rows = await size(pane(house).locator('.aurow'));
+    expect(rows).toHaveLength(3);
+    for (const [, h] of rows) expect(h).toBeGreaterThanOrEqual(44);
+    const row = pane(house).locator('.aurow[data-au="front_door_light"]');
+    await expect(row).toContainText('Entrance');
+    await expect(row.locator('small')).not.toBeEmpty();
+    await expect(row.locator('svg')).toHaveCount(1);
+    const fill = (l: Locator) => l.evaluate(e => getComputedStyle(e).backgroundColor);
+    const unselected = await fill(row);
+    await row.click();
+    const selected = await fill(row);
+    expect(selected).not.toBe(unselected);
+    // the neutral selection fill, the sidebar's, and not only a colour: the chevron stays and the selected state is said
+    const navSel = await row.evaluate(e => {
+      const probe = document.createElement('i');
+      probe.style.background = 'var(--nav-sel-bg)';
+      e.append(probe);
+      const c = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+      return c;
+    });
+    expect(selected).toBe(navSel);
+    await expect(pane(house)).not.toContainText(/\btap\b/i);
   });
 
   test('asks for the list of runs once when the tab opens, not again within twenty seconds', async ({house}) => {
@@ -218,7 +257,7 @@ test.describe('the Automations pane', () => {
     await house.mutations.reset();
     await house.setState('light.living_room_1', {state: 'on'});
     await house.page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
-    expect(await house.mutations.count('hp-automations-pane, hp-run-timeline, hp-flow-card, hp-automation-chips')).toBe(
+    expect(await house.mutations.count('hp-automations-pane, hp-run-timeline, hp-flow-card, hp-automation-list')).toBe(
       0,
     );
   });

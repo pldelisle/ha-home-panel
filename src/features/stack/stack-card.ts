@@ -1,5 +1,5 @@
 // <hp-stack-card mode="home" | "idle">: one card of the smart stack, its title row, its body's parts in order and its footer line; a tap
-// asks for what the card is about (a tab, a sheet, or a sensor's history).
+// asks for what the card is about (a tab, a sheet, or a sensor's history); a card that asks is a `<button>`, and one that only shows is a box.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over a `StackCard` view model the rules made: every word and figure arrives
 // formatted, and the element places each body part with the legacy `scard`'s classes, so the legacy rules moved here unchanged.
 // Must not: compute or word anything (the rules do), read the store or the clock, stop a tap's propagation (the idle clock wakes on it),
@@ -127,20 +127,31 @@ export class StackCardElement extends LitElement {
   protected override render() {
     const card = this.card;
     if (!card) return nothing;
-    // `data-k` is the rule's kind, the key before its `:` (a door's id, a room's name), as the legacy `scard` wrote it
-    return html`<div
-      class=${card.tone ? `sc ${card.tone}` : 'sc'}
-      data-k=${card.key.split(':')[0]}
-      data-go=${ifDefined(goAttribute(card.go))}
-      @click=${this.onTap}
-    >
-      <div class="sh">
+    const content = html`<div class="sh">
         <span class="si" style=${styleMap({background: card.color})}>${ico(card.icon, 16)}</span><b>${card.label}</b>${
           card.right ? html`<em>${card.right}</em>` : nothing
         }
       </div>
-      ${card.body.map(part)}${card.foot ? html`<div class="sft">${card.foot}</div>` : nothing}
-    </div>`;
+      ${card.body.map(part)}${card.foot ? html`<div class="sft">${card.foot}</div>` : nothing}`;
+    const classes = card.tone ? `sc ${card.tone}` : 'sc';
+    // `data-k` is the rule's kind, the key before its `:` (a door's id, a room's name), as the legacy `scard` wrote it
+    const kind = card.key.split(':')[0];
+    // A card that asks for something is a button. Its words name it, unless the card has a name of its own: its words are then not the
+    // name (a screen reader would find the visible text missing from it), so the card is a box with a button over it that holds the name.
+    if (!card.go) return html`<div class=${classes} data-k=${kind}>${content}</div>`;
+    if (card.name)
+      return html`<div class=${classes} data-k=${kind} data-go=${ifDefined(goAttribute(card.go))}>
+        ${content}<button type="button" class="scgo" aria-label=${card.name} @click=${this.onTap}></button>
+      </div>`;
+    return html`<button
+      type="button"
+      class=${classes}
+      data-k=${kind}
+      data-go=${ifDefined(goAttribute(card.go))}
+      @click=${this.onTap}
+    >
+      ${content}
+    </button>`;
   }
 
   // the tap travels on: beside the idle clock it is the one that wakes the panel, and the card's request is answered after

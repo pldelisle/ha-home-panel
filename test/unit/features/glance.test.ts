@@ -60,7 +60,7 @@ describe('the test houses', () => {
       ['lights', '1 on', 'Living room 71%'],
       null,
       null,
-      ['energy', '–', 'Now · 12.3 kWh today · rate unknown'],
+      ['energy', 'No reading', 'Now · 12.3 kWh today · rate unknown'],
       null,
       null,
     ]);
@@ -162,12 +162,19 @@ describe('Car', () => {
 });
 
 describe('Energy and the water heater', () => {
-  test('the grid under a kilowatt in watts, a dash without a reading, and no total before the history', () => {
+  test('the grid under a kilowatt in watts, the words "No reading" (flagged missing) without one, and no total before the history', () => {
     expect(energyGlance(full({'sensor.house_power': {state: '850'}}), noHistory)).toMatchObject({
       value: '850 W',
       line: 'Now · rate unknown',
     });
-    expect(energyGlance(full({'sensor.house_power': {state: 'unavailable'}}), history)?.value).toBe('–');
+    expect(energyGlance(full({'sensor.house_power': {state: 'unavailable'}}), history)).toMatchObject({
+      value: 'No reading',
+      missing: true,
+    });
+    expect(energyGlance(full({'sensor.house_power': {state: '850'}}), history)?.missing).toBeUndefined();
+    expect(energyGlance(full({'sensor.house_power': {state: 'unavailable'}}, FULL_CFG, 'fr'), history)?.value).toBe(
+      'Aucune mesure',
+    );
   });
 
   test('the water heater heating, without a temperature, and before the history', () => {
@@ -175,7 +182,7 @@ describe('Energy and the water heater', () => {
       full({'sensor.water_heater_power': {state: '3000'}, 'sensor.water_heater_temperature': {state: 'unknown'}}),
       noHistory,
     );
-    expect(tile).toMatchObject({value: '–', line: 'Heating'});
+    expect(tile).toMatchObject({value: 'No reading', missing: true, line: 'Heating'});
   });
 });
 

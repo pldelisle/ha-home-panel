@@ -1,5 +1,5 @@
 // The departure schedule's draft: the days, the time and the cabin temperature a person edits before anything is sent, and the rules around it.
-// Pattern: edit locally, validate, send once (a form draft; Fowler's Unit of Work in miniature): plain data, replaced by new values, so the element that holds it, `<hp-car-comfort>`, owns the one copy.
+// Pattern: edit locally, validate, send once (a form draft; Fowler's Unit of Work in miniature): plain data, replaced by new values, so the element that holds it, `<hp-car-departure>`, owns the one copy.
 // The rules are the legacy `depState`, `depDesc` and the save branch of `carControl` (deleted in #253) and `clockTime` (deleted in #269); the words are catalog messages, the time of day is `fmt.clock`'s.
 // Must not: send a command, read the store or the clock, or write a time of day or a day's name by hand.
 import type {Formatters} from '../../core/i18n/format.ts';
@@ -103,15 +103,10 @@ const daysWords = (days: readonly string[], t: Translate): string => {
 
 /**
  * What the draft says it will do, `weekdays at 8:30 am`: the days, and the time the way the household's language writes it
- * (`8 h 30`); a cleared time field names no time, only the days. Read by `describe` and by the toast that says a schedule was saved.
+ * (`8 h 30`); a cleared time field names no time, only the days. Read by the departure row and by the toast that says a schedule was saved.
  */
 export function scheduleWords(draft: ScheduleDraft, fmt: Pick<Formatters, 'clock'>, t: Translate): string {
   const days = daysWords(draft.days, t);
   const parsed = parseTime(draft.time);
   return parsed ? t('car.at', {days, time: fmt.clock(parsed.hours, parsed.minutes)}) : days;
-}
-
-/** The departure switch's line: `On · weekdays at 8:30 am` while it is on, `Off · weekdays at 8:30 am saved` while it is off. */
-export function describe(draft: ScheduleDraft, on: boolean, fmt: Pick<Formatters, 'clock'>, t: Translate): string {
-  return t(on ? 'car.departureOn' : 'car.departureOff', {when: scheduleWords(draft, fmt, t)});
 }

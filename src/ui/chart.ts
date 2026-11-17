@@ -10,7 +10,7 @@ import {AppearanceConsumer} from './controllers/appearance-consumer.ts';
 import {MediaQueryController} from './controllers/media-query.ts';
 import {ResizeController} from './controllers/resize.ts';
 import {StoreController} from './controllers/store-controller.ts';
-import {baseOptions, frenchAxis, mergeOptions, type ChartOptions} from './chart-options.ts';
+import {baseOptions, houseAxis, mergeOptions, type ChartOptions} from './chart-options.ts';
 import {ToastEvent} from './events.ts';
 import {chart as chartStyles, common} from './styles/index.ts';
 import chartOwn from './chart.element.css?inline';
@@ -118,7 +118,7 @@ export class HpChart extends LitElement {
     this.chart.render().catch((error: unknown) => console.warn('home-panel chart', error));
   }
 
-  // the base look from the host's computed tokens, the options over it, and French's axis when the panel is in French
+  // the base look from the host's computed tokens, the options over it, and the time axis in the house's formats
   private merged(options: ChartOptions, key: string): ChartOptions {
     const {store} = this.storeController;
     const style = getComputedStyle(this);
@@ -130,7 +130,7 @@ export class HpChart extends LitElement {
       noData: store.t('chart.noData'),
     });
     const merged = mergeOptions(base, options);
-    return store.isFrench ? frenchAxis(merged, store.fmt) : merged;
+    return houseAxis(merged, store.fmt);
   }
 
   private dispose(): void {

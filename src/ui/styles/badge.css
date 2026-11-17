@@ -1,5 +1,6 @@
-/* The badge in a header's corner, written once for the pane header, the More sheet and the legacy sheets: the icon on a square
-   tinted with the subject's colour (`--acc`), and glass on the glass look. A header is `.ph` with a `.badge` in it. Inside an
+/* The badge in a header's corner, written once for the pane header, the More sheet and the legacy sheets: the subject's icon beside
+   the title, on no fill (the owner's choice, 2026-11-17: a bare icon reads as the title's, not as a button), with or without glass.
+   A header is `.ph` with a `.badge` in it. Inside an
    element `.app.cp` and `.app.gl` read as `:host([compact])` and `:host([glass])` (host.ts). */
 .ph .badge {
   width: 54px;
@@ -8,7 +9,7 @@
   display: grid;
   place-items: center;
   flex: none;
-  background: color-mix(in srgb, var(--acc, var(--fg3)) 22%, var(--card));
+  background: transparent;
   color: var(--fg);
 }
 .app.cp .ph .badge {
@@ -20,17 +21,10 @@
   width: 22px;
   height: 22px;
 }
-/* pane and sheet title icons are tinted glass instead of a flat colour square */
+/* the glass look draws it the same: no fill, no blur, no rim (HIG, Materials: no Liquid Glass in the content layer) */
 .app.gl .ph .badge {
-  background: color-mix(in srgb, var(--acc, var(--fg3)) 22%, var(--g-fill));
-  -webkit-backdrop-filter: var(--g-bd);
-  backdrop-filter: var(--g-bd);
-  box-shadow: var(--g-edge);
-}
-@media (prefers-reduced-transparency: reduce) {
-  .app.gl .ph .badge {
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-    background: color-mix(in srgb, var(--acc, var(--fg3)) 22%, var(--card));
-  }
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
 }

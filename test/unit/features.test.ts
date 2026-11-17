@@ -36,7 +36,7 @@ describe('the registry', () => {
     expect(FEATURES.filter(f => f.phoneBar).map(f => f.key)).toEqual(['home', 'lights', 'climate', 'car']);
   });
 
-  test('names each subject by its colour token and a catalog title, and only Automations has a short one', () => {
+  test('names each subject by its colour token and a catalog title', () => {
     expect(FEATURES.map(f => f.color)).toEqual([
       'var(--c-grid)',
       'var(--warn)',
@@ -50,7 +50,6 @@ describe('the registry', () => {
       'var(--c-heat)',
     ]);
     for (const f of FEATURES) expect(f.title).toBe(f.key === 'cams' ? 'security.title' : `${f.key}.title`);
-    expect(FEATURES.filter(f => f.shortTitle).map(f => [f.key, f.shortTitle])).toEqual([['auto', 'auto.short']]);
   });
 
   // the rail's labels were English words the French layer rewrote with its map; they are catalog messages now and must
@@ -59,7 +58,6 @@ describe('the registry', () => {
     const labels: [keyof typeof en, string][] = [
       ...FEATURES.map(f => [f.title, en[f.title]] as [keyof typeof en, string]),
     ];
-    labels.push(['auto.short', en['auto.short']]);
     // the More sheet's Close button, which the sheet draws from the catalog (its title, line and the bar's More left the map
     // after a byte comparison; the French baseline of the sheet holds them)
     labels.push(['more.close', en['more.close']]);
@@ -181,13 +179,24 @@ describe('the Air descriptor', () => {
     };
   };
 
-  test("is the registry's own and always shown, and binds its pane to the sheet host's answer: the detail's `open`", () => {
+  test("is the registry's own and always shown, and binds its pane to the sheet host's answers: the detail's `open`, the reading whose history is open", () => {
     expect(FEATURES.find(f => f.key === 'air')).toBe(airFeature);
     expect(airFeature.available).toBeUndefined();
     expect(airFeature.detailSheet).toBe('air.detail');
-    const pane = (open: string | null) => airFeature.pane({...env(), sheetOpen: id => id === open});
-    expect(pane(null).values).toEqual([false]);
-    expect(pane('air.detail').values).toEqual([true]);
+    expect(airFeature.overSheets).toEqual(['air.history']);
+    const pane = (open: string | null, detail?: unknown) =>
+      airFeature.pane({...env(), sheetOpen: id => id === open, sheetDetail: id => (id === open ? detail : undefined)});
+    const request = {metric: 'co2', room: 'fan.office_purifier'};
+    expect(pane(null).values).toEqual([false, undefined]);
+    expect(pane('air.detail').values).toEqual([true, undefined]);
+    // the request the tile sent is handed on as it is, the same object, so the pane is not asked to draw it again
+    expect(pane('air.history', request).values[1]).toBe(request);
+    // a request that names no reading of the table, or no room, opens nothing the pane could draw
+    expect(pane('air.history', {metric: 'temperature', room: 'fan.office_purifier'}).values).toEqual([
+      false,
+      undefined,
+    ]);
+    expect(pane('air.history', {metric: 'co2'}).values).toEqual([false, undefined]);
   });
 
   // the More sheet's baselines read the legacy word ("Moderate"), not the pane's sub-line ("1 purifier · Moderate"): `airBrief` words the first, the pane the second

@@ -4,7 +4,7 @@
 import {existsSync} from 'node:fs';
 import {describe, expect, test} from 'vitest';
 import {conditionName} from '../../../../src/core/i18n/condition-name.ts';
-import {aqhiRisk, uvWord, weatherBrief} from '../../../../src/features/weather/model.ts';
+import {aqhiRisk, uvWord, weatherBrief, weatherCardName} from '../../../../src/features/weather/model.ts';
 import {createFormatters} from '../../../../src/core/i18n/format.ts';
 import {englishLocale} from '../../../../src/core/i18n/locale.ts';
 import {createMessages} from '../../../../src/core/i18n/messages.ts';
@@ -585,6 +585,16 @@ describe('the house picture and the word under Weather in More', () => {
 
   test('is empty when the house has no temperature', () => {
     expect(weatherBrief(inputsWith({condition: 'rainy'}), deps)).toBe('');
+  });
+
+  test("names the phone's Home card for a screen reader: the temperature, the condition and where a tap goes", () => {
+    expect(
+      weatherCardName(
+        inputsWith({temperature: 4.2, condition: 'Mainly Sunny', conditionWords: 'weather.cond.ec.mainlySunny'}),
+        deps,
+      ),
+    ).toBe('Weather: 4°, mainly sunny. Opens the forecast');
+    expect(weatherCardName(inputsWith({condition: 'rainy'}), deps)).toBe('Weather. Opens the forecast');
   });
 });
 

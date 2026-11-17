@@ -1,0 +1,80 @@
+/*
+ * <hp-car-departure>'s own rules: the row on the tab (a button that opens the editor, the switch beside it, and the chevron that says it opens), and the editor's time field, cabin menu and
+ * checkmarks. The row is a list row of the card the detail wraps it in (car-detail.element.css); the editor is dialog.css.
+ */
+:host {
+  display: block;
+  min-width: 0;
+}
+.dep {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 60px;
+  padding: 6px 8px 6px 14px;
+}
+.open {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.open svg {
+  flex: none;
+  color: var(--fg2);
+}
+.tx {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.tx b {
+  font-weight: 600;
+}
+.tx small {
+  font-size: calc(12.5px * var(--tx));
+  color: var(--fg2);
+}
+.chev {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--fg3);
+  cursor: pointer;
+}
+.open:focus-visible {
+  outline: 2px solid var(--c-home);
+  outline-offset: 2px;
+  border-radius: 12px;
+}
+.dtime,
+.cabin {
+  min-height: 36px;
+  border: 0;
+  border-radius: 10px;
+  padding: 0 10px;
+  background: var(--card);
+  color: var(--fg);
+  font: inherit;
+  font-weight: 600;
+  color-scheme: light dark;
+}
+.chk {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  color: var(--fg);
+}

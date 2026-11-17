@@ -346,6 +346,35 @@ export const expectCall = (house: House, re: RegExp) =>
     {box: true},
   );
 
+/**
+ * The interactive elements that sit inside another one (a button in a button, a switch in a `role=button`), through every shadow
+ * root: each one as a line (the inner's tag and name, then the outer's) for a report. A screen reader reads one or the other, and
+ * the two hit areas fight. Empty is the goal.
+ */
+export const nestedInteractive = (house: House): Promise<string[]> =>
+  house.page.evaluate(() => {
+    const INNER =
+      'button, a[href], input, select, textarea, [role=button], [role=switch], [role=link], [role=checkbox]';
+    const OUTER = 'button, a[href], [role=button], [role=link]';
+    const found: string[] = [];
+    const parentOf = (e: Element): Element | null => e.parentElement ?? (e.getRootNode() as ShadowRoot).host ?? null;
+    const name = (e: Element) =>
+      `${e.localName}${e.getAttribute('role') ? `[role=${e.getAttribute('role')}]` : ''}("${e.getAttribute('aria-label') ?? (e.textContent ?? '').trim().slice(0, 30)}")`;
+    const walk = (root: Document | ShadowRoot | Element) => {
+      for (const e of root.querySelectorAll('*')) {
+        if (e.shadowRoot) walk(e.shadowRoot);
+        if (!e.matches(INNER)) continue;
+        for (let up = parentOf(e); up; up = parentOf(up))
+          if (up.matches(OUTER)) {
+            found.push(`${name(e)} inside ${name(up)}`);
+            break;
+          }
+      }
+    };
+    walk(document);
+    return found;
+  });
+
 export {expect};
 
 /**

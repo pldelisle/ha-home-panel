@@ -45,7 +45,7 @@
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  color: var(--fg2);
+  color: var(--fg);
   font: 600 11px var(--f-body);
   cursor: pointer;
   min-width: 0;
@@ -135,38 +135,15 @@
 .pane > .panel > * + * {
   margin-top: 16px;
 }
-/* the active section lights up in its own colour */
+/* The rail and the phone's tab bar draw as the Files app's sidebar does: every icon in the one blue, the labels in the text colour,
+   and the chosen section on a darker neutral fill, never in a section's own colour (HIG, Color: "Apply color sparingly to the
+   Liquid Glass material"; docs/design.md) */
+.rtab svg {
+  color: var(--c-home);
+}
 .rtab[aria-selected='true'] {
-  --rc: var(--c-home);
-  color: var(--rc);
-  background: color-mix(in srgb, var(--rc) 14%, var(--card));
-}
-.rtab[aria-selected='true'][data-tab='lights'] {
-  --rc: var(--warn);
-}
-.rtab[aria-selected='true'][data-tab='climate'] {
-  --rc: var(--c-wh);
-}
-.rtab[aria-selected='true'][data-tab='weather'] {
-  --rc: var(--m-blue);
-}
-.rtab[aria-selected='true'][data-tab='car'] {
-  --rc: var(--c-ev);
-}
-.rtab[aria-selected='true'][data-tab='energy'] {
-  --rc: var(--c-grid);
-}
-.rtab[aria-selected='true'][data-tab='air'] {
-  --rc: var(--ok);
-}
-.rtab[aria-selected='true'][data-tab='media'] {
-  --rc: var(--c-home);
-}
-.rtab[aria-selected='true'][data-tab='cams'] {
-  --rc: var(--m-purple);
-}
-.rtab[aria-selected='true'][data-tab='home'] {
-  --rc: var(--c-grid);
+  color: var(--fg);
+  background: var(--nav-sel-bg);
 }
 .rtab[aria-selected='true'] span {
   color: var(--fg);
@@ -286,10 +263,6 @@
   .rtab {
     flex: 1 0 64px;
   }
-}
-/* Automations pane: its rail tab's colour (the pane's rules are the feature's, src/features/automations/styles.css) */
-.rtab[aria-selected='true'][data-tab='auto'] {
-  --rc: var(--c-heat);
 }
 /* Home pane: Security card (cameras, doors, motion), same padding and gaps as the tiles */
 /* Idle clock (v1.19.6): the wall iPad rests on a big clock after 5 min; everything else fades out, the wallpaper keeps drifting */

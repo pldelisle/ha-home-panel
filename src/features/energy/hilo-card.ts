@@ -37,7 +37,7 @@ export class HiloCard extends LitElement {
     const view = this.view;
     if (!view) return nothing;
     const {rate, tier} = view;
-    // the inner box carries the glass: see <hp-energy-card>
+    // the inner box carries the glass: see <hp-water-card>
     return html`<div class="ebox">
         <div class="etop"><span class="elbl">${view.title}</span><span class="eright">${view.challenge}</span></div>
         <div class="hero">

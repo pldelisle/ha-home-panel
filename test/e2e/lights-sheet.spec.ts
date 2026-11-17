@@ -3,7 +3,7 @@
 // Test titles start with the check's number in docs/specs/01-playwright-test.md.
 import {test, expect, type House} from './fixtures';
 import {FULL_CFG} from './houses';
-import {callData, callsMessage, OFFICE_TILE, openOfficeSheet} from './lights';
+import {callData, callsMessage, OFFICE_ROW, openOfficeSheet} from './lights';
 
 // a fake clock lets the tests run past the panel's timers (the 60 ms drag release, the 1 s render tick) without waiting
 test.use({houseOpts: {cfg: FULL_CFG, time: '2026-11-07T12:00:00-05:00'}});
@@ -96,7 +96,7 @@ test('31 Done closes the sheet and Enter on a tile opens it again', async ({hous
   await openOfficeSheet(house);
   await house.root().locator('#sh-light .ldone').click();
   await expect(house.root().locator('#sh-light')).toBeHidden();
-  await house.root().locator(OFFICE_TILE).focus();
+  await house.root().locator(OFFICE_ROW).focus();
   await house.page.keyboard.press('Enter');
   await expect(house.root().locator('#sh-light')).toBeVisible();
 });

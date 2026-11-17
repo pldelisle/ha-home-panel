@@ -194,7 +194,6 @@ export type FeatureKey =
 export interface FeatureDescriptor {
   key: FeatureKey;
   title: MessageKey; // 'weather.title'; the rail label, the pane heading and the More list
-  shortTitle?: MessageKey; // the phone's fifth slot: 'auto.short' is "Rules"
   icon: IconName; // from src/ui/icons.ts
   color: string; // a token: 'var(--m-blue)'
   phoneBar: boolean; // one of the four tabs of the phone's bar; the rest sit under More

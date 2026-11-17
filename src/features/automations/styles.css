@@ -17,9 +17,9 @@
 }
 .app.gl .aubox {
   background: var(--g-card);
-  -webkit-backdrop-filter: var(--g-bd);
-  backdrop-filter: var(--g-bd);
-  box-shadow: var(--g-edge);
+  -webkit-backdrop-filter: var(--m-bd);
+  backdrop-filter: var(--m-bd);
+  box-shadow: var(--m-edge);
 }
 /* WebKit leaves ghosts of the previous flow drawing behind a blurred card (stale compositing under backdrop-filter), so on iOS the two
    Automations cards keep a denser plain translucent fill with no blur, and every flow drawing gets its own layer (v1.18.3) */
@@ -109,16 +109,14 @@
 .app.gl .auhead .pill.ok {
   background: color-mix(in srgb, var(--ok) 18%, var(--g-tile));
 }
-/* the chips of the run picker and of every automation: a run's time, or a name with when it last ran */
-.aupick,
-.auchips {
+/* the chips of the run picker: a run's time */
+.aupick {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 12px;
 }
-.aupick .chip,
-.auchips .chip {
+.aupick .chip {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -139,34 +137,18 @@
   height: 9px;
   border-radius: 50%;
 }
-.aupick .chip.sel,
-.auchips .chip.sel {
+.aupick .chip.sel {
   background: var(--fg);
   color: var(--card);
 }
-.auchips .chip small {
-  font-weight: 600;
-  color: var(--fg2);
-  font-size: calc(11px * var(--tx));
-}
-.auchips .chip.sel small {
-  color: inherit;
-  opacity: 0.7;
-}
-.auchips .chip.offa {
-  opacity: 0.55;
-}
-.app.gl .aupick .chip,
-.app.gl .auchips .chip {
+.app.gl .aupick .chip {
   background: var(--g-tile);
   box-shadow: var(--g-edge-s);
 }
-.app.gl .aupick .chip.sel,
-.app.gl .auchips .chip.sel {
+.app.gl .aupick .chip.sel {
   background: var(--fg);
 }
 /* on a phone the chips wrap instead of widening the pane */
-.app.cp .auchips .chip,
 .app.cp .aupick .chip {
   white-space: normal;
   max-width: 100%;
@@ -175,8 +157,7 @@
 }
 /* press feedback: a chip shrinks a touch under the finger; with motion on it springs back and its selection cross-fades */
 @media (prefers-reduced-motion: no-preference) {
-  .aupick .chip,
-  .auchips .chip {
+  .aupick .chip {
     transition:
       transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
       background-color 0.2s ease,
@@ -184,9 +165,68 @@
       color 0.2s ease;
   }
 }
-.aupick .chip:active,
-.auchips .chip:active {
+.aupick .chip:active {
   transform: scale(0.96);
+}
+/* every automation: a plain list, a row of at least 44 pt each (name, when it last ran, a chevron); the selected row has the
+   neutral selection fill and a bolder name, so it is not told by colour alone */
+.aulist {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.aurow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  font-size: calc(14px * var(--tx));
+  text-align: left;
+  cursor: pointer;
+}
+.aurow .nm {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.aurow small {
+  flex: none;
+  color: var(--fg2);
+  font-weight: 600;
+  font-size: calc(12px * var(--tx));
+}
+.aurow .chev {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 24px;
+  color: var(--fg3);
+}
+.aurow.sel {
+  background: var(--nav-sel-bg);
+}
+.aurow.sel .nm {
+  font-weight: 800;
+}
+.aurow.offa {
+  opacity: 0.55;
+}
+.aurow:focus-visible {
+  outline: 2px solid var(--c-home);
+  outline-offset: -2px;
+}
+.aurow:active {
+  background: var(--nav-sel-bg);
 }
 /* the head's right side: the pill and the selected card's close */
 .auhr {
@@ -265,70 +305,72 @@
   height: 64px;
   margin: 12px 6px 4px;
 }
-/* a dot is 28 px with a 44 px touch area; runs closer together than a dot is wide share one dot, with the count on it */
+/* a dot is a 44 px button (HIG, Buttons: 44x44 pt) round the 28 px dot it draws (`.d`); runs closer together than 44 px share one
+   dot, with the count on it, so no two buttons overlap */
 .aud {
   position: absolute;
-  top: 21px;
-  width: 28px;
-  height: 28px;
-  margin-left: -14px;
-  border-radius: 50%;
-  border: 3px solid var(--fg2);
-  background: var(--fg2);
+  top: 13px;
+  width: 44px;
+  height: 44px;
+  margin-left: -22px;
+  border: 0;
+  background: none;
   padding: 0;
   cursor: pointer;
   display: grid;
   place-items: center;
 }
-.aud::before {
-  content: '';
-  position: absolute;
-  inset: -8px;
+.aud .d {
+  box-sizing: border-box;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
+  border: 3px solid var(--fg2);
+  background: var(--fg2);
+  display: grid;
+  place-items: center;
 }
 .aud .n {
   font: 700 calc(11px * var(--tx)) var(--f-body);
   color: var(--card);
   line-height: 1;
 }
-.aud.skip {
+.aud.skip .d {
   background: var(--card);
   border-color: var(--crit);
   width: 20px;
   height: 20px;
-  margin-left: -10px;
-  top: 25px;
   border-width: 2.5px;
-}
-.aud.skip::before {
-  inset: -12px;
 }
 .aud.skip .n {
   color: var(--crit);
 }
-.aud.err {
+.aud.err .d {
   background: var(--crit);
   border-color: var(--crit);
 }
-.aud.now {
+.aud.now .d {
   background: var(--ok);
   border-color: var(--ok);
   box-shadow: 0 0 0 5px color-mix(in srgb, var(--ok) 25%, transparent);
   animation: aupulse 1.6s ease-in-out infinite;
 }
-.aud.up {
+.aud.up .d {
   background: var(--card);
   border-color: var(--ring);
 }
 .aud.up .n {
   color: var(--fg2);
 }
-.app.gl .aud.up,
-.app.gl .aud.skip {
+.app.gl .aud.up .d,
+.app.gl .aud.skip .d {
   background: var(--g-tile);
   box-shadow: var(--g-edge-s);
 }
 .aud:focus-visible {
+  outline: none;
+}
+.aud:focus-visible .d {
   outline: 2px solid var(--c-home);
   outline-offset: 3px;
 }
@@ -433,7 +475,7 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .augraph .au-run,
-  .aud.now {
+  .aud.now .d {
     animation: none;
   }
 }

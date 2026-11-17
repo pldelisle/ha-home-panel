@@ -40,7 +40,7 @@ export class ControlSender implements ReactiveController {
     host.addController(this);
   }
 
-  /** Shows `value` under each of the command's `holds` and sends it now: a mode, a fan, a louver position, or a second tap. */
+  /** Shows `value` under each of the command's `holds` and sends it now: a mode, a fan, or a louver position. */
   now(command: Command, value: unknown): void {
     void this.options.commands.runHolding(command, value);
   }

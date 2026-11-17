@@ -60,12 +60,12 @@ test('a new toast replaces the one showing: a done one after a failure goes afte
 test.describe('in French', () => {
   test.use({houseOpts: {cfg: FULL_CFG, time: AFTERNOON, lang: 'fr'}});
 
-  // a catalog toast: the Car's comfort card words this one from the catalog (#253), as every feature does
+  // a catalog toast: the Car's charger words this one from the catalog (#253), as every feature does
   test('a catalog toast is in French, and so is the Dismiss of a failure', async ({house}) => {
     tabletOnly();
     await house.tab('car');
-    await house.root().locator('hp-car-comfort').getByRole('button', {name: "Enregistrer l'horaire"}).click();
-    await expect(toast(house)).toHaveText("Choisissez d'abord une température d'habitacle");
+    await house.root().locator('hp-charger-controls').getByRole('switch', {name: 'Verrouiller la borne'}).click();
+    await expect(toast(house)).toHaveText('Borne verrouillée');
     await house.failNext('scene.turn_on');
     await house.tab('home');
     await scene(house, 'Movie night').click(); // a name the house gave, which the panel never translates
@@ -78,5 +78,30 @@ test.describe('in French', () => {
     await openOfficeSheet(house);
     await house.root().locator('#lsheet hp-switch[data-l="al"] button').click();
     await expect(toast(house)).toHaveText('Auto désactivé');
+  });
+});
+
+// white text on the error fill: the dark theme's light red (#da8282) gave 2.8:1, so the fill is its own darker token, 5.3:1 (#391)
+test.describe('the failure toast by theme', () => {
+  const failed = async (house: House) => {
+    await pause(house);
+    await house.failNext('scene.turn_on');
+    await scene(house, 'Movie night').click();
+    await expect(toast(house)).toHaveClass(/\berr\b/);
+  };
+
+  test.describe('in dark mode', () => {
+    test.use({houseOpts: {cfg: FULL_CFG, time: AFTERNOON, theme: 'dark'}});
+
+    test('the fill is a red white text reads on (4.5:1)', async ({house}) => {
+      await failed(house);
+      await expect(toast(house)).toHaveCSS('background-color', 'rgb(179, 74, 74)');
+      await expect(toast(house)).toHaveCSS('color', 'rgb(255, 255, 255)');
+    });
+  });
+
+  test('the light theme keeps its red', async ({house}) => {
+    await failed(house);
+    await expect(toast(house)).toHaveCSS('background-color', 'rgb(167, 80, 80)');
   });
 });
