@@ -4,6 +4,7 @@
    where the weather chip is hidden, the box is no box, so a box holding only a hidden chip adds no gap either. */
 #wxchip-host {
   display: flex;
+  align-self: stretch; /* as tall as the chips' row, so a chip is centred in that row once, as it was when it was the row's own item */
   align-items: center;
   gap: 10px;
 }
