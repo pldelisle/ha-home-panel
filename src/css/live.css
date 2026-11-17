@@ -1,16 +1,17 @@
 /* ---- Live activities (2.5.0): the pill and its cards are feature elements since #256 (src/features/live); what stays here is the popup's box and the weather chip beside the pill ---- */
-/* the guest's chips sit in a box of their own before the pill (#256), a flex row as the header's chips are; a `display: contents`
-   box drew the weather chip's text a shade differently. Empty, it takes no place and no gap. */
+/* the guest's chips sit in a box of their own before the pill (#256): on a tablet a flex row as the header's chips are, since a
+   `display: contents` box drew the weather chip's text a shade differently there; empty, it takes no place and no gap. On a phone,
+   where the weather chip is hidden, the box is no box, so a box holding only a hidden chip adds no gap either. */
 #wxchip-host {
   display: flex;
   align-items: center;
   gap: 10px;
 }
-.app.tabsv.cp .head #wxchip-host {
-  gap: 8px;
-}
 #wxchip-host:empty {
   display: none;
+}
+.app.tabsv.cp .head #wxchip-host {
+  display: contents;
 }
 #chips[data-live] .wxchip small {
   display: none;
