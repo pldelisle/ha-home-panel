@@ -1,0 +1,160 @@
+/*
+ * <hp-light-slider>'s own rules: the tall pill, its fill or its handle, the marks at its ends, the Night look, and the value under it.
+ * Moved from the room sheet's rules (lights.css) in #262. The host has no box: the pill and its value are a column of the sheet's row.
+ */
+:host {
+  display: contents;
+}
+/* two tall sliders, Apple Home style: brightness fills from the bottom in the lights' colour; colour runs warm (bottom) to cool (top) */
+.lpc {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.lpill {
+  position: relative;
+  width: 112px;
+  height: min(290px, 38vh);
+  min-height: 200px;
+  border-radius: 32px;
+  overflow: hidden;
+  background: var(--card2);
+  box-shadow: inset 0 0 0 1px var(--ring);
+  cursor: ns-resize;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+.app.gl .lpill {
+  background: rgba(127, 127, 127, 0.18);
+}
+.app.cp .lpill {
+  width: 100px;
+  height: min(240px, 32vh);
+}
+.lpill .lpf {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--v);
+  background: var(--lc, var(--warn));
+  transition: height 0.2s ease;
+}
+.lpill.drag .lpf,
+.lpill.drag .lphd {
+  transition: none;
+}
+/* while a finger is on it the slider lifts and takes a glass rim, as Apple's do */
+.lpill.drag {
+  transform: scale(1.04);
+  box-shadow:
+    inset 0 0 14px -4px rgba(255, 255, 255, 0.7),
+    inset 0 0 0 1.5px rgba(255, 255, 255, 0.7),
+    0 10px 30px -10px rgba(0, 0, 0, 0.45);
+}
+.lpill:focus-visible {
+  outline: 2px solid var(--c-home);
+  outline-offset: 3px;
+}
+.lpill[aria-disabled='true'] {
+  opacity: 0.4;
+  cursor: default;
+}
+.lpill .lpmx,
+.lpill .lpmn {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  color: rgba(40, 30, 20, 0.5);
+}
+.lpill .lpmx {
+  top: 16px;
+}
+.lpill .lpmn {
+  bottom: 18px;
+}
+.lpill.lbr .lpmx {
+  color: var(--fg2);
+}
+.lpill.lbr.off .lpmn {
+  color: var(--fg2);
+}
+.lpill.lct,
+.app.gl .lpill.lct {
+  background: linear-gradient(to top, var(--warm), var(--mid), var(--cool));
+}
+.lpill.lct .lpmx {
+  color: rgba(30, 40, 70, 0.55);
+}
+.lpill.lct .lpmn {
+  color: rgba(90, 40, 0, 0.6);
+}
+.lpill .lphd {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  height: 10px;
+  border-radius: 6px;
+  bottom: calc(var(--v) - 5px);
+  background: #fff;
+  box-shadow:
+    0 0 0 2px rgba(0, 0, 0, 0.28),
+    0 2px 8px rgba(0, 0, 0, 0.35);
+  transition: bottom 0.2s ease;
+}
+.lpill .lpnl {
+  display: none;
+}
+.lpill.lct.night,
+.app.gl .lpill.lct.night {
+  background: linear-gradient(to top, #a81c00, #ff2800);
+}
+.lpill.lct.night .lphd,
+.lpill.lct.night .lpmx,
+.lpill.lct.night .lpmn {
+  display: none;
+}
+.lpill.lct.night .lpnl {
+  display: block;
+  position: absolute;
+  inset: auto 0 18px;
+  text-align: center;
+  font-size: calc(12px * var(--tx));
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #fff;
+  pointer-events: none;
+}
+.lpv {
+  text-align: center;
+  line-height: 1.25;
+}
+.lpv b {
+  display: block;
+  font-size: calc(22px * var(--tx));
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.lpv small {
+  font-size: calc(13px * var(--tx));
+  color: var(--fg2);
+}
+@media (prefers-reduced-motion: reduce) {
+  .lpill,
+  .lpill .lpf,
+  .lpill .lphd {
+    transition: none;
+  }
+  .lpill.drag {
+    transform: none;
+  }
+}

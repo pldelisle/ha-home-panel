@@ -222,39 +222,7 @@
 .pane > .panel > .grab + * {
   margin-top: 0;
 }
-/* a light area's controls in its sheet: the name is in the title, so the row keeps only its buttons */
-#lsheet .larea {
-  background: transparent;
-  padding: 0;
-}
-#lsheet .lhead .lic,
-#lsheet .lhead .tx {
-  display: none;
-}
-#lsheet .lhead {
-  justify-content: flex-start;
-  gap: 10px;
-}
-#lsheet .lhead .swl {
-  order: -1;
-  flex: 1;
-  font-size: calc(14px * var(--tx));
-  font-weight: 600;
-}
-#lsheet .larea input[type='range'] {
-  margin: 6px 0 0;
-  height: 44px;
-}
-#lsheet .ctrow {
-  margin-top: 4px;
-}
-#lsheet .lchips {
-  margin-top: 14px;
-}
-#lsheet .lchip {
-  padding: 10px 14px;
-  font-size: calc(13.5px * var(--tx));
-}
+
 /* automation chips wrap instead of widening the page */
 .app.tabsv.cp .auchips .chip,
 .app.tabsv.cp .aupick .chip {

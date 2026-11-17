@@ -1,16 +1,23 @@
-// The icons of src/ui/icons.ts: each path is the text of the legacy class's own icon table, so the two cannot drift
-// while the class still draws the rest of its icons, and `ico` draws one at the size asked.
+// The icons of src/ui/icons.ts: each path the legacy class's own icon table still has is the text of that entry, so the two cannot
+// drift while the class still draws it (one only the elements draw, such as the room sheet's since #262, has left the table), and
+// `ico` draws one at the size asked.
 import {readFileSync} from 'node:fs';
 import {describe, expect, test} from 'vitest';
 import {ICONS, conditionKind, ico, weatherIcon, type IconName} from '../../src/ui/icons.ts';
 
 const legacy = readFileSync(new URL('../../src/home-panel.js', import.meta.url), 'utf8');
+const table = legacy.slice(legacy.indexOf('const ICON = {'), legacy.indexOf('\n};', legacy.indexOf('const ICON = {')));
+const shared = (Object.keys(ICONS) as IconName[]).filter(name => new RegExp(`\\n  ${name}:`).test(table));
 
 describe('the icons', () => {
-  test.each(Object.keys(ICONS) as IconName[])('%s is the path the class draws', name => {
+  test('the class still draws most of them', () => {
+    expect(shared.length).toBeGreaterThan(20);
+  });
+
+  test.each(shared)('%s is the path the class draws', name => {
     const written = ICONS[name].strings.join('');
     // prettier puts a long entry on the next line
-    expect(legacy).toMatch(new RegExp(`\\n  ${name}:\\s*'${written.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}'`));
+    expect(table).toMatch(new RegExp(`\\n  ${name}:\\s*'${written.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}'`));
   });
 
   test('ico draws an svg of the size asked, and 20 pixels by default', () => {

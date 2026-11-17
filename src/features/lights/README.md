@@ -1,6 +1,6 @@
 # Lights
 
-What the Lights tab reads and computes ([spec 23](../../../docs/specs/23-lights.md)): the house's lights grouped into one tile per area, the Adaptive Lighting switch that runs each, the linked rooms and the order an admin saved, what a tile's lights are doing, and the Adaptive Lighting strip. This folder holds the pure half of the first move (#258), the model (#259), the commands (#261) and the pane with its tiles (#260); the sheet (#262) and Arrange's move into the kit (#263) follow.
+What the Lights tab reads and computes ([spec 23](../../../docs/specs/23-lights.md)): the house's lights grouped into one tile per area, the Adaptive Lighting switch that runs each, the linked rooms and the order an admin saved, what a tile's lights are doing, and the Adaptive Lighting strip. This folder holds the pure half of the first move (#258), the model (#259), the commands (#261), the pane with its tiles (#260) and the room's sheet (#262); Arrange's move into the kit (#263) follows.
 
 ## The folder
 
@@ -28,12 +28,19 @@ src/features/lights/
   lights-pane.ts           <hp-lights-pane>: the header with Arrange and Reset order, the strip, the rows or the phone's grid, a pair
                            side by side; runs the commands, saves the order and the links, and holds Arrange's drag until #263
   light-tile.ts            <hp-light-tile>: one room; the bulb asks the pane to switch it (`area-toggle`), the rest opens its sheet
+  sheets.ts                ROOM_SHEET ('lights.room'), the room sheet's id, and roomKeyOf(detail): the room it is asked to show
+  light-sheet.ts           <hp-light-sheet>: a room's sheet: power and Done, the two pills, Auto and Night, the bulbs, Linked with
+  light-slider.ts          <hp-light-slider>: one tall pill; the finger's height is the value, sent once on release
+  link-picker.ts           <hp-link-picker>: the "Link with" list, None and every other room as radios, with Back
+  sheet-rows.css           the sheet's grouped rows (an iOS inset list), which the sheet and the picker both adopt
   al-strip.ts              <hp-al-strip>: the Adaptive Lighting card and its strip
   *.element.css            each element's own rules, moved from the legacy sheets
 src/ui/
   commands.ts              CommandRunner gains runAll(cmds): a list in order, stopped at a failure
+  icons.ts                 gains chev, grip, link (#260) and chevl, lsun, lpow, lsnow, lflame (#262)
 src/ui/controllers/
   system-data.ts           SystemDataController(host, deps, key): one key of the house's frontend system data, read and written through
+  store-controller.ts      gains `held` and `release()`: a change while held waits, and the release draws it once (#262)
 ```
 
 ## The tiles
@@ -64,7 +71,13 @@ The order and the links are one key, `home_panel`, of Home Assistant's frontend 
 
 ## The pane
 
-`<hp-lights-pane>` reads the tiles with `readLights` over its store controller (the lights and their switches only, paused while another tab is shown) and the system data, and `lightsModel` words them; the template places each unit (a room, or a linked pair drawn as two tiles side by side) keyed by its first tile. A bulb's `area-toggle` runs `toggleArea` on the room's pair, All off runs `allOff`, and a tap elsewhere on a tile asks for the room's sheet with its key (`SheetRequestEvent('sh-light', {key})`), which the legacy sheet reads until #262. While an admin arranges, the units jiggle, a drag moves one (the unit under the pointer gives way and the page scrolls near the edges), an arrow key moves the focused one, and the order is saved when it changed; taps neither switch nor open. Until #262 the legacy sheet reads the rooms through the pane's `rooms()` and picks a partner through its `link(key, partner)`, so the system data has one owner.
+`<hp-lights-pane>` reads the tiles with `readLights` over its store controller (the lights and their switches only, paused while another tab is shown) and the system data, and `lightsModel` words them; the template places each unit (a room, or a linked pair drawn as two tiles side by side) keyed by its first tile. A bulb's `area-toggle` runs `toggleArea` on the room's pair, All off runs `allOff`, and a tap elsewhere on a tile asks for the room's sheet with its key (`SheetRequestEvent('lights.room', {key})`). While an admin arranges, the units jiggle, a drag moves one (the unit under the pointer gives way and the page scrolls near the edges), an arrow key moves the focused one, and the order is saved when it changed; taps neither switch nor open.
+
+## The sheet
+
+The sheet is over the screen (`overSheets`): the descriptor binds the room the sheet host was asked for to the pane's `roomKey`, and the pane, the system data's one owner, words it with `sheetModel` and draws `<hp-light-sheet>` while it is set; Escape, the scrim, Done and the phone's swipe close it through the host (`SheetDismissEvent`), and Done takes focus as it opens. The sheet draws the kit's chrome (`sheet.css`: the scrim, the panel, the grabber, the header) itself rather than `<hp-sheet>`, because that element's badge and ✕ cannot be the power button and the Done of the sheet as it looks; a room the house no longer lists closes it. What it asks comes back to the pane as events: the power button's `area-toggle`, a pill's `slider-change`, the Auto and Night rows' and the chips' `sheet-intent` (the pane turns Auto or Night the other way from what the pair is in, as the legacy panel did), and the picker's `link-pick`, which saves the pairs and then sends the copy calls without waiting for the save's answer.
+
+A pill (`<hp-light-slider>`) captures the pointer: the finger's height is the value (the top is the most; brightness in whole percent, colour in 50 K steps between the room's range), painted by the pill itself while the finger moves, and sent once on release; a cancel sends nothing, and an arrow key steps ten percent or 100 K and sends at once. Meanwhile the pane's store controller is **held**: a change of the house waits, and 60 ms after the release (the legacy settle) one update draws what came, so nothing moves the pill under the finger. "Linked with" pushes `<hp-link-picker>` in the body's place: Back takes focus, and Back gives it to the Linked with row again; a pick leaves the list up with its check mark moved, as the legacy sheet did.
 
 ## The commands
 

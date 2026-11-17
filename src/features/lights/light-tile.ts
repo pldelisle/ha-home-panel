@@ -11,9 +11,7 @@ import {SheetRequestEvent} from '../../ui/events.ts';
 import {ico} from '../../ui/icons.ts';
 import {common} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
-
-/** The room's sheet, which the legacy panel still draws until #262 moves it to the feature. */
-export const ROOM_SHEET = 'sh-light';
+import {ROOM_SHEET} from './sheets.ts';
 
 /** The tile's bulb was tapped: the pane switches the room (and its partner) on or off. */
 export class AreaToggleEvent extends CustomEvent<{key: string}> {

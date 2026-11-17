@@ -47,28 +47,11 @@ const LAYOUT = ['open-air'];
 // areas the Phone tab shows as part of another, the way Apple Home groups them: the parking spot's charger and camera live in the garage
 // Tabs view: one pane per subject, for a tablet fixed to the wall. The rail, the phone's bar and the panes
 // are the shell's (src/shell/features.ts); the guest fills what is inside them.
-// colour of a black body at k kelvin (Tanner Helland's fit), for the room sheet's colour slider
-const kelvinRGB = k => {
-  const t = Math.min(40000, Math.max(1000, k)) / 100,
-    c = v => Math.round(Math.min(255, Math.max(0, v)));
-  const r = t <= 66 ? 255 : 329.698727446 * Math.pow(t - 60, -0.1332047592);
-  const g = t <= 66 ? 99.4708025861 * Math.log(t) - 161.1195681661 : 288.1221695283 * Math.pow(t - 60, -0.0755148492);
-  const b = t >= 66 ? 255 : t <= 19 ? 0 : 138.5177312231 * Math.log(t - 10) - 305.0447927307;
-  return `rgb(${c(r)},${c(g)},${c(b)})`;
-};
 // The words the stack's air card and the Home tile say, the legacy panel's own until the stack (#266) and Home (#268) move: the
 // provider rates the air (src/providers/air-quality.ts) and words nothing. [name, unit] by pollutant, and the level words.
 const AIR_WORDS = {pm2_5: ['PM2.5', 'µg/m³'], co2: ['CO₂', 'ppm'], voc: ['VOC', 'µg/m³'], co: ['CO', 'ppm']};
 const AIR_LEVELS = ['Good', 'Moderate', 'Poor'];
 const ICON = {
-  chev: '<path d="m9 6 6 6-6 6"/>',
-  chevl: '<path d="m15 6-6 6 6 6"/>',
-  lsun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
-  lpow: '<path d="M12 3v8M6.4 6.6a8 8 0 1 0 11.2 0"/>',
-  lsnow: '<path d="M12 2v20M4 7l16 10M20 7 4 17"/>',
-  lflame: '<path d="M12 22a7 7 0 0 0 7-7c0-4-3-6-4-10-2 2-3 4-3 6-1-1-2-2-2-4-2 2-5 5-5 8a7 7 0 0 0 7 7z"/>',
-  grip: '<path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" stroke-width="3"/>',
-  link: '<path d="M10 13.5a4 4 0 0 0 5.7.3l3-3a4 4 0 0 0-5.7-5.6l-1.2 1.2"/><path d="M14 10.5a4 4 0 0 0-5.7-.3l-3 3a4 4 0 0 0 5.7 5.6l1.2-1.2"/>',
   unlink:
     '<path d="M15.5 13l3.2-3.2a4 4 0 0 0-5.7-5.6l-1.6 1.6"/><path d="M8.5 11l-3.2 3.2a4 4 0 0 0 5.7 5.6l1.6-1.6"/><path d="M8 3v2.5M3 8h2.5M16 21v-2.5M21 16h-2.5"/>',
   more: '<rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/>',
@@ -123,7 +106,6 @@ const ICON = {
   warn: '<path d="M12 3.5 2.5 20h19z"/><path d="M12 10v4.5M12 17.2v.3"/>',
   sunup: '<path d="M12 3v4.5M9.5 5.5 12 3l2.5 2.5M4.9 11.4l1.6 1.6M19.1 11.4l-1.6 1.6M3 19h18M7 19a5 5 0 0 1 10 0"/>',
   menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
-  check: '<path d="m5 12.5 4.5 4.5L19 7.5" stroke-width="2.6"/>',
   flow: '<circle cx="5" cy="6" r="2"/><circle cx="5" cy="18" r="2"/><circle cx="19" cy="12" r="2.2"/><path d="M7 6c5 0 5 6 9.8 6M7 18c5 0 5-6 9.8-6"/>',
   shield: '<path d="M12 3l7 3v5c0 4.5-3 8.5-7 10-4-1.5-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/>',
   cam: '<path d="M3 7h12a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H3zM17 10.5l4-2.5v8l-4-2.5"/><circle cx="9" cy="12" r="2.5"/>',
@@ -244,7 +226,6 @@ export class LegacyPanel {
     };
     this.unsubStore = null; // the one path to the one-second render, subscribed in connect
     this.shared = null; // the history the readers left in this panel share: the energy slices and the water heater's day (loadSharedHistory)
-    this.sheetOffs = []; // what unregisters this draw's sheets from the shell's sheet host (build), run by teardown
     this.drawnTab = 'home'; // the tab the guest last drew its part of (tabChanged); `tab` is the shell's
     this.framed = false; // whether build() has drawn once, so the next draw asks the shell for a fresh frame
     this.frameKey = null; // what availability() said when the shell was last asked to draw the rail
@@ -323,8 +304,6 @@ export class LegacyPanel {
   teardown() {
     this.frStop();
     this.cache = {};
-    this.sheetOffs.forEach(off => off()); // the sheets are about to be written again, and none is open
-    this.sheetOffs = [];
     this.plan = null;
     this.$app = null;
     this.view = null;
@@ -487,34 +466,21 @@ export class LegacyPanel {
     // moved into a pane survives. The shell renders them at once; the first draw finds the frame the shell rendered.
     if (this.framed) this.ctx.shell.resetFrame();
     this.framed = true;
-    // the shell drew the frame (the header, the rail, the panes); the guest draws what is not in it: the parked cards, the sheets, the idle clock
+    // the shell drew the frame (the header, the rail, the panes); the guest draws what is not in it: the parked cards and the idle clock
     // (the Air card is <hp-air-card>, placed by the Air pane: `#open-air` and `#air` are empty legacy containers, kept until the Home move, #268)
     this.container.innerHTML = `<div class="cols">
     <div class="col c1"></div>
     <div class="col c2">
       <div class="card tap" id="open-air" tabindex="0" role="button" aria-description="Open air quality details"><div id="air"></div></div>
     </div>
-  </div>
-
-<div class="sheet" id="sh-light" hidden><div class="panel" role="dialog" aria-modal="true" aria-labelledby="lshh">
-  <div class="ph"><button type="button" class="lpwr" id="lshpwr" role="switch" aria-checked="false" data-l="area" data-a="">${ico('lpow', 24)}</button><div class="grow"><h2 id="lshh"></h2><div class="sub" id="lshsub"></div></div><button class="close ldone" type="button">Done</button></div>
-  <div class="lsbody" id="lsheet"></div>
-</div></div>`;
+  </div>`;
     this.$app = this.$('app');
     // `.app` is the shell's and outlives a draw, where a fresh one used to start bare: clear what the guest toggles on it
     // (the shell owns the theme, the glass wallpaper, `gl`, `txl`, `live` and `idle`)
     this.$app.classList.remove('mc');
     this.theme = this.ctx.shell.appearance.theme;
     this.$app.lang = (this.store.isFrench ? this.locale : this.localeEn).tag;
-    this.root
-      .querySelectorAll('.sheet>.panel')
-      .forEach(p => p.insertAdjacentHTML('afterbegin', '<div class="grab" aria-hidden="true"></div>'));
     if (this.store.isFrench) this.frStart();
-    // the detail panels move into the tab panes in the Tabs view, so they are kept by id
-    this.panels = {};
-    this.root.querySelectorAll('.sheet').forEach(sh => {
-      this.panels[sh.id] = sh.querySelector('.panel');
-    });
     // The scenes row is Media's element, placed by its tag (the Home-card bridge, ADR 0024): written once a draw and never again, and
     // hidden while it says it has nothing, as the legacy row was. The Home move (#268) deletes the Home-card bridge and its hosts.
     const hs = this.$('hscenes');
@@ -525,13 +491,6 @@ export class LegacyPanel {
     // The Security card is the second use, written the same way: its tag once a draw, and the card keeps its glow's memory (#226).
     this.$('hsec').innerHTML = '<hp-security-card></hp-security-card>';
     this.wire();
-    // the host takes the scrim and the Close button of each sheet, and places the panels for the shape of the screen (none sits inline in its pane since #252; #188 deletes the placement)
-    this.sheetOffs = [...this.root.querySelectorAll('.guest .sheet')].map(el =>
-      this.sheets.registerLegacy({
-        id: /** @type {import('./shell/sheet-host.ts').LegacySheetId} */ (el.id),
-        element: el,
-      }),
-    );
     this.observeLayout();
     this.ctx.shell.idle.arm(); // a draw counts as a touch, as it did: the five minutes start over, and an idle panel wakes
     // the first render (setView → renderTabs) gates the Car tab and tile, so it must already know the car; renderLive looks again
@@ -1118,94 +1077,12 @@ export class LegacyPanel {
         }
       });
     });
-    this.root.querySelectorAll('.sheet').forEach(sh => this.swipeToClose(sh.querySelector('.panel'), sh.id));
     this.root.addEventListener('click', e => {
       // a tap outside the Status popup closes it (the shell keeps it); a tap on the pill stops at the pill
       if (!e.composedPath().some(n => n instanceof Element && n.localName === 'hp-status-popup'))
         this.ctx.shell.closeStatus();
       const sp = this.$('setpop');
       if (!sp.hidden && !e.composedPath().some(n => n === sp || n === this.$('gear'))) this.ctx.shell.closeSettings();
-    });
-    // the light sheet's two tall sliders (Apple Home style): the finger's height is the value, a tap jumps there,
-    // the arrows step it; nothing re-renders while one is held, and the value goes out on release
-    const sh = this.$('sh-light');
-    const lpVal = (p, y) => {
-      const b = p.getBoundingClientRect();
-      return Math.max(0, Math.min(1, (b.bottom - y) / b.height));
-    };
-    const lpPaint = (p, f) => {
-      const box = p.closest('.lpc'),
-        out = box && box.querySelector('.lpv b');
-      if (p.dataset.lp === 'br') {
-        const v = Math.round(f * 100);
-        p.style.setProperty('--v', v + '%');
-        p.classList.toggle('off', !v);
-        p.setAttribute('aria-valuenow', v);
-        p.setAttribute('aria-valuetext', v ? v + '%' : 'Off');
-        if (out) out.textContent = v ? v + '%' : 'Off';
-        return v;
-      }
-      const lo = +p.dataset.min,
-        hi = +p.dataset.max,
-        k = Math.round((lo + f * (hi - lo)) / 50) * 50;
-      p.style.setProperty('--v', (((k - lo) / (hi - lo)) * 100).toFixed(1) + '%');
-      p.classList.remove('night');
-      p.setAttribute('aria-valuenow', k);
-      p.setAttribute('aria-valuetext', k + ' K');
-      if (out) out.textContent = k + ' K';
-      return k;
-    };
-    /** @type {{p: any, id: number, v?: any} | null} */
-    let lp = null;
-    sh.addEventListener('pointerdown', e => {
-      const p = e.target.closest('.lpill[data-lp]');
-      if (!p || p.getAttribute('aria-disabled') === 'true' || e.button > 0) return;
-      e.preventDefault();
-      lp = {p, id: e.pointerId};
-      this.lightDrag = true;
-      p.classList.add('drag');
-      try {
-        p.setPointerCapture(e.pointerId);
-      } catch {}
-      lp.v = lpPaint(p, lpVal(p, e.clientY));
-    });
-    sh.addEventListener('pointermove', e => {
-      if (lp && e.pointerId === lp.id) {
-        e.preventDefault();
-        lp.v = lpPaint(lp.p, lpVal(lp.p, e.clientY));
-      }
-    });
-    const lpEnd = e => {
-      if (!lp || e.pointerId !== lp.id) return;
-      const x = lp;
-      lp = null;
-      x.p.classList.remove('drag');
-      if (e.type === 'pointerup') this.lightCmd(x.p.dataset.lp, x.p.dataset.a, x.v);
-      setTimeout(() => {
-        this.lightDrag = false;
-        this.tick();
-      }, 60);
-    };
-    sh.addEventListener('pointerup', lpEnd);
-    sh.addEventListener('pointercancel', lpEnd);
-    sh.addEventListener('keydown', e => {
-      const p = e.target.closest('.lpill[data-lp]');
-      if (!p || p.getAttribute('aria-disabled') === 'true') return;
-      const dir = {ArrowUp: 1, ArrowRight: 1, ArrowDown: -1, ArrowLeft: -1}[e.key];
-      if (!dir) return;
-      e.preventDefault();
-      const br = p.dataset.lp === 'br',
-        now = +p.getAttribute('aria-valuenow') || 0;
-      const f = br
-        ? Math.max(0, Math.min(100, now + dir * 10)) / 100
-        : (Math.max(+p.dataset.min, Math.min(+p.dataset.max, now + dir * 100)) - p.dataset.min) /
-          (p.dataset.max - p.dataset.min);
-      this.lightCmd(p.dataset.lp, p.dataset.a, lpPaint(p, f));
-    });
-    // every button of the room sheet (its switches, chips, the link picker) goes through lightCmd
-    sh.addEventListener('click', e => {
-      const b = e.target.closest('button[data-l]');
-      if (b && !b.disabled) this.lightCmd(b.dataset.l, b.dataset.a ?? b.dataset.id, b.dataset.al);
     });
     // Tabs view: the rail and the glance tiles switch panes; scenes and speakers work as on the phone view
     const tv = this.$('tabview');
@@ -1245,46 +1122,6 @@ export class LegacyPanel {
       }),
     );
   }
-  // on a phone a sheet is dragged down by its grabber or its title to close, as iOS sheets are; a short drag springs back
-  // (the kit's SwipeToClose is the same drag for the sheets that are elements; this one goes with the last legacy sheet, #169)
-  swipeToClose(p, id) {
-    let d = null;
-    const end = e => {
-      if (!d || e.pointerId !== d.id) return;
-      const dy = e.clientY - d.y,
-        fast = dy / Math.max(1, Date.now() - d.t) > 0.5,
-        go = d.on && (dy > 80 || (fast && dy > 24));
-      d = null;
-      p.classList.remove('dragging');
-      if (go) {
-        p.style.transform = `translateY(${p.offsetHeight}px)`;
-        setTimeout(() => {
-          p.style.transform = '';
-          this.sheets.close(id); // a sheet already closed by something else is left alone
-        }, 180);
-      } else p.style.transform = '';
-    };
-    p.addEventListener('pointerdown', e => {
-      if (!this.compact || e.button || !e.target.closest('.grab, .ph>.badge, .ph>.grow')) return;
-      d = {y: e.clientY, t: Date.now(), id: e.pointerId, on: false};
-      try {
-        p.setPointerCapture(e.pointerId);
-      } catch {}
-    });
-    p.addEventListener('pointermove', e => {
-      if (!d || e.pointerId !== d.id) return;
-      const dy = e.clientY - d.y;
-      if (!d.on) {
-        if (dy > 6) {
-          d.on = true;
-          p.classList.add('dragging');
-        } else return;
-      }
-      p.style.transform = `translateY(${Math.max(0, dy)}px)`;
-    });
-    p.addEventListener('pointerup', end);
-    p.addEventListener('pointercancel', end);
-  }
   async call(domain, service, data, done) {
     try {
       await this.api.runService(domain, service, data);
@@ -1314,11 +1151,6 @@ export class LegacyPanel {
       console.error('home-panel', 'renderHeader', e);
     }
     this.renderTabs();
-    try {
-      if (this.sheets.isOpen('sh-light')) this.renderLightSheet();
-    } catch (e) {
-      console.error('home-panel sheet', e);
-    }
   }
 
   // ---------- live values ----------
@@ -1441,24 +1273,10 @@ export class LegacyPanel {
   }
 
   // ---------- sheets ----------
-  // the sheet host calls these two: a legacy sheet is on screen (over the page, or inline in its pane) or left it
-  // a tile of the Lights pane asks for its room's sheet with the room's key (`SheetRequestEvent`), which the host hands on
-  sheetOpened(id, detail) {
-    if (id === 'sh-light' && detail && detail.key) {
-      this.lightSel = detail.key;
-      this.lightPick = false;
-    }
-    this.buildSheet(id);
-  }
+  // the sheet host tells the guest when a legacy sheet opens or closes; none is left since the room's light sheet moved (#262), and #188
+  // deletes the two with the host's legacy half
+  sheetOpened() {}
   sheetClosed() {}
-  buildSheet(id) {
-    if (!this.sheets.isOpen(id)) return;
-    try {
-      if (id === 'sh-light') this.renderLightSheet();
-    } catch (e) {
-      console.error('home-panel sheet', e);
-    }
-  }
   // ---------- weather ----------
   // The Weather pane's ForecastController owns the forecast subscription (spec 15) and the shell tells the guest of each message:
   // Home's card (`wxDays`) still reads `this.fc`. Deleted with its last reader (the Home move).
@@ -1667,89 +1485,6 @@ export class LegacyPanel {
     }
     this.cache = {};
     this.renderLive();
-  }
-  // the room's sheet: power in the header, brightness and colour as two tall sliders, Auto and Night as switches in a list,
-  // single bulbs as chips, and "Linked with" as a row that opens a list of the other rooms (the iOS way to pick one value)
-  renderLightSheet() {
-    if (!this.sheets.isOpen('sh-light') || this.lightDrag) return;
-    const A = this.lightAreas(),
-      a = A.find(x => x.aid === this.lightSel);
-    if (!a) {
-      this.sheets.close();
-      return;
-    }
-    const s = this.lightState(a),
-      m = this.lightMode(a),
-      aid = esc(a.aid);
-    this.set('lshh', esc(a.name));
-    this.set('lshsub', this.lightSub(a, s, m));
-    const pw = this.$('lshpwr');
-    pw.dataset.a = a.aid;
-    pw.setAttribute('aria-checked', s.any);
-    pw.setAttribute('aria-label', `${a.name} lights`);
-    pw.disabled = !s.avail;
-    pw.style.setProperty('--lc', s.tint || 'var(--warn)');
-    this.$('sh-light')
-      .querySelector('.panel')
-      .style.setProperty('--lc', s.tint || 'var(--warn)');
-    if (this.lightPick) {
-      this.set('lsheet', this.lightPicker(a, A));
-      return;
-    }
-    const br = s.any ? s.br : 0;
-    const brP = `<div class="lpc"><div class="lpill lbr${s.any ? '' : ' off'}" data-lp="br" data-a="${aid}" role="slider" tabindex="0" aria-label="Brightness" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${br}" aria-valuetext="${s.any ? br + '%' : 'Off'}"${s.avail ? '' : ' aria-disabled="true"'} style="--v:${br}%"><span class="lpf"></span><span class="lpmx">${ico('lsun', 20)}</span><span class="lpmn">${ico('bulb', 28)}</span></div>
-      <div class="lpv"><b class="num">${s.any ? br + '%' : 'Off'}</b><small>Brightness</small></div></div>`;
-    const ct = s.ct,
-      night = m.nightOn && m.alOn;
-    const ctP = !ct
-      ? ''
-      : `<div class="lpc"><div class="lpill lct${night ? ' night' : ''}" data-lp="ct" data-a="${aid}" data-min="${ct.min}" data-max="${ct.max}" role="slider" tabindex="0" aria-label="Colour temperature" aria-valuemin="${ct.min}" aria-valuemax="${ct.max}" aria-valuenow="${ct.k}" aria-valuetext="${night ? 'Night' : ct.k + ' K'}"${s.any && s.avail ? '' : ' aria-disabled="true"'} style="--v:${(((ct.k - ct.min) / (ct.max - ct.min)) * 100).toFixed(1)}%;--warm:${kelvinRGB(ct.min)};--mid:${kelvinRGB((ct.min + ct.max) / 2)};--cool:${kelvinRGB(ct.max)}"><span class="lphd"></span><span class="lpmx">${ico('lsnow', 18)}</span><span class="lpmn">${ico('lflame', 18)}</span><span class="lpnl">Night</span></div>
-      <div class="lpv"><b class="num">${night ? 'Night' : ct.k + ' K'}</b><small>${night ? 'Red, very dim' : ct.k <= 3000 ? 'Warm white' : ct.k >= 5000 ? 'Cool white' : 'Neutral white'}</small></div></div>`;
-    const sw = (l, on, id, ok2, label) =>
-      `<button type="button" class="sw" role="switch" aria-checked="${!!on}" aria-label="${label}" data-l="${l}" data-a="${aid}" data-id="${esc(id)}" ${ok2 ? '' : 'disabled'}></button>`;
-    const modes = !a.al
-      ? ''
-      : `<div class="lgrp">
-      <div class="lgr"><span class="lgi" style="--gi:#D98A1E">${ico('lsun', 20)}</span><span class="tx"><b>Auto</b><small>Brightness and colour follow the time of day</small></span>${sw('al', m.auto, a.al, ok(this.st(a.al)), 'Auto')}</div>
-      ${m.night ? `<div class="lgr"><span class="lgi" style="--gi:#C2412A">${ico('moon', 19)}</span><span class="tx"><b>Night</b><small>Very dim red light for the night</small></span>${sw('night', night, m.night, ok(this.st(m.night)), 'Night')}</div>` : ''}
-    </div>`;
-    const isOn = i => (this.st(i) || {}).state === 'on';
-    const chips =
-      a.units.length > 1
-        ? `<div class="lchips" role="group" aria-label="Bulbs"><span class="lcl">Bulbs</span>${a.units.map((i, k) => `<button type="button" class="lchip" aria-pressed="${isOn(i)}" data-l="one" data-id="${esc(i)}" ${ok(this.st(i)) ? '' : 'disabled'}><span class="ck" aria-hidden="true">${ico('check', 14)}</span>${esc(a.labels[k])}</button>`).join('')}</div>`
-        : '';
-    const L = a.link,
-      admin = !!(this.hass.user && this.hass.user.is_admin);
-    const link =
-      A.length < 2
-        ? ''
-        : `<div class="lgrp"><button type="button" class="lgr lnav" data-l="pick" data-a="${aid}" ${admin ? '' : 'disabled'}><span class="lgi" style="--gi:#5B7FB8">${ico('link', 19)}</span><span class="tx"><b>Linked with</b><small>${admin ? 'Moves together with another room' : 'Only an admin can change this'}</small></span><span class="lval">${L ? esc(L.other.name) : 'None'}</span>${ico('chev', 18)}</button></div>`;
-    this.set('lsheet', `<div class="lpills">${brP}${ctP}</div>${modes}${chips}${link}`);
-  }
-  // "Linked with": None plus every other room, a check mark on the current one; a room already linked elsewhere says so
-  lightPicker(a, A) {
-    const cur = a.link ? a.link.other.aid : '',
-      aid = esc(a.aid);
-    const opt = (id, name, sub) =>
-      `<button type="button" class="lgr lopt" role="radio" aria-checked="${cur === id}" data-l="linkto" data-a="${aid}" data-al="${esc(id)}"><span class="tx"><b>${esc(name)}</b><small>${sub}</small></span><span class="lck" aria-hidden="true">${cur === id ? ico('check', 20) : ''}</span></button>`;
-    const rows = [
-      opt('', 'None', 'This room moves on its own'),
-      ...A.filter(x => x.aid !== a.aid).map(x => {
-        const s = this.lightState(x),
-          m = this.lightMode(x);
-        return opt(
-          x.aid,
-          x.name,
-          this.lightSub(x, s, m) +
-            (x.link && x.link.other.aid !== a.aid
-              ? ` · <span class="lnow">now with ${esc(x.link.other.name)}</span>`
-              : ''),
-        );
-      }),
-    ];
-    return `<div class="lpkh"><button type="button" class="lback" data-l="back" data-a="${aid}">${ico('chevl', 20)}<span>${esc(a.name)}</span></button><b>Link with</b></div>
-      <div class="lgrp" role="radiogroup" aria-label="Link with">${rows.join('')}</div>
-      <p class="lfoot">Linked rooms switch, dim and change colour together. Picking a room copies this room's light onto it. A room links with one other room at a time.</p>`;
   }
   // the word under each section in the phone's More sheet, in English, for the registry's summary
   moreLines() {
@@ -2073,28 +1808,6 @@ export class LegacyPanel {
     });
     return out;
   }
-  // the rooms as the Lights pane reads them, its saved links and order applied, in the legacy shape the room sheet reads until #262 moves it
-  lightAreas() {
-    // the pane's element type is the feature's, which this file may not import: its two doors are named here
-    const pane = /** @type {{rooms(): any[]} | null} */ (
-        /** @type {unknown} */ (this.root.querySelector('hp-lights-pane'))
-      ),
-      rooms = pane ? pane.rooms() : [];
-    /** @type {any[]} */
-    const out = rooms.map(t => ({
-      aid: t.key,
-      name: t.name || 'Other lights',
-      ids: t.ids,
-      units: t.units,
-      labels: t.labels,
-      al: t.al,
-    }));
-    rooms.forEach((t, i) => {
-      const other = t.link && out.find(x => x.aid === t.link.other);
-      if (other) out[i].link = {other, on: true, first: t.link.first};
-    });
-    return out;
-  }
   // the house's light areas by the provider, for the stack's card and the Home tile, which need no link or order (#266, #268)
   houseLights() {
     const {hass, names, config} = this.store;
@@ -2102,165 +1815,6 @@ export class LegacyPanel {
       ...a,
       name: a.name || 'Other lights',
     }));
-  }
-
-  // what an area's lights are doing: which are on, the mean brightness and colour temperature, the tint, the colour range
-  lightState(a) {
-    const isOn = i => (this.st(i) || {}).state === 'on',
-      on = a.ids.filter(isOn),
-      avail = a.ids.some(i => ok(this.st(i))),
-      any = on.length > 0;
-    const br = any ? Math.max(1, Math.round(sum(on.map(i => this.attr(i, 'brightness') || 0)) / on.length / 2.55)) : 0;
-    const tw = i => (this.attr(i, 'supported_color_modes') || []).includes('color_temp'),
-      tws = a.ids.filter(tw);
-    let ct = null;
-    if (tws.length) {
-      const mins = tws.map(i => this.attr(i, 'min_color_temp_kelvin')).filter(Boolean),
-        maxs = tws.map(i => this.attr(i, 'max_color_temp_kelvin')).filter(Boolean);
-      const min = Math.ceil((mins.length ? Math.max(...mins) : 2000) / 50) * 50,
-        max = Math.floor((maxs.length ? Math.min(...maxs) : 6500) / 50) * 50;
-      const ks = on
-          .filter(tw)
-          .map(i => this.attr(i, 'color_temp_kelvin'))
-          .filter(x => x != null),
-        k = ks.length ? Math.round(sum(ks) / ks.length / 50) * 50 : Math.round((min + max) / 100) * 50;
-      if (max > min) ct = {min, max, k: Math.max(min, Math.min(max, k)), known: ks.length > 0};
-    }
-    return {on, any, avail, br, ct, k: ct && ct.known ? ct.k : null, tint: any ? this.lightTint(on) : ''};
-  }
-  // who's in charge: Auto = Adaptive Lighting on and none of the lights taken over by hand; Night = its sleep mode
-  lightMode(a) {
-    const isOn = i => (this.st(i) || {}).state === 'on',
-      alOn = !!(a.al && isOn(a.al));
-    const night = a.al && this.st(a.al + '_sleep_mode') ? a.al + '_sleep_mode' : null,
-      nightOn = !!(night && isOn(night));
-    const man = alOn && (this.attr(a.al, 'manual_control') || []).some(l => a.ids.includes(l) || a.units.includes(l));
-    return {
-      alOn,
-      night,
-      nightOn,
-      manual: man,
-      auto: alOn && !man,
-      mode: nightOn && alOn ? 'Night' : alOn && !man ? 'Auto' : a.al ? 'Manual' : '',
-    };
-  }
-  // the room's line in its sheet and in the "Link with" picker
-  lightSub(a, s, m) {
-    if (!s.avail) return 'Unavailable';
-    if (!s.any) return 'Off';
-    return [
-      s.on.length < a.ids.length ? `${s.on.length} of ${a.ids.length} on` : '',
-      s.br + '%',
-      m.mode || (s.k ? s.k + ' K' : ''),
-    ]
-      .filter(Boolean)
-      .join(' · ');
-  }
-  // the colour an area's lights are showing: the first lit bulb's rgb_color, or its colour temperature turned into a warm-to-cool white
-  lightTint(on) {
-    for (const i of on) {
-      const rgb = this.attr(i, 'rgb_color'),
-        k = this.attr(i, 'color_temp_kelvin'),
-        mode = this.attr(i, 'color_mode');
-      if (rgb && !['color_temp', 'white', 'brightness', 'onoff'].includes(mode))
-        return `rgb(${rgb.slice(0, 3).join(',')})`;
-      if (k) return kelvinRGB(k);
-    }
-    return '';
-  }
-  lightCmd(kind, key, v) {
-    const A = this.lightAreas(),
-      isOn = i => (this.st(i) || {}).state === 'on',
-      AL = this.hass.services && this.hass.services.adaptive_lighting;
-    if (kind === 'one') {
-      this.call('light', 'toggle', {entity_id: key});
-      return;
-    }
-    const a = A.find(x => x.aid === key);
-    if (!a) return;
-    // a linked pair acts as one room
-    const pair = a.link ? [a, a.link.other] : [a],
-      all = pair.flatMap(x => x.ids),
-      on = all.filter(isOn);
-    // back to the schedule: Adaptive Lighting on and nothing held by hand
-    const resume = (ids, al) => {
-      if (!isOn(al)) this.call('switch', 'turn_on', {entity_id: al});
-      if (AL) this.call('adaptive_lighting', 'set_manual_control', {entity_id: al, lights: ids, manual_control: false});
-    };
-    if (kind === 'pick' || kind === 'back') {
-      this.lightPick = kind === 'pick';
-      this.renderLightSheet();
-      const f = this.$('lsheet').querySelector(this.lightPick ? '.lback' : '.lnav');
-      if (f) f.focus({preventScroll: true, focusVisible: false});
-      return;
-    }
-    if (kind === 'linkto') {
-      this.linkTo(a, v || '');
-      return;
-    }
-    if (kind === 'area') {
-      this.call('light', a.ids.some(isOn) ? 'turn_off' : 'turn_on', {entity_id: all});
-      return;
-    }
-    if (kind === 'al') {
-      // Auto on: the schedule takes the room back (Night stays as it was); Auto off: Adaptive Lighting lets go, and Night with it
-      const auto = pair.every(x => !x.al || this.lightMode(x).auto);
-      for (const x of pair) {
-        if (!x.al) continue;
-        if (!auto) resume(x.ids, x.al);
-        else {
-          this.call('switch', 'turn_off', {entity_id: x.al});
-          const n = this.lightMode(x).night;
-          if (n && isOn(n)) this.call('switch', 'turn_off', {entity_id: n});
-        }
-      }
-      this.toast(auto ? 'Auto off' : 'Auto on');
-      return;
-    }
-    if (kind === 'night') {
-      // Night needs Adaptive Lighting, so turning it on also hands the room back to Auto
-      const m = this.lightMode(a),
-        going = !(m.nightOn && m.alOn);
-      for (const x of pair) {
-        const mx = this.lightMode(x);
-        if (!mx.night) continue;
-        this.call('switch', going ? 'turn_on' : 'turn_off', {entity_id: mx.night});
-        if (going) resume(x.ids, x.al);
-      }
-      this.toast(going ? 'Night on' : 'Night off');
-      return;
-    }
-    if (kind !== 'br' && kind !== 'ct') return;
-    // brightness or colour by hand: the room leaves Auto and Night until Auto is turned on again
-    const took = pair.filter(x => x.al && (this.lightMode(x).auto || this.lightMode(x).nightOn));
-    for (const x of took) {
-      const mx = this.lightMode(x);
-      if (mx.nightOn) this.call('switch', 'turn_off', {entity_id: mx.night});
-      if (AL)
-        this.call('adaptive_lighting', 'set_manual_control', {entity_id: x.al, lights: x.ids, manual_control: true});
-      else this.call('switch', 'turn_off', {entity_id: x.al});
-    }
-    if (kind === 'br') {
-      if (v < 1) this.call('light', 'turn_off', {entity_id: all});
-      else this.call('light', 'turn_on', {entity_id: on.length ? on : all, brightness_pct: v});
-    } else {
-      const ids = (on.length ? on : all).filter(i =>
-        (this.attr(i, 'supported_color_modes') || []).includes('color_temp'),
-      );
-      if (!ids.length) return;
-      this.call('light', 'turn_on', {entity_id: ids, color_temp_kelvin: v});
-    }
-    if (took.length) this.toast('Set by hand, Auto off');
-  }
-  // pick the room this one moves with (or none): the pane saves the pairs for the whole house and sets a new partner's lights;
-  // the sheet is drawn again at once, and again once Home Assistant has answered (a refusal puts the old pairs back)
-  linkTo(a, other) {
-    const pane = /** @type {{link(key: string, other: string): Promise<void>} | null} */ (
-      /** @type {unknown} */ (this.root.querySelector('hp-lights-pane'))
-    );
-    if (!pane || (a.link ? a.link.other.aid : '') === other) return;
-    void pane.link(a.aid, other).finally(() => this.renderLightSheet());
-    this.renderLightSheet();
   }
 
   // ---------- the departure schedule's words, which the stack's car card and the header's upcoming list still read until #269 ----------
