@@ -1,7 +1,5 @@
-// The sky wallpaper (src/shell/sky.ts): one test per branch of the legacy `skyWp()`, with a day written out by hand,
-// and a guard that the wet conditions agree with the legacy class's own `condKind` while both exist.
-import {readFileSync} from 'node:fs';
-import {runInNewContext} from 'node:vm';
+// The sky wallpaper (src/shell/sky.ts): one test per branch of the legacy `skyWp()`, with a day written out by hand. The guard
+// against the legacy class's own `condKind` went with `condKind` (#276).
 import {describe, expect, test} from 'vitest';
 import {isWetCondition, skyWallpaper} from '../../../src/shell/sky.ts';
 
@@ -116,24 +114,34 @@ describe('isWetCondition', () => {
     expect(wet).toEqual(['fog', 'hail', 'lightning', 'lightning-rainy', 'pouring', 'rainy', 'snowy', 'snowy-rainy']);
   });
 
+  test('the wet words of Environment Canada, as the legacy condKind answered them', () => {
+    expect(CANADA_WORDS.filter(isWetCondition)).toEqual([
+      'Chance of showers',
+      'Light Rain',
+      'Rain showers',
+      'Drizzle',
+      'Freezing drizzle',
+      'Periods of rain',
+      'Light Snow',
+      'Flurries',
+      'Snow',
+      'Ice pellets',
+      'Hail',
+      'Rain or snow',
+      'Wet flurries',
+      'Thunderstorm',
+      'Risk of thunderstorms',
+      'Fog',
+      'Mist',
+      'Haze',
+      'Blowing snow',
+    ]);
+  });
+
   test('Environment Canada words are searched, in any case', () => {
     expect(isWetCondition('Light Rain')).toBe(true);
     expect(isWetCondition('FLURRIES')).toBe(true);
     expect(isWetCondition('Mainly Sunny')).toBe(false);
     expect(isWetCondition(undefined)).toBe(false);
-  });
-
-  // The legacy class keeps its own table until the Weather moves delete it (#157, #158); this reads it from the source
-  // and compares answers over every code and word above. It goes when `condKind` does.
-  test('agrees with the legacy class on every code and word', () => {
-    const legacy = readFileSync(new URL('../../../src/home-panel.js', import.meta.url), 'utf8');
-    const table = legacy.match(/^const COND = \{[\s\S]*?^\};$/m)?.[0];
-    const kind = legacy.match(/^const condKind = c => \{[\s\S]*?^\};$/m)?.[0];
-    expect(table, 'COND is still in the legacy class: if it is gone, delete this test').toBeDefined();
-    expect(kind, 'condKind is still in the legacy class: if it is gone, delete this test').toBeDefined();
-    const condKind = runInNewContext(`${table}\n${kind}\ncondKind`) as (c: string) => string;
-    const wetKinds = ['rain', 'snow', 'sleet', 'storm', 'fog'];
-    for (const word of [...HOME_ASSISTANT_CODES, ...CANADA_WORDS, 'constructor', 'toString'])
-      expect(isWetCondition(word), word).toBe(wetKinds.includes(condKind(word)));
   });
 });

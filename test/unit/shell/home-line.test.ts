@@ -1,13 +1,7 @@
 // The header's greeting and the date line it shares with the Home pane's heading (#269): the greeting by the hour, the first name, the
 // line's parts in English, and in French what the rewrite layer made of the English line, the date upper case first as it wrote it.
 import {describe, expect, test} from 'vitest';
-import {
-  firstName,
-  greetingKey,
-  homeLine,
-  homeTemperatureIds,
-  readHomeTemperatures,
-} from '../../../src/shell/home-line.ts';
+import {firstName, greetingKey, homeLine} from '../../../src/shell/home-line.ts';
 import {createFrench} from '../../../src/i18n/fr.js';
 import {FULL_CFG} from '../../e2e/houses.ts';
 import {fakeHass} from '../fake-hass.ts';
@@ -62,22 +56,5 @@ describe('the date line', () => {
     const french = homeLine({now: NOW, ...temps}, fr);
     expect(french).toBe(layer.text(homeLine({now: NOW, ...temps}, en)));
     expect(french.charAt(0)).toBe(french.charAt(0).toUpperCase());
-  });
-});
-
-describe('the temperatures', () => {
-  test("are the rooms' average and the weather's, read from the ids the line listens to", () => {
-    const store = inLanguage('en');
-    const {inside, outside} = readHomeTemperatures(store.hass!.states, store.config);
-    expect(inside).not.toBeNull();
-    expect(outside).not.toBeNull();
-    const ids = homeTemperatureIds(store.config);
-    expect(ids).toContain('climate.living_room');
-    expect(ids).toContain(store.config.entities.weather);
-  });
-
-  test('are null when nothing reads', () => {
-    const store = storeOf(fakeHass({}), {});
-    expect(readHomeTemperatures(store.hass!.states, store.config)).toEqual({inside: null, outside: null});
   });
 });

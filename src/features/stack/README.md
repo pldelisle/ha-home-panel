@@ -23,7 +23,7 @@ src/features/stack/
 
 ## The elements
 
-`<hp-smart-stack>` subscribes to `stackIds` (ADR 0012), reads the forecast from the shell's context (ADR 0030) and the history through the statistics cache, and turns every twenty seconds while the page is visible. It says `hp-empty` when it has no card, so the guest hides its slot (ADR 0031). `<hp-stack-card>` draws one card with the legacy classes; a tap asks for a tab, a sheet or a sensor's history and lets the event bubble.
+`<hp-smart-stack>` subscribes to `stackIds` (ADR 0012), reads the forecast from the shell's context (ADR 0030) and the history through the statistics cache, and turns every twenty seconds while the page is visible. It says `hp-empty` when it has no card, so the idle screen hides its slot and the clock stands alone (ADR 0031; the guest heard it until #276). `<hp-stack-card>` draws one card with the legacy classes; a tap asks for a tab, a sheet or a sensor's history and lets the event bubble.
 
 ## The inputs
 

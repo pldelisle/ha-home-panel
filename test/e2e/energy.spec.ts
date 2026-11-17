@@ -47,6 +47,17 @@ const energyReads = async (house: House) =>
   (await house.asked(STATISTICS)).filter(m => m.period === 'day' && (m.statistic_ids as string[]).join() === METER)
     .length;
 
+// the energy reads once they stopped coming: the same count twice, 300 ms apart (the meter's second read, when there is one, lands late)
+const settledEnergyReads = async (house: House) => {
+  let last = -1;
+  for (;;) {
+    const now = await energyReads(house);
+    if (now === last) return now;
+    last = now;
+    await house.page.waitForTimeout(300);
+  }
+};
+
 // a house with Hilo: its current-rate sensor is in the states, at the low tier
 const addHilo = async (house: House) => {
   await house.setState('sensor.hilo_gateway_hilo_rate_low', {state: '0.0732'});
@@ -226,11 +237,13 @@ test.describe('on a tablet', () => {
     house,
   }) => {
     await expect.poll(() => powerReads(house)).toBe(2);
-    const atStart = await energyReads(house);
-    // the hourly week and the water heater's day (the two power reads), the meter's 33 days, and the meter's 33 days a second time: the
-    // panel's first load runs under the config it has before the house's own arrives, and the shell empties the cache with the new one.
-    // It must: the first load's replies are the old generation's and reject as StaleReply, so a load that shared them would never land.
-    expect(atStart, 'the shared windows at start').toBe(4);
+    await expect.poll(() => energyReads(house), 'the shared windows at start').toBeGreaterThanOrEqual(3);
+    const atStart = await settledEnergyReads(house);
+    // the hourly week and the water heater's day (the two power reads) and the meter's 33 days, once or twice: when the panel's first
+    // load runs under the config it has before the house's own arrives, the shell empties the cache with the new one and the meter is
+    // read again. It must: the first load's replies are the old generation's and reject as StaleReply. Whether that first load starts
+    // before the house's config arrives is the page's timing (#276 moved the idle clock out of the guest's first draw and made it rarer).
+    expect([3, 4], 'the shared windows at start').toContain(atStart);
     expect(await yearReads(house), 'at start').toBe(0);
     await house.tab('energy');
     await expect(water(house).locator('.whleg')).toBeVisible();

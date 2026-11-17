@@ -44,8 +44,8 @@ import {AppearanceController} from './appearance.ts';
 import type {FeatureDescriptor, FeatureEnv, FeatureKey} from '../ui/feature.ts';
 import {FEATURES, UNDER_MORE, isFeatureKey, visibleTab} from './features.ts';
 import {createGuest, guestStyles, type GuestContext, type GuestRenderer, type ShellForGuest} from './guest.ts';
+import './idle-screen.ts'; // defines <hp-idle-screen>
 import {IdleTimer, type IdleState} from './idle-timer.ts';
-import '../features/stack/index.ts'; // defines <hp-smart-stack>, which the guest places beside the idle clock (ADR 0031)
 import {headerStyles, type SettingsToggleEvent} from './header.ts'; // defines <hp-header>
 import {homePaneStyles} from './home-pane.ts';
 import type {ForecastEvent} from '../features/weather/forecast-controller.ts';
@@ -108,7 +108,7 @@ export class HomePanel extends LitElement {
   declare private selected: string;
   /** Counts the guest's fresh starts: the frame it draws into is keyed on it, so each start finds new elements. */
   declare private epoch: number;
-  /** The idle timer's state, drawn as `.app.idle`, the overlay's `hidden` and its `wake` class; the guest draws the clock. */
+  /** The idle timer's state, drawn as `.app.idle`, the overlay's `hidden` and its `wake` class, and handed to <hp-idle-screen>. */
   declare private idleState: IdleState;
   /** The settings popup behind the gear is open. */
   declare private settingsOpen: boolean;
@@ -203,7 +203,6 @@ export class HomePanel extends LitElement {
   private toldAppearance: Appearance | undefined;
   private phoneNow = false;
   private idleCompact = this.phone.matches; // what the idle timer was last told about the phone's shape
-  private toldIdle = false;
   // the word under each section of the More sheet, asked of the descriptors when the sheet opens
   private moreSummaries: Readonly<Partial<Record<FeatureKey, string | null>>> = {};
   private moreWasOpen = false;
@@ -513,8 +512,7 @@ export class HomePanel extends LitElement {
   }
 
   // The idle clock's overlay, a child of `.app` so the frame fades behind it (`.app.idle > :not(.idle)`). It is visible while
-  // idle and while waking, when it fades out and swallows the tap that woke the panel; `#iwrap` is the guest's container
-  // and has no binding, so Lit never touches what the guest draws in it.
+  // idle and while waking, when it fades out and swallows the tap that woke the panel; what it shows is <hp-idle-screen>'s (#276).
   private renderIdle(): TemplateResult {
     return html`<div
       class="idle ${classMap({wake: this.idleState === 'waking'})}"
@@ -522,7 +520,7 @@ export class HomePanel extends LitElement {
       ?hidden=${this.idleState === 'active'}
       aria-hidden="true"
     >
-      <div class="iwrap" id="iwrap"></div>
+      <hp-idle-screen .state=${this.idleState}></hp-idle-screen>
     </div>`;
   }
 
@@ -668,12 +666,6 @@ export class HomePanel extends LitElement {
       this.sheets.compactChanged(this.compact); // the open sheet closes and the panels move, before the guest lays its cards out
       guest.compactChanged(this.compact);
     }
-    // the shell has drawn the overlay by now, so the guest can draw the clock in it; told once, when the clock shows or goes
-    const idle = this.idleState === 'idle';
-    if (idle !== this.toldIdle) {
-      this.toldIdle = idle;
-      guest.idleChanged(idle);
-    }
     // a tab the house does not show gives way to Home, and comes back when the house shows it again
     if (this.visible !== this.toldTab) this.tellTab();
     else if (this.epoch !== this.activeEpoch) this.syncActive();
@@ -699,6 +691,5 @@ export class HomePanel extends LitElement {
     clearTimeout(this.toastTimer);
     this.toastTimer = undefined;
     this.toastNow = null;
-    this.toldIdle = false; // the guest is down: a change of state while away tells it nothing, and a clock still showing is told again on return
   }
 }

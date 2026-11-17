@@ -7,6 +7,11 @@ export const en = {
   'common.failed': "Didn't work: {reason}",
   // the failure toast's button (src/ui/toast.ts); a tap anywhere on the toast dismisses it too
   'common.dismiss': 'Dismiss',
+  // the idle clock (src/features/clock/model.ts): the temperatures' line, its parts joined by " · ", and the next sun event
+  'clock.inside': '{n}° inside',
+  'clock.outside': '{n}° outside',
+  'clock.sunrise': 'Sunrise {time}',
+  'clock.sunset': 'Sunset {time}',
   'charts.failed': 'Charts library failed to load',
   // a room whose thermostat is "Chambre de <Name>" (the Hilo naming), read in English
   'room.bedroomOf': "{name}'s bedroom",

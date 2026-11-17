@@ -16,9 +16,9 @@ test.beforeEach(({house}) => fontsLoaded(house));
 // - the time: it reads "now", so Date cannot be frozen (`frozen` would show 11:30 pm after five minutes). The test stops the clock
 //   a minute on from the load and lets goIdle move it five minutes on, on a phone too, so the time (and the card the stack turns
 //   to: the first one, on both viewports) is the same on every run.
-// - the position: the panel nudges the whole block by a random offset on every tick so the screen never rests on the same pixels
-//   (Math.random in renderIdle). The test pins Math.random to its middle, which is no nudge at all. The pin MUST be installed before
-//   the idle clock starts, because renderIdle draws the first offset the moment it starts; idle.spec.ts covers the drift this hides.
+// - the position: the idle screen nudges the whole block on every tick so the screen never rests on the same pixels (src/shell/drift.ts,
+//   seeded from Math.random when the panel goes idle). Its first place is no nudge at all, whatever the seed; the test still pins
+//   Math.random to its middle, before the idle clock starts, so the seed is the same on every run. idle.spec.ts covers the drift.
 async function idleClock(house: House) {
   await house.page.evaluate(() => {
     Math.random = () => 0.5;

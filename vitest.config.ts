@@ -31,6 +31,7 @@ export default defineConfig({
         'src/shell/guest.ts',
         'src/shell/features.ts',
         'src/shell/idle-timer.ts', // the table and its controller; the host is a stub, no element is mounted
+        'src/shell/drift.ts',
         'src/shell/legacy-feature.ts',
         'src/shell/sky.ts',
         'src/shell/upcoming.ts',
@@ -72,6 +73,7 @@ export default defineConfig({
         'src/ui/controllers/system-data.ts': {statements: 100},
         'src/ui/styles/host.ts': {statements: 100},
         'src/shell/guest.ts': {statements: 100},
+        'src/shell/drift.ts': {statements: 100},
         'src/shell/features.ts': {statements: 100},
         'src/shell/idle-timer.ts': {statements: 100, branches: 100},
         'src/shell/legacy-feature.ts': {statements: 100},
