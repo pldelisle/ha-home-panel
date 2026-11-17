@@ -1314,6 +1314,11 @@ export const en = {
   'lights.setByHand': 'Set by hand, Auto off',
   'lights.roomsLinked': 'Rooms linked',
   'lights.roomUnlinked': 'Room unlinked',
+  // the Lights pane's saves (#260): Arrange's order and the room sheet's link, said once Home Assistant accepts or refuses them
+  'lights.orderSaved': 'Light order saved',
+  'lights.orderReset': 'Light order reset',
+  'lights.orderNotSaved': "Couldn't save the light order: {reason}",
+  'lights.linkNotSaved': "Couldn't save the link: {reason}",
   // Who's home (src/features/people, #264): the header's chips and the Home card's label, each person's state, and the card's hint
   'people.whosHome': "Who's home",
   'people.home': 'home',

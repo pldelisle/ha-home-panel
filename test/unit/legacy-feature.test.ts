@@ -30,8 +30,6 @@ const markup = (pane: Pane): string => pane(env({})).strings.join('');
 /** the three values the header is given: its icon, its colour and its heading */
 const bindings = (pane: Pane) => pane(env({})).values;
 
-const pane = (key: FeatureKey) => FEATURES.find(f => f.key === key)!.pane;
-
 describe('legacyFeature', () => {
   test('names the title by the key and carries the parts', () => {
     const d = legacyFeature('car', parts);
@@ -86,14 +84,14 @@ describe('the ten panes', () => {
   test('hold no id twice, and the ones the guest writes into are there', () => {
     const ids = FEATURES.flatMap(f => [...markup(f.pane).matchAll(/ id="([^"]+)"/g)].map(m => m[1]));
     expect(new Set(ids).size).toBe(ids.length);
-    for (const id of ['hsub', 'lsub', 'ausub']) expect(ids, id).toContain(id);
-    for (const id of ['lhost', 'auhost']) expect(ids, id).toContain(id);
+    for (const id of ['hsub', 'ausub']) expect(ids, id).toContain(id);
+    for (const id of ['auhost']) expect(ids, id).toContain(id);
   });
 
   // the header's shadow root is closed to the guest (getElementById stops at it), so the lines it writes are slotted nodes
-  test("put the line the guest writes under the heading in the header's sub slot, but the Weather, Climate, Car, Energy, Air, Media and Security panes', which are elements", () => {
+  test("put the line the guest writes under the heading in the header's sub slot, but the Lights, Weather, Climate, Car, Energy, Air, Media and Security panes', which are elements", () => {
     for (const f of FEATURES.filter(
-      f => !['weather', 'climate', 'car', 'energy', 'air', 'media', 'cams'].includes(f.key),
+      f => !['lights', 'weather', 'climate', 'car', 'energy', 'air', 'media', 'cams'].includes(f.key),
     ))
       expect(markup(f.pane), f.key).toMatch(/<div slot="sub" id="\w+"><\/div>/);
   });
@@ -102,14 +100,14 @@ describe('the ten panes', () => {
     expect(FEATURES.filter(f => markup(f.pane).includes('slot="title"')).map(f => f.key)).toEqual([]);
   });
 
-  test("keep the Lights pane's Arrange bar in the header's actions slot, and give no other pane actions", () => {
-    expect(markup(pane('lights'))).toContain('<div class="ledbar" id="ledbar" slot="actions" hidden>');
-    expect(FEATURES.filter(f => markup(f.pane).includes('slot="actions"')).map(f => f.key)).toEqual(['lights']);
+  // the Lights element draws its own Arrange bar in its header since #260
+  test('give no legacy pane actions', () => {
+    expect(FEATURES.filter(f => markup(f.pane).includes('slot="actions"')).map(f => f.key)).toEqual([]);
   });
 
-  test('head their pane with the catalog title, in the language of the panel, but the Weather, Climate, Car, Energy, Air, Media and Security elements', () => {
+  test('head their pane with the catalog title, in the language of the panel, but the Lights, Weather, Climate, Car, Energy, Air, Media and Security elements', () => {
     for (const f of FEATURES.filter(
-      f => !['car', 'weather', 'climate', 'energy', 'air', 'media', 'cams'].includes(f.key),
+      f => !['lights', 'car', 'weather', 'climate', 'energy', 'air', 'media', 'cams'].includes(f.key),
     ))
       expect(bindings(f.pane)[2], f.key).toBe(`[${f.key}.title]`);
   });

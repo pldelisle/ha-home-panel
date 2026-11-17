@@ -52,3 +52,22 @@ test.describe('whole areas', () => {
     expect(columns).toBe(2);
   });
 });
+
+test.describe('what it costs', () => {
+  test.use({houseOpts: {cfg: FULL_CFG}});
+
+  // A tripwire: a light's state object is changed in place, which no store notices (it compares references), so the pane shows it
+  // only if it draws again. A thermostat change must not make it draw: the pane listens to the lights and their switches alone.
+  test('a thermostat change draws nothing in the pane, its tiles or its strip', async ({house}) => {
+    await house.tab('lights');
+    await expect(house.root().locator('#pane-lights .lcell:visible').first()).toBeVisible();
+    await house.page.evaluate(() => {
+      (window as unknown as {hass: {states: Record<string, {state: string}>}}).hass.states['light.office_1'].state =
+        'off';
+    });
+    await house.mutations.reset();
+    await house.setState('climate.living_room', {attributes: {temperature: 23}});
+    await house.page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
+    expect(await house.mutations.count('hp-lights-pane, hp-light-tile, hp-al-strip'), 'mutations').toBe(0);
+  });
+});

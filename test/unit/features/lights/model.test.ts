@@ -46,6 +46,7 @@ describe('lightsModel', () => {
       name: 'Kitchen',
       sub: '2 of 3 on · 59% · 3000 K',
       label: 'Kitchen: 2 of 3 on · 59% · 3000 K',
+      bulbLabel: 'Kitchen lights',
       on: true,
       available: true,
       tint: 'rgb(255,177,110)',

@@ -1,5 +1,5 @@
 {
-  "about": "The English messages the Lights move introduced (src/core/i18n/en.ts, lights.*), each with sample values: the model's (#259) and the commands' toasts (#261). test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer makes of the English, or what is `translated` where the layer left the English as it stood: \"No lights found\" on the tablet's card, the pane's three Adaptive Lighting lines and the picker's \"now with\", a visible change that #260 and #262 record in their baselines. A tile's accessible name is read with its line in French, as the layer read the whole label. The legacy panel draws all of these until #260 and #262, so no entry of the rewrite layer is deleted yet. Deleted with the layer in phase 4.",
+  "about": "The English messages the Lights move introduced (src/core/i18n/en.ts, lights.*), each with sample values: the model's (#259), the commands' toasts (#261) and the pane's saves (#260). test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer makes of the English, or what is `translated` where the layer left the English as it stood: \"No lights found\" on the tablet's card, the pane's three Adaptive Lighting lines and the picker's \"now with\", a visible change that #260 and #262 record in their baselines. A tile's accessible name is read with its line in French, as the layer read the whole label. The legacy panel draws all of these until #260 and #262, so no entry of the rewrite layer is deleted yet. Deleted with the layer in phase 4.",
   "messages": [
     {
       "key": "lights.noLights",
@@ -266,6 +266,24 @@
     },
     {
       "key": "lights.roomUnlinked"
+    },
+    {
+      "key": "lights.orderSaved"
+    },
+    {
+      "key": "lights.orderReset"
+    },
+    {
+      "key": "lights.orderNotSaved",
+      "values": {
+        "reason": "42"
+      }
+    },
+    {
+      "key": "lights.linkNotSaved",
+      "values": {
+        "reason": "42"
+      }
     }
   ]
 }

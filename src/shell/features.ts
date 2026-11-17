@@ -7,6 +7,7 @@ import {airFeature} from '../features/air/index.ts';
 import {carFeature} from '../features/car/index.ts';
 import {climateFeature} from '../features/climate/index.ts';
 import {energyFeature} from '../features/energy/index.ts';
+import {lightsFeature} from '../features/lights/index.ts';
 import {mediaFeature} from '../features/media/index.ts';
 import {securityFeature} from '../features/security/index.ts';
 import {weatherFeature} from '../features/weather/index.ts';
@@ -25,21 +26,7 @@ export const FEATURES: readonly FeatureDescriptor[] = [
       '<div class="hscenes" id="hscenes" hidden></div>',
     ],
   }),
-  legacyFeature('lights', {
-    icon: 'bulb',
-    color: 'var(--warn)',
-    phoneBar: true,
-    header: {
-      subId: 'lsub',
-      actions:
-        '<div class="ledbar" id="ledbar" slot="actions" hidden><button type="button" class="more" id="lreset" hidden>Reset order</button><button type="button" class="more" id="ledit" aria-pressed="false">Arrange</button></div>',
-    },
-    hosts: [
-      '<div class="card" id="albar" hidden></div>',
-      '<div class="ltiles" id="ltiles"></div>',
-      '<div id="lhost"></div>',
-    ],
-  }),
+  lightsFeature,
   climateFeature,
   weatherFeature,
   carFeature,

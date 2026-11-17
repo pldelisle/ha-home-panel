@@ -43,6 +43,9 @@ export const ICONS = {
   fan: svg`<path d="M12 12c0-5 1-8 4-8s2 5-4 8zM12 12c5 0 8 1 8 4s-5 2-8-4zM12 12c0 5-1 8-4 8s-2-5 4-8zM12 12c-5 0-8-1-8-4s5-2 8 4z"/>`,
   rear: svg`<rect x="4" y="6" width="16" height="12" rx="3"/><path d="M8 10h8M8 14h8"/>`,
   wheel: svg`<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2"/><path d="M4.5 10h5M14.5 10h5M12 14v6"/>`,
+  chev: svg`<path d="m9 6 6 6-6 6"/>`,
+  grip: svg`<path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" stroke-width="3"/>`,
+  link: svg`<path d="M10 13.5a4 4 0 0 0 5.7.3l3-3a4 4 0 0 0-5.7-5.6l-1.2 1.2"/><path d="M14 10.5a4 4 0 0 0-5.7-.3l-3 3a4 4 0 0 0 5.7 5.6l1.2-1.2"/>`,
 } satisfies Record<string, SVGTemplateResult>;
 
 export type IconName = keyof typeof ICONS;

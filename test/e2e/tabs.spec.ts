@@ -223,7 +223,7 @@ test.describe('full house', () => {
     house,
   }) => {
     await house.tab('lights');
-    const line = house.root().locator('hp-pane-header > #lsub');
+    const line = house.root().locator('#pane-lights hp-pane-header > [slot="sub"]');
     await expect(line).toBeVisible();
     const lit = async () => Number(/^(\d+) lights? on/.exec((await line.textContent()) ?? '')?.[1]);
     const before = await lit();

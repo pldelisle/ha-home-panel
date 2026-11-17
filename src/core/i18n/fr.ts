@@ -1309,6 +1309,11 @@ export const fr: Record<MessageKey, string> = {
   'lights.setByHand': 'Réglé à la main, Auto désactivé',
   'lights.roomsLinked': 'Pièces liées',
   'lights.roomUnlinked': 'Pièce déliée',
+  // the Lights pane's saves (#260); the link's refusal stays English with the French colon, as the rewrite layer leaves it
+  'lights.orderSaved': 'Ordre des lumières enregistré',
+  'lights.orderReset': 'Ordre des lumières par défaut',
+  'lights.orderNotSaved': 'Impossible d’enregistrer l’ordre des lumières\u00a0: {reason}',
+  'lights.linkNotSaved': "Couldn't save the link\u00a0: {reason}",
   // Who's home's words, from the rewrite layer's entries; the hint is English on purpose, as the layer leaves it (French is a visible change)
   'people.whosHome': 'Qui est à la maison',
   'people.home': 'à la maison',
