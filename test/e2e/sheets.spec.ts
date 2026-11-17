@@ -176,17 +176,18 @@ test('a toast asked for from an element shows, and a sticky one stays until it i
   await expect(toast).toContainText('It did not work');
 });
 
-test('the shape changing from a tablet to a phone moves the Car detail from the pane into its sheet, and back', async ({
+test('the shape changing from a tablet to a phone keeps the Car detail inline in the tab, under the phone’s header, and back', async ({
   house,
 }) => {
-  // Car's detail is an element's now (#252): inline in the pane on a tablet, in its sheet (closed, so empty) on a phone; Energy's version is the fixme below, until #333
+  // Car's detail is an element's (#252): inline in the tab on a tablet and, since the Car rework, on a phone too (its sheet is the Home tile's); Energy's version is the fixme below, until #333
   tabletOnly();
   await house.tab('car');
   const detail = house.root().locator('#pane-car hp-car-detail');
   await expect(detail).toBeVisible();
   await house.page.setViewportSize(VIEWPORTS.phone);
-  await expect(detail).toHaveCount(0);
-  await expect(house.root().locator('#pane-car hp-car-pane hp-sheet .sheet')).toBeHidden();
+  await expect(detail).toHaveCount(1);
+  await expect(detail).toBeVisible();
+  await expect(house.root().locator('#pane-car hp-car-pane hp-sheet.detail .sheet')).toBeHidden();
   await house.page.setViewportSize(VIEWPORTS.tablet);
   await expect(detail).toBeVisible();
   await expect(detail.locator('hp-pane-header [slot="sub"]')).not.toBeEmpty();

@@ -1,5 +1,5 @@
 // The Climate tab (spec 20): <hp-climate-pane>, <hp-climate-list>, <hp-climate-detail>, <hp-climate-controls>, <hp-gauge>, <hp-dial>, <hp-heat-legend> and the charts. On a tablet the list of the house, its rooms and the
-// heat pump beside the selected item's detail with the gauge and the controls, then the heatmap and the outside chart; on a phone a grid of tiles that open the detail in a sheet with the dial, which is the slider
+// heat pump beside the selected item's detail with the gauge and the controls, then the heatmap; on a phone a grid of tiles that open the detail in a sheet with the dial, which is the slider
 // that sets a room's setpoint and the heat pump's target. The history is the pane's, loaded per range through the panel's cache (#246). The test house
 // has four thermostats (Bedroom 20.8 and Living room 20.0 heating, Garage 21.2 and Office 20.4 idle, all at 21 degrees) and no heat pump, which the last tests add.
 import AxeBuilder from '@axe-core/playwright';
@@ -26,7 +26,6 @@ const expectOneSetpoint = async (house: House, what: string) => {
 };
 const charts = (house: House) => detail(house).locator('hp-chart .apexcharts-canvas');
 const heatmap = (house: House) => pane(house).locator('.cblocks > .inner').first();
-const outside = (house: House) => pane(house).locator('.cblocks > .inner').last();
 // the tile's host has no box of its own (`display: contents`): its button is what a person taps
 const tile = (house: House, key: string) => pane(house).locator(`hp-stat-tile[key="${key}"] button`);
 const tileFigures = (house: House) => detail(house).locator('.tile .v');
@@ -77,7 +76,7 @@ test.describe('on a tablet', () => {
     );
   });
 
-  test('the controls and the chart sit in the detail, for the room chosen, and the heatmap and outside chart under it', async ({
+  test('the controls and the chart sit in the detail, for the room chosen, and the heatmap alone under it (the outside is the chart’s line)', async ({
     house,
   }) => {
     await expect(controls(house).locator('hp-stepper')).toBeVisible();
@@ -86,9 +85,8 @@ test.describe('on a tablet', () => {
     await expect(heatmap(house).locator('h3')).toHaveText('Every room, hour by hour');
     await expect(heatmap(house).locator('hp-heat-legend .hticks i')).toHaveText(['17°', '19°', '21°', '23°', '25°']);
     await expect(heatmap(house).locator('hp-chart .apexcharts-canvas')).toBeVisible();
-    await expect(outside(house).locator('h3')).toHaveText('Outside, last 24 hours');
-    await expect(outside(house).locator('.legend')).toHaveText(/Low to high\s*Mean/);
-    await expect(outside(house).locator('hp-chart .apexcharts-canvas')).toBeVisible();
+    await expect(pane(house).locator('.cblocks > .inner')).toHaveCount(1);
+    await expect(detail(house).locator('.legend')).toContainText('Outside');
     await item(house, 'office').click();
     await expect(detail(house).locator('.legend')).toContainText('Office');
     await expect(controls(house).locator('.quick button')).toHaveCount(5);
@@ -100,16 +98,14 @@ test.describe('on a tablet', () => {
     await expect(detail(house).locator('.tile .k').last()).toHaveText('Heating, 7 days');
     await expect(detail(house).locator('.legend')).toContainText('last 7 days');
     await expect(heatmap(house).locator('h3')).toHaveText('Every room, every 6 hours');
-    await expect(outside(house).locator('h3')).toHaveText('Outside, last 7 days');
   });
 
   // the heatmap's options depend on the range and the theme only: a setpoint changing, a room chosen, nothing makes its chart again, and the
-  // draws are the DOM mutations in the roots of the charts' elements (`.cblocks hp-chart` are the heatmap's and the outside chart's, in the pane)
-  test('a setpoint change and a room chosen leave the heatmap and the outside chart as they were, and draw the room chart again', async ({
+  // draws are the DOM mutations in the roots of the charts' elements (`.cblocks hp-chart` is the heatmap's, in the pane)
+  test('a setpoint change and a room chosen leave the heatmap as it was, and draw the room chart again', async ({
     house,
   }) => {
     await expect(heatmap(house).locator('hp-chart .apexcharts-canvas')).toBeVisible();
-    await expect(outside(house).locator('hp-chart .apexcharts-canvas')).toBeVisible();
     await expect(charts(house)).toBeVisible();
     const settle = () =>
       house.page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
@@ -124,7 +120,7 @@ test.describe('on a tablet', () => {
       await house.mutations.count('hp-chart'),
       'mutations in the charts: the room chart is drawn for the bedroom',
     ).toBeGreaterThan(0);
-    expect(await house.mutations.count('.cblocks hp-chart'), 'mutations in the heatmap and the outside chart').toBe(0);
+    expect(await house.mutations.count('.cblocks hp-chart'), 'mutations in the heatmap').toBe(0);
     await expect(heatmap(house).locator('hp-chart .apexcharts-canvas')).toHaveCount(1);
   });
 
@@ -308,7 +304,7 @@ test.describe('on a phone', () => {
     await tile(house, 'office').click();
     await expect(controls(house).locator('.quick button')).toHaveCount(5);
     await expect(charts(house)).toBeVisible();
-    // the heatmap and the outside chart are the tablet's: the sheet holds the room's chart alone
+    // the heatmap is the tablet's: the sheet holds the room's chart alone
     await expect(charts(house)).toHaveCount(1);
     await expect(pane(house).locator('.cblocks')).toHaveCount(0);
     await expect(pane(house).locator('hp-heat-legend')).toHaveCount(0);

@@ -1,6 +1,6 @@
 /*
- * <hp-car-detail>'s own rules: its `:host` and the column of its blocks, sixteen pixels apart on a tablet and fourteen in a phone's sheet, as the legacy panel's `.pane > .panel > * + *` and
- * `.sheet > .panel > * + *` rules set them. The row that sets two blocks side by side is the kit's `.two`, which the charger's and the comfort's cards share too.
+ * <hp-car-detail>'s own rules: its `:host`, the two columns on a tablet and the one on a phone, sixteen pixels between blocks (fourteen on a phone), and the card that holds the departure and the
+ * charging history as two rows of one list, a hairline between them (HIG, Lists and tables).
  */
 :host {
   display: block;
@@ -9,10 +9,39 @@
 .blocks {
   min-width: 0;
 }
-.blocks > * + * {
-  margin-top: 16px;
+.blocks > hp-pane-header {
+  display: block;
+  margin-bottom: 18px;
 }
-/* the first block too: in the sheet the header's `.ph` came before it, so the `* + *` rule reached it */
-:host([compact]) .blocks > * {
-  margin-top: 14px;
+.cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+.col {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+:host([compact]) .col {
+  gap: 14px;
+}
+@media (max-width: 1000px) {
+  .cols {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.rows {
+  padding: 14px;
+}
+/* the rows open sheets: a control's surface, not a well (docs/design.md, "Three surfaces") */
+.rows .list {
+  border-radius: 16px;
+  background: var(--ctl-bg);
+  box-shadow: var(--ctl-edge);
+  overflow: hidden;
+}
+.rows hp-car-history {
+  border-top: 1px solid var(--line);
 }

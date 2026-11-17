@@ -75,14 +75,6 @@ export interface HeatmapBlock {
   notice: ChartNotice | null;
 }
 
-/** The tablet's outside chart block. */
-export interface OutsideBlock {
-  title: string;
-  note: string;
-  legend: LegendItem[];
-  notice: ChartNotice | null;
-}
-
 /** The range the tiles are named for until the person picks one (the legacy `crange`'s default). */
 const DEFAULT_RANGE: Range = 'day';
 /** The room's quick setpoints, `off` first: the frost guard is what a tap on it asks for. */
@@ -261,8 +253,6 @@ export interface ClimateViewModel {
     chart: ChartBlock;
     /** The tablet's heatmap block; null on the phone, whose sheet is one room. */
     heatmap: HeatmapBlock | null;
-    /** The tablet's outside chart block; null on the phone. */
-    outsideChart: OutsideBlock | null;
   };
 }
 
@@ -643,7 +633,6 @@ function waiting(loaded: boolean, {t, historyFailed}: ClimateModelDeps): ChartNo
 const ROOM_LINE = 'var(--c-wh)';
 const OUTSIDE_LINE = 'var(--c-home)';
 const SETPOINT_LINE = 'var(--fg2)';
-const OUTSIDE_BAND = 'color-mix(in srgb, var(--c-home) 35%, transparent)';
 
 /** The detail chart's legend and words: the line (the house is "House average"), its setpoint for a room or the heat pump, and the outside. */
 function chartBlock(
@@ -668,32 +657,19 @@ function chartBlock(
   };
 }
 
-/** The tablet's two blocks under the detail, worded for the range; the last room is drawn on top, as the legacy heatmap's. */
-function wideBlocks(
+/** The tablet's heatmap under the detail, worded for the range; the last room is drawn on top, as the legacy heatmap's. The outside's temperature is the detail chart's line, so it has no chart of its own. */
+function heatmapBlock(
   rooms: readonly RoomPower[],
   range: Range,
   loaded: boolean,
   deps: ClimateModelDeps,
-): {heatmap: HeatmapBlock; outsideChart: OutsideBlock} {
+): HeatmapBlock {
   const {t} = deps;
-  const waits = waiting(loaded, deps);
-  const words = RANGE_WORDS[range];
   return {
-    heatmap: {
-      title: t(words.heatTitle),
-      hint: t('climate.heatHint'),
-      rooms: [...rooms].reverse().map(room => ({key: room.key, name: roomName(room, deps)})),
-      notice: waits ?? (rooms.length ? null : {kind: 'empty', text: t('climate.noThermostats')}),
-    },
-    outsideChart: {
-      title: t('climate.outsideTitle', {label: t(RANGES[range].labelKey)}),
-      note: t(words.outNote),
-      legend: [
-        {name: t('climate.chart.lowToHigh'), color: OUTSIDE_BAND, dashed: false},
-        {name: t('climate.chart.mean'), color: OUTSIDE_LINE, dashed: false},
-      ],
-      notice: waits,
-    },
+    title: t(RANGE_WORDS[range].heatTitle),
+    hint: t('climate.heatHint'),
+    rooms: [...rooms].reverse().map(room => ({key: room.key, name: roomName(room, deps)})),
+    notice: waiting(loaded, deps) ?? (rooms.length ? null : {kind: 'empty', text: t('climate.noThermostats')}),
   };
 }
 
@@ -717,7 +693,7 @@ export function climateModel(
   const figures = figuresOf(history, range, selection, rooms);
   const head = headOf(pump, room, inputs, deps, items, figures);
   const {t, fmt} = deps;
-  const blocks = deps.compact ? null : wideBlocks(rooms, range, figures !== null, deps);
+  const heatmap = deps.compact ? null : heatmapBlock(rooms, range, figures !== null, deps);
   return {
     summary: summaryOf(inputs, deps),
     items,
@@ -735,8 +711,7 @@ export function climateModel(
       note: head.note,
       controls: head.controls,
       chart: chartBlock(head, selection, range, figures !== null, deps),
-      heatmap: blocks?.heatmap ?? null,
-      outsideChart: blocks?.outsideChart ?? null,
+      heatmap,
     },
   };
 }

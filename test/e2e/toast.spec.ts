@@ -60,12 +60,12 @@ test('a new toast replaces the one showing: a done one after a failure goes afte
 test.describe('in French', () => {
   test.use({houseOpts: {cfg: FULL_CFG, time: AFTERNOON, lang: 'fr'}});
 
-  // a catalog toast: the Car's comfort card words this one from the catalog (#253), as every feature does
+  // a catalog toast: the Car's charger words this one from the catalog (#253), as every feature does
   test('a catalog toast is in French, and so is the Dismiss of a failure', async ({house}) => {
     tabletOnly();
     await house.tab('car');
-    await house.root().locator('hp-car-comfort').getByRole('button', {name: "Enregistrer l'horaire"}).click();
-    await expect(toast(house)).toHaveText("Choisissez d'abord une température d'habitacle");
+    await house.root().locator('hp-charger-controls').getByRole('switch', {name: 'Verrouiller la borne'}).click();
+    await expect(toast(house)).toHaveText('Borne verrouillée');
     await house.failNext('scene.turn_on');
     await house.tab('home');
     await scene(house, 'Movie night').click(); // a name the house gave, which the panel never translates

@@ -10,7 +10,9 @@ The words the panel and its code use. One word per concept: use it in issues, te
 
 **Pane header** — The block a pane opens with: a badge in the subject's colour, the title, a line under it and, on Lights, the Arrange buttons; the kit's `<hp-pane-header>`, with the line and the buttons as slotted nodes the guest still fills. The summary panes' header (Climate, Weather, Car, Energy, Air) shows on the phone only, since a tablet's pane opens on a detail with its own; Home's shows on a tablet only.
 
-**Sheet** — A detail view opened from a pane by tapping a tile or card, such as a room's light sheet; it slides up on a phone and is a narrow panel on a tablet. Avoid: modal, dialog.
+**Sheet** — A detail view opened from a pane by tapping a tile or card, such as a room's light sheet; it slides up on a phone and is a narrow panel on a tablet. Avoid: modal, dialog (a dialog is the next term).
+
+**Dialog** — A modal interruption an element owns and opens over everything (ADR 0035): a confirmation before an intentional action, such as Unlock or Start, or an editor holding a draft with Cancel and Save, such as the departure editor. Not a detail view: that is a Sheet. Avoid: alert, popup, modal.
 
 **Tile** — A compact tappable block for one thing, such as a room on the Lights tab (the bulb switches the room, the rest of the tile opens its sheet) or a scene. Avoid: row (the sideways dimmer row that tiles replaced).
 

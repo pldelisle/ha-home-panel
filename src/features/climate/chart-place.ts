@@ -1,5 +1,5 @@
 // The pieces the Climate detail and the pane draw around a chart: its legend, and the place of the chart itself, which holds the notice before there is a line.
-// Pattern: template helpers (Lit docs, Templates: composing templates) over the model's `LegendItem` and `ChartNotice`, so the room chart, the heatmap and the outside chart
+// Pattern: template helpers (Lit docs, Templates: composing templates) over the model's `LegendItem` and `ChartNotice`, so the room chart and the heatmap
 // place `<hp-chart>` (ADR 0022) by one rule: the notice when the model has one, the chart once its options are made, nothing while they are not.
 // Must not: word a string (the model does), build options (`ClimateCharts` does), or keep state: each is a pure function of what it is given.
 import {html, nothing} from 'lit';

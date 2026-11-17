@@ -212,10 +212,12 @@ test.describe('full house', () => {
     await headings('en')(house);
     await eachShownTab(house, async (tab, pane) => {
       // a tablet's Weather and Air panes have the header of their detail too, with the summary under it; Energy's has only its detail's; a phone's
-      // Climate and Car panes have the header of their sheet, closed, after their own; a tablet's Car pane has only its detail's
+      // Climate pane has the header of its sheet, closed, after its own; a Car pane has two on both shapes, its own on a phone (the detail is inline there too) or its detail's on a
+      // tablet, and its charging history's sheet's, closed
       const headers =
         ((tab === 'weather' || tab === 'air') && !isPhone(house)) ||
-        ((tab === 'climate' || tab === 'car') && isPhone(house))
+        (tab === 'climate' && isPhone(house)) ||
+        tab === 'car'
           ? 2
           : 1;
       await expect(pane.locator('hp-pane-header > [slot="sub"]'), tab).toHaveCount(headers);

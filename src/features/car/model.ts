@@ -9,11 +9,10 @@ import {fixedOr, noonOf, whole, type Formatters} from '../../core/i18n/format.ts
 import type {Translate} from '../../core/i18n/messages.ts';
 import type {CarInputs, FordMessage, LastPlug} from '../../providers/fordpass.ts';
 import {sum} from '../../providers/power-history.ts';
-import {chargerStatusKey, DEFAULT_KWH_PRICE, type Session, type WallboxInputs} from '../../providers/wallbox.ts';
+import {DEFAULT_KWH_PRICE, type Session, type WallboxInputs} from '../../providers/wallbox.ts';
 import {barsGeometry, type BarsGeometry} from './bars-geometry.ts';
 import {DAILY_DAYS, monthlySessions, type CarHistoryData, type MonthlySessions} from './history.ts';
 import type {CarFeatureInputs} from './inputs.ts';
-import {draftFromSchedule, scheduleWords} from './schedule.ts';
 
 /** What the model words and formats with, and what the detail's table is showing. */
 export interface CarModelDeps {
@@ -86,22 +85,6 @@ export interface CarArtView {
   drawing: string;
 }
 
-export interface CarCard extends CarArtView {
-  /** What a screen reader says of the card, which opens the detail. */
-  open: string;
-  where: string;
-  /** The charge, a tenth of a percent; the percent sign is the tile's. */
-  charge: string;
-  /** "280 km range · locked · charging". */
-  line: string;
-  soc: SocBar;
-  /** The charger, the last charge and the odometer. */
-  tiles: CarTile[];
-  /** Null until the history has loaded. */
-  daily: DailyBars | null;
-}
-
-/** One of the four tires: its name, its pressure and unit, and Ford's word for it when it gave one. */
 export interface TireView {
   label: string;
   psi: string;
@@ -109,36 +92,31 @@ export interface TireView {
   state: {text: string; ok: boolean} | null;
 }
 
-/** A status chip: "Doors closed", in the warning colour when it is not good. */
-export interface Chip {
+/** One fact under the summary's bar, with its tone: `ok` for the good news of the moment (charging), `warn` for what needs a look (a door open, unlocked), `plain` for the rest. */
+export interface Fact {
   text: string;
-  good: boolean;
+  tone: 'ok' | 'warn' | 'plain';
 }
 
-export interface BatteryBlock extends CarArtView {
-  title: string;
-  /** "55.0 of 88.0 kWh usable · battery at 20.0°"; empty when the car gives neither. */
-  line: string;
+/** The top of the tab: the charge and the range beside the car, the bar with the limit Ford sets, and the facts under it, said once (docs/apple-hig-audit-car-2026-11-17.md). */
+export interface SummaryBlock extends CarArtView {
   charge: string;
   range: string;
   soc: SocBar;
-  tiles: CarTile[];
+  facts: Fact[];
 }
 
 export interface StatusBlock {
   title: string;
-  caption: string;
-  /** What a screen reader says of the car seen from above, between the tires. */
+  /** The top view's label for a screen reader. */
   drawing: string;
-  /** Front left, front right, rear left, rear right. */
   tires: TireView[];
-  chips: Chip[];
-  tiles: CarTile[];
+  /** The details the car reports, as value rows (HIG, Lists and tables: a grouped label and value list): odometer, full range, AC limit, cabin, 12 V battery, usable energy, battery temperature, software, automatic updates. */
+  rows: CarTile[];
 }
 
-/** A line of the Ford block: one of Ford's messages, or the departure times' state. */
+/** A line of the Ford block: one of Ford's messages. */
 export interface FordRow {
-  kind: 'message' | 'departure';
   title: string;
   body: string;
 }
@@ -184,14 +162,28 @@ export interface SessionsBlock {
   toggle: string | null;
 }
 
+/** The history's row on the tab (it opens the sessions in a sheet) and the 30 days of bars the sheet draws. */
+export interface HistoryBlock {
+  title: string;
+  /** The sheet's button that closes it. */
+  done: string;
+  /** `3 sessions · 39 kWh`; `''` until the history loads. */
+  line: string;
+  /** The year's estimated cost; `''` until the history loads. */
+  value: string;
+  daily: DailyBars | null;
+}
+
 export interface CarDetail {
   title: string;
   /** "Parked at home · locked · the car last checked in at 4:05 pm". */
   sub: string;
-  battery: BatteryBlock;
+  summary: SummaryBlock;
   status: StatusBlock;
+  history: HistoryBlock;
   sessions: SessionsBlock;
-  ford: FordBlock;
+  /** Ford's own messages; null when it sent none. */
+  ford: FordBlock | null;
   last: LastBlock;
 }
 
@@ -199,9 +191,8 @@ export interface CarViewModel {
   /** The phone's header and the line under it. */
   summary: {title: string; line: string};
   /** Null where the house has no FordPass car. */
-  card: CarCard | null;
   detail: CarDetail | null;
-  /** What stands where a car's card and detail would: "No FordPass car found."; null when there is one. */
+  /** What stands where a car's detail would: "No FordPass car found."; null when there is one. */
   none: string | null;
   /** "History didn't load: …", for the card's and the detail's line; null when it did, or has not been asked. */
   error: string | null;
@@ -245,54 +236,20 @@ const lockWord = (locked: boolean | null, t: Translate): string =>
 const stateWord = (car: CarInputs, t: Translate): string =>
   t(car.charging ? 'car.state.charging' : car.plugged ? 'car.state.pluggedIn' : 'car.state.unplugged');
 
-/** The battery bar and the words under it: the card's names the limit to a screen reader and says "Limit 90%" under it; the detail's says "Charge limit 90%" and 100%. */
-function socBar(car: CarInputs, {t, fmt}: CarModelDeps, detail: boolean): SocBar {
+/** The battery bar and the words under it: the limit as Ford sets it ("Limit 90% · set in FordPass"; the panel cannot change it) and the full scale. */
+function socBar(car: CarInputs, {t, fmt}: CarModelDeps): SocBar {
   const limit = car.limit || null;
   const charge = fixedOr(fmt, car.soc, 1);
   const named = limit === null ? '' : fmt.number(limit);
   return {
     fill: car.soc || 0,
     limit,
-    label:
-      limit === null || detail ? t('car.socLabel', {n: charge}) : t('car.socLabelLimit', {n: charge, limit: named}),
+    label: limit === null ? t('car.socLabel', {n: charge}) : t('car.socLabelLimit', {n: charge, limit: named}),
     scale: {
       start: t('car.percent', {n: fmt.integer(0)}),
-      limit: limit === null ? '' : t(detail ? 'car.limitCharge' : 'car.limit', {n: named}),
-      end: detail ? t('car.percent', {n: fmt.integer(100)}) : '',
+      limit: limit === null ? '' : t('car.limitFord', {n: named}),
+      end: t('car.percent', {n: fmt.integer(100)}),
     },
-  };
-}
-
-/** The charger's status as the Wallbox integration words it, in the household's language where the catalog knows it. */
-function chargerWord(charger: WallboxInputs, t: Translate): string {
-  if (charger.status === null) return DASH;
-  const key = chargerStatusKey(charger.status);
-  return key ? t(key) : charger.status;
-}
-
-function cardOf(car: CarInputs, charger: WallboxInputs, history: CarHistoryData | null, deps: CarModelDeps): CarCard {
-  const {t, fmt} = deps;
-  const last = history?.sessions.at(-1) ?? null;
-  const rangeWords = car.range === null ? '' : t('car.range', {n: whole(fmt, car.range)});
-  return {
-    name: car.name || t('car.title'),
-    picture: car.picture,
-    color: car.color,
-    drawing: t('car.art.side'),
-    open: t('car.open'),
-    where: whereOf(car, t),
-    charge: fixedOr(fmt, car.soc, 1),
-    line: joined(rangeWords, lockWord(car.locked, t), stateWord(car, t)),
-    soc: socBar(car, deps, false),
-    tiles: [
-      tile(t('car.card.charger'), chargerWord(charger, t), {sub: t('car.card.wallbox'), word: true}),
-      tile(t('car.card.lastCharge'), last ? fmt.fixed(last.kwh, 1) : DASH, {
-        unit: UNIT.kwh,
-        sub: last ? fmt.date(last.start) : '',
-      }),
-      tile(t('car.odometer'), car.odometer === null ? DASH : fmt.integer(car.odometer), {unit: UNIT.km}),
-    ],
-    daily: history ? dailyBars(history, deps) : null,
   };
 }
 
@@ -324,43 +281,27 @@ function summaryOf(car: CarInputs, {t, fmt}: CarModelDeps) {
   };
 }
 
-function batteryOf(car: CarInputs, deps: CarModelDeps): BatteryBlock {
+/** The plug as a fact: charging with its power in the `ok` tone, plugged in or unplugged plain. */
+function plugFact(car: CarInputs, {t, fmt}: CarModelDeps): Fact {
+  if (car.charging)
+    return {
+      text: joined(t('car.plug.charging'), car.chargingKw ? `${fmt.fixed(car.chargingKw, 1)} ${UNIT.kw}` : ''),
+      tone: 'ok',
+    };
+  return {text: t(car.plugged ? 'car.plug.pluggedIn' : 'car.plug.unplugged'), tone: 'plain'};
+}
+
+function summaryBlockOf(car: CarInputs, deps: CarModelDeps): SummaryBlock {
   const {t, fmt} = deps;
-  const {battery} = car;
-  const plug = car.charging ? 'car.plug.charging' : car.plugged ? 'car.plug.pluggedIn' : 'car.plug.unplugged';
   return {
     name: car.name || t('car.title'),
     picture: car.picture,
     color: car.color,
     drawing: t('car.art.side'),
-    title: t('car.battery.title'),
-    line: joined(
-      battery.remainingKwh === null
-        ? ''
-        : t('car.battery.usable', {
-            remaining: fmt.fixed(battery.remainingKwh, 1),
-            capacity: fixedOr(fmt, battery.capacityKwh, 1),
-          }),
-      battery.temperature === null ? '' : t('car.battery.temperature', {n: fmt.fixed(battery.temperature, 1)}),
-    ),
     charge: fixedOr(fmt, car.soc, 1),
     range: car.range === null ? '' : t('car.range', {n: whole(fmt, car.range)}),
-    soc: socBar(car, deps, true),
-    tiles: present([
-      tile(t('car.battery.fullRange'), battery.fullRangeKm === null ? DASH : whole(fmt, battery.fullRangeKm), {
-        unit: UNIT.km,
-        sub: t('car.battery.atFull'),
-      }),
-      tile(t('car.battery.plug'), t(plug), {
-        sub: car.charging && car.chargingKw ? `${fmt.fixed(car.chargingKw, 1)} ${UNIT.kw}` : '',
-        word: true,
-      }),
-      tile(t('car.battery.acLimit'), reading(fmt, car.acLimit), {unit: UNIT.amps}),
-      tile(t('car.battery.cabin'), fixedOr(fmt, car.cabin, 1), {
-        unit: UNIT.degrees,
-        sub: car.outsideTemp === null ? '' : t('car.battery.outside', {n: fmt.fixed(car.outsideTemp, 1)}),
-      }),
-    ]),
+    soc: socBar(car, deps),
+    facts: [plugFact(car, deps), ...factsOf(car, deps)],
   };
 }
 
@@ -374,10 +315,10 @@ function tireOf(label: string, {psi, state}: CarInputs['tires']['frontLeft'], {t
   };
 }
 
-/** The status chips the car's sensors support, each with whether it is good; a sensor the car does not have gives none. */
-function chipsOf(car: CarInputs, {t}: CarModelDeps): Chip[] {
+/** The doors, windows, hood, lock, alarm and gear as facts, what needs a look in the warning tone; a sensor the car does not have gives none. */
+function factsOf(car: CarInputs, {t}: CarModelDeps): Fact[] {
   const {doors, windowsClosed, locked, alarm, gear} = car;
-  const chips: (Chip | null)[] = [
+  const chips: ({text: string; good: boolean} | null)[] = [
     doors.closed === null
       ? null
       : {text: t(doors.closed ? 'car.chip.doorsClosed' : 'car.chip.doorOpen'), good: doors.closed},
@@ -401,16 +342,17 @@ function chipsOf(car: CarInputs, {t}: CarModelDeps): Chip[] {
       ? null
       : {text: gear === 'PARK' ? t('car.chip.park') : t('car.chip.gear', {gear: gear.toLowerCase()}), good: true},
   ];
-  return chips.filter((chip): chip is Chip => chip !== null);
+  return chips.flatMap(chip =>
+    chip === null ? [] : [{text: chip.text, tone: chip.good ? ('plain' as const) : ('warn' as const)}],
+  );
 }
 
 function statusOf(car: CarInputs, deps: CarModelDeps): StatusBlock {
   const {t, fmt} = deps;
-  const {tires, firmware, battery12} = car;
+  const {tires, firmware, battery12, battery} = car;
   const updated = firmware?.since ?? null;
   return {
     title: t('car.status.title'),
-    caption: t('car.status.tires'),
     drawing: t('car.art.top'),
     tires: [
       tireOf(t('car.tire.frontLeft'), tires.frontLeft, deps),
@@ -418,13 +360,26 @@ function statusOf(car: CarInputs, deps: CarModelDeps): StatusBlock {
       tireOf(t('car.tire.rearLeft'), tires.rearLeft, deps),
       tireOf(t('car.tire.rearRight'), tires.rearRight, deps),
     ],
-    chips: chipsOf(car, deps),
-    tiles: present([
+    rows: present([
       tile(t('car.odometer'), car.odometer === null ? DASH : fmt.integer(car.odometer), {unit: UNIT.km}),
+      tile(t('car.battery.fullRange'), battery.fullRangeKm === null ? DASH : whole(fmt, battery.fullRangeKm), {
+        unit: UNIT.km,
+        sub: t('car.battery.atFull'),
+      }),
+      tile(t('car.battery.acLimit'), reading(fmt, car.acLimit), {unit: UNIT.amps}),
+      tile(t('car.battery.cabin'), fixedOr(fmt, car.cabin, 1), {
+        unit: UNIT.degrees,
+        sub: car.outsideTemp === null ? '' : t('car.battery.outside', {n: fmt.fixed(car.outsideTemp, 1)}),
+      }),
       tile(t('car.status.battery12'), reading(fmt, battery12.percent), {
         unit: UNIT.percent,
         sub: battery12.volts ? `${fmt.fixed(battery12.volts, 1)} ${UNIT.volts}` : '',
       }),
+      tile(t('car.status.usable'), battery.remainingKwh === null ? DASH : fmt.fixed(battery.remainingKwh, 1), {
+        unit: UNIT.kwh,
+        sub: battery.capacityKwh === null ? '' : t('car.status.ofCapacity', {n: fmt.fixed(battery.capacityKwh, 1)}),
+      }),
+      tile(t('car.status.batteryTemp'), fixedOr(fmt, battery.temperature, 1), {unit: UNIT.degrees}),
       tile(t('car.status.software'), firmware?.version ?? DASH, {
         sub: updated === null ? '' : t('car.since', {date: fmt.date(updated)}),
         word: true,
@@ -453,24 +408,19 @@ const fordText = (text: string, t: Translate): string => {
 function messageRow(message: FordMessage, {t, fmt}: CarModelDeps): FordRow {
   const subject = fordText(message.subject, t);
   return {
-    kind: 'message',
     title: message.created === null ? subject : t('car.ford.dated', {subject, date: fmt.date(message.created)}),
     body: fordText(message.body, t),
   };
 }
 
-function fordOf(car: CarInputs, deps: CarModelDeps): FordBlock {
-  const {t, fmt} = deps;
-  const saved = car.schedule
-    ? t('car.ford.saved', {when: capitalise(scheduleWords(draftFromSchedule(car.schedule), fmt, t))})
-    : t('car.ford.noSchedule');
+/** Ford's own messages; null when it sent none (the departure schedule is its own row, controls.ts). */
+function fordOf(car: CarInputs, deps: CarModelDeps): FordBlock | null {
+  if (!car.messages.length) return null;
+  const {t} = deps;
   return {
     title: t('car.ford.title'),
     caption: t('car.ford.subtitle'),
-    rows: [
-      ...car.messages.map(message => messageRow(message, deps)),
-      {kind: 'departure', title: t(car.departureOn ? 'car.ford.departureOn' : 'car.ford.departureOff'), body: saved},
-    ],
+    rows: car.messages.map(message => messageRow(message, deps)),
   };
 }
 
@@ -594,6 +544,24 @@ function sessionsOf(
   };
 }
 
+/** The history's row and the 30 days of bars its sheet draws; the row is empty until the history loads. */
+function historyOf(history: CarHistoryData | null, charger: WallboxInputs, deps: CarModelDeps): HistoryBlock {
+  const {t, fmt} = deps;
+  const title = t('car.sessions.title');
+  const done = t('car.history.done');
+  if (!history) return {title, done, line: '', value: '', daily: null};
+  const {sessions} = history;
+  const total = sum(sessions.map(session => session.kwh));
+  const price = charger.price ?? DEFAULT_KWH_PRICE;
+  return {
+    title,
+    done,
+    line: t('car.history.line', {n: sessions.length, kwh: fmt.integer(total)}),
+    value: sessions.length ? money(deps, total * price, false) : '',
+    daily: dailyBars(history, deps),
+  };
+}
+
 /** The detail's line under the name: where the car is, whether it is locked, and when it last checked in. */
 function subOf(car: CarInputs, {t, fmt}: CarModelDeps): string {
   return joined(
@@ -614,7 +582,6 @@ export function carModel(inputs: CarFeatureInputs, history: CarHistoryData | nul
   if (!car) {
     return {
       summary: {title: t('car.title'), line: t('car.noCar')},
-      card: null,
       detail: null,
       none: t('car.noCar'),
       error,
@@ -622,12 +589,12 @@ export function carModel(inputs: CarFeatureInputs, history: CarHistoryData | nul
   }
   return {
     summary: summaryOf(car, deps),
-    card: cardOf(car, charger, history, deps),
     detail: {
       title: car.name || t('car.title'),
       sub: subOf(car, deps),
-      battery: batteryOf(car, deps),
+      summary: summaryBlockOf(car, deps),
       status: statusOf(car, deps),
+      history: historyOf(history, charger, deps),
       sessions: sessionsOf(history?.sessions, charger, deps),
       ford: fordOf(car, deps),
       last: lastOf(car, history, deps),

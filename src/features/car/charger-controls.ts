@@ -1,9 +1,10 @@
-// <hp-charger-controls>: the Car detail's charger card: the Wallbox's current limit as a radio group, the charge limit the car reports (read-only), and the charging and lock switches.
+// <hp-charger-controls>: the Car detail's charger card: the Wallbox's current limit as a radio group and its lock switch while it answers, one line saying it is unavailable while it does not
+// (the charge limit is the summary's bar, the pause the actions row's: docs/apple-hig-audit-car-2026-11-17.md).
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over `chargerControls`, the model's pure view of the inputs and the held values: a tap holds the value it asks for in the panel's overlay and runs a `Command`
 // through the kit's `CommandRunner` (ADR 0023), at once and once; `<hp-seg>` and `<hp-switch-row>` are the kit's controls, and the card's own rules are in charger-controls.element.css.
 // Must not: read an entity or the clock (the inputs and the model did), build a command by hand (commands.ts does), word a string, or keep a value of the charger (the overlay does).
 import {LitElement, html, nothing, unsafeCSS} from 'lit';
-import {setAmps, toggleChargerLock, togglePause} from './commands.ts';
+import {setAmps, toggleChargerLock} from './commands.ts';
 import {chargerControls, type ChargerView, type SwitchRowView} from './controls.ts';
 import controlsCss from './controls.css?inline';
 import ownCss from './charger-controls.element.css?inline';
@@ -62,7 +63,14 @@ export class ChargerControls extends LitElement {
   protected override render() {
     const {view} = this;
     if (!view) return nothing;
-    const {power, limit, charging, lock} = view;
+    const {power, lock} = view;
+    // a charger that does not answer is one line, not controls that do nothing (docs/apple-hig-audit-car-2026-11-17.md, finding 1)
+    if (!view.available)
+      return html`<div class="inner fill">
+          <h3>${view.title}</h3>
+          <div class="unav"><b>${view.unavailable.title}</b><span>${view.unavailable.line}</span></div>
+        </div>
+        ${lensLike(this.getRootNode())}`;
     return html`<div class="inner fill">
         <h3>${view.title}</h3>
         <p>${view.line}</p>
@@ -75,10 +83,6 @@ export class ChargerControls extends LitElement {
           @change=${(e: CustomEvent<SegChangeDetail>) => this.onAmps(power.id, Number(e.detail.value))}
         ></hp-seg>
         <div class="hint">${power.hint}</div>
-        <div class="ctl-l">${limit.heading}</div>
-        <hp-seg .label=${limit.label} .options=${limit.options} .value=${limit.chosen} .disabled=${true}></hp-seg>
-        <div class="hint">${limit.hint}</div>
-        ${this.renderRow(charging, (on, id) => this.ask(togglePause({id}, on), on))}
         ${this.renderRow(lock, (on, id) => this.ask(toggleChargerLock({id}, on), on))}
       </div>
       ${lensLike(this.getRootNode())}`;

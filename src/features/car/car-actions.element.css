@@ -1,0 +1,70 @@
+/*
+ * <hp-car-actions>' own rules: the row of action buttons. Each is a control (docs/design.md: raised on `--ctl-bg` with `--ctl-edge`), its icon beside its name and the line that says how things
+ * stand; on a phone the icon sits above the words. The dialogs are dialog.css.
+ */
+:host {
+  display: block;
+  min-width: 0;
+}
+.acts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: 10px;
+}
+.act {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--ctl-bg);
+  box-shadow: var(--ctl-edge);
+  font: inherit;
+  font-weight: 600;
+  font-size: calc(14px * var(--tx));
+  color: var(--fg);
+  cursor: pointer;
+  text-align: left;
+}
+.act svg {
+  flex: none;
+}
+.act .tx {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  min-width: 0;
+}
+.act small {
+  font-weight: 500;
+  font-size: calc(12px * var(--tx));
+  color: var(--fg2);
+}
+.act:focus-visible {
+  outline: 2px solid var(--c-home);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .act {
+    transition:
+      transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+      background-color 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+}
+.act:active {
+  transform: scale(0.96);
+}
+:host([compact]) .act {
+  flex-direction: column;
+  gap: 4px;
+  min-height: 68px;
+  text-align: center;
+  font-size: calc(13px * var(--tx));
+}
+:host([compact]) .act .tx {
+  align-items: center;
+}

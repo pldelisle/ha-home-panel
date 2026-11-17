@@ -41,6 +41,8 @@
      anything a tap acts on inside a card: raised above the well, so it never reads as one. Glass gives both their glass. */
   --ctl-bg: var(--card);
   --ctl-edge: var(--shadow);
+  /* what floats over everything (a dialog, ADR 0035): a long soft drop shadow, the same in both themes */
+  --pop-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.45);
   --f-num: 'Manrope', ui-sans-serif, system-ui, sans-serif;
   --f-body: 'Manrope', ui-sans-serif, system-ui, sans-serif;
   /* the one place a second face is meant: a config path is code, so the configuration card sets it in JetBrains Mono,

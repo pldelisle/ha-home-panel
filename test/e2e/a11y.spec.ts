@@ -171,11 +171,11 @@ for (const lang of ['en', 'fr'] as const) {
     });
 
     test('the Car detail sheet has no serious or critical finding', async ({house}) => {
-      phoneOnly(); // on a tablet the detail is the Car tab, which every shown tab covers
-      await openTab(house, 'car');
-      await house.root().locator('hp-car-card .box').click();
-      await expect(house.root().locator('hp-car-sessions .apexcharts-canvas')).toBeVisible();
-      await scanDialog(house, 'the car detail sheet', 'hp-car-pane hp-sheet .sheet');
+      phoneOnly(); // the sheet is the phone's, from Home's car tile; the Car tab shows the detail inline, which every shown tab covers
+      await openTab(house, 'home');
+      await house.root().locator('[data-opens="car.detail"]').first().click();
+      await expect(house.root().locator('hp-car-pane hp-sheet hp-car-summary .carhero')).toBeVisible();
+      await scanDialog(house, 'the car detail sheet', 'hp-car-pane hp-sheet.detail .sheet');
     });
 
     test('the Media sheet has no serious or critical finding', async ({house}) => {

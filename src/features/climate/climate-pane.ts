@@ -1,5 +1,5 @@
 // <hp-climate-pane>: the Climate tab: on a phone the header with the summary, a grid of tiles and the detail's sheet; on a tablet the header with the range tabs, the list
-// beside the selected item's detail, and the heatmap and the outside chart under them. It keeps the selection and the range the person chose.
+// beside the selected item's detail, and the heatmap under them. It keeps the selection and the range the person chose.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over a view model: `climateModel` runs in `willUpdate` and the template places what it returns; a store
 // controller on `climateIds` (ADR 0012), paused while no part of the pane is on screen, and `ClimateHistory`, which loads the range shown (ADR 0028). The held values the model reads are the panel's overlay (ADR 0023).
 // Must not: read an entity itself (`readClimate` does), hold a string the household reads, call the API (the history controller asks the cache), send a command (the detail's controls do), or open the sheet (a tile asks).
@@ -9,7 +9,7 @@ import {repeat} from 'lit/directives/repeat.js';
 import {ClimateCharts, type ClimateOptions} from './charts.ts';
 import './climate-detail.ts'; // defines <hp-climate-detail>
 import './climate-list.ts'; // defines <hp-climate-list>
-import {chartPlace, legendItems} from './chart-place.ts';
+import {chartPlace} from './chart-place.ts';
 import {detailIcon} from './climate-detail.ts';
 import type {SelectDetail} from './climate-list.ts';
 import paneOwn from './climate-pane.element.css?inline';
@@ -18,13 +18,7 @@ import {climateIds} from './ids.ts';
 import {readClimate} from './inputs.ts';
 import {ClimateHistory} from './loader.ts';
 import type {ClimateHistoryData} from './history.ts';
-import {
-  climateModel,
-  type ClimateSelection,
-  type ClimateViewModel,
-  type HeatmapBlock,
-  type OutsideBlock,
-} from './model.ts';
+import {climateModel, type ClimateSelection, type ClimateViewModel, type HeatmapBlock} from './model.ts';
 import {DETAIL_SHEET} from './sheets.ts';
 import {registriesOf} from '../../core/registry.ts';
 import type {RoomPower} from '../../providers/power.ts';
@@ -222,7 +216,7 @@ export class ClimatePane extends LitElement {
     </div>`;
   }
 
-  // The tablet: the header with the range tabs, the list and the detail, and the heatmap and the outside chart under them.
+  // The tablet: the header with the range tabs, the list and the detail, and the heatmap under them.
   private renderTablet(view: ClimateViewModel) {
     const {t} = this.storeController.store;
     return html`<hp-pane-header .icon=${'therm'} .color=${'var(--c-home)'} .heading=${t('climate.homeClimate')}>
@@ -244,9 +238,7 @@ export class ClimatePane extends LitElement {
         ></hp-climate-list>
         ${this.renderDetail(view)}
       </div>
-      <div class="cblocks">
-        ${this.renderHeatmap(view.detail.heatmap)}${this.renderOutside(view.detail.outsideChart)}
-      </div>`;
+      <div class="cblocks">${this.renderHeatmap(view.detail.heatmap)}</div>`;
   }
 
   // The heatmap: its title and line, the colour bar, and the chart, or what stands in for it while the range loads
@@ -257,17 +249,6 @@ export class ClimatePane extends LitElement {
       <p>${block.hint}</p>
       <hp-heat-legend></hp-heat-legend>
       ${chartPlace(block, this.drawn?.heatmap, 300, `${block.title}. ${block.hint}`)}
-    </div>`;
-  }
-
-  // the outside chart: a band from each bucket's low to its high, and the mean's line over it
-  private renderOutside(block: OutsideBlock | null) {
-    if (!block) return nothing;
-    return html`<div class="inner">
-      <h3>${block.title}</h3>
-      <p>${block.note}</p>
-      <div class="legend">${legendItems(block.legend)}</div>
-      ${chartPlace(block, this.drawn?.outside, 260, `${block.title}. ${block.note}`)}
     </div>`;
   }
 

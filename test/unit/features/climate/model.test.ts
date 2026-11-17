@@ -171,27 +171,18 @@ describe('the test house, on the tablet', () => {
       ],
       notice: {kind: 'loading', text: 'Loading history…'},
     });
-    expect(waiting.outsideChart).toMatchObject({
-      title: 'Outside, last 24 hours',
-      note: 'Band is each 5 minutes’ low to high, line is the mean',
-      legend: [
-        {name: 'Low to high', color: 'color-mix(in srgb, var(--c-home) 35%, transparent)'},
-        {name: 'Mean', color: 'var(--c-home)'},
-      ],
-    });
     const failed = modelOf(fullHouse, 'house', {historyFailed: true}).detail;
-    expect([failed.chart.notice, failed.heatmap?.notice, failed.outsideChart?.notice]).toEqual(
-      Array(3).fill({kind: 'failed', text: 'History is not available right now.'}),
+    expect([failed.chart.notice, failed.heatmap?.notice]).toEqual(
+      Array(2).fill({kind: 'failed', text: 'History is not available right now.'}),
     );
     // loaded: nothing stands in for a chart, and a week's words follow the range
     const ready = modelOf(fullHouse, 'house', {range: 'week', history: loaded({}, 'week')}).detail;
-    expect([ready.chart.notice, ready.heatmap?.notice, ready.outsideChart?.notice]).toEqual([null, null, null]);
-    expect([ready.heatmap?.title, ready.outsideChart?.title]).toEqual([
-      'Every room, every 6 hours',
-      'Outside, last 7 days',
-    ]);
+    expect([ready.chart.notice, ready.heatmap?.notice]).toEqual([null, null]);
+    expect(ready.heatmap?.title).toBe('Every room, every 6 hours');
+    // the outside's temperature is the detail chart's line: the tablet has no outside chart of its own
+    expect(ready).not.toHaveProperty('outsideChart');
     const phone = modelOf(fullHouse, 'bedroom', {compact: true}).detail;
-    expect([phone.heatmap, phone.outsideChart]).toEqual([null, null]);
+    expect(phone.heatmap).toBeNull();
     expect(phone.chart.legend.map(item => [item.name, item.dashed])).toEqual([
       ['Bedroom', false],
       ['Setpoint', true],
@@ -205,7 +196,6 @@ describe('the test house, on the tablet', () => {
     expect(empty.detail.heatmap?.notice).toEqual({kind: 'empty', text: 'No thermostats found.'});
     const french = modelOf(fullHouse, 'house', {language: 'fr'}).detail;
     expect(french.chart.name).toBe('Moyenne de la maison');
-    expect(french.outsideChart?.title).toBe('Dehors, dernières 24 heures');
     expect(french.heatmap?.notice?.text).toBe('Chargement de l’historique…');
   });
 
