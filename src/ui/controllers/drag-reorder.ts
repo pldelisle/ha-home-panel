@@ -186,6 +186,9 @@ export class DragReorderController implements ReactiveController {
     const next = moveBy(this.options.keys(), this.options.keyOf(unit)!, step);
     if (!next) return;
     const focused = e.composedPath()[0] as HTMLElement;
+    // a drop still settling gives way, so its order cannot redraw the units, and lose the focus, after this one
+    clearTimeout(this.settle);
+    this.drag = null;
     this.options.onReorder(next);
     void this.host.updateComplete.then(() => focused.focus());
   };
