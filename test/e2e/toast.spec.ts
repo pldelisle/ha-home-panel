@@ -80,3 +80,28 @@ test.describe('in French', () => {
     await expect(toast(house)).toHaveText('Auto désactivé');
   });
 });
+
+// white text on the error fill: the dark theme's light red (#da8282) gave 2.8:1, so the fill is its own darker token, 5.3:1 (#391)
+test.describe('the failure toast by theme', () => {
+  const failed = async (house: House) => {
+    await pause(house);
+    await house.failNext('scene.turn_on');
+    await scene(house, 'Movie night').click();
+    await expect(toast(house)).toHaveClass(/\berr\b/);
+  };
+
+  test.describe('in dark mode', () => {
+    test.use({houseOpts: {cfg: FULL_CFG, time: AFTERNOON, theme: 'dark'}});
+
+    test('the fill is a red white text reads on (4.5:1)', async ({house}) => {
+      await failed(house);
+      await expect(toast(house)).toHaveCSS('background-color', 'rgb(179, 74, 74)');
+      await expect(toast(house)).toHaveCSS('color', 'rgb(255, 255, 255)');
+    });
+  });
+
+  test('the light theme keeps its red', async ({house}) => {
+    await failed(house);
+    await expect(toast(house)).toHaveCSS('background-color', 'rgb(167, 80, 80)');
+  });
+});

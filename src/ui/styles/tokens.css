@@ -30,6 +30,7 @@
   --ok: #758671;
   --warn: #b27c43;
   --crit: #a75050;
+  --crit-fill: var(--crit);
   /* accents used as text, dark enough for 4.5:1 on white and on the cards; the plain accents stay for fills and icons */
   --t-ev: #0f7c64;
   --t-home: #3d70ad;
@@ -91,6 +92,7 @@
   --ok: #afc0ac;
   --warn: #eaba89;
   --crit: #da8282;
+  --crit-fill: #b34a4a; /* white text on it reads at 5.3:1; --crit stays the light red for text, dots and strokes */
   --t-ev: #41af92;
   --t-home: #719fe2;
   --t-wh: #e08a5a;
