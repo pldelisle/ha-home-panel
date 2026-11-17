@@ -1,104 +1,132 @@
 {
-  "about": "The English messages the Live move introduced (src/core/i18n/en.ts, live.*), each with sample values: the Status checks' (#254), the activities', the pill's and the popup's (#255). test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer makes of the English (the aria labels the layer left in English, the phase bar's, the car's, the battery bar's and the water heater's, are `translated`: a screen reader hears French, no pixel changes; the water card's cycle count is `translated` too: the layer's entry never matched (it reads the 24 as a number too), so the card said \"3 cycles in 24 h\" in French, a change #256 records if a baseline shows it; the heat pump's line for a unit whose device names no maker stays English in both, as the layer left it). The legacy panel still draws the checks until #256, so no entry of the rewrite layer is deleted yet. Deleted with the layer in phase 4.",
+  "about": "The English messages the Live move introduced (src/core/i18n/en.ts, live.*), each with sample values: the Status checks' (#254), the activities', the pill's and the popup's (#255). test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer makes of the English (the aria labels the layer left in English, the phase bar's, the car's, the battery bar's and the water heater's, are `translated`: a screen reader hears French, no pixel changes; the water card's cycle count is `translated` too: the layer's entry never matched (it reads the 24 as a number too), so the card said \"3 cycles in 24 h\" in French, a change #256 records if a baseline shows it; the heat pump's line for a unit whose device names no maker stays English in both, as the layer left it). #257 deleted the map entries the legacy panel no longer renders (it drew the checks, the pill and the cards until #256): `was` is what the layer made of the English before, `after` what it makes of it now. The entries other screens still render stay: the legacy panel's own words (Status, Critical peak now and coming, Doors closed, Water heater, Charging, Hilo challenge, Challenge, Water, about, so far, inside) and the oracles of other moves (paused, the range). The header's \"Critical peak now\" is `live.criticalPeakNow` since #257. Deleted with the layer in phase 4.",
   "messages": [
     {
-      "key": "live.hqStale"
+      "key": "live.hqStale",
+      "was": "Hydro-Québec ne se met pas à jour"
     },
     {
-      "key": "live.hqStaleLine"
+      "key": "live.hqStaleLine",
+      "was": "Les données de facturation et de pointe sont indisponibles. Vérifiez l'intégration Hydro-Québec : elle demande peut-être à nouveau votre mot de passe."
     },
     {
-      "key": "live.hqUpdating"
+      "key": "live.hqUpdating",
+      "was": "Hydro-Québec à jour"
     },
     {
-      "key": "live.heatPumpOffline"
+      "key": "live.heatPumpOffline",
+      "was": "Thermopompe hors ligne",
+      "after": "Heat pump hors ligne"
     },
     {
       "key": "live.heatPumpOfflineLine",
       "values": {
         "brand": "Fujitsu"
-      }
+      },
+      "was": "L'appareil Fujitsu apparaît comme indisponible dans Home Assistant."
     },
     {
       "key": "live.heatPumpOfflineLineNoMaker"
     },
     {
-      "key": "live.heatPumpOnline"
+      "key": "live.heatPumpOnline",
+      "was": "Thermopompe en ligne"
     },
     {
-      "key": "live.gatewayOffline"
+      "key": "live.gatewayOffline",
+      "was": "Passerelle Hilo hors ligne",
+      "after": "Hilo gateway hors ligne"
     },
     {
-      "key": "live.gatewayOfflineLine"
+      "key": "live.gatewayOfflineLine",
+      "was": "Les thermostats et le compteur pourraient cesser de transmettre."
     },
     {
-      "key": "live.gatewayOnline"
+      "key": "live.gatewayOnline",
+      "was": "Passerelle Hilo en ligne"
     },
     {
       "key": "live.thermostatsNotReporting",
       "values": {
         "n": 1
-      }
+      },
+      "was": "1 thermostat ne répond pas"
     },
     {
       "key": "live.thermostatsNotReporting",
       "values": {
         "n": 2
-      }
+      },
+      "was": "2 thermostats ne répondent pas"
     },
     {
-      "key": "live.peakInProgress"
+      "key": "live.peakInProgress",
+      "was": "Pointe critique en cours"
     },
     {
-      "key": "live.peakInProgressLine"
+      "key": "live.peakInProgressLine",
+      "was": "Période de pointe Hydro-Québec : réduisez la consommation maintenant."
     },
     {
       "key": "live.peakComing"
     },
     {
-      "key": "live.peakComingLine"
+      "key": "live.peakComingLine",
+      "was": "Hydro-Québec a annoncé une pointe critique à venir."
     },
     {
-      "key": "live.noPeak"
+      "key": "live.noPeak",
+      "was": "Aucune pointe critique"
     },
     {
-      "key": "live.weatherWarning"
+      "key": "live.weatherWarning",
+      "was": "Avertissement météo"
     },
     {
       "key": "live.weatherWarningLine",
       "values": {
         "n": 1
-      }
+      },
+      "was": "Environnement Canada a émis 1 avertissement pour votre secteur."
     },
     {
       "key": "live.weatherWarningLine",
       "values": {
         "n": 2
-      }
+      },
+      "was": "Environnement Canada a émis 2 avertissements pour votre secteur."
     },
     {
-      "key": "live.noWeatherAlerts"
+      "key": "live.noWeatherAlerts",
+      "was": "Aucune alerte météo"
     },
     {
-      "key": "live.tirePressureLow"
+      "key": "live.tirePressureLow",
+      "was": "Pression des pneus basse"
     },
     {
-      "key": "live.tirePressureLowLine"
+      "key": "live.tirePressureLowLine",
+      "was": "La voiture signale un pneu sous sa pression normale."
     },
     {
-      "key": "live.carUnlocked"
+      "key": "live.carUnlocked",
+      "was": "Voiture déverrouillée"
     },
     {
-      "key": "live.carUnlockedLine"
+      "key": "live.carUnlockedLine",
+      "was": "Verrouillez-la depuis la vue de la voiture."
     },
     {
-      "key": "live.carLocked"
+      "key": "live.carLocked",
+      "was": "Voiture verrouillée"
     },
     {
-      "key": "live.carNotReporting"
+      "key": "live.carNotReporting",
+      "was": "La voiture ne répond pas"
     },
     {
-      "key": "live.carNotReportingLine"
+      "key": "live.carNotReportingLine",
+      "was": "L'intégration Ford n'a pas de données de batterie pour le moment."
     },
     {
       "key": "live.doorOpen",
@@ -110,21 +138,24 @@
       "key": "live.openFor",
       "values": {
         "kind": "now"
-      }
+      },
+      "was": "Ouverte à l'instant."
     },
     {
       "key": "live.openFor",
       "values": {
         "kind": "minutes",
         "n": 12
-      }
+      },
+      "was": "Ouverte depuis 12 min."
     },
     {
       "key": "live.openFor",
       "values": {
         "kind": "hours",
         "n": 2
-      }
+      },
+      "was": "Ouverte depuis 2 h."
     },
     {
       "key": "live.sensorOffline",
@@ -133,7 +164,8 @@
       }
     },
     {
-      "key": "live.sensorOfflineLine"
+      "key": "live.sensorOfflineLine",
+      "was": "Le capteur est indisponible dans Home Assistant."
     },
     {
       "key": "live.batteryLow",
@@ -145,7 +177,8 @@
       "key": "live.batteryLeft",
       "values": {
         "n": 12
-      }
+      },
+      "was": "12 % restant."
     },
     {
       "key": "live.doorsClosed"
@@ -154,37 +187,43 @@
       "key": "live.wallboxOffline"
     },
     {
-      "key": "live.wallboxOfflineLine"
+      "key": "live.wallboxOfflineLine",
+      "was": "La borne est indisponible dans Home Assistant."
     },
     {
       "key": "live.hiloName",
       "values": {
         "phase": "pre_heat"
-      }
+      },
+      "was": "Préchauffage Hilo"
     },
     {
       "key": "live.hiloShort",
       "values": {
         "phase": "pre_heat"
-      }
+      },
+      "was": "Préchauffage"
     },
     {
       "key": "live.phase",
       "values": {
         "phase": "pre_heat"
-      }
+      },
+      "was": "Préchauffage"
     },
     {
       "key": "live.until",
       "values": {
         "phase": "pre_heat"
-      }
+      },
+      "was": "avant la baisse du chauffage"
     },
     {
       "key": "live.hiloNote",
       "values": {
         "phase": "pre_heat"
-      }
+      },
+      "was": "Les pièces se réchauffent avant le défi."
     },
     {
       "key": "live.hiloName",
@@ -208,19 +247,22 @@
       "key": "live.until",
       "values": {
         "phase": "reduction"
-      }
+      },
+      "was": "avant la fin du défi"
     },
     {
       "key": "live.hiloNote",
       "values": {
         "phase": "reduction"
-      }
+      },
+      "was": "Le chauffage est réduit."
     },
     {
       "key": "live.hiloName",
       "values": {
         "phase": "recovery"
-      }
+      },
+      "was": "Récupération Hilo"
     },
     {
       "key": "live.hiloShort",
@@ -238,7 +280,8 @@
       "key": "live.until",
       "values": {
         "phase": "recovery"
-      }
+      },
+      "was": "avant la fin de la récupération"
     },
     {
       "key": "live.hiloNote",
@@ -250,13 +293,15 @@
       "key": "live.challengeIn",
       "values": {
         "d": "52 min"
-      }
+      },
+      "was": "défi dans 52 min"
     },
     {
       "key": "live.endsIn",
       "values": {
         "d": "1 h 50"
-      }
+      },
+      "was": "fin dans 1 h 50"
     },
     {
       "key": "live.labelWith",
@@ -267,7 +312,8 @@
       "fr": {
         "name": "Préchauffage Hilo",
         "what": "défi dans 52 min"
-      }
+      },
+      "was": "Préchauffage Hilo, défi dans 52 min"
     },
     {
       "key": "live.hiloCardTitle"
@@ -305,19 +351,23 @@
       "key": "live.inside"
     },
     {
-      "key": "live.houseUsing"
+      "key": "live.houseUsing",
+      "was": "la maison consomme"
     },
     {
       "key": "live.ofAllowed",
       "values": {
         "n": "3.0"
-      }
+      },
+      "was": "sur 3,0 kWh permis"
     },
     {
       "key": "live.charging"
     },
     {
-      "key": "live.chargingPaused"
+      "key": "live.chargingPaused",
+      "was": "Recharge en pause",
+      "after": "Recharge : en pause"
     },
     {
       "key": "live.chargingShort"
@@ -326,13 +376,16 @@
       "key": "live.paused"
     },
     {
-      "key": "live.pauseCharging"
+      "key": "live.pauseCharging",
+      "was": "Suspendre la recharge"
     },
     {
-      "key": "live.resumeCharging"
+      "key": "live.resumeCharging",
+      "was": "Reprendre la recharge"
     },
     {
-      "key": "live.openCar"
+      "key": "live.openCar",
+      "was": "Ouvrir Voiture ›"
     },
     {
       "key": "live.percent",
@@ -369,7 +422,8 @@
       "key": "live.toLimit",
       "values": {
         "n": 90
-      }
+      },
+      "was": "→ limite de 90 %"
     },
     {
       "key": "live.fullAt",
@@ -378,13 +432,15 @@
       },
       "fr": {
         "time": "16 h 07"
-      }
+      },
+      "was": "Pleine à 16 h 07"
     },
     {
       "key": "live.inDuration",
       "values": {
         "d": "1 h 50"
-      }
+      },
+      "was": "dans 1 h 50"
     },
     {
       "key": "live.batteryAria",
@@ -401,7 +457,8 @@
       },
       "fr": {
         "time": "16 h 07"
-      }
+      },
+      "was": "Branchée à 16 h 07"
     },
     {
       "key": "live.soFarAbout"
@@ -425,7 +482,9 @@
       "key": "live.water"
     },
     {
-      "key": "live.waterHeating"
+      "key": "live.waterHeating",
+      "was": "Chauffe-eau en chauffe",
+      "after": "Chauffage : Water heater"
     },
     {
       "key": "live.waterHeatingLeft",
@@ -445,36 +504,42 @@
       "translated": "environ 52 min"
     },
     {
-      "key": "live.almostDone"
+      "key": "live.almostDone",
+      "was": "presque fini"
     },
     {
-      "key": "live.almostDoneTitle"
+      "key": "live.almostDoneTitle",
+      "was": "Presque fini"
     },
     {
       "key": "live.left",
       "values": {
         "d": "~52 min"
-      }
+      },
+      "was": "reste ~52 min"
     },
     {
       "key": "live.usualCycle",
       "values": {
         "d": "1 h 05"
-      }
+      },
+      "was": "cycle habituel 1 h 05"
     },
     {
       "key": "live.rate",
       "values": {
         "up": "yes",
         "n": "1.2"
-      }
+      },
+      "was": "↗ 1,2° / 10 min"
     },
     {
       "key": "live.rate",
       "values": {
         "up": "no",
         "n": "0.4"
-      }
+      },
+      "was": "↘ 0,4° / 10 min"
     },
     {
       "key": "live.waterSparkAria",
@@ -487,10 +552,12 @@
       },
       "fr": {
         "time": "16 h 07"
-      }
+      },
+      "was": "Commencé à 16 h 07"
     },
     {
-      "key": "live.thisCycle"
+      "key": "live.thisCycle",
+      "was": "ce cycle"
     },
     {
       "key": "live.cyclesIn24h",
@@ -510,22 +577,26 @@
       "key": "live.needsAttention",
       "values": {
         "n": 1
-      }
+      },
+      "was": "1 élément à vérifier"
     },
     {
       "key": "live.needsAttention",
       "values": {
         "n": 2
-      }
+      },
+      "was": "2 éléments à vérifier"
     },
     {
       "key": "live.chargedTo",
       "values": {
         "n": 90
-      }
+      },
+      "was": "Rechargée à 90 %"
     },
     {
-      "key": "live.challengeDone"
+      "key": "live.challengeDone",
+      "was": "Défi terminé"
     },
     {
       "key": "live.status"
@@ -534,19 +605,26 @@
       "key": "live.itemsNeedAttention",
       "values": {
         "n": 1
-      }
+      },
+      "was": "1 élément à vérifier"
     },
     {
       "key": "live.itemsNeedAttention",
       "values": {
         "n": 3
-      }
+      },
+      "was": "3 éléments à vérifier"
     },
     {
-      "key": "live.allClear"
+      "key": "live.allClear",
+      "was": "Tout va bien"
     },
     {
-      "key": "live.reportingNormally"
+      "key": "live.reportingNormally",
+      "was": "Tout fonctionne normalement."
+    },
+    {
+      "key": "live.criticalPeakNow"
     }
   ]
 }

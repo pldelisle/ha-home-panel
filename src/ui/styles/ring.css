@@ -1,5 +1,5 @@
 /* The kit's ring (`<hp-ring>`): a round progress around an icon, in the accent `--ac`. Its users: the live pill, its bubbles and its activity cards'
-   heads (spec 22); the smart stack's `.sring` joins it in spec 24. The rules are the legacy live.css's `.lring`. Inside the pill the legacy `.attchip svg`
+   heads (spec 22); the smart stack's `.sring` joins it in spec 24. The rules are the legacy live.css's `.lring`. Inside the pill the legacy `.attchip svg` (deleted in #257)
    greyed and nudged every svg, the ring's too; a parent asks the same through `--lring-svg-color` and `--lring-svg-shift`, which nothing sets elsewhere. */
 .lring {
   position: relative;

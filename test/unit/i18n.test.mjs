@@ -97,8 +97,8 @@ test('the climate words the legacy panel still draws are French', () => {
     'Inside · 1 pièce chauffe · thermopompe hors ligne',
   );
   expect(frText('20.8° inside · 3.1° outside')).toBe('20,8° à l’intérieur · 3,1° dehors');
-  expect(frText('Heat pump offline')).toBe('Thermopompe hors ligne');
-  expect(frText('1 thermostat not reporting')).toBe('1 thermostat ne répond pas');
+  // "Heat pump offline" and "1 thermostat not reporting" were the Status checks' words, which the catalog says since #256; #257 deleted
+  // their entries (test/unit/fixtures/moved/live.json records what the layer made of them)
   expect(frText('All off')).toBe('Tout éteindre');
 });
 
