@@ -2,7 +2,7 @@
 // Pattern: tree-scoped references (CSS Scoping Module Level 1): a `url(#id)` finds an element of the tree its element is in,
 // so a root with glass of its own draws the filter again, one copy per root, parsed once (Lit docs, Templates).
 // Must not: decide whether the lens is on (`--g-bd` does: without the lens it holds no url and the copy is inert), or draw anything else.
-// Always drawn since the guest went (#277): the shell's own filter is never wiped any more (#198), so neither is the copy's reason.
+// Always drawn since the guest went (#277): a redraw no longer wipes the filter (#198), and every root with glass carries its copy.
 import {html} from 'lit';
 
 /** The filter, to draw last inside an element's own root that has glass. */

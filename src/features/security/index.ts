@@ -2,7 +2,7 @@
 // Pattern: plug-in (Fowler, PoEAA, Plugin): the feature's folder says what it is as data and one `pane` template, and its element is
 // linked by importing this module. The pane binds the camera and the sensor whose sheet is open to the sheet host's answers (ADR 0021).
 // The More word is `securityMoreWord` over the provider's doors and motion, the legacy panel's rule (#277); the tab is always shown.
-// Must not: draw or hold state, import another feature, or read an entity beyond what the More word reads.
+// Must not: draw or hold state, import another feature, or read an entity other than through the shared door and motion provider.
 import {html} from 'lit';
 import {CAMERA_SHEET, HISTORY_SHEET, entityIdOf} from './sheets.ts';
 import './security-pane.ts'; // defines <hp-security-pane>

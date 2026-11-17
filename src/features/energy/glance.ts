@@ -4,6 +4,7 @@
 // history is the Energy card's loaded slices, given by the caller: a reader never loads.
 // Must not: read the clock, load, import the DOM, Lit, the shell or another feature, or hold text the household reads.
 import {DASH} from '../../core/figures.ts';
+import {whole} from '../../core/i18n/format.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
 import type {GlanceStore, GlanceView} from '../../ui/glance.ts';
 import {LIVE_KW} from './flow-layout.ts';
@@ -79,6 +80,6 @@ export function moreWord({hass, config, names, t, fmt}: GlanceStore): string | n
   const kw = readEnergy(hass.states, config, names).power.grid;
   if (kw == null) return null;
   return kw < WATTS_BELOW_KW
-    ? t('energy.more.watts', {n: Math.round(kw * 1000)})
+    ? t('energy.more.watts', {n: whole(fmt, kw * 1000)})
     : t('energy.more.kilowatts', {n: fmt.fixed(kw, 2)});
 }

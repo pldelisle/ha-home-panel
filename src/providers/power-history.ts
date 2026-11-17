@@ -75,7 +75,7 @@ export const windowStart = (now: number, days: number): Date =>
 const SESSION_DAYS = 366;
 
 /**
- * The Wallbox's hourly `mean` and `max` power over the sessions' year, one definition for the Car's history and the legacy panel's shared load, so the cache answers the second
+ * The Wallbox's hourly `mean` and `max` power over the sessions' year, one definition for the Car's history and every other reader, so the cache answers all but the first
  * (ADR 0028); the live pill reads the same rows.
  */
 export const sessionsWindow = (now: number, power: string | null): StatisticsWindow => ({
@@ -122,7 +122,7 @@ export function powerWindows(
 
 /**
  * The daily mean power of the same sensors for 400 days, the window Energy's detail ranges over: one
- * definition for the card's loader (ADR 0028). The legacy panel no longer asks it; its Car card's daily bars read the charger in its own temperatures call.
+ * definition for the card's loader (ADR 0028).
  */
 export const dailyPowerWindow = (now: number, config: Pick<ResolvedConfig, 'entities' | 'rooms'>): StatisticsWindow => {
   const flow = flowIds(config);

@@ -51,7 +51,7 @@ export class CarPane extends LitElement {
     super();
     this.active = false;
     this.detailOpen = false;
-    // the panel's one cache is the shell's (ADR 0028): the legacy panel's shared load asks the Wallbox's year of hours through it, so that window is read once; the
+    // the panel's one cache is the shell's (ADR 0028): a window another element asked for is read once; the
     // consumer is made before the controller, so the cache is there when the controller's first update asks
     new ContextConsumer(this, {
       context: statisticsCacheContext,
