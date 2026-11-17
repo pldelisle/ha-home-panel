@@ -43,13 +43,13 @@ export interface TvView {
   muted: boolean;
   /** The input while the set is on, or an empty string. */
   sourceLabel: string;
-  /** "On", "On · muted", "Off" or "Not responding": what the pane's line and the phone's tile start from. */
+  /** "On", "On · muted", "Off" or "Not responding": the pane's line under the name, and what the phone's tile starts from. */
   status: string;
-  /** The pane's line under the name: the status, then the input. */
-  statusLine: string;
-  /** What the pane's screen says while the set is on (the input, else "On"); null while it is off, and the pane draws an icon. */
-  screenLabel: string | null;
-  /** The power switch's name for a screen reader. */
+  /** The line under the status while the set is on and names an input ("Now on Netflix"), else null. */
+  nowOn: string | null;
+  /** The power button's name for a screen reader: it says what a press does ("Turn the TV off"). */
+  powerLabel: string;
+  /** The phone's tile switch's name for a screen reader. */
   switchLabel: string;
   controlsLabel: string;
   /** The pane's note that there is no volume slider. */
@@ -145,12 +145,6 @@ function tvView(tv: TvInputs, {t, overlay}: MediaModelDeps): TvView {
   const sourceLabel = on && tv.source ? tv.source : '';
   const name = tv.name ?? t(tv.defaultName);
   const status = !available ? t('media.notResponding') : on ? t(muted ? 'media.onMuted' : 'media.on') : t('media.off');
-  // the French layer leaves "muted" in English over an input (`Activé · muted · Netflix`), so that line is a message of its own
-  const statusLine = !sourceLabel
-    ? status
-    : available && on && muted
-      ? t('media.onMutedSource', {source: sourceLabel})
-      : `${status} · ${sourceLabel}`;
   return {
     id: tv.id,
     wakeButton: tv.wakeButton,
@@ -160,8 +154,8 @@ function tvView(tv: TvInputs, {t, overlay}: MediaModelDeps): TvView {
     muted,
     sourceLabel,
     status,
-    statusLine,
-    screenLabel: on ? sourceLabel || t('media.on') : null,
+    nowOn: sourceLabel ? t('media.nowOn', {source: sourceLabel}) : null,
+    powerLabel: t(on ? 'media.tvPowerOff' : 'media.tvPowerOn'),
     switchLabel: t('media.tvPower', {name}),
     controlsLabel: t('media.volumeAndPlayback'),
     hint: t('media.noVolumeSlider'),

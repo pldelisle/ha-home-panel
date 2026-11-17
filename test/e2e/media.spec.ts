@@ -12,14 +12,15 @@ const WAKE = 'button.wake_on_lan_living_room_tv';
 
 const pane = (house: House) => house.root().locator('#pane-media hp-media-pane');
 const pod = (house: House) => pane(house).locator('hp-speaker-pod');
-const power = (house: House) => pane(house).getByRole('switch', {name: 'Samsung TV power'});
+const power = (house: House) => pane(house).getByRole('button', {name: /^Turn the TV (on|off)$/});
+const slider = (house: House) => pod(house).getByRole('slider', {name: 'Living room volume'});
 const calls = (house: House, prefix: string) => house.calls.filter(c => c.startsWith(prefix));
 
 test('7 the TV mute and power buttons send their services', async ({house}) => {
   tabletOnly();
   await house.tab('media');
   await house.root().locator('#pane-media').getByRole('button', {name: 'Mute', exact: true}).click();
-  await house.root().locator('#pane-media').getByRole('switch', {name: 'Samsung TV power'}).click();
+  await power(house).click();
   await expectCall(house, /^media_player\.volume_mute /);
   await expectCall(house, /^media_player\.turn_off /);
 });
@@ -33,12 +34,38 @@ test.describe('the tablet', () => {
     await house.tab('media');
     const up = pod(house).getByRole('button', {name: 'Volume up'});
     for (let i = 0; i < 5; i++) await up.click();
-    await expect(pod(house).locator('.sv b')).toHaveText('60%');
+    await expect(slider(house)).toHaveValue('60');
+    await expect(pod(house).locator('.vv')).toHaveText('60%');
     await expectCall(
       house,
       /^media_player\.volume_set \{"entity_id":"media_player\.living_room_speaker","volume_level":0\.6\}$/,
     );
     expect(calls(house, 'media_player.volume_set'), 'one call for the burst').toHaveLength(1);
+  });
+
+  test("dragging a speaker's volume slider shows each level and sends one volume_set when the finger rests", async ({
+    house,
+  }) => {
+    await house.tab('media');
+    await expect(slider(house)).toHaveValue('35');
+    await slider(house).fill('50');
+    await slider(house).fill('72');
+    await expect(pod(house).locator('.vv')).toHaveText('72%');
+    await expectCall(
+      house,
+      /^media_player\.volume_set \{"entity_id":"media_player\.living_room_speaker","volume_level":0\.72\}$/,
+    );
+    expect(calls(house, 'media_player.volume_set'), 'one call for the drag').toHaveLength(1);
+  });
+
+  test('the slider has the − and + buttons at its ends, and the TV card has no grey placeholder', async ({house}) => {
+    await house.tab('media');
+    const box = house.root().locator('#pane-media hp-tv-box');
+    await expect(box.getByText('Now on Netflix', {exact: true})).toBeVisible();
+    await expect(box.locator('.tvscreen')).toHaveCount(0);
+    await expect(power(house)).toHaveAttribute('aria-pressed', 'true');
+    await pod(house).getByRole('button', {name: 'Volume down'}).click();
+    await expect(slider(house)).toHaveValue('30');
   });
 
   // the pod cancels its waiting send in disconnectedCallback and releases the level it held, and its connectedCallback arms nothing:
@@ -56,9 +83,7 @@ test.describe('the tablet', () => {
     });
     await house.page.waitForTimeout(900);
     expect(calls(house, 'media_player.volume_set')).toEqual([]);
-    await expect(pod(house).locator('.sv b'), 'the level Home Assistant reports, not the one never sent').toHaveText(
-      '35%',
-    );
+    await expect(slider(house), 'the level Home Assistant reports, not the one never sent').toHaveValue('35');
   });
 
   test('play on a paused speaker shows the pause button at once and sends media_play', async ({house}) => {
@@ -83,17 +108,19 @@ test.describe('the tablet', () => {
       await power(house).click();
       await expectCall(house, /^button\.press \{"entity_id":"button\.wake_on_lan_living_room_tv"\}$/);
       await expect(house.root().locator('#toast')).toHaveText('Turning the TV on');
-      await expect(power(house)).toHaveAttribute('aria-checked', 'true');
+      await expect(power(house)).toHaveAttribute('aria-pressed', 'true');
     });
 
-    test('says why in a toast that stays, and its switch returns to off, when the house has none', async ({house}) => {
+    test('says why in a toast that stays, and its power button returns to off, when the house has none', async ({
+      house,
+    }) => {
       await house.tab('media');
       await house.failNext('media_player.turn_on');
       await power(house).click();
       const toast = house.root().locator('#toast');
       await expect(toast).toContainText("Didn't work: the service call failed on purpose");
       await expect(toast).toHaveAttribute('role', 'alert');
-      await expect(power(house)).toHaveAttribute('aria-checked', 'false');
+      await expect(power(house)).toHaveAttribute('aria-pressed', 'false');
       expect(calls(house, 'button.')).toEqual([]);
     });
   });
@@ -107,11 +134,11 @@ test.describe('the tablet', () => {
       // the page's clock stands still, so only fastForward moves it and an expectation's retries cannot outwait a hold
       await house.clock.pauseAt((await house.page.evaluate(() => Date.now())) + 1000);
       await power(house).click();
-      await expect(power(house)).toHaveAttribute('aria-checked', 'false');
+      await expect(power(house)).toHaveAttribute('aria-pressed', 'false');
       await house.clock.fastForward(14_000);
-      await expect(power(house)).toHaveAttribute('aria-checked', 'false');
+      await expect(power(house)).toHaveAttribute('aria-pressed', 'false');
       await house.clock.fastForward(2_000);
-      await expect(power(house)).toHaveAttribute('aria-checked', 'true');
+      await expect(power(house)).toHaveAttribute('aria-pressed', 'true');
     });
   });
 
@@ -120,7 +147,7 @@ test.describe('the tablet', () => {
     // it only if it draws again. A thermostat change must not make it draw: the pane listens to the Media ids alone.
     test('a thermostat change draws nothing in the pane, its box or its pods', async ({house}) => {
       await house.tab('media');
-      await expect(pod(house).locator('.sv b')).toHaveText('35%');
+      await expect(slider(house)).toHaveValue('35');
       await house.page.evaluate(id => {
         (window as unknown as {hass: {states: Record<string, {state: string}>}}).hass.states[id].state = 'idle';
       }, SPEAKER);
@@ -151,7 +178,7 @@ test.describe('the phone', () => {
   }) => {
     await tile(house, 'Samsung TV').getByText('Samsung TV', {exact: true}).click();
     await expect(panel(house, 'Samsung TV')).toBeVisible();
-    await expect(sheet(house).getByRole('switch', {name: 'Samsung TV power'})).toBeVisible();
+    await expect(sheet(house).getByRole('button', {name: 'Turn the TV off'})).toBeVisible();
     await house.page.keyboard.press('Escape');
     await expect(panel(house, 'Samsung TV')).toBeHidden();
     await expect(sheet(house).locator('hp-tv-box'), 'a closed sheet holds no box').toHaveCount(0);

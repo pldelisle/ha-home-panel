@@ -1,11 +1,13 @@
-// <hp-speaker-pod>: one speaker in the Media pane: the cover or the speaker icon, the room and the track, the volume stepper, play.
+// <hp-speaker-pod>: one speaker in the Media pane: the cover or the speaker icon, the room and the track, the volume slider with its − and +, play.
 // Pattern: humble object (Meszaros) over the model's `SpeakerView`; a tap holds the value it asks for in the panel's overlay store and
-// runs the feature's command (ADR 0023); the stepper's taps go through `debounce(450)`, so a burst is one `volume_set` at the last level.
+// runs the feature's command (ADR 0023); the slider holds the level on `input` and the − and + taps hold theirs, and both go through
+// `debounce(450)`, so a drag or a burst is one `volume_set` at the last level. A continuous value is a slider (Apple's HIG, Sliders).
 // A send still waiting is cancelled in `disconnectedCallback` and its level released, so a pod that leaves the document sends nothing and
 // never shows an unsent level when it comes back; connecting arms nothing (a tap does).
 // Must not: read an entity or the store's state (the pane hands it `speaker`), word a string, or send a level per tap.
 import {LitElement, html, nothing, unsafeCSS} from 'lit';
 import {classMap} from 'lit/directives/class-map.js';
+import {styleMap} from 'lit/directives/style-map.js';
 import {K, speakerPlayPause, speakerVolume} from './commands.ts';
 import type {SpeakerView} from './model.ts';
 import podOwn from './speaker-pod.element.css?inline';
@@ -15,15 +17,14 @@ import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {OptimisticController} from '../../ui/controllers/optimistic.ts';
 import {StoreController} from '../../ui/controllers/store-controller.ts';
 import {ico} from '../../ui/icons.ts';
-import '../../ui/stepper.ts'; // defines <hp-stepper>
-import type {StepDetail} from '../../ui/stepper.ts';
+import {stepBy} from '../../ui/steps.ts';
 import {common} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
-/** How long the stepper waits for the taps to stop before it sends the level: the legacy `mpVol`'s 450 ms. */
+/** How long the pod waits for the slider or the taps to stop before it sends the level: the legacy `mpVol`'s 450 ms. */
 const VOLUME_DEBOUNCE_MS = 450;
 
-/** A tap on the stepper's − or +: five percent, as the legacy stepper; the stepper keeps the level in 0 to 1 at two decimals. */
+/** A tap on the − or +: five percent, as the legacy stepper; the level stays in 0 to 1 at two decimals. */
 const VOLUME_STEP = 0.05;
 
 export class SpeakerPod extends LitElement {
@@ -80,18 +81,39 @@ export class SpeakerPod extends LitElement {
       </div>
       ${
         volume
-          ? html`<hp-stepper
-              aria-label=${volume.label}
-              .value=${volume.level}
-              .min=${0}
-              .max=${1}
-              .step=${VOLUME_STEP}
-              .valueText=${volume.text}
-              .label=${volume.caption}
-              .decrementLabel=${volume.downLabel}
-              .incrementLabel=${volume.upLabel}
-              @step-change=${this.onStep}
-            ></hp-stepper>`
+          ? html`<div class="vol">
+              <button
+                type="button"
+                class="step"
+                aria-label=${volume.downLabel}
+                ?disabled=${volume.level <= 0}
+                @click=${this.onDown}
+              >
+                −
+              </button>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+                aria-label=${volume.label}
+                aria-valuetext=${volume.text}
+                .value=${String(volume.percent)}
+                style=${styleMap({'--v': `${volume.percent}%`})}
+                @input=${this.onInput}
+                @change=${this.onRelease}
+              />
+              <button
+                type="button"
+                class="step"
+                aria-label=${volume.upLabel}
+                ?disabled=${volume.level >= 1}
+                @click=${this.onUp}
+              >
+                +
+              </button>
+              <b class="vv num">${volume.text}</b>
+            </div>`
           : nothing
       }
       <button
@@ -106,15 +128,34 @@ export class SpeakerPod extends LitElement {
     </div>`;
   }
 
-  // the level shows at once (the hold draws the pane again) and is sent once the taps stop
-  private step(level: number): void {
+  // the level shows at once (the hold draws the pane again) and is sent once the finger or the taps stop
+  private hold(level: number): void {
     if (!this.speaker) return;
     this.optimistic.hold(K.volume(this.speaker.id), level);
     this.waiting = this.speaker.id;
+  }
+
+  private step(level: number): void {
+    if (!this.speaker) return;
+    this.hold(level);
     this.sendVolume(this.speaker, level);
   }
 
-  private readonly onStep = (e: CustomEvent<StepDetail>): void => this.step(e.detail.value);
+  private readonly onDown = (): void => this.stepFrom(-VOLUME_STEP);
+  private readonly onUp = (): void => this.stepFrom(VOLUME_STEP);
+  private stepFrom(delta: number): void {
+    if (this.speaker?.volume) this.step(stepBy(this.speaker.volume.level, delta, 0, 1));
+  }
+
+  // a slider's level, in whole percents, as the level the player takes
+  private levelOf(e: Event): number {
+    return Number((e.currentTarget as HTMLInputElement).value) / 100;
+  }
+
+  // `input` fires all along a drag: it only shows the level; the send waits for the finger to rest (`change`, and the debounce)
+  private readonly onInput = (e: Event): void => this.hold(this.levelOf(e));
+
+  private readonly onRelease = (e: Event): void => this.step(this.levelOf(e));
 
   private readonly onPlay = (): void => {
     if (!this.speaker) return;

@@ -99,16 +99,25 @@
       "after": "Activé · muted"
     },
     {
-      "key": "media.onMutedSource",
+      "key": "media.nowOn",
       "values": {
         "source": "Netflix"
-      }
+      },
+      "translated": "Sur Netflix en ce moment"
     },
     {
       "key": "media.tvPower",
       "values": {
         "name": "Samsung TV"
       }
+    },
+    {
+      "key": "media.tvPowerOn",
+      "translated": "Allumer la télé"
+    },
+    {
+      "key": "media.tvPowerOff",
+      "translated": "Éteindre la télé"
     },
     {
       "key": "media.volumeAndPlayback",

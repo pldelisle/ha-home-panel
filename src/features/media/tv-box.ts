@@ -1,6 +1,7 @@
-// <hp-tv-box>: the television's box in the Media pane: its name and status beside the power switch, the screen, and four buttons.
+// <hp-tv-box>: the television's box in the Media pane: its name, status and app beside the power button, and four buttons.
 // Pattern: humble object (Meszaros) over the model's `TvView`, and command (Gamma et al.): a tap holds the value it asks for in the
 // panel's overlay store, then runs the feature's command through `CommandRunner`, whose failure releases that hold alone (ADR 0023).
+// The power is a button that acts as a toggle (`aria-pressed`), not a switch: Apple's Toggles page keeps switches for list rows.
 // Must not: read an entity or the store's state (the pane hands it `tv`), word a string, or show a state it has not held.
 import {LitElement, html, nothing, unsafeCSS} from 'lit';
 import {classMap} from 'lit/directives/class-map.js';
@@ -14,8 +15,6 @@ import {StoreController} from '../../ui/controllers/store-controller.ts';
 import {ico} from '../../ui/icons.ts';
 import {common} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
-import '../../ui/switch.ts'; // defines <hp-switch>
-import type {SwitchChangeDetail} from '../../ui/switch.ts';
 
 export class TvBox extends LitElement {
   static override properties = {
@@ -48,16 +47,20 @@ export class TvBox extends LitElement {
     return html`<div class="tvhead">
         <div class="tx">
           <h3>${tv.name}</h3>
-          <p>${tv.statusLine}</p>
+          <p>${tv.status}</p>
+          ${tv.nowOn ? html`<p class="now">${tv.nowOn}</p>` : nothing}
         </div>
-        <hp-switch
-          .checked=${tv.on}
-          .disabled=${!tv.available}
-          .label=${tv.switchLabel}
-          @change=${this.onPower}
-        ></hp-switch>
+        <button
+          type="button"
+          class=${classMap({power: true, on: tv.on})}
+          aria-pressed=${tv.on ? 'true' : 'false'}
+          aria-label=${tv.powerLabel}
+          ?disabled=${!tv.available}
+          @click=${this.onPower}
+        >
+          ${ico('lpow', 24)}
+        </button>
       </div>
-      <div class=${classMap({tvscreen: true, on: tv.on})}>${tv.screenLabel ?? ico('tv', 40)}</div>
       <div class="tvkeys" role="group" aria-label=${tv.controlsLabel}>
         <button type="button" aria-label=${volumeDown.label} ?disabled=${!tv.on} @click=${this.onVolumeDown}>
           ${volumeDown.text}
@@ -80,12 +83,12 @@ export class TvBox extends LitElement {
       </div>`;
   }
 
-  // The switch asks for a state and does not flip itself: the box holds it, so the pane, the box and the switch read it at once.
-  private readonly onPower = (e: CustomEvent<SwitchChangeDetail>): void => {
-    e.stopPropagation();
+  // The button asks for the opposite of what shows and does not flip itself: the box holds it, so the pane, the box and the button read it at once.
+  private readonly onPower = (): void => {
     if (!this.tv) return;
-    this.optimistic.hold(K.on(this.tv.id), e.detail.checked, TV_HOLD_MS);
-    void this.commands.run(tvPower(this.tv, e.detail.checked));
+    const on = !this.tv.on;
+    this.optimistic.hold(K.on(this.tv.id), on, TV_HOLD_MS);
+    void this.commands.run(tvPower(this.tv, on));
   };
 
   private readonly onMute = (): void => {
