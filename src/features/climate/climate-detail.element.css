@@ -1,8 +1,8 @@
 /*
- * <hp-climate-detail>'s own rules: the head with its state pill, the big number on a tablet, the tiles' columns (the phone gives the Range
+ * <hp-climate-detail>'s own rules: the head with its state, the big number on a tablet, the tiles' columns (the phone gives the Range
  * tile both) and the note. The inner card and the tiles' wells are the kit's (`.inner`, `.tiles`, `.tile`); the controls and the chart are elements of
  * their own. Moved from the legacy `.cdet`, `.big` and `#ctiles` rules (base.css, extra.css), which this move deleted; the controls' own rules
- * are `<hp-climate-controls>`'s. The state pill is the kit's (pill.css), `.cpill` its Climate tones.
+ * are `<hp-climate-controls>`'s. The state is the kit's `.status` (status.css).
  */
 :host {
   display: block;
@@ -34,20 +34,6 @@
 .cdet .big .out {
   font-size: 13px;
   padding-bottom: 6px;
-}
-.cpill.on {
-  background: color-mix(in srgb, var(--c-wh) 18%, var(--card));
-  color: var(--t-wh);
-}
-.cpill.bad {
-  background: color-mix(in srgb, var(--warn) 18%, var(--card));
-  color: var(--t-warn);
-}
-:host([glass]) .cpill.on {
-  background: color-mix(in srgb, var(--c-wh) 20%, var(--g-tile));
-}
-:host([glass]) .cpill.bad {
-  background: color-mix(in srgb, var(--warn) 20%, var(--g-tile));
 }
 .cdet .tiles {
   margin: 6px 0 16px;

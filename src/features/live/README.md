@@ -23,7 +23,7 @@ src/features/live/
   done.ts                  nextDone(previous, activities, inputs): the ten-minute "finished" state, LiveState
   model.ts                 liveModel(inputs, history, state, deps): the pill, the popup and the state to keep
   loader.ts                LiveHistory: the water heater's 25 hours and the charging sessions, through the cache
-  peak-chip.ts             <hp-peak-chip>: the header's "Critical peak now" chip, before the pill (#257)
+  peak-chip.ts             <hp-peak-chip>: the header's "Critical peak now" status text with a dot, before the pill (#257)
 ```
 
 ## The activities and the model

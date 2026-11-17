@@ -526,7 +526,7 @@ export const en = {
   'air.historyLoading': 'Loading history…',
   'air.noBand': 'Mila rates no band for this reading.',
   // a reading's tile in the room's card, which opens its history
-  'air.tile.opens': '{name} {value}, opens its history',
+  'air.tile.opens': 'Opens its history',
   // the outside block and its chart
   'air.outside': 'Outside',
   'air.outsideHint':
@@ -1272,11 +1272,11 @@ export const en = {
   'automations.card.shapeOnly':
     'No run of this automation is stored since Home Assistant last started, so this is its shape only.',
   'automations.card.close': 'Close',
-  'automations.pill.none': 'no run stored',
-  'automations.pill.running': 'running {elapsed}',
-  'automations.pill.stopped': 'stopped {time}',
-  'automations.pill.error': 'error {time}',
-  'automations.pill.done': 'done {time}',
+  'automations.status.none': 'no run stored',
+  'automations.status.running': 'running {elapsed}',
+  'automations.status.stopped': 'stopped {time}',
+  'automations.status.error': 'error {time}',
+  'automations.status.done': 'done {time}',
   'automations.legend.taken': 'path taken',
   'automations.legend.waiting': 'waiting here',
   'automations.legend.stopped': 'stopped',

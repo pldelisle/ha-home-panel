@@ -354,11 +354,7 @@
     },
     {
       "key": "air.tile.opens",
-      "values": {
-        "name": "CO₂",
-        "value": "640ppm"
-      },
-      "written": "CO₂ 640ppm, ouvre l’historique"
+      "written": "Ouvre l’historique"
     },
     {
       "key": "air.outside"

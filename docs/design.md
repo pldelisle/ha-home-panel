@@ -7,7 +7,7 @@ mirrors them.
 ## Two layers
 
 Apple's rule (HIG, Materials): "Don't use Liquid Glass in the content layer." Liquid Glass is the **navigation layer** only: the
-rail and the phone's tab bar, the header's round buttons and capsules (the live pill, the peak chip, Settings), popovers, toasts,
+rail and the phone's tab bar, the header's round buttons and capsules (the live pill, Settings), popovers, toasts,
 dialogs (`<hp-dialog>`, ADR 0036: a question over the page, in the top layer) and a sheet's frame and its close button.
 Everything a pane shows is the **content layer**, and stays opaque with glass on: the
 wallpaper shows faintly through a card's near-opaque fill and plain blur, never through its wells or controls. The glass tokens of
@@ -31,14 +31,13 @@ strength setting moves the navigation layer only.
 - **A value tile with a chevron leads to its data; a tile without one is not a button.** If a tile opens something (a history, or
   the chart and range it summarises), it is a control, the kit's `.tile.tilebtn` (`src/ui/styles/tiles.css`): a `<button>` raised on
   `--ctl-bg`, its figure followed by a `›`, and a screen-reader description of where it leads (`aria-description`: "Opens the
-  history", "Shows its chart"). If it opens nothing it is a well (`.tile`): a `<div>`, flat, with no pointer. One row of tiles can
+  history", "Shows its chart"). Every tile is drawn by one template, `tile()` (`src/ui/tile.ts`), which Climate, Energy and Air share. If it opens nothing it is a well (`.tile`): a `<div>`, flat, with no pointer. One row of tiles can
   mix the two (Energy's totals, Climate's house detail): only the tiles that lead somewhere are buttons. Why: HIG, Buttons and Lists and tables: a thing that acts looks as if it does, and the same shape works the same way
-  everywhere. Used by Weather's tiles, Air's readings (which carry the words in their name, "CO₂ 640 ppm, opens its history"),
+  everywhere. Used by Weather's tiles, Air's readings ("Opens its history"),
   Climate's Warmest and Coolest, and Energy's totals. Enforced by `test/e2e/climate.spec.ts` (the description), `test/e2e/energy.spec.ts` (four of the six totals are buttons, the car and the
-  rate are not) and `test/e2e/air.spec.ts` (the names); `test/e2e/a11y.spec.ts` fails a button that holds another (`nestedInteractive`).
+  rate are not) and `test/e2e/air.spec.ts` (the description); `test/e2e/a11y.spec.ts` fails a button that holds another (`nestedInteractive`).
 - A whole card is tappable only when the whole card goes to one place (the Home tiles, which show a plain `›` in their
-  top-right corner, in `--fg3`, with no box: a boxed chevron reads as a second button). A card with controls inside it is not itself tappable; if it also leads somewhere, its header row carries the
-  `›` (the Security card). A row that opens something ends in a plain `›` (a light tile's row, the Car's departure and charging
+  top-right corner, in `--fg3`, with no box: a boxed chevron reads as a second button). A card with controls inside it is not itself tappable; if it also leads somewhere, its header row carries a plain `›`, as the tiles do (the Security card). A row that opens something ends in a plain `›` (a light tile's row, the Car's departure and charging
   history, the Automations list); a tile that acts and opens nothing (a scene, a bulb) has none, and a light tile is two sibling
   buttons, the row that opens the room and the bulb that switches it, never one inside the other.
 - Nested shapes take the smaller radius: card 22, then wells and controls 16, then icon squares 10–12.
@@ -58,7 +57,7 @@ A filled capsule means "tap me" in this panel (the live pill), so a fact never w
 a small coloured dot, never a filled capsule.** The kit's `.status` (`src/ui/styles/status.css`) is plain text with an `<i
 aria-hidden>` dot before it; the dot's tone is `.ok`, `.warn` (its word in the warning text colour) or `.bad`, and the word always
 stays, so the tone is never carried by colour alone. It has no fill, so the card's glass shows through. The Car's facts, the
-Automations' dates and runs, Air's ratings and Home's people use it. Why: HIG, Buttons (a button's style says it can be tapped) and
+Automations' dates and runs, Air's ratings, Home's people, Climate's and Energy's states and the header's peak chip use it. Why: HIG, Buttons (a button's style says it can be tapped) and
 Color (never colour alone). Nothing forbids a capsule mechanically yet: the e2e specs find the `.status` text (`air.spec.ts`,
 `automations.spec.ts`), and `test/e2e/a11y.spec.ts` holds its 4.5:1 contrast with no rule switched off (`DISABLED_RULES` is empty).
 
@@ -75,9 +74,7 @@ chooses one thing, so the page cannot say Week while a card says Today. Enforced
 ## The header
 
 - The header's controls are the live pill and the round gear (Settings). A reading (the weather) is plain text beside them, so it
-  never looks like one of them, and the people under the greeting are status text (see "Status is text"), not buttons. The one
-  capsule there that opens nothing is the peak chip, a glass alert in the navigation layer; it is a known exception to "a filled
-  capsule is a button", not a pattern to copy.
+  never looks like one of them, and the people under the greeting are status text (see "Status is text"), not buttons; so is the peak chip ("Critical peak now"), text with a warning dot.
 - The date is written once, under the greeting; a pane's sub-line does not repeat it.
 
 ## Type and words

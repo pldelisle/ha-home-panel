@@ -1,44 +1,11 @@
-/* <hp-peak-chip>: the header's peak chip, the legacy sheet's `.chip` and `.chip .dot` (base.css), the header chips' glass (glass.css) and the
-   phone's header chip (phone.css) as they drew it, written on `.peak` so no selector of the legacy sheet is written twice; those legacy rules go
-   with the legacy header (deleted in #269). `.app.gl` reads as `:host([glass])`, `.app.cp` as `:host([compact])`. */
+/* <hp-peak-chip>: the header's "Critical peak now", status text with a warning dot (the kit's `.status`, status.css), beside the live pill. It
+   opens nothing, so it is no capsule (a filled capsule means "tap me", docs/design.md): no fill, no shadow, no glass, as the weather reading
+   beside it. Its vertical size is the header's chips' row (44px), its word reads in the warning text colour. */
 :host {
   display: contents; /* the chip is a flex item of the header's chips, as it was */
 }
 .peak {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--card);
-  border: 0;
-  border-radius: 999px;
-  padding: 9px 15px;
   min-height: 44px;
-  font-weight: 600;
+  padding: 0 4px;
   white-space: nowrap;
-  box-shadow: var(--shadow);
-}
-.peak .dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: var(--crit);
-}
-.app.gl .peak {
-  background: var(--g-fill);
-  border: 0;
-  -webkit-backdrop-filter: var(--g-bd);
-  backdrop-filter: var(--g-bd);
-  box-shadow: var(--g-edge);
-}
-.app.cp .peak {
-  padding: 7px 12px;
-  font-size: calc(13px * var(--tx));
-}
-/* Reduce Transparency: the glass turns back into a near-solid card */
-@media (prefers-reduced-transparency: reduce) {
-  .app.gl .peak {
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-    background: var(--card);
-  }
 }

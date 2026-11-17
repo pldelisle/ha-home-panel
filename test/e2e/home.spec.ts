@@ -86,6 +86,25 @@ test('a tile’s chevron is a plain trailing "›" in the tertiary colour, with 
   expect(chevron.color).toBe(chevron.tertiary);
 });
 
+test('the Security card’s chevron is a plain trailing "›" in the tertiary colour too, with no box', async ({house}) => {
+  await house.tab('home');
+  const chevron = house.root().locator('#hsec hp-security-card .hh .chev');
+  await expect(chevron).toBeVisible();
+  await expect(chevron).toHaveText('›');
+  await expect(chevron).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  await expect(chevron).toHaveCSS('box-shadow', 'none');
+  await expect(chevron).toHaveCSS('border-top-left-radius', '0px');
+  const [color, tertiary] = await chevron.evaluate(el => {
+    const probe = document.createElement('span');
+    probe.style.color = 'var(--fg3)';
+    el.parentElement!.append(probe);
+    const tertiary = getComputedStyle(probe).color;
+    probe.remove();
+    return [getComputedStyle(el).color, tertiary];
+  });
+  expect(color).toBe(tertiary);
+});
+
 test.describe('on a tablet', () => {
   test.beforeEach(() => tabletOnly());
 

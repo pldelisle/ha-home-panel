@@ -25,6 +25,7 @@ import {tileList} from './tile-list.ts';
 import '../../ui/chart.ts'; // defines <hp-chart>
 import type {ChartOptions} from '../../ui/chart-options.ts';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
+import {MediaQueryController} from '../../ui/controllers/media-query.ts';
 import {StoreController} from '../../ui/controllers/store-controller.ts';
 import {lens} from '../../ui/lens.ts';
 import '../../ui/pane-header.ts'; // defines <hp-pane-header>
@@ -64,6 +65,7 @@ export class EnergyDetail extends LitElement {
   static override styles = [common, inner, tiles, rangeStyles, chart, unsafeCSS(forShadow(detailOwn))];
 
   private readonly storeController = new StoreController(this, {ids: () => []});
+  private readonly motion = new MediaQueryController(this, '(prefers-reduced-motion: reduce)');
   private readonly appearance = new AppearanceConsumer(this);
   private built: Built | undefined;
 
@@ -248,7 +250,10 @@ export class EnergyDetail extends LitElement {
   // a total's tap: the range that holds its period is the tab's (the pane keeps it, as for the tabs), and the chart that follows it is brought into view
   private readonly onTotal = (range: EnergyRange): void => {
     this.dispatchEvent(new CustomEvent<RangeChangeDetail<string>>('range-chosen', {detail: {range}}));
-    this.renderRoot.querySelector('.mainblock')?.scrollIntoView({block: 'nearest'});
+    // `start`, not `nearest`: a chart half in view is brought to the top, where the whole of it can be read
+    this.renderRoot
+      .querySelector('.mainblock')
+      ?.scrollIntoView({block: 'start', behavior: this.motion.matches ? 'auto' : 'smooth'});
   };
 
   // the header's tabs (a tablet) tell here; the pane keeps the choice and hands it back

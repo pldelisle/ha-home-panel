@@ -89,7 +89,7 @@ export interface Tile {
   value: string;
   unit: string;
   high: boolean;
-  /** What a screen reader says of the tile, a button: "PM2.5 20 µg/m³, opens its history". */
+  /** What a screen reader adds to the tile, a button named by its figure: "Opens its history" (its `aria-description`). */
   opens: string;
 }
 
@@ -257,7 +257,7 @@ function tilesOf(room: AirRoomInputs, rating: RoomRating, {t, fmt}: AirModelDeps
       value,
       unit,
       high: !!rated && rated.level > 0,
-      opens: t('air.tile.opens', {name, value: value === DASH ? value : `${value}${unit}`}),
+      opens: t('air.tile.opens'),
     };
   });
 }

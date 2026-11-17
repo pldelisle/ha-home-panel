@@ -1,5 +1,5 @@
 // What the Automations pane shows: the line under the heading while loading, refused or read; the Today card's tiles and dots; the
-// four flow cards with their pills, the selected one's picker and the shape-only sentence; the rows of the list; the More word; the ids.
+// four flow cards with their statuses, the selected one's picker and the shape-only sentence; the rows of the list; the More word; the ids.
 // Pattern: example tests at the pure view model (ADR 0005), over literal `trace/list` rows and configs at a fixed instant.
 // Must not: read the clock (every instant is a literal), the DOM or Home Assistant.
 import {describe, expect, test} from 'vitest';
@@ -109,9 +109,9 @@ describe('automationsModel: the Today card', () => {
       {label: 'Next', value: '1:00 pm', sub: 'Auto a'},
       {label: 'Then', value: '3:30 pm', sub: 'Auto a'},
     ]);
-    expect(view.today.pill).toMatch(/ · 12:00 pm$/);
+    expect(view.today.status).toMatch(/ · 12:00 pm$/);
   });
-  test('the hour marks of the line and the pill follow the house format, in English and in French', () => {
+  test('the hour marks of the line and the status follow the house format, in English and in French', () => {
     const en = automationsModel(inputs([auto('a')]), data(), null, deps).today;
     expect(en.hours).toEqual([
       {pct: 0, label: '12 am'},
@@ -130,9 +130,9 @@ describe('automationsModel: the Today card', () => {
       fr,
     );
     expect(view.today.hours.map(h => h.label)).toEqual(['0 h', '6 h', '12 h', '18 h']);
-    expect(view.today.pill).toMatch(/ · 12 h$/);
+    expect(view.today.status).toMatch(/ · 12 h$/);
     expect(view.today.tiles.slice(1).map(x => x.value)).toEqual(['13 h', '15 h 30']);
-    expect(view.cards[0].flow?.pill.text).toBe('terminée 8 h 05 min 09 s');
+    expect(view.cards[0].flow?.status.text).toBe('terminée 8 h 05 min 09 s');
     expect(view.rows[0].sub).toBe('8 h 05');
   });
   test('nothing to come: dashes, and every run passed its checks', () => {
@@ -154,9 +154,9 @@ describe('automationsModel: the flow cards', () => {
     run('a', 'now', '2026-11-07T11:58:00Z', {state: 'running', script_execution: undefined}),
     run('a', 'err', '2026-11-06T10:00:00Z', {script_execution: 'error'}),
   ];
-  test('running now, the last decision and the last completed, each with its pill and a definition', () => {
+  test('running now, the last decision and the last completed, each with its status and a definition', () => {
     const view = automationsModel(inputs([auto('a')]), data({list, configs: {a: lamp}}), null, deps);
-    expect(view.cards.map(c => [c.kind, c.key, c.title, c.flow?.pill])).toEqual([
+    expect(view.cards.map(c => [c.kind, c.key, c.title, c.flow?.status])).toEqual([
       [
         'running',
         'now',
@@ -169,10 +169,10 @@ describe('automationsModel: the flow cards', () => {
     expect(view.cards[0].flow?.def).toMatch(/^flowchart LR/);
     expect(view.empty).toBeNull();
   });
-  test('a selected run first, with the picker of its automation’s runs (another day’s with its date) and an error’s pill', () => {
+  test('a selected run first, with the picker of its automation’s runs (another day’s with its date) and an error’s status', () => {
     const view = automationsModel(inputs([auto('a')]), data({list, configs: {a: lamp}}), {item: 'a', run: 'err'}, deps);
     const [selected] = view.cards;
-    expect([selected.kind, selected.flow?.pill]).toEqual(['selected', {tone: 'bad', text: 'error 10:00 am'}]);
+    expect([selected.kind, selected.flow?.status]).toEqual(['selected', {tone: 'bad', text: 'error 10:00 am'}]);
     expect(selected.flow?.picker.map(c => [c.run, c.sel, c.dot, c.label])).toEqual([
       ['now', false, 'warn', '11:58 am'],
       ['stop', false, 'crit', '9:00 am'],
@@ -186,7 +186,7 @@ describe('automationsModel: the flow cards', () => {
       null,
       deps,
     );
-    expect(plain.cards[0].flow?.pill).toEqual({tone: 'ok', text: 'done 7:00 am'});
+    expect(plain.cards[0].flow?.status).toEqual({tone: 'ok', text: 'done 7:00 am'});
   });
   test('a run is drawn once: the selected running run is not drawn again as running now', () => {
     const view = automationsModel(inputs([auto('a')]), data({list, configs: {a: lamp}}), {item: 'a', run: 'now'}, deps);
@@ -203,7 +203,7 @@ describe('automationsModel: the flow cards', () => {
   });
   test('an automation picked with no run stored: its shape; one whose config could not be read: says so', () => {
     const shape = automationsModel(inputs([auto('a')]), data({configs: {a: lamp}}), {item: 'a'}, deps);
-    expect(shape.cards.map(c => [c.key, c.flow?.pill.text, c.flow?.sentence, c.flow?.picker])).toEqual([
+    expect(shape.cards.map(c => [c.key, c.flow?.status.text, c.flow?.sentence, c.flow?.picker])).toEqual([
       [
         'none:a',
         'no run stored',
@@ -264,7 +264,7 @@ test('automationsBrief: how many run now, else how many there are, else nothing'
   expect(automationsBrief([], t)).toBeNull();
 });
 
-test('runningText: the running pill’s words', () => {
+test('runningText: the running status’s words', () => {
   expect(runningText(NOW - 65_000, NOW, t)).toBe('running 1:05');
 });
 

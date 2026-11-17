@@ -10,7 +10,7 @@ import ownCss from './water-card.element.css?inline';
 import energyShared from './styles.css?inline';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {lens} from '../../ui/lens.ts';
-import {common, hero} from '../../ui/styles/index.ts';
+import {common, hero, status} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
 type Water = EnergyViewModel['water'];
@@ -26,7 +26,7 @@ export class WaterCard extends LitElement {
   declare framed: boolean;
 
   // The kit's hero, the feature's box (styles.css), and the element's own rules, the chart's and the legend's, last (water-card.element.css).
-  static override styles = [common, hero, unsafeCSS(forShadow(energyShared)), unsafeCSS(forShadow(ownCss))];
+  static override styles = [common, hero, status, unsafeCSS(forShadow(energyShared)), unsafeCSS(forShadow(ownCss))];
 
   constructor() {
     super();
@@ -45,7 +45,7 @@ export class WaterCard extends LitElement {
         <div class="etop"><span class="elbl">${view.title}</span><span class="eright">${view.name}</span></div>
         <div class="hero">
           <div class="v num">${temperature.value}<small>${temperature.unit}</small></div>
-          <span class="state"><i class=${state.heating ? 'on' : 'off'}></i>${state.text}</span>
+          <span class=${state.heating ? 'status ok' : 'status'}><i aria-hidden="true"></i>${state.text}</span>
         </div>
         ${view.chart ? this.renderChart(view.chart) : nothing}
         ${

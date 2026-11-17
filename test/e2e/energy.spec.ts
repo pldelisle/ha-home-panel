@@ -155,7 +155,7 @@ test.describe('on a phone', () => {
     const sheet = pane(house).locator('hp-sheet[open]');
     await expect(sheet.locator('h2')).toHaveText('Water heater');
     await expect(water(house).locator('.hero .v')).toHaveText('50.0°C');
-    await expect(water(house).locator('.hero .state')).toHaveText('Idle · 0 W');
+    await expect(water(house).locator('.hero .status')).toHaveText('Idle · 0 W');
     await sheet.locator('.close').click();
     await expect(pane(house).locator('hp-sheet[open]')).toHaveCount(0);
     await expect(water(house)).toHaveCount(0);
@@ -168,7 +168,7 @@ test.describe('on a phone', () => {
     await expect(tile.locator('.tx b')).toHaveText('Hilo');
     await tile.locator('button').click();
     await expect(hilo(house).locator('.hero .v')).toHaveText('7.32¢/kWh');
-    await expect(hilo(house).locator('.hero .state')).toHaveText('Low tier');
+    await expect(hilo(house).locator('.hero .status')).toHaveText('Low tier');
     await expect(hilo(house).locator('.tile .k')).toHaveText(['Medium', 'Reward', 'Rewards']);
     await house.page.keyboard.press('Escape');
     await expect(hilo(house)).toHaveCount(0);
@@ -251,7 +251,7 @@ test.describe('on a tablet', () => {
     await house.tab('energy');
     await expect(water(house).locator('.elbl')).toHaveText('Water heater');
     await expect(water(house).locator('.hero .v')).toHaveText('50.0°C');
-    await expect(water(house).locator('.hero .state')).toHaveText('Idle · 0 W');
+    await expect(water(house).locator('.hero .status')).toHaveText('Idle · 0 W');
     await expect(water(house).locator('.whleg span')).toHaveText(['Water temperature', 'Heating power']);
     await expect(water(house).locator('.whline')).toContainText('Last 24 hours:');
     await expect(hilo(house)).toHaveCount(0);
@@ -261,7 +261,7 @@ test.describe('on a tablet', () => {
     await house.tab('energy');
     await addHilo(house);
     await expect(hilo(house).locator('.hero .v')).toHaveText('7.32¢/kWh');
-    await expect(hilo(house).locator('.hero .state')).toHaveText('Low tier');
+    await expect(hilo(house).locator('.hero .status')).toHaveText('Low tier');
     await expect(water(house)).toHaveCount(1);
   });
 

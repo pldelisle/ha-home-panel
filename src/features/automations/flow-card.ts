@@ -31,8 +31,8 @@ export class FlowCard extends LitElement {
   constructor() {
     super();
     this.view = undefined;
-    // a running run's pill counts up each second; the drawing is not touched
-    new TickController(this, 1000, () => this.view?.flow?.pill.since !== undefined);
+    // a running run's status counts up each second; the drawing is not touched
+    new TickController(this, 1000, () => this.view?.flow?.status.since !== undefined);
   }
 
   override disconnectedCallback(): void {
@@ -58,7 +58,8 @@ export class FlowCard extends LitElement {
         ${lens}`;
     const {flow} = v;
     const selected = v.kind === 'selected';
-    const pillText = flow.pill.since === undefined ? flow.pill.text : runningText(flow.pill.since, Date.now(), t);
+    const statusText =
+      flow.status.since === undefined ? flow.status.text : runningText(flow.status.since, Date.now(), t);
     return html`<section class="aubox auc${selected ? ' ausel' : ''}">
         <div class="auhead">
           <div>
@@ -66,7 +67,7 @@ export class FlowCard extends LitElement {
             <p>${flow.sentence}</p>
           </div>
           <div class="auhr">
-            <span class="status ${flow.pill.tone}"><i aria-hidden="true"></i>${pillText}</span>${
+            <span class="status ${flow.status.tone}"><i aria-hidden="true"></i>${statusText}</span>${
               selected
                 ? html`<button
                     type="button"

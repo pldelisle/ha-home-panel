@@ -35,7 +35,7 @@ src/features/energy/
   styles.css               the box and the title line the two cards share (adopted, not joined into the legacy sheet)
 src/ui/
   thin-axis.ts             thinCategories(cats, phone, wide, compact): the phone's category thinning for a bar chart's axis
-  styles/hero.css          .hero: a big figure with its unit and a state pill (the cards here, the legacy Car card, the climate gauge later)
+  styles/hero.css          .hero: a big figure with its unit (the cards here; the state beside it is the kit's `.status`)
 ```
 
 ## The model

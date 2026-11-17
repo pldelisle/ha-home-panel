@@ -1,5 +1,5 @@
 // Which stored runs the Automations tab shows: what the loader holds, the noise it leaves out, the four runs its flow cards draw,
-// today's runs, the fingerprint of the states that asks for a reload, and the running pill's elapsed time.
+// today's runs, the fingerprint of the states that asks for a reload, and the running status's elapsed time.
 // Pattern: pure functions over Home Assistant's `trace/list` rows (Bernhardt, functional core), the rules of the legacy
 // `auNoise()`, `auPicks()`, `renderAuto()`'s filters and `auElapsed()`.
 // Must not: read the clock (`now` and `midnight` are passed in), word anything outside the catalog, or ask Home Assistant.

@@ -1,5 +1,5 @@
 // Which runs the Automations tab shows: the noise rule, the four picks with and without a selection, the fingerprint,
-// today's runs and the running pill's elapsed time.
+// today's runs and the running status's elapsed time.
 // Pattern: example tests at the pure functions over literal `trace/list` rows (ADR 0005; Meszaros, xUnit Test Patterns).
 // Must not: read the clock (every instant is a literal) or ask Home Assistant.
 import {describe, expect, test} from 'vitest';

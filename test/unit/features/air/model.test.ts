@@ -399,28 +399,31 @@ describe('the detail’s outdoor chart follows the range', () => {
 });
 
 describe('a tile opens its history', () => {
-  test('each of the seven tiles is named for a screen reader: the reading, its value and unit, and what a tap does', () => {
+  test('each of the seven tiles shows its reading, value and unit, and says what a tap does as a description', () => {
     const {states, registries, names, store} = readingOf(fullHouse);
-    const {detail} = modelOf(readAir(states, registries, names, store.config));
-    expect(detail.rooms[0].tiles.map(tile => tile.opens)).toEqual([
-      'PM2.5 20µg/m³, opens its history',
-      'CO₂ 640ppm, opens its history',
-      'VOC 180µg/m³, opens its history',
-      'CO 1.0ppm, opens its history',
-      'PM1 6µg/m³, opens its history',
-      'PM10 24µg/m³, opens its history',
-      'Humidity 38%, opens its history',
+    const {tiles} = modelOf(readAir(states, registries, names, store.config)).detail.rooms[0];
+    expect(tiles.map(tile => `${tile.label} ${tile.value}${tile.unit}`)).toEqual([
+      'PM2.5 20µg/m³',
+      'CO₂ 640ppm',
+      'VOC 180µg/m³',
+      'CO 1.0ppm',
+      'PM1 6µg/m³',
+      'PM10 24µg/m³',
+      'Humidity 38%',
     ]);
+    expect(tiles.map(tile => tile.opens)).toEqual(Array(7).fill('Opens its history'));
   });
 
-  test('a reading with no value is named without a unit', () => {
-    const {tiles} = modelOf(inputsOf([room()])).detail.rooms[0];
-    expect(tiles[0].opens).toBe('PM2.5 –, opens its history');
-  });
-
-  test('in French, the words and the number are French’s own', () => {
+  test('in French, the description and the number are French’s own', () => {
     const fr = modelOf(inputsOf([room({readings: {co: 1}})]), 'fr').detail.rooms[0].tiles;
-    expect(fr[3].opens).toBe('CO 1,0ppm, ouvre l’historique');
+    expect(fr[3].opens).toBe('Ouvre l’historique');
+    expect(fr[3].value).toBe('1,0');
+  });
+
+  test('a reading with no value shows a dash and still says what a tap does', () => {
+    const {tiles} = modelOf(inputsOf([room()])).detail.rooms[0];
+    expect(tiles[0].value).toBe('–');
+    expect(tiles[0].opens).toBe('Opens its history');
   });
 });
 

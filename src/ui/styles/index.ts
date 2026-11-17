@@ -13,7 +13,6 @@ import listText from './list.css?inline';
 import moreText from './more.css?inline';
 import motionText from './motion.css?inline';
 import paneHeaderText from './pane-header.css?inline';
-import pillText from './pill.css?inline';
 import rangeText from './range.css?inline';
 import ringText from './ring.css?inline';
 import segText from './seg.css?inline';
@@ -52,14 +51,12 @@ export const ring = adopt(ringText);
 export const settings = adopt(settingsText);
 /** The tiles of a detail panel, with the one that opens a history. */
 export const tiles = adopt(tilesText);
-/** The hero of a card: a big figure with its unit and a state pill. */
+/** The hero of a card: a big figure with its unit. */
 export const hero = adopt(heroText);
 /** The inner card of a detail panel and the row that sets two of them side by side. */
 export const inner = adopt(innerText);
 /** The rows and chips of a status list: the Car detail's Ford messages and status block (`.clear`), and the legacy Status checks popup's until spec 22 (#256). */
 export const list = adopt(listText);
-/** The state pill beside a heading, without its tones (each user writes its own). */
-export const pill = adopt(pillText);
 /** A status as plain text with a coloured dot (`.status`, tones `.ok`, `.warn`, `.bad`): never a filled capsule, which means "tap me". */
 export const status = adopt(statusText);
 /** A chart's legend and its tooltip's font. */

@@ -36,7 +36,7 @@ export class RunTimeline extends LitElement {
             <h3>${v.title}</h3>
             <p>${v.caption}</p>
           </div>
-          <span class="status">${v.pill}</span>
+          <span class="status">${v.status}</span>
         </div>
         <div class="autl">
           <div class="axis"></div>
