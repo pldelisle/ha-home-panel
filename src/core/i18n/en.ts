@@ -477,7 +477,6 @@ export const en = {
   'air.roomWhy': '{name}: {detail}',
   'air.glance.clean': 'clean air everywhere', // the Home pane's Air tile (#267)
   'air.outsideAqi': 'Outside AQI',
-  'air.open': 'Open air quality details',
   'air.close': 'Close',
   'air.purifierOffline': 'Purifier offline',
   'air.fanOff': 'Fan off',

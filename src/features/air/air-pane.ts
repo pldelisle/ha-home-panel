@@ -1,11 +1,10 @@
-// <hp-air-pane>: the Air tab: on a phone the header with the summary, the card and the detail's sheet; on a tablet the detail inline (the header is
-// there and not shown, and the card is not drawn). It owns the statistics cache and the range and metric the detail last showed.
+// <hp-air-pane>: the Air tab: the detail inline, under the header with the summary and the range tabs on a phone (the detail's own header on a tablet, the
+// pane's not shown); over another tab on a phone (Home's tile, the live pill) the detail's sheet. It owns the statistics cache and the range and metric the detail last showed.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over a view model: `airModel` runs in `willUpdate` and the template places what it
 // returns; a store controller on `airIds` (ADR 0012), paused while the pane is off screen, and an optimistic one (ADR 0023) so a tap draws it again.
-// Must not: read an entity itself (`readAir` does), hold a string the household reads, or open the sheet (the card asks).
+// Must not: read an entity itself (`readAir` does), hold a string the household reads, or open the sheet (a tile or a card elsewhere asks).
 import {ContextConsumer} from '@lit/context';
 import {LitElement, html, nothing, unsafeCSS, type PropertyValues} from 'lit';
-import './air-card.ts'; // defines <hp-air-card>
 import './air-detail.ts'; // defines <hp-air-detail>
 import {detailIcon, type MetricChosenDetail} from './air-detail.ts';
 import paneOwn from './air-pane.element.css?inline';
@@ -103,22 +102,27 @@ export class AirPane extends LitElement {
     if (!view) return nothing;
     const {t} = this.storeController.store;
     const compact = this.appearance.value?.compact === true;
-    // the sheet over another tab: the pane is behind it and draws nothing but it, so the tab stays
-    if (!this.active && this.detailOpen && compact) return this.renderSheet(view);
-    // On a tablet the pane is the detail's place alone: the header is there and not shown, as the old pane's was, and the card and the sheet are the phone's.
+    // the sheet over another tab (Home's tile, the stack's card): the pane is behind it and draws nothing but it, so the tab stays
+    if (compact && !this.active) return this.renderSheet(view);
+    // The header: on a phone the tab's own, with the range tabs the detail's header has on a tablet; on a tablet it is there and not shown
+    // (the detail draws its own), as the old pane's was. The detail is under it, inline, while the pane is the tab; leaving the tab drops it, charts with it.
     return html`<hp-pane-header .icon=${'aq'} .color=${'var(--ok)'} .heading=${t('air.title')}>
         <div slot="sub">${view.summary}</div>
-      </hp-pane-header>
-      ${
-        compact
-          ? html`<hp-air-card .view=${view.card} .openLabel=${t('air.open')}></hp-air-card>${this.renderSheet(view)}`
-          : this.active
-            ? this.renderDetail(view)
+        ${
+          compact
+            ? html`<hp-range-tabs
+                slot="actions"
+                .ranges=${rangeTabs(t)}
+                .value=${this.range}
+                @range-change=${this.onRange}
+              ></hp-range-tabs>`
             : nothing
-      }`;
+        }
+      </hp-pane-header>
+      ${this.active ? this.renderDetail(view) : nothing}`;
   }
 
-  // a tablet shows the detail in the pane while the pane is the tab; leaving the tab drops it, charts with it
+  // the tab shows the detail in the pane while the pane is the tab
   private renderDetail(view: AirViewModel) {
     return html`<hp-air-detail
       .view=${view.detail}
@@ -131,7 +135,7 @@ export class AirPane extends LitElement {
     ></hp-air-detail>`;
   }
 
-  // a phone shows it in a sheet the host opens; it exists only while open, so a closed sheet holds no chart
+  // over another tab, on a phone, it is in a sheet the host opens; it exists only while open, so a closed sheet holds no chart
   private renderSheet(view: AirViewModel) {
     const {t} = this.storeController.store;
     return html`<hp-sheet

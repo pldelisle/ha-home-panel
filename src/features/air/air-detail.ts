@@ -242,7 +242,7 @@ export class AirDetail extends LitElement {
       ${lensLike(this.getRootNode())}`;
   }
 
-  // On a tablet the detail opens with its own header, the pane's being the phone's; on a phone the sheet draws it, tabs included.
+  // On a tablet the detail opens with its own header, the pane's being the phone's; on a phone the pane's header (inline) or the sheet's (over another tab) draws it, tabs included.
   private renderHeader({title, sub}: Detail) {
     const {t} = this.storeController.store;
     return html`<hp-pane-header .icon=${'aq'} .color=${'var(--ok)'} .heading=${title}>

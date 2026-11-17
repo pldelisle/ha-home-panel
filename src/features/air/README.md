@@ -18,11 +18,10 @@ src/features/air/
   glance.ts                glance(store): the Home pane's Air tile, worded by the model's airGlance, #267
   index.ts                 airFeature: the descriptor, with `detailSheet`; its More word is `airBrief`, the legacy word ("Good", "No data", "No purifiers")
   sheets.ts                DETAIL_SHEET = 'air.detail'
-  air-pane.ts              <hp-air-pane>: the header; the card and the detail's sheet on a phone, the detail inline on a tablet; owns the statistics cache, the range and the metric; air-pane.element.css
-  air-card.ts              <hp-air-card>: the outside figure, the state line, a box per room; air-card.element.css
+  air-pane.ts              <hp-air-pane>: the detail inline under its header on a phone (the range tabs in it) and alone on a tablet, the detail's sheet over another tab; owns the statistics cache, the range and the metric; air-pane.element.css
   air-detail.ts            <hp-air-detail>: the rooms, the metric chart and the outdoor block with its chart; air-detail.element.css
   room-card.ts             <hp-air-room>: a purifier's tiles and its Automagic or Manual control with the debounced stepper; room-card.element.css
-  styles.css               the `.aqsum` state line, adopted by the card and the detail
+  styles.css               the `.aqsum` state line, adopted by the detail
 ```
 
 ## The providers
