@@ -170,11 +170,15 @@ test.describe('Status checks', () => {
     await stopCharging(house); // while the car charges, the charging pill wins over the attention pill
     await openFrontDoor(house);
     await expect(pill(house)).toContainText(/needs attention/);
-    // the pill is an element and follows at once; Home's tiles and stack are still the guest's, which redraws within a second (#256)
+    // the pill, the Car tile and the stack are elements since #268 and follow at once; the waits keep the screenshot after them
     await expect(house.root().locator('#pane-home')).toContainText('unplugged');
     await expect(house.root().locator('#pane-home')).toContainText('Front door open');
     await openPopup(house);
-    await expect(house.page).toHaveScreenshot('status-checks-tablet-light-en.png');
+    // the six tiles under the popup are masked: their text came out a sub-pixel apart from one CI run to the next (#268), and the
+    // Home baselines already show them; this one is about the popup, the pill and the Security card
+    await expect(house.page).toHaveScreenshot('status-checks-tablet-light-en.png', {
+      mask: [house.root().locator('hp-glance-tile .htile')],
+    });
   });
 });
 
