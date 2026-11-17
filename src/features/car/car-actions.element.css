@@ -1,6 +1,6 @@
 /*
  * <hp-car-actions>' own rules: the row of action buttons. Each is a control (docs/design.md: raised on `--ctl-bg` with `--ctl-edge`), its icon beside its name and the line that says how things
- * stand; on a phone the icon sits above the words. The dialogs are dialog.css.
+ * stand; on a phone the icon sits above the words. The dialogs are the kit's `<hp-dialog>`; the rows slotted into the Start one are dialog.css.
  */
 :host {
   display: block;

@@ -1,16 +1,14 @@
 // <hp-car-actions>: the Car tab's actions row (docs/apple-hig-audit-car-2026-11-17.md, findings 4 and 7): Unlock or Lock, Start… or Stop engine, and Pause or Resume charging, each with
 // how things stand under its name; unlocking and starting ask first in a dialog (HIG, Alerts), and the start's dialog holds the heaters the car runs with it as switches.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over `carActions`, the model's pure view; a tap holds the value it asks for in the panel's overlay and runs a `Command` through the kit's
-// `CommandRunner` (ADR 0023). The two confirmations are native `<dialog>`s opened with `showModal()` (ADR 0035): the browser gives them the top layer, the focus and Escape; a tap on the backdrop cancels.
+// `CommandRunner` (ADR 0023). The two confirmations are the kit's `<hp-dialog>` (ADR 0035), opened by `asking`: the browser gives them the top layer, the focus and Escape; a tap on the backdrop cancels.
 // Must not: read an entity or the clock (the inputs and the model did), build a command by hand (commands.ts does), word a string, or send a start or an unlock before its dialog's button.
 import {LitElement, html, nothing, unsafeCSS} from 'lit';
-import {createRef, ref, type Ref} from 'lit/directives/ref.js';
 import {repeat} from 'lit/directives/repeat.js';
 import ownCss from './car-actions.element.css?inline';
 import {honk, lockCar, remoteStart, toggleHeater, togglePause, unlockCar} from './commands.ts';
 import {carActions, type ActionsView} from './controls.ts';
 import dialogCss from './dialog.css?inline';
-import {closeOnBackdrop, stopEscape} from './dialogs.ts';
 import type {CarFeatureInputs} from './inputs.ts';
 import type {Command} from '../../core/commands.ts';
 import {CommandRunner} from '../../ui/commands.ts';
@@ -22,12 +20,15 @@ import type {Overlay} from '../../ui/overlay-store.ts';
 import {common} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 import type {SwitchChangeDetail} from '../../ui/switch.ts';
+import '../../ui/dialog.ts'; // defines <hp-dialog>
 import '../../ui/switch.ts'; // defines <hp-switch>
 
 export class CarActions extends LitElement {
-  static override properties = {inputs: {attribute: false}};
+  static override properties = {inputs: {attribute: false}, asking: {state: true}};
   /** What the pane read: the car, the charger and the car's entities. */
   declare inputs: CarFeatureInputs | undefined;
+  /** The question on screen, if any: the dialog that is open. The state is here, so a question the model stops asking (the car got unlocked elsewhere) is closed. */
+  declare private asking: 'unlock' | 'start' | null;
 
   static override styles = [common, unsafeCSS(forShadow(dialogCss)), unsafeCSS(forShadow(ownCss))];
 
@@ -39,13 +40,12 @@ export class CarActions extends LitElement {
     t: () => this.storeController.store.t,
   });
   private readonly overlay: Overlay = (key, current) => this.optimistic.read(key, current);
-  private readonly unlockDialog: Ref<HTMLDialogElement> = createRef();
-  private readonly startDialog: Ref<HTMLDialogElement> = createRef();
   private view: ActionsView | null = null;
 
   constructor() {
     super();
     this.inputs = undefined;
+    this.asking = null;
     // `glass` and `compact` come from the shell as host attributes the rules test
     new AppearanceConsumer(this);
   }
@@ -54,6 +54,9 @@ export class CarActions extends LitElement {
     const {inputs} = this;
     const {t, fmt} = this.storeController.store;
     this.view = inputs ? carActions(inputs, {t, fmt, overlay: this.overlay}) : null;
+    // a question the model no longer asks must not come back later, unasked
+    if (this.asking === 'unlock' && !this.view?.lock?.confirm) this.asking = null;
+    if (this.asking === 'start' && !this.view?.start) this.asking = null;
   }
 
   protected override render() {
@@ -65,14 +68,14 @@ export class CarActions extends LitElement {
         ${
           lock
             ? this.renderAction(lock.locked ? 'unlock' : 'lock', lock, () =>
-                lock.confirm ? this.unlockDialog.value?.showModal() : this.ask(lockCar(car), true),
+                lock.confirm ? (this.asking = 'unlock') : this.ask(lockCar(car), true),
               )
             : nothing
         }
         ${
           start
             ? this.renderAction('lpow', start, () =>
-                start.running ? this.ask(remoteStart(car, false), false) : this.startDialog.value?.showModal(),
+                start.running ? this.ask(remoteStart(car, false), false) : (this.asking = 'start'),
               )
             : nothing
         }
@@ -87,36 +90,36 @@ export class CarActions extends LitElement {
       </div>
       ${
         lock?.confirm
-          ? html`<dialog
-              ${ref(this.unlockDialog)}
-              aria-labelledby="ut"
-              @keydown=${stopEscape}
-              @click=${closeOnBackdrop}
-            >
-              <h4 id="ut" tabindex="-1" .autofocus=${true}>${lock.confirm.title}</h4>
-              <p>${lock.confirm.line}</p>
-              <div class="btns">
-                <button type="button" class="dbtn" @click=${() => this.unlockDialog.value?.close()}>
-                  ${lock.confirm.cancel}</button
-                ><button
-                  type="button"
-                  class="dbtn prim"
-                  @click=${() => {
-                    this.unlockDialog.value?.close();
-                    this.ask(unlockCar(car), false);
-                  }}
-                >
-                  ${lock.confirm.confirm}
-                </button>
-              </div>
-            </dialog>`
+          ? html`<hp-dialog
+              data-ask="unlock"
+              .open=${this.asking === 'unlock'}
+              .heading=${lock.confirm.title}
+              .line=${lock.confirm.line}
+              .cancelLabel=${lock.confirm.cancel}
+              .confirmLabel=${lock.confirm.confirm}
+              @dialog-cancel=${this.dismiss}
+              @dialog-confirm=${() => {
+                this.asking = null;
+                this.ask(unlockCar(car), false);
+              }}
+            ></hp-dialog>`
           : nothing
       }
       ${
         start
-          ? html`<dialog ${ref(this.startDialog)} aria-labelledby="st" @keydown=${stopEscape} @click=${closeOnBackdrop}>
-              <h4 id="st" tabindex="-1" .autofocus=${true}>${start.confirm.title}</h4>
-              <p>${start.confirm.line}</p>
+          ? html`<hp-dialog
+              data-ask="start"
+              .open=${this.asking === 'start'}
+              .heading=${start.confirm.title}
+              .line=${start.confirm.line}
+              .cancelLabel=${start.confirm.cancel}
+              .confirmLabel=${start.confirm.confirm}
+              @dialog-cancel=${this.dismiss}
+              @dialog-confirm=${() => {
+                this.asking = null;
+                this.ask(remoteStart(car, true), true);
+              }}
+            >
               ${
                 start.options.length
                   ? html`<div class="gl">${start.optionsLabel}</div>
@@ -143,24 +146,14 @@ export class CarActions extends LitElement {
               }
               ${start.options.length ? html`<p class="foot">${start.optionsFoot}</p>` : nothing}
               ${start.seats ? html`<p class="foot">${start.seats}</p>` : nothing}
-              <div class="btns">
-                <button type="button" class="dbtn" @click=${() => this.startDialog.value?.close()}>
-                  ${start.confirm.cancel}</button
-                ><button
-                  type="button"
-                  class="dbtn prim"
-                  @click=${() => {
-                    this.startDialog.value?.close();
-                    this.ask(remoteStart(car, true), true);
-                  }}
-                >
-                  ${start.confirm.confirm}
-                </button>
-              </div>
-            </dialog>`
+            </hp-dialog>`
           : nothing
       }`;
   }
+
+  private readonly dismiss = (): void => {
+    this.asking = null;
+  };
 
   // one action: its name and, under it, how things stand (the horn has no state to say)
   private renderAction(icon: IconName, {label, line = ''}: {label: string; line?: string}, act: () => void) {

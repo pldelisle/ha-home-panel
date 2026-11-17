@@ -392,7 +392,7 @@ test.describe('the controls', () => {
   }) => {
     await addComfort(house);
     await openTab(house);
-    const dialog = actions(house).locator('dialog[aria-labelledby="st"]');
+    const dialog = actions(house).locator('hp-dialog[data-ask="start"] dialog');
     await action(house, /^Start…/).click();
     await expect(dialog).toBeVisible();
     await expect(dialog.locator('h4')).toHaveText('Start the car?');
@@ -417,11 +417,12 @@ test.describe('the controls', () => {
     await addComfort(house);
     await openTab(house);
     await action(house, /^Start…/).click();
-    const dialog = actions(house).locator('dialog[aria-labelledby="st"]');
-    await expect(dialog.getByRole('switch')).toHaveCount(3);
-    await dialog.getByRole('switch', {name: 'Heated wheel'}).click();
+    const question = actions(house).locator('hp-dialog[data-ask="start"]');
+    const dialog = question.locator('dialog');
+    await expect(question.getByRole('switch')).toHaveCount(3);
+    await question.getByRole('switch', {name: 'Heated wheel'}).click();
     await expectCall(house, /^switch\.turn_on \{"entity_id":"switch\.fordpass_test_rccsteeringwheel"\}$/);
-    await expect(dialog.getByRole('switch', {name: 'Heated wheel'})).toHaveAttribute('aria-checked', 'true');
+    await expect(question.getByRole('switch', {name: 'Heated wheel'})).toHaveAttribute('aria-checked', 'true');
     await expect(toast(house)).toHaveText('Heated wheel on');
     expect(sent(house, 'switch.turn_on {"entity_id":"switch.fordpass_test_ignition"'), 'no start').toEqual([]);
     await dialog.getByRole('button', {name: 'Cancel'}).click();
@@ -432,7 +433,7 @@ test.describe('the controls', () => {
 
   test('Unlock asks first and sends nothing until Unlock; Lock does not ask', async ({house}) => {
     await openTab(house);
-    const dialog = actions(house).locator('dialog[aria-labelledby="ut"]');
+    const dialog = actions(house).locator('hp-dialog[data-ask="unlock"] dialog');
     await action(house, /^Unlock/).click();
     await expect(dialog.locator('h4')).toHaveText('Unlock the car?');
     await house.page.waitForTimeout(300);
@@ -450,13 +451,27 @@ test.describe('the controls', () => {
     house,
   }) => {
     await openTab(house);
-    const dialog = actions(house).locator('dialog[aria-labelledby="ut"]');
+    const dialog = actions(house).locator('hp-dialog[data-ask="unlock"] dialog');
     await action(house, /^Unlock/).click();
     await dialog.locator('p').click();
     await expect(dialog).toBeVisible();
     await house.page.mouse.click(5, 5);
     await expect(dialog).toBeHidden();
     expect(sent(house, 'lock.')).toEqual([]);
+  });
+
+  test('Escape cancels the Unlock question and sends nothing, and the question opens again on the next tap', async ({
+    house,
+  }) => {
+    await openTab(house);
+    const dialog = actions(house).locator('hp-dialog[data-ask="unlock"] dialog');
+    await action(house, /^Unlock/).click();
+    await expect(dialog).toBeVisible();
+    await house.page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
+    expect(sent(house, 'lock.')).toEqual([]);
+    await action(house, /^Unlock/).click();
+    await expect(dialog).toBeVisible();
   });
 
   test('Escape in the editor opened in the phone’s detail sheet closes the editor alone, and the sheet stays', async ({
@@ -479,7 +494,7 @@ test.describe('the controls', () => {
     await openTab(house);
     await action(house, /^Unlock/).click();
     await house.failNext('lock.unlock');
-    await actions(house).locator('dialog[aria-labelledby="ut"]').getByRole('button', {name: 'Unlock'}).click();
+    await actions(house).locator('hp-dialog[data-ask="unlock"] dialog').getByRole('button', {name: 'Unlock'}).click();
     await expect(toast(house)).toContainText("Didn't work: the service call failed on purpose");
     await expect(toast(house)).toHaveAttribute('role', 'alert');
     await expect(action(house, /^Unlock/)).toHaveText(/Locked now/);

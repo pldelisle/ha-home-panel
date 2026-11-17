@@ -1,41 +1,12 @@
 /*
- * The Car's dialogs (the Start and Unlock confirmations, the departure editor, the charging history): a native `<dialog>` opened with `showModal()`, so the browser gives it the top layer, the
- * focus, Escape and the backdrop. A dialog floats above the content, so it is the navigation layer and takes the glass when glass is on (docs/design.md, "Two layers"); its rows are content and stay
- * opaque. On a phone the confirmations rise from the bottom as an action sheet does, and the editor and the history fill the screen as a sheet (HIG, Sheets and Alerts).
+ * What the Car's dialogs hold beyond the kit's (src/ui/dialog.element.css): the departure editor's sheet (`.dsheet`, the bar with Cancel, the title and Save, and its body) and the grouped rows
+ * of the editor and of the Start question's heaters (`.list`, `.lrow`, `.gl`, `.foot`). On a phone the editor fills the screen as a sheet (HIG, Sheets).
  */
-dialog {
-  border: 0;
-  padding: 18px;
-  border-radius: 26px;
-  width: min(400px, calc(100vw - 32px));
-  max-height: calc(100vh - 48px);
-  background: var(--card);
-  color: var(--fg);
-  box-shadow: var(--pop-shadow);
-  font: inherit;
-}
-:host([glass]) dialog {
-  background: var(--g-dense);
-  -webkit-backdrop-filter: var(--g-bd);
-  backdrop-filter: var(--g-bd);
-  box-shadow: var(--pop-shadow), var(--g-edge);
-}
-/* the kit sheet's own scrim (sheet.css), so a dialog and a sheet dim the page alike */
-dialog::backdrop {
-  background: color-mix(in srgb, var(--bg) 70%, transparent);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
-}
 dialog.dsheet {
   width: min(560px, calc(100vw - 32px));
   height: min(760px, calc(100vh - 48px));
   padding: 0;
   overflow: auto;
-}
-:host([compact]) dialog:not(.dsheet) {
-  margin: auto 12px 18px;
-  width: auto;
-  max-width: none;
 }
 :host([compact]) dialog.dsheet {
   margin: auto 0 0;
@@ -43,56 +14,6 @@ dialog.dsheet {
   max-width: none;
   height: calc(100vh - 40px);
   border-radius: 30px 30px 0 0;
-}
-@media (prefers-reduced-transparency: reduce) {
-  :host([glass]) dialog {
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-    background: var(--card);
-  }
-}
-dialog h4 {
-  outline: none;
-  margin: 0 0 2px;
-  font-size: calc(17px * var(--tx));
-  font-weight: 600;
-}
-dialog p {
-  margin: 0 0 12px;
-  color: var(--fg2);
-  font-size: calc(13.5px * var(--tx));
-}
-/* the two buttons of a confirmation: Cancel, and the action as the prominent one (HIG, Buttons: style tells the preferred choice) */
-.btns {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-top: 14px;
-}
-.dbtn {
-  min-height: 44px;
-  padding: 0 18px;
-  border: 0;
-  border-radius: 999px;
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-  background: var(--ctl-bg);
-  color: var(--fg);
-  box-shadow: var(--ctl-edge);
-}
-.dbtn.prim {
-  background: var(--fg);
-  color: var(--bg);
-  box-shadow: none;
-}
-.dbtn:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-.dbtn:focus-visible {
-  outline: 2px solid var(--c-home);
-  outline-offset: 2px;
 }
 /* a sheet's bar: Cancel, the title, and the action (or Done) */
 .nav {

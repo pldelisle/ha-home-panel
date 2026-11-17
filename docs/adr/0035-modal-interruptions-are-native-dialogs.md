@@ -8,7 +8,7 @@ The Car rework (docs/apple-hig-audit-car-2026-11-17.md) added four overlays: a c
 
 ## Decision
 
-**A sheet in the glossary's sense (a detail view the person browses and closes) is `<hp-sheet>`, opened through a `SheetRequestEvent` and the host, as ADR 0021 says**: the charging history is `car.history`, an over-sheet of the Car pane, as Weather's histories are. **A modal interruption, a confirmation of an intentional action or an editor holding a draft with Cancel and Save, is a native `<dialog>` opened with `showModal()` by the element that owns the decision or the draft**: the top layer escapes the content layer's containing blocks, the page goes inert, focus is trapped and returns, and the draft never leaves its element. A dialog stops Escape at itself (`stopEscape`, `src/features/car/dialogs.ts`), so one Escape closes one thing and the host never also closes the sheet beneath; a confirmation is cancelled by a tap on its backdrop, an editor never is, since a stray tap would drop the draft. A dialog never opens a sheet or another dialog. Its styles are the feature's `dialog.css` until a second feature needs one, when they move to the kit as `<hp-dialog>`.
+**A sheet in the glossary's sense (a detail view the person browses and closes) is `<hp-sheet>`, opened through a `SheetRequestEvent` and the host, as ADR 0021 says**: the charging history is `car.history`, an over-sheet of the Car pane, as Weather's histories are. **A modal interruption, a confirmation of an intentional action or an editor holding a draft with Cancel and Save, is a native `<dialog>` opened with `showModal()` by the element that owns the decision or the draft**: the top layer escapes the content layer's containing blocks, the page goes inert, focus is trapped and returns, and the draft never leaves its element. A dialog stops Escape at itself (`stopEscape`, `src/features/car/dialogs.ts`), so one Escape closes one thing and the host never also closes the sheet beneath; a confirmation is cancelled by a tap on its backdrop, an editor never is, since a stray tap would drop the draft. A dialog never opens a sheet or another dialog. A confirmation is the kit's `<hp-dialog>` (title, line, optional slotted content, Cancel and a named action; `dialog-confirm` and `dialog-cancel` up); an editor draws its own `<dialog>` with the kit's look and `stopEscape`.
 
 ## Consequences
 
@@ -18,7 +18,7 @@ The Car rework (docs/apple-hig-audit-car-2026-11-17.md) added four overlays: a c
 
 ## When to revisit
 
-A second feature that needs a confirmation or an editor: move `dialog.css` and `dialogs.ts` to `src/ui/` as `<hp-dialog>`. A kit sheet that gains a Cancel and Save bar, a focus trap and the top layer would let the editor become a sheet again.
+Done (#377, Climate being the second feature that asks a question): the confirmation is the kit's `<hp-dialog>` (`src/ui/dialog.ts`), its look and `stopEscape` and `closeOnBackdrop` are `src/ui/dialog.element.css` and `src/ui/dialogs.ts`, and the Car's Unlock and Start use it. The departure editor keeps its own `<dialog>`, since it holds a draft, and borrows the look and `stopEscape` from the kit; its sheet rules stay the Car's `dialog.css`. A kit sheet that gains a Cancel and Save bar, a focus trap and the top layer would let the editor become a sheet again.
 
 ## Read
 

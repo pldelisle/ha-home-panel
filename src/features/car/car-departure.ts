@@ -10,7 +10,6 @@ import ownCss from './car-departure.element.css?inline';
 import {saveSchedule, toggleDeparture} from './commands.ts';
 import {departureControls, type DepartureView} from './controls.ts';
 import dialogCss from './dialog.css?inline';
-import {stopEscape} from './dialogs.ts';
 import type {CarFeatureInputs} from './inputs.ts';
 import {
   redraft,
@@ -26,6 +25,7 @@ import {CommandRunner} from '../../ui/commands.ts';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {OptimisticController} from '../../ui/controllers/optimistic.ts';
 import {StoreController} from '../../ui/controllers/store-controller.ts';
+import {dialogLook, stopEscape} from '../../ui/dialogs.ts';
 import {ico} from '../../ui/icons.ts';
 import type {Overlay} from '../../ui/overlay-store.ts';
 import {common} from '../../ui/styles/index.ts';
@@ -38,7 +38,7 @@ export class CarDeparture extends LitElement {
   /** What the pane read: the car, the charger and the car's entities. */
   declare inputs: CarFeatureInputs | undefined;
 
-  static override styles = [common, unsafeCSS(forShadow(dialogCss)), unsafeCSS(forShadow(ownCss))];
+  static override styles = [common, dialogLook, unsafeCSS(forShadow(dialogCss)), unsafeCSS(forShadow(ownCss))];
 
   private readonly storeController = new StoreController(this, {ids: () => []});
   private readonly optimistic = new OptimisticController(this);
