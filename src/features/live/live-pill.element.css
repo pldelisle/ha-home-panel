@@ -31,6 +31,16 @@
 .app.gl .lap {
   padding: 0;
 }
+/* the legacy `.attchip svg` (extra.css): every svg in the pill is grey and two pixels to the left, the rings' (through their custom properties)
+   and the done check's alike */
+.lap {
+  --lring-svg-color: var(--fg2);
+  --lring-svg-shift: -2px;
+}
+.lap svg {
+  color: var(--fg2);
+  margin-left: -2px;
+}
 .lap:focus-visible {
   outline: 2px solid var(--c-home);
   outline-offset: 2px;
