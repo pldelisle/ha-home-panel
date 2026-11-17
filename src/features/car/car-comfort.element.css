@@ -21,7 +21,8 @@
 .cbtn {
   border: 0;
   border-radius: 16px;
-  background: var(--card2);
+  background: var(--ctl-bg);
+  box-shadow: var(--ctl-edge);
   padding: 12px;
   text-align: left;
   font: inherit;
@@ -38,7 +39,7 @@
   border-radius: 10px;
   display: grid;
   place-items: center;
-  background: var(--card);
+  background: var(--card2);
   color: var(--fg2);
 }
 .cbtn b {
@@ -101,7 +102,8 @@
   height: 44px;
   border: 0;
   border-radius: 12px;
-  background: var(--card2);
+  background: var(--ctl-bg);
+  box-shadow: var(--ctl-edge);
   color: var(--fg2);
   font: inherit;
   font-weight: 600;
@@ -115,7 +117,8 @@
   height: 44px;
   border: 0;
   border-radius: 12px;
-  background: var(--card2);
+  background: var(--ctl-bg);
+  box-shadow: var(--ctl-edge);
   color: var(--fg);
   font: inherit;
   font-weight: 600;
@@ -128,7 +131,8 @@ hp-seg {
 .save {
   margin-top: 10px;
   border: 0;
-  background: var(--card2);
+  background: var(--ctl-bg);
+  box-shadow: var(--ctl-edge);
   border-radius: 999px;
   padding: 10px 16px;
   min-height: 44px;
@@ -145,32 +149,22 @@ hp-seg {
   outline: 2px solid var(--c-home);
   outline-offset: 2px;
 }
-:host([glass]) .access,
-:host([glass]) .cbtn,
-:host([glass]) .dtime,
-:host([glass]) .save {
+/* glass: the access row is a well (the tile fill); the buttons are controls and take --ctl-bg and --ctl-edge, which glass sets */
+:host([glass]) .access {
   background: var(--g-tile);
-  box-shadow: var(--g-edge-s);
 }
 :host([glass]) .cbtn .ic {
-  background: var(--g-sel);
+  background: var(--g-tile);
   border-color: transparent;
 }
 :host([glass]) .cbtn[aria-pressed='true'] {
-  background: color-mix(in srgb, var(--c-wh) 18%, var(--g-tile));
-}
-:host([glass]) .days button {
-  background: var(--g-tile);
-  box-shadow: var(--g-edge-s);
+  background: color-mix(in srgb, var(--c-wh) 18%, var(--ctl-bg));
 }
 :host([glass]) .days button[aria-pressed='true'] {
-  background: color-mix(in srgb, var(--c-ev) 22%, var(--g-sel));
+  background: color-mix(in srgb, var(--c-ev) 22%, var(--ctl-bg));
 }
 @media (prefers-reduced-transparency: reduce) {
-  :host([glass]) .access,
-  :host([glass]) .cbtn,
-  :host([glass]) .dtime,
-  :host([glass]) .save {
+  :host([glass]) .access {
     background: var(--card2);
   }
 }

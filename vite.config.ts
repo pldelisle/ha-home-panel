@@ -5,13 +5,13 @@ import {brotliCompressSync, constants as zlib, gzipSync} from 'node:zlib';
 import {createRequire} from 'node:module';
 import {fileURLToPath} from 'node:url';
 import pkg from './package.json' with {type: 'json'};
-import {FONT_FILES} from './src/fonts.js';
+import {FONT_SOURCES} from './src/fonts.js';
 
 // One minified ES module, dist/home-panel.js, with its source map beside it. The CSS is imported as minified text
 // (`?inline`, src/styles.js) and the version is injected here, from package.json. ApexCharts and Mermaid come from npm
 // through dynamic imports, so they are emitted as lazy chunks under dist/chunks/, fetched when a tab first needs
 // them. The generated LICENSES.md (npm run licenses) is emitted beside the entry, so the release zip carries the
-// libraries' licences, and the Montserrat files go to dist/fonts/. Each script gets a .br and a .gz copy
+// libraries' licences, and the font files go to dist/fonts/. Each script gets a .br and a .gz copy
 // (precompress, below). Nothing else is copied: there is no vendor/ directory.
 
 // The constants the build replaces in src/ (declared in src/env.d.ts); vitest.config.ts uses the same object.
@@ -48,18 +48,18 @@ const shipLicenses: Plugin = {
   },
 };
 
-// Montserrat (spec 08): the eight woff2 files src/fonts.js declares, copied from @fontsource/montserrat into
-// dist/fonts/ under Fontsource's own names. Not imported through CSS, where Vite would inline or hash them: the names
+// The fonts (spec 08): the woff2 files src/fonts.js declares, Manrope and JetBrains Mono, copied from their Fontsource
+// packages into dist/fonts/ under Fontsource's own names. Not imported through CSS, where Vite would inline or hash them: the names
 // stay stable, so a tablet's cached font outlives an update, and src/fonts.js can name them.
 const requireFontsource = createRequire(import.meta.url);
 const shipFonts: Plugin = {
   name: 'ship-fonts',
   generateBundle() {
-    for (const file of FONT_FILES)
+    for (const [pkg, file] of FONT_SOURCES)
       this.emitFile({
         type: 'asset',
         fileName: `fonts/${file}`,
-        source: readFileSync(requireFontsource.resolve(`@fontsource/montserrat/files/${file}`)),
+        source: readFileSync(requireFontsource.resolve(`${pkg}/files/${file}`)),
       });
   },
 };

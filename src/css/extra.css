@@ -49,6 +49,16 @@
 .wxchip.slim small {
   display: none;
 }
+/* the header's weather is a reading, not a control: plain text beside the capsules you can tap (the live pill, Settings),
+   so it never looks like one of them; glass gives it no fill either */
+.app .head .chip.wxchip,
+.app.gl .head .chip.wxchip {
+  background: none;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  padding-inline: 4px;
+}
 .pop .top {
   display: flex;
   align-items: center;

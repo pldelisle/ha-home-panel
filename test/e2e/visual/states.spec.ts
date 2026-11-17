@@ -9,7 +9,7 @@ import {OFFICE_TILE} from '../lights';
 import {NIGHT, goIdle} from '../idle';
 import {pill, stopCharging, openFrontDoor, openPopup} from '../live';
 
-// every screenshot shows the bundled Montserrat, never the fallback it swaps from (font-display: swap)
+// every screenshot shows the bundled Manrope, never the fallback it swaps from (font-display: swap)
 test.beforeEach(({house}) => fontsLoaded(house));
 
 // The idle clock draws two things that differ between runs, and neither is a tolerance question:

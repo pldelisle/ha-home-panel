@@ -29,7 +29,7 @@ export interface SceneTileView {
   kind: 'scene' | 'mode';
   name: string;
   icon: SceneIcon;
-  /** "Tap to run", "Last 2 h ago" and "Done" for a scene; "On" or "Off" for a mode. */
+  /** "Never run", "Last 2 h ago" and "Done" for a scene; "On" or "Off" for a mode. */
   subLine: string;
   /** A scene that was just run, or a mode that is on. */
   active: boolean;

@@ -205,7 +205,8 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  background: var(--card2);
+  background: var(--ctl-bg);
+  box-shadow: var(--ctl-edge);
   border: 0;
   border-radius: 16px;
   padding: 12px 14px;
@@ -233,27 +234,18 @@
       color 0.2s ease;
   }
 }
-:host([glass]) .hsen {
-  background: var(--g-tile);
-  box-shadow: var(--g-edge-s);
-}
-@media (prefers-reduced-transparency: reduce) {
-  :host([glass]) .hsen {
-    background: var(--card2);
-  }
-}
 .hsen .sic {
   width: 34px;
   height: 34px;
   border-radius: 11px;
-  background: var(--card);
+  background: var(--card2);
   display: grid;
   place-items: center;
   color: var(--fg2);
   flex: none;
 }
 :host([glass]) .hsen .sic {
-  background: var(--g-sel);
+  background: var(--g-tile);
   border-color: transparent;
 }
 .hsen > div {

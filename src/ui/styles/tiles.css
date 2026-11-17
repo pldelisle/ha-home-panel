@@ -54,7 +54,13 @@
   }
 }
 
-/* a tile that opens a history (the weather detail's) */
+/* a tile that opens a history (the weather detail's): a control, so it is raised above the static tiles beside it
+   (the control surface, tokens.css); the chevron after its figure says it opens something */
+.tile.tilebtn,
+.app.gl .tile.tilebtn {
+  background: var(--ctl-bg);
+  box-shadow: var(--ctl-edge);
+}
 .tilebtn {
   border: 0;
   font: inherit;

@@ -81,7 +81,7 @@ export const en = {
   'media.modeOn': '{name} on',
   'media.modeOff': '{name} off',
   // the scenes row: a scene's line, and a routine's (the household's modes), which French words in its own way
-  'media.tapToRun': 'Tap to run',
+  'media.tapToRun': 'Never run',
   'media.done': 'Done',
   'media.last': 'Last {kind, select, now {just now} minutes {{n} min ago} hours {{n} h ago} other {{date}}}',
   'media.modeIsOff': 'Off',
@@ -1394,7 +1394,6 @@ export const en = {
   'stack.using': 'Using {power} right now',
   'stack.music.label': 'Now playing',
   'stack.music.playing': 'Playing',
-  'stack.music.foot': 'Tap for the player',
   'stack.who.arrived': 'Arrived {when}',
   'stack.who.left': 'Left {when}',
   'stack.who.home': 'Home',

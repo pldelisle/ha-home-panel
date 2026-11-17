@@ -79,7 +79,7 @@ export const fr: Record<MessageKey, string> = {
   'media.sceneOn': '{name}\u00a0: activé',
   'media.modeOn': '{name}\u00a0: activé',
   'media.modeOff': '{name}\u00a0: désactivé',
-  'media.tapToRun': 'Lancer',
+  'media.tapToRun': 'Jamais lancée',
   'media.done': 'Fait',
   'media.last':
     "{kind, select, now {À l'instant} minutes {Il y a {n} min} hours {Il y a {n} h} other {Lancée le {date}}}",
@@ -1385,7 +1385,6 @@ export const fr: Record<MessageKey, string> = {
   'stack.using': 'Using {power} right now',
   'stack.music.label': 'En lecture',
   'stack.music.playing': 'En lecture',
-  'stack.music.foot': 'Toucher pour le lecteur',
   'stack.who.arrived': 'Arrivé·e à {when}',
   'stack.who.left': 'Parti·e à {when}',
   'stack.who.home': 'Maison',

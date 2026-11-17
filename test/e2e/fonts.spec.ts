@@ -1,4 +1,4 @@
-// Montserrat ships with the panel (spec 08): the font comes from the panel's own fonts/ folder, and nothing is asked of
+// Manrope and JetBrains Mono ship with the panel (spec 08): the fonts come from the panel's own fonts/ folder, and nothing is asked of
 // Google. The fixture already fails any test whose page calls Google's font hosts; this file checks that the font
 // arrives from beside home-panel.js, that the page draws with it, and that no tab reaches past the house's server.
 import {
@@ -17,10 +17,10 @@ test.beforeEach(tabletOnly);
 test.use({houseOpts: {cfg: FULL_CFG}});
 
 // the four weights of the latin subset, the files the test house's text needs (it shows no latin-ext character)
-const LATIN = FONT_WEIGHTS.map(w => `montserrat-latin-${w}-normal.woff2`);
+const LATIN = FONT_WEIGHTS.map(w => `manrope-latin-${w}-normal.woff2`);
 
 // a font-family list that starts with the bundled family, as getComputedStyle writes it
-const MONTSERRAT_FIRST = /^["']?Montserrat["']?,/;
+const MANROPE_FIRST = /^["']?Manrope["']?,/;
 
 // the font-family the first element matching `selector` in the panel is set in
 const family = (house: House, selector: string) =>
@@ -30,7 +30,7 @@ const family = (house: House, selector: string) =>
     .first()
     .evaluate(e => getComputedStyle(e).fontFamily);
 
-test("the Home tab draws in Montserrat from the panel's fonts/ folder", async ({house}) => {
+test("the Home tab draws in Manrope from the panel's fonts/ folder", async ({house}) => {
   // the weights the Home tab uses arrived; every font file the page received (the fixture records them all, wherever
   // they came from) is one of the panel's, with a 200
   await expect
@@ -45,7 +45,7 @@ test("the Home tab draws in Montserrat from the panel's fonts/ folder", async ({
   expect(
     await page.evaluate(async () => {
       await document.fonts.ready;
-      return document.fonts.check('600 16px Montserrat');
+      return document.fonts.check('600 16px Manrope');
     }),
   ).toBe(true);
   // check() is also true for a family no rule declares, so the loaded faces are asked for too: the panel declares
@@ -55,10 +55,10 @@ test("the Home tab draws in Montserrat from the panel's fonts/ folder", async ({
   expect(await page.locator('head link[rel="stylesheet"]').count(), 'stylesheet links in the head').toBe(0);
   // and the text uses the family: a heading on the Home pane is drawn in it
   await house.tab('home');
-  expect(await family(house, '#pane-home h2')).toMatch(MONTSERRAT_FIRST);
+  expect(await family(house, '#pane-home h2')).toMatch(MANROPE_FIRST);
 });
 
-test("no tab asks anything of a server other than the house's, and charts and flows draw in Montserrat", async ({
+test("no tab asks anything of a server other than the house's, and charts and flows draw in Manrope", async ({
   house,
 }) => {
   // the offline check: with the harness server as the only network, every tab draws and every request the page made
@@ -71,12 +71,12 @@ test("no tab asks anything of a server other than the house's, and charts and fl
     if (t === 'energy') {
       // ApexCharts draws its labels as SVG text in the panel's --f-body
       await expect(house.root().locator('#pane-energy .apexcharts-canvas text').first()).toBeAttached();
-      expect(await family(house, '#pane-energy .apexcharts-canvas text')).toMatch(MONTSERRAT_FIRST);
+      expect(await family(house, '#pane-energy .apexcharts-canvas text')).toMatch(MANROPE_FIRST);
     }
     if (t === 'auto') {
       // Mermaid draws the flow's labels as HTML inside the SVG, in its fontFamily setting (the same --f-body)
       await expect(house.root().locator('#pane-auto .augraph foreignObject span').first()).toBeAttached();
-      expect(await family(house, '#pane-auto .augraph foreignObject span')).toMatch(MONTSERRAT_FIRST);
+      expect(await family(house, '#pane-auto .augraph foreignObject span')).toMatch(MANROPE_FIRST);
     }
   });
   urls.push(...(await page.evaluate(() => performance.getEntriesByType('resource').map(e => e.name))));

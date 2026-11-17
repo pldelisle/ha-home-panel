@@ -161,9 +161,6 @@
       "key": "stack.music.playing"
     },
     {
-      "key": "stack.music.foot"
-    },
-    {
       "key": "stack.who.arrived",
       "values": {
         "when": "4:07 pm"
