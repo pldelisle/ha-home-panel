@@ -8,7 +8,7 @@ The key words MUST, MUST NOT, SHOULD, SHOULD NOT and MAY are to be read as in RF
 
 ## Problem Statement
 
-The idle clock is what a wall tablet shows most of the day: after five minutes without a touch the shell's `IdleTimer` (spec 14 D) sets `idle`, and the guest draws into `#iwrap` (`renderIdle`, ~1364): the time in the profile's format (`16 h 07` in French), the long date, the inside and outside temperatures, the weather icon for the condition by day or night, the next sunrise or sunset, and, when the config's smart stack is on, one stack card beside the clock (a `.ss` shell with `#iclk` and `#istk`) or the clock alone (`.solo`); the block drifts by up to 20 px sideways and 15 px up or down on every tick so the screen never shows the same pixels for hours; a 20-second interval redraws it. The stack's cards (`stackCards`) and their rotation (`pickStack` in `src/stack.js`) are the Home move's (spec 24, `features/stack/`), so this spec consumes them.
+The idle clock is what a wall tablet shows most of the day: after five minutes without a touch the shell's `IdleTimer` (spec 14 D) sets `idle`, and the guest draws into `#iwrap` (`renderIdle`, ~1364): the time in the profile's format (`16:07` in French), the long date, the inside and outside temperatures, the weather icon for the condition by day or night, the next sunrise or sunset, and, when the config's smart stack is on, one stack card beside the clock (a `.ss` shell with `#iclk` and `#istk`) or the clock alone (`.solo`); the block drifts by up to 20 px sideways and 15 px up or down on every tick so the screen never shows the same pixels for hours; a 20-second interval redraws it. The stack's cards (`stackCards`) and their rotation (`pickStack` in `src/stack.js`) are the Home move's (spec 24, `features/stack/`), so this spec consumes them.
 
 After specs 15 to 25 the class holds the idle clock, the guest's plumbing (`connect`, `disconnect`, the five lifecycle methods, `build()` with the containers, `set`, `$`, `css`, `dark`, the French observer's start and stop, `toast`, `swipeToClose`, `tick` and `renderLive` with an empty list, `wire()` with the idle overlay's listeners), `src/legacy/globals.js`, `src/styles.js`'s concatenation of what is left of `src/css/`, `src/fonts.js`, `src/stack.js` (moved by spec 24), `src/types.d.ts`, `src/env.d.ts`, `src/i18n/fr.js` (phase 4's), `src/charts/` (the ApexCharts chunk loader, replaced by `<hp-chart>`'s). The last move is the clock; then the class, the guest interface and the methods-exist test are deleted, which is the gate's audit (#188).
 
@@ -24,7 +24,7 @@ Each pull request leaves every baseline identical (`idle-stack-*`, and every oth
 ## User Stories
 
 1. As a household member, I want the idle clock, its date and temperatures, the weather icon, the next sun event and the stack card beside it to look exactly as before, and the block to keep drifting, so that the move is invisible.
-2. As a French-speaking user, I want the clock in `16 h 07` and the date as `samedi 7 novembre`, from the catalog's formatters, so that the last French strings leave the map.
+2. As a French-speaking user, I want the clock in `16:07` and the date as `samedi 7 novembre`, from the catalog's formatters, so that the last French strings leave the map.
 3. As a maintainer, I want the idle screen to be a composition in the shell (the clock feature beside the stack feature), so that ADR 0017's rule holds at the end as it did for Home.
 4. As a maintainer, I want the clock's text as a pure model at a given instant, tested in both languages, so that the one view the tablet shows all day is pinned.
 5. As a maintainer, I want the drift to be a pure function of a seed and the tick, so that the "never further than 20 px" rule of `idle.spec.ts` is a unit fact too.
@@ -61,11 +61,11 @@ export interface ClockInputs {
   condition: string | null; // the condition sensor's state, else the weather entity's
 }
 export interface ClockViewModel {
-  time: {main: string; suffix: string}; // "4:07" + "pm" in English (fmt.time split on the space), "16 h 07" + "" in French (fmt.time24)
+  time: {main: string; suffix: string}; // "4:07" + "pm" in English (fmt.time split on the space), "16:07" + "" in French (fmt.time24)
   date: string; // fmt.dateLong
   temps: string | null; // "20.8° inside · 3.1° outside"
   icon: {condition: string; day: boolean} | null; // weatherIcon(condition, 120, day)
-  nextSun: {label: string; time: string} | null; // "Sunrise 7:02 am"
+  nextSun: string | null; // "Sunrise 7:02 am", one catalog message with the time in it
 }
 export function clockModel(inputs: ClockInputs, deps: {t: Translate; fmt: Formatters; isFrench: boolean}): ClockViewModel;
 ```
@@ -75,8 +75,8 @@ export function clockModel(inputs: ClockInputs, deps: {t: Translate; fmt: Format
 ### The elements and the composition
 
 - **`<hp-clock>`**: `StoreController({ids: s => clockIds(s)})`; `TickController(20_000)` (the clock's minute changes come from the tick, as today's 20-second interval; the store notifies the rest); renders the `.iclk2` with the icon (`weatherIcon` from the kit) and the `.iclock.num` (main and small suffix), the `.idate`, the `.itemps`, the `.isun`. Paused when the overlay is hidden (the idle screen sets `active`).
-- **`<hp-idle-screen>`** (`src/shell/idle-screen.ts`): property `idle: IdleState` from the shell; renders the `.ss` layout (`.ssc` with `<hp-clock>` and `.ssk` with `<hp-smart-stack mode="idle">`) when the stack has a card, else the clock alone (the `solo` class), with the `.scw`, `.speek` and `.sdots` the stack element draws for itself; the **drift**: on every clock tick the shell applies `transform: translate(x, y)` to the `.iwrap` box from `drift(tick, seed)`, a pure function (a small LCG over the tick and a per-connection seed) bounded to ±20 and ±15, replacing `Math.random()` so `idle.spec.ts`'s check 40 holds and a unit test proves the bounds; the composition rule from ADR 0017 is in the header: the shell imports `features/clock` and `features/stack` and lays them out; neither imports the other.
-- The shell's template: the `.idle` overlay (`hidden` and `wake` from `IdleTimer`, spec 14 D) holds `<hp-idle-screen .idle=${state}>`; `#iwrap` and the guest's `idleChanged` go.
+- **`<hp-idle-screen>`** (`src/shell/idle-screen.ts`): property `state: IdleState` from the shell; renders the `.ss` layout (`.ssc` with `<hp-clock>` and `.ssk` with `<hp-smart-stack mode="idle">`) when the stack has a card, else the clock alone (the `solo` class), with the `.scw`, `.speek` and `.sdots` the stack element draws for itself; the **drift**: on every clock tick the shell applies `transform: translate(x, y)` to the `.iwrap` box from `drift(tick, seed)`, a pure function (a small LCG over the tick and a per-connection seed) bounded to ±20 and ±15, replacing `Math.random()` so `idle.spec.ts`'s check 40 holds and a unit test proves the bounds; the composition rule from ADR 0017 is in the header: the shell imports `features/clock` and `features/stack` and lays them out; neither imports the other.
+- The shell's template: the `.idle` overlay (`hidden` and `wake` from `IdleTimer`, spec 14 D) holds `<hp-idle-screen .state=${state}>`; `#iwrap` and the guest's `idleChanged` go.
 - A tap on the stack's card wakes the panel and opens what the card is about (`stackGo`, spec 24's `<hp-smart-stack>` dispatches `tab-select`, `SheetRequestEvent` or a sensor history request; the idle timer's `waking` state swallows the tap that woke the screen, as today: check 9 and check 19 of the specs).
 
 ### The deletion (pull request 2)
@@ -109,7 +109,7 @@ After pull request 2: `ls src/home-panel.js src/auto.js src/legacy src/charts sr
 Pull request 1, the clock feature and the idle screen:
 
 1. `src/features/clock/{README.md,index.ts,ids.ts,model.ts,clock.ts,styles.css}`, `src/shell/idle-screen.ts`, `src/shell/drift.ts` exist with headers; the shell renders `<hp-idle-screen>` inside the `.idle` overlay; `renderIdle`, the 20-second interval, `#iwrap`'s guest write and `idleChanged` are gone from the class and the guest interface.
-2. Vitest: `clockModel` at a known instant in `en` and `fr` (the time split, the French `16 h 07`, the long date, the temps line, the icon's day flag, the next sun event across the three cases), `drift` (bounds over ten thousand ticks, determinism per seed); 100 percent statements.
+2. Vitest: `clockModel` at a known instant in `en` and `fr` (the time split, the French `16:07`, the long date, the temps line, the icon's day flag, the next sun event across the three cases), `drift` (bounds over ten thousand ticks, determinism per seed); 100 percent statements.
 3. Playwright: `idle.spec.ts` checks 8, 9 and 40 and `smart-stack.spec.ts` checks 18 to 21 pass unchanged; the `idle-stack-*` baselines identical; axe clean on the idle screen (`aria-hidden` on the overlay as today).
 4. Every baseline identical; the French equivalence test passes for `test/unit/fixtures/moved/clock.json`; `npm run check`, `npm test -- --coverage`, `npm run lint` green; changeset (patch): "The idle clock is redrawn with the same look. Nothing visible changes."
 
@@ -138,7 +138,9 @@ The seams are the two of ADR 0005. New in kind: nothing; the clock is the simple
 
 ## As built (#276)
 
-- **The French time is `16:07`, not `16 h 07`.** The legacy clock drew `fmt.time24` in French, and the move keeps what the screen showed; `clockModel` does the same.
+- **The French time is `16:07`.** The spec first said `16 h 07`; the legacy clock drew `fmt.time24` in French, and the move keeps what the screen showed. The lines above are amended.
+- **The view model's small changes.** `nextSun` is one catalog message (`clock.sunrise`, `clock.sunset`, with `{time}`) rather than a label and a time, and `icon` carries its `label`. The reads are `readClock` in `inputs.ts`, beside `ids.ts`, as in every feature.
+- **The drift's seed.** It is drawn each time the panel goes idle, not once per connection, and the first place of each idle spell is no nudge at all; every tick after it moves.
 - **The stylesheets follow ADR 0019's naming.** The clock's rules are in `src/features/clock/clock.element.css` and the idle screen's in `src/shell/idle-screen.element.css`, both in the elements' own shadow roots.
 - **The overlay stays in the frame.** `.idle`, `.idle[hidden]`, `.idle.wake` and `.app.idle > :not(.idle)` are rules of the shell's frame (the overlay is the frame's child, and the fade is the frame's keyframes), so they stay in `tabs.css`; `<hp-idle-screen>` draws `#iwrap` and what is inside it.
 - **The house's temperatures moved to a provider.** `readHomeTemperatures` and `homeTemperatureIds` moved from `src/shell/home-line.ts` to `src/providers/home-temperatures.ts`, because a feature may not import the shell; the greeting's line and the clock read the same function.

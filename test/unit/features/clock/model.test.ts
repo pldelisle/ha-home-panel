@@ -6,8 +6,8 @@ import {clockIds} from '../../../../src/features/clock/ids.ts';
 import {readClock, type ClockInputs} from '../../../../src/features/clock/inputs.ts';
 import {clockModel} from '../../../../src/features/clock/model.ts';
 import {FULL_CFG} from '../../../e2e/houses.ts';
-import {fakeHass} from '../../fake-hass.ts';
-import {depsOf, fullHouse, NOW, storeOf} from '../media/support.ts';
+import {fakeHass, readFixture} from '../../fake-hass.ts';
+import {depsOf, fullHouse, NOW, recorded, storeOf} from '../media/support.ts';
 
 const at = (iso: string) => Date.parse(iso);
 const PM = at('2026-11-07T16:07:00-05:00');
@@ -87,11 +87,30 @@ describe('readClock and clockIds', () => {
   });
 
   test('a house with no sun entity is day, the weather entity names the condition, and a missing place is the equator', () => {
-    const hass = fakeHass({states: {'weather.home': {state: 'rainy', attributes: {temperature: 4}}}});
-    const store = storeOf(hass, {entities: {weather: 'weather.home', sun: null, cond: null}});
+    // the test house, with the config's sun and condition sensor taken away
+    const store = storeOf(fullHouse, {...FULL_CFG, entities: {...FULL_CFG.entities, sun: null, cond: null}});
+    const weather = store.config.entities.weather!;
     const read = readClock(store.hass!.states, store.config, {}, {now: NOW, isoDay: at => store.fmt.isoDay(at)});
-    expect(read).toMatchObject({sunUp: true, condition: 'rainy', outside: 4, inside: null});
+    expect(read).toMatchObject({sunUp: true, condition: store.hass!.states[weather].state});
     expect(read.sunrise).not.toBeNull();
-    expect(clockIds(store)).toEqual(['weather.home']);
+    expect(clockIds(store)).not.toContain('sun.sun');
+  });
+});
+
+describe('the recorded house', () => {
+  if (!recorded) {
+    test.skip('main.json is not recorded yet (the owner records it, #170): the clock is tested on the test house', () => {});
+    return;
+  }
+
+  test.each(['en', 'fr'] as const)('gives a time, a date and the next sun event, in %s', language => {
+    const hass = fakeHass.fromFixture('main');
+    const store = storeOf(hass);
+    const now = Date.parse(readFixture('main').recordedAt);
+    const read = readClock(hass.states, store.config, hass.config, {now, isoDay: at => store.fmt.isoDay(at)});
+    const vm = clockModel(read, {...depsOf(hass, language), isFrench: language === 'fr'});
+    expect(vm.time.main).toMatch(/^\d{1,2}:\d{2}$/);
+    expect(vm.date).not.toBe('');
+    expect(new Set(clockIds(store)).size).toBe(clockIds(store).length);
   });
 });

@@ -7,7 +7,7 @@ The big clock the idle screen shows after a few minutes without a touch ([spec 2
 ```
 src/features/clock/
   README.md
-  index.ts             the feature's export (importing it defines <hp-clock>)
+  index.ts             the feature's export: HpClock and CLOCK_TICK_MS (importing it defines <hp-clock>)
   ids.ts               clockIds(store): the temperatures, the sun and the condition sensor
   inputs.ts            readClock(states, config, place, {now, isoDay}): ClockInputs
   model.ts             clockModel(inputs, {t, fmt, isFrench}): ClockViewModel
@@ -21,7 +21,7 @@ src/features/clock/
 
 ## The model
 
-`clockModel` words everything: the time in the panel's language (24-hour in French, as the legacy clock was), the long date, "20.8° inside · −3.1° outside" (`clock.inside`, `clock.outside`), the icon's label, and the next sun event: the sunrise before it, the sunset during the day, tomorrow's sunrise after dark (`clock.sunrise`, `clock.sunset`).
+`clockModel` words everything: the time in the panel's language (24-hour in French, as the legacy clock was), the long date, "20.8° inside · -3.1° outside" (`clock.inside`, `clock.outside`), the icon's label, and the next sun event: the sunrise before it, the sunset during the day, tomorrow's sunrise after dark (`clock.sunrise`, `clock.sunset`).
 
 ## The element
 

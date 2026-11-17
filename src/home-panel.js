@@ -220,8 +220,8 @@ export class LegacyPanel {
     // moved into a pane survives. The shell renders them at once; the first draw finds the frame the shell rendered.
     if (this.framed) this.ctx.shell.resetFrame();
     this.framed = true;
-    // the shell drew the frame (the header, the rail, the panes); the guest draws what is not in it: the idle clock. Its own container
-    // starts empty at each draw, the lens filter with it, as it did since the columns went (#269); #198 draws the filter again
+    // the shell drew the frame (the header, the rail, the panes) and, since #276, the idle clock; the guest's own container holds only the
+    // lens filter. It starts empty at each draw, the filter with it, as it did since the columns went (#269); #198 draws the filter again
     this.container.innerHTML = '';
     this.$app = this.$('app');
     // `.app` is the shell's and outlives a draw, where a fresh one used to start bare: clear what the guest toggles on it
@@ -313,8 +313,8 @@ export class LegacyPanel {
   }
 
   // ---------- live values ----------
-  // Energy's read left in the legacy panel (#241): the provider over the store, in kW (the provider words nothing). Its callers leave
-  // with the idle clock (spec 26) and the More word (the guest).
+  // Energy's read left in the legacy panel (#241): the provider over the store, in kW (the provider words nothing). Its last caller,
+  // the More word, leaves with the guest.
   powerNow() {
     return powerNow(this.store.hass?.states ?? {}, this.store.config);
   }
