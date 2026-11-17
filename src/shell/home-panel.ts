@@ -92,6 +92,7 @@ export class HomePanel extends LitElement {
     epoch: {state: true},
     idleState: {state: true},
     settingsOpen: {state: true},
+    statusOpen: {state: true},
     toastNow: {state: true},
     liveRunning: {state: true},
   };
@@ -106,6 +107,8 @@ export class HomePanel extends LitElement {
   declare private idleState: IdleState;
   /** The settings popup behind the gear is open. */
   declare private settingsOpen: boolean;
+  /** The Status checks under the live pill are open: a popup, as the settings are, so a sheet opens over it and Escape closes the sheet first. */
+  declare private statusOpen: boolean;
   /** The toast showing, from the last `ToastEvent` through the pure schedule; null when none is. */
   declare private toastNow: ToastState;
   /** An activity runs in the live pill: `#chips` says so, and the weather chip beside it slims down. */
@@ -170,6 +173,7 @@ export class HomePanel extends LitElement {
   private guest: GuestRenderer | undefined;
   private guestConnected = false;
   private settingsOff: (() => void) | undefined;
+  private statusOff: (() => void) | undefined;
   // which tabs this house shows, asked of the descriptors when the answer may have changed (the store told us, or the guest)
   private stale = true;
   private shown: Readonly<Partial<Record<FeatureKey, boolean>>> = {};
@@ -206,6 +210,7 @@ export class HomePanel extends LitElement {
     this.epoch = 0;
     this.idleState = 'active';
     this.settingsOpen = false;
+    this.statusOpen = false;
     this.toastNow = null;
     this.liveRunning = false;
     // each provider adds itself to this element as a controller and answers the context requests of every element below
@@ -230,6 +235,7 @@ export class HomePanel extends LitElement {
       resetFrame: () => this.resetFrame(),
       idle: {arm: () => this.idle.arm(), sleepNow: () => this.idle.sleepNow()},
       closeSettings: () => this.closeSettings(),
+      closeStatus: () => this.closeStatus(),
       sheets: this.sheets,
       get tab() {
         return tab();
@@ -273,7 +279,7 @@ export class HomePanel extends LitElement {
   private resetFrame(): void {
     // the guest's sheets start over with it, and so does More: it closes, as it did when the guest wrote it
     this.sheets.forget(MORE_SHEET);
-    this.sheets.forget(STATUS_SHEET);
+    this.statusOpen = false;
     this.settingsOpen = false;
     this.epoch++;
     this.flush();
@@ -284,14 +290,21 @@ export class HomePanel extends LitElement {
   // the sheet's Close button, its backdrop and its swipe: the host closes it, if it is still the sheet that is open
   private readonly onMoreClose = (): void => this.sheets.close(MORE_SHEET);
 
-  // The gear opens and closes the popup; its Sleep now closes it and starts the idle clock. Escape reaches it through the sheet host
-  // (registered after the guest's Status checks, so those close first); the guest's tap outside asks `closeSettings`. Arrow fields, so the template hands the same functions at every render.
+  // The gear opens and closes the popup, and closes the Status checks, which never stay open beside it from the gear; its Sleep now closes it
+  // and starts the idle clock. Escape reaches it through the sheet host (registered after the Status checks, so those close first); the
+  // guest's tap outside asks `closeSettings`. Arrow fields, so the template hands the same functions at every render.
   private readonly toggleSettings = (): void => {
     this.settingsOpen = !this.settingsOpen;
+    this.statusOpen = false;
   };
 
   private closeSettings(): void {
     this.settingsOpen = false;
+  }
+
+  // the Status checks: the pill opens and closes them, the guest's tap outside and Escape close them
+  private closeStatus(): void {
+    this.statusOpen = false;
   }
 
   private readonly onSleepNow = (): void => {
@@ -309,7 +322,9 @@ export class HomePanel extends LitElement {
   private readonly onSheetRequest = (e: SheetRequestEvent): void => {
     e.stopPropagation();
     const {id, detail} = e.detail;
-    this.sheets.open(id, detail);
+    // the Status checks are a popup the shell keeps, not a sheet: a sheet opened after them leaves them open beneath it
+    if (id === STATUS_SHEET) this.statusOpen = true;
+    else this.sheets.open(id, detail);
   };
 
   // A pane whose detail sheet is open while another tab is shown (Home's card opens Weather's, on a phone), or one of the sheets it
@@ -324,7 +339,8 @@ export class HomePanel extends LitElement {
   // an element's sheet asks to close (its Close button, its backdrop, its swipe)
   private readonly onSheetDismiss = (e: SheetDismissEvent): void => {
     e.stopPropagation();
-    this.sheets.close(e.detail.id);
+    if (e.detail.id === STATUS_SHEET) this.closeStatus();
+    else this.sheets.close(e.detail.id);
   };
 
   // The live pill counts what runs and what needs attention: the weather chip slims while an activity shows, and the guest's Home sub-line says the count.
@@ -477,7 +493,7 @@ export class HomePanel extends LitElement {
   }
 
   // The header, the error line and the tabs, whose containers the guest fills (#hello, #wxchip-host, #clock, the hosts inside the panes); the live pill and
-  // the Status popup are the live feature's elements (#256), the popup a sheet of the host's (`live.status`) in the frame's popup box;
+  // the Status popup are the live feature's elements (#256), the popup one the shell keeps open (`statusOpen`) in the frame's popup box;
   // #err is empty since #251, when the Energy and Car cards took their own history error lines, and goes with Home (#268); what the guest
   // draws itself comes after, in the guest container.
   private renderWrap(): TemplateResult {
@@ -488,7 +504,7 @@ export class HomePanel extends LitElement {
         <div class="chips">
           <div id="chips" ?data-live=${this.liveRunning}>
             <span id="wxchip-host" style="display:contents"></span>
-            <hp-live-pill .open=${this.sheets.isOpen(STATUS_SHEET)}></hp-live-pill>
+            <hp-live-pill .open=${this.statusOpen}></hp-live-pill>
           </div>
           <button
             class="icon"
@@ -508,8 +524,8 @@ export class HomePanel extends LitElement {
           id="attpop"
           role="dialog"
           aria-label="Status checks"
-          ?hidden=${!this.sheets.isOpen(STATUS_SHEET)}
-          .open=${this.sheets.isOpen(STATUS_SHEET)}
+          ?hidden=${!this.statusOpen}
+          .open=${this.statusOpen}
         ></hp-status-popup>
         <div class="pop" id="setpop" ?hidden=${!this.settingsOpen} role="dialog" aria-label="Settings">
           <hp-settings-popup
@@ -601,7 +617,9 @@ export class HomePanel extends LitElement {
   private connectGuest(): void {
     if (!this.guest || !this.isConnected) return;
     this.guest.connect(this.guestContext());
-    // Escape tries the popups in the order they registered: the guest's Status checks (registered in connect) close first, then this one
+    // Escape tries the popups in the order they registered: the Status checks close first, then the settings
+    this.statusOff?.();
+    this.statusOff = this.sheets.registerPopup({isOpen: () => this.statusOpen, close: () => this.closeStatus()});
     this.settingsOff?.();
     this.settingsOff = this.sheets.registerPopup({isOpen: () => this.settingsOpen, close: () => this.closeSettings()});
     this.guestConnected = true;
@@ -662,6 +680,8 @@ export class HomePanel extends LitElement {
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     this.guest?.disconnect();
+    this.statusOff?.();
+    this.statusOff = undefined;
     this.settingsOff?.();
     this.settingsOff = undefined;
     // the toast goes with the panel: no timer runs for a panel off the page

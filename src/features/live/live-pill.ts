@@ -2,7 +2,7 @@
 // ring and words, the others as ring bubbles and a "!" bubble for a problem, or a finished activity's check for ten minutes. A tap opens the Status popup.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) placing `liveModel`'s pill in the legacy `laPill()`'s markup; it keeps the model's `LiveState` between readings
 // (the reducer's state lives in the element, as `laSeen` and `laDone` lived in the legacy panel) and tells the shell how many activities run (an event up).
-// Must not: read an entity or the clock but through `LiveReading`, word a string, or open the popup itself (the shell's sheet host does).
+// Must not: read an entity or the clock but through `LiveReading`, word a string, or open the popup itself (the shell does).
 import {LitElement, html, nothing, unsafeCSS, type PropertyValues} from 'lit';
 import {classMap} from 'lit/directives/class-map.js';
 import {styleMap} from 'lit/directives/style-map.js';
@@ -34,7 +34,7 @@ const levelColor = (level: AttentionView['level']) => `var(--${level})`;
 
 export class LivePill extends LitElement {
   static override properties = {open: {type: Boolean}};
-  /** Bound by the shell to the sheet host's `isOpen(STATUS_SHEET)`: the popup is on screen, which `aria-expanded` says. */
+  /** Bound by the shell to whether it keeps the Status checks open: the popup is on screen, which `aria-expanded` says. */
   declare open: boolean;
 
   static override styles = [common, unsafeCSS(forShadow(ownCss))];

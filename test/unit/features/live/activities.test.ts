@@ -155,7 +155,8 @@ describe('the car', () => {
       right: '7.1 kW',
       big: {soc: '64', limit: '→ 90% limit', eta: null},
       bar: {soc: 64, limit: 90, aria: 'Battery 64 percent, limit 90 percent'},
-      pause: {id: house.wallbox.pause.id, resume: false, label: 'Pause charging'}, openCar: 'Open Car ›',
+      pause: {id: house.wallbox.pause.id, resume: false, label: 'Pause charging'},
+      openCar: 'Open Car ›',
     });
   });
 

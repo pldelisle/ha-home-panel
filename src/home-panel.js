@@ -1128,8 +1128,6 @@ export class LegacyPanel {
     this.$('menu').addEventListener('click', () =>
       this.host.dispatchEvent(new Event('hass-toggle-menu', {bubbles: true, composed: true})),
     );
-    // the gear's popup and the Status popup do not stay open together, as before the pill was an element
-    this.$('gear').addEventListener('click', () => this.sheets.close('live.status'));
     [
       ['open-air', 'air.detail'], // dead until the Home move (#268): the card is empty and parked
     ].forEach(([b, s]) => {
@@ -1144,12 +1142,9 @@ export class LegacyPanel {
     });
     this.root.querySelectorAll('.sheet').forEach(sh => this.swipeToClose(sh.querySelector('.panel'), sh.id));
     this.root.addEventListener('click', e => {
-      // a tap outside the Status popup closes it (the shell's sheet host keeps it); a tap on the pill stops at the pill
-      if (
-        this.sheets.isOpen('live.status') &&
-        !e.composedPath().some(n => n instanceof Element && n.localName === 'hp-status-popup')
-      )
-        this.sheets.close('live.status');
+      // a tap outside the Status popup closes it (the shell keeps it); a tap on the pill stops at the pill
+      if (!e.composedPath().some(n => n instanceof Element && n.localName === 'hp-status-popup'))
+        this.ctx.shell.closeStatus();
       const sp = this.$('setpop');
       if (!sp.hidden && !e.composedPath().some(n => n === sp || n === this.$('gear'))) this.ctx.shell.closeSettings();
     });

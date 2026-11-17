@@ -1,6 +1,6 @@
 // <hp-status-popup>: the Status popup under the header: one card per running activity, then the Status block (the checks' rows and the phrases of what is fine).
 // Pattern: humble object (Meszaros, xUnit Test Patterns) placing `liveModel`'s popup in the legacy `renderAttention()`'s markup; it is the shell's popup box
-// (`.pop`, the sheet host opens and closes it as `live.status`, ADR 0021) and wears `la` while it holds cards, as the legacy box did.
+// (`.pop`, the shell opens and closes it as the popup `live.status`, before the settings in Escape's order) and wears `la` while it holds cards, as the legacy box did.
 // Must not: read an entity or the clock but through `LiveReading`, word a string, or open or close itself (the shell binds `open` and `hidden`).
 import {LitElement, html, nothing, unsafeCSS} from 'lit';
 import {repeat} from 'lit/directives/repeat.js';
@@ -16,7 +16,7 @@ import {forShadow} from '../../ui/styles/host.ts';
 
 export class StatusPopup extends LitElement {
   static override properties = {open: {type: Boolean}};
-  /** Bound by the shell to the sheet host's `isOpen('live.status')`: closed, it draws nothing and asks for no history. */
+  /** Bound by the shell to whether it keeps the Status checks open: closed, it draws nothing and asks for no history. */
   declare open: boolean;
 
   static override styles = [common, list, unsafeCSS(forShadow(ownCss))];
