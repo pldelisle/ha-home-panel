@@ -34,9 +34,6 @@
   font-size: calc(13px * var(--tx));
   margin-top: 1px;
 }
-.app.tabsv.cp .head .who {
-  display: none;
-}
 .app.tabsv.cp .head .chips {
   display: contents;
 }

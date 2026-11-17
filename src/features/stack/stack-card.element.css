@@ -1,0 +1,321 @@
+/*
+ * <hp-stack-card>'s own rules: the host lays out nothing, so the card is the item of the smart stack's `.scw`, as the legacy `.sc` div
+ * was; then the card in the Home card's slot (`mode="home"`, smaller on a short card), the card and its parts in both places, and the
+ * narrow screen's size. Moved from the legacy `.hwx .hstk .sc` and its parts and the `:is(.idle, .hstk) .sc` rules and its parts
+ * (tabs.css), which #266 deleted: `.hwx .hstk` is read here as `:host([mode='home'])` and `:is(.idle, .hstk)` as `:host`, which weigh
+ * the same, so the cascade is the legacy one in the legacy order.
+ */
+:host {
+  display: contents;
+}
+:host([mode='home']) .sc {
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  flex: 1;
+  padding: 16px 18px;
+  border-radius: 24px;
+  background: var(--card2);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+  animation-duration: 0.45s;
+}
+:host([glass][mode='home']) .sc:not(.amber, .red) {
+  background: var(--g-tile);
+  box-shadow: var(--g-edge-s);
+}
+@container (max-height:230px) {
+  :host([mode='home']) .sft {
+    display: none;
+  }
+  :host([mode='home']) .sbig {
+    font-size: 42px;
+    margin-top: 10px;
+  }
+  :host([mode='home']) .smid {
+    font-size: 15px;
+    margin-top: 4px;
+  }
+  :host([mode='home']) :is(.srow, .snp, .spl, .sev, .schips, .swx, .sbar) {
+    margin-top: 10px;
+  }
+  :host([mode='home']) .snp :is(img, .sart) {
+    width: 64px;
+    height: 64px;
+  }
+  :host([mode='home']) .sring {
+    zoom: 0.78;
+  }
+}
+:host .sc {
+  position: relative;
+  width: 340px;
+  height: 300px;
+  box-sizing: border-box;
+  padding: 22px 24px;
+  border-radius: 34px;
+  background: var(--g-card, var(--card));
+  -webkit-backdrop-filter: var(--g-bd, none);
+  backdrop-filter: var(--g-bd, none);
+  box-shadow: var(--g-edge, var(--shadow));
+  display: flex;
+  flex-direction: column;
+  color: var(--fg);
+  overflow: hidden;
+  animation: scin 0.6s ease-out both;
+}
+:host .sc[data-go] {
+  cursor: pointer;
+}
+:host .sc.amber {
+  box-shadow:
+    var(--g-edge, var(--shadow)),
+    0 0 0 2px color-mix(in srgb, var(--warn) 70%, transparent),
+    0 0 40px -6px color-mix(in srgb, var(--warn) 60%, transparent);
+}
+:host .sc.red {
+  box-shadow:
+    var(--g-edge, var(--shadow)),
+    0 0 0 2px color-mix(in srgb, var(--crit) 75%, transparent),
+    0 0 44px -6px color-mix(in srgb, var(--crit) 60%, transparent);
+}
+@keyframes scin {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+:host .sh {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--fg2);
+  min-width: 0;
+}
+:host .sh .si {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+}
+:host .sh b {
+  font-weight: 700;
+  color: var(--fg);
+  font-size: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+:host .sh em {
+  margin-left: auto;
+  font-style: normal;
+  white-space: nowrap;
+  padding-left: 6px;
+}
+:host .sbig {
+  font-family: var(--f-num);
+  font-weight: var(--num-w);
+  font-size: 56px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  margin-top: 18px;
+}
+:host .sbig small,
+:host .sring b small {
+  font-size: 0.42em;
+  font-weight: 600;
+}
+:host .smid {
+  font-size: 17px;
+  font-weight: 600;
+  margin-top: 8px;
+  line-height: 1.3;
+}
+:host .sft {
+  margin-top: auto;
+  font-size: 14px;
+  color: var(--fg2);
+  line-height: 1.35;
+}
+:host .schips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 14px;
+}
+:host .schips span {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--fg) 10%, transparent);
+}
+:host .swx {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 12px;
+}
+:host .swx .sbig {
+  margin-top: 0;
+  font-size: 50px;
+}
+:host .swx .sbig small {
+  color: var(--fg2);
+  font-size: 0.55em;
+}
+:host .swx .wxi {
+  flex: none;
+}
+:host .srow {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-top: 14px;
+}
+:host .sring {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+:host .sring svg {
+  position: absolute;
+  inset: 0;
+}
+:host .sring b {
+  font-family: var(--f-num);
+  font-weight: var(--num-w);
+  font-size: 32px;
+}
+:host .skv {
+  display: grid;
+  gap: 8px;
+}
+:host .skv small {
+  display: block;
+  font-size: 12.5px;
+  color: var(--fg2);
+}
+:host .skv b {
+  font-size: 18px;
+}
+:host .spl {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+:host .sp {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+:host .sp b {
+  display: block;
+  font-size: 16px;
+}
+:host .sp small {
+  font-size: 13.5px;
+  color: var(--fg2);
+}
+:host .sav {
+  flex: none;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--m-orange);
+  color: #fff;
+  font-weight: 700;
+  font-size: 17px;
+}
+:host .sav.away {
+  filter: grayscale(0.9);
+  opacity: 0.55;
+}
+:host .stag {
+  margin-left: auto;
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--fg) 10%, transparent);
+  color: var(--fg2);
+}
+:host .stag.ok {
+  background: color-mix(in srgb, var(--ok) 22%, transparent);
+  color: var(--ok);
+}
+:host .sev {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+:host .sev i {
+  flex: none;
+  width: 4px;
+  border-radius: 2px;
+}
+:host .sev b {
+  display: block;
+  font-size: 16px;
+}
+:host .sev small {
+  font-size: 13.5px;
+  color: var(--fg2);
+}
+:host .snp {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 18px;
+}
+:host .snp img,
+:host .snp .sart {
+  flex: none;
+  width: 84px;
+  height: 84px;
+  border-radius: 14px;
+  object-fit: cover;
+  background: linear-gradient(135deg, var(--m-amber), var(--m-purple));
+}
+:host .snp b {
+  display: block;
+  font-size: 18px;
+}
+:host .snp small {
+  font-size: 14px;
+  color: var(--fg2);
+}
+:host .sbar {
+  display: flex;
+  gap: 3px;
+  height: 12px;
+  margin-top: 18px;
+}
+:host .sbar i {
+  border-radius: 4px;
+}
+@media (max-width: 380px) {
+  :host .sc {
+    width: 300px;
+    height: 280px;
+    padding: 20px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  :host .sc {
+    animation: none;
+    transition: none;
+  }
+}

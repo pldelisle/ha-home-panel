@@ -1,0 +1,51 @@
+/*
+ * <hp-smart-stack>'s own rules: the host lays out nothing, so the card's frame and the dots are items of the guest's slot (`.hstk` in the
+ * Home card, a column; `.ssk` beside the idle clock, a row), as the legacy `.scw` and `.sdots` divs were. Moved from the legacy
+ * `.hwx .hstk .scw`, `.hwx .hstk .sdots` and the `:is(.idle, .hstk)` rules of `.scw`, `.speek` and `.sdots` (tabs.css), which #266
+ * deleted, read here as `:host([mode='home'])` and `:host`, which weigh the same; the slots' own rules stay with the guest.
+ */
+:host {
+  display: contents;
+}
+:host([mode='home']) .scw {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+:host([mode='home']) .sdots {
+  flex-direction: row;
+  justify-content: center;
+}
+:host([mode='home']) .sdots i.on {
+  height: 6px;
+  width: 16px;
+}
+:host .scw {
+  position: relative;
+}
+:host .speek {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  top: -9px;
+  height: 24px;
+  border-radius: 22px 22px 0 0;
+  background: var(--g-card, var(--card));
+  opacity: 0.55;
+}
+:host .sdots {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+:host .sdots i {
+  width: 6px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--fg);
+  opacity: 0.25;
+}
+:host .sdots i.on {
+  opacity: 0.9;
+  height: 16px;
+}

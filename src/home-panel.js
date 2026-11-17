@@ -1,7 +1,6 @@
 // Home panel for Home Assistant: a wall-tablet and phone dashboard (energy, climate, lights, weather, car, air, automations).
 // Registered with panel_custom, so it runs inside the HA frontend and uses the signed-in user's connection.
 // Nothing secret lives in this file: the house's entities, rooms and people come from the panel's config (see core/config.ts) or are found in hass.
-import {pickStack, inHours, reminderLeft} from './stack.js';
 import {FR_ATTR, createFrench} from './i18n/fr.js';
 import {autoMethods} from './auto.js';
 import {StaleReply} from './core/api.ts';
@@ -19,7 +18,7 @@ import {hydroQuebec} from './providers/hydro-quebec.ts';
 import {lightAreas} from './providers/light-areas.ts';
 import {milaRooms} from './providers/mila.ts';
 import {powerNow} from './providers/power.ts';
-import {dayKeys, flowIds, hourlyFlow, meterTotals, powerWindows, waterDay} from './providers/power-history.ts';
+import {dayKeys, meterTotals, powerWindows, waterDay} from './providers/power-history.ts';
 import {ensureFonts} from './fonts.js';
 // Liquid Glass: whether this engine can run an SVG filter inside backdrop-filter (Chromium only)
 const LENS_OK =
@@ -30,15 +29,6 @@ const LENS_OK =
 
 const sum = a => a.reduce((x, y) => x + (y || 0), 0);
 const f1 = v => (v == null ? '–' : (+v).toFixed(1));
-const ms = v => (typeof v === 'number' ? v : Date.parse(v));
-// a YYYY-MM-DD day key as its UTC noon: read by a UTC-pinned set (fmtUtcEn, fmtUtc), a key names its own day whatever zone the browser or the house is in
-const dayAt = k => new Date(k + 'T12:00:00Z');
-// a name without its accents and capitals, for matching a person's first name
-const fold = x =>
-  x
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase();
 
 // card order for the column packing
 // 'open-air' is dead until the Home move deletes it (#268): nothing draws in that card any more
@@ -214,9 +204,8 @@ export class LegacyPanel {
     // the formatter sets (spec 11), named by their language and zone, are built once the store is known (refreshFormatters):
     //   fmt      the profile's language, the house's zone: the five sites that were already French
     //   fmtEn    English, the house's zone: every other site, because the rewrite layer parses English (deleted in phase 4)
-    //   fmtUtc   fmt pinned to UTC, and fmtUtcEn fmtEn pinned to UTC: for a day key parsed at UTC noon (dayAt)
-    //            and for a clock time with no day (clockTime), neither of which belongs to any zone
-    // fmtUtcEn never changes; the other three follow the profile (refreshFormatters)
+    //   fmtUtcEn fmtEn pinned to UTC: for a clock time with no day (clockTime), which belongs to no zone
+    // fmtUtcEn never changes; the other two follow the profile (refreshFormatters)
     this.fmtUtcEn = createFormatters(englishLocale('UTC'));
     this.localeKey = '';
     this.frDrawn = false; // whether the panel was last drawn in French
@@ -225,7 +214,7 @@ export class LegacyPanel {
       this.tick();
     };
     this.unsubStore = null; // the one path to the one-second render, subscribed in connect
-    this.shared = null; // the history the readers left in this panel share: the energy slices and the water heater's day (loadSharedHistory)
+    this.shared = null; // the history the readers left in this panel share: the meter's totals and the water heater's day (loadSharedHistory)
     this.drawnTab = 'home'; // the tab the guest last drew its part of (tabChanged); `tab` is the shell's
     this.framed = false; // whether build() has drawn once, so the next draw asks the shell for a fresh frame
     this.frameKey = null; // what availability() said when the shell was last asked to draw the rail
@@ -233,13 +222,6 @@ export class LegacyPanel {
     this.cache = {}; // last innerHTML per container, to skip identical updates
     this.attentionCount = 0; // how many Status checks need attention, told by the shell from the live pill (liveChanged)
     this.liveRunning = false; // whether the live pill shows an activity, told by the shell (liveChanged): the weather chip slims beside it
-    this.fc = {}; // forecasts by type, told by the shell (forecastChanged) from the Weather pane's subscription; Home's card reads them
-    // #iwrap, the clock's container, is a static node of the shell's and outlives a draw: one listener, added at connect and removed at disconnect.
-    // On the smart stack's card the tap that wakes the panel opens what the card is about
-    this.onIdleClick = e => {
-      const g = e.target.closest('[data-go]');
-      if (g) this.stackGo(g.dataset.go);
-    };
   }
   // connect, disconnect, hassChanged, panelChanged, tabChanged and compactChanged are the guest's interface (spec 14,
   // GuestRenderer): the shell feeds the store itself and calls them after it did.
@@ -329,10 +311,8 @@ export class LegacyPanel {
     this.clockT = setInterval(() => {
       this.renderHeader();
       this.renderIdle();
-      this.renderHomeStack();
     }, 20000);
     this.histT = setInterval(() => this.refreshShared(), 15 * 60000);
-    this.$('iwrap').addEventListener('click', this.onIdleClick);
     if (this.hass && this.$app) this.refreshShared();
     if (this.$app) this.observeLayout();
   }
@@ -350,7 +330,6 @@ export class LegacyPanel {
     if (this.ro) this.ro.disconnect();
     clearInterval(this.clockT);
     clearInterval(this.histT);
-    this.$('iwrap').removeEventListener('click', this.onIdleClick);
     if (this.unsubStore) this.unsubStore();
     this.unsubStore = null;
   }
@@ -360,9 +339,6 @@ export class LegacyPanel {
   }
   get ROOMS() {
     return this.store.config.rooms;
-  }
-  get HOUSEHOLD() {
-    return this.store.config.people;
   }
   get MODES() {
     return this.store.config.modes;
@@ -410,7 +386,6 @@ export class LegacyPanel {
     this.localeEn = englishLocale(locale.timeZone);
     this.fmt = createFormatters(this.locale);
     this.fmtEn = createFormatters(this.localeEn);
-    this.fmtUtc = createFormatters({...locale, timeZone: 'UTC'}); // fmt for a day key, see the constructor
   }
   ago(t) {
     const m = Math.round((Date.now() - Date.parse(t)) / 6e4);
@@ -489,6 +464,20 @@ export class LegacyPanel {
     });
     // The Security card is the second use, written the same way: its tag once a draw, and the card keeps its glow's memory (#226).
     this.$('hsec').innerHTML = '<hp-security-card></hp-security-card>';
+    // Who's home and the smart stack are the people and stack features' elements (#266), placed the same way (ADR 0031): the header's
+    // chips after the greeting, the Home card's Who's home and, on a tablet, its stack under the weather, and the stack beside the idle
+    // clock. Each container the guest still fills is a sibling of theirs, so a redraw of the greeting or the weather keeps them.
+    this.$('hello').innerHTML =
+      '<h1 id="hello-h"></h1><div id="hello-sub"></div><hp-who-chips place="header"></hp-who-chips>';
+    this.$('hwx').innerHTML = '<div id="hwx-wx" style="display:contents"></div><hp-who-card></hp-who-card>';
+    this.placeHomeStack();
+    this.$('iwrap').innerHTML =
+      '<div id="iss"><div class="ssc" id="iclk"></div><div class="ssk" id="istk" hidden><hp-smart-stack mode="idle"></hp-smart-stack></div></div>';
+    this.idleStackShown = false;
+    this.$('istk').addEventListener('hp-empty', e => {
+      this.idleStackShown = !e.detail.empty;
+      this.placeIdleStack();
+    });
     this.wire();
     this.observeLayout();
     this.ctx.shell.idle.arm(); // a draw counts as a touch, as it did: the five minutes start over, and an idle panel wakes
@@ -551,8 +540,17 @@ export class LegacyPanel {
   // "Sleep now" in the settings popup asks it through ctx.shell.idle. The guest draws the clock into #iwrap until the clock moves.
   idleChanged(idle) {
     if (!idle) return; // the shell took `.idle` off the frame already; the overlay fades out by itself
-    this.cache.ishell = null;
     this.renderIdle();
+  }
+  // The smart stack beside the clock is the stack feature's <hp-smart-stack mode="idle"> (#266), which build() places in #istk through
+  // the Home-card bridge (ADR 0031), its last use until the idle screen moves (spec 26): while it has a card the clock and the card sit
+  // side by side (`.ss`), else the clock is alone, as the legacy `renderIdle` laid them out.
+  placeIdleStack() {
+    const wrap = this.$('iss'),
+      slot = this.$('istk');
+    if (!wrap || !slot) return;
+    wrap.className = this.idleStackShown ? 'ss' : '';
+    slot.hidden = !this.idleStackShown;
   }
   renderIdle() {
     if (!this.$app || !this.hass || !this.$app.classList.contains('idle')) return;
@@ -578,463 +576,31 @@ export class LegacyPanel {
       d1 = this.sunDay(1);
     const next = ms < d.rise ? ['Sunrise', d.rise] : ms < d.set ? ['Sunset', d.set] : ['Sunrise', d1.rise];
     const clock = `<div class="iclock num">${t[0]}<small>${t[1] || ''}</small></div>`;
-    // smart stack (2.5.0): one contextual card beside the clock, picked by pickStack() from the cards that apply right now
-    let pick = null;
-    try {
-      pick = this.CFG.stack.on ? pickStack(this.stackCards(), ms) : null;
-    } catch (e) {
-      console.error('home-panel stack', e);
-    }
-    const shell = pick ? 'ss' : 'solo';
-    if (this.cache.ishell !== shell) {
-      this.cache.ishell = shell;
-      this.cache.iclk = this.cache.istk = null;
-      this.$('iwrap').innerHTML = pick
-        ? '<div class="ss"><div class="ssc" id="iclk"></div><div class="ssk" id="istk"></div></div>'
-        : '<div id="iclk"></div>';
-    }
     this.set(
       'iclk',
       `${icon ? `<div class="iclk2">${icon}${clock}</div>` : clock}<div class="idate">${esc(dateStr)}</div>${temps ? `<div class="itemps">${temps}</div>` : ''}${next[1] ? `<div class="isun">${next[0]} ${this.fmtEn.time(new Date(next[1]))}</div>` : ''}`,
     );
-    if (pick)
-      this.set(
-        'istk',
-        `<div class="scw">${pick.n > 1 ? '<div class="speek"></div>' : ''}${pick.card.html}</div>${pick.n > 1 ? `<div class="sdots" aria-hidden="true">${Array.from({length: pick.n}, (_, i) => `<i${i === pick.i ? ' class="on"' : ''}></i>`).join('')}</div>` : ''}`,
-      );
     // the block drifts a little on every tick so the OLED-less iPad still never shows the same pixels for hours
     const x = Math.round(Math.random() * 40 - 20),
       y = Math.round(Math.random() * 30 - 15);
     this.$('iwrap').style.transform = `translate(${x}px,${y}px)`;
   }
-  // one smart stack card: a title row, a body and a footer line; go = where a tap on it leads
-  scard(k, {ic, label, color, right = '', body = '', foot = '', tone = null, go = '', filler = false}) {
-    const html = `<div class="sc${tone ? ' ' + tone : ''}" data-k="${k}"${go ? ` data-go="${esc(go)}"` : ''}><div class="sh"><span class="si" style="background:${color}">${ico(ic, 16)}</span><b>${esc(label)}</b>${right ? `<em>${esc(right)}</em>` : ''}</div>${body}${foot ? `<div class="sft">${esc(foot)}</div>` : ''}</div>`;
-    return {k, tone, filler, html};
-  }
-  sring(pct, lim, color, size = 124) {
-    const r = 52,
-      c = 2 * Math.PI * r,
-      a = (c * Math.max(0, Math.min(100, pct || 0))) / 100;
-    return `<span class="sring" style="width:${size}px;height:${size}px"><svg width="${size}" height="${size}" viewBox="0 0 124 124" aria-hidden="true"><circle cx="62" cy="62" r="${r}" fill="none" stroke="currentColor" stroke-opacity=".14" stroke-width="11"/><circle cx="62" cy="62" r="${r}" fill="none" stroke="${color}" stroke-width="11" stroke-linecap="round" stroke-dasharray="${a.toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 62 62)"/>${lim ? `<circle cx="62" cy="62" r="${r}" fill="none" stroke="currentColor" stroke-opacity=".6" stroke-width="11" stroke-dasharray="1.6 ${c.toFixed(1)}" stroke-dashoffset="${((-c * lim) / 100).toFixed(1)}" transform="rotate(-90 62 62)"/>` : ''}</svg><b class="num">${pct == null ? '–' : Math.round(pct)}<small>%</small></b></span>`;
-  }
-  // every card that applies right now, red alerts and amber warnings first. No card ever reads camera motion.
   // Security's one read left in the legacy panel (#227): the provider's door and motion sensors over the store. Its
-  // callers leave with the Status checks (#256, after #254 moves the rules), the legacy stack (#266) and the More word (the guest).
+  // last caller is the More word, which leaves with the guest.
   doorSensors() {
     return doorMotionSensors(this.store.hass.states, registriesOf(this.store.hass), this.store.names);
   }
-  // Air's one read left in the legacy panel (#234): the provider's rooms, each with its rating, over the store. Its callers
-  // leave with the stack (#266) and the Home tile (#268).
+  // Air's one read left in the legacy panel (#234): the provider's rooms, each with its rating, over the store. Its last caller
+  // is the Home tile, which leaves with #268.
   airRooms() {
     return milaRooms(this.store.hass.states, registriesOf(this.store.hass), this.store.names).map(room => ({
       room,
       rating: rateRoom(room),
     }));
   }
-  // a pollutant's reading as the stack's air card and the Home tile said it (the feature words its own through the formatters)
+  // a pollutant's reading as the Home tile says it (the feature words its own through the formatters)
   airFigure(k, v) {
     return v == null ? '–' : k === 'co' && v < 10 ? (+v).toFixed(1) : this.fmtEn.integer(v);
-  }
-  stackCards() {
-    const now = Date.now(),
-      h = this.fmtEn.hourNow(Date.now()),
-      out = [],
-      S = this.CFG.stack,
-      mins = t => Math.round((now - Date.parse(t)) / 6e4);
-    const when = t => {
-      const d = Date.parse(t);
-      return this.fmtEn.isoDay(d) === this.fmtEn.isoDay(now) ? this.fmtEn.time(d) : this.fmtEn.date(d);
-    };
-    const chips = names =>
-      `<div class="schips">${names
-        .slice(0, 3)
-        .map(n => `<span>${esc(n)}</span>`)
-        .join('')}${names.length > 3 ? `<span>+${names.length - 3}</span>` : ''}</div>`;
-    const big = (v, u) => `<div class="sbig num">${v}${u ? `<small>${u}</small>` : ''}</div>`,
-      mid = t => `<div class="smid">${esc(t)}</div>`;
-    const doors = this.doorSensors().filter(x => x.kind === 'door');
-    const areas = this.houseLights();
-    // red: a door open 5 min or more, lights that stopped answering for 5 min (pinned until fixed)
-    // (x.since is the same instant as a number; mins and when take the state's ISO string, so the state is read again)
-    doors
-      .filter(x => x.on && mins(this.st(x.id).last_changed) >= 5)
-      .forEach(x => {
-        const m = mins(this.st(x.id).last_changed);
-        out.push(
-          this.scard('door', {
-            ic: 'door',
-            label: `${x.name} open`,
-            color: 'var(--crit)',
-            tone: 'red',
-            go: 'sens:' + x.id,
-            body:
-              m < 60
-                ? big(m, ' min')
-                : big(Math.floor(m / 60), ' h') + mid(`Open since ${when(this.st(x.id).last_changed)}`),
-            foot: 'Stays here until the door closes',
-          }),
-        );
-      });
-    const lost = areas.filter(a =>
-      a.ids.some(id => {
-        const s = this.st(id);
-        return s && s.state === 'unavailable' && mins(s.last_changed) >= 5;
-      }),
-    );
-    if (lost.length) {
-      const ids = lost.flatMap(a => a.ids.filter(id => (this.st(id) || {}).state === 'unavailable')),
-        first = ids.map(id => Date.parse(this.st(id).last_changed)).sort()[0];
-      out.push(
-        this.scard('lights', {
-          ic: 'bulb',
-          label: 'Lights unreachable',
-          color: 'var(--crit)',
-          right: 'since ' + when(first),
-          tone: 'red',
-          go: 'tab:lights',
-          body: big(ids.length, ids.length === 1 ? ' light' : ' lights') + chips(lost.map(a => a.name)),
-          foot: 'They are not answering Home Assistant',
-        }),
-      );
-    }
-    // amber: a weather warning, the car low and unplugged at night, phones that stopped updating
-    const warn = this.alerts().filter(a => a.kind === 'Warning');
-    if (warn.length)
-      out.push(
-        this.scard('wxwarn', {
-          ic: 'warn',
-          label: warn[0].title,
-          color: 'var(--warn)',
-          tone: 'amber',
-          go: 'weather.detail',
-          right: 'Env. Canada',
-          body: mid(warn.length > 1 ? `${warn.length} warnings in effect` : 'In effect for your area'),
-          foot: warn[0].time ? `Issued ${when(warn[0].time)}` : 'Tap for the details',
-        }),
-      );
-    const C = this.carInputs();
-    if (C && C.home !== false && !C.plugged && C.soc != null && C.soc < 40 && inHours(h, 21, 6))
-      out.push(
-        this.scard('carlow', {
-          ic: 'car',
-          label: `${C.name || 'Car'} not plugged in`,
-          color: 'var(--warn)',
-          tone: 'amber',
-          go: 'car.detail',
-          body: `<div class="srow">${this.sring(C.soc, 0, 'var(--warn)', 108)}<div class="skv">${C.range != null ? `<div><small>Range</small><b class="num">${Math.round(C.range)} km</b></div>` : ''}</div></div>`,
-          foot: 'Plug in before bed',
-        }),
-      );
-    const reg = this.hass.entities || {};
-    const frozen = Object.keys(this.hass.states)
-      .filter(id => id.startsWith('person.'))
-      .map(id => this.attr(id, 'source'))
-      .filter(Boolean)
-      .filter(t => (reg[t] || {}).platform === 'icloud' && ok(this.st(t)) && mins(this.st(t).last_updated) >= 180);
-    if (frozen.length)
-      out.push(
-        this.scard('presence', {
-          ic: 'house',
-          label: 'Presence not updating',
-          color: 'var(--warn)',
-          tone: 'amber',
-          right: 'since ' + when(this.st(frozen[0]).last_updated),
-          body: mid(`${plural(frozen.length, 'iPhone')} stopped updating. Who's home and Away may be wrong.`),
-          foot: 'Sign in to iCloud again in Settings',
-        }),
-      );
-    // the hour before sunrise
-    const d0 = this.sunDay(0),
-      rise = now < d0.rise ? d0.rise : this.sunDay(1).rise,
-      left = (rise - now) / 6e4;
-    if (rise && left > 0 && left <= 60) {
-      const on = areas.filter(a => a.ids.some(id => (this.st(id) || {}).state === 'on')).map(a => a.name);
-      if (!S.sunriseOff || on.length)
-        out.push(
-          this.scard('sunrise', {
-            ic: 'sunup',
-            label: S.sunriseOff ? 'Lights off at sunrise' : 'Sunrise',
-            color: 'var(--m-amber)',
-            go: 'tab:lights',
-            body:
-              big(
-                ...this.fmtEn
-                  .time(rise)
-                  .split(' ')
-                  .map((x, i) => (i ? ' ' + x : x)),
-              ) +
-              mid(`in ${Math.round(left)} min`) +
-              (on.length ? chips(on) : ''),
-            foot: on.length ? (S.sunriseOff ? 'Every light turns off then' : 'Lights still on') : 'Every light is off',
-          }),
-        );
-    }
-    // reminders from the config (a child's bedtime, say)
-    (S.reminders || []).forEach((r, i) => {
-      const m = reminderLeft(r, h);
-      if (m == null) return;
-      out.push(
-        this.scard('rem' + i, {
-          ic: 'moon',
-          label: r.title,
-          color: 'var(--m-purple)',
-          body:
-            big(
-              ...this.fmtEn
-                .time(Date.now() + m * 6e4)
-                .split(' ')
-                .map((x, j) => (j ? ' ' + x : x)),
-            ) + (r.text ? mid(r.text) : ''),
-          foot: `in ${m} min`,
-        }),
-      );
-    });
-    // Hydro-Québec critical peaks and Hilo challenges
-    const hq = this.hydroQuebec(),
-      defi = this.hiloChallenge(),
-      L = this.powerNow();
-    // the grid's reading as these two cards said it: watts under a kilowatt, one decimal above; the legacy English, which leaves with the
-    // stack's peak cards (#265), when the model words the figure
-    const using = () => {
-      const g = L.grid;
-      return `Using ${g == null ? '–' : g < 1 ? Math.round(g * 1000) + ' W' : g.toFixed(1) + ' kW'} right now`;
-    };
-    if (hq && (hq.peakNow || hq.peakUpcoming))
-      out.push(
-        this.scard('peak', {
-          ic: 'bolt',
-          label: hq.peakNow ? 'Critical peak now' : 'Critical peak coming',
-          color: 'var(--crit)',
-          right: 'Hydro-Québec',
-          go: 'energy.detail',
-          body: mid(hq.peakNow ? 'Lower consumption now' : 'Hydro-Québec announced a critical peak'),
-          foot: using(),
-        }),
-      );
-    else if (defi && defi.active)
-      out.push(
-        this.scard('peak', {
-          ic: 'bolt',
-          label: 'Hilo challenge',
-          color: 'var(--crit)',
-          right: 'Hilo',
-          go: 'energy.detail',
-          body: mid(String(defi.state)),
-          foot: using(),
-        }),
-      );
-    // a HomePod playing
-    const sp = this.speakers().find(x => (this.st(x.id) || {}).state === 'playing');
-    if (sp) {
-      const pic = this.attr(sp.id, 'entity_picture'),
-        area = this.areaName(sp.aid, sp.name);
-      out.push(
-        this.scard('music', {
-          ic: 'spk',
-          label: 'Now playing',
-          color: 'var(--m-purple)',
-          right: area,
-          go: 'tab:media',
-          body: `<div class="snp">${pic ? `<img src="${esc(pic)}" alt="">` : '<span class="sart"></span>'}<div><b>${esc(this.attr(sp.id, 'media_title') || 'Playing')}</b><small>${esc(this.attr(sp.id, 'media_artist') || this.attr(sp.id, 'app_name') || '')}</small></div></div>`,
-          foot: 'Tap for the player',
-        }),
-      );
-    }
-    // someone came or left in the last 30 min
-    const P = this.presence(),
-      pe = id => {
-        const s = this.st(id);
-        return s && s.last_changed;
-      };
-    const pid = n =>
-      Object.keys(this.hass.states).find(
-        id => id.startsWith('person.') && fold(this.attr(id, 'friendly_name') || '').split(/\s+/)[0] === fold(n),
-      );
-    const moved = P.map(p => ({...p, at: pe(pid(p.name))})).filter(p => p.at);
-    const who = () => {
-      const dr = doors
-        .filter(x => this.st(x.id) && mins(this.st(x.id).last_changed) <= 30 && (this.st(x.id) || {}).state === 'off')
-        .sort((a, b) => Date.parse(this.st(b.id).last_changed) - Date.parse(this.st(a.id).last_changed))[0];
-      return {
-        ic: 'house',
-        label: "Who's home",
-        color: 'var(--m-orange)',
-        body: `<div class="spl">${moved.map(p => `<div class="sp"><span class="sav${p.home ? '' : ' away'}">${esc(p.name.charAt(0))}</span><div><b>${esc(p.name)}</b><small>${p.home ? 'Arrived' : 'Left'} ${when(p.at)}</small></div><span class="stag${p.home ? ' ok' : ''}">${p.home ? 'Home' : 'Away'}</span></div>`).join('')}</div>`,
-        foot: dr ? `${dr.name} opened ${when(this.st(dr.id).last_changed)}` : '',
-      };
-    };
-    if (moved.some(p => mins(p.at) <= 30)) out.push(this.scard('who', who()));
-    // today's calendar events, in the morning
-    if (inHours(h, 6, 11)) {
-      const today = this.fmtEn.isoDay(now),
-        ev = Object.keys(this.hass.states)
-          .filter(id => id.startsWith('calendar.') && !(reg[id] || {}).hidden && ok(this.st(id)))
-          .map(id => ({id, a: this.st(id).attributes}))
-          .filter(
-            x =>
-              x.a.start_time &&
-              this.fmtEn.isoDay(Date.parse(String(x.a.start_time).replace(' ', 'T'))) === today &&
-              Date.parse(String(x.a.end_time || x.a.start_time).replace(' ', 'T')) > now,
-          )
-          .sort((x, y) => String(x.a.start_time).localeCompare(String(y.a.start_time)));
-      if (ev.length)
-        out.push(
-          this.scard('agenda', {
-            ic: 'cal',
-            label: 'Today',
-            color: 'var(--crit)',
-            right: plural(ev.length, 'event'),
-            body: ev
-              .slice(0, 2)
-              .map(
-                (x, i) =>
-                  `<div class="sev"><i style="background:var(--${['c-home', 'm-purple'][i]})"></i><div><b>${esc(x.a.message || this.name(x.id))}</b><small class="num">${x.a.all_day ? 'All day' : this.fmtEn.time(Date.parse(String(x.a.start_time).replace(' ', 'T')))}</small></div></div>`,
-              )
-              .join(''),
-            foot: ev.length > 2 ? `and ${ev.length - 2} more` : 'From your calendars',
-          }),
-        );
-    }
-    // Away mode
-    const aw = this.st(this.E.away);
-    if (aw && aw.state === 'on') {
-      const on = areas.filter(a => a.ids.some(id => (this.st(id) || {}).state === 'on')).length,
-        ins = L.rooms.map(r => r.temperature).filter(v => v != null);
-      out.push(
-        this.scard('away', {
-          ic: 'shield',
-          label: 'Away',
-          color: 'var(--c-home)',
-          right: 'since ' + when(aw.last_changed),
-          body:
-            (ins.length ? big((sum(ins) / ins.length).toFixed(1) + '°', ' inside') : '') +
-            mid(on ? `${plural(on, 'light')} on` : 'All lights off'),
-          foot: 'Ends when someone comes home',
-        }),
-      );
-    }
-    // a room whose air turned poor
-    this.airRooms().forEach(({room, rating}) => {
-      const bad = rating.pollutants.find(p => p.level >= 2);
-      if (!bad) return;
-      const [name, unit] = AIR_WORDS[bad.k];
-      out.push(
-        this.scard('air', {
-          ic: 'wind',
-          label: `${room.name} air`,
-          color: 'var(--m-teal)',
-          go: 'air.detail',
-          body: big(this.airFigure(bad.k, bad.v), ' ' + unit) + mid(`${name} is high`),
-          foot: bad.k === 'co2' ? 'Open a door or a window a little' : 'The purifier can run faster',
-        }),
-      );
-    });
-    // tomorrow's weather, in the evening
-    if (inHours(h, 17, 24)) {
-      const days = this.wxDays(),
-        tm = days.find(x => x.k === this.fmtEn.isoDay(now + 864e5)),
-        tn = days.find(x => x.k === this.fmtEn.isoDay(now));
-      if (tm && (tm.hi != null || tm.lo != null))
-        out.push(
-          this.scard('tomorrow', {
-            ic: 'cal',
-            label: 'Tomorrow',
-            color: 'var(--c-home)',
-            right: this.dayName(tm.k, false) === 'Tomorrow' ? this.fmtUtcEn.weekday(dayAt(tm.k), 'long') : '',
-            go: 'weather.detail',
-            body: `<div class="swx">${wxIcon(tm.cond, 76, true)}<div>${big(tm.hi != null ? Math.round(tm.hi) + '°' : '–', tm.lo != null ? ' / ' + Math.round(tm.lo) + '°' : '')}${mid(condName(tm.cond) + (tm.pop ? `, ${Math.round(tm.pop)}%` : ''))}</div></div>`,
-            foot:
-              tn && tn.night
-                ? `Tonight: ${condName(tn.night)}${tn.lo != null ? `, low ${Math.round(tn.lo)}°` : ''}`
-                : '',
-          }),
-        );
-    }
-    // the car charging overnight
-    if (C && C.plugged && C.home !== false && inHours(h, 21, 7)) {
-      const p = this.kw(this.E.evP),
-        dep = (this.st(this.car.id('switch', 'departuretimes')) || {}).state === 'on' ? this.schedText() : '';
-      out.push(
-        this.scard('car', {
-          ic: 'car',
-          label: C.name || 'Car',
-          color: 'var(--c-ev)',
-          right: C.charging ? 'Charging' : 'Plugged in',
-          go: 'car.detail',
-          body: `<div class="srow">${this.sring(C.soc, C.limit, 'var(--ok)')}<div class="skv">${p != null && p > 0.05 ? `<div><small>Power</small><b class="num">${p.toFixed(1)} kW</b></div>` : ''}${C.range != null ? `<div><small>Range</small><b class="num">${Math.round(C.range)} km</b></div>` : ''}${C.limit ? `<div><small>Limit</small><b class="num">${C.limit}%</b></div>` : ''}</div></div>`,
-          foot:
-            dep && !/^No /.test(dep)
-              ? `Departure: ${dep.replace(/ saved\.$/, '')}`
-              : C.charging
-                ? `Charging to ${C.limit || 100}%`
-                : 'Not charging right now',
-        }),
-      );
-    }
-    // fillers, when nothing else applies: energy used today in the daytime, and who's home
-    const T = this.shared && this.shared.totals,
-      F = this.shared && this.shared.flow;
-    if (T && T.today != null && inHours(h, 8, 21)) {
-      const td = (F || []).filter(r => this.fmtEn.isoDay(r[0]) === this.fmtEn.isoDay(now));
-      const part = [3, 2, 1, 4].map(i => sum(td.map(r => r[i]))),
-        tot = sum(part) || 1,
-        col = ['var(--c-heat)', 'var(--c-wh)', 'var(--c-ev)', 'var(--fg3)'];
-      out.push(
-        this.scard('energy', {
-          ic: 'bolt',
-          label: 'Energy today',
-          color: 'var(--m-orange)',
-          right: 'so far',
-          go: 'energy.detail',
-          filler: true,
-          body:
-            big(f1(T.today), ' kWh') +
-            (td.length
-              ? `<div class="sbar">${part.map((v, i) => (v > 0 ? `<i style="flex:${((v / tot) * 100).toFixed(1)};background:${col[i]}"></i>` : '')).join('')}</div>`
-              : ''),
-          foot: td.length
-            ? ['Heating', 'water', 'car'].map((n, i) => `${n} ${Math.round((part[i] / tot) * 100)}%`).join(' · ')
-            : '',
-        }),
-      );
-    }
-    if (moved.length && inHours(h, 7, 22) && !out.some(c => c.k === 'who'))
-      out.push({...this.scard('who', who()), filler: true});
-    return out;
-  }
-  // the smart stack inside the Home card on a tablet (2.9.0): same cards and turns as beside the idle clock, minus the who's-home filler
-  // that the Who's home chips right above it already show. Nothing to show: the slot hides.
-  renderHomeStack() {
-    const el = this.$('hstk');
-    if (!el || this.compact || this.tab !== 'home') return;
-    let pick = null;
-    try {
-      pick = this.CFG.stack.on
-        ? pickStack(
-            this.stackCards().filter(c => !(c.k === 'who' && c.filler)),
-            Date.now(),
-          )
-        : null;
-    } catch (e) {
-      console.error('home-panel home stack', e);
-    }
-    el.hidden = !pick;
-    if (pick)
-      this.set(
-        'hstk',
-        `<div class="scw">${pick.card.html}</div>${pick.n > 1 ? `<div class="sdots" aria-hidden="true">${Array.from({length: pick.n}, (_, i) => `<i${i === pick.i ? ' class="on"' : ''}></i>`).join('')}</div>` : ''}`,
-      );
-  }
-  // a tap on the stack's card wakes the panel and opens what the card is about
-  stackGo(go) {
-    if (go.startsWith('sens:')) return this.sheets.open('security.history', {id: go.slice(5)}); // Security's sheet (#225); the legacy stack goes with #266
-    if (go.startsWith('tab:')) {
-      const t = go.slice(4);
-      if (this.availability()[t] !== false) this.ctx.shell.setTab(t);
-      return;
-    }
-    if (go.includes('.') || this.$(go)) this.sheets.open(go);
   }
   // Mercury drop (v1.19.0): Chromium bends the backdrop of every glass surface with a blurred fractal-noise displacement map (the Aether CSS
   // "glass-distortion" filter, referenced from glass.css through the mc class). WebKit drops url() filters, so it keeps the frosted glass from the CSS
@@ -1054,13 +620,6 @@ export class LegacyPanel {
 
   // ---------- events ----------
   wire() {
-    this.$('hwx').addEventListener('click', e => {
-      const g = e.target.closest('.hstk [data-go]');
-      if (g) {
-        e.stopPropagation();
-        this.stackGo(g.dataset.go);
-      }
-    });
     this.$('menu').addEventListener('click', () =>
       this.host.dispatchEvent(new Event('hass-toggle-menu', {bubbles: true, composed: true})),
     );
@@ -1178,10 +737,9 @@ export class LegacyPanel {
     ]
       .filter(Boolean)
       .join(' · ');
-    this.set(
-      'hello',
-      `<h1>${part}${name ? `, <span style="white-space:nowrap">${esc(name)}</span>` : ''}</h1><div>${sub}</div>${this.whoHtml()}`,
-    );
+    // the chips after them are the people feature's <hp-who-chips>, which build() placed (#266)
+    this.set('hello-h', `${part}${name ? `, <span style="white-space:nowrap">${esc(name)}</span>` : ''}`);
+    this.set('hello-sub', sub);
     const t = this.store.isFrench ? [this.fmt.time24(new Date())] : this.fmtEn.time(new Date()).split(' ');
     this.set(
       'clock',
@@ -1234,23 +792,17 @@ export class LegacyPanel {
     this.cache = {};
     this.renderLive();
   }
-  // What the readers left in this panel still read: the stack's Energy-today card (the hourly flow and the meter's today), the Home water tile (the water
-  // heater's day) and the header's "Live · history" line (`at`); the live pill reads its own through the cache since #256. The power windows are asked through
-  // the panel-wide cache, the very calls Energy's card makes, so each is read once for the panel (ADR 0028), and cut by the providers' slices; the energy-only
-  // windows are the card's, asked when it first connects. It is deleted with its last reader: #266 (the stack), #268 (the Home tile) and #269 (the header).
+  // What the readers left in this panel still read: the Home tiles (the meter's today and the water heater's day) and the header's "Live · history" line
+  // (`at`); the live pill reads its own through the cache since #256, and the smart stack its own since #266. The power windows are asked through the
+  // panel-wide cache, the very calls Energy's card makes, so each is read once for the panel (ADR 0028), and cut by the providers' slices; the energy-only
+  // windows are the card's, asked when it first connects. It is deleted with its last reader: #268 (the Home tiles) and #269 (the header).
   async loadSharedHistory(now) {
     const {config} = this.store,
       ask = ({ids, period, start, types}) => this.ctx.statistics.statistics(ids, period, start, types);
     const w = powerWindows(now, config, this.fmtEn);
-    const [hour7, today, meter33, fiveMin25h] = await Promise.all([
-      ask(w.hour7),
-      ask(w.today),
-      ask(w.meter33),
-      ask(w.fiveMin25h),
-    ]);
+    const [today, meter33, fiveMin25h] = await Promise.all([ask(w.today), ask(w.meter33), ask(w.fiveMin25h)]);
     return {
       at: new Date(),
-      flow: hourlyFlow(hour7, flowIds(config)),
       totals: meterTotals(
         meter33,
         today,
@@ -1267,12 +819,6 @@ export class LegacyPanel {
   // deletes the two with the host's legacy half
   sheetOpened() {}
   sheetClosed() {}
-  // ---------- weather ----------
-  // The Weather pane's ForecastController owns the forecast subscription (spec 15) and the shell tells the guest of each message:
-  // Home's card (`wxDays`) still reads `this.fc`. Deleted with its last reader (the Home move).
-  forecastChanged(type, forecast) {
-    this.fc[type] = forecast;
-  }
   // ---------- the live pill's counts ----------
   // The live pill (#256) runs the activities and the Status checks, and the shell tells the guest whether an activity shows and how many
   // checks need attention: the weather chip slims beside an activity, redrawn as the legacy header redrew it, and the Home pane's sub-line
@@ -1291,170 +837,12 @@ export class LegacyPanel {
         console.error('home-panel ' + f, e);
       }
   }
-  // Temporary until Home's card and the idle clock move: `wxDays`, `dayName`, `alerts`, `sunDay`
-  wxDays() {
-    // EC sends day and night entries; fold them into one row per local day
-    const by = new Map();
-    (this.fc.daily || []).forEach(f => {
-      const k = this.fmtEn.isoDay(ms(f.datetime)),
-        r = by.get(k) || {k, t: ms(f.datetime), hi: null, lo: null, cond: null, pop: null, night: null};
-      if (f.temperature != null && f.is_daytime !== false)
-        r.hi = r.hi == null ? f.temperature : Math.max(r.hi, f.temperature);
-      if (f.templow != null) r.lo = r.lo == null ? f.templow : Math.min(r.lo, f.templow);
-      if (f.is_daytime === false && f.temperature != null && f.templow == null)
-        r.lo = r.lo == null ? f.temperature : Math.min(r.lo, f.temperature);
-      if (f.is_daytime === false) r.night = f.condition;
-      else if (!r.cond) r.cond = f.condition;
-      if (f.precipitation_probability != null) r.pop = Math.max(r.pop || 0, f.precipitation_probability);
-      by.set(k, r);
-    });
-    return [...by.values()].map(r => ({...r, cond: r.cond || r.night})).slice(0, 7);
-  }
-  dayName(k, short) {
-    if (k === this.fmtEn.isoDay(Date.now())) return 'Today';
-    if (!short && k === this.fmtEn.isoDay(Date.now() + 864e5)) return 'Tomorrow';
-    const at = dayAt(k),
-      style = short ? 'short' : 'long';
-    if (!this.store.isFrench) return this.fmtUtcEn.weekday(at, style);
-    const d = this.fmtUtc.weekday(at, style);
-    return d.charAt(0).toUpperCase() + d.slice(1);
-  }
+  // Temporary until the idle clock moves (spec 26): the sun's day at the house
   sunDay(offset = 0) {
     const lat = (this.hass.config && this.hass.config.latitude) ?? 0,
       lon = (this.hass.config && this.hass.config.longitude) ?? 0;
     const t = Date.now() + offset * 864e5;
     return sunTimes(lat, lon, this.fmtEn.isoDay(t));
-  }
-  alerts() {
-    const out = [];
-    [
-      [this.E.warnings, 'Warning', 'crit'],
-      [this.E.watches, 'Watch', 'warn'],
-      [this.E.advisories, 'Advisory', 'warn'],
-      [this.E.statements, 'Statement', 'ok'],
-    ].forEach(([id, kind, tone]) => {
-      const s = this.st(id);
-      if (!ok(s) || !(+s.state > 0)) return;
-      const a = s.attributes;
-      let i = 1,
-        found = 0;
-      while (a[`alert_${i}`] != null) {
-        out.push({kind, tone, title: a[`alert_${i}`], time: a[`alert_time_${i}`]});
-        i++;
-        found++;
-      }
-      if (!found) out.push({kind, tone, title: `${plural(+s.state, kind.toLowerCase())} in effect`, time: null});
-    });
-    return out;
-  }
-
-  // ---------- who's home: the household's phones and watches (iPads and laptops stay home, so they don't count) ----------
-  presence() {
-    const reg = this.hass.entities || {},
-      by = new Map();
-    // a person entity wins: it follows the trackers chosen in HA's People settings
-    for (const id of Object.keys(this.hass.states)) {
-      if (!id.startsWith('person.')) continue;
-      const who = this.HOUSEHOLD.find(h => fold(this.attr(id, 'friendly_name') || '').split(/\s+/)[0] === fold(h)),
-        s = this.st(id);
-      if (who && ok(s))
-        by.set(who, {name: who, home: s.state === 'home', since: s.state === 'home' ? null : s.last_changed});
-    }
-    if (by.size) return this.HOUSEHOLD.filter(h => by.has(h)).map(h => by.get(h));
-    for (const id of Object.keys(this.hass.states)) {
-      if (!id.startsWith('device_tracker.') || (reg[id] || {}).hidden) continue;
-      const n = this.attr(id, 'friendly_name') || '',
-        m = n.match(/^(.+?)[’']s\s+(.+)$/) || n.match(/^(.+?)\s+(?:de|d[’'])\s*(.+)$/);
-      if (!m) continue;
-      const [owner, dev] = n.match(/^(.+?)[’']s\s/) ? [m[1], m[2]] : [m[2], m[1]];
-      if (!/iphone|watch/i.test(dev)) continue;
-      const who = this.HOUSEHOLD.find(h => fold(owner).split(/\s+/)[0] === fold(h));
-      if (!who) continue;
-      const s = this.st(id);
-      if (!ok(s)) continue;
-      const p = by.get(who) || {name: who, home: false, since: null};
-      by.set(who, p);
-      if (s.state === 'home') {
-        p.home = true;
-      } else if (!p.home) p.since = s.last_changed;
-    }
-    return this.HOUSEHOLD.filter(h => by.has(h)).map(h => by.get(h));
-  }
-  whoHtml() {
-    const P = this.presence();
-    if (!P.length) return '';
-    return `<div class="who" aria-label="Who's home">${P.map(p => `<span class="wp${p.home ? ' home' : ''}"><i></i>${esc(p.name)}<small>${p.home ? 'home' : 'away'}</small></span>`).join('')}</div>`;
-  }
-
-  // ---------- TV ----------
-  // kept for the now-playing stack card, through speakers(); #266 deletes it with the legacy stack
-  tv() {
-    const reg = this.hass.entities || {},
-      dev = this.hass.devices || {};
-    const ids = Object.keys(this.hass.states).filter(
-      id => id.startsWith('media_player.') && this.attr(id, 'device_class') === 'tv' && !(reg[id] || {}).hidden,
-    );
-    const id = ids.find(i => (reg[i] || {}).platform === 'samsungtv') || ids[0];
-    if (!id) return null;
-    const e = reg[id] || {},
-      D = dev[e.device_id] || {};
-    const wol = Object.keys(this.hass.states).find(
-      i => i.startsWith('button.wake_on_lan_') && /tv/i.test(this.attr(i, 'friendly_name') || ''),
-    );
-    return {
-      id,
-      wol,
-      aid: e.area_id || D.area_id || '',
-      name: D.name_by_user ? this.name(e.device_id) : e.platform === 'samsungtv' ? 'Samsung TV' : this.name(id, 'TV'),
-    };
-  }
-  entArea(id) {
-    const e = (this.hass.entities || {})[id] || {};
-    return e.area_id || ((this.hass.devices || {})[e.device_id] || {}).area_id || '';
-  }
-  // an area's name as the panel shows it; an area that has no name of its own gives the fallback, as it always did
-  areaName(aid, fallback = '') {
-    const a = (this.hass.areas || {})[aid];
-    return a && a.name ? this.name(aid) : fallback;
-  }
-  // a device's name as the panel shows it; a device that has no name of its own (not even its integration's) gives the
-  // fallback, usually the name of the entity that led to it
-  deviceName(devId, fallback) {
-    const D = (this.hass.devices || {})[devId];
-    return D && (D.name_by_user || D.name) ? this.name(devId) : fallback;
-  }
-  // speakers by area (HomePods and the like); camera speakers and the TV have their own controls
-  // kept for the now-playing stack card (stackCards); #266 deletes it with the legacy stack
-  speakers() {
-    const reg = this.hass.entities || {},
-      areas = this.hass.areas || {},
-      tv = (this.tv() || {}).id;
-    const words = x =>
-      fold(x)
-        .replace(/'s\b/g, '')
-        .split(/[^a-z0-9]+/)
-        .filter(Boolean);
-    return Object.keys(this.hass.states)
-      .filter(
-        i =>
-          i.startsWith('media_player.') &&
-          i !== tv &&
-          !(reg[i] || {}).hidden &&
-          !['unifiprotect', 'samsungtv'].includes((reg[i] || {}).platform),
-      )
-      .map(i => {
-        // the words of the area's name, as Home Assistant gives it and as the panel shows it, are the ones to drop
-        const aid = this.entArea(i),
-          aw = new Set([...words((areas[aid] || {}).name || ''), ...words(this.areaName(aid))]),
-          fn = this.name(i);
-        // "HomePod mini Kitchen" in the Kitchen is just "HomePod mini"
-        const short = String(fn)
-          .split(/\s+/)
-          .filter(w => !aw.has(words(w)[0]))
-          .join(' ');
-        return {id: i, aid, name: short || fn};
-      })
-      .filter(x => x.aid);
   }
   setView() {
     // Tabs is the only view since 1.16.0, on the iPad and the iPhone alike; the view switcher is gone
@@ -1473,8 +861,24 @@ export class LegacyPanel {
       this.leaveTabs();
       this.enterTabs();
     }
+    this.placeHomeStack();
     this.cache = {};
     this.renderLive();
+  }
+  // The Home card's stack slot, on a tablet only, as the legacy `renderHome` drew it: written when the card is drawn and when the
+  // shape changes, never in a redraw, with the stack's element inside (the Home-card bridge, ADR 0031); hidden while it has no card.
+  placeHomeStack() {
+    const slot = this.$('hstk');
+    if (this.compact) return slot?.remove();
+    if (slot) return;
+    this.$('hwx').insertAdjacentHTML(
+      'beforeend',
+      '<div class="hstk" id="hstk" hidden><hp-smart-stack mode="home"></hp-smart-stack></div>',
+    );
+    const added = this.$('hstk');
+    added.addEventListener('hp-empty', e => {
+      added.hidden = e.detail.empty;
+    });
   }
   // the word under each section in the phone's More sheet, in English, for the registry's summary
   moreLines() {
@@ -1623,17 +1027,13 @@ export class LegacyPanel {
       cond = this.st(this.E.cond),
       hi = this.num(this.E.hi),
       lo = this.num(this.E.lo);
-    const hwxWas = this.cache.hwx;
     this.set(
-      'hwx',
+      'hwx-wx',
       `<div class="muted" style="font-size:13px;font-weight:500">${dayUp ? 'Sunset' : 'Sunrise'} <b style="color:var(--fg)">${ok(nxt) ? this.fmtEn.time(new Date(nxt.state)) : '–'}</b>${ok(nxt2) ? ` · ${dayUp ? 'sunrise' : 'sunset'} <b style="color:var(--fg)">${this.fmtEn.time(new Date(nxt2.state))}</b>` : ''}</div>
       <div class="hbig"><span class="num">${temp == null ? '–' : Math.round(temp) + '°'}</span><div><div class="hc">${esc(condName(ok(cond) ? cond.state : (this.st(this.E.weather) || {}).state))}</div><div class="muted">${hi != null ? `High ${Math.round(hi)}°` : ''}${lo != null ? ` · low ${Math.round(lo)}°` : ''}</div></div></div>
       <div class="hhouse">${houseImg(this.CFG.house)}</div>
-      <div class="lbl hwho">Who's home</div>${this.whoHtml() || '<p class="hint">No one is tracked yet.</p>'}${this.compact ? '' : '<div class="hstk" id="hstk" hidden></div>'}`,
+`,
     );
-    // 2.9.0: under Who's home, the rest of the card holds the idle clock's smart stack (a fresh card slot whenever the card was rebuilt)
-    if (this.cache.hwx !== hwxWas) this.cache.hstk = null;
-    this.renderHomeStack();
     const A = this.houseLights(),
       onAreas = A.map(a => ({a, on: a.ids.filter(isOn)})).filter(x => x.on.length);
     const temps = L.rooms.map(r => r.temperature).filter(v => v != null),

@@ -181,9 +181,7 @@
 .app.tabsv.gl .rtab:not([aria-selected='true']):active {
   background: var(--g-fill);
 }
-/* small pills and icon squares (who's home, status pills, light chips, tile icons): tile fill, tinted states keep their accent */
-.app.gl .wp,
-.app.gl .hwx .wp,
+/* small pills and icon squares (status pills, light chips, tile icons): tile fill, tinted states keep their accent */
 .app.gl .pill,
 .app.gl .pane-auto .pill,
 .app.gl .state,
