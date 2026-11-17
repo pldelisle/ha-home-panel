@@ -995,6 +995,9 @@ export const en = {
   // the departure row and its editor sheet (2026-11)
   'car.departure.title': 'Departure',
   'car.departure.none': 'No times saved',
+  'car.departure.line': '{schedule} · {state}',
+  'car.departure.on': 'On',
+  'car.departure.off': 'Off',
   'car.departure.save': 'Save',
   'car.departure.time': 'Time',
   'car.departure.cabin': 'Cabin',

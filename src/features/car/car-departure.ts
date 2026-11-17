@@ -1,4 +1,4 @@
-// <hp-car-departure>: the Car tab's departure row (what Ford saved, and its switch) and its editor, a sheet with Cancel and Save (docs/apple-hig-audit-car-2026-11-17.md, finding 5): the time, the cabin
+// <hp-car-departure>: the Car tab's departure row (one button: what Ford saved and whether it is on) and its editor, a sheet with Cancel and Save (docs/apple-hig-audit-car-2026-11-17.md, findings 5 and 14): the switch, which acts at once, the time, the cabin
 // to choose, and the seven days as a checkmark list; Save waits, and says why, until `validate` allows it.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over `departureControls`, the model's pure view; the draft is its state, edited locally, validated and sent once (a form draft: Fowler's
 // Unit of Work in miniature), begun again when Ford's saved schedule changes (the cabin choice kept: Ford does not report it) and when the editor is cancelled. The editor is a native `<dialog>` (ADR 0036): Cancel, Save or Escape close it, never a tap on the backdrop, which would drop the draft.
@@ -85,21 +85,10 @@ export class CarDeparture extends LitElement {
     const {view} = this;
     if (!view) return nothing;
     const {row, editor} = view;
-    return html`<div class="dep">
-        <button type="button" class="open" @click=${this.openEditor} aria-haspopup="dialog">
-          ${ico('clock', 20)}<span class="tx"><b>${row.title}</b><small>${row.line}</small></span>
-        </button>
-        <hp-switch
-          .checked=${row.on}
-          .disabled=${row.disabled}
-          .label=${row.label}
-          @change=${(e: CustomEvent<SwitchChangeDetail>) =>
-            this.ask(toggleDeparture(view.car, e.detail.checked), e.detail.checked)}
-        ></hp-switch>
-        <button type="button" class="chev" @click=${this.openEditor} aria-hidden="true" tabindex="-1">
-          ${ico('chev', 18)}
-        </button>
-      </div>
+    return html`<button type="button" class="open" @click=${this.openEditor} aria-haspopup="dialog">
+        ${ico('clock', 20)}<span class="tx"><b>${row.title}</b><small>${row.line}</small></span>
+        <span class="chev" aria-hidden="true">${ico('chev', 18)}</span>
+      </button>
       <dialog class="dsheet" ${ref(this.editor)} aria-labelledby="dt" @cancel=${this.cancel} @keydown=${stopEscape}>
         <div class="nav">
           <button type="button" class="dbtn l" @click=${this.cancel}>${editor.cancel}</button>
@@ -110,6 +99,16 @@ export class CarDeparture extends LitElement {
         </div>
         <div class="sb">
           <div class="list">
+            <div class="lrow">
+              <span class="lbl">${editor.departure.label}</span>
+              <hp-switch
+                .checked=${editor.departure.on}
+                .disabled=${editor.departure.disabled}
+                .label=${editor.departure.label}
+                @change=${(e: CustomEvent<SwitchChangeDetail>) =>
+                  this.ask(toggleDeparture(view.car, e.detail.checked), e.detail.checked)}
+              ></hp-switch>
+            </div>
             <label class="lrow">
               <span class="lbl">${editor.time.label}</span>
               <input

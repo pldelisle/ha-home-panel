@@ -1,26 +1,18 @@
 /*
- * <hp-car-departure>'s own rules: the row on the tab (a button that opens the editor, the switch beside it, and the chevron that says it opens), and the editor's time field, cabin menu and
+ * <hp-car-departure>'s own rules: the row on the tab (one button that opens the editor, with the chevron that says it opens), and the editor's time field, cabin menu and
  * checkmarks. The row is a list row of the card the detail wraps it in (car-detail.element.css); the editor is dialog.css.
  */
 :host {
   display: block;
   min-width: 0;
 }
-.dep {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 60px;
-  padding: 6px 8px 6px 14px;
-}
 .open {
-  flex: 1;
-  min-width: 0;
   display: flex;
   align-items: center;
   gap: 12px;
-  min-height: 48px;
-  padding: 0;
+  width: 100%;
+  min-height: 60px;
+  padding: 6px 12px 6px 14px;
   border: 0;
   background: none;
   font: inherit;
@@ -35,6 +27,7 @@
 .tx {
   display: flex;
   flex-direction: column;
+  flex: 1;
   min-width: 0;
 }
 .tx b {
@@ -47,13 +40,9 @@
 .chev {
   display: grid;
   place-items: center;
-  width: 32px;
-  height: 44px;
-  padding: 0;
-  border: 0;
-  background: none;
+}
+.open .chev svg {
   color: var(--fg3);
-  cursor: pointer;
 }
 .open:focus-visible {
   outline: 2px solid var(--c-home);

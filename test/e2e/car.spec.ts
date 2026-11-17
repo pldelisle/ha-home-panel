@@ -501,14 +501,27 @@ test.describe('the controls', () => {
     expect(sent(house, 'lock.'), 'a failed call is not recorded').toEqual([]);
   });
 
-  test('the departure switch sends switch.turn_on and flips at once', async ({house}) => {
+  test('the departure row is one button, with no switch; the switch is the editor’s first row, sends switch.turn_on at once and flips', async ({
+    house,
+  }) => {
     await addComfort(house);
     await openTab(house);
-    const toggle = departure(house).getByRole('switch', {name: 'Departure times'});
+    const row = departure(house).locator('button.open');
+    await expect(departure(house).locator('button:not(dialog button)')).toHaveCount(1);
+    await expect(departure(house).locator('hp-switch:not(dialog hp-switch)')).toHaveCount(0);
+    await expect(row.locator('small')).toHaveText('No times saved · Off');
+    expect((await row.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    await row.click();
+    const toggle = editor(house).getByRole('switch', {name: 'Departure times'});
+    await expect(editor(house).locator('.lrow').first()).toContainText('Departure times');
     await toggle.click();
     await expectCall(house, /^switch\.turn_on \{"entity_id":"switch\.fordpass_test_departuretimes"\}$/);
     await expect(toggle).toHaveAttribute('aria-checked', 'true');
     await expect(toast(house)).toHaveText('Departure times on');
+    // it acted at once: Save was not pressed, and the row behind says On
+    expect(sent(house, 'fordpass.')).toEqual([]);
+    await editor(house).getByRole('button', {name: 'Cancel'}).click();
+    await expect(row.locator('small')).toHaveText('No times saved · On');
   });
 
   test('the editor saves only on Save: it waits for a cabin and a day and says why, then sends one call in five-minute steps', async ({
@@ -544,7 +557,7 @@ test.describe('the controls', () => {
       attributes: {schedule: {tuesday: {timeOfDay: {hours: 7, minutes: 15}}}},
     });
     await openTab(house);
-    await expect(departure(house).locator('.open small')).toHaveText('Tue at 7:15 am');
+    await expect(departure(house).locator('.open small')).toHaveText('Tue at 7:15 am · Off');
     await departure(house).locator('button.open').click();
     const day = (name: string) => editor(house).getByRole('checkbox', {name});
     await expect(day('Every Tuesday')).toHaveAttribute('aria-checked', 'true');
@@ -592,7 +605,7 @@ test.describe('the controls', () => {
       state: 'ok',
       attributes: {schedule: {monday: {timeOfDay: {hours: 8, minutes: 0}}}},
     });
-    await expect(departure(house).locator('.open small')).toHaveText('Mon at 8:00 am');
+    await expect(departure(house).locator('.open small')).toHaveText('Mon at 8:00 am · Off');
     await departure(house).locator('button.open').click();
     await expect(editor(house).getByRole('combobox')).toHaveValue('high');
   });

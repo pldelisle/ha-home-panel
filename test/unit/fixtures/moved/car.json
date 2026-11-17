@@ -931,6 +931,26 @@
       "written": "Aucun horaire enregistré"
     },
     {
+      "key": "car.departure.line",
+      "values": {
+        "schedule": "Weekdays at 8:30 am",
+        "state": "On"
+      },
+      "fr": {
+        "schedule": "En semaine à 8 h 30",
+        "state": "Activé"
+      },
+      "written": "En semaine à 8 h 30 · Activé"
+    },
+    {
+      "key": "car.departure.on",
+      "written": "Activé"
+    },
+    {
+      "key": "car.departure.off",
+      "written": "Désactivé"
+    },
+    {
       "key": "car.departure.save",
       "written": "Enregistrer"
     },
