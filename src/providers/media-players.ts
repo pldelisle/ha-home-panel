@@ -1,12 +1,12 @@
 // speakers: the media players that are speakers, each with its area and the name it goes by in that room.
-// Pattern: a pure rule over states and registries (Bernhardt, functional core); generic, so it sits in the feature and not in a
-// provider: the two platforms it leaves out have their own controls (a camera's speaker, the television).
+// Pattern: a pure rule over states and registries (Bernhardt, functional core); a provider since #264 (ADR 0025), because Media and the
+// smart stack's now-playing card both read it. The two platforms it leaves out have their own controls (a camera's speaker, the television).
 // `NOT_SPEAKERS` and the name rule copy the legacy `speakers()`, which #266 deletes with the legacy stack, its last reader.
 // Must not: read the DOM, the clock or `hass` itself, reorder the players (the baselines depend on the house's order) or hold text for the household.
-import {fold} from '../../core/fold.ts';
-import type {HassEntities, Registries} from '../../core/hass.ts';
-import type {Names} from '../../core/i18n/names.ts';
-import {areaOf, isHidden} from '../../core/registry.ts';
+import {fold} from '../core/fold.ts';
+import type {HassEntities, Registries} from '../core/hass.ts';
+import type {Names} from '../core/i18n/names.ts';
+import {areaOf, isHidden} from '../core/registry.ts';
 
 /** A speaker as the pane lists it, before its state is read. */
 export interface Speaker {

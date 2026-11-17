@@ -3,7 +3,7 @@
 // each `holds` key names in the panel's overlay store (ADR 0023). The rules are the legacy `tvCmd`, `mpVol` and `phoneCmd`'s Media
 // branch, which #218 deleted, and `runScene`, which #220 deleted.
 // Must not: send anything, read the store or the clock, or word a string (`done` is a catalog key, the runner words it).
-import type {Speaker} from './speakers.ts';
+import type {Speaker} from '../../providers/media-players.ts';
 import type {Command} from '../../core/commands.ts';
 import {overlayKey} from '../../core/overlay-key.ts';
 import type {TvInputs} from '../../providers/tv-source.ts';

@@ -85,6 +85,7 @@ describe.each([
   ['live', 'live.', ['src/features/live/'], []],
   ['automations', 'automations.', ['src/features/automations/'], []],
   ['lights', 'lights.', ['src/features/lights/'], []],
+  ['people', 'people.', ['src/features/people/'], []],
   ['chart', 'chart.', ['src/ui/'], []],
   ['ranges', 'range.', ['src/ui/'], []],
   ['settings', 'settings.', ['src/shell/'], []],

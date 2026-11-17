@@ -60,7 +60,7 @@ src/features/media/
   index.ts                 mediaFeature: FeatureDescriptor; defines the Home scenes row's element
   ids.ts                   mediaIds(store): the TV, the speakers, the wake button, the scenes and modes
   inputs.ts                TV_SOURCES, findTv, readMedia(states, registries, names, sources): MediaInputs
-  speakers.ts              speakers(states, registries, names, tvId): Speaker[] (generic rules, pure; readMedia adds each one's state)
+  speakers.ts              speakers(states, registries, names, tvId): Speaker[] (generic rules, pure; readMedia adds each one's state; src/providers/media-players.ts since #264)
   model.ts                 mediaModel(inputs, {t, names, overlay}): MediaViewModel
   scenes.ts                sceneTiles(states, registries, config, overlay, deps): SceneTileView[]
   commands.ts              the feature's commands: tvPower, tvVolume, tvMute, tvPlayPause, speakerPlayPause, speakerVolume, speakerSkip, runScene, setMode
@@ -118,7 +118,7 @@ export function findTv(states, registries, names, sources = TV_SOURCES): TvInput
 
 ### The speakers, the scenes and the modes are generic
 
-- `speakers(states, registries, names, tvId)` in `src/features/media/speakers.ts`: every visible `media_player.*` that is not the TV, not on the `unifiprotect` or `samsungtv` platforms, and sits in an area (`store.areaOf`'s rule, over the registries the function is given); the name drops every word that also appears in the area's name as Home Assistant gives it or as the panel shows it ("HomePod mini Kitchen" in the Kitchen is "HomePod mini"); returns `{id, areaId, name}` sorted as `Object.keys` gives them today (insertion order; keep it, the baselines depend on it).
+- `speakers(states, registries, names, tvId)` in `src/features/media/speakers.ts` (`src/providers/media-players.ts` since #264, when the smart stack became its second reader): every visible `media_player.*` that is not the TV, not on the `unifiprotect` or `samsungtv` platforms, and sits in an area (`store.areaOf`'s rule, over the registries the function is given); the name drops every word that also appears in the area's name as Home Assistant gives it or as the panel shows it ("HomePod mini Kitchen" in the Kitchen is "HomePod mini"); returns `{id, areaId, name}` sorted as `Object.keys` gives them today (insertion order; keep it, the baselines depend on it).
 - `sceneTiles` in `scenes.ts`: the visible `scene.*` ordered by `config.scenes` then alphabetically; then the `config.modes` `input_boolean`s that exist; a scene's sub-line is "Done" for four seconds after a run, else "Last {ago}" when its state parses as a date, else "Tap to run"; a mode's is On or Off with `aria-pressed`. The icon rule `sceneIcon(id)` (night, movie, dinner, away, else house) moves here unchanged.
 - Ids: `mediaIds(store)` is the TV id, the wake button, every speaker id, every scene id and every mode id; the pane and the scenes row subscribe to the union, and the store's index means a light's change never reaches them.
 

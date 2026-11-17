@@ -1305,4 +1305,9 @@ export const fr: Record<MessageKey, string> = {
   'lights.setByHand': 'Réglé à la main, Auto désactivé',
   'lights.roomsLinked': 'Pièces liées',
   'lights.roomUnlinked': 'Pièce déliée',
+  // Who's home's words, from the rewrite layer's entries; the hint is English on purpose, as the layer leaves it (French is a visible change)
+  'people.whosHome': 'Qui est à la maison',
+  'people.home': 'à la maison',
+  'people.away': 'absent',
+  'people.noOneTracked': 'No one is tracked yet.',
 };

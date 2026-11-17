@@ -1,9 +1,9 @@
 // speakers: which players are speakers, in which area, and what each is called there. The test house gives today's answer
 // as a literal; literal players give the rules it does not exercise; the recorded house is read when the owner has one (#170).
 import {describe, expect, test} from 'vitest';
-import {speakers} from '../../../../src/features/media/speakers.ts';
-import {fakeHass} from '../../fake-hass.ts';
-import {fullHouse, houseOf, readingOf, recorded, type Player} from './support.ts';
+import {speakers} from '../../../src/providers/media-players.ts';
+import {fakeHass} from '../fake-hass.ts';
+import {fullHouse, houseOf, readingOf, recorded, type Player} from '../features/media/support.ts';
 
 type House = ReturnType<typeof houseOf>;
 const speakersOf = (house: House, tvId: string | null = null) => {

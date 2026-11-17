@@ -5,7 +5,7 @@
 import type {PanelStore} from '../../core/store.ts';
 import {isHidden, registriesOf} from '../../core/registry.ts';
 import {findTv} from './inputs.ts';
-import {speakers} from './speakers.ts';
+import {speakers} from '../../providers/media-players.ts';
 
 /** The ids of the television, its wake button, every speaker, every visible scene and every mode the house has. */
 export function mediaIds({hass, names, config}: Pick<PanelStore, 'hass' | 'names' | 'config'>): string[] {
