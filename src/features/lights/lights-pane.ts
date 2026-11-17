@@ -117,7 +117,7 @@ export class LightsPane extends LitElement {
   private view: LightsViewModel | undefined;
   private sheet: SheetView | null = null;
   // Arrange: a unit follows the pointer, the one under it gives way, an arrow key moves the focused one, and the order is saved
-  private readonly arrange = new DragReorderController(this, {
+  private readonly reorder = new DragReorderController(this, {
     enabled: () => this.editing,
     keys: () => unitsOf(this.view?.tiles ?? []).map(u => u.key),
     keyOf: unit => unit.dataset.unit,
@@ -276,18 +276,18 @@ export class LightsPane extends LitElement {
 
   private renderUnits(view: LightsViewModel, kind: 'lrows' | 'ltiles') {
     // mid-drag the units follow the drag's order
-    const units = this.arrange.arrange(unitsOf(view.tiles), unit => unit.key);
-    const {arrange} = this;
+    const units = this.reorder.arrange(unitsOf(view.tiles), unit => unit.key);
+    const {reorder} = this;
     return html`<div
       class=${kind}
       id=${ifDefined(kind === 'ltiles' ? 'ltiles' : undefined)}
       @area-toggle=${this.onToggle}
-      @pointerdown=${arrange.onPointerDown}
-      @pointermove=${arrange.onPointerMove}
-      @pointerup=${arrange.onPointerUp}
-      @pointercancel=${arrange.onPointerUp}
-      @keydown=${arrange.onKeyDown}
-      @click=${arrange.onClickCapture}
+      @pointerdown=${reorder.onPointerDown}
+      @pointermove=${reorder.onPointerMove}
+      @pointerup=${reorder.onPointerUp}
+      @pointercancel=${reorder.onPointerUp}
+      @keydown=${reorder.onKeyDown}
+      @click=${reorder.onClickCapture}
     >
       ${repeat(
         units,
@@ -298,7 +298,7 @@ export class LightsPane extends LitElement {
   }
 
   private renderUnit({key, tiles}: Unit) {
-    const lifted = this.arrange.lifted === key ? 'lifted' : '';
+    const lifted = this.reorder.lifted === key ? 'lifted' : '';
     const tile = (t: TileView) => html`<hp-light-tile .tile=${t} .editing=${this.editing}></hp-light-tile>`;
     if (tiles.length === 1)
       return html`<hp-light-tile

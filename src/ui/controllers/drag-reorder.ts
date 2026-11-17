@@ -74,8 +74,11 @@ export class DragReorderController implements ReactiveController {
     host.addController(this);
   }
 
+  // a page left mid-drag puts the lifted unit back where it stands
   hostDisconnected(): void {
     clearTimeout(this.settle);
+    const unit = this.drag && this.unitEl(this.drag);
+    if (unit) unit.style.transform = '';
     this.drag = null;
   }
 

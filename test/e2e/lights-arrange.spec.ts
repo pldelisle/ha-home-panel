@@ -53,7 +53,7 @@ test.describe('as an admin', () => {
     ).toEqual([]);
   });
 
-  test('62 while arranging, ArrowDown on a focused tile moves its block one place and saves the order', async ({
+  test('62 while arranging, a tap on a tile is stopped before the tile, and ArrowDown on it moves its block one place and saves the order', async ({
     house,
   }) => {
     tabletOnly();
@@ -61,6 +61,14 @@ test.describe('as an admin', () => {
     await house.tab('lights');
     await root.locator('#ledit').click();
     const island = root.locator('#pane-lights .lcell[data-lsheet="light.kitchen_island"]');
+    // the controller stops the click on its way down, so a listener on the unit (the pair, which the press captured) never hears it
+    await island.evaluate(el => {
+      (window as unknown as {heard: number}).heard = 0;
+      const unit = ((el.getRootNode() as ShadowRoot).host as HTMLElement).closest('[data-unit]')!;
+      unit.addEventListener('click', () => (window as unknown as {heard: number}).heard++);
+    });
+    await island.click();
+    expect(await house.page.evaluate(() => (window as unknown as {heard: number}).heard), 'the tap is stopped').toBe(0);
     await island.focus();
     await house.page.keyboard.press('ArrowDown');
     // read before the tiles' names, which taps the rail's tab
