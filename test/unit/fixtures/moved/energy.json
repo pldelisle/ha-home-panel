@@ -192,10 +192,12 @@
       "key": "energy.unavailable"
     },
     {
-      "key": "energy.now"
+      "key": "energy.now",
+      "written": "Direct"
     },
     {
-      "key": "energy.today"
+      "key": "energy.today",
+      "written": "Jour"
     },
     {
       "key": "energy.tile.heat",

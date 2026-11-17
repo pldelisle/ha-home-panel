@@ -211,13 +211,17 @@ test.describe('on a phone in French', () => {
   test.use({houseOpts: {cfg: FULL_CFG, lang: 'fr'}});
   test.beforeEach(() => phoneOnly());
 
-  // the pill scrolls sideways (the kit's `overflow-x: auto`) where French's Maintenant and Aujourd'hui leave no room for all five: the last is still reachable
-  test('the five range tabs are French, and the last one, past the edge of the pill, can be chosen', async ({
-    house,
-  }) => {
+  // French says Direct and Jour, short enough that the five fit a phone's width: none is hidden past the pill's edge
+  test('the five range tabs are French and all fit on the screen, and the last one can be chosen', async ({house}) => {
     await openTab(house);
     const tabs = pane(house).locator(':scope > hp-range-tabs');
-    await expect(tabs.getByRole('tab')).toHaveText(['Maintenant', "Aujourd'hui", 'Semaine', 'Mois', 'Année']);
+    await expect(tabs.getByRole('tab')).toHaveText(['Direct', 'Jour', 'Semaine', 'Mois', 'Année']);
+    const pill = (await tabs.getByRole('tablist').boundingBox())!;
+    const last = (await tabs.getByRole('tab', {name: 'Année'}).boundingBox())!;
+    expect(last.x + last.width, 'the last tab ends inside the pill').toBeLessThanOrEqual(pill.x + pill.width + 0.5);
+    expect(pill.x + pill.width, 'the pill ends inside the screen').toBeLessThanOrEqual(
+      house.page.viewportSize()!.width,
+    );
     await tabs.getByRole('tab', {name: 'Année'}).click();
     await expect(tabs.getByRole('tab', {name: 'Année'})).toHaveAttribute('aria-selected', 'true');
     await expect(detail(house).locator('.inner h3').first()).toHaveText('Mois par mois');

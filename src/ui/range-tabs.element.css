@@ -4,3 +4,11 @@
 :host([compact]) .tabs {
   width: 100%;
 }
+/* on a phone the pill is a segmented control: the segments share its width equally (HIG, Segmented controls), so five fit a 393 pt screen without scrolling */
+:host([compact]) .tab {
+  flex: 1 1 0;
+  min-width: 0;
+  padding-inline: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
