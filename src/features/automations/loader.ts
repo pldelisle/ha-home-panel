@@ -6,37 +6,18 @@
 import {ContextConsumer} from '@lit/context';
 import type {ReactiveController, ReactiveControllerHost} from 'lit';
 import {StaleReply, type PanelApi} from '../../core/api.ts';
-import type {AutomationConfig, Trace, TraceSummary} from '../../core/ha.ts';
 import type {Automation} from '../../providers/automations.ts';
 import {apiContext} from '../../ui/contexts.ts';
-import {noiseOf, picks, type Selection} from './traces.ts';
+import {pickedRuns, type Selection, type TracesData} from './traces.ts';
 
 const LIST_MS = 20_000;
 const CONFIGS_MS = 600_000;
 const AFTER_CHANGE_MS = 1_500;
 
-/** What the loader holds: the pane's model reads it. */
-export interface TracesData {
-  /** The stored runs, null until the first list arrived. */
-  list: TraceSummary[] | null;
-  /** Why the last list was refused (a non-admin account), null when it arrived. */
-  error: string | null;
-  /** Each automation's config by item id; null when it could not be read. */
-  configs: Record<string, AutomationConfig | null>;
-  /** The traces fetched, by `item/run`. */
-  traces: Record<string, Trace>;
-}
-
 /** The pane's side: its automations now and what the person picked. */
 export interface TracesSource {
   automations(): Automation[];
   selection(): Selection | null;
-}
-
-/** The runs the flow cards draw, in the order of the cards: selected, running now, last decision, last completed. */
-export function pickedRuns(data: TracesData, selection: Selection | null): (TraceSummary | undefined)[] {
-  const p = picks(data.list ?? [], selection, noiseOf(data.configs));
-  return [p.selected, p.running, p.decision, p.completed];
 }
 
 export class TracesLoader implements ReactiveController {

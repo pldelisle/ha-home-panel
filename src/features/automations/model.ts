@@ -11,11 +11,10 @@ import type {Translate} from '../../core/i18n/messages.ts';
 import type {Names} from '../../core/i18n/names.ts';
 import {minutesOfDay, sunNext, upcomingRuns, type Automation} from '../../providers/automations.ts';
 import {automationGraph} from './graph.ts';
-import {pickedRuns, type TracesData} from './loader.ts';
 import {toMermaid, type FlowTokens} from './mermaid-def.ts';
 import {shortAlias} from './sentences.ts';
 import {timelineLayout, isUp, type DotClass, type TimelineDot} from './timeline-layout.ts';
-import {elapsedText, noiseOf, todayRuns, type Selection} from './traces.ts';
+import {elapsedText, noiseOf, pickedRuns, todayRuns, type Selection, type TracesData} from './traces.ts';
 
 export interface AutomationsInputs {
   automations: Automation[];

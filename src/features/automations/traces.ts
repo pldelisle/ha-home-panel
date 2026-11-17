@@ -1,9 +1,9 @@
-// Which stored runs the Automations tab shows: the noise it leaves out, the four runs its flow cards draw, today's runs, the
-// fingerprint of the states that asks for a reload, and the running pill's elapsed time.
+// Which stored runs the Automations tab shows: what the loader holds, the noise it leaves out, the four runs its flow cards draw,
+// today's runs, the fingerprint of the states that asks for a reload, and the running pill's elapsed time.
 // Pattern: pure functions over Home Assistant's `trace/list` rows (Bernhardt, functional core), the rules of the legacy
 // `auNoise()`, `auPicks()`, `renderAuto()`'s filters and `auElapsed()`.
 // Must not: read the clock (`now` and `midnight` are passed in), word anything outside the catalog, or ask Home Assistant.
-import type {AutomationConfig, TraceSummary} from '../../core/ha.ts';
+import type {AutomationConfig, Trace, TraceSummary} from '../../core/ha.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
 import {asList, triggerKind, type Automation} from '../../providers/automations.ts';
 
@@ -79,4 +79,22 @@ export function elapsedText(startMs: number, now: number, t: Translate): string 
     minutes: hours ? String(Math.floor(s / 60) % 60).padStart(2, '0') : String(Math.floor(s / 60)),
     seconds: String(s % 60).padStart(2, '0'),
   });
+}
+
+/** What the loader (`loader.ts`) holds: the pane's model reads it. */
+export interface TracesData {
+  /** The stored runs, null until the first list arrived. */
+  list: TraceSummary[] | null;
+  /** Why the last list was refused (a non-admin account), null when it arrived. */
+  error: string | null;
+  /** Each automation's config by item id; null when it could not be read. */
+  configs: Record<string, AutomationConfig | null>;
+  /** The traces fetched, by `item/run`. */
+  traces: Record<string, Trace>;
+}
+
+/** The runs the flow cards draw, in the order of the cards: selected, running now, last decision, last completed. */
+export function pickedRuns(data: TracesData, selection: Selection | null): (TraceSummary | undefined)[] {
+  const p = picks(data.list ?? [], selection, noiseOf(data.configs));
+  return [p.selected, p.running, p.decision, p.completed];
 }

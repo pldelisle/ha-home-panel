@@ -1,5 +1,5 @@
-// mountFlow: an automation's flow drawn into a box: Mermaid loaded once per page, initialized for the box's theme, the definition
-// rendered once per theme through a cache, the drawing sized to the box and decorated (arrowheads in each edge's colour, the dash on
+// mountFlow: an automation's flow drawn into a box: Mermaid loaded once per document, initialized for the box's theme, the definition
+// rendered once per theme through a cache of the last theme's drawings, the drawing sized to the box and decorated (arrowheads in each edge's colour, the dash on
 // the step waited for). Pattern: a mount module for a third-party library (spec 17's shape), the legacy `auDraw()` and `auDecorate()`.
 // Mermaid's configuration is global, so every render is queued and initializes again when its theme is not the last one's (two panels).
 // Must not: word anything (the failure lines are the caller's), read Home Assistant, or keep a box after `destroy()`.
@@ -20,13 +20,13 @@ export interface FlowMount {
 }
 
 // Mermaid is imported the first time a flow is drawn, so the bundle the other tabs load does not carry it; Vite emits it as
-// chunks under chunks/, beside home-panel.js. Module-level on purpose: a library loads once per page, not once per panel
-// (spec 10, the one exception to "no module state"); so are the queue, the last theme and the render ids, which are page-wide too.
+// chunks under chunks/, beside home-panel.js. Module-level on purpose: a library loads once per document, not once per panel
+// (spec 10, the one exception to "no module state"); so are the queue, the last theme and the render ids, which are shared by every panel too.
 let mermaidP: Promise<Mermaid> | undefined;
 const loadMermaid = (): Promise<Mermaid> => (mermaidP ??= import('mermaid/dist/mermaid.core.mjs').then(m => m.default));
 let queue: Promise<unknown> = Promise.resolve();
 let initialized = '';
-// a render id is an element id in the page's document while Mermaid measures: two panels drawing the same automation need two
+// a render id is an element id in the document while Mermaid measures: two panels drawing the same automation need two
 let renderCount = 0;
 const svgs = new Map<string, string>();
 
@@ -78,6 +78,8 @@ function render(mermaid: Mermaid, def: string, config: ReturnType<typeof themeOf
     const again = svgs.get(key);
     if (again) return again;
     if (initialized !== theme) {
+      // a new theme: the drawings of the last one are dropped, as the legacy panel did, so a theme toggled all day keeps one set
+      svgs.clear();
       mermaid.initialize(config);
       initialized = theme;
     }

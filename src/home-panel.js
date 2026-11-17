@@ -328,7 +328,7 @@ export class LegacyPanel {
       } catch {}
     }
   }
-  // which tabs this house lacks (false: nothing for it), for the shell's registry: none of the tabs the guest still draws has an opinion, Climate's and Car's are their descriptors' `available`
+  // which tabs this house lacks (false: nothing for it), for the shell's registry: the guest draws no tab since #273, so it has no opinion and the descriptors' `available` answer; #188 deletes this member with the guest interface
   availability() {
     return {};
   }

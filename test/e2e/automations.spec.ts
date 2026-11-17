@@ -206,7 +206,8 @@ test.describe('the Automations pane', () => {
   test('asks for the list of runs once when the tab opens, not again within twenty seconds', async ({house}) => {
     await house.tab('auto');
     await expect(pane(house).locator('hp-run-timeline')).toBeAttached();
-    await house.clock.runFor(10_000);
+    // just under the twenty seconds the list is held for: a shorter hold would ask again within this window
+    await house.clock.runFor(19_500);
     const lists = (await house.reads()).filter(r => r.startsWith('trace/list'));
     expect(lists).toHaveLength(1);
   });

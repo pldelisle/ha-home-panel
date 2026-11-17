@@ -9,7 +9,7 @@ import {createFormatters} from '../../../../src/core/i18n/format.ts';
 import {englishLocale} from '../../../../src/core/i18n/locale.ts';
 import {createMessages} from '../../../../src/core/i18n/messages.ts';
 import {automationIds} from '../../../../src/features/automations/ids.ts';
-import type {TracesData} from '../../../../src/features/automations/loader.ts';
+import type {TracesData} from '../../../../src/features/automations/traces.ts';
 import {automationsBrief, automationsModel, runningText} from '../../../../src/features/automations/model.ts';
 import type {Automation} from '../../../../src/providers/automations.ts';
 
