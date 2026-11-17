@@ -66,7 +66,7 @@
   font-size: 11px;
 }
 .app.tabsv.cp .rtab[aria-selected='true'] {
-  background: transparent;
+  background: var(--nav-sel-bg);
 }
 .app.tabsv.cp .rtab[aria-selected='true'] span {
   color: var(--fg);

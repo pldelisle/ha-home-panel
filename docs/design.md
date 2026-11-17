@@ -10,9 +10,13 @@ Apple's rule (HIG, Materials): "Don't use Liquid Glass in the content layer." Li
 rail and the phone's tab bar, the header's round buttons and capsules (the live pill, the peak chip, Settings), popovers, toasts,
 and a sheet's frame and its close button. Everything a pane shows is the **content layer**, and stays opaque with glass on: the
 wallpaper shows faintly through a card's near-opaque fill and plain blur, never through its wells or controls. The glass tokens of
-the navigation layer are `--g-fill`, `--g-dense`, `--g-edge`, `--g-bd` (with the Chromium lens), `--g-nav-sel` and
+the navigation layer are `--g-fill`, `--g-dense`, `--g-edge`, `--g-bd` (with the Chromium lens), `--nav-sel-bg` and
 `--g-nav-rim-s`; the content layer's are `--g-card`, `--g-tile`, `--m-bd` and `--m-edge` (`src/css/glass.css`). The glass
 strength setting moves the navigation layer only.
+
+- The rail and the phone's tab bar draw as the Files app's sidebar: every icon in the one blue (`--c-home`), the labels in the
+  text colour, and the chosen section on a darker neutral fill (`--nav-sel-bg`). A section never colours the navigation.
+- A pane's or a sheet's title icon stands bare beside the title, on no fill: it is part of the title, not a button.
 
 ## Three surfaces in the content layer
 

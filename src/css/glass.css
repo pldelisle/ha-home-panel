@@ -31,9 +31,8 @@
   padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px));
 }
 .app.tabsv.gl.cp .rtab[aria-selected='true'] {
-  background: color-mix(in srgb, var(--rc) 20%, var(--g-nav-sel));
+  background: var(--nav-sel-bg);
   border-radius: 24px;
-  box-shadow: var(--g-nav-rim-s);
 }
 /* iPad: the rail is the same capsule, standing on the page */
 .app.tabsv.gl:not(.cp) .rail {
@@ -41,7 +40,7 @@
   padding: 10px 6px;
 }
 .app.tabsv.gl:not(.cp) .rtab[aria-selected='true'] {
-  background: color-mix(in srgb, var(--rc) 20%, var(--g-nav-sel));
+  background: var(--nav-sel-bg);
 }
 /* the wallpaper: a fixed layer behind the page (iOS ignores background-attachment:fixed), soft colour washes for the glass to bend */
 .app.gl {
