@@ -74,6 +74,7 @@ test.describe('on a phone', () => {
       'Grid supplying 3.24 kW · room heating 2.40 kW · Hilo rate unknown',
     );
     await expect(pane(house).locator(':scope > hp-range-tabs').getByRole('tab')).toHaveText([
+      'Now',
       'Today',
       'Week',
       'Month',
@@ -206,6 +207,23 @@ test.describe('on a phone', () => {
   });
 });
 
+test.describe('on a phone in French', () => {
+  test.use({houseOpts: {cfg: FULL_CFG, lang: 'fr'}});
+  test.beforeEach(() => phoneOnly());
+
+  // the pill scrolls sideways (the kit's `overflow-x: auto`) where French's Maintenant and Aujourd'hui leave no room for all five: the last is still reachable
+  test('the five range tabs are French, and the last one, past the edge of the pill, can be chosen', async ({
+    house,
+  }) => {
+    await openTab(house);
+    const tabs = pane(house).locator(':scope > hp-range-tabs');
+    await expect(tabs.getByRole('tab')).toHaveText(['Maintenant', "Aujourd'hui", 'Semaine', 'Mois', 'Année']);
+    await tabs.getByRole('tab', {name: 'Année'}).click();
+    await expect(tabs.getByRole('tab', {name: 'Année'})).toHaveAttribute('aria-selected', 'true');
+    await expect(detail(house).locator('.inner h3').first()).toHaveText('Mois par mois');
+  });
+});
+
 test.describe('on a tablet', () => {
   test.beforeEach(() => tabletOnly());
 
@@ -289,7 +307,6 @@ test.describe('the detail on a tablet', () => {
   const charts = (house: House) => detail(house).locator('.inner > hp-chart .apexcharts-canvas');
   const mainTitle = (house: House) => detail(house).locator('.inner h3').first();
   const rangeTab = (house: House, name: string) => detail(house).locator('hp-range-tabs').getByRole('tab', {name});
-  const modeTab = (house: House, name: string) => detail(house).locator('.sankeyblock').getByRole('tab', {name});
 
   // the statistics the panel asked for so far, as the harness saw them
   const asked = async (house: House) => (await house.asked(STATISTICS)).length;
@@ -327,29 +344,37 @@ test.describe('the detail on a tablet', () => {
     expect((await house.reads()).length, 'reads after four taps').toBe(reads);
   });
 
-  test('the Sankey: Now shows the live flow, Today and 30 days the ribbons, and none asks the recorder for anything', async ({
+  test('the tab’s one range drives the Sankey: Now shows the live flow, the other ranges the ribbons of their days, and none asks the recorder for anything', async ({
     house,
   }) => {
     await openDetail(house);
     const before = await asked(house);
     const note = detail(house).locator('.sankeyblock p');
+    // no control of its own: the detail's only tabs are the header's five
+    await expect(detail(house).getByRole('tab')).toHaveCount(5);
+    await expect(detail(house).locator('.sankeyblock').getByRole('tab')).toHaveCount(0);
+    await expect(rangeTab(house, 'Now')).toHaveAttribute('aria-selected', 'true');
     await expect(detail(house).locator('.sankeyblock hp-power-flow svg')).toBeVisible();
     await expect(detail(house).locator('hp-sankey')).toHaveCount(0);
     await expect(note).toHaveText("Live power: the Hilo meter on the left, each device's own sensor on the right.");
-    await modeTab(house, '30 days').click();
+    await rangeTab(house, 'Month').click();
     await expect(detail(house).locator('hp-power-flow')).toHaveCount(0);
     const ribbons = detail(house).locator('hp-sankey svg path');
     await expect(ribbons.first()).toBeVisible();
     expect(await ribbons.count(), 'a ribbon for each use and each room').toBeGreaterThan(4);
     await expect(note).toHaveText(/^Last 30 days, [\d,\u202f\u00a0 ]+ kWh in all\.$/);
     await expect(detail(house).locator('hp-sankey text', {hasText: /^Grid$/})).toBeVisible();
-    await modeTab(house, 'Today').click();
+    await rangeTab(house, 'Week').click();
+    await expect(note).toHaveText(/^Last 7 days, [\d,\u202f\u00a0 ]+ kWh in all\.$/);
+    await rangeTab(house, 'Year').click();
+    await expect(note).toHaveText(/^Last 365 days, [\d,\u202f\u00a0 ]+ kWh in all\.$/);
+    await rangeTab(house, 'Today').click();
     await expect(note).toHaveText(/^Energy since midnight, [\d.]+ kWh so far\.$/);
     await expect(detail(house).locator('hp-sankey svg path').first()).toBeVisible();
-    await modeTab(house, 'Now').click();
+    await rangeTab(house, 'Now').click();
     await expect(detail(house).locator('hp-sankey')).toHaveCount(0);
     await expect(detail(house).locator('.sankeyblock hp-power-flow svg')).toBeVisible();
-    expect(await asked(house), 'statistics requests after three taps').toBe(before);
+    expect(await asked(house), 'statistics requests after six taps').toBe(before);
   });
 
   test('the donut’s table and the totals read as literals', async ({house}) => {
@@ -362,6 +387,17 @@ test.describe('the detail on a tablet', () => {
       'EV charging',
       'Rest of home',
     ]);
+    // Now draws today's hours, so the donut is today's (eight hours into the day)
+    await expect(detail(house).locator('.donut').locator('xpath=..').locator('p')).toHaveText(
+      /^Today so far\. Rest of home/,
+    );
+    await expect(rows.locator('td.r:nth-child(2)')).toHaveText(['44.8 kWh', '11.2 kWh', '11.2 kWh', '0.0 kWh']);
+    await expect(rows.locator('td.r:nth-child(3)')).toHaveText(['67%', '17%', '17%', '0%']);
+    // the Month tab is the 30 days the donut always drew
+    await rangeTab(house, 'Month').click();
+    await expect(detail(house).locator('.donut').locator('xpath=..').locator('p')).toHaveText(
+      /^Last 30 days\. Rest of home/,
+    );
     await expect(rows.locator('td.r:nth-child(2)')).toHaveText([
       '4,400.1 kWh',
       '1,100.0 kWh',

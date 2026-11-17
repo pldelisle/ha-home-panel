@@ -1,5 +1,5 @@
 // <hp-energy-pane>: the Energy tab: on a phone the header with the summary, the range and the detail inline, then two tiles that open the water heater's and
-// Hilo's cards in sheets (the detail's own sheet is Home's tile's); on a tablet the detail inline (the header and the tiles are not shown there) and the two cards after it. It keeps the range and the Sankey's period.
+// Hilo's cards in sheets (the detail's own sheet is Home's tile's); on a tablet the detail inline (the header and the tiles are not shown there) and the two cards after it. It keeps the one range, which every card of the detail follows.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over a view model: `energyModel` runs in `willUpdate` and the template places what it returns;
 // a store controller on `energyIds` (ADR 0012), paused while no part of the pane is on screen, and `EnergyHistory`, which loads the history when the pane is shown (ADR 0028).
 // Must not: read an entity itself (`readEnergy` does), hold a string the household reads, call the API (the history controller asks the cache), or open a sheet (it asks).
@@ -7,14 +7,14 @@ import {ContextConsumer} from '@lit/context';
 import {LitElement, html, nothing, unsafeCSS, type PropertyValues, type TemplateResult} from 'lit';
 import './energy-detail.ts'; // defines <hp-energy-detail>
 import {isEnergyRange, type EnergyRange} from './charts.ts';
-import {detailIcon, type ModeChosenDetail} from './energy-detail.ts';
+import {detailIcon} from './energy-detail.ts';
 import './hilo-card.ts'; // defines <hp-hilo-card>
 import './water-card.ts'; // defines <hp-water-card>
 import paneOwn from './energy-pane.element.css?inline';
 import {energyIds} from './ids.ts';
 import {readEnergy} from './inputs.ts';
 import {EnergyHistory, type EnergyHistoryHost} from './loader.ts';
-import {energyModel, type EnergyViewModel, type SankeyMode} from './model.ts';
+import {energyModel, type EnergyViewModel} from './model.ts';
 import {DETAIL_SHEET, HILO_SHEET, WATER_SHEET} from './sheets.ts';
 import type {StatisticsCache} from '../../core/statistics-cache.ts';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
@@ -65,8 +65,7 @@ export class EnergyPane extends LitElement {
   private readonly history: EnergyHistory;
   private view: EnergyViewModel | undefined;
   /** What the detail last showed, kept for the panel's life and handed to each opening, as the legacy sheet kept its own. */
-  private range: EnergyRange = 'today';
-  private sankeyMode: SankeyMode = 'now';
+  private range: EnergyRange = 'now';
 
   constructor() {
     super();
@@ -133,7 +132,6 @@ export class EnergyPane extends LitElement {
       language: store.language,
       error: this.history.error,
       range: this.range,
-      sankeyMode: this.sankeyMode,
     });
   }
 
@@ -193,15 +191,13 @@ export class EnergyPane extends LitElement {
     </div>`;
   }
 
-  // the detail: the history's charts, the Sankey and the totals, from the model, and the range and period the pane keeps
+  // the detail: the history's charts, the Sankey and the totals, from the model, and the range the pane keeps
   private renderDetail({detail}: EnergyViewModel) {
     return html`<hp-energy-detail
       .view=${detail}
       .history=${this.history.data}
       .range=${this.range}
-      .mode=${this.sankeyMode}
       @range-chosen=${this.onRange}
-      @mode-chosen=${this.onMode}
     ></hp-energy-detail>`;
   }
 
@@ -286,12 +282,6 @@ export class EnergyPane extends LitElement {
     e.stopPropagation();
     if (!isEnergyRange(e.detail.range)) return;
     this.range = e.detail.range;
-    this.requestUpdate();
-  };
-
-  private readonly onMode = (e: CustomEvent<ModeChosenDetail>): void => {
-    e.stopPropagation();
-    this.sankeyMode = e.detail.mode;
     this.requestUpdate();
   };
 

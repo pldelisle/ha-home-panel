@@ -1,7 +1,7 @@
-// <hp-energy-detail>: the Energy detail: the main stacked chart by range, the Sankey of a period, the donut with its table and the six totals.
+// <hp-energy-detail>: the Energy detail: the main stacked chart, the Sankey and the donut, each for the tab's one range, and the six totals.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) placing the view model the pane hands down, the charts through <hp-chart> (ADR 0022, 0027)
-// from the pure options of charts.ts and the Sankey through <hp-sankey>; a controlled component (the range and the period are the pane's, told
-// upward as `range-chosen` and `mode-chosen`); a switch of range redraws from the history the pane loaded, so it asks nothing.
+// from the pure options of charts.ts and the Sankey through <hp-sankey>; a controlled component (the range is the pane's, told
+// upward as `range-chosen`); a switch of range redraws from the history the pane loaded, so it asks nothing.
 // Must not: read an entity or the clock for a figure (the model did), call the API client, open a sheet itself, or build options for what did not change.
 import {LitElement, html, nothing, svg, unsafeCSS} from 'lit';
 import {ifDefined} from 'lit/directives/if-defined.js';
@@ -17,7 +17,7 @@ import {
 } from './charts.ts';
 import detailOwn from './energy-detail.element.css?inline';
 import type {EnergyHistoryData} from './history.ts';
-import type {DonutRow, EnergyDetailView, LegendItem, SankeyMode} from './model.ts';
+import type {DonutRow, EnergyDetailView, LegendItem} from './model.ts';
 import './power-flow.ts'; // defines <hp-power-flow>
 import './sankey.ts'; // defines <hp-sankey>
 import {tileList} from './tile-list.ts';
@@ -31,11 +31,6 @@ import '../../ui/range-tabs.ts'; // defines <hp-range-tabs>
 import type {RangeChangeDetail} from '../../ui/range-tabs.ts';
 import {chart, common, inner, range as rangeStyles, tiles} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
-
-/** What a tap on the Sankey's tabs says: the period now chosen. */
-export interface ModeChosenDetail {
-  mode: SankeyMode;
-}
 
 /** The charts' options, made for one history, range, theme, language and shape, so an update for anything else draws nothing again. */
 interface Built {
@@ -56,15 +51,13 @@ export class EnergyDetail extends LitElement {
     view: {attribute: false},
     history: {attribute: false},
     range: {},
-    mode: {},
   };
   /** The pane's view model of the detail: the words, the Sankey's geometry, the donut's table and the totals. */
   declare view: EnergyDetailView | undefined;
   /** The history the pane loaded; null before it arrives. The charts are drawn from it. */
   declare history: EnergyHistoryData | null;
-  /** The range and the Sankey's period chosen: the pane keeps them for the panel's life and passes them in, as the legacy sheet kept its own. */
+  /** The range chosen, which the three cards follow: the pane keeps it for the panel's life and passes it in, as the legacy sheet kept its own. */
   declare range: EnergyRange;
-  declare mode: SankeyMode;
 
   // The kit's wells, tiles, tabs and legend, and the element's own rules last (energy-detail.element.css).
   static override styles = [common, inner, tiles, rangeStyles, chart, unsafeCSS(forShadow(detailOwn))];
@@ -77,8 +70,7 @@ export class EnergyDetail extends LitElement {
     super();
     this.view = undefined;
     this.history = null;
-    this.range = 'today';
-    this.mode = 'now';
+    this.range = 'now';
   }
 
   // The options are rebuilt only when what they are made of changed: new history, another range, the theme, the language or the shape. A power
@@ -191,28 +183,8 @@ export class EnergyDetail extends LitElement {
   private renderSankey({sankey}: EnergyDetailView) {
     const {body} = sankey;
     return html`<div class="inner sankeyblock">
-      <div class="sankeyhead">
-        <div>
-          <h3>${sankey.title}</h3>
-          <p>${sankey.note}</p>
-        </div>
-        <div class="tabs" role="tablist" aria-label=${sankey.label}>
-          ${repeat(
-            sankey.modes,
-            ({mode}) => mode,
-            ({mode, label}) =>
-              html`<button
-                class="tab"
-                type="button"
-                role="tab"
-                aria-selected=${mode === this.mode ? 'true' : 'false'}
-                @click=${() => this.onMode(mode)}
-              >
-                ${label}
-              </button>`,
-          )}
-        </div>
-      </div>
+      <h3>${sankey.title}</h3>
+      <p>${sankey.note}</p>
       <div class="sankey">
         ${
           body.kind === 'flow'
@@ -261,10 +233,6 @@ export class EnergyDetail extends LitElement {
   private readonly onRange = (event: CustomEvent<RangeChangeDetail<string>>): void => {
     this.dispatchEvent(new CustomEvent<RangeChangeDetail<string>>('range-chosen', {detail: event.detail}));
   };
-
-  private onMode(mode: SankeyMode): void {
-    if (mode !== this.mode) this.dispatchEvent(new CustomEvent<ModeChosenDetail>('mode-chosen', {detail: {mode}}));
-  }
 }
 
 declare global {

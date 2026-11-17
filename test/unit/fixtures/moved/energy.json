@@ -192,6 +192,9 @@
       "key": "energy.unavailable"
     },
     {
+      "key": "energy.now"
+    },
+    {
       "key": "energy.today"
     },
     {
@@ -487,13 +490,6 @@
       "was": "Où va l’électricité"
     },
     {
-      "key": "energy.sankey.period",
-      "was": "Période du diagramme"
-    },
-    {
-      "key": "energy.sankey.now"
-    },
-    {
       "key": "energy.days30"
     },
     {
@@ -509,11 +505,12 @@
       "was": "Énergie depuis minuit, 12,3 kWh jusqu’ici."
     },
     {
-      "key": "energy.sankey.note30",
+      "key": "energy.sankey.noteDays",
       "values": {
+        "days": 7,
         "kwh": 612
       },
-      "written": "30 derniers jours, 612 kWh en tout."
+      "written": "7 derniers jours, 612 kWh en tout."
     },
     {
       "key": "energy.sankey.noData",
@@ -541,7 +538,10 @@
     },
     {
       "key": "energy.donut.hint",
-      "was": "30 derniers jours. Le reste de la maison comprend tout ce qui n'a pas son propre capteur de puissance, y compris la thermopompe."
+      "values": {
+        "days": 30
+      },
+      "written": "30 derniers jours. Le reste de la maison comprend tout ce qui n'a pas son propre capteur de puissance, y compris la thermopompe."
     },
     {
       "key": "energy.donut.total"

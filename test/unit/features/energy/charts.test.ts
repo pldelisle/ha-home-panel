@@ -76,8 +76,9 @@ describe('mainRows', () => {
   const {fmt} = depsOf(fullHouse, 'en');
   const rows = (range: (typeof ENERGY_RANGES)[number]) => mainRows(range, history(), {fmt, now: NOW});
 
-  test('today is the hours of the local day, the week all the hours', () => {
+  test('today is the hours of the local day, and so is now; the week all the hours', () => {
     expect(rows('today')).toEqual({range: 'today', rows: FLOW.slice(0, 2)});
+    expect(rows('now')).toEqual({range: 'today', rows: FLOW.slice(0, 2)});
     expect(rows('week')).toEqual({range: 'week', rows: FLOW});
   });
 
@@ -90,14 +91,14 @@ describe('mainRows', () => {
 });
 
 describe('the ranges', () => {
-  test('are today, week, month and year, and a tab of the kit’s other ranges is not one', () => {
-    expect([...ENERGY_RANGES]).toEqual(['today', 'week', 'month', 'year']);
+  test('are now, today, week, month and year, and a tab of the kit’s other ranges is not one', () => {
+    expect([...ENERGY_RANGES]).toEqual(['now', 'today', 'week', 'month', 'year']);
     expect(ENERGY_RANGES.every(isEnergyRange)).toBe(true);
     expect(isEnergyRange('day')).toBe(false);
   });
 
-  test('today and the week stand on a time axis, the month and the year on categories: the shape <hp-chart> draws a new chart for', () => {
-    expect(ENERGY_RANGES.map(mainShape)).toEqual(['time', 'time', 'category', 'category']);
+  test('now, today and the week stand on a time axis, the month and the year on categories: the shape <hp-chart> draws a new chart for', () => {
+    expect(ENERGY_RANGES.map(mainShape)).toEqual(['time', 'time', 'time', 'category', 'category']);
   });
 });
 
@@ -255,11 +256,11 @@ describe('the donut', () => {
     expect(at(options, 'plotOptions.pie.donut.size')).toBe('70%');
   });
 
-  test('writes a slice in whole kWh in its middle, the total of the 30 days under its label, and a tenth in the tooltip', () => {
+  test('writes a slice in whole kWh in its middle, the total of the period under its label, and a tenth in the tooltip', () => {
     const options = donutOptions(parts, deps());
     const labels = 'plotOptions.pie.donut.labels';
     expect(at(options, `${labels}.value`)).toMatchObject({fontFamily: 'Num', color: 'black'});
-    expect(at(options, `${labels}.total`)).toMatchObject({label: 'kWh, 30 days', color: 'dim'});
+    expect(at(options, `${labels}.total`)).toMatchObject({label: 'kWh', color: 'dim'});
     expect(call(options, `${labels}.value.formatter`, 120.6)).toBe('121');
     expect(call(options, `${labels}.total.formatter`)).toBe('476');
     expect(call(options, 'tooltip.y.formatter', 55.55)).toBe('55.6 kWh');
@@ -267,7 +268,7 @@ describe('the donut', () => {
 
   test('in French the total’s label is French', () => {
     const options = donutOptions(parts, deps('fr'));
-    expect(at(options, 'plotOptions.pie.donut.labels.total.label')).toBe('kWh, 30 jours');
+    expect(at(options, 'plotOptions.pie.donut.labels.total.label')).toBe('kWh');
     expect(call(options, 'tooltip.y.formatter', 55.55)).toBe('55,6 kWh');
   });
 });

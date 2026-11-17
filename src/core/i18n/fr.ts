@@ -562,6 +562,7 @@ export const fr: Record<MessageKey, string> = {
   'energy.hot': '{state}, chaud',
   'energy.roomsOn': '{on} sur {total} pièces en marche',
   'energy.unavailable': 'Indisponible',
+  'energy.now': 'Maintenant',
   'energy.today': "Aujourd'hui",
   'energy.tile.heat': 'Chauffage des pièces',
   'energy.tile.water': 'Chauffe-eau',
@@ -629,13 +630,11 @@ export const fr: Record<MessageKey, string> = {
   'energy.detail.yearPeak':
     '12 derniers mois. Le chauffage a culminé en {month}\u00a0: {kwh} kWh. Les mois avec des données manquantes paraissent plus courts.',
   'energy.sankey.title': 'Où va l’électricité',
-  'energy.sankey.period': 'Période du diagramme',
-  'energy.sankey.now': 'Maintenant',
   'energy.days30': '30 jours',
   'energy.sankey.noteNow':
     'Puissance en direct\u00a0: le compteur Hilo à gauche, le capteur de chaque appareil à droite.',
   'energy.sankey.noteToday': 'Énergie depuis minuit, {kwh} kWh jusqu’ici.',
-  'energy.sankey.note30': '30 derniers jours, {kwh} kWh en tout.',
+  'energy.sankey.noteDays': '{days} derniers jours, {kwh} kWh en tout.',
   'energy.sankey.noData': 'Pas encore de données.',
   'energy.sankey.empty': 'Pas encore de données',
   'energy.sankey.grid': 'Réseau',
@@ -644,8 +643,8 @@ export const fr: Record<MessageKey, string> = {
     'Électricité du réseau, répartie entre le chauffage des pièces, l’eau chaude, la recharge du véhicule et le reste de la maison',
   'energy.donut.title': "Où est allée l'énergie",
   'energy.donut.hint':
-    "30 derniers jours. Le reste de la maison comprend tout ce qui n'a pas son propre capteur de puissance, y compris la thermopompe.",
-  'energy.donut.total': 'kWh, 30 jours',
+    "{days, plural, =1 {Aujourd'hui jusqu'ici} other {# derniers jours}}. Le reste de la maison comprend tout ce qui n'a pas son propre capteur de puissance, y compris la thermopompe.",
+  'energy.donut.total': 'kWh',
   'energy.donut.percent': '{n}\u202f%',
   'energy.totals.title': 'Totaux',
   'energy.totals.hint': 'Du compteur intelligent Hilo',

@@ -6,7 +6,12 @@ import type {DailyRow, EnergyHistoryData} from '../../../../src/features/energy/
 import type {SankeyGeometry, SankeyLabel} from '../../../../src/features/energy/sankey-layout.ts';
 import type {FlowRow} from '../../../../src/providers/power-history.ts';
 import {readEnergy, type EnergyInputs} from '../../../../src/features/energy/inputs.ts';
-import {energyModel, type EnergyModelDeps, type EnergyViewModel} from '../../../../src/features/energy/model.ts';
+import {
+  energyModel,
+  periodsOf,
+  type EnergyModelDeps,
+  type EnergyViewModel,
+} from '../../../../src/features/energy/model.ts';
 import {FULL_CFG} from '../../../e2e/houses.ts';
 import {entity, fakeHass} from '../../fake-hass.ts';
 import {depsOf, fullHouse, houseOf, NOW, readingOf, recorded, storeOf, type Language} from '../media/support.ts';
@@ -59,7 +64,7 @@ const modelOf = (
   history: EnergyHistoryData | null = null,
   language: Language = 'en',
   error: string | null = null,
-  detail: Pick<EnergyModelDeps, 'range' | 'sankeyMode'> = {},
+  detail: Pick<EnergyModelDeps, 'range'> = {},
 ): EnergyViewModel => {
   const {t, fmt, names} = depsOf(fullHouse, language);
   return energyModel(inputs, history, {now: NOW, t, fmt, names, language, error, ...detail});
@@ -300,12 +305,11 @@ describe('the detail', () => {
       flow,
       daily: [day('2026-11-06'), day(today)],
       g30: [300, 90, 40, 70],
-      room30: [150, 100, 40, 10],
       ...over,
     });
   const detail = (
     over: Partial<EnergyHistoryData> | null,
-    deps: Pick<EnergyModelDeps, 'range' | 'sankeyMode'> = {},
+    deps: Pick<EnergyModelDeps, 'range'> = {},
     language: Language = 'en',
   ) => modelOf(testHouse(), over === null ? null : loaded(over), language, null, deps).detail;
   const labelsOf = (view: ReturnType<typeof detail>['sankey']) =>
@@ -313,10 +317,11 @@ describe('the detail', () => {
       (item): item is SankeyLabel => item.kind === 'label',
     );
 
-  test('the header: the title, the pane’s sentence under it, the four tabs from today to year', () => {
+  test('the header: the title, the pane’s sentence under it, the five tabs from now to year', () => {
     const vm = modelOf(testHouse());
     expect(vm.detail).toMatchObject({title: 'Home energy', sub: vm.summary});
     expect(vm.detail.ranges.map(tab => [tab.range, tab.label])).toEqual([
+      ['now', 'Now'],
       ['today', 'Today'],
       ['week', 'Week'],
       ['month', 'Month'],
@@ -387,16 +392,34 @@ describe('the detail', () => {
     });
   });
 
+  describe('the periods of the tab’s range', () => {
+    test('now is the live flow and today’s donut; each other range is one period for both cards', () => {
+      expect(periodsOf('now')).toEqual({sankey: 'live', donut: 1});
+      expect(periodsOf('today')).toEqual({sankey: 1, donut: 1});
+      expect(periodsOf('week')).toEqual({sankey: 7, donut: 7});
+      expect(periodsOf('month')).toEqual({sankey: 30, donut: 30});
+      expect(periodsOf('year')).toEqual({sankey: 365, donut: 365});
+    });
+  });
+
   describe('the Sankey', () => {
-    test('now: the live flow, with the live note and the three tabs', () => {
-      const vm = modelOf(testHouse(), loaded());
-      const {sankey} = vm.detail;
-      expect(sankey).toMatchObject({title: 'Where the power goes', label: 'Sankey period'});
-      expect(sankey.modes).toEqual([
-        {mode: 'now', label: 'Now'},
-        {mode: 'today', label: 'Today'},
-        {mode: 'd30', label: '30 days'},
-      ]);
+    // nine days: the two oldest are heavy and outside a week, the seven newest are the test day
+    const nine = [
+      ...['2026-10-29', '2026-10-30'].map(key =>
+        day(key, {heat: 100, wh: 40, ev: 10, rest: 50, rooms: [100, 0, 0, 0]}),
+      ),
+      ...['2026-10-31', '2026-11-01', '2026-11-02', '2026-11-03', '2026-11-04', '2026-11-05', today].map(key =>
+        day(key),
+      ),
+    ];
+
+    test('the tab has no control of its own: the block is a title, a note and a body', () => {
+      expect(Object.keys(detail({}).sankey).sort()).toEqual(['body', 'note', 'title']);
+      expect(detail({}).sankey.title).toBe('Where the power goes');
+    });
+
+    test('now: the live flow, with the live note', () => {
+      const {sankey} = modelOf(testHouse(), loaded(), 'en', null, {range: 'now'}).detail;
       expect(sankey.note).toBe("Live power: the Hilo meter on the left, each device's own sensor on the right.");
       expect(sankey.body.kind).toBe('flow');
     });
@@ -410,7 +433,7 @@ describe('the detail', () => {
     });
 
     test('today: the day’s uses and rooms as ribbons, the rooms named, and the note with the day’s total', () => {
-      const {sankey} = detail({}, {sankeyMode: 'today'});
+      const {sankey} = detail({}, {range: 'today'});
       expect(sankey.note).toBe('Energy since midnight, 20.0 kWh so far.');
       expect(labelsOf(sankey).map(label => [label.name, label.value])).toEqual([
         ['Grid', '20.0 kWh'],
@@ -425,73 +448,105 @@ describe('the detail', () => {
     });
 
     test('today without a day that is today, or without the history, has nothing to draw', () => {
-      const yesterday = detail({daily: [day('2026-11-06')]}, {sankeyMode: 'today'}).sankey;
+      const yesterday = detail({daily: [day('2026-11-06')]}, {range: 'today'}).sankey;
       expect(yesterday).toMatchObject({note: 'No data yet.', body: {kind: 'empty', text: 'No data yet'}});
-      expect(detail({daily: []}, {sankeyMode: 'today'}).sankey.body.kind).toBe('empty');
-      expect(detail(null, {sankeyMode: 'today'}).sankey.body.kind).toBe('empty');
-      expect(detail(null, {sankeyMode: 'd30'}).sankey.body.kind).toBe('empty');
+      expect(detail({daily: []}, {range: 'today'}).sankey.body.kind).toBe('empty');
+      expect(detail(null, {range: 'today'}).sankey.body.kind).toBe('empty');
+      expect(detail(null, {range: 'month'}).sankey.body.kind).toBe('empty');
     });
 
-    test('30 days: the groups and rooms of the 30 days in whole kWh, and nothing when they add up to nothing', () => {
-      const {sankey} = detail({}, {sankeyMode: 'd30'});
-      expect(sankey.note).toBe('Last 30 days, 500 kWh in all.');
-      expect(labelsOf(sankey).map(label => label.value)).toEqual([
-        '500 kWh',
-        '300 kWh',
-        '90 kWh',
-        '40 kWh',
-        '70 kWh',
-        '150 kWh',
-        '100 kWh',
-        '40 kWh',
-        '10 kWh',
+    test('the week is the last seven days of the history, in whole kWh, and the note says so', () => {
+      const {sankey} = detail({daily: nine}, {range: 'week'});
+      expect(sankey.note).toBe('Last 7 days, 140 kWh in all.');
+      expect(labelsOf(sankey).map(label => [label.name, label.value])).toEqual([
+        ['Grid', '140 kWh'],
+        ['Room heating', '70 kWh'],
+        ['Water heating', '28 kWh'],
+        ['Rest of home', '42 kWh'],
+        ['Bedroom', '28 kWh'],
+        ['Garage', '21 kWh'],
+        ['Living room', '14 kWh'],
+        ['Office', '7 kWh'],
       ]);
-      expect(detail({g30: [0, 0, 0, 0]}, {sankeyMode: 'd30'}).sankey.body.kind).toBe('empty');
     });
 
-    test('a room the history has no figure for is a room with nothing', () => {
-      const {sankey} = detail({room30: [150]}, {sankeyMode: 'd30'});
+    test('the month is the last 30 days and the year the last 365: here, every day there is', () => {
+      const month = detail({daily: nine}, {range: 'month'}).sankey;
+      expect(month.note).toBe('Last 30 days, 540 kWh in all.');
+      expect(labelsOf(month)[0].value).toBe('540 kWh');
+      const year = detail({daily: nine}, {range: 'year'}).sankey;
+      expect(year.note).toBe('Last 365 days, 540 kWh in all.');
+    });
+
+    test('nothing in the days has nothing to draw', () => {
+      const none = [day('2026-11-06', {heat: 0, wh: 0, ev: 0, rest: 0, rooms: [0, 0, 0, 0]})];
+      expect(detail({daily: none}, {range: 'month'}).sankey.body.kind).toBe('empty');
+    });
+
+    test('a room with nothing over the period has no ribbon', () => {
+      const {sankey} = detail({daily: [day(today, {rooms: [150, 0, 0, 0]})]}, {range: 'week'});
       expect(labelsOf(sankey).map(label => label.name)).toEqual([
         'Grid',
         'Room heating',
         'Water heating',
-        'EV charging',
         'Rest of home',
         'Bedroom',
       ]);
     });
 
-    test('in French the tabs, the note and the title are French', () => {
-      const {sankey} = detail({}, {sankeyMode: 'd30'}, 'fr');
-      expect(sankey.modes.map(mode => mode.label)).toEqual(['Maintenant', "Aujourd'hui", '30 jours']);
-      expect(sankey.note).toBe('30 derniers jours, 500 kWh en tout.');
+    test('in French the note and the title are French', () => {
+      const {sankey} = detail({daily: nine}, {range: 'week'}, 'fr');
+      expect(sankey.note).toBe('7 derniers jours, 140 kWh en tout.');
       expect(sankey.title).toBe('Où va l’électricité');
     });
   });
 
   describe('the donut and the totals', () => {
-    test('the 30 days’ four slices with a tenth of a kWh and their share of the total', () => {
-      const {donut} = detail({g30: [120.44, 55.5, 8.2, 300]});
-      expect(donut.hint).toBe(
-        'Last 30 days. Rest of home is everything without its own power sensor, including the heat pump.',
-      );
-      expect(donut.parts.map(part => [part.key, part.kwh])).toEqual([
-        ['heat', 120.44],
-        ['wh', 55.5],
-        ['ev', 8.2],
-        ['rest', 300],
-      ]);
-      expect(donut.rows).toEqual([
-        {key: 'heat', name: 'Room heating', kwh: '120.4 kWh', share: '25%'},
-        {key: 'wh', name: 'Water heating', kwh: '55.5 kWh', share: '11%'},
-        {key: 'ev', name: 'EV charging', kwh: '8.2 kWh', share: '2%'},
-        {key: 'rest', name: 'Rest of home', kwh: '300.0 kWh', share: '62%'},
-      ]);
+    test('today’s four slices with a tenth of a kWh and their share of the total; now draws today’s', () => {
+      const daily = [day('2026-11-06'), day(today, {heat: 120.44, wh: 55.5, ev: 8.2, rest: 300})];
+      for (const range of ['now', 'today'] as const) {
+        const {donut} = detail({daily}, {range});
+        expect(donut.hint).toBe(
+          'Today so far. Rest of home is everything without its own power sensor, including the heat pump.',
+        );
+        expect(donut.parts.map(part => [part.key, part.kwh])).toEqual([
+          ['heat', 120.44],
+          ['wh', 55.5],
+          ['ev', 8.2],
+          ['rest', 300],
+        ]);
+        expect(donut.rows).toEqual([
+          {key: 'heat', name: 'Room heating', kwh: '120.4 kWh', share: '25%'},
+          {key: 'wh', name: 'Water heating', kwh: '55.5 kWh', share: '11%'},
+          {key: 'ev', name: 'EV charging', kwh: '8.2 kWh', share: '2%'},
+          {key: 'rest', name: 'Rest of home', kwh: '300.0 kWh', share: '62%'},
+        ]);
+      }
     });
 
-    test('with nothing in the 30 days every share is zero, and French puts a narrow space before the sign', () => {
-      expect(detail({g30: [0, 0, 0, 0]}).donut.rows.map(row => row.share)).toEqual(['0%', '0%', '0%', '0%']);
-      expect(detail({g30: [1, 1, 1, 1]}, {}, 'fr').donut.rows[0]).toMatchObject({kwh: '1,0 kWh', share: '25 %'});
+    test('the week, the month and the year sum the last 7, 30 and 365 days, and the hint says which', () => {
+      // 400 days: the oldest 35 weigh 100 kWh of heating each, and the last 365 days 10
+      const days = Array.from({length: 400}, (_, index) => {
+        const stamp = new Date(Date.UTC(2025, 9, 1) + index * 864e5).toISOString().slice(0, 10);
+        return day(stamp, {heat: index < 35 ? 100 : 10});
+      });
+      const heat = (range: 'week' | 'month' | 'year') => detail({daily: days}, {range}).donut.parts[0].kwh;
+      expect([heat('week'), heat('month'), heat('year')]).toEqual([70, 300, 3650]);
+      expect(detail({daily: days}, {range: 'week'}).donut.hint).toMatch(/^Last 7 days\. Rest of home/);
+      expect(detail({daily: days}, {range: 'month'}).donut.hint).toMatch(/^Last 30 days\. /);
+      expect(detail({daily: days}, {range: 'year'}).donut.hint).toMatch(/^Last 365 days\. /);
+    });
+
+    test('today with no day that is today draws a donut of nothing: every share is zero, and French puts a narrow space before the sign', () => {
+      const old = day('2026-11-06', {heat: 1, wh: 1, ev: 1, rest: 1});
+      expect(detail({daily: [old]}).donut.rows.map(row => row.share)).toEqual(['0%', '0%', '0%', '0%']);
+      expect(detail({daily: [day(today, {heat: 1, wh: 1, ev: 1, rest: 1})]}, {}, 'fr').donut.rows[0]).toMatchObject({
+        kwh: '1,0 kWh',
+        share: '25\u202f%',
+      });
+      expect(detail({daily: [day(today, {heat: 1, wh: 1, ev: 1, rest: 1})]}, {}, 'fr').donut.hint).toMatch(
+        /^Aujourd'hui jusqu'ici\. Le reste de la maison/,
+      );
     });
 
     test('the six totals: today to a decimal until the time, yesterday, the 30 days with their daily mean, the month, the car and the rate', () => {

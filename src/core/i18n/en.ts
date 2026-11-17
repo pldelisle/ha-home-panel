@@ -578,6 +578,7 @@ export const en = {
   'energy.roomsOn': '{on} of {total} rooms on',
   'energy.unavailable': 'Unavailable',
   // the card's four tiles
+  'energy.now': 'Now',
   'energy.today': 'Today',
   'energy.tile.heat': 'Room heating',
   'energy.tile.water': 'Water heating',
@@ -647,11 +648,9 @@ export const en = {
   'energy.detail.yearPeak':
     'Last 12 months. Room heating peaked in {month}: {kwh} kWh. Months with missing data look shorter.',
   'energy.sankey.title': 'Where the power goes',
-  'energy.sankey.period': 'Sankey period',
-  'energy.sankey.now': 'Now',
   'energy.sankey.noteNow': "Live power: the Hilo meter on the left, each device's own sensor on the right.",
   'energy.sankey.noteToday': 'Energy since midnight, {kwh} kWh so far.',
-  'energy.sankey.note30': 'Last 30 days, {kwh} kWh in all.',
+  'energy.sankey.noteDays': 'Last {days} days, {kwh} kWh in all.',
   'energy.sankey.noData': 'No data yet.',
   'energy.sankey.empty': 'No data yet',
   'energy.sankey.grid': 'Grid',
@@ -660,8 +659,8 @@ export const en = {
     'Power from the grid, split into room heating, water heating, EV charging and the rest of the home',
   'energy.donut.title': 'Where it went',
   'energy.donut.hint':
-    'Last 30 days. Rest of home is everything without its own power sensor, including the heat pump.',
-  'energy.donut.total': 'kWh, 30 days',
+    '{days, plural, =1 {Today so far} other {Last # days}}. Rest of home is everything without its own power sensor, including the heat pump.',
+  'energy.donut.total': 'kWh',
   'energy.donut.percent': '{n}%',
   'energy.totals.title': 'Totals',
   'energy.totals.hint': 'From the Hilo smart meter',
