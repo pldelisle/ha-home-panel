@@ -4,6 +4,7 @@
 // Each rule is the legacy panel's own (weatherSummary, renderWeather, renderWeatherNow, renderForecast, wxDays, dayName).
 // Must not: import the DOM, a UI kit element or the shell, hold a colour (tiles carry a tone name), or read the clock.
 import {capitalise, DASH, DAY_MS, HOUR_MS} from '../../core/figures.ts';
+import {conditionName} from '../../core/i18n/condition-name.ts';
 import {degrees, whole, type Formatters} from '../../core/i18n/format.ts';
 import type {Messages} from '../../core/i18n/messages.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
@@ -159,40 +160,8 @@ const HOURS_KEPT = 24;
 /** The strip shows one hour in three. */
 const HOUR_STEP = 3;
 
-/** Home Assistant's condition words, each with its own message. */
-const CONDITIONS = [
-  'clear-night',
-  'cloudy',
-  'fog',
-  'hail',
-  'lightning',
-  'lightning-rainy',
-  'partlycloudy',
-  'pouring',
-  'rainy',
-  'snowy',
-  'snowy-rainy',
-  'sunny',
-  'windy',
-  'windy-variant',
-  'exceptional',
-] as const;
-type Condition = (typeof CONDITIONS)[number];
-const isCondition = (word: string): word is Condition => (CONDITIONS as readonly string[]).includes(word);
-
 /** The tiles in the order the detail panel shows them; the pane's order is TILES'. */
 const DETAIL_ORDER: readonly TileKey[] = ['wind', 'hum', 'pres', 'pop', 'uv', 'aqhi', 'feels', 'normal'];
-
-/**
- * The name of a condition: the catalog's word for one Home Assistant knows, else the integration's own word with a capital
- * and the rest in lower case (Environment Canada sends `Mainly Sunny`); nothing for no condition.
- */
-export function conditionName(condition: string | null, t: Translate): string {
-  if (!condition) return '';
-  return isCondition(condition)
-    ? t(`weather.cond.${condition}`)
-    : capitalise(condition.slice(0, 1) + condition.slice(1).toLowerCase());
-}
 
 /** What every section says and formats with: the catalog, the formats and the rounding the legacy panel did. */
 interface Say {

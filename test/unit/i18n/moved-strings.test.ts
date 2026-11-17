@@ -75,7 +75,7 @@ const ofMove = (prefix: string) => Object.keys(en).filter(key => key.startsWith(
 // a move: its fixture, the prefix of the keys it introduced, the folders that say them, and the keys outside the prefix it
 // also introduced (the kit's `common.failed` came with Media's command layer; the kit says it, in src/ui/)
 describe.each([
-  ['weather', 'weather.', ['src/features/weather/', 'src/providers/'], []],
+  ['weather', 'weather.', ['src/features/weather/', 'src/providers/', 'src/core/i18n/'], []],
   ['media', 'media.', ['src/features/media/', 'src/providers/'], ['common.failed']],
   ['security', 'security.', ['src/features/security/'], []],
   ['air', 'air.', ['src/features/air/', 'src/providers/'], []],
@@ -86,6 +86,7 @@ describe.each([
   ['automations', 'automations.', ['src/features/automations/'], []],
   ['lights', 'lights.', ['src/features/lights/'], []],
   ['people', 'people.', ['src/features/people/'], []],
+  ['stack', 'stack.', ['src/features/stack/'], []],
   ['chart', 'chart.', ['src/ui/'], []],
   ['ranges', 'range.', ['src/ui/'], []],
   ['settings', 'settings.', ['src/shell/'], []],

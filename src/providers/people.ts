@@ -14,6 +14,8 @@ export interface Person {
   home: boolean;
   /** When an away person left (the entity's `last_changed`, ISO); null while home or when no tracker says. */
   since: string | null;
+  /** When the person entity last changed, home or away (ISO): the smart stack's "came or left"; null when the trackers decided. */
+  changed: string | null;
 }
 
 /** An iCloud tracker behind a person entity that has not reported for three hours. */
@@ -63,14 +65,19 @@ export function presence(states: HassEntities, registries: Registries, people: s
     const who = whoIs(textAttributeOf(states, id, 'friendly_name') ?? '', people);
     const s = states[id];
     if (who && isAvailable(s))
-      by.set(who, {name: who, home: s.state === 'home', since: s.state === 'home' ? null : s.last_changed});
+      by.set(who, {
+        name: who,
+        home: s.state === 'home',
+        since: s.state === 'home' ? null : s.last_changed,
+        changed: s.last_changed,
+      });
   }
   if (!by.size)
     for (const id of Object.keys(states)) {
       const who = trackerOwner(states, registries, id, people);
       const s = states[id];
       if (!who || !isAvailable(s)) continue;
-      const person = by.get(who) ?? {name: who, home: false, since: null};
+      const person = by.get(who) ?? {name: who, home: false, since: null, changed: null};
       by.set(who, person);
       if (s.state === 'home') person.home = true;
       else if (!person.home) person.since = s.last_changed;

@@ -1,0 +1,383 @@
+{
+  "about": "The English messages the smart stack's rules introduced (src/core/i18n/en.ts, stack.*, #265), each with sample values. test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer makes of the English: a time in a sample is written the French way (`fr`), and a condition in the evening card's footer is the word the layer gave it there (`Transparent`, lower case after a low), where the catalog will say the Weather feature's word: a visible change #266 records. `written` is the one piece the layer only translates in its sentence (Weekdays, in \"Weekdays at 7:30 am\"). Where the layer left the English (Range, Power, Limit, a light count's unit, the grid's line), so does the catalog. The legacy stack still draws all of these until #266, so no entry of the rewrite layer is deleted yet. Deleted with the layer in phase 4.",
+  "messages": [
+    {
+      "key": "stack.door.label",
+      "values": {
+        "name": "Front door"
+      }
+    },
+    {
+      "key": "stack.unit.minutes"
+    },
+    {
+      "key": "stack.unit.hours"
+    },
+    {
+      "key": "stack.door.openSince",
+      "values": {
+        "when": "4:07 pm"
+      },
+      "fr": {
+        "when": "16 h 07"
+      }
+    },
+    {
+      "key": "stack.door.foot"
+    },
+    {
+      "key": "stack.lights.label"
+    },
+    {
+      "key": "stack.since",
+      "values": {
+        "when": "4:07 pm"
+      },
+      "fr": {
+        "when": "16 h 07"
+      }
+    },
+    {
+      "key": "stack.lights.unit",
+      "values": {
+        "n": 1
+      }
+    },
+    {
+      "key": "stack.lights.unit",
+      "values": {
+        "n": 2
+      }
+    },
+    {
+      "key": "stack.lights.foot"
+    },
+    {
+      "key": "stack.warning.many",
+      "values": {
+        "n": 2
+      }
+    },
+    {
+      "key": "stack.warning.one"
+    },
+    {
+      "key": "stack.warning.issued",
+      "values": {
+        "when": "4:07 pm"
+      },
+      "fr": {
+        "when": "16 h 07"
+      }
+    },
+    {
+      "key": "stack.tapForDetails"
+    },
+    {
+      "key": "stack.car"
+    },
+    {
+      "key": "stack.carLow.label",
+      "values": {
+        "name": "Mach-E"
+      }
+    },
+    {
+      "key": "stack.carLow.foot"
+    },
+    {
+      "key": "stack.range"
+    },
+    {
+      "key": "stack.power"
+    },
+    {
+      "key": "stack.limit"
+    },
+    {
+      "key": "stack.presence.label"
+    },
+    {
+      "key": "stack.presence.body",
+      "values": {
+        "n": 1
+      }
+    },
+    {
+      "key": "stack.presence.body",
+      "values": {
+        "n": 2
+      }
+    },
+    {
+      "key": "stack.presence.foot"
+    },
+    {
+      "key": "stack.sunrise.label"
+    },
+    {
+      "key": "stack.sunrise.lightsOff"
+    },
+    {
+      "key": "stack.inMinutes",
+      "values": {
+        "n": 12
+      }
+    },
+    {
+      "key": "stack.sunrise.turnsOff"
+    },
+    {
+      "key": "stack.sunrise.stillOn"
+    },
+    {
+      "key": "stack.sunrise.allOff"
+    },
+    {
+      "key": "stack.peak.now"
+    },
+    {
+      "key": "stack.peak.coming"
+    },
+    {
+      "key": "stack.peak.lower"
+    },
+    {
+      "key": "stack.peak.announced"
+    },
+    {
+      "key": "stack.peak.challenge"
+    },
+    {
+      "key": "stack.using",
+      "values": {
+        "power": "850 W"
+      }
+    },
+    {
+      "key": "stack.music.label"
+    },
+    {
+      "key": "stack.music.playing"
+    },
+    {
+      "key": "stack.music.foot"
+    },
+    {
+      "key": "stack.who.arrived",
+      "values": {
+        "when": "4:07 pm"
+      },
+      "fr": {
+        "when": "16 h 07"
+      }
+    },
+    {
+      "key": "stack.who.left",
+      "values": {
+        "when": "4:07 pm"
+      },
+      "fr": {
+        "when": "16 h 07"
+      }
+    },
+    {
+      "key": "stack.who.home"
+    },
+    {
+      "key": "stack.who.away"
+    },
+    {
+      "key": "stack.who.opened",
+      "values": {
+        "name": "Front door",
+        "when": "4:07 pm"
+      },
+      "fr": {
+        "when": "16 h 07"
+      }
+    },
+    {
+      "key": "stack.agenda.label"
+    },
+    {
+      "key": "stack.agenda.events",
+      "values": {
+        "n": 1
+      }
+    },
+    {
+      "key": "stack.agenda.events",
+      "values": {
+        "n": 3
+      }
+    },
+    {
+      "key": "stack.agenda.allDay"
+    },
+    {
+      "key": "stack.agenda.more",
+      "values": {
+        "n": 2
+      }
+    },
+    {
+      "key": "stack.agenda.foot"
+    },
+    {
+      "key": "stack.away.label"
+    },
+    {
+      "key": "stack.away.inside"
+    },
+    {
+      "key": "stack.away.lightsOn",
+      "values": {
+        "n": 1
+      }
+    },
+    {
+      "key": "stack.away.lightsOn",
+      "values": {
+        "n": 3
+      }
+    },
+    {
+      "key": "stack.away.allOff"
+    },
+    {
+      "key": "stack.away.foot"
+    },
+    {
+      "key": "stack.air.label",
+      "values": {
+        "room": "Office"
+      }
+    },
+    {
+      "key": "stack.air.high",
+      "values": {
+        "pollutant": "CO₂"
+      }
+    },
+    {
+      "key": "stack.air.openWindow"
+    },
+    {
+      "key": "stack.air.faster"
+    },
+    {
+      "key": "stack.tomorrow.label"
+    },
+    {
+      "key": "stack.tomorrow.chance",
+      "values": {
+        "condition": "Rain",
+        "pop": 40
+      },
+      "fr": {
+        "condition": "Pluie"
+      }
+    },
+    {
+      "key": "stack.tonight",
+      "values": {
+        "condition": "Clear"
+      },
+      "fr": {
+        "condition": "Transparent"
+      }
+    },
+    {
+      "key": "stack.tonightLow",
+      "values": {
+        "condition": "Clear",
+        "low": -3
+      },
+      "fr": {
+        "condition": "transparent",
+        "low": -3
+      }
+    },
+    {
+      "key": "stack.charge.charging"
+    },
+    {
+      "key": "stack.charge.plugged"
+    },
+    {
+      "key": "stack.charge.departure",
+      "values": {
+        "schedule": "Weekdays at 7:30 am"
+      },
+      "fr": {
+        "schedule": "En semaine à 7 h 30"
+      }
+    },
+    {
+      "key": "stack.charge.to",
+      "values": {
+        "n": 90
+      }
+    },
+    {
+      "key": "stack.charge.notNow"
+    },
+    {
+      "key": "stack.days.every"
+    },
+    {
+      "key": "stack.days.weekdays",
+      "written": "En semaine"
+    },
+    {
+      "key": "stack.days.at",
+      "values": {
+        "days": "Weekdays",
+        "time": "7:30 am"
+      },
+      "fr": {
+        "days": "En semaine",
+        "time": "7 h 30"
+      }
+    },
+    {
+      "key": "stack.energy.label"
+    },
+    {
+      "key": "stack.energy.soFar"
+    },
+    {
+      "key": "stack.energy.split",
+      "values": {
+        "heat": 60,
+        "water": 30,
+        "car": 10
+      }
+    },
+    {
+      "key": "stack.peak.phase",
+      "values": {
+        "phase": "pre_heat"
+      }
+    },
+    {
+      "key": "stack.peak.phase",
+      "values": {
+        "phase": "reduction"
+      }
+    },
+    {
+      "key": "stack.peak.phase",
+      "values": {
+        "phase": "recovery"
+      }
+    },
+    {
+      "key": "stack.peak.phase",
+      "values": {
+        "phase": "appreciation"
+      }
+    }
+  ]
+}

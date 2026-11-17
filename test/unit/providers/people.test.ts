@@ -14,8 +14,13 @@ const read = (hass: FakeHass, people = PEOPLE) => presence(hass.states, registri
 describe('the test house', () => {
   test('its person entities say Alex is home and Sam left', () => {
     expect(read(fullHouse)).toEqual([
-      {name: 'Alex', home: true, since: null},
-      {name: 'Sam', home: false, since: fullHouse.states['person.sam'].last_changed},
+      {name: 'Alex', home: true, since: null, changed: fullHouse.states['person.alex'].last_changed},
+      {
+        name: 'Sam',
+        home: false,
+        since: fullHouse.states['person.sam'].last_changed,
+        changed: fullHouse.states['person.sam'].last_changed,
+      },
     ]);
     expect(presenceIds(fullHouse.states, registriesOf(fullHouse), PEOPLE)).toEqual(['person.alex', 'person.sam']);
   });
@@ -34,7 +39,9 @@ describe('presence', () => {
         phone('sam_iphone', "Sam's iPhone", 'home'),
       ],
     );
-    expect(read(hass, ['Sam', 'Emile'])).toEqual([{name: 'Emile', home: true, since: null}]);
+    expect(read(hass, ['Sam', 'Emile'])).toEqual([
+      {name: 'Emile', home: true, since: null, changed: hass.states['person.a'].last_changed},
+    ]);
   });
 
   test('without a person entity, iPhones and watches decide in both name shapes; an iPad, a hidden tracker or a stranger does not', () => {
@@ -55,8 +62,8 @@ describe('presence', () => {
     );
     // the config's order, not the states'; away since the last tracker that left
     expect(read(hass, ['Sam', 'Alex'])).toEqual([
-      {name: 'Sam', home: true, since: null},
-      {name: 'Alex', home: false, since: '2026-01-01T09:00:00Z'},
+      {name: 'Sam', home: true, since: null, changed: null},
+      {name: 'Alex', home: false, since: '2026-01-01T09:00:00Z', changed: null},
     ]);
     expect(presenceIds(hass.states, registriesOf(hass), ['Sam', 'Alex']).sort()).toEqual(
       [
@@ -71,7 +78,7 @@ describe('presence', () => {
 
   test('a home tracker keeps its owner home whichever comes first, and no tracker gives no one', () => {
     const hass = houseOf([], [phone('a', "Alex's iPhone", 'home'), phone('b', "Alex's Watch", 'not_home')]);
-    expect(read(hass)).toEqual([{name: 'Alex', home: true, since: null}]);
+    expect(read(hass)).toEqual([{name: 'Alex', home: true, since: null, changed: null}]);
     expect(read(houseOf([], []))).toEqual([]);
   });
 });
