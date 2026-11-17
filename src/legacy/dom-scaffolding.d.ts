@@ -35,12 +35,3 @@ declare global {
     disabled: boolean;
   }
 }
-
-// the Automations methods, put on the prototype by `Object.assign(LegacyPanel.prototype, autoMethods)` in home-panel.js
-declare module '../home-panel.js' {
-  interface LegacyPanel {
-    auAutos(): any[];
-    auLoad(force?: boolean): Promise<void>;
-    renderAuto(): void;
-  }
-}

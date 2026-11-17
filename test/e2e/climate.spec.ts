@@ -335,7 +335,7 @@ test.describe('on a phone', () => {
     const found = violations
       .filter(v => v.impact === 'serious' || v.impact === 'critical')
       .flatMap(v =>
-        v.nodes.filter(n => !(v.id === 'color-contrast' && String(n.target.at(-1)).includes('.cpill'))).map(() => v.id),
+        v.nodes.filter(n => !(v.id === 'color-contrast' && /\.c?pill\b/.test(String(n.target.at(-1))))).map(() => v.id),
       );
     expect(found).toEqual([]);
   });

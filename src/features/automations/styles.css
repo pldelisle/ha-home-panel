@@ -1,0 +1,460 @@
+/*
+ * The Automations feature's rules (spec 25, "Styles"), adopted by its four elements through `forShadow` (ADR 0019): the card box, its
+ * head with the title, the line under it and the pill, the Today line and its dots, the run picker and the chips, the legend and the
+ * flow's box. Moved from tabs.css, glass.css, motion.css, phone.css and base.css (`.chip`, `.shead`) with the Automations move (#273).
+ * Known copies of legacy rules, each under an Automations selector: `.card` (base.css, glass.css) as `.aubox`, `.card .top` and the
+ * second `.lbl` (base.css) as `.aubox .top` and `.aulbl`, and `.hint` (base.css) as `.aubox .hint`. The guest draws none of them any
+ * more; the phase 3 gate (#188) deletes the legacy rules with the rest of `src/css/`.
+ */
+.aubox {
+  background: var(--card);
+  border: 0;
+  border-radius: 22px;
+  padding: 20px;
+  box-shadow: var(--shadow);
+  min-width: 0;
+  position: relative;
+}
+.app.gl .aubox {
+  background: var(--g-card);
+  -webkit-backdrop-filter: var(--g-bd);
+  backdrop-filter: var(--g-bd);
+  box-shadow: var(--g-edge);
+}
+/* WebKit leaves ghosts of the previous flow drawing behind a blurred card (stale compositing under backdrop-filter), so on iOS the two
+   Automations cards keep a denser plain translucent fill with no blur, and every flow drawing gets its own layer (v1.18.3) */
+@supports (-webkit-touch-callout: none) {
+  .app.gl .auc,
+  .app.gl .autoday {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: color-mix(in srgb, var(--g-card) 70%, var(--card));
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .app.gl .aubox {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--card);
+  }
+}
+.aubox .top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.aulbl {
+  letter-spacing: 0.04em;
+  text-transform: none;
+  font-size: calc(15px * var(--tx));
+  font-weight: 600;
+  color: var(--fg);
+}
+.aubox .hint {
+  font-size: calc(12px * var(--tx));
+  color: var(--fg2);
+  margin: 6px 0 0;
+}
+/* a card's head: its title and the line under it, the pill (and the selected card's close) on the right */
+.auhead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.auhead h3 {
+  margin: 0;
+  font-size: calc(17px * var(--tx));
+}
+.auhead p {
+  margin: 4px 0 0;
+  color: var(--fg2);
+  font-size: calc(13px * var(--tx));
+  line-height: 1.45;
+}
+.auhead .pill {
+  font-size: calc(11.5px * var(--tx));
+  font-weight: 700;
+  padding: 5px 11px;
+  border-radius: 999px;
+  white-space: nowrap;
+  background: var(--card2);
+  color: var(--fg2);
+}
+.auhead .pill.run {
+  background: color-mix(in srgb, var(--warn) 16%, var(--card));
+  color: var(--t-warn);
+}
+.auhead .pill.no {
+  background: color-mix(in srgb, var(--crit) 14%, var(--card));
+  color: var(--crit);
+}
+.auhead .pill.ok {
+  background: color-mix(in srgb, var(--ok) 16%, var(--card));
+  color: var(--t-ok);
+}
+.app.gl .auhead .pill {
+  background: var(--g-tile);
+  box-shadow: var(--g-edge-s);
+}
+.app.gl .auhead .pill.run {
+  background: color-mix(in srgb, var(--warn) 18%, var(--g-tile));
+}
+.app.gl .auhead .pill.no {
+  background: color-mix(in srgb, var(--crit) 16%, var(--g-tile));
+}
+.app.gl .auhead .pill.ok {
+  background: color-mix(in srgb, var(--ok) 18%, var(--g-tile));
+}
+/* the chips of the run picker and of every automation: a run's time, or a name with when it last ran */
+.aupick,
+.auchips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.aupick .chip,
+.auchips .chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 999px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: none;
+  background: var(--card2);
+  font-size: calc(12.5px * var(--tx));
+  padding: 8px 13px;
+  min-height: 40px;
+  cursor: pointer;
+  color: var(--fg);
+}
+.aupick .chip .dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+.aupick .chip.sel,
+.auchips .chip.sel {
+  background: var(--fg);
+  color: var(--card);
+}
+.auchips .chip small {
+  font-weight: 600;
+  color: var(--fg2);
+  font-size: calc(11px * var(--tx));
+}
+.auchips .chip.sel small {
+  color: inherit;
+  opacity: 0.7;
+}
+.auchips .chip.offa {
+  opacity: 0.55;
+}
+.app.gl .aupick .chip,
+.app.gl .auchips .chip {
+  background: var(--g-tile);
+  box-shadow: var(--g-edge-s);
+}
+.app.gl .aupick .chip.sel,
+.app.gl .auchips .chip.sel {
+  background: var(--fg);
+}
+/* on a phone the chips wrap instead of widening the pane */
+.app.cp .auchips .chip,
+.app.cp .aupick .chip {
+  white-space: normal;
+  max-width: 100%;
+  text-align: left;
+  line-height: 1.3;
+}
+/* press feedback: a chip shrinks a touch under the finger; with motion on it springs back and its selection cross-fades */
+@media (prefers-reduced-motion: no-preference) {
+  .aupick .chip,
+  .auchips .chip {
+    transition:
+      transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+      background-color 0.2s ease,
+      box-shadow 0.2s ease,
+      color 0.2s ease;
+  }
+}
+.aupick .chip:active,
+.auchips .chip:active {
+  transform: scale(0.96);
+}
+/* the head's right side: the pill and the selected card's close */
+.auhr {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+.ausel .close {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 0;
+  background: var(--card2);
+  color: var(--fg);
+  font-size: calc(20px * var(--tx));
+  cursor: pointer;
+}
+.app.gl .ausel .close {
+  background: var(--g-tile);
+  box-shadow: var(--g-edge-s);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ausel .close {
+    transition:
+      transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+      background-color 0.2s ease,
+      box-shadow 0.2s ease,
+      color 0.2s ease;
+  }
+}
+.ausel .close:active {
+  transform: scale(0.96);
+}
+/* the Today line: the axis, the part already past, the now line and the hour marks */
+.autl {
+  position: relative;
+  height: 92px;
+  margin: 14px 22px 6px;
+}
+.autl .axis,
+.autl .past {
+  position: absolute;
+  left: 0;
+  top: 34px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--ring);
+}
+.autl .axis {
+  right: 0;
+}
+.autl .past {
+  background: var(--fg2);
+}
+.autl .nowl {
+  position: absolute;
+  top: 20px;
+  width: 2px;
+  height: 30px;
+  margin-left: -1px;
+  background: var(--ok);
+  border-radius: 2px;
+}
+.autl .hr {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  font-size: calc(11px * var(--tx));
+  font-weight: 600;
+  color: var(--fg2);
+}
+.app.cp .autl {
+  height: 64px;
+  margin: 12px 6px 4px;
+}
+/* a dot is 28 px with a 44 px touch area; runs closer together than a dot is wide share one dot, with the count on it */
+.aud {
+  position: absolute;
+  top: 21px;
+  width: 28px;
+  height: 28px;
+  margin-left: -14px;
+  border-radius: 50%;
+  border: 3px solid var(--fg2);
+  background: var(--fg2);
+  padding: 0;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+.aud::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+}
+.aud .n {
+  font: 700 calc(11px * var(--tx)) var(--f-body);
+  color: var(--card);
+  line-height: 1;
+}
+.aud.skip {
+  background: var(--card);
+  border-color: var(--crit);
+  width: 20px;
+  height: 20px;
+  margin-left: -10px;
+  top: 25px;
+  border-width: 2.5px;
+}
+.aud.skip::before {
+  inset: -12px;
+}
+.aud.skip .n {
+  color: var(--crit);
+}
+.aud.err {
+  background: var(--crit);
+  border-color: var(--crit);
+}
+.aud.now {
+  background: var(--ok);
+  border-color: var(--ok);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--ok) 25%, transparent);
+  animation: aupulse 1.6s ease-in-out infinite;
+}
+.aud.up {
+  background: var(--card);
+  border-color: var(--ring);
+}
+.aud.up .n {
+  color: var(--fg2);
+}
+.app.gl .aud.up,
+.app.gl .aud.skip {
+  background: var(--g-tile);
+  box-shadow: var(--g-edge-s);
+}
+.aud:focus-visible {
+  outline: 2px solid var(--c-home);
+  outline-offset: 3px;
+}
+@keyframes aupulse {
+  50% {
+    box-shadow: 0 0 0 9px color-mix(in srgb, var(--ok) 10%, transparent);
+  }
+}
+/* the time under a dot, on one of two rows; a phone has no room for them */
+.aul {
+  position: absolute;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: calc(11px * var(--tx));
+  font-weight: 600;
+  color: var(--fg2);
+  white-space: nowrap;
+  pointer-events: none;
+  line-height: 1.3;
+}
+.aul b {
+  font-size: calc(11px * var(--tx));
+  color: var(--fg2);
+}
+.aul.r0 {
+  top: 56px;
+}
+.aul.r1 {
+  top: 72px;
+}
+.aul.now b,
+.aul.now {
+  color: var(--t-ok);
+}
+.aul.skip b {
+  color: var(--crit);
+}
+.app.cp .aul {
+  display: none;
+}
+/* the legend of a flow: the path taken, the step waited on, the check that stopped it, what was not taken */
+.aulegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 12px;
+  font-size: calc(11.5px * var(--tx));
+  font-weight: 600;
+  color: var(--fg2);
+}
+.aulegend i {
+  display: inline-block;
+  width: 22px;
+  height: 3px;
+  border-radius: 2px;
+  vertical-align: middle;
+  margin-right: 6px;
+  background: var(--ok);
+}
+.aulegend i.run {
+  background: var(--warn);
+}
+.aulegend i.no {
+  background: var(--crit);
+}
+.aulegend i.off {
+  background: var(--ring);
+}
+/* the flow's box: the drawing fits, or scrolls with its right edge fading until the end is reached */
+.augraph {
+  margin-top: 14px;
+  min-height: 60px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  isolation: isolate;
+  transform: translateZ(0);
+}
+.augraph svg {
+  display: block;
+  height: auto;
+  margin: 0 auto;
+}
+.app.cp .augraph svg {
+  max-width: none;
+}
+.augraph.wide svg {
+  margin: 0;
+}
+.augraph .au-run {
+  stroke-dasharray: 9 7 !important;
+  animation: audash 1s linear infinite;
+}
+.augraph .au-off {
+  stroke-dasharray: 3 6 !important;
+}
+@keyframes audash {
+  to {
+    stroke-dashoffset: -16;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .augraph .au-run,
+  .aud.now {
+    animation: none;
+  }
+}
+.augraph.wide {
+  padding-bottom: 8px;
+  mask-image: linear-gradient(90deg, #000 88%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, #000 88%, transparent);
+}
+.augraph.wide.end {
+  mask-image: none;
+  -webkit-mask-image: none;
+}
+.augraph::-webkit-scrollbar {
+  height: 6px;
+}
+.augraph::-webkit-scrollbar-thumb {
+  background: var(--ring);
+  border-radius: 3px;
+}
+.augraph .edgeLabel,
+.augraph .edgeLabel p,
+.augraph .edgeLabel span {
+  color: var(--fg2) !important;
+}

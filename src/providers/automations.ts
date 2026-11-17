@@ -1,7 +1,6 @@
 // The house's automations as Home Assistant states them, and today's runs still to come from their time and sun triggers.
-// Pattern: an adapter below the features (ADR 0025), the rules of the legacy `auAutos()` and `auUpcoming()`; the legacy
-// Automations tab (`src/auto.js`) reads both until the Automations pane does (#273), and a later composition (the Home
-// pane's "Coming up", spec 24) may read the second.
+// Pattern: an adapter below the features (ADR 0025), the rules of the legacy `auAutos()` and `auUpcoming()`; the Automations
+// pane reads both, and a later composition (the Home pane's "Coming up", spec 24) may read the second.
 // Must not: word anything a person reads (a name is the resolver's, a time is a number), or read the clock or the DOM.
 import type {AutomationConfig} from '../core/ha.ts';
 import type {HassEntities} from '../core/hass.ts';
@@ -53,6 +52,9 @@ export interface SunNext {
   nextRising: string | null;
   nextSetting: string | null;
 }
+
+/** The entities `sunNext` reads: a reader of it listens to these. */
+export const SUN_IDS = ['sun.sun', 'sensor.sun_next_rising', 'sensor.sun_next_setting'] as const;
 
 export function sunNext(states: HassEntities): SunNext {
   const read = (attribute: string, sensor: string): string | null => {

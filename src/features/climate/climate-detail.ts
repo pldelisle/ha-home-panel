@@ -21,7 +21,7 @@ import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {OptimisticController} from '../../ui/controllers/optimistic.ts';
 import {StoreController} from '../../ui/controllers/store-controller.ts';
 import {lensLike} from '../../ui/lens.ts';
-import {chart, common, inner, tiles} from '../../ui/styles/index.ts';
+import {chart, common, inner, pill, tiles} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
 type Detail = ClimateViewModel['detail'];
@@ -51,7 +51,7 @@ export class ClimateDetail extends LitElement {
   declare chart: ChartOptions | null;
 
   // The kit's inner card, tiles and chart legend; the element's own rules, the head, the big number, the tiles' columns and the note, are in climate-detail.element.css.
-  static override styles = [common, inner, tiles, chart, unsafeCSS(forShadow(detailOwn))];
+  static override styles = [common, inner, tiles, chart, pill, unsafeCSS(forShadow(detailOwn))];
 
   // the catalog and the formatters for the dial's commands; no entity, so no state change reaches the detail
   private readonly storeController = new StoreController(this, {ids: () => []});
@@ -80,7 +80,7 @@ export class ClimateDetail extends LitElement {
             <h3>${view.title}</h3>
             <p>${view.sub}</p>
           </div>
-          <span class=${`cpill ${view.pill.tone}`}>${view.pill.text}</span>
+          <span class=${`pill cpill ${view.pill.tone}`}>${view.pill.text}</span>
         </div>
         ${view.dial ? this.renderDial(view.dial) : this.renderGauge(view)}
         <hp-climate-controls .view=${view.controls}></hp-climate-controls>

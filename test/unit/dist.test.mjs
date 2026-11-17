@@ -240,7 +240,7 @@ test('the bundle carries the package version once and no placeholder', () => {
 
 test("the entry's source map names the original files under src/ and the three libraries built in, no other library's", () => {
   const map = JSON.parse(readFileSync(join(DIST, 'home-panel.js.map'), 'utf8'));
-  for (const f of ['src/core/config.ts', 'src/home-panel.js', 'src/i18n/fr.js', 'src/auto.js'])
+  for (const f of ['src/core/config.ts', 'src/home-panel.js', 'src/i18n/fr.js', 'src/features/automations/model.ts'])
     expect(
       map.sources.some(s => s.endsWith(f)),
       f,
@@ -271,7 +271,13 @@ test('no personal data: names, places, a house photo or house-specific entity id
   // every tracked text file is scanned (test/personal-data.mjs says which are not, and why)
   const files = scannedFiles(ROOT);
   const scanned = [
-    ...['src/core/config.ts', 'src/home-panel.js', 'src/auto.js', 'src/i18n/fr.js', 'src/css/base.css'],
+    ...[
+      'src/core/config.ts',
+      'src/home-panel.js',
+      'src/features/automations/model.ts',
+      'src/i18n/fr.js',
+      'src/css/base.css',
+    ],
     ...['houses.ts', 'fixtures.ts', 'harness.html'].map(f => 'test/e2e/' + f),
     ...['full.mjs', 'bare.mjs', 'build.mjs', 'clock.mjs', 'read.mjs'].map(f => 'test/houses/' + f),
     ...['package.json', 'package-lock.json', 'vite.config.ts', 'playwright.config.ts', 'vitest.config.ts'],

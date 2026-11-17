@@ -1,5 +1,5 @@
 {
-  "about": "The English messages the Automations move's pure rules introduced (src/core/i18n/en.ts, automations.*), each with sample values. test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer makes of the English or, where the layer leaves the English or gets it wrong (`Turn on` is `Turn : activé`), the `translated` French. Nothing visible changes in #271 and #272: the legacy panel draws these messages in English (tEn in src/auto.js) and the layer still translates them as before; the translated rows become visible when #273 draws the tab in the panel's language, with its baselines.",
+  "about": "The English messages the Automations move's pure rules introduced (src/core/i18n/en.ts, automations.*), each with sample values. test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer makes of the English or, where the layer leaves the English or gets it wrong (`Turn on` is `Turn : activé`), the `translated` French. Nothing visible changes in #271 and #272: the legacy panel draws these messages in English (tEn in src/auto.js) and the layer still translates them as before; the translated rows became visible when #273 drew the tab in the panel's language, with its baselines, and added the pane's own messages below. #273 also deleted the layer's entries only the tab used: their rows are `was` rows, with the French the layer made of them.",
   "messages": [
     {"key": "automations.domain.climate"},
     {"key": "automations.domain.light", "translated": "Lumière"},
@@ -318,7 +318,8 @@
     },
     {
       "key": "automations.action.manualControl",
-      "values": {"manual": "no", "lights": "that light"}
+      "values": {"manual": "no", "lights": "that light"},
+      "was": "Retour en auto · that light"
     },
     {
       "key": "automations.action.brightness",
@@ -399,35 +400,18 @@
       "key": "automations.elapsed",
       "values": {"hours": 1, "minutes": "05", "seconds": "00"}
     },
-    {
-      "key": "automations.timeline.what",
-      "values": {"what": "scheduled"}
-    },
-    {
-      "key": "automations.timeline.what",
-      "values": {"what": "skip"}
-    },
-    {
-      "key": "automations.timeline.what",
-      "values": {"what": "now"}
-    },
-    {
-      "key": "automations.timeline.what",
-      "values": {"what": "err"}
-    },
-    {
-      "key": "automations.timeline.what",
-      "values": {"what": "ran"}
-    },
+    {"key": "automations.timeline.what", "values": {"what": "scheduled"}, "was": "prévue", "after": "Programmée"},
+    {"key": "automations.timeline.what", "values": {"what": "skip"}, "was": "vérifiée, rien fait"},
+    {"key": "automations.timeline.what", "values": {"what": "now"}, "was": "en cours"},
+    {"key": "automations.timeline.what", "values": {"what": "err"}, "was": "erreur", "after": "Erreur"},
+    {"key": "automations.timeline.what", "values": {"what": "ran"}, "was": "exécutée"},
     {
       "key": "automations.timeline.one",
-      "values": {"time": "07:02", "name": "Lights off", "what": "ran"},
-      "translated": "07:02 Lights off, ran"
+      "values": {"time": "07:02", "name": "Lights off", "what": "ran"}
     },
     {
       "key": "automations.timeline.item",
-      "values": {"name": "Lights off", "what": "ran"},
-      "translated": "Lights off, ran"
+      "values": {"name": "Lights off", "what": "ran"}
     },
     {
       "key": "automations.timeline.group",
@@ -441,7 +425,7 @@
     {"key": "automations.graph.no", "translated": "non"},
     {"key": "automations.graph.timedOut", "translated": "délai dépassé"},
     {"key": "automations.graph.done", "translated": "terminé"},
-    {"key": "automations.graph.waiting"},
+    {"key": "automations.graph.waiting", "was": "en attente ici"},
     {"key": "automations.graph.waitingSince", "values": {"time": "07:02"}, "translated": "en attente ici depuis 07:02"},
     {"key": "automations.graph.any", "translated": "UN DES"},
     {"key": "automations.graph.anyOf", "translated": "UN DE"},
@@ -477,7 +461,7 @@
       "values": {"step": "front closed"},
       "translated": "en attente : front closed"
     },
-    {"key": "automations.sentence.error"},
+    {"key": "automations.sentence.error", "was": "erreur", "after": "Erreur"},
     {
       "key": "automations.sentence.errorWith",
       "values": {"message": "Entity is unavailable"},
@@ -494,6 +478,67 @@
       "key": "automations.sentence.ended",
       "values": {"text": "2 steps ran", "how": "aborted"},
       "translated": "2 steps ran (interrompue)"
-    }
+    },
+    {"key": "automations.loading", "was": "Lecture des exécutions dans Home Assistant…"},
+    {"key": "automations.count", "values": {"n": 2}, "translated": "2 automatisations"},
+    {"key": "automations.count", "values": {"n": 1}, "translated": "1 automatisation"},
+    {"key": "automations.sub.running", "values": {"n": 2}, "was": "2 en cours"},
+    {"key": "automations.sub.idle", "was": "rien en cours"},
+    {"key": "automations.sub.runsToday", "values": {"n": 2}, "was": "2 exécutions aujourd'hui"},
+    {"key": "automations.sub.runsToday", "values": {"n": 1}, "was": "1 exécution aujourd'hui"},
+    {"key": "automations.sub.enabled", "values": {"n": 2}, "was": "2 activées"},
+    {"key": "automations.sub.off", "values": {"n": 2}, "was": "2 désactivées", "after": "2 : désactivé"},
+    {
+      "key": "automations.refused",
+      "values": {"error": "unknown_command"},
+      "translated": "Home Assistant n’a pas renvoyé les traces des automatisations (unknown_command). Le panneau a besoin d’un compte administrateur pour les lire."
+    },
+    {"key": "automations.today.title"},
+    {
+      "key": "automations.today.caption",
+      "was": "Un point par exécution, un nombre quand plusieurs se suivent de près. Plein : exécutée; cerclé de rouge : vérifiée, rien fait; vert : en cours; vide : à venir. Touchez-en un pour le voir plus bas."
+    },
+    {"key": "automations.tile.ranToday", "was": "Exécutées aujourd'hui"},
+    {"key": "automations.tile.skipped", "values": {"n": 2}, "was": "2 autres vérifiées, rien fait"},
+    {"key": "automations.tile.allPassed", "was": "toutes ont passé leurs vérifications"},
+    {"key": "automations.tile.next", "was": "Prochaine"},
+    {"key": "automations.tile.nothingElse", "was": "rien d'autre de prévu aujourd'hui"},
+    {"key": "automations.tile.then", "was": "Ensuite"},
+    {"key": "automations.card.selected", "was": "Choisie"},
+    {"key": "automations.card.running", "was": "En cours"},
+    {"key": "automations.card.decision", "was": "Dernière décision"},
+    {"key": "automations.card.completed", "was": "Dernière terminée"},
+    {"key": "automations.card.unreadable", "translated": "Sa configuration n’a pas pu être lue."},
+    {
+      "key": "automations.card.shapeOnly",
+      "was": "Aucune exécution gardée depuis le dernier démarrage de Home Assistant : voici seulement sa forme."
+    },
+    {"key": "automations.card.close"},
+    {"key": "automations.pill.none", "was": "aucune exécution gardée"},
+    {"key": "automations.pill.running", "values": {"elapsed": "4:07"}, "translated": "en cours 4:07"},
+    {"key": "automations.pill.stopped", "values": {"time": "07:02"}, "translated": "arrêtée 07:02"},
+    {"key": "automations.pill.error", "values": {"time": "07:02"}, "translated": "erreur 07:02"},
+    {"key": "automations.pill.done", "values": {"time": "07:02"}, "translated": "terminée 07:02"},
+    {"key": "automations.legend.taken", "was": "parcours suivi"},
+    {"key": "automations.legend.waiting", "was": "en attente ici"},
+    {"key": "automations.legend.stopped", "was": "arrêtée"},
+    {"key": "automations.legend.notTaken", "was": "non suivi"},
+    {
+      "key": "automations.noRuns",
+      "was": "Aucune automatisation n'a tourné depuis le dernier démarrage de Home Assistant."
+    },
+    {"key": "automations.chips.title", "was": "Toutes les automatisations"},
+    {
+      "key": "automations.chips.caption",
+      "was": "Les plus récentes d’abord. Touchez-en une pour voir son parcours, avec sa dernière exécution en couleur."
+    },
+    {"key": "automations.chip.off"},
+    {"key": "automations.chip.running", "was": "en cours"},
+    {"key": "automations.chip.never", "was": "jamais"},
+    {
+      "key": "automations.flow.noLibrary",
+      "translated": "La bibliothèque qui dessine les parcours n’a pas été chargée : le dossier chunks manque à côté de home-panel.js, ou la connexion a été coupée. Rechargez la page pour réessayer."
+    },
+    {"key": "automations.flow.failed", "translated": "Ce parcours n’a pas pu être dessiné."}
   ]
 }

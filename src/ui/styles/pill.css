@@ -1,0 +1,17 @@
+/* The state pill: a short word on a rounded tint beside a heading ("Heating to 21°", "done 07:02:15"); each user writes its tones
+   (Climate's `.on` and `.bad`, the Automations' `.run`, `.no` and `.ok`). Moved from base.css and glass.css with the Automations
+   move (#273), its second user being the Climate detail's (#244). */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--card2);
+  font-size: calc(12.5px * var(--tx));
+  font-weight: 600;
+}
+.app.gl .pill {
+  background: var(--g-tile);
+  box-shadow: var(--g-edge-s);
+}

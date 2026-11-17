@@ -9,3 +9,13 @@ declare module '*.css?inline' {
   const css: string;
   export default css;
 }
+
+// Mermaid as the Automations' flow mount calls it (src/features/automations/flow-mount.ts), by its ESM file: the package's own
+// types import `type-fest`, which the panel does not install. Same file as `import('mermaid')`, so the same lazy chunks.
+declare module 'mermaid/dist/mermaid.core.mjs' {
+  const mermaid: {
+    initialize(config: object): void;
+    render(id: string, definition: string): Promise<{svg: string}>;
+  };
+  export default mermaid;
+}

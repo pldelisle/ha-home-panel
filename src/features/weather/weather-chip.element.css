@@ -1,5 +1,5 @@
-/* <hp-weather-chip>: the header's weather chip, the legacy sheet's `.chip` and `.chip small` (base.css, which the Automations' chips still
-   wear until spec 25 deletes them), the header chips' glass (glass.css), the phone's header chip (phone.css) and the slim chip (extra.css) as they drew it, written on
+/* <hp-weather-chip>: the header's weather chip, the legacy sheet's `.chip` and `.chip small` (base.css, which the Automations' chips
+   wore until their move deleted them, #273), the header chips' glass (glass.css), the phone's header chip (phone.css) and the slim chip (extra.css) as they drew it, written on
    `.wx`; the header's copies went with the legacy header (#269). The chip is a reading, not a control (#368): plain text beside the
    capsules you can tap (the live pill, Settings), no fill, no shadow and no glass. `.app.gl` reads as `:host([glass])`, `.app.cp` as `:host([compact])`. */
 :host {

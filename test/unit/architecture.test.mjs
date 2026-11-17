@@ -33,19 +33,16 @@ test('docs/architecture/dependency-graph.md is exactly what npm run arch:graph w
 
 // The legacy panel may read the core and the providers (ADR 0025): a reading two features need lives in a provider, so the
 // legacy panel calls it instead of keeping a second copy. It may not reach a feature, the kit or the shell; the one other
-// door is the legacy sheet, which joins the kit's stylesheets (ADR 0019); and, until #273 deletes it, src/auto.js reads the
-// Automations feature's pure files (the `auto-reads-its-feature` rule of .dependency-cruiser.cjs, spec 25).
+// door is the legacy sheet, which joins the kit's stylesheets (ADR 0019).
 test('the legacy set imports only the core, the providers and itself, and its sheet the kit’s stylesheets (ADR 0025)', () => {
   const allowed = /^src\/(core|providers)\//;
   const kitStyles = /^src\/ui\/styles\/[^/]+\.css$/;
-  const autoReads = /^src\/features\/automations\/(traces|sentences|timeline-layout|graph|mermaid-def)\.ts$/;
   const offenders = modules
     .filter(({source}) => isLegacy(source))
     .flatMap(({source, dependencies}) =>
       dependencies
         .filter(({resolved}) => resolved.startsWith('src/') && !isLegacy(resolved) && !allowed.test(resolved))
         .filter(({resolved}) => !(source === 'src/styles.js' && kitStyles.test(resolved)))
-        .filter(({resolved}) => !(source === 'src/auto.js' && autoReads.test(resolved)))
         .map(({resolved}) => `${source} → ${resolved}`),
     );
   expect(offenders).toEqual([]);

@@ -107,28 +107,6 @@
 .app.tabsv.cp .pane .card.tap .go {
   display: grid;
 }
-/* Automations: the timeline keeps its dots, the labels would pile up at this width */
-.app.tabsv.cp .aul {
-  display: none;
-}
-.app.tabsv.cp .autl {
-  height: 64px;
-  margin: 12px 6px 4px;
-}
-.app.tabsv.cp .pane-auto .shead {
-  flex-wrap: wrap;
-}
-.app.tabsv.cp .augraph svg {
-  max-width: none;
-}
 .pane > .panel > .grab + * {
   margin-top: 0;
-}
-/* automation chips wrap instead of widening the page */
-.app.tabsv.cp .auchips .chip,
-.app.tabsv.cp .aupick .chip {
-  white-space: normal;
-  max-width: 100%;
-  text-align: left;
-  line-height: 1.3;
 }
