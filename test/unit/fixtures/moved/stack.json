@@ -161,6 +161,13 @@
       "key": "stack.music.playing"
     },
     {
+      "key": "stack.music.name",
+      "values": {
+        "detail": "Test tone, Living room"
+      },
+      "written": "En lecture\u00a0: Test tone, Living room. Ouvre Médias"
+    },
+    {
       "key": "stack.who.arrived",
       "values": {
         "when": "4:07 pm"

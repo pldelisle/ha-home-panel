@@ -4,8 +4,10 @@
 // It defines `<hp-weather-card>`, the Home pane's weather card (#268), and `<hp-weather-chip>`, the header's chip (#269), which the shell composes.
 // Must not: draw or hold state, import the guest or another feature, or read an entity (the model's brief line reads the store it is given).
 import {html} from 'lit';
+import type {PanelStore} from '../../core/store.ts';
 import {readWeather} from './inputs.ts';
-import {weatherBrief} from './model.ts';
+import {weatherBrief, weatherCardName} from './model.ts';
+import {weatherIds} from './ids.ts';
 import {DETAIL_SHEET, HISTORY_SHEET} from './sheets.ts';
 import {tileKeyOf} from './tiles.ts';
 import './weather-card.ts'; // defines <hp-weather-card>, which the Home pane places
@@ -32,3 +34,12 @@ export const weatherFeature: FeatureDescriptor = {
       .historyTile=${env.sheetOpen(HISTORY_SHEET) ? tileKeyOf(env.sheetDetail(HISTORY_SHEET)) : undefined}
     ></hp-weather-pane>`,
 };
+
+/** The entities `weatherCardLabel` reads, for a pane that draws it: the store tells the pane when one changes. */
+export const weatherCardLabelIds = (store: PanelStore): string[] => weatherIds(store.config);
+
+/** What a screen reader calls the phone's Home weather card, one button over the weather and Who's home ("" before Home Assistant answers). */
+export function weatherCardLabel(store: PanelStore): string {
+  const {hass} = store;
+  return hass ? weatherCardName(readWeather(hass.states, store.config), store) : '';
+}

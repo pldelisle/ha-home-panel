@@ -623,6 +623,18 @@ export function weatherBrief(inputs: WeatherInputs, {fmt, t}: Pick<WeatherModelD
   return `${degrees(fmt, inputs.temperature)} · ${conditionOf(inputs, sayWith(t, fmt))}`;
 }
 
+/**
+ * The name a screen reader gives the phone's Home weather card, which is one button over the weather and Who's home: "Weather: 4°,
+ * mainly sunny. Opens the forecast", or without the figures when the house reads no temperature.
+ */
+export function weatherCardName(inputs: WeatherInputs, {fmt, t}: Pick<WeatherModelDeps, 'fmt' | 't'>): string {
+  if (inputs.temperature === null) return t('weather.card.nameBare');
+  return t('weather.card.name', {
+    temperature: degrees(fmt, inputs.temperature),
+    condition: conditionOf(inputs, sayWith(t, fmt)).toLowerCase(),
+  });
+}
+
 export function weatherModel(
   inputs: WeatherInputs,
   forecast: {daily: ForecastEntry[]; hourly: ForecastEntry[]},

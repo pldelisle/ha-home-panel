@@ -1,6 +1,7 @@
 // <hp-light-tile>: one room of the Lights tab as an Apple Home tile: the bulb switches it, the rest of the tile opens the room's sheet.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over the model's `TileView`: it draws what it is given and says what was tapped,
-// with events up (Lit docs, Events); the bulb's `role=switch` inside the tile's `role=button` is today's markup (#192 fixes the nesting).
+// with events up (Lit docs, Events); the tile is two sibling buttons, the row that opens the room and the bulb that switches it, never one
+// inside the other (Apple HIG, Lists and tables: an accessory sits beside the row's own action).
 // Must not: run a service call (the pane does), read the store or an entity, hold a string the household reads, or open a sheet itself.
 import {LitElement, html, nothing, unsafeCSS} from 'lit';
 import {styleMap} from 'lit/directives/style-map.js';
@@ -44,15 +45,12 @@ export class LightTile extends LitElement {
   protected override render() {
     const tile = this.tile;
     if (!tile) return nothing;
+    // two siblings: the row (name, level, chevron) opens the room, the bulb switches it. The row fills the tile and the bulb
+    // sits over its left padding, so the whole tile is still one tap.
     return html`<div
       class="lcell${tile.on ? ' on' : ''}${tile.available ? '' : ' na'}"
       data-lsheet=${tile.key}
-      role="button"
-      tabindex="0"
-      aria-label=${tile.label}
       style=${styleMap({'--lc': tile.tint || undefined})}
-      @click=${this.onTap}
-      @keydown=${this.onKey}
     >
       <button
         type="button"
@@ -66,15 +64,17 @@ export class LightTile extends LitElement {
       >
         ${ico('bulb', 22)}
       </button>
-      <span class="tx"
-        ><b>${tile.name}</b>
-        <small
-          >${tile.sub}${
-            tile.linkedWith ? html` · <em class="lkd">${ico('link', 13)}${tile.linkedWith}</em>` : nothing
-          }</small
-        ></span
-      ><span class="lchev" aria-hidden="true">${ico('chev', 18)}</span
-      ><span class="lgrip" aria-hidden="true">${ico('grip', 20)}</span>
+      <button type="button" class="lrow" data-lsheet=${tile.key} aria-label=${tile.label} @click=${this.onTap}>
+        <span class="tx"
+          ><b>${tile.name}</b>
+          <small
+            >${tile.sub}${
+              tile.linkedWith ? html` · <em class="lkd">${ico('link', 13)}${tile.linkedWith}</em>` : nothing
+            }</small
+          ></span
+        ><span class="lchev" aria-hidden="true">${ico('chev', 18)}</span
+        ><span class="lgrip" aria-hidden="true">${ico('grip', 20)}</span>
+      </button>
     </div>`;
   }
 
@@ -84,17 +84,10 @@ export class LightTile extends LitElement {
     this.dispatchEvent(new AreaToggleEvent(this.tile.key));
   };
 
-  // a tap anywhere but the bulb opens the room, except while arranging
+  // a tap on the row opens the room, except while arranging (Enter and Space on it are taps: it is a button)
   private readonly onTap = (): void => {
     if (this.editing || !this.tile) return;
     this.dispatchEvent(new SheetRequestEvent(ROOM_SHEET, {key: this.tile.key}));
-  };
-
-  // Enter or Space on the tile itself opens the room, like a tap (the bulb is its own button)
-  private readonly onKey = (e: KeyboardEvent): void => {
-    if (e.target !== e.currentTarget || this.editing || (e.key !== 'Enter' && e.key !== ' ')) return;
-    e.preventDefault();
-    this.onTap();
   };
 }
 

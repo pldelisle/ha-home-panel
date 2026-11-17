@@ -159,3 +159,22 @@ hp-home-pane > hp-pane-header {
 .app.tabsv.cp .hscenes[hidden] {
   display: none;
 }
+/* on a phone the card opens the weather detail: a button of its own over the whole card, named for what a screen reader needs (the
+   card's words are not its name, so the card is no button around them) */
+.hwx-open {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  padding: 0;
+  border: 0;
+  border-radius: inherit;
+  background: none;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.hwx-open:focus-visible {
+  outline: 2px solid var(--c-home);
+  outline-offset: 2px;
+}

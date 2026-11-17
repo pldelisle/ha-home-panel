@@ -3,7 +3,7 @@
 // Spec: docs/specs/14-lit-shell.md, "axe in the end-to-end run (step A)". Not numbered in docs/specs/01-playwright-test.md:
 // it checks no behaviour, only what a screen reader would be told.
 import AxeBuilder from '@axe-core/playwright';
-import {test, expect, eachShownTab, isPhone, phoneOnly, type House} from './fixtures';
+import {test, expect, eachShownTab, isPhone, nestedInteractive, phoneOnly, type House} from './fixtures';
 import {FULL_CFG, PHONE_TABS} from './houses';
 import {openOfficeSheet} from './lights';
 import {stopCharging, openFrontDoor, openPopup, pill} from './live';
@@ -15,12 +15,6 @@ const BLOCKING = new Set(['serious', 'critical']);
 // A rule is disabled only with the reason and the issue that owns it, and only in the states where it finds something: everywhere
 // else it still runs. The list is expected to empty out; the phase-3 gate (#150) is "no serious or critical finding".
 const DISABLED_RULES: {rule: string; issue: number; why: string; states: RegExp}[] = [
-  {
-    rule: 'nested-interactive',
-    issue: 192,
-    why: 'a light tile and a media tile are a button that holds a switch; fixing it moves markup the arrange mode and the baselines rest on',
-    states: /^the (lights tab|light sheet|media tab|media sheet)$/, // a sheet opens over its tab, so the tab's tiles are still in the page
-  },
   {
     rule: 'color-contrast',
     issue: 191,
@@ -56,6 +50,8 @@ const scan = async (house: House, state: string) => {
     });
   // soft: one run lists every state's findings, not only the first state that has any
   expect.soft(blocking.map(describeViolation), `axe, serious or critical, on ${state}`).toEqual([]);
+  // one control, one name: no button holds another (axe's rule only sees the ones in the same tree)
+  expect.soft(await nestedInteractive(house), `nested interactive elements on ${state}`).toEqual([]);
 };
 
 /** scans the open sheet or popup, then closes it with Escape and waits until it is gone */

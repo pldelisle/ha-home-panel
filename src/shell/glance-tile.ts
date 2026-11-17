@@ -77,7 +77,7 @@ export class GlanceTile extends LitElement {
       >
         <span class="hh"
           ><span style="color:${view.color}">${ico(view.icon, 22)}</span><span class="lbl">${view.label}</span
-          ><span class="go">›</span></span
+          ><span class="go" aria-hidden="true">›</span></span
         ><span class="hv num">${view.value}</span><span class="hs">${view.line}</span>
       </button>
       ${lensLike(this.getRootNode())}`;

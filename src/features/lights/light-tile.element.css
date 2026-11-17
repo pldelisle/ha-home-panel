@@ -11,12 +11,12 @@
   border-radius: 20px;
 }
 .lcell {
+  --pad: 12px;
+  --bulb: 46px;
   position: relative;
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  /* the row and the bulb share the one cell: the row fills it, the bulb sits over the row's left padding (two sibling buttons) */
+  display: grid;
   min-height: 76px;
-  padding: 12px;
   border-radius: 22px;
   /* off: dimmed, as Apple Home draws a light that is off; on (below): bright, in the light's colour */
   background: var(--tile-off);
@@ -45,14 +45,36 @@
   color: #1e1b19;
   box-shadow: 0 0 22px -8px color-mix(in srgb, var(--lc, var(--warn)) 70%, transparent);
 }
-.lcell:focus-visible {
+.lcell .lrow {
+  grid-area: 1 / 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--pad);
+  padding: var(--pad) var(--pad) var(--pad) calc(var(--pad) * 2 + var(--bulb));
+  border: 0;
+  border-radius: inherit;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.lcell .lrow:focus-visible {
   outline: 2px solid var(--c-home);
   outline-offset: 2px;
 }
 .lcell .lbulb {
-  width: 46px;
-  height: 46px;
-  flex: none;
+  grid-area: 1 / 1;
+  z-index: 1;
+  align-self: center;
+  justify-self: start;
+  margin-inline-start: var(--pad);
+  width: var(--bulb);
+  height: var(--bulb);
   border-radius: 50%;
   border: 0;
   padding: 0;
@@ -155,14 +177,10 @@
   }
 }
 .app.cp .lcell {
+  --pad: 10px;
+  --bulb: 44px;
   min-height: 70px;
-  padding: 10px;
-  gap: 10px;
   border-radius: 20px;
-}
-.app.cp .lcell .lbulb {
-  width: 44px;
-  height: 44px;
 }
 .lgrip {
   display: none;

@@ -69,10 +69,11 @@ test.describe('as an admin', () => {
     });
     await island.click();
     expect(await house.page.evaluate(() => (window as unknown as {heard: number}).heard), 'the tap is stopped').toBe(0);
-    await island.focus();
+    const row = island.locator('.lrow');
+    await row.focus();
     await house.page.keyboard.press('ArrowDown');
     // read before the tiles' names, which taps the rail's tab
-    await expect(island, 'focus stays on the tile that moved').toBeFocused();
+    await expect(row, 'focus stays on the tile that moved').toBeFocused();
     await expect.poll(() => tileNames(house)).toEqual(['Office', 'Living room', 'Island', 'Sink']);
     await expect
       .poll(() => house.ws.at(-1))

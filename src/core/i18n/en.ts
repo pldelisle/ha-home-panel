@@ -237,6 +237,8 @@ export const en = {
   'weather.compass':
     '{point, select, N {N} NNE {NNE} NE {NE} ENE {ENE} E {E} ESE {ESE} SE {SE} SSE {SSE} S {S} SSW {SSW} SW {SW} WSW {WSW} W {W} WNW {WNW} NW {NW} NNW {NNW} other {{point}}}',
   'weather.card.open': 'Open weather details',
+  'weather.card.name': 'Weather: {temperature}, {condition}. Opens the forecast',
+  'weather.card.nameBare': 'Weather. Opens the forecast',
   'weather.today': 'Today',
   'weather.tomorrow': 'Tomorrow',
   'weather.tonight': 'Tonight',
@@ -1447,6 +1449,7 @@ export const en = {
   'stack.using': 'Using {power} right now',
   'stack.music.label': 'Now playing',
   'stack.music.playing': 'Playing',
+  'stack.music.name': 'Now playing: {detail}. Opens Media',
   'stack.who.arrived': 'Arrived {when}',
   'stack.who.left': 'Left {when}',
   'stack.who.home': 'Home',

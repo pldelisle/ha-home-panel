@@ -230,6 +230,8 @@ export const fr: Record<MessageKey, string> = {
   'weather.compass':
     '{point, select, N {N} NNE {NNE} NE {NE} ENE {ENE} E {E} ESE {ESE} SE {SE} SSE {SSE} S {S} SSW {SSO} SW {SO} WSW {OSO} W {W} WNW {ONO} NW {NO} NNW {NNO} other {{point}}}',
   'weather.card.open': 'Ouvrir les détails de la météo',
+  'weather.card.name': 'Météo\u00a0: {temperature}, {condition}. Ouvre les prévisions',
+  'weather.card.nameBare': 'Météo. Ouvre les prévisions',
   'weather.today': "Aujourd'hui",
   'weather.tomorrow': 'Demain',
   'weather.tonight': 'Ce soir',
@@ -1431,6 +1433,7 @@ export const fr: Record<MessageKey, string> = {
   'stack.using': 'Using {power} right now',
   'stack.music.label': 'En lecture',
   'stack.music.playing': 'En lecture',
+  'stack.music.name': 'En lecture\u00a0: {detail}. Ouvre Médias',
   'stack.who.arrived': 'Arrivé·e à {when}',
   'stack.who.left': 'Parti·e à {when}',
   'stack.who.home': 'Maison',
