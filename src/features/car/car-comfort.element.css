@@ -1,6 +1,6 @@
 /*
  * <hp-car-comfort>'s own rules: its `:host`, the four buttons, the lock status and its buttons, the departure's days and time, the radio group's place and the "Save schedule" button. Moved from the legacy `.ctls`, `.cbtn`,
- * `.access`, `.deprow`, `.days`, `.dtime` and `.more` rules (base.css, glass.css, motion.css), which the Car's move (#253) deleted; `.save` is the legacy `.more`'s look, which the Lights header still draws (a known copy until #263).
+ * `.access`, `.deprow`, `.days`, `.dtime` and `.more` rules (base.css, glass.css, motion.css), which the Car's move (#253) deleted; `.save` is the legacy `.more`'s look.
  * The card is the kit's inner card with the blocks' shared rules (styles.css) and the controls' labels and hints (controls.css); the pill buttons, the radio group and the switch row are the kit's.
  */
 :host {

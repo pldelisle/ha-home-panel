@@ -146,16 +146,6 @@ test('the idle stack card says "En lecture" and nothing else changed with it', (
   expect(frText('Tap for the player')).toBe('Toucher pour le lecteur');
 });
 
-// the Lights tile's sub-line is "2 of 3 on · 59%", with the colour temperature or the mode after it on a tablet
-test('the Lights tile sub-line is French in every part', () => {
-  const frText = frTextFor([]);
-  expect(frText('2 of 3 on')).toBe('2 sur 3 allumées');
-  expect(frText('2 of 3 on · 59% · 3000 K')).toBe('2 sur 3 allumées · 59 % · 3000 K');
-  expect(frText('2 of 3 on · 59% · Auto')).toBe('2 sur 3 allumées · 59 % · Auto');
-  expect(frText('2 of 3 on · 59% · Night')).toBe('2 sur 3 allumées · 59 % · Nuit');
-  expect(frText('2 of 3 on · 59%')).toBe('2 sur 3 allumées · 59 %');
-});
-
 // createFrench(store): the per-panel translator, fed by a store (a fake store is enough). Two panels on one page have
 // two layers, and each reads the house's names from its own store: a name one house gave is still translated for the
 // other. The translations themselves are covered above, where every layer is built the same way.

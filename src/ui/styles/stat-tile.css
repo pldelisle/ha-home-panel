@@ -148,9 +148,6 @@
 .stile.wide small {
   font-size: calc(12.5px * var(--tx));
 }
-.stile .sw {
-  flex: none;
-}
 .stile .pp2 {
   width: 44px;
   height: 44px;

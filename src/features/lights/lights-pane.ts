@@ -1,8 +1,8 @@
 // <hp-lights-pane>: the Lights tab: the header with its line and, for an admin, Arrange and Reset order; the Adaptive Lighting card;
 // then the rooms as tiles, a linked pair side by side, in rows on a tablet (with All off) and two to a row on a phone; a room's sheet.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over view models: `lightsModel` and `sheetModel` run in `willUpdate`, keyed by
-// room (Lit docs, repeat); a store controller on `lightIds` paused off screen (ADR 0012) and held under a slider's finger; the saved
-// order and links through `SystemDataController`; the commands as data run by the kit's `CommandRunner` (ADR 0023) (README: until #263).
+// room (Lit docs, repeat); a store controller on `lightIds` paused off screen (ADR 0012) and held under a slider's finger; Arrange by the
+// kit's `DragReorderController`; the order and links through `SystemDataController`; the commands run by the kit's `CommandRunner` (ADR 0023).
 // Must not: call the API but through its controllers, read an entity itself (`readLights` does), or hold a string the household reads.
 import {ContextConsumer} from '@lit/context';
 import {LitElement, html, nothing, unsafeCSS, type PropertyValues} from 'lit';
@@ -41,6 +41,7 @@ import {registriesOf} from '../../core/registry.ts';
 import {sunTimes} from '../../core/sun.ts';
 import {hasManualControlService} from '../../providers/adaptive-lighting.ts';
 import {CommandRunner} from '../../ui/commands.ts';
+import {DragReorderController} from '../../ui/controllers/drag-reorder.ts';
 import {apiContext} from '../../ui/contexts.ts';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {OptimisticController} from '../../ui/controllers/optimistic.ts';
@@ -64,17 +65,6 @@ const SETTLE_MS = 60;
 interface Unit {
   key: string;
   tiles: TileView[];
-}
-
-/** A drag in progress: the unit lifted, the pointer, where it took the unit, and the units' order as it stands. */
-interface Drag {
-  key: string;
-  pointer: number;
-  dx: number;
-  dy: number;
-  order: string[];
-  /** Released: the units settle for a moment before the saved order takes over, and the pointer moves nothing meanwhile. */
-  dropped?: boolean;
 }
 
 const unitsOf = (tiles: TileView[]): Unit[] =>
@@ -125,8 +115,14 @@ export class LightsPane extends LitElement {
   );
   private inputs: LightsInputs | undefined;
   private view: LightsViewModel | undefined;
-  private drag: Drag | null = null;
   private sheet: SheetView | null = null;
+  // Arrange: a unit follows the pointer, the one under it gives way, an arrow key moves the focused one, and the order is saved
+  private readonly arrange = new DragReorderController(this, {
+    enabled: () => this.editing,
+    keys: () => unitsOf(this.view?.tiles ?? []).map(u => u.key),
+    keyOf: unit => unit.dataset.unit,
+    onReorder: keys => void this.save({light_order: keys}, 'lights.orderSaved', 'lights.orderNotSaved'),
+  });
   /** A finger is on a slider of the sheet, or it was released less than `SETTLE_MS` ago. */
   private sliding = false;
   private settle: ReturnType<typeof setTimeout> | undefined;
@@ -279,23 +275,19 @@ export class LightsPane extends LitElement {
   }
 
   private renderUnits(view: LightsViewModel, kind: 'lrows' | 'ltiles') {
-    let units = unitsOf(view.tiles);
-    const order = this.drag?.order;
-    // mid-drag the units follow the drag's order; one that appeared meanwhile goes last
-    if (order)
-      units = [
-        ...order.map(key => units.find(u => u.key === key)).filter((u): u is Unit => !!u),
-        ...units.filter(u => !order.includes(u.key)),
-      ];
+    // mid-drag the units follow the drag's order
+    const units = this.arrange.arrange(unitsOf(view.tiles), unit => unit.key);
+    const {arrange} = this;
     return html`<div
       class=${kind}
       id=${ifDefined(kind === 'ltiles' ? 'ltiles' : undefined)}
       @area-toggle=${this.onToggle}
-      @pointerdown=${this.onDown}
-      @pointermove=${this.onMove}
-      @pointerup=${this.onDrop}
-      @pointercancel=${this.onDrop}
-      @keydown=${this.onKey}
+      @pointerdown=${arrange.onPointerDown}
+      @pointermove=${arrange.onPointerMove}
+      @pointerup=${arrange.onPointerUp}
+      @pointercancel=${arrange.onPointerUp}
+      @keydown=${arrange.onKeyDown}
+      @click=${arrange.onClickCapture}
     >
       ${repeat(
         units,
@@ -306,7 +298,7 @@ export class LightsPane extends LitElement {
   }
 
   private renderUnit({key, tiles}: Unit) {
-    const lifted = this.drag?.key === key && !this.drag.dropped ? 'lifted' : '';
+    const lifted = this.arrange.lifted === key ? 'lifted' : '';
     const tile = (t: TileView) => html`<hp-light-tile .tile=${t} .editing=${this.editing}></hp-light-tile>`;
     if (tiles.length === 1)
       return html`<hp-light-tile
@@ -417,115 +409,6 @@ export class LightsPane extends LitElement {
       (e: unknown) => void this.dispatchEvent(new ToastEvent(t(failed, {reason: rejectionReason(e)}), true)),
     );
   }
-
-  /** Saves the units' order when it differs from the one drawn before the move. */
-  private saveOrder(order: string[]): void {
-    const before = unitsOf(this.view?.tiles ?? []).map(u => u.key);
-    if (JSON.stringify(order) !== JSON.stringify(before))
-      void this.save({light_order: order}, 'lights.orderSaved', 'lights.orderNotSaved');
-  }
-
-  // ---- Arrange: a unit follows the pointer, the one under it gives way, and the order is saved on release ----
-
-  /** The unit a pointer or a key is on: the child of the rows that holds it. */
-  private unitOf(e: Event): HTMLElement | undefined {
-    return e
-      .composedPath()
-      .find(
-        (n): n is HTMLElement =>
-          n instanceof HTMLElement && n.dataset.unit !== undefined && n.parentElement === e.currentTarget,
-      );
-  }
-
-  private unitEl(key: string): HTMLElement | null {
-    return this.renderRoot.querySelector<HTMLElement>(`[data-unit="${CSS.escape(key)}"]`);
-  }
-
-  private readonly onDown = (e: PointerEvent): void => {
-    if (!this.editing || e.button > 0) return;
-    const unit = this.unitOf(e);
-    if (!unit) return;
-    e.preventDefault();
-    const box = unit.getBoundingClientRect();
-    const order = unitsOf(this.view?.tiles ?? []).map(u => u.key);
-    this.drag = {
-      key: unit.dataset.unit!,
-      pointer: e.pointerId,
-      dx: e.clientX - box.left,
-      dy: e.clientY - box.top,
-      order,
-    };
-    try {
-      unit.setPointerCapture(e.pointerId);
-    } catch {
-      // a pointer that is already gone: the drop follows
-    }
-    this.requestUpdate();
-  };
-
-  private readonly onMove = (e: PointerEvent): void => {
-    const drag = this.drag;
-    if (!drag || drag.dropped || !this.editing || e.pointerId !== drag.pointer) return;
-    e.preventDefault();
-    // the unit under the pointer takes the lifted one's place (the lifted one lets the pointer through)
-    const over = (this.renderRoot as ShadowRoot)
-      .elementFromPoint(e.clientX, e.clientY)
-      ?.closest<HTMLElement>('[data-unit]');
-    const target = over?.dataset.unit;
-    if (target && target !== drag.key) {
-      const order = drag.order.filter(key => key !== drag.key);
-      order.splice(drag.order.indexOf(target), 0, drag.key);
-      drag.order = order;
-      this.requestUpdate();
-      void this.updateComplete.then(() => this.follow(e));
-    } else this.follow(e);
-    // near the top or the bottom of the screen the page scrolls along
-    if (e.clientY < 70) window.scrollBy(0, -12);
-    else if (e.clientY > innerHeight - 90) window.scrollBy(0, 12);
-  };
-
-  // the lifted unit stays where the pointer took it
-  private follow(e: PointerEvent): void {
-    const drag = this.drag;
-    const unit = drag && this.unitEl(drag.key);
-    if (!unit) return;
-    unit.style.transform = '';
-    const box = unit.getBoundingClientRect();
-    unit.style.transform = `translate(${e.clientX - drag.dx - box.left}px,${e.clientY - drag.dy - box.top}px)`;
-  }
-
-  private readonly onDrop = (e: PointerEvent): void => {
-    const drag = this.drag;
-    if (!drag || drag.dropped || e.pointerId !== drag.pointer) return;
-    drag.dropped = true;
-    const unit = this.unitEl(drag.key);
-    if (unit) unit.style.transform = '';
-    this.saveOrder(drag.order);
-    this.requestUpdate(); // the unit is put down at once
-    // the drop settles before the tiles follow the saved order, as the legacy drag let it
-    setTimeout(() => {
-      if (this.drag === drag) this.drag = null;
-      this.requestUpdate();
-    }, 60);
-  };
-
-  // while arranging, an arrow key moves the focused unit one place, and the order is saved
-  private readonly onKey = (e: KeyboardEvent): void => {
-    if (!this.editing) return;
-    const step = ({ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1} as Record<string, number>)[e.key];
-    const unit = this.unitOf(e);
-    if (!unit || !step) return;
-    e.preventDefault();
-    e.stopImmediatePropagation();
-    const order = unitsOf(this.view?.tiles ?? []).map(u => u.key);
-    const i = order.indexOf(unit.dataset.unit!);
-    const j = i + step;
-    if (j < 0 || j >= order.length) return;
-    order.splice(j, 0, ...order.splice(i, 1));
-    const focused = e.composedPath()[0] as HTMLElement;
-    this.saveOrder(order);
-    void this.updateComplete.then(() => focused.focus());
-  };
 }
 
 declare global {

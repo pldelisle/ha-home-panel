@@ -52,6 +52,28 @@ test.describe('as an admin', () => {
       'arranging switches or dims nothing',
     ).toEqual([]);
   });
+
+  test('62 while arranging, ArrowDown on a focused tile moves its block one place and saves the order', async ({
+    house,
+  }) => {
+    tabletOnly();
+    const root = house.root();
+    await house.tab('lights');
+    await root.locator('#ledit').click();
+    const island = root.locator('#pane-lights .lcell[data-lsheet="light.kitchen_island"]');
+    await island.focus();
+    await house.page.keyboard.press('ArrowDown');
+    // read before the tiles' names, which taps the rail's tab
+    await expect(island, 'focus stays on the tile that moved').toBeFocused();
+    await expect.poll(() => tileNames(house)).toEqual(['Office', 'Living room', 'Island', 'Sink']);
+    await expect
+      .poll(() => house.ws.at(-1))
+      .toEqual({
+        type: 'frontend/set_system_data',
+        key: 'home_panel',
+        value: {light_order: ['office', 'light.kitchen_island']},
+      });
+  });
 });
 
 test.describe('with a saved order', () => {

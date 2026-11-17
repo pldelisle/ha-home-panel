@@ -507,65 +507,7 @@
   display: grid;
   gap: 16px;
 }
-/* colour temperature slider under the brightness slider */
-.ctrow {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 8px;
-}
-/* the colour slider: the warm-to-cool gradient is painted on the track (--ctg), the input itself is 44 px tall for the finger */
-.larea .ctrow input[type='range'] {
-  flex: 1;
-  width: auto;
-  margin: 0;
-  height: 44px;
-  background: transparent;
-}
-.ctrow .ct::-webkit-slider-runnable-track {
-  height: 8px;
-  border-radius: 4px;
-  background: var(--ctg, var(--ring));
-}
-.ctrow .ct::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--card);
-  border: 2px solid var(--fg2);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-  margin-top: -10px;
-}
-.ctrow .ct::-moz-range-track {
-  height: 8px;
-  border-radius: 4px;
-  background: var(--ctg, var(--ring));
-}
-.ctrow .ct::-moz-range-thumb {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--card);
-  border: 2px solid var(--fg2);
-}
-.ctrow .ct:disabled {
-  opacity: 0.4;
-}
-.ctv {
-  font-size: calc(12px * var(--tx));
-  color: var(--fg2);
-  min-width: 46px;
-  text-align: right;
-}
-.ctm {
-  font-size: calc(11px * var(--tx));
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--t-warn);
-}
+
 /* Energy pane: the sheet, then the water heater and Hilo side by side (the element's own grid, #239) */
 .pane-energy {
   display: grid;
@@ -948,7 +890,6 @@
 #hsec {
   display: contents;
 }
-
 /* Idle clock (v1.19.6): the wall iPad rests on a big clock after 5 min; everything else fades out, the wallpaper keeps drifting */
 .idle[hidden] {
   display: none;

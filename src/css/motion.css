@@ -7,7 +7,6 @@
   .rtab,
   .head button.icon,
   .ausel .close,
-  .lauto,
   .go,
   button.chip,
   .more,
@@ -24,7 +23,6 @@
 }
 .head button.icon:active,
 .ausel .close:active,
-.lauto:active,
 .go:active,
 button.chip:active,
 .more:active {
@@ -32,9 +30,6 @@ button.chip:active,
 }
 .rtab:active svg {
   transform: scale(0.86);
-}
-.sw::after {
-  transition: transform 0.22s cubic-bezier(0.3, 1.3, 0.4, 1);
 }
 /* a section settles in when its tab is chosen */
 .pane:not([hidden]) {
@@ -104,7 +99,4 @@ button.chip:active,
     transform: none;
   }
   /* the switch knob slides and a phone sheet springs back after a short drag only with motion on (base.css gives the knob a slide of its own) */
-  .sw::after {
-    transition: none;
-  }
 }

@@ -53,7 +53,7 @@ beforeAll(async () => {
 afterAll(() => rmSync(scratch, {recursive: true, force: true}));
 
 test('the minified stylesheet is the one inside the entry, and it is smaller than the source', () => {
-  expect(css.length).toBeGreaterThan(60_000);
+  expect(css.length).toBeGreaterThan(50_000);
   expect(css.length).toBeLessThan(source.length * 0.9);
   // the entry carries the string either between double quotes or in a template; compare a piece from the middle,
   // which has no quote or backslash of its own to escape differently. Each file the sheet joins is its own string in the

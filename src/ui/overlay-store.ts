@@ -1,7 +1,7 @@
 // The optimistic overlay: what the person asked for, held until Home Assistant agrees, and the pure rule that reads it.
 // Pattern: optimistic UI (the pending state of a write is shown before its confirmation) over a plain observable, so
 // two elements of one panel share one map (ADR 0023). `overlay` is the legacy `pend` rule, string comparison kept.
-// A known copy: the twenty seconds and `String(a) !== String(b)` are the legacy `pend`'s; #263 deletes that one.
+// The twenty seconds and `String(a) !== String(b)` are the legacy `pend`'s, which is gone (#262); this is the one copy.
 // Must not: import Lit, the shell or a feature, read an entity, or be shared by two panels (the shell makes one each).
 
 /** One held value and the instant (ms) it stops being held. */

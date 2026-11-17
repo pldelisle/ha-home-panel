@@ -1,12 +1,13 @@
 {
-  "about": "The English messages the Lights move introduced (src/core/i18n/en.ts, lights.*), each with sample values: the model's (#259), the commands' toasts (#261) and the pane's saves (#260). test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer makes of the English, or what is `translated` where the layer left the English as it stood: \"No lights found\" on the tablet's card, the pane's three Adaptive Lighting lines and the picker's \"now with\", a visible change that #260 and #262 record in their baselines. A tile's accessible name is read with its line in French, as the layer read the whole label. The legacy panel draws all of these until #260 and #262, so no entry of the rewrite layer is deleted yet. Deleted with the layer in phase 4.",
+  "about": "The English messages the Lights move introduced (src/core/i18n/en.ts, lights.*), each with sample values: the model's (#259), the commands' toasts (#261) and the pane's saves (#260). test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer makes of the English, or what is `translated` where the layer left the English as it stood: \"No lights found\" on the tablet's card, the pane's three Adaptive Lighting lines and the picker's \"now with\", a visible change that #260 and #262 record in their baselines. A tile's accessible name is read with its line in French, as the layer read the whole label. #263 deleted the map entries the legacy panel no longer renders once the pane (#260) and the sheet (#262) moved: `was` is what the layer made of the English before, `after` what it makes of it now. The entries other screens still render (Lights, Other lights, the light counts of the Home tile, the stack and the room chips) stay. Deleted with the layer in phase 4.",
   "messages": [
     {
       "key": "lights.noLights",
       "translated": "Aucune lumière trouvée"
     },
     {
-      "key": "lights.noLightsHint"
+      "key": "lights.noLightsHint",
+      "was": "Aucune lumière trouvée."
     },
     {
       "key": "lights.lightsOn",
@@ -43,16 +44,19 @@
       "translated": "Éclairage adaptatif éteint partout"
     },
     {
-      "key": "lights.dragHint"
+      "key": "lights.dragHint",
+      "was": "Glissez les lumières dans l’ordre voulu"
     },
     {
-      "key": "lights.arrange"
+      "key": "lights.arrange",
+      "was": "Réorganiser"
     },
     {
       "key": "lights.done"
     },
     {
-      "key": "lights.resetOrder"
+      "key": "lights.resetOrder",
+      "was": "Ordre par défaut"
     },
     {
       "key": "lights.otherLights"
@@ -68,7 +72,9 @@
       "values": {
         "on": "1",
         "total": "3"
-      }
+      },
+      "was": "1 sur 3 allumées",
+      "after": "1 of 3 : activé"
     },
     {
       "key": "lights.percent",
@@ -86,7 +92,8 @@
       "key": "lights.mode",
       "values": {
         "mode": "Night"
-      }
+      },
+      "was": "Nuit"
     },
     {
       "key": "lights.mode",
@@ -101,7 +108,8 @@
       }
     },
     {
-      "key": "lights.adaptiveToday"
+      "key": "lights.adaptiveToday",
+      "was": "Éclairage adaptatif aujourd’hui"
     },
     {
       "key": "lights.now"
@@ -180,58 +188,71 @@
       "key": "lights.brightness"
     },
     {
-      "key": "lights.colourTemperature"
+      "key": "lights.colourTemperature",
+      "was": "Température de couleur"
     },
     {
-      "key": "lights.night"
+      "key": "lights.night",
+      "was": "Nuit"
     },
     {
-      "key": "lights.nightLook"
+      "key": "lights.nightLook",
+      "was": "Rouge, très tamisé"
     },
     {
       "key": "lights.white",
       "values": {
         "tone": "warm"
-      }
+      },
+      "was": "Blanc chaud"
     },
     {
       "key": "lights.white",
       "values": {
         "tone": "cool"
-      }
+      },
+      "was": "Blanc froid"
     },
     {
       "key": "lights.white",
       "values": {
         "tone": "neutral"
-      }
+      },
+      "was": "Blanc neutre"
     },
     {
       "key": "lights.auto"
     },
     {
-      "key": "lights.autoDesc"
+      "key": "lights.autoDesc",
+      "was": "L'intensité et la couleur suivent l'heure du jour"
     },
     {
-      "key": "lights.nightDesc"
+      "key": "lights.nightDesc",
+      "was": "Lumière rouge très tamisée pour la nuit"
     },
     {
-      "key": "lights.bulbs"
+      "key": "lights.bulbs",
+      "was": "Ampoules"
     },
     {
-      "key": "lights.linkedWith"
+      "key": "lights.linkedWith",
+      "was": "Lié avec"
     },
     {
-      "key": "lights.linkedDesc"
+      "key": "lights.linkedDesc",
+      "was": "Bouge avec une autre pièce"
     },
     {
-      "key": "lights.adminOnly"
+      "key": "lights.adminOnly",
+      "was": "Seul un administrateur peut changer ceci"
     },
     {
       "key": "lights.none"
     },
     {
-      "key": "lights.noneDesc"
+      "key": "lights.noneDesc",
+      "was": "Cette pièce bouge seule"
     },
     {
       "key": "lights.nowWith",
@@ -241,43 +262,61 @@
       "translated": "maintenant avec Office"
     },
     {
-      "key": "lights.linkWith"
+      "key": "lights.linkWith",
+      "was": "Lier avec"
     },
     {
-      "key": "lights.linkFoot"
+      "key": "lights.linkFoot",
+      "was": "Les pièces liées s'allument, se tamisent et changent de couleur ensemble. Choisir une pièce y copie l'éclairage de celle-ci. Une pièce se lie à une seule autre à la fois."
     },
     {
-      "key": "lights.autoOn"
+      "key": "lights.autoOn",
+      "was": "Auto activé",
+      "after": "Auto : activé"
     },
     {
-      "key": "lights.autoOff"
+      "key": "lights.autoOff",
+      "was": "Auto désactivé",
+      "after": "Auto : désactivé"
     },
     {
-      "key": "lights.nightOn"
+      "key": "lights.nightOn",
+      "was": "Nuit activée",
+      "after": "Night : activé"
     },
     {
-      "key": "lights.nightOff"
+      "key": "lights.nightOff",
+      "was": "Nuit désactivée",
+      "after": "Night : désactivé"
     },
     {
-      "key": "lights.setByHand"
+      "key": "lights.setByHand",
+      "was": "Réglé à la main, Auto désactivé",
+      "after": "Set by hand, Auto : désactivé"
     },
     {
-      "key": "lights.roomsLinked"
+      "key": "lights.roomsLinked",
+      "was": "Pièces liées"
     },
     {
-      "key": "lights.roomUnlinked"
+      "key": "lights.roomUnlinked",
+      "was": "Pièce déliée"
     },
     {
-      "key": "lights.orderSaved"
+      "key": "lights.orderSaved",
+      "was": "Ordre des lumières enregistré"
     },
     {
-      "key": "lights.orderReset"
+      "key": "lights.orderReset",
+      "was": "Ordre des lumières par défaut"
     },
     {
       "key": "lights.orderNotSaved",
       "values": {
         "reason": "42"
-      }
+      },
+      "was": "Impossible d’enregistrer l’ordre des lumières : 42",
+      "after": "Couldn't save the light order : 42"
     },
     {
       "key": "lights.linkNotSaved",
