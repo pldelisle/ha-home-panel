@@ -146,6 +146,7 @@ test.describe('with the Hydro-Québec peak sensor', () => {
 
   test('59 a critical peak shows its chip before the pill, and the chip goes when the peak ends', async ({house}) => {
     const chip = house.root().locator('#chips hp-peak-chip');
+    await house.setState('binary_sensor.critical_peak', {state: 'off'});
     await expect(chip).toHaveText('');
     await house.setState('binary_sensor.critical_peak', {state: 'on'});
     await expect(chip).toHaveText('Critical peak now');

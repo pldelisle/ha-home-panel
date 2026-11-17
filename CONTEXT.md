@@ -16,7 +16,7 @@ The words the panel and its code use. One word per concept: use it in issues, te
 
 **Card** — A glass surface that groups one subject's content, such as the Home card, a smart-stack card or a live-activity card.
 
-**Chip** — A small rounded label, in the header (weather, the people) or in a sheet (a single bulb, with a check mark when on).
+**Chip** — A small rounded label, in the header (weather, the critical peak, the people) or in a sheet (a single bulb, with a check mark when on).
 
 **Pill** — The glass capsule in the header that stands for something happening or needing a look; under Reduce Transparency it is solid.
 
