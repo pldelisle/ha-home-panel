@@ -2,8 +2,7 @@
 // then the rooms as tiles, a linked pair side by side, in rows on a tablet (with All off) and two to a row on a phone.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over a view model: `lightsModel` runs in `willUpdate` and the template places
 // what it returns, keyed by room (Lit docs, repeat); a store controller on `lightIds` paused off screen (ADR 0012); the house's saved
-// order and links through `SystemDataController`; the commands as data run by the kit's `CommandRunner` (ADR 0023). Arrange's drag
-// lives here until #263 moves it into the kit, and the legacy room sheet reads `rooms` and asks `link` until #262 moves the sheet.
+// order and links through `SystemDataController`; the commands as data run by the kit's `CommandRunner` (ADR 0023) (README: until #262, #263).
 // Must not: call the API but through its controllers, read an entity itself (`readLights` does), or hold a string the household reads.
 import {ContextConsumer} from '@lit/context';
 import {LitElement, html, nothing, unsafeCSS, type PropertyValues} from 'lit';
@@ -52,6 +51,8 @@ interface Drag {
   dx: number;
   dy: number;
   order: string[];
+  /** Released: the units settle for a moment before the saved order takes over, and the pointer moves nothing meanwhile. */
+  dropped?: boolean;
 }
 
 const unitsOf = (tiles: TileView[]): Unit[] =>
@@ -119,8 +120,10 @@ export class LightsPane extends LitElement {
     const tile = rooms.find(room => room.key === key);
     const change = tile && link(tile, partnerKey, rooms);
     if (!change) return Promise.resolve();
+    // the save goes out first and the copy right after it, without waiting for the answer, as the legacy panel sent them
+    const saved = this.save({light_links: change.pairs}, change.toast, 'lights.linkNotSaved');
     void this.commands.runAll(change.commands);
-    return this.save({light_links: change.pairs}, change.toast, 'lights.linkNotSaved');
+    return saved;
   }
 
   // The pause and the resume sit in willUpdate: a resume asks for an update, and one asked for here is this one.
@@ -212,7 +215,12 @@ export class LightsPane extends LitElement {
   private renderUnits(view: LightsViewModel, kind: 'lrows' | 'ltiles') {
     let units = unitsOf(view.tiles);
     const order = this.drag?.order;
-    if (order) units = order.map(key => units.find(u => u.key === key)).filter((u): u is Unit => !!u);
+    // mid-drag the units follow the drag's order; one that appeared meanwhile goes last
+    if (order)
+      units = [
+        ...order.map(key => units.find(u => u.key === key)).filter((u): u is Unit => !!u),
+        ...units.filter(u => !order.includes(u.key)),
+      ];
     return html`<div
       class=${kind}
       id=${kind === 'ltiles' ? 'ltiles' : nothing}
@@ -232,7 +240,7 @@ export class LightsPane extends LitElement {
   }
 
   private renderUnit({key, tiles}: Unit) {
-    const lifted = this.drag?.key === key ? 'lifted' : '';
+    const lifted = this.drag?.key === key && !this.drag.dropped ? 'lifted' : '';
     const tile = (t: TileView) => html`<hp-light-tile .tile=${t} .editing=${this.editing}></hp-light-tile>`;
     if (tiles.length === 1)
       return html`<hp-light-tile
@@ -331,7 +339,7 @@ export class LightsPane extends LitElement {
 
   private readonly onMove = (e: PointerEvent): void => {
     const drag = this.drag;
-    if (!drag || e.pointerId !== drag.pointer) return;
+    if (!drag || drag.dropped || !this.editing || e.pointerId !== drag.pointer) return;
     e.preventDefault();
     // the unit under the pointer takes the lifted one's place (the lifted one lets the pointer through)
     const over = (this.renderRoot as ShadowRoot)
@@ -362,10 +370,12 @@ export class LightsPane extends LitElement {
 
   private readonly onDrop = (e: PointerEvent): void => {
     const drag = this.drag;
-    if (!drag || e.pointerId !== drag.pointer) return;
+    if (!drag || drag.dropped || e.pointerId !== drag.pointer) return;
+    drag.dropped = true;
     const unit = this.unitEl(drag.key);
     if (unit) unit.style.transform = '';
     this.saveOrder(drag.order);
+    this.requestUpdate(); // the unit is put down at once
     // the drop settles before the tiles follow the saved order, as the legacy drag let it
     setTimeout(() => {
       if (this.drag === drag) this.drag = null;

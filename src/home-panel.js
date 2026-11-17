@@ -47,7 +47,7 @@ const LAYOUT = ['open-air'];
 // areas the Phone tab shows as part of another, the way Apple Home groups them: the parking spot's charger and camera live in the garage
 // Tabs view: one pane per subject, for a tablet fixed to the wall. The rail, the phone's bar and the panes
 // are the shell's (src/shell/features.ts); the guest fills what is inside them.
-// colour of a black body at k kelvin (Tanner Helland's fit), for the colour-temperature strips and sliders
+// colour of a black body at k kelvin (Tanner Helland's fit), for the room sheet's colour slider
 const kelvinRGB = k => {
   const t = Math.min(40000, Math.max(1000, k)) / 100,
     c = v => Math.round(Math.min(255, Math.max(0, v)));
@@ -1308,12 +1308,10 @@ export class LegacyPanel {
   renderLive() {
     if (!this.hass) return;
     this.car ||= findCar(this.hass.states);
-    for (const f of ['renderHeader']) {
-      try {
-        this[f]();
-      } catch (e) {
-        console.error('home-panel', f, e);
-      }
+    try {
+      this.renderHeader();
+    } catch (e) {
+      console.error('home-panel', 'renderHeader', e);
     }
     this.renderTabs();
     try {
@@ -2146,14 +2144,14 @@ export class LegacyPanel {
       mode: nightOn && alOn ? 'Night' : alOn && !man ? 'Auto' : a.al ? 'Manual' : '',
     };
   }
-  // `short`: the phone's tile has no room for the colour temperature; the sheet and the tablet keep it
-  lightSub(a, s, m, short = false) {
+  // the room's line in its sheet and in the "Link with" picker
+  lightSub(a, s, m) {
     if (!s.avail) return 'Unavailable';
     if (!s.any) return 'Off';
     return [
       s.on.length < a.ids.length ? `${s.on.length} of ${a.ids.length} on` : '',
       s.br + '%',
-      m.mode || (s.k && !short ? s.k + ' K' : ''),
+      m.mode || (s.k ? s.k + ' K' : ''),
     ]
       .filter(Boolean)
       .join(' · ');
@@ -2174,11 +2172,6 @@ export class LegacyPanel {
     const A = this.lightAreas(),
       isOn = i => (this.st(i) || {}).state === 'on',
       AL = this.hass.services && this.hass.services.adaptive_lighting;
-    if (kind === 'alloff') {
-      const ids = A.flatMap(x => x.ids).filter(isOn);
-      if (ids.length) this.call('light', 'turn_off', {entity_id: ids});
-      return;
-    }
     if (kind === 'one') {
       this.call('light', 'toggle', {entity_id: key});
       return;

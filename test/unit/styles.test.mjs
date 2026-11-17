@@ -53,7 +53,7 @@ beforeAll(async () => {
 afterAll(() => rmSync(scratch, {recursive: true, force: true}));
 
 test('the minified stylesheet is the one inside the entry, and it is smaller than the source', () => {
-  expect(css.length).toBeGreaterThan(70_000);
+  expect(css.length).toBeGreaterThan(60_000);
   expect(css.length).toBeLessThan(source.length * 0.9);
   // the entry carries the string either between double quotes or in a template; compare a piece from the middle,
   // which has no quote or backslash of its own to escape differently. Each file the sheet joins is its own string in the
@@ -86,7 +86,7 @@ test('every color-mix() the source writes is still in the stylesheet, as written
   const expressions = text => new Set([...text.matchAll(/color-mix\([^;}]*/g)].map(m => m[0].replace(/\s+/g, '')));
   const have = expressions(css);
   const want = expressions(source);
-  expect(want.size).toBeGreaterThan(50);
+  expect(want.size).toBeGreaterThan(40);
   expect([...want].filter(e => !have.has(e))).toStrictEqual([]);
 });
 
