@@ -159,7 +159,13 @@ export interface AirViewModel {
     rooms: RoomDetail[];
     /** The station and the AQHI; null without a station. */
     outside: OutsideDetail | null;
-    outdoorChart: {title: string; hint: string; empty: string} | null;
+    outdoorChart: {
+      title: string;
+      /** Each chart's own name and caption: the station's US AQI and the AQHI are two charts on two scales. */
+      aqi: {title: string; caption: string};
+      aqhi: {title: string; caption: string};
+      empty: string;
+    } | null;
   };
 }
 
@@ -409,7 +415,8 @@ export function airModel(inputs: AirInputs, deps: AirModelDeps): AirViewModel {
         inputs.outside?.aqi || inputs.aqhiId
           ? {
               title: t('air.outdoorAir', {range: t(RANGES[range].labelKey)}),
-              hint: t('air.outdoorHint'),
+              aqi: {title: t('air.aqiSeries'), caption: t('air.aqiCaption')},
+              aqhi: {title: t('air.aqhiSeries'), caption: t('air.aqhiCaption')},
               empty: t('air.noOutdoorHistory'),
             }
           : null,

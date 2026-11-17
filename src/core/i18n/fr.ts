@@ -517,8 +517,8 @@ export const fr: Record<MessageKey, string> = {
   'air.outsideHint':
     'De la station extérieure Mila la plus proche de la maison, et de la cote air santé d’Environnement Canada.',
   'air.outdoorAir': 'Air extérieur, {range}',
-  'air.outdoorHint':
-    'IQA américain de la station (bon jusqu’à 50, modéré jusqu’à 100) et cote air santé sur son échelle de 1 à 10.',
+  'air.aqiCaption': 'IQA américain de la station\u202f: bon jusqu’à 50, modéré jusqu’à 100.',
+  'air.aqhiCaption': 'La cote air santé d’Environnement Canada, sur son échelle de 1 à 10.',
   'air.aqi': 'IQA',
   'air.aqhiValue': 'CAS {n}',
   'air.stationPm': 'PM2,5 {n} µg/m³',

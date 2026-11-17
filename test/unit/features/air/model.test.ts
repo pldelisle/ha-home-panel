@@ -379,6 +379,23 @@ describe('the detail’s outdoor chart follows the range', () => {
     );
     expect(Object.keys(week.detail)).not.toContain('history');
   });
+
+  test('each of the two charts is named and captioned for its own scale, in English and in French', () => {
+    expect(modelOf(inputsOf([room()], station())).detail.outdoorChart).toMatchObject({
+      aqi: {title: 'AQI (Mila station)', caption: 'US AQI from the station: good up to 50, moderate up to 100.'},
+      aqhi: {title: 'AQHI (Environment Canada)', caption: 'The AQHI from Environment Canada, on its 1 to 10 scale.'},
+    });
+    expect(modelOf(inputsOf([room()], station()), 'fr').detail.outdoorChart).toMatchObject({
+      aqi: {
+        title: 'IQA (station Mila)',
+        caption: 'IQA américain de la station\u202f: bon jusqu’à 50, modéré jusqu’à 100.',
+      },
+      aqhi: {
+        title: 'CAS (Environnement Canada)',
+        caption: 'La cote air santé d’Environnement Canada, sur son échelle de 1 à 10.',
+      },
+    });
+  });
 });
 
 describe('a tile opens its history', () => {

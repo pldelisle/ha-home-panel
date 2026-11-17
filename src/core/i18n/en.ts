@@ -532,7 +532,8 @@ export const en = {
   'air.outsideHint':
     "From the Mila outdoor station nearest your home, and Environment Canada's Air Quality Health Index.",
   'air.outdoorAir': 'Outdoor air, {range}',
-  'air.outdoorHint': 'US AQI from the station (good up to 50, moderate up to 100) and the AQHI on its 1 to 10 scale.',
+  'air.aqiCaption': 'US AQI from the station: good up to 50, moderate up to 100.',
+  'air.aqhiCaption': 'The AQHI from Environment Canada, on its 1 to 10 scale.',
   'air.aqi': 'AQI',
   'air.aqhiValue': 'AQHI {n}',
   'air.stationPm': 'PM2.5 {n} µg/m³',

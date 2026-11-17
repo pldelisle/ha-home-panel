@@ -288,37 +288,51 @@ export function airChartOptions(
   };
 }
 
+/** The scale of a chart's axis: from zero to the first multiple of `step` that is at least `floor` and leaves `room` above `highest`, a tick at each step. */
+function scaleTo(highest: number, step: number, floor: number, room: number) {
+  const max = Math.max(floor, Math.ceil((highest + room) / step) * step);
+  return {min: 0, max, tickAmount: max / step};
+}
+
+/** What the two outdoor charts share: one line in its colour on one axis (`scale`, titled), the time axis and a tooltip of whole numbers; a chart's own bands are `annotations`. */
+function outdoorLine(
+  name: string,
+  points: Point[],
+  color: string,
+  axisTitle: string,
+  scale: ReturnType<typeof scaleTo>,
+  range: Range,
+  {fmt, tokens, now}: AirChartDeps,
+  annotations: Record<string, unknown> = {},
+) {
+  return {
+    chart: {type: 'line'},
+    series: [{name, data: points}],
+    colors: [color],
+    stroke: {width: 2, curve: 'smooth'},
+    xaxis: timeAxis(RANGES[range].days, now, fmt),
+    yaxis: {
+      ...scale,
+      title: {text: axisTitle, style: {color: tokens.muted, fontWeight: 500}},
+      labels: {formatter: (value: number) => whole(fmt, value)},
+    },
+    annotations,
+    tooltip: {
+      x: {formatter: tooltipDate(RANGES[range].tooltip, fmt)},
+      y: {formatter: (value: number | null) => (value == null ? DASH : whole(fmt, value))},
+    },
+  };
+}
+
+/** The highest reading of a series; zero for a series with none. */
+const highestOf = (points: Point[]): number => points.reduce((top, [, value]) => Math.max(top, value), 0);
+
 /**
- * The options of the outdoor chart, without the theme: the station's US AQI on the left axis with the good and moderate bands, and the AQHI on a
- * second axis on the right, from 0 to 10; a line is left out when it has no points, and the bands with the AQI.
+ * The options of the station's US AQI chart, without the theme: one line on its own axis from 0 to 150 in steps of 50, the good and the moderate
+ * bands, and an axis that grows a step when a reading reaches the top, so no marker is cut off.
  */
-export function outdoorChartOptions(series: OutdoorSeries, range: Range, {fmt, t, tokens, now}: AirChartDeps) {
-  const axis = (seriesName: string, title: string, extra: Record<string, unknown>) => ({
-    seriesName,
-    min: 0,
-    title: {text: title, style: {color: tokens.muted, fontWeight: 500}},
-    labels: {formatter: (value: number) => whole(fmt, value)},
-    ...extra,
-  });
-  const lines: {name: string; data: Point[]; color: string; axis: Record<string, unknown>}[] = [];
-  if (series.aqi.length) {
-    const name = t('air.aqiSeries');
-    lines.push({
-      name,
-      data: series.aqi,
-      color: tokens.aqi,
-      axis: axis(name, t('air.axis.aqi'), {forceNiceScale: true}),
-    });
-  }
-  if (series.aqhi.length) {
-    const name = t('air.aqhiSeries');
-    lines.push({
-      name,
-      data: series.aqhi,
-      color: tokens.aqhi,
-      axis: axis(name, t('air.axis.aqhi'), {opposite: true, max: 10, tickAmount: 5}),
-    });
-  }
+export function outdoorAqiOptions(points: Point[], range: Range, deps: AirChartDeps) {
+  const {t, tokens} = deps;
   const band = (from: number, to: number, fillColor: string, opacity: number, label: string) => ({
     y: from,
     y2: to,
@@ -327,25 +341,36 @@ export function outdoorChartOptions(series: OutdoorSeries, range: Range, {fmt, t
     borderColor: 'transparent',
     label: bandLabel(label, tokens.muted),
   });
-  return {
-    chart: {type: 'line'},
-    series: lines.map(({name, data}) => ({name, data})),
-    colors: lines.map(line => line.color),
-    stroke: {width: 2, curve: 'smooth'},
-    xaxis: timeAxis(RANGES[range].days, now, fmt),
-    yaxis: lines.map(line => line.axis),
-    annotations: series.aqi.length
-      ? {
-          yaxis: [
-            band(0, OUTDOOR_BANDS[0], tokens.ok, 0.1, t('air.level.good')),
-            band(OUTDOOR_BANDS[0], OUTDOOR_BANDS[1], tokens.warn, 0.08, t('air.level.moderate')),
-          ],
-        }
-      : {},
-    tooltip: {
-      shared: true,
-      x: {formatter: tooltipDate(RANGES[range].tooltip, fmt)},
-      y: {formatter: (value: number | null) => (value == null ? DASH : whole(fmt, value))},
+  return outdoorLine(
+    t('air.aqiSeries'),
+    points,
+    tokens.aqi,
+    t('air.axis.aqi'),
+    scaleTo(highestOf(points), OUTDOOR_BANDS[0], 150, 5),
+    range,
+    deps,
+    {
+      yaxis: [
+        band(0, OUTDOOR_BANDS[0], tokens.ok, 0.1, t('air.level.good')),
+        band(OUTDOOR_BANDS[0], OUTDOOR_BANDS[1], tokens.warn, 0.08, t('air.level.moderate')),
+      ],
     },
-  };
+  );
+}
+
+/**
+ * The options of Environment Canada's AQHI chart, without the theme: one line on its own axis, from 0 to 12 in steps of three (the scale is 1 to 10,
+ * and the top leaves room for a reading of 10 and for one above), grown a step when a reading reaches the top.
+ */
+export function aqhiOptions(points: Point[], range: Range, deps: AirChartDeps) {
+  const {t, tokens} = deps;
+  return outdoorLine(
+    t('air.aqhiSeries'),
+    points,
+    tokens.aqhi,
+    t('air.axis.aqhi'),
+    scaleTo(highestOf(points), 3, 12, 0.5),
+    range,
+    deps,
+  );
 }

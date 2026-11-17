@@ -13,6 +13,10 @@ const card = (house: House) => pane(house).locator('hp-air-card'); // gone with 
 const sheet = (house: House) => pane(house).locator('hp-sheet');
 const detail = (house: House) => pane(house).locator('hp-air-detail');
 const room = (house: House) => detail(house).locator('hp-air-room');
+// the outdoor air's block: its title and, under it, the station's US AQI chart and the AQHI chart, each with its own heading and caption
+const outdoorBlock = (house: House) =>
+  detail(house).locator('.inner', {has: house.page.locator('h3', {hasText: 'Outdoor air'})});
+const outdoorCharts = (house: House) => outdoorBlock(house).locator('hp-chart');
 const history = (house: House) => pane(house).locator('hp-air-history');
 const tile = (house: House, name: string) => room(house).getByRole('button', {name});
 const CO2 = 'CO₂ 640ppm, opens its history';
@@ -51,8 +55,8 @@ test.describe('on a phone', () => {
       'Week',
       'Month',
     ]);
-    await expect(detail(house).locator('hp-chart')).toHaveCount(1);
-    await expect(detail(house).locator('hp-chart .apexcharts-canvas')).toBeVisible();
+    await expect(outdoorCharts(house)).toHaveCount(2);
+    await expect(detail(house).locator('hp-chart .apexcharts-canvas').first()).toBeVisible();
     await expect(detail(house).locator('.aqmetric')).toHaveCount(0);
     await expect(room(house).getByRole('button', {name: /, opens its history$/})).toHaveCount(7);
     await expect(detail(house).locator('.aqsum').first()).toContainText('AQI 42');
@@ -205,7 +209,7 @@ test.describe('on a tablet', () => {
     await expect(card(house)).toHaveCount(0);
   });
 
-  test('the outside block shows the station, its pollen and the outdoor chart, the only chart of the detail', async ({
+  test('the outside block shows the station, its pollen and the two outdoor charts, the only charts of the detail', async ({
     house,
   }) => {
     await house.tab('air');
@@ -218,10 +222,31 @@ test.describe('on a tablet', () => {
       'Weeds pollen',
       'Mold pollen',
     ]);
-    await expect(detail(house).locator('hp-chart')).toHaveCount(1);
-    await expect(detail(house).locator('hp-chart .apexcharts-canvas')).toBeVisible();
-    await expect(detail(house).locator('.legend')).toHaveText('AQI (Mila station)AQHI (Environment Canada)');
+    await expect(outdoorCharts(house)).toHaveCount(2);
+    await expect(detail(house).locator('hp-chart .apexcharts-canvas').first()).toBeVisible();
+    await expect(outdoorBlock(house).locator('h4')).toHaveText(['AQI (Mila station)', 'AQHI (Environment Canada)']);
+    await expect(outdoorBlock(house).locator('section p')).toHaveText([
+      'US AQI from the station: good up to 50, moderate up to 100.',
+      'The AQHI from Environment Canada, on its 1 to 10 scale.',
+    ]);
     await expect(detail(house).locator('.aqmetric')).toHaveCount(0);
+  });
+
+  test('the outdoor air block sits one gap below the block above it, as every block of the column does', async ({
+    house,
+  }) => {
+    await house.tab('air');
+    await expect(outdoorCharts(house)).toHaveCount(2);
+    const gaps = await detail(house)
+      .locator('.blocks > *')
+      .evaluateAll(els =>
+        els.slice(1).map((el, i) => Math.round(el.getBoundingClientRect().top - els[i].getBoundingClientRect().bottom)),
+      );
+    // the header's own gap above the rooms is the header's; from the rooms down the column has one gap
+    const column = gaps.slice(-2);
+    expect(column, 'rooms, outside, outdoor air: two gaps').toHaveLength(2);
+    expect(column[1], 'above Outdoor air').toBeGreaterThan(0);
+    expect(column[1], 'as above Outside').toBe(column[0]);
   });
 
   test('a tap on Manual sends fan.set_preset_mode and shows the stepper at once, at the fan’s speed', async ({
@@ -355,7 +380,7 @@ test.describe('on a tablet', () => {
     house,
   }) => {
     await house.tab('air');
-    await expect(detail(house).locator('hp-chart .apexcharts-canvas')).toBeVisible();
+    await expect(detail(house).locator('hp-chart .apexcharts-canvas').first()).toBeVisible();
     await tile(house, CO2).click();
     const sheetEl = history(house);
     await expect(sheetEl.locator('hp-sheet h2')).toHaveText('CO₂');

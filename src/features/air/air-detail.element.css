@@ -1,8 +1,7 @@
 /*
- * <hp-air-detail>'s own rules: the column of its blocks, the rooms' grid and the pollen tiles. Moved from the legacy
+ * <hp-air-detail>'s own rules: the column of its blocks, the rooms' grid, the pollen tiles and the outdoor charts' blocks. Moved from the legacy
  * `.aqrooms` rule (extra.css), which this move deleted; the station's state line is the feature's `.aqsum` (styles.css),
- * shared with the card, and the inner cards, the tiles and the legend are the kit's (`.inner`, `.tiles`,
- * `.legend`).
+ * shared with the card, and the inner cards and the tiles are the kit's (`.inner`, `.tiles`).
  */
 :host {
   display: block;
@@ -38,6 +37,15 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
   margin-top: 10px;
 }
-.again {
-  margin-top: 18px;
+.outdoor-chart {
+  margin-top: 14px;
+}
+.inner h4 {
+  margin: 0;
+  font-size: calc(14px * var(--tx));
+  font-weight: 600;
+}
+.outdoor-chart hp-chart {
+  display: block;
+  margin-top: 6px;
 }
