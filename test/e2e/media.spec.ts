@@ -207,7 +207,7 @@ test.describe('the Home scenes row', () => {
     await house.clock.fastForward(3_900);
     await expect(line(house, 'Movie night')).toHaveText('Done');
     await house.clock.fastForward(200);
-    await expect(line(house, 'Movie night')).toHaveText('Tap to run');
+    await expect(line(house, 'Movie night')).toHaveText('Never run');
   });
 
   test('a mode turns on at once and sends input_boolean.turn_on', async ({house}) => {
@@ -228,7 +228,7 @@ test.describe('the Home scenes row', () => {
     const toast = house.root().locator('#toast');
     await expect(toast).toContainText("Didn't work: the service call failed on purpose");
     await expect(toast).toHaveAttribute('role', 'alert');
-    await expect(line(house, 'Movie night')).toHaveText('Tap to run');
+    await expect(line(house, 'Movie night')).toHaveText('Never run');
     await expect(tile(house, 'Kids bedtime')).toHaveAttribute('aria-pressed', 'true');
   });
 

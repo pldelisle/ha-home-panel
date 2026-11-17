@@ -38,7 +38,7 @@ describe('mergeOptions', () => {
 
 describe('baseOptions', () => {
   const deps = {
-    tokens: {font: 'Montserrat', text: '#555', line: '#ddd'},
+    tokens: {font: 'Manrope', text: '#555', line: '#ddd'},
     dark: false,
     reducedMotion: false,
     noData: 'No history yet',
@@ -48,7 +48,7 @@ describe('baseOptions', () => {
     const options = baseOptions(250, deps) as {chart: ChartOptions; grid: ChartOptions; noData: ChartOptions};
     expect(options.chart).toMatchObject({
       height: 250,
-      fontFamily: 'Montserrat',
+      fontFamily: 'Manrope',
       foreColor: '#555',
       background: 'transparent',
     });

@@ -36,7 +36,7 @@ describe('the test house', () => {
         kind: 'scene',
         name: 'Movie night',
         icon: 'tv',
-        subLine: 'Tap to run',
+        subLine: 'Never run',
         active: false,
         pressed: undefined,
         disabled: false,
@@ -70,7 +70,7 @@ describe('the test house', () => {
       subLine,
     ]);
     expect(lines).toEqual([
-      ['scene.movie_night', 'Lancer'],
+      ['scene.movie_night', 'Jamais lancée'],
       ['scene.dinner', 'Il y a 2 h'],
       ['input_boolean.kids_bedtime', 'Désactivé'],
     ]);
@@ -115,8 +115,8 @@ describe('a scene', () => {
   });
 
   test.each(['scene.b', 'scene.d'])('says to tap when its state is no date (%s)', id => {
-    expect(line('en', id)).toBe('Tap to run');
-    expect(line('fr', id)).toBe('Lancer');
+    expect(line('en', id)).toBe('Never run');
+    expect(line('fr', id)).toBe('Jamais lancée');
   });
 
   test('says Done while the overlay holds that it ran, and shows it active', () => {

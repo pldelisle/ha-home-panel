@@ -33,7 +33,7 @@ const cutLabels = (house: House, tab: 'home' | 'lights') =>
 // the labels the issue names, per language: none may be cut
 const NAMED = {
   en: ['Living room'],
-  fr: ['4 allumées', 'Il y a 2 h', 'Lancer', 'En lecture', 'toutes les portes fermées · mouvement en cours'],
+  fr: ['4 allumées', 'Il y a 2 h', 'Jamais lancée', 'En lecture', 'toutes les portes fermées · mouvement en cours'],
 };
 
 for (const lang of ['en', 'fr'] as const) {

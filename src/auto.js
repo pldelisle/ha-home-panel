@@ -287,9 +287,9 @@ export const autoMethods = {
         // exact-match screenshots of the flows flake. Any fixed non-zero seed makes the drawing repeatable.
         handDrawnSeed: 1,
         theme: 'base',
-        fontFamily: this.css('--f-body') || 'Montserrat, sans-serif',
+        fontFamily: this.css('--f-body') || 'Manrope, sans-serif',
         themeVariables: {
-          fontFamily: this.css('--f-body') || 'Montserrat, sans-serif',
+          fontFamily: this.css('--f-body') || 'Manrope, sans-serif',
           fontSize: '13px',
           primaryColor: this.css('--card'),
           primaryBorderColor: this.css('--ring'),

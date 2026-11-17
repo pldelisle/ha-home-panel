@@ -336,7 +336,7 @@ describe('a critical peak or a Hilo challenge', () => {
 
 describe('now playing', () => {
   test('the playing speaker with its place, its title or "Playing", and opens Media', () => {
-    expect(one(nowPlaying, {})).toMatchObject({right: 'Living room', go: {tab: 'media'}, foot: 'Tap for the player'});
+    expect(one(nowPlaying, {})).toMatchObject({right: 'Living room', go: {tab: 'media'}});
     expect(one(nowPlaying, {playing: {place: 'Kitchen', picture: '/p.jpg', title: null, artist: null}}).body).toEqual([
       {kind: 'nowPlaying', picture: '/p.jpg', title: 'Playing', artist: ''},
     ]);

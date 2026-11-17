@@ -78,9 +78,10 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  background: var(--card2);
-  border-radius: 14px;
-  padding: 9px 12px;
+  background: var(--ctl-bg);
+  box-shadow: var(--ctl-edge);
+  border-radius: 16px;
+  padding: 12px 14px;
   min-width: 0;
 }
 .schip:focus-visible {
@@ -97,15 +98,6 @@
       background-color 0.2s ease,
       box-shadow 0.2s ease,
       color 0.2s ease;
-  }
-}
-:host([glass]) .schip {
-  background: var(--g-tile);
-  box-shadow: var(--g-edge-s);
-}
-@media (prefers-reduced-transparency: reduce) {
-  :host([glass]) .schip {
-    background: var(--card2);
   }
 }
 .schip > div {
@@ -133,17 +125,17 @@
   color: var(--fg);
 }
 .schip .sic {
-  width: 30px;
-  height: 30px;
-  border-radius: 10px;
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
   display: grid;
   place-items: center;
-  background: var(--card);
+  background: var(--card2);
   color: var(--fg3);
   flex: none;
 }
 :host([glass]) .schip .sic {
-  background: var(--g-sel);
+  background: var(--g-tile);
   border-color: transparent;
 }
 .schip.warn .sic {

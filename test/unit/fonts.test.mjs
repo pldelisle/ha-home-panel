@@ -1,49 +1,67 @@
-// src/fonts.js declares the bundled Montserrat (spec 08). Its file names and unicode ranges must be the ones the
-// installed @fontsource/montserrat ships and declares, so that a bump which renames a file or moves a range fails here
-// rather than on a tablet; and the rules go into the document once, however often the panel redraws itself.
+// src/fonts.js declares the bundled faces, Manrope and JetBrains Mono (spec 08). Their file names and unicode ranges must
+// be the ones the installed Fontsource packages ship and declare, so that a bump which renames a file or moves a range
+// fails here rather than on a tablet; and the rules go into the document once, however often the panel redraws itself.
 import {test, expect, afterEach} from 'vitest';
 import {existsSync, readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {dirname, join} from 'node:path';
-import {FONT_FILES, FONT_SUBSETS, FONT_WEIGHTS, fontFaces, ensureFonts} from '../../src/fonts.js';
+import {
+  FONT_FACES,
+  FONT_FILES,
+  FONT_SOURCES,
+  FONT_SUBSETS,
+  FONT_WEIGHTS,
+  fontFaces,
+  ensureFonts,
+} from '../../src/fonts.js';
 
-const PKG = dirname(createRequire(import.meta.url).resolve('@fontsource/montserrat/package.json'));
-const pkgFile = f => readFileSync(join(PKG, f), 'utf8');
+const require = createRequire(import.meta.url);
+const pkgDir = pkg => dirname(require.resolve(`@fontsource/${pkg}/package.json`));
+const pkgFile = (pkg, f) => readFileSync(join(pkgDir(pkg), f), 'utf8');
 const noSpace = s => s.replaceAll(/\s/g, '');
 
-test("the eight files are Fontsource's, weights 400 to 700 in the latin and latin-ext subsets", () => {
+test("the files are Fontsource's: Manrope 400 to 700 and JetBrains Mono 400, in the latin and latin-ext subsets", () => {
+  expect(FONT_FACES.map(f => [f.family, f.weights])).toEqual([
+    ['Manrope', [400, 500, 600, 700]],
+    ['JetBrains Mono', [400]],
+  ]);
   expect(FONT_WEIGHTS).toEqual([400, 500, 600, 700]);
   expect(FONT_FILES.toSorted()).toEqual([
-    'montserrat-latin-400-normal.woff2',
-    'montserrat-latin-500-normal.woff2',
-    'montserrat-latin-600-normal.woff2',
-    'montserrat-latin-700-normal.woff2',
-    'montserrat-latin-ext-400-normal.woff2',
-    'montserrat-latin-ext-500-normal.woff2',
-    'montserrat-latin-ext-600-normal.woff2',
-    'montserrat-latin-ext-700-normal.woff2',
+    'jetbrains-mono-latin-400-normal.woff2',
+    'jetbrains-mono-latin-ext-400-normal.woff2',
+    'manrope-latin-400-normal.woff2',
+    'manrope-latin-500-normal.woff2',
+    'manrope-latin-600-normal.woff2',
+    'manrope-latin-700-normal.woff2',
+    'manrope-latin-ext-400-normal.woff2',
+    'manrope-latin-ext-500-normal.woff2',
+    'manrope-latin-ext-600-normal.woff2',
+    'manrope-latin-ext-700-normal.woff2',
   ]);
-  for (const f of FONT_FILES) expect(existsSync(join(PKG, 'files', f)), f).toBe(true);
+  for (const [pkg, f] of FONT_SOURCES)
+    expect(existsSync(join(dirname(require.resolve(`${pkg}/package.json`)), 'files', f)), f).toBe(true);
 });
 
-test('each subset has the unicode-range Fontsource declares for it, in the order its CSS declares them', () => {
-  const ranges = JSON.parse(pkgFile('unicode.json'));
-  for (const [subset, range] of FONT_SUBSETS) {
-    expect(range, subset).toBe(noSpace(ranges[subset]));
-    // the weight files (400.css …) declare the same range on the block for this subset's file
-    for (const w of FONT_WEIGHTS) {
-      const block = pkgFile(`${w}.css`)
-        .split('@font-face')
-        .find(b => b.includes(`/montserrat-${subset}-${w}-normal.woff2`));
-      expect(noSpace(block.match(/unicode-range:([^;]+);/)[1]), `${w}.css, ${subset}`).toBe(range);
+test('each subset has the unicode-range Fontsource declares for it, in the order its CSS declares them, in both packages', () => {
+  for (const {pkg, weights} of FONT_FACES) {
+    const ranges = JSON.parse(pkgFile(pkg, 'unicode.json'));
+    for (const [subset, range] of FONT_SUBSETS) {
+      expect(range, `${pkg} ${subset}`).toBe(noSpace(ranges[subset]));
+      // the weight files (400.css …) declare the same range on the block for this subset's file
+      for (const w of weights) {
+        const block = pkgFile(pkg, `${w}.css`)
+          .split('@font-face')
+          .find(b => b.includes(`/${pkg}-${subset}-${w}-normal.woff2`));
+        expect(noSpace(block.match(/unicode-range:([^;]+);/)[1]), `${pkg} ${w}.css, ${subset}`).toBe(range);
+      }
     }
+    // latin last: where two ranges overlap, the face declared last is used
+    const css = pkgFile(pkg, '400.css');
+    const at = subset => css.indexOf(`/${pkg}-${subset}-400-normal.woff2`);
+    expect(FONT_SUBSETS.map(([subset]) => subset).toSorted((a, b) => at(a) - at(b))).toEqual(
+      FONT_SUBSETS.map(([subset]) => subset),
+    );
   }
-  // latin last: where two ranges overlap, the face declared last is used
-  const css = pkgFile('400.css');
-  const at = subset => css.indexOf(`/montserrat-${subset}-400-normal.woff2`);
-  expect(FONT_SUBSETS.map(([subset]) => subset).toSorted((a, b) => at(a) - at(b))).toEqual(
-    FONT_SUBSETS.map(([subset]) => subset),
-  );
 });
 
 // the subset whose range holds a character: the last declared one, as the browser picks it
@@ -67,18 +85,19 @@ test('French needs only the latin file; latin-ext is fetched for the rarer Latin
   expect(subsetOf('₂')).toBe(null);
 });
 
-test('the rules: eight faces, swap, each file under the base URL it is given', () => {
+test('the rules: one face per file, swap, each file under the base URL it is given', () => {
   const base = 'https://ha.local/hacsfiles/ha-home-panel/fonts/';
   const rules = fontFaces(base).split('\n');
-  expect(rules).toHaveLength(8);
+  expect(rules).toHaveLength(FONT_FILES.length);
   const re =
-    /^@font-face\{font-family:'Montserrat';font-style:normal;font-weight:(\d+);font-display:swap;src:url\("([^"]+)"\) format\('woff2'\);unicode-range:([^}]+)\}$/;
+    /^@font-face\{font-family:'([^']+)';font-style:normal;font-weight:(\d+);font-display:swap;src:url\("([^"]+)"\) format\('woff2'\);unicode-range:([^}]+)\}$/;
   const seen = rules.map(rule => {
-    const [, weight, url, range] = rule.match(re) ?? [];
+    const [, family, weight, url, range] = rule.match(re) ?? [];
     expect(url, rule).toBeDefined();
     const file = url.slice(base.length);
     expect(url).toBe(base + file);
-    const [, subset, w] = file.match(/^montserrat-(latin(?:-ext)?)-(\d+)-normal\.woff2$/);
+    const [, pkg, subset, w] = file.match(/^(manrope|jetbrains-mono)-(latin(?:-ext)?)-(\d+)-normal\.woff2$/);
+    expect(family).toBe(FONT_FACES.find(f => f.pkg === pkg).family);
     expect(w).toBe(weight);
     expect(range).toBe(FONT_SUBSETS.find(([s]) => s === subset)[1]);
     return file;
