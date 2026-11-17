@@ -1,4 +1,4 @@
-// <hp-dialog>: the kit's confirmation: a title, a line, optional slotted content, Cancel and a named action, in a native `<dialog>` opened with `showModal()` (ADR 0035).
+// <hp-dialog>: the kit's confirmation: a title, a line, optional slotted content, Cancel and a named action, in a native `<dialog>` opened with `showModal()` (ADR 0036).
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over the platform's modal `<dialog>`: the browser gives the top layer, the inert page, the focus trap and its return; properties down (`open`, the words),
 // events up (`dialog-confirm`, `dialog-cancel`), the owner holding what is asked (Lit docs, Events). Escape and a tap on the backdrop cancel; the shared rules are in dialogs.ts.
 // Must not: send a service call, know what it confirms, open a sheet or another dialog, or hold a draft (an editor with Cancel and Save owns its own `<dialog>` and takes the look and `stopEscape` from dialogs.ts).

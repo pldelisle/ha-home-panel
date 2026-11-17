@@ -26,7 +26,7 @@ import '../../ui/chart.ts'; // defines <hp-chart>
 import type {ChartOptions} from '../../ui/chart-options.ts';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {StoreController} from '../../ui/controllers/store-controller.ts';
-import {lensLike} from '../../ui/lens.ts';
+import {lens} from '../../ui/lens.ts';
 import '../../ui/pane-header.ts'; // defines <hp-pane-header>
 import '../../ui/range-tabs.ts'; // defines <hp-range-tabs>
 import type {RangeChangeDetail} from '../../ui/range-tabs.ts';
@@ -140,7 +140,7 @@ export class EnergyDetail extends LitElement {
           </div>
         </div>
       </div>
-      ${lensLike(this.getRootNode())}`;
+      ${lens}`;
   }
 
   // On a tablet the detail opens with its own header, the pane's being the phone's; on a phone the pane or the sheet draws it, tabs included.

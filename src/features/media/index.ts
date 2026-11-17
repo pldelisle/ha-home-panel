@@ -2,7 +2,7 @@
 // Pattern: plug-in (Fowler, PoEAA, Plugin): the feature's folder says what it is as data and one `pane` template, and its element is
 // linked by importing this module. The pane binds the tile whose controls are open to the sheet host's answers, which the descriptor's
 // `env` gives it (ADR 0021).
-// Must not: draw or hold state, import the guest or another feature, or read an entity (the brief line reads the store it is given).
+// Must not: draw or hold state, import another feature, or read an entity (the brief line reads the store it is given).
 import {html} from 'lit';
 import {readMedia} from './inputs.ts';
 import {mediaBrief} from './model.ts';

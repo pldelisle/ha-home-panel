@@ -1,6 +1,6 @@
 // The kit's stylesheets as what a shadow root adopts: each file of this folder through `forShadow`, as a Lit CSSResult.
 // Pattern: adopted stylesheets (Lit docs, Styles): one constructed sheet per file, shared by every instance of an element;
-// one source, two views (ADR 0019): src/styles.js concatenates the same files, as written, into the legacy sheet.
+// one source, two views (ADR 0019): src/shell/frame-styles.ts concatenates the same files, as written, into the frame's sheet.
 // Must not: hold a rule (the files do), adopt the tokens (they reach an element by inheritance from `.app`), or import the shell.
 import {unsafeCSS, type CSSResult} from 'lit';
 import badgeText from './badge.css?inline';

@@ -12,7 +12,7 @@ import shared from './styles.css?inline';
 import own from './automation-list.element.css?inline';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {ico} from '../../ui/icons.ts';
-import {lensLike} from '../../ui/lens.ts';
+import {lens} from '../../ui/lens.ts';
 import {common} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
@@ -61,7 +61,7 @@ export class AutomationList extends LitElement {
           )}
         </ul>
       </section>
-      ${lensLike(this.getRootNode())}`;
+      ${lens}`;
   }
 }
 

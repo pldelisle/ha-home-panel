@@ -11,7 +11,7 @@ import {StoreController} from '../ui/controllers/store-controller.ts';
 import {SheetRequestEvent, TabSelectEvent} from '../ui/events.ts';
 import type {GlanceView} from '../ui/glance.ts';
 import {ico} from '../ui/icons.ts';
-import {lensLike} from '../ui/lens.ts';
+import {lens} from '../ui/lens.ts';
 import {common} from '../ui/styles/index.ts';
 import {forShadow} from '../ui/styles/host.ts';
 
@@ -80,7 +80,7 @@ export class GlanceTile extends LitElement {
           ><span class="go" aria-hidden="true">›</span></span
         ><span class=${view.missing ? 'hs' : 'hv num'}>${view.value}</span><span class="hs">${view.line}</span>
       </button>
-      ${lensLike(this.getRootNode())}`;
+      ${lens}`;
   }
 }
 

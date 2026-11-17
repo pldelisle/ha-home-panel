@@ -31,7 +31,7 @@ import {emptyChartText} from '../../ui/chart-notice.ts';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {StoreController} from '../../ui/controllers/store-controller.ts';
 import {SheetDismissEvent} from '../../ui/events.ts';
-import {lensLike} from '../../ui/lens.ts';
+import {lens} from '../../ui/lens.ts';
 import '../../ui/range-tabs.ts'; // defines <hp-range-tabs>
 import type {RangeChangeDetail} from '../../ui/range-tabs.ts';
 import {RANGES, type Range} from '../../ui/ranges.ts';
@@ -155,7 +155,7 @@ export class AirHistory extends LitElement {
           ${this.renderBody(`${text.title}. ${text.caption}`)}
         </div>
       </hp-sheet>
-      ${lensLike(this.getRootNode())}`;
+      ${lens}`;
   }
 
   // the chart with its legend, or the line that says why there is none: the failure, the wait, no points at all

@@ -1,14 +1,13 @@
-// The panel's two faces ship with it: Manrope for every word and figure, weights 400 to 700, and JetBrains Mono for code
-// (the config card's paths), weight 400; each in Fontsource's latin and latin-ext subsets, which vite.config.ts copies
-// from @fontsource/manrope and @fontsource/jetbrains-mono into dist/fonts/ under their own names. The tablet never asks
-// Google for anything, and the fonts are there when the house has no internet (docs/specs/08-bundled-font.md).
+// The panel's two faces: Manrope for every word and figure (400 to 700) and JetBrains Mono for code (400), in Fontsource's
+// latin and latin-ext subsets, which vite.config.ts copies into dist/fonts/ under their own names (docs/specs/08-bundled-font.md).
+// Pattern: a static table and the one function that declares it in the document (moved from src/fonts.js with the guest, #277).
+// Must not: be imported through CSS (Vite would hash the names), ask Google for anything, or declare the faces twice.
 
 /**
  * The faces: the family name the stylesheet asks for, the Fontsource package (and file prefix) it comes from, and the
  * weights the stylesheet uses. Automations labels ask for 800, which draws with the 700 file.
- * @type {ReadonlyArray<{family: string, pkg: string, weights: number[]}>}
  */
-export const FONT_FACES = [
+export const FONT_FACES: ReadonlyArray<{family: string; pkg: string; weights: number[]}> = [
   {family: 'Manrope', pkg: 'manrope', weights: [400, 500, 600, 700]},
   {family: 'JetBrains Mono', pkg: 'jetbrains-mono', weights: [400]},
 ];
@@ -22,9 +21,8 @@ export const FONT_WEIGHTS = FONT_FACES[0].weights;
  * ranges). latin has ASCII, Latin-1 (every French accent, « », the no-break space), Œ œ and the punctuation; latin-ext
  * has the rest of Latin (Ÿ among them), and a browser fetches its file only when a page shows one of those characters.
  * The order is Fontsource's: where the ranges overlap (three combining marks) the face declared last, latin, is the one used.
- * @type {Array<[string, string]>}
  */
-export const FONT_SUBSETS = [
+export const FONT_SUBSETS: Array<[string, string]> = [
   [
     'latin-ext',
     'U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF',
@@ -36,24 +34,23 @@ export const FONT_SUBSETS = [
 ];
 
 /** Fontsource's name for one file, kept as it is in dist/fonts/ */
-const fontFile = (/** @type {string} */ pkg, /** @type {string} */ subset, /** @type {number} */ weight) =>
-  `${pkg}-${subset}-${weight}-normal.woff2`;
+const fontFile = (pkg: string, subset: string, weight: number) => `${pkg}-${subset}-${weight}-normal.woff2`;
 
 /**
  * Every file the panel ships, with the face it belongs to, in declaration order.
- * @type {Array<{family: string, pkg: string, subset: string, range: string, weight: number, file: string}>}
  */
-const FONT_ENTRIES = FONT_FACES.flatMap(({family, pkg, weights}) =>
-  FONT_SUBSETS.flatMap(([subset, range]) =>
-    weights.map(weight => ({family, pkg, subset, range, weight, file: fontFile(pkg, subset, weight)})),
-  ),
-);
+const FONT_ENTRIES: Array<{family: string; pkg: string; subset: string; range: string; weight: number; file: string}> =
+  FONT_FACES.flatMap(({family, pkg, weights}) =>
+    FONT_SUBSETS.flatMap(([subset, range]) =>
+      weights.map(weight => ({family, pkg, subset, range, weight, file: fontFile(pkg, subset, weight)})),
+    ),
+  );
 
 /** The files in dist/fonts/; vite.config.ts copies exactly these. */
 export const FONT_FILES = FONT_ENTRIES.map(e => e.file);
 
 /** Each file with the Fontsource package it is copied from: `[package, file]`. */
-export const FONT_SOURCES = FONT_ENTRIES.map(e => /** @type {[string, string]} */ ([`@fontsource/${e.pkg}`, e.file]));
+export const FONT_SOURCES = FONT_ENTRIES.map((e): [string, string] => [`@fontsource/${e.pkg}`, e.file]);
 
 // dist/fonts/, beside the module Home Assistant loaded: /local/home-panel/home-panel.js?v=2.11.1 gives
 // /local/home-panel/fonts/, without the query (the names are stable, so a cached font outlives an update). The module's
@@ -63,7 +60,7 @@ const moduleUrl = import.meta.url;
 const FONTS_URL = new URL('fonts/', moduleUrl).href;
 
 /** The @font-face rules for every file under `base` (a URL ending in a slash). */
-export const fontFaces = (base = FONTS_URL) =>
+export const fontFaces = (base: string = FONTS_URL): string =>
   FONT_ENTRIES.map(
     ({family, range, weight, file}) =>
       `@font-face{font-family:'${family}';font-style:normal;font-weight:${weight};font-display:swap;src:url("${base}${file}") format('woff2');unicode-range:${range}}`,
@@ -73,7 +70,7 @@ export const fontFaces = (base = FONTS_URL) =>
  * Declares the faces in the document, once. Chromium does not apply @font-face rules inside a shadow root, so they go
  * into document.head, where the panel's shadow root (and the charts and flows drawn in it) find the families by name.
  */
-export function ensureFonts() {
+export function ensureFonts(): void {
   if (document.getElementById('home-panel-fonts')) return;
   const style = document.createElement('style');
   style.id = 'home-panel-fonts';

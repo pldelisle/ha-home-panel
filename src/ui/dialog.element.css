@@ -1,5 +1,5 @@
 /*
- * The kit's dialog (ADR 0035): a native `<dialog>` opened with `showModal()`, so the browser gives it the top layer, the focus, Escape and the backdrop. A dialog floats above the content, so it is
+ * The kit's dialog (ADR 0036): a native `<dialog>` opened with `showModal()`, so the browser gives it the top layer, the focus, Escape and the backdrop. A dialog floats above the content, so it is
  * the navigation layer and takes the glass when glass is on (docs/design.md, "Two layers"); what a feature slots into it is content and stays opaque. On a phone a confirmation rises from the bottom as an
  * action sheet does, and a feature's editor (`.dsheet`, in the feature's own file) fills the screen as a sheet (HIG, Sheets and Alerts).
  */

@@ -1,4 +1,4 @@
-# 0035: Modal interruptions are native dialogs; navigation sheets stay the host's
+# 0036: Modal interruptions are native dialogs; navigation sheets stay the host's
 
 Status: accepted (2026-11-17)
 

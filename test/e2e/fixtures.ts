@@ -53,7 +53,7 @@ export type Chunk = {url: string; body: string};
 /** where the build puts Manrope in the served panel (dist/fonts/, served under /panel/) */
 export const FONT_URL = /\/panel\/fonts\//;
 
-/** the weights the panel's stylesheet uses, which src/fonts.js declares, as `document.fonts` writes them */
+/** the weights the panel's stylesheet uses, which src/ui/fonts.ts declares, as `document.fonts` writes them */
 export const FONT_WEIGHTS = ['400', '500', '600', '700'];
 
 // a request to Google's font hosts fails the test (spec 08)

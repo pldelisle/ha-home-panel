@@ -1,7 +1,7 @@
 // <hp-car-departure>: the Car tab's departure row (what Ford saved, and its switch) and its editor, a sheet with Cancel and Save (docs/apple-hig-audit-car-2026-11-17.md, finding 5): the time, the cabin
 // to choose, and the seven days as a checkmark list; Save waits, and says why, until `validate` allows it.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over `departureControls`, the model's pure view; the draft is its state, edited locally, validated and sent once (a form draft: Fowler's
-// Unit of Work in miniature), begun again when Ford's saved schedule changes (the cabin choice kept: Ford does not report it) and when the editor is cancelled. The editor is a native `<dialog>` (ADR 0035): Cancel, Save or Escape close it, never a tap on the backdrop, which would drop the draft.
+// Unit of Work in miniature), begun again when Ford's saved schedule changes (the cabin choice kept: Ford does not report it) and when the editor is cancelled. The editor is a native `<dialog>` (ADR 0036): Cancel, Save or Escape close it, never a tap on the backdrop, which would drop the draft.
 // Must not: read an entity or the clock (the inputs and the model did), build a command by hand (commands.ts does), send a draft that `validate` refuses, or keep the draft anywhere else.
 import {LitElement, html, nothing, unsafeCSS} from 'lit';
 import {createRef, ref, type Ref} from 'lit/directives/ref.js';

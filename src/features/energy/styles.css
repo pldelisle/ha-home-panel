@@ -1,7 +1,7 @@
 /*
  * The Energy feature's shared rules (spec 19, "Styles"): the box the two cards draw (`.ebox`) and its title line (`.etop`),
  * adopted by the water heater's and Hilo's card elements through `forShadow`, so each is written once (ADR 0019); the box draws on an inner element, so the
- * guest's lens backdrop reaches it. Known copies of legacy rules the panel's other cards still draw, each under an Energy selector: `.card`,
+ * frame's lens backdrop reaches it. Known copies of legacy rules the panel's other cards still draw, each under an Energy selector: `.card`,
  * `.card .top`, `.card .top .right`, `.lbl` and `.go` (base.css, glass.css), which the Home move (#268) deletes; `:host([framed])`, the card inside
  * a sheet, is the only copy left of `#cardhost > .card` (phone.css), which #239 deleted along with its last users.
  */

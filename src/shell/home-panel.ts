@@ -1,17 +1,8 @@
-// <home-panel>, the one element Home Assistant mounts: it owns the store, the API client, the settings and the optimistic values, provides them through context, draws the frame from the registry and hosts the guest in its one shadow root.
+// <home-panel>, the one element Home Assistant mounts: it owns the store, the API client, the settings and the optimistic values, provides them through context and draws the frame from the registry in its one shadow root.
 // Pattern: composition root (Seemann, Dependency Injection Principles, Practices, and Patterns); humble object (Meszaros, xUnit Test Patterns): it forwards `hass`, `panel` and `narrow` and decides nothing the registry and the store decide.
-// It reads `localStorage`; the browser's locale defaults are read here and, until the formatters move, by the guest. It owns `tab`, `compact`, the idle state, which tabs the house shows, whether the settings popup and the Status checks are open, whether a live activity runs and, through controllers, the appearance and the open sheet.
-// Must not: import legacy code (the guest arrives through registerGuest), or decide what the store and the models decide.
-// Lit binds nothing inside a guest container, and the guest writes nothing outside its containers.
-import {
-  LitElement,
-  html,
-  unsafeCSS,
-  type CSSResultGroup,
-  type CSSResultOrNative,
-  type PropertyValues,
-  type TemplateResult,
-} from 'lit';
+// It reads `localStorage` and the browser's locale defaults. It owns `tab`, `compact`, the idle state, which tabs the house shows, whether the settings popup and the Status checks are open, whether a live activity runs and, through controllers, the appearance and the open sheet.
+// Must not: decide what the store and the models decide. The legacy panel it hosted as its guest is gone (#277, ADR 0035).
+import {LitElement, html, unsafeCSS, type PropertyValues, type TemplateResult} from 'lit';
 import {classMap} from 'lit/directives/class-map.js';
 import {ifDefined} from 'lit/directives/if-defined.js';
 import {keyed} from 'lit/directives/keyed.js';
@@ -21,6 +12,7 @@ import {createApi} from '../core/api.ts';
 import {resolveConfig} from '../core/config.ts';
 import type {PanelHass} from '../core/hass.ts';
 import {browserDefaults} from '../core/i18n/browser.ts';
+import {ENGLISH_TAG, panelLocale} from '../core/i18n/locale.ts';
 import {createSettings, type KeyValueStorage} from '../core/settings.ts';
 import {createStatisticsCache, STATISTICS_TTL_MS} from '../core/statistics-cache.ts';
 import type {ForecastEntry} from '../core/ha.ts';
@@ -42,7 +34,7 @@ import type {SheetDismissEvent, SheetRequestEvent, TabSelectEvent, ToastEvent} f
 import {AppearanceController} from './appearance.ts';
 import type {FeatureDescriptor, FeatureEnv, FeatureKey} from '../ui/feature.ts';
 import {FEATURES, UNDER_MORE, isFeatureKey, visibleTab} from './features.ts';
-import {createGuest, guestStyles, type GuestContext, type GuestRenderer, type ShellForGuest} from './guest.ts';
+import {FRAME_CSS} from './frame-styles.ts';
 import './idle-screen.ts'; // defines <hp-idle-screen>
 import {IdleTimer, type IdleState} from './idle-timer.ts';
 import {headerStyles, type SettingsToggleEvent} from './header.ts'; // defines <hp-header>
@@ -50,8 +42,10 @@ import {homePaneStyles} from './home-pane.ts';
 import type {ForecastEvent} from '../features/weather/forecast-controller.ts';
 import {STATUS_SHEET, type LiveActivitiesEvent} from '../features/live/index.ts'; // defines <hp-live-pill> and <hp-status-popup>
 import './more-sheet.ts'; // defines <hp-more-sheet>
-import '../ui/pane-header.ts'; // defines <hp-pane-header>, which the legacy panes' headers are
+import '../ui/pane-header.ts'; // defines <hp-pane-header>
 import {SheetMediator} from './sheet-host.ts';
+import {ensureFonts} from '../ui/fonts.ts';
+import {lens} from '../ui/lens.ts';
 import '../ui/toast.ts'; // defines <hp-toast>
 import {expiry, nextToast, type ToastAction, type ToastState} from '../ui/toast-schedule.ts';
 
@@ -65,6 +59,10 @@ const PHONE = '(max-width:599px)';
 // The device's own appearance: dark, and less transparency. The theme follows the first on auto; the glass lens yields to the second.
 const DARK = '(prefers-color-scheme: dark)';
 const REDUCED_TRANSPARENCY = '(prefers-reduced-transparency: reduce)';
+// Liquid Glass's Mercury drop (v1.19.0): whether this engine runs an SVG filter inside backdrop-filter (Chromium only); WebKit drops
+// url() filters and keeps the frosted glass of the CSS. Asked once: the engine does not change.
+const LENS_OK =
+  typeof navigator !== 'undefined' && 'userAgentData' in navigator && CSS.supports('backdrop-filter', 'url(#x)');
 // the phone's More sheet, the first element sheet of the host
 const MORE_SHEET = 'shell.more';
 
@@ -105,7 +103,7 @@ export class HomePanel extends LitElement {
   declare panel: PanelInfo | undefined;
   /** The tab asked for, as the settings remember it: a hidden or unknown one shows Home (`tab`). */
   declare private selected: string;
-  /** Counts the guest's fresh starts: the frame it draws into is keyed on it, so each start finds new elements. */
+  /** Counts the panel's fresh draws (a new config or language after the first): the frame is keyed on it, so each starts with new elements. */
   declare private epoch: number;
   /** The idle timer's state, drawn as `.app.idle`, the overlay's `hidden` and its `wake` class, and handed to <hp-idle-screen>. */
   declare private idleState: IdleState;
@@ -121,14 +119,9 @@ export class HomePanel extends LitElement {
   declare private attention: number;
   private liveRunning = false;
 
-  // The legacy stylesheet is the guest's, so it comes with the guest (registerGuest) instead of an import of
-  // src/styles.js, which the dependency rule forbids here. Lit adopts it once for every instance, as a constructed
-  // sheet, where the class used to write a <style> tag into each root: the rules are the same text.
-  protected static override finalizeStyles(styles?: CSSResultGroup): CSSResultOrNative[] {
-    return super.finalizeStyles([unsafeCSS(guestStyles()), styles ?? []]);
-  }
-  // The Home pane and the header draw in this root's light DOM (ADR 0032, ADR 0033): their rules follow the legacy sheet here.
-  static override styles = [homePaneStyles, headerStyles];
+  // The frame's rules (the rail, the panes, the overlays, the glass), then the Home pane's and the header's, which draw in this
+  // root's light DOM (ADR 0032, ADR 0033). Lit adopts them once for every instance, as constructed sheets.
+  static override styles = [unsafeCSS(FRAME_CSS), homePaneStyles, headerStyles];
 
   // this panel's services, none shared with another panel (ADR 0012)
   private readonly store = createStore(storeOptions());
@@ -145,7 +138,7 @@ export class HomePanel extends LitElement {
   /** The daily forecast the Weather pane's subscription last heard, for the elements that read tomorrow (ADR 0030). */
   private readonly forecast: ContextProvider<typeof forecastContext>;
   // The shell draws again when a registry, the language or the user changes: it reads no entity itself; the descriptors' `available`
-  // is asked at every change (`onAvailability`), and the guest tells it through `requestFrame` when its answer about the house changes. It passes the store itself because
+  // is asked at every change (`onAvailability`). It passes the store itself because
   // a context provider never answers its own element.
   private readonly storeController = new StoreController(this, {
     store: this.store,
@@ -175,31 +168,29 @@ export class HomePanel extends LitElement {
     reducedTransparency: new MediaQueryController(this, REDUCED_TRANSPARENCY),
     touches: listener => this.idle.onTouch(listener),
   });
-  // which sheet is open, Escape and where focus goes back to; the guest registers its sheets and popups with it
+  // which sheet is open, Escape and where focus goes back to; the shell registers its two popups with it
   private readonly sheets = new SheetMediator(this, {
     root: () => this.renderRoot as ShadowRoot,
-    guest: () => this.guest,
     paneOf: id => FEATURES.find(f => f.detailSheet === id)?.key,
-    tab: () => this.tab,
     compact: () => this.compact,
     setTab: key => this.setTab(key),
   });
-  private readonly forGuest: ShellForGuest = this.doors();
-  private guest: GuestRenderer | undefined;
-  private guestConnected = false;
+  // the rail's buttons wait for the first answer about the house (`connectFrame`), so no tab shows for a frame and goes
+  private answered = false;
+  // what the frame was last drawn for: the store's config generation and the language; a change after the first draw starts it over
+  private drawnFor: string | undefined;
   private settingsOff: (() => void) | undefined;
   private statusOff: (() => void) | undefined;
   private availabilityOff: (() => void) | undefined;
-  // which tabs this house shows, asked of the descriptors when the answer may have changed (the store told us, or the guest)
+  // which tabs this house shows, asked of the descriptors when the answer may have changed (the store told us)
   private stale = true;
   private shown: Readonly<Partial<Record<FeatureKey, boolean>>> = {};
   private visible: FeatureKey = 'home';
   private toldTab: FeatureKey | undefined;
   private activeEpoch = -1;
   private toldCompact = false;
-  // the appearance as the last render drew it, and as the guest last heard it: the guest is told once the DOM follows
+  // the appearance as the last render drew it
   private drawn: Appearance | undefined;
-  private toldAppearance: Appearance | undefined;
   private phoneNow = false;
   private idleCompact = this.phone.matches; // what the idle timer was last told about the phone's shape
   // the word under each section of the More sheet, asked of the descriptors when the sheet opens
@@ -208,11 +199,10 @@ export class HomePanel extends LitElement {
   // the one timer of this panel's toast: it sends `expire` when the schedule says a done toast goes
   private toastTimer: ReturnType<typeof setTimeout> | undefined;
 
-  /** What a descriptor may read: this panel's store and, until a subject is a feature of its own, the guest's answers. */
+  /** What a descriptor may read: this panel's store and the sheet host's answers. */
   private get env(): FeatureEnv {
     return {
       store: this.store,
-      guest: this.guest as GuestRenderer,
       sheetOpen: id => this.sheets.isOpen(id),
       sheetDetail: id => this.sheets.detail(id),
       attention: this.attention,
@@ -238,31 +228,8 @@ export class HomePanel extends LitElement {
     new ContextProvider(this, {context: optimisticContext, initialValue: this.optimistic});
     this.forecast = new ContextProvider(this, {context: forecastContext, initialValue: []});
     // The store starts from the empty config, so a panel that arrives with none is no change; the store counts its
-    // first config as one even then, which would make the guest draw a second time for nothing.
+    // first config as one even then, which would make the frame draw a second time for nothing.
     this.store.setPanelConfig({});
-  }
-
-  // the shell's doors for the guest: a few calls back, and `tab`, `compact` and `narrow` read as the element is when asked
-  private doors(): ShellForGuest {
-    const tab = () => this.tab;
-    const compact = () => this.compact;
-    const appearance = () => this.appearance.value;
-    return {
-      setTab: key => this.setTab(key),
-      requestFrame: () => this.requestFrame(),
-      resetFrame: () => this.resetFrame(),
-      idle: {arm: () => this.idle.arm(), sleepNow: () => this.idle.sleepNow()},
-      sheets: this.sheets,
-      get tab() {
-        return tab();
-      },
-      get compact() {
-        return compact();
-      },
-      get appearance() {
-        return appearance();
-      },
-    };
   }
 
   /** The tab shown: the one chosen, or Home when this house hides it or the settings name no tab. */
@@ -275,14 +242,12 @@ export class HomePanel extends LitElement {
     return this.phoneNow;
   }
 
-  /** Shows a tab: remembers it, draws the frame with its pane open, then tells the guest, which draws its part. */
+  /** Shows a tab: remembers it and draws the frame with its pane open. */
   private setTab(key: FeatureKey): void {
     this.selected = isFeatureKey(key) ? key : 'home';
     this.settings.set('tab', this.selected);
     this.idle.arm();
-    // the update tells the guest when the tab shown changed (`updated`); only an element not yet drawn skips it
     this.flush();
-    if (!this.hasUpdated) this.tellTab();
   }
 
   private requestFrame(): void {
@@ -290,10 +255,9 @@ export class HomePanel extends LitElement {
     this.requestUpdate();
   }
 
-  // The guest starts over: new frame elements, as the old build wrote new ones, so no listener it wired and no card it
-  // moved into a pane survives into its next draw. It needs the elements at once, so the update runs now.
+  // A new config or language draws the frame anew, as the legacy panel's draw did (ADR 0016): new elements, the sheets
+  // and the popups closed. The update runs now, so the frame is new before anything else reads it.
   private resetFrame(): void {
-    // the guest's sheets start over with it, and so does More: it closes, as it did when the guest wrote it
     this.sheets.forget(MORE_SHEET);
     this.statusOpen = false;
     this.settingsOpen = false;
@@ -404,8 +368,8 @@ export class HomePanel extends LitElement {
     this.toastTimer = at === null ? undefined : setTimeout(() => this.toastAct({type: 'expire'}), at - Date.now());
   }
 
-  // Lit renders in a microtask. The guest looks its elements up right after it asks for a change, so these two
-  // requests render at once, through the hook Lit documents for taking over the timing of an update.
+  // Lit renders in a microtask. A tab's pane and a fresh frame are drawn at once, through the hook Lit documents for taking
+  // over the timing of an update, so the pane told it is active is the one in the page.
   private flush(): void {
     if (!this.hasUpdated) return;
     this.requestUpdate();
@@ -413,14 +377,16 @@ export class HomePanel extends LitElement {
   }
 
   private tellTab(): void {
-    if (!this.guestConnected) return;
+    const prev = this.toldTab;
     this.toldTab = this.visible;
-    this.guest?.tabChanged(this.visible);
     this.syncActive();
+    // on a phone each section starts at the top, as an app's tabs do (the legacy panel's tabChanged)
+    if (this.compact && prev !== undefined && prev !== this.visible)
+      this.renderRoot.querySelector('#app')?.scrollIntoView({block: 'start'});
   }
 
   // A pane whose element has an `active` property is told whether it is the one on screen; it pauses its store
-  // controller while it is not. None of the guest's panes has one.
+  // controller while it is not.
   private syncActive(): void {
     this.activeEpoch = this.epoch;
     for (const f of FEATURES) {
@@ -438,7 +404,7 @@ export class HomePanel extends LitElement {
       this.idleCompact = this.phoneNow;
       this.idle.compactChanged(this.phoneNow);
     }
-    if (this.guestConnected && this.stale) {
+    if (this.answered && this.stale) {
       this.stale = false;
       const {env} = this;
       this.shown = Object.fromEntries(FEATURES.map(f => [f.key, f.available?.(env) ?? true]));
@@ -446,7 +412,7 @@ export class HomePanel extends LitElement {
     const before = this.visible;
     this.visible = visibleTab(this.selected, this.shown);
     // Another tab shows by another road than a tile of More (a card of Home, a house that stopped showing it): More closes,
-    // as the guest's tabChanged hid it. No screen reaches this road today, so no test does.
+    // as the legacy panel's tabChanged hid it. No screen reaches this road today, so no test does.
     if (this.visible !== before) this.sheets.close(MORE_SHEET);
     // More opens with the words under its sections as they are now
     const more = this.sheets.isOpen(MORE_SHEET);
@@ -457,10 +423,12 @@ export class HomePanel extends LitElement {
     this.moreWasOpen = more;
   }
 
-  // `.app#app` sits outside `keyed`: it is the one frame element a guest draw keeps, so the guest clears the classes and
-  // data it toggles on it at each draw (where main's fresh `#app` came bare). The wrap inside is new at each draw.
+  // `.app#app` sits outside `keyed`: it is the one frame element a fresh draw keeps; the wrap inside is new at each draw. `mc`
+  // turns the Mercury drop on (glass.css), whose filter is `lens`, drawn once and kept through every draw (#198).
   protected override render() {
     const a = (this.drawn = this.appearance.value);
+    const {hass} = this.store;
+    const lang = this.store.isFrench && hass ? panelLocale(hass, browserDefaults()).tag : ENGLISH_TAG;
     return html`<div
       class="app ${classMap({
         narrow: this.narrow,
@@ -471,8 +439,10 @@ export class HomePanel extends LitElement {
         gc: a.glass.cards,
         txl: a.largeText,
         live: a.live,
+        mc: a.glass.on && LENS_OK && !a.reducedTransparency,
       })}"
       id="app"
+      lang=${lang}
       data-theme=${a.theme}
       data-wp=${ifDefined(a.glass.wallpaper ?? undefined)}
       @sheet-request=${this.onSheetRequest}
@@ -485,8 +455,7 @@ export class HomePanel extends LitElement {
       @sleep-now=${this.onSleepNow}
       @click=${this.onTapOutside}
     >
-      ${keyed(this.epoch, this.renderWrap())}
-      <div class="guest" style="display:contents"></div>
+      ${keyed(this.epoch, this.renderWrap())} ${lens}
       <hp-toast
         .open=${this.toastNow !== null}
         .message=${this.toastNow?.message ?? ''}
@@ -556,8 +525,8 @@ export class HomePanel extends LitElement {
     </div>`;
   }
 
-  // The rail on a tablet, the bar on a phone. Before the guest has answered, every button is hidden: it alone knows
-  // which tabs this house lacks, and a tab that shows for a moment is a tab a frame can catch.
+  // The rail on a tablet, the bar on a phone. Before the first answer about the house, every button is hidden: a tab
+  // that shows for a moment is a tab a frame can catch.
   private renderRail(): TemplateResult {
     const {t} = this.store;
     const {tab} = this;
@@ -574,7 +543,7 @@ export class HomePanel extends LitElement {
             role="tab"
             data-tab=${f.key}
             ?data-ph=${f.phoneBar}
-            ?hidden=${!this.guestConnected || this.shown[f.key] === false}
+            ?hidden=${!this.answered || this.shown[f.key] === false}
             aria-selected=${tab === f.key}
             @click=${() => this.setTab(f.key)}
           >
@@ -594,37 +563,24 @@ export class HomePanel extends LitElement {
     </nav>`;
   }
 
-  private guestContext(): GuestContext {
-    return {
-      root: this.renderRoot as ShadowRoot,
-      host: this,
-      store: this.store,
-      api: this.api,
-      settings: this.settings,
-      shell: this.forGuest,
-    };
-  }
-
-  // the container exists now, which the guest's `connect` needs
+  // the frame is in the page now: the fonts go into the document, the popups register, and the house is asked about
   protected override firstUpdated(): void {
-    this.guest = createGuest();
-    this.connectGuest();
+    this.connectFrame();
   }
 
-  private connectGuest(): void {
-    if (!this.guest || !this.isConnected) return;
-    this.guest.connect(this.guestContext());
+  private connectFrame(): void {
+    if (!this.isConnected) return;
+    ensureFonts(); // Manrope and JetBrains Mono from the panel's own fonts/ folder, declared in the document once
     // Escape tries the popups in the order they registered: the Status checks close first, then the settings
     this.statusOff?.();
     this.statusOff = this.sheets.registerPopup({isOpen: () => this.statusOpen, close: () => this.closeStatus()});
     this.settingsOff?.();
     this.settingsOff = this.sheets.registerPopup({isOpen: () => this.settingsOpen, close: () => this.closeSettings()});
-    this.guestConnected = true;
+    this.answered = true;
     this.phoneNow = this.phone.matches;
     this.toldCompact = this.phoneNow;
-    this.toldAppearance = this.drawn;
     this.toldTab = this.visible;
-    this.requestFrame(); // the guest answers about the house from here on
+    this.requestFrame(); // the descriptors answer about the house from here on
     this.availabilityOff?.();
     this.availabilityOff = this.store.subscribe('*', this.onAvailability);
   }
@@ -636,50 +592,53 @@ export class HomePanel extends LitElement {
     if (FEATURES.some(f => f.available && f.available(env) !== (this.shown[f.key] ?? true))) this.requestFrame();
   };
 
-  // The store takes each value and the guest is told after it did, in the order the properties were set: Lit keeps the
-  // changed properties in the order they were first set. Home Assistant sets `panel` before `hass`, so there the guest
-  // draws once with the config; the harness sets `hass` first, so there it draws once without it and again with it.
-  // Each environment draws as the element did before it, which the baselines record (ADR 0016). The guest exists only
-  // after `firstUpdated`, so the first update cannot be told in `willUpdate`, and the store is fed here for the same
-  // reason: feeding the config before the guest's first `hassChanged` would turn the harness's two draws into one.
+  // The store takes each value in the order the properties were set (Lit keeps the changed properties in the order they were
+  // first set), and the frame is drawn anew after each when the config or the language it was drawn for changed. Home Assistant
+  // sets `panel` before `hass`, so there the frame draws once with the config; the harness sets `hass` first, so there it draws
+  // once without it and again with it, as the legacy panel did (ADR 0016). The frame exists only after `firstUpdated`, so the
+  // store is fed here: feeding it before would turn the harness's two draws into one.
   protected override updated(changed: PropertyValues<this>): void {
-    const {guest} = this;
-    if (!guest || !this.guestConnected) return;
+    if (!this.answered) return;
     for (const key of changed.keys()) {
-      if (key === 'hass' && this.hass) guest.hassChanged(this.store.setHass(this.hass));
+      if (key === 'hass' && this.hass) {
+        this.store.setHass(this.hass);
+        this.drawIfNew();
+      }
       if (key === 'panel') {
         // a new config is a new generation, and the replies cached under the old one go (StatisticsCache.clear)
         if (this.store.setPanelConfig(this.panel?.config)) this.statistics.clear();
-        guest.panelChanged();
+        this.drawIfNew();
       }
     }
-    // the DOM follows the appearance now (data-theme, data-wp, gl, txl, live, cp); the guest hears of it once, then of the
-    // phone's shape, whose first act was the glass it has just been told about
-    if (this.drawn && this.drawn !== this.toldAppearance) {
-      this.toldAppearance = this.drawn;
-      guest.appearanceChanged(this.drawn);
-    }
-    // the frame already follows the phone's shape (`cp`); the guest lays its cards out again
+    // the frame already follows the phone's shape (`cp`): the open sheet closes and the panels move
     if (this.compact !== this.toldCompact) {
       this.toldCompact = this.compact;
-      this.sheets.compactChanged(this.compact); // the open sheet closes and the panels move, before the guest lays its cards out
-      guest.compactChanged(this.compact);
+      this.sheets.compactChanged();
     }
     // a tab the house does not show gives way to Home, and comes back when the house shows it again
     if (this.visible !== this.toldTab) this.tellTab();
     else if (this.epoch !== this.activeEpoch) this.syncActive();
   }
 
-  // Lit calls this on the first connection too, before the first update; the guest does not exist then and
-  // `firstUpdated` connects it. A later connection is a reconnect, which the guest tolerates.
+  // A draw counts as a touch, as it did: the five minutes start over, and an idle panel wakes. Nothing draws before the first hass.
+  private drawIfNew(): void {
+    if (!this.store.hass) return;
+    const key = `${this.store.generation}|${this.store.isFrench}`;
+    if (key === this.drawnFor) return;
+    if (this.drawnFor !== undefined) this.resetFrame();
+    this.drawnFor = key;
+    this.idle.arm();
+  }
+
+  // Lit calls this on the first connection too, before the first update; `firstUpdated` connects the frame then. A later
+  // connection is a reconnect.
   override connectedCallback(): void {
     super.connectedCallback();
-    if (this.guest) this.connectGuest();
+    if (this.hasUpdated) this.connectFrame();
   }
 
   override disconnectedCallback(): void {
     super.disconnectedCallback();
-    this.guest?.disconnect();
     this.statusOff?.();
     this.statusOff = undefined;
     this.availabilityOff?.();

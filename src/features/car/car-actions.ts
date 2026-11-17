@@ -1,7 +1,7 @@
 // <hp-car-actions>: the Car tab's actions row (docs/apple-hig-audit-car-2026-11-17.md, findings 4 and 7): Unlock or Lock, Start… or Stop engine, and Pause or Resume charging, each with
 // how things stand under its name; unlocking and starting ask first in a dialog (HIG, Alerts), and the start's dialog holds the heaters the car runs with it as switches.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over `carActions`, the model's pure view; a tap holds the value it asks for in the panel's overlay and runs a `Command` through the kit's
-// `CommandRunner` (ADR 0023). The two confirmations are the kit's `<hp-dialog>` (ADR 0035), opened by `asking`: the browser gives them the top layer, the focus and Escape; a tap on the backdrop cancels.
+// `CommandRunner` (ADR 0023). The two confirmations are the kit's `<hp-dialog>` (ADR 0036), opened by `asking`: the browser gives them the top layer, the focus and Escape; a tap on the backdrop cancels.
 // Must not: read an entity or the clock (the inputs and the model did), build a command by hand (commands.ts does), word a string, or send a start or an unlock before its dialog's button.
 import {LitElement, html, nothing, unsafeCSS} from 'lit';
 import {repeat} from 'lit/directives/repeat.js';

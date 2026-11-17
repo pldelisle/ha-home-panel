@@ -10,7 +10,7 @@ import {SelectRunEvent} from './events.ts';
 import shared from './styles.css?inline';
 import own from './run-timeline.element.css?inline';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
-import {lensLike} from '../../ui/lens.ts';
+import {lens} from '../../ui/lens.ts';
 import {common, pill, tiles} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
@@ -60,7 +60,7 @@ export class RunTimeline extends LitElement {
           )}
         </div>
       </section>
-      ${lensLike(this.getRootNode())}`;
+      ${lens}`;
   }
 
   private dot(d: DotView) {

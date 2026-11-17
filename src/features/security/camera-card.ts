@@ -10,7 +10,7 @@ import cardOwn from './camera-card.element.css?inline';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {SheetRequestEvent} from '../../ui/events.ts';
 import {ico} from '../../ui/icons.ts';
-import {lensLike} from '../../ui/lens.ts';
+import {lens} from '../../ui/lens.ts';
 import {common} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
@@ -41,7 +41,7 @@ export class CameraCard extends LitElement {
         <div class="top"><span class="lbl">${view.title}</span><span class="right">${view.count}</span></div>
         ${view.empty ? this.renderEmpty(view.emptyText) : this.renderGrid(view.tiles)}
       </div>
-      ${lensLike(this.getRootNode())}`;
+      ${lens}`;
   }
 
   private renderEmpty({title, hint, link}: SecurityViewModel['cameras']['emptyText']) {

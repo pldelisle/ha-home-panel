@@ -8,10 +8,6 @@ const PROVIDERS = '^src/providers/';
 const UI = '^src/ui/';
 const ENTRY = '^src/main\\.js$';
 const FEATURES = '^src/features/';
-// the kit's stylesheets: plain text with no imports, which the legacy sheet joins (src/styles.js) and the elements adopt (ADR 0019)
-const KIT_STYLES = '^src/ui/styles/[^/]+\\.css$';
-// the strangler's host, shared with scripts/arch-graph.mjs and test/unit/architecture.test.mjs
-const {LEGACY} = require('./scripts/legacy-set.cjs');
 
 module.exports = {
   forbidden: [
@@ -27,7 +23,7 @@ module.exports = {
       name: 'providers-import-core-only',
       severity: 'error',
       comment:
-        'A provider adapts one source of data to the core. It must not know the screens, the UI kit, the shell or the legacy code that consume it.',
+        'A provider adapts one source of data to the core. It must not know the screens, the UI kit or the shell that consume it.',
       from: {path: PROVIDERS},
       to: {path: '^src/', pathNot: [PROVIDERS, CORE]},
     },
@@ -35,7 +31,7 @@ module.exports = {
       name: 'ui-kit-imports-core-only',
       severity: 'error',
       comment:
-        'The UI kit is shared by every feature, so it may not depend on one of them, on a provider, on the shell or on legacy code.',
+        'The UI kit is shared by every feature, so it may not depend on one of them, on a provider or on the shell.',
       from: {path: UI},
       to: {path: '^src/', pathNot: [UI, CORE]},
     },
@@ -43,7 +39,7 @@ module.exports = {
       name: 'features-import-inward-only',
       severity: 'error',
       comment:
-        'A feature may use the core, the UI kit and the providers. It must not reach the shell that composes it or the legacy code it replaces.',
+        'A feature may use the core, the UI kit and the providers. It must not reach the shell that composes it.',
       from: {path: FEATURES},
       to: {path: '^src/', pathNot: [FEATURES, CORE, UI, PROVIDERS]},
     },
@@ -56,30 +52,6 @@ module.exports = {
       to: {path: FEATURES, pathNot: '^src/features/$1/'},
     },
     {
-      name: 'legacy-imports-core-providers-and-legacy-only',
-      severity: 'error',
-      comment:
-        'Legacy code is being strangled: it may use the new core and the providers (ADR 0025: a reading two features need lives in a provider, so a shared read never has two implementations), but it must not grow dependencies on the new features, UI kit or shell. The one exception is the legacy sheet, below.',
-      from: {path: LEGACY, pathNot: ['^src/styles\\.js$']},
-      to: {path: '^src/', pathNot: [LEGACY, CORE, PROVIDERS]},
-    },
-    {
-      name: 'legacy-sheet-joins-kit-styles',
-      severity: 'error',
-      comment:
-        "The legacy sheet is the concatenation of the kit's stylesheets (ADR 0019): plain text with no imports, so it may import those and nothing else of the new layers.",
-      from: {path: '^src/styles\\.js$'},
-      to: {path: '^src/', pathNot: [LEGACY, CORE, KIT_STYLES]},
-    },
-    {
-      name: 'nothing-imports-legacy-but-entry',
-      severity: 'error',
-      comment:
-        'Nothing new may depend on legacy code, or it can never be deleted. Only the entry, src/main.js, which composes the app, may.',
-      from: {path: '^src/', pathNot: [LEGACY, ENTRY]},
-      to: {path: LEGACY},
-    },
-    {
       name: 'no-circular',
       severity: 'error',
       comment: 'A cycle cannot be loaded, tested or moved one module at a time.',
@@ -89,8 +61,9 @@ module.exports = {
     {
       name: 'no-orphans',
       severity: 'error',
-      comment: 'A module nothing imports is dead code. The entry and declaration files are the exceptions.',
-      from: {orphan: true, pathNot: [ENTRY, '\\.d\\.ts$']},
+      comment:
+        'A module nothing imports is dead code. The entry and declaration files are the exceptions, and the French rewrite layer, which only the equivalence tests import: phase 4 (spec 27) deletes it.',
+      from: {orphan: true, pathNot: [ENTRY, '\\.d\\.ts$', '^src/i18n/fr\\.js$']},
       to: {},
     },
     {

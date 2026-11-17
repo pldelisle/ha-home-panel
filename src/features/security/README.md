@@ -1,6 +1,6 @@
 # Security
 
-What the Security tab computes and draws ([spec 17](../../../docs/specs/17-security.md)): the cameras, the door and motion sensors, two sheets and the Home card. This folder holds the pure half and, since #224, #225 and #226, the pane, its two cards, the two sheets and the Home card (`<hp-security-pane>`, `<hp-camera-card>`, `<hp-sensor-card>`, `<hp-camera-sheet>`, `<hp-sensor-history>`, `<hp-security-card>`, each with its `.element.css`, and `mountCameraStream`): the rules that find the cameras and the sensors (in `src/providers/`, because the live pill, the stack and the Home pane read them too, [ADR 0025](../../../docs/adr/0025-shared-reads-live-in-providers.md)), `readSecurity` that composes them, `securityIds` that lists what the pane reads, and the model, the history sheet's rules and the glow rule that word and compute everything the elements place, pinned in Vitest (#222, #223). A tap on a camera or a sensor is a `SheetRequestEvent` the sheet host answers; the pane draws the sheet that is open, and the legacy stack opens the same sheets through the host until #266. The Home card is placed by the guest through the Home-card bridge ([ADR 0024](../../../docs/adr/0024-home-card-bridge.md), [ADR 0026](../../../docs/adr/0026-bridged-card-draws-its-own-box.md)); the move ended with #227.
+What the Security tab computes and draws ([spec 17](../../../docs/specs/17-security.md)): the cameras, the door and motion sensors, two sheets and the Home card. This folder holds the pure half and, since #224, #225 and #226, the pane, its two cards, the two sheets and the Home card (`<hp-security-pane>`, `<hp-camera-card>`, `<hp-sensor-card>`, `<hp-camera-sheet>`, `<hp-sensor-history>`, `<hp-security-card>`, each with its `.element.css`, and `mountCameraStream`): the rules that find the cameras and the sensors (in `src/providers/`, because the live pill, the stack and the Home pane read them too, [ADR 0025](../../../docs/adr/0025-shared-reads-live-in-providers.md)), `readSecurity` that composes them, `securityIds` that lists what the pane reads, and the model, the history sheet's rules and the glow rule that word and compute everything the elements place, pinned in Vitest (#222, #223). A tap on a camera or a sensor is a `SheetRequestEvent` the sheet host answers; the pane draws the sheet that is open, and the legacy stack opens the same sheets through the host until #266. The Home card is placed by the shell's Home pane ([ADR 0024](../../../docs/adr/0024-home-card-bridge.md), [ADR 0026](../../../docs/adr/0026-bridged-card-draws-its-own-box.md)); the move ended with #227.
 
 ## The folder
 
@@ -20,7 +20,7 @@ src/features/security/
   activity.ts              activeOf(sensors), newlyActive(prev, next): string[] (the glow rule), pure
   sheets.ts                CAMERA_SHEET, HISTORY_SHEET, entityIdOf(detail)
   security-pane.ts         <hp-security-pane>
-  security-card.ts         <hp-security-card>: the Home card, placed by the guest through the Home-card bridge
+  security-card.ts         <hp-security-card>: the Home card, placed by the shell's Home pane
   camera-card.ts           <hp-camera-card>
   sensor-card.ts           <hp-sensor-card>
   camera-sheet.ts          <hp-camera-sheet>

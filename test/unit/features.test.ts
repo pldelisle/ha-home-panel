@@ -8,8 +8,10 @@ import {createStore} from '../../src/core/store.ts';
 import {airFeature} from '../../src/features/air/index.ts';
 import {energyFeature} from '../../src/features/energy/index.ts';
 import {mediaFeature} from '../../src/features/media/index.ts';
+import {securityFeature} from '../../src/features/security/index.ts';
 import {weatherFeature} from '../../src/features/weather/index.ts';
 import * as full from '../houses/full.mjs';
+import {FULL_CFG} from '../e2e/houses.ts';
 import {fakeHass} from './fake-hass.ts';
 import {FEATURES, UNDER_MORE, isFeatureKey, visibleTab} from '../../src/shell/features.ts';
 import {FR_MAP} from '../../src/i18n/fr.js';
@@ -106,7 +108,6 @@ describe('the Weather descriptor', () => {
     return s;
   };
   const weather = FEATURES.find(f => f.key === 'weather')!;
-  const guest = {availability: () => ({}), moreLine: () => null};
 
   test("is the registry's own, always shown, and binds its pane to the sheet host's answers: the detail's `open`, the tile whose history is open", () => {
     expect(weather).toBe(weatherFeature);
@@ -116,7 +117,6 @@ describe('the Weather descriptor', () => {
     const pane = (open: string | null, detail?: unknown) =>
       weather.pane({
         store: store(),
-        guest,
         sheetOpen: id => id === open,
         sheetDetail: id => (id === open ? detail : undefined),
         attention: 0,
@@ -132,14 +132,13 @@ describe('the Weather descriptor', () => {
     expect(
       weather.summary?.({
         store: store(fakeHass.fromHouse(full)),
-        guest,
         sheetOpen: () => false,
         sheetDetail: () => undefined,
         attention: 0,
       }),
     ).toBe('4° · Mainly sunny');
     expect(
-      weather.summary?.({store: store(), guest, sheetOpen: () => false, sheetDetail: () => undefined, attention: 0}),
+      weather.summary?.({store: store(), sheetOpen: () => false, sheetDetail: () => undefined, attention: 0}),
     ).toBeNull();
   });
 });
@@ -150,7 +149,6 @@ describe('the Media descriptor', () => {
     if (hass) store.setHass(hass);
     return {
       store,
-      guest: {availability: () => ({}), moreLine: () => null},
       sheetOpen: () => false,
       sheetDetail: () => undefined,
       attention: 0,
@@ -175,7 +173,6 @@ describe('the Air descriptor', () => {
     if (hass) store.setHass(hass);
     return {
       store,
-      guest: {availability: () => ({}), moreLine: () => null},
       sheetOpen: () => false,
       sheetDetail: () => undefined,
       attention: 0,
@@ -210,13 +207,12 @@ describe('the Air descriptor', () => {
 });
 
 describe('the Energy descriptor', () => {
-  const env = (open: string | null = null, line: string | null = null) => ({
-    store: createStore({defaultTimeZone: 'America/Toronto', resolve: resolveConfig}),
-    guest: {availability: () => ({}), moreLine: () => line},
-    sheetOpen: (id: string) => id === open,
-    sheetDetail: () => undefined,
-    attention: 0,
-  });
+  const env = (open: string | null = null, hass?: ReturnType<typeof fakeHass.fromHouse>) => {
+    const store = createStore({defaultTimeZone: 'America/Toronto', resolve: resolveConfig});
+    store.setPanelConfig(FULL_CFG);
+    if (hass) store.setHass(hass);
+    return {store, sheetOpen: (id: string) => id === open, sheetDetail: () => undefined, attention: 0};
+  };
 
   test("is the registry's own and always shown, and binds its pane to the sheet host's answers: the detail's `open`, then the water heater's and Hilo's", () => {
     expect(FEATURES.find(f => f.key === 'energy')).toBe(energyFeature);
@@ -229,8 +225,32 @@ describe('the Energy descriptor', () => {
     expect(energyFeature.pane(env('energy.hilo')).values).toEqual([false, false, true]);
   });
 
-  // the More sheet's baselines read the legacy word ("3.24 kW now"), not the pane's sub-line: the guest's line stays until the guest goes (#277)
-  test("says the guest's word under More", () => {
-    expect(energyFeature.summary?.(env(null, '3.24 kW now'))).toBe('3.24 kW now');
+  // the More sheet's baselines read the legacy word ("3.24 kW now"), not the pane's sub-line; watts under a kilowatt
+  test("says the grid's power now under More, and nothing before the house has been heard", () => {
+    const house = fakeHass.fromHouse(full);
+    expect(energyFeature.summary?.(env(null, house))).toBe('3.24 kW now');
+    house.states['sensor.house_power'] = {...house.states['sensor.house_power'], state: '850'};
+    expect(energyFeature.summary?.(env(null, fakeHass.fromHouse(full, {states: house.states})))).toBe('850 W now');
+    delete house.states['sensor.house_power'];
+    expect(energyFeature.summary?.(env(null, fakeHass.fromHouse(full, {states: house.states})))).toBeNull();
+    expect(energyFeature.summary?.(env())).toBeNull();
+  });
+});
+
+describe('the Security descriptor', () => {
+  const env = (hass?: ReturnType<typeof fakeHass.fromHouse>) => {
+    const store = createStore({defaultTimeZone: 'America/Toronto', resolve: resolveConfig});
+    if (hass) store.setHass(hass);
+    return {store, sheetOpen: () => false, sheetDetail: () => undefined, attention: 0};
+  };
+
+  // the legacy word ("Doors closed · motion now"), not the pane's line
+  test('says the doors and the motion under More, and nothing before the house has been heard', () => {
+    const house = fakeHass.fromHouse(full);
+    expect(securityFeature.summary?.(env(house))).toBe('Doors closed · motion now');
+    house.states['binary_sensor.front_door'] = {...house.states['binary_sensor.front_door'], state: 'on'};
+    house.states['binary_sensor.hall_motion'] = {...house.states['binary_sensor.hall_motion'], state: 'off'};
+    expect(securityFeature.summary?.(env(fakeHass.fromHouse(full, {states: house.states})))).toBe('1 door open');
+    expect(securityFeature.summary?.(env())).toBeNull();
   });
 });

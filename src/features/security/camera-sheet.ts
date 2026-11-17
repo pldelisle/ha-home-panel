@@ -16,7 +16,7 @@ import type {PanelStore} from '../../core/store.ts';
 import type {CameraInputs} from '../../providers/camera-source.ts';
 import {StoreController} from '../../ui/controllers/store-controller.ts';
 import {SheetDismissEvent} from '../../ui/events.ts';
-import {lensLike} from '../../ui/lens.ts';
+import {lens} from '../../ui/lens.ts';
 import '../../ui/sheet.ts'; // defines <hp-sheet>
 import {common} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
@@ -86,7 +86,7 @@ export class CameraSheet extends LitElement {
         <div slot="sub">${camera.detail}</div>
         <div class="camlive"></div>
       </hp-sheet>
-      ${lensLike(this.getRootNode())}`;
+      ${lens}`;
   }
 
   protected override updated(): void {

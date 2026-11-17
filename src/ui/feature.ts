@@ -2,7 +2,7 @@
 // Pattern: plug-in (Fowler, Patterns of Enterprise Application Architecture, Plugin): configuration, not code, decides
 // which implementation of a subject is linked, and the registry (features.ts) is the list of these descriptors.
 // Lives in the kit so a feature can type its descriptor without importing the shell (ADR 0017); the registry is the shell's.
-// Must not: hold state, import the guest, a feature or the shell's elements, or draw: `pane` only returns a template.
+// Must not: hold state, import a feature or the shell's elements, or draw: `pane` only returns a template.
 import type {TemplateResult} from 'lit';
 import type {MessageKey} from '../core/i18n/en.ts';
 import type {PanelStore} from '../core/store.ts';
@@ -12,18 +12,9 @@ import type {IconName} from './icons.ts';
 export type FeatureKey =
   'home' | 'lights' | 'climate' | 'weather' | 'car' | 'energy' | 'air' | 'media' | 'cams' | 'auto';
 
-/** What the guest answers while it still draws a subject; a descriptor reads it through `FeatureEnv`. */
-export interface GuestAnswers {
-  /** Which subjects this house has something for (false: it lacks them); a missing key means no opinion. */
-  availability(): Partial<Record<FeatureKey, boolean>>;
-  /** The word under a section in the phone's More sheet, in the panel's language, or null when the section has none. */
-  moreLine(key: FeatureKey): string | null;
-}
-
-/** What a descriptor may read: this panel's store and, until the subject is a feature of its own, the guest's answers. */
+/** What a descriptor may read: this panel's store and the sheet host's answers. */
 export interface FeatureEnv {
   readonly store: PanelStore;
-  readonly guest: GuestAnswers;
   /** Whether the sheet host has this element's sheet open: a pane binds it to its sheet's `open` (ADR 0021). */
   sheetOpen(id: string): boolean;
   /** What the open sheet was asked to show (the tile of a history: `{key}`), or undefined when it is not the sheet open. */
@@ -55,6 +46,6 @@ export interface FeatureDescriptor {
    * behind them, whichever tab is shown, so the tab does not change.
    */
   overSheets?: readonly string[];
-  /** The pane's content: a feature's element, or the markup the guest still fills. */
+  /** The pane's content: a feature's element. */
   pane: (env: FeatureEnv) => TemplateResult;
 }

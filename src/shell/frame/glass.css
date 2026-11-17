@@ -1,6 +1,6 @@
 /* ---- Liquid Glass (v1.18.0), Mercury drop material since v1.19.0: almost no tint, a soft white inner glow, a 15 px blur and (Chromium) a noise distortion of the backdrop.
    .gl on .app = glass on (Status popup: Glass None / Dawn / Lake / Meadow, localStorage home-panel-glass), data-wp = the wallpaper.
-   Material = a thin fill + the backdrop blurred and saturated + a light rim; the lens (Chromium only) is added by lensAll() in the JS. ---- */
+   Material = a thin fill + the backdrop blurred and saturated + a light rim; the lens (Chromium only) is the shell's `mc` class and the `#glass-distortion` filter (src/ui/lens.ts). ---- */
 /* thin glass: the bar, the rail and the header's round buttons (the header's chips draw their own) */
 .app.tabsv.gl .rail,
 .app.gl .head button.icon {

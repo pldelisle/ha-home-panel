@@ -2,7 +2,7 @@
 // Pattern: plug-in (Fowler, PoEAA, Plugin): the feature's folder says what it is as data and one `pane` template, and its element is linked by importing this module.
 // The pane binds its detail's and its history's sheets to the sheet host's answers (ADR 0021).
 // It re-exports `glance`, the Home pane's tile reader (glance.ts, #267), and the ids that tile subscribes to (#268).
-// Must not: draw or hold state, import the guest or another feature, or read an entity beyond what `findCar` reads.
+// Must not: draw or hold state, import another feature, or read an entity beyond what `findCar` reads.
 import {html} from 'lit';
 import './car-pane.ts'; // defines <hp-car-pane>
 import {DETAIL_SHEET, HISTORY_SHEET} from './sheets.ts';

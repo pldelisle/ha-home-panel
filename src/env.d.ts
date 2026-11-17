@@ -4,7 +4,7 @@
 // Constants that vite.config.ts (and vitest.config.ts) replace at build time.
 declare const __VERSION__: string;
 
-// Vite's `?inline` suffix imports a stylesheet, minified, as a string (src/styles.js reads src/css/ this way).
+// Vite's `?inline` suffix imports a stylesheet, minified, as a string (src/shell/frame-styles.ts reads src/shell/frame/ this way).
 declare module '*.css?inline' {
   const css: string;
   export default css;

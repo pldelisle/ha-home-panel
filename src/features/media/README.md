@@ -23,7 +23,7 @@ src/features/media/
   media-tile.ts            <hp-media-tile>: a player on the phone, its switch or play button; media-tile.element.css
   tv-box.ts                <hp-tv-box>: the name, status and app beside the power button, and the four buttons; tv-box.element.css
   speaker-pod.ts           <hp-speaker-pod>: the cover, the track, the volume slider with its − and +, and play; speaker-pod.element.css
-  scene-tiles.ts           <hp-scene-tiles>: the Home scenes row, placed by the guest through the Home-card bridge; scene-tiles.element.css
+  scene-tiles.ts           <hp-scene-tiles>: the Home scenes row, placed by the shell's Home pane; scene-tiles.element.css
 src/core/
   registry.ts              areaOf, isHidden, nameOwner, entitiesByDevice: the registry rules the store, the providers and the features share
   timing.ts                debounce(fn, ms, timers?): the volume's 450 ms, with injected timers and a cancel
@@ -61,7 +61,7 @@ Two rules copy the legacy panel on purpose: the **summary** and the **speakers l
 
 Each command is a pure function returning the kit's `Command`: the service, the optimistic keys it holds (`K`, one typed function per key) and the toast it says on success. The element holds the value the key names and runs the command; nothing here sends. `tvPower(tv, true)` carries the wake-on-LAN button as `fallback` when the house has one, whichever set was chosen, as the legacy `tv()` does.
 
-`sceneIcon` and the scenes' order are the legacy panel's rules, which #220 deleted. The legacy panel now holds no Media code except `speakers()` and `tv()`, which its now-playing stack card still reads; #266 deletes them with the legacy stack.
+`sceneIcon` and the scenes' order are the legacy panel's rules, which #220 deleted. The legacy panel's `speakers()` and `tv()` went with the legacy stack (#266).
 
 ## The elements
 

@@ -18,7 +18,7 @@ import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {OptimisticController} from '../../ui/controllers/optimistic.ts';
 import {StoreController} from '../../ui/controllers/store-controller.ts';
 import {SheetRequestEvent} from '../../ui/events.ts';
-import {lensLike} from '../../ui/lens.ts';
+import {lens} from '../../ui/lens.ts';
 import '../../ui/seg.ts'; // defines <hp-seg>
 import type {SegChangeDetail, SegOption} from '../../ui/seg.ts';
 import '../../ui/stepper.ts'; // defines <hp-stepper>
@@ -101,7 +101,7 @@ export class AirRoom extends LitElement {
         </div>
         ${this.renderControl(room, room.control)}
       </div>
-      ${lensLike(this.getRootNode())}`;
+      ${lens}`;
   }
 
   private renderControl(room: RoomDetail, control: RoomControl) {

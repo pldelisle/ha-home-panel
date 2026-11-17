@@ -1,4 +1,4 @@
-// The rules every dialog keeps (ADR 0035), and the look every dialog wears: Escape stops at the dialog, a confirmation is cancelled by a tap on its backdrop, and the one stylesheet.
+// The rules every dialog keeps (ADR 0036), and the look every dialog wears: Escape stops at the dialog, a confirmation is cancelled by a tap on its backdrop, and the one stylesheet.
 // Pattern: shared event handlers (Lit docs, Events), module functions so a template hands the same function at every render; one source, two views (ADR 0019) for the look, adopted by `<hp-dialog>` and by an owner's own editor.
 // Must not: open or close a sheet, hold state, or be used on an editor's backdrop (a stray tap would drop the draft).
 import {unsafeCSS} from 'lit';

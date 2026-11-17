@@ -1,7 +1,7 @@
 // AppearanceController: the shell's theme, glass, text size, document background and `live` class, gathered into one frozen Appearance.
 // Pattern: Lit reactive controller (Lit docs, Reactive Controllers) wrapping what were six methods of the legacy class; it
 // provides its value by context (ADR 0018, after the Context Protocol) and the pure rules of appearance-rules.ts decide.
-// Must not: read localStorage (the settings module does), hold a rule (the rules do), or write into a guest container.
+// Must not: read localStorage (the settings module does), hold a rule (the rules do), or write into the frame.
 import {ContextProvider} from '@lit/context';
 import type {LitElement, ReactiveController} from 'lit';
 import {createFormatters} from '../core/i18n/format.ts';
@@ -74,7 +74,7 @@ export class AppearanceController implements ReactiveController {
     this.current = this.compute();
     this.provider = new ContextProvider(host, {context: appearanceContext, initialValue: this.current});
     // The sun and the weather decide the sky wallpaper; the ids are asked again when the config changes, so a house
-    // that names its own sun entity is followed. The value is made at once, so the guest's first draw finds it right.
+    // that names its own sun entity is followed. The value is made at once, so the frame's first draw finds it right.
     new StoreController(host, {
       store: options.store,
       onChange: () => this.refresh(),

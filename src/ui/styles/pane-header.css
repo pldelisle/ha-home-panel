@@ -1,5 +1,5 @@
 /* The header every pane opens with, written once for `<hp-pane-header>` and for the legacy sheet: the row, the heading and the
-   sub-line the guest writes (a slotted node, so `::slotted`); the badge is badge.css. The pane's own place (margin, grid
+   sub-line a pane writes (a slotted node, so `::slotted`); the badge is badge.css. The pane's own place (margin, grid
    column, display) is the host's: see the element's styles and the pane rules of tabs.css. Inside an element `.app.cp` and
    `.app.gl` read as `:host([compact])` and `:host([glass])` (host.ts). */
 .ph {

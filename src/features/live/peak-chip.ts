@@ -7,7 +7,7 @@ import ownCss from './peak-chip.element.css?inline';
 import {hydroQuebec} from '../../providers/hydro-quebec.ts';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {StoreController} from '../../ui/controllers/store-controller.ts';
-import {lensLike} from '../../ui/lens.ts';
+import {lens} from '../../ui/lens.ts';
 import {common} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
@@ -29,7 +29,7 @@ export class PeakChip extends LitElement {
     const {hass, config, t} = this.storeController.store;
     if (!hass || !hydroQuebec(hass.states, config)?.peakNow) return nothing;
     return html`<div class="peak"><span class="dot"></span>${t('live.criticalPeakNow')}</div>
-      ${lensLike(this.getRootNode())}`;
+      ${lens}`;
   }
 }
 

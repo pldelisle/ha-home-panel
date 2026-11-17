@@ -1,6 +1,6 @@
 // <hp-climate-controls>: what a person sets in the Climate detail: the heat pump's mode, target, fan, preset and louvers; the house's "set every room" with its two buttons, which ask in a dialog before they change every room; a room's setpoint and quick buttons.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over the model's `ControlsView`: it switches on `kind` and computes nothing but the next setpoint (commands.ts). A tap shows its value at once in the panel's overlay and runs a
-// `Command` through the kit's `CommandRunner` (ADR 0023), through `ControlSender`: a setpoint waits 1,100 ms for the taps to stop, a mode goes now. The two questions are the kit's `<hp-dialog>` (ADR 0035), opened by `asking`;
+// `Command` through the kit's `CommandRunner` (ADR 0023), through `ControlSender`: a setpoint waits 1,100 ms for the taps to stop, a mode goes now. The two questions are the kit's `<hp-dialog>` (ADR 0036), opened by `asking`;
 // `<hp-seg>` and `<hp-stepper>` are the kit's controls.
 // Must not: read an entity or the store's states (the view has what it needs), build a command by hand (commands.ts does), word a question (the model does), send a setpoint per tap, send "all rooms" before its dialog's button, or keep a thermostat's value (the overlay does).
 import {LitElement, html, nothing, unsafeCSS, type TemplateResult} from 'lit';

@@ -685,6 +685,18 @@
     {
       "key": "energy.noReading",
       "written": "Aucune mesure"
+    },
+    {
+      "key": "energy.more.watts",
+      "values": {
+        "n": 850
+      }
+    },
+    {
+      "key": "energy.more.kilowatts",
+      "values": {
+        "n": "3.24"
+      }
     }
   ]
 }

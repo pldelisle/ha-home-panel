@@ -3,7 +3,7 @@
 // linked by importing this module. The pane binds its detail's sheet and the reading whose history is open to the sheet host's answers, which the descriptor's `env` gives it (ADR 0021).
 // The More word is `airBrief`, the legacy word and not the pane's sub-line; the tab is always shown.
 // It re-exports `glance`, the Home pane's tile reader (glance.ts, #267), and the ids that tile subscribes to (#268).
-// Must not: draw or hold state, import the guest or another feature, or read an entity itself (the brief line reads the store it is given).
+// Must not: draw or hold state, import another feature, or read an entity itself (the brief line reads the store it is given).
 import {html} from 'lit';
 import './air-pane.ts'; // defines <hp-air-pane>
 import {airBrief} from './model.ts';

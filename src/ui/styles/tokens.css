@@ -45,12 +45,12 @@
   /* a light that is off, as Apple Home draws it: a dimmed grey tile under the bright ones that are on; its line one step darker so it reads on the grey */
   --tile-off: #e2dfda;
   --tile-off-sub: #5e5b57;
-  /* what floats over everything (a dialog, ADR 0035): a long soft drop shadow, the same in both themes */
+  /* what floats over everything (a dialog, ADR 0036): a long soft drop shadow, the same in both themes */
   --pop-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.45);
   --f-num: 'Manrope', ui-sans-serif, system-ui, sans-serif;
   --f-body: 'Manrope', ui-sans-serif, system-ui, sans-serif;
   /* the one place a second face is meant: a config path is code, so the configuration card sets it in JetBrains Mono,
-     shipped in dist/fonts/ at weight 400 (src/fonts.js) */
+     shipped in dist/fonts/ at weight 400 (src/ui/fonts.ts) */
   --f-mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
   --num-w: 600;
   --shadow: 0 0 0 1px rgba(60, 50, 40, 0.03), 0 4px 12px -4px rgba(60, 50, 40, 0.07);

@@ -3,7 +3,7 @@
 // importing this module. The pane binds its detail's sheet and the tile whose history is open to the sheet host's answers, which the descriptor's `env` gives it (ADR 0021).
 // It defines `<hp-weather-card>`, the Home pane's weather card (#268), and `<hp-weather-chip>`, the header's chip (#269), which the shell composes.
 // It re-exports `weatherCardLabel` and `weatherCardLabelIds`, the Home pane's reader of the phone's weather card (glance.ts), as Climate re-exports its `glance`.
-// Must not: draw or hold state, import the guest or another feature, or read an entity (the model's brief line reads the store it is given).
+// Must not: draw or hold state, import another feature, or read an entity (the model's brief line reads the store it is given).
 import {html} from 'lit';
 import {readWeather} from './inputs.ts';
 import {weatherBrief} from './model.ts';

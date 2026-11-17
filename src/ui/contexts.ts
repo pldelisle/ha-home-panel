@@ -17,7 +17,7 @@ import type {OverlayStore} from './overlay-store.ts';
 export const storeContext = createContext<PanelStore>(Symbol('home-panel.store'));
 export const apiContext = createContext<PanelApi>(Symbol('home-panel.api'));
 /**
- * The panel's one memo of the recorder's reads, shared by every feature that loads a history and by the guest (ADR 0028); one per panel,
+ * The panel's one memo of the recorder's reads, shared by every feature that loads a history (ADR 0028); one per panel,
  * so two panels stay independent. Weather's and Security's own caches stay as they are.
  */
 export const statisticsCacheContext = createContext<StatisticsCache>(Symbol('home-panel.statistics'));

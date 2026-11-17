@@ -17,7 +17,7 @@ import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {SwipeToClose} from '../../ui/controllers/swipe-to-close.ts';
 import {SheetDismissEvent} from '../../ui/events.ts';
 import {ico} from '../../ui/icons.ts';
-import {lensLike} from '../../ui/lens.ts';
+import {lens} from '../../ui/lens.ts';
 import {common, motion, sheet} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 import '../../ui/switch.ts'; // defines <hp-switch>
@@ -123,7 +123,7 @@ export class LightSheet extends LitElement {
           </div>
         </div>
       </div>
-      ${lensLike(this.getRootNode())}`;
+      ${lens}`;
   }
 
   private renderBody(v: SheetView) {

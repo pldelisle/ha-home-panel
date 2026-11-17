@@ -15,7 +15,7 @@ import {CommandRunner} from '../../ui/commands.ts';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {OptimisticController} from '../../ui/controllers/optimistic.ts';
 import {StoreController} from '../../ui/controllers/store-controller.ts';
-import {lensLike} from '../../ui/lens.ts';
+import {lens} from '../../ui/lens.ts';
 import '../../ui/seg.ts'; // defines <hp-seg>
 import type {SegChangeDetail} from '../../ui/seg.ts';
 import {common, inner} from '../../ui/styles/index.ts';
@@ -70,7 +70,7 @@ export class ChargerControls extends LitElement {
           <h3>${view.title}</h3>
           <div class="unav"><b>${view.unavailable.title}</b><span>${view.unavailable.line}</span></div>
         </div>
-        ${lensLike(this.getRootNode())}`;
+        ${lens}`;
     return html`<div class="inner fill">
         <h3>${view.title}</h3>
         <p>${view.line}</p>
@@ -85,7 +85,7 @@ export class ChargerControls extends LitElement {
         <div class="hint">${power.hint}</div>
         ${this.renderRow(lock, (on, id) => this.ask(toggleChargerLock({id}, on), on))}
       </div>
-      ${lensLike(this.getRootNode())}`;
+      ${lens}`;
   }
 
   private renderRow({id, title, line, on, disabled, label}: SwitchRowView, toggle: (on: boolean, id: string) => void) {

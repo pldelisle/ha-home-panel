@@ -3,8 +3,8 @@
  * head with the title, the line under it and the pill, the Today line and its dots, the run picker and the chips, the legend and the
  * flow's box. Moved from tabs.css, glass.css, motion.css, phone.css and base.css (`.chip`, `.shead`) with the Automations move (#273).
  * Known copies of legacy rules, each under an Automations selector: `.card` (base.css, glass.css) as `.aubox`, `.card .top` and the
- * second `.lbl` (base.css) as `.aubox .top` and `.aulbl`, and `.hint` (base.css) as `.aubox .hint`. The guest draws none of them any
- * more; the phase 3 gate (#188) deletes the legacy rules with the rest of `src/css/`.
+ * second `.lbl` (base.css) as `.aubox .top` and `.aulbl`, and `.hint` (base.css) as `.aubox .hint`. The legacy rules moved to
+ * `src/shell/frame/` with the guest's deletion (#277); the phase 3 gate (#188) checks each one.
  */
 .aubox {
   background: var(--card);

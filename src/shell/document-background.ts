@@ -28,7 +28,7 @@ interface Claim {
   color: string | null;
 }
 
-// Module state, the second beside the guest registry (src/shell/guest.ts): the claims on each document, oldest first. A
+// Module state, the shell's one (the guest registry beside it went with the guest, #277): the claims on each document, oldest first. A
 // document that goes away takes its claims with it.
 const claims = new WeakMap<DocumentLike, Claim[]>();
 

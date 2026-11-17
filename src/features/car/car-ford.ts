@@ -6,7 +6,7 @@ import ownCss from './car-ford.element.css?inline';
 import type {FordBlock, FordRow} from './model.ts';
 import blockCss from './styles.css?inline';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
-import {lensLike} from '../../ui/lens.ts';
+import {lens} from '../../ui/lens.ts';
 import {common, inner, list} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
@@ -32,7 +32,7 @@ export class CarFord extends LitElement {
         <p>${block.caption}</p>
         <div class="att">${block.rows.map(row => this.renderRow(row))}</div>
       </div>
-      ${lensLike(this.getRootNode())}`;
+      ${lens}`;
   }
 
   // a message is flagged with a bang in the warning colour (the departure schedule is its own row since 2026-11)

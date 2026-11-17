@@ -10,7 +10,7 @@ import {fileURLToPath} from 'node:url';
 import {execFileSync} from 'node:child_process';
 import {brotliDecompressSync, gunzipSync} from 'node:zlib';
 import {createRequire} from 'node:module';
-import {FONT_FILES} from '../../src/fonts.js';
+import {FONT_FILES} from '../../src/ui/fonts.ts';
 import {GOOGLE_FONT_HOSTS} from '../google-font-hosts.mjs';
 import {bannedHits, scannedFiles} from '../personal-data.mjs';
 
@@ -65,7 +65,7 @@ beforeAll(() => {
 test('dist/ holds the bundle, its source map, the lazy chunks, a .br and a .gz beside each script, the fonts and the licence list, and nothing else', () => {
   // no copied library file (there is no vendor/), no assets/ folder: the stylesheets are imported as minified text
   // (`?inline`)
-  // the fonts are the eight files src/fonts.js names (fonts.test.mjs pins that list to Fontsource's eight names)
+  // the fonts are the eight files src/ui/fonts.ts names (fonts.test.mjs pins that list to Fontsource's eight names)
   // every script (the entry and each chunk) has a .br and a .gz beside it (vite.config.ts, precompress) and no map has one
   const scripts = ['home-panel.js', ...chunks];
   const rest = distFiles.filter(
@@ -123,7 +123,7 @@ test("the maps of the chunks and of the entry name the libraries' files but leav
 });
 
 test('dist/fonts/ holds the Manrope and JetBrains Mono files as Fontsource ships them, and nothing names Google', () => {
-  // under Fontsource's names (src/fonts.js builds the URLs from them), byte for byte the installed package's files
+  // under Fontsource's names (src/ui/fonts.ts builds the URLs from them), byte for byte the installed package's files
   const requireFontsource = createRequire(import.meta.url);
   for (const f of distFiles.filter(f => f.startsWith('fonts/')))
     expect(
@@ -240,11 +240,13 @@ test('the bundle carries the package version once and no placeholder', () => {
 
 test("the entry's source map names the original files under src/ and the three libraries built in, no other library's", () => {
   const map = JSON.parse(readFileSync(join(DIST, 'home-panel.js.map'), 'utf8'));
-  for (const f of ['src/core/config.ts', 'src/home-panel.js', 'src/i18n/fr.js', 'src/features/automations/model.ts'])
+  for (const f of ['src/core/config.ts', 'src/shell/home-panel.ts', 'src/features/automations/model.ts'])
     expect(
       map.sources.some(s => s.endsWith(f)),
       f,
     ).toBe(true);
+  // the French rewrite layer is phase 4's input, not the panel's: nothing in the entry imports it since the guest went (#277)
+  expect(map.sources.some(s => s.endsWith('src/i18n/fr.js'))).toBe(false);
   // relative paths only, into src/ or node_modules/, never an absolute path of the machine that built it
   expect(
     map.sources.every(s => s.startsWith('../src/') || s.startsWith('../node_modules/')),
@@ -273,10 +275,10 @@ test('no personal data: names, places, a house photo or house-specific entity id
   const scanned = [
     ...[
       'src/core/config.ts',
-      'src/home-panel.js',
+      'src/shell/home-panel.ts',
       'src/features/automations/model.ts',
       'src/i18n/fr.js',
-      'src/css/base.css',
+      'src/shell/frame/base.css',
     ],
     ...['houses.ts', 'fixtures.ts', 'harness.html'].map(f => 'test/e2e/' + f),
     ...['full.mjs', 'bare.mjs', 'build.mjs', 'clock.mjs', 'read.mjs'].map(f => 'test/houses/' + f),
