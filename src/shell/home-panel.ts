@@ -16,7 +16,6 @@ import {classMap} from 'lit/directives/class-map.js';
 import {ifDefined} from 'lit/directives/if-defined.js';
 import {keyed} from 'lit/directives/keyed.js';
 import {repeat} from 'lit/directives/repeat.js';
-import {styleMap} from 'lit/directives/style-map.js';
 import {ContextProvider} from '@lit/context';
 import {createApi} from '../core/api.ts';
 import {resolveConfig} from '../core/config.ts';
@@ -561,7 +560,8 @@ export class HomePanel extends LitElement {
   private renderRail(): TemplateResult {
     const {t} = this.store;
     const {tab} = this;
-    const section = FEATURES.find(f => f.key === tab && !f.phoneBar);
+    // the fifth button is the way to the other tabs, so it says More whichever tab shows; it is selected while one of them does
+    const underMore = FEATURES.some(f => f.key === tab && !f.phoneBar);
     return html`<nav class="rail" id="rail" role="tablist" aria-label="Sections">
       ${repeat(
         FEATURES,
@@ -584,14 +584,11 @@ export class HomePanel extends LitElement {
         class="rtab rmore"
         role="tab"
         id="moretab"
-        aria-selected=${section !== undefined}
+        aria-selected=${underMore}
         aria-haspopup="dialog"
-        style=${styleMap({'--rc': section?.color ?? 'var(--c-home)'})}
         @click=${() => this.sheets.open(MORE_SHEET)}
       >
-        ${ico(section?.icon ?? 'more', 24)}<span
-          >${section ? t(section.shortTitle ?? section.title) : t('nav.more')}</span
-        >
+        ${ico('more', 24)}<span>${t('nav.more')}</span>
       </button>
     </nav>`;
   }

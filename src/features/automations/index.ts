@@ -1,6 +1,6 @@
 // automationsFeature: the descriptor of the Automations subject, which the registry lists and the shell draws the rail, the pane and
 // the More word from. Pattern: plug-in (Fowler, PoEAA, Plugin): the feature's folder says what it is as data and one `pane`
-// template, and its element is linked by importing this module. The tab is always shown; the phone's fifth slot calls it "Rules".
+// template, and its element is linked by importing this module. The tab is always shown.
 // Must not: draw or hold state, import the guest or another feature, or read an entity itself (the brief reads the store it is given).
 import {html} from 'lit';
 import './automations-pane.ts'; // defines <hp-automations-pane>
@@ -11,7 +11,6 @@ import type {FeatureDescriptor} from '../../ui/feature.ts';
 export const automationsFeature: FeatureDescriptor = {
   key: 'auto',
   title: 'auto.title',
-  shortTitle: 'auto.short',
   icon: 'flow',
   color: 'var(--c-heat)',
   phoneBar: false,

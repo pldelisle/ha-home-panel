@@ -15,8 +15,7 @@ export const en = {
   'charts.failed': 'Charts library failed to load',
   // a room whose thermostat is "Chambre de <Name>" (the Hilo naming), read in English
   'room.bedroomOf': "{name}'s bedroom",
-  // the ten subjects, in rail order: the rail's label, the pane's heading and the More list; `auto.short` is the fifth
-  // slot of the phone's bar, where "Automations" does not fit
+  // the ten subjects, in rail order: the rail's label, the pane's heading and the More list
   'home.title': 'Home',
   // the phone's "Coming up" list on the Home pane (src/shell/upcoming.ts, #267)
   'home.upcoming.sunset': 'Sunset · theme turns dark',
@@ -103,7 +102,6 @@ export const en = {
   'media.modeIsOff': 'Off',
   'security.title': 'Security',
   'auto.title': 'Automations',
-  'auto.short': 'Rules',
   'nav.more': 'More',
   // the phone's More sheet (src/shell/more-sheet.ts): its title, the line under it and its Close button
   'more.title': 'More',

@@ -100,7 +100,6 @@ export const fr: Record<MessageKey, string> = {
   'media.modeIsOff': 'Désactivé',
   'security.title': 'Sécurité',
   'auto.title': 'Automatisations',
-  'auto.short': 'Règles',
   'nav.more': 'Plus',
   'more.title': 'Plus',
   'more.sub': 'Toutes les sections',

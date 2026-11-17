@@ -34,7 +34,7 @@ describe('the registry', () => {
     expect(FEATURES.filter(f => f.phoneBar).map(f => f.key)).toEqual(['home', 'lights', 'climate', 'car']);
   });
 
-  test('names each subject by its colour token and a catalog title, and only Automations has a short one', () => {
+  test('names each subject by its colour token and a catalog title', () => {
     expect(FEATURES.map(f => f.color)).toEqual([
       'var(--c-grid)',
       'var(--warn)',
@@ -48,7 +48,6 @@ describe('the registry', () => {
       'var(--c-heat)',
     ]);
     for (const f of FEATURES) expect(f.title).toBe(f.key === 'cams' ? 'security.title' : `${f.key}.title`);
-    expect(FEATURES.filter(f => f.shortTitle).map(f => [f.key, f.shortTitle])).toEqual([['auto', 'auto.short']]);
   });
 
   // the rail's labels were English words the French layer rewrote with its map; they are catalog messages now and must
@@ -57,7 +56,6 @@ describe('the registry', () => {
     const labels: [keyof typeof en, string][] = [
       ...FEATURES.map(f => [f.title, en[f.title]] as [keyof typeof en, string]),
     ];
-    labels.push(['auto.short', en['auto.short']]);
     // the More sheet's Close button, which the sheet draws from the catalog (its title, line and the bar's More left the map
     // after a byte comparison; the French baseline of the sheet holds them)
     labels.push(['more.close', en['more.close']]);
