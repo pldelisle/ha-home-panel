@@ -23,9 +23,8 @@ text {
 }
 .cap {
   fill: var(--fg2);
-  font-size: calc(11px * var(--tx));
-  font-weight: 700;
-  letter-spacing: 0.12em;
+  font-size: calc(13px * var(--tx));
+  font-weight: 600;
 }
 .st {
   fill: var(--fg2);

@@ -137,23 +137,23 @@
     },
     {
       "key": "energy.flow.grid",
-      "was": "RÉSEAU"
+      "written": "Réseau"
     },
     {
       "key": "energy.flow.home",
-      "was": "kW · MAISON"
+      "written": "kW · Maison"
     },
     {
       "key": "energy.flow.water",
-      "was": "CHAUFFE-EAU"
+      "written": "Chauffe-eau"
     },
     {
       "key": "energy.flow.heat",
-      "was": "CHAUFFAGE"
+      "written": "Chauffage"
     },
     {
       "key": "energy.flow.ev",
-      "was": "RECHARGE VÉ"
+      "written": "Recharge VÉ"
     },
     {
       "key": "energy.flow.rest",

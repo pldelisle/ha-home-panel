@@ -117,7 +117,7 @@ describe('the nodes and their figures', () => {
     expect(home).toMatchObject({cx: 220, cy: 160, r: 56, strokeWidth: 4, color: 'var(--c-home)', on: true});
     expect(home.texts).toEqual([
       {x: 220, y: 158, text: '0.85', anchor: 'middle', kind: 'big', size: 28},
-      {x: 220, y: 178, text: 'kW · HOME', anchor: 'middle', kind: 'st'},
+      {x: 220, y: 178, text: 'kW · Home', anchor: 'middle', kind: 'st'},
     ]);
   });
 
@@ -141,13 +141,13 @@ describe('the captions', () => {
       rooms: [room(true), room(true), room(false), room(false)],
     });
     expect(geometry.labels).toEqual([
-      {x: 70, y: 222, text: 'GRID', anchor: 'middle', kind: 'cap'},
+      {x: 70, y: 222, text: 'Grid', anchor: 'middle', kind: 'cap'},
       {x: 70, y: 238, text: 'Importing', anchor: 'middle', kind: 'st'},
-      {x: 300, y: 44, text: 'WATER HEATING', anchor: 'start', kind: 'cap'},
+      {x: 300, y: 44, text: 'Water heating', anchor: 'start', kind: 'cap'},
       {x: 300, y: 60, text: 'Heating, hot', anchor: 'start', kind: 'st'},
-      {x: 370, y: 222, text: 'ROOM HEATING', anchor: 'middle', kind: 'cap'},
+      {x: 370, y: 222, text: 'Room heating', anchor: 'middle', kind: 'cap'},
       {x: 370, y: 238, text: '2 of 4 rooms on', anchor: 'middle', kind: 'st'},
-      {x: 300, y: 272, text: 'EV CHARGING', anchor: 'start', kind: 'cap'},
+      {x: 300, y: 272, text: 'EV charging', anchor: 'start', kind: 'cap'},
       {x: 300, y: 288, text: 'Charging', anchor: 'start', kind: 'st'},
       {x: 120, y: 290, text: 'Rest of home', anchor: 'end', kind: 'st'},
       {x: 120, y: 306, text: '0.50 kW', anchor: 'end', kind: 'big', size: 15},
@@ -195,13 +195,13 @@ describe('in French', () => {
   test('the captions, the decimal comma and the sentence', () => {
     const geometry = layout({grid: 3.24, heat: 2.4, waterHeater: 0.85, ev: 7.1, rest: 0.5}, 'fr');
     expect(words(geometry)).toEqual([
-      'RÉSEAU',
+      'Réseau',
       'Consomme',
-      'CHAUFFE-EAU',
+      'Chauffe-eau',
       'Chauffe, chaud',
-      'CHAUFFAGE',
+      'Chauffage',
       '0 sur 4 pièces en marche',
-      'RECHARGE VÉ',
+      'Recharge VÉ',
       'Recharge',
       'Reste de la maison',
       '0,50 kW',

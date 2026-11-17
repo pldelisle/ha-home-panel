@@ -183,10 +183,8 @@
   box-shadow: var(--shadow);
 }
 .walert b {
-  font-size: calc(11px * var(--tx));
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font-size: calc(13px * var(--tx));
+  font-weight: 600;
 }
 .walert span {
   font-weight: 600;

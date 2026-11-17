@@ -14,11 +14,9 @@
   padding-right: max(16px, env(safe-area-inset-right, 0px));
 }
 .lbl {
-  font-size: calc(12px * var(--tx));
+  font-size: calc(13px * var(--tx));
   font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--label);
+  color: var(--fg2);
 }
 .faint {
   color: var(--fg3);

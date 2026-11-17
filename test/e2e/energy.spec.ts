@@ -82,7 +82,7 @@ test.describe('on a phone', () => {
     ]);
     await expect(detail(house)).toBeVisible();
     await expect(flow(house).locator('text.big').nth(1)).toHaveText('3.24');
-    await expect(flow(house).locator('text.st', {hasText: /^kW · HOME$/})).toHaveText('kW · HOME');
+    await expect(flow(house).locator('text.st', {hasText: /^kW · Home$/})).toHaveText('kW · Home');
     await expect(detail(house).locator('.inner > hp-chart .apexcharts-canvas')).toBeVisible();
     await expect(detail(house).locator('.donutchart .apexcharts-canvas')).toBeVisible();
     await expect(detail(house).locator('.totals .tile')).toHaveCount(6);
