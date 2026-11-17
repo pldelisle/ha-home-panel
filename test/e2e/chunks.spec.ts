@@ -123,7 +123,7 @@ test.describe('lazy chunks', () => {
     expect(house.chunkRequests, 'chunks asked for on the Home tab').toEqual([]);
 
     await house.tab('auto');
-    await expect(house.root().locator('#pane-auto svg').first()).toBeVisible({timeout: 10_000});
+    await expect(house.root().locator('#pane-auto svg:not([aria-hidden])').first()).toBeVisible({timeout: 10_000});
     await expect.poll(() => house.chunksWith(MERMAID), 'chunks holding Mermaid on the Automations tab').toHaveLength(1);
     // KaTeX (Mermaid's formulas, 259 kB) stays a lazy chunk of its own, asked for only by a label with $$…$$: none here
     expect(

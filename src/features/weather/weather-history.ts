@@ -12,7 +12,7 @@ import '../../ui/chart.ts'; // defines <hp-chart>
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {StoreController} from '../../ui/controllers/store-controller.ts';
 import {SheetDismissEvent} from '../../ui/events.ts';
-import {lensLike} from '../../ui/lens.ts';
+import {lens} from '../../ui/lens.ts';
 import '../../ui/range-tabs.ts'; // defines <hp-range-tabs>
 import type {RangeChangeDetail, RangeTab} from '../../ui/range-tabs.ts';
 import {RANGES, type Range} from '../../ui/ranges.ts';
@@ -202,7 +202,7 @@ export class WeatherHistory extends LitElement {
           </div>
         </div>
       </hp-sheet>
-      ${lensLike(this.getRootNode())}`;
+      ${lens}`;
   }
 
   // what the sheet has to say: a sensor Home Assistant lacks, a read that failed, the wait, no points at all, or the chart. A range

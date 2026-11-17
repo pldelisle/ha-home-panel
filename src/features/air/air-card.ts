@@ -12,7 +12,7 @@ import cardOwn from './air-card.element.css?inline';
 import airShared from './styles.css?inline';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {SheetRequestEvent} from '../../ui/events.ts';
-import {lensLike} from '../../ui/lens.ts';
+import {lens} from '../../ui/lens.ts';
 import {common} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
@@ -59,7 +59,7 @@ export class AirCard extends LitElement {
       >
         ${isFilledCard(view) ? this.renderFilled(view) : this.renderEmpty(view)}
       </div>
-      ${lensLike(this.getRootNode())}`;
+      ${lens}`;
   }
 
   private renderEmpty({title, message}: {title: string; message: string}) {

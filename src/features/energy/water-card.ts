@@ -9,7 +9,7 @@ import type {WaterChartGeometry, WaterChartText} from './water-chart.ts';
 import ownCss from './water-card.element.css?inline';
 import energyShared from './styles.css?inline';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
-import {lensLike} from '../../ui/lens.ts';
+import {lens} from '../../ui/lens.ts';
 import {common, hero} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
@@ -61,7 +61,7 @@ export class WaterCard extends LitElement {
         }
         ${view.line === null ? nothing : html`<div class="muted whline">${view.line}</div>`}
       </div>
-      ${lensLike(this.getRootNode())}`;
+      ${lens}`;
   }
 
   // the geometry's numbers and texts, placed as they come: the grid and its labels, the power axis, the hour ticks, the bars, the line and its last point

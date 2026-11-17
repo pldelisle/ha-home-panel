@@ -27,7 +27,7 @@ import sheetOwn from './sensor-history.element.css?inline';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {StoreController} from '../../ui/controllers/store-controller.ts';
 import {SheetDismissEvent} from '../../ui/events.ts';
-import {lensLike} from '../../ui/lens.ts';
+import {lens} from '../../ui/lens.ts';
 import '../../ui/range-tabs.ts'; // defines <hp-range-tabs>
 import type {RangeChangeDetail, RangeTab} from '../../ui/range-tabs.ts';
 import {RANGES} from '../../ui/ranges.ts';
@@ -140,7 +140,7 @@ export class SensorHistory extends LitElement {
           </div>
         </div>
       </hp-sheet>
-      ${lensLike(this.getRootNode())}`;
+      ${lens}`;
   }
 
   // the strip, its axis and the events, or the line that says why there are none

@@ -28,7 +28,7 @@ import {OptimisticController} from '../../ui/controllers/optimistic.ts';
 import {StoreController} from '../../ui/controllers/store-controller.ts';
 import {ToastEvent} from '../../ui/events.ts';
 import {ico} from '../../ui/icons.ts';
-import {lensLike} from '../../ui/lens.ts';
+import {lens} from '../../ui/lens.ts';
 import type {Overlay} from '../../ui/overlay-store.ts';
 import '../../ui/seg.ts'; // defines <hp-seg>
 import type {SegChangeDetail} from '../../ui/seg.ts';
@@ -177,7 +177,7 @@ export class CarComfort extends LitElement {
         <div class="hint">${departure.hint}</div>
         <button type="button" class="save" @click=${this.save}>${departure.save}</button>
       </div>
-      ${lensLike(this.getRootNode())}`;
+      ${lens}`;
   }
 
   private renderButton(view: ComfortView, b: ComfortButtonView) {

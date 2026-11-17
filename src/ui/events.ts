@@ -60,7 +60,7 @@ export interface EmptyDetail {
 
 /**
  * An element has nothing to show, or something again: its container toggles its `hidden`, as the legacy panel did when it drew the
- * markup. The Home pane hears it from the stack and the scenes row (#268), and the guest from the idle stack (ADR 0031) until spec 26.
+ * markup. The Home pane hears it from the stack and the scenes row (#268), and the idle screen from its stack (#276).
  */
 export class EmptyEvent extends CustomEvent<EmptyDetail> {
   constructor(empty: boolean) {

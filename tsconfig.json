@@ -8,12 +8,9 @@
     "noEmit": true,
     "types": ["node"],
     "skipLibCheck": true,
-    // vite.config.ts imports the font file list from src/fonts.js; this lets TypeScript read that module's types
-    // (tsconfig.check.json checks the module itself, strictly)
+    // the tests import a few .mjs helpers and the French layer (src/i18n/fr.js), phase 4's input
     "allowJs": true,
     "allowImportingTsExtensions": true
   },
-  "include": ["*.ts", "src/**/*.ts", "test/**/*.ts"],
-  // loose-pass scaffolding for the legacy files: tsconfig.legacy.json only
-  "exclude": ["src/legacy/**/*.d.ts"]
+  "include": ["*.ts", "src/**/*.ts", "test/**/*.ts"]
 }

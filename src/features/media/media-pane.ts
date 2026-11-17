@@ -20,7 +20,7 @@ import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {OptimisticController} from '../../ui/controllers/optimistic.ts';
 import {StoreController} from '../../ui/controllers/store-controller.ts';
 import {SheetDismissEvent} from '../../ui/events.ts';
-import {lensLike} from '../../ui/lens.ts';
+import {lens} from '../../ui/lens.ts';
 import '../../ui/pane-header.ts'; // defines <hp-pane-header>
 import '../../ui/sheet.ts'; // defines <hp-sheet>
 import {common} from '../../ui/styles/index.ts';
@@ -77,9 +77,7 @@ export class MediaPane extends LitElement {
     return html`<hp-pane-header .icon=${'tv'} .color=${'var(--c-home)'} .heading=${t('media.title')}>
         <div slot="sub">${view.summary}</div>
       </hp-pane-header>
-      ${compact ? html`${this.renderTiles(view)}${this.renderSheet(view)}` : this.renderCards(view)}${lensLike(
-        this.getRootNode(),
-      )}`;
+      ${compact ? html`${this.renderTiles(view)}${this.renderSheet(view)}` : this.renderCards(view)}${lens}`;
   }
 
   // the cards are the tablet's: the television's when the house has one, and the speakers'

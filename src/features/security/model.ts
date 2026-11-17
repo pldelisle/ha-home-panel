@@ -225,3 +225,14 @@ export function securityModel(inputs: SecurityInputs, deps: SecurityModelDeps): 
     },
   };
 }
+
+/**
+ * The More sheet's word under Security: the doors open or "Doors closed", then "motion now" while a motion sensor sees someone
+ * (the legacy `moreLines`'s rule, moved with the guest's deletion, #277).
+ */
+export function securityMoreWord(sensors: readonly SensorInputs[], t: Translate): string {
+  const open = sensors.filter(s => s.kind === 'door' && s.on).length;
+  const moving = sensors.some(s => s.kind === 'motion' && s.on);
+  const doors = open ? t('security.doorsOpen', {n: open}) : t('security.more.doorsClosed');
+  return moving ? `${doors} · ${t('security.summary.motionNow')}` : doors;
+}

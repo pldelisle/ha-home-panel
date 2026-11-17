@@ -1,12 +1,12 @@
-// The stylesheet is minified by Lightning CSS at build time (src/styles.js imports src/css/*.css and src/ui/styles/*.css with `?inline`;
+// The stylesheet is minified by Lightning CSS at build time (src/shell/frame-styles.ts imports src/shell/frame/*.css and src/ui/styles/*.css with `?inline`;
 // vite.config.ts sets `build.cssMinify` and `build.cssTarget`, for Safari and iOS 26 and current Chrome, Edge and
 // Firefox: docs/specs/06-vite-build.md, "As built (#69)"). The screenshot baselines catch what looks different; this
 // test catches what a minifier can lose without a pixel moving in the test house: an effect dropped, a block merged
 // away, a rule that is no longer there.
 //
-// The expected figures come from the source files (a regex over src/css/*.css and src/ui/styles/*.css, comments removed), never from the
+// The expected figures come from the source files (a regex over src/shell/frame/*.css and src/ui/styles/*.css, comments removed), never from the
 // output. The output is built here into a scratch folder, through Vite's own API and the repository's vite.config.ts:
-// once as the whole entry (what ships) and once from src/styles.js alone, which gives the stylesheet as a string apart
+// once as the whole entry (what ships) and once from src/shell/frame-styles.ts alone, which gives the stylesheet as a string apart
 // from the JavaScript around it (the entry has a few `backdrop-filter` and `color-mix(` of its own in inline styles).
 import {test, expect, beforeAll, afterAll} from 'vitest';
 import {readFileSync, readdirSync, mkdtempSync, rmSync} from 'node:fs';
@@ -17,9 +17,9 @@ import {build} from 'vite';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const stripComments = css => css.replace(/\/\*[\s\S]*?\*\//g, '');
-// the legacy sheet is src/css/ and the kit's files (src/ui/styles/, ADR 0019), which src/styles.js joins
+// the frame's sheet is src/shell/frame/ and the kit's files (src/ui/styles/, ADR 0019), which src/shell/frame-styles.ts joins
 const source = stripComments(
-  ['src/css', 'src/ui/styles']
+  ['src/shell/frame', 'src/ui/styles']
     .flatMap(dir => readdirSync(join(ROOT, dir)).map(f => join(ROOT, dir, f)))
     .filter(f => f.endsWith('.css'))
     .map(f => readFileSync(f, 'utf8'))
@@ -38,17 +38,17 @@ beforeAll(async () => {
     build: {outDir: join(scratch, 'entry'), emptyOutDir: true, sourcemap: false, lib: {entry: 'src/main.js'}},
   });
   entry = readFileSync(join(scratch, 'entry/home-panel.js'), 'utf8');
-  // src/styles.js alone, with the same CSS settings: its `CSS` export is the minified stylesheet
+  // src/shell/frame-styles.ts alone, with the same CSS settings: its `FRAME_CSS` export is the minified stylesheet
   await build({
     ...common,
     build: {
       outDir: join(scratch, 'styles'),
       emptyOutDir: true,
       sourcemap: false,
-      lib: {entry: 'src/styles.js', formats: ['es'], fileName: () => 'styles.js'},
+      lib: {entry: 'src/shell/frame-styles.ts', formats: ['es'], fileName: () => 'styles.js'},
     },
   });
-  css = (await import(pathToFileURL(join(scratch, 'styles/styles.js')).href)).CSS;
+  css = (await import(pathToFileURL(join(scratch, 'styles/styles.js')).href)).FRAME_CSS;
 }, 120_000);
 afterAll(() => rmSync(scratch, {recursive: true, force: true}));
 
@@ -65,7 +65,7 @@ test('the minified stylesheet is the one inside the entry, and it is smaller tha
 
 test('the stylesheet is minified: no comment, no run of spaces', () => {
   expect(css).not.toContain('/*');
-  expect(entry).not.toContain('panel extras'); // a comment in src/css/extra.css
+  expect(entry).not.toContain('panel extras'); // a comment in src/shell/frame/extra.css
   expect(css).not.toMatch(/ {2}|\n/);
 });
 

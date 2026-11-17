@@ -69,3 +69,16 @@ export function waterGlance(
     go: {tab: 'energy', sheet: WATER_SHEET},
   };
 }
+
+/**
+ * The More sheet's word under Energy: the grid's power now, in watts under a kilowatt ("850 W now", "3.24 kW now"), the legacy
+ * `moreLines`'s rule (#277). Null while the grid reads nothing.
+ */
+export function moreWord({hass, config, names, t, fmt}: GlanceStore): string | null {
+  if (!hass) return null;
+  const kw = readEnergy(hass.states, config, names).power.grid;
+  if (kw == null) return null;
+  return kw < WATTS_BELOW_KW
+    ? t('energy.more.watts', {n: Math.round(kw * 1000)})
+    : t('energy.more.kilowatts', {n: fmt.fixed(kw, 2)});
+}

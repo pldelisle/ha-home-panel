@@ -43,6 +43,8 @@ export const en = {
   'weather.title': 'Weather',
   'car.title': 'Car',
   'energy.title': 'Energy',
+  'energy.more.watts': '{n} W now',
+  'energy.more.kilowatts': '{n} kW now',
   'air.title': 'Air',
   'media.title': 'Media',
   // what a television that has no name of its own is called, by its source (src/providers/samsung-tv.ts, tv-entity.ts)
@@ -428,6 +430,7 @@ export const en = {
   'security.summary.noCameras': 'No cameras',
   'security.summary.allDoorsClosed': 'all doors closed',
   'security.summary.motionNow': 'motion now',
+  'security.more.doorsClosed': 'Doors closed',
   'security.summary.noMotion': 'no motion',
   // the history sheet (src/features/security/history.ts)
   'security.history': '{name} history',

@@ -424,6 +424,9 @@
         "n": 1,
         "m": 5
       }
+    },
+    {
+      "key": "security.more.doorsClosed"
     }
   ]
 }

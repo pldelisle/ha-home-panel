@@ -1,7 +1,7 @@
 // <hp-media-tile>: one player on the phone's Media tab, the kit's wide summary tile with the television's switch or a speaker's play button.
 // Pattern: humble object (Meszaros) over the model's `MediaTileView`; a tap on the tile asks the shell for its controls' sheet by a
 // `SheetRequestEvent` (ADR 0021), and a tap on its control holds the value it asks for and runs the feature's command (ADR 0023).
-// Its look is the kit's `.stile` rules, adopted (ADR 0019), as the guest's tiles and `<hp-stat-tile>` draw them.
+// Its look is the kit's `.stile` rules, adopted (ADR 0019), as `<hp-stat-tile>` draws them.
 // Must not: read an entity or the store's state (the pane hands it `tile`), word a string, or open the sheet from its control.
 import {LitElement, html, nothing, unsafeCSS} from 'lit';
 import {classMap} from 'lit/directives/class-map.js';

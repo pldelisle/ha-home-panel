@@ -9,7 +9,7 @@ import type {ChipView} from './model.ts';
 import shared from './styles.css?inline';
 import own from './automation-chips.element.css?inline';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
-import {lensLike} from '../../ui/lens.ts';
+import {lens} from '../../ui/lens.ts';
 import {common} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
@@ -54,7 +54,7 @@ export class AutomationChips extends LitElement {
           )}
         </div>
       </section>
-      ${lensLike(this.getRootNode())}`;
+      ${lens}`;
   }
 }
 
