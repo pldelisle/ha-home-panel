@@ -74,6 +74,24 @@ hp-header {
 .app.tabsv.cp .head .clock {
   display: none;
 }
+/* any tab but Home (#380): no greeting, so the row is slim and the tab's own title is the page's large title; the clock leads on a tablet,
+   and on a phone the menu button, the live pill and the gear share the first row */
+.hello[hidden] {
+  display: none;
+}
+.head.slim {
+  margin-bottom: 14px;
+}
+.head.slim .clock {
+  order: -1;
+  margin-right: auto;
+  text-align: left;
+  font-size: calc(clamp(24px, 2.8vw, 34px) * var(--tx));
+}
+.app.tabsv.cp .head.slim #chips {
+  grid-area: 1/2;
+  justify-content: flex-end;
+}
 /* on light glass the grey lines go dark, for contrast */
 .app.gl:not([data-theme='dark']) .hello > div,
 .app.gl:not([data-theme='dark']) .clock small {

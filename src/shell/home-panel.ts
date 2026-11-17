@@ -534,6 +534,7 @@ export class HomePanel extends LitElement {
         .live=${this.liveRunning}
         .liveKey=${this.liveKey}
         .historyAt=${this.statistics.lastLoadedAt}
+        .tab=${this.tab}
       ></hp-header>
       <div class="tabview" id="tabview">
         ${this.renderRail()}

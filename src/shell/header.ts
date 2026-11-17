@@ -1,4 +1,4 @@
-// <hp-header>: the panel's header: the sidebar button, the greeting with Who's home, the chips (weather, peak, the live pill), the gear,
+// <hp-header>: the panel's header: the sidebar button, the greeting with Who's home (on Home only, #380), the chips (weather, peak, the live pill), the gear,
 // the clock, and the two popups the shell keeps open or shut (the Status checks under the pill, the settings under the gear).
 // Pattern: a humble composition (Meszaros, xUnit Test Patterns), the composition root's child, drawn in light DOM (ADR 0033) so the legacy
 // `.head` rules still lay out its row, as the Home pane is (ADR 0032); its own rules are header.css. It replaced the guest's header (#269).
@@ -30,6 +30,7 @@ export class Header extends LitElement {
     live: {type: Boolean},
     liveKey: {type: Number},
     historyAt: {attribute: false},
+    tab: {type: String},
   };
   /** The Status checks are open under the pill. */
   declare statusOpen: boolean;
@@ -41,6 +42,8 @@ export class Header extends LitElement {
   declare liveKey: number;
   /** When the statistics cache last answered, null before its first reply: the clock's small line and the settings popup's version line. */
   declare historyAt: number | null;
+  /** The tab shown: the greeting, the date and Who's home are Home's, every other tab's title is the page's large title (#380). */
+  declare tab: string;
 
   constructor() {
     super();
@@ -49,6 +52,7 @@ export class Header extends LitElement {
     this.live = false;
     this.liveKey = 0;
     this.historyAt = null;
+    this.tab = 'home';
   }
 
   protected override createRenderRoot(): HTMLElement {
@@ -66,11 +70,11 @@ export class Header extends LitElement {
   // The weather chip is drawn anew whenever the pill changes, as the legacy header redrew it: the pill moves the chips, and Chromium
   // keeps a moved glass chip's old sub-pixel raster where a new one is drawn fresh.
   protected override render() {
-    return html`<header class="head">
+    return html`<header class="head${this.tab === 'home' ? '' : ' slim'}">
       <button class="icon menu" id="menu" type="button" aria-label="Open the sidebar" @click=${this.openSidebar}>
         ${ico('menu')}
       </button>
-      <hp-greeting class="hello" id="hello"></hp-greeting>
+      <hp-greeting class="hello" id="hello" ?hidden=${this.tab !== 'home'}></hp-greeting>
       <div class="chips">
         <div id="chips">
           ${keyed(this.liveKey, html`<hp-weather-chip .slim=${this.live}></hp-weather-chip>`)}<hp-peak-chip
