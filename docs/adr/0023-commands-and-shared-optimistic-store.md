@@ -12,7 +12,7 @@ The legacy panel sends every control's service call with `call`, holds what the 
 
 The held values are one `OverlayStore` (`src/ui/overlay-store.ts`), a plain observable class with the pure `overlay` rule (the legacy `pend`, string comparison and twenty seconds kept). The shell makes one per panel and provides it by `optimisticContext`, so two panels stay independent. `OptimisticController` is each element's subscriber: it subscribes in `hostConnected`, unsubscribes in `hostDisconnected`, updates its host on any change, and keeps one timer at the earliest expiry so an unconfirmed value visibly reverts at twenty seconds.
 
-`<hp-switch>` is a controlled component: a tap says what it asks for and its owner sets `checked`, normally from the overlay. The legacy `call`, `pend` and `pending` stay for every control that has not moved, with the same twenty-second rule, until #263.
+`<hp-switch>` is a controlled component: a tap says what it asks for and its owner sets `checked`, normally from the overlay. The legacy `call`, `pend` and `pending` stay for every control that has not moved, with the same twenty-second rule, until #263. (#262 deleted them with the light sheet.)
 
 `common.failed` is English in French too, as the legacy layer leaves it; translating it is its own visible change and needs an approved baseline.
 
@@ -21,7 +21,7 @@ The held values are one `OverlayStore` (`src/ui/overlay-store.ts`), a plain obse
 - A fix to the failure path is one fix, and a failed command no longer resets another control's held value.
 - The Home card and the pane read one state.
 - The runner is an invoker whose header bars the store, so the element hands it `t`.
-- The two implementations coexist for a few releases, with the twenty seconds and the string comparison written twice; each copy names its ticket. `<hp-switch>` likewise copies the legacy `.sw` look, which the TV (#217, #218, #219), the light sheet (#262) and the Wallbox and precondition switches (#253) still draw, until #263 deletes the rules.
+- The two implementations coexist for a few releases, with the twenty seconds and the string comparison written twice; each copy names its ticket. `<hp-switch>` likewise copies the legacy `.sw` look, which the TV (#217, #218, #219), the light sheet (#262) and the Wallbox and precondition switches (#253) still draw, until #263 deletes the rules. (#263 deleted them.)
 
 ## Read
 

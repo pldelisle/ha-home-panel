@@ -1,7 +1,7 @@
 // CommandRunner: sends one service call (or a list, in order), tells the person on success, and on failure undoes what it held and says so.
 // Pattern: Command (Gamma et al.): `Command` is the data (`src/core/commands.ts`), this is the invoker, `PanelApi` the receiver; compensating action
-// (Richardson): releasing the keys the command set. The legacy `call` empties the whole bag; #263 deletes it, and its wording.
-// A known copy: `Didn't work: {reason}` is the legacy `call`'s wording, until #263; the reason is read by the API client's `rejectionReason`.
+// (Richardson): releasing the keys the command set. The legacy `call`, which emptied the whole bag, is gone (#262).
+// `Didn't work: {reason}` is its wording, kept; the reason is read by the API client's `rejectionReason`.
 // Must not: read the store, format a string (the catalog does, through the `t` it is handed), or touch another command's state.
 import {ContextConsumer} from '@lit/context';
 import type {ReactiveControllerHost} from 'lit';

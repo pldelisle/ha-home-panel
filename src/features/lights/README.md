@@ -1,6 +1,6 @@
 # Lights
 
-What the Lights tab reads and computes ([spec 23](../../../docs/specs/23-lights.md)): the house's lights grouped into one tile per area, the Adaptive Lighting switch that runs each, the linked rooms and the order an admin saved, what a tile's lights are doing, and the Adaptive Lighting strip. This folder holds the pure half of the first move (#258), the model (#259), the commands (#261), the pane with its tiles (#260) and the room's sheet (#262); Arrange's move into the kit (#263) follows.
+What the Lights tab reads and computes ([spec 23](../../../docs/specs/23-lights.md)): the house's lights grouped into one tile per area, the Adaptive Lighting switch that runs each, the linked rooms and the order an admin saved, what a tile's lights are doing, and the Adaptive Lighting strip. This folder holds the pure half of the first move (#258), the model (#259), the commands (#261), the pane with its tiles (#260), the room's sheet (#262) and Arrange's move into the kit (#263).
 
 ## The folder
 
@@ -26,7 +26,7 @@ src/features/lights/
                            each intent as the service calls to run, in order (CommandRunner.runAll runs them)
   index.ts                 lightsFeature: the registry's descriptor (on the phone's bar, so no More word)
   lights-pane.ts           <hp-lights-pane>: the header with Arrange and Reset order, the strip, the rows or the phone's grid, a pair
-                           side by side; runs the commands, saves the order and the links, and holds Arrange's drag until #263
+                           side by side; runs the commands and saves the order and the links
   light-tile.ts            <hp-light-tile>: one room; the bulb asks the pane to switch it (`area-toggle`), the rest opens its sheet
   sheets.ts                ROOM_SHEET ('lights.room'), the room sheet's id, and roomKeyOf(detail): the room it is asked to show
   light-sheet.ts           <hp-light-sheet>: a room's sheet: power and Done, the two pills, Auto and Night, the bulbs, Linked with
@@ -41,6 +41,7 @@ src/ui/
 src/ui/controllers/
   system-data.ts           SystemDataController(host, deps, key): one key of the house's frontend system data, read and written through
   store-controller.ts      gains `held` and `release()`: a change while held waits, and the release draws it once (#262)
+  drag-reorder.ts          DragReorderController(host, {enabled, keys, keyOf, onReorder}): the kit's drag and drop, Arrange's (#263)
 ```
 
 ## The tiles
@@ -71,7 +72,7 @@ The order and the links are one key, `home_panel`, of Home Assistant's frontend 
 
 ## The pane
 
-`<hp-lights-pane>` reads the tiles with `readLights` over its store controller (the lights and their switches only, paused while another tab is shown) and the system data, and `lightsModel` words them; the template places each unit (a room, or a linked pair drawn as two tiles side by side) keyed by its first tile. A bulb's `area-toggle` runs `toggleArea` on the room's pair, All off runs `allOff`, and a tap elsewhere on a tile asks for the room's sheet with its key (`SheetRequestEvent('lights.room', {key})`). While an admin arranges, the units jiggle, a drag moves one (the unit under the pointer gives way and the page scrolls near the edges), an arrow key moves the focused one, and the order is saved when it changed; taps neither switch nor open.
+`<hp-lights-pane>` reads the tiles with `readLights` over its store controller (the lights and their switches only, paused while another tab is shown) and the system data, and `lightsModel` words them; the template places each unit (a room, or a linked pair drawn as two tiles side by side) keyed by its first tile. A bulb's `area-toggle` runs `toggleArea` on the room's pair, All off runs `allOff`, and a tap elsewhere on a tile asks for the room's sheet with its key (`SheetRequestEvent('lights.room', {key})`). While an admin arranges (the kit's `DragReorderController`, enabled while `editing`), the units jiggle, a drag moves one (the unit under the pointer gives way and the page scrolls near the edges), an arrow key moves the focused one, and the order is saved when it changed; taps neither switch nor open.
 
 ## The sheet
 

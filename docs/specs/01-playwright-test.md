@@ -106,7 +106,7 @@ Every check below exists in the script today and MUST exist after the conversion
 
 `lights-links.spec.ts` (config with the kitchen pair on a switch and office linked to living room) 32. Tablet: tiles read Island, Sink, Office, Living room; two linked pairs are shown. 33. Tablet: tapping a linked tile's bulb sends one `light.turn_on` or `light.turn_off` naming both rooms' bulbs. 34. Tablet: the sheet's Linked with row reads "Sink"; opening it lists None, Sink (checked), Office, Living room; choosing None writes `frontend/set_system_data` with key `home_panel` and value `{light_links: [['office', 'living_room']]}` and the kitchen tiles stand apart; choosing Living room writes `light_links: [['light.kitchen_island', 'living_room']]` and sends `light.turn_on` for the living room bulb; Back returns to the room. 35. Phone: two linked blocks; tapping the Island tile's text opens the sheet with a Linked with row. 36. Non-admin (`admin: false`): the Linked with row is disabled. 61. Tablet: opening Linked with moves focus to Back, and Back moves it to the Linked with row (#262).
 
-`lights-arrange.spec.ts` 37. Tablet, admin: Arrange, drag Living room onto Island, and the order becomes Office, Living room, Island, Sink; the last system-data write is `{light_order: ['office', 'light.kitchen_island']}`; no `light.*` call was sent; Done leaves arranging. 38. Phone with `sysdata: {home_panel: {light_order: ['office', 'light.kitchen_island']}}`: tiles follow the saved order. 39. Tablet, non-admin: the Arrange bar is hidden.
+`lights-arrange.spec.ts` 37. Tablet, admin: Arrange, drag Living room onto Island, and the order becomes Office, Living room, Island, Sink; the last system-data write is `{light_order: ['office', 'light.kitchen_island']}`; no `light.*` call was sent; Done leaves arranging. 38. Phone with `sysdata: {home_panel: {light_order: ['office', 'light.kitchen_island']}}`: tiles follow the saved order. 39. Tablet, non-admin: the Arrange bar is hidden. 62. Tablet, arranging: a tap on the Island tile is stopped before the tile hears it; ArrowDown on the focused Island tile moves its block after Office's, writes `{light_order: ['office', 'light.kitchen_island']}` and leaves focus on the tile (#263).
 
 ### Determinism
 
@@ -115,7 +115,7 @@ Every check below exists in the script today and MUST exist after the conversion
 
 ## Acceptance Criteria
 
-1. `npm run test:e2e` passes locally and in CI on `main`, with every check numbered 1 to 61 present as a named test.
+1. `npm run test:e2e` passes locally and in CI on `main`, with every check numbered 1 to 62 present as a named test.
 2. `smoke.mjs` is gone; `test/e2e/out/` is gone; no spec calls a method or reads a property of the `home-panel` element other than setting `hass`, `narrow` and `panel` from the harness.
 3. No file under `src/` changed.
 4. A deliberately failing assertion in CI produces an uploaded trace and screenshot.

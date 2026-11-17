@@ -165,7 +165,6 @@
   box-shadow: var(--g-edge);
 }
 /* v1.18.2: every other surface follows. Top-level panels (sheet sections, room list) are glass cards; inner wells (rows, segmented controls, tabs, steppers, sensor and speaker rows) take the tile fill; small buttons inside take the selected-bubble fill; tinted "on" states mix their accent into the glass instead of the opaque card */
-.app.gl .larea,
 .app.gl .more,
 .app.gl .aupick .chip,
 .app.gl .auchips .chip,
@@ -175,20 +174,9 @@
   background: var(--g-tile);
   box-shadow: var(--g-edge-s);
 }
-.app.gl .lauto,
-.app.gl .lic {
-  background: var(--g-sel);
-  border-color: transparent;
-}
 .app.gl .aupick .chip.sel,
 .app.gl .auchips .chip.sel {
   background: var(--fg);
-}
-.app.gl .lauto[aria-pressed='true'] {
-  background: color-mix(in srgb, var(--c-home) 16%, var(--g-sel));
-}
-.app.gl .larea.on .lic {
-  background: color-mix(in srgb, var(--lc, var(--warn)) 26%, var(--g-sel));
 }
 .app.tabsv.gl .rtab:not([aria-selected='true']):active {
   background: var(--g-fill);
@@ -267,7 +255,6 @@
     backdrop-filter: none;
     background: var(--card);
   }
-  .app.gl .larea,
   .app.gl .more {
     background: var(--card2);
   }

@@ -1,8 +1,6 @@
 /*
- * <hp-switch>'s look: the iOS-style track and knob. A known duplicate of the legacy `.sw` rules (base.css, motion.css): the
- * light sheet drew `.sw` buttons until #262 gave it this element, so nothing draws them now; #263 (Lights, the deletion) deletes the rules.
- * The selectors differ (`.switch`, not `.sw`) because the styles-split test lets one file write a selector, and a
- * shadow root cannot reach the legacy rule anyway.
+ * <hp-switch>'s look: the iOS-style track and knob, the panel's one copy since #263 deleted the legacy `.sw` rules (base.css, motion.css)
+ * that it duplicated while the guest still drew `.sw` buttons.
  */
 :host {
   display: contents;
