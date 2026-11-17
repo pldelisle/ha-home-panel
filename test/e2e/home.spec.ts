@@ -100,3 +100,14 @@ test.describe('on a phone', () => {
     await expect(house.root().locator('hp-weather-detail')).toBeVisible();
   });
 });
+
+test.describe('a car that reports after the first load', () => {
+  test.use({houseOpts: {house: 'bare'}});
+
+  test('gets its tile when its sensor appears', async ({house}) => {
+    await house.tab('home');
+    await expect(tile(house, 'car')).toHaveCount(0);
+    await house.setState('sensor.fordpass_test_soc', {state: '50'});
+    await expect(tile(house, 'car').locator('.hv')).toHaveText('50.0%');
+  });
+});

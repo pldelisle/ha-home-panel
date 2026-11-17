@@ -2,7 +2,8 @@
 // the Security card, and the scenes row. The shell imports features; a feature never imports the shell or another feature (ADR 0017).
 // Pattern: a humble composition (Meszaros, xUnit Test Patterns), the composition root's child: each card is its feature's element on its
 // own ids (ADR 0012), drawn in light DOM (ADR 0032) so the pane's parts stay items of the `.pane-home` grid, styled by home-pane.css.
-// Must not: read an entity or word anything (the cards and the readers do), hold logic beyond placing them, or draw what the guest writes (`#hsub`).
+// It loads the Energy and Water heater tiles' history (`HomeHistory`) and hands it down. Must not: read an entity or word anything (the cards
+// and the readers do), hold logic beyond placing them and that load, or draw what the guest writes (`#hsub`).
 import {ContextConsumer} from '@lit/context';
 import {LitElement, html, nothing, unsafeCSS} from 'lit';
 import {ifDefined} from 'lit/directives/if-defined.js';
@@ -12,7 +13,7 @@ import './glance-tile.ts'; // defines <hp-glance-tile>
 import {HomeHistory} from './home-history.ts';
 import paneCss from './home-pane.css?inline';
 import {GLANCE_SOURCES, type GlanceDeps} from './home-tiles.ts';
-import {STATISTICS_TTL_MS, type StatisticsCache} from '../core/statistics-cache.ts';
+import type {StatisticsCache} from '../core/statistics-cache.ts';
 import '../features/media/index.ts'; // defines <hp-scene-tiles>
 import '../features/people/index.ts'; // defines <hp-who-card>
 import '../features/security/index.ts'; // defines <hp-security-card>
@@ -62,8 +63,8 @@ export class HomePane extends LitElement {
       const {store} = this.storeController;
       return {cache: this.cache as StatisticsCache, store, fmt: store.fmt};
     });
-    // the history is asked again once the cache would have let it go, as the legacy panel's shared history was
-    new TickController(this, STATISTICS_TTL_MS, () => this.active);
+    // each minute the tiles' "today" moves on and, once the cache would have let it go, the history is asked again (the legacy panel's every fifteen minutes)
+    new TickController(this, 60_000, () => this.active);
   }
 
   protected override createRenderRoot(): HTMLElement {
@@ -90,7 +91,7 @@ export class HomePane extends LitElement {
     const {t} = this.storeController.store;
     const compact = this.compact;
     const data = this.history.data;
-    const deps: GlanceDeps = {history: data, now: data?.at ?? 0};
+    const deps: GlanceDeps = {history: data, now: Date.now()};
     return html`<hp-pane-header .icon=${'house'} .color=${'var(--c-grid)'} .heading=${t('home.title')}
         ><div slot="sub" id="hsub"></div></hp-pane-header
       ><hp-config-card></hp-config-card>

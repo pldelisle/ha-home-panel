@@ -37,7 +37,7 @@ export interface HomeHistoryData {
 
 type Fmt = Pick<Formatters, 'hourNow' | 'isoDay'>;
 
-export function homeWindows(now: number, config: ResolvedConfig, fmt: Fmt): HomeWindows {
+function homeWindows(now: number, config: ResolvedConfig, fmt: Fmt): HomeWindows {
   const {today, meter33, fiveMin25h} = powerWindows(now, config, fmt);
   return {today, meter33, fiveMin25h};
 }
@@ -56,7 +56,7 @@ function deriveHomeHistory(
   };
 }
 
-export type HomeHistoryDeps = WindowedHistoryDeps<Fmt>;
+type HomeHistoryDeps = WindowedHistoryDeps<Fmt>;
 
 export class HomeHistory implements ReactiveController {
   private readonly history: WindowedHistory<HomeWindows, HomeHistoryData, Fmt>;

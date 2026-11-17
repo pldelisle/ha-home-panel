@@ -19,22 +19,33 @@ export type TileStore = Pick<PanelStore, 'hass' | 'config' | 'names' | 't' | 'fm
 export interface GlanceSource {
   /** The tile's identity, its view's `key`: `repeat` keys the tiles on it. */
   key: string;
-  ids(store: TileStore): string[];
-  /** The tile's words, or null where the house has nothing for it (the tile is not drawn). */
-  read(store: TileStore, deps: GlanceDeps): GlanceView | null;
+  /** `'*'` while the subject is still to be found (a car that reports after the first load), so the tile hears it arrive. */
+  ids(store: TileStore): readonly string[] | '*';
+  /** The tile's words, or null where the house has nothing for it (the tile is not drawn); `compact` is the phone's shape. */
+  read(store: TileStore, deps: GlanceDeps, shape: {compact: boolean}): GlanceView | null;
 }
 
 /** The six tiles in the legacy order: Lights, Climate, Car, Energy, Air, Water heater. */
 export const GLANCE_SOURCES: readonly GlanceSource[] = [
   {key: 'lights', ids: lightIds, read: lightsGlance},
   {key: 'climate', ids: climateIds, read: climateGlance},
-  {key: 'car', ids: store => carIds(store, store.hass ? findCar(store.hass.states) : null), read: carGlance},
+  {
+    key: 'car',
+    ids: store => {
+      const ref = store.hass ? findCar(store.hass.states) : null;
+      return ref ? carIds(store, ref) : '*';
+    },
+    read: carGlance,
+  },
   {key: 'energy', ids: energyIds, read: energyGlance},
   {key: 'air', ids: airIds, read: airGlance},
-  {key: 'water', ids: energyIds, read: waterGlance},
+  // the phone hides the tile of a house without the sensors, as the legacy panel did; the tablet's grid keeps it
+  {key: 'water', ids: energyIds, read: (store, deps, {compact}) => waterGlance(store, deps, {evenAbsent: !compact})},
 ];
 
 /** The tiles a house shows, in order: what the six tiles draw together. */
-export function glanceTiles(store: TileStore, deps: GlanceDeps): GlanceView[] {
-  return GLANCE_SOURCES.map(source => source.read(store, deps)).filter((view): view is GlanceView => view !== null);
+export function glanceTiles(store: TileStore, deps: GlanceDeps, shape: {compact: boolean}): GlanceView[] {
+  return GLANCE_SOURCES.map(source => source.read(store, deps, shape)).filter(
+    (view): view is GlanceView => view !== null,
+  );
 }

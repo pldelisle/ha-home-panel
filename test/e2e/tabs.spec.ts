@@ -308,8 +308,8 @@ test.describe('bare house', () => {
   });
 });
 
-// a house with a heat pump and no thermostat: the tab is the Climate descriptor's `available`, which the shell asks again when the guest asks for a frame
-// (`gateLacking`'s key carries `lacking().climate` until #268 deletes it), so a unit that reports after the first hass shows the tab, as Home's tile
+// a house with a heat pump and no thermostat: the tab is the Climate descriptor's `available`, which the shell asks at every change (`onAvailability`,
+// since #268), so a unit that reports after the first hass shows the tab, as Home's tile
 test.describe('a heat pump whose state arrives after the first load', () => {
   test.use({houseOpts: {house: 'bare', cfg: {entities: {heat_pump: 'climate.heat_pump'}}}});
 
@@ -325,8 +325,8 @@ test.describe('a heat pump whose state arrives after the first load', () => {
   });
 });
 
-// a house whose car reports after the first load: the tab is the Car descriptor's `available` (`findCar`), which the shell asks again when the guest asks for a
-// frame (`gateLacking`'s key carries whether the car is found, until #268 deletes it), so the car's tab and Home's tile appear when its sensor does
+// a house whose car reports after the first load: the tab is the Car descriptor's `available` (`findCar`), which the shell asks at every change
+// (`onAvailability`, since #268), so the car's tab and Home's tile appear when its sensor does
 test.describe('a car whose sensor appears after the first load', () => {
   test.use({houseOpts: {house: 'bare'}});
 

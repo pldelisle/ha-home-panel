@@ -577,7 +577,7 @@ export interface WeatherCardView {
   range: string;
 }
 
-/** The legacy `renderHome`'s weather part, which #268 deletes: the sun's two events in the order they come, by the sun entity. */
+/** The legacy `renderHome`'s weather part, deleted in #268: the sun's two events in the order they come, by the sun entity. */
 export function weatherCardModel(
   inputs: WeatherInputs,
   sun: {set: number | null; rise: number | null},

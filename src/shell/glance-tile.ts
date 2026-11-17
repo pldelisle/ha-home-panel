@@ -60,7 +60,9 @@ export class GlanceTile extends LitElement {
     }
     const {source} = this;
     if (source) this.dataset.key = source.key; // the tile's subject on its host, for a reader of the page
-    this.view = source ? source.read(this.storeController.store, this.deps) : null;
+    this.view = source
+      ? source.read(this.storeController.store, this.deps, {compact: this.appearance.value?.compact ?? false})
+      : null;
   }
 
   protected override render() {

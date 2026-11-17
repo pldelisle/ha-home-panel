@@ -2,8 +2,8 @@
 // each card taking turns; in the Home card's slot on a tablet, and beside the idle clock.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over `readStack`, `stackCards` and `stackModel`; a store controller on
 // `stackIds` (ADR 0012), `StackHistory` (ADR 0028) and the shell's daily forecast (ADR 0030); the cards are kept in a `CardCache` and a
-// twenty-second `TickController` only picks among them. It says `hp-empty` when no card applies, and the guest hides its slot.
-// Must not: compute the cards on a tick within the same minute, word anything (the rules do), or reach the guest past `hp-empty`.
+// twenty-second `TickController` only picks among them. It says `hp-empty` when no card applies, and its container (the Home pane's `#hstk`, the guest's `#istk`) hides it.
+// Must not: compute the cards on a tick within the same minute, word anything (the rules do), or tell its container more than `hp-empty`.
 import {ContextConsumer} from '@lit/context';
 import {LitElement, html, nothing, unsafeCSS} from 'lit';
 import {keyed} from 'lit/directives/keyed.js';

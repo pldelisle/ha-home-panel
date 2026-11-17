@@ -502,7 +502,7 @@ export class HomePanel extends LitElement {
 
   // The header, the error line and the tabs, whose containers the guest fills (#hello, #wxchip-host, #clock, the hosts inside the panes); the live pill and
   // the Status popup are the live feature's elements (#256), the popup one the shell keeps open (`statusOpen`) in the frame's popup box;
-  // #err is empty since #251, when the Energy and Car cards took their own history error lines, and goes with Home (#268); what the guest
+  // #err is empty since #251, when the Energy and Car cards took their own history error lines, and goes with the header (#269); what the guest
   // draws itself comes after, in the guest container.
   private renderWrap(): TemplateResult {
     return html`<div class="wrap">

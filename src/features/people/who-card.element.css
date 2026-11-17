@@ -2,7 +2,7 @@
  * <hp-who-card>'s own rules: the host lays out nothing, so the label and the chips or the hint are items of the Home card's column, as
  * the legacy `.lbl.hwho` and `.hint` were. `.hwx .hwho` (tabs.css) moved here, deleted by #266. Known copies of rules the guest's other
  * cards still draw: `.lbl` (base.css, both of its rules, as they cascade) read here as `.hwho`, and `.hint` (base.css) as `.nobody`;
- * the Home move (spec 24, #268) deletes the copies when the Home pane composes the card.
+ * the copies stay while the legacy sheet draws the originals, until the guest goes (#277).
  */
 :host {
   display: contents;

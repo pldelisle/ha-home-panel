@@ -1,6 +1,6 @@
 // glance and waterGlance: the Energy and Water heater tiles of the Home pane, the grid's power with today's kWh and Hilo's rate,
 // and the tank's temperature with its last 24 hours' kWh (spec 24, #267).
-// Pattern: pure readers over the store (view models, Meszaros' humble object's other half); the legacy `renderHome`'s rules, which #268 deletes. The
+// Pattern: pure readers over the store (view models, Meszaros' humble object's other half); the legacy `renderHome`'s rules, deleted in #268. The
 // history is the Energy card's loaded slices, given by the caller: a reader never loads.
 // Must not: read the clock, load, import the DOM, Lit, the shell or another feature, or hold text the household reads.
 import {DASH} from '../../core/figures.ts';
@@ -44,11 +44,18 @@ export function glance({hass, config, names, t, fmt}: GlanceStore, {history}: Gl
   };
 }
 
-/** The Water heater tile: null for a house with neither of its sensors. */
-export function waterGlance({hass, config, names, t, fmt}: GlanceStore, {history, now}: GlanceDeps): GlanceView | null {
+/**
+ * The Water heater tile: null for a house with neither of its sensors, unless `evenAbsent` (the tablet's grid, which the legacy panel
+ * never hid: a dash and "Idle").
+ */
+export function waterGlance(
+  {hass, config, names, t, fmt}: GlanceStore,
+  {history, now}: GlanceDeps,
+  {evenAbsent = false}: {evenAbsent?: boolean} = {},
+): GlanceView | null {
   if (!hass) return null;
   const {water} = readEnergy(hass.states, config, names);
-  if (!water.present) return null;
+  if (!water.present && !evenAbsent) return null;
   const state = t((water.power ?? 0) > LIVE_KW ? 'energy.heating' : 'energy.idle');
   return {
     key: 'water',
