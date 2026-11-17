@@ -42,6 +42,9 @@
      anything a tap acts on inside a card: raised above the well, so it never reads as one. Glass gives both their glass. */
   --ctl-bg: var(--card);
   --ctl-edge: var(--shadow);
+  /* a light that is off, as Apple Home draws it: a dimmed grey tile under the bright ones that are on; its line one step darker so it reads on the grey */
+  --tile-off: #e2dfda;
+  --tile-off-sub: #5e5b57;
   /* what floats over everything (a dialog, ADR 0035): a long soft drop shadow, the same in both themes */
   --pop-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.45);
   --f-num: 'Manrope', ui-sans-serif, system-ui, sans-serif;
@@ -73,6 +76,8 @@
   --line: #3a3734;
   --fg: #e5e3dd;
   --fg2: #a9a6a0;
+  --tile-off: #232120;
+  --tile-off-sub: var(--fg2);
   --fg3: #a09d98;
   --label: #a9a6a0;
   --ring: #3e3b37;
