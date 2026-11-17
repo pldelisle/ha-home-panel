@@ -1,7 +1,7 @@
 // <hp-activity-card>: one live activity's card in the Status popup: the Hilo challenge's phases, the car's charge with its buttons, the water heater's cycle.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) placing the model's `ActivityCardView` in the legacy `liveActs()` cards' markup; "Pause charging" runs the
 // Wallbox provider's `wallboxCommands.pause` through the kit's `CommandRunner`, holding the switch's value in the overlay (ADR 0023), and "Open Car" closes the popup and asks for the Car's detail.
-// Must not: read an entity or the clock (the model did), word a string, build a command by hand, or know the popup it sits in.
+// Must not: read an entity or the clock (the model did), word a string, build a command by hand, or open or close a sheet itself (Open Car asks the shell).
 import {LitElement, html, nothing, svg, unsafeCSS, type TemplateResult} from 'lit';
 import {styleMap} from 'lit/directives/style-map.js';
 import type {ActivityCardView, CarCardView, HiloCardView, Rich, WaterCardView} from './activities.ts';

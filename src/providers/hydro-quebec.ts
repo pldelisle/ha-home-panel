@@ -1,7 +1,7 @@
 // Hydro-Québec's account balance, its critical-peak flags and whether its sensors report, read into inputs.
 // Pattern: an adapter below the features (ADR 0025): the header's peak chip, the upcoming list, the energy card and the live pill
 // read one answer; the flags are the legacy `hqPeak` and `hqUpcoming` reads (`state === 'on'`), deleted in #241; the Status
-// checks' reads (the balance's age, the peak sensor's value) are the legacy `attention()`'s, which #256 deletes.
+// checks' reads (the balance's age, the peak sensor's value) are the legacy `attention()`'s, which #256 deleted.
 // Must not: word anything a person reads, read the registry (the config's keys are the discovery), or read the clock.
 import type {ResolvedConfig} from '../core/config.ts';
 import type {HassEntities} from '../core/hass.ts';

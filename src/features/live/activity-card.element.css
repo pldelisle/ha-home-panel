@@ -1,5 +1,6 @@
 /* <hp-activity-card>: one activity's card in the Status popup, the legacy live.css's card rules (#256 moved them), with what the
-   legacy `.go` look still gave Open Car. `.app.gl` reads as `:host([glass])`. */
+   legacy `.go` look still gave Open Car,
+   copied until the legacy `.go` goes with Home's tiles (#268). `.app.gl` reads as `:host([glass])`. */
 :host {
   display: contents; /* the card is the popup list's flex item, as the legacy `.lact` was */
 }

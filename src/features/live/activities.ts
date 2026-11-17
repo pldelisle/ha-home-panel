@@ -1,6 +1,6 @@
 // The header's three live activities (the Hilo challenge, the car's charge, the water heater's cycle) as pure functions at a known instant.
 // Pattern: functional core (Bernhardt): each reads `LiveInputs` and the loaded history and returns data (texts through `t()`, a card as a view
-// model); the rules are the legacy `liveActs()`'s three blocks (#256 deletes it), its thresholds and its order copied and named.
+// model); the rules are the legacy `liveActs()`'s three blocks (deleted in #256), its thresholds and its order copied and named.
 // Must not: import a feature, read the clock or the states, hold a callable (a button is a flag, the element runs the command), or draw.
 import {MINUTE_MS} from '../../core/figures.ts';
 import type {Formatters} from '../../core/i18n/format.ts';

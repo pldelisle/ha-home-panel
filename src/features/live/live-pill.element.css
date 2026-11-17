@@ -1,6 +1,7 @@
 /* <hp-live-pill>: the header's pill, its bubbles and its "!" mark: the legacy live.css's pill rules (#256 moved them). The button's own rule is what the
    legacy sheet's `.chip` (base.css), `.attchip` (extra.css), the phone's header chip (phone.css) and the press (motion.css) left once the pill's reset
-   applied, written on `.lap` so no selector of the legacy sheet is written twice. `.app.gl` reads as `:host([glass])`, `.app.cp` as `:host([compact])`. */
+   applied, written on `.lap` so no selector of the legacy sheet is written twice;
+   those legacy rules go with the legacy header (#269). `.app.gl` reads as `:host([glass])`, `.app.cp` as `:host([compact])`. */
 :host {
   display: contents; /* the button is a flex item of the header's chips, as it was */
 }

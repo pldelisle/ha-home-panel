@@ -92,10 +92,10 @@ export interface ShellForGuest {
   idle: Pick<IdleTimer, 'arm' | 'sleepNow'>;
   /**
    * Step D: closes the settings popup, which the shell opens with the gear and draws; the guest's tap outside asks.
-   * Deleted when the shell's header takes the taps outside both popups.
+   * Deleted with the guest's tap-outside listener, when the shell's header takes the taps outside both popups (#269).
    */
   closeSettings(): void;
-  /** Closes the Status checks under the live pill, which the shell keeps open since #256; the guest's tap outside asks, as for the settings. */
+  /** Closes the Status checks under the live pill, which the shell keeps open since #256; the guest's tap outside asks, as for the settings. Deleted with `closeSettings` (#269). */
   closeStatus(): void;
   /** Step E: the sheet host. The guest registers its sheets and popups with it, and opens and closes sheets through it. Deleted with the guest. */
   sheets: SheetHost;

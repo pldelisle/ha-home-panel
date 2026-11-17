@@ -1,6 +1,6 @@
 // <home-panel>, the one element Home Assistant mounts: it owns the store, the API client, the settings and the optimistic values, provides them through context, draws the frame from the registry and hosts the guest in its one shadow root.
 // Pattern: composition root (Seemann, Dependency Injection Principles, Practices, and Patterns); humble object (Meszaros, xUnit Test Patterns): it forwards `hass`, `panel` and `narrow` and decides nothing the registry and the store decide.
-// It reads `localStorage`; the browser's locale defaults are read here and, until the formatters move, by the guest. It owns `tab`, `compact`, the idle state, which tabs the house shows, whether the settings popup is open and, through controllers, the appearance and the open sheet.
+// It reads `localStorage`; the browser's locale defaults are read here and, until the formatters move, by the guest. It owns `tab`, `compact`, the idle state, which tabs the house shows, whether the settings popup and the Status checks are open, whether a live activity runs and, through controllers, the appearance and the open sheet.
 // Must not: import legacy code (the guest arrives through registerGuest), or decide what the store and the models decide.
 // Lit binds nothing inside a guest container, and the guest writes nothing outside its containers.
 import {

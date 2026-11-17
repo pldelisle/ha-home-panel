@@ -2,7 +2,7 @@
 // Pattern: Chain of Responsibility in its collecting form (Gamma et al.): `CHECKS` is the chain and `runChecks` asks every link,
 // keeping each item and each "all is well" phrase in chain order; a link that returns null does not apply to this house.
 // Must not: import a feature, read the clock or the states (everything comes through `readLive`), or change a threshold: the
-// thresholds are copies of the legacy `attention()`'s, which #256 deletes.
+// thresholds are copies of the legacy `attention()`'s, which #256 deleted.
 import {HOUR_MS, MINUTE_MS} from '../../core/figures.ts';
 import type {Formatters} from '../../core/i18n/format.ts';
 import {roomName, type RoomNameDeps} from '../../core/i18n/room-name.ts';

@@ -1,6 +1,6 @@
 // The ten-minute check: when the car reaches its limit or a challenge ends, the pill shows "Charged to 90%" or "Challenge done" for ten minutes.
 // Pattern: a pure state transition (the reducer of Elm's architecture): the element keeps `LiveState` and hands it back with each reading;
-// the rule is the legacy `liveActs()`'s `laSeen` and `laDone` (#256 deletes them), its order kept: a check is made, then cleared at once if anything runs.
+// the rule is the legacy `liveActs()`'s `laSeen` and `laDone` (deleted in #256), its order kept: a check is made, then cleared at once if anything runs.
 // Must not: read the clock (`inputs.now` is the instant), keep module state (the state is the element's), or word anything.
 import {MINUTE_MS} from '../../core/figures.ts';
 import {seenOf, type Activity, type Seen} from './activities.ts';
