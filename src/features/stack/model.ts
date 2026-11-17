@@ -2,7 +2,7 @@
 // Pattern: a pure view-model function (Meszaros, Fowler, humble object): the Home card's filter (no who's-home filler, since the
 // Who's home chips sit right above it, as the legacy `renderHomeStack` did) and the rotation's pick; the idle screen keeps every card.
 // Must not: read the clock (`now` is passed in), compute a card (the rules do), or word anything.
-import type {StackCard} from './cards.ts';
+import {WHO_KEY, type StackCard} from './cards.ts';
 import {pickStack} from './rotation.ts';
 
 /** Where the stack is: in the Home card on a tablet, or beside the idle clock. */
@@ -17,5 +17,5 @@ export interface StackViewModel {
 
 /** The card for this tick in this mode; null when none applies, and the slot hides. */
 export function stackModel(cards: readonly StackCard[], now: number, mode: StackMode): StackViewModel | null {
-  return pickStack(mode === 'home' ? cards.filter(c => !(c.key === 'who' && c.filler)) : cards, now);
+  return pickStack(mode === 'home' ? cards.filter(c => !(c.key === WHO_KEY && c.filler)) : cards, now);
 }

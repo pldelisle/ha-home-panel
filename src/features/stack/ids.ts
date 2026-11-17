@@ -24,6 +24,7 @@ const CONFIG_KEYS = [
   'grid',
   'whP',
   'evP',
+  'hp',
   'away',
 ] as const;
 

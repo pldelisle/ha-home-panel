@@ -60,6 +60,10 @@ const withCar = (over: Partial<CarInputs>): CarInputs => ({...car, ...over});
 const door = (over: Partial<SensorInputs>): SensorInputs => ({...house.doors[0], ...over});
 
 describe('the test house', () => {
+  test('shows nothing when the stack is switched off', () => {
+    expect(stackCards({...house, stack: {...house.stack, on: false}}, deps)).toEqual([]);
+  });
+
   test('shows the speaker that plays and the who’s-home filler, nothing else, in the chain’s order', () => {
     expect(stackCards(house, deps).map(c => [c.key, c.filler])).toEqual([
       ['music', false],
@@ -364,6 +368,9 @@ describe('someone came or left', () => {
     expect(one(cameOrLeft, {people: people(NOW), doors: [door({on: false, since: NOW - 31 * MINUTE_MS})]}).foot).toBe(
       '',
     );
+    // a door that stopped answering is not a door someone opened, as the legacy read only `off`
+    const lost = door({on: false, available: false, since: NOW - 5 * MINUTE_MS});
+    expect(one(cameOrLeft, {people: people(NOW), doors: [lost]}).foot).toBe('');
   });
 
   test('else, in the waking hours, the filler; never both', () => {
@@ -468,6 +475,13 @@ describe('a room’s poor air', () => {
       value: '–',
       unit: 'µg/m³',
     });
+    const two = run(poorAir, {
+      air: [
+        {name: 'Office', rating: rating('co2', 1300, 2)},
+        {name: 'Den', rating: rating('co2', 1400, 2)},
+      ],
+    });
+    expect(two.map(c => c.key)).toEqual(['air:Office', 'air:Den']);
     expect(one(poorAir, {air: [{name: 'Bureau', rating: rating('co2', 1300, 2)}]}, frDeps).label).toBe(
       'Air\u00a0: Bureau',
     );
@@ -503,6 +517,14 @@ describe('tomorrow’s weather, in the evening', () => {
     expect(one(tomorrow, {forecast: [day(1, {lo: null})], tonight: null, now: at(18)})).toMatchObject({
       body: [{kind: 'weather', unit: ''}],
       foot: '',
+    });
+  });
+
+  test('rounds a half the way the legacy `Math.round` did, never to "-0"', () => {
+    const halves = [day(0, {lo: -0.4}), day(1, {hi: -2.5, lo: -3.5})];
+    expect(one(tomorrow, {forecast: halves, tonight: 'clear-night', now: at(18)})).toMatchObject({
+      body: [{kind: 'weather', value: '-2°', unit: '/ -3°'}],
+      foot: 'Tonight: Clear, low 0°',
     });
   });
 

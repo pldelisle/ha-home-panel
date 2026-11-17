@@ -1,19 +1,22 @@
 // The smart stack's rotation: which card shows at an instant, and the two clock rules the cards' windows use.
 // Pattern: pure functions over plain data (functional core), a typed copy of `src/stack.js`; the legacy panel may not import a feature,
-// so `src/stack.js` and `test/unit/stack.test.mjs` stay for the legacy stack until #266 deletes all three of them together.
+// so `src/stack.js` and `test/unit/stack.test.mjs` stay for the legacy stack until #266 deletes them both with the legacy stack.
 // Must not: read the clock (`now` and the hour are passed in), the states or the DOM, or reorder cards of the same tone.
 import type {Reminder} from '../../core/config.ts';
 
 /** One card per twenty seconds. */
 export const STACK_TURN_MS = 20_000;
 
+/** A card's tone: red pins itself, amber goes first, null takes its turn. */
+export type Tone = 'red' | 'amber' | null;
+
 /** What the rotation reads of a card. */
 export interface Turnable {
-  tone: 'red' | 'amber' | null;
+  tone: Tone;
   filler: boolean;
 }
 
-const TONE_RANK: Record<string, number> = {red: 0, amber: 1};
+const TONE_RANK: Record<Exclude<Tone, null>, number> = {red: 0, amber: 1};
 const rank = (tone: Turnable['tone']): number => (tone === null ? 2 : TONE_RANK[tone]);
 
 /**

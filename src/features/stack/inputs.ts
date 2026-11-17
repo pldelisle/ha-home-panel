@@ -9,7 +9,7 @@ import type {Formatters} from '../../core/i18n/format.ts';
 import type {Names} from '../../core/i18n/names.ts';
 import {sunTimes, type SunTimes} from '../../core/sun.ts';
 import {DAY_MS} from '../../core/figures.ts';
-import {attributeOf, isAvailable, textAttributeOf} from '../../core/states.ts';
+import {isAvailable, textAttributeOf} from '../../core/states.ts';
 import {rateRoom, type RoomRating} from '../../providers/air-quality.ts';
 import {todaysEvents} from '../../providers/calendar.ts';
 import {doorMotionSensors, type SensorInputs} from '../../providers/door-motion.ts';
@@ -22,6 +22,8 @@ import {speakers} from '../../providers/media-players.ts';
 import {milaRooms} from '../../providers/mila.ts';
 import {frozenPresence, presence, type FrozenTracker, type Person} from '../../providers/people.ts';
 import {powerNow, type PowerNow} from '../../providers/power.ts';
+import {samsungTvSource} from '../../providers/samsung-tv.ts';
+import {tvEntitySource} from '../../providers/tv-entity.ts';
 import type {FlowRow, MeterTotals} from '../../providers/power-history.ts';
 import {forecastTime, type ForecastDay, type ForecastEntry, type WeatherAlert} from '../../providers/weather-source.ts';
 
@@ -129,17 +131,11 @@ function playingOf(states: HassEntities, registries: Registries, names: Names): 
 }
 
 /**
- * The television the speakers leave out: the visible `device_class: tv` player, a Samsung one first. The legacy `tv()` rule, which
- * the speakers' reading has always been given; Media's `findTv` is the same rule over its sources, but a feature never imports another.
+ * The television the speakers leave out: the first candidate of the TV sources, Samsung's platform first, the order Media's `TV_SOURCES`
+ * tries them in. The sources are the providers' own rules; only their order is restated here, since a feature never imports another.
  */
 function findTvId(states: HassEntities, registries: Registries): string | null {
-  const tvs = Object.keys(states).filter(
-    id =>
-      id.startsWith('media_player.') &&
-      attributeOf(states, id, 'device_class') === 'tv' &&
-      !registries.entities?.[id]?.hidden,
-  );
-  return tvs.find(id => registries.entities?.[id]?.platform === 'samsungtv') ?? tvs[0] ?? null;
+  return samsungTvSource.candidates(states, registries)[0] ?? tvEntitySource.candidates(states, registries)[0] ?? null;
 }
 
 /** The night entry of `today`'s forecast, the legacy `wxDays`' `night`: the last one listed. */

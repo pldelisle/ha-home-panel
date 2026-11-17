@@ -3,15 +3,16 @@
 // `stackCards` asks every link, keeping each card in chain order; a card is a view model (data, never HTML) for `<hp-stack-card>` (#266).
 // Must not: import another feature, read the clock or the states (everything comes through `readStack`), or change a threshold: the
 // thresholds are copies of the legacy `stackCards()`'s, which #266 deletes with the legacy stack.
-import {capitalise, DAY_MS, MINUTE_MS} from '../../core/figures.ts';
+import {capitalise, DASH, DAY_MS, MINUTE_MS} from '../../core/figures.ts';
 import {conditionName} from '../../core/i18n/condition-name.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
-import type {Formatters} from '../../core/i18n/format.ts';
+import {whole, type Formatters} from '../../core/i18n/format.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
 import type {Pollutant} from '../../providers/air-quality.ts';
 import type {Schedule} from '../../providers/fordpass.ts';
+import type {FlowRow} from '../../providers/power-history.ts';
 import type {StackInputs} from './inputs.ts';
-import {inHours, reminderLeft} from './rotation.ts';
+import {inHours, reminderLeft, type Tone} from './rotation.ts';
 
 /** Where a tap on a card leads: a tab, a sheet (with what it is about), or a sensor's history. */
 export type Go = {tab: string} | {sheet: string; detail?: Record<string, string>} | {sensorHistory: string};
@@ -55,10 +56,10 @@ export interface EventRow {
 }
 
 export interface StackCard {
-  /** Unique in the list: the rule's key, with the reminder's index or the door's id where a rule makes several. */
+  /** Unique in the list: the rule's key, with the reminder's index, the door's id or the room's name where a rule makes several. */
   key: string;
   /** Red pins the card until it clears; amber puts it first in the rotation. */
-  tone: 'red' | 'amber' | null;
+  tone: Tone;
   /** A filler shows only when no other card applies. */
   filler: boolean;
   icon: string;
@@ -83,22 +84,22 @@ export interface StackRule {
 }
 
 /** A door open this long is a red card. */
-export const DOOR_OPEN_MINUTES = 5;
+const DOOR_OPEN_MINUTES = 5;
 /** Lights unavailable this long are a red card. */
-export const LIGHTS_LOST_MINUTES = 5;
+const LIGHTS_LOST_MINUTES = 5;
 /** Under this charge, the car unplugged at night is an amber card. */
-export const CAR_LOW_PERCENT = 40;
+const CAR_LOW_PERCENT = 40;
 /** The night the car's two cards watch: 21:00 to 6:00 for the low charge, to 7:00 for the overnight charge. */
-export const NIGHT = {from: 21, lowTo: 6, chargeTo: 7};
+const NIGHT = {from: 21, lowTo: 6, chargeTo: 7};
 /** The sunrise card shows this long before the sun rises. */
-export const SUNRISE_LEAD_MINUTES = 60;
+const SUNRISE_LEAD_MINUTES = 60;
 /** Someone came or left this recently: the who's-home card; a door closed this recently is its footer. */
-export const MOVED_MINUTES = 30;
+const MOVED_MINUTES = 30;
 /** The agenda shows in the morning, tomorrow in the evening, the Energy filler in the day and the who's-home filler in the waking hours. */
-export const AGENDA_HOURS = [6, 11] as const;
-export const TOMORROW_HOURS = [17, 24] as const;
-export const ENERGY_HOURS = [8, 21] as const;
-export const WHO_FILLER_HOURS = [7, 22] as const;
+const AGENDA_HOURS = [6, 11] as const;
+const TOMORROW_HOURS = [17, 24] as const;
+const ENERGY_HOURS = [8, 21] as const;
+const WHO_FILLER_HOURS = [7, 22] as const;
 /** A pollutant at this level or above (poor) is worth a card. */
 const AIR_POOR = 2;
 /** The charging power the overnight card shows at all, in kW. */
@@ -322,7 +323,7 @@ export const reminders: StackRule = {
 /** The grid's draw as the two peak cards say it: watts under a kilowatt, one decimal above. */
 function using({power}: StackInputs, {t, fmt}: StackDeps): string {
   const g = power.grid;
-  const figure = g === null ? '–' : g < 1 ? `${fmt.integer(g * 1000)} W` : `${fmt.fixed(g, 1)} kW`;
+  const figure = g === null ? DASH : g < 1 ? `${whole(fmt, g * 1000)} W` : `${fmt.fixed(g, 1)} kW`;
   return t('stack.using', {power: figure});
 }
 
@@ -380,14 +381,22 @@ export const nowPlaying: StackRule = {
       : [],
 };
 
+/** The key of the who's-home card, the came-or-left one and the filler alike; the Home card's filter drops the filler by it. */
+export const WHO_KEY = 'who';
+
+/** The people a person entity says came or left, each with when it changed. */
+const movedPeople = ({people}: StackInputs) =>
+  people.flatMap(p => (p.changed ? [{...p, at: Date.parse(p.changed)}] : []));
+
 /** The people a person entity says came or left, each with when, and the door closed most recently in the last half hour. */
-function whoCard({people, doors, now}: StackInputs, {t, fmt}: StackDeps, filler: boolean): StackCard {
-  const moved = people.flatMap(p => (p.changed ? [{...p, at: Date.parse(p.changed)}] : []));
+function whoCard(inputs: StackInputs, {t, fmt}: StackDeps, filler: boolean): StackCard {
+  const {doors, now} = inputs;
+  const moved = movedPeople(inputs);
   const door = doors
-    .filter(d => !d.on && minutesSince(now, d.since) <= MOVED_MINUTES)
+    .filter(d => d.available && !d.on && minutesSince(now, d.since) <= MOVED_MINUTES)
     .sort((a, b) => b.since - a.since)[0];
   return card({
-    key: 'who',
+    key: WHO_KEY,
     icon: 'house',
     label: t('people.whosHome'),
     color: 'var(--m-orange)',
@@ -408,12 +417,13 @@ function whoCard({people, doors, now}: StackInputs, {t, fmt}: StackDeps, filler:
   });
 }
 
-const movedAt = ({people}: StackInputs): number[] => people.flatMap(p => (p.changed ? [Date.parse(p.changed)] : []));
+/** Whether someone came or left in the last half hour: the came-or-left card shows, and the filler does not. */
+const movedLately = (inputs: StackInputs): boolean =>
+  movedPeople(inputs).some(p => minutesSince(inputs.now, p.at) <= MOVED_MINUTES);
 
 export const cameOrLeft: StackRule = {
-  key: 'who',
-  run: (inputs, deps) =>
-    movedAt(inputs).some(at => minutesSince(inputs.now, at) <= MOVED_MINUTES) ? [whoCard(inputs, deps, false)] : [],
+  key: WHO_KEY,
+  run: (inputs, deps) => (movedLately(inputs) ? [whoCard(inputs, deps, false)] : []),
 };
 
 export const agenda: StackRule = {
@@ -475,10 +485,10 @@ export const poorAir: StackRule = {
       if (!bad) return [];
       const [word, unit] = POLLUTANT[bad.k];
       const v = bad.v;
-      const figure = v === null ? '–' : bad.k === 'co' && v < 10 ? fmt.fixed(v, 1) : fmt.integer(v);
+      const figure = v === null ? DASH : bad.k === 'co' && v < 10 ? fmt.fixed(v, 1) : fmt.integer(v);
       return [
         card({
-          key: 'air',
+          key: `air:${name}`,
           icon: 'wind',
           label: t('stack.air.label', {room: name}),
           color: 'var(--m-teal)',
@@ -511,15 +521,15 @@ export const tomorrow: StackRule = {
           {
             kind: 'weather',
             condition: next.condition,
-            value: next.hi === null ? '–' : `${fmt.integer(next.hi)}°`,
-            unit: next.lo === null ? '' : `/ ${fmt.integer(next.lo)}°`,
+            value: next.hi === null ? DASH : `${whole(fmt, next.hi)}°`,
+            unit: next.lo === null ? '' : `/ ${whole(fmt, next.lo)}°`,
             text: next.pop ? t('stack.tomorrow.chance', {condition, pop: Math.round(next.pop)}) : condition,
           },
         ],
         foot: !night
           ? ''
           : today?.lo != null
-            ? t('stack.tonightLow', {condition: night, low: fmt.integer(today.lo)})
+            ? t('stack.tonightLow', {condition: night, low: whole(fmt, today.lo)})
             : t('stack.tonight', {condition: night}),
       }),
     ];
@@ -573,8 +583,13 @@ export const energyToday: StackRule = {
   run: ({history, now}, {t, fmt}) => {
     if (!history || !inHours(fmt.hourNow(now), ...ENERGY_HOURS)) return [];
     const today = history.flow.filter(row => fmt.isoDay(row[0]) === fmt.isoDay(now));
-    // heating, the water heater, the car, the rest: the flow row's columns 3, 2, 1 and 4
-    const parts = [3, 2, 1, 4].map(i => today.reduce((sum, row) => sum + (row[i] || 0), 0));
+    const sumOf = (pick: (row: FlowRow) => number) => today.reduce((sum, row) => sum + (pick(row) || 0), 0);
+    const parts = [
+      sumOf(([, , , heat]) => heat),
+      sumOf(([, , wh]) => wh),
+      sumOf(([, ev]) => ev),
+      sumOf(([, , , , rest]) => rest),
+    ];
     const total = parts.reduce((a, b) => a + b, 0) || 1;
     const share = (v: number) => Math.round((v / total) * 100);
     return [
@@ -605,13 +620,13 @@ export const energyToday: StackRule = {
   },
 };
 
-/** The who's-home filler: someone came or left today and no came-or-left card shows, in the waking hours. */
+/** The who's-home filler: someone's person entity says when they came or left, no came-or-left card shows, in the waking hours. */
 export const whoFiller: StackRule = {
   key: 'whoFiller',
-  run: (inputs, deps) => {
-    if (!movedAt(inputs).length || !inHours(deps.fmt.hourNow(inputs.now), ...WHO_FILLER_HOURS)) return [];
-    return cameOrLeft.run(inputs, deps).length ? [] : [whoCard(inputs, deps, true)];
-  },
+  run: (inputs, deps) =>
+    movedPeople(inputs).length && !movedLately(inputs) && inHours(deps.fmt.hourNow(inputs.now), ...WHO_FILLER_HOURS)
+      ? [whoCard(inputs, deps, true)]
+      : [],
 };
 
 /** The chain, in the legacy stack's order: red first, then amber, the rest, and the two fillers last. */
@@ -635,7 +650,8 @@ export const RULES: readonly StackRule[] = [
   whoFiller,
 ];
 
-/** Every card that applies at these inputs, in the chain's order. */
+/** Every card that applies at these inputs, in the chain's order; none when the stack is switched off, as the legacy pick was null. */
 export function stackCards(inputs: StackInputs, deps: StackDeps): StackCard[] {
+  if (!inputs.stack.on) return [];
   return RULES.flatMap(rule => rule.run(inputs, deps));
 }
