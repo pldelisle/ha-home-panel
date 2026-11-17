@@ -122,13 +122,17 @@ test("the maps of the chunks and of the entry name the libraries' files but leav
   }
 });
 
-test('dist/fonts/ holds the Montserrat files as Fontsource ships them, and nothing names Google', () => {
+test('dist/fonts/ holds the Manrope and JetBrains Mono files as Fontsource ships them, and nothing names Google', () => {
   // under Fontsource's names (src/fonts.js builds the URLs from them), byte for byte the installed package's files
   const requireFontsource = createRequire(import.meta.url);
   for (const f of distFiles.filter(f => f.startsWith('fonts/')))
     expect(
       readFileSync(join(DIST, f)).equals(
-        readFileSync(requireFontsource.resolve(`@fontsource/montserrat/files/${basename(f)}`)),
+        readFileSync(
+          requireFontsource.resolve(
+            `@fontsource/${basename(f).startsWith('jetbrains-mono-') ? 'jetbrains-mono' : 'manrope'}/files/${basename(f)}`,
+          ),
+        ),
       ),
       f,
     ).toBe(true);

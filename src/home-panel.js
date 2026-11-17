@@ -315,7 +315,7 @@ export class LegacyPanel {
 
   // ---------- skeleton ----------
   build() {
-    ensureFonts(); // Montserrat from the panel's own fonts/ folder, declared in the document once
+    ensureFonts(); // Manrope and JetBrains Mono from the panel's own fonts/ folder, declared in the document once
     // A second draw starts from new frame elements, as when the class wrote the frame itself: no listener it wired and no card it
     // moved into a pane survives. The shell renders them at once; the first draw finds the frame the shell rendered.
     if (this.framed) this.ctx.shell.resetFrame();

@@ -188,9 +188,9 @@ That needs the repository setting "Allow GitHub Actions to create and approve pu
 The `changeset` CI job (`.github/workflows/changeset.yml` lists the paths it watches) fails a pull request that changes what ships without a changeset; pull requests that only change documentation, tests or CI pass without one, and the `no-changeset` label skips the job when a watched path changed without a release note (a devDependency bump, say).
 
 Renovate (`renovate.json`) opens pull requests weekly, on Monday mornings: the npm minor and patch updates in one, the GitHub Actions in another.
-Playwright (the npm package and the Docker image tag together), the Montserrat font (`@fontsource/montserrat`) and lock-file maintenance come monthly, each in its own pull request.
+Playwright (the npm package and the Docker image tag together), the fonts (`@fontsource/manrope`, `@fontsource/jetbrains-mono`) and lock-file maintenance come monthly, each in its own pull request.
 Pull requests that touch devDependencies, Actions or the image tag carry the `no-changeset` label. Lock-file maintenance changes `package-lock.json`, which pins the libraries inside `dist/chunks/`: it needs a changeset when it moved one of them, or the label when nothing that ships changed.
-A bump of `apexcharts`, `mermaid` or `@fontsource/montserrat`, and lock-file maintenance that moves a package inside them, changes `package.json` or `package-lock.json` and not `LICENSES.md`, so the licences test fails that pull request until a person runs `npm run licenses` on its branch and commits the result (Renovate cannot: its `postUpgradeTasks` need a self-hosted bot).
+A bump of `apexcharts`, `mermaid` or a font package, and lock-file maintenance that moves a package inside them, changes `package.json` or `package-lock.json` and not `LICENSES.md`, so the licences test fails that pull request until a person runs `npm run licenses` on its branch and commits the result (Renovate cannot: its `postUpgradeTasks` need a self-hosted bot).
 Renovate does not re-record screenshots: a person pushes the re-recorded baselines to the Renovate Playwright branch, and to a font bump's branch when the font files changed (`npm run test:visual:update`, or its `:container` variant), before it can merge.
 Every `uses:` in `.github/workflows/` is pinned to a commit with its version in a comment (Renovate keeps both current), each workflow declares its `permissions:` at the top, and `.github/workflows/codeql.yml` runs CodeQL on pushes to `main`, on pull requests and weekly.
 `test/unit/workflows.test.mjs` fails a workflow that breaks the first two rules.
@@ -204,7 +204,7 @@ Automations tab (`src/auto.js`), the configuration schema (`src/core/config.ts`)
 (`src/i18n/fr.js`) and the stylesheet (`src/styles.js`, which joins the files in `src/css/`, minified by Lightning CSS for the browsers listed under Browser support) imported from it. `src/legacy/globals.js` holds the state
 and helpers those files used to share as globals; it goes away in the refactor's second phase. ApexCharts and Mermaid come from npm as lazy chunks under
 `dist/chunks/`: ApexCharts (`src/core/apex.ts`) is fetched when the first tab with charts opens, Mermaid when the Automations tab draws its first flow.
-Montserrat comes from npm too: `@fontsource/montserrat`'s woff2 files for weights 400 to 700, latin and latin-ext, are copied into `dist/fonts/` under their own names,
+The fonts come from npm too: `@fontsource/manrope`'s woff2 files for weights 400 to 700 and `@fontsource/jetbrains-mono`'s for 400, latin and latin-ext, are copied into `dist/fonts/` under their own names,
 and `src/fonts.js` declares them with `@font-face` rules in the document (Chromium ignores them inside a shadow root), so the panel never calls Google Fonts.
 No library is committed as a file. `LICENSES.md` at the root lists every production package with its version and licence text; `npm run licenses` generates it (it is not edited by hand, and Prettier skips it), `vite build` copies it into `dist/`, and `test/unit/licenses.test.mjs` fails when it is out of date.
 `npm run typecheck` runs `tsc` twice: `tsconfig.check.json` checks the core and the small modules (`stack.js`, `fonts.js`) strictly, and `tsconfig.legacy.json` checks every
@@ -218,8 +218,8 @@ The test houses in `test/houses/` are made up. Keep real names, addresses and en
 
 The colour palette comes from [Origami](https://github.com/hazymorning/origami) by hazymorning.
 Charts are drawn by [ApexCharts](https://apexcharts.com) and automation flows by [Mermaid](https://mermaid.js.org).
-The typeface is [Montserrat](https://github.com/JulietaUla/Montserrat) by the Montserrat Project Authors, under the SIL Open Font Licence 1.1, packaged by [Fontsource](https://fontsource.org/fonts/montserrat).
-It ships in the release's `fonts/` folder and loads from your own Home Assistant, so the panel no longer calls Google Fonts: a tablet tells no third party when it opens the dashboard, and the font works when the internet is down.
+The typeface is [Manrope](https://github.com/sharanda/manrope) by the Manrope Project Authors, and code is set in [JetBrains Mono](https://github.com/JetBrains/JetBrainsMono) by the JetBrains Mono Project Authors, both under the SIL Open Font Licence 1.1 and packaged by [Fontsource](https://fontsource.org).
+They ship in the release's `fonts/` folder and loads from your own Home Assistant, so the panel never calls Google Fonts: a tablet tells no third party when it opens the dashboard, and the fonts work when the internet is down.
 Every shipped library and its licence is listed in [LICENSES.md](LICENSES.md).
 
 ## Licence

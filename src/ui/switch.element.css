@@ -1,14 +1,14 @@
 /*
- * <hp-switch>'s look: the iOS-style track and knob, the panel's one copy since #263 deleted the legacy `.sw` rules (base.css, motion.css)
+ * <hp-switch>'s look: the panel's own track and knob (56 by 30, a 24 px knob 3 px in, so it is no copy of a platform's switch), the panel's one copy since #263 deleted the legacy `.sw` rules (base.css, motion.css)
  * that it duplicated while the guest still drew `.sw` buttons.
  */
 :host {
   display: contents;
 }
 .switch {
-  width: 51px;
-  height: 31px;
-  border-radius: 16px;
+  width: 56px;
+  height: 30px;
+  border-radius: 15px;
   border: 0;
   padding: 0;
   background: color-mix(in srgb, var(--fg3) 45%, transparent);
@@ -19,10 +19,10 @@
 .switch::after {
   content: '';
   position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 27px;
-  height: 27px;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   background: var(--card);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
@@ -32,7 +32,7 @@
   background: var(--c-ev);
 }
 .switch[aria-checked='true']::after {
-  transform: translateX(20px);
+  transform: translateX(26px);
 }
 .switch:disabled {
   opacity: 0.45;

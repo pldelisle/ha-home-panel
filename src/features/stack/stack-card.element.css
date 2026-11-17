@@ -14,16 +14,17 @@
   min-height: 0;
   flex: 1;
   padding: 16px 18px;
-  border-radius: 24px;
-  background: var(--card2);
+  border-radius: 16px;
+  /* a tap opens the card's subject, so on the Home card it is a control, raised above the card's wells */
+  background: var(--ctl-bg);
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
-  box-shadow: none;
+  box-shadow: var(--ctl-edge);
   animation-duration: 0.45s;
 }
 :host([glass][mode='home']) .sc:not(.amber, .red) {
-  background: var(--g-tile);
-  box-shadow: var(--g-edge-s);
+  background: var(--ctl-bg);
+  box-shadow: var(--ctl-edge);
 }
 @container (max-height:230px) {
   :host([mode='home']) .sft {

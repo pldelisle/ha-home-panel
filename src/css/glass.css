@@ -151,6 +151,9 @@
 .app.gl {
   --g-card: rgba(255, 255, 255, calc(0.14 * var(--g-m, 1)));
   --g-tile: rgba(255, 255, 255, calc(0.12 * var(--g-m, 1)));
+  /* a control is raised glass: the selection fill and a rim, where a well is the tile fill alone */
+  --ctl-bg: var(--g-sel);
+  --ctl-edge: var(--g-edge-s);
 }
 .app.gl[data-theme='dark'] {
   --g-card: rgba(255, 255, 255, calc(0.06 * var(--g-m, 1)));
@@ -241,6 +244,12 @@
   }
   .app.gl .more {
     background: var(--card2);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .app.gl {
+    --ctl-bg: var(--card);
+    --ctl-edge: var(--shadow);
   }
 }
 @media (prefers-contrast: more) {

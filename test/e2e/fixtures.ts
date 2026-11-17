@@ -50,7 +50,7 @@ export const KATEX_CHUNK_URL = /\/panel\/chunks\/katex-/;
 /** a chunk the panel fetched from dist/chunks/: its URL and its source text */
 export type Chunk = {url: string; body: string};
 
-/** where the build puts Montserrat in the served panel (dist/fonts/, served under /panel/) */
+/** where the build puts Manrope in the served panel (dist/fonts/, served under /panel/) */
 export const FONT_URL = /\/panel\/fonts\//;
 
 /** the weights the panel's stylesheet uses, which src/fonts.js declares, as `document.fonts` writes them */
@@ -106,7 +106,7 @@ export type House = {
   chunks: Chunk[];
   /** the URLs of the fetched chunks whose body contains `needle` (a string, or a pattern) */
   chunksWith: (needle: string | RegExp) => string[];
-  /** every font file the page received, wherever it came from (the bundled Montserrat is under /panel/fonts/), in order */
+  /** every font file the page received, wherever it came from (the bundled Manrope is under /panel/fonts/), in order */
   fonts: Array<{url: string; status: number}>;
   /** the panel element */
   root: () => Locator;
@@ -303,27 +303,31 @@ export async function eachShownTab(
 }
 
 /**
- * The weights of Montserrat the document has loaded, sorted. Not `document.fonts.check()`: in Chromium it is true for a
+ * The weights of Manrope the document has loaded, sorted. Not `document.fonts.check()`: in Chromium it is true for a
  * family no rule declares at all, so it would pass with the font gone. A loaded face is one whose file arrived.
  */
 export const loadedFontWeights = (house: House) =>
   house.page.evaluate(() =>
     [...document.fonts]
-      .filter(f => f.family.replaceAll(/["']/g, '') === 'Montserrat' && f.status === 'loaded')
+      .filter(f => f.family.replaceAll(/["']/g, '') === 'Manrope' && f.status === 'loaded')
       .map(f => f.weight)
       .sort(),
   );
 
-// Waits until Montserrat is loaded in all four weights. The font is declared with font-display: swap, so text is drawn
+// Waits until Manrope is loaded in all four weights (and JetBrains Mono in its one). The font is declared with font-display: swap, so text is drawn
 // in the fallback until a weight arrives; a screenshot must never catch that, and a chart or a flow drawn later must
 // measure its labels in the real font (ApexCharts and Mermaid size boxes and axes from the text). document.fonts.load
 // fetches a weight the page has not used yet and resolves when it is there; it rejects when a file cannot be fetched.
 export async function fontsLoaded(house: House) {
   await house.page.evaluate(async weights => {
-    await Promise.all(weights.map(w => document.fonts.load(`${w} 16px Montserrat`)));
+    // and JetBrains Mono, the config card's code face, in its one weight
+    await Promise.all([
+      ...weights.map(w => document.fonts.load(`${w} 16px Manrope`)),
+      document.fonts.load('400 16px "JetBrains Mono"'),
+    ]);
     await document.fonts.ready;
   }, FONT_WEIGHTS);
-  expect(await loadedFontWeights(house), 'Montserrat weights loaded').toEqual(FONT_WEIGHTS);
+  expect(await loadedFontWeights(house), 'Manrope weights loaded').toEqual(FONT_WEIGHTS);
 }
 
 // skip a test (or a describe's tests, as a beforeEach) on the wrong project, for checks about one layout

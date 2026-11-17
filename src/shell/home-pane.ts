@@ -96,7 +96,7 @@ export class HomePane extends LitElement {
     const {hass, config, t, fmt} = this.storeController.store;
     const compact = this.compact;
     const line = hass
-      ? homeLine({now: Date.now(), ...readHomeTemperatures(hass.states, config), attention: this.attention}, {t, fmt})
+      ? homeLine({...readHomeTemperatures(hass.states, config), attention: this.attention}, {t, fmt})
       : '';
     const data = this.history.data;
     const deps: GlanceDeps = {history: data, now: Date.now()};

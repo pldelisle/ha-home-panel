@@ -57,7 +57,7 @@ Two rules copy the legacy panel on purpose: the **summary** and the **speakers l
 
 ## The scenes and the commands
 
-`sceneTiles` lists the visible scenes in the config's order, then alphabetically, then the config's modes that exist. A scene says "Done" while the overlay holds `K.ran(id)` (four seconds, `SCENE_RAN_MS`), else "Last {ago}" when its state is a date, else "Tap to run"; a mode says On or Off.
+`sceneTiles` lists the visible scenes in the config's order, then alphabetically, then the config's modes that exist. A scene says "Done" while the overlay holds `K.ran(id)` (four seconds, `SCENE_RAN_MS`), else "Last {ago}" when its state is a date, else "Never run"; a mode says On or Off.
 
 Each command is a pure function returning the kit's `Command`: the service, the optimistic keys it holds (`K`, one typed function per key) and the toast it says on success. The element holds the value the key names and runs the command; nothing here sends. `tvPower(tv, true)` carries the wake-on-LAN button as `fallback` when the house has one, whichever set was chosen, as the legacy `tv()` does.
 

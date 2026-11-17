@@ -46,6 +46,8 @@ describe('the date line', () => {
   test('in English: the date, then the temperatures and the checks that need attention, each when it has something', () => {
     const {t, fmt} = inLanguage('en');
     expect(homeLine({now: NOW}, {t, fmt})).toBe(fmt.dateLong(NOW));
+    // the pane's line, under the greeting that already says the date
+    expect(homeLine({...temps, attention: 1}, {t, fmt})).toBe('20.6° inside · -4.2° outside · 1 item needs attention');
     expect(homeLine({now: NOW, ...temps, attention: 2}, {t, fmt})).toBe(
       `${fmt.dateLong(NOW)} · 20.6° inside · -4.2° outside · 2 items need attention`,
     );

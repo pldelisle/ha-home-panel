@@ -6,7 +6,7 @@ import {AFTERNOON, FULL_CFG, KEEP_ENGLISH_NAMES, PHONE_TABS, TABLET_TABS, VIEWPO
 
 const TABS = {tablet: TABLET_TABS, phone: PHONE_TABS};
 
-// every screenshot shows the bundled Montserrat, never the fallback it swaps from, and the charts and flows drawn after
+// every screenshot shows the bundled Manrope, never the fallback it swaps from, and the charts and flows drawn after
 // this measure their labels in it
 test.beforeEach(({house}) => fontsLoaded(house));
 

@@ -27,7 +27,7 @@
 }
 .tvscreen {
   aspect-ratio: 16/9;
-  border-radius: 20px;
+  border-radius: 16px;
   background: var(--card2);
   display: grid;
   place-items: center;
@@ -49,7 +49,8 @@
   min-height: 72px;
   border: 0;
   border-radius: 16px;
-  background: var(--card2);
+  background: var(--ctl-bg);
+  box-shadow: var(--ctl-edge);
   font: 600 calc(16px * var(--tx)) var(--f-body);
   color: var(--fg);
   cursor: pointer;
@@ -69,17 +70,12 @@
 }
 .app.gl .tvscreen {
   background: var(--g-tile);
-  box-shadow: var(--g-edge-s);
 }
 .app.gl .tvscreen.on {
   background: color-mix(in srgb, var(--c-home) 14%, var(--g-tile));
 }
-.app.gl .tvkeys button {
-  background: var(--g-tile);
-  box-shadow: var(--g-edge-s);
-}
 .app.gl .tvkeys button[aria-pressed='true'] {
-  background: color-mix(in srgb, var(--warn) 18%, var(--g-sel));
+  background: color-mix(in srgb, var(--warn) 18%, var(--ctl-bg));
 }
 @media (prefers-reduced-transparency: reduce) {
   .app.gl .tvscreen {

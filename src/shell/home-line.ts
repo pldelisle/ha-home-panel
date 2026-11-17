@@ -1,5 +1,6 @@
-// The date line the header's greeting and the Home pane's heading share: today's date, then the average inside and the outside temperature,
-// then (the pane's) how many Status checks need attention, as the legacy `renderHeader` and `renderPaneSubs` wrote them (deleted in #269).
+// The line the header's greeting and the Home pane's heading share: today's date (the greeting's; the pane leaves it to the greeting), then the
+// average inside and the outside temperature, then (the pane's) how many Status checks need attention, as the legacy `renderHeader` and
+// `renderPaneSubs` wrote them (deleted in #269).
 // Pattern: a pure model with its reading beside it (Fowler, Presentation Model): `readHomeTemperatures` reads the store's states, `homeLine` words.
 // Must not: draw, read the clock (`now` is given), or read an entity `homeTemperatureIds` does not list.
 import type {ResolvedConfig} from '../core/config.ts';
@@ -34,7 +35,8 @@ export function readHomeTemperatures(states: HassEntities, config: ResolvedConfi
 }
 
 export interface HomeLineInputs extends Partial<HomeTemperatures> {
-  now: number;
+  /** Today, which the line opens with; absent, it says no date (the pane's, under the greeting that already says it). */
+  now?: number;
   /** How many Status checks need attention; none is said when 0 or absent. */
   attention?: number;
 }
@@ -44,7 +46,7 @@ export function homeLine(
   {now, inside = null, outside = null, attention = 0}: HomeLineInputs,
   {t, fmt}: {t: Translate; fmt: Pick<Formatters, 'dateLong' | 'fixed'>},
 ): string {
-  const date = fmt.dateLong(now);
+  const date = now === undefined ? '' : fmt.dateLong(now);
   // French writes the weekday lower case; the line starts with it, upper case, as the rewrite layer wrote it
   return [
     date.charAt(0).toUpperCase() + date.slice(1),

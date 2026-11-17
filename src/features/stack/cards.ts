@@ -382,7 +382,6 @@ export const nowPlaying: StackRule = {
                 artist: playing.artist ?? '',
               },
             ],
-            foot: t('stack.music.foot'),
           }),
         ]
       : [],
