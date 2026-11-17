@@ -1,6 +1,6 @@
 // The departure schedule's draft: the days, the time and the cabin temperature a person edits before anything is sent, and the rules around it.
 // Pattern: edit locally, validate, send once (a form draft; Fowler's Unit of Work in miniature): plain data, replaced by new values, so the element that holds it, `<hp-car-comfort>`, owns the one copy.
-// The rules are the legacy `depState`, `depDesc` and the save branch of `carControl` (deleted in #253) and `clockTime` (until #269); the words are catalog messages, the time of day is `fmt.clock`'s.
+// The rules are the legacy `depState`, `depDesc` and the save branch of `carControl` (deleted in #253) and `clockTime` (deleted in #269); the words are catalog messages, the time of day is `fmt.clock`'s.
 // Must not: send a command, read the store or the clock, or write a time of day or a day's name by hand.
 import type {Formatters} from '../../core/i18n/format.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';

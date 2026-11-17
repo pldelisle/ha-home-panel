@@ -2,11 +2,10 @@
 // Pattern: strangler fig (Fowler, Strangler Fig Application): the host wraps the old code behind an interface the host
 // owns, and the interface only shrinks; registering a factory keeps the shell from importing legacy code (ADR 0011).
 // Must not: grow past what the spec names for a step, except a member whose note names what deletes it; be imported by anything but the shell and src/main.js; or outlive the guest (module state included).
-// Lit binds nothing inside a guest container, and the guest writes nothing outside them but the Home-card bridge's tags (ADR 0024, ADR 0031): `<hp-who-chips place="header">`
-// in `#hello` until #269, and `<hp-smart-stack mode="idle">` in `#iwrap`, the last, until spec 26. The Home pane composes its own cards since #268.
+// Lit binds nothing inside a guest container, and the guest writes nothing outside them but the Home-card bridge's last tag (ADR 0024, ADR 0031):
+// `<hp-smart-stack mode="idle">` in `#iwrap`, until spec 26. The Home pane and the header are the shell's since #268 and #269.
 import type {PanelApi} from '../core/api.ts';
 import type {PanelSettings} from '../core/settings.ts';
-import type {StatisticsCache} from '../core/statistics-cache.ts';
 import type {HassChange, PanelStore} from '../core/store.ts';
 import type {Appearance} from '../ui/contexts.ts';
 import type {FeatureKey, GuestAnswers} from '../ui/feature.ts';
@@ -21,8 +20,6 @@ export interface GuestContext {
   host: HTMLElement;
   store: PanelStore;
   api: PanelApi;
-  /** The panel's one statistics cache (ADR 0028): the legacy `loadHistory` asks it for the power windows Energy's card asks too. Deleted with the guest (#277). */
-  statistics: StatisticsCache;
   settings: PanelSettings;
   shell: ShellForGuest;
 }
@@ -57,16 +54,6 @@ export interface GuestRenderer extends GuestAnswers, LegacySheetGuest {
    * then; the guest draws the clock into `#iwrap`. Told once per change. Deleted with the clock's own move (#187).
    */
   idleChanged(idle: boolean): void;
-  /**
-   * Step D: whether the history behind the charts has loaded, which the settings popup's version line says. The guest asks
-   * the shell for a frame (`requestFrame`) when it turns true. Deleted with `loadHistory` (spec 21, the Car move, #182).
-   */
-  statisticsLoaded(): boolean;
-  /**
-   * Live move 3 (#256): whether the live pill shows an activity and how many Status checks need attention; the weather chip slims beside an
-   * activity and the Home pane's sub-line says the count. Deleted with its last readers (the Home move, #269).
-   */
-  liveChanged(running: boolean, attention: number): void;
 }
 
 /** What the guest may ask of the shell, and what it may read of it. Deleted whole with the guest; `tab`, `compact`, `setTab` and `requestFrame` live as long as it does. */
@@ -79,7 +66,7 @@ export interface ShellForGuest {
   readonly appearance: Appearance;
   /** Shows a tab, remembers it and tells the guest through `tabChanged` once its pane is on screen. */
   setTab(key: FeatureKey): void;
-  /** `availability()` changed, or the history loaded (`statisticsLoaded()`): the shell asks the guest again and draws the rail and the settings popup from the answers. */
+  /** `availability()` changed: the shell asks the guest again and draws the rail from the answers. */
   requestFrame(): void;
   /** The guest is about to draw its markup again: the shell renders its frame afresh and returns when it is in the DOM. Deleted with the guest's `build`. */
   resetFrame(): void;
@@ -88,13 +75,6 @@ export interface ShellForGuest {
    * on a phone too. The controller's `start` is the shell's own, at connection. Deleted with the guest's clock (#187).
    */
   idle: Pick<IdleTimer, 'arm' | 'sleepNow'>;
-  /**
-   * Step D: closes the settings popup, which the shell opens with the gear and draws; the guest's tap outside asks.
-   * Deleted with the guest's tap-outside listener, when the shell's header takes the taps outside both popups (#269).
-   */
-  closeSettings(): void;
-  /** Closes the Status checks under the live pill, which the shell keeps open since #256; the guest's tap outside asks, as for the settings. Deleted with `closeSettings` (#269). */
-  closeStatus(): void;
   /** Step E: the sheet host. The guest registers its popups with it (its last sheet moved to the Lights feature, #262), and opens sheets through it. Deleted with the guest. */
   sheets: SheetHost;
 }

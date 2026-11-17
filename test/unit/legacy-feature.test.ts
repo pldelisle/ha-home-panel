@@ -12,6 +12,7 @@ const env = (availability: Partial<Record<FeatureKey, boolean>>, line: string | 
   guest: {availability: () => availability, moreLine: () => line},
   sheetOpen: () => false,
   sheetDetail: () => undefined,
+  attention: 0,
 });
 
 const parts = {

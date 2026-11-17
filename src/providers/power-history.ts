@@ -1,5 +1,5 @@
 // The power history every reader of it shares: which statistics to ask, and the hourly flow, the meter's totals and the water heater's day they make.
-// Pattern: an adapter below the features (ADR 0025), pure over the recorder's rows. The legacy `loadSharedHistory` asks the windows and
+// Pattern: an adapter below the features (ADR 0025), pure over the recorder's rows. The Home pane's `HomeHistory` asks the windows and
 // src/features/energy/history.ts cuts its own slices; the smart stack, the live pill's water heater, the Home tiles and the header's line (#241, which
 // deleted the legacy `derive` each rule is a block of) read these, so they are not Energy's to keep (ADR 0028). The numbers are kWh.
 // The windows start on a stable hour, so the shared cache (ADR 0028) can answer a repeat.

@@ -1,9 +1,8 @@
 /* ---- Liquid Glass (v1.18.0), Mercury drop material since v1.19.0: almost no tint, a soft white inner glow, a 15 px blur and (Chromium) a noise distortion of the backdrop.
    .gl on .app = glass on (Status popup: Glass None / Dawn / Lake / Meadow, localStorage home-panel-glass), data-wp = the wallpaper.
    Material = a thin fill + the backdrop blurred and saturated + a light rim; the lens (Chromium only) is added by lensAll() in the JS. ---- */
-/* thin glass: the bar, the rail, the header chips and round buttons */
+/* thin glass: the bar, the rail and the header's round buttons (the header's chips draw their own) */
 .app.tabsv.gl .rail,
-.app.gl .head .chip,
 .app.gl .head button.icon {
   background: var(--g-fill);
   border: 0;
@@ -167,8 +166,6 @@
 .app.gl .more,
 .app.gl .aupick .chip,
 .app.gl .auchips .chip,
-.app.gl .inner .chips .chip,
-.app.gl .card .chips .chip,
 .app.gl .ausel .close {
   background: var(--g-tile);
   box-shadow: var(--g-edge-s);
@@ -229,21 +226,12 @@
   --fg2: #b0ada7;
 }
 .app.gl:not([data-theme='dark']) .rtab:not([aria-selected='true']),
-.app.gl:not([data-theme='dark']) .hello > div,
-.app.gl:not([data-theme='dark']) .clock small,
-.app.gl:not([data-theme='dark']) .pane .ph .sub,
-.app.gl:not([data-theme='dark']) .head .chip small {
+.app.gl:not([data-theme='dark']) .pane .ph .sub {
   color: var(--fg);
 }
 /* Reduce Transparency, or Increase Contrast: the glass turns back into near-solid cards */
 @media (prefers-reduced-transparency: reduce) {
-  .app.gl .inner .chips .chip,
-  .app.gl .card .chips .chip {
-    background: var(--card2);
-    box-shadow: none;
-  }
   .app.tabsv.gl .rail,
-  .app.gl .head .chip,
   .app.gl .head button.icon,
   .app.gl .pop,
   .app.gl .card {

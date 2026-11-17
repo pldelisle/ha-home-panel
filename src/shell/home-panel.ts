@@ -45,14 +45,13 @@ import type {FeatureDescriptor, FeatureEnv, FeatureKey} from '../ui/feature.ts';
 import {FEATURES, UNDER_MORE, isFeatureKey, visibleTab} from './features.ts';
 import {createGuest, guestStyles, type GuestContext, type GuestRenderer, type ShellForGuest} from './guest.ts';
 import {IdleTimer, type IdleState} from './idle-timer.ts';
-import '../features/people/index.ts'; // defines <hp-who-chips>, which the guest places in the header (ADR 0031)
 import '../features/stack/index.ts'; // defines <hp-smart-stack>, which the guest places beside the idle clock (ADR 0031)
+import {headerStyles, type SettingsToggleEvent} from './header.ts'; // defines <hp-header>
 import {homePaneStyles} from './home-pane.ts';
 import type {ForecastEvent} from '../features/weather/forecast-controller.ts';
 import {STATUS_SHEET, type LiveActivitiesEvent} from '../features/live/index.ts'; // defines <hp-live-pill> and <hp-status-popup>
 import './more-sheet.ts'; // defines <hp-more-sheet>
 import '../ui/pane-header.ts'; // defines <hp-pane-header>, which the legacy panes' headers are
-import './settings-popup.ts'; // defines <hp-settings-popup>
 import {SheetMediator} from './sheet-host.ts';
 import '../ui/toast.ts'; // defines <hp-toast>
 import {expiry, nextToast, type ToastAction, type ToastState} from '../ui/toast-schedule.ts';
@@ -99,6 +98,8 @@ export class HomePanel extends LitElement {
     settingsOpen: {state: true},
     statusOpen: {state: true},
     toastNow: {state: true},
+    liveKey: {state: true},
+    attention: {state: true},
   };
   declare hass: PanelHass | undefined;
   declare narrow: boolean;
@@ -115,6 +116,11 @@ export class HomePanel extends LitElement {
   declare private statusOpen: boolean;
   /** The toast showing, from the last `ToastEvent` through the pure schedule; null when none is. */
   declare private toastNow: ToastState;
+  /** Counts the live pill's changes, which the header redraws its weather chip at; with `liveRunning`, whether an activity shows. */
+  declare private liveKey: number;
+  /** How many Status checks need attention, which the Home pane's heading says. */
+  declare private attention: number;
+  private liveRunning = false;
 
   // The legacy stylesheet is the guest's, so it comes with the guest (registerGuest) instead of an import of
   // src/styles.js, which the dependency rule forbids here. Lit adopts it once for every instance, as a constructed
@@ -122,14 +128,18 @@ export class HomePanel extends LitElement {
   protected static override finalizeStyles(styles?: CSSResultGroup): CSSResultOrNative[] {
     return super.finalizeStyles([unsafeCSS(guestStyles()), styles ?? []]);
   }
-  // The Home pane draws in this root's light DOM (ADR 0032): its rules follow the legacy sheet here.
-  static override styles = homePaneStyles;
+  // The Home pane and the header draw in this root's light DOM (ADR 0032, ADR 0033): their rules follow the legacy sheet here.
+  static override styles = [homePaneStyles, headerStyles];
 
   // this panel's services, none shared with another panel (ADR 0012)
   private readonly store = createStore(storeOptions());
   private readonly api = createApi(this.store);
   /** The one memo of the recorder's reads for this panel (ADR 0028); a reply stays fresh as long as a feature keeps its history. */
-  private readonly statistics = createStatisticsCache(this.api, {ttlMs: STATISTICS_TTL_MS});
+  /** Its first reply turns the settings popup's version line to "kept fresh". */
+  private readonly statistics = createStatisticsCache(this.api, {
+    ttlMs: STATISTICS_TTL_MS,
+    onFirstLoad: () => this.requestUpdate(),
+  });
   private readonly settings = createSettings(browserStorage());
   // what the household asked for and Home Assistant has not confirmed yet: the panel's elements share it (ADR 0023)
   private readonly optimistic = new OverlayStore();
@@ -207,6 +217,7 @@ export class HomePanel extends LitElement {
       guest: this.guest as GuestRenderer,
       sheetOpen: id => this.sheets.isOpen(id),
       sheetDetail: id => this.sheets.detail(id),
+      attention: this.attention,
     };
   }
 
@@ -219,6 +230,8 @@ export class HomePanel extends LitElement {
     this.settingsOpen = false;
     this.statusOpen = false;
     this.toastNow = null;
+    this.liveKey = 0;
+    this.attention = 0;
     // each provider adds itself to this element as a controller and answers the context requests of every element below
     new ContextProvider(this, {context: storeContext, initialValue: this.store});
     new ContextProvider(this, {context: apiContext, initialValue: this.api});
@@ -241,8 +254,6 @@ export class HomePanel extends LitElement {
       requestFrame: () => this.requestFrame(),
       resetFrame: () => this.resetFrame(),
       idle: {arm: () => this.idle.arm(), sleepNow: () => this.idle.sleepNow()},
-      closeSettings: () => this.closeSettings(),
-      closeStatus: () => this.closeStatus(),
       sheets: this.sheets,
       get tab() {
         return tab();
@@ -297,10 +308,11 @@ export class HomePanel extends LitElement {
   // the sheet's Close button, its backdrop and its swipe: the host closes it, if it is still the sheet that is open
   private readonly onMoreClose = (): void => this.sheets.close(MORE_SHEET);
 
-  // The gear opens and closes the popup, and closes the Status checks, which never stay open beside it from the gear; its Sleep now closes it
-  // and starts the idle clock. Escape reaches it through the sheet host (registered after the Status checks, so those close first); the
-  // guest's tap outside asks `closeSettings`. Arrow fields, so the template hands the same functions at every render.
-  private readonly toggleSettings = (): void => {
+  // The header's gear opens and closes the popup, and closes the Status checks, which never stay open beside it from the gear; its Sleep now
+  // closes it and starts the idle clock. Escape reaches it through the sheet host (registered after the Status checks, so those close first),
+  // and a tap outside closes it (`onTapOutside`). Arrow fields, so the template hands the same functions at every render.
+  private readonly toggleSettings = (e: SettingsToggleEvent): void => {
+    e.stopPropagation();
     this.settingsOpen = !this.settingsOpen;
     this.statusOpen = false;
   };
@@ -309,7 +321,7 @@ export class HomePanel extends LitElement {
     this.settingsOpen = false;
   }
 
-  // the Status checks: the pill opens and closes them, the guest's tap outside and Escape close them
+  // the Status checks: the pill opens and closes them, a tap outside and Escape close them
   private closeStatus(): void {
     this.statusOpen = false;
   }
@@ -350,11 +362,22 @@ export class HomePanel extends LitElement {
     else this.sheets.close(e.detail.id);
   };
 
-  // The live pill counts what runs and what needs attention; the guest draws both: its weather chip slims while an activity shows (redrawn,
-  // as the legacy header was, since a chip restyled in place after the row moves kept a stale sub-pixel raster in Chromium), and its Home sub-line says the count.
+  // The live pill counts what runs and what needs attention: the header's weather chip slims while an activity shows, drawn anew at each
+  // change (`liveKey`), and the Home pane's heading says the count.
   private readonly onLiveActivities = (e: LiveActivitiesEvent): void => {
     e.stopPropagation();
-    if (this.guestConnected) this.guest?.liveChanged(e.detail.count > 0, e.detail.attention);
+    this.liveRunning = e.detail.count > 0;
+    this.attention = e.detail.attention;
+    this.liveKey++;
+  };
+
+  // A tap outside the Status checks closes them (a tap on the pill stops at the pill), and one outside the settings popup and its gear
+  // closes that, as the legacy panel's listener on the root did (deleted in #269).
+  private readonly onTapOutside = (e: MouseEvent): void => {
+    const path = e.composedPath();
+    if (!path.some(n => n instanceof Element && n.localName === 'hp-status-popup')) this.closeStatus();
+    if (this.settingsOpen && !path.some(n => n instanceof Element && (n.id === 'setpop' || n.id === 'gear')))
+      this.closeSettings();
   };
 
   // the Weather pane's controller owns the forecast: the shell hands the daily one on to the elements that read tomorrow (ADR 0030)
@@ -459,6 +482,9 @@ export class HomePanel extends LitElement {
       @toast=${this.onToast}
       @weather-forecast=${this.onForecast}
       @live-activities=${this.onLiveActivities}
+      @settings-toggle=${this.toggleSettings}
+      @sleep-now=${this.onSleepNow}
+      @click=${this.onTapOutside}
     >
       ${keyed(this.epoch, this.renderWrap())}
       <div class="guest" style="display:contents"></div>
@@ -500,51 +526,18 @@ export class HomePanel extends LitElement {
     </div>`;
   }
 
-  // The header, the error line and the tabs, whose containers the guest fills (#hello, #wxchip-host, #clock, the hosts inside the panes); the live pill and
-  // the Status popup are the live feature's elements (#256), the popup one the shell keeps open (`statusOpen`) in the frame's popup box;
-  // #err is empty since #251, when the Energy and Car cards took their own history error lines, and goes with the header (#269); what the guest
-  // draws itself comes after, in the guest container.
+  // The header (<hp-header>, #269) and the tabs: the rail and one pane per feature, each its element. The live pill and the Status popup
+  // are the live feature's elements (#256), the popup one the shell keeps open (`statusOpen`); so is the settings popup (`settingsOpen`).
   private renderWrap(): TemplateResult {
     return html`<div class="wrap">
-      <header class="head">
-        <button class="icon menu" id="menu" type="button" aria-label="Open the sidebar">${ico('menu')}</button>
-        <div class="hello" id="hello"></div>
-        <div class="chips">
-          <div id="chips">
-            <span id="wxchip-host"></span><hp-peak-chip></hp-peak-chip>
-            <hp-live-pill .open=${this.statusOpen}></hp-live-pill>
-          </div>
-          <button
-            class="icon"
-            id="gear"
-            type="button"
-            aria-label="Settings"
-            aria-haspopup="dialog"
-            aria-expanded=${this.settingsOpen}
-            @click=${this.toggleSettings}
-          >
-            ${ico('gear', 20)}
-          </button>
-        </div>
-        <div class="clock" id="clock"></div>
-        <hp-status-popup
-          class="pop"
-          id="attpop"
-          role="dialog"
-          aria-label="Status checks"
-          ?hidden=${!this.statusOpen}
-          .open=${this.statusOpen}
-        ></hp-status-popup>
-        <div class="pop" id="setpop" ?hidden=${!this.settingsOpen} role="dialog" aria-label="Settings">
-          <hp-settings-popup
-            .version=${__VERSION__}
-            .statistics=${this.guestConnected && this.guest?.statisticsLoaded() === true}
-            @sleep-now=${this.onSleepNow}
-          ></hp-settings-popup>
-        </div>
-      </header>
-      <div id="err"></div>
-      <div class="tabview" id="tabview" hidden>
+      <hp-header
+        .statusOpen=${this.statusOpen}
+        .settingsOpen=${this.settingsOpen}
+        .live=${this.liveRunning}
+        .liveKey=${this.liveKey}
+        .historyLoaded=${this.statistics.lastLoadedAt !== null}
+      ></hp-header>
+      <div class="tabview" id="tabview">
         ${this.renderRail()}
         <div class="panes">
           ${repeat(
@@ -610,7 +603,6 @@ export class HomePanel extends LitElement {
       host: this,
       store: this.store,
       api: this.api,
-      statistics: this.statistics,
       settings: this.settings,
       shell: this.forGuest,
     };

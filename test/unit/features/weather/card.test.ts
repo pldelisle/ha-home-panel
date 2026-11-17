@@ -6,7 +6,7 @@ import {createFormatters} from '../../../../src/core/i18n/format.ts';
 import {panelLocale} from '../../../../src/core/i18n/locale.ts';
 import {createMessages} from '../../../../src/core/i18n/messages.ts';
 import {readSunTimes, readWeather} from '../../../../src/features/weather/inputs.ts';
-import {weatherCardModel} from '../../../../src/features/weather/model.ts';
+import {weatherCardModel, weatherChipModel} from '../../../../src/features/weather/model.ts';
 import {fullHouse, inputsWith, type Language} from './support.ts';
 
 const SET = Date.UTC(2026, 10, 7, 21, 45);
@@ -80,5 +80,18 @@ describe('weatherCardModel', () => {
       say('en'),
     );
     expect(view.next.label).toMatch(/^Sun(set|rise)$/);
+  });
+});
+
+// The header's chip (#269): the temperature to a tenth and the condition, as the legacy chip wrote them; none without a temperature.
+describe('weatherChipModel', () => {
+  test('words the temperature to a tenth and the condition, in English and French', () => {
+    const inputs = inputsWith({temperature: -4.25, condition: 'partlycloudy'});
+    expect(weatherChipModel(inputs, say('en'))).toEqual({temperature: '-4.3°', condition: 'Partly cloudy'});
+    expect(weatherChipModel(inputs, say('fr'))).toEqual({temperature: '-4,3°', condition: 'Partiellement nuageux'});
+  });
+
+  test('is null when the house reads no temperature', () => {
+    expect(weatherChipModel(inputsWith({condition: 'sunny'}), say('en'))).toBeNull();
   });
 });

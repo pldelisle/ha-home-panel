@@ -1,7 +1,7 @@
 // upcoming: the phone's "Coming up" list on the Home pane, what the house has planned: the sun's next two events with what they do,
 // Hilo's challenge, Hydro-Québec's coming peak, the car's departure and the modes that are on (spec 24, #267). Not Automations' runs.
 // Pattern: a pure view model in two halves (Meszaros' humble object): `readUpcoming` reads the states, `upcoming` words them; the
-// legacy panel's `upcoming()`, which #269 deletes with the header.
+// legacy panel's `upcoming()`, which #269 deleted with the header.
 // Must not: read the clock, import the DOM, Lit or a feature, or hold text the household reads (a catalog key says it; the sources'
 // brand names, Hilo and Hydro-Québec, read the same in both languages).
 import type {ResolvedConfig} from '../core/config.ts';

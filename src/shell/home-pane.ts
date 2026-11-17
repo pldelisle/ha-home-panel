@@ -2,8 +2,8 @@
 // the Security card, and the scenes row. The shell imports features; a feature never imports the shell or another feature (ADR 0017).
 // Pattern: a humble composition (Meszaros, xUnit Test Patterns), the composition root's child: each card is its feature's element on its
 // own ids (ADR 0012), drawn in light DOM (ADR 0032) so the pane's parts stay items of the `.pane-home` grid, styled by home-pane.css.
-// It loads the Energy and Water heater tiles' history (`HomeHistory`) and hands it down. Must not: read an entity or word anything (the cards
-// and the readers do), hold logic beyond placing them and that load, or draw what the guest writes (`#hsub`).
+// It loads the Energy and Water heater tiles' history (`HomeHistory`) and hands it down, and its heading's line is `homeLine`'s. Must not: read
+// an entity but through `readHomeTemperatures`, word anything (the cards, the readers and `homeLine` do), or hold logic beyond placing them and that load.
 import {ContextConsumer} from '@lit/context';
 import {LitElement, html, nothing, unsafeCSS} from 'lit';
 import {ifDefined} from 'lit/directives/if-defined.js';
@@ -11,6 +11,7 @@ import {repeat} from 'lit/directives/repeat.js';
 import './config-card.ts'; // defines <hp-config-card>
 import './glance-tile.ts'; // defines <hp-glance-tile>
 import {HomeHistory} from './home-history.ts';
+import {homeLine, homeTemperatureIds, readHomeTemperatures} from './home-line.ts';
 import paneCss from './home-pane.css?inline';
 import {GLANCE_SOURCES, type GlanceDeps} from './home-tiles.ts';
 import type {StatisticsCache} from '../core/statistics-cache.ts';
@@ -31,17 +32,20 @@ export const homePaneStyles = unsafeCSS(paneCss);
 export class HomePane extends LitElement {
   static override properties = {
     active: {type: Boolean, reflect: true},
+    attention: {type: Number},
     stackEmpty: {state: true},
     scenesEmpty: {state: true},
   };
   /** Set by the shell: this pane is the tab on screen. */
   declare active: boolean;
+  /** Set by the shell: how many Status checks need attention, which the heading's line says. */
+  declare attention: number;
   /** The stack and the scenes said they have nothing: their slot is hidden, as the legacy panel hid it. */
   declare private stackEmpty: boolean;
   declare private scenesEmpty: boolean;
 
-  // the heading and the language: the config's and the catalog's changes, no entity
-  private readonly storeController = new StoreController(this, {ids: () => []});
+  // the heading's line: the rooms' and the outside temperatures
+  private readonly storeController = new StoreController(this, {ids: store => homeTemperatureIds(store.config)});
   private readonly appearance = new ContextConsumer(this, {context: appearanceContext, subscribe: true});
   private cache: StatisticsCache | undefined;
   private readonly history: HomeHistory;
@@ -49,6 +53,7 @@ export class HomePane extends LitElement {
   constructor() {
     super();
     this.active = false;
+    this.attention = 0;
     this.stackEmpty = true;
     this.scenesEmpty = true;
     // the panel's one cache (ADR 0028), asked for before the history's controller so its first update finds it
@@ -88,12 +93,15 @@ export class HomePane extends LitElement {
   };
 
   protected override render() {
-    const {t} = this.storeController.store;
+    const {hass, config, t, fmt} = this.storeController.store;
     const compact = this.compact;
+    const line = hass
+      ? homeLine({now: Date.now(), ...readHomeTemperatures(hass.states, config), attention: this.attention}, {t, fmt})
+      : '';
     const data = this.history.data;
     const deps: GlanceDeps = {history: data, now: Date.now()};
     return html`<hp-pane-header .icon=${'house'} .color=${'var(--c-grid)'} .heading=${t('home.title')}
-        ><div slot="sub" id="hsub"></div></hp-pane-header
+        ><div slot="sub" id="hsub">${line}</div></hp-pane-header
       ><hp-config-card></hp-config-card>
       <div
         class="card hwx${compact ? ' tap' : ''}"

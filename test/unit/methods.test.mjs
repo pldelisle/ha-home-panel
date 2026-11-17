@@ -44,7 +44,6 @@ test('the class defines the guest methods', () => {
     'appearanceChanged',
     'availability',
     'moreLine',
-    'statisticsLoaded',
   ])
     expect(panel, m).toMatch(new RegExp(`^  ${m}\\(`, 'm'));
 });
@@ -86,10 +85,17 @@ test("the class draws no More sheet: it is the shell's element", () => {
 
 // Spec 14, step D (#168): the popup behind the gear is `<hp-settings-popup>`, an element of the shell, which writes the settings and is
 // redrawn from them itself; the class keeps no renderer, no listener on the popup's container and no redraw on a theme change.
-test("the class draws no settings popup: it is the shell's element", () => {
-  for (const gone of ['renderSettings', 'toggleSettings', 'refreshSettings', 'setc', 'data-sleep'])
+test("the class draws no settings popup and closes no popup: they are the shell's, a tap outside them too (#269)", () => {
+  for (const gone of [
+    'renderSettings',
+    'toggleSettings',
+    'refreshSettings',
+    'setc',
+    'data-sleep',
+    'closeSettings',
+    'closeStatus',
+  ])
     expect(panel.includes(gone), gone).toBe(false);
-  expect(panel).toMatch(/this\.ctx\.shell\.closeSettings\(\)/);
 });
 
 test('the config is de-duplicated on the store generation, not on its own copy of the config', () => {

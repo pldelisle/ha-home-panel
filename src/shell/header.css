@@ -1,0 +1,81 @@
+/*
+ * <hp-header>'s rules, joined after the legacy sheet in the shell's root, where the header draws in light DOM (ADR 0033): the host lays out
+ * nothing, so `header.head` stays an item of the frame's grid; then the greeting, the chips' row and the clock. Moved from the legacy
+ * `.hello`, `.chips`, `#chips` and `.clock` rules (base.css, phone.css, glass.css), which #269 deleted with the guest's header; the
+ * `.head` row itself and its round buttons keep their legacy rules, which the frame's layout shares. The chips draw their own.
+ */
+hp-header {
+  display: contents;
+}
+.hello {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+.hello h1 {
+  margin: 0;
+  font-family: var(--f-num);
+  font-weight: var(--num-w);
+  font-size: calc(clamp(26px, 3.2vw, 40px) * var(--tx));
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+.hello div {
+  color: var(--fg2);
+  font-size: calc(15px * var(--tx));
+  margin-top: 4px;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+/* the chips sit in a box of their own before the gear, a box that is no box, so they are the row's own items */
+#chips {
+  display: contents;
+}
+.clock {
+  font-family: var(--f-num);
+  font-weight: var(--num-w);
+  font-size: calc(clamp(30px, 3.6vw, 46px) * var(--tx));
+  letter-spacing: -0.02em;
+  line-height: 1;
+  text-align: right;
+}
+.clock small {
+  display: block;
+  font-family: var(--f-body);
+  font-size: calc(13px * var(--tx));
+  color: var(--fg2);
+  letter-spacing: 0;
+  margin-top: 4px;
+  font-weight: 500;
+}
+/* a phone: menu and greeting on one row, the chips under them, no clock */
+.app.tabsv.cp .head .hello {
+  grid-area: 1/2;
+}
+.app.tabsv.cp .head .hello h1 {
+  font-size: calc(22px * var(--tx));
+}
+.app.tabsv.cp .head .hello div {
+  font-size: calc(13px * var(--tx));
+  margin-top: 1px;
+}
+.app.tabsv.cp .head .chips {
+  display: contents;
+}
+.app.tabsv.cp .head #chips {
+  grid-area: 2/1/3/4;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.app.tabsv.cp .head .clock {
+  display: none;
+}
+/* on light glass the grey lines go dark, for contrast */
+.app.gl:not([data-theme='dark']) .hello > div,
+.app.gl:not([data-theme='dark']) .clock small {
+  color: var(--fg);
+}

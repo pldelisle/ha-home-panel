@@ -1,5 +1,5 @@
 {
-  "about": "The English messages of the phone's \"Coming up\" list (src/core/i18n/en.ts, home.upcoming.*, #267), each with sample values, and the new Home tile keys sit in their features' fixtures. test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer makes of the English; `translated` is French where the layer left the English or got it wrong, a visible change #268 and #269 record when they draw these. The legacy panel still draws all of them until #268 and #269, so no entry of the rewrite layer is deleted yet. Deleted with the layer in phase 4.",
+  "about": "The English messages of the phone's \"Coming up\" list (src/core/i18n/en.ts, home.upcoming.*, #267) and of the header and the Home pane's heading (home.greeting.*, home.inside, home.outside, home.attention, home.clock.*, #269), each with sample values; the new Home tile keys sit in their features' fixtures. test/unit/i18n/moved-strings.test.ts asserts that the French catalog renders what the rewrite layer makes of the English; `translated` is French where the layer left the English or got it wrong, a visible change #268 and #269 record when they draw these; `was` is what the layer made of a text whose entry #269 deleted with the legacy header. Deleted with the layer in phase 4.",
   "messages": [
     {
       "key": "home.upcoming.sunset"
@@ -44,6 +44,62 @@
     },
     {
       "key": "home.upcoming.on"
+    },
+    {
+      "key": "home.greeting.night",
+      "was": "Bonne nuit"
+    },
+    {
+      "key": "home.greeting.morning",
+      "was": "Bonjour"
+    },
+    {
+      "key": "home.greeting.afternoon",
+      "was": "Bon après-midi"
+    },
+    {
+      "key": "home.greeting.evening",
+      "was": "Bonsoir"
+    },
+    {
+      "key": "home.inside",
+      "values": {
+        "n": "20.6"
+      }
+    },
+    {
+      "key": "home.outside",
+      "values": {
+        "n": "4.2"
+      }
+    },
+    {
+      "key": "home.attention",
+      "values": {
+        "n": 1
+      },
+      "translated": "1 élément à vérifier"
+    },
+    {
+      "key": "home.attention",
+      "values": {
+        "n": 2
+      },
+      "translated": "2 éléments à vérifier"
+    },
+    {
+      "key": "home.clock.history",
+      "values": {
+        "time": "2:00 pm"
+      },
+      "fr": {
+        "time": "14 h"
+      },
+      "was": "En direct · historique 14 h"
+    },
+    {
+      "key": "home.clock.loading",
+      "was": "En direct · chargement de l'historique"
     }
   ]
 }

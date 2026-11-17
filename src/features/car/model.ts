@@ -1,6 +1,6 @@
 // carModel: the car, its charger and its history in, every text, figure and shape the Car card, the phone's line and the detail's read-only blocks place out.
 // Pattern: a pure view-model function, a humble object's other half (Meszaros, Fowler): it reads no clock, no `hass` and no store, words every message through `deps.t` and every number through `deps.fmt`,
-// and delegates the bars to bars-geometry.ts and the schedule's words to schedule.ts. Each rule was the legacy panel's (`renderCarCard`, `carSheet`, `renderSessions`, `renderCarSheetLive`, which #251 and #252 deleted, and `schedText`, which reads the provider's schedule until #269).
+// and delegates the bars to bars-geometry.ts and the schedule's words to schedule.ts. Each rule was the legacy panel's (`renderCarCard`, `carSheet`, `renderSessions`, `renderCarSheetLive`, which #251 and #252 deleted, and `schedText`, deleted in #269).
 // The pane's header and the card draw it since #251, the detail's blocks since #252; the controls' view is controls.ts (#253).
 // Must not: import the DOM, Lit or the shell, read the clock (the sessions' "today" is the history's), hold text the household reads (a catalog key says it), or build the controls' view (controls.ts does).
 import {capitalise, DASH, HOUR_MS, joined} from '../../core/figures.ts';

@@ -16,10 +16,10 @@ const houseWithNames = names => ({
 });
 const frTextFor = names => createFrench({hass: fakeHass(houseWithNames(names)), isFrench: true, names: plain}).text;
 
-test('greetings, numbers and dates', () => {
+test('words, numbers and dates', () => {
   const frText = frTextFor([]);
-  expect(frText('Good evening')).toBe('Bonsoir');
-  expect(frText('Live · history 4:07 pm')).toBe('En direct · historique 16 h 07');
+  expect(frText('Doors closed')).toBe('Portes fermées');
+  expect(frText('4.2° outside')).toBe('4,2° dehors');
   expect(frText('12.5')).toBe('12,5');
   expect(frText('Some text nobody translated')).toBe('Some text nobody translated');
 });
@@ -35,8 +35,8 @@ test('the charts-failed toast reads the same in both languages as it did from th
 });
 
 test('a name the house gave in HA is never translated', () => {
-  const frText = frTextFor(['Good evening']);
-  expect(frText('Good evening')).toBe('Good evening');
+  const frText = frTextFor(['Doors closed']);
+  expect(frText('Doors closed')).toBe('Doors closed');
 });
 
 test('no French entry is empty, and placeholders match', () => {
@@ -150,23 +150,23 @@ test('the idle stack card says "En lecture" and nothing else changed with it', (
 // two layers, and each reads the house's names from its own store: a name one house gave is still translated for the
 // other. The translations themselves are covered above, where every layer is built the same way.
 test('two createFrench layers over two stores each leave only the names their own house gave', () => {
-  const evening = createFrench({hass: fakeHass(houseWithNames(['Good evening'])), isFrench: true, names: plain});
-  const morning = createFrench({hass: fakeHass(houseWithNames(['Good morning'])), isFrench: true, names: plain});
-  expect(evening.text('Good evening')).toBe('Good evening');
-  expect(evening.text('Good morning')).toBe('Bonjour');
-  expect(morning.text('Good morning')).toBe('Good morning');
-  expect(morning.text('Good evening')).toBe('Bonsoir');
+  const evening = createFrench({hass: fakeHass(houseWithNames(['Doors closed'])), isFrench: true, names: plain});
+  const morning = createFrench({hass: fakeHass(houseWithNames(['Rooms'])), isFrench: true, names: plain});
+  expect(evening.text('Doors closed')).toBe('Doors closed');
+  expect(evening.text('Rooms')).toBe('Pièces');
+  expect(morning.text('Rooms')).toBe('Rooms');
+  expect(morning.text('Doors closed')).toBe('Portes fermées');
 });
 
 test('createFrench does nothing while the store is not French', () => {
   const store = {hass: fakeHass(), isFrench: false, names: plain};
   const fr = createFrench(store);
-  expect(fr.text('Good evening')).toBe('Good evening');
+  expect(fr.text('Doors closed')).toBe('Doors closed');
   const opts = {chart: {}};
   expect(fr.apex(opts)).toBe(opts);
   expect(opts.chart).toStrictEqual({});
   store.isFrench = true;
-  expect(fr.text('Good evening')).toBe('Bonsoir');
+  expect(fr.text('Doors closed')).toBe('Portes fermées');
   expect(fr.apex({chart: {}}).chart.defaultLocale).toBe('fr');
 });
 
@@ -183,37 +183,37 @@ const element = (attrs, {noTranslate = false} = {}) => ({
 
 test('createFrench translates text nodes and attributes, and keeps a name of the house untranslated', () => {
   const fr = createFrench({hass: fakeHass(houseWithNames(['Tap to run'])), isFrench: true, names: plain});
-  const t = textNode('Good evening'),
+  const t = textNode('Doors closed'),
     name = textNode('Tap to run'),
-    attrs = {'aria-label': 'Good evening', title: 'Tap to run'};
+    attrs = {'aria-label': 'Doors closed', title: 'Tap to run'};
   fr.node(t);
   fr.node(name);
   fr.node(element(attrs));
   fr.tree(t); // a text node as a tree is the node itself
-  expect(t.data).toBe('Bonsoir');
+  expect(t.data).toBe('Portes fermées');
   expect(name.data).toBe('Tap to run');
-  expect(attrs).toStrictEqual({'aria-label': 'Bonsoir', title: 'Tap to run'});
+  expect(attrs).toStrictEqual({'aria-label': 'Portes fermées', title: 'Tap to run'});
 });
 
 // the config card is drawn in the user's language already and marked translate="no": the layer leaves its text alone, and
 // would leave an aria-label or title on it alone too, so a label added to it one day cannot be translated twice
 test('createFrench leaves the labels of an element under translate="no" as they are', () => {
   const fr = createFrench({hass: fakeHass(), isFrench: true, names: plain});
-  const attrs = {'aria-label': 'Good evening', title: 'Good evening'};
+  const attrs = {'aria-label': 'Doors closed', title: 'Doors closed'};
   fr.node(element(attrs, {noTranslate: true}));
-  expect(attrs).toStrictEqual({'aria-label': 'Good evening', title: 'Good evening'});
+  expect(attrs).toStrictEqual({'aria-label': 'Doors closed', title: 'Doors closed'});
 });
 
 test('createFrench translates a node it met while the store was English once the store turns French', () => {
   const store = {hass: fakeHass(), isFrench: false, names: plain};
   const fr = createFrench(store);
-  const t = textNode('Good evening');
+  const t = textNode('Doors closed');
   fr.node(t);
   fr.tree(t);
-  expect(t.data).toBe('Good evening');
+  expect(t.data).toBe('Doors closed');
   store.isFrench = true;
   fr.node(t);
-  expect(t.data).toBe('Bonsoir');
+  expect(t.data).toBe('Portes fermées');
 });
 
 // The layer's skip list holds the name Home Assistant gave and the name the panel shows for it (the store's display
@@ -221,8 +221,8 @@ test('createFrench translates a node it met while the store was English once the
 describe('the layer leaves a display name alone', () => {
   const house = {
     areas: {living: {area_id: 'living', name: 'Living room'}, salon: {area_id: 'salon', name: 'Salon'}},
-    devices: {d1: {id: 'd1', name: 'Hub', name_by_user: 'Good morning'}},
-    states: {'light.l1': entity('light.l1', 'on', {friendly_name: 'Good evening'})},
+    devices: {d1: {id: 'd1', name: 'Hub', name_by_user: 'Rooms'}},
+    states: {'light.l1': entity('light.l1', 'on', {friendly_name: 'Doors closed'})},
   };
   const layerIn = (language, names = {}) => {
     const store = createStore({defaultTimeZone: 'UTC', resolve: raw => raw});
@@ -232,12 +232,12 @@ describe('the layer leaves a display name alone', () => {
   };
 
   test('in French, the name Home Assistant gave and the name the config gives are both left as they are', () => {
-    const {text} = layerIn('fr', {'Good evening': {fr: 'Good night'}, d1: {fr: 'Good afternoon'}});
-    expect(text('Good evening')).toBe('Good evening');
-    expect(text('Good night')).toBe('Good night');
-    expect(text('Good morning')).toBe('Good morning');
-    expect(text('Good afternoon')).toBe('Good afternoon');
-    expect(text('Good night,')).toBe('Bonne nuit,');
+    const {text} = layerIn('fr', {'Doors closed': {fr: 'Status'}, d1: {fr: 'Phone'}});
+    expect(text('Doors closed')).toBe('Doors closed');
+    expect(text('Status')).toBe('Status');
+    expect(text('Rooms')).toBe('Rooms');
+    expect(text('Phone')).toBe('Phone');
+    expect(text('Status checks')).toBe('Vérifications');
   });
 
   test('in French, the dictionary reading of an English name and the English name are both left as they are', () => {
@@ -251,12 +251,12 @@ describe('the layer leaves a display name alone', () => {
     const {store, text} = layerIn('en');
     expect(store.names.name('salon')).toBe('Living room');
     expect(text('Salon')).toBe('Salon');
-    expect(text('Good evening')).toBe('Good evening');
+    expect(text('Doors closed')).toBe('Doors closed');
   });
 
   test('a name set for a device that has only its own name, or for a thermostat room, is left as it is', () => {
     const store = createStore({defaultTimeZone: 'UTC', resolve: raw => raw});
-    store.setPanelConfig({names: {d2: {fr: 'Good night'}, Den: {fr: 'Good afternoon'}}});
+    store.setPanelConfig({names: {d2: {fr: 'Status'}, Den: {fr: 'Phone'}}});
     store.setHass(
       fakeHass({
         locale: {language: 'fr'},
@@ -265,16 +265,16 @@ describe('the layer leaves a display name alone', () => {
       }),
     );
     const {text} = createFrench(store);
-    expect(text('Good night')).toBe('Good night');
-    expect(text('Good afternoon')).toBe('Good afternoon');
+    expect(text('Status')).toBe('Status');
+    expect(text('Phone')).toBe('Phone');
     // a name nobody changed is still the layer's to translate
-    expect(text('Good evening')).toBe('Bonsoir');
+    expect(text('Doors closed')).toBe('Portes fermées');
   });
 
   test('a name the config no longer gives is translated again, the list following the store', () => {
-    const {store, text} = layerIn('fr', {'Good evening': {fr: 'Good night'}});
-    expect(text('Good night')).toBe('Good night');
+    const {store, text} = layerIn('fr', {'Doors closed': {fr: 'Status'}});
+    expect(text('Status')).toBe('Status');
     store.setPanelConfig({});
-    expect(text('Good night')).toBe('Bonne nuit');
+    expect(text('Status')).toBe('État');
   });
 });

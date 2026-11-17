@@ -1,0 +1,50 @@
+/* <hp-weather-chip>: the header's weather chip, the legacy sheet's `.chip` and `.chip small` (base.css, which the Automations' chips still
+   wear), the header chips' glass (glass.css), the phone's header chip (phone.css) and the slim chip (extra.css) as they drew it, written on
+   `.wx`; the header's copies went with the legacy header (#269). `.app.gl` reads as `:host([glass])`, `.app.cp` as `:host([compact])`. */
+:host {
+  display: contents; /* the chip is a flex item of the header's chips, as it was */
+}
+.wx {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--card);
+  border: 0;
+  border-radius: 999px;
+  padding: 9px 15px;
+  min-height: 44px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: var(--shadow);
+}
+.wx small {
+  font-weight: 500;
+  color: var(--fg2);
+  font-size: calc(13px * var(--tx));
+}
+/* beside a running activity the chip shows only its temperature */
+:host([slim]) .wx small {
+  display: none;
+}
+.app.gl .wx {
+  background: var(--g-fill);
+  border: 0;
+  -webkit-backdrop-filter: var(--g-bd);
+  backdrop-filter: var(--g-bd);
+  box-shadow: var(--g-edge);
+}
+.app.gl:not([data-theme='dark']) .wx small {
+  color: var(--fg);
+}
+/* a phone's header has no room for it */
+.app.cp .wx {
+  display: none;
+}
+/* Reduce Transparency: the glass turns back into a near-solid card */
+@media (prefers-reduced-transparency: reduce) {
+  .app.gl .wx {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--card);
+  }
+}

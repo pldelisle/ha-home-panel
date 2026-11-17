@@ -1,6 +1,6 @@
 # Media
 
-What the Media tab computes and draws ([spec 16](../../../docs/specs/16-media.md)). This folder holds the pure half, the rules that find the television and the speakers, the model every Media element draws, the scenes row and the commands, pinned in Vitest against the test house, and the pane: `<hp-media-pane>` with `<hp-tv-box>` and one `<hp-speaker-pod>` per speaker on a tablet, and one `<hp-media-tile>` per player on a phone, whose tap opens the card in a sheet; and the Home tab's scenes row, `<hp-scene-tiles>`, which the guest places by its tag (ADR 0024). The hidden Home TV card was deleted, not moved (#219).
+What the Media tab computes and draws ([spec 16](../../../docs/specs/16-media.md)). This folder holds the pure half, the rules that find the television and the speakers, the model every Media element draws, the scenes row and the commands, pinned in Vitest against the test house, and the pane: `<hp-media-pane>` with `<hp-tv-box>` and one `<hp-speaker-pod>` per speaker on a tablet, and one `<hp-media-tile>` per player on a phone, whose tap opens the card in a sheet; and the Home tab's scenes row, `<hp-scene-tiles>`, which the Home pane composes (#268). The hidden Home TV card was deleted, not moved (#219).
 
 ## The folder
 

@@ -112,7 +112,7 @@ export const autoMethods = {
   },
   // ---------- drawing ----------
   renderAuto() {
-    if (this.view !== 'tabs' || this.tab !== 'auto' || !this.hass) return;
+    if (this.tab !== 'auto' || !this.hass) return;
     const A = this.auAutos(),
       sig = fingerprint(A);
     if (sig !== this.auSig) {

@@ -31,29 +31,7 @@
   gap: 14px 18px;
   margin-bottom: 22px;
 }
-.hello {
-  flex: 1 1 260px;
-  min-width: 0;
-}
-.hello h1 {
-  margin: 0;
-  font-family: var(--f-num);
-  font-weight: var(--num-w);
-  font-size: calc(clamp(26px, 3.2vw, 40px) * var(--tx));
-  letter-spacing: -0.02em;
-  line-height: 1.05;
-}
-.hello div {
-  color: var(--fg2);
-  font-size: calc(15px * var(--tx));
-  margin-top: 4px;
-}
-.chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: center;
-}
+/* the greeting, the chips' row and the clock are <hp-header>'s (src/shell/header.css, #269); `.chip` is the Automations' chips' */
 .chip {
   display: flex;
   align-items: center;
@@ -80,45 +58,6 @@
 .card:focus-visible {
   outline: 2px solid var(--c-home);
   outline-offset: 2px;
-}
-.clock {
-  font-family: var(--f-num);
-  font-weight: var(--num-w);
-  font-size: calc(clamp(30px, 3.6vw, 46px) * var(--tx));
-  letter-spacing: -0.02em;
-  line-height: 1;
-  text-align: right;
-}
-.clock small {
-  display: block;
-  font-family: var(--f-body);
-  font-size: calc(13px * var(--tx));
-  color: var(--fg2);
-  letter-spacing: 0;
-  margin-top: 4px;
-  font-weight: 500;
-}
-/* grid */
-.cols {
-  display: grid;
-  grid-template-columns: 1.05fr 1fr 1fr;
-  gap: 18px;
-  align-items: start;
-}
-.col {
-  display: grid;
-  gap: 18px;
-  min-width: 0;
-}
-@media (max-width: 1100px) {
-  .cols {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-@media (max-width: 720px) {
-  .cols {
-    grid-template-columns: 1fr;
-  }
 }
 .card {
   background: var(--card);

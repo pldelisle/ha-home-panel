@@ -1,7 +1,4 @@
 /* ---------- Phone: the Tabs view under 600 px (iPhone). Bottom tab bar, one column, summary tiles that open sheets ---------- */
-#chips {
-  display: contents;
-}
 .rtab.rmore {
   display: none;
 }
@@ -24,37 +21,10 @@
   width: 44px;
   height: 44px;
 }
-.app.tabsv.cp .head .hello {
-  grid-area: 1/2;
-}
-.app.tabsv.cp .head .hello h1 {
-  font-size: calc(22px * var(--tx));
-}
-.app.tabsv.cp .head .hello div {
-  font-size: calc(13px * var(--tx));
-  margin-top: 1px;
-}
-.app.tabsv.cp .head .chips {
-  display: contents;
-}
 .app.tabsv.cp .head #theme {
   grid-area: 1/3;
   width: 44px;
   height: 44px;
-}
-.app.tabsv.cp .head #chips {
-  grid-area: 2/1/3/4;
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.app.tabsv.cp .head .chip {
-  padding: 7px 12px;
-  font-size: calc(13px * var(--tx));
-}
-.app.tabsv.cp .head .clock,
-.app.tabsv.cp .head .wxchip {
-  display: none;
 }
 .app.tabsv.cp .pop {
   top: calc(100% + 6px);

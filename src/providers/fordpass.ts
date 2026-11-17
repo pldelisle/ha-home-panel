@@ -1,6 +1,6 @@
 // The FordPass car, found by its entity ids and read into the inputs the Car feature takes: the charge, the plug, the tires, the doors, Ford's messages and the departure schedule.
 // Pattern: an adapter below the features (ADR 0025), by convention over configuration: the car is `sensor.fordpass_<name>_soc` and every other entity is `<domain>.fordpass_<name>_<key>`;
-// the rules are those of the legacy `findCar`, `carName` and `carState` (deleted in #251), `renderCarSheetLive` and `plugStamp` (#252) and `schedText`, which now reads it (#269 deletes that), with Ford's malformed dates guarded where the legacy `asDate` guarded them.
+// the rules are those of the legacy `findCar`, `carName` and `carState` (deleted in #251), `renderCarSheetLive` and `plugStamp` (#252) and `schedText` (deleted in #269), with Ford's malformed dates guarded where the legacy `asDate` guarded them.
 // Must not: word anything a person reads (the name Ford does not give is `''`, and the model words "Car"), read the clock, the registry or the DOM, or send a command.
 import {isRecord, type ResolvedConfig} from '../core/config.ts';
 import type {HassEntities} from '../core/hass.ts';
