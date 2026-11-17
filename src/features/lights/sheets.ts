@@ -1,4 +1,4 @@
-// The id of the room's sheet Lights asks the shell for, and the reader of what it is asked to show, for the tiles, the pane and the descriptor.
+// The id of the room's sheet Lights asks the shell for, and the reader of what it is asked to show, for the tiles, the sheet, the pane and the descriptor.
 // Pattern: a named constant for the `<owner>.<name>` id of ADR 0021, so the sheet is asked for by a name the compiler checks, and a reader
 // that turns the sheet host's `unknown` detail back into the room's key.
 // Must not: hold anything but the id and the reader, or be imported by the shell.

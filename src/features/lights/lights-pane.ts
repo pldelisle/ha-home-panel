@@ -144,7 +144,7 @@ export class LightsPane extends LitElement {
    * once, as the legacy panel did, whether or not the save is accepted.
    */
   private link(key: string, partnerKey: string): void {
-    const rooms = this.inputs?.tiles ?? [];
+    const rooms = this.read()?.tiles ?? [];
     const tile = rooms.find(room => room.key === key);
     const change = tile && link(tile, partnerKey, rooms);
     if (!change) return;
@@ -161,6 +161,12 @@ export class LightsPane extends LitElement {
         this.storeController.pause();
         this.editing = false; // another tab ends Arrange, as the legacy panel did
       }
+    }
+    // a sheet closed under the finger (Escape, the scrim, a room gone) says no `drag-end`: the hold ends with it
+    if (changed.has('roomKey') && !this.roomKey && this.sliding) {
+      clearTimeout(this.settle);
+      this.sliding = false;
+      this.storeController.release();
     }
     if (!this.active) return;
     const inputs = this.read();
@@ -329,7 +335,8 @@ export class LightsPane extends LitElement {
 
   /** The sheet's room and its partner, which act as one room; empty when the room is gone. */
   private sheetPair(): Room[] {
-    const rooms = this.inputs?.tiles ?? [];
+    // the house as it is now, not as the last draw read it: a release follows a hold that drew nothing
+    const rooms = this.read()?.tiles ?? [];
     const room = rooms.find(r => r.key === this.roomKey);
     return room ? pairOf(room, rooms) : [];
   }
@@ -375,12 +382,14 @@ export class LightsPane extends LitElement {
     this.sliding = true;
   };
 
-  // the pills settle a moment, then what the house said meanwhile is drawn, in one update
+  // the pills settle a moment, then the sheet is drawn again from the house, in one update, as the legacy sheet's tick drew it: what
+  // came meanwhile, or the state as it was when the call was refused or changed nothing
   private readonly onSlideEnd = (): void => {
     clearTimeout(this.settle);
     this.settle = setTimeout(() => {
       this.sliding = false;
       this.storeController.release();
+      this.requestUpdate();
     }, SETTLE_MS);
   };
 

@@ -82,6 +82,7 @@ export class StoreController implements ReactiveController {
   /** Listens again and asks the host for one update, since changes were missed while paused. */
   resume(): void {
     this.paused = false;
+    this.missed = false; // the update below draws it
     this.subscribeNow();
     this.host.requestUpdate();
   }

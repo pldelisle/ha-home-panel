@@ -100,7 +100,7 @@ export interface ShellForGuest {
   closeSettings(): void;
   /** Closes the Status checks under the live pill, which the shell keeps open since #256; the guest's tap outside asks, as for the settings. Deleted with `closeSettings` (#269). */
   closeStatus(): void;
-  /** Step E: the sheet host. The guest registers its sheets and popups with it, and opens and closes sheets through it. Deleted with the guest. */
+  /** Step E: the sheet host. The guest registers its popups with it (its last sheet moved to the Lights feature, #262), and opens sheets through it. Deleted with the guest. */
   sheets: SheetHost;
 }
 

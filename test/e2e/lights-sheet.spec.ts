@@ -110,10 +110,13 @@ test('60 a change of the room while a finger is on the slider leaves the slider 
   await house.page.mouse.down();
   await house.page.mouse.move(x, b.y + b.height * 0.3);
   const held = await pill.getAttribute('aria-valuenow');
+  const sub = await house.root().locator('#lshsub').textContent();
   expect(Number(held), 'the finger at 70 % of the height').toBeGreaterThanOrEqual(65);
   await house.setState('light.office_1', {attributes: {brightness: 25}}); // the bulb reports 10 % meanwhile
   await house.clock.runFor(1_100); // past the panel's next render tick
   await expect(pill, 'the house does not move the slider under the finger').toHaveAttribute('aria-valuenow', held!);
+  // the sheet is held, not only the pill: the room's line, which says the brightness, waits for the release too
+  await expect(house.root().locator('#lshsub'), 'nothing of the sheet is drawn again mid-drag').toHaveText(sub!);
   await house.page.mouse.up();
   await house.clock.runFor(1_100);
   const brightness = house.calls.filter(c => /^light\.turn_on .*office_1/.test(c) && /brightness_pct/.test(c));

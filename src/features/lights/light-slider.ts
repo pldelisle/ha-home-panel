@@ -1,6 +1,6 @@
 // <hp-light-slider>: one of the room sheet's two tall pills, brightness or colour temperature: the finger's height is the value.
 // Pattern: controlled component over a humble object (Meszaros, xUnit Test Patterns): it draws the model's `SliderView`, paints the value
-// under the finger itself while a pointer is captured (the legacy `lpVal` and `lpPaint`), and says `change` once, on release or per arrow
+// under the finger itself while a pointer is captured (the legacy `lpVal` and `lpPaint`), and says `slider-change` once, on release or per arrow
 // key; `drag-start` and `drag-end` let the pane hold its store meanwhile, so an update cannot move the pill under the finger.
 // Must not: send a service call, read the store or an entity, or word a value itself (the pane's `word` does).
 import {LitElement, html, nothing, unsafeCSS, type PropertyValues} from 'lit';
@@ -116,6 +116,7 @@ export class LightSlider extends LitElement {
         @pointermove=${this.onMove}
         @pointerup=${this.onEnd}
         @pointercancel=${this.onEnd}
+        @lostpointercapture=${this.onEnd}
         @keydown=${this.onKey}
       >
         ${
@@ -162,7 +163,7 @@ export class LightSlider extends LitElement {
     this.live = this.valueAt(e.currentTarget as HTMLElement, e.clientY);
   };
 
-  // a release sends the value under the finger (a tap is a press and a release at one point); a cancel sends nothing
+  // a release sends the value under the finger (a tap is a press and a release at one point); a cancel, or a capture lost, sends nothing
   private readonly onEnd = (e: PointerEvent): void => {
     if (e.pointerId !== this.pointer) return;
     this.pointer = null;

@@ -231,7 +231,6 @@ export class LegacyPanel {
     this.frameKey = null; // what availability() said when the shell was last asked to draw the rail
     this.car = null; // the car's entities by the provider's rule (findCar), found once there are states: the stack and the Home tile read it through carInputs, until #269
     this.cache = {}; // last innerHTML per container, to skip identical updates
-    this.pending = {}; // optimistic control states until hass catches up
     this.attentionCount = 0; // how many Status checks need attention, told by the shell from the live pill (liveChanged)
     this.liveRunning = false; // whether the live pill shows an activity, told by the shell (liveChanged): the weather chip slims beside it
     this.fc = {}; // forecasts by type, told by the shell (forecastChanged) from the Weather pane's subscription; Home's card reads them
@@ -1122,15 +1121,6 @@ export class LegacyPanel {
       }),
     );
   }
-  async call(domain, service, data, done) {
-    try {
-      await this.api.runService(domain, service, data);
-      if (done) this.toast(done);
-    } catch (e) {
-      this.toast(`Didn't work: ${e.message || e.code || e}`, true);
-      this.pending = {};
-    }
-  }
 
   // ---------- live rendering, throttled ----------
   tick() {
@@ -1835,15 +1825,6 @@ export class LegacyPanel {
           ? 'Weekdays'
           : sch.days.map(x => x.slice(0, 3).replace(/^./, c => c.toUpperCase())).join(', ');
     return `${d} at ${this.clockTime(sch.hours, sch.minutes)} saved.`;
-  }
-
-  // ---------- the switch's optimistic read ----------
-  // `sw`, `pending` and `call` stay for the Lights pane until it moves (spec 23, #263); the Car's controls hold their values in the panel's overlay since #253
-  sw(id) {
-    const p = this.pending[id];
-    if (p != null && Date.now() < p.until) return p.on;
-    const s = this.st(id);
-    return ok(s) ? ['on', 'locked'].includes(s.state) : null;
   }
 }
 

@@ -1,7 +1,7 @@
 // Adaptive Lighting: which of its switches runs an area's lights, what mode the area is in (Auto, Night, by hand), and today's colour curve.
 // Pattern: a provider (ADR 0025) naming the integration's quirks where they live: the switch's entity naming, its `configured_lights` (hidden
 // unless `include_config_in_attributes` is on), `manual_control` and the `_sleep_mode` twin; the rules are the legacy `alFor`,
-// `lightMode` and `renderAlBar`'s curve, whose copies go with the sheet (#262) and the strip (#260).
+// `lightMode` and `renderAlBar`'s curve, whose copies went with the strip (#260) and the sheet (#262).
 // Must not: word anything, read the clock, the DOM or `hass` itself, or send a command (the feature's commands do).
 import type {SunTimes} from '../core/sun.ts';
 import type {HassEntities, PanelHass, Registries} from '../core/hass.ts';

@@ -222,7 +222,6 @@
 .pane > .panel > .grab + * {
   margin-top: 0;
 }
-
 /* automation chips wrap instead of widening the page */
 .app.tabsv.cp .auchips .chip,
 .app.tabsv.cp .aupick .chip {

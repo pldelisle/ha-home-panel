@@ -174,7 +174,6 @@
   border-color: transparent;
   background: color-mix(in srgb, var(--c-home) 14%, var(--card));
 }
-
 .lauto:disabled {
   opacity: 0.45;
   cursor: not-allowed;
@@ -267,7 +266,6 @@
   height: 0;
   order: 0;
 }
-
 /* one gap between cards everywhere: 16px between cards and sheet sections, 8px between tiles inside a card */
 .cols,
 .col {

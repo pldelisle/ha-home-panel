@@ -1,5 +1,5 @@
 // What a tile's lights are doing: which are on, whether any answers, the mean brightness, the colour-temperature range and mean, and the tint.
-// Pattern: pure functions over plain data (Bernhardt, functional core); the rules are the legacy `lightState` and `lightTint`, whose copies go with
+// Pattern: pure functions over plain data (Bernhardt, functional core); the rules are the legacy `lightState` and `lightTint`, whose copies went with
 // the sheet (#262), the tile's last legacy reader.
 // Must not: word anything (the sub-line is the model's), read the clock, the DOM or `hass` itself.
 import {kelvinRGB} from '../../core/color.ts';

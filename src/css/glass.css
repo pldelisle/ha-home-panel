@@ -214,7 +214,6 @@
 .app.gl .pane-auto .pill.ok {
   background: color-mix(in srgb, var(--ok) 18%, var(--g-tile));
 }
-
 /* v1.18.3: WebKit leaves ghosts of the previous flow drawing behind a blurred card (stale compositing under backdrop-filter), so on iOS the two Automations cards keep a denser plain translucent fill with no blur, and every flow drawing gets its own layer */
 .augraph {
   isolation: isolate;

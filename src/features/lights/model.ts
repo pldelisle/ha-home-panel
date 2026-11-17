@@ -1,7 +1,7 @@
 // lightsModel and sheetModel: the tiles, the strip, the pane's line and a room's sheet as the Lights elements place them, from the inputs.
 // Pattern: a pure view-model function, a humble object's other half (Meszaros, Fowler): it words every message through `deps.t` and every time
 // through `deps.fmt`, and takes the clock, the sun, the screen and who is looking as `deps`. Each rule is the legacy panel's (`renderLights`,
-// `lightSub`, `renderAlBar`, `renderPaneSubs`' Lights line, `renderLightSheet`, `lightPicker`), whose copies go with #260 and #262.
+// `lightSub`, `renderAlBar`, `renderPaneSubs`' Lights line, `renderLightSheet`, `lightPicker`), whose copies went with #260 and #262.
 // Must not: import the DOM, Lit or the shell, read the clock or `hass`, or hold text the household reads (a catalog key says it).
 import {kelvinRGB} from '../../core/color.ts';
 import {joined} from '../../core/figures.ts';
