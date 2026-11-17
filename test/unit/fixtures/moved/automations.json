@@ -496,7 +496,7 @@
     {"key": "automations.today.title"},
     {
       "key": "automations.today.caption",
-      "was": "Un point par exécution, un nombre quand plusieurs se suivent de près. Plein : exécutée; cerclé de rouge : vérifiée, rien fait; vert : en cours; vide : à venir. Touchez-en un pour le voir plus bas."
+      "translated": "Un point par exécution, un nombre quand plusieurs se suivent de près. Plein : exécutée; cerclé de rouge : vérifiée, rien fait; vert : en cours; vide : à venir."
     },
     {"key": "automations.tile.ranToday", "was": "Exécutées aujourd'hui"},
     {"key": "automations.tile.skipped", "values": {"n": 2}, "was": "2 autres vérifiées, rien fait"},
@@ -530,7 +530,7 @@
     {"key": "automations.chips.title", "was": "Toutes les automatisations"},
     {
       "key": "automations.chips.caption",
-      "was": "Les plus récentes d’abord. Touchez-en une pour voir son parcours, avec sa dernière exécution en couleur."
+      "translated": "Les plus récentes d’abord. Celle qui est choisie a son parcours dessiné plus haut, avec sa dernière exécution en couleur."
     },
     {"key": "automations.chip.off"},
     {"key": "automations.chip.running", "was": "en cours"},

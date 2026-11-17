@@ -23,7 +23,7 @@ src/features/automations/
   automations-pane.ts      <hp-automations-pane>
   run-timeline.ts          <hp-run-timeline>
   flow-card.ts             <hp-flow-card>
-  automation-chips.ts      <hp-automation-chips>
+  automation-chips.ts      <hp-automation-chips>: the list of every automation
   styles.css               the feature's rules, adopted by the four elements
 test/unit/
   providers/automations.test.ts

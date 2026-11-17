@@ -1228,7 +1228,7 @@ export const fr: Record<MessageKey, string> = {
     'Home Assistant n’a pas renvoyé les traces des automatisations ({error}). Le panneau a besoin d’un compte administrateur pour les lire.',
   'automations.today.title': "Aujourd'hui",
   'automations.today.caption':
-    'Un point par exécution, un nombre quand plusieurs se suivent de près. Plein : exécutée; cerclé de rouge : vérifiée, rien fait; vert : en cours; vide : à venir. Touchez-en un pour le voir plus bas.',
+    'Un point par exécution, un nombre quand plusieurs se suivent de près. Plein : exécutée; cerclé de rouge : vérifiée, rien fait; vert : en cours; vide : à venir.',
   'automations.tile.ranToday': "Exécutées aujourd'hui",
   'automations.tile.skipped': '{n} autres vérifiées, rien fait',
   'automations.tile.allPassed': 'toutes ont passé leurs vérifications',
@@ -1255,7 +1255,7 @@ export const fr: Record<MessageKey, string> = {
   'automations.noRuns': "Aucune automatisation n'a tourné depuis le dernier démarrage de Home Assistant.",
   'automations.chips.title': 'Toutes les automatisations',
   'automations.chips.caption':
-    'Les plus récentes d’abord. Touchez-en une pour voir son parcours, avec sa dernière exécution en couleur.',
+    'Les plus récentes d’abord. Celle qui est choisie a son parcours dessiné plus haut, avec sa dernière exécution en couleur.',
   'automations.chip.off': 'Éteint',
   'automations.chip.running': 'en cours',
   'automations.chip.never': 'jamais',

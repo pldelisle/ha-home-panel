@@ -95,7 +95,7 @@ describe('automationsModel: the Today card', () => {
   test('the runs and the runs still to come as dots, the tiles from them', () => {
     const list = [
       run('a', 'r1', '2026-11-07T08:00:00Z'),
-      run('a', 'r2', '2026-11-07T09:00:00Z', {script_execution: 'failed_conditions'}),
+      run('a', 'r2', '2026-11-07T10:00:00Z', {script_execution: 'failed_conditions'}),
     ];
     const view = automationsModel(inputs([auto('a')]), data({list, configs: {a: lamp}}), null, deps);
     expect(view.today.dots.map(d => [d.cls, d.item, d.run])).toEqual([
