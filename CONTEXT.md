@@ -14,9 +14,17 @@ The words the panel and its code use. One word per concept: use it in issues, te
 
 **Dialog** — A modal interruption an element owns and opens over everything (ADR 0036): a confirmation before an intentional action, such as Unlock or Start, or an editor holding a draft with Cancel and Save, such as the departure editor. A confirmation is the kit's `<hp-dialog>`. Not a detail view: that is a Sheet. Avoid: alert, popup, modal.
 
-**Tile** — A compact tappable block for one thing, such as a room on the Lights tab (the bulb switches the room, the rest of the tile opens its sheet) or a scene. Avoid: row (the sideways dimmer row that tiles replaced).
+**Tile** — A compact block for one thing. Either a well that shows a value and does nothing (a weather figure, a total with no chart), or a control that acts: a room on the Lights tab (the bulb switches the room, the row beside it opens its sheet), a scene, or a value tile with a chevron that leads to its data. Avoid: row (the sideways dimmer row that tiles replaced).
+
+**Well** — The surface that shows a value or a state and does nothing when tapped: flat, no rim, shadow or pointer (`.tile` as a `<div>`). A control is its opposite, raised above the wells (`docs/design.md`, "Three surfaces").
+
+**Control** — Anything a tap acts on inside a card, drawn raised on `--ctl-bg`; a tile that opens something is one (`.tile.tilebtn`, with a chevron). A filled capsule is always a control.
 
 **Card** — A glass surface that groups one subject's content, such as the Home card, a smart-stack card or a live-activity card.
+
+**Status** — A fact the panel reports, written as text with a small coloured dot before it (`.status`, `src/ui/styles/status.css`): the Car's facts, an automation's date and run, Air's ratings, who is home. The dot's tone (ok, warn, bad) adds to the word and never replaces it. Never a filled capsule, which is a button's shape. Avoid: status pill, badge (the pane header's is the icon square). Not the Status checks, the list behind the attention pill.
+
+**Range** — How far back a history reaches: Day, Week, Month or Year (`RANGES`, `src/ui/ranges.ts`), or a feature's own such as Energy's Now and Today, chosen with the pane's `<hp-range-tabs>`. A pane has one, at the top, and every card follows it or names its own fixed period; a tile that sets it (Energy's totals) sets that one. Avoid: period (the recorder's statistics period, one of `5minute`, `hour` and `day`, which a range asks for), span, timeframe.
 
 **Chip** — A small rounded label, in the header (weather, the critical peak, the people) or in a sheet (a single bulb, with a check mark when on).
 
