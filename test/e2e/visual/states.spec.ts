@@ -174,10 +174,10 @@ test.describe('Status checks', () => {
     await expect(house.root().locator('#pane-home')).toContainText('unplugged');
     await expect(house.root().locator('#pane-home')).toContainText('Front door open');
     await openPopup(house);
-    // the six tiles under the popup are masked: their text came out a sub-pixel apart from one CI run to the next (#268), and the
-    // Home baselines already show them; this one is about the popup, the pill and the Security card
+    // the tiles' last lines are masked: CI drew their text a sub-pixel apart from one run to the next (#268), and the Home
+    // baselines already show them; this one is about the popup, the pill and the Security card
     await expect(house.page).toHaveScreenshot('status-checks-tablet-light-en.png', {
-      mask: [house.root().locator('hp-glance-tile .htile')],
+      mask: [house.root().locator('hp-glance-tile .hs')],
     });
   });
 });
