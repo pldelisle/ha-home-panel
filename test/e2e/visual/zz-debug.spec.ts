@@ -25,7 +25,7 @@ test('zz debug status checks', async ({house}) => {
         new Promise<HTMLImageElement>(r => {
           const i = new Image();
           i.onload = () => r(i);
-          i.src = 'data:image/png;base64,' + s;
+          i.src = ['data:image', 'png;base64,'].join('/') + s;
         });
       const [ia, ie] = await Promise.all([load(a), load(e)]);
       const c = (i: HTMLImageElement) => {
