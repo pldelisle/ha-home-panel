@@ -121,3 +121,12 @@ test('51 with transparency reduced, the attention pill is solid', async ({house}
   await expect(pill(house)).toContainText(/needs attention/);
   await expectSolidWhenReduced(house, pill(house).locator('.latt.lmain'));
 });
+
+test("52 a light's change redraws nothing in the pill or the open popup", async ({house}) => {
+  const popup = await openPopup(house);
+  await expect(popup.locator('.lact')).toHaveCount(1);
+  await house.mutations.reset();
+  await house.setState('light.living_room_1', {attributes: {brightness: 100}});
+  await house.page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
+  expect(await house.mutations.count('hp-live-pill, hp-status-popup, hp-activity-card, hp-ring'), 'mutations').toBe(0);
+});

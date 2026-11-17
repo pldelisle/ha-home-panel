@@ -11,26 +11,14 @@ import {createFormatters} from './core/i18n/format.ts';
 import {englishLocale, panelLocale} from './core/i18n/locale.ts';
 import {ok, esc, plural} from './legacy/globals.js';
 import {registriesOf} from './core/registry.ts';
-import {roomName} from './core/i18n/room-name.ts';
 import {rateRoom} from './providers/air-quality.ts';
 import {doorMotionSensors} from './providers/door-motion.ts';
 import {departureSchedule, findCar, readCar} from './providers/fordpass.ts';
 import {hiloChallenge, hiloRates} from './providers/hilo.ts';
-import {heatPump} from './providers/heat-pump.ts';
 import {hydroQuebec} from './providers/hydro-quebec.ts';
 import {milaRooms} from './providers/mila.ts';
 import {powerNow} from './providers/power.ts';
-import {
-  dayKeys,
-  flowIds,
-  hourlyFlow,
-  meterTotals,
-  powerWindows,
-  rowsOf,
-  sessionsWindow,
-  waterDay,
-} from './providers/power-history.ts';
-import {chargingSessions} from './providers/wallbox.ts';
+import {dayKeys, flowIds, hourlyFlow, meterTotals, powerWindows, waterDay} from './providers/power-history.ts';
 import {ensureFonts} from './fonts.js';
 // Liquid Glass: whether this engine can run an SVG filter inside backdrop-filter (Chromium only)
 const LENS_OK =
@@ -43,12 +31,6 @@ const LIGHT_ORDER_KEY = 'home_panel';
 
 const sum = a => a.reduce((x, y) => x + (y || 0), 0);
 const f1 = v => (v == null ? '–' : (+v).toFixed(1));
-const f0 = v => (v == null ? '–' : String(Math.round(+v)));
-// a duration for the live-activity pill: 52 min, 1 h 50, 3 h
-const durTxt = ms => {
-  const m = Math.max(1, Math.round(ms / 6e4));
-  return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h${m % 60 ? ' ' + String(m % 60).padStart(2, '0') : ''}`;
-};
 const ms = v => (typeof v === 'number' ? v : Date.parse(v));
 // a YYYY-MM-DD day key as its UTC noon: read by a UTC-pinned set (fmtUtcEn, fmtUtc), a key names its own day whatever zone the browser or the house is in
 const dayAt = k => new Date(k + 'T12:00:00Z');
@@ -270,15 +252,15 @@ export class LegacyPanel {
       this.tick();
     };
     this.unsubStore = null; // the one path to the one-second render, subscribed in connect
-    this.shared = null; // the history the readers left in this panel share: the energy slices and the Wallbox's sessions (loadSharedHistory)
+    this.shared = null; // the history the readers left in this panel share: the energy slices and the water heater's day (loadSharedHistory)
     this.sheetOffs = []; // what unregisters this draw's sheets from the shell's sheet host (build), run by teardown
-    this.popupOffs = []; // the same for the two popups Escape dismisses (connect, disconnect)
     this.drawnTab = 'home'; // the tab the guest last drew its part of (tabChanged); `tab` is the shell's
     this.framed = false; // whether build() has drawn once, so the next draw asks the shell for a fresh frame
     this.frameKey = null; // what availability() said when the shell was last asked to draw the rail
-    this.car = null; // the car's entities by the provider's rule (findCar), found once there are states: the stack, the live pill and the Home tile read it through carInputs, until #256 and #269
+    this.car = null; // the car's entities by the provider's rule (findCar), found once there are states: the stack and the Home tile read it through carInputs, until #269
     this.cache = {}; // last innerHTML per container, to skip identical updates
     this.pending = {}; // optimistic control states until hass catches up
+    this.attentionCount = 0; // how many Status checks need attention, told by the shell from the live pill (attentionChanged)
     this.fc = {}; // forecasts by type, told by the shell (forecastChanged) from the Weather pane's subscription; Home's card reads them
     // #iwrap, the clock's container, is a static node of the shell's and outlives a draw: one listener, added at connect and removed at disconnect.
     // On the smart stack's card the tap that wakes the panel opens what the card is about
@@ -384,16 +366,6 @@ export class LegacyPanel {
       this.renderHomeStack();
     }, 20000);
     this.histT = setInterval(() => this.refreshShared(), 15 * 60000);
-    // Escape closes the sheet, then the Status checks, then the settings popup: the host owns the order, these two are its last
-    this.popupOffs = [
-      this.sheets.registerPopup({
-        isOpen: () => !!this.$app && !this.$('attpop').hidden,
-        close: () => {
-          this.toggleAttention(false);
-          this.renderHeader();
-        },
-      }),
-    ];
     this.$('iwrap').addEventListener('click', this.onIdleClick);
     if (this.hass && this.$app) this.refreshShared();
     if (this.$app) this.observeLayout();
@@ -412,8 +384,6 @@ export class LegacyPanel {
     if (this.ro) this.ro.disconnect();
     clearInterval(this.clockT);
     clearInterval(this.histT);
-    this.popupOffs.forEach(off => off());
-    this.popupOffs = [];
     this.$('iwrap').removeEventListener('click', this.onIdleClick);
     if (this.unsubStore) this.unsubStore();
     this.unsubStore = null;
@@ -1158,10 +1128,8 @@ export class LegacyPanel {
     this.$('menu').addEventListener('click', () =>
       this.host.dispatchEvent(new Event('hass-toggle-menu', {bubbles: true, composed: true})),
     );
-    this.$('gear').addEventListener('click', () => {
-      this.toggleAttention(false);
-      this.renderHeader();
-    });
+    // the gear's popup and the Status popup do not stay open together, as before the pill was an element
+    this.$('gear').addEventListener('click', () => this.sheets.close('live.status'));
     [
       ['open-air', 'air.detail'], // dead until the Home move (#268): the card is empty and parked
     ].forEach(([b, s]) => {
@@ -1175,20 +1143,13 @@ export class LegacyPanel {
       });
     });
     this.root.querySelectorAll('.sheet').forEach(sh => this.swipeToClose(sh.querySelector('.panel'), sh.id));
-    this.$('attpop').addEventListener('click', e => this.laClick(e));
-    this.$('chips').addEventListener('click', e => {
-      if (e.target.closest('.attchip')) {
-        e.stopPropagation();
-        this.toggleAttention();
-        this.renderHeader();
-      }
-    });
     this.root.addEventListener('click', e => {
-      const pop = this.$('attpop');
-      if (!pop.hidden && !e.composedPath().some(n => n === pop || (n.classList && n.classList.contains('attchip')))) {
-        this.toggleAttention(false);
-        this.renderHeader();
-      }
+      // a tap outside the Status popup closes it (the shell's sheet host keeps it); a tap on the pill stops at the pill
+      if (
+        this.sheets.isOpen('live.status') &&
+        !e.composedPath().some(n => n instanceof Element && n.localName === 'hp-status-popup')
+      )
+        this.sheets.close('live.status');
       const sp = this.$('setpop');
       if (!sp.hidden && !e.composedPath().some(n => n === sp || n === this.$('gear'))) this.ctx.shell.closeSettings();
     });
@@ -1503,7 +1464,6 @@ export class LegacyPanel {
     this.renderTabs();
     try {
       if (this.sheets.isOpen('sh-light')) this.renderLightSheet();
-      if (!this.$('attpop').hidden) this.renderAttention();
     } catch (e) {
       console.error('home-panel sheet', e);
     }
@@ -1511,7 +1471,7 @@ export class LegacyPanel {
 
   // ---------- live values ----------
   // Energy's reads left in the legacy panel (#241): the providers over the store, in kW, each reader taking the fields it needs
-  // (the provider words nothing). Their callers leave with the live pill (#255, #256), the peak chip (#257), the stack (#265, #266),
+  // (the provider words nothing). Their callers leave with the peak chip (#257), the stack (#265, #266),
   // the Home tiles (#268), the header (#269) and the More word (the guest).
   powerNow() {
     return powerNow(this.store.hass?.states ?? {}, this.store.config);
@@ -1524,11 +1484,6 @@ export class LegacyPanel {
   }
   hydroQuebec() {
     return hydroQuebec(this.store.hass?.states ?? {}, this.store.config);
-  }
-  // a room's name, by the core's rule over the provider's room (powerNow's `RoomPower` carries what the rule reads); the Status checks
-  // still ask it (#256)
-  roomName(room) {
-    return roomName(room, {names: this.store.names, t: this.store.t, language: this.store.language});
   }
 
   renderHeader() {
@@ -1559,8 +1514,7 @@ export class LegacyPanel {
       `${t[0]}<span style="font-size:.45em;margin-left:4px">${t[1] || ''}</span><small>${this.shared ? 'Live · history ' + this.fmtEn.time(this.shared.at) : 'Live · loading history'}</small>`,
     );
     const temp = this.attr(this.E.weather, 'temperature') ?? this.num(this.E.outT),
-      cond = this.st(this.E.cond),
-      att = this.attention();
+      cond = this.st(this.E.cond);
     const chips = [];
     if (temp != null)
       chips.push(
@@ -1568,422 +1522,12 @@ export class LegacyPanel {
       );
     if (this.hydroQuebec()?.peakNow)
       chips.push(`<div class="chip"><span class="dot" style="background:var(--crit)"></span>Critical peak now</div>`);
-    const open = !this.$('attpop').hidden,
-      pill = this.laPill(att);
-    if (pill) {
-      chips.push(pill);
-      if (chips[0].includes('wxchip') && this.liveActs().acts.length)
-        chips[0] = chips[0].replace('chip wxchip', 'chip wxchip slim');
-    } else if (open) this.toggleAttention(false);
-    this.set('chips', chips.join(''));
-  }
-
-  // ---------- attention ----------
-  attention() {
-    const items = [],
-      clear = [];
-    const stale = (id, h) => {
-      const s = this.st(id);
-      return !ok(s) || Date.now() - Date.parse(s.last_updated) > h * 3600e3;
-    };
-    if (this.st(this.E.hq)) {
-      if (stale(this.E.hq, 36))
-        items.push([
-          'warn',
-          'Hydro-Québec not updating',
-          'Billing and peak data are unavailable. Check the Hydro-Québec integration, it may need your password again.',
-        ]);
-      else clear.push('Hydro-Québec updating');
-    }
-    // the Hydro-Québec sensor's age, the heat pump and the Hilo gateway are read raw too: #254 (the Status checks' rules over the providers) replaces these reads
-    const hp = this.st(this.E.hp);
-    if (hp) {
-      if (!ok(hp))
-        items.push([
-          'crit',
-          'Heat pump offline',
-          `The ${heatPump(this.store.hass.states, registriesOf(this.store.hass), this.store.config)?.brand ?? 'Heat pump'} unit shows as unavailable in Home Assistant.`,
-        ]);
-      else clear.push('Heat pump online');
-    }
-    const gw = this.st(this.E.gateway);
-    if (gw) {
-      if (gw.state !== 'on' || gw.attributes.disconnected)
-        items.push(['crit', 'Hilo gateway offline', 'Thermostats and the meter may stop reporting.']);
-      else clear.push('Hilo gateway online');
-    }
-    const down = this.powerNow()
-      .rooms.filter(r => this.st(r.climate) && !ok(this.st(r.climate)))
-      .map(r => this.roomName(r));
-    if (down.length) items.push(['warn', `${plural(down.length, 'thermostat')} not reporting`, down.join(', ')]);
-    // the peak flags and the Hilo gateway are read as the sensors say them until the Status checks move to the providers (#254)
-    const peak = this.st(this.E.hqPeak),
-      up = this.st(this.E.hqUpcoming);
-    if (peak && peak.state === 'on')
-      items.push(['crit', 'Critical peak in progress', 'Hydro-Québec peak period: lower consumption now.']);
-    else if (up && up.state === 'on')
-      items.push(['warn', 'Critical peak coming', 'Hydro-Québec announced an upcoming critical peak.']);
-    else if (ok(peak)) clear.push('No critical peak');
-    const w = this.num(this.E.warnings);
-    if (w) items.push(['warn', 'Weather warning', `Environment Canada has ${plural(w, 'warning')} for your area.`]);
-    else if (w === 0) clear.push('No weather alerts');
-    const C = this.car;
-    if (C) {
-      const tp = this.st(C.id('sensor', 'tirepressure'));
-      if (
-        ok(tp) &&
-        (tp.state !== 'NORMAL_OPERATION' ||
-          ['frontLeft', 'frontRight', 'rearLeft', 'rearRight'].some(
-            k => tp.attributes[k + '_state'] && tp.attributes[k + '_state'] !== 'NORMAL',
-          ))
-      )
-        items.push(['warn', 'Tire pressure low', 'The car reports a tire below its normal pressure.']);
-      const lk = this.st(C.id('lock', 'doorlock'));
-      if (ok(lk) && lk.state === 'unlocked') items.push(['warn', 'Car unlocked', 'Lock it from the car view.']);
-      else if (ok(lk)) clear.push('Car locked');
-      if (!ok(this.st(C.id('sensor', 'soc'))))
-        items.push(['warn', 'Car not reporting', 'The Ford integration has no battery data right now.']);
-    }
-    const X = this.store.hass ? this.doorSensors() : [];
-    // (x.since is the same instant as a number; ago takes the state's ISO string, so the state is read again)
-    X.filter(x => x.kind === 'door' && x.on && Date.now() - x.since > 10 * 6e4).forEach(x =>
-      items.push(['warn', `${x.name} open`, `Open for ${this.ago(this.st(x.id).last_changed).replace(' ago', '')}.`]),
-    );
-    X.filter(x => !x.available).forEach(x =>
-      items.push(['warn', `${x.name} offline`, 'The sensor is unavailable in Home Assistant.']),
-    );
-    X.filter(x => x.battery != null && x.battery < 15).forEach(x =>
-      items.push(['warn', `${x.name} battery low`, `${Math.round(x.battery)}% left.`]),
-    );
-    if (X.some(x => x.kind === 'door') && !X.some(x => x.kind === 'door' && x.on)) clear.push('Doors closed');
-    if (this.st(this.E.wbStatus) && !ok(this.st(this.E.wbStatus)))
-      items.push(['warn', 'Wallbox offline', 'The charger is unavailable in Home Assistant.']);
-    return {items, clear};
-  }
-  renderAttention() {
-    const {items, clear} = this.attention();
-    const row = ([lvl, b, s]) =>
-      `<div class="arow"><span class="ic acc" style="--acc:var(--${lvl})">!</span><div><b>${esc(b)}</b><span>${esc(s)}</span></div></div>`;
-    const acts = this.liveActs().acts;
-    this.$('attpop').classList.toggle('la', acts.length > 0);
-    this.set(
-      'att',
-      `${acts.map(a => `<div class="lact" style="--ac:${a.ac}">${a.card()}</div>`).join('')}<div class="lstat"><div class="top"><span class="lbl">Status</span><span class="right">${items.length ? plural(items.length, 'item') + (items.length === 1 ? ' needs' : ' need') + ' attention' : 'All clear'}</span></div>
-      ${items.length ? `<div class="att">${items.map(row).join('')}</div>` : `<div class="muted" style="font-size:14px">Everything is reporting normally.</div>`}
-      <div class="clear">${clear.map(c => `<span>${esc(c)}</span>`).join('')}</div></div>`,
-    );
-  }
-
-  // ---------- live activities (2.5.0) ----------
-  // While something runs (the car charging, the water heater heating, a Hilo challenge), the status chip turns into a pill
-  // with that one number and the time left; other running things sit beside it as small rings, and a status problem as a "!".
-  // Tapping opens the Status popup with one card per activity above the usual checks. When the car reaches its limit or a
-  // challenge ends, a check shows for 10 minutes, then the chip says "All clear" again.
-  liveActs() {
-    const now = Date.now(),
-      acts = [],
-      seen = {};
-    const ring = (ic, p, ac, s = 34) => {
-      const r = s / 2 - 2.5,
-        c = 2 * Math.PI * r,
-        pp = p == null ? null : Math.max(0.02, Math.min(1, p));
-      return `<span class="lring" style="--ac:${ac};width:${s}px;height:${s}px"><svg viewBox="0 0 ${s} ${s}" aria-hidden="true"><circle cx="${s / 2}" cy="${s / 2}" r="${r}" fill="color-mix(in srgb,${ac} 16%,transparent)" stroke="color-mix(in srgb,${ac} 22%,transparent)" stroke-width="3"/>${pp == null ? '' : `<circle cx="${s / 2}" cy="${s / 2}" r="${r}" fill="none" stroke="${ac}" stroke-width="3" stroke-linecap="round" stroke-dasharray="${(c * pp).toFixed(1)} ${c.toFixed(1)}"/>`}</svg><span class="li">${ico(ic, Math.round(s * 0.5))}</span></span>`;
-    };
-    const head = (a, title, right) =>
-      `<div class="lah">${ring(a.ic, a.p, a.ac, 30)}<b>${title}</b><span class="rt">${right}</span></div>`;
-    // Hilo challenge: from the start of pre-heat until recovery ends; phase times come from the challenge sensor's next event
-    const challenge = this.hiloChallenge(),
-      dst = challenge ? (challenge.state === 'on' ? 'reduction' : challenge.state) : null;
-    if (['pre_heat', 'reduction', 'recovery'].includes(dst)) {
-      const ev = challenge.nextEvent ?? {phases: {}, used: null, allowed: null},
-        ph = ev.phases;
-      const T = k => {
-        const v = Date.parse(String(ph[k] || '').replace(' ', 'T'));
-        return Number.isFinite(v) ? v : null;
-      };
-      const [a0, b0] = {
-        pre_heat: ['preheat_start', 'preheat_end'],
-        reduction: ['reduction_start', 'reduction_end'],
-        recovery: ['recovery_start', 'recovery_end'],
-      }[dst].map(T);
-      const to = dst === 'pre_heat' ? (T('reduction_start') ?? b0) : b0;
-      const p = a0 && b0 && b0 > a0 ? (now - a0) / (b0 - a0) : null,
-        red = dst === 'reduction';
-      const name = {pre_heat: 'Hilo pre-heat', reduction: 'Hilo challenge', recovery: 'Hilo recovery'}[dst],
-        short = {pre_heat: 'Pre-heat', reduction: 'Challenge', recovery: 'Recovery'}[dst];
-      const left = to ? durTxt(to - now) : '',
-        what = dst === 'pre_heat' ? 'challenge in' : 'ends in';
-      const L = this.powerNow(),
-        ins = L.rooms.map(r => r.temperature).filter(v => v != null),
-        inside = ins.length ? sum(ins) / ins.length : null;
-      seen.hilo = true;
-      const a = {
-        k: 'hilo',
-        prio: red ? 0 : 1,
-        ic: 'bolt',
-        ac: red ? 'var(--crit)' : 'var(--c-grid)',
-        p,
-        tint: red,
-        pill: `<span class="ll">${name}</span>${left ? `<i class="lsep"></i><span class="lv">${what} ${left}</span>` : ''}`,
-        short: `<span class="ll">${short}</span>${left ? `<i class="lsep"></i><span class="lv">${left}</span>` : ''}`,
-        label: `${name}${left ? `, ${what} ${left}` : ''}`,
-      };
-      a.card = () => {
-        const p0 = T('preheat_start'),
-          p1 = T('reduction_start'),
-          p2 = T('recovery_start'),
-          p3 = T('recovery_end');
-        const bar =
-          p0 && p1 && p2 && p3 && p3 > p0
-            ? (() => {
-                const W = p3 - p0,
-                  pc = t => (((t - p0) / W) * 100).toFixed(1);
-                return `<div class="lph" role="img" aria-label="Pre-heat ${this.fmtEn.time(p0)}, reduction ${this.fmtEn.time(p1)} to ${this.fmtEn.time(p2)}, recovery until ${this.fmtEn.time(p3)}"><span style="flex:${p1 - p0};--pc:var(--c-grid)">Pre-heat</span><span style="flex:${p2 - p1};--pc:var(--crit)">Reduction</span><span style="flex:${p3 - p2};--pc:var(--c-ev)">Recovery</span><i style="left:${Math.max(0, Math.min(100, +pc(now)))}%"></i></div>
-            <div class="lpt">${[p0, p1, p2, p3].map(t => `<span style="left:${pc(t)}%">${this.fmtEn.time(t).replace(/ [ap]m$/, '')}</span>`).join('')}</div>`;
-              })()
-            : '';
-        const used = ev.used,
-          allowed = ev.allowed,
-          g = this.powerNow().grid; // read when the card is drawn, as the meter was
-        const meta = [
-          inside != null ? `<b>${inside.toFixed(1)}°</b> inside` : '',
-          g != null ? `house using <b>${g.toFixed(1)} kW</b>` : '',
-          used != null && allowed ? `<b>${(+used).toFixed(1)}</b> of ${(+allowed).toFixed(1)} kWh allowed` : '',
-        ]
-          .filter(Boolean)
-          .join(' · ');
-        return (
-          head(a, 'Hilo challenge', `${short}${a0 && b0 ? ` · ${this.fmtEn.time(a0)} – ${this.fmtEn.time(b0)}` : ''}`) +
-          bar +
-          (left
-            ? `<div class="lbig"><span class="n">${left}</span><span class="to">${dst === 'pre_heat' ? 'until heating holds back' : dst === 'reduction' ? 'until the challenge ends' : 'until recovery ends'}</span></div>`
-            : '') +
-          `<div class="lmeta">${dst === 'reduction' ? 'Heating is held back. ' : dst === 'pre_heat' ? 'Rooms are warming up before the challenge. ' : ''}${meta}</div>`
-        );
-      };
-      acts.push(a);
-    }
-    // the car: while FordPass says it's charging, or while it's plugged in with the Wallbox paused below its limit
-    const C = this.car,
-      c = this.carInputs();
-    const paused = !!(
-      c &&
-      !c.charging &&
-      c.plugged &&
-      this.E.wbPause &&
-      this.sw(this.E.wbPause) === false &&
-      (c.soc == null || c.limit == null || c.soc < c.limit - 1)
-    );
-    if (c && (c.charging || paused)) {
-      const chg = (this.st(C.id('sensor', 'elvehcharging')) || {}).attributes || {},
-        soc = c.soc,
-        lim = c.limit || 100;
-      const pw =
-        this.kw(this.E.evP) ??
-        (() => {
-          const k = Object.keys(chg).find(x => /charg.*(power|kw)$/i.test(x));
-          return k && Number.isFinite(+chg[k]) ? +chg[k] : null;
-        })();
-      // time to full: FordPass's own estimate when it reports one, else what's left of the battery at the charger's power
-      let eta = null;
-      for (const [k, v] of Object.entries(chg)) {
-        if (!/(end|complete|full|remain)/i.test(k)) continue;
-        const t = typeof v === 'string' && /\d{4}-\d\d-\d\d/.test(v) ? Date.parse(v) : null;
-        if (t && t > now) {
-          eta = t;
-          break;
-        }
-        if (/(minutes|remain|to.?full)/i.test(k) && Number.isFinite(+v) && +v > 0 && +v < 3000) {
-          eta = now + +v * 6e4;
-          break;
-        }
-      }
-      const cap = +this.CFG.car.battery_kwh;
-      if (!eta && c.charging && cap && soc != null && pw > 0.3 && soc < lim)
-        eta = now + ((((lim - soc) / 100) * cap) / pw) * 36e5;
-      const left = eta ? durTxt(eta - now) : '';
-      const H = this.shared,
-        ses = H && H.sessions.length ? H.sessions[H.sessions.length - 1] : null,
-        plugT = (() => {
-          const x = this.st(C.id('sensor', 'elvehplug'));
-          return ok(x) ? Date.parse(x.last_changed) : null;
-        })();
-      // the hourly charging session that started with this plug-in (sessions are built from hourly statistics)
-      const cur = ses && ses.end >= now - 2 * 36e5 && (!plugT || ses.start >= plugT - 36e5) ? ses : null;
-      const price = this.num(this.E.wbPrice) ?? 0.07,
-        plug = this.st(C.id('sensor', 'elvehplug'));
-      seen.car = {lim};
-      const a = {
-        k: 'car',
-        prio: 2,
-        ic: 'car',
-        ac: paused ? 'var(--fg3)' : 'var(--c-ev)',
-        p: soc == null ? null : soc / 100,
-        pill: `<span class="ll">${paused ? 'Charging paused' : 'Charging'}</span><span class="lv">${f0(soc)}%</span>${left ? `<i class="lsep"></i><span class="lv">${left}</span>` : ''}`,
-        short: `<span class="lv">${f0(soc)}%</span><i class="lsep"></i><span class="lv">${paused ? 'paused' : left || 'charging'}</span>`,
-        label: `${paused ? 'Charging paused' : 'Car charging'}, ${f0(soc)} percent${left ? `, full in ${left}` : ''}`,
-      };
-      a.card = () => {
-        const on = this.sw(this.E.wbPause);
-        const meta = [
-          ok(plug) && plug.state !== 'DISCONNECTED'
-            ? `Plugged in at ${this.fmtEn.time(new Date(plug.last_changed))}`
-            : '',
-          cur ? `<b>+${f1(cur.kwh)} kWh</b> so far · about <b>$${(cur.kwh * price).toFixed(2)}</b>` : '',
-          c.range != null ? `${Math.round(c.range)} km range` : '',
-        ]
-          .filter(Boolean)
-          .join(' · ');
-        return (
-          head(
-            a,
-            `${esc(c.name || 'Car')} <span>${paused ? 'paused' : 'charging'}</span>`,
-            pw != null && pw > 0.05 ? `${pw.toFixed(1)} kW` : '',
-          ) +
-          `<div class="lbig"><span class="n">${f0(soc)}<small>%</small></span><span class="to">→ ${lim}% limit</span>${eta ? `<span class="eta"><b>Full at ${this.fmtEn.time(eta)}</b>in ${left}</span>` : ''}</div>
-          <div class="lbar" role="img" aria-label="Battery ${f0(soc)} percent, limit ${lim} percent"><i style="width:${soc || 0}%"></i><em style="left:${lim}%"></em></div>
-          ${meta ? `<div class="lmeta">${meta}</div>` : ''}
-          <div class="lbtns">${this.E.wbPause && ok(this.st(this.E.wbPause)) ? `<button type="button" data-la="pause">${on === false ? 'Resume charging' : 'Pause charging'}</button>` : ''}<button type="button" class="go" data-la="car">Open Car ›</button></div>`
-        );
-      };
-      acts.push(a);
-    }
-    // the water heater: while it draws power; time left from how long its other cycles today lasted
-    const wp = this.kw(this.E.whP);
-    if (wp != null && wp > 0.2) {
-      const W = this.shared && this.shared.wh24,
-        pts = W ? W.p.filter(x => x[0] >= now - 864e5) : [],
-        runs = [];
-      let r0 = null;
-      pts.forEach((x, i) => {
-        const on = x[1] > 0.2;
-        if (on && r0 == null) r0 = x[0];
-        if ((!on || i === pts.length - 1) && r0 != null) {
-          runs.push([r0, on ? x[0] + 3e5 : x[0]]);
-          r0 = null;
-        }
-      });
-      const last = runs[runs.length - 1],
-        open = last && last[1] >= now - 15 * 6e4;
-      const sPw = this.st(this.E.whP),
-        start = open ? last[0] : Date.parse(sPw.last_changed);
-      const done = runs
-        .filter(x => x !== (open ? last : null) && x[1] - x[0] >= 5 * 6e4)
-        .map(x => x[1] - x[0])
-        .sort((x, y) => x - y);
-      const typ = done.length ? done[Math.floor(done.length / 2)] : null,
-        el = now - start;
-      const left = typ ? Math.max(0, typ - el) : null,
-        t = this.num(this.E.whT);
-      const tp = W ? W.t.filter(x => x[0] >= start - 6e5) : [];
-      const rate =
-        tp.length > 1 && tp[tp.length - 1][0] > tp[0][0]
-          ? (tp[tp.length - 1][1] - tp[0][1]) / ((tp[tp.length - 1][0] - tp[0][0]) / 6e5)
-          : null;
-      const lt = left == null ? '' : left < 3 * 6e4 ? 'almost done' : `~${durTxt(left)}`;
-      const a = {
-        k: 'wh',
-        prio: 3,
-        ic: 'drop',
-        ac: 'var(--c-wh)',
-        p: typ ? el / typ : null,
-        pill: `<span class="ll">Water heater</span>${t != null ? `<span class="lv">${Math.round(t)}°</span>` : ''}${lt ? `<i class="lsep"></i><span class="lv">${lt}</span>` : ''}`,
-        short: `<span class="ll">Water</span>${lt ? `<i class="lsep"></i><span class="lv">${lt}</span>` : ''}`,
-        label: `Water heater heating${lt ? `, ${lt.replace('~', 'about ')} left` : ''}`,
-      };
-      a.card = () => {
-        const kwh = sum(pts.filter(x => x[0] >= start).map(x => x[1])) / 12,
-          nth = runs.length;
-        let spark = '';
-        if (tp.length > 1) {
-          const ys = tp.map(x => x[1]),
-            lo = Math.min(...ys) - 0.5,
-            hi = Math.max(...ys) + 0.5,
-            x0 = tp[0][0],
-            x1 = Math.max(now, x0 + 1);
-          const X = v => (((v - x0) / (x1 - x0)) * 330 + 5).toFixed(1),
-            Y = v => (40 - ((v - lo) / (hi - lo)) * 34).toFixed(1);
-          const d = tp.map((x, i) => `${i ? 'L' : 'M'}${X(x[0])},${Y(x[1])}`).join(''),
-            e = tp[tp.length - 1];
-          spark = `<svg class="lspark" viewBox="0 0 340 46" preserveAspectRatio="none" role="img" aria-label="Water temperature this cycle"><path d="${d}L${X(e[0])},46L5,46Z" fill="color-mix(in srgb,var(--c-wh) 16%,transparent)"/><path d="${d}" fill="none" stroke="var(--c-wh)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>`;
-        }
-        return (
-          head(a, 'Water heater heating', `${wp.toFixed(1)} kW`) +
-          spark +
-          `<div class="lbig"><span class="n">${f1(t)}<small>°C</small></span>${rate != null && Math.abs(rate) >= 0.05 ? `<span class="to">${rate > 0 ? '↗' : '↘'} ${Math.abs(rate).toFixed(1)}° / 10 min</span>` : ''}${lt ? `<span class="eta"><b>${lt === 'almost done' ? 'Almost done' : lt + ' left'}</b>usual cycle ${durTxt(typ)}</span>` : ''}</div>
-          <div class="lmeta">Started ${this.fmtEn.time(start)}${pts.length ? ` · <b>${kwh.toFixed(1)} kWh</b> this cycle` : ''}${nth > 1 ? ` · ${plural(nth, 'cycle')} in 24 h` : ''}</div>`
-        );
-      };
-      acts.push(a);
-    }
-    acts.sort((x, y) => x.prio - y.prio);
-    // something that just finished keeps a check for 10 minutes: the car at its limit, a challenge after recovery
-    /** @type {Record<string, any>} */
-    const prev = this.laSeen || {};
-    if (prev.car && !seen.car && c && c.soc != null && c.soc >= (prev.car.lim || 100) - 1)
-      this.laDone = {text: `Charged to ${Math.round(c.soc)}%`, until: now + 6e5, at: now};
-    if (prev.hilo && !seen.hilo && challenge && !['pre_heat', 'reduction', 'recovery', 'on'].includes(challenge.state))
-      this.laDone = {text: 'Challenge done', until: now + 6e5, at: now};
-    this.laSeen = seen;
-    if (this.laDone && (this.laDone.until < now || acts.length)) this.laDone = null;
-    return {acts, done: this.laDone};
-  }
-  laPill(att) {
-    const {acts, done} = this.liveActs();
-    // since 2.8.0 there is no "All clear" chip: with nothing running and nothing to check, the spot stays empty
-    if (!acts.length && !done && !att.items.length) return null;
-    const open = !this.$('attpop').hidden,
-      crit = att.items.some(i => i[0] === 'crit'),
-      a = acts[0];
-    const need = att.items.length === 1 ? '1 thing needs attention' : `${att.items.length} things need attention`;
-    // only a status problem: the pill is the problem, in amber (red when critical)
-    if (!a && !done)
-      return `<button type="button" class="chip attchip lap" aria-haspopup="dialog" aria-expanded="${open}"><span class="lmain latt" style="--ac:var(--${crit ? 'crit' : 'warn'})"><span class="lwarn"><b>!</b></span><span>${need}</span></span></button>`;
-    const ring = (x, s) => {
-      const r = s / 2 - 2.5,
-        c = 2 * Math.PI * r,
-        p = x.p == null ? null : Math.max(0.02, Math.min(1, x.p));
-      return `<span class="lring" style="--ac:${x.ac};width:${s}px;height:${s}px"><svg viewBox="0 0 ${s} ${s}" aria-hidden="true"><circle cx="${s / 2}" cy="${s / 2}" r="${r}" fill="color-mix(in srgb,${x.ac} 16%,transparent)" stroke="color-mix(in srgb,${x.ac} 22%,transparent)" stroke-width="3"/>${p == null ? '' : `<circle cx="${s / 2}" cy="${s / 2}" r="${r}" fill="none" stroke="${x.ac}" stroke-width="3" stroke-linecap="round" stroke-dasharray="${(c * p).toFixed(1)} ${c.toFixed(1)}"/>`}</svg><span class="li">${ico(x.ic, Math.round(s * 0.5))}</span></span>`;
-    };
-    const main = a
-      ? `<span class="lmain${a.tint ? ' tint' : ''}" style="--ac:${a.ac}">${ring(a, 34)}<span class="sr">${esc(a.label)}</span><span class="lsay" aria-hidden="true">${this.compact ? a.pill : a.short}</span></span>`
-      : `<span class="lmain" style="--ac:var(--c-ev)"><span class="lok">${ico('check', 18)}</span><span>${esc(done.text)}</span>${this.compact ? '' : `<span class="ll">${this.fmtEn.time(done.at)}</span>`}</span>`;
-    const bubs =
-      acts
-        .slice(1)
-        .map(x => `<span class="lbub">${ring(x, 36)}<span class="sr">${esc(x.label)}</span></span>`)
-        .join('') +
-      (att.items.length
-        ? `<span class="lbub lwarn" style="--ac:var(--${crit ? 'crit' : 'warn'})"><b aria-hidden="true">!</b><span class="sr">${need}</span></span>`
-        : '');
-    return `<button type="button" class="chip attchip lap" aria-haspopup="dialog" aria-expanded="${open}">${main}${bubs}</button>`;
-  }
-  laClick(e) {
-    const b = e.target.closest('[data-la]');
-    if (!b) return;
-    e.stopPropagation();
-    if (b.dataset.la === 'car') {
-      this.toggleAttention(false);
-      this.renderHeader();
-      this.sheets.open('car.detail');
-      return;
-    }
-    if (b.dataset.la === 'pause' && this.E.wbPause) {
-      const on = !this.sw(this.E.wbPause);
-      this.pending[this.E.wbPause] = {on, until: Date.now() + 20000};
-      this.call(
-        'switch',
-        on ? 'turn_on' : 'turn_off',
-        {entity_id: this.E.wbPause},
-        on ? 'Charging resumed' : 'Charging paused',
-      );
-      this.renderAttention();
-      this.renderHeader();
-    }
+    // the live pill after these is the feature's <hp-live-pill>, which the shell places (#256)
+    this.set('wxchip-host', chips.join(''));
   }
 
   // ---------- the car, for the legacy readers ----------
-  // the car as the provider reads it, null when the house has none; the stack, the live pill and the Home tile read it until #256 (live pill) and #269 (Home)
+  // the car as the provider reads it, null when the house has none; the stack and the Home tile read it until #269 (Home)
   carInputs() {
     return this.car ? readCar(this.hass.states, this.store.config, this.store.names, this.car) : null;
   }
@@ -2018,21 +1562,19 @@ export class LegacyPanel {
     this.cache = {};
     this.renderLive();
   }
-  // What the readers left in this panel still read: the stack's Energy-today card (the hourly flow and the meter's today), the live pill's water heater and
-  // the Home water tile (the water heater's day), the live pill's car (the Wallbox's year of hours, which the Car's history asks
-  // too, so it is one read), and the header's "Live · history" line (`at`). The power windows are asked through the panel-wide cache, the very calls Energy's
-  // card makes, so each is read once for the panel (ADR 0028), and cut by the providers' slices; the energy-only windows are the card's, asked when it first
-  // connects. It is deleted with its last reader: #256 (liveActs), #266 (the stack), #268 (the Home tile) and #269 (the header).
+  // What the readers left in this panel still read: the stack's Energy-today card (the hourly flow and the meter's today), the Home water tile (the water
+  // heater's day) and the header's "Live · history" line (`at`); the live pill reads its own through the cache since #256. The power windows are asked through
+  // the panel-wide cache, the very calls Energy's card makes, so each is read once for the panel (ADR 0028), and cut by the providers' slices; the energy-only
+  // windows are the card's, asked when it first connects. It is deleted with its last reader: #266 (the stack), #268 (the Home tile) and #269 (the header).
   async loadSharedHistory(now) {
     const {config} = this.store,
       ask = ({ids, period, start, types}) => this.ctx.statistics.statistics(ids, period, start, types);
     const w = powerWindows(now, config, this.fmtEn);
-    const [hour7, today, meter33, fiveMin25h, hours] = await Promise.all([
+    const [hour7, today, meter33, fiveMin25h] = await Promise.all([
       ask(w.hour7),
       ask(w.today),
       ask(w.meter33),
       ask(w.fiveMin25h),
-      ask(sessionsWindow(now, config.entities.evP)),
     ]);
     return {
       at: new Date(),
@@ -2045,7 +1587,6 @@ export class LegacyPanel {
         this.fmtEn.isoDay,
       ),
       wh24: waterDay(fiveMin25h, {temperature: config.entities.whT, power: config.entities.whP}),
-      sessions: chargingSessions(rowsOf(hours, config.entities.evP)),
     };
   }
 
@@ -2068,6 +1609,18 @@ export class LegacyPanel {
   // Home's card (`wxDays`) still reads `this.fc`. Deleted with its last reader (the Home move).
   forecastChanged(type, forecast) {
     this.fc[type] = forecast;
+  }
+  // ---------- the Status checks' count ----------
+  // The live pill (#256) runs the Status checks and the shell tells the guest how many need attention: the Home pane's sub-line says it. Deleted with
+  // its last reader, `renderPaneSubs` (the Home move, #269).
+  attentionChanged(count) {
+    this.attentionCount = count;
+    if (!this.hass || !this.$app) return; // drawn with the count at the first render
+    try {
+      this.renderPaneSubs();
+    } catch (e) {
+      console.error('home-panel renderPaneSubs', e);
+    }
   }
   // Temporary until Home's card and the idle clock move: `wxDays`, `dayName`, `alerts`, `sunDay`
   wxDays() {
@@ -2463,7 +2016,7 @@ export class LegacyPanel {
   renderPaneSubs() {
     const isOn = i => (this.st(i) || {}).state === 'on',
       L = this.powerNow(),
-      att = this.attention();
+      att = this.attentionCount;
     const lit = this.lightAreas()
         .flatMap(a => a.ids)
         .filter(isOn).length,
@@ -2485,9 +2038,7 @@ export class LegacyPanel {
           this.fmtEn.dateLong(new Date()),
           avg == null ? '' : `${avg.toFixed(1)}° inside`,
           out == null ? '' : `${f1(out)}° outside`,
-          att.items.length
-            ? plural(att.items.length, 'item') + (att.items.length === 1 ? ' needs' : ' need') + ' attention'
-            : '',
+          att ? plural(att, 'item') + (att === 1 ? ' needs' : ' need') + ' attention' : '',
         ]
           .filter(Boolean)
           .join(' · '),
@@ -3158,17 +2709,8 @@ export class LegacyPanel {
       if (rest.length) this.call('light', 'turn_on', {entity_id: rest, brightness_pct: s.br});
     } else this.call('light', 'turn_on', {entity_id: them, brightness_pct: s.br});
   }
-  // ---------- attention, folded into the status chip ----------
-  toggleAttention(force) {
-    const pop = this.$('attpop'),
-      open = force ?? pop.hidden;
-    pop.hidden = !open;
-    const b = this.root.querySelector('#chips .attchip');
-    if (b) b.setAttribute('aria-expanded', open);
-    if (open) this.renderAttention();
-  }
 
-  // ---------- the departure schedule's words, which the stack's car card and the live pill's upcoming list still read until #269 ----------
+  // ---------- the departure schedule's words, which the stack's car card and the header's upcoming list still read until #269 ----------
   // a time of day with no date, such as the departure schedule's hours and minutes: placed on a fixed UTC day and read
   // back by the UTC set, so that neither the browser's zone nor the house's moves it
   clockTime(h, m) {
@@ -3189,7 +2731,7 @@ export class LegacyPanel {
   }
 
   // ---------- the switch's optimistic read ----------
-  // `sw`, `pending` and `call` stay for the Lights pane and the live pill's "Pause charging" until Lights moves (spec 23, #263); the Car's controls hold their values in the panel's overlay since #253
+  // `sw`, `pending` and `call` stay for the Lights pane until it moves (spec 23, #263); the Car's controls hold their values in the panel's overlay since #253
   sw(id) {
     const p = this.pending[id];
     if (p != null && Date.now() < p.until) return p.on;

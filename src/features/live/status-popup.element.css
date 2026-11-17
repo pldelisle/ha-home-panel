@@ -1,0 +1,30 @@
+/* <hp-status-popup>: the Status block's head and the cards' column. The popup's box is the host, `.pop` and `.pop.la` in the legacy sheet (the frame's popup,
+   which the settings popup shares); the rows and chips are the kit's list.css. The head's `.lbl` is the legacy sheet's label as base.css's two rules left it. */
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.top .right {
+  font-size: calc(13px * var(--tx));
+  color: var(--fg2);
+  font-weight: 500;
+}
+.top .lbl {
+  font-size: calc(15px * var(--tx));
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  color: var(--fg);
+}
+/* with activity cards, the cards and the Status block are one column (the legacy `.pop.la #att`) */
+:host(.la) .list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+:host(.la) .lstat {
+  padding: 12px 12px 6px;
+}

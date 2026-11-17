@@ -14,6 +14,7 @@ import moreText from './more.css?inline';
 import motionText from './motion.css?inline';
 import paneHeaderText from './pane-header.css?inline';
 import rangeText from './range.css?inline';
+import ringText from './ring.css?inline';
 import segText from './seg.css?inline';
 import settingsText from './settings.css?inline';
 import sheetText from './sheet.css?inline';
@@ -43,6 +44,8 @@ export const more = adopt(moreText);
 export const seg = adopt(segText);
 /** The range tabs: a pill of buttons, one chosen. */
 export const range = adopt(rangeText);
+/** The ring of a progress around an icon: `<hp-ring>`'s. */
+export const ring = adopt(ringText);
 /** The settings popup's tiles, its text-size and glass choices and the transparency slider. */
 export const settings = adopt(settingsText);
 /** The tiles of a detail panel, with the one that opens a history. */

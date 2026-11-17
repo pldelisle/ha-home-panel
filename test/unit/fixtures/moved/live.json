@@ -326,6 +326,15 @@
       "key": "live.paused"
     },
     {
+      "key": "live.pauseCharging"
+    },
+    {
+      "key": "live.resumeCharging"
+    },
+    {
+      "key": "live.openCar"
+    },
+    {
       "key": "live.percent",
       "values": {
         "n": "64"

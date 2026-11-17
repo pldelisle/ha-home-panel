@@ -1263,6 +1263,9 @@ export const fr: Record<MessageKey, string> = {
   'live.chargingPaused': 'Recharge en pause',
   'live.chargingShort': 'en recharge',
   'live.paused': 'en pause',
+  'live.pauseCharging': 'Suspendre la recharge',
+  'live.resumeCharging': 'Reprendre la recharge',
+  'live.openCar': 'Ouvrir Voiture ›',
   'live.percent': '{n} %',
   'live.carAria': '{paused, select, yes {Recharge en pause} other {Voiture en recharge}}, {n} pour cent',
   'live.carAriaLeft':

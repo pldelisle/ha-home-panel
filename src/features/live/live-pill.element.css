@@ -1,0 +1,149 @@
+/* <hp-live-pill>: the header's pill, its bubbles and its "!" mark: the legacy live.css's pill rules (#256 moved them). The button's own rule is what the
+   legacy sheet's `.chip` (base.css), `.attchip` (extra.css), the phone's header chip (phone.css) and the press (motion.css) left once the pill's reset
+   applied, written on `.lap` so no selector of the legacy sheet is written twice. `.app.gl` reads as `:host([glass])`, `.app.cp` as `:host([compact])`. */
+:host {
+  display: contents; /* the button is a flex item of the header's chips, as it was */
+}
+.lap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: 0;
+  border-radius: 999px;
+  padding: 0;
+  min-height: 44px;
+  white-space: nowrap;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  color: var(--fg);
+}
+/* the phone's header chip: in the legacy sheet its padding beat the pill's reset unless the glass look was on, and its size always applied */
+.app.cp .lap {
+  padding: 7px 12px;
+  font-size: calc(13px * var(--tx));
+}
+.app.gl .lap {
+  padding: 0;
+}
+.lap:focus-visible {
+  outline: 2px solid var(--c-home);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .lap {
+    transition:
+      transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+      background-color 0.2s ease,
+      box-shadow 0.2s ease,
+      color 0.2s ease;
+  }
+}
+.lap:active {
+  transform: scale(0.96);
+}
+.lap .lmain,
+.lap .lbub {
+  display: flex;
+  align-items: center;
+  height: 44px;
+  border-radius: 999px;
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+.lap .lmain {
+  gap: 9px;
+  padding: 0 16px 0 5px;
+  white-space: nowrap;
+  font-weight: 600;
+}
+.lap .lmain.tint {
+  background: color-mix(in srgb, var(--ac) 14%, var(--card));
+}
+.lap .lbub {
+  width: 44px;
+  justify-content: center;
+}
+.lap .lwarn b {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--ac);
+  color: #fff;
+  font-size: 16px;
+}
+.app.gl .lap .lmain,
+.app.gl .lap .lbub {
+  background: var(--g-dense);
+  -webkit-backdrop-filter: var(--g-bd);
+  backdrop-filter: var(--g-bd);
+  box-shadow: var(--g-edge);
+}
+.app.gl .lap .lmain.tint {
+  background: color-mix(in srgb, var(--ac) 16%, var(--g-dense));
+}
+.app.gl .lap .lwarn:where(.lbub) {
+  background: color-mix(in srgb, var(--ac) 20%, var(--g-dense));
+}
+.lap .lsay {
+  display: contents; /* the visible words stay flex items of .lmain; only the spoken copy beside them is for screen readers */
+}
+.lap .ll {
+  color: var(--fg2);
+  font-weight: 500;
+}
+.lap .lv {
+  font-variant-numeric: tabular-nums;
+}
+.lsep {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--fg3);
+  flex: none;
+}
+.lok {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--ac);
+  color: #fff;
+}
+/* 2.8.0: a status problem alone is a pill too */
+.lap .latt {
+  padding-left: 5px;
+}
+.lap .latt .lwarn {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+}
+.lap .latt.lmain {
+  background: color-mix(in srgb, var(--ac) 14%, var(--card));
+}
+.app.gl .lap .latt.lmain {
+  background: color-mix(in srgb, var(--ac) 16%, var(--g-dense));
+}
+/* the tinted pills (the Hilo challenge, the attention pill) have more specific glass rules above, so they are listed here too */
+@media (prefers-reduced-transparency: reduce) {
+  .app.gl .lap .lmain,
+  .app.gl .lap .lbub {
+    background: var(--card);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .app.gl .lap .lmain.tint,
+  .app.gl .lap .latt.lmain {
+    background: color-mix(in srgb, var(--ac) 14%, var(--card));
+    backdrop-filter: none;
+  }
+}

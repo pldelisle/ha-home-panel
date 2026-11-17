@@ -67,6 +67,8 @@ export interface GuestRenderer extends GuestAnswers, LegacySheetGuest {
    * forecast here. Deleted with its last reader (the Home move).
    */
   forecastChanged(type: 'daily' | 'hourly', forecast: readonly object[]): void;
+  /** Live move 3 (#256): how many Status checks need attention, from the live pill; the Home pane's sub-line still says it. Deleted with its last reader (the Home move, #269). */
+  attentionChanged(count: number): void;
 }
 
 /** What the guest may ask of the shell, and what it may read of it. Deleted whole with the guest; `tab`, `compact`, `setTab` and `requestFrame` live as long as it does. */

@@ -44,6 +44,7 @@ import {FEATURES, UNDER_MORE, isFeatureKey, visibleTab} from './features.ts';
 import {createGuest, guestStyles, type GuestContext, type GuestRenderer, type ShellForGuest} from './guest.ts';
 import {IdleTimer, type IdleState} from './idle-timer.ts';
 import type {ForecastEvent} from '../features/weather/forecast-controller.ts';
+import {STATUS_SHEET, type LiveActivitiesEvent} from '../features/live/index.ts'; // defines <hp-live-pill> and <hp-status-popup>
 import './more-sheet.ts'; // defines <hp-more-sheet>
 import '../ui/pane-header.ts'; // defines <hp-pane-header>, which the legacy panes' headers are
 import './settings-popup.ts'; // defines <hp-settings-popup>
@@ -92,6 +93,7 @@ export class HomePanel extends LitElement {
     idleState: {state: true},
     settingsOpen: {state: true},
     toastNow: {state: true},
+    liveRunning: {state: true},
   };
   declare hass: PanelHass | undefined;
   declare narrow: boolean;
@@ -106,6 +108,8 @@ export class HomePanel extends LitElement {
   declare private settingsOpen: boolean;
   /** The toast showing, from the last `ToastEvent` through the pure schedule; null when none is. */
   declare private toastNow: ToastState;
+  /** An activity runs in the live pill: `#chips` says so, and the weather chip beside it slims down. */
+  declare private liveRunning: boolean;
 
   // The legacy stylesheet is the guest's, so it comes with the guest (registerGuest) instead of an import of
   // src/styles.js, which the dependency rule forbids here. Lit adopts it once for every instance, as a constructed
@@ -203,6 +207,7 @@ export class HomePanel extends LitElement {
     this.idleState = 'active';
     this.settingsOpen = false;
     this.toastNow = null;
+    this.liveRunning = false;
     // each provider adds itself to this element as a controller and answers the context requests of every element below
     new ContextProvider(this, {context: storeContext, initialValue: this.store});
     new ContextProvider(this, {context: apiContext, initialValue: this.api});
@@ -268,6 +273,7 @@ export class HomePanel extends LitElement {
   private resetFrame(): void {
     // the guest's sheets start over with it, and so does More: it closes, as it did when the guest wrote it
     this.sheets.forget(MORE_SHEET);
+    this.sheets.forget(STATUS_SHEET);
     this.settingsOpen = false;
     this.epoch++;
     this.flush();
@@ -319,6 +325,13 @@ export class HomePanel extends LitElement {
   private readonly onSheetDismiss = (e: SheetDismissEvent): void => {
     e.stopPropagation();
     this.sheets.close(e.detail.id);
+  };
+
+  // The live pill counts what runs and what needs attention: the weather chip slims while an activity shows, and the guest's Home sub-line says the count.
+  private readonly onLiveActivities = (e: LiveActivitiesEvent): void => {
+    e.stopPropagation();
+    this.liveRunning = e.detail.count > 0;
+    if (this.guestConnected) this.guest?.attentionChanged(e.detail.attention);
   };
 
   // the Weather pane's controller owns the forecast; the guest still reads it for the detail panel and Home's card (#158)
@@ -421,6 +434,7 @@ export class HomePanel extends LitElement {
       @tab-select=${this.onTabSelect}
       @toast=${this.onToast}
       @weather-forecast=${this.onForecast}
+      @live-activities=${this.onLiveActivities}
     >
       ${keyed(this.epoch, this.renderWrap())}
       <div class="guest" style="display:contents"></div>
@@ -462,7 +476,8 @@ export class HomePanel extends LitElement {
     </div>`;
   }
 
-  // The header, the error line and the tabs, whose containers the guest fills (#hello, #chips, #clock, #att, #setc, the hosts inside the panes);
+  // The header, the error line and the tabs, whose containers the guest fills (#hello, #wxchip-host, #clock, the hosts inside the panes); the live pill and
+  // the Status popup are the live feature's elements (#256), the popup a sheet of the host's (`live.status`) in the frame's popup box;
   // #err is empty since #251, when the Energy and Car cards took their own history error lines, and goes with Home (#268); what the guest
   // draws itself comes after, in the guest container.
   private renderWrap(): TemplateResult {
@@ -471,7 +486,10 @@ export class HomePanel extends LitElement {
         <button class="icon menu" id="menu" type="button" aria-label="Open the sidebar">${ico('menu')}</button>
         <div class="hello" id="hello"></div>
         <div class="chips">
-          <div id="chips"></div>
+          <div id="chips" ?data-live=${this.liveRunning}>
+            <span id="wxchip-host" style="display:contents"></span>
+            <hp-live-pill .open=${this.sheets.isOpen(STATUS_SHEET)}></hp-live-pill>
+          </div>
           <button
             class="icon"
             id="gear"
@@ -485,7 +503,14 @@ export class HomePanel extends LitElement {
           </button>
         </div>
         <div class="clock" id="clock"></div>
-        <div class="pop" id="attpop" hidden role="dialog" aria-label="Status checks"><div id="att"></div></div>
+        <hp-status-popup
+          class="pop"
+          id="attpop"
+          role="dialog"
+          aria-label="Status checks"
+          ?hidden=${!this.sheets.isOpen(STATUS_SHEET)}
+          .open=${this.sheets.isOpen(STATUS_SHEET)}
+        ></hp-status-popup>
         <div class="pop" id="setpop" ?hidden=${!this.settingsOpen} role="dialog" aria-label="Settings">
           <hp-settings-popup
             .version=${__VERSION__}

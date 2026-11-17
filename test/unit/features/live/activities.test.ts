@@ -155,7 +155,7 @@ describe('the car', () => {
       right: '7.1 kW',
       big: {soc: '64', limit: '→ 90% limit', eta: null},
       bar: {soc: 64, limit: 90, aria: 'Battery 64 percent, limit 90 percent'},
-      pause: {show: true, resume: false},
+      pause: {id: house.wallbox.pause.id, resume: false, label: 'Pause charging'}, openCar: 'Open Car ›',
     });
   });
 
@@ -177,7 +177,7 @@ describe('the car', () => {
       short: {extra: 'paused'},
       ariaLabel: 'Charging paused, 50 percent',
     });
-    expect(activity.card).toMatchObject({state: 'paused', pause: {resume: true}});
+    expect(activity.card).toMatchObject({state: 'paused', pause: {resume: true, label: 'Resume charging'}});
     // a tap on Resume holds the switch on: the car is no longer paused before Home Assistant says so, and a tap on Pause the reverse
     const held =
       (on: boolean): Overlay =>
@@ -186,6 +186,11 @@ describe('the car', () => {
     expect(chargingPaused(paused(50), held(true))).toBe(false);
     const pausing = carActivity(house, null, {...deps, overlay: held(false)})!;
     expect(pausing.card).toMatchObject({pause: {resume: true}});
+    // no button where the switch is unset or Home Assistant has no value for it
+    const noSwitch = (pause: Partial<LiveInputs['wallbox']['pause']>) =>
+      carActivity(with_({wallbox: {...house.wallbox, pause: {...house.wallbox.pause, ...pause}}}), null, deps)!.card;
+    expect(noSwitch({available: false})).toMatchObject({pause: null});
+    expect(noSwitch({id: null})).toMatchObject({pause: null});
     expect(carActivity(with_({car: {...car, charging: false}}), null, deps)).toBeNull();
     expect(carActivity(with_({car: null}), null, deps)).toBeNull();
   });

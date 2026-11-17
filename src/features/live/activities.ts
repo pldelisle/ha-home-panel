@@ -61,8 +61,10 @@ export interface CarCardView {
   big: {soc: string; limit: string; eta: {at: string; inText: string} | null};
   bar: {soc: number; limit: number; aria: string};
   meta: Rich;
-  /** The Wallbox's pause switch has a value: the card offers it, as "Resume charging" when the charger is paused. */
-  pause: {show: boolean; resume: boolean};
+  /** The Wallbox's pause switch, when it has a value: the button turns it on (`resume`, while the charger is paused) or off. */
+  pause: {id: string; resume: boolean; label: string} | null;
+  /** The button that opens the Car's detail. */
+  openCar: string;
 }
 
 export interface WaterCardView {
@@ -327,7 +329,15 @@ export function carActivity(
       },
       bar: {soc: soc ?? 0, limit, aria: t('live.batteryAria', {n: percent, limit})},
       meta,
-      pause: {show: wallbox.pause.available, resume: !pauseOn(wallbox, overlay)},
+      pause:
+        wallbox.pause.id && wallbox.pause.available
+          ? {
+              id: wallbox.pause.id,
+              resume: !pauseOn(wallbox, overlay),
+              label: t(pauseOn(wallbox, overlay) ? 'live.pauseCharging' : 'live.resumeCharging'),
+            }
+          : null,
+      openCar: t('live.openCar'),
     },
   };
 }

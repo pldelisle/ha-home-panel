@@ -1,5 +1,5 @@
-/* What every element needs of the frame's own rules: the hidden attribute, `box-sizing`, the number face, the muted text and the tap highlight.
-   Joined into the legacy sheet first, where these rules always were, and adopted by each element. */
+/* What every element needs of the frame's own rules: the hidden attribute, `box-sizing`, the number face, the muted text, the tap highlight and `.sr`,
+   the text only screen readers read. Joined into the legacy sheet first, where these rules always were (`.sr` came from base.css in #256), and adopted by each element. */
 /* the hidden attribute always wins: several controls set display, and an invisible overlay once blocked every tap (v1.19.6) */
 [hidden] {
   display: none !important;
@@ -20,4 +20,16 @@ button,
 }
 .muted {
   color: var(--fg2);
+}
+/* text for screen readers only: it takes no room and paints nothing */
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
