@@ -12,22 +12,9 @@
 .app:not(.narrow) .menu {
   display: none;
 }
-/* status chip + popover */
+/* the header's popups (the Status checks and the settings) and the guest's chips beside the pill */
 .head {
   position: relative;
-}
-.attchip {
-  cursor: pointer;
-  font: inherit;
-  font-weight: 600;
-  color: var(--fg);
-}
-.attchip svg {
-  color: var(--fg2);
-  margin-left: -2px;
-}
-.attchip.warn {
-  background: color-mix(in srgb, var(--warn) 16%, var(--card));
 }
 .pop {
   position: absolute;
@@ -45,9 +32,22 @@
 .pop[hidden] {
   display: none;
 }
-.attchip:focus-visible {
-  outline: 2px solid var(--c-home);
-  outline-offset: 2px;
+/* the Status checks' popup: one card per activity, then the usual Status checks (live.css until #257) */
+.pop.la {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
+}
+/* the guest's chips sit in a box of their own before the peak chip and the pill (#256), a box that is no box, so they are the row's own items */
+#wxchip-host {
+  display: contents;
+}
+/* beside a running activity the weather chip shows only its temperature: the guest adds `slim` (liveChanged) */
+.wxchip.slim small {
+  display: none;
 }
 .pop .top {
   display: flex;

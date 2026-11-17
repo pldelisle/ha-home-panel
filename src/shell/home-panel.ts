@@ -499,7 +499,7 @@ export class HomePanel extends LitElement {
         <div class="hello" id="hello"></div>
         <div class="chips">
           <div id="chips">
-            <span id="wxchip-host"></span>
+            <span id="wxchip-host"></span><hp-peak-chip></hp-peak-chip>
             <hp-live-pill .open=${this.statusOpen}></hp-live-pill>
           </div>
           <button

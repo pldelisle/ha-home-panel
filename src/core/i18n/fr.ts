@@ -987,6 +987,7 @@ export const fr: Record<MessageKey, string> = {
   'live.peakInProgressLine': 'Période de pointe Hydro-Québec : réduisez la consommation maintenant.',
   'live.peakComing': 'Pointe critique à venir',
   'live.peakComingLine': 'Hydro-Québec a annoncé une pointe critique à venir.',
+  'live.criticalPeakNow': 'Pointe critique en cours',
   'live.noPeak': 'Aucune pointe critique',
   'live.weatherWarning': 'Avertissement météo',
   'live.weatherWarningLine':

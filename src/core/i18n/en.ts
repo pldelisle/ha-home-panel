@@ -997,6 +997,7 @@ export const en = {
   'live.peakInProgressLine': 'Hydro-Québec peak period: lower consumption now.',
   'live.peakComing': 'Critical peak coming',
   'live.peakComingLine': 'Hydro-Québec announced an upcoming critical peak.',
+  'live.criticalPeakNow': 'Critical peak now',
   'live.noPeak': 'No critical peak',
   'live.weatherWarning': 'Weather warning',
   'live.weatherWarningLine': 'Environment Canada has {n, plural, one {# warning} other {# warnings}} for your area.',

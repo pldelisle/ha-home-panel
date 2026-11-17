@@ -1511,15 +1511,13 @@ export class LegacyPanel {
     );
     const temp = this.attr(this.E.weather, 'temperature') ?? this.num(this.E.outT),
       cond = this.st(this.E.cond);
-    const chips = [];
-    if (temp != null)
-      chips.push(
-        `<div class="chip wxchip${this.liveRunning ? ' slim' : ''}"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="9" r="4" fill="var(--m-amber)"/><path d="M8 19h9a4 4 0 0 0 0-8 5 5 0 0 0-9.6 1.6A3.2 3.2 0 0 0 8 19z" fill="var(--fg3)" opacity=".7"/></svg><span class="num">${f1(temp)}°</span><small>${esc(condName(ok(cond) ? cond.state : (this.st(this.E.weather) || {}).state))}</small></div>`,
-      );
-    if (this.hydroQuebec()?.peakNow)
-      chips.push(`<div class="chip"><span class="dot" style="background:var(--crit)"></span>Critical peak now</div>`);
-    // the live pill after these is the feature's <hp-live-pill>, which the shell places (#256)
-    this.set('wxchip-host', chips.join(''));
+    // the peak chip and the live pill after it are the feature's <hp-peak-chip> and <hp-live-pill>, which the shell places (#256, #257)
+    this.set(
+      'wxchip-host',
+      temp == null
+        ? ''
+        : `<div class="chip wxchip${this.liveRunning ? ' slim' : ''}"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="9" r="4" fill="var(--m-amber)"/><path d="M8 19h9a4 4 0 0 0 0-8 5 5 0 0 0-9.6 1.6A3.2 3.2 0 0 0 8 19z" fill="var(--fg3)" opacity=".7"/></svg><span class="num">${f1(temp)}°</span><small>${esc(condName(ok(cond) ? cond.state : (this.st(this.E.weather) || {}).state))}</small></div>`,
+    );
   }
 
   // ---------- the car, for the legacy readers ----------

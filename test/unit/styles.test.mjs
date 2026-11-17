@@ -65,7 +65,7 @@ test('the minified stylesheet is the one inside the entry, and it is smaller tha
 
 test('the stylesheet is minified: no comment, no run of spaces', () => {
   expect(css).not.toContain('/*');
-  expect(entry).not.toContain('Live activities (2.5.0)'); // a comment in src/css/live.css
+  expect(entry).not.toContain('panel extras'); // a comment in src/css/extra.css
   expect(css).not.toMatch(/ {2}|\n/);
 });
 
