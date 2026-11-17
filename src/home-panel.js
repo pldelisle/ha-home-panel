@@ -16,6 +16,7 @@ import {doorMotionSensors} from './providers/door-motion.ts';
 import {departureSchedule, findCar, readCar} from './providers/fordpass.ts';
 import {hiloChallenge, hiloRates} from './providers/hilo.ts';
 import {hydroQuebec} from './providers/hydro-quebec.ts';
+import {lightAreas} from './providers/light-areas.ts';
 import {milaRooms} from './providers/mila.ts';
 import {powerNow} from './providers/power.ts';
 import {dayKeys, flowIds, hourlyFlow, meterTotals, powerWindows, waterDay} from './providers/power-history.ts';
@@ -27,33 +28,23 @@ const LENS_OK =
   !!window.CSS &&
   window.CSS.supports('backdrop-filter', 'url(#x)');
 
-const LIGHT_ORDER_KEY = 'home_panel';
-
 const sum = a => a.reduce((x, y) => x + (y || 0), 0);
 const f1 = v => (v == null ? '–' : (+v).toFixed(1));
 const ms = v => (typeof v === 'number' ? v : Date.parse(v));
 // a YYYY-MM-DD day key as its UTC noon: read by a UTC-pinned set (fmtUtcEn, fmtUtc), a key names its own day whatever zone the browser or the house is in
 const dayAt = k => new Date(k + 'T12:00:00Z');
-// drop the leading words every name shares ("Lumière Dessus Piano", "Lumiere Dessus Porte" -> "Piano", "Porte")
+// a name without its accents and capitals, for matching a person's first name
 const fold = x =>
   x
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase();
-const shortNames = names => {
-  if (names.length < 2) return names;
-  const w = names.map(n => String(n).split(/\s+/));
-  let k = 0;
-  while (w.every(x => x.length > k + 1 && fold(x[k]) === fold(w[0][k]))) k++;
-  return w.map(x => x.slice(k).join(' '));
-};
 
-// card order for the column packing: the lights first
+// card order for the column packing
 // 'open-air' is dead until the Home move deletes it (#268): nothing draws in that card any more
-const LAYOUT = ['lights', 'open-air'];
+const LAYOUT = ['open-air'];
 // thermostats without an HA area: the area each Hilo room belongs to
 // areas the Phone tab shows as part of another, the way Apple Home groups them: the parking spot's charger and camera live in the garage
-// AL_AREAS (from the config): HA area → Adaptive Lighting switch, for areas the panel can't match on its own
 // Tabs view: one pane per subject, for a tablet fixed to the wall. The rail, the phone's bar and the panes
 // are the shell's (src/shell/features.ts); the guest fills what is inside them.
 // colour of a black body at k kelvin (Tanner Helland's fit), for the colour-temperature strips and sliders
@@ -316,10 +307,6 @@ export class LegacyPanel {
     }
     this.configure();
     if (!this.$app) this.build();
-    if (!this.lightOrderAsked) {
-      this.lightOrderAsked = true;
-      this.loadLightOrder();
-    }
   }
   // true when the store's config changed after the panel was drawn, so it must be drawn again; the store's generation
   // is the key (the shell fed the store the config, and the store counts its changes)
@@ -401,15 +388,6 @@ export class LegacyPanel {
   }
   get MODES() {
     return this.store.config.modes;
-  }
-  get AL_AREAS() {
-    return this.store.config.alAreas;
-  }
-  get SPLIT_AREAS() {
-    return this.store.config.splitLightAreas;
-  }
-  get LIGHT_LINKS() {
-    return this.store.config.lightLinks;
   }
   get CFG() {
     return this.store.config;
@@ -514,7 +492,6 @@ export class LegacyPanel {
     this.container.innerHTML = `<div class="cols">
     <div class="col c1"></div>
     <div class="col c2">
-      <div class="card" id="lights"></div>
       <div class="card tap" id="open-air" tabindex="0" role="button" aria-description="Open air quality details"><div id="air"></div></div>
     </div>
   </div>
@@ -719,7 +696,7 @@ export class LegacyPanel {
     const big = (v, u) => `<div class="sbig num">${v}${u ? `<small>${u}</small>` : ''}</div>`,
       mid = t => `<div class="smid">${esc(t)}</div>`;
     const doors = this.doorSensors().filter(x => x.kind === 'door');
-    const areas = this.lightAreas();
+    const areas = this.houseLights();
     // red: a door open 5 min or more, lights that stopped answering for 5 min (pinned until fixed)
     // (x.since is the same instant as a number; mins and when take the state's ISO string, so the state is read again)
     doors
@@ -1225,127 +1202,11 @@ export class LegacyPanel {
           (p.dataset.max - p.dataset.min);
       this.lightCmd(p.dataset.lp, p.dataset.a, lpPaint(p, f));
     });
-    // every light button (tiles, sheet switches, chips, the link picker) goes through lightCmd
-    for (const lt of [this.$('lights'), this.$('ltiles'), sh])
-      lt.addEventListener('click', e => {
-        const b = e.target.closest('button[data-l]');
-        if (b && !b.disabled) this.lightCmd(b.dataset.l, b.dataset.a ?? b.dataset.id, b.dataset.al);
-      });
-    // dimmer rows: a sideways slide dims (relative to where the fill was), an up-down move scrolls the page as usual,
-    // and the brightness goes out on release; a linked pair's two rows move together while sliding
-    // Arrange: drag whole rows (a linked pair as one block) into the order you want; it's saved for every screen
-    this.$('ledit').addEventListener('click', () => this.setLightEdit(!this.lightEdit));
-    this.$('lreset').addEventListener('click', () => {
-      this.saveLightOrder(null);
-      this.tick();
+    // every button of the room sheet (its switches, chips, the link picker) goes through lightCmd
+    sh.addEventListener('click', e => {
+      const b = e.target.closest('button[data-l]');
+      if (b && !b.disabled) this.lightCmd(b.dataset.l, b.dataset.a ?? b.dataset.id, b.dataset.al);
     });
-    for (const lt of [this.$('lights'), this.$('ltiles')]) {
-      let m = null;
-      const box = () => (lt.id === 'ltiles' ? lt : lt.querySelector('.lrows'));
-      const unitOf = (b, n) => b && [...b.children].find(c => c.contains(n));
-      const keys = b =>
-        [...b.children]
-          .map(c => (c.matches('.lcell') ? c : c.querySelector('.lcell')))
-          .filter(Boolean)
-          .map(r => r.dataset.lsheet);
-      const save = b => {
-        const k = keys(b);
-        if (
-          JSON.stringify(k) !==
-          JSON.stringify(
-            this.lightAreas()
-              .filter(x => !x.link || x.link.first)
-              .map(x => x.aid),
-          )
-        )
-          this.saveLightOrder(k);
-      };
-      lt.addEventListener('pointerdown', e => {
-        if (!this.lightEdit || e.button > 0) return;
-        const b = box(),
-          u = unitOf(b, e.target);
-        if (!u) return;
-        e.preventDefault();
-        const r = u.getBoundingClientRect();
-        m = {u, b, id: e.pointerId, gx: e.clientX - r.left, gy: e.clientY - r.top};
-        this.lightDrag = true;
-        u.classList.add('lifted');
-        try {
-          u.setPointerCapture(e.pointerId);
-        } catch {}
-      });
-      lt.addEventListener('pointermove', e => {
-        if (!m || e.pointerId !== m.id) return;
-        e.preventDefault();
-        // the row under the finger takes the dragged one's place
-        const over = unitOf(m.b, this.root.elementFromPoint(e.clientX, e.clientY));
-        if (over && over !== m.u) {
-          const k = [...m.b.children],
-            i = k.indexOf(m.u),
-            j = k.indexOf(over);
-          m.b.insertBefore(m.u, j > i ? over.nextSibling : over);
-        }
-        m.u.style.transform = '';
-        const r = m.u.getBoundingClientRect();
-        m.u.style.transform = `translate(${e.clientX - m.gx - r.left}px,${e.clientY - m.gy - r.top}px)`;
-        // near the top or bottom of the screen the page scrolls along
-        if (e.clientY < 70) window.scrollBy(0, -12);
-        else if (e.clientY > innerHeight - 90) window.scrollBy(0, 12);
-      });
-      const drop = e => {
-        if (!m || e.pointerId !== m.id) return;
-        const x = m;
-        m = null;
-        x.u.style.transform = '';
-        x.u.classList.remove('lifted');
-        save(x.b);
-        setTimeout(() => {
-          this.lightDrag = false;
-          this.tick();
-        }, 60);
-      };
-      lt.addEventListener('pointerup', drop);
-      lt.addEventListener('pointercancel', drop);
-      // while arranging, taps don't switch lights or open sheets, and the arrow keys move the focused row
-      lt.addEventListener(
-        'click',
-        e => {
-          if (this.lightEdit && e.target.closest('.lrows > *, #ltiles > *')) {
-            e.stopPropagation();
-            e.preventDefault();
-          }
-        },
-        true,
-      );
-      lt.addEventListener(
-        'keydown',
-        e => {
-          if (!this.lightEdit) return;
-          const b = box(),
-            u = unitOf(b, e.target),
-            step = {ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1}[e.key];
-          if (!u || !step) return;
-          e.preventDefault();
-          e.stopImmediatePropagation();
-          const k = [...b.children],
-            i = k.indexOf(u),
-            j = i + step;
-          if (j < 0 || j >= k.length) return;
-          b.insertBefore(u, step > 0 ? k[j].nextSibling : k[j]);
-          /** @type {HTMLElement} */ (e.target).focus();
-          save(b);
-        },
-        true,
-      );
-    }
-    // light tiles: Enter or Space opens the room, like a tap (the bulb inside is its own button)
-    for (const lt of [this.$('lights'), this.$('ltiles')])
-      lt.addEventListener('keydown', e => {
-        const c = e.target.closest('.lcell');
-        if (!c || e.target !== c || this.lightEdit || (e.key !== 'Enter' && e.key !== ' ')) return;
-        e.preventDefault();
-        this.openLight(c.dataset.lsheet);
-      });
     // Tabs view: the rail and the glance tiles switch panes; scenes and speakers work as on the phone view
     const tv = this.$('tabview');
     this.$('pane-auto').addEventListener('click', e => {
@@ -1364,12 +1225,9 @@ export class LegacyPanel {
       }
     });
     const onTap = e => {
-      if (e.target.closest('button[data-l]')) return; // light switches on the phone rows: the lights listener has them
       // phone: tiles open sheets
       const sh = e.target.closest('[data-opens]');
       if (sh) return this.sheets.open(sh.dataset.opens);
-      const ls = e.target.closest('[data-lsheet]');
-      if (ls) return this.openLight(ls.dataset.lsheet);
       const t = e.target.closest('[data-pane]');
       if (t) return this.ctx.shell.setTab(t.dataset.pane);
     };
@@ -1450,7 +1308,7 @@ export class LegacyPanel {
   renderLive() {
     if (!this.hass) return;
     this.car ||= findCar(this.hass.states);
-    for (const f of ['renderHeader', 'renderLights']) {
+    for (const f of ['renderHeader']) {
       try {
         this[f]();
       } catch (e) {
@@ -1586,7 +1444,12 @@ export class LegacyPanel {
 
   // ---------- sheets ----------
   // the sheet host calls these two: a legacy sheet is on screen (over the page, or inline in its pane) or left it
-  sheetOpened(id) {
+  // a tile of the Lights pane asks for its room's sheet with the room's key (`SheetRequestEvent`), which the host hands on
+  sheetOpened(id, detail) {
+    if (id === 'sh-light' && detail && detail.key) {
+      this.lightSel = detail.key;
+      this.lightPick = false;
+    }
     this.buildSheet(id);
   }
   sheetClosed() {}
@@ -1807,31 +1670,6 @@ export class LegacyPanel {
     this.cache = {};
     this.renderLive();
   }
-  renderCompact() {
-    if (!this.compact || this.view !== 'tabs') return;
-    for (const f of ['renderLightTiles']) {
-      try {
-        this[f]();
-      } catch (e) {
-        console.error('home-panel phone', f, e);
-      }
-    }
-  }
-  // Lights on the phone: the same tiles as the tablet, two to a row; a tile opens the room's controls in a sheet
-  renderLightTiles() {
-    if (this.tab !== 'lights' || this.lightDrag) return;
-    const A = this.lightAreas();
-    if (!A.length) {
-      this.set('ltiles', '<p class="hint">No lights found.</p>');
-      return;
-    }
-    this.set('ltiles', this.lightGrid(A));
-  }
-  openLight(aid) {
-    this.lightSel = aid;
-    this.lightPick = false;
-    this.sheets.open('sh-light');
-  }
   // the room's sheet: power in the header, brightness and colour as two tall sliders, Auto and Night as switches in a list,
   // single bulbs as chips, and "Linked with" as a row that opens a list of the other rooms (the iOS way to pick one value)
   renderLightSheet() {
@@ -1947,12 +1785,6 @@ export class LegacyPanel {
   }
   // ---------- Tabs view: a left rail, one pane per subject; cards and detail panels move into the panes ----------
   enterTabs() {
-    const mv = (id, host, first) => {
-      const el = this.$(id),
-        h = this.$(host);
-      if (el && h) first ? h.prepend(el) : h.appendChild(el);
-    };
-    mv('lights', 'lhost');
     this.tabChanged(this.tab);
   }
   leaveTabs() {
@@ -1963,8 +1795,6 @@ export class LegacyPanel {
     if (!this.$app || this.view !== 'tabs') return; // nothing drawn yet: enterTabs asks again once it is
     const prev = this.drawnTab;
     this.drawnTab = t;
-    if (t === 'lights' && prev !== t) this.loadLightOrder(); // another screen may have rearranged them
-    if (t !== 'lights' && this.lightEdit) this.setLightEdit(false);
     this.sheets.paneShown(t); // the host shows this pane's legacy detail panel inline, on a tablet: none has one since #252, and #188 deletes this call
     this.renderTabs();
     // on a phone each section starts at the top, as an app's tabs do
@@ -1976,7 +1806,7 @@ export class LegacyPanel {
   }
   renderTabs() {
     if (this.view !== 'tabs' || !this.hass) return;
-    for (const f of ['renderHome', 'renderAlBar', 'renderPaneSubs', 'renderAuto', 'renderCompact', 'gateLacking']) {
+    for (const f of ['renderHome', 'renderPaneSubs', 'renderAuto', 'gateLacking']) {
       try {
         this[f]();
       } catch (e) {
@@ -2014,20 +1844,8 @@ export class LegacyPanel {
   }
   // one line under each pane title, like the detail sheets have
   renderPaneSubs() {
-    const isOn = i => (this.st(i) || {}).state === 'on',
-      L = this.powerNow(),
+    const L = this.powerNow(),
       att = this.attentionCount;
-    const lit = this.lightAreas()
-        .flatMap(a => a.ids)
-        .filter(isOn).length,
-      als = [
-        ...new Set(
-          this.lightAreas()
-            .map(a => a.al)
-            .filter(Boolean),
-        ),
-      ],
-      alOn = als.filter(isOn).length;
     const temps = L.rooms.map(r => r.temperature).filter(v => v != null),
       avg = temps.length ? sum(temps) / temps.length : null,
       out = this.attr(this.E.weather, 'temperature') ?? this.num(this.E.outT);
@@ -2043,29 +1861,6 @@ export class LegacyPanel {
           .filter(Boolean)
           .join(' · '),
       );
-    if (this.tab === 'lights') {
-      this.set(
-        'lsub',
-        this.lightEdit
-          ? 'Drag the lights into the order you want'
-          : [
-              lit ? `${plural(lit, 'light')} on` : 'All lights off',
-              als.length
-                ? `Adaptive Lighting ${alOn === als.length ? 'on everywhere' : alOn ? `on in ${alOn} of ${als.length}` : 'off everywhere'}`
-                : '',
-            ]
-              .filter(Boolean)
-              .join(' · '),
-      );
-      // only admins can write the house-wide order, so only they get the Arrange button
-      const bar = this.$('ledbar');
-      if (bar)
-        bar.hidden =
-          !(this.hass.user && this.hass.user.is_admin) ||
-          this.lightAreas().filter(x => !x.link || x.link.first).length < 2;
-      const rs = this.$('lreset');
-      if (rs) rs.hidden = !this.lightEdit || !(this.lightOrder && this.lightOrder.length);
-    }
   }
   // The configuration card (spec 13): one line per setting the panel could not use, for an admin, while the store holds
   // problems; nothing at all otherwise (the host stays hidden and empty, so a clean config draws exactly what it always drew).
@@ -2116,7 +1911,7 @@ export class LegacyPanel {
     // 2.9.0: under Who's home, the rest of the card holds the idle clock's smart stack (a fresh card slot whenever the card was rebuilt)
     if (this.cache.hwx !== hwxWas) this.cache.hstk = null;
     this.renderHomeStack();
-    const A = this.lightAreas(),
+    const A = this.houseLights(),
       onAreas = A.map(a => ({a, on: a.ids.filter(isOn)})).filter(x => x.on.length);
     const temps = L.rooms.map(r => r.temperature).filter(v => v != null),
       avg = temps.length ? sum(temps) / temps.length : null,
@@ -2280,236 +2075,37 @@ export class LegacyPanel {
     });
     return out;
   }
-  // Lights pane: a thin strip of today's Adaptive Lighting colour temperature, sunrise to sunset, with where we are now
-  renderAlBar() {
-    const el = this.$('albar');
-    if (!el || this.tab !== 'lights') return;
-    const als = [
-      ...new Set(
-        this.lightAreas()
-          .map(a => a.al)
-          .filter(Boolean),
-      ),
-    ];
-    el.hidden = !als.length;
-    if (!als.length) return;
-    const S = this.sunDay(0),
-      now = Date.now(),
-      h0 = now - this.fmtEn.hourNow(Date.now()) * 36e5;
-    const cfg = als.map(a => this.attr(a, 'configuration') || {}),
-      minK = Math.min(...cfg.map(c => +c.min_color_temp || 2000)),
-      maxK = Math.max(...cfg.map(c => +c.max_color_temp || 5500));
-    // Adaptive Lighting's curve: the maximum at solar noon, falling as a parabola to the minimum at sunrise and sunset, the minimum at night
-    const ct = t => {
-      if (!S.rise || t < S.rise || t > S.set) return minK;
-      const k = t < S.noon ? (t - S.noon) / (S.noon - S.rise) : (t - S.noon) / (S.set - S.noon);
-      return minK + (maxK - minK) * Math.max(0, 1 - k * k);
-    };
-    const stops = [];
-    for (let i = 0; i <= 48; i++) {
-      const t = h0 + i * 18e5,
-        col = kelvinRGB(ct(t)),
-        night = !S.rise || t < S.rise || t > S.set;
-      stops.push(`${night ? `color-mix(in srgb,${col} 35%,var(--card2))` : col} ${((i / 48) * 100).toFixed(1)}%`);
-    }
-    const x = t => `${Math.max(0, Math.min(100, ((t - h0) / 864e5) * 100)).toFixed(2)}%`;
-    const on = als.filter(a => (this.st(a) || {}).state === 'on'),
-      live = on.map(a => this.attr(a, 'color_temp_kelvin')).find(v => v != null),
-      nowK = Math.round(live != null ? live : ct(now));
-    const marks = [
-      [S.rise, 'Sunrise'],
-      [S.noon, 'Noon'],
-      [S.set, 'Sunset'],
-    ].filter(m => m[0]);
-    this.set(
-      'albar',
-      `<div class="top"><span class="lbl">Adaptive Lighting today</span><span class="right">${on.length ? `Now <b class="num" style="color:var(--fg)">${nowK} K</b> · ${on.length === als.length ? 'on everywhere' : `on in ${on.length} of ${als.length}`}` : 'Off everywhere'}</span></div>
-      <div class="alstrip"><div class="algrad" style="background:linear-gradient(90deg,${stops.join(',')})"></div><i class="alnow" style="left:${x(now)}"></i>
-        ${marks.map(([t, l]) => `<span class="almark" style="left:${x(t)}"><i></i>${this.compact ? '' : l + ' '}${this.fmtEn.time(new Date(t))}</span>`).join('')}
-        ${[0, 6, 12, 18].map(h => `<span class="alh" style="left:${(h / 24) * 100}%">${this.fmtEn.hour(h0 + h * 36e5)}</span>`).join('')}</div>`,
-    );
-  }
+  // the rooms as the Lights pane reads them, its saved links and order applied, in the legacy shape the room sheet reads until #262 moves it
   lightAreas() {
-    const reg = this.hass.entities || {},
-      dev = this.hass.devices || {},
-      by = new Map();
-    const area = id => {
-      const e = reg[id] || {};
-      return e.area_id || (dev[e.device_id] || {}).area_id || '';
-    };
-    const all = Object.keys(this.hass.states).filter(id => id.startsWith('light.'));
-    // light groups carry their members in entity_id: the group gives the area, its bulbs get the controls
-    const groups = all.filter(id => Array.isArray(this.attr(id, 'entity_id'))),
-      owner = {};
-    groups.forEach(g =>
-      this.attr(g, 'entity_id').forEach(m => {
-        if (!owner[m]) owner[m] = g;
-      }),
-    );
-    const gArea = g => area(g) || this.attr(g, 'entity_id').map(area).find(Boolean) || '';
-    const slot = aid => {
-      if (!by.has(aid)) by.set(aid, {ids: [], units: []});
-      return by.get(aid);
-    };
-    // the buttons under each area are its light groups plus any light that isn't in a group
-    groups.forEach(g => slot(gArea(g)).units.push(g));
-    for (const id of all) {
-      const e = reg[id] || {};
-      if (groups.includes(id) || e.entity_category || (e.hidden && !owner[id])) continue;
-      const a = slot(owner[id] ? gArea(owner[id]) || area(id) : area(id));
-      a.ids.push(id);
-      if (!owner[id]) a.units.push(id);
-    }
-    // Adaptive Lighting: by its configured lights when exposed, else its device's area, else a group sharing its name
-    const als = Object.keys(this.hass.states).filter(
-      id => /^switch\.adaptive_lighting_/.test(id) && !/_(sleep_mode|adapt_color|adapt_brightness)$/.test(id),
-    );
-    const alName = a => fold(String(this.attr(a, 'friendly_name') || '').replace(/^Adaptive Lighting:\s*/i, ''));
-    // AL hides its light list unless include_config_in_attributes is on, so areas whose group doesn't carry the
-    // instance's name are listed in AL_AREAS (the staircase group, Lumieres Passage, is under the Bureau instance)
-    const alLights = a => this.attr(a, 'configured_lights') || (this.attr(a, 'configuration') || {}).lights || [];
-    const alFor = (aid, ids) =>
-      als.find(a =>
-        alLights(a)
-          .flatMap(l => [l, ...(this.attr(l, 'entity_id') || [])])
-          .some(l => ids.includes(l)),
-      ) ||
-      (this.AL_AREAS[aid] && als.find(a => a === this.AL_AREAS[aid])) ||
-      als.find(a => aid && area(a) === aid) ||
-      als.find(
-        a =>
-          alName(a) &&
-          groups.some(g => area(g) === aid && fold(String(this.attr(g, 'friendly_name') || '')).includes(alName(a))),
-      );
-    const byName = (x, y) => this.name(x).localeCompare(this.name(y));
+    // the pane's element type is the feature's, which this file may not import: its two doors are named here
+    const pane = /** @type {{rooms(): any[]} | null} */ (
+        /** @type {unknown} */ (this.root.querySelector('hp-lights-pane'))
+      ),
+      rooms = pane ? pane.rooms() : [];
     /** @type {any[]} */
-    const out = [];
-    for (const [aid, {ids, units}] of by) {
-      if (!ids.length) continue;
-      units.sort(byName);
-      const area = aid ? this.name(aid) : 'Other lights',
-        labels = shortNames(units.map(i => this.name(i)));
-      // areas listed in split_light_areas get one tile per light group (or loose light) instead of one for the whole area;
-      // each tile keeps the area's Adaptive Lighting switch, so Auto and Night still act on the area
-      if (this.SPLIT_AREAS.includes(aid) && units.length > 1) {
-        const al = alFor(aid, ids);
-        units.forEach((u, k) => {
-          const mine = ids.filter(i => (owner[i] || i) === u);
-          if (mine.length)
-            out.push({aid: u, area, other: !aid, name: labels[k], ids: mine, al, units: [u], labels: [labels[k]]});
-        });
-      } else out.push({aid, area, other: !aid, name: area, ids, al: alFor(aid, ids), units, labels});
-    }
-    // split tiles stay together under their area's place in the list
-    out.sort((a, b) => a.other - b.other || a.area.localeCompare(b.area) || a.name.localeCompare(b.name));
-    // linked rooms: the second card of a pair moves next to the first and they act together
-    const card = k => out.find(t => t.aid === k) || out.find(t => t.units.includes(k) || t.ids.includes(k));
-    for (const keys of this.lightLinkList()) {
-      const a = card(keys[0]),
-        b = card(keys[1]);
-      if (!a || !b || a === b || a.link || b.link) continue;
-      out.splice(out.indexOf(b), 1);
-      out.splice(out.indexOf(a) + 1, 0, b);
-      a.link = {other: b, on: true, first: true};
-      b.link = {other: a, on: true, first: false};
-    }
-    // the order someone arranged on the Lights tab (saved for the whole house); a pair moves as one, lights it doesn't know go last
-    const O = this.lightOrder;
-    if (Array.isArray(O) && O.length) {
-      const units = [];
-      for (const t of out) if (!t.link || t.link.first) units.push(t.link ? [t, t.link.other] : [t]);
-      const at = u => {
-        const i = O.indexOf(u[0].aid);
-        return i < 0 ? Infinity : i;
-      };
-      return units
-        .map(/** @returns {[any[], number]} */ (u, i) => [u, i])
-        .sort((x, y) => at(x[0]) - at(y[0]) || x[1] - y[1])
-        .flatMap(x => x[0]);
-    }
+    const out = rooms.map(t => ({
+      aid: t.key,
+      name: t.name || 'Other lights',
+      ids: t.ids,
+      units: t.units,
+      labels: t.labels,
+      al: t.al,
+    }));
+    rooms.forEach((t, i) => {
+      const other = t.link && out.find(x => x.aid === t.link.other);
+      if (other) out[i].link = {other, on: true, first: t.link.first};
+    });
     return out;
   }
-  // the pairs of linked rooms: picked in a light sheet and saved for the whole house (system data light_links),
-  // or, until someone picks, the panel config's light_links (a pair with a switch counts while its switch is on)
-  lightLinkList() {
-    const v = this.sysData && this.sysData.light_links;
-    if (Array.isArray(v)) return v.filter(p => Array.isArray(p) && p.length === 2).map(p => p.map(String));
-    return this.LIGHT_LINKS.filter(l => l.keys.length === 2 && (!l.sw || (this.st(l.sw) || {}).state === 'on')).map(
-      l => l.keys,
-    );
+  // the house's light areas by the provider, for the stack's card and the Home tile, which need no link or order (#266, #268)
+  houseLights() {
+    const {hass, names, config} = this.store;
+    return lightAreas(hass.states, registriesOf(hass), names, config).map(a => ({
+      ...a,
+      name: a.name || 'Other lights',
+    }));
   }
-  saveLightLinks(pairs, msg) {
-    const v = {...(this.sysData || {}), light_links: pairs};
-    this.sysData = v;
-    this.tick();
-    this.api
-      .setSystemData(LIGHT_ORDER_KEY, v)
-      .then(() => this.toast(msg))
-      .catch(e => this.toast(`Couldn't save the link: ${e.message || e.code || e}`, true));
-  }
-  // the light order lives in Home Assistant's frontend system data (one value for every screen; only admins may write it)
-  loadLightOrder() {
-    if (!this.hass) return;
-    this.api
-      .getSystemData(LIGHT_ORDER_KEY, {stale: false}) // the system data is the same under every config
-      .then(r => {
-        const v = r || {},
-          o = Array.isArray(v.light_order) ? v.light_order : null;
-        const same = JSON.stringify(v) === JSON.stringify(this.sysData || {});
-        this.sysData = v;
-        if (this.lightDrag || (same && JSON.stringify(o) === JSON.stringify(this.lightOrder || null))) return;
-        this.lightOrder = o;
-        this.tick();
-      })
-      .catch(() => {});
-  }
-  saveLightOrder(keys) {
-    this.lightOrder = keys;
-    const v = {...(this.sysData || {}), light_order: keys};
-    this.sysData = v;
-    this.api
-      .setSystemData(LIGHT_ORDER_KEY, v)
-      .then(() => this.toast(keys ? 'Light order saved' : 'Light order reset'))
-      .catch(e => this.toast(`Couldn't save the light order: ${e.message || e.code || e}`, true));
-  }
-  setLightEdit(on) {
-    this.lightEdit = on;
-    const p = this.$('pane-lights');
-    if (p) p.classList.toggle('ledit', on);
-    const b = this.$('ledit');
-    if (b) {
-      b.textContent = on ? 'Done' : 'Arrange';
-      b.setAttribute('aria-pressed', on);
-    }
-    this.tick();
-  }
-  renderLights() {
-    if (this.lightDrag) return;
-    const A = this.lightAreas(),
-      isOn = i => (this.st(i) || {}).state === 'on';
-    if (!A.length) {
-      this.set(
-        'lights',
-        '<div class="top"><span class="lbl">Lights</span><span class="right">No lights found</span></div>',
-      );
-      return;
-    }
-    const lit = A.flatMap(a => a.ids).filter(isOn).length;
-    this.set(
-      'lights',
-      `<div class="top"><span class="lbl">Lights</span><span class="right">${lit ? `${plural(lit, 'light')} on<button type="button" class="more" data-l="alloff">All off</button>` : 'All off'}</span></div><div class="lrows">${this.lightGrid(A)}</div>`,
-    );
-  }
-  // the tiles, a linked pair drawn as one block of two
-  lightGrid(A) {
-    return A.map(a =>
-      !a.link
-        ? this.lightCell(a)
-        : !a.link.first
-          ? ''
-          : this.linkPair(a, this.lightCell(a) + this.lightCell(a.link.other)),
-    ).join('');
-  }
+
   // what an area's lights are doing: which are on, the mean brightness and colour temperature, the tint, the colour range
   lightState(a) {
     const isOn = i => (this.st(i) || {}).state === 'on',
@@ -2562,16 +2158,6 @@ export class LegacyPanel {
       .filter(Boolean)
       .join(' · ');
   }
-  // one room as an Apple Home style tile: the bulb switches it, the rest of the tile opens its sheet
-  lightCell(a) {
-    const s = this.lightState(a),
-      m = this.lightMode(a),
-      sub = this.lightSub(a, s, m, this.compact),
-      aid = esc(a.aid);
-    return `<div class="lcell${s.any ? ' on' : ''}${s.avail ? '' : ' na'}" data-lsheet="${aid}" role="button" tabindex="0" aria-label="${esc(a.name)}: ${this.lightSub(a, s, m)}${a.link ? ' · ' + esc(a.link.other.name) : ''}"${s.tint ? ` style="--lc:${s.tint}"` : ''}>
-      <button type="button" class="lbulb" role="switch" aria-checked="${s.any}" aria-label="${esc(a.name)} lights" data-l="area" data-a="${aid}" ${s.avail ? '' : 'disabled'}>${ico('bulb', 22)}</button>
-      <span class="tx"><b>${esc(a.name)}</b> <small>${sub}${this.linkTag(a)}</small></span><span class="lchev" aria-hidden="true">${ico('chev', 18)}</span><span class="lgrip" aria-hidden="true">${ico('grip', 20)}</span></div>`;
-  }
   // the colour an area's lights are showing: the first lit bulb's rgb_color, or its colour temperature turned into a warm-to-cool white
   lightTint(on) {
     for (const i of on) {
@@ -2583,15 +2169,6 @@ export class LegacyPanel {
       if (k) return kelvinRGB(k);
     }
     return '';
-  }
-  // a linked tile's subtitle names the room it moves with
-  linkTag(a) {
-    return a.link ? ` · <em class="lkd">${ico('link', 13)}${esc(a.link.other.name)}</em>` : '';
-  }
-  // two linked tiles drawn as one block
-  linkPair(a, inner) {
-    const tint = this.lightTint(a.ids.concat(a.link.other.ids).filter(i => (this.st(i) || {}).state === 'on'));
-    return `<div class="llink on"${tint ? ` style="--lc:${tint}"` : ''}>${inner}</div>`;
   }
   lightCmd(kind, key, v) {
     const A = this.lightAreas(),
@@ -2625,7 +2202,7 @@ export class LegacyPanel {
       return;
     }
     if (kind === 'linkto') {
-      this.linkTo(a, v || '', A);
+      this.linkTo(a, v || '');
       return;
     }
     if (kind === 'area') {
@@ -2682,32 +2259,15 @@ export class LegacyPanel {
     }
     if (took.length) this.toast('Set by hand, Auto off');
   }
-  // pick the room this one moves with (or none); the pair list is saved for the whole house, and a new partner starts out matching
-  linkTo(a, other, A) {
-    const cur = A.filter(t => t.link && t.link.first).map(t => [t.aid, t.link.other.aid]);
-    const b = other ? A.find(x => x.aid === other) : null;
-    if (other && !b) return;
-    if ((a.link ? a.link.other.aid : '') === other) return;
-    const next = cur.filter(p => !p.includes(a.aid) && !(other && p.includes(other)));
-    if (b) next.push([a.aid, b.aid]);
-    this.saveLightLinks(next, b ? 'Rooms linked' : 'Room unlinked');
-    if (!b) return;
-    const isOn = i => (this.st(i) || {}).state === 'on',
-      mine = a.ids.filter(isOn),
-      them = b.ids;
-    if (!mine.length) {
-      if (them.some(isOn)) this.call('light', 'turn_off', {entity_id: them});
-      return;
-    }
-    const s = this.lightState(a),
-      m = this.lightMode(a),
-      tw = them.filter(i => (this.attr(i, 'supported_color_modes') || []).includes('color_temp'));
-    // under Auto the colour follows on its own; a colour set by hand is copied
-    if (s.k && !m.auto && tw.length) {
-      this.call('light', 'turn_on', {entity_id: tw, brightness_pct: s.br, color_temp_kelvin: s.k});
-      const rest = them.filter(i => !tw.includes(i));
-      if (rest.length) this.call('light', 'turn_on', {entity_id: rest, brightness_pct: s.br});
-    } else this.call('light', 'turn_on', {entity_id: them, brightness_pct: s.br});
+  // pick the room this one moves with (or none): the pane saves the pairs for the whole house and sets a new partner's lights;
+  // the sheet is drawn again at once, and again once Home Assistant has answered (a refusal puts the old pairs back)
+  linkTo(a, other) {
+    const pane = /** @type {{link(key: string, other: string): Promise<void>} | null} */ (
+      /** @type {unknown} */ (this.root.querySelector('hp-lights-pane'))
+    );
+    if (!pane || (a.link ? a.link.other.aid : '') === other) return;
+    void pane.link(a.aid, other).finally(() => this.renderLightSheet());
+    this.renderLightSheet();
   }
 
   // ---------- the departure schedule's words, which the stack's car card and the header's upcoming list still read until #269 ----------

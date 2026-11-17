@@ -33,6 +33,8 @@ export interface TileView {
   sub: string;
   /** The tile's accessible name: the name, the full line and the partner. */
   label: string;
+  /** The bulb's accessible name. */
+  bulbLabel: string;
   on: boolean;
   available: boolean;
   /** The colour of the lit lights, `''` when none is on. */
@@ -113,6 +115,7 @@ function tileView(tile: LightTile, tiles: LightTile[], deps: LightsDeps): TileVi
     label: linkedWith
       ? t('lights.tileLabelLinked', {name, sub: full, partner: linkedWith})
       : t('lights.tileLabel', {name, sub: full}),
+    bulbLabel: t('lights.areaLights', {name}),
     on: tile.state.any,
     available: tile.state.avail,
     tint: tile.state.tint,

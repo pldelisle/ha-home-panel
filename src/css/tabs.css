@@ -127,7 +127,6 @@
   display: none;
 }
 .pane-home > hp-pane-header,
-.pane-lights > hp-pane-header,
 .pane-media > hp-pane-header {
   grid-column: 1/-1;
   margin-bottom: 2px;
@@ -510,57 +509,6 @@
 }
 .pane-lights .lareas {
   grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-.alstrip {
-  position: relative;
-  height: 50px;
-  margin: 4px 6px 0;
-}
-.algrad {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 15px;
-  height: 6px;
-  border-radius: 3px;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
-}
-.alnow {
-  position: absolute;
-  top: 11px;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--card);
-  border: 3px solid var(--fg);
-  transform: translateX(-50%);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
-}
-.almark {
-  position: absolute;
-  top: 24px;
-  transform: translateX(-50%);
-  font-size: calc(11px * var(--tx));
-  color: var(--fg2);
-  white-space: nowrap;
-  text-align: center;
-}
-.almark i {
-  display: block;
-  width: 1px;
-  height: 6px;
-  background: var(--fg3);
-  margin: 0 auto 3px;
-}
-.alh {
-  position: absolute;
-  top: 0;
-  font-size: calc(11px * var(--tx));
-  color: var(--fg2);
-  transform: translateX(-50%);
-}
-.alh:first-of-type {
-  transform: none;
 }
 /* colour temperature slider under the brightness slider */
 .ctrow {
@@ -1503,15 +1451,6 @@
   opacity: 0.5;
   cursor: default;
 }
-.lkd {
-  color: color-mix(in srgb, var(--lc, var(--warn)) 70%, var(--fg));
-  font-style: normal;
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  vertical-align: -2px;
-}
 @media (max-width: 1000px) {
   .lareas .llink {
     grid-column: span 2;
@@ -1531,71 +1470,5 @@
   }
   .lnk {
     top: 50%;
-  }
-}
-/* Arrange (2.7.0): the Lights tab's tiles can be dragged into the order you want; a linked pair moves as one block */
-.pane-lights > hp-pane-header .ledbar {
-  margin-left: auto;
-  display: flex;
-  gap: 8px;
-}
-.pane-lights > hp-pane-header .ledbar .more {
-  padding: 8px 16px;
-  border-radius: 999px;
-  font: inherit;
-  font-weight: 600;
-}
-.pane-lights > hp-pane-header .ledbar #ledit[aria-pressed='true'] {
-  color: #fff;
-  background: var(--c-home);
-  border-color: transparent;
-}
-.lgrip {
-  display: none;
-  flex: none;
-  width: 36px;
-  height: 44px;
-  place-items: center;
-  color: var(--fg3);
-}
-.ledit .lcell .lgrip {
-  display: grid;
-}
-.ledit .lcell .lbulb {
-  pointer-events: none;
-}
-.ledit .lrows > *,
-.ledit #ltiles > * {
-  touch-action: none;
-  cursor: grab;
-  animation: ljig 0.3s ease-in-out infinite alternate;
-}
-.ledit .lrows > *:nth-child(2n),
-.ledit #ltiles > *:nth-child(2n) {
-  animation-delay: -0.15s;
-}
-.lifted {
-  position: relative;
-  z-index: 5;
-  pointer-events: none;
-  cursor: grabbing !important;
-  animation: none !important;
-  box-shadow: 0 18px 40px -12px rgba(0, 0, 0, 0.35);
-  opacity: 0.96;
-}
-@keyframes ljig {
-  from {
-    rotate: -0.35deg;
-  }
-  to {
-    rotate: 0.35deg;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .ledit .lrows > *,
-  .ledit #ltiles > * {
-    animation: none;
-    outline: 1.5px dashed var(--ring);
-    outline-offset: 3px;
   }
 }

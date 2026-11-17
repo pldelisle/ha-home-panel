@@ -1,6 +1,6 @@
 # Lights
 
-What the Lights tab reads and computes ([spec 23](../../../docs/specs/23-lights.md)): the house's lights grouped into one tile per area, the Adaptive Lighting switch that runs each, the linked rooms and the order an admin saved, what a tile's lights are doing, and the Adaptive Lighting strip. This folder holds the pure half of the first move (#258), the model (#259) and the commands (#261); the pane and the tiles (#260), the sheet (#262) and Arrange (#263) follow.
+What the Lights tab reads and computes ([spec 23](../../../docs/specs/23-lights.md)): the house's lights grouped into one tile per area, the Adaptive Lighting switch that runs each, the linked rooms and the order an admin saved, what a tile's lights are doing, and the Adaptive Lighting strip. This folder holds the pure half of the first move (#258), the model (#259), the commands (#261) and the pane with its tiles (#260); the sheet (#262) and Arrange's move into the kit (#263) follow.
 
 ## The folder
 
@@ -24,6 +24,12 @@ src/features/lights/
   al-strip-layout.ts       alStripLayout(curve, now, fmt): the gradient's stops, now, the sun's marks, the hours
   commands.ts              pairOf, allOff, toggleOne, toggleArea, isAuto, setAuto, isNight, setNight, setBrightness, setColorTemp, link:
                            each intent as the service calls to run, in order (CommandRunner.runAll runs them)
+  index.ts                 lightsFeature: the registry's descriptor (on the phone's bar, so no More word)
+  lights-pane.ts           <hp-lights-pane>: the header with Arrange and Reset order, the strip, the rows or the phone's grid, a pair
+                           side by side; runs the commands, saves the order and the links, and holds Arrange's drag until #263
+  light-tile.ts            <hp-light-tile>: one room; the bulb asks the pane to switch it (`area-toggle`), the rest opens its sheet
+  al-strip.ts              <hp-al-strip>: the Adaptive Lighting card and its strip
+  *.element.css            each element's own rules, moved from the legacy sheets
 src/ui/
   commands.ts              CommandRunner gains runAll(cmds): a list in order, stopped at a failure
 src/ui/controllers/
@@ -55,6 +61,10 @@ The pairs in force are the system data's `light_links` once someone has picked a
 `lightsModel(inputs, deps)` words what the pane shows: its line (the lit lights and how many Adaptive Lighting switches are on, or how to drag while arranging), the card's title and right-hand words, the phone's line when the house has no light, the All off button, one `TileView` per tile (its line, short on a phone, its accessible name, its tint and its place in a pair), the strip (`null` without a switch: the live kelvin of the first lit switch, else the curve's at now) and the Arrange bar (an admin's, with two units or more; Reset while arranging a saved order). `sheetModel(key, inputs, deps)` words a room's sheet: the power button, the brightness and colour sliders (the colour's words are Night's, else warm to 3000 K, cool from 5000 K, neutral between), the Auto and Night rows from the switches' readings, the chips for a room of two buttons or more, the Linked with row (an admin's to change) and the picker, which says who a room is now with. Its `deps` carry the clock, the sun, the screen and whether the viewer is an admin, so the model reads none of them.
 
 The order and the links are one key, `home_panel`, of Home Assistant's frontend system data: one value for every screen, which only an admin may write. `SystemDataController` reads it with `stale: false` (the value does not depend on the config) when the config changes and each time the pane is shown, since another screen may have rearranged meanwhile; `set(patch)` changes the value at once, tells the host and saves it, and a refused save puts the old value back and rejects, for the caller's toast.
+
+## The pane
+
+`<hp-lights-pane>` reads the tiles with `readLights` over its store controller (the lights and their switches only, paused while another tab is shown) and the system data, and `lightsModel` words them; the template places each unit (a room, or a linked pair drawn as two tiles side by side) keyed by its first tile. A bulb's `area-toggle` runs `toggleArea` on the room's pair, All off runs `allOff`, and a tap elsewhere on a tile asks for the room's sheet with its key (`SheetRequestEvent('sh-light', {key})`), which the legacy sheet reads until #262. While an admin arranges, the units jiggle, a drag moves one (the unit under the pointer gives way and the page scrolls near the edges), an arrow key moves the focused one, and the order is saved when it changed; taps neither switch nor open. Until #262 the legacy sheet reads the rooms through the pane's `rooms()` and picks a partner through its `link(key, partner)`, so the system data has one owner.
 
 ## The commands
 

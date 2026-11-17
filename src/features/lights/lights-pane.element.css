@@ -1,0 +1,188 @@
+/*
+ * <hp-lights-pane>'s own rules: its place in the pane section and the header's (tabs.css, phone.css), Arrange's buttons in the header,
+ * the tablet's card, its rows and the phone's grid, a linked pair (lights.css), and Arrange's jiggle and lifted unit (tabs.css), moved in #260.
+ * Known copies: `.more` with its glass and its press (base.css, glass.css, motion.css) as `.lbtn`, and `.hint` (base.css), which other
+ * legacy panes still draw; selectors differ because the styles-split test lets one file write a selector.
+ */
+/* the tablet's pane is a column of the header, the strip and the card; the phone's is a column sixteen pixels apart */
+:host {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 16px;
+  min-width: 0;
+}
+:host([compact]) {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 16px;
+}
+hp-pane-header {
+  grid-column: 1/-1;
+  margin-bottom: 2px;
+}
+:host([compact]) hp-pane-header {
+  margin-bottom: 0;
+}
+/* the tablet's card holds the rows without a card of its own: tiles are content, the HIG puts no material under them */
+.lcard {
+  position: relative;
+  min-width: 0;
+  border-radius: 22px;
+  padding: 0;
+}
+.lcard > .top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 12px;
+}
+.lcard > .top .lbl {
+  visibility: hidden;
+  letter-spacing: 0.04em;
+  font-size: calc(15px * var(--tx));
+  font-weight: 600;
+  color: var(--fg);
+}
+.lcard > .top .right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: calc(13px * var(--tx));
+  color: var(--fg2);
+  font-weight: 500;
+}
+/* the pill buttons: All off, Arrange and Reset order */
+.lbtn {
+  margin-top: 10px;
+  border: 0;
+  background: var(--card2);
+  border-radius: 999px;
+  padding: 10px 16px;
+  min-height: 44px;
+  font: inherit;
+  font-size: calc(13px * var(--tx));
+  font-weight: 600;
+  color: var(--fg);
+  cursor: pointer;
+}
+.lbtn:focus-visible {
+  outline: 2px solid var(--c-home);
+  outline-offset: 2px;
+}
+.lbtn[hidden] {
+  display: none;
+}
+.app.gl .lbtn {
+  background: var(--g-tile);
+  box-shadow: var(--g-edge-s);
+}
+@media (prefers-reduced-transparency: reduce) {
+  .app.gl .lbtn {
+    background: var(--card2);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .lbtn {
+    transition:
+      transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+      background-color 0.2s ease,
+      box-shadow 0.2s ease,
+      color 0.2s ease;
+  }
+}
+.lbtn:active {
+  transform: scale(0.96);
+}
+.right .lbtn {
+  margin: 0;
+}
+.ledbar {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+.ledbar[hidden] {
+  display: none;
+}
+.ledbar .lbtn {
+  margin: 0;
+  padding: 8px 16px;
+}
+.ledbar #ledit[aria-pressed='true'] {
+  color: #fff;
+  background: var(--c-home);
+}
+/* the rows: four across, three under 1000 pixels, two under 720; the phone's grid two across */
+.lrows {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  align-items: stretch;
+}
+@media (max-width: 1000px) {
+  .lrows {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 720px) {
+  .lrows {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.ltiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  align-items: stretch;
+}
+.ltiles .hint {
+  grid-column: 1 / -1;
+  font-size: calc(12px * var(--tx));
+  color: var(--fg2);
+  margin: 6px 0 0;
+}
+/* a linked pair: two ordinary tiles kept side by side, so Arrange moves them together; the link shows in each subtitle */
+.llink {
+  grid-column: span 2;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: inherit;
+}
+/* Arrange: the units jiggle and follow a drag; the lifted one floats over the others and lets the pointer through */
+:host([editing]) .lrows > *,
+:host([editing]) .ltiles > * {
+  touch-action: none;
+  cursor: grab;
+  animation: ljig 0.3s ease-in-out infinite alternate;
+}
+:host([editing]) .lrows > *:nth-child(2n),
+:host([editing]) .ltiles > *:nth-child(2n) {
+  animation-delay: -0.15s;
+}
+.lifted {
+  position: relative;
+  z-index: 5;
+  pointer-events: none;
+  cursor: grabbing !important;
+  animation: none !important;
+  box-shadow: 0 18px 40px -12px rgba(0, 0, 0, 0.35);
+  opacity: 0.96;
+}
+@keyframes ljig {
+  from {
+    rotate: -0.35deg;
+  }
+  to {
+    rotate: 0.35deg;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  :host([editing]) .lrows > *,
+  :host([editing]) .ltiles > * {
+    animation: none;
+    outline: 1.5px dashed var(--ring);
+    outline-offset: 3px;
+  }
+}

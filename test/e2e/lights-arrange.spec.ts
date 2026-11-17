@@ -20,7 +20,7 @@ test.describe('as an admin', () => {
     await house.tab('lights');
     await expect(root.locator('#ledbar')).toBeVisible();
     await root.locator('#ledit').click();
-    await expect(root.locator('#pane-lights')).toHaveClass(/ledit/);
+    await expect(root.locator('hp-lights-pane')).toHaveAttribute('editing');
     const centre = async (name: string) => {
       const tile = root
         .locator('#pane-lights .lcell')
@@ -45,7 +45,7 @@ test.describe('as an admin', () => {
       });
 
     await root.locator('#ledit').click();
-    await expect(root.locator('#pane-lights')).not.toHaveClass(/ledit/);
+    await expect(root.locator('hp-lights-pane')).not.toHaveAttribute('editing');
     await house.clock.runFor(1_100);
     expect(
       house.calls.filter(c => /^light\./.test(c)),
