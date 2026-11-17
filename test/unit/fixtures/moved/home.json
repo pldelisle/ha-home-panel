@@ -11,11 +11,20 @@
       "key": "home.upcoming.challenge",
       "values": {
         "phase": "reduction"
+      }
+    },
+    {
+      "key": "home.upcoming.challenge",
+      "values": {
+        "phase": "pre_heat"
+      }
+    },
+    {
+      "key": "home.upcoming.challenge",
+      "values": {
+        "phase": "on"
       },
-      "fr": {
-        "phase": "Réduction"
-      },
-      "translated": "Défi : Réduction"
+      "translated": "Défi : activé"
     },
     {
       "key": "home.upcoming.peak"

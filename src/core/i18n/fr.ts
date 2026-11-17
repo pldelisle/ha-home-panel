@@ -17,7 +17,8 @@ export const fr: Record<MessageKey, string> = {
   'home.title': 'Maison',
   'home.upcoming.sunset': 'Coucher du soleil · le thème passe en sombre',
   'home.upcoming.sunrise': 'Lever du soleil · toutes les lumières éteintes, modes nuit désactivés',
-  'home.upcoming.challenge': 'Défi : {phase}',
+  'home.upcoming.challenge':
+    '{phase, select, appreciation {Défi : appréciation} pre_heat {Défi : préchauffage} reduction {Défi : réduction} recovery {Défi : récupération} scheduled {Défi : prévue} on {Défi : activé} other {Défi : {phase}}}',
   'home.upcoming.peak': 'Pointe critique à venir',
   'home.upcoming.car': 'Voiture',
   'home.upcoming.departure': 'Départ : {schedule}',

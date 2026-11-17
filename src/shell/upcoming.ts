@@ -2,14 +2,15 @@
 // Hilo's challenge, Hydro-Québec's coming peak, the car's departure and the modes that are on (spec 24, #267). Not Automations' runs.
 // Pattern: a pure view model in two halves (Meszaros' humble object): `readUpcoming` reads the states, `upcoming` words them; the
 // legacy panel's `upcoming()`, which #269 deletes with the header.
-// Must not: read the clock, import the DOM, Lit or a feature, or hold text the household reads (a catalog key says it).
+// Must not: read the clock, import the DOM, Lit or a feature, or hold text the household reads (a catalog key says it; the sources'
+// brand names, Hilo and Hydro-Québec, read the same in both languages).
 import type {ResolvedConfig} from '../core/config.ts';
 import type {HassEntities} from '../core/hass.ts';
 import type {Formatters} from '../core/i18n/format.ts';
 import type {Translate} from '../core/i18n/messages.ts';
 import type {Names} from '../core/i18n/names.ts';
 import {isAvailable} from '../core/states.ts';
-import {departureSchedule, findCar, type Schedule} from '../providers/fordpass.ts';
+import {findCar, readCar, type Schedule} from '../providers/fordpass.ts';
 import {hiloChallenge} from '../providers/hilo.ts';
 import {hydroQuebec} from '../providers/hydro-quebec.ts';
 
@@ -53,15 +54,15 @@ export function readUpcoming(states: HassEntities, config: ResolvedConfig, names
   const {sun, setting, rising} = config.entities;
   const sunState = sun ? states[sun] : undefined;
   const challenge = hiloChallenge(states, config);
-  const car = findCar(states);
-  const departureOn = !!car && states[car.id('switch', 'departuretimes')]?.state === 'on';
+  const ref = findCar(states);
+  const car = ref && readCar(states, config, names, ref);
   return {
     day: !sunState || sunState.state === 'above_horizon',
     sunset: instantOf(states, setting),
     sunrise: instantOf(states, rising),
     challenge: challenge?.active ? challenge.state : null,
     peakComing: !!hydroQuebec(states, config)?.peakUpcoming,
-    departure: car && departureOn ? departureSchedule(states, car) : null,
+    departure: car?.departureOn ? car.schedule : null,
     modes: config.modes.filter(id => states[id]?.state === 'on').map(id => names.name(id)),
   };
 }
@@ -88,9 +89,7 @@ export function upcoming(inputs: UpcomingInputs, deps: UpcomingDeps): UpcomingRo
     ...(inputs.day ? [...sunset, ...sunrise] : [...sunrise, ...sunset]),
     ...(inputs.challenge === null
       ? []
-      : [
-          {when: 'Hilo', what: t('home.upcoming.challenge', {phase: t('stack.peak.phase', {phase: inputs.challenge})})},
-        ]),
+      : [{when: 'Hilo', what: t('home.upcoming.challenge', {phase: inputs.challenge})}]),
     ...(inputs.peakComing ? [{when: 'Hydro-Québec', what: t('home.upcoming.peak')}] : []),
     ...(inputs.departure
       ? [

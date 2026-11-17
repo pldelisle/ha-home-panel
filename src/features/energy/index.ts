@@ -3,7 +3,7 @@
 // importing this module. The pane binds its detail's sheet and the two cards' to the sheet host's answers, which the descriptor's `env` gives it (ADR 0021).
 // The More word is the guest's (`moreLines`), until the legacy panel goes (#277); the tab is always shown.
 // It re-exports `glance` and `waterGlance`, the Home pane's two tile readers (glance.ts, #267).
-// Must not: draw or hold state, import the guest or another feature, or read an entity.
+// Must not: draw or hold state, import the guest or another feature, or read an entity itself.
 import {html} from 'lit';
 import './energy-pane.ts'; // defines <hp-energy-pane>
 import {DETAIL_SHEET, HILO_SHEET, WATER_SHEET} from './sheets.ts';

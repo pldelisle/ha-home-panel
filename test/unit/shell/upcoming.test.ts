@@ -65,7 +65,7 @@ describe('readUpcoming and upcoming', () => {
     expect(rows(store)).toStrictEqual([
       '16 h 45 | Coucher du soleil · le thème passe en sombre',
       '7 h | Lever du soleil · toutes les lumières éteintes, modes nuit désactivés',
-      'Hilo | Défi : Réduction',
+      'Hilo | Défi : réduction',
       'Voiture | Départ : En semaine à 7 h 30',
     ]);
   });

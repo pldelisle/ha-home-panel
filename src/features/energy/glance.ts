@@ -1,12 +1,12 @@
 // glance and waterGlance: the Energy and Water heater tiles of the Home pane, the grid's power with today's kWh and Hilo's rate,
 // and the tank's temperature with its last 24 hours' kWh (spec 24, #267).
-// Pattern: pure readers over the store (view models, Meszaros' humble object's other half); the legacy `renderHome`'s rules. The
+// Pattern: pure readers over the store (view models, Meszaros' humble object's other half); the legacy `renderHome`'s rules, which #268 deletes. The
 // history is the Energy card's loaded slices, given by the caller: a reader never loads.
 // Must not: read the clock, load, import the DOM, Lit, the shell or another feature, or hold text the household reads.
 import {DASH} from '../../core/figures.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
-import {whole} from '../../core/i18n/format.ts';
 import type {GlanceStore, GlanceView} from '../../ui/glance.ts';
+import {LIVE_KW} from './flow-layout.ts';
 import {waterCycles, type EnergyHistoryData} from './history.ts';
 import {readEnergy} from './inputs.ts';
 import {DETAIL_SHEET, WATER_SHEET} from './sheets.ts';
@@ -19,8 +19,6 @@ export interface GlanceDeps {
 
 /** Under a kilowatt the grid is said in watts. */
 const WATTS_BELOW_KW = 1;
-/** The water heater heats above this power, in kW: the legacy tile's threshold. */
-const HEATING_ABOVE_KW = 0.02;
 
 /** The Energy tile: always there, a dash while the grid reads nothing. Null only before the first states. */
 export function glance({hass, config, names, t, fmt}: GlanceStore, {history}: GlanceDeps): GlanceView | null {
@@ -37,7 +35,7 @@ export function glance({hass, config, names, t, fmt}: GlanceStore, {history}: Gl
       kw === null
         ? DASH
         : kw < WATTS_BELOW_KW
-          ? t('energy.watts', {n: whole(fmt, kw * 1000)})
+          ? t('energy.watts', {n: String(Math.round(kw * 1000))}) // as the legacy tile wrote it: no thousands separator below −1 kW
           : t('energy.kw', {n: fmt.fixed(kw, 2)}),
     line: history
       ? t('energy.glance.line', {kwh: fmt.fixed(history.totals.today, 1), rate})
@@ -51,7 +49,7 @@ export function waterGlance({hass, config, names, t, fmt}: GlanceStore, {history
   if (!hass) return null;
   const {water} = readEnergy(hass.states, config, names);
   if (!water.present) return null;
-  const state = t((water.power ?? 0) > HEATING_ABOVE_KW ? 'energy.heating' : 'energy.idle');
+  const state = t((water.power ?? 0) > LIVE_KW ? 'energy.heating' : 'energy.idle');
   return {
     key: 'water',
     icon: 'drop',

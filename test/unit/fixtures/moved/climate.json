@@ -364,6 +364,7 @@
     },
     {"key": "climate.glance.heating", "values": {"n": 2}},
     {"key": "climate.glance.heating", "values": {"n": 1}},
+    {"key": "climate.glance.heating", "values": {"n": 0}, "translated": "0 pièce chauffe"},
     {
       "key": "climate.glance.line",
       "values": {"heating": "2 rooms heating"},

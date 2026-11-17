@@ -16,7 +16,8 @@ export const en = {
   // the phone's "Coming up" list on the Home pane (src/shell/upcoming.ts, #267)
   'home.upcoming.sunset': 'Sunset · theme turns dark',
   'home.upcoming.sunrise': 'Sunrise · every light off, night modes off',
-  'home.upcoming.challenge': 'Challenge: {phase}',
+  'home.upcoming.challenge':
+    '{phase, select, appreciation {Challenge: appreciation} pre_heat {Challenge: pre_heat} reduction {Challenge: reduction} recovery {Challenge: recovery} scheduled {Challenge: scheduled} on {Challenge: on} other {Challenge: {phase}}}',
   'home.upcoming.peak': 'Critical peak coming',
   'home.upcoming.car': 'Car',
   'home.upcoming.departure': '{schedule} departure',
