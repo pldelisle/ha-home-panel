@@ -503,7 +503,7 @@ export class HomePanel extends LitElement {
         <div class="hello" id="hello"></div>
         <div class="chips">
           <div id="chips" ?data-live=${this.liveRunning}>
-            <span id="wxchip-host" style="display:contents"></span>
+            <span id="wxchip-host"></span>
             <hp-live-pill .open=${this.statusOpen}></hp-live-pill>
           </div>
           <button
