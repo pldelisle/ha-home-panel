@@ -8,6 +8,7 @@ import {LitElement, html, type PropertyValues, unsafeCSS} from 'lit';
 import {loadApex, type ApexChart, type ApexChartConstructor} from '../core/apex.ts';
 import {AppearanceConsumer} from './controllers/appearance-consumer.ts';
 import {MediaQueryController} from './controllers/media-query.ts';
+import {ResizeController} from './controllers/resize.ts';
 import {StoreController} from './controllers/store-controller.ts';
 import {baseOptions, frenchAxis, mergeOptions, type ChartOptions} from './chart-options.ts';
 import {ToastEvent} from './events.ts';
@@ -53,8 +54,6 @@ export class HpChart extends LitElement {
   private readonly motion = new MediaQueryController(this, '(prefers-reduced-motion: reduce)');
   private library: ApexChartConstructor | undefined;
   private chart: ApexChart | undefined;
-  /** Waits for the chart's place to have a width before it is drawn. */
-  private sizing: ResizeObserver | undefined;
   /** What the instance in `chart` was drawn for: a change of the theme, the language, the height or the shape needs a new one. */
   private drawnFor = '';
 
@@ -64,6 +63,8 @@ export class HpChart extends LitElement {
     this.shape = '';
     this.height = 300;
     this.label = '';
+    // the chart's place: a chart is drawn once it has a width, its update asked for when the width changes
+    new ResizeController(this, () => this.renderRoot.querySelector('.chart'));
   }
 
   override connectedCallback(): void {
@@ -108,27 +109,13 @@ export class HpChart extends LitElement {
     this.dispose();
     const target = this.renderRoot.querySelector<HTMLElement>('.chart');
     if (!target) return;
-    // a place with no width (a pane or a sheet not shown yet) cannot be measured: the library would write NaN into the drawing. It is drawn once the place has one.
-    if (!target.clientWidth) {
-      this.awaitWidth(target);
-      return;
-    }
+    // a place with no width (a pane or a sheet not shown yet) cannot be measured: the library would write NaN into the drawing. It is
+    // drawn once the place has one, the resize controller asking for the update
+    if (!target.clientWidth) return;
     this.drawnFor = key;
     this.chart = new library(target, this.merged(options, key));
     // a chart with nothing to draw must not take the panel down with it
     this.chart.render().catch((error: unknown) => console.warn('home-panel chart', error));
-  }
-
-  // asks for an update when the place first has a width: once, and only while the element is on the page
-  private awaitWidth(target: HTMLElement): void {
-    this.sizing?.disconnect();
-    this.sizing = new ResizeObserver(() => {
-      if (!target.clientWidth) return;
-      this.sizing?.disconnect();
-      this.sizing = undefined;
-      this.requestUpdate();
-    });
-    this.sizing.observe(target);
   }
 
   // the base look from the host's computed tokens, the options over it, and French's axis when the panel is in French
@@ -147,8 +134,6 @@ export class HpChart extends LitElement {
   }
 
   private dispose(): void {
-    this.sizing?.disconnect();
-    this.sizing = undefined;
     try {
       this.chart?.destroy();
     } catch {
