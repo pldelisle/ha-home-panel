@@ -84,6 +84,8 @@ test.describe('on a phone', () => {
     await expect(flow(house).locator('text.big').nth(1)).toHaveText('3.24');
     await expect(flow(house).locator('text.st', {hasText: /^kW · Home$/})).toHaveText('kW · Home');
     await expect(detail(house).locator('.inner > hp-chart .apexcharts-canvas')).toBeVisible();
+    // today has no row in this clock's recorder, so its donut would say so: the week has days
+    await pane(house).locator(':scope > hp-range-tabs').getByRole('tab', {name: 'Week'}).click();
     await expect(detail(house).locator('.donutchart .apexcharts-canvas')).toBeVisible();
     await expect(detail(house).locator('.totals .tile')).toHaveCount(6);
     await expect(pane(house).locator('hp-sheet[open]')).toHaveCount(0);
@@ -510,6 +512,8 @@ test.describe('the detail on a phone', () => {
   test('the charts draw inline in the tab, under the range tabs', async ({house}) => {
     await openTab(house);
     await expect(detail(house).locator('.inner > hp-chart .apexcharts-canvas')).toBeVisible();
+    // today has no row in this clock's recorder, so its donut would say so: the week has days
+    await pane(house).locator(':scope > hp-range-tabs').getByRole('tab', {name: 'Week'}).click();
     await expect(detail(house).locator('.donutchart .apexcharts-canvas')).toBeVisible();
     const tabs = await pane(house).locator(':scope > hp-range-tabs').getByRole('tablist').boundingBox();
     const inline = await detail(house).boundingBox();
@@ -535,8 +539,63 @@ test.describe('the detail on a phone', () => {
   test('the tab has no serious or critical accessibility finding', async ({house}) => {
     await openTab(house);
     await expect(detail(house).locator('.inner > hp-chart .apexcharts-canvas')).toBeVisible();
+    // today has no row in this clock's recorder, so its donut would say so: the week has days
+    await pane(house).locator(':scope > hp-range-tabs').getByRole('tab', {name: 'Week'}).click();
     await expect(detail(house).locator('.donutchart .apexcharts-canvas')).toBeVisible();
     const {violations} = await new AxeBuilder({page: house.page}).include('home-panel').analyze();
     expect(violations.filter(v => v.impact === 'serious' || v.impact === 'critical').map(v => v.id)).toEqual([]);
+  });
+});
+
+// The bare house has no meter and no recorded history: each chart card says so once, and no card draws empty axes, a donut or tiles of 0 kWh (#385).
+test.describe('the bare house, with no history yet', () => {
+  test.use({houseOpts: {house: 'bare'}});
+
+  const NO_HISTORY = 'No history yet. It fills in as Home Assistant records the next hour.';
+  const openBare = async (house: House) => {
+    if (test.info().project.name === 'phone') {
+      await house.root().locator('#moretab').click();
+      await house.root().locator('#morelist hp-stat-tile[key="energy"] button').click();
+      await expect(house.root().locator('#pane-energy')).toBeVisible();
+    } else await house.tab('energy');
+  };
+
+  test('the main chart, the donut and the totals are each a title and the one sentence, on every range', async ({
+    house,
+  }) => {
+    await openBare(house);
+    const cards = detail(house).locator('.inner');
+    // Now: the live flow has no reading from the grid, so the Sankey says that; the three others say the one sentence
+    await expect(cards.locator('p.loading', {hasText: NO_HISTORY})).toHaveCount(3);
+    await expect(cards.locator('h3')).toHaveText([
+      'Today, hour by hour',
+      'Where the power goes',
+      'Where it went',
+      'Totals',
+    ]);
+    await expect(detail(house).locator('.sankey p.loading')).toHaveText('No reading');
+    for (const range of ['Week', 'Month', 'Year']) {
+      await house.root().locator('#pane-energy').getByRole('tab', {name: range}).first().click();
+      await expect(cards.locator('p.loading', {hasText: NO_HISTORY})).toHaveCount(4);
+    }
+    // nothing of what an empty chart drew: no chart (axes), no donut's table, no tile of 0 kWh, no legend
+    await expect(detail(house).locator('hp-chart')).toHaveCount(0);
+    await expect(detail(house).locator('.donut, .totals, .tile, .legend')).toHaveCount(0);
+  });
+});
+
+// A tile of Home whose sensor reads nothing says "No reading" in the line's style, never a dash as its big figure (#385).
+test.describe('Home’s tiles with no reading', () => {
+  test.use({houseOpts: {house: 'bare', cfg: {entities: {grid_power: 'sensor.house_power'}}}});
+
+  test('the Energy tile says "No reading" in its line style, and the big figure comes back with a reading', async ({
+    house,
+  }) => {
+    await house.tab('home');
+    const energy = house.root().locator('#htiles hp-glance-tile[data-key="energy"] button.htile');
+    await expect(energy.locator('.hv')).toHaveCount(0);
+    await expect(energy.locator('.hs').first()).toHaveText('No reading');
+    await house.setState('sensor.house_power', {state: '850', attributes: {unit_of_measurement: 'W'}});
+    await expect(energy.locator('.hv')).toBeVisible();
   });
 });

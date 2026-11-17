@@ -162,7 +162,7 @@ for (const lang of ['en', 'fr'] as const) {
       phoneOnly(); // on a tablet the detail is the Energy tab, which every shown tab covers
       await house.tab('home'); // the sheet is Home's Energy tile's: the tab draws the detail inline
       await house.root().locator('#htiles [data-opens="energy.detail"]').click();
-      await expect(house.root().locator('hp-energy-detail .donutchart .apexcharts-canvas')).toBeVisible();
+      await expect(house.root().locator('hp-energy-detail .inner > hp-chart .apexcharts-canvas')).toBeVisible();
       await scanDialog(house, 'the energy detail sheet', 'hp-energy-pane hp-sheet:has(hp-energy-detail) .sheet');
     });
 

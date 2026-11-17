@@ -374,6 +374,7 @@ export const fr: Record<MessageKey, string> = {
   'weather.history.title': '{name}, {range}',
   'chart.label': 'Graphique',
   'chart.noData': "Pas encore d'historique",
+  'chart.empty': 'Pas encore d’historique. Il se remplit à mesure que Home Assistant enregistre la prochaine heure.',
   'range.day.tab': 'Jour',
   'range.week.tab': 'Semaine',
   'range.month.tab': 'Mois',
@@ -570,6 +571,7 @@ export const fr: Record<MessageKey, string> = {
   'energy.tile.water': 'Chauffe-eau',
   'energy.tile.ev': 'Recharge VÉ',
   'energy.water.title': 'Chauffe-eau',
+  'energy.noReading': 'Aucune mesure',
   'energy.glance.line': "Maintenant · {kwh} kWh aujourd'hui · {rate}",
   'energy.glance.lineNow': 'Maintenant · {rate}',
   'energy.glance.water': "{state} · {kwh} kWh aujourd'hui",
@@ -625,7 +627,6 @@ export const fr: Record<MessageKey, string> = {
   'energy.detail.year': 'Mois par mois',
   'energy.detail.busiest':
     'Heure la plus chargée\u00a0: {kwh} kWh, {when}. Touchez une barre pour voir ce qui fonctionnait.',
-  'energy.detail.noHour': "Pas encore d'heure complète aujourd'hui.",
   'energy.detail.monthSum':
     '{total} kWh en 30 jours\u00a0: chauffage {heat}, chauffe-eau {water}, recharge VÉ {ev}, reste de la maison {rest}.',
   'energy.detail.yearCaption': '12 derniers mois. Les mois avec des données manquantes paraissent plus courts.',
@@ -637,8 +638,6 @@ export const fr: Record<MessageKey, string> = {
     'Puissance en direct\u00a0: le compteur Hilo à gauche, le capteur de chaque appareil à droite.',
   'energy.sankey.noteToday': 'Énergie depuis minuit, {kwh} kWh jusqu’ici.',
   'energy.sankey.noteDays': '{days} derniers jours, {kwh} kWh en tout.',
-  'energy.sankey.noData': 'Pas encore de données.',
-  'energy.sankey.empty': 'Pas encore de données',
   'energy.sankey.grid': 'Réseau',
   'energy.sankey.otherRooms': 'Autres pièces',
   'energy.sankey.label':

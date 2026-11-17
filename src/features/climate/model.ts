@@ -9,6 +9,7 @@ import {degrees, fixedOr} from '../../core/i18n/format.ts';
 import {roomName} from '../../core/i18n/room-name.ts';
 import {FUJITSU_BRAND, NO_TARGET_MODES, type HeatPumpInputs} from '../../providers/heat-pump.ts';
 import {DEFAULT_MAX_TEMP, FROST_GUARD, OFF_AT_OR_BELOW, type RoomPower} from '../../providers/power.ts';
+import {emptyChartText} from '../../ui/chart-notice.ts';
 import type {Overlay} from '../../ui/overlay-store.ts';
 import {RANGES, type Range} from '../../ui/ranges.ts';
 import {dialGeometry, type DialGeometry} from './dial-geometry.ts';
@@ -656,9 +657,9 @@ function figuresOf(
   };
 }
 
-/** What stands in a chart's place before there is a line: the loading word, or the failure's. */
-function waiting(loaded: boolean, {t, historyFailed}: ClimateModelDeps): ChartNotice | null {
-  if (loaded) return null;
+/** What stands in a chart's place before there is a line: the loading word, the failure's, or, once loaded with nothing to draw (`dry`), the kit's empty sentence. */
+function waiting(loaded: boolean, {t, historyFailed}: ClimateModelDeps, dry = false): ChartNotice | null {
+  if (loaded) return dry ? {kind: 'empty', text: emptyChartText(t)} : null;
   return historyFailed
     ? {kind: 'failed', text: t('climate.historyUnavailable')}
     : {kind: 'loading', text: t('climate.historyLoading')};
@@ -676,6 +677,7 @@ function chartBlock(
   range: Range,
   loaded: boolean,
   deps: ClimateModelDeps,
+  dry: boolean,
 ): ChartBlock {
   const {t} = deps;
   const house = selection === 'house';
@@ -688,7 +690,7 @@ function chartBlock(
       ...(house ? [] : [{name: t('climate.chart.setpoint'), color: SETPOINT_LINE, dashed: true}]),
       {name: t('climate.chart.outside'), color: OUTSIDE_LINE, dashed: false},
     ],
-    notice: waiting(loaded, deps),
+    notice: waiting(loaded, deps, dry),
   };
 }
 
@@ -698,13 +700,16 @@ function heatmapBlock(
   range: Range,
   loaded: boolean,
   deps: ClimateModelDeps,
+  dry: boolean,
 ): HeatmapBlock {
   const {t} = deps;
   return {
     title: t(RANGE_WORDS[range].heatTitle),
     hint: t('climate.heatHint'),
     rooms: [...rooms].reverse().map(room => ({key: room.key, name: roomName(room, deps)})),
-    notice: waiting(loaded, deps) ?? (rooms.length ? null : {kind: 'empty', text: t('climate.noThermostats')}),
+    notice:
+      waiting(loaded, deps, dry && rooms.length > 0) ??
+      (rooms.length ? null : {kind: 'empty', text: t('climate.noThermostats')}),
   };
 }
 
@@ -728,7 +733,9 @@ export function climateModel(
   const figures = figuresOf(history, range, selection, rooms);
   const head = headOf(pump, room, inputs, deps, items, figures);
   const {t, fmt} = deps;
-  const heatmap = deps.compact ? null : heatmapBlock(rooms, range, figures !== null, deps);
+  // loaded, and no room read anything over the range: the heatmap is empty; the chart is when its own selection has no reading
+  const dry = !!history && figures !== null && Object.values(history.rooms).every(readings => readings.length === 0);
+  const heatmap = deps.compact ? null : heatmapBlock(rooms, range, figures !== null, deps, dry);
   return {
     summary: summaryOf(inputs, deps),
     items,
@@ -745,7 +752,7 @@ export function climateModel(
       tiles: head.tiles,
       note: head.note,
       controls: head.controls,
-      chart: chartBlock(head, selection, range, figures !== null, deps),
+      chart: chartBlock(head, selection, range, figures !== null, deps, figures !== null && figures.span === null),
       heatmap,
     },
   };

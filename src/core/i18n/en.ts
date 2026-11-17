@@ -380,6 +380,8 @@ export const en = {
   // the chart element (src/ui/chart.ts)
   'chart.label': 'Chart',
   'chart.noData': 'No history yet',
+  // what a chart's place says, in place of empty axes, when its range holds nothing yet (src/ui/chart-notice.ts)
+  'chart.empty': 'No history yet. It fills in as Home Assistant records the next hour.',
   // the history ranges (src/ui/ranges.ts)
   'range.day.tab': 'Day',
   'range.week.tab': 'Week',
@@ -587,7 +589,8 @@ export const en = {
   'energy.tile.ev': 'EV charging',
   // the water heater's card and its 24-hour chart (src/features/energy/water-chart.ts)
   'energy.water.title': 'Water heater',
-  // the Home pane's Energy and Water heater tiles (src/features/energy/glance.ts, #267)
+  // the Home pane's Energy and Water heater tiles (src/features/energy/glance.ts, #267); a tile whose sensor reads nothing says so in its line's style, and so does the live Sankey
+  'energy.noReading': 'No reading',
   'energy.glance.line': 'Now · {kwh} kWh today · {rate}',
   'energy.glance.lineNow': 'Now · {rate}',
   'energy.glance.water': '{state} · {kwh} kWh today',
@@ -643,7 +646,6 @@ export const en = {
   'energy.detail.month': 'Last 30 days, day by day',
   'energy.detail.year': 'Month by month',
   'energy.detail.busiest': 'Busiest hour: {kwh} kWh, {when}. Tap a bar to see what was running.',
-  'energy.detail.noHour': 'No complete hour yet today.',
   'energy.detail.monthSum':
     '{total} kWh in 30 days: room heating {heat}, water heating {water}, EV charging {ev}, rest of home {rest}.',
   'energy.detail.yearCaption': 'Last 12 months. Months with missing data look shorter.',
@@ -653,8 +655,6 @@ export const en = {
   'energy.sankey.noteNow': "Live power: the Hilo meter on the left, each device's own sensor on the right.",
   'energy.sankey.noteToday': 'Energy since midnight, {kwh} kWh so far.',
   'energy.sankey.noteDays': 'Last {days} days, {kwh} kWh in all.',
-  'energy.sankey.noData': 'No data yet.',
-  'energy.sankey.empty': 'No data yet',
   'energy.sankey.grid': 'Grid',
   'energy.sankey.otherRooms': 'Other rooms',
   'energy.sankey.label':

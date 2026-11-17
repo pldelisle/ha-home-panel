@@ -282,6 +282,9 @@ describe('in French', () => {
 });
 
 describe('the detail', () => {
+  const NO_HISTORY = 'No history yet. It fills in as Home Assistant records the next hour.';
+  const NO_HISTORY_FR =
+    'Pas encore d’historique. Il se remplit à mesure que Home Assistant enregistre la prochaine heure.';
   const {fmt} = depsOf(fullHouse, 'en');
   const today = fmt.isoDay(NOW);
   const day = (key: string, over: Partial<DailyRow> = {}): DailyRow => ({
@@ -343,12 +346,13 @@ describe('the detail', () => {
   });
 
   describe('the main chart’s words', () => {
-    test('today: the busiest hour of the day’s hours, and none when there is no complete hour', () => {
+    test('today: the busiest hour of the day’s hours, and the one empty-state sentence when there is no complete hour', () => {
       expect(detail({}).main).toMatchObject({
+        notice: null,
         title: 'Today, hour by hour',
         caption: 'Busiest hour: 10.0 kWh, 1:00 pm. Tap a bar to see what was running.',
       });
-      expect(detail({flow: []}).main.caption).toBe('No complete hour yet today.');
+      expect(detail({flow: []}).main).toMatchObject({caption: '', notice: NO_HISTORY});
     });
 
     test('the week: the same, with the day of the hour, over the last seven days', () => {
@@ -377,7 +381,7 @@ describe('the detail', () => {
       });
       const quiet = detail({monthly: [['2026-01', {heat: 50, wh: 0, ev: 0, rest: 0}]]}, {range: 'year'});
       expect(quiet.main.caption).toBe('Last 12 months. Months with missing data look shorter.');
-      expect(detail({monthly: []}, {range: 'year'}).main.caption).toBe(quiet.main.caption);
+      expect(detail({monthly: []}, {range: 'year'}).main).toMatchObject({caption: '', notice: NO_HISTORY});
     });
 
     test('in French the words and the figures are French’s own', () => {
@@ -389,6 +393,47 @@ describe('the detail', () => {
       expect(peak.main.caption).toBe(
         '12 derniers mois. Le chauffage a culminé en janvier : 300 kWh. Les mois avec des données manquantes paraissent plus courts.',
       );
+    });
+  });
+
+  describe('no history yet: each chart card says so once', () => {
+    // what the bare house's recorder replies: no hour, no day, no month, a meter that read nothing
+    const blank: Partial<EnergyHistoryData> = {
+      flow: [],
+      daily: [],
+      monthly: [],
+      g30: [0, 0, 0, 0],
+      totals: {today: 0, yesterday: null, d30: 0, month: 0},
+    };
+
+    test.each(['now', 'today', 'week', 'month', 'year'] as const)(
+      '%s: the main chart, the Sankey, the donut and the totals are a title and the one sentence',
+      range => {
+        const view = detail(blank, {range});
+        expect(view.main).toMatchObject({caption: '', legend: [], notice: NO_HISTORY});
+        expect(view.donut).toMatchObject({parts: [], rows: [], hint: '', notice: NO_HISTORY});
+        expect(view.totals).toMatchObject({tiles: [], hint: '', notice: NO_HISTORY});
+        if (range !== 'now') expect(view.sankey).toMatchObject({note: '', body: {kind: 'empty', text: NO_HISTORY}});
+      },
+    );
+
+    test('in French the sentence is French’s own', () => {
+      const view = detail(blank, {}, 'fr');
+      expect([view.main.notice, view.donut.notice, view.totals.notice]).toEqual([
+        NO_HISTORY_FR,
+        NO_HISTORY_FR,
+        NO_HISTORY_FR,
+      ]);
+    });
+
+    test('with history nothing changes: no card has a notice', () => {
+      const view = detail({}, {range: 'week'});
+      expect([view.main.notice, view.donut.notice, view.totals.notice]).toEqual([null, null, null]);
+    });
+
+    test('while the history loads the cards say loading, not that there is none', () => {
+      const view = detail(null);
+      expect([view.main.notice, view.donut.notice, view.totals.notice]).toEqual([null, null, null]);
     });
   });
 
@@ -429,7 +474,7 @@ describe('the detail', () => {
       const dead = {...inputs, power: {...inputs.power, grid: 0}};
       const {t, fmt: formats, names} = depsOf(fullHouse, 'en');
       const {sankey} = energyModel(dead, null, {now: NOW, t, fmt: formats, names, language: 'en'}).detail;
-      expect(sankey).toMatchObject({note: 'No data yet.', body: {kind: 'empty', text: 'No data yet'}});
+      expect(sankey).toMatchObject({note: '', body: {kind: 'empty', text: 'No reading'}});
     });
 
     test('today: the day’s uses and rooms as ribbons, the rooms named, and the note with the day’s total', () => {
@@ -449,9 +494,9 @@ describe('the detail', () => {
 
     test('today without a day that is today, or without the history, has nothing to draw', () => {
       const yesterday = detail({daily: [day('2026-11-06')]}, {range: 'today'}).sankey;
-      expect(yesterday).toMatchObject({note: 'No data yet.', body: {kind: 'empty', text: 'No data yet'}});
+      expect(yesterday).toMatchObject({note: '', body: {kind: 'empty', text: NO_HISTORY}});
       expect(detail({daily: []}, {range: 'today'}).sankey.body.kind).toBe('empty');
-      expect(detail(null, {range: 'today'}).sankey.body.kind).toBe('empty');
+      expect(detail(null, {range: 'today'}).sankey.body).toEqual({kind: 'empty', text: 'Loading history…'});
       expect(detail(null, {range: 'month'}).sankey.body.kind).toBe('empty');
     });
 
@@ -537,9 +582,9 @@ describe('the detail', () => {
       expect(detail({daily: days}, {range: 'year'}).donut.hint).toMatch(/^Last 365 days\. /);
     });
 
-    test('today with no day that is today draws a donut of nothing: every share is zero, and French puts a narrow space before the sign', () => {
+    test('today with no day that is today draws no donut but the one sentence; in French the share has a narrow space before the sign', () => {
       const old = day('2026-11-06', {heat: 1, wh: 1, ev: 1, rest: 1});
-      expect(detail({daily: [old]}).donut.rows.map(row => row.share)).toEqual(['0%', '0%', '0%', '0%']);
+      expect(detail({daily: [old]}).donut).toMatchObject({notice: NO_HISTORY, parts: [], rows: [], hint: ''});
       expect(detail({daily: [day(today, {heat: 1, wh: 1, ev: 1, rest: 1})]}, {}, 'fr').donut.rows[0]).toMatchObject({
         kwh: '1,0 kWh',
         share: '25\u202f%',
@@ -562,6 +607,18 @@ describe('the detail', () => {
         {label: 'EV, 30 days', value: '40', unit: 'kWh', sub: '3 charging days'},
         {label: 'Rate now', value: '–', unit: '¢', sub: 'Hilo rate unknown'},
       ]);
+    });
+
+    test('a meter that read nothing and no day: the totals are the one sentence, no tile of 0 kWh', () => {
+      const none = {today: 0, yesterday: null, d30: 0, month: 0};
+      expect(detail({daily: [], totals: none}).totals).toEqual({
+        title: 'Totals',
+        hint: '',
+        notice: NO_HISTORY,
+        tiles: [],
+      });
+      expect(detail({daily: [], totals: none}, {}, 'fr').totals.notice).toBe(NO_HISTORY_FR);
+      expect(detail({}).totals.notice).toBeNull();
     });
 
     test('yesterday is a dash when no day says it, and one charging day is singular, none plural', () => {

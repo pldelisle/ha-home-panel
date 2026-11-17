@@ -6,6 +6,10 @@
     },
     {
       "key": "chart.noData"
+    },
+    {
+      "key": "chart.empty",
+      "written": "Pas encore d’historique. Il se remplit à mesure que Home Assistant enregistre la prochaine heure."
     }
   ]
 }

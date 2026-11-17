@@ -11,8 +11,9 @@ import {sum} from '../../providers/power-history.ts';
 import type {Names} from '../../core/i18n/names.ts';
 import {roomName} from '../../core/i18n/room-name.ts';
 import type {RangeTab} from '../../ui/range-tabs.ts';
+import {emptyChartText} from '../../ui/chart-notice.ts';
 import {RANGES} from '../../ui/ranges.ts';
-import {ENERGY_RANGES, mainRows, middleOf, type EnergyRange} from './charts.ts';
+import {ENERGY_RANGES, mainRows, middleOf, type EnergyRange, type MainRows} from './charts.ts';
 import {flowLayout, LIVE_KW, type FlowGeometry} from './flow-layout.ts';
 import {
   GROUPS,
@@ -140,6 +141,9 @@ export interface DonutRow extends LegendItem {
   share: string;
 }
 
+/** What stands in a card's place when its range holds no history yet: the one sentence, in place of axes, a donut or tiles of 0 kWh; null when the card draws. */
+export type Notice = string | null;
+
 export interface EnergyDetailView {
   title: string;
   /** The same sentence as the pane's. */
@@ -148,10 +152,10 @@ export interface EnergyDetailView {
   error: string | null;
   /** The range tabs, now to year. */
   ranges: RangeTab<EnergyRange>[];
-  main: {title: string; caption: string; legend: LegendItem[]};
+  main: {title: string; caption: string; legend: LegendItem[]; notice: Notice};
   sankey: {title: string; note: string; body: SankeyBody};
-  donut: {title: string; hint: string; parts: (LegendItem & {kwh: number})[]; rows: DonutRow[]};
-  totals: {title: string; hint: string; tiles: EnergyTile[]};
+  donut: {title: string; hint: string; parts: (LegendItem & {kwh: number})[]; rows: DonutRow[]; notice: Notice};
+  totals: {title: string; hint: string; tiles: EnergyTile[]; notice: Notice};
 }
 
 export interface EnergyViewModel {
@@ -211,18 +215,30 @@ type DetailDeps = Required<Pick<EnergyModelDeps, 'now' | 't' | 'fmt' | 'names' |
 
 const legendOf = (t: Translate): LegendItem[] => GROUPS.map(key => ({key, name: t(GROUP_WORDS[key])}));
 
+/** The main chart's title, by the shape of the rows it draws. */
+const MAIN_TITLES: Record<MainRows['range'], MessageKey> = {
+  today: 'energy.detail.today',
+  week: 'energy.detail.week',
+  month: 'energy.detail.month',
+  year: 'energy.detail.year',
+};
+
 /** The main chart's title and caption for a range: the busiest hour of the hours it draws, the 30 days' split, or the month the heating peaked in. */
 function mainBlock(history: EnergyHistoryData | null, {now, t, fmt, range}: DetailDeps): EnergyDetailView['main'] {
   const legend = legendOf(t);
-  if (!history) return {title: t('energy.detail.loading'), caption: '', legend};
+  if (!history) return {title: t('energy.detail.loading'), caption: '', legend, notice: null};
   const main = mainRows(range, history, {fmt, now});
+  const title = t(MAIN_TITLES[main.range]);
+  // no row to draw: the title and the one sentence, no caption, no legend and no axes
+  if (!main.rows.length) return {title, caption: '', legend: [], notice: emptyChartText(t)};
   if (main.range === 'month') {
     const [heat, water, ev, rest] = history.g30.map(kwh => whole(fmt, kwh));
     const total = whole(fmt, sum(history.g30));
     return {
-      title: t('energy.detail.month'),
+      title,
       caption: t('energy.detail.monthSum', {total, heat, water, ev, rest}),
       legend,
+      notice: null,
     };
   }
   if (main.range === 'year') {
@@ -231,21 +247,20 @@ function mainBlock(history: EnergyHistoryData | null, {now, t, fmt, range}: Deta
       undefined,
     );
     return {
-      title: t('energy.detail.year'),
+      title,
       caption:
         top && top[1].heat > HEATING_PEAK_KWH
           ? t('energy.detail.yearPeak', {month: fmt.month(middleOf(top[0]), 'long'), kwh: fmt.integer(top[1].heat)})
           : t('energy.detail.yearCaption'),
       legend,
+      notice: null,
     };
   }
   const {rows} = main;
-  const title = t(main.range === 'today' ? 'energy.detail.today' : 'energy.detail.week');
-  if (!rows.length) return {title, caption: t('energy.detail.noHour'), legend};
   const busiest = rows.reduce((best, row) => (row[5] > best[5] ? row : best), rows[0]);
   const day = main.range === 'week' ? `${fmt.weekday(busiest[0], 'short')} ` : '';
   const when = `${day}${fmt.time(busiest[0])}`;
-  return {title, caption: t('energy.detail.busiest', {kwh: fmt.fixed(busiest[5], 1), when}), legend};
+  return {title, caption: t('energy.detail.busiest', {kwh: fmt.fixed(busiest[5], 1), when}), legend, notice: null};
 }
 
 /** What a period of the Sankey draws: the grid's total, the four uses in the order of `GROUPS`, the rooms' shares, the figure's format and the note. */
@@ -296,17 +311,19 @@ function sankeyBlock(
 ): EnergyDetailView['sankey'] {
   const {t, names, language, range} = deps;
   const {power} = inputs;
-  const empty = (): SankeyBody => ({kind: 'empty', text: t('energy.sankey.empty')});
+  // an empty body says its one sentence and has no note: no reading from the grid (live), the history still loading, or no history yet
+  const empty = (text: string) => block('', {kind: 'empty', text});
   const block = (note: string, body: SankeyBody) => ({title: t('energy.sankey.title'), note, body});
   const {sankey} = periodsOf(range);
   if (sankey === 'live') {
     // the live flow is the power flow's geometry; with no reading from the grid there is nothing to show
     return (power.grid ?? 0) > 0
       ? block(t('energy.sankey.noteNow'), {kind: 'flow', flow})
-      : block(t('energy.sankey.noData'), empty());
+      : empty(t('energy.noReading'));
   }
+  if (!history) return empty(t('energy.detail.loading'));
   const period = sankeyPeriod(sankey, history, power.rooms.length, deps);
-  if (!period || period.total <= 0) return block(t('energy.sankey.noData'), empty());
+  if (!period || period.total <= 0) return empty(emptyChartText(t));
   const words = legendOf(t);
   const geometry = sankeyLayout(
     {
@@ -334,9 +351,13 @@ function donutBlock(history: EnergyHistoryData | null, deps: DetailDeps): Energy
   const uses = history ? groupTotals(daysOf(history, days, deps), days) : [];
   const parts = history ? legendOf(t).map((use, index) => ({...use, kwh: uses[index]})) : [];
   const total = sum(parts.map(part => part.kwh));
+  // a loaded history whose period holds nothing draws no donut of 0 kWh: the title and the one sentence
+  if (history && total <= 0)
+    return {title: t('energy.donut.title'), hint: '', parts: [], rows: [], notice: emptyChartText(t)};
   return {
     title: t('energy.donut.title'),
     hint: t('energy.donut.hint', {days}),
+    notice: null,
     parts,
     rows: parts.map(({key, name, kwh}) => ({
       key,
@@ -355,12 +376,16 @@ function totalsBlock(
 ): EnergyDetailView['totals'] {
   const title = t('energy.totals.title');
   const hint = t('energy.totals.hint');
-  if (!history) return {title, hint, tiles: []};
+  if (!history) return {title, hint, tiles: [], notice: null};
   const {totals, g30} = history;
+  // a meter that read nothing and no day: no tile of 0 kWh and dashes, the one sentence
+  if (!history.daily.length && !totals.today && totals.yesterday === null && !totals.d30 && !totals.month)
+    return {title, hint: '', tiles: [], notice: emptyChartText(t)};
   const chargingDays = history.daily.slice(-30).filter(row => row.ev > EV_DAY_KWH).length;
   return {
     title,
     hint,
+    notice: null,
     tiles: [
       {
         label: t('energy.totals.today'),

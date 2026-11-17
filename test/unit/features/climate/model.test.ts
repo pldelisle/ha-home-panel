@@ -180,7 +180,14 @@ describe('the test house, on the tablet', () => {
       Array(2).fill({kind: 'failed', text: 'History is not available right now.'}),
     );
     // loaded: nothing stands in for a chart, and a week's words follow the range
-    const ready = modelOf(fullHouse, 'house', {range: 'week', history: loaded({}, 'week')}).detail;
+    const everyRoom = {
+      bedroom: points(18, 19, 20),
+      garage: points(18, 19, 20),
+      living_room: points(18),
+      office: points(18),
+    };
+    const readings = {rooms: everyRoom};
+    const ready = modelOf(fullHouse, 'house', {range: 'week', history: loaded(readings, 'week')}).detail;
     expect([ready.chart.notice, ready.heatmap?.notice]).toEqual([null, null]);
     expect(ready.heatmap?.title).toBe('Every room, every 6 hours');
     // the outside's temperature is the detail chart's line: the tablet has no outside chart of its own
@@ -192,6 +199,22 @@ describe('the test house, on the tablet', () => {
       ['Setpoint', true],
       ['Outside', false],
     ]);
+  });
+
+  test('a loaded range with no reading at all says so once, in the kit’s sentence, where the chart and the heatmap would be', () => {
+    const sentence = 'No history yet. It fills in as Home Assistant records the next hour.';
+    const dry = modelOf(fullHouse, 'house', {history: loaded()}).detail;
+    expect(dry.chart.notice).toEqual({kind: 'empty', text: sentence});
+    expect(dry.heatmap?.notice).toEqual({kind: 'empty', text: sentence});
+    // a room with readings keeps its chart even when another room has none
+    const one = modelOf(fullHouse, 'bedroom', {history: loaded({rooms: {bedroom: points(18, 19)}})}).detail;
+    expect([one.chart.notice, one.heatmap?.notice]).toEqual([null, null]);
+    expect(
+      modelOf(fullHouse, 'garage', {history: loaded({rooms: {bedroom: points(18, 19)}})}).detail.chart.notice,
+    ).toEqual({kind: 'empty', text: sentence});
+    expect(modelOf(fullHouse, 'house', {history: loaded(), language: 'fr'}).detail.chart.notice?.text).toBe(
+      'Pas encore d’historique. Il se remplit à mesure que Home Assistant enregistre la prochaine heure.',
+    );
   });
 
   test('a house with no thermostat has no heatmap to draw, once loaded; the words are French in French', () => {
