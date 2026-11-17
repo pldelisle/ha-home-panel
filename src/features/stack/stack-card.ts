@@ -8,6 +8,7 @@ import {LitElement, html, nothing, svg, unsafeCSS, type TemplateResult} from 'li
 import {ifDefined} from 'lit/directives/if-defined.js';
 import {styleMap} from 'lit/directives/style-map.js';
 import type {BodyPart, Go, StackCard} from './cards.ts';
+import type {StackMode} from './model.ts';
 import cardOwn from './stack-card.element.css?inline';
 import {DASH} from '../../core/figures.ts';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
@@ -110,7 +111,7 @@ export class StackCardElement extends LitElement {
   static override properties = {card: {attribute: false}, mode: {reflect: true}};
   declare card: StackCard | undefined;
   /** Where the card sits: the Home card's slot, or beside the idle clock. */
-  declare mode: 'home' | 'idle';
+  declare mode: StackMode;
 
   // The element's own rules, its `:host`, the card's box and every part's, in both places, are in stack-card.element.css.
   static override styles = [common, unsafeCSS(forShadow(cardOwn))];

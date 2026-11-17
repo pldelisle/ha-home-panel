@@ -906,6 +906,9 @@
   gap: 14px;
   text-align: left;
 }
+.idle .ssk[hidden] {
+  display: none;
+}
 @media (max-aspect-ratio: 1/1) {
   .idle .ss {
     flex-direction: column;

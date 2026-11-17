@@ -879,6 +879,8 @@ export class LegacyPanel {
     added.addEventListener('hp-empty', e => {
       added.hidden = e.detail.empty;
     });
+    // a tap on a card stays in the Home card, as the legacy handler kept it: the page's own click closes the popups
+    added.addEventListener('click', e => e.stopPropagation());
   }
   // the word under each section in the phone's More sheet, in English, for the registry's summary
   moreLines() {
