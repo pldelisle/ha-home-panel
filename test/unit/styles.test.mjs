@@ -53,7 +53,7 @@ beforeAll(async () => {
 afterAll(() => rmSync(scratch, {recursive: true, force: true}));
 
 test('the minified stylesheet is the one inside the entry, and it is smaller than the source', () => {
-  expect(css.length).toBeGreaterThan(45_000); // 50 000 until the Home move (#268) took its rules into the elements and the shell's root
+  expect(css.length).toBeGreaterThan(35_000); // 50 000 until the Home move (#268), 45 000 until the Automations move (#273) took their rules into the elements and the shell's root
   expect(css.length).toBeLessThan(source.length * 0.9);
   // the entry carries the string either between double quotes or in a template; compare a piece from the middle,
   // which has no quote or backslash of its own to escape differently. Each file the sheet joins is its own string in the
@@ -75,7 +75,7 @@ test('every rule with a backdrop-filter keeps the unprefixed one, the glass', ()
   // the pair into the second, which Chromium does not implement (the idle stack card lost its blur). So the source
   // writes the prefixed line first, always, and the count of unprefixed lines is the same before and after.
   const unprefixed = text => count(text, /(?<!-)backdrop-filter/g);
-  expect(unprefixed(source)).toBeGreaterThan(15);
+  expect(unprefixed(source)).toBeGreaterThan(12); // 15 until the Automations move (#273) took its cards' glass
   expect(unprefixed(css)).toBe(unprefixed(source));
   expect(source).not.toMatch(/(?<!-)backdrop-filter:[^;]+;\s*-webkit-backdrop-filter/);
 });
@@ -86,8 +86,8 @@ test('every color-mix() the source writes is still in the stylesheet, as written
   const expressions = text => new Set([...text.matchAll(/color-mix\([^;}]*/g)].map(m => m[0].replace(/\s+/g, '')));
   const have = expressions(css);
   const want = expressions(source);
-  // a floor that proves the pattern still finds them; the smart stack's took six to its elements' own sheets (#266)
-  expect(want.size).toBeGreaterThan(30);
+  // a floor that proves the pattern still finds them; the smart stack's took six to its elements' own sheets (#266), the Automations' ten (#273)
+  expect(want.size).toBeGreaterThan(20);
   expect([...want].filter(e => !have.has(e))).toStrictEqual([]);
 });
 

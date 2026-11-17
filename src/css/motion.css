@@ -6,9 +6,7 @@
 @media (prefers-reduced-motion: no-preference) {
   .rtab,
   .head button.icon,
-  .ausel .close,
   .go,
-  button.chip,
   .more {
     transition:
       transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
@@ -21,9 +19,7 @@
   }
 }
 .head button.icon:active,
-.ausel .close:active,
 .go:active,
-button.chip:active,
 .more:active {
   transform: scale(0.96);
 }

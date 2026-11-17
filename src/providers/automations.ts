@@ -54,6 +54,9 @@ export interface SunNext {
   nextSetting: string | null;
 }
 
+/** The entities `sunNext` reads: a reader of it listens to these. */
+export const SUN_IDS = ['sun.sun', 'sensor.sun_next_rising', 'sensor.sun_next_setting'] as const;
+
 export function sunNext(states: HassEntities): SunNext {
   const read = (attribute: string, sensor: string): string | null => {
     const v: unknown = states['sun.sun']?.attributes[attribute];

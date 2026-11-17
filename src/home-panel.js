@@ -2,7 +2,6 @@
 // Registered with panel_custom, so it runs inside the HA frontend and uses the signed-in user's connection.
 // Nothing secret lives in this file: the house's entities, rooms and people come from the panel's config (see core/config.ts) or are found in hass.
 import {FR_ATTR, createFrench} from './i18n/fr.js';
-import {autoMethods} from './auto.js';
 import {browserDefaults} from './core/i18n/browser.ts';
 import {createFormatters} from './core/i18n/format.ts';
 import {englishLocale, panelLocale} from './core/i18n/locale.ts';
@@ -39,11 +38,8 @@ export class LegacyPanel {
     //   fmtEn    English, the house's zone: every other site, because the rewrite layer parses English (deleted in phase 4)
     this.localeKey = '';
     this.frDrawn = false; // whether the panel was last drawn in French
-    this.onStore = () => {
-      this.refreshFormatters(); // before the render, which reads them
-      this.tick();
-    };
-    this.unsubStore = null; // the one path to the one-second render, subscribed in connect
+    this.onStore = () => this.refreshFormatters();
+    this.unsubStore = null; // the formatters follow the store's language and zone, subscribed in connect
     this.drawnTab = 'home'; // the tab the guest last drew its part of (tabChanged); `tab` is the shell's
     this.framed = false; // whether build() has drawn once, so the next draw asks the shell for a fresh frame
     this.cache = {}; // last innerHTML per container, to skip identical updates
@@ -63,10 +59,7 @@ export class LegacyPanel {
   }
   // the shell fed the store the new config; draw again when it is a different one (configure)
   panelChanged() {
-    if (this.hass && this.configure()) {
-      this.build();
-      this.tick();
-    }
+    if (this.hass && this.configure()) this.build();
   }
   /**
    * @returns {any} loose on purpose: the class reads registry fields (hidden, platform, manufacturer, entity_category)
@@ -230,7 +223,6 @@ export class LegacyPanel {
     this.theme = this.ctx.shell.appearance.theme;
     this.$app.lang = (this.store.isFrench ? this.locale : this.localeEn).tag;
     if (this.store.isFrench) this.frStart();
-    this.wire();
     this.ctx.shell.idle.arm(); // a draw counts as a touch, as it did: the five minutes start over, and an idle panel wakes
     this.tabChanged(this.tab);
     this.lensAll();
@@ -266,25 +258,6 @@ export class LegacyPanel {
     this.$app.classList.toggle('mc', on);
   }
 
-  // ---------- events ----------
-  wire() {
-    this.$('pane-auto').addEventListener('click', e => {
-      const r = e.target.closest('[data-run]'),
-        c = e.target.closest('[data-au]'),
-        x = e.target.closest('[data-auclose]');
-      if (!r && !c && !x) return;
-      this.auSel = x ? null : r ? {item: r.dataset.item, run: r.dataset.run} : {item: c.dataset.au, run: null};
-      this.cache.auhost = null;
-      this.auLoad(true);
-      this.renderAuto();
-      if (!x) {
-        const h = this.$('auhost');
-        const card = h && h.querySelector('.ausel');
-        if (card) card.scrollIntoView({behavior: 'smooth', block: 'start'});
-      }
-    });
-  }
-
   // The shell draws the toast (<hp-toast>, #275): this asks for one as an element does, with a `ToastEvent`'s shape (the legacy code may
   // not import the kit), in French when the panel is, as the rewrite layer made it of the light DOM. Deleted with the guest (#277).
   toast(msg, sticky) {
@@ -295,21 +268,6 @@ export class LegacyPanel {
         detail: {message: this.french.text(msg), sticky: !!sticky},
       }),
     );
-  }
-
-  // ---------- live rendering, throttled ----------
-  tick() {
-    if (this.tickQ) return;
-    const wait = Math.max(0, 1000 - (Date.now() - (this.lastTick || 0)));
-    this.tickQ = setTimeout(() => {
-      this.tickQ = null;
-      this.lastTick = Date.now();
-      this.renderLive();
-    }, wait);
-  }
-  renderLive() {
-    if (!this.hass) return;
-    this.renderTabs();
   }
 
   // ---------- live values ----------
@@ -329,7 +287,6 @@ export class LegacyPanel {
   compactChanged() {
     if (!this.$app) return; // nothing drawn yet: the first draw reads the shell
     this.cache = {};
-    this.renderLive();
   }
   // the word under each section in the phone's More sheet, in English, for the registry's summary
   moreLines() {
@@ -338,14 +295,11 @@ export class LegacyPanel {
     const X = this.doorSensors(),
       open = X.filter(x => x.kind === 'door' && x.on).length,
       moving = X.some(x => x.kind === 'motion' && x.on);
-    const A = this.auAutos ? this.auAutos() : [],
-      running = A.filter(a => a.current).length;
     const sb = {
       energy: L.grid == null ? '' : `${L.grid < 1 ? Math.round(L.grid * 1000) + ' W' : L.grid.toFixed(2) + ' kW'} now`,
       cams: [open ? plural(open, 'door') + ' open' : 'Doors closed', moving ? 'motion now' : '']
         .filter(Boolean)
         .join(' · '),
-      auto: running ? `${running} running` : A.length ? plural(A.length, 'automation') : '',
     };
     return sb;
   }
@@ -367,7 +321,6 @@ export class LegacyPanel {
     const prev = this.drawnTab;
     this.drawnTab = t;
     this.sheets.paneShown(t); // the host shows this pane's legacy detail panel inline, on a tablet: none has one since #252, and #188 deletes this call
-    this.renderTabs();
     // on a phone each section starts at the top, as an app's tabs do
     if (this.compact && prev && prev !== t) {
       try {
@@ -375,18 +328,8 @@ export class LegacyPanel {
       } catch {}
     }
   }
-  renderTabs() {
-    if (!this.$app || !this.hass) return;
-    try {
-      this.renderAuto();
-    } catch (e) {
-      console.error('home-panel tabs', 'renderAuto', e);
-    }
-  }
   // which tabs this house lacks (false: nothing for it), for the shell's registry: none of the tabs the guest still draws has an opinion, Climate's and Car's are their descriptors' `available`
   availability() {
     return {};
   }
 }
-
-Object.assign(LegacyPanel.prototype, autoMethods);

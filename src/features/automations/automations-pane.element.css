@@ -1,0 +1,19 @@
+/*
+ * <hp-automations-pane>'s own rules: it has no box of its own, so the header and the column are items of the pane section, as the
+ * legacy header and `#auhost` were; the column sets its cards sixteen pixels apart. The header sits closer to the column than the
+ * kit's, and on a phone as every pane's header does there (phone.css).
+ */
+:host {
+  display: contents;
+}
+hp-pane-header {
+  margin-bottom: 2px;
+}
+:host([compact]) hp-pane-header {
+  margin-bottom: 0;
+}
+.auhost {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}

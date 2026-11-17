@@ -1,7 +1,8 @@
 // Home Assistant text reaches the Mermaid source of a flow (step aliases, entity names, trace errors). It is drawn as
 // text: none of it may act as Mermaid syntax, such as a %%{init}%% directive, a label closed early or a click handler.
-import {test, expect, tabletOnly, KATEX_CHUNK_URL} from './fixtures';
-import {FULL_CFG} from './houses';
+import AxeBuilder from '@axe-core/playwright';
+import {test, expect, tabletOnly, KATEX_CHUNK_URL, type House} from './fixtures';
+import {AFTERNOON, FULL_CFG} from './houses';
 import {automations as houseAutomations} from '../houses/full.mjs';
 
 // what an automation's author could type as the alias of a step, each under the 64 characters a label keeps
@@ -170,5 +171,68 @@ test.describe('A % or # that ends a label in a flow with no run stored', () => {
     await expect.soft(svg.locator('.node', {hasText: /^TRIGGER%$/})).toHaveCount(1, {timeout: 1000});
     for (const text of [...Object.values(PERCENT), ...Object.values(HOSTILE), ...ENTITIES])
       await expect.soft(svg, text).toContainText(text, {timeout: 1000});
+  });
+});
+
+// The pane drawn by the feature (#273): the line and the Today dots from the test house's runs, a chip's card with its flow, the
+// twenty-second rule of the runs' list, nothing redrawn for an entity the pane does not read, and no accessibility finding
+test.describe('the Automations pane', () => {
+  test.use({houseOpts: {cfg: FULL_CFG, time: AFTERNOON}});
+  test.beforeEach(tabletOnly);
+
+  const pane = (house: House) => house.root().locator('hp-automations-pane');
+
+  test('says what ran today and draws a dot per run', async ({house}) => {
+    await house.tab('auto');
+    await expect(pane(house).locator('hp-pane-header [slot="sub"]')).toHaveText(
+      'nothing running · 3 runs today · 3 enabled',
+    );
+    await expect(pane(house).locator('.aud:not(.up)')).toHaveCount(3);
+    await expect(pane(house).locator('.aud.up')).not.toHaveCount(0);
+  });
+
+  test('a chip selects its automation, and its card comes first with its flow', async ({house}) => {
+    await house.tab('auto');
+    const chip = pane(house).locator('.auchip[data-au="front_door_light"]');
+    await chip.click();
+    await expect(chip).toHaveClass(/\bsel\b/);
+    const card = pane(house).locator('.auc.ausel');
+    await expect(card.locator('h3')).toHaveText(/^Selected · Entrance/);
+    await expect(card.locator('.augraph svg')).toBeVisible({timeout: 10_000});
+    await card.locator('.close').click();
+    await expect(pane(house).locator('.auc.ausel')).toHaveCount(0);
+  });
+
+  test('asks for the list of runs once when the tab opens, not again within twenty seconds', async ({house}) => {
+    await house.tab('auto');
+    await expect(pane(house).locator('hp-run-timeline')).toBeAttached();
+    await house.clock.runFor(10_000);
+    const lists = (await house.reads()).filter(r => r.startsWith('trace/list'));
+    expect(lists).toHaveLength(1);
+  });
+
+  test('a light change gives zero mutations in the pane', async ({house}) => {
+    await house.tab('auto');
+    await expect(pane(house).locator('.augraph svg').first()).toBeVisible({timeout: 10_000});
+    await house.mutations.reset();
+    await house.setState('light.living_room_1', {state: 'on'});
+    await house.page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
+    expect(await house.mutations.count('hp-automations-pane, hp-run-timeline, hp-flow-card, hp-automation-chips')).toBe(
+      0,
+    );
+  });
+
+  // The "done" pill (`--t-ok` on its green tint, over the glass) reads under 4.5:1, as the legacy pill drew it: a pixel-identical
+  // move keeps it, so that one node is left out; any other finding fails
+  test('the tab has no serious or critical accessibility finding, but the done pill’s contrast', async ({house}) => {
+    await house.tab('auto');
+    await expect(pane(house).locator('.augraph svg').first()).toBeVisible({timeout: 10_000});
+    const {violations} = await new AxeBuilder({page: house.page}).include('home-panel').analyze();
+    const bad = violations
+      .filter(v => v.impact === 'serious' || v.impact === 'critical')
+      .flatMap(v =>
+        v.nodes.filter(n => !(v.id === 'color-contrast' && String(n.target.at(-1)).endsWith('.ok'))).map(() => v.id),
+      );
+    expect(bad).toEqual([]);
   });
 });

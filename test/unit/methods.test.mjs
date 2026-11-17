@@ -2,10 +2,9 @@
 // a method removed along with the old Phone view; this catches that kind of leftover before it ships.
 import {test, expect} from 'vitest';
 import {readFileSync} from 'node:fs';
-const [panel, auto] = ['src/home-panel.js', 'src/auto.js'].map(f =>
-  readFileSync(new URL('../../' + f, import.meta.url), 'utf8'),
-);
-const src = panel + '\n' + auto;
+// src/auto.js, the Automations methods, was the second file until its move deleted it (#273)
+const panel = readFileSync(new URL('../../src/home-panel.js', import.meta.url), 'utf8');
+
 const BUILTIN = new Set([
   'attachShadow',
   'dispatchEvent',
@@ -20,11 +19,11 @@ const BUILTIN = new Set([
 ]);
 
 test('no call to a method that no longer exists', () => {
-  const called = new Set([...src.matchAll(/this\.([A-Za-z_$][\w$]*)\(/g)].map(m => m[1]));
+  const called = new Set([...panel.matchAll(/this\.([A-Za-z_$][\w$]*)\(/g)].map(m => m[1]));
   const defined = new Set(
-    [...src.matchAll(/^\s+(?:async\s+)?(?:get |set |static )?([A-Za-z_$][\w$]*)\s*\([^)]*\)\s*\{/gm)].map(m => m[1]),
+    [...panel.matchAll(/^\s+(?:async\s+)?(?:get |set |static )?([A-Za-z_$][\w$]*)\s*\([^)]*\)\s*\{/gm)].map(m => m[1]),
   );
-  const assigned = new Set([...src.matchAll(/this\.([A-Za-z_$][\w$]*)\s*=/g)].map(m => m[1]));
+  const assigned = new Set([...panel.matchAll(/this\.([A-Za-z_$][\w$]*)\s*=/g)].map(m => m[1]));
   const missing = [...called].filter(n => !defined.has(n) && !assigned.has(n) && !BUILTIN.has(n));
   expect(missing).toStrictEqual([]);
 });
@@ -64,7 +63,6 @@ test('the class takes the page and the services from the context, and is no elem
   ])
     expect(panel.includes(gone), gone).toBe(false);
   expect(panel).not.toMatch(/\b_panel\b/); // a word: the light-order key 'home_panel' is not the removed field
-  expect(auto.includes('this.shadowRoot')).toBe(false);
 });
 
 // Spec 14, step C: the rail, the phone's bar, the panes and the phone threshold are the shell's (src/shell/features.ts), so

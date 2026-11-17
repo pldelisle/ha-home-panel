@@ -1,0 +1,4 @@
+/* <hp-automation-chips>'s own rules: it has no box of its own, so its card is an item of the pane's column, as the legacy card was. */
+:host {
+  display: contents;
+}

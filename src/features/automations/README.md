@@ -1,6 +1,6 @@
 # Automations
 
-What the Automations tab reads and computes ([spec 25](../../../docs/specs/25-automations.md)): which automations exist and which of their stored runs to show, today's runs and the ones still to come, and the words of each trigger, condition and action of a flow. This folder holds the pure rules of the second move (#271) and the flow's graph and Mermaid definition (#272); the legacy panel's `src/auto.js` draws from them until the elements of #273 replace it.
+What the Automations tab reads and computes ([spec 25](../../../docs/specs/25-automations.md)): which automations exist and which of their stored runs to show, today's runs and the ones still to come, and the words of each trigger, condition and action of a flow. This folder holds the pure rules (#271), the flow's graph and Mermaid definition (#272), and the tab's elements, its loader and the Mermaid mount (#273), which replaced the legacy panel's `src/auto.js`.
 
 ## The folder
 
@@ -14,6 +14,17 @@ src/features/automations/
   graph.ts                 automationGraph(config, trace, summary, deps): the nodes keyed by the trace's paths, the edges, the run's sentence
   mermaid-def.ts           toMermaid(graph, tokens, compact); safeText and its four escapes (#97); mixHex
   timeline-layout.ts       timelineLayout(dots, widthPx, now, deps): the groups with their place, class, label row and description; dotClass
+  index.ts                 automationsFeature
+  ids.ts                   automationIds(store): every automation.* and the sun
+  loader.ts                TracesLoader: the runs every 20 s at most, the configs every 10 min, the traces of the picked runs; pickedRuns
+  model.ts                 automationsModel(inputs, data, selection, deps): the line, the Today card, the flow cards, the chips; automationsBrief
+  flow-mount.ts            mountFlow(box, def, deps): Mermaid loaded, initialized per theme, rendered once per definition, decorated
+  events.ts                SelectRunEvent, CloseSelectionEvent
+  automations-pane.ts      <hp-automations-pane>
+  run-timeline.ts          <hp-run-timeline>
+  flow-card.ts             <hp-flow-card>
+  automation-chips.ts      <hp-automation-chips>
+  styles.css               the feature's rules, adopted by the four elements
 test/unit/
   providers/automations.test.ts
   features/automations/{traces,sentences,timeline-layout,graph,mermaid-def}.test.ts

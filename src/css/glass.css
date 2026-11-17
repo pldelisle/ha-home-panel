@@ -166,51 +166,18 @@
   box-shadow: var(--g-edge);
 }
 /* v1.18.2: every other surface follows. Top-level panels (sheet sections, room list) are glass cards; inner wells (rows, segmented controls, tabs, steppers, sensor and speaker rows) take the tile fill; small buttons inside take the selected-bubble fill; tinted "on" states mix their accent into the glass instead of the opaque card */
-.app.gl .more,
-.app.gl .aupick .chip,
-.app.gl .auchips .chip,
-.app.gl .ausel .close {
+.app.gl .more {
   background: var(--g-tile);
   box-shadow: var(--g-edge-s);
-}
-.app.gl .aupick .chip.sel,
-.app.gl .auchips .chip.sel {
-  background: var(--fg);
 }
 .app.tabsv.gl .rtab:not([aria-selected='true']):active {
   background: var(--g-fill);
 }
 /* small pills and icon squares (status pills, light chips, tile icons): tile fill, tinted states keep their accent */
-.app.gl .pill,
-.app.gl .pane-auto .pill,
 .app.gl .state,
-.app.gl .go,
-.app.gl .aud.up,
-.app.gl .aud.skip {
+.app.gl .go {
   background: var(--g-tile);
   box-shadow: var(--g-edge-s);
-}
-.app.gl .pane-auto .pill.run {
-  background: color-mix(in srgb, var(--warn) 18%, var(--g-tile));
-}
-.app.gl .pane-auto .pill.no {
-  background: color-mix(in srgb, var(--crit) 16%, var(--g-tile));
-}
-.app.gl .pane-auto .pill.ok {
-  background: color-mix(in srgb, var(--ok) 18%, var(--g-tile));
-}
-/* v1.18.3: WebKit leaves ghosts of the previous flow drawing behind a blurred card (stale compositing under backdrop-filter), so on iOS the two Automations cards keep a denser plain translucent fill with no blur, and every flow drawing gets its own layer */
-.augraph {
-  isolation: isolate;
-  transform: translateZ(0);
-}
-@supports (-webkit-touch-callout: none) {
-  .app.gl .auc,
-  .app.gl .autoday {
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-    background: color-mix(in srgb, var(--g-card) 70%, var(--card));
-  }
 }
 /* Mercury drop (v1.19.0): Chromium bends the backdrop with a blurred fractal-noise displacement map (#glass-distortion in the JS); WebKit keeps the frosted look */
 .app.gl.mc {

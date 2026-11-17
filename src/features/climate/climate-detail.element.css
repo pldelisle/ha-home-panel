@@ -2,8 +2,7 @@
  * <hp-climate-detail>'s own rules: the head with its state pill, the big number on a tablet, the tiles' columns (the phone gives the Range
  * tile both) and the note. The inner card and the tiles' wells are the kit's (`.inner`, `.tiles`, `.tile`); the controls and the chart are elements of
  * their own. Moved from the legacy `.cdet`, `.big` and `#ctiles` rules (base.css, extra.css), which this move deleted; the controls' own rules
- * are `<hp-climate-controls>`'s. The state pill `.cpill` is a known copy of the legacy `.pill` (base.css, glass.css), which
- * the Automations pane still draws until its move (#273).
+ * are `<hp-climate-controls>`'s. The state pill is the kit's (pill.css), `.cpill` its Climate tones.
  */
 :host {
   display: block;
@@ -36,16 +35,6 @@
   font-size: 13px;
   padding-bottom: 6px;
 }
-.cpill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: var(--card2);
-  font-size: calc(12.5px * var(--tx));
-  font-weight: 600;
-}
 .cpill.on {
   background: color-mix(in srgb, var(--c-wh) 18%, var(--card));
   color: var(--t-wh);
@@ -53,10 +42,6 @@
 .cpill.bad {
   background: color-mix(in srgb, var(--warn) 18%, var(--card));
   color: var(--t-warn);
-}
-:host([glass]) .cpill {
-  background: var(--g-tile);
-  box-shadow: var(--g-edge-s);
 }
 :host([glass]) .cpill.on {
   background: color-mix(in srgb, var(--c-wh) 20%, var(--g-tile));

@@ -77,7 +77,11 @@ const openTab = async (house: House, tab: string) => {
 };
 
 const scanTab = async (house: House, tab: string) => {
-  if (tab === 'auto') await expect(house.root().locator('#pane-auto svg').first()).toBeVisible({timeout: 10_000});
+  // the runs are read: the Today line is drawn, and every flow the house has holds its drawing
+  if (tab === 'auto') {
+    await expect(house.root().locator('#pane-auto .autl')).toBeVisible({timeout: 10_000});
+    await expect(house.root().locator('#pane-auto .augraph:not([data-drawn])')).toHaveCount(0, {timeout: 10_000});
+  }
   await scan(house, `the ${tab} tab`);
 };
 

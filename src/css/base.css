@@ -31,30 +31,6 @@
   gap: 14px 18px;
   margin-bottom: 22px;
 }
-/* the greeting, the chips' row and the clock are <hp-header>'s (src/shell/header.css, #269); `.chip` is the Automations' chips' */
-.chip {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--card);
-  border: 0;
-  border-radius: 999px;
-  padding: 9px 15px;
-  min-height: 44px;
-  font-weight: 600;
-  white-space: nowrap;
-  box-shadow: var(--shadow);
-}
-.chip .dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-}
-.chip small {
-  font-weight: 500;
-  color: var(--fg2);
-  font-size: calc(13px * var(--tx));
-}
 .card:focus-visible {
   outline: 2px solid var(--c-home);
   outline-offset: 2px;
@@ -166,17 +142,6 @@
   font-weight: 600;
   color: var(--fg);
   cursor: pointer;
-}
-/* the state pill the Automations pane still draws (`.pane-auto .pill`, tabs.css); the Climate detail's own is a copy in its element (#244), and the Automations move (#273) deletes this one */
-.pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: var(--card2);
-  font-size: calc(12.5px * var(--tx));
-  font-weight: 600;
 }
 .lbl {
   letter-spacing: 0.04em;
