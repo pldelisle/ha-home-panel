@@ -3,7 +3,8 @@
 // (weather-tablet-light-en and -fr, bare-weather-tablet-light-en), so this test is those pixels' textual twin.
 import {existsSync} from 'node:fs';
 import {describe, expect, test} from 'vitest';
-import {aqhiRisk, conditionName, uvWord, weatherBrief} from '../../../../src/features/weather/model.ts';
+import {conditionName} from '../../../../src/core/i18n/condition-name.ts';
+import {aqhiRisk, uvWord, weatherBrief} from '../../../../src/features/weather/model.ts';
 import {createFormatters} from '../../../../src/core/i18n/format.ts';
 import {englishLocale} from '../../../../src/core/i18n/locale.ts';
 import {createMessages} from '../../../../src/core/i18n/messages.ts';
