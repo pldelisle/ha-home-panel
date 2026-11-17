@@ -258,6 +258,7 @@ export class ClimatePane extends LitElement {
       .view=${view.detail}
       .selection=${view.selection}
       .chart=${this.drawn?.chart ?? null}
+      @select=${this.onSelect}
     ></hp-climate-detail>`;
   }
 
@@ -296,7 +297,7 @@ export class ClimatePane extends LitElement {
     this.dispatchEvent(new SheetDismissEvent(DETAIL_SHEET));
   };
 
-  // the list's tap: the detail shows that item
+  // the list's tap, or a tile of the detail that leads to a room: the detail shows that item
   private readonly onSelect = (e: CustomEvent<SelectDetail>): void => {
     e.stopPropagation();
     this.selection = e.detail.sel;

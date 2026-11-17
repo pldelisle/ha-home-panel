@@ -93,6 +93,21 @@ test.describe('on a tablet', () => {
     );
   });
 
+  test('the house’s Warmest and Coolest are buttons that select that room; the other tiles are plain', async ({
+    house,
+  }) => {
+    const buttons = detail(house).locator('button.tile');
+    await expect(buttons).toHaveCount(2);
+    await expect(buttons.first()).toHaveAccessibleName(/^Warmest.*21\.2.*Garage/);
+    await expect(buttons.first()).toHaveAccessibleDescription('Shows its chart');
+    await buttons.nth(1).click();
+    await expect(detail(house).locator('h3')).toHaveText('Living room');
+    await expect(item(house, 'living_room')).toHaveAttribute('aria-selected', 'true');
+    await expect(charts(house)).toBeVisible();
+    // a room's own tiles lead nowhere
+    await expect(detail(house).locator('button.tile')).toHaveCount(0);
+  });
+
   test('the controls and the chart sit in the detail, for the room chosen, and the heatmap alone under it (the outside is the chart’s line)', async ({
     house,
   }) => {
@@ -315,6 +330,14 @@ test.describe('on a phone', () => {
     await expect(dial).toHaveAccessibleName('Temperature');
     await expect(dial.locator('.dknob')).toHaveCount(0);
     await expect(dial.locator('.dialc b')).toHaveText('20.6°');
+  });
+
+  test('the house’s Coolest tile, in the sheet, shows that room', async ({house}) => {
+    await tile(house, 'house').click();
+    await detail(house)
+      .getByRole('button', {name: /^Coolest.*20\.0.*Living room/})
+      .click();
+    await expect(detail(house).locator('h3')).toHaveText('Living room');
   });
 
   test('the sheet holds the controls and chart, for the room, and its range tabs', async ({house}) => {

@@ -575,6 +575,10 @@
       "key": "energy.totals.soFar"
     },
     {
+      "key": "energy.totals.opensChart",
+      "written": "Affiche son graphique"
+    },
+    {
       "key": "energy.totals.ev",
       "was": "VÉ, 30 jours"
     },

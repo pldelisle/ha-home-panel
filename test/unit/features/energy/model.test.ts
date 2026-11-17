@@ -631,10 +631,10 @@ describe('the detail', () => {
       );
       const view = detail({daily: days, totals: {today: 12.34, yesterday: 20.06, d30: 612.4, month: 100.4}});
       expect(view.totals.tiles).toEqual([
-        {label: 'Today so far', value: '12.3', unit: 'kWh', sub: 'until 2:00 pm'},
-        {label: 'Yesterday', value: '20.1', unit: 'kWh', sub: ''},
-        {label: '30 days', value: '612', unit: 'kWh', sub: '20.4 kWh a day'},
-        {label: 'November', value: '100', unit: 'kWh', sub: 'so far'},
+        {label: 'Today so far', value: '12.3', unit: 'kWh', sub: 'until 2:00 pm', range: 'today'},
+        {label: 'Yesterday', value: '20.1', unit: 'kWh', sub: '', range: 'week'},
+        {label: '30 days', value: '612', unit: 'kWh', sub: '20.4 kWh a day', range: 'month'},
+        {label: 'November', value: '100', unit: 'kWh', sub: 'so far', range: 'month'},
         {label: 'EV, 30 days', value: '40', unit: 'kWh', sub: '3 charging days'},
         {label: 'Rate now', value: '–', unit: '¢', sub: 'Hilo rate unknown'},
       ]);

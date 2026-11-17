@@ -656,6 +656,7 @@ export const fr: Record<MessageKey, string> = {
   'energy.totals.yesterday': 'Hier',
   'energy.totals.perDay': '{kwh} kWh par jour',
   'energy.totals.soFar': "jusqu'ici",
+  'energy.totals.opensChart': 'Affiche son graphique',
   'energy.totals.ev': 'VÉ, 30 jours',
   // `=0` repeats `other`: the legacy wrote « 0 jours de recharge », where CLDR's French `one` covers 0
   'energy.totals.chargingDays':
@@ -722,6 +723,7 @@ export const fr: Record<MessageKey, string> = {
   'climate.drawingNow': 'Puissance actuelle',
   'climate.warmest': 'Le plus chaud',
   'climate.coolest': 'Le plus frais',
+  'climate.tile.opensChart': 'Affiche son graphique',
   'climate.heatingNow': 'Chauffe en ce moment',
   'climate.allThermostats': 'tous les thermostats',
   'climate.noteRoom': "La ligne pointillée est la consigne. Là où elle s'arrête, le thermostat était éteint.",

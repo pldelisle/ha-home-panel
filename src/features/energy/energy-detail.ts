@@ -1,7 +1,7 @@
 // <hp-energy-detail>: the Energy detail: the main stacked chart, the Sankey and the donut, each for the tab's one range, and the six totals.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) placing the view model the pane hands down, the charts through <hp-chart> (ADR 0022, 0027)
 // from the pure options of charts.ts and the Sankey through <hp-sankey>; a controlled component (the range is the pane's, told
-// upward as `range-chosen`); a switch of range redraws from the history the pane loaded, so it asks nothing.
+// upward as `range-chosen`, by the tabs and by a total that holds a range); a switch of range redraws from the history the pane loaded, so it asks nothing.
 // A card whose range holds no history yet draws its title and the model's one sentence (`notice`) and nothing else: no axes, donut, legend or tiles of 0 kWh.
 // Must not: read an entity or the clock for a figure (the model did), call the API client, open a sheet itself, or build options for what did not change.
 import {LitElement, html, nothing, svg, unsafeCSS} from 'lit';
@@ -135,7 +135,9 @@ export class EnergyDetail extends LitElement {
               view.totals.notice !== null
                 ? html`<p class="loading">${view.totals.notice}</p>`
                 : html`<p>${view.totals.hint}</p>
-                    <div class="totals">${tileList(view.totals.tiles)}</div>`
+                    <div class="totals">
+                      ${tileList(view.totals.tiles, {onRange: this.onTotal, opens: this.storeController.store.t('energy.totals.opensChart')})}
+                    </div>`
             }
           </div>
         </div>
@@ -168,7 +170,7 @@ export class EnergyDetail extends LitElement {
   }
 
   private renderMain({main}: EnergyDetailView, built: Built | undefined) {
-    return html`<div class="inner">
+    return html`<div class="inner mainblock">
       <h3>${main.title}</h3>
       ${
         main.notice !== null
@@ -242,6 +244,12 @@ export class EnergyDetail extends LitElement {
     </tr>`;
 
   // arrow fields, so the template hands the same function at every render
+
+  // a total's tap: the range that holds its period is the tab's (the pane keeps it, as for the tabs), and the chart that follows it is brought into view
+  private readonly onTotal = (range: EnergyRange): void => {
+    this.dispatchEvent(new CustomEvent<RangeChangeDetail<string>>('range-chosen', {detail: {range}}));
+    this.renderRoot.querySelector('.mainblock')?.scrollIntoView({block: 'nearest'});
+  };
 
   // the header's tabs (a tablet) tell here; the pane keeps the choice and hands it back
   private readonly onRange = (event: CustomEvent<RangeChangeDetail<string>>): void => {

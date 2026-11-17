@@ -1,14 +1,16 @@
 // <hp-climate-detail>: the selection's head (title, line, state pill), then the gauge and the big number on a tablet or the dial on a phone, the controls, the tiles, the chart and the note.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) placing the model's `detail` and the options `ClimateCharts` made, through `chart-place.ts`. The chart is `<hp-chart>` (ADR 0022); the controls are
 // `<hp-climate-controls>`; the dial's drag and keys are told here (`dial-input`, `dial-change`), shown at once in the overlay and sent once the finger rests, through `ControlSender` (ADR 0023).
-// Must not: read an entity, compute a figure or word a string (the model does), build the chart's options (the pane's `ClimateCharts` does), build a command by hand, or be given the selection by anyone but the pane.
+// Must not: read an entity, compute a figure or word a string (the model does), build the chart's options (the pane's `ClimateCharts` does), build a command by hand, or be given the selection by anyone but the pane (a tile's tap tells it upward as `select`).
 import {LitElement, html, nothing, svg, unsafeCSS} from 'lit';
+import {ifDefined} from 'lit/directives/if-defined.js';
 import {keyed} from 'lit/directives/keyed.js';
 import {repeat} from 'lit/directives/repeat.js';
 import {chartPlace, legendItems} from './chart-place.ts';
 import './climate-controls.ts'; // defines <hp-climate-controls>
 import {hpTemperature, setRoomTemperature} from './commands.ts';
 import './dial.ts'; // defines <hp-dial>
+import type {SelectDetail} from './climate-list.ts';
 import type {DialDetail} from './dial.ts';
 import './gauge.ts'; // defines <hp-gauge>
 import detailOwn from './climate-detail.element.css?inline';
@@ -88,17 +90,33 @@ export class ClimateDetail extends LitElement {
           ${repeat(
             view.tiles,
             ({label}) => label,
-            ({label, value, unit, sub, range}) =>
-              html`<div class=${range ? 'tile trange' : 'tile'}>
-                <div class="k">${label}</div>
-                <div class="v num">${value}<small>${unit}</small></div>
-                ${sub ? html`<div class="s">${sub}</div>` : nothing}
-              </div>`,
+            tile => this.renderTile(tile),
           )}
         </div>
         ${this.renderChart(view)} ${view.note ? html`<p class="note">${view.note}</p>` : nothing}
       </div>
       ${lens}`;
+  }
+
+  // a tile is a plain well, or, when it leads to a room's chart (the house's Warmest and Coolest), the kit's button with its chevron that tells the pane which room (its name is what it draws, its description the model's `opens`);
+  private renderTile({label, value, unit, sub, range, select, opens}: Detail['tiles'][number]) {
+    const body = html`<div class="k">${label}</div>
+      <div class="v num">${value}<small>${unit}</small></div>
+      ${sub ? html`<div class="s">${sub}</div>` : nothing}`;
+    if (select === undefined) return html`<div class=${range ? 'tile trange' : 'tile'}>${body}</div>`;
+    return html`<button
+      type="button"
+      class="tile tilebtn"
+      aria-description=${ifDefined(opens)}
+      @click=${() => this.choose(select)}
+    >
+      ${body}
+    </button>`;
+  }
+
+  // the same event the list tells, so the pane shows that room as it does for a tap on its row
+  private choose(sel: ClimateSelection): void {
+    this.dispatchEvent(new CustomEvent<SelectDetail>('select', {detail: {sel}}));
   }
 
   // the legend and the chart; until the range is loaded (or when it failed) the line that says so stands in the chart's place
