@@ -14,6 +14,8 @@ export const LIVE_KW = 0.02;
 const HOT_C = 48;
 /** Devices summing over the meter by more than this many watts (the figures' own rounding) are over it. */
 const METER_TOLERANCE_W = 10;
+/** Where the over-the-meter note starts: the card's left edge, with room to the EV ring for about 26 characters a line. */
+const OVER_METER_X = 14;
 /** The drawing's own coordinates, which the element's `viewBox` repeats. */
 const WIDTH = 440;
 const HEIGHT = 340;
@@ -152,8 +154,11 @@ export function flowLayout(now: PowerNow, {t, fmt, waterTemperature, chargerStat
 
   // devices summing over the meter cannot be balanced by a rest of home: the flow says so once, and draws neither a zero nor a negative rest
   const overMeter = grid !== null && Math.round((water + ev + heat - grid) * 1000) > METER_TOLERANCE_W;
+  // the note is two lines from the card's left edge (the catalog breaks it with \n): one line ended at x 120, under the grid's ring, ran off the card
   const restLabels = overMeter
-    ? [text(120, 290, t('energy.flow.overMeter'), 'st', 'end')]
+    ? t('energy.flow.overMeter')
+        .split('\n')
+        .map((line, i) => text(OVER_METER_X, 290 + i * 15, line, 'st'))
     : [text(120, 290, t('energy.flow.rest'), 'st', 'end'), text(120, 306, spoken(rest), 'big', 'end', 15)];
 
   return {

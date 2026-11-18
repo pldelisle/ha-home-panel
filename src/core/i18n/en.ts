@@ -577,7 +577,7 @@ export const en = {
   'energy.flow.heat': 'Room heating',
   'energy.flow.ev': 'EV charging',
   'energy.flow.rest': 'Rest of home',
-  'energy.flow.overMeter': 'Devices report more than the meter',
+  'energy.flow.overMeter': 'Devices report more\nthan the meter',
   'energy.importing': 'Importing',
   'energy.idle': 'Idle',
   'energy.heating': 'Heating',

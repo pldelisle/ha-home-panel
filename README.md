@@ -72,6 +72,18 @@ A setting the panel cannot use (a misspelled key, a value of the wrong type, an 
       scenes: [scene.dinner, scene.movie_night]
 ```
 
+On the Energy tab's Now view, the grid ring is set against each device's own sensor. Some meters (Hilo's among them) send one instantaneous reading a minute, while baseboard thermostats report their average power over their on/off cycle, so a reading taken while the heaters are between pulses can be far below what the rooms report. Name a smoothed copy of the meter as `grid_power_live` and the Now view uses it; the history keeps reading `grid_power`. A five-minute time-weighted mean is enough:
+
+```yaml
+sensor:
+  - platform: statistics
+    name: House power 5 min average
+    entity_id: sensor.house_power
+    state_characteristic: average_step
+    max_age: {minutes: 5}
+    sampling_size: 100
+```
+
 The Lights tab shows one tile per room, the way Apple's Home app does: the bulb switches the room and the rest of the tile opens it. The room's sheet has a brightness slider and a colour temperature slider side by side, and, when the room has an Adaptive Lighting instance, an Auto switch (the schedule) and a Night switch (its sleep mode). Moving a slider by hand takes the room off Auto until Auto is turned on again.
 
 To change the order of the Lights tab, an admin taps Arrange and drags the tiles; the order is saved in Home Assistant and every screen uses it.

@@ -220,21 +220,28 @@ describe('in French', () => {
 describe('devices that report more than the meter', () => {
   const over = {grid: 3.24, heat: 2.4, waterHeater: 0, ev: 7.1, rest: 0};
 
-  test('the flow says so once and draws no Rest of home, balanced at zero or otherwise', () => {
+  test('the flow says so once, on two lines from the card’s left edge, and draws no Rest of home, balanced at zero or otherwise', () => {
     const geometry = layout(over);
-    expect(words(geometry)).toContain('Devices report more than the meter');
+    const note = geometry.labels.slice(-2);
+    expect(note.map(l => l.text)).toEqual(['Devices report more', 'than the meter']);
+    expect(note.map(l => [l.x, l.y, l.anchor])).toEqual([
+      [14, 290, 'start'],
+      [14, 305, 'start'],
+    ]);
     expect(words(geometry)).not.toContain('Rest of home');
     expect(geometry.labels.filter(l => l.kind === 'big')).toEqual([]);
   });
 
   test('in French, and a house whose devices fit the meter keeps its rest of home', () => {
-    expect(words(layout(over, 'fr'))).toContain('Les appareils déclarent plus que le compteur');
+    expect(words(layout(over, 'fr'))).toEqual(
+      expect.arrayContaining(['Les appareils déclarent', 'plus que le compteur']),
+    );
     expect(words(layout({grid: 3.24, heat: 1, waterHeater: 0, ev: 1, rest: 1.24}))).toContain('Rest of home');
   });
 
   test('exactly 10 W over the meter is the figures’ own rounding and draws no note; 20 W over does', () => {
     const near = {grid: 1, heat: 1.01, waterHeater: 0, ev: 0, rest: 0};
-    expect(words(layout(near))).not.toContain('Devices report more than the meter');
-    expect(words(layout({...near, heat: 1.02}))).toContain('Devices report more than the meter');
+    expect(words(layout(near))).not.toContain('Devices report more');
+    expect(words(layout({...near, heat: 1.02}))).toContain('Devices report more');
   });
 });

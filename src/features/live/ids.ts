@@ -10,6 +10,7 @@ import {carEntityIds, findCar} from '../../providers/fordpass.ts';
 /** The sensors of the integrations the header reads, by config key: the flow, Hilo, Hydro-Québec, the heat pump, the warnings, the Wallbox. */
 const CONFIG_KEYS = [
   'grid',
+  'gridLive',
   'whP',
   'whT',
   'evP',

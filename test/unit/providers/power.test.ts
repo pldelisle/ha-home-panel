@@ -89,6 +89,14 @@ describe('the flow', () => {
     expect([flow.waterHeater, flow.ev, flow.rest]).toEqual([null, null, 2]);
   });
 
+  test('a live grid named in the config is the flow’s grid, the meter only while it is unset', () => {
+    const live = {entities: {...NO_ENTITIES, grid_power_live: 'sensor.grid_avg'}};
+    // the meter sampled between the baseboards' pulses (1.5 kW) against its five-minute mean (2.6 kW)
+    const states = house(watts('sensor.grid', 1518), watts('sensor.grid_avg', 2623), watts('sensor.ev', 0));
+    expect(flowOf(states, live)).toMatchObject({grid: 2.623, rest: 2.623});
+    expect(flowOf(states, cfg).grid).toBe(1.518);
+  });
+
   test('without a grid reading there is no rest, and a surplus of loads leaves none either', () => {
     expect(flowOf(house(watts('sensor.ev', 7000)), cfg)).toMatchObject({grid: null, ev: 7, rest: null});
     expect(flowOf(house(watts('sensor.grid', 1000), watts('sensor.ev', 7000)), cfg).rest).toBe(0);

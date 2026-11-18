@@ -22,6 +22,7 @@ const CONFIG_KEYS = [
   'hqUpcoming',
   'defi',
   'grid',
+  'gridLive',
   'whP',
   'evP',
   'hp',

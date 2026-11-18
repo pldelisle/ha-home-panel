@@ -10,6 +10,7 @@ export function energyIds({config}: Pick<PanelStore, 'config'>): string[] {
   const {entities, rooms} = config;
   const ids = [
     entities.grid,
+    entities.gridLive,
     entities.energy,
     entities.whP,
     entities.whT,
