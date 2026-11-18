@@ -3,8 +3,9 @@
 // Pattern: controlled component over a humble object (Meszaros, xUnit Test Patterns): it draws what its owner says and lets the switch's `change` (which crosses the shadow root) go up to it;
 // the owner holds the optimistic value and sets `checked` back. It is the legacy `.tgl` row, which the Car's charger and comfort cards drew three times and which every later row of the kind can use.
 // Must not: flip `checked` itself, send a service call, or know what it stands for (a charger, a departure schedule).
-import {LitElement, html, unsafeCSS} from 'lit';
+import {LitElement, html, nothing, unsafeCSS} from 'lit';
 import {AppearanceConsumer} from './controllers/appearance-consumer.ts';
+import {ico, type IconName} from './icons.ts';
 import {common} from './styles/index.ts';
 import {forShadow} from './styles/host.ts';
 import './switch.ts'; // defines <hp-switch>
@@ -17,6 +18,7 @@ export class HpSwitchRow extends LitElement {
     checked: {type: Boolean},
     disabled: {type: Boolean},
     label: {},
+    icon: {},
   };
   /** The row's bold line. */
   declare heading: string;
@@ -26,6 +28,8 @@ export class HpSwitchRow extends LitElement {
   declare disabled: boolean;
   /** What a screen reader calls the switch: the owner words it, since the row knows no subject. */
   declare label: string | undefined;
+  /** The icon in the Material row's 40 px container; the Apple row draws none. Without one the row has no container. */
+  declare icon: IconName | undefined;
 
   // The element's own rules, the tile and its two lines, are in switch-row.element.css.
   static override styles = [common, unsafeCSS(forShadow(switchRowOwn))];
@@ -37,12 +41,14 @@ export class HpSwitchRow extends LitElement {
     this.checked = false;
     this.disabled = false;
     this.label = undefined;
+    this.icon = undefined;
     // `glass` comes from the shell as a host attribute the row's rules test
     new AppearanceConsumer(this);
   }
 
   protected override render() {
     return html`<div class="row">
+      ${this.icon ? html`<span class="ic" ?data-on=${this.checked}>${ico(this.icon, 20)}</span>` : nothing}
       <div class="tx"><b>${this.heading}</b><span>${this.line}</span></div>
       <hp-switch .checked=${this.checked} .disabled=${this.disabled} .label=${this.label}></hp-switch>
     </div>`;

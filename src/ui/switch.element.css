@@ -48,6 +48,10 @@
   outline: var(--focus-width) solid var(--focus-color);
   outline-offset: var(--focus-offset);
 }
+/* the check on the Material handle: drawn for both designs, shown by Material only */
+.chk {
+  display: none;
+}
 /* the knob springs only with motion on, and does not slide at all when the person asks for less */
 @media (prefers-reduced-motion: no-preference) {
   .switch::after {
@@ -58,4 +62,59 @@
   .switch::after {
     transition: none;
   }
+}
+/* The Material switch (ADR 0037, #464): a 52 by 32 track, a handle that grows from 16 to 24 px and carries a check when on. Off is the highest surface
+   container with a 2 px outline edge and a 16 px outline handle; on is the primary track and a 24 px on-primary handle, raised, with a primary check.
+   The handle is one 24 px circle placed once and moved by the compositor alone: `translateX` travels it and `scale` (16/24 off) grows it, on the spatial-fast spring (`--motion-spring`); the colours fade (effects); the hit area is 48 tall around the track. */
+:host([design='material']) .switch {
+  width: 52px;
+  height: 32px;
+  background: var(--md-surface-container-highest);
+  box-shadow: inset 0 0 0 2px var(--md-outline);
+  transition: background-color var(--motion-fade-ms) var(--motion-fade);
+}
+:host([design='material']) .switch::before {
+  inset: -8px 0;
+}
+:host([design='material']) .switch::after {
+  top: 4px;
+  left: 4px;
+  width: 24px;
+  height: 24px;
+  background: var(--md-outline);
+  box-shadow: none;
+  transform: translateX(0) scale(calc(16 / 24));
+  transition:
+    transform var(--motion-switch-ms) var(--motion-spring),
+    background-color var(--motion-fade-ms) var(--motion-fade),
+    box-shadow var(--motion-fade-ms) var(--motion-fade);
+}
+:host([design='material']) .switch[aria-checked='true'] {
+  background: var(--md-primary);
+  box-shadow: none;
+}
+:host([design='material']) .switch[aria-checked='true']::after {
+  background: var(--md-on-primary);
+  box-shadow: var(--elevation-1);
+  transform: translateX(20px) scale(1);
+}
+:host([design='material']) .chk {
+  position: absolute;
+  top: 8px;
+  left: 28px;
+  width: 16px;
+  height: 16px;
+  z-index: 1;
+  display: none;
+  color: var(--md-primary);
+}
+:host([design='material']) .switch[aria-checked='true'] .chk {
+  display: block;
+}
+:host([design='material']) .chk svg {
+  display: block;
+}
+:host([design='material']) .switch:disabled {
+  opacity: 0.38;
+  cursor: default;
 }

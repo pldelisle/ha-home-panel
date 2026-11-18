@@ -110,6 +110,7 @@
   --shape-sheet: 30px;
   --shape-dialog: 26px;
   --shape-nav-item: 24px;
+  --shape-nav-rail: 22px;
   /* a card, and the stat tile; a card that sits inside a sheet or a compact pane takes the smaller radius */
   --shape-card: 22px;
   --shape-stat-tile: 20px;
@@ -118,6 +119,8 @@
   --shape-well: 16px;
   --shape-control: 16px;
   --shape-switch: 15px;
+  --shape-list-item: 16px;
+  --shape-list-group: 16px;
   --shape-control-sm: 14px;
   --shape-segment: 12px;
   --shape-focus: 8px;
@@ -357,12 +360,16 @@
   --shape-sheet: var(--shape-extra-large);
   --shape-dialog: var(--shape-extra-large);
   --shape-nav-item: var(--shape-full);
+  --shape-nav-rail: var(--shape-large);
   --shape-card: var(--shape-extra-large);
   --shape-stat-tile: var(--shape-large);
   --shape-card-compact: var(--shape-large-increased);
   --shape-well: var(--shape-medium);
   --shape-control: var(--shape-large);
   --shape-switch: var(--shape-full);
+  /* a list group's rows: square-ish inside, the large corner on the group's outer ends */
+  --shape-list-item: var(--shape-extra-small);
+  --shape-list-group: var(--shape-large);
   --shape-control-sm: var(--shape-small);
   --shape-segment: var(--shape-small);
   --shape-focus: var(--shape-small);
@@ -534,4 +541,11 @@
    above the bar (the snackbar) read it. */
 .app.cp[data-design='material'] {
   --nav-bar-h: 64px;
+}
+/* The navigation rail's width (#466): the page's first column on the tablet under Apple, and the room the page leaves beside the fixed rail under Material. */
+.app {
+  --nav-rail-w: 96px;
+}
+.app[data-design='material'] {
+  --nav-rail-w: 96px;
 }

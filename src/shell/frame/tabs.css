@@ -4,7 +4,7 @@
 }
 .app.tabsv .wrap {
   display: grid;
-  grid-template-columns: 96px minmax(0, 1fr);
+  grid-template-columns: var(--nav-rail-w) minmax(0, 1fr);
   column-gap: 20px;
   align-items: start;
 }
@@ -317,4 +317,110 @@
 .app.cp[data-design='material'] .pane .ph .sub {
   font: var(--type-body-small);
   letter-spacing: var(--track-body-small);
+}
+/* Material's navigation rail (#466): the NavigationBar of the HA Home Panel Material design system. Flush with the left edge, the full height of the
+   screen, `--nav-rail-w` wide, on `surface-container-low`, its outer corners rounded; no float, no blur, no shadow. The open section's icon sits in a
+   56 x 32 pill (`--control`): the item's `::after`, behind the icon, which grows in from the icon's own width by scaling on X (a transform, so the
+   compositor draws it, no layout) on the fast spatial spring; the markup stays as it is. The state layer (common.css, the item's `::before`) and the
+   keyboard focus ring are the pill's as well: the ring is drawn on it, since the rail scrolls and would clip a ring around the whole item. The open
+   label is in `--fg` at 600, the others in `--fg2`. The rail leaves the page's grid on a tablet: `.wrap` makes room with its own padding. */
+.app.tabsv[data-design='material'] .rail {
+  background: var(--md-surface-container-low);
+  border-radius: var(--shape-nav-rail);
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.app.tabsv[data-design='material'] .rtab,
+.app.tabsv[data-design='material'] .rtab[aria-selected='true'] {
+  background: transparent;
+  padding: 0 2px;
+  gap: 4px;
+  justify-content: flex-start;
+  color: var(--fg2);
+}
+.app.tabsv[data-design='material'] .rtab:focus-visible {
+  outline: none;
+}
+/* the state layer and the pill: 56 x 32 at the top of the item, where the icon is; the layer is above the pill, the pill behind the icon */
+.app.tabsv[data-design='material'] .rtab::before,
+.app.tabsv[data-design='material'] .rtab::after {
+  inset: 0 auto auto 50%;
+  width: 56px;
+  height: 32px;
+  margin-left: -28px;
+  border-radius: var(--shape-nav-item);
+}
+.app.tabsv[data-design='material'] .rtab::before {
+  z-index: 0;
+}
+.app.tabsv[data-design='material'] .rtab::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+  background: var(--control);
+  opacity: 0;
+  transform: scaleX(0.4286);
+  transition:
+    transform var(--motion-spatial-fast-ms) var(--motion-spatial-fast),
+    opacity var(--motion-effects-default-ms) var(--motion-effects);
+}
+.app.tabsv[data-design='material'] .rtab[aria-selected='true']::after {
+  opacity: 1;
+  transform: none;
+}
+.app.tabsv[data-design='material'] .rtab:focus-visible::after {
+  opacity: 1;
+  transform: none;
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
+}
+.app.tabsv[data-design='material'] .rtab:not([aria-selected='true']):focus-visible::after {
+  background: transparent;
+}
+.app.tabsv[data-design='material'] .rtab[aria-selected='true'] {
+  color: var(--fg);
+  font-weight: 600;
+}
+.app.tabsv:not(.cp)[data-design='material'] .rtab {
+  /* French has Automatisations: 98 px at the role's 0.5 px tracking, in a 96 px rail; with none it is 91 px, and the rail cuts no label */
+  letter-spacing: 0;
+}
+.app.tabsv[data-design='material'] .rtab svg {
+  box-sizing: content-box;
+  width: 24px;
+  height: 24px;
+  padding: 4px 0;
+  transition: color var(--motion-effects-default-ms) var(--motion-effects);
+}
+.app.tabsv[data-design='material'] .rtab[aria-selected='true'] svg {
+  color: var(--on-control);
+}
+@media (min-width: 721px) {
+  .app.tabsv:not(.cp)[data-design='material'] .rail {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 12;
+    width: var(--nav-rail-w);
+    height: 100vh;
+    height: 100dvh;
+    padding: 16px 0;
+    gap: 12px;
+    border-radius: 0 var(--shape-nav-rail) var(--shape-nav-rail) 0;
+    justify-content: flex-start;
+    overflow-y: auto;
+    scrollbar-width: none;
+  }
+  .app.tabsv:not(.cp)[data-design='material'] .wrap {
+    grid-template-columns: minmax(0, 1fr);
+    column-gap: 0;
+    padding-left: calc(var(--nav-rail-w) + 24px + env(safe-area-inset-left, 0px));
+  }
+  .app.tabsv:not(.cp)[data-design='material'] .head,
+  .app.tabsv:not(.cp)[data-design='material'] .note,
+  .app.tabsv:not(.cp)[data-design='material'] .panes {
+    grid-column: 1;
+  }
 }

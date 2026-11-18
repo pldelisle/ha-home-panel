@@ -113,3 +113,32 @@
   font: var(--type-label-medium);
   letter-spacing: var(--track-label-medium);
 }
+/* Material's navigation bar (#466): full width on `surface-container`, `--nav-bar-h` (64 px, tokens.css) plus the bottom safe-area inset, no float, no blur, no shadow. The tabs
+   and their pill are tabs.css's; the page keeps the bar's height and 16 px under its content, so the bar hides none of it. */
+.app.tabsv.cp[data-design='material'] .rail {
+  height: calc(var(--nav-bar-h) + env(safe-area-inset-bottom, 0px));
+  padding: 6px max(0px, env(safe-area-inset-right, 0px)) env(safe-area-inset-bottom, 0px)
+    max(0px, env(safe-area-inset-left, 0px));
+  background: var(--md-surface-container);
+  border-radius: 0;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+.app.tabsv.cp[data-design='material'] .rtab[data-ph],
+.app.tabsv.cp[data-design='material'] .rtab.rmore {
+  padding: 0 2px;
+  gap: 4px;
+  justify-content: flex-start;
+}
+.app.tabsv.cp[data-design='material'] .rtab[aria-selected='true'] {
+  background: transparent;
+  font-weight: 600;
+}
+.app.tabsv.cp[data-design='material'] .rtab svg {
+  width: 24px;
+  height: 24px;
+}
+.app.tabsv.cp[data-design='material'] .wrap {
+  padding-bottom: calc(var(--nav-bar-h) + 16px + env(safe-area-inset-bottom, 0px));
+}

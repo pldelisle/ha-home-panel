@@ -95,6 +95,7 @@ export class ChargerControls extends LitElement {
       .checked=${on}
       .disabled=${disabled}
       .label=${label}
+      icon="lock"
       @change=${(e: CustomEvent<SwitchChangeDetail>) => {
         if (id !== null) toggle(e.detail.checked, id);
       }}
