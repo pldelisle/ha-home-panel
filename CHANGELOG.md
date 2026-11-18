@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.16.0
+
+- The Weather tab's year and season charts now reach back before Home Assistant's first recorded day, from Environment Canada's nearest climate station (set `climate_station`, or `false` to turn it off).
+
 ## 2.15.1
 
 - Energy's detail drops the Totals card; Where it went now stands alone under the main chart.
