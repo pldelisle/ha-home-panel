@@ -1,6 +1,5 @@
 /*
- * <hp-room-pane>'s own rules: the pane's column, the readings under the room's name, one block per subject with its small heading, and the
- * line a room shows when every part has gone. The header's block is the kit's (pane-header.css).
+ * <hp-room-pane>'s own rules: the pane's column, the readings under the room's name, one block per subject with its small heading. The header's block is the kit's (pane-header.css).
  */
 :host {
   display: block;
@@ -27,11 +26,6 @@ hp-pane-header {
   color: var(--fg2);
   font: 600 calc(15px * var(--tx)) var(--f-body);
   letter-spacing: 0.02em;
-}
-.empty {
-  margin: 24px 0 0;
-  color: var(--fg2);
-  font-size: calc(15px * var(--tx));
 }
 :host([design='material']) .subject > h3 {
   font: var(--type-title-small);

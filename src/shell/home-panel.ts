@@ -33,7 +33,6 @@ import {
   type Appearance,
 } from '../ui/contexts.ts';
 import {OverlayStore} from '../ui/overlay-store.ts';
-import {guessIcon} from '../core/room-icons.ts';
 import {ico} from '../ui/icons.ts';
 import type {SheetDismissEvent, SheetRequestEvent, TabSelectEvent, ToastEvent} from '../ui/events.ts';
 import {AppearanceController} from './appearance.ts';
@@ -49,7 +48,7 @@ import {STATUS_SHEET, type LiveActivitiesEvent} from '../features/live/index.ts'
 import './more-sheet.ts'; // defines <hp-more-sheet>
 import '../ui/pane-header.ts'; // defines <hp-pane-header>
 import './room-pane.ts'; // defines <hp-room-pane>
-import {parseView, roomList, roomTab, visibleView, type Room} from './rooms.ts';
+import {parseView, roomColor, roomIcon, roomList, roomTab, visibleView, type Room} from './rooms.ts';
 import {SheetMediator} from './sheet-host.ts';
 import {MORE_SHEET} from './sheets.ts';
 import {ensureFonts} from '../ui/fonts.ts';
@@ -311,7 +310,10 @@ export class HomePanel extends LitElement {
 
   /** Shows a tab, a section's key or a room's `room:<area_id>`: remembers it and draws the frame with its pane open. */
   private setTab(tab: string): void {
-    this.selected = isFeatureKey(tab) || parseView(tab).kind === 'room' ? tab : 'home';
+    const next = isFeatureKey(tab) || parseView(tab).kind === 'room' ? tab : 'home';
+    // a sheet opened over a room view (a detail sheet, a room's light sheet) belongs to that view: leaving it closes the sheet, as More's is
+    if (this.room !== null && next !== roomTab(this.room)) this.sheets.close();
+    this.selected = next;
     this.settings.set('tab', this.selected);
     this.idle.arm();
     this.flush();
@@ -375,7 +377,7 @@ export class HomePanel extends LitElement {
   // a tile of the More sheet or the Home card's header asks for a tab: the More sheet closes (a no-op when it is not open), then the tab shows
   private readonly onTabSelect = (e: TabSelectEvent): void => {
     this.sheets.close(MORE_SHEET);
-    this.setTab(e.detail.room === undefined ? e.detail.key : roomTab(e.detail.room));
+    this.setTab('room' in e.detail ? roomTab(e.detail.room) : e.detail.key);
   };
 
   // an element asked upward for a sheet, or for the toast; the event stops here, it is the panel's business
@@ -656,7 +658,7 @@ export class HomePanel extends LitElement {
     const underMore = FEATURES.some(f => f.key === tab && !f.phoneBar);
     // after the categories, one row per room (ADR 0039): the sidebar's, so none on the phone's bar or Material's rail
     const rooms = glass ? this.rooms : [];
-    const homeColor = FEATURES.find(f => f.key === 'home')?.color;
+    const homeColor = roomColor(FEATURES);
     const rows = glass ? sidebarRows(FEATURES) : FEATURES;
     // roving tabindex: the list is one tab stop, the selected tab's; the arrow keys move focus inside it (`onTabsKey`)
     const stops = rows.filter((row): row is FeatureDescriptor => row !== CATEGORIES);
@@ -720,11 +722,11 @@ export class HomePanel extends LitElement {
               aria-selected=${this.room === room.areaId}
               aria-controls=${ifDefined(this.room === room.areaId ? 'pane-room' : undefined)}
               tabindex=${stopKey === roomTab(room.areaId) ? 0 : -1}
-              title=${ifDefined(strip ? room.name : undefined)}
+              title=${room.name}
               style=${`--tab-c:${homeColor}`}
               @click=${() => this.setTab(roomTab(room.areaId))}
             >
-              ${ico(guessIcon(room.name), 24)}<span>${room.name}</span>
+              ${ico(roomIcon(room.name), 24)}<span>${room.name}</span>
             </button>`,
         )}<button
           type="button"

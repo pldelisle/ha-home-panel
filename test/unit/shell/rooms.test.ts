@@ -2,7 +2,7 @@
 // Pure functions over literal inputs: a descriptor is a plain object, the names are a map.
 import {describe, expect, test} from 'vitest';
 import type {FeatureDescriptor, FeatureEnv} from '../../../src/ui/feature.ts';
-import {parseView, roomList, roomTab, subjectsOf, visibleView} from '../../../src/shell/rooms.ts';
+import {parseView, roomColor, roomIcon, roomList, roomTab, subjectsOf, visibleView} from '../../../src/shell/rooms.ts';
 
 const env = {room: null} as unknown as FeatureEnv;
 const feature = (key: string, areas?: readonly string[], available?: boolean): FeatureDescriptor =>
@@ -98,5 +98,20 @@ describe('the subjects of a room', () => {
     expect(subjectsOf(features, env, 'kitchen').map(f => f.key)).toEqual(['lights', 'climate']);
     expect(subjectsOf(features, env, 'office').map(f => f.key)).toEqual(['climate']);
     expect(subjectsOf(features, env, 'attic')).toEqual([]);
+  });
+});
+
+describe('the icon and colour of a room', () => {
+  test('are guessIcon of the name, with the house where it would give the thermometer', () => {
+    expect(roomIcon('Living room')).toBe('sofa');
+    expect(roomIcon('Chambre des maîtres')).toBe('bed');
+    expect(roomIcon('Kitchen')).toBe('house');
+    expect(roomIcon('')).toBe('house');
+  });
+
+  test("the colour is Home's, and a fixed one when the registry has no Home", () => {
+    const home = {key: 'home', color: 'var(--c-test)'} as unknown as FeatureDescriptor;
+    expect(roomColor([feature('lights'), home])).toBe('var(--c-test)');
+    expect(roomColor([feature('lights')])).toBe('var(--c-grid)');
   });
 });

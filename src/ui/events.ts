@@ -25,20 +25,16 @@ export class SheetDismissEvent extends CustomEvent<{id: string}> {
   }
 }
 
-export interface TabSelectDetail {
-  /** the section to show */
-  key: FeatureKey;
-  /** the area of the room view to show instead (ADR 0039); absent for a section */
-  room?: string;
-}
+/** What to show: a section, or a room view by its area (ADR 0039); a request names one and never both. */
+export type TabSelectDetail = {key: FeatureKey} | {room: string};
 
 /**
  * An element asks the shell for a tab: a tile of the More sheet, the Home card's header. The shell's frame hears it from anywhere inside
  * it (ADR 0026), closes the More sheet if it is open and shows the tab.
  */
 export class TabSelectEvent extends CustomEvent<TabSelectDetail> {
-  constructor(key: FeatureKey, room?: string) {
-    super('tab-select', {bubbles: true, composed: true, detail: room === undefined ? {key} : {key, room}});
+  constructor(target: FeatureKey | {room: string}) {
+    super('tab-select', {bubbles: true, composed: true, detail: typeof target === 'string' ? {key: target} : target});
   }
 }
 

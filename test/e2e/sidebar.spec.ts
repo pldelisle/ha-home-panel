@@ -190,6 +190,27 @@ test.describe('between the phone and the tablet (700 px)', () => {
   });
 });
 
+test.describe('a room with a very long name', () => {
+  test.use({houseOpts: {cfg: FULL_CFG, time: AFTERNOON, frozen: true}});
+
+  test('is cut in its row and never widens or pans the list', async ({house}) => {
+    tabletOnly();
+    const name = 'LongAreaName'.repeat(5); // 60 characters in one word, the worst case for a row
+    await house.setAreaName('office', name);
+    await toggle(house).click();
+    await expect.poll(async () => (await rail(house).boundingBox())?.width).toBe(280);
+    const row = house.root().getByRole('tab', {name});
+    await expect(row).toBeVisible();
+    await expect(row).toHaveAttribute('title', name);
+    const list = rail(house).locator('.rtabs');
+    expect(await list.evaluate(e => [e.scrollWidth, e.clientWidth])).toEqual(
+      await list.evaluate(e => [e.clientWidth, e.clientWidth]),
+    );
+    const label = row.locator('span');
+    expect(await label.evaluate(e => e.scrollWidth > e.clientWidth)).toBe(true);
+  });
+});
+
 test.describe('the sidebar in French', () => {
   test.use({houseOpts: {cfg: FULL_CFG, lang: 'fr', time: AFTERNOON, frozen: true}});
 

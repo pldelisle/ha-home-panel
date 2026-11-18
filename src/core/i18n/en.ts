@@ -117,8 +117,6 @@ export const en = {
   'nav.rooms': 'Rooms',
   'nav.sidebarShow': 'Show sidebar',
   'nav.sidebarHide': 'Hide sidebar',
-  // a room view (src/shell/room-pane.ts): what it says when no subject has a tile in the room any more
-  'room.empty': 'Nothing in this room yet',
   // the phone's More sheet (src/shell/more-sheet.ts): its title, the line under it and its Close button
   'more.title': 'More',
   'more.sub': 'All sections',

@@ -1,9 +1,11 @@
 // The room rules: which rooms the house has, in what order, and how the `tab` setting names a room (ADR 0039).
 // Pattern: a pure function over the registry's descriptors (Fowler, PoEAA, Plugin): the shell asks each subject only for the areas it has tiles
 // in (`room.areas`), never what the tiles are (ADR 0017); the route is a string with a prefix, as the `tab` setting already is a string.
+// Its one memo, the collator of each locale tag, is pure: it only saves building one on every change of the house.
 // Must not: read an entity or the DOM, draw, or know which subject fills a room: the descriptors answer.
 import type {FeatureDescriptor, FeatureEnv, FeatureKey} from '../ui/feature.ts';
 import type {Names} from '../core/i18n/names.ts';
+import {guessIcon, type RoomIcon} from '../core/room-icons.ts';
 import {visibleTab} from './features.ts';
 
 /** One room of the sidebar: an area of Home Assistant with its display name. */
@@ -19,6 +21,27 @@ export type View = {kind: 'feature'; key: string} | {kind: 'room'; areaId: strin
 export type ShownView = {kind: 'feature'; key: FeatureKey} | {kind: 'room'; areaId: string};
 
 const PREFIX = 'room:';
+
+// roomList runs on every change of the house, so each locale's collator is built once
+const collators = new Map<string, Intl.Collator>();
+const collatorOf = (locale: string): Intl.Collator => {
+  let collator = collators.get(locale);
+  if (!collator) collators.set(locale, (collator = new Intl.Collator(locale)));
+  return collator;
+};
+
+/**
+ * A room's icon: `guessIcon` of its name, except that a name it has no word for is the house, not the thermometer it falls back to
+ * (that is Climate's icon, and `guessIcon` stays as Climate's baselines have it).
+ */
+export const roomIcon = (name: string): RoomIcon => {
+  const icon = guessIcon(name);
+  return icon === 'therm' ? 'house' : icon;
+};
+
+/** The colour of a room's icon and header: Home's, which is the house's own and no subject's. */
+export const roomColor = (features: readonly FeatureDescriptor[]): string =>
+  features.find(f => f.key === 'home')?.color ?? 'var(--c-grid)';
 
 /** The `tab` setting's value for a room. */
 export const roomTab = (areaId: string): string => `${PREFIX}${areaId}`;
@@ -53,7 +76,7 @@ export function roomList(
     if (!f.room || f.available?.(env) === false) continue;
     for (const id of f.room.areas(env)) if (id) areas.add(id);
   }
-  const collator = new Intl.Collator(locale);
+  const collator = collatorOf(locale);
   return [...areas]
     .map(areaId => ({areaId, name: names.name(areaId)}))
     .sort((a, b) => collator.compare(a.name, b.name) || collator.compare(a.areaId, b.areaId));

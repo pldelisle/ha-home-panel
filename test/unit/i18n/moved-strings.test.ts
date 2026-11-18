@@ -69,11 +69,8 @@ const read = (move: string) =>
   (JSON.parse(readFileSync(new URL(`../fixtures/moved/${move}.json`, import.meta.url), 'utf8')) as {messages: Moved[]})
     .messages;
 
-// the rail's label for the subject is the shell's (src/shell/features.ts says it), not a message the move introduced; nor is one its prefix
-// gained after the move (the room view's line, #506)
-const AFTER_THE_MOVE = new Set(['room.empty']);
-const ofMove = (prefix: string) =>
-  Object.keys(en).filter(key => key.startsWith(prefix) && key !== `${prefix}title` && !AFTER_THE_MOVE.has(key));
+// the rail's label for the subject is the shell's (src/shell/features.ts says it), not a message the move introduced
+const ofMove = (prefix: string) => Object.keys(en).filter(key => key.startsWith(prefix) && key !== `${prefix}title`);
 
 // a move: its fixture, the prefix of the keys it introduced, the folders that say them, and the keys outside the prefix it
 // also introduced (the kit's `common.failed` came with Media's command layer; the kit says it, in src/ui/)

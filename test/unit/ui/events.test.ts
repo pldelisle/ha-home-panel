@@ -22,12 +22,13 @@ test('a tab request bubbles and is composed, and carries the key of the section 
   expect(e.type).toBe('tab-select');
   expect([e.bubbles, e.composed]).toEqual([true, true]);
   expect(e.detail).toEqual({key: 'cams'});
-  expect('room' in e.detail).toBe(false);
+  expect(e.detail).not.toHaveProperty('room');
 });
 
 test('a tab request may name a room view instead, by its area id', () => {
-  const e = new TabSelectEvent('home', 'living_room');
-  expect(e.detail).toEqual({key: 'home', room: 'living_room'});
+  const e = new TabSelectEvent({room: 'living_room'});
+  expect(e.detail).toEqual({room: 'living_room'});
+  expect(e.detail).not.toHaveProperty('key');
   expect([e.bubbles, e.composed]).toEqual([true, true]);
 });
 

@@ -8,7 +8,6 @@ import {ContextConsumer} from '@lit/context';
 import {LitElement, html, nothing, unsafeCSS, type PropertyValues} from 'lit';
 import {ifDefined} from 'lit/directives/if-defined.js';
 import {repeat} from 'lit/directives/repeat.js';
-import {styleMap} from 'lit/directives/style-map.js';
 import {
   allOff,
   isAuto,
@@ -23,16 +22,9 @@ import {
   type LightServices,
 } from './commands.ts';
 import {lightIds} from './ids.ts';
+import {SYSTEM_DATA_KEY} from './order.ts';
 import {readLights, type LightsInputs, type LightTile as Room} from './inputs.ts';
-import {
-  lightsModel,
-  sheetModel,
-  unitsOf,
-  type LightsViewModel,
-  type SheetView,
-  type TileView,
-  type Unit,
-} from './model.ts';
+import {lightsModel, sheetModel, unitsOf, type LightsViewModel, type SheetView} from './model.ts';
 import {LightsCommands} from './lights-commands.ts';
 import type {AreaToggleEvent} from './light-tile.ts';
 import type {SheetIntentEvent, SliderWords} from './light-sheet.ts';
@@ -41,8 +33,9 @@ import type {LinkPickEvent} from './link-picker.ts';
 import {ROOM_SHEET} from './sheets.ts';
 import './light-sheet.ts'; // defines <hp-light-sheet>
 import './al-strip.ts'; // defines <hp-al-strip>
-import './light-tile.ts'; // defines <hp-light-tile>
+import {renderUnit} from './unit-rows.ts';
 import paneOwn from './lights-pane.element.css?inline';
+import unitRows from './unit-rows.css?inline';
 import {rejectionReason, type PanelApi} from '../../core/api.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
 import {registriesOf} from '../../core/registry.ts';
@@ -60,8 +53,6 @@ import '../../ui/pane-header.ts'; // defines <hp-pane-header>
 import {common} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
-/** The frontend system data's key that holds the order and the links, for every screen of the house. */
-const SYSTEM_DATA_KEY = 'home_panel';
 /** The now mark moves each minute. */
 const TICK_MS = 60_000;
 /** After a slider's release the pills settle this long before the house's state draws them again, as the legacy sheet let them. */
@@ -81,7 +72,7 @@ export class LightsPane extends LitElement {
   declare roomKey: string | undefined;
 
   // The element's own rules, its `:host` and what only its tree has, are in lights-pane.element.css.
-  static override styles = [common, unsafeCSS(forShadow(paneOwn))];
+  static override styles = [common, unsafeCSS(forShadow(unitRows)), unsafeCSS(forShadow(paneOwn))];
 
   // held while a finger is on a slider: a change of the house then waits for the release, so the pill stays under the finger
   private readonly storeController = new StoreController(this, {
@@ -294,27 +285,8 @@ export class LightsPane extends LitElement {
       ${repeat(
         units,
         unit => unit.key,
-        unit => this.renderUnit(unit),
+        unit => renderUnit(unit, {lifted: this.reorder.lifted === unit.key, editing: this.editing}),
       )}
-    </div>`;
-  }
-
-  private renderUnit({key, tiles}: Unit) {
-    const lifted = this.reorder.lifted === key ? 'lifted' : '';
-    const tile = (t: TileView) => html`<hp-light-tile .tile=${t} .editing=${this.editing}></hp-light-tile>`;
-    if (tiles.length === 1)
-      return html`<hp-light-tile
-        class=${lifted}
-        data-unit=${key}
-        .tile=${tiles[0]}
-        .editing=${this.editing}
-      ></hp-light-tile>`;
-    return html`<div
-      class="llink on ${lifted}"
-      data-unit=${key}
-      style=${styleMap({'--lc': tiles[0].pairTint || undefined})}
-    >
-      ${tile(tiles[0])}${tile(tiles[1])}
     </div>`;
   }
 

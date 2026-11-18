@@ -5,14 +5,13 @@
 // Must not: know a subject, read an entity, offer Arrange or any control of its own, or import a feature (ADR 0017).
 import {LitElement, html, nothing, unsafeCSS} from 'lit';
 import {repeat} from 'lit/directives/repeat.js';
-import {guessIcon} from '../core/room-icons.ts';
 import {AppearanceConsumer} from '../ui/controllers/appearance-consumer.ts';
 import {StoreController} from '../ui/controllers/store-controller.ts';
 import type {FeatureDescriptor, FeatureEnv} from '../ui/feature.ts';
 import '../ui/pane-header.ts'; // defines <hp-pane-header>
 import {common} from '../ui/styles/index.ts';
 import {forShadow} from '../ui/styles/host.ts';
-import {subjectsOf} from './rooms.ts';
+import {roomColor, roomIcon, subjectsOf} from './rooms.ts';
 import roomPaneOwn from './room-pane.element.css?inline';
 
 export class RoomPane extends LitElement {
@@ -52,9 +51,7 @@ export class RoomPane extends LitElement {
     const {t} = this.store.store;
     const taking = subjectsOf(this.features, env, areaId);
     const chips = taking.map(f => f.room?.chip?.(env, areaId)).filter((chip): chip is string => !!chip);
-    // the room takes Home's colour: it is the house's own, no subject's
-    const color = this.features.find(f => f.key === 'home')?.color ?? 'var(--c-grid)';
-    return html`<hp-pane-header .icon=${guessIcon(this.name)} .color=${color} .heading=${this.name}>
+    return html`<hp-pane-header .icon=${roomIcon(this.name)} .color=${roomColor(this.features)} .heading=${this.name}>
         ${
           chips.length
             ? html`<ul class="readings" slot="sub">
@@ -67,19 +64,15 @@ export class RoomPane extends LitElement {
             : nothing
         }
       </hp-pane-header>
-      ${
-        taking.length
-          ? repeat(
-              taking,
-              f => f.key,
-              f =>
-                html`<section class="subject" data-subject=${f.key} aria-labelledby="h-${f.key}">
-                  <h3 id="h-${f.key}">${t(f.title)}</h3>
-                  ${f.room!.part(env, areaId)}
-                </section>`,
-            )
-          : html`<p class="empty">${t('room.empty')}</p>`
-      }`;
+      ${repeat(
+        taking,
+        f => f.key,
+        f =>
+          html`<section class="subject" data-subject=${f.key} aria-labelledby="h-${f.key}">
+            <h3 id="h-${f.key}">${t(f.title)}</h3>
+            ${f.room!.part(env, areaId)}
+          </section>`,
+      )}`;
   }
 }
 

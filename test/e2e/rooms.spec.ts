@@ -88,6 +88,18 @@ test.describe('the rooms of the full house', () => {
     await expect(pane(house)).toBeVisible();
   });
 
+  test("choosing a section while the room's sheet is open closes the sheet", async ({house}) => {
+    tabletOnly();
+    await openRoom(house, 'office');
+    await pane(house).locator('.lrow[data-lsheet="office"]').click();
+    await expect(house.root().locator('#sh-light')).toBeVisible();
+    // the sheet's backdrop covers the rail, so the row is chosen as the keyboard or a script would
+    await house.root().locator('#rail [data-tab="climate"]').dispatchEvent('click');
+    await expect(house.root().locator('#pane-climate')).toBeVisible();
+    await expect(house.root().locator('#sh-light')).toBeHidden();
+    await expect(house.root().locator('#pane-lights')).not.toHaveClass(/behind/);
+  });
+
   test('the keyboard walks the sections and then the rooms in one list', async ({house}) => {
     tabletOnly();
     await house.root().locator('#rail [data-tab="cams"]').focus();

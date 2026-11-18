@@ -463,6 +463,7 @@
     flex: 1 1 auto;
     gap: 4px;
     min-height: 0;
+    overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
     scrollbar-width: none;
@@ -503,6 +504,12 @@
     overflow: visible;
     text-overflow: clip;
     white-space: nowrap;
+  }
+  /* a room is named by the house, so its name may be long: it is cut with an ellipsis (the row's title and accessible name keep it whole) */
+  .app.tabsv:not(.cp):not([data-design='material']) .rtab.rroom span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   /* collapsed: the icon sits in the middle of its row, whatever the strip's width (the open sidebar's start padding would leave it off-centre) */
   .app.tabsv:not(.sbo):not(.cp):not([data-design='material']) .rside,

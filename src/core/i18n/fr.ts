@@ -111,7 +111,6 @@ export const fr: Record<MessageKey, string> = {
   'nav.rooms': 'Pièces',
   'nav.sidebarShow': 'Afficher la barre latérale',
   'nav.sidebarHide': 'Masquer la barre latérale',
-  'room.empty': 'Rien dans cette pièce pour le moment',
   'more.title': 'Plus',
   'more.sub': 'Toutes les sections',
   'more.close': 'Fermer',

@@ -6,14 +6,15 @@
 import {ContextConsumer} from '@lit/context';
 import {LitElement, html, nothing, unsafeCSS} from 'lit';
 import {repeat} from 'lit/directives/repeat.js';
-import {styleMap} from 'lit/directives/style-map.js';
 import {lightIds} from './ids.ts';
 import {readLights, type LightsInputs} from './inputs.ts';
 import {LightsCommands} from './lights-commands.ts';
 import {roomUnits, type Unit} from './model.ts';
 import type {AreaToggleEvent} from './light-tile.ts';
-import './light-tile.ts'; // defines <hp-light-tile>
+import {SYSTEM_DATA_KEY} from './order.ts';
+import {renderUnit} from './unit-rows.ts';
 import roomOwn from './lights-room.element.css?inline';
+import unitRows from './unit-rows.css?inline';
 import type {PanelApi} from '../../core/api.ts';
 import {registriesOf} from '../../core/registry.ts';
 import {apiContext} from '../../ui/contexts.ts';
@@ -23,9 +24,6 @@ import {SystemDataController} from '../../ui/controllers/system-data.ts';
 import {common} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
-/** The frontend system data's key the Lights pane writes the order and the links under: read here, never written. */
-const SYSTEM_DATA_KEY = 'home_panel';
-
 export class LightsRoom extends LitElement {
   static override properties = {
     areaId: {},
@@ -34,7 +32,7 @@ export class LightsRoom extends LitElement {
   declare areaId: string;
 
   // The element's own rules, its `:host` and what only its tree has, are in lights-room.element.css.
-  static override styles = [common, unsafeCSS(forShadow(roomOwn))];
+  static override styles = [common, unsafeCSS(forShadow(unitRows)), unsafeCSS(forShadow(roomOwn))];
 
   /** The element exists only while its room is shown, so it is always the one on screen (what the system data's host asks). */
   readonly active = true;
@@ -78,15 +76,8 @@ export class LightsRoom extends LitElement {
       ${repeat(
         this.units,
         unit => unit.key,
-        unit => this.renderUnit(unit),
+        unit => renderUnit(unit),
       )}
-    </div>`;
-  }
-
-  private renderUnit({key, tiles}: Unit) {
-    if (tiles.length === 1) return html`<hp-light-tile data-unit=${key} .tile=${tiles[0]}></hp-light-tile>`;
-    return html`<div class="llink on" data-unit=${key} style=${styleMap({'--lc': tiles[0].pairTint || undefined})}>
-      <hp-light-tile .tile=${tiles[0]}></hp-light-tile><hp-light-tile .tile=${tiles[1]}></hp-light-tile>
     </div>`;
   }
 

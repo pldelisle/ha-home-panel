@@ -6,6 +6,9 @@ import type {LightLink} from '../../core/config.ts';
 import type {HassEntities} from '../../core/hass.ts';
 import type {LightArea} from '../../providers/light-areas.ts';
 
+/** The frontend system data's key that holds the order and the links, for every screen of the house: the pane and a room view read it, the pane writes it. */
+export const SYSTEM_DATA_KEY = 'home_panel';
+
 /** A tile's partner when its room is linked: the other tile's key, and whether this one is drawn first. */
 export interface TileLink {
   other: string;
