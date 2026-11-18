@@ -1,6 +1,6 @@
 // <home-panel>, the one element Home Assistant mounts: it owns the store, the API client, the settings and the optimistic values, provides them through context and draws the frame from the registry in its one shadow root.
 // Pattern: composition root (Seemann, Dependency Injection Principles, Practices, and Patterns); humble object (Meszaros, xUnit Test Patterns): it forwards `hass`, `panel` and `narrow` and decides nothing the registry and the store decide.
-// It reads `localStorage` and the browser's locale defaults. It owns `tab`, `compact`, the idle state, which tabs the house shows, whether the settings popup and the Status checks are open, whether a live activity runs and, through controllers, the appearance and the open sheet. Done and Escape close the settings popup and return focus to the gear.
+// It reads `localStorage` and the browser's locale defaults. It owns `tab`, `sidebar`, `compact`, the idle state, which tabs the house shows, whether the settings popup and the Status checks are open, whether a live activity runs and, through controllers, the appearance and the open sheet. Done and Escape close the settings popup and return focus to the gear.
 // Must not: decide what the store and the models decide. The legacy panel it hosted as its guest is gone (#277, ADR 0035).
 import {LitElement, html, unsafeCSS, type PropertyValues, type TemplateResult} from 'lit';
 import {classMap} from 'lit/directives/class-map.js';
@@ -37,7 +37,7 @@ import {ico} from '../ui/icons.ts';
 import type {SheetDismissEvent, SheetRequestEvent, TabSelectEvent, ToastEvent} from '../ui/events.ts';
 import {AppearanceController} from './appearance.ts';
 import type {FeatureDescriptor, FeatureEnv, FeatureKey} from '../ui/feature.ts';
-import {FEATURES, UNDER_MORE, isFeatureKey, visibleTab} from './features.ts';
+import {CATEGORIES, FEATURES, UNDER_MORE, isFeatureKey, sidebarRows, visibleTab} from './features.ts';
 import {FRAME_CSS} from './frame-styles.ts';
 import './idle-screen.ts'; // defines <hp-idle-screen>
 import {IdleTimer, type IdleState} from './idle-timer.ts';
@@ -61,6 +61,8 @@ interface PanelInfo {
 
 // The phone's shape: the bar at the bottom, one column. The stylesheet's `.cp` rules are written for the same width.
 const PHONE = '(max-width:599px)';
+// where the Liquid Glass sidebar's CSS starts (tabs.css, the min-width of its block): between the phone and this, the rail is the old one
+const SIDEBAR_WIDE = '(min-width: 721px)';
 // The device's own appearance: dark, and less transparency. The theme follows the first on auto; the glass lens yields to the second.
 const DARK = '(prefers-color-scheme: dark)';
 const REDUCED_TRANSPARENCY = '(prefers-reduced-transparency: reduce)';
@@ -104,6 +106,7 @@ export class HomePanel extends LitElement {
     epoch: {state: true},
     idleState: {state: true},
     settingsOpen: {state: true},
+    sidebar: {state: true},
     statusOpen: {state: true},
     toastNow: {state: true},
     liveKey: {state: true},
@@ -118,6 +121,8 @@ export class HomePanel extends LitElement {
   declare private epoch: number;
   /** The idle timer's state, drawn as `.app.idle`, the overlay's `hidden` and its `wake` class, and handed to <hp-idle-screen>. */
   declare private idleState: IdleState;
+  /** The Liquid Glass tablet's sidebar, `collapsed` (an icon strip) or `open`: the per-browser setting, drawn as `.app.sbo` and the toggle's `aria-expanded`. */
+  declare private sidebar: string;
   /** The settings popup behind the gear is open. */
   declare private settingsOpen: boolean;
   /** The Status checks under the live pill are open: a popup, as the settings are, so a sheet opens over it and Escape closes the sheet first. */
@@ -165,6 +170,7 @@ export class HomePanel extends LitElement {
     },
   });
   private readonly phone = new MediaQueryController(this, PHONE);
+  private readonly sidebarWide = new MediaQueryController(this, SIDEBAR_WIDE);
   // Five minutes without a touch and a tablet shows the clock; a phone never does by itself. The listeners are the
   // controller's, on this root and the window, from connection to disconnection.
   private readonly idle = new IdleTimer(this, {
@@ -247,6 +253,7 @@ export class HomePanel extends LitElement {
     this.selected = this.settings.get().tab;
     this.epoch = 0;
     this.idleState = 'active';
+    this.sidebar = this.settings.get().sidebar;
     this.settingsOpen = false;
     this.statusOpen = false;
     this.toastNow = null;
@@ -282,6 +289,12 @@ export class HomePanel extends LitElement {
     this.idle.arm();
     this.flush();
   }
+
+  /** Opens or collapses the Liquid Glass tablet's sidebar and remembers the choice on this device. */
+  private readonly toggleSidebar = (): void => {
+    this.sidebar = this.sidebar === 'open' ? 'collapsed' : 'open';
+    this.settings.set('sidebar', this.sidebar);
+  };
 
   private requestFrame(): void {
     this.stale = true;
@@ -474,6 +487,7 @@ export class HomePanel extends LitElement {
         cp: this.compact,
         tabsv: true,
         idle: this.idleState === 'idle',
+        sbo: this.sidebar === 'open',
         gl: a.glass.on,
         gc: a.glass.cards,
         txl: a.largeText,
@@ -570,40 +584,62 @@ export class HomePanel extends LitElement {
   }
 
   // The rail on a tablet, the bar on a phone. Before the first answer about the house, every button is hidden: a tab
-  // that shows for a moment is a tab a frame can catch.
+  // that shows for a moment is a tab a frame can catch. Under Liquid Glass the rail is the sidebar (ADR 0038): Home and Automations
+  // first, then the Categories heading and the rest, and the toggle on top; CSS draws it on the tablet only, and the phone's bar and
+  // Material's rail keep their own order and look. The tabs sit in their own tablist, since a button is not a tab.
   private renderRail(): TemplateResult {
     const {t} = this.store;
     const {tab} = this;
+    const glass = this.appearance.value.design !== 'material' && this.sidebarWide.matches;
+    const open = this.sidebar === 'open';
+    // a collapsed strip has no labels to read, so each icon names itself on hover
+    const strip = glass && !open;
     // the fifth button is the way to the other tabs, so it says More whichever tab shows; it is selected while one of them does
     const underMore = FEATURES.some(f => f.key === tab && !f.phoneBar);
-    return html`<nav class="rail" id="rail" role="tablist" aria-label="Sections">
-      ${repeat(
-        FEATURES,
-        f => f.key,
-        f =>
-          html`<button
-            type="button"
-            class="rtab"
-            role="tab"
-            data-tab=${f.key}
-            ?data-ph=${f.phoneBar}
-            ?hidden=${!this.answered || this.shown[f.key] === false}
-            aria-selected=${tab === f.key}
-            @click=${() => this.setTab(f.key)}
-          >
-            ${ico(f.icon, 24)}<span>${t(f.title)}</span>
-          </button>`,
-      )}<button
+    const rows = glass ? sidebarRows(FEATURES) : FEATURES;
+    return html`<nav class="rail" id="rail">
+      <button
         type="button"
-        class="rtab rmore"
-        role="tab"
-        id="moretab"
-        aria-selected=${underMore}
-        aria-haspopup="dialog"
-        @click=${() => this.sheets.open(MORE_SHEET)}
+        class="rside"
+        aria-expanded=${open}
+        aria-label=${t(open ? 'nav.sidebarHide' : 'nav.sidebarShow')}
+        @click=${this.toggleSidebar}
       >
-        ${ico('more', 24)}<span>${t('nav.more')}</span>
+        ${ico('sidebar', 24)}
       </button>
+      <div class="rtabs" role="tablist" aria-label=${t('nav.sections')}>
+        ${repeat(
+          rows,
+          row => (row === CATEGORIES ? 'categories' : row.key),
+          row =>
+            row === CATEGORIES
+              ? html`<div class="rhead" aria-hidden="true">${t('nav.categories')}</div>`
+              : html`<button
+                  type="button"
+                  class="rtab"
+                  role="tab"
+                  data-tab=${row.key}
+                  ?data-ph=${row.phoneBar}
+                  ?hidden=${!this.answered || this.shown[row.key] === false}
+                  aria-selected=${tab === row.key}
+                  title=${ifDefined(strip ? t(row.title) : undefined)}
+                  style=${`--tab-c:${row.color}`}
+                  @click=${() => this.setTab(row.key)}
+                >
+                  ${ico(row.icon, 24)}<span>${t(row.title)}</span>
+                </button>`,
+        )}<button
+          type="button"
+          class="rtab rmore"
+          role="tab"
+          id="moretab"
+          aria-selected=${underMore}
+          aria-haspopup="dialog"
+          @click=${() => this.sheets.open(MORE_SHEET)}
+        >
+          ${ico('more', 24)}<span>${t('nav.more')}</span>
+        </button>
+      </div>
     </nav>`;
   }
 

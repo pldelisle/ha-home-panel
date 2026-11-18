@@ -43,6 +43,7 @@ export const ICONS = {
   unlock: svg`<rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 7.6-1.7"/>`,
   flow: svg`<circle cx="5" cy="6" r="2"/><circle cx="5" cy="18" r="2"/><circle cx="19" cy="12" r="2.2"/><path d="M7 6c5 0 5 6 9.8 6M7 18c5 0 5-6 9.8-6"/>`,
   more: svg`<rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/>`,
+  sidebar: svg`<rect x="3.5" y="5" width="17" height="14" rx="3"/><path d="M9.5 5v14"/>`,
   menu: svg`<path d="M4 7h16M4 12h16M4 17h16"/>`,
   gear: svg`<circle cx="12" cy="12" r="3"/><path d=${GEAR_PATH}/>`,
   moon: svg`<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>`,

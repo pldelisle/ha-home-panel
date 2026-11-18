@@ -14,7 +14,7 @@ import {weatherFeature} from '../../src/features/weather/index.ts';
 import * as full from '../houses/full.mjs';
 import {FULL_CFG} from '../e2e/houses.ts';
 import {fakeHass} from './fake-hass.ts';
-import {FEATURES, UNDER_MORE, isFeatureKey, visibleTab} from '../../src/shell/features.ts';
+import {CATEGORIES, FEATURES, UNDER_MORE, isFeatureKey, sidebarRows, visibleTab} from '../../src/shell/features.ts';
 import {FR_MAP} from '../../src/i18n/fr.js';
 
 describe('the registry', () => {
@@ -41,7 +41,7 @@ describe('the registry', () => {
     expect(FEATURES.map(f => f.color)).toEqual([
       'var(--c-grid)',
       'var(--warn)',
-      'var(--c-wh)',
+      'var(--c-heat)',
       'var(--m-blue)',
       'var(--c-ev)',
       'var(--c-grid)',
@@ -267,5 +267,31 @@ describe('the Automations descriptor', () => {
     expect(FEATURES.find(f => f.key === 'auto')).toBe(automationsFeature);
     expect(automationsFeature.pane(env(null)).values).toEqual([false]);
     expect(automationsFeature.pane(env('automations.flow')).values).toEqual([true]);
+  });
+});
+
+describe('the Liquid Glass sidebar rows', () => {
+  test('put Home and Automations first, then the Categories heading and the rest in rail order', () => {
+    const rows = sidebarRows(FEATURES);
+    expect(rows.map(r => (r === CATEGORIES ? 'categories' : r.key))).toEqual([
+      'home',
+      'auto',
+      'categories',
+      'lights',
+      'climate',
+      'weather',
+      'car',
+      'energy',
+      'air',
+      'media',
+      'cams',
+    ]);
+  });
+
+  test('keep every subject once, and leave the registry as it was', () => {
+    const before = FEATURES.map(f => f.key);
+    const rows = sidebarRows(FEATURES).filter(r => r !== CATEGORIES);
+    expect(rows).toHaveLength(FEATURES.length);
+    expect(FEATURES.map(f => f.key)).toEqual(before);
   });
 });

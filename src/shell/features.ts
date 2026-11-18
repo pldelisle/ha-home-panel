@@ -1,6 +1,7 @@
 // The registry of the panel's ten subjects, in rail order: the rail, the phone's bar and the panes are drawn from it.
 // Pattern: registry (Fowler, Patterns of Enterprise Application Architecture, Registry) of plug-ins (Plugin): adding a
 // subject is one folder and one line here; every subject is a feature's own descriptor since the Automations move (#273).
+// `sidebarRows` orders them for the Liquid Glass sidebar (ADR 0038); the registry's own order is the rail's and the bar's.
 // Must not: hold state, or list a subject twice.
 import type {FeatureDescriptor, FeatureKey} from '../ui/feature.ts';
 import {airFeature} from '../features/air/index.ts';
@@ -38,4 +39,21 @@ export const isFeatureKey = (value: string): value is FeatureKey => FEATURES.som
  */
 export function visibleTab(tab: string, shown: Readonly<Partial<Record<FeatureKey, boolean>>>): FeatureKey {
   return isFeatureKey(tab) && shown[tab] !== false ? tab : 'home';
+}
+
+/** The heading row of the Liquid Glass sidebar, between its first group and the categories. */
+export const CATEGORIES = Symbol('categories');
+
+/** The two sections the sidebar lists before its Categories heading, in order. */
+const SIDEBAR_FIRST: readonly FeatureKey[] = ['home', 'auto'];
+
+/**
+ * The rows of the Liquid Glass sidebar (ADR 0038): Home and Automations, the Categories heading, then every other section in rail order.
+ * The DOM follows this order, so the keyboard walks the rows as the eye does; Material's rail and the phone's bar keep `features` as it is.
+ */
+export function sidebarRows(
+  features: readonly FeatureDescriptor[],
+): readonly (FeatureDescriptor | typeof CATEGORIES)[] {
+  const first = SIDEBAR_FIRST.flatMap(key => features.filter(f => f.key === key));
+  return [...first, CATEGORIES, ...features.filter(f => !SIDEBAR_FIRST.includes(f.key))];
 }

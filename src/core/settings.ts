@@ -1,4 +1,4 @@
-// The per-browser settings (theme, text size, wallpaper, glass level, last tab, design) behind a storage parameter.
+// The per-browser settings (theme, text size, wallpaper, glass level, last tab, design, sidebar) behind a storage parameter.
 // Pattern: a Storage-like parameter (accept dependencies, don't create them: Ousterhout, A Philosophy of Software
 // Design); parse at the edge, so a bad value becomes the default (King, Parse, don't validate).
 // Observer (Gamma et al., Design Patterns): `subscribe` tells a listener after each write, so what reads a setting need not poll.
@@ -27,6 +27,8 @@ export interface Settings {
   design: string;
   /** Under Material, the seed the palette is built from (`house`, `dawn`, ...); anything else parses to `house`, and Apple keeps it for the way back. */
   seed: string;
+  /** The Liquid Glass tablet's sidebar: `collapsed` (an icon strip, the default) or `open` (icons and labels); anything else parses to `collapsed`. */
+  sidebar: string;
 }
 
 export interface PanelSettings {
@@ -45,6 +47,7 @@ const KEYS: Record<keyof Settings, string> = {
   tab: 'home-panel-tab',
   design: 'home-panel-design',
   seed: 'home-panel-seed',
+  sidebar: 'home-panel-sidebar',
 };
 const VERSION_KEY = 'home-panel-settings';
 const VERSION = '1';
@@ -88,6 +91,7 @@ export function createSettings(storage: KeyValueStorage, defaults: SettingsDefau
       tab: read('tab') || 'home',
       design: design(),
       seed: parseSeed(read('seed')),
+      sidebar: read('sidebar') === 'open' ? 'open' : 'collapsed',
     }),
 
     set(key, value) {

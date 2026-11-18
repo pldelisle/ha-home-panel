@@ -149,6 +149,18 @@ for (const viewport of ['tablet', 'phone'] as const) {
           }
 
           if (viewport === 'tablet') {
+            // the Liquid Glass sidebar opened (#491): glass panel, the two groups, the open section tinted with its own colour. Every other
+            // tablet screen shows the strip it starts as
+            test('sidebar open', async ({house}) => {
+              await house.tab('climate');
+              await house.root().getByRole('button', {name: 'Show sidebar'}).click();
+              await expect(house.root().getByRole('button', {name: 'Hide sidebar'})).toHaveAttribute(
+                'aria-expanded',
+                'true',
+              );
+              await expect(house.page).toHaveScreenshot(`sidebar-open-${viewport}-${theme}-en.png`);
+            });
+
             test('settings popup', async ({house}) => {
               await house.root().locator('#gear').click();
               await expect(house.root().locator('#setpop')).toBeVisible();

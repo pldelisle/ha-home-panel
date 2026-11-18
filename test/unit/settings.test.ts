@@ -29,6 +29,7 @@ const DEFAULTS = {
   tab: 'home',
   design: 'apple',
   seed: 'house',
+  sidebar: 'collapsed',
 };
 
 describe('reading', () => {
@@ -46,6 +47,7 @@ describe('reading', () => {
       'home-panel-tab': 'climate',
       'home-panel-design': 'material',
       'home-panel-seed': 'meadow',
+      'home-panel-sidebar': 'open',
     });
     expect(createSettings(storage).get()).toEqual({
       theme: 'dark',
@@ -56,6 +58,7 @@ describe('reading', () => {
       tab: 'climate',
       design: 'material',
       seed: 'meadow',
+      sidebar: 'open',
     });
   });
 
@@ -79,6 +82,19 @@ describe('reading', () => {
     expect(createSettings(mapStorage({'home-panel-design': 'apple'}).storage, android).get().design).toBe('apple');
     expect(createSettings(mapStorage({'home-panel-design': 'google'}).storage, android).get().design).toBe('material');
     expect(createSettings(throwing, android).get().design).toBe('material');
+  });
+
+  test('the sidebar is collapsed unless the stored value says open', () => {
+    expect(createSettings(mapStorage().storage).get().sidebar).toBe('collapsed');
+    expect(createSettings(mapStorage({'home-panel-sidebar': 'open'}).storage).get().sidebar).toBe('open');
+    for (const junk of ['', 'Open', 'expanded', 'collapsed', 'true'])
+      expect(createSettings(mapStorage({'home-panel-sidebar': junk}).storage).get().sidebar).toBe('collapsed');
+  });
+
+  test('the sidebar is written under its own key', () => {
+    const {map, storage} = mapStorage();
+    createSettings(storage).set('sidebar', 'open');
+    expect(map.get('home-panel-sidebar')).toBe('open');
   });
 
   test('cards are solid unless the stored value says glass', () => {
@@ -131,6 +147,7 @@ describe('writing', () => {
       tab: 'energy',
       design: 'apple',
       seed: 'house',
+      sidebar: 'collapsed',
     });
   });
 

@@ -6,6 +6,8 @@ The words the panel and its code use. One word per concept: use it in issues, te
 
 **Tab** — A button on the tablet's rail or the phone's bottom bar that picks a subject (Home, Lights, Climate and so on). Avoid: page (and the document's background is "the document" in code, `claimDocument`, never "the page").
 
+**Sidebar** — The tablet's navigation under Liquid Glass: a glass panel with a toggle and one row per section in two groups (Home and Automations, then Categories), collapsed to a strip of icons by default; `home-panel-sidebar` (`collapsed` or `open`) in the settings, `.sbo` on the frame (ADR 0038). It is the rail's markup, drawn differently; Material keeps its rail and the phone its bottom bar. Avoid: menu, drawer.
+
 **Pane** — What a tab shows: the content of one of the ten subjects on the tablet rail. Avoid: page.
 
 **Pane header** — The block a pane opens with: a badge in the subject's colour, the title, a line under it and, on Lights, the Arrange buttons; the kit's `<hp-pane-header>`, with the line and the buttons as slotted nodes its pane fills. The summary panes' header (Climate, Weather, Car, Energy, Air) shows on the phone only, since a tablet's pane opens on a detail with its own; Home's shows on a tablet only.
