@@ -65,7 +65,7 @@
 }
 /* The Material switch (ADR 0037, #464): a 52 by 32 track, a handle that grows from 16 to 24 px and carries a check when on. Off is the highest surface
    container with a 2 px outline edge and a 16 px outline handle; on is the primary track and a 24 px on-primary handle, raised, with a primary check.
-   The handle travels and grows on the spatial-fast spring (`--motion-spring`), the colours fade (effects); the hit area is 48 tall around the track. */
+   The handle is one 24 px circle placed once and moved by the compositor alone: `translateX` travels it and `scale` (16/24 off) grows it, on the spatial-fast spring (`--motion-spring`); the colours fade (effects); the hit area is 48 tall around the track. */
 :host([design='material']) .switch {
   width: 52px;
   height: 32px;
@@ -77,17 +77,15 @@
   inset: -8px 0;
 }
 :host([design='material']) .switch::after {
-  top: 8px;
-  left: 8px;
-  width: 16px;
-  height: 16px;
+  top: 4px;
+  left: 4px;
+  width: 24px;
+  height: 24px;
   background: var(--md-outline);
   box-shadow: none;
+  transform: translateX(0) scale(calc(16 / 24));
   transition:
-    left var(--motion-switch-ms) var(--motion-spring),
-    top var(--motion-switch-ms) var(--motion-spring),
-    width var(--motion-switch-ms) var(--motion-spring),
-    height var(--motion-switch-ms) var(--motion-spring),
+    transform var(--motion-switch-ms) var(--motion-spring),
     background-color var(--motion-fade-ms) var(--motion-fade),
     box-shadow var(--motion-fade-ms) var(--motion-fade);
 }
@@ -96,13 +94,9 @@
   box-shadow: none;
 }
 :host([design='material']) .switch[aria-checked='true']::after {
-  top: 4px;
-  left: 24px;
-  width: 24px;
-  height: 24px;
   background: var(--md-on-primary);
   box-shadow: var(--elevation-1);
-  transform: none;
+  transform: translateX(20px) scale(1);
 }
 :host([design='material']) .chk {
   position: absolute;

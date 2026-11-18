@@ -174,7 +174,7 @@ for (const {viewport, theme} of SHOTS) {
       await lock.click();
       await expect(lock).toHaveAttribute('aria-checked', 'true');
       // the handle's spring has settled
-      await house.page.waitForTimeout(600);
+      await lock.evaluate(button => Promise.all(button.getAnimations({subtree: true}).map(a => a.finished)));
       await expect(charger).toHaveScreenshot(`material-switch-on-${viewport}-${theme}-en.png`);
     });
   });

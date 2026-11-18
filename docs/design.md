@@ -57,6 +57,7 @@ value, so a second design language can redefine the set in one place. No rule wr
 | Card                | `--shape-card`; inside a sheet or a compact pane `--shape-card-compact`                                                                                              | 22, 18 px                                         |
 | Stat tile           | `--shape-stat-tile`                                                                                                                                                  | 20 px                                             |
 | Well and control    | `--shape-well`, `--shape-control`, then `--shape-control-sm`, `--shape-switch`                                                                                       | 16, 16, 14, 15 px                                 |
+| List group          | `--shape-list-item` (a row), `--shape-list-group` (the group's outer ends)                                                                                           | 16, 16 px                                         |
 | Segment, focus ring | `--shape-segment` (a segmented control's option, a nested row), `--shape-focus`                                                                                      | 12, 8 px                                          |
 | Icon square         | `--shape-icon-xl`, `-lg`, `-md`, then `--shape-icon`, `--shape-icon-sm`                                                                                              | 13, 12, 11, 10, 9 px                              |
 | Bar and track ends  | `--shape-track-lg`, `-md`, `--shape-track`, `--shape-bar`, `-sm`, `-xs`                                                                                              | 6, 5, 4, 3, 2, 1 px                               |
@@ -70,7 +71,7 @@ value, so a second design language can redefine the set in one place. No rule wr
   `-3` (the toast), and the keyboard focus ring is `--focus-color`, `--focus-width`, `--focus-offset`.
 - The Material design (ADR 0037, #463) redefines these same tokens in `tokens.css` under `.app[data-design='material']`, on its own scale (`--shape-extra-small`
   4 ... `--shape-extra-large` 28, `--shape-full`, which only that block declares: a rule reads the role, never the scale). A card is 28 and flat, a stat tile 16,
-  a well 12 and a control 16, a chip, a segment and the focus ring 8, a switch, a nav item and a pill full. `--shape-pill-pressed` is what a pill becomes under a
+  a well 12 and a control 16, a chip, a segment and the focus ring 8, a switch, a nav item and a pill full, a list row 4 (`--shape-list-item`) and the ends of its group 16 (`--shape-list-group`). `--shape-pill-pressed` is what a pill becomes under a
   finger (16), and the springs are `linear()` easings sampled from Material's motion scheme, with their settle time as the duration (spatial 347 / 411 / 567 ms,
   effects 137 / 211 / 299 ms). A press scales nothing (`--press-scale: 1`): `common.css` lays a state layer on every button (the content colour at 8% under a
   mouse, 10% under the keyboard or a finger, `border-radius: inherit`), morphs a pressed pill's corners, and under Reduce Motion turns every transition into the
