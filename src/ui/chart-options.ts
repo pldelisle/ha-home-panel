@@ -68,17 +68,18 @@ const STEPS_H = [1, 2, 3, 4, 6, 12];
 /**
  * How to cut a span of hours into equal steps that are whole hours, so every tick of a time axis falls on a round hour: the number of steps and
  * the span they cover, which is the span itself when a step divides it and the next whole number of steps when none does. The step is the one
- * that loses the fewest hours (the smallest when they tie) among those that need at most `MAX_STEPS`; nothing for a span with no hour in it.
+ * that loses the fewest hours (the smallest when they tie) among those that need at most `maxSteps` (`MAX_STEPS` when the caller has no narrower
+ * axis); nothing for a span with no hour in it.
  * ApexCharts spaces a time axis' ticks evenly from its first (`tickAmount` steps), so a span it can split this way starts and ends on the hour.
  */
-export function hourTicks(spanMs: number): {intervals: number; span: number} | undefined {
+export function hourTicks(spanMs: number, maxSteps = MAX_STEPS): {intervals: number; span: number} | undefined {
   const hours = Math.ceil(spanMs / HOUR_MS - 1e-9);
   if (hours < 1) return undefined;
   const steps = [...STEPS_H, ...Array.from({length: Math.ceil(hours / 24)}, (_, i) => 24 * (i + 1))];
   let best: {intervals: number; span: number} | undefined;
   for (const step of steps) {
     const intervals = Math.ceil(hours / step);
-    if (intervals > MAX_STEPS) continue;
+    if (intervals > maxSteps) continue;
     const span = intervals * step * HOUR_MS;
     if (!best || span < best.span) best = {intervals, span};
   }
@@ -105,9 +106,10 @@ export function hourRowsAxis(
   first: number,
   last: number,
   fmt: Pick<Formatters, 'hourNow'>,
+  maxSteps?: number,
 ): {min: number; max: number; tickAmount: number} | undefined {
   const start = last - first > DAY_MS ? midnightAtOrAfter(first, fmt) : first;
-  const ticks = hourTicks(last - start);
+  const ticks = hourTicks(last - start, maxSteps);
   return ticks ? {min: start, max: start + ticks.span, tickAmount: ticks.intervals} : undefined;
 }
 

@@ -439,7 +439,7 @@
       "fr": {
         "when": "17 h"
       },
-      "written": "Heure la plus chargée : 4,2 kWh, 17 h. Touchez une barre pour voir ce qui fonctionnait."
+      "written": "Heure la plus chargée : 4,2 kWh, 17 h."
     },
     {
       "key": "energy.detail.busiest",
@@ -450,7 +450,7 @@
       "fr": {
         "when": "lun. 17 h"
       },
-      "written": "Heure la plus chargée : 4,2 kWh, lun. 17 h. Touchez une barre pour voir ce qui fonctionnait."
+      "written": "Heure la plus chargée : 4,2 kWh, lun. 17 h."
     },
     {
       "key": "energy.detail.monthSum",

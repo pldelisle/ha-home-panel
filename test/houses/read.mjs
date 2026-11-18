@@ -88,7 +88,11 @@ function automationRuns(automations, now, timeZone) {
 }
 
 /** How far apart the recorder's points are, and how many the panel gets, for each period (an unknown period reads as a day). */
-const PERIODS = {'5minute': {step: 3e5, n: 300}, hour: {step: 36e5, n: 170}, day: {step: 864e5, n: 60}};
+const PERIODS = {
+  '5minute': {step: 3e5, n: 300, aligned: true},
+  hour: {step: 36e5, n: 170, aligned: true},
+  day: {step: 864e5, n: 60, aligned: false},
+};
 
 /** The Air sensors' own ranges, `[base, swing]` by id: the purifier's and the station's only, so no other entity's curve moves. */
 const AIR_CURVES = [
@@ -100,15 +104,19 @@ const AIR_CURVES = [
   [/^sensor\.outdoor_aqi$/, 36, 18],
 ];
 
-/** Smooth made-up curves for the recorder's statistics, one series per known entity id. */
+/**
+ * Smooth made-up curves for the recorder's statistics, one series per known entity id. The rows of an hour or of five minutes start on
+ * their boundary, as Home Assistant writes them, whatever minute it is asked at: the last row is the bucket `now` falls in.
+ */
 function statisticsOf(states, now, ids, period) {
   const out = {},
-    {step, n} = PERIODS[period] ?? PERIODS.day;
+    {step, n, aligned} = PERIODS[period] ?? PERIODS.day,
+    last = aligned ? Math.floor(now / step) * step : now;
   for (const id of ids) {
     if (!states[id]) continue;
     out[id] = [];
     for (let i = n; i >= 0; i--) {
-      const t = now - i * step,
+      const t = last - i * step,
         w = Math.sin(i / 6) * 0.5 + 0.5;
       const [, base, swing] = AIR_CURVES.find(([re]) => re.test(id)) ?? [],
         v =

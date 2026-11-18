@@ -196,6 +196,22 @@ describe('the main chart, today and the week', () => {
     });
   });
 
+  // a tilted label is a label that did not fit (#421): the hours' labels are never rotated, and a phone is given fewer of them
+  test('the hours’ labels are never tilted, and a phone has four steps at most, so it labels every six hours over a day', () => {
+    const first = Date.parse('2026-11-07T00:00:00-05:00');
+    const day: MainRows = {
+      range: 'today',
+      rows: Array.from({length: 24}, (_, i): FlowRow => [first + i * 36e5, 1, 1, 1, 1, 4]),
+    };
+    for (const compact of [false, true])
+      expect(at(mainChartOptions(day, NAMES, deps('en', compact)), 'xaxis.labels')).toMatchObject({
+        rotate: 0,
+        hideOverlappingLabels: true,
+      });
+    expect(at(mainChartOptions(day, NAMES, deps('en', false)), 'xaxis.tickAmount')).toBe(8);
+    expect(at(mainChartOptions(day, NAMES, deps('en', true)), 'xaxis.tickAmount')).toBe(4);
+  });
+
   test('the axis counts whole kWh from zero and the tooltip reads the hour and two decimals', () => {
     const today = mainChartOptions(rows('today'), NAMES, deps());
     const week = mainChartOptions(rows('week'), NAMES, deps());

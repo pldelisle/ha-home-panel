@@ -35,6 +35,9 @@ const openTab = async (house: House) => {
   await expect(house.root().locator('#pane-energy')).toBeVisible();
 };
 
+// the phone's range tabs, under the pane's header
+const phoneTab = (house: House, name: string) => pane(house).locator(':scope > hp-range-tabs').getByRole('tab', {name});
+
 // the statistics requests of the history's power windows: the grid with the loads for a week by the hour and for a year by the day, and the
 // water heater for a day by five minutes (every one names the water heater's power; the legacy panel's own reads, the Car card's daily
 // bars among them, do not)
@@ -73,7 +76,7 @@ const addHilo = async (house: House) => {
 test.describe('on a phone', () => {
   test.beforeEach(() => phoneOnly());
 
-  test('the tab is the header and the detail inline: the range, the flow with the grid value, the charts and the totals; no card, no sheet', async ({
+  test('the tab is the header and the detail inline: the range, the flow with the grid value alone on Now, then the charts and the totals; no card, no sheet', async ({
     house,
   }) => {
     await openTab(house);
@@ -90,9 +93,12 @@ test.describe('on a phone', () => {
     await expect(detail(house)).toBeVisible();
     await expect(flow(house).locator('text.big').nth(1)).toHaveText('3.2kW');
     await expect(flow(house).locator('text.st', {hasText: /^kW · Home$/})).toHaveText('kW · Home');
+    // Now is the live flow alone: no chart, donut or totals, which are the history's
+    await expect(detail(house).locator('hp-chart, .donut, .totals')).toHaveCount(0);
+    await phoneTab(house, 'Today').click();
     await expect(detail(house).locator('.inner > hp-chart .apexcharts-canvas')).toBeVisible();
     // today has no row in this clock's recorder, so its donut would say so: the week has days
-    await pane(house).locator(':scope > hp-range-tabs').getByRole('tab', {name: 'Week'}).click();
+    await phoneTab(house, 'Week').click();
     await expect(detail(house).locator('.donutchart .apexcharts-canvas')).toBeVisible();
     await expect(detail(house).locator('.totals .tile')).toHaveCount(6);
     await expect(pane(house).locator('hp-sheet[open]')).toHaveCount(0);
@@ -102,6 +108,7 @@ test.describe('on a phone', () => {
 
   test('a total that has a range sets the tab to it; the car and the rate stay plain tiles', async ({house}) => {
     await openTab(house);
+    await phoneTab(house, 'Today').click();
     const totals = detail(house).locator('.totals');
     await expect(totals.locator('button.tile')).toHaveCount(4);
     await expect(totals.locator('.tile')).toHaveCount(6);
@@ -201,6 +208,7 @@ test.describe('on a phone', () => {
     const atStart = await energyReads(house);
     expect(await yearReads(house), 'at start').toBe(0);
     await openTab(house);
+    await phoneTab(house, 'Today').click();
     await expect(detail(house).locator('.totals .tile .v').first()).not.toHaveText(/^No reading/);
     await expect.poll(() => yearReads(house), 'opening Energy').toBe(1);
     expect(await energyReads(house), 'opening Energy').toBe(atStart + 1);
@@ -369,8 +377,10 @@ test.describe('the detail on a tablet', () => {
   // the statistics the panel asked for so far, as the harness saw them
   const asked = async (house: House) => (await house.asked(STATISTICS)).length;
 
+  // the tab opens on Now, the live flow alone: the history's cards are Today's and the ranges after it
   const openDetail = async (house: House) => {
     await house.tab('energy');
+    await rangeTab(house, 'Today').click();
     await expect(charts(house)).toHaveCount(1); // the main chart; the donut is in its own card
     await expect(detail(house).locator('.donutchart .apexcharts-canvas')).toBeVisible();
   };
@@ -417,7 +427,8 @@ test.describe('the detail on a tablet', () => {
   test('the tab’s one range drives the Sankey: Now shows the live flow, the other ranges the ribbons of their days, and none asks the recorder for anything', async ({
     house,
   }) => {
-    await openDetail(house);
+    await house.tab('energy');
+    await expect(detail(house).locator('.sankeyblock hp-power-flow svg')).toBeVisible();
     const before = await asked(house);
     const note = detail(house).locator('.sankeyblock p');
     // no control of its own: the detail's only tabs are the header's five
@@ -457,16 +468,18 @@ test.describe('the detail on a tablet', () => {
       'EV charging',
       'Rest of home',
     ]);
-    // Now draws today's hours, so the donut is today's (eight hours into the day)
+    // Today draws today's hours, so the donut is today's (eight hours into the day)
     await expect(detail(house).locator('.donut').locator('xpath=..').locator('p').first()).toHaveText(
       /^Today so far\. Rest of home/,
     );
     await expect(rows.locator('td.r:nth-child(2)')).toHaveText(['70.7 kWh', '17.7 kWh', '17.7 kWh', '0.0 kWh']);
     await expect(rows.locator('td.r:nth-child(3)')).toHaveText(['67%', '17%', '17%', '0%']);
     // the test house's devices (106 kWh of hours) outrun its meter (which reads 0.0 today): the live flow and the uses each say so once, and the Totals keep the meter
+    await expect(detail(house).locator('.histnote')).toHaveText('Devices report more than the meter today.');
+    await rangeTab(house, 'Now').click();
     await expect(flow(house).locator('svg')).toContainText('Devices report more than the meter');
     await expect(flow(house).locator('svg')).not.toContainText('Rest of home');
-    await expect(detail(house).locator('.histnote')).toHaveText('Devices report more than the meter today.');
+    await rangeTab(house, 'Today').click();
     // the Month tab is the 30 days the donut always drew
     await rangeTab(house, 'Month').click();
     await expect(detail(house).locator('.donut').locator('xpath=..').locator('p')).toHaveText(
@@ -581,6 +594,7 @@ test.describe('the detail on a phone', () => {
 
   test('the charts draw inline in the tab, under the range tabs', async ({house}) => {
     await openTab(house);
+    await phoneTab(house, 'Today').click();
     await expect(detail(house).locator('.inner > hp-chart .apexcharts-canvas')).toBeVisible();
     // today has no row in this clock's recorder, so its donut would say so: the week has days
     await pane(house).locator(':scope > hp-range-tabs').getByRole('tab', {name: 'Week'}).click();
@@ -597,6 +611,8 @@ test.describe('the detail on a phone', () => {
     await house.root().locator('#htiles [data-opens="energy.detail"]').click();
     const sheet = pane(house).locator('hp-sheet:has(hp-energy-detail)');
     await expect(sheet).toHaveAttribute('open', '');
+    await expect(detail(house).locator('hp-power-flow svg')).toBeVisible(); // the sheet opens on Now
+    await sheet.locator('hp-range-tabs').getByRole('tab', {name: 'Today'}).click();
     await expect(detail(house).locator('.inner > hp-chart .apexcharts-canvas')).toBeVisible();
     await expect(sheet.locator(':scope > [slot="sub"]')).toContainText('Grid supplying 3.2 kW');
     await sheet.locator('hp-range-tabs').getByRole('tab', {name: 'Month'}).click();
@@ -608,12 +624,47 @@ test.describe('the detail on a phone', () => {
 
   test('the tab has no serious or critical accessibility finding', async ({house}) => {
     await openTab(house);
+    await phoneTab(house, 'Today').click();
     await expect(detail(house).locator('.inner > hp-chart .apexcharts-canvas')).toBeVisible();
     // today has no row in this clock's recorder, so its donut would say so: the week has days
     await pane(house).locator(':scope > hp-range-tabs').getByRole('tab', {name: 'Week'}).click();
     await expect(detail(house).locator('.donutchart .apexcharts-canvas')).toBeVisible();
     const {violations} = await new AxeBuilder({page: house.page}).include('home-panel').analyze();
     expect(violations.filter(v => v.impact === 'serious' || v.impact === 'critical').map(v => v.id)).toEqual([]);
+  });
+});
+
+// Now and Today are not the same page (#421): Now is the live flow alone, and the hours' bars, which Today draws, start on the clock hour and are
+// labelled in round hours, never tilted, at a clock that is twenty minutes past one (the recorder's rows start on the hour, as Home Assistant's do).
+test.describe('Now and Today, and the hours’ axis', () => {
+  test.use({houseOpts: {cfg: FULL_CFG, time: '2026-11-07T20:20:00-05:00', frozen: true}});
+
+  const open = async (house: House) => {
+    if (test.info().project.name === 'phone') await openTab(house);
+    else await house.tab('energy');
+  };
+  const tab = (house: House, name: string) => house.root().locator('#pane-energy').getByRole('tab', {name}).first();
+
+  test('Now draws the live flow and no chart; Today draws the hours, whose labels are round hours and horizontal', async ({
+    house,
+  }) => {
+    await open(house);
+    await expect(tab(house, 'Now')).toHaveAttribute('aria-selected', 'true');
+    await expect(flow(house).locator('svg')).toBeVisible();
+    await expect(detail(house).locator('hp-chart, .donut, .totals')).toHaveCount(0);
+    await expect(detail(house).locator('.inner h3')).toHaveText(['Where the power goes']);
+
+    await tab(house, 'Today').click();
+    await expect(detail(house).locator('.inner > hp-chart .apexcharts-canvas')).toBeVisible();
+    await expect(detail(house).locator('hp-power-flow')).toHaveCount(0);
+    const labels = detail(house).locator('.mainblock .apexcharts-xaxis-label tspan');
+    await expect(labels.first()).toBeVisible();
+    const texts = (await labels.allTextContents()).filter(text => text !== '');
+    expect(texts.length, 'a few labels').toBeGreaterThan(2);
+    for (const text of texts) expect(text, 'a round hour').toMatch(/^(12|[1-9]|1[01]) (am|pm)$/);
+    // a tilted label is one that did not fit: none is rotated
+    const tilted = detail(house).locator('.mainblock .apexcharts-xaxis-label[transform*="rotate"]');
+    await expect(tilted).toHaveCount(0);
   });
 });
 
@@ -635,18 +686,21 @@ test.describe('the bare house, with no history yet', () => {
   }) => {
     await openBare(house);
     const cards = detail(house).locator('.inner');
-    // Now: the live flow has no reading from the grid, so the Sankey says that; the three others say the one sentence
-    await expect(cards.locator('p.loading', {hasText: NO_HISTORY})).toHaveCount(3);
-    await expect(cards.locator('h3')).toHaveText([
-      'Today, hour by hour',
-      'Where the power goes',
-      'Where it went',
-      'Totals',
-    ]);
+    // Now is the live flow alone, which has no reading from the grid, so the Sankey says that and the history's cards are not there
+    await expect(cards.locator('h3')).toHaveText(['Where the power goes']);
     await expect(detail(house).locator('.sankey p.loading')).toHaveText('No reading');
-    for (const range of ['Week', 'Month', 'Year']) {
+    await expect(cards.locator('p.loading', {hasText: NO_HISTORY})).toHaveCount(0);
+    // the four others say the one sentence
+    const TITLES = {
+      Today: 'Today, hour by hour',
+      Week: 'Last 7 days, hour by hour',
+      Month: 'Last 30 days, day by day',
+      Year: 'Month by month',
+    } as const;
+    for (const range of ['Today', 'Week', 'Month', 'Year'] as const) {
       await house.root().locator('#pane-energy').getByRole('tab', {name: range}).first().click();
       await expect(cards.locator('p.loading', {hasText: NO_HISTORY})).toHaveCount(4);
+      await expect(cards.locator('h3')).toHaveText([TITLES[range], 'Where the power goes', 'Where it went', 'Totals']);
     }
     // nothing of what an empty chart drew: no chart (axes), no donut's table, no tile of 0 kWh, no legend
     await expect(detail(house).locator('hp-chart')).toHaveCount(0);

@@ -229,6 +229,11 @@ describe('hourTicks', () => {
     expect(hourTicks(15 * HOUR)).toEqual({intervals: 5, span: 15 * HOUR});
   });
 
+  test('takes the room a caller has: fewer steps for a narrower axis', () => {
+    expect(hourTicks(24 * HOUR, 4)).toEqual({intervals: 4, span: 24 * HOUR}); // every six hours
+    expect(hourTicks(14 * HOUR, 4)).toEqual({intervals: 4, span: 16 * HOUR}); // every four
+  });
+
   test('has nothing to say of a span with no hours in it', () => {
     expect(hourTicks(0)).toBeUndefined();
   });

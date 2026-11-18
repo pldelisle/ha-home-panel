@@ -158,6 +158,8 @@ export interface EnergyDetailView {
   error: string | null;
   /** The range tabs, now to year. */
   ranges: RangeTab<EnergyRange>[];
+  /** Now: the live flow is the whole detail, and the history's cards (the hours, the donut, the totals) are for the other ranges. */
+  live: boolean;
   main: {title: string; caption: string; legend: LegendItem[]; notice: Notice};
   sankey: {title: string; note: string; body: SankeyBody};
   donut: {
@@ -561,6 +563,7 @@ export function energyModel(
       sub: summary,
       error: error === null ? null : t('energy.historyFailed', {reason: error}),
       ranges: ENERGY_RANGES.map(key => ({range: key, label: t(RANGE_WORDS[key])})),
+      live: range === 'now',
       main: mainBlock(history, detail),
       sankey: sankeyBlock(inputs, history, flow, detail),
       donut: donutBlock(history, detail),

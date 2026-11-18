@@ -645,7 +645,7 @@ export const en = {
   'energy.detail.week': 'Last 7 days, hour by hour',
   'energy.detail.month': 'Last 30 days, day by day',
   'energy.detail.year': 'Month by month',
-  'energy.detail.busiest': 'Busiest hour: {kwh} kWh, {when}. Tap a bar to see what was running.',
+  'energy.detail.busiest': 'Busiest hour: {kwh} kWh, {when}.',
   'energy.detail.monthSum':
     '{total} kWh in 30 days: room heating {heat}, water heating {water}, EV charging {ev}, rest of home {rest}.',
   'energy.detail.yearCaption': 'Last 12 months. Months with missing data look shorter.',

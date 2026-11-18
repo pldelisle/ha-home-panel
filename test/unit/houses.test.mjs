@@ -262,4 +262,17 @@ describe('readHouse', () => {
     readHouse(full.house, {now: REFERENCE_MS, timeZone: TOWN_ZONE, frenchAreas: true});
     expect(full.house).toEqual(before);
   });
+
+  // Home Assistant's recorder writes an hour's row at the top of the hour and a five-minute row at a multiple of five minutes, whatever the minute it is asked at
+  test('the recorder’s rows start on their period’s boundary, at a clock that is not on one', async () => {
+    const asked = Date.parse('2026-11-07T08:23:41-05:00');
+    const {ws} = readHouse(full.house, {now: asked, timeZone: TOWN_ZONE});
+    const rows = async period =>
+      (await ws({type: 'recorder/statistics_during_period', statistic_ids: ['sensor.office_temperature'], period}))[
+        'sensor.office_temperature'
+      ];
+    expect((await rows('hour')).every(row => row.start % 36e5 === 0)).toBe(true);
+    expect((await rows('5minute')).every(row => row.start % 3e5 === 0)).toBe(true);
+    expect((await rows('hour')).at(-1).start).toBe(Date.parse('2026-11-07T08:00:00-05:00'));
+  });
 });
