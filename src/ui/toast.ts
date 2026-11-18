@@ -1,9 +1,11 @@
 // <hp-toast>: the short message at the bottom of the screen: a done toast in the frame's colours, a failure in red with Dismiss.
 // Pattern: humble object (Meszaros, xUnit Test Patterns): it draws `message` and `sticky` and says a tap by `toast-dismiss`
 // (Lit docs, Events); when it goes is the shell's, through the pure schedule in toast-schedule.ts.
+// The Material design draws it as a snackbar (toast.element.css): a failure leads with the warn icon, which the Apple look hides.
 // Must not: run a timer, hide itself, word a message, or listen for `ToastEvent` (the shell does).
 import {LitElement, html, unsafeCSS} from 'lit';
 import {AppearanceConsumer} from './controllers/appearance-consumer.ts';
+import {ico} from './icons.ts';
 import {common} from './styles/index.ts';
 import {forShadow} from './styles/host.ts';
 import toastOwn from './toast.element.css?inline';
@@ -50,7 +52,8 @@ export class HpToast extends LitElement {
     >
       ${
         this.sticky
-          ? html`<span>${this.message}</span><button type="button" class="tdis">${this.dismissLabel}</button>`
+          ? html`<span class="tic">${ico('warn', 18)}</span><span>${this.message}</span
+              ><button type="button" class="tdis">${this.dismissLabel}</button>`
           : this.message
       }
     </div>`;

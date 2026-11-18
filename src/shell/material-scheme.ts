@@ -99,6 +99,8 @@ export function materialScheme(seedHex: string, dark: boolean, contrast: number)
   const hex = (role: DynamicColor): string => hexFromArgb(role.getArgb(scheme));
   const out: Record<string, string> = {};
   for (const [name, role] of MATERIAL_ROLES) out[`--md-${kebab(name)}`] = hex(role);
+  // `error` on the snackbar's inverse surface: the other theme's tone, as `inverse-primary` is (the plain `error` is the same theme's and does not read there)
+  out['--md-inverse-error'] = hexFromArgb(scheme.errorPalette.tone(dark ? 40 : 80));
   Object.assign(out, statusGroups(seed, dark, contrast));
   for (const [name, [light, night]] of Object.entries(ROLES)) {
     out[`--${name}`] = out[`--md-${kebab(dark ? night : light)}`];

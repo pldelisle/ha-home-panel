@@ -35,6 +35,9 @@
   font-size: calc(14px * var(--tx));
   text-align: left;
 }
+.toast .tic {
+  display: none; /* the Material snackbar's warn icon */
+}
 .toast .tdis {
   border: 0;
   border-radius: var(--shape-icon);
@@ -71,8 +74,53 @@
     background: var(--card);
   }
 }
-/* Material's type roles: see tokens.css. */
+/* The Material design's snackbar (#467), the design system's Snackbar: a one-line bar on `inverse-surface`, at most one action in `inverse-primary`,
+   a failure led by the warn icon in `error`. The shape and the elevation are the toast's role tokens (`--shape-snackbar` is extra small under Material,
+   `--elevation-3`); the glass pill does not apply, glass is off. Type: Material's roles, see tokens.css (body-medium for the message, label-large for the action). */
 :host([design='material']) .toast {
+  background: var(--md-inverse-surface);
+  color: var(--md-inverse-on-surface);
   font: var(--type-body-medium);
   letter-spacing: var(--track-body-medium);
+  padding: 14px 16px;
+  min-height: 48px;
+  box-sizing: border-box;
+  max-width: min(420px, calc(100% - 32px));
+  /* clear of the phone's navigation bar when there is one (--nav-bar-h, tokens.css; 0 elsewhere) */
+  bottom: calc(var(--nav-bar-h, 0px) + env(safe-area-inset-bottom, 0px) + 16px);
+}
+:host([design='material']) .toast.err {
+  gap: 8px;
+  padding: 0 8px 0 16px;
+}
+:host([design='material']) .toast.err > span:not(.tic) {
+  flex: 1;
+  padding-block: 14px;
+}
+:host([design='material']) .tic {
+  display: flex;
+  flex: none;
+  color: var(--md-inverse-error);
+}
+:host([design='material']) .toast .tdis {
+  background: none;
+  color: var(--md-inverse-primary);
+  font: var(--type-label-large);
+  letter-spacing: var(--track-label-large);
+  height: 40px;
+  min-height: 0;
+  padding: 0 12px;
+  border-radius: var(--shape-pill);
+}
+/* it rises on the toast's motion role (the spatial-default spring): the individual `translate` property, as `transform` already centres it */
+@keyframes snackrise {
+  from {
+    opacity: 0;
+    translate: 0 24px;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  :host([design='material']) .toast:not([hidden]) {
+    animation: snackrise var(--motion-toast-ms) var(--motion-toast) both;
+  }
 }
