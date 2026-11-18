@@ -124,7 +124,7 @@ export const en = {
   'settings.theme.auto': 'Auto',
   'settings.theme.autoCaption': 'Follows the device',
   'settings.design.title': 'Design',
-  'settings.design.apple': 'Apple',
+  'settings.design.apple': 'Liquid Glass',
   'settings.design.material': 'Material',
   // the seeds' names are the wallpapers' (settings.glass.*) and this one: House, the panel's own blue
   'settings.seed.title': 'Colour',
