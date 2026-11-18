@@ -567,9 +567,41 @@ test.describe('the controls', () => {
     await expect(row.locator('small')).toHaveText('No times saved · On');
   });
 
+  test('with departures off the time, the cabin and the days are dimmed and still; on, the time reads in the house’s format and each field fills a 44 pt row', async ({
+    house,
+  }) => {
+    await addComfort(house);
+    await openTab(house);
+    await departure(house).locator('button.open').click();
+    const sheet = editor(house);
+    const rows = sheet.locator('.lrow:has(.dtime), .lrow:has(.cabin), button.lrow');
+    await expect(rows).toHaveCount(9);
+    for (const row of await rows.all()) await expect(row).toHaveAttribute('aria-disabled', 'true');
+    await expect(sheet.locator('.dtime')).toBeDisabled();
+    await expect(sheet.locator('.cabin')).toBeDisabled();
+    await sheet.getByRole('checkbox', {name: 'Every Monday'}).click({force: true});
+    await expect(sheet.getByRole('checkbox', {name: 'Every Monday'})).toHaveAttribute('aria-checked', 'false');
+    await sheet.getByRole('switch', {name: 'Departure times'}).click();
+    for (const row of await rows.all()) await expect(row).toHaveAttribute('aria-disabled', 'false');
+    await expect(sheet.locator('.pick .shown').first()).toHaveText('8:00 am');
+    await sheet.locator('.dtime').fill('13:05');
+    await expect(sheet.locator('.pick .shown').first()).toHaveText('1:05 pm');
+    await expect(sheet.locator('.pick .shown').last()).toHaveText('Choose');
+    await sheet.getByRole('combobox').selectOption('high');
+    await expect(sheet.locator('.pick .shown').last()).toHaveText('Warm');
+    // the field is the row: as wide as it, and at least 44 pt tall
+    for (const field of ['.dtime', '.cabin']) {
+      const box = (await sheet.locator(field).boundingBox())!;
+      const row = (await sheet.locator(`.lrow:has(${field})`).boundingBox())!;
+      expect(box.height).toBeGreaterThanOrEqual(44);
+      expect(box.width).toBeCloseTo(row.width, 0);
+    }
+  });
+
   test('the editor saves only on Save: it waits for a cabin and a day and says why, then sends one call in five-minute steps', async ({
     house,
   }) => {
+    await house.setState(DEPARTURE, {state: 'on'});
     await openTab(house);
     await departure(house).locator('button.open').click();
     const sheet = editor(house);
@@ -599,8 +631,9 @@ test.describe('the controls', () => {
       state: 'ok',
       attributes: {schedule: {tuesday: {timeOfDay: {hours: 7, minutes: 15}}}},
     });
+    await house.setState(DEPARTURE, {state: 'on'});
     await openTab(house);
-    await expect(departure(house).locator('.open small')).toHaveText('Tue at 7:15 am · Off');
+    await expect(departure(house).locator('.open small')).toHaveText('Tue at 7:15 am · On');
     await departure(house).locator('button.open').click();
     const day = (name: string) => editor(house).getByRole('checkbox', {name});
     await expect(day('Every Tuesday')).toHaveAttribute('aria-checked', 'true');
@@ -619,6 +652,7 @@ test.describe('the controls', () => {
   }) => {
     const saved = (days: Record<string, object>) => ({state: 'ok', attributes: {schedule: days}});
     await house.setState(SCHEDULE, saved({tuesday: {timeOfDay: {hours: 7, minutes: 15}}}));
+    await house.setState(DEPARTURE, {state: 'on'});
     await openTab(house);
     await departure(house).locator('button.open').click();
     const day = (name: string) => editor(house).getByRole('checkbox', {name});
@@ -637,6 +671,7 @@ test.describe('the controls', () => {
   test('a save followed by Ford’s own schedule update keeps the cabin choice, which Ford does not report', async ({
     house,
   }) => {
+    await house.setState(DEPARTURE, {state: 'on'});
     await openTab(house);
     await departure(house).locator('button.open').click();
     await editor(house).getByRole('combobox').selectOption('high');
@@ -648,13 +683,14 @@ test.describe('the controls', () => {
       state: 'ok',
       attributes: {schedule: {monday: {timeOfDay: {hours: 8, minutes: 0}}}},
     });
-    await expect(departure(house).locator('.open small')).toHaveText('Mon at 8:00 am · Off');
+    await expect(departure(house).locator('.open small')).toHaveText('Mon at 8:00 am · On');
     await departure(house).locator('button.open').click();
     await expect(editor(house).getByRole('combobox')).toHaveValue('high');
   });
 
   test('the tab left and come back to begins the draft again', async ({house}) => {
     tabletOnly();
+    await house.setState(DEPARTURE, {state: 'on'});
     await openTab(house);
     await departure(house).locator('button.open').click();
     await editor(house).getByRole('checkbox', {name: 'Every Wednesday'}).click();
