@@ -1048,6 +1048,50 @@
         "action": "chauffe"
       },
       "translated": "thermopompe : chauffe"
+    },
+    {
+      "key": "climate.swing.swing",
+      "written": "Balayage"
+    },
+    {
+      "key": "climate.swing.positionAt",
+      "values": {
+        "n": "7"
+      },
+      "written": "Position 7"
+    },
+    {
+      "key": "climate.louversVertical",
+      "written": "Verticaux"
+    },
+    {
+      "key": "climate.louversHorizontal",
+      "written": "Horizontaux"
+    },
+    {
+      "key": "climate.louverVerticalPosition",
+      "written": "Position des volets verticaux"
+    },
+    {
+      "key": "climate.louverHorizontalPosition",
+      "written": "Position des volets horizontaux"
+    },
+    {
+      "key": "climate.hpSwingVertical",
+      "values": {
+        "swing": "position 7"
+      },
+      "written": "Volets verticaux : position 7"
+    },
+    {
+      "key": "climate.hpSwingHorizontal",
+      "values": {
+        "swing": "swing"
+      },
+      "fr": {
+        "swing": "balayage"
+      },
+      "written": "Volets horizontaux : balayage"
     }
   ]
 }

@@ -45,9 +45,12 @@ export interface HeatPumpInputs {
   fanModes: string[] | null;
   presetModes: string[] | null;
   swingModes: string[] | null;
+  /** `swing_horizontal_modes` (Home Assistant 2024.12): the side-to-side louvers set on their own; null when the unit sets them only through `swing_modes`, or not at all. */
+  swingHorizontalModes: string[] | null;
   fan: string | null;
   preset: string | null;
   swing: string | null;
+  swingHorizontal: string | null;
   /** When Home Assistant last saw the unit change, in milliseconds; null without a state. */
   lastUpdated: number | null;
 }
@@ -96,9 +99,11 @@ export function heatPump(
     fanModes: listAttributeOf(read, id, 'fan_modes'),
     presetModes: listAttributeOf(read, id, 'preset_modes'),
     swingModes: listAttributeOf(read, id, 'swing_modes'),
+    swingHorizontalModes: listAttributeOf(read, id, 'swing_horizontal_modes'),
     fan: textAttributeOf(read, id, 'fan_mode'),
     preset: textAttributeOf(read, id, 'preset_mode'),
     swing: textAttributeOf(read, id, 'swing_mode'),
+    swingHorizontal: textAttributeOf(read, id, 'swing_horizontal_mode'),
     lastUpdated: Number.isNaN(stamp) ? null : stamp,
   };
 }
