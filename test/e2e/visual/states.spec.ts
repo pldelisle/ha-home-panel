@@ -317,3 +317,42 @@ for (const lang of ['en', 'fr'] as const) {
     });
   });
 }
+
+// Rooms on the phone and under Material (#511): a room view on the phone, with its Back button, in light and dark; and the same view on Material's
+// tablet in light, where the rail selects no tab; and the phone's Home scrolled to its Rooms row. Material's tablet Home and the phone's More sheet,
+// which now list the rooms, are the matrix's and material.spec.ts's own shots, re-recorded.
+for (const theme of ['light', 'dark'] as const) {
+  test.describe(`room view on the phone, ${theme}`, () => {
+    test.use({viewport: VIEWPORTS.phone, houseOpts: {cfg: FULL_CFG, theme, time: AFTERNOON, frozen: true}});
+    // Home's Rooms row sits under the six tiles, below the first screen: scrolled to
+    test('Home Rooms row', async ({house}) => {
+      await house.tab('home');
+      await house.root().locator('#hrooms').scrollIntoViewIfNeeded();
+      await house.page.mouse.move(0, 0);
+      await expect(house.root().locator('#hrooms .hroom')).toHaveCount(3);
+      await expect(house.page).toHaveScreenshot(`home-rooms-row-phone-${theme}-en.png`);
+    });
+
+    test('room view', async ({house}) => {
+      await house.tab('home');
+      await house.root().locator('#hrooms .hroom', {hasText: 'Living room'}).click();
+      await expect(house.root().locator('#pane-room hp-light-tile')).toBeVisible();
+      await house.page.mouse.move(0, 0);
+      await expect(house.page).toHaveScreenshot(`room-view-phone-back-${theme}-en.png`);
+    });
+  });
+}
+
+test.describe('room view under Material, tablet, light', () => {
+  test.use({
+    viewport: VIEWPORTS.tablet,
+    houseOpts: {cfg: FULL_CFG, theme: 'light', design: 'material', time: AFTERNOON, frozen: true},
+  });
+  test('room view', async ({house}) => {
+    await house.tab('home');
+    await house.root().locator('#hrooms .hroom', {hasText: 'Living room'}).click();
+    await expect(house.root().locator('#pane-room hp-light-tile')).toBeVisible();
+    await house.page.mouse.move(0, 0);
+    await expect(house.page).toHaveScreenshot('room-view-material-tablet-light-en.png', {maxDiffPixels: 4});
+  });
+});

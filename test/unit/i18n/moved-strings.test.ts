@@ -70,7 +70,9 @@ const read = (move: string) =>
     .messages;
 
 // the rail's label for the subject is the shell's (src/shell/features.ts says it), not a message the move introduced
-const ofMove = (prefix: string) => Object.keys(en).filter(key => key.startsWith(prefix) && key !== `${prefix}title`);
+// nor is the room view's Back button (`room.back`, src/shell/room-pane.ts, #511), which shares the rooms move's prefix
+const ofMove = (prefix: string) =>
+  Object.keys(en).filter(key => key.startsWith(prefix) && key !== `${prefix}title` && key !== 'room.back');
 
 // a move: its fixture, the prefix of the keys it introduced, the folders that say them, and the keys outside the prefix it
 // also introduced (the kit's `common.failed` came with Media's command layer; the kit says it, in src/ui/)

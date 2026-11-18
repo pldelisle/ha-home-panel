@@ -1,7 +1,7 @@
 // Room views (#506, ADR 0039): the Liquid Glass sidebar lists a row for each room that has a tile, a row opens that room's view, the Lights part
 // switches the room and opens the room's sheet over the view, and a remembered room the house no longer has shows Home. Driven as a person
 // drives it: the rows, the bulb, the tile; what is read back is the screen's roles, text and the calls Home Assistant got.
-import {test, expect, tabletOnly, fontsLoaded, type House} from './fixtures';
+import {test, expect, tabletOnly, phoneOnly, fontsLoaded, type House} from './fixtures';
 import {AFTERNOON, FULL_CFG} from './houses';
 
 test.beforeEach(({house}) => fontsLoaded(house));
@@ -127,5 +127,111 @@ rememberedAttic.describe('a remembered room the house does not have', () => {
     await expect(house.root().locator('#rail [data-tab="home"]')).toHaveAttribute('aria-selected', 'true');
     await expect(pane(house)).toBeHidden();
     await expect(rooms(house).first()).toHaveAttribute('aria-selected', 'false');
+  });
+});
+
+// Rooms where the sidebar is not (#511): the phone's Home draws a Rooms row of chips and its More sheet lists the rooms; Material's tablet has the
+// row too; the Liquid Glass tablet has the sidebar's group instead, so no row. A room view on the phone has a Back button to Home.
+const chips = (house: House) => house.root().locator('#hrooms .hroom');
+const selectedTabs = (house: House) => house.root().locator('#rail .rtab[aria-selected="true"]');
+
+test.describe('rooms on the phone, Liquid Glass', () => {
+  test.use({houseOpts: {cfg: FULL_CFG, time: AFTERNOON, frozen: true}});
+
+  test("Home's Rooms row opens a room, and Back returns to Home", async ({house}) => {
+    phoneOnly();
+    await house.tab('home');
+    await expect(chips(house).locator('span')).toHaveText(['Kitchen', 'Living room', 'Office']);
+    await expect(house.root().locator('#hrooms')).toHaveAccessibleName('Rooms');
+    await chips(house).filter({hasText: 'Office'}).click();
+    await expect(pane(house)).toBeVisible();
+    await expect(pane(house).locator('hp-pane-header h2')).toHaveText('Office');
+    await expect(house.root().locator('#pane-home')).toBeHidden();
+    // the bar selects no tab while a room shows
+    await expect(selectedTabs(house)).toHaveCount(0);
+    expect(await house.page.evaluate(() => localStorage.getItem('home-panel-tab'))).toBe('room:office');
+    await pane(house).getByRole('button', {name: 'Home'}).click();
+    await expect(house.root().locator('#pane-home')).toBeVisible();
+    await expect(pane(house)).toBeHidden();
+    await expect(house.root().locator('#rail [data-tab="home"]')).toHaveAttribute('aria-selected', 'true');
+  });
+
+  test('the row sits under the six tiles and scrolls sideways when the chips outgrow it', async ({house}) => {
+    phoneOnly();
+    await house.tab('home');
+    const tiles = await house.root().locator('#htiles').boundingBox();
+    const row = await house.root().locator('#hrooms').boundingBox();
+    expect(row!.y).toBeGreaterThanOrEqual(tiles!.y + tiles!.height);
+    expect(
+      await house
+        .root()
+        .locator('#hrooms')
+        .evaluate(e => getComputedStyle(e).overflowX),
+    ).toBe('auto');
+  });
+
+  test('the More sheet lists the rooms below its sections, and a row closes it and shows the room', async ({house}) => {
+    phoneOnly();
+    await house.root().locator('#moretab').click();
+    const sheet = house.root().locator('hp-more-sheet');
+    await expect(sheet.getByRole('heading', {name: 'Rooms'})).toBeVisible();
+    await expect(sheet.locator('#morerooms .arow b')).toHaveText(['Kitchen', 'Living room', 'Office']);
+    await sheet.locator('#morerooms .arow', {hasText: 'Kitchen'}).click();
+    await expect(sheet.getByRole('dialog')).toBeHidden();
+    await expect(pane(house).locator('hp-pane-header h2')).toHaveText('Kitchen');
+    await expect(selectedTabs(house)).toHaveCount(0);
+  });
+
+  test('a room view on a tablet has no Back button, and the Home pane no row beside the sidebar', async ({house}) => {
+    tabletOnly();
+    await expect(house.root().locator('#hrooms')).toHaveCount(0);
+    await openRoom(house, 'office');
+    await expect(pane(house).getByRole('button', {name: 'Home'})).toHaveCount(0);
+  });
+});
+
+test.describe('rooms on the phone, in French', () => {
+  test.use({houseOpts: {cfg: FULL_CFG, lang: 'fr', time: AFTERNOON, frozen: true}});
+
+  test('the chips show whole, the row is named Pièces and Back says Accueil', async ({house}) => {
+    phoneOnly();
+    await house.tab('home');
+    await expect(house.root().locator('#hrooms')).toHaveAccessibleName('Pièces');
+    const cut = await chips(house)
+      .locator('span')
+      .evaluateAll(spans => spans.filter(e => e.scrollWidth > e.clientWidth).map(e => e.textContent));
+    expect(cut, 'chip names cut').toEqual([]);
+    await chips(house).first().click();
+    await expect(pane(house).getByRole('button', {name: 'Accueil'})).toBeVisible();
+  });
+});
+
+test.describe('rooms under Material', () => {
+  test.use({houseOpts: {cfg: FULL_CFG, design: 'material', time: AFTERNOON, frozen: true}});
+
+  test("the tablet's Home shows the Rooms row, its rail has no Rooms group, and a chip opens a room the rail does not select", async ({
+    house,
+  }) => {
+    tabletOnly();
+    await expect(chips(house).locator('span')).toHaveText(['Kitchen', 'Living room', 'Office']);
+    await expect(house.root().locator('#rail .rhead, #rail .rroom')).toHaveCount(0);
+    // the assist chip: 32 px high
+    const chip = chips(house).first();
+    expect((await chip.boundingBox())?.height).toBe(32);
+    await chip.click();
+    await expect(pane(house).locator('hp-pane-header h2')).toHaveText('Kitchen');
+    await expect(selectedTabs(house)).toHaveCount(0);
+    await expect(pane(house).getByRole('button', {name: 'Home'})).toHaveCount(0);
+  });
+
+  test("the phone's Home row, More list and Back work as under Liquid Glass", async ({house}) => {
+    phoneOnly();
+    await house.tab('home');
+    await chips(house).filter({hasText: 'Living room'}).click();
+    await expect(pane(house).locator('hp-pane-header h2')).toHaveText('Living room');
+    await pane(house).getByRole('button', {name: 'Home'}).click();
+    await expect(house.root().locator('#pane-home')).toBeVisible();
+    await house.root().locator('#moretab').click();
+    await expect(house.root().locator('hp-more-sheet #morerooms .arow')).toHaveCount(3);
   });
 });

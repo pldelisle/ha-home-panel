@@ -138,12 +138,18 @@ hp-home-pane {
   grid-template-columns: 1fr;
 }
 /* the scenes come first, one row that scrolls sideways; the pane has no title of its own, the header's greeting is Home's (#426) */
-/* the configuration card stays the first thing on the Home tab: -2 only because the scenes row below is -1 (change both together) */
+/* The phone's order, by `order` (the Security card's box is in its own shadow root, so it keeps 0 and the Rooms row, which sits right under the tiles, is -1):
+   the configuration card -4, the scenes -3, the weather card, Who's home and the tiles -2, the Rooms row -1, the Security card 0 (change them together) */
 .app.tabsv.cp .cfgerrh {
+  order: -4;
+}
+.app.tabsv.cp .hwx,
+.app.tabsv.cp .hwhoc,
+.app.tabsv.cp .htiles {
   order: -2;
 }
 .app.tabsv.cp .hscenes {
-  order: -1; /* first of the pane's own content; the configuration card above is -2 to sit before it */
+  order: -3; /* first of the pane's own content; the configuration card above is -4 to sit before it */
   display: flex;
   gap: 10px;
   margin: 0 -16px;
@@ -177,4 +183,78 @@ hp-home-pane {
 .hwx-open:focus-visible {
   outline: var(--focus-width) solid var(--focus-color);
   outline-offset: var(--focus-offset);
+}
+/* The Rooms row (ADR 0039, #511), where the sidebar does not list the rooms: a row of chips that scrolls sideways, across the pane under the tiles.
+   A chip is a pill with the room's icon and name; Material's is the assist chip (32px, an outline-variant edge, the small corner, #468). */
+.hrooms {
+  grid-column: 1/-1;
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.hrooms::-webkit-scrollbar {
+  display: none;
+}
+.hroom {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 70vw;
+  min-height: 44px;
+  padding: 0 16px 0 12px;
+  border: 0;
+  border-radius: var(--shape-chip);
+  background: var(--card2);
+  color: var(--fg);
+  font: 600 calc(14px * var(--tx)) var(--f-body);
+  cursor: pointer;
+  scroll-snap-align: start;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.hroom svg {
+  flex: none;
+}
+.hroom span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hroom:focus-visible {
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
+}
+.app.gl .hroom {
+  background: var(--g-tile);
+  box-shadow: var(--g-edge-s);
+}
+@media (prefers-reduced-transparency: reduce) {
+  .app.gl .hroom {
+    background: var(--card2);
+  }
+}
+.app[data-design='material'] .hroom {
+  min-height: 32px;
+  padding: 0 16px 0 8px;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--fg2);
+  font: var(--type-label-large);
+  letter-spacing: var(--track-label-large);
+}
+.app[data-design='material'] .hroom svg {
+  width: 18px;
+  height: 18px;
+}
+/* on the phone the row sits right under the six tiles, before the Security card (the order is set with the scenes row's, above) */
+.app.tabsv.cp .hrooms {
+  order: -1;
+  margin: 0 -16px;
+  padding: 0 16px 2px;
 }

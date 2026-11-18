@@ -287,6 +287,11 @@ export class HomePanel extends LitElement {
     return this.visible;
   }
 
+  /** Whether the Liquid Glass sidebar is drawn, and lists the rooms: not Material's rail, and a tablet wide enough. Elsewhere Home's Rooms row and More list them. */
+  private get sidebarRooms(): boolean {
+    return this.appearance.value.design !== 'material' && this.sidebarWide.matches;
+  }
+
   /** The section shown, or null while a room view is. */
   private get section(): FeatureKey | null {
     return this.room === null ? this.visible : null;
@@ -553,6 +558,8 @@ export class HomePanel extends LitElement {
       <hp-more-sheet
         .features=${UNDER_MORE}
         .shown=${this.shown}
+        .rooms=${this.rooms}
+        .roomColor=${roomColor(FEATURES)}
         .summaries=${this.moreSummaries}
         .current=${this.tab}
         .open=${this.sheets.isOpen(MORE_SHEET)}
@@ -610,12 +617,18 @@ export class HomePanel extends LitElement {
                 ?hidden=${this.section !== f.key && !this.sheetBehind(f)}
                 ${ref(el => this.scopeStatistics(f.key, el))}
               >
-                ${f.pane(this.env)}
+                ${f.key === 'home' ? this.renderHome() : f.pane(this.env)}
               </section>`,
           )}${this.renderRoom()}
         </div>
       </div>
     </div>`;
+  }
+
+  // The Home pane, drawn here and not by its descriptor: it is handed the rooms for its Rooms row, and the rule the sidebar's Rooms group
+  // is drawn by (`sidebarRooms`), so one rule decides both (#511).
+  private renderHome(): TemplateResult {
+    return html`<hp-home-pane .rooms=${this.rooms} .roomsInSidebar=${this.sidebarRooms}></hp-home-pane>`;
   }
 
   // The room view (ADR 0039): one pane for every room, drawn only while a room shows, so a hidden room listens to nothing. It is labelled by
@@ -650,7 +663,7 @@ export class HomePanel extends LitElement {
   private renderRail(): TemplateResult {
     const {t} = this.store;
     const tab = this.section;
-    const glass = this.appearance.value.design !== 'material' && this.sidebarWide.matches;
+    const glass = this.sidebarRooms;
     const open = this.sidebar === 'open';
     // a collapsed strip has no labels to read, so each icon names itself on hover
     const strip = glass && !open;

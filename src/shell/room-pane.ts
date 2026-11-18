@@ -2,12 +2,15 @@
 // Pattern: composite over the registry (Gamma et al., Composite, and Fowler's Plugin): the shell hands it the descriptors, and each one's `room`
 // part draws its own tiles; humble object (Meszaros): the pane lists which subjects take part, in registry order, and decides nothing the parts decide.
 // It reads the store only to draw again when the house changes (a part's tiles may come and go), and for the catalog's words.
+// On a phone a Back button over the header (chevron and "Home") returns to Home, which has no sidebar to leave a room from (#511).
 // Must not: know a subject, read an entity, offer Arrange or any control of its own, or import a feature (ADR 0017).
 import {LitElement, html, nothing, unsafeCSS} from 'lit';
 import {repeat} from 'lit/directives/repeat.js';
 import {AppearanceConsumer} from '../ui/controllers/appearance-consumer.ts';
 import {StoreController} from '../ui/controllers/store-controller.ts';
+import {TabSelectEvent} from '../ui/events.ts';
 import type {FeatureDescriptor, FeatureEnv} from '../ui/feature.ts';
+import {ico} from '../ui/icons.ts';
 import '../ui/pane-header.ts'; // defines <hp-pane-header>
 import {common} from '../ui/styles/index.ts';
 import {forShadow} from '../ui/styles/host.ts';
@@ -37,6 +40,10 @@ export class RoomPane extends LitElement {
   private readonly store = new StoreController(this, {ids: () => '*'});
   private readonly appearance = new AppearanceConsumer(this);
 
+  private readonly back = (): void => {
+    this.dispatchEvent(new TabSelectEvent('home'));
+  };
+
   constructor() {
     super();
     this.areaId = '';
@@ -51,7 +58,13 @@ export class RoomPane extends LitElement {
     const {t} = this.store.store;
     const taking = subjectsOf(this.features, env, areaId);
     const chips = taking.map(f => f.room?.chip?.(env, areaId)).filter((chip): chip is string => !!chip);
-    return html`<hp-pane-header .icon=${roomIcon(this.name)} .color=${roomColor(this.features)} .heading=${this.name}>
+    return html`${
+        this.appearance.value?.compact
+          ? html`<button type="button" class="back" @click=${this.back}>
+              ${ico('chevl', 20)}<span>${t('room.back')}</span>
+            </button>`
+          : nothing
+      }<hp-pane-header .icon=${roomIcon(this.name)} .color=${roomColor(this.features)} .heading=${this.name}>
         ${
           chips.length
             ? html`<ul class="readings" slot="sub">

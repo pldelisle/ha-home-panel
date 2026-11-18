@@ -1,3 +1,29 @@
 :host {
   display: contents;
 }
+/* The Rooms under the sections: a heading, then the kit's rows (list.css) as buttons. Material's button row (a control with the chevron) is list.css's. */
+.roomshead {
+  margin: 20px 0 10px;
+  color: var(--fg2);
+  font: 600 calc(15px * var(--tx)) var(--f-body);
+  letter-spacing: 0.02em;
+}
+:host([design='material']) .roomshead {
+  font: var(--type-title-small);
+  letter-spacing: var(--track-title-small);
+}
+.morerooms button.arow {
+  width: 100%;
+  border: 0;
+  align-items: center;
+  color: var(--fg);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.morerooms button.arow:focus-visible {
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
+}

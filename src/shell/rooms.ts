@@ -5,14 +5,10 @@
 // Must not: read an entity or the DOM, draw, or know which subject fills a room: the descriptors answer.
 import type {FeatureDescriptor, FeatureEnv, FeatureKey} from '../ui/feature.ts';
 import type {Names} from '../core/i18n/names.ts';
-import {guessIcon, type RoomIcon} from '../core/room-icons.ts';
+import {roomIcon, type Room} from './room.ts';
 import {visibleTab} from './features.ts';
 
-/** One room of the sidebar: an area of Home Assistant with its display name. */
-export interface Room {
-  areaId: string;
-  name: string;
-}
+export {roomIcon, type Room}; // defined in room.ts, which the Home pane imports: this module imports the registry, which imports the pane
 
 /** What the `tab` setting names: a section of the panel (not yet checked against the registry), or a room by its area id. */
 export type View = {kind: 'feature'; key: string} | {kind: 'room'; areaId: string};
@@ -28,15 +24,6 @@ const collatorOf = (locale: string): Intl.Collator => {
   let collator = collators.get(locale);
   if (!collator) collators.set(locale, (collator = new Intl.Collator(locale)));
   return collator;
-};
-
-/**
- * A room's icon: `guessIcon` of its name, except that a name it has no word for is the house, not the thermometer it falls back to
- * (that is Climate's icon, and `guessIcon` stays as Climate's baselines have it).
- */
-export const roomIcon = (name: string): RoomIcon => {
-  const icon = guessIcon(name);
-  return icon === 'therm' ? 'house' : icon;
 };
 
 /** The colour of a room's icon and header: Home's, which is the house's own and no subject's. */

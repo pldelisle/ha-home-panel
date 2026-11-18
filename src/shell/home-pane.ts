@@ -2,7 +2,7 @@
 // stack), the six tiles with the Security card, and the scenes row. The shell imports features; a feature never imports the shell or another feature (ADR 0017).
 // Pattern: a humble composition (Meszaros, xUnit Test Patterns), the composition root's child: each card is its feature's element on its
 // own ids (ADR 0012), drawn in light DOM (ADR 0032) so the pane's parts stay items of the `.pane-home` grid, styled by home-pane.css.
-// On a phone the weather card carries a button over it, named by `weatherCardLabel`, that shows the Weather tab, rather than being a button around its words. It loads the Energy and Water heater tiles' history (`HomeHistory`) and hands it down. It has no heading: the header's greeting is Home's one title (#426). Must not: read
+// On a phone the weather card carries a button over it, named by `weatherCardLabel`, that shows the Weather tab, rather than being a button around its words. It loads the Energy and Water heater tiles' history (`HomeHistory`) and hands it down. Where the sidebar does not list the rooms, a Rooms row of chips under the tiles shows a room (the shell says which, `roomsInSidebar`). It has no heading: the header's greeting is Home's one title (#426). Must not: read
 // an entity but through `weatherCardLabelIds`, word anything (the cards and the readers do), or hold logic beyond placing them and that load.
 import {ContextConsumer} from '@lit/context';
 import {LitElement, html, nothing, unsafeCSS} from 'lit';
@@ -10,6 +10,7 @@ import {repeat} from 'lit/directives/repeat.js';
 import './config-card.ts'; // defines <hp-config-card>
 import './glance-tile.ts'; // defines <hp-glance-tile>
 import {HomeHistory} from './home-history.ts';
+import {roomIcon, type Room} from './room.ts';
 import paneCss from './home-pane.css?inline';
 import {GLANCE_SOURCES, type GlanceDeps} from './home-tiles.ts';
 import type {StatisticsCache} from '../core/statistics-cache.ts';
@@ -19,6 +20,7 @@ import '../features/security/index.ts'; // defines <hp-security-card>
 import '../features/stack/index.ts'; // defines <hp-smart-stack>
 import {weatherCardLabel, weatherCardLabelIds, weatherFeature} from '../features/weather/index.ts'; // defines <hp-weather-card>
 import {StoreController} from '../ui/controllers/store-controller.ts';
+import {ico} from '../ui/icons.ts';
 import {TickController} from '../ui/controllers/tick.ts';
 import {appearanceContext, statisticsCacheContext} from '../ui/contexts.ts';
 import {TabSelectEvent, type EmptyEvent} from '../ui/events.ts';
@@ -29,11 +31,17 @@ export const homePaneStyles = unsafeCSS(paneCss);
 export class HomePane extends LitElement {
   static override properties = {
     active: {type: Boolean, reflect: true},
+    rooms: {attribute: false},
+    roomsInSidebar: {type: Boolean},
     stackEmpty: {state: true},
     scenesEmpty: {state: true},
   };
   /** Set by the shell: this pane is the tab on screen. */
   declare active: boolean;
+  /** The rooms of the house, from the shell (`roomList`): the Rooms row's chips. */
+  declare rooms: readonly Room[];
+  /** Set by the shell, by the rule that draws the sidebar's Rooms group (`renderRail`): the sidebar lists the rooms, so this pane draws no row. */
+  declare roomsInSidebar: boolean;
   /** The stack and the scenes said they have nothing: their slot is hidden, as the legacy panel hid it. */
   declare private stackEmpty: boolean;
   declare private scenesEmpty: boolean;
@@ -47,6 +55,8 @@ export class HomePane extends LitElement {
   constructor() {
     super();
     this.active = false;
+    this.rooms = [];
+    this.roomsInSidebar = false;
     this.stackEmpty = true;
     this.scenesEmpty = true;
     // the panel's one cache (ADR 0028), asked for before the history's controller so its first update finds it
@@ -77,6 +87,27 @@ export class HomePane extends LitElement {
   private readonly openWeather = (): void => {
     if (this.compact) this.dispatchEvent(new TabSelectEvent(weatherFeature.key));
   };
+
+  // a chip asks the shell for its room, as a row of the sidebar does
+  private readonly openRoom = (areaId: string): void => {
+    this.dispatchEvent(new TabSelectEvent({room: areaId}));
+  };
+
+  // The Rooms row (ADR 0039): where the Liquid Glass sidebar does not list the rooms (the phone, Material's rail), one chip for each, in a row that scrolls sideways.
+  private renderRooms() {
+    if (this.roomsInSidebar || !this.rooms.length) return nothing;
+    const {t} = this.storeController.store;
+    return html`<nav class="hrooms" id="hrooms" aria-label=${t('nav.rooms')}>
+      ${repeat(
+        this.rooms,
+        room => room.areaId,
+        room =>
+          html`<button type="button" class="hroom" data-room=${room.areaId} @click=${() => this.openRoom(room.areaId)}>
+            ${ico(roomIcon(room.name), 18)}<span>${room.name}</span>
+          </button>`,
+      )}
+    </nav>`;
+  }
 
   protected override render() {
     const compact = this.compact;
@@ -127,7 +158,8 @@ export class HomePane extends LitElement {
         @hp-empty=${(e: EmptyEvent) => (this.scenesEmpty = e.detail.empty)}
       >
         <hp-scene-tiles></hp-scene-tiles>
-      </div>`;
+      </div>
+      ${this.renderRooms()}`;
   }
 }
 
