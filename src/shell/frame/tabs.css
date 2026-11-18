@@ -45,7 +45,7 @@
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  color: var(--fg);
+  color: var(--fg2);
   font: 600 11px var(--f-body);
   cursor: pointer;
   min-width: 0;
@@ -63,10 +63,9 @@
 }
 .rtab[aria-selected='true'] {
   background: var(--card2);
-  color: var(--fg);
 }
 @media (hover: hover) {
-  .rtab:hover {
+  .rtab:not([aria-selected='true']):hover {
     color: var(--fg);
   }
 }
@@ -135,18 +134,12 @@
 .pane > .panel > * + * {
   margin-top: 16px;
 }
-/* The rail and the phone's tab bar draw as the Files app's sidebar does: every icon in the one blue, the labels in the text colour,
-   and the chosen section on a darker neutral fill, never in a section's own colour (HIG, Color: "Apply color sparingly to the
-   Liquid Glass material"; docs/design.md) */
-.rtab svg {
-  color: var(--c-home);
-}
+/* The rail and the phone's tab bar draw as an iPadOS tab bar does: every section in grey, the chosen one in the one blue, icon and
+   label alike, on a darker neutral fill, never in a section's own colour (HIG, Color: "Apply color sparingly to the Liquid Glass
+   material"; docs/design.md). The blue is --nav-sel-fg, which keeps 4.5:1 on the fill */
 .rtab[aria-selected='true'] {
-  color: var(--fg);
+  color: var(--nav-sel-fg);
   background: var(--nav-sel-bg);
-}
-.rtab[aria-selected='true'] span {
-  color: var(--fg);
 }
 /* Home pane: weather and house left, six tiles and two cards right */
 .pane-home {

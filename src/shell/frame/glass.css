@@ -199,7 +199,6 @@
 .app.gl[data-theme='dark'] {
   --fg2: #b0ada7;
 }
-.app.gl:not([data-theme='dark']) .rtab:not([aria-selected='true']),
 .app.gl:not([data-theme='dark']) .pane .ph .sub {
   color: var(--fg);
 }
