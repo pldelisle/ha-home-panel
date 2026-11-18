@@ -151,6 +151,8 @@
   --shape-bar-xs: 1px;
   /* the snackbar (the toast): a role of its own, as Material draws it square where the Apple look rounds it like a control */
   --shape-snackbar: 14px;
+  /* the overflow menu of a button group (<hp-seg>'s "More", #481): only the Material design draws one */
+  --shape-menu: 12px;
   /* as round as the box allows: a chip, a button, a range tab; and what a pill button is while a finger is on it (the same, so the
      Apple look keeps its shape: the Material design tightens the corners, common.css) */
   --shape-pill: 999px;
@@ -398,6 +400,7 @@
   --shape-code: var(--shape-extra-small);
   --shape-chip: var(--shape-small);
   --shape-snackbar: var(--shape-extra-small);
+  --shape-menu: var(--shape-extra-small);
   --shape-pill: var(--shape-full);
   /* a button at rest is a pill; pressed, its corners tighten (common.css reads this on :active) */
   --shape-pill-pressed: var(--shape-large);

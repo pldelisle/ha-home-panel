@@ -11,6 +11,7 @@ export const fr: Record<MessageKey, string> = {
   // here is its own visible change and needs an approved baseline (ADR 0003, test/unit/i18n/moved-strings.test.ts)
   'common.failed': "Didn't work: {reason}",
   'common.dismiss': 'Fermer',
+  'common.moreModes': 'Autres modes',
   'common.noReading': 'Aucune mesure',
   'clock.inside': '{n}° à l’intérieur',
   'clock.outside': '{n}° dehors',

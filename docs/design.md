@@ -80,6 +80,8 @@ value, so a second design language can redefine the set in one place. No rule wr
 - Under Material the segmented control (`hp-seg`, 48 px) and the range tabs (`hp-range-tabs`, 40 px) are the connected button group (#465): no container, buttons joined by
   2 px, the outer ends `--shape-pill`, the inner corners `--shape-group-inner` (8; 12 in Apple, where the rule is unused), the chosen one `primary` and a full pill
   (`--shape-segment-selected`), its corners on the spatial-fast spring. The rules sit in `seg.css` and `range.css` under `.app[data-design='material']`.
+- A Material `hp-seg` of more than five options draws the first four and a More button (the `more` icon, or the chosen mode's word on `primary` when the choice is in its menu); the
+  menu is a popover on `surface-container`, `--elevation-2` and `--shape-menu` (extra-small), 48 px items, the chosen one on `secondary-container` (#481, ADR 0037).
 - The Material components (#468) draw under `.app[data-design='material']` in the kit's sheets and `:host([design='material'])` in an element's own. A list of
   status rows is a group (`--shape-list-group` 16, `--shape-list-item` 4, 2 px apart); a chip is `--shape-chip` (8) with a 1 px `--line` edge. A tile is a well, or a
   `--control` when it opens a history; a stat tile is the card with a `--control` icon square, and `primary-container` over `primary` while its subject is on. A

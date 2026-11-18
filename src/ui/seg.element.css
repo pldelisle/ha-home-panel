@@ -16,9 +16,68 @@
   opacity: 0.5;
 }
 /* Material: a read-only group keeps the group's own colours and mutes the unchosen buttons as a whole (the chosen one stays `primary`), where the Apple look greys their words */
-:host([design='material']) .seg[aria-disabled='true'] button:not([aria-checked='true']) {
+:host([design='material']) .seg[aria-disabled='true'] button:not([aria-checked='true'], [data-chosen]) {
   opacity: 0.6;
 }
-:host([design='material']) .seg[aria-disabled='true'] button:not([aria-checked='true']) b {
+:host([design='material']) .seg[aria-disabled='true'] button:not([aria-checked='true'], [data-chosen]) b {
   color: inherit;
+}
+/*
+ * Material's overflow menu (ADR 0037, #481), after the design system's menu: `surface-container` on `elevation-2` with the `shape-menu` (extra-small) corner, 48px items in
+ * the label type, the chosen one on `secondary-container` (its state layer, hover and focus, is common.css's, as for every button). It is a popover, so it is in the top layer
+ * and fixed: the element sets `top` and `right` (in viewport pixels) when it opens, and the box is 8px above and below the items (the element's MENU_PAD).
+ */
+:host([design='material']) .menu {
+  inset: auto;
+  margin: 0;
+  padding: 8px 0;
+  border: 0;
+  min-width: 112px;
+  max-width: calc(100vw - 16px);
+  overflow: hidden;
+  background: var(--md-surface-container);
+  color: var(--md-on-surface);
+  border-radius: var(--shape-menu);
+  box-shadow: var(--elevation-2);
+}
+:host([design='material']) .menu:popover-open {
+  display: flex;
+  flex-direction: column;
+}
+:host([design='material']) .menu button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 0 12px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: var(--type-label-large);
+  letter-spacing: var(--track-label-large);
+  text-align: start;
+  cursor: pointer;
+}
+:host([design='material']) .menu button b {
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  white-space: nowrap;
+}
+:host([design='material']) .menu button small {
+  font: var(--type-body-small);
+  letter-spacing: var(--track-body-small);
+  opacity: 0.85;
+}
+:host([design='material']) .menu button[aria-checked='true'] {
+  background: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+}
+:host([design='material']) .menu button:disabled {
+  cursor: default;
+  opacity: 0.38;
+}
+:host([design='material']) .menu button:focus-visible {
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: calc(var(--focus-width) * -1);
 }

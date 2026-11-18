@@ -164,6 +164,7 @@ export class ClimateControls extends LitElement {
   ): TemplateResult {
     return html`<hp-seg
       .label=${label}
+      .moreLabel=${this.storeController.store.t('common.moreModes')}
       .options=${segOptions(options)}
       .value=${chosen(options)}
       @change=${(e: CustomEvent<SegChangeDetail>) => {
