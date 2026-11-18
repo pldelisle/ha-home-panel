@@ -3,7 +3,7 @@
 // Pattern: pure readers over the store (view models, Meszaros' humble object's other half); the legacy `renderHome`'s rules, deleted in #268. The
 // history is the Energy card's loaded slices, given by the caller: a reader never loads.
 // Must not: read the clock, load, import the DOM, Lit, the shell or another feature, or hold text the household reads.
-import {whole} from '../../core/i18n/format.ts';
+import {power, temperature} from '../../core/i18n/format.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
 import type {GlanceStore, GlanceView} from '../../ui/glance.ts';
 import {LIVE_KW} from './flow-layout.ts';
@@ -17,26 +17,18 @@ export interface GlanceDeps {
   now: number;
 }
 
-/** Under a kilowatt the grid is said in watts. */
-const WATTS_BELOW_KW = 1;
-
 /** The Energy tile: always there, "No reading" in the line's style while the grid reads nothing. Null only before the first states. */
 export function glance({hass, config, names, t, fmt}: GlanceStore, {history}: GlanceDeps): GlanceView | null {
   if (!hass) return null;
-  const {power, hilo} = readEnergy(hass.states, config, names);
-  const kw = power.grid;
+  const {power: now, hilo} = readEnergy(hass.states, config, names);
+  const kw = now.grid;
   const rate = t(`energy.rate.${hilo.tier}` as MessageKey);
   return {
     key: 'energy',
     icon: 'bolt',
     color: 'var(--c-grid)',
     label: t('energy.title'),
-    value:
-      kw === null
-        ? t('energy.noReading')
-        : kw < WATTS_BELOW_KW
-          ? t('energy.watts', {n: String(Math.round(kw * 1000))}) // as the legacy tile wrote it: no thousands separator below −1 kW
-          : t('energy.kw', {n: fmt.fixed(kw, 2)}),
+    value: kw === null ? t('energy.noReading') : power(fmt, kw * 1000),
     ...(kw === null ? {missing: true} : {}),
     line: history
       ? t('energy.glance.line', {kwh: fmt.fixed(history.totals.today, 1), rate})
@@ -63,7 +55,7 @@ export function waterGlance(
     icon: 'drop',
     color: 'var(--c-wh)',
     label: t('energy.water.title'),
-    value: water.temperature === null ? t('energy.noReading') : `${fmt.fixed(water.temperature, 1)}°`,
+    value: water.temperature === null ? t('energy.noReading') : temperature(fmt, water.temperature),
     ...(water.temperature === null ? {missing: true} : {}),
     line: history
       ? t('energy.glance.water', {state, kwh: fmt.fixed(waterCycles(history.wh24.p, now).kwh24, 1)})
@@ -80,7 +72,5 @@ export function moreWord({hass, config, names, t, fmt}: GlanceStore): string | n
   if (!hass) return null;
   const kw = readEnergy(hass.states, config, names).power.grid;
   if (kw == null) return null;
-  return kw < WATTS_BELOW_KW
-    ? t('energy.more.watts', {n: whole(fmt, kw * 1000)})
-    : t('energy.more.kilowatts', {n: fmt.fixed(kw, 2)});
+  return t('energy.more.now', {power: power(fmt, kw * 1000)});
 }

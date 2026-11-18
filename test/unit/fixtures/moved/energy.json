@@ -11,50 +11,50 @@
     {
       "key": "energy.summary",
       "values": {
-        "grid": "2.30",
-        "heat": "1.10",
+        "grid": "2.3 kW",
+        "heat": "1.1 kW",
         "rate": "low rate"
       },
       "fr": {
         "rate": "tarif bas"
       },
-      "was": "Réseau 2,30 kW · chauffage 1,10 kW · Hilo tarif bas"
+      "was": "Réseau 2,3 kW · chauffage 1,1 kW · Hilo tarif bas"
     },
     {
       "key": "energy.summary",
       "values": {
-        "grid": "2.30",
-        "heat": "1.10",
+        "grid": "2.3 kW",
+        "heat": "1.1 kW",
         "rate": "current rate"
       },
       "fr": {
         "rate": "tarif actuel"
       },
-      "written": "Réseau 2,30 kW · chauffage 1,10 kW · Hilo tarif actuel"
+      "written": "Réseau 2,3 kW · chauffage 1,1 kW · Hilo tarif actuel"
     },
     {
       "key": "energy.summary",
       "values": {
-        "grid": "2.30",
-        "heat": "1.10",
+        "grid": "2.3 kW",
+        "heat": "1.1 kW",
         "rate": "rate unknown"
       },
       "fr": {
         "rate": "tarif inconnu"
       },
-      "written": "Réseau 2,30 kW · chauffage 1,10 kW · Hilo tarif inconnu"
+      "written": "Réseau 2,3 kW · chauffage 1,1 kW · Hilo tarif inconnu"
     },
     {
       "key": "energy.summary",
       "values": {
         "grid": "–",
-        "heat": "0.00",
+        "heat": "0 W",
         "rate": "medium rate"
       },
       "fr": {
         "rate": "tarif moyen"
       },
-      "written": "Réseau – kW · chauffage 0,00 kW · Hilo tarif moyen"
+      "written": "Réseau – · chauffage 0 W · Hilo tarif moyen"
     },
     {
       "key": "energy.tier.low",
@@ -92,18 +92,6 @@
     },
     {
       "key": "energy.rate.unknown"
-    },
-    {
-      "key": "energy.watts",
-      "values": {
-        "n": 850
-      }
-    },
-    {
-      "key": "energy.kw",
-      "values": {
-        "n": "7.10"
-      }
     },
     {
       "key": "energy.flow.label",
@@ -219,11 +207,14 @@
     {
       "key": "energy.water.heating",
       "values": {
-        "kw": "1.5"
+        "power": "1.5 kW"
       }
     },
     {
-      "key": "energy.water.idle"
+      "key": "energy.water.idle",
+      "values": {
+        "power": "0 W"
+      }
     },
     {
       "key": "energy.water.temperature",
@@ -270,7 +261,7 @@
       "key": "energy.water.barTitle",
       "values": {
         "time": "1:30 pm",
-        "kw": "2.4"
+        "power": "2.4 kW"
       },
       "fr": {
         "time": "13 h 30"
@@ -691,15 +682,15 @@
       "written": "Aucune mesure"
     },
     {
-      "key": "energy.more.watts",
+      "key": "energy.more.now",
       "values": {
-        "n": 850
+        "power": "850 W"
       }
     },
     {
-      "key": "energy.more.kilowatts",
+      "key": "energy.more.now",
       "values": {
-        "n": "3.24"
+        "power": "3.2 kW"
       }
     }
   ]

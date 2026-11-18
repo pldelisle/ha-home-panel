@@ -5,7 +5,7 @@
 // Must not: import the DOM, Lit or the shell, read the clock (the sessions' "today" is the history's), hold text the household reads (a catalog key says it), or build the controls' view (controls.ts does).
 import {capitalise, DASH, DAY_MS, HOUR_MS, joined} from '../../core/figures.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
-import {fixedOr, noonOf, whole, type Formatters} from '../../core/i18n/format.ts';
+import {money, noonOf, percent, power, temperatureFigure, whole, type Formatters} from '../../core/i18n/format.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
 import type {CarInputs, FordMessage, LastPlug} from '../../providers/fordpass.ts';
 import {sum} from '../../providers/power-history.ts';
@@ -56,7 +56,6 @@ const SESSION_BAR_STUB_PX = 4;
 /** The units under a figure: symbols, the same in every language. */
 const UNIT = {
   kwh: 'kWh',
-  kw: 'kW',
   km: 'km',
   percent: '%',
   hours: 'h',
@@ -265,7 +264,7 @@ const stateWord = (car: CarInputs, t: Translate): string =>
 /** The battery bar and the words under it: the limit as Ford sets it ("Limit 90% · set in FordPass"; the panel cannot change it) and the full scale. */
 function socBar(car: CarInputs, {t, fmt}: CarModelDeps): SocBar {
   const limit = car.limit || null;
-  const charge = fixedOr(fmt, car.soc, 1);
+  const charge = percent(fmt, car.soc);
   const named = limit === null ? '' : fmt.number(limit);
   return {
     fill: car.soc || 0,
@@ -300,7 +299,7 @@ function dailyBars({daily}: CarHistoryData, {t, fmt}: CarModelDeps): DailyBars {
 /** The phone's line: where, the charge and the range, and what the plug is doing; or the missing car. */
 function summaryOf(car: CarInputs, {t, fmt}: CarModelDeps) {
   const range = car.range === null ? '' : `${whole(fmt, car.range)} ${UNIT.km}`;
-  const charge = t('car.percent', {n: fixedOr(fmt, car.soc, 1)});
+  const charge = t('car.percent', {n: percent(fmt, car.soc)});
   return {
     title: car.name || t('car.title'),
     line: joined(whereOf(car, t), joined(charge, range), stateWord(car, t)),
@@ -311,7 +310,7 @@ function summaryOf(car: CarInputs, {t, fmt}: CarModelDeps) {
 function plugFact(car: CarInputs, {t, fmt}: CarModelDeps): Fact {
   if (car.charging)
     return {
-      text: joined(t('car.plug.charging'), car.chargingKw ? `${fmt.fixed(car.chargingKw, 1)} ${UNIT.kw}` : ''),
+      text: joined(t('car.plug.charging'), car.chargingKw ? power(fmt, car.chargingKw * 1000) : ''),
       tone: 'ok',
     };
   return {text: t(car.plugged ? 'car.plug.pluggedIn' : 'car.plug.unplugged'), tone: 'plain'};
@@ -324,7 +323,7 @@ function summaryBlockOf(car: CarInputs, deps: CarModelDeps): SummaryBlock {
     picture: car.picture,
     color: car.color,
     drawing: t('car.art.side'),
-    charge: fixedOr(fmt, car.soc, 1),
+    charge: percent(fmt, car.soc),
     range: car.range === null ? '' : t('car.range', {n: whole(fmt, car.range)}),
     soc: socBar(car, deps),
     facts: [plugFact(car, deps), ...factsOf(car, deps)],
@@ -394,9 +393,9 @@ function statusOf(car: CarInputs, deps: CarModelDeps): StatusBlock {
         sub: t('car.battery.atFull'),
       }),
       tile(t('car.battery.acLimit'), reading(fmt, car.acLimit), {unit: UNIT.amps}),
-      tile(t('car.battery.cabin'), fixedOr(fmt, car.cabin, 1), {
+      tile(t('car.battery.cabin'), temperatureFigure(fmt, car.cabin), {
         unit: UNIT.degrees,
-        sub: car.outsideTemp === null ? '' : t('car.battery.outside', {n: fmt.fixed(car.outsideTemp, 1)}),
+        sub: car.outsideTemp === null ? '' : t('car.battery.outside', {n: temperatureFigure(fmt, car.outsideTemp)}),
       }),
       tile(t('car.status.battery12'), reading(fmt, battery12.percent), {
         unit: UNIT.percent,
@@ -406,7 +405,7 @@ function statusOf(car: CarInputs, deps: CarModelDeps): StatusBlock {
         unit: UNIT.kwh,
         sub: battery.capacityKwh === null ? '' : t('car.status.ofCapacity', {n: fmt.fixed(battery.capacityKwh, 1)}),
       }),
-      tile(t('car.status.batteryTemp'), fixedOr(fmt, battery.temperature, 1), {unit: UNIT.degrees}),
+      tile(t('car.status.batteryTemp'), temperatureFigure(fmt, battery.temperature), {unit: UNIT.degrees}),
       tile(t('car.status.software'), firmware?.version ?? DASH, {
         sub: updated === null ? '' : t('car.since', {date: fmt.date(updated)}),
         word: true,
@@ -494,8 +493,8 @@ function lastOf(car: CarInputs, history: CarHistoryData | null, deps: CarModelDe
 }
 
 /** A sum of money as the household's language writes it: whole dollars or with cents. */
-const money = ({t, fmt}: CarModelDeps, amount: number, cents: boolean): string =>
-  t('car.money', {amount: cents ? fmt.fixed(amount, 2) : fmt.integer(Math.round(amount))});
+const amountText = ({t, fmt}: CarModelDeps, amount: number, cents: boolean): string =>
+  t('car.money', {amount: money(fmt, amount, cents ? 'cents' : 'headline')});
 
 /** The columns' titles of the sessions' table. */
 const sessionColumns = (t: Translate): SessionsBlock['columns'] => ({
@@ -517,8 +516,8 @@ function sessionRow(session: Session, widest: number, price: number, deps: CarMo
     length: `${whole(fmt, (session.end - session.start) / HOUR_MS)} ${UNIT.hours}`,
     energy: `${fmt.fixed(session.kwh, 1)} ${UNIT.kwh}`,
     barPx: Math.round((session.kwh / widest) * SESSION_BAR_PX) + SESSION_BAR_STUB_PX,
-    peak: `${fmt.fixed(session.peak, 1)} ${UNIT.kw}`,
-    cost: money(deps, session.kwh * price, true),
+    peak: power(fmt, session.peak * 1000),
+    cost: amountText(deps, session.kwh * price, true),
   };
 }
 
@@ -534,7 +533,7 @@ function sessionTiles(sessions: readonly Session[], price: number, cents: string
       unit: UNIT.kwh,
       sub: t('car.sessions.perSession'),
     }),
-    tile(t('car.estCost'), money(deps, total * price, false), {sub: t('car.sessions.rate', {cents})}),
+    tile(t('car.estCost'), amountText(deps, total * price, false), {sub: t('car.sessions.rate', {cents})}),
   ];
 }
 
@@ -589,7 +588,7 @@ function historyOf(history: CarHistoryData | null, charger: WallboxInputs, deps:
     done,
     windows,
     line: t('car.history.line', {n: sessions.length, kwh: fmt.integer(total)}),
-    value: sessions.length ? money(deps, total * price, false) : '',
+    value: sessions.length ? amountText(deps, total * price, false) : '',
     daily: dailyBars(history, deps),
   };
 }

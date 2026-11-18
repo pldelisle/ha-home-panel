@@ -3,7 +3,7 @@
 // model); the rules are the legacy `liveActs()`'s three blocks (deleted in #256), its thresholds and its order copied and named.
 // Must not: import a feature, read the clock or the states, hold a callable (a button is a flag, the element runs the command), or draw.
 import {MINUTE_MS} from '../../core/figures.ts';
-import type {Formatters} from '../../core/i18n/format.ts';
+import {money, percent, power, temperature, temperatureFigure, type Formatters} from '../../core/i18n/format.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
 import type {Point} from '../../providers/power-history.ts';
 import {DEFAULT_KWH_PRICE, pauseHold, type Session} from '../../providers/wallbox.ts';
@@ -171,8 +171,8 @@ export function hiloActivity(inputs: LiveInputs, {t, fmt}: ActivityDeps): Activi
   const allowed = challenge.nextEvent?.allowed ?? null;
   const grid = inputs.power.grid;
   const meta = metaLine([
-    inside !== null && [{text: `${fmt.fixed(inside, 1)}°`, strong: true}, {text: ` ${t('live.inside')}`}],
-    grid !== null && [{text: `${t('live.houseUsing')} `}, {text: `${fmt.fixed(grid, 1)} kW`, strong: true}],
+    inside !== null && [{text: temperature(fmt, inside), strong: true}, {text: ` ${t('live.inside')}`}],
+    grid !== null && [{text: `${t('live.houseUsing')} `}, {text: power(fmt, grid * 1000), strong: true}],
     used !== null &&
       !!allowed && [
         {text: fmt.fixed(used, 1), strong: true},
@@ -282,10 +282,10 @@ export function carActivity(
   if (!car || !(car.charging || paused)) return null;
   const {soc} = car;
   const limit = car.limit || 100;
-  const power = wallbox.power ?? car.chargePowerKw;
-  const eta = chargeEta(inputs, power);
+  const kw = wallbox.power ?? car.chargePowerKw;
+  const eta = chargeEta(inputs, kw);
   const left = eta ? fmt.durationShort(eta - now) : '';
-  const percent = soc === null ? '–' : `${Math.round(soc)}`;
+  const charge = percent(fmt, soc);
   const session = currentSession(history?.sessions ?? [], car.plugChangedAt, now);
   const price = wallbox.price ?? DEFAULT_KWH_PRICE;
   const meta = metaLine([
@@ -293,7 +293,7 @@ export function carActivity(
     !!session && [
       {text: `+${fmt.fixed(session.kwh, 1)} kWh`, strong: true},
       {text: ` ${t('live.soFarAbout')} `},
-      {text: t('live.cost', {n: fmt.fixed(session.kwh * price, 2)}), strong: true},
+      {text: t('car.money', {amount: money(fmt, session.kwh * price, 'cents')}), strong: true},
     ],
     car.range !== null && [{text: t('live.range', {n: Math.round(car.range)})}],
   ]);
@@ -306,28 +306,28 @@ export function carActivity(
     tint: false,
     pill: {
       label: t(paused ? 'live.chargingPaused' : 'live.charging'),
-      value: t('live.percent', {n: percent}),
+      value: t('live.percent', {n: charge}),
       extra: left || null,
     },
     short: {
       label: null,
-      value: t('live.percent', {n: percent}),
+      value: t('live.percent', {n: charge}),
       extra: paused ? t('live.paused') : left || t('live.chargingShort'),
     },
     ariaLabel: left
-      ? t('live.carAriaLeft', {paused: paused ? 'yes' : 'no', n: percent, left})
-      : t('live.carAria', {paused: paused ? 'yes' : 'no', n: percent}),
+      ? t('live.carAriaLeft', {paused: paused ? 'yes' : 'no', n: charge, left})
+      : t('live.carAria', {paused: paused ? 'yes' : 'no', n: charge}),
     card: {
       kind: 'car',
       name: car.name || t('car.title'),
       state: t(paused ? 'live.paused' : 'live.chargingShort'),
-      right: power !== null && power > POWER_SHOWN_KW ? `${fmt.fixed(power, 1)} kW` : '',
+      right: kw !== null && kw > POWER_SHOWN_KW ? power(fmt, kw * 1000) : '',
       big: {
-        soc: percent,
+        soc: charge,
         limit: t('live.toLimit', {n: limit}),
         eta: eta ? {at: t('live.fullAt', {time: fmt.time(eta)}), inText: t('live.inDuration', {d: left})} : null,
       },
-      bar: {soc: soc ?? 0, limit, aria: t('live.batteryAria', {n: percent, limit})},
+      bar: {soc: soc ?? 0, limit, aria: t('live.batteryAria', {n: charge, limit})},
       meta,
       pause:
         wallbox.pause.id && wallbox.pause.available
@@ -367,9 +367,9 @@ export function waterActivity(
   history: LiveHistoryData | null,
   {t, fmt}: ActivityDeps,
 ): Activity | null {
-  const {power, temperature, powerChangedAt} = inputs.waterHeater;
+  const {power: kw, temperature: tank, powerChangedAt} = inputs.waterHeater;
   const {now} = inputs;
-  if (power === null || !(power > WATER_ON_KW)) return null;
+  if (kw === null || !(kw > WATER_ON_KW)) return null;
   const points = history ? history.wh24.p.filter(([at]) => at >= now - 24 * 60 * MINUTE_MS) : [];
   const runs = waterRuns(points);
   const last = runs.at(-1);
@@ -406,7 +406,7 @@ export function waterActivity(
     tint: false,
     pill: {
       label: t('live.waterHeater'),
-      value: temperature === null ? null : `${Math.round(temperature)}°`,
+      value: tank === null ? null : temperature(fmt, tank),
       extra: left || null,
     },
     short: {label: t('live.water'), value: null, extra: left || null},
@@ -415,13 +415,13 @@ export function waterActivity(
     card: {
       kind: 'wh',
       title: t('live.waterHeating'),
-      right: `${fmt.fixed(power, 1)} kW`,
+      right: power(fmt, kw * 1000),
       spark: sparkline(temps, now, t),
       big: {
-        t: temperature === null ? '–' : fmt.fixed(temperature, 1),
+        t: temperatureFigure(fmt, tank),
         rate:
           rate !== null && Math.abs(rate) >= RATE_SHOWN_FROM
-            ? t('live.rate', {up: rate > 0 ? 'yes' : 'no', n: fmt.fixed(Math.abs(rate), 1)})
+            ? t('live.rate', {up: rate > 0 ? 'yes' : 'no', n: temperatureFigure(fmt, Math.abs(rate))})
             : null,
         left:
           leftMs === null || usual === null

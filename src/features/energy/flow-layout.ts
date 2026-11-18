@@ -3,7 +3,7 @@
 // bars (#249) will follow), the legacy `flowSvg` copied number for number (deleted in #240, with the Sankey's Now mode that drew it); the powers come from `powerNow`, and each word and figure through `t` and `fmt`.
 // Must not: import Lit or the DOM, read the clock, state or the registry, or hold a word a person reads (a catalog key says it).
 import {DASH} from '../../core/figures.ts';
-import {fixedOr, whole, type Formatters} from '../../core/i18n/format.ts';
+import {power, powerParts, temperature, type Formatters} from '../../core/i18n/format.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
 import type {PowerNow} from '../../providers/power.ts';
 import {chargerStatusKey} from '../../providers/wallbox.ts';
@@ -12,13 +12,10 @@ import {chargerStatusKey} from '../../providers/wallbox.ts';
 export const LIVE_KW = 0.02;
 /** A tank at or over this many degrees reads "hot". */
 const HOT_C = 48;
-/** Under this many kW a power is written in watts. */
-const WATTS_BELOW_KW = 1;
 /** The drawing's own coordinates, which the element's `viewBox` repeats. */
 const WIDTH = 440;
 const HEIGHT = 340;
 /** The unit symbol under a ring's figure of a kilowatt or more; the words beside a unit ("kW · HOME") are catalog keys. */
-const KW = 'kW';
 
 /** A text of the drawing: `big` is a figure, `cap` a caption, `st` a small line; `size` overrides the class's font size. */
 export interface FlowText {
@@ -28,6 +25,8 @@ export interface FlowText {
   anchor: 'start' | 'middle' | 'end';
   kind: 'big' | 'cap' | 'st';
   size?: number;
+  /** A unit symbol drawn smaller beside the text, in the same line. */
+  unit?: string;
 }
 
 /** A ring and the figures inside it; `color` is a token, drawn only while `on` (the ring is `var(--ring)` otherwise). */
@@ -81,15 +80,15 @@ export interface FlowDeps {
 const widthOf = (kw: number): number => +(3 + Math.min(2, kw / 2)).toFixed(1);
 const durationOf = (kw: number): string => `${Math.max(0.45, 2.4 - kw * 0.4).toFixed(2)}s`;
 
-export function flowLayout(power: PowerNow, {t, fmt, waterTemperature, chargerStatus}: FlowDeps): FlowGeometry {
-  const {grid, heat, rest} = power;
+export function flowLayout(now: PowerNow, {t, fmt, waterTemperature, chargerStatus}: FlowDeps): FlowGeometry {
+  const {grid, heat, rest} = now;
   // the legacy flow read an absent water heater or charger as zero, and an absent grid as nothing
-  const water = power.waterHeater ?? 0;
-  const ev = power.ev ?? 0;
-  const roomsOn = power.rooms.filter(room => room.heating).length;
+  const water = now.waterHeater ?? 0;
+  const ev = now.ev ?? 0;
+  const roomsOn = now.rooms.filter(room => room.heating).length;
 
-  const watts = (kw: number | null): string =>
-    kw === null ? DASH : kw < WATTS_BELOW_KW ? t('energy.watts', {n: whole(fmt, kw * 1000)}) : fmt.fixed(kw, 2);
+  /** A power with its unit, for a sentence or a figure that carries it: `3.2 kW`. */
+  const spoken = (kw: number | null): string => power(fmt, kw === null ? null : kw * 1000);
   const text = (
     x: number,
     y: number,
@@ -120,17 +119,21 @@ export function flowLayout(power: PowerNow, {t, fmt, waterTemperature, chargerSt
     on: boolean,
     sub = '',
   ): FlowNode => {
-    const unit = kw !== null && kw >= WATTS_BELOW_KW;
-    const texts = [text(cx, cy + (unit ? -2 : 6), watts(kw), 'big', 'middle', r > 41 ? 20 : 18)];
-    if (unit) texts.push(text(cx, cy + 16, KW, 'st', 'middle'));
+    const parts = kw === null ? null : powerParts(fmt, kw * 1000);
+    const kilo = parts?.unit === 'kW';
+    const figure = kilo ? parts.n : spoken(kw);
+    const texts = [text(cx, cy + (kilo ? -2 : 6), figure, 'big', 'middle', r > 41 ? 20 : 18)];
+    if (kilo) texts.push(text(cx, cy + 16, parts.unit, 'st', 'middle'));
     else if (sub) texts.push(text(cx, cy + 21, sub, 'st', 'middle'));
     return {key, cx, cy, r, strokeWidth: 3, color, on, texts};
   };
 
   const word = chargerStatus === null ? undefined : chargerStatusKey(chargerStatus);
   const chargerText = chargerStatus === null ? t('energy.unavailable') : word ? t(word) : chargerStatus;
-  const tank = waterTemperature === null ? '' : `${fmt.fixed(waterTemperature, 1)}°`;
+  const tank = waterTemperature === null ? '' : temperature(fmt, waterTemperature);
   const waterWord = lit(water) ? t('energy.heating') : t('energy.idle');
+  // the home's centre is the grid's power, its unit in a smaller tspan beside the figure
+  const homeFigure = grid === null ? {n: DASH, unit: undefined} : powerParts(fmt, grid * 1000);
   const home: FlowNode = {
     key: 'home',
     cx: 220,
@@ -140,7 +143,7 @@ export function flowLayout(power: PowerNow, {t, fmt, waterTemperature, chargerSt
     color: 'var(--c-home)',
     on: true,
     texts: [
-      text(220, 158, fixedOr(fmt, grid, 2), 'big', 'middle', 28),
+      {...text(220, 158, homeFigure.n, 'big', 'middle', 28), unit: homeFigure.unit},
       text(220, 178, t('energy.flow.home'), 'st', 'middle'),
     ],
   };
@@ -148,7 +151,7 @@ export function flowLayout(power: PowerNow, {t, fmt, waterTemperature, chargerSt
   return {
     width: WIDTH,
     height: HEIGHT,
-    label: t('energy.flow.label', {grid: watts(grid), heat: watts(heat), water: watts(water), ev: watts(ev)}),
+    label: t('energy.flow.label', {grid: spoken(grid), heat: spoken(heat), water: spoken(water), ev: spoken(ev)}),
     connectors: [
       connector('grid', 'var(--c-grid)', [112, 160, 164, 160], grid),
       connector('heat', 'var(--c-heat)', [276, 160, 328, 160], heat),
@@ -174,11 +177,11 @@ export function flowLayout(power: PowerNow, {t, fmt, waterTemperature, chargerSt
         'st',
       ),
       text(370, 222, t('energy.flow.heat'), 'cap', 'middle'),
-      text(370, 238, t('energy.roomsOn', {on: roomsOn, total: power.rooms.length}), 'st', 'middle'),
+      text(370, 238, t('energy.roomsOn', {on: roomsOn, total: now.rooms.length}), 'st', 'middle'),
       text(300, 272, t('energy.flow.ev'), 'cap'),
       text(300, 288, chargerText, 'st'),
       text(120, 290, t('energy.flow.rest'), 'st', 'end'),
-      text(120, 306, rest === null ? DASH : t('energy.kw', {n: fmt.fixed(rest, 2)}), 'big', 'end', 15),
+      text(120, 306, spoken(rest), 'big', 'end', 15),
     ],
   };
 }

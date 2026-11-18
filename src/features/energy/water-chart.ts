@@ -3,7 +3,7 @@
 // scale rules copied number for number (deleted in #239). It was never ApexCharts: two scales on one 320 by 120 canvas, which a library would not draw.
 // Must not: import Lit or the DOM, read the clock (`now` is passed in), or hold a word a person reads (a catalog key says it).
 import {DAY_MS, HOUR_MS, MINUTE_MS} from '../../core/figures.ts';
-import type {Formatters} from '../../core/i18n/format.ts';
+import {power, type Formatters} from '../../core/i18n/format.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
 import type {Point} from '../../providers/power-history.ts';
 
@@ -121,8 +121,8 @@ export function waterChartGeometry(
       label: {x: LEFT - 4, y: yTemperature(degrees) + 3, text: `${fmt.number(degrees, 1)}°`, anchor: 'end'},
     })),
     powerLabels: [
-      {x: WIDTH - RIGHT + 4, y: TOP + 3, text: t('energy.kw', {n: fmt.integer(powerMax)}), anchor: 'start'},
-      {x: WIDTH - RIGHT + 4, y: TOP + PLOT_HEIGHT + 3, text: t('energy.kw', {n: fmt.integer(0)}), anchor: 'start'},
+      {x: WIDTH - RIGHT + 4, y: TOP + 3, text: power(fmt, powerMax * 1000), anchor: 'start'},
+      {x: WIDTH - RIGHT + 4, y: TOP + PLOT_HEIGHT + 3, text: power(fmt, 0), anchor: 'start'},
     ],
     ticks,
     bars: powers
@@ -132,7 +132,7 @@ export function waterChartGeometry(
         y: tenth(yPower(kw)),
         width: tenth(barWidth),
         height: tenth(TOP + PLOT_HEIGHT - yPower(kw)),
-        title: t('energy.water.barTitle', {time: fmt.time(instant), kw: fmt.fixed(kw, 1)}),
+        title: t('energy.water.barTitle', {time: fmt.time(instant), power: power(fmt, kw * 1000)}),
       })),
     line: points.length > 1 ? points.map(([px, py], i) => `${i ? 'L' : 'M'}${tenth(px)},${tenth(py)}`).join('') : null,
     dot: last ? {cx: tenth(last[0]), cy: tenth(last[1])} : null,

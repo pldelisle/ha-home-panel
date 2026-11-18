@@ -2,7 +2,7 @@
 // Pattern: Command (Gamma et al.) built by pure functions; the kit's `CommandRunner` sends them, an element holds the value each `holds` key names in the panel's
 // overlay store (ADR 0023). The rules are the legacy `climateControl`'s and `applySp`'s, deleted in #248: below 5.5 going down is the lowest setpoint, up from off is 15.
 // Must not: send anything, read the store or the clock, or word a string (`done` is a catalog key, the runner words it; a number or a word arrives already written).
-import type {Formatters} from '../../core/i18n/format.ts';
+import {temperatureFigure, type Formatters} from '../../core/i18n/format.ts';
 import {FROST_GUARD, OFF_AT_OR_BELOW} from '../../providers/power.ts';
 import type {Command} from '../../core/commands.ts';
 import {K} from './keys.ts';
@@ -62,7 +62,7 @@ export const setRoomTemperature = (room: RoomTarget, value: number, fmt: DegreeF
   done:
     value <= OFF_AT_OR_BELOW
       ? {key: 'climate.roomOff', values: {name: room.name}}
-      : {key: 'climate.roomSet', values: {name: room.name, n: fmt.fixed(value, 1)}},
+      : {key: 'climate.roomSet', values: {name: room.name, n: temperatureFigure(fmt, value)}},
 });
 
 /** Sets every room in one call, each shown at the value at once; the frost guard is the "all off" the toast names. */
@@ -72,7 +72,7 @@ export const setAllRooms = (ids: readonly string[], value: number, fmt: DegreeFo
   done:
     value <= FROST_GUARD
       ? {key: 'climate.allRoomsOff'}
-      : {key: 'climate.allRoomsSet', values: {n: fmt.fixed(value, 1)}},
+      : {key: 'climate.allRoomsSet', values: {n: temperatureFigure(fmt, value)}},
 });
 
 /** The heat pump's four word settings, which differ only in names: the service and its field, the overlay key, and the toast's catalog key and value name. */
@@ -100,7 +100,7 @@ export const hpMode = (hp: HeatPumpTarget, mode: string, word: string): Command 
 export const hpTemperature = (hp: HeatPumpTarget, value: number, fmt: DegreeFormat): Command => ({
   ...climate('set_temperature', {entity_id: hp.id, temperature: value}),
   holds: [K.hp.sp(hp.id)],
-  done: {key: 'climate.hpSet', values: {n: fmt.fixed(value, 1)}},
+  done: {key: 'climate.hpSet', values: {n: temperatureFigure(fmt, value)}},
 });
 
 /** Sets the heat pump's fan speed, as its mode. */

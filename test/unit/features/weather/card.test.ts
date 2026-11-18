@@ -46,7 +46,7 @@ describe('weatherCardModel', () => {
     expect(view).toEqual({
       next: {label: 'Sunset', time: '4:45 pm'},
       then: {label: 'sunrise', time: '7:00 am'},
-      temperature: '4°',
+      temperature: '4.2°',
       condition: 'Partly cloudy',
       range: 'High 7° · low -1°',
     });

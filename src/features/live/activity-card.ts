@@ -127,7 +127,7 @@ export class ActivityCard extends LitElement {
           : nothing
       }
       <div class="lbig">
-        <span class="n">${big.t}<small>°C</small></span
+        <span class="n">${big.t}<small>°</small></span
         >${big.rate === null ? nothing : html`<span class="to">${big.rate}</span>`}${
           big.left ? html`<span class="eta"><b>${big.left.main}</b>${big.left.usual}</span>` : nothing
         }

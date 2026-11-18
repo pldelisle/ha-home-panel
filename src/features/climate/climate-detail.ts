@@ -171,7 +171,7 @@ export class ClimateDetail extends LitElement {
   // the tablet: the big number with the outside reading beside it, and the gauge under them
   private renderGauge({temperature, outside, gauge}: Detail) {
     return html`<div class="big again">
-        <div class="t">${temperature}<small>°C</small></div>
+        <div class="t">${temperature}<small>°</small></div>
         <div class="muted out">${outside}</div>
       </div>
       ${gauge ? html`<hp-gauge .view=${gauge}></hp-gauge>` : nothing}`;

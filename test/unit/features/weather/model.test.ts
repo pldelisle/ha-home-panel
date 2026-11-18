@@ -24,7 +24,7 @@ describe('the full test house, in English', () => {
     expect(shown(model.tiles)).toEqual([
       {key: 'wind', value: '14', unit: ' km/h', sub: 'SW · gusts 25 km/h'},
       {key: 'hum', value: '71', unit: '%', sub: 'Dew point -0.5°'},
-      {key: 'feels', value: '4°', unit: '', sub: 'Same as the air'},
+      {key: 'feels', value: '4.2°', unit: '', sub: 'Same as the air'},
       {key: 'pres', value: '101.9', unit: ' kPa', sub: 'Rising'},
       {key: 'uv', value: '1', unit: '', sub: 'Low'},
       {key: 'aqhi', value: '2', unit: '', sub: 'Low risk'},
@@ -112,7 +112,7 @@ describe('the full test house, in French', () => {
     expect(shown(model.tiles)).toEqual([
       {key: 'wind', value: '14', unit: ' km/h', sub: 'SO · rafales 25 km/h'},
       {key: 'hum', value: '71', unit: '%', sub: 'Point de rosée -0,5°'},
-      {key: 'feels', value: '4°', unit: '', sub: "Comme l'air"},
+      {key: 'feels', value: '4,2°', unit: '', sub: "Comme l'air"},
       {key: 'pres', value: '101,9', unit: ' kPa', sub: 'En hausse'},
       {key: 'uv', value: '1', unit: '', sub: 'Bas'},
       {key: 'aqhi', value: '2', unit: '', sub: 'Risque faible'},
@@ -307,11 +307,11 @@ describe('the lines under the temperature', () => {
   test('the detail line says Feels like first, when the feels-like differs from the air by a degree or more', () => {
     const base = {today: {hi: 14, lo: 6, pop: null}, temperature: 12.5};
     expect(inEnglish({...base, feelsLike: {value: 10, kind: 'windChill'}}).now.line).toBe(
-      'Feels like 10° · High 14° · Low 6°',
+      'Feels like 10.0° · High 14° · Low 6°',
     );
     expect(inEnglish({...base, feelsLike: {value: 12, kind: 'humidex'}}).now.line).toBe('High 14° · Low 6°');
     expect(inEnglish({today: base.today, feelsLike: {value: 3, kind: 'windChill'}}).now.line).toBe(
-      'Feels like 3° · High 14° · Low 6°',
+      'Feels like 3.0° · High 14° · Low 6°',
     );
   });
 
@@ -362,15 +362,15 @@ describe('the tiles', () => {
 
   test('feels like: wind chill or humidex with its word, the air when there is none, and the visibility', () => {
     expect(tile({feelsLike: {value: -9.4, kind: 'windChill'}, temperature: -3}, 'feels')).toMatchObject({
-      value: '-9°',
+      value: '-9.4°',
       sub: 'wind chill',
     });
     expect(tile({feelsLike: {value: 31, kind: 'humidex'}, temperature: 26}, 'feels', 'tiles')).toMatchObject({
-      value: '31°',
+      value: '31.0°',
       sub: 'Humidex',
     });
     expect(tile({feelsLike: {value: -9, kind: 'windChill'}}, 'feels', 'tiles').sub).toBe('Wind chill');
-    expect(tile({temperature: 4.2}, 'feels', 'tiles')).toMatchObject({value: '4°', sub: 'Same as the air'});
+    expect(tile({temperature: 4.2}, 'feels', 'tiles')).toMatchObject({value: '4.2°', sub: 'Same as the air'});
     expect(tile({temperature: null}, 'feels', 'tiles')).toMatchObject({value: '–', sub: 'Same as the air'});
     expect(tile({temperature: 4.2, visibility: 11.6}, 'feels')).toMatchObject({value: '4.2°', sub: 'visibility 12 km'});
     expect(tile({temperature: null}, 'feels')).toMatchObject({value: '–°', sub: 'same as the air'});
@@ -546,14 +546,14 @@ describe('the house picture and the word under Weather in More', () => {
     t: createMessages({language: 'en', tag: 'en-CA'}).t,
   };
 
-  test("is the rounded temperature and the condition, in the catalog's words", () => {
-    expect(weatherBrief(inputsWith({temperature: 4.2, condition: 'partlycloudy'}), deps)).toBe('4° · Partly cloudy');
+  test("is the temperature to a tenth and the condition, in the catalog's words", () => {
+    expect(weatherBrief(inputsWith({temperature: 4.2, condition: 'partlycloudy'}), deps)).toBe('4.2° · Partly cloudy');
     expect(
       weatherBrief(
         inputsWith({temperature: -0.4, condition: 'Mainly Sunny', conditionWords: 'weather.cond.ec.mainlySunny'}),
         deps,
       ),
-    ).toBe('0° · Mainly sunny');
+    ).toBe('-0.4° · Mainly sunny');
   });
 
   test('is empty when the house has no temperature', () => {
@@ -566,7 +566,7 @@ describe('the house picture and the word under Weather in More', () => {
         inputsWith({temperature: 4.2, condition: 'Mainly Sunny', conditionWords: 'weather.cond.ec.mainlySunny'}),
         deps,
       ),
-    ).toBe('Weather: 4°, mainly sunny. Opens the forecast');
+    ).toBe('Weather: 4.2°, mainly sunny. Opens the forecast');
     expect(weatherCardName(inputsWith({condition: 'rainy'}), deps)).toBe('Weather. Opens the forecast');
   });
 });

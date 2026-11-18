@@ -96,10 +96,10 @@ describe('the charger’s card, from the test house', () => {
     });
     // the range is 6 to 40: 48 is not offered
     expect(view.power.options).toEqual([
-      {value: '16', label: '16 A', sub: '3.8 kW'},
-      {value: '24', label: '24 A', sub: '5.8 kW'},
-      {value: '32', label: '32 A', sub: '7.7 kW'},
-      {value: '40', label: '40 A', sub: '9.6 kW'},
+      {value: '16', label: '16 A', sub: '3.8\u00a0kW'},
+      {value: '24', label: '24 A', sub: '5.8\u00a0kW'},
+      {value: '32', label: '32 A', sub: '7.7\u00a0kW'},
+      {value: '40', label: '40 A', sub: '9.6\u00a0kW'},
     ]);
   });
 });
@@ -125,7 +125,7 @@ describe('the charger’s card, from literal houses', () => {
     const view = chargerControls(inputsOf(hass), depsFor(hass))!;
     expect(view.power.chosen).toBe('20');
     expect(view.power.hint).toBe('Now 20 A · kW at 240 V.');
-    expect(view.power.options.at(-1)).toEqual({value: '48', label: '48 A', sub: '11.5 kW'});
+    expect(view.power.options.at(-1)).toEqual({value: '48', label: '48 A', sub: '12\u00a0kW'});
   });
 
   test('a charger that does not answer is unavailable: one line instead of controls that cannot be used', () => {
@@ -180,7 +180,7 @@ describe('the charger’s card, from literal houses', () => {
   test('in French the words are French’s and the kilowatts take a comma', () => {
     const view = chargerControls(inputsOf(fullHouse), depsFor(fullHouse, 'fr'))!;
     expect(view).toMatchObject({title: 'Borne à la maison', line: 'Wallbox Pulsar Plus · en recharge'});
-    expect(view.power.options[0]).toEqual({value: '16', label: '16 A', sub: '3,8 kW'});
+    expect(view.power.options[0]).toEqual({value: '16', label: '16 A', sub: '3,8\u00a0kW'});
     expect(view.power.hint).toBe('kW à 240 V.');
   });
 });
@@ -268,7 +268,12 @@ describe('the actions row, from a car with every switch', () => {
       confirm: {title: 'Unlock the car?', line: 'Anyone at the car can open it.', confirm: 'Unlock', cancel: 'Cancel'},
     });
     expect(view?.start).toMatchObject({label: 'Start…', line: 'Engine off', running: false});
-    expect(view?.pause).toEqual({id: 'switch.charger_pause', label: 'Pause charging', line: '7.2 kW', paused: false});
+    expect(view?.pause).toEqual({
+      id: 'switch.charger_pause',
+      label: 'Pause charging',
+      line: '7.2\u00a0kW',
+      paused: false,
+    });
   });
 });
 
@@ -282,7 +287,7 @@ describe('the actions row, from literal houses', () => {
     expect(carActions(inputsOf(houseOf([], [])), depsFor(houseOf([], [])))).toBeNull();
   });
 
-  test('a charger that answers but draws nothing says no power under Pause charging, rather than 0.0 kW', () => {
+  test('a charger that answers but draws nothing says no power under Pause charging, rather than 0.0\u00a0kW', () => {
     const hass = carHouse({'sensor.charger_power': entity('sensor.charger_power', '0')});
     expect(carActions(inputsOf(hass), depsFor(hass))?.pause).toMatchObject({label: 'Pause charging', line: ''});
   });
@@ -326,7 +331,7 @@ describe('the actions row, from literal houses', () => {
       confirm: {title: 'Déverrouiller la voiture ?', cancel: 'Annuler'},
     });
     expect(view?.start?.label).toBe('Démarrer…');
-    expect(view?.pause).toMatchObject({label: 'Suspendre la recharge', line: '7,2 kW'});
+    expect(view?.pause).toMatchObject({label: 'Suspendre la recharge', line: '7,2\u00a0kW'});
   });
 });
 

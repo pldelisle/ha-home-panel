@@ -137,16 +137,16 @@ describe('the test house, in English', () => {
   const vm = modelOf(fullHouse);
 
   test('the phone’s line, and the summary: the charge, the range, the bar with the limit Ford sets, charging and locked', () => {
-    expect(vm.summary).toEqual({title: 'Car', line: 'Parked at home · 64.0% · 280 km · charging'});
+    expect(vm.summary).toEqual({title: 'Car', line: 'Parked at home · 64% · 280 km · charging'});
     expect(vm).not.toHaveProperty('card');
     expect(vm.detail?.summary).toMatchObject({
       name: 'Car',
       picture: null,
       color: '#B03A2E',
       drawing: 'Car, side view',
-      charge: '64.0',
+      charge: '64',
       range: '280 km range',
-      soc: {fill: 64, limit: 90, label: 'Battery 64.0 percent, charge limit 90 percent'},
+      soc: {fill: 64, limit: 90, label: 'Battery 64 percent, charge limit 90 percent'},
       facts: [
         {text: 'Charging', tone: 'ok'},
         {text: 'Locked', tone: 'plain'},
@@ -193,11 +193,11 @@ describe('the test house, in French', () => {
   const vm = modelOf(fullHouse, null, {language: 'fr'});
 
   test('the words are French’s and the numbers too: a comma, a narrow space before the percent sign, a thin space in thousands', () => {
-    expect(vm.summary.line).toBe('Stationnée à la maison · 64,0 % · 280 km · en recharge');
+    expect(vm.summary.line).toBe('Stationnée à la maison · 64 % · 280 km · en recharge');
     expect(vm.detail?.summary).toMatchObject({
       drawing: 'Voiture, vue de côté',
       range: "280 km d'autonomie",
-      soc: {label: 'Batterie 64,0 pour cent, limite de charge 90 pour cent'},
+      soc: {label: 'Batterie 64 pour cent, limite de charge 90 pour cent'},
     });
     expect(vm.detail?.summary.soc.scale.limit).toBe('Limite 90 % · réglée dans FordPass');
     expect(vm.detail?.summary.facts.map(({text}) => text)).toEqual(['Recharge', 'Verrouillée']);
@@ -247,7 +247,7 @@ describe('a car with every sensor', () => {
 
   test('the summary: the charge and the range, the bar with the limit, and the facts, charging with its power first', () => {
     expect(detail.summary).toMatchObject({
-      charge: '64.0',
+      charge: '64',
       range: '280 km range',
       name: 'Test',
       picture: '/api/image_proxy/image.t',
@@ -259,11 +259,11 @@ describe('a car with every sensor', () => {
     expect(detail.summary.soc).toEqual({
       fill: 64,
       limit: 90,
-      label: 'Battery 64.0 percent, charge limit 90 percent',
+      label: 'Battery 64 percent, charge limit 90 percent',
       scale: {start: '0%', limit: 'Limit 90% · set in FordPass', end: '100%'},
     });
     expect(detail.summary.facts).toEqual([
-      {text: 'Charging · 7.2 kW', tone: 'ok'},
+      {text: 'Charging · 7.2\u00a0kW', tone: 'ok'},
       {text: 'Doors closed', tone: 'plain'},
       {text: 'Windows closed', tone: 'plain'},
       {text: 'Hood and tailgate closed', tone: 'plain'},
@@ -347,7 +347,7 @@ describe('a car with every sensor', () => {
       length: '1 h',
       energy: '6.0 kWh',
       barPx: 27,
-      peak: '3.5 kW',
+      peak: '3.5\u00a0kW',
       cost: '$0.42',
     });
     expect(sessions.rows.map(row => row.date)).toEqual(['Sun, Nov 8', 'Fri, Nov 6', 'Tue, Oct 20']);
@@ -524,7 +524,7 @@ describe('a car with every sensor, in French', () => {
     expect(detail.sub).toBe('Stationnée à la maison · verrouillée · dernier contact de la voiture à 16 h 05');
     expect([detail.summary.drawing, detail.status.drawing]).toEqual(['Voiture, vue de côté', 'Voiture vue de haut']);
     expect(detail.summary.facts.map(({text}) => text)).toEqual([
-      'Recharge · 7,2 kW',
+      'Recharge · 7,2\u00a0kW',
       'Portes fermées',
       'Fenêtres fermées',
       'Capot et hayon fermés',
@@ -584,7 +584,7 @@ describe('the other shapes of a car', () => {
         'device_tracker.tracker': car('device_tracker', 'tracker', 'not_home'),
       }),
     );
-    expect(vm.summary.line).toBe('Away · 64.0% · 280 km · plugged in');
+    expect(vm.summary.line).toBe('Away · 64% · 280 km · plugged in');
     expect(vm.detail?.summary.facts[0]).toEqual({text: 'Plugged in', tone: 'plain'});
     expect(vm.detail?.summary.facts).toContainEqual({text: 'Unlocked', tone: 'warn'});
   });
@@ -601,13 +601,13 @@ describe('the other shapes of a car', () => {
       }),
     );
     expect(vm.detail?.summary).toMatchObject({
-      charge: '12.0',
+      charge: '12',
       range: '',
-      soc: {fill: 12, limit: null, label: 'Battery 12.0 percent'},
+      soc: {fill: 12, limit: null, label: 'Battery 12 percent'},
     });
     expect(vm.detail?.summary.soc.scale.limit).toBe('');
     expect(vm.detail?.summary.facts[0]).toEqual({text: 'Unplugged', tone: 'plain'});
-    expect(vm.summary.line).toBe('Work · 12.0% · unplugged');
+    expect(vm.summary.line).toBe('Work · 12% · unplugged');
     expect(vm.detail?.status.rows.map(row => row.label)).not.toContain('Full range');
   });
 
@@ -641,7 +641,7 @@ describe('the other shapes of a car', () => {
       }),
     );
     const detail = vm.detail!;
-    expect(vm.summary.line).toBe('64.0% · plugged in');
+    expect(vm.summary.line).toBe('64% · plugged in');
     expect(detail.sub).toBe('');
     expect(detail.summary.facts).toEqual([{text: 'Plugged in', tone: 'plain'}]);
     expect(detail.status.tires.map(tire => [tire.psi, tire.state])).toEqual([

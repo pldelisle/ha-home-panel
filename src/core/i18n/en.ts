@@ -45,8 +45,7 @@ export const en = {
   'weather.title': 'Weather',
   'car.title': 'Car',
   'energy.title': 'Energy',
-  'energy.more.watts': '{n} W now',
-  'energy.more.kilowatts': '{n} kW now',
+  'energy.more.now': '{power} now',
   'air.title': 'Air',
   'media.title': 'Media',
   // what a television that has no name of its own is called, by its source (src/providers/samsung-tv.ts, tv-entity.ts)
@@ -568,7 +567,7 @@ export const en = {
   // the card, its top line and the sub-line
   'energy.card.title': 'Home energy',
   'energy.close': 'Close',
-  'energy.summary': 'Grid supplying {grid} kW · room heating {heat} kW · Hilo {rate}',
+  'energy.summary': 'Grid supplying {grid} · room heating {heat} · Hilo {rate}',
   // Hilo's tier, as a name and as a short form in running text; the rate is `challenge` when it is the reward rate
   'energy.tier.low': 'Low tier',
   'energy.tier.medium': 'Medium tier',
@@ -581,8 +580,6 @@ export const en = {
   'energy.rate.current': 'current rate',
   'energy.rate.unknown': 'rate unknown',
   // the live flow's figures, captions and screen-reader sentence (src/features/energy/flow-layout.ts)
-  'energy.watts': '{n} W',
-  'energy.kw': '{n} kW',
   'energy.flow.label': 'Grid supplies {grid} to the home; room heating {heat}; water heating {water}; EV charging {ev}',
   'energy.flow.grid': 'Grid',
   'energy.flow.home': 'kW · Home',
@@ -609,15 +606,15 @@ export const en = {
   'energy.glance.line': 'Now · {kwh} kWh today · {rate}',
   'energy.glance.lineNow': 'Now · {rate}',
   'energy.glance.water': '{state} · {kwh} kWh today',
-  'energy.water.heating': 'Heating · {kw} kW',
-  'energy.water.idle': 'Idle · 0 W',
+  'energy.water.heating': 'Heating · {power}',
+  'energy.water.idle': 'Idle · {power}',
   'energy.water.temperature': 'Water temperature',
   'energy.water.power': 'Heating power',
   // `=0` repeats `other` in English; the French needs it (CLDR's `one` covers 0 there, the legacy wrote « 0 cycles »), and both catalogs keep the same branches
   'energy.water.last24':
     'Last 24 hours: {kwh} kWh over {cycles, plural, =0 {# heating cycles} one {# heating cycle} other {# heating cycles}}.',
   'energy.water.average': '{days}-day average: {kwh} kWh a day.',
-  'energy.water.barTitle': '{time}: {kw} kW',
+  'energy.water.barTitle': '{time}: {power}',
   'energy.water.chartLabel': 'Water temperature {low} to {high} degrees and heating power, last 24 hours',
   // the Hilo card: the challenge's lines, the phases as the sensor says them, and the three tiles
   'energy.hilo.title': 'Hilo',
@@ -698,7 +695,7 @@ export const en = {
   'climate.roomsHeating': '{n, plural, =0 {# rooms} one {# room} other {# rooms}} heating',
   'climate.heatPumpPlusRooms': 'Heat pump + {n, plural, =0 {# rooms} one {# room} other {# rooms}} heating',
   'climate.unavailable': 'Unavailable',
-  'climate.heatingKw': 'Heating · {kw} kW',
+  'climate.heatingKw': 'Heating · {power}',
   'climate.holding': 'Holding {n}°',
   'climate.off': 'Off',
   'climate.heatPump': 'Heat pump',
@@ -973,7 +970,6 @@ export const en = {
   'car.charger.power': 'Power limit',
   'car.charger.currentLabel': 'Charging current limit',
   'car.charger.amps': '{n} A',
-  'car.charger.kw': '{n} kW',
   'car.charger.ampsHint': 'kW at 240 V.',
   'car.charger.ampsHintNow': 'Now {n} A · kW at 240 V.',
   'car.charger.unavailableTitle': 'Wallbox unavailable',
@@ -1398,7 +1394,6 @@ export const en = {
   'live.batteryAria': 'Battery {n} percent, limit {limit} percent',
   'live.pluggedInAt': 'Plugged in at {time}',
   'live.soFarAbout': 'so far · about',
-  'live.cost': '${n}',
   'live.range': '{n} km range',
   'live.waterHeater': 'Water heater',
   'live.water': 'Water',

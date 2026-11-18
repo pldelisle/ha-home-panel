@@ -101,7 +101,7 @@ describe('the test house, on the tablet', () => {
       ['living_room', false],
       ['office', false],
     ]);
-    expect(vm.tiles[1]).toMatchObject({name: 'Bedroom', sub: 'Heating · 1.20 kW'});
+    expect(vm.tiles[1]).toMatchObject({name: 'Bedroom', sub: 'Heating · 1.2\u00a0kW'});
   });
 
   test('the house: the average, its warmest and coolest rooms, the heating now, a dash for what history gives', () => {
@@ -139,7 +139,7 @@ describe('the test house, on the tablet', () => {
         select: 'living_room',
         opens: 'Shows its chart',
       },
-      {label: 'Heating now', value: '2.40', unit: 'kW', sub: 'all thermostats', range: false},
+      {label: 'Heating now', value: '2.4', unit: 'kW', sub: 'all thermostats', range: false},
       {label: 'Heating, 24 h', value: '–', unit: 'kWh', sub: 'all thermostats', range: false},
     ]);
   });
@@ -162,7 +162,7 @@ describe('the test house, on the tablet', () => {
     const tiles = (history: ClimateHistoryData, sel: string, range: Range = history.range, language: Language = 'en') =>
       modelOf(fullHouse, sel, {range, history, language}).detail.tiles.map(t => t.value);
     // a room: the span of its readings at one decimal, the kWh at one; the Drawing now tile is the state's
-    expect(tiles(week, 'bedroom')).toEqual(['18.5–23.0', '1.20', '12.3']);
+    expect(tiles(week, 'bedroom')).toEqual(['18.5–23.0', '1.2', '12.3']);
     expect(tiles(week, 'bedroom', 'week', 'fr')[0]).toBe('18,5–23,0');
     // the house has no Range tile: the mean of the rooms is the line the chart draws, and its Heating tile is the rooms' total, a whole number of kWh
     const everyRoom = {
@@ -172,11 +172,11 @@ describe('the test house, on the tablet', () => {
       office: points(19, 22),
     };
     const house = loaded({rooms: everyRoom, kwh: {bedroom: 100, garage: 39.6, living_room: 0, office: 0}});
-    expect(tiles(house, 'house')).toEqual(['21.2', '20.0', '2.40', '140']);
+    expect(tiles(house, 'house')).toEqual(['21.2', '20.0', '2.4', '140']);
     // a room the load has no rows for, or no power sensor for, stays a dash
-    expect(tiles(week, 'garage')).toEqual(['–', '0.00', '–']);
+    expect(tiles(week, 'garage')).toEqual(['–', '0', '–']);
     // a history of another range than the one shown is no history: dashes until the loader has the range
-    expect(tiles(week, 'bedroom', 'day')).toEqual(['–', '1.20', '–']);
+    expect(tiles(week, 'bedroom', 'day')).toEqual(['–', '1.2', '–']);
     // a selection that names nothing the house has is the house, and its figures are the house's
     expect(modelOf(fullHouse, 'nowhere', {history: house}).detail.tiles[3].value).toBe('140');
   });
@@ -312,7 +312,7 @@ describe('the test house, on the tablet', () => {
     });
     expect(detail.tiles.map(tile => [tile.label, tile.value, tile.unit, tile.range])).toEqual([
       ['Range, 7 days', '–', '°', true],
-      ['Drawing now', '1.20', 'kW', false],
+      ['Drawing now', '1.2', 'kW', false],
       ['Heating, 7 days', '–', 'kWh', false],
     ]);
     const {id, name, setpoint, quick} = room(detail.controls);
@@ -381,7 +381,7 @@ describe('in French', () => {
       ['Le plus chaud', '21,2', 'Garage'],
       // the French baselines keep the rooms' English names (KEEP_ENGLISH_NAMES), so the test house says `Living room` in both
       ['Le plus frais', '20,0', 'Living room'],
-      ['Chauffe en ce moment', '2,40', 'tous les thermostats'],
+      ['Chauffe en ce moment', '2,4', 'tous les thermostats'],
       ['Chauffage, 24 h', '–', 'tous les thermostats'],
     ]);
     expect(vm.detail.gauge).toMatchObject({
@@ -393,7 +393,7 @@ describe('in French', () => {
   test('a room, and its dial on the phone', () => {
     const {detail} = modelOf(fullHouse, 'bedroom', {language: 'fr'});
     expect(detail).toMatchObject({title: 'Bedroom', sub: 'Thermostat Hilo', pill: {text: 'Chauffe à 21°'}});
-    expect(detail.tiles[1]).toMatchObject({label: 'Puissance actuelle', value: '1,20'});
+    expect(detail.tiles[1]).toMatchObject({label: 'Puissance actuelle', value: '1,2'});
     const dial = modelOf(fullHouse, 'bedroom', {language: 'fr', compact: true}).detail.dial;
     expect(dial).toMatchObject({
       label: 'Consigne',
@@ -715,7 +715,7 @@ describe('a house with nothing to read', () => {
     expect(vm.detail.tiles.map(tile => [tile.value, tile.sub])).toEqual([
       ['–', null],
       ['–', null],
-      ['0.00', 'all thermostats'],
+      ['0', 'all thermostats'],
       ['–', 'all thermostats'],
     ]);
     expect(vm.detail.dial).toMatchObject({big: '–', caption: ''});

@@ -464,12 +464,6 @@
       "key": "live.soFarAbout"
     },
     {
-      "key": "live.cost",
-      "values": {
-        "n": "0.22"
-      }
-    },
-    {
       "key": "live.range",
       "values": {
         "n": 280

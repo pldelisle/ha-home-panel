@@ -8,7 +8,7 @@ import type {EntityKey} from '../../core/entities.ts';
 import {capitalise, DASH, DAY_MS, HOUR_MS, hundredths} from '../../core/figures.ts';
 import type {HistoryPoint, StatisticRow} from '../../core/ha.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
-import {degrees, whole, type Formatters} from '../../core/i18n/format.ts';
+import {degrees, temperature, temperatureFigure, whole, type Formatters} from '../../core/i18n/format.ts';
 import type {Messages} from '../../core/i18n/messages.ts';
 import {celsius, hourRowsAxis, timeAxis, tooltipDate} from '../../ui/chart-options.ts';
 import {bucketMiddle, RANGES, type Range} from '../../ui/ranges.ts';
@@ -231,11 +231,11 @@ export function seasonView(
   return {
     since: t('weather.season.since', {date: fmt.date(months[0].at)}),
     tiles: [
-      tile(t('weather.season.warmest'), `${fmt.fixed(best.warmest.value, 1)}°`, '', fmt.date(best.warmest.at)),
-      tile(t('weather.season.coldest'), `${fmt.fixed(best.coldest.value, 1)}°`, '', fmt.date(best.coldest.at)),
+      tile(t('weather.season.warmest'), temperature(fmt, best.warmest.value), '', fmt.date(best.warmest.at)),
+      tile(t('weather.season.coldest'), temperature(fmt, best.coldest.value), '', fmt.date(best.coldest.at)),
       tile(
         capitalise(fmt.month(now, 'long')),
-        current ? `${fmt.fixed(current.mean, 1)}°` : DASH,
+        current ? temperature(fmt, current.mean) : DASH,
         '',
         current ? t('weather.season.average', {n: current.frostNights}) : '',
       ),
@@ -257,7 +257,7 @@ export function seasonView(
         : month.hotDays
           ? t('weather.season.hot', {n: month.hotDays, limit: HOT_FROM})
           : '',
-      title: t('weather.season.averageTitle', {mean: fmt.fixed(month.mean, 1)}),
+      title: t('weather.season.averageTitle', {mean: temperatureFigure(fmt, month.mean)}),
       barLeft: percent(month.low),
       barWidth: Math.max(2, ((month.high - month.low) / span) * 100),
       averageAt: percent(month.mean),

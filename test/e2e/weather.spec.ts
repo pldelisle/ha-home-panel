@@ -36,7 +36,7 @@ test("the Weather tab shows the eight tiles with the house's readings", async ({
   await expect(tiles(house).locator('.tv')).toHaveText([
     '14 km/h',
     '71%',
-    '4°',
+    '4.2°',
     '101.9 kPa',
     '1',
     '2',
@@ -63,7 +63,7 @@ test.describe('the bare house', () => {
     house,
   }) => {
     await openWeather(house);
-    await expect(tiles(house).locator('.tv')).toHaveText(['14 km/h', '71%', '4°', '101.9 kPa', '–', '–', '–', '–']);
+    await expect(tiles(house).locator('.tv')).toHaveText(['14 km/h', '71%', '4.2°', '101.9 kPa', '–', '–', '–', '–']);
   });
 });
 

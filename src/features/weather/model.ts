@@ -5,7 +5,14 @@
 // Must not: import the DOM, a UI kit element or the shell, hold a colour (tiles carry a tone name), or read the clock.
 import {capitalise, DASH, DAY_MS, HOUR_MS, joined} from '../../core/figures.ts';
 import {conditionName} from '../../core/i18n/condition-name.ts';
-import {degrees, whole, type Formatters} from '../../core/i18n/format.ts';
+import {
+  forecastFigure,
+  forecastTemperature,
+  temperature,
+  temperatureFigure,
+  whole,
+  type Formatters,
+} from '../../core/i18n/format.ts';
 import type {Messages} from '../../core/i18n/messages.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
 import {isDayAt, sunTimes} from '../../core/sun.ts';
@@ -184,7 +191,7 @@ function sayWith(t: Translate, fmt: Formatters): Say {
     t,
     fmt,
     int: n => whole(fmt, n),
-    degrees: n => degrees(fmt, n),
+    degrees: n => forecastTemperature(fmt, n),
     raw: n => (n === null ? DASH : fmt.number(n, 2)),
     fixed: (n, digits) => (n === null ? DASH : fmt.fixed(n, digits)),
     compass: point => t('weather.compass', {point}),
@@ -277,10 +284,10 @@ function paneTiles(inputs: WeatherInputs, say: Say): StatTileView[] {
     hum: () => ({
       value: fixed(humidity, 0),
       unit: humidity === null ? '' : '%',
-      sub: dewPoint === null ? '' : t('weather.sub.dewPoint', {temp: fmt.fixed(dewPoint, 1)}),
+      sub: dewPoint === null ? '' : t('weather.sub.dewPoint', {temp: temperatureFigure(fmt, dewPoint)}),
     }),
     feels: () => ({
-      value: feelsLike ? degrees(feelsLike.value) : inputs.temperature === null ? DASH : degrees(inputs.temperature),
+      value: feelsLike || inputs.temperature !== null ? temperature(fmt, feelsLike?.value ?? inputs.temperature) : DASH,
       unit: '',
       sub: feelsSub(inputs, false, say),
     }),
@@ -349,7 +356,7 @@ function detailTiles(inputs: WeatherInputs, say: Say): StatTileView[] {
     hum: () => ({
       value: raw(humidity),
       unit: '%',
-      sub: dewPoint === null ? '' : t('weather.sub.dewPointLower', {temp: fmt.fixed(dewPoint, 1)}),
+      sub: dewPoint === null ? '' : t('weather.sub.dewPointLower', {temp: temperatureFigure(fmt, dewPoint)}),
     }),
     pres: () => ({
       value: fixed(pressure.kpa, 1),
@@ -364,7 +371,7 @@ function detailTiles(inputs: WeatherInputs, say: Say): StatTileView[] {
       sub: aqhi === null ? t('weather.aqhi') : t('weather.aqhiRisk', {risk: aqhiRisk(aqhi)}),
     }),
     feels: () => ({
-      value: feelsLike ? degrees(feelsLike.value) : `${fixed(inputs.temperature, 1)}°`,
+      value: temperature(fmt, feelsLike ? feelsLike.value : inputs.temperature),
       unit: '',
       sub:
         feelsLike || visibility === null
@@ -388,12 +395,14 @@ function detailTiles(inputs: WeatherInputs, say: Say): StatTileView[] {
  * when `feelsText` is given. The two sets of figures the French map has a sentence for are worded whole; any other set is
  * joined from its parts.
  */
-function rangeLine(inputs: WeatherInputs, feelsText: string | null, withNormals: boolean, {t, int}: Say): string {
+function rangeLine(inputs: WeatherInputs, feelsText: string | null, withNormals: boolean, {t, fmt}: Say): string {
   const {today, normals} = inputs;
-  const high = today.hi === null ? null : int(today.hi);
-  const low = today.lo === null ? null : int(today.lo);
+  const high = today.hi === null ? null : forecastFigure(fmt, today.hi);
+  const low = today.lo === null ? null : forecastFigure(fmt, today.lo);
   const normal =
-    withNormals && normals.hi !== null && normals.lo !== null ? {high: int(normals.hi), low: int(normals.lo)} : null;
+    withNormals && normals.hi !== null && normals.lo !== null
+      ? {high: forecastFigure(fmt, normals.hi), low: forecastFigure(fmt, normals.lo)}
+      : null;
   if (feelsText === null && high !== null && low !== null)
     return normal
       ? t('weather.highLowNormal', {high, low, normalHigh: normal.high, normalLow: normal.low})
@@ -409,8 +418,8 @@ function rangeLine(inputs: WeatherInputs, feelsText: string | null, withNormals:
 }
 
 /** The feels-like figure, when it differs from the air by a degree or more: the detail's line says it first. */
-function feelsShown({feelsLike, temperature}: WeatherInputs, {int}: Say): string | null {
-  return feelsLike && Math.abs(feelsLike.value - (temperature ?? 0)) >= 1 ? int(feelsLike.value) : null;
+function feelsShown({feelsLike, temperature: air}: WeatherInputs, {fmt}: Say): string | null {
+  return feelsLike && Math.abs(feelsLike.value - (air ?? 0)) >= 1 ? temperatureFigure(fmt, feelsLike.value) : null;
 }
 
 // ---------- the days ----------
@@ -574,11 +583,11 @@ export function weatherCardModel(
       second === null
         ? null
         : {label: t(up ? 'weather.card.thenSunrise' : 'weather.card.thenSunset'), time: fmt.time(second)},
-    temperature: inputs.temperature === null ? DASH : degrees(fmt, inputs.temperature),
+    temperature: inputs.temperature === null ? DASH : temperature(fmt, inputs.temperature),
     condition: conditionOf(inputs, say),
     range: joined(
-      hi === null ? '' : t('weather.card.high', {n: whole(fmt, hi)}),
-      lo === null ? '' : t('weather.card.low', {n: whole(fmt, lo)}),
+      hi === null ? '' : t('weather.card.high', {n: forecastFigure(fmt, hi)}),
+      lo === null ? '' : t('weather.card.low', {n: forecastFigure(fmt, lo)}),
     ),
   };
 }
@@ -595,13 +604,13 @@ export function weatherChipModel(
   {t, fmt}: Pick<WeatherModelDeps, 't' | 'fmt'>,
 ): WeatherChipView | null {
   if (inputs.temperature === null) return null;
-  return {temperature: `${fmt.fixed(inputs.temperature, 1)}°`, condition: conditionOf(inputs, sayWith(t, fmt))};
+  return {temperature: temperature(fmt, inputs.temperature), condition: conditionOf(inputs, sayWith(t, fmt))};
 }
 
 /** The word under Weather in the phone's More sheet: "4° · Partly cloudy", or nothing when the house has no temperature. */
 export function weatherBrief(inputs: WeatherInputs, {fmt, t}: Pick<WeatherModelDeps, 'fmt' | 't'>): string {
   if (inputs.temperature === null) return '';
-  return `${degrees(fmt, inputs.temperature)} · ${conditionOf(inputs, sayWith(t, fmt))}`;
+  return `${temperature(fmt, inputs.temperature)} · ${conditionOf(inputs, sayWith(t, fmt))}`;
 }
 
 /**
@@ -611,7 +620,7 @@ export function weatherBrief(inputs: WeatherInputs, {fmt, t}: Pick<WeatherModelD
 export function weatherCardName(inputs: WeatherInputs, {fmt, t}: Pick<WeatherModelDeps, 'fmt' | 't'>): string {
   if (inputs.temperature === null) return t('weather.card.nameBare');
   return t('weather.card.name', {
-    temperature: degrees(fmt, inputs.temperature),
+    temperature: temperature(fmt, inputs.temperature),
     condition: conditionOf(inputs, sayWith(t, fmt)).toLowerCase(),
   });
 }
@@ -629,7 +638,7 @@ export function weatherModel(
   const forecastDays = (inputs.foldForecast ?? defaultFold)(forecast.daily, isoDay).slice(0, DAYS_KEPT);
   const alerts = alertViews(inputs, say);
   const hours = hourViews(forecast.hourly, deps, say);
-  const temperature = inputs.temperature === null ? `${DASH}°` : `${fmt.fixed(inputs.temperature, 1)}°`;
+  const outside = temperature(fmt, inputs.temperature);
   const condition = conditionOf(inputs, say);
   return {
     summary: summaryLine(inputs, alerts.length, condition, say),
@@ -637,14 +646,14 @@ export function weatherModel(
       house: deps.house?.day ? {day: deps.house.day, night: deps.house.night ?? deps.house.day} : null,
       sunLabel: inputs.sun.up ? t('weather.sunset') : t('weather.sunrise'),
       sunTime: inputs.sun.next ? fmt.time(inputs.sun.next.at) : DASH,
-      temperature,
+      temperature: outside,
       condition,
       range: rangeLine(inputs, null, true, say),
       days: cardDays(forecastDays, days, say),
     },
     tiles: paneTiles(inputs, say),
     now: {
-      temperature,
+      temperature: outside,
       condition,
       icon: {condition: inputs.condition, day: inputs.isDay, label: condition},
       line: rangeLine(inputs, feelsShown(inputs, say), false, say),

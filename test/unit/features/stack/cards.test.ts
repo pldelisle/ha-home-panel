@@ -310,14 +310,14 @@ describe('a critical peak or a Hilo challenge', () => {
       right: 'Hydro-Québec',
       go: {sheet: 'energy.detail'},
       body: [{kind: 'mid', text: 'Lower consumption now'}],
-      foot: 'Using 3.2 kW right now',
+      foot: 'Using 3.2\u00a0kW right now',
     });
     expect(
       one(peak, {hydroQuebec: {...hq, peakNow: false, peakUpcoming: true}, power: {...house.power, grid: 0.85}}),
     ).toMatchObject({
       label: 'Critical peak coming',
       body: [{kind: 'mid', text: 'Hydro-Québec announced a critical peak'}],
-      foot: 'Using 850 W right now',
+      foot: 'Using 850\u00a0W right now',
     });
   });
 
@@ -560,7 +560,7 @@ describe('the car charging overnight', () => {
           limit: 90,
           size: 124,
           rows: [
-            {label: 'Power', value: '7.1 kW'},
+            {label: 'Power', value: '7.1\u00a0kW'},
             {label: 'Range', value: '280 km'},
             {label: 'Limit', value: '90%'},
           ],

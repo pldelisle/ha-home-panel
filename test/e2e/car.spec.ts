@@ -44,15 +44,15 @@ test.describe('on a phone', () => {
     await house.tab('car');
     await expect(pane(house).locator('hp-pane-header h2').first()).toHaveText('Car');
     await expect(pane(house).locator(':scope > hp-pane-header > [slot="sub"]')).toHaveText(
-      'Parked at home · 64.0% · 280 km · charging',
+      'Parked at home · 64% · 280 km · charging',
     );
     await expect(detail(house)).toBeVisible();
     await expect(pane(house).locator('hp-car-card')).toHaveCount(0);
     await expect(pane(house).locator('hp-sheet .sheet:visible')).toHaveCount(0);
-    await expect(summary(house).locator('.carhero .t')).toHaveText('64.0%');
+    await expect(summary(house).locator('.carhero .t')).toHaveText('64%');
     await expect(summary(house).locator('.socbar')).toHaveAttribute(
       'aria-label',
-      'Battery 64.0 percent, charge limit 90 percent',
+      'Battery 64 percent, charge limit 90 percent',
     );
     await expect(summary(house).locator('.socscale')).toHaveText('0%Limit 90% · set in FordPass100%');
     await expect(summary(house).locator('.facts li')).toHaveText(['Charging', 'Locked']);
@@ -112,7 +112,7 @@ test.describe('on a phone', () => {
     await expect(history(house).locator('.hist .err')).toHaveText(
       "History didn't load: the recorder is down. Live values still update.",
     );
-    await expect(summary(house).locator('.carhero .t')).toHaveText('64.0%');
+    await expect(summary(house).locator('.carhero .t')).toHaveText('64%');
     // the failure is logged once, and the fixture would fail on it
     expect(house.errors).toEqual([expect.stringContaining('home-panel car history')]);
     house.errors.length = 0;
@@ -125,7 +125,7 @@ test.describe('on a phone', () => {
     await house.root().locator('[data-opens="car.detail"]').first().click();
     const sheet = pane(house).locator('hp-sheet.detail .sheet');
     await expect(sheet).toBeVisible();
-    await expect(pane(house).locator('hp-sheet hp-car-summary .carhero .t')).toHaveText('64.0%');
+    await expect(pane(house).locator('hp-sheet hp-car-summary .carhero .t')).toHaveText('64%');
     await expect.poll(() => windowReads(house)).toEqual({hours: 1, days: 1});
   });
 
@@ -217,7 +217,7 @@ test.describe('on a tablet', () => {
   }) => {
     await house.tab('car');
     const d = detail(house);
-    await expect(d.locator('hp-car-summary .carhero .t')).toHaveText('64.0%');
+    await expect(d.locator('hp-car-summary .carhero .t')).toHaveText('64%');
     await expect(d.locator('hp-car-summary .autonomy')).toHaveText('280 km range');
     await expect(d.locator('hp-car-summary .socscale')).toHaveText('0%Limit 90% · set in FordPass100%');
     await expect(d.locator('hp-car-status .tp .k')).toHaveText([

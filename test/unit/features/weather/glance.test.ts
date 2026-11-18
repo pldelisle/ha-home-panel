@@ -10,7 +10,7 @@ import {fullHouse} from './support.ts';
 
 describe('weatherCardLabel', () => {
   test('says the temperature, the condition and where a tap goes, from the house', () => {
-    expect(weatherCardLabel(storeOf(fullHouse, FULL_CFG))).toMatch(/^Weather: 4°, [a-z].*\. Opens the forecast$/);
+    expect(weatherCardLabel(storeOf(fullHouse, FULL_CFG))).toMatch(/^Weather: 4\.2°, [a-z].*\. Opens the forecast$/);
   });
 
   test('is empty before Home Assistant answers', () => {

@@ -3,7 +3,7 @@
 // `renderPaneSubs` wrote them (deleted in #269).
 // Pattern: a pure model (Fowler, Presentation Model) over the provider's `readHomeTemperatures` (src/providers/home-temperatures.ts, since #276).
 // Must not: draw, read the clock (`now` is given), or read an entity.
-import type {Formatters} from '../core/i18n/format.ts';
+import {temperatureFigure, type Formatters} from '../core/i18n/format.ts';
 import type {Translate} from '../core/i18n/messages.ts';
 import type {HomeTemperatures} from '../providers/home-temperatures.ts';
 
@@ -23,8 +23,8 @@ export function homeLine(
   // French writes the weekday lower case; the line starts with it, upper case, as the rewrite layer wrote it
   return [
     date.charAt(0).toUpperCase() + date.slice(1),
-    inside === null ? '' : t('home.inside', {n: fmt.fixed(inside, 1)}),
-    outside === null ? '' : t('home.outside', {n: fmt.fixed(outside, 1)}),
+    inside === null ? '' : t('home.inside', {n: temperatureFigure(fmt, inside)}),
+    outside === null ? '' : t('home.outside', {n: temperatureFigure(fmt, outside)}),
     attention ? t('home.attention', {n: attention}) : '',
   ]
     .filter(Boolean)

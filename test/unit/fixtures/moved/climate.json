@@ -53,7 +53,7 @@
     {
       "key": "climate.heatingKw",
       "values": {
-        "kw": "1.20"
+        "power": "1.2 kW"
       }
     },
     {

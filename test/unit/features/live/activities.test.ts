@@ -33,7 +33,7 @@ const deps: ActivityDeps = {t: store.t, fmt: store.fmt, overlay: unheld};
 const french = storeOf({...fullHouse, locale: {...fullHouse.locale, language: 'fr'}}, FULL_CFG);
 const frDeps: ActivityDeps = {t: french.t, fmt: french.fmt, overlay: unheld};
 
-/** The test house at its clock (2 pm in Toronto): the car charging at 64 % to 90 %, the Wallbox at 7.1 kW, the water heater idle at 50°. */
+/** The test house at its clock (2 pm in Toronto): the car charging at 64 % to 90 %, the Wallbox at 7.1\u00a0kW, the water heater idle at 50°. */
 const house: LiveInputs = readLive(fullHouse.states, registriesOf(fullHouse), store.config, store.names, NOW);
 const car = house.car!;
 const with_ = (over: Partial<LiveInputs>): LiveInputs => ({...house, ...over});
@@ -95,7 +95,7 @@ describe('the Hilo challenge', () => {
     expect(activity).toMatchObject({priority: 0, tint: true, color: 'var(--crit)', progress: -0.5});
     expect(activity.pill.extra).toBe('ends in 3 h');
     expect(activity.card.kind === 'hilo' && activity.card.meta.map(piece => piece.text).join('')).toBe(
-      '20.6° inside · house using 3.2 kW · 1.2 of 3.0 kWh allowed',
+      '20.6° inside · house using 3.2\u00a0kW · 1.2 of 3.0 kWh allowed',
     );
   });
 
@@ -152,7 +152,7 @@ describe('the car', () => {
     expect(activity.card).toMatchObject({
       name: 'Car',
       state: 'charging',
-      right: '7.1 kW',
+      right: '7.1\u00a0kW',
       big: {soc: '64', limit: '→ 90% limit', eta: null},
       bar: {soc: 64, limit: 90, aria: 'Battery 64 percent, limit 90 percent'},
       pause: {id: house.wallbox.pause.id, resume: false, label: 'Pause charging'},
@@ -243,7 +243,7 @@ describe('the water heater', () => {
   const history = (p: Point[], t: Point[] = []): LiveHistoryData => ({at: NOW, wh24: {t, p}, sessions: []});
   const heating = with_({waterHeater: {power: 4.5, temperature: 48.6, powerChangedAt: NOW - 20 * MIN}});
 
-  test('runs are the points above 0.2 kW; one still on at the end closes five minutes after its last point', () => {
+  test('runs are the points above 0.2\u00a0kW; one still on at the end closes five minutes after its last point', () => {
     expect(waterRuns(series(30, [0, 1, 1, 0, 1]))).toEqual([
       [NOW - 25 * MIN, NOW - 15 * MIN],
       [NOW - 10 * MIN, NOW - 5 * MIN],
@@ -257,13 +257,13 @@ describe('the water heater', () => {
       key: 'wh',
       priority: 3,
       progress: 20 / 50,
-      pill: {label: 'Water heater', value: '49°', extra: '~30 min'},
+      pill: {label: 'Water heater', value: '48.6°', extra: '~30 min'},
       short: {label: 'Water', value: null, extra: '~30 min'},
       ariaLabel: 'Water heater heating, about 30 min left',
     });
     expect(activity.card).toMatchObject({
       title: 'Water heater heating',
-      right: '4.5 kW',
+      right: '4.5\u00a0kW',
       big: {t: '48.6', rate: null, left: {main: '~30 min left', usual: 'usual cycle 50 min'}},
     });
     expect(activity.card.kind === 'wh' && activity.card.meta.map(piece => piece.text).join('')).toBe(
