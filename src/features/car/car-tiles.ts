@@ -4,6 +4,7 @@
 import {html, nothing, type TemplateResult} from 'lit';
 import {repeat} from 'lit/directives/repeat.js';
 import type {CarTile} from './model.ts';
+import {figureCell} from '../../ui/reading.ts';
 
 /** The tiles' wells, to place inside a block's `.tiles` grid; a tile without a sub-line draws none. */
 export const carTiles = (tiles: readonly CarTile[]): TemplateResult =>
@@ -13,9 +14,11 @@ export const carTiles = (tiles: readonly CarTile[]): TemplateResult =>
     tile =>
       html`<div class="tile">
         <div class="k">${tile.label}</div>
-        <div class="v num">
-          ${tile.word ? html`<span class="word">${tile.value}</span>` : tile.value}<small>${tile.unit}</small>
-        </div>
+        ${
+          tile.word && !tile.missing
+            ? html`<div class="v num"><span class="word">${tile.value}</span><small>${tile.unit}</small></div>`
+            : figureCell(tile)
+        }
         ${tile.sub ? html`<div class="s">${tile.sub}</div>` : nothing}
       </div>`,
   )}`;

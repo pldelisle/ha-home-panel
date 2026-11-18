@@ -18,6 +18,7 @@ import {OptimisticController} from '../../ui/controllers/optimistic.ts';
 import {StoreController} from '../../ui/controllers/store-controller.ts';
 import {SheetRequestEvent} from '../../ui/events.ts';
 import {lens} from '../../ui/lens.ts';
+import {figureCell} from '../../ui/reading.ts';
 import '../../ui/seg.ts'; // defines <hp-seg>
 import type {SegChangeDetail, SegOption} from '../../ui/seg.ts';
 import '../../ui/stepper.ts'; // defines <hp-stepper>
@@ -90,7 +91,7 @@ export class AirRoom extends LitElement {
             tile =>
               kitTile(
                 html`<div class="k">${tile.label}</div>
-                  <div class="v num">${tile.value}<small>${tile.unit}</small></div>`,
+                  ${figureCell(tile)}`,
                 {
                   leads: {description: tile.opens, onTap: () => this.openHistory(room, tile.metric)},
                   classes: {hi: tile.high},

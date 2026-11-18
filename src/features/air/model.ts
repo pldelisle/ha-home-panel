@@ -10,6 +10,7 @@ import type {Translate} from '../../core/i18n/messages.ts';
 import {outdoorLevel, rateRoom, type Level, type Pollutant, type RoomRating} from '../../providers/air-quality.ts';
 import {POLLEN_KINDS, type AirRoomInputs, type OutsideAirInputs, type PollenKind} from '../../providers/mila.ts';
 import type {Overlay} from '../../ui/overlay-store.ts';
+import {reading, type Reading} from '../../ui/reading.ts';
 import {RANGES, type Range} from '../../ui/ranges.ts';
 import {K, type Mode} from './commands.ts';
 import {DEFAULT_RANGE, METRICS, type Metric} from './history.ts';
@@ -83,11 +84,9 @@ export interface RoomLine {
   line: string;
 }
 
-export interface Tile {
+export interface Tile extends Reading {
   metric: Metric;
   label: string;
-  value: string;
-  unit: string;
   high: boolean;
   /** What a screen reader adds to the tile, a button named by its figure: "Opens its history" (its `aria-description`). */
   opens: string;
@@ -248,14 +247,19 @@ function tilesOf(room: AirRoomInputs, rating: RoomRating, {t, fmt}: AirModelDeps
   return TILES.map(metric => {
     const {label, unit} = METRICS[metric];
     const rated = rating.pollutants.find(p => p.k === metric);
-    const reading = room.readings[metric];
+    const measured = room.readings[metric];
     const name = t(label);
-    const value = rated ? figure(rated.k, rated.v, fmt) : reading === null ? DASH : whole(fmt, reading);
+    const shown = rated
+      ? rated.v === null
+        ? null
+        : figure(rated.k, rated.v, fmt)
+      : measured === null
+        ? null
+        : whole(fmt, measured);
     return {
       metric,
       label: name,
-      value,
-      unit,
+      ...reading(t, shown, unit),
       high: !!rated && rated.level > 0,
       opens: t('air.tile.opens'),
     };

@@ -24,6 +24,7 @@ import {
   type WeatherAlert,
   type WeatherInputs,
 } from '../../providers/weather-source.ts';
+import {reading} from '../../ui/reading.ts';
 import {tileDefinition, TILES, type StatTileDefinition, type TileIcon, type TileKey, type Tone} from './tiles.ts';
 
 type Translate = Messages['t'];
@@ -52,10 +53,12 @@ export interface StatTileView {
   key: TileKey;
   icon: TileIcon;
   label: string;
-  /** The reading, or a dash. */
+  /** The reading, or the words for no reading (`missing`). */
   value: string;
   /** Drawn small after the value, spacing included; empty when there is no reading to put it after. */
   unit: string;
+  /** There is no reading: `value` is the words that say so, drawn in the line's style, with no unit. */
+  missing?: true;
   sub: string;
   tone: Tone | null;
   /** Wind's bearing arrow, drawn in `sub` after its first `after` characters, the compass point. */
@@ -176,10 +179,10 @@ interface Say {
   /** A whole number; the -0 of Math.round(-0.4) is 0, which Intl would otherwise write as `-0`. */
   int: (n: number) => string;
   degrees: (n: number) => string;
-  /** A reading as the sensor gave it, to two digits at most, or a dash. */
-  raw: (n: number | null) => string;
-  /** A reading to exactly `digits` fraction digits, or a dash. */
-  fixed: (n: number | null, digits: number) => string;
+  /** A reading as the sensor gave it, to two digits at most, or null for no reading (a tile says so: `reading`). */
+  raw: (n: number | null) => string | null;
+  /** A reading to exactly `digits` fraction digits, or null for no reading. */
+  fixed: (n: number | null, digits: number) => string | null;
   /** A compass point in the user's language; a word the catalog does not know is shown as it is. */
   compass: (point: string) => string;
   condition: (word: string | null) => string;
@@ -192,8 +195,8 @@ function sayWith(t: Translate, fmt: Formatters): Say {
     fmt,
     int: n => whole(fmt, n),
     degrees: n => forecastTemperature(fmt, n),
-    raw: n => (n === null ? DASH : fmt.number(n, 2)),
-    fixed: (n, digits) => (n === null ? DASH : fmt.fixed(n, digits)),
+    raw: n => (n === null ? null : fmt.number(n, 2)),
+    fixed: (n, digits) => (n === null ? null : fmt.fixed(n, digits)),
     compass: point => t('weather.compass', {point}),
     condition: word => conditionName(word, t),
     icon: (word, day) => ({condition: word, day, label: conditionName(word, t)}),
@@ -240,15 +243,18 @@ function summaryLine(inputs: WeatherInputs, alerts: number, condition: string, {
 // ---------- the tiles ----------
 
 /** What a tile says of its reading; the rest of a tile's view comes from its definition. */
-type Shown = Pick<StatTileView, 'value' | 'unit' | 'sub'> & Partial<Pick<StatTileView, 'tone' | 'arrow'>>;
+type Shown = Pick<StatTileView, 'unit' | 'sub'> &
+  Partial<Pick<StatTileView, 'tone' | 'arrow'>> & {value: string | null};
 
-const tileView = (definition: StatTileDefinition, shown: Shown, {t}: Say): StatTileView => ({
+/** A tile from what it says; a `null` value is no reading (the words, no unit, `missing`), decided here once for every tile of both layouts. */
+const tileView = (definition: StatTileDefinition, {value, unit, ...shown}: Shown, {t}: Say): StatTileView => ({
   key: definition.key,
   icon: definition.icon,
   label: t(definition.labelKey),
   tone: null,
   arrow: null,
   ...shown,
+  ...reading(t, value, unit),
 });
 
 /** The word of a band the reading falls in, or nothing. */
@@ -287,7 +293,7 @@ function paneTiles(inputs: WeatherInputs, say: Say): StatTileView[] {
       sub: dewPoint === null ? '' : t('weather.sub.dewPoint', {temp: temperatureFigure(fmt, dewPoint)}),
     }),
     feels: () => ({
-      value: feelsLike || inputs.temperature !== null ? temperature(fmt, feelsLike?.value ?? inputs.temperature) : DASH,
+      value: feelsLike || inputs.temperature !== null ? temperature(fmt, feelsLike?.value ?? inputs.temperature) : null,
       unit: '',
       sub: feelsSub(inputs, false, say),
     }),
@@ -297,12 +303,12 @@ function paneTiles(inputs: WeatherInputs, say: Say): StatTileView[] {
       sub: pressure.tendency ? capitalise(tendencyWord(pressure.tendency, t)) : '',
     }),
     uv: () => ({
-      value: uv === null ? DASH : int(uv),
+      value: uv === null ? null : int(uv),
       unit: '',
       sub: bandWord(tileDefinition('uv'), uv, say) || (uv !== null && uv >= 8 ? t('weather.band.veryHigh') : ''),
     }),
     aqhi: () => ({
-      value: aqhi === null ? DASH : int(aqhi),
+      value: aqhi === null ? null : int(aqhi),
       unit: '',
       sub: bandWord(tileDefinition('aqhi'), aqhi, say),
     }),
@@ -312,7 +318,7 @@ function paneTiles(inputs: WeatherInputs, say: Say): StatTileView[] {
       sub: t('weather.sub.chanceToday'),
     }),
     normal: () => ({
-      value: normals.hi === null ? DASH : degrees(normals.hi),
+      value: normals.hi === null ? null : degrees(normals.hi),
       unit: normals.hi === null || normals.lo === null ? '' : ` / ${degrees(normals.lo)}`,
       sub: t('weather.sub.forTheDate'),
     }),
@@ -348,7 +354,7 @@ function detailTiles(inputs: WeatherInputs, say: Say): StatTileView[] {
   const dir = wind.direction ? compass(wind.direction) : '';
   const reading: Record<TileKey, () => Shown> = {
     wind: () => ({
-      value: wind.speed === null ? DASH : int(wind.speed),
+      value: wind.speed === null ? null : int(wind.speed),
       unit: 'km/h',
       sub: [dir, wind.gust === null ? '' : t('weather.sub.gusts', {speed: int(wind.gust)})].filter(Boolean).join(' · '),
       arrow: wind.bearing === null ? null : {bearing: wind.bearing, after: dir.length},
@@ -371,7 +377,7 @@ function detailTiles(inputs: WeatherInputs, say: Say): StatTileView[] {
       sub: aqhi === null ? t('weather.aqhi') : t('weather.aqhiRisk', {risk: aqhiRisk(aqhi)}),
     }),
     feels: () => ({
-      value: temperature(fmt, feelsLike ? feelsLike.value : inputs.temperature),
+      value: feelsLike || inputs.temperature !== null ? temperature(fmt, feelsLike?.value ?? inputs.temperature) : null,
       unit: '',
       sub:
         feelsLike || visibility === null
@@ -380,7 +386,11 @@ function detailTiles(inputs: WeatherInputs, say: Say): StatTileView[] {
     }),
     normal: () => ({
       value:
-        normals.hi === null ? DASH : `${degrees(normals.hi)} / ${normals.lo === null ? DASH : degrees(normals.lo)}`,
+        normals.hi === null
+          ? null
+          : normals.lo === null
+            ? degrees(normals.hi)
+            : `${degrees(normals.hi)} / ${degrees(normals.lo)}`,
       unit: '',
       sub: t('weather.sub.normalHighLow'),
     }),

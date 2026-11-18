@@ -6,6 +6,7 @@ import {html, nothing, type TemplateResult} from 'lit';
 import {repeat} from 'lit/directives/repeat.js';
 import type {EnergyRange} from './charts.ts';
 import type {EnergyTile} from './model.ts';
+import {figureCell} from '../../ui/reading.ts';
 import {tile as kitTile} from '../../ui/tile.ts';
 
 /**
@@ -21,8 +22,7 @@ export function tileList(
     tile => tile.label,
     tile => {
       const body = html`<div class="k">${tile.label}</div>
-        <div class="v num">${tile.value}<small>${tile.unit}</small></div>
-        ${tile.sub ? html`<div class="s">${tile.sub}</div>` : nothing}`;
+        ${figureCell(tile)} ${tile.sub ? html`<div class="s">${tile.sub}</div>` : nothing}`;
       const {range} = tile;
       return kitTile(body, {
         leads:

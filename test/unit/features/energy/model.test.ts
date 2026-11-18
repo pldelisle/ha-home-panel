@@ -171,15 +171,15 @@ describe('Hilo', () => {
     expect(vm.summary).toBe(`Grid supplying 2.3\u00a0kW · room heating 0\u00a0W · Hilo ${short}`);
   });
 
-  test('no reading at all: dashes, the unknown tier, and a challenge sensor that is missing says so', () => {
+  test('no reading at all: the words for it, no unit, the unknown tier, and a challenge sensor that is missing says so', () => {
     const vm = modelOf(inputsOf([entity('sensor.rate', 'unavailable')]));
     expect(vm.hilo).toMatchObject({
       present: true,
       challenge: 'Challenge status unknown',
-      rate: {value: '–'},
+      rate: {value: 'No reading', unit: '', missing: true},
       tier: {text: 'Rate unknown', ok: false},
     });
-    expect(vm.hilo.tiles.map(tile => tile.value)).toEqual(['–', '–', '–']);
+    expect(vm.hilo.tiles.map(tile => [tile.value, tile.unit])).toEqual(Array(3).fill(['No reading', '']));
   });
 
   test('a challenge is worded by its phase, and a phase the catalog does not know is shown as the sensor says it', () => {
@@ -268,7 +268,7 @@ describe('the water heater', () => {
     const hass = houseOf([], [entity('sensor.grid', '2.3')]);
     const store = storeOf(hass, {entities: ENTITIES});
     const vm = modelOf(readEnergy(hass.states, store.config, store.names));
-    expect(vm.water).toMatchObject({present: false, temperature: {value: '–'}});
+    expect(vm.water).toMatchObject({present: false, temperature: {value: 'No reading', unit: ''}});
     expect(vm.tiles).toEqual([]);
   });
 });
@@ -636,7 +636,7 @@ describe('the detail', () => {
         {label: '30 days', value: '612', unit: 'kWh', sub: '20.4 kWh a day', range: 'month'},
         {label: 'November', value: '100', unit: 'kWh', sub: 'so far', range: 'month'},
         {label: 'EV, 30 days', value: '40', unit: 'kWh', sub: '3 charging days'},
-        {label: 'Rate now', value: '–', unit: '¢', sub: 'Hilo rate unknown'},
+        {label: 'Rate now', value: 'No reading', unit: '', missing: true, sub: 'Hilo rate unknown'},
       ]);
     });
 
@@ -652,10 +652,10 @@ describe('the detail', () => {
       expect(detail({}).totals.notice).toBeNull();
     });
 
-    test('yesterday is a dash when no day says it, and one charging day is singular, none plural', () => {
+    test('yesterday is "No reading", with no unit, when no day says it, and one charging day is singular, none plural', () => {
       const totals = {today: 0, yesterday: null, d30: 0, month: 0};
       const one = detail({daily: [day(today, {ev: 6})], totals}).totals.tiles;
-      expect([one[1].value, one[4].sub]).toEqual(['–', '1 charging day']);
+      expect([one[1].value, one[1].unit, one[4].sub]).toEqual(['No reading', '', '1 charging day']);
       expect(detail({daily: []}).totals.tiles[4].sub).toBe('0 charging days');
     });
 

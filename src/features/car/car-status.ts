@@ -9,6 +9,7 @@ import type {StatusBlock, TireView} from './model.ts';
 import blockCss from './styles.css?inline';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {lens} from '../../ui/lens.ts';
+import {figureCell} from '../../ui/reading.ts';
 import {common, inner} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
@@ -55,10 +56,10 @@ export class CarStatus extends LitElement {
   }
 
   // a tire: its name, its pressure, and Ford's word for it when it gave one, in the warning colour unless it is normal
-  private renderTire({label, psi, unit, state}: TireView) {
+  private renderTire({label, psi, unit, missing, state}: TireView) {
     return html`<div class="tp">
       <div class="k">${label}</div>
-      <div class="v">${psi}<small>${unit}</small></div>
+      ${figureCell({value: psi, unit, missing})}
       ${state ? html`<div class=${state.ok ? 's' : 's warn'}>${state.text}</div>` : nothing}
     </div>`;
   }

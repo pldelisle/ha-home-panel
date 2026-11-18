@@ -10,6 +10,7 @@ import ownCss from './water-card.element.css?inline';
 import energyShared from './styles.css?inline';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {lens} from '../../ui/lens.ts';
+import {figureCell} from '../../ui/reading.ts';
 import {common, hero, status} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
@@ -44,7 +45,7 @@ export class WaterCard extends LitElement {
     return html`<div class="ebox">
         <div class="etop"><span class="elbl">${view.title}</span><span class="eright">${view.name}</span></div>
         <div class="hero">
-          <div class="v num">${temperature.value}<small>${temperature.unit}</small></div>
+          ${figureCell(temperature)}
           <span class=${state.heating ? 'status ok' : 'status'}><i aria-hidden="true"></i>${state.text}</span>
         </div>
         ${view.chart ? this.renderChart(view.chart) : nothing}

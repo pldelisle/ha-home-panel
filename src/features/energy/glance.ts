@@ -28,7 +28,7 @@ export function glance({hass, config, names, t, fmt}: GlanceStore, {history}: Gl
     icon: 'bolt',
     color: 'var(--c-grid)',
     label: t('energy.title'),
-    value: kw === null ? t('energy.noReading') : power(fmt, kw * 1000),
+    value: kw === null ? t('common.noReading') : power(fmt, kw * 1000),
     ...(kw === null ? {missing: true} : {}),
     line: history
       ? t('energy.glance.line', {kwh: fmt.fixed(history.totals.today, 1), rate})
@@ -55,7 +55,7 @@ export function waterGlance(
     icon: 'drop',
     color: 'var(--c-wh)',
     label: t('energy.water.title'),
-    value: water.temperature === null ? t('energy.noReading') : temperature(fmt, water.temperature),
+    value: water.temperature === null ? t('common.noReading') : temperature(fmt, water.temperature),
     ...(water.temperature === null ? {missing: true} : {}),
     line: history
       ? t('energy.glance.water', {state, kwh: fmt.fixed(waterCycles(history.wh24.p, now).kwh24, 1)})

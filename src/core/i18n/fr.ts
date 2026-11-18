@@ -11,6 +11,7 @@ export const fr: Record<MessageKey, string> = {
   // here is its own visible change and needs an approved baseline (ADR 0003, test/unit/i18n/moved-strings.test.ts)
   'common.failed': "Didn't work: {reason}",
   'common.dismiss': 'Fermer',
+  'common.noReading': 'Aucune mesure',
   'clock.inside': '{n}° à l’intérieur',
   'clock.outside': '{n}° dehors',
   'clock.sunrise': 'Lever {time}',
@@ -578,7 +579,6 @@ export const fr: Record<MessageKey, string> = {
   'energy.tile.water': 'Chauffe-eau',
   'energy.tile.ev': 'Recharge VÉ',
   'energy.water.title': 'Chauffe-eau',
-  'energy.noReading': 'Aucune mesure',
   'energy.glance.line': "Maintenant · {kwh} kWh aujourd'hui · {rate}",
   'energy.glance.lineNow': 'Maintenant · {rate}',
   'energy.glance.water': "{state} · {kwh} kWh aujourd'hui",

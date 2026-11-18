@@ -31,6 +31,13 @@
   font-weight: var(--num-w);
   font-size: calc(24px * var(--tx));
 }
+/* a tire with no reading says so in the line's style, as the kit's tiles do */
+.tpms .tp .v.na {
+  font-family: var(--f-body);
+  font-size: calc(12.5px * var(--tx));
+  font-weight: 400;
+  color: var(--fg2);
+}
 .tpms .tp .v small {
   font-size: calc(12px * var(--tx));
   color: var(--fg2);

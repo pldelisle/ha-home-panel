@@ -79,7 +79,7 @@ describe.each([
   ['media', 'media.', ['src/features/media/', 'src/providers/'], ['common.failed']],
   ['security', 'security.', ['src/features/security/'], []],
   ['air', 'air.', ['src/features/air/', 'src/providers/'], []],
-  ['energy', 'energy.', ['src/features/energy/', 'src/providers/'], []],
+  ['energy', 'energy.', ['src/features/energy/', 'src/providers/'], ['common.noReading']],
   ['climate', 'climate.', ['src/features/climate/'], []],
   ['car', 'car.', ['src/features/car/', 'src/providers/'], []],
   ['live', 'live.', ['src/features/live/'], []],

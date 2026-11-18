@@ -146,12 +146,11 @@ describe('automationsModel: the Today card', () => {
     expect(view.cards[0].flow?.status.text).toBe('terminée 8 h 05 min 09 s');
     expect(view.rows[0].sub).toBe('8 h 05');
   });
-  test('nothing to come: dashes, and every run passed its checks', () => {
+  test('nothing to come: Next says so, the Then tile is not drawn, and every run passed its checks', () => {
     const view = automationsModel(inputs([auto('a')]), data(), null, deps);
     expect(view.today.tiles.map(x => [x.value, x.sub])).toEqual([
       ['0', 'every run passed its checks'],
       ['–', 'nothing else scheduled today'],
-      ['–', '—'],
     ]);
   });
 });

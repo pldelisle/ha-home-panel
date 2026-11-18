@@ -228,6 +228,7 @@ export class WeatherPane extends LitElement {
             .sub=${tile.sub}
             .value=${tile.value}
             .unit=${tile.unit}
+            .missing=${tile.missing ?? false}
             .tone=${tile.tone ?? ''}
           ></hp-stat-tile>`,
       )}

@@ -19,6 +19,7 @@ import {apiContext} from '../../ui/contexts.ts';
 import {SheetRequestEvent} from '../../ui/events.ts';
 import {weatherIcon} from '../../ui/icons.ts';
 import {lens} from '../../ui/lens.ts';
+import {figureCell} from '../../ui/reading.ts';
 import '../../ui/pane-header.ts'; // defines <hp-pane-header>
 import {chart, common, inner, tiles} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
@@ -234,8 +235,7 @@ export class WeatherDetail extends LitElement {
         aria-description=${t('weather.detail.opensHistory')}
       >
         <div class="k">${tile.label}</div>
-        <div class="v num">${tile.value}<small>${tile.unit}</small></div>
-        ${tile.sub || tile.arrow ? html`<div class="s">${this.tileSub(tile)}</div>` : nothing}
+        ${figureCell(tile)} ${tile.sub || tile.arrow ? html`<div class="s">${this.tileSub(tile)}</div>` : nothing}
       </button>`;
   }
 

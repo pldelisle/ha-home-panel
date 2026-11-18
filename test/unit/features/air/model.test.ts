@@ -263,9 +263,18 @@ describe('the card’s figures', () => {
     expect([co(0.5), co(9.9), co(10)]).toEqual(['0.5', '9.9', '10']);
   });
 
-  test('the particles and the humidity are whole numbers, a dash when missing; only rated pollutants run high', () => {
+  test('the particles and the humidity are whole numbers, "No reading" with no unit when missing; only rated pollutants run high', () => {
     const tiles = modelOf(inputsOf([room({readings: {pm1: 5.6, humidity: 38.4, pm2_5: 40}})])).detail.rooms[0].tiles;
-    expect(tiles.map(tile => tile.value)).toEqual(['40', '–', '–', '–', '6', '–', '38']);
+    const none = {value: 'No reading', unit: '', missing: true};
+    expect(tiles.map(({value, unit, missing}) => ({value, unit, ...(missing ? {missing} : {})}))).toEqual([
+      expect.objectContaining({value: '40'}),
+      none,
+      none,
+      none,
+      expect.objectContaining({value: '6'}),
+      none,
+      expect.objectContaining({value: '38'}),
+    ]);
     expect(tiles.map(tile => tile.high)).toEqual([true, false, false, false, false, false, false]);
   });
 });
@@ -420,9 +429,9 @@ describe('a tile opens its history', () => {
     expect(fr[3].value).toBe('1,0');
   });
 
-  test('a reading with no value shows a dash and still says what a tap does', () => {
+  test('a reading with no value says "No reading" and still says what a tap does', () => {
     const {tiles} = modelOf(inputsOf([room()])).detail.rooms[0];
-    expect(tiles[0].value).toBe('–');
+    expect(tiles[0]).toMatchObject({value: 'No reading', unit: '', missing: true});
     expect(tiles[0].opens).toBe('Opens its history');
   });
 });

@@ -201,7 +201,7 @@ test.describe('on a phone', () => {
     const atStart = await energyReads(house);
     expect(await yearReads(house), 'at start').toBe(0);
     await openTab(house);
-    await expect(detail(house).locator('.totals .tile .v').first()).not.toHaveText(/^–/);
+    await expect(detail(house).locator('.totals .tile .v').first()).not.toHaveText(/^No reading/);
     await expect.poll(() => yearReads(house), 'opening Energy').toBe(1);
     expect(await energyReads(house), 'opening Energy').toBe(atStart + 1);
   });
@@ -485,11 +485,11 @@ test.describe('the detail on a tablet', () => {
     ]);
     await expect(detail(house).locator('.totals .tile .v')).toHaveText([
       '0.0kWh',
-      '–kWh',
+      'No reading',
       '0kWh',
       '0kWh',
       '1,100kWh',
-      '–¢',
+      'No reading',
     ]);
     await expect(detail(house).locator('.totals .tile .s')).toHaveText([
       'until 8:00 am',
