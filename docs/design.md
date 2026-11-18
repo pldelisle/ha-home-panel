@@ -56,7 +56,7 @@ strength setting moves the navigation layer only.
 A filled capsule means "tap me" in this panel (the live pill), so a fact never wears one. **A status is text with
 a small coloured dot, never a filled capsule.** The kit's `.status` (`src/ui/styles/status.css`) is plain text with an `<i
 aria-hidden>` dot before it; the dot's tone is `.ok`, `.warn` (its word in the warning text colour) or `.bad`, and the word always
-stays, so the tone is never carried by colour alone. It has no fill, so the card's glass shows through. The Car's facts, the
+stays, so the tone is never carried by colour alone. **`.ok` is good news only** (charging, locked, a good rating): what is merely happening, such as "Motion now" on Home and Security (`src/features/security/sensor-status.ts`), takes no tone and keeps the neutral dot, since green would say it is fine and blue (the tint) would say it can be tapped. It has no fill, so the card's glass shows through. The Car's facts, the
 Automations' dates and runs, Air's ratings, Home's people, Climate's and Energy's states and the header's peak chip use it. Why: HIG, Buttons (a button's style says it can be tapped) and
 Color (never colour alone). Nothing forbids a capsule mechanically yet: the e2e specs find the `.status` text (`air.spec.ts`,
 `automations.spec.ts`), and `test/e2e/a11y.spec.ts` holds its 4.5:1 contrast with no rule switched off (`DISABLED_RULES` is empty).
@@ -71,11 +71,54 @@ and Air's tiles, a sensor) is its own place and has its own one control, at its 
 chooses one thing, so the page cannot say Week while a card says Today. Enforced by `test/e2e/energy.spec.ts` (one
 `hp-range-tabs` under the header, the totals set it) and the unit tests of the ranges (`test/unit/ui/ranges.test.ts`).
 
+## One formatter per kind of quantity
+
+**Every quantity of a kind is written by one rule, so the same value never reads two ways.** A battery charge is a whole percent
+(`percent`), a measured temperature is to a tenth (`temperatureFigure`, `temperature`) and a forecast's is whole (`forecastFigure`,
+`forecastTemperature`), a power is two significant figures with one unit per magnitude (`powerParts`, `power`: `850 W`, `3.2 kW`,
+`12 kW`), and money is whole dollars in a headline and cents in a table (`money`). They are in `src/core/i18n/format.ts` and each has two forms: the
+**figure** alone, for a catalog message that carries its own sign (French spaces `%` and puts `$` after the number), and the **joined**
+form with its unit, which the formatter writes once. A feature never writes `toFixed`, `Math.round` or a `°` of its own for these.
+
+**A missing value is "No reading", without its unit.** The figure forms give `null` for `null`, and `reading()` (`src/ui/reading.ts`)
+turns it into the kit's word (`common.noReading`) flagged `missing`, so no tile shows "–%" or "– kWh"; `bareReading()` is the same for a
+figure that carries its unit in its text. Why: HIG, Typography and Writing: one number is formatted one way, and a missing one is said in
+plain language, not with a placeholder. Enforced by `test/unit/format.test.ts` and `test/unit/ui/figure-cell.test.ts`.
+
+## One control per device
+
+**A device gets the same control on every screen size**; the layout changes, not the control. The TV is its power button
+(`<hp-tv-power>`, `src/features/media/tv-power.ts`) in the iPad's box and in the phone's tile, and a speaker's volume is the slider with
+its − and + (`<hp-volume-control>`, `src/features/media/volume-control.ts`) in the pod and in the tile. Each is its own element that
+both layouts compose, so the two can never drift; a feature that needs a device on a second screen reuses the element and does not
+draw a second one (a switch on the phone and a button on the iPad). A play-or-pause button shows the one it does, and a toast names what the
+card names (the room). Why: HIG, Toggles and Sliders: one thing is one control, wherever it is drawn. Enforced by
+`test/e2e/media.spec.ts` on the tablet and phone projects.
+
+## A sheet drawn in a tab is a region
+
+**Only a sheet over the page is a dialog.** `<hp-sheet>` (`src/ui/sheet.ts`) takes `inline` when a tablet draws it as a tab's own panel:
+then it has no backdrop, no `aria-modal` and no swipe, and its role is `region` with the same label, so VoiceOver says "Car, region" and
+not "Car, dialog" on a tab. The phone's sheet and a sheet that opens over a pane stay dialogs. The detail elements that a tablet shows
+inline in its pane (`<hp-car-detail>`, `<hp-energy-detail>`, `<hp-air-detail>`, `<hp-weather-detail>`) give their panel the same
+`region` role when they draw it themselves, and `dialog` only when a sheet over the page does. A new tab's panel is one or the other,
+never a dialog on a tab. Why: HIG, Accessibility: a role says what an element is. Enforced by `test/e2e/sheets.spec.ts` and `test/e2e/car.spec.ts` (the region by
+name) and the axe scan in `test/e2e/a11y.spec.ts`.
+
+## One figure, one source
+
+**A figure carries the value of the source its label names, and a disagreement between sources is said once.** Energy's "Today so far" is
+the Hilo meter's reading; the uses under it (the donut, the bars, the busiest hour) are the devices' own, and when the devices add up to
+more than the meter, the card says so once ("Devices report more than the meter today", `energy.donut.overMeter`) rather than showing two
+totals that contradict each other. The sun is one reading for every tab (`sunToday`, `sunNext` in `src/providers/sun.ts`), so Home,
+Lights and Weather give the same sunrise and sunset.
+
 ## The header
 
 - The header's controls are the live pill and the round gear (Settings). A reading (the weather) is plain text beside them, so it
   never looks like one of them, and the people under the greeting are status text (see "Status is text"), not buttons; so is the peak chip ("Critical peak now"), text with a warning dot.
 - The date is written once, under the greeting; a pane's sub-line does not repeat it.
+- **The header never moves between tabs.** On a tablet the clock stays top right and the controls keep their place on every tab, whatever the title beside them; Home's greeting is its one title, so Home draws no pane header under it. Enforced by `test/e2e/header.spec.ts` ("the header's place", at the tablet's two widths and in both languages).
 
 ## Type and words
 
