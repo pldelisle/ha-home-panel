@@ -328,7 +328,7 @@ export class HomePanel extends LitElement {
     else this.sheets.open(id, detail);
   };
 
-  // A pane whose detail sheet is open while another tab is shown (Home's card opens Weather's, on a phone), or one of the sheets it
+  // A pane whose detail sheet is open while another tab is shown (Home's Air tile opens Air's, on a phone), or one of the sheets it
   // draws over the screen (a tile's history, opened from that detail), stays in the page, behind the sheet, so the sheet is drawn and
   // the tab is not changed; the pane draws only its sheets then.
   private sheetBehind(f: FeatureDescriptor): boolean {

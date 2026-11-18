@@ -172,8 +172,45 @@ test('the Home card opens the Weather tab, and More shows it as the current sect
   await expect(house.root().locator('#pane-home')).toBeHidden();
   await expect(detail(house).locator('.sunarc')).toBeVisible();
   await expect(house.root().locator('hp-sheet[open]')).toHaveCount(0);
+  await expect(house.root().locator('#moretab')).toHaveAttribute('aria-selected', 'true');
   await house.root().locator('#moretab').click();
   await expect(house.root().locator('#morelist hp-stat-tile[key="weather"] button')).toHaveClass(/\bsel\b/);
+});
+
+test.describe('the phone hero', () => {
+  test.use({
+    houseOpts: {cfg: {...FULL_CFG, house_image: {day: '/day.png', night: '/night.png'}}, time: AFTERNOON, frozen: true},
+  });
+
+  test("shows the config's house picture under the big reading, as Home's card does", async ({house}) => {
+    await openWeather(house);
+    await expect(detail(house).locator('.whouse .house.day')).toHaveAttribute('src', '/day.png');
+    await expect(detail(house).locator('.whouse .house.night')).toBeHidden();
+  });
+});
+
+test.describe('the phone layout at 393 px', () => {
+  test.use({houseOpts: {cfg: FULL_CFG, time: '2026-11-07T17:00:00Z', frozen: true, forecast: true, lang: 'fr'}});
+
+  test('cuts no day name in French, and puts the tiles in one column at Larger text', async ({house}) => {
+    await openWeather(house);
+    const cut = await detail(house)
+      .locator('.drow .dn')
+      .evaluateAll(names => names.filter(n => n.scrollWidth > n.clientWidth).map(n => n.textContent));
+    expect(cut).toEqual([]);
+    const columns = () =>
+      detail(house)
+        .locator('.wnow ~ .tiles')
+        .evaluate(el => getComputedStyle(el).gridTemplateColumns.split(' ').length);
+    expect(await columns()).toBe(2);
+    await house.root().locator('#gear').click();
+    await house.root().locator('hp-settings-popup [data-tx="larger"]').dispatchEvent('click');
+    await expect.poll(columns).toBe(1);
+    const cutLarger = await detail(house)
+      .locator('.drow .dn')
+      .evaluateAll(names => names.filter(n => n.scrollWidth > n.clientWidth).map(n => n.textContent));
+    expect(cutLarger, 'at Larger text').toEqual([]);
+  });
 });
 
 test.describe('what it costs', () => {

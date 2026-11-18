@@ -26,7 +26,7 @@ import {
   type WeatherInputs,
 } from '../../providers/weather-source.ts';
 import {reading} from '../../ui/reading.ts';
-import {tileDefinition, type StatTileDefinition, type TileIcon, type TileKey, type Tone} from './tiles.ts';
+import {tileDefinition, type StatTileDefinition, type TileKey} from './tiles.ts';
 
 type Translate = Messages['t'];
 
@@ -50,7 +50,6 @@ export interface IconSpec {
 
 export interface StatTileView {
   key: TileKey;
-  icon: TileIcon;
   label: string;
   /** The reading, or the words for no reading (`missing`). */
   value: string;
@@ -59,7 +58,6 @@ export interface StatTileView {
   /** There is no reading: `value` is the words that say so, drawn in the line's style, with no unit. */
   missing?: true;
   sub: string;
-  tone: Tone | null;
   /** Wind's bearing arrow, drawn in `sub` after its first `after` characters, the compass point. */
   arrow: {bearing: number; after: number} | null;
 }
@@ -218,15 +216,12 @@ function summaryLine(inputs: WeatherInputs, alerts: number, condition: string, {
 // ---------- the tiles ----------
 
 /** What a tile says of its reading; the rest of a tile's view comes from its definition. */
-type Shown = Pick<StatTileView, 'unit' | 'sub'> &
-  Partial<Pick<StatTileView, 'tone' | 'arrow'>> & {value: string | null};
+type Shown = Pick<StatTileView, 'unit' | 'sub'> & Partial<Pick<StatTileView, 'arrow'>> & {value: string | null};
 
 /** A tile from what it says; a `null` value is no reading (the words, no unit, `missing`), decided here once for every tile of both layouts. */
 const tileView = (definition: StatTileDefinition, {value, unit, ...shown}: Shown, {t}: Say): StatTileView => ({
   key: definition.key,
-  icon: definition.icon,
   label: t(definition.labelKey),
-  tone: null,
   arrow: null,
   ...shown,
   ...reading(t, value, unit),

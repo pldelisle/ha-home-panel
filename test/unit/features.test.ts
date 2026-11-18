@@ -114,7 +114,7 @@ describe('the Weather descriptor', () => {
     expect(weather).toBe(weatherFeature);
     expect(weather.available).toBeUndefined();
     expect(weather.detailSheet).toBeUndefined();
-    expect(weather.overSheets).toEqual(['weather.history']);
+    expect(weather.overSheets).toBeUndefined();
     const pane = (open: string | null, detail?: unknown) =>
       weather.pane({
         store: store(),

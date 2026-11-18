@@ -38,7 +38,7 @@ describe('the full test house, in English', () => {
       {key: 'feels', value: '4.2°', unit: '', sub: 'same as the air'},
       {key: 'normal', value: '6° / -2°', unit: '', sub: 'high / low for the date'},
     ]);
-    expect(model.now.tiles.every(tile => tile.tone === null && tile.arrow === null)).toBe(true);
+    expect(model.now.tiles.every(tile => tile.arrow === null)).toBe(true);
   });
 
   test('the sun block: the daylight, the arc, and the times with their first and last light', () => {

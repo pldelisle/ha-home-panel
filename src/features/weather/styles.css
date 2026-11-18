@@ -201,7 +201,7 @@
 }
 @media (max-width: 720px) {
   .drow {
-    grid-template-columns: 76px 26px 34px 30px minmax(60px, 1fr) 30px;
+    grid-template-columns: 92px 26px 34px 30px minmax(60px, 1fr) 30px;
     gap: 8px;
   }
   .drow .dc {
@@ -252,13 +252,6 @@
 .radar .rnote {
   margin: 0;
   padding: 16px;
-}
-/* phones: run the map to the card's edges so the card stays wide enough to show the frame time */
-@media (max-width: 720px) {
-  .radar {
-    margin: 12px -18px -18px;
-    border-radius: 0 0 22px 22px;
-  }
 }
 /* the big weather icon on the Weather sheet: the sun's rays turn, clouds breathe, rain falls, snow drifts, lightning flickers, fog and wind slide */
 .wicon .wxi .rays {

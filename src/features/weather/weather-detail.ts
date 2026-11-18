@@ -65,8 +65,8 @@ export class WeatherDetail extends LitElement {
   /** The pane's statistics cache. */
   declare cache: StatisticsCache | undefined;
 
-  // On a phone the detail sits in the tab under the pane's header; the card rules of the old sheet that reached its `.inner` are in weather-detail.element.css.
-  // On a phone the detail sits in a sheet, which draws the heading; the card rules of the old sheet that reached its `.inner` are in weather-detail.element.css.
+  // The host is a block; its blocks are one column with the sixteen pixels between them the pane's `.panel` gave (fourteen on the phone).
+  // On a phone the detail sits in the tab under the pane's header; the rules that reach its `.inner` there are in weather-detail.element.css.
   // The element's own rules, its `:host` and what only its tree has, are in weather-detail.element.css.
   static override styles = [
     common,
@@ -212,6 +212,7 @@ export class WeatherDetail extends LitElement {
   }
 
   private renderNow({now}: WeatherViewModel) {
+    const house = this.appearance.value?.compact ? this.storeController.store.config.house : null;
     return html`<div class="wnow">
         <div class="wicon">${weatherIcon(now.icon.condition, 64, now.icon.day, now.icon.label)}</div>
         <div>
@@ -225,6 +226,17 @@ export class WeatherDetail extends LitElement {
           <div class="muted">${now.line}</div>
         </div>
       </div>
+      ${
+        house
+          ? html`<div class="whouse">
+              <img class="house photo day" alt="" src=${house.day ?? ''} /><img
+                class="house photo night"
+                alt=""
+                src=${house.night ?? ''}
+              />
+            </div>`
+          : nothing
+      }
       ${now.summary ? html`<p class="wsum">${now.summary}</p>` : nothing}
       <div class="tiles" style="margin-top:14px">${now.tiles.map(tile => this.renderTileButton(tile))}</div>`;
   }

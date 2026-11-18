@@ -458,9 +458,6 @@
       "key": "weather.tonight"
     },
     {
-      "key": "weather.lowWord"
-    },
-    {
       "key": "weather.sunrise"
     },
     {
@@ -657,24 +654,9 @@
       "was": "Risque élevé"
     },
     {
-      "key": "weather.band.veryHigh"
-    },
-    {
-      "key": "weather.sub.gustsUnit",
-      "values": {
-        "speed": 25
-      }
-    },
-    {
       "key": "weather.sub.gusts",
       "values": {
         "speed": 25
-      }
-    },
-    {
-      "key": "weather.sub.dewPoint",
-      "values": {
-        "temp": "-0.5"
       }
     },
     {
@@ -699,15 +681,7 @@
       }
     },
     {
-      "key": "weather.sub.chanceToday",
-      "was": "Probabilité aujourd'hui"
-    },
-    {
       "key": "weather.sub.chanceTodayLower"
-    },
-    {
-      "key": "weather.sub.forTheDate",
-      "was": "Pour la date"
     },
     {
       "key": "weather.sub.normalHighLow"
@@ -943,9 +917,6 @@
     },
     {
       "key": "weather.detail.opensHistory"
-    },
-    {
-      "key": "weather.detail.close"
     },
     {
       "key": "weather.detail.sun"

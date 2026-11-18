@@ -25,7 +25,6 @@ export const weatherFeature: FeatureDescriptor = {
     const {hass} = store;
     return hass ? weatherBrief(readWeather(hass.states, store.config), store) || null : null;
   },
-  overSheets: [HISTORY_SHEET],
   pane: env =>
     html`<hp-weather-pane
       .historyTile=${env.sheetOpen(HISTORY_SHEET) ? tileKeyOf(env.sheetDetail(HISTORY_SHEET)) : undefined}

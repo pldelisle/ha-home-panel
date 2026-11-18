@@ -39,7 +39,6 @@ export class WeatherPane extends LitElement {
   static override styles = [common, unsafeCSS(forShadow(weatherPaneOwn))];
 
   private readonly storeController = new StoreController(this, {ids: store => weatherIds(store.config)});
-  private readonly appearance = new AppearanceConsumer(this);
   private readonly forecast = new ForecastController(this);
   private view: WeatherViewModel | undefined;
   private cache: StatisticsCache | undefined;
@@ -48,6 +47,8 @@ export class WeatherPane extends LitElement {
 
   constructor() {
     super();
+    // reflects `compact` and `data-theme` as attributes on the host, which its CSS reads
+    new AppearanceConsumer(this);
     this.active = false;
     this.historyTile = undefined;
     // the caches are the pane's: the detail is drawn and dropped as the pane is shown and left, and a second opening within the
@@ -65,9 +66,8 @@ export class WeatherPane extends LitElement {
   // The pause and the resume sit in willUpdate and not in updated: a resume asks for an update, and one asked for inside
   // willUpdate is this one, where `updated` would draw twice.
   protected override willUpdate(changed: PropertyValues<this>): void {
-    // a history over another tab shows the pane's tab behind it, but it is the sheet that is on screen
-    const shown = this.active || this.historyTile !== undefined;
-    if (changed.has('active') || changed.has('historyTile')) {
+    const shown = this.active;
+    if (changed.has('active')) {
       if (shown) this.storeController.resume();
       else this.storeController.pause();
     }
@@ -99,10 +99,7 @@ export class WeatherPane extends LitElement {
   protected override render() {
     const view = this.view;
     if (!view) return nothing;
-    const compact = this.appearance.value?.compact === true;
     const {t} = this.storeController.store;
-    // A history over another tab: the pane is behind it and draws nothing but it, so the tab stays.
-    if (!this.active && this.historyTile !== undefined && compact) return this.renderHistory();
     // On a tablet the pane is the detail's place alone: the header is there and not shown, as the old pane's was, and the detail draws its own.
     // On a phone the pane's header is the tab's, and the detail has none.
     return html`<hp-pane-header .icon=${'wx'} .color=${'var(--m-blue)'} .heading=${t('weather.title')}>
