@@ -1,6 +1,14 @@
 {
-  "about": "The English messages the settings popup introduced (src/core/i18n/en.ts, settings.*), compared as test/unit/fixtures/moved/weather.json is, except that the move deleted most of their entries from the map: those carry `was`, the French the layer made of them before. The theme toggle's label is read with the hint beside it, which the popup passes already translated. Deleted with the layer in phase 4.",
+  "about": "The English messages the settings popup introduced (src/core/i18n/en.ts, settings.*), compared as test/unit/fixtures/moved/weather.json is, except that the move deleted most of their entries from the map: those carry `was`, the French the layer made of them before. Deleted with the layer in phase 4.",
   "messages": [
+    {
+      "key": "settings.theme.title",
+      "written": "Apparence"
+    },
+    {
+      "key": "settings.done",
+      "written": "Terminé"
+    },
     {
       "key": "settings.theme.dark",
       "was": "Sombre"
@@ -8,14 +16,6 @@
     {
       "key": "settings.theme.light",
       "was": "Clair"
-    },
-    {
-      "key": "settings.theme.following",
-      "was": "Suit l'appareil"
-    },
-    {
-      "key": "settings.theme.tap",
-      "was": "Toucher pour changer"
     },
     {
       "key": "settings.theme.auto"
@@ -100,54 +100,6 @@
     },
     {
       "key": "settings.transparency.clear"
-    },
-    {
-      "key": "settings.theme.label",
-      "values": {
-        "theme": "dark",
-        "hint": "Tap to switch"
-      },
-      "fr": {
-        "theme": "dark",
-        "hint": "Toucher pour changer"
-      },
-      "was": "Thème : sombre. Toucher pour changer"
-    },
-    {
-      "key": "settings.theme.label",
-      "values": {
-        "theme": "dark",
-        "hint": "Following the device"
-      },
-      "fr": {
-        "theme": "dark",
-        "hint": "Suit l'appareil"
-      },
-      "was": "Thème : sombre. Suit l'appareil"
-    },
-    {
-      "key": "settings.theme.label",
-      "values": {
-        "theme": "light",
-        "hint": "Tap to switch"
-      },
-      "fr": {
-        "theme": "light",
-        "hint": "Toucher pour changer"
-      },
-      "was": "Thème : clair. Toucher pour changer"
-    },
-    {
-      "key": "settings.theme.label",
-      "values": {
-        "theme": "light",
-        "hint": "Following the device"
-      },
-      "fr": {
-        "theme": "light",
-        "hint": "Suit l'appareil"
-      },
-      "was": "Thème : clair. Suit l'appareil"
     },
     {
       "key": "settings.version",

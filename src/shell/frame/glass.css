@@ -57,94 +57,94 @@
   background: var(--wp, none), var(--wbase, var(--bg));
 }
 .app.gl[data-wp='dawn'] {
-  --wbase: #efeaf0;
+  --wbase: var(--wp-dawn-base);
   --wp:
-    radial-gradient(60% 50% at 12% 8%, rgba(250, 186, 150, 0.85), transparent 70%),
-    radial-gradient(55% 45% at 88% 16%, rgba(192, 172, 236, 0.8), transparent 70%),
-    radial-gradient(45% 40% at 42% 56%, rgba(252, 224, 166, 0.55), transparent 70%),
-    radial-gradient(65% 50% at 62% 96%, rgba(156, 196, 244, 0.75), transparent 70%);
+    radial-gradient(60% 50% at 12% 8%, var(--wp-dawn-1), transparent 70%),
+    radial-gradient(55% 45% at 88% 16%, var(--wp-dawn-2), transparent 70%),
+    radial-gradient(45% 40% at 42% 56%, var(--wp-dawn-3), transparent 70%),
+    radial-gradient(65% 50% at 62% 96%, var(--wp-dawn-4), transparent 70%);
 }
 .app.gl[data-wp='lake'] {
-  --wbase: #dce6f4;
+  --wbase: var(--wp-lake-base);
   --wp:
-    radial-gradient(60% 50% at 18% 12%, rgba(96, 156, 244, 0.85), transparent 70%),
-    radial-gradient(55% 48% at 84% 28%, rgba(142, 114, 232, 0.8), transparent 70%),
-    radial-gradient(50% 42% at 62% 88%, rgba(238, 146, 200, 0.7), transparent 70%),
-    radial-gradient(45% 40% at 8% 78%, rgba(132, 220, 240, 0.65), transparent 70%);
+    radial-gradient(60% 50% at 18% 12%, var(--wp-lake-1), transparent 70%),
+    radial-gradient(55% 48% at 84% 28%, var(--wp-lake-2), transparent 70%),
+    radial-gradient(50% 42% at 62% 88%, var(--wp-lake-3), transparent 70%),
+    radial-gradient(45% 40% at 8% 78%, var(--wp-lake-4), transparent 70%);
 }
 .app.gl[data-wp='meadow'] {
-  --wbase: #e8f0e8;
+  --wbase: var(--wp-meadow-base);
   --wp:
-    radial-gradient(60% 50% at 16% 10%, rgba(160, 224, 196, 0.9), transparent 70%),
-    radial-gradient(55% 48% at 86% 24%, rgba(110, 186, 194, 0.8), transparent 70%),
-    radial-gradient(50% 42% at 60% 90%, rgba(246, 226, 150, 0.7), transparent 70%),
-    radial-gradient(45% 40% at 8% 76%, rgba(166, 204, 236, 0.6), transparent 70%);
+    radial-gradient(60% 50% at 16% 10%, var(--wp-meadow-1), transparent 70%),
+    radial-gradient(55% 48% at 86% 24%, var(--wp-meadow-2), transparent 70%),
+    radial-gradient(50% 42% at 60% 90%, var(--wp-meadow-3), transparent 70%),
+    radial-gradient(45% 40% at 8% 76%, var(--wp-meadow-4), transparent 70%);
 }
 .app.gl[data-theme='dark'][data-wp='dawn'] {
-  --wbase: #17151b;
+  --wbase: var(--wp-dawn-base);
   --wp:
-    radial-gradient(60% 50% at 12% 8%, rgba(150, 74, 60, 0.55), transparent 70%),
-    radial-gradient(55% 45% at 88% 16%, rgba(92, 66, 150, 0.55), transparent 70%),
-    radial-gradient(65% 50% at 62% 96%, rgba(40, 76, 140, 0.5), transparent 70%);
+    radial-gradient(60% 50% at 12% 8%, var(--wp-dawn-1), transparent 70%),
+    radial-gradient(55% 45% at 88% 16%, var(--wp-dawn-2), transparent 70%),
+    radial-gradient(65% 50% at 62% 96%, var(--wp-dawn-4), transparent 70%);
 }
 .app.gl[data-theme='dark'][data-wp='lake'] {
-  --wbase: #121722;
+  --wbase: var(--wp-lake-base);
   --wp:
-    radial-gradient(60% 50% at 18% 12%, rgba(30, 80, 180, 0.6), transparent 70%),
-    radial-gradient(55% 48% at 84% 28%, rgba(84, 52, 170, 0.55), transparent 70%),
-    radial-gradient(50% 42% at 62% 88%, rgba(160, 52, 120, 0.45), transparent 70%);
+    radial-gradient(60% 50% at 18% 12%, var(--wp-lake-1), transparent 70%),
+    radial-gradient(55% 48% at 84% 28%, var(--wp-lake-2), transparent 70%),
+    radial-gradient(50% 42% at 62% 88%, var(--wp-lake-3), transparent 70%);
 }
 .app.gl[data-theme='dark'][data-wp='meadow'] {
-  --wbase: #131a16;
+  --wbase: var(--wp-meadow-base);
   --wp:
-    radial-gradient(60% 50% at 16% 10%, rgba(30, 110, 80, 0.55), transparent 70%),
-    radial-gradient(55% 48% at 86% 24%, rgba(28, 92, 104, 0.55), transparent 70%),
-    radial-gradient(50% 42% at 60% 90%, rgba(130, 104, 40, 0.4), transparent 70%);
+    radial-gradient(60% 50% at 16% 10%, var(--wp-meadow-1), transparent 70%),
+    radial-gradient(55% 48% at 86% 24%, var(--wp-meadow-2), transparent 70%),
+    radial-gradient(50% 42% at 60% 90%, var(--wp-meadow-3), transparent 70%);
 }
 .app.gl[data-wp='ember'] {
-  --wbase: #f4e9e4;
+  --wbase: var(--wp-ember-base);
   --wp:
-    radial-gradient(60% 50% at 14% 10%, rgba(250, 150, 120, 0.8), transparent 70%),
-    radial-gradient(55% 48% at 84% 20%, rgba(252, 206, 120, 0.75), transparent 70%),
-    radial-gradient(50% 42% at 60% 92%, rgba(196, 140, 200, 0.6), transparent 70%),
-    radial-gradient(45% 40% at 6% 76%, rgba(248, 176, 190, 0.6), transparent 70%);
+    radial-gradient(60% 50% at 14% 10%, var(--wp-ember-1), transparent 70%),
+    radial-gradient(55% 48% at 84% 20%, var(--wp-ember-2), transparent 70%),
+    radial-gradient(50% 42% at 60% 92%, var(--wp-ember-3), transparent 70%),
+    radial-gradient(45% 40% at 6% 76%, var(--wp-ember-4), transparent 70%);
 }
 .app.gl[data-wp='aurora'] {
-  --wbase: #e4ecf2;
+  --wbase: var(--wp-aurora-base);
   --wp:
-    radial-gradient(60% 50% at 16% 12%, rgba(100, 220, 200, 0.8), transparent 70%),
-    radial-gradient(55% 48% at 86% 26%, rgba(150, 232, 170, 0.7), transparent 70%),
-    radial-gradient(50% 42% at 62% 90%, rgba(160, 140, 240, 0.7), transparent 70%),
-    radial-gradient(45% 40% at 8% 76%, rgba(120, 170, 250, 0.6), transparent 70%);
+    radial-gradient(60% 50% at 16% 12%, var(--wp-aurora-1), transparent 70%),
+    radial-gradient(55% 48% at 86% 26%, var(--wp-aurora-2), transparent 70%),
+    radial-gradient(50% 42% at 62% 90%, var(--wp-aurora-3), transparent 70%),
+    radial-gradient(45% 40% at 8% 76%, var(--wp-aurora-4), transparent 70%);
 }
 .app.gl[data-wp='sand'] {
-  --wbase: #f2ece2;
+  --wbase: var(--wp-sand-base);
   --wp:
-    radial-gradient(60% 50% at 14% 10%, rgba(236, 206, 150, 0.85), transparent 70%),
-    radial-gradient(55% 48% at 86% 24%, rgba(232, 160, 120, 0.7), transparent 70%),
-    radial-gradient(50% 42% at 60% 90%, rgba(150, 196, 240, 0.7), transparent 70%),
-    radial-gradient(45% 40% at 8% 76%, rgba(180, 210, 180, 0.55), transparent 70%);
+    radial-gradient(60% 50% at 14% 10%, var(--wp-sand-1), transparent 70%),
+    radial-gradient(55% 48% at 86% 24%, var(--wp-sand-2), transparent 70%),
+    radial-gradient(50% 42% at 60% 90%, var(--wp-sand-3), transparent 70%),
+    radial-gradient(45% 40% at 8% 76%, var(--wp-sand-4), transparent 70%);
 }
 .app.gl[data-theme='dark'][data-wp='ember'] {
-  --wbase: #1c1416;
+  --wbase: var(--wp-ember-base);
   --wp:
-    radial-gradient(60% 50% at 14% 10%, rgba(170, 70, 50, 0.55), transparent 70%),
-    radial-gradient(55% 48% at 84% 20%, rgba(160, 110, 30, 0.5), transparent 70%),
-    radial-gradient(50% 42% at 60% 92%, rgba(100, 50, 120, 0.5), transparent 70%);
+    radial-gradient(60% 50% at 14% 10%, var(--wp-ember-1), transparent 70%),
+    radial-gradient(55% 48% at 84% 20%, var(--wp-ember-2), transparent 70%),
+    radial-gradient(50% 42% at 60% 92%, var(--wp-ember-3), transparent 70%);
 }
 .app.gl[data-theme='dark'][data-wp='aurora'] {
-  --wbase: #0e1620;
+  --wbase: var(--wp-aurora-base);
   --wp:
-    radial-gradient(60% 50% at 16% 12%, rgba(20, 140, 120, 0.6), transparent 70%),
-    radial-gradient(55% 48% at 86% 26%, rgba(40, 150, 80, 0.5), transparent 70%),
-    radial-gradient(50% 42% at 62% 90%, rgba(90, 60, 180, 0.55), transparent 70%);
+    radial-gradient(60% 50% at 16% 12%, var(--wp-aurora-1), transparent 70%),
+    radial-gradient(55% 48% at 86% 26%, var(--wp-aurora-2), transparent 70%),
+    radial-gradient(50% 42% at 62% 90%, var(--wp-aurora-3), transparent 70%);
 }
 .app.gl[data-theme='dark'][data-wp='sand'] {
-  --wbase: #1a1612;
+  --wbase: var(--wp-sand-base);
   --wp:
-    radial-gradient(60% 50% at 14% 10%, rgba(140, 100, 40, 0.5), transparent 70%),
-    radial-gradient(55% 48% at 86% 24%, rgba(150, 70, 40, 0.5), transparent 70%),
-    radial-gradient(50% 42% at 60% 90%, rgba(40, 80, 140, 0.45), transparent 70%);
+    radial-gradient(60% 50% at 14% 10%, var(--wp-sand-1), transparent 70%),
+    radial-gradient(55% 48% at 86% 24%, var(--wp-sand-2), transparent 70%),
+    radial-gradient(50% 42% at 60% 90%, var(--wp-sand-3), transparent 70%);
 }
 /* The content layer (HIG, Materials: "Don't use Liquid Glass in the content layer"; docs/design.md). Liquid Glass is the navigation
    layer only: the rail and tab bar, the header's round buttons and capsules, popovers, toasts and the sheet frame. Cards are a

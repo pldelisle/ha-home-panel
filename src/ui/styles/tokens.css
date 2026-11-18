@@ -4,6 +4,37 @@
 /* Palette: Origami (hazymorning/origami) surfaces and muted named colors for chrome; chart series are the same hue families
    stepped up in chroma so they pass colorblind checks. */
 .app {
+  /* the glass wallpapers' colours: the wallpaper (frame/glass.css) and the settings popup's swatches (styles/settings.css) both read them */
+  --wp-dawn-base: #efeaf0;
+  --wp-dawn-1: rgba(250, 186, 150, 0.85);
+  --wp-dawn-2: rgba(192, 172, 236, 0.8);
+  --wp-dawn-3: rgba(252, 224, 166, 0.55);
+  --wp-dawn-4: rgba(156, 196, 244, 0.75);
+  --wp-lake-base: #dce6f4;
+  --wp-lake-1: rgba(96, 156, 244, 0.85);
+  --wp-lake-2: rgba(142, 114, 232, 0.8);
+  --wp-lake-3: rgba(238, 146, 200, 0.7);
+  --wp-lake-4: rgba(132, 220, 240, 0.65);
+  --wp-meadow-base: #e8f0e8;
+  --wp-meadow-1: rgba(160, 224, 196, 0.9);
+  --wp-meadow-2: rgba(110, 186, 194, 0.8);
+  --wp-meadow-3: rgba(246, 226, 150, 0.7);
+  --wp-meadow-4: rgba(166, 204, 236, 0.6);
+  --wp-ember-base: #f4e9e4;
+  --wp-ember-1: rgba(250, 150, 120, 0.8);
+  --wp-ember-2: rgba(252, 206, 120, 0.75);
+  --wp-ember-3: rgba(196, 140, 200, 0.6);
+  --wp-ember-4: rgba(248, 176, 190, 0.6);
+  --wp-aurora-base: #e4ecf2;
+  --wp-aurora-1: rgba(100, 220, 200, 0.8);
+  --wp-aurora-2: rgba(150, 232, 170, 0.7);
+  --wp-aurora-3: rgba(160, 140, 240, 0.7);
+  --wp-aurora-4: rgba(120, 170, 250, 0.6);
+  --wp-sand-base: #f2ece2;
+  --wp-sand-1: rgba(236, 206, 150, 0.85);
+  --wp-sand-2: rgba(232, 160, 120, 0.7);
+  --wp-sand-3: rgba(150, 196, 240, 0.7);
+  --wp-sand-4: rgba(180, 210, 180, 0.55);
   --bg: #f2f0eb;
   --bg-glow: #f7f5f0;
   --card: #ffffff;
@@ -69,6 +100,36 @@
   --house-shadow: rgba(60, 50, 40, 0.18);
 }
 .app[data-theme='dark'] {
+  --wp-dawn-base: #17151b;
+  --wp-dawn-1: rgba(150, 74, 60, 0.55);
+  --wp-dawn-2: rgba(92, 66, 150, 0.55);
+  --wp-dawn-3: transparent;
+  --wp-dawn-4: rgba(40, 76, 140, 0.5);
+  --wp-lake-base: #121722;
+  --wp-lake-1: rgba(30, 80, 180, 0.6);
+  --wp-lake-2: rgba(84, 52, 170, 0.55);
+  --wp-lake-3: rgba(160, 52, 120, 0.45);
+  --wp-lake-4: transparent;
+  --wp-meadow-base: #131a16;
+  --wp-meadow-1: rgba(30, 110, 80, 0.55);
+  --wp-meadow-2: rgba(28, 92, 104, 0.55);
+  --wp-meadow-3: rgba(130, 104, 40, 0.4);
+  --wp-meadow-4: transparent;
+  --wp-ember-base: #1c1416;
+  --wp-ember-1: rgba(170, 70, 50, 0.55);
+  --wp-ember-2: rgba(160, 110, 30, 0.5);
+  --wp-ember-3: rgba(100, 50, 120, 0.5);
+  --wp-ember-4: transparent;
+  --wp-aurora-base: #0e1620;
+  --wp-aurora-1: rgba(20, 140, 120, 0.6);
+  --wp-aurora-2: rgba(40, 150, 80, 0.5);
+  --wp-aurora-3: rgba(90, 60, 180, 0.55);
+  --wp-aurora-4: transparent;
+  --wp-sand-base: #1a1612;
+  --wp-sand-1: rgba(140, 100, 40, 0.5);
+  --wp-sand-2: rgba(150, 70, 40, 0.5);
+  --wp-sand-3: rgba(40, 80, 140, 0.45);
+  --wp-sand-4: transparent;
   --bg: #181715;
   --bg-glow: #1d1c19;
   --card: #2f2d2a;
