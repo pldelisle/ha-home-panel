@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.20.0
+
+- Under the Material design a button group with more than five modes (a heat pump or a purifier that reports six or seven) shows its first four modes and a More button that opens a menu with the rest; when the chosen mode is in the menu, More shows its name and is drawn chosen. The arrow keys still run across every mode, and More opens its menu on Enter, Space or the down arrow. Liquid Glass keeps its one row.
+- Under the Material design, the Media pane's TV remote keys are 48px tonal buttons that tighten their corners under a finger, with mute in primary while it holds, and the Lights pane's room tiles are control tiles: a room that is on turns primary-container with a primary bulb. Liquid Glass is unchanged.
+- Under Liquid Glass, the tablet's sidebar lists the house's rooms after the sections, as Apple Home does: a row for each room that has a tile, and a tap shows everything the panel has for it, starting with the room's lights. The bulb switches the room, and a tile opens the room's light sheet over the room.
+- A room's view now shows its thermostat: the same tile as the Climate tab's phone grid, with the room's temperature in the header, and a tap opens the room's climate detail over the room.
+- A room view shows the room's air: the room's Mila purifier card, with its rating, its readings and the mode and fan controls of the Air tab, and the room's humidity among the readings under its name. A tile opens its history over the room, and a button opens the whole Air detail as a sheet over it, on a tablet too.
+- A room view shows the room's speakers and, when it sits there, its television, as the Media tab's tiles: play or pause acts at once, and a tap opens the controls over the room.
+- A room's view shows its Security: the room's cameras, then its door and motion sensors, as the Security tab draws them. A camera opens its live view and a sensor its history over the room.
+- Rooms on the phone and under Material, which have no sidebar: Home shows a Rooms row of chips under the tiles, the More sheet lists the rooms below its sections, and a tap shows the room. On the phone a room view has a Home button in its header that returns to Home.
+- Under Liquid Glass the header's live pill is the cards' material, the same near-white as the card under it, instead of dense glass tinted by the wallpaper with a white halo; with Transparent cards on it is glass again, as the cards are.
+- The section tabs follow the WAI-ARIA tabs keyboard pattern, in the Liquid Glass sidebar, Material's rail and the phone's bar: the list is one tab stop (the selected tab's), the arrow keys (Up and Down, and Left and Right on the phone), Home and End move focus and wrap, passing over tabs the house does not show, and Enter or Space selects. Each tab names its pane with `aria-controls`, and each pane is a `tabpanel` labelled by its tab.
+
 ## 2.19.0
 
 - Settings is a Control Center, under Liquid Glass and Material alike: Appearance and Text size are modules whose round icon toggles in one tap and whose label opens a submenu inside the popup, Sleep now and Design are round buttons, and Glass (Colour under Material) is a wide module with its swatches in view. Text size is a stepped slider with an Auto switch; the stored settings are unchanged.
