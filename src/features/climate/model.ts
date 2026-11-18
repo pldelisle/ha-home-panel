@@ -122,6 +122,11 @@ const SWING_AT: readonly [RegExp, MessageKey][] = [
   [/^vertical_(\d+)$/i, 'climate.swing.verticalAt'],
   [/^horizontal_(\d+)$/i, 'climate.swing.horizontalAt'],
 ];
+/** A side-to-side position or swing, which a unit that sets those apart may still list among its `swing_modes`: the up-and-down select leaves them out. */
+const HORIZONTAL_SWING = /^horizontal(_\d+)?$/i;
+/** In a select of one direction, its swing and its numbered positions need no direction: "Swing", "Position 7". */
+const DIRECTED_SWING = /^(vertical|horizontal)$/i;
+const DIRECTED_AT = /^(?:vertical|horizontal)_(\d+)$/i;
 
 export interface ClimateModelDeps extends ClimateItemsDeps {
   /** The held value of a key while a tap awaits Home Assistant, else the current one (`OptimisticController.read`). */
@@ -178,7 +183,10 @@ export type ControlsView =
       /** Null when the unit is off or has no such setting. */
       fan: ControlOption[] | null;
       preset: ControlOption[] | null;
+      /** The louvers; the up-and-down ones alone when `swingHorizontal` is not null. */
       swing: ControlOption[] | null;
+      /** The side-to-side louvers of a unit that lists them apart (`swing_horizontal_modes`); null when it does not, or is off. */
+      swingHorizontal: ControlOption[] | null;
     }
   /** Every room's thermostat, for "set every room", and the two questions its buttons ask first; the value is the controls' own state. */
   | {kind: 'house'; rooms: string[]; asks: AllAsks}
@@ -318,6 +326,13 @@ function swingLabel(value: string, {t}: ClimateModelDeps): string {
   return capitalWords(value);
 }
 
+/** A louver position in a select of one direction: its swing and positions without the direction, the rest as `swingLabel` words them. */
+function directedSwingLabel(value: string, deps: ClimateModelDeps): string {
+  if (DIRECTED_SWING.test(value)) return deps.t('climate.swing.swing');
+  const at = DIRECTED_AT.exec(value);
+  return at ? deps.t('climate.swing.positionAt', {n: at[1] ?? ''}) : swingLabel(value, deps);
+}
+
 /** What the heat pump says in the summary: nothing without one, else offline, off, or what it is doing, to its target. */
 function heatPumpSummary(heatPump: HeatPumpInputs | null, {t, fmt}: ClimateModelDeps): string {
   if (!heatPump) return '';
@@ -387,7 +402,31 @@ function heatPumpControls(hp: HeatPumpInputs, deps: ClimateModelDeps): ControlsV
       : options(hp.presetModes, overlay(K.hp.preset(hp.id), hp.preset), value =>
           value === 'none' ? t('climate.normal') : settingLabel(value, deps),
         ),
-    swing: off ? null : options(hp.swingModes, overlay(K.hp.swing(hp.id), hp.swing), value => swingLabel(value, deps)),
+    ...louvers(hp, off, deps),
+  };
+}
+
+/** The louvers: one select of every position, or, for a unit that lists the side-to-side ones apart, one select per direction. */
+function louvers(
+  hp: HeatPumpInputs,
+  off: boolean,
+  deps: ClimateModelDeps,
+): {swing: ControlOption[] | null; swingHorizontal: ControlOption[] | null} {
+  if (off) return {swing: null, swingHorizontal: null};
+  const {overlay} = deps;
+  const swing = overlay(K.hp.swing(hp.id), hp.swing);
+  if (!hp.swingHorizontalModes) {
+    return {swing: options(hp.swingModes, swing, value => swingLabel(value, deps)), swingHorizontal: null};
+  }
+  const directed = (value: string) => directedSwingLabel(value, deps);
+  const vertical = hp.swingModes?.filter(value => !HORIZONTAL_SWING.test(value) || value === swing) ?? null;
+  return {
+    swing: vertical && vertical.length ? options(vertical, swing, directed) : null,
+    swingHorizontal: options(
+      hp.swingHorizontalModes,
+      overlay(K.hp.swingHorizontal(hp.id), hp.swingHorizontal),
+      directed,
+    ),
   };
 }
 

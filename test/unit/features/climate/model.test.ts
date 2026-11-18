@@ -613,6 +613,37 @@ describe('the heat pump', () => {
       ['Fixed, horizontal position 2', false],
       ['Sideways wide', false],
     ]);
+    expect(controls.swingHorizontal).toBeNull();
+  });
+
+  test('a unit that lists its side-to-side louvers apart has a select per direction, each without the direction in its words', () => {
+    const SPLIT = {
+      ...ATTRS,
+      swing_modes: ['vertical', 'horizontal', 'both', 'Vertical_1', 'Vertical_7', 'Horizontal_1', 'Horizontal_3'],
+      swing_mode: 'Vertical_7',
+      swing_horizontal_modes: ['horizontal', 'Horizontal_1', 'Horizontal_3'],
+      swing_horizontal_mode: 'Horizontal_3',
+    };
+    const controls = hp(pumpOf(pump('heat', SPLIT)).detail.controls);
+    // the side-to-side entries of `swing_modes` are the other select's
+    expect(controls.swing?.map(o => [o.value, o.label, o.checked])).toEqual([
+      ['vertical', 'Swing', false],
+      ['both', 'Swing both ways', false],
+      ['Vertical_1', 'Position 1', false],
+      ['Vertical_7', 'Position 7', true],
+    ]);
+    expect(controls.swingHorizontal?.map(o => [o.value, o.label, o.checked])).toEqual([
+      ['horizontal', 'Swing', false],
+      ['Horizontal_1', 'Position 1', false],
+      ['Horizontal_3', 'Position 3', true],
+    ]);
+    // a held side-to-side value is the select's; off has no louvers at all
+    const held = pumpOf(pump('heat', SPLIT), {
+      overlay: holding({[K.hp.swingHorizontal('climate.pump')]: 'horizontal'}),
+    });
+    expect(hp(held.detail.controls).swingHorizontal?.find(o => o.checked)?.value).toBe('horizontal');
+    expect(hp(pumpOf(pump('off', SPLIT)).detail.controls)).toMatchObject({swing: null, swingHorizontal: null});
+    expect(hp(pumpOf(pump('heat', SPLIT), {language: 'fr'}).detail.controls).swing?.[0]?.label).toBe('Balayage');
   });
 
   test('a unit that lists no modes offers off and heat, and one with no fan, preset or louvers offers none', () => {

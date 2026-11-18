@@ -68,10 +68,10 @@ test("no tab asks anything of a server other than the house's, and charts and fl
   const urls: string[] = [];
   page.on('request', r => urls.push(r.url()));
   await eachShownTab(house, async t => {
-    if (t === 'energy') {
+    if (t === 'climate') {
       // ApexCharts draws its labels as SVG text in the panel's --f-body
-      await expect(house.root().locator('#pane-energy .apexcharts-canvas text').first()).toBeAttached();
-      expect(await family(house, '#pane-energy .apexcharts-canvas text')).toMatch(MANROPE_FIRST);
+      await expect(house.root().locator('#pane-climate .apexcharts-canvas text').first()).toBeAttached();
+      expect(await family(house, '#pane-climate .apexcharts-canvas text')).toMatch(MANROPE_FIRST);
     }
     if (t === 'auto') {
       // Mermaid draws the flow's labels as HTML inside the SVG, in its fontFamily setting (the same --f-body)
@@ -81,7 +81,9 @@ test("no tab asks anything of a server other than the house's, and charts and fl
   });
   urls.push(...(await page.evaluate(() => performance.getEntriesByType('resource').map(e => e.name))));
   expect(urls.length, 'requests seen').toBeGreaterThan(10);
-  expect(urls.filter(u => !u.startsWith(origin + '/') && !u.startsWith('data:'))).toEqual([]);
+  // the one other server the panel asks is ECCC's public climate archive (#447), which the harness answers itself (fixtures.ts)
+  const ECCC = 'https://api.weather.gc.ca/';
+  expect(urls.filter(u => !u.startsWith(origin + '/') && !u.startsWith('data:') && !u.startsWith(ECCC))).toEqual([]);
   expect(house.fonts.every(f => FONT_URL.test(f.url) && f.status === 200)).toBe(true);
   // the family the charts and the flows name is the bundled one, loaded
   expect(await loadedFontWeights(house)).toEqual(FONT_WEIGHTS);

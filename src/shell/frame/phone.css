@@ -68,9 +68,6 @@
 .app.tabsv.cp .rtab[aria-selected='true'] {
   background: var(--nav-sel-bg);
 }
-.app.tabsv.cp .rtab[aria-selected='true'] span {
-  color: var(--fg);
-}
 .app.tabsv.cp .rtab svg {
   width: 26px;
   height: 26px;

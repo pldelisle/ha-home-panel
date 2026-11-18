@@ -7,6 +7,8 @@ import {
   hpMode,
   hpPreset,
   hpSwing,
+  hpSwingHorizontal,
+  hpSwingVertical,
   hpTemperature,
   nextSetpoint,
   quickSetpoint,
@@ -169,6 +171,23 @@ describe('the heat pump', () => {
       data: {entity_id: 'climate.pump', swing_mode: 'vertical_3'},
       holds: ['climate.pump:hp-swing'],
       done: {key: 'climate.hpSwing', values: {swing: 'fixed, vertical position 3'}},
+    });
+  });
+
+  test('with the directions apart: up and down is the same call, its toast names it; side to side is its own service', () => {
+    expect(hpSwingVertical(pump, 'Vertical_7', 'Position 7')).toEqual({
+      domain: 'climate',
+      service: 'set_swing_mode',
+      data: {entity_id: 'climate.pump', swing_mode: 'Vertical_7'},
+      holds: ['climate.pump:hp-swing'],
+      done: {key: 'climate.hpSwingVertical', values: {swing: 'position 7'}},
+    });
+    expect(hpSwingHorizontal(pump, 'Horizontal_3', 'Position 3')).toEqual({
+      domain: 'climate',
+      service: 'set_swing_horizontal_mode',
+      data: {entity_id: 'climate.pump', swing_horizontal_mode: 'Horizontal_3'},
+      holds: ['climate.pump:hp-swing-h'],
+      done: {key: 'climate.hpSwingHorizontal', values: {swing: 'position 3'}},
     });
   });
 });
