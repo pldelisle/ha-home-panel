@@ -145,7 +145,10 @@ export const fr: Record<MessageKey, string> = {
   'config.unknownKeyHint': '{path} : réglage inconnu. Vouliez-vous écrire {hint} ?',
   'config.unknownEntity': "{path} : ce n'est pas une entité que le panneau lit. Voir l'exemple de configuration.",
   'config.wrongType':
-    '{path} : attendu {expected, select, number {un nombre} text {du texte} list {une liste} block {un bloc de réglages} yesno {oui ou non} nothing {rien} other {une valeur}}, reçu {got, select, number {un nombre} text {du texte} list {une liste} block {un bloc de réglages} yesno {oui ou non} nothing {rien} other {une valeur}}.',
+    '{path} : attendu {expected, select, number {un nombre} text {du texte} list {une liste} block {un ' +
+    'bloc de réglages} yesno {oui ou non} nothing {rien} other {une valeur}}, reçu {got, select, number ' +
+    '{un nombre} text {du texte} list {une liste} block {un bloc de réglages} yesno {oui ou non} nothing ' +
+    '{rien} other {une valeur}}.',
   'config.notOneOf': '{path} : {got} ne fait pas partie de {options}.',
   'config.notAPair': '{path} : un lien doit relier exactement deux cartes.',
   'config.notATime': "{path} : {got} n'est pas une heure comme 20:00.",
@@ -225,7 +228,10 @@ export const fr: Record<MessageKey, string> = {
   'weather.alerts.none': 'aucune alerte',
   'weather.alerts.count': '{n, plural, one {# alerte en vigueur} other {# alertes en vigueur}}',
   'weather.alerts.kindCount':
-    '{kind, select, warning {{n, plural, one {# avertissement en vigueur} other {# avertissements en vigueur}}} watch {{n, plural, one {# veille en vigueur} other {# veilles en vigueur}}} advisory {{n, plural, one {# avis en vigueur} other {# avis en vigueur}}} other {{n, plural, one {# bulletin en vigueur} other {# bulletins en vigueur}}}}',
+    '{kind, select, warning {{n, plural, one {# avertissement en vigueur} other {# avertissements en ' +
+    'vigueur}}} watch {{n, plural, one {# veille en vigueur} other {# veilles en vigueur}}} advisory ' +
+    '{{n, plural, one {# avis en vigueur} other {# avis en vigueur}}} other {{n, plural, one {# bulletin ' +
+    'en vigueur} other {# bulletins en vigueur}}}}',
   'weather.alertKind.warning': 'Avertissement',
   'weather.alertKind.watch': 'Veille',
   'weather.alertKind.advisory': 'Avis',
@@ -926,7 +932,14 @@ export const fr: Record<MessageKey, string> = {
   'car.charger.title': 'Borne à la maison',
   'car.charger.line': 'Wallbox Pulsar Plus · {status}{plugged, select, yes {} other {, voiture non branchée}}',
   'car.charger.status':
-    "{id, select, unavailable {indisponible} ready {prête} charging {en recharge} connectedWaitingForCar {branchée\u00a0: en attente de la voiture} waitingForCar {en attente de la voiture} connectedWaitingForSchedule {branchée\u00a0: en attente du prochain horaire} waitingForSchedule {en attente du prochain horaire} pausedByUser {en pause par l'utilisateur} scheduled {programmée} discharging {en décharge} error {erreur} disconnected {débranchée} locked {verrouillée} lockedCarConnected {verrouillée, voiture branchée} updating {mise à jour} waiting {en attente} queuePowerSharing {en file (partage de puissance)} queuePowerBoost {en file (power boost)} queueEcoSmart {en file (eco-smart)} midFailed {échec mid} other {{raw}}}",
+    '{id, select, unavailable {indisponible} ready {prête} charging {en recharge} connectedWaitingForCar ' +
+    '{branchée\u00a0: en attente de la voiture} waitingForCar {en attente de la voiture} ' +
+    'connectedWaitingForSchedule {branchée\u00a0: en attente du prochain horaire} waitingForSchedule {en ' +
+    "attente du prochain horaire} pausedByUser {en pause par l'utilisateur} scheduled {programmée} " +
+    'discharging {en décharge} error {erreur} disconnected {débranchée} locked {verrouillée} ' +
+    'lockedCarConnected {verrouillée, voiture branchée} updating {mise à jour} waiting {en attente} ' +
+    'queuePowerSharing {en file (partage de puissance)} queuePowerBoost {en file (power boost)} ' +
+    'queueEcoSmart {en file (eco-smart)} midFailed {échec mid} other {{raw}}}',
   'car.charger.power': 'Limite de puissance',
   'car.charger.currentLabel': 'Limite du courant de recharge',
   'car.charger.amps': '{n} A',
