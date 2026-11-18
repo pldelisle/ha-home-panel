@@ -55,7 +55,7 @@
   cursor: grab;
 }
 .dial.ed:focus-visible {
-  outline: 2px solid var(--c-home);
+  outline: var(--focus-width) solid var(--focus-color);
   outline-offset: 4px;
   border-radius: 50%;
 }

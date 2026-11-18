@@ -28,14 +28,14 @@
   cursor: not-allowed;
 }
 .power:active {
-  transform: scale(0.97);
+  transform: scale(var(--press-scale-cell));
 }
 @media (prefers-reduced-motion: no-preference) {
   .power {
     transition:
       transform var(--motion-press-ms) var(--motion-standard),
-      background-color 0.2s ease,
-      box-shadow 0.2s ease,
-      color 0.2s ease;
+      background-color var(--motion-fade-ms) var(--motion-fade),
+      box-shadow var(--motion-fade-ms) var(--motion-fade),
+      color var(--motion-fade-ms) var(--motion-fade);
   }
 }

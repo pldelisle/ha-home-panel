@@ -34,7 +34,7 @@ button.lgr:disabled {
   opacity: 0.6;
 }
 button.lgr:focus-visible {
-  outline: 2px solid var(--c-home);
+  outline: var(--focus-width) solid var(--focus-color);
   outline-offset: -3px;
 }
 .lgr .lgi {

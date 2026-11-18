@@ -30,8 +30,8 @@
   margin-bottom: 22px;
 }
 .card:focus-visible {
-  outline: 2px solid var(--c-home);
-  outline-offset: 2px;
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
 }
 .card {
   background: var(--card);
@@ -103,8 +103,8 @@
   height: 20px;
 }
 .more:focus-visible {
-  outline: 2px solid var(--c-home);
-  outline-offset: 2px;
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
 }
 .hint {
   font-size: calc(12px * var(--tx));

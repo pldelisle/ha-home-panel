@@ -41,8 +41,8 @@
   color: var(--fg2);
 }
 .step:focus-visible {
-  outline: 2px solid var(--c-home);
-  outline-offset: 2px;
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
 }
 /* glass: the same tokens as src/shell/frame/glass.css gives `.app.gl .stepper` */
 :host([glass]) {
@@ -61,13 +61,13 @@
   .step {
     transition:
       transform var(--motion-press-ms) var(--motion-standard),
-      background-color 0.2s ease,
-      box-shadow 0.2s ease,
-      color 0.2s ease;
+      background-color var(--motion-fade-ms) var(--motion-fade),
+      box-shadow var(--motion-fade-ms) var(--motion-fade),
+      color var(--motion-fade-ms) var(--motion-fade);
   }
 }
 .step:active {
-  transform: scale(0.96);
+  transform: scale(var(--press-scale));
 }
 /* Material's type roles: see tokens.css. */
 :host([design='material']) .sv b {

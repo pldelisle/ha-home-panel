@@ -85,19 +85,19 @@
   min-width: 0;
 }
 .schip:focus-visible {
-  outline: 2px solid var(--c-home);
-  outline-offset: 2px;
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
 }
 .schip:active {
-  transform: scale(0.96);
+  transform: scale(var(--press-scale));
 }
 @media (prefers-reduced-motion: no-preference) {
   .schip {
     transition:
       transform var(--motion-press-ms) var(--motion-standard),
-      background-color 0.2s ease,
-      box-shadow 0.2s ease,
-      color 0.2s ease;
+      background-color var(--motion-fade-ms) var(--motion-fade),
+      box-shadow var(--motion-fade-ms) var(--motion-fade),
+      color var(--motion-fade-ms) var(--motion-fade);
   }
 }
 .schip > div {

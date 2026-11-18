@@ -43,7 +43,7 @@
   bottom: 0;
   height: var(--v);
   background: var(--lc, var(--warn));
-  transition: height 0.2s ease;
+  transition: height var(--motion-fade-ms) var(--motion-fade);
 }
 .lpill.drag .lpf,
 .lpill.drag .lphd {
@@ -58,7 +58,7 @@
     0 10px 30px -10px rgba(0, 0, 0, 0.45);
 }
 .lpill:focus-visible {
-  outline: 2px solid var(--c-home);
+  outline: var(--focus-width) solid var(--focus-color);
   outline-offset: 3px;
 }
 .lpill[aria-disabled='true'] {
@@ -108,7 +108,7 @@
   box-shadow:
     0 0 0 2px rgba(0, 0, 0, 0.28),
     0 2px 8px rgba(0, 0, 0, 0.35);
-  transition: bottom 0.2s ease;
+  transition: bottom var(--motion-fade-ms) var(--motion-fade);
 }
 .lpill .lpnl {
   display: none;

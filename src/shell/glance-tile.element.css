@@ -24,11 +24,11 @@
   min-width: 0;
 }
 .htile:active {
-  transform: scale(0.98);
+  transform: scale(var(--press-scale-tile));
 }
 .htile:focus-visible {
-  outline: 2px solid var(--c-home);
-  outline-offset: 2px;
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
 }
 .htile .hh {
   display: flex;
@@ -91,9 +91,9 @@
   .htile {
     transition:
       transform var(--motion-press-ms) var(--motion-standard),
-      background-color 0.2s ease,
-      box-shadow 0.2s ease,
-      color 0.2s ease;
+      background-color var(--motion-fade-ms) var(--motion-fade),
+      box-shadow var(--motion-fade-ms) var(--motion-fade),
+      color var(--motion-fade-ms) var(--motion-fade);
   }
 }
 /* the Car tile's icon pulses while the car charges */

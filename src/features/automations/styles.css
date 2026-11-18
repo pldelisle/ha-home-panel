@@ -129,13 +129,13 @@
   .aupick .chip {
     transition:
       transform var(--motion-press-ms) var(--motion-standard),
-      background-color 0.2s ease,
-      box-shadow 0.2s ease,
-      color 0.2s ease;
+      background-color var(--motion-fade-ms) var(--motion-fade),
+      box-shadow var(--motion-fade-ms) var(--motion-fade),
+      color var(--motion-fade-ms) var(--motion-fade);
   }
 }
 .aupick .chip:active {
-  transform: scale(0.96);
+  transform: scale(var(--press-scale));
 }
 /* every automation: a plain list, a row of at least 44 pt each (name, when it last ran, a chevron); the selected row has the
    neutral selection fill and a bolder name, so it is not told by colour alone */
@@ -191,7 +191,7 @@
   opacity: 0.55;
 }
 .aurow:focus-visible {
-  outline: 2px solid var(--c-home);
+  outline: var(--focus-width) solid var(--focus-color);
   outline-offset: -2px;
 }
 .aurow:active {
@@ -224,13 +224,13 @@
   .ausel .close {
     transition:
       transform var(--motion-press-ms) var(--motion-standard),
-      background-color 0.2s ease,
-      box-shadow 0.2s ease,
-      color 0.2s ease;
+      background-color var(--motion-fade-ms) var(--motion-fade),
+      box-shadow var(--motion-fade-ms) var(--motion-fade),
+      color var(--motion-fade-ms) var(--motion-fade);
   }
 }
 .ausel .close:active {
-  transform: scale(0.96);
+  transform: scale(var(--press-scale));
 }
 /* the Today line: the axis, the part already past, the now line and the hour marks */
 .autl {
@@ -340,7 +340,7 @@
   outline: none;
 }
 .aud:focus-visible .d {
-  outline: 2px solid var(--c-home);
+  outline: var(--focus-width) solid var(--focus-color);
   outline-offset: 3px;
 }
 @keyframes aupulse {

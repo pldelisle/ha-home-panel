@@ -40,8 +40,8 @@
   text-overflow: ellipsis;
 }
 .lback:focus-visible {
-  outline: 2px solid var(--c-home);
-  outline-offset: 2px;
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
 }
 .lfoot {
   margin: -8px 6px 0;

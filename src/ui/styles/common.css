@@ -1,5 +1,6 @@
-/* What every element needs of the frame's own rules: the hidden attribute, `box-sizing`, the number face, the muted text, the tap highlight and `.sr`,
-   the text only screen readers read. Joined into the legacy sheet first, where these rules always were (`.sr` came from base.css in #256), and adopted by each element. */
+/* What every element needs of the frame's own rules: the hidden attribute, `box-sizing`, the number face, the muted text, the tap highlight, `.sr`,
+   the text only screen readers read, and the Material design's interaction states for every button (the state layer, the shape a press morphs to
+   and the reduced-motion fades), written once here because every element adopts this file. Joined into the legacy sheet first, where these rules always were (`.sr` came from base.css in #256), and adopted by each element. */
 /* the hidden attribute always wins: several controls set display, and an invisible overlay once blocked every tap (v1.19.6) */
 [hidden] {
   display: none !important;
@@ -41,4 +42,59 @@ button,
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
+}
+/* ---- The Material design's interaction states (ADR 0037, #463), one rule set for every button in every root ----
+   Pattern: state layer (Material 3, "State layers"): a `::before` filled with the content colour, at `--state-hover` under a mouse and `--state-focus` /
+   `--state-pressed` under the keyboard and the finger, following the control's corners (`border-radius: inherit`); the control's own content draws above it
+   (`z-index: -1` inside `isolation: isolate`). It does not scale: the press scale is a token (`--press-scale`, 1 here). A pressed pill tightens
+   its corners: its `--shape-pill` becomes `--shape-pill-pressed` for the length of the press, which every rule that reads `--shape-pill` follows
+   with no selector list, and the corners spring on the spatial curve. The switch keeps its own: its `::before` is the hit area. The box properties sit in a cascade layer, which any
+   unlayered rule beats whatever its specificity, so a button that is absolute or sticky stays that. */
+@layer state-layer {
+  .app[data-design='material'] :where(button, [role='button']):not(:disabled, .switch) {
+    position: relative;
+    isolation: isolate;
+  }
+}
+.app[data-design='material'] :where(button, [role='button']):not(:disabled, .switch)::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--motion-effects-fast-ms) var(--motion-effects);
+}
+@media (hover: hover) {
+  .app[data-design='material'] :where(button, [role='button']):not(:disabled, .switch):hover::before {
+    opacity: var(--state-hover);
+  }
+}
+.app[data-design='material'] :where(button, [role='button']):not(:disabled, .switch):focus-visible::before {
+  opacity: var(--state-focus);
+}
+.app[data-design='material'] :where(button, [role='button']):not(:disabled, .switch):active::before {
+  opacity: var(--state-pressed);
+}
+.app[data-design='material'] :where(button, [role='button']) {
+  transition:
+    border-radius var(--motion-spatial-fast-ms) var(--motion-spatial-fast),
+    transform var(--motion-spatial-fast-ms) var(--motion-spatial-fast),
+    background-color var(--motion-effects-default-ms) var(--motion-effects),
+    color var(--motion-effects-default-ms) var(--motion-effects),
+    box-shadow var(--motion-effects-default-ms) var(--motion-effects);
+}
+.app[data-design='material'] :where(button, [role='button']):active {
+  --shape-pill: var(--shape-pill-pressed);
+}
+/* Reduce Motion: a spring becomes the shortest fade, and nothing overshoots; the state layers stay (they are opacity) */
+@media (prefers-reduced-motion: reduce) {
+  .app[data-design='material'] *,
+  .app[data-design='material'] *::before,
+  .app[data-design='material'] *::after {
+    transition-duration: var(--motion-effects-fast-ms) !important;
+    transition-timing-function: var(--motion-effects) !important;
+  }
 }

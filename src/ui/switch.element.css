@@ -31,8 +31,8 @@
   height: 24px;
   border-radius: 50%;
   background: var(--card);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
-  transition: transform 0.2s;
+  box-shadow: var(--elevation-1);
+  transition: transform var(--motion-fade-ms) var(--motion-fade);
 }
 .switch[aria-checked='true'] {
   background: var(--c-ev);
@@ -45,8 +45,8 @@
   cursor: not-allowed;
 }
 .switch:focus-visible {
-  outline: 2px solid var(--c-home);
-  outline-offset: 2px;
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
 }
 /* the knob springs only with motion on, and does not slide at all when the person asks for less */
 @media (prefers-reduced-motion: no-preference) {

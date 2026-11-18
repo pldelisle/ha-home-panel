@@ -77,8 +77,8 @@
   box-shadow: 0 1px 4px rgb(0 0 0 / 0.35);
 }
 .vol input:focus-visible {
-  outline: 2px solid var(--c-home);
-  outline-offset: 2px;
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
   border-radius: var(--shape-focus);
 }
 .app.gl .vol .step {
