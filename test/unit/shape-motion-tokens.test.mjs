@@ -57,10 +57,10 @@ test('no cubic-bezier literal stays outside the token declarations', () => {
 
 test('every --shape-* and --motion-* a rule reads is declared once on .app in tokens.css', () => {
   const tokens = stripComments(readFileSync(join(ROOT, TOKENS), 'utf8'));
-  const declared = [...tokens.matchAll(/^\s*(--(?:shape|motion)-[a-z-]+):/gm)].map(m => m[1]);
+  const declared = [...tokens.matchAll(/^\s*(--(?:shape|motion)-[a-z0-9-]+):/gm)].map(m => m[1]);
   expect(new Set(declared).size).toBe(declared.length);
   const used = new Set(
-    sheets.flatMap(({css}) => [...css.matchAll(/var\((--(?:shape|motion)-[a-z-]+)\)/g)].map(m => m[1])),
+    sheets.flatMap(({css}) => [...css.matchAll(/var\((--(?:shape|motion)-[a-z0-9-]+)\)/g)].map(m => m[1])),
   );
   expect([...used].filter(name => !declared.includes(name))).toEqual([]);
   // and none is declared for nothing: a token no rule reads is a role that was never drawn
