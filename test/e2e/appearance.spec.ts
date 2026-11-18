@@ -385,3 +385,26 @@ test('a touch marks the frame live for a minute', async ({house}) => {
   await house.clock.runFor(11_000);
   await expect(app(house)).not.toHaveClass(/\blive\b/);
 });
+
+test.describe('on an Android device', () => {
+  test.use({
+    userAgent:
+      'Mozilla/5.0 (Linux; Android 16; SM-X710; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/142.0.0.0 Safari/537.36 Home Assistant/2026.11.0-full',
+  });
+
+  test('the panel starts in Material until a design is chosen', async ({house}) => {
+    await expect(app(house)).toHaveAttribute('data-design', 'material');
+  });
+});
+
+test.describe('on an Android device that chose Liquid Glass', () => {
+  test.use({
+    userAgent:
+      'Mozilla/5.0 (Linux; Android 16; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Mobile Safari/537.36',
+    houseOpts: {cfg: FULL_CFG, time: AFTERNOON, design: 'apple'},
+  });
+
+  test('the stored choice wins over the device', async ({house}) => {
+    await expect(app(house)).toHaveAttribute('data-design', 'apple');
+  });
+});

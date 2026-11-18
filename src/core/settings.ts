@@ -2,6 +2,7 @@
 // Pattern: a Storage-like parameter (accept dependencies, don't create them: Ousterhout, A Philosophy of Software
 // Design); parse at the edge, so a bad value becomes the default (King, Parse, don't validate).
 // Observer (Gamma et al., Design Patterns): `subscribe` tells a listener after each write, so what reads a setting need not poll.
+// The device's default design comes in as a parameter too (`SettingsDefaults`), from `deviceDesign`.
 // Must not: touch localStorage or any global, throw on a bad or blocked storage, or change a key or a stored value.
 
 import {parseSeed} from './seeds.ts';
@@ -21,7 +22,8 @@ export interface Settings {
   /** With glass on, the cards are opaque (`solid`, Apple's rule) or glass too (`glass`, the panel's older look). */
   cards: string;
   tab: string;
-  /** The design language: `apple` (the default, glass) or `material` (a tonal palette, no glass); anything else parses to `apple`. */
+  /** The design language: `apple` (Liquid Glass) or `material` (a tonal palette, no glass); nothing stored, or anything else, parses to the
+   * device's default (`SettingsDefaults.design`, `apple` when none is given). */
   design: string;
   /** Under Material, the seed the palette is built from (`house`, `dawn`, ...); anything else parses to `house`, and Apple keeps it for the way back. */
   seed: string;
@@ -47,7 +49,13 @@ const KEYS: Record<keyof Settings, string> = {
 const VERSION_KEY = 'home-panel-settings';
 const VERSION = '1';
 
-export function createSettings(storage: KeyValueStorage): PanelSettings {
+/** What the device decides before the person does; the shell passes it (the core reads no global). */
+export interface SettingsDefaults {
+  design?: 'apple' | 'material';
+}
+
+export function createSettings(storage: KeyValueStorage, defaults: SettingsDefaults = {}): PanelSettings {
+  const deviceDesign = defaults.design ?? 'apple';
   let versioned = false;
   const listeners = new Set<() => void>();
 
@@ -64,6 +72,12 @@ export function createSettings(storage: KeyValueStorage): PanelSettings {
     return Number.isNaN(v) ? 50 : Math.max(0, Math.min(100, v));
   };
 
+  // a stored choice wins; nothing stored, or anything but the two names, is the device's
+  const design = (): string => {
+    const v = read('design');
+    return v === 'material' || v === 'apple' ? v : deviceDesign;
+  };
+
   return {
     get: () => ({
       theme: read('theme') || 'auto',
@@ -72,7 +86,7 @@ export function createSettings(storage: KeyValueStorage): PanelSettings {
       glassLevel: glassLevel(),
       cards: read('cards') === 'glass' ? 'glass' : 'solid',
       tab: read('tab') || 'home',
-      design: read('design') === 'material' ? 'material' : 'apple',
+      design: design(),
       seed: parseSeed(read('seed')),
     }),
 

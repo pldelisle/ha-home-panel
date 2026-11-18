@@ -15,6 +15,7 @@ import type {PanelHass} from '../core/hass.ts';
 import {browserDefaults} from '../core/i18n/browser.ts';
 import {ENGLISH_TAG, panelLocale} from '../core/i18n/locale.ts';
 import {createSettings, type KeyValueStorage} from '../core/settings.ts';
+import {deviceDesign, type DeviceHint} from '../core/device-design.ts';
 import {createStatisticsCache, STATISTICS_TTL_MS} from '../core/statistics-cache.ts';
 import type {ForecastEntry} from '../core/ha.ts';
 import {createStore} from '../core/store.ts';
@@ -79,6 +80,13 @@ function browserStorage(): KeyValueStorage {
   }
 }
 
+// what the browser says about the device, read once, for the design it starts in before the person picks one (ADR 0037)
+function browserDevice(): DeviceHint {
+  if (typeof navigator === 'undefined') return {};
+  const data = (navigator as Navigator & {userAgentData?: {platform?: string}}).userAgentData;
+  return {platform: data?.platform || undefined, userAgent: navigator.userAgent};
+}
+
 // the browser's defaults, read once, for the store's formats
 function storeOptions() {
   const {timeZone, browserLocale, browserHour12} = browserDefaults();
@@ -141,7 +149,7 @@ export class HomePanel extends LitElement {
     now: Date.now,
     house: () => archiveHouse(this.store.config, this.store.hass),
   });
-  private readonly settings = createSettings(browserStorage());
+  private readonly settings = createSettings(browserStorage(), {design: deviceDesign(browserDevice())});
   // what the household asked for and Home Assistant has not confirmed yet: the panel's elements share it (ADR 0023)
   private readonly optimistic = new OverlayStore();
   /** The daily forecast the Weather pane's subscription last heard, for the elements that read tomorrow (ADR 0030). */

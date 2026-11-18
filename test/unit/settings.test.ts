@@ -73,6 +73,14 @@ describe('reading', () => {
       expect(createSettings(mapStorage({'home-panel-design': junk}).storage).get().design).toBe('apple');
   });
 
+  test("with no choice stored the design is the device's, and a stored choice wins over it", () => {
+    const android = {design: 'material'} as const;
+    expect(createSettings(mapStorage().storage, android).get().design).toBe('material');
+    expect(createSettings(mapStorage({'home-panel-design': 'apple'}).storage, android).get().design).toBe('apple');
+    expect(createSettings(mapStorage({'home-panel-design': 'google'}).storage, android).get().design).toBe('material');
+    expect(createSettings(throwing, android).get().design).toBe('material');
+  });
+
   test('cards are solid unless the stored value says glass', () => {
     expect(createSettings(mapStorage({'home-panel-cards': 'nonsense'}).storage).get().cards).toBe('solid');
     expect(createSettings(mapStorage({'home-panel-cards': 'glass'}).storage).get().cards).toBe('glass');
