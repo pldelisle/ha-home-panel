@@ -288,3 +288,22 @@ describe('the last reply', () => {
     expect([cache.lastLoadedAt, told]).toEqual([null, 2]);
   });
 });
+
+describe('the answers of a scope', () => {
+  test('a scope is answered by a fetch and by a hit, not by a failure; a scope that asked nothing has none; clear() forgets them', async () => {
+    const {hass, clock, cache} = setup();
+    const home = cache.scoped('home');
+    expect([cache.answeredAt('home'), cache.answeredAt('lights')]).toEqual([null, null]);
+    await home.statistics(['sensor.a'], 'hour', START, ['mean']);
+    expect([cache.answeredAt('home'), cache.answeredAt('lights')]).toEqual([1_000_000, null]);
+    clock.at += 60_000;
+    await home.statistics(['sensor.a'], 'hour', START, ['mean']); // a hit: the answer is still an answer
+    expect(cache.answeredAt('home')).toBe(1_060_000);
+    clock.at += 60_000;
+    hass.replies.set('recorder/statistics_during_period', () => Promise.reject(new Error('down')));
+    await expect(home.statistics(['sensor.z'], 'hour', START, ['mean'])).rejects.toThrow();
+    expect(cache.answeredAt('home')).toBe(1_060_000);
+    cache.clear();
+    expect(cache.answeredAt('home')).toBeNull();
+  });
+});

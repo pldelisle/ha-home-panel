@@ -19,8 +19,6 @@ export interface FeatureEnv {
   sheetOpen(id: string): boolean;
   /** What the open sheet was asked to show (the tile of a history: `{key}`), or undefined when it is not the sheet open. */
   sheetDetail(id: string): unknown;
-  /** How many Status checks need attention, as the live pill counts them: the Home pane's heading says it (#269). */
-  readonly attention: number;
 }
 
 export interface FeatureDescriptor {

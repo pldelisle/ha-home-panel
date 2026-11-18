@@ -10,7 +10,7 @@ src/providers/
 src/features/people/
   README.md
   index.ts                 the feature's exports: peopleIds, peopleModel, WhoChips, WhoCard
-  who-chips.ts             <hp-who-chips place="header"|"card">: one chip per person, home or away
+  who-chips.ts             <hp-who-chips>: one chip per person, home or away
   who-chips.element.css    its own rules (ADR 0019)
   who-card.ts              <hp-who-card>: the Home card's label, then the chips or the hint
   who-card.element.css     its own rules

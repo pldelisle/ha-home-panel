@@ -2,7 +2,8 @@
 // Pattern: memoisation (Michie, 1968), a cache-aside read-through with a time to live: a call is keyed by its arguments and a hit
 // returns the first call's promise. Why here, spec 15 "Notes": "Two features already cache (this.WX, this.CR), so ... the shared module is justified now".
 // A caller that wants hits passes a start it keeps stable (the top of the hour, the start of the day): a start that moves is a new call.
-// It also keeps the time of the last reply (`lastLoadedAt`), which the header's clock line says (#269).
+// It also keeps the time of the last reply (`lastLoadedAt`, the settings' foot) and, per scope (a pane's view of it, `scoped`), the time of the
+// newest answer that scope was given, a hit included (`answeredAt`): the header's clock line says when the history on screen was last answered (#426).
 // Must not: touch the DOM, read a clock but the `now` it is given (`Date.now` only as the default), keep a rejection (a StaleReply included), or retry.
 import type {PanelApi} from './api.ts';
 
@@ -12,6 +13,10 @@ export type StatisticsCache = Pick<PanelApi, 'statistics' | 'history'> & {
   clear(): void;
   /** When the last reply arrived, in milliseconds, or null before the first (and after `clear`): the header's "Live · history" line (#269). */
   readonly lastLoadedAt: number | null;
+  /** A view of this cache for one pane: the same memo, and every answer it gives (a hit too) is noted under `scope`. */
+  scoped(scope: string): StatisticsCache;
+  /** When `scope` was last answered, in milliseconds, or null when it never was (and after `clear`): a pane that reads no history has none. */
+  answeredAt(scope: string): number | null;
 };
 
 /** How long a recorder reply stays fresh, the legacy panel's fifteen minutes: the cache's time to live, and how long a feature keeps what it derived. */
@@ -46,18 +51,34 @@ export function createStatisticsCache(
 ): StatisticsCache {
   const entries = new Map<string, Entry>();
   let lastLoadedAt: number | null = null;
+  // the time of the newest answer each scope was given: a reply that came, or a hit that returned a reply that came
+  const answers = new Map<string, number>();
   // a reply of the config before the last `clear` is not counted: it belongs to the old config
   let generation = 0;
 
-  function memo<R>(key: string, load: () => Promise<R>): Promise<R> {
+  function memo<R>(key: string, load: () => Promise<R>, scope: string | undefined): Promise<R> {
     const at = now();
+    const asked = generation;
+    // an answer is noted when the reply arrives, for the scope that asked; a reply of the config before a `clear` is not
+    const note = (promise: Promise<unknown>) => {
+      if (scope === undefined) return;
+      promise.then(
+        () => {
+          if (asked === generation) answers.set(scope, now());
+        },
+        () => {},
+      );
+    };
     const hit = entries.get(key);
-    if (hit && at - hit.at < ttlMs) return hit.promise as Promise<R>;
+    if (hit && at - hit.at < ttlMs) {
+      note(hit.promise);
+      return hit.promise as Promise<R>;
+    }
     // an expired entry that no call asks for again would stay for good: each miss sweeps them
     for (const [other, entry] of entries) if (at - entry.at >= ttlMs) entries.delete(other);
     const promise = load();
     entries.set(key, {at, promise});
-    const asked = generation;
+    note(promise);
     promise.then(
       () => {
         if (asked !== generation) return;
@@ -73,7 +94,7 @@ export function createStatisticsCache(
     return promise;
   }
 
-  return {
+  const view = (scope: string | undefined): StatisticsCache => ({
     statistics(ids, period, start, types, end) {
       const key = JSON.stringify([
         'statistics',
@@ -83,7 +104,7 @@ export function createStatisticsCache(
         [...types].sort(),
         end?.getTime() ?? null,
       ]);
-      return memo(key, () => api.statistics(ids, period, start, types, end));
+      return memo(key, () => api.statistics(ids, period, start, types, end), scope);
     },
     history(ids, start, options) {
       const {minimal, attributes, end} = options;
@@ -95,15 +116,19 @@ export function createStatisticsCache(
         attributes,
         end?.getTime() ?? null,
       ]);
-      return memo(key, () => api.history(ids, start, options));
+      return memo(key, () => api.history(ids, start, options), scope);
     },
     clear() {
       entries.clear();
+      answers.clear();
       lastLoadedAt = null;
       generation++;
     },
     get lastLoadedAt() {
       return lastLoadedAt;
     },
-  };
+    scoped: name => view(name),
+    answeredAt: name => answers.get(name) ?? null,
+  });
+  return view(undefined);
 }

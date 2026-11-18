@@ -29,18 +29,23 @@ test.describe('in the afternoon', () => {
     await expect(condition).toBeVisible();
   });
 
-  test('the clock has no line while the history is fresh, and says when it was updated once it is old', async ({
+  test('the clock has no line while the history is fresh; Home says when it was updated once the recorder has stayed down past the interval, and Lights, with no history, never does', async ({
     house,
   }) => {
     await house.root().locator('#gear').click(); // the settings' foot says the history has loaded
     await expect(house.root().locator('#setpop .ccv')).toContainText('statistics refreshed');
     await house.root().locator('#gear').click();
-    const clock = house.root().locator('#clock');
-    await expect(clock).toBeVisible();
-    await expect(clock.locator('small')).toHaveCount(0);
-    // the panels' own readers refresh the history by themselves, so the test hands the clock an old reply: half an hour before 2:00 pm
-    await clock.evaluate((el: HTMLElement & {at: number}) => (el.at = Date.now() - 30 * 60_000));
-    await expect(clock.locator('small')).toHaveText('Updated 1:30 pm');
+    const note = house.root().locator('#clock small');
+    await expect(house.root().locator('#clock')).toBeVisible();
+    await expect(note).toHaveCount(0);
+    await house.page.evaluate(() => window.house.failStatistics('all')); // Home asks again each minute once the 15 minutes are up, and is not answered
+    await house.clock.runFor(20 * 60_000);
+    await expect(note).toHaveText('Updated 2:00 pm');
+    await house.tab('lights'); // no history on this pane: nothing to say about it
+    await expect(note).toHaveCount(0);
+    // each failed read is logged by the reader that asked, and the fixture would fail on it
+    expect(house.errors.every(e => /^home-panel (stack|live|home) history .*the recorder is down/.test(e))).toBe(true);
+    house.errors.length = 0;
   });
 });
 
@@ -81,19 +86,6 @@ test.describe('the greeting belongs to Home', () => {
     await expect(house.root().locator('#gear')).toBeVisible();
   });
 
-  test('on a tablet the clock, the weather, the live pill and the gear sit in the same place on Home and on Lights', async ({
-    house,
-  }) => {
-    tabletOnly();
-    const parts = ['#clock', 'hp-weather-chip .wx', '#chips .attchip', '#gear'];
-    const boxes = () => Promise.all(parts.map(part => house.root().locator(part).boundingBox()));
-    await expect(pill(house)).toBeVisible(); // the car charges in this house
-    const onHome = await boxes();
-    await house.tab('lights');
-    await expect(pill(house)).toBeVisible();
-    expect(await boxes()).toEqual(onHome);
-  });
-
   test('on a phone the menu button and Settings share one row, and the title starts near the top', async ({house}) => {
     phoneOnly();
     await house.tab('lights');
@@ -109,3 +101,26 @@ test.describe('the greeting belongs to Home', () => {
     expect(title!.y).toBeLessThan(100);
   });
 });
+
+// the header never moves between tabs, at the tablet's two widths and in both languages
+for (const {lang, viewport} of [
+  {lang: 'en', viewport: {width: 1180, height: 820}},
+  {lang: 'fr', viewport: {width: 1024, height: 768}},
+] as const) {
+  test.describe(`the header's place, ${lang} at ${viewport.width}`, () => {
+    test.use({viewport, houseOpts: {cfg: FULL_CFG, lang, time: '2026-11-07T14:00:00-05:00'}});
+
+    test('the clock, the weather, the live pill and the gear sit in the same place on Home and on Lights', async ({
+      house,
+    }) => {
+      tabletOnly();
+      const parts = ['#clock', 'hp-weather-chip .wx', '#chips .attchip', '#gear'];
+      const boxes = () => Promise.all(parts.map(part => house.root().locator(part).boundingBox()));
+      await expect(pill(house)).toBeVisible(); // the car charges in this house
+      const onHome = await boxes();
+      await house.tab('lights');
+      await expect(pill(house)).toBeVisible();
+      expect(await boxes()).toEqual(onHome);
+    });
+  });
+}

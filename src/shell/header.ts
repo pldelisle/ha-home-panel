@@ -31,6 +31,7 @@ export class Header extends LitElement {
     live: {type: Boolean},
     liveKey: {type: Number},
     historyAt: {attribute: false},
+    historyAnsweredAt: {attribute: false},
     tab: {type: String},
     attention: {type: Number},
   };
@@ -42,8 +43,10 @@ export class Header extends LitElement {
   declare live: boolean;
   /** Counts the pill's changes: the weather chip is drawn anew at each, see `render`. */
   declare liveKey: number;
-  /** When the statistics cache last answered, null before its first reply: the clock's small line and the settings popup's version line. */
+  /** When the statistics cache last answered, null before its first reply: the settings popup's version line. */
   declare historyAt: number | null;
+  /** When the history the shown pane reads was last answered, null for a pane that reads none: the clock's small line asks it at each tick. */
+  declare historyAnsweredAt: () => number | null;
   /** The tab shown: the greeting, the date and Who's home are Home's, every other tab's title is the page's large title (#380). */
   declare tab: string;
   /** How many Status checks need attention: the greeting's line says it. */
@@ -59,6 +62,7 @@ export class Header extends LitElement {
     this.live = false;
     this.liveKey = 0;
     this.historyAt = null;
+    this.historyAnsweredAt = () => null;
     this.tab = 'home';
     this.attention = 0;
   }
@@ -103,7 +107,7 @@ export class Header extends LitElement {
           ${ico('gear', 20)}
         </button>
       </div>
-      <hp-clock-line class="clock" id="clock" .at=${this.historyAt}></hp-clock-line>
+      <hp-clock-line class="clock" id="clock" .answeredAt=${this.historyAnsweredAt}></hp-clock-line>
       <hp-status-popup
         class="pop"
         id="attpop"

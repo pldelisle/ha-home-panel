@@ -64,7 +64,7 @@
       const subscriptions = new Set();
       // the messages the panel sent through `callWS`, so a test can say how many times it asked the recorder
       const asked = [];
-      // a recorder that is down for one statistics period (`window.house.failStatistics`), answering with an error as the socket does
+      // a recorder that is down for one statistics period, or for all of them (`window.house.failStatistics`), answering with an error as the socket does
       let failing = null;
       // the pattern `window.house.failNext` set, until the next matching service call has been rejected
       let failingCall = null;
@@ -92,7 +92,8 @@
             ? {value: (window.SYSDATA || {})[m.key] ?? null}
             : m.type === 'frontend/set_system_data'
               ? (console.log('WS', JSON.stringify(m)), ((window.SYSDATA = window.SYSDATA || {})[m.key] = m.value), null)
-              : (asked.push(m), m.type === 'recorder/statistics_during_period' && m.period === failing)
+              : (asked.push(m),
+                  m.type === 'recorder/statistics_during_period' && (failing === 'all' || m.period === failing))
                 ? Promise.reject(new Error('the recorder is down'))
                 : answer(m),
         connection: {
