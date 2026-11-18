@@ -79,6 +79,7 @@ export const en = {
   'media.volumeDownPane': 'Vol −, volume down',
   'media.volumeUpPane': 'Vol +, volume up',
   'media.mute': 'Mute',
+  'media.playOrPause': 'Play or pause',
   'media.opensControls': 'Opens the controls',
   // the sheet a phone's tile opens: its Close button
   'media.close': 'Close',

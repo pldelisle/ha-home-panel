@@ -64,11 +64,20 @@ test.describe('the tablet', () => {
     await expect(box.getByText('Now on Netflix', {exact: true})).toBeVisible();
     await expect(box.locator('.tvscreen')).toHaveCount(0);
     await expect(power(house)).toHaveAttribute('aria-pressed', 'true');
-    // the play button says what a press does, and the card no longer explains a slider it does not have
-    await expect(box.getByRole('button', {name: 'Pause', exact: true})).toBeVisible();
+    // the test house's TV says only `on`, so its play button claims neither Play nor Pause; the card no longer explains a slider it does not have
+    await expect(box.getByRole('button', {name: 'Play or pause', exact: true})).toBeVisible();
     await expect(pane(house).getByText(/no slider/)).toHaveCount(0);
     await pod(house).getByRole('button', {name: 'Volume down'}).click();
     await expect(slider(house)).toHaveValue('30');
+  });
+
+  test("the television's play button says Pause while it plays and Play while it is paused", async ({house}) => {
+    await house.tab('media');
+    const box = house.root().locator('#pane-media hp-tv-box');
+    await house.setState(TV, {state: 'playing'});
+    await expect(box.getByRole('button', {name: 'Pause', exact: true})).toBeVisible();
+    await house.setState(TV, {state: 'paused'});
+    await expect(box.getByRole('button', {name: 'Play', exact: true})).toBeVisible();
   });
 
   test('the room name has a line to itself, whole, with the volume on a row under it', async ({house}) => {
@@ -243,7 +252,8 @@ test.describe('the phone', () => {
       /^media_player\.volume_set \{"entity_id":"media_player\.living_room_speaker","volume_level":0\.4\}$/,
     );
     await expect(house.root().getByRole('dialog'), 'a tap on the volume opens nothing').toHaveCount(0);
-    await expect(living.getByRole('button', {name: /Living room/}).getByRole('slider')).toHaveCount(0);
+    // the slider is a sibling of the row's button, never inside any button (nested-interactive)
+    expect(await slider.evaluate(el => el.closest('button'))).toBeNull();
   });
 
   test('draws a tile per player, and leaves the box and the pods to the sheets', async ({house}) => {

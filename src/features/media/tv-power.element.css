@@ -1,0 +1,41 @@
+/*
+ * <hp-tv-power>'s own rules: the television's power button, a toggle filled while the set is on, drawn once for the box and the phone's
+ * tile. 56 pt by default, above the 44 pt floor; the tile sets `--power-size` to 44px to sit level with a speaker's play button.
+ */
+/* no box of its own: the button is an item of its host's flex line */
+:host {
+  display: contents;
+}
+.power {
+  flex: none;
+  width: var(--power-size, 56px);
+  height: var(--power-size, 56px);
+  border: 0;
+  border-radius: 50%;
+  background: var(--ctl-bg);
+  box-shadow: var(--ctl-edge);
+  color: var(--fg);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+.power.on {
+  background: var(--c-home);
+  color: #fff;
+}
+.power:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.power:active {
+  transform: scale(0.97);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .power {
+    transition:
+      transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+      background-color 0.2s ease,
+      box-shadow 0.2s ease,
+      color 0.2s ease;
+  }
+}

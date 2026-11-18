@@ -32,9 +32,9 @@ export interface TvControl {
   label: string;
 }
 
-/** The television's play button: its glyph and name say what a press will do, as a speaker's do. */
+/** The television's play button: its glyph and name say what a press will do when the set says what it does, and the neutral play-or-pause glyph when it does not. */
 export interface TvPlayControl extends TvControl {
-  icon: 'play' | 'pause';
+  icon: 'play' | 'pause' | 'pp';
 }
 
 export interface TvView {
@@ -140,6 +140,13 @@ export interface MediaViewModel {
   labels: {speakers: string; noDevices: string; noSpeakers: string};
 }
 
+/** What a press of the television's play button will do: a set that says `playing` will pause, `paused` will play, and any other says neither. */
+function playPauseOf(playback: TvInputs['playback'], t: Translate): TvPlayControl {
+  if (playback === 'playing') return {text: null, label: t('media.pause'), icon: 'pause'};
+  if (playback === 'paused') return {text: null, label: t('media.play'), icon: 'play'};
+  return {text: null, label: t('media.playOrPause'), icon: 'pp'};
+}
+
 /** The television's view: a held `on` and `mute` replace what the player says until it agrees. */
 function tvView(tv: TvInputs, {t, overlay}: MediaModelDeps): TvView {
   const live = tv.state !== 'unavailable';
@@ -166,11 +173,7 @@ function tvView(tv: TvInputs, {t, overlay}: MediaModelDeps): TvView {
       volumeDown: {text: t('media.volumeDownShort'), label: t('media.volumeDownPane')},
       volumeUp: {text: t('media.volumeUpShort'), label: t('media.volumeUpPane')},
       mute: {text: t('media.mute'), label: t('media.mute')},
-      playPause: {
-        text: null,
-        label: t(tv.paused ? 'media.play' : 'media.pause'),
-        icon: tv.paused ? 'play' : 'pause',
-      },
+      playPause: playPauseOf(tv.playback, t),
     },
   };
 }

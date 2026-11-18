@@ -67,7 +67,7 @@ src/features/media/
   media-pane.ts            <hp-media-pane> (#217), its rules in media-pane.element.css
   tv-box.ts                <hp-tv-box> (the TV with its switch and controls; the pane's, #217, and the phone's sheet's, #218), tv-box.element.css
   speaker-pod.ts           <hp-speaker-pod> (#217), speaker-pod.element.css
-  media-tile.ts            <hp-media-tile> (the phone's tile with an embedded switch or play button)
+  media-tile.ts            <hp-media-tile> (the phone's tile with an embedded switch or play button). Since #424: a power button on both.
   scene-tiles.ts           <hp-scene-tiles> (Home, placed by the guest through the Home-card bridge, #219), scene-tiles.element.css
   styles.css               the rules two of the feature's elements share, if a later ticket has any (#217 has none: each element's are its own)
 src/ui/

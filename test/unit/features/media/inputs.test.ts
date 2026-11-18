@@ -25,7 +25,7 @@ describe('the test house', () => {
         source: 'Netflix',
         summarySource: 'Netflix',
         muted: false,
-        paused: false,
+        playback: 'unknown',
       },
       speakers: [
         {

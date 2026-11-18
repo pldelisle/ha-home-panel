@@ -45,7 +45,7 @@ const tv = (over: Partial<TvInputs> = {}): TvInputs => ({
   source: 'Netflix',
   summarySource: 'Netflix',
   muted: false,
-  paused: false,
+  playback: 'unknown',
   ...over,
 });
 
@@ -98,7 +98,7 @@ describe('the full test house, in English', () => {
         volumeDown: {text: 'Vol −', label: 'Vol −, volume down'},
         volumeUp: {text: 'Vol +', label: 'Vol +, volume up'},
         mute: {text: 'Mute', label: 'Mute'},
-        playPause: {text: null, label: 'Pause', icon: 'pause'},
+        playPause: {text: null, label: 'Play or pause', icon: 'pp'},
       },
     });
   });
@@ -254,9 +254,19 @@ describe('the recorded house', () => {
 
 describe('the television', () => {
   test('its play button shows what a press will do, with a label that says it', () => {
-    expect(tvOnly({paused: false}).tv?.controls.playPause).toEqual({text: null, label: 'Pause', icon: 'pause'});
-    expect(tvOnly({paused: true}).tv?.controls.playPause).toEqual({text: null, label: 'Play', icon: 'play'});
-    expect(tvOnly({paused: true}, 'fr').tv?.controls.playPause).toMatchObject({label: 'Lecture', icon: 'play'});
+    expect(tvOnly({playback: 'playing'}).tv?.controls.playPause).toEqual({text: null, label: 'Pause', icon: 'pause'});
+    expect(tvOnly({playback: 'paused'}).tv?.controls.playPause).toEqual({text: null, label: 'Play', icon: 'play'});
+    expect(tvOnly({playback: 'paused'}, 'fr').tv?.controls.playPause).toMatchObject({label: 'Lecture', icon: 'play'});
+    // a set that reports only `on` does not say what a press does, so the button does not claim to
+    expect(tvOnly({playback: 'unknown'}).tv?.controls.playPause).toEqual({
+      text: null,
+      label: 'Play or pause',
+      icon: 'pp',
+    });
+    expect(tvOnly({playback: 'unknown'}, 'fr').tv?.controls.playPause).toMatchObject({
+      label: 'Lecture ou pause',
+      icon: 'pp',
+    });
   });
 
   test('is off: no source, no "Now on" line, the tile and the box offering to turn it on', () => {

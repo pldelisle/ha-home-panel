@@ -76,6 +76,7 @@ export const fr: Record<MessageKey, string> = {
   'media.volumeUpShort': 'Vol +',
   'media.volumeDownPane': 'Vol −, baisser le volume',
   'media.volumeUpPane': 'Vol +, monter le volume',
+  'media.playOrPause': 'Lecture ou pause',
   'media.mute': 'Sourdine',
   // the legacy layer has no entry for this line, so the French pane reads it in English; the catalog says what the pane showed
   'media.opensControls': 'Ouvre les commandes',

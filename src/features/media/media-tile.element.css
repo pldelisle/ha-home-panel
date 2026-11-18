@@ -36,3 +36,7 @@
 hp-volume-control {
   --vol-well: var(--card2);
 }
+/* the power button sits level with a speaker's play button */
+hp-tv-power {
+  --power-size: 44px;
+}

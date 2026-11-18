@@ -144,6 +144,10 @@
       "was": "Sourdine"
     },
     {
+      "key": "media.playOrPause",
+      "was": "Lecture ou pause"
+    },
+    {
       "key": "media.opensControls",
       "was": "Ouvre les commandes"
     },
