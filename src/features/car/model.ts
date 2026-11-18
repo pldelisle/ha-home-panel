@@ -3,7 +3,7 @@
 // and delegates the bars to bars-geometry.ts and the schedule's words to schedule.ts. Each rule was the legacy panel's (`renderCarCard`, `carSheet`, `renderSessions`, `renderCarSheetLive`, which #251 and #252 deleted, and `schedText`, deleted in #269).
 // The pane's header and the card draw it since #251, the detail's blocks since #252; the controls' view is controls.ts (#253).
 // Must not: import the DOM, Lit or the shell, read the clock (the sessions' "today" is the history's), hold text the household reads (a catalog key says it), or build the controls' view (controls.ts does).
-import {capitalise, DASH, HOUR_MS, joined} from '../../core/figures.ts';
+import {capitalise, DASH, DAY_MS, HOUR_MS, joined} from '../../core/figures.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
 import {fixedOr, noonOf, whole, type Formatters} from '../../core/i18n/format.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
@@ -13,6 +13,8 @@ import {DEFAULT_KWH_PRICE, type Session, type WallboxInputs} from '../../provide
 import {barsGeometry, type BarsGeometry} from './bars-geometry.ts';
 import {DAILY_DAYS, monthlySessions, type CarHistoryData, type MonthlySessions} from './history.ts';
 import type {CarFeatureInputs} from './inputs.ts';
+import type {RangeTab} from '../../ui/range-tabs.ts';
+import {RANGES} from '../../ui/ranges.ts';
 
 /** What the model words and formats with, and what the detail's table is showing. */
 export interface CarModelDeps {
@@ -32,8 +34,17 @@ export type HistoryWindow = 'month' | 'year';
 /** The windows in the order their tabs show them; their words are the kit's range tabs' (`range.<window>.tab`). */
 export const HISTORY_WINDOWS: readonly HistoryWindow[] = ['month', 'year'];
 
-/** The month window reaches this far back from the history's own instant, which is as far as the sheet's bars go. */
-const MONTH_MS = DAILY_DAYS * 864e5;
+/** A tab's range that is one of the history sheet's windows. */
+export const isHistoryWindow = (range: string): range is HistoryWindow => HISTORY_WINDOWS.some(one => one === range);
+
+/**
+ * What each window means, in one table rather than a check per use: how far back from the history's own instant it reaches (the kit's month,
+ * `RANGES.month.days`; null for the whole year the history holds), the sentence when it holds no session, and whether the months' chart is drawn.
+ */
+const WINDOW_RULES: Record<HistoryWindow, {days: number | null; none: MessageKey; charted: boolean}> = {
+  month: {days: RANGES.month.days, none: 'car.sessions.noneMonth', charted: false},
+  year: {days: null, none: 'car.sessions.none', charted: true},
+};
 
 /** The table shows this many sessions, the latest, until "show all". */
 const LATEST_SESSIONS = 10;
@@ -179,7 +190,7 @@ export interface HistoryBlock {
   /** The sheet's button that closes it. */
   done: string;
   /** The tabs that choose what the sheet's sessions cover. */
-  windows: {range: HistoryWindow; label: string}[];
+  windows: RangeTab<HistoryWindow>[];
   /** `3 sessions · 39 kWh`; `''` until the history loads. */
   line: string;
   /** The year's estimated cost; `''` until the history loads. */
@@ -525,8 +536,9 @@ function sessionTiles(sessions: readonly Session[], price: number, cents: string
 }
 
 /** The sessions of the window: the year's are the history's, the month's are those that started within 30 days of the history's own instant (the model reads no clock). */
-function inWindow({at, sessions}: CarHistoryData, window: HistoryWindow): Session[] {
-  return window === 'year' ? sessions : sessions.filter(session => session.start >= at - MONTH_MS);
+function inWindow({at, sessions}: CarHistoryData, chosen: HistoryWindow): Session[] {
+  const {days} = WINDOW_RULES[chosen];
+  return days === null ? sessions : sessions.filter(session => session.start >= at - days * DAY_MS);
 }
 
 function sessionsOf(history: CarHistoryData | null, charger: WallboxInputs, deps: CarModelDeps): SessionsBlock {
@@ -545,9 +557,9 @@ function sessionsOf(history: CarHistoryData | null, charger: WallboxInputs, deps
     title,
     summary: sessions.length
       ? t('car.sessions.summary', {n: sessions.length, date: since, stop: stopAfter(since), cents})
-      : t(historyWindow === 'month' ? 'car.sessions.noneMonth' : 'car.sessions.none'),
+      : t(WINDOW_RULES[historyWindow].none),
     tiles: sessionTiles(sessions, price, cents, deps),
-    months: historyWindow === 'year' ? monthlySessions(sessions, fmt) : [],
+    months: WINDOW_RULES[historyWindow].charted ? monthlySessions(sessions, fmt) : [],
     columns,
     rows: shown.map(session => sessionRow(session, widest, price, deps)),
     toggle:

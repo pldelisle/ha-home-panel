@@ -11,7 +11,7 @@ import paneOwn from './car-pane.element.css?inline';
 import {carIds} from './ids.ts';
 import {readCarFeature, type CarFeatureInputs} from './inputs.ts';
 import {CarHistory, type CarHistoryHost} from './loader.ts';
-import {carModel, HISTORY_WINDOWS, type CarViewModel, type HistoryWindow} from './model.ts';
+import {carModel, isHistoryWindow, type CarViewModel, type HistoryWindow} from './model.ts';
 import {DETAIL_SHEET, HISTORY_SHEET} from './sheets.ts';
 import type {CarRef} from '../../providers/fordpass.ts';
 import type {StatisticsCache} from '../../core/statistics-cache.ts';
@@ -214,9 +214,8 @@ export class CarPane extends LitElement {
   private readonly onHistoryWindow = (e: CustomEvent<RangeChangeDetail<string>>): void => {
     e.stopPropagation();
     const {range} = e.detail;
-    const chosen = HISTORY_WINDOWS.find(window => window === range);
-    if (!chosen) return;
-    this.historyWindow = chosen;
+    if (!isHistoryWindow(range)) return;
+    this.historyWindow = range;
     this.requestUpdate();
   };
 

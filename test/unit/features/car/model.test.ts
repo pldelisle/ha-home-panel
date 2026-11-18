@@ -3,7 +3,7 @@
 import {describe, expect, test} from 'vitest';
 import type {CarHistoryData} from '../../../../src/features/car/history.ts';
 import {readCarFeature} from '../../../../src/features/car/inputs.ts';
-import {carModel, type CarModelDeps} from '../../../../src/features/car/model.ts';
+import {carModel, isHistoryWindow, type CarModelDeps} from '../../../../src/features/car/model.ts';
 import {FULL_CFG} from '../../../e2e/houses.ts';
 import {entity, fakeHass, type FakeHass} from '../../fake-hass.ts';
 import {depsOf, fullHouse, houseOf, recorded, storeOf, type Language} from '../media/support.ts';
@@ -436,7 +436,7 @@ describe('the history sheet’s window', () => {
     expect(modelOf(house, history({sessions: old}), {historyWindow: 'year'}).detail!.sessions.rows).toHaveLength(1);
     const french = modelOf(house, history({sessions: old}), {historyWindow: 'month', language: 'fr'});
     expect(french.detail!.sessions.summary).toBe('Aucune session de recharge au cours des 30 derniers jours.');
-    expect(french.detail!.history.windows.map(window => window.label)).toEqual(['Mois', 'Année']);
+    expect(french.detail!.history.windows.map(chosen => chosen.label)).toEqual(['Mois', 'Année']);
   });
 
   test('the table’s latest ten and its toggle follow the window', () => {
@@ -721,5 +721,11 @@ describe('the recorded house', () => {
       if (vm.detail) expect(vm.detail.title).toBeTruthy();
       else expect(vm.none).toBeTruthy();
     }
+  });
+});
+
+describe('isHistoryWindow', () => {
+  test('is a window of the sheet for month and year, and no other tab', () => {
+    expect(['month', 'year', 'week', 'day', ''].map(isHistoryWindow)).toEqual([true, true, false, false, false]);
   });
 });
