@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.17.0
+
+- The Energy tab's Now view can read a smoothed meter, `grid_power_live`, so baseboard thermostats that report their average power no longer outrun a meter sampled once a minute; the history keeps reading `grid_power`. The "Devices report more than the meter" note now sits on two lines from the card's left edge instead of running off it.
+- A heat pump that sets its side-to-side louvers apart (`swing_horizontal_modes`, as FGLair does) shows two louver selects, Vertical and Horizontal, each with its own positions ("Swing", "Position 7"); a unit with one list of positions keeps its one select.
+- The climate archive stops paging on the last page, accepts an unquoted `climate_station` number, and dates its source line where the archive's rows end.
+- Segmented controls centre their words in each segment, so the chosen one's raised box frames its label evenly (the heat pump's Mode, Fan and Preset, Air, Car and the settings).
+
 ## 2.16.1
 
 - The sidebar and the phone's tab bar show every section in grey and the open one in blue, icon and label alike.
