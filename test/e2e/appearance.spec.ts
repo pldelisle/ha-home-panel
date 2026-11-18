@@ -4,27 +4,21 @@
 import type {Page} from '@playwright/test';
 import {test, expect, tabletOnly, type House} from './fixtures';
 import {AFTERNOON, FULL_CFG} from './houses';
+import {openSettings, openSubmenu, popup, setDesign, setTextSize, setTheme} from './settings-controls';
 
 test.use({houseOpts: {cfg: FULL_CFG, time: AFTERNOON}});
 
 const app = (house: House) => house.root().locator('.app');
-const popup = (house: House) => house.root().locator('hp-settings-popup');
 // the popup is where a person changes a setting; the clicks are dispatched because on the phone the bar covers part of it
 async function choose(house: House, selector: string) {
-  const pop = house.root().locator('#setpop');
-  if (await pop.isHidden()) await house.root().locator('#gear').click();
-  await expect(pop).toBeVisible();
+  await openSettings(house);
   await popup(house).locator(selector).dispatchEvent('click');
 }
-// the appearance control's three segments, by their words
-async function chooseTheme(house: House, name: 'Light' | 'Dark' | 'Auto') {
-  const pop = house.root().locator('#setpop');
-  if (await pop.isHidden()) await house.root().locator('#gear').click();
-  await expect(pop).toBeVisible();
-  await themeRadio(house, name).dispatchEvent('click');
-}
-const themeRadio = (house: House, name: string) =>
-  popup(house).getByRole('radiogroup', {name: 'Appearance'}).getByRole('radio', {name, exact: true});
+// the appearance module: the Auto switch in its submenu, the round icon that flips what shows
+const chooseTheme = setTheme;
+// what the round icon says: pressed when the panel is dark
+const darkIcon = (house: House) => popup(house).locator('[data-toggle-theme]');
+const autoSwitch = (house: House) => popup(house).getByRole('switch', {name: 'Auto'});
 const pageBackground = (page: Page) =>
   page.evaluate(() => ({
     html: document.documentElement.style.backgroundColor,
@@ -33,13 +27,13 @@ const pageBackground = (page: Page) =>
 
 test('the popup switches between dark and light, and the choice stays', async ({house}) => {
   await expect(app(house)).toHaveAttribute('data-theme', 'light');
-  await chooseTheme(house, 'Dark');
+  await chooseTheme(house, 'dark');
   await expect(app(house)).toHaveAttribute('data-theme', 'dark');
-  await expect(themeRadio(house, 'Dark')).toBeChecked();
+  await expect(darkIcon(house)).toHaveAttribute('aria-pressed', 'true');
   expect(await house.page.evaluate(() => localStorage.getItem('home-panel-theme'))).toBe('dark');
-  await chooseTheme(house, 'Light');
+  await chooseTheme(house, 'light');
   await expect(app(house)).toHaveAttribute('data-theme', 'light');
-  await expect(themeRadio(house, 'Light')).toBeChecked();
+  await expect(darkIcon(house)).toHaveAttribute('aria-pressed', 'false');
 });
 
 // Auto is the device's own light or dark setting (`prefers-color-scheme`), as it changes. The sun has no part in the
@@ -70,13 +64,14 @@ test.describe('the theme on auto', () => {
   });
 
   test('leaves an open settings popup open, still on Auto, when the device flips', async ({house}) => {
-    await chooseTheme(house, 'Auto');
-    const auto = themeRadio(house, 'Auto');
-    await expect(auto).toBeChecked();
+    await chooseTheme(house, 'auto');
+    await openSubmenu(house, 'appearance');
+    const auto = autoSwitch(house);
+    await expect(auto).toHaveAttribute('aria-checked', 'true');
     await house.page.emulateMedia({colorScheme: 'dark'});
     await expect(app(house)).toHaveAttribute('data-theme', 'dark');
     await expect(house.root().locator('#setpop')).toBeVisible();
-    await expect(auto).toBeChecked();
+    await expect(auto).toHaveAttribute('aria-checked', 'true');
     await house.page.emulateMedia({colorScheme: 'light'});
     await expect(app(house)).toHaveAttribute('data-theme', 'light');
   });
@@ -183,7 +178,7 @@ test.describe('the first theme shown', () => {
 });
 
 test('a redraw of the guest keeps the theme: the language changes and the panel is still dark', async ({house}) => {
-  await chooseTheme(house, 'Dark');
+  await chooseTheme(house, 'dark');
   await expect(app(house)).toHaveAttribute('data-theme', 'dark');
   await house.setLanguage('fr');
   await expect(house.root().locator('#hello')).not.toBeEmpty();
@@ -204,7 +199,7 @@ test('the page takes the colour of the wallpaper in force: it changes with the t
   const light = await wallpaperBase();
   expect(light.base).not.toBe('');
   expect(light.html).toBe(light.base);
-  await chooseTheme(house, 'Dark');
+  await chooseTheme(house, 'dark');
   await expect(app(house)).toHaveAttribute('data-theme', 'dark');
   await expect.poll(async () => (await wallpaperBase()).html === (await wallpaperBase()).base).toBe(true);
   const dark = await wallpaperBase();
@@ -236,12 +231,10 @@ test('the glass choices set the wallpaper and the glass class; None takes both a
   await expect(app(house)).not.toHaveAttribute('data-wp', /.*/);
 });
 
-const openPopup = async (house: House) => {
-  await house.root().locator('#gear').click();
-  await expect(house.root().locator('#setpop')).toBeVisible();
-};
-const designRadio = (house: House, name: 'Liquid Glass' | 'Material') =>
-  popup(house).getByRole('radiogroup', {name: 'Design'}).getByRole('radio', {name, exact: true});
+const openPopup = openSettings;
+// Liquid Glass or Material, through the Design submenu (which is the same in both designs)
+const chooseDesign = (house: House, name: 'Liquid Glass' | 'Material') =>
+  setDesign(house, name === 'Material' ? 'material' : 'apple');
 
 test('Material turns glass off and recolours the frame from the seed; Apple takes it all back', async ({house}) => {
   const glass = popup(house).locator('[data-gl]');
@@ -250,7 +243,7 @@ test('Material turns glass off and recolours the frame from the seed; Apple take
   expect(await app(house).evaluate(e => (e as HTMLElement).style.getPropertyValue('--bg'))).toBe('');
   await choose(house, '[data-gl="lake"]');
 
-  await designRadio(house, 'Material').dispatchEvent('click');
+  await chooseDesign(house, 'Material');
   await expect(app(house)).toHaveAttribute('data-design', 'material');
   await expect(app(house)).not.toHaveClass(/\bgl\b/);
   await expect(app(house)).not.toHaveAttribute('data-wp', /.*/);
@@ -262,10 +255,10 @@ test('Material turns glass off and recolours the frame from the seed; Apple take
   expect(await house.page.evaluate(() => localStorage.getItem('home-panel-design'))).toBe('material');
   expect(await house.page.evaluate(() => localStorage.getItem('home-panel-glass'))).toBe('lake'); // kept for the way back
 
-  await chooseTheme(house, 'Dark');
+  await chooseTheme(house, 'dark');
   await expect(app(house)).toHaveCSS('--bg', '#111418'); // surface, dark
 
-  await designRadio(house, 'Liquid Glass').dispatchEvent('click');
+  await chooseDesign(house, 'Liquid Glass');
   await expect(app(house)).toHaveAttribute('data-design', 'apple');
   await expect(app(house)).toHaveClass(/\bgl\b/);
   await expect(app(house)).toHaveAttribute('data-wp', 'lake');
@@ -279,7 +272,7 @@ test('under Material the seven seeds replace the wallpapers: a seed recolours th
   house,
 }) => {
   await openPopup(house);
-  await designRadio(house, 'Material').dispatchEvent('click');
+  await chooseDesign(house, 'Material');
   const seeds = popup(house).locator('.seed');
   await expect(seeds).toHaveCount(7);
   await expect(popup(house).locator('[data-seed="sky"]')).toHaveCount(0); // Sky has no seed: the wallpapers are not here
@@ -297,14 +290,14 @@ test('under Material the seven seeds replace the wallpapers: a seed recolours th
   await expect(popup(house).locator('.seed[aria-checked="true"]')).toHaveAttribute('data-seed', 'ember');
   await expect(app(house)).toHaveCSS('--md-primary', '#8f4c37');
 
-  await designRadio(house, 'Liquid Glass').dispatchEvent('click');
-  await designRadio(house, 'Material').dispatchEvent('click');
+  await chooseDesign(house, 'Liquid Glass');
+  await chooseDesign(house, 'Material');
   await expect(popup(house).locator('.seed[aria-checked="true"]')).toHaveAttribute('data-seed', 'ember');
 });
 
 test('More contrast builds the Material scheme at contrast level 1', async ({house}) => {
   await openPopup(house);
-  await designRadio(house, 'Material').dispatchEvent('click');
+  await chooseDesign(house, 'Material');
   await expect(app(house)).toHaveCSS('--md-primary', '#39608f');
   await house.page.emulateMedia({contrast: 'more'});
   await expect(app(house)).toHaveCSS('--md-primary', '#002d54'); // light-hc in the design system
@@ -340,13 +333,13 @@ test('Sky turns to Ember in the last hour of daylight with no change in the hous
 
 test('the text sizes scale the type, and Larger marks the frame as large text', async ({house}) => {
   await expect(app(house)).toHaveCSS('--tx', '1.000');
-  await choose(house, '[data-tx="larger"]');
+  await setTextSize(house, 'larger');
   await expect(app(house)).toHaveCSS('--tx', '1.300');
   await expect(app(house)).toHaveClass(/\btxl\b/);
-  await choose(house, '[data-tx="smaller"]');
+  await setTextSize(house, 'smaller');
   await expect(app(house)).toHaveCSS('--tx', '0.900');
   await expect(app(house)).not.toHaveClass(/\btxl\b/);
-  await choose(house, '[data-tx="auto"]');
+  await setTextSize(house, 'auto');
   await expect(app(house)).toHaveCSS('--tx', '1.000'); // the probe reads the default body size
 });
 

@@ -65,6 +65,7 @@ export const ICONS = {
   lsun: svg`<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>`,
   lpow: svg`<path d="M12 3v8M6.4 6.6a8 8 0 1 0 11.2 0"/>`,
   lsnow: svg`<path d="M12 2v20M4 7l16 10M20 7 4 17"/>`,
+  half: svg`<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/>`,
   lflame: svg`<path d="M12 22a7 7 0 0 0 7-7c0-4-3-6-4-10-2 2-3 4-3 6-1-1-2-2-2-4-2 2-5 5-5 8a7 7 0 0 0 7 7z"/>`,
 } satisfies Record<string, SVGTemplateResult>;
 

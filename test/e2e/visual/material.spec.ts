@@ -8,6 +8,7 @@ import {test, expect, fontsLoaded, type House} from '../fixtures';
 import {AFTERNOON, FULL_CFG, KEEP_ENGLISH_NAMES, VIEWPORTS} from '../houses';
 import {OFFICE_TILE} from '../lights';
 import {openFrontDoor, openPopup, stopCharging} from '../live';
+import {openSubmenu} from '../settings-controls';
 
 // every screenshot shows the bundled Manrope, never the fallback it swaps from (font-display: swap)
 test.beforeEach(({house}) => fontsLoaded(house));
@@ -80,6 +81,28 @@ for (const theme of ['light', 'dark'] as const) {
     });
   });
 }
+
+// the Control Center's submenus in Material (#495): Appearance with its Auto switch, Text size with its slider (Auto off, so it shows as it works)
+test.describe('tablet, light, settings submenus', () => {
+  test.use({
+    viewport: VIEWPORTS.tablet,
+    houseOpts: {cfg: FULL_CFG, theme: 'light', design: 'material', time: AFTERNOON, frozen: true},
+  });
+
+  for (const menu of ['appearance', 'text'] as const)
+    test(`${menu} submenu in Material`, async ({house}) => {
+      await openSubmenu(house, menu);
+      if (menu === 'text') {
+        await house.root().locator('hp-settings-popup').getByRole('switch', {name: 'Auto'}).dispatchEvent('click');
+        await expect(house.root().locator('hp-settings-popup').getByRole('slider')).toBeEnabled();
+      }
+      await settled(house);
+      await expect(house.page).toHaveScreenshot(`material-settings-${menu}-tablet-light-en.png`, {
+        ...SHOT,
+        mask: [house.root().locator('#setpop .ccv')],
+      });
+    });
+});
 
 test.describe('tablet, light, Meadow', () => {
   test.use({

@@ -128,6 +128,10 @@ export const en = {
   'settings.theme.light': 'Light',
   'settings.theme.auto': 'Auto',
   'settings.theme.autoCaption': 'Follows the device',
+  // the Appearance module's line under its title when Auto is on: what the device shows now ({state} is Light or Dark)
+  'settings.theme.autoState': 'Auto · {state}',
+  // the back button of a submenu inside the popup (Control Center's expanded modules)
+  'settings.back': 'Back',
   'settings.design.title': 'Design',
   'settings.design.apple': 'Liquid Glass',
   'settings.design.material': 'Material',
@@ -135,7 +139,6 @@ export const en = {
   'settings.seed.title': 'Colour',
   'settings.seed.house': 'House',
   'settings.sleepNow': 'Sleep now',
-  'settings.sleepNowCaption': 'Shows the clock until you touch the screen',
   'settings.text.title': 'Text size',
   'settings.text.smaller': 'Smaller',
   'settings.text.auto': 'Auto',
