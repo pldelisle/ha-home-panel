@@ -1,4 +1,4 @@
-// The per-browser settings (theme, text size, wallpaper, glass level, last tab) behind a storage parameter.
+// The per-browser settings (theme, text size, wallpaper, glass level, last tab, design) behind a storage parameter.
 // Pattern: a Storage-like parameter (accept dependencies, don't create them: Ousterhout, A Philosophy of Software
 // Design); parse at the edge, so a bad value becomes the default (King, Parse, don't validate).
 // Observer (Gamma et al., Design Patterns): `subscribe` tells a listener after each write, so what reads a setting need not poll.
@@ -19,6 +19,8 @@ export interface Settings {
   /** With glass on, the cards are opaque (`solid`, Apple's rule) or glass too (`glass`, the panel's older look). */
   cards: string;
   tab: string;
+  /** The design language: `apple` (the default, glass) or `material` (a tonal palette, no glass); anything else parses to `apple`. */
+  design: string;
 }
 
 export interface PanelSettings {
@@ -35,6 +37,7 @@ const KEYS: Record<keyof Settings, string> = {
   glassLevel: 'home-panel-glass-t',
   cards: 'home-panel-cards',
   tab: 'home-panel-tab',
+  design: 'home-panel-design',
 };
 const VERSION_KEY = 'home-panel-settings';
 const VERSION = '1';
@@ -64,6 +67,7 @@ export function createSettings(storage: KeyValueStorage): PanelSettings {
       glassLevel: glassLevel(),
       cards: read('cards') === 'glass' ? 'glass' : 'solid',
       tab: read('tab') || 'home',
+      design: read('design') === 'material' ? 'material' : 'apple',
     }),
 
     set(key, value) {

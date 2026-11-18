@@ -1,7 +1,7 @@
-// <hp-settings-popup>: the Control Center popup behind the gear (appearance, Sleep now, text size, glass, transparency), in its own shadow root.
+// <hp-settings-popup>: the Control Center popup behind the gear (appearance, design, Sleep now, text size, glass, transparency), in its own shadow root.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over the settings module, an observer of it (Gamma et al.); a choice is a
 // `settings.set` and the shell's AppearanceController applies it; "Sleep now" and, on the phone, Done go up as events (Lit docs, Events).
-// Appearance is the kit's <hp-seg> (HIG, Segmented controls); a glass is a colour, so it is a swatch with its name and a check (HIG, Color).
+// Under Material the glass choices are not drawn (glass is Apple's). Appearance and Design are the kit's <hp-seg> (HIG, Segmented controls); a glass is a colour, so it is a swatch with its name and a check (HIG, Color).
 // Its words are catalog messages: the French rewrite layer cannot see inside this root (ADR 0019, ADR 0013).
 // Must not: apply a setting, open or close itself (its container is the shell's, Done only asks), or know the idle timer.
 import {ContextConsumer} from '@lit/context';
@@ -24,6 +24,10 @@ const THEMES: readonly (readonly [string, MessageKey])[] = [
   ['light', 'settings.theme.light'],
   ['dark', 'settings.theme.dark'],
   ['auto', 'settings.theme.auto'],
+];
+const DESIGNS: readonly (readonly [string, MessageKey])[] = [
+  ['apple', 'settings.design.apple'],
+  ['material', 'settings.design.material'],
 ];
 const TEXT_SIZES: readonly (readonly [string, MessageKey])[] = [
   ['smaller', 'settings.text.smaller'],
@@ -78,11 +82,12 @@ export class SettingsPopup extends LitElement {
 
   protected override render() {
     const {t} = this.store.store;
-    const {theme, text, glass, glassLevel, cards} = this.settingsNow();
+    const {theme, text, glass, glassLevel, cards, design} = this.settingsNow();
     // one tab stop in the group (the chosen swatch), the arrow keys move within it, as in the kit's <hp-seg>
     const glassStop = tabStop(GLASSES.map(([value]) => ({checked: value === glass})));
     const phone = this.appearance.value?.compact === true;
     const themes: SegOption[] = THEMES.map(([value, key]) => ({value, label: t(key)}));
+    const designs: SegOption[] = DESIGNS.map(([value, key]) => ({value, label: t(key)}));
     // the foot of the popup: the version, and that the charts' history is kept fresh once it has loaded
     const foot = t(this.statistics ? 'settings.versionStatistics' : 'settings.version', {version: this.version});
     return html`<div class="cc" @click=${this.onClick}>
@@ -99,6 +104,15 @@ export class SettingsPopup extends LitElement {
         <hp-seg .options=${themes} .value=${theme} .label=${t('settings.theme.title')} @change=${this.onTheme}></hp-seg>
         ${theme === 'auto' ? html`<small class="ccn">${t('settings.theme.autoCaption')}</small>` : nothing}
       </div>
+      <div class="cct wide">
+        <div class="ccl">${t('settings.design.title')}</div>
+        <hp-seg
+          .options=${designs}
+          .value=${design}
+          .label=${t('settings.design.title')}
+          @change=${this.onDesign}
+        ></hp-seg>
+      </div>
       <button type="button" class="cct tog wide sleepnow" data-sleep="1">
         <span class="ccic">${ico('moon', 22)}</span
         ><span class="sltx"><b>${t('settings.sleepNow')}</b><small>${t('settings.sleepNowCaption')}</small></span>
@@ -114,47 +128,56 @@ export class SettingsPopup extends LitElement {
           )}
         </div>
       </div>
-      <div class="cct wide">
-        <div class="ccl">${t('settings.glass.title')}</div>
-        <div class="swatches" role="radiogroup" aria-label=${t('settings.glass.title')} @keydown=${this.onGlassKey}>
-          ${GLASSES.map(
-            ([value, key], index) =>
-              html`<button
-                type="button"
-                class="sw"
-                role="radio"
-                aria-checked=${value === glass}
-                tabindex=${index === glassStop ? 0 : -1}
-                data-gl=${value}
+      ${
+        design === 'material'
+          ? nothing // glass is the Apple design's: no swatches, slider or switch; the stored choice waits for the way back
+          : html` <div class="cct wide">
+              <div class="ccl">${t('settings.glass.title')}</div>
+              <div
+                class="swatches"
+                role="radiogroup"
+                aria-label=${t('settings.glass.title')}
+                @keydown=${this.onGlassKey}
               >
-                <span class="swc" aria-hidden="true">${value === glass ? ico('check', 18) : nothing}</span>
-                <span class="swn">${t(key)}</span>
-              </button>`,
-          )}
-        </div>
-        <div class="gtrow">
-          <span>${t('settings.transparency.solid')}</span
-          ><input
-            type="range"
-            class="gtrange"
-            min="0"
-            max="100"
-            step="1"
-            .value=${String(glassLevel)}
-            style=${`--p:${glassLevel}%`}
-            aria-label=${t('settings.transparency')}
-            @input=${this.onRange}
-          /><span>${t('settings.transparency.clear')}</span>
-        </div>
-        <div class="gcrow">
-          <span>${t('settings.glassCards')}</span>
-          <hp-switch
-            .checked=${cards === 'glass'}
-            .label=${t('settings.glassCards')}
-            @change=${this.onCards}
-          ></hp-switch>
-        </div>
-      </div>
+                ${GLASSES.map(
+                  ([value, key], index) =>
+                    html`<button
+                      type="button"
+                      class="sw"
+                      role="radio"
+                      aria-checked=${value === glass}
+                      tabindex=${index === glassStop ? 0 : -1}
+                      data-gl=${value}
+                    >
+                      <span class="swc" aria-hidden="true">${value === glass ? ico('check', 18) : nothing}</span>
+                      <span class="swn">${t(key)}</span>
+                    </button>`,
+                )}
+              </div>
+              <div class="gtrow">
+                <span>${t('settings.transparency.solid')}</span
+                ><input
+                  type="range"
+                  class="gtrange"
+                  min="0"
+                  max="100"
+                  step="1"
+                  .value=${String(glassLevel)}
+                  style=${`--p:${glassLevel}%`}
+                  aria-label=${t('settings.transparency')}
+                  @input=${this.onRange}
+                /><span>${t('settings.transparency.clear')}</span>
+              </div>
+              <div class="gcrow">
+                <span>${t('settings.glassCards')}</span>
+                <hp-switch
+                  .checked=${cards === 'glass'}
+                  .label=${t('settings.glassCards')}
+                  @change=${this.onCards}
+                ></hp-switch>
+              </div>
+            </div>`
+      }
       <div class="ccv">${foot}</div>
     </div>`;
   }
@@ -163,6 +186,11 @@ export class SettingsPopup extends LitElement {
     if (!this.source) throw new Error('SettingsPopup: the settings arrive by context when the popup connects.');
     return this.source.get();
   }
+
+  // Apple or Material: the setting is the choice itself, and the shell's controller redraws the frame from it
+  private readonly onDesign = (e: CustomEvent<SegChangeDetail>): void => {
+    this.source?.set('design', e.detail.value);
+  };
 
   // Light, Dark or Auto: the setting is the choice itself, and the theme in force follows from it (the shell's controller)
   private readonly onTheme = (e: CustomEvent<SegChangeDetail>): void => {

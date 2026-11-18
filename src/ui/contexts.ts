@@ -40,6 +40,8 @@ export const forecastContext = createContext<readonly ForecastEntry[]>(Symbol('h
 export interface Appearance {
   /** Dark or light, from the setting, the device and the sun. */
   readonly theme: 'light' | 'dark';
+  /** The design language: Apple's (glass, the default) or Material's (a tonal palette from a seed, no glass); ADR 0037. */
+  readonly design: 'apple' | 'material';
   /** Under 600 px wide: the phone's shape. */
   readonly compact: boolean;
   /** Home Assistant's sidebar is collapsed. */

@@ -473,6 +473,7 @@ export class HomePanel extends LitElement {
       id="app"
       lang=${lang}
       data-theme=${a.theme}
+      data-design=${a.design}
       data-wp=${ifDefined(a.glass.wallpaper ?? undefined)}
       @sheet-request=${this.onSheetRequest}
       @sheet-dismiss=${this.onSheetDismiss}

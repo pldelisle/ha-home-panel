@@ -1,6 +1,6 @@
 // A controller that reflects the panel's appearance onto its host as attributes, so the element's CSS can test them.
 // Pattern: Lit reactive controller over a context consumer (Lit docs, Reactive Controllers and Context; the W3C Community
-// Group's Context Protocol): `data-theme`, `compact`, `narrow`, `glass` and `large-text` on the host, `:host([compact]) .x` in its styles.
+// Group's Context Protocol): `data-theme`, `design`, `compact`, `narrow`, `glass` and `large-text` on the host, `:host([compact]) .x` in its styles.
 // Must not: read the settings or a media query (the shell's controller does), style anything, or touch the host's shadow root.
 import {ContextConsumer} from '@lit/context';
 import type {ReactiveControllerHost} from 'lit';
@@ -27,6 +27,7 @@ export class AppearanceConsumer {
   private reflect(a: Appearance): void {
     const {host} = this;
     host.setAttribute('data-theme', a.theme);
+    host.setAttribute('design', a.design);
     host.toggleAttribute('compact', a.compact);
     host.toggleAttribute('narrow', a.narrow);
     host.toggleAttribute('glass', a.glass.on);

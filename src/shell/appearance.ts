@@ -1,7 +1,7 @@
-// AppearanceController: the shell's theme, glass, text size, document background and `live` class, gathered into one frozen Appearance.
+// AppearanceController: the shell's theme, design, glass, text size, document background and `live` class, gathered into one frozen Appearance.
 // Pattern: Lit reactive controller (Lit docs, Reactive Controllers) wrapping what were six methods of the legacy class; it
 // provides its value by context (ADR 0018, after the Context Protocol) and the pure rules of appearance-rules.ts decide.
-// Must not: read localStorage (the settings module does), hold a rule (the rules do), or write into the frame.
+// Must not: read localStorage (the settings module does), hold a rule (the rules do), or write into the frame beyond `.app`'s inline custom properties.
 import {ContextProvider} from '@lit/context';
 import type {LitElement, ReactiveController} from 'lit';
 import {createFormatters} from '../core/i18n/format.ts';
@@ -12,6 +12,7 @@ import {sunTimes} from '../core/sun.ts';
 import {appearanceContext, type Appearance} from '../ui/contexts.ts';
 import type {MediaQueryController} from '../ui/controllers/media-query.ts';
 import {StoreController} from '../ui/controllers/store-controller.ts';
+import {DEFAULT_SEED, materialScheme} from './material-scheme.ts';
 import {glassDensity, glassWallpaper, isDark, isLargeText, textScale} from './appearance-rules.ts';
 import {claimDocument, type DocumentClaim} from './document-background.ts';
 import {skyWallpaper, type SunDay} from './sky.ts';
@@ -39,6 +40,7 @@ const NO_SUN: SunDay = {rise: null, set: null, dawn: null, dusk: null};
 
 const same = (a: Appearance, b: Appearance): boolean =>
   a.theme === b.theme &&
+  a.design === b.design &&
   a.compact === b.compact &&
   a.narrow === b.narrow &&
   a.glass.wallpaper === b.glass.wallpaper &&
@@ -59,6 +61,8 @@ export class AppearanceController implements ReactiveController {
   private staleProbe = true;
   private applied: Appearance | undefined;
   private backgroundKey: string | undefined;
+  private schemeKey: string | undefined;
+  private schemeNames: string[] = []; // the custom properties the Material scheme has written on the frame
   private background: DocumentClaim | undefined;
   private stops: (() => void)[] = [];
   private clock: ReturnType<typeof setInterval> | undefined;
@@ -100,6 +104,7 @@ export class AppearanceController implements ReactiveController {
     // what the document was given is gone if the panel was off the page; and a setting or the device may have moved
     this.applied = undefined;
     this.backgroundKey = undefined;
+    this.schemeKey = undefined;
     this.background = claimDocument(document, this.host);
     this.refresh();
     this.host.requestUpdate();
@@ -131,10 +136,23 @@ export class AppearanceController implements ReactiveController {
     this.applied = a;
     app.style.setProperty('--g-m', a.glass.density.toFixed(3));
     app.style.setProperty('--tx', a.textScale.toFixed(3));
+    this.paintScheme(app, a);
     const key = `${a.theme}/${a.glass.wallpaper}`;
     if (key === this.backgroundKey) return;
     this.backgroundKey = key;
     this.background?.paint(this.backgroundColour(app));
+  }
+
+  // Under Material the frame's colour tokens are the scheme's, written inline so they win over the stylesheet's (Increase Contrast
+  // included: its rules are written without !important); under Apple none is written, and what Material wrote is taken away.
+  private paintScheme(app: HTMLElement, a: Appearance): void {
+    const key = `${a.design}/${a.theme}`;
+    if (key === this.schemeKey) return;
+    this.schemeKey = key;
+    const tokens = a.design === 'material' ? materialScheme(DEFAULT_SEED, a.theme === 'dark', 0) : {};
+    for (const name of this.schemeNames) if (!(name in tokens)) app.style.removeProperty(name);
+    for (const [name, value] of Object.entries(tokens)) app.style.setProperty(name, value);
+    this.schemeNames = Object.keys(tokens);
   }
 
   // Lit makes the root when the host first connects, so the controller built in the host's constructor finds none yet
@@ -160,10 +178,12 @@ export class AppearanceController implements ReactiveController {
     const {settings, compact, dark, reducedTransparency} = this.options;
     const set = settings.get();
     if (this.staleProbe) this.readProbe();
-    const wallpaper = glassWallpaper(set.glass, () => this.sky());
+    const design = set.design === 'material' ? 'material' : 'apple';
+    const wallpaper = glassWallpaper(set.glass, () => this.sky(), design);
     const scale = textScale(set.text, this.probePx);
     return Object.freeze({
       theme: isDark(set.theme, dark.matches) ? 'dark' : 'light',
+      design,
       compact: compact.matches,
       narrow: Boolean(this.host.narrow), // Lit sets the property after the controllers are built
       glass: Object.freeze({

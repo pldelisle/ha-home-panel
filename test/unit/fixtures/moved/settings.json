@@ -25,6 +25,15 @@
       "was": "Suit l'appareil"
     },
     {
+      "key": "settings.design.title"
+    },
+    {
+      "key": "settings.design.apple"
+    },
+    {
+      "key": "settings.design.material"
+    },
+    {
       "key": "settings.sleepNow",
       "was": "Dormir maintenant"
     },

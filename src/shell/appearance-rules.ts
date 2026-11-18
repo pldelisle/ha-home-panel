@@ -1,4 +1,4 @@
-// The appearance rules as pure functions: dark or light, which wallpaper, how dense the glass, how large the text.
+// The appearance rules as pure functions: dark or light, which wallpaper (none under Material), how dense the glass, how large the text.
 // Pattern: functional core (Bernhardt, Boundaries): the controller gathers the settings, the media queries, the sun and
 // the probe; these decide. They are the legacy class's `applyTheme`, `applyGlass` and `applyText` with the reads taken out.
 // Must not: read a setting, a media query, the store or the DOM, or return anything but plain values.
@@ -29,9 +29,12 @@ export function isDark(theme: string, deviceDark: boolean): boolean {
   return theme === 'dark' || (theme === 'auto' && deviceDark);
 }
 
-/** The wallpaper the Glass setting shows, or null for glass off; `sky` asks for the sky's pick only when it is chosen. */
-export function glassWallpaper(glass: string, sky: () => string): string | null {
-  if (!WALLPAPERS.includes(glass)) return null;
+/**
+ * The wallpaper the Glass setting shows, or null for glass off; `sky` asks for the sky's pick only when it is chosen.
+ * Glass is the Apple design's: under Material there is none, whatever the setting holds (which is kept for the way back).
+ */
+export function glassWallpaper(glass: string, sky: () => string, design = 'apple'): string | null {
+  if (design === 'material' || !WALLPAPERS.includes(glass)) return null;
   return glass === 'sky' ? sky() : glass;
 }
 
