@@ -110,6 +110,7 @@
   --shape-sheet: 30px;
   --shape-dialog: 26px;
   --shape-nav-item: 24px;
+  --shape-nav-rail: 22px;
   /* a card, and the stat tile; a card that sits inside a sheet or a compact pane takes the smaller radius */
   --shape-card: 22px;
   --shape-stat-tile: 20px;
@@ -359,6 +360,7 @@
   --shape-sheet: var(--shape-extra-large);
   --shape-dialog: var(--shape-extra-large);
   --shape-nav-item: var(--shape-full);
+  --shape-nav-rail: var(--shape-large);
   --shape-card: var(--shape-extra-large);
   --shape-stat-tile: var(--shape-large);
   --shape-card-compact: var(--shape-large-increased);

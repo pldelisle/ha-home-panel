@@ -318,3 +318,80 @@
   font: var(--type-body-small);
   letter-spacing: var(--track-body-small);
 }
+/* Material's navigation rail (#466): the NavigationBar of the HA Home Panel Material design system. Flush with the left edge, the full height of the
+   screen, 96 px wide, on `surface-container-low`, its outer corners rounded; no float, no blur, no shadow. The open section's icon sits in a 56 x 32
+   pill (`--control`), drawn on the icon itself: the icon is 24 px, the pill is the padding around it (4 px above and below, 16 px beside it when open),
+   so the pill grows in from the icon's own width on the fast spatial spring and the markup stays as it is. The open label is in `--fg` at 600, the
+   others in `--fg2`. The rail leaves the page's grid: the page keeps its column, `.wrap` makes room for the 96 px with its own padding. */
+.app.tabsv[data-design='material'] .rail {
+  background: var(--md-surface-container-low);
+  border-radius: 0 var(--shape-nav-rail) var(--shape-nav-rail) 0;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  padding: 16px 0;
+  gap: 12px;
+}
+.app.tabsv[data-design='material'] .rtab,
+.app.tabsv[data-design='material'] .rtab[aria-selected='true'] {
+  background: transparent;
+  padding: 0 2px;
+  gap: 4px;
+  justify-content: flex-start;
+  color: var(--fg2);
+}
+/* the state layer (common.css) is the pill's, not the whole item's: 56 x 32 at the top, where the icon is */
+.app.tabsv[data-design='material'] .rtab::before {
+  inset: 0 auto auto 50%;
+  width: 56px;
+  height: 32px;
+  margin-left: -28px;
+  border-radius: var(--shape-nav-item);
+}
+.app.tabsv[data-design='material'] .rtab[aria-selected='true'] {
+  color: var(--fg);
+  font-weight: 600;
+}
+.app.tabsv:not(.cp)[data-design='material'] .rtab {
+  /* French has Automatisations: 98 px at the role's 0.5 px tracking, in a 96 px rail; with none it is 91 px, and the rail cuts no label */
+  letter-spacing: 0;
+}
+.app.tabsv[data-design='material'] .rtab svg {
+  box-sizing: content-box;
+  width: 24px;
+  height: 24px;
+  padding: 4px 0;
+  border-radius: var(--shape-nav-item);
+  transition:
+    padding-inline var(--motion-spatial-fast-ms) var(--motion-spatial-fast),
+    background-color var(--motion-effects-default-ms) var(--motion-effects);
+}
+.app.tabsv[data-design='material'] .rtab[aria-selected='true'] svg {
+  padding-inline: 16px;
+  background: var(--control);
+  color: var(--on-control);
+}
+@media (min-width: 721px) {
+  .app.tabsv:not(.cp)[data-design='material'] .rail {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 12;
+    width: 96px;
+    height: 100vh;
+    height: 100dvh;
+    justify-content: flex-start;
+    overflow-y: auto;
+    scrollbar-width: none;
+  }
+  .app.tabsv:not(.cp)[data-design='material'] .wrap {
+    grid-template-columns: minmax(0, 1fr);
+    column-gap: 0;
+    padding-left: calc(96px + 24px + env(safe-area-inset-left, 0px));
+  }
+  .app.tabsv:not(.cp)[data-design='material'] .head,
+  .app.tabsv:not(.cp)[data-design='material'] .note,
+  .app.tabsv:not(.cp)[data-design='material'] .panes {
+    grid-column: 1;
+  }
+}

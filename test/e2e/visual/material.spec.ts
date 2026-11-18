@@ -179,3 +179,43 @@ for (const {viewport, theme} of SHOTS) {
     });
   });
 }
+
+// The navigation bar and rail (#466): the rail on the tablet in light and dark, in French as well (its longest label, Automatisations), and the bar
+// on the phone in light and dark with a section other than Home open, so the pill sits behind another icon.
+for (const theme of ['light', 'dark'] as const) {
+  test.describe(`tablet, ${theme}, navigation`, () => {
+    test.use({
+      viewport: VIEWPORTS.tablet,
+      houseOpts: {cfg: FULL_CFG, theme, design: 'material', time: AFTERNOON, frozen: true},
+    });
+
+    test('Rail in Material', async ({house}) => {
+      await house.tab('lights');
+      await expect(house.page).toHaveScreenshot(`material-rail-tablet-${theme}-en.png`);
+    });
+  });
+
+  test.describe(`phone, ${theme}, navigation`, () => {
+    test.use({
+      viewport: VIEWPORTS.phone,
+      houseOpts: {cfg: FULL_CFG, theme, design: 'material', time: AFTERNOON, frozen: true},
+    });
+
+    test('Bar in Material', async ({house}) => {
+      await house.tab('lights');
+      await expect(house.page).toHaveScreenshot(`material-bar-phone-${theme}-en.png`);
+    });
+  });
+}
+
+test.describe('tablet, light, French navigation', () => {
+  test.use({
+    viewport: VIEWPORTS.tablet,
+    houseOpts: {cfg: FULL_CFG, theme: 'light', lang: 'fr', design: 'material', time: AFTERNOON, frozen: true},
+  });
+
+  test('Rail in Material in French', async ({house}) => {
+    await house.tab('automations');
+    await expect(house.page).toHaveScreenshot('material-rail-tablet-light-fr.png');
+  });
+});
