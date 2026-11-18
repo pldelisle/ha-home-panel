@@ -1,7 +1,8 @@
 // <hp-tv-box>: the television's box in the Media pane: its name, status and app beside the power button, and four buttons.
 // Pattern: humble object (Meszaros) over the model's `TvView`, and command (Gamma et al.): a tap holds the value it asks for in the
 // panel's overlay store, then runs the feature's command through `CommandRunner`, whose failure releases that hold alone (ADR 0023).
-// The power is a button that acts as a toggle (`aria-pressed`), not a switch: Apple's Toggles page keeps switches for list rows.
+// The power is a button that acts as a toggle (`aria-pressed`), not a switch: Apple's Toggles page keeps switches for list rows; the phone's tile has the same button.
+// Its play button shows what a press will do, a play or a pause, as a speaker's does.
 // Must not: read an entity or the store's state (the pane hands it `tv`), word a string, or show a state it has not held.
 import {LitElement, html, nothing, unsafeCSS} from 'lit';
 import {classMap} from 'lit/directives/class-map.js';
@@ -78,7 +79,7 @@ export class TvBox extends LitElement {
           ${mute.text}
         </button>
         <button type="button" aria-label=${playPause.label} ?disabled=${!tv.on} @click=${this.onPlayPause}>
-          ${ico('pp', 24)}
+          ${ico(playPause.icon, 24)}
         </button>
       </div>`;
   }

@@ -43,6 +43,7 @@ describe('the test house', () => {
       source: 'Netflix',
       summarySource: 'Netflix',
       muted: false,
+      paused: false,
     });
   });
 
@@ -217,5 +218,13 @@ describe('the state, the input and the volume', () => {
     expect(muted(true)).toBe(true);
     expect(muted(false)).toBe(false);
     expect(muted(undefined)).toBe(false);
+  });
+
+  test('paused follows a state of paused, and a set that reports only on is not paused', () => {
+    const paused = (state: string) =>
+      tvOf(houseOf([['media_player.a', state, {...SET}, {platform: 'samsungtv'}]]))?.paused;
+    expect(paused('paused')).toBe(true);
+    expect(paused('playing')).toBe(false);
+    expect(paused('on')).toBe(false);
   });
 });

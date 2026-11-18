@@ -69,7 +69,6 @@ export const en = {
   'media.off': 'Off',
   'media.onMuted': 'On · muted',
   'media.nowOn': 'Now on {source}',
-  'media.tvPower': '{name} power',
   'media.tvPowerOn': 'Turn the TV on',
   'media.tvPowerOff': 'Turn the TV off',
   'media.volumeAndPlayback': 'Volume and playback',
@@ -80,8 +79,6 @@ export const en = {
   'media.volumeDownPane': 'Vol −, volume down',
   'media.volumeUpPane': 'Vol +, volume up',
   'media.mute': 'Mute',
-  'media.playOrPause': 'Play or pause',
-  'media.noVolumeSlider': "The TV doesn't report its volume, so there's no slider.",
   'media.opensControls': 'Opens the controls',
   // the sheet a phone's tile opens: its Close button
   'media.close': 'Close',

@@ -66,7 +66,6 @@ export const fr: Record<MessageKey, string> = {
   'media.off': 'Éteint',
   'media.onMuted': 'Allumé · en sourdine',
   'media.nowOn': 'Sur {source} en ce moment',
-  'media.tvPower': '{name}\u00a0: alimentation',
   'media.tvPowerOn': 'Allumer la télé',
   'media.tvPowerOff': 'Éteindre la télé',
   'media.volumeAndPlayback': 'Volume et lecture',
@@ -78,9 +77,7 @@ export const fr: Record<MessageKey, string> = {
   'media.volumeDownPane': 'Vol −, baisser le volume',
   'media.volumeUpPane': 'Vol +, monter le volume',
   'media.mute': 'Sourdine',
-  'media.playOrPause': 'Lecture ou pause',
   // the legacy layer has no entry for this line, so the French pane reads it in English; the catalog says what the pane showed
-  'media.noVolumeSlider': "The TV doesn't report its volume, so there's no slider.",
   'media.opensControls': 'Ouvre les commandes',
   'media.close': 'Fermer',
   'media.volume': 'Volume',

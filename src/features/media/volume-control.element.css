@@ -1,0 +1,87 @@
+/*
+ * <hp-volume-control>'s own rules: the slider with its − and + and the level, drawn once for the speaker's pod and the phone's tile.
+ * The volume is a native range input drawn with the level in `--v`: the track fills up to the thumb. The row takes the whole line of the
+ * flex box that holds it, under the room and the play button; `--vol-well` is the colour of the − and + and of the track's rest, which
+ * the box that holds the row sets when its own colour is the default's.
+ */
+/* no box of its own: the row is an item of its host's flex line */
+:host {
+  display: contents;
+}
+.vol {
+  order: 2;
+  flex: 1 1 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.vol .step {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  border: 0;
+  background: var(--vol-well, var(--card));
+  color: var(--fg);
+  font: 600 calc(22px * var(--tx)) var(--f-body);
+  cursor: pointer;
+  box-shadow: var(--shadow);
+}
+.vol .step:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.vol .vv {
+  flex: none;
+  min-width: 4ch;
+  text-align: end;
+  font-size: calc(16px * var(--tx));
+}
+.vol input {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.vol input::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, var(--c-home) var(--v), var(--vol-well, var(--card)) var(--v));
+}
+.vol input::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, var(--c-home) var(--v), var(--vol-well, var(--card)) var(--v));
+}
+.vol input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 28px;
+  height: 28px;
+  margin-top: -11px;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.35);
+}
+.vol input::-moz-range-thumb {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.35);
+}
+.vol input:focus-visible {
+  outline: 2px solid var(--c-home);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+.app.gl .vol .step {
+  background: var(--g-sel);
+  border-color: transparent;
+}

@@ -86,10 +86,7 @@ export class MediaPane extends LitElement {
   }
 
   private renderTvCard(tv: TvView) {
-    return html`<div class="mcard">
-      <hp-tv-box .tv=${tv}></hp-tv-box>
-      <p class="hint">${tv.hint}</p>
-    </div>`;
+    return html`<div class="mcard"><hp-tv-box .tv=${tv}></hp-tv-box></div>`;
   }
 
   // the speakers' line, and the pods or the hint when the house has none

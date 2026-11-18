@@ -26,6 +26,8 @@ export interface TvInputs {
   /** The input as the pane's sub-line shows it: only what a dash opens is cut, and a full-width ampersand stays (the legacy line's rule). */
   summarySource: string | null;
   muted: boolean;
+  /** The player says `paused`: a press of its play-or-pause button will play. A set that reports only `on` is never paused. */
+  paused: boolean;
 }
 
 export interface TvSource {
@@ -79,5 +81,6 @@ export function readSet(
     source: cleanSource(state.attributes.source),
     summarySource: withoutDetail(state.attributes.source),
     muted: !!state.attributes.is_volume_muted,
+    paused: state.state === 'paused',
   };
 }

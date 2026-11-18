@@ -106,12 +106,6 @@
       "translated": "Sur Netflix en ce moment"
     },
     {
-      "key": "media.tvPower",
-      "values": {
-        "name": "Samsung TV"
-      }
-    },
-    {
       "key": "media.tvPowerOn",
       "translated": "Allumer la télé"
     },
@@ -148,13 +142,6 @@
     {
       "key": "media.mute",
       "was": "Sourdine"
-    },
-    {
-      "key": "media.playOrPause",
-      "was": "Lecture ou pause"
-    },
-    {
-      "key": "media.noVolumeSlider"
     },
     {
       "key": "media.opensControls",
