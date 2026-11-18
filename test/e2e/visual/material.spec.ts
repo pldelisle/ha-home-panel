@@ -285,6 +285,7 @@ for (const theme of ['light', 'dark'] as const) {
       const arrange = pane.locator('#ledit');
       expect(await style(arrange, 'height')).toBe('40px');
       expect(await style(arrange, 'background-color')).toBe(await role(house, '--control'));
+      await settled(house);
       await expect(house.page).toHaveScreenshot(`material-lights-tablet-${theme}-en.png`);
     });
 
@@ -306,6 +307,7 @@ for (const theme of ['light', 'dark'] as const) {
       const setAll = detail.locator('.abtn').first();
       expect(await style(setAll, 'height')).toBe('40px');
       expect(await style(setAll, 'background-color')).toBe(await role(house, '--control'));
+      await settled(house);
       await expect(house.page).toHaveScreenshot(`material-climate-tablet-${theme}-en.png`);
     });
   });
@@ -346,6 +348,7 @@ test.describe('tablet, light, status rows', () => {
     const icon = first.locator('.ic');
     expect(await style(icon, 'background-color')).toBe(await role(house, '--warn-container'));
     expect(await style(icon, 'width')).toBe('40px');
+    await settled(house);
     await expect(house.page).toHaveScreenshot('material-status-tablet-light-en.png');
   });
 });
@@ -368,6 +371,7 @@ test.describe('phone, light, components', () => {
     expect(await style(idle, 'min-height')).toBe('128px');
     expect(await style(idle.locator('.ic'), 'background-color')).toBe(await role(house, '--control'));
     expect(await style(idle.locator('.ic'), 'border-top-left-radius')).toBe('20px');
+    await settled(house);
     await expect(house.page).toHaveScreenshot('material-climate-phone-light-en.png');
   });
 });
