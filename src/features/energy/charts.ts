@@ -12,7 +12,7 @@ import {GROUPS, type DailyRow, type EnergyHistoryData, type MonthSplit} from './
 
 /**
  * The tab's ranges, in the order of its tabs: Energy's own, since `now` and `today` are no ranges of the kit's `RANGES` (they ask the recorder for
- * nothing). `now` is the live flow, and the hours chart draws today's for it, as for `today`.
+ * nothing). `now` is the live flow alone: the detail draws no chart for it (`mainRows` still answers it with today's hours, which nothing draws).
  */
 export const ENERGY_RANGES = ['now', 'today', 'week', 'month', 'year'] as const;
 export type EnergyRange = (typeof ENERGY_RANGES)[number];
@@ -77,6 +77,8 @@ const TOOLTIP_DATE: Record<'today' | 'week', TooltipDate> = {
 };
 /** About how many labels a category axis writes on a phone, for the month's days and the year's months. */
 const PHONE_LABELS = {month: 5, year: 4} as const;
+/** The most steps a phone's day of hours is cut into: a label every six hours (12 am, 6 am, 12 pm), where the wide axis takes up to eight. */
+const PHONE_HOUR_STEPS = 4;
 
 /** The hours of today the main chart draws, as flow rows. */
 export function hoursOfToday(
@@ -129,11 +131,19 @@ export function mainChartOptions(main: MainRows, names: readonly string[], deps:
       plotOptions: {bar: {...STACK, columnWidth: range === 'today' ? '70%' : '90%'}},
       stroke: {show: false},
       fill: {opacity: 1},
-      // the ticks fall on whole hours, every two hours for a morning, every day for the week (`hourRowsAxis`)
+      // the ticks fall on whole hours, every two hours for a morning, every day for the week (`hourRowsAxis`); a phone's day has fewer of them,
+      // and a label that does not fit is left off, never tilted
       xaxis: {
         type: 'datetime',
-        labels: {datetimeUTC: false},
-        ...(rows.length ? hourRowsAxis(rows[0][0], rows[rows.length - 1][0], fmt) : undefined),
+        labels: {datetimeUTC: false, rotate: 0, hideOverlappingLabels: true},
+        ...(rows.length
+          ? hourRowsAxis(
+              rows[0][0],
+              rows[rows.length - 1][0],
+              fmt,
+              compact && range === 'today' ? PHONE_HOUR_STEPS : undefined,
+            )
+          : undefined),
       },
       yaxis: {
         min: 0,

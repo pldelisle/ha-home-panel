@@ -381,7 +381,7 @@ describe('the detail', () => {
       expect(detail({}).main).toMatchObject({
         notice: null,
         title: 'Today, hour by hour',
-        caption: 'Busiest hour: 10.0 kWh, 1:00 pm. Tap a bar to see what was running.',
+        caption: 'Busiest hour: 10.0 kWh, 1:00 pm.',
       });
       expect(detail({flow: []}).main).toMatchObject({caption: '', notice: NO_HISTORY});
     });
@@ -392,15 +392,13 @@ describe('the detail', () => {
         [Date.parse('2026-11-07T04:00:00-05:00'), 0, 1, 2, 0.5, 3.5],
         [Date.parse('2026-11-07T04:20:00-05:00'), 7.1, 0.8, 2.4, 0, 3.24],
       ];
-      expect(detail({flow: tall}).main.caption).toBe(
-        'Busiest hour: 10.3 kWh, 4:20 am. Tap a bar to see what was running.',
-      );
+      expect(detail({flow: tall}).main.caption).toBe('Busiest hour: 10.3 kWh, 4:20 am.');
     });
 
     test('the week: the same, with the day of the hour, over the last seven days', () => {
       expect(detail({}, {range: 'week'}).main).toMatchObject({
         title: 'Last 7 days, hour by hour',
-        caption: 'Busiest hour: 10.0 kWh, Sat 1:00 pm. Tap a bar to see what was running.',
+        caption: 'Busiest hour: 10.0 kWh, Sat 1:00 pm.',
       });
       expect(detail({flow: [flow[0]]}, {range: 'week'}).main.caption).toContain('Fri 3:00 pm');
     });
@@ -427,9 +425,7 @@ describe('the detail', () => {
     });
 
     test('in French the words and the figures are French’s own', () => {
-      expect(detail({}, {}, 'fr').main.caption).toBe(
-        'Heure la plus chargée : 10,0 kWh, 13 h. Touchez une barre pour voir ce qui fonctionnait.',
-      );
+      expect(detail({}, {}, 'fr').main.caption).toBe('Heure la plus chargée : 10,0 kWh, 13 h.');
       expect(detail({}, {}, 'fr').main.title).toBe("Aujourd'hui, heure par heure");
       const peak = detail({monthly: [['2026-01', {heat: 300, wh: 0, ev: 0, rest: 0}]]}, {range: 'year'}, 'fr');
       expect(peak.main.caption).toBe(
@@ -477,6 +473,12 @@ describe('the detail', () => {
       const view = detail(null);
       expect([view.main.notice, view.donut.notice, view.totals.notice]).toEqual([null, null, null]);
     });
+  });
+
+  test('Now is the live flow alone; every other range draws the history’s cards besides', () => {
+    expect(detail({}, {range: 'now'}).live).toBe(true);
+    expect(detail({}).live).toBe(true); // the tab opens on Now
+    for (const range of ['today', 'week', 'month', 'year'] as const) expect(detail({}, {range}).live).toBe(false);
   });
 
   describe('the periods of the tab’s range', () => {

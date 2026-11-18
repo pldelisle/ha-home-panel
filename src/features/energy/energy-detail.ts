@@ -2,6 +2,7 @@
 // Pattern: humble object (Meszaros, xUnit Test Patterns) placing the view model the pane hands down, the charts through <hp-chart> (ADR 0022, 0027)
 // from the pure options of charts.ts and the Sankey through <hp-sankey>; a controlled component (the range is the pane's, told
 // upward as `range-chosen`, by the tabs and by a total that holds a range); a switch of range redraws from the history the pane loaded, so it asks nothing.
+// Now (`view.live`) draws the live flow alone, and builds no chart options; the hours, the donut and the totals are the other ranges'.
 // A card whose range holds no history yet draws its title and the model's one sentence (`notice`) and nothing else: no axes, donut, legend or tiles of 0 kWh.
 // Must not: read an entity or the clock for a figure (the model did), call the API client, open a sheet itself, or build options for what did not change.
 import {LitElement, html, nothing, svg, unsafeCSS} from 'lit';
@@ -80,7 +81,9 @@ export class EnergyDetail extends LitElement {
   // reading, which changes the model every second, leaves the charts' `options` the objects they were, so <hp-chart> is not asked to draw the same bars again.
   protected override willUpdate(): void {
     const {view, history, range} = this;
-    if (!view || !history) return;
+    // Now draws the flow alone: no chart is made for it, and the tab back to a range builds them again
+    if (view?.live) this.built = undefined;
+    if (!view || !history || view.live) return;
     const {store} = this.storeController;
     const compact = this.appearance.value?.compact === true;
     const base = `${this.appearance.value?.theme ?? 'light'}/${store.language}/${compact}`;
@@ -127,22 +130,9 @@ export class EnergyDetail extends LitElement {
         aria-label=${ifDefined(compact ? undefined : view.title)}
       >
         ${compact ? nothing : this.renderHeader(view)}
-        ${view.error === null ? nothing : html`<p class="histnote">${view.error}</p>`} ${this.renderMain(view, built)}
-        ${this.renderSankey(view)}
-        <div class="two">
-          ${this.renderDonut(view, built)}
-          <div class="inner">
-            <h3>${view.totals.title}</h3>
-            ${
-              view.totals.notice !== null
-                ? html`<p class="loading">${view.totals.notice}</p>`
-                : html`<p>${view.totals.hint}</p>
-                    <div class="totals">
-                      ${tileList(view.totals.tiles, {onRange: this.onTotal, opens: this.storeController.store.t('energy.totals.opensChart')})}
-                    </div>`
-            }
-          </div>
-        </div>
+        ${view.error === null ? nothing : html`<p class="histnote">${view.error}</p>`}
+        ${view.live ? nothing : this.renderMain(view, built)} ${this.renderSankey(view)}
+        ${view.live ? nothing : this.renderTwo(view, built)}
       </div>
       ${lens}`;
   }
@@ -190,6 +180,24 @@ export class EnergyDetail extends LitElement {
             ></hp-chart>`
           : nothing
       }
+    </div>`;
+  }
+
+  // the donut and the totals, which are the history's: Now has neither
+  private renderTwo(view: EnergyDetailView, built: Built | undefined) {
+    return html`<div class="two">
+      ${this.renderDonut(view, built)}
+      <div class="inner">
+        <h3>${view.totals.title}</h3>
+        ${
+          view.totals.notice !== null
+            ? html`<p class="loading">${view.totals.notice}</p>`
+            : html`<p>${view.totals.hint}</p>
+                <div class="totals">
+                  ${tileList(view.totals.tiles, {onRange: this.onTotal, opens: this.storeController.store.t('energy.totals.opensChart')})}
+                </div>`
+        }
+      </div>
     </div>`;
   }
 

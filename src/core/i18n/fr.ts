@@ -620,8 +620,7 @@ export const fr: Record<MessageKey, string> = {
   'energy.detail.week': '7 derniers jours, heure par heure',
   'energy.detail.month': '30 derniers jours, jour par jour',
   'energy.detail.year': 'Mois par mois',
-  'energy.detail.busiest':
-    'Heure la plus chargée\u00a0: {kwh} kWh, {when}. Touchez une barre pour voir ce qui fonctionnait.',
+  'energy.detail.busiest': 'Heure la plus chargée\u00a0: {kwh} kWh, {when}.',
   'energy.detail.monthSum':
     '{total} kWh en 30 jours\u00a0: chauffage {heat}, chauffe-eau {water}, recharge VÉ {ev}, reste de la maison {rest}.',
   'energy.detail.yearCaption': '12 derniers mois. Les mois avec des données manquantes paraissent plus courts.',

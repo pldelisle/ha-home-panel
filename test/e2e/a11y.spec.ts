@@ -145,6 +145,12 @@ for (const lang of ['en', 'fr'] as const) {
       phoneOnly(); // on a tablet the detail is the Energy tab, which every shown tab covers
       await house.tab('home'); // the sheet is Home's Energy tile's: the tab draws the detail inline
       await house.root().locator('#htiles [data-opens="energy.detail"]').click();
+      // the sheet opens on Now, the live flow alone: Today is the range that draws the charts the scan should cover
+      await house
+        .root()
+        .locator('hp-energy-pane hp-sheet:has(hp-energy-detail) hp-range-tabs')
+        .getByRole('tab', {name: /^(Today|Jour)$/})
+        .click();
       await expect(house.root().locator('hp-energy-detail .inner > hp-chart .apexcharts-canvas')).toBeVisible();
       await scanDialog(house, 'energy.detail', 'hp-energy-pane hp-sheet:has(hp-energy-detail) .sheet');
     });
