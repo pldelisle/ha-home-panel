@@ -305,8 +305,8 @@ describe('the rooms of the registry', () => {
     return {store, sheetOpen: () => false, sheetDetail: () => undefined, room: null};
   };
 
-  test('Lights and Media have a room part for now, with no reading for the header', () => {
-    expect(FEATURES.filter(f => f.room).map(f => f.key)).toEqual(['lights', 'media']);
+  test('Lights, Media and Security have a room part, Lights and Media with no reading for the header', () => {
+    expect(FEATURES.filter(f => f.room).map(f => f.key)).toEqual(['lights', 'media', 'cams']);
     expect(lightsFeature.room).not.toHaveProperty('chip');
     expect(mediaFeature.room).not.toHaveProperty('chip');
   });
@@ -329,5 +329,18 @@ describe('the rooms of the registry', () => {
       {areaId: 'living_room', name: 'Living room'},
       {areaId: 'office', name: 'Office'},
     ]);
+  });
+});
+
+describe('the Security part of a room view', () => {
+  const env = (house?: ReturnType<typeof fakeHass.fromHouse>) => {
+    const store = createStore({defaultTimeZone: 'America/Toronto', resolve: resolveConfig});
+    if (house) store.setHass(house);
+    return {store, sheetOpen: () => false, sheetDetail: () => undefined, room: null};
+  };
+
+  test('lists the areas of the door and motion sensors, and none before the house has been heard', () => {
+    expect(securityFeature.room?.areas(env())).toEqual([]);
+    expect(securityFeature.room?.areas(env(fakeHass.fromHouse(full)))).toEqual(['living_room', 'office']);
   });
 });

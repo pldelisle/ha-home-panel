@@ -3,6 +3,7 @@
 // drives it: the rows, the bulb, the tile; what is read back is the screen's roles, text and the calls Home Assistant got.
 import {test, expect, tabletOnly, fontsLoaded, type House} from './fixtures';
 import {AFTERNOON, FULL_CFG} from './houses';
+import {addPorchCamera} from './room-camera';
 
 test.beforeEach(({house}) => fontsLoaded(house));
 
@@ -52,8 +53,8 @@ test.describe('the rooms of the full house', () => {
     await expect(house.root().locator('#rail [data-tab="home"]')).toHaveAttribute('aria-selected', 'false');
     await expect(house.root().locator('#pane-home')).toBeHidden();
     await expect(pane(house).locator('hp-pane-header h2')).toHaveText('Office');
-    await expect(pane(house).locator('.subject')).toHaveCount(1);
-    await expect(pane(house).locator('.subject > h3')).toHaveText('Lights');
+    // the Office has a light and the hall motion sensor: one section each, in the registry's order
+    await expect(pane(house).locator('.subject > h3')).toHaveText(['Lights', 'Security']);
     await expect(pane(house).locator('hp-light-tile .tx b')).toHaveText(['Office']);
     expect(await house.page.evaluate(() => localStorage.getItem('home-panel-tab'))).toBe('room:office');
     // another row, then a section, takes the room's place
@@ -141,7 +142,7 @@ test.describe('Media in a room view', () => {
   }) => {
     tabletOnly();
     await openRoom(house, 'living_room');
-    await expect(pane(house).locator('.subject > h3')).toHaveText(['Lights', 'Media']);
+    await expect(pane(house).locator('.subject > h3')).toHaveText(['Lights', 'Media', 'Security']);
     await expect(pane(house).locator('hp-media-tile .tx b')).toHaveText(['Samsung TV', 'speaker']);
     // a room with no player has no Media section
     await openRoom(house, 'kitchen');
@@ -190,5 +191,83 @@ test.describe('Media in a room view', () => {
       house.root().locator('#pane-media hp-sheet').getByRole('button', {name: 'Turn the TV off'}),
     ).toBeVisible();
     await expect(house.root().locator('#rail [data-room="living_room"]')).toHaveAttribute('aria-selected', 'true');
+  });
+});
+
+// The Security part of a room view (#510): the room's cameras, then its door and motion sensors, as the Security tab draws them; a camera
+// opens its live sheet and a sensor its history over the room. The test house has the front door in the living room, the hall motion sensor in
+// the office and no camera: the porch camera is added to the living room the way Home Assistant adds an entity, with its registry row.
+test.describe('the Security part of a room', () => {
+  test.use({houseOpts: {cfg: FULL_CFG, time: AFTERNOON, frozen: true}});
+
+  const section = (house: House) => pane(house).locator('[data-subject="cams"]');
+
+  test('a room with a door sensor and a camera shows the camera, then the sensor, and no other room', async ({
+    house,
+  }) => {
+    tabletOnly();
+    await addPorchCamera(house, 'living_room');
+    await openRoom(house, 'living_room');
+    await expect(section(house).locator('h3')).toHaveText('Security');
+    await expect(section(house).locator('hp-camera-card .camlbl b')).toHaveText(['Porch']);
+    await expect(section(house).locator('hp-sensor-card .schip b')).toHaveText(['Front door']);
+    // the cameras' card comes before the sensors'
+    const order = await section(house)
+      .locator('hp-security-room > *')
+      .evaluateAll(cards => cards.map(c => c.localName));
+    expect(order).toEqual(['hp-camera-card', 'hp-sensor-card']);
+    // a door that opens is a later state change: the camera keeps its registry row, so it stays in the room
+    await house.setState('binary_sensor.front_door', {state: 'on'});
+    await expect(section(house).locator('hp-sensor-card .schip.warn em')).toHaveText('Open');
+    await expect(section(house).locator('hp-camera-card .camlbl b')).toHaveText(['Porch']);
+  });
+
+  test('a room with only a sensor draws no cameras card, not even the tab empty state', async ({house}) => {
+    tabletOnly();
+    await openRoom(house, 'office');
+    await expect(section(house).locator('hp-sensor-card .schip b')).toHaveText(['Hall motion']);
+    await expect(section(house).locator('hp-camera-card')).toHaveCount(0);
+  });
+
+  test('a camera opens its sheet over the room, and the room stays', async ({house}) => {
+    tabletOnly();
+    await addPorchCamera(house, 'living_room');
+    await openRoom(house, 'living_room');
+    await section(house)
+      .getByRole('button', {name: /^Porch/})
+      .click();
+    const sheet = house.root().locator('hp-camera-sheet');
+    await expect(sheet.locator('hp-sheet h2')).toHaveText('Porch');
+    await expect(sheet.locator('.camlive img')).toHaveAttribute(
+      'src',
+      '/api/camera_proxy_stream/camera.porch?token=tok',
+    );
+    await expect(house.root().locator('#rail [data-room="living_room"]')).toHaveAttribute('aria-selected', 'true');
+    await expect(pane(house)).toBeVisible();
+    await house.page.keyboard.press('Escape');
+    await expect(sheet).toHaveCount(0);
+    await expect(pane(house)).toBeVisible();
+  });
+
+  test('a sensor opens its history over the room, and the room stays', async ({house}) => {
+    tabletOnly();
+    await openRoom(house, 'living_room');
+    await section(house)
+      .getByRole('button', {name: /^Front door/})
+      .click();
+    await expect(house.root().locator('hp-sensor-history hp-sheet h2')).toHaveText('Front door');
+    await expect(house.root().locator('#rail [data-room="living_room"]')).toHaveAttribute('aria-selected', 'true');
+    await house.page.keyboard.press('Escape');
+    await expect(house.root().locator('hp-sensor-history')).toHaveCount(0);
+    await expect(pane(house)).toBeVisible();
+  });
+
+  test('leaving the room takes its cards, and their snapshots, out of the page', async ({house}) => {
+    tabletOnly();
+    await addPorchCamera(house, 'living_room');
+    await openRoom(house, 'living_room');
+    await expect(section(house).locator('hp-camera-card .cam img')).toHaveCount(1);
+    await house.tab('lights');
+    await expect(house.root().locator('hp-security-room')).toHaveCount(0);
   });
 });

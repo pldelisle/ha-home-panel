@@ -1,0 +1,9 @@
+/*
+ * <hp-security-room>'s own rules: its place in a room view's section: the cameras' card, then the sensors', one under the other.
+ * The cards' own rules are theirs (camera-card.element.css, sensor-card.element.css).
+ */
+:host {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}

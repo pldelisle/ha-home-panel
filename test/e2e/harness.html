@@ -177,6 +177,11 @@
           };
           for (const p of panels) p.hass = hass;
         },
+        // an entity is registered in Home Assistant (its entity registry row): a new entities registry inside a new hass object, which every later setState keeps
+        register(id, row) {
+          hass = {...hass, entities: {...hass.entities, [id]: {entity_id: id, ...row}}};
+          for (const p of panels) p.hass = hass;
+        },
         // an area is renamed in Home Assistant: a new areas registry inside a new hass object
         setAreaName(id, name) {
           hass.areas = {...hass.areas, [id]: {...hass.areas[id], name}};
