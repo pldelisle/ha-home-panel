@@ -9,6 +9,7 @@ import type {Names} from '../../core/i18n/names.ts';
 import type {Overlay} from '../../ui/overlay-store.ts';
 import {K} from './commands.ts';
 import type {MediaInputs, SpeakerInputs} from './inputs.ts';
+import {withoutWords} from '../../providers/media-players.ts';
 import type {TvInputs} from '../../providers/tv-source.ts';
 
 type Translate = Messages['t'];
@@ -300,12 +301,12 @@ function tvTile(tv: TvView, t: Translate): MediaTileView {
   };
 }
 
-function speakerTile(speaker: SpeakerView, t: Translate, title: string = speaker.room): MediaTileView {
+function speakerTile(speaker: SpeakerView, t: Translate): MediaTileView {
   return {
     key: speaker.id,
     kind: 'speaker',
     icon: 'spk',
-    title,
+    title: speaker.room,
     sheetTitle: t('media.speakers'),
     description: t('media.opensControls'),
     subLine: speaker.loaded ? `${speaker.title}${speaker.artist ? ` · ${speaker.artist}` : ''}` : speaker.subLine,
@@ -349,17 +350,16 @@ export function mediaRoomAreas({tv, speakers}: MediaInputs): string[] {
 }
 
 /**
- * A room's tiles: the television when it sits in the area, then the area's speakers, each the same tile the Media tab draws. A
- * speaker goes by its short name, the words of its room dropped, since the room view's heading already says the room.
+ * A room's tiles: the Media tab's tiles that sit in the area, in the tab's order. The room view's heading already says the room, so a
+ * tile goes by its name without the room's words: a speaker's short name, the television's name cut by the same rule.
  */
 export function mediaRoomTiles(inputs: MediaInputs, areaId: string, deps: MediaModelDeps): MediaTileView[] {
-  const {t} = deps;
-  const tv = inputs.tv?.areaId === areaId ? tvView(inputs.tv, deps) : null;
-  return [
-    ...(tv ? [tvTile(tv, t)] : []),
-    ...inputs.speakers
-      .filter(speaker => speaker.areaId === areaId)
-      .map(speaker => speakerView(speaker, deps))
-      .map(speaker => speakerTile(speaker, t, speaker.name)),
-  ];
+  const roomName = deps.names.name(areaId);
+  const speakerAt = new Map(inputs.speakers.map(speaker => [speaker.id, speaker]));
+  return mediaModel(inputs, deps)
+    .tiles.filter(tile => (tile.kind === 'tv' ? inputs.tv?.areaId : speakerAt.get(tile.key)?.areaId) === areaId)
+    .map(tile => ({
+      ...tile,
+      title: tile.kind === 'tv' ? withoutWords(tile.title, roomName) : (speakerAt.get(tile.key)?.name ?? tile.title),
+    }));
 }

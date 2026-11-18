@@ -513,6 +513,16 @@ describe('the tiles of a room', () => {
     expect({...tile, title: ''}).toEqual({...tab, title: ''});
   });
 
+  test("the television's tile drops the room's words from its name, and keeps a name that would be emptied", () => {
+    const named = (name: string): MediaInputs => ({tv: tv({name, areaId: 'living_room'}), speakers: []});
+    const title = (name: string) => mediaRoomTiles(named(name), 'living_room', deps())[0].title;
+    expect(title('Living Room TV')).toBe('TV');
+    expect(title('Samsung TV')).toBe('Samsung TV');
+    expect(title('Living room')).toBe('Living room');
+    // the Media tab keeps the whole name
+    expect(mediaModel(named('Living Room TV'), deps()).tiles[0].title).toBe('Living Room TV');
+  });
+
   test('a held pause shows in the room as it does in the tab', () => {
     const [tile] = mediaRoomTiles(mixed, 'kitchen', deps(holding({[K.state('media_player.a')]: 'paused'})));
     expect(tile.control).toMatchObject({kind: 'play', playing: false, icon: 'play'});
