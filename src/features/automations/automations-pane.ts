@@ -12,6 +12,7 @@ import type {SelectRunEvent} from './events.ts';
 import type {FlowCard} from './flow-card.ts';
 import './flow-card.ts'; // defines <hp-flow-card>
 import {automationIds} from './ids.ts';
+import {AUTOMATIONS_COLOR, AUTOMATIONS_ICON} from './identity.ts';
 import {TracesLoader} from './loader.ts';
 import {automationsModel, type AutomationsViewModel} from './model.ts';
 import './run-timeline.ts'; // defines <hp-run-timeline>
@@ -57,6 +58,8 @@ export class AutomationsPane extends LitElement {
   private selection: Selection | null = null;
   private seen = '';
   private view: AutomationsViewModel | undefined;
+  // the phone's shape, read once per update: the body, the model's drawing and a pick all follow it
+  private phone = false;
 
   constructor() {
     super();
@@ -92,6 +95,7 @@ export class AutomationsPane extends LitElement {
       this.selection = null;
       void this.loader.load(true);
     }
+    this.phone = this.appearance.value?.compact === true;
     if (!this.active) return;
     const {store} = this.storeController;
     const {hass} = store;
@@ -107,7 +111,7 @@ export class AutomationsPane extends LitElement {
         states: hass.states,
         now: Date.now(),
         width: this.size.width,
-        compact: this.appearance.value?.compact === true,
+        compact: this.phone,
         tokens: Object.fromEntries(TOKENS.map(k => [k, css(k)])) as Record<(typeof TOKENS)[number], string>,
       },
       this.loader.data,
@@ -120,7 +124,7 @@ export class AutomationsPane extends LitElement {
     const view = this.view;
     if (!view) return nothing;
     const {t} = this.storeController.store;
-    return html`<hp-pane-header .icon=${'flow'} .color=${'var(--c-heat)'} .heading=${t('auto.title')}>
+    return html`<hp-pane-header .icon=${AUTOMATIONS_ICON} .color=${AUTOMATIONS_COLOR} .heading=${t('auto.title')}>
         <div slot="sub">${view.sub}</div>
       </hp-pane-header>
       <div class="auhost" @select-run=${this.onSelect} @close-selection=${this.onClose}>${this.renderBody(view)}</div>
@@ -129,7 +133,7 @@ export class AutomationsPane extends LitElement {
 
   private renderBody(view: AutomationsViewModel) {
     const {t} = this.storeController.store;
-    const phone = this.appearance.value?.compact === true;
+    const {phone} = this;
     if (view.loading) return html`<p class="loading">${t('automations.loading')}</p>`;
     if (view.refused)
       return html`<section class="aubox">
@@ -153,14 +157,19 @@ export class AutomationsPane extends LitElement {
       ${phone ? this.renderSheet(view) : nothing}`;
   }
 
+  // the host says the flow's sheet is open but nothing is selected (a request from elsewhere): it is closed, and nothing is drawn
+  protected override updated(): void {
+    if (this.flowOpen && !this.selection) this.dispatchEvent(new SheetDismissEvent(FLOW_SHEET));
+  }
+
   // the flow's sheet: the selected card, which exists only while the sheet is open, so a closed sheet holds no drawing
   private renderSheet(view: AutomationsViewModel) {
     const {t} = this.storeController.store;
-    const card = this.flowOpen ? view.cards.find(c => c.kind === 'selected') : undefined;
+    const card = this.flowOpen && this.selection ? view.cards.find(c => c.kind === 'selected') : undefined;
     return html`<hp-sheet
       .open=${this.flowOpen}
-      .icon=${'flow'}
-      .color=${'var(--c-heat)'}
+      .icon=${AUTOMATIONS_ICON}
+      .color=${AUTOMATIONS_COLOR}
       .heading=${card?.name ?? t('auto.title')}
       .closeLabel=${t('automations.card.close')}
       @sheet-close=${this.dismissFlow}
@@ -176,7 +185,7 @@ export class AutomationsPane extends LitElement {
     void this.loader.load(true);
     this.requestUpdate();
     // a phone draws the card in a sheet the host opens, and has no card to scroll to
-    if (this.appearance.value?.compact === true) {
+    if (this.phone) {
       if (!this.flowOpen) this.dispatchEvent(new SheetRequestEvent(FLOW_SHEET)); // a run of the open sheet's picker only redraws it
       return;
     }

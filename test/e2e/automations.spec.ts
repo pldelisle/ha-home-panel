@@ -321,4 +321,19 @@ test.describe('the Automations pane on a phone', () => {
     await expect(sheet).toBeHidden();
     await expect(pane.locator('.augraph')).toHaveCount(0);
   });
+
+  // the host may be asked for the sheet by something that selected nothing: no empty sheet stays over the tab
+  test('closes the flow sheet when it is asked for with nothing selected', async ({house}) => {
+    await openAuto(house);
+    const pane = house.root().locator('hp-automations-pane');
+    await pane
+      .locator('hp-run-timeline')
+      .evaluate(el =>
+        el.dispatchEvent(
+          new CustomEvent('sheet-request', {bubbles: true, composed: true, detail: {id: 'automations.flow'}}),
+        ),
+      );
+    await expect(pane.locator('hp-sheet')).not.toHaveAttribute('open', /.*/);
+    await expect(pane.locator('hp-sheet .sheet')).toBeHidden();
+  });
 });

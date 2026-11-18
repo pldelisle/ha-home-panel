@@ -538,7 +538,7 @@
     },
     {
       "key": "automations.chips.captionPhone",
-      "translated": "Les plus récentes d’abord. Ouvrez-en une pour voir son parcours, avec sa dernière exécution en couleur."
+      "translated": "Les plus récentes d’abord."
     },
     {"key": "automations.chip.off"},
     {"key": "automations.chip.running", "was": "en cours"},

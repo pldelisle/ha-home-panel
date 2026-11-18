@@ -1282,8 +1282,7 @@ export const fr: Record<MessageKey, string> = {
   'automations.chips.title': 'Toutes les automatisations',
   'automations.chips.caption':
     'Les plus récentes d’abord. Celle qui est choisie a son parcours dessiné plus haut, avec sa dernière exécution en couleur.',
-  'automations.chips.captionPhone':
-    'Les plus récentes d’abord. Ouvrez-en une pour voir son parcours, avec sa dernière exécution en couleur.',
+  'automations.chips.captionPhone': 'Les plus récentes d’abord.',
   'automations.chip.off': 'Éteint',
   'automations.chip.running': 'en cours',
   'automations.chip.never': 'jamais',

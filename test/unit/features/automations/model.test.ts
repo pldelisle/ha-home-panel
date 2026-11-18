@@ -115,10 +115,10 @@ describe('automationsModel: the Today card', () => {
   test('the Today card names the four marks of a dot, and its caption no longer explains them', () => {
     const {legend, caption} = automationsModel(inputs([auto('a')]), data(), null, deps).today;
     expect(legend).toEqual([
-      {cls: '', label: 'ran'},
-      {cls: 'skip', label: 'checked, did nothing'},
-      {cls: 'now', label: 'running now'},
-      {cls: 'up', label: 'still to come'},
+      {mark: 'ran', label: 'ran'},
+      {mark: 'skip', label: 'checked, did nothing'},
+      {mark: 'now', label: 'running now'},
+      {mark: 'up', label: 'still to come'},
     ]);
     expect(caption).not.toContain('Filled');
   });

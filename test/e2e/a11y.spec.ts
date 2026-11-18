@@ -183,7 +183,7 @@ for (const lang of ['en', 'fr'] as const) {
       await openTab(house, 'auto');
       await house.root().locator('hp-automation-list .aurow:not([disabled])').first().click();
       await expect(house.root().locator('hp-automations-pane hp-sheet .augraph svg')).toBeVisible({timeout: 10_000});
-      await scanDialog(house, 'the automation flow sheet', 'hp-automations-pane hp-sheet .sheet');
+      await scanDialog(house, 'automations.flow', 'hp-automations-pane hp-sheet .sheet');
     });
 
     test('the camera sheet has no serious or critical finding', async ({house}) => {

@@ -49,8 +49,8 @@ export class RunTimeline extends LitElement {
             d => this.dot(d),
           )}
         </div>
-        <div class="audots">
-          ${v.legend.map(m => html`<span><i class=${m.cls || 'ran'} aria-hidden="true"></i>${m.label}</span>`)}
+        <div class="aulegend audots">
+          ${v.legend.map(m => html`<span><i class=${m.mark} aria-hidden="true"></i>${m.label}</span>`)}
         </div>
         <div class="tiles" style="grid-template-columns:repeat(3,minmax(0,1fr))">
           ${v.tiles.map(

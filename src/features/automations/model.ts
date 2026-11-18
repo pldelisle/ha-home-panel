@@ -65,7 +65,7 @@ export interface TodayView {
   hours: {pct: number; label: string}[];
   dots: DotView[];
   /** The four marks a dot takes, each with its words, drawn under the line as the flow's lines are. */
-  legend: {cls: DotClass; label: string}[];
+  legend: {mark: 'ran' | 'skip' | 'now' | 'up'; label: string}[];
   tiles: [TileView, TileView, TileView];
 }
 
@@ -233,10 +233,10 @@ export function automationsModel(
       };
     }),
     legend: [
-      {cls: '', label: t('automations.dots.ran')},
-      {cls: 'skip', label: t('automations.dots.skipped')},
-      {cls: 'now', label: t('automations.dots.now')},
-      {cls: 'up', label: t('automations.dots.up')},
+      {mark: 'ran', label: t('automations.dots.ran')},
+      {mark: 'skip', label: t('automations.dots.skipped')},
+      {mark: 'now', label: t('automations.dots.now')},
+      {mark: 'up', label: t('automations.dots.up')},
     ],
     tiles: [
       {

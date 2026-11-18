@@ -1301,7 +1301,7 @@ export const en = {
   'automations.noRuns': 'No automation has run since Home Assistant last started.',
   'automations.chips.title': 'Every automation',
   'automations.chips.caption': 'Latest first. The selected one has its flow drawn above, with its last run lit up.',
-  'automations.chips.captionPhone': 'Latest first. Open one to see its flow, with its last run lit up.',
+  'automations.chips.captionPhone': 'Latest first.',
   'automations.chip.off': 'off',
   'automations.chip.running': 'running',
   'automations.chip.never': 'never',

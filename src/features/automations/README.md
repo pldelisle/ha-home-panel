@@ -21,6 +21,7 @@ src/features/automations/
   flow-mount.ts            mountFlow(box, def, deps): Mermaid loaded, initialized per theme, rendered once per definition, decorated
   events.ts                SelectRunEvent, CloseSelectionEvent
   sheets.ts                FLOW_SHEET: the id of the flow's sheet a phone's list row opens
+  identity.ts              AUTOMATIONS_ICON, AUTOMATIONS_COLOR: the subject's icon and colour, for the descriptor, the header and the sheet
   automations-pane.ts      <hp-automations-pane>: on a phone Today's card then the list, the selected card in the flow's sheet
   run-timeline.ts          <hp-run-timeline>
   flow-card.ts             <hp-flow-card>
