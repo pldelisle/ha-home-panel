@@ -27,9 +27,9 @@ test('two panels on one page show their own houses', async ({house}) => {
   await expect(await climateRooms(second)).toHaveText(['Living room', 'Office']);
   await expect(await climateRooms(first)).toHaveText(['Bedroom', 'Garage', 'Living room', 'Office']); // discovered: every thermostat, sorted by id
 
-  // the headers show two people in the first and one in the second
-  await expect(first.locator('#hello .status')).toHaveCount(2);
-  await expect(second.locator('#hello .status')).toHaveCount(1);
+  // Who is home shows two people in the first and one in the second
+  await expect(first.locator('hp-who-card .status')).toHaveCount(2);
+  await expect(second.locator('hp-who-card .status')).toHaveCount(1);
 
   // a state change through the harness reaches both
   const bulb = (panel: Locator) => panel.locator('#pane-lights .lbulb[data-a="living_room"]:visible'); // on the phone the tablet card is in the page too, hidden

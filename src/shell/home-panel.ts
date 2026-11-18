@@ -6,6 +6,7 @@ import {LitElement, html, unsafeCSS, type PropertyValues, type TemplateResult} f
 import {classMap} from 'lit/directives/class-map.js';
 import {ifDefined} from 'lit/directives/if-defined.js';
 import {keyed} from 'lit/directives/keyed.js';
+import {ref} from 'lit/directives/ref.js';
 import {repeat} from 'lit/directives/repeat.js';
 import {ContextProvider} from '@lit/context';
 import {createApi} from '../core/api.ts';
@@ -114,7 +115,7 @@ export class HomePanel extends LitElement {
   declare private toastNow: ToastState;
   /** Counts the live pill's changes, which the header redraws its weather chip at; with `liveRunning`, whether an activity shows. */
   declare private liveKey: number;
-  /** How many Status checks need attention, which the Home pane's heading says. */
+  /** How many Status checks need attention, which the header's greeting line says. */
   declare private attention: number;
   private liveRunning = false;
 
@@ -204,8 +205,22 @@ export class HomePanel extends LitElement {
       store: this.store,
       sheetOpen: id => this.sheets.isOpen(id),
       sheetDetail: id => this.sheets.detail(id),
-      attention: this.attention,
     };
+  }
+
+  /** When the history the shown pane reads was last answered, or null when that pane reads none: the header's clock line asks it each second. */
+  private readonly historyAnsweredAt = (): number | null => this.statistics.answeredAt(this.tab);
+  private readonly scopedPanes = new WeakSet<Element>();
+
+  // Each pane gets its own view of the one statistics cache, so the cache can tell which pane was answered: a pane that reads no history
+  // has no answer, and the header's note is about the pane on screen (#426). The section is made before its elements connect.
+  private scopeStatistics(key: FeatureKey, el: Element | undefined): void {
+    if (!el || this.scopedPanes.has(el)) return;
+    this.scopedPanes.add(el);
+    new ContextProvider(el as HTMLElement, {
+      context: statisticsCacheContext,
+      initialValue: this.statistics.scoped(key),
+    });
   }
 
   constructor() {
@@ -509,7 +524,9 @@ export class HomePanel extends LitElement {
         .live=${this.liveRunning}
         .liveKey=${this.liveKey}
         .historyAt=${this.statistics.lastLoadedAt}
+        .historyAnsweredAt=${this.historyAnsweredAt}
         .tab=${this.tab}
+        .attention=${this.attention}
       ></hp-header>
       <div class="tabview" id="tabview">
         ${this.renderRail()}
@@ -522,6 +539,7 @@ export class HomePanel extends LitElement {
                 class="pane pane-${f.key} ${this.sheetBehind(f) ? 'behind' : ''}"
                 id="pane-${f.key}"
                 ?hidden=${this.tab !== f.key && !this.sheetBehind(f)}
+                ${ref(el => this.scopeStatistics(f.key, el))}
               >
                 ${f.pane(this.env)}
               </section>`,

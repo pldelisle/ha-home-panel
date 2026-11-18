@@ -21,8 +21,8 @@ declare global {
       forecast(type: 'daily' | 'hourly', entries: object[]): void;
       /** how many subscriptions with this message `type` the panel holds now */
       subscribed(type: string): number;
-      /** the recorder answers every statistics request of this period with an error (null: it answers again) */
-      failStatistics(period: '5minute' | 'hour' | 'day' | null): void;
+      /** the recorder answers every statistics request of this period ('all': of every period) with an error (null: it answers again) */
+      failStatistics(period: '5minute' | 'hour' | 'day' | 'all' | null): void;
       /**
        * the next `callService` whose `domain.service` contains the pattern (`'media_player.turn_on'`, `'light.'`) rejects once with
        * `{code: 'unknown_error', message: 'the service call failed on purpose'}`, as Home Assistant's socket does; the rejected call is

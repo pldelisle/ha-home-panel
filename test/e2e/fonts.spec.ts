@@ -53,9 +53,9 @@ test("the Home tab draws in Manrope from the panel's fonts/ folder", async ({hou
   expect(await loadedFontWeights(house)).toEqual(FONT_WEIGHTS);
   await expect(page.locator('head style#home-panel-fonts')).toHaveCount(1);
   expect(await page.locator('head link[rel="stylesheet"]').count(), 'stylesheet links in the head').toBe(0);
-  // and the text uses the family: a heading on the Home pane is drawn in it
+  // and the text uses the family: Home's title, the greeting, is drawn in it
   await house.tab('home');
-  expect(await family(house, '#pane-home h2')).toMatch(MANROPE_FIRST);
+  expect(await family(house, 'hp-greeting h1')).toMatch(MANROPE_FIRST);
 });
 
 test("no tab asks anything of a server other than the house's, and charts and flows draw in Manrope", async ({

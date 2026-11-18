@@ -24,11 +24,14 @@ hp-header {
   font-size: calc(15px * var(--tx));
   margin-top: 4px;
 }
+/* the chips take the free space before them (on Home the greeting does), and the row's items hang from its top (`.head`, base.css), so
+   the chips, the gear and the clock are in the same place on every tab whatever the left of the row holds (#426) */
 .chips {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
   align-items: center;
+  margin-left: auto;
 }
 /* the chips sit in a box of their own before the gear, a box that is no box, so they are the row's own items */
 #chips {
@@ -74,19 +77,13 @@ hp-header {
 .app.tabsv.cp .head .clock {
   display: none;
 }
-/* any tab but Home (#380): no greeting, so the row is slim and the tab's own title is the page's large title; the clock leads on a tablet,
-   and on a phone the menu button, the live pill and the gear share the first row */
+/* any tab but Home (#380): no greeting, so the row is slim and the tab's own title is the page's large title; on a phone the menu
+   button, the live pill and the gear share the first row */
 .hello[hidden] {
   display: none;
 }
 .head.slim {
   margin-bottom: 14px;
-}
-.head.slim .clock {
-  order: -1;
-  margin-right: auto;
-  text-align: left;
-  font-size: calc(clamp(24px, 2.8vw, 34px) * var(--tx));
 }
 .app.tabsv.cp .head.slim #chips {
   grid-area: 1/2;

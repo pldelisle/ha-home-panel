@@ -1,6 +1,6 @@
 // The header's elements (#269): the greeting turns at 5:00 by the clock, the weather chip slims beside a live activity and widens when it
 // ends, and the clock's small line says when the history last loaded.
-import {test, expect, tabletOnly, phoneOnly, isPhone} from './fixtures';
+import {test, expect, tabletOnly, phoneOnly} from './fixtures';
 import {FULL_CFG} from './houses';
 import {pill, stopCharging} from './live';
 
@@ -29,18 +29,37 @@ test.describe('in the afternoon', () => {
     await expect(condition).toBeVisible();
   });
 
-  test('the clock says when the history last loaded', async ({house}) => {
-    await expect(house.root().locator('#clock small')).toHaveText('Live · history 2:00 pm');
+  test('the clock has no line while the history is fresh; Home says when it was updated once the recorder has stayed down past the interval, and Lights, with no history, never does', async ({
+    house,
+  }) => {
+    await house.root().locator('#gear').click(); // the settings' foot says the history has loaded
+    await expect(house.root().locator('#setpop .ccv')).toContainText('statistics refreshed');
+    await house.root().locator('#gear').click();
+    const note = house.root().locator('#clock small');
+    await expect(house.root().locator('#clock')).toBeVisible();
+    await expect(note).toHaveCount(0);
+    await house.page.evaluate(() => window.house.failStatistics('all')); // Home asks again each minute once the 15 minutes are up, and is not answered
+    await house.clock.runFor(20 * 60_000);
+    await expect(note).toHaveText('Updated 2:00 pm');
+    await house.tab('lights'); // no history on this pane: nothing to say about it
+    await expect(note).toHaveCount(0);
+    // each failed read is logged by the reader that asked, and the fixture would fail on it
+    expect(house.errors.every(e => /^home-panel (stack|live|home) history .*the recorder is down/.test(e))).toBe(true);
+    house.errors.length = 0;
   });
 });
 
 test.describe('the greeting belongs to Home', () => {
   test.use({houseOpts: {cfg: FULL_CFG, time: '2026-11-07T14:00:00-05:00'}});
 
-  test('Home keeps the greeting, the date and the people; Lights drops them for the tab title', async ({house}) => {
+  test('Home keeps the greeting with its date and temperatures as its only title; Lights drops them for the tab title', async ({
+    house,
+  }) => {
     const hello = house.root().locator('#hello');
     await expect(hello.locator('h1')).toBeVisible();
-    if (!isPhone(house)) await expect(hello.locator('.status').first()).toBeVisible(); // a phone's Home pane shows them
+    await expect(hello.locator('div')).toContainText(/Saturday, November 7 · .*inside/);
+    await expect(house.root().locator('#pane-home hp-pane-header')).toHaveCount(0); // no second title under the greeting
+    await expect(house.root().locator('hp-who-chips')).toHaveCount(1); // Who is home is the card, not the greeting too
     await house.tab('lights');
     await expect(hello).toBeHidden();
     await expect(house.root().locator('#gear')).toBeVisible();
@@ -82,3 +101,26 @@ test.describe('the greeting belongs to Home', () => {
     expect(title!.y).toBeLessThan(100);
   });
 });
+
+// the header never moves between tabs, at the tablet's two widths and in both languages
+for (const {lang, viewport} of [
+  {lang: 'en', viewport: {width: 1180, height: 820}},
+  {lang: 'fr', viewport: {width: 1024, height: 768}},
+] as const) {
+  test.describe(`the header's place, ${lang} at ${viewport.width}`, () => {
+    test.use({viewport, houseOpts: {cfg: FULL_CFG, lang, time: '2026-11-07T14:00:00-05:00'}});
+
+    test('the clock, the weather, the live pill and the gear sit in the same place on Home and on Lights', async ({
+      house,
+    }) => {
+      tabletOnly();
+      const parts = ['#clock', 'hp-weather-chip .wx', '#chips .attchip', '#gear'];
+      const boxes = () => Promise.all(parts.map(part => house.root().locator(part).boundingBox()));
+      await expect(pill(house)).toBeVisible(); // the car charges in this house
+      const onHome = await boxes();
+      await house.tab('lights');
+      await expect(pill(house)).toBeVisible();
+      expect(await boxes()).toEqual(onHome);
+    });
+  });
+}

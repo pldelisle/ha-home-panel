@@ -1,7 +1,7 @@
-// <hp-who-chips place="header" | "card">: Who's home as plain text, a dot, the first name and "home" or "away" for each configured person.
+// <hp-who-chips>: Who's home as plain text, a dot, the first name and "home" or "away" for each configured person.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over `peopleModel`, run in `willUpdate` on the provider's `presence`, with a
-// store controller on `peopleIds` (ADR 0012); `place` picks the header's or the Home card's look, as the legacy `.hello div` and `.hwx .wp` did.
-// The header's `<hp-greeting>` places it (#269); `<hp-who-card>` places it in the Home card.
+// store controller on `peopleIds` (ADR 0012).
+// `<hp-who-card>` places it in the Home card, its one place since the header's greeting stopped showing it (#426).
 // Must not: read an entity itself (`presence` does), word anything (the model does), or draw anything when no one is tracked.
 import {LitElement, html, nothing, unsafeCSS} from 'lit';
 import {repeat} from 'lit/directives/repeat.js';
@@ -16,11 +16,7 @@ import {common, status} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
 export class WhoChips extends LitElement {
-  static override properties = {place: {reflect: true}};
-  /** Where the chips sit: the header's greeting, or the Home card's Who's home. */
-  declare place: 'header' | 'card';
-
-  // The element's own rules, its `:host`, the chips and the two places' differences, are in who-chips.element.css.
+  // The element's own rules, its `:host` and the chips, are in who-chips.element.css.
   static override styles = [common, status, unsafeCSS(forShadow(chipsOwn))];
 
   private readonly storeController = new StoreController(this, {ids: store => peopleIds(store)});
@@ -28,7 +24,6 @@ export class WhoChips extends LitElement {
 
   constructor() {
     super();
-    this.place = 'header';
     // `compact` and `glass` come from the shell as host attributes the chips' rules test
     new AppearanceConsumer(this);
   }

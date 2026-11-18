@@ -1,4 +1,4 @@
-// <hp-header>: the panel's header: the sidebar button, the greeting with Who's home (on Home only, #380; every other tab has a hidden h1 naming the panel, so a page has exactly one), the chips (weather, peak, the live pill), the gear,
+// <hp-header>: the panel's header: the sidebar button, the greeting and its line (on Home only, #380; every other tab has a hidden h1 naming the panel, so a page has exactly one), the chips (weather, peak, the live pill), the gear,
 // the clock, and the two popups the shell keeps open or shut (the Status checks under the pill, the settings under the gear).
 // Pattern: a humble composition (Meszaros, xUnit Test Patterns), the composition root's child, drawn in light DOM (ADR 0033) so the legacy
 // `.head` rules still lay out its row, as the Home pane is (ADR 0032); its own rules are header.css. It replaced the guest's header (#269).
@@ -31,7 +31,9 @@ export class Header extends LitElement {
     live: {type: Boolean},
     liveKey: {type: Number},
     historyAt: {attribute: false},
+    historyAnsweredAt: {attribute: false},
     tab: {type: String},
+    attention: {type: Number},
   };
   /** The Status checks are open under the pill. */
   declare statusOpen: boolean;
@@ -41,10 +43,14 @@ export class Header extends LitElement {
   declare live: boolean;
   /** Counts the pill's changes: the weather chip is drawn anew at each, see `render`. */
   declare liveKey: number;
-  /** When the statistics cache last answered, null before its first reply: the clock's small line and the settings popup's version line. */
+  /** When the statistics cache last answered, null before its first reply: the settings popup's version line. */
   declare historyAt: number | null;
+  /** When the history the shown pane reads was last answered, null for a pane that reads none: the clock's small line asks it at each tick. */
+  declare historyAnsweredAt: () => number | null;
   /** The tab shown: the greeting, the date and Who's home are Home's, every other tab's title is the page's large title (#380). */
   declare tab: string;
+  /** How many Status checks need attention: the greeting's line says it. */
+  declare attention: number;
 
   // the catalog's words only: the header reads no entity
   private readonly storeController = new StoreController(this, {ids: () => []});
@@ -56,7 +62,9 @@ export class Header extends LitElement {
     this.live = false;
     this.liveKey = 0;
     this.historyAt = null;
+    this.historyAnsweredAt = () => null;
     this.tab = 'home';
+    this.attention = 0;
   }
 
   protected override createRenderRoot(): HTMLElement {
@@ -79,7 +87,7 @@ export class Header extends LitElement {
       <button class="icon menu" id="menu" type="button" aria-label="Open the sidebar" @click=${this.openSidebar}>
         ${ico('menu')}
       </button>
-      <hp-greeting class="hello" id="hello" ?hidden=${this.tab !== 'home'}></hp-greeting>
+      <hp-greeting class="hello" id="hello" .attention=${this.attention} ?hidden=${this.tab !== 'home'}></hp-greeting>
       ${this.tab === 'home' ? nothing : html`<h1 class="sr">${t('header.panel')}</h1>`}
       <div class="chips">
         <div id="chips">
@@ -99,7 +107,7 @@ export class Header extends LitElement {
           ${ico('gear', 20)}
         </button>
       </div>
-      <hp-clock-line class="clock" id="clock" .at=${this.historyAt}></hp-clock-line>
+      <hp-clock-line class="clock" id="clock" .answeredAt=${this.historyAnsweredAt}></hp-clock-line>
       <hp-status-popup
         class="pop"
         id="attpop"

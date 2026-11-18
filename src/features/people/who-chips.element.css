@@ -1,8 +1,7 @@
 /*
- * <hp-who-chips>'s own rules: the host lays out nothing, so the row is a child of the header's `.hello` or an item of the Home
- * card's column, as the legacy `.who` div was. Moved from the legacy `.who`, `.wp` and its parts (extra.css), `.hwx .who` and `.hwx .wp`
- * (tabs.css), `.app.gl .wp` (glass.css) and `.app.tabsv.cp .head .who` (phone.css), which #266 deleted. In the header the legacy
- * `.hello div` rule also reached the row: of what it set, only its `margin-top` showed (each chip sets its own colour and size).
+ * <hp-who-chips>'s own rules: the host lays out nothing, so the row is an item of the Home card's column, as the legacy `.who` div was.
+ * Moved from the legacy `.who`, `.wp` and its parts (extra.css), `.hwx .who` and `.hwx .wp` (tabs.css), `.app.gl .wp` (glass.css) and
+ * `.app.tabsv.cp .head .who` (phone.css), which #266 deleted. The header's look went with the chips in the greeting (#426).
  */
 :host {
   display: contents;
@@ -11,16 +10,6 @@
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-top: 8px;
-}
-:host([place='header']) .who {
-  margin-top: 4px;
-}
-:host([place='header'][compact]) .who {
-  display: none;
-}
-:host([place='card']) .who {
-  margin: 0;
 }
 .status small {
   font-weight: 500;

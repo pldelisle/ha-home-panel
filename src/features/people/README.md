@@ -1,6 +1,6 @@
 # People
 
-Who's home ([spec 24](../../../docs/specs/24-home.md)): the configured people, each home or away, as the header's chips, the Home card and the smart stack show them. Who's home is no tab, so the folder has no descriptor: the shell composes its elements on the Home pane and in the header. This folder holds the model and the ids (#264) and the elements `<hp-who-chips>` and `<hp-who-card>` (#266). The reading is the provider's, because three places read it (ADR 0025).
+Who's home ([spec 24](../../../docs/specs/24-home.md)): the configured people, each home or away, as the Home card and the smart stack show them (the header's chips went in #426). Who's home is no tab, so the folder has no descriptor: the shell composes its elements on the Home pane and in the header. This folder holds the model and the ids (#264) and the elements `<hp-who-chips>` and `<hp-who-card>` (#266). The reading is the provider's, because three places read it (ADR 0025).
 
 ## The folder
 
@@ -10,7 +10,7 @@ src/providers/
 src/features/people/
   README.md
   index.ts                 the feature's exports: peopleIds, peopleModel, WhoChips, WhoCard
-  who-chips.ts             <hp-who-chips place="header"|"card">: one chip per person, home or away
+  who-chips.ts             <hp-who-chips>: one chip per person, home or away
   who-chips.element.css    its own rules (ADR 0019)
   who-card.ts              <hp-who-card>: the Home card's label, then the chips or the hint
   who-card.element.css     its own rules

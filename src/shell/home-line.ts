@@ -1,6 +1,5 @@
-// The line the header's greeting and the Home pane's heading share: today's date (the greeting's; the pane leaves it to the greeting), then the
-// average inside and the outside temperature, then (the pane's) how many Status checks need attention, as the legacy `renderHeader` and
-// `renderPaneSubs` wrote them (deleted in #269).
+// The line under the header's greeting, Home's one title (#426): today's date, then the average inside and the outside temperature, then how many
+// Status checks need attention, as the legacy `renderHeader` and `renderPaneSubs` wrote them (deleted in #269).
 // Pattern: a pure model (Fowler, Presentation Model) over the provider's `readHomeTemperatures` (src/providers/home-temperatures.ts, since #276).
 // Must not: draw, read the clock (`now` is given), or read an entity.
 import {temperatureFigure, type Formatters} from '../core/i18n/format.ts';
@@ -8,7 +7,7 @@ import type {Translate} from '../core/i18n/messages.ts';
 import type {HomeTemperatures} from '../providers/home-temperatures.ts';
 
 export interface HomeLineInputs extends Partial<HomeTemperatures> {
-  /** Today, which the line opens with; absent, it says no date (the pane's, under the greeting that already says it). */
+  /** Today, which the line opens with; absent, it says no date. */
   now?: number;
   /** How many Status checks need attention; none is said when 0 or absent. */
   attention?: number;
