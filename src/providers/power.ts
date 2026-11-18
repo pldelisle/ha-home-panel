@@ -46,7 +46,7 @@ export interface RoomPower extends RoomNameInputs {
 }
 
 export interface PowerNow {
-  /** kW; null when the grid sensor is unset or reports no number. */
+  /** kW, from `gridLive` when the config names one, else `grid`; null when the sensor is unset or reports no number. */
   grid: number | null;
   waterHeater: number | null;
   ev: number | null;
@@ -102,7 +102,8 @@ export function waterHeaterNow(states: HassEntities, config: Pick<ResolvedConfig
 
 export function powerNow(states: HassEntities, config: Pick<ResolvedConfig, 'entities' | 'rooms'>): PowerNow {
   const {entities} = config;
-  const grid = kilowattsOf(states, entities.grid);
+  // the live flow sets the meter against devices that report an average (a baseboard's duty cycle): a house can name a smoothed meter for it
+  const grid = kilowattsOf(states, entities.gridLive ?? entities.grid);
   const waterHeater = kilowattsOf(states, entities.whP);
   const ev = kilowattsOf(states, entities.evP);
   const rooms = config.rooms.map(room => roomPower(states, room));

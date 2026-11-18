@@ -41,6 +41,8 @@ export const DEFAULT_ENTITIES = {
   dawn: 'sensor.sun_next_dawn',
   // energy: whole-house power, energy total, water heater, EV charger
   grid: null,
+  // the live flow's grid, when the meter's own reading is a sample the devices' averaged figures cannot be set against (a smoothed copy of `grid`); unset = `grid`
+  gridLive: null,
   energy: 'sensor.hilo_energy_total',
   whP: null,
   whT: null,
@@ -114,6 +116,7 @@ export const ENTITY_ALIAS: Record<string, EntityKey> = {
   sun_rising: 'rising',
   sun_dawn: 'dawn',
   grid_power: 'grid',
+  grid_power_live: 'gridLive',
   energy_total: 'energy',
   water_heater_power: 'whP',
   water_heater_temperature: 'whT',

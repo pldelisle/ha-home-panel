@@ -149,7 +149,7 @@
     },
     {
       "key": "energy.flow.overMeter",
-      "written": "Les appareils déclarent plus que le compteur"
+      "written": "Les appareils déclarent\nplus que le compteur"
     },
     {
       "key": "energy.importing",

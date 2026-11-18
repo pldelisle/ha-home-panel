@@ -555,7 +555,7 @@ export const fr: Record<MessageKey, string> = {
   'energy.flow.heat': 'Chauffage',
   'energy.flow.ev': 'Recharge VÉ',
   'energy.flow.rest': 'Reste de la maison',
-  'energy.flow.overMeter': 'Les appareils déclarent plus que le compteur',
+  'energy.flow.overMeter': 'Les appareils déclarent\nplus que le compteur',
   'energy.importing': 'Consomme',
   'energy.idle': 'Au repos',
   'energy.heating': 'Chauffe',

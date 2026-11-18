@@ -23,6 +23,8 @@ panel_custom:
       entities:
         weather: weather.springfield_forecast # default: the first weather entity
         grid_power: sensor.house_power
+        # the live flow's grid, when the meter reports one-minute samples and the thermostats an average (see the README)
+        grid_power_live: sensor.house_power_5_min_average
         energy_total: sensor.house_energy
         water_heater_power: sensor.water_heater_power
         water_heater_temperature: sensor.water_heater_temperature

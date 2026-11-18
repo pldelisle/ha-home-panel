@@ -451,7 +451,8 @@ test.describe('the detail on a tablet', () => {
     // the test house's devices (106 kWh of hours) outrun its meter (which reads 0.0 today): the live flow and the uses each say so once
     await expect(detail(house).locator('.histnote')).toHaveText('Devices report more than the meter today.');
     await rangeTab(house, 'Now').click();
-    await expect(flow(house).locator('svg')).toContainText('Devices report more than the meter');
+    await expect(flow(house).locator('svg text', {hasText: 'Devices report more'})).toHaveCount(1);
+    await expect(flow(house).locator('svg text', {hasText: 'than the meter'})).toHaveCount(1);
     await expect(flow(house).locator('svg')).not.toContainText('Rest of home');
     await rangeTab(house, 'Today').click();
     // the Month tab is the 30 days the donut always drew
