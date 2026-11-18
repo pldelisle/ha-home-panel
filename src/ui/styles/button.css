@@ -2,7 +2,7 @@
    but the legacy sheet still joins every kit file (ADR 0019), where the button's rules were, until phase 4. */
 .abtn {
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--shape-pill);
   padding: 10px 16px;
   min-height: 44px;
   font: inherit;
@@ -23,7 +23,7 @@
 @media (prefers-reduced-motion: no-preference) {
   .abtn {
     transition:
-      transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+      transform var(--motion-press-ms) var(--motion-standard),
       background-color 0.2s ease,
       box-shadow 0.2s ease,
       color 0.2s ease;

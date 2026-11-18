@@ -10,7 +10,7 @@
 }
 .aqcard {
   background: var(--card);
-  border-radius: 22px;
+  border-radius: var(--shape-card);
   padding: 16px;
   box-shadow: var(--shadow);
   min-width: 0;

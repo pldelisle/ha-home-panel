@@ -6,7 +6,7 @@
 }
 .cct {
   background: var(--card2);
-  border-radius: 20px;
+  border-radius: var(--shape-stat-tile);
   padding: 14px;
   min-width: 0;
   border: 0;
@@ -101,7 +101,7 @@ button.cct:focus-visible {
   min-height: 44px;
   padding: 0 18px;
   border: 0;
-  border-radius: 22px;
+  border-radius: var(--shape-card);
   background: var(--card2);
   font: inherit;
   font-weight: 600;
@@ -239,17 +239,17 @@ button.cct:focus-visible {
 }
 .gtrange::-webkit-slider-runnable-track {
   height: 6px;
-  border-radius: 3px;
+  border-radius: var(--shape-bar);
   background: linear-gradient(90deg, var(--c-home) 0, var(--c-home) var(--p), var(--ring) var(--p));
 }
 .gtrange::-moz-range-track {
   height: 6px;
-  border-radius: 3px;
+  border-radius: var(--shape-bar);
   background: var(--ring);
 }
 .gtrange::-moz-range-progress {
   height: 6px;
-  border-radius: 3px;
+  border-radius: var(--shape-bar);
   background: var(--c-home);
 }
 .gtrange::-webkit-slider-thumb {
@@ -281,7 +281,7 @@ button.cct:focus-visible {
 @media (prefers-reduced-motion: no-preference) {
   .cct {
     transition:
-      transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+      transform var(--motion-press-ms) var(--motion-standard),
       background-color 0.2s ease,
       box-shadow 0.2s ease,
       color 0.2s ease;

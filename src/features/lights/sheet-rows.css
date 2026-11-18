@@ -2,7 +2,7 @@
    link with) through `forShadow`, where `.app.gl` reads as `:host([glass])`. Moved from the legacy sheet's rules (lights.css) in #262.
    A selector the feature writes is written nowhere else (ADR 0019). */
 .lgrp {
-  border-radius: 18px;
+  border-radius: var(--shape-card-compact);
   overflow: hidden;
   background: var(--card2);
 }
@@ -41,7 +41,7 @@ button.lgr:focus-visible {
   width: 32px;
   height: 32px;
   flex: none;
-  border-radius: 9px;
+  border-radius: var(--shape-icon-sm);
   display: grid;
   place-items: center;
   color: #fff;

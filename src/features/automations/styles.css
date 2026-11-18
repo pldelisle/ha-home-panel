@@ -9,7 +9,7 @@
 .aubox {
   background: var(--card);
   border: 0;
-  border-radius: 22px;
+  border-radius: var(--shape-card);
   padding: 20px;
   box-shadow: var(--shadow);
   min-width: 0;
@@ -90,7 +90,7 @@
   align-items: center;
   gap: 8px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--shape-pill);
   font-weight: 600;
   white-space: nowrap;
   box-shadow: none;
@@ -128,7 +128,7 @@
 @media (prefers-reduced-motion: no-preference) {
   .aupick .chip {
     transition:
-      transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+      transform var(--motion-press-ms) var(--motion-standard),
       background-color 0.2s ease,
       box-shadow 0.2s ease,
       color 0.2s ease;
@@ -154,7 +154,7 @@
   min-height: 44px;
   padding: 8px 12px;
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--shape-segment);
   background: transparent;
   color: var(--fg);
   font: inherit;
@@ -223,7 +223,7 @@
 @media (prefers-reduced-motion: no-preference) {
   .ausel .close {
     transition:
-      transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+      transform var(--motion-press-ms) var(--motion-standard),
       background-color 0.2s ease,
       box-shadow 0.2s ease,
       color 0.2s ease;
@@ -244,7 +244,7 @@
   left: 0;
   top: 34px;
   height: 2px;
-  border-radius: 2px;
+  border-radius: var(--shape-bar-sm);
   background: var(--ring);
 }
 .autl .axis {
@@ -260,7 +260,7 @@
   height: 30px;
   margin-left: -1px;
   background: var(--ok);
-  border-radius: 2px;
+  border-radius: var(--shape-bar-sm);
 }
 .autl .hr {
   position: absolute;
@@ -397,7 +397,7 @@
   display: inline-block;
   width: 22px;
   height: 3px;
-  border-radius: 2px;
+  border-radius: var(--shape-bar-sm);
   vertical-align: middle;
   margin-right: 6px;
   background: var(--ok);
@@ -490,7 +490,7 @@
 }
 .augraph::-webkit-scrollbar-thumb {
   background: var(--ring);
-  border-radius: 3px;
+  border-radius: var(--shape-bar);
 }
 .augraph .edgeLabel,
 .augraph .edgeLabel p,

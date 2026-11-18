@@ -22,7 +22,7 @@
 }
 :host([compact]) .inner {
   padding: 14px;
-  border-radius: 18px;
+  border-radius: var(--shape-card-compact);
 }
 /* the Sankey's card sits 14 pixels under the chart's on a tablet too, as the legacy panel's inline style put it */
 .blocks > .sankeyblock {
@@ -63,6 +63,6 @@
   display: inline-block;
   width: 10px;
   height: 10px;
-  border-radius: 3px;
+  border-radius: var(--shape-bar);
   margin-right: 8px;
 }

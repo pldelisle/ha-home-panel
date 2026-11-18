@@ -62,7 +62,7 @@
   min-width: 0;
   padding: 5px 2px 3px;
   gap: 3px;
-  border-radius: 14px;
+  border-radius: var(--shape-control-sm);
   font-size: 11px;
 }
 .app.tabsv.cp .rtab[aria-selected='true'] {

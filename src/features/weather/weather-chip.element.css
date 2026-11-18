@@ -11,7 +11,7 @@
   gap: 8px;
   background: none;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--shape-pill);
   padding: 9px 4px;
   min-height: 44px;
   font-weight: 600;

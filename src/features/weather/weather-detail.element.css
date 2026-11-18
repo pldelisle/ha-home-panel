@@ -13,7 +13,7 @@
 }
 :host([compact]) .inner {
   padding: 14px;
-  border-radius: 18px;
+  border-radius: var(--shape-card-compact);
 }
 [slot='icon'] {
   display: contents;
@@ -21,7 +21,7 @@
 /* the phone's blocks have 14px of padding and 18px corners: the radar's map runs to the block's edges, no further, so the block stays wide enough to show the frame time */
 :host([compact]) .radar {
   margin: 12px -14px -14px;
-  border-radius: 0 0 18px 18px;
+  border-radius: 0 0 var(--shape-card-compact) var(--shape-card-compact);
 }
 /* the house picture under the big reading, as Home's card draws it: one for each theme */
 .whouse .house {

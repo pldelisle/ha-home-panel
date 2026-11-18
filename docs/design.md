@@ -44,6 +44,32 @@ strength setting moves the navigation layer only.
 - A request for reduced transparency (`prefers-reduced-transparency: reduce`) makes the navigation layer solid too, and drops the
   cards' blur.
 
+## Shape and motion
+
+Every corner and every easing is a token declared once on `.app` (`src/ui/styles/tokens.css`), named by the role it plays and not by its
+value, so a second design language can redefine the set in one place. No rule writes a literal pixel `border-radius` (0, 50% and
+`inherit` aside) or a `cubic-bezier(...)`: `test/unit/shape-motion-tokens.test.mjs` fails it, and fails a token a rule reads but
+`tokens.css` does not declare.
+
+| Role                | Token                                                                                                                                                                | Today                                             |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| Big surfaces        | `--shape-feature`, `--shape-slider`, `--shape-sheet`, `--shape-dialog`, `--shape-nav-item`                                                                           | 34, 32, 30, 26, 24 px                             |
+| Card                | `--shape-card`; inside a sheet or a compact pane `--shape-card-compact`                                                                                              | 22, 18 px                                         |
+| Stat tile           | `--shape-stat-tile`                                                                                                                                                  | 20 px                                             |
+| Well and control    | `--shape-well`, `--shape-control`, then `--shape-control-sm`, `--shape-switch`                                                                                       | 16, 16, 14, 15 px                                 |
+| Segment, focus ring | `--shape-segment` (a segmented control's option, a nested row), `--shape-focus`                                                                                      | 12, 8 px                                          |
+| Icon square         | `--shape-icon-xl`, `-lg`, `-md`, then `--shape-icon`, `--shape-icon-sm`                                                                                              | 13, 12, 11, 10, 9 px                              |
+| Bar and track ends  | `--shape-track-lg`, `-md`, `--shape-track`, `--shape-bar`, `-sm`, `-xs`                                                                                              | 6, 5, 4, 3, 2, 1 px                               |
+| Inline code         | `--shape-code`                                                                                                                                                       | 6 px                                              |
+| Pill                | `--shape-pill`                                                                                                                                                       | 999 px                                            |
+| Easing              | `--motion-standard` (every press and entrance), `--motion-spring` (the switch knob), `--motion-sheet-spring`, `--motion-pop`, `--motion-overshoot` (the dial's knob) | `cubic-bezier(0.2, 0.8, 0.2, 1)` and four springs |
+| Duration            | `--motion-press-ms`, `--motion-pane-ms`, `--motion-sheet-ms`, `--motion-sheet-spring-ms`, `--motion-pop-ms`, `--motion-switch-ms`                                    | 180, 280, 320, 460, 300, 220 ms                   |
+
+- A radius that is the shape of the element's box (a circle is `50%`, a square corner `0`, a child that follows its parent
+  `inherit`) stays as it is: it is geometry, not design.
+- A new rule picks the token for what the element is, never one that merely has the right number; a role with no token yet gets a
+  new one in `tokens.css`, with the test as the guard.
+
 ## Telling the person what a tap does
 
 - Say it with the surface and the `›`, not with words. No "Tap to …" lines: a scene that has never run says "Never run", not

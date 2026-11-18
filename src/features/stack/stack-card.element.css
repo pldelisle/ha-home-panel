@@ -15,7 +15,7 @@
   flex: 1;
   padding: 16px 18px;
   /* the stack is a card of its own on the Home pane, the surface the other cards have; a tap opens its subject */
-  border-radius: 22px;
+  border-radius: var(--shape-card);
   background: var(--card);
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
@@ -64,7 +64,7 @@
   height: 300px;
   box-sizing: border-box;
   padding: 22px 24px;
-  border-radius: 34px;
+  border-radius: var(--shape-feature);
   background: var(--g-card, var(--card));
   -webkit-backdrop-filter: var(--g-bd, none);
   backdrop-filter: var(--g-bd, none);
@@ -141,7 +141,7 @@
   flex: none;
   width: 28px;
   height: 28px;
-  border-radius: 9px;
+  border-radius: var(--shape-icon-sm);
   display: grid;
   place-items: center;
   color: #fff;
@@ -195,7 +195,7 @@
   font-size: 13px;
   font-weight: 600;
   padding: 5px 10px;
-  border-radius: 99px;
+  border-radius: var(--shape-pill);
   background: color-mix(in srgb, var(--fg) 10%, transparent);
 }
 :host .swx {
@@ -287,7 +287,7 @@
   font-size: 12.5px;
   font-weight: 700;
   padding: 4px 10px;
-  border-radius: 99px;
+  border-radius: var(--shape-pill);
   background: color-mix(in srgb, var(--fg) 10%, transparent);
   color: var(--fg2);
 }
@@ -303,7 +303,7 @@
 :host .sev i {
   flex: none;
   width: 4px;
-  border-radius: 2px;
+  border-radius: var(--shape-bar-sm);
 }
 :host .sev b {
   display: block;
@@ -324,7 +324,7 @@
   flex: none;
   width: 84px;
   height: 84px;
-  border-radius: 14px;
+  border-radius: var(--shape-control-sm);
   object-fit: cover;
   background: linear-gradient(135deg, var(--m-amber), var(--m-purple));
 }
@@ -343,7 +343,7 @@
   margin-top: 18px;
 }
 :host .sbar i {
-  border-radius: 4px;
+  border-radius: var(--shape-track);
 }
 @media (max-width: 380px) {
   :host .sc {

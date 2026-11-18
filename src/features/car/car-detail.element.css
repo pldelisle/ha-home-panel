@@ -37,7 +37,7 @@
 }
 /* the rows open sheets: a control's surface, not a well (docs/design.md, "Three surfaces") */
 .rows .list {
-  border-radius: 16px;
+  border-radius: var(--shape-well);
   background: var(--ctl-bg);
   box-shadow: var(--ctl-edge);
   overflow: hidden;

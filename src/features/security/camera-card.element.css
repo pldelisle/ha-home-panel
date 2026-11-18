@@ -13,7 +13,7 @@
 .camcard {
   background: var(--card);
   border: 0;
-  border-radius: 22px;
+  border-radius: var(--shape-card);
   padding: 20px;
   box-shadow: var(--shadow);
   min-width: 0;
@@ -68,7 +68,7 @@
   position: relative;
   border: 0;
   padding: 0;
-  border-radius: 16px;
+  border-radius: var(--shape-well);
   overflow: hidden;
   background: var(--card2);
   aspect-ratio: 16/9;
@@ -126,7 +126,7 @@
   gap: 14px;
   align-items: flex-start;
   background: var(--card2);
-  border-radius: 16px;
+  border-radius: var(--shape-well);
   padding: 14px;
   color: var(--fg3);
 }
@@ -157,7 +157,7 @@
   margin-top: 10px;
   border: 1.5px solid var(--c-home);
   background: var(--card);
-  border-radius: 999px;
+  border-radius: var(--shape-pill);
   padding: 10px 16px;
   min-height: 44px;
   font: inherit;
@@ -185,7 +185,7 @@
 @media (prefers-reduced-motion: no-preference) {
   .camempty .more {
     transition:
-      transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+      transform var(--motion-press-ms) var(--motion-standard),
       background-color 0.2s ease,
       box-shadow 0.2s ease,
       color 0.2s ease;

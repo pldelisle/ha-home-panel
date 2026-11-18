@@ -99,6 +99,58 @@
   --house-win: #55524e;
   --house-shadow: rgba(60, 50, 40, 0.18);
 }
+/* Shape and motion (docs/design.md, "Shape and motion"): every corner and every easing in the panel is one of these, named by the role
+   it plays and not by its value, so a second design language redefines them here and nowhere else. A rule never writes a literal
+   `border-radius` in px (0, 50% and `inherit` aside) or a `cubic-bezier(...)`: test/unit/shape-motion-tokens.test.mjs fails it. */
+.app {
+  /* the big surfaces: the Smart Stack card and the glass rail on a wide screen, a sheet's panel, a dialog */
+  --shape-feature: 34px;
+  --shape-slider: 32px;
+  --shape-sheet: 30px;
+  --shape-dialog: 26px;
+  --shape-nav-item: 24px;
+  /* a card, and the stat tile; a card that sits inside a sheet or a compact pane takes the smaller radius */
+  --shape-card: 22px;
+  --shape-stat-tile: 20px;
+  --shape-card-compact: 18px;
+  /* inside a card: a well shows a value, a control is tapped (the same size today, two roles for a language that tells them apart) */
+  --shape-well: 16px;
+  --shape-control: 16px;
+  --shape-switch: 15px;
+  --shape-control-sm: 14px;
+  --shape-segment: 12px;
+  --shape-focus: 8px;
+  /* the square an icon sits on, from the stat tile's wide one down to a row's */
+  --shape-icon-xl: 13px;
+  --shape-icon-lg: 12px;
+  --shape-icon-md: 11px;
+  --shape-icon: 10px;
+  --shape-icon-sm: 9px;
+  /* inline code (the configuration card's path) */
+  --shape-code: 6px;
+  /* the end of a bar: a track, a thumb, a legend swatch */
+  --shape-track-lg: 6px;
+  --shape-track-md: 5px;
+  --shape-track: 4px;
+  --shape-bar: 3px;
+  --shape-bar-sm: 2px;
+  --shape-bar-xs: 1px;
+  /* as round as the box allows: a chip, a button, a range tab */
+  --shape-pill: 999px;
+  /* easings: the one every press and entrance uses, and the springs that overshoot a little (the switch knob, a sheet rising, a popup, the dial's knob) */
+  --motion-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --motion-spring: cubic-bezier(0.3, 1.3, 0.4, 1);
+  --motion-sheet-spring: cubic-bezier(0.3, 1.22, 0.4, 1);
+  --motion-pop: cubic-bezier(0.2, 0.9, 0.3, 1.06);
+  --motion-overshoot: cubic-bezier(0.2, 0.9, 0.3, 1.3);
+  /* the durations that go with them, in ms */
+  --motion-press-ms: 180ms;
+  --motion-pane-ms: 280ms;
+  --motion-sheet-ms: 320ms;
+  --motion-sheet-spring-ms: 460ms;
+  --motion-pop-ms: 300ms;
+  --motion-switch-ms: 220ms;
+}
 .app[data-theme='dark'] {
   --wp-dawn-base: #17151b;
   --wp-dawn-1: rgba(150, 74, 60, 0.55);

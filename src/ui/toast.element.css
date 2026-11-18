@@ -15,7 +15,7 @@
   background: var(--fg);
   color: var(--bg);
   padding: 10px 16px;
-  border-radius: 14px;
+  border-radius: var(--shape-control-sm);
   font-size: calc(13px * var(--tx));
   width: max-content;
   max-width: calc(100% - 32px);
@@ -37,7 +37,7 @@
 }
 .toast .tdis {
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--shape-icon);
   min-height: 36px;
   padding: 8px 12px;
   font: inherit;
@@ -55,7 +55,7 @@
   backdrop-filter: var(--g-bd);
   box-shadow: var(--g-edge);
   color: var(--fg);
-  border-radius: 999px;
+  border-radius: var(--shape-pill);
   padding: 12px 18px;
   font-weight: 600;
 }

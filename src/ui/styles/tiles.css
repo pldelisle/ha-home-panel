@@ -14,7 +14,7 @@
 }
 .tile {
   background: var(--card2);
-  border-radius: 16px;
+  border-radius: var(--shape-well);
   padding: 10px 12px;
   min-width: 0;
 }
@@ -85,7 +85,7 @@
 @media (prefers-reduced-motion: no-preference) {
   .tilebtn {
     transition:
-      transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+      transform var(--motion-press-ms) var(--motion-standard),
       background-color 0.2s ease,
       box-shadow 0.2s ease,
       color 0.2s ease;

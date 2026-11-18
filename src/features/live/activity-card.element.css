@@ -10,7 +10,7 @@
   font-variant-numeric: tabular-nums;
 }
 .lact {
-  border-radius: 18px;
+  border-radius: var(--shape-card-compact);
   padding: 14px 16px;
   background: var(--card2);
 }
@@ -73,13 +73,13 @@
 .lbar {
   position: relative;
   height: 8px;
-  border-radius: 5px;
+  border-radius: var(--shape-track-md);
   background: color-mix(in srgb, var(--fg) 10%, transparent);
 }
 .lbar i {
   position: absolute;
   inset: 0 auto 0 0;
-  border-radius: 5px;
+  border-radius: var(--shape-track-md);
   background: var(--ac);
 }
 .lbar em {
@@ -87,7 +87,7 @@
   top: -3px;
   bottom: -3px;
   width: 2px;
-  border-radius: 1px;
+  border-radius: var(--shape-bar-xs);
   background: var(--fg);
 }
 .lmeta {
@@ -109,7 +109,7 @@
   flex: 1;
   min-height: 44px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--shape-pill);
   font: 600 calc(13.5px * var(--tx)) var(--f-body);
   color: var(--fg);
   background: var(--card);
@@ -131,7 +131,7 @@
   position: relative;
   display: flex;
   height: 26px;
-  border-radius: 9px;
+  border-radius: var(--shape-icon-sm);
   overflow: hidden;
   margin: 12px 0 4px;
   font-size: calc(11px * var(--tx));
@@ -151,7 +151,7 @@
   bottom: 0;
   width: 3px;
   margin-left: -1.5px;
-  border-radius: 2px;
+  border-radius: var(--shape-bar-sm);
   background: var(--fg);
 }
 .lpt {
@@ -188,7 +188,7 @@
 @media (prefers-reduced-motion: no-preference) {
   .lbtns button.go {
     transition:
-      transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+      transform var(--motion-press-ms) var(--motion-standard),
       background-color 0.2s ease,
       box-shadow 0.2s ease,
       color 0.2s ease;

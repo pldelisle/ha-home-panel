@@ -36,7 +36,7 @@
 .card {
   background: var(--card);
   border: 0;
-  border-radius: 22px;
+  border-radius: var(--shape-card);
   padding: 20px;
   box-shadow: var(--shadow);
   min-width: 0;
@@ -69,7 +69,7 @@
 .go {
   width: 34px;
   height: 34px;
-  border-radius: 12px;
+  border-radius: var(--shape-segment);
   background: var(--card2);
   display: grid;
   place-items: center;
@@ -91,7 +91,7 @@
 .ichip {
   width: 40px;
   height: 40px;
-  border-radius: 14px;
+  border-radius: var(--shape-control-sm);
   display: grid;
   place-items: center;
   flex: none;
@@ -115,7 +115,7 @@
   margin-top: 10px;
   border: 0;
   background: var(--card2);
-  border-radius: 999px;
+  border-radius: var(--shape-pill);
   padding: 10px 16px;
   min-height: 44px;
   font: inherit;

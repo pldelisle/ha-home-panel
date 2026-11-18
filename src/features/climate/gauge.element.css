@@ -9,7 +9,7 @@
   position: relative;
   height: 10px;
   margin: 30px 9px 8px;
-  border-radius: 6px;
+  border-radius: var(--shape-track-lg);
   background: linear-gradient(90deg, #5b8fd0, #7fb3a0 35%, #e2c07a 62%, #d4763f);
 }
 .gauge .mk {
@@ -27,7 +27,7 @@
   top: -7px;
   bottom: -7px;
   width: 3px;
-  border-radius: 2px;
+  border-radius: var(--shape-bar-sm);
   transform: translateX(-50%);
   background: var(--fg);
 }

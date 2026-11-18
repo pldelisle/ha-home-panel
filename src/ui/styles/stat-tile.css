@@ -16,7 +16,7 @@
   min-height: 112px;
   padding: 12px 14px;
   border: 0;
-  border-radius: 20px;
+  border-radius: var(--shape-stat-tile);
   background: var(--card);
   box-shadow: var(--shadow);
   font: inherit;
@@ -36,7 +36,7 @@
 .stile .ic {
   width: 36px;
   height: 36px;
-  border-radius: 12px;
+  border-radius: var(--shape-icon-lg);
   background: var(--card2);
   display: grid;
   place-items: center;
@@ -129,7 +129,7 @@
   margin: 0;
   width: 40px;
   height: 40px;
-  border-radius: 13px;
+  border-radius: var(--shape-icon-xl);
 }
 .stile.wide .tx {
   order: 0;
@@ -263,7 +263,7 @@
   .stile,
   .stile .pp2 {
     transition:
-      transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+      transform var(--motion-press-ms) var(--motion-standard),
       background-color 0.2s ease,
       box-shadow 0.2s ease,
       color 0.2s ease;

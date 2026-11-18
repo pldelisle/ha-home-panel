@@ -10,7 +10,7 @@
 .alcard {
   background: var(--card);
   border: 0;
-  border-radius: 22px;
+  border-radius: var(--shape-card);
   padding: 20px;
   box-shadow: var(--shadow);
   min-width: 0;
@@ -63,7 +63,7 @@
   right: 0;
   top: 15px;
   height: 6px;
-  border-radius: 3px;
+  border-radius: var(--shape-bar);
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
 }
 .alnow {

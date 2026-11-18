@@ -9,7 +9,7 @@
   display: flex;
   gap: 4px;
   background: var(--card2);
-  border-radius: 999px;
+  border-radius: var(--shape-pill);
   padding: 4px;
   overflow-x: auto;
 }
@@ -20,7 +20,7 @@
   font: 600 calc(14px * var(--tx)) var(--f-body);
   padding: 12px 16px;
   min-height: 44px;
-  border-radius: 999px;
+  border-radius: var(--shape-pill);
   cursor: pointer;
   white-space: nowrap;
 }
@@ -44,7 +44,7 @@
 @media (prefers-reduced-motion: no-preference) {
   .tab {
     transition:
-      transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+      transform var(--motion-press-ms) var(--motion-standard),
       background-color 0.2s ease,
       box-shadow 0.2s ease,
       color 0.2s ease;

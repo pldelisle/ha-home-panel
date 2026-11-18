@@ -95,7 +95,7 @@ hp-home-pane {
   /* the pill's right padding sits under the text that follows: the English colon reads attached (`peoples:`), and the
      French space before its colon (`peoples :`) stays a space */
   margin-right: -5px;
-  border-radius: 6px;
+  border-radius: var(--shape-code);
   background: var(--card2);
   color: var(--fg);
 }

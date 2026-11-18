@@ -6,13 +6,13 @@
   grid-auto-columns: 1fr;
   gap: 4px;
   background: var(--card2);
-  border-radius: 16px;
+  border-radius: var(--shape-control);
   padding: 4px;
 }
 .seg button {
   border: 0;
   background: transparent;
-  border-radius: 12px;
+  border-radius: var(--shape-segment);
   padding: 8px 2px;
   min-height: 44px;
   font: inherit;
@@ -69,7 +69,7 @@
 @media (prefers-reduced-motion: no-preference) {
   .seg button {
     transition:
-      transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+      transform var(--motion-press-ms) var(--motion-standard),
       background-color 0.2s ease,
       box-shadow 0.2s ease,
       color 0.2s ease;

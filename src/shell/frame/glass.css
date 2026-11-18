@@ -23,7 +23,7 @@
   left: 14px;
   right: 14px;
   bottom: calc(10px + env(safe-area-inset-bottom, 0px));
-  border-radius: 34px;
+  border-radius: var(--shape-feature);
   padding: 6px 8px;
   gap: 2px;
 }
@@ -32,11 +32,11 @@
 }
 .app.tabsv.gl.cp .rtab[aria-selected='true'] {
   background: var(--nav-sel-bg);
-  border-radius: 24px;
+  border-radius: var(--shape-nav-item);
 }
 /* iPad: the rail is the same capsule, standing on the page */
 .app.tabsv.gl:not(.cp) .rail {
-  border-radius: 30px;
+  border-radius: var(--shape-sheet);
   padding: 10px 6px;
 }
 .app.tabsv.gl:not(.cp) .rtab[aria-selected='true'] {
