@@ -1,5 +1,5 @@
-// The seven contexts the shell provides: the store, the API client, the statistics cache, the settings, the optimistic values, the daily
-// forecast and the appearance, one typed key each.
+// The eight contexts the shell provides: the store, the API client, the statistics cache, the climate archive, the settings, the optimistic
+// values, the daily forecast and the appearance, one typed key each.
 // Pattern: context protocol (W3C Community Group, Context Protocol; Lit's @lit/context): a provider at the root, a
 // consumer anywhere below finds it by a DOM event, so no level of the tree threads a service through its properties.
 // They live in the kit, not the shell: the kit's controllers consume them, and the kit may not import the shell, so
@@ -7,6 +7,7 @@
 // Must not: hold a value (the shell's providers do), or be imported by the core, which knows no context.
 import {createContext} from '@lit/context';
 import type {PanelApi} from '../core/api.ts';
+import type {StatisticsArchive} from '../core/archive-statistics.ts';
 import type {ForecastEntry} from '../core/ha.ts';
 import type {PanelSettings} from '../core/settings.ts';
 import type {StatisticsCache} from '../core/statistics-cache.ts';
@@ -21,6 +22,8 @@ export const apiContext = createContext<PanelApi>(Symbol('home-panel.api'));
  * so two panels stay independent. Weather's and Security's own caches stay as they are.
  */
 export const statisticsCacheContext = createContext<StatisticsCache>(Symbol('home-panel.statistics'));
+/** The past the recorder lacks, from ECCC's climate archive (#447): the shell builds it over `fetch`, and the Weather pane puts it behind its caches. */
+export const climateArchiveContext = createContext<StatisticsArchive>(Symbol('home-panel.climate-archive'));
 export const settingsContext = createContext<PanelSettings>(Symbol('home-panel.settings'));
 /** The panel's optimistic values, one store per panel so two panels stay independent (ADR 0023). */
 export const optimisticContext = createContext<OverlayStore>(Symbol('home-panel.optimistic'));

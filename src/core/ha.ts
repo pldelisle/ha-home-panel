@@ -3,6 +3,9 @@
 // Assistant's whole schema, and the client fills it at the edge (times in milliseconds, history in camelCase).
 // Must not: import at runtime, hold any value, or grow a field the panel does not read.
 
+/** The recorder's statistics periods: the length of one bucket of a statistic. */
+export type StatisticsPeriod = '5minute' | 'hour' | 'day';
+
 /** One bucket of a statistic (`recorder/statistics_during_period`); times are milliseconds since the epoch. */
 export interface StatisticRow {
   start: number;

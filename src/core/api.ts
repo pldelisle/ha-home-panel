@@ -10,6 +10,7 @@ import type {
   LovelaceResource,
   PanelSystemData,
   StatisticRow,
+  StatisticsPeriod,
   Trace,
   TraceSummary,
 } from './ha.ts';
@@ -54,7 +55,7 @@ export interface PanelApi {
   /** Statistics of the given ids (empty and missing ids dropped, repeated ids asked once); `{}` and no message when none are left. */
   statistics(
     ids: readonly (string | null | undefined)[],
-    period: string,
+    period: StatisticsPeriod,
     start: Date,
     types: readonly string[],
     end?: Date,

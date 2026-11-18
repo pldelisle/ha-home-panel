@@ -25,6 +25,7 @@ import '../../ui/pane-header.ts'; // defines <hp-pane-header>
 import {chart, common, inner, tiles} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 import {
+  archiveSource,
   detailChartOptions,
   SEASON_DAYS,
   seasonTicks,
@@ -62,14 +63,14 @@ export class WeatherDetail extends LitElement {
   static override properties = {
     view: {attribute: false},
     cache: {attribute: false},
-    archive: {attribute: false},
+    archiveNotice: {attribute: false},
   };
   /** The pane's view model: now, sun, alerts, hours and days. */
   declare view: WeatherViewModel | undefined;
   /** The pane's statistics cache. */
   declare cache: StatisticsCache | undefined;
   /** The pane's archive notice: where the rows before the recorder's first came from, asked with the arguments of the read. */
-  declare archive: ArchivedStatistics['notice'] | undefined;
+  declare archiveNotice: ArchivedStatistics['notice'] | undefined;
 
   // The host is a block; its blocks are one column with the sixteen pixels between them the pane's `.panel` gave (fourteen on the phone).
   // On a phone the detail sits in the tab under the pane's header; the rules that reach its `.inner` there are in weather-detail.element.css.
@@ -111,7 +112,7 @@ export class WeatherDetail extends LitElement {
     super();
     this.view = undefined;
     this.cache = undefined;
-    this.archive = undefined;
+    this.archiveNotice = undefined;
     new ContextConsumer(this, {
       context: apiContext,
       subscribe: false,
@@ -462,11 +463,7 @@ export class WeatherDetail extends LitElement {
               : nothing
         }
       </div>
-      ${
-        season && notice
-          ? html`<p class="muted">${t('archive.source', {date: fmt.date(notice.before), station: notice.station})}</p>`
-          : nothing
-      }`;
+      ${season && notice ? html`<p class="muted">${archiveSource(notice, {fmt, t})}</p>` : nothing}`;
   }
 
   // a tile's button anywhere in the blocks: the history is the shell's to open, as the pane's tiles are
@@ -528,7 +525,13 @@ export class WeatherDetail extends LitElement {
         cache.statistics(seasonIds, 'day', seasonStart, ['mean', 'min', 'max']),
       ]);
       if (token !== this.token) return;
-      this.loaded = {hour, day, at: now, generation, notice: this.archive?.(seasonIds, 'day', seasonStart) ?? null};
+      this.loaded = {
+        hour,
+        day,
+        at: now,
+        generation,
+        notice: this.archiveNotice?.(seasonIds, 'day', seasonStart) ?? null,
+      };
       this.failed = false;
       this.failedAt = undefined;
     } catch (error) {

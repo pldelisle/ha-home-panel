@@ -43,7 +43,7 @@ interface Entry {
  * The ids that name the reply: empty ones dropped, each once, sorted. `statistics` sends exactly these; `history` sends the list as
  * given, but its reply is keyed by id, so the same set reads the same.
  */
-const idsKey = (ids: readonly (string | null | undefined)[]) => [...new Set(ids.filter(Boolean))].sort();
+export const idsKey = (ids: readonly (string | null | undefined)[]) => [...new Set(ids.filter(Boolean))].sort();
 
 export function createStatisticsCache(
   api: Pick<PanelApi, 'statistics' | 'history'>,

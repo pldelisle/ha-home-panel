@@ -47,7 +47,11 @@ describe('the gap split', () => {
     expect(out['sensor.wind'].map(r => r.mean)).toEqual([1, 9]);
     expect(out['sensor.hum']).toHaveLength(2);
     expect(recorded['sensor.wind']).toHaveLength(1);
-    expect(api.notice(['sensor.wind', 'sensor.hum'], 'hour', START)).toEqual({station: "L'ASSOMPTION", before: first});
+    // the notice names where the archive's rows end (the end of the last), not where the recorder's begin
+    expect(api.notice(['sensor.wind', 'sensor.hum'], 'hour', START)).toEqual({
+      station: "L'ASSOMPTION",
+      before: START.getTime() + HOUR,
+    });
     // the notice belongs to that read: another range of the same ids, or other ids, has none
     expect(api.notice(['sensor.wind', 'sensor.hum'], 'day', START)).toBeNull();
     expect(api.notice(['sensor.wind'], 'hour', START)).toBeNull();
@@ -58,6 +62,8 @@ describe('the gap split', () => {
     const out = await api.statistics(['sensor.wind'], 'hour', START, ['mean']);
     expect(out['sensor.wind']).toHaveLength(1);
     expect(rows.mock.calls[0][3].getTime()).toBe(NOW);
+    // with no recorder row, the notice is not "before now": it is where the archive stopped
+    expect(api.notice(['sensor.wind'], 'hour', START)?.before).toBe(START.getTime() + HOUR);
     const end = new Date('2026-11-10T00:00:00Z');
     await api.statistics(['sensor.wind'], 'hour', START, ['mean'], end);
     expect(rows.mock.calls[1][3]).toEqual(end);
