@@ -703,6 +703,31 @@ test.describe('a heat pump with seven modes, on a tablet', () => {
   });
 });
 
+test.describe('a heat pump with seven modes under Material, on a phone', () => {
+  test.use({houseOpts: {cfg: SEVEN_MODES, design: 'material'}});
+
+  test('Escape in the menu closes only the menu, not the sheet the group is in, and the focus returns to More', async ({
+    house,
+  }) => {
+    phoneOnly();
+    await house.setState('climate.heat_pump', {...SEVEN, state: 'auto'});
+    await house.tab('climate');
+    await tile(house, 'hp').click();
+    const modes = controls(house).locator('hp-seg').first();
+    const more = modes.getByRole('button', {name: /^More modes/});
+    await expect(more).toHaveAccessibleDescription('Selected: Auto');
+    await more.focus();
+    await house.page.keyboard.press('Enter');
+    const menu = modes.getByRole('menu', {name: 'More modes'});
+    await expect(menu).toBeVisible();
+    await house.page.keyboard.press('Escape');
+    await expect(menu).toBeHidden();
+    await expect(more).toBeFocused();
+    await expect(sheet(house)).toBeVisible();
+    await expect(controls(house)).toBeVisible();
+  });
+});
+
 // a room's controls and the house's: the quick buttons, the setpoint stepper with the frost guard's rules, and the two buttons that ask in a dialog
 test.describe('a room’s and the house’s controls, on a tablet', () => {
   test.beforeEach(async ({house}) => {

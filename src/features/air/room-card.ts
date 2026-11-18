@@ -112,6 +112,7 @@ export class AirRoom extends LitElement {
       <hp-seg
         .label=${control.modeLabel}
         .moreLabel=${this.storeController.store.t('common.moreModes')}
+        .selectedText=${(mode: string) => this.storeController.store.t('common.modeSelected', {mode})}
         .options=${control.modes.map(({mode, label}): SegOption<Mode> => ({value: mode, label}))}
         .value=${control.modes.find(({checked}) => checked)?.mode}
         @change=${(e: CustomEvent<SegChangeDetail<Mode>>) => this.onMode(room, e.detail.value)}

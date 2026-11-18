@@ -8,6 +8,7 @@
 // Must not: keep the choice itself (its owner holds `value`), know what an option stands for, or send a command.
 import {LitElement, html, nothing, unsafeCSS} from 'lit';
 import {repeat} from 'lit/directives/repeat.js';
+import {stopEscape} from './dialogs.ts';
 import {AppearanceConsumer} from './controllers/appearance-consumer.ts';
 import {ico} from './icons.ts';
 import {moveTo, tabStop} from './seg-keys.ts';
@@ -40,6 +41,7 @@ export class HpSeg extends LitElement {
     value: {},
     label: {},
     moreLabel: {},
+    selectedText: {attribute: false},
     disabled: {type: Boolean, reflect: true},
     open: {state: true},
   };
@@ -51,6 +53,8 @@ export class HpSeg extends LitElement {
   declare label: string | undefined;
   /** What a screen reader calls the overflow button of a long group under Material: its owner words it, as it does the group's `label`. */
   declare moreLabel: string | undefined;
+  /** What a screen reader hears for the chosen option when it is behind More (`Selected: Auto`), where there is no checked radio to say it: the owner words it from the option's label. */
+  declare selectedText: ((option: string) => string) | undefined;
   /** The whole group is read-only: no option can be chosen, and the unchosen ones are muted. */
   declare disabled: boolean;
   /** The overflow menu is showing (the popover's own state, mirrored for `aria-expanded`). */
@@ -68,13 +72,19 @@ export class HpSeg extends LitElement {
     this.value = undefined;
     this.label = undefined;
     this.moreLabel = undefined;
+    this.selectedText = undefined;
     this.disabled = false;
     this.open = false;
   }
 
   override disconnectedCallback(): void {
     super.disconnectedCallback();
-    window.removeEventListener('scroll', this.closeOnScroll, true);
+    this.stopWatching();
+  }
+
+  // the menu is placed once, when it opens: a disabled group must not keep one open
+  protected override updated(): void {
+    if (this.disabled && this.open) this.menu?.hidePopover?.();
   }
 
   protected override render() {
@@ -107,7 +117,7 @@ export class HpSeg extends LitElement {
         )}
         ${more.length > 0 ? this.renderMore(shown.length, checked, stop) : nothing}
       </div>
-      ${more.length > 0 ? this.renderMenu(more, shown.length) : nothing}`;
+      ${more.length > 0 ? this.renderMenu(more, shown.length) : nothing} ${this.renderSelected(shown.length, checked)}`;
   }
 
   // Material's overflow button: the `more` icon, or the chosen option's word (and drawn chosen) when the choice is in the menu. It is not a radio (it opens a menu), so the
@@ -123,6 +133,7 @@ export class HpSeg extends LitElement {
       aria-haspopup="menu"
       aria-expanded=${this.open ? 'true' : 'false'}
       aria-controls="more-menu"
+      aria-describedby=${word !== undefined && this.selectedText ? 'more-selected' : nothing}
       popovertarget="more-menu"
       ?data-chosen=${inMenu}
       tabindex=${stop !== null && stop >= count ? 0 : -1}
@@ -130,6 +141,12 @@ export class HpSeg extends LitElement {
     >
       ${inMenu ? html`<b part="label">${word}</b>` : ico('more', 24)}
     </button>`;
+  }
+
+  // the chosen option behind More, said for a screen reader (the group has no checked radio then): the description of the More button, outside it so it is not the button's text
+  private renderSelected(count: number, checked: number) {
+    if (checked < count || !this.selectedText || this.split.more.length === 0) return nothing;
+    return html`<span id="more-selected" class="sr">${this.selectedText(this.options[checked].label)}</span>`;
   }
 
   // the rest of the options, a native popover (top layer, so no card clips it) of `menuitemradio`s, the chosen one checked
@@ -182,6 +199,7 @@ export class HpSeg extends LitElement {
 
   // a tap says its option, even the one already chosen: the owner may send the value again, as the legacy buttons did
   private choose(value: string): void {
+    if (this.disabled) return;
     this.dispatchEvent(new CustomEvent<SegChangeDetail>('change', {detail: {value}}));
   }
 
@@ -232,18 +250,25 @@ export class HpSeg extends LitElement {
     const open = (e as ToggleEvent).newState === 'open';
     this.open = open;
     if (!open) {
-      window.removeEventListener('scroll', this.closeOnScroll, true);
+      this.stopWatching();
       return;
     }
-    window.addEventListener('scroll', this.closeOnScroll, {capture: true, passive: true});
+    window.addEventListener('scroll', this.closeMenu, {capture: true, passive: true});
+    window.addEventListener('resize', this.closeMenu);
     const items = this.menuItems();
     const chosen = items.find(item => item.getAttribute('aria-checked') === 'true' && !item.disabled);
     (chosen ?? items.find(item => !item.disabled))?.focus();
   };
 
-  private readonly closeOnScroll = (e: Event): void => {
-    if (e.target !== this.menu) this.menu?.hidePopover?.();
+  // a scroll or a resize leaves the menu where it was placed: it closes
+  private readonly closeMenu = (): void => {
+    this.menu?.hidePopover?.();
   };
+
+  private stopWatching(): void {
+    window.removeEventListener('scroll', this.closeMenu, true);
+    window.removeEventListener('resize', this.closeMenu);
+  }
 
   private menuItems(): HTMLButtonElement[] {
     return [...this.renderRoot.querySelectorAll<HTMLButtonElement>('.menu [role="menuitemradio"]')];
@@ -252,6 +277,8 @@ export class HpSeg extends LitElement {
   // the menu's keys: the arrows, Home and End move among the items as in the group (no choice is made until Enter or Space presses one); Tab leaves it; Escape closes it
   // and the focus goes back to More (the popover's own restore is not reliable when the focus was moved into it)
   private readonly onMenuKey = (e: KeyboardEvent): void => {
+    // one Escape, one thing: the sheet the group sits in must not close with the menu
+    stopEscape(e);
     if (e.key === 'Tab') {
       this.menu?.hidePopover?.();
       return;

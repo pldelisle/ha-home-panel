@@ -12,6 +12,7 @@ export const fr: Record<MessageKey, string> = {
   'common.failed': "Didn't work: {reason}",
   'common.dismiss': 'Fermer',
   'common.moreModes': 'Autres modes',
+  'common.modeSelected': 'Sélectionné : {mode}',
   'common.noReading': 'Aucune mesure',
   'clock.inside': '{n}° à l’intérieur',
   'clock.outside': '{n}° dehors',

@@ -13,6 +13,11 @@ describe('splitGroup', () => {
     expect(splitGroup(range(7))).toEqual({shown: [0, 1, 2, 3], more: [4, 5, 6]});
   });
 
+  test('a smaller maximum overflows sooner', () => {
+    expect(splitGroup(range(4), 3)).toEqual({shown: [0, 1], more: [2, 3]});
+    expect(splitGroup(range(3), 3)).toEqual({shown: [0, 1, 2], more: []});
+  });
+
   test('the group plus its overflow button is never wider than the maximum', () => {
     for (const n of range(12)) {
       const {shown, more} = splitGroup(range(n));
