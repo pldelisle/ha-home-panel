@@ -1,4 +1,4 @@
-// The events an element sends up: a request to open a sheet, to close one, a tab to show, a message for the toast, and `hp-empty`, an element with nothing to show.
+// The events an element sends up: a request to open a sheet, to close one, a tab or a room view to show, a message for the toast, and `hp-empty`, an element with nothing to show.
 // Pattern: events up, properties down (Lit docs, Events): an element never imports the shell, it dispatches one of these
 // from itself, and the shell, listening on its root, calls the sheet host or draws the toast; whoever composed the element hears `hp-empty` (the idle screen, since #276).
 // Must not: carry state the shell has to hand back, or be dispatched with `composed: false`: they cross shadow roots.
@@ -25,18 +25,16 @@ export class SheetDismissEvent extends CustomEvent<{id: string}> {
   }
 }
 
-export interface TabSelectDetail {
-  /** the section to show */
-  key: FeatureKey;
-}
+/** What to show: a section, or a room view by its area (ADR 0039); a request names one and never both. */
+export type TabSelectDetail = {key: FeatureKey} | {room: string};
 
 /**
  * An element asks the shell for a tab: a tile of the More sheet, the Home card's header. The shell's frame hears it from anywhere inside
  * it (ADR 0026), closes the More sheet if it is open and shows the tab.
  */
 export class TabSelectEvent extends CustomEvent<TabSelectDetail> {
-  constructor(key: FeatureKey) {
-    super('tab-select', {bubbles: true, composed: true, detail: {key}});
+  constructor(target: FeatureKey | {room: string}) {
+    super('tab-select', {bubbles: true, composed: true, detail: typeof target === 'string' ? {key: target} : target});
   }
 }
 

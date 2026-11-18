@@ -19,6 +19,18 @@ export interface FeatureEnv {
   sheetOpen(id: string): boolean;
   /** What the open sheet was asked to show (the tile of a history: `{key}`), or undefined when it is not the sheet open. */
   sheetDetail(id: string): unknown;
+  /** The area of the room view shown (ADR 0039), or null while a section is: a feature draws its tiles for that room only. */
+  readonly room: string | null;
+}
+
+/** A subject's part of a room view (ADR 0039): which areas it has tiles in, and its tiles for one of them. */
+export interface RoomPart {
+  /** The areas this subject has a tile in, by area id: asked on every change, as `available` is. */
+  areas(env: FeatureEnv): readonly string[];
+  /** Its tiles for one area; its element asks for the feature's own sheets as the pane does. */
+  part(env: FeatureEnv, areaId: string): TemplateResult;
+  /** A short reading for the room's header ("21°", "45 %"), or null; the Climate and Air tickets fill it. */
+  chip?(env: FeatureEnv, areaId: string): string | null;
 }
 
 export interface FeatureDescriptor {
@@ -44,6 +56,8 @@ export interface FeatureDescriptor {
    * behind them, whichever tab is shown, so the tab does not change.
    */
   overSheets?: readonly string[];
+  /** This subject's part of a room view (ADR 0039); absent means it has none. */
+  room?: RoomPart;
   /** The pane's content: a feature's element. */
   pane: (env: FeatureEnv) => TemplateResult;
 }

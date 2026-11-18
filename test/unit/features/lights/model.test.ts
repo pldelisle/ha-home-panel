@@ -3,7 +3,13 @@
 import {describe, expect, test} from 'vitest';
 import type {HassEntities} from '../../../../src/core/hass.ts';
 import {readLights} from '../../../../src/features/lights/inputs.ts';
-import {lightsModel, sheetModel, type LightsDeps} from '../../../../src/features/lights/model.ts';
+import {
+  lightRoomAreas,
+  lightsModel,
+  roomUnits,
+  sheetModel,
+  type LightsDeps,
+} from '../../../../src/features/lights/model.ts';
 import {FULL_CFG, LINK_CFG} from '../../../e2e/houses.ts';
 import {entity} from '../../fake-hass.ts';
 import {depsOf, fullHouse, houseOf, NOW, readingOf, storeOf, type Language} from '../media/support.ts';
@@ -328,5 +334,51 @@ describe('sheetModel', () => {
     const one = houseOf([['light.a', 'on', {brightness: 128}, {area_id: 'den'}]], [], {den: 'Den'});
     expect(sheetModel('den', inputsOf(one, {}), deps())?.link.show).toBe(false);
     expect(sheetModel('garage', inputsOf(), deps())).toBeNull();
+  });
+});
+
+describe('the Lights part of a room view', () => {
+  /** the room's blocks, each as its tiles' `[name, pair]` */
+  const room = (inputs: ReturnType<typeof inputsOf>, areaId: string) =>
+    roomUnits(inputs, areaId, deps()).map(unit => unit.tiles.map(tile => [tile.name, tile.pair]));
+
+  test('lists the areas the lights sit in, each once', () => {
+    expect(lightRoomAreas(inputsOf().tiles)).toEqual(['kitchen', 'living_room', 'office']);
+  });
+
+  test('leaves out the lights with no area: the Other tile is never a room', () => {
+    const house = withStates(['light.hallway_lamp', 'on', {brightness: 100, supported_color_modes: ['brightness']}]);
+    const inputs = inputsOf(house);
+    expect(inputs.tiles.some(tile => tile.other)).toBe(true);
+    expect(lightRoomAreas(inputs.tiles)).toEqual(['kitchen', 'living_room', 'office']);
+    expect(roomUnits(inputs, '', deps())).toEqual([]);
+  });
+
+  test('draws only the tiles of the room, as the pane draws them', () => {
+    const inputs = inputsOf();
+    expect(room(inputs, 'office')).toEqual([[['Office', null]]]);
+    const view = roomUnits(inputs, 'office', deps())[0].tiles[0];
+    expect(view).toEqual(lightsModel(inputs, deps()).tiles.find(tile => tile.key === 'office'));
+    expect(room(inputs, 'attic')).toEqual([]);
+  });
+
+  test("gives a split area's groups a tile each", () => {
+    const split = inputsOf(fullHouse, {...FULL_CFG, split_light_areas: ['kitchen']});
+    expect(room(split, 'kitchen')).toEqual([[['Island', null]], [['Sink', null]]]);
+  });
+
+  test('keeps a linked pair side by side when both tiles are in the room, and stands a tile alone when its partner is elsewhere', () => {
+    const linked = inputsOf(fullHouse, LINK_CFG);
+    expect(room(linked, 'kitchen')).toEqual([
+      [
+        ['Island', 'first'],
+        ['Sink', 'second'],
+      ],
+    ]);
+    // the office and the living room are linked: each is alone in its own room, and still names its partner
+    expect(room(linked, 'office')).toEqual([[['Office', null]]]);
+    const alone = roomUnits(linked, 'office', deps())[0].tiles[0];
+    expect(alone.linkedWith).toBe('Living room');
+    expect(alone.pairTint).toBe('');
   });
 });

@@ -117,6 +117,7 @@ export const en = {
   // the Liquid Glass tablet's sidebar (src/shell/home-panel.ts): the heading over the sections that are not Home and Automations, and its toggle, which names what a press does
   'nav.sections': 'Sections',
   'nav.categories': 'Categories',
+  'nav.rooms': 'Rooms',
   'nav.sidebarShow': 'Show sidebar',
   'nav.sidebarHide': 'Hide sidebar',
   // the phone's More sheet (src/shell/more-sheet.ts): its title, the line under it and its Close button

@@ -1,8 +1,8 @@
 // <home-panel>, the one element Home Assistant mounts: it owns the store, the API client, the settings and the optimistic values, provides them through context and draws the frame from the registry in its one shadow root.
 // Pattern: composition root (Seemann, Dependency Injection Principles, Practices, and Patterns); humble object (Meszaros, xUnit Test Patterns): it forwards `hass`, `panel` and `narrow` and decides nothing the registry and the store decide.
-// It reads `localStorage` and the browser's locale defaults. It owns `tab`, `sidebar`, `compact`, the idle state, which tabs the house shows, whether the settings popup and the Status checks are open, whether a live activity runs and, through controllers, the appearance and the open sheet. Done and Escape close the settings popup and return focus to the gear.
+// It reads `localStorage` and the browser's locale defaults. It owns `tab` (a section or a room view, ADR 0039), the rooms the house has, `sidebar`, `compact`, the idle state, which tabs the house shows, whether the settings popup and the Status checks are open, whether a live activity runs and, through controllers, the appearance and the open sheet. Done and Escape close the settings popup and return focus to the gear.
 // Must not: decide what the store and the models decide. The legacy panel it hosted as its guest is gone (#277, ADR 0035).
-import {LitElement, html, unsafeCSS, type PropertyValues, type TemplateResult} from 'lit';
+import {LitElement, html, nothing, unsafeCSS, type PropertyValues, type TemplateResult} from 'lit';
 import {classMap} from 'lit/directives/class-map.js';
 import {ifDefined} from 'lit/directives/if-defined.js';
 import {keyed} from 'lit/directives/keyed.js';
@@ -37,7 +37,7 @@ import {ico} from '../ui/icons.ts';
 import type {SheetDismissEvent, SheetRequestEvent, TabSelectEvent, ToastEvent} from '../ui/events.ts';
 import {AppearanceController} from './appearance.ts';
 import type {FeatureDescriptor, FeatureEnv, FeatureKey} from '../ui/feature.ts';
-import {CATEGORIES, FEATURES, UNDER_MORE, isFeatureKey, sidebarRows, visibleTab} from './features.ts';
+import {CATEGORIES, FEATURES, UNDER_MORE, isFeatureKey, sidebarRows} from './features.ts';
 import {FRAME_CSS} from './frame-styles.ts';
 import './idle-screen.ts'; // defines <hp-idle-screen>
 import {IdleTimer, type IdleState} from './idle-timer.ts';
@@ -47,6 +47,8 @@ import type {ForecastEvent} from '../features/weather/forecast-controller.ts';
 import {STATUS_SHEET, type LiveActivitiesEvent} from '../features/live/index.ts'; // defines <hp-live-pill> and <hp-status-popup>
 import './more-sheet.ts'; // defines <hp-more-sheet>
 import '../ui/pane-header.ts'; // defines <hp-pane-header>
+import './room-pane.ts'; // defines <hp-room-pane>
+import {parseView, roomColor, roomIcon, roomList, roomTab, visibleView, type Room} from './rooms.ts';
 import {SheetMediator} from './sheet-host.ts';
 import {MORE_SHEET} from './sheets.ts';
 import {ensureFonts} from '../ui/fonts.ts';
@@ -116,7 +118,7 @@ export class HomePanel extends LitElement {
   declare hass: PanelHass | undefined;
   declare narrow: boolean;
   declare panel: PanelInfo | undefined;
-  /** The tab asked for, as the settings remember it: a hidden or unknown one shows Home (`tab`). */
+  /** The tab asked for, as the settings remember it, a section or `room:<area_id>`: a hidden or unknown one shows Home (`tab`). */
   declare private selected: string;
   /** Counts the panel's fresh draws (a new config or language after the first): the frame is keyed on it, so each starts with new elements. */
   declare private epoch: number;
@@ -197,7 +199,8 @@ export class HomePanel extends LitElement {
   private readonly sheets = new SheetMediator(this, {
     root: () => this.renderRoot as ShadowRoot,
     paneOf: id => FEATURES.find(f => f.detailSheet === id)?.key,
-    compact: () => this.compact,
+    // a detail sheet opens over the screen on a phone, and over a room view (which has no pane of the subject to open it in)
+    overScreen: () => this.compact || this.room !== null,
     setTab: key => this.setTab(key),
   });
   // the rail's buttons wait for the first answer about the house (`connectFrame`), so no tab shows for a frame and goes
@@ -211,7 +214,12 @@ export class HomePanel extends LitElement {
   private stale = true;
   private shown: Readonly<Partial<Record<FeatureKey, boolean>>> = {};
   private visible: FeatureKey = 'home';
-  private toldTab: FeatureKey | undefined;
+  // the room view shown: its area, or null while a section is. Then `visible` is Home, which the header and the clock line read.
+  private room: string | null = null;
+  // the rooms of the house, asked of the descriptors with `shown` (ADR 0039)
+  private rooms: readonly Room[] = [];
+  // what was last told the shown view: its section's key, or its room's `tab` string
+  private toldTab: string | undefined;
   private activeEpoch = -1;
   private toldCompact = false;
   // the appearance as the last render drew it
@@ -230,6 +238,7 @@ export class HomePanel extends LitElement {
       store: this.store,
       sheetOpen: id => this.sheets.isOpen(id),
       sheetDetail: id => this.sheets.detail(id),
+      room: this.room,
     };
   }
 
@@ -278,14 +287,33 @@ export class HomePanel extends LitElement {
     return this.visible;
   }
 
+  /** The section shown, or null while a room view is. */
+  private get section(): FeatureKey | null {
+    return this.room === null ? this.visible : null;
+  }
+
+  /** What `toldTab` compares: the section's key, or the room's `tab` string. */
+  private get viewId(): string {
+    return this.room === null ? this.visible : roomTab(this.room);
+  }
+
+  /** The language tag the lists are collated in. */
+  private get localeTag(): string {
+    const {hass} = this.store;
+    return this.store.isFrench && hass ? panelLocale(hass, browserDefaults()).tag : ENGLISH_TAG;
+  }
+
   /** Under 600 px wide: the phone's shape. */
   get compact(): boolean {
     return this.phoneNow;
   }
 
-  /** Shows a tab: remembers it and draws the frame with its pane open. */
-  private setTab(key: FeatureKey): void {
-    this.selected = isFeatureKey(key) ? key : 'home';
+  /** Shows a tab, a section's key or a room's `room:<area_id>`: remembers it and draws the frame with its pane open. */
+  private setTab(tab: string): void {
+    const next = isFeatureKey(tab) || parseView(tab).kind === 'room' ? tab : 'home';
+    // a sheet opened over a room view (a detail sheet, a room's light sheet) belongs to that view: leaving it closes the sheet, as More's is
+    if (this.room !== null && next !== roomTab(this.room)) this.sheets.close();
+    this.selected = next;
     this.settings.set('tab', this.selected);
     this.idle.arm();
     this.flush();
@@ -349,7 +377,7 @@ export class HomePanel extends LitElement {
   // a tile of the More sheet or the Home card's header asks for a tab: the More sheet closes (a no-op when it is not open), then the tab shows
   private readonly onTabSelect = (e: TabSelectEvent): void => {
     this.sheets.close(MORE_SHEET);
-    this.setTab(e.detail.key);
+    this.setTab('room' in e.detail ? roomTab(e.detail.room) : e.detail.key);
   };
 
   // an element asked upward for a sheet, or for the toast; the event stops here, it is the panel's business
@@ -361,12 +389,13 @@ export class HomePanel extends LitElement {
     else this.sheets.open(id, detail);
   };
 
-  // A pane whose detail sheet is open while another tab is shown (Home's Air tile opens Air's, on a phone), or one of the sheets it
-  // draws over the screen (a tile's history, opened from that detail), stays in the page, behind the sheet, so the sheet is drawn and
-  // the tab is not changed; the pane draws only its sheets then.
+  // A pane whose detail sheet is open while another tab is shown (Home's Air tile opens Air's, on a phone, or from a room view on a tablet),
+  // or one of the sheets it draws over the screen (a tile's history, opened from that detail, or a room's sheet opened from a room view),
+  // stays in the page, behind the sheet, so the sheet is drawn and the tab is not changed; the pane draws only its sheets then.
   private sheetBehind(f: FeatureDescriptor): boolean {
-    if (this.tab === f.key) return false;
-    const detail = f.detailSheet !== undefined && this.compact && this.sheets.isOpen(f.detailSheet);
+    if (this.section === f.key) return false;
+    const detail =
+      f.detailSheet !== undefined && (this.compact || this.room !== null) && this.sheets.isOpen(f.detailSheet);
     return detail || (f.overSheets ?? []).some(id => this.sheets.isOpen(id));
   }
 
@@ -431,10 +460,10 @@ export class HomePanel extends LitElement {
 
   private tellTab(): void {
     const prev = this.toldTab;
-    this.toldTab = this.visible;
+    this.toldTab = this.viewId;
     this.syncActive();
     // on a phone each section starts at the top, as an app's tabs do (the legacy panel's tabChanged)
-    if (this.compact && prev !== undefined && prev !== this.visible)
+    if (this.compact && prev !== undefined && prev !== this.viewId)
       this.renderRoot.querySelector('#app')?.scrollIntoView({block: 'start'});
   }
 
@@ -444,7 +473,7 @@ export class HomePanel extends LitElement {
     this.activeEpoch = this.epoch;
     for (const f of FEATURES) {
       const first = this.renderRoot.querySelector(`#pane-${f.key}`)?.firstElementChild as {active?: boolean} | null;
-      if (first && 'active' in first) first.active = f.key === this.visible;
+      if (first && 'active' in first) first.active = f.key === this.section;
     }
   }
 
@@ -461,12 +490,15 @@ export class HomePanel extends LitElement {
       this.stale = false;
       const {env} = this;
       this.shown = Object.fromEntries(FEATURES.map(f => [f.key, f.available?.(env) ?? true]));
+      this.rooms = roomList(FEATURES, env, this.store.names, this.localeTag);
     }
-    const before = this.visible;
-    this.visible = visibleTab(this.selected, this.shown);
+    const before = this.viewId;
+    const view = visibleView(this.selected, this.shown, this.rooms);
+    this.visible = view.kind === 'room' ? 'home' : view.key;
+    this.room = view.kind === 'room' ? view.areaId : null;
     // Another tab shows by another road than a tile of More (a card of Home, a house that stopped showing it): More closes,
     // as the legacy panel's tabChanged hid it. No screen reaches this road today, so no test does.
-    if (this.visible !== before) this.sheets.close(MORE_SHEET);
+    if (this.viewId !== before) this.sheets.close(MORE_SHEET);
     // More opens with the words under its sections as they are now
     const more = this.sheets.isOpen(MORE_SHEET);
     if (more && !this.moreWasOpen) {
@@ -480,8 +512,7 @@ export class HomePanel extends LitElement {
   // turns the Mercury drop on (glass.css), whose filter is `lens`, drawn once and kept through every draw (#198).
   protected override render() {
     const a = (this.drawn = this.appearance.value);
-    const {hass} = this.store;
-    const lang = this.store.isFrench && hass ? panelLocale(hass, browserDefaults()).tag : ENGLISH_TAG;
+    const lang = this.localeTag;
     return html`<div
       class="app ${classMap({
         narrow: this.narrow,
@@ -576,15 +607,40 @@ export class HomePanel extends LitElement {
                 id="pane-${f.key}"
                 role=${ifDefined(this.sheetBehind(f) ? undefined : 'tabpanel')}
                 aria-labelledby=${ifDefined(this.sheetBehind(f) ? undefined : `tab-${f.key}`)}
-                ?hidden=${this.tab !== f.key && !this.sheetBehind(f)}
+                ?hidden=${this.section !== f.key && !this.sheetBehind(f)}
                 ${ref(el => this.scopeStatistics(f.key, el))}
               >
                 ${f.pane(this.env)}
               </section>`,
-          )}
+          )}${this.renderRoom()}
         </div>
       </div>
     </div>`;
+  }
+
+  // The room view (ADR 0039): one pane for every room, drawn only while a room shows, so a hidden room listens to nothing. It is labelled by
+  // the room's row in the sidebar.
+  private renderRoom(): TemplateResult {
+    const room = this.rooms.find(r => r.areaId === this.room);
+    return html`<section
+      class="pane pane-room"
+      id="pane-room"
+      role="tabpanel"
+      aria-labelledby=${ifDefined(room ? `room-${room.areaId}` : undefined)}
+      ?hidden=${!room}
+      ${ref(el => this.scopeStatistics('home', el))}
+    >
+      ${
+        room
+          ? html`<hp-room-pane
+              .areaId=${room.areaId}
+              .name=${room.name}
+              .features=${FEATURES}
+              .env=${this.env}
+            ></hp-room-pane>`
+          : nothing
+      }
+    </section>`;
   }
 
   // The rail on a tablet, the bar on a phone. Before the first answer about the house, every button is hidden: a tab
@@ -593,21 +649,26 @@ export class HomePanel extends LitElement {
   // Material's rail keep their own order and look. The tabs sit in their own tablist, since a button is not a tab.
   private renderRail(): TemplateResult {
     const {t} = this.store;
-    const {tab} = this;
+    const tab = this.section;
     const glass = this.appearance.value.design !== 'material' && this.sidebarWide.matches;
     const open = this.sidebar === 'open';
     // a collapsed strip has no labels to read, so each icon names itself on hover
     const strip = glass && !open;
     // the fifth button is the way to the other tabs, so it says More whichever tab shows; it is selected while one of them does
     const underMore = FEATURES.some(f => f.key === tab && !f.phoneBar);
+    // after the categories, one row per room (ADR 0039): the sidebar's, so none on the phone's bar or Material's rail
+    const rooms = glass ? this.rooms : [];
+    const homeColor = roomColor(FEATURES);
     const rows = glass ? sidebarRows(FEATURES) : FEATURES;
     // roving tabindex: the list is one tab stop, the selected tab's; the arrow keys move focus inside it (`onTabsKey`)
     const stops = rows.filter((row): row is FeatureDescriptor => row !== CATEGORIES);
+    const ids = [...stops.map(row => row.key as string), ...rooms.map(r => roomTab(r.areaId)), 'more'];
     const stop = stopAt([
       ...stops.map(row => ({disabled: !this.tabOn(row.key), checked: tab === row.key})),
+      ...rooms.map(r => ({disabled: !this.answered, checked: this.room === r.areaId})),
       {disabled: !this.tabOn('more'), checked: underMore},
     ]);
-    const stopKey: FeatureKey | 'more' | null = stop === null ? null : stop < stops.length ? stops[stop].key : 'more';
+    const stopKey = stop === null ? null : ids[stop];
     return html`<nav class="rail" id="rail">
       <button
         type="button"
@@ -648,6 +709,25 @@ export class HomePanel extends LitElement {
                 >
                   ${ico(row.icon, 24)}<span>${t(row.title)}</span>
                 </button>`,
+        )}${rooms.length ? html`<div class="rhead" aria-hidden="true">${t('nav.rooms')}</div>` : nothing}${repeat(
+          rooms,
+          room => room.areaId,
+          room =>
+            html`<button
+              type="button"
+              class="rtab rroom"
+              role="tab"
+              id="room-${room.areaId}"
+              data-room=${room.areaId}
+              aria-selected=${this.room === room.areaId}
+              aria-controls=${ifDefined(this.room === room.areaId ? 'pane-room' : undefined)}
+              tabindex=${stopKey === roomTab(room.areaId) ? 0 : -1}
+              title=${room.name}
+              style=${`--tab-c:${homeColor}`}
+              @click=${() => this.setTab(roomTab(room.areaId))}
+            >
+              ${ico(roomIcon(room.name), 24)}<span>${room.name}</span>
+            </button>`,
         )}<button
           type="button"
           class="rtab rmore"
@@ -676,11 +756,13 @@ export class HomePanel extends LitElement {
   private readonly onTabsKey = (e: KeyboardEvent): void => {
     if (e.altKey || e.ctrlKey || e.metaKey) return; // Alt+Left (back), Cmd+Up and the like are the browser's and the system's
     const buttons = [...(e.currentTarget as HTMLElement).querySelectorAll<HTMLButtonElement>('.rtab')];
-    const key = (b: HTMLElement) => b.dataset.tab as FeatureKey | undefined;
+    // a room's row is on screen once the house has answered; a section's is the registry's question, and More's the phone's
+    const on = (b: HTMLElement) =>
+      b.dataset.room !== undefined ? this.answered : this.tabOn((b.dataset.tab as FeatureKey | undefined) ?? 'more');
     const from = buttons.findIndex(b => b === this.shadowRoot?.activeElement);
     if (from < 0) return;
     const to = focusTo(
-      buttons.map(b => ({disabled: !this.tabOn(key(b) ?? 'more')})),
+      buttons.map(b => ({disabled: !on(b)})),
       from,
       e.key,
       this.compact ? 'horizontal' : 'vertical',
@@ -709,17 +791,24 @@ export class HomePanel extends LitElement {
     this.answered = true;
     this.phoneNow = this.phone.matches;
     this.toldCompact = this.phoneNow;
-    this.toldTab = this.visible;
+    this.toldTab = this.viewId;
     this.requestFrame(); // the descriptors answer about the house from here on
     this.availabilityOff?.();
     this.availabilityOff = this.store.subscribe('*', this.onAvailability);
   }
 
-  // A tab a descriptor's `available` gates (Climate, Car) appears when its entity does: every change asks those descriptors, and the
-  // rail is drawn again only when an answer moved, as the legacy tiles' check asked the shell until the Home move (#268).
+  // A tab a descriptor's `available` gates (Climate, Car) appears when its entity does, and a room appears when a subject first has a tile in it:
+  // every change asks those descriptors, and the rail is drawn again only when an answer moved, as the legacy tiles' check asked the shell
+  // until the Home move (#268). The rooms moved when their ids or their names did (ADR 0039).
   private readonly onAvailability = (): void => {
     const {env} = this;
-    if (FEATURES.some(f => f.available && f.available(env) !== (this.shown[f.key] ?? true))) this.requestFrame();
+    if (FEATURES.some(f => f.available && f.available(env) !== (this.shown[f.key] ?? true))) return this.requestFrame();
+    const rooms = roomList(FEATURES, env, this.store.names, this.localeTag);
+    if (
+      rooms.length !== this.rooms.length ||
+      rooms.some((r, i) => r.areaId !== this.rooms[i].areaId || r.name !== this.rooms[i].name)
+    )
+      this.requestFrame();
   };
 
   // The store takes each value in the order the properties were set (Lit keeps the changed properties in the order they were
@@ -746,7 +835,7 @@ export class HomePanel extends LitElement {
       this.sheets.compactChanged();
     }
     // a tab the house does not show gives way to Home, and comes back when the house shows it again
-    if (this.visible !== this.toldTab) this.tellTab();
+    if (this.viewId !== this.toldTab) this.tellTab();
     else if (this.epoch !== this.activeEpoch) this.syncActive();
   }
 
