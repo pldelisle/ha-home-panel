@@ -61,6 +61,8 @@ interface PanelInfo {
 
 // The phone's shape: the bar at the bottom, one column. The stylesheet's `.cp` rules are written for the same width.
 const PHONE = '(max-width:599px)';
+// where the Liquid Glass sidebar's CSS starts (tabs.css, the min-width of its block): between the phone and this, the rail is the old one
+const SIDEBAR_WIDE = '(min-width: 721px)';
 // The device's own appearance: dark, and less transparency. The theme follows the first on auto; the glass lens yields to the second.
 const DARK = '(prefers-color-scheme: dark)';
 const REDUCED_TRANSPARENCY = '(prefers-reduced-transparency: reduce)';
@@ -168,6 +170,7 @@ export class HomePanel extends LitElement {
     },
   });
   private readonly phone = new MediaQueryController(this, PHONE);
+  private readonly sidebarWide = new MediaQueryController(this, SIDEBAR_WIDE);
   // Five minutes without a touch and a tablet shows the clock; a phone never does by itself. The listeners are the
   // controller's, on this root and the window, from connection to disconnection.
   private readonly idle = new IdleTimer(this, {
@@ -587,10 +590,10 @@ export class HomePanel extends LitElement {
   private renderRail(): TemplateResult {
     const {t} = this.store;
     const {tab} = this;
-    const glass = this.appearance.value.design !== 'material';
+    const glass = this.appearance.value.design !== 'material' && this.sidebarWide.matches;
     const open = this.sidebar === 'open';
     // a collapsed strip has no labels to read, so each icon names itself on hover
-    const strip = glass && !open && !this.compact;
+    const strip = glass && !open;
     // the fifth button is the way to the other tabs, so it says More whichever tab shows; it is selected while one of them does
     const underMore = FEATURES.some(f => f.key === tab && !f.phoneBar);
     const rows = glass ? sidebarRows(FEATURES) : FEATURES;
@@ -604,7 +607,7 @@ export class HomePanel extends LitElement {
       >
         ${ico('sidebar', 24)}
       </button>
-      <div class="rtabs" role="tablist" aria-label="Sections">
+      <div class="rtabs" role="tablist" aria-label=${t('nav.sections')}>
         ${repeat(
           rows,
           row => (row === CATEGORIES ? 'categories' : row.key),

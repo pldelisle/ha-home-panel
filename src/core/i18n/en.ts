@@ -112,6 +112,7 @@ export const en = {
   'auto.title': 'Automations',
   'nav.more': 'More',
   // the Liquid Glass tablet's sidebar (src/shell/home-panel.ts): the heading over the sections that are not Home and Automations, and its toggle, which names what a press does
+  'nav.sections': 'Sections',
   'nav.categories': 'Categories',
   'nav.sidebarShow': 'Show sidebar',
   'nav.sidebarHide': 'Hide sidebar',

@@ -106,6 +106,7 @@ export const fr: Record<MessageKey, string> = {
   'security.title': 'Sécurité',
   'auto.title': 'Automatisations',
   'nav.more': 'Plus',
+  'nav.sections': 'Sections',
   'nav.categories': 'Catégories',
   'nav.sidebarShow': 'Afficher la barre latérale',
   'nav.sidebarHide': 'Masquer la barre latérale',

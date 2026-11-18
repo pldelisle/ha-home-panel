@@ -42,6 +42,13 @@ test.describe('the sidebar on the tablet', () => {
     await house.page.keyboard.press('Enter');
     await expect(toggle(house)).toHaveAttribute('aria-expanded', 'true');
     await expect(toggle(house)).toHaveAccessibleName('Hide sidebar');
+    // the toggle is the same button after the redraw, so the keyboard stays on it
+    await expect(toggle(house)).toBeFocused();
+    await house.page.keyboard.press('Space');
+    await expect(toggle(house)).toHaveAttribute('aria-expanded', 'false');
+    await expect(toggle(house)).toBeFocused();
+    await house.page.keyboard.press('Enter');
+    await expect(toggle(house)).toHaveAttribute('aria-expanded', 'true');
     await expect.poll(async () => (await rail(house).boundingBox())?.width).toBe(280);
     await expect(rail(house).locator('.rhead')).toHaveText('Categories');
     // Home and Automations, the heading, then the rest in today's order
@@ -90,7 +97,18 @@ test.describe('the sidebar on the tablet', () => {
       await house.root().locator(`[data-tab="${key}"]`).click();
       const open = `#rail [data-tab="${key}"][aria-selected="true"]`;
       await expect(house.root().locator(open)).toBeVisible();
-      expect(await colour(house, `${open} svg`), `${key}: the row's icon`).toBe(card[key]);
+      // light theme: the icon is the colour pulled toward the text colour so it keeps 3:1 on its pill, so it is the card's colour, darker
+      const icon = await colour(house, `${open} svg`);
+      // rgb(...) in 0-255, or color(srgb ...) in 0-1: the brightness is the sum of the three channels on one scale
+      const sum = (c: string) => {
+        const [r, g, b] = c
+          .match(/[\d.]+/g)!
+          .slice(0, 3)
+          .map(Number);
+        return (r + g + b) * (c.startsWith('color(') ? 255 : 1);
+      };
+      expect(icon, `${key}: the row's icon is not the card's colour`).not.toBe(card[key]);
+      expect(sum(icon), `${key}: the row's icon is darker`).toBeLessThan(sum(card[key]));
       // the pill is that colour at a low alpha, and the label keeps the text colour
       await expect
         .poll(() =>
@@ -107,6 +125,43 @@ test.describe('the sidebar on the tablet', () => {
         .evaluate(e => getComputedStyle(e).color);
       expect(label).toBe(text);
     }
+  });
+});
+
+test.describe('the sidebar, dark', () => {
+  test.use({houseOpts: {cfg: FULL_CFG, theme: 'dark', time: AFTERNOON, frozen: true}});
+
+  test('the open row icon is exactly the colour of its icon on its Home card', async ({house}) => {
+    tabletOnly();
+    await house.tab('home');
+    const card = await colour(house, '#htiles hp-glance-tile[data-key="lights"] .hh > span:first-child');
+    await house.root().locator('[data-tab="lights"]').click();
+    await expect(house.root().locator('#rail [data-tab="lights"][aria-selected="true"]')).toBeVisible();
+    expect(await colour(house, '#rail [data-tab="lights"] svg')).toBe(card);
+  });
+});
+
+test.describe('between the phone and the tablet (700 px)', () => {
+  test.use({viewport: {width: 700, height: 820}, houseOpts: {cfg: FULL_CFG, time: AFTERNOON, frozen: true}});
+
+  test('the rail is as it was: the registry order, no tooltips, no toggle', async ({house}) => {
+    tabletOnly();
+    const tabs = rail(house).locator('[data-tab]');
+    expect(await tabs.evaluateAll(els => els.map(e => (e as HTMLElement).dataset.tab))).toEqual([
+      'home',
+      'lights',
+      'climate',
+      'weather',
+      'car',
+      'energy',
+      'air',
+      'media',
+      'cams',
+      'auto',
+    ]);
+    expect(await tabs.evaluateAll(els => els.filter(e => e.hasAttribute('title')).length)).toBe(0);
+    await expect(toggle(house)).toBeHidden();
+    await expect(rail(house).locator('.rhead')).toHaveCount(0);
   });
 });
 

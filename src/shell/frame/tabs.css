@@ -534,6 +534,12 @@
   .app.tabsv:not(.cp):not([data-design='material']) .rtab[aria-selected='true'] svg {
     color: var(--tab-c);
   }
+  /* the open icon is a graphic that carries meaning (WCAG 1.4.11, 3:1): in the light theme the section colours reach 2.4:1 to 3.5:1 on their own pill, so the
+     icon is the colour pulled toward the text colour, 3.15:1 or more for all eight on grounds from the peach wash to white; the pill stays the pure colour.
+     The dark theme's colours already pass. */
+  .app.tabsv:not([data-theme='dark']):not(.cp):not([data-design='material']) .rtab[aria-selected='true'] svg {
+    color: color-mix(in srgb, var(--tab-c) 60%, var(--fg));
+  }
   @media (hover: hover) {
     .app.tabsv:not(.cp):not([data-design='material']) .rside:hover,
     .app.tabsv:not(.cp):not([data-design='material']) .rtab:not([aria-selected='true']):hover {

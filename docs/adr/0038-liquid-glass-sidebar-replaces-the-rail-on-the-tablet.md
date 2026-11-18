@@ -17,7 +17,9 @@ The tablet's navigation was a 96 px rail: an icon over a label for each of ten s
 ## Consequences
 
 - Every Liquid Glass tablet baseline shows the strip, so all of them were re-recorded; Material and phone baselines are unchanged.
-- The tab icons in the light theme are 2.4:1 to 3.5:1 on the pill (a graphic needs 3:1): the same colours the Home cards use, kept for the match; Lights and Energy are the two under 3:1.
+- The open icon is a graphic that carries meaning (WCAG 1.4.11, 3:1). In the light theme the section colours are 2.4:1 to 3.5:1 on their pill (Lights and Energy are under 3:1), so there the icon is `color-mix(in srgb, var(--tab-c) 60%, var(--fg))`, 3.15:1 or more for all eight over grounds from the peach wash to white; the pill stays the pure colour. In the dark theme the icon is exactly the card's colour, which already passes.
+- The width animation lays the grid out again for about 300 ms on each toggle. The toggle is rare, so the cost is accepted.
+- The sidebar's CSS starts at 721 px while the phone's shape ends at 599 px; between them the old rail stays, and the shell reads the same breakpoint (`SIDEBAR_WIDE`) so that range gets the registry's order and no tooltips, as before.
 - The sidebar is not in the Settings popup: its toggle is its own control.
 
 ## Read
