@@ -494,6 +494,8 @@
   --state-hover: 0.08;
   --state-focus: 0.1;
   --state-pressed: 0.1;
+  /* a dialog grows from this much of its size as it opens (dialog.element.css) */
+  --dialog-grow-from: 0.9;
   /* the keyboard focus ring: 3px in the focus colour, 2px off */
   --focus-color: var(--focus, var(--c-home));
   --focus-width: 3px;

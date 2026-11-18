@@ -43,6 +43,9 @@ const ROLES: Record<string, readonly [string, string]> = {
   fg2: ['onSurfaceVariant', 'onSurfaceVariant'],
   line: ['outlineVariant', 'outlineVariant'],
   focus: ['secondary', 'secondary'],
+  // what floats over a scrim (#469): a bottom sheet's ground, one step under the cards it holds, and a dialog's, one above them
+  'sheet-bg': ['surfaceContainerLow', 'surfaceContainerLow'],
+  'dialog-bg': ['surfaceContainerHigh', 'surfaceContainerHigh'],
 };
 
 // the names the panel's stylesheets already read, each the role it stands for, so the Apple rules recolour without a rewrite
@@ -90,7 +93,7 @@ function statusGroups(seedArgb: number, dark: boolean, contrast: number): Record
 
 /**
  * The custom properties of the Material look for a seed (`#rrggbb`), light or dark, at a contrast level (0 standard, 1 high):
- * the panel's roles (`--bg`, `--card`, `--well`, `--control`, `--on-control`, `--fg`, `--fg2`, `--line`, `--focus`, and the older
+ * the panel's roles (`--bg`, `--card`, `--well`, `--control`, `--on-control`, `--fg`, `--fg2`, `--line`, `--focus`, `--sheet-bg`, `--dialog-bg`, and the older
  * names that stand for them) and every Material role as `--md-<role>`, and the status groups `ok` and `warn` (`--ok`, `--on-ok`, `--ok-container`, `--on-ok-container`, ...).
  */
 export function materialScheme(seedHex: string, dark: boolean, contrast: number): Record<string, string> {

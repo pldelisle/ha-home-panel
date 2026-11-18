@@ -39,8 +39,8 @@
   letter-spacing: var(--track-label-large);
 }
 /* The Material design's common button (ADR 0037, #468), tonal by default: 40px tall inside a 48px touch target, a pill at rest that tightens its corners
-   under a finger (common.css), the control's tone and the state layer; disabled is the content at 38% over a 12% fill. The one confirming action of a
-   dialog is the filled button (`.dbtn.prim`, dialog.element.css) and the one big action of a pane the large one (`.lbtn[data-l='alloff']`). */
+   under a finger (common.css), the control's tone and the state layer; disabled is the content at 38% over a 12% fill. A dialog's actions are text buttons in
+   primary (`.dbtn`, dialog.element.css, #469) and the one big action of a pane the large one (`.lbtn[data-l='alloff']`). */
 .app[data-design='material'] .abtn {
   position: relative;
   min-height: 40px;

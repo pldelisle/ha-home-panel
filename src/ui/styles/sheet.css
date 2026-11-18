@@ -283,3 +283,98 @@ button.icon:focus-visible {
   color: var(--on-control);
   box-shadow: none;
 }
+/* ---- Material's modal bottom sheet (ADR 0037, #469): `sheet-bg` (surface-container-low) under a flat 32% scrim, no glass and no blur; one step above, `card`s read lighter. On the phone it is full
+   width with the large corner on its top edge and a 32x4 handle in a 48px grab area (the drag target); on the tablet it floats 24px above the bottom, 640px at most, round on all four corners, with no
+   handle. `:not([inline])`: a sheet placed in its pane (<hp-sheet inline>) is no modal sheet and keeps what it had; a legacy sheet is never inline, so it changes nothing there. It rises on the spatial-default spring; a drag settles or closes on the spatial-fast one; it leaves with a fade and a 40px slide (`.leaving`, set by <hp-sheet>). ---- */
+.app.cp[data-design='material']:not([inline]) .sheet,
+.app:not(.cp)[data-design='material']:not([inline]) .sheet {
+  background: color-mix(in srgb, var(--md-scrim) 32%, transparent);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.app[data-design='material']:not([inline]) .sheet > .panel {
+  background: var(--sheet-bg);
+  box-shadow: var(--elevation-1);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.app.cp[data-design='material']:not([inline]) .sheet > .panel {
+  max-height: 90%;
+  border-radius: var(--shape-sheet) var(--shape-sheet) 0 0;
+  padding: 0 16px calc(24px + env(safe-area-inset-bottom, 0px));
+}
+.app:not(.cp)[data-design='material']:not([inline]) .sheet {
+  place-items: end center;
+  padding-bottom: max(24px, env(safe-area-inset-bottom, 0px));
+}
+.app:not(.cp)[data-design='material']:not([inline]) .sheet > .panel {
+  width: min(640px, 100%);
+  max-height: 100%;
+  border-radius: var(--shape-sheet);
+}
+/* the handle: 32x4 in on-surface-variant at 40%, 16px from the top of its 48px grab area; the header follows the area at once */
+.app.cp[data-design='material']:not([inline]) .sheet > .panel > .grab {
+  display: grid;
+  place-items: start center;
+  box-sizing: border-box;
+  height: 48px;
+  padding: 16px 0 0;
+}
+.app.cp[data-design='material']:not([inline]) .sheet > .panel > .grab::before {
+  width: 32px;
+  height: 4px;
+  margin: 0;
+  border-radius: var(--shape-pill);
+  background: color-mix(in srgb, var(--md-on-surface-variant) 40%, transparent);
+}
+/* the subject's icon on a 40px tonal circle, as the design draws a sheet's header */
+.app[data-design='material']:not([inline]) .sheet .ph .badge {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--shape-pill);
+  background: var(--control);
+  color: var(--on-control);
+}
+.app[data-design='material']:not([inline]) .sheet .ph .badge svg {
+  width: 22px;
+  height: 22px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .app[data-design='material']:not([inline]) .sheet {
+    animation: fadein var(--motion-fade-ms) var(--motion-fade) both;
+  }
+  .app.cp[data-design='material']:not([inline]) .sheet > .panel,
+  .app:not(.cp)[data-design='material']:not([inline]) .sheet > .panel {
+    animation: shup var(--motion-sheet-ms) var(--motion-standard) both;
+  }
+  /* a release settles back, or closes, on the spatial-fast spring (swipe-to-close.ts waits for as long) */
+  .app.cp[data-design='material']:not([inline]) .sheet > .panel {
+    transition: transform var(--motion-press-ms) var(--motion-spring);
+  }
+  .app.cp[data-design='material']:not([inline]) .sheet > .panel.dragging {
+    transition: none;
+  }
+}
+/* it leaves: the scrim and the sheet fade (a short fade under Reduce Motion), the sheet slides 40px as well when motion is allowed, and a tap goes through to nothing meanwhile */
+.app[data-design='material']:not([inline]) .sheet.leaving {
+  pointer-events: none;
+  animation: fadeout var(--motion-fade-ms) var(--motion-fade) both;
+}
+.app.cp[data-design='material']:not([inline]) .sheet.leaving > .panel,
+.app:not(.cp)[data-design='material']:not([inline]) .sheet.leaving > .panel {
+  animation: fadeout var(--motion-fade-ms) var(--motion-fade) both;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .app.cp[data-design='material']:not([inline]) .sheet.leaving > .panel,
+  .app:not(.cp)[data-design='material']:not([inline]) .sheet.leaving > .panel {
+    animation-name: shdown;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .app[data-design='material']:not([inline]) .sheet.leaving,
+  .app.cp[data-design='material']:not([inline]) .sheet.leaving > .panel,
+  .app:not(.cp)[data-design='material']:not([inline]) .sheet.leaving > .panel {
+    animation-duration: var(--motion-effects-fast-ms);
+    animation-timing-function: var(--motion-effects);
+  }
+}

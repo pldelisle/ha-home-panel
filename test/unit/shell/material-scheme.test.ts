@@ -58,6 +58,15 @@ describe('materialScheme', () => {
     expect(materialScheme(DEFAULT_SEED, true, 0)['--md-primary']).toBe('#a3c9fe');
   });
 
+  test('a sheet floats on surface-container-low and a dialog on surface-container-high, and the scrim is exposed', () => {
+    for (const dark of [false, true]) {
+      const s = materialScheme(DEFAULT_SEED, dark, 0);
+      expect(s['--sheet-bg']).toBe(s['--md-surface-container-low']);
+      expect(s['--dialog-bg']).toBe(s['--md-surface-container-high']);
+      expect(s['--md-scrim']).toBe('#000000');
+    }
+  });
+
   test('only custom properties, each a six-digit hex', () => {
     for (const dark of [false, true])
       for (const [name, value] of Object.entries(materialScheme(DEFAULT_SEED, dark, 0))) {

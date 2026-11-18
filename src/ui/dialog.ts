@@ -4,7 +4,7 @@
 // Must not: send a service call, know what it confirms, open a sheet or another dialog, or hold a draft (an editor with Cancel and Save owns its own `<dialog>` and takes the look and `stopEscape` from dialogs.ts).
 import {LitElement, html, nothing, type PropertyValues} from 'lit';
 import {AppearanceConsumer} from './controllers/appearance-consumer.ts';
-import {closeOnBackdrop, dialogLook, stopEscape} from './dialogs.ts';
+import {dialogLook, stopEscape, tappedBackdrop} from './dialogs.ts';
 import {common} from './styles/index.ts';
 
 export class HpDialog extends LitElement {
@@ -27,6 +27,9 @@ export class HpDialog extends LitElement {
   // `display: contents` and the look are in dialog.element.css; the dialog is in the top layer, so the host takes no room.
   static override styles = [common, dialogLook];
 
+  // Material's dialog fades out before it closes, and is still open (and drawn) until it has
+  private leaving = false;
+
   constructor() {
     super();
     this.open = false;
@@ -39,7 +42,13 @@ export class HpDialog extends LitElement {
   }
 
   protected override render() {
-    return html`<dialog aria-labelledby="t" @keydown=${stopEscape} @click=${closeOnBackdrop} @close=${this.onClose}>
+    return html`<dialog
+      aria-labelledby="t"
+      @keydown=${stopEscape}
+      @cancel=${this.onCancel}
+      @click=${this.onBackdrop}
+      @close=${this.onClose}
+    >
       <h4 id="t" tabindex="-1" .autofocus=${true}>${this.heading}</h4>
       ${this.line ? html`<p>${this.line}</p>` : nothing}
       <slot></slot>
@@ -57,8 +66,19 @@ export class HpDialog extends LitElement {
     const dialog = this.renderRoot.querySelector<HTMLDialogElement>('dialog');
     if (!dialog) return;
     if (this.open && !dialog.open) dialog.showModal();
-    else if (!this.open && dialog.open) dialog.close();
+    else if (!this.open && dialog.open) void this.dismiss(dialog);
+    else if (this.open) dialog.classList.remove('leaving'); // asked again while it was leaving
   }
+
+  // Escape and a tap on the backdrop cancel, as before, but through `finish`, so that the dialog can leave first
+  private readonly onCancel = (e: Event): void => {
+    e.preventDefault();
+    this.finish('dialog-cancel');
+  };
+
+  private readonly onBackdrop = (e: MouseEvent): void => {
+    if (tappedBackdrop(e)) this.finish('dialog-cancel');
+  };
 
   // the browser closed it (Escape, or the backdrop's `close()`): that is a cancel, said once; a close this element asked for already turned `open` false
   private readonly onClose = (): void => {
@@ -66,9 +86,24 @@ export class HpDialog extends LitElement {
   };
 
   private finish(event: 'dialog-confirm' | 'dialog-cancel'): void {
+    if (this.leaving) return;
     this.open = false;
-    this.renderRoot.querySelector<HTMLDialogElement>('dialog')?.close();
+    const dialog = this.renderRoot.querySelector<HTMLDialogElement>('dialog');
+    if (dialog) void this.dismiss(dialog);
     this.dispatchEvent(new CustomEvent(event, {bubbles: true, composed: true}));
+  }
+
+  // Closes at once, or under Material after the leaving animation (`.leaving`, dialog.element.css); the flag is set before the first wait, so a second close finds it
+  private async dismiss(dialog: HTMLDialogElement): Promise<void> {
+    if (this.leaving) return;
+    if (this.getAttribute('design') === 'material') {
+      this.leaving = true;
+      dialog.classList.add('leaving');
+      await Promise.allSettled(dialog.getAnimations({subtree: true}).map(a => a.finished));
+      this.leaving = false;
+      dialog.classList.remove('leaving');
+    }
+    if (!this.open) dialog.close();
   }
 }
 

@@ -15,9 +15,14 @@ export const stopEscape = (e: KeyboardEvent): void => {
 
 /** A tap on a confirmation's backdrop cancels it, as on iPadOS: the click lands on the `<dialog>` itself only outside its box. */
 export const closeOnBackdrop = (e: MouseEvent): void => {
+  if (tappedBackdrop(e)) (e.currentTarget as HTMLDialogElement).close();
+};
+
+/** Whether the click landed on the `<dialog>`'s backdrop: on the element itself, and outside its box. */
+export const tappedBackdrop = (e: MouseEvent): boolean => {
   const dialog = e.currentTarget as HTMLDialogElement;
-  if (e.target !== dialog) return;
+  if (e.target !== dialog) return false;
   const box = dialog.getBoundingClientRect();
   const inside = e.clientX >= box.left && e.clientX <= box.right && e.clientY >= box.top && e.clientY <= box.bottom;
-  if (!inside) dialog.close();
+  return !inside;
 };

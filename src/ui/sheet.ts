@@ -22,6 +22,7 @@ export class HpSheet extends LitElement {
     label: {},
     closeLabel: {attribute: 'close-label'},
     hasSub: {state: true},
+    leaving: {state: true},
   };
   /** On screen. Its owner binds it to the sheet host's `isOpen`; the Close button takes focus when it turns true. */
   declare open: boolean;
@@ -38,6 +39,8 @@ export class HpSheet extends LitElement {
   declare closeLabel: string;
   /** Something is slotted as the sub-line: without one the header draws no line, so the heading sits where the legacy card sheet's did. */
   declare private hasSub: boolean;
+  /** Under Material a closed sheet is still drawn while it fades out and slides off (sheet.css, `.leaving`); then it is hidden. */
+  declare private leaving: boolean;
 
   // `display: contents`: the sheet is `position: fixed`, so the host takes no room where its owner puts it. The rules for the
   // header the legacy sheet's `.ph` carried are here, in sheet.element.css, and not in sheet.css, because the header is the pane header's now: the
@@ -49,9 +52,13 @@ export class HpSheet extends LitElement {
   // on a phone, dragged down by its grabber or its header to close; a press on a control is the control's
   private readonly swipe = new SwipeToClose(this, {
     enabled: () => this.appearance.value?.compact === true && !this.inline,
-    close: () => this.close(),
+    close: () => {
+      this.dragged = true; // it has slid off under the finger: no second slide on the way out
+      this.close();
+    },
     handle: '.grab, hp-pane-header',
   });
+  private dragged = false;
 
   constructor() {
     super();
@@ -63,12 +70,17 @@ export class HpSheet extends LitElement {
     this.label = '';
     this.closeLabel = '';
     this.hasSub = false;
+    this.leaving = false;
   }
 
   // The sub-line and the controls ride in the pane header's own slots, in wrappers: a slot forwarded into a slot is a `<slot>`,
   // which has no box of its own for the margin the pane header's `::slotted` rules give.
   protected override render() {
-    return html`<div class="sheet" ?hidden=${!this.open} @click=${this.onBackdrop}>
+    return html`<div
+      class="sheet ${this.leaving ? 'leaving' : ''}"
+      ?hidden=${!this.open && !this.leaving}
+      @click=${this.onBackdrop}
+    >
       <div
         class="panel"
         role=${this.inline ? 'region' : 'dialog'}
@@ -110,9 +122,25 @@ export class HpSheet extends LitElement {
     if (e.target === e.currentTarget) this.close();
   };
 
+  protected override willUpdate(changed: PropertyValues<this>): void {
+    // Material's sheet leaves with a fade and a slide, and stays drawn until they end: not an inline sheet, nor one a drag has already taken off
+    if (changed.has('open') && changed.get('open') === true && !this.open) {
+      this.leaving = this.getAttribute('design') === 'material' && !this.inline && !this.dragged;
+      this.dragged = false;
+    } else if (this.open) this.leaving = false;
+  }
+
   protected override updated(changed: PropertyValues<this>): void {
+    if ((changed as Map<PropertyKey, unknown>).has('leaving') && this.leaving) void this.finishLeaving();
     // the Close button takes focus, as the legacy sheet's did, so a keyboard or a switch is inside the sheet at once
     if (changed.has('open') && this.open) void this.focusClose();
+  }
+
+  // the sheet and its panel animate (sheet.css); a sheet with no animation to wait for (none is running) is hidden at once
+  private async finishLeaving(): Promise<void> {
+    const sheet = this.renderRoot.querySelector<HTMLElement>('.sheet');
+    await Promise.allSettled((sheet?.getAnimations({subtree: true}) ?? []).map(a => a.finished));
+    if (!this.open) this.leaving = false;
   }
 
   // The button is slotted into the pane header, whose own tree is drawn after this one's: a sheet made open (a feature draws it only while

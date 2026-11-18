@@ -6,6 +6,7 @@
 import type {Locator} from '@playwright/test';
 import {test, expect, fontsLoaded, type House} from '../fixtures';
 import {AFTERNOON, FULL_CFG, KEEP_ENGLISH_NAMES, VIEWPORTS} from '../houses';
+import {OFFICE_TILE} from '../lights';
 import {openFrontDoor, openPopup, stopCharging} from '../live';
 
 // every screenshot shows the bundled Manrope, never the fallback it swaps from (font-display: swap)
@@ -381,3 +382,89 @@ test.describe('phone, light, components', () => {
     await expect(house.page).toHaveScreenshot('material-climate-phone-light-en.png', SHOT);
   });
 });
+
+// A sheet and a dialog over their scrim (#469). The sheet is a room's lights: the full-width one with a handle on the phone, the floating
+// one without on the tablet; the dialog is Climate's "Turn every room off?".
+const pseudo = (target: Locator, which: '::before' | '::backdrop', prop: string): Promise<string> =>
+  target.evaluate((el, [w, p]) => getComputedStyle(el, w).getPropertyValue(p), [which, prop]);
+
+for (const {viewport, theme} of [
+  {viewport: 'tablet', theme: 'light'},
+  {viewport: 'tablet', theme: 'dark'},
+  {viewport: 'phone', theme: 'light'},
+] as const) {
+  test.describe(`${viewport}, ${theme}, sheet`, () => {
+    test.use({
+      viewport: VIEWPORTS[viewport],
+      houseOpts: {cfg: FULL_CFG, theme, design: 'material', time: AFTERNOON, frozen: true},
+    });
+
+    test('a sheet is surface-container-low over a 32% scrim; the phone has a handle, the tablet floats', async ({
+      house,
+    }) => {
+      await house.tab('lights');
+      await house.root().locator(`${OFFICE_TILE}:visible .tx`).click();
+      const sheet = house.root().locator('#sh-light');
+      const panel = sheet.locator('> .panel');
+      await expect(panel).toBeVisible();
+      await settled(house);
+      expect(await style(panel, 'background-color')).toBe(await role(house, '--md-surface-container-low'));
+      expect(await style(panel, 'border-top-left-radius')).toBe('28px');
+      expect(await style(sheet, 'background-color')).toMatch(/0\.32/);
+      expect(await style(sheet, 'backdrop-filter')).toBe('none');
+      const box = (await panel.boundingBox())!;
+      const grab = panel.locator('> .grab');
+      if (viewport === 'phone') {
+        // full width, square at the bottom edge, a 32x4 handle in a 48px grab area
+        expect(box.width).toBe(VIEWPORTS.phone.width);
+        expect(await style(panel, 'border-bottom-left-radius')).toBe('0px');
+        expect(await style(grab, 'height')).toBe('48px');
+        expect(await pseudo(grab, '::before', 'width')).toBe('32px');
+        expect(await pseudo(grab, '::before', 'height')).toBe('4px');
+        expect(box.y + box.height).toBe(VIEWPORTS.phone.height);
+        expect(box.height).toBeLessThanOrEqual(VIEWPORTS.phone.height * 0.9);
+      } else {
+        // floating 24px above the bottom, round on all four corners, no handle
+        expect(await style(panel, 'border-bottom-left-radius')).toBe('28px');
+        expect(await style(grab, 'display')).toBe('none');
+        expect(box.width).toBeLessThanOrEqual(640);
+        expect(VIEWPORTS.tablet.height - (box.y + box.height)).toBe(24);
+      }
+      await expect(house.page).toHaveScreenshot(`material-sheet-${viewport}-${theme}-en.png`, SHOT);
+    });
+  });
+}
+
+for (const theme of ['light', 'dark'] as const) {
+  test.describe(`tablet, ${theme}, dialog`, () => {
+    test.use({
+      viewport: VIEWPORTS.tablet,
+      houseOpts: {cfg: FULL_CFG, theme, design: 'material', time: AFTERNOON, frozen: true},
+    });
+
+    test('a confirmation is surface-container-high with text buttons in primary, Cancel first', async ({house}) => {
+      await house.tab('climate');
+      const controls = house.root().locator('hp-climate-detail hp-climate-controls');
+      await controls.getByRole('button', {name: 'All off'}).click();
+      const dialog = controls.locator('hp-dialog[data-ask="alloff"] dialog');
+      await expect(dialog).toBeVisible();
+      await expect(dialog.locator('h4')).toHaveText('Turn every room off?');
+      await settled(house);
+      expect(await style(dialog, 'background-color')).toBe(await role(house, '--md-surface-container-high'));
+      expect(await style(dialog, 'border-top-left-radius')).toBe('28px');
+      expect(await style(dialog, 'padding-top')).toBe('24px');
+      expect(await pseudo(dialog, '::backdrop', 'background-color')).toMatch(/0\.32/);
+      // the actions are text buttons: no fill, no outline, the text in primary; Cancel before the action
+      const [cancel, action] = await dialog.locator('.dbtn').all();
+      for (const button of [cancel, action]) {
+        expect(await style(button, 'background-color')).toBe('rgba(0, 0, 0, 0)');
+        expect(await style(button, 'box-shadow')).toBe('none');
+        expect(await style(button, 'color')).toBe(await role(house, '--md-primary'));
+        expect(await style(button, 'height')).toBe('40px');
+      }
+      await expect(cancel).toHaveText('Cancel');
+      await expect(action).toHaveText('Turn off');
+      await expect(house.page).toHaveScreenshot(`material-dialog-tablet-${theme}-en.png`, SHOT);
+    });
+  });
+}
