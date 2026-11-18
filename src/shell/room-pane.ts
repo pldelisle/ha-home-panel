@@ -40,6 +40,11 @@ export class RoomPane extends LitElement {
   private readonly store = new StoreController(this, {ids: () => '*'});
   private readonly appearance = new AppearanceConsumer(this);
 
+  /** Moves focus to the room's heading: the shell calls it after a tap of Home's Rooms row, of More's or of Back took the person here (WCAG 2.4.3). */
+  focusHeading(): void {
+    this.renderRoot.querySelector<HTMLElement>('h2')?.focus();
+  }
+
   private readonly back = (): void => {
     this.dispatchEvent(new TabSelectEvent('home'));
   };
@@ -64,7 +69,8 @@ export class RoomPane extends LitElement {
               ${ico('chevl', 20)}<span>${t('room.back')}</span>
             </button>`
           : nothing
-      }<hp-pane-header .icon=${roomIcon(this.name)} .color=${roomColor(this.features)} .heading=${this.name}>
+      }<hp-pane-header .icon=${roomIcon(this.name)} .color=${roomColor(this.features)}>
+        <h2 slot="title" tabindex="-1">${this.name}</h2>
         ${
           chips.length
             ? html`<ul class="readings" slot="sub">

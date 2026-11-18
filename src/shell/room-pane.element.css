@@ -56,3 +56,7 @@ hp-pane-header {
   font: var(--type-label-large);
   letter-spacing: var(--track-label-large);
 }
+/* the heading takes focus when a room opens, as a landmark does: no ring on a heading that is no control */
+h2:focus {
+  outline: none;
+}

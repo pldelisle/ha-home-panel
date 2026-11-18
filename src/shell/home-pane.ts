@@ -2,7 +2,7 @@
 // stack), the six tiles with the Security card, and the scenes row. The shell imports features; a feature never imports the shell or another feature (ADR 0017).
 // Pattern: a humble composition (Meszaros, xUnit Test Patterns), the composition root's child: each card is its feature's element on its
 // own ids (ADR 0012), drawn in light DOM (ADR 0032) so the pane's parts stay items of the `.pane-home` grid, styled by home-pane.css.
-// On a phone the weather card carries a button over it, named by `weatherCardLabel`, that shows the Weather tab, rather than being a button around its words. It loads the Energy and Water heater tiles' history (`HomeHistory`) and hands it down. Where the sidebar does not list the rooms, a Rooms row of chips under the tiles shows a room (the shell says which, `roomsInSidebar`). It has no heading: the header's greeting is Home's one title (#426). Must not: read
+// On a phone the weather card carries a button over it, named by `weatherCardLabel`, that shows the Weather tab, rather than being a button around its words. It loads the Energy and Water heater tiles' history (`HomeHistory`) and hands it down. Where the sidebar does not list the rooms, a Rooms row of chips right under the tiles shows a room (the descriptor's env says which, `roomsInSidebar`). It has no heading: the header's greeting is Home's one title (#426). Must not: read
 // an entity but through `weatherCardLabelIds`, word anything (the cards and the readers do), or hold logic beyond placing them and that load.
 import {ContextConsumer} from '@lit/context';
 import {LitElement, html, nothing, unsafeCSS} from 'lit';
@@ -111,6 +111,7 @@ export class HomePane extends LitElement {
 
   protected override render() {
     const compact = this.compact;
+    const rooms = this.renderRooms();
     const data = this.history.data;
     const deps: GlanceDeps = {history: data, now: Date.now()};
     return html`<hp-config-card></hp-config-card>
@@ -141,7 +142,7 @@ export class HomePane extends LitElement {
               </div>`
         }
       </div>
-      <div class="hright">
+      <div class="hright${rooms === nothing ? '' : ' hrooms-on'}">
         <div class="htiles" id="htiles">
           ${repeat(
             GLANCE_SOURCES,
@@ -149,6 +150,7 @@ export class HomePane extends LitElement {
             source => html`<hp-glance-tile .source=${source} .deps=${deps} .active=${this.active}></hp-glance-tile>`,
           )}
         </div>
+        ${rooms}
         <div id="hsec"><hp-security-card></hp-security-card></div>
       </div>
       <div
@@ -158,8 +160,7 @@ export class HomePane extends LitElement {
         @hp-empty=${(e: EmptyEvent) => (this.scenesEmpty = e.detail.empty)}
       >
         <hp-scene-tiles></hp-scene-tiles>
-      </div>
-      ${this.renderRooms()}`;
+      </div>`;
   }
 }
 

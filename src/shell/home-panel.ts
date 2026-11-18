@@ -239,6 +239,8 @@ export class HomePanel extends LitElement {
       sheetOpen: id => this.sheets.isOpen(id),
       sheetDetail: id => this.sheets.detail(id),
       room: this.room,
+      rooms: this.rooms,
+      sidebarRooms: this.sidebarRooms,
     };
   }
 
@@ -383,7 +385,18 @@ export class HomePanel extends LitElement {
   private readonly onTabSelect = (e: TabSelectEvent): void => {
     this.sheets.close(MORE_SHEET);
     this.setTab('room' in e.detail ? roomTab(e.detail.room) : e.detail.key);
+    // the button that asked was in the pane that is now hidden, or in the sheet that closed: focus goes to the view that shows (WCAG 2.4.3)
+    void this.focusShownView();
   };
+
+  // Focus goes to the room's heading, or to the pane of the section shown (a tabpanel with tabindex -1), once the frame and the room pane have drawn.
+  private async focusShownView(): Promise<void> {
+    await this.updateComplete;
+    if (this.room === null) return this.renderRoot.querySelector<HTMLElement>(`#pane-${this.visible}`)?.focus();
+    const pane = this.renderRoot.querySelector('hp-room-pane');
+    await pane?.updateComplete;
+    pane?.focusHeading();
+  }
 
   // an element asked upward for a sheet, or for the toast; the event stops here, it is the panel's business
   private readonly onSheetRequest = (e: SheetRequestEvent): void => {
@@ -612,23 +625,18 @@ export class HomePanel extends LitElement {
               html`<section
                 class="pane pane-${f.key} ${this.sheetBehind(f) ? 'behind' : ''}"
                 id="pane-${f.key}"
+                tabindex="-1"
                 role=${ifDefined(this.sheetBehind(f) ? undefined : 'tabpanel')}
                 aria-labelledby=${ifDefined(this.sheetBehind(f) ? undefined : `tab-${f.key}`)}
                 ?hidden=${this.section !== f.key && !this.sheetBehind(f)}
                 ${ref(el => this.scopeStatistics(f.key, el))}
               >
-                ${f.key === 'home' ? this.renderHome() : f.pane(this.env)}
+                ${f.pane(this.env)}
               </section>`,
           )}${this.renderRoom()}
         </div>
       </div>
     </div>`;
-  }
-
-  // The Home pane, drawn here and not by its descriptor: it is handed the rooms for its Rooms row, and the rule the sidebar's Rooms group
-  // is drawn by (`sidebarRooms`), so one rule decides both (#511).
-  private renderHome(): TemplateResult {
-    return html`<hp-home-pane .rooms=${this.rooms} .roomsInSidebar=${this.sidebarRooms}></hp-home-pane>`;
   }
 
   // The room view (ADR 0039): one pane for every room, drawn only while a room shows, so a hidden room listens to nothing. It is labelled by

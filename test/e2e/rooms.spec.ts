@@ -134,6 +134,16 @@ rememberedAttic.describe('a remembered room the house does not have', () => {
 // row too; the Liquid Glass tablet has the sidebar's group instead, so no row. A room view on the phone has a Back button to Home.
 const chips = (house: House) => house.root().locator('#hrooms .hroom');
 const selectedTabs = (house: House) => house.root().locator('#rail .rtab[aria-selected="true"]');
+// where focus is, through every shadow root, as the element's chain of ancestors up to the document: does it sit inside the selector's element
+const focusIn = (house: House, selector: string) =>
+  house.page.evaluate(sel => {
+    let el: Element | null = document.activeElement;
+    while (el?.shadowRoot?.activeElement) el = el.shadowRoot.activeElement;
+    for (let node: Node | null = el; node; node = node.parentNode ?? (node as ShadowRoot).host ?? null) {
+      if (node instanceof Element && node.matches(sel)) return true;
+    }
+    return false;
+  }, selector);
 
 test.describe('rooms on the phone, Liquid Glass', () => {
   test.use({houseOpts: {cfg: FULL_CFG, time: AFTERNOON, frozen: true}});
@@ -154,6 +164,30 @@ test.describe('rooms on the phone, Liquid Glass', () => {
     await expect(house.root().locator('#pane-home')).toBeVisible();
     await expect(pane(house)).toBeHidden();
     await expect(house.root().locator('#rail [data-tab="home"]')).toHaveAttribute('aria-selected', 'true');
+  });
+
+  test('focus follows the person: Enter on a chip lands in the room, Back lands on Home, and a row of More lands in the room', async ({
+    house,
+  }) => {
+    phoneOnly();
+    await house.tab('home');
+    await chips(house).filter({hasText: 'Office'}).focus();
+    await house.page.keyboard.press('Enter');
+    await expect(pane(house)).toBeVisible();
+    await expect.poll(() => focusIn(house, '#pane-room')).toBe(true);
+    expect(
+      await pane(house)
+        .locator('h2')
+        .evaluate(e => e.matches(':focus')),
+    ).toBe(true);
+    await pane(house).getByRole('button', {name: 'Home'}).focus();
+    await house.page.keyboard.press('Enter');
+    await expect(house.root().locator('#pane-home')).toBeVisible();
+    await expect.poll(() => focusIn(house, '#pane-home')).toBe(true);
+    await house.root().locator('#moretab').click();
+    await house.root().locator('hp-more-sheet #morerooms .arow', {hasText: 'Kitchen'}).click();
+    await expect(pane(house)).toBeVisible();
+    await expect.poll(() => focusIn(house, '#pane-room')).toBe(true);
   });
 
   test('the row sits under the six tiles and scrolls sideways when the chips outgrow it', async ({house}) => {
@@ -214,11 +248,21 @@ test.describe('rooms under Material', () => {
   }) => {
     tabletOnly();
     await expect(chips(house).locator('span')).toHaveText(['Kitchen', 'Living room', 'Office']);
+    // right under the six tiles, in their column
+    const tiles = await house.root().locator('#htiles').boundingBox();
+    const row = await house.root().locator('#hrooms').boundingBox();
+    expect(row!.y).toBeGreaterThanOrEqual(tiles!.y + tiles!.height);
+    expect(row!.y).toBeLessThan(tiles!.y + tiles!.height + 40);
     await expect(house.root().locator('#rail .rhead, #rail .rroom')).toHaveCount(0);
-    // the assist chip: 32 px high
+    // the assist chip: 32 px high, with a 48 px hit area: a tap 6 px above its edge still opens the room
     const chip = chips(house).first();
     expect((await chip.boundingBox())?.height).toBe(32);
-    await chip.click();
+    const hit = await chip.evaluate(e => {
+      const after = getComputedStyle(e, '::after');
+      return {top: after.top, bottom: after.bottom, position: after.position};
+    });
+    expect(hit).toEqual({top: '-8px', bottom: '-8px', position: 'absolute'});
+    await chip.click({position: {x: 20, y: -6}});
     await expect(pane(house).locator('hp-pane-header h2')).toHaveText('Kitchen');
     await expect(selectedTabs(house)).toHaveCount(0);
     await expect(pane(house).getByRole('button', {name: 'Home'})).toHaveCount(0);

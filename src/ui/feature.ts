@@ -21,6 +21,10 @@ export interface FeatureEnv {
   sheetDetail(id: string): unknown;
   /** The area of the room view shown (ADR 0039), or null while a section is: a feature draws its tiles for that room only. */
   readonly room: string | null;
+  /** The rooms of the house, by area and name, sorted as the sidebar lists them (ADR 0039): Home's Rooms row draws them where the sidebar does not. */
+  readonly rooms: readonly {readonly areaId: string; readonly name: string}[];
+  /** Whether the Liquid Glass sidebar is drawn and lists the rooms, so Home draws no Rooms row (the one rule `renderRail` draws the sidebar's group by). */
+  readonly sidebarRooms: boolean;
 }
 
 /** A subject's part of a room view (ADR 0039): which areas it has tiles in, and its tiles for one of them. */

@@ -116,7 +116,7 @@ export class MoreSheet extends LitElement {
               @click=${() => this.selectRoom(room.areaId)}
             >
               <span class="ic acc" style="--acc: ${this.roomColor}">${ico(roomIcon(room.name), 20)}</span>
-              <div><b>${room.name}</b></div>
+              <span class="at"><b>${room.name}</b></span>
             </button>`,
         )}
       </div>`;

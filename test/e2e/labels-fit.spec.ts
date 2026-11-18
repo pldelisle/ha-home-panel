@@ -130,3 +130,22 @@ for (const lang of ['en', 'fr'] as const) {
     });
   });
 }
+
+// Home's Rooms row (#511): a room with a long name in French ellipsizes inside its chip, and the chip stays within the screen, so the row scrolls and the page does not
+test.describe('phone, a long room name in French', () => {
+  test.beforeEach(phoneOnly);
+  test.use({houseOpts: {cfg: FULL_CFG, lang: 'fr', time: AFTERNOON, frozen: true}});
+
+  test('the chip ellipsizes the name and the page does not scroll sideways', async ({house}) => {
+    await house.setAreaName('office', 'Salle de jeux et de lecture des enfants de la maison principale');
+    await house.tab('home');
+    const chip = house.root().locator('#hrooms .hroom', {hasText: 'Salle de jeux'});
+    await expect(chip).toBeVisible();
+    const name = chip.locator('span');
+    expect(await name.evaluate(e => getComputedStyle(e).textOverflow)).toBe('ellipsis');
+    expect(await name.evaluate(e => e.scrollWidth > e.clientWidth)).toBe(true);
+    const width = house.page.viewportSize()!.width;
+    expect((await chip.boundingBox())!.width).toBeLessThanOrEqual(width);
+    expect(await house.page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+  });
+});

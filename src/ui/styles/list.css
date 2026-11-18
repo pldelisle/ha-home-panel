@@ -28,6 +28,22 @@
   display: block;
   font-weight: 600;
 }
+/* a row that is a button (More's Rooms): the button's own look goes, and the row fills its group */
+button.arow {
+  width: 100%;
+  border: 0;
+  align-items: center;
+  color: var(--fg);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+button.arow:focus-visible {
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
+}
 .arow span {
   font-size: calc(12.5px * var(--tx));
   color: var(--fg2);
@@ -61,7 +77,8 @@
 }
 /* glass: a row and a chip take the tile fill, the icon square mixes its accent into it */
 .app.gl .arow,
-.app.gl .clear span {
+.app.gl .clear span,
+.app.gl .hroom {
   background: var(--g-tile);
   box-shadow: var(--g-edge-s);
 }
@@ -71,11 +88,12 @@
 }
 @media (prefers-reduced-transparency: reduce) {
   .app.gl .arow,
-  .app.gl .clear span {
+  .app.gl .clear span,
+  .app.gl .hroom {
     background: var(--card2);
   }
 }
-/* The Material design's list and chip (ADR 0037, #468): the rows are a group, 2px apart, round at its two ends and nearly square between (the corners are
+/* The Material design's list and chip (ADR 0037, #468; the chip's rules are Home's Rooms row's too, `.hroom` in home-pane.css): the rows are a group, 2px apart, round at its two ends and nearly square between (the corners are
    `--shape-list-group` and `--shape-list-item`); a row that only tells is a well and one that opens something (a button) is a control with the chevron.
    The icon container is a 40px circle and its colour says the kind (`warn`, `crit`, plain); the headline always says it in words too. The chips
    of what is fine are Material's assist chips: 32px, an outline-variant edge, the small corner. */
@@ -117,7 +135,8 @@
   background: var(--md-error-container);
   color: var(--md-on-error-container);
 }
-.app[data-design='material'] .arow > div {
+.app[data-design='material'] .arow > div,
+.app[data-design='material'] .arow > .at {
   flex: 1;
   min-width: 0;
 }
@@ -151,16 +170,22 @@
 .app[data-design='material'] .clear {
   gap: 8px;
 }
-.app[data-design='material'] .clear span {
+.app[data-design='material'] .clear span,
+.app[data-design='material'] .hroom {
   display: inline-flex;
   align-items: center;
   height: 32px;
+  min-height: 0;
   padding: 0 16px 0 8px;
   background: transparent;
   box-shadow: inset 0 0 0 1px var(--line);
   color: var(--fg2);
   font: var(--type-label-large);
   letter-spacing: var(--track-label-large);
+}
+.app[data-design='material'] .hroom svg {
+  width: 18px;
+  height: 18px;
 }
 .app[data-design='material'] .clear span::before {
   margin-right: 8px;
