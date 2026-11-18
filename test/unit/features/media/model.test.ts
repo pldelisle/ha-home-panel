@@ -5,7 +5,7 @@ import {describe, expect, test} from 'vitest';
 import {OverlayStore} from '../../../../src/ui/overlay-store.ts';
 import {K} from '../../../../src/features/media/commands.ts';
 import {readMedia, type MediaInputs, type SpeakerInputs} from '../../../../src/features/media/inputs.ts';
-import {mediaBrief, mediaModel} from '../../../../src/features/media/model.ts';
+import {mediaBrief, mediaModel, mediaRoomAreas, mediaRoomTiles} from '../../../../src/features/media/model.ts';
 import type {TvInputs} from '../../../../src/providers/tv-source.ts';
 import {fakeHass} from '../../fake-hass.ts';
 import {depsOf, fullHouse, readingOf, recorded, type Language} from './support.ts';
@@ -472,6 +472,50 @@ describe('the brief line under More', () => {
     [{tv: null, speakers: []}, 'Nothing playing', 'Rien en lecture'],
   ])('%j', (inputs, english, french) => {
     expect([brief(inputs), brief(inputs, 'fr')]).toEqual([english, french]);
+  });
+});
+
+// a room view's part: the area's own tiles, the speaker by its short name
+describe('the tiles of a room', () => {
+  const deps = (overlay: <T>(key: string, current: T) => T = unheld) => {
+    const {t, names} = depsOf(fullHouse, 'en');
+    return {t, names, overlay};
+  };
+  const mixed: MediaInputs = {
+    tv: tv({areaId: 'living_room'}),
+    speakers: [
+      speaker({id: 'media_player.a', areaId: 'kitchen', name: 'HomePod mini'}),
+      speaker({id: 'media_player.b', areaId: 'living_room', name: 'Soundbar'}),
+      speaker({id: 'media_player.c', areaId: 'kitchen', name: 'Radio'}),
+    ],
+  };
+
+  test('the areas are those of the television and of the speakers, once each', () => {
+    expect(mediaRoomAreas(mixed)).toEqual(['living_room', 'kitchen']);
+    expect(mediaRoomAreas({tv: tv({areaId: null}), speakers: []})).toEqual([]);
+    expect(mediaRoomAreas({tv: null, speakers: []})).toEqual([]);
+  });
+
+  test("a room's tiles are the television when it sits there, then the speakers there", () => {
+    expect(mediaRoomTiles(mixed, 'living_room', deps()).map(tile => tile.key)).toEqual(['tv', 'media_player.b']);
+    expect(mediaRoomTiles(mixed, 'kitchen', deps()).map(tile => tile.key)).toEqual([
+      'media_player.a',
+      'media_player.c',
+    ]);
+    expect(mediaRoomTiles(mixed, 'attic', deps())).toEqual([]);
+  });
+
+  test("a speaker's tile goes by its short name, and is otherwise the Media tab's tile", () => {
+    const [tile] = mediaRoomTiles(mixed, 'kitchen', deps());
+    const tab = mediaModel(mixed, deps()).tiles.find(t => t.key === 'media_player.a');
+    expect(tile.title).toBe('HomePod mini');
+    expect(tab?.title).toBe('Kitchen');
+    expect({...tile, title: ''}).toEqual({...tab, title: ''});
+  });
+
+  test('a held pause shows in the room as it does in the tab', () => {
+    const [tile] = mediaRoomTiles(mixed, 'kitchen', deps(holding({[K.state('media_player.a')]: 'paused'})));
+    expect(tile.control).toMatchObject({kind: 'play', playing: false, icon: 'play'});
   });
 });
 

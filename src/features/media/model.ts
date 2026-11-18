@@ -300,12 +300,12 @@ function tvTile(tv: TvView, t: Translate): MediaTileView {
   };
 }
 
-function speakerTile(speaker: SpeakerView, t: Translate): MediaTileView {
+function speakerTile(speaker: SpeakerView, t: Translate, title: string = speaker.room): MediaTileView {
   return {
     key: speaker.id,
     kind: 'speaker',
     icon: 'spk',
-    title: speaker.room,
+    title,
     sheetTitle: t('media.speakers'),
     description: t('media.opensControls'),
     subLine: speaker.loaded ? `${speaker.title}${speaker.artist ? ` · ${speaker.artist}` : ''}` : speaker.subLine,
@@ -341,4 +341,25 @@ export function mediaModel(inputs: MediaInputs, deps: MediaModelDeps): MediaView
     tiles: [...(tv ? [tvTile(tv, t)] : []), ...speakers.map(speaker => speakerTile(speaker, t))],
     labels: {speakers: t('media.speakers'), noDevices: t('media.noDevices'), noSpeakers: t('media.playersHint')},
   };
+}
+
+/** The areas the television and the speakers sit in, once each, in the house's order: the rooms a room view lists Media in (ADR 0039). */
+export function mediaRoomAreas({tv, speakers}: MediaInputs): string[] {
+  return [...new Set([...(tv?.areaId ? [tv.areaId] : []), ...speakers.map(speaker => speaker.areaId)])];
+}
+
+/**
+ * A room's tiles: the television when it sits in the area, then the area's speakers, each the same tile the Media tab draws. A
+ * speaker goes by its short name, the words of its room dropped, since the room view's heading already says the room.
+ */
+export function mediaRoomTiles(inputs: MediaInputs, areaId: string, deps: MediaModelDeps): MediaTileView[] {
+  const {t} = deps;
+  const tv = inputs.tv?.areaId === areaId ? tvView(inputs.tv, deps) : null;
+  return [
+    ...(tv ? [tvTile(tv, t)] : []),
+    ...inputs.speakers
+      .filter(speaker => speaker.areaId === areaId)
+      .map(speaker => speakerView(speaker, deps))
+      .map(speaker => speakerTile(speaker, t, speaker.name)),
+  ];
 }

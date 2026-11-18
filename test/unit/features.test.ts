@@ -305,9 +305,16 @@ describe('the rooms of the registry', () => {
     return {store, sheetOpen: () => false, sheetDetail: () => undefined, room: null};
   };
 
-  test('only Lights has a room part for now, with no reading for the header', () => {
-    expect(FEATURES.filter(f => f.room).map(f => f.key)).toEqual(['lights']);
+  test('Lights and Media have a room part for now, with no reading for the header', () => {
+    expect(FEATURES.filter(f => f.room).map(f => f.key)).toEqual(['lights', 'media']);
     expect(lightsFeature.room).not.toHaveProperty('chip');
+    expect(mediaFeature.room).not.toHaveProperty('chip');
+  });
+
+  test('Media lists the areas of its speakers and of its television, and draws its sheet over a room view', () => {
+    expect(mediaFeature.room?.areas(env())).toEqual([]);
+    expect(mediaFeature.room?.areas(env(fakeHass.fromHouse(full)))).toEqual(['living_room']);
+    expect(mediaFeature.overSheets).toEqual(['media.controls']);
   });
 
   test('Lights lists the areas of its lights, and none before the house has been heard', () => {
