@@ -1,5 +1,5 @@
 /*
- * <hp-car-history-sheet>'s own rules: the 30 days of bars in their well, the sentences under them, and the room between the blocks the sheet holds. The sheet's frame is the kit's `<hp-sheet>`.
+ * <hp-car-history-sheet>'s own rules: the room kept under the 30 days' chart card, the sentences the sheet says on its own, and the room between the blocks the sheet holds. The sheet's frame is the kit's `<hp-sheet>`.
  */
 :host {
   display: block;
@@ -7,17 +7,6 @@
 }
 .bars {
   margin-bottom: 14px;
-  padding: 14px 16px;
-  border-radius: 16px;
-  background: var(--card2);
-}
-:host([glass]) .bars {
-  background: var(--g-tile);
-}
-.spark {
-  display: block;
-  width: 100%;
-  height: 120px;
 }
 .hline {
   margin: 8px 4px 0;

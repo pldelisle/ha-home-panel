@@ -868,6 +868,7 @@ export const en = {
   'car.limitFord': 'Limit {n}% · set in FordPass',
   // the Charging history row on the tab
   'car.history.done': 'Done',
+  'car.history.tab.month': '30 days',
   'car.history.line':
     '{n, plural, =0 {No sessions in the last year} one {# session · {kwh} kWh} other {# sessions · {kwh} kWh}}',
   'car.socLabel': 'Battery {n} percent',
@@ -887,9 +888,8 @@ export const en = {
   'car.plug.pluggedIn': 'Plugged in',
   'car.plug.unplugged': 'Unplugged',
   'car.card.daily':
-    'Daily EV energy, last {days} days: {charging, plural, =0 {# charging days} one {# charging day} other {# charging days}}, {kwh} kWh.',
+    'Car energy, last {days} days: {charging, plural, =0 {# charging days} one {# charging day} other {# charging days}}, {kwh} kWh.',
   'car.card.barsLabel': 'Daily kWh bars, highest {n} kWh',
-  'car.card.barTitle': '{day}: {kwh} kWh',
   'car.checkedIn': 'the car last checked in at {time}',
   'car.battery.title': 'Battery',
   'car.battery.fullRange': 'Full range',

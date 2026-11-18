@@ -18,7 +18,8 @@ import {
   type StatsReply,
 } from '../../providers/power-history.ts';
 import {chargingSessions, type Session} from '../../providers/wallbox.ts';
-import type {ChartOptions} from '../../ui/chart-options.ts';
+import {mergeOptions, type ChartOptions} from '../../ui/chart-options.ts';
+import {thinCategories} from '../../ui/thin-axis.ts';
 
 /** How many days of the charger's daily energy the card's bars draw. */
 export const DAILY_DAYS = 30;
@@ -143,4 +144,34 @@ export function sessionsChartOptions(
       },
     },
   };
+}
+
+/** What the daily chart is made with: the sessions' (the formats, the catalog and the charger's colour) and whether the screen is a phone's. */
+export interface DailyChartDeps extends SessionsChartDeps {
+  compact: boolean;
+}
+
+/** A day label every week: seven days between two labels, whichever the screen. */
+const LABEL_EVERY = 7;
+
+/**
+ * The options of the 30 days' bars, without the theme: the kWh charged each day on thinned day categories and a kWh axis, as Energy's month chart is drawn (the kit's `thinCategories`),
+ * a label every week and a tooltip that names every day.
+ */
+export function dailyChartOptions(
+  {days, values}: {days: readonly string[]; values: readonly number[]},
+  {fmt, t, color, compact}: DailyChartDeps,
+): ChartOptions {
+  const labels = days.length / LABEL_EVERY;
+  return mergeOptions(
+    {
+      chart: {type: 'bar', height: 220},
+      series: [{name: t('car.sessions.chargedAtHome'), data: values.map(value => +value.toFixed(1))}],
+      colors: [color],
+      plotOptions: {bar: {borderRadius: 3, borderRadiusApplication: 'end', columnWidth: '64%'}},
+      yaxis: {labels: {formatter: (value: number) => `${whole(fmt, value)} ${KWH}`}},
+      tooltip: {y: {formatter: (value: number) => `${fmt.fixed(value, 1)} ${KWH}`}},
+    },
+    thinCategories(days, labels, labels, compact),
+  );
 }

@@ -1,6 +1,6 @@
 // carModel: the car, its charger and its history in, every text, figure and shape the Car card, the phone's line and the detail's read-only blocks place out.
 // Pattern: a pure view-model function, a humble object's other half (Meszaros, Fowler): it reads no clock, no `hass` and no store, words every message through `deps.t` and every number through `deps.fmt`,
-// and delegates the bars to bars-geometry.ts and the schedule's words to schedule.ts. Each rule was the legacy panel's (`renderCarCard`, `carSheet`, `renderSessions`, `renderCarSheetLive`, which #251 and #252 deleted, and `schedText`, deleted in #269).
+// and delegates the schedule's words to schedule.ts. Each rule was the legacy panel's (`renderCarCard`, `carSheet`, `renderSessions`, `renderCarSheetLive`, which #251 and #252 deleted, and `schedText`, deleted in #269).
 // The pane's header and the card draw it since #251, the detail's blocks since #252; the controls' view is controls.ts (#253).
 // Must not: import the DOM, Lit or the shell, read the clock (the sessions' "today" is the history's), hold text the household reads (a catalog key says it), or build the controls' view (controls.ts does).
 import {capitalise, DASH, DAY_MS, HOUR_MS, joined} from '../../core/figures.ts';
@@ -19,7 +19,6 @@ import type {Translate} from '../../core/i18n/messages.ts';
 import type {CarInputs, FordMessage, LastPlug} from '../../providers/fordpass.ts';
 import {sum} from '../../providers/power-history.ts';
 import {DEFAULT_KWH_PRICE, type Session, type WallboxInputs} from '../../providers/wallbox.ts';
-import {barsGeometry, type BarsGeometry} from './bars-geometry.ts';
 import {DAILY_DAYS, monthlySessions, type CarHistoryData, type MonthlySessions} from './history.ts';
 import type {CarFeatureInputs} from './inputs.ts';
 import type {RangeTab} from '../../ui/range-tabs.ts';
@@ -49,12 +48,13 @@ export const isHistoryWindow = (range: string): range is HistoryWindow => HISTOR
 
 /**
  * What each window means, in one table rather than a check per use: how far back from the history's own instant it reaches (the kit's month,
- * `RANGES.month.days`; null for the whole year the history holds), the sentence when it holds no session, and whether the months' chart is drawn.
+ * `RANGES.month.days`; null for the whole year the history holds), its tab's label (the month's is "30 days": it is not the calendar month the Energy tab's "Month" is), the sentence when it holds no session, and whether the months' chart is drawn.
  */
-const WINDOW_RULES: Record<HistoryWindow, {days: number | null; none: MessageKey; charted: boolean}> = {
-  month: {days: RANGES.month.days, none: 'car.sessions.noneMonth', charted: false},
-  year: {days: null, none: 'car.sessions.none', charted: true},
-};
+const WINDOW_RULES: Record<HistoryWindow, {days: number | null; tab: MessageKey; none: MessageKey; charted: boolean}> =
+  {
+    month: {days: RANGES.month.days, tab: 'car.history.tab.month', none: 'car.sessions.noneMonth', charted: false},
+    year: {days: null, tab: 'range.year.tab', none: 'car.sessions.none', charted: true},
+  };
 
 /** The table shows this many sessions, the latest, until "show all". */
 const LATEST_SESSIONS = 10;
@@ -93,13 +93,14 @@ export interface SocBar {
   scale: {start: string; limit: string; end: string};
 }
 
-/** The card's daily bars: the geometry, a title for each bar and the sentence under them. */
+/** The sheet's daily chart: the kWh of each of the last 30 days and its day, the screen reader's label over the drawing and the sentence under it. */
 export interface DailyBars {
-  geometry: BarsGeometry;
+  /** The kWh of each day, oldest first. */
+  values: number[];
+  /** Each day as `Nov 6`, in the values' order: the chart's categories. */
+  days: string[];
   /** For a screen reader, over the whole drawing. */
   label: string;
-  /** Each bar's "Nov 6: 3.2 kWh", in the bars' order. */
-  titles: string[];
   line: string;
 }
 
@@ -298,16 +299,14 @@ function socBar(car: CarInputs, {t, fmt}: CarModelDeps): SocBar {
   };
 }
 
-/** The last 30 days' charging as bars, a title for each, and the line that counts the charging days and the kWh. */
+/** The last 30 days' charging as the chart's values and days, and the line that counts the charging days and the kWh. */
 function dailyBars({daily}: CarHistoryData, {t, fmt}: CarModelDeps): DailyBars {
   const last = daily.slice(-DAILY_DAYS);
   const values = last.map(({ev}) => ev);
-  const days = last.map(({day}) => fmt.date(noonOf(day, fmt)));
-  const geometry = barsGeometry(values, days);
   return {
-    geometry,
-    label: t('car.card.barsLabel', {n: fmt.fixed(geometry.highest, 1)}),
-    titles: values.map((value, index) => t('car.card.barTitle', {day: days[index], kwh: fmt.fixed(value, 1)})),
+    values,
+    days: last.map(({day}) => fmt.date(noonOf(day, fmt))),
+    label: t('car.card.barsLabel', {n: fmt.fixed(Math.max(...values, 0), 1)}),
     line: t('car.card.daily', {
       days: DAILY_DAYS,
       charging: values.filter(value => value > CHARGING_DAY_KWH).length,
@@ -528,13 +527,20 @@ const sessionColumns = (t: Translate): SessionsBlock['columns'] => ({
   cost: t('car.estCost'),
 });
 
+/** The two ends of a session as the row writes them: the clock alone for a session that ends the day it began, the date too for one that ends days later ("Nov 7, 11:20 am to Nov 14, 2:20 pm"). */
+function sessionEnds({start, end}: Session, {t, fmt}: CarModelDeps): {from: string; to: string} {
+  if (fmt.isoDay(start) === fmt.isoDay(end)) return {from: fmt.time(start), to: fmt.time(end)};
+  const stamp = (instant: number) => t('car.stamp', {date: fmt.date(instant), time: fmt.time(instant)});
+  return {from: stamp(start), to: stamp(end)};
+}
+
 /** One row of the table: the session's figures as the columns write them, its energy bar scaled to the `widest` session's kWh, and its cost at `price` dollars a kWh. */
 function sessionRow(session: Session, widest: number, price: number, deps: CarModelDeps): SessionRow {
   const {t, fmt} = deps;
   return {
     key: session.start,
     date: capitalise(fmt.dateWeekday(session.start)),
-    times: t('car.sessions.times', {from: fmt.time(session.start), to: fmt.time(session.end)}),
+    times: t('car.sessions.times', sessionEnds(session, deps)),
     length: `${whole(fmt, (session.end - session.start) / HOUR_MS)} ${UNIT.hours}`,
     energy: `${fmt.fixed(session.kwh, 1)} ${UNIT.kwh}`,
     barPx: Math.round((session.kwh / widest) * SESSION_BAR_PX) + SESSION_BAR_STUB_PX,
@@ -568,7 +574,8 @@ function inWindow({at, sessions}: CarHistoryData, chosen: HistoryWindow): Sessio
 function sessionsOf(history: CarHistoryData | null, charger: WallboxInputs, deps: CarModelDeps): SessionsBlock {
   const {t, fmt, allSessions, historyWindow} = deps;
   const columns = sessionColumns(t);
-  const title = t('car.sessions.title');
+  // the sheet is titled Charging history already: its first card is Sessions
+  const title = t('car.sessions.sessions');
   if (!history) return {title, summary: '', tiles: [], months: [], columns, rows: [], toggle: null};
   const sessions = inWindow(history, historyWindow);
   const price = charger.price ?? DEFAULT_KWH_PRICE;
@@ -600,7 +607,7 @@ function historyOf(history: CarHistoryData | null, charger: WallboxInputs, deps:
   const {t, fmt} = deps;
   const title = t('car.sessions.title');
   const done = t('car.history.done');
-  const windows = HISTORY_WINDOWS.map(range => ({range, label: t(`range.${range}.tab`)}));
+  const windows = HISTORY_WINDOWS.map(range => ({range, label: t(WINDOW_RULES[range].tab)}));
   if (!history) return {title, done, windows, line: '', value: '', daily: null};
   const {sessions} = history;
   const total = sum(sessions.map(session => session.kwh));
