@@ -13,7 +13,6 @@ export default defineConfig({
       provider: 'v8',
       // the elements and src/ui/controllers/** are humble objects, proven by the harness (ADR 0005), so they are not listed
       include: [
-        'src/fonts.js',
         'src/core/**/*.ts',
         'src/providers/**/*.ts',
         'src/features/*/{ids,inputs,model,tiles,history,scenes,commands,flow-layout,water-chart,charts,sankey-layout,schedule,bars-geometry,checks,order,state,al-strip-layout,traces,sentences,timeline-layout,graph,mermaid-def,activities,done,cards,rotation,card-cache,glance}.ts', // the pure files; the elements are proven by the harness
@@ -29,6 +28,7 @@ export default defineConfig({
         'src/ui/controllers/{optimistic,armed,windowed-history,system-data}.ts',
         'src/ui/styles/host.ts',
         'src/shell/features.ts',
+        'src/shell/sheets.ts', // the ids of the shell's own sheet and popup, constants only
         'src/shell/home-line.ts', // the line under the greeting and the Home heading, a pure model
         'src/shell/home-tiles.ts', // the table of the six glance tiles: ids and readers, no element
         'src/shell/idle-timer.ts', // the table and its controller; the host is a stub, no element is mounted
@@ -48,7 +48,8 @@ export default defineConfig({
       // the phase-2 gate: every statement in the core is tested (CI runs `npm test -- --coverage`); phase 3 holds the providers,
       // each feature's model, ids, inputs, tiles and history, and the kit's ranges to the same line
       thresholds: {
-        // the floor for whatever no glob below names (the include list is the pure files, so every file is named there): never lower
+        // the floor is the total across every included file (Vitest's global threshold covers all of them, even those a glob below also
+        // names), so it bites when the sum slips, whatever each file's own line says: never lower
         statements: 100,
         functions: 100,
         lines: 100,
@@ -79,6 +80,7 @@ export default defineConfig({
         'src/ui/styles/host.ts': {statements: 100},
         'src/shell/drift.ts': {statements: 100},
         'src/shell/features.ts': {statements: 100},
+        'src/shell/sheets.ts': {statements: 100, branches: 100},
         'src/shell/home-line.ts': {statements: 100},
         'src/shell/home-tiles.ts': {statements: 100},
         'src/shell/idle-timer.ts': {statements: 100, branches: 100},

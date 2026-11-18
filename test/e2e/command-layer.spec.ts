@@ -33,7 +33,7 @@ test('failNext(null) cancels a pattern that has not matched yet', async ({house}
   await expect(house.root().locator('#toast')).toBeHidden();
 });
 
-// <hp-switch> is in the built panel (src/main.js) but no feature draws it yet, so the page mounts one the way a feature will
+// <hp-switch> is defined by the shell's settings popup and drawn by the car's departure and actions cards; the harness page mounts a bare one
 const mount = (house: House, attributes: string) =>
   house.page.evaluate(attributes => {
     const w = window as unknown as {changes: boolean[]};

@@ -54,9 +54,9 @@ module.exports = {
       name: 'entry-imports-shell-only',
       severity: 'error',
       comment:
-        'The entry only defines the custom element: it imports the shell (and the kit, for <hp-switch>), so the shell stays the one place that composes the layers.',
+        'The entry only defines the custom element: it imports the shell alone, so the shell stays the one place that composes the layers.',
       from: {path: ENTRY},
-      to: {path: '^src/', pathNot: ['^src/shell/', UI]},
+      to: {path: '^src/', pathNot: '^src/shell/'},
     },
     {
       name: 'no-circular',

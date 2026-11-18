@@ -44,6 +44,7 @@ import {STATUS_SHEET, type LiveActivitiesEvent} from '../features/live/index.ts'
 import './more-sheet.ts'; // defines <hp-more-sheet>
 import '../ui/pane-header.ts'; // defines <hp-pane-header>
 import {SheetMediator} from './sheet-host.ts';
+import {MORE_SHEET} from './sheets.ts';
 import {ensureFonts} from '../ui/fonts.ts';
 import {lens} from '../ui/lens.ts';
 import '../ui/toast.ts'; // defines <hp-toast>
@@ -63,8 +64,6 @@ const REDUCED_TRANSPARENCY = '(prefers-reduced-transparency: reduce)';
 // url() filters and keeps the frosted glass of the CSS. Asked once: the engine does not change.
 const LENS_OK =
   typeof navigator !== 'undefined' && 'userAgentData' in navigator && CSS.supports('backdrop-filter', 'url(#x)');
-// the phone's More sheet, the first element sheet of the host
-const MORE_SHEET = 'shell.more';
 
 // The one adapter wiring for storage: only src/core/settings.ts reads or writes it. Blocked site data makes touching
 // localStorage throw, so the settings then keep their defaults.
