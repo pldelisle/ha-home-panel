@@ -15,11 +15,11 @@
   background: var(--fg);
   color: var(--bg);
   padding: 10px 16px;
-  border-radius: var(--shape-control-sm);
+  border-radius: var(--shape-snackbar);
   font-size: calc(13px * var(--tx));
   width: max-content;
   max-width: calc(100% - 32px);
-  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--elevation-3);
 }
 .toast[hidden] {
   display: none;

@@ -37,7 +37,7 @@
   box-shadow: none;
 }
 .lcell:active {
-  transform: scale(0.97);
+  transform: scale(var(--press-scale-cell));
 }
 .lcell.on,
 .app.gl .lcell.on {
@@ -64,8 +64,8 @@
   -webkit-tap-highlight-color: transparent;
 }
 .lcell .lrow:focus-visible {
-  outline: 2px solid var(--c-home);
-  outline-offset: 2px;
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
 }
 .lcell .lbulb {
   grid-area: 1 / 1;
@@ -95,8 +95,8 @@
   box-shadow: 0 0 14px color-mix(in srgb, var(--lc, var(--warn)) 70%, transparent);
 }
 .lcell .lbulb:focus-visible {
-  outline: 2px solid var(--c-home);
-  outline-offset: 2px;
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
 }
 .lcell .lbulb:disabled {
   opacity: 0.5;

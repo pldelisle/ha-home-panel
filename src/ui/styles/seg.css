@@ -46,8 +46,8 @@
   color: var(--fg);
 }
 .seg button:focus-visible {
-  outline: 2px solid var(--c-home);
-  outline-offset: 2px;
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
 }
 .app.gl .seg {
   background: var(--g-tile);
@@ -70,13 +70,18 @@
   .seg button {
     transition:
       transform var(--motion-press-ms) var(--motion-standard),
-      background-color 0.2s ease,
-      box-shadow 0.2s ease,
-      color 0.2s ease;
+      border-radius var(--motion-press-ms) var(--motion-standard),
+      background-color var(--motion-fade-ms) var(--motion-fade),
+      box-shadow var(--motion-fade-ms) var(--motion-fade),
+      color var(--motion-fade-ms) var(--motion-fade);
   }
 }
 .seg button:active {
-  transform: scale(0.96);
+  transform: scale(var(--press-scale));
+}
+/* Material's connected button group: the options keep the small inner corners, the chosen one is a full pill (see tokens.css) */
+.app[data-design='material'] .seg button[aria-checked='true'] {
+  border-radius: var(--shape-segment-selected);
 }
 /* Material's type roles: see tokens.css. */
 .app[data-design='material'] .seg button b {

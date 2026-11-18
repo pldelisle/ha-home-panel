@@ -65,6 +65,17 @@ value, so a second design language can redefine the set in one place. No rule wr
 | Easing              | `--motion-standard` (every press and entrance), `--motion-spring` (the switch knob), `--motion-sheet-spring`, `--motion-pop`, `--motion-overshoot` (the dial's knob) | `cubic-bezier(0.2, 0.8, 0.2, 1)` and four springs |
 | Duration            | `--motion-press-ms`, `--motion-pane-ms`, `--motion-sheet-ms`, `--motion-sheet-spring-ms`, `--motion-pop-ms`, `--motion-switch-ms`                                    | 180, 280, 320, 460, 300, 220 ms                   |
 
+- Durations that had no easing of their own are tokens too: `--motion-fade` and `--motion-fade-ms` (ease, 200 ms) are the cross-fade of a colour, a shadow and a
+  state. A press is `--press-scale` (0.96, a key or cell 0.97, a tile 0.98, an icon 0.86), what floats is `--elevation-1` (the switch's knob), `-2` (a menu) and
+  `-3` (the toast), and the keyboard focus ring is `--focus-color`, `--focus-width`, `--focus-offset`.
+- The Material design (ADR 0037, #463) redefines these same tokens in `tokens.css` under `.app[data-design='material']`, on its own scale (`--shape-extra-small`
+  4 ... `--shape-extra-large` 28, `--shape-full`, which only that block declares: a rule reads the role, never the scale). A card is 28 and flat, a stat tile 16,
+  a well 12 and a control 16, a chip, a segment and the focus ring 8, a switch, a nav item and a pill full. `--shape-pill-pressed` is what a pill becomes under a
+  finger (16), and the springs are `linear()` easings sampled from Material's motion scheme, with their settle time as the duration (spatial 347 / 411 / 567 ms,
+  effects 137 / 211 / 299 ms). A press scales nothing (`--press-scale: 1`): `common.css` lays a state layer on every button (the content colour at 8% under a
+  mouse, 10% under the keyboard or a finger, `border-radius: inherit`), morphs a pressed pill's corners, and under Reduce Motion turns every transition into the
+  effects-fast fade. Cards and stat tiles lose their edge (`--shadow`, `--ctl-edge`, `--m-edge` are `none`); only the knob, the toast, All off and a dialog float.
+- The ApexCharts bars' radii (`src/features/car/history.ts`) are JavaScript, not CSS, and are the same in both designs.
 - A radius that is the shape of the element's box (a circle is `50%`, a square corner `0`, a child that follows its parent
   `inherit`) stays as it is: it is geometry, not design.
 - A new rule picks the token for what the element is, never one that merely has the right number; a role with no token yet gets a

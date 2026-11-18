@@ -92,8 +92,8 @@
   appearance: none;
 }
 :host .scgo:focus-visible {
-  outline: 2px solid var(--c-home);
-  outline-offset: 2px;
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
 }
 :host button.sc {
   margin: 0;
@@ -104,8 +104,8 @@
   appearance: none;
 }
 :host button.sc:focus-visible {
-  outline: 2px solid var(--c-home);
-  outline-offset: 2px;
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
 }
 :host .sc.amber {
   box-shadow:

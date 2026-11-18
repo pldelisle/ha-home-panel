@@ -10,9 +10,10 @@
   .more {
     transition:
       transform var(--motion-press-ms) var(--motion-standard),
-      background-color 0.2s ease,
-      box-shadow 0.2s ease,
-      color 0.2s ease;
+      border-radius var(--motion-press-ms) var(--motion-standard),
+      background-color var(--motion-fade-ms) var(--motion-fade),
+      box-shadow var(--motion-fade-ms) var(--motion-fade),
+      color var(--motion-fade-ms) var(--motion-fade);
   }
   .rtab svg {
     transition: transform var(--motion-press-ms) var(--motion-standard);
@@ -21,10 +22,10 @@
 .head button.icon:active,
 .go:active,
 .more:active {
-  transform: scale(0.96);
+  transform: scale(var(--press-scale));
 }
 .rtab:active svg {
-  transform: scale(0.86);
+  transform: scale(var(--press-scale-icon));
 }
 /* a section settles in when its tab is chosen. `backwards`, not `both`: kept after the end, even an identity transform makes the pane the containing
    block of the `position: fixed` sheets it draws, which then stop at the pane's box (docs/apple-hig-audit-tabs-2026-11-17.md, finding 1) */

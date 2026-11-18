@@ -99,9 +99,10 @@
   --house-win: #55524e;
   --house-shadow: rgba(60, 50, 40, 0.18);
 }
-/* Shape and motion (docs/design.md, "Shape and motion"): every corner and every easing in the panel is one of these, named by the role
-   it plays and not by its value, so a second design language redefines them here and nowhere else. A rule never writes a literal
-   `border-radius` in px (0, 50% and `inherit` aside) or a `cubic-bezier(...)`: test/unit/shape-motion-tokens.test.mjs fails it. */
+/* Shape, motion, press, elevation and focus (docs/design.md, "Shape and motion"): every corner, easing and duration, what a press does, what floats and the
+   focus ring in the panel is one of these, named by the role it plays and not by its value, so a second design language redefines them here and nowhere
+   else. A rule never writes a literal `border-radius` in px (0, 50% and `inherit` aside), a `cubic-bezier(...)` or a `linear(...)`:
+   test/unit/shape-motion-tokens.test.mjs fails it. */
 .app {
   /* the big surfaces: the Smart Stack card and the glass rail on a wide screen, a sheet's panel, a dialog */
   --shape-feature: 34px;
@@ -135,8 +136,16 @@
   --shape-bar: 3px;
   --shape-bar-sm: 2px;
   --shape-bar-xs: 1px;
-  /* as round as the box allows: a chip, a button, a range tab */
+  /* the snackbar (the toast): a role of its own, as Material draws it square where the Apple look rounds it like a control */
+  --shape-snackbar: 14px;
+  /* as round as the box allows: a chip, a button, a range tab; and what a pill button is while a finger is on it (the same, so the
+     Apple look keeps its shape: the Material design tightens the corners, common.css) */
   --shape-pill: 999px;
+  --shape-pill-pressed: 999px;
+  /* the one big floating action (All off), at rest and pressed, and a segmented control's chosen option */
+  --shape-fab: 999px;
+  --shape-fab-pressed: 999px;
+  --shape-segment-selected: 12px;
   /* easings: the one every press and entrance uses, and the springs that overshoot a little (the switch knob, a sheet rising, a popup, the dial's knob) */
   --motion-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
   --motion-spring: cubic-bezier(0.3, 1.3, 0.4, 1);
@@ -150,6 +159,33 @@
   --motion-sheet-spring-ms: 460ms;
   --motion-pop-ms: 300ms;
   --motion-switch-ms: 220ms;
+  /* the dial's knob settling in */
+  --motion-knob-ms: 400ms;
+  /* the cross-fade of a colour, a shadow and a state: the one duration and curve every `background-color`, `box-shadow` and `color` transition used bare */
+  --motion-fade: ease;
+  --motion-fade-ms: 200ms;
+  /* what a press does to a control: it shrinks a touch under the finger (a button, a key or cell, a tile or row, an icon); Material scales nothing and
+     changes the shape instead */
+  --press-scale: 0.96;
+  --press-scale-cell: 0.97;
+  --press-scale-tile: 0.98;
+  --press-scale-icon: 0.86;
+  /* what floats above the content, lowest first: the switch's knob, a menu, a confirmation (the toast) and what sits over everything */
+  --elevation-1: 0 1px 3px rgba(0, 0, 0, 0.25);
+  --elevation-2: 0 6px 18px -8px rgba(0, 0, 0, 0.35);
+  --elevation-3: 0 10px 30px -10px rgba(0, 0, 0, 0.4);
+  /* the same, by what floats: a sheet's panel, the glass popup, a tile lifted to be moved, and the thumb of a slider */
+  --elevation-sheet: 0 30px 80px -30px rgba(0, 0, 0, 0.5);
+  --elevation-popup: 0 20px 50px -20px rgba(0, 0, 0, 0.45);
+  --elevation-lifted: 0 18px 40px -12px rgba(0, 0, 0, 0.35);
+  --elevation-drag: 0 10px 30px -10px rgba(0, 0, 0, 0.45);
+  --elevation-thumb: 0 1px 4px rgb(0 0 0 / 0.35);
+  --elevation-thumb-soft: 0 1px 4px rgba(0, 0, 0, 0.3);
+  --elevation-thumb-lg: 0 2px 8px rgba(0, 0, 0, 0.35);
+  /* the ring a keyboard focus draws */
+  --focus-color: var(--c-home);
+  --focus-width: 2px;
+  --focus-offset: 2px;
 }
 .app[data-theme='dark'] {
   --wp-dawn-base: #17151b;
@@ -294,6 +330,155 @@
   --track-label-medium: 0.5px;
   --type-label-small: 500 calc(11px * var(--tx)) / calc(16px * var(--tx)) var(--f-body);
   --track-label-small: 0.5px;
+}
+/* The Material design's shape, elevation, motion and states (ADR 0037, #463): the same role tokens as above, redefined on the Material scale from the
+   HA Home Panel Material design system's tokens.json, and nothing else changes in a rule. The scale names (`--shape-extra-small` ... `--shape-full`) exist only
+   here: a rule reads a role (`--shape-card`), never the scale. Cards are flat (separated by tone, no shadow) so the edge tokens are `none`; only what floats
+   has an elevation. Motion is a spring, sampled into a `linear()` easing with its settle time as the duration: spatial for what moves or changes shape,
+   effects for a colour or an opacity, which never overshoots. A press changes the shape and lays a state layer (common.css), it does not scale. */
+.app[data-design='material'] {
+  /* the scale */
+  --shape-extra-small: 4px;
+  --shape-small: 8px;
+  --shape-medium: 12px;
+  --shape-large: 16px;
+  --shape-large-increased: 20px;
+  --shape-extra-large: 28px;
+  --shape-extra-large-increased: 32px;
+  --shape-full: 999px;
+  /* the roles: the hero and the sliders, a sheet and a dialog, a card (smaller inside a sheet), a stat tile, a well, a control */
+  --shape-feature: var(--shape-extra-large-increased);
+  --shape-slider: var(--shape-extra-large);
+  --shape-sheet: var(--shape-extra-large);
+  --shape-dialog: var(--shape-extra-large);
+  --shape-nav-item: var(--shape-full);
+  --shape-card: var(--shape-extra-large);
+  --shape-stat-tile: var(--shape-large);
+  --shape-card-compact: var(--shape-large-increased);
+  --shape-well: var(--shape-medium);
+  --shape-control: var(--shape-large);
+  --shape-switch: var(--shape-full);
+  --shape-control-sm: var(--shape-small);
+  --shape-segment: var(--shape-small);
+  --shape-focus: var(--shape-small);
+  /* the square an icon sits on: the big ones near a circle, the small ones a rounded square */
+  --shape-icon-xl: var(--shape-large-increased);
+  --shape-icon-lg: var(--shape-large-increased);
+  --shape-icon-md: var(--shape-medium);
+  --shape-icon: var(--shape-small);
+  --shape-icon-sm: var(--shape-small);
+  --shape-code: var(--shape-extra-small);
+  --shape-snackbar: var(--shape-extra-small);
+  --shape-pill: var(--shape-full);
+  /* a button at rest is a pill; pressed, its corners tighten (common.css reads this on :active) */
+  --shape-pill-pressed: var(--shape-large);
+  --shape-fab: var(--shape-large);
+  --shape-fab-pressed: var(--shape-medium);
+  --shape-segment-selected: var(--shape-full);
+  /* the springs: spatial (a position, a size, a shape) with a visible overshoot, effects (a colour, an opacity) critically damped; the duration is the settle time */
+  --motion-spatial-fast: linear(
+    0,
+    0.071,
+    0.235,
+    0.435,
+    0.631,
+    0.8,
+    0.929,
+    1.017,
+    1.069,
+    1.092,
+    1.094,
+    1.083,
+    1.065,
+    1.046,
+    1.028,
+    1.014,
+    1.003,
+    0.996,
+    0.992,
+    0.991,
+    0.991,
+    0.993,
+    0.995,
+    0.996,
+    1
+  );
+  --motion-spatial-fast-ms: 347ms;
+  --motion-spatial-default: linear(
+    0,
+    0.047,
+    0.155,
+    0.291,
+    0.432,
+    0.563,
+    0.677,
+    0.771,
+    0.846,
+    0.903,
+    0.945,
+    0.974,
+    0.994,
+    1.005,
+    1.012,
+    1.015,
+    1.015,
+    1.014,
+    1.012,
+    1.01,
+    1.008,
+    1.006,
+    1.004,
+    1.003,
+    1
+  );
+  --motion-spatial-default-ms: 411ms;
+  --motion-spatial-slow-ms: 567ms;
+  --motion-effects: linear(0, 0.157, 0.41, 0.623, 0.771, 0.866, 0.923, 0.957, 0.976, 0.987, 0.993, 0.996, 1);
+  --motion-effects-fast-ms: 137ms;
+  --motion-effects-default-ms: 211ms;
+  --motion-effects-slow-ms: 299ms;
+  /* the roles: a press and an entrance move things (spatial), the knob springs fast, a sheet rises on the default spring and settles slower, a colour fades (effects) */
+  --motion-standard: var(--motion-spatial-default);
+  --motion-spring: var(--motion-spatial-fast);
+  --motion-sheet-spring: var(--motion-spatial-default);
+  --motion-pop: var(--motion-spatial-default);
+  --motion-overshoot: var(--motion-spatial-fast);
+  --motion-press-ms: var(--motion-spatial-fast-ms);
+  --motion-pane-ms: var(--motion-spatial-default-ms);
+  --motion-sheet-ms: var(--motion-spatial-default-ms);
+  --motion-sheet-spring-ms: var(--motion-spatial-slow-ms);
+  --motion-pop-ms: var(--motion-spatial-default-ms);
+  --motion-switch-ms: var(--motion-spatial-fast-ms);
+  --motion-knob-ms: var(--motion-spatial-fast-ms);
+  --motion-fade: var(--motion-effects);
+  --motion-fade-ms: var(--motion-effects-default-ms);
+  /* no scale under the finger: the shape morphs and the state layer says it */
+  --press-scale: 1;
+  --press-scale-cell: 1;
+  --press-scale-tile: 1;
+  --press-scale-icon: 1;
+  /* a card and a stat tile are flat: tone separates them, so the edge that drew them is gone; the surfaces that float keep an elevation */
+  --shadow: none;
+  --ctl-edge: none;
+  --m-edge: none;
+  --elevation-1: 0 1px 2px 0 rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15);
+  --elevation-2: 0 1px 2px 0 rgba(0, 0, 0, 0.3), 0 2px 6px 2px rgba(0, 0, 0, 0.15);
+  --elevation-3: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 4px 8px 3px rgba(0, 0, 0, 0.15);
+  --pop-shadow: var(--elevation-3);
+  --elevation-sheet: var(--elevation-2);
+  --elevation-popup: var(--elevation-2);
+  --elevation-lifted: var(--elevation-1);
+  --elevation-drag: var(--elevation-1);
+  --elevation-thumb: var(--elevation-1);
+  --elevation-thumb-soft: var(--elevation-1);
+  --elevation-thumb-lg: var(--elevation-1);
+  /* the state layer: the content colour over a control at these opacities (common.css) */
+  --state-hover: 0.08;
+  --state-focus: 0.1;
+  --state-pressed: 0.1;
+  /* the keyboard focus ring: 3px in the focus colour, 2px off */
+  --focus-color: var(--focus, var(--c-home));
+  --focus-width: 3px;
 }
 .app {
   --house-door: #a98b73;

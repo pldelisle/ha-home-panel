@@ -57,20 +57,21 @@ p {
 }
 .quick button:focus-visible,
 .csel:focus-visible {
-  outline: 2px solid var(--c-home);
-  outline-offset: 2px;
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
 }
 @media (prefers-reduced-motion: no-preference) {
   .quick button {
     transition:
       transform var(--motion-press-ms) var(--motion-standard),
-      background-color 0.2s ease,
-      box-shadow 0.2s ease,
-      color 0.2s ease;
+      border-radius var(--motion-press-ms) var(--motion-standard),
+      background-color var(--motion-fade-ms) var(--motion-fade),
+      box-shadow var(--motion-fade-ms) var(--motion-fade),
+      color var(--motion-fade-ms) var(--motion-fade);
   }
 }
 .quick button:active {
-  transform: scale(0.96);
+  transform: scale(var(--press-scale));
 }
 /* the two directions of louvers side by side, each its word over its select; one under the other on a narrow phone */
 .cdirs {

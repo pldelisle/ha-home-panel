@@ -55,7 +55,7 @@
   cursor: grab;
 }
 .dial.ed:focus-visible {
-  outline: 2px solid var(--c-home);
+  outline: var(--focus-width) solid var(--focus-color);
   outline-offset: 4px;
   border-radius: 50%;
 }
@@ -99,7 +99,7 @@
   }
 }
 .dial.in .dknob {
-  animation: knobin 0.4s 0.4s var(--motion-overshoot) both;
+  animation: knobin var(--motion-knob-ms) 0.4s var(--motion-overshoot) both;
 }
 @keyframes knobin {
   from {

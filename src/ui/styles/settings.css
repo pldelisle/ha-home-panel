@@ -45,8 +45,8 @@ button.cct.sleepnow {
   min-width: 0;
 }
 button.cct:focus-visible {
-  outline: 2px solid var(--c-home);
-  outline-offset: 2px;
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
 }
 .cct .ccic {
   width: 40px;
@@ -110,8 +110,8 @@ button.cct:focus-visible {
 }
 .cch .done:focus-visible,
 .sw:focus-visible {
-  outline: 2px solid var(--c-home);
-  outline-offset: 2px;
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
 }
 /* a glass is a colour: a 44 pt swatch of its wallpaper's own colours (the `--wp-*` tokens of styles/tokens.css, which frame/glass.css paints the wallpaper
    from, so the two cannot drift) with its name under it, and a check on the chosen one; Sky follows the hour and the weather, so it blends all five wallpapers it picks among */
@@ -284,7 +284,7 @@ button.cct:focus-visible {
   margin-top: -11px;
   background: #fff;
   box-shadow:
-    0 1px 4px rgba(0, 0, 0, 0.3),
+    var(--elevation-thumb-soft),
     0 0 0 0.5px rgba(0, 0, 0, 0.08);
 }
 .gtrange::-moz-range-thumb {
@@ -293,7 +293,7 @@ button.cct:focus-visible {
   border: 0;
   border-radius: 50%;
   background: #fff;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--elevation-thumb-soft);
 }
 .app.gl .cct .seg {
   background: var(--g-sel);
@@ -306,13 +306,14 @@ button.cct:focus-visible {
   .cct {
     transition:
       transform var(--motion-press-ms) var(--motion-standard),
-      background-color 0.2s ease,
-      box-shadow 0.2s ease,
-      color 0.2s ease;
+      border-radius var(--motion-press-ms) var(--motion-standard),
+      background-color var(--motion-fade-ms) var(--motion-fade),
+      box-shadow var(--motion-fade-ms) var(--motion-fade),
+      color var(--motion-fade-ms) var(--motion-fade);
   }
 }
 .cct:active {
-  transform: scale(0.96);
+  transform: scale(var(--press-scale));
 }
 /* Material's type roles: see tokens.css. */
 .app[data-design='material'] .cct b {
