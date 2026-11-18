@@ -18,3 +18,8 @@
 [slot='icon'] {
   display: contents;
 }
+/* the phone's blocks have 14px of padding and 18px corners: the radar's map runs to the block's edges, no further */
+:host([compact]) .radar {
+  margin: 12px -14px -14px;
+  border-radius: 0 0 18px 18px;
+}

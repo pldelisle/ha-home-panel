@@ -31,7 +31,7 @@ export interface SheetHost {
 export interface SheetMediatorOptions {
   /** The shell's root: where focus is read. */
   root: () => ShadowRoot;
-  /** The pane whose detail an element's sheet is (`weather.detail`), from the registry; none for any other. */
+  /** The pane whose detail an element's sheet is (`air.detail`), from the registry; none for any other. */
   paneOf: (id: SheetId) => FeatureKey | undefined;
   /** The phone's shape, as the shell has it now. */
   compact: () => boolean;

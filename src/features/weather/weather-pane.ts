@@ -1,34 +1,24 @@
-// <hp-weather-pane>: the Weather tab: on the phone the header, the summary card, the eight stat tiles and the detail's sheet, on a tablet the detail inline,
-// and, over either, the sheet of the tile whose history is open.
+// <hp-weather-pane>: the Weather tab: the detail inline (on the phone under the pane's header, on a tablet with its own) and, over any tab,
+// the sheet of the tile whose history is open.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over a view model: `weatherModel` runs in `willUpdate` and the template only
 // places what it returns, keyed (Lit docs, repeat); a store controller on the ids it reads (ADR 0012), paused while the pane is hidden. It owns
 // the statistics caches and hands the model and a cache to the detail and the history, which it draws only while they are on screen.
 // Must not: read an entity itself (`readWeather` does, from the states it is handed), format a figure or hold a string the household reads, or open a sheet (it asks).
 import {ContextConsumer} from '@lit/context';
 import {LitElement, html, nothing, unsafeCSS, type PropertyValues} from 'lit';
-import {repeat} from 'lit/directives/repeat.js';
 import {readWeather} from './inputs.ts';
 import {weatherIds} from './ids.ts';
-import {weatherModel, type DayCell, type WeatherViewModel} from './model.ts';
+import {weatherModel, type WeatherViewModel} from './model.ts';
 import {ForecastController} from './forecast-controller.ts';
 import {HISTORY_TTL_MS, STATISTICS_TTL_MS} from './history.ts';
-import {DETAIL_SHEET, HISTORY_SHEET} from './sheets.ts';
 import type {TileKey} from './tiles.ts';
 import './weather-detail.ts'; // defines <hp-weather-detail>
 import './weather-history.ts'; // defines <hp-weather-history>
-import paneStyles from './styles.css?inline';
 import {createStatisticsCache, type StatisticsCache} from '../../core/statistics-cache.ts';
-import {sunToday} from '../../providers/sun.ts';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {StoreController} from '../../ui/controllers/store-controller.ts';
 import {apiContext} from '../../ui/contexts.ts';
-import {SheetDismissEvent, SheetRequestEvent} from '../../ui/events.ts';
-import {weatherIcon} from '../../ui/icons.ts';
-import {lens} from '../../ui/lens.ts';
 import '../../ui/pane-header.ts'; // defines <hp-pane-header>
-import '../../ui/sheet.ts'; // defines <hp-sheet>
-import '../../ui/stat-tile.ts'; // defines <hp-stat-tile>
-import type {TileOpenDetail} from '../../ui/stat-tile.ts';
 import {common} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 import weatherPaneOwn from './weather-pane.element.css?inline';
@@ -36,20 +26,17 @@ import weatherPaneOwn from './weather-pane.element.css?inline';
 export class WeatherPane extends LitElement {
   static override properties = {
     active: {type: Boolean, reflect: true},
-    detailOpen: {type: Boolean},
     historyTile: {},
   };
   /** Set by the shell: this pane is the tab on screen. A hidden pane listens to nothing and draws nothing. */
   declare active: boolean;
-  /** Bound by the registry's template to the sheet host's `isOpen('weather.detail')`: the phone's sheet is on screen. */
-  declare detailOpen: boolean;
   /** Bound by the registry's template to the tile whose history the sheet host has open, or undefined: a sheet over the screen, on any tab. */
   declare historyTile: TileKey | undefined;
 
-  // The host lays itself out as the old pane did: a column with the sixteen pixels between its parts on the phone, a block on a
+  // The host lays itself out as a column with the sixteen pixels between its parts on the phone (the header, the detail), a block on a
   // tablet, where the detail is its one child.
   // The element's own rules, its `:host` and what only its tree has, are in weather-pane.element.css.
-  static override styles = [common, unsafeCSS(forShadow(paneStyles)), unsafeCSS(forShadow(weatherPaneOwn))];
+  static override styles = [common, unsafeCSS(forShadow(weatherPaneOwn))];
 
   private readonly storeController = new StoreController(this, {ids: store => weatherIds(store.config)});
   private readonly appearance = new AppearanceConsumer(this);
@@ -62,7 +49,6 @@ export class WeatherPane extends LitElement {
   constructor() {
     super();
     this.active = false;
-    this.detailOpen = false;
     this.historyTile = undefined;
     // the caches are the pane's: the detail is drawn and dropped as the pane is shown and left, and a second opening within the
     // fifteen minutes is the cache's hit; a client never changes for a given tree
@@ -79,9 +65,9 @@ export class WeatherPane extends LitElement {
   // The pause and the resume sit in willUpdate and not in updated: a resume asks for an update, and one asked for inside
   // willUpdate is this one, where `updated` would draw twice.
   protected override willUpdate(changed: PropertyValues<this>): void {
-    // the sheet over another tab (the Home card opens it) shows the pane's tab behind it, but it is the sheet that is on screen
-    const shown = this.active || this.detailOpen || this.historyTile !== undefined;
-    if (changed.has('active') || changed.has('detailOpen') || changed.has('historyTile')) {
+    // a history over another tab shows the pane's tab behind it, but it is the sheet that is on screen
+    const shown = this.active || this.historyTile !== undefined;
+    if (changed.has('active') || changed.has('historyTile')) {
       if (shown) this.storeController.resume();
       else this.storeController.pause();
     }
@@ -106,12 +92,6 @@ export class WeatherPane extends LitElement {
         t: store.t,
         latitude: hass.config.latitude ?? 0,
         longitude: hass.config.longitude ?? 0,
-        sun: sunToday(hass.states, store.config, {
-          latitude: hass.config.latitude,
-          longitude: hass.config.longitude,
-          day: store.fmt.isoDay(Date.now()),
-        }),
-        house: store.config.house,
       },
     );
   }
@@ -121,18 +101,14 @@ export class WeatherPane extends LitElement {
     if (!view) return nothing;
     const compact = this.appearance.value?.compact === true;
     const {t} = this.storeController.store;
-    // The sheets over another tab (Home's card opens the detail's, which opens a tile's history): the pane is behind them and draws
-    // nothing but them, so the tab stays.
-    if (!this.active && (this.detailOpen || this.historyTile !== undefined) && compact)
-      return html`${this.renderSheet(view)}${this.renderHistory()}`;
-    // On a tablet the pane is the detail's place alone: the header is there and not shown, as the old pane's was, and the card, the
-    // tiles and the sheet are the phone's.
+    // A history over another tab: the pane is behind it and draws nothing but it, so the tab stays.
+    if (!this.active && this.historyTile !== undefined && compact) return this.renderHistory();
+    // On a tablet the pane is the detail's place alone: the header is there and not shown, as the old pane's was, and the detail draws its own.
+    // On a phone the pane's header is the tab's, and the detail has none.
     return html`<hp-pane-header .icon=${'wx'} .color=${'var(--m-blue)'} .heading=${t('weather.title')}>
         <div slot="sub">${view.summary}</div>
       </hp-pane-header>
-      ${compact ? this.renderCard(view, t('weather.card.open')) : this.renderInline(view)}${
-        compact ? html`${this.renderSheet(view)}${this.renderTiles(view)}` : nothing
-      }${this.renderHistory()}`;
+      ${this.renderInline(view)}${this.renderHistory()}`;
   }
 
   // a tile's history exists only while its sheet is open, so a closed one holds no chart and asks for nothing
@@ -142,127 +118,10 @@ export class WeatherPane extends LitElement {
       : nothing;
   }
 
-  // a tablet shows the detail in the pane while the pane is the tab; leaving the tab drops it, charts and radar with it
+  // the tab shows the detail in the pane while the pane is the tab; leaving the tab drops it, charts and radar with it
   private renderInline(view: WeatherViewModel) {
     return this.active ? html`<hp-weather-detail .view=${view} .cache=${this.cache}></hp-weather-detail>` : nothing;
   }
-
-  // a phone shows it in a sheet the host opens; it exists only while open, so a closed sheet holds no chart and no radar
-  private renderSheet(view: WeatherViewModel) {
-    const {t} = this.storeController.store;
-    return html`<hp-sheet
-      .open=${this.detailOpen}
-      .icon=${'wx'}
-      .color=${'var(--m-amber)'}
-      .heading=${t('weather.title')}
-      .closeLabel=${t('weather.detail.close')}
-      @sheet-close=${this.dismissDetail}
-    >
-      ${
-        this.detailOpen
-          ? html`<span slot="icon" style="display:contents"
-                >${weatherIcon('partlycloudy', 22, true, t('weather.cond.partlycloudy'))}</span
-              >
-              <div slot="sub">${view.summary}</div>
-              <hp-weather-detail .view=${view} .cache=${this.cache}></hp-weather-detail>`
-          : nothing
-      }
-    </hp-sheet>`;
-  }
-
-  // The card is a button that opens the detail's sheet: a tap, Enter and Space. `repeat` keys the days, so a forecast message
-  // changes their text and keeps their nodes. The lens is the frame's glass filter, drawn again in this root (see lens.ts).
-  private renderCard({card}: WeatherViewModel, label: string) {
-    // lit-analyzer does not know `aria-description` (a screen reader reads it after the role and the name); the ignore covers this one tag
-    return html`<!-- @ts-ignore -->
-      <div
-        class="wxcard"
-        tabindex="0"
-        role="button"
-        aria-description=${label}
-        @click=${this.openDetail}
-        @keydown=${this.onCardKey}
-      >
-        ${
-          card.house
-            ? html`<img class="house photo day" alt="" src=${card.house.day} /><img
-                  class="house photo night"
-                  alt=""
-                  src=${card.house.night}
-                />`
-            : nothing
-        }
-        <div class="txt">
-          <div class="wxsun">${card.sunLabel} <b>${card.sunTime}</b></div>
-          <div class=${card.temperatureMissing ? 'na' : 'num wxtemp'}>${card.temperature}</div>
-          <div class="wxcond">${card.condition}</div>
-          <div class="wxrange">${card.range}</div>
-        </div>
-        <div class="wxd">
-          ${repeat(
-            card.days,
-            day => day.dayKey,
-            day => this.renderDay(day),
-          )}
-        </div>
-      </div>
-      ${lens}`;
-  }
-
-  // a night with no high is Tonight: its low is the figure, with the word under it
-  private renderDay(day: DayCell) {
-    const {icon} = day;
-    return html`<div>
-      <span>${day.label}</span>${weatherIcon(icon.condition, 26, icon.day, icon.label)}${
-        day.isTonight
-          ? html`<b class="num">${day.lo}</b><small>${day.loLabel}</small>`
-          : html`<b class="num">${day.hi}</b><small class="num">${day.lo}</small>`
-      }
-    </div>`;
-  }
-
-  private renderTiles({tiles}: WeatherViewModel) {
-    return html`<div class="wxtiles" @tile-open=${this.onTile}>
-      ${repeat(
-        tiles,
-        tile => tile.key,
-        tile =>
-          html`<hp-stat-tile
-            .key=${tile.key}
-            .icon=${tile.icon}
-            .label=${tile.label}
-            .sub=${tile.sub}
-            .value=${tile.value}
-            .unit=${tile.unit}
-            .missing=${tile.missing ?? false}
-            .tone=${tile.tone ?? ''}
-          ></hp-stat-tile>`,
-      )}
-    </div>`;
-  }
-
-  // arrow fields, so the template hands the same functions at every render
-  private readonly openDetail = (): void => {
-    this.dispatchEvent(new SheetRequestEvent(DETAIL_SHEET));
-  };
-
-  // the sheet's Close button, its backdrop and its swipe: the host closes it, the pane only says so
-  private readonly dismissDetail = (e: Event): void => {
-    e.stopPropagation();
-    this.dispatchEvent(new SheetDismissEvent(DETAIL_SHEET));
-  };
-
-  private readonly onCardKey = (e: KeyboardEvent): void => {
-    if (e.key !== 'Enter' && e.key !== ' ') return;
-    e.preventDefault();
-    this.openDetail();
-  };
-
-  // the tile's event stops here: what it asks for is a sheet, which is the shell's to open
-  private readonly onTile = (e: CustomEvent<TileOpenDetail>): void => {
-    e.stopPropagation();
-    this.dispatchEvent(new SheetRequestEvent(HISTORY_SHEET, {key: e.detail.key}));
-  };
 }
 
 declare global {

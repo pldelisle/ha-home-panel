@@ -227,7 +227,7 @@ export const weatherWarning: StackRule = {
         label: first.title ?? t('weather.alerts.kindCount', {kind: 'warning', n: first.count ?? 1}),
         color: WARN,
         tone: 'amber',
-        go: {sheet: 'weather.detail'},
+        go: {tab: 'weather'},
         right: 'Env. Canada',
         body: [mid(warnings.length > 1 ? t('stack.warning.many', {n: warnings.length}) : t('stack.warning.one'))],
         foot: Number.isFinite(issued)
@@ -533,7 +533,7 @@ export const tomorrow: StackRule = {
         label: t('stack.tomorrow.label'),
         color: 'var(--c-home)',
         right: capitalise(fmt.weekday(next.at, 'long')),
-        go: {sheet: 'weather.detail'},
+        go: {tab: 'weather'},
         body: [
           {
             kind: 'weather',

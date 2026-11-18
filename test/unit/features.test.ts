@@ -110,10 +110,10 @@ describe('the Weather descriptor', () => {
   };
   const weather = FEATURES.find(f => f.key === 'weather')!;
 
-  test("is the registry's own, always shown, and binds its pane to the sheet host's answers: the detail's `open`, the tile whose history is open", () => {
+  test("is the registry's own, always shown, has no detail sheet, and binds its pane to the sheet host's answer: the tile whose history is open", () => {
     expect(weather).toBe(weatherFeature);
     expect(weather.available).toBeUndefined();
-    expect(weather.detailSheet).toBe('weather.detail');
+    expect(weather.detailSheet).toBeUndefined();
     expect(weather.overSheets).toEqual(['weather.history']);
     const pane = (open: string | null, detail?: unknown) =>
       weather.pane({
@@ -122,11 +122,10 @@ describe('the Weather descriptor', () => {
         sheetDetail: id => (id === open ? detail : undefined),
         attention: 0,
       });
-    expect(pane(null).values).toEqual([false, undefined]);
-    expect(pane('weather.detail').values).toEqual([true, undefined]);
-    expect(pane('weather.history', {key: 'wind'}).values).toEqual([false, 'wind']);
+    expect(pane(null).values).toEqual([undefined]);
+    expect(pane('weather.history', {key: 'wind'}).values).toEqual(['wind']);
     // a request that names no tile of the table opens nothing the pane could draw
-    expect(pane('weather.history', {key: 'rain'}).values).toEqual([false, undefined]);
+    expect(pane('weather.history', {key: 'rain'}).values).toEqual([undefined]);
   });
 
   test('says the temperature and the condition under More, and nothing before the house has been heard', () => {

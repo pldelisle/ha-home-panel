@@ -158,7 +158,7 @@ test.describe('on a phone', () => {
     ).toBeVisible();
   });
 
-  test('the weather card opens the weather detail, holds only the weather, and Who’s home is its own card', async ({
+  test('the weather card opens the Weather tab, holds only the weather, and Who’s home is its own card', async ({
     house,
   }) => {
     await house.tab('home');
@@ -167,7 +167,7 @@ test.describe('on a phone', () => {
     await expect(house.root().locator('#pane-home #hwho.card hp-who-card')).toBeAttached();
     await expect(house.root().locator('#pane-home #hstk')).toHaveCount(0);
     await card.click();
-    await expect(house.root().locator('hp-weather-detail')).toBeVisible();
+    await expect(house.root().locator('#pane-weather hp-weather-detail')).toBeVisible();
   });
 });
 

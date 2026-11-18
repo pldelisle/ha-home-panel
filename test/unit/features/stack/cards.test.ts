@@ -155,13 +155,13 @@ describe('a weather warning', () => {
     time: '2026-11-07T10:00:00-05:00',
   };
 
-  test('is amber, titled by the first, says how many and when it was issued, and opens the weather detail', () => {
+  test('is amber, titled by the first, says how many and when it was issued, and goes to the Weather tab', () => {
     expect(run(weatherWarning, {alerts: [{...warning, kind: 'watch'}]})).toEqual([]);
     expect(one(weatherWarning, {alerts: [warning]})).toMatchObject({
       tone: 'amber',
       label: 'Wind warning',
       right: 'Env. Canada',
-      go: {sheet: 'weather.detail'},
+      go: {tab: 'weather'},
       body: [{kind: 'mid', text: 'In effect for your area'}],
       foot: 'Issued 10:00 am',
     });
@@ -517,7 +517,7 @@ describe('tomorrow’s weather, in the evening', () => {
     expect(run(tomorrow, {forecast, tonight: 'clear-night', now: at(16, 59)})).toEqual([]);
     expect(one(tomorrow, {forecast, tonight: 'clear-night', now: at(17)})).toMatchObject({
       right: 'Sunday',
-      go: {sheet: 'weather.detail'},
+      go: {tab: 'weather'},
       body: [{kind: 'weather', condition: 'rainy', value: '5°', unit: '/ -2°', text: 'Rain, 40%'}],
       foot: 'Tonight: Clear, low -3°',
     });

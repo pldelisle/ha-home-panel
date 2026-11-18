@@ -65,7 +65,7 @@ export class WeatherDetail extends LitElement {
   /** The pane's statistics cache. */
   declare cache: StatisticsCache | undefined;
 
-  // The host is a block; its blocks are one column with the sixteen pixels between them the pane's `.panel` gave (fourteen on the phone).
+  // On a phone the detail sits in the tab under the pane's header; the card rules of the old sheet that reached its `.inner` are in weather-detail.element.css.
   // On a phone the detail sits in a sheet, which draws the heading; the card rules of the old sheet that reached its `.inner` are in weather-detail.element.css.
   // The element's own rules, its `:host` and what only its tree has, are in weather-detail.element.css.
   static override styles = [
@@ -191,7 +191,7 @@ export class WeatherDetail extends LitElement {
       ${lens}`;
   }
 
-  // On a tablet the detail opens with its own header, the pane's being the phone's; on a phone the sheet draws it.
+  // On a tablet the detail opens with its own header, the pane's being the phone's; on a phone the pane's header is above the detail.
   private renderHeader({summary}: WeatherViewModel) {
     const {t} = this.storeController.store;
     return html`<hp-pane-header .icon=${'wx'} .color=${'var(--m-amber)'} .heading=${t('weather.title')}>
