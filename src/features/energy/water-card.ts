@@ -66,23 +66,25 @@ export class WaterCard extends LitElement {
 
   // the geometry's numbers and texts, placed as they come: the grid and its labels, the power axis, the hour ticks, the bars, the line and its last point
   private renderChart(chart: WaterChartGeometry) {
-    return html`<svg class="whchart" viewBox="0 0 ${chart.width} ${chart.height}" role="img" aria-label=${chart.label}>
-      ${chart.grid.map(
-        g =>
-          svg`<line x1=${g.x1} x2=${g.x2} y1=${g.y} y2=${g.y} stroke="var(--ring)" stroke-width="1" />${this.axis(g.label)}`,
-      )}
-      ${chart.powerLabels.map(this.axis)}
-      ${chart.ticks.map(
-        tick =>
-          svg`<line x1=${tick.x} x2=${tick.x} y1=${tick.y1} y2=${tick.y2} stroke="var(--ring)" />${this.axis(tick.label)}`,
-      )}
-      ${chart.bars.map(
-        bar =>
-          svg`<rect class="bar" x=${bar.x} y=${bar.y} width=${bar.width} height=${bar.height} rx=".6"><title>${bar.title}</title></rect>`,
-      )}
-      ${chart.line === null ? nothing : svg`<path class="trace" d=${chart.line} />`}
-      ${chart.dot === null ? nothing : svg`<circle class="dot" cx=${chart.dot.cx} cy=${chart.dot.cy} r="3" />`}
-    </svg>`;
+    return html`<div class="whbox">
+      <svg class="whchart" viewBox="0 0 ${chart.width} ${chart.height}" role="img" aria-label=${chart.label}>
+        ${chart.grid.map(
+          g =>
+            svg`<line x1=${g.x1} x2=${g.x2} y1=${g.y} y2=${g.y} stroke="var(--ring)" stroke-width="1" />${this.axis(g.label)}`,
+        )}
+        ${chart.powerLabels.map(this.axis)}
+        ${chart.ticks.map(
+          tick =>
+            svg`<line x1=${tick.x} x2=${tick.x} y1=${tick.y1} y2=${tick.y2} stroke="var(--ring)" />${this.axis(tick.label)}`,
+        )}
+        ${chart.bars.map(
+          bar =>
+            svg`<rect class="bar" x=${bar.x} y=${bar.y} width=${bar.width} height=${bar.height} rx=".6"><title>${bar.title}</title></rect>`,
+        )}
+        ${chart.line === null ? nothing : svg`<path class="trace" d=${chart.line} />`}
+        ${chart.dot === null ? nothing : svg`<circle class="dot" cx=${chart.dot.cx} cy=${chart.dot.cy} r="3" />`}
+      </svg>
+    </div>`;
   }
 
   private readonly axis = ({x, y, text, anchor}: WaterChartText) =>

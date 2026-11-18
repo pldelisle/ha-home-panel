@@ -14,10 +14,26 @@
   margin-top: 12px;
   overflow: visible;
 }
+/* The chart's 320-unit canvas is drawn as wide as its card, so a unit is more than a pixel on a wide card: the axis text is sized in units so
+   that it comes out at 11 to 14 pixels on screen at the card's width (the box is the container), in the secondary text colour (5.1:1 on a card;
+   the tertiary is 3.4:1, and axe does not read SVG text). */
+.whbox {
+  container-type: inline-size;
+}
 .axis {
-  font-size: 9px;
-  fill: var(--fg3);
+  font-size: 11.5px;
+  fill: var(--fg2);
   font-family: var(--f-body);
+}
+@container (min-width: 400px) {
+  .axis {
+    font-size: 8.6px;
+  }
+}
+@container (min-width: 520px) {
+  .axis {
+    font-size: 6.7px;
+  }
 }
 .bar {
   fill: var(--c-wh);

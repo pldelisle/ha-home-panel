@@ -258,7 +258,7 @@
   font-weight: 600;
 }
 .hsen .act {
-  color: var(--t-home);
+  color: var(--fg);
   font-weight: 600;
 }
 .hsen .off {

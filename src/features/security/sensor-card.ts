@@ -6,13 +6,14 @@ import {LitElement, html, nothing, unsafeCSS} from 'lit';
 import {classMap} from 'lit/directives/class-map.js';
 import {repeat} from 'lit/directives/repeat.js';
 import type {SecurityViewModel, SensorRow} from './model.ts';
+import {motionNow} from './motion-now.ts';
 import {HISTORY_SHEET} from './sheets.ts';
 import cardOwn from './sensor-card.element.css?inline';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {SheetRequestEvent} from '../../ui/events.ts';
 import {ico} from '../../ui/icons.ts';
 import {lens} from '../../ui/lens.ts';
-import {common} from '../../ui/styles/index.ts';
+import {common, status} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
 export class SensorCard extends LitElement {
@@ -23,7 +24,7 @@ export class SensorCard extends LitElement {
   declare view: SecurityViewModel['sensors'] | undefined;
 
   // The element's own rules, the card's chrome as the host's and what only its tree has, are in sensor-card.element.css.
-  static override styles = [common, unsafeCSS(forShadow(cardOwn))];
+  static override styles = [common, status, unsafeCSS(forShadow(cardOwn))];
 
   constructor() {
     super();
@@ -67,7 +68,10 @@ export class SensorCard extends LitElement {
       >
         <span class="sic">${ico(row.kind === 'door' ? 'door' : 'walk', 17)}</span>
         <div>
-          <b>${row.name}</b><span><em>${row.main}</em>${row.sub ? ` · ${row.sub}` : nothing}</span>
+          <b>${row.name}</b
+          ><span
+            ><em>${row.tone === 'act' ? motionNow(row.main) : row.main}</em>${row.sub ? ` · ${row.sub}` : nothing}</span
+          >
         </div>
       </button>`;
   }

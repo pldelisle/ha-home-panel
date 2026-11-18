@@ -3,6 +3,7 @@
 // needs one adds it the way Home Assistant adds any entity. The camera's picture is a Home Assistant proxy URL the harness never
 // serves, so a tile with one shows a broken image, as the legacy panel's did; the tests read its `src`, not its pixels.
 import AxeBuilder from '@axe-core/playwright';
+import type {Locator} from '@playwright/test';
 import {test, expect, tabletOnly, countAdded, type House} from './fixtures';
 import {AFTERNOON, FULL_CFG, KEEP_ENGLISH_NAMES} from './houses';
 
@@ -40,6 +41,16 @@ test('the tab shows the house cameras and sensors, doors first, under the summar
   await expect(sensors(house).locator('.schip b')).toHaveText(['Front door', 'Hall motion']);
   await expect(sensors(house).locator('.schip em')).toHaveText(['Closed', 'Motion now']);
   await expect(sensors(house).locator('.schip.act')).toHaveCount(1);
+});
+
+// "Motion now" is a status, not a link: the text colour with a green dot, never the blue that says "tap me"
+const colourOf = (text: Locator) => text.evaluate(e => getComputedStyle(e).color);
+
+test('"Motion now" is in the text colour with a dot, on the tab', async ({house}) => {
+  await house.tab('cams');
+  const now = sensors(house).locator('.schip.act em');
+  await expect(now.locator('i')).toHaveCount(1);
+  expect(await colourOf(now)).toBe(await colourOf(sensors(house).locator('.schip.act b')));
 });
 
 test('a house without a camera shows the empty state and its link to the integration', async ({house}) => {
@@ -264,6 +275,9 @@ test.describe('the Home card', () => {
     await house.tab('home');
     await expect(card(house).locator('.hh .right')).toHaveText('all doors closed · motion now');
     await expect(card(house).locator('.hsen b')).toHaveText(['Front door', 'Hall motion']);
+    const now = card(house).locator('.hsen .act');
+    await expect(now.locator('i')).toHaveCount(1);
+    expect(await colourOf(now)).toBe(await colourOf(card(house).locator('.hsen b').last()));
     await card(house).locator('.hh').click();
     await expect(house.root().locator('#pane-cams')).toBeVisible();
   });

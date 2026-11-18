@@ -21,6 +21,16 @@ const GRID = 'sensor.house_power';
 const METER = 'sensor.hilo_energy_total';
 const HILO_RATE = 'sensor.hilo_gateway_hilo_rate_current';
 
+/** How big the chart's axis texts are drawn on screen, in pixels (they share one size): the user-unit size they are given, scaled as the svg's viewBox is to its box. */
+const axisPixels = (house: House) =>
+  water(house)
+    .locator('svg.whchart')
+    .evaluate(svg => {
+      const box = svg as unknown as SVGSVGElement;
+      const scale = box.getBoundingClientRect().width / box.viewBox.baseVal.width;
+      return parseFloat(getComputedStyle(box.querySelector('text.axis')!).fontSize) * scale;
+    });
+
 // Energy is under More on a phone
 const openTab = async (house: House) => {
   await house.root().locator('#moretab').click();
@@ -156,6 +166,8 @@ test.describe('on a phone', () => {
     await expect(sheet.locator('h2')).toHaveText('Water heater');
     await expect(water(house).locator('.hero .v')).toHaveText('50.0°C');
     await expect(water(house).locator('.hero .status')).toHaveText('Idle · 0 W');
+    expect(await axisPixels(house), 'the chart axis is 11 px or more on screen').toBeGreaterThanOrEqual(11);
+    expect(await axisPixels(house), 'and no more than 15').toBeLessThanOrEqual(15);
     await sheet.locator('.close').click();
     await expect(pane(house).locator('hp-sheet[open]')).toHaveCount(0);
     await expect(water(house)).toHaveCount(0);
@@ -254,6 +266,8 @@ test.describe('on a tablet', () => {
     await expect(water(house).locator('.hero .status')).toHaveText('Idle · 0 W');
     await expect(water(house).locator('.whleg span')).toHaveText(['Water temperature', 'Heating power']);
     await expect(water(house).locator('.whline')).toContainText('Last 24 hours:');
+    expect(await axisPixels(house), 'the chart axis is 11 px or more on screen').toBeGreaterThanOrEqual(11);
+    expect(await axisPixels(house), 'and no more than 15').toBeLessThanOrEqual(15);
     await expect(hilo(house)).toHaveCount(0);
   });
 

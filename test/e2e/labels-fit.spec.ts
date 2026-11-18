@@ -107,3 +107,24 @@ test.describe('tablet', () => {
     expect(new Set(sizes)).toEqual(new Set(['32px']));
   });
 });
+
+// the More sheet's captions fit on one line at 393 px, in English and in French
+for (const lang of ['en', 'fr'] as const) {
+  test.describe(`the More sheet, ${lang}`, () => {
+    test.beforeEach(phoneOnly);
+    test.use({houseOpts: {cfg: FULL_CFG, lang, time: AFTERNOON, frozen: true}});
+
+    test('no caption is cut', async ({house}) => {
+      await house.root().locator('#moretab').click();
+      const tiles = house.root().locator('#morelist hp-stat-tile');
+      await expect(tiles).toHaveCount(6);
+      const cut = await tiles.evaluateAll(list =>
+        list
+          .flatMap(tile => [...(tile.shadowRoot ?? tile).querySelectorAll<HTMLElement>('small')])
+          .filter(e => e.scrollWidth > e.clientWidth)
+          .map(e => e.textContent.trim()),
+      );
+      expect(cut, 'captions cut in More').toEqual([]);
+    });
+  });
+}

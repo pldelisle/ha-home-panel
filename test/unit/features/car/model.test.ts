@@ -255,6 +255,7 @@ describe('a car with every sensor', () => {
       drawing: 'Car, side view',
     });
     expect(detail.status.drawing).toBe('Car seen from above');
+    expect(detail.status.color).toBe('#B03A2E');
     expect(detail.summary.soc).toEqual({
       fill: 64,
       limit: 90,

@@ -149,9 +149,6 @@
   color: var(--c-home);
   background: color-mix(in srgb, var(--c-home) 16%, var(--card));
 }
-.schip.act em {
-  color: var(--t-home);
-}
 :host([glass]) .schip.warn .sic {
   background: color-mix(in srgb, var(--warn) 20%, var(--g-sel));
 }

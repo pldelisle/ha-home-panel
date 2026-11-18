@@ -25,7 +25,7 @@ src/features/car/
   car-summary.ts, car-status.ts, car-ford.ts, car-last-plug.ts, car-sessions.ts   the read-only blocks, each over its model block
   car-tiles.ts, soc-bar.ts   the tiles and the battery bar, as template functions (soc-bar.css is the bar's)
   dialog.css               what the Car's dialogs hold beyond the kit's `<hp-dialog>` (ADR 0035): the departure editor's sheet and the grouped rows of the editor and of the Start question
-  car-art.ts               carArt(art, failed, onError), carSide(color, label), carTop(label): the picture and the drawn car as `svg` templates
+  car-art.ts               carArt(art, failed, onError), carSide(color, label), carTop(color, label): the picture and the drawn car as `svg` templates
   styles.css               what the blocks and the two control cards share; each element's own rules are `<element>.element.css`; controls.css the two cards' labels and hints
   sheets.ts                DETAIL_SHEET, HISTORY_SHEET: `car.detail`, which Home's tile and the live pill ask for, and `car.history`, which the history row asks for
   ids.ts                   carIds(store, ref): the car's entities and the Wallbox's six

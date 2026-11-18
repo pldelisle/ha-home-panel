@@ -1,6 +1,6 @@
 // carArt, carSide and carTop: the car's picture: Ford's photo, else the car drawn from the side (the card's and the battery block's), and the car drawn from above (the tire pressures' centre).
 // Pattern: template functions (Lit docs, Templates) over constant drawings, in the tokens the frame defines (`--car-body`, `--car-glass`, ...), so the theme recolours them with no redraw;
-// the side view's body colour is the one custom property the config may set on it. The pane keeps whether the photo failed, and the card and the battery block call `carArt` with it.
+// the body colour is the one custom property the config may set, on the side view and on the top view. The pane keeps whether the photo failed, and the card and the battery block call `carArt` with it.
 // Must not: word a label (the model does, through the catalog), read an entity or the config, or hold state.
 import {html, svg, type SVGTemplateResult} from 'lit';
 import {ifDefined} from 'lit/directives/if-defined.js';
@@ -25,9 +25,16 @@ export const carSide = (color: string | null, label: string): SVGTemplateResult 
     <g><circle cx="264" cy="101" r="22" fill="var(--car-tire)" /><circle cx="264" cy="101" r="14" fill="var(--car-rim)" /><circle cx="264" cy="101" r="4" fill="var(--car-tire)" /></g>
   </svg>`;
 
-/** The car from above, 90 by 170 pixels, in the frame's body colour; `label` is what a screen reader says. */
-export const carTop = (label: string): SVGTemplateResult =>
-  svg`<svg viewBox="0 0 90 170" width="90" height="170" role="img" aria-label=${label}>
+/** The car from above, 90 by 170 pixels, in the config's body colour as the side view is (null for the frame's); `label` is what a screen reader says. */
+export const carTop = (color: string | null, label: string): SVGTemplateResult =>
+  svg`<svg
+    viewBox="0 0 90 170"
+    width="90"
+    height="170"
+    role="img"
+    aria-label=${label}
+    style=${ifDefined(color ? `--car-body:${color}` : undefined)}
+  >
     <rect x="12" y="6" width="66" height="158" rx="26" fill="var(--car-body)" /><path d="M20 52c8-6 42-6 50 0l-4 22H24zM24 112h42l4 20c-8 6-42 6-50 0z" fill="var(--car-glass)" />
     <rect x="2" y="30" width="10" height="26" rx="4" fill="var(--car-tire)" /><rect x="78" y="30" width="10" height="26" rx="4" fill="var(--car-tire)" />
     <rect x="2" y="114" width="10" height="26" rx="4" fill="var(--car-tire)" /><rect x="78" y="114" width="10" height="26" rx="4" fill="var(--car-tire)" />
