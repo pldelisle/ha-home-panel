@@ -48,12 +48,21 @@ button,
    `--state-pressed` under the keyboard and the finger, following the control's corners (`border-radius: inherit`); the control's own content draws above it
    (`z-index: -1` inside `isolation: isolate`). It does not scale: the press scale is a token (`--press-scale`, 1 here). A pressed pill tightens
    its corners: its `--shape-pill` becomes `--shape-pill-pressed` for the length of the press, which every rule that reads `--shape-pill` follows
-   with no selector list, and the corners spring on the spatial curve. The switch keeps its own: its `::before` is the hit area. The box properties sit in a cascade layer, which any
-   unlayered rule beats whatever its specificity, so a button that is absolute or sticky stays that. */
+   with no selector list, and the corners spring on the spatial curve. The switch keeps its own: its `::before` is the hit area. The box properties and the default transition sit in a cascade layer, which any
+   unlayered rule beats whatever its specificity, so a button that is absolute or sticky, or has a transition of its own, stays that. */
 @layer state-layer {
   .app[data-design='material'] :where(button, [role='button']):not(:disabled, .switch) {
     position: relative;
     isolation: isolate;
+  }
+  /* a button with no transition of its own springs its corners, and fades its colours; one that has its own keeps it (and its list names the radius) */
+  .app[data-design='material'] :where(button, [role='button']) {
+    transition:
+      border-radius var(--motion-spatial-fast-ms) var(--motion-spatial-fast),
+      transform var(--motion-spatial-fast-ms) var(--motion-spatial-fast),
+      background-color var(--motion-effects-default-ms) var(--motion-effects),
+      color var(--motion-effects-default-ms) var(--motion-effects),
+      box-shadow var(--motion-effects-default-ms) var(--motion-effects);
   }
 }
 .app[data-design='material'] :where(button, [role='button']):not(:disabled, .switch)::before {
@@ -77,14 +86,6 @@ button,
 }
 .app[data-design='material'] :where(button, [role='button']):not(:disabled, .switch):active::before {
   opacity: var(--state-pressed);
-}
-.app[data-design='material'] :where(button, [role='button']) {
-  transition:
-    border-radius var(--motion-spatial-fast-ms) var(--motion-spatial-fast),
-    transform var(--motion-spatial-fast-ms) var(--motion-spatial-fast),
-    background-color var(--motion-effects-default-ms) var(--motion-effects),
-    color var(--motion-effects-default-ms) var(--motion-effects),
-    box-shadow var(--motion-effects-default-ms) var(--motion-effects);
 }
 .app[data-design='material'] :where(button, [role='button']):active {
   --shape-pill: var(--shape-pill-pressed);

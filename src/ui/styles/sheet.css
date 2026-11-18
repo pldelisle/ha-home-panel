@@ -37,7 +37,7 @@ button.icon:focus-visible {
   border: 1px solid var(--line);
   border-radius: var(--shape-sheet);
   padding: 24px;
-  box-shadow: 0 30px 80px -30px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--elevation-sheet);
 }
 .sheet .ph {
   display: flex;
@@ -222,6 +222,7 @@ button.icon:focus-visible {
   .sheet button.icon.close {
     transition:
       transform var(--motion-press-ms) var(--motion-standard),
+      border-radius var(--motion-press-ms) var(--motion-standard),
       background-color var(--motion-fade-ms) var(--motion-fade),
       box-shadow var(--motion-fade-ms) var(--motion-fade),
       color var(--motion-fade-ms) var(--motion-fade);

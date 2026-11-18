@@ -87,6 +87,7 @@ hp-pane-header {
   .lbtn {
     transition:
       transform var(--motion-press-ms) var(--motion-standard),
+      border-radius var(--motion-press-ms) var(--motion-standard),
       background-color var(--motion-fade-ms) var(--motion-fade),
       box-shadow var(--motion-fade-ms) var(--motion-fade),
       color var(--motion-fade-ms) var(--motion-fade);
@@ -100,11 +101,11 @@ hp-pane-header {
 }
 /* Material's one big floating action, All off: a large rounded square that rests on elevation 3 and tightens to a medium corner when pressed */
 :host([design='material']) .lbtn[data-l='alloff'] {
-  border-radius: var(--shape-large);
+  border-radius: var(--shape-fab);
   box-shadow: var(--elevation-3);
 }
 :host([design='material']) .lbtn[data-l='alloff']:active {
-  border-radius: var(--shape-medium);
+  border-radius: var(--shape-fab-pressed);
 }
 .ledbar {
   margin-left: auto;
@@ -177,7 +178,7 @@ hp-pane-header {
   pointer-events: none;
   cursor: grabbing !important;
   animation: none !important;
-  box-shadow: 0 18px 40px -12px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--elevation-lifted);
   opacity: 0.96;
 }
 @keyframes ljig {

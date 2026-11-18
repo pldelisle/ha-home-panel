@@ -142,6 +142,10 @@
      Apple look keeps its shape: the Material design tightens the corners, common.css) */
   --shape-pill: 999px;
   --shape-pill-pressed: 999px;
+  /* the one big floating action (All off), at rest and pressed, and a segmented control's chosen option */
+  --shape-fab: 999px;
+  --shape-fab-pressed: 999px;
+  --shape-segment-selected: 12px;
   /* easings: the one every press and entrance uses, and the springs that overshoot a little (the switch knob, a sheet rising, a popup, the dial's knob) */
   --motion-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
   --motion-spring: cubic-bezier(0.3, 1.3, 0.4, 1);
@@ -155,6 +159,8 @@
   --motion-sheet-spring-ms: 460ms;
   --motion-pop-ms: 300ms;
   --motion-switch-ms: 220ms;
+  /* the dial's knob settling in */
+  --motion-knob-ms: 400ms;
   /* the cross-fade of a colour, a shadow and a state: the one duration and curve every `background-color`, `box-shadow` and `color` transition used bare */
   --motion-fade: ease;
   --motion-fade-ms: 200ms;
@@ -168,6 +174,14 @@
   --elevation-1: 0 1px 3px rgba(0, 0, 0, 0.25);
   --elevation-2: 0 6px 18px -8px rgba(0, 0, 0, 0.35);
   --elevation-3: 0 10px 30px -10px rgba(0, 0, 0, 0.4);
+  /* the same, by what floats: a sheet's panel, the glass popup, a tile lifted to be moved, and the thumb of a slider */
+  --elevation-sheet: 0 30px 80px -30px rgba(0, 0, 0, 0.5);
+  --elevation-popup: 0 20px 50px -20px rgba(0, 0, 0, 0.45);
+  --elevation-lifted: 0 18px 40px -12px rgba(0, 0, 0, 0.35);
+  --elevation-drag: 0 10px 30px -10px rgba(0, 0, 0, 0.45);
+  --elevation-thumb: 0 1px 4px rgb(0 0 0 / 0.35);
+  --elevation-thumb-soft: 0 1px 4px rgba(0, 0, 0, 0.3);
+  --elevation-thumb-lg: 0 2px 8px rgba(0, 0, 0, 0.35);
   /* the ring a keyboard focus draws */
   --focus-color: var(--c-home);
   --focus-width: 2px;
@@ -358,6 +372,9 @@
   --shape-pill: var(--shape-full);
   /* a button at rest is a pill; pressed, its corners tighten (common.css reads this on :active) */
   --shape-pill-pressed: var(--shape-large);
+  --shape-fab: var(--shape-large);
+  --shape-fab-pressed: var(--shape-medium);
+  --shape-segment-selected: var(--shape-full);
   /* the springs: spatial (a position, a size, a shape) with a visible overshoot, effects (a colour, an opacity) critically damped; the duration is the settle time */
   --motion-spatial-fast: linear(
     0,
@@ -432,6 +449,7 @@
   --motion-sheet-spring-ms: var(--motion-spatial-slow-ms);
   --motion-pop-ms: var(--motion-spatial-default-ms);
   --motion-switch-ms: var(--motion-spatial-fast-ms);
+  --motion-knob-ms: var(--motion-spatial-fast-ms);
   --motion-fade: var(--motion-effects);
   --motion-fade-ms: var(--motion-effects-default-ms);
   /* no scale under the finger: the shape morphs and the state layer says it */
@@ -447,6 +465,13 @@
   --elevation-2: 0 1px 2px 0 rgba(0, 0, 0, 0.3), 0 2px 6px 2px rgba(0, 0, 0, 0.15);
   --elevation-3: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 4px 8px 3px rgba(0, 0, 0, 0.15);
   --pop-shadow: var(--elevation-3);
+  --elevation-sheet: var(--elevation-2);
+  --elevation-popup: var(--elevation-2);
+  --elevation-lifted: var(--elevation-1);
+  --elevation-drag: var(--elevation-1);
+  --elevation-thumb: var(--elevation-1);
+  --elevation-thumb-soft: var(--elevation-1);
+  --elevation-thumb-lg: var(--elevation-1);
   /* the state layer: the content colour over a control at these opacities (common.css) */
   --state-hover: 0.08;
   --state-focus: 0.1;

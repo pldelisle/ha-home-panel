@@ -39,6 +39,7 @@ span {
   .row {
     transition:
       transform var(--motion-press-ms) var(--motion-standard),
+      border-radius var(--motion-press-ms) var(--motion-standard),
       background-color var(--motion-fade-ms) var(--motion-fade),
       box-shadow var(--motion-fade-ms) var(--motion-fade),
       color var(--motion-fade-ms) var(--motion-fade);

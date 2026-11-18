@@ -89,3 +89,24 @@ test('every --shape-* and --motion-* a rule reads is declared in tokens.css, eac
   const kept = roles.filter(name => !redefined.has(name));
   expect(kept.every(name => /^--shape-(?:track|bar)/.test(name))).toBe(true);
 });
+
+test("a rule reads a role, never Material's scale (--shape-large and the rest are for tokens.css to map)", () => {
+  expect(
+    find(
+      /var\(--shape-(?:extra-small|small|medium|large|large-increased|extra-large|extra-large-increased|full)\)/g,
+      file => file === TOKENS,
+    ),
+  ).toEqual([]);
+});
+
+test('the focus ring and what floats are tokens: no literal focus outline, no literal drop shadow', () => {
+  // (a selection marker or an edge, like a chosen seed's or the configuration card's, is not the focus ring)
+  expect(find(/outline:\s*[\d.]+px\s+solid\s+var\(--(?:c-home|focus)\)/g)).toEqual([]);
+  // a drop shadow is an offset, a blur and black; a ring (no blur) and a glow in a colour are not elevation
+  expect(
+    find(
+      /(?:box-shadow:|,)\s*(?:0|-?[\d.]+px)\s+(?:0|-?[\d.]+px)\s+[1-9][\d.]*px(?:\s+-?[\d.]+px)?\s+rgba?\(0\b/g,
+      file => file === TOKENS,
+    ),
+  ).toEqual([]);
+});
