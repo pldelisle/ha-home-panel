@@ -93,3 +93,31 @@ dialog p {
   font: var(--type-body-medium);
   letter-spacing: var(--track-body-medium);
 }
+/* Material's buttons (#468): the one confirming action is the filled button (primary) and what dismisses it the outlined one beside it; 40px inside a 48px
+   touch target, pills that tighten under a finger (common.css), the state layer. */
+:host([design='material']) .dbtn {
+  position: relative;
+  min-height: 40px;
+  padding: 0 24px;
+  background: transparent;
+  color: var(--fg2);
+  box-shadow: inset 0 0 0 1px var(--md-outline);
+  font: var(--type-label-large);
+  letter-spacing: var(--track-label-large);
+}
+:host([design='material']) .dbtn::after {
+  content: '';
+  position: absolute;
+  inset: -4px 0;
+}
+:host([design='material']) .dbtn.prim {
+  background: var(--md-primary);
+  color: var(--md-on-primary);
+  box-shadow: none;
+}
+:host([design='material']) .dbtn:disabled {
+  background: color-mix(in srgb, var(--fg) 12%, transparent);
+  color: color-mix(in srgb, var(--fg) 38%, transparent);
+  box-shadow: none;
+  opacity: 1;
+}

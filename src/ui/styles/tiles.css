@@ -118,3 +118,21 @@
   font: var(--type-body-small);
   letter-spacing: var(--track-body-small);
 }
+/* The Material design's tiles (ADR 0037, #468): a static tile is a neutral well (12px, `space-12` padding) and does nothing; one that opens a history
+   is a control, tinted, with the control's text and the state layer (common.css, the tile is a button). Material separates the two by tone: neutral
+   does nothing, tinted acts. */
+.app[data-design='material'] .tile {
+  padding: 12px;
+}
+.app[data-design='material'] .tile.tilebtn {
+  background: var(--control);
+  color: var(--on-control);
+}
+.app[data-design='material'] .tile.tilebtn .k,
+.app[data-design='material'] .tile.tilebtn .s,
+.app[data-design='material'] .tile.tilebtn .v small {
+  color: inherit;
+}
+.app[data-design='material'] .tilebtn .v::after {
+  color: inherit;
+}

@@ -38,7 +38,7 @@ export class CarFord extends LitElement {
   // a message is flagged with a bang in the warning colour (the departure schedule is its own row since 2026-11)
   private renderRow({title, body}: FordRow) {
     return html`<div class="arow">
-      <span class="ic acc" style="--acc:var(--warn)">!</span>
+      <span class="ic acc warn" style="--acc:var(--warn)">!</span>
       <div><b>${title}</b><span>${body}</span></div>
     </div>`;
   }

@@ -80,3 +80,29 @@
   font: var(--type-label-medium);
   letter-spacing: var(--track-label-medium);
 }
+/* The Material design's stepper (ADR 0037, #468): Material has none, so it is built from its parts (an intentional addition, kept so `hp-stepper` works in both
+   looks): two 48px tonal icon buttons, which tighten their corners under a finger (common.css), around the figure and its word, with no pill behind them.
+   A button at its bound is disabled: the content at 38% over a 12% fill. */
+:host([design='material']) {
+  gap: 8px;
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+}
+:host([design='material']) .step {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--shape-pill);
+  background: var(--control);
+  color: var(--on-control);
+  font-weight: 500;
+  box-shadow: none;
+}
+:host([design='material']) .step:disabled {
+  background: color-mix(in srgb, var(--fg) 12%, transparent);
+  color: color-mix(in srgb, var(--fg) 38%, transparent);
+  opacity: 1;
+}
+:host([design='material']) .sv {
+  min-width: 88px;
+}

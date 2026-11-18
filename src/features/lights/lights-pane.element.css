@@ -99,10 +99,36 @@ hp-pane-header {
 .right .lbtn {
   margin: 0;
 }
-/* Material's one big floating action, All off: a large rounded square that rests on elevation 3 and tightens to a medium corner when pressed */
+/* Material's buttons (#468): Arrange and Reset order are tonal, 40px inside a 48px touch target, and Arrange while it is on is the filled one (primary) */
+:host([design='material']) .lbtn {
+  position: relative;
+  min-height: 40px;
+  padding: 0 16px;
+  background: var(--control);
+  color: var(--on-control);
+}
+:host([design='material']) .lbtn::after {
+  content: '';
+  position: absolute;
+  inset: -4px 0;
+}
+:host([design='material']) .ledbar #ledit[aria-pressed='true'] {
+  background: var(--md-primary);
+  color: var(--md-on-primary);
+}
+/* Material's one big floating action, All off: 56px, primary-container, a large rounded square that rests on elevation 3 and tightens to a medium corner when pressed */
 :host([design='material']) .lbtn[data-l='alloff'] {
+  min-height: 56px;
+  padding: 0 24px;
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  font: var(--type-title-medium);
+  letter-spacing: var(--track-title-medium);
   border-radius: var(--shape-fab);
   box-shadow: var(--elevation-3);
+}
+:host([design='material']) .lbtn[data-l='alloff']::after {
+  content: none;
 }
 :host([design='material']) .lbtn[data-l='alloff']:active {
   border-radius: var(--shape-fab-pressed);

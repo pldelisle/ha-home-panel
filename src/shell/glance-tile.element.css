@@ -145,3 +145,7 @@
   font: var(--type-body-small);
   letter-spacing: var(--track-body-small);
 }
+/* Material shows that a whole card is tappable with the state layer (common.css) and draws no chevron: the Apple look's plain `›` is its own (#468) */
+:host([design='material']) .htile .hh .go {
+  display: none;
+}

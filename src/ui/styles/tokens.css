@@ -132,6 +132,8 @@
   --shape-icon-sm: 9px;
   /* inline code (the configuration card's path) */
   --shape-code: 6px;
+  /* a chip (a status list's rows and group ends are --shape-list-item and --shape-list-group above) */
+  --shape-chip: 999px;
   /* the end of a bar: a track, a thumb, a legend swatch */
   --shape-track-lg: 6px;
   --shape-track-md: 5px;
@@ -380,6 +382,7 @@
   --shape-icon: var(--shape-small);
   --shape-icon-sm: var(--shape-small);
   --shape-code: var(--shape-extra-small);
+  --shape-chip: var(--shape-small);
   --shape-snackbar: var(--shape-extra-small);
   --shape-pill: var(--shape-full);
   /* a button at rest is a pill; pressed, its corners tighten (common.css reads this on :active) */

@@ -301,3 +301,64 @@
   letter-spacing: var(--track-headline-small);
   font-variant-numeric: tabular-nums;
 }
+/* The Material design's stat tile (ADR 0037, #468): the card, 16px, at least 128px tall on `space-16`, the icon in a secondary-container square of the
+   increased large corner (the roles `--shape-stat-tile` and `--shape-icon-lg` are Material's). A subject that is active (lights on, a scene running)
+   turns the whole tile primary-container and its icon square primary: one glance shows what is on. The Apple look's accent tones, glows and rings
+   are not drawn; a tile that needs a look (`bad`) takes the warning container. */
+.app[data-design='material'] .stile {
+  min-height: 128px;
+  padding: 16px;
+  gap: 8px;
+}
+.app[data-design='material'] .stile.wide,
+.app[data-design='material'] .stile.list {
+  min-height: 0;
+}
+.app[data-design='material'] .stile.wide {
+  padding: 12px 16px;
+}
+.app[data-design='material'] .stile .ic {
+  margin-bottom: 0;
+  background: var(--control);
+  color: var(--on-control);
+  box-shadow: none;
+}
+.app[data-design='material'] .stile:not(.wide, .list) .ic {
+  width: 44px;
+  height: 44px;
+}
+.app[data-design='material'] .stile.bad .ic {
+  background: var(--warn-container);
+  color: var(--on-warn-container);
+}
+.app[data-design='material'] .stile .tx {
+  margin-top: 0;
+}
+.app[data-design='material'] .stile.on {
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+}
+.app[data-design='material'] .stile.on .ic {
+  background: var(--md-primary);
+  color: var(--md-on-primary);
+}
+.app[data-design='material'] .stile.on small,
+.app[data-design='material'] .stile.on .tv small,
+.app[data-design='material'] .stile.on small em {
+  color: inherit;
+}
+.app[data-design='material'] .stile .pp2 {
+  width: 48px;
+  height: 48px;
+  background: var(--control);
+  color: var(--on-control);
+}
+.app[data-design='material'] .stile .pp2.on {
+  background: var(--md-primary);
+  color: var(--md-on-primary);
+}
+.app[data-design='material'] .stile .pp2:disabled {
+  background: color-mix(in srgb, var(--fg) 12%, transparent);
+  color: color-mix(in srgb, var(--fg) 38%, transparent);
+  opacity: 1;
+}

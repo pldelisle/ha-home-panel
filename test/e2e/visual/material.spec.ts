@@ -3,11 +3,29 @@
 // dark); and the Home tab on the tablet with one non-default seed (Meadow). Later tickets of the Material epic add their own shots.
 // Baselines live in test/e2e/__screenshots__/visual/material.spec.ts/ and are recorded only inside the Playwright image (Docker or
 // `container`: npm run test:visual:update); a difference is either fixed or approved by updating them in the same pull request.
+import type {Locator} from '@playwright/test';
 import {test, expect, fontsLoaded, type House} from '../fixtures';
 import {AFTERNOON, FULL_CFG, KEEP_ENGLISH_NAMES, VIEWPORTS} from '../houses';
+import {openFrontDoor, openPopup, stopCharging} from '../live';
 
 // every screenshot shows the bundled Manrope, never the fallback it swaps from (font-display: swap)
 test.beforeEach(({house}) => fontsLoaded(house));
+
+// before a shot the pointer leaves for the page's corner (a tap leaves it over whatever the closing sheet uncovers, a navigation item
+// on the phone, whose hover layer then shows in one run and not the next) and every finite animation, in every shadow root, ends (the
+// navigation pill and the state layers spring after a tap); an infinite one (a live dot's pulse) is left to the screenshot's own pause
+const settled = async (house: House) => {
+  await house.page.mouse.move(0, 0);
+  await house.page.evaluate(() => {
+    const roots: (Document | ShadowRoot)[] = [document];
+    for (let i = 0; i < roots.length; i++)
+      for (const el of roots[i].querySelectorAll('*')) if (el.shadowRoot) roots.push(el.shadowRoot);
+    const running = roots
+      .flatMap(r => r.getAnimations())
+      .filter(a => a.effect?.getComputedTiming().endTime !== Infinity);
+    return Promise.all(running.map(a => a.finished.catch(() => undefined)));
+  });
+};
 
 const SHOTS = [
   {viewport: 'tablet', theme: 'light'},
@@ -27,6 +45,7 @@ for (const {viewport, theme} of SHOTS) {
       // the frame is Material's: no glass, and the scheme's surface under the cards
       await expect(house.root().locator('.app')).toHaveAttribute('data-design', 'material');
       await expect(house.root().locator('.app')).not.toHaveClass(/\bgl\b/);
+      await settled(house);
       await expect(house.page).toHaveScreenshot(`material-home-${viewport}-${theme}-en.png`);
     });
   });
@@ -47,6 +66,7 @@ for (const theme of ['light', 'dark'] as const) {
       await expect(house.root().locator('#setpop .seed[aria-checked="true"]')).toHaveAttribute('data-seed', 'house');
       await expect(house.root().locator('#setpop [data-gl]')).toHaveCount(0);
       // the footer prints the release, which every release changes: masked, a version bump leaves the baseline alone
+      await settled(house);
       await expect(house.page).toHaveScreenshot(`material-settings-tablet-${theme}-en.png`, {
         mask: [house.root().locator('#setpop .ccv')],
       });
@@ -62,6 +82,7 @@ test.describe('tablet, light, Meadow', () => {
 
   test('Home in Material with the Meadow seed', async ({house}) => {
     await house.tab('home');
+    await settled(house);
     await expect(house.page).toHaveScreenshot('material-home-tablet-light-meadow-en.png');
   });
 });
@@ -90,6 +111,7 @@ for (const {viewport, theme} of SHOTS) {
         'aria-checked',
         'true',
       );
+      await settled(house);
       await expect(house.page).toHaveScreenshot(`material-button-group-${viewport}-${theme}-en.png`);
     });
   });
@@ -114,6 +136,7 @@ test.describe('button group, phone, light, French', () => {
     await house.root().locator('#morelist hp-stat-tile[key="air"] button').click();
     await expect(house.root().locator('#pane-air')).toBeVisible();
     await expect(house.root().locator('#pane-air hp-range-tabs [role="tab"]').first()).toBeVisible();
+    await settled(house);
     await expect(house.page).toHaveScreenshot('material-button-group-phone-light-fr.png');
   });
 });
@@ -139,6 +162,7 @@ for (const {viewport, theme} of [
       await house.clock.pauseAt((await house.page.evaluate(() => Date.now())) + 1000);
       await movieNight(house).click();
       await expect(house.root().locator('hp-toast #toast')).toHaveText('Movie night on');
+      await settled(house);
       await expect(house.page).toHaveScreenshot(`material-snackbar-${viewport}-${theme}-en.png`);
     });
 
@@ -148,6 +172,7 @@ for (const {viewport, theme} of [
       await house.failNext('scene.turn_on');
       await movieNight(house).click();
       await expect(house.root().locator('hp-toast #toast')).toHaveClass(/\berr\b/);
+      await settled(house);
       await expect(house.page).toHaveScreenshot(`material-snackbar-error-${viewport}-${theme}-en.png`);
     });
   });
@@ -191,6 +216,7 @@ for (const theme of ['light', 'dark'] as const) {
 
     test('Rail in Material', async ({house}) => {
       await house.tab('lights');
+      await settled(house);
       await expect(house.page).toHaveScreenshot(`material-rail-tablet-${theme}-en.png`);
     });
   });
@@ -203,6 +229,7 @@ for (const theme of ['light', 'dark'] as const) {
 
     test('Bar in Material', async ({house}) => {
       await house.tab('lights');
+      await settled(house);
       await expect(house.page).toHaveScreenshot(`material-bar-phone-${theme}-en.png`);
     });
   });
@@ -216,6 +243,135 @@ test.describe('tablet, light, French navigation', () => {
 
   test('Rail in Material in French', async ({house}) => {
     await house.tab('auto');
+    await settled(house);
     await expect(house.page).toHaveScreenshot('material-rail-tablet-light-fr.png');
+  });
+});
+
+// The Material components (#468): lists, tiles, stat tiles, buttons, chips, the stepper and the pane header. Each test reads what the person
+// sees from the computed style, against the role it must wear (a colour is the scheme's `--md-*` or panel role, not a literal), then takes the shot.
+const rgb = (hex: string): string => {
+  const n = parseInt(hex.trim().slice(1), 16);
+  return `rgb(${n >> 16}, ${(n >> 8) & 255}, ${n & 255})`;
+};
+// the scheme's colours are inline custom properties on `.app`: a role is read from there and written as the browser computes it
+const role = async (house: House, name: string): Promise<string> =>
+  rgb(
+    await house
+      .root()
+      .locator('.app')
+      .evaluate((app, n) => getComputedStyle(app).getPropertyValue(n), name),
+  );
+const style = (target: Locator, prop: string): Promise<string> =>
+  target.evaluate((el, p) => getComputedStyle(el).getPropertyValue(p), prop);
+
+for (const theme of ['light', 'dark'] as const) {
+  test.describe(`tablet, ${theme}, components`, () => {
+    test.use({
+      viewport: VIEWPORTS.tablet,
+      houseOpts: {cfg: FULL_CFG, theme, design: 'material', time: AFTERNOON, frozen: true},
+    });
+
+    test('Lights: All off is the one large primary-container button, Arrange is tonal', async ({house}) => {
+      await house.tab('lights');
+      const pane = house.root().locator('hp-lights-pane');
+      const alloff = pane.locator('.lbtn[data-l="alloff"]');
+      await expect(alloff).toBeVisible();
+      expect(await style(alloff, 'height')).toBe('56px');
+      expect(await style(alloff, 'background-color')).toBe(await role(house, '--md-primary-container'));
+      expect(await style(alloff, 'color')).toBe(await role(house, '--md-on-primary-container'));
+      expect(await style(alloff, 'border-top-left-radius')).toBe('16px');
+      expect(await style(alloff, 'box-shadow')).not.toBe('none');
+      const arrange = pane.locator('#ledit');
+      expect(await style(arrange, 'height')).toBe('40px');
+      expect(await style(arrange, 'background-color')).toBe(await role(house, '--control'));
+      await settled(house);
+      await expect(house.page).toHaveScreenshot(`material-lights-tablet-${theme}-en.png`);
+    });
+
+    test('Climate: a static tile is a well, one that opens a history a control; the stepper and the buttons are tonal', async ({
+      house,
+    }) => {
+      await house.tab('climate');
+      const detail = house.root().locator('hp-climate-detail');
+      const wellTile = detail.locator('.tile:not(.tilebtn)').first();
+      const controlTile = detail.locator('.tile.tilebtn').first();
+      await expect(controlTile).toBeVisible();
+      expect(await style(wellTile, 'background-color')).toBe(await role(house, '--well'));
+      expect(await style(controlTile, 'background-color')).toBe(await role(house, '--control'));
+      expect(await style(wellTile, 'border-top-left-radius')).toBe('12px');
+      const step = detail.locator('hp-stepper .step').first();
+      expect(await style(step, 'width')).toBe('48px');
+      expect(await style(step, 'border-top-left-radius')).toBe('999px');
+      expect(await style(step, 'background-color')).toBe(await role(house, '--control'));
+      const setAll = detail.locator('.abtn').first();
+      expect(await style(setAll, 'height')).toBe('40px');
+      expect(await style(setAll, 'background-color')).toBe(await role(house, '--control'));
+      await settled(house);
+      await expect(house.page).toHaveScreenshot(`material-climate-tablet-${theme}-en.png`);
+    });
+  });
+}
+
+test.describe('tablet, light, status rows', () => {
+  test.use({
+    viewport: VIEWPORTS.tablet,
+    houseOpts: {cfg: FULL_CFG, theme: 'light', design: 'material', time: AFTERNOON, frozen: true},
+  });
+
+  test('the Status checks are a list group with a kind-coloured icon, and the fine phrases are chips', async ({
+    house,
+  }) => {
+    await stopCharging(house);
+    await openFrontDoor(house);
+    const popup = await openPopup(house);
+    // what is fine is said in chips: the car is locked
+    const chip = popup.locator('.clear span').first();
+    await expect(chip).toBeVisible();
+    expect(await style(chip, 'height')).toBe('32px');
+    expect(await style(chip, 'border-top-left-radius')).toBe('8px');
+    // a second check, so the list is a group of two: the car is left unlocked
+    await house.setState('lock.fordpass_test_doorlock', {state: 'unlocked'});
+    const rows = popup.locator('.arow');
+    await expect(rows).toHaveCount(2);
+    const [first, last] = [rows.first(), rows.last()];
+    // the group is round at its two ends (the large corner) and nearly square between its rows, which are 2px apart
+    expect(await style(first, 'border-top-left-radius')).toBe('16px');
+    // (the corners spring when the group grows: wait for them to settle)
+    await expect.poll(() => style(first, 'border-bottom-left-radius')).toBe('4px');
+    await expect.poll(() => style(last, 'border-top-left-radius')).toBe('4px');
+    expect(await style(last, 'border-bottom-left-radius')).toBe('16px');
+    const [a, b] = await Promise.all([first.boundingBox(), last.boundingBox()]);
+    expect(b!.y - (a!.y + a!.height)).toBe(2);
+    expect(await style(first, 'min-height')).toBe('56px');
+    expect(await style(first, 'background-color')).toBe(await role(house, '--well'));
+    const icon = first.locator('.ic');
+    expect(await style(icon, 'background-color')).toBe(await role(house, '--warn-container'));
+    expect(await style(icon, 'width')).toBe('40px');
+    await settled(house);
+    await expect(house.page).toHaveScreenshot('material-status-tablet-light-en.png');
+  });
+});
+
+test.describe('phone, light, components', () => {
+  test.use({
+    viewport: VIEWPORTS.phone,
+    houseOpts: {cfg: FULL_CFG, theme: 'light', design: 'material', time: AFTERNOON, frozen: true},
+  });
+
+  test('Climate: a stat tile is a card, and a room that heats turns primary-container', async ({house}) => {
+    await house.tab('climate');
+    const heating = house.root().locator('hp-climate-pane hp-stat-tile[key="bedroom"] .stile');
+    const idle = house.root().locator('hp-climate-pane hp-stat-tile[key="garage"] .stile');
+    await expect(heating).toBeVisible();
+    expect(await style(heating, 'background-color')).toBe(await role(house, '--md-primary-container'));
+    expect(await style(heating.locator('.ic'), 'background-color')).toBe(await role(house, '--md-primary'));
+    expect(await style(idle, 'background-color')).toBe(await role(house, '--card'));
+    expect(await style(idle, 'border-top-left-radius')).toBe('16px');
+    expect(await style(idle, 'min-height')).toBe('128px');
+    expect(await style(idle.locator('.ic'), 'background-color')).toBe(await role(house, '--control'));
+    expect(await style(idle.locator('.ic'), 'border-top-left-radius')).toBe('20px');
+    await settled(house);
+    await expect(house.page).toHaveScreenshot('material-climate-phone-light-en.png');
   });
 });

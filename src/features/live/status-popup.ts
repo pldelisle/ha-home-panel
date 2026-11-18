@@ -62,7 +62,7 @@ export class StatusPopup extends LitElement {
 
   private row({level, title, line}: CheckItem) {
     return html`<div class="arow">
-      <span class="ic acc" style="--acc:var(--${level})">!</span>
+      <span class="ic acc ${level}" style="--acc:var(--${level})">!</span>
       <div><b>${title}</b><span>${line}</span></div>
     </div>`;
   }
