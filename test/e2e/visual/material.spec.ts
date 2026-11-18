@@ -596,3 +596,61 @@ test.describe('tablet, dark, greeting ink', () => {
     expect((await column(Math.floor(box.x) - 1)).equals(await column(Math.floor(box.x) - 10))).toBe(true);
   });
 });
+
+// A button group with more than five options (#481, ADR 0037): a seven-mode heat pump's detail on the phone shows the first four modes and "More", which wears the chosen
+// mode's word and the chosen look while the choice is in its menu; the second shot has the menu open (surface-container, elevation 2, the chosen item on secondary-container).
+test.describe('phone, light, seven modes', () => {
+  test.use({
+    viewport: VIEWPORTS.phone,
+    houseOpts: {
+      cfg: {...FULL_CFG, entities: {...FULL_CFG.entities, heat_pump: 'climate.heat_pump'}},
+      theme: 'light',
+      design: 'material',
+      time: AFTERNOON,
+      frozen: true,
+    },
+  });
+
+  test.beforeEach(async ({house}) => {
+    await house.setState('climate.heat_pump', {
+      state: 'auto',
+      attributes: {
+        hvac_action: 'heating',
+        current_temperature: 19.5,
+        temperature: 22,
+        min_temp: 16,
+        max_temp: 30,
+        hvac_modes: ['off', 'heat', 'cool', 'dry', 'fan_only', 'auto', 'eco'],
+      },
+    });
+    await house.tab('climate');
+    await house.root().locator('hp-climate-pane hp-stat-tile[key="hp"] button').click();
+  });
+
+  test('the group is four buttons and More, drawn chosen with the mode behind it', async ({house}) => {
+    const group = house.root().locator('hp-climate-detail hp-climate-controls hp-seg').first();
+    await expect(group.getByRole('radio')).toHaveText(['Off', 'Heat', 'Cool', 'Dry']);
+    const more = group.getByRole('button', {name: /^More modes/});
+    await expect(more).toHaveText('Auto');
+    expect(await style(more, 'background-color')).toBe(await role(house, '--md-primary'));
+    expect(await style(more, 'border-top-right-radius')).toBe('999px');
+    await settled(house);
+    await expect(house.page).toHaveScreenshot('material-button-group-overflow-phone-light-en.png', SHOT);
+  });
+
+  test('its menu is a surface-container with the chosen mode checked', async ({house}) => {
+    const group = house.root().locator('hp-climate-detail hp-climate-controls hp-seg').first();
+    await group.getByRole('button', {name: /^More modes/}).click();
+    const menu = group.getByRole('menu');
+    await expect(menu).toBeVisible();
+    await expect(menu.getByRole('menuitemradio')).toHaveText(['Fan', 'Auto', 'Eco']);
+    expect(await style(menu, 'background-color')).toBe(await role(house, '--md-surface-container'));
+    expect(await style(menu, 'border-top-left-radius')).toBe('4px');
+    expect(await style(menu, 'box-shadow')).not.toBe('none');
+    const chosen = menu.getByRole('menuitemradio', {checked: true});
+    await expect(chosen).toHaveText('Auto');
+    expect(await style(chosen, 'background-color')).toBe(await role(house, '--md-secondary-container'));
+    await settled(house);
+    await expect(house.page).toHaveScreenshot('material-button-group-overflow-menu-phone-light-en.png', SHOT);
+  });
+});

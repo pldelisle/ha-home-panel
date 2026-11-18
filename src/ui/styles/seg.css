@@ -115,7 +115,8 @@
 .app[data-design='material'] .seg button:last-child {
   border-radius: var(--shape-group-inner) var(--shape-pill) var(--shape-pill) var(--shape-group-inner);
 }
-.app[data-design='material'] .seg button[aria-checked='true'] {
+.app[data-design='material'] .seg button[aria-checked='true'],
+.app[data-design='material'] .seg button.more[data-chosen] {
   background: var(--md-primary);
   color: var(--md-on-primary);
   border-radius: var(--shape-segment-selected);
@@ -130,4 +131,9 @@
   font: var(--type-body-small);
   letter-spacing: var(--track-body-small);
   opacity: 0.85;
+}
+/* A group of more than five options ends in the overflow button, "More" (#481, ADR 0037): the `more` icon on a `control` button, or, when the chosen option is in its
+   menu, that option's word on `primary` as a chosen button is. It is the group's last button, so the rules above round its end. */
+.app[data-design='material'] .seg button.more b {
+  white-space: nowrap;
 }

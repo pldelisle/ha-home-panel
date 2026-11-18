@@ -77,6 +77,8 @@ export class ChargerControls extends LitElement {
         <div class="ctl-l">${power.heading}</div>
         <hp-seg
           .label=${power.label}
+          .moreLabel=${this.storeController.store.t('common.moreModes')}
+          .selectedText=${(mode: string) => this.storeController.store.t('common.modeSelected', {mode})}
           .options=${power.options}
           .value=${power.chosen}
           .disabled=${power.disabled}

@@ -7,6 +7,9 @@ export const en = {
   'common.failed': "Didn't work: {reason}",
   // the failure toast's button (src/ui/toast.ts); a tap anywhere on the toast dismisses it too
   'common.dismiss': 'Dismiss',
+  // the Material button group's overflow button, when a group has more than five options (src/ui/seg.ts, #481): what a screen reader calls it
+  'common.moreModes': 'More modes',
+  'common.modeSelected': 'Selected: {mode}',
   // what a tile or a figure with no value says in its place, with no unit (src/ui/reading.ts, #418); the live Sankey says it too
   'common.noReading': 'No reading',
   // the idle clock (src/features/clock/model.ts): the temperatures' line, its parts joined by " · ", and the next sun event

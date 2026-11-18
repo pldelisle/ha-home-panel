@@ -610,6 +610,124 @@ test.describe('the heat pump’s controls, on a tablet', () => {
   });
 });
 
+// a unit with seven modes (#481, ADR 0037): under Material the first four are the connected group and the rest are behind "More", a menu; Liquid Glass keeps the one row
+const SEVEN = {
+  state: 'heat',
+  attributes: {
+    hvac_action: 'heating',
+    current_temperature: 19.5,
+    temperature: 22,
+    min_temp: 16,
+    max_temp: 30,
+    hvac_modes: ['off', 'heat', 'cool', 'dry', 'fan_only', 'auto', 'eco'],
+    fan_modes: ['quiet', 'low', 'auto'],
+    fan_mode: 'auto',
+  },
+};
+const SEVEN_MODES = {...FULL_CFG, entities: {...FULL_CFG.entities, heat_pump: 'climate.heat_pump'}};
+const SET_AUTO = /^climate\.set_hvac_mode \{"entity_id":"climate\.heat_pump","hvac_mode":"auto"\}$/;
+const SET_FAN = /^climate\.set_hvac_mode \{"entity_id":"climate\.heat_pump","hvac_mode":"fan_only"\}$/;
+
+test.describe('a heat pump with seven modes, on a tablet', () => {
+  const modes = (house: House) => controls(house).locator('hp-seg').first();
+  const more = (house: House) => modes(house).getByRole('button', {name: /^More modes/});
+  const menu = (house: House) => modes(house).getByRole('menu', {name: 'More modes'});
+
+  test.beforeEach(async ({house}) => {
+    tabletOnly();
+    await house.setState('climate.heat_pump', SEVEN);
+    await house.tab('climate');
+    await item(house, 'hp').click();
+  });
+
+  test.describe('under Liquid Glass', () => {
+    test.use({houseOpts: {cfg: SEVEN_MODES}});
+
+    test('every mode is a radio in the one row, and there is no More button', async ({house}) => {
+      await expect(modes(house).getByRole('radio')).toHaveCount(7);
+      await expect(more(house)).toHaveCount(0);
+    });
+  });
+
+  test.describe('under Material', () => {
+    test.use({houseOpts: {cfg: SEVEN_MODES, design: 'material'}});
+
+    test('four radios and a More button; its menu holds the other three, and a pick chooses it and shows it on More', async ({
+      house,
+    }) => {
+      await expect(modes(house).getByRole('radio')).toHaveText(['Off', 'Heat', 'Cool', 'Dry']);
+      await expect(modes(house).getByRole('radiogroup')).toHaveAccessibleName('Heat pump mode');
+      await expect(more(house)).toHaveAccessibleName('More modes');
+      await expect(more(house)).toHaveAttribute('aria-expanded', 'false');
+      await more(house).click();
+      await expect(menu(house)).toBeVisible();
+      await expect(more(house)).toHaveAttribute('aria-expanded', 'true');
+      const items = menu(house).getByRole('menuitemradio');
+      await expect(items).toHaveText(['Fan', 'Auto', 'Eco']);
+      await expect(menu(house).getByRole('menuitemradio', {checked: true})).toHaveCount(0);
+      await items.nth(1).click();
+      await expectCall(house, SET_AUTO);
+      await expect(menu(house)).toBeHidden();
+      // the choice is behind More: its word is the button's, drawn chosen, and the menu has it checked
+      await expect(more(house)).toHaveText('Auto');
+      await expect(more(house)).toHaveAccessibleName('More modes, Auto');
+      await expect(more(house)).toHaveAttribute('data-chosen', '');
+      await expect(modes(house).getByRole('radio', {checked: true})).toHaveCount(0);
+      await more(house).click();
+      await expect(menu(house).getByRole('menuitemradio', {checked: true})).toHaveText('Auto');
+    });
+
+    test('the arrows run across all seven: one into the overflow chooses it, ArrowDown on More opens the menu and Escape closes it', async ({
+      house,
+    }) => {
+      await modes(house).getByRole('radio').nth(3).focus();
+      await house.page.keyboard.press('ArrowRight');
+      await expectCall(house, SET_FAN);
+      await expect(more(house)).toBeFocused();
+      await expect(more(house)).toHaveText('Fan');
+      await expect(menu(house)).toBeHidden();
+      await house.page.keyboard.press('ArrowDown');
+      await expect(menu(house)).toBeVisible();
+      await expect(menu(house).getByRole('menuitemradio', {name: 'Fan'})).toBeFocused();
+      await house.page.keyboard.press('ArrowDown');
+      await house.page.keyboard.press('Enter');
+      await expectCall(house, SET_AUTO);
+      await expect(menu(house)).toBeHidden();
+      await expect(more(house)).toBeFocused();
+      await house.page.keyboard.press('Enter');
+      await expect(menu(house)).toBeVisible();
+      await house.page.keyboard.press('Escape');
+      await expect(menu(house)).toBeHidden();
+      await expect(more(house)).toBeFocused();
+    });
+  });
+});
+
+test.describe('a heat pump with seven modes under Material, on a phone', () => {
+  test.use({houseOpts: {cfg: SEVEN_MODES, design: 'material'}});
+
+  test('Escape in the menu closes only the menu, not the sheet the group is in, and the focus returns to More', async ({
+    house,
+  }) => {
+    phoneOnly();
+    await house.setState('climate.heat_pump', {...SEVEN, state: 'auto'});
+    await house.tab('climate');
+    await tile(house, 'hp').click();
+    const modes = controls(house).locator('hp-seg').first();
+    const more = modes.getByRole('button', {name: /^More modes/});
+    await expect(more).toHaveAccessibleDescription('Selected: Auto');
+    await more.focus();
+    await house.page.keyboard.press('Enter');
+    const menu = modes.getByRole('menu', {name: 'More modes'});
+    await expect(menu).toBeVisible();
+    await house.page.keyboard.press('Escape');
+    await expect(menu).toBeHidden();
+    await expect(more).toBeFocused();
+    await expect(sheet(house)).toBeVisible();
+    await expect(controls(house)).toBeVisible();
+  });
+});
+
 // a room's controls and the house's: the quick buttons, the setpoint stepper with the frost guard's rules, and the two buttons that ask in a dialog
 test.describe('a room’s and the house’s controls, on a tablet', () => {
   test.beforeEach(async ({house}) => {
