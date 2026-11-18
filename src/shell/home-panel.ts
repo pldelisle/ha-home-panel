@@ -551,6 +551,7 @@ export class HomePanel extends LitElement {
 
   // The header (<hp-header>, #269) and the tabs: the rail and one pane per feature, each its element. The live pill and the Status popup
   // are the live feature's elements (#256), the popup one the shell keeps open (`statusOpen`); so is the settings popup (`settingsOpen`).
+  // A pane behind a sheet has no tabpanel role: its tab is not the selected one, and the sheet it holds is the dialog on screen.
   private renderWrap(): TemplateResult {
     return html`<div class="wrap">
       <hp-header
@@ -573,8 +574,8 @@ export class HomePanel extends LitElement {
               html`<section
                 class="pane pane-${f.key} ${this.sheetBehind(f) ? 'behind' : ''}"
                 id="pane-${f.key}"
-                role="tabpanel"
-                aria-labelledby="tab-${f.key}"
+                role=${ifDefined(this.sheetBehind(f) ? undefined : 'tabpanel')}
+                aria-labelledby=${ifDefined(this.sheetBehind(f) ? undefined : `tab-${f.key}`)}
                 ?hidden=${this.tab !== f.key && !this.sheetBehind(f)}
                 ${ref(el => this.scopeStatistics(f.key, el))}
               >
@@ -617,7 +618,13 @@ export class HomePanel extends LitElement {
       >
         ${ico('sidebar', 24)}
       </button>
-      <div class="rtabs" role="tablist" aria-label=${t('nav.sections')} @keydown=${this.onTabsKey}>
+      <div
+        class="rtabs"
+        role="tablist"
+        aria-label=${t('nav.sections')}
+        aria-orientation=${this.compact ? 'horizontal' : 'vertical'}
+        @keydown=${this.onTabsKey}
+      >
         ${repeat(
           rows,
           row => (row === CATEGORIES ? 'categories' : row.key),
@@ -667,6 +674,7 @@ export class HomePanel extends LitElement {
 
   // The WAI-ARIA tabs keys (tabs-keys.ts decides where): an arrow, Home or End moves focus, and Enter or Space, the button's own click, selects.
   private readonly onTabsKey = (e: KeyboardEvent): void => {
+    if (e.altKey || e.ctrlKey || e.metaKey) return; // Alt+Left (back), Cmd+Up and the like are the browser's and the system's
     const buttons = [...(e.currentTarget as HTMLElement).querySelectorAll<HTMLButtonElement>('.rtab')];
     const key = (b: HTMLElement) => b.dataset.tab as FeatureKey | undefined;
     const from = buttons.findIndex(b => b === this.shadowRoot?.activeElement);

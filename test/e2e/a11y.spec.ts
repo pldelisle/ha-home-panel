@@ -295,6 +295,10 @@ test.describe('bare house', () => {
 // tab names its pane (aria-controls) while the pane names its tab (role tabpanel, aria-labelledby). The sidebar (open and collapsed), Material's rail and the
 // phone's bar share the markup, so one walk serves all four.
 const walkTabs = async (house: House, next: string, previous: string) => {
+  await expect(house.root().locator('#rail [role="tablist"]')).toHaveAttribute(
+    'aria-orientation',
+    isPhone(house) ? 'horizontal' : 'vertical',
+  );
   const tabs = house.root().locator('#rail .rtab:visible');
   const names = await tabs.evaluateAll(l => l.map(e => e.id));
   expect(names.length).toBeGreaterThan(2);
@@ -369,6 +373,24 @@ test.describe('the section tabs keyboard pattern', () => {
       await walkTabs(house, 'ArrowDown', 'ArrowUp');
       await wiredToPanes(house);
       await enterSelects(house, 'weather');
+    });
+
+    test('a key with Alt, Ctrl or Cmd is left to the browser', async ({house}) => {
+      tabletOnly();
+      const stop = house.root().locator('#rail .rtab[tabindex="0"]');
+      await stop.focus();
+      for (const mod of ['Alt', 'Control', 'Meta']) await house.page.keyboard.press(`${mod}+ArrowDown`);
+      await expect(stop).toBeFocused();
+    });
+
+    test("a pane behind another tab's sheet is no tab panel", async ({house}) => {
+      phoneOnly(); // Home's Air tile opens Air's detail as a sheet, the Air pane staying in the page behind it
+      await house.tab('home');
+      await expect(house.root().locator('#pane-air')).toHaveAttribute('role', 'tabpanel');
+      await house.root().locator('[data-opens="air.detail"]').first().click();
+      await expect(house.root().locator('#pane-air.behind')).toHaveCount(1);
+      await expect(house.root().locator('#pane-air')).not.toHaveAttribute('role', /./);
+      await expect(house.root().locator('#pane-air')).not.toHaveAttribute('aria-labelledby', /./);
     });
 
     test('Left and Right are no keys of the vertical list', async ({house}) => {
