@@ -18,7 +18,7 @@ export function climateRoomAreas({rooms}: Pick<ResolvedConfig, 'rooms'>, registr
 }
 
 /** The rooms of the Climate tab whose thermostat is in the area. */
-export const roomsIn = (rooms: readonly RoomPower[], areaId: string, registries: Registries): RoomPower[] =>
+const roomsIn = (rooms: readonly RoomPower[], areaId: string, registries: Registries): RoomPower[] =>
   rooms.filter(({climate}) => areaOf(climate, registries) === areaId);
 
 /** The tab's items for the thermostats in the area, in the tab's order: no house item and no heat pump. */
