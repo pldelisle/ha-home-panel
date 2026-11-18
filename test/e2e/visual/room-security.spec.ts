@@ -12,7 +12,7 @@ test.describe('a room with security, tablet, light', () => {
 
   test('room view with security', async ({house}) => {
     await addPorchCamera(house, 'living_room');
-    await house.root().locator('#rail [data-room=\"living_room\"]').click();
+    await house.root().locator('#rail [data-room="living_room"]').click();
     await expect(house.root().locator('#pane-room hp-camera-card .cam')).toBeVisible();
     await house.page.mouse.move(0, 0);
     // the snapshot is a Home Assistant proxy URL the harness never serves: masked, as it is wherever a camera is on screen
