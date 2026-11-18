@@ -28,6 +28,19 @@ const words = (text: string): string[] =>
     .split(/[^a-z0-9]+/)
     .filter(Boolean);
 
+/**
+ * A name without the words of the areas given, as a room's own tile says it ("Living Room TV" in the Living room is "TV"); a name
+ * that would be emptied is kept whole. Both the speakers' names and a room view's television use it.
+ */
+export function withoutWords(full: string, ...areaNames: string[]): string {
+  const drop = new Set(areaNames.flatMap(words));
+  const short = full
+    .split(/\s+/)
+    .filter(word => !drop.has(words(word)[0]))
+    .join(' ');
+  return short || full;
+}
+
 /** Every visible player that is not the television (`tvId`, null when there is none) and sits in an area, in the house's order. */
 export function speakers(states: HassEntities, registries: Registries, names: Names, tvId: string | null): Speaker[] {
   return Object.keys(states)
@@ -43,13 +56,7 @@ export function speakers(states: HassEntities, registries: Registries, names: Na
     .map(({id, areaId}) => {
       // the area's name as Home Assistant gives it and as the panel shows it: the words of both are the ones to drop
       const area = registries.areas?.[areaId]?.name ?? '';
-      const drop = new Set([...words(area), ...words(area ? names.name(areaId) : '')]);
-      const full = names.name(id);
       // "HomePod mini Kitchen" in the Kitchen is just "HomePod mini"
-      const short = full
-        .split(/\s+/)
-        .filter(word => !drop.has(words(word)[0]))
-        .join(' ');
-      return {id, areaId, name: short || full};
+      return {id, areaId, name: withoutWords(names.name(id), area, area ? names.name(areaId) : '')};
     });
 }

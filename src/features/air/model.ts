@@ -377,6 +377,29 @@ export function airGlance(
   };
 }
 
+/** The areas the purifiers sit in, once each; a purifier with no area (named from its device) is in no room view (ADR 0039). */
+export function airRoomAreas(rooms: readonly AirRoomInputs[]): string[] {
+  return [...new Set(rooms.map(room => room.areaId).filter((id): id is string => !!id))];
+}
+
+/** The detail's card of each purifier in the area, as the Air tab draws it: the room view reuses the cards, filtered to the room. */
+export function roomDetailsIn(inputs: AirInputs, areaId: string, deps: AirModelDeps): RoomDetail[] {
+  return inputs.rooms.filter(room => room.areaId === areaId).map(room => roomDetail(room, rateRoom(room), deps));
+}
+
+/** The room's humidity for its header ("45 %"): the mean of its purifiers' readings, whole; null when none reads. */
+export function roomHumidity(
+  rooms: readonly AirRoomInputs[],
+  areaId: string,
+  {t, fmt}: Pick<AirModelDeps, 't' | 'fmt'>,
+): string | null {
+  const read = rooms
+    .filter(room => room.areaId === areaId)
+    .map(room => room.readings.humidity)
+    .filter((n): n is number => n !== null);
+  return read.length ? t('air.humidityChip', {n: whole(fmt, read.reduce((a, b) => a + b, 0) / read.length)}) : null;
+}
+
 /** The Air tab's view: the card, the detail and the sub-line, from the inputs, in the language `deps.t` words. */
 export function airModel(inputs: AirInputs, deps: AirModelDeps): AirViewModel {
   const {t, fmt} = deps;

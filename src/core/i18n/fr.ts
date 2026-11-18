@@ -497,6 +497,8 @@ export const fr: Record<MessageKey, string> = {
   'air.manual': 'Manuel',
   'air.fanLine': '{mode} · {n} %',
   'air.rh': '{n} % HR',
+  'air.humidityChip': '{n} %',
+  'air.roomDetails': 'Toutes les pièces et l’air extérieur',
   'air.offlineHint': 'Le purificateur est hors ligne, il ne peut pas être réglé pour le moment.',
   'air.automagicHint': 'Automagic règle le ventilateur selon les capteurs de la pièce{clauses}.',
   'air.hintNow': ', en ce moment {n} %',

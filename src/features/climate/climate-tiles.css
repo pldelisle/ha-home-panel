@@ -1,0 +1,13 @@
+/*
+ * The grid of the Climate tiles, adopted by `<hp-climate-pane>` (the phone) and `<hp-climate-room>` (a room view) through `forShadow`: two across, one column at
+ * the Larger text size, so nothing is cut. Moved out of climate-pane.element.css so a room view draws the same tracks.
+ * A selector the feature writes is written nowhere else (ADR 0019).
+ */
+.ctiles2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+:host([large-text]) .ctiles2 {
+  grid-template-columns: 1fr;
+}

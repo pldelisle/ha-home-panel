@@ -34,6 +34,9 @@ src/features/climate/
   chart-place.ts           legendItems, noticeLine, chartPlace: a chart's legend and its place (the notice, the <hp-chart>, or nothing) for the detail and the pane
   gauge.ts, dial.ts        <hp-gauge> and <hp-dial>: the geometry placed with svg templates; the dial is a slider (pointer, arrows, Home and End) while its setpoint can be set
   heatmap-legend.ts        <hp-heat-legend>: the heat scale's colour bar and its degrees
+  climate-tiles.ts, .css   climateTile(item, wide): the phone's tile, and the grid both the phone and a room view draw it in
+  room-items.ts            climateRoomAreas, climateItemsIn, climateChip: the thermostats cut to one area, for a room view (ADR 0039)
+  climate-room.ts          <hp-climate-room>: the room view's thermostat tile; a tap asks for the detail sheet over the room
   *.element.css            each element's own rules, moved from the legacy sheet
 ```
 
