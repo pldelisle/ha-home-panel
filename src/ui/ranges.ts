@@ -2,13 +2,14 @@
 // Pattern: table-driven design (a table, not four branches), after the legacy panel's CRANGE (deleted in #246) with every word replaced by a
 // message key; it sits in the UI kit because Weather, Climate, Air and the sensors' sheets all read the same four ranges.
 // Must not: import anything but types, hold a string the household reads, or format a date (`tooltipDate` does, from the parts a range names).
+import type {StatisticsPeriod} from '../core/ha.ts';
 import type {MessageKey} from '../core/i18n/en.ts';
 import type {TooltipDate} from './chart-options.ts';
 
 export type Range = 'day' | 'week' | 'month' | 'year';
 
-/** The recorder's statistics periods a range asks for. */
-export type StatisticsPeriod = '5minute' | 'hour' | 'day';
+/** The recorder's statistics periods a range asks for (the type is the core's, which the archive port names too). */
+export type {StatisticsPeriod};
 
 export interface RangeDefinition {
   /** How far back the range reaches. */

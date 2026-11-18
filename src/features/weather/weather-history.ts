@@ -20,6 +20,7 @@ import {RANGES, type Range} from '../../ui/ranges.ts';
 import '../../ui/sheet.ts'; // defines <hp-sheet>
 import {chart, common, inner, tiles} from '../../ui/styles/index.ts';
 import {
+  archiveSource,
   historyChartOptions,
   idsWithoutStatistics,
   statisticsStart,
@@ -69,7 +70,7 @@ export class WeatherHistory extends LitElement {
   static override properties = {
     tile: {},
     cache: {attribute: false},
-    archive: {attribute: false},
+    archiveNotice: {attribute: false},
     range: {state: true},
   };
   /** Which tile's history: the key the tile asked for. */
@@ -77,7 +78,7 @@ export class WeatherHistory extends LitElement {
   /** The pane's statistics cache, whose replies are shared: nothing here changes one. */
   declare cache: StatisticsCache | undefined;
   /** The pane's archive notice: where the rows before the recorder's first came from, asked with the arguments of the read. */
-  declare archive: ArchivedStatistics['notice'] | undefined;
+  declare archiveNotice: ArchivedStatistics['notice'] | undefined;
   /** The range chosen; each opening starts at the week. */
   declare range: Range;
 
@@ -102,7 +103,7 @@ export class WeatherHistory extends LitElement {
     super();
     this.tile = undefined;
     this.cache = undefined;
-    this.archive = undefined;
+    this.archiveNotice = undefined;
     this.range = 'week';
   }
 
@@ -184,9 +185,7 @@ export class WeatherHistory extends LitElement {
           <p>${note}</p>
           ${
             state === 'chart' && this.loaded?.notice
-              ? html`<p class="muted">
-                  ${t('archive.source', {date: fmt.date(this.loaded.notice.before), station: this.loaded.notice.station})}
-                </p>`
+              ? html`<p class="muted">${archiveSource(this.loaded.notice, {fmt, t})}</p>`
               : nothing
           }
           <div class="legend">
@@ -293,7 +292,14 @@ export class WeatherHistory extends LitElement {
         ? await cache.history(missing, start, {minimal: true, attributes: false}).catch(optional)
         : {};
       if (token !== this.token) return;
-      this.loaded = {key, range, statistics, history, at: now, notice: this.archive?.(ids, period, start) ?? null};
+      this.loaded = {
+        key,
+        range,
+        statistics,
+        history,
+        at: now,
+        notice: this.archiveNotice?.(ids, period, start) ?? null,
+      };
     } catch (error) {
       if (token !== this.token) return;
       // a reply of a config that is gone: ask again under the new one

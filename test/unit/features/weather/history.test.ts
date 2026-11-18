@@ -7,6 +7,7 @@ import {createStatisticsCache} from '../../../../src/core/statistics-cache.ts';
 import {panelLocale} from '../../../../src/core/i18n/locale.ts';
 import {createMessages} from '../../../../src/core/i18n/messages.ts';
 import {
+  archiveSource,
   detailChartOptions,
   FROST_BELOW,
   hasStatistics,
@@ -776,5 +777,15 @@ describe('detailChartOptions', () => {
       }),
     ).not.toThrow();
     expect(() => seasonView(frozen(DAYS), frozen(GUSTS), deps('en'))).not.toThrow();
+  });
+});
+
+describe('archiveSource', () => {
+  // the line under the season and under a tile's chart: the date the archive's rows end, the station, in the household's language
+  const notice = {station: "L'ASSOMPTION", before: Date.parse('2026-11-10T00:00:00-05:00')};
+
+  test('names the date and the station in English and in French', () => {
+    expect(archiveSource(notice, deps('en'))).toBe("Before Nov 10: ECCC, L'ASSOMPTION");
+    expect(archiveSource(notice, deps('fr'))).toBe("Avant le 10 nov. : ECCC, L'ASSOMPTION");
   });
 });

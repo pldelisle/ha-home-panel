@@ -194,6 +194,20 @@ export function noonOf(day: string, fmt: Pick<Formatters, 'isoDay'>): number {
   return [utc, utc - DAY_MS, utc + DAY_MS].find(at => fmt.isoDay(at) === day) ?? utc;
 }
 
+/**
+ * The first instant of a day key in the formatters' zone, to the minute (a zone's offset is whole minutes): the search runs between the day's
+ * noon and the noon before it, where `isoDay` turns from the day before to the day. The archive's day rows start there, as the recorder's do.
+ */
+export function startOfDay(day: string, fmt: Pick<Formatters, 'isoDay'>): number {
+  let [before, from] = [Math.floor((noonOf(day, fmt) - DAY_MS) / MINUTE_MS), Math.floor(noonOf(day, fmt) / MINUTE_MS)];
+  while (from - before > 1) {
+    const middle = Math.floor((before + from) / 2);
+    if (fmt.isoDay(middle * MINUTE_MS) === day) from = middle;
+    else before = middle;
+  }
+  return from * MINUTE_MS;
+}
+
 export function createFormatters(locale: PanelLocaleSpec): Formatters {
   const {language, tag, timeZone, hour12} = locale;
   // the rules are chosen once, by the tag's language; every other language is `Intl`'s own output

@@ -1,7 +1,10 @@
 // The ECCC climate archive provider at its seam: a `fetch` that answers literal GeoJSON shaped as api.weather.gc.ca sends it, and the
 // urls that left as the proof of what was asked. No network.
 import {describe, expect, test, vi} from 'vitest';
+import {resolveConfig} from '../../../src/core/config.ts';
+import type {PanelHass} from '../../../src/core/hass.ts';
 import {
+  archiveHouse,
   ARCHIVED_KEYS,
   createClimateArchive,
   jsonFetcher,
@@ -11,7 +14,7 @@ import {
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
 const NOW = Date.parse('2026-11-17T12:00:00Z');
-// Mascouche, in the Toronto zone the fake houses use (Quebec shares its rules)
+// a house in Quebec, in the Toronto zone the fake houses use (the same rules)
 const HOUSE: ArchiveHouse = {latitude: 45.75, longitude: -73.6, timeZone: 'America/Toronto', station: null};
 
 const station = (id: string, name: string, lon: number, lat: number, extra: Record<string, unknown> = {}) => ({
@@ -39,7 +42,7 @@ const hourly = (utc: string, properties: Record<string, unknown>) => ({propertie
 // the stations of the area: the closed town one, a good one 13 km away, a better-looking one 60 km away, one whose feed stopped
 const LASSOMPTION = station('7014160', "L'ASSOMPTION", -73.4347, 45.8094);
 const AREA = collection([
-  station('7014629', 'MASCOUCHE', -73.6, 45.75, {HAS_HOURLY_DATA: 'N'}),
+  station('7014629', 'TOWN', -73.6, 45.75, {HAS_HOURLY_DATA: 'N'}),
   station('7000001', 'STOPPED', -73.6, 45.76, {HLY_LAST_DATE: '2026-09-01 00:00:00'}),
   station('7000002', 'FAR', -74.4, 45.75),
   LASSOMPTION,
@@ -67,6 +70,23 @@ const archiveOver = (routes: Record<string, unknown>, house: ArchiveHouse | null
 
 const START = new Date('2026-11-10T05:00:00Z');
 const END = new Date('2026-11-10T08:00:00Z');
+
+describe('the house', () => {
+  const hass = {config: {latitude: 45.75, longitude: -73.6, time_zone: 'America/Toronto'}} as PanelHass;
+
+  test('is read from the resolved config and the hass: place, zone and station; none before Home Assistant is there', () => {
+    const config = (climate_station?: string | false) => resolveConfig({climate_station});
+    expect(archiveHouse(config('7014160'), hass)).toEqual({...HOUSE, station: '7014160'});
+    expect(archiveHouse(config(false), hass)?.station).toBe(false);
+    expect(archiveHouse(config(), {config: {time_zone: 'UTC'}} as PanelHass)).toEqual({
+      latitude: null,
+      longitude: null,
+      timeZone: 'UTC',
+      station: null,
+    });
+    expect(archiveHouse(config(), null)).toBeNull();
+  });
+});
 
 describe('the station', () => {
   test('the nearest active hourly station within 40 km, found in the bounding box of the house', async () => {
@@ -210,6 +230,17 @@ describe('hourly rows', () => {
     ];
     const {archive} = archiveOver({'climate-stations': AREA, 'climate-hourly': () => pages.shift()});
     expect((await archive.rows('outT', 'hour', START, END))?.rows.map(r => r.mean)).toEqual([1, 2]);
+  });
+
+  test('the read ends on the running total: a last page that still carries a next link is not followed', async () => {
+    const next = {rel: 'next', href: 'https://api.weather.gc.ca/collections/climate-hourly/items?offset=2'};
+    const pages = [
+      collection([hourly('2026-11-10T05:00:00', {TEMP: 1})], {numberMatched: 2, links: [next]}),
+      collection([hourly('2026-11-10T06:00:00', {TEMP: 2})], {numberMatched: 2, links: [next]}),
+    ];
+    const {archive, to} = archiveOver({'climate-stations': AREA, 'climate-hourly': () => pages.shift()});
+    expect((await archive.rows('outT', 'hour', START, END))?.rows.map(r => r.mean)).toEqual([1, 2]);
+    expect(to('climate-hourly')).toHaveLength(2);
   });
 
   test('a page that says there is more and gives no link ends the read', async () => {
