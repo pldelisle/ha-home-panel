@@ -273,8 +273,18 @@ test.describe('on a tablet', () => {
       await expect(toggle).toHaveText('Show the latest 10');
       await toggle.click();
       await expect(rows).toHaveCount(10);
-      // the bars of the last 30 days and the monthly chart, in the charger's colour
-      await expect(historySheet(house).locator('.spark rect')).toHaveCount(30);
+      // the last 30 days' chart on its card, with a kWh axis and a label every week, and the monthly chart, in the charger's colour
+      const daily = historySheet(house).locator('.daily hp-chart');
+      await expect(daily.locator('.apexcharts-bar-area').first()).toBeVisible();
+      await expect(daily.locator('.apexcharts-yaxis-label').first()).toContainText('kWh');
+      // five day labels, a week apart, and the others blank
+      await expect
+        .poll(
+          async () =>
+            (await daily.locator('.apexcharts-xaxis-label').allTextContents()).filter(label => label.trim() !== '')
+              .length,
+        )
+        .toBe(5);
       await expect(sessions.locator('hp-chart .apexcharts-bar-area').first()).toBeVisible();
       // Done closes the sheet, and its charts go with it; Escape does too, the host's one key for the sheet open
       await pane(house).getByRole('button', {name: 'Done'}).click();

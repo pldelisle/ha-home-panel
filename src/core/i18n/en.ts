@@ -887,9 +887,8 @@ export const en = {
   'car.plug.pluggedIn': 'Plugged in',
   'car.plug.unplugged': 'Unplugged',
   'car.card.daily':
-    'Daily EV energy, last {days} days: {charging, plural, =0 {# charging days} one {# charging day} other {# charging days}}, {kwh} kWh.',
-  'car.card.barsLabel': 'Daily kWh bars, highest {n} kWh',
-  'car.card.barTitle': '{day}: {kwh} kWh',
+    'Charging energy, last {days} days: {charging, plural, =0 {# charging days} one {# charging day} other {# charging days}}, {kwh} kWh.',
+  'car.card.chartLabel': 'Daily kWh chart, highest {n} kWh',
   'car.checkedIn': 'the car last checked in at {time}',
   'car.battery.title': 'Battery',
   'car.battery.fullRange': 'Full range',

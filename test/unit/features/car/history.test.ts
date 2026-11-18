@@ -8,6 +8,7 @@ import {panelLocale} from '../../../../src/core/i18n/locale.ts';
 import {createMessages} from '../../../../src/core/i18n/messages.ts';
 import {
   carWindows,
+  dailyChartOptions,
   dailyEv,
   deriveCarHistory,
   monthlySessions,
@@ -152,7 +153,7 @@ describe('sessionsChartOptions', () => {
 
   test('a bar chart of the kWh charged each month, in the charger’s colour, with the months’ short names under it', () => {
     expect(options('en')).toMatchObject({
-      chart: {type: 'bar', height: 220},
+      chart: {type: 'bar'},
       series: [{name: 'Charged at home', data: [33.3, 12.5]}],
       colors: ['rgb(1, 2, 3)'],
       plotOptions: {bar: {borderRadius: 5, borderRadiusApplication: 'end', columnWidth: '56%'}},
@@ -176,5 +177,46 @@ describe('sessionsChartOptions', () => {
     expect(xaxis.categories).toEqual(['Oct.', 'Nov.']);
     expect(series[0].name).toBe('Rechargée à la maison');
     expect(tooltip.y.formatter(33.3, {dataPointIndex: 0})).toBe('33 kWh en 3 sessions');
+  });
+});
+
+describe('dailyChartOptions', () => {
+  // 30 days: Oct 11 to Nov 9
+  const days = Array.from({length: 30}, (_, index) => fmt.date(Date.UTC(2026, 9, 11 + index, 12)));
+  const values = days.map((_day, index) => (index === 29 ? 4.54 : index === 28 ? 12.34 : 0));
+  type Options = ReturnType<typeof dailyChartOptions> & {
+    xaxis: {categories: string[]; labels: {formatter: (label: string) => string}};
+    yaxis: {labels: {formatter: (value: number) => string}};
+    tooltip: {y: {formatter: (value: number) => string}};
+  };
+  const options = (compact: boolean) =>
+    dailyChartOptions(
+      {days, values},
+      {fmt, t: createMessages({language: 'en', tag: 'en-CA'}).t, color: 'rgb(1, 2, 3)', compact},
+    ) as Options;
+
+  test('a bar chart of the 30 days in the charger’s colour, a value axis in kWh and a tooltip with the tenth', () => {
+    const {yaxis, tooltip, ...rest} = options(false);
+    expect(rest).toMatchObject({
+      chart: {type: 'bar'},
+      series: [{data: [...values.slice(0, 28), 12.3, 4.5]}],
+      colors: ['rgb(1, 2, 3)'],
+    });
+    expect(yaxis.labels.formatter(12.34)).toBe('12 kWh');
+    expect(tooltip.y.formatter(12.34)).toBe('12.3 kWh');
+  });
+
+  test('a day label every week, on a tablet and on a phone, and every day still has its category for the tooltip', () => {
+    for (const compact of [false, true]) {
+      const {xaxis} = options(compact);
+      expect(xaxis.categories).toEqual(days);
+      expect(days.filter(day => xaxis.labels.formatter(day) !== '')).toEqual([
+        days[0],
+        days[7],
+        days[14],
+        days[21],
+        days[28],
+      ]);
+    }
   });
 });

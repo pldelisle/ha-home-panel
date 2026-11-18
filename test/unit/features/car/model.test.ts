@@ -215,13 +215,13 @@ describe('a car with every sensor', () => {
     expect(detail.summary).toMatchObject({name: 'Test', picture: '/api/image_proxy/image.t'});
     expect(detail.history).toMatchObject({title: 'Charging history', line: '3 sessions · 39 kWh', value: '$3'});
     const daily = detail.history.daily;
-    expect(daily?.geometry.highest).toBe(12.34);
-    expect(daily?.geometry.bars).toHaveLength(30);
-    expect(daily?.label).toBe('Daily kWh bars, highest 12.3 kWh');
-    expect(daily?.titles.slice(-3)).toEqual(['Nov 7: 0.0 kWh', 'Nov 8: 12.3 kWh', 'Nov 9: 4.5 kWh']);
-    expect(daily?.titles[0]).toBe('Oct 11: 0.0 kWh');
+    expect(daily?.values).toHaveLength(30);
+    expect(daily?.values.slice(-3)).toEqual([0, 12.34, 4.5]);
+    expect(daily?.days.slice(-3)).toEqual(['Nov 7', 'Nov 8', 'Nov 9']);
+    expect(daily?.days[0]).toBe('Oct 11');
+    expect(daily?.label).toBe('Daily kWh chart, highest 12.3 kWh');
     // only one day is over 5 kWh; 12.34 + 4.5 is 17 kWh
-    expect(daily?.line).toBe('Daily EV energy, last 30 days: 1 charging day, 17 kWh.');
+    expect(daily?.line).toBe('Charging energy, last 30 days: 1 charging day, 17 kWh.');
   });
 
   test('the daily line groups the thousands of kWh as the locale does, through the formatters', () => {
@@ -232,7 +232,7 @@ describe('a car with every sensor', () => {
       })),
     });
     expect(modelOf(carHouse(), month).detail?.history.daily?.line).toBe(
-      'Daily EV energy, last 30 days: 30 charging days, 1,200 kWh.',
+      'Charging energy, last 30 days: 30 charging days, 1,200 kWh.',
     );
     // French groups with a narrow no-break space
     expect(modelOf(carHouse(), month, {language: 'fr'}).detail?.history.daily?.line).toContain(
@@ -317,7 +317,8 @@ describe('a car with every sensor', () => {
 
   test('the sessions: the sentence, four tiles, the months, the table’s latest first and its toggle absent under eleven', () => {
     const {sessions} = detail;
-    expect(sessions.title).toBe('Charging history');
+    // the sheet is already titled Charging history: its first card is Sessions
+    expect(sessions.title).toBe('Sessions');
     expect(sessions.summary).toBe(
       '3 charging sessions on the Wallbox since Oct 20. Cost is estimated at the 7¢/kWh set in the Wallbox app.',
     );
@@ -353,6 +354,25 @@ describe('a car with every sensor', () => {
     expect(sessions.rows.map(row => row.date)).toEqual(['Sun, Nov 8', 'Fri, Nov 6', 'Tue, Oct 20']);
     expect(sessions.rows[2]).toMatchObject({length: '3 h', energy: '18.0 kWh', barPx: 74, cost: '$1.26'});
     expect(sessions.toggle).toBeNull();
+  });
+
+  test('thirty days with nothing charged say so once, and draw no chart, though the year has sessions', () => {
+    const idle = history({daily: history().daily.map(({day}) => ({day, ev: 0}))});
+    const daily = modelOf(carHouse(), idle).detail?.history.daily;
+    expect(daily?.notice).toBe('No history yet. It fills in as Home Assistant records the next hour.');
+    expect(modelOf(carHouse(), history()).detail?.history.daily?.notice).toBeNull();
+  });
+
+  test('a session that ends on a later day says so: the end carries its date (the Date column says the start’s), a same-day one only the clock', () => {
+    const week = history({
+      sessions: [session('2026-11-07T11:20:00-05:00', 171, 40), session('2026-11-08T09:00:00-05:00', 1, 6)],
+    });
+    const {rows} = modelOf(carHouse(), week).detail!.sessions;
+    expect(rows[0].times).toBe('9:00 am to 10:00 am');
+    expect(rows[1].times).toBe('11:20 am to Nov 14, 2:20 pm');
+    expect(modelOf(carHouse(), week, {language: 'fr'}).detail!.sessions.rows[1].times).toBe(
+      'De 11 h 20 à 14 nov., 14 h 20',
+    );
   });
 
   test('a house with no history yet has no bars, no sessions and nothing delivered', () => {
@@ -524,7 +544,7 @@ describe('a car with every sensor, in French', () => {
   });
 
   test('the sentences, the rows and the facts are the rewrite layer’s French', () => {
-    expect(detail.history.daily?.line).toBe('Énergie VÉ quotidienne, 30 derniers jours : 1 jour de recharge, 17 kWh.');
+    expect(detail.history.daily?.line).toBe('Énergie de recharge, 30 derniers jours : 1 jour de recharge, 17 kWh.');
     expect(detail.history).toMatchObject({title: 'Historique de recharge', line: '3 sessions · 39 kWh', value: '3 $'});
     expect(detail.sub).toBe('Stationnée à la maison · verrouillée · dernier contact de la voiture à 16 h 05');
     expect([detail.summary.drawing, detail.status.drawing]).toEqual(['Voiture, vue de côté', 'Voiture vue de haut']);

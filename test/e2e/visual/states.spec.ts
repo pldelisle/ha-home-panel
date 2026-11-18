@@ -228,6 +228,30 @@ test.describe('The Media tiles in French', () => {
   });
 });
 
+// The Car's charging history sheet (#422): the 30 days' chart on its card, the Sessions card and the last plug-in, over the tab. Twelve sessions twelve hours apart, from the frozen clock, so the dates are the same on every run.
+test.describe('Car charging history sheet', () => {
+  test.use({
+    viewport: VIEWPORTS.tablet,
+    houseOpts: {
+      cfg: FULL_CFG,
+      time: AFTERNOON,
+      frozen: true,
+      charges: {
+        id: 'sensor.charger_power',
+        runs: Array.from({length: 12}, (_, i) => ({hoursAgo: 20 + 12 * i, hours: 3, kw: 7.2})),
+      },
+    },
+  });
+  test('tablet, light', async ({house}) => {
+    await house.tab('car');
+    const pane = house.root().locator('#pane-car hp-car-pane');
+    await expect(pane.locator('hp-car-history .hist .tx small')).not.toBeEmpty();
+    await pane.locator('hp-car-history .hist').click();
+    await expect(pane.locator('hp-car-history-sheet .daily hp-chart .apexcharts-bar-area').first()).toBeVisible();
+    await expect(house.page).toHaveScreenshot('car-history-sheet-tablet-light-en.png');
+  });
+});
+
 // The config-error card (spec 13): an admin's Home tab for a config with one problem of each kind the checker reports, in both
 // languages. The tablet in the light theme is the pinned look (spec 13 asks for exactly these two baselines); the phone and the
 // dark theme are covered by config-error.spec.ts's behaviour and were looked at by hand.

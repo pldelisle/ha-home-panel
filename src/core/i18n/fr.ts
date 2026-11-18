@@ -860,9 +860,8 @@ export const fr: Record<MessageKey, string> = {
   'car.plug.unplugged': 'Débranchée',
   // `=0` repeats `other`, as the rooms heating do: the legacy wrote « 0 jours de recharge »
   'car.card.daily':
-    'Énergie VÉ quotidienne, {days} derniers jours\u00a0: {charging, plural, =0 {# jours de recharge} one {# jour de recharge} other {# jours de recharge}}, {kwh} kWh.',
-  'car.card.barsLabel': 'Barres quotidiennes en kWh, maximum {n} kWh',
-  'car.card.barTitle': '{day}\u00a0: {kwh} kWh',
+    'Énergie de recharge, {days} derniers jours\u00a0: {charging, plural, =0 {# jours de recharge} one {# jour de recharge} other {# jours de recharge}}, {kwh} kWh.',
+  'car.card.chartLabel': 'Graphique quotidien en kWh, maximum {n} kWh',
   'car.checkedIn': 'dernier contact de la voiture à {time}',
   'car.battery.title': 'Batterie',
   'car.battery.fullRange': 'Autonomie complète',

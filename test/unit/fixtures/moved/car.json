@@ -206,7 +206,8 @@
         "days": 30,
         "charging": 5,
         "kwh": 120
-      }
+      },
+      "written": "Énergie de recharge, 30 derniers jours : 5 jours de recharge, 120 kWh."
     },
     {
       "key": "car.card.daily",
@@ -214,7 +215,8 @@
         "days": 30,
         "charging": 1,
         "kwh": 8
-      }
+      },
+      "written": "Énergie de recharge, 30 derniers jours : 1 jour de recharge, 8 kWh."
     },
     {
       "key": "car.card.daily",
@@ -222,24 +224,15 @@
         "days": 30,
         "charging": 0,
         "kwh": 0
-      }
+      },
+      "written": "Énergie de recharge, 30 derniers jours : 0 jours de recharge, 0 kWh."
     },
     {
-      "key": "car.card.barsLabel",
+      "key": "car.card.chartLabel",
       "values": {
         "n": "3.2"
       },
-      "translated": "Barres quotidiennes en kWh, maximum 3,2 kWh"
-    },
-    {
-      "key": "car.card.barTitle",
-      "values": {
-        "day": "Nov 6",
-        "kwh": "3.2"
-      },
-      "fr": {
-        "day": "6 nov."
-      }
+      "translated": "Graphique quotidien en kWh, maximum 3,2 kWh"
     },
     {
       "key": "car.checkedIn",
