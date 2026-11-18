@@ -70,3 +70,15 @@ h2 {
   font: var(--type-headline-small);
   letter-spacing: var(--track-headline-small);
 }
+/* Material's header badge (#469): the subject's icon on a 40px tonal circle; the pane header's badge is its tree's, reached by its part. An inline sheet keeps the pane's bare icon. */
+:host([design='material']:not([inline])) hp-pane-header::part(badge) {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--shape-pill);
+  background: var(--control);
+  color: var(--on-control);
+}
+:host([design='material']:not([inline])) slot[name='icon'] > svg {
+  width: 22px;
+  height: 22px;
+}

@@ -83,8 +83,15 @@ value, so a second design language can redefine the set in one place. No rule wr
 - The Material components (#468) draw under `.app[data-design='material']` in the kit's sheets and `:host([design='material'])` in an element's own. A list of
   status rows is a group (`--shape-list-group` 16, `--shape-list-item` 4, 2 px apart); a chip is `--shape-chip` (8) with a 1 px `--line` edge. A tile is a well, or a
   `--control` when it opens a history; a stat tile is the card with a `--control` icon square, and `primary-container` over `primary` while its subject is on. A
-  button is tonal, 40 px in a 48 px target, and a pill that tightens under a finger; a dialog's confirm is filled (`primary`), its dismiss outlined, All off the one
+  button is tonal, 40 px in a 48 px target, and a pill that tightens under a finger; All off is the one
   56 px `primary-container` button on `--elevation-3`, and the stepper's and a sheet's close buttons 48 px tonal circles. A tappable card draws no chevron: the state layer says it.
+- The Material sheet and dialog (#469) float over a flat `scrim` at 32% (no blur, no glass). A sheet is `--sheet-bg` (`surface-container-low`) on `--elevation-1` with the
+  `--shape-sheet` corner: full width on the phone with a 32x4 handle in a 48 px grab area (the drag target), at most 90% of the height; on the tablet at most 640 px wide,
+  floating 24 px above the bottom, round on all four corners and with no handle. It rises on the spatial-default spring and leaves with an effects fade and a 40 px slide
+  (`<hp-sheet>` keeps itself drawn until it ends); a drag settles or closes on the spatial-fast spring. A dialog is `--dialog-bg` (`surface-container-high`) on
+  `--elevation-3`, 24 px of padding, 280 to 560 px wide, its title 16 px above its line and its actions 24 px below, right-aligned: text buttons in `primary`, Cancel first
+  (inside a dialog this replaces #468's filled confirm and outlined dismiss). It grows from 90% on the spatial-fast spring (`--dialog-grow-from`) and leaves on the
+  effects-fast fade; under Reduce Motion both only fade. Liquid Glass keeps its own look and its blurred scrim, unchanged.
 - The ApexCharts bars' radii (`src/features/car/history.ts`) are JavaScript, not CSS, and are the same in both designs.
 - A radius that is the shape of the element's box (a circle is `50%`, a square corner `0`, a child that follows its parent
   `inherit`) stays as it is: it is geometry, not design.

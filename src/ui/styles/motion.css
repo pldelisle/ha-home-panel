@@ -17,3 +17,15 @@
     transform: translateY(10px) scale(0.97);
   }
 }
+/* A Material sheet and dialog leave (#469): they fade out, and a sheet slides a little as it goes. */
+@keyframes fadeout {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes shdown {
+  to {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+}

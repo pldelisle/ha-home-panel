@@ -4,7 +4,8 @@
 // Must not: send a service call, know what it confirms, open a sheet or another dialog, or hold a draft (an editor with Cancel and Save owns its own `<dialog>` and takes the look and `stopEscape` from dialogs.ts).
 import {LitElement, html, nothing, type PropertyValues} from 'lit';
 import {AppearanceConsumer} from './controllers/appearance-consumer.ts';
-import {closeOnBackdrop, dialogLook, stopEscape} from './dialogs.ts';
+import {Exit} from './controllers/exit.ts';
+import {dialogLook, stopEscape, tappedBackdrop} from './dialogs.ts';
 import {common} from './styles/index.ts';
 
 export class HpDialog extends LitElement {
@@ -39,7 +40,13 @@ export class HpDialog extends LitElement {
   }
 
   protected override render() {
-    return html`<dialog aria-labelledby="t" @keydown=${stopEscape} @click=${closeOnBackdrop} @close=${this.onClose}>
+    return html`<dialog
+      aria-labelledby="t"
+      @keydown=${stopEscape}
+      @cancel=${this.onCancel}
+      @click=${this.onBackdrop}
+      @close=${this.onClose}
+    >
       <h4 id="t" tabindex="-1" .autofocus=${true}>${this.heading}</h4>
       ${this.line ? html`<p>${this.line}</p>` : nothing}
       <slot></slot>
@@ -57,19 +64,45 @@ export class HpDialog extends LitElement {
     const dialog = this.renderRoot.querySelector<HTMLDialogElement>('dialog');
     if (!dialog) return;
     if (this.open && !dialog.open) dialog.showModal();
-    else if (!this.open && dialog.open) dialog.close();
+    // its owner closed it (no event to send): it leaves, if it is Material's, and closes unless it was asked for again meanwhile
+    else if (!this.open && dialog.open)
+      void this.exit.run(() => {
+        if (!this.open) dialog.close();
+      });
   }
+
+  // Escape and a tap on the backdrop cancel, as before, but through `finish`, so that the dialog can leave first
+  private readonly onCancel = (e: Event): void => {
+    e.preventDefault();
+    this.finish('dialog-cancel');
+  };
+
+  private readonly onBackdrop = (e: MouseEvent): void => {
+    if (tappedBackdrop(e)) this.finish('dialog-cancel');
+  };
 
   // the browser closed it (Escape, or the backdrop's `close()`): that is a cancel, said once; a close this element asked for already turned `open` false
   private readonly onClose = (): void => {
     if (this.open) this.finish('dialog-cancel');
   };
 
+  // Under Liquid Glass the dialog closes and says so at once. Under Material it says so after its fade, so that an owner who takes the dialog out of its template
+  // on the event does not cut the fade; a button tapped twice, or Escape on top of a tap, finds it leaving and does nothing.
   private finish(event: 'dialog-confirm' | 'dialog-cancel'): void {
-    this.open = false;
-    this.renderRoot.querySelector<HTMLDialogElement>('dialog')?.close();
-    this.dispatchEvent(new CustomEvent(event, {bubbles: true, composed: true}));
+    const dialog = this.renderRoot.querySelector<HTMLDialogElement>('dialog');
+    void this.exit.run(() => {
+      this.open = false;
+      dialog?.close();
+      this.dispatchEvent(new CustomEvent(event, {bubbles: true, composed: true}));
+    });
   }
+
+  // the dialog's own `.leaving` look (dialog.element.css), and the animations it starts
+  private readonly exit = new Exit({
+    animated: () => this.getAttribute('design') === 'material',
+    target: () => this.renderRoot.querySelector<HTMLDialogElement>('dialog'),
+    mark: on => this.renderRoot.querySelector('dialog')?.classList.toggle('leaving', on),
+  });
 }
 
 declare global {

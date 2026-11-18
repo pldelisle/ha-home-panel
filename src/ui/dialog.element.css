@@ -84,6 +84,27 @@ dialog p {
   outline: var(--focus-width) solid var(--focus-color);
   outline-offset: var(--focus-offset);
 }
+/* Material's dialog (ADR 0037, #469): `dialog-bg` (surface-container-high) over a flat 32% scrim, the large corner, 24px of padding and the third elevation; 280 to 560px wide and centred on the
+   phone too. The title sits 16px above the line and the actions 24px below it. A feature's editor (`.dsheet`) takes the colour, the corner, the scrim and the buttons, and keeps the size it sets itself. */
+:host([design='material']) dialog {
+  background: var(--dialog-bg);
+  box-shadow: var(--elevation-3);
+}
+:host([design='material']) dialog:not(.dsheet) {
+  box-sizing: border-box;
+  width: fit-content;
+  min-width: 280px;
+  max-width: min(560px, calc(100vw - 48px));
+  padding: 24px;
+}
+:host([compact][design='material']) dialog:not(.dsheet) {
+  margin: auto;
+}
+:host([design='material']) dialog::backdrop {
+  background: color-mix(in srgb, var(--md-scrim) 32%, transparent);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
 /* Material's type roles: see tokens.css. */
 :host([design='material']) dialog h4 {
   font: var(--type-headline-small);
@@ -93,15 +114,30 @@ dialog p {
   font: var(--type-body-medium);
   letter-spacing: var(--track-body-medium);
 }
-/* Material's buttons (#468): the one confirming action is the filled button (primary) and what dismisses it the outlined one beside it; 40px inside a 48px
-   touch target, pills that tighten under a finger (common.css), the state layer. */
-:host([design='material']) .dbtn {
+/* a confirmation's title sits 16px above its line; an editor's bar and rows set their own */
+:host([design='material']) dialog:not(.dsheet) h4 {
+  margin-bottom: 16px;
+}
+:host([design='material']) dialog:not(.dsheet) p {
+  margin: 0;
+}
+/* the actions: right-aligned, 8px apart and 24px below, Cancel first and the action last, so the action is nearest the thumb */
+:host([design='material']) .btns {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 24px;
+}
+/* A dialog's buttons are text buttons in primary (#469): inside a dialog this replaces the filled confirm and the outlined dismiss #468 drew (`.dbtn` is only ever in a dialog). 40px inside a
+   48px touch target, pills that tighten under a finger (common.css), the state layer in the text's colour. */
+:host([design='material']) .dbtn,
+:host([design='material']) .dbtn.prim {
   position: relative;
   min-height: 40px;
-  padding: 0 24px;
+  padding: 0 12px;
   background: transparent;
-  color: var(--fg2);
-  box-shadow: inset 0 0 0 1px var(--md-outline);
+  color: var(--md-primary);
+  box-shadow: none;
   font: var(--type-label-large);
   letter-spacing: var(--track-label-large);
 }
@@ -110,14 +146,42 @@ dialog p {
   position: absolute;
   inset: -4px 0;
 }
-:host([design='material']) .dbtn.prim {
-  background: var(--md-primary);
-  color: var(--md-on-primary);
-  box-shadow: none;
-}
 :host([design='material']) .dbtn:disabled {
-  background: color-mix(in srgb, var(--fg) 12%, transparent);
+  background: transparent;
   color: color-mix(in srgb, var(--fg) 38%, transparent);
-  box-shadow: none;
   opacity: 1;
+}
+/* It grows from 90% with a fade on the spatial-fast spring and its scrim fades in; it leaves on the effects-fast fade (`.leaving`, set by <hp-dialog>). Under Reduce Motion it only fades. */
+@media (prefers-reduced-motion: no-preference) {
+  :host([design='material']) dialog[open] {
+    animation: dialog-grow var(--motion-press-ms) var(--motion-spring) both;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  :host([design='material']) dialog[open] {
+    animation: dialog-fadein var(--motion-effects-fast-ms) var(--motion-effects) both;
+  }
+}
+:host([design='material']) dialog[open]::backdrop {
+  animation: dialog-fadein var(--motion-fade-ms) var(--motion-fade) both;
+}
+:host([design='material']) dialog.leaving,
+:host([design='material']) dialog.leaving::backdrop {
+  animation: dialog-fadeout var(--motion-effects-fast-ms) var(--motion-effects) both;
+}
+@keyframes dialog-grow {
+  from {
+    opacity: 0;
+    transform: scale(var(--dialog-grow-from));
+  }
+}
+@keyframes dialog-fadein {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes dialog-fadeout {
+  to {
+    opacity: 0;
+  }
 }
