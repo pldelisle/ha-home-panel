@@ -47,7 +47,7 @@ test("the Weather tab's eight tiles are the detail's, with the house's readings,
     'Feels like',
     'Normal',
   ]);
-  await expect(tiles(house).locator('.v')).toHaveText([
+  await expect(tiles(house).locator('.v, .na')).toHaveText([
     '14km/h',
     '71%',
     '101.9kPa',
@@ -68,7 +68,7 @@ test.describe('the bare house', () => {
     house,
   }) => {
     await openWeather(house);
-    await expect(tiles(house).locator('.v')).toHaveText([
+    await expect(tiles(house).locator('.v, .na')).toHaveText([
       '14km/h',
       '71%',
       '101.9kPa',
@@ -102,7 +102,7 @@ test.describe('in French', () => {
     );
     await expect(detail(house).locator('.wnow')).toContainText('Généralement ensoleillé');
     await expect(tiles(house).locator('.k').first()).toHaveText('Vent');
-    await expect(tiles(house).locator('.v').nth(2)).toHaveText('101,9kPa');
+    await expect(tiles(house).locator('.v, .na').nth(2)).toHaveText('101,9kPa');
   });
 });
 
