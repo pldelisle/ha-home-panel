@@ -504,6 +504,10 @@
       "key": "car.sessions.none"
     },
     {
+      "key": "car.sessions.noneMonth",
+      "written": "Aucune session de recharge au cours des 30 derniers jours."
+    },
+    {
       "key": "car.sessions.sessions"
     },
     {

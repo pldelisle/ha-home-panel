@@ -928,6 +928,7 @@ export const en = {
   'car.sessions.summary':
     '{n, plural, one {# charging session} other {# charging sessions}} on the Wallbox since {date}{stop} Cost is estimated at the {cents}¢/kWh set in the Wallbox app.',
   'car.sessions.none': 'No charging sessions in the last year.',
+  'car.sessions.noneMonth': 'No charging sessions in the last 30 days.',
   'car.sessions.sessions': 'Sessions',
   'car.sessions.average': 'Average',
   'car.sessions.perSession': 'per session',
