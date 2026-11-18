@@ -554,3 +554,8 @@
 .app[data-design='material'] {
   --nav-rail-w: 96px;
 }
+/* The Liquid Glass tablet's sidebar (#491): open, and collapsed to a strip of icons (the page's first column is the one in use, tabs.css). */
+.app {
+  --sidebar-w: 280px;
+  --sidebar-w-collapsed: 72px;
+}

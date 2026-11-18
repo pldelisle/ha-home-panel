@@ -36,6 +36,15 @@
   justify-content: space-evenly;
   gap: 0;
 }
+/* the tablist inside the rail takes no box of its own: the rail lays the tabs out as it always did (the Liquid Glass sidebar below gives it one) */
+.rtabs {
+  display: contents;
+}
+/* the sidebar's toggle and Categories heading: only the Liquid Glass tablet shows them */
+.rside,
+.rhead {
+  display: none;
+}
 .rtab {
   border: 0;
   background: transparent;
@@ -425,5 +434,122 @@
   .app.tabsv:not(.cp)[data-design='material'] .note,
   .app.tabsv:not(.cp)[data-design='material'] .panes {
     grid-column: 1;
+  }
+}
+/* The Liquid Glass sidebar (#491, ADR 0038): on the tablet the rail is an iPad sidebar, as Apple Home has. A glass panel (glass.css gives it its fill and
+   its blur, as it gave the rail) with a toggle at the top and one 48 px row per section, the icon then the label: Home and Automations, then the
+   Categories heading and the rest. It starts collapsed to a strip of icons (`--sidebar-w-collapsed`, the labels read by assistive technology and the
+   hover title only) and `.sbo` opens it to `--sidebar-w`; the page's first column follows, so the content takes the width the strip frees. The icon
+   keeps its x in both states. The open section's row is its colour (`--tab-c`, the descriptor's, the same as its card's icon on Home) at a low alpha, and its
+   icon takes the colour; its label keeps `--fg`, since none of the nine colours has 4.5:1 as text on its own pill in the light theme. Material's
+   rail and the phone's bar are not drawn by these rules. */
+@media (min-width: 721px) {
+  .app.tabsv:not(.cp):not([data-design='material']) {
+    --nav-rail-w: var(--sidebar-w-collapsed);
+  }
+  .app.tabsv.sbo:not(.cp):not([data-design='material']) {
+    --nav-rail-w: var(--sidebar-w);
+  }
+  .app.tabsv:not(.cp):not([data-design='material']) .rail {
+    justify-content: flex-start;
+    gap: 4px;
+    padding: 12px 10px;
+    overflow: hidden auto;
+    scrollbar-width: none;
+  }
+  .app.tabsv:not(.cp):not([data-design='material']) .rtabs {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .app.tabsv:not(.cp):not([data-design='material']) .rside,
+  .app.tabsv:not(.cp):not([data-design='material']) .rtab {
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 14px;
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 48px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: var(--shape-control);
+    background: transparent;
+    color: var(--fg2);
+    font: 500 16px var(--f-body);
+    text-align: start;
+    cursor: pointer;
+  }
+  .app.tabsv:not(.cp):not([data-design='material']) .rside {
+    margin-bottom: 8px;
+  }
+  .app.tabsv:not(.cp):not([data-design='material']) .rtab.rmore {
+    display: none;
+  }
+  .app.tabsv:not(.cp):not([data-design='material']) .rside:focus-visible,
+  .app.tabsv:not(.cp):not([data-design='material']) .rtab:focus-visible {
+    outline: var(--focus-width) solid var(--focus-color);
+    outline-offset: calc(var(--focus-width) * -1);
+  }
+  .app.tabsv:not(.cp):not([data-design='material']) .rtab span {
+    max-width: none;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: nowrap;
+  }
+  /* collapsed: the label is for assistive technology alone, clipped to nothing */
+  .app.tabsv:not(.sbo):not(.cp):not([data-design='material']) .rtab span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .app.tabsv:not(.cp):not([data-design='material']) .rhead {
+    display: block;
+    padding: 14px 14px 4px;
+    color: var(--fg2);
+    font: 600 12px var(--f-body);
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+  /* collapsed: the heading is a hairline between the two groups */
+  .app.tabsv:not(.sbo):not(.cp):not([data-design='material']) .rhead {
+    height: 1px;
+    margin: 8px 14px;
+    padding: 0;
+    overflow: hidden;
+    background: var(--line);
+    font-size: 0;
+  }
+  /* `.rail` lifts it over glass.css's .gl rule for the chosen row, which has the same weight and comes later */
+  .app.tabsv:not(.cp):not([data-design='material']) .rail .rtab[aria-selected='true'] {
+    background: color-mix(in srgb, var(--tab-c) 16%, transparent);
+    color: var(--fg);
+    font-weight: 600;
+  }
+  .app.tabsv:not(.cp):not([data-design='material']) .rtab[aria-selected='true'] svg {
+    color: var(--tab-c);
+  }
+  @media (hover: hover) {
+    .app.tabsv:not(.cp):not([data-design='material']) .rside:hover,
+    .app.tabsv:not(.cp):not([data-design='material']) .rtab:not([aria-selected='true']):hover {
+      color: var(--fg);
+    }
+  }
+  /* the width opens and closes on the pane's spring-free curve; under Reduce Motion it snaps and the labels fade in */
+  @media (prefers-reduced-motion: no-preference) {
+    .app.tabsv:not(.cp):not([data-design='material']) .wrap {
+      transition: grid-template-columns var(--motion-pane-ms) var(--motion-standard);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .app.tabsv.sbo:not(.cp):not([data-design='material']) .rtab span,
+    .app.tabsv.sbo:not(.cp):not([data-design='material']) .rhead {
+      animation: fadein var(--motion-fade-ms) var(--motion-fade) both;
+    }
   }
 }

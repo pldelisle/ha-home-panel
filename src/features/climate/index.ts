@@ -13,7 +13,7 @@ export const climateFeature: FeatureDescriptor = {
   key: 'climate',
   title: 'climate.title',
   icon: 'therm',
-  color: 'var(--c-wh)',
+  color: 'var(--c-heat)',
   phoneBar: true,
   // a house with no thermostat and no heat pump has nothing to show; until the first states arrive the tab is shown
   available: ({store}) => !store.hass || hasClimate(store.hass.states, store.config),
