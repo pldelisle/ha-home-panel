@@ -21,6 +21,7 @@ src/features/air/
   air-pane.ts              <hp-air-pane>: the detail inline under its header on a phone (the range tabs in it) and alone on a tablet, the detail's sheet over another tab; owns the statistics cache and the range, and draws the reading's history over any tab; air-pane.element.css
   air-detail.ts            <hp-air-detail>: the rooms, the outside block and the outdoor air block with its two charts (the US AQI and the AQHI, each on its own scale); air-detail.element.css
   air-history.ts           <hp-air-history>: a tile's sheet (#382): one reading in the tapped room over Day, Week or Month, with the station's PM2.5 beside PM2.5; air-history.element.css
+  air-area.ts              <hp-air-area>: the Air part of a room view (ADR 0039): the room's purifier cards (`roomDetailsIn`) and a button that opens the detail's sheet over the room; air-area.element.css
   room-card.ts             <hp-air-room>: a purifier's seven tiles, each a button that asks for its history (`air.history`, `{metric, room}`), and its Automagic or Manual control with the debounced stepper; room-card.element.css
   styles.css               the `.aqsum` state line, adopted by the detail
 ```

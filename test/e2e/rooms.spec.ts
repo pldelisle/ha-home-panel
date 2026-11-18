@@ -1,7 +1,7 @@
 // Room views (#506, ADR 0039): the Liquid Glass sidebar lists a row for each room that has a tile, a row opens that room's view, the Lights part
 // switches the room and opens the room's sheet over the view, and a remembered room the house no longer has shows Home. Driven as a person
 // drives it: the rows, the bulb, the tile; what is read back is the screen's roles, text and the calls Home Assistant got.
-import {test, expect, tabletOnly, fontsLoaded, type House} from './fixtures';
+import {test, expect, expectCall, tabletOnly, fontsLoaded, type House} from './fixtures';
 import {AFTERNOON, FULL_CFG} from './houses';
 
 test.beforeEach(({house}) => fontsLoaded(house));
@@ -52,8 +52,9 @@ test.describe('the rooms of the full house', () => {
     await expect(house.root().locator('#rail [data-tab="home"]')).toHaveAttribute('aria-selected', 'false');
     await expect(house.root().locator('#pane-home')).toBeHidden();
     await expect(pane(house).locator('hp-pane-header h2')).toHaveText('Office');
-    await expect(pane(house).locator('.subject')).toHaveCount(1);
-    await expect(pane(house).locator('.subject > h3')).toHaveText('Lights');
+    // the office has a purifier as well as a light
+    await expect(pane(house).locator('.subject')).toHaveCount(2);
+    await expect(pane(house).locator('.subject > h3')).toHaveText(['Lights', 'Air']);
     await expect(pane(house).locator('hp-light-tile .tx b')).toHaveText(['Office']);
     expect(await house.page.evaluate(() => localStorage.getItem('home-panel-tab'))).toBe('room:office');
     // another row, then a section, takes the room's place
@@ -127,5 +128,76 @@ rememberedAttic.describe('a remembered room the house does not have', () => {
     await expect(house.root().locator('#rail [data-tab="home"]')).toHaveAttribute('aria-selected', 'true');
     await expect(pane(house)).toBeHidden();
     await expect(rooms(house).first()).toHaveAttribute('aria-selected', 'false');
+  });
+});
+
+// Air's part of a room view (#508): the room's purifier card, its humidity in the header, and the Air sheets over the view. The test house has one
+// purifier, in the office; the kitchen has lights and no purifier.
+test.describe('the Air part of a room', () => {
+  test.use({houseOpts: {cfg: FULL_CFG, time: AFTERNOON, frozen: true}});
+
+  const air = (house: House) => pane(house).locator('.subject[data-subject="air"]');
+  const card = (house: House) => air(house).locator('hp-air-room');
+  const MANUAL = /^fan\.set_preset_mode \{"entity_id":"fan\.office_purifier","preset_mode":"Manual"\}$/;
+
+  test('a room with a purifier shows its card after the lights, and the humidity in the header; one without has neither', async ({
+    house,
+  }) => {
+    tabletOnly();
+    await openRoom(house, 'office');
+    await expect(pane(house).locator('.subject > h3')).toHaveText(['Lights', 'Air']);
+    await expect(pane(house).locator('hp-pane-header .readings li')).toHaveText(['38 %']);
+    await expect(card(house)).toHaveCount(1);
+    await expect(card(house).locator('.aqhead h3')).toHaveText('Office');
+    await expect(card(house).getByRole('radio', {name: 'Automagic'})).toHaveAttribute('aria-checked', 'true');
+    await expect(card(house).locator('.tile .k')).toHaveText(['PM2.5', 'CO₂', 'VOC', 'CO', 'PM1', 'PM10', 'Humidity']);
+    await openRoom(house, 'kitchen');
+    await expect(air(house)).toHaveCount(0);
+    await expect(pane(house).locator('hp-pane-header .readings li')).toHaveCount(0);
+  });
+
+  test('the mode control sends the same call as on the Air tab and shows the choice at once', async ({house}) => {
+    tabletOnly();
+    await openRoom(house, 'office');
+    await card(house).getByRole('radio', {name: 'Manual'}).click();
+    await expectCall(house, MANUAL);
+    await expect(card(house).getByRole('radio', {name: 'Manual'})).toHaveAttribute('aria-checked', 'true');
+    await expect(card(house).getByRole('button', {name: 'Faster'})).toBeVisible();
+  });
+
+  test('the humidity follows the sensor', async ({house}) => {
+    tabletOnly();
+    await openRoom(house, 'office');
+    await house.setState('sensor.office_purifier_humidity', {state: '45'});
+    await expect(pane(house).locator('hp-pane-header .readings li')).toHaveText(['45 %']);
+  });
+
+  test('a tile opens its history over the room, and the room stays', async ({house}) => {
+    tabletOnly();
+    await openRoom(house, 'office');
+    await card(house).getByRole('button', {name: /^CO₂/}).click();
+    await expect(house.root().locator('hp-air-history hp-sheet')).toHaveAttribute('open', '');
+    await expect(house.root().locator('#rail [data-room="office"]')).toHaveAttribute('aria-selected', 'true');
+    await expect(house.root().locator('#pane-air')).toHaveClass(/behind/);
+    await house.page.keyboard.press('Escape');
+    await expect(house.root().locator('hp-air-history')).toHaveCount(0);
+    await expect(pane(house)).toBeVisible();
+  });
+
+  test('the detail opens as a sheet over the room on a tablet, and the room stays', async ({house}) => {
+    tabletOnly();
+    await openRoom(house, 'office');
+    await air(house).getByRole('button', {name: 'Every room and the outside air'}).click();
+    const sheet = house.root().locator('#pane-air hp-air-pane hp-sheet');
+    await expect(sheet).toHaveAttribute('open', '');
+    await expect(sheet.locator('h2[slot="title"]')).toHaveText('Air quality');
+    await expect(sheet.locator('hp-air-detail hp-air-room')).toHaveCount(1);
+    await expect(house.root().locator('#rail [data-room="office"]')).toHaveAttribute('aria-selected', 'true');
+    await expect(house.root().locator('#rail [data-tab="air"]')).toHaveAttribute('aria-selected', 'false');
+    await expect(house.root().locator('#pane-air')).toHaveClass(/behind/);
+    await house.page.keyboard.press('Escape');
+    await expect(sheet).not.toHaveAttribute('open', '');
+    await expect(pane(house)).toBeVisible();
+    await expect(house.root().locator('#pane-air')).not.toHaveClass(/behind/);
   });
 });

@@ -1,0 +1,14 @@
+/*
+ * <hp-air-area>'s own rules: its place in a room view's section: the purifier's cards in one column, and the button to the detail under them.
+ * The card's rules are <hp-air-room>'s own (room-card.element.css).
+ */
+:host {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+}
+hp-air-room {
+  align-self: stretch;
+}
