@@ -21,6 +21,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  /* the words sit in the middle of the segment, up and down as well as across, so the chosen one's raised box frames them evenly */
+  justify-content: center;
   gap: 1px;
   min-width: 0;
 }
