@@ -20,14 +20,22 @@ const throwing: KeyValueStorage = {
   },
 };
 
-const DEFAULTS = {theme: 'auto', text: 'auto', glass: 'dawn', glassLevel: 50, cards: 'solid', tab: 'home'};
+const DEFAULTS = {
+  theme: 'auto',
+  text: 'auto',
+  glass: 'dawn',
+  glassLevel: 50,
+  cards: 'solid',
+  tab: 'home',
+  design: 'apple',
+};
 
 describe('reading', () => {
   test('a missing key gives the default', () => {
     expect(createSettings(mapStorage().storage).get()).toEqual(DEFAULTS);
   });
 
-  test('stored values are read from the six keys', () => {
+  test('stored values are read from the seven keys', () => {
     const {storage} = mapStorage({
       'home-panel-theme': 'dark',
       'home-panel-text': 'large',
@@ -35,6 +43,7 @@ describe('reading', () => {
       'home-panel-glass-t': '20',
       'home-panel-cards': 'glass',
       'home-panel-tab': 'climate',
+      'home-panel-design': 'material',
     });
     expect(createSettings(storage).get()).toEqual({
       theme: 'dark',
@@ -43,7 +52,15 @@ describe('reading', () => {
       glassLevel: 20,
       cards: 'glass',
       tab: 'climate',
+      design: 'material',
     });
+  });
+
+  test('the design is apple unless the stored value says material', () => {
+    expect(createSettings(mapStorage().storage).get().design).toBe('apple');
+    expect(createSettings(mapStorage({'home-panel-design': 'material'}).storage).get().design).toBe('material');
+    for (const junk of ['', 'Material', 'google', 'apple'])
+      expect(createSettings(mapStorage({'home-panel-design': junk}).storage).get().design).toBe('apple');
   });
 
   test('cards are solid unless the stored value says glass', () => {
@@ -94,6 +111,7 @@ describe('writing', () => {
       glassLevel: 30,
       cards: 'solid',
       tab: 'energy',
+      design: 'apple',
     });
   });
 

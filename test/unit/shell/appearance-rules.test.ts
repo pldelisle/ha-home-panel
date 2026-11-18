@@ -40,6 +40,19 @@ describe('glassWallpaper', () => {
   test('sky shows the sky’s pick', () => {
     expect(glassWallpaper('sky', () => 'ember')).toBe('ember');
   });
+
+  test('under Material there is no glass, whatever the setting holds, and the sky is not asked', () => {
+    const never = () => {
+      throw new Error('the sky was asked');
+    };
+    for (const name of ['none', 'dawn', 'lake', 'sky', 'night'])
+      expect(glassWallpaper(name, never, 'material')).toBeNull();
+  });
+
+  test('under Apple the wallpaper is as before', () => {
+    expect(glassWallpaper('lake', () => 'ember', 'apple')).toBe('lake');
+    expect(glassWallpaper('sky', () => 'ember', 'apple')).toBe('ember');
+  });
 });
 
 describe('glassDensity', () => {

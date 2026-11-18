@@ -236,6 +236,38 @@ test('the glass choices set the wallpaper and the glass class; None takes both a
   await expect(app(house)).not.toHaveAttribute('data-wp', /.*/);
 });
 
+const designRadio = (house: House, name: 'Apple' | 'Material') =>
+  popup(house).getByRole('radiogroup', {name: 'Design'}).getByRole('radio', {name, exact: true});
+
+test('Material turns glass off and recolours the frame from the seed; Apple takes it all back', async ({house}) => {
+  const glass = popup(house).locator('[data-gl]');
+  await expect(app(house)).toHaveAttribute('data-design', 'apple');
+  await expect(app(house)).toHaveClass(/\bgl\b/);
+  expect(await app(house).evaluate(e => (e as HTMLElement).style.getPropertyValue('--bg'))).toBe('');
+  await choose(house, '[data-gl="lake"]');
+
+  await designRadio(house, 'Material').dispatchEvent('click');
+  await expect(app(house)).toHaveAttribute('data-design', 'material');
+  await expect(app(house)).not.toHaveClass(/\bgl\b/);
+  await expect(app(house)).not.toHaveAttribute('data-wp', /.*/);
+  await expect(app(house)).toHaveCSS('--bg', '#ecedf4'); // the seed's surface-container, light
+  await expect(app(house)).toHaveCSS('--card', '#ffffff');
+  await expect(glass).toHaveCount(0);
+  await expect(popup(house).locator('.gtrow, .gcrow')).toHaveCount(0);
+  await expect(popup(house)).toHaveAttribute('design', 'material');
+  expect(await house.page.evaluate(() => localStorage.getItem('home-panel-design'))).toBe('material');
+  expect(await house.page.evaluate(() => localStorage.getItem('home-panel-glass'))).toBe('lake'); // kept for the way back
+
+  await chooseTheme(house, 'Dark');
+  await expect(app(house)).toHaveCSS('--bg', '#111418'); // surface, dark
+
+  await designRadio(house, 'Apple').dispatchEvent('click');
+  await expect(app(house)).toHaveAttribute('data-design', 'apple');
+  await expect(app(house)).toHaveClass(/\bgl\b/);
+  await expect(app(house)).toHaveAttribute('data-wp', 'lake');
+  expect(await app(house).evaluate(e => (e as HTMLElement).getAttribute('style') ?? '')).not.toMatch(/--(bg|card|md-)/);
+});
+
 test('the transparency slider sets how dense the glass is', async ({house}) => {
   await choose(house, '[data-gl="lake"]');
   await popup(house).locator('.gtrange').fill('0');
