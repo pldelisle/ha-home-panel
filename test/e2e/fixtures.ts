@@ -347,6 +347,10 @@ export async function fontsLoaded(house: House) {
     await Promise.all([
       ...weights.map(w => document.fonts.load(`${w} 16px Manrope`)),
       document.fonts.load('400 16px "JetBrains Mono"'),
+      // the Material design is set in Roboto Flex, one variable file for every weight; the Apple design never asks for it
+      ...(localStorage.getItem('home-panel-design') === 'material'
+        ? [document.fonts.load('400 16px "Roboto Flex"')]
+        : []),
     ]);
     await document.fonts.ready;
   }, FONT_WEIGHTS);

@@ -162,5 +162,8 @@ Lights and Weather give the same sunrise and sunset.
 
 - Manrope for every word and figure (400–700), JetBrains Mono for code (the config card's paths). Both ship in `dist/fonts/`
   (`src/fonts.js`); nothing is fetched from Google.
+- Under the Material design (ADR 0037) the panel is set in Roboto Flex, one variable file per subset in `dist/fonts/` too, with
+  Material 3's type roles: `tokens.css` holds them as `--type-<role>` and `--track-<role>` on `.app[data-design='material']`, and an
+  element draws a role in its Material rule (`font: var(--type-title-small)`). Sentence case, and every size times `--tx`, as in Apple.
 - The design system copies no platform vendor's assets: the icons are the panel's own, and no font, control or setting name is
   taken from Apple.

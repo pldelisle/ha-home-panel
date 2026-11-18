@@ -1,14 +1,19 @@
-// The panel's two faces: Manrope for every word and figure (400 to 700) and JetBrains Mono for code (400), in Fontsource's
-// latin and latin-ext subsets, which vite.config.ts copies into dist/fonts/ under their own names (docs/specs/08-bundled-font.md).
+// The panel's three faces: Manrope for every word and figure under the Apple design (400 to 700), Roboto Flex for the Material design (one
+// variable file per subset, weight 100 to 1000) and JetBrains Mono for code (400), in Fontsource's latin and latin-ext subsets, which
+// vite.config.ts copies into dist/fonts/ under their own names (docs/specs/08-bundled-font.md, ADR 0037).
 // Pattern: a static table and the one function that declares it in the document (moved from src/fonts.js with the guest, #277).
 // Must not: be imported through CSS (Vite would hash the names), ask Google for anything, or declare the faces twice.
 
 /**
  * The faces: the family name the stylesheet asks for, the Fontsource package (and file prefix) it comes from, and the
- * weights the stylesheet uses. Automations labels ask for 800, which draws with the 700 file.
+ * weights the stylesheet uses. Automations labels ask for 800, which draws with the 700 file. A `variable` face comes from the
+ * `@fontsource-variable` scope instead, one file per subset that holds the whole weight axis, so its `weights` are the
+ * range `[min, max]` of that axis, declared once (`font-weight: 100 1000`). Roboto Flex is the `wght` file only: the browser draws it at
+ * its default optical size, which is what Fontsource's smallest file keeps (34 kB, against 250 kB with every axis).
  */
-export const FONT_FACES: ReadonlyArray<{family: string; pkg: string; weights: number[]}> = [
+export const FONT_FACES: ReadonlyArray<{family: string; pkg: string; weights: number[]; variable?: true}> = [
   {family: 'Manrope', pkg: 'manrope', weights: [400, 500, 600, 700]},
+  {family: 'Roboto Flex', pkg: 'roboto-flex', weights: [100, 1000], variable: true},
   {family: 'JetBrains Mono', pkg: 'jetbrains-mono', weights: [400]},
 ];
 
@@ -17,7 +22,7 @@ export const FONT_WEIGHTS = FONT_FACES[0].weights;
 
 /**
  * Fontsource's subsets with the unicode-range its CSS gives each (the weight files, 400.css and the rest, and
- * unicode.json; test/unit/fonts.test.mjs fails when an installed package says otherwise; both packages declare the same
+ * unicode.json; test/unit/fonts.test.mjs fails when an installed package says otherwise; all three packages declare the same
  * ranges). latin has ASCII, Latin-1 (every French accent, « », the no-break space), Œ œ and the punctuation; latin-ext
  * has the rest of Latin (Ÿ among them), and a browser fetches its file only when a page shows one of those characters.
  * The order is Fontsource's: where the ranges overlap (three combining marks) the face declared last, latin, is the one used.
@@ -33,24 +38,43 @@ export const FONT_SUBSETS: Array<[string, string]> = [
   ],
 ];
 
-/** Fontsource's name for one file, kept as it is in dist/fonts/ */
-const fontFile = (pkg: string, subset: string, weight: number) => `${pkg}-${subset}-${weight}-normal.woff2`;
+/** Fontsource's name for one file, kept as it is in dist/fonts/: `manrope-latin-400-normal.woff2`, `roboto-flex-latin-wght-normal.woff2` */
+const fontFile = (pkg: string, subset: string, weight: number | 'wght') => `${pkg}-${subset}-${weight}-normal.woff2`;
 
 /**
  * Every file the panel ships, with the face it belongs to, in declaration order.
  */
-const FONT_ENTRIES: Array<{family: string; pkg: string; subset: string; range: string; weight: number; file: string}> =
-  FONT_FACES.flatMap(({family, pkg, weights}) =>
-    FONT_SUBSETS.flatMap(([subset, range]) =>
-      weights.map(weight => ({family, pkg, subset, range, weight, file: fontFile(pkg, subset, weight)})),
-    ),
+const FONT_ENTRIES: Array<{
+  family: string;
+  pkg: string;
+  scope: string;
+  subset: string;
+  range: string;
+  /** what `font-weight` says: one weight, or the axis's range (`100 1000`) */
+  weight: string;
+  file: string;
+}> = FONT_FACES.flatMap(({family, pkg, weights, variable}) => {
+  const scope = variable ? '@fontsource-variable' : '@fontsource';
+  return FONT_SUBSETS.flatMap(([subset, range]) =>
+    variable
+      ? [{family, pkg, scope, subset, range, weight: weights.join(' '), file: fontFile(pkg, subset, 'wght')}]
+      : weights.map(weight => ({
+          family,
+          pkg,
+          scope,
+          subset,
+          range,
+          weight: `${weight}`,
+          file: fontFile(pkg, subset, weight),
+        })),
   );
+});
 
 /** The files in dist/fonts/; vite.config.ts copies exactly these. */
 export const FONT_FILES = FONT_ENTRIES.map(e => e.file);
 
 /** Each file with the Fontsource package it is copied from: `[package, file]`. */
-export const FONT_SOURCES = FONT_ENTRIES.map((e): [string, string] => [`@fontsource/${e.pkg}`, e.file]);
+export const FONT_SOURCES = FONT_ENTRIES.map((e): [string, string] => [`${e.scope}/${e.pkg}`, e.file]);
 
 // dist/fonts/, beside the module Home Assistant loaded: /local/home-panel/home-panel.js?v=2.11.1 gives
 // /local/home-panel/fonts/, without the query (the names are stable, so a cached font outlives an update). The module's

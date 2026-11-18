@@ -48,8 +48,8 @@
       "groupName": "Mermaid"
     },
     {
-      "description": "@fontsource/manrope and @fontsource/jetbrains-mono are the fonts the panel ships in dist/fonts/ (spec 08), and every screenshot baseline draws their glyphs: a release that changes the woff2 files re-records all of them (about 25 MB, as for Playwright), so it comes alone and monthly, never in the weekly group. Its visual job fails until a person re-records the baselines on its branch (npm run test:visual:update), runs npm run licenses and adds a changeset; Renovate does none of these. A file Fontsource renames or a unicode range it moves fails test/unit/fonts.test.mjs",
-      "matchPackageNames": ["@fontsource/manrope", "@fontsource/jetbrains-mono"],
+      "description": "@fontsource/manrope, @fontsource-variable/roboto-flex and @fontsource/jetbrains-mono are the fonts the panel ships in dist/fonts/ (spec 08), and every screenshot baseline draws their glyphs: a release that changes the woff2 files re-records all of them (about 25 MB, as for Playwright), so it comes alone and monthly, never in the weekly group. Its visual job fails until a person re-records the baselines on its branch (npm run test:visual:update), runs npm run licenses and adds a changeset; Renovate does none of these. A file Fontsource renames or a unicode range it moves fails test/unit/fonts.test.mjs",
+      "matchPackageNames": ["@fontsource/manrope", "@fontsource-variable/roboto-flex", "@fontsource/jetbrains-mono"],
       "groupName": "Fonts",
       "schedule": ["before 6am on the first day of the month"]
     },

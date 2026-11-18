@@ -10,7 +10,7 @@ import {fileURLToPath} from 'node:url';
 import {execFileSync} from 'node:child_process';
 import {brotliDecompressSync, gunzipSync} from 'node:zlib';
 import {createRequire} from 'node:module';
-import {FONT_FILES} from '../../src/ui/fonts.ts';
+import {FONT_FILES, FONT_SOURCES} from '../../src/ui/fonts.ts';
 import {GOOGLE_FONT_HOSTS} from '../google-font-hosts.mjs';
 import {bannedHits, scannedFiles} from '../personal-data.mjs';
 
@@ -65,7 +65,7 @@ beforeAll(() => {
 test('dist/ holds the bundle, its source map, the lazy chunks, a .br and a .gz beside each script, the fonts and the licence list, and nothing else', () => {
   // no copied library file (there is no vendor/), no assets/ folder: the stylesheets are imported as minified text
   // (`?inline`)
-  // the fonts are the eight files src/ui/fonts.ts names (fonts.test.mjs pins that list to Fontsource's eight names)
+  // the fonts are the files src/ui/fonts.ts names (fonts.test.mjs pins that list to Fontsource's names)
   // every script (the entry and each chunk) has a .br and a .gz beside it (vite.config.ts, precompress) and no map has one
   const scripts = ['home-panel.js', ...chunks];
   const rest = distFiles.filter(
@@ -122,16 +122,14 @@ test("the maps of the chunks and of the entry name the libraries' files but leav
   }
 });
 
-test('dist/fonts/ holds the Manrope and JetBrains Mono files as Fontsource ships them, and nothing names Google', () => {
+test('dist/fonts/ holds the Manrope, Roboto Flex and JetBrains Mono files as Fontsource ships them, and nothing names Google', () => {
   // under Fontsource's names (src/ui/fonts.ts builds the URLs from them), byte for byte the installed package's files
   const requireFontsource = createRequire(import.meta.url);
   for (const f of distFiles.filter(f => f.startsWith('fonts/')))
     expect(
       readFileSync(join(DIST, f)).equals(
         readFileSync(
-          requireFontsource.resolve(
-            `@fontsource/${basename(f).startsWith('jetbrains-mono-') ? 'jetbrains-mono' : 'manrope'}/files/${basename(f)}`,
-          ),
+          requireFontsource.resolve(`${FONT_SOURCES.find(([, file]) => file === basename(f))[0]}/files/${basename(f)}`),
         ),
       ),
       f,

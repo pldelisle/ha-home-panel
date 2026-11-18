@@ -254,6 +254,47 @@
   font-size: calc(14px * var(--tx));
   line-height: 1.4;
 }
+/* The Material design's type (ADR 0037, #462): Roboto Flex, shipped in dist/fonts/ (src/ui/fonts.ts), and Material 3's fifteen type roles from
+   the HA Home Panel Material design system's tokens.json. A role is two custom properties: `--type-<role>`, a `font` shorthand (weight, size
+   and line height both times `--tx`, family) and `--track-<role>`, its letter spacing, which a `font` shorthand cannot hold. An element draws
+   a role in its Material rule: `font: var(--type-title-small); letter-spacing: var(--track-title-small);` (a figure adds
+   `font-variant-numeric: tabular-nums`, which `font` resets). The Apple design sets none of them and keeps its own sizes. `font-optical-sizing`
+   stays on its default (auto), and `text-transform` is never uppercase: Material sets its labels in sentence case. */
+.app[data-design='material'] {
+  --f-num: 'Roboto Flex', Roboto, ui-sans-serif, system-ui, sans-serif;
+  --f-body: 'Roboto Flex', Roboto, ui-sans-serif, system-ui, sans-serif;
+  --num-w: 400;
+  --type-display-large: 400 calc(57px * var(--tx)) / calc(64px * var(--tx)) var(--f-num);
+  --track-display-large: -0.25px;
+  --type-display-medium: 400 calc(45px * var(--tx)) / calc(52px * var(--tx)) var(--f-num);
+  --track-display-medium: 0px;
+  --type-display-small: 400 calc(36px * var(--tx)) / calc(44px * var(--tx)) var(--f-num);
+  --track-display-small: 0px;
+  --type-headline-large: 400 calc(32px * var(--tx)) / calc(40px * var(--tx)) var(--f-num);
+  --track-headline-large: 0px;
+  --type-headline-medium: 400 calc(28px * var(--tx)) / calc(36px * var(--tx)) var(--f-num);
+  --track-headline-medium: 0px;
+  --type-headline-small: 400 calc(24px * var(--tx)) / calc(32px * var(--tx)) var(--f-num);
+  --track-headline-small: 0px;
+  --type-title-large: 400 calc(22px * var(--tx)) / calc(28px * var(--tx)) var(--f-num);
+  --track-title-large: 0px;
+  --type-title-medium: 500 calc(16px * var(--tx)) / calc(24px * var(--tx)) var(--f-num);
+  --track-title-medium: 0.15px;
+  --type-title-small: 500 calc(14px * var(--tx)) / calc(20px * var(--tx)) var(--f-num);
+  --track-title-small: 0.1px;
+  --type-body-large: 400 calc(16px * var(--tx)) / calc(24px * var(--tx)) var(--f-body);
+  --track-body-large: 0.5px;
+  --type-body-medium: 400 calc(14px * var(--tx)) / calc(20px * var(--tx)) var(--f-body);
+  --track-body-medium: 0.25px;
+  --type-body-small: 400 calc(12px * var(--tx)) / calc(16px * var(--tx)) var(--f-body);
+  --track-body-small: 0.4px;
+  --type-label-large: 500 calc(14px * var(--tx)) / calc(20px * var(--tx)) var(--f-body);
+  --track-label-large: 0.1px;
+  --type-label-medium: 500 calc(12px * var(--tx)) / calc(16px * var(--tx)) var(--f-body);
+  --track-label-medium: 0.5px;
+  --type-label-small: 500 calc(11px * var(--tx)) / calc(16px * var(--tx)) var(--f-body);
+  --track-label-small: 0.5px;
+}
 .app {
   --house-door: #a98b73;
 }

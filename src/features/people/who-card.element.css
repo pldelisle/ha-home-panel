@@ -20,3 +20,8 @@
   color: var(--fg2);
   margin: 6px 0 0;
 }
+/* Material's type roles (ADR 0037, #462): the role each style draws in under the Material design (tokens.css holds the roles; the Apple design keeps the sizes above). */
+:host([design='material']) .hwho {
+  font: var(--type-title-small);
+  letter-spacing: var(--track-title-small);
+}
