@@ -29,12 +29,21 @@
   color: var(--fg);
   box-shadow: var(--shadow);
 }
+/* Liquid Glass: the chosen range is the raised thumb, semibold, the others medium */
+.app:not([data-design='material']) .tab {
+  font-weight: 500;
+}
+.app:not([data-design='material']) .tab[aria-selected='true'] {
+  background: var(--seg-thumb);
+  box-shadow: var(--seg-thumb-edge);
+  font-weight: 600;
+}
 .app.gl .tabs {
   background: var(--g-tile);
   box-shadow: var(--g-edge-s);
 }
 .app.gl .tab[aria-selected='true'] {
-  background: var(--g-sel);
+  background: var(--seg-thumb);
 }
 @media (prefers-reduced-transparency: reduce) {
   .app.gl .tabs {

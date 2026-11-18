@@ -73,6 +73,10 @@
      anything a tap acts on inside a card: raised above the well, so it never reads as one. Glass gives both their glass. */
   --ctl-bg: var(--card);
   --ctl-edge: var(--shadow);
+  /* the chosen segment of a segmented control or the range tabs: the raised thumb on the well, as iOS draws it; lighter than the track in
+     both themes (in dark the card is darker than the well, so the thumb has its own colour), with a shadow that reads at a glance */
+  --seg-thumb: var(--card);
+  --seg-thumb-edge: 0 0 0 0.5px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.14), 0 3px 8px -2px rgba(0, 0, 0, 0.1);
   /* a light that is off, as Apple Home draws it: a dimmed grey tile under the bright ones that are on; its line one step darker so it reads on the grey */
   --tile-off: #e2dfda;
   --tile-off-sub: #5e5b57;
@@ -232,6 +236,8 @@
   --bg-glow: #1d1c19;
   --card: #2f2d2a;
   --card2: #383532;
+  --seg-thumb: #57534e;
+  --seg-thumb-edge: inset 0 0 0 0.5px rgba(255, 255, 255, 0.1), 0 2px 6px rgba(0, 0, 0, 0.45);
   --line: #3a3734;
   --fg: #e5e3dd;
   --fg2: #a9a6a0;

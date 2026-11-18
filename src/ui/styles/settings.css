@@ -225,9 +225,27 @@ button.cct:focus-visible {
   color: var(--fg2);
   padding: 2px 4px 0;
 }
-.app.gl .cct {
+/* Under Liquid Glass a tile is a card, as the Home cards are (the card fill and edge; a well's fill is for what sits inside one):
+   so its controls take the well's fill, as a card's controls do. Material keeps its own surfaces (the scheme's well and control). */
+.app:not([data-design='material']) .cct {
+  background: var(--card);
+  box-shadow: var(--m-edge);
+}
+.app:not([data-design='material']) .cct .ccic,
+.app:not([data-design='material']) .cct .seg,
+.app:not([data-design='material']) .cct hp-seg::part(group) {
+  background: var(--card2);
+}
+.app.gl:not([data-design='material']) .cct {
+  background: var(--g-card);
+  -webkit-backdrop-filter: var(--m-bd);
+  backdrop-filter: var(--m-bd);
+  box-shadow: var(--m-edge);
+}
+.app.gl:not([data-design='material']) .cct .ccic,
+.app.gl:not([data-design='material']) .cct .seg,
+.app.gl:not([data-design='material']) .cct hp-seg::part(group) {
   background: var(--g-tile);
-  box-shadow: var(--g-edge-s);
 }
 /* Transparency slider in the settings popup (v1.18.2): scales every glass fill; hidden when Glass is None */
 .gtrow {

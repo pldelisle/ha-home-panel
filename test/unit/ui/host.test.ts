@@ -35,6 +35,8 @@ describe('forShadow', () => {
   test("reads the frame's `data-design` as the host's `design` attribute, quoted or not, and only that attribute", () => {
     expect(forShadow(".app[data-design='material'] .x { y: 1 }")).toBe(":host([design='material']) .x { y: 1 }");
     expect(forShadow('.app.cp[data-design=material] .x{y:1}')).toBe(':host([compact][design=material]) .x{y:1}');
+    // a rule for every design but one: the attribute is renamed inside :not() too, or the rule would match every element
+    expect(forShadow(".app:not([data-design='material']) .x{y:1}")).toBe(":host(:not([design='material'])) .x{y:1}");
     expect(forShadow(".app[data-theme='dark'] .x { y: 1 }")).toBe(":host([data-theme='dark']) .x { y: 1 }");
   });
 
