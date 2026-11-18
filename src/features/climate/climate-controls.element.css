@@ -118,6 +118,18 @@ hp-seg::part(label) {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+/* Material: the button group stays one row on a narrow window (its outer ends are the first and last buttons); the words give way with an ellipsis, not a scroll
+   that would clip the focus ring and the state layer */
+@media (max-width: 720px) {
+  :host([design='material']) hp-seg::part(group) {
+    grid-auto-flow: column;
+    grid-template-columns: none;
+  }
+  :host([design='material']) hp-seg::part(label) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
 .chint {
   font-size: calc(12px * var(--tx));
   color: var(--fg2);

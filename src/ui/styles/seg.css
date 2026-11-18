@@ -118,7 +118,7 @@
   color: inherit;
 }
 .app[data-design='material'] .seg button small {
-  font: var(--type-label-medium);
-  letter-spacing: var(--track-label-medium);
+  font: var(--type-body-small);
+  letter-spacing: var(--track-body-small);
   opacity: 0.85;
 }
