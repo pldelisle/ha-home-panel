@@ -79,7 +79,8 @@
   outline-offset: -2px;
 }
 /* departures are off: the rows are dimmed and do not answer */
-.lrow[aria-disabled='true'] {
+.lrow[aria-disabled='true'],
+.pick:has(:disabled) {
   opacity: 0.4;
 }
 .dtime:disabled,

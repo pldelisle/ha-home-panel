@@ -109,9 +109,9 @@ export class CarDeparture extends LitElement {
                   this.ask(toggleDeparture(view.car, e.detail.checked), e.detail.checked)}
               ></hp-switch>
             </div>
-            <label class="lrow pick" aria-disabled=${editor.live ? 'false' : 'true'}>
+            <label class="lrow pick">
               <span class="lbl">${editor.time.label}</span>
-              <span class="shown">${editor.time.shown}</span>
+              <span class="shown" aria-hidden="true">${editor.time.shown}</span>
               <input
                 class="dtime"
                 type="time"
@@ -122,9 +122,9 @@ export class CarDeparture extends LitElement {
                 @change=${(e: Event) => this.edit(draft => ({...draft, time: (e.target as HTMLInputElement).value}))}
               />
             </label>
-            <label class="lrow pick" aria-disabled=${editor.live ? 'false' : 'true'}>
+            <label class="lrow pick">
               <span class="lbl">${editor.cabin.label}</span>
-              <span class="shown">${editor.cabin.shown}</span>
+              <span class="shown" aria-hidden="true">${editor.cabin.shown}</span>
               <select
                 class="cabin"
                 ?disabled=${!editor.live}

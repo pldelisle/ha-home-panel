@@ -239,8 +239,11 @@ describe('the departure row and its editor', () => {
     const view = departureControls(inputsOf(none), saved, depsFor(none))!;
     expect(view.editor.departure).toMatchObject({on: false, disabled: true});
     expect(view.row.line).toBe('Weekdays at 8:30 am · Off');
-    // with the switch off the rows below are not live (the sheet dims them), and the time still reads in the house's format
-    expect(view.editor).toMatchObject({live: false, time: {shown: '8:30 am'}});
+    // a car with no switch has none that is off: its rows stay live, and the time reads in the house's format
+    expect(view.editor).toMatchObject({live: true, time: {shown: '8:30 am'}});
+    // with the switch there and off the rows below are not live (the sheet dims them)
+    const off = carHouse({[id('switch', 'departuretimes')]: car('switch', 'departuretimes', 'off')});
+    expect(departureControls(inputsOf(off), saved, depsFor(off))!.editor.live).toBe(false);
     expect(departureControls(inputsOf(houseOf([], [])), saved, depsFor(houseOf([], [])))).toBeNull();
   });
 

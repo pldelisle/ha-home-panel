@@ -263,7 +263,7 @@ export interface DepartureEditorView {
   /** Whether Save can be pressed; `reason` says what is missing while it cannot. */
   canSave: boolean;
   reason: string;
-  /** Whether the rows below the switch answer a tap: they are off while departures are off (Ford keeps no schedule then). */
+  /** Whether the rows below the switch answer a tap: not while the car's switch is there and off (Ford keeps no schedule then); a car with no switch has none that is off. */
   live: boolean;
   /** `value` is the input's `HH:MM`; `shown` is the same time in the house's format (`8:30 am`), what the row reads. */
   time: {label: string; value: string; shown: string};
@@ -320,7 +320,7 @@ export function departureControls(
       save: t('car.departure.save'),
       canSave: problem === null,
       reason: problem === null ? '' : t(problem),
-      live: on,
+      live: on || !car.departureAvailable,
       time: {label: t('car.departure.time'), value: draft.time, shown: clockWords(draft.time, fmt)},
       cabin: {
         label: t('car.departure.cabin'),
