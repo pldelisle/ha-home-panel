@@ -21,7 +21,7 @@ async function expectLibraryStyles(house: House) {
     0,
   );
   await expect(house.root().locator('#apexcss')).toHaveCount(0);
-  const tooltip = house.root().locator('#pane-energy .apexcharts-tooltip').first();
+  const tooltip = house.root().locator('#pane-climate .apexcharts-tooltip').first();
   await expect(tooltip).toBeAttached();
   await expect.poll(() => tooltip.evaluate(e => getComputedStyle(e).opacity), 'the hidden tooltip').toBe('0');
 }
@@ -29,34 +29,35 @@ async function expectLibraryStyles(house: House) {
 test.describe('lazy chunks', () => {
   test.use({houseOpts: {cfg: FULL_CFG, time: AFTERNOON}});
 
-  test('the charts library is fetched when the Energy tab opens, not on Home', async ({house}) => {
+  // Climate is the first tab that draws a chart as it opens (Energy opens on Now, the live flow alone)
+  test('the charts library is fetched when the Climate tab opens, not on Home', async ({house}) => {
     // four minutes pass on Home (the idle screen comes at five): a timer that fetched the library later would fire
     await house.clock.runFor(4 * 60_000);
     expect(house.chunkRequests, 'chunks asked for on the Home tab').toEqual([]);
 
-    await house.tab('energy');
-    await expect.poll(() => house.chunksWith(APEX), 'chunks holding ApexCharts on the Energy tab').toHaveLength(1);
+    await house.tab('climate');
+    await expect.poll(() => house.chunksWith(APEX), 'chunks holding ApexCharts on the Climate tab').toHaveLength(1);
     const [apex] = house.chunksWith(APEX);
     // the chart is drawn, and styled by the stylesheet ApexCharts writes into the shadow root itself: the panel adds none
-    await expect(house.root().locator('#pane-energy .apexcharts-canvas').first()).toBeVisible();
+    await expect(house.root().locator('#pane-climate .apexcharts-canvas').first()).toBeVisible();
     await expectLibraryStyles(house);
 
     // the second tab with charts reuses it: no further request for the library
-    await house.tab('climate');
-    await expect(house.root().locator('#pane-climate .apexcharts-canvas').first()).toBeVisible();
+    await house.tab('weather');
+    await expect(house.root().locator('hp-weather-detail hp-chart .apexcharts-canvas').first()).toBeVisible();
     await expect.poll(() => house.chunksWith(APEX)).toEqual([apex]);
     expect(house.chunkRequests).toEqual([apex]);
   });
 
   test('the charts are styled by the library after the panel is rebuilt', async ({house}) => {
-    await house.tab('energy');
-    await expect(house.root().locator('#pane-energy .apexcharts-canvas').first()).toBeVisible();
+    await house.tab('climate');
+    await expect(house.root().locator('#pane-climate .apexcharts-canvas').first()).toBeVisible();
     await expectLibraryStyles(house);
     // a profile in French makes Home Assistant hand the panel a new hass; the panel redraws itself, shadow root included
     await house.setLanguage('fr');
     await expect(house.root().locator('#app')).toHaveAttribute('lang', 'fr-CA');
-    await house.tab('energy');
-    await expect(house.root().locator('#pane-energy .apexcharts-canvas').first()).toBeVisible();
+    await house.tab('climate');
+    await expect(house.root().locator('#pane-climate .apexcharts-canvas').first()).toBeVisible();
     await expectLibraryStyles(house);
   });
 
@@ -71,7 +72,7 @@ test.describe('lazy chunks', () => {
 
   test('when the chunk cannot be fetched the panel says so, and nothing else breaks', async ({house}) => {
     await house.page.route(CHUNK_URL, r => r.abort());
-    await house.tab('energy');
+    await house.tab('climate');
     await expect(house.root().locator('#toast')).toContainText('Charts library failed to load');
     expect(house.chunksWith(APEX)).toEqual([]);
     await house.tab('home');
