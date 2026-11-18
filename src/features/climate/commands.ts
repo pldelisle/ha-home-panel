@@ -75,21 +75,44 @@ export const setAllRooms = (ids: readonly string[], value: number, fmt: DegreeFo
       : {key: 'climate.allRoomsSet', values: {n: temperatureFigure(fmt, value)}},
 });
 
-/** The heat pump's four word settings, which differ only in names: the service and its field, the overlay key, and the toast's catalog key and value name. */
+/**
+ * The heat pump's word settings, which differ only in names: the service and its field, the overlay key, and the toast's catalog key and value name.
+ * The louvers are one setting when the unit has one list of positions, and two, up and down and side to side, when it lists the side-to-side ones apart.
+ */
 const HP_SETTINGS = {
-  mode: {service: 'set_hvac_mode', field: 'hvac_mode', hold: K.hp.mode, done: 'climate.hpMode'},
-  fan: {service: 'set_fan_mode', field: 'fan_mode', hold: K.hp.fan, done: 'climate.hpFan'},
-  preset: {service: 'set_preset_mode', field: 'preset_mode', hold: K.hp.preset, done: 'climate.hpPreset'},
-  swing: {service: 'set_swing_mode', field: 'swing_mode', hold: K.hp.swing, done: 'climate.hpSwing'},
+  mode: {service: 'set_hvac_mode', field: 'hvac_mode', hold: K.hp.mode, done: 'climate.hpMode', name: 'mode'},
+  fan: {service: 'set_fan_mode', field: 'fan_mode', hold: K.hp.fan, done: 'climate.hpFan', name: 'fan'},
+  preset: {
+    service: 'set_preset_mode',
+    field: 'preset_mode',
+    hold: K.hp.preset,
+    done: 'climate.hpPreset',
+    name: 'preset',
+  },
+  swing: {service: 'set_swing_mode', field: 'swing_mode', hold: K.hp.swing, done: 'climate.hpSwing', name: 'swing'},
+  swingVertical: {
+    service: 'set_swing_mode',
+    field: 'swing_mode',
+    hold: K.hp.swing,
+    done: 'climate.hpSwingVertical',
+    name: 'swing',
+  },
+  swingHorizontal: {
+    service: 'set_swing_horizontal_mode',
+    field: 'swing_horizontal_mode',
+    hold: K.hp.swingHorizontal,
+    done: 'climate.hpSwingHorizontal',
+    name: 'swing',
+  },
 } as const;
 
 /** Sets one of the heat pump's word settings; `word` is the value as its control says it, the toast says it in lower case. */
 const hpSetting = (setting: keyof typeof HP_SETTINGS, hp: HeatPumpTarget, value: string, word: string): Command => {
-  const {service, field, hold, done} = HP_SETTINGS[setting];
+  const {service, field, hold, done, name} = HP_SETTINGS[setting];
   return {
     ...climate(service, {entity_id: hp.id, [field]: value}),
     holds: [hold(hp.id)],
-    done: {key: done, values: {[setting]: word.toLowerCase()}},
+    done: {key: done, values: {[name]: word.toLowerCase()}},
   };
 };
 
@@ -113,3 +136,11 @@ export const hpPreset = (hp: HeatPumpTarget, preset: string, word: string): Comm
 /** Sets the heat pump's louver position, as its mode. */
 export const hpSwing = (hp: HeatPumpTarget, swing: string, word: string): Command =>
   hpSetting('swing', hp, swing, word);
+
+/** Sets the up-and-down louvers of a unit that sets the side-to-side ones apart: the same call as `hpSwing`, the toast names the direction. */
+export const hpSwingVertical = (hp: HeatPumpTarget, swing: string, word: string): Command =>
+  hpSetting('swingVertical', hp, swing, word);
+
+/** Sets the side-to-side louvers (`climate.set_swing_horizontal_mode`, Home Assistant 2024.12). */
+export const hpSwingHorizontal = (hp: HeatPumpTarget, swing: string, word: string): Command =>
+  hpSetting('swingHorizontal', hp, swing, word);

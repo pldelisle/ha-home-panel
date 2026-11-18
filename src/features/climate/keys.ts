@@ -14,5 +14,6 @@ export const K = {
     fan: overlayKey('hp-fan'),
     preset: overlayKey('hp-preset'),
     swing: overlayKey('hp-swing'),
+    swingHorizontal: overlayKey('hp-swing-h'),
   },
 } as const;

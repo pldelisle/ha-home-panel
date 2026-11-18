@@ -758,6 +758,8 @@ export const en = {
   'climate.swing.off': 'Fixed',
   'climate.swing.verticalAt': 'Fixed, vertical position {n}',
   'climate.swing.horizontalAt': 'Fixed, horizontal position {n}',
+  'climate.swing.swing': 'Swing',
+  'climate.swing.positionAt': 'Position {n}',
   'climate.homeClimate': 'Home climate',
   'climate.rooms': 'Rooms',
   'climate.close': 'Close',
@@ -786,6 +788,10 @@ export const en = {
   'climate.hpModeLabel': 'Heat pump mode',
   'climate.fanSpeed': 'Fan speed',
   'climate.louverPosition': 'Louver position',
+  'climate.louversVertical': 'Vertical',
+  'climate.louversHorizontal': 'Horizontal',
+  'climate.louverVerticalPosition': 'Vertical louver position',
+  'climate.louverHorizontalPosition': 'Horizontal louver position',
   'climate.target': 'Target',
   'climate.lowerTarget': 'Lower target',
   'climate.raiseTarget': 'Raise target',
@@ -816,6 +822,8 @@ export const en = {
   'climate.hpFan': 'Fan: {fan}',
   'climate.hpPreset': 'Preset: {preset}',
   'climate.hpSwing': 'Louvers: {swing}',
+  'climate.hpSwingVertical': 'Vertical louvers: {swing}',
+  'climate.hpSwingHorizontal': 'Horizontal louvers: {swing}',
   // the Car's first words (src/features/car/schedule.ts and src/providers/wallbox.ts): the departure schedule's draft, its two toasts, and the charging switch's;
   // the model's strings follow (#250). The abbreviations of the days are one select, whose `other` says the day as it came
   'car.chargingOn': 'Charging on',
