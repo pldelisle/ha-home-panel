@@ -37,8 +37,8 @@ describe('the test houses', () => {
     expect(all(full())).toStrictEqual([
       ['lights', '4 on', 'Kitchen 59% · Living room 71% · Office 78%'],
       ['climate', '20.6°', 'Inside · 2 rooms heating'],
-      ['car', '64.0%', '280 km · charging · locked'],
-      ['energy', '3.24 kW', 'Now · 12.3 kWh today · rate unknown'],
+      ['car', '64%', '280 km · charging · locked'],
+      ['energy', '3.2 kW', 'Now · 12.3 kWh today · rate unknown'],
       ['water', '50.0°', 'Idle · 0.2 kWh today'],
       ['air', 'Moderate', '1 purifier · Office: PM2.5 20'],
     ]);
@@ -48,8 +48,8 @@ describe('the test houses', () => {
     expect(all(full({}, FULL_CFG, 'fr'))).toStrictEqual([
       ['lights', '4 allumées', 'Bureau 78% · Cuisine 59% · Salon 71%'],
       ['climate', '20,6°', 'Intérieur · 2 pièces chauffent'],
-      ['car', '64,0\u202f%', '280 km · en recharge · verrouillée'],
-      ['energy', '3,24 kW', "Maintenant · 12,3 kWh aujourd'hui · tarif inconnu"],
+      ['car', '64\u202f%', '280 km · en recharge · verrouillée'],
+      ['energy', '3,2 kW', "Maintenant · 12,3 kWh aujourd'hui · tarif inconnu"],
       ['water', '50,0°', "Au repos · 0,2 kWh aujourd'hui"],
       ['air', 'Moyen', '1 purificateur · Bureau : PM2,5 20'],
     ]);

@@ -11,50 +11,56 @@
     {
       "key": "energy.summary",
       "values": {
-        "grid": "2.30",
-        "heat": "1.10",
+        "grid": "2.3 kW",
+        "heat": "1.1 kW",
         "rate": "low rate"
       },
       "fr": {
+        "grid": "2,3 kW",
+        "heat": "1,1 kW",
         "rate": "tarif bas"
       },
-      "was": "Réseau 2,30 kW · chauffage 1,10 kW · Hilo tarif bas"
+      "written": "Réseau 2,3 kW · chauffage 1,1 kW · Hilo tarif bas"
     },
     {
       "key": "energy.summary",
       "values": {
-        "grid": "2.30",
-        "heat": "1.10",
+        "grid": "2.3 kW",
+        "heat": "1.1 kW",
         "rate": "current rate"
       },
       "fr": {
+        "grid": "2,3 kW",
+        "heat": "1,1 kW",
         "rate": "tarif actuel"
       },
-      "written": "Réseau 2,30 kW · chauffage 1,10 kW · Hilo tarif actuel"
+      "written": "Réseau 2,3 kW · chauffage 1,1 kW · Hilo tarif actuel"
     },
     {
       "key": "energy.summary",
       "values": {
-        "grid": "2.30",
-        "heat": "1.10",
+        "grid": "2.3 kW",
+        "heat": "1.1 kW",
         "rate": "rate unknown"
       },
       "fr": {
+        "grid": "2,3 kW",
+        "heat": "1,1 kW",
         "rate": "tarif inconnu"
       },
-      "written": "Réseau 2,30 kW · chauffage 1,10 kW · Hilo tarif inconnu"
+      "written": "Réseau 2,3 kW · chauffage 1,1 kW · Hilo tarif inconnu"
     },
     {
       "key": "energy.summary",
       "values": {
         "grid": "–",
-        "heat": "0.00",
+        "heat": "0 W",
         "rate": "medium rate"
       },
       "fr": {
         "rate": "tarif moyen"
       },
-      "written": "Réseau – kW · chauffage 0,00 kW · Hilo tarif moyen"
+      "written": "Réseau – · chauffage 0 W · Hilo tarif moyen"
     },
     {
       "key": "energy.tier.low",

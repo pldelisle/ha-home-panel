@@ -5,7 +5,15 @@
 // Must not: import the DOM, Lit or the shell, read the clock (the sessions' "today" is the history's), hold text the household reads (a catalog key says it), or build the controls' view (controls.ts does).
 import {capitalise, DASH, DAY_MS, HOUR_MS, joined} from '../../core/figures.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
-import {fixedOr, noonOf, whole, type Formatters} from '../../core/i18n/format.ts';
+import {
+  fixedOr,
+  money as moneyFigure,
+  noonOf,
+  percent as wholePercent,
+  power as powerText,
+  whole,
+  type Formatters,
+} from '../../core/i18n/format.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
 import type {CarInputs, FordMessage, LastPlug} from '../../providers/fordpass.ts';
 import {sum} from '../../providers/power-history.ts';
@@ -265,7 +273,7 @@ const stateWord = (car: CarInputs, t: Translate): string =>
 /** The battery bar and the words under it: the limit as Ford sets it ("Limit 90% · set in FordPass"; the panel cannot change it) and the full scale. */
 function socBar(car: CarInputs, {t, fmt}: CarModelDeps): SocBar {
   const limit = car.limit || null;
-  const charge = fixedOr(fmt, car.soc, 1);
+  const charge = wholePercent(fmt, car.soc);
   const named = limit === null ? '' : fmt.number(limit);
   return {
     fill: car.soc || 0,
@@ -300,7 +308,7 @@ function dailyBars({daily}: CarHistoryData, {t, fmt}: CarModelDeps): DailyBars {
 /** The phone's line: where, the charge and the range, and what the plug is doing; or the missing car. */
 function summaryOf(car: CarInputs, {t, fmt}: CarModelDeps) {
   const range = car.range === null ? '' : `${whole(fmt, car.range)} ${UNIT.km}`;
-  const charge = t('car.percent', {n: fixedOr(fmt, car.soc, 1)});
+  const charge = t('car.percent', {n: wholePercent(fmt, car.soc)});
   return {
     title: car.name || t('car.title'),
     line: joined(whereOf(car, t), joined(charge, range), stateWord(car, t)),
@@ -311,7 +319,7 @@ function summaryOf(car: CarInputs, {t, fmt}: CarModelDeps) {
 function plugFact(car: CarInputs, {t, fmt}: CarModelDeps): Fact {
   if (car.charging)
     return {
-      text: joined(t('car.plug.charging'), car.chargingKw ? `${fmt.fixed(car.chargingKw, 1)} ${UNIT.kw}` : ''),
+      text: joined(t('car.plug.charging'), car.chargingKw ? powerText(fmt, car.chargingKw * 1000) : ''),
       tone: 'ok',
     };
   return {text: t(car.plugged ? 'car.plug.pluggedIn' : 'car.plug.unplugged'), tone: 'plain'};
@@ -324,7 +332,7 @@ function summaryBlockOf(car: CarInputs, deps: CarModelDeps): SummaryBlock {
     picture: car.picture,
     color: car.color,
     drawing: t('car.art.side'),
-    charge: fixedOr(fmt, car.soc, 1),
+    charge: wholePercent(fmt, car.soc),
     range: car.range === null ? '' : t('car.range', {n: whole(fmt, car.range)}),
     soc: socBar(car, deps),
     facts: [plugFact(car, deps), ...factsOf(car, deps)],
@@ -495,7 +503,7 @@ function lastOf(car: CarInputs, history: CarHistoryData | null, deps: CarModelDe
 
 /** A sum of money as the household's language writes it: whole dollars or with cents. */
 const money = ({t, fmt}: CarModelDeps, amount: number, cents: boolean): string =>
-  t('car.money', {amount: cents ? fmt.fixed(amount, 2) : fmt.integer(Math.round(amount))});
+  t('car.money', {amount: moneyFigure(fmt, amount, cents ? 'cents' : 'headline')});
 
 /** The columns' titles of the sessions' table. */
 const sessionColumns = (t: Translate): SessionsBlock['columns'] => ({

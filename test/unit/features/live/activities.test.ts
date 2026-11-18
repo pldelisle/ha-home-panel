@@ -257,7 +257,7 @@ describe('the water heater', () => {
       key: 'wh',
       priority: 3,
       progress: 20 / 50,
-      pill: {label: 'Water heater', value: '49°', extra: '~30 min'},
+      pill: {label: 'Water heater', value: '48.6°', extra: '~30 min'},
       short: {label: 'Water', value: null, extra: '~30 min'},
       ariaLabel: 'Water heater heating, about 30 min left',
     });

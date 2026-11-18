@@ -5,6 +5,10 @@
 // their fraction digits to 2, `clock` placing a time of day on a fixed UTC day, `timeSeconds` and `hourOfDay` following `time` and `hour`, time24 and time24s joining the parts with a colon and Latin digits in every locale (the table asks for `16:07`),
 // and `ago`, the one function that returns no text: it cuts a span into a kind and a count (the legacy rule) and formats only the date, so the words stay in the catalog.
 // Beside the factory, the module functions over an instance: `fixedOr`, `whole`, `degrees`, and the day keys' `utcNoonOf` and `noonOf`.
+// One rule per kind of quantity, which every tab routes its figures through (#417, Apple HIG consistency): `percent` (whole, `64`),
+// `temperature` (a tenth, `20.6°`, for what is measured) and `forecastTemperature` (whole degrees, for highs, lows and normals),
+// `powerParts` and `power` (watts in, two significant figures, `0 W` `850 W` `3.2 kW` `12 kW`) and `money(fmt, n, 'headline' | 'cents')`
+// (whole dollars in a tile, cents in a table); they return the figure and a catalog message adds the `%` or `$`.
 // Must not: read the clock, the DOM or a browser default, or hold a word a person reads.
 import {DAY_MS, DASH, HOUR_MS, MINUTE_MS} from '../figures.ts';
 import type {PanelLocaleSpec} from './locale.ts';
@@ -87,6 +91,57 @@ export const degrees = (fmt: Formatters, n: number): string => `${whole(fmt, n)}
 /** `fmt.fixed` of a reading, or the dash when there is none (Energy's six figures; Weather's `fixed` is the same rule). */
 export const fixedOr = (fmt: Formatters, n: number | null, digits: number): string =>
   n === null ? DASH : fmt.fixed(n, digits);
+
+// One rule per kind of quantity (#417): every tab writes a battery charge, a temperature, a power or a sum of money through these,
+// so the same value never reads two ways. They return the figure; a catalog message adds the words (and the `%` or `$`, which French
+// spaces), except the SI symbols `W` and `kW` and the degree sign, which no language words differently.
+
+/** A battery charge or any percent: a whole figure, `64`, the dash for no reading. The catalog's `car.percent` adds the sign. */
+export const percent = (fmt: Formatters, n: number | null): string => (n === null ? DASH : whole(fmt, n));
+
+const HALF_TENTH = 0.05;
+
+/** A measured temperature (inside, outside, feels like, the tank) to a tenth: `20.6°`, `–°` for no reading. */
+export const temperature = (fmt: Formatters, n: number | null): string =>
+  `${fixedOr(fmt, n !== null && Math.abs(n) < HALF_TENTH ? 0 : n, 1)}°`; // never `-0.0°`: a tenth that rounds to zero is zero
+
+/** A forecast temperature (a high, a low, a normal) in whole degrees: `5°`, `–°` for no reading. */
+export const forecastTemperature = (fmt: Formatters, n: number | null): string =>
+  n === null ? `${DASH}°` : degrees(fmt, n);
+
+/** A power as a figure and its fixed unit: `{n: '3.2', unit: 'kW'}`. */
+export interface PowerParts {
+  n: string;
+  unit: 'W' | 'kW';
+}
+
+const KILO = 1000;
+const TWO_FIGURES = 2;
+const KW_TENTHS_BELOW = 10;
+
+/**
+ * A power in watts to two significant figures with one unit per magnitude: `0 W`, `850 W`, `3.2 kW`, `12 kW`. Under a kilowatt it
+ * is watts (rounded to two figures, so 856 W reads 860 W), from a kilowatt it is kW with a tenth below 10 kW and whole kW above.
+ * The unit is picked after rounding, so 996 W is `1.0 kW`, never `1000 W`.
+ */
+export function powerParts(fmt: Formatters, watts: number): PowerParts {
+  const sign = watts < 0 ? -1 : 1;
+  const rounded = Number(Math.abs(watts).toPrecision(TWO_FIGURES));
+  if (rounded < KILO) return {n: whole(fmt, sign * rounded), unit: 'W'};
+  const kw = rounded / KILO;
+  return {n: kw < KW_TENTHS_BELOW ? fmt.fixed(sign * kw, 1) : whole(fmt, sign * kw), unit: 'kW'};
+}
+
+/** `powerParts` as one text, `3.2 kW`; the dash for no reading. */
+export function power(fmt: Formatters, watts: number | null): string {
+  if (watts === null) return DASH;
+  const {n, unit} = powerParts(fmt, watts);
+  return `${n} ${unit}`;
+}
+
+/** A sum of money, the figure only (the catalog's `car.money` adds the `$`): whole dollars in a headline, cents in a table; the dash for none. */
+export const money = (fmt: Formatters, n: number | null, kind: 'headline' | 'cents'): string =>
+  n === null ? DASH : kind === 'cents' ? fmt.fixed(n, 2) : whole(fmt, n);
 
 /** A `2026-11-07` day key's noon in UTC, in milliseconds: the instant arithmetic on day keys starts from (Climate's week starts on the Monday by it). */
 export const utcNoonOf = (day: string): number => Date.parse(`${day}T12:00:00Z`);

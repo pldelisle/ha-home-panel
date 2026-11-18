@@ -26,7 +26,7 @@ test.describe('the tiles', () => {
       'Water heater',
     ]);
     await house.setState('sensor.fordpass_test_soc', {state: '64'});
-    await expect(tile(house, 'car').locator('.hv')).toHaveText('64.0%');
+    await expect(tile(house, 'car').locator('.hv')).toHaveText('64%');
   });
 
   test('a thermostat change draws the Climate tile again and nothing else in the pane', async ({house}) => {
@@ -154,7 +154,7 @@ test.describe('on a phone', () => {
   test('the Home card is one button named for the weather and where it leads', async ({house}) => {
     await house.tab('home');
     await expect(
-      house.root().locator('#pane-home').getByRole('button', {name: 'Weather: 4°, mainly sunny. Opens the forecast'}),
+      house.root().locator('#pane-home').getByRole('button', {name: 'Weather: 4.2°, mainly sunny. Opens the forecast'}),
     ).toBeVisible();
   });
 
@@ -178,6 +178,6 @@ test.describe('a car that reports after the first load', () => {
     await house.tab('home');
     await expect(tile(house, 'car')).toHaveCount(0);
     await house.setState('sensor.fordpass_test_soc', {state: '50'});
-    await expect(tile(house, 'car').locator('.hv')).toHaveText('50.0%');
+    await expect(tile(house, 'car').locator('.hv')).toHaveText('50%');
   });
 });

@@ -1,7 +1,7 @@
 // glance: the Car tile of the Home pane, the charge with the range, the plug and the locks (spec 24, #267).
 // Pattern: a pure reader over the store (a view model, Meszaros' humble object's other half); the legacy `renderHome`'s rule, deleted in #268.
 // Must not: read the clock, import the DOM, Lit, the shell or another feature, or hold text the household reads (a catalog key says it).
-import {DASH} from '../../core/figures.ts';
+import {percent} from '../../core/i18n/format.ts';
 import {findCar, readCar} from '../../providers/fordpass.ts';
 import type {GlanceStore, GlanceView} from '../../ui/glance.ts';
 import {DETAIL_SHEET} from './sheets.ts';
@@ -16,8 +16,8 @@ export function glance({hass, config, names, t, fmt}: GlanceStore): GlanceView |
     icon: 'car',
     color: 'var(--c-ev)',
     label: t('car.title'),
-    // the catalog's percent, as the layer wrote the legacy tile's in French (`64,0 %`, a narrow no-break space)
-    value: t('car.percent', {n: car.soc === null ? DASH : fmt.fixed(car.soc, 1)}),
+    // the catalog's percent (a narrow no-break space in French) round the whole figure every tab shows
+    value: t('car.percent', {n: percent(fmt, car.soc)}),
     line: [
       car.range === null ? '' : t('car.glance.range', {n: Math.round(car.range)}),
       t(car.charging ? 'car.state.charging' : car.plugged ? 'car.state.pluggedIn' : 'car.state.unplugged'),

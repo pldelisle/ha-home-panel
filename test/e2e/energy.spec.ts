@@ -78,7 +78,7 @@ test.describe('on a phone', () => {
   }) => {
     await openTab(house);
     await expect(pane(house).locator(':scope > hp-pane-header > [slot="sub"]')).toHaveText(
-      'Grid supplying 3.24 kW · room heating 2.40 kW · Hilo rate unknown',
+      'Grid supplying 3.2 kW · room heating 2.4 kW · Hilo rate unknown',
     );
     await expect(pane(house).locator(':scope > hp-range-tabs').getByRole('tab')).toHaveText([
       'Now',
@@ -88,7 +88,7 @@ test.describe('on a phone', () => {
       'Year',
     ]);
     await expect(detail(house)).toBeVisible();
-    await expect(flow(house).locator('text.big').nth(1)).toHaveText('3.24');
+    await expect(flow(house).locator('text.big').nth(1)).toHaveText('3.2 kW');
     await expect(flow(house).locator('text.st', {hasText: /^kW · Home$/})).toHaveText('kW · Home');
     await expect(detail(house).locator('.inner > hp-chart .apexcharts-canvas')).toBeVisible();
     // today has no row in this clock's recorder, so its donut would say so: the week has days
@@ -124,9 +124,9 @@ test.describe('on a phone', () => {
     const gridWidth = () => svg.locator('line').first().getAttribute('stroke-width');
     const before = await gridWidth();
     await house.setState(GRID, {state: '4100'});
-    await expect(flow(house).locator('text.big').nth(1)).toHaveText('4.10');
+    await expect(flow(house).locator('text.big').nth(1)).toHaveText('4.1 kW');
     await house.setState(GRID, {state: '4900'});
-    await expect(flow(house).locator('text.big').nth(1)).toHaveText('4.90');
+    await expect(flow(house).locator('text.big').nth(1)).toHaveText('4.9 kW');
     expect(await gridWidth(), 'the line grows with the power').not.toBe(before);
     expect(
       await flow(house).evaluate(
@@ -161,7 +161,7 @@ test.describe('on a phone', () => {
     await tile.locator('button').click();
     const sheet = pane(house).locator('hp-sheet[open]');
     await expect(sheet.locator('h2')).toHaveText('Water heater');
-    await expect(water(house).locator('.hero .v')).toHaveText('50.0°C');
+    await expect(water(house).locator('.hero .v')).toHaveText('50.0°');
     await expect(water(house).locator('.hero .status')).toHaveText('Idle · 0 W');
     expect(await axisPixels(house), 'the chart axis is 11 px').toBe(11);
     await sheet.locator('.close').click();
@@ -186,7 +186,7 @@ test.describe('on a phone', () => {
     await house.tab('home');
     await house.root().locator('#htiles [data-opens="energy.water"]').click();
     await expect(pane(house).locator('hp-sheet[open] h2')).toHaveText('Water heater');
-    await expect(water(house).locator('.hero .v')).toHaveText('50.0°C');
+    await expect(water(house).locator('.hero .v')).toHaveText('50.0°');
     await expect(house.root().locator('#pane-home')).toBeVisible();
     await house.page.keyboard.press('Escape');
     await expect(water(house)).toHaveCount(0);
@@ -258,7 +258,7 @@ test.describe('on a tablet', () => {
   }) => {
     await house.tab('energy');
     await expect(water(house).locator('.elbl')).toHaveText('Water heater');
-    await expect(water(house).locator('.hero .v')).toHaveText('50.0°C');
+    await expect(water(house).locator('.hero .v')).toHaveText('50.0°');
     await expect(water(house).locator('.hero .status')).toHaveText('Idle · 0 W');
     await expect(water(house).locator('.whleg span')).toHaveText(['Water temperature', 'Heating power']);
     await expect(water(house).locator('.whline')).toContainText('Last 24 hours:');
@@ -592,7 +592,7 @@ test.describe('the detail on a phone', () => {
     const sheet = pane(house).locator('hp-sheet:has(hp-energy-detail)');
     await expect(sheet).toHaveAttribute('open', '');
     await expect(detail(house).locator('.inner > hp-chart .apexcharts-canvas')).toBeVisible();
-    await expect(sheet.locator(':scope > [slot="sub"]')).toContainText('Grid supplying 3.24 kW');
+    await expect(sheet.locator(':scope > [slot="sub"]')).toContainText('Grid supplying 3.2 kW');
     await sheet.locator('hp-range-tabs').getByRole('tab', {name: 'Month'}).click();
     await expect(detail(house).locator('.inner h3').first()).toHaveText('Last 30 days, day by day');
     await expect(house.root().locator('#pane-home')).toBeVisible();

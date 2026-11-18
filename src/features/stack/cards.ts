@@ -6,7 +6,7 @@
 import {capitalise, DASH, DAY_MS, MINUTE_MS} from '../../core/figures.ts';
 import {conditionName} from '../../core/i18n/condition-name.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
-import {whole, type Formatters} from '../../core/i18n/format.ts';
+import {power as powerText, whole, type Formatters} from '../../core/i18n/format.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
 import type {Pollutant} from '../../providers/air-quality.ts';
 import type {Schedule} from '../../providers/fordpass.ts';
@@ -327,7 +327,7 @@ export const reminders: StackRule = {
 /** The grid's draw as the two peak cards say it: watts under a kilowatt, one decimal above. */
 function using({power}: StackInputs, {t, fmt}: StackDeps): string {
   const g = power.grid;
-  const figure = g === null ? DASH : g < 1 ? `${whole(fmt, g * 1000)} W` : `${fmt.fixed(g, 1)} kW`;
+  const figure = g === null ? DASH : powerText(fmt, g * 1000);
   return t('stack.using', {power: figure});
 }
 
@@ -565,7 +565,7 @@ export const chargingOvernight: StackRule = {
     if (!car?.plugged || car.home === false || !inHours(fmt.hourNow(now), NIGHT.from, NIGHT.chargeTo)) return [];
     const p = power.ev;
     const rows = [
-      ...(p !== null && p > CHARGING_SHOWN_KW ? [{label: t('stack.power'), value: `${fmt.fixed(p, 1)} kW`}] : []),
+      ...(p !== null && p > CHARGING_SHOWN_KW ? [{label: t('stack.power'), value: powerText(fmt, p * 1000)}] : []),
       ...(car.range !== null ? [{label: t('stack.range'), value: `${fmt.integer(car.range)} km`}] : []),
       ...(car.limit ? [{label: t('stack.limit'), value: `${fmt.integer(car.limit)}%`}] : []),
     ];

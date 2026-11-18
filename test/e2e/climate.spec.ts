@@ -53,7 +53,7 @@ test.describe('on a tablet', () => {
     await expect(list(house).locator('.citem .sb').first()).toHaveText('2 rooms heating');
     await expect(item(house, 'house')).toHaveAttribute('aria-selected', 'true');
     await expect(detail(house).locator('h3')).toHaveText('Whole house');
-    await expect(detail(house).locator('.t')).toHaveText('20.6°C');
+    await expect(detail(house).locator('.t')).toHaveText('20.6°');
     await expect(detail(house).locator('hp-gauge [role="img"]')).toHaveAccessibleName(
       'Temperature 20.6 degrees on a 14 to 30 degree scale',
     );

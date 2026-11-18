@@ -3,7 +3,13 @@
 // model); the rules are the legacy `liveActs()`'s three blocks (deleted in #256), its thresholds and its order copied and named.
 // Must not: import a feature, read the clock or the states, hold a callable (a button is a flag, the element runs the command), or draw.
 import {MINUTE_MS} from '../../core/figures.ts';
-import type {Formatters} from '../../core/i18n/format.ts';
+import {
+  money,
+  percent as wholePercent,
+  power as powerText,
+  temperature as tenthDegrees,
+  type Formatters,
+} from '../../core/i18n/format.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
 import type {Point} from '../../providers/power-history.ts';
 import {DEFAULT_KWH_PRICE, pauseHold, type Session} from '../../providers/wallbox.ts';
@@ -171,8 +177,8 @@ export function hiloActivity(inputs: LiveInputs, {t, fmt}: ActivityDeps): Activi
   const allowed = challenge.nextEvent?.allowed ?? null;
   const grid = inputs.power.grid;
   const meta = metaLine([
-    inside !== null && [{text: `${fmt.fixed(inside, 1)}°`, strong: true}, {text: ` ${t('live.inside')}`}],
-    grid !== null && [{text: `${t('live.houseUsing')} `}, {text: `${fmt.fixed(grid, 1)} kW`, strong: true}],
+    inside !== null && [{text: tenthDegrees(fmt, inside), strong: true}, {text: ` ${t('live.inside')}`}],
+    grid !== null && [{text: `${t('live.houseUsing')} `}, {text: powerText(fmt, grid * 1000), strong: true}],
     used !== null &&
       !!allowed && [
         {text: fmt.fixed(used, 1), strong: true},
@@ -285,7 +291,7 @@ export function carActivity(
   const power = wallbox.power ?? car.chargePowerKw;
   const eta = chargeEta(inputs, power);
   const left = eta ? fmt.durationShort(eta - now) : '';
-  const percent = soc === null ? '–' : `${Math.round(soc)}`;
+  const percent = wholePercent(fmt, soc);
   const session = currentSession(history?.sessions ?? [], car.plugChangedAt, now);
   const price = wallbox.price ?? DEFAULT_KWH_PRICE;
   const meta = metaLine([
@@ -293,7 +299,7 @@ export function carActivity(
     !!session && [
       {text: `+${fmt.fixed(session.kwh, 1)} kWh`, strong: true},
       {text: ` ${t('live.soFarAbout')} `},
-      {text: t('live.cost', {n: fmt.fixed(session.kwh * price, 2)}), strong: true},
+      {text: t('live.cost', {n: money(fmt, session.kwh * price, 'cents')}), strong: true},
     ],
     car.range !== null && [{text: t('live.range', {n: Math.round(car.range)})}],
   ]);
@@ -321,7 +327,7 @@ export function carActivity(
       kind: 'car',
       name: car.name || t('car.title'),
       state: t(paused ? 'live.paused' : 'live.chargingShort'),
-      right: power !== null && power > POWER_SHOWN_KW ? `${fmt.fixed(power, 1)} kW` : '',
+      right: power !== null && power > POWER_SHOWN_KW ? powerText(fmt, power * 1000) : '',
       big: {
         soc: percent,
         limit: t('live.toLimit', {n: limit}),
@@ -406,7 +412,7 @@ export function waterActivity(
     tint: false,
     pill: {
       label: t('live.waterHeater'),
-      value: temperature === null ? null : `${Math.round(temperature)}°`,
+      value: temperature === null ? null : tenthDegrees(fmt, temperature),
       extra: left || null,
     },
     short: {label: t('live.water'), value: null, extra: left || null},
@@ -415,7 +421,7 @@ export function waterActivity(
     card: {
       kind: 'wh',
       title: t('live.waterHeating'),
-      right: `${fmt.fixed(power, 1)} kW`,
+      right: powerText(fmt, power * 1000),
       spark: sparkline(temps, now, t),
       big: {
         t: temperature === null ? '–' : fmt.fixed(temperature, 1),

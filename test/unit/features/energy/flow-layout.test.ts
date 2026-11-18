@@ -79,7 +79,7 @@ describe('the connectors', () => {
 describe('the nodes and their figures', () => {
   const busy = layout({grid: 3.24, heat: 2.4, waterHeater: 0.85, ev: 7.1, rest: 0});
 
-  test('a power of a kilowatt or more is two decimals over the unit, under it whole watts', () => {
+  test('a power of a kilowatt or more is two significant figures over the unit, under it watts', () => {
     expect(node(busy, 'grid')).toMatchObject({
       cx: 70,
       cy: 160,
@@ -89,12 +89,12 @@ describe('the nodes and their figures', () => {
       color: 'var(--c-grid)',
     });
     expect(node(busy, 'grid').texts).toEqual([
-      {x: 70, y: 158, text: '3.24', anchor: 'middle', kind: 'big', size: 20},
+      {x: 70, y: 158, text: '3.2', anchor: 'middle', kind: 'big', size: 20},
       {x: 70, y: 176, text: 'kW', anchor: 'middle', kind: 'st'},
     ]);
-    expect(node(busy, 'heat').texts[0]).toMatchObject({x: 370, y: 158, text: '2.40', size: 20});
+    expect(node(busy, 'heat').texts[0]).toMatchObject({x: 370, y: 158, text: '2.4', size: 20});
     expect(node(busy, 'ev')).toMatchObject({cx: 220, cy: 276, r: 40, on: true});
-    expect(node(busy, 'ev').texts[0]).toMatchObject({text: '7.10', size: 18});
+    expect(node(busy, 'ev').texts[0]).toMatchObject({text: '7.1', size: 18});
   });
 
   test('the water heater under a kilowatt writes its watts, and its tank temperature under them', () => {
@@ -112,11 +112,11 @@ describe('the nodes and their figures', () => {
     expect(node(idle, 'water').texts).toHaveLength(1);
   });
 
-  test('the home is always lit, its figure the grid’s with two decimals, even under a kilowatt', () => {
+  test('the home is always lit, its figure the grid’s with its unit, even under a kilowatt', () => {
     const home = node(layout({grid: 0.85}), 'home');
     expect(home).toMatchObject({cx: 220, cy: 160, r: 56, strokeWidth: 4, color: 'var(--c-home)', on: true});
     expect(home.texts).toEqual([
-      {x: 220, y: 158, text: '0.85', anchor: 'middle', kind: 'big', size: 28},
+      {x: 220, y: 158, text: '850 W', anchor: 'middle', kind: 'big', size: 24},
       {x: 220, y: 178, text: 'kW · Home', anchor: 'middle', kind: 'st'},
     ]);
   });
@@ -150,7 +150,7 @@ describe('the captions', () => {
       {x: 300, y: 272, text: 'EV charging', anchor: 'start', kind: 'cap'},
       {x: 300, y: 288, text: 'Charging', anchor: 'start', kind: 'st'},
       {x: 120, y: 290, text: 'Rest of home', anchor: 'end', kind: 'st'},
-      {x: 120, y: 306, text: '0.50 kW', anchor: 'end', kind: 'big', size: 15},
+      {x: 120, y: 306, text: '500 W', anchor: 'end', kind: 'big', size: 15},
     ]);
   });
 
@@ -182,7 +182,7 @@ describe('the captions', () => {
 
   test('the screen reader’s sentence says each figure the way the node does', () => {
     expect(layout({grid: 3.24, heat: 2.4, waterHeater: 0.85, ev: 7.1}).label).toBe(
-      'Grid supplies 3.24 to the home; room heating 2.40; water heating 850 W; EV charging 7.10',
+      'Grid supplies 3.2 kW to the home; room heating 2.4 kW; water heating 850 W; EV charging 7.1 kW',
     );
   });
 
@@ -204,11 +204,11 @@ describe('in French', () => {
       'Recharge VÉ',
       'Recharge',
       'Reste de la maison',
-      '0,50 kW',
+      '500 W',
     ]);
-    expect(node(geometry, 'grid').texts[0].text).toBe('3,24');
+    expect(node(geometry, 'grid').texts[0].text).toBe('3,2');
     expect(geometry.label).toBe(
-      'Le réseau fournit 3,24 à la maison; chauffage 2,40; chauffe-eau 850 W; recharge VÉ 7,10',
+      'Le réseau fournit 3,2 kW à la maison; chauffage 2,4 kW; chauffe-eau 850 W; recharge VÉ 7,1 kW',
     );
   });
 });

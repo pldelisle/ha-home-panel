@@ -137,7 +137,7 @@ describe('the Weather descriptor', () => {
         sheetDetail: () => undefined,
         attention: 0,
       }),
-    ).toBe('4° · Mainly sunny');
+    ).toBe('4.2° · Mainly sunny');
     expect(
       weather.summary?.({store: store(), sheetOpen: () => false, sheetDetail: () => undefined, attention: 0}),
     ).toBeNull();
@@ -229,7 +229,7 @@ describe('the Energy descriptor', () => {
   // the More sheet's baselines read the legacy word ("3.24 kW now"), not the pane's sub-line; watts under a kilowatt
   test("says the grid's power now under More, and nothing before the house has been heard", () => {
     const house = fakeHass.fromHouse(full);
-    expect(energyFeature.summary?.(env(null, house))).toBe('3.24 kW now');
+    expect(energyFeature.summary?.(env(null, house))).toBe('3.2 kW now');
     house.states['sensor.house_power'] = {...house.states['sensor.house_power'], state: '850'};
     expect(energyFeature.summary?.(env(null, fakeHass.fromHouse(full, {states: house.states})))).toBe('850 W now');
     delete house.states['sensor.house_power'];

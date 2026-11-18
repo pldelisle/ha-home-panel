@@ -4,7 +4,7 @@
 // panel's own (`renderEnergy`, `renderWater`, `renderHilo`, `renderEnergyTiles` and, in #240, `energySheet` and `sankeyData`, deleted; `energySummary`, deleted in #241); the detail's blocks, the donut and the totals included.
 // Must not: import the DOM, Lit or the shell, read the clock, or hold text the household reads (a catalog key says it).
 import type {MessageKey} from '../../core/i18n/en.ts';
-import {fixedOr, whole, type Formatters} from '../../core/i18n/format.ts';
+import {fixedOr, power as powerText, whole, type Formatters} from '../../core/i18n/format.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
 import type {HiloTier} from '../../providers/hilo.ts';
 import {sum} from '../../providers/power-history.ts';
@@ -90,7 +90,7 @@ const HEATING_PEAK_KWH = 50;
 const EV_DAY_KWH = 5;
 
 /** The unit symbols the tiles write small after a figure; words ("kW · HOME") are catalog keys. */
-const UNIT = {kwh: 'kWh', degrees: '°', celsius: '°C', cents: '¢', centsPerKwh: '¢/kWh', dollars: '$'} as const;
+const UNIT = {kwh: 'kWh', degrees: '°', cents: '¢', centsPerKwh: '¢/kWh', dollars: '$'} as const;
 
 export interface EnergyModelDeps {
   /** The instant the model is read at, in milliseconds: the water heater's 24 hours end here. */
@@ -449,8 +449,8 @@ export function energyModel(
     chargerStatus: inputs.wallbox.status,
   });
   const summary = t('energy.summary', {
-    grid: fixedOr(fmt, power.grid, 2),
-    heat: fmt.fixed(power.heat, 2),
+    grid: powerText(fmt, power.grid === null ? null : power.grid * 1000),
+    heat: powerText(fmt, power.heat * 1000),
     rate: t(tier.short),
   });
   const detail: DetailDeps = {now, t, fmt, names, language, range};
@@ -489,7 +489,7 @@ export function energyModel(
       present: water.present,
       title: t('energy.water.title'),
       name: water.name,
-      temperature: {value: tank, unit: UNIT.celsius},
+      temperature: {value: tank, unit: UNIT.degrees},
       state: {heating, text: heating ? heatingText : t('energy.water.idle')},
       chart: history ? waterChartGeometry(history.wh24, now, {t, fmt}) : null,
       legend: history ? LEGEND.map(({kind, label}) => ({kind, label: t(label)})) : [],

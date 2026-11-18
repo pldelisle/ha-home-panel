@@ -4,7 +4,7 @@
 // Must not: import Lit or the DOM, read state or the clock, or hold a word a person reads (a catalog key says it).
 import {DASH} from '../../core/figures.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
-import type {Formatters} from '../../core/i18n/format.ts';
+import {temperature, type Formatters} from '../../core/i18n/format.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
 import {roomName, type RoomNameDeps} from '../../core/i18n/room-name.ts';
 import type {HeatPumpInputs} from '../../providers/heat-pump.ts';
@@ -59,7 +59,7 @@ export function averageTemperature(rooms: readonly RoomPower[]): number | null {
 export const heatingCount = (rooms: readonly RoomPower[]): number => rooms.filter(room => room.heating).length;
 
 /** A temperature to a tenth with its degree sign, the legacy `f1(v) + '°'`; a room with no reading shows `–°` as it did. The model's dial reads its centre with it. */
-export const tenthDegrees = (fmt: Formatters, v: number | null): string => `${v === null ? DASH : fmt.fixed(v, 1)}°`;
+export const tenthDegrees = temperature;
 
 /** A room's status line, the legacy `climItems()`'s order of questions: unavailable, heating, holding a setpoint above the frost guard, else off. */
 function roomStatus(room: RoomPower, {t, fmt}: ClimateItemsDeps): string {
