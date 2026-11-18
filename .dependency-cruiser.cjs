@@ -1,8 +1,7 @@
 // The layer table of docs/specs/09-architecture-foundations.md as `forbidden` rules: dependencies point inward, toward
-// the core (Martin's Dependency Rule, 2017). One rule per row, each with the reason it exists. The folders of phase 3
-// do not exist yet; their rules name them so they are enforced from the first file. The shell (src/shell/ and
-// src/main.js) is the composition root and has no row of its own: it may import everything, and the rows above and
-// below are what keep every other layer from importing it.
+// the core (Martin's Dependency Rule, 2017). One rule per row, each with the reason it exists. The shell (src/shell/)
+// is the composition root and has no row of its own: it may import everything, and the rows below are what keep every
+// other layer from importing it. The entry, src/main.js, imports the shell and the kit's switch, nothing else.
 const CORE = '^src/core/';
 const PROVIDERS = '^src/providers/';
 const UI = '^src/ui/';
@@ -50,6 +49,14 @@ module.exports = {
         'A feature folder can be moved or deleted on its own only if no other feature imports it. Shared code goes down to the UI kit or the core.',
       from: {path: '^src/features/([^/]+)/'},
       to: {path: FEATURES, pathNot: '^src/features/$1/'},
+    },
+    {
+      name: 'entry-imports-shell-only',
+      severity: 'error',
+      comment:
+        'The entry only defines the custom element: it imports the shell alone, so the shell stays the one place that composes the layers.',
+      from: {path: ENTRY},
+      to: {path: '^src/', pathNot: '^src/shell/'},
     },
     {
       name: 'no-circular',

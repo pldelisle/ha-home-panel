@@ -153,7 +153,10 @@ export const en = {
   'config.unknownKeyHint': '{path}: unknown setting. Did you mean {hint}?',
   'config.unknownEntity': '{path}: not an entity the panel reads. See the example configuration.',
   'config.wrongType':
-    '{path}: expected {expected, select, number {a number} text {text} list {a list} block {a block of settings} yesno {yes or no} nothing {nothing} other {a value}}, got {got, select, number {a number} text {text} list {a list} block {a block of settings} yesno {yes or no} nothing {nothing} other {a value}}.',
+    '{path}: expected {expected, select, number {a number} text {text} list {a list} block {a block of ' +
+    'settings} yesno {yes or no} nothing {nothing} other {a value}}, got {got, select, number {a number} ' +
+    'text {text} list {a list} block {a block of settings} yesno {yes or no} nothing {nothing} other {a ' +
+    'value}}.',
   'config.notOneOf': '{path}: {got} is not one of {options}.',
   'config.notAPair': '{path}: a link needs exactly two cards.',
   'config.notATime': '{path}: {got} is not a time like 20:00.',
@@ -233,7 +236,10 @@ export const en = {
   'weather.alerts.none': 'no alerts',
   'weather.alerts.count': '{n, plural, one {# alert in effect} other {# alerts in effect}}',
   'weather.alerts.kindCount':
-    '{kind, select, warning {{n, plural, one {# warning in effect} other {# warnings in effect}}} watch {{n, plural, one {# watch in effect} other {# watchs in effect}}} advisory {{n, plural, one {# advisory in effect} other {# advisorys in effect}}} other {{n, plural, one {# statement in effect} other {# statements in effect}}}}',
+    '{kind, select, warning {{n, plural, one {# warning in effect} other {# warnings in effect}}} watch ' +
+    '{{n, plural, one {# watch in effect} other {# watchs in effect}}} advisory {{n, plural, one {# ' +
+    'advisory in effect} other {# advisorys in effect}}} other {{n, plural, one {# statement in effect} ' +
+    'other {# statements in effect}}}}',
   'weather.alertKind.warning': 'Warning',
   'weather.alertKind.watch': 'Watch',
   'weather.alertKind.advisory': 'Advisory',
@@ -951,7 +957,14 @@ export const en = {
   'car.charger.title': 'Home charger',
   'car.charger.line': 'Wallbox Pulsar Plus · {status}{plugged, select, yes {} other {, car not plugged in}}',
   'car.charger.status':
-    '{id, select, unavailable {unavailable} ready {ready} charging {charging} connectedWaitingForCar {connected: waiting for car demand} waitingForCar {waiting for car demand} connectedWaitingForSchedule {connected: waiting for next schedule} waitingForSchedule {waiting for next schedule} pausedByUser {paused by user} scheduled {scheduled} discharging {discharging} error {error} disconnected {disconnected} locked {locked} lockedCarConnected {locked, car connected} updating {updating} waiting {waiting} queuePowerSharing {waiting in queue by power sharing} queuePowerBoost {waiting in queue by power boost} queueEcoSmart {waiting in queue by eco-smart} midFailed {waiting for mid failed} other {{raw}}}',
+    '{id, select, unavailable {unavailable} ready {ready} charging {charging} connectedWaitingForCar ' +
+    '{connected: waiting for car demand} waitingForCar {waiting for car demand} ' +
+    'connectedWaitingForSchedule {connected: waiting for next schedule} waitingForSchedule {waiting for ' +
+    'next schedule} pausedByUser {paused by user} scheduled {scheduled} discharging {discharging} error ' +
+    '{error} disconnected {disconnected} locked {locked} lockedCarConnected {locked, car connected} ' +
+    'updating {updating} waiting {waiting} queuePowerSharing {waiting in queue by power sharing} ' +
+    'queuePowerBoost {waiting in queue by power boost} queueEcoSmart {waiting in queue by eco-smart} ' +
+    'midFailed {waiting for mid failed} other {{raw}}}',
   'car.charger.power': 'Power limit',
   'car.charger.currentLabel': 'Charging current limit',
   'car.charger.amps': '{n} A',

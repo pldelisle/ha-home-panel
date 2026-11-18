@@ -168,7 +168,9 @@
   backdrop-filter: var(--m-bd);
   box-shadow: var(--m-edge);
 }
-/* v1.18.2: every other surface follows. Top-level panels (sheet sections, room list) are glass cards; inner wells (rows, segmented controls, tabs, steppers, sensor and speaker rows) take the tile fill; small buttons inside take the selected-bubble fill; tinted "on" states mix their accent into the glass instead of the opaque card */
+/* v1.18.2: every other surface follows. Top-level panels (sheet sections, room list) are glass cards; inner wells (rows,
+   segmented controls, tabs, steppers, sensor and speaker rows) take the tile fill; small buttons inside take the
+   selected-bubble fill; tinted "on" states mix their accent into the glass instead of the opaque card */
 .app.gl .more {
   background: var(--g-tile);
   box-shadow: var(--g-edge-s);

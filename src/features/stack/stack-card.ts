@@ -34,11 +34,12 @@ function ring(percent: number | null, limit: number | null, color: string, size:
   const arc = (RING_AROUND * Math.max(0, Math.min(100, percent ?? 0))) / 100;
   return html`<span class="sring" style=${styleMap({width: `${size}px`, height: `${size}px`})}
     ><svg width=${size} height=${size} viewBox="0 0 124 124" aria-hidden="true">
-      ${svg`<circle cx="62" cy="62" r=${RING_R} fill="none" stroke="currentColor" stroke-opacity=".14" stroke-width="11"></circle><circle cx="62" cy="62" r=${RING_R} fill="none" stroke=${color} stroke-width="11" stroke-linecap="round" stroke-dasharray="${arc.toFixed(1)} ${RING_AROUND.toFixed(1)}" transform="rotate(-90 62 62)"></circle>${
-        limit
-          ? svg`<circle cx="62" cy="62" r=${RING_R} fill="none" stroke="currentColor" stroke-opacity=".6" stroke-width="11" stroke-dasharray="1.6 ${RING_AROUND.toFixed(1)}" stroke-dashoffset=${((-RING_AROUND * limit) / 100).toFixed(1)} transform="rotate(-90 62 62)"></circle>`
-          : nothing
-      }`}</svg
+      ${svg`<circle cx="62" cy="62" r=${RING_R} fill="none" stroke="currentColor" stroke-opacity=".14" stroke-width="11"></circle><circle cx="62" cy="62" r=${RING_R} fill="none" stroke=${color} stroke-width="11" stroke-linecap="round"
+        stroke-dasharray="${arc.toFixed(1)} ${RING_AROUND.toFixed(1)}" transform="rotate(-90 62 62)"></circle>${
+          limit
+            ? svg`<circle cx="62" cy="62" r=${RING_R} fill="none" stroke="currentColor" stroke-opacity=".6" stroke-width="11" stroke-dasharray="1.6 ${RING_AROUND.toFixed(1)}" stroke-dashoffset=${((-RING_AROUND * limit) / 100).toFixed(1)} transform="rotate(-90 62 62)"></circle>`
+            : nothing
+        }`}</svg
     ><b class="num">${percent === null ? DASH : Math.round(percent)}<small>%</small></b></span
   >`;
 }

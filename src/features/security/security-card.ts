@@ -26,7 +26,10 @@ import {forShadow} from '../../ui/styles/host.ts';
 const GLOW_MS = 2800;
 
 // the shield in sage with its tick in the card's colour, which the kit's outline `shield` icon is not
-const SHIELD = svg`<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l7.5 3.2v5.3c0 4.8-3.2 9-7.5 10.6-4.3-1.6-7.5-5.8-7.5-10.6V5.7z" fill="var(--m-sage)"/><path d="M8.8 12.2l2.2 2.2 4.4-4.4" fill="none" stroke="var(--card)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const SHIELD = svg`<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+  <path d="M12 2.5l7.5 3.2v5.3c0 4.8-3.2 9-7.5 10.6-4.3-1.6-7.5-5.8-7.5-10.6V5.7z" fill="var(--m-sage)"/>
+  <path d="M8.8 12.2l2.2 2.2 4.4-4.4" fill="none" stroke="var(--card)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>`;
 
 export class SecurityCard extends LitElement {
   // The element's own rules, its `:host` and the card's box and rows, are in security-card.element.css.

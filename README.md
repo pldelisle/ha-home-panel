@@ -147,13 +147,13 @@ npm run build          # Vite: dist/home-panel.js (minified), home-panel.js.map,
 npm run dev            # the same build, redone on every save (vite build --watch)
 npm run size           # the gzipped size of the main chunk and of the lazy chunks, for information (run it after a build)
 npm run licenses       # rewrites LICENSES.md from package-lock.json and node_modules, production packages only (run it when apexcharts, mermaid, the font or the lock file changes)
-npm run typecheck      # tsc --checkJs: the core and the stack module strictly, the rest of src/ loosely (tsconfig.legacy.json)
+npm run typecheck      # tsc --checkJs, strict, over every file under src/ (tsconfig.check.json)
 npm test               # unit tests (Vitest): config, stack, French, the built dist/, a scan for personal data
 npm run test:watch     # the same, re-run on every save
 npm run test:coverage  # the same, with a coverage report in coverage/
 npm run changeset      # describes your change for the changelog and the version (see below)
 npm run format         # Prettier (run it before committing; CI checks it with npm run format:check)
-npm run lint           # ESLint (an import that does not resolve is an error), then the layer rules and the legacy footprint
+npm run lint           # ESLint (an import that does not resolve is an error), then the layer rules
 npm run arch:graph     # redraws docs/architecture/dependency-graph.md from the imports under src/ (a test fails when it is stale)
 npm run test:e2e       # builds, then runs the Playwright suite
 npm run test:visual:docker           # compares every tab with its screenshot baseline, inside Docker
@@ -199,17 +199,12 @@ Every `uses:` in `.github/workflows/` is pinned to a commit with its version in 
 `npm run size` prints the gzipped size of the main chunk and of the lazy chunks (as `size-limit` counts it). There is no limit: the panel is growing on purpose,
 and a size that jumps without a reason is for the reviewer to notice in the CI log.
 
-The source is ES modules under `src/`, built by Vite (`vite.config.ts`). `src/main.js` is the entry: it registers the legacy class as the guest and defines the custom element, `<home-panel>`, a Lit element in `src/shell/home-panel.ts`; the legacy class (`LegacyPanel`) is in `src/home-panel.js`, with the
-Automations tab (`src/auto.js`), the configuration schema (`src/core/config.ts`), the smart-stack rules (`src/stack.js`), the French translations
-(`src/i18n/fr.js`) and the stylesheet (`src/styles.js`, which joins the files in `src/css/`, minified by Lightning CSS for the browsers listed under Browser support) imported from it. `src/legacy/globals.js` holds the state
-and helpers those files used to share as globals; it goes away in the refactor's second phase. ApexCharts and Mermaid come from npm as lazy chunks under
+The source is ES modules under `src/`, built by Vite (`vite.config.ts`). `src/main.js` is the entry: it defines the custom element, `<home-panel>`, a Lit element in `src/shell/home-panel.ts`. The layers are folders under `src/` (`core`, `providers`, `ui`, `features`, `shell`; see `docs/architecture.md`), and the French rewrite layer, `src/i18n/fr.js`, is kept as phase 4's input and is not shipped. ApexCharts and Mermaid come from npm as lazy chunks under
 `dist/chunks/`: ApexCharts (`src/core/apex.ts`) is fetched when the first tab with charts opens, Mermaid when the Automations tab draws its first flow.
 The fonts come from npm too: `@fontsource/manrope`'s woff2 files for weights 400 to 700 and `@fontsource/jetbrains-mono`'s for 400, latin and latin-ext, are copied into `dist/fonts/` under their own names,
-and `src/fonts.js` declares them with `@font-face` rules in the document (Chromium ignores them inside a shadow root), so the panel never calls Google Fonts.
+and `src/ui/fonts.ts` declares them with `@font-face` rules in the document (Chromium ignores them inside a shadow root), so the panel never calls Google Fonts.
 No library is committed as a file. `LICENSES.md` at the root lists every production package with its version and licence text; `npm run licenses` generates it (it is not edited by hand, and Prettier skips it), `vite build` copies it into `dist/`, and `test/unit/licenses.test.mjs` fails when it is out of date.
-`npm run typecheck` runs `tsc` twice: `tsconfig.check.json` checks the core and the small modules (`stack.js`, `fonts.js`) strictly, and `tsconfig.legacy.json` checks every
-file under `src/` without `strict`, so a name that does not exist or an import that does not resolve is an error while the untyped class is tolerated.
-`src/legacy/dom-scaffolding.d.ts` holds the ambient declarations that second pass needs (only `tsconfig.legacy.json` lists it); the refactor's second phase deletes it.
+`npm run typecheck` runs `tsc` once, strictly, over every file under `src/` (`tsconfig.check.json`).
 The source map points a stack trace or the browser's DevTools back at the files in `src/`; it ships in the release zip next to `home-panel.js`.
 The test houses in `test/houses/` are made up. Keep real names, addresses and entity IDs out of the repository:
 `npm test` fails if it finds some of them in any committed file.

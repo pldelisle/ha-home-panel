@@ -1,6 +1,8 @@
 // WindowedHistory: the controller that loads a feature's statistics windows through the panel's statistics cache when its host is shown, and keeps what it derived as long as the cache would.
 // Pattern: lazy load (Fowler, PoEAA) as a Lit reactive controller, built once from the Car's and Energy's identical loaders (the rule of three, with Climate's, which keeps one entry per range and stays its own):
-// composition, not a base class: it does not register itself with the host, its owner (a feature's `CarHistory`, `EnergyHistory`) does and hands it the host's three hooks; a feature gives it the function that names its windows, the one that derives its data from the replies, and a log tag (ADR 0028). Nothing is asked while the host is hidden,
+// composition, not a base class: it does not register itself with the host, its owner (a feature's `CarHistory`,
+// `EnergyHistory`) does and hands it the host's three hooks; a feature gives it the function that names its windows, the one
+// that derives its data from the replies, and a log tag (ADR 0028). Nothing is asked while the host is hidden,
 // the windows are asked together, and a reply that arrives after the host left or the config changed is dropped.
 // Must not: call the API client (only the cache), draw or word anything, know what a window is for, retry a failure more than once a minute, or keep the replies it derived from.
 import type {ReactiveController, ReactiveControllerHost} from 'lit';

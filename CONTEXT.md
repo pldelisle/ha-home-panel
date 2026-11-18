@@ -110,13 +110,13 @@ The words the panel and its code use. One word per concept: use it in issues, te
 
 **Display name** — A name given to an entity, area or device after it passes through the display-name resolver: the config's `names:` block first, then the built-in dictionary of room words, then the name as Home Assistant gives it. Names are data, never message keys. Avoid: friendly name (the raw name Home Assistant gives, the last fallback).
 
-**Legacy class** — The `LegacyPanel` class that was `src/home-panel.js`, and the files around it, which the strangler fig replaced; deleted with the guest in #277 (ADR 0035). `npm run lint` still prints the legacy footprint, now 0 modules.
+**Legacy class** — The `LegacyPanel` class that was `src/home-panel.js`, and the files around it, which the strangler fig replaced; deleted with the guest in #277 (ADR 0035); the lint's footprint line, which counted it, went at the phase 3 gate (#188). Historical.
 
-**Guest** — The legacy class while the shell hosts it: not an element but a renderer that implements `GuestRenderer` (`src/shell/guest.ts`), which `src/main.js` registers, the shell constructs and drives, and which draws only into its own containers inside the shell's one shadow root. The interface only shrinks, and it is deleted with the guest. Avoid: guest renderer, legacy renderer, the old class.
+**Guest** — Historical: the word for the legacy class while the shell hosted it, until #277 (ADR 0035). It was not an element but a renderer that implemented `GuestRenderer` (`src/shell/guest.ts`), which `src/main.js` registered, the shell constructed and drove, and which drew only into its own containers inside the shell's one shadow root. Interface and renderer are gone. Avoid: guest renderer, legacy renderer, the old class.
 
 **Home-card bridge** — The rule (ADR 0024) by which the guest wrote a feature element's tag, and nothing else, into a Home container it still drew, once per draw, and heard only `hp-empty` back. The idle screen's `<hp-smart-stack mode="idle">` was the last use, until spec 26 (#276); gone with the guest (#277). Avoid: the bridge, alone (the bridge package is the Home Assistant YAML package).
 
-**Sheet host** — The shell's one mediator (`SheetHost`, `src/shell/sheet-host.ts`) for which sheet is open, Escape, focus return and where the five detail panels sit. The guest's sheets register with it as legacy sheets; an element's sheet is opened by its owner's template. Elements ask for a sheet with a `SheetRequestEvent` rather than importing the shell.
+**Sheet host** — The shell's one mediator (`SheetHost`, `src/shell/sheet-host.ts`) for which sheet is open, Escape, focus return and where the five detail panels sit. The guest's sheets once registered with it as legacy sheets; now every sheet is opened by its owner's template. Elements ask for a sheet with a `SheetRequestEvent` rather than importing the shell.
 
 **Descriptor** — The data for one of the ten subjects in the shell's registry (`src/shell/features.ts`): key, title, icon, colour, whether it sits on the phone's bar, whether this house shows it, and its pane. The rail, the phone's bar and the panes are drawn from the list.
 

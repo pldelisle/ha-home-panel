@@ -1,16 +1,12 @@
 // Draws the architecture from the code. `node scripts/arch-graph.mjs` writes docs/architecture/dependency-graph.md, the
 // module graph folded to the folders of src/ and to the packages as a Mermaid diagram (dependency-cruiser's `mermaid` reporter), which
 // GitHub renders; test/unit/architecture.test.mjs fails when the committed file differs from a fresh run, the way
-// licenses.test.mjs guards LICENSES.md. `--check-footprint` prints how many modules the legacy set still holds, the
-// progress number of phase 3, and writes nothing.
+// licenses.test.mjs guards LICENSES.md.
 import {execFileSync} from 'node:child_process';
 import {realpathSync, writeFileSync} from 'node:fs';
-import {createRequire} from 'node:module';
 import {fileURLToPath} from 'node:url';
 
-const require = createRequire(import.meta.url);
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
-const {isLegacy} = require('./legacy-set.cjs');
 const GRAPH_FILE = `${ROOT}docs/architecture/dependency-graph.md`;
 
 const depcruise = (...args) =>
@@ -19,15 +15,6 @@ const depcruise = (...args) =>
     encoding: 'utf8',
     maxBuffer: 32 * 1024 * 1024,
   });
-
-// the cruise of src/ as dependency-cruiser's JSON: {modules: [{source, dependencies: [{resolved}]}]}
-export function cruise() {
-  return JSON.parse(depcruise('--output-type', 'json'));
-}
-
-export function legacyModules(modules) {
-  return modules.filter(({source}) => isLegacy(source));
-}
 
 // the Mermaid text for the layer folders; the file is this text under a heading, in a code fence
 export function renderGraph() {
@@ -45,10 +32,6 @@ export function renderGraph() {
 
 // run directly (also through a symlink), not when a test imports it
 if (process.argv[1] && realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url))) {
-  if (process.argv.includes('--check-footprint')) {
-    console.log(`legacy footprint: ${legacyModules(cruise().modules).length} modules`);
-  } else {
-    writeFileSync(GRAPH_FILE, renderGraph());
-    console.log('wrote docs/architecture/dependency-graph.md');
-  }
+  writeFileSync(GRAPH_FILE, renderGraph());
+  console.log('wrote docs/architecture/dependency-graph.md');
 }
