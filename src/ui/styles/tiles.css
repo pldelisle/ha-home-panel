@@ -1,6 +1,6 @@
 /* The tiles of a detail panel: a grid of wells, each a label, a figure with its small unit, and a line under it. `.tilebtn` makes one a
-   button that opens a history. Written once for the legacy sheets and for the elements that draw them; inside an element `.app.gl` reads
-   as `:host([glass])` (host.ts). */
+   button that leads to its data (a history, a chart or a range), with a chevron after its figure; `src/ui/tile.ts` writes both. Inside an
+   element `.app.gl` reads as `:host([glass])` (host.ts). */
 .tile {
   -webkit-tap-highlight-color: transparent;
 }

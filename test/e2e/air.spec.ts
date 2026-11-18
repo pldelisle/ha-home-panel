@@ -13,9 +13,13 @@ const card = (house: House) => pane(house).locator('hp-air-card'); // gone with 
 const sheet = (house: House) => pane(house).locator('hp-sheet');
 const detail = (house: House) => pane(house).locator('hp-air-detail');
 const room = (house: House) => detail(house).locator('hp-air-room');
+// the outdoor air's block: its title and, under it, the station's US AQI chart and the AQHI chart, each with its own heading and caption
+const outdoorBlock = (house: House) =>
+  detail(house).locator('.inner', {has: house.page.locator('h3', {hasText: 'Outdoor air'})});
+const outdoorCharts = (house: House) => outdoorBlock(house).locator('hp-chart');
 const history = (house: House) => pane(house).locator('hp-air-history');
 const tile = (house: House, name: string) => room(house).getByRole('button', {name});
-const CO2 = 'CO₂ 640ppm, opens its history';
+const CO2 = 'CO₂ 640ppm';
 const calls = (house: House, prefix: string) => house.calls.filter(c => c.startsWith(prefix));
 const STATISTICS = 'recorder/statistics_during_period';
 const FAN = 'fan.office_purifier';
@@ -51,10 +55,12 @@ test.describe('on a phone', () => {
       'Week',
       'Month',
     ]);
-    await expect(detail(house).locator('hp-chart')).toHaveCount(1);
-    await expect(detail(house).locator('hp-chart .apexcharts-canvas')).toBeVisible();
+    await expect(outdoorCharts(house)).toHaveCount(2);
+    await expect(detail(house).locator('hp-chart .apexcharts-canvas').first()).toBeVisible();
     await expect(detail(house).locator('.aqmetric')).toHaveCount(0);
-    await expect(room(house).getByRole('button', {name: /, opens its history$/})).toHaveCount(7);
+    // each tile is a button named by its reading, and says where it leads in its description, not in its name
+    await expect(room(house).locator('button.tile.tilebtn[aria-description="Opens its history"]')).toHaveCount(7);
+    await expect(room(house).locator('button.tile.tilebtn[aria-label]')).toHaveCount(0);
     await expect(detail(house).locator('.aqsum').first()).toContainText('AQI 42');
     await expect(card(house)).toHaveCount(0);
     await expect(sheet(house)).toHaveCount(0);
@@ -194,7 +200,7 @@ test.describe('on a tablet', () => {
     await expect(room(house)).toHaveCount(1);
     await expect(room(house).locator('.aqhead h3')).toHaveText('Office');
     await expect(room(house).locator('.aqhead p')).toHaveText('PM2.5 moderate · 21.4°');
-    await expect(room(house).locator('.aqhead .state')).toHaveText('Moderate');
+    await expect(room(house).locator('.aqhead .status')).toHaveText('Moderate');
     await expect(room(house).locator('.tile .k')).toHaveText(['PM2.5', 'CO₂', 'VOC', 'CO', 'PM1', 'PM10', 'Humidity']);
     await expect(room(house).locator('.tile .v').first()).toHaveText('20µg/m³');
     await expect(room(house).locator('.tile.hi')).toHaveCount(1);
@@ -205,7 +211,7 @@ test.describe('on a tablet', () => {
     await expect(card(house)).toHaveCount(0);
   });
 
-  test('the outside block shows the station, its pollen and the outdoor chart, the only chart of the detail', async ({
+  test('the outside block shows the station, its pollen and the two outdoor charts, the only charts of the detail', async ({
     house,
   }) => {
     await house.tab('air');
@@ -218,10 +224,31 @@ test.describe('on a tablet', () => {
       'Weeds pollen',
       'Mold pollen',
     ]);
-    await expect(detail(house).locator('hp-chart')).toHaveCount(1);
-    await expect(detail(house).locator('hp-chart .apexcharts-canvas')).toBeVisible();
-    await expect(detail(house).locator('.legend')).toHaveText('AQI (Mila station)AQHI (Environment Canada)');
+    await expect(outdoorCharts(house)).toHaveCount(2);
+    await expect(detail(house).locator('hp-chart .apexcharts-canvas').first()).toBeVisible();
+    await expect(outdoorBlock(house).locator('h4')).toHaveText(['AQI (Mila station)', 'AQHI (Environment Canada)']);
+    await expect(outdoorBlock(house).locator('section p')).toHaveText([
+      'US AQI from the station: good up to 50, moderate up to 100.',
+      'The AQHI from Environment Canada, on its 1 to 10 scale.',
+    ]);
     await expect(detail(house).locator('.aqmetric')).toHaveCount(0);
+  });
+
+  test('the outdoor air block sits one gap below the block above it, as every block of the column does', async ({
+    house,
+  }) => {
+    await house.tab('air');
+    await expect(outdoorCharts(house)).toHaveCount(2);
+    const gaps = await detail(house)
+      .locator('.blocks > *')
+      .evaluateAll(els =>
+        els.slice(1).map((el, i) => Math.round(el.getBoundingClientRect().top - els[i].getBoundingClientRect().bottom)),
+      );
+    // the header's own gap above the rooms is the header's; from the rooms down the column has one gap
+    const column = gaps.slice(-2);
+    expect(column, 'rooms, outside, outdoor air: two gaps').toHaveLength(2);
+    expect(column[1], 'above Outdoor air').toBeGreaterThan(0);
+    expect(column[1], 'as above Outside').toBe(column[0]);
   });
 
   test('a tap on Manual sends fan.set_preset_mode and shows the stepper at once, at the fan’s speed', async ({
@@ -355,7 +382,7 @@ test.describe('on a tablet', () => {
     house,
   }) => {
     await house.tab('air');
-    await expect(detail(house).locator('hp-chart .apexcharts-canvas')).toBeVisible();
+    await expect(detail(house).locator('hp-chart .apexcharts-canvas').first()).toBeVisible();
     await tile(house, CO2).click();
     const sheetEl = history(house);
     await expect(sheetEl.locator('hp-sheet h2')).toHaveText('CO₂');
@@ -373,7 +400,7 @@ test.describe('on a tablet', () => {
 
   test('the PM2.5 tile’s history has the outdoor station’s dashed line beside the room’s', async ({house}) => {
     await house.tab('air');
-    await tile(house, 'PM2.5 20µg/m³, opens its history').click();
+    await tile(house, 'PM2.5 20µg/m³').click();
     await expect(history(house).locator('hp-chart .apexcharts-canvas')).toBeVisible();
     await expect(history(house).locator('.legend')).toHaveText('OfficeOutside');
     await expect(history(house).locator('.inner p').first()).toContainText('The dashed line is the outdoor station.');
@@ -381,7 +408,7 @@ test.describe('on a tablet', () => {
 
   test('every tile opens a history, and a reading no band is rated for says so', async ({house}) => {
     await house.tab('air');
-    await tile(house, 'PM10 24µg/m³, opens its history').click();
+    await tile(house, 'PM10 24µg/m³').click();
     await expect(history(house).locator('hp-sheet h2')).toHaveText('PM10');
     await expect(history(house).locator('.inner p').first()).toHaveText('Mila rates no band for this reading.');
   });
@@ -419,6 +446,8 @@ test.describe('in French, on a tablet', () => {
     await house.tab('air');
     await expect(room(house).locator('.tile .v').nth(3)).toHaveText('1,0ppm');
     await expect(room(house).getByRole('radio', {name: 'Manuel'})).toHaveAttribute('aria-checked', 'false');
-    await expect(room(house).getByRole('button', {name: /^Humidité .*, ouvre l’historique$/})).toBeVisible();
+    const humidity = room(house).getByRole('button', {name: /^Humidité /});
+    await expect(humidity).toBeVisible();
+    await expect(humidity).toHaveAttribute('aria-description', 'Ouvre l’historique');
   });
 });

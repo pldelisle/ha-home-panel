@@ -121,10 +121,39 @@ describe('the test house, on the tablet', () => {
       },
     });
     expect(detail.tiles).toEqual([
-      {label: 'Warmest', value: '21.2', unit: '°', sub: 'Garage', range: false},
-      {label: 'Coolest', value: '20.0', unit: '°', sub: 'Living room', range: false},
+      {
+        label: 'Warmest',
+        value: '21.2',
+        unit: '°',
+        sub: 'Garage',
+        range: false,
+        select: 'garage',
+        opens: 'Shows its chart',
+      },
+      {
+        label: 'Coolest',
+        value: '20.0',
+        unit: '°',
+        sub: 'Living room',
+        range: false,
+        select: 'living_room',
+        opens: 'Shows its chart',
+      },
       {label: 'Heating now', value: '2.40', unit: 'kW', sub: 'all thermostats', range: false},
       {label: 'Heating, 24 h', value: '–', unit: 'kWh', sub: 'all thermostats', range: false},
+    ]);
+  });
+
+  test('the house’s Warmest and Coolest lead to their room, said in French too; no other tile leads anywhere', () => {
+    const english = modelOf(fullHouse, 'house').detail.tiles;
+    expect(english.map(tile => tile.select)).toEqual(['garage', 'living_room', undefined, undefined]);
+    const french = modelOf(fullHouse, 'house', {language: 'fr'}).detail.tiles;
+    expect(french[0]?.opens).toBe('Affiche son graphique');
+    // a room's own tiles and the heat pump's have no target
+    expect(modelOf(fullHouse, 'bedroom').detail.tiles.map(tile => tile.select)).toEqual([
+      undefined,
+      undefined,
+      undefined,
     ]);
   });
 

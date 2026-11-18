@@ -203,6 +203,10 @@ export interface DetailTile {
   sub: string | null;
   /** The Range tile, which the phone gives a row of its own. */
   range: boolean;
+  /** The room whose chart a tap on the tile shows (the house's Warmest and Coolest); absent for a tile that leads nowhere, which is no button. */
+  select?: string;
+  /** What a screen reader adds to the name of a tile that leads somewhere ("Shows its chart"); present with `select`. */
+  opens?: string;
 }
 
 /** What the dial's setpoint is for: a thermostat or the heat pump; null on the house's dial, which has none to set. */
@@ -433,17 +437,28 @@ function houseHead(
   const {rooms} = inputs;
   const house = items[0];
   const read = rooms
-    .flatMap(room => (room.temperature === null ? [] : [{name: roomName(room, deps), temperature: room.temperature}]))
+    .flatMap(room =>
+      room.temperature === null ? [] : [{key: room.key, name: roomName(room, deps), temperature: room.temperature}],
+    )
     .sort((a, b) => b.temperature - a.temperature);
   const warmest = read[0];
   const coolest = read[read.length - 1];
-  const named = (reading: typeof warmest, label: MessageKey): DetailTile => ({
-    label: t(label),
-    value: reading ? fmt.fixed(reading.temperature, 1) : DASH,
-    unit: '°',
-    sub: reading?.name ?? null,
-    range: false,
-  });
+  // a tile with a reading leads to that room's chart; one without (no room reads) is a plain tile
+  const named = (reading: typeof warmest, label: MessageKey): DetailTile => {
+    const tile: DetailTile = {
+      label: t(label),
+      value: reading ? fmt.fixed(reading.temperature, 1) : DASH,
+      unit: '°',
+      sub: reading?.name ?? null,
+      range: false,
+    };
+    if (!reading) return tile;
+    return {
+      ...tile,
+      select: reading.key,
+      opens: t('climate.tile.opensChart'),
+    };
+  };
   const all = t('climate.allThermostats');
   return {
     title: t('climate.wholeHouse'),

@@ -86,7 +86,7 @@ export class SecurityCard extends LitElement {
     return html`<div class=${classMap({seccard: true, glow: this.glowing})}>
         <button type="button" class="hh" @click=${this.openTab}>
           <span class="hsecico">${SHIELD}</span><span class="lbl">${t('security.title')}</span
-          ><span class="right">${view.line}</span><span class="chev">›</span>
+          ><span class="right">${view.line}</span><span class="chev" aria-hidden="true">›</span>
         </button>
         ${
           view.cameras.length

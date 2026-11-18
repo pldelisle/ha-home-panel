@@ -130,7 +130,6 @@ export interface WeatherViewModel {
     temperature: string;
     condition: string;
     range: string;
-    facts: {label: string; value: string}[];
     days: DayCell[];
   };
   tiles: StatTileView[];
@@ -414,24 +413,6 @@ function feelsShown({feelsLike, temperature}: WeatherInputs, {int}: Say): string
   return feelsLike && Math.abs(feelsLike.value - (temperature ?? 0)) >= 1 ? int(feelsLike.value) : null;
 }
 
-const factViews = (inputs: WeatherInputs, {t, int, raw, compass}: Say) => [
-  {
-    label: t('weather.tile.wind.label'),
-    value: [
-      inputs.wind.speed === null ? DASH : `${int(inputs.wind.speed)} km/h`,
-      inputs.wind.direction ? compass(inputs.wind.direction) : '',
-    ]
-      .filter(Boolean)
-      .join(' '),
-  },
-  {
-    label: t('weather.tile.hum.label'),
-    value: inputs.humidity === null ? `${DASH}%` : t('weather.percent', {value: raw(inputs.humidity)}),
-  },
-  {label: t('weather.fact.uv'), value: raw(inputs.uv)},
-  {label: t('weather.tile.aqhi.label'), value: raw(inputs.aqhi)},
-];
-
 // ---------- the days ----------
 
 const isTonight = (day: ForecastDay, days: Days) => day.isTonight && day.dayKey === days.today;
@@ -659,7 +640,6 @@ export function weatherModel(
       temperature,
       condition,
       range: rangeLine(inputs, null, true, say),
-      facts: factViews(inputs, say),
       days: cardDays(forecastDays, days, say),
     },
     tiles: paneTiles(inputs, say),

@@ -406,6 +406,6 @@ test.describe('the Climate detail', () => {
     await house.tab('climate');
     await house.setState('climate.living_room', {attributes: {hvac_action: 'heating', temperature: null}});
     await house.root().locator('#pane-climate hp-climate-list [data-id="living_room"]').click();
-    await expect(house.root().locator('#pane-climate hp-climate-detail .cpill')).toHaveText('Heating to –°');
+    await expect(house.root().locator('#pane-climate hp-climate-detail .big .status')).toHaveText('Heating to –°');
   });
 });

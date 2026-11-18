@@ -4,7 +4,6 @@
 // pane's (controlled component): a tap is told upward as `range-chosen`, and the pane hands the choice back.
 // Must not: read an entity (the pane's model did), call the API client for statistics but through the cache, mutate a cached reply, or open a sheet itself.
 import {LitElement, html, nothing, svg, unsafeCSS} from 'lit';
-import {classMap} from 'lit/directives/class-map.js';
 import {ifDefined} from 'lit/directives/if-defined.js';
 import {repeat} from 'lit/directives/repeat.js';
 import {StaleReply} from '../../core/api.ts';
@@ -15,16 +14,15 @@ import detailOwn from './air-detail.element.css?inline';
 import airShared from './styles.css?inline';
 import {
   airTokensFrom,
-  outdoorChartOptions,
+  aqhiOptions,
+  outdoorAqiOptions,
   outdoorSeries,
   rangeTabs,
   statisticsStart,
-  type AirChartDeps,
-  type AirTokens,
   type OutdoorSeries,
 } from './history.ts';
 import type {AirInputs} from './inputs.ts';
-import type {AirViewModel, OutsideDetail} from './model.ts';
+import {toneClass, type AirViewModel, type OutsideDetail} from './model.ts';
 import '../../ui/chart.ts'; // defines <hp-chart>
 import type {ChartOptions} from '../../ui/chart-options.ts';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
@@ -34,7 +32,7 @@ import '../../ui/pane-header.ts'; // defines <hp-pane-header>
 import '../../ui/range-tabs.ts'; // defines <hp-range-tabs>
 import type {RangeChangeDetail} from '../../ui/range-tabs.ts';
 import {RANGES, type Range} from '../../ui/ranges.ts';
-import {chart, common, inner, tiles} from '../../ui/styles/index.ts';
+import {common, inner, status, tiles} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
 type Detail = AirViewModel['detail'];
@@ -47,48 +45,29 @@ interface OutdoorLoad {
   at: number;
 }
 
-/** A line of a chart's legend: its swatch and its name. */
-interface LegendItem {
-  color: string;
-  name: string;
-}
-
-/** A chart's options and legend, made for one load in one theme and language, so an update for anything else draws nothing again. */
-interface Built<L> {
-  load: L;
+/** The two outdoor charts' options, built for one load in one theme and language: a chart with no points has none, and an update for anything else draws nothing again. */
+interface Built {
+  load: OutdoorLoad;
   base: string;
-  options: ChartOptions;
-  legend: LegendItem[];
+  aqi: ChartOptions | null;
+  aqhi: ChartOptions | null;
 }
 
-/** One chart's place: what the last request was for (`generation/range/ids`: answered, failed or in flight), its reply and its options. */
-interface ChartSlot<L extends {at: number}> {
+/** The charts' place: what the last request was for (`generation/range/ids`: answered, failed or in flight), its reply and its options. */
+interface ChartSlot {
   asked: string | undefined;
-  load: L | undefined;
+  load: OutdoorLoad | undefined;
   failed: boolean;
-  built: Built<L> | undefined;
+  built: Built | undefined;
 }
 
-/** The words and the size of a chart's place; `empty` is shown instead of a chart with no line, where the house has no source. */
-interface ChartPlace {
-  height: number;
-  label: string;
-  unavailable: string;
-  empty?: string;
-}
+/** The height of each of the two charts. */
+const CHART_HEIGHT = 180;
 
-/** What a chart's `make` returns, `outdoorChartOptions`: `<hp-chart>`'s options, with the legend's names and colours. */
-type MadeOptions = ChartOptions & Parameters<typeof legendOf>[0];
+const emptySlot = (): ChartSlot => ({asked: undefined, load: undefined, failed: false, built: undefined});
 
-const emptySlot = <L extends {at: number}>(): ChartSlot<L> => ({
-  asked: undefined,
-  load: undefined,
-  failed: false,
-  built: undefined,
-});
-
-/** A chart's options are stale when its statistics are not the ones they were built from, or the theme or the language changed. */
-const needsBuild = (slot: ChartSlot<{at: number}>, base: string): boolean =>
+/** The options are stale when the statistics are not the ones they were built from, or the theme or the language changed. */
+const needsBuild = (slot: ChartSlot, base: string): boolean =>
   !!slot.load && (slot.built?.load !== slot.load || slot.built.base !== base);
 
 /** The mean of each sensor over the range, through the cache; no sensor, no request (a house with none has nothing to chart). */
@@ -111,11 +90,6 @@ export const detailIcon = svg`<svg
   <path d="M3 8h10a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h7" />
 </svg>`;
 
-/** The names and colours of the lines of options built by `outdoorChartOptions`: the colours list may run one over. */
-function legendOf(options: {series: {name: string}[]; colors: string[]}): LegendItem[] {
-  return options.series.map(({name}, index) => ({name, color: options.colors[index]}));
-}
-
 export class AirDetail extends LitElement {
   static override properties = {
     view: {attribute: false},
@@ -132,12 +106,12 @@ export class AirDetail extends LitElement {
   /** The range chosen: the pane keeps the last choice for the panel's life and passes it in, as the legacy sheet kept its own. */
   declare range: Range;
 
-  // The kit's wells, tiles, radios and legend; the feature's `.aqsum` state line (styles.css, shared with the card); the element's own rules last.
+  // The kit's wells, status text, tiles and radios; the feature's `.aqsum` state line (styles.css); the element's own rules last.
   static override styles = [
     common,
     inner,
+    status,
     tiles,
-    chart,
     unsafeCSS(forShadow(airShared)),
     unsafeCSS(forShadow(detailOwn)),
   ];
@@ -145,8 +119,8 @@ export class AirDetail extends LitElement {
   private readonly storeController = new StoreController(this, {ids: () => []});
   private readonly appearance = new AppearanceConsumer(this);
 
-  // the outdoor index's chart: its request, reply and options
-  private readonly outdoorSlot = emptySlot<OutdoorLoad>();
+  // the outdoor air's two charts: their request, reply and options
+  private readonly outdoorSlot = emptySlot();
 
   constructor() {
     super();
@@ -162,29 +136,23 @@ export class AirDetail extends LitElement {
     this.outdoorSlot.asked = undefined;
   }
 
-  // The options of the chart are rebuilt only when what they are made of changed: new statistics, the theme or the language. An update for
-  // anything else (a room's reading) leaves the chart's `options` the object it was, so `<hp-chart>` is not asked to draw the same lines again.
+  // The options of the charts are rebuilt only when what they are made of changed: new statistics, the theme or the language. An update for
+  // anything else (a room's reading) leaves each chart's `options` the object it was, so `<hp-chart>` is not asked to draw the same lines again.
   protected override willUpdate(): void {
-    const {outdoorSlot} = this;
+    const {outdoorSlot: slot} = this;
     const base = `${this.appearance.value?.theme ?? 'light'}/${this.storeController.store.language}`;
-    if (!needsBuild(outdoorSlot, base)) return;
-    const style = getComputedStyle(this);
-    const tokens = airTokensFrom(name => style.getPropertyValue(name).trim());
-    this.rebuild(outdoorSlot, base, tokens, (load, deps) => outdoorChartOptions(load.series, load.range, deps));
-  }
-
-  // the chart's options, built again only when `needsBuild` says so
-  private rebuild<L extends {at: number}>(
-    slot: ChartSlot<L>,
-    base: string,
-    tokens: AirTokens,
-    make: (load: L, deps: AirChartDeps) => MadeOptions,
-  ): void {
     const {load} = slot;
     if (!load || !needsBuild(slot, base)) return;
+    const style = getComputedStyle(this);
     const {fmt, t} = this.storeController.store;
-    const options = make(load, {fmt, t, tokens, now: load.at});
-    slot.built = {load, base, options, legend: legendOf(options)};
+    const deps = {fmt, t, tokens: airTokensFrom(name => style.getPropertyValue(name).trim()), now: load.at};
+    const {aqi, aqhi} = load.series;
+    slot.built = {
+      load,
+      base,
+      aqi: aqi.length ? outdoorAqiOptions(aqi, load.range, deps) : null,
+      aqhi: aqhi.length ? aqhiOptions(aqhi, load.range, deps) : null,
+    };
   }
 
   protected override render() {
@@ -224,48 +192,44 @@ export class AirDetail extends LitElement {
     </hp-pane-header>`;
   }
 
-  private renderLegend(items: readonly LegendItem[] | undefined) {
-    return html`<div class="legend">
-      ${items?.map(({color, name}) => html`<span><b style=${`background:${color}`}></b>${name}</span>`)}
-    </div>`;
+  // one chart's block: its name, what its scale means, and the chart
+  private renderChart(title: string, caption: string, options: ChartOptions) {
+    return html`<section class="outdoor-chart">
+      <h4>${title}</h4>
+      <p>${caption}</p>
+      <hp-chart .height=${CHART_HEIGHT} .label=${`${title}. ${caption}`} .options=${options}></hp-chart>
+    </section>`;
   }
 
-  // a chart's place: the failure word, the loading word, the empty word when a built chart has no line, else the chart
-  private renderChart<L extends {at: number}>(slot: ChartSlot<L>, {height, label, unavailable, empty}: ChartPlace) {
+  // the outside block's charts: the failure word, the loading word, the empty word when neither series has a point, else a chart for each that has
+  private renderCharts({aqi, aqhi, empty}: NonNullable<Detail['outdoorChart']>) {
+    const {outdoorSlot: slot} = this;
     const {built} = slot;
-    if (slot.failed) return html`<p>${unavailable}</p>`;
+    if (slot.failed) return html`<p>${this.storeController.store.t('air.historyUnavailable')}</p>`;
     if (!built) return html`<p class="loading">${this.storeController.store.t('air.historyLoading')}</p>`;
-    if (empty !== undefined && !built.legend.length) return html`<p class="loading">${empty}</p>`;
-    return html`<hp-chart .height=${height} .label=${label} .options=${built.options}></hp-chart>`;
+    if (!built.aqi && !built.aqhi) return html`<p class="loading">${empty}</p>`;
+    return html`${built.aqi ? this.renderChart(aqi.title, aqi.caption, built.aqi) : nothing}
+    ${built.aqhi ? this.renderChart(aqhi.title, aqhi.caption, built.aqhi) : nothing}`;
   }
 
-  // the station's reading and the pollen, then the outdoor chart: either part is left out of a house that has no source for it
+  // the station's reading and the pollen, then the outdoor charts, each a block of the column: either is left out of a house that has no source for it
   private renderOutside({outside, outdoorChart}: Detail) {
-    if (!outside && !outdoorChart) return nothing;
-    const {outdoorSlot} = this;
-    return html`<div class="inner">
-      ${outside ? this.renderStation(outside) : nothing}
-      ${
-        outdoorChart
-          ? html`<h3 class=${classMap({again: !!outside})}>${outdoorChart.title}</h3>
-              <p>${outdoorChart.hint}</p>
-              ${this.renderLegend(outdoorSlot.built?.legend)}
-              ${this.renderChart(outdoorSlot, {
-                height: 240,
-                label: `${outdoorChart.title}. ${outdoorChart.hint}`,
-                unavailable: this.storeController.store.t('air.historyUnavailable'),
-                empty: outdoorChart.empty,
-              })}`
-          : nothing
-      }
-    </div>`;
+    return html`${outside ? html`<div class="inner">${this.renderStation(outside)}</div>` : nothing}
+    ${
+      outdoorChart
+        ? html`<div class="inner">
+            <h3>${outdoorChart.title}</h3>
+            ${this.renderCharts(outdoorChart)}
+          </div>`
+        : nothing
+    }`;
   }
 
   private renderStation({title, hint, tone, state, reading, more, pollen, pollenHint}: OutsideDetail) {
     return html`<h3>${title}</h3>
       <p>${hint}</p>
-      <div class=${`aqsum lv${tone}`}>
-        <span class="state"><i></i>${state}</span
+      <div class="aqsum">
+        <span class=${`status ${toneClass(tone)}`}><i aria-hidden="true"></i>${state}</span
         ><span class="why">${reading.label} <b class="num">${reading.value}</b>${more ? ` · ${more}` : ''}</span>
       </div>
       ${
@@ -312,18 +276,13 @@ export class AirDetail extends LitElement {
   }
 
   // a reply is stale when the detail left, or another range, config or list of sensors was asked for meanwhile
-  private isStale(slot: ChartSlot<{at: number}>, key: string): boolean {
+  private isStale(slot: ChartSlot, key: string): boolean {
     return !this.isConnected || slot.asked !== key;
   }
 
-  // One request for the chart: the slot forgets a failure and remembers the key, a stale reply is dropped, a `StaleReply` (the cache's
+  // One request for the charts: the slot forgets a failure and remembers the key, a stale reply is dropped, a `StaleReply` (the cache's
   // own word for a request it superseded) is no failure, and any other error is logged with the chart's name and shown as unavailable.
-  private async load<L extends {at: number}>(
-    slot: ChartSlot<L>,
-    key: string,
-    what: string,
-    fetch: () => Promise<L>,
-  ): Promise<void> {
+  private async load(slot: ChartSlot, key: string, what: string, fetch: () => Promise<OutdoorLoad>): Promise<void> {
     slot.asked = key;
     slot.failed = false;
     try {

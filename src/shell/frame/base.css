@@ -76,23 +76,6 @@
   color: var(--fg2);
   flex: none;
 }
-/* EV / water heater: the hero is the kit's (src/ui/styles/hero.css) */
-.state {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  border-radius: 999px;
-  padding: 6px 12px;
-  font-weight: 600;
-  font-size: calc(13px * var(--tx));
-  background: var(--card2);
-}
-.state i {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  display: block;
-}
 .note {
   margin-top: 22px;
   font-size: calc(12.5px * var(--tx));

@@ -1,9 +1,8 @@
 /*
- * <hp-air-room>'s own rules: a purifier's card, its head with the level's state pill, the seven tiles and the control. Moved from the legacy
+ * <hp-air-room>'s own rules: a purifier's card, its head with the level's rating (the kit's `.status`), the seven tiles and the control. Moved from the legacy
  * `.aqcard`, `.aqhead`, `.aqt` and `.aqctl` rules (extra.css, glass.css), which this move deleted. The tiles, the
- * mode group and the stepper are the kit's (`.tiles`, `<hp-seg>`, `<hp-stepper>`), and the group is sized from here (`.aqctl hp-seg`). Known copies of rules the
- * legacy panel's other cards still draw, each read here under the card's own selector: `.state` (base.css, glass.css) as `.aqhead .state` and
- * `.hint` (base.css) as `.aqctl .hint`, until the Home move (#268) deletes them.
+ * mode group and the stepper are the kit's (`.tiles`, `<hp-seg>`, `<hp-stepper>`), and the group is sized from here (`.aqctl hp-seg`). Known copy of a rule the
+ * legacy panel's other cards still draw, read here under the card's own selector: `.hint` (base.css) as `.aqctl .hint`, until the Home move (#268) deletes them.
  */
 :host {
   display: block;
@@ -37,35 +36,6 @@
   margin: 2px 0 0;
   font-size: calc(12.5px * var(--tx));
   color: var(--fg2);
-}
-.aqhead .state {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  border-radius: 999px;
-  padding: 6px 12px;
-  font-weight: 600;
-  font-size: calc(13px * var(--tx));
-  background: var(--card2);
-}
-:host([glass]) .aqhead .state {
-  background: var(--g-tile);
-  box-shadow: var(--g-edge-s);
-}
-.aqhead .state i {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  display: block;
-}
-.lv0 .aqhead .state i {
-  background: var(--ok);
-}
-.lv1 .aqhead .state i {
-  background: var(--warn);
-}
-.lv2 .aqhead .state i {
-  background: var(--crit);
 }
 .aqt {
   grid-template-columns: repeat(4, minmax(0, 1fr));

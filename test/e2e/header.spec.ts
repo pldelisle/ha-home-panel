@@ -40,7 +40,7 @@ test.describe('the greeting belongs to Home', () => {
   test('Home keeps the greeting, the date and the people; Lights drops them for the tab title', async ({house}) => {
     const hello = house.root().locator('#hello');
     await expect(hello.locator('h1')).toBeVisible();
-    if (!isPhone(house)) await expect(hello.locator('.wp').first()).toBeVisible(); // a phone's Home pane shows them
+    if (!isPhone(house)) await expect(hello.locator('.status').first()).toBeVisible(); // a phone's Home pane shows them
     await house.tab('lights');
     await expect(hello).toBeHidden();
     await expect(house.root().locator('#gear')).toBeVisible();

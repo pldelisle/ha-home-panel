@@ -27,6 +27,7 @@ export class StatTile extends LitElement {
     sub: {},
     value: {},
     unit: {},
+    missing: {type: Boolean},
     tone: {},
     color: {},
   };
@@ -42,6 +43,8 @@ export class StatTile extends LitElement {
   declare value: string | undefined;
   /** What follows the value, smaller. */
   declare unit: string | undefined;
+  /** The sensor reads nothing: `value` is the word that says so, drawn in the line's style, not as a big figure (never a dash as the big number). */
+  declare missing: boolean;
   /**
    * What the tile looks like, as the words of the modifier classes it grew from, separated by spaces: `blue`, `grid`,
    * `home`, `on`, `wide` (with `trail`, its figure after its words), `sel` (the ring of the one shown) and `list` (an icon beside its words, as the More list sets them).
@@ -65,6 +68,7 @@ export class StatTile extends LitElement {
     this.label = '';
     this.sub = '';
     this.tone = '';
+    this.missing = false;
   }
 
   protected override render() {
@@ -78,7 +82,9 @@ export class StatTile extends LitElement {
       ${
         this.value === undefined
           ? nothing
-          : html`<span class="tv num">${this.value}${this.unit ? html`<small>${this.unit}</small>` : nothing}</span>`
+          : html`<span class=${this.missing ? 'tv na' : 'tv num'}
+              >${this.value}${this.unit ? html`<small>${this.unit}</small>` : nothing}</span
+            >`
       }
       <span class="tx"><b>${this.label}</b><small>${this.sub || NBSP}</small></span>
     </button>`;

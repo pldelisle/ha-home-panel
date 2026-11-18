@@ -61,6 +61,50 @@ test('a tile is named without the "›" read aloud', async ({house}) => {
   ).toBeVisible();
 });
 
+test('a tile’s chevron is a plain trailing "›" in the tertiary colour, with no box of its own', async ({house}) => {
+  await house.tab('home');
+  const chevron = await tile(house, 'lights')
+    .locator('.go')
+    .evaluate(el => {
+      const probe = document.createElement('span');
+      probe.style.color = 'var(--fg3)';
+      el.parentElement!.append(probe);
+      const tertiary = getComputedStyle(probe).color;
+      probe.remove();
+      const s = getComputedStyle(el);
+      return {
+        background: s.backgroundColor,
+        shadow: s.boxShadow,
+        radius: s.borderTopLeftRadius,
+        color: s.color,
+        tertiary,
+      };
+    });
+  expect(chevron.background).toBe('rgba(0, 0, 0, 0)');
+  expect(chevron.shadow).toBe('none');
+  expect(chevron.radius).toBe('0px');
+  expect(chevron.color).toBe(chevron.tertiary);
+});
+
+test('the Security card’s chevron is a plain trailing "›" in the tertiary colour too, with no box', async ({house}) => {
+  await house.tab('home');
+  const chevron = house.root().locator('#hsec hp-security-card .hh .chev');
+  await expect(chevron).toBeVisible();
+  await expect(chevron).toHaveText('›');
+  await expect(chevron).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  await expect(chevron).toHaveCSS('box-shadow', 'none');
+  await expect(chevron).toHaveCSS('border-top-left-radius', '0px');
+  const [color, tertiary] = await chevron.evaluate(el => {
+    const probe = document.createElement('span');
+    probe.style.color = 'var(--fg3)';
+    el.parentElement!.append(probe);
+    const tertiary = getComputedStyle(probe).color;
+    probe.remove();
+    return [getComputedStyle(el).color, tertiary];
+  });
+  expect(color).toBe(tertiary);
+});
+
 test.describe('on a tablet', () => {
   test.beforeEach(() => tabletOnly());
 
@@ -73,14 +117,18 @@ test.describe('on a tablet', () => {
     await expect(house.root().locator('#pane-car')).toBeVisible();
   });
 
-  test('the Home card holds the weather, Who’s home and the stack, and the Security card and the scenes are in place', async ({
+  test('each subject is its own card: the weather, Who’s home and the stack; the Security card and the scenes are in place', async ({
     house,
   }) => {
     await house.tab('home');
-    const card = house.root().locator('#pane-home #hwx');
-    await expect(card.locator('hp-weather-card .hbig .num')).toBeVisible();
-    await expect(card.locator('hp-who-card')).toBeAttached();
-    await expect(card.locator('#hstk hp-smart-stack[mode="home"]')).toBeAttached();
+    const weather = house.root().locator('#pane-home #hwx');
+    await expect(weather.locator('hp-weather-card .hbig .num')).toBeVisible();
+    await expect(
+      weather.locator('hp-who-card, hp-smart-stack, #hstk'),
+      'the weather card is only the weather',
+    ).toHaveCount(0);
+    await expect(house.root().locator('#pane-home #hwho.card hp-who-card')).toBeAttached();
+    await expect(house.root().locator('#pane-home #hstk hp-smart-stack[mode="home"]')).toBeAttached();
     await expect(house.root().locator('#pane-home .hright #hsec hp-security-card .seccard')).toBeVisible();
     await expect(house.root().locator('#pane-home #hscenes hp-scene-tiles')).toBeAttached();
     await expect(house.root().locator('#pane-home #hscenes')).toBeVisible();
@@ -110,10 +158,14 @@ test.describe('on a phone', () => {
     ).toBeVisible();
   });
 
-  test('the Home card opens the weather detail, and has no stack', async ({house}) => {
+  test('the weather card opens the weather detail, holds only the weather, and Who’s home is its own card', async ({
+    house,
+  }) => {
     await house.tab('home');
     const card = house.root().locator('#pane-home #hwx');
-    await expect(card.locator('#hstk')).toHaveCount(0);
+    await expect(card.locator('#hstk, hp-who-card')).toHaveCount(0);
+    await expect(house.root().locator('#pane-home #hwho.card hp-who-card')).toBeAttached();
+    await expect(house.root().locator('#pane-home #hstk')).toHaveCount(0);
     await card.click();
     await expect(house.root().locator('hp-weather-detail')).toBeVisible();
   });

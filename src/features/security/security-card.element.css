@@ -117,22 +117,12 @@
   -webkit-box-orient: vertical;
   white-space: normal;
 }
+/* a plain trailing chevron, as the Home tiles draw theirs (#397): it leads to the Security tab, and no box makes it a second button */
 .chev {
-  width: 28px;
-  height: 28px;
-  border-radius: 10px;
-  background: var(--card2);
   display: grid;
   place-items: center;
-  color: var(--fg2);
+  color: var(--fg3);
   flex: none;
-}
-:host([glass]) .chev {
-  background: var(--g-tile);
-  box-shadow: var(--g-edge-s);
-}
-.chev:active {
-  transform: scale(0.96);
 }
 .hcams {
   display: grid;

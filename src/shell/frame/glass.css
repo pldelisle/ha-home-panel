@@ -176,8 +176,7 @@
 .app.tabsv.gl .rtab:not([aria-selected='true']):active {
   background: var(--g-fill);
 }
-/* small pills and icon squares (status pills, light chips, tile icons): tile fill, tinted states keep their accent */
-.app.gl .state,
+/* small icon squares (tile icons): tile fill, tinted states keep their accent */
 .app.gl .go {
   background: var(--g-tile);
   box-shadow: var(--g-edge-s);

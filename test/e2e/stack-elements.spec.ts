@@ -11,7 +11,7 @@ test.describe('tablet', () => {
 
   test('a thermostat change gives zero mutations in the stack and Who’s home', async ({house}) => {
     await expect(house.root().locator('#hstk .sc')).toBeVisible();
-    await expect(house.root().locator('#hwx .wp')).toHaveCount(2);
+    await expect(house.root().locator('#hwho .status')).toHaveCount(2);
     await house.mutations.reset();
     await house.setState('climate.living_room', {attributes: {temperature: 23}});
     await house.page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));

@@ -89,7 +89,7 @@ export interface Tile {
   value: string;
   unit: string;
   high: boolean;
-  /** What a screen reader says of the tile, a button: "PM2.5 20 µg/m³, opens its history". */
+  /** What a screen reader adds to the tile, a button named by its figure: "Opens its history" (its `aria-description`). */
   opens: string;
 }
 
@@ -159,7 +159,13 @@ export interface AirViewModel {
     rooms: RoomDetail[];
     /** The station and the AQHI; null without a station. */
     outside: OutsideDetail | null;
-    outdoorChart: {title: string; hint: string; empty: string} | null;
+    outdoorChart: {
+      title: string;
+      /** Each chart's own name and caption: the station's US AQI and the AQHI are two charts on two scales. */
+      aqi: {title: string; caption: string};
+      aqhi: {title: string; caption: string};
+      empty: string;
+    } | null;
   };
 }
 
@@ -204,6 +210,10 @@ function overallOf(
 
 const toneOf = (level: Level): Tone => Math.max(0, level) as Tone;
 
+const TONE_CLASS = ['ok', 'warn', 'bad'] as const;
+/** The kit's status tone (`.status.ok`, `.warn`, `.bad`) for a level: the dot's colour of the rating word beside it. */
+export const toneClass = (tone: Tone): (typeof TONE_CLASS)[Tone] => TONE_CLASS[tone];
+
 /** The fan's mode and speed as a held tap says them, else as the purifier reports them. */
 function fanOf({fanId, fan}: AirRoomInputs, overlay: Overlay) {
   const mode = overlay<Mode>(K.mode(fanId), fan.preset === 'Automagic' ? 'Automagic' : 'Manual');
@@ -247,7 +257,7 @@ function tilesOf(room: AirRoomInputs, rating: RoomRating, {t, fmt}: AirModelDeps
       value,
       unit,
       high: !!rated && rated.level > 0,
-      opens: t('air.tile.opens', {name, value: value === DASH ? value : `${value}${unit}`}),
+      opens: t('air.tile.opens'),
     };
   });
 }
@@ -405,7 +415,8 @@ export function airModel(inputs: AirInputs, deps: AirModelDeps): AirViewModel {
         inputs.outside?.aqi || inputs.aqhiId
           ? {
               title: t('air.outdoorAir', {range: t(RANGES[range].labelKey)}),
-              hint: t('air.outdoorHint'),
+              aqi: {title: t('air.aqiSeries'), caption: t('air.aqiCaption')},
+              aqhi: {title: t('air.aqhiSeries'), caption: t('air.aqhiCaption')},
               empty: t('air.noOutdoorHistory'),
             }
           : null,

@@ -190,14 +190,13 @@ describe('the departure row and its editor', () => {
   const saved = draftFromSchedule(inputsOf(hass).car!.schedule);
   const view = departureControls(inputsOf(hass), saved, depsFor(hass))!;
 
-  test('the row says what Ford saved, has the switch, and opens the editor', () => {
-    expect(view.row).toEqual({
+  test('the row says what Ford saved and whether it is on, and only opens the editor; the switch is the editor’s first row', () => {
+    expect(view.row).toEqual({title: 'Departure', line: 'Weekdays at 8:30 am · On'});
+    expect(view.editor.departure).toEqual({
       id: id('switch', 'departuretimes'),
-      title: 'Departure',
-      line: 'Weekdays at 8:30 am',
+      label: 'Departure times',
       on: true,
       disabled: false,
-      label: 'Departure times',
     });
   });
 
@@ -226,15 +225,19 @@ describe('the departure row and its editor', () => {
 
   test('with no schedule saved the row says so, not the editor’s default time', () => {
     const none = carHouse({[id('sensor', 'departureschedules')]: null});
-    expect(departureControls(inputsOf(none), draftFromSchedule(null), depsFor(none))?.row.line).toBe('No times saved');
+    expect(departureControls(inputsOf(none), draftFromSchedule(null), depsFor(none))?.row.line).toBe(
+      'No times saved · On',
+    );
     expect(departureControls(inputsOf(none), draftFromSchedule(null), depsFor(none, 'fr'))?.row.line).toBe(
-      'Aucun horaire enregistré',
+      'Aucun horaire enregistré · Activé',
     );
   });
 
   test('a car with no departure switch has the row disabled and off; a house with no car has none', () => {
     const none = carHouse({[id('switch', 'departuretimes')]: null});
-    expect(departureControls(inputsOf(none), saved, depsFor(none))?.row).toMatchObject({on: false, disabled: true});
+    const view = departureControls(inputsOf(none), saved, depsFor(none))!;
+    expect(view.editor.departure).toMatchObject({on: false, disabled: true});
+    expect(view.row.line).toBe('Weekdays at 8:30 am · Off');
     expect(departureControls(inputsOf(houseOf([], [])), saved, depsFor(houseOf([], [])))).toBeNull();
   });
 
@@ -321,6 +324,15 @@ describe('the actions row, from literal houses', () => {
 });
 
 describe('the Start confirmation', () => {
+  test('the seats’ line says cooling at its level, and nothing for a state it does not know', () => {
+    const cooled = carHouse({[id('select', 'rccseatfrontleft')]: car('select', 'rccseatfrontleft', 'cooled1')});
+    expect(carActions(inputsOf(cooled), depsFor(cooled))?.start?.seats).toBe(
+      'Front seats cool at level 1 with remote start.',
+    );
+    const off = carHouse({[id('select', 'rccseatfrontleft')]: car('select', 'rccseatfrontleft', 'off')});
+    expect(carActions(inputsOf(off), depsFor(off))?.start?.seats).toBe('');
+  });
+
   test('asks first, says what follows, and offers the heaters the car has as switches, with the seats’ own setting', () => {
     const hass = carHouse();
     const start = carActions(inputsOf(hass), depsFor(hass))?.start;

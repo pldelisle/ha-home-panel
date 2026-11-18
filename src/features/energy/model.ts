@@ -116,11 +116,15 @@ export interface Reading {
 export interface EnergyTile extends Reading {
   label: string;
   sub: string;
+  /** The tab's range that holds the tile's period, which a tap sets (a total of the detail); absent for a tile that leads nowhere, which is no button. */
+  range?: EnergyRange;
 }
 
 /** A tile of the phone's Energy tab, which opens its card in a sheet. */
 export interface PhoneTile extends EnergyTile {
   key: 'water' | 'hilo';
+  /** The sensor reads nothing: `value` is the word that says so (with no unit), which the tile draws in the line's style, never a dash as its big figure. */
+  missing?: boolean;
   /** The water heater is heating. */
   on: boolean;
 }
@@ -278,14 +282,8 @@ function daysOf(history: EnergyHistoryData, days: number, {now, fmt}: Pick<Detai
   return days === 1 && last[0]?.day !== fmt.isoDay(now) ? [] : last;
 }
 
-/** The last `days` days' totals from the history; null when it is not loaded, or when today is the period and has no row. */
-function sankeyPeriod(
-  days: number,
-  history: EnergyHistoryData | null,
-  rooms: number,
-  deps: DetailDeps,
-): SankeyPeriod | null {
-  if (!history) return null;
+/** The last `days` days' totals from the history; null when today is the period and has no row (the caller says "loading" before the history is in). */
+function sankeyPeriod(days: number, history: EnergyHistoryData, rooms: number, deps: DetailDeps): SankeyPeriod | null {
   const {t, fmt} = deps;
   const rows = daysOf(history, days, deps);
   if (days === 1 && !rows.length) return null;
@@ -392,15 +390,29 @@ function totalsBlock(
         value: fmt.fixed(totals.today, 1),
         unit: UNIT.kwh,
         sub: t('energy.totals.until', {time: fmt.time(now)}),
+        range: 'today',
       },
-      {label: t('energy.totals.yesterday'), value: fixedOr(fmt, totals.yesterday, 1), unit: UNIT.kwh, sub: ''},
+      {
+        label: t('energy.totals.yesterday'),
+        value: fixedOr(fmt, totals.yesterday, 1),
+        unit: UNIT.kwh,
+        sub: '',
+        range: 'week',
+      },
       {
         label: t('energy.days30'),
         value: whole(fmt, totals.d30),
         unit: UNIT.kwh,
         sub: t('energy.totals.perDay', {kwh: fmt.fixed(totals.d30 / 30, 1)}),
+        range: 'month',
       },
-      {label: fmt.month(now, 'long'), value: whole(fmt, totals.month), unit: UNIT.kwh, sub: t('energy.totals.soFar')},
+      {
+        label: fmt.month(now, 'long'),
+        value: whole(fmt, totals.month),
+        unit: UNIT.kwh,
+        sub: t('energy.totals.soFar'),
+        range: 'month',
+      },
       {
         label: t('energy.totals.ev'),
         value: whole(fmt, g30[2]),
@@ -443,6 +455,9 @@ export function energyModel(
   });
   const detail: DetailDeps = {now, t, fmt, names, language, range};
 
+  // a tile's figure and unit, or the word for no reading flagged `missing`, so the tile never draws a dash as its big figure
+  const figure = (value: string | null, unit: string): Pick<PhoneTile, 'value' | 'unit' | 'missing'> =>
+    value === null ? {value: t('energy.noReading'), unit: '', missing: true} : {value, unit};
   const phone: PhoneTile[] = [
     ...(water.present
       ? [
@@ -450,8 +465,7 @@ export function energyModel(
             key: 'water' as const,
             label: t('energy.water.title'),
             sub: heating ? heatingText : t('energy.idle'),
-            value: tank,
-            unit: UNIT.degrees,
+            ...figure(water.temperature === null ? null : tank, UNIT.degrees),
             on: heating,
           },
         ]
@@ -462,8 +476,7 @@ export function energyModel(
             key: 'hilo' as const,
             label: t('energy.hilo.title'),
             sub: t('energy.hiloTile', {tier: t(tier.name), challenge}),
-            value: cents(hilo.current),
-            unit: UNIT.cents,
+            ...figure(hilo.current === null ? null : cents(hilo.current), UNIT.cents),
             on: false,
           },
         ]

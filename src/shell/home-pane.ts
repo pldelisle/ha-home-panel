@@ -1,5 +1,5 @@
-// <hp-home-pane>: the Home tab: the config card, the weather card with Who's home and (on a tablet) the smart stack, the six tiles with
-// the Security card, and the scenes row. The shell imports features; a feature never imports the shell or another feature (ADR 0017).
+// <hp-home-pane>: the Home tab: the config card, a column of one card per subject (the weather, Who's home and, on a tablet, the smart
+// stack), the six tiles with the Security card, and the scenes row. The shell imports features; a feature never imports the shell or another feature (ADR 0017).
 // Pattern: a humble composition (Meszaros, xUnit Test Patterns), the composition root's child: each card is its feature's element on its
 // own ids (ADR 0012), drawn in light DOM (ADR 0032) so the pane's parts stay items of the `.pane-home` grid, styled by home-pane.css.
 // On a phone the weather card carries a button over it, named by `weatherCardLabel`, rather than being a button around its words. It loads the Energy and Water heater tiles' history (`HomeHistory`) and hands it down, and its heading's line is `homeLine`'s. Must not: read
@@ -99,21 +99,25 @@ export class HomePane extends LitElement {
     return html`<hp-pane-header .icon=${'house'} .color=${'var(--c-grid)'} .heading=${t('home.title')}
         ><div slot="sub" id="hsub">${line}</div></hp-pane-header
       ><hp-config-card></hp-config-card>
-      <div
-        class="card hwx${compact ? ' tap' : ''}"
-        id="hwx"
-        data-opens=${compact ? (weatherFeature.detailSheet ?? nothing) : nothing}
-      >
-        <hp-weather-card></hp-weather-card><hp-who-card></hp-who-card>${
-          compact
-            ? html`<button
-                type="button"
-                class="hwx-open"
-                aria-label=${weatherCardLabel(this.storeController.store)}
-                @click=${this.openWeather}
-              ></button>`
-            : nothing
-        }${
+      <div class="hleft" id="hleft">
+        <div
+          class="card hwx${compact ? ' tap' : ''}"
+          id="hwx"
+          data-opens=${compact ? (weatherFeature.detailSheet ?? nothing) : nothing}
+        >
+          <hp-weather-card></hp-weather-card>${
+            compact
+              ? html`<button
+                  type="button"
+                  class="hwx-open"
+                  aria-label=${weatherCardLabel(this.storeController.store)}
+                  @click=${this.openWeather}
+                ></button>`
+              : nothing
+          }
+        </div>
+        <div class="card hwhoc" id="hwho"><hp-who-card></hp-who-card></div>
+        ${
           compact
             ? nothing
             : html`<div
@@ -121,7 +125,6 @@ export class HomePane extends LitElement {
                 id="hstk"
                 ?hidden=${this.stackEmpty}
                 @hp-empty=${(e: EmptyEvent) => (this.stackEmpty = e.detail.empty)}
-                @click=${(e: Event) => e.stopPropagation()}
               >
                 <hp-smart-stack .mode=${'home'}></hp-smart-stack>
               </div>`

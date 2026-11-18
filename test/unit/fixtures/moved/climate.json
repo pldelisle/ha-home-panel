@@ -413,6 +413,10 @@
       "was": "Le plus frais"
     },
     {
+      "key": "climate.tile.opensChart",
+      "written": "Affiche son graphique"
+    },
+    {
       "key": "climate.heatingNow",
       "was": "Chauffe en ce moment"
     },

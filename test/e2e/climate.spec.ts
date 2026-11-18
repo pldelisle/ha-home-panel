@@ -59,13 +59,30 @@ test.describe('on a tablet', () => {
     );
   });
 
+  test('the selected room is a neutral filled row, with no outline and no blue ring', async ({house}) => {
+    const selected = item(house, 'house');
+    await expect(selected).toHaveAttribute('aria-selected', 'true');
+    const look = await selected.evaluate(el => {
+      const probe = document.createElement('div');
+      probe.style.background = 'var(--nav-sel-bg)';
+      el.parentElement!.append(probe);
+      const fill = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+      const style = getComputedStyle(el);
+      return {fill, background: style.backgroundColor, outline: style.outlineStyle, shadow: style.boxShadow};
+    });
+    expect(look.background).toBe(look.fill);
+    expect(look.outline).toBe('none');
+    expect(look.shadow).not.toContain('inset');
+  });
+
   test('selecting a room changes the head and the tiles', async ({house}) => {
     await item(house, 'bedroom').click();
     await expect(item(house, 'bedroom')).toHaveAttribute('aria-selected', 'true');
     await expect(item(house, 'house')).toHaveAttribute('aria-selected', 'false');
     await expect(detail(house).locator('h3')).toHaveText('Bedroom');
     await expect(detail(house).locator('.big p').first()).toHaveText('Hilo thermostat');
-    await expect(detail(house).locator('.cpill')).toHaveText('Heating to 21°');
+    await expect(detail(house).locator('.big .status')).toHaveText('Heating to 21°');
     await expect(detail(house).locator('.tile .k')).toHaveText(['Range, 24 h', 'Drawing now', 'Heating, 24 h']);
     await expect(detail(house).locator('.tile .v').nth(1)).toHaveText('1.20kW');
     await expect(detail(house).locator('hp-gauge [role="img"]')).toHaveAccessibleName(
@@ -74,6 +91,21 @@ test.describe('on a tablet', () => {
     await expect(detail(house).locator('.note')).toHaveText(
       'The dashed line is the setpoint. Where it stops, the thermostat was off.',
     );
+  });
+
+  test('the house’s Warmest and Coolest are buttons that select that room; the other tiles are plain', async ({
+    house,
+  }) => {
+    const buttons = detail(house).locator('button.tile');
+    await expect(buttons).toHaveCount(2);
+    await expect(buttons.first()).toHaveAccessibleName(/^Warmest.*21\.2.*Garage/);
+    await expect(buttons.first()).toHaveAccessibleDescription('Shows its chart');
+    await buttons.nth(1).click();
+    await expect(detail(house).locator('h3')).toHaveText('Living room');
+    await expect(item(house, 'living_room')).toHaveAttribute('aria-selected', 'true');
+    await expect(charts(house)).toBeVisible();
+    // a room's own tiles lead nowhere
+    await expect(detail(house).locator('button.tile')).toHaveCount(0);
   });
 
   test('the controls and the chart sit in the detail, for the room chosen, and the heatmap alone under it (the outside is the chart’s line)', async ({
@@ -114,7 +146,7 @@ test.describe('on a tablet', () => {
     await item(house, 'bedroom').click();
     await expect(detail(house).locator('h3')).toHaveText('Bedroom');
     await house.setState('climate.bedroom', {attributes: {temperature: 23}});
-    await expect(detail(house).locator('.cpill')).toHaveText('Heating to 23°');
+    await expect(detail(house).locator('.big .status')).toHaveText('Heating to 23°');
     await settle();
     expect(
       await house.mutations.count('hp-chart'),
@@ -252,7 +284,7 @@ test.describe('on a phone', () => {
     for (const value of [22, 23, 24, 25]) await house.page.mouse.move(at(value).x, at(value).y, {steps: 3});
     await expect(detail(house).locator('hp-dial .dialc b')).toHaveText('25.0°');
     await house.setState('climate.bedroom', {attributes: {temperature: 18}});
-    await expect(detail(house).locator('.cpill'), 'the thermostat reported another setpoint').toHaveText(
+    await expect(detail(house).locator('.big .status'), 'the thermostat reported another setpoint').toHaveText(
       'Heating to 18°',
     );
     await expect(dial, 'the held value wins under the finger').toHaveAttribute('aria-valuenow', '25');
@@ -300,6 +332,14 @@ test.describe('on a phone', () => {
     await expect(dial.locator('.dialc b')).toHaveText('20.6°');
   });
 
+  test('the house’s Coolest tile, in the sheet, shows that room', async ({house}) => {
+    await tile(house, 'house').click();
+    await detail(house)
+      .getByRole('button', {name: /^Coolest.*20\.0.*Living room/})
+      .click();
+    await expect(detail(house).locator('h3')).toHaveText('Living room');
+  });
+
   test('the sheet holds the controls and chart, for the room, and its range tabs', async ({house}) => {
     await tile(house, 'office').click();
     await expect(controls(house).locator('.quick button')).toHaveCount(5);
@@ -320,19 +360,14 @@ test.describe('on a phone', () => {
     expect(await house.mutations.count('hp-security-pane'), 'mutations').toBe(0);
   });
 
-  // The lit state pill's text (`--t-wh` on the pill's tint) reads 4.31:1 in the sheet, under 4.5:1. The legacy detail drew the same colours, so this move changes
-  // nothing; only that rule on that element is left out, everything else must be clean.
-  test('the sheet has no serious or critical accessibility finding, but the contrast of the lit pill: the slider', async ({
-    house,
-  }) => {
+  // the state is plain text with a dot since #393, so no rule of the audit is left out
+  test('the sheet has no serious or critical accessibility finding', async ({house}) => {
     await tile(house, 'bedroom').click();
     await expect(charts(house)).toBeVisible();
     const {violations} = await new AxeBuilder({page: house.page}).include('home-panel').analyze();
     const found = violations
       .filter(v => v.impact === 'serious' || v.impact === 'critical')
-      .flatMap(v =>
-        v.nodes.filter(n => !(v.id === 'color-contrast' && /\.c?pill\b/.test(String(n.target.at(-1))))).map(() => v.id),
-      );
+      .flatMap(v => v.nodes.map(() => v.id));
     expect(found).toEqual([]);
   });
 
@@ -367,7 +402,7 @@ test.describe('with a heat pump, on a tablet', () => {
     await expect(list(house).locator('.citem .tv').last()).toHaveText('19.5°');
     await item(house, 'hp').click();
     await expect(detail(house).locator('h3')).toHaveText('Heat pump');
-    await expect(detail(house).locator('.cpill')).toHaveText('Heating to 22°');
+    await expect(detail(house).locator('.big .status')).toHaveText('Heating to 22°');
     await expect(detail(house).locator('.tile .k')).toHaveText(['Range, 24 h', 'Last update']);
     await expect(detail(house).locator('.note')).toContainText('Readings come from the unit itself.');
     await expect(controls(house).locator('hp-seg [role="radio"][aria-checked="true"]')).toHaveText('Heat');

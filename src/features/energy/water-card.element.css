@@ -1,17 +1,11 @@
 /*
- * <hp-water-card>'s own rules: its `:host`, the state dot's two colours, the 24-hour chart's marks, its legend and the cycles line. The box
+ * <hp-water-card>'s own rules: its `:host`, the 24-hour chart's marks, its legend and the cycles line. The box
  * and its title line are the feature's (styles.css), the hero the kit's. The legacy card wrote these as inline styles and attributes
  * (renderWater, whChart), deleted in #239; the values are the same.
  */
 :host {
   display: block;
   min-width: 0;
-}
-.hero .state i.on {
-  background: var(--c-wh);
-}
-.hero .state i.off {
-  background: var(--fg3);
 }
 .whchart {
   display: block;

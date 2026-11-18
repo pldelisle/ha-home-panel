@@ -1,7 +1,6 @@
-/* The hero of a card: a big figure with its small unit, and a state pill with a coloured dot beside it. Written once for the legacy Car
-   card and for the elements that draw it (the water heater's and Hilo's cards; the climate gauge of #244 later); inside an element `.app.gl`
-   reads as `:host([glass])` (host.ts). The pill is `.hero .state`, a known copy of the legacy `.state` (base.css, glass.css) that the
-   other legacy cards still draw, which the Home move (#268) deletes. */
+/* The hero of a card: a big figure with its small unit, and a state beside it, which is the kit's `.status` (status.css), never a capsule.
+   Written once for the elements that draw it (the water heater's and Hilo's cards); inside an element `.app.gl` reads as `:host([glass])`
+   (host.ts). */
 .hero {
   display: flex;
   align-items: flex-end;
@@ -18,24 +17,4 @@
   color: var(--fg2);
   font-weight: 500;
   margin-left: 4px;
-}
-.hero .state {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  border-radius: 999px;
-  padding: 6px 12px;
-  font-weight: 600;
-  font-size: calc(13px * var(--tx));
-  background: var(--card2);
-}
-.hero .state i {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  display: block;
-}
-.app.gl .hero .state {
-  background: var(--g-tile);
-  box-shadow: var(--g-edge-s);
 }

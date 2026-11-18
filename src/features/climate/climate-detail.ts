@@ -1,7 +1,7 @@
 // <hp-climate-detail>: the selection's head (title, line, state pill), then the gauge and the big number on a tablet or the dial on a phone, the controls, the tiles, the chart and the note.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) placing the model's `detail` and the options `ClimateCharts` made, through `chart-place.ts`. The chart is `<hp-chart>` (ADR 0022); the controls are
 // `<hp-climate-controls>`; the dial's drag and keys are told here (`dial-input`, `dial-change`), shown at once in the overlay and sent once the finger rests, through `ControlSender` (ADR 0023).
-// Must not: read an entity, compute a figure or word a string (the model does), build the chart's options (the pane's `ClimateCharts` does), build a command by hand, or be given the selection by anyone but the pane.
+// Must not: read an entity, compute a figure or word a string (the model does), build the chart's options (the pane's `ClimateCharts` does), build a command by hand, or be given the selection by anyone but the pane (a tile's tap tells it upward as `select`).
 import {LitElement, html, nothing, svg, unsafeCSS} from 'lit';
 import {keyed} from 'lit/directives/keyed.js';
 import {repeat} from 'lit/directives/repeat.js';
@@ -9,6 +9,7 @@ import {chartPlace, legendItems} from './chart-place.ts';
 import './climate-controls.ts'; // defines <hp-climate-controls>
 import {hpTemperature, setRoomTemperature} from './commands.ts';
 import './dial.ts'; // defines <hp-dial>
+import type {SelectDetail} from './climate-list.ts';
 import type {DialDetail} from './dial.ts';
 import './gauge.ts'; // defines <hp-gauge>
 import detailOwn from './climate-detail.element.css?inline';
@@ -21,10 +22,14 @@ import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {OptimisticController} from '../../ui/controllers/optimistic.ts';
 import {StoreController} from '../../ui/controllers/store-controller.ts';
 import {lens} from '../../ui/lens.ts';
-import {chart, common, inner, pill, tiles} from '../../ui/styles/index.ts';
+import {tile} from '../../ui/tile.ts';
+import {chart, common, inner, status, tiles} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
 type Detail = ClimateViewModel['detail'];
+
+/** The model's tone (lit, unavailable) as the kit's status tone: lit is the good news of the moment, unavailable needs a look. */
+const STATUS_TONE = {'': '', on: 'ok', bad: 'warn'} as const;
 
 /** The detail's badge, the legacy sheet's own art, where the rail and the phone's header draw the `therm` icon. */
 export const detailIcon = svg`<svg
@@ -51,7 +56,7 @@ export class ClimateDetail extends LitElement {
   declare chart: ChartOptions | null;
 
   // The kit's inner card, tiles and chart legend; the element's own rules, the head, the big number, the tiles' columns and the note, are in climate-detail.element.css.
-  static override styles = [common, inner, tiles, chart, pill, unsafeCSS(forShadow(detailOwn))];
+  static override styles = [common, inner, tiles, chart, status, unsafeCSS(forShadow(detailOwn))];
 
   // the catalog and the formatters for the dial's commands; no entity, so no state change reaches the detail
   private readonly storeController = new StoreController(this, {ids: () => []});
@@ -80,7 +85,7 @@ export class ClimateDetail extends LitElement {
             <h3>${view.title}</h3>
             <p>${view.sub}</p>
           </div>
-          <span class=${`pill cpill ${view.pill.tone}`}>${view.pill.text}</span>
+          <span class=${`status ${STATUS_TONE[view.pill.tone]}`}><i aria-hidden="true"></i>${view.pill.text}</span>
         </div>
         ${view.dial ? this.renderDial(view.dial) : this.renderGauge(view)}
         <hp-climate-controls .view=${view.controls}></hp-climate-controls>
@@ -88,17 +93,31 @@ export class ClimateDetail extends LitElement {
           ${repeat(
             view.tiles,
             ({label}) => label,
-            ({label, value, unit, sub, range}) =>
-              html`<div class=${range ? 'tile trange' : 'tile'}>
-                <div class="k">${label}</div>
-                <div class="v num">${value}<small>${unit}</small></div>
-                ${sub ? html`<div class="s">${sub}</div>` : nothing}
-              </div>`,
+            tile => this.renderTile(tile),
           )}
         </div>
         ${this.renderChart(view)} ${view.note ? html`<p class="note">${view.note}</p>` : nothing}
       </div>
       ${lens}`;
+  }
+
+  // a tile is a plain well, or, when it leads to a room's chart (the house's Warmest and Coolest), the kit's button with its chevron that tells the pane which room (its name is what it draws, its description the model's `opens`);
+  private renderTile({label, value, unit, sub, range, select, opens}: Detail['tiles'][number]) {
+    const body = html`<div class="k">${label}</div>
+      <div class="v num">${value}<small>${unit}</small></div>
+      ${sub ? html`<div class="s">${sub}</div>` : nothing}`;
+    return tile(body, {
+      leads:
+        select === undefined || opens === undefined
+          ? undefined
+          : {description: opens, onTap: () => this.choose(select)},
+      classes: {trange: !!range},
+    });
+  }
+
+  // the same event the list tells, so the pane shows that room as it does for a tap on its row
+  private choose(sel: ClimateSelection): void {
+    this.dispatchEvent(new CustomEvent<SelectDetail>('select', {detail: {sel}}));
   }
 
   // the legend and the chart; until the range is loaded (or when it failed) the line that says so stands in the chart's place

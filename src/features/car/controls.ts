@@ -246,14 +246,17 @@ function seatWords(seats: string | null, t: Translate): string {
   return cool ? t('car.comfort.seatCool', {level: cool[1]}) : '';
 }
 
-/** The departure row: what Ford saved, and its switch. */
-export interface DepartureRowView extends SwitchRowView {
-  id: string;
+/** The departure row: one button that opens the editor, saying what Ford saved and whether it is on (HIG, Lists and tables: a row navigates or toggles, not both). */
+export interface DepartureRowView {
+  title: string;
+  line: string;
 }
 
 /** The departure editor (a sheet with Cancel and Save, HIG Sheets): the switch, the time, the cabin to choose and the days as a checkmark list. */
 export interface DepartureEditorView {
   title: string;
+  /** The first row, a switch that acts at once (not on Save): the entity it turns, what a screen reader calls it, whether it is on and whether the car has it. */
+  departure: {id: string; label: string; on: boolean; disabled: boolean};
   cancel: string;
   save: string;
   /** Whether Save can be pressed; `reason` says what is missing while it cannot. */
@@ -286,15 +289,17 @@ export function departureControls(
   return {
     car: ref,
     row: {
-      id: depId,
       title: t('car.departure.title'),
-      line: car.schedule ? capitalise(scheduleWords(draftFromSchedule(car.schedule), fmt, t)) : t('car.departure.none'),
-      on,
-      disabled: !car.departureAvailable,
-      label: t('car.comfort.departure'),
+      line: t('car.departure.line', {
+        schedule: car.schedule
+          ? capitalise(scheduleWords(draftFromSchedule(car.schedule), fmt, t))
+          : t('car.departure.none'),
+        state: t(on ? 'car.departure.on' : 'car.departure.off'),
+      }),
     },
     editor: {
       title: t('car.departure.title'),
+      departure: {id: depId, label: t('car.comfort.departure'), on, disabled: !car.departureAvailable},
       cancel: t('car.action.cancel'),
       save: t('car.departure.save'),
       canSave: problem === null,

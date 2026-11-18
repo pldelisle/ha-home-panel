@@ -164,7 +164,7 @@ test.describe('A % or # that ends a label in a flow with no run stored', () => {
     await house.root().locator('#pane-auto .aurow[data-au="percent_flow"]').click();
     const flow = house.root().locator('#pane-auto .auc.ausel'),
       svg = flow.locator('.augraph svg');
-    await expect(flow.locator('.pill', {hasText: 'no run stored'})).toBeVisible();
+    await expect(flow.locator('.status', {hasText: 'no run stored'})).toBeVisible();
     await expect(svg).toBeVisible({timeout: 10_000});
     // a label at the end of its source line: `"100%"` is `100#37;` and a `#2;` is `#35;2;`, as it reads as an entity (the
     // `Room #2` of ENTITIES does not, and stays as it is)
@@ -262,17 +262,13 @@ test.describe('the Automations pane', () => {
     );
   });
 
-  // The "done" pill (`--t-ok` on its green tint, over the glass) reads under 4.5:1, as the legacy pill drew it: a pixel-identical
-  // move keeps it, so that one node is left out; any other finding fails
-  test('the tab has no serious or critical accessibility finding, but the done pill’s contrast', async ({house}) => {
+  test('the tab has no serious or critical accessibility finding', async ({house}) => {
     await house.tab('auto');
     await expect(pane(house).locator('.augraph svg').first()).toBeVisible({timeout: 10_000});
     const {violations} = await new AxeBuilder({page: house.page}).include('home-panel').analyze();
     const bad = violations
       .filter(v => v.impact === 'serious' || v.impact === 'critical')
-      .flatMap(v =>
-        v.nodes.filter(n => !(v.id === 'color-contrast' && String(n.target.at(-1)).endsWith('.ok'))).map(() => v.id),
-      );
+      .flatMap(v => v.nodes.map(() => v.id));
     expect(bad).toEqual([]);
   });
 });

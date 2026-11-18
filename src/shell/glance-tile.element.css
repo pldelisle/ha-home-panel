@@ -48,14 +48,11 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* a plain trailing chevron, as the light rows and the Car's rows draw it: no box of its own */
 .htile .hh .go {
-  width: 28px;
-  height: 28px;
-  border-radius: 10px;
-  background: var(--card2);
   display: grid;
   place-items: center;
-  color: var(--fg2);
+  color: var(--fg3);
   flex: none;
 }
 .htile .hv {
@@ -83,10 +80,6 @@
   backdrop-filter: var(--m-bd);
   box-shadow: var(--m-edge);
 }
-.app.gl .htile .hh .go {
-  background: var(--g-tile);
-  box-shadow: var(--g-edge-s);
-}
 @media (prefers-reduced-transparency: reduce) {
   .app.gl .htile {
     -webkit-backdrop-filter: none;
@@ -95,7 +88,6 @@
   }
 }
 @media (prefers-reduced-motion: no-preference) {
-  .htile .hh .go,
   .htile {
     transition:
       transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
@@ -103,9 +95,6 @@
       box-shadow 0.2s ease,
       color 0.2s ease;
   }
-}
-.htile .hh .go:active {
-  transform: scale(0.96);
 }
 /* the Car tile's icon pulses while the car charges */
 .htile.chg .hh > span:first-child {

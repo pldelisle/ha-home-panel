@@ -73,12 +73,6 @@ describe('the full test house, in English', () => {
       temperature: '4.2°',
       condition: 'Mainly sunny',
       range: 'High 7° · Low -1° · normal 6° / -2°',
-      facts: [
-        {label: 'Wind', value: '14 km/h SW'},
-        {label: 'Humidity', value: '71%'},
-        {label: 'UV', value: '1'},
-        {label: 'Air quality', value: '2'},
-      ],
       days: [],
     });
   });
@@ -157,12 +151,6 @@ describe('the full test house, in French', () => {
       sunTime: '16 h 45',
       temperature: '4,2°',
       range: 'Max 7° · Min -1° · normale 6° / -2°',
-      facts: [
-        {label: 'Vent', value: '14 km/h SO'},
-        {label: 'Humidité', value: '71 %'},
-        {label: 'UV', value: '1'},
-        {label: "Qualité de l'air", value: '2'},
-      ],
     });
     expect(model.sun).toMatchObject({
       daylight: "10 h 0 min d'ensoleillement, 2 min 32 s de moins qu'hier",
@@ -209,7 +197,6 @@ describe('a house that knows nothing', () => {
       condition: '',
       range: '',
     });
-    expect(model.card.facts.map(fact => fact.value)).toEqual(['–', '–%', '–', '–']);
     expect(shown(model.tiles).map(tile => [tile.value, tile.unit])).toEqual(Array(8).fill(['–', '']));
     expect(model.now).toMatchObject({temperature: '–°', condition: '', line: '', summary: null});
   });
@@ -466,23 +453,9 @@ describe('the tiles', () => {
   });
 });
 
-describe('the card facts', () => {
-  test('the wind speed with its direction, the humidity with its percent sign, UV and air quality', () => {
-    const model = inEnglish({
-      wind: {speed: 14.6, gust: null, direction: 'SW', bearing: null},
-      humidity: 71.5,
-      uv: 3,
-      aqhi: 4,
-    });
-    expect(model.card.facts).toEqual([
-      {label: 'Wind', value: '15 km/h SW'},
-      {label: 'Humidity', value: '71.5%'},
-      {label: 'UV', value: '3'},
-      {label: 'Air quality', value: '4'},
-    ]);
-    expect(inEnglish({wind: {speed: null, gust: null, direction: 'SW', bearing: null}}).card.facts[0].value).toBe(
-      '– SW',
-    );
+describe('the card', () => {
+  test('has no facts row: the tiles under it say wind, humidity, UV and air quality once', () => {
+    expect(inEnglish({}).card).not.toHaveProperty('facts');
   });
 
   test('the sun label follows the sun: Sunset while it is up, Sunrise after, with the time of the next event', () => {

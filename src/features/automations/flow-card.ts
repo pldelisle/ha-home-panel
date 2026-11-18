@@ -1,4 +1,4 @@
-// <hp-flow-card>: one flow card of the Automations tab: its title and sentence, the pill that says how the run ended (counting up
+// <hp-flow-card>: one flow card of the Automations tab: its title and sentence, the status that says how the run ended, as text with a dot (counting up
 // while it runs), the run picker of the selected card, the legend and the Mermaid drawing of the automation with the run lit up.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over the model's `FlowCardView`; the drawing goes through the mount module
 // (`mountFlow`), mounted after the first update and again when the definition or the theme changes, destroyed on disconnect.
@@ -13,14 +13,14 @@ import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {StoreController} from '../../ui/controllers/store-controller.ts';
 import {TickController} from '../../ui/controllers/tick.ts';
 import {lens} from '../../ui/lens.ts';
-import {common, pill} from '../../ui/styles/index.ts';
+import {common, status} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
 export class FlowCard extends LitElement {
   static override properties = {view: {attribute: false}};
   declare view: FlowCardView | undefined;
 
-  static override styles = [common, pill, unsafeCSS(forShadow(shared)), unsafeCSS(forShadow(own))];
+  static override styles = [common, status, unsafeCSS(forShadow(shared)), unsafeCSS(forShadow(own))];
 
   // the store for its words only: the card listens to no entity
   private readonly storeController = new StoreController(this, {ids: () => []});
@@ -31,8 +31,8 @@ export class FlowCard extends LitElement {
   constructor() {
     super();
     this.view = undefined;
-    // a running run's pill counts up each second; the drawing is not touched
-    new TickController(this, 1000, () => this.view?.flow?.pill.since !== undefined);
+    // a running run's status counts up each second; the drawing is not touched
+    new TickController(this, 1000, () => this.view?.flow?.status.since !== undefined);
   }
 
   override disconnectedCallback(): void {
@@ -58,7 +58,8 @@ export class FlowCard extends LitElement {
         ${lens}`;
     const {flow} = v;
     const selected = v.kind === 'selected';
-    const pillText = flow.pill.since === undefined ? flow.pill.text : runningText(flow.pill.since, Date.now(), t);
+    const statusText =
+      flow.status.since === undefined ? flow.status.text : runningText(flow.status.since, Date.now(), t);
     return html`<section class="aubox auc${selected ? ' ausel' : ''}">
         <div class="auhead">
           <div>
@@ -66,7 +67,7 @@ export class FlowCard extends LitElement {
             <p>${flow.sentence}</p>
           </div>
           <div class="auhr">
-            <span class="pill ${flow.pill.tone}">${pillText}</span>${
+            <span class="status ${flow.status.tone}"><i aria-hidden="true"></i>${statusText}</span>${
               selected
                 ? html`<button
                     type="button"

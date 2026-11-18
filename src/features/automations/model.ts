@@ -59,7 +59,7 @@ export interface TileView {
 export interface TodayView {
   title: string;
   caption: string;
-  pill: string;
+  status: string;
   nowPct: number;
   /** The hour marks of the line: where each sits (percent) and its label in the house's format. */
   hours: {pct: number; label: string}[];
@@ -68,7 +68,7 @@ export interface TodayView {
 }
 
 export type CardKind = 'selected' | 'running' | 'decision' | 'completed';
-export type PillTone = '' | 'run' | 'no' | 'ok';
+export type StatusTone = 'plain' | 'warn' | 'bad' | 'ok';
 
 export interface PickChip {
   run: string;
@@ -87,7 +87,7 @@ export interface FlowCardView {
   /** Null when its config could not be read: the card says so and draws nothing else. */
   flow: {
     sentence: string;
-    pill: {tone: PillTone; text: string; since?: number};
+    status: {tone: StatusTone; text: string; since?: number};
     picker: PickChip[];
     def: string;
   } | null;
@@ -126,9 +126,9 @@ const TIMELINE_HOURS = [0, 6, 12, 18];
 
 const startOf = (s: TraceSummary): number => Date.parse(s.timestamp.start);
 
-/** The running pill's words: what the flow card writes again each second. */
+/** The running status's words: what the flow card writes again each second. */
 export const runningText = (since: number, now: number, t: Translate): string =>
-  t('automations.pill.running', {elapsed: elapsedText(since, now, t)});
+  t('automations.status.running', {elapsed: elapsedText(since, now, t)});
 
 /** The line under the heading: what runs now, today's runs and how many are enabled. */
 function subLine(
@@ -158,23 +158,23 @@ export function automationsBrief(automations: Automation[], t: Translate): strin
       : null;
 }
 
-function pillOf(
+function statusOf(
   run: TraceSummary | undefined,
   now: number,
   deps: AutomationsDeps,
-): {tone: PillTone; text: string; since?: number} {
+): {tone: StatusTone; text: string; since?: number} {
   const {t, fmt} = deps;
-  if (!run) return {tone: '', text: t('automations.pill.none')};
+  if (!run) return {tone: 'plain', text: t('automations.status.none')};
   const start = startOf(run);
-  if (run.state === 'running') return {tone: 'run', text: runningText(start, now, t), since: start};
+  if (run.state === 'running') return {tone: 'warn', text: runningText(start, now, t), since: start};
   if (run.script_execution === 'failed_conditions')
-    return {tone: 'no', text: t('automations.pill.stopped', {time: fmt.time(new Date(start))})};
+    return {tone: 'bad', text: t('automations.status.stopped', {time: fmt.time(new Date(start))})};
   if (run.script_execution === 'error')
-    return {tone: 'no', text: t('automations.pill.error', {time: fmt.time(new Date(start))})};
+    return {tone: 'bad', text: t('automations.status.error', {time: fmt.time(new Date(start))})};
   const finish = run.timestamp.finish;
   return {
     tone: 'ok',
-    text: t('automations.pill.done', {time: finish ? fmt.timeSeconds(new Date(finish)) : fmt.time(new Date(start))}),
+    text: t('automations.status.done', {time: finish ? fmt.timeSeconds(new Date(finish)) : fmt.time(new Date(start))}),
   };
 }
 
@@ -211,7 +211,7 @@ export function automationsModel(
   const todayView: TodayView = {
     title: t('automations.today.title'),
     caption: t('automations.today.caption'),
-    pill: `${fmt.dateWeekday(new Date(now))} · ${fmt.time(now)}`,
+    status: `${fmt.dateWeekday(new Date(now))} · ${fmt.time(now)}`,
     nowPct: layout.nowPct,
     hours: TIMELINE_HOURS.map(h => ({pct: (h / 24) * 100, label: fmt.hourOfDay(h)})),
     dots: layout.groups.map((g, i) => {
@@ -282,7 +282,7 @@ export function automationsModel(
       title,
       flow: {
         sentence: graph.sentence || (run ? '' : t('automations.card.shapeOnly')),
-        pill: pillOf(run, now, deps),
+        status: statusOf(run, now, deps),
         picker:
           runsOf.length > 1
             ? runsOf.map(x => ({

@@ -1,0 +1,31 @@
+/* A status as plain text with a small coloured dot (HIG, Color: never colour alone; Buttons: a filled capsule means "tap me" in this panel,
+   so a fact never wears one). The word always stays; the dot is an `<i aria-hidden>` before it and says the tone: `.ok` for the good news
+   of the moment, `.warn` for what needs a look (its word in the warning text colour), `.bad` for a failure; with no tone the dot is the grey of
+   the secondary text, for the rest (there is no `.plain` rule). With no `<i>` it is just the text (a date). The Car's facts, the Automations' dates and runs, the Air's ratings, Home's
+   people, Climate's and Energy's states and the header's peak chip use it; it has no fill, so a card's glass shows through. */
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: calc(13px * var(--tx));
+  font-weight: 600;
+}
+.status i {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--fg3);
+}
+.status.ok i {
+  background: var(--ok);
+}
+.status.warn i {
+  background: var(--warn);
+}
+.status.bad i {
+  background: var(--crit);
+}
+.status.warn {
+  color: var(--t-warn);
+}

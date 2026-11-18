@@ -354,11 +354,7 @@
     },
     {
       "key": "air.tile.opens",
-      "values": {
-        "name": "CO₂",
-        "value": "640ppm"
-      },
-      "written": "CO₂ 640ppm, ouvre l’historique"
+      "written": "Ouvre l’historique"
     },
     {
       "key": "air.outside"
@@ -379,8 +375,12 @@
       "after": "Air : Outdoor, 7 derniers jours"
     },
     {
-      "key": "air.outdoorHint",
-      "written": "IQA américain de la station (bon jusqu’à 50, modéré jusqu’à 100) et cote air santé sur son échelle de 1 à 10."
+      "key": "air.aqiCaption",
+      "written": "IQA américain de la station\u202f: bon jusqu’à 50, modéré jusqu’à 100."
+    },
+    {
+      "key": "air.aqhiCaption",
+      "written": "La cote air santé d’Environnement Canada, sur son échelle de 1 à 10."
     },
     {
       "key": "air.aqi",

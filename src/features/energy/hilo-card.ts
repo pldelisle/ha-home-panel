@@ -9,7 +9,7 @@ import energyShared from './styles.css?inline';
 import {tileList} from './tile-list.ts';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {lens} from '../../ui/lens.ts';
-import {common, hero, tiles} from '../../ui/styles/index.ts';
+import {common, hero, status, tiles} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
 export class HiloCard extends LitElement {
@@ -23,7 +23,14 @@ export class HiloCard extends LitElement {
   declare framed: boolean;
 
   // The kit's hero and tiles, the feature's box (styles.css), and the element's own rules, its `:host`, the tiles' three columns and the dot, last (hilo-card.element.css).
-  static override styles = [common, hero, tiles, unsafeCSS(forShadow(energyShared)), unsafeCSS(forShadow(ownCss))];
+  static override styles = [
+    common,
+    hero,
+    status,
+    tiles,
+    unsafeCSS(forShadow(energyShared)),
+    unsafeCSS(forShadow(ownCss)),
+  ];
 
   constructor() {
     super();
@@ -42,7 +49,7 @@ export class HiloCard extends LitElement {
         <div class="etop"><span class="elbl">${view.title}</span><span class="eright">${view.challenge}</span></div>
         <div class="hero">
           <div class="v num">${rate.value}<small>${rate.unit}</small></div>
-          <span class="state"><i class=${tier.ok ? 'ok' : 'warn'}></i>${tier.text}</span>
+          <span class=${tier.ok ? 'status ok' : 'status warn'}><i aria-hidden="true"></i>${tier.text}</span>
         </div>
         <div class="tiles hilotiles">${tileList(view.tiles)}</div>
       </div>

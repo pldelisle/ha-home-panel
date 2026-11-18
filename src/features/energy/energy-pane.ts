@@ -176,7 +176,7 @@ export class EnergyPane extends LitElement {
   // the phone's two tiles, for the sections the house has: each opens its card in a sheet
   private renderTiles({tiles}: EnergyViewModel) {
     return html`<div class="etiles" @tile-open=${this.onTile}>
-      ${tiles.map(({key, label, sub, value, unit, on}) => {
+      ${tiles.map(({key, label, sub, value, unit, missing, on}) => {
         const section = SECTIONS[key];
         return html`<hp-stat-tile
           .key=${key}
@@ -185,6 +185,7 @@ export class EnergyPane extends LitElement {
           .sub=${sub}
           .value=${value}
           .unit=${unit}
+          .missing=${missing ?? false}
           .tone=${on ? `${section.tone} on` : section.tone}
         ></hp-stat-tile>`;
       })}

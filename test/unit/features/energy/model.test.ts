@@ -192,6 +192,37 @@ describe('Hilo', () => {
     expect(challenge('scheduled')).toBe('Challenge: scheduled');
   });
 
+  test('a tile whose sensor reads nothing says "No reading", in French "Aucune mesure", flagged missing and with no unit', () => {
+    const noTank = (rate: string): EnergyInputs => {
+      const hass = houseOf(
+        [],
+        [
+          entity('sensor.tank_temperature', 'unavailable'),
+          entity('sensor.tank_power', '0', {unit_of_measurement: 'W'}),
+          ...hiloStates(rate),
+        ],
+      );
+      const store = storeOf(hass, {entities: ENTITIES});
+      return readEnergy(hass.states, store.config, store.names);
+    };
+    expect(modelOf(noTank('unknown')).tiles).toEqual([
+      {key: 'water', label: 'Water heater', sub: 'Idle', value: 'No reading', unit: '', missing: true, on: false},
+      {
+        key: 'hilo',
+        label: 'Hilo',
+        sub: 'Rate unknown · No challenge scheduled',
+        value: 'No reading',
+        unit: '',
+        missing: true,
+        on: false,
+      },
+    ]);
+    expect(modelOf(noTank('unknown'), null, 'fr').tiles.map(tile => tile.value)).toEqual([
+      'Aucune mesure',
+      'Aucune mesure',
+    ]);
+  });
+
   test('the phone’s two rows: the tank heating, and Hilo with its tier and its challenge', () => {
     expect(modelOf(inputsOf(hiloStates('0.0759', 'pre_heat'))).tiles).toEqual([
       {key: 'water', label: 'Water heater', sub: 'Heating · 1.2 kW', value: '49.5', unit: '°', on: true},
@@ -600,10 +631,10 @@ describe('the detail', () => {
       );
       const view = detail({daily: days, totals: {today: 12.34, yesterday: 20.06, d30: 612.4, month: 100.4}});
       expect(view.totals.tiles).toEqual([
-        {label: 'Today so far', value: '12.3', unit: 'kWh', sub: 'until 2:00 pm'},
-        {label: 'Yesterday', value: '20.1', unit: 'kWh', sub: ''},
-        {label: '30 days', value: '612', unit: 'kWh', sub: '20.4 kWh a day'},
-        {label: 'November', value: '100', unit: 'kWh', sub: 'so far'},
+        {label: 'Today so far', value: '12.3', unit: 'kWh', sub: 'until 2:00 pm', range: 'today'},
+        {label: 'Yesterday', value: '20.1', unit: 'kWh', sub: '', range: 'week'},
+        {label: '30 days', value: '612', unit: 'kWh', sub: '20.4 kWh a day', range: 'month'},
+        {label: 'November', value: '100', unit: 'kWh', sub: 'so far', range: 'month'},
         {label: 'EV, 30 days', value: '40', unit: 'kWh', sub: '3 charging days'},
         {label: 'Rate now', value: '–', unit: '¢', sub: 'Hilo rate unknown'},
       ]);

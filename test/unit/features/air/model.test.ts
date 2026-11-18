@@ -3,7 +3,7 @@
 import {describe, expect, test} from 'vitest';
 import {readAir, type AirInputs} from '../../../../src/features/air/inputs.ts';
 import {K} from '../../../../src/features/air/commands.ts';
-import {airBrief, airModel, type AirViewModel} from '../../../../src/features/air/model.ts';
+import {airBrief, airModel, toneClass, type AirViewModel} from '../../../../src/features/air/model.ts';
 import type {AirRoomInputs, OutsideAirInputs} from '../../../../src/providers/mila.ts';
 import {fakeHass} from '../../fake-hass.ts';
 import {depsOf, fullHouse, readingOf, recorded, type Language} from '../media/support.ts';
@@ -379,30 +379,56 @@ describe('the detail’s outdoor chart follows the range', () => {
     );
     expect(Object.keys(week.detail)).not.toContain('history');
   });
+
+  test('each of the two charts is named and captioned for its own scale, in English and in French', () => {
+    expect(modelOf(inputsOf([room()], station())).detail.outdoorChart).toMatchObject({
+      aqi: {title: 'AQI (Mila station)', caption: 'US AQI from the station: good up to 50, moderate up to 100.'},
+      aqhi: {title: 'AQHI (Environment Canada)', caption: 'The AQHI from Environment Canada, on its 1 to 10 scale.'},
+    });
+    expect(modelOf(inputsOf([room()], station()), 'fr').detail.outdoorChart).toMatchObject({
+      aqi: {
+        title: 'IQA (station Mila)',
+        caption: 'IQA américain de la station\u202f: bon jusqu’à 50, modéré jusqu’à 100.',
+      },
+      aqhi: {
+        title: 'CAS (Environnement Canada)',
+        caption: 'La cote air santé d’Environnement Canada, sur son échelle de 1 à 10.',
+      },
+    });
+  });
 });
 
 describe('a tile opens its history', () => {
-  test('each of the seven tiles is named for a screen reader: the reading, its value and unit, and what a tap does', () => {
+  test('each of the seven tiles shows its reading, value and unit, and says what a tap does as a description', () => {
     const {states, registries, names, store} = readingOf(fullHouse);
-    const {detail} = modelOf(readAir(states, registries, names, store.config));
-    expect(detail.rooms[0].tiles.map(tile => tile.opens)).toEqual([
-      'PM2.5 20µg/m³, opens its history',
-      'CO₂ 640ppm, opens its history',
-      'VOC 180µg/m³, opens its history',
-      'CO 1.0ppm, opens its history',
-      'PM1 6µg/m³, opens its history',
-      'PM10 24µg/m³, opens its history',
-      'Humidity 38%, opens its history',
+    const {tiles} = modelOf(readAir(states, registries, names, store.config)).detail.rooms[0];
+    expect(tiles.map(tile => `${tile.label} ${tile.value}${tile.unit}`)).toEqual([
+      'PM2.5 20µg/m³',
+      'CO₂ 640ppm',
+      'VOC 180µg/m³',
+      'CO 1.0ppm',
+      'PM1 6µg/m³',
+      'PM10 24µg/m³',
+      'Humidity 38%',
     ]);
+    expect(tiles.map(tile => tile.opens)).toEqual(Array(7).fill('Opens its history'));
   });
 
-  test('a reading with no value is named without a unit', () => {
-    const {tiles} = modelOf(inputsOf([room()])).detail.rooms[0];
-    expect(tiles[0].opens).toBe('PM2.5 –, opens its history');
-  });
-
-  test('in French, the words and the number are French’s own', () => {
+  test('in French, the description and the number are French’s own', () => {
     const fr = modelOf(inputsOf([room({readings: {co: 1}})]), 'fr').detail.rooms[0].tiles;
-    expect(fr[3].opens).toBe('CO 1,0ppm, ouvre l’historique');
+    expect(fr[3].opens).toBe('Ouvre l’historique');
+    expect(fr[3].value).toBe('1,0');
+  });
+
+  test('a reading with no value shows a dash and still says what a tap does', () => {
+    const {tiles} = modelOf(inputsOf([room()])).detail.rooms[0];
+    expect(tiles[0].value).toBe('–');
+    expect(tiles[0].opens).toBe('Opens its history');
+  });
+});
+
+describe('toneClass: the kit’s dotted text for an Air level', () => {
+  test('good is ok, moderate is warn, poor is bad', () => {
+    expect(([0, 1, 2] as const).map(toneClass)).toEqual(['ok', 'warn', 'bad']);
   });
 });

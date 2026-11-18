@@ -93,6 +93,18 @@ test.describe('on a phone', () => {
     await expect(detail(house).locator('hp-pane-header')).toHaveCount(0);
   });
 
+  test('a total that has a range sets the tab to it; the car and the rate stay plain tiles', async ({house}) => {
+    await openTab(house);
+    const totals = detail(house).locator('.totals');
+    await expect(totals.locator('button.tile')).toHaveCount(4);
+    await expect(totals.locator('.tile')).toHaveCount(6);
+    const tabs = pane(house).locator(':scope > hp-range-tabs');
+    await totals.getByRole('button', {name: /^30 days/}).click();
+    await expect(tabs.getByRole('tab', {name: 'Month'})).toHaveAttribute('aria-selected', 'true');
+    await totals.getByRole('button', {name: /^Yesterday/}).click();
+    await expect(tabs.getByRole('tab', {name: 'Week'})).toHaveAttribute('aria-selected', 'true');
+  });
+
   test('the flow’s one SVG is bound and not rebuilt: it stays the same node across two updates while its numbers change', async ({
     house,
   }) => {
@@ -143,7 +155,7 @@ test.describe('on a phone', () => {
     const sheet = pane(house).locator('hp-sheet[open]');
     await expect(sheet.locator('h2')).toHaveText('Water heater');
     await expect(water(house).locator('.hero .v')).toHaveText('50.0°C');
-    await expect(water(house).locator('.hero .state')).toHaveText('Idle · 0 W');
+    await expect(water(house).locator('.hero .status')).toHaveText('Idle · 0 W');
     await sheet.locator('.close').click();
     await expect(pane(house).locator('hp-sheet[open]')).toHaveCount(0);
     await expect(water(house)).toHaveCount(0);
@@ -156,7 +168,7 @@ test.describe('on a phone', () => {
     await expect(tile.locator('.tx b')).toHaveText('Hilo');
     await tile.locator('button').click();
     await expect(hilo(house).locator('.hero .v')).toHaveText('7.32¢/kWh');
-    await expect(hilo(house).locator('.hero .state')).toHaveText('Low tier');
+    await expect(hilo(house).locator('.hero .status')).toHaveText('Low tier');
     await expect(hilo(house).locator('.tile .k')).toHaveText(['Medium', 'Reward', 'Rewards']);
     await house.page.keyboard.press('Escape');
     await expect(hilo(house)).toHaveCount(0);
@@ -239,7 +251,7 @@ test.describe('on a tablet', () => {
     await house.tab('energy');
     await expect(water(house).locator('.elbl')).toHaveText('Water heater');
     await expect(water(house).locator('.hero .v')).toHaveText('50.0°C');
-    await expect(water(house).locator('.hero .state')).toHaveText('Idle · 0 W');
+    await expect(water(house).locator('.hero .status')).toHaveText('Idle · 0 W');
     await expect(water(house).locator('.whleg span')).toHaveText(['Water temperature', 'Heating power']);
     await expect(water(house).locator('.whline')).toContainText('Last 24 hours:');
     await expect(hilo(house)).toHaveCount(0);
@@ -249,7 +261,7 @@ test.describe('on a tablet', () => {
     await house.tab('energy');
     await addHilo(house);
     await expect(hilo(house).locator('.hero .v')).toHaveText('7.32¢/kWh');
-    await expect(hilo(house).locator('.hero .state')).toHaveText('Low tier');
+    await expect(hilo(house).locator('.hero .status')).toHaveText('Low tier');
     await expect(water(house)).toHaveCount(1);
   });
 
@@ -322,6 +334,18 @@ test.describe('the detail on a tablet', () => {
     await expect(charts(house)).toHaveCount(1); // the main chart; the donut is in its own card
     await expect(detail(house).locator('.donutchart .apexcharts-canvas')).toBeVisible();
   };
+
+  test('a total’s tap sets the range tabs and brings the main chart into view', async ({house}) => {
+    await openDetail(house);
+    const totals = detail(house).locator('.totals');
+    await expect(totals.locator('button.tile')).toHaveCount(4);
+    await totals.getByRole('button', {name: /^30 days/}).click();
+    await expect(rangeTab(house, 'Month')).toHaveAttribute('aria-selected', 'true');
+    await expect(mainTitle(house)).toHaveText('Last 30 days, day by day');
+    await totals.getByRole('button', {name: /^Today so far/}).click();
+    await expect(rangeTab(house, 'Today')).toHaveAttribute('aria-selected', 'true');
+    await expect(mainTitle(house)).toBeInViewport();
+  });
 
   test('Week, Month and Year redraw the main chart from the loaded slices, and ask the recorder for nothing more', async ({
     house,
@@ -597,5 +621,23 @@ test.describe('Home’s tiles with no reading', () => {
     await expect(energy.locator('.hs').first()).toHaveText('No reading');
     await house.setState('sensor.house_power', {state: '850', attributes: {unit_of_measurement: 'W'}});
     await expect(energy.locator('.hv')).toBeVisible();
+  });
+});
+
+// The phone's Energy tiles say "No reading" in the line's style when their sensor reads nothing, never a dash as the big figure (#396).
+test.describe('the phone’s Energy tiles with no reading', () => {
+  test.use({houseOpts: {house: 'bare', cfg: {entities: {water_heater_temperature: 'sensor.tank_temperature'}}}});
+  test.beforeEach(() => phoneOnly());
+
+  test('the water heater tile says "No reading" in its line style, and its figure comes back with a reading', async ({
+    house,
+  }) => {
+    await house.setState('sensor.tank_temperature', {state: 'unavailable'});
+    await openTab(house);
+    const tile = pane(house).locator('hp-stat-tile[key="water"]');
+    await expect(tile.locator('.tv.num')).toHaveCount(0);
+    await expect(tile.locator('.tv')).toHaveText('No reading');
+    await house.setState('sensor.tank_temperature', {state: '48.5', attributes: {unit_of_measurement: '°C'}});
+    await expect(tile.locator('.tv.num')).toHaveText('48.5°');
   });
 });

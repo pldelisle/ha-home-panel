@@ -12,7 +12,9 @@ import {
   isHistoryRequest,
   metricIds,
   metricSeries,
-  outdoorChartOptions,
+  aqhiOptions,
+  airTokensFrom,
+  outdoorAqiOptions,
   outdoorSeries,
   rangeTabs,
   statisticsStart,
@@ -40,6 +42,20 @@ const STATS = {
   'sensor.out_aqi': [row(1_000_000, 42.04)],
   'sensor.ec_aqhi': [row(1_000_000, 3)],
 };
+
+describe('airTokensFrom', () => {
+  test('reads each colour from the page by its token name', () => {
+    expect(airTokensFrom(name => `value of ${name}`)).toEqual({
+      rooms: ['value of --c-home', 'value of --c-wh', 'value of --c-heat', 'value of --c-ev'],
+      station: 'value of --c-rest',
+      ok: 'value of --ok',
+      warn: 'value of --warn',
+      muted: 'value of --fg3',
+      aqi: 'value of --m-orange',
+      aqhi: 'value of --m-purple',
+    });
+  });
+});
 
 describe('metricSeries', () => {
   test('is the mean of each bucket moved to its middle and rounded to a decimal, a row with none dropped', () => {
@@ -251,17 +267,17 @@ describe('airChartOptions', () => {
   });
 });
 
-describe('outdoorChartOptions', () => {
-  const both = {aqi: [[1, 40]] as [number, number][], aqhi: [[1, 3]] as [number, number][]};
+describe('outdoorAqiOptions', () => {
+  const aqi: [number, number][] = [
+    [1, 40],
+    [2, 62],
+  ];
 
-  test('the index on the left axis with its bands and the AQHI on a right axis from 0 to 10, each in its own colour', () => {
-    const o = outdoorChartOptions(both, 'day', depsOf('en'));
-    expect(o.series.map(s => s.name)).toEqual(['AQI (Mila station)', 'AQHI (Environment Canada)']);
-    expect(o.colors).toEqual(['#aqi', '#aqhi']);
-    expect(o.yaxis).toMatchObject([
-      {seriesName: 'AQI (Mila station)', min: 0, forceNiceScale: true, title: {text: 'US AQI'}},
-      {seriesName: 'AQHI (Environment Canada)', min: 0, opposite: true, max: 10, tickAmount: 5, title: {text: 'AQHI'}},
-    ]);
+  test('one line on one axis from 0 to 150 with the good and moderate bands, in the index colour', () => {
+    const o = outdoorAqiOptions(aqi, 'day', depsOf('en'));
+    expect(o.series).toEqual([{name: 'AQI (Mila station)', data: aqi}]);
+    expect(o.colors).toEqual(['#aqi']);
+    expect(o.yaxis).toMatchObject({min: 0, max: 150, tickAmount: 3, title: {text: 'US AQI'}});
     expect(o.annotations.yaxis).toMatchObject([
       {y: 0, y2: 50, fillColor: '#ok', opacity: 0.1, label: {text: 'Good'}},
       {y: 50, y2: 100, fillColor: '#warn', opacity: 0.08, label: {text: 'Moderate'}},
@@ -270,19 +286,60 @@ describe('outdoorChartOptions', () => {
     expect(o.tooltip.x.formatter(Date.parse('2026-11-09T21:07:00Z'))).toBe('Mon 4:07 pm');
   });
 
-  test('a line with no points is left out, and the bands go with the index', () => {
-    const aqhiOnly = outdoorChartOptions({aqi: [], aqhi: both.aqhi}, 'day', depsOf('en'));
-    expect(aqhiOnly.series.map(s => s.name)).toEqual(['AQHI (Environment Canada)']);
-    expect(aqhiOnly.annotations).toEqual({});
-    expect(outdoorChartOptions({aqi: both.aqi, aqhi: []}, 'day', depsOf('en')).yaxis).toHaveLength(1);
+  test.each([
+    [140, 150],
+    [150, 200],
+    [187, 200],
+    [201, 250],
+  ])('the axis leaves room above the highest point: %s is drawn on a scale to %s', (highest, max) => {
+    const o = outdoorAqiOptions([[1, highest]], 'day', depsOf('en'));
+    expect(o.yaxis).toMatchObject({min: 0, max, tickAmount: max / 50});
   });
 
-  test('the axes and the tooltip are whole numbers, French’s own with a thousand', () => {
-    const en = outdoorChartOptions(both, 'day', depsOf('en'));
-    const left = en.yaxis[0] as {labels: {formatter: (value: number) => string}};
-    expect(left.labels.formatter(41.6)).toBe('42');
+  test('the axis and the tooltip are whole numbers, French’s own with a thousand', () => {
+    const en = outdoorAqiOptions(aqi, 'day', depsOf('en'));
+    expect(en.yaxis.labels.formatter(41.6)).toBe('42');
     expect(en.tooltip.y.formatter(41.6)).toBe('42');
     expect(en.tooltip.y.formatter(null)).toBe('–');
-    expect(outdoorChartOptions(both, 'day', depsOf('fr')).tooltip.y.formatter(1234)).toBe('1 234');
+    const fr = outdoorAqiOptions(aqi, 'day', depsOf('fr'));
+    expect(fr.tooltip.y.formatter(1234)).toBe('1 234');
+    expect(fr.series[0].name).toBe('IQA (station Mila)');
+    expect(fr.yaxis.title.text).toBe('IQA américain');
+    expect(fr.annotations.yaxis).toMatchObject([{label: {text: 'Bon'}}, {label: {text: 'Moyen'}}]);
+  });
+});
+
+describe('aqhiOptions', () => {
+  const aqhi: [number, number][] = [
+    [1, 3],
+    [2, 10],
+  ];
+
+  test('one line on one axis from 0 to 12 in steps of three, in the AQHI colour, with no band', () => {
+    const o = aqhiOptions(aqhi, 'week', depsOf('en'));
+    expect(o.series).toEqual([{name: 'AQHI (Environment Canada)', data: aqhi}]);
+    expect(o.colors).toEqual(['#aqhi']);
+    expect(o.yaxis).toMatchObject({min: 0, max: 12, tickAmount: 4, title: {text: 'AQHI'}});
+    expect(o.annotations).toEqual({});
+    expect(o.xaxis).toMatchObject({
+      min: Date.parse('2026-11-03T00:00:00-05:00'),
+      max: Date.parse('2026-11-10T00:00:00-05:00'),
+    });
+  });
+
+  test.each([
+    [10, 12],
+    [11.5, 12],
+    [12, 15],
+  ])('the axis leaves room above the highest point: %s is drawn on a scale to %s', (highest, max) => {
+    expect(aqhiOptions([[1, highest]], 'day', depsOf('en')).yaxis).toMatchObject({min: 0, max, tickAmount: max / 3});
+  });
+
+  test('the words are French in French, and the readings whole numbers', () => {
+    const fr = aqhiOptions(aqhi, 'day', depsOf('fr'));
+    expect(fr.series[0].name).toBe('CAS (Environnement Canada)');
+    expect(fr.yaxis.title.text).toBe('CAS');
+    expect(fr.tooltip.y.formatter(3.4)).toBe('3');
+    expect(fr.tooltip.y.formatter(null)).toBe('–');
   });
 });
