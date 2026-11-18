@@ -6,7 +6,14 @@
 import {capitalise, DASH, DAY_MS, MINUTE_MS} from '../../core/figures.ts';
 import {conditionName} from '../../core/i18n/condition-name.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
-import {power as powerText, whole, type Formatters} from '../../core/i18n/format.ts';
+import {
+  forecastFigure,
+  forecastTemperature,
+  percent,
+  power,
+  temperature,
+  type Formatters,
+} from '../../core/i18n/format.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
 import type {Pollutant} from '../../providers/air-quality.ts';
 import type {Schedule} from '../../providers/fordpass.ts';
@@ -325,9 +332,9 @@ export const reminders: StackRule = {
 };
 
 /** The grid's draw as the two peak cards say it: watts under a kilowatt, one decimal above. */
-function using({power}: StackInputs, {t, fmt}: StackDeps): string {
-  const g = power.grid;
-  const figure = g === null ? DASH : powerText(fmt, g * 1000);
+function using({power: live}: StackInputs, {t, fmt}: StackDeps): string {
+  const g = live.grid;
+  const figure = g === null ? DASH : power(fmt, g * 1000);
   return t('stack.using', {power: figure});
 }
 
@@ -478,7 +485,7 @@ export const awayMode: StackRule = {
         color: 'var(--c-home)',
         right: t('stack.since', {when: when(away.since, now, fmt)}),
         body: [
-          ...(inside.length ? [big(`${fmt.fixed(mean, 1)}°`, t('stack.away.inside'))] : []),
+          ...(inside.length ? [big(temperature(fmt, mean), t('stack.away.inside'))] : []),
           mid(on ? t('stack.away.lightsOn', {n: on}) : t('stack.away.allOff')),
         ],
         foot: t('stack.away.foot'),
@@ -532,15 +539,15 @@ export const tomorrow: StackRule = {
             kind: 'weather',
             condition: next.condition,
             label: condition,
-            value: next.hi === null ? DASH : `${whole(fmt, next.hi)}°`,
-            unit: next.lo === null ? '' : `/ ${whole(fmt, next.lo)}°`,
+            value: next.hi === null ? DASH : forecastTemperature(fmt, next.hi),
+            unit: next.lo === null ? '' : `/ ${forecastTemperature(fmt, next.lo)}`,
             text: next.pop ? t('stack.tomorrow.chance', {condition, pop: Math.round(next.pop)}) : condition,
           },
         ],
         foot: !night
           ? ''
           : today?.lo != null
-            ? t('stack.tonightLow', {condition: night, low: whole(fmt, today.lo)})
+            ? t('stack.tonightLow', {condition: night, low: forecastFigure(fmt, today.lo)})
             : t('stack.tonight', {condition: night}),
       }),
     ];
@@ -560,14 +567,14 @@ function departureWords({days, hours, minutes}: Schedule, {t, fmt}: StackDeps): 
 
 export const chargingOvernight: StackRule = {
   key: 'car',
-  run: ({car, power, now}, deps) => {
+  run: ({car, power: live, now}, deps) => {
     const {t, fmt} = deps;
     if (!car?.plugged || car.home === false || !inHours(fmt.hourNow(now), NIGHT.from, NIGHT.chargeTo)) return [];
-    const p = power.ev;
+    const p = live.ev;
     const rows = [
-      ...(p !== null && p > CHARGING_SHOWN_KW ? [{label: t('stack.power'), value: powerText(fmt, p * 1000)}] : []),
+      ...(p !== null && p > CHARGING_SHOWN_KW ? [{label: t('stack.power'), value: power(fmt, p * 1000)}] : []),
       ...(car.range !== null ? [{label: t('stack.range'), value: `${fmt.integer(car.range)} km`}] : []),
-      ...(car.limit ? [{label: t('stack.limit'), value: `${fmt.integer(car.limit)}%`}] : []),
+      ...(car.limit ? [{label: t('stack.limit'), value: t('car.percent', {n: percent(fmt, car.limit)})}] : []),
     ];
     const departure = car.departureOn && car.schedule ? departureWords(car.schedule, deps) : null;
     return [

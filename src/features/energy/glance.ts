@@ -3,7 +3,7 @@
 // Pattern: pure readers over the store (view models, Meszaros' humble object's other half); the legacy `renderHome`'s rules, deleted in #268. The
 // history is the Energy card's loaded slices, given by the caller: a reader never loads.
 // Must not: read the clock, load, import the DOM, Lit, the shell or another feature, or hold text the household reads.
-import {powerParts, temperature} from '../../core/i18n/format.ts';
+import {power, temperature} from '../../core/i18n/format.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
 import type {GlanceStore, GlanceView} from '../../ui/glance.ts';
 import {LIVE_KW} from './flow-layout.ts';
@@ -17,24 +17,18 @@ export interface GlanceDeps {
   now: number;
 }
 
-/** A grid power in kW as the tile writes it: watts under a kilowatt, kW above, two significant figures (`powerParts`). */
-function wording(kw: number, t: GlanceStore['t'], fmt: GlanceStore['fmt']): string {
-  const {n, unit} = powerParts(fmt, kw * 1000);
-  return t(unit === 'W' ? 'energy.watts' : 'energy.kw', {n});
-}
-
 /** The Energy tile: always there, "No reading" in the line's style while the grid reads nothing. Null only before the first states. */
 export function glance({hass, config, names, t, fmt}: GlanceStore, {history}: GlanceDeps): GlanceView | null {
   if (!hass) return null;
-  const {power, hilo} = readEnergy(hass.states, config, names);
-  const kw = power.grid;
+  const {power: now, hilo} = readEnergy(hass.states, config, names);
+  const kw = now.grid;
   const rate = t(`energy.rate.${hilo.tier}` as MessageKey);
   return {
     key: 'energy',
     icon: 'bolt',
     color: 'var(--c-grid)',
     label: t('energy.title'),
-    value: kw === null ? t('energy.noReading') : wording(kw, t, fmt),
+    value: kw === null ? t('energy.noReading') : power(fmt, kw * 1000),
     ...(kw === null ? {missing: true} : {}),
     line: history
       ? t('energy.glance.line', {kwh: fmt.fixed(history.totals.today, 1), rate})
@@ -78,6 +72,5 @@ export function moreWord({hass, config, names, t, fmt}: GlanceStore): string | n
   if (!hass) return null;
   const kw = readEnergy(hass.states, config, names).power.grid;
   if (kw == null) return null;
-  const {n, unit} = powerParts(fmt, kw * 1000);
-  return t(unit === 'W' ? 'energy.more.watts' : 'energy.more.kilowatts', {n});
+  return t('energy.more.now', {power: power(fmt, kw * 1000)});
 }

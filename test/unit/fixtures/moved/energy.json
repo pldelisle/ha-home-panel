@@ -16,11 +16,9 @@
         "rate": "low rate"
       },
       "fr": {
-        "grid": "2,3 kW",
-        "heat": "1,1 kW",
         "rate": "tarif bas"
       },
-      "written": "Réseau 2,3 kW · chauffage 1,1 kW · Hilo tarif bas"
+      "was": "Réseau 2,3 kW · chauffage 1,1 kW · Hilo tarif bas"
     },
     {
       "key": "energy.summary",
@@ -30,8 +28,6 @@
         "rate": "current rate"
       },
       "fr": {
-        "grid": "2,3 kW",
-        "heat": "1,1 kW",
         "rate": "tarif actuel"
       },
       "written": "Réseau 2,3 kW · chauffage 1,1 kW · Hilo tarif actuel"
@@ -44,8 +40,6 @@
         "rate": "rate unknown"
       },
       "fr": {
-        "grid": "2,3 kW",
-        "heat": "1,1 kW",
         "rate": "tarif inconnu"
       },
       "written": "Réseau 2,3 kW · chauffage 1,1 kW · Hilo tarif inconnu"
@@ -98,18 +92,6 @@
     },
     {
       "key": "energy.rate.unknown"
-    },
-    {
-      "key": "energy.watts",
-      "values": {
-        "n": 850
-      }
-    },
-    {
-      "key": "energy.kw",
-      "values": {
-        "n": "7.10"
-      }
     },
     {
       "key": "energy.flow.label",
@@ -225,11 +207,14 @@
     {
       "key": "energy.water.heating",
       "values": {
-        "kw": "1.5"
+        "power": "1.5 kW"
       }
     },
     {
-      "key": "energy.water.idle"
+      "key": "energy.water.idle",
+      "values": {
+        "power": "0 W"
+      }
     },
     {
       "key": "energy.water.temperature",
@@ -276,7 +261,7 @@
       "key": "energy.water.barTitle",
       "values": {
         "time": "1:30 pm",
-        "kw": "2.4"
+        "power": "2.4 kW"
       },
       "fr": {
         "time": "13 h 30"
@@ -697,15 +682,15 @@
       "written": "Aucune mesure"
     },
     {
-      "key": "energy.more.watts",
+      "key": "energy.more.now",
       "values": {
-        "n": 850
+        "power": "850 W"
       }
     },
     {
-      "key": "energy.more.kilowatts",
+      "key": "energy.more.now",
       "values": {
-        "n": "3.24"
+        "power": "3.2 kW"
       }
     }
   ]

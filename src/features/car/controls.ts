@@ -4,7 +4,7 @@
 // Must not: import the DOM, Lit or the shell, read the clock, hold text the household reads (a catalog key says it), or decide a command (commands.ts does).
 import {capitalise} from '../../core/figures.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
-import type {Formatters} from '../../core/i18n/format.ts';
+import {power, type Formatters} from '../../core/i18n/format.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
 import type {CarInputs, CarRef} from '../../providers/fordpass.ts';
 import {chargerStatusKey, pauseHold} from '../../providers/wallbox.ts';
@@ -176,7 +176,7 @@ export function carActions(inputs: CarFeatureInputs, {t, fmt, overlay}: Controls
               ? t('car.action.paused')
               : charger.power === null || charger.power <= 0
                 ? ''
-                : t('car.charger.kw', {n: fmt.fixed(charger.power, 1)}),
+                : power(fmt, charger.power * 1000),
             paused: !charging,
           },
     honk: car.honkButton === null ? null : {id: car.honkButton, label: t('car.comfort.honk')},
@@ -210,7 +210,7 @@ export function chargerControls(inputs: CarFeatureInputs, {t, fmt, overlay}: Con
       options: steps.map(a => ({
         value: String(a),
         label: t('car.charger.amps', {n: a}),
-        sub: t('car.charger.kw', {n: fmt.fixed(a * KW_PER_AMP, 1)}),
+        sub: power(fmt, a * KW_PER_AMP * 1000),
       })),
       chosen: rounded === null ? undefined : String(rounded),
       disabled: !amps.available,

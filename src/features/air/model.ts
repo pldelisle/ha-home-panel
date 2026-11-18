@@ -5,7 +5,7 @@
 // Must not: import the DOM, Lit or the shell, read the clock, or hold text the household reads (a catalog key says it).
 import {capitalWords, DASH, joined} from '../../core/figures.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
-import {whole, type Formatters} from '../../core/i18n/format.ts';
+import {temperature, whole, type Formatters} from '../../core/i18n/format.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
 import {outdoorLevel, rateRoom, type Level, type Pollutant, type RoomRating} from '../../providers/air-quality.ts';
 import {POLLEN_KINDS, type AirRoomInputs, type OutsideAirInputs, type PollenKind} from '../../providers/mila.ts';
@@ -308,7 +308,7 @@ function roomDetail(room: AirRoomInputs, rating: RoomRating, deps: AirModelDeps)
     name: room.name,
     tone,
     state: rating.level < 0 ? DASH : t(LEVEL_WORDS[tone]),
-    headline: joined(headline, room.readings.temperature === null ? '' : `${fmt.fixed(room.readings.temperature, 1)}°`),
+    headline: joined(headline, room.readings.temperature === null ? '' : temperature(fmt, room.readings.temperature)),
     tiles: tilesOf(room, rating, deps),
     control: controlOf(room, deps),
   };

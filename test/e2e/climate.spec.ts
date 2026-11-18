@@ -84,7 +84,7 @@ test.describe('on a tablet', () => {
     await expect(detail(house).locator('.big p').first()).toHaveText('Hilo thermostat');
     await expect(detail(house).locator('.big .status')).toHaveText('Heating to 21°');
     await expect(detail(house).locator('.tile .k')).toHaveText(['Range, 24 h', 'Drawing now', 'Heating, 24 h']);
-    await expect(detail(house).locator('.tile .v').nth(1)).toHaveText('1.20kW');
+    await expect(detail(house).locator('.tile .v').nth(1)).toHaveText('1.2kW');
     await expect(detail(house).locator('hp-gauge [role="img"]')).toHaveAccessibleName(
       'Temperature 20.8 degrees, setpoint 21 degrees on a 14 to 30 degree scale',
     );

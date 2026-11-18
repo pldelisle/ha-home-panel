@@ -32,9 +32,9 @@ describe('the test house', () => {
     const items = itemsOf(fullHouse);
     expect(items.map(i => [i.id, i.icon, i.name, i.sub, i.value, i.tone])).toEqual([
       ['house', 'house', 'Whole house', '2 rooms heating', '20.6°', 'on'],
-      ['bedroom', 'bed', 'Bedroom', 'Heating · 1.20 kW', '20.8°', 'on'],
+      ['bedroom', 'bed', 'Bedroom', 'Heating · 1.2\u00a0kW', '20.8°', 'on'],
       ['garage', 'car', 'Garage', 'Holding 21°', '21.2°', ''],
-      ['living_room', 'sofa', 'Living room', 'Heating · 1.20 kW', '20.0°', 'on'],
+      ['living_room', 'sofa', 'Living room', 'Heating · 1.2\u00a0kW', '20.0°', 'on'],
       ['office', 'desk', 'Office', 'Holding 21°', '20.4°', ''],
     ]);
   });
@@ -42,7 +42,7 @@ describe('the test house', () => {
   test('in French: the words, the decimal comma and the rooms’ own names', () => {
     const items = itemsOf(fullHouse, 'fr');
     expect(items[0]).toMatchObject({name: 'Toute la maison', sub: '2 pièces chauffent', value: '20,6°'});
-    expect(items[1]).toMatchObject({sub: 'Chauffe · 1,20 kW', value: '20,8°'});
+    expect(items[1]).toMatchObject({sub: 'Chauffe · 1,2\u00a0kW', value: '20,8°'});
     expect(items[2]).toMatchObject({sub: 'Maintient 21°'});
   });
 
@@ -88,11 +88,11 @@ describe('a room', () => {
     expect(sub([thermostat('den', 'heat')])).toMatchObject({sub: 'Off'});
     expect(sub([thermostat('den', 'unavailable')])).toMatchObject({sub: 'Unavailable', value: '–°', tone: 'bad'});
     expect(sub([thermostat('den', 'heat', {hvac_action: 'heating'})])).toMatchObject({
-      sub: 'Heating · 0.00 kW',
+      sub: 'Heating · 0\u00a0W',
       tone: 'on',
     });
     expect(sub([thermostat('den'), entity('sensor.den_power', '600', {unit_of_measurement: 'W'})])).toMatchObject({
-      sub: 'Heating · 0.60 kW',
+      sub: 'Heating · 600\u00a0W',
       tone: 'on',
     });
   });

@@ -3,12 +3,14 @@
 import {describe, expect, test} from 'vitest';
 import {
   createFormatters,
+  forecastFigure,
   forecastTemperature,
   money,
   percent,
   power,
   powerParts,
   temperature,
+  temperatureFigure,
   type Formatters,
 } from '../../src/core/i18n/format.ts';
 import type {PanelLocaleSpec} from '../../src/core/i18n/locale.ts';
@@ -320,7 +322,7 @@ describe('one formatter per kind of quantity (#417)', () => {
     expect(percent(fr, null)).toBe('–');
   });
 
-  test('temperature is a tenth with the degree sign, a forecast a whole degree', () => {
+  test('temperature is a tenth, with the degree sign or without it', () => {
     expect(temperature(en, 4)).toBe('4.0°');
     expect(temperature(en, 4.24)).toBe('4.2°');
     expect(temperature(en, 20.6)).toBe('20.6°');
@@ -329,35 +331,53 @@ describe('one formatter per kind of quantity (#417)', () => {
     expect(temperature(en, -3.25)).toMatch(/^[-−]3\.[23]°$/);
     expect(temperature(fr, 20.6)).toBe('20,6°');
     expect(temperature(fr, null)).toBe('–°');
+    expect(temperatureFigure(en, 20.6)).toBe('20.6');
+    expect(temperatureFigure(fr, 20.64)).toBe('20,6');
+    expect(temperatureFigure(en, null)).toBe('–');
+  });
+
+  test('a forecast is a whole degree, with the degree sign or without it', () => {
     expect(forecastTemperature(en, 4.6)).toBe('5°');
     expect(forecastTemperature(fr, -0.4)).toBe('0°');
     expect(forecastTemperature(fr, null)).toBe('–°');
+    expect(forecastFigure(en, 4.4)).toBe('4');
+    expect(forecastFigure(fr, null)).toBe('–');
   });
 
-  test('power keeps two significant figures and one unit per magnitude', () => {
-    expect(power(en, 0)).toBe('0 W');
-    expect(power(en, 0.4)).toBe('0 W');
-    expect(power(en, 47.6)).toBe('48 W');
-    expect(power(en, 850)).toBe('850 W');
-    expect(power(en, 856)).toBe('860 W');
-    expect(power(en, 3240)).toBe('3.2 kW');
-    expect(power(en, 12340)).toBe('12 kW');
-    expect(power(en, 996)).toBe('1.0 kW');
-    expect(power(en, -850)).toMatch(/^[-−]850 W$/);
-    expect(power(en, -3240)).toMatch(/^[-−]3\.2 kW$/);
-    expect(power(fr, 3240)).toBe('3,2 kW');
-    expect(power(fr, 12340)).toBe('12 kW');
+  test('power keeps two significant figures and one unit per magnitude, a no-break space between', () => {
+    expect(power(en, 0)).toBe('0\u00a0W');
+    expect(power(en, 0.4)).toBe('0\u00a0W');
+    expect(power(en, 47.6)).toBe('48\u00a0W');
+    expect(power(en, 850)).toBe('850\u00a0W');
+    expect(power(en, 856)).toBe('860\u00a0W');
+    expect(power(en, 3240)).toBe('3.2\u00a0kW');
+    expect(power(en, 12340)).toBe('12\u00a0kW');
+    expect(power(en, -850)).toMatch(/^[-−]850\u00a0W$/);
+    expect(power(en, -3240)).toMatch(/^[-−]3\.2\u00a0kW$/);
+    expect(power(fr, 3240)).toBe('3,2\u00a0kW');
+    expect(power(fr, 12340)).toBe('12\u00a0kW');
     expect(power(fr, null)).toBe('–');
     expect(powerParts(en, 3240)).toEqual({n: '3.2', unit: 'kW'});
     expect(powerParts(en, 0)).toEqual({n: '0', unit: 'W'});
+  });
+
+  test('the unit is chosen after rounding: 999.6 W is 1.0 kW, never 1000 W; 9.96 kW is 10 kW', () => {
+    expect(power(en, 994)).toBe('990\u00a0W');
+    expect(power(en, 996)).toBe('1.0\u00a0kW');
+    expect(power(en, 999.6)).toBe('1.0\u00a0kW');
+    expect(power(fr, 999.6)).toBe('1,0\u00a0kW');
+    expect(power(en, 9960)).toBe('10\u00a0kW');
   });
 
   test('money is whole dollars in a headline and cents in a table, the same rounding', () => {
     expect(money(en, 17.59, 'headline')).toBe('18');
     expect(money(en, 17.59, 'cents')).toBe('17.59');
     expect(money(en, 0, 'cents')).toBe('0.00');
+    expect(money(en, -0.004, 'cents')).toBe('0.00');
     expect(money(en, -2.5, 'cents')).toMatch(/^[-−]2\.50$/);
     expect(money(fr, 17.59, 'cents')).toBe('17,59');
+    expect(money(fr, 17.59, 'headline')).toBe('18');
+    expect(money(fr, 1234.5, 'headline')).toBe('1\u202f235');
     expect(money(fr, 0.4, 'headline')).toBe('0');
     expect(money(fr, null, 'cents')).toBe('–');
   });

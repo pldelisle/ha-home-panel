@@ -88,7 +88,7 @@ test.describe('on a phone', () => {
       'Year',
     ]);
     await expect(detail(house)).toBeVisible();
-    await expect(flow(house).locator('text.big').nth(1)).toHaveText('3.2 kW');
+    await expect(flow(house).locator('text.big').nth(1)).toHaveText('3.2kW');
     await expect(flow(house).locator('text.st', {hasText: /^kW · Home$/})).toHaveText('kW · Home');
     await expect(detail(house).locator('.inner > hp-chart .apexcharts-canvas')).toBeVisible();
     // today has no row in this clock's recorder, so its donut would say so: the week has days
@@ -124,9 +124,9 @@ test.describe('on a phone', () => {
     const gridWidth = () => svg.locator('line').first().getAttribute('stroke-width');
     const before = await gridWidth();
     await house.setState(GRID, {state: '4100'});
-    await expect(flow(house).locator('text.big').nth(1)).toHaveText('4.1 kW');
+    await expect(flow(house).locator('text.big').nth(1)).toHaveText('4.1kW');
     await house.setState(GRID, {state: '4900'});
-    await expect(flow(house).locator('text.big').nth(1)).toHaveText('4.9 kW');
+    await expect(flow(house).locator('text.big').nth(1)).toHaveText('4.9kW');
     expect(await gridWidth(), 'the line grows with the power').not.toBe(before);
     expect(
       await flow(house).evaluate(

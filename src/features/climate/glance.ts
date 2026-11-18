@@ -2,6 +2,7 @@
 // Pattern: a pure reader over the store (a view model, Meszaros' humble object's other half); the legacy `renderHome`'s rule, deleted in #268.
 // Must not: read the clock, import the DOM, Lit, the shell or another feature, or hold text the household reads (a catalog key says it).
 import {DASH} from '../../core/figures.ts';
+import {temperature} from '../../core/i18n/format.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
 import {registriesOf} from '../../core/registry.ts';
 import {heatPump} from '../../providers/heat-pump.ts';
@@ -28,7 +29,7 @@ export function glance({hass, config, t, fmt}: GlanceStore): GlanceView | null {
     icon: 'therm',
     color: 'var(--c-heat)',
     label: t('climate.title'),
-    value: temps.length ? `${fmt.fixed(sum(temps) / temps.length, 1)}°` : DASH,
+    value: temps.length ? temperature(fmt, sum(temps) / temps.length) : DASH,
     line: hp
       ? t('climate.glance.lineHp', {
           heating,

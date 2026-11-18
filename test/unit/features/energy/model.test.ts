@@ -39,7 +39,7 @@ const hiloStates = (rate: string, challenge: string | null = 'off'): State[] => 
   entity('sensor.rewards', '85'),
 ];
 
-/** The inputs of a house of literal states: Hilo, a tank of 49.5 degrees heating at 1.2 kW, and a grid reading of 2.3 kW. */
+/** The inputs of a house of literal states: Hilo, a tank of 49.5 degrees heating at 1.2\u00a0kW, and a grid reading of 2.3\u00a0kW. */
 const inputsOf = (states: State[] = hiloStates('0.0759')): EnergyInputs => {
   const hass = houseOf(
     [],
@@ -102,7 +102,7 @@ describe('the test house', () => {
   const vm = modelOf(testHouse());
 
   test('no Hilo: the summary says the tier is unknown, as the legacy panel did, and the detail is the one title and no error', () => {
-    expect(vm.summary).toBe('Grid supplying 3.2 kW · room heating 2.4 kW · Hilo rate unknown');
+    expect(vm.summary).toBe('Grid supplying 3.2\u00a0kW · room heating 2.4\u00a0kW · Hilo rate unknown');
     expect(vm.detail).toMatchObject({title: 'Home energy', sub: vm.summary, error: null});
   });
 
@@ -110,7 +110,7 @@ describe('the test house', () => {
     const {body} = vm.detail.sankey;
     if (body.kind !== 'flow') throw new Error('the Sankey of now is the live flow');
     expect(body.flow.label).toBe(
-      'Grid supplies 3.2 kW to the home; room heating 2.4 kW; water heating 0 W; EV charging 7.1 kW',
+      'Grid supplies 3.2\u00a0kW to the home; room heating 2.4\u00a0kW; water heating 0\u00a0W; EV charging 7.1\u00a0kW',
     );
     expect(body.flow.labels.map(l => l.text)).toContain('Charging');
     expect(body.flow.nodes.find(n => n.key === 'water')!.texts[1].text).toBe('50.0°');
@@ -126,7 +126,7 @@ describe('the test house', () => {
       title: 'Water heater',
       name: '',
       temperature: {value: '50.0', unit: '°'},
-      state: {heating: false, text: 'Idle · 0 W'},
+      state: {heating: false, text: 'Idle · 0\u00a0W'},
     });
     expect(vm.hilo.present).toBe(false);
     expect(vm.tiles).toEqual([{key: 'water', label: 'Water heater', sub: 'Idle', value: '50.0', unit: '°', on: false}]);
@@ -136,7 +136,7 @@ describe('the test house', () => {
 describe('Hilo', () => {
   test('the low tier: the summary, the top line, the hero and the rate’s tier word, in the "ok" colour', () => {
     const vm = modelOf(inputsOf());
-    expect(vm.summary).toBe('Grid supplying 2.3 kW · room heating 0 W · Hilo low rate');
+    expect(vm.summary).toBe('Grid supplying 2.3\u00a0kW · room heating 0\u00a0W · Hilo low rate');
     expect(vm.hilo).toMatchObject({
       present: true,
       title: 'Hilo',
@@ -150,7 +150,7 @@ describe('Hilo', () => {
     const hass = houseOf([], hiloStates('0.0759'));
     const store = storeOf(hass, {entities: ENTITIES});
     const vm = modelOf(readEnergy(hass.states, store.config, store.names));
-    expect(vm.summary).toBe('Grid supplying – · room heating 0 W · Hilo low rate');
+    expect(vm.summary).toBe('Grid supplying – · room heating 0\u00a0W · Hilo low rate');
   });
 
   test('the three tiles: the medium and reward rates in cents, the rewards in dollars', () => {
@@ -168,7 +168,7 @@ describe('Hilo', () => {
   ])('a rate of %s is the %s, which the summary calls the %s and the tier is not "ok"', (rate, tier, short) => {
     const vm = modelOf(inputsOf(hiloStates(rate)));
     expect(vm.hilo.tier).toEqual({text: tier, ok: false});
-    expect(vm.summary).toBe(`Grid supplying 2.3 kW · room heating 0 W · Hilo ${short}`);
+    expect(vm.summary).toBe(`Grid supplying 2.3\u00a0kW · room heating 0\u00a0W · Hilo ${short}`);
   });
 
   test('no reading at all: dashes, the unknown tier, and a challenge sensor that is missing says so', () => {
@@ -225,7 +225,7 @@ describe('Hilo', () => {
 
   test('the phone’s two rows: the tank heating, and Hilo with its tier and its challenge', () => {
     expect(modelOf(inputsOf(hiloStates('0.0759', 'pre_heat'))).tiles).toEqual([
-      {key: 'water', label: 'Water heater', sub: 'Heating · 1.2 kW', value: '49.5', unit: '°', on: true},
+      {key: 'water', label: 'Water heater', sub: 'Heating · 1.2\u00a0kW', value: '49.5', unit: '°', on: true},
       {key: 'hilo', label: 'Hilo', sub: 'Low tier · Challenge: pre_heat', value: '7.59', unit: '¢', on: false},
     ]);
   });
@@ -234,7 +234,7 @@ describe('Hilo', () => {
 describe('the water heater', () => {
   test('heating: its power to a decimal, in the hero and under the flow’s ring', () => {
     const vm = modelOf(inputsOf());
-    expect(vm.water.state).toEqual({heating: true, text: 'Heating · 1.2 kW'});
+    expect(vm.water.state).toEqual({heating: true, text: 'Heating · 1.2\u00a0kW'});
     expect(vm.water.name).toBe('Tank');
   });
 
@@ -285,11 +285,11 @@ describe('the error line', () => {
 describe('in French', () => {
   test('the test house: the summary, the error line and the water heater', () => {
     const vm = modelOf(testHouse(), history(), 'fr', 'délai dépassé');
-    expect(vm.summary).toBe('Réseau 3,2 kW · chauffage 2,4 kW · Hilo tarif inconnu');
+    expect(vm.summary).toBe('Réseau 3,2\u00a0kW · chauffage 2,4\u00a0kW · Hilo tarif inconnu');
     expect(vm.detail.error).toBe(
       "L'historique n'a pas pu être chargé : délai dépassé. Les valeurs en direct continuent de se mettre à jour.",
     );
-    expect(vm.water).toMatchObject({title: 'Chauffe-eau', state: {text: 'Au repos · 0 W'}});
+    expect(vm.water).toMatchObject({title: 'Chauffe-eau', state: {text: 'Au repos · 0\u00a0W'}});
     expect(vm.water.line).toBe(
       '24 dernières heures : 0,3 kWh en 2 cycles de chauffe. Moyenne sur 2 jours : 4,5 kWh par jour.',
     );
@@ -308,7 +308,7 @@ describe('in French', () => {
       ['Récompenses', '85'],
     ]);
     expect(vm.tiles[1].sub).toBe('Palier bas · Défi : préchauffage');
-    expect(vm.summary).toBe('Réseau 2,3 kW · chauffage 0 W · Hilo tarif bas');
+    expect(vm.summary).toBe('Réseau 2,3\u00a0kW · chauffage 0\u00a0W · Hilo tarif bas');
   });
 });
 

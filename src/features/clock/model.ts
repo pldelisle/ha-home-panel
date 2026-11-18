@@ -4,7 +4,7 @@
 // words every message through `deps.t` and `deps.fmt`. The wording is the legacy `renderIdle`'s, deleted by #276.
 // Must not: import the DOM, the kit or the shell, read the clock, or hold text the household reads (a catalog key says it).
 import {conditionName} from '../../core/i18n/condition-name.ts';
-import type {Formatters} from '../../core/i18n/format.ts';
+import {temperatureFigure, type Formatters} from '../../core/i18n/format.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
 import {conditionWordsOf} from '../../providers/environment-canada.ts';
 import type {ClockInputs} from './inputs.ts';
@@ -32,8 +32,8 @@ export function clockModel(inputs: ClockInputs, {t, fmt, isFrench}: ClockDeps): 
   const {now, inside, outside, condition} = inputs;
   const [main, suffix = ''] = isFrench ? [fmt.time24(now)] : fmt.time(now).split(' ');
   const temps = [
-    inside === null ? '' : t('clock.inside', {n: fmt.fixed(inside, 1)}),
-    outside === null ? '' : t('clock.outside', {n: fmt.fixed(outside, 1)}),
+    inside === null ? '' : t('clock.inside', {n: temperatureFigure(fmt, inside)}),
+    outside === null ? '' : t('clock.outside', {n: temperatureFigure(fmt, outside)}),
   ]
     .filter(Boolean)
     .join(' · ');

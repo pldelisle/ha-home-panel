@@ -677,12 +677,6 @@
       }
     },
     {
-      "key": "car.charger.kw",
-      "values": {
-        "n": "7.7"
-      }
-    },
-    {
       "key": "car.charger.ampsHint",
       "written": "kW à 240 V."
     },

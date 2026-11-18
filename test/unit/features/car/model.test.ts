@@ -263,7 +263,7 @@ describe('a car with every sensor', () => {
       scale: {start: '0%', limit: 'Limit 90% · set in FordPass', end: '100%'},
     });
     expect(detail.summary.facts).toEqual([
-      {text: 'Charging · 7.2 kW', tone: 'ok'},
+      {text: 'Charging · 7.2\u00a0kW', tone: 'ok'},
       {text: 'Doors closed', tone: 'plain'},
       {text: 'Windows closed', tone: 'plain'},
       {text: 'Hood and tailgate closed', tone: 'plain'},
@@ -347,7 +347,7 @@ describe('a car with every sensor', () => {
       length: '1 h',
       energy: '6.0 kWh',
       barPx: 27,
-      peak: '3.5 kW',
+      peak: '3.5\u00a0kW',
       cost: '$0.42',
     });
     expect(sessions.rows.map(row => row.date)).toEqual(['Sun, Nov 8', 'Fri, Nov 6', 'Tue, Oct 20']);
@@ -524,7 +524,7 @@ describe('a car with every sensor, in French', () => {
     expect(detail.sub).toBe('Stationnée à la maison · verrouillée · dernier contact de la voiture à 16 h 05');
     expect([detail.summary.drawing, detail.status.drawing]).toEqual(['Voiture, vue de côté', 'Voiture vue de haut']);
     expect(detail.summary.facts.map(({text}) => text)).toEqual([
-      'Recharge · 7,2 kW',
+      'Recharge · 7,2\u00a0kW',
       'Portes fermées',
       'Fenêtres fermées',
       'Capot et hayon fermés',

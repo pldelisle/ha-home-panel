@@ -66,15 +66,15 @@ describe('the scales', () => {
 
   test('the power axis reaches five kW at least, labelled at both ends', () => {
     expect(geometry.powerLabels).toEqual([
-      {x: 290, y: 11, text: '5 kW', anchor: 'start'},
-      {x: 290, y: 105, text: '0 kW', anchor: 'start'},
+      {x: 290, y: 11, text: '5.0\u00a0kW', anchor: 'start'},
+      {x: 290, y: 105, text: '0\u00a0W', anchor: 'start'},
     ]);
   });
 
-  test('a bar over 50 W for each mean in the window, as wide as the floor, titled with its time and power', () => {
+  test('a bar over 50\u00a0W for each mean in the window, as wide as the floor, titled with its time and power', () => {
     expect(geometry.bars).toEqual([
-      {x: 49.5, y: 45.6, width: 1.4, height: 56.4, title: '4:00 pm: 3.0 kW'},
-      {x: 92.5, y: 92.6, width: 1.4, height: 9.4, title: '8:00 pm: 0.5 kW'},
+      {x: 49.5, y: 45.6, width: 1.4, height: 56.4, title: '4:00 pm: 3.0\u00a0kW'},
+      {x: 92.5, y: 92.6, width: 1.4, height: 9.4, title: '8:00 pm: 500\u00a0W'},
     ]);
   });
 
@@ -115,7 +115,7 @@ describe('the rules for odd days', () => {
 
   test('a power over five kW reaches the next whole kW', () => {
     const geometry = chart([], [[START + 2 * HOUR_MS, 7.2]])!;
-    expect(geometry.powerLabels[0].text).toBe('8 kW');
+    expect(geometry.powerLabels[0].text).toBe('8.0\u00a0kW');
     expect(geometry.bars[0]).toMatchObject({y: 17.4, height: 84.6});
   });
 
@@ -137,6 +137,6 @@ describe('in French', () => {
     expect(geometry.label).toBe('Température de l’eau de 45 à 52 degrés et puissance de chauffe, 24 dernières heures');
     expect(geometry.grid[1].label.text).toBe('48,5°');
     expect(geometry.ticks.map(t => t.label.text)).toEqual(['18 h', '0 h', '6 h', '12 h']);
-    expect(geometry.bars[0].title).toBe('16 h : 3,0 kW');
+    expect(geometry.bars[0].title).toBe('16 h : 3,0\u00a0kW');
   });
 });

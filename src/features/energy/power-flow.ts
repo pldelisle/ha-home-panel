@@ -67,8 +67,8 @@ export class PowerFlow extends LitElement {
       ${n.texts.map(this.caption)}
     </g>`;
 
-  private readonly caption = ({x, y, text, anchor, kind, size}: FlowText) =>
-    svg`<text x=${x} y=${y} text-anchor=${anchor} class=${kind} font-size=${ifDefined(size)}>${text}</text>`;
+  private readonly caption = ({x, y, text, anchor, kind, size, unit}: FlowText) =>
+    svg`<text x=${x} y=${y} text-anchor=${anchor} class=${kind} font-size=${ifDefined(size)}>${text}${unit === undefined ? '' : svg`<tspan dx="3" font-size="16">${unit}</tspan>`}</text>`;
 }
 
 declare global {

@@ -5,7 +5,7 @@
 // Must not: import the DOM, Lit or the shell, read the clock, hold text the household reads (a catalog key says it), or decide the frost guard's commands (commands.ts does).
 import {capitalWords, DASH} from '../../core/figures.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
-import {degrees, fixedOr} from '../../core/i18n/format.ts';
+import {degrees, powerParts, temperature, temperatureFigure} from '../../core/i18n/format.ts';
 import {roomName} from '../../core/i18n/room-name.ts';
 import {FUJITSU_BRAND, NO_TARGET_MODES, type HeatPumpInputs} from '../../providers/heat-pump.ts';
 import {DEFAULT_MAX_TEMP, FROST_GUARD, OFF_AT_OR_BELOW, type RoomPower} from '../../providers/power.ts';
@@ -20,7 +20,6 @@ import {
   averageTemperature,
   climateItems,
   heatingCount,
-  tenthDegrees,
   type ClimateItem,
   type ClimateItemsDeps,
   type Tone,
@@ -337,8 +336,8 @@ function summaryOf({rooms, heatPump, outside}: ClimateInputs, deps: ClimateModel
   const average = averageTemperature(rooms);
   const heating = heatingCount(rooms);
   return [
-    average === null ? '' : t('climate.averageInside', {n: fmt.fixed(average, 1)}),
-    outside === null ? '' : t('climate.outsideTemp', {n: fmt.fixed(outside, 1)}),
+    average === null ? '' : t('climate.averageInside', {n: temperatureFigure(fmt, average)}),
+    outside === null ? '' : t('climate.outsideTemp', {n: temperatureFigure(fmt, outside)}),
     heating ? t('climate.roomsHeating', {n: heating}) : t('climate.noRoomsHeating'),
     heatPumpSummary(heatPump, deps),
   ]
@@ -347,11 +346,17 @@ function summaryOf({rooms, heatPump, outside}: ClimateInputs, deps: ClimateModel
 }
 
 /** The Range tile: its span is the loaded history's, a dash before it. */
+/** A power tile's figure and its unit symbol, as `powerParts` writes them from kW. */
+const powerTile = (fmt: ClimateModelDeps['fmt'], kw: number): {value: string; unit: string} => {
+  const {n, unit} = powerParts(fmt, kw * 1000);
+  return {value: n, unit};
+};
+
 function rangeTile({t, fmt}: ClimateModelDeps, range: Range, figures: Figures | null): DetailTile {
   const span = figures?.span;
   return {
     label: t('climate.rangeSpan', {span: t(RANGES[range].shortKey)}),
-    value: span ? `${fmt.fixed(span.lo, 1)}–${fmt.fixed(span.hi, 1)}` : DASH,
+    value: span ? `${temperatureFigure(fmt, span.lo)}–${temperatureFigure(fmt, span.hi)}` : DASH,
     unit: '°',
     sub: null,
     range: true,
@@ -409,7 +414,7 @@ function allAsks(rooms: number, {t, fmt}: ClimateModelDeps): AllAsks {
   const cancel = t('climate.askCancel');
   return {
     set: degrees => {
-      const n = fmt.fixed(degrees, 1);
+      const n = temperatureFigure(fmt, degrees);
       return {
         title: t('climate.askSetAll', {n}),
         line: t('climate.askSetAllLine', {rooms, n}),
@@ -447,7 +452,7 @@ function houseHead(
   const named = (reading: typeof warmest, label: MessageKey): DetailTile => {
     const tile: DetailTile = {
       label: t(label),
-      value: reading ? fmt.fixed(reading.temperature, 1) : DASH,
+      value: reading ? temperatureFigure(fmt, reading.temperature) : DASH,
       unit: '°',
       sub: reading?.name ?? null,
       range: false,
@@ -470,7 +475,7 @@ function houseHead(
     tiles: [
       named(warmest, 'climate.warmest'),
       named(coolest, 'climate.coolest'),
-      {label: t('climate.heatingNow'), value: fmt.fixed(inputs.heat, 2), unit: 'kW', sub: all, range: false},
+      {label: t('climate.heatingNow'), ...powerTile(fmt, inputs.heat), sub: all, range: false},
       {
         label: t('climate.heatingSpan', {span: t(RANGES[range].shortKey)}),
         value: figures?.kwh == null ? DASH : fmt.integer(figures.kwh),
@@ -568,7 +573,7 @@ function roomHead(room: RoomPower, deps: ClimateModelDeps, range: Range, figures
     },
     tiles: [
       rangeTile(deps, range, figures),
-      {label: t('climate.drawingNow'), value: fmt.fixed(room.power ?? 0, 2), unit: 'kW', sub: null, range: false},
+      {label: t('climate.drawingNow'), ...powerTile(fmt, room.power ?? 0), sub: null, range: false},
       {
         label: t('climate.heatingSpan', {span: t(RANGES[range].shortKey)}),
         value: figures?.kwh == null ? DASH : fmt.fixed(figures.kwh, 1),
@@ -584,8 +589,8 @@ function roomHead(room: RoomPower, deps: ClimateModelDeps, range: Range, figures
 
 /** The dial's centre: the setpoint, "Off", or the temperature while the setpoint is unknown. */
 function dialBig({shown, off}: DialGeometry, reading: number | null, {t, fmt}: ClimateModelDeps): string {
-  if (shown === null) return reading === null ? DASH : tenthDegrees(fmt, reading);
-  return off ? t('climate.off') : tenthDegrees(fmt, shown);
+  if (shown === null) return reading === null ? DASH : temperature(fmt, reading);
+  return off ? t('climate.off') : temperature(fmt, shown);
 }
 
 /** What a screen reader says of the slider's value; empty while the setpoint is unknown. */
@@ -608,8 +613,8 @@ function dialView(head: Head, outside: number | null, deps: ClimateModelDeps): D
     geometry,
     big: dialBig(geometry, reading, deps),
     caption: [
-      reading === null ? '' : t('climate.now', {n: fixedOr(fmt, reading, 1)}),
-      outside === null ? '' : t('climate.dialOutside', {n: fmt.fixed(outside, 1)}),
+      reading === null ? '' : t('climate.now', {n: temperatureFigure(fmt, reading)}),
+      outside === null ? '' : t('climate.dialOutside', {n: temperatureFigure(fmt, outside)}),
     ]
       .filter(Boolean)
       .join(' · '),
@@ -623,7 +628,7 @@ function gaugeView(head: Head, {t, fmt}: ClimateModelDeps): GaugeView | null {
   const geometry = gaugeGeometry(temperature, mark);
   if (geometry === null || temperature === null) return null;
   const scale = {lo: GAUGE.lo, hi: GAUGE.hi};
-  const temp = fmt.fixed(temperature, 1);
+  const temp = temperatureFigure(fmt, temperature);
   return {
     geometry,
     label:
@@ -760,8 +765,8 @@ export function climateModel(
       title: head.title,
       sub: head.sub,
       pill: head.pill,
-      temperature: deps.compact ? null : fixedOr(fmt, head.temperature, 1),
-      outside: deps.compact ? null : t('climate.outsideNow', {n: fixedOr(fmt, outside, 1)}),
+      temperature: deps.compact ? null : temperatureFigure(fmt, head.temperature),
+      outside: deps.compact ? null : t('climate.outsideNow', {n: temperatureFigure(fmt, outside)}),
       gauge: deps.compact ? null : gaugeView(head, deps),
       dial: deps.compact ? dialView(head, outside, deps) : null,
       tiles: head.tiles,

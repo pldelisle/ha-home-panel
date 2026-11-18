@@ -44,7 +44,7 @@ const node = (geometry: FlowGeometry, key: string) => geometry.nodes.find(n => n
 const words = (geometry: FlowGeometry) => geometry.labels.map(l => l.text);
 
 describe('the connectors', () => {
-  test('at 0 kW a line is off: three wide, no dash, no duration', () => {
+  test('at 0\u00a0kW a line is off: three wide, no dash, no duration', () => {
     expect(layout({grid: 0, heat: 0, waterHeater: 0, ev: 0}).connectors).toEqual([
       {key: 'grid', x1: 112, y1: 160, x2: 164, y2: 160, color: 'var(--c-grid)', on: false, width: 3, duration: null},
       {key: 'heat', x1: 276, y1: 160, x2: 328, y2: 160, color: 'var(--c-heat)', on: false, width: 3, duration: null},
@@ -53,20 +53,20 @@ describe('the connectors', () => {
     ]);
   });
 
-  test('the threshold is 20 W: over it a line is on, at it not', () => {
+  test('the threshold is 20\u00a0W: over it a line is on, at it not', () => {
     expect(connector(layout({grid: 0.02}), 'grid').on).toBe(false);
     expect(connector(layout({grid: 0.03}), 'grid')).toMatchObject({on: true, width: 3, duration: '2.39s'});
   });
 
-  test('at 1 kW the line is 3.5 wide and the dashes take 2.00 s', () => {
+  test('at 1\u00a0kW the line is 3.5 wide and the dashes take 2.00 s', () => {
     expect(connector(layout({grid: 1}), 'grid')).toMatchObject({on: true, width: 3.5, duration: '2.00s'});
   });
 
-  test('at 6 kW the width stops at 5 and the dashes stop at 0.45 s', () => {
+  test('at 6\u00a0kW the width stops at 5 and the dashes stop at 0.45 s', () => {
     expect(connector(layout({ev: 6}), 'ev')).toMatchObject({on: true, width: 5, duration: '0.45s'});
   });
 
-  test('a duration is a stable string: 3 kW is 1.20 s, not 1.2000000000000002', () => {
+  test('a duration is a stable string: 3\u00a0kW is 1.20 s, not 1.2000000000000002', () => {
     expect(connector(layout({heat: 3}), 'heat')).toMatchObject({width: 4.5, duration: '1.20s'});
   });
 
@@ -100,7 +100,7 @@ describe('the nodes and their figures', () => {
   test('the water heater under a kilowatt writes its watts, and its tank temperature under them', () => {
     expect(node(busy, 'water')).toMatchObject({cx: 220, cy: 50, r: 40, on: true});
     expect(node(busy, 'water').texts).toEqual([
-      {x: 220, y: 56, text: '850 W', anchor: 'middle', kind: 'big', size: 18},
+      {x: 220, y: 56, text: '850\u00a0W', anchor: 'middle', kind: 'big', size: 18},
       {x: 220, y: 71, text: '50.0°', anchor: 'middle', kind: 'st'},
     ]);
   });
@@ -108,7 +108,9 @@ describe('the nodes and their figures', () => {
   test('an idle load is a lit-off ring with its figure and no unit, and no tank reading leaves no line under it', () => {
     const idle = layout({waterHeater: 0, ev: null}, 'en', {waterTemperature: null});
     expect(node(idle, 'ev')).toMatchObject({on: false});
-    expect(node(idle, 'ev').texts).toEqual([{x: 220, y: 282, text: '0 W', anchor: 'middle', kind: 'big', size: 18}]);
+    expect(node(idle, 'ev').texts).toEqual([
+      {x: 220, y: 282, text: '0\u00a0W', anchor: 'middle', kind: 'big', size: 18},
+    ]);
     expect(node(idle, 'water').texts).toHaveLength(1);
   });
 
@@ -116,7 +118,7 @@ describe('the nodes and their figures', () => {
     const home = node(layout({grid: 0.85}), 'home');
     expect(home).toMatchObject({cx: 220, cy: 160, r: 56, strokeWidth: 4, color: 'var(--c-home)', on: true});
     expect(home.texts).toEqual([
-      {x: 220, y: 158, text: '850 W', anchor: 'middle', kind: 'big', size: 24},
+      {x: 220, y: 158, text: '850', anchor: 'middle', kind: 'big', size: 28, unit: 'W'},
       {x: 220, y: 178, text: 'kW · Home', anchor: 'middle', kind: 'st'},
     ]);
   });
@@ -150,7 +152,7 @@ describe('the captions', () => {
       {x: 300, y: 272, text: 'EV charging', anchor: 'start', kind: 'cap'},
       {x: 300, y: 288, text: 'Charging', anchor: 'start', kind: 'st'},
       {x: 120, y: 290, text: 'Rest of home', anchor: 'end', kind: 'st'},
-      {x: 120, y: 306, text: '500 W', anchor: 'end', kind: 'big', size: 15},
+      {x: 120, y: 306, text: '500\u00a0W', anchor: 'end', kind: 'big', size: 15},
     ]);
   });
 
@@ -173,7 +175,9 @@ describe('the captions', () => {
     const geometry = layout({ev: null, grid: null});
     expect(geometry.pulse).toBeNull();
     expect(words(geometry)).toContain('Idle');
-    expect(geometry.label).toBe('Grid supplies – to the home; room heating 0 W; water heating 0 W; EV charging 0 W');
+    expect(geometry.label).toBe(
+      'Grid supplies – to the home; room heating 0\u00a0W; water heating 0\u00a0W; EV charging 0\u00a0W',
+    );
   });
 
   test('the charger pulses while it charges, in its colour, round its node', () => {
@@ -182,7 +186,7 @@ describe('the captions', () => {
 
   test('the screen reader’s sentence says each figure the way the node does', () => {
     expect(layout({grid: 3.24, heat: 2.4, waterHeater: 0.85, ev: 7.1}).label).toBe(
-      'Grid supplies 3.2 kW to the home; room heating 2.4 kW; water heating 850 W; EV charging 7.1 kW',
+      'Grid supplies 3.2\u00a0kW to the home; room heating 2.4\u00a0kW; water heating 850\u00a0W; EV charging 7.1\u00a0kW',
     );
   });
 
@@ -204,11 +208,11 @@ describe('in French', () => {
       'Recharge VÉ',
       'Recharge',
       'Reste de la maison',
-      '500 W',
+      '500\u00a0W',
     ]);
     expect(node(geometry, 'grid').texts[0].text).toBe('3,2');
     expect(geometry.label).toBe(
-      'Le réseau fournit 3,2 kW à la maison; chauffage 2,4 kW; chauffe-eau 850 W; recharge VÉ 7,1 kW',
+      'Le réseau fournit 3,2\u00a0kW à la maison; chauffage 2,4\u00a0kW; chauffe-eau 850\u00a0W; recharge VÉ 7,1\u00a0kW',
     );
   });
 });

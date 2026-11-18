@@ -21,7 +21,7 @@ import {
   setAllRooms,
   setRoomTemperature,
 } from './commands.ts';
-import {tenthDegrees} from './items.ts';
+import {temperature, temperatureFigure} from '../../core/i18n/format.ts';
 import {ControlSender} from './sender.ts';
 import type {AskView, ControlOption, ControlsView} from './model.ts';
 import {CommandRunner} from '../../ui/commands.ts';
@@ -122,7 +122,7 @@ export class ClimateControls extends LitElement {
                       .min=${target.lo}
                       .max=${target.hi}
                       .step=${SETPOINT_STEP}
-                      .valueText=${target.value === null ? DASH : tenthDegrees(fmt, target.value)}
+                      .valueText=${target.value === null ? DASH : temperature(fmt, target.value)}
                       .decrementLabel=${t('climate.lowerTarget')}
                       .incrementLabel=${t('climate.raiseTarget')}
                       .disabled=${target.value === null}
@@ -196,7 +196,7 @@ export class ClimateControls extends LitElement {
   private renderHouse({rooms, asks}: House) {
     const {t, fmt} = this.storeController.store;
     const {allSetpoint: value} = this;
-    const degrees = fmt.fixed(value, 1);
+    const degrees = temperatureFigure(fmt, value);
     // a dialog per button: the set one's words follow the stepper's value, which cannot move while the dialog is open
     const dialog = (key: AllKey, ask: AskView) =>
       html`<hp-dialog
@@ -218,7 +218,7 @@ export class ClimateControls extends LitElement {
           .min=${ALL_ROOMS.lo}
           .max=${ALL_ROOMS.hi}
           .step=${SETPOINT_STEP}
-          .valueText=${`${degrees}°`}
+          .valueText=${temperature(fmt, value)}
           .decrementLabel=${t('climate.lowerAll')}
           .incrementLabel=${t('climate.raiseAll')}
           @step-change=${this.onAllStep}
@@ -263,7 +263,7 @@ export class ClimateControls extends LitElement {
               .min=${setpoint.lo}
               .max=${setpoint.hi}
               .step=${SETPOINT_STEP}
-              .valueText=${setpoint.off ? t('climate.off') : tenthDegrees(fmt, setpoint.value)}
+              .valueText=${setpoint.off ? t('climate.off') : temperature(fmt, setpoint.value)}
               .decrementLabel=${t('climate.lowerSetpoint')}
               .incrementLabel=${t('climate.raiseSetpoint')}
               @step-change=${(e: CustomEvent<StepDetail>) => this.onRoomStep(room, e.detail.value)}
