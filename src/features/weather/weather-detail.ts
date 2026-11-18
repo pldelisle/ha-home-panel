@@ -162,7 +162,7 @@ export class WeatherDetail extends LitElement {
     // lit-analyzer does not know `aria-description`; the ignore covers the tile buttons' tags below
     return html`<div
         class="blocks"
-        role=${ifDefined(compact ? undefined : 'dialog')}
+        role=${ifDefined(compact ? undefined : 'region')}
         aria-label=${ifDefined(compact ? undefined : t('weather.title'))}
         @click=${this.onTile}
       >

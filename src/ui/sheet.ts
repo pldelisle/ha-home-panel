@@ -25,14 +25,14 @@ export class HpSheet extends LitElement {
   };
   /** On screen. Its owner binds it to the sheet host's `isOpen`; the Close button takes focus when it turns true. */
   declare open: boolean;
-  /** Placed in its pane (a tablet's detail panel) instead of over the page: no backdrop, no `aria-modal`, no swipe. */
+  /** Placed in its pane (a tablet's detail panel) instead of over the page: no backdrop, no `aria-modal`, no swipe, and a region, not a dialog, for a screen reader. */
   declare inline: boolean;
   declare icon: IconName;
   /** A colour token for the badge (`--acc`), such as `var(--c-home)`. */
   declare color: string;
   /** The heading, already in the panel's language. */
   declare heading: string;
-  /** The accessible name of the element with the ARIA role dialog; the heading when it is empty. */
+  /** The accessible name of the panel (a dialog; a region when inline); the heading when it is empty. */
   declare label: string;
   /** The Close button's accessible name, already in the panel's language. */
   declare closeLabel: string;
@@ -71,7 +71,7 @@ export class HpSheet extends LitElement {
     return html`<div class="sheet" ?hidden=${!this.open} @click=${this.onBackdrop}>
       <div
         class="panel"
-        role="dialog"
+        role=${this.inline ? 'region' : 'dialog'}
         aria-modal=${ifDefined(this.inline ? undefined : 'true')}
         aria-label=${this.label || this.heading}
         @pointerdown=${this.swipe.onPointerDown}

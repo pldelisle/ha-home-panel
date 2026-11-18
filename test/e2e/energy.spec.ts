@@ -268,7 +268,7 @@ test.describe('on a tablet', () => {
   test('the detail sits inline above the cards, and is no sheet over the page', async ({house}) => {
     await house.tab('energy');
     await expect(detail(house)).toBeVisible();
-    await expect(detail(house).getByRole('dialog')).not.toHaveAttribute('aria-modal', /.*/);
+    await expect(detail(house).getByRole('region', {name: 'Home energy'})).not.toHaveAttribute('aria-modal', /.*/);
     const inline = await detail(house).boundingBox();
     const cards = await water(house).boundingBox();
     expect(cards!.y, 'the cards come after the detail').toBeGreaterThan(inline!.y + inline!.height - 1);

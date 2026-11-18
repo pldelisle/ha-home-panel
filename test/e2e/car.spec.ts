@@ -57,6 +57,14 @@ test.describe('on a phone', () => {
     await expect(summary(house).locator('.facts li')).toHaveText(['Charging', 'Locked']);
   });
 
+  // #427: the phone's sheet over the page stays a modal dialog
+  test('the sheet Home’s car tile opens is a modal dialog', async ({house}) => {
+    await house.root().locator('[data-opens="car.detail"]').first().click();
+    const panel = pane(house).getByRole('dialog', {name: 'Car'});
+    await expect(panel).toBeVisible();
+    await expect(panel).toHaveAttribute('aria-modal', 'true');
+  });
+
   // spec 21, "Performance": the Wallbox's year is the legacy panel's shared load too and the cache answers the second; the grid's and the charger's days are the Car's alone
   test('the two windows are asked once for the panel, the day one when the tab is first shown, and not again when it is shown again', async ({
     house,
@@ -182,6 +190,15 @@ test.describe('on a tablet', () => {
     await expect(detail(house).locator('hp-pane-header [slot="sub"]')).toContainText('Parked at home · locked');
     await expect(pane(house).locator('hp-car-card')).toHaveCount(0);
     await expect(house.root().locator('#pane-car > .panel')).toHaveCount(0);
+  });
+
+  // #427: inline, the panel is a labelled region: a screen reader says "Car, region" for the tab, not "Car, dialog"
+  test('the detail is a labelled region, not a dialog, and no modal', async ({house}) => {
+    await house.tab('car');
+    const panel = pane(house).getByRole('region', {name: 'Car'});
+    await expect(panel).toBeVisible();
+    await expect(panel).not.toHaveAttribute('aria-modal', /.*/);
+    await expect(pane(house).getByRole('dialog')).toHaveCount(0);
   });
 
   // a tablet's tile has no `data-opens` (that is the phone's): it names the pane, and the shell shows the tab, whose detail is inline
