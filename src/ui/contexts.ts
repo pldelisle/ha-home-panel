@@ -61,6 +61,10 @@ export interface Appearance {
   readonly largeText: boolean;
   /** The device asks for less transparency. */
   readonly reducedTransparency: boolean;
+  /** Under Material, the seed the palette is built from (an id of core/seeds.ts); under Apple, the choice waiting for the way back. */
+  readonly seed: string;
+  /** The device asks for more contrast (`prefers-contrast: more`): Material's scheme is built at contrast level 1. */
+  readonly moreContrast: boolean;
   /** Something was touched in the last minute. */
   readonly live: boolean;
 }

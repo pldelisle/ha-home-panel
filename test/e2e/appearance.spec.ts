@@ -236,6 +236,10 @@ test('the glass choices set the wallpaper and the glass class; None takes both a
   await expect(app(house)).not.toHaveAttribute('data-wp', /.*/);
 });
 
+const openPopup = async (house: House) => {
+  await house.root().locator('#gear').click();
+  await expect(house.root().locator('#setpop')).toBeVisible();
+};
 const designRadio = (house: House, name: 'Apple' | 'Material') =>
   popup(house).getByRole('radiogroup', {name: 'Design'}).getByRole('radio', {name, exact: true});
 
@@ -269,6 +273,43 @@ test('Material turns glass off and recolours the frame from the seed; Apple take
   expect(
     await app(house).evaluate(e => [...(e as HTMLElement).style].filter(p => p !== '--g-m' && p !== '--tx')),
   ).toEqual([]);
+});
+
+test('under Material the seven seeds replace the wallpapers: a seed recolours the panel, keys move it, Apple keeps it', async ({
+  house,
+}) => {
+  await openPopup(house);
+  await designRadio(house, 'Material').dispatchEvent('click');
+  const seeds = popup(house).locator('.seed');
+  await expect(seeds).toHaveCount(7);
+  await expect(popup(house).locator('[data-seed="sky"]')).toHaveCount(0); // Sky has no seed: the wallpapers are not here
+  await expect(popup(house).locator('.seed[aria-checked="true"]')).toHaveAttribute('data-seed', 'house');
+  await expect(app(house)).toHaveCSS('--md-primary', '#39608f');
+  expect(await house.page.evaluate(() => localStorage.getItem('home-panel-seed'))).toBeNull(); // House is the default, unwritten
+
+  await popup(house).locator('[data-seed="meadow"]').dispatchEvent('click');
+  await expect(app(house)).toHaveCSS('--md-primary', '#1b6b51');
+  expect(await house.page.evaluate(() => localStorage.getItem('home-panel-seed'))).toBe('meadow');
+
+  // an arrow moves the choice and the focus together, as in the glass group
+  await popup(house).locator('[data-seed="meadow"]').focus();
+  await house.page.keyboard.press('ArrowRight');
+  await expect(popup(house).locator('.seed[aria-checked="true"]')).toHaveAttribute('data-seed', 'ember');
+  await expect(app(house)).toHaveCSS('--md-primary', '#8f4c37');
+
+  await designRadio(house, 'Apple').dispatchEvent('click');
+  await designRadio(house, 'Material').dispatchEvent('click');
+  await expect(popup(house).locator('.seed[aria-checked="true"]')).toHaveAttribute('data-seed', 'ember');
+});
+
+test('More contrast builds the Material scheme at contrast level 1', async ({house}) => {
+  await openPopup(house);
+  await designRadio(house, 'Material').dispatchEvent('click');
+  await expect(app(house)).toHaveCSS('--md-primary', '#39608f');
+  await house.page.emulateMedia({contrast: 'more'});
+  await expect(app(house)).toHaveCSS('--md-primary', '#002d54'); // light-hc in the design system
+  await house.page.emulateMedia({contrast: 'no-preference'});
+  await expect(app(house)).toHaveCSS('--md-primary', '#39608f');
 });
 
 test('the transparency slider sets how dense the glass is', async ({house}) => {

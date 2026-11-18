@@ -126,6 +126,9 @@ export const en = {
   'settings.design.title': 'Design',
   'settings.design.apple': 'Apple',
   'settings.design.material': 'Material',
+  // the seeds' names are the wallpapers' (settings.glass.*) and this one: House, the panel's own blue
+  'settings.seed.title': 'Colour',
+  'settings.seed.house': 'House',
   'settings.sleepNow': 'Sleep now',
   'settings.sleepNowCaption': 'Shows the clock until you touch the screen',
   'settings.text.title': 'Text size',

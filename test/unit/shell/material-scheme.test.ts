@@ -2,7 +2,8 @@
 // below are the design system's tokens.json (scheme from @material/material-color-utilities 0.3.0, seed #4a7dba), so a change of the
 // library or of the mapping that moves a colour fails here.
 import {describe, expect, test} from 'vitest';
-import {DEFAULT_SEED, materialScheme} from '../../../src/shell/material-scheme.ts';
+import {SEEDS} from '../../../src/core/seeds.ts';
+import {DEFAULT_SEED, materialScheme, seedSwatch} from '../../../src/shell/material-scheme.ts';
 
 describe('materialScheme', () => {
   test('the default seed is the House blue', () => {
@@ -70,5 +71,131 @@ describe('materialScheme', () => {
       materialScheme(DEFAULT_SEED, false, 0)['--md-primary'],
     );
     expect(materialScheme(DEFAULT_SEED, false, 1)['--md-primary']).toBe('#002d54'); // light-hc in tokens.json
+  });
+});
+
+// the design system's tokens.json holds the House seed's four themes; these are its `ok` and `warn` groups
+const STATUS = {
+  light: {
+    '--ok': '#4e6355',
+    '--on-ok': '#ffffff',
+    '--ok-container': '#d1e8d7',
+    '--on-ok-container': '#0b1f15',
+    '--warn': '#89502c',
+    '--on-warn': '#ffffff',
+    '--warn-container': '#ffdbc8',
+    '--on-warn-container': '#321200',
+  },
+  dark: {
+    '--ok': '#b5ccbb',
+    '--on-ok': '#213529',
+    '--ok-container': '#374b3e',
+    '--on-ok-container': '#d1e8d7',
+    '--warn': '#ffb68b',
+    '--on-warn': '#512403',
+    '--warn-container': '#6d3917',
+    '--on-warn-container': '#ffdbc8',
+  },
+  'light-hc': {
+    '--ok': '#2c4033',
+    '--on-ok': '#ffffff',
+    '--ok-container': '#42574a',
+    '--on-ok-container': '#ffffff',
+    '--warn': '#5f2e0c',
+    '--on-warn': '#ffffff',
+    '--warn-container': '#7b4521',
+    '--on-warn-container': '#ffffff',
+  },
+  'dark-hc': {
+    '--ok': '#d6eedc',
+    '--on-ok': '#000000',
+    '--ok-container': '#9ab1a1',
+    '--on-ok-container': '#000000',
+    '--warn': '#ffe3d4',
+    '--on-warn': '#000000',
+    '--warn-container': '#e29b70',
+    '--on-warn-container': '#000000',
+  },
+} as const;
+
+describe('contrast level 1 (More contrast)', () => {
+  test('the scheme is the design system’s -hc themes', () => {
+    const light = materialScheme(DEFAULT_SEED, false, 1);
+    expect(light['--md-primary']).toBe('#002d54');
+    expect(light['--md-primary-container']).toBe('#214b78');
+    const dark = materialScheme(DEFAULT_SEED, true, 1);
+    expect(dark['--md-primary']).toBe('#e9f0ff');
+    expect(dark['--md-primary-container']).toBe('#9fc5fa');
+  });
+
+  test('text holds 7:1 on its grounds, for every seed in light and dark', () => {
+    const luminance = (hex: string): number => {
+      const [r, g, b] = [1, 3, 5].map(i => {
+        const c = parseInt(hex.slice(i, i + 2), 16) / 255;
+        return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+      });
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+    const ratio = (a: string, b: string): number => {
+      const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+      return (hi + 0.05) / (lo + 0.05);
+    };
+    for (const seed of Object.values(SEEDS))
+      for (const dark of [false, true]) {
+        const s = materialScheme(seed, dark, 1);
+        expect(ratio(s['--md-on-primary'], s['--md-primary'])).toBeGreaterThanOrEqual(7);
+        expect(ratio(s['--md-on-surface'], s['--md-surface'])).toBeGreaterThanOrEqual(7);
+        expect(ratio(s['--md-on-secondary-container'], s['--md-secondary-container'])).toBeGreaterThanOrEqual(7);
+        expect(ratio(s['--ok'], s['--card'])).toBeGreaterThanOrEqual(7);
+        expect(ratio(s['--warn'], s['--card'])).toBeGreaterThanOrEqual(7);
+        expect(ratio(s['--on-ok'], s['--ok'])).toBeGreaterThanOrEqual(7);
+      }
+  });
+});
+
+describe('the status colours as Material custom colour groups', () => {
+  test.each([
+    ['light', false, 0],
+    ['dark', true, 0],
+    ['light-hc', false, 1],
+    ['dark-hc', true, 1],
+  ] as const)('%s: the eight values match tokens.json', (theme, dark, contrast) => {
+    const s = materialScheme(DEFAULT_SEED, dark, contrast);
+    for (const [name, hex] of Object.entries(STATUS[theme])) expect(s[name]).toBe(hex);
+  });
+
+  test('they are harmonized toward the seed: another seed moves them', () => {
+    const house = materialScheme(DEFAULT_SEED, false, 0)['--ok'];
+    const dawn = materialScheme(SEEDS.dawn, false, 0)['--ok'];
+    expect(dawn).not.toBe(house);
+    expect(dawn).toMatch(/^#[0-9a-f]{6}$/);
+  });
+
+  test('the older text names follow them, and --md- carries no status group', () => {
+    const s = materialScheme(DEFAULT_SEED, false, 0);
+    expect(s['--t-ok']).toBe(s['--ok']);
+    expect(s['--t-warn']).toBe(s['--warn']);
+    expect(Object.keys(s).filter(k => k.startsWith('--md-') && /ok|warn/.test(k))).toEqual([]);
+  });
+});
+
+describe('seedSwatch', () => {
+  test('the four quadrants are the scheme’s primary, primary container, secondary container and card', () => {
+    expect(seedSwatch(SEEDS.house, false)).toEqual(['#39608f', '#d3e4ff', '#d8e3f8', '#ecedf4']);
+    expect(seedSwatch(SEEDS.house, true)).toEqual(['#a3c9fe', '#1e4876', '#3c4758', '#272a2f']);
+    expect(seedSwatch(SEEDS.meadow, false)).toEqual(['#1b6b51', '#a6f2d2', '#cee9db', '#e9efea']);
+    expect(seedSwatch(SEEDS.sand, true)).toEqual(['#eac16c', '#5c4200', '#53452a', '#2e2921']);
+  });
+
+  test('they come from the panel’s own scheme, so the swatch cannot disagree with the panel', () => {
+    for (const dark of [false, true]) {
+      const s = materialScheme(SEEDS.ember, dark, 0);
+      expect(seedSwatch(SEEDS.ember, dark)).toEqual([
+        s['--md-primary'],
+        s['--md-primary-container'],
+        s['--md-secondary-container'],
+        dark ? s['--card'] : s['--bg'],
+      ]);
+    }
   });
 });

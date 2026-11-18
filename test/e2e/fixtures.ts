@@ -70,6 +70,8 @@ export type HouseOpts = {
   theme?: 'light' | 'dark' | 'auto';
   /** the design language (`home-panel-design`), set before the page loads; the panel's default is Apple */
   design?: 'apple' | 'material';
+  /** under Material, the seed (`home-panel-seed`: `house`, `dawn`, `lake`, `meadow`, ...), set before the page loads; the panel's default is House */
+  seed?: string;
   /** the device's own appearance (`prefers-color-scheme`), set before the page loads; the browser's default is light */
   colorScheme?: 'light' | 'dark';
   /** whether the signed-in user is an admin */
@@ -162,7 +164,7 @@ export const test = base.extend<{houseOpts: HouseOpts; house: House}>({
       chunks: Chunk[] = [],
       fonts: House['fonts'] = [];
     await page.addInitScript(
-      ([cfg, sysdata, automations, theme, charges, design]) => {
+      ([cfg, sysdata, automations, theme, charges, design, seed]) => {
         window.PANEL_CFG = cfg;
         window.SYSDATA = sysdata;
         window.AUTOMATIONS = automations;
@@ -170,11 +172,20 @@ export const test = base.extend<{houseOpts: HouseOpts; house: House}>({
         try {
           localStorage.setItem('home-panel-theme', theme);
           if (design) localStorage.setItem('home-panel-design', design);
+          if (seed) localStorage.setItem('home-panel-seed', seed);
         } catch {
           // storage is blocked: the panel keeps its default theme
         }
       },
-      [o.cfg ?? null, o.sysdata ?? null, o.automations ?? null, o.theme, o.charges ?? null, o.design ?? null] as const,
+      [
+        o.cfg ?? null,
+        o.sysdata ?? null,
+        o.automations ?? null,
+        o.theme,
+        o.charges ?? null,
+        o.design ?? null,
+        o.seed ?? null,
+      ] as const,
     );
     // a Google Fonts request fails the test; it is also aborted, so that a run never depends on the internet
     page.on('request', r => {

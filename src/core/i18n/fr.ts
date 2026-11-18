@@ -119,6 +119,8 @@ export const fr: Record<MessageKey, string> = {
   'settings.design.title': 'Design',
   'settings.design.apple': 'Apple',
   'settings.design.material': 'Material',
+  'settings.seed.title': 'Couleur',
+  'settings.seed.house': 'Maison',
   'settings.sleepNow': 'Dormir maintenant',
   'settings.sleepNowCaption': 'Affiche l’horloge jusqu’au prochain toucher',
   'settings.text.title': 'Taille du texte',
