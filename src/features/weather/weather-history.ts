@@ -7,6 +7,7 @@ import {LitElement, html, nothing, unsafeCSS} from 'lit';
 import {repeat} from 'lit/directives/repeat.js';
 import {StaleReply} from '../../core/api.ts';
 import type {HistoryPoint, StatisticRow} from '../../core/ha.ts';
+import type {ArchiveNotice, ArchivedStatistics} from '../../core/archive-statistics.ts';
 import type {StatisticsCache} from '../../core/statistics-cache.ts';
 import '../../ui/chart.ts'; // defines <hp-chart>
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
@@ -43,6 +44,8 @@ interface Loaded {
   statistics: Rows;
   history: Readonly<Record<string, readonly HistoryPoint[]>>;
   at: number;
+  /** Where the rows before the recorder's first came from, when the archive filled some. */
+  notice: ArchiveNotice | null;
 }
 
 /** What the sheet draws from a reply: the lines, their figures and the chart's options. */
@@ -66,12 +69,15 @@ export class WeatherHistory extends LitElement {
   static override properties = {
     tile: {},
     cache: {attribute: false},
+    archive: {attribute: false},
     range: {state: true},
   };
   /** Which tile's history: the key the tile asked for. */
   declare tile: TileKey | undefined;
   /** The pane's statistics cache, whose replies are shared: nothing here changes one. */
   declare cache: StatisticsCache | undefined;
+  /** The pane's archive notice: where the rows before the recorder's first came from, asked with the arguments of the read. */
+  declare archive: ArchivedStatistics['notice'] | undefined;
   /** The range chosen; each opening starts at the week. */
   declare range: Range;
 
@@ -96,6 +102,7 @@ export class WeatherHistory extends LitElement {
     super();
     this.tile = undefined;
     this.cache = undefined;
+    this.archive = undefined;
     this.range = 'week';
   }
 
@@ -175,6 +182,13 @@ export class WeatherHistory extends LitElement {
         <div class="inner">
           <h3>${title}</h3>
           <p>${note}</p>
+          ${
+            state === 'chart' && this.loaded?.notice
+              ? html`<p class="muted">
+                  ${t('archive.source', {date: fmt.date(this.loaded.notice.before), station: this.loaded.notice.station})}
+                </p>`
+              : nothing
+          }
           <div class="legend">
             ${lines.map(
               (line, index) =>
@@ -279,7 +293,7 @@ export class WeatherHistory extends LitElement {
         ? await cache.history(missing, start, {minimal: true, attributes: false}).catch(optional)
         : {};
       if (token !== this.token) return;
-      this.loaded = {key, range, statistics, history, at: now};
+      this.loaded = {key, range, statistics, history, at: now, notice: this.archive?.(ids, period, start) ?? null};
     } catch (error) {
       if (token !== this.token) return;
       // a reply of a config that is gone: ask again under the new one

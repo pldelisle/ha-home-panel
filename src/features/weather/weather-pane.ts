@@ -2,19 +2,21 @@
 // the sheet of the tile whose history is open.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over a view model: `weatherModel` runs in `willUpdate` and the template only
 // places what it returns, keyed (Lit docs, repeat); a store controller on the ids it reads (ADR 0012), paused while the pane is hidden. It owns
-// the statistics caches and hands the model and a cache to the detail and the history, which it draws only while they are on screen.
+// the statistics caches (over the recorder's reads with ECCC's archive in front, `withArchive`) and hands the model and a cache to the detail and the history, which it draws only while they are on screen.
 // Must not: read an entity itself (`readWeather` does, from the states it is handed), format a figure or hold a string the household reads, or open a sheet (it asks).
 import {ContextConsumer} from '@lit/context';
 import {LitElement, html, nothing, unsafeCSS, type PropertyValues} from 'lit';
 import {readWeather} from './inputs.ts';
-import {weatherIds} from './ids.ts';
+import {archiveKeys, weatherIds} from './ids.ts';
 import {weatherModel, type WeatherViewModel} from './model.ts';
 import {ForecastController} from './forecast-controller.ts';
 import {HISTORY_TTL_MS, STATISTICS_TTL_MS} from './history.ts';
 import type {TileKey} from './tiles.ts';
 import './weather-detail.ts'; // defines <hp-weather-detail>
 import './weather-history.ts'; // defines <hp-weather-history>
+import {withArchive, type ArchivedStatistics} from '../../core/archive-statistics.ts';
 import {createStatisticsCache, type StatisticsCache} from '../../core/statistics-cache.ts';
+import {createClimateArchive, jsonFetcher} from '../../providers/climate-archive.ts';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {StoreController} from '../../ui/controllers/store-controller.ts';
 import {apiContext} from '../../ui/contexts.ts';
@@ -41,6 +43,24 @@ export class WeatherPane extends LitElement {
   private readonly storeController = new StoreController(this, {ids: store => weatherIds(store.config)});
   private readonly forecast = new ForecastController(this);
   private view: WeatherViewModel | undefined;
+  // ECCC's climate archive, behind the recorder's reads: it fills what comes before the recorder's first row (#447). It reads the house at each call.
+  private readonly climate = createClimateArchive({
+    fetch: jsonFetcher(),
+    now: Date.now,
+    house: () => {
+      const {store} = this.storeController;
+      const place = store.hass?.config;
+      return place
+        ? {
+            latitude: place.latitude ?? null,
+            longitude: place.longitude ?? null,
+            timeZone: place.time_zone,
+            station: store.config.climateStation,
+          }
+        : null;
+    },
+  });
+  private archived: ArchivedStatistics | undefined;
   private cache: StatisticsCache | undefined;
   private historyCache: StatisticsCache | undefined;
   private cacheGeneration = -1;
@@ -57,8 +77,11 @@ export class WeatherPane extends LitElement {
       context: apiContext,
       subscribe: false,
       callback: api => {
-        this.cache = createStatisticsCache(api, {ttlMs: STATISTICS_TTL_MS});
-        this.historyCache = createStatisticsCache(api, {ttlMs: HISTORY_TTL_MS});
+        // one wrapped client under both caches: the detail's and the sheet's reads fill the same way
+        const archived = withArchive(api, this.climate, () => archiveKeys(this.storeController.store.config));
+        this.archived = archived;
+        this.cache = createStatisticsCache(archived, {ttlMs: STATISTICS_TTL_MS});
+        this.historyCache = createStatisticsCache(archived, {ttlMs: HISTORY_TTL_MS});
       },
     });
   }
@@ -111,13 +134,23 @@ export class WeatherPane extends LitElement {
   // a tile's history exists only while its sheet is open, so a closed one holds no chart and asks for nothing
   private renderHistory() {
     return this.historyTile
-      ? html`<hp-weather-history .tile=${this.historyTile} .cache=${this.historyCache}></hp-weather-history>`
+      ? html`<hp-weather-history
+          .tile=${this.historyTile}
+          .cache=${this.historyCache}
+          .archive=${this.archived?.notice}
+        ></hp-weather-history>`
       : nothing;
   }
 
   // the tab shows the detail in the pane while the pane is the tab; leaving the tab drops it, charts and radar with it
   private renderInline(view: WeatherViewModel) {
-    return this.active ? html`<hp-weather-detail .view=${view} .cache=${this.cache}></hp-weather-detail>` : nothing;
+    return this.active
+      ? html`<hp-weather-detail
+          .view=${view}
+          .cache=${this.cache}
+          .archive=${this.archived?.notice}
+        ></hp-weather-detail>`
+      : nothing;
   }
 }
 

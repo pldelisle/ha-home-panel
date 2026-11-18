@@ -143,6 +143,14 @@ test('split_light_areas: a list or one area, empty by default', () => {
   expect(resolveConfig({split_light_areas: ['kitchen', 'den']}).splitLightAreas).toStrictEqual(['kitchen', 'den']);
 });
 
+test('climate_station: an identifier, false for none, null (look for the nearest) by default and for anything else', () => {
+  expect(resolveConfig({climate_station: '7014160'}).climateStation).toBe('7014160');
+  expect(resolveConfig({climate_station: false}).climateStation).toBe(false);
+  expect(resolveConfig({}).climateStation).toBeNull();
+  expect(resolveConfig({climate_station: true}).climateStation).toBeNull();
+  expect(resolveConfig({climate_station: 7014160}).climateStation).toBeNull();
+});
+
 test('names: passed through as the user wrote it, an empty record when it is not a record', () => {
   const names = {'Living room': {fr: 'Salon'}, 'light.lamp': {en: 'Lamp', fr: 'Lampe'}};
   expect(resolveConfig({names}).names).toStrictEqual(names);

@@ -10,6 +10,7 @@ import {repeat} from 'lit/directives/repeat.js';
 import {StaleReply, type PanelApi} from '../../core/api.ts';
 import type {PanelHass} from '../../core/hass.ts';
 import type {StatisticRow} from '../../core/ha.ts';
+import type {ArchiveNotice, ArchivedStatistics} from '../../core/archive-statistics.ts';
 import type {StatisticsCache} from '../../core/statistics-cache.ts';
 import '../../ui/chart.ts'; // defines <hp-chart>
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
@@ -50,6 +51,8 @@ interface Loaded {
   day: Rows;
   at: number;
   generation: number;
+  /** Where the season's earlier part came from, when the archive filled it. */
+  notice: ArchiveNotice | null;
 }
 
 /** The radar's narrow shape: the same breakpoint the legacy panel's `phone` test used. */
@@ -59,11 +62,14 @@ export class WeatherDetail extends LitElement {
   static override properties = {
     view: {attribute: false},
     cache: {attribute: false},
+    archive: {attribute: false},
   };
   /** The pane's view model: now, sun, alerts, hours and days. */
   declare view: WeatherViewModel | undefined;
   /** The pane's statistics cache. */
   declare cache: StatisticsCache | undefined;
+  /** The pane's archive notice: where the rows before the recorder's first came from, asked with the arguments of the read. */
+  declare archive: ArchivedStatistics['notice'] | undefined;
 
   // The host is a block; its blocks are one column with the sixteen pixels between them the pane's `.panel` gave (fourteen on the phone).
   // On a phone the detail sits in the tab under the pane's header; the rules that reach its `.inner` there are in weather-detail.element.css.
@@ -105,6 +111,7 @@ export class WeatherDetail extends LitElement {
     super();
     this.view = undefined;
     this.cache = undefined;
+    this.archive = undefined;
     new ContextConsumer(this, {
       context: apiContext,
       subscribe: false,
@@ -415,8 +422,9 @@ export class WeatherDetail extends LitElement {
   }
 
   private renderSeason() {
-    const {t} = this.storeController.store;
+    const {fmt, t} = this.storeController.store;
     const {season} = this;
+    const notice = this.loaded?.notice;
     const step = this.appearance.value?.compact ? 20 : 10;
     return html`<h3>${t('weather.detail.season')}</h3>
       <p id="wseasonp">${season?.since ?? ''}</p>
@@ -453,7 +461,12 @@ export class WeatherDetail extends LitElement {
                   </div>`
               : nothing
         }
-      </div>`;
+      </div>
+      ${
+        season && notice
+          ? html`<p class="muted">${t('archive.source', {date: fmt.date(notice.before), station: notice.station})}</p>`
+          : nothing
+      }`;
   }
 
   // a tile's button anywhere in the blocks: the history is the shell's to open, as the pane's tiles are
@@ -508,16 +521,14 @@ export class WeatherDetail extends LitElement {
     const token = ++this.token;
     this.request = {token, generation};
     try {
+      const seasonIds = [ids.gusts, ids.temperature];
+      const seasonStart = statisticsStart(now, SEASON_DAYS);
       const [hour, day] = await Promise.all([
         cache.statistics(Object.values(ids), 'hour', statisticsStart(now, WEEK_DAYS), ['mean', 'min', 'max']),
-        cache.statistics([ids.gusts, ids.temperature], 'day', statisticsStart(now, SEASON_DAYS), [
-          'mean',
-          'min',
-          'max',
-        ]),
+        cache.statistics(seasonIds, 'day', seasonStart, ['mean', 'min', 'max']),
       ]);
       if (token !== this.token) return;
-      this.loaded = {hour, day, at: now, generation};
+      this.loaded = {hour, day, at: now, generation, notice: this.archive?.(seasonIds, 'day', seasonStart) ?? null};
       this.failed = false;
       this.failedAt = undefined;
     } catch (error) {
