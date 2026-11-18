@@ -306,7 +306,7 @@ describe('the rooms of the registry', () => {
   };
 
   test('Lights and Security have a room part, Lights with no reading for the header', () => {
-    expect(FEATURES.filter(f => f.room).map(f => f.key)).toEqual(expect.arrayContaining(['lights', 'cams']));
+    expect(FEATURES.filter(f => f.room).map(f => f.key)).toEqual(['lights', 'cams']);
     expect(lightsFeature.room).not.toHaveProperty('chip');
   });
 

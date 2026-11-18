@@ -53,8 +53,8 @@ test.describe('the rooms of the full house', () => {
     await expect(house.root().locator('#rail [data-tab="home"]')).toHaveAttribute('aria-selected', 'false');
     await expect(house.root().locator('#pane-home')).toBeHidden();
     await expect(pane(house).locator('hp-pane-header h2')).toHaveText('Office');
-    await expect(pane(house).locator('.subject[data-subject="lights"]')).toHaveCount(1);
-    await expect(pane(house).locator('.subject[data-subject="lights"] > h3')).toHaveText('Lights');
+    // the Office has a light and the hall motion sensor: one section each, in the registry's order
+    await expect(pane(house).locator('.subject > h3')).toHaveText(['Lights', 'Security']);
     await expect(pane(house).locator('hp-light-tile .tx b')).toHaveText(['Office']);
     expect(await house.page.evaluate(() => localStorage.getItem('home-panel-tab'))).toBe('room:office');
     // another row, then a section, takes the room's place
@@ -153,6 +153,10 @@ test.describe('the Security part of a room', () => {
       .locator('hp-security-room > *')
       .evaluateAll(cards => cards.map(c => c.localName));
     expect(order).toEqual(['hp-camera-card', 'hp-sensor-card']);
+    // a door that opens is a later state change: the camera keeps its registry row, so it stays in the room
+    await house.setState('binary_sensor.front_door', {state: 'on'});
+    await expect(section(house).locator('hp-sensor-card .schip.warn em')).toHaveText('Open');
+    await expect(section(house).locator('hp-camera-card .camlbl b')).toHaveText(['Porch']);
   });
 
   test('a room with only a sensor draws no cameras card, not even the tab empty state', async ({house}) => {

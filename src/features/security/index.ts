@@ -3,7 +3,7 @@
 // linked by importing this module. The pane binds the camera and the sensor whose sheet is open to the sheet host's answers (ADR 0021).
 // Its `room` part is the room's cameras and sensors (ADR 0039): a camera or a sensor opens its sheet over the room view.
 // The More word is `securityMoreWord` over the provider's doors and motion, the legacy panel's rule (#277); the tab is always shown.
-// Must not: draw or hold state, import another feature, or read an entity other than through the shared door and motion provider.
+// Must not: draw or hold state, import another feature, or read an entity other than through `readSecurity` (the camera sources and the shared door and motion provider).
 import {html} from 'lit';
 import {CAMERA_SHEET, HISTORY_SHEET, entityIdOf} from './sheets.ts';
 import './security-pane.ts'; // defines <hp-security-pane>
