@@ -1,95 +1,231 @@
-/* The settings popup's Control Center tiles, in `<hp-settings-popup>`'s root; the popup itself (`.pop`) is the shell's and stays in the legacy sheet. */
+/* The settings popup's Control Center, in `<hp-settings-popup>`'s root; the popup itself (`.pop`) is the shell's and stays in the legacy sheet.
+   macOS's Control Center is the model: a module is a rounded pill with a 44 px round icon on its left (tap it to toggle) and its title and state beside it
+   (tap them to open the submenu); a single action is a square button; a module with a control in it (the glass swatches, a slider) is wide. One markup for both
+   designs: the geometry is here, the colours and shapes are each design's roles (Liquid Glass under `:not([data-design='material'])`, Material under `[data-design='material']`). */
 .cc {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 60px 60px;
   gap: 10px;
 }
-.cct {
-  background: var(--card2);
-  border-radius: var(--shape-stat-tile);
-  padding: 14px;
+.cc:focus {
+  outline: none;
+}
+/* on the phone the two square buttons share a row, each with its word beside the icon */
+.app.cp .cc {
+  grid-template-columns: 1fr 1fr;
+}
+.ccm {
   min-width: 0;
+  margin: 0;
   border: 0;
+  padding: 0;
+  box-sizing: border-box;
   font: inherit;
   color: inherit;
   text-align: left;
 }
-.cct.wide {
-  grid-column: 1/-1;
-}
-button.cct {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
+button.ccm {
   cursor: pointer;
-  min-height: 104px;
   -webkit-appearance: none;
   appearance: none;
 }
-button.cct.sleepnow {
-  flex-direction: row;
-  align-items: center;
-  gap: 12px;
-  min-height: 60px;
-  padding: 10px 14px;
+.ccm.wide,
+.ccm.textsize {
+  grid-column: 1/-1;
 }
-.cct.sleepnow .ccic {
-  margin: 0;
-  flex: none;
+.app.cp .ccm.appearance {
+  grid-column: 1/-1;
 }
-.cct.sleepnow .sltx {
+/* a pill: the icon, then the title and its state */
+.ccm.pill {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  min-height: 60px;
+  border-radius: var(--shape-pill);
 }
-button.cct:focus-visible {
-  outline: var(--focus-width) solid var(--focus-color);
-  outline-offset: var(--focus-offset);
-}
-.cct .ccic {
-  width: 40px;
-  height: 40px;
+.ccic {
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: var(--card);
-  color: var(--fg2);
-  margin-bottom: auto;
+  flex: none;
 }
-.cct b {
+.ccaa {
+  font-size: calc(16px * var(--tx));
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.ccib {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: 0;
+  flex: none;
+  cursor: pointer;
+}
+.cclb {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 10px 0 4px;
+  border: 0;
+  border-radius: var(--shape-pill);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+span.cclb {
+  cursor: inherit;
+}
+.ccm b,
+.ccm small {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ccm b {
   font-size: calc(15px * var(--tx));
   font-weight: 600;
-  margin-top: 10px;
 }
-.cct small {
+.ccm small {
   font-size: calc(12px * var(--tx));
   color: var(--fg2);
 }
-.cct .ccl {
-  font-size: calc(13px * var(--tx));
+/* a square button: one action, the icon alone (its name is its tooltip); on the phone it is a pill with its word */
+.ccm.sq {
+  display: grid;
+  place-items: center;
+  min-height: 60px;
+  border-radius: var(--shape-card-compact);
+}
+.ccbl {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  font-size: calc(15px * var(--tx));
   font-weight: 600;
-  color: var(--fg2);
-  margin-bottom: 8px;
 }
-.cct .seg,
-.cct hp-seg::part(group) {
-  background: var(--card);
+.app.cp .ccm.sq {
+  display: flex;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 8px 14px 8px 8px;
+  border-radius: var(--shape-pill);
 }
-/* Material's button group has no container: the buttons sit straight on the popup (see seg.css) */
-.app[data-design='material'] .cct .seg,
-.app[data-design='material'] .cct hp-seg::part(group) {
+.app.cp .ccbl {
+  position: static;
+  width: auto;
+  height: auto;
+  margin: 0;
+  clip-path: none;
+  overflow: visible;
+}
+/* a wide module holds a control or a list */
+.ccm.wide {
+  padding: 14px;
+  border-radius: var(--shape-stat-tile);
+}
+.ccm.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+  padding: 10px 14px;
+}
+.ccrt {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+.ccm.swatchmod {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ccm.swatchmod.full {
+  gap: 8px;
+}
+/* the module's header: its name and the chevron that opens its submenu */
+.cgh {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: var(--shape-well);
   background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
-/* "Auto follows the device", under the appearance control */
-.ccn {
-  display: block;
-  margin-top: 8px;
-  font-size: calc(12px * var(--tx));
+.cgh svg {
   color: var(--fg2);
 }
-/* the phone's title and Done, above the tiles (the popup has neither on a tablet, where it hangs under the gear) */
+.ccm:focus-visible,
+.ccib:focus-visible,
+.cclb:focus-visible,
+.cgh:focus-visible,
+.ccback:focus-visible,
+.ccopt:focus-visible {
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
+}
+/* the Design submenu: two choices, a check on the one in force */
+.ccm.list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+}
+.ccopt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 52px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--shape-well);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: calc(15px * var(--tx));
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.cck {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  color: var(--c-home);
+}
+/* the phone's title and Done above the modules, and a submenu's back chevron and title in their place (the popup has neither title on a tablet, where it
+   hangs under the gear) */
 .cch {
   grid-column: 1/-1;
   display: flex;
@@ -101,6 +237,26 @@ button.cct:focus-visible {
   margin: 0;
   font-size: calc(22px * var(--tx));
   font-weight: 700;
+}
+.cch.sub {
+  justify-content: flex-start;
+  gap: 4px;
+}
+.cch.sub h2 {
+  font-size: calc(20px * var(--tx));
+  font-weight: 600;
+}
+.ccback {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
 }
 .cch .done {
   min-height: 44px;
@@ -152,12 +308,30 @@ button.cct:focus-visible {
 .sw[aria-checked='true'] .swc {
   box-shadow:
     inset 0 0 0 1px rgba(0, 0, 0, 0.14),
-    0 0 0 2px var(--card2),
+    0 0 0 2px var(--sw-gap, var(--card2)),
     0 0 0 4px var(--c-home);
 }
 .swn {
   font-size: calc(12px * var(--tx));
   font-weight: 600;
+}
+/* in the module the swatches are one row of round dots, the names for screen readers only (the submenu names them) */
+.swatches.compact {
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 0;
+}
+.swatches.seeds.compact {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0;
+  padding: 0;
+}
+.compact .sw {
+  min-width: 0;
+  justify-content: center;
+}
+.compact .swc {
+  width: 28px;
+  height: 28px;
 }
 .sw[data-gl='none'] {
   --sw: linear-gradient(135deg, #fff 50%, #d1d1d6 50%);
@@ -193,7 +367,7 @@ button.cct:focus-visible {
     var(--wp-lake-base);
 }
 /* a seed (Material's Settings, the Seeds component): a 64 px disc in four quadrants of the seed's own scheme (the shell writes `--s0` to `--s3`:
-   primary, primary container, secondary container, card), a 3 px primary ring on the chosen one, its name under it */
+   primary, primary container, secondary container, card), a 3 px primary ring on the chosen one, its name under it; a dot of 32 px in the module */
 .seeds {
   gap: 18px 4px;
   padding: 6px 0;
@@ -216,8 +390,16 @@ button.cct:focus-visible {
   background: var(--md-primary);
   color: var(--md-on-primary);
 }
-.cct .gtrow {
-  margin-top: 8px;
+.seeds.compact .swc {
+  width: 32px;
+  height: 32px;
+}
+.seeds.compact .sw[aria-checked='true'] .swc {
+  outline-width: 2px;
+  outline-offset: 2px;
+}
+.seeds.compact .swc svg {
+  padding: 1px;
 }
 .ccv {
   grid-column: 1/-1;
@@ -225,34 +407,12 @@ button.cct:focus-visible {
   color: var(--fg2);
   padding: 2px 4px 0;
 }
-/* Under Liquid Glass a tile is a card, as the Home cards are (the card fill and edge; a well's fill is for what sits inside one):
-   so its controls take the well's fill, as a card's controls do. Material keeps its own surfaces (the scheme's well and control). */
-.app:not([data-design='material']) .cct {
-  background: var(--card);
-  box-shadow: var(--m-edge);
-}
-.app:not([data-design='material']) .cct .ccic,
-.app:not([data-design='material']) .cct .seg,
-.app:not([data-design='material']) .cct hp-seg::part(group) {
-  background: var(--card2);
-}
-.app.gl:not([data-design='material']) .cct {
-  background: var(--g-card);
-  -webkit-backdrop-filter: var(--m-bd);
-  backdrop-filter: var(--m-bd);
-  box-shadow: var(--m-edge);
-}
-.app.gl:not([data-design='material']) .cct .ccic,
-.app.gl:not([data-design='material']) .cct .seg,
-.app.gl:not([data-design='material']) .cct hp-seg::part(group) {
-  background: var(--g-tile);
-}
 /* Transparency slider in the settings popup (v1.18.2): scales every glass fill; hidden when Glass is None */
 .gtrow {
   display: none;
   align-items: center;
   gap: 10px;
-  margin-top: 10px;
+  margin-top: 4px;
   font-size: calc(12px * var(--tx));
   color: var(--fg2);
 }
@@ -318,42 +478,234 @@ button.cct:focus-visible {
   background: #fff;
   box-shadow: var(--elevation-thumb-soft);
 }
-.app.gl .cct .seg {
-  background: var(--g-sel);
-  box-shadow: none;
+.gtrange:focus-visible {
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
+  border-radius: var(--shape-pill);
 }
-.app.gl .cct .ccic {
+/* the Text size slider (macOS's accessibility slider): a rail under the range with a tick at each step, the range's own track drawn clear so the ticks
+   show through; the thumb is the range's. `--p` is the thumb's place, `--rail` the rail and `--fill` what is behind the thumb */
+.ccm.steps {
+  padding: 14px 16px 10px;
+}
+.stepbox {
+  position: relative;
+  display: flex;
+  height: 44px;
+  --thumb: 28px;
+  --track: 8px;
+  --rail: var(--ring);
+  --fill: var(--ring);
+  --tick: var(--fg3);
+}
+.stepbox::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: var(--track);
+  transform: translateY(-50%);
+  border-radius: var(--shape-pill);
+  background: linear-gradient(90deg, var(--fill) 0 var(--p), var(--rail) var(--p));
+}
+.ticks {
+  position: absolute;
+  inset: 0 calc(var(--thumb) / 2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+}
+.ticks i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--tick);
+}
+.stepbox .gtrange {
+  position: relative;
+  width: 100%;
+  margin: 0;
+}
+.stepbox .gtrange::-webkit-slider-runnable-track {
+  height: var(--track);
+  background: transparent;
+}
+.stepbox .gtrange::-moz-range-track,
+.stepbox .gtrange::-moz-range-progress {
+  height: var(--track);
+  background: transparent;
+}
+.stepbox .gtrange::-webkit-slider-thumb {
+  margin-top: calc((var(--track) - 28px) / 2);
+}
+.steps[data-off='true'] .stepbox {
+  opacity: 0.4;
+}
+.steps .gtrange:disabled {
+  cursor: default;
+}
+.stepends {
+  display: flex;
+  justify-content: space-between;
+  font-size: calc(12px * var(--tx));
+  color: var(--fg2);
+}
+/* ---- Liquid Glass: a module is a card, as the Home cards are (the card fill and edge; a well's fill is for what sits inside one) ---- */
+.app:not([data-design='material']) .ccm {
+  background: var(--card);
+  box-shadow: var(--m-edge);
+  --sw-gap: var(--card);
+}
+.app.gl:not([data-design='material']) .ccm {
+  background: var(--g-card);
+  -webkit-backdrop-filter: var(--m-bd);
+  backdrop-filter: var(--m-bd);
+  box-shadow: var(--m-edge);
+}
+/* Control Center's round icon, in both themes: neutral (a well's disc, the neutral glyph) when off; on, a white disc with the panel's blue glyph */
+.app:not([data-design='material']) .ccic {
+  background: var(--card2);
+  color: var(--fg2);
+}
+.app:not([data-design='material']) .ccib[data-on='true'] .ccic {
+  background: var(--cc-disc-on);
+  color: var(--cc-glyph-on);
+  box-shadow: var(--seg-thumb-edge);
+}
+.app:not([data-design='material']) .ccm.sq .ccic,
+.app:not([data-design='material']) .ccm.textsize .ccic {
+  color: var(--fg);
+}
+.app:not([data-design='material']) .ccm .cclb:active,
+.app:not([data-design='material']) .ccm.sq:active,
+.app:not([data-design='material']) .ccm.textsize:active {
+  transform: scale(var(--press-scale));
+}
+.app:not([data-design='material']) .ccback {
+  background: var(--card);
+  box-shadow: var(--m-edge);
+}
+.app:not([data-design='material']) .ccopt[aria-pressed='true'] {
+  background: var(--card2);
+}
+.app.gl:not([data-design='material']) .ccback {
+  background: var(--g-card);
+}
+.app.gl:not([data-design='material']) .ccopt[aria-pressed='true'] {
   background: var(--g-sel);
+}
+.app:not([data-design='material']) .stepbox {
+  --track: 10px;
+  --rail: color-mix(in srgb, var(--fg) 14%, transparent);
+  --fill: var(--rail);
 }
 @media (prefers-reduced-motion: no-preference) {
-  .cct {
+  .ccm,
+  .cclb,
+  .ccic {
     transition:
       transform var(--motion-press-ms) var(--motion-standard),
-      border-radius var(--motion-press-ms) var(--motion-standard),
       background-color var(--motion-fade-ms) var(--motion-fade),
       box-shadow var(--motion-fade-ms) var(--motion-fade),
       color var(--motion-fade-ms) var(--motion-fade);
   }
 }
-.cct:active {
-  transform: scale(var(--press-scale));
+/* a submenu fades in over the popup: a fade is what Reduce Motion allows, so it is the same for everyone */
+.cc[data-view]:not([data-view='modules']) > :not(.ccv) {
+  animation: cc-in var(--motion-fade-ms) var(--motion-fade);
+}
+@keyframes cc-in {
+  from {
+    opacity: 0;
+  }
+}
+/* ---- Material: tonal modules on the popup, after the design system's Button and Card: a tappable module is `control` and its text `on-control`, a wide one
+   with controls in it is a well; the round icon is a `card` disc on a tonal module and a `secondary-container` one on a well, `primary` with `on-primary`
+   when on (the module turns `primary-container`); shapes are the role tokens, and the state layers and springs are common.css's ---- */
+.app[data-design='material'] .ccm.pill,
+.app[data-design='material'] .ccm.sq {
+  background: var(--control);
+  color: var(--on-control);
+}
+.app[data-design='material'] .ccm.wide {
+  background: var(--card2);
+  color: var(--fg);
+  border-radius: var(--shape-card);
+  --sw-gap: var(--card2);
+}
+.app[data-design='material'] .ccm small {
+  color: inherit;
+  opacity: 0.8;
+}
+.app[data-design='material'] .ccm.wide small {
+  color: var(--fg2);
+  opacity: 1;
+}
+.app[data-design='material'] .ccic {
+  background: var(--card);
+  color: var(--on-control);
+}
+.app[data-design='material'] .ccm.wide .ccic {
+  background: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+}
+.app[data-design='material'] .ccm.appearance:has(.ccib[data-on='true']) {
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+}
+.app[data-design='material'] .ccib[data-on='true'] .ccic {
+  background: var(--md-primary);
+  color: var(--md-on-primary);
+}
+.app[data-design='material'] .ccback {
+  background: var(--control);
+  color: var(--on-control);
+}
+.app[data-design='material'] .ccopt[aria-pressed='true'] {
+  background: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+}
+.app[data-design='material'] .cck {
+  color: inherit;
+}
+/* the slider in Material's look: a thick `primary` active track, a `secondary-container` rest, a 4 px handle, the stops as dots */
+.app[data-design='material'] .stepbox {
+  --thumb: 4px;
+  --track: 16px;
+  --rail: var(--md-secondary-container);
+  --fill: var(--md-primary);
+  --tick: var(--md-on-secondary-container);
+}
+.app[data-design='material'] .ticks i.on {
+  background: var(--md-on-primary);
+}
+.app[data-design='material'] .stepbox .gtrange::-webkit-slider-thumb {
+  width: 4px;
+  height: 44px;
+  margin-top: calc((var(--track) - 44px) / 2);
+  border-radius: var(--shape-pill);
+  background: var(--md-primary);
+  box-shadow: none;
+}
+.app[data-design='material'] .stepbox .gtrange::-moz-range-thumb {
+  width: 4px;
+  height: 44px;
+  border-radius: var(--shape-pill);
+  background: var(--md-primary);
+  box-shadow: none;
 }
 /* Material's type roles: see tokens.css. */
-.app[data-design='material'] .cct b {
+.app[data-design='material'] .ccm b,
+.app[data-design='material'] .ccopt {
   font: var(--type-title-medium);
   letter-spacing: var(--track-title-medium);
 }
-.app[data-design='material'] .cct small {
-  font: var(--type-body-small);
-  letter-spacing: var(--track-body-small);
-}
-.app[data-design='material'] .cct .ccl {
-  font: var(--type-label-large);
-  letter-spacing: var(--track-label-large);
-}
-.app[data-design='material'] .ccn,
+.app[data-design='material'] .ccm small,
 .app[data-design='material'] .ccv,
-.app[data-design='material'] .gtrow {
+.app[data-design='material'] .gtrow,
+.app[data-design='material'] .stepends {
   font: var(--type-body-small);
   letter-spacing: var(--track-body-small);
 }
@@ -365,7 +717,27 @@ button.cct:focus-visible {
   font: var(--type-label-medium);
   letter-spacing: var(--track-label-medium);
 }
-.app[data-design='material'] .gcrow {
+.app[data-design='material'] .gcrow,
+.app[data-design='material'] .ccbl {
   font: var(--type-label-large);
   letter-spacing: var(--track-label-large);
+}
+/* Material's tap target is 48 px (the design system's tap-48): the round icons, the back chevron, and the pills and square buttons that hold them */
+.app[data-design='material'] .ccic,
+.app[data-design='material'] .ccib,
+.app[data-design='material'] .ccback {
+  width: 48px;
+  height: 48px;
+}
+.app[data-design='material'] .cclb {
+  min-height: 48px;
+}
+.app[data-design='material'] .ccm.pill {
+  min-height: 64px;
+}
+.app[data-design='material'] .ccm.sq {
+  min-height: 64px;
+}
+.app[data-design='material']:not(.cp) .cc {
+  grid-template-columns: 1fr 64px 64px;
 }

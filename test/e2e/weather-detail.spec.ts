@@ -3,6 +3,7 @@
 // The phone's sheet is in weather.spec.ts. Spec: docs/specs/15-weather.md, "The elements" and "Performance, by construction".
 import {test, expect, tabletOnly, CHUNK_URL, type House} from './fixtures';
 import {AFTERNOON, FULL_CFG} from './houses';
+import {setTheme} from './settings-controls';
 
 test.beforeEach(() => tabletOnly());
 test.use({houseOpts: {cfg: FULL_CFG, time: AFTERNOON}});
@@ -24,14 +25,7 @@ const FAKE_CARD = `
     set hass(value) { this.seen = value; }
   });`;
 
-async function toggleTheme(house: House) {
-  await house.root().locator('#gear').click();
-  await house
-    .root()
-    .locator('hp-settings-popup')
-    .getByRole('radio', {name: 'Dark', exact: true})
-    .dispatchEvent('click');
-}
+const toggleTheme = (house: House) => setTheme(house, 'dark');
 
 test('the Weather tab shows the detail in its pane: the header, the sun block, the days and the three seven-day charts', async ({
   house,

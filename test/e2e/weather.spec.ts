@@ -3,6 +3,7 @@
 // Spec: docs/specs/15-weather.md, "The elements" and "Performance, by construction".
 import {test, expect, phoneOnly, type House} from './fixtures';
 import {AFTERNOON, FULL_CFG} from './houses';
+import {setTextSize} from './settings-controls';
 
 test.use({houseOpts: {cfg: FULL_CFG}});
 test.beforeEach(() => phoneOnly());
@@ -203,8 +204,7 @@ test.describe('the phone layout at 393 px', () => {
         .locator('.wnow ~ .tiles')
         .evaluate(el => getComputedStyle(el).gridTemplateColumns.split(' ').length);
     expect(await columns()).toBe(2);
-    await house.root().locator('#gear').click();
-    await house.root().locator('hp-settings-popup [data-tx="larger"]').dispatchEvent('click');
+    await setTextSize(house, 'larger');
     await expect.poll(columns).toBe(1);
     const cutLarger = await detail(house)
       .locator('.drow .dn')

@@ -77,6 +77,10 @@
      both themes (in dark the card is darker than the well, so the thumb has its own colour), with a shadow that reads at a glance */
   --seg-thumb: var(--card);
   --seg-thumb-edge: 0 0 0 0.5px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.14), 0 3px 8px -2px rgba(0, 0, 0, 0.1);
+  /* the Control Center's round icon when its module is on: a white disc with the panel's blue glyph, as macOS draws the Wi-Fi tile (the glyph is the
+     blue at 3:1 on white in light; a deeper blue in dark, where --c-home is lighter) */
+  --cc-disc-on: #ffffff;
+  --cc-glyph-on: var(--c-home);
   /* a light that is off, as Apple Home draws it: a dimmed grey tile under the bright ones that are on; its line one step darker so it reads on the grey */
   --tile-off: #e2dfda;
   --tile-off-sub: #5e5b57;
@@ -237,6 +241,7 @@
   --card: #2f2d2a;
   --card2: #383532;
   --seg-thumb: #57534e;
+  --cc-glyph-on: #2f5a90;
   --seg-thumb-edge: inset 0 0 0 0.5px rgba(255, 255, 255, 0.1), 0 2px 6px rgba(0, 0, 0, 0.45);
   --line: #3a3734;
   --fg: #e5e3dd;

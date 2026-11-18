@@ -117,7 +117,11 @@ export class Header extends LitElement {
         .open=${this.statusOpen}
       ></hp-status-popup>
       <div class="pop" id="setpop" ?hidden=${!this.settingsOpen} role="dialog" aria-label=${t('settings.title')}>
-        <hp-settings-popup .version=${__VERSION__} .statistics=${this.historyAt !== null}></hp-settings-popup>
+        <hp-settings-popup
+          .version=${__VERSION__}
+          .statistics=${this.historyAt !== null}
+          .open=${this.settingsOpen}
+        ></hp-settings-popup>
       </div>
     </header>`;
   }

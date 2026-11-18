@@ -8,6 +8,7 @@ import {AFTERNOON, FULL_CFG, KEEP_ENGLISH_NAMES, VIEWPORTS} from '../houses';
 import {OFFICE_TILE} from '../lights';
 import {NIGHT, goIdle} from '../idle';
 import {pill, stopCharging, openFrontDoor, openPopup} from '../live';
+import {openSubmenu} from '../settings-controls';
 
 // every screenshot shows the bundled Manrope, never the fallback it swaps from (font-display: swap)
 test.beforeEach(({house}) => fontsLoaded(house));
@@ -145,6 +146,27 @@ for (const viewport of ['tablet', 'phone'] as const) {
                 const panel = house.root().locator('hp-more-sheet .panel');
                 await expect(panel).toBeVisible();
                 expect(await panel.evaluate(e => getComputedStyle(e).backdropFilter)).toContain('glass-distortion');
+              });
+          }
+
+          // the Control Center's two submenus (#495): Appearance with its Auto switch, and Text size with its stepped slider, Auto off so the slider shows
+          // as it works; the phone's in light only
+          if (viewport === 'tablet' || theme === 'light') {
+            for (const menu of ['appearance', 'text'] as const)
+              test(`settings ${menu} submenu`, async ({house}) => {
+                await openSubmenu(house, menu);
+                if (menu === 'text') {
+                  await house
+                    .root()
+                    .locator('hp-settings-popup')
+                    .getByRole('switch', {name: 'Auto'})
+                    .dispatchEvent('click');
+                  await expect(house.root().locator('hp-settings-popup').getByRole('slider')).toBeEnabled();
+                }
+                await house.page.mouse.move(0, 0);
+                await expect(house.page).toHaveScreenshot(`settings-${menu}-${viewport}-${theme}-en.png`, {
+                  mask: [house.root().locator('#setpop .ccv')],
+                });
               });
           }
 

@@ -6,6 +6,7 @@ import AxeBuilder from '@axe-core/playwright';
 import {test, expect, eachShownTab, isPhone, nestedInteractive, phoneOnly, type House} from './fixtures';
 import {FULL_CFG, PHONE_TABS} from './houses';
 import {openOfficeSheet} from './lights';
+import {backToModules, openSettings, openSubmenu} from './settings-controls';
 import {stopCharging, openFrontDoor, openPopup, pill} from './live';
 
 type Result = Awaited<ReturnType<AxeBuilder['analyze']>>['violations'][number];
@@ -94,8 +95,14 @@ const everyTab = async (house: House) => {
   }
 };
 
+// the modules, and each submenu inside the popup (a submenu is not a dialog of its own: Escape goes back to the modules)
 const settingsPopup = async (house: House) => {
-  await house.root().locator('#gear').click();
+  await openSettings(house);
+  for (const name of ['appearance', 'text', 'design', 'glass'] as const) {
+    await openSubmenu(house, name);
+    await scan(house, `shell.settings, ${name} submenu`);
+    await backToModules(house);
+  }
   await scanDialog(house, 'shell.settings', '#setpop');
 };
 

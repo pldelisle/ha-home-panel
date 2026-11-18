@@ -4,6 +4,7 @@
 import {test, expect, isPhone, type House} from './fixtures';
 import {AFTERNOON, FULL_CFG} from './houses';
 import {openFrontDoor, openPopup, stopCharging} from './live';
+import {backToModules, openSubmenu, setTextSize, setTheme} from './settings-controls';
 
 test.use({houseOpts: {cfg: FULL_CFG, time: AFTERNOON}});
 
@@ -38,7 +39,7 @@ test('Escape closes the popup, and so does a tap anywhere else', async ({house})
   await house.root().locator('#hello').click();
   await expect(pop(house)).toBeHidden();
   await open(house);
-  await popup(house).locator('.ccl').first().click(); // a tap inside it leaves it open
+  await popup(house).locator('.ccv').click(); // a tap inside it leaves it open
   await expect(pop(house)).toBeVisible();
 });
 
@@ -56,13 +57,10 @@ test('Escape closes the Status checks first and the popup after', async ({house}
   await expect(pop(house)).toBeHidden();
 });
 
-test('lists the four text sizes as radio buttons and the eight glasses as swatches, in order, each saying which is chosen', async ({
+test('lists the eight glasses as swatches in the Glass module, in order, each saying which is chosen', async ({
   house,
 }) => {
   await open(house);
-  const sizes = popup(house).getByRole('radiogroup', {name: 'Text size'}).getByRole('radio');
-  await expect(sizes).toHaveText(['Smaller', 'Auto', 'Large', 'Larger']);
-  await expect(sizes.nth(1)).toBeChecked();
   const glasses = popup(house).getByRole('radiogroup', {name: 'Glass'}).getByRole('radio');
   await expect(glasses).toHaveText(['None', 'Dawn', 'Lake', 'Meadow', 'Ember', 'Aurora', 'Sand', 'Sky']);
   await expect(glasses.nth(1)).toBeChecked(); // Dawn is the default
@@ -70,13 +68,24 @@ test('lists the four text sizes as radio buttons and the eight glasses as swatch
   await expect(popup(house).getByRole('slider', {name: 'Transparency'})).toHaveValue('50');
 });
 
+test('the modules: Appearance and Text size pills, the Sleep now and Design buttons, and the Glass module, each with a name', async ({
+  house,
+}) => {
+  await open(house);
+  await expect(popup(house).locator('[data-open="appearance"]')).toContainText('Appearance');
+  await expect(popup(house).locator('[data-open="appearance"]')).toContainText('Light');
+  await expect(popup(house).locator('[data-open="text"]')).toContainText('Text size');
+  await expect(popup(house).locator('[data-open="text"]')).toContainText('Auto');
+  await expect(popup(house).getByRole('button', {name: 'Sleep now'})).toHaveAttribute('title', 'Sleep now');
+  await expect(popup(house).getByRole('button', {name: 'Design'})).toHaveAttribute('title', 'Design');
+  await expect(popup(house).locator('[data-open="glass"]')).toContainText('Glass');
+});
+
 test('a choice is kept, applied and shown by the popup', async ({house}) => {
   await open(house);
-  const larger = popup(house).locator('[data-tx="larger"]');
-  await larger.click();
+  await setTextSize(house, 'larger');
   expect(await stored(house, 'home-panel-text')).toBe('larger');
-  await expect(larger).toBeChecked();
-  await expect(popup(house).locator('[data-tx="auto"]')).not.toBeChecked();
+  await expect(popup(house).locator('[data-open="text"]')).toContainText('Larger');
   await expect(app(house)).toHaveClass(/\btxl\b/);
   const lake = popup(house).locator('[data-gl="lake"]');
   await lake.click();
@@ -89,34 +98,137 @@ test('a choice is kept, applied and shown by the popup', async ({house}) => {
   await expect(range).toHaveAttribute('style', /--p:\s*100%/); // the filled part of the track follows the value
 });
 
-const appearance = (house: House) => popup(house).getByRole('radiogroup', {name: 'Appearance'}).getByRole('radio');
+const darkIcon = (house: House) => popup(house).locator('[data-toggle-theme]');
+const autoSwitch = (house: House) => popup(house).getByRole('switch', {name: 'Auto'});
 
-test('appearance is one segmented control, Light, Dark and Auto, and a choice turns the frame and is kept', async ({
+test('the Appearance icon toggles Light and Dark in one tap, turns the frame and is kept', async ({house}) => {
+  await open(house);
+  await expect(popup(house).getByRole('button', {name: 'Dark', pressed: false})).toBeVisible(); // the icon's name, and its state
+  await expect(darkIcon(house)).toHaveAttribute('aria-pressed', 'false');
+  await expect(popup(house).locator('[data-open="appearance"]')).toContainText('Light');
+  await darkIcon(house).click();
+  await expect(app(house)).toHaveAttribute('data-theme', 'dark');
+  await expect(darkIcon(house)).toHaveAttribute('aria-pressed', 'true');
+  await expect(popup(house).locator('[data-open="appearance"]')).toContainText('Dark');
+  expect(await stored(house, 'home-panel-theme')).toBe('dark');
+  await darkIcon(house).click();
+  await expect(app(house)).toHaveAttribute('data-theme', 'light');
+  expect(await stored(house, 'home-panel-theme')).toBe('light');
+});
+
+test('Auto follows the device and says so; a tap on the icon while Auto is on sets the opposite and turns Auto off', async ({
   house,
 }) => {
   await open(house);
-  await expect(appearance(house)).toHaveText(['Light', 'Dark', 'Auto']);
-  await expect(appearance(house).first()).toBeChecked();
-  await appearance(house).nth(1).click();
-  await expect(app(house)).toHaveAttribute('data-theme', 'dark');
-  await expect(appearance(house).nth(1)).toBeChecked();
-  expect(await stored(house, 'home-panel-theme')).toBe('dark');
-  await appearance(house).first().click();
-  await expect(app(house)).toHaveAttribute('data-theme', 'light');
-  await expect(appearance(house).first()).toBeChecked();
-});
-
-test('Auto follows the device and says so', async ({house}) => {
-  await open(house);
-  await expect(popup(house).getByText('Follows the device')).toHaveCount(0);
-  await appearance(house).nth(2).click();
-  await expect(appearance(house).nth(2)).toBeChecked();
-  expect(await stored(house, 'home-panel-theme')).toBe('auto');
+  await openSubmenu(house, 'appearance');
   await expect(popup(house).getByText('Follows the device')).toBeVisible();
+  await expect(autoSwitch(house)).toHaveAttribute('aria-checked', 'false');
+  await autoSwitch(house).click();
+  await expect(autoSwitch(house)).toHaveAttribute('aria-checked', 'true');
+  expect(await stored(house, 'home-panel-theme')).toBe('auto');
+  await backToModules(house);
+  await expect(popup(house).locator('[data-open="appearance"]')).toContainText('Auto · Light');
+  await darkIcon(house).click(); // the device is light: the opposite is Dark, for good
+  await expect(app(house)).toHaveAttribute('data-theme', 'dark');
+  expect(await stored(house, 'home-panel-theme')).toBe('dark');
+  await expect(popup(house).locator('[data-open="appearance"]')).not.toContainText('Auto');
+  // turning Auto off keeps what shows
+  await setTheme(house, 'auto');
+  await openSubmenu(house, 'appearance');
+  await autoSwitch(house).click();
+  expect(await stored(house, 'home-panel-theme')).toBe('light');
 });
 
-test('a glass is a 44 pt swatch with its name under it, and the chosen one is checked', async ({house}) => {
+test('the Text size slider: a step per size above Auto, the arrow keys move a step, Auto dims it', async ({house}) => {
   await open(house);
+  await openSubmenu(house, 'text');
+  const slider = popup(house).getByRole('slider', {name: 'Text size'});
+  await expect(autoSwitch(house)).toHaveAttribute('aria-checked', 'true'); // Auto is the default
+  await expect(slider).toBeDisabled();
+  await expect(popup(house).locator('.stepends')).toHaveText('SmallerMaximum');
+  await expect(popup(house).locator('.ticks i')).toHaveCount(4);
+  await autoSwitch(house).click();
+  await expect(slider).toBeEnabled();
+  expect(await stored(house, 'home-panel-text')).toBe('normal'); // the step nearest the scale Auto gave: no jump
+  await expect(app(house)).toHaveCSS('--tx', '1.000');
+  await expect(slider).toHaveAttribute('aria-valuetext', 'Normal');
+  await slider.focus();
+  await house.page.keyboard.press('ArrowRight');
+  expect(await stored(house, 'home-panel-text')).toBe('large');
+  await expect(slider).toHaveAttribute('aria-valuetext', 'Large');
+  await house.page.keyboard.press('ArrowRight');
+  expect(await stored(house, 'home-panel-text')).toBe('larger');
+  await expect(slider).toHaveAttribute('aria-valuetext', 'Larger');
+  await expect(app(house)).toHaveClass(/\btxl\b/);
+  for (let i = 0; i < 3; i++) await house.page.keyboard.press('ArrowLeft');
+  expect(await stored(house, 'home-panel-text')).toBe('smaller');
+  await autoSwitch(house).click(); // back to Auto: the slider is dimmed and inactive
+  await expect(slider).toBeDisabled();
+  expect(await stored(house, 'home-panel-text')).toBe('auto');
+});
+
+test('the Design button opens a submenu with the two choices; choosing Material closes it and switches the panel', async ({
+  house,
+}) => {
+  await open(house);
+  await openSubmenu(house, 'design');
+  const apple = popup(house).getByRole('button', {name: 'Liquid Glass'});
+  const material = popup(house).getByRole('button', {name: 'Material'});
+  await expect(apple).toHaveAttribute('aria-pressed', 'true');
+  await expect(material).toHaveAttribute('aria-pressed', 'false');
+  await material.click();
+  await expect(app(house)).toHaveAttribute('data-design', 'material');
+  await expect(popup(house).locator('[data-back]')).toHaveCount(0); // the submenu closed
+  await expect(popup(house).locator('[data-open="design"]')).toBeFocused();
+  expect(await stored(house, 'home-panel-design')).toBe('material');
+  await expect(popup(house).locator('.seed')).toHaveCount(7); // the Colour module takes the Glass module's place
+  await expect(popup(house).locator('[data-open="glass"]')).toContainText('Colour');
+});
+
+test('the Glass module opens a submenu with everything Glass has: the named swatches, the slider and Transparent cards', async ({
+  house,
+}) => {
+  await open(house);
+  await openSubmenu(house, 'glass');
+  await expect(popup(house).locator('[data-gl="lake"] .swn')).toHaveText('Lake');
+  await expect(popup(house).getByRole('slider', {name: 'Transparency'})).toBeVisible();
+  const cards = popup(house).getByRole('switch', {name: 'Transparent cards'});
+  await cards.click();
+  expect(await stored(house, 'home-panel-cards')).toBe('glass');
+});
+
+test('a submenu is inside the popup: focus goes in, Escape and the chevron go back to the module that opened it, and the popup stays', async ({
+  house,
+}) => {
+  await open(house);
+  const label = popup(house).locator('[data-open="text"]');
+  await label.click();
+  await expect(popup(house).locator('[data-back]')).toBeFocused();
+  await expect(popup(house).getByRole('heading', {name: 'Text size'})).toBeVisible();
+  await house.page.keyboard.press('Escape');
+  await expect(pop(house)).toBeVisible();
+  await expect(label).toBeFocused();
+  await label.click();
+  await popup(house).locator('[data-back]').click();
+  await expect(label).toBeFocused();
+  await house.page.keyboard.press('Escape'); // in the modules, Escape closes the popup
+  await expect(pop(house)).toBeHidden();
+});
+
+test('a popup closed in a submenu opens at the modules', async ({house}) => {
+  await open(house);
+  await openSubmenu(house, 'design');
+  await gear(house).click();
+  await expect(pop(house)).toBeHidden();
+  await open(house);
+  await expect(popup(house).locator('[data-open="design"]')).toBeVisible();
+});
+
+test('in the submenu a glass is a 44 pt swatch with its name under it, and the chosen one is checked', async ({
+  house,
+}) => {
+  await open(house);
+  await openSubmenu(house, 'glass');
   const glasses = popup(house).getByRole('radiogroup', {name: 'Glass'}).getByRole('radio');
   for (const glass of await glasses.all()) {
     const box = (await glass.boundingBox())!;
@@ -157,7 +269,7 @@ test('the phone titles the popup Settings and has Done; Done and Escape close it
     await expect(gear(house)).toBeFocused();
     await open(house);
   }
-  await popup(house).locator('[data-tx="large"]').focus();
+  await popup(house).locator('[data-open="text"]').focus();
   await house.page.keyboard.press('Escape');
   await expect(pop(house)).toBeHidden();
   await expect(gear(house)).toBeFocused();
@@ -201,15 +313,16 @@ test.describe('in French', () => {
     await open(house);
     await expect(popup(house).getByText('Taille du texte')).toBeVisible();
     await expect(popup(house).getByRole('radiogroup', {name: 'Verre'}).getByRole('radio').first()).toHaveText('Aucun');
-    await expect(popup(house).locator('[data-sleep] b')).toHaveText('Dormir maintenant');
+    await expect(popup(house).locator('[data-sleep]')).toHaveAttribute('aria-label', 'Dormir maintenant');
     await expect(popup(house).locator('.ccv')).toHaveText(
       /^Home panel v\d+\.\d+\.\d+ · statistiques actualisées aux 15 minutes$/,
     );
-    await expect(popup(house).getByRole('radiogroup', {name: 'Apparence'}).getByRole('radio')).toHaveText([
-      'Clair',
-      'Sombre',
-      'Auto',
-    ]);
+    await expect(popup(house).locator('[data-open="appearance"]')).toContainText('Clair');
+    await expect(popup(house).getByRole('button', {name: 'Sombre', pressed: false})).toBeVisible();
+    await openSubmenu(house, 'appearance');
+    await expect(popup(house).getByRole('switch', {name: 'Auto'})).toBeVisible();
+    await expect(popup(house).getByText("Suit l'appareil")).toBeVisible();
+    await expect(popup(house).getByRole('button', {name: 'Retour'})).toBeVisible();
   });
 
   test('says its three labels in French: the gear, the popup and the Status checks', async ({house}) => {
@@ -238,7 +351,7 @@ test.describe('in French', () => {
       };
     });
     await house.page.reload();
-    await expect(popup(house).locator('.ccl').first()).toHaveText('Apparence');
+    await expect(popup(house).locator('[data-open="appearance"] b')).toHaveText('Apparence');
     const texts = await house.page.evaluate(() => (window as unknown as {popupTexts: string[]}).popupTexts);
     expect(texts.length, 'the popup drew').toBeGreaterThan(0);
     for (const text of texts)

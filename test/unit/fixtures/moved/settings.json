@@ -25,6 +25,23 @@
       "was": "Suit l'appareil"
     },
     {
+      "key": "settings.theme.autoState",
+      "values": {"state": "Light"},
+      "written": "Auto · Light"
+    },
+    {
+      "key": "settings.text.normal",
+      "written": "Normal"
+    },
+    {
+      "key": "settings.text.maximum",
+      "written": "Maximum"
+    },
+    {
+      "key": "settings.back",
+      "written": "Retour"
+    },
+    {
       "key": "settings.design.title"
     },
     {
@@ -44,10 +61,6 @@
     {
       "key": "settings.sleepNow",
       "was": "Dormir maintenant"
-    },
-    {
-      "key": "settings.sleepNowCaption",
-      "was": "Affiche l’horloge jusqu’au prochain toucher"
     },
     {
       "key": "settings.text.title",
