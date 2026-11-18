@@ -32,7 +32,7 @@ The words the panel and its code use. One word per concept: use it in issues, te
 
 **Mercury drop** — The glass material since v1.19.0: almost no tint, a soft inner glow, a 15 px blur and, in Chromium, the `#glass-distortion` filter the shell draws (`lens`). It belongs to the Apple design. Avoid: Liquid Glass.
 
-**Design** — The panel's design language, chosen under Settings and kept per browser: **Apple** (the default: glass, the Mercury drop, a wallpaper) or **Material** (Material 3 Expressive: a tonal palette built from a seed, no glass); `design` in the settings, as a `design` attribute on every element and `data-design` on the frame (ADR 0037). Content, words, data and chart colours are the same in both. Avoid: theme (that is Light, Dark or Auto), style, skin.
+**Design** — The panel's design language, chosen under Settings and kept per browser: **Liquid Glass** (the default, labelled so in the popup and stored as `apple`: glass, the Mercury drop, a wallpaper) or **Material** (Material 3 Expressive: a tonal palette built from a seed, no glass); `design` in the settings, as a `design` attribute on every element and `data-design` on the frame (ADR 0037). Content, words, data and chart colours are the same in both. Avoid: theme (that is Light, Dark or Auto), style, skin.
 
 **Live-activity pill** — The pill shown while something runs: the car charging, the water heater heating or a Hilo challenge. A further activity sits beside it as a small ring, and tapping it opens one card per activity above the Status checks. Avoid: status chip (the "All clear" chip it replaced).
 
@@ -40,7 +40,7 @@ The words the panel and its code use. One word per concept: use it in issues, te
 
 **Status checks** — The list of things that need attention, opened from the attention pill or from the live-activity pill's popup. Avoid: status block (removed from the Home card).
 
-**Settings popup** — The popup behind the gear in the header: the theme (Dark or Light, and Auto), the design (Apple or Material), Sleep now, the text size, the glass and its transparency (Apple's only), and the version. Each choice is written to the browser's settings, and the shell applies it. Avoid: settings sheet (a sheet is a detail view of a tile), settings dialog.
+**Settings popup** — The popup behind the gear in the header: the theme (Dark or Light, and Auto), the design (Liquid Glass or Material), Sleep now, the text size, the glass and its transparency (Apple's only), and the version. Each choice is written to the browser's settings, and the shell applies it. Avoid: settings sheet (a sheet is a detail view of a tile), settings dialog.
 
 **Smart stack** — The cards that follow the moment (a door left open, the car charging overnight, tomorrow's weather), taking turns every 20 seconds with dots for how many there are; it sits beside the idle clock and fills the Home card on a tablet. Red cards stay alone and amber cards come first.
 

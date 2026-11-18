@@ -240,7 +240,7 @@ const openPopup = async (house: House) => {
   await house.root().locator('#gear').click();
   await expect(house.root().locator('#setpop')).toBeVisible();
 };
-const designRadio = (house: House, name: 'Apple' | 'Material') =>
+const designRadio = (house: House, name: 'Liquid Glass' | 'Material') =>
   popup(house).getByRole('radiogroup', {name: 'Design'}).getByRole('radio', {name, exact: true});
 
 test('Material turns glass off and recolours the frame from the seed; Apple takes it all back', async ({house}) => {
@@ -265,7 +265,7 @@ test('Material turns glass off and recolours the frame from the seed; Apple take
   await chooseTheme(house, 'Dark');
   await expect(app(house)).toHaveCSS('--bg', '#111418'); // surface, dark
 
-  await designRadio(house, 'Apple').dispatchEvent('click');
+  await designRadio(house, 'Liquid Glass').dispatchEvent('click');
   await expect(app(house)).toHaveAttribute('data-design', 'apple');
   await expect(app(house)).toHaveClass(/\bgl\b/);
   await expect(app(house)).toHaveAttribute('data-wp', 'lake');
@@ -297,7 +297,7 @@ test('under Material the seven seeds replace the wallpapers: a seed recolours th
   await expect(popup(house).locator('.seed[aria-checked="true"]')).toHaveAttribute('data-seed', 'ember');
   await expect(app(house)).toHaveCSS('--md-primary', '#8f4c37');
 
-  await designRadio(house, 'Apple').dispatchEvent('click');
+  await designRadio(house, 'Liquid Glass').dispatchEvent('click');
   await designRadio(house, 'Material').dispatchEvent('click');
   await expect(popup(house).locator('.seed[aria-checked="true"]')).toHaveAttribute('data-seed', 'ember');
 });

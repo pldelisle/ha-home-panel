@@ -117,7 +117,7 @@ export const fr: Record<MessageKey, string> = {
   'settings.theme.auto': 'Auto',
   'settings.theme.autoCaption': "Suit l'appareil",
   'settings.design.title': 'Design',
-  'settings.design.apple': 'Apple',
+  'settings.design.apple': 'Liquid Glass',
   'settings.design.material': 'Material',
   'settings.seed.title': 'Couleur',
   'settings.seed.house': 'Maison',
