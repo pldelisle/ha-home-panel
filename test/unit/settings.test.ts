@@ -28,6 +28,7 @@ const DEFAULTS = {
   cards: 'solid',
   tab: 'home',
   design: 'apple',
+  seed: 'house',
 };
 
 describe('reading', () => {
@@ -44,6 +45,7 @@ describe('reading', () => {
       'home-panel-cards': 'glass',
       'home-panel-tab': 'climate',
       'home-panel-design': 'material',
+      'home-panel-seed': 'meadow',
     });
     expect(createSettings(storage).get()).toEqual({
       theme: 'dark',
@@ -53,7 +55,15 @@ describe('reading', () => {
       cards: 'glass',
       tab: 'climate',
       design: 'material',
+      seed: 'meadow',
     });
+  });
+
+  test('the seed is house unless the stored value names one of the seven', () => {
+    expect(createSettings(mapStorage().storage).get().seed).toBe('house');
+    expect(createSettings(mapStorage({'home-panel-seed': 'aurora'}).storage).get().seed).toBe('aurora');
+    for (const junk of ['', 'Meadow', 'sky', 'none', '#a0e0c4'])
+      expect(createSettings(mapStorage({'home-panel-seed': junk}).storage).get().seed).toBe('house');
   });
 
   test('the design is apple unless the stored value says material', () => {
@@ -112,6 +122,7 @@ describe('writing', () => {
       cards: 'solid',
       tab: 'energy',
       design: 'apple',
+      seed: 'house',
     });
   });
 

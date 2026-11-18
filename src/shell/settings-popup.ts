@@ -1,7 +1,8 @@
 // <hp-settings-popup>: the Control Center popup behind the gear (appearance, design, Sleep now, text size, glass, transparency), in its own shadow root.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over the settings module, an observer of it (Gamma et al.); a choice is a
 // `settings.set` and the shell's AppearanceController applies it; "Sleep now" and, on the phone, Done go up as events (Lit docs, Events).
-// Under Material the glass choices are not drawn (glass is Apple's). Appearance and Design are the kit's <hp-seg> (HIG, Segmented controls); a glass is a colour, so it is a swatch with its name and a check (HIG, Color).
+// Under Material the glass choices are not drawn (glass is Apple's) and the seven seeds take their place, as swatches of each seed's own scheme.
+// Appearance and Design are the kit's <hp-seg> (HIG, Segmented controls); a glass is a colour, so it is a swatch with its name and a check (HIG, Color).
 // Its words are catalog messages: the French rewrite layer cannot see inside this root (ADR 0019, ADR 0013).
 // Must not: apply a setting, open or close itself (its container is the shell's, Done only asks), or know the idle timer.
 import {ContextConsumer} from '@lit/context';
@@ -12,6 +13,8 @@ import {AppearanceConsumer} from '../ui/controllers/appearance-consumer.ts';
 import {StoreController} from '../ui/controllers/store-controller.ts';
 import {settingsContext} from '../ui/contexts.ts';
 import {ico} from '../ui/icons.ts';
+import {SEEDS, SEED_IDS, type SeedId} from '../core/seeds.ts';
+import {seedSwatch} from './material-scheme.ts';
 import {moveTo, tabStop} from '../ui/seg-keys.ts';
 import type {SegChangeDetail, SegOption} from '../ui/seg.ts';
 import '../ui/seg.ts'; // defines <hp-seg>
@@ -45,6 +48,17 @@ const GLASSES: readonly (readonly [string, MessageKey])[] = [
   ['sand', 'settings.glass.sand'],
   ['sky', 'settings.glass.sky'],
 ];
+
+// the seeds, in the order the popup lists them, and the message that names each: the wallpapers' names, and House's own
+const SEED_NAMES: Record<SeedId, MessageKey> = {
+  house: 'settings.seed.house',
+  dawn: 'settings.glass.dawn',
+  lake: 'settings.glass.lake',
+  meadow: 'settings.glass.meadow',
+  ember: 'settings.glass.ember',
+  aurora: 'settings.glass.aurora',
+  sand: 'settings.glass.sand',
+};
 
 export class SettingsPopup extends LitElement {
   static override properties = {
@@ -82,9 +96,12 @@ export class SettingsPopup extends LitElement {
 
   protected override render() {
     const {t} = this.store.store;
-    const {theme, text, glass, glassLevel, cards, design} = this.settingsNow();
+    const {theme, text, glass, glassLevel, cards, design, seed} = this.settingsNow();
     // one tab stop in the group (the chosen swatch), the arrow keys move within it, as in the kit's <hp-seg>
     const glassStop = tabStop(GLASSES.map(([value]) => ({checked: value === glass})));
+    const seedStop = tabStop(SEED_IDS.map(id => ({checked: id === seed})));
+    const dark = this.appearance.value?.theme === 'dark';
+    const contrast = this.appearance.value?.moreContrast ? 1 : 0;
     const phone = this.appearance.value?.compact === true;
     const themes: SegOption[] = THEMES.map(([value, key]) => ({value, label: t(key)}));
     const designs: SegOption[] = DESIGNS.map(([value, key]) => ({value, label: t(key)}));
@@ -130,7 +147,31 @@ export class SettingsPopup extends LitElement {
       </div>
       ${
         design === 'material'
-          ? nothing // glass is the Apple design's: no swatches, slider or switch; the stored choice waits for the way back
+          ? html` <div class="cct wide">
+              <div class="ccl">${t('settings.seed.title')}</div>
+              <div
+                class="swatches seeds"
+                role="radiogroup"
+                aria-label=${t('settings.seed.title')}
+                @keydown=${this.onSeedKey}
+              >
+                ${SEED_IDS.map((id, index) => {
+                  const [primary, container, secondary, card] = seedSwatch(SEEDS[id], dark, contrast);
+                  return html`<button
+                    type="button"
+                    class="sw seed"
+                    role="radio"
+                    aria-checked=${id === seed}
+                    tabindex=${index === seedStop ? 0 : -1}
+                    data-seed=${id}
+                    style=${`--s0:${primary};--s1:${container};--s2:${secondary};--s3:${card}`}
+                  >
+                    <span class="swc" aria-hidden="true">${id === seed ? ico('check', 22) : nothing}</span>
+                    <span class="swn">${t(SEED_NAMES[id])}</span>
+                  </button>`;
+                })}
+              </div>
+            </div>`
           : html` <div class="cct wide">
               <div class="ccl">${t('settings.glass.title')}</div>
               <div
@@ -211,26 +252,38 @@ export class SettingsPopup extends LitElement {
       return;
     }
     const glass = target.closest<HTMLElement>('[data-gl]')?.dataset.gl;
+    const seed = target.closest<HTMLElement>('[data-seed]')?.dataset.seed;
     const text = target.closest<HTMLElement>('[data-tx]')?.dataset.tx;
     if (glass !== undefined) source.set('glass', glass);
+    else if (seed !== undefined) source.set('seed', seed);
     else if (text !== undefined) source.set('text', text);
   };
 
   // an arrow, Home or End moves the choice and the focus together, as a native radio group does (the keys are seg-keys.ts's)
-  private readonly onGlassKey = (e: KeyboardEvent): void => {
+  private readonly onGlassKey = (e: KeyboardEvent): void =>
+    this.moveSwatch(
+      e,
+      'glass',
+      GLASSES.map(([value]) => value),
+    );
+
+  // the seeds are the same kind of group, with the same keys, over their own table
+  private readonly onSeedKey = (e: KeyboardEvent): void => this.moveSwatch(e, 'seed', SEED_IDS);
+
+  private moveSwatch(e: KeyboardEvent, key: 'glass' | 'seed', values: readonly string[]): void {
     const {source} = this;
-    const buttons = [...this.renderRoot.querySelectorAll<HTMLButtonElement>('.swatches button')];
+    const buttons = [...(e.currentTarget as HTMLElement).querySelectorAll<HTMLButtonElement>('button')];
     const from = buttons.findIndex(button => button === this.shadowRoot?.activeElement);
     const to = moveTo(
-      GLASSES.map(() => ({})),
+      values.map(() => ({})),
       Math.max(from, 0),
       e.key,
     );
     if (!source || to === null) return;
     e.preventDefault();
     buttons[to]?.focus();
-    source.set('glass', GLASSES[to][0]);
-  };
+    source.set(key, values[to]);
+  }
 
   // the switch tells what a tap asks for; the setting is written and the popup draws it back from the settings
   private readonly onCards = (e: CustomEvent<SwitchChangeDetail>): void => {

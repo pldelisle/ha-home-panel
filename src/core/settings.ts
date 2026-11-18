@@ -4,6 +4,8 @@
 // Observer (Gamma et al., Design Patterns): `subscribe` tells a listener after each write, so what reads a setting need not poll.
 // Must not: touch localStorage or any global, throw on a bad or blocked storage, or change a key or a stored value.
 
+import {parseSeed} from './seeds.ts';
+
 /** The slice of the browser's Storage that the settings use; the element passes localStorage. */
 export interface KeyValueStorage {
   getItem(key: string): string | null;
@@ -21,6 +23,8 @@ export interface Settings {
   tab: string;
   /** The design language: `apple` (the default, glass) or `material` (a tonal palette, no glass); anything else parses to `apple`. */
   design: string;
+  /** Under Material, the seed the palette is built from (`house`, `dawn`, ...); anything else parses to `house`, and Apple keeps it for the way back. */
+  seed: string;
 }
 
 export interface PanelSettings {
@@ -38,6 +42,7 @@ const KEYS: Record<keyof Settings, string> = {
   cards: 'home-panel-cards',
   tab: 'home-panel-tab',
   design: 'home-panel-design',
+  seed: 'home-panel-seed',
 };
 const VERSION_KEY = 'home-panel-settings';
 const VERSION = '1';
@@ -68,6 +73,7 @@ export function createSettings(storage: KeyValueStorage): PanelSettings {
       cards: read('cards') === 'glass' ? 'glass' : 'solid',
       tab: read('tab') || 'home',
       design: read('design') === 'material' ? 'material' : 'apple',
+      seed: parseSeed(read('seed')),
     }),
 
     set(key, value) {

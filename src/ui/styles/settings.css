@@ -187,6 +187,30 @@ button.cct:focus-visible {
     ),
     var(--wp-lake-base);
 }
+/* a seed (Material's Settings, the Seeds component): a 64 px disc in four quadrants of the seed's own scheme (the shell writes `--s0` to `--s3`:
+   primary, primary container, secondary container, card), a 3 px primary ring on the chosen one, its name under it */
+.seeds {
+  gap: 18px 4px;
+  padding: 6px 0;
+}
+.seed .swc {
+  width: 64px;
+  height: 64px;
+  background: conic-gradient(var(--s1) 0 25%, var(--s3) 0 50%, var(--s2) 0 75%, var(--s0) 0);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.seed[aria-checked='true'] .swc {
+  box-shadow: inset 0 0 0 1px var(--line);
+  outline: 3px solid var(--md-primary);
+  outline-offset: 3px;
+}
+.seed .swc svg {
+  box-sizing: content-box;
+  padding: 3px;
+  border-radius: 50%;
+  background: var(--md-primary);
+  color: var(--md-on-primary);
+}
 .cct .gtrow {
   margin-top: 8px;
 }

@@ -1,4 +1,4 @@
-// AppearanceController: the shell's theme, design, glass, text size, document background and `live` class, gathered into one frozen Appearance.
+// AppearanceController: the shell's theme, design, seed, glass, text size, document background and `live` class, gathered into one frozen Appearance.
 // Pattern: Lit reactive controller (Lit docs, Reactive Controllers) wrapping what were six methods of the legacy class; it
 // provides its value by context (ADR 0018, after the Context Protocol) and the pure rules of appearance-rules.ts decide.
 // Must not: read localStorage (the settings module does), hold a rule (the rules do), or write into the frame beyond `.app`'s inline custom properties.
@@ -12,7 +12,8 @@ import {sunTimes} from '../core/sun.ts';
 import {appearanceContext, type Appearance} from '../ui/contexts.ts';
 import type {MediaQueryController} from '../ui/controllers/media-query.ts';
 import {StoreController} from '../ui/controllers/store-controller.ts';
-import {DEFAULT_SEED, materialScheme} from './material-scheme.ts';
+import {SEEDS, parseSeed} from '../core/seeds.ts';
+import {materialScheme} from './material-scheme.ts';
 import {glassDensity, glassWallpaper, isDark, isLargeText, textScale} from './appearance-rules.ts';
 import {claimDocument, type DocumentClaim} from './document-background.ts';
 import {skyWallpaper, type SunDay} from './sky.ts';
@@ -27,6 +28,8 @@ export interface AppearanceOptions {
   compact: MediaQueryController;
   dark: MediaQueryController;
   reducedTransparency: MediaQueryController;
+  /** `prefers-contrast: more`: Material's scheme is built at its high contrast level. */
+  moreContrast: MediaQueryController;
   /** Calls the listener on every touch of the panel (the idle timer's four listeners); returns the way out. */
   touches: (listener: () => void) => () => void;
 }
@@ -49,6 +52,8 @@ const same = (a: Appearance, b: Appearance): boolean =>
   a.textScale === b.textScale &&
   a.largeText === b.largeText &&
   a.reducedTransparency === b.reducedTransparency &&
+  a.seed === b.seed &&
+  a.moreContrast === b.moreContrast &&
   a.live === b.live;
 
 export class AppearanceController implements ReactiveController {
@@ -146,10 +151,12 @@ export class AppearanceController implements ReactiveController {
   // Under Material the frame's colour tokens are the scheme's, written inline so they win over the stylesheet's (Increase Contrast
   // included: its rules are written without !important); under Apple none is written, and what Material wrote is taken away.
   private paintScheme(app: HTMLElement, a: Appearance): void {
-    const key = `${a.design}/${a.theme}`;
+    // Apple writes none, whatever the seed: its key does not move with a seed or a contrast it does not use
+    const key = a.design === 'material' ? `material/${a.theme}/${a.seed}/${a.moreContrast}` : 'apple';
     if (key === this.schemeKey) return;
     this.schemeKey = key;
-    const tokens = a.design === 'material' ? materialScheme(DEFAULT_SEED, a.theme === 'dark', 0) : {};
+    const tokens =
+      a.design === 'material' ? materialScheme(SEEDS[a.seed], a.theme === 'dark', a.moreContrast ? 1 : 0) : {};
     for (const name of this.schemeNames) if (!(name in tokens)) app.style.removeProperty(name);
     for (const [name, value] of Object.entries(tokens)) app.style.setProperty(name, value);
     this.schemeNames = Object.keys(tokens);
@@ -175,7 +182,7 @@ export class AppearanceController implements ReactiveController {
   }
 
   private compute(): Appearance {
-    const {settings, compact, dark, reducedTransparency} = this.options;
+    const {settings, compact, dark, reducedTransparency, moreContrast} = this.options;
     const set = settings.get();
     if (this.staleProbe) this.readProbe();
     const design = set.design === 'material' ? 'material' : 'apple';
@@ -195,6 +202,8 @@ export class AppearanceController implements ReactiveController {
       textScale: scale,
       largeText: isLargeText(scale),
       reducedTransparency: reducedTransparency.matches,
+      seed: parseSeed(set.seed),
+      moreContrast: moreContrast.matches,
       live: this.touched,
     });
   }

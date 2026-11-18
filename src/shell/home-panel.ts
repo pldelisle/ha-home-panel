@@ -63,6 +63,7 @@ const PHONE = '(max-width:599px)';
 // The device's own appearance: dark, and less transparency. The theme follows the first on auto; the glass lens yields to the second.
 const DARK = '(prefers-color-scheme: dark)';
 const REDUCED_TRANSPARENCY = '(prefers-reduced-transparency: reduce)';
+const MORE_CONTRAST = '(prefers-contrast: more)';
 // Liquid Glass's Mercury drop (v1.19.0): whether this engine runs an SVG filter inside backdrop-filter (Chromium only); WebKit drops
 // url() filters and keeps the frosted glass of the CSS. Asked once: the engine does not change.
 const LENS_OK =
@@ -174,6 +175,7 @@ export class HomePanel extends LitElement {
     compact: this.phone,
     dark: new MediaQueryController(this, DARK),
     reducedTransparency: new MediaQueryController(this, REDUCED_TRANSPARENCY),
+    moreContrast: new MediaQueryController(this, MORE_CONTRAST),
     touches: listener => this.idle.onTouch(listener),
   });
   // which sheet is open, Escape and where focus goes back to; the shell registers its two popups with it
