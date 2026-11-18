@@ -33,8 +33,8 @@ export interface SheetMediatorOptions {
   root: () => ShadowRoot;
   /** The pane whose detail an element's sheet is (`air.detail`), from the registry; none for any other. */
   paneOf: (id: SheetId) => FeatureKey | undefined;
-  /** The phone's shape, as the shell has it now. */
-  compact: () => boolean;
+  /** Whether a detail sheet opens over the screen, whatever tab is shown (the phone, or a room view: ADR 0039), as the shell has it now. */
+  overScreen: () => boolean;
   setTab: (key: FeatureKey) => void;
 }
 
@@ -80,9 +80,9 @@ export class SheetMediator implements SheetHost, ReactiveController {
   }
 
   open(id: SheetId, detail?: unknown): void {
-    // an element's detail sheet is its pane's: a tablet shows it inline in the pane, a phone over the screen, whatever tab is shown
+    // an element's detail sheet is its pane's: a tablet shows it inline in the pane, a phone (or a room view) over the screen, whatever tab is shown
     const owner = this.options.paneOf(id);
-    if (owner && !this.options.compact()) {
+    if (owner && !this.options.overScreen()) {
       this.options.setTab(owner);
       return;
     }

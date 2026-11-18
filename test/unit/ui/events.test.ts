@@ -22,6 +22,13 @@ test('a tab request bubbles and is composed, and carries the key of the section 
   expect(e.type).toBe('tab-select');
   expect([e.bubbles, e.composed]).toEqual([true, true]);
   expect(e.detail).toEqual({key: 'cams'});
+  expect('room' in e.detail).toBe(false);
+});
+
+test('a tab request may name a room view instead, by its area id', () => {
+  const e = new TabSelectEvent('home', 'living_room');
+  expect(e.detail).toEqual({key: 'home', room: 'living_room'});
+  expect([e.bubbles, e.composed]).toEqual([true, true]);
 });
 
 test('a toast bubbles and is composed, and is not sticky unless it says so', () => {

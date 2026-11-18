@@ -102,7 +102,7 @@ function tileSub(tile: LightTile, t: Translate, short: boolean): string {
 const partnerOf = (tile: LightTile, tiles: LightTile[]) =>
   tile.link ? (tiles.find(o => o.key === tile.link!.other) ?? null) : null;
 
-function tileView(tile: LightTile, tiles: LightTile[], deps: LightsDeps): TileView {
+export function tileView(tile: LightTile, tiles: LightTile[], deps: Pick<LightsDeps, 't' | 'compact'>): TileView {
   const {t} = deps;
   const partner = partnerOf(tile, tiles);
   const name = nameOf(tile, t);
@@ -124,6 +124,38 @@ function tileView(tile: LightTile, tiles: LightTile[], deps: LightsDeps): TileVi
     pairTint: tile.pairTint,
   };
 }
+
+/** One block of the rows: a room, or a linked pair, under its first tile's key; what Arrange moves, and what a room view draws. */
+export interface Unit {
+  key: string;
+  tiles: TileView[];
+}
+
+/** The tiles as blocks: a linked pair is one block of its two tiles, any other tile its own. */
+export const unitsOf = (tiles: TileView[]): Unit[] =>
+  tiles.flatMap((tile, i): Unit[] =>
+    tile.pair === 'second' ? [] : [{key: tile.key, tiles: tile.pair === 'first' ? [tile, tiles[i + 1]] : [tile]}],
+  );
+
+/**
+ * The blocks of one room view (ADR 0039): the tiles whose area is the room, in the pane's order, a split area's several tiles each and a
+ * linked pair side by side when both are in the room. A tile whose partner sits in another room is drawn alone, still saying who it is
+ * linked with; the Other tile (no area) is never a room's.
+ */
+export function roomUnits(inputs: LightsInputs, areaId: string, deps: Pick<LightsDeps, 't' | 'compact'>): Unit[] {
+  const inRoom = inputs.tiles.filter(tile => tile.areaId === areaId);
+  const views = inRoom.map(tile => {
+    const view = tileView(tile, inputs.tiles, deps);
+    // a pair block needs both tiles here: otherwise the tile stands as any other
+    return inRoom.some(o => o.key === tile.link?.other) ? view : {...view, pair: null, pairTint: ''};
+  });
+  return unitsOf(views);
+}
+
+/** The areas the lights have a tile in, by id, each once: what the Lights part lists for the shell's rooms. */
+export const lightRoomAreas = (tiles: readonly Pick<LightTile, 'areaId'>[]): string[] => [
+  ...new Set(tiles.map(tile => tile.areaId).filter((id): id is string => !!id)),
+];
 
 /** The pane: its line, the card's words, the tiles, the strip and the Arrange bar. */
 export function lightsModel(inputs: LightsInputs, deps: LightsDeps): LightsViewModel {

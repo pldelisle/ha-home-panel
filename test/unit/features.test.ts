@@ -7,6 +7,7 @@ import {resolveConfig} from '../../src/core/config.ts';
 import {createStore} from '../../src/core/store.ts';
 import {airFeature} from '../../src/features/air/index.ts';
 import {automationsFeature} from '../../src/features/automations/index.ts';
+import {lightsFeature} from '../../src/features/lights/index.ts';
 import {energyFeature} from '../../src/features/energy/index.ts';
 import {mediaFeature} from '../../src/features/media/index.ts';
 import {securityFeature} from '../../src/features/security/index.ts';
@@ -15,6 +16,7 @@ import * as full from '../houses/full.mjs';
 import {FULL_CFG} from '../e2e/houses.ts';
 import {fakeHass} from './fake-hass.ts';
 import {CATEGORIES, FEATURES, UNDER_MORE, isFeatureKey, sidebarRows, visibleTab} from '../../src/shell/features.ts';
+import {roomList} from '../../src/shell/rooms.ts';
 import {FR_MAP} from '../../src/i18n/fr.js';
 
 describe('the registry', () => {
@@ -293,5 +295,32 @@ describe('the Liquid Glass sidebar rows', () => {
     const rows = sidebarRows(FEATURES).filter(r => r !== CATEGORIES);
     expect(rows).toHaveLength(FEATURES.length);
     expect(FEATURES.map(f => f.key)).toEqual(before);
+  });
+});
+
+describe('the rooms of the registry', () => {
+  const env = (house?: ReturnType<typeof fakeHass.fromHouse>) => {
+    const store = createStore({defaultTimeZone: 'America/Toronto', resolve: resolveConfig});
+    if (house) store.setHass(house);
+    return {store, sheetOpen: () => false, sheetDetail: () => undefined, room: null};
+  };
+
+  test('only Lights has a room part for now, with no reading for the header', () => {
+    expect(FEATURES.filter(f => f.room).map(f => f.key)).toEqual(['lights']);
+    expect(lightsFeature.room).not.toHaveProperty('chip');
+  });
+
+  test('Lights lists the areas of its lights, and none before the house has been heard', () => {
+    expect(lightsFeature.room?.areas(env())).toEqual([]);
+    expect(lightsFeature.room?.areas(env(fakeHass.fromHouse(full)))).toEqual(['kitchen', 'living_room', 'office']);
+  });
+
+  test("the test house's rooms are those areas, by display name", () => {
+    const e = env(fakeHass.fromHouse(full));
+    expect(roomList(FEATURES, e, e.store.names, 'en-CA')).toEqual([
+      {areaId: 'kitchen', name: 'Kitchen'},
+      {areaId: 'living_room', name: 'Living room'},
+      {areaId: 'office', name: 'Office'},
+    ]);
   });
 });

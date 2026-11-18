@@ -19,13 +19,21 @@ import {
   setBrightness,
   setColorTemp,
   setNight,
-  toggleArea,
   toggleOne,
   type LightServices,
 } from './commands.ts';
 import {lightIds} from './ids.ts';
 import {readLights, type LightsInputs, type LightTile as Room} from './inputs.ts';
-import {lightsModel, sheetModel, type LightsViewModel, type SheetView, type TileView} from './model.ts';
+import {
+  lightsModel,
+  sheetModel,
+  unitsOf,
+  type LightsViewModel,
+  type SheetView,
+  type TileView,
+  type Unit,
+} from './model.ts';
+import {LightsCommands} from './lights-commands.ts';
 import type {AreaToggleEvent} from './light-tile.ts';
 import type {SheetIntentEvent, SliderWords} from './light-sheet.ts';
 import type {SliderChangeEvent} from './light-slider.ts';
@@ -40,11 +48,9 @@ import type {MessageKey} from '../../core/i18n/en.ts';
 import {registriesOf} from '../../core/registry.ts';
 import {sunToday} from '../../providers/sun.ts';
 import {hasManualControlService} from '../../providers/adaptive-lighting.ts';
-import {CommandRunner} from '../../ui/commands.ts';
 import {DragReorderController} from '../../ui/controllers/drag-reorder.ts';
 import {apiContext} from '../../ui/contexts.ts';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
-import {OptimisticController} from '../../ui/controllers/optimistic.ts';
 import {StoreController} from '../../ui/controllers/store-controller.ts';
 import {SystemDataController} from '../../ui/controllers/system-data.ts';
 import {TickController} from '../../ui/controllers/tick.ts';
@@ -60,17 +66,6 @@ const SYSTEM_DATA_KEY = 'home_panel';
 const TICK_MS = 60_000;
 /** After a slider's release the pills settle this long before the house's state draws them again, as the legacy sheet let them. */
 const SETTLE_MS = 60;
-
-/** One block of the rows: a room, or a linked pair, under its first tile's key; what Arrange moves. */
-interface Unit {
-  key: string;
-  tiles: TileView[];
-}
-
-const unitsOf = (tiles: TileView[]): Unit[] =>
-  tiles.flatMap((tile, i): Unit[] =>
-    tile.pair === 'second' ? [] : [{key: tile.key, tiles: tile.pair === 'first' ? [tile, tiles[i + 1]] : [tile]}],
-  );
 
 export class LightsPane extends LitElement {
   static override properties = {
@@ -94,11 +89,8 @@ export class LightsPane extends LitElement {
     held: () => this.sliding,
   });
   private readonly appearance = new AppearanceConsumer(this);
-  private readonly optimistic = new OptimisticController(this);
-  private readonly commands = new CommandRunner(this, {
-    overlay: this.optimistic,
-    t: () => this.storeController.store.t,
-  });
+  // the optimistic values and the runner, which <hp-lights-room> shares (ADR 0039)
+  private readonly commands = new LightsCommands(this, () => this.storeController.store.t);
   private api: PanelApi | undefined;
   // the api arrives with the connection; the system data is read once the pane has both
   private readonly apiConsumer = new ContextConsumer(this, {
@@ -151,23 +143,27 @@ export class LightsPane extends LitElement {
 
   // The pause and the resume sit in willUpdate: a resume asks for an update, and one asked for here is this one.
   protected override willUpdate(changed: PropertyValues<this>): void {
-    if (changed.has('active')) {
-      if (this.active) this.storeController.resume();
-      else {
-        this.storeController.pause();
-        this.editing = false; // another tab ends Arrange, as the legacy panel did
-      }
+    // the pane listens while it is the tab, and while its room's sheet is open over another view (a room view's tile asks for it, ADR 0039):
+    // the sheet's sliders and switches read the house as it changes
+    if (changed.has('active') || changed.has('roomKey')) {
+      if (this.active || this.roomKey) this.storeController.resume();
+      else this.storeController.pause();
     }
+    if (changed.has('active') && !this.active) this.editing = false; // another tab ends Arrange, as the legacy panel did
     // a sheet closed under the finger (Escape, the scrim, a room gone) says no `drag-end`: the hold ends with it
     if (changed.has('roomKey') && !this.roomKey && this.sliding) {
       clearTimeout(this.settle);
       this.sliding = false;
       this.storeController.release();
     }
-    if (!this.active) return;
+    if (!this.active && !this.roomKey) return;
     const inputs = this.read();
     if (!inputs) return;
     const {store} = this.storeController;
+    this.inputs = inputs;
+    this.sheet = this.roomKey ? sheetModel(this.roomKey, inputs, {t: store.t, isAdmin: store.isAdmin}) : null;
+    // behind another view's sheet the pane is not on screen: only the sheet is drawn, so the rest of the model is left
+    if (!this.active) return;
     const {hass, fmt} = store;
     const now = Date.now();
     // the one pair every tab says; a noon is only drawn between a rise and a set, so a house with neither has none to give
@@ -177,7 +173,6 @@ export class LightsPane extends LitElement {
       day: fmt.isoDay(now),
     });
     const sun = {rise: today.rise, set: today.set, noon: today.noon ?? now};
-    this.inputs = inputs;
     this.view = lightsModel(inputs, {
       t: store.t,
       fmt,
@@ -187,7 +182,6 @@ export class LightsPane extends LitElement {
       editing: this.editing,
       isAdmin: store.isAdmin,
     });
-    this.sheet = this.roomKey ? sheetModel(this.roomKey, inputs, {t: store.t, isAdmin: store.isAdmin}) : null;
   }
 
   override disconnectedCallback(): void {
@@ -198,7 +192,7 @@ export class LightsPane extends LitElement {
 
   // a room Home Assistant no longer lists has no sheet to show: the host is asked to close it
   protected override updated(): void {
-    if (this.roomKey && this.view && !this.sheet) this.dispatchEvent(new SheetDismissEvent(ROOM_SHEET));
+    if (this.roomKey && this.inputs && !this.sheet) this.dispatchEvent(new SheetDismissEvent(ROOM_SHEET));
   }
 
   private read(): LightsInputs | undefined {
@@ -209,6 +203,8 @@ export class LightsPane extends LitElement {
   }
 
   protected override render() {
+    // behind a room view's sheet (not the tab, its room's sheet open): the sheet alone
+    if (!this.active && this.roomKey) return this.renderSheet();
     const view = this.view;
     if (!view) return nothing;
     const {t} = this.storeController.store;
@@ -326,9 +322,7 @@ export class LightsPane extends LitElement {
 
   private readonly onToggle = (e: AreaToggleEvent): void => {
     e.stopPropagation();
-    const rooms = this.inputs?.tiles ?? [];
-    const room = rooms.find(r => r.key === e.detail.key);
-    if (room) void this.commands.runAll(toggleArea(pairOf(room, rooms)));
+    void this.commands.toggleArea(this.inputs?.tiles ?? [], e.detail.key);
   };
 
   /** The sheet's room and its partner, which act as one room; empty when the room is gone. */

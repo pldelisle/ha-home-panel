@@ -9,7 +9,8 @@ test.beforeEach(({house}) => fontsLoaded(house));
 
 const rail = (house: House) => house.root().locator('#rail');
 const toggle = (house: House) => rail(house).locator('.rside');
-const rows = (house: House) => rail(house).locator('.rtab:visible');
+// the sections' rows: the rooms' rows after them (rooms.spec.ts) are tabs of the same list, but not sections
+const rows = (house: House) => rail(house).locator('.rtab:not(.rroom):visible');
 const colour = (house: House, selector: string) =>
   house
     .root()
@@ -63,7 +64,7 @@ test.describe('the sidebar on the tablet', () => {
     await house.page.keyboard.press('Enter');
     await expect(toggle(house)).toHaveAttribute('aria-expanded', 'true');
     await expect.poll(async () => (await rail(house).boundingBox())?.width).toBe(280);
-    await expect(rail(house).locator('.rhead')).toHaveText('Categories');
+    await expect(rail(house).locator('.rhead').first()).toHaveText('Categories');
     // Home and Automations, the heading, then the rest in today's order
     await expect(rows(house).locator('span')).toHaveText([
       'Home',
@@ -197,7 +198,7 @@ test.describe('the sidebar in French', () => {
     await expect(toggle(house)).toHaveAccessibleName('Afficher la barre latérale');
     await toggle(house).click();
     await expect(toggle(house)).toHaveAccessibleName('Masquer la barre latérale');
-    await expect(rail(house).locator('.rhead')).toHaveText('Catégories');
+    await expect(rail(house).locator('.rhead').first()).toHaveText('Catégories');
     await expect.poll(async () => (await rail(house).boundingBox())?.width).toBe(280);
     const cut = await rows(house)
       .locator('span')

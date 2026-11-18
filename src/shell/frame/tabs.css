@@ -438,7 +438,7 @@
 }
 /* The Liquid Glass sidebar (#491, ADR 0038): on the tablet the rail is an iPad sidebar, as Apple Home has. A glass panel (glass.css gives it its fill and
    its blur, as it gave the rail) with a toggle at the top and one 48 px row per section, the icon then the label: Home and Automations, then the
-   Categories heading and the rest. It starts collapsed to a strip of icons (`--sidebar-w-collapsed`, the labels read by assistive technology and the
+   Categories heading and the rest, then a Rooms heading and one row per room (ADR 0039, the same row with the Home colour on its icon). It starts collapsed to a strip of icons (`--sidebar-w-collapsed`, the labels read by assistive technology and the
    hover title only) and `.sbo` opens it to `--sidebar-w`; the page's first column follows, so the content takes the width the strip frees. The icon
    keeps its x in both states. The open section's row has the navigation layer's neutral fill (`--nav-sel-bg`, HIG: "Apply color sparingly to the Liquid Glass
    material") and only its icon takes the section's colour (`--tab-c`, the descriptor's, the same as its card's icon on Home); its label keeps `--fg`. Material's
@@ -454,13 +454,18 @@
     justify-content: flex-start;
     gap: 4px;
     padding: 12px 10px;
-    overflow: hidden auto;
-    scrollbar-width: none;
+    overflow: hidden;
   }
+  /* the tablist scrolls when the sections and the rooms outgrow the height; the toggle above it stays put */
   .app.tabsv:not(.cp):not([data-design='material']) .rtabs {
     display: flex;
     flex-direction: column;
+    flex: 1 1 auto;
     gap: 4px;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
   }
   .app.tabsv:not(.cp):not([data-design='material']) .rside,
   .app.tabsv:not(.cp):not([data-design='material']) .rtab {

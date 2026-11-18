@@ -10,6 +10,8 @@ The words the panel and its code use. One word per concept: use it in issues, te
 
 **Pane** — What a tab shows: the content of one of the ten subjects on the tablet rail. Avoid: page.
 
+**Room view** — What a room shows: every tile the panel has for one Home Assistant area, grouped by subject (Lights first), under the room's name and icon. Under Liquid Glass on the tablet the sidebar lists each room that has a tile after its Rooms heading, and a row shows the view; the `tab` setting is then `room:<area_id>` (ADR 0039). A subject takes part through its descriptor's `room` part. Avoid: room page, area tab (a room's own light sheet is a Sheet, and the Lights tab's tile is a Tile).
+
 **Pane header** — The block a pane opens with: a badge in the subject's colour, the title, a line under it and, on Lights, the Arrange buttons; the kit's `<hp-pane-header>`, with the line and the buttons as slotted nodes its pane fills. The summary panes' header (Climate, Weather, Car, Energy, Air) shows on the phone only, since a tablet's pane opens on a detail with its own; Home's shows on a tablet only.
 
 **Sheet** — A detail view opened from a pane by tapping a tile or card, such as a room's light sheet; it slides up on a phone and is a narrow panel on a tablet. Avoid: modal, dialog (a dialog is the next term).

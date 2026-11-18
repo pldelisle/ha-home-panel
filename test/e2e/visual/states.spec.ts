@@ -183,6 +183,14 @@ for (const viewport of ['tablet', 'phone'] as const) {
               await expect(house.page).toHaveScreenshot(`sidebar-open-${viewport}-${theme}-en.png`);
             });
 
+            // a room view (#506): the Liquid Glass sidebar's Rooms group with the room's row selected, the room's name and icon, and its Lights tiles
+            test('room view', async ({house}) => {
+              await house.root().locator('#rail [data-room="living_room"]').click();
+              await expect(house.root().locator('#pane-room hp-light-tile')).toBeVisible();
+              await house.page.mouse.move(0, 0);
+              await expect(house.page).toHaveScreenshot(`room-view-${viewport}-${theme}-en.png`);
+            });
+
             test('settings popup', async ({house}) => {
               await house.root().locator('#gear').click();
               await expect(house.root().locator('#setpop')).toBeVisible();
