@@ -43,7 +43,7 @@ test('the tab shows the house cameras and sensors, doors first, under the summar
   await expect(sensors(house).locator('.schip.act')).toHaveCount(1);
 });
 
-// "Motion now" is a status, not a link: the text colour with a green dot, never the blue that says "tap me"
+// "Motion now" is a status, not a link: the text colour with a dot, never the blue that says "tap me"
 const colourOf = (text: Locator) => text.evaluate(e => getComputedStyle(e).color);
 
 test('"Motion now" is in the text colour with a dot, on the tab', async ({house}) => {
@@ -51,6 +51,9 @@ test('"Motion now" is in the text colour with a dot, on the tab', async ({house}
   const now = sensors(house).locator('.schip.act em');
   await expect(now.locator('i')).toHaveCount(1);
   expect(await colourOf(now)).toBe(await colourOf(sensors(house).locator('.schip.act b')));
+  // the line keeps the size of the other chip's
+  const size = (text: Locator) => text.evaluate(e => getComputedStyle(e).fontSize);
+  expect(await size(now.locator('.status'))).toBe(await size(sensors(house).locator('.schip:not(.act) em')));
 });
 
 test('a house without a camera shows the empty state and its link to the integration', async ({house}) => {

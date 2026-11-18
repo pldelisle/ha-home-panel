@@ -6,7 +6,7 @@ import {LitElement, html, nothing, unsafeCSS} from 'lit';
 import {classMap} from 'lit/directives/class-map.js';
 import {repeat} from 'lit/directives/repeat.js';
 import type {SecurityViewModel, SensorRow} from './model.ts';
-import {motionNow} from './motion-now.ts';
+import {sensorStatus} from './sensor-status.ts';
 import {HISTORY_SHEET} from './sheets.ts';
 import cardOwn from './sensor-card.element.css?inline';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
@@ -68,10 +68,7 @@ export class SensorCard extends LitElement {
       >
         <span class="sic">${ico(row.kind === 'door' ? 'door' : 'walk', 17)}</span>
         <div>
-          <b>${row.name}</b
-          ><span
-            ><em>${row.tone === 'act' ? motionNow(row.main) : row.main}</em>${row.sub ? ` · ${row.sub}` : nothing}</span
-          >
+          <b>${row.name}</b><span><em>${sensorStatus(row)}</em>${row.sub ? ` · ${row.sub}` : nothing}</span>
         </div>
       </button>`;
   }

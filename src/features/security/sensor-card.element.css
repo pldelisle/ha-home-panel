@@ -124,6 +124,10 @@
   font-weight: 600;
   color: var(--fg);
 }
+/* the kit's status keeps the line's size ("Motion now" inside the em) */
+.schip .status {
+  font-size: inherit;
+}
 .schip .sic {
   width: 34px;
   height: 34px;

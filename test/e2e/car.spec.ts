@@ -2,6 +2,7 @@
 // the charging history's rows (each opening a sheet), the status and Ford's messages. The tab shows the detail inline on a phone as on a tablet; the phone's sheet is only for the Home tile and the
 // live pill. The test house has a car at 64 percent with 280 km of range, locked and charging, a limit of 90 percent, and a Wallbox that says Charging (32 A of 6 to 40, unlocked).
 import AxeBuilder from '@axe-core/playwright';
+import type {Locator} from '@playwright/test';
 import {test, expect, expectCall, phoneOnly, tabletOnly, type House} from './fixtures';
 import {AFTERNOON, FULL_CFG} from './houses';
 
@@ -226,6 +227,13 @@ test.describe('on a tablet', () => {
       'Rear right',
     ]);
     await expect(d.locator('hp-car-status svg[role="img"]')).toHaveAttribute('aria-label', 'Car seen from above');
+    // the top view's body is the car's configured colour, as the side view's is (the house's config says #B03A2E)
+    const bodyOf = (view: Locator) =>
+      view
+        .locator('rect')
+        .first()
+        .evaluate(rect => getComputedStyle(rect).fill);
+    expect(await bodyOf(d.locator('hp-car-status svg[role="img"]'))).toBe('rgb(176, 58, 46)');
     await expect(d.locator('hp-car-status .vrow', {hasText: 'Odometer'})).toContainText('12,000');
     await expect(d.locator('hp-car-departure .open b')).toHaveText('Departure');
     await expect(d.locator('hp-car-ford')).toHaveCount(0);

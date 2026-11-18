@@ -255,10 +255,15 @@ function summaryOf({tv, speakers}: MediaInputs, t: Translate): string {
 /**
  * The word under Media in the phone's More sheet: the legacy `moreLines`, which says the television's state and the speakers that
  * play, without the input the pane's sub-line names, and "Nothing playing" when that says nothing. It counts what Home Assistant says.
+ * Its words are short ("TV on · 1 playing"): the More sheet's tiles are half a phone wide and a caption is one line.
  */
 export function mediaBrief({tv, speakers}: MediaInputs, t: Translate): string {
   const playing = playingCount(speakers);
-  const parts = [...(tv ? [tvWord(tv, t)] : []), ...(playing > 0 ? [playingWord(playing, tv !== null, t)] : [])];
+  const tvPart = tv ? (tv.state === 'on' ? t('media.more.tvOn') : tvWord(tv, t)) : null;
+  const parts = [
+    ...(tvPart ? [tvPart] : []),
+    ...(playing > 0 ? [tv ? t('media.more.playing', {count: playing}) : playingWord(playing, false, t)] : []),
+  ];
   return parts.join(' · ') || t('media.nothingPlaying');
 }
 

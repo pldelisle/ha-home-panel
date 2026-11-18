@@ -185,7 +185,7 @@ test.describe('in French', () => {
       house.root().locator('hp-more-sheet').getByRole('button', {name: 'Fermer', exact: true}),
     ).toBeVisible();
     await expect(tile(house, 'cams').locator('b')).toHaveText('Sécurité');
-    await expect(tile(house, 'cams').locator('small')).toHaveText('Portes fermées · mouvement en cours');
+    await expect(tile(house, 'cams').locator('small')).toHaveText('Fermées · mouv.');
   });
 
   test('the fifth button says Plus while an overflow tab is shown', async ({house}) => {

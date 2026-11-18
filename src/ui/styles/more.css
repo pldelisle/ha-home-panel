@@ -1,7 +1,10 @@
-/* The More list, in `<hp-more-sheet>`'s root. Its tiles are `<hp-stat-tile>`s, which lay out as if they were its children.
-   One row each, whatever the text size: a caption ("Télé allumée · 1 speaker : en lecture") is cut in half a phone's width. */
+/* The More list's grid, in `<hp-more-sheet>`'s root. Its tiles are `<hp-stat-tile>`s, which lay out as if they were its children. */
+.app.cp.txl .morelist {
+  grid-template-columns: 1fr;
+}
+/* More */
 .morelist {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }

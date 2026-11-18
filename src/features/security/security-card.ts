@@ -10,7 +10,7 @@ import {newlyActive, type ActiveSnapshot} from './activity.ts';
 import {securityIds} from './ids.ts';
 import {readSecurity} from './inputs.ts';
 import {SNAPSHOT_MS, securityModel, type CameraTile, type SecurityViewModel, type SensorRow} from './model.ts';
-import {motionNow} from './motion-now.ts';
+import {sensorStatus} from './sensor-status.ts';
 import {CAMERA_SHEET, HISTORY_SHEET} from './sheets.ts';
 import cardOwn from './security-card.element.css?inline';
 import {registriesOf} from '../../core/registry.ts';
@@ -140,9 +140,7 @@ export class SecurityCard extends LitElement {
         <span class="sic">${ico(row.kind === 'door' ? 'door' : 'walk', 20)}</span>
         <div>
           <b>${row.name}</b
-          ><span class=${row.tone}
-            >${row.tone === 'act' ? motionNow(row.main) : row.main}${row.sub ? html` <small>· ${row.sub}</small>` : nothing}</span
-          >
+          ><span class=${row.tone}>${sensorStatus(row)}${row.sub ? html` <small>· ${row.sub}</small>` : nothing}</span>
         </div>
       </button>`;
   }

@@ -439,8 +439,8 @@ describe('the brief line under More', () => {
   const brief = (inputs: MediaInputs, language: Language = 'en') => mediaBrief(inputs, depsOf(fullHouse, language).t);
 
   test('the full test house, as the More baselines read it', () => {
-    expect(brief(inputsOf(fullHouse))).toBe('TV on · 1 speaker playing');
-    expect(brief(inputsOf(fullHouse), 'fr')).toBe('Télé allumée · 1 speaker\u00a0: en lecture');
+    expect(brief(inputsOf(fullHouse))).toBe('TV on · 1 playing');
+    expect(brief(inputsOf(fullHouse), 'fr')).toBe('Télé · 1 en lecture');
   });
 
   test.each([

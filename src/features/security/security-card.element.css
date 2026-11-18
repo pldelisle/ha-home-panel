@@ -261,6 +261,10 @@
   color: var(--fg);
   font-weight: 600;
 }
+/* the kit's status keeps the line's size ("Motion now" inside the span) */
+.hsen .status {
+  font-size: inherit;
+}
 .hsen .off {
   opacity: 0.6;
 }
