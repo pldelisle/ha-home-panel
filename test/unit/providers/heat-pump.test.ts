@@ -59,9 +59,11 @@ describe('the reading', () => {
       fan_modes: ['auto', 'low'],
       preset_modes: ['none', 'boost'],
       swing_modes: ['off', 'vertical'],
+      swing_horizontal_modes: ['horizontal', 'Horizontal_2'],
       fan_mode: 'auto',
       preset_mode: 'none',
       swing_mode: 'off',
+      swing_horizontal_mode: 'Horizontal_2',
     };
     expect(read([pump('heat', attributes)])).toEqual({
       id: ID,
@@ -78,9 +80,11 @@ describe('the reading', () => {
       fanModes: ['auto', 'low'],
       presetModes: ['none', 'boost'],
       swingModes: ['off', 'vertical'],
+      swingHorizontalModes: ['horizontal', 'Horizontal_2'],
       fan: 'auto',
       preset: 'none',
       swing: 'off',
+      swingHorizontal: 'Horizontal_2',
       lastUpdated: Date.parse('2026-01-01T00:00:00+00:00'),
     });
   });
@@ -97,9 +101,11 @@ describe('the reading', () => {
       fanModes: null,
       presetModes: null,
       swingModes: null,
+      swingHorizontalModes: null,
       fan: null,
       preset: null,
       swing: null,
+      swingHorizontal: null,
     });
   });
 

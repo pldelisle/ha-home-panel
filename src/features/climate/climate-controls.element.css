@@ -72,6 +72,22 @@ p {
 .quick button:active {
   transform: scale(0.96);
 }
+/* the two directions of louvers side by side, each its word over its select; one under the other on a narrow phone */
+.cdirs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+}
+.cdir {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.cdir span {
+  font-size: calc(12px * var(--tx));
+  color: var(--fg2);
+}
 .csel {
   width: 100%;
   border: 0;

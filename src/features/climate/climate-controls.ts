@@ -14,6 +14,8 @@ import {
   hpMode,
   hpPreset,
   hpSwing,
+  hpSwingHorizontal,
+  hpSwingVertical,
   hpTemperature,
   nextSetpoint,
   quickSetpoint,
@@ -106,7 +108,7 @@ export class ClimateControls extends LitElement {
 
   private renderHeatPump(hp: Hp) {
     const {t, fmt} = this.storeController.store;
-    const {mode, modes, target, fan, preset, swing} = hp;
+    const {mode, modes, target, fan, preset, swing, swingHorizontal} = hp;
     return html`<div class="clbl">${t('climate.mode')}</div>
       ${this.renderGroup(t('climate.hpModeLabel'), modes, (value, word) => this.sender.now(hpMode(hp, value, word), value))}
       ${
@@ -150,7 +152,7 @@ export class ClimateControls extends LitElement {
                     )}`
                 : nothing
             }
-            ${swing ? this.renderSwing(hp, swing) : nothing}`
+            ${swingHorizontal ? this.renderLouvers(hp, swing, swingHorizontal) : swing ? this.renderSwing(hp, swing) : nothing}`
       }`;
   }
 
@@ -189,6 +191,47 @@ export class ClimateControls extends LitElement {
           ({value, label, checked}) => html`<option value=${value} ?selected=${checked}>${label}</option>`,
         )}
       </select>`;
+  }
+
+  // the louvers of a unit that sets each direction on its own: two selects side by side, up and down then side to side, each with its word above it
+  private renderLouvers(hp: Hp, vertical: readonly ControlOption[] | null, horizontal: readonly ControlOption[]) {
+    const {t} = this.storeController.store;
+    const column = (
+      word: string,
+      label: string,
+      options: readonly ControlOption[],
+      send: (value: string, word: string) => void,
+    ) =>
+      html`<label class="cdir">
+        <span>${word}</span>
+        <select
+          class="csel"
+          aria-label=${label}
+          @change=${(e: Event) => {
+            const {value} = e.target as HTMLSelectElement;
+            send(value, wordOf(options, value));
+          }}
+        >
+          ${repeat(
+            options,
+            ({value}) => value,
+            ({value, label: words, checked}) => html`<option value=${value} ?selected=${checked}>${words}</option>`,
+          )}
+        </select>
+      </label>`;
+    return html`<div class="clbl">${t('climate.louvers')}</div>
+      <div class="cdirs">
+        ${
+          vertical
+            ? column(t('climate.louversVertical'), t('climate.louverVerticalPosition'), vertical, (value, word) =>
+                this.sender.now(hpSwingVertical(hp, value, word), value),
+              )
+            : nothing
+        }
+        ${column(t('climate.louversHorizontal'), t('climate.louverHorizontalPosition'), horizontal, (value, word) =>
+          this.sender.now(hpSwingHorizontal(hp, value, word), value),
+        )}
+      </div>`;
   }
 
   // ---- the house ----
