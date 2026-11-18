@@ -9,6 +9,22 @@ import {AFTERNOON, FULL_CFG, KEEP_ENGLISH_NAMES, VIEWPORTS} from '../houses';
 // every screenshot shows the bundled Manrope, never the fallback it swaps from (font-display: swap)
 test.beforeEach(({house}) => fontsLoaded(house));
 
+// before a shot the pointer leaves for the page's corner (a tap leaves it over whatever the closing sheet uncovers, a navigation item
+// on the phone, whose hover layer then shows in one run and not the next) and every finite animation, in every shadow root, ends (the
+// navigation pill and the state layers spring after a tap); an infinite one (a live dot's pulse) is left to the screenshot's own pause
+const settled = async (house: House) => {
+  await house.page.mouse.move(0, 0);
+  await house.page.evaluate(() => {
+    const roots: (Document | ShadowRoot)[] = [document];
+    for (let i = 0; i < roots.length; i++)
+      for (const el of roots[i].querySelectorAll('*')) if (el.shadowRoot) roots.push(el.shadowRoot);
+    const running = roots
+      .flatMap(r => r.getAnimations())
+      .filter(a => a.effect?.getComputedTiming().endTime !== Infinity);
+    return Promise.all(running.map(a => a.finished.catch(() => undefined)));
+  });
+};
+
 const SHOTS = [
   {viewport: 'tablet', theme: 'light'},
   {viewport: 'tablet', theme: 'dark'},
@@ -27,6 +43,7 @@ for (const {viewport, theme} of SHOTS) {
       // the frame is Material's: no glass, and the scheme's surface under the cards
       await expect(house.root().locator('.app')).toHaveAttribute('data-design', 'material');
       await expect(house.root().locator('.app')).not.toHaveClass(/\bgl\b/);
+      await settled(house);
       await expect(house.page).toHaveScreenshot(`material-home-${viewport}-${theme}-en.png`);
     });
   });
@@ -47,6 +64,7 @@ for (const theme of ['light', 'dark'] as const) {
       await expect(house.root().locator('#setpop .seed[aria-checked="true"]')).toHaveAttribute('data-seed', 'house');
       await expect(house.root().locator('#setpop [data-gl]')).toHaveCount(0);
       // the footer prints the release, which every release changes: masked, a version bump leaves the baseline alone
+      await settled(house);
       await expect(house.page).toHaveScreenshot(`material-settings-tablet-${theme}-en.png`, {
         mask: [house.root().locator('#setpop .ccv')],
       });
@@ -62,6 +80,7 @@ test.describe('tablet, light, Meadow', () => {
 
   test('Home in Material with the Meadow seed', async ({house}) => {
     await house.tab('home');
+    await settled(house);
     await expect(house.page).toHaveScreenshot('material-home-tablet-light-meadow-en.png');
   });
 });
@@ -90,6 +109,7 @@ for (const {viewport, theme} of SHOTS) {
         'aria-checked',
         'true',
       );
+      await settled(house);
       await expect(house.page).toHaveScreenshot(`material-button-group-${viewport}-${theme}-en.png`);
     });
   });
@@ -114,6 +134,7 @@ test.describe('button group, phone, light, French', () => {
     await house.root().locator('#morelist hp-stat-tile[key="air"] button').click();
     await expect(house.root().locator('#pane-air')).toBeVisible();
     await expect(house.root().locator('#pane-air hp-range-tabs [role="tab"]').first()).toBeVisible();
+    await settled(house);
     await expect(house.page).toHaveScreenshot('material-button-group-phone-light-fr.png');
   });
 });
@@ -139,6 +160,7 @@ for (const {viewport, theme} of [
       await house.clock.pauseAt((await house.page.evaluate(() => Date.now())) + 1000);
       await movieNight(house).click();
       await expect(house.root().locator('hp-toast #toast')).toHaveText('Movie night on');
+      await settled(house);
       await expect(house.page).toHaveScreenshot(`material-snackbar-${viewport}-${theme}-en.png`);
     });
 
@@ -148,6 +170,7 @@ for (const {viewport, theme} of [
       await house.failNext('scene.turn_on');
       await movieNight(house).click();
       await expect(house.root().locator('hp-toast #toast')).toHaveClass(/\berr\b/);
+      await settled(house);
       await expect(house.page).toHaveScreenshot(`material-snackbar-error-${viewport}-${theme}-en.png`);
     });
   });
@@ -191,6 +214,7 @@ for (const theme of ['light', 'dark'] as const) {
 
     test('Rail in Material', async ({house}) => {
       await house.tab('lights');
+      await settled(house);
       await expect(house.page).toHaveScreenshot(`material-rail-tablet-${theme}-en.png`);
     });
   });
@@ -203,6 +227,7 @@ for (const theme of ['light', 'dark'] as const) {
 
     test('Bar in Material', async ({house}) => {
       await house.tab('lights');
+      await settled(house);
       await expect(house.page).toHaveScreenshot(`material-bar-phone-${theme}-en.png`);
     });
   });
@@ -216,6 +241,7 @@ test.describe('tablet, light, French navigation', () => {
 
   test('Rail in Material in French', async ({house}) => {
     await house.tab('auto');
+    await settled(house);
     await expect(house.page).toHaveScreenshot('material-rail-tablet-light-fr.png');
   });
 });
