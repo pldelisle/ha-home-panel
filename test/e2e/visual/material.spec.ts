@@ -465,6 +465,9 @@ for (const theme of ['light', 'dark'] as const) {
       await expect(cancel).toHaveText('Cancel');
       await expect(action).toHaveText('Turn off');
       await expect(house.page).toHaveScreenshot(`material-dialog-tablet-${theme}-en.png`, SHOT);
+      // it fades out and then closes (and says so): Cancel, however it leaves, closes it for good
+      await cancel.click();
+      await expect(dialog).toBeHidden();
     });
   });
 }

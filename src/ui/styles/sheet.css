@@ -378,3 +378,8 @@ button.icon:focus-visible {
     animation-timing-function: var(--motion-effects);
   }
 }
+/* after a drag the sheet has slid off under the finger (the controller puts it back as it asks to close): it stays out of sight, and only the scrim fades */
+.app.cp[data-design='material']:not([inline]) .sheet.leaving.dragged > .panel {
+  animation: none;
+  opacity: 0;
+}

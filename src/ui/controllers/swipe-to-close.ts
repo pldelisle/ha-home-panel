@@ -30,6 +30,12 @@ const FLICK_PX = 24;
 const FLICK_SPEED = 0.5;
 // How long the slide off lasts before the sheet is asked to close: the design's press duration (`--motion-press-ms`, 180 ms; the spatial-fast spring under Material), this when it has none.
 const SLIDE_MS = 180;
+
+/** A custom property's time (`347ms`, `0.2s`) in milliseconds; `fallback` when it is empty or not a time. */
+export function cssMs(value: string, fallback: number): number {
+  const time = /^\s*(-?\d*\.?\d+)(ms|s)\s*$/.exec(value);
+  return time ? Number(time[1]) * (time[2] === 's' ? 1000 : 1) : fallback;
+}
 // A press on a control is the control's: capturing the pointer for a drag would send its click to the panel.
 const CONTROL = 'button, a[href], input, select, textarea, [role="tab"]';
 
@@ -92,13 +98,10 @@ export class SwipeToClose implements ReactiveController {
       return;
     }
     d.panel.style.transform = `translateY(${d.panel.offsetHeight}px)`;
-    const press = parseFloat(getComputedStyle(d.panel).getPropertyValue('--motion-press-ms'));
-    this.slide = setTimeout(
-      () => {
-        d.panel.style.transform = '';
-        this.options.close();
-      },
-      Number.isFinite(press) ? press : SLIDE_MS,
-    );
+    const slide = cssMs(getComputedStyle(d.panel).getPropertyValue('--motion-press-ms'), SLIDE_MS);
+    this.slide = setTimeout(() => {
+      d.panel.style.transform = '';
+      this.options.close();
+    }, slide);
   };
 }

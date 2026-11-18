@@ -4,6 +4,7 @@
 // Must not: send a service call, know what it confirms, open a sheet or another dialog, or hold a draft (an editor with Cancel and Save owns its own `<dialog>` and takes the look and `stopEscape` from dialogs.ts).
 import {LitElement, html, nothing, type PropertyValues} from 'lit';
 import {AppearanceConsumer} from './controllers/appearance-consumer.ts';
+import {Exit} from './controllers/exit.ts';
 import {dialogLook, stopEscape, tappedBackdrop} from './dialogs.ts';
 import {common} from './styles/index.ts';
 
@@ -26,9 +27,6 @@ export class HpDialog extends LitElement {
 
   // `display: contents` and the look are in dialog.element.css; the dialog is in the top layer, so the host takes no room.
   static override styles = [common, dialogLook];
-
-  // Material's dialog fades out before it closes, and is still open (and drawn) until it has
-  private leaving = false;
 
   constructor() {
     super();
@@ -66,8 +64,11 @@ export class HpDialog extends LitElement {
     const dialog = this.renderRoot.querySelector<HTMLDialogElement>('dialog');
     if (!dialog) return;
     if (this.open && !dialog.open) dialog.showModal();
-    else if (!this.open && dialog.open) void this.dismiss(dialog);
-    else if (this.open) dialog.classList.remove('leaving'); // asked again while it was leaving
+    // its owner closed it (no event to send): it leaves, if it is Material's, and closes unless it was asked for again meanwhile
+    else if (!this.open && dialog.open)
+      void this.exit.run(() => {
+        if (!this.open) dialog.close();
+      });
   }
 
   // Escape and a tap on the backdrop cancel, as before, but through `finish`, so that the dialog can leave first
@@ -85,26 +86,23 @@ export class HpDialog extends LitElement {
     if (this.open) this.finish('dialog-cancel');
   };
 
+  // Under Liquid Glass the dialog closes and says so at once. Under Material it says so after its fade, so that an owner who takes the dialog out of its template
+  // on the event does not cut the fade; a button tapped twice, or Escape on top of a tap, finds it leaving and does nothing.
   private finish(event: 'dialog-confirm' | 'dialog-cancel'): void {
-    if (this.leaving) return;
-    this.open = false;
     const dialog = this.renderRoot.querySelector<HTMLDialogElement>('dialog');
-    if (dialog) void this.dismiss(dialog);
-    this.dispatchEvent(new CustomEvent(event, {bubbles: true, composed: true}));
+    void this.exit.run(() => {
+      this.open = false;
+      dialog?.close();
+      this.dispatchEvent(new CustomEvent(event, {bubbles: true, composed: true}));
+    });
   }
 
-  // Closes at once, or under Material after the leaving animation (`.leaving`, dialog.element.css); the flag is set before the first wait, so a second close finds it
-  private async dismiss(dialog: HTMLDialogElement): Promise<void> {
-    if (this.leaving) return;
-    if (this.getAttribute('design') === 'material') {
-      this.leaving = true;
-      dialog.classList.add('leaving');
-      await Promise.allSettled(dialog.getAnimations({subtree: true}).map(a => a.finished));
-      this.leaving = false;
-      dialog.classList.remove('leaving');
-    }
-    if (!this.open) dialog.close();
-  }
+  // the dialog's own `.leaving` look (dialog.element.css), and the animations it starts
+  private readonly exit = new Exit({
+    animated: () => this.getAttribute('design') === 'material',
+    target: () => this.renderRoot.querySelector<HTMLDialogElement>('dialog'),
+    mark: on => this.renderRoot.querySelector('dialog')?.classList.toggle('leaving', on),
+  });
 }
 
 declare global {

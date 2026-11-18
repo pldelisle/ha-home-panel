@@ -18,7 +18,7 @@ The Car rework (docs/apple-hig-audit-car-2026-11-17.md) added four overlays: a c
 
 ## When to revisit
 
-Done (#377, Climate being the second feature that asks a question): the confirmation is the kit's `<hp-dialog>` (`src/ui/dialog.ts`), its look and `stopEscape` and `closeOnBackdrop` are `src/ui/dialog.element.css` and `src/ui/dialogs.ts`, and the Car's Unlock and Start use it. The departure editor keeps its own `<dialog>`, since it holds a draft, and borrows the look and `stopEscape` from the kit; its sheet rules stay the Car's `dialog.css`. A kit sheet that gains a Cancel and Save bar, a focus trap and the top layer would let the editor become a sheet again.
+Done (#377, Climate being the second feature that asks a question): the confirmation is the kit's `<hp-dialog>` (`src/ui/dialog.ts`), its look, `stopEscape` and `tappedBackdrop` (the test of a tap on the backdrop, which `<hp-dialog>` turns into a cancel) are `src/ui/dialog.element.css` and `src/ui/dialogs.ts`, and the Car's Unlock and Start use it. The departure editor keeps its own `<dialog>`, since it holds a draft, and borrows the look and `stopEscape` from the kit; its sheet rules stay the Car's `dialog.css`. A kit sheet that gains a Cancel and Save bar, a focus trap and the top layer would let the editor become a sheet again.
 
 ## Read
 

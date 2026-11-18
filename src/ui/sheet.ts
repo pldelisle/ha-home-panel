@@ -5,6 +5,7 @@
 import {LitElement, html, type PropertyValues, unsafeCSS} from 'lit';
 import {ifDefined} from 'lit/directives/if-defined.js';
 import {AppearanceConsumer} from './controllers/appearance-consumer.ts';
+import {Exit} from './controllers/exit.ts';
 import {SwipeToClose} from './controllers/swipe-to-close.ts';
 import {ico, type IconName} from './icons.ts';
 import {type PaneHeader} from './pane-header.ts'; // defines <hp-pane-header>
@@ -23,6 +24,7 @@ export class HpSheet extends LitElement {
     closeLabel: {attribute: 'close-label'},
     hasSub: {state: true},
     leaving: {state: true},
+    dragged: {state: true},
   };
   /** On screen. Its owner binds it to the sheet host's `isOpen`; the Close button takes focus when it turns true. */
   declare open: boolean;
@@ -41,6 +43,8 @@ export class HpSheet extends LitElement {
   declare private hasSub: boolean;
   /** Under Material a closed sheet is still drawn while it fades out and slides off (sheet.css, `.leaving`); then it is hidden. */
   declare private leaving: boolean;
+  /** The leave is one a drag began: the panel has slid off under the finger, so only the scrim fades (sheet.css, `.dragged`). */
+  declare private dragged: boolean;
 
   // `display: contents`: the sheet is `position: fixed`, so the host takes no room where its owner puts it. The rules for the
   // header the legacy sheet's `.ph` carried are here, in sheet.element.css, and not in sheet.css, because the header is the pane header's now: the
@@ -55,10 +59,21 @@ export class HpSheet extends LitElement {
     close: () => {
       this.dragged = true; // it has slid off under the finger: no second slide on the way out
       this.close();
+      if (!this.exit.leaving) this.dragged = false; // (Liquid Glass closes at once)
     },
     handle: '.grab, hp-pane-header',
   });
-  private dragged = false;
+  // Material's sheet says it is closed after its fade and slide (the owner may take it out of its template on the event), and stays drawn while it fades
+  private settled = false; // its own leave has ended: the owner's `open=false` that follows needs none
+  private readonly exit = new Exit({
+    animated: () => this.getAttribute('design') === 'material' && !this.inline,
+    target: () => this.renderRoot.querySelector<HTMLElement>('.sheet'),
+    mark: on => {
+      this.leaving = on;
+      if (!on) this.dragged = false;
+    },
+    drawn: () => this.updateComplete,
+  });
 
   constructor() {
     super();
@@ -71,13 +86,14 @@ export class HpSheet extends LitElement {
     this.closeLabel = '';
     this.hasSub = false;
     this.leaving = false;
+    this.dragged = false;
   }
 
   // The sub-line and the controls ride in the pane header's own slots, in wrappers: a slot forwarded into a slot is a `<slot>`,
   // which has no box of its own for the margin the pane header's `::slotted` rules give.
   protected override render() {
     return html`<div
-      class="sheet ${this.leaving ? 'leaving' : ''}"
+      class="sheet ${this.leaving ? 'leaving' : ''} ${this.dragged ? 'dragged' : ''}"
       ?hidden=${!this.open && !this.leaving}
       @click=${this.onBackdrop}
     >
@@ -113,8 +129,12 @@ export class HpSheet extends LitElement {
     this.hasSub = (e.target as HTMLSlotElement).assignedNodes({flatten: true}).length > 0;
   };
 
+  // Under Material the event follows the fade, so an owner that takes the sheet out of its template on it does not cut the fade; a second ask while it leaves does nothing
   private readonly close = (): void => {
-    this.dispatchEvent(new CustomEvent('sheet-close', {bubbles: true, composed: true}));
+    void this.exit.run(() => {
+      this.settled = this.getAttribute('design') === 'material' && !this.inline;
+      this.dispatchEvent(new CustomEvent('sheet-close', {bubbles: true, composed: true}));
+    });
   };
 
   // a tap on the backdrop, not on the panel
@@ -123,24 +143,17 @@ export class HpSheet extends LitElement {
   };
 
   protected override willUpdate(changed: PropertyValues<this>): void {
-    // Material's sheet leaves with a fade and a slide, and stays drawn until they end: not an inline sheet, nor one a drag has already taken off
+    // closed by its owner, with no ask of its own (Escape, through the sheet host): Material's sheet still fades out, and stays drawn until it has,
+    // unless its own leave just ended, or it is inline
     if (changed.has('open') && changed.get('open') === true && !this.open) {
-      this.leaving = this.getAttribute('design') === 'material' && !this.inline && !this.dragged;
-      this.dragged = false;
-    } else if (this.open) this.leaving = false;
+      if (!this.settled) void this.exit.run(() => {});
+      this.settled = false;
+    } else if (changed.has('open') && this.open) this.settled = false;
   }
 
   protected override updated(changed: PropertyValues<this>): void {
-    if ((changed as Map<PropertyKey, unknown>).has('leaving') && this.leaving) void this.finishLeaving();
     // the Close button takes focus, as the legacy sheet's did, so a keyboard or a switch is inside the sheet at once
     if (changed.has('open') && this.open) void this.focusClose();
-  }
-
-  // the sheet and its panel animate (sheet.css); a sheet with no animation to wait for (none is running) is hidden at once
-  private async finishLeaving(): Promise<void> {
-    const sheet = this.renderRoot.querySelector<HTMLElement>('.sheet');
-    await Promise.allSettled((sheet?.getAnimations({subtree: true}) ?? []).map(a => a.finished));
-    if (!this.open) this.leaving = false;
   }
 
   // The button is slotted into the pane header, whose own tree is drawn after this one's: a sheet made open (a feature draws it only while
