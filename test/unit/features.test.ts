@@ -163,7 +163,7 @@ describe('the Media descriptor', () => {
 
   // the More sheet's baselines read the legacy line, which leaves the input out: the brief, not the pane's sub-line
   test('says the television and the speakers that play under More, and nothing before the house has been heard', () => {
-    expect(mediaFeature.summary?.(env(fakeHass.fromHouse(full)))).toBe('TV on · 1 speaker playing');
+    expect(mediaFeature.summary?.(env(fakeHass.fromHouse(full)))).toBe('TV on · 1 playing');
     expect(mediaFeature.summary?.(env())).toBeNull();
   });
 });
@@ -245,13 +245,13 @@ describe('the Security descriptor', () => {
     return {store, sheetOpen: () => false, sheetDetail: () => undefined, attention: 0};
   };
 
-  // the legacy word ("Doors closed · motion now"), not the pane's line
+  // the short word ("Closed · motion"), not the pane's line
   test('says the doors and the motion under More, and nothing before the house has been heard', () => {
     const house = fakeHass.fromHouse(full);
-    expect(securityFeature.summary?.(env(house))).toBe('Doors closed · motion now');
+    expect(securityFeature.summary?.(env(house))).toBe('Closed · motion');
     house.states['binary_sensor.front_door'] = {...house.states['binary_sensor.front_door'], state: 'on'};
     house.states['binary_sensor.hall_motion'] = {...house.states['binary_sensor.hall_motion'], state: 'off'};
-    expect(securityFeature.summary?.(env(fakeHass.fromHouse(full, {states: house.states})))).toBe('1 door open');
+    expect(securityFeature.summary?.(env(fakeHass.fromHouse(full, {states: house.states})))).toBe('1 open');
     expect(securityFeature.summary?.(env())).toBeNull();
   });
 });

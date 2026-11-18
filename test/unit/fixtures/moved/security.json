@@ -426,7 +426,19 @@
       }
     },
     {
-      "key": "security.more.doorsClosed"
+      "key": "security.more.doorsClosed",
+      "translated": "Fermées"
+    },
+    {
+      "key": "security.more.doorsOpen",
+      "values": {
+        "n": 2
+      },
+      "translated": "2 ouvertes"
+    },
+    {
+      "key": "security.more.motion",
+      "translated": "mouv."
     }
   ]
 }

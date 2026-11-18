@@ -195,11 +195,13 @@ describe('the sensor rows', () => {
   test('a motion sensor: now, or since when, with the light and the battery in that order', () => {
     expect(row({kind: 'motion', on: true, illuminance: 120.4, battery: 5})).toMatchObject({
       tone: 'act',
+      status: true,
       main: 'Motion now',
       sub: '120 lx · battery 5%',
     });
     expect(row({kind: 'motion', illuminance: 1234.6, battery: 5})).toMatchObject({
       tone: '',
+      status: false,
       main: 'No motion',
       sub: '12 min ago · 1235 lx · battery 5%',
     });

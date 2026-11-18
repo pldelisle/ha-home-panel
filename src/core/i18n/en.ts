@@ -62,6 +62,9 @@ export const en = {
   'media.speakers': 'Speakers',
   'media.speakersPlaying': '{count, plural, one {# speaker} other {# speakers}} playing',
   'media.nothingPlaying': 'Nothing playing',
+  // under Media in More, two columns of a phone wide: short
+  'media.more.tvOn': 'TV on',
+  'media.more.playing': '{count} playing',
   'media.noneFound': 'None found',
   'media.noDevices': 'No TV or speakers found.',
   'media.playersHint': 'Media players that sit in an HA area show up here.',
@@ -442,7 +445,10 @@ export const en = {
   'security.summary.noCameras': 'No cameras',
   'security.summary.allDoorsClosed': 'all doors closed',
   'security.summary.motionNow': 'motion now',
-  'security.more.doorsClosed': 'Doors closed',
+  // under Security in More, two columns of a phone wide: short
+  'security.more.doorsClosed': 'Closed',
+  'security.more.doorsOpen': '{n, plural, one {# open} other {# open}}',
+  'security.more.motion': 'motion',
   'security.summary.noMotion': 'no motion',
   // the history sheet (src/features/security/history.ts)
   'security.history': '{name} history',

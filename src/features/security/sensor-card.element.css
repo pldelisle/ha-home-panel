@@ -124,6 +124,13 @@
   font-weight: 600;
   color: var(--fg);
 }
+/* the kit's status inside the em keeps the line's size, and stays the kit's flex row: `.schip span:not(.sic)` above makes a span a block, which would
+   collapse its dot to nothing */
+.schip em .status {
+  display: inline-flex;
+  font-size: inherit;
+  color: inherit;
+}
 .schip .sic {
   width: 34px;
   height: 34px;
@@ -148,9 +155,6 @@
 .schip.act .sic {
   color: var(--c-home);
   background: color-mix(in srgb, var(--c-home) 16%, var(--card));
-}
-.schip.act em {
-  color: var(--t-home);
 }
 :host([glass]) .schip.warn .sic {
   background: color-mix(in srgb, var(--warn) 20%, var(--g-sel));

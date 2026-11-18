@@ -33,7 +33,7 @@ export class CarStatus extends LitElement {
     return html`<div class="inner fill">
         <h3>${block.title}</h3>
         <div class="tpms">
-          ${this.renderTire(frontLeft)}${carTop(block.drawing)}${this.renderTire(frontRight)}${this.renderTire(rearLeft)}${this.renderTire(rearRight)}
+          ${this.renderTire(frontLeft)}${carTop(block.color, block.drawing)}${this.renderTire(frontRight)}${this.renderTire(rearLeft)}${this.renderTire(rearRight)}
         </div>
         ${
           block.rows.length

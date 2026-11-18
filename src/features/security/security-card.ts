@@ -10,6 +10,7 @@ import {newlyActive, type ActiveSnapshot} from './activity.ts';
 import {securityIds} from './ids.ts';
 import {readSecurity} from './inputs.ts';
 import {SNAPSHOT_MS, securityModel, type CameraTile, type SecurityViewModel, type SensorRow} from './model.ts';
+import {sensorStatus} from './sensor-status.ts';
 import {CAMERA_SHEET, HISTORY_SHEET} from './sheets.ts';
 import cardOwn from './security-card.element.css?inline';
 import {registriesOf} from '../../core/registry.ts';
@@ -19,7 +20,7 @@ import {TickController} from '../../ui/controllers/tick.ts';
 import {SheetRequestEvent, TabSelectEvent} from '../../ui/events.ts';
 import {ico} from '../../ui/icons.ts';
 import {lens} from '../../ui/lens.ts';
-import {common} from '../../ui/styles/index.ts';
+import {common, status} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
 /** How long the card glows: the legacy panel's 2.8 seconds, a little past the 2.6 the animation runs. */
@@ -33,7 +34,7 @@ const SHIELD = svg`<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="
 
 export class SecurityCard extends LitElement {
   // The element's own rules, its `:host` and the card's box and rows, are in security-card.element.css.
-  static override styles = [common, unsafeCSS(forShadow(cardOwn))];
+  static override styles = [common, status, unsafeCSS(forShadow(cardOwn))];
 
   private readonly storeController = new StoreController(this, {ids: store => securityIds(store)});
   private view: SecurityViewModel['home'] | undefined;
@@ -139,7 +140,7 @@ export class SecurityCard extends LitElement {
         <span class="sic">${ico(row.kind === 'door' ? 'door' : 'walk', 20)}</span>
         <div>
           <b>${row.name}</b
-          ><span class=${row.tone}>${row.main}${row.sub ? html` <small>· ${row.sub}</small>` : nothing}</span>
+          ><span class=${row.tone}>${sensorStatus(row)}${row.sub ? html` <small>· ${row.sub}</small>` : nothing}</span>
         </div>
       </button>`;
   }

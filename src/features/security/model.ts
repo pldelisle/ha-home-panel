@@ -59,6 +59,8 @@ export interface SensorRow {
   tone: SensorTone;
   /** "Open", "Closed", "Motion now", "No motion" or "Offline". */
   main: string;
+  /** Whether `main` is a status the card draws with a dot ("Motion now": what is happening, not a button); false for the rest. */
+  status: boolean;
   /** What follows it, joined with " · ": "for 12 min · battery 9%"; empty when there is nothing to say. */
   sub: string;
   /** The row's name for a screen reader: "Front door history". */
@@ -153,7 +155,7 @@ function sensorRow(sensor: SensorInputs, deps: SecurityModelDeps): SensorRow {
   const {now, t, fmt} = deps;
   const label = t('security.history', {name: sensor.name});
   const base = {id: sensor.id, kind: sensor.kind, name: sensor.name, label};
-  if (!sensor.available) return {...base, tone: 'off', main: t('security.offline'), sub: ''};
+  if (!sensor.available) return {...base, tone: 'off', status: false, main: t('security.offline'), sub: ''};
   const low =
     sensor.battery !== null && sensor.battery < BATTERY_LOW
       ? t('security.batteryLow', {n: String(Math.round(sensor.battery))})
@@ -163,6 +165,7 @@ function sensorRow(sensor: SensorInputs, deps: SecurityModelDeps): SensorRow {
     return {
       ...base,
       tone: sensor.on ? 'warn' : '',
+      status: false,
       main: t(sensor.on ? 'security.open' : 'security.closed'),
       sub: joined(sensor.on ? forDuration(sensor.since, deps) : ago, low),
     };
@@ -170,6 +173,7 @@ function sensorRow(sensor: SensorInputs, deps: SecurityModelDeps): SensorRow {
   return {
     ...base,
     tone: sensor.on ? 'act' : '',
+    status: sensor.on,
     main: t(sensor.on ? 'security.motionNow' : 'security.noMotion'),
     sub: joined(sensor.on ? '' : ago, lux, low),
   };
@@ -228,11 +232,11 @@ export function securityModel(inputs: SecurityInputs, deps: SecurityModelDeps): 
 
 /**
  * The More sheet's word under Security: the doors open or "Doors closed", then "motion now" while a motion sensor sees someone
- * (the legacy `moreLines`'s rule, moved with the guest's deletion, #277).
+ * (the legacy `moreLines`'s rule, moved with the guest's deletion, #277), in short words: a caption in More is one line in a tile half a phone wide.
  */
 export function securityMoreWord(sensors: readonly SensorInputs[], t: Translate): string {
   const open = sensors.filter(s => s.kind === 'door' && s.on).length;
   const moving = sensors.some(s => s.kind === 'motion' && s.on);
-  const doors = open ? t('security.doorsOpen', {n: open}) : t('security.more.doorsClosed');
-  return moving ? `${doors} · ${t('security.summary.motionNow')}` : doors;
+  const doors = open ? t('security.more.doorsOpen', {n: open}) : t('security.more.doorsClosed');
+  return moving ? `${doors} · ${t('security.more.motion')}` : doors;
 }

@@ -1,6 +1,6 @@
 // <hp-water-card>: the water heater's card: the tank's temperature and whether it heats, the last 24 hours as a small chart, its legend and the cycles line.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over the model's `water` view, placing the pure geometry of `waterChartGeometry` with `svg`
-// templates (the pure-geometry style of spec 19); on a tablet beside the detail, on a phone inside the sheet its tile opens (`framed`).
+// templates (the pure-geometry style of spec 19) and its texts as HTML over them, which keep their size when the card's width changes; on a tablet beside the detail, on a phone inside the sheet its tile opens (`framed`).
 // Must not: read an entity or the clock, compute a position or a word (the model does), or open anything (the sheet is its pane's).
 import {LitElement, html, nothing, svg, unsafeCSS} from 'lit';
 import {repeat} from 'lit/directives/repeat.js';
@@ -64,29 +64,38 @@ export class WaterCard extends LitElement {
       ${lens}`;
   }
 
-  // the geometry's numbers and texts, placed as they come: the grid and its labels, the power axis, the hour ticks, the bars, the line and its last point
+  // the geometry's numbers, placed as they come: the grid, the hour ticks, the bars, the line and its last point; its texts are HTML over the svg
+  // (the svg scales with the card, so text drawn in it would not keep its size: see the axis rules in water-card.element.css)
   private renderChart(chart: WaterChartGeometry) {
-    return html`<svg class="whchart" viewBox="0 0 ${chart.width} ${chart.height}" role="img" aria-label=${chart.label}>
-      ${chart.grid.map(
-        g =>
-          svg`<line x1=${g.x1} x2=${g.x2} y1=${g.y} y2=${g.y} stroke="var(--ring)" stroke-width="1" />${this.axis(g.label)}`,
-      )}
-      ${chart.powerLabels.map(this.axis)}
-      ${chart.ticks.map(
-        tick =>
-          svg`<line x1=${tick.x} x2=${tick.x} y1=${tick.y1} y2=${tick.y2} stroke="var(--ring)" />${this.axis(tick.label)}`,
-      )}
-      ${chart.bars.map(
-        bar =>
-          svg`<rect class="bar" x=${bar.x} y=${bar.y} width=${bar.width} height=${bar.height} rx=".6"><title>${bar.title}</title></rect>`,
-      )}
-      ${chart.line === null ? nothing : svg`<path class="trace" d=${chart.line} />`}
-      ${chart.dot === null ? nothing : svg`<circle class="dot" cx=${chart.dot.cx} cy=${chart.dot.cy} r="3" />`}
-    </svg>`;
+    const labels = [...chart.grid.map(g => g.label), ...chart.powerLabels, ...chart.ticks.map(tick => tick.label)];
+    return html`<div class="whbox">
+      <svg class="whchart" viewBox="0 0 ${chart.width} ${chart.height}" role="img" aria-label=${chart.label}>
+        ${chart.grid.map(
+          g => svg`<line x1=${g.x1} x2=${g.x2} y1=${g.y} y2=${g.y} stroke="var(--ring)" stroke-width="1" />`,
+        )}
+        ${chart.ticks.map(
+          tick => svg`<line x1=${tick.x} x2=${tick.x} y1=${tick.y1} y2=${tick.y2} stroke="var(--ring)" />`,
+        )}
+        ${chart.bars.map(
+          bar =>
+            svg`<rect class="bar" x=${bar.x} y=${bar.y} width=${bar.width} height=${bar.height} rx=".6"><title>${bar.title}</title></rect>`,
+        )}
+        ${chart.line === null ? nothing : svg`<path class="trace" d=${chart.line} />`}
+        ${chart.dot === null ? nothing : svg`<circle class="dot" cx=${chart.dot.cx} cy=${chart.dot.cy} r="3" />`}
+      </svg>
+      ${labels.map(label => this.axis(label, chart))}
+    </div>`;
   }
 
-  private readonly axis = ({x, y, text, anchor}: WaterChartText) =>
-    svg`<text class="axis" x=${x} y=${y} text-anchor=${anchor}>${text}</text>`;
+  // an axis text: a span placed by its share of the canvas, its anchor (`start`, `middle`, `end`) as the attribute the rules read
+  private readonly axis = ({x, y, text, anchor}: WaterChartText, {width, height}: WaterChartGeometry) =>
+    html`<span
+      class="axis"
+      aria-hidden="true"
+      data-anchor=${anchor}
+      style="left:${(x / width) * 100}%;top:${(y / height) * 100}%"
+      >${text}</span
+    >`;
 }
 
 declare global {

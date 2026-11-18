@@ -132,6 +132,8 @@ export interface StatusBlock {
   title: string;
   /** The top view's label for a screen reader. */
   drawing: string;
+  /** The body colour the config gave the car, the side view's too; null for the default. */
+  color: string | null;
   tires: TireView[];
   /** The details the car reports, as value rows (HIG, Lists and tables: a grouped label and value list): odometer, full range, AC limit, cabin, 12 V battery, usable energy, battery temperature, software, automatic updates. */
   rows: CarTile[];
@@ -378,6 +380,7 @@ function statusOf(car: CarInputs, deps: CarModelDeps): StatusBlock {
   return {
     title: t('car.status.title'),
     drawing: t('car.art.top'),
+    color: car.color,
     tires: [
       tireOf(t('car.tire.frontLeft'), tires.frontLeft, deps),
       tireOf(t('car.tire.frontRight'), tires.frontRight, deps),

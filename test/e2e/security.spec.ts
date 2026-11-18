@@ -3,6 +3,7 @@
 // needs one adds it the way Home Assistant adds any entity. The camera's picture is a Home Assistant proxy URL the harness never
 // serves, so a tile with one shows a broken image, as the legacy panel's did; the tests read its `src`, not its pixels.
 import AxeBuilder from '@axe-core/playwright';
+import type {Locator} from '@playwright/test';
 import {test, expect, tabletOnly, countAdded, type House} from './fixtures';
 import {AFTERNOON, FULL_CFG, KEEP_ENGLISH_NAMES} from './houses';
 
@@ -40,6 +41,30 @@ test('the tab shows the house cameras and sensors, doors first, under the summar
   await expect(sensors(house).locator('.schip b')).toHaveText(['Front door', 'Hall motion']);
   await expect(sensors(house).locator('.schip em')).toHaveText(['Closed', 'Motion now']);
   await expect(sensors(house).locator('.schip.act')).toHaveCount(1);
+});
+
+// "Motion now" is a status, not a link: the text colour with a dot, never the blue that says "tap me"
+const colourOf = (text: Locator) => text.evaluate(e => getComputedStyle(e).color);
+/** The status dot's drawn box and colour: a dot that collapses to nothing (a `display: block` parent) is no dot. */
+const dotOf = (status: Locator) =>
+  status.locator('i').evaluate(dot => {
+    const {width, height} = dot.getBoundingClientRect();
+    return {width, height, fill: getComputedStyle(dot).backgroundColor};
+  });
+const looksOf = (text: Locator) =>
+  text.evaluate(e => {
+    const {fontFamily, fontSize, fontWeight, letterSpacing} = getComputedStyle(e);
+    return {fontFamily, fontSize, fontWeight, letterSpacing};
+  });
+
+test('"Motion now" is in the text colour with a dot, on the tab', async ({house}) => {
+  await house.tab('cams');
+  const now = sensors(house).locator('.schip.act em');
+  await expect(now.locator('i')).toHaveCount(1);
+  expect(await colourOf(now)).toBe(await colourOf(sensors(house).locator('.schip.act b')));
+  // a dot you can see, and the words in the face and size of the other chip's
+  expect(await dotOf(now)).toEqual({width: 8, height: 8, fill: expect.stringMatching(/^rgb/)});
+  expect(await looksOf(now.locator('.status'))).toEqual(await looksOf(sensors(house).locator('.schip:not(.act) em')));
 });
 
 test('a house without a camera shows the empty state and its link to the integration', async ({house}) => {
@@ -264,6 +289,14 @@ test.describe('the Home card', () => {
     await house.tab('home');
     await expect(card(house).locator('.hh .right')).toHaveText('all doors closed · motion now');
     await expect(card(house).locator('.hsen b')).toHaveText(['Front door', 'Hall motion']);
+    const now = card(house).locator('.hsen .act');
+    await expect(now.locator('i')).toHaveCount(1);
+    expect(await colourOf(now)).toBe(await colourOf(card(house).locator('.hsen b').last()));
+    expect(await dotOf(now)).toEqual({width: 8, height: 8, fill: expect.stringMatching(/^rgb/)});
+    expect(await looksOf(now.locator('.status'))).toMatchObject({
+      fontFamily: (await looksOf(now)).fontFamily,
+      letterSpacing: (await looksOf(now)).letterSpacing,
+    });
     await card(house).locator('.hh').click();
     await expect(house.root().locator('#pane-cams')).toBeVisible();
   });

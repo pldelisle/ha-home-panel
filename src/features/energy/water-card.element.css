@@ -14,10 +14,27 @@
   margin-top: 12px;
   overflow: visible;
 }
+/* The chart's 320-unit canvas is drawn as wide as its card, so text drawn in it would grow and shrink with the card: the axis texts are HTML over the svg,
+   placed by their share of the canvas, at the text size (11 px, with the household's Larger text), in the secondary text colour (5.1:1 on a card;
+   the tertiary is 3.4:1, and axe does not read SVG text). `y` is the text's baseline, as the svg has it. */
+.whbox {
+  position: relative;
+}
 .axis {
-  font-size: 9px;
-  fill: var(--fg3);
+  position: absolute;
+  font-size: calc(11px * var(--tx));
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--fg2);
   font-family: var(--f-body);
+  pointer-events: none;
+  transform: translate(-50%, -80%);
+}
+.axis[data-anchor='start'] {
+  transform: translate(0, -80%);
+}
+.axis[data-anchor='end'] {
+  transform: translate(-100%, -80%);
 }
 .bar {
   fill: var(--c-wh);

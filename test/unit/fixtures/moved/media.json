@@ -295,6 +295,17 @@
       "values": {
         "reason": "the TV is asleep"
       }
+    },
+    {
+      "key": "media.more.tvOn",
+      "translated": "Télé"
+    },
+    {
+      "key": "media.more.playing",
+      "values": {
+        "count": 1
+      },
+      "translated": "1 en lecture"
     }
   ]
 }

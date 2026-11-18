@@ -21,6 +21,13 @@ const GRID = 'sensor.house_power';
 const METER = 'sensor.hilo_energy_total';
 const HILO_RATE = 'sensor.hilo_gateway_hilo_rate_current';
 
+/** How big the chart's axis texts are drawn, in pixels: they are HTML over the svg, so they share one size whatever the card's width. */
+const axisPixels = (house: House) =>
+  water(house)
+    .locator('.whbox .axis')
+    .first()
+    .evaluate(text => parseFloat(getComputedStyle(text).fontSize));
+
 // Energy is under More on a phone
 const openTab = async (house: House) => {
   await house.root().locator('#moretab').click();
@@ -156,6 +163,7 @@ test.describe('on a phone', () => {
     await expect(sheet.locator('h2')).toHaveText('Water heater');
     await expect(water(house).locator('.hero .v')).toHaveText('50.0°C');
     await expect(water(house).locator('.hero .status')).toHaveText('Idle · 0 W');
+    expect(await axisPixels(house), 'the chart axis is 11 px').toBe(11);
     await sheet.locator('.close').click();
     await expect(pane(house).locator('hp-sheet[open]')).toHaveCount(0);
     await expect(water(house)).toHaveCount(0);
@@ -254,7 +262,39 @@ test.describe('on a tablet', () => {
     await expect(water(house).locator('.hero .status')).toHaveText('Idle · 0 W');
     await expect(water(house).locator('.whleg span')).toHaveText(['Water temperature', 'Heating power']);
     await expect(water(house).locator('.whline')).toContainText('Last 24 hours:');
+    expect(await axisPixels(house), 'the chart axis is 11 px').toBe(11);
     await expect(hilo(house)).toHaveCount(0);
+  });
+
+  test('the chart’s axis texts stay 11 px as the card gets wider, in the secondary colour, and follow Larger text', async ({
+    house,
+  }) => {
+    await house.tab('energy');
+    // the secondary text colour as this card resolves it: a probe painted in it
+    const secondary = await water(house).evaluate(card => {
+      const probe = document.createElement('i');
+      probe.style.color = 'var(--fg2)';
+      card.shadowRoot!.append(probe);
+      const colour = getComputedStyle(probe).color;
+      probe.remove();
+      return colour;
+    });
+    for (const width of [800, 1024, 1366]) {
+      await house.page.setViewportSize({width, height: 900});
+      await expect(water(house).locator('.whbox .axis').first()).toBeVisible();
+      const cardWidth = (await water(house).locator('svg.whchart').boundingBox())!.width;
+      expect(await axisPixels(house), `at a ${Math.round(cardWidth)} px chart`).toBe(11);
+    }
+    const colour = await water(house)
+      .locator('.whbox .axis')
+      .first()
+      .evaluate(text => getComputedStyle(text).color);
+    expect(colour, 'the secondary text colour').toBe(secondary);
+    await house
+      .root()
+      .locator('#app')
+      .evaluate(app => app.style.setProperty('--tx', '1.3'));
+    expect(await axisPixels(house), 'at Larger text').toBeCloseTo(14.3, 1);
   });
 
   test('Hilo’s card shows the rate and the tier beside the water heater’s once the house has Hilo', async ({house}) => {
