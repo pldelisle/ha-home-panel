@@ -40,3 +40,14 @@
       color var(--motion-fade-ms) var(--motion-fade);
   }
 }
+/* Material's icon button (#468): a pill that tightens its corners under a finger (common.css), tonal at rest and primary while the set is on */
+:host([design='material']) .power {
+  border-radius: var(--shape-pill);
+  background: var(--control);
+  color: var(--on-control);
+  box-shadow: none;
+}
+:host([design='material']) .power.on {
+  background: var(--md-primary);
+  color: var(--md-on-primary);
+}

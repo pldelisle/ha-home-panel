@@ -275,3 +275,11 @@ button.icon:focus-visible {
   font: var(--type-body-small);
   letter-spacing: var(--track-body-small);
 }
+/* Material's icon button (ADR 0037, #468): a sheet's close is the pane header's trailing action, a 48px tonal circle that tightens its corners under a finger (common.css) */
+.app[data-design='material'] .sheet button.icon.close {
+  width: 48px;
+  height: 48px;
+  background: var(--control);
+  color: var(--on-control);
+  box-shadow: none;
+}

@@ -62,6 +62,7 @@ value, so a second design language can redefine the set in one place. No rule wr
 | Icon square         | `--shape-icon-xl`, `-lg`, `-md`, then `--shape-icon`, `--shape-icon-sm`                                                                                              | 13, 12, 11, 10, 9 px                              |
 | Bar and track ends  | `--shape-track-lg`, `-md`, `--shape-track`, `--shape-bar`, `-sm`, `-xs`                                                                                              | 6, 5, 4, 3, 2, 1 px                               |
 | Inline code         | `--shape-code`                                                                                                                                                       | 6 px                                              |
+| Status list, chip   | `--shape-list-item` (a row), `--shape-list-group` (the group's first and last row), `--shape-chip`                                                                   | 16, 16, 999 px                                    |
 | Pill                | `--shape-pill`                                                                                                                                                       | 999 px                                            |
 | Easing              | `--motion-standard` (every press and entrance), `--motion-spring` (the switch knob), `--motion-sheet-spring`, `--motion-pop`, `--motion-overshoot` (the dial's knob) | `cubic-bezier(0.2, 0.8, 0.2, 1)` and four springs |
 | Duration            | `--motion-press-ms`, `--motion-pane-ms`, `--motion-sheet-ms`, `--motion-sheet-spring-ms`, `--motion-pop-ms`, `--motion-switch-ms`                                    | 180, 280, 320, 460, 300, 220 ms                   |
@@ -79,6 +80,11 @@ value, so a second design language can redefine the set in one place. No rule wr
 - Under Material the segmented control (`hp-seg`, 48 px) and the range tabs (`hp-range-tabs`, 40 px) are the connected button group (#465): no container, buttons joined by
   2 px, the outer ends `--shape-pill`, the inner corners `--shape-group-inner` (8; 12 in Apple, where the rule is unused), the chosen one `primary` and a full pill
   (`--shape-segment-selected`), its corners on the spatial-fast spring. The rules sit in `seg.css` and `range.css` under `.app[data-design='material']`.
+- The Material components (#468) draw under `.app[data-design='material']` in the kit's sheets and `:host([design='material'])` in an element's own. A list of
+  status rows is a group (`--shape-list-group` 16, `--shape-list-item` 4, 2 px apart); a chip is `--shape-chip` (8) with a 1 px `--line` edge. A tile is a well, or a
+  `--control` when it opens a history; a stat tile is the card with a `--control` icon square, and `primary-container` over `primary` while its subject is on. A
+  button is tonal, 40 px in a 48 px target, and a pill that tightens under a finger; a dialog's confirm is filled (`primary`), its dismiss outlined, All off the one
+  56 px `primary-container` button on `--elevation-3`, and the stepper's and a sheet's close buttons 48 px tonal circles. A tappable card draws no chevron: the state layer says it.
 - The ApexCharts bars' radii (`src/features/car/history.ts`) are JavaScript, not CSS, and are the same in both designs.
 - A radius that is the shape of the element's box (a circle is `50%`, a square corner `0`, a child that follows its parent
   `inherit`) stays as it is: it is geometry, not design.

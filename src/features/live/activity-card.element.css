@@ -207,3 +207,26 @@
   font: var(--type-label-medium);
   letter-spacing: var(--track-label-medium);
 }
+/* Material's buttons (#468): Pause charging and its kind are tonal, 40px inside a 48px touch target; Open Car is a 48px tonal icon button */
+:host([design='material']) .lbtns button {
+  position: relative;
+  min-height: 40px;
+  background: var(--control);
+  color: var(--on-control);
+  box-shadow: none;
+  font: var(--type-label-large);
+  letter-spacing: var(--track-label-large);
+}
+:host([design='material']) .lbtns button::after {
+  content: '';
+  position: absolute;
+  inset: -4px 0;
+}
+:host([design='material']) .lbtns button.go {
+  width: 48px;
+  height: 48px;
+  color: var(--on-control);
+}
+:host([design='material']) .lbtns button.go::after {
+  content: none;
+}
