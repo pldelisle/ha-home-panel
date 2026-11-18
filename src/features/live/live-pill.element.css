@@ -90,18 +90,20 @@
   color: #fff;
   font-size: 16px;
 }
+/* with glass on, the pill and its bubbles are the cards' material (--g-card, the plain blur, the plain edge; glass.css), so they read as the same
+   white as the card under them, not as the wallpaper's wash through dense glass; with transparent cards on, that material is glass again */
 .app.gl .lap .lmain,
 .app.gl .lap .lbub {
-  background: var(--g-dense);
-  -webkit-backdrop-filter: var(--g-bd);
-  backdrop-filter: var(--g-bd);
-  box-shadow: var(--g-edge);
+  background: var(--g-card);
+  -webkit-backdrop-filter: var(--m-bd);
+  backdrop-filter: var(--m-bd);
+  box-shadow: var(--m-edge);
 }
 .app.gl .lap .lmain.tint {
-  background: color-mix(in srgb, var(--ac) 16%, var(--g-dense));
+  background: color-mix(in srgb, var(--ac) 16%, var(--g-card));
 }
 .app.gl .lap .lwarn:where(.lbub) {
-  background: color-mix(in srgb, var(--ac) 20%, var(--g-dense));
+  background: color-mix(in srgb, var(--ac) 20%, var(--g-card));
 }
 .lap .lsay {
   display: contents; /* the visible words stay flex items of .lmain; only the spoken copy beside them is for screen readers */
@@ -143,7 +145,7 @@
   background: color-mix(in srgb, var(--ac) 14%, var(--card));
 }
 .app.gl .lap .latt.lmain {
-  background: color-mix(in srgb, var(--ac) 16%, var(--g-dense));
+  background: color-mix(in srgb, var(--ac) 16%, var(--g-card));
 }
 /* the tinted pills (the Hilo challenge, the attention pill) have more specific glass rules above, so they are listed here too */
 @media (prefers-reduced-transparency: reduce) {
