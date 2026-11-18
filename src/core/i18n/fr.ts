@@ -627,7 +627,6 @@ export const fr: Record<MessageKey, string> = {
   'energy.detail.yearPeak':
     '12 derniers mois. Le chauffage a culminé en {month}\u00a0: {kwh} kWh. Les mois avec des données manquantes paraissent plus courts.',
   'energy.sankey.title': 'Où va l’électricité',
-  'energy.days30': '30 jours',
   'energy.sankey.noteNow':
     'Puissance en direct\u00a0: le compteur Hilo à gauche, le capteur de chaque appareil à droite.',
   'energy.sankey.noteToday': 'Énergie depuis minuit, {kwh} kWh jusqu’ici.',
@@ -642,22 +641,8 @@ export const fr: Record<MessageKey, string> = {
   'energy.donut.overMeter': 'Les appareils déclarent plus que le compteur aujourd’hui.',
   'energy.donut.total': 'kWh',
   'energy.donut.percent': '{n}\u202f%',
-  'energy.totals.title': 'Totaux',
-  'energy.totals.hint': 'Du compteur intelligent Hilo',
-  'energy.totals.today': "Aujourd'hui jusqu'ici",
-  'energy.totals.until': "jusqu'à {time}",
-  'energy.totals.yesterday': 'Hier',
-  'energy.totals.perDay': '{kwh} kWh par jour',
-  'energy.totals.soFar': "jusqu'ici",
-  'energy.totals.opensChart': 'Affiche son graphique',
-  'energy.totals.ev': 'VÉ, 30 jours',
-  // `=0` repeats `other`: the legacy wrote « 0 jours de recharge », where CLDR's French `one` covers 0
-  'energy.totals.chargingDays':
-    '{n, plural, =0 {# jours de recharge} one {# jour de recharge} other {# jours de recharge}}',
-  'energy.totals.rate': 'Tarif actuel',
-  'energy.totals.rateTier': 'Hilo {tier}',
   'climate.wholeHouse': 'Toute la maison',
-  // `=0` repeats `other`, as the charging days do: the legacy wrote « 0 pièces chauffent », where CLDR's French `one` covers 0
+  // `=0` repeats `other`: the legacy wrote « 0 pièces chauffent », where CLDR's French `one` covers 0
   'climate.roomsHeating': '{n, plural, =0 {# pièces chauffent} one {# pièce chauffe} other {# pièces chauffent}}',
   'climate.heatPumpPlusRooms':
     'Thermopompe + {n, plural, =0 {# pièces chauffent} one {# pièce chauffe} other {# pièces chauffent}}',

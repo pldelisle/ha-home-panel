@@ -483,9 +483,6 @@
       "was": "Où va l’électricité"
     },
     {
-      "key": "energy.days30"
-    },
-    {
       "key": "energy.sankey.noteNow",
       "was": "Puissance en direct : le compteur Hilo à gauche, le capteur de chaque appareil à droite.",
       "after": "Live : alimentation : the Hilo meter on the left, each device's own sensor on the right."
@@ -540,121 +537,6 @@
       "values": {
         "n": 45
       }
-    },
-    {
-      "key": "energy.totals.title"
-    },
-    {
-      "key": "energy.totals.hint",
-      "was": "Du compteur intelligent Hilo"
-    },
-    {
-      "key": "energy.totals.today"
-    },
-    {
-      "key": "energy.totals.until",
-      "values": {
-        "time": "3:45 pm"
-      },
-      "fr": {
-        "time": "15 h 45"
-      }
-    },
-    {
-      "key": "energy.totals.yesterday"
-    },
-    {
-      "key": "energy.totals.perDay",
-      "values": {
-        "kwh": "20.4"
-      },
-      "was": "20,4 kWh par jour"
-    },
-    {
-      "key": "energy.totals.soFar"
-    },
-    {
-      "key": "energy.totals.opensChart",
-      "written": "Affiche son graphique"
-    },
-    {
-      "key": "energy.totals.ev",
-      "was": "VÉ, 30 jours"
-    },
-    {
-      "key": "energy.totals.chargingDays",
-      "values": {
-        "n": 0
-      },
-      "was": "0 jours de recharge"
-    },
-    {
-      "key": "energy.totals.chargingDays",
-      "values": {
-        "n": 1
-      },
-      "was": "1 jour de recharge"
-    },
-    {
-      "key": "energy.totals.chargingDays",
-      "values": {
-        "n": 6
-      },
-      "was": "6 jours de recharge"
-    },
-    {
-      "key": "energy.totals.rate",
-      "was": "Tarif actuel"
-    },
-    {
-      "key": "energy.totals.rateTier",
-      "values": {
-        "tier": "low tier"
-      },
-      "fr": {
-        "tier": "palier bas"
-      },
-      "was": "Hilo palier bas"
-    },
-    {
-      "key": "energy.totals.rateTier",
-      "values": {
-        "tier": "medium tier"
-      },
-      "fr": {
-        "tier": "palier moyen"
-      },
-      "written": "Hilo palier moyen"
-    },
-    {
-      "key": "energy.totals.rateTier",
-      "values": {
-        "tier": "challenge rate"
-      },
-      "fr": {
-        "tier": "tarif de défi"
-      },
-      "written": "Hilo tarif de défi"
-    },
-    {
-      "key": "energy.totals.rateTier",
-      "values": {
-        "tier": "rate unknown"
-      },
-      "fr": {
-        "tier": "tarif inconnu"
-      },
-      "written": "Hilo tarif inconnu"
-    },
-    {
-      "key": "energy.totals.rateTier",
-      "values": {
-        "tier": "current rate"
-      },
-      "fr": {
-        "tier": "tarif actuel"
-      },
-      "written": "Hilo tarif actuel"
     },
     {
       "key": "energy.glance.line",
