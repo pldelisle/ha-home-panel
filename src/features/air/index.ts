@@ -6,14 +6,19 @@
 // It re-exports `glance`, the Home pane's tile reader (glance.ts, #267), and the ids that tile subscribes to (#268).
 // Must not: draw or hold state, import another feature, or read an entity itself (the brief line reads the store it is given).
 import {html} from 'lit';
-import './air-area.ts'; // defines <hp-air-area>
+import './air-room-part.ts'; // defines <hp-air-room-part>
 import './air-pane.ts'; // defines <hp-air-pane>
 import {airBrief, airRoomAreas, roomHumidity} from './model.ts';
 import {isHistoryRequest} from './history.ts';
 import {DETAIL_SHEET, HISTORY_SHEET} from './sheets.ts';
 import {registriesOf} from '../../core/registry.ts';
-import {milaRooms} from '../../providers/mila.ts';
+import type {PanelStore} from '../../core/store.ts';
+import {milaRooms, type AirRoomInputs} from '../../providers/mila.ts';
 import type {FeatureDescriptor} from '../../ui/feature.ts';
+
+/** The purifiers of the house as the store knows it now; none before the house has been heard. */
+const roomsOf = ({hass, names}: Pick<PanelStore, 'hass' | 'names'>): AirRoomInputs[] =>
+  hass ? milaRooms(hass.states, registriesOf(hass), names) : [];
 
 export const airFeature: FeatureDescriptor = {
   key: 'air',
@@ -40,15 +45,10 @@ export const airFeature: FeatureDescriptor = {
   },
   room: {
     // the areas the purifiers sit in; a purifier with no area is in no room view
-    areas: ({store}) => {
-      const {hass} = store;
-      return hass ? airRoomAreas(milaRooms(hass.states, registriesOf(hass), store.names)) : [];
-    },
-    part: (_env, areaId) => html`<hp-air-area .areaId=${areaId}></hp-air-area>`,
-    chip: ({store}, areaId) => {
-      const {hass} = store;
-      return hass ? roomHumidity(milaRooms(hass.states, registriesOf(hass), store.names), areaId, store) : null;
-    },
+    areas: ({store}) => airRoomAreas(roomsOf(store)),
+    part: (_env, areaId) => html`<hp-air-room-part .areaId=${areaId}></hp-air-room-part>`,
+    // the room's humidity, the mean of its purifiers' readings, rounded
+    chip: ({store}, areaId) => roomHumidity(roomsOf(store), areaId, store),
   },
 };
 export {glance} from './glance.ts';

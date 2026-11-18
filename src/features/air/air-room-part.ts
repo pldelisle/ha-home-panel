@@ -1,4 +1,4 @@
-// <hp-air-area>: the Air part of a room view: the room's purifier cards, as the Air tab draws them, and a button to the whole detail.
+// <hp-air-room-part>: the Air part of a room view: the room's purifier cards, as the Air tab draws them, and a button to the whole detail.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over `roomDetailsIn`, the Air model cut to one area (ADR 0039): the same `<hp-air-room>` cards,
 // read by `readAir`, and a card runs the same commands as on the Air tab. A tile's tap asks for its history (`air.history`) and the button for the
 // detail (`air.detail`); the Air pane stays in the page behind them (`overSheets`, `detailSheet` over a room), so the room view stays.
@@ -6,7 +6,7 @@
 import {LitElement, html, nothing, unsafeCSS} from 'lit';
 import {repeat} from 'lit/directives/repeat.js';
 import './room-card.ts'; // defines <hp-air-room>
-import areaOwn from './air-area.element.css?inline';
+import partOwn from './air-room-part.element.css?inline';
 import {airIds} from './ids.ts';
 import {readAir} from './inputs.ts';
 import {roomDetailsIn, type RoomDetail} from './model.ts';
@@ -20,15 +20,15 @@ import type {Overlay} from '../../ui/overlay-store.ts';
 import {button, common} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
-export class AirArea extends LitElement {
+export class AirRoomPart extends LitElement {
   static override properties = {
     areaId: {},
   };
   /** The area of the room shown, set by the room view. */
   declare areaId: string;
 
-  // The kit's button; the element's own rules, its `:host` and the cards' column, are in air-area.element.css.
-  static override styles = [common, button, unsafeCSS(forShadow(areaOwn))];
+  // The kit's button; the element's own rules, its `:host` and the cards' column, are in air-room-part.element.css.
+  static override styles = [common, button, unsafeCSS(forShadow(partOwn))];
 
   private readonly storeController = new StoreController(this, {ids: store => airIds(store)});
   private readonly appearance = new AppearanceConsumer(this);
@@ -75,8 +75,8 @@ export class AirArea extends LitElement {
 
 declare global {
   interface HTMLElementTagNameMap {
-    'hp-air-area': AirArea;
+    'hp-air-room-part': AirRoomPart;
   }
 }
 
-if (!customElements.get('hp-air-area')) customElements.define('hp-air-area', AirArea);
+if (!customElements.get('hp-air-room-part')) customElements.define('hp-air-room-part', AirRoomPart);

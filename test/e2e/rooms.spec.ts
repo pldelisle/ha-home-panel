@@ -200,4 +200,23 @@ test.describe('the Air part of a room', () => {
     await expect(pane(house)).toBeVisible();
     await expect(house.root().locator('#pane-air')).not.toHaveClass(/behind/);
   });
+
+  test('a room that goes away while the detail is open over it takes the sheet with it, and Home shows', async ({
+    house,
+  }) => {
+    tabletOnly();
+    await openRoom(house, 'office');
+    await air(house).getByRole('button', {name: 'Every room and the outside air'}).click();
+    await expect(house.root().locator('#pane-air hp-air-pane hp-sheet')).toHaveAttribute('open', '');
+    // the office's area is deleted in Home Assistant: its light and its purifier are in no room any more
+    await house.removeArea('office');
+    await expect(house.root().locator('#rail [data-room="office"]')).toHaveCount(0);
+    await expect(house.root().locator('hp-sheet[open]')).toHaveCount(0);
+    await expect(house.root().locator('#pane-home')).toBeVisible();
+    await expect(pane(house)).toBeHidden();
+    // nothing is left open in the host either: another room does not find the detail's sheet open over it
+    await openRoom(house, 'kitchen');
+    await expect(house.root().locator('hp-sheet[open]')).toHaveCount(0);
+    await expect(house.root().locator('#pane-air')).not.toHaveClass(/behind/);
+  });
 });
