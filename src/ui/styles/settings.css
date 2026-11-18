@@ -77,6 +77,11 @@ button.cct:focus-visible {
 .cct hp-seg::part(group) {
   background: var(--card);
 }
+/* Material's button group has no container: the buttons sit straight on the popup (see seg.css) */
+.app[data-design='material'] .cct .seg,
+.app[data-design='material'] .cct hp-seg::part(group) {
+  background: transparent;
+}
 /* "Auto follows the device", under the appearance control */
 .ccn {
   display: block;

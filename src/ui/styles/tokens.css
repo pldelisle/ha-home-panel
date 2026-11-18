@@ -146,6 +146,8 @@
   --shape-fab: 999px;
   --shape-fab-pressed: 999px;
   --shape-segment-selected: 12px;
+  /* a connected button group (Material's segmented control and range tabs): the corner where two buttons meet; its outer ends are --shape-pill */
+  --shape-group-inner: 12px;
   /* easings: the one every press and entrance uses, and the springs that overshoot a little (the switch knob, a sheet rising, a popup, the dial's knob) */
   --motion-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
   --motion-spring: cubic-bezier(0.3, 1.3, 0.4, 1);
@@ -375,6 +377,7 @@
   --shape-fab: var(--shape-large);
   --shape-fab-pressed: var(--shape-medium);
   --shape-segment-selected: var(--shape-full);
+  --shape-group-inner: var(--shape-small);
   /* the springs: spatial (a position, a size, a shape) with a visible overshoot, effects (a colour, an opacity) critically damped; the duration is the settle time */
   --motion-spatial-fast: linear(
     0,

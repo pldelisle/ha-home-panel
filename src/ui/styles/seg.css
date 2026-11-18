@@ -79,16 +79,46 @@
 .seg button:active {
   transform: scale(var(--press-scale));
 }
-/* Material's connected button group: the options keep the small inner corners, the chosen one is a full pill (see tokens.css) */
+/* Material's connected button group (ADR 0037, #465), after the design system's ButtonGroup: no container, 48px buttons joined by 2px, the outer ends
+   as round as the box allows and the inner corners small; the chosen one is `primary` and a full pill, its corners springing on the spatial-fast curve
+   (the unchosen ones are `control`; their text is `on-control`, so the Apple look's chosen-figure colour does not apply). A press tightens the outer
+   ends (common.css moves `--shape-pill`). */
+.app[data-design='material'] .seg {
+  gap: 2px;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+}
+.app[data-design='material'] .seg button {
+  min-height: 48px;
+  padding: 0 8px;
+  background: var(--control);
+  color: var(--on-control);
+  border-radius: var(--shape-group-inner);
+  transition:
+    border-radius var(--motion-spatial-fast-ms) var(--motion-spatial-fast),
+    background-color var(--motion-effects-default-ms) var(--motion-effects),
+    color var(--motion-effects-default-ms) var(--motion-effects);
+}
+.app[data-design='material'] .seg button:first-child {
+  border-radius: var(--shape-pill) var(--shape-group-inner) var(--shape-group-inner) var(--shape-pill);
+}
+.app[data-design='material'] .seg button:last-child {
+  border-radius: var(--shape-group-inner) var(--shape-pill) var(--shape-pill) var(--shape-group-inner);
+}
 .app[data-design='material'] .seg button[aria-checked='true'] {
+  background: var(--md-primary);
+  color: var(--md-on-primary);
   border-radius: var(--shape-segment-selected);
 }
 /* Material's type roles: see tokens.css. */
 .app[data-design='material'] .seg button b {
   font: var(--type-label-large);
   letter-spacing: var(--track-label-large);
+  color: inherit;
 }
 .app[data-design='material'] .seg button small {
   font: var(--type-label-medium);
   letter-spacing: var(--track-label-medium);
+  opacity: 0.85;
 }

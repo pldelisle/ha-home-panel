@@ -65,3 +65,32 @@ test.describe('tablet, light, Meadow', () => {
     await expect(house.page).toHaveScreenshot('material-home-tablet-light-meadow-en.png');
   });
 });
+
+// The connected button group (#465): the Air tab holds both, the range tabs (Day, Week, Month) and a room card's mode group (hp-seg) with its
+// chosen mode a primary pill. Air is a tab on a tablet and under More on a phone.
+for (const {viewport, theme} of SHOTS) {
+  test.describe(`button group, ${viewport}, ${theme}`, () => {
+    test.use({
+      viewport: VIEWPORTS[viewport],
+      houseOpts: {cfg: FULL_CFG, theme, design: 'material', time: AFTERNOON, frozen: true},
+    });
+
+    test('Air with the button groups in Material', async ({house}) => {
+      if (viewport === 'phone') {
+        await house.root().locator('#moretab').click();
+        await house.root().locator('#morelist hp-stat-tile[key="air"] button').click();
+        await expect(house.root().locator('#pane-air')).toBeVisible();
+      } else {
+        await house.tab('air');
+      }
+      const pane = house.root().locator('#pane-air hp-air-pane');
+      // the range tabs: in the pane's header on a phone, in the detail on a tablet
+      await expect(pane.locator('hp-range-tabs [role="tab"]').first()).toBeVisible();
+      await expect(pane.locator('hp-air-room').getByRole('radio', {name: 'Automagic'})).toHaveAttribute(
+        'aria-checked',
+        'true',
+      );
+      await expect(house.page).toHaveScreenshot(`material-button-group-${viewport}-${theme}-en.png`);
+    });
+  });
+}
