@@ -11,8 +11,8 @@ import {
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
 const NOW = Date.parse('2026-11-17T12:00:00Z');
-// Mascouche, in the Toronto zone the fake houses use (Quebec shares its rules)
-const HOUSE: ArchiveHouse = {latitude: 45.75, longitude: -73.6, timeZone: 'America/Toronto', station: null};
+// a made-up town, in the Toronto zone the fake houses use
+const HOUSE: ArchiveHouse = {latitude: 46.75, longitude: -72.6, timeZone: 'America/Toronto', station: null};
 
 const station = (id: string, name: string, lon: number, lat: number, extra: Record<string, unknown> = {}) => ({
   type: 'Feature',
@@ -37,13 +37,13 @@ const collection = (features: unknown[], extra: Record<string, unknown> = {}) =>
 const hourly = (utc: string, properties: Record<string, unknown>) => ({properties: {UTC_DATE: utc, ...properties}});
 
 // the stations of the area: the closed town one, a good one 13 km away, a better-looking one 60 km away, one whose feed stopped
-const LASSOMPTION = station('7014160', "L'ASSOMPTION", -73.4347, 45.8094);
+const LANSE = station('7099160', "L'ANSE-GRISE", -72.4347, 46.8094);
 const AREA = collection([
-  station('7014629', 'MASCOUCHE', -73.6, 45.75, {HAS_HOURLY_DATA: 'N'}),
-  station('7000001', 'STOPPED', -73.6, 45.76, {HLY_LAST_DATE: '2026-09-01 00:00:00'}),
-  station('7000002', 'FAR', -74.4, 45.75),
-  LASSOMPTION,
-  station('7000003', 'NEXT', -73.3, 45.9),
+  station('7099629', 'MAPLEFORD', -72.6, 46.75, {HAS_HOURLY_DATA: 'N'}),
+  station('7000001', 'STOPPED', -72.6, 46.76, {HLY_LAST_DATE: '2026-09-01 00:00:00'}),
+  station('7000002', 'FAR', -73.4, 46.75),
+  LANSE,
+  station('7000003', 'NEXT', -72.3, 46.9),
 ]);
 
 /** A fetch over literal replies: the first route whose path appears in the url answers; the urls are kept. */
@@ -72,11 +72,11 @@ describe('the station', () => {
   test('the nearest active hourly station within 40 km, found in the bounding box of the house', async () => {
     const {archive, to} = archiveOver({'climate-stations': AREA, 'climate-hourly': collection([])});
     const fill = await archive.rows('wind', 'hour', START, END);
-    expect(fill?.station).toBe("L'ASSOMPTION");
+    expect(fill?.station).toBe("L'ANSE-GRISE");
     const bbox = to('climate-stations')[0].searchParams.get('bbox')!.split(',').map(Number);
-    expect(bbox[0]).toBeCloseTo(-73.6 - 40 / (111.32 * Math.cos((45.75 * Math.PI) / 180)), 2);
-    expect(bbox[3]).toBeCloseTo(45.75 + 40 / 111.32, 2);
-    expect(to('climate-hourly')[0].searchParams.get('CLIMATE_IDENTIFIER')).toBe('7014160');
+    expect(bbox[0]).toBeCloseTo(-72.6 - 40 / (111.32 * Math.cos((46.75 * Math.PI) / 180)), 2);
+    expect(bbox[3]).toBeCloseTo(46.75 + 40 / 111.32, 2);
+    expect(to('climate-hourly')[0].searchParams.get('CLIMATE_IDENTIFIER')).toBe('7099160');
   });
 
   test('none in range: the archive is off, and no data is asked for', async () => {
@@ -87,11 +87,11 @@ describe('the station', () => {
 
   test('the config names a station: its own record is read (name, elevation), and an unknown one turns the archive off', async () => {
     const {archive, to} = archiveOver(
-      {'climate-stations': collection([LASSOMPTION]), 'climate-hourly': collection([])},
-      {...HOUSE, station: '7014160'},
+      {'climate-stations': collection([LANSE]), 'climate-hourly': collection([])},
+      {...HOUSE, station: '7099160'},
     );
-    expect((await archive.rows('wind', 'hour', START, END))?.station).toBe("L'ASSOMPTION");
-    expect(to('climate-stations')[0].searchParams.get('CLIMATE_IDENTIFIER')).toBe('7014160');
+    expect((await archive.rows('wind', 'hour', START, END))?.station).toBe("L'ANSE-GRISE");
+    expect(to('climate-stations')[0].searchParams.get('CLIMATE_IDENTIFIER')).toBe('7099160');
     const unknown = archiveOver({'climate-stations': collection([])}, {...HOUSE, station: '1'});
     expect(await unknown.archive.rows('wind', 'hour', START, END)).toBeNull();
   });
@@ -106,7 +106,7 @@ describe('the station', () => {
 
   test('a station whose last hourly date is not a date is not active', async () => {
     const {archive} = archiveOver({
-      'climate-stations': collection([station('1', 'ODD', -73.6, 45.75, {HLY_LAST_DATE: null})]),
+      'climate-stations': collection([station('1', 'ODD', -72.6, 46.75, {HLY_LAST_DATE: null})]),
     });
     expect(await archive.rows('wind', 'hour', START, END)).toBeNull();
   });
@@ -189,7 +189,7 @@ describe('hourly rows', () => {
   });
 
   test('a station with no elevation on record is taken at sea level', async () => {
-    const flat = collection([station('7014160', 'FLAT', -73.6, 45.75, {ELEVATION: null})]);
+    const flat = collection([station('7099160', 'FLAT', -72.6, 46.75, {ELEVATION: null})]);
     const {archive} = archiveOver({
       'climate-stations': flat,
       'climate-hourly': collection([hourly('2026-11-10T05:00:00', {STATION_PRESSURE: 101, TEMP: 5})]),
@@ -270,7 +270,7 @@ describe('daily rows', () => {
     ]);
     const asked = to('climate-daily')[0].searchParams;
     expect(asked.get('datetime')).toBe('2026-10-29/2026-11-10');
-    expect(asked.get('CLIMATE_IDENTIFIER')).toBe('7014160');
+    expect(asked.get('CLIMATE_IDENTIFIER')).toBe('7099160');
     expect(asked.get('properties')).toBe('LOCAL_DATE,MEAN_TEMPERATURE,MIN_TEMPERATURE,MAX_TEMPERATURE');
     expect(asked.get('sortby')).toBe('LOCAL_DATE');
   });
