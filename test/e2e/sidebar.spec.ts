@@ -37,6 +37,7 @@ test.describe('the sidebar on the tablet', () => {
   });
 
   test('collapsed, each icon sits in the middle of its row', async ({house}) => {
+    tabletOnly();
     const off = await rows(house).evaluateAll(els =>
       els.map(row => {
         const r = row.getBoundingClientRect();
