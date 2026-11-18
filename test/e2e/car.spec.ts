@@ -259,9 +259,9 @@ test.describe('on a tablet', () => {
       const sessions = historySheet(house).locator('hp-car-sessions');
       const rows = sessions.locator('tbody tr');
       const toggle = sessions.locator('.showall');
-      // the sheet opens on 30 days: all twelve sessions are within a week; Year is the months' chart and the same table
+      // the sheet opens on Month, the last 30 days: all twelve sessions are within a week; Year is the months' chart and the same table
       const tabs = pane(house).locator('hp-range-tabs');
-      await expect(tabs.getByRole('tab', {name: '30 days'})).toHaveAttribute('aria-selected', 'true');
+      await expect(tabs.getByRole('tab', {name: 'Month'})).toHaveAttribute('aria-selected', 'true');
       await expect(sessions.locator('hp-chart')).toHaveCount(0);
       await expect(sessions.locator('.stiles .tile .v').first()).toHaveText('12');
       await tabs.getByRole('tab', {name: 'Year'}).click();
@@ -274,10 +274,17 @@ test.describe('on a tablet', () => {
       await toggle.click();
       await expect(rows).toHaveCount(10);
       // the last 30 days' chart on its card, with a kWh axis and a label every week, and the monthly chart, in the charger's colour
-      const daily = historySheet(house).locator('.bars hp-chart');
+      const daily = historySheet(house).locator('.daily hp-chart');
       await expect(daily.locator('.apexcharts-bar-area').first()).toBeVisible();
       await expect(daily.locator('.apexcharts-yaxis-label').first()).toContainText('kWh');
-      await expect(daily.locator('.apexcharts-xaxis-label').filter({hasText: /\w/})).not.toHaveCount(0);
+      // five day labels, a week apart, and the others blank
+      await expect
+        .poll(
+          async () =>
+            (await daily.locator('.apexcharts-xaxis-label').allTextContents()).filter(label => label.trim() !== '')
+              .length,
+        )
+        .toBe(5);
       await expect(sessions.locator('hp-chart .apexcharts-bar-area').first()).toBeVisible();
       // Done closes the sheet, and its charts go with it; Escape does too, the host's one key for the sheet open
       await pane(house).getByRole('button', {name: 'Done'}).click();
@@ -289,7 +296,7 @@ test.describe('on a tablet', () => {
     });
   });
 
-  // two sessions this week and two from two months ago: 30 days shows the first pair, Year all four
+  // two sessions this week and two from two months ago: Month shows the first pair, Year all four
   test.describe('with sessions older than a month', () => {
     test.use({
       houseOpts: {
@@ -301,7 +308,7 @@ test.describe('on a tablet', () => {
       },
     });
 
-    test('the history sheet opens on 30 days, Year adds the older sessions and the months’ chart, and the choice stays when it closes', async ({
+    test('the history sheet opens on Month, Year adds the older sessions and the months’ chart, and the choice stays when it closes', async ({
       house,
     }) => {
       await house.tab('car');
@@ -309,7 +316,7 @@ test.describe('on a tablet', () => {
       await history(house).locator('.hist').click();
       const sessions = historySheet(house).locator('hp-car-sessions');
       const tabs = pane(house).locator('hp-range-tabs');
-      await expect(tabs.getByRole('tab', {name: '30 days'})).toHaveAttribute('aria-selected', 'true');
+      await expect(tabs.getByRole('tab', {name: 'Month'})).toHaveAttribute('aria-selected', 'true');
       await expect(sessions.locator('tbody tr')).toHaveCount(2);
       await expect(sessions.locator('.stiles .tile .v').first()).toHaveText('2');
       await expect(sessions.locator('hp-chart')).toHaveCount(0);

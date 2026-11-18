@@ -48,13 +48,12 @@ export const isHistoryWindow = (range: string): range is HistoryWindow => HISTOR
 
 /**
  * What each window means, in one table rather than a check per use: how far back from the history's own instant it reaches (the kit's month,
- * `RANGES.month.days`; null for the whole year the history holds), its tab's label (the month's is "30 days": it is not the calendar month the Energy tab's "Month" is), the sentence when it holds no session, and whether the months' chart is drawn.
+ * `RANGES.month.days`; null for the whole year the history holds), the sentence when it holds no session, and whether the months' chart is drawn.
  */
-const WINDOW_RULES: Record<HistoryWindow, {days: number | null; tab: MessageKey; none: MessageKey; charted: boolean}> =
-  {
-    month: {days: RANGES.month.days, tab: 'car.history.tab.month', none: 'car.sessions.noneMonth', charted: false},
-    year: {days: null, tab: 'range.year.tab', none: 'car.sessions.none', charted: true},
-  };
+const WINDOW_RULES: Record<HistoryWindow, {days: number | null; none: MessageKey; charted: boolean}> = {
+  month: {days: RANGES.month.days, none: 'car.sessions.noneMonth', charted: false},
+  year: {days: null, none: 'car.sessions.none', charted: true},
+};
 
 /** The table shows this many sessions, the latest, until "show all". */
 const LATEST_SESSIONS = 10;
@@ -93,8 +92,8 @@ export interface SocBar {
   scale: {start: string; limit: string; end: string};
 }
 
-/** The sheet's daily chart: the kWh of each of the last 30 days and its day, the screen reader's label over the drawing and the sentence under it. */
-export interface DailyBars {
+/** The sheet's daily chart: the kWh of each of the last 30 days and its day, the screen reader's label over the drawing and the sentence under it; with nothing charged in them, the one sentence that says so instead. */
+export interface DailyChart {
   /** The kWh of each day, oldest first. */
   values: number[];
   /** Each day as `Nov 6`, in the values' order: the chart's categories. */
@@ -102,6 +101,8 @@ export interface DailyBars {
   /** For a screen reader, over the whole drawing. */
   label: string;
   line: string;
+  /** The empty state's sentence when no day charged anything (the chart is not drawn then), else null. */
+  notice: string | null;
 }
 
 /** What the car's picture needs, which the card and the battery block both draw: Ford's photo, else the drawn car. */
@@ -207,7 +208,7 @@ export interface HistoryBlock {
   line: string;
   /** The year's estimated cost; `''` until the history loads. */
   value: string;
-  daily: DailyBars | null;
+  daily: DailyChart | null;
 }
 
 export interface CarDetail {
@@ -300,13 +301,14 @@ function socBar(car: CarInputs, {t, fmt}: CarModelDeps): SocBar {
 }
 
 /** The last 30 days' charging as the chart's values and days, and the line that counts the charging days and the kWh. */
-function dailyBars({daily}: CarHistoryData, {t, fmt}: CarModelDeps): DailyBars {
+function dailyChart({daily}: CarHistoryData, {t, fmt}: CarModelDeps): DailyChart {
   const last = daily.slice(-DAILY_DAYS);
   const values = last.map(({ev}) => ev);
   return {
     values,
     days: last.map(({day}) => fmt.date(noonOf(day, fmt))),
-    label: t('car.card.barsLabel', {n: fmt.fixed(Math.max(...values, 0), 1)}),
+    label: t('car.card.chartLabel', {n: fmt.fixed(Math.max(...values, 0), 1)}),
+    notice: values.some(value => value > 0) ? null : t('chart.empty'),
     line: t('car.card.daily', {
       days: DAILY_DAYS,
       charging: values.filter(value => value > CHARGING_DAY_KWH).length,
@@ -527,11 +529,10 @@ const sessionColumns = (t: Translate): SessionsBlock['columns'] => ({
   cost: t('car.estCost'),
 });
 
-/** The two ends of a session as the row writes them: the clock alone for a session that ends the day it began, the date too for one that ends days later ("Nov 7, 11:20 am to Nov 14, 2:20 pm"). */
+/** The two ends of a session as the row writes them: the clock alone for a session that ends the day it began, the end's date too for one that ends days later ("11:20 am to Nov 14, 2:20 pm": the Date column says the start's). */
 function sessionEnds({start, end}: Session, {t, fmt}: CarModelDeps): {from: string; to: string} {
   if (fmt.isoDay(start) === fmt.isoDay(end)) return {from: fmt.time(start), to: fmt.time(end)};
-  const stamp = (instant: number) => t('car.stamp', {date: fmt.date(instant), time: fmt.time(instant)});
-  return {from: stamp(start), to: stamp(end)};
+  return {from: fmt.time(start), to: t('car.stamp', {date: fmt.date(end), time: fmt.time(end)})};
 }
 
 /** One row of the table: the session's figures as the columns write them, its energy bar scaled to the `widest` session's kWh, and its cost at `price` dollars a kWh. */
@@ -607,7 +608,7 @@ function historyOf(history: CarHistoryData | null, charger: WallboxInputs, deps:
   const {t, fmt} = deps;
   const title = t('car.sessions.title');
   const done = t('car.history.done');
-  const windows = HISTORY_WINDOWS.map(range => ({range, label: t(WINDOW_RULES[range].tab)}));
+  const windows = HISTORY_WINDOWS.map(range => ({range, label: t(`range.${range}.tab`)}));
   if (!history) return {title, done, windows, line: '', value: '', daily: null};
   const {sessions} = history;
   const total = sum(sessions.map(session => session.kwh));
@@ -618,7 +619,7 @@ function historyOf(history: CarHistoryData | null, charger: WallboxInputs, deps:
     windows,
     line: t('car.history.line', {n: sessions.length, kwh: fmt.integer(total)}),
     value: sessions.length ? amountText(deps, total * price, false) : '',
-    daily: dailyBars(history, deps),
+    daily: dailyChart(history, deps),
   };
 }
 

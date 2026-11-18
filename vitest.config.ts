@@ -15,7 +15,7 @@ export default defineConfig({
       include: [
         'src/core/**/*.ts',
         'src/providers/**/*.ts',
-        'src/features/*/{ids,inputs,model,tiles,history,scenes,commands,flow-layout,water-chart,charts,sankey-layout,schedule,bars-geometry,checks,order,state,al-strip-layout,traces,sentences,timeline-layout,graph,mermaid-def,activities,done,cards,rotation,card-cache,glance}.ts', // the pure files; the elements are proven by the harness
+        'src/features/*/{ids,inputs,model,tiles,history,scenes,commands,flow-layout,water-chart,charts,sankey-layout,schedule,checks,order,state,al-strip-layout,traces,sentences,timeline-layout,graph,mermaid-def,activities,done,cards,rotation,card-cache,glance}.ts', // the pure files; the elements are proven by the harness
         'src/features/stack/loader.ts', // the same, for the smart stack's Energy-today filler
         'src/features/live/loader.ts', // a controller over the statistics cache through the kit's WindowedHistory, tested with a fake cache, store and host
         'src/features/car/controls.ts', // the controls' view: strings and flags from the inputs, the held values and the draft; the two cards that call it are proven by the harness
@@ -56,7 +56,7 @@ export default defineConfig({
         branches: 98,
         'src/core/**/*.ts': {statements: 100},
         'src/providers/**/*.ts': {statements: 100},
-        'src/features/*/{ids,inputs,model,tiles,history,scenes,commands,flow-layout,water-chart,charts,sankey-layout,schedule,bars-geometry,checks,order,state,al-strip-layout,traces,sentences,timeline-layout,graph,mermaid-def,activities,done,cards,rotation,card-cache,glance}.ts':
+        'src/features/*/{ids,inputs,model,tiles,history,scenes,commands,flow-layout,water-chart,charts,sankey-layout,schedule,checks,order,state,al-strip-layout,traces,sentences,timeline-layout,graph,mermaid-def,activities,done,cards,rotation,card-cache,glance}.ts':
           {
             statements: 100,
           },

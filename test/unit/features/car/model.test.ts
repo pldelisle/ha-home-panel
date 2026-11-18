@@ -174,7 +174,7 @@ describe('the test house, in English', () => {
       title: 'Charging history',
       done: 'Done',
       windows: [
-        {range: 'month', label: '30 days'},
+        {range: 'month', label: 'Month'},
         {range: 'year', label: 'Year'},
       ],
       line: '',
@@ -219,9 +219,9 @@ describe('a car with every sensor', () => {
     expect(daily?.values.slice(-3)).toEqual([0, 12.34, 4.5]);
     expect(daily?.days.slice(-3)).toEqual(['Nov 7', 'Nov 8', 'Nov 9']);
     expect(daily?.days[0]).toBe('Oct 11');
-    expect(daily?.label).toBe('Daily kWh bars, highest 12.3 kWh');
-    // only one day is over 5 kWh; 12.34 + 4.5 is 17 kWh; the line says whose figures they are: the car's, where the card under it is the charger's
-    expect(daily?.line).toBe('Car energy, last 30 days: 1 charging day, 17 kWh.');
+    expect(daily?.label).toBe('Daily kWh chart, highest 12.3 kWh');
+    // only one day is over 5 kWh; 12.34 + 4.5 is 17 kWh
+    expect(daily?.line).toBe('Charging energy, last 30 days: 1 charging day, 17 kWh.');
   });
 
   test('the daily line groups the thousands of kWh as the locale does, through the formatters', () => {
@@ -232,7 +232,7 @@ describe('a car with every sensor', () => {
       })),
     });
     expect(modelOf(carHouse(), month).detail?.history.daily?.line).toBe(
-      'Car energy, last 30 days: 30 charging days, 1,200 kWh.',
+      'Charging energy, last 30 days: 30 charging days, 1,200 kWh.',
     );
     // French groups with a narrow no-break space
     expect(modelOf(carHouse(), month, {language: 'fr'}).detail?.history.daily?.line).toContain(
@@ -356,15 +356,22 @@ describe('a car with every sensor', () => {
     expect(sessions.toggle).toBeNull();
   });
 
-  test('a session that ends on a later day says so: both ends carry their date, a same-day one only the clock', () => {
+  test('thirty days with nothing charged say so once, and draw no chart, though the year has sessions', () => {
+    const idle = history({daily: history().daily.map(({day}) => ({day, ev: 0}))});
+    const daily = modelOf(carHouse(), idle).detail?.history.daily;
+    expect(daily?.notice).toBe('No history yet. It fills in as Home Assistant records the next hour.');
+    expect(modelOf(carHouse(), history()).detail?.history.daily?.notice).toBeNull();
+  });
+
+  test('a session that ends on a later day says so: the end carries its date (the Date column says the start’s), a same-day one only the clock', () => {
     const week = history({
       sessions: [session('2026-11-07T11:20:00-05:00', 171, 40), session('2026-11-08T09:00:00-05:00', 1, 6)],
     });
     const {rows} = modelOf(carHouse(), week).detail!.sessions;
     expect(rows[0].times).toBe('9:00 am to 10:00 am');
-    expect(rows[1].times).toBe('Nov 7, 11:20 am to Nov 14, 2:20 pm');
+    expect(rows[1].times).toBe('11:20 am to Nov 14, 2:20 pm');
     expect(modelOf(carHouse(), week, {language: 'fr'}).detail!.sessions.rows[1].times).toBe(
-      'De 7 nov., 11 h 20 à 14 nov., 14 h 20',
+      'De 11 h 20 à 14 nov., 14 h 20',
     );
   });
 
@@ -374,7 +381,7 @@ describe('a car with every sensor', () => {
       title: 'Charging history',
       done: 'Done',
       windows: [
-        {range: 'month', label: '30 days'},
+        {range: 'month', label: 'Month'},
         {range: 'year', label: 'Year'},
       ],
       line: '',
@@ -455,7 +462,7 @@ describe('the history sheet’s window', () => {
     expect(modelOf(house, history({sessions: old}), {historyWindow: 'year'}).detail!.sessions.rows).toHaveLength(1);
     const french = modelOf(house, history({sessions: old}), {historyWindow: 'month', language: 'fr'});
     expect(french.detail!.sessions.summary).toBe('Aucune session de recharge au cours des 30 derniers jours.');
-    expect(french.detail!.history.windows.map(chosen => chosen.label)).toEqual(['30 jours', 'Année']);
+    expect(french.detail!.history.windows.map(chosen => chosen.label)).toEqual(['Mois', 'Année']);
   });
 
   test('the table’s latest ten and its toggle follow the window', () => {
@@ -537,7 +544,7 @@ describe('a car with every sensor, in French', () => {
   });
 
   test('the sentences, the rows and the facts are the rewrite layer’s French', () => {
-    expect(detail.history.daily?.line).toBe('Énergie de la voiture, 30 derniers jours : 1 jour de recharge, 17 kWh.');
+    expect(detail.history.daily?.line).toBe('Énergie de recharge, 30 derniers jours : 1 jour de recharge, 17 kWh.');
     expect(detail.history).toMatchObject({title: 'Historique de recharge', line: '3 sessions · 39 kWh', value: '3 $'});
     expect(detail.sub).toBe('Stationnée à la maison · verrouillée · dernier contact de la voiture à 16 h 05');
     expect([detail.summary.drawing, detail.status.drawing]).toEqual(['Voiture, vue de côté', 'Voiture vue de haut']);

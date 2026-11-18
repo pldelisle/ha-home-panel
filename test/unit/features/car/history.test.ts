@@ -153,7 +153,7 @@ describe('sessionsChartOptions', () => {
 
   test('a bar chart of the kWh charged each month, in the charger’s colour, with the months’ short names under it', () => {
     expect(options('en')).toMatchObject({
-      chart: {type: 'bar', height: 220},
+      chart: {type: 'bar'},
       series: [{name: 'Charged at home', data: [33.3, 12.5]}],
       colors: ['rgb(1, 2, 3)'],
       plotOptions: {bar: {borderRadius: 5, borderRadiusApplication: 'end', columnWidth: '56%'}},

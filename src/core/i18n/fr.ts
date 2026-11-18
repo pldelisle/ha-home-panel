@@ -840,7 +840,6 @@ export const fr: Record<MessageKey, string> = {
   'car.percent': '{n}\u202f%',
   'car.limitFord': 'Limite {n}\u202f% · réglée dans FordPass',
   'car.history.done': 'OK',
-  'car.history.tab.month': '30 jours',
   'car.history.line':
     '{n, plural, =0 {Aucune session dans la dernière année} one {# session · {kwh} kWh} other {# sessions · {kwh} kWh}}',
   'car.socLabel': 'Batterie {n} pour cent',
@@ -861,8 +860,8 @@ export const fr: Record<MessageKey, string> = {
   'car.plug.unplugged': 'Débranchée',
   // `=0` repeats `other`, as the rooms heating do: the legacy wrote « 0 jours de recharge »
   'car.card.daily':
-    'Énergie de la voiture, {days} derniers jours\u00a0: {charging, plural, =0 {# jours de recharge} one {# jour de recharge} other {# jours de recharge}}, {kwh} kWh.',
-  'car.card.barsLabel': 'Barres quotidiennes en kWh, maximum {n} kWh',
+    'Énergie de recharge, {days} derniers jours\u00a0: {charging, plural, =0 {# jours de recharge} one {# jour de recharge} other {# jours de recharge}}, {kwh} kWh.',
+  'car.card.chartLabel': 'Graphique quotidien en kWh, maximum {n} kWh',
   'car.checkedIn': 'dernier contact de la voiture à {time}',
   'car.battery.title': 'Batterie',
   'car.battery.fullRange': 'Autonomie complète',

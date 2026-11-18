@@ -1,4 +1,4 @@
-// The Car's history as pure functions: the two windows it asks, the charging sessions and the daily EV energy they make, the sessions by month, and the monthly chart's options.
+// The Car's history as pure functions: the two windows it asks, the charging sessions and the daily EV energy they make, the sessions by month, and the options of the two charts the history's sheet draws (the months' and the 30 days', `dailyChartOptions`, which uses the kit's `thinCategories` as Energy's month chart does).
 // Pattern: functional core (Bernhardt, Boundaries), the data half of a humble object (Meszaros); each rule is a block of the legacy `derive` and `carSheet` (deleted in #251 and #252),
 // copied and named. The session rule itself is the Wallbox provider's (`chargingSessions`), which the live pill reads too (ADR 0028). kWh; a day's key is the local day of the row's noon.
 // Must not: call the API client or the cache, word anything a person reads outside `t`, or read the clock or the zone (`now`, the formats and the colour are passed in).
@@ -131,7 +131,7 @@ export function sessionsChartOptions(
   {fmt, t, color}: SessionsChartDeps,
 ): ChartOptions {
   return {
-    chart: {type: 'bar', height: 220},
+    chart: {type: 'bar'},
     series: [{name: t('car.sessions.chargedAtHome'), data: months.map(({kwh}) => +kwh.toFixed(1))}],
     colors: [color],
     plotOptions: {bar: {borderRadius: 5, borderRadiusApplication: 'end', columnWidth: '56%'}},
@@ -165,7 +165,7 @@ export function dailyChartOptions(
   const labels = days.length / LABEL_EVERY;
   return mergeOptions(
     {
-      chart: {type: 'bar', height: 220},
+      chart: {type: 'bar'},
       series: [{name: t('car.sessions.chargedAtHome'), data: values.map(value => +value.toFixed(1))}],
       colors: [color],
       plotOptions: {bar: {borderRadius: 3, borderRadiusApplication: 'end', columnWidth: '64%'}},
