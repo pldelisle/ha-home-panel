@@ -52,13 +52,13 @@ export class MediaPane extends LitElement {
   }
 
   // The pause and the resume sit in willUpdate: a resume asks for an update, and one asked for here is this one. A tile's sheet
-  // opens from the tab and over it, so it is on screen only while the pane is.
+  // opens from the tab and over it, or over a room view, whose tile asks for it (ADR 0039): the pane then listens for the sheet's sake.
   protected override willUpdate(changed: PropertyValues<this>): void {
-    if (changed.has('active')) {
-      if (this.active) this.storeController.resume();
+    if (changed.has('active') || changed.has('controlsKey')) {
+      if (this.active || this.controlsKey) this.storeController.resume();
       else this.storeController.pause();
     }
-    if (!this.active) return;
+    if (!this.active && !this.controlsKey) return;
     const {store} = this.storeController;
     const {hass} = store;
     if (!hass) return;
@@ -69,9 +69,18 @@ export class MediaPane extends LitElement {
     });
   }
 
+  // a player Home Assistant no longer lists has no controls to show: the host is asked to close the sheet
+  protected override updated(): void {
+    if (this.controlsKey && this.view && !this.view.tiles.some(tile => tile.key === this.controlsKey)) {
+      this.dispatchEvent(new SheetDismissEvent(CONTROLS_SHEET));
+    }
+  }
+
   protected override render() {
     const view = this.view;
     if (!view) return nothing;
+    // behind a room view's sheet (not the tab, a tile's controls open): the sheet alone
+    if (!this.active && this.controlsKey) return this.renderSheet(view);
     const {t} = this.storeController.store;
     const compact = this.appearance.value?.compact === true;
     return html`<hp-pane-header .icon=${'tv'} .color=${'var(--c-home)'} .heading=${t('media.title')}>
