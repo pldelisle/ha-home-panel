@@ -215,7 +215,7 @@ test.describe('tablet, light, French navigation', () => {
   });
 
   test('Rail in Material in French', async ({house}) => {
-    await house.tab('automations');
+    await house.tab('auto');
     await expect(house.page).toHaveScreenshot('material-rail-tablet-light-fr.png');
   });
 });
