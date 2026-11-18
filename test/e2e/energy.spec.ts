@@ -461,7 +461,7 @@ test.describe('the detail on a tablet', () => {
     await expect(detail(house).locator('.donut').locator('xpath=..').locator('p')).toHaveText(
       /^Today so far\. Rest of home/,
     );
-    await expect(rows.locator('td.r:nth-child(2)')).toHaveText(['44.8 kWh', '11.2 kWh', '11.2 kWh', '0.0 kWh']);
+    await expect(rows.locator('td.r:nth-child(2)')).toHaveText(['70.7 kWh', '17.7 kWh', '17.7 kWh', '0.0 kWh']);
     await expect(rows.locator('td.r:nth-child(3)')).toHaveText(['67%', '17%', '17%', '0%']);
     // the Month tab is the 30 days the donut always drew
     await rangeTab(house, 'Month').click();

@@ -386,6 +386,17 @@ describe('the detail', () => {
       expect(detail({flow: []}).main).toMatchObject({caption: '', notice: NO_HISTORY});
     });
 
+    test('the busiest hour is the tallest bar as drawn: the devices stacked, not the grid column the devices outrun', () => {
+      // the bars stack [ev, wh, heat, rest] (columns 1 to 4): 7.1 + 0.8 + 2.4 + 0 = 10.3 kWh tall over a grid hour of 3.24
+      const tall: FlowRow[] = [
+        [Date.parse('2026-11-07T04:00:00-05:00'), 0, 1, 2, 0.5, 3.5],
+        [Date.parse('2026-11-07T04:20:00-05:00'), 7.1, 0.8, 2.4, 0, 3.24],
+      ];
+      expect(detail({flow: tall}).main.caption).toBe(
+        'Busiest hour: 10.3 kWh, 4:20 am. Tap a bar to see what was running.',
+      );
+    });
+
     test('the week: the same, with the day of the hour, over the last seven days', () => {
       expect(detail({}, {range: 'week'}).main).toMatchObject({
         title: 'Last 7 days, hour by hour',
@@ -510,12 +521,13 @@ describe('the detail', () => {
 
     test('today: the day’s uses and rooms as ribbons, the rooms named, and the note with the day’s total', () => {
       const {sankey} = detail({}, {range: 'today'});
-      expect(sankey.note).toBe('Energy since midnight, 20.0 kWh so far.');
+      // the uses are the hours the chart draws (8 + 3 + 3.04 kWh); the rooms are the day's own
+      expect(sankey.note).toBe('Energy since midnight, 14.0 kWh so far.');
       expect(labelsOf(sankey).map(label => [label.name, label.value])).toEqual([
-        ['Grid', '20.0 kWh'],
-        ['Room heating', '10.0 kWh'],
-        ['Water heating', '4.0 kWh'],
-        ['Rest of home', '6.0 kWh'],
+        ['Grid', '14.0 kWh'],
+        ['Room heating', '8.0 kWh'],
+        ['Water heating', '3.0 kWh'],
+        ['Rest of home', '3.0 kWh'],
         ['Bedroom', '4.0 kWh'],
         ['Garage', '3.0 kWh'],
         ['Living room', '2.0 kWh'],
@@ -524,9 +536,10 @@ describe('the detail', () => {
     });
 
     test('today without a day that is today, or without the history, has nothing to draw', () => {
-      const yesterday = detail({daily: [day('2026-11-06')]}, {range: 'today'}).sankey;
+      // no meter day for today and no hour today either: the chart has nothing, so the Sankey has nothing
+      const yesterday = detail({flow: [flow[0]], daily: [day('2026-11-06')]}, {range: 'today'}).sankey;
       expect(yesterday).toMatchObject({note: '', body: {kind: 'empty', text: NO_HISTORY}});
-      expect(detail({daily: []}, {range: 'today'}).sankey.body.kind).toBe('empty');
+      expect(detail({flow: [], daily: []}, {range: 'today'}).sankey.body.kind).toBe('empty');
       expect(detail(null, {range: 'today'}).sankey.body).toEqual({kind: 'empty', text: 'Loading history…'});
       expect(detail(null, {range: 'month'}).sankey.body.kind).toBe('empty');
     });
@@ -581,7 +594,7 @@ describe('the detail', () => {
     test('today’s four slices with a tenth of a kWh and their share of the total; now draws today’s', () => {
       const daily = [day('2026-11-06'), day(today, {heat: 120.44, wh: 55.5, ev: 8.2, rest: 300})];
       for (const range of ['now', 'today'] as const) {
-        const {donut} = detail({daily}, {range});
+        const {donut} = detail({flow: [], daily}, {range});
         expect(donut.hint).toBe(
           'Today so far. Rest of home is everything without its own power sensor, including the heat pump.',
         );
@@ -600,6 +613,31 @@ describe('the detail', () => {
       }
     });
 
+    test('today with no meter day reads the hours the chart draws: the donut, the Sankey and the Totals agree with it', () => {
+      // `flow` has two hours today: heating 2 + 6, water 1 + 2, rest 1 + 2.04, and nothing for the charger
+      const totals = {today: 0, yesterday: 20, d30: 400, month: 100};
+      const view = detail({daily: [day('2026-11-06')], totals});
+      const sankey = detail({daily: [day('2026-11-06')], totals}, {range: 'today'}).sankey;
+      expect(view.donut.parts.map(part => [part.key, part.kwh])).toEqual([
+        ['heat', 8],
+        ['wh', 3],
+        ['ev', 0],
+        ['rest', 3.04],
+      ]);
+      expect(sankey.body.kind).toBe('ribbons');
+      expect(sankey.note).toContain('14.0 kWh');
+      expect(view.totals.tiles[0]).toMatchObject({label: 'Today so far', value: '14.0'});
+      // a day's own row that disagrees with the hours does not win: the chart's hours are the figure
+      const own = detail({daily: [day(today, {heat: 99})], totals}).donut.parts[0];
+      expect([own.key, own.kwh]).toEqual(['heat', 8]);
+    });
+
+    test('with no meter day and no hour today the chart, Where it went and the Totals all say there is no data', () => {
+      const none = {today: 0, yesterday: null, d30: 0, month: 0};
+      const view = detail({flow: [flow[0]], daily: [], totals: none});
+      expect([view.main.notice, view.donut.notice, view.totals.notice]).toEqual([NO_HISTORY, NO_HISTORY, NO_HISTORY]);
+    });
+
     test('the week, the month and the year sum the last 7, 30 and 365 days, and the hint says which', () => {
       // 400 days: the oldest 35 weigh 100 kWh of heating each, and the last 365 days 10
       const days = Array.from({length: 400}, (_, index) => {
@@ -615,12 +653,19 @@ describe('the detail', () => {
 
     test('today with no day that is today draws no donut but the one sentence; in French the share has a narrow space before the sign', () => {
       const old = day('2026-11-06', {heat: 1, wh: 1, ev: 1, rest: 1});
-      expect(detail({daily: [old]}).donut).toMatchObject({notice: NO_HISTORY, parts: [], rows: [], hint: ''});
-      expect(detail({daily: [day(today, {heat: 1, wh: 1, ev: 1, rest: 1})]}, {}, 'fr').donut.rows[0]).toMatchObject({
+      expect(detail({flow: [flow[0]], daily: [old]}).donut).toMatchObject({
+        notice: NO_HISTORY,
+        parts: [],
+        rows: [],
+        hint: '',
+      });
+      expect(
+        detail({flow: [], daily: [day(today, {heat: 1, wh: 1, ev: 1, rest: 1})]}, {}, 'fr').donut.rows[0],
+      ).toMatchObject({
         kwh: '1,0 kWh',
         share: '25\u202f%',
       });
-      expect(detail({daily: [day(today, {heat: 1, wh: 1, ev: 1, rest: 1})]}, {}, 'fr').donut.hint).toMatch(
+      expect(detail({flow: [], daily: [day(today, {heat: 1, wh: 1, ev: 1, rest: 1})]}, {}, 'fr').donut.hint).toMatch(
         /^Aujourd'hui jusqu'ici\. Le reste de la maison/,
       );
     });
@@ -629,7 +674,7 @@ describe('the detail', () => {
       const days = Array.from({length: 30}, (_, index) =>
         day(`2026-10-${String(index + 1).padStart(2, '0')}`, {ev: index < 3 ? 6 : 5}),
       );
-      const view = detail({daily: days, totals: {today: 12.34, yesterday: 20.06, d30: 612.4, month: 100.4}});
+      const view = detail({flow: [], daily: days, totals: {today: 12.34, yesterday: 20.06, d30: 612.4, month: 100.4}});
       expect(view.totals.tiles).toEqual([
         {label: 'Today so far', value: '12.3', unit: 'kWh', sub: 'until 2:00 pm', range: 'today'},
         {label: 'Yesterday', value: '20.1', unit: 'kWh', sub: '', range: 'week'},
@@ -642,13 +687,13 @@ describe('the detail', () => {
 
     test('a meter that read nothing and no day: the totals are the one sentence, no tile of 0 kWh', () => {
       const none = {today: 0, yesterday: null, d30: 0, month: 0};
-      expect(detail({daily: [], totals: none}).totals).toEqual({
+      expect(detail({flow: [], daily: [], totals: none}).totals).toEqual({
         title: 'Totals',
         hint: '',
         notice: NO_HISTORY,
         tiles: [],
       });
-      expect(detail({daily: [], totals: none}, {}, 'fr').totals.notice).toBe(NO_HISTORY_FR);
+      expect(detail({flow: [], daily: [], totals: none}, {}, 'fr').totals.notice).toBe(NO_HISTORY_FR);
       expect(detail({}).totals.notice).toBeNull();
     });
 

@@ -5,7 +5,8 @@ import {resolveConfig} from '../../../../src/core/config.ts';
 import {createFormatters} from '../../../../src/core/i18n/format.ts';
 import {panelLocale} from '../../../../src/core/i18n/locale.ts';
 import {createMessages} from '../../../../src/core/i18n/messages.ts';
-import {readSunTimes, readWeather} from '../../../../src/features/weather/inputs.ts';
+import {readWeather} from '../../../../src/features/weather/inputs.ts';
+import {sunNext as readSunTimes} from '../../../../src/providers/sun.ts';
 import {weatherCardModel, weatherChipModel} from '../../../../src/features/weather/model.ts';
 import {fullHouse, inputsWith, type Language} from './support.ts';
 

@@ -135,7 +135,7 @@ describe('the nodes and their figures', () => {
 describe('the captions', () => {
   test('a busy house: importing, heating and hot, the rooms on, the charger’s own status, the rest', () => {
     const geometry = layout({
-      grid: 3.24,
+      grid: 10.9,
       heat: 2.4,
       waterHeater: 0.85,
       ev: 7.1,
@@ -197,7 +197,7 @@ describe('the captions', () => {
 
 describe('in French', () => {
   test('the captions, the decimal comma and the sentence', () => {
-    const geometry = layout({grid: 3.24, heat: 2.4, waterHeater: 0.85, ev: 7.1, rest: 0.5}, 'fr');
+    const geometry = layout({grid: 10.9, heat: 2.4, waterHeater: 0.85, ev: 7.1, rest: 0.5}, 'fr');
     expect(words(geometry)).toEqual([
       'Réseau',
       'Consomme',
@@ -210,9 +210,25 @@ describe('in French', () => {
       'Reste de la maison',
       '500\u00a0W',
     ]);
-    expect(node(geometry, 'grid').texts[0].text).toBe('3,2');
+    expect(node(geometry, 'grid').texts[0].text).toBe('11');
     expect(geometry.label).toBe(
-      'Le réseau fournit 3,2\u00a0kW à la maison; chauffage 2,4\u00a0kW; chauffe-eau 850\u00a0W; recharge VÉ 7,1\u00a0kW',
+      'Le réseau fournit 11\u00a0kW à la maison; chauffage 2,4\u00a0kW; chauffe-eau 850\u00a0W; recharge VÉ 7,1\u00a0kW',
     );
+  });
+});
+
+describe('devices that report more than the meter', () => {
+  const over = {grid: 3.24, heat: 2.4, waterHeater: 0, ev: 7.1, rest: 0};
+
+  test('the flow says so once and draws no Rest of home, balanced at zero or otherwise', () => {
+    const geometry = layout(over);
+    expect(words(geometry)).toContain('Devices report more than the meter');
+    expect(words(geometry)).not.toContain('Rest of home');
+    expect(geometry.labels.filter(l => l.kind === 'big')).toEqual([]);
+  });
+
+  test('in French, and a house whose devices fit the meter keeps its rest of home', () => {
+    expect(words(layout(over, 'fr'))).toContain('Les appareils déclarent plus que le compteur');
+    expect(words(layout({grid: 3.24, heat: 1, waterHeater: 0, ev: 1, rest: 1.24}))).toContain('Rest of home');
   });
 });

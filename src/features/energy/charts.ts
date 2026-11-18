@@ -66,6 +66,8 @@ const KWH = 'kWh';
 const MWH = 'MWh';
 /** A flow row's column for each use: `[t, ev, wh, heat, rest, total]`. */
 const COLUMN = {heat: 3, wh: 2, ev: 1, rest: 4} as const;
+/** The height of a flow row's bar: the four uses stacked (columns 1 to 4), which is the grid's total only while the devices fit the meter. */
+export const stackOf = (row: FlowRow): number => row[COLUMN.ev] + row[COLUMN.wh] + row[COLUMN.heat] + row[COLUMN.rest];
 /** The bars' rounded top, shared by the four ranges. */
 const STACK = {borderRadius: 3, borderRadiusApplication: 'end', borderRadiusWhenStacked: 'last'} as const;
 /** What a time axis' tooltip names: the clock for today, the day and the clock for the week. */
@@ -76,16 +78,22 @@ const TOOLTIP_DATE: Record<'today' | 'week', TooltipDate> = {
 /** About how many labels a category axis writes on a phone, for the month's days and the year's months. */
 const PHONE_LABELS = {month: 5, year: 4} as const;
 
+/** The hours of today the main chart draws, as flow rows. */
+export function hoursOfToday(
+  history: Pick<EnergyHistoryData, 'flow'>,
+  {fmt, now}: {fmt: Pick<Formatters, 'isoDay'>; now: number},
+): FlowRow[] {
+  const today = fmt.isoDay(now);
+  return history.flow.filter(([start]) => fmt.isoDay(start) === today);
+}
+
 /** The rows a range draws: today's hours (for now too), the week's, the last 30 days or the last 12 months, from what the history derived. */
 export function mainRows(
   range: EnergyRange,
   history: Pick<EnergyHistoryData, 'flow' | 'daily' | 'monthly'>,
   {fmt, now}: {fmt: Pick<Formatters, 'isoDay'>; now: number},
 ): MainRows {
-  if (range === 'now' || range === 'today') {
-    const today = fmt.isoDay(now);
-    return {range: 'today', rows: history.flow.filter(([start]) => fmt.isoDay(start) === today)};
-  }
+  if (range === 'now' || range === 'today') return {range: 'today', rows: hoursOfToday(history, {fmt, now})};
   if (range === 'week') return {range, rows: history.flow};
   if (range === 'month') return {range, rows: history.daily.slice(-30)};
   return {range, rows: history.monthly};

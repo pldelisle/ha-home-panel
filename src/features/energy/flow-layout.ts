@@ -12,6 +12,8 @@ import {chargerStatusKey} from '../../providers/wallbox.ts';
 export const LIVE_KW = 0.02;
 /** A tank at or over this many degrees reads "hot". */
 const HOT_C = 48;
+/** Devices summing over the meter by more than this many kW (the figures' own rounding, 10 W) are over it. */
+const METER_TOLERANCE_KW = 0.01;
 /** The drawing's own coordinates, which the element's `viewBox` repeats. */
 const WIDTH = 440;
 const HEIGHT = 340;
@@ -148,6 +150,12 @@ export function flowLayout(now: PowerNow, {t, fmt, waterTemperature, chargerStat
     ],
   };
 
+  // devices summing over the meter cannot be balanced by a rest of home: the flow says so once, and draws neither a zero nor a negative rest
+  const overMeter = grid !== null && water + ev + heat - grid > METER_TOLERANCE_KW;
+  const restLabels = overMeter
+    ? [text(120, 290, t('energy.flow.overMeter'), 'st', 'end')]
+    : [text(120, 290, t('energy.flow.rest'), 'st', 'end'), text(120, 306, spoken(rest), 'big', 'end', 15)];
+
   return {
     width: WIDTH,
     height: HEIGHT,
@@ -180,8 +188,7 @@ export function flowLayout(now: PowerNow, {t, fmt, waterTemperature, chargerStat
       text(370, 238, t('energy.roomsOn', {on: roomsOn, total: now.rooms.length}), 'st', 'middle'),
       text(300, 272, t('energy.flow.ev'), 'cap'),
       text(300, 288, chargerText, 'st'),
-      text(120, 290, t('energy.flow.rest'), 'st', 'end'),
-      text(120, 306, spoken(rest), 'big', 'end', 15),
+      ...restLabels,
     ],
   };
 }

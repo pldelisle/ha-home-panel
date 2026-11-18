@@ -148,6 +148,10 @@
       "was": "Reste de la maison"
     },
     {
+      "key": "energy.flow.overMeter",
+      "written": "Les appareils déclarent plus que le compteur"
+    },
+    {
       "key": "energy.importing",
       "was": "Consomme"
     },

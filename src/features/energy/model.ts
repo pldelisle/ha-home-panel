@@ -14,7 +14,7 @@ import type {RangeTab} from '../../ui/range-tabs.ts';
 import {emptyChartText} from '../../ui/chart-notice.ts';
 import {reading, type Reading} from '../../ui/reading.ts';
 import {RANGES} from '../../ui/ranges.ts';
-import {ENERGY_RANGES, mainRows, middleOf, type EnergyRange, type MainRows} from './charts.ts';
+import {ENERGY_RANGES, hoursOfToday, mainRows, middleOf, stackOf, type EnergyRange, type MainRows} from './charts.ts';
 import {flowLayout, LIVE_KW, type FlowGeometry} from './flow-layout.ts';
 import {
   GROUPS,
@@ -254,10 +254,16 @@ function mainBlock(history: EnergyHistoryData | null, {now, t, fmt, range}: Deta
     };
   }
   const {rows} = main;
-  const busiest = rows.reduce((best, row) => (row[5] > best[5] ? row : best), rows[0]);
+  // the bars stack each device's own column, so the tallest bar is the largest stack, not the grid's total (which the devices can outrun)
+  const busiest = rows.reduce((best, row) => (stackOf(row) > stackOf(best) ? row : best), rows[0]);
   const day = main.range === 'week' ? `${fmt.weekday(busiest[0], 'short')} ` : '';
   const when = `${day}${fmt.time(busiest[0])}`;
-  return {title, caption: t('energy.detail.busiest', {kwh: fmt.fixed(busiest[5], 1), when}), legend, notice: null};
+  return {
+    title,
+    caption: t('energy.detail.busiest', {kwh: fmt.fixed(stackOf(busiest), 1), when}),
+    legend,
+    notice: null,
+  };
 }
 
 /** What a period of the Sankey draws: the grid's total, the four uses in the order of `GROUPS`, the rooms' shares, the figure's format and the note. */
@@ -269,10 +275,28 @@ interface SankeyPeriod {
   note: string;
 }
 
-/** The rows of the history's last `days` days; for a single day, today's row, or none when nothing has been read since midnight. */
-function daysOf(history: EnergyHistoryData, days: number, {now, fmt}: Pick<DetailDeps, 'now' | 'fmt'>): DailyRow[] {
+/**
+ * Today as the main chart draws it: the sum of today's hours (`hoursOfToday`), as one day's row; null when the chart has no hour today, and the
+ * day's own row (a mean times the hours so far) or the meter's today answers as before. The hours are the finest reading of the same recorder
+ * and the figure the bars show, so Where it went, the Sankey and the Totals' Today tile take them first and cannot contradict the chart.
+ */
+function todayFromHours(history: EnergyHistoryData, {now, fmt}: Pick<DetailDeps, 'now' | 'fmt'>): DailyRow | null {
+  const rows = hoursOfToday(history, {fmt, now});
+  if (!rows.length) return null;
+  const [heat, wh, ev, rest] = [3, 2, 1, 4].map(column => sum(rows.map(row => row[column])));
+  // the rooms' own heating is only in the day's row, which has no hours to say it by: its rooms ride along
+  const day = fmt.isoDay(now);
+  const own = history.daily.find(row => row.day === day);
+  return {day, heat, wh, ev, rest, total: heat + wh + ev + rest, rooms: own?.rooms ?? []};
+}
+
+/** The rows of the history's last `days` days; for a single day, today as the chart draws it, else the day's own row when it has one, else none. */
+function daysOf(history: EnergyHistoryData, days: number, deps: Pick<DetailDeps, 'now' | 'fmt'>): DailyRow[] {
   const last = history.daily.slice(-days);
-  return days === 1 && last[0]?.day !== fmt.isoDay(now) ? [] : last;
+  if (days !== 1) return last;
+  const hours = todayFromHours(history, deps);
+  if (hours) return [hours];
+  return last[0]?.day === deps.fmt.isoDay(deps.now) ? last : [];
 }
 
 /** The last `days` days' totals from the history; null when today is the period and has no row (the caller says "loading" before the history is in). */
@@ -363,14 +387,18 @@ function donutBlock(history: EnergyHistoryData | null, deps: DetailDeps): Energy
 function totalsBlock(
   history: EnergyHistoryData | null,
   rate: {value: string | null; tier: string},
-  {now, t, fmt}: DetailDeps,
+  deps: DetailDeps,
 ): EnergyDetailView['totals'] {
+  const {now, t, fmt} = deps;
   const title = t('energy.totals.title');
   const hint = t('energy.totals.hint');
   if (!history) return {title, hint, tiles: [], notice: null};
-  const {totals, g30} = history;
+  const {g30} = history;
+  // today so far is the chart's hours when it has any (the grid's kWh), else what the meter read
+  const hours = todayFromHours(history, deps);
+  const totals = hours ? {...history.totals, today: hours.total} : history.totals;
   // a meter that read nothing and no day: no tile of 0 kWh and dashes, the one sentence
-  if (!history.daily.length && !totals.today && totals.yesterday === null && !totals.d30 && !totals.month)
+  if (!history.daily.length && !hours && !totals.today && totals.yesterday === null && !totals.d30 && !totals.month)
     return {title, hint: '', tiles: [], notice: emptyChartText(t)};
   const chargingDays = history.daily.slice(-30).filter(row => row.ev > EV_DAY_KWH).length;
   return {
