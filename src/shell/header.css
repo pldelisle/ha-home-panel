@@ -120,3 +120,9 @@ hp-header {
   font: var(--type-body-medium);
   letter-spacing: var(--track-body-medium);
 }
+/* Material's greeting keeps its ink inside its box (#485): Chromium's subpixel text spills a glyph's colour fringe one pixel past the line's
+   start, outside the box it repaints when the greeting hides, so a tab opened after Home could keep that pixel in an unchanged tile.
+   Clipped across only, the descenders still hang free. */
+.app[data-design='material'] .hello {
+  overflow-x: clip;
+}
