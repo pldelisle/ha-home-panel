@@ -324,6 +324,15 @@ describe('the actions row, from literal houses', () => {
 });
 
 describe('the Start confirmation', () => {
+  test('the seats’ line says cooling at its level, and nothing for a state it does not know', () => {
+    const cooled = carHouse({[id('select', 'rccseatfrontleft')]: car('select', 'rccseatfrontleft', 'cooled1')});
+    expect(carActions(inputsOf(cooled), depsFor(cooled))?.start?.seats).toBe(
+      'Front seats cool at level 1 with remote start.',
+    );
+    const off = carHouse({[id('select', 'rccseatfrontleft')]: car('select', 'rccseatfrontleft', 'off')});
+    expect(carActions(inputsOf(off), depsFor(off))?.start?.seats).toBe('');
+  });
+
   test('asks first, says what follows, and offers the heaters the car has as switches, with the seats’ own setting', () => {
     const hass = carHouse();
     const start = carActions(inputsOf(hass), depsFor(hass))?.start;

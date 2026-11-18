@@ -282,14 +282,8 @@ function daysOf(history: EnergyHistoryData, days: number, {now, fmt}: Pick<Detai
   return days === 1 && last[0]?.day !== fmt.isoDay(now) ? [] : last;
 }
 
-/** The last `days` days' totals from the history; null when it is not loaded, or when today is the period and has no row. */
-function sankeyPeriod(
-  days: number,
-  history: EnergyHistoryData | null,
-  rooms: number,
-  deps: DetailDeps,
-): SankeyPeriod | null {
-  if (!history) return null;
+/** The last `days` days' totals from the history; null when today is the period and has no row (the caller says "loading" before the history is in). */
+function sankeyPeriod(days: number, history: EnergyHistoryData, rooms: number, deps: DetailDeps): SankeyPeriod | null {
   const {t, fmt} = deps;
   const rows = daysOf(history, days, deps);
   if (days === 1 && !rows.length) return null;

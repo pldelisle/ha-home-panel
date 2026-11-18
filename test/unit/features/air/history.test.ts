@@ -13,6 +13,7 @@ import {
   metricIds,
   metricSeries,
   aqhiOptions,
+  airTokensFrom,
   outdoorAqiOptions,
   outdoorSeries,
   rangeTabs,
@@ -41,6 +42,20 @@ const STATS = {
   'sensor.out_aqi': [row(1_000_000, 42.04)],
   'sensor.ec_aqhi': [row(1_000_000, 3)],
 };
+
+describe('airTokensFrom', () => {
+  test('reads each colour from the page by its token name', () => {
+    expect(airTokensFrom(name => `value of ${name}`)).toEqual({
+      rooms: ['value of --c-home', 'value of --c-wh', 'value of --c-heat', 'value of --c-ev'],
+      station: 'value of --c-rest',
+      ok: 'value of --ok',
+      warn: 'value of --warn',
+      muted: 'value of --fg3',
+      aqi: 'value of --m-orange',
+      aqhi: 'value of --m-purple',
+    });
+  });
+});
 
 describe('metricSeries', () => {
   test('is the mean of each bucket moved to its middle and rounded to a decimal, a row with none dropped', () => {
