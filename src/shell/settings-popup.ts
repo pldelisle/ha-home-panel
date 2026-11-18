@@ -12,6 +12,7 @@ import {AppearanceConsumer} from '../ui/controllers/appearance-consumer.ts';
 import {StoreController} from '../ui/controllers/store-controller.ts';
 import {settingsContext} from '../ui/contexts.ts';
 import {ico} from '../ui/icons.ts';
+import {moveTo, tabStop} from '../ui/seg-keys.ts';
 import type {SegChangeDetail, SegOption} from '../ui/seg.ts';
 import '../ui/seg.ts'; // defines <hp-seg>
 import type {SwitchChangeDetail} from '../ui/switch.ts';
@@ -78,6 +79,8 @@ export class SettingsPopup extends LitElement {
   protected override render() {
     const {t} = this.store.store;
     const {theme, text, glass, glassLevel, cards} = this.settingsNow();
+    // one tab stop in the group (the chosen swatch), the arrow keys move within it, as in the kit's <hp-seg>
+    const glassStop = tabStop(GLASSES.map(([value]) => ({checked: value === glass})));
     const phone = this.appearance.value?.compact === true;
     const themes: SegOption[] = THEMES.map(([value, key]) => ({value, label: t(key)}));
     // the foot of the popup: the version, and that the charts' history is kept fresh once it has loaded
@@ -113,10 +116,17 @@ export class SettingsPopup extends LitElement {
       </div>
       <div class="cct wide">
         <div class="ccl">${t('settings.glass.title')}</div>
-        <div class="swatches" role="group" aria-label=${t('settings.glass.title')}>
+        <div class="swatches" role="radiogroup" aria-label=${t('settings.glass.title')} @keydown=${this.onGlassKey}>
           ${GLASSES.map(
-            ([value, key]) =>
-              html`<button type="button" class="sw" aria-pressed=${value === glass} data-gl=${value}>
+            ([value, key], index) =>
+              html`<button
+                type="button"
+                class="sw"
+                role="radio"
+                aria-checked=${value === glass}
+                tabindex=${index === glassStop ? 0 : -1}
+                data-gl=${value}
+              >
                 <span class="swc" aria-hidden="true">${value === glass ? ico('check', 18) : nothing}</span>
                 <span class="swn">${t(key)}</span>
               </button>`,
@@ -176,6 +186,22 @@ export class SettingsPopup extends LitElement {
     const text = target.closest<HTMLElement>('[data-tx]')?.dataset.tx;
     if (glass !== undefined) source.set('glass', glass);
     else if (text !== undefined) source.set('text', text);
+  };
+
+  // an arrow, Home or End moves the choice and the focus together, as a native radio group does (the keys are seg-keys.ts's)
+  private readonly onGlassKey = (e: KeyboardEvent): void => {
+    const {source} = this;
+    const buttons = [...this.renderRoot.querySelectorAll<HTMLButtonElement>('.swatches button')];
+    const from = buttons.findIndex(button => button === this.shadowRoot?.activeElement);
+    const to = moveTo(
+      GLASSES.map(() => ({})),
+      Math.max(from, 0),
+      e.key,
+    );
+    if (!source || to === null) return;
+    e.preventDefault();
+    buttons[to]?.focus();
+    source.set('glass', GLASSES[to][0]);
   };
 
   // the switch tells what a tap asks for; the setting is written and the popup draws it back from the settings

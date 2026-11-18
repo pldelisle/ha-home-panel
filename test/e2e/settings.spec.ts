@@ -63,10 +63,10 @@ test('lists the four text sizes as radio buttons and the eight glasses as swatch
   const sizes = popup(house).getByRole('radiogroup', {name: 'Text size'}).getByRole('radio');
   await expect(sizes).toHaveText(['Smaller', 'Auto', 'Large', 'Larger']);
   await expect(sizes.nth(1)).toBeChecked();
-  const glasses = popup(house).getByRole('group', {name: 'Glass'}).getByRole('button');
+  const glasses = popup(house).getByRole('radiogroup', {name: 'Glass'}).getByRole('radio');
   await expect(glasses).toHaveText(['None', 'Dawn', 'Lake', 'Meadow', 'Ember', 'Aurora', 'Sand', 'Sky']);
-  await expect(glasses.nth(1)).toHaveAttribute('aria-pressed', 'true'); // Dawn is the default
-  await expect(glasses.nth(2)).toHaveAttribute('aria-pressed', 'false');
+  await expect(glasses.nth(1)).toBeChecked(); // Dawn is the default
+  await expect(glasses.nth(2)).not.toBeChecked();
   await expect(popup(house).getByRole('slider', {name: 'Transparency'})).toHaveValue('50');
 });
 
@@ -81,8 +81,8 @@ test('a choice is kept, applied and shown by the popup', async ({house}) => {
   const lake = popup(house).locator('[data-gl="lake"]');
   await lake.click();
   expect(await stored(house, 'home-panel-glass')).toBe('lake');
-  await expect(lake).toHaveAttribute('aria-pressed', 'true');
-  await expect(popup(house).locator('[data-gl="dawn"]')).toHaveAttribute('aria-pressed', 'false');
+  await expect(lake).toBeChecked();
+  await expect(popup(house).locator('[data-gl="dawn"]')).not.toBeChecked();
   const range = popup(house).getByRole('slider', {name: 'Transparency'});
   await range.fill('100');
   expect(await stored(house, 'home-panel-glass-t')).toBe('100');
@@ -117,7 +117,7 @@ test('Auto follows the device and says so', async ({house}) => {
 
 test('a glass is a 44 pt swatch with its name under it, and the chosen one is checked', async ({house}) => {
   await open(house);
-  const glasses = popup(house).getByRole('group', {name: 'Glass'}).getByRole('button');
+  const glasses = popup(house).getByRole('radiogroup', {name: 'Glass'}).getByRole('radio');
   for (const glass of await glasses.all()) {
     const box = (await glass.boundingBox())!;
     expect(box.width).toBeGreaterThanOrEqual(44);
@@ -125,6 +125,20 @@ test('a glass is a 44 pt swatch with its name under it, and the chosen one is ch
   }
   await expect(popup(house).locator('[data-gl="dawn"] .swc svg')).toBeVisible(); // the check mark of the chosen one
   await expect(popup(house).locator('[data-gl="lake"] .swc svg')).toHaveCount(0);
+});
+
+test('the glass swatches are one radio group: one tab stop, and the arrow keys move and choose', async ({house}) => {
+  await open(house);
+  const glasses = popup(house).getByRole('radiogroup', {name: 'Glass'}).getByRole('radio');
+  await expect(glasses.nth(1)).toHaveAttribute('tabindex', '0');
+  await expect(glasses.nth(2)).toHaveAttribute('tabindex', '-1');
+  await glasses.nth(1).focus();
+  await house.page.keyboard.press('ArrowRight');
+  await expect(glasses.nth(2)).toBeChecked();
+  await expect(glasses.nth(2)).toBeFocused();
+  expect(await stored(house, 'home-panel-glass')).toBe('lake');
+  await house.page.keyboard.press('Home');
+  await expect(glasses.first()).toBeChecked();
 });
 
 test('the phone titles the popup Settings and has Done; Done and Escape close it and focus returns to the gear', async ({
@@ -176,8 +190,8 @@ test('keeps following the settings when the panel leaves the page and comes back
   // the same element came back (a popup the frame had drawn again would prove nothing about following the settings again)
   await expect(popup(house)).toHaveAttribute('data-first', '');
   await popup(house).locator('[data-gl="aurora"]').click();
-  await expect(popup(house).locator('[data-gl="aurora"]')).toHaveAttribute('aria-pressed', 'true');
-  await expect(popup(house).locator('[data-gl="dawn"]')).toHaveAttribute('aria-pressed', 'false');
+  await expect(popup(house).locator('[data-gl="aurora"]')).toBeChecked();
+  await expect(popup(house).locator('[data-gl="dawn"]')).not.toBeChecked();
 });
 
 test.describe('in French', () => {
@@ -186,7 +200,7 @@ test.describe('in French', () => {
   test('opens in French and reads Taille du texte', async ({house}) => {
     await open(house);
     await expect(popup(house).getByText('Taille du texte')).toBeVisible();
-    await expect(popup(house).getByRole('group', {name: 'Verre'}).getByRole('button').first()).toHaveText('Aucun');
+    await expect(popup(house).getByRole('radiogroup', {name: 'Verre'}).getByRole('radio').first()).toHaveText('Aucun');
     await expect(popup(house).locator('[data-sleep] b')).toHaveText('Dormir maintenant');
     await expect(popup(house).locator('.ccv')).toHaveText(
       /^Home panel v\d+\.\d+\.\d+ · statistiques actualisées aux 15 minutes$/,
@@ -227,6 +241,9 @@ test.describe('in French', () => {
     await expect(popup(house).locator('.ccl').first()).toHaveText('Apparence');
     const texts = await house.page.evaluate(() => (window as unknown as {popupTexts: string[]}).popupTexts);
     expect(texts.length, 'the popup drew').toBeGreaterThan(0);
-    for (const text of texts) expect(text).not.toMatch(/Text size|Sleep now|Smaller|Solid|Follows the device/);
+    for (const text of texts)
+      expect(text).not.toMatch(
+        /Appearance|Light|Dark|Settings|Done|Text size|Sleep now|Smaller|Solid|Follows the device/,
+      );
   });
 });

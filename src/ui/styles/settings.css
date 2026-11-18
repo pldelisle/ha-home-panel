@@ -113,8 +113,8 @@ button.cct:focus-visible {
   outline: 2px solid var(--c-home);
   outline-offset: 2px;
 }
-/* a glass is a colour: a 44 pt swatch of its wallpaper's leading colours (frame/glass.css has the wallpapers) with its name under it,
-   and a check on the chosen one; Sky follows the hour, so it shows the four wallpapers it picks among */
+/* a glass is a colour: a 44 pt swatch of its wallpaper's own colours (the `--wp-*` tokens of styles/tokens.css, which frame/glass.css paints the wallpaper
+   from, so the two cannot drift) with its name under it, and a check on the chosen one; Sky follows the hour and the weather, so it blends all five wallpapers it picks among */
 .swatches {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -144,7 +144,7 @@ button.cct:focus-visible {
   color: #1c1c1e;
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.14);
 }
-.sw[aria-pressed='true'] .swc {
+.sw[aria-checked='true'] .swc {
   box-shadow:
     inset 0 0 0 1px rgba(0, 0, 0, 0.14),
     0 0 0 2px var(--card2),
@@ -158,25 +158,34 @@ button.cct:focus-visible {
   --sw: linear-gradient(135deg, #fff 50%, #d1d1d6 50%);
 }
 .sw[data-gl='dawn'] {
-  --sw: linear-gradient(135deg, #faba96, #c0acec 55%, #9cc4f4);
+  --sw: linear-gradient(135deg, var(--wp-dawn-1), var(--wp-dawn-2) 55%, var(--wp-dawn-4)), var(--wp-dawn-base);
 }
 .sw[data-gl='lake'] {
-  --sw: linear-gradient(135deg, #609cf4, #8e72e8 55%, #ee92c8);
+  --sw: linear-gradient(135deg, var(--wp-lake-1), var(--wp-lake-2) 55%, var(--wp-lake-3)), var(--wp-lake-base);
 }
 .sw[data-gl='meadow'] {
-  --sw: linear-gradient(135deg, #a0e0c4, #6ebac2 55%, #f6e296);
+  --sw: linear-gradient(135deg, var(--wp-meadow-1), var(--wp-meadow-2) 55%, var(--wp-meadow-3)), var(--wp-meadow-base);
 }
 .sw[data-gl='ember'] {
-  --sw: linear-gradient(135deg, #fa9678, #fcce78 55%, #c48cc8);
+  --sw: linear-gradient(135deg, var(--wp-ember-1), var(--wp-ember-2) 55%, var(--wp-ember-3)), var(--wp-ember-base);
 }
 .sw[data-gl='aurora'] {
-  --sw: linear-gradient(135deg, #64dcc8, #96e8aa 55%, #a08cf0);
+  --sw: linear-gradient(135deg, var(--wp-aurora-1), var(--wp-aurora-2) 55%, var(--wp-aurora-3)), var(--wp-aurora-base);
 }
 .sw[data-gl='sand'] {
-  --sw: linear-gradient(135deg, #ecce96, #e8a078 55%, #96c4f0);
+  --sw: linear-gradient(135deg, var(--wp-sand-1), var(--wp-sand-2) 55%, var(--wp-sand-3)), var(--wp-sand-base);
 }
 .sw[data-gl='sky'] {
-  --sw: conic-gradient(#609cf4, #faba96, #fa9678, #64dcc8, #609cf4);
+  --sw:
+    conic-gradient(
+      var(--wp-lake-1),
+      var(--wp-aurora-1),
+      var(--wp-dawn-1),
+      var(--wp-ember-1),
+      var(--wp-meadow-1),
+      var(--wp-lake-1)
+    ),
+    var(--wp-lake-base);
 }
 .cct .gtrow {
   margin-top: 8px;
