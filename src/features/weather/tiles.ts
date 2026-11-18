@@ -5,13 +5,10 @@
 import type {EntityKey} from '../../core/config.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
 
-/** The tone a band or a tile is drawn in; the element maps it to a colour token. */
+/** The tone a band is drawn in; the element maps it to a colour token. */
 export type Tone = 'ok' | 'warn' | 'crit' | 'blue';
 
 export type TileKey = 'wind' | 'hum' | 'feels' | 'pres' | 'uv' | 'aqhi' | 'pop' | 'normal';
-
-/** The name of the icon the element draws; the UI kit resolves it. */
-export type TileIcon = 'wind' | 'hum' | 'therm' | 'clock' | 'wx' | 'aq' | 'drop';
 
 /** One line of a history chart: the config key of its sensor, its name, its unit, and how it is drawn. */
 export interface TileSeries {
@@ -33,7 +30,6 @@ export interface TileBand {
 
 export interface StatTileDefinition {
   key: TileKey;
-  icon: TileIcon;
   /** The tile's label and its history sheet's title. */
   labelKey: MessageKey;
   /** The history sheet's sub-line. */
@@ -54,7 +50,6 @@ export interface StatTileDefinition {
 export const TILES: readonly StatTileDefinition[] = [
   {
     key: 'wind',
-    icon: 'wind',
     labelKey: 'weather.tile.wind.label',
     subKey: 'weather.tile.wind.sub',
     noteKey: 'weather.tile.wind.note',
@@ -66,7 +61,6 @@ export const TILES: readonly StatTileDefinition[] = [
   },
   {
     key: 'hum',
-    icon: 'hum',
     labelKey: 'weather.tile.hum.label',
     subKey: 'weather.tile.hum.sub',
     noteKey: 'weather.tile.hum.note',
@@ -78,7 +72,6 @@ export const TILES: readonly StatTileDefinition[] = [
   },
   {
     key: 'feels',
-    icon: 'therm',
     labelKey: 'weather.tile.feels.label',
     subKey: 'weather.tile.feels.sub',
     noteKey: 'weather.tile.feels.note',
@@ -91,7 +84,6 @@ export const TILES: readonly StatTileDefinition[] = [
   },
   {
     key: 'pres',
-    icon: 'clock',
     labelKey: 'weather.tile.pres.label',
     subKey: 'weather.tile.pres.sub',
     noteKey: 'weather.tile.pres.note',
@@ -100,7 +92,6 @@ export const TILES: readonly StatTileDefinition[] = [
   },
   {
     key: 'uv',
-    icon: 'wx',
     labelKey: 'weather.tile.uv.label',
     subKey: 'weather.tile.uv.sub',
     noteKey: 'weather.tile.uv.note',
@@ -115,7 +106,6 @@ export const TILES: readonly StatTileDefinition[] = [
   },
   {
     key: 'aqhi',
-    icon: 'aq',
     labelKey: 'weather.tile.aqhi.label',
     subKey: 'weather.tile.aqhi.sub',
     noteKey: 'weather.tile.aqhi.note',
@@ -131,7 +121,6 @@ export const TILES: readonly StatTileDefinition[] = [
   },
   {
     key: 'pop',
-    icon: 'drop',
     labelKey: 'weather.tile.pop.label',
     subKey: 'weather.tile.pop.sub',
     noteKey: 'weather.tile.pop.note',
@@ -142,7 +131,6 @@ export const TILES: readonly StatTileDefinition[] = [
   },
   {
     key: 'normal',
-    icon: 'wx',
     labelKey: 'weather.tile.normal.label',
     subKey: 'weather.tile.normal.sub',
     noteKey: 'weather.tile.normal.note',

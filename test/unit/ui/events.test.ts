@@ -11,10 +11,10 @@ test('a sheet request bubbles and is composed, and carries the id and the detail
 });
 
 test('a dismissal bubbles and is composed, and carries the id of the sheet to close', () => {
-  const e = new SheetDismissEvent('weather.detail');
+  const e = new SheetDismissEvent('air.detail');
   expect(e.type).toBe('sheet-dismiss');
   expect([e.bubbles, e.composed]).toEqual([true, true]);
-  expect(e.detail).toEqual({id: 'weather.detail'});
+  expect(e.detail).toEqual({id: 'air.detail'});
 });
 
 test('a tab request bubbles and is composed, and carries the key of the section to show', () => {

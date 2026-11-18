@@ -1,5 +1,5 @@
 // The Weather pane (spec 15): `<hp-weather-pane>` on the phone, what a person reads and does on it, and what it costs. The pane draws the
-// header, the summary card and the eight tiles, and the detail in a sheet; on a tablet it holds the detail inline (weather-detail.spec.ts).
+// header and the whole detail inline, as a tablet's does (weather-detail.spec.ts); Home's card and the stack's cards switch to the tab.
 // Spec: docs/specs/15-weather.md, "The elements" and "Performance, by construction".
 import {test, expect, phoneOnly, type House} from './fixtures';
 import {AFTERNOON, FULL_CFG} from './houses';
@@ -8,7 +8,8 @@ test.use({houseOpts: {cfg: FULL_CFG}});
 test.beforeEach(() => phoneOnly());
 
 const pane = (house: House) => house.root().locator('hp-weather-pane');
-const tiles = (house: House) => pane(house).locator('hp-stat-tile');
+const detail = (house: House) => pane(house).locator('hp-weather-detail');
+const tiles = (house: House) => detail(house).locator('button.tilebtn');
 // the weather entity's own reading comes first, then the outdoor sensor
 const entityId = 'weather.springfield_forecast';
 const warmer = () => ({attributes: {temperature: 9.1}});
@@ -20,40 +21,44 @@ async function openWeather(house: House) {
   await expect(house.root().locator('#pane-weather')).toBeVisible();
 }
 
-test("the Weather tab shows the eight tiles with the house's readings", async ({house}) => {
+test('the Weather tab shows the forecast, the sun and the radar in the tab, with no sheet', async ({house}) => {
   await openWeather(house);
-  await expect(tiles(house)).toHaveCount(8);
-  await expect(tiles(house).locator('.tx b')).toHaveText([
-    'Wind',
-    'Humidity',
-    'Feels like',
-    'Pressure',
-    'UV index',
-    'Air quality',
-    'Rain or snow',
-    'Normal',
-  ]);
-  await expect(tiles(house).locator('.tv')).toHaveText([
-    '14 km/h',
-    '71%',
-    '4.2°',
-    '101.9 kPa',
-    '1',
-    '2',
-    'No reading',
-    '6° / -2°',
-  ]);
+  await expect(detail(house).locator('.wnow .num')).toHaveText('4.2°');
+  await expect(detail(house).locator('.sunarc')).toBeVisible();
+  await expect(detail(house).locator('.sunarc + .tiles .k')).toHaveText(['Sunrise', 'Solar noon', 'Sunset']);
+  await expect(detail(house).locator('.radar')).toBeVisible();
+  await expect(detail(house).locator('#wdays')).toBeVisible();
+  await expect(pane(house).locator('hp-sheet')).toHaveCount(0);
+  await expect(pane(house).locator('.wxcard, hp-stat-tile')).toHaveCount(0);
 });
 
-test('the summary card keeps the temperature, the range and the sun, and says nothing the tiles say', async ({
+test("the Weather tab's eight tiles are the detail's, with the house's readings, and each opens its history", async ({
   house,
 }) => {
   await openWeather(house);
-  const card = pane(house).locator('.wxcard');
-  await expect(card.locator('.wxtemp')).toBeVisible();
-  await expect(card.locator('.wxrange')).toContainText('normal');
-  await expect(card.locator('.wxsun')).toContainText(/Sun(rise|set)/);
-  for (const word of ['Wind', 'Humidity', 'UV', 'Air quality']) await expect(card).not.toContainText(word);
+  await expect(tiles(house)).toHaveCount(8);
+  await expect(tiles(house).locator('.k')).toHaveText([
+    'Wind',
+    'Humidity',
+    'Pressure',
+    'Rain or snow',
+    'UV index',
+    'Air quality',
+    'Feels like',
+    'Normal',
+  ]);
+  await expect(tiles(house).locator('.v, .na')).toHaveText([
+    '14km/h',
+    '71%',
+    '101.9kPa',
+    'No reading',
+    '1',
+    '2',
+    '4.2°',
+    '6° / -2°',
+  ]);
+  await tiles(house).first().click();
+  await expect(house.root().locator('hp-weather-history hp-sheet h2')).toHaveText('Wind');
 });
 
 test.describe('the bare house', () => {
@@ -63,14 +68,14 @@ test.describe('the bare house', () => {
     house,
   }) => {
     await openWeather(house);
-    await expect(tiles(house).locator('.tv')).toHaveText([
-      '14 km/h',
+    await expect(tiles(house).locator('.v, .na')).toHaveText([
+      '14km/h',
       '71%',
+      '101.9kPa',
+      'No reading',
+      'No reading',
+      'No reading',
       '4.2°',
-      '101.9 kPa',
-      'No reading',
-      'No reading',
-      'No reading',
       'No reading',
     ]);
   });
@@ -90,14 +95,14 @@ test.describe('in English', () => {
 test.describe('in French', () => {
   test.use({houseOpts: {cfg: FULL_CFG, lang: 'fr', time: AFTERNOON, frozen: true}});
 
-  test('the sub-line, the card and the tiles are in French from the first paint', async ({house}) => {
+  test('the sub-line, the big reading and the tiles are in French from the first paint', async ({house}) => {
     await openWeather(house);
     await expect(pane(house).locator('[slot="sub"]').first()).toHaveText(
       'Généralement ensoleillé · observé à 13 h 30 · pression en hausse · aucune alerte',
     );
-    await expect(pane(house).locator('.wxcond')).toHaveText('Généralement ensoleillé');
-    await expect(tiles(house).locator('.tx b').first()).toHaveText('Vent');
-    await expect(tiles(house).locator('.tv').nth(3)).toHaveText('101,9 kPa');
+    await expect(detail(house).locator('.wnow')).toContainText('Généralement ensoleillé');
+    await expect(tiles(house).locator('.k').first()).toHaveText('Vent');
+    await expect(tiles(house).locator('.v, .na').nth(2)).toHaveText('101,9kPa');
   });
 });
 
@@ -111,29 +116,45 @@ test.describe('with a forecast', () => {
     templow: i - 2,
   }));
 
-  test('a forecast message shows four days on the card', async ({house}) => {
+  test('a forecast message shows the days in the tab', async ({house}) => {
     await openWeather(house);
-    await expect(pane(house).locator('.wxd > div')).toHaveCount(0);
+    await expect(detail(house).locator('.drow')).toHaveCount(0);
     await house.page.evaluate(entries => window.house.forecast('daily', entries), days);
-    await expect(pane(house).locator('.wxd > div')).toHaveCount(4);
-    await expect(pane(house).locator('.wxd > div > span')).toHaveText(['Today', 'Sun', 'Mon', 'Tue']);
-    await expect(pane(house).locator('.wxd > div > b')).toHaveText(['8°', '9°', '10°', '11°']);
+    await expect(detail(house).locator('.drow')).toHaveCount(5);
+    await expect(detail(house).locator('.drow .dn')).toHaveText([
+      'Today',
+      'Tomorrow',
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+    ]);
+    await expect(detail(house).locator('.drow .dh')).toHaveText(['8°', '9°', '10°', '11°', '12°']);
   });
 
   test('a forecast a day later keeps the nodes of the days it still has (the days are keyed)', async ({house}) => {
     await openWeather(house);
     await house.page.evaluate(entries => window.house.forecast('daily', entries), days);
-    await expect(pane(house).locator('.wxd > div')).toHaveCount(4);
-    // mark the four nodes, then let a day go by in the forecast: the second, third and fourth are now the first, second and third
-    await pane(house)
-      .locator('.wxd > div')
+    await expect(detail(house).locator('.drow')).toHaveCount(5);
+    // mark the five nodes, then let a day go by in the forecast: the second to the fifth are now the first to the fourth
+    await detail(house)
+      .locator('.drow')
       .evaluateAll(nodes => nodes.forEach((node, i) => ((node as HTMLElement & {mark?: number}).mark = i)));
-    await house.page.evaluate(entries => window.house.forecast('daily', entries), days.slice(1));
-    await expect(pane(house).locator('.wxd > div > span')).toHaveText(['Sun', 'Mon', 'Tue', 'Wed']);
-    const marks = await pane(house)
-      .locator('.wxd > div')
+    const later = [
+      ...days.slice(1),
+      {datetime: '2026-11-12T17:00:00Z', condition: 'cloudy', temperature: 13, templow: 3},
+    ];
+    await house.page.evaluate(entries => window.house.forecast('daily', entries), later);
+    await expect(detail(house).locator('.drow .dn')).toHaveText([
+      'Tomorrow',
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+    ]);
+    const marks = await detail(house)
+      .locator('.drow')
       .evaluateAll(nodes => nodes.map(node => (node as HTMLElement & {mark?: number}).mark));
-    expect(marks).toEqual([1, 2, 3, undefined]);
+    expect(marks).toEqual([1, 2, 3, 4, undefined]);
   });
 
   test('the pane holds the one pair of forecast subscriptions, and the guest none of its own', async ({house}) => {
@@ -142,86 +163,74 @@ test.describe('with a forecast', () => {
   });
 });
 
-const detail = (house: House) => pane(house).locator('hp-weather-detail');
-const sheet = (house: House) => pane(house).locator('hp-sheet');
-
-test('the summary card opens the detail in a sheet by a tap and by the keyboard, and Escape closes it', async ({
-  house,
-}) => {
-  await openWeather(house);
-  await expect(detail(house)).toHaveCount(0);
-  await pane(house).locator('.wxcard').click();
-  await expect(sheet(house)).toHaveAttribute('open', '');
-  await expect(detail(house)).toBeVisible();
-  await house.page.keyboard.press('Escape');
-  await expect(detail(house)).toHaveCount(0);
-  await pane(house).locator('.wxcard').focus();
-  await house.page.keyboard.press('Enter');
-  await expect(detail(house)).toBeVisible();
-});
-
-test('the detail on the phone shows the sun block, and its Close button closes it', async ({house}) => {
-  await openWeather(house);
-  await pane(house).locator('.wxcard').click();
-  await expect(detail(house).locator('.sunarc')).toBeVisible();
-  await expect(detail(house).locator('.sunarc + .tiles .k')).toHaveText(['Sunrise', 'Solar noon', 'Sunset']);
-  await sheet(house).locator('.close').click();
-  await expect(detail(house)).toHaveCount(0);
-});
-
-test('the Home card opens the detail over Home: Home stays the tab, a reload returns on Home, and Escape gives the focus back to the card', async ({
-  house,
-}) => {
+// Home's card leaves Home: it switches to the Weather tab (More's Weather tile shows as the current section), with no sheet
+test('the Home card opens the Weather tab, and More shows it as the current section', async ({house}) => {
   const card = house.root().locator('#hwx');
   await expect(house.root().locator('#pane-home')).toBeVisible();
   await card.click();
-  await expect(detail(house)).toBeVisible();
-  await expect(house.root().locator('#pane-home')).toBeVisible();
-  await expect(house.root().locator('#pane-weather')).toBeHidden();
-  expect(await house.page.evaluate(() => localStorage.getItem('home-panel-tab'))).not.toBe('weather');
-  await house.page.reload();
-  await expect(house.root().locator('#pane-home')).toBeVisible();
-  await expect(house.root().locator('#pane-weather')).toBeHidden();
-  await card.click();
-  await expect(detail(house)).toBeVisible();
-  await house.page.keyboard.press('Escape');
-  await expect(detail(house)).toHaveCount(0);
-  await expect(card.locator('.hwx-open')).toBeFocused();
+  await expect(house.root().locator('#pane-weather')).toBeVisible();
+  await expect(house.root().locator('#pane-home')).toBeHidden();
+  await expect(detail(house).locator('.sunarc')).toBeVisible();
+  await expect(house.root().locator('hp-sheet[open]')).toHaveCount(0);
+  await expect(house.root().locator('#moretab')).toHaveAttribute('aria-selected', 'true');
+  await house.root().locator('#moretab').click();
+  await expect(house.root().locator('#morelist hp-stat-tile[key="weather"] button')).toHaveClass(/\bsel\b/);
 });
 
-// the detail over Home has tiles of its own, and one of them opens a history: the pane stays behind both and Home stays the tab
-test("a tile of the detail opened from Home's card opens its history over Home, and Escape closes it", async ({
-  house,
-}) => {
-  await house.root().locator('#hwx').click();
-  await detail(house).locator('button[data-wx="wind"]').click();
-  await expect(house.root().locator('hp-weather-history hp-sheet h2')).toHaveText('Wind');
-  await expect(detail(house)).toHaveCount(0);
-  await expect(house.root().locator('#pane-home')).toBeVisible();
-  await expect(house.root().locator('#pane-weather')).toBeHidden();
-  await house.page.keyboard.press('Escape');
-  await expect(house.root().locator('hp-weather-history')).toHaveCount(0);
-  await expect(house.root().locator('#pane-home')).toBeVisible();
+test.describe('the phone hero', () => {
+  test.use({
+    houseOpts: {cfg: {...FULL_CFG, house_image: {day: '/day.png', night: '/night.png'}}, time: AFTERNOON, frozen: true},
+  });
+
+  test("shows the config's house picture under the big reading, as Home's card does", async ({house}) => {
+    await openWeather(house);
+    await expect(detail(house).locator('.whouse .house.day')).toHaveAttribute('src', '/day.png');
+    await expect(detail(house).locator('.whouse .house.night')).toBeHidden();
+  });
+});
+
+test.describe('the phone layout at 393 px', () => {
+  test.use({houseOpts: {cfg: FULL_CFG, time: '2026-11-07T17:00:00Z', frozen: true, forecast: true, lang: 'fr'}});
+
+  test('cuts no day name in French, and puts the tiles in one column at Larger text', async ({house}) => {
+    await openWeather(house);
+    const cut = await detail(house)
+      .locator('.drow .dn')
+      .evaluateAll(names => names.filter(n => n.scrollWidth > n.clientWidth).map(n => n.textContent));
+    expect(cut).toEqual([]);
+    const columns = () =>
+      detail(house)
+        .locator('.wnow ~ .tiles')
+        .evaluate(el => getComputedStyle(el).gridTemplateColumns.split(' ').length);
+    expect(await columns()).toBe(2);
+    await house.root().locator('#gear').click();
+    await house.root().locator('hp-settings-popup [data-tx="larger"]').dispatchEvent('click');
+    await expect.poll(columns).toBe(1);
+    const cutLarger = await detail(house)
+      .locator('.drow .dn')
+      .evaluateAll(names => names.filter(n => n.scrollWidth > n.clientWidth).map(n => n.textContent));
+    expect(cutLarger, 'at Larger text').toEqual([]);
+  });
 });
 
 test.describe('what it costs', () => {
   test('a change of the temperature of the weather entity reaches the pane and shows', async ({house}) => {
     await openWeather(house);
-    await expect(pane(house).locator('.wxtemp')).toHaveText('4.2°');
+    await expect(detail(house).locator('.wnow .num')).toHaveText('4.2°');
     await house.setState(entityId, warmer());
-    await expect(pane(house).locator('.wxtemp')).toHaveText('9.1°');
+    await expect(detail(house).locator('.wnow .num')).toHaveText('9.1°');
   });
 
   // a paused pane is not told: without the pause its update would draw the new reading while the tab is hidden
   test('a pane on another tab is not told of its entities, and is current when it comes back', async ({house}) => {
     await openWeather(house);
-    await expect(pane(house).locator('.wxtemp')).toHaveText('4.2°');
+    await expect(detail(house).locator('.wnow .num')).toHaveText('4.2°');
     await house.tab('home');
     await house.mutations.reset();
     await house.setState(entityId, warmer());
     await house.page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
     expect(await house.mutations.count('hp-weather-pane'), 'while away').toBe(0);
     await openWeather(house);
-    await expect(pane(house).locator('.wxtemp')).toHaveText('9.1°');
+    await expect(detail(house).locator('.wnow .num')).toHaveText('9.1°');
   });
 });

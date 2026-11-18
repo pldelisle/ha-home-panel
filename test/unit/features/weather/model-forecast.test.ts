@@ -1,4 +1,4 @@
-// weatherModel's forecast half: the card's four days, the hour strip and its chart series, and the days as range bars,
+// weatherModel's forecast half: the hour strip and its chart series, and the days as range bars,
 // from Environment Canada's twice-daily forecast and from a generic entity's, at the afternoon instant (a Saturday, in Toronto).
 import {describe, expect, test} from 'vitest';
 import {readWeather} from '../../../../src/features/weather/inputs.ts';
@@ -44,47 +44,6 @@ const HOURLY: ForecastEntry[] = Array.from({length: 30}, (_, i) => ({
 const house = modelOf(fullHouse, 'en', {forecast: {daily: DAILY, hourly: HOURLY}});
 
 describe('the days, from a twice-daily forecast', () => {
-  test("the card's four days start with tonight, a low and no high, then the weekdays", () => {
-    expect(house.card.days).toEqual([
-      {
-        dayKey: '2026-11-07',
-        label: 'Tonight',
-        icon: {condition: 'clear-night', day: false, label: 'Clear'},
-        hi: '',
-        lo: '1°',
-        loLabel: 'low',
-        isTonight: true,
-      },
-      {
-        dayKey: '2026-11-08',
-        label: 'Sun',
-        icon: {condition: 'partlycloudy', day: true, label: 'Partly cloudy'},
-        hi: '8°',
-        lo: '2°',
-        loLabel: '',
-        isTonight: false,
-      },
-      {
-        dayKey: '2026-11-09',
-        label: 'Mon',
-        icon: {condition: 'sunny', day: true, label: 'Sunny'},
-        hi: '11°',
-        lo: '4°',
-        loLabel: '',
-        isTonight: false,
-      },
-      {
-        dayKey: '2026-11-10',
-        label: 'Tue',
-        icon: {condition: 'rainy', day: true, label: 'Rain'},
-        hi: '9°',
-        lo: '5°',
-        loLabel: '',
-        isTonight: false,
-      },
-    ]);
-  });
-
   test('the days as range bars: tonight runs from now down to its low, today has the dot, and a day with no low is a stub', () => {
     expect(
       house.days.map(({dayKey, label, condition, pop, lo, hi, barLeft, barWidth, dot}) => ({
@@ -164,11 +123,10 @@ describe('the days, from a twice-daily forecast', () => {
     expect(twenty.days[0].pop).toBe('20%');
   });
 
-  test('the forecast keeps seven days, and the card four', () => {
+  test('the forecast keeps seven days', () => {
     const many = Array.from({length: 10}, (_, i) => day(`2026-11-${String(8 + i).padStart(2, '0')}`, 5 + i, 'cloudy'));
     const model = inEnglish({}, {forecast: {daily: many, hourly: []}});
     expect(model.days).toHaveLength(7);
-    expect(model.card.days).toHaveLength(4);
   });
 
   test('no forecast is no days, and a temperature that is not known leaves the dot off', () => {
@@ -193,18 +151,12 @@ describe('the days, from a twice-daily forecast', () => {
       },
     });
     expect(model.days[0]).toMatchObject({lo: '', hi: '', barLeft: 0, barWidth: 0});
-    expect(model.card.days[0]).toMatchObject({hi: '', lo: '', isTonight: false});
   });
 
   test('a night-only day that is not today is not tonight', () => {
     const model = modelOf(fullHouse, 'en', {forecast: {daily: [night('2026-11-09', 2, 'fog')], hourly: []}});
     expect(model.days[0].label).toBe('Monday');
-    expect(model.card.days[0]).toMatchObject({isTonight: false, hi: '', lo: '2°'});
-  });
-
-  test('tonight with no low says a dash', () => {
-    const forecast = {daily: [{datetime: '2026-11-07T18:00:00-05:00', is_daytime: false}], hourly: []};
-    expect(modelOf(fullHouse, 'en', {forecast}).card.days[0]).toMatchObject({isTonight: true, lo: '–', loLabel: 'low'});
+    expect(model.days[0]).toMatchObject({hi: '', lo: '2°'});
   });
 });
 
@@ -234,10 +186,6 @@ describe('the days, from a generic weather entity', () => {
     expect(model.days.map(d => [d.label, d.lo, d.hi, d.pop])).toEqual([
       ['Today', '1°', '8°', '50%'],
       ['Tomorrow', '3°', '10°', ''],
-    ]);
-    expect(model.card.days.map(d => [d.label, d.hi, d.lo])).toEqual([
-      ['Today', '8°', '1°'],
-      ['Sun', '10°', '3°'],
     ]);
   });
 
@@ -353,8 +301,6 @@ describe('in French', () => {
   const french = modelOf(fullHouse, 'fr', {forecast: {daily: DAILY, hourly: HOURLY}});
 
   test('the days are named in French, with a capital', () => {
-    expect(french.card.days.map(d => d.label)).toEqual(['Ce soir', 'Dim.', 'Lun.', 'Mar.']);
-    expect(french.card.days[0].loLabel).toBe('min');
     expect(french.days.map(d => d.label)).toEqual(['Ce soir', 'Demain', 'Lundi', 'Mardi', 'Mercredi']);
     expect(french.days.map(d => d.condition)).toEqual([
       'Transparent',

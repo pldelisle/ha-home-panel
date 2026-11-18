@@ -121,7 +121,7 @@ hp-home-pane {
 #hsec {
   display: contents;
 }
-/* the phone: the weather card opens its sheet, the six tiles go two across, the Security card follows, the scenes row comes first */
+/* the phone: the weather card shows the Weather tab, the six tiles go two across, the Security card follows, the scenes row comes first */
 .app.tabsv.cp .hwx {
   cursor: pointer;
 }

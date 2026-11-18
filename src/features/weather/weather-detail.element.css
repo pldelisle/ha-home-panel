@@ -18,3 +18,35 @@
 [slot='icon'] {
   display: contents;
 }
+/* the phone's blocks have 14px of padding and 18px corners: the radar's map runs to the block's edges, no further, so the block stays wide enough to show the frame time */
+:host([compact]) .radar {
+  margin: 12px -14px -14px;
+  border-radius: 0 0 18px 18px;
+}
+/* the house picture under the big reading, as Home's card draws it: one for each theme */
+.whouse .house {
+  display: block;
+  width: 100%;
+  max-width: 220px;
+  height: auto;
+  margin: 8px auto 0;
+  filter: drop-shadow(0 10px 10px rgba(40, 30, 20, 0.18));
+}
+:host([data-theme='dark']) .whouse .house {
+  filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.5));
+}
+.whouse .house.night,
+:host([data-theme='dark']) .whouse .house.day {
+  display: none;
+}
+:host([data-theme='dark']) .whouse .house.night {
+  display: block;
+}
+/* at the Larger text size the phone's two-column tiles go to one column, so nothing is cut */
+:host([compact][large-text]) .wnow ~ .tiles {
+  grid-template-columns: 1fr;
+}
+/* and the day names, which grow with the type, get the room the rain chance and the bar give up */
+:host([compact][large-text]) .drow {
+  grid-template-columns: 116px 26px 38px 38px minmax(30px, 1fr) 38px;
+}

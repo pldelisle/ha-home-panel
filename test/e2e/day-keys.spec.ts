@@ -5,7 +5,7 @@
 import {test, expect, phoneOnly, tabletOnly, type House} from './fixtures';
 import {FULL_CFG} from './houses';
 
-// the phone's summary card is the pane's own: More holds Weather there
+// the phone's Weather tab holds the forecast: More holds Weather there
 async function openWeather(house: House) {
   await house.root().locator('#moretab').click();
   await house.root().locator('#morelist hp-stat-tile[key="weather"] button').click();
@@ -22,7 +22,14 @@ for (const tz of ['America/Toronto', 'Asia/Tokyo', 'Pacific/Auckland']) {
       test('the forecast names the house days', async ({house}) => {
         phoneOnly();
         await openWeather(house);
-        await expect(house.root().locator('hp-weather-pane .wxd span')).toHaveText(['Today', 'Sun', 'Mon', 'Tue']);
+        await expect(house.root().locator('hp-weather-pane .drow .dn')).toHaveText([
+          'Today',
+          'Tomorrow',
+          'Monday',
+          'Tuesday',
+          'Wednesday',
+          'Thursday',
+        ]);
       });
 
       test('the season records print the house days', async ({house}) => {
@@ -42,11 +49,13 @@ for (const tz of ['America/Toronto', 'Asia/Tokyo', 'Pacific/Auckland']) {
       test('the forecast names the house days', async ({house}) => {
         phoneOnly();
         await openWeather(house);
-        await expect(house.root().locator('hp-weather-pane .wxd span')).toHaveText([
+        await expect(house.root().locator('hp-weather-pane .drow .dn')).toHaveText([
           "Aujourd'hui",
-          'Dim.',
-          'Lun.',
-          'Mar.',
+          'Demain',
+          'Lundi',
+          'Mardi',
+          'Mercredi',
+          'Jeudi',
         ]);
       });
     });

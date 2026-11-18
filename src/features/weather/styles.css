@@ -1,128 +1,6 @@
-/* The Weather feature's own rules (spec 15, "Styles"): the phone's summary card and the grid of the eight tiles, and the detail panel's
-   blocks (alerts, now, sun, hours, days, seasons, radar), written in the frame's terms (`.app.cp`, `.app.gl`) and adopted by
-   `<hp-weather-pane>` and `<hp-weather-detail>` through `forShadow`, where they read as `:host([compact])` and `:host([glass])`. The card was a `.card.tap`, so it carries that card's look in its own selectors (`.wxcard`):
-   a selector the feature writes is written nowhere else (ADR 0019). The `.stile` rules are the kit's. */
-.wxcard {
-  background: var(--card2);
-  overflow: hidden;
-  border: 0;
-  border-radius: 22px;
-  padding: 20px;
-  box-shadow: var(--shadow);
-  min-width: 0;
-  position: relative;
-  cursor: pointer;
-}
-.wxcard:focus-visible {
-  outline: 2px solid var(--c-home);
-  outline-offset: 2px;
-}
-.wxcard .house {
-  position: absolute;
-  right: -6px;
-  top: 6px;
-  width: 52%;
-  max-width: 260px;
-  height: auto;
-  pointer-events: none;
-}
-.wxcard .txt {
-  position: relative;
-  z-index: 1;
-}
-.wxsun {
-  color: var(--fg2);
-  font-weight: 500;
-}
-.wxsun b {
-  color: var(--fg);
-}
-.wxtemp {
-  font-size: 76px;
-  line-height: 1;
-  margin-top: 26px;
-}
-.wxcond {
-  font-weight: 600;
-  font-size: 16px;
-  margin-top: 6px;
-}
-.wxrange {
-  color: var(--fg2);
-  margin-top: 2px;
-}
-.wxd {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 6px;
-  position: relative;
-  z-index: 1;
-}
-.wxd > div {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  padding: 8px 4px;
-  border-radius: 14px;
-  background: var(--card);
-  font-size: calc(12px * var(--tx));
-  color: var(--fg2);
-}
-.wxd b {
-  color: var(--fg);
-  font-size: calc(14px * var(--tx));
-}
-.wxd small {
-  color: var(--fg2);
-  font-size: calc(11px * var(--tx));
-}
-.wxcard .house.photo {
-  top: 10px;
-  right: 16px;
-  width: clamp(150px, calc(100% - 240px), 300px);
-  max-width: none;
-  filter: drop-shadow(0 10px 10px rgba(40, 30, 20, 0.18));
-}
-.app[data-theme='dark'] .wxcard .house.photo {
-  filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.5));
-}
-.wxcard .house.night,
-.app[data-theme='dark'] .wxcard .house.day {
-  display: none;
-}
-.app[data-theme='dark'] .wxcard .house.night {
-  display: block;
-}
-.wxtiles {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-.app.cp .wxcard .house.photo {
-  width: 150px;
-  top: 12px;
-  right: 12px;
-}
-/* at the Larger text size the two-column tiles go to one column, so nothing is cut */
-.app.txl .wxtiles {
-  grid-template-columns: 1fr;
-}
-/* glass: the card is glass as the other cards are (glass.css), solid again under Reduce Transparency */
-.app.gl .wxcard {
-  background: var(--g-card);
-  -webkit-backdrop-filter: var(--m-bd);
-  backdrop-filter: var(--m-bd);
-  box-shadow: var(--m-edge);
-}
-@media (prefers-reduced-transparency: reduce) {
-  .app.gl .wxcard {
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-    background: var(--card);
-  }
-}
-
+/* The Weather feature's own rules (spec 15, "Styles"): the detail panel's blocks (alerts, now, sun, hours, days, seasons, radar), written in
+   the frame's terms (`.app.cp`, `.app.gl`) and adopted by `<hp-weather-pane>` and `<hp-weather-detail>` through `forShadow`, where they
+   read as `:host([compact])` and `:host([glass])`: a selector the feature writes is written nowhere else (ADR 0019). */
 /* ---- the detail panel (moved from extra.css, motion.css and glass.css with <hp-weather-detail>, #158) ---- */
 .walerts {
   display: grid;
@@ -323,7 +201,7 @@
 }
 @media (max-width: 720px) {
   .drow {
-    grid-template-columns: 76px 26px 34px 30px minmax(60px, 1fr) 30px;
+    grid-template-columns: 92px 26px 34px 30px minmax(60px, 1fr) 30px;
     gap: 8px;
   }
   .drow .dc {
@@ -374,13 +252,6 @@
 .radar .rnote {
   margin: 0;
   padding: 16px;
-}
-/* phones: run the map to the card's edges so the card stays wide enough to show the frame time */
-@media (max-width: 720px) {
-  .radar {
-    margin: 12px -18px -18px;
-    border-radius: 0 0 22px 22px;
-  }
 }
 /* the big weather icon on the Weather sheet: the sun's rays turn, clouds breathe, rain falls, snow drifts, lightning flickers, fog and wind slide */
 .wicon .wxi .rays {

@@ -10,11 +10,8 @@ const STATISTICS = 'recorder/statistics_during_period';
 const history = (house: House) => house.root().locator('hp-weather-history');
 const tab = (house: House, name: string) => history(house).locator('[role="tab"]', {hasText: name});
 
-// the Wind tile: the pane's on the phone, the detail's button on a tablet; the phone's Weather tab sits under More
-const windTile = (house: House) =>
-  isPhone(house)
-    ? house.root().locator('hp-weather-pane hp-stat-tile[key="wind"] button')
-    : house.root().locator('hp-weather-detail button[data-wx="wind"]');
+// the Wind tile: the detail's button, in the tab on both shapes; the phone's Weather tab sits under More
+const windTile = (house: House) => house.root().locator('hp-weather-detail button[data-wx="wind"]');
 
 async function openWind(house: House) {
   if (isPhone(house)) {

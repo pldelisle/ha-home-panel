@@ -2,7 +2,7 @@
 // stack), the six tiles with the Security card, and the scenes row. The shell imports features; a feature never imports the shell or another feature (ADR 0017).
 // Pattern: a humble composition (Meszaros, xUnit Test Patterns), the composition root's child: each card is its feature's element on its
 // own ids (ADR 0012), drawn in light DOM (ADR 0032) so the pane's parts stay items of the `.pane-home` grid, styled by home-pane.css.
-// On a phone the weather card carries a button over it, named by `weatherCardLabel`, rather than being a button around its words. It loads the Energy and Water heater tiles' history (`HomeHistory`) and hands it down. It has no heading: the header's greeting is Home's one title (#426). Must not: read
+// On a phone the weather card carries a button over it, named by `weatherCardLabel`, that shows the Weather tab, rather than being a button around its words. It loads the Energy and Water heater tiles' history (`HomeHistory`) and hands it down. It has no heading: the header's greeting is Home's one title (#426). Must not: read
 // an entity but through `weatherCardLabelIds`, word anything (the cards and the readers do), or hold logic beyond placing them and that load.
 import {ContextConsumer} from '@lit/context';
 import {LitElement, html, nothing, unsafeCSS} from 'lit';
@@ -21,7 +21,7 @@ import {weatherCardLabel, weatherCardLabelIds, weatherFeature} from '../features
 import {StoreController} from '../ui/controllers/store-controller.ts';
 import {TickController} from '../ui/controllers/tick.ts';
 import {appearanceContext, statisticsCacheContext} from '../ui/contexts.ts';
-import {SheetRequestEvent, type EmptyEvent} from '../ui/events.ts';
+import {TabSelectEvent, type EmptyEvent} from '../ui/events.ts';
 
 /** The pane's rules, joined after the legacy sheet in the shell's root, where the pane draws (ADR 0032). */
 export const homePaneStyles = unsafeCSS(paneCss);
@@ -73,10 +73,9 @@ export class HomePane extends LitElement {
     return this.appearance.value?.compact ?? false;
   }
 
-  // on a phone the card opens the weather detail, as the legacy card did
+  // on a phone the card shows the Weather tab, whose detail is inline there
   private readonly openWeather = (): void => {
-    if (this.compact && weatherFeature.detailSheet)
-      this.dispatchEvent(new SheetRequestEvent(weatherFeature.detailSheet));
+    if (this.compact) this.dispatchEvent(new TabSelectEvent(weatherFeature.key));
   };
 
   protected override render() {
@@ -85,11 +84,7 @@ export class HomePane extends LitElement {
     const deps: GlanceDeps = {history: data, now: Date.now()};
     return html`<hp-config-card></hp-config-card>
       <div class="hleft" id="hleft">
-        <div
-          class="card hwx${compact ? ' tap' : ''}"
-          id="hwx"
-          data-opens=${compact ? (weatherFeature.detailSheet ?? nothing) : nothing}
-        >
+        <div class="card hwx${compact ? ' tap' : ''}" id="hwx" data-pane=${compact ? weatherFeature.key : nothing}>
           <hp-weather-card></hp-weather-card>${
             compact
               ? html`<button

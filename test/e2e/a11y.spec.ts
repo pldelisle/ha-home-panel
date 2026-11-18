@@ -136,23 +136,9 @@ for (const lang of ['en', 'fr'] as const) {
 
     test('a weather tile history has no serious or critical finding', async ({house}) => {
       await openTab(house, 'weather');
-      // the phone's tiles are the pane's elements; the tablet's are the detail panel's buttons
-      await house
-        .root()
-        .locator(
-          isPhone(house) ? 'hp-weather-pane hp-stat-tile[key="wind"] button' : '#pane-weather button[data-wx="wind"]',
-        )
-        .click();
+      await house.root().locator('#pane-weather button[data-wx="wind"]').click();
       await expect(house.root().locator('hp-weather-history hp-chart .apexcharts-canvas')).toBeVisible();
       await scanDialog(house, 'weather.history', 'hp-weather-history hp-sheet .sheet');
-    });
-
-    test('the weather detail sheet has no serious or critical finding', async ({house}) => {
-      phoneOnly(); // on a tablet the detail is the Weather tab, which every shown tab covers
-      await openTab(house, 'weather');
-      await house.root().locator('hp-weather-pane .wxcard').click();
-      await expect(house.root().locator('hp-weather-detail .sunarc')).toBeVisible();
-      await scanDialog(house, 'weather.detail', 'hp-weather-pane hp-sheet .sheet');
     });
 
     test('the Energy detail sheet has no serious or critical finding', async ({house}) => {
