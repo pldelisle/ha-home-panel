@@ -56,7 +56,7 @@ export class CarDetailElement extends LitElement {
     const compact = this.appearance.value?.compact === true;
     return html`<div
       class="blocks"
-      role=${ifDefined(compact ? undefined : 'dialog')}
+      role=${ifDefined(compact ? undefined : 'region')}
       aria-label=${ifDefined(compact ? undefined : detail.title)}
     >
       ${compact ? nothing : this.renderHeader(detail)}

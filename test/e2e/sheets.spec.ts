@@ -17,6 +17,7 @@ const energyTile = (house: House) =>
 const lightSheet = (house: House) => house.root().locator('#sh-light');
 // Energy's detail is an element's sheet (#240): its panel (the ARIA dialog) is in the page only while the sheet is open
 const energySheet = (house: House) => house.root().getByRole('dialog', {name: 'Home energy'});
+const energyRegion = (house: House) => house.root().getByRole('region', {name: 'Home energy'});
 const moreSheet = (house: House) => house.root().locator('hp-more-sheet .sheet');
 const officeTile = (house: House) => house.root().locator(`${OFFICE_ROW}:visible`);
 
@@ -77,7 +78,7 @@ test('on a tablet the energy tile shows the Energy pane with its panel inline, a
   await expect(house.root().locator('hp-energy-pane hp-sheet')).toHaveCount(0); // a tablet draws no sheet for it
   const panel = house.root().locator('#pane-energy hp-energy-detail');
   await expect(panel).toBeVisible();
-  await expect(energySheet(house)).not.toHaveAttribute('aria-modal', /.*/);
+  await expect(energyRegion(house)).not.toHaveAttribute('aria-modal', /.*/);
   await expect(panel.locator('hp-pane-header [slot="sub"]')).not.toBeEmpty(); // the detail was drawn, inline
 });
 

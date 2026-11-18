@@ -123,7 +123,7 @@ export class EnergyDetail extends LitElement {
     const built = this.history ? this.built : undefined;
     return html`<div
         class="blocks"
-        role=${ifDefined(compact ? undefined : 'dialog')}
+        role=${ifDefined(compact ? undefined : 'region')}
         aria-label=${ifDefined(compact ? undefined : view.title)}
       >
         ${compact ? nothing : this.renderHeader(view)}
