@@ -191,6 +191,14 @@ for (const viewport of ['tablet', 'phone'] as const) {
               await expect(house.page).toHaveScreenshot(`room-view-${viewport}-${theme}-en.png`);
             });
 
+            // a room with a purifier (#508): the Air card under the lights, and the room's humidity in its header
+            test('room view with air', async ({house}) => {
+              await house.root().locator('#rail [data-room="office"]').click();
+              await expect(house.root().locator('#pane-room hp-air-room')).toBeVisible();
+              await house.page.mouse.move(0, 0);
+              await expect(house.page).toHaveScreenshot(`room-view-air-${viewport}-${theme}-en.png`);
+            });
+
             // the Media part of a room view (#509): the speakers' controls over the room, whose own view stays behind the sheet
             test('room view with the speakers sheet over it', async ({house}) => {
               await house.root().locator('#rail [data-room="living_room"]').click();

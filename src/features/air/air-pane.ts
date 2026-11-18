@@ -1,5 +1,5 @@
 // <hp-air-pane>: the Air tab: the detail inline, under the header with the summary and the range tabs on a phone (the detail's own header on a tablet, the
-// pane's not shown); over another tab on a phone (Home's tile, the live pill) the detail's sheet; and, over either, the history of the reading whose tile was tapped.
+// pane's not shown); over another tab on a phone (Home's tile, the live pill) or over a room view (the Air part's button) the detail's sheet; and, over either, the history of the reading whose tile was tapped.
 // It owns the statistics cache and the range the detail and the history last showed.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over a view model: `airModel` runs in `willUpdate` and the template places what it
 // returns; a store controller on `airIds` (ADR 0012), paused while the pane is off screen, and an optimistic one (ADR 0023) so a tap draws it again.
@@ -35,12 +35,15 @@ export class AirPane extends LitElement {
   static override properties = {
     active: {type: Boolean, reflect: true},
     detailOpen: {type: Boolean},
+    inRoom: {type: Boolean},
     historyRequest: {attribute: false},
   };
   /** Set by the shell: this pane is the tab on screen. A hidden pane listens to no entity and keeps what it drew. */
   declare active: boolean;
   /** Bound by the registry's template to the sheet host's `isOpen('air.detail')`: the phone's sheet is on screen. */
   declare detailOpen: boolean;
+  /** Bound by the registry's template to `env.room !== null`: a room view is shown, so the pane is behind its sheets on a tablet too. */
+  declare inRoom: boolean;
   /** Bound by the registry's template to what the sheet host's `air.history` was asked for, or undefined: a sheet over the screen, on any tab. */
   declare historyRequest: HistoryRequest | undefined;
 
@@ -62,6 +65,7 @@ export class AirPane extends LitElement {
     super();
     this.active = false;
     this.detailOpen = false;
+    this.inRoom = false;
     this.historyRequest = undefined;
     // the cache is the pane's: the detail is drawn and dropped as the pane is shown and left, and a second opening within the ten
     // minutes is the cache's hit; a client never changes for a given tree
@@ -106,8 +110,8 @@ export class AirPane extends LitElement {
     if (!view) return nothing;
     const {t} = this.storeController.store;
     const compact = this.appearance.value?.compact === true;
-    // the sheets over another tab (Home's tile, the stack's card): the pane is behind them and draws nothing but them, so the tab stays
-    if (compact && !this.active) return html`${this.renderSheet(view)}${this.renderHistory()}`;
+    // the sheets over another tab (Home's tile, the stack's card) or over a room view: the pane is behind them and draws nothing but them, so the tab stays
+    if ((compact || this.inRoom) && !this.active) return html`${this.renderSheet(view)}${this.renderHistory()}`;
     // The header: on a phone the tab's own, with the range tabs the detail's header has on a tablet; on a tablet it is there and not shown
     // (the detail draws its own), as the old pane's was. The detail is under it, inline, while the pane is the tab; leaving the tab drops it, charts with it.
     return html`<hp-pane-header .icon=${'aq'} .color=${'var(--ok)'} .heading=${t('air.title')}>

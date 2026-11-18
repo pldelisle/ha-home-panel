@@ -16,6 +16,7 @@ declare global {
     house: {
       setState(entityId: string, patch: object): void;
       setAreaName(areaId: string, name: string): void;
+      removeArea(areaId: string): void;
       register(entityId: string, row: object): void;
       setLanguage(lang: string): void;
       /** delivers a forecast to the live `weather/subscribe_forecast` subscriptions of that type */
@@ -121,6 +122,8 @@ export type House = {
   setState: (entityId: string, patch: object) => Promise<void>;
   /** an area is renamed in Home Assistant: a new areas registry inside a new hass object */
   setAreaName: (areaId: string, name: string) => Promise<void>;
+  /** an area is deleted in Home Assistant: gone from the areas registry and cleared from its devices and entities (`window.house.removeArea`) */
+  removeArea: (areaId: string) => Promise<void>;
   /** an entity is registered in Home Assistant, with its registry row (`{platform, area_id, ...}`): later setState calls keep it */
   register: (entityId: string, row: object) => Promise<void>;
   /** the next service call matching the pattern fails once (`window.house.failNext`): a command's failure path, as Home Assistant sends it */
@@ -287,6 +290,7 @@ export const test = base.extend<{houseOpts: HouseOpts; house: House}>({
       register: (id, row) => page.evaluate(([id, row]) => window.house.register(id, row), [id, row] as const),
       setAreaName: (areaId, name) =>
         page.evaluate(([areaId, name]) => window.house.setAreaName(areaId, name), [areaId, name] as const),
+      removeArea: areaId => page.evaluate(areaId => window.house.removeArea(areaId), areaId),
       setLanguage: lang => page.evaluate(lang => window.house.setLanguage(lang), lang),
       failNext: pattern => page.evaluate(pattern => window.house.failNext(pattern), pattern),
       mutations: {

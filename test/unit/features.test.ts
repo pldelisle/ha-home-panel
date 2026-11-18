@@ -177,11 +177,12 @@ describe('the Air descriptor', () => {
       store,
       sheetOpen: () => false,
       sheetDetail: () => undefined,
+      room: null,
       attention: 0,
     };
   };
 
-  test("is the registry's own and always shown, and binds its pane to the sheet host's answers: the detail's `open`, the reading whose history is open", () => {
+  test("is the registry's own and always shown, and binds its pane to the sheet host's answers: the detail's `open`, whether a room view shows, the reading whose history is open", () => {
     expect(FEATURES.find(f => f.key === 'air')).toBe(airFeature);
     expect(airFeature.available).toBeUndefined();
     expect(airFeature.detailSheet).toBe('air.detail');
@@ -189,16 +190,27 @@ describe('the Air descriptor', () => {
     const pane = (open: string | null, detail?: unknown) =>
       airFeature.pane({...env(), sheetOpen: id => id === open, sheetDetail: id => (id === open ? detail : undefined)});
     const request = {metric: 'co2', room: 'fan.office_purifier'};
-    expect(pane(null).values).toEqual([false, undefined]);
-    expect(pane('air.detail').values).toEqual([true, undefined]);
+    expect(pane(null).values).toEqual([false, false, undefined]);
+    expect(pane('air.detail').values).toEqual([true, false, undefined]);
+    // a room view shown makes the pane the sheet's host behind it, on a tablet too
+    expect(airFeature.pane({...env(), room: 'office'}).values).toEqual([false, true, undefined]);
     // the request the tile sent is handed on as it is, the same object, so the pane is not asked to draw it again
-    expect(pane('air.history', request).values[1]).toBe(request);
+    expect(pane('air.history', request).values[2]).toBe(request);
     // a request that names no reading of the table, or no room, opens nothing the pane could draw
     expect(pane('air.history', {metric: 'temperature', room: 'fan.office_purifier'}).values).toEqual([
       false,
+      false,
       undefined,
     ]);
-    expect(pane('air.history', {metric: 'co2'}).values).toEqual([false, undefined]);
+    expect(pane('air.history', {metric: 'co2'}).values).toEqual([false, false, undefined]);
+  });
+
+  test("has a room part: the areas of its purifiers, the room's humidity for the header, and nothing before the house has been heard", () => {
+    expect(airFeature.room?.areas(env())).toEqual([]);
+    expect(airFeature.room?.areas(env(fakeHass.fromHouse(full)))).toEqual(['office']);
+    expect(airFeature.room?.chip?.(env(fakeHass.fromHouse(full)), 'office')).toBe('38 %');
+    expect(airFeature.room?.chip?.(env(fakeHass.fromHouse(full)), 'kitchen')).toBeNull();
+    expect(airFeature.room?.chip?.(env(), 'office')).toBeNull();
   });
 
   // the More sheet's baselines read the legacy word ("Moderate"), not the pane's sub-line ("1 purifier · Moderate"): `airBrief` words the first, the pane the second
@@ -305,8 +317,8 @@ describe('the rooms of the registry', () => {
     return {store, sheetOpen: () => false, sheetDetail: () => undefined, room: null};
   };
 
-  test('Lights, Media and Security have a room part, Lights and Media with no reading for the header', () => {
-    expect(FEATURES.filter(f => f.room).map(f => f.key)).toEqual(['lights', 'media', 'cams']);
+  test('Lights, Air, Media and Security have a room part; Lights and Media give no reading for the header', () => {
+    expect(FEATURES.filter(f => f.room).map(f => f.key)).toEqual(['lights', 'air', 'media', 'cams']);
     expect(lightsFeature.room).not.toHaveProperty('chip');
     expect(mediaFeature.room).not.toHaveProperty('chip');
   });

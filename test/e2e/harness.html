@@ -187,6 +187,16 @@
           hass.areas = {...hass.areas, [id]: {...hass.areas[id], name}};
           for (const p of panels) p.hass = {...hass};
         },
+        // an area is deleted in Home Assistant, which clears it from its devices and entities: new registries inside a new hass object
+        removeArea(id) {
+          const without = rows =>
+            Object.fromEntries(
+              Object.entries(rows).map(([k, row]) => [k, row.area_id === id ? {...row, area_id: null} : row]),
+            );
+          const {[id]: gone, ...areas} = hass.areas;
+          hass = {...hass, areas, entities: without(hass.entities), devices: without(hass.devices)};
+          for (const p of panels) p.hass = hass;
+        },
         // the profile language changes: Home Assistant hands the panel a new hass with it, and keeps it for every later state change
         setLanguage(lang) {
           hass.locale = {language: lang};
