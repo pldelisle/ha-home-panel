@@ -20,11 +20,12 @@ permissions:
 
 jobs:
   claude-review:
-    # Optional: Filter by PR author
-    # if: |
-    #   github.event.pull_request.user.login == 'external-contributor' ||
-    #   github.event.pull_request.user.login == 'new-developer' ||
-    #   github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR'
+    # Skip the Release pull request, which github-actions[bot] opens from changeset-release/main in this repository
+    # (recognised by branch, as changeset.yml does, not by title). claude-code-action refuses bot actors, so the job
+    # would fail on it, and the Release pull request only bumps versions and the changelog: there is nothing to review.
+    if: >-
+      !(github.event.pull_request.head.ref == 'changeset-release/main' &&
+        github.event.pull_request.head.repo.full_name == github.repository)
 
     runs-on: ubuntu-latest
     steps:
