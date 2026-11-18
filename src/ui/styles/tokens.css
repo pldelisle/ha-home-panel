@@ -525,3 +525,8 @@
   --nav-sel-fg: #9abff2;
   --g-shadow: 0 0 21px -8px rgba(255, 255, 255, 0.12);
 }
+/* The room the phone's navigation bar takes at the bottom of the screen, above the safe-area inset (#467): the snackbar sits on top of it. Material's bar is 64px with
+   8px above and 12px below (the design system's NavigationBar); the navigation bar's own rule (#466) keeps this in step with its height. 0 where nothing is pinned. */
+.app.cp[data-design='material'] {
+  --nav-bar-h: 84px;
+}

@@ -3,7 +3,7 @@
 // dark); and the Home tab on the tablet with one non-default seed (Meadow). Later tickets of the Material epic add their own shots.
 // Baselines live in test/e2e/__screenshots__/visual/material.spec.ts/ and are recorded only inside the Playwright image (Docker or
 // `container`: npm run test:visual:update); a difference is either fixed or approved by updating them in the same pull request.
-import {test, expect, fontsLoaded} from '../fixtures';
+import {test, expect, fontsLoaded, type House} from '../fixtures';
 import {AFTERNOON, FULL_CFG, KEEP_ENGLISH_NAMES, VIEWPORTS} from '../houses';
 
 // every screenshot shows the bundled Manrope, never the fallback it swaps from (font-display: swap)
@@ -117,3 +117,38 @@ test.describe('button group, phone, light, French', () => {
     await expect(house.page).toHaveScreenshot('material-button-group-phone-light-fr.png');
   });
 });
+
+// The snackbar (#467): a done toast with no action, and a failure led by the warn icon with its Dismiss action; on the tablet in light, and on
+// the phone in light and dark, where it sits above the navigation bar. The page's clock is paused so the done one stays up for its shot.
+for (const {viewport, theme} of [
+  {viewport: 'tablet', theme: 'light'},
+  {viewport: 'phone', theme: 'light'},
+  {viewport: 'phone', theme: 'dark'},
+] as const) {
+  test.describe(`${viewport}, ${theme}, snackbar`, () => {
+    test.use({
+      viewport: VIEWPORTS[viewport],
+      houseOpts: {cfg: FULL_CFG, theme, design: 'material', time: AFTERNOON, frozen: true},
+    });
+
+    const movieNight = (house: House) =>
+      house.root().locator('#hscenes hp-scene-tiles').getByRole('button').filter({hasText: 'Movie night'});
+
+    test('a confirmation in Material', async ({house}) => {
+      await house.tab('home');
+      await house.clock.pauseAt((await house.page.evaluate(() => Date.now())) + 1000);
+      await movieNight(house).click();
+      await expect(house.root().locator('hp-toast #toast')).toHaveText('Movie night on');
+      await expect(house.page).toHaveScreenshot(`material-snackbar-${viewport}-${theme}-en.png`);
+    });
+
+    test('a failure in Material', async ({house}) => {
+      await house.tab('home');
+      await house.clock.pauseAt((await house.page.evaluate(() => Date.now())) + 1000);
+      await house.failNext('scene.turn_on');
+      await movieNight(house).click();
+      await expect(house.root().locator('hp-toast #toast')).toHaveClass(/\berr\b/);
+      await expect(house.page).toHaveScreenshot(`material-snackbar-error-${viewport}-${theme}-en.png`);
+    });
+  });
+}
