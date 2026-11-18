@@ -1,5 +1,21 @@
 # Changelog
 
+## 2.18.0
+
+- The panel starts in Material on Android and in Liquid Glass on Apple's devices, until a design is chosen in Settings.
+- Design setting: Material. Settings has a new Design choice, Apple or Material. Material recolours the whole panel from a tonal palette built from the House blue, in light and dark, and turns glass off; the glass choices are hidden while it is on and come back, as you left them, when you return to Apple. Apple looks exactly as before.
+- Under Liquid Glass the tablet's navigation is a sidebar like Apple Home's: collapsed to a strip of icons until its toggle opens it (kept per device), with the open section tinted in its own colour.
+- Material button group. Under the Material design, the mode choices (a thermostat's mode, a purifier's speed, the Appearance and Design rows in Settings) and the Day, Week, Month and Year tabs are Material's connected button group: buttons joined by 2 px, the outer ends fully round, and the chosen one turns primary and morphs into a full pill. Apple looks exactly as before.
+- Material components. Under the Material design the status rows are a list group, tiles are a neutral well or a tinted control, the phone's stat tiles turn primary-container when their subject is on, buttons are tonal (with a filled confirm and a large All off), and the stepper and sheet close are 48px tonal icon buttons. Apple looks exactly as before.
+- Material navigation. Under the Material design, the sections are Material's navigation bar on the phone (full width, 64 px, no float and no blur) and navigation rail on the tablet (96 px, flush with the left edge), with a pill behind the open section's icon that grows in on a spring; every section's name now fits the rail, in English and French. Apple looks exactly as before.
+- Material type. Under the Material design the panel is set in Roboto Flex, shipped with the panel so the tablet never calls Google, with Material's type roles for the clock, the greeting, titles, figures, rows, body text, buttons and labels. Apple still uses Manrope and looks exactly as before.
+- Material seeds and More contrast. Under the Material design, Settings shows seven colour seeds (House, Dawn, Lake, Meadow, Ember, Aurora, Sand) in place of the wallpapers, and the whole panel recolours from the one you pick; the choice is kept when you switch to Apple and back. When your device asks for more contrast, Material's colours are rebuilt at its high contrast level so text holds 7:1. The status colours (ok and warn) now follow the seed too. Apple looks exactly as before.
+- Material shape, elevation and motion. Under the Material design cards are flat and 28 px round, buttons are pills that tighten their corners under a finger, controls show a state layer on hover, focus and press instead of shrinking, the keyboard focus ring is 3 px, and motion follows Material's springs (short fades under Reduce Motion). Apple looks exactly as before.
+- Material sheets and dialogs. Under the Material design a sheet is a modal bottom sheet over a light scrim, with a drag handle on the phone and floating above the bottom on a tablet, and a confirmation is a Material dialog with text buttons. Both spring in and fade out. Liquid Glass looks exactly as before.
+- Material snackbar. Under the Material design the confirmation toast becomes a snackbar: a dark one-line bar with its action in the accent, a failure led by a warning icon, rising on a spring above the phone's navigation bar. Apple looks exactly as before.
+- Material switch. Under the Material design, switches are 52 by 32 with a handle that grows from 16 to 24 px and carries a check when on, and the charger's lock row is a Material list row with an icon. Apple looks exactly as before.
+- The Design setting's first choice is called Liquid Glass.
+
 ## 2.17.0
 
 - The Energy tab's Now view can read a smoothed meter, `grid_power_live`, so baseboard thermostats that report their average power no longer outrun a meter sampled once a minute; the history keeps reading `grid_power`. The "Devices report more than the meter" note now sits on two lines from the card's left edge instead of running off it.
