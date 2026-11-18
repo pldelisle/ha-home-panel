@@ -45,15 +45,26 @@ test('the tab shows the house cameras and sensors, doors first, under the summar
 
 // "Motion now" is a status, not a link: the text colour with a dot, never the blue that says "tap me"
 const colourOf = (text: Locator) => text.evaluate(e => getComputedStyle(e).color);
+/** The status dot's drawn box and colour: a dot that collapses to nothing (a `display: block` parent) is no dot. */
+const dotOf = (status: Locator) =>
+  status.locator('i').evaluate(dot => {
+    const {width, height} = dot.getBoundingClientRect();
+    return {width, height, fill: getComputedStyle(dot).backgroundColor};
+  });
+const looksOf = (text: Locator) =>
+  text.evaluate(e => {
+    const {fontFamily, fontSize, fontWeight, letterSpacing} = getComputedStyle(e);
+    return {fontFamily, fontSize, fontWeight, letterSpacing};
+  });
 
 test('"Motion now" is in the text colour with a dot, on the tab', async ({house}) => {
   await house.tab('cams');
   const now = sensors(house).locator('.schip.act em');
   await expect(now.locator('i')).toHaveCount(1);
   expect(await colourOf(now)).toBe(await colourOf(sensors(house).locator('.schip.act b')));
-  // the line keeps the size of the other chip's
-  const size = (text: Locator) => text.evaluate(e => getComputedStyle(e).fontSize);
-  expect(await size(now.locator('.status'))).toBe(await size(sensors(house).locator('.schip:not(.act) em')));
+  // a dot you can see, and the words in the face and size of the other chip's
+  expect(await dotOf(now)).toEqual({width: 8, height: 8, fill: expect.stringMatching(/^rgb/)});
+  expect(await looksOf(now.locator('.status'))).toEqual(await looksOf(sensors(house).locator('.schip:not(.act) em')));
 });
 
 test('a house without a camera shows the empty state and its link to the integration', async ({house}) => {
@@ -281,6 +292,11 @@ test.describe('the Home card', () => {
     const now = card(house).locator('.hsen .act');
     await expect(now.locator('i')).toHaveCount(1);
     expect(await colourOf(now)).toBe(await colourOf(card(house).locator('.hsen b').last()));
+    expect(await dotOf(now)).toEqual({width: 8, height: 8, fill: expect.stringMatching(/^rgb/)});
+    expect(await looksOf(now.locator('.status'))).toMatchObject({
+      fontFamily: (await looksOf(now)).fontFamily,
+      letterSpacing: (await looksOf(now)).letterSpacing,
+    });
     await card(house).locator('.hh').click();
     await expect(house.root().locator('#pane-cams')).toBeVisible();
   });

@@ -124,9 +124,12 @@
   font-weight: 600;
   color: var(--fg);
 }
-/* the kit's status keeps the line's size ("Motion now" inside the em) */
-.schip .status {
+/* the kit's status inside the em keeps the line's size, and stays the kit's flex row: `.schip span:not(.sic)` above makes a span a block, which would
+   collapse its dot to nothing */
+.schip em .status {
+  display: inline-flex;
   font-size: inherit;
+  color: inherit;
 }
 .schip .sic {
   width: 34px;
