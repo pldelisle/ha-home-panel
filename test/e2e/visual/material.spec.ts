@@ -494,3 +494,81 @@ for (const theme of ['light', 'dark'] as const) {
     });
   });
 }
+
+// The remote keys and the room tiles (#484): the Media pane's four keys are 48px tonal icon buttons (a pill that tightens under a finger, mute primary
+// while it holds), and a room of the Lights pane is a `control` tile, primary-container with a primary bulb when it is on. Media on the tablet, Lights
+// on the phone, both in light.
+test.describe('tablet, light, remote keys', () => {
+  test.use({
+    viewport: VIEWPORTS.tablet,
+    houseOpts: {cfg: FULL_CFG, theme: 'light', design: 'material', time: AFTERNOON, frozen: true},
+  });
+
+  test('Media: the TV remote keys are 48px tonal pills, the muted one primary', async ({house}) => {
+    await house.tab('media');
+    const box = house.root().locator('#pane-media hp-tv-box');
+    const keys = box.locator('.tvkeys button');
+    await expect(keys).toHaveCount(4);
+    await settled(house);
+    for (const key of await keys.all()) {
+      expect(await style(key, 'height')).toBe('48px');
+      expect(await style(key, 'border-top-left-radius')).toBe('999px');
+      expect(await style(key, 'background-color')).toBe(await role(house, '--control'));
+      expect(await style(key, 'color')).toBe(await role(house, '--on-control'));
+    }
+    // the muted key is primary
+    const mute = box.getByRole('button', {name: 'Mute', exact: true});
+    await mute.click();
+    await expect(mute).toHaveAttribute('aria-pressed', 'true');
+    await settled(house);
+    expect(await style(mute, 'background-color')).toBe(await role(house, '--md-primary'));
+    expect(await style(mute, 'color')).toBe(await role(house, '--md-on-primary'));
+    await expect(house.page).toHaveScreenshot('material-media-tablet-light-en.png', SHOT);
+    // a finger on a key tightens its corners to the large shape
+    const volume = box.getByRole('button', {name: 'Vol +, volume up', exact: true});
+    await volume.hover();
+    await house.page.mouse.down();
+    await expect.poll(() => style(volume, 'border-top-left-radius')).toBe('16px');
+    await house.page.mouse.up();
+    // a key of a set that is off is the content at 38% over a 12% fill
+    await house.setState('media_player.living_room_tv', {state: 'off'});
+    await expect(volume).toBeDisabled();
+    await settled(house);
+    expect(await style(volume, 'background-color')).toMatch(/0\.12\)$/);
+    expect(await style(volume, 'color')).toMatch(/0\.38\)$/);
+  });
+});
+
+test.describe('phone, light, room tiles', () => {
+  test.use({
+    viewport: VIEWPORTS.phone,
+    houseOpts: {cfg: FULL_CFG, theme: 'light', design: 'material', time: AFTERNOON, frozen: true},
+  });
+
+  test('Lights: a room that is on is primary-container with a primary bulb, one that is off a control', async ({
+    house,
+  }) => {
+    // the full house lights every room: the Office goes off, so the pane shows both kinds
+    await house.setState('light.office_1', {state: 'off'});
+    await house.tab('lights');
+    // a lit room that carries its own light colour (`--lc`): Material does not draw it
+    const lit = house.root().locator('#pane-lights .lcell.on[style*="--lc"]:visible').first();
+    const dark = house.root().locator('#pane-lights .lcell[data-lsheet="office"]:visible');
+    await expect(lit).toBeVisible();
+    await expect(dark).toBeVisible();
+    await settled(house);
+    expect(await lit.evaluate(el => el.style.getPropertyValue('--lc'))).not.toBe('');
+    expect(await style(lit, 'background-color')).toBe(await role(house, '--md-primary-container'));
+    expect(await style(lit, 'box-shadow')).toBe('none');
+    expect(await style(lit, 'color')).toBe(await role(house, '--md-on-primary-container'));
+    expect(await style(lit.locator('.lbulb'), 'background-color')).toBe(await role(house, '--md-primary'));
+    expect(await style(dark, 'background-color')).toBe(await role(house, '--control'));
+    expect(await style(dark, 'color')).toBe(await role(house, '--on-control'));
+    expect(await style(dark, 'border-top-left-radius')).toBe('16px');
+    expect(await style(dark.locator('.lbulb'), 'border-top-left-radius')).toBe('20px');
+    // an off room's bulb is a quiet square of the content's colour
+    expect(await style(dark.locator('.lbulb'), 'color')).toBe(await role(house, '--on-control'));
+    expect(await style(dark.locator('.lbulb'), 'background-color')).toMatch(/0\.12\)$/);
+    await expect(house.page).toHaveScreenshot('material-lights-phone-light-en.png', SHOT);
+  });
+});

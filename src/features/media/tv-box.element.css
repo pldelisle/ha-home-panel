@@ -74,3 +74,34 @@
       color var(--motion-fade-ms) var(--motion-fade);
   }
 }
+/* The Material design's remote keys (ADR 0037, #484): the Button component's icon buttons, tonal (`control` / `on-control`), 48px tall, a pill at rest that
+   tightens its corners under a finger (common.css) on the spatial spring, with the state layer. The four share the row's width, because two of them
+   carry a word ("Mute"), not a glyph. Mute, while it holds, is primary; a disabled key is the content at 38% over a 12% fill. */
+:host([design='material']) .tvkeys {
+  gap: var(--space-8);
+}
+:host([design='material']) .tvkeys button {
+  height: 48px;
+  min-height: 48px;
+  border-radius: var(--shape-pill);
+  background: var(--control);
+  box-shadow: none;
+  color: var(--on-control);
+  font: var(--type-label-large);
+  letter-spacing: var(--track-label-large);
+  transition:
+    border-radius var(--motion-spatial-fast-ms) var(--motion-spatial-fast),
+    transform var(--motion-spatial-fast-ms) var(--motion-spatial-fast),
+    background-color var(--motion-effects-default-ms) var(--motion-effects),
+    color var(--motion-effects-default-ms) var(--motion-effects);
+}
+:host([design='material']) .tvkeys button[aria-pressed='true'] {
+  background: var(--md-primary);
+  color: var(--md-on-primary);
+}
+:host([design='material']) .tvkeys button:disabled {
+  background: color-mix(in srgb, var(--fg) 12%, transparent);
+  color: color-mix(in srgb, var(--fg) 38%, transparent);
+  opacity: 1;
+  cursor: default;
+}
