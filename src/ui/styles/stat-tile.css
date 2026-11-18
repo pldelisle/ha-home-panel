@@ -193,8 +193,8 @@
   min-height: 0;
   flex-direction: row;
   align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
+  gap: 10px;
+  padding: 12px;
 }
 .stile.list .ic {
   margin: 0;
@@ -205,6 +205,16 @@
   order: 0;
   margin: 0;
   flex: 1;
+}
+/* a caption in More takes two lines before it is cut, and every tile keeps room for two so the grid's rows are one height (a forecast's own words are long) */
+.stile.list small {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  white-space: normal;
+  line-height: 1.25;
+  min-height: 2.5em;
 }
 .app.gl .stile {
   background: var(--g-card);

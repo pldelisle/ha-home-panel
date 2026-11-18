@@ -108,30 +108,25 @@ test.describe('tablet', () => {
   });
 });
 
-// the More sheet's captions fit on one line at 393 px, two tiles to a row. English: every tile. French: the ones the ticket names (Media's and
-// Security's); the others say the weather's own words ("Généralement ensoleillé"), Energy's "maintenant" and Automations' count, a few pixels too wide
-const FIT = {en: ['weather', 'energy', 'air', 'media', 'cams', 'auto'], fr: ['media', 'cams']};
+// the More sheet's captions fit in two lines at 393 px, two tiles to a row, in English and in French (the forecast's own words are long)
 for (const lang of ['en', 'fr'] as const) {
   test.describe(`the More sheet, ${lang}`, () => {
     test.beforeEach(phoneOnly);
     test.use({houseOpts: {cfg: FULL_CFG, lang, time: AFTERNOON, frozen: true}});
 
-    test('no caption is cut', async ({house}) => {
+    test('no caption is cut, and every tile is as tall as its row', async ({house}) => {
       await house.root().locator('#moretab').click();
-      await expect(house.root().locator('#morelist hp-stat-tile')).toHaveCount(6);
-      const cut = await house
-        .root()
-        .locator('#morelist hp-stat-tile')
-        .evaluateAll(
-          (list, keys) =>
-            list
-              .filter(tile => keys.includes(tile.getAttribute('key') ?? ''))
-              .flatMap(tile => [...(tile.shadowRoot ?? tile).querySelectorAll<HTMLElement>('small')])
-              .filter(e => e.scrollWidth > e.clientWidth)
-              .map(e => e.textContent.trim()),
-          FIT[lang],
-        );
+      const tiles = house.root().locator('#morelist hp-stat-tile');
+      await expect(tiles).toHaveCount(6);
+      const {cut, heights} = await tiles.evaluateAll(list => ({
+        cut: list
+          .flatMap(tile => [...(tile.shadowRoot ?? tile).querySelectorAll<HTMLElement>('small')])
+          .filter(e => e.scrollWidth > e.clientWidth || e.scrollHeight > e.clientHeight + 1)
+          .map(e => e.textContent.trim()),
+        heights: new Set(list.map(tile => Math.round(tile.getBoundingClientRect().height))).size,
+      }));
       expect(cut, 'captions cut in More').toEqual([]);
+      expect(heights, 'one height for every tile').toBe(1);
     });
   });
 }
