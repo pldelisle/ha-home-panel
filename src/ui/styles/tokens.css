@@ -163,6 +163,9 @@
   --motion-switch-ms: 220ms;
   /* the dial's knob settling in */
   --motion-knob-ms: 400ms;
+  /* the snackbar (the toast) rising in: only the Material design animates it */
+  --motion-toast: var(--motion-standard);
+  --motion-toast-ms: var(--motion-pane-ms);
   /* the cross-fade of a colour, a shadow and a state: the one duration and curve every `background-color`, `box-shadow` and `color` transition used bare */
   --motion-fade: ease;
   --motion-fade-ms: 200ms;
@@ -453,6 +456,8 @@
   --motion-pop-ms: var(--motion-spatial-default-ms);
   --motion-switch-ms: var(--motion-spatial-fast-ms);
   --motion-knob-ms: var(--motion-spatial-fast-ms);
+  --motion-toast: var(--motion-spatial-default);
+  --motion-toast-ms: var(--motion-spatial-default-ms);
   --motion-fade: var(--motion-effects);
   --motion-fade-ms: var(--motion-effects-default-ms);
   /* no scale under the finger: the shape morphs and the state layer says it */
@@ -525,8 +530,8 @@
   --nav-sel-fg: #9abff2;
   --g-shadow: 0 0 21px -8px rgba(255, 255, 255, 0.12);
 }
-/* The room the phone's navigation bar takes at the bottom of the screen, above the safe-area inset (#467): the snackbar sits on top of it. Material's bar is 64px with
-   8px above and 12px below (the design system's NavigationBar); the navigation bar's own rule (#466) keeps this in step with its height. 0 where nothing is pinned. */
+/* The Material phone's navigation bar (#466): its height without the bottom safe-area inset. The bar, the page's room under its content and what floats
+   above the bar (the snackbar) read it. */
 .app.cp[data-design='material'] {
-  --nav-bar-h: 84px;
+  --nav-bar-h: 64px;
 }

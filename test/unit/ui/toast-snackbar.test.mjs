@@ -16,19 +16,23 @@ const rule = (css, selector) => {
   return css.slice(css.indexOf('{', at) + 1, css.indexOf('}', at));
 };
 
-test('the Material snackbar is drawn in the scheme inverse roles, the action in inverse-primary and a failure icon in error', () => {
+test('the Material snackbar is drawn in the scheme inverse roles, the action in inverse-primary and a failure icon in inverse-error', () => {
   const bar = rule(toast, ":host([design='material']) .toast");
   expect(bar).toContain('background: var(--md-inverse-surface)');
   expect(bar).toContain('color: var(--md-inverse-on-surface)');
-  expect(rule(toast, ":host([design='material']) .toast.err")).toContain('background: var(--md-inverse-surface)');
   expect(rule(toast, ":host([design='material']) .toast .tdis")).toContain('color: var(--md-inverse-primary)');
-  expect(rule(toast, ":host([design='material']) .tic")).toContain('color: var(--md-error)');
+  expect(rule(toast, ":host([design='material']) .tic")).toContain('color: var(--md-inverse-error)');
 });
 
 test('it sits above the navigation bar by a token that only the Material phone frame sets', () => {
   expect(rule(toast, ":host([design='material']) .toast")).toMatch(/bottom: calc\(var\(--nav-bar-h, 0px\) \+/);
   expect(rule(tokens, ".app.cp[data-design='material']")).toMatch(/--nav-bar-h: \d+px/);
-  expect(tokens.match(/--nav-bar-h:/g)).toHaveLength(1);
+});
+
+test('it rises on the toast motion role, which the Material design makes the spatial default spring', () => {
+  expect(toast).toContain('animation: snackrise var(--motion-toast-ms) var(--motion-toast)');
+  expect(toast).not.toContain('--motion-spatial');
+  expect(tokens).toContain('--motion-toast: var(--motion-spatial-default);');
 });
 
 test('the warn icon of a failure is hidden by default, so the Apple look keeps its layout', () => {

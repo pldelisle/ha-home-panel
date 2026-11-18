@@ -90,12 +90,8 @@
   bottom: calc(var(--nav-bar-h, 0px) + env(safe-area-inset-bottom, 0px) + 16px);
 }
 :host([design='material']) .toast.err {
-  background: var(--md-inverse-surface);
-  color: var(--md-inverse-on-surface);
   gap: 8px;
   padding: 0 8px 0 16px;
-  font: var(--type-body-medium);
-  letter-spacing: var(--track-body-medium);
 }
 :host([design='material']) .toast.err > span:not(.tic) {
   flex: 1;
@@ -104,7 +100,7 @@
 :host([design='material']) .tic {
   display: flex;
   flex: none;
-  color: var(--md-error);
+  color: var(--md-inverse-error);
 }
 :host([design='material']) .toast .tdis {
   background: none;
@@ -116,7 +112,7 @@
   padding: 0 12px;
   border-radius: var(--shape-pill);
 }
-/* it rises on the spatial-default spring: the individual `translate` property, as `transform` already centres it */
+/* it rises on the toast's motion role (the spatial-default spring): the individual `translate` property, as `transform` already centres it */
 @keyframes snackrise {
   from {
     opacity: 0;
@@ -125,6 +121,6 @@
 }
 @media (prefers-reduced-motion: no-preference) {
   :host([design='material']) .toast:not([hidden]) {
-    animation: snackrise var(--motion-spatial-default-ms) var(--motion-spatial-default) both;
+    animation: snackrise var(--motion-toast-ms) var(--motion-toast) both;
   }
 }
