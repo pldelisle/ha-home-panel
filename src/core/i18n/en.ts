@@ -1280,6 +1280,7 @@ export const en = {
   'automations.tile.skipped': '{n} more checked and did nothing',
   'automations.tile.allPassed': 'every run passed its checks',
   'automations.tile.next': 'Next',
+  'automations.tile.none': 'None',
   'automations.tile.nothingElse': 'nothing else scheduled today',
   'automations.tile.then': 'Then',
   'automations.card.selected': 'Selected',

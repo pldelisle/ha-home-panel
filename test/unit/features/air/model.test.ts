@@ -150,7 +150,7 @@ describe('the test house', () => {
     expect(vm.detail.rooms[0].tiles[3]).toMatchObject({label: 'CO', value: '1,0'});
     expect(vm.detail.rooms[0].headline).toBe('PM2,5 moyen · 21,4°');
     expect(vm.detail.outside?.more).toBe('CAS 2 · PM2,5 9,0 µg/m³ · station à 6 km');
-    expect(vm.detail.outside?.pollen?.[0]).toEqual({label: 'Pollen des arbres', value: 'Bas'});
+    expect(vm.detail.outside?.pollen?.[0]).toEqual({label: 'Pollen des arbres', value: 'Bas', unit: ''});
   });
 });
 
@@ -344,7 +344,7 @@ describe('the outside air', () => {
     expect(vm.card).toMatchObject({outside: null});
     expect(vm.detail.outside).toMatchObject({
       state: 'No data',
-      reading: {value: '–'},
+      reading: {value: 'No reading', unit: '', missing: true},
       more: 'station 7 km away',
       tone: 0,
     });
@@ -357,10 +357,10 @@ describe('the outside air', () => {
     expect(outside({aqi: 120}).outside).toMatchObject({state: 'Poor', tone: 2});
   });
 
-  test('pollen: the statuses the catalog words, any other capitalised with its underscores read as spaces, a dash when one is missing; none reported is the hint', () => {
+  test('pollen: the statuses the catalog words, any other capitalised with its underscores read as spaces, "No reading" when one is missing; none reported is the hint', () => {
     const pollen = outside({pollen: {trees: 'very_high', grass: 'very_low', weeds: 'extreme', mold: null}}).outside
       ?.pollen;
-    expect(pollen?.map(p => p.value)).toEqual(['Very high', 'Very low', 'Extreme', '–']);
+    expect(pollen?.map(p => p.value)).toEqual(['Very high', 'Very low', 'Extreme', 'No reading']);
     const none = outside({pollen: {trees: null, grass: null, weeds: null, mold: null}}).outside;
     expect(none).toMatchObject({
       pollen: null,

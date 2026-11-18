@@ -35,14 +35,6 @@
   margin-left: 2px;
   font-weight: 500;
 }
-/* a tile with no reading says so in the line's style, not as a big figure, as the phone's `.stile .tv.na` does */
-.tile .v.na {
-  font-family: var(--f-body);
-  font-size: calc(12.5px * var(--tx));
-  font-weight: 400;
-  letter-spacing: normal;
-  color: var(--fg2);
-}
 .tile .v .wrapv {
   white-space: normal;
   line-height: 1.25;

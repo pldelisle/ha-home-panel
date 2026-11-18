@@ -4,7 +4,7 @@
 // panel's own (`renderEnergy`, `renderWater`, `renderHilo`, `renderEnergyTiles` and, in #240, `energySheet` and `sankeyData`, deleted; `energySummary`, deleted in #241); the detail's blocks, the donut and the totals included.
 // Must not: import the DOM, Lit or the shell, read the clock, or hold text the household reads (a catalog key says it).
 import type {MessageKey} from '../../core/i18n/en.ts';
-import {money, power, temperatureFigure, whole, type Formatters} from '../../core/i18n/format.ts';
+import {fixedOr, money, power, temperatureFigure, whole, type Formatters} from '../../core/i18n/format.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
 import type {HiloTier} from '../../providers/hilo.ts';
 import {sum} from '../../providers/power-history.ts';
@@ -386,7 +386,7 @@ function totalsBlock(
       },
       {
         label: t('energy.totals.yesterday'),
-        ...reading(t, totals.yesterday === null ? null : fmt.fixed(totals.yesterday, 1), UNIT.kwh),
+        ...reading(t, fixedOr(fmt, totals.yesterday, 1), UNIT.kwh),
         sub: '',
         range: 'week',
       },
@@ -425,8 +425,8 @@ export function energyModel(
   const tier = TIER_WORDS[hilo.tier];
   const challenge = challengeText(inputs.challenge, t);
   const heating = (water.power ?? 0) > LIVE_KW;
-  const cents = (rate: number | null): string | null => (rate === null ? null : fmt.fixed(rate * 100, 2));
-  const tank = water.temperature === null ? null : temperatureFigure(fmt, water.temperature);
+  const cents = (rate: number | null): string | null => fixedOr(fmt, rate === null ? null : rate * 100, 2);
+  const tank = temperatureFigure(fmt, water.temperature);
   const heatingText = t('energy.water.heating', {power: power(fmt, (water.power ?? 0) * 1000)});
 
   const flow = flowLayout(live, {
@@ -490,7 +490,7 @@ export function energyModel(
         {label: t('energy.hilo.reward'), ...reading(t, cents(hilo.reward), UNIT.cents), sub: ''},
         {
           label: t('energy.hilo.rewards'),
-          ...reading(t, inputs.rewards === null ? null : money(fmt, inputs.rewards, 'headline'), UNIT.dollars),
+          ...reading(t, money(fmt, inputs.rewards, 'headline'), UNIT.dollars),
           sub: '',
         },
       ],

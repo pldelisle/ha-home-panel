@@ -13,6 +13,10 @@ export const DAY_MS = 864e5;
 /** A reading as the panel keeps it: two decimals at most. */
 export const hundredths = (value: number): number => +value.toFixed(2);
 
+/** A figure with its unit written after it as part of the figure (`4.2` and `°`); a missing figure (`null`) stays missing, for `reading()` to word. */
+export const withSuffix = (figure: string | null, suffix: string): string | null =>
+  figure === null ? null : `${figure}${suffix}`;
+
 /** The text with its first letter in capitals. */
 export const capitalise = (text: string): string => text.charAt(0).toUpperCase() + text.slice(1);
 

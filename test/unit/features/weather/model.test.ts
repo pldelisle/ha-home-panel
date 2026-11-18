@@ -193,12 +193,13 @@ describe('a house that knows nothing', () => {
     expect(model.card).toMatchObject({
       sunLabel: 'Sunrise',
       sunTime: '–',
-      temperature: '–°',
+      temperature: 'No reading',
+      temperatureMissing: true,
       condition: '',
       range: '',
     });
     expect(shown(model.tiles).map(tile => [tile.value, tile.unit])).toEqual(Array(8).fill(['No reading', '']));
-    expect(model.now).toMatchObject({temperature: '–°', condition: '', line: '', summary: null});
+    expect(model.now).toMatchObject({temperature: 'No reading', condition: '', line: '', summary: null});
   });
 });
 
@@ -320,10 +321,10 @@ describe('the lines under the temperature', () => {
     expect(inEnglish({today: {hi: 14.5, lo: -1.5, pop: null}}).now.line).toBe('High 15° · Low -1°');
   });
 
-  test('the temperature keeps its decimal, even a zero one, and its dash', () => {
+  test('the temperature keeps its decimal, even a zero one, and says "No reading" without one', () => {
     expect(inEnglish({temperature: 5}).now.temperature).toBe('5.0°');
     expect(inEnglish({temperature: -3.04}).now.temperature).toBe('-3.0°');
-    expect(inEnglish({temperature: null}).now.temperature).toBe('–°');
+    expect(inEnglish({temperature: null}).now).toMatchObject({temperature: 'No reading', temperatureMissing: true});
   });
 });
 

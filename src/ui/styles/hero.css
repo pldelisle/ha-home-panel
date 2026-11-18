@@ -11,15 +11,6 @@
   font-size: calc(56px * var(--tx));
   line-height: 0.9;
 }
-/* a hero with no reading says so in words, not as a 56px figure */
-.hero .v.na {
-  font-family: var(--f-body);
-  font-size: calc(20px * var(--tx));
-  font-weight: 500;
-  line-height: 1.2;
-  letter-spacing: normal;
-  color: var(--fg2);
-}
 .hero .v small {
   font-size: calc(20px * var(--tx));
   font-family: var(--f-body);

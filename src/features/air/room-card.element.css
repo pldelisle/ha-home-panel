@@ -46,9 +46,6 @@
 .aqt .tile .v {
   font-size: calc(18px * var(--tx));
 }
-.aqt .tile .v.na {
-  font-size: calc(12.5px * var(--tx));
-}
 .aqt .hi .v {
   color: var(--t-warn);
 }

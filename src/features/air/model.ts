@@ -130,11 +130,11 @@ export interface OutsideDetail {
   tone: Tone;
   state: string;
   /** "AQI" and the figure, which the detail writes in bold. */
-  reading: {label: string; value: string};
+  reading: {label: string} & Reading;
   /** What follows, joined with " · ": "AQHI 2 · PM2.5 9.0 µg/m³ · station 6 km away"; empty when there is nothing to say. */
   more: string;
   /** The four pollen tiles; null when the station reports none. */
-  pollen: {label: string; value: string}[] | null;
+  pollen: ({label: string} & Reading)[] | null;
   pollenHint: string;
 }
 
@@ -318,9 +318,9 @@ function roomDetail(room: AirRoomInputs, rating: RoomRating, deps: AirModelDeps)
   };
 }
 
-/** A pollen report as the catalog words it, else HA's own word capitalised; a dash when the station reports none. */
-function pollenValue(status: string | null, t: Translate): string {
-  if (status === null) return DASH;
+/** A pollen report as the catalog words it, else HA's own word capitalised; null when the station reports none. */
+function pollenValue(status: string | null, t: Translate): string | null {
+  if (status === null) return null;
   const key = POLLEN_STATUSES.get(status.replace(/_/g, ' '));
   return key ? t(key) : capitalWords(status);
 }
@@ -334,14 +334,14 @@ function outsideDetail(outside: OutsideAirInputs, aqhi: number | null, {t, fmt}:
     hint: t('air.outsideHint'),
     tone,
     state: aqi === null ? t('air.noData') : t(LEVEL_WORDS[tone]),
-    reading: {label: t('air.aqi'), value: aqi === null ? DASH : whole(fmt, aqi)},
+    reading: {label: t('air.aqi'), ...reading(t, whole(fmt, aqi), '')},
     more: joined(
       aqhi === null ? '' : t('air.aqhiValue', {n: String(aqhi)}),
       pm === null ? '' : t('air.stationPm', {n: fmt.fixed(pm, 1)}),
       distance === null ? '' : t('air.station', {n: whole(fmt, distance)}),
     ),
     pollen: reported
-      ? POLLEN_KINDS.map(kind => ({label: t(POLLEN_LABELS[kind]), value: pollenValue(pollen[kind], t)}))
+      ? POLLEN_KINDS.map(kind => ({label: t(POLLEN_LABELS[kind]), ...reading(t, pollenValue(pollen[kind], t), '')}))
       : null,
     pollenHint: t('air.noPollenYet'),
   };

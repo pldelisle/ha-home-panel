@@ -63,12 +63,12 @@ describe('weatherCardModel', () => {
     expect(view.range).toBe('Max 7°');
   });
 
-  test('a dash for a sensor that reads nothing, and no second event', () => {
+  test('a dash for a sun sensor that reads nothing, "No reading" for the temperature, and no second event', () => {
     const inputs = inputsWith({sun: {up: true, next: null, hasFirstLight: false}});
     const view = weatherCardModel(inputs, {set: null, rise: null}, say('en'));
     expect(view.next.time).toBe('–');
     expect(view.then).toBeNull();
-    expect(view.temperature).toBe('–');
+    expect(view).toMatchObject({temperature: 'No reading', temperatureMissing: true});
     expect(view.range).toBe('');
   });
 

@@ -9,7 +9,7 @@ import energyShared from './styles.css?inline';
 import {tileList} from './tile-list.ts';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {lens} from '../../ui/lens.ts';
-import {figureCell} from '../../ui/reading.ts';
+import {figureCell} from '../../ui/figure-cell.ts';
 import {common, hero, status, tiles} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 

@@ -6,7 +6,7 @@ import {html, nothing, type TemplateResult} from 'lit';
 import {repeat} from 'lit/directives/repeat.js';
 import type {EnergyRange} from './charts.ts';
 import type {EnergyTile} from './model.ts';
-import {figureCell} from '../../ui/reading.ts';
+import {figureCell} from '../../ui/figure-cell.ts';
 import {tile as kitTile} from '../../ui/tile.ts';
 
 /**

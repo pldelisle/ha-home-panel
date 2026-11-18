@@ -18,6 +18,15 @@ button,
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
 }
+/* the words for no reading, in the line's style where a figure would stand (src/ui/reading.ts, figure-cell.ts, <hp-stat-tile>): the figure's own
+   classes (`.v`, `.tv`) are left off the element, so no figure size competes with it; the one rule every surface uses */
+.na {
+  font-family: var(--f-body);
+  font-size: calc(12.5px * var(--tx));
+  font-weight: 400;
+  letter-spacing: normal;
+  color: var(--fg2);
+}
 .muted {
   color: var(--fg2);
 }

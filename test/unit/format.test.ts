@@ -3,6 +3,7 @@
 import {describe, expect, test} from 'vitest';
 import {
   createFormatters,
+  fixedOr,
   forecastFigure,
   forecastTemperature,
   money,
@@ -12,6 +13,7 @@ import {
   temperature,
   temperatureFigure,
   type Formatters,
+  whole,
 } from '../../src/core/i18n/format.ts';
 import type {PanelLocaleSpec} from '../../src/core/i18n/locale.ts';
 
@@ -313,13 +315,13 @@ describe('one formatter per kind of quantity (#417)', () => {
   const en = make('en-CA');
   const fr = make('fr-CA');
 
-  test('percent writes a whole figure, the dash for no reading', () => {
+  test('percent writes a whole figure, null for no reading', () => {
     expect(percent(en, 64)).toBe('64');
     expect(percent(en, 63.96)).toBe('64');
     expect(percent(en, 0)).toBe('0');
     expect(percent(en, -0.2)).toBe('0');
     expect(percent(fr, 64.4)).toBe('64');
-    expect(percent(fr, null)).toBe('–');
+    expect(percent(fr, null)).toBeNull();
   });
 
   test('temperature is a tenth, with the degree sign or without it', () => {
@@ -333,7 +335,7 @@ describe('one formatter per kind of quantity (#417)', () => {
     expect(temperature(fr, null)).toBe('–°');
     expect(temperatureFigure(en, 20.6)).toBe('20.6');
     expect(temperatureFigure(fr, 20.64)).toBe('20,6');
-    expect(temperatureFigure(en, null)).toBe('–');
+    expect(temperatureFigure(en, null)).toBeNull();
   });
 
   test('a forecast is a whole degree, with the degree sign or without it', () => {
@@ -341,7 +343,7 @@ describe('one formatter per kind of quantity (#417)', () => {
     expect(forecastTemperature(fr, -0.4)).toBe('0°');
     expect(forecastTemperature(fr, null)).toBe('–°');
     expect(forecastFigure(en, 4.4)).toBe('4');
-    expect(forecastFigure(fr, null)).toBe('–');
+    expect(forecastFigure(fr, null)).toBeNull();
   });
 
   test('power keeps two significant figures and one unit per magnitude, a no-break space between', () => {
@@ -359,6 +361,8 @@ describe('one formatter per kind of quantity (#417)', () => {
     expect(power(fr, null)).toBe('–');
     expect(powerParts(en, 3240)).toEqual({n: '3.2', unit: 'kW'});
     expect(powerParts(en, 0)).toEqual({n: '0', unit: 'W'});
+    expect(powerParts(en, null)).toBeNull();
+    expect([whole(en, null), fixedOr(en, null, 1), fixedOr(en, 4, 1)]).toEqual([null, null, '4.0']);
   });
 
   test('the unit is chosen after rounding: 999.6 W is 1.0 kW, never 1000 W; 9.96 kW is 10 kW', () => {
@@ -379,6 +383,7 @@ describe('one formatter per kind of quantity (#417)', () => {
     expect(money(fr, 17.59, 'headline')).toBe('18');
     expect(money(fr, 1234.5, 'headline')).toBe('1\u202f235');
     expect(money(fr, 0.4, 'headline')).toBe('0');
-    expect(money(fr, null, 'cents')).toBe('–');
+    expect(money(fr, null, 'cents')).toBeNull();
+    expect(money(fr, null, 'headline')).toBeNull();
   });
 });

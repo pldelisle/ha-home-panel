@@ -53,11 +53,14 @@
 }
 .stile .tv {
   order: 2;
-  font-size: calc(24px * var(--tx));
   line-height: 1.1;
-  letter-spacing: -0.02em;
   margin-top: auto;
   white-space: nowrap;
+}
+/* a figure is `.tv.num`; the words for no reading are `.tv.na`, which the kit's `.na` styles (common.css) */
+.stile .tv.num {
+  font-size: calc(24px * var(--tx));
+  letter-spacing: -0.02em;
 }
 .stile .tv small {
   font-size: calc(13px * var(--tx));
@@ -136,18 +139,11 @@
 .stile.wide .tv {
   order: 0;
   margin: 0;
+}
+.stile.wide .tv.num {
   font-size: calc(22px * var(--tx));
 }
-/* a tile with no reading says so in the line's style, not as a big figure (`.stile.wide .tv` is as specific, so it is repeated) */
-.stile .tv.na,
-.stile.wide .tv.na {
-  font-family: var(--f-body);
-  font-size: calc(12.5px * var(--tx));
-  font-weight: 400;
-  letter-spacing: normal;
-  color: var(--fg2);
-}
-/* in a wide tile it follows the words, as a line does, where a figure leads */
+/* in a wide tile the words for no reading follow the tile's words, as a line does, where a figure leads */
 .stile.wide .tv.na {
   order: 1;
 }

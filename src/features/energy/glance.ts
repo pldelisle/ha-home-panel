@@ -6,6 +6,7 @@
 import {power, temperature} from '../../core/i18n/format.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
 import type {GlanceStore, GlanceView} from '../../ui/glance.ts';
+import {bareReading} from '../../ui/reading.ts';
 import {LIVE_KW} from './flow-layout.ts';
 import {waterCycles, type EnergyHistoryData} from './history.ts';
 import {readEnergy} from './inputs.ts';
@@ -28,8 +29,7 @@ export function glance({hass, config, names, t, fmt}: GlanceStore, {history}: Gl
     icon: 'bolt',
     color: 'var(--c-grid)',
     label: t('energy.title'),
-    value: kw === null ? t('common.noReading') : power(fmt, kw * 1000),
-    ...(kw === null ? {missing: true} : {}),
+    ...bareReading(t, kw === null ? null : power(fmt, kw * 1000)),
     line: history
       ? t('energy.glance.line', {kwh: fmt.fixed(history.totals.today, 1), rate})
       : t('energy.glance.lineNow', {rate}),
@@ -55,8 +55,7 @@ export function waterGlance(
     icon: 'drop',
     color: 'var(--c-wh)',
     label: t('energy.water.title'),
-    value: water.temperature === null ? t('common.noReading') : temperature(fmt, water.temperature),
-    ...(water.temperature === null ? {missing: true} : {}),
+    ...bareReading(t, water.temperature === null ? null : temperature(fmt, water.temperature)),
     line: history
       ? t('energy.glance.water', {state, kwh: fmt.fixed(waterCycles(history.wh24.p, now).kwh24, 1)})
       : state,

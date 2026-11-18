@@ -8,9 +8,11 @@
 // One rule per kind of quantity, which every tab routes its figures through (#417, Apple HIG consistency). Figure only (a catalog
 // message adds the sign): `percent` (whole, `64`; the catalog spaces the `%`), `temperatureFigure` (a tenth, `20.6`, for what is
 // measured), `forecastFigure` (whole degrees, for highs, lows and normals), `money(fmt, n, 'headline' | 'cents')` (whole dollars in a
-// tile, cents in a table; the catalog's `car.money` adds the `$`) and `powerParts` (`{n, unit}`, watts in, two significant figures,
-// W under a kilowatt, then kW). Joined with their unit symbol and a no-break space: `temperature` (`20.6°`), `forecastTemperature`
-// (`5°`) and `power` (`0 W` `850 W` `3.2 kW` `12 kW`). All but `powerParts`, which takes a reading, give the dash for none.
+// tile, cents in a table; the catalog's `car.money` adds the `$`), `powerParts` (`{n, unit}`, watts in, two significant figures, W
+// under a kilowatt, then kW), `whole` and `fixedOr`. The FIGURE forms take `number | null` and give `null` for `null`: the only
+// path of a missing value, which `reading()` (src/ui/reading.ts) turns into the words for it on a tile. The JOINED forms, a figure
+// with its unit symbol and a no-break space, `temperature` (`20.6°`), `forecastTemperature` (`5°`) and `power` (`0 W` `850 W`
+// `3.2 kW` `12 kW`), give the dash for none, for text that is no tile's figure (a sentence, a chart's label).
 // Must not: read the clock, the DOM or a browser default, or hold a word a person reads.
 import {DAY_MS, DASH, HOUR_MS, MINUTE_MS} from '../figures.ts';
 import type {PanelLocaleSpec} from './locale.ts';
@@ -89,13 +91,20 @@ const frenchThousands: HouseRule = text => text.replace(/\u00a0/g, '\u202f');
 /** What the figure helpers need of an instance, so a model that was given a few formatters can still call them. */
 export type Numbers = Pick<Formatters, 'integer' | 'fixed'>;
 
-/** A whole number; the -0 of Math.round(-0.4) is 0, which Intl would otherwise write as `-0`. */
-export const whole = (fmt: Numbers, n: number): string => fmt.integer(Math.round(n) + 0);
+/** A whole number; the -0 of Math.round(-0.4) is 0, which Intl would otherwise write as `-0`. No reading (`null`) gives `null`. */
+export function whole(fmt: Numbers, n: number): string;
+export function whole(fmt: Numbers, n: number | null): string | null;
+export function whole(fmt: Numbers, n: number | null): string | null {
+  return n === null ? null : fmt.integer(Math.round(n) + 0);
+}
 /** A whole number of degrees: `12°`. */
 export const degrees = (fmt: Numbers, n: number): string => `${whole(fmt, n)}°`;
-/** `fmt.fixed` of a reading, or the dash when there is none (Energy's six figures; Weather's `fixed` is the same rule). */
-export const fixedOr = (fmt: Pick<Formatters, 'fixed'>, n: number | null, digits: number): string =>
-  n === null ? DASH : fmt.fixed(n, digits);
+/** `fmt.fixed` of a reading, or `null` when there is none: the figure forms' rule, which `reading()` turns into the words for it. */
+export function fixedOr(fmt: Pick<Formatters, 'fixed'>, n: number, digits: number): string;
+export function fixedOr(fmt: Pick<Formatters, 'fixed'>, n: number | null, digits: number): string | null;
+export function fixedOr(fmt: Pick<Formatters, 'fixed'>, n: number | null, digits: number): string | null {
+  return n === null ? null : fmt.fixed(n, digits);
+}
 
 // One rule per kind of quantity (#417): every tab writes a battery charge, a temperature, a power or a sum of money through these,
 // so the same value never reads two ways. Each rule has a figure-only form, for a catalog message that carries its own sign
@@ -105,22 +114,33 @@ const NO_BREAK_SPACE = '\u00a0';
 const HALF_TENTH = 0.05;
 const HALF_CENT = 0.005;
 
-/** A battery charge or any percent, the figure only: whole, `64`, the dash for no reading. The catalog's `car.percent` adds the sign, which French spaces. */
-export const percent = (fmt: Numbers, n: number | null): string => (n === null ? DASH : whole(fmt, n));
+/** A battery charge or any percent, the figure only: whole, `64`, `null` for no reading. The catalog's `car.percent` adds the sign, which French spaces. */
+export function percent(fmt: Numbers, n: number): string;
+export function percent(fmt: Numbers, n: number | null): string | null;
+export function percent(fmt: Numbers, n: number | null): string | null {
+  return whole(fmt, n);
+}
 
-/** A measured temperature (inside, outside, feels like, the tank) to a tenth, the figure only: `20.6`, the dash for no reading; never `-0.0`. */
-export const temperatureFigure = (fmt: Pick<Formatters, 'fixed'>, n: number | null): string =>
-  fixedOr(fmt, n !== null && Math.abs(n) < HALF_TENTH ? 0 : n, 1);
+/** A measured temperature (inside, outside, feels like, the tank) to a tenth, the figure only: `20.6`, `null` for no reading; never `-0.0`. */
+export function temperatureFigure(fmt: Pick<Formatters, 'fixed'>, n: number): string;
+export function temperatureFigure(fmt: Pick<Formatters, 'fixed'>, n: number | null): string | null;
+export function temperatureFigure(fmt: Pick<Formatters, 'fixed'>, n: number | null): string | null {
+  return fixedOr(fmt, n !== null && Math.abs(n) < HALF_TENTH ? 0 : n, 1);
+}
 
-/** `temperatureFigure` with its degree sign: `20.6°`, `–°` for no reading. */
+/** `temperatureFigure` with its degree sign: `20.6°`, `–°` for no reading (text that is no tile's figure). */
 export const temperature = (fmt: Pick<Formatters, 'fixed'>, n: number | null): string =>
-  `${temperatureFigure(fmt, n)}°`;
+  `${temperatureFigure(fmt, n) ?? DASH}°`;
 
-/** A forecast temperature (a high, a low, a normal) in whole degrees, the figure only: `5`, the dash for no reading. */
-export const forecastFigure = (fmt: Numbers, n: number | null): string => (n === null ? DASH : whole(fmt, n));
+/** A forecast temperature (a high, a low, a normal) in whole degrees, the figure only: `5`, `null` for no reading. */
+export function forecastFigure(fmt: Numbers, n: number): string;
+export function forecastFigure(fmt: Numbers, n: number | null): string | null;
+export function forecastFigure(fmt: Numbers, n: number | null): string | null {
+  return whole(fmt, n);
+}
 
-/** `forecastFigure` with its degree sign: `5°`, `–°` for no reading. */
-export const forecastTemperature = (fmt: Numbers, n: number | null): string => `${forecastFigure(fmt, n)}°`;
+/** `forecastFigure` with its degree sign: `5°`, `–°` for no reading (text that is no tile's figure). */
+export const forecastTemperature = (fmt: Numbers, n: number | null): string => `${forecastFigure(fmt, n) ?? DASH}°`;
 
 /** A power as a figure and its fixed unit: `{n: '3.2', unit: 'kW'}`. */
 export interface PowerParts {
@@ -137,7 +157,10 @@ const KW_TENTHS_BELOW = 10;
  * is watts (rounded to two figures, so 856 W reads 860 W), from a kilowatt it is kW with a tenth below 10 kW and whole kW above.
  * The unit is picked after rounding, so 999.6 W is `1.0 kW`, never `1000 W`.
  */
-export function powerParts(fmt: Numbers, watts: number): PowerParts {
+export function powerParts(fmt: Numbers, watts: number): PowerParts;
+export function powerParts(fmt: Numbers, watts: number | null): PowerParts | null;
+export function powerParts(fmt: Numbers, watts: number | null): PowerParts | null {
+  if (watts === null) return null;
   const sign = watts < 0 ? -1 : 1;
   const rounded = Number(Math.abs(watts).toPrecision(TWO_FIGURES));
   if (rounded < KILO) return {n: whole(fmt, sign * rounded), unit: 'W'};
@@ -145,19 +168,22 @@ export function powerParts(fmt: Numbers, watts: number): PowerParts {
   return {n: kw < KW_TENTHS_BELOW ? fmt.fixed(sign * kw, 1) : whole(fmt, sign * kw), unit: 'kW'};
 }
 
-/** `powerParts` as one text with a no-break space, `3.2 kW`; the dash for no reading. */
+/** `powerParts` as one text with a no-break space, `3.2 kW`; the dash for no reading (text that is no tile's figure). */
 export function power(fmt: Numbers, watts: number | null): string {
-  if (watts === null) return DASH;
-  const {n, unit} = powerParts(fmt, watts);
-  return `${n}${NO_BREAK_SPACE}${unit}`;
+  const parts = powerParts(fmt, watts);
+  return parts === null ? DASH : `${parts.n}${NO_BREAK_SPACE}${parts.unit}`;
 }
 
 /**
  * A sum of money, the figure only (the catalog's `car.money` adds the `$`, which French follows with a no-break space): whole dollars
- * in a headline, cents in a table; the dash for none, never `-0.00`.
+ * in a headline, cents in a table; `null` for none, never `-0.00`.
  */
-export const money = (fmt: Numbers, n: number | null, kind: 'headline' | 'cents'): string =>
-  n === null ? DASH : kind === 'cents' ? fmt.fixed(Math.abs(n) < HALF_CENT ? 0 : n, 2) : whole(fmt, n);
+export function money(fmt: Numbers, n: number, kind: 'headline' | 'cents'): string;
+export function money(fmt: Numbers, n: number | null, kind: 'headline' | 'cents'): string | null;
+export function money(fmt: Numbers, n: number | null, kind: 'headline' | 'cents'): string | null {
+  if (n === null) return null;
+  return kind === 'cents' ? fmt.fixed(Math.abs(n) < HALF_CENT ? 0 : n, 2) : whole(fmt, n);
+}
 
 /** A `2026-11-07` day key's noon in UTC, in milliseconds: the instant arithmetic on day keys starts from (Climate's week starts on the Monday by it). */
 export const utcNoonOf = (day: string): number => Date.parse(`${day}T12:00:00Z`);

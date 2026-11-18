@@ -3,7 +3,7 @@
 // Pattern: functional core (Bernhardt, Boundaries), the data half of a humble object (Meszaros); each rule is that of the legacy
 // panel's `sensSheet`, deleted by #227, and the sheet only places what comes out; `fmt`, `t` and `now` are arguments.
 // Must not: call the API client or the cache, read the clock or the DOM, or keep a state between two calls.
-import {DASH} from '../../core/figures.ts';
+import {bareReading, type Reading} from '../../ui/reading.ts';
 import type {HistoryPoint} from '../../core/ha.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
 import type {Formatters} from '../../core/i18n/format.ts';
@@ -172,12 +172,11 @@ export function eventRows(
     }));
 }
 
-export interface StatTile {
+export interface StatTile extends Pick<Reading, 'value' | 'missing'> {
   label: string;
-  value: string;
 }
 
-/** The four tiles under the strip: how many, the total, the longest, and when the last one was; `–` for what there is not. */
+/** The four tiles under the strip: how many, the total, the longest, and when the last one was; "No reading" for what there is not. */
 export function statTiles(
   stats: PeriodStats,
   kind: SensorKind,
@@ -188,10 +187,13 @@ export function statTiles(
   const words = KIND_WORDS[kind];
   const some = stats.count > 0;
   return [
-    {label: t(words.count), value: String(stats.count)},
-    {label: t(words.total), value: some ? durationText(stats.total, t) : DASH},
-    {label: t('security.longest'), value: some ? durationText(stats.longest, t) : DASH},
-    {label: t('security.last'), value: stats.last === null ? DASH : t('security.ago', fmt.ago(stats.last, now))},
+    {label: t(words.count), ...bareReading(t, String(stats.count))},
+    {label: t(words.total), ...bareReading(t, some ? durationText(stats.total, t) : null)},
+    {label: t('security.longest'), ...bareReading(t, some ? durationText(stats.longest, t) : null)},
+    {
+      label: t('security.last'),
+      ...bareReading(t, stats.last === null ? null : t('security.ago', fmt.ago(stats.last, now))),
+    },
   ];
 }
 

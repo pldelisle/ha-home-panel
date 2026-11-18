@@ -1257,6 +1257,7 @@ export const fr: Record<MessageKey, string> = {
   'automations.tile.skipped': '{n} autres vérifiées, rien fait',
   'automations.tile.allPassed': 'toutes ont passé leurs vérifications',
   'automations.tile.next': 'Prochaine',
+  'automations.tile.none': 'Aucune',
   'automations.tile.nothingElse': "rien d'autre de prévu aujourd'hui",
   'automations.tile.then': 'Ensuite',
   'automations.card.selected': 'Choisie',

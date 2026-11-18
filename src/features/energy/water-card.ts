@@ -10,7 +10,7 @@ import ownCss from './water-card.element.css?inline';
 import energyShared from './styles.css?inline';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {lens} from '../../ui/lens.ts';
-import {figureCell} from '../../ui/reading.ts';
+import {figureCell} from '../../ui/figure-cell.ts';
 import {common, hero, status} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 

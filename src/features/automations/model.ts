@@ -247,7 +247,7 @@ export function automationsModel(
       },
       {
         label: t('automations.tile.next'),
-        value: next ? fmt.time(new Date(next.t)) : '–',
+        value: next ? fmt.time(new Date(next.t)) : t('automations.tile.none'),
         sub: next ? shortAlias(next.name) : t('automations.tile.nothingElse'),
       },
       ...(then

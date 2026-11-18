@@ -42,7 +42,7 @@ export class WeatherCard extends LitElement {
         <b>${view.next.time}</b>${view.then ? html` · ${view.then.label} <b>${view.then.time}</b>` : nothing}
       </div>
       <div class="hbig">
-        <span class="num">${view.temperature}</span>
+        <span class=${view.temperatureMissing ? 'na' : 'num'}>${view.temperature}</span>
         <div>
           <div class="hc">${view.condition}</div>
           <div class="muted">${view.range}</div>

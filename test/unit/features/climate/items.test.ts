@@ -86,7 +86,12 @@ describe('a room', () => {
     expect(sub([thermostat('den', 'heat', {temperature: 20.5})])).toMatchObject({sub: 'Holding 20.5°', tone: ''});
     expect(sub([thermostat('den', 'heat', {temperature: 5.5})])).toMatchObject({sub: 'Off', tone: ''});
     expect(sub([thermostat('den', 'heat')])).toMatchObject({sub: 'Off'});
-    expect(sub([thermostat('den', 'unavailable')])).toMatchObject({sub: 'Unavailable', value: '–°', tone: 'bad'});
+    expect(sub([thermostat('den', 'unavailable')])).toMatchObject({
+      sub: 'Unavailable',
+      value: 'No reading',
+      missing: true,
+      tone: 'bad',
+    });
     expect(sub([thermostat('den', 'heat', {hvac_action: 'heating'})])).toMatchObject({
       sub: 'Heating · 0\u00a0W',
       tone: 'on',
@@ -105,7 +110,10 @@ describe('a room', () => {
       sub: '0 rooms heating',
       tone: '',
     });
-    expect(house(thermostat('den', 'heat'), thermostat('hall', 'heat'))).toMatchObject({value: '–'});
+    expect(house(thermostat('den', 'heat'), thermostat('hall', 'heat'))).toMatchObject({
+      value: 'No reading',
+      missing: true,
+    });
   });
 });
 
@@ -127,13 +135,13 @@ describe('the heat pump', () => {
     });
     expect(item(pump('heat', {hvac_action: 'idle', temperature: 21.5}))).toMatchObject({
       sub: 'Daikin · idle to 21.5°',
-      value: '–',
+      value: 'No reading',
       tone: '',
     });
     expect(item(pump('cool', {}))).toMatchObject({sub: 'Daikin · cool'});
     expect(item(pump('off', {temperature: 22}))).toMatchObject({sub: 'Daikin · off', tone: ''});
-    expect(item(pump('unavailable'))).toMatchObject({sub: 'Daikin · offline', value: '–', tone: 'bad'});
-    expect(item()).toMatchObject({sub: 'Not found', value: '–', tone: 'bad'});
+    expect(item(pump('unavailable'))).toMatchObject({sub: 'Daikin · offline', value: 'No reading', tone: 'bad'});
+    expect(item()).toMatchObject({sub: 'Not found', value: 'No reading', tone: 'bad'});
   });
 
   test('a unit with no maker is "Heat pump" in the sub, Fujitsu through FGLair, and its heating lights the house', () => {

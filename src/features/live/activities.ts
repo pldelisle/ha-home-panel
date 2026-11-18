@@ -2,7 +2,7 @@
 // Pattern: functional core (Bernhardt): each reads `LiveInputs` and the loaded history and returns data (texts through `t()`, a card as a view
 // model); the rules are the legacy `liveActs()`'s three blocks (deleted in #256), its thresholds and its order copied and named.
 // Must not: import a feature, read the clock or the states, hold a callable (a button is a flag, the element runs the command), or draw.
-import {MINUTE_MS} from '../../core/figures.ts';
+import {DASH, MINUTE_MS} from '../../core/figures.ts';
 import {money, percent, power, temperature, temperatureFigure, type Formatters} from '../../core/i18n/format.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
 import type {Point} from '../../providers/power-history.ts';
@@ -285,7 +285,7 @@ export function carActivity(
   const kw = wallbox.power ?? car.chargePowerKw;
   const eta = chargeEta(inputs, kw);
   const left = eta ? fmt.durationShort(eta - now) : '';
-  const charge = percent(fmt, soc);
+  const charge = percent(fmt, soc) ?? DASH;
   const session = currentSession(history?.sessions ?? [], car.plugChangedAt, now);
   const price = wallbox.price ?? DEFAULT_KWH_PRICE;
   const meta = metaLine([
@@ -418,7 +418,7 @@ export function waterActivity(
       right: power(fmt, kw * 1000),
       spark: sparkline(temps, now, t),
       big: {
-        t: temperatureFigure(fmt, tank),
+        t: temperatureFigure(fmt, tank) ?? DASH,
         rate:
           rate !== null && Math.abs(rate) >= RATE_SHOWN_FROM
             ? t('live.rate', {up: rate > 0 ? 'yes' : 'no', n: temperatureFigure(fmt, Math.abs(rate))})

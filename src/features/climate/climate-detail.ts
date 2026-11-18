@@ -22,6 +22,7 @@ import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {OptimisticController} from '../../ui/controllers/optimistic.ts';
 import {StoreController} from '../../ui/controllers/store-controller.ts';
 import {lens} from '../../ui/lens.ts';
+import {figureCell} from '../../ui/figure-cell.ts';
 import {tile} from '../../ui/tile.ts';
 import {chart, common, inner, status, tiles} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
@@ -102,10 +103,9 @@ export class ClimateDetail extends LitElement {
   }
 
   // a tile is a plain well, or, when it leads to a room's chart (the house's Warmest and Coolest), the kit's button with its chevron that tells the pane which room (its name is what it draws, its description the model's `opens`);
-  private renderTile({label, value, unit, sub, range, select, opens}: Detail['tiles'][number]) {
+  private renderTile({label, value, unit, missing, sub, range, select, opens}: Detail['tiles'][number]) {
     const body = html`<div class="k">${label}</div>
-      <div class="v num">${value}<small>${unit}</small></div>
-      ${sub ? html`<div class="s">${sub}</div>` : nothing}`;
+      ${figureCell({value, unit, missing})} ${sub ? html`<div class="s">${sub}</div>` : nothing}`;
     return tile(body, {
       leads:
         select === undefined || opens === undefined

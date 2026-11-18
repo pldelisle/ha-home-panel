@@ -48,7 +48,7 @@ export class ClimateList extends LitElement {
         ${repeat(
           this.items,
           ({id}) => id,
-          ({id, icon, name, sub, value, tone}) =>
+          ({id, icon, name, sub, value, missing, tone}) =>
             html`<button
               class=${`citem ${tone}`}
               role="option"
@@ -61,7 +61,7 @@ export class ClimateList extends LitElement {
               ><span class="tx"
                 ><div class="nm">${name}</div>
                 <div class="sb">${sub}</div></span
-              ><span class="tv">${value}</span>
+              ><span class=${missing ? 'na' : 'tv'}>${value}</span>
             </button>`,
         )}
       </div>
