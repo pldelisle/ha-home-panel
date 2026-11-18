@@ -1,7 +1,10 @@
 // The ECCC climate archive provider at its seam: a `fetch` that answers literal GeoJSON shaped as api.weather.gc.ca sends it, and the
 // urls that left as the proof of what was asked. No network.
 import {describe, expect, test, vi} from 'vitest';
+import {resolveConfig} from '../../../src/core/config.ts';
+import type {PanelHass} from '../../../src/core/hass.ts';
 import {
+  archiveHouse,
   ARCHIVED_KEYS,
   createClimateArchive,
   jsonFetcher,
@@ -11,8 +14,8 @@ import {
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
 const NOW = Date.parse('2026-11-17T12:00:00Z');
-// a made-up town, in the Toronto zone the fake houses use
-const HOUSE: ArchiveHouse = {latitude: 46.75, longitude: -72.6, timeZone: 'America/Toronto', station: null};
+// a house in Quebec, in the Toronto zone the fake houses use (the same rules)
+const HOUSE: ArchiveHouse = {latitude: 44.5, longitude: -78.5, timeZone: 'America/Toronto', station: null};
 
 const station = (id: string, name: string, lon: number, lat: number, extra: Record<string, unknown> = {}) => ({
   type: 'Feature',
@@ -37,13 +40,13 @@ const collection = (features: unknown[], extra: Record<string, unknown> = {}) =>
 const hourly = (utc: string, properties: Record<string, unknown>) => ({properties: {UTC_DATE: utc, ...properties}});
 
 // the stations of the area: the closed town one, a good one 13 km away, a better-looking one 60 km away, one whose feed stopped
-const LANSE = station('7099160', "L'ANSE-GRISE", -72.4347, 46.8094);
+const LAKESIDE = station('7000100', 'LAKESIDE', -78.4, 44.55);
 const AREA = collection([
-  station('7099629', 'MAPLEFORD', -72.6, 46.75, {HAS_HOURLY_DATA: 'N'}),
-  station('7000001', 'STOPPED', -72.6, 46.76, {HLY_LAST_DATE: '2026-09-01 00:00:00'}),
-  station('7000002', 'FAR', -73.4, 46.75),
-  LANSE,
-  station('7000003', 'NEXT', -72.3, 46.9),
+  station('7000200', 'TOWN', -78.5, 44.5, {HAS_HOURLY_DATA: 'N'}),
+  station('7000001', 'STOPPED', -78.5, 44.51, {HLY_LAST_DATE: '2026-09-01 00:00:00'}),
+  station('7000002', 'FAR', -79.3, 44.5),
+  LAKESIDE,
+  station('7000003', 'NEXT', -78.3, 44.6),
 ]);
 
 /** A fetch over literal replies: the first route whose path appears in the url answers; the urls are kept. */
@@ -68,15 +71,32 @@ const archiveOver = (routes: Record<string, unknown>, house: ArchiveHouse | null
 const START = new Date('2026-11-10T05:00:00Z');
 const END = new Date('2026-11-10T08:00:00Z');
 
+describe('the house', () => {
+  const hass = {config: {latitude: 44.5, longitude: -78.5, time_zone: 'America/Toronto'}} as PanelHass;
+
+  test('is read from the resolved config and the hass: place, zone and station; none before Home Assistant is there', () => {
+    const config = (climate_station?: string | false) => resolveConfig({climate_station});
+    expect(archiveHouse(config('7000100'), hass)).toEqual({...HOUSE, station: '7000100'});
+    expect(archiveHouse(config(false), hass)?.station).toBe(false);
+    expect(archiveHouse(config(), {config: {time_zone: 'UTC'}} as PanelHass)).toEqual({
+      latitude: null,
+      longitude: null,
+      timeZone: 'UTC',
+      station: null,
+    });
+    expect(archiveHouse(config(), null)).toBeNull();
+  });
+});
+
 describe('the station', () => {
   test('the nearest active hourly station within 40 km, found in the bounding box of the house', async () => {
     const {archive, to} = archiveOver({'climate-stations': AREA, 'climate-hourly': collection([])});
     const fill = await archive.rows('wind', 'hour', START, END);
-    expect(fill?.station).toBe("L'ANSE-GRISE");
+    expect(fill?.station).toBe('LAKESIDE');
     const bbox = to('climate-stations')[0].searchParams.get('bbox')!.split(',').map(Number);
-    expect(bbox[0]).toBeCloseTo(-72.6 - 40 / (111.32 * Math.cos((46.75 * Math.PI) / 180)), 2);
-    expect(bbox[3]).toBeCloseTo(46.75 + 40 / 111.32, 2);
-    expect(to('climate-hourly')[0].searchParams.get('CLIMATE_IDENTIFIER')).toBe('7099160');
+    expect(bbox[0]).toBeCloseTo(-78.5 - 40 / (111.32 * Math.cos((44.5 * Math.PI) / 180)), 2);
+    expect(bbox[3]).toBeCloseTo(44.5 + 40 / 111.32, 2);
+    expect(to('climate-hourly')[0].searchParams.get('CLIMATE_IDENTIFIER')).toBe('7000100');
   });
 
   test('none in range: the archive is off, and no data is asked for', async () => {
@@ -87,11 +107,11 @@ describe('the station', () => {
 
   test('the config names a station: its own record is read (name, elevation), and an unknown one turns the archive off', async () => {
     const {archive, to} = archiveOver(
-      {'climate-stations': collection([LANSE]), 'climate-hourly': collection([])},
-      {...HOUSE, station: '7099160'},
+      {'climate-stations': collection([LAKESIDE]), 'climate-hourly': collection([])},
+      {...HOUSE, station: '7000100'},
     );
-    expect((await archive.rows('wind', 'hour', START, END))?.station).toBe("L'ANSE-GRISE");
-    expect(to('climate-stations')[0].searchParams.get('CLIMATE_IDENTIFIER')).toBe('7099160');
+    expect((await archive.rows('wind', 'hour', START, END))?.station).toBe('LAKESIDE');
+    expect(to('climate-stations')[0].searchParams.get('CLIMATE_IDENTIFIER')).toBe('7000100');
     const unknown = archiveOver({'climate-stations': collection([])}, {...HOUSE, station: '1'});
     expect(await unknown.archive.rows('wind', 'hour', START, END)).toBeNull();
   });
@@ -106,7 +126,7 @@ describe('the station', () => {
 
   test('a station whose last hourly date is not a date is not active', async () => {
     const {archive} = archiveOver({
-      'climate-stations': collection([station('1', 'ODD', -72.6, 46.75, {HLY_LAST_DATE: null})]),
+      'climate-stations': collection([station('1', 'ODD', -78.5, 44.5, {HLY_LAST_DATE: null})]),
     });
     expect(await archive.rows('wind', 'hour', START, END)).toBeNull();
   });
@@ -189,7 +209,7 @@ describe('hourly rows', () => {
   });
 
   test('a station with no elevation on record is taken at sea level', async () => {
-    const flat = collection([station('7099160', 'FLAT', -72.6, 46.75, {ELEVATION: null})]);
+    const flat = collection([station('7000100', 'FLAT', -78.5, 44.5, {ELEVATION: null})]);
     const {archive} = archiveOver({
       'climate-stations': flat,
       'climate-hourly': collection([hourly('2026-11-10T05:00:00', {STATION_PRESSURE: 101, TEMP: 5})]),
@@ -210,6 +230,17 @@ describe('hourly rows', () => {
     ];
     const {archive} = archiveOver({'climate-stations': AREA, 'climate-hourly': () => pages.shift()});
     expect((await archive.rows('outT', 'hour', START, END))?.rows.map(r => r.mean)).toEqual([1, 2]);
+  });
+
+  test('the read ends on the running total: a last page that still carries a next link is not followed', async () => {
+    const next = {rel: 'next', href: 'https://api.weather.gc.ca/collections/climate-hourly/items?offset=2'};
+    const pages = [
+      collection([hourly('2026-11-10T05:00:00', {TEMP: 1})], {numberMatched: 2, links: [next]}),
+      collection([hourly('2026-11-10T06:00:00', {TEMP: 2})], {numberMatched: 2, links: [next]}),
+    ];
+    const {archive, to} = archiveOver({'climate-stations': AREA, 'climate-hourly': () => pages.shift()});
+    expect((await archive.rows('outT', 'hour', START, END))?.rows.map(r => r.mean)).toEqual([1, 2]);
+    expect(to('climate-hourly')).toHaveLength(2);
   });
 
   test('a page that says there is more and gives no link ends the read', async () => {
@@ -270,7 +301,7 @@ describe('daily rows', () => {
     ]);
     const asked = to('climate-daily')[0].searchParams;
     expect(asked.get('datetime')).toBe('2026-10-29/2026-11-10');
-    expect(asked.get('CLIMATE_IDENTIFIER')).toBe('7099160');
+    expect(asked.get('CLIMATE_IDENTIFIER')).toBe('7000100');
     expect(asked.get('properties')).toBe('LOCAL_DATE,MEAN_TEMPERATURE,MIN_TEMPERATURE,MAX_TEMPERATURE');
     expect(asked.get('sortby')).toBe('LOCAL_DATE');
   });

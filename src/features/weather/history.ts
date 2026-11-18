@@ -4,6 +4,7 @@
 // Numbers come back as numbers, except in the season view and the chart callbacks, which take `fmt`, `t` and `now` as arguments.
 // Must not: call the API client or the cache, read the clock or the DOM, or pick a colour of its own (every colour is a caller's
 // token; `transparent` is the absence of one, and the sizes are the legacy options' constants).
+import type {ArchiveNotice} from '../../core/archive-statistics.ts';
 import type {EntityKey} from '../../core/entities.ts';
 import {capitalise, DASH, DAY_MS, HOUR_MS, hundredths} from '../../core/figures.ts';
 import type {HistoryPoint, StatisticRow} from '../../core/ha.ts';
@@ -290,6 +291,10 @@ export const STATISTICS_TTL_MS = 15 * 60_000;
 
 /** How long a tile's history stays fresh in the cache: the ten minutes the legacy sheet kept it. */
 export const HISTORY_TTL_MS = 10 * 60_000;
+
+/** The line that says where the earlier part of a chart comes from: `Before Nov 10: ECCC, LAKESIDE`, `Avant le 10 nov. : ECCC, ...`. */
+export const archiveSource = (notice: ArchiveNotice, {fmt, t}: {fmt: Formatters; t: Translate}): string =>
+  t('archive.source', {date: fmt.date(notice.before), station: notice.station});
 
 /** How far back the seven-day charts reach. */
 export const WEEK_DAYS = 7;

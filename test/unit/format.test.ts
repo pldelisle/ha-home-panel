@@ -10,6 +10,7 @@ import {
   percent,
   power,
   powerParts,
+  startOfDay,
   temperature,
   temperatureFigure,
   type Formatters,
@@ -122,6 +123,18 @@ describe.each([
   const f = make(tag);
   test.each(rows)('%s', (_name, call, ...expected) => {
     expect(call(f)).toEqual(expected[col]);
+  });
+});
+
+describe('startOfDay: the first instant of a day key in the zone', () => {
+  const startIn = (day: string, timeZone: string) => startOfDay(day, make('en-CA', {timeZone}));
+
+  test("is local midnight, across the change of clock (Toronto, UTC-4 then UTC-5) and in a zone off the hour (St. John's)", () => {
+    expect(startIn('2026-10-31', 'America/Toronto')).toBe(Date.parse('2026-10-31T04:00:00Z'));
+    expect(startIn('2026-11-01', 'America/Toronto')).toBe(Date.parse('2026-11-01T04:00:00Z'));
+    expect(startIn('2026-11-02', 'America/Toronto')).toBe(Date.parse('2026-11-02T05:00:00Z'));
+    expect(startIn('2026-11-10', 'America/St_Johns')).toBe(Date.parse('2026-11-10T03:30:00Z'));
+    expect(startIn('2026-11-10', 'Pacific/Auckland')).toBe(Date.parse('2026-11-09T11:00:00Z'));
   });
 });
 

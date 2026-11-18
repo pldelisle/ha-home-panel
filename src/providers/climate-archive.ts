@@ -1,14 +1,16 @@
-// The ECCC climate archive: the observed past of Environment and Climate Change Canada's climate stations, answered in the recorder's shape.
-// Pattern: an adapter behind the StatisticsArchive port (Cockburn, Hexagonal Architecture) and an anti-corruption layer (Evans, Domain-Driven
-// Design): the OGC API Features replies (api.weather.gc.ca, GeoJSON) are read into `StatisticRow`s here and nowhere else, under the Weather
-// tab's entity keys. A pure mapping over an injected `fetch`: the station choice, the requests, the fields, the sea-level pressure and the
-// fold of hourly rows into local days (a day starts at local midnight in the house's zone, as the recorder's `day` rows do).
-// Must not: read the clock but through the `now` it is given, touch the DOM, know a feature, write anything, or keep a failure (the
-// decorator takes it as "no rows" and the next read asks again).
-import {isRecord} from '../core/config.ts';
+// The ECCC climate archive: the observed past of Environment and Climate Change Canada's climate stations, in the recorder's shape.
+// Pattern: an adapter behind the StatisticsArchive port (Cockburn) and an anti-corruption layer (Evans): the GeoJSON of api.weather.gc.ca
+// is read into `StatisticRow`s here, under the Weather tab's keys, over an injected `fetch`; a day starts at local midnight in the house's zone.
+// Must not: read the clock but through the `now` it is given, touch the DOM, know a feature, write anything, or keep a failure (the decorator
+// takes it as "no rows", and the archive is asked again once the cache entry of that read expires).
+import {isRecord, type ResolvedConfig} from '../core/config.ts';
 import type {ArchiveFill, StatisticsArchive} from '../core/archive-statistics.ts';
 import type {EntityKey} from '../core/entities.ts';
-import type {StatisticRow} from '../core/ha.ts';
+import {DAY_MS, HOUR_MS} from '../core/figures.ts';
+import type {StatisticRow, StatisticsPeriod} from '../core/ha.ts';
+import type {PanelHass} from '../core/hass.ts';
+import {createFormatters, startOfDay} from '../core/i18n/format.ts';
+import {englishLocale} from '../core/i18n/locale.ts';
 
 /** `fetch` as far as the archive needs it: a url in, the decoded JSON out, a rejection for any failure. */
 export type Fetcher = (url: string) => Promise<unknown>;
@@ -29,9 +31,16 @@ export interface ClimateArchiveOptions {
   house: () => ArchiveHouse | null;
 }
 
+/** The house as the archive reads it, from the resolved config and the hass the store holds: null before Home Assistant is connected. */
+export const archiveHouse = ({climateStation}: ResolvedConfig, hass: PanelHass | null): ArchiveHouse | null =>
+  hass && {
+    latitude: hass.config.latitude ?? null,
+    longitude: hass.config.longitude ?? null,
+    timeZone: hass.config.time_zone,
+    station: climateStation,
+  };
+
 const API = 'https://api.weather.gc.ca/collections';
-const HOUR_MS = 3_600_000;
-const DAY_MS = 24 * HOUR_MS;
 /** How far from the house a station may be, and how recent its last hourly row: an old station says nothing of this house's weather now. */
 const RADIUS_KM = 40;
 const MAX_AGE_MS = 30 * DAY_MS;
@@ -104,53 +113,46 @@ const kilometres = (lat1: number, lon1: number, lat2: number, lon2: number): num
   return 2 * EARTH_KM * Math.asin(Math.sqrt(a));
 };
 
-/** The days of one zone: the day a moment falls on, and the moment a day starts. `Intl` only, never the browser's zone. */
+/** What one read asks of the archive: one series of one station over `[from, to)`, in the house's zone. */
+interface Query {
+  station: Station;
+  key: EntityKey;
+  from: number;
+  to: number;
+  timeZone: string;
+}
+
+type Statistic = 'mean' | 'min' | 'max';
+
+// the days of a zone by the core's formatters, which are costly to build: one per zone
+const zones = new Map<string, ReturnType<typeof zoneOf>>();
 function zoneOf(timeZone: string) {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone,
-    hourCycle: 'h23',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  });
-  const read = (ms: number) => {
-    const found = Object.fromEntries(parts.formatToParts(ms).map(part => [part.type, Number(part.value)]));
-    return {day: `${found.year}-${String(found.month).padStart(2, '0')}-${String(found.day).padStart(2, '0')}`, found};
-  };
-  // how far the zone's clock is ahead of UTC at `ms`
-  const offset = (ms: number) => {
-    const {found} = read(ms);
-    return (
-      Date.UTC(found.year, found.month - 1, found.day, found.hour, found.minute, found.second) -
-      Math.floor(ms / 1000) * 1000
-    );
-  };
+  const fmt = createFormatters(englishLocale(timeZone));
   return {
-    dayOf: (ms: number): string => read(ms).day,
-    /** The instant the local day `day` (`YYYY-MM-DD`) begins; the offset is read again at the guess, which is right across a change of clock. */
-    startOf(day: string): number {
-      const utc = Date.parse(`${day}T00:00:00Z`);
-      return utc - offset(utc - offset(utc));
-    },
+    dayOf: (ms: number): string => fmt.isoDay(ms),
+    /** The instant the local day `day` (`YYYY-MM-DD`) begins. */
+    startOf: (day: string): number => startOfDay(day, fmt),
     next: (day: string): string => new Date(Date.parse(`${day}T00:00:00Z`) + DAY_MS).toISOString().slice(0, 10),
   };
 }
+const zoneFor = (timeZone: string) => {
+  const known = zones.get(timeZone) ?? zoneOf(timeZone);
+  zones.set(timeZone, known);
+  return known;
+};
 
 export function createClimateArchive({fetch: get, now, house}: ClimateArchiveOptions): StatisticsArchive {
-  /** Every feature of a query, following the `next` link while the page says there is more. */
+  /** Every feature of a query, following the `next` link until the rows matched are in or there is none. */
   async function features(url: string): Promise<Record<string, unknown>[]> {
     const found: Record<string, unknown>[] = [];
     for (let next: string | undefined = url, page = 0; next && page < MAX_PAGES; page++) {
       const reply = await get(next);
       if (!isRecord(reply) || !Array.isArray(reply.features)) throw new Error('ECCC climate archive: unexpected reply');
-      const items = reply.features as Record<string, unknown>[];
-      found.push(...items);
+      found.push(...(reply.features as Record<string, unknown>[]));
       const links = Array.isArray(reply.links) ? (reply.links as Record<string, unknown>[]) : [];
-      const more = typeof reply.numberMatched === 'number' && items.length < reply.numberMatched;
-      next = more ? (links.find(link => link.rel === 'next')?.href as string | undefined) : undefined;
+      // the running total ends the read, whatever a last page's links say
+      const done = typeof reply.numberMatched === 'number' && found.length >= reply.numberMatched;
+      next = done ? undefined : (links.find(link => link.rel === 'next')?.href as string | undefined);
     }
     return found;
   }
@@ -206,43 +208,38 @@ export function createClimateArchive({fetch: get, now, house}: ClimateArchiveOpt
     return lookup;
   }
 
-  /** The hourly rows of `[from, to)` as `[start, value]`, the key's field read, the sea-level pressure made. */
-  async function hours(station: Station, key: EntityKey, from: number, to: number): Promise<[number, number][]> {
+  /** The hourly rows of the query as `[start, value]`, the key's field read, the sea-level pressure made. */
+  async function hours({station, key, from, to}: Query): Promise<[number, number][]> {
     const field = HOURLY[key]!;
-    const properties = ['UTC_DATE', field, ...(key === 'pres' ? ['TEMP'] : [])].join(',');
+    const pressure = key === 'pres';
     const params = {
       CLIMATE_IDENTIFIER: station.id,
       datetime: `${new Date(from).toISOString()}/${new Date(to - 1).toISOString()}`,
       sortby: 'UTC_DATE',
       limit: '10000',
-      properties,
+      properties: ['UTC_DATE', field, ...(pressure ? ['TEMP'] : [])].join(','),
     };
     return (await query('climate-hourly', params)).flatMap(feature => {
       const row = propertiesOf(feature);
       // UTC_DATE comes with no `Z`: it is UTC all the same
       const at = Date.parse(`${String(row.UTC_DATE)}Z`);
       let value = numberAt(row, field);
-      if (value !== null && key === 'pres') value = seaLevel(value, numberAt(row, 'TEMP'), station.elevation);
+      if (value !== null && pressure) value = seaLevel(value, numberAt(row, 'TEMP'), station.elevation);
       return value === null || !(at >= from && at < to) ? [] : [[at, value] as [number, number]];
     });
   }
 
-  /** What `rows` answers for an hourly period: a row per hour whose value is there. */
-  async function hourRows(station: Station, key: EntityKey, from: number, to: number): Promise<StatisticRow[]> {
-    const values = await hours(station, key, from, to);
+  /** A row per hour whose value is there. */
+  async function hourRows(q: Query): Promise<StatisticRow[]> {
+    const values = await hours(q);
     return values.map(([start, value]) => ({start, end: start + HOUR_MS, mean: value, min: value, max: value}));
   }
 
-  /** The days of `[from, to)`: the daily series where the key has one, else the hourly rows folded by local day. */
-  async function dayRows(
-    station: Station,
-    key: EntityKey,
-    from: number,
-    to: number,
-    timeZone: string,
-  ): Promise<StatisticRow[]> {
-    const zone = zoneOf(timeZone);
-    const statistic = (start: string, values: Partial<Record<'mean' | 'min' | 'max', number>>): StatisticRow[] => {
+  /** The days of the query: the daily series where the key has one, else the hourly rows folded by local day. */
+  async function dayRows(q: Query): Promise<StatisticRow[]> {
+    const {station, key, from, to} = q;
+    const zone = zoneFor(q.timeZone);
+    const statistic = (start: string, values: Partial<Record<Statistic, number>>): StatisticRow[] => {
       const row: StatisticRow = {start: zone.startOf(start), end: zone.startOf(zone.next(start)), ...values};
       // a day that ended before the range starts, or began after it ends, is not part of it
       return Object.keys(values).length && row.end > from && row.start < to ? [row] : [];
@@ -258,8 +255,8 @@ export function createClimateArchive({fetch: get, now, house}: ClimateArchiveOpt
       };
       return (await query('climate-daily', params)).flatMap(feature => {
         const row = propertiesOf(feature);
-        const values: Partial<Record<'mean' | 'min' | 'max', number>> = {};
-        for (const [name, field] of Object.entries(daily) as ['mean' | 'min' | 'max', string][]) {
+        const values: Partial<Record<Statistic, number>> = {};
+        for (const [name, field] of Object.entries(daily) as [Statistic, string][]) {
           const value = numberAt(row, field);
           if (value !== null) values[name] = value;
         }
@@ -268,7 +265,7 @@ export function createClimateArchive({fetch: get, now, house}: ClimateArchiveOpt
       });
     }
     // from the local midnight of the first day, so that the first day is whole
-    const values = await hours(station, key, zone.startOf(zone.dayOf(from)), to);
+    const values = await hours({...q, from: zone.startOf(zone.dayOf(from))});
     const byDay = new Map<string, number[]>();
     for (const [at, value] of values) {
       const day = zone.dayOf(at);
@@ -283,18 +280,22 @@ export function createClimateArchive({fetch: get, now, house}: ClimateArchiveOpt
     );
   }
 
+  // the periods the archive keeps (not the five minutes, which the recorder always has): which keys each covers, and how it reads
+  const PERIODS: Partial<
+    Record<StatisticsPeriod, {covers: (key: EntityKey) => boolean; rows: (q: Query) => Promise<StatisticRow[]>}>
+  > = {
+    hour: {covers: key => key in HOURLY, rows: hourRows},
+    day: {covers: key => key in HOURLY || key in DAILY, rows: dayRows},
+  };
+
   return {
     async rows(key, period, start, end): Promise<ArchiveFill | null> {
-      const covered = period === 'hour' ? HOURLY[key] : period === 'day' ? (HOURLY[key] ?? DAILY[key]) : undefined;
+      const kept = PERIODS[period];
       const place = house();
-      if (!covered || !place) return null;
+      if (!kept?.covers(key) || !place) return null;
       const station = await stationFor(place);
       if (!station) return null;
-      const [from, to] = [start.getTime(), end.getTime()];
-      const rows =
-        period === 'hour'
-          ? await hourRows(station, key, from, to)
-          : await dayRows(station, key, from, to, place.timeZone);
+      const rows = await kept.rows({station, key, from: start.getTime(), to: end.getTime(), timeZone: place.timeZone});
       return {station: station.name, rows};
     },
   };

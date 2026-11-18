@@ -129,9 +129,15 @@ export const panelConfig = block({
       reminders: optional(oneOrList(reminder)),
     }),
   ),
-  // the ECCC climate station whose past fills the Weather tab's charts before the recorder's first row: its climate identifier,
-  // or false to turn that off; left out, the nearest active hourly station within 40 km of the house
-  climate_station: optional(either(v => typeof v === 'string', string(), literal(false))),
+  // the ECCC climate station whose past fills the Weather tab's charts before the recorder's first row: its climate identifier
+  // (YAML reads 7000100 as a number, which counts), or false to turn that off; left out, the nearest active hourly station within 40 km of the house
+  climate_station: optional(
+    either(
+      v => typeof v === 'number',
+      number(),
+      either(v => typeof v === 'string', string(), literal(false)),
+    ),
+  ),
   // a name per language, for the name Home Assistant gives (the exact name), an entity id, an area id or a device id
   names: optional(dictionary(dictionary(string()))),
   // Home Assistant adds this to every custom panel's config; it is not ours to check
@@ -375,6 +381,12 @@ function roomSpec(r: Infer<typeof room>, states: ConfigStates): RoomSpec {
   };
 }
 
+/** The station as the resolver keeps it: the identifier as text (a number is one YAML wrote unquoted), false for none, else null. */
+const climateStationOf = (station: string | number | false | undefined): string | false | null => {
+  if (typeof station === 'number') return Number.isFinite(station) ? String(station) : null;
+  return station === false ? false : station || null;
+};
+
 const asList = <T>(v: T | T[] | undefined): T[] => (v === undefined ? [] : Array.isArray(v) ? v : [v]);
 // a person's first name from the friendly name discovery found: String() of it, as the old resolver read it
 const firstWord = (s: unknown): string => {
@@ -450,7 +462,7 @@ export function resolveConfig(raw: unknown, states?: ConfigStates | null): Resol
     house: house && house.day ? house : null,
     // a name (or an id) to one name per language; the name resolver in the core reads it
     names: cfg.names ?? {},
-    climateStation: cfg.climate_station || (cfg.climate_station === false ? false : null),
+    climateStation: climateStationOf(cfg.climate_station),
     car: {
       name: cfg.car?.name || null,
       color: cfg.car?.color || null,

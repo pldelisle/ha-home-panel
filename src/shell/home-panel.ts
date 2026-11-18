@@ -18,10 +18,12 @@ import {createSettings, type KeyValueStorage} from '../core/settings.ts';
 import {createStatisticsCache, STATISTICS_TTL_MS} from '../core/statistics-cache.ts';
 import type {ForecastEntry} from '../core/ha.ts';
 import {createStore} from '../core/store.ts';
+import {archiveHouse, createClimateArchive, jsonFetcher} from '../providers/climate-archive.ts';
 import {MediaQueryController} from '../ui/controllers/media-query.ts';
 import {StoreController} from '../ui/controllers/store-controller.ts';
 import {
   apiContext,
+  climateArchiveContext,
   forecastContext,
   optimisticContext,
   settingsContext,
@@ -132,6 +134,12 @@ export class HomePanel extends LitElement {
     ttlMs: STATISTICS_TTL_MS,
     onLoad: () => this.requestUpdate(),
   });
+  /** ECCC's climate archive over `fetch`, for the Weather pane's caches: the house is read at each call, so a new config or hass applies. */
+  private readonly climateArchive = createClimateArchive({
+    fetch: jsonFetcher(),
+    now: Date.now,
+    house: () => archiveHouse(this.store.config, this.store.hass),
+  });
   private readonly settings = createSettings(browserStorage());
   // what the household asked for and Home Assistant has not confirmed yet: the panel's elements share it (ADR 0023)
   private readonly optimistic = new OverlayStore();
@@ -238,6 +246,7 @@ export class HomePanel extends LitElement {
     new ContextProvider(this, {context: storeContext, initialValue: this.store});
     new ContextProvider(this, {context: apiContext, initialValue: this.api});
     new ContextProvider(this, {context: statisticsCacheContext, initialValue: this.statistics});
+    new ContextProvider(this, {context: climateArchiveContext, initialValue: this.climateArchive});
     new ContextProvider(this, {context: settingsContext, initialValue: this.settings});
     new ContextProvider(this, {context: optimisticContext, initialValue: this.optimistic});
     this.forecast = new ContextProvider(this, {context: forecastContext, initialValue: []});
