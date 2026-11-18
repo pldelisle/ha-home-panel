@@ -2,13 +2,14 @@
 // Pattern: a pure function at the language seam (ADR 0013), a humble object's other half (Meszaros, Fowler): inputs in, the strings
 // the list and the phone's tiles place out, every word through `deps.t`; the legacy `climItems()`'s rules.
 // Must not: import Lit or the DOM, read state or the clock, or hold a word a person reads (a catalog key says it).
-import {DASH} from '../../core/figures.ts';
+import {withSuffix} from '../../core/figures.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
-import {power, temperature, type Formatters} from '../../core/i18n/format.ts';
+import {power, temperatureFigure, type Formatters} from '../../core/i18n/format.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
 import {roomName, type RoomNameDeps} from '../../core/i18n/room-name.ts';
 import type {HeatPumpInputs} from '../../providers/heat-pump.ts';
 import type {IconName} from '../../ui/icons.ts';
+import {bareReading, type Reading} from '../../ui/reading.ts';
 import {OFF_AT_OR_BELOW, type RoomPower} from '../../providers/power.ts';
 import type {ClimateInputs} from './inputs.ts';
 
@@ -27,14 +28,13 @@ const ACTION_WORDS: ReadonlyMap<string, MessageKey> = new Map([
 /** `on` for what is heating, `bad` for what is offline or unavailable. */
 export type Tone = '' | 'on' | 'bad';
 
-export interface ClimateItem {
+export interface ClimateItem extends Pick<Reading, 'value' | 'missing'> {
   /** `house`, `hp`, or the room's key. */
   id: string;
   /** The glyph's name: the room's own, `house` for the whole house, `fan` for the heat pump. */
   icon: IconName;
   name: string;
   sub: string;
-  value: string;
   tone: Tone;
 }
 
@@ -77,6 +77,10 @@ function heatPumpStatus(heatPump: HeatPumpInputs, brand: string, {t, fmt}: Clima
   return t('climate.hpActionTo', {brand, action, n: fmt.number(heatPump.target, 2)});
 }
 
+/** A temperature to a tenth with its degree sign, for an item or a tile that writes the sign in its figure; null for no reading. */
+export const degreesOf = (fmt: Formatters, n: number | null): string | null =>
+  withSuffix(temperatureFigure(fmt, n), '°');
+
 /** The items in list order: the whole house, each room, then the heat pump when the house has one. */
 export function climateItems({rooms, heatPump, heatPumpOn}: ClimateInputs, deps: ClimateItemsDeps): ClimateItem[] {
   const {t, fmt} = deps;
@@ -88,7 +92,7 @@ export function climateItems({rooms, heatPump, heatPumpOn}: ClimateInputs, deps:
       icon: 'house',
       name: t('climate.wholeHouse'),
       sub: t(heatPumpOn ? 'climate.heatPumpPlusRooms' : 'climate.roomsHeating', {n: heating}),
-      value: average === null ? DASH : temperature(fmt, average),
+      ...bareReading(t, degreesOf(fmt, average)),
       tone: heating || heatPumpOn ? 'on' : '',
     },
     ...rooms.map((room): ClimateItem => ({
@@ -96,7 +100,7 @@ export function climateItems({rooms, heatPump, heatPumpOn}: ClimateInputs, deps:
       icon: room.icon,
       name: roomName(room, deps),
       sub: roomStatus(room, deps),
-      value: temperature(fmt, room.temperature),
+      ...bareReading(t, degreesOf(fmt, room.temperature)),
       tone: room.heating ? 'on' : !room.available ? 'bad' : '',
     })),
   ];
@@ -106,7 +110,7 @@ export function climateItems({rooms, heatPump, heatPumpOn}: ClimateInputs, deps:
       icon: 'fan',
       name: t('climate.heatPump'),
       sub: heatPumpStatus(heatPump, heatPump.brand ?? t('climate.heatPump'), deps),
-      value: heatPump.available && heatPump.temperature !== null ? temperature(fmt, heatPump.temperature) : DASH,
+      ...bareReading(t, heatPump.available ? degreesOf(fmt, heatPump.temperature) : null),
       tone: !heatPump.available ? 'bad' : heatPumpOn ? 'on' : '',
     });
   }

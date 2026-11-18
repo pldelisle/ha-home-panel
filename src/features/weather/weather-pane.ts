@@ -188,7 +188,7 @@ export class WeatherPane extends LitElement {
         }
         <div class="txt">
           <div class="wxsun">${card.sunLabel} <b>${card.sunTime}</b></div>
-          <div class="num wxtemp">${card.temperature}</div>
+          <div class=${card.temperatureMissing ? 'na' : 'num wxtemp'}>${card.temperature}</div>
           <div class="wxcond">${card.condition}</div>
           <div class="wxrange">${card.range}</div>
         </div>
@@ -228,6 +228,7 @@ export class WeatherPane extends LitElement {
             .sub=${tile.sub}
             .value=${tile.value}
             .unit=${tile.unit}
+            .missing=${tile.missing ?? false}
             .tone=${tile.tone ?? ''}
           ></hp-stat-tile>`,
       )}

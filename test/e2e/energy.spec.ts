@@ -201,7 +201,7 @@ test.describe('on a phone', () => {
     const atStart = await energyReads(house);
     expect(await yearReads(house), 'at start').toBe(0);
     await openTab(house);
-    await expect(detail(house).locator('.totals .tile .v').first()).not.toHaveText(/^–/);
+    await expect(detail(house).locator('.totals .tile .v').first()).not.toHaveText(/^No reading/);
     await expect.poll(() => yearReads(house), 'opening Energy').toBe(1);
     expect(await energyReads(house), 'opening Energy').toBe(atStart + 1);
   });
@@ -483,14 +483,16 @@ test.describe('the detail on a tablet', () => {
       'EV, 30 days',
       'Rate now',
     ]);
-    await expect(detail(house).locator('.totals .tile .v')).toHaveText([
+    // a figure is `.v` with its unit; no reading is the kit's `.na`, with no unit
+    await expect(detail(house).locator('.totals .tile .v, .totals .tile .na')).toHaveText([
       '0.0kWh',
-      '–kWh',
+      'No reading',
       '0kWh',
       '0kWh',
       '1,100kWh',
-      '–¢',
+      'No reading',
     ]);
+    await expect(detail(house).locator('.totals .tile .na')).toHaveCount(2);
     await expect(detail(house).locator('.totals .tile .s')).toHaveText([
       'until 8:00 am',
       '0.0 kWh a day',
@@ -645,6 +647,23 @@ test.describe('the bare house, with no history yet', () => {
     // nothing of what an empty chart drew: no chart (axes), no donut's table, no tile of 0 kWh, no legend
     await expect(detail(house).locator('hp-chart')).toHaveCount(0);
     await expect(detail(house).locator('.donut, .totals, .tile, .legend')).toHaveCount(0);
+  });
+});
+
+// The Hilo card of a house whose rate sensor reads nothing says "No reading" in the line's style, with no unit, where the rate and the tiles would be a dash and a unit (#418).
+test.describe('the Hilo card with no reading', () => {
+  test.use({houseOpts: {house: 'bare'}});
+  test.beforeEach(() => tabletOnly());
+
+  test('the rate and the three tiles say "No reading", and the rate comes back with a reading', async ({house}) => {
+    await house.setState(HILO_RATE, {state: 'unavailable'});
+    await house.tab('energy');
+    await expect(hilo(house).locator('.hero .na')).toHaveText('No reading');
+    await expect(hilo(house).locator('.hero .v')).toHaveCount(0);
+    await expect(hilo(house).locator('.tile .na')).toHaveText(['No reading', 'No reading', 'No reading']);
+    await addHilo(house);
+    await expect(hilo(house).locator('.hero .v')).toHaveText('7.32¢/kWh');
+    await expect(hilo(house).locator('.hero .na')).toHaveCount(0);
   });
 });
 

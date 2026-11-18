@@ -1,5 +1,5 @@
 // automationsModel: what the Automations pane shows, from the automations' states and what the loader read: the line under the
-// heading, the Today card (the timeline's dots and the three tiles), the flow cards with their Mermaid definitions, and the list of every automation.
+// heading, the Today card (the timeline's dots and its tiles), the flow cards with their Mermaid definitions, and the list of every automation.
 // Pattern: a view model (Fowler, Presentation Model) the pane places, the rules of the legacy `renderAuto()`, worded in the panel's
 // language through the catalog, so French is the catalog's from the first paint.
 // Must not: read the clock or the DOM (the time, the width and the theme's colours are passed in), load anything, or draw.
@@ -66,7 +66,8 @@ export interface TodayView {
   dots: DotView[];
   /** The four marks a dot takes, each with its words, drawn under the line as the flow's lines are. */
   legend: {mark: 'ran' | 'skip' | 'now' | 'up'; label: string}[];
-  tiles: [TileView, TileView, TileView];
+  /** Ran today, Next, and Then: Then is left out when nothing follows Next. */
+  tiles: TileView[];
 }
 
 export type CardKind = 'selected' | 'running' | 'decision' | 'completed';
@@ -246,14 +247,12 @@ export function automationsModel(
       },
       {
         label: t('automations.tile.next'),
-        value: next ? fmt.time(new Date(next.t)) : '–',
+        value: next ? fmt.time(new Date(next.t)) : t('automations.tile.none'),
         sub: next ? shortAlias(next.name) : t('automations.tile.nothingElse'),
       },
-      {
-        label: t('automations.tile.then'),
-        value: then ? fmt.time(new Date(then.t)) : '–',
-        sub: then ? shortAlias(then.name) : '—',
-      },
+      ...(then
+        ? [{label: t('automations.tile.then'), value: fmt.time(new Date(then.t)), sub: shortAlias(then.name)}]
+        : []),
     ],
   };
 

@@ -132,13 +132,13 @@ describe('Climate', () => {
     expect(french?.line).toBe('Intérieur · 2 pièces chauffent · thermopompe : chauffe');
   });
 
-  test('a dash when no room reads a temperature', () => {
+  test('"No reading" when no room reads a temperature', () => {
     const silent = Object.fromEntries(
       Object.keys(fullHouse.states)
         .filter(id => id.startsWith('climate.') || /temperature/.test(id))
         .map(id => [id, {state: 'unavailable', attributes: {current_temperature: null}}]),
     );
-    expect(climateGlance(full(silent))?.value).toBe('–');
+    expect(climateGlance(full(silent))).toMatchObject({value: 'No reading', missing: true});
   });
 });
 

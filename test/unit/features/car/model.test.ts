@@ -369,7 +369,12 @@ describe('a car with every sensor', () => {
       daily: null,
     });
     expect(early.detail?.sessions).toMatchObject({summary: '', tiles: [], months: [], rows: [], toggle: null});
-    expect(early.detail?.last.tiles[3]).toMatchObject({label: 'Delivered', value: '–'});
+    expect(early.detail?.last.tiles[3]).toMatchObject({
+      label: 'Delivered',
+      value: 'No reading',
+      unit: '',
+      missing: true,
+    });
   });
 
   test('no session in the year says so, and a dash for the average', () => {
@@ -378,7 +383,7 @@ describe('a car with every sensor', () => {
     expect(none?.tiles).toEqual([
       {label: 'Sessions', value: '0', unit: '', sub: '', word: false},
       {label: 'Delivered', value: '0', unit: 'kWh', sub: '', word: false},
-      {label: 'Average', value: '–', unit: 'kWh', sub: 'per session', word: false},
+      {label: 'Average', value: 'No reading', unit: '', missing: true, sub: 'per session', word: false},
       {label: 'Est. cost', value: '$0', unit: '', sub: 'at 7¢/kWh', word: false},
     ]);
   });
@@ -645,10 +650,10 @@ describe('the other shapes of a car', () => {
     expect(detail.sub).toBe('');
     expect(detail.summary.facts).toEqual([{text: 'Plugged in', tone: 'plain'}]);
     expect(detail.status.tires.map(tire => [tire.psi, tire.state])).toEqual([
-      ['–', null],
-      ['–', null],
-      ['–', null],
-      ['–', null],
+      ['No reading', null],
+      ['No reading', null],
+      ['No reading', null],
+      ['No reading', null],
     ]);
     expect(detail.status.rows).toEqual([]);
     expect(detail.ford).toBeNull();

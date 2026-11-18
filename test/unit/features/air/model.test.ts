@@ -150,7 +150,7 @@ describe('the test house', () => {
     expect(vm.detail.rooms[0].tiles[3]).toMatchObject({label: 'CO', value: '1,0'});
     expect(vm.detail.rooms[0].headline).toBe('PM2,5 moyen · 21,4°');
     expect(vm.detail.outside?.more).toBe('CAS 2 · PM2,5 9,0 µg/m³ · station à 6 km');
-    expect(vm.detail.outside?.pollen?.[0]).toEqual({label: 'Pollen des arbres', value: 'Bas'});
+    expect(vm.detail.outside?.pollen?.[0]).toEqual({label: 'Pollen des arbres', value: 'Bas', unit: ''});
   });
 });
 
@@ -263,9 +263,18 @@ describe('the card’s figures', () => {
     expect([co(0.5), co(9.9), co(10)]).toEqual(['0.5', '9.9', '10']);
   });
 
-  test('the particles and the humidity are whole numbers, a dash when missing; only rated pollutants run high', () => {
+  test('the particles and the humidity are whole numbers, "No reading" with no unit when missing; only rated pollutants run high', () => {
     const tiles = modelOf(inputsOf([room({readings: {pm1: 5.6, humidity: 38.4, pm2_5: 40}})])).detail.rooms[0].tiles;
-    expect(tiles.map(tile => tile.value)).toEqual(['40', '–', '–', '–', '6', '–', '38']);
+    const none = {value: 'No reading', unit: '', missing: true};
+    expect(tiles.map(({value, unit, missing}) => ({value, unit, ...(missing ? {missing} : {})}))).toEqual([
+      expect.objectContaining({value: '40'}),
+      none,
+      none,
+      none,
+      expect.objectContaining({value: '6'}),
+      none,
+      expect.objectContaining({value: '38'}),
+    ]);
     expect(tiles.map(tile => tile.high)).toEqual([true, false, false, false, false, false, false]);
   });
 });
@@ -335,7 +344,7 @@ describe('the outside air', () => {
     expect(vm.card).toMatchObject({outside: null});
     expect(vm.detail.outside).toMatchObject({
       state: 'No data',
-      reading: {value: '–'},
+      reading: {value: 'No reading', unit: '', missing: true},
       more: 'station 7 km away',
       tone: 0,
     });
@@ -348,10 +357,10 @@ describe('the outside air', () => {
     expect(outside({aqi: 120}).outside).toMatchObject({state: 'Poor', tone: 2});
   });
 
-  test('pollen: the statuses the catalog words, any other capitalised with its underscores read as spaces, a dash when one is missing; none reported is the hint', () => {
+  test('pollen: the statuses the catalog words, any other capitalised with its underscores read as spaces, "No reading" when one is missing; none reported is the hint', () => {
     const pollen = outside({pollen: {trees: 'very_high', grass: 'very_low', weeds: 'extreme', mold: null}}).outside
       ?.pollen;
-    expect(pollen?.map(p => p.value)).toEqual(['Very high', 'Very low', 'Extreme', '–']);
+    expect(pollen?.map(p => p.value)).toEqual(['Very high', 'Very low', 'Extreme', 'No reading']);
     const none = outside({pollen: {trees: null, grass: null, weeds: null, mold: null}}).outside;
     expect(none).toMatchObject({
       pollen: null,
@@ -420,9 +429,9 @@ describe('a tile opens its history', () => {
     expect(fr[3].value).toBe('1,0');
   });
 
-  test('a reading with no value shows a dash and still says what a tap does', () => {
+  test('a reading with no value says "No reading" and still says what a tap does', () => {
     const {tiles} = modelOf(inputsOf([room()])).detail.rooms[0];
-    expect(tiles[0].value).toBe('–');
+    expect(tiles[0]).toMatchObject({value: 'No reading', unit: '', missing: true});
     expect(tiles[0].opens).toBe('Opens its history');
   });
 });

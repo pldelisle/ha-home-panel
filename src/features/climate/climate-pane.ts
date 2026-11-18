@@ -203,13 +203,14 @@ export class ClimatePane extends LitElement {
       ${repeat(
         tiles,
         ({id}) => id,
-        ({id, icon, name, sub, value, tone, wide}) =>
+        ({id, icon, name, sub, value, missing, tone, wide}) =>
           html`<hp-stat-tile
             .key=${id}
             .icon=${icon}
             .label=${name}
             .sub=${sub}
             .value=${value}
+            .missing=${missing ?? false}
             .tone=${wide ? `${tone} wide trail` : tone}
           ></hp-stat-tile>`,
       )}

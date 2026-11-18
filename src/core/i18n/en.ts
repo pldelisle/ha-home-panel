@@ -7,6 +7,8 @@ export const en = {
   'common.failed': "Didn't work: {reason}",
   // the failure toast's button (src/ui/toast.ts); a tap anywhere on the toast dismisses it too
   'common.dismiss': 'Dismiss',
+  // what a tile or a figure with no value says in its place, with no unit (src/ui/reading.ts, #418); the live Sankey says it too
+  'common.noReading': 'No reading',
   // the idle clock (src/features/clock/model.ts): the temperatures' line, its parts joined by " · ", and the next sun event
   'clock.inside': '{n}° inside',
   'clock.outside': '{n}° outside',
@@ -600,8 +602,7 @@ export const en = {
   'energy.tile.ev': 'EV charging',
   // the water heater's card and its 24-hour chart (src/features/energy/water-chart.ts)
   'energy.water.title': 'Water heater',
-  // the Home pane's Energy and Water heater tiles (src/features/energy/glance.ts, #267); a tile whose sensor reads nothing says so in its line's style, and so does the live Sankey
-  'energy.noReading': 'No reading',
+  // the Home pane's Energy and Water heater tiles (src/features/energy/glance.ts, #267)
   'energy.glance.line': 'Now · {kwh} kWh today · {rate}',
   'energy.glance.lineNow': 'Now · {rate}',
   'energy.glance.water': '{state} · {kwh} kWh today',
@@ -1279,6 +1280,7 @@ export const en = {
   'automations.tile.skipped': '{n} more checked and did nothing',
   'automations.tile.allPassed': 'every run passed its checks',
   'automations.tile.next': 'Next',
+  'automations.tile.none': 'None',
   'automations.tile.nothingElse': 'nothing else scheduled today',
   'automations.tile.then': 'Then',
   'automations.card.selected': 'Selected',

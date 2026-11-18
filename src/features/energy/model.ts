@@ -12,6 +12,7 @@ import type {Names} from '../../core/i18n/names.ts';
 import {roomName} from '../../core/i18n/room-name.ts';
 import type {RangeTab} from '../../ui/range-tabs.ts';
 import {emptyChartText} from '../../ui/chart-notice.ts';
+import {reading, type Reading} from '../../ui/reading.ts';
 import {RANGES} from '../../ui/ranges.ts';
 import {ENERGY_RANGES, mainRows, middleOf, type EnergyRange, type MainRows} from './charts.ts';
 import {flowLayout, LIVE_KW, type FlowGeometry} from './flow-layout.ts';
@@ -106,12 +107,6 @@ export interface EnergyModelDeps {
   error?: string | null;
 }
 
-/** A figure and the unit written small after it. */
-export interface Reading {
-  value: string;
-  unit: string;
-}
-
 /** A tile of the Hilo card or of the detail's totals: a reading with its label and a line under it (empty when there is none). */
 export interface EnergyTile extends Reading {
   label: string;
@@ -123,8 +118,6 @@ export interface EnergyTile extends Reading {
 /** A tile of the phone's Energy tab, which opens its card in a sheet. */
 export interface PhoneTile extends EnergyTile {
   key: 'water' | 'hilo';
-  /** The sensor reads nothing: `value` is the word that says so (with no unit), which the tile draws in the line's style, never a dash as its big figure. */
-  missing?: boolean;
   /** The water heater is heating. */
   on: boolean;
 }
@@ -317,7 +310,7 @@ function sankeyBlock(
     // the live flow is the power flow's geometry; with no reading from the grid there is nothing to show
     return (power.grid ?? 0) > 0
       ? block(t('energy.sankey.noteNow'), {kind: 'flow', flow})
-      : empty(t('energy.noReading'));
+      : empty(t('common.noReading'));
   }
   if (!history) return empty(t('energy.detail.loading'));
   const period = sankeyPeriod(sankey, history, power.rooms.length, deps);
@@ -369,7 +362,7 @@ function donutBlock(history: EnergyHistoryData | null, deps: DetailDeps): Energy
 /** The six totals the Hilo meter and the history give: today, yesterday, 30 days, this month, the car's 30 days and the rate now. */
 function totalsBlock(
   history: EnergyHistoryData | null,
-  rate: {value: string; tier: string},
+  rate: {value: string | null; tier: string},
   {now, t, fmt}: DetailDeps,
 ): EnergyDetailView['totals'] {
   const title = t('energy.totals.title');
@@ -387,42 +380,36 @@ function totalsBlock(
     tiles: [
       {
         label: t('energy.totals.today'),
-        value: fmt.fixed(totals.today, 1),
-        unit: UNIT.kwh,
+        ...reading(t, fmt.fixed(totals.today, 1), UNIT.kwh),
         sub: t('energy.totals.until', {time: fmt.time(now)}),
         range: 'today',
       },
       {
         label: t('energy.totals.yesterday'),
-        value: fixedOr(fmt, totals.yesterday, 1),
-        unit: UNIT.kwh,
+        ...reading(t, fixedOr(fmt, totals.yesterday, 1), UNIT.kwh),
         sub: '',
         range: 'week',
       },
       {
         label: t('energy.days30'),
-        value: whole(fmt, totals.d30),
-        unit: UNIT.kwh,
+        ...reading(t, whole(fmt, totals.d30), UNIT.kwh),
         sub: t('energy.totals.perDay', {kwh: fmt.fixed(totals.d30 / 30, 1)}),
         range: 'month',
       },
       {
         label: fmt.month(now, 'long'),
-        value: whole(fmt, totals.month),
-        unit: UNIT.kwh,
+        ...reading(t, whole(fmt, totals.month), UNIT.kwh),
         sub: t('energy.totals.soFar'),
         range: 'month',
       },
       {
         label: t('energy.totals.ev'),
-        value: whole(fmt, g30[2]),
-        unit: UNIT.kwh,
+        ...reading(t, whole(fmt, g30[2]), UNIT.kwh),
         sub: t('energy.totals.chargingDays', {n: chargingDays}),
       },
       {
         label: t('energy.totals.rate'),
-        value: rate.value,
-        unit: UNIT.cents,
+        ...reading(t, rate.value, UNIT.cents),
         sub: t('energy.totals.rateTier', {tier: rate.tier}),
       },
     ],
@@ -438,7 +425,7 @@ export function energyModel(
   const tier = TIER_WORDS[hilo.tier];
   const challenge = challengeText(inputs.challenge, t);
   const heating = (water.power ?? 0) > LIVE_KW;
-  const cents = (rate: number | null): string => fixedOr(fmt, rate === null ? null : rate * 100, 2);
+  const cents = (rate: number | null): string | null => fixedOr(fmt, rate === null ? null : rate * 100, 2);
   const tank = temperatureFigure(fmt, water.temperature);
   const heatingText = t('energy.water.heating', {power: power(fmt, (water.power ?? 0) * 1000)});
 
@@ -455,9 +442,6 @@ export function energyModel(
   });
   const detail: DetailDeps = {now, t, fmt, names, language, range};
 
-  // a tile's figure and unit, or the word for no reading flagged `missing`, so the tile never draws a dash as its big figure
-  const figure = (value: string | null, unit: string): Pick<PhoneTile, 'value' | 'unit' | 'missing'> =>
-    value === null ? {value: t('energy.noReading'), unit: '', missing: true} : {value, unit};
   const phone: PhoneTile[] = [
     ...(water.present
       ? [
@@ -465,7 +449,7 @@ export function energyModel(
             key: 'water' as const,
             label: t('energy.water.title'),
             sub: heating ? heatingText : t('energy.idle'),
-            ...figure(water.temperature === null ? null : tank, UNIT.degrees),
+            ...reading(t, tank, UNIT.degrees),
             on: heating,
           },
         ]
@@ -476,7 +460,7 @@ export function energyModel(
             key: 'hilo' as const,
             label: t('energy.hilo.title'),
             sub: t('energy.hiloTile', {tier: t(tier.name), challenge}),
-            ...figure(hilo.current === null ? null : cents(hilo.current), UNIT.cents),
+            ...reading(t, cents(hilo.current), UNIT.cents),
             on: false,
           },
         ]
@@ -489,7 +473,7 @@ export function energyModel(
       present: water.present,
       title: t('energy.water.title'),
       name: water.name,
-      temperature: {value: tank, unit: UNIT.degrees},
+      temperature: reading(t, tank, UNIT.degrees),
       state: {heating, text: heating ? heatingText : t('energy.water.idle', {power: power(fmt, 0)})},
       chart: history ? waterChartGeometry(history.wh24, now, {t, fmt}) : null,
       legend: history ? LEGEND.map(({kind, label}) => ({kind, label: t(label)})) : [],
@@ -499,12 +483,16 @@ export function energyModel(
       present: inputs.hiloPresent,
       title: t('energy.hilo.title'),
       challenge,
-      rate: {value: cents(hilo.current), unit: UNIT.centsPerKwh},
+      rate: reading(t, cents(hilo.current), UNIT.centsPerKwh),
       tier: {text: t(tier.name), ok: hilo.tier === 'low'},
       tiles: [
-        {label: t('energy.hilo.medium'), value: cents(hilo.medium), unit: UNIT.cents, sub: ''},
-        {label: t('energy.hilo.reward'), value: cents(hilo.reward), unit: UNIT.cents, sub: ''},
-        {label: t('energy.hilo.rewards'), value: money(fmt, inputs.rewards, 'headline'), unit: UNIT.dollars, sub: ''},
+        {label: t('energy.hilo.medium'), ...reading(t, cents(hilo.medium), UNIT.cents), sub: ''},
+        {label: t('energy.hilo.reward'), ...reading(t, cents(hilo.reward), UNIT.cents), sub: ''},
+        {
+          label: t('energy.hilo.rewards'),
+          ...reading(t, money(fmt, inputs.rewards, 'headline'), UNIT.dollars),
+          sub: '',
+        },
       ],
     },
     tiles: phone,

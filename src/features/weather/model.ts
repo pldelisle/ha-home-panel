@@ -6,6 +6,7 @@
 import {capitalise, DASH, DAY_MS, HOUR_MS, joined} from '../../core/figures.ts';
 import {conditionName} from '../../core/i18n/condition-name.ts';
 import {
+  fixedOr,
   forecastFigure,
   forecastTemperature,
   temperature,
@@ -24,6 +25,7 @@ import {
   type WeatherAlert,
   type WeatherInputs,
 } from '../../providers/weather-source.ts';
+import {reading} from '../../ui/reading.ts';
 import {tileDefinition, TILES, type StatTileDefinition, type TileIcon, type TileKey, type Tone} from './tiles.ts';
 
 type Translate = Messages['t'];
@@ -52,10 +54,12 @@ export interface StatTileView {
   key: TileKey;
   icon: TileIcon;
   label: string;
-  /** The reading, or a dash. */
+  /** The reading, or the words for no reading (`missing`). */
   value: string;
   /** Drawn small after the value, spacing included; empty when there is no reading to put it after. */
   unit: string;
+  /** There is no reading: `value` is the words that say so, drawn in the line's style, with no unit. */
+  missing?: true;
   sub: string;
   tone: Tone | null;
   /** Wind's bearing arrow, drawn in `sub` after its first `after` characters, the compass point. */
@@ -135,6 +139,8 @@ export interface WeatherViewModel {
     sunLabel: string;
     sunTime: string;
     temperature: string;
+    /** The house reads no temperature: `temperature` is the words for it, in the line's style. */
+    temperatureMissing?: true;
     condition: string;
     range: string;
     days: DayCell[];
@@ -143,6 +149,7 @@ export interface WeatherViewModel {
   /** The detail panel's first block. */
   now: {
     temperature: string;
+    temperatureMissing?: true;
     condition: string;
     icon: IconSpec;
     line: string;
@@ -176,10 +183,10 @@ interface Say {
   /** A whole number; the -0 of Math.round(-0.4) is 0, which Intl would otherwise write as `-0`. */
   int: (n: number) => string;
   degrees: (n: number) => string;
-  /** A reading as the sensor gave it, to two digits at most, or a dash. */
-  raw: (n: number | null) => string;
-  /** A reading to exactly `digits` fraction digits, or a dash. */
-  fixed: (n: number | null, digits: number) => string;
+  /** A reading as the sensor gave it, to two digits at most, or null for no reading (a tile says so: `reading`). */
+  raw: (n: number | null) => string | null;
+  /** A reading to exactly `digits` fraction digits, or null for no reading. */
+  fixed: (n: number | null, digits: number) => string | null;
   /** A compass point in the user's language; a word the catalog does not know is shown as it is. */
   compass: (point: string) => string;
   condition: (word: string | null) => string;
@@ -192,8 +199,8 @@ function sayWith(t: Translate, fmt: Formatters): Say {
     fmt,
     int: n => whole(fmt, n),
     degrees: n => forecastTemperature(fmt, n),
-    raw: n => (n === null ? DASH : fmt.number(n, 2)),
-    fixed: (n, digits) => (n === null ? DASH : fmt.fixed(n, digits)),
+    raw: n => (n === null ? null : fmt.number(n, 2)),
+    fixed: (n, digits) => fixedOr(fmt, n, digits),
     compass: point => t('weather.compass', {point}),
     condition: word => conditionName(word, t),
     icon: (word, day) => ({condition: word, day, label: conditionName(word, t)}),
@@ -240,21 +247,40 @@ function summaryLine(inputs: WeatherInputs, alerts: number, condition: string, {
 // ---------- the tiles ----------
 
 /** What a tile says of its reading; the rest of a tile's view comes from its definition. */
-type Shown = Pick<StatTileView, 'value' | 'unit' | 'sub'> & Partial<Pick<StatTileView, 'tone' | 'arrow'>>;
+type Shown = Pick<StatTileView, 'unit' | 'sub'> &
+  Partial<Pick<StatTileView, 'tone' | 'arrow'>> & {value: string | null};
 
-const tileView = (definition: StatTileDefinition, shown: Shown, {t}: Say): StatTileView => ({
+/** A tile from what it says; a `null` value is no reading (the words, no unit, `missing`), decided here once for every tile of both layouts. */
+const tileView = (definition: StatTileDefinition, {value, unit, ...shown}: Shown, {t}: Say): StatTileView => ({
   key: definition.key,
   icon: definition.icon,
   label: t(definition.labelKey),
   tone: null,
   arrow: null,
   ...shown,
+  ...reading(t, value, unit),
 });
 
 /** The word of a band the reading falls in, or nothing. */
 function bandWord(definition: StatTileDefinition, value: number | null, {t}: Say): string {
   const band = value === null ? undefined : definition.bands?.find(b => value >= b.from && value <= b.to);
   return band ? t(band.labelKey) : '';
+}
+
+/** The feels-like tile's figure with its degree sign (the wind chill or humidex, else the air's); null while neither is known. */
+function feelsFigure({feelsLike, temperature: air}: WeatherInputs, fmt: Formatters): string | null {
+  const figure = temperatureFigure(fmt, feelsLike?.value ?? air);
+  return figure === null ? null : `${figure}°`;
+}
+
+/** The big temperature of a card or the detail: to a tenth with its degree sign, or the words for no reading (and `temperatureMissing`, so the element draws them as a line, not a figure). */
+function heroTemperature(
+  {temperature: air}: WeatherInputs,
+  {t, fmt}: Say,
+): {temperature: string; temperatureMissing?: true} {
+  return air === null
+    ? {temperature: t('common.noReading'), temperatureMissing: true}
+    : {temperature: temperature(fmt, air)};
 }
 
 /** The sub-line about feels-like, in the pane's wording or the detail's (lower case). */
@@ -266,8 +292,8 @@ function feelsSub({feelsLike}: WeatherInputs, lower: boolean, {t}: Say): string 
 
 /** The pane's tiles: a figure to the unit the tile is drawn with, the unit only after a reading, sentences from a capital. */
 function paneTiles(inputs: WeatherInputs, say: Say): StatTileView[] {
-  const {t, fmt, int, degrees, fixed, compass} = say;
-  const {wind, pressure, today, normals, feelsLike, uv, aqhi, humidity, dewPoint} = inputs;
+  const {t, fmt, degrees, fixed, compass} = say;
+  const {wind, pressure, today, normals, uv, aqhi, humidity, dewPoint} = inputs;
   // the pane rounds with `toFixed` where the detail rounds with `Math.round`, so a negative half differs between them; that is
   // the legacy panel's own behaviour too, kept for parity
   const reading: Record<TileKey, () => Shown> = {
@@ -287,7 +313,7 @@ function paneTiles(inputs: WeatherInputs, say: Say): StatTileView[] {
       sub: dewPoint === null ? '' : t('weather.sub.dewPoint', {temp: temperatureFigure(fmt, dewPoint)}),
     }),
     feels: () => ({
-      value: feelsLike || inputs.temperature !== null ? temperature(fmt, feelsLike?.value ?? inputs.temperature) : DASH,
+      value: feelsFigure(inputs, fmt),
       unit: '',
       sub: feelsSub(inputs, false, say),
     }),
@@ -297,12 +323,12 @@ function paneTiles(inputs: WeatherInputs, say: Say): StatTileView[] {
       sub: pressure.tendency ? capitalise(tendencyWord(pressure.tendency, t)) : '',
     }),
     uv: () => ({
-      value: uv === null ? DASH : int(uv),
+      value: whole(fmt, uv),
       unit: '',
       sub: bandWord(tileDefinition('uv'), uv, say) || (uv !== null && uv >= 8 ? t('weather.band.veryHigh') : ''),
     }),
     aqhi: () => ({
-      value: aqhi === null ? DASH : int(aqhi),
+      value: whole(fmt, aqhi),
       unit: '',
       sub: bandWord(tileDefinition('aqhi'), aqhi, say),
     }),
@@ -312,7 +338,7 @@ function paneTiles(inputs: WeatherInputs, say: Say): StatTileView[] {
       sub: t('weather.sub.chanceToday'),
     }),
     normal: () => ({
-      value: normals.hi === null ? DASH : degrees(normals.hi),
+      value: normals.hi === null ? null : degrees(normals.hi),
       unit: normals.hi === null || normals.lo === null ? '' : ` / ${degrees(normals.lo)}`,
       sub: t('weather.sub.forTheDate'),
     }),
@@ -348,7 +374,7 @@ function detailTiles(inputs: WeatherInputs, say: Say): StatTileView[] {
   const dir = wind.direction ? compass(wind.direction) : '';
   const reading: Record<TileKey, () => Shown> = {
     wind: () => ({
-      value: wind.speed === null ? DASH : int(wind.speed),
+      value: whole(fmt, wind.speed),
       unit: 'km/h',
       sub: [dir, wind.gust === null ? '' : t('weather.sub.gusts', {speed: int(wind.gust)})].filter(Boolean).join(' · '),
       arrow: wind.bearing === null ? null : {bearing: wind.bearing, after: dir.length},
@@ -371,7 +397,7 @@ function detailTiles(inputs: WeatherInputs, say: Say): StatTileView[] {
       sub: aqhi === null ? t('weather.aqhi') : t('weather.aqhiRisk', {risk: aqhiRisk(aqhi)}),
     }),
     feels: () => ({
-      value: temperature(fmt, feelsLike ? feelsLike.value : inputs.temperature),
+      value: feelsFigure(inputs, fmt),
       unit: '',
       sub:
         feelsLike || visibility === null
@@ -380,7 +406,11 @@ function detailTiles(inputs: WeatherInputs, say: Say): StatTileView[] {
     }),
     normal: () => ({
       value:
-        normals.hi === null ? DASH : `${degrees(normals.hi)} / ${normals.lo === null ? DASH : degrees(normals.lo)}`,
+        normals.hi === null
+          ? null
+          : normals.lo === null
+            ? degrees(normals.hi)
+            : `${degrees(normals.hi)} / ${degrees(normals.lo)}`,
       unit: '',
       sub: t('weather.sub.normalHighLow'),
     }),
@@ -397,8 +427,8 @@ function detailTiles(inputs: WeatherInputs, say: Say): StatTileView[] {
  */
 function rangeLine(inputs: WeatherInputs, feelsText: string | null, withNormals: boolean, {t, fmt}: Say): string {
   const {today, normals} = inputs;
-  const high = today.hi === null ? null : forecastFigure(fmt, today.hi);
-  const low = today.lo === null ? null : forecastFigure(fmt, today.lo);
+  const high = forecastFigure(fmt, today.hi);
+  const low = forecastFigure(fmt, today.lo);
   const normal =
     withNormals && normals.hi !== null && normals.lo !== null
       ? {high: forecastFigure(fmt, normals.hi), low: forecastFigure(fmt, normals.lo)}
@@ -562,6 +592,8 @@ export interface WeatherCardView {
   /** The other event, lower case after the first ("sunrise"), when its sensor reads a time. */
   then: {label: string; time: string} | null;
   temperature: string;
+  /** The house reads no temperature: `temperature` is the words for it, in the line's style. */
+  temperatureMissing?: true;
   condition: string;
   /** "High 7° · low -1°", or what of it the sensors give. */
   range: string;
@@ -583,7 +615,7 @@ export function weatherCardModel(
       second === null
         ? null
         : {label: t(up ? 'weather.card.thenSunrise' : 'weather.card.thenSunset'), time: fmt.time(second)},
-    temperature: inputs.temperature === null ? DASH : temperature(fmt, inputs.temperature),
+    ...heroTemperature(inputs, say),
     condition: conditionOf(inputs, say),
     range: joined(
       hi === null ? '' : t('weather.card.high', {n: forecastFigure(fmt, hi)}),
@@ -638,7 +670,7 @@ export function weatherModel(
   const forecastDays = (inputs.foldForecast ?? defaultFold)(forecast.daily, isoDay).slice(0, DAYS_KEPT);
   const alerts = alertViews(inputs, say);
   const hours = hourViews(forecast.hourly, deps, say);
-  const outside = temperature(fmt, inputs.temperature);
+  const hero = heroTemperature(inputs, say);
   const condition = conditionOf(inputs, say);
   return {
     summary: summaryLine(inputs, alerts.length, condition, say),
@@ -646,14 +678,14 @@ export function weatherModel(
       house: deps.house?.day ? {day: deps.house.day, night: deps.house.night ?? deps.house.day} : null,
       sunLabel: inputs.sun.up ? t('weather.sunset') : t('weather.sunrise'),
       sunTime: inputs.sun.next ? fmt.time(inputs.sun.next.at) : DASH,
-      temperature: outside,
+      ...hero,
       condition,
       range: rangeLine(inputs, null, true, say),
       days: cardDays(forecastDays, days, say),
     },
     tiles: paneTiles(inputs, say),
     now: {
-      temperature: outside,
+      ...hero,
       condition,
       icon: {condition: inputs.condition, day: inputs.isDay, label: condition},
       line: rangeLine(inputs, feelsShown(inputs, say), false, say),

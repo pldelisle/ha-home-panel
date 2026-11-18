@@ -5,13 +5,14 @@
 // Must not: import the DOM, Lit or the shell, read the clock, hold text the household reads (a catalog key says it), or decide the frost guard's commands (commands.ts does).
 import {capitalWords, DASH} from '../../core/figures.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
-import {degrees, powerParts, temperature, temperatureFigure} from '../../core/i18n/format.ts';
+import {degrees, fixedOr, powerParts, temperature, temperatureFigure, whole} from '../../core/i18n/format.ts';
 import {roomName} from '../../core/i18n/room-name.ts';
 import {FUJITSU_BRAND, NO_TARGET_MODES, type HeatPumpInputs} from '../../providers/heat-pump.ts';
 import {DEFAULT_MAX_TEMP, FROST_GUARD, OFF_AT_OR_BELOW, type RoomPower} from '../../providers/power.ts';
 import {emptyChartText} from '../../ui/chart-notice.ts';
 import type {Overlay} from '../../ui/overlay-store.ts';
 import {RANGES, type Range} from '../../ui/ranges.ts';
+import {reading, type Reading} from '../../ui/reading.ts';
 import {dialGeometry, type DialGeometry} from './dial-geometry.ts';
 import {GAUGE, gaugeGeometry, type GaugeGeometry} from './gauge-geometry.ts';
 import type {ClimateInputs} from './inputs.ts';
@@ -194,10 +195,8 @@ export type ControlsView =
     };
 
 /** One tile of the detail: "Range, 24 h", `18.5–23.0` and `°`. */
-export interface DetailTile {
+export interface DetailTile extends Reading {
   label: string;
-  value: string;
-  unit: string;
   /** The line under the value: a room's name, "all thermostats"; null for none. */
   sub: string | null;
   /** The Range tile, which the phone gives a row of its own. */
@@ -356,8 +355,7 @@ function rangeTile({t, fmt}: ClimateModelDeps, range: Range, figures: Figures | 
   const span = figures?.span;
   return {
     label: t('climate.rangeSpan', {span: t(RANGES[range].shortKey)}),
-    value: span ? `${temperatureFigure(fmt, span.lo)}–${temperatureFigure(fmt, span.hi)}` : DASH,
-    unit: '°',
+    ...reading(t, span ? `${temperatureFigure(fmt, span.lo)}–${temperatureFigure(fmt, span.hi)}` : null, '°'),
     sub: null,
     range: true,
   };
@@ -449,18 +447,17 @@ function houseHead(
   const warmest = read[0];
   const coolest = read[read.length - 1];
   // a tile with a reading leads to that room's chart; one without (no room reads) is a plain tile
-  const named = (reading: typeof warmest, label: MessageKey): DetailTile => {
+  const named = (room: typeof warmest, label: MessageKey): DetailTile => {
     const tile: DetailTile = {
       label: t(label),
-      value: reading ? temperatureFigure(fmt, reading.temperature) : DASH,
-      unit: '°',
-      sub: reading?.name ?? null,
+      ...reading(t, temperatureFigure(fmt, room?.temperature ?? null), '°'),
+      sub: room?.name ?? null,
       range: false,
     };
-    if (!reading) return tile;
+    if (!room) return tile;
     return {
       ...tile,
-      select: reading.key,
+      select: room.key,
       opens: t('climate.tile.opensChart'),
     };
   };
@@ -478,8 +475,7 @@ function houseHead(
       {label: t('climate.heatingNow'), ...powerTile(fmt, inputs.heat), sub: all, range: false},
       {
         label: t('climate.heatingSpan', {span: t(RANGES[range].shortKey)}),
-        value: figures?.kwh == null ? DASH : fmt.integer(figures.kwh),
-        unit: 'kWh',
+        ...reading(t, whole(fmt, figures?.kwh ?? null), 'kWh'),
         sub: all,
         range: false,
       },
@@ -576,8 +572,7 @@ function roomHead(room: RoomPower, deps: ClimateModelDeps, range: Range, figures
       {label: t('climate.drawingNow'), ...powerTile(fmt, room.power ?? 0), sub: null, range: false},
       {
         label: t('climate.heatingSpan', {span: t(RANGES[range].shortKey)}),
-        value: figures?.kwh == null ? DASH : fmt.fixed(figures.kwh, 1),
-        unit: 'kWh',
+        ...reading(t, fixedOr(fmt, figures?.kwh ?? null, 1), 'kWh'),
         sub: null,
         range: false,
       },
@@ -765,8 +760,8 @@ export function climateModel(
       title: head.title,
       sub: head.sub,
       pill: head.pill,
-      temperature: deps.compact ? null : temperatureFigure(fmt, head.temperature),
-      outside: deps.compact ? null : t('climate.outsideNow', {n: temperatureFigure(fmt, outside)}),
+      temperature: deps.compact ? null : (temperatureFigure(fmt, head.temperature) ?? DASH),
+      outside: deps.compact ? null : t('climate.outsideNow', {n: temperatureFigure(fmt, outside) ?? DASH}),
       gauge: deps.compact ? null : gaugeView(head, deps),
       dial: deps.compact ? dialView(head, outside, deps) : null,
       tiles: head.tiles,

@@ -27,6 +27,7 @@ import '../../ui/chart.ts'; // defines <hp-chart>
 import type {ChartOptions} from '../../ui/chart-options.ts';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {StoreController} from '../../ui/controllers/store-controller.ts';
+import {figureCell} from '../../ui/figure-cell.ts';
 import {lens} from '../../ui/lens.ts';
 import '../../ui/pane-header.ts'; // defines <hp-pane-header>
 import '../../ui/range-tabs.ts'; // defines <hp-range-tabs>
@@ -230,7 +231,10 @@ export class AirDetail extends LitElement {
       <p>${hint}</p>
       <div class="aqsum">
         <span class=${`status ${toneClass(tone)}`}><i aria-hidden="true"></i>${state}</span
-        ><span class="why">${reading.label} <b class="num">${reading.value}</b>${more ? ` · ${more}` : ''}</span>
+        ><span class="why"
+          >${reading.label}
+          <b class=${reading.missing ? 'na' : 'num'}>${reading.value}</b>${more ? ` · ${more}` : ''}</span
+        >
       </div>
       ${
         pollen
@@ -241,7 +245,7 @@ export class AirDetail extends LitElement {
                 tile =>
                   html`<div class="tile">
                     <div class="k">${tile.label}</div>
-                    <div class="v num">${tile.value}</div>
+                    ${figureCell(tile)}
                   </div>`,
               )}
             </div>`

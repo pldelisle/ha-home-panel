@@ -140,7 +140,7 @@ describe('the test house, on the tablet', () => {
         opens: 'Shows its chart',
       },
       {label: 'Heating now', value: '2.4', unit: 'kW', sub: 'all thermostats', range: false},
-      {label: 'Heating, 24 h', value: '–', unit: 'kWh', sub: 'all thermostats', range: false},
+      {label: 'Heating, 24 h', value: 'No reading', unit: '', missing: true, sub: 'all thermostats', range: false},
     ]);
   });
 
@@ -174,9 +174,9 @@ describe('the test house, on the tablet', () => {
     const house = loaded({rooms: everyRoom, kwh: {bedroom: 100, garage: 39.6, living_room: 0, office: 0}});
     expect(tiles(house, 'house')).toEqual(['21.2', '20.0', '2.4', '140']);
     // a room the load has no rows for, or no power sensor for, stays a dash
-    expect(tiles(week, 'garage')).toEqual(['–', '0', '–']);
+    expect(tiles(week, 'garage')).toEqual(['No reading', '0', 'No reading']);
     // a history of another range than the one shown is no history: dashes until the loader has the range
-    expect(tiles(week, 'bedroom', 'day')).toEqual(['–', '1.2', '–']);
+    expect(tiles(week, 'bedroom', 'day')).toEqual(['No reading', '1.2', 'No reading']);
     // a selection that names nothing the house has is the house, and its figures are the house's
     expect(modelOf(fullHouse, 'nowhere', {history: house}).detail.tiles[3].value).toBe('140');
   });
@@ -311,9 +311,9 @@ describe('the test house, on the tablet', () => {
       caption: 'Bar marks the setpoint',
     });
     expect(detail.tiles.map(tile => [tile.label, tile.value, tile.unit, tile.range])).toEqual([
-      ['Range, 7 days', '–', '°', true],
+      ['Range, 7 days', 'No reading', '', true],
       ['Drawing now', '1.2', 'kW', false],
-      ['Heating, 7 days', '–', 'kWh', false],
+      ['Heating, 7 days', 'No reading', '', false],
     ]);
     const {id, name, setpoint, quick} = room(detail.controls);
     expect([id, name], 'what the commands and their toasts name').toEqual(['climate.bedroom', 'Bedroom']);
@@ -382,7 +382,7 @@ describe('in French', () => {
       // the French baselines keep the rooms' English names (KEEP_ENGLISH_NAMES), so the test house says `Living room` in both
       ['Le plus frais', '20,0', 'Living room'],
       ['Chauffe en ce moment', '2,4', 'tous les thermostats'],
-      ['Chauffage, 24 h', '–', 'tous les thermostats'],
+      ['Chauffage, 24 h', 'Aucune mesure', 'tous les thermostats'],
     ]);
     expect(vm.detail.gauge).toMatchObject({
       label: 'Température 20,6 degrés sur une échelle de 14 à 30 degrés',
@@ -713,10 +713,10 @@ describe('a house with nothing to read', () => {
     const vm = modelOf(houseOf([], []), 'house', {config: ROOMS, compact: true});
     expect(vm.summary).toBe('no rooms heating');
     expect(vm.detail.tiles.map(tile => [tile.value, tile.sub])).toEqual([
-      ['–', null],
-      ['–', null],
+      ['No reading', null],
+      ['No reading', null],
       ['0', 'all thermostats'],
-      ['–', 'all thermostats'],
+      ['No reading', 'all thermostats'],
     ]);
     expect(vm.detail.dial).toMatchObject({big: '–', caption: ''});
   });

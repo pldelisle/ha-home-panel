@@ -506,6 +506,7 @@
     {"key": "automations.tile.skipped", "values": {"n": 2}, "was": "2 autres vérifiées, rien fait"},
     {"key": "automations.tile.allPassed", "was": "toutes ont passé leurs vérifications"},
     {"key": "automations.tile.next", "was": "Prochaine"},
+    {"key": "automations.tile.none", "written": "Aucune"},
     {"key": "automations.tile.nothingElse", "was": "rien d'autre de prévu aujourd'hui"},
     {"key": "automations.tile.then", "was": "Ensuite"},
     {"key": "automations.card.selected", "was": "Choisie"},

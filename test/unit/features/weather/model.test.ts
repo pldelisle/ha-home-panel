@@ -28,7 +28,7 @@ describe('the full test house, in English', () => {
       {key: 'pres', value: '101.9', unit: ' kPa', sub: 'Rising'},
       {key: 'uv', value: '1', unit: '', sub: 'Low'},
       {key: 'aqhi', value: '2', unit: '', sub: 'Low risk'},
-      {key: 'pop', value: '–', unit: '', sub: 'Chance today'},
+      {key: 'pop', value: 'No reading', unit: '', sub: 'Chance today'},
       {key: 'normal', value: '6°', unit: ' / -2°', sub: 'For the date'},
     ]);
     expect(model.tiles.every(tile => tile.tone === 'blue')).toBe(true);
@@ -56,7 +56,7 @@ describe('the full test house, in English', () => {
       {key: 'wind', value: '14', unit: 'km/h', sub: 'SW · gusts 25'},
       {key: 'hum', value: '71', unit: '%', sub: 'dew point -0.5°'},
       {key: 'pres', value: '101.9', unit: 'kPa', sub: 'rising'},
-      {key: 'pop', value: '–', unit: '%', sub: 'chance today'},
+      {key: 'pop', value: 'No reading', unit: '', sub: 'chance today'},
       {key: 'uv', value: '1', unit: '', sub: 'low'},
       {key: 'aqhi', value: '2', unit: '', sub: 'AQHI, low risk'},
       {key: 'feels', value: '4.2°', unit: '', sub: 'same as the air'},
@@ -116,7 +116,7 @@ describe('the full test house, in French', () => {
       {key: 'pres', value: '101,9', unit: ' kPa', sub: 'En hausse'},
       {key: 'uv', value: '1', unit: '', sub: 'Bas'},
       {key: 'aqhi', value: '2', unit: '', sub: 'Risque faible'},
-      {key: 'pop', value: '–', unit: '', sub: "Probabilité aujourd'hui"},
+      {key: 'pop', value: 'Aucune mesure', unit: '', sub: "Probabilité aujourd'hui"},
       {key: 'normal', value: '6°', unit: ' / -2°', sub: 'Pour la date'},
     ]);
     expect(model.tiles.map(tile => tile.label)).toEqual([
@@ -137,7 +137,7 @@ describe('the full test house, in French', () => {
       {key: 'wind', value: '14', unit: 'km/h', sub: 'SO · gusts 25'},
       {key: 'hum', value: '71', unit: '%', sub: 'point de rosée -0,5°'},
       {key: 'pres', value: '101,9', unit: 'kPa', sub: 'en hausse'},
-      {key: 'pop', value: '–', unit: '%', sub: "probabilité aujourd'hui"},
+      {key: 'pop', value: 'Aucune mesure', unit: '', sub: "probabilité aujourd'hui"},
       {key: 'uv', value: '1', unit: '', sub: 'min'},
       {key: 'aqhi', value: '2', unit: '', sub: 'CAS, risque faible'},
       {key: 'feels', value: '4,2°', unit: '', sub: "comme l'air"},
@@ -176,11 +176,11 @@ describe('the bare test house: only the weather entity', () => {
       {key: 'pres', value: '101.9', unit: 'kPa', sub: ''},
     ]);
     expect(shown(model.now.tiles).slice(3)).toEqual([
-      {key: 'pop', value: '–', unit: '%', sub: 'chance today'},
-      {key: 'uv', value: '–', unit: '', sub: ''},
-      {key: 'aqhi', value: '–', unit: '', sub: 'AQHI'},
+      {key: 'pop', value: 'No reading', unit: '', sub: 'chance today'},
+      {key: 'uv', value: 'No reading', unit: '', sub: ''},
+      {key: 'aqhi', value: 'No reading', unit: '', sub: 'AQHI'},
       {key: 'feels', value: '4.2°', unit: '', sub: 'same as the air'},
-      {key: 'normal', value: '–', unit: '', sub: 'high / low for the date'},
+      {key: 'normal', value: 'No reading', unit: '', sub: 'high / low for the date'},
     ]);
   });
 });
@@ -193,12 +193,13 @@ describe('a house that knows nothing', () => {
     expect(model.card).toMatchObject({
       sunLabel: 'Sunrise',
       sunTime: '–',
-      temperature: '–°',
+      temperature: 'No reading',
+      temperatureMissing: true,
       condition: '',
       range: '',
     });
-    expect(shown(model.tiles).map(tile => [tile.value, tile.unit])).toEqual(Array(8).fill(['–', '']));
-    expect(model.now).toMatchObject({temperature: '–°', condition: '', line: '', summary: null});
+    expect(shown(model.tiles).map(tile => [tile.value, tile.unit])).toEqual(Array(8).fill(['No reading', '']));
+    expect(model.now).toMatchObject({temperature: 'No reading', condition: '', line: '', summary: null});
   });
 });
 
@@ -320,10 +321,10 @@ describe('the lines under the temperature', () => {
     expect(inEnglish({today: {hi: 14.5, lo: -1.5, pop: null}}).now.line).toBe('High 15° · Low -1°');
   });
 
-  test('the temperature keeps its decimal, even a zero one, and its dash', () => {
+  test('the temperature keeps its decimal, even a zero one, and says "No reading" without one', () => {
     expect(inEnglish({temperature: 5}).now.temperature).toBe('5.0°');
     expect(inEnglish({temperature: -3.04}).now.temperature).toBe('-3.0°');
-    expect(inEnglish({temperature: null}).now.temperature).toBe('–°');
+    expect(inEnglish({temperature: null}).now).toMatchObject({temperature: 'No reading', temperatureMissing: true});
   });
 });
 
@@ -350,9 +351,10 @@ describe('the tiles', () => {
     });
     expect(tile({wind: {...wind, direction: null}}, 'wind').arrow).toEqual({bearing: 315, after: 0});
     expect(tile({wind: {speed: null, gust: null, direction: null, bearing: null}}, 'wind', 'tiles')).toMatchObject({
-      value: '–',
+      value: 'No reading',
       unit: '',
       sub: '',
+      missing: true,
     });
   });
 
@@ -371,9 +373,14 @@ describe('the tiles', () => {
     });
     expect(tile({feelsLike: {value: -9, kind: 'windChill'}}, 'feels', 'tiles').sub).toBe('Wind chill');
     expect(tile({temperature: 4.2}, 'feels', 'tiles')).toMatchObject({value: '4.2°', sub: 'Same as the air'});
-    expect(tile({temperature: null}, 'feels', 'tiles')).toMatchObject({value: '–', sub: 'Same as the air'});
+    expect(tile({temperature: null}, 'feels', 'tiles')).toMatchObject({
+      value: 'No reading',
+      unit: '',
+      missing: true,
+      sub: 'Same as the air',
+    });
     expect(tile({temperature: 4.2, visibility: 11.6}, 'feels')).toMatchObject({value: '4.2°', sub: 'visibility 12 km'});
-    expect(tile({temperature: null}, 'feels')).toMatchObject({value: '–°', sub: 'same as the air'});
+    expect(tile({temperature: null}, 'feels')).toMatchObject({value: 'No reading', unit: '', sub: 'same as the air'});
   });
 
   test('UV: the band word in the pane, and the index word in the detail, at each threshold', () => {
@@ -394,7 +401,7 @@ describe('the tiles', () => {
       'extreme',
     ]);
     expect(tile({uv: 6}, 'uv', 'tiles').value).toBe('6');
-    expect(tile({uv: null}, 'uv')).toMatchObject({value: '–', sub: ''});
+    expect(tile({uv: null}, 'uv')).toMatchObject({value: 'No reading', sub: ''});
   });
 
   test('air quality: the band in the pane, the risk in the detail, at each threshold', () => {
@@ -420,7 +427,7 @@ describe('the tiles', () => {
       'AQHI, very high risk',
     ]);
     expect(tile({aqhi: 3}, 'aqhi').value).toBe('3');
-    expect(tile({aqhi: null}, 'aqhi', 'tiles').value).toBe('–');
+    expect(tile({aqhi: null}, 'aqhi', 'tiles').value).toBe('No reading');
   });
 
   test('humidity, pressure, rain and snow: the pane rounds, the detail keeps the reading', () => {
@@ -442,7 +449,7 @@ describe('the tiles', () => {
   test('normal: the high and the low, or the high alone when the low is not known', () => {
     expect(tile({normals: {hi: 6.4, lo: -2.5}}, 'normal', 'tiles')).toMatchObject({value: '6°', unit: ' / -2°'});
     expect(tile({normals: {hi: 6.4, lo: null}}, 'normal', 'tiles')).toMatchObject({value: '6°', unit: ''});
-    expect(tile({normals: {hi: 6.4, lo: null}}, 'normal').value).toBe('6° / –');
+    expect(tile({normals: {hi: 6.4, lo: null}}, 'normal').value).toBe('6°');
     expect(tile({normals: {hi: 6.4, lo: 1}}, 'normal').value).toBe('6° / 1°');
   });
 

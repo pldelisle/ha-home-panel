@@ -343,6 +343,21 @@ test.describe('on a tablet', () => {
     expect(await house.mutations.count(DETAIL_HOSTS), 'mutations').toBe(0);
   });
 
+  // a tire that reads nothing says "No reading" in the line's style with no unit; a status row whose sensor the car lacks is left out, not drawn with no reading (#418)
+  test('a tire with no reading says so, and a sensor the car lacks leaves its row out', async ({house}) => {
+    await house.setState('sensor.fordpass_test_tirepressure', {
+      state: 'NORMAL_OPERATION',
+      attributes: {frontLeft: null, frontRight: 241, rearLeft: 238, rearRight: 239},
+    });
+    await house.setState('sensor.fordpass_test_odometer', {state: 'unavailable'});
+    await house.tab('car');
+    const tires = detail(house).locator('hp-car-status .tp');
+    await expect(tires.first().locator('.na')).toHaveText('No reading');
+    await expect(tires.first().locator('.v')).toHaveCount(0);
+    await expect(tires.nth(1).locator('.v')).toContainText('psi');
+    await expect(detail(house).locator('hp-car-status .vrow', {hasText: 'Odometer'})).toHaveCount(0);
+  });
+
   test('a change of one entity redraws only the block that shows it', async ({house}) => {
     await house.tab('car');
     await expect(detail(house).locator('hp-car-status .vrow').first()).toBeVisible();

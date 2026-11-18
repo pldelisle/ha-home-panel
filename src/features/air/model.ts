@@ -10,6 +10,7 @@ import type {Translate} from '../../core/i18n/messages.ts';
 import {outdoorLevel, rateRoom, type Level, type Pollutant, type RoomRating} from '../../providers/air-quality.ts';
 import {POLLEN_KINDS, type AirRoomInputs, type OutsideAirInputs, type PollenKind} from '../../providers/mila.ts';
 import type {Overlay} from '../../ui/overlay-store.ts';
+import {reading, type Reading} from '../../ui/reading.ts';
 import {RANGES, type Range} from '../../ui/ranges.ts';
 import {K, type Mode} from './commands.ts';
 import {DEFAULT_RANGE, METRICS, type Metric} from './history.ts';
@@ -83,11 +84,9 @@ export interface RoomLine {
   line: string;
 }
 
-export interface Tile {
+export interface Tile extends Reading {
   metric: Metric;
   label: string;
-  value: string;
-  unit: string;
   high: boolean;
   /** What a screen reader adds to the tile, a button named by its figure: "Opens its history" (its `aria-description`). */
   opens: string;
@@ -131,11 +130,11 @@ export interface OutsideDetail {
   tone: Tone;
   state: string;
   /** "AQI" and the figure, which the detail writes in bold. */
-  reading: {label: string; value: string};
+  reading: {label: string} & Reading;
   /** What follows, joined with " · ": "AQHI 2 · PM2.5 9.0 µg/m³ · station 6 km away"; empty when there is nothing to say. */
   more: string;
   /** The four pollen tiles; null when the station reports none. */
-  pollen: {label: string; value: string}[] | null;
+  pollen: ({label: string} & Reading)[] | null;
   pollenHint: string;
 }
 
@@ -248,14 +247,19 @@ function tilesOf(room: AirRoomInputs, rating: RoomRating, {t, fmt}: AirModelDeps
   return TILES.map(metric => {
     const {label, unit} = METRICS[metric];
     const rated = rating.pollutants.find(p => p.k === metric);
-    const reading = room.readings[metric];
+    const measured = room.readings[metric];
     const name = t(label);
-    const value = rated ? figure(rated.k, rated.v, fmt) : reading === null ? DASH : whole(fmt, reading);
+    const shown = rated
+      ? rated.v === null
+        ? null
+        : figure(rated.k, rated.v, fmt)
+      : measured === null
+        ? null
+        : whole(fmt, measured);
     return {
       metric,
       label: name,
-      value,
-      unit,
+      ...reading(t, shown, unit),
       high: !!rated && rated.level > 0,
       opens: t('air.tile.opens'),
     };
@@ -314,9 +318,9 @@ function roomDetail(room: AirRoomInputs, rating: RoomRating, deps: AirModelDeps)
   };
 }
 
-/** A pollen report as the catalog words it, else HA's own word capitalised; a dash when the station reports none. */
-function pollenValue(status: string | null, t: Translate): string {
-  if (status === null) return DASH;
+/** A pollen report as the catalog words it, else HA's own word capitalised; null when the station reports none. */
+function pollenValue(status: string | null, t: Translate): string | null {
+  if (status === null) return null;
   const key = POLLEN_STATUSES.get(status.replace(/_/g, ' '));
   return key ? t(key) : capitalWords(status);
 }
@@ -330,14 +334,14 @@ function outsideDetail(outside: OutsideAirInputs, aqhi: number | null, {t, fmt}:
     hint: t('air.outsideHint'),
     tone,
     state: aqi === null ? t('air.noData') : t(LEVEL_WORDS[tone]),
-    reading: {label: t('air.aqi'), value: aqi === null ? DASH : whole(fmt, aqi)},
+    reading: {label: t('air.aqi'), ...reading(t, whole(fmt, aqi), '')},
     more: joined(
       aqhi === null ? '' : t('air.aqhiValue', {n: String(aqhi)}),
       pm === null ? '' : t('air.stationPm', {n: fmt.fixed(pm, 1)}),
       distance === null ? '' : t('air.station', {n: whole(fmt, distance)}),
     ),
     pollen: reported
-      ? POLLEN_KINDS.map(kind => ({label: t(POLLEN_LABELS[kind]), value: pollenValue(pollen[kind], t)}))
+      ? POLLEN_KINDS.map(kind => ({label: t(POLLEN_LABELS[kind]), ...reading(t, pollenValue(pollen[kind], t), '')}))
       : null,
     pollenHint: t('air.noPollenYet'),
   };

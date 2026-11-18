@@ -27,6 +27,7 @@ import sheetOwn from './sensor-history.element.css?inline';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {StoreController} from '../../ui/controllers/store-controller.ts';
 import {SheetDismissEvent} from '../../ui/events.ts';
+import {figureCell} from '../../ui/figure-cell.ts';
 import {lens} from '../../ui/lens.ts';
 import '../../ui/range-tabs.ts'; // defines <hp-range-tabs>
 import type {RangeChangeDetail, RangeTab} from '../../ui/range-tabs.ts';
@@ -134,7 +135,7 @@ export class SensorHistory extends LitElement {
               stat =>
                 html`<div class="tile">
                   <div class="k">${stat.label}</div>
-                  <div class="v num">${stat.value}</div>
+                  ${figureCell({value: stat.value, unit: '', missing: stat.missing})}
                 </div>`,
             )}
           </div>

@@ -9,6 +9,7 @@ import energyShared from './styles.css?inline';
 import {tileList} from './tile-list.ts';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {lens} from '../../ui/lens.ts';
+import {figureCell} from '../../ui/figure-cell.ts';
 import {common, hero, status, tiles} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
@@ -48,7 +49,7 @@ export class HiloCard extends LitElement {
     return html`<div class="ebox">
         <div class="etop"><span class="elbl">${view.title}</span><span class="eright">${view.challenge}</span></div>
         <div class="hero">
-          <div class="v num">${rate.value}<small>${rate.unit}</small></div>
+          ${figureCell(rate)}
           <span class=${tier.ok ? 'status ok' : 'status warn'}><i aria-hidden="true"></i>${tier.text}</span>
         </div>
         <div class="tiles hilotiles">${tileList(view.tiles)}</div>

@@ -40,7 +40,7 @@ test("the Weather tab shows the eight tiles with the house's readings", async ({
     '101.9 kPa',
     '1',
     '2',
-    '–',
+    'No reading',
     '6° / -2°',
   ]);
 });
@@ -59,11 +59,20 @@ test('the summary card keeps the temperature, the range and the sun, and says no
 test.describe('the bare house', () => {
   test.use({houseOpts: {house: 'bare'}});
 
-  test('has only a weather entity: it shows what the entity knows, the air for feels like, and a dash for the rest', async ({
+  test('has only a weather entity: it shows what the entity knows, the air for feels like, and "No reading" for the rest', async ({
     house,
   }) => {
     await openWeather(house);
-    await expect(tiles(house).locator('.tv')).toHaveText(['14 km/h', '71%', '4.2°', '101.9 kPa', '–', '–', '–', '–']);
+    await expect(tiles(house).locator('.tv')).toHaveText([
+      '14 km/h',
+      '71%',
+      '4.2°',
+      '101.9 kPa',
+      'No reading',
+      'No reading',
+      'No reading',
+      'No reading',
+    ]);
   });
 });
 

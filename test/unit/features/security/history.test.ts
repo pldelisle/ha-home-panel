@@ -184,8 +184,13 @@ describe('statTiles', () => {
     ]);
   });
 
-  test('without a period the figures are dashes', () => {
-    expect(statTiles(periodStats([], NOW), 'door', NOW, fmt, t).map(tile => tile.value)).toEqual(['0', '–', '–', '–']);
+  test('without a period the figures say "No reading"', () => {
+    expect(statTiles(periodStats([], NOW), 'door', NOW, fmt, t).map(tile => tile.value)).toEqual([
+      '0',
+      'No reading',
+      'No reading',
+      'No reading',
+    ]);
   });
 });
 
