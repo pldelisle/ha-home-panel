@@ -1,4 +1,4 @@
-// <hp-climate-pane>: the Climate tab: on a phone the header with the summary, a grid of tiles and the detail's sheet; on a tablet the header with the range tabs, the list
+// <hp-climate-pane>: the Climate tab: on a phone the header with the summary, a grid of tiles and the detail's sheet (which a room view's tile opens over the room, on a tablet too); on a tablet the header with the range tabs, the list
 // beside the selected item's detail, and the heatmap under them. It keeps the selection and the range the person chose.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over a view model: `climateModel` runs in `willUpdate` and the template places what it returns; a store
 // controller on `climateIds` (ADR 0012), paused while no part of the pane is on screen, and `ClimateHistory`, which loads the range shown (ADR 0028). The held values the model reads are the panel's overlay (ADR 0023).
@@ -10,6 +10,8 @@ import {ClimateCharts, type ClimateOptions} from './charts.ts';
 import './climate-detail.ts'; // defines <hp-climate-detail>
 import './climate-list.ts'; // defines <hp-climate-list>
 import {chartPlace} from './chart-place.ts';
+import tilesOwn from './climate-tiles.css?inline';
+import {climateTile} from './climate-tiles.ts';
 import {detailIcon} from './climate-detail.ts';
 import type {SelectDetail} from './climate-list.ts';
 import paneOwn from './climate-pane.element.css?inline';
@@ -35,7 +37,6 @@ import '../../ui/range-tabs.ts'; // defines <hp-range-tabs>
 import type {RangeChangeDetail, RangeTab} from '../../ui/range-tabs.ts';
 import {RANGES, type Range} from '../../ui/ranges.ts';
 import '../../ui/sheet.ts'; // defines <hp-sheet>
-import '../../ui/stat-tile.ts'; // defines <hp-stat-tile>
 import type {TileOpenDetail} from '../../ui/stat-tile.ts';
 import {chart, common, inner} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
@@ -58,6 +59,7 @@ export class ClimatePane extends LitElement {
     active: {type: Boolean, reflect: true},
     detailOpen: {type: Boolean},
     detail: {attribute: false},
+    over: {type: Boolean},
   };
   /** Set by the shell: this pane is the tab on screen. A hidden pane listens to no entity and keeps what it drew. */
   declare active: boolean;
@@ -65,9 +67,11 @@ export class ClimatePane extends LitElement {
   declare detailOpen: boolean;
   /** Bound by the registry's template to what the open sheet was asked to show: `{sel}` from a tile, nothing from Home's. */
   declare detail: unknown;
+  /** Bound by the registry's template to whether a room view is shown (ADR 0039): the detail is a sheet over the screen, on a tablet as on a phone. */
+  declare over: boolean;
 
   // The element's own rules, its `:host`, the tablet's grid and the phone's tiles, are in climate-pane.element.css.
-  static override styles = [common, inner, chart, unsafeCSS(forShadow(paneOwn))];
+  static override styles = [common, inner, chart, unsafeCSS(forShadow(tilesOwn)), unsafeCSS(forShadow(paneOwn))];
 
   private cache: StatisticsCache | undefined;
   private readonly storeController = new StoreController(this, {ids: store => climateIds(store)});
@@ -93,6 +97,7 @@ export class ClimatePane extends LitElement {
     this.active = false;
     this.detailOpen = false;
     this.detail = undefined;
+    this.over = false;
     // the panel's one cache is the shell's (ADR 0028): Energy's card and the legacy history ask it too, so each window is read once; the consumer
     // is made before the controller, so the cache is there when the controller's first update asks
     new ContextConsumer(this, {
@@ -113,9 +118,14 @@ export class ClimatePane extends LitElement {
     return this.active || this.detailOpen;
   }
 
-  /** The detail is on screen: the tablet's tab, or the phone's sheet. The history is asked for then, not for the phone's tiles, nor on Home. */
+  /** The detail is a sheet over the screen, not the tablet's own column: on a phone, and while a room view is shown. */
+  private get asSheet(): boolean {
+    return this.compact || this.over;
+  }
+
+  /** The detail is on screen: the tablet's tab, or the sheet. The history is asked for then, not for the phone's tiles, nor on Home. */
   private get detailShown(): boolean {
-    return this.compact ? this.detailOpen : this.active;
+    return this.asSheet ? this.detailOpen : this.active;
   }
 
   // The pause and the resume sit in willUpdate: a resume asks for an update, and one asked for here is this one.
@@ -183,8 +193,8 @@ export class ClimatePane extends LitElement {
     const {view} = this;
     if (!view) return nothing;
     const {compact} = this;
-    // a sheet over another tab: the pane is behind it and draws nothing but it, so the tab stays
-    if (compact && !this.active) return this.detailOpen ? this.renderSheet(view) : nothing;
+    // a sheet over another tab or a room view: the pane is behind it and draws nothing but it, so the tab stays
+    if (this.asSheet && !this.active) return this.detailOpen ? this.renderSheet(view) : nothing;
     if (compact) return html`${this.renderHeader(view)}${this.renderTiles(view)}${this.renderSheet(view)}`;
     return this.active ? this.renderTablet(view) : nothing;
   }
@@ -203,16 +213,7 @@ export class ClimatePane extends LitElement {
       ${repeat(
         tiles,
         ({id}) => id,
-        ({id, icon, name, sub, value, missing, tone, wide}) =>
-          html`<hp-stat-tile
-            .key=${id}
-            .icon=${icon}
-            .label=${name}
-            .sub=${sub}
-            .value=${value}
-            .missing=${missing ?? false}
-            .tone=${wide ? `${tone} wide trail` : tone}
-          ></hp-stat-tile>`,
+        tile => climateTile(tile, tile.wide),
       )}
     </div>`;
   }

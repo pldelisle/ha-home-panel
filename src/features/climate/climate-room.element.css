@@ -1,0 +1,7 @@
+/*
+ * <hp-climate-room>'s own rules: its place in a room view's section. The tile grid is the Climate tab's (climate-tiles.css).
+ */
+:host {
+  display: block;
+  min-width: 0;
+}

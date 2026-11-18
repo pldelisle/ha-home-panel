@@ -29,7 +29,7 @@ export interface RoomPart {
   areas(env: FeatureEnv): readonly string[];
   /** Its tiles for one area; its element asks for the feature's own sheets as the pane does. */
   part(env: FeatureEnv, areaId: string): TemplateResult;
-  /** A short reading for the room's header ("21°", "45 %"), or null; the Climate and Air tickets fill it. */
+  /** A short reading for the room's header ("21°", "45 %"), or null; Climate fills it, the Air ticket will. */
   chip?(env: FeatureEnv, areaId: string): string | null;
 }
 

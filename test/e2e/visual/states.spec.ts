@@ -191,6 +191,15 @@ for (const viewport of ['tablet', 'phone'] as const) {
               await expect(house.page).toHaveScreenshot(`room-view-${viewport}-${theme}-en.png`);
             });
 
+            // a room with a thermostat (#507): the Lights tiles and the Climate section's tile, with the room's temperature in the header
+            if (theme === 'light')
+              test('room view with climate', async ({house}) => {
+                await house.root().locator('#rail [data-room="living_room"]').click();
+                await expect(house.root().locator('#pane-room hp-climate-room hp-stat-tile')).toBeVisible();
+                await house.page.mouse.move(0, 0);
+                await expect(house.page).toHaveScreenshot(`room-view-climate-${viewport}-${theme}-en.png`);
+              });
+
             test('settings popup', async ({house}) => {
               await house.root().locator('#gear').click();
               await expect(house.root().locator('#setpop')).toBeVisible();
