@@ -1,0 +1,14 @@
+/*
+ * <hp-media-room>'s own rules: its place in a room view's section and the grid of its tiles. The tile's own look is <hp-media-tile>'s.
+ */
+:host {
+  display: block;
+  min-width: 0;
+}
+/* each tile is a wide one with its volume under it, so the columns are as wide as the tile needs rather than a fixed count */
+.mrtiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 12px;
+  align-items: start;
+}

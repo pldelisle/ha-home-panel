@@ -131,6 +131,69 @@ rememberedAttic.describe('a remembered room the house does not have', () => {
   });
 });
 
+// The Media part (#509): the room's speakers and, when it sits there, the television, as the Media tab's tiles; the controls open over the room.
+test.describe('Media in a room view', () => {
+  test.use({houseOpts: {cfg: FULL_CFG, time: AFTERNOON, frozen: true}});
+
+  const tile = (house: House, name: string) => pane(house).locator('hp-media-tile').filter({hasText: name});
+
+  test("the living room's Media section has the television's tile and the speaker's, named without the room's words", async ({
+    house,
+  }) => {
+    tabletOnly();
+    await openRoom(house, 'living_room');
+    await expect(pane(house).locator('.subject > h3')).toHaveText(['Lights', 'Media', 'Security']);
+    await expect(pane(house).locator('hp-media-tile .tx b')).toHaveText(['Samsung TV', 'speaker']);
+    // a room with no player has no Media section
+    await openRoom(house, 'kitchen');
+    await expect(pane(house).locator('.subject > h3')).toHaveText(['Lights']);
+    await expect(pane(house).locator('hp-media-tile')).toHaveCount(0);
+  });
+
+  test("the play button pauses the speaker at once through the Media tab's command", async ({house}) => {
+    tabletOnly();
+    await openRoom(house, 'living_room');
+    await tile(house, 'speaker').getByRole('button', {name: 'Pause', exact: true}).click();
+    await expect(tile(house, 'speaker').getByRole('button', {name: 'Play', exact: true})).toBeEnabled();
+    await expect
+      .poll(
+        () => house.calls.some(c => /^media_player\.media_pause .*living_room_speaker/.test(c)),
+        house.calls.join('; '),
+      )
+      .toBe(true);
+    await expect(house.root().getByRole('dialog')).toHaveCount(0);
+  });
+
+  test('a tap opens the controls sheet over the room, and the room stays', async ({house}) => {
+    tabletOnly();
+    await openRoom(house, 'living_room');
+    await tile(house, 'speaker').getByText('speaker', {exact: true}).click();
+    const sheet = house.root().getByRole('dialog', {name: 'Speakers'});
+    await expect(sheet).toBeVisible();
+    // the card is slotted, so it is the sheet element's child and not the panel's
+    await expect(house.root().locator('#pane-media hp-sheet hp-speaker-pod')).toHaveCount(1);
+    // the tab did not change: the room's view is still the one selected, and the Media pane is in the page only behind the sheet
+    await expect(house.root().locator('#rail [data-room="living_room"]')).toHaveAttribute('aria-selected', 'true');
+    await expect(pane(house)).toBeVisible();
+    await expect(house.root().locator('#rail [data-tab="media"]')).toHaveAttribute('aria-selected', 'false');
+    await expect(house.root().locator('#pane-media')).toHaveClass(/behind/);
+    await house.page.keyboard.press('Escape');
+    await expect(sheet).toBeHidden();
+    await expect(pane(house)).toBeVisible();
+  });
+
+  test("the television's tile opens its box in the sheet over the room", async ({house}) => {
+    tabletOnly();
+    await openRoom(house, 'living_room');
+    await tile(house, 'Samsung TV').getByText('Samsung TV', {exact: true}).click();
+    await expect(house.root().getByRole('dialog', {name: 'Samsung TV'})).toBeVisible();
+    await expect(
+      house.root().locator('#pane-media hp-sheet').getByRole('button', {name: 'Turn the TV off'}),
+    ).toBeVisible();
+    await expect(house.root().locator('#rail [data-room="living_room"]')).toHaveAttribute('aria-selected', 'true');
+  });
+});
+
 // The Security part of a room view (#510): the room's cameras, then its door and motion sensors, as the Security tab draws them; a camera
 // opens its live sheet and a sensor its history over the room. The test house has the front door in the living room, the hall motion sensor in
 // the office and no camera: the porch camera is added to the living room the way Home Assistant adds an entity, with its registry row.
