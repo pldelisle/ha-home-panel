@@ -7,7 +7,7 @@
 }
 .camlive {
   background: #000;
-  border-radius: 18px;
+  border-radius: var(--shape-card-compact);
   overflow: hidden;
   min-height: 200px;
   display: grid;

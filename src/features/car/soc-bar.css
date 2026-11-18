@@ -2,14 +2,14 @@
 .socbar {
   position: relative;
   height: 10px;
-  border-radius: 6px;
+  border-radius: var(--shape-track-lg);
   background: var(--card2);
   margin: 12px 0 4px;
 }
 .socbar > i {
   position: absolute;
   inset: 0 auto 0 0;
-  border-radius: 6px;
+  border-radius: var(--shape-track-lg);
   background: var(--c-ev);
 }
 .socbar > b {
@@ -17,7 +17,7 @@
   top: -5px;
   bottom: -5px;
   width: 2px;
-  border-radius: 2px;
+  border-radius: var(--shape-bar-sm);
   background: var(--fg2);
 }
 .socscale {

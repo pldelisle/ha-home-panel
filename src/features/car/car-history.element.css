@@ -27,7 +27,7 @@
 .hist:focus-visible {
   outline: 2px solid var(--c-home);
   outline-offset: -2px;
-  border-radius: 14px;
+  border-radius: var(--shape-control-sm);
 }
 .tx {
   flex: 1;

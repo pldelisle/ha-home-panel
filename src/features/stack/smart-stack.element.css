@@ -29,7 +29,7 @@
   right: 18px;
   top: -9px;
   height: 24px;
-  border-radius: 22px 22px 0 0;
+  border-radius: var(--shape-card) var(--shape-card) 0 0;
   background: var(--g-card, var(--card));
   opacity: 0.55;
 }
@@ -41,7 +41,7 @@
 :host .sdots i {
   width: 6px;
   height: 6px;
-  border-radius: 3px;
+  border-radius: var(--shape-bar);
   background: var(--fg);
   opacity: 0.25;
 }

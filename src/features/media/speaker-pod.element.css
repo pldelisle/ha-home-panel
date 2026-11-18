@@ -15,7 +15,7 @@
   flex-wrap: wrap;
   gap: 10px 14px;
   background: var(--card2);
-  border-radius: 20px;
+  border-radius: var(--shape-stat-tile);
   padding: 14px 16px;
   min-width: 0;
 }
@@ -25,7 +25,7 @@
 .player .pic {
   width: 72px;
   height: 72px;
-  border-radius: 18px;
+  border-radius: var(--shape-card-compact);
   background: var(--card);
   display: grid;
   place-items: center;
@@ -69,7 +69,7 @@
   order: 1;
   width: 60px;
   height: 60px;
-  border-radius: 30px;
+  border-radius: var(--shape-sheet);
   border: 0;
   background: var(--card);
   display: grid;
@@ -94,7 +94,7 @@
 .app.cp .player .pic {
   width: 52px;
   height: 52px;
-  border-radius: 14px;
+  border-radius: var(--shape-control-sm);
 }
 .app.cp .player .tx {
   min-width: 100px;
@@ -126,7 +126,7 @@
 @media (prefers-reduced-motion: no-preference) {
   .play {
     transition:
-      transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+      transform var(--motion-press-ms) var(--motion-standard),
       background-color 0.2s ease,
       box-shadow 0.2s ease,
       color 0.2s ease;

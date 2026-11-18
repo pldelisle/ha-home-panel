@@ -49,7 +49,7 @@
   min-width: 64px;
   height: 44px;
   padding: 0 18px;
-  border-radius: 999px;
+  border-radius: var(--shape-pill);
   border: 0;
   font: inherit;
   font-size: calc(15px * var(--tx));
@@ -90,7 +90,7 @@
 .lchip {
   min-height: 44px;
   padding: 8px 16px;
-  border-radius: 999px;
+  border-radius: var(--shape-pill);
   border: 0;
   display: inline-flex;
   align-items: center;
@@ -128,7 +128,7 @@
 @media (prefers-reduced-motion: no-preference) {
   .lchip {
     transition:
-      transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+      transform var(--motion-press-ms) var(--motion-standard),
       background-color 0.2s ease,
       box-shadow 0.2s ease,
       color 0.2s ease;

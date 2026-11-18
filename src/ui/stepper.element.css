@@ -9,13 +9,13 @@
   gap: 6px;
   box-sizing: border-box;
   background: var(--card2);
-  border-radius: 18px;
+  border-radius: var(--shape-card-compact);
   padding: 5px;
 }
 .step {
   width: 44px;
   height: 44px;
-  border-radius: 14px;
+  border-radius: var(--shape-control-sm);
   border: 0;
   background: var(--card);
   color: var(--fg);
@@ -60,7 +60,7 @@
 @media (prefers-reduced-motion: no-preference) {
   .step {
     transition:
-      transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+      transform var(--motion-press-ms) var(--motion-standard),
       background-color 0.2s ease,
       box-shadow 0.2s ease,
       color 0.2s ease;

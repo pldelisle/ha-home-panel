@@ -35,7 +35,7 @@
 .slist .bar {
   display: inline-block;
   height: 6px;
-  border-radius: 3px;
+  border-radius: var(--shape-bar);
   background: var(--c-ev);
   vertical-align: middle;
   margin-right: 8px;
@@ -49,7 +49,7 @@
   margin-top: 10px;
   border: 0;
   background: var(--card2);
-  border-radius: 999px;
+  border-radius: var(--shape-pill);
   padding: 10px 16px;
   min-height: 44px;
   font: inherit;
@@ -74,7 +74,7 @@
 @media (prefers-reduced-motion: no-preference) {
   .showall {
     transition:
-      transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+      transform var(--motion-press-ms) var(--motion-standard),
       background-color 0.2s ease,
       box-shadow 0.2s ease,
       color 0.2s ease;

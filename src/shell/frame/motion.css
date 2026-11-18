@@ -9,13 +9,13 @@
   .go,
   .more {
     transition:
-      transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+      transform var(--motion-press-ms) var(--motion-standard),
       background-color 0.2s ease,
       box-shadow 0.2s ease,
       color 0.2s ease;
   }
   .rtab svg {
-    transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+    transition: transform var(--motion-press-ms) var(--motion-standard);
   }
 }
 .head button.icon:active,
@@ -29,7 +29,7 @@
 /* a section settles in when its tab is chosen. `backwards`, not `both`: kept after the end, even an identity transform makes the pane the containing
    block of the `position: fixed` sheets it draws, which then stop at the pane's box (docs/apple-hig-audit-tabs-2026-11-17.md, finding 1) */
 .pane:not([hidden]) {
-  animation: panein 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation: panein var(--motion-pane-ms) var(--motion-standard) backwards;
 }
 @keyframes panein {
   from {

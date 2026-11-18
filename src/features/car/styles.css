@@ -8,7 +8,7 @@
 .app.cp .inner {
   /* a phone's inner cards are tighter, the blocks' and the two control cards' alike */
   padding: 14px;
-  border-radius: 18px;
+  border-radius: var(--shape-card-compact);
 }
 .tile .v .word {
   font-size: 18px;

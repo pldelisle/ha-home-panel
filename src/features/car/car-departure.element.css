@@ -47,7 +47,7 @@
 .open:focus-visible {
   outline: 2px solid var(--c-home);
   outline-offset: 2px;
-  border-radius: 12px;
+  border-radius: var(--shape-segment);
 }
 /* the time and cabin rows: the value is text the house formats, and the native field (transparent) fills the whole row, so a tap anywhere on it opens the picker or the menu (44 pt at least, HIG Buttons) */
 .pick {
@@ -55,7 +55,7 @@
 }
 .pick .shown {
   padding: 6px 10px;
-  border-radius: 10px;
+  border-radius: var(--shape-icon);
   background: var(--card);
   font-weight: 600;
 }

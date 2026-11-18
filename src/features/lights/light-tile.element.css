@@ -5,10 +5,10 @@
 :host {
   display: grid;
   min-width: 0;
-  border-radius: 22px; /* the tile's, so a lifted tile's shadow and Arrange's outline follow its corners */
+  border-radius: var(--shape-card); /* the tile's, so a lifted tile's shadow and Arrange's outline follow its corners */
 }
 :host([compact]) {
-  border-radius: 20px;
+  border-radius: var(--shape-stat-tile);
 }
 .lcell {
   --pad: 12px;
@@ -17,7 +17,7 @@
   /* the row and the bulb share the one cell: the row fills it, the bulb sits over the row's left padding (two sibling buttons) */
   display: grid;
   min-height: 76px;
-  border-radius: 22px;
+  border-radius: var(--shape-card);
   /* off: dimmed, as Apple Home draws a light that is off; on (below): bright, in the light's colour */
   background: var(--tile-off);
   box-shadow: none;
@@ -180,7 +180,7 @@
   --pad: 10px;
   --bulb: 44px;
   min-height: 70px;
-  border-radius: 20px;
+  border-radius: var(--shape-stat-tile);
 }
 .lgrip {
   display: none;

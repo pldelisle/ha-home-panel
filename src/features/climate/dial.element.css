@@ -49,7 +49,7 @@
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25));
   transform-box: fill-box;
   transform-origin: center;
-  transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: transform 0.15s var(--motion-standard);
 }
 .dial.ed {
   cursor: grab;
@@ -88,7 +88,7 @@
 /* the thermostat dial draws its arc, then the knob and the number land */
 .dial.in .dact {
   stroke-dasharray: 600;
-  animation: dialdraw 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation: dialdraw 0.7s var(--motion-standard) both;
 }
 @keyframes dialdraw {
   from {
@@ -99,7 +99,7 @@
   }
 }
 .dial.in .dknob {
-  animation: knobin 0.4s 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+  animation: knobin 0.4s 0.4s var(--motion-overshoot) both;
 }
 @keyframes knobin {
   from {
@@ -108,7 +108,7 @@
   }
 }
 .dial.in .dialc {
-  animation: fadeup 0.45s 0.2s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation: fadeup 0.45s 0.2s var(--motion-standard) both;
 }
 @keyframes fadeup {
   from {

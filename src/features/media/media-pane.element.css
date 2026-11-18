@@ -36,7 +36,7 @@ hp-pane-header {
 .mcard {
   background: var(--card);
   border: 0;
-  border-radius: 22px;
+  border-radius: var(--shape-card);
   padding: 20px;
   box-shadow: var(--shadow);
   min-width: 0;
@@ -84,7 +84,7 @@ hp-pane-header {
 /* a card in the sheet a tile opens, as the legacy card sheet drew one (`#cardhost > .card`, phone.css, deleted in #239) */
 hp-sheet > .mcard {
   padding: 14px;
-  border-radius: 18px;
+  border-radius: var(--shape-card-compact);
 }
 hp-sheet > .mcard > .top {
   margin-bottom: 12px;

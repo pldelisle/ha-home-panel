@@ -68,13 +68,13 @@
 .whleg i.line {
   width: 14px;
   height: 3px;
-  border-radius: 2px;
+  border-radius: var(--shape-bar-sm);
   background: var(--c-wh);
 }
 .whleg i.bars {
   width: 10px;
   height: 10px;
-  border-radius: 2px;
+  border-radius: var(--shape-bar-sm);
   background: color-mix(in srgb, var(--c-wh) 42%, transparent);
 }
 .whline {

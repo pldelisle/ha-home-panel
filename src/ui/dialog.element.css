@@ -9,7 +9,7 @@
 dialog {
   border: 0;
   padding: 18px;
-  border-radius: 26px;
+  border-radius: var(--shape-dialog);
   width: min(400px, calc(100vw - 32px));
   max-height: calc(100vh - 48px);
   background: var(--card);
@@ -63,7 +63,7 @@ dialog p {
   min-height: 44px;
   padding: 0 18px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--shape-pill);
   font: inherit;
   font-weight: 600;
   cursor: pointer;

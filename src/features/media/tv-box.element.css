@@ -41,7 +41,7 @@
 .tvkeys button {
   min-height: 72px;
   border: 0;
-  border-radius: 16px;
+  border-radius: var(--shape-control);
   background: var(--ctl-bg);
   box-shadow: var(--ctl-edge);
   font: 600 calc(16px * var(--tx)) var(--f-body);
@@ -67,7 +67,7 @@
 @media (prefers-reduced-motion: no-preference) {
   .tvkeys button {
     transition:
-      transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+      transform var(--motion-press-ms) var(--motion-standard),
       background-color 0.2s ease,
       box-shadow 0.2s ease,
       color 0.2s ease;

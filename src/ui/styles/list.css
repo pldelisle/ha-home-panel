@@ -11,13 +11,13 @@
   gap: 12px;
   align-items: flex-start;
   background: var(--card2);
-  border-radius: 16px;
+  border-radius: var(--shape-control);
   padding: 12px 14px;
 }
 .arow .ic {
   width: 30px;
   height: 30px;
-  border-radius: 10px;
+  border-radius: var(--shape-icon);
   display: grid;
   place-items: center;
   flex: none;
@@ -42,7 +42,7 @@
   font-size: calc(12px * var(--tx));
   color: var(--fg2);
   background: var(--card2);
-  border-radius: 999px;
+  border-radius: var(--shape-pill);
   padding: 5px 10px;
 }
 .clear span::before {

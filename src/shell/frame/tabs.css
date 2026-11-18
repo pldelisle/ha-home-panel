@@ -24,7 +24,7 @@
   flex-direction: column;
   gap: 4px;
   background: var(--card);
-  border-radius: 22px;
+  border-radius: var(--shape-card);
   padding: 8px 6px;
   box-shadow: var(--shadow);
 }
@@ -39,7 +39,7 @@
 .rtab {
   border: 0;
   background: transparent;
-  border-radius: 16px;
+  border-radius: var(--shape-control);
   padding: 10px 4px 8px;
   display: flex;
   flex-direction: column;
@@ -100,7 +100,7 @@
 .pane .ph .badge {
   width: 54px;
   height: 54px;
-  border-radius: 18px;
+  border-radius: var(--shape-card-compact);
   display: grid;
   place-items: center;
   flex: none;
@@ -175,7 +175,7 @@
 .hrow .sic {
   width: 30px;
   height: 30px;
-  border-radius: 10px;
+  border-radius: var(--shape-icon);
   background: var(--card2);
   display: grid;
   place-items: center;

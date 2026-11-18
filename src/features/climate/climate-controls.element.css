@@ -43,7 +43,7 @@ p {
 .quick button {
   border: 0;
   background: var(--card2);
-  border-radius: 999px;
+  border-radius: var(--shape-pill);
   padding: 9px 13px;
   min-height: 40px;
   font: 600 calc(13px * var(--tx)) var(--f-body);
@@ -63,7 +63,7 @@ p {
 @media (prefers-reduced-motion: no-preference) {
   .quick button {
     transition:
-      transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+      transform var(--motion-press-ms) var(--motion-standard),
       background-color 0.2s ease,
       box-shadow 0.2s ease,
       color 0.2s ease;
@@ -93,7 +93,7 @@ p {
   border: 0;
   background: var(--card2);
   color: var(--fg);
-  border-radius: 14px;
+  border-radius: var(--shape-control-sm);
   padding: 11px 12px;
   font: 500 calc(14px * var(--tx)) var(--f-body);
 }

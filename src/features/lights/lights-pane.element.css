@@ -28,7 +28,7 @@ hp-pane-header {
 .lcard {
   position: relative;
   min-width: 0;
-  border-radius: 22px;
+  border-radius: var(--shape-card);
   padding: 0;
 }
 .lcard > .top {
@@ -58,7 +58,7 @@ hp-pane-header {
   margin-top: 10px;
   border: 0;
   background: var(--card2);
-  border-radius: 999px;
+  border-radius: var(--shape-pill);
   padding: 10px 16px;
   min-height: 44px;
   font: inherit;
@@ -86,7 +86,7 @@ hp-pane-header {
 @media (prefers-reduced-motion: no-preference) {
   .lbtn {
     transition:
-      transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+      transform var(--motion-press-ms) var(--motion-standard),
       background-color 0.2s ease,
       box-shadow 0.2s ease,
       color 0.2s ease;

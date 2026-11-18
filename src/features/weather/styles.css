@@ -15,7 +15,7 @@
   flex-wrap: wrap;
   align-items: baseline;
   gap: 4px 12px;
-  border-radius: 16px;
+  border-radius: var(--shape-well);
   padding: 12px 16px;
   background: color-mix(in srgb, var(--warn) 16%, var(--card));
 }
@@ -133,14 +133,14 @@
 .rng {
   position: relative;
   height: 8px;
-  border-radius: 4px;
+  border-radius: var(--shape-track);
   background: var(--line);
 }
 .rng b {
   position: absolute;
   top: 0;
   bottom: 0;
-  border-radius: 4px;
+  border-radius: var(--shape-track);
   background: linear-gradient(90deg, var(--c-home), var(--m-amber) 60%, var(--c-wh));
 }
 .rng i {
@@ -231,7 +231,7 @@
 /* Weather Radar Card reads HA's theme variables; these map them onto the panel's palette */
 .radar {
   margin-top: 12px;
-  border-radius: 16px;
+  border-radius: var(--shape-well);
   overflow: hidden;
   background: var(--card2);
   font-family: var(--f-body);

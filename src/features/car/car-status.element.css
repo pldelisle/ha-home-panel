@@ -46,7 +46,7 @@
 }
 /* the details as value rows: the label (and the line under it) left, the figure right, a hairline between rows (HIG, Lists and tables) */
 .rows {
-  border-radius: 16px;
+  border-radius: var(--shape-well);
   background: var(--card2);
   overflow: hidden;
 }

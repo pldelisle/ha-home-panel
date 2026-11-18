@@ -10,7 +10,7 @@
 .htile {
   min-height: 150px;
   border: 0;
-  border-radius: 22px;
+  border-radius: var(--shape-card);
   background: var(--card);
   box-shadow: var(--shadow);
   padding: 16px 18px;
@@ -90,7 +90,7 @@
 @media (prefers-reduced-motion: no-preference) {
   .htile {
     transition:
-      transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+      transform var(--motion-press-ms) var(--motion-standard),
       background-color 0.2s ease,
       box-shadow 0.2s ease,
       color 0.2s ease;
@@ -115,7 +115,7 @@
 .app.tabsv.cp .htile {
   min-height: 116px;
   padding: 14px;
-  border-radius: 20px;
+  border-radius: var(--shape-stat-tile);
 }
 .app.tabsv.cp .htile .hv {
   font-size: calc(24px * var(--tx));

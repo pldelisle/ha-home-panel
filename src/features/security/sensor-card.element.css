@@ -13,7 +13,7 @@
 .sencard {
   background: var(--card);
   border: 0;
-  border-radius: 22px;
+  border-radius: var(--shape-card);
   padding: 20px;
   box-shadow: var(--shadow);
   min-width: 0;
@@ -80,7 +80,7 @@
   gap: 10px;
   background: var(--ctl-bg);
   box-shadow: var(--ctl-edge);
-  border-radius: 16px;
+  border-radius: var(--shape-control);
   padding: 12px 14px;
   min-width: 0;
 }
@@ -94,7 +94,7 @@
 @media (prefers-reduced-motion: no-preference) {
   .schip {
     transition:
-      transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+      transform var(--motion-press-ms) var(--motion-standard),
       background-color 0.2s ease,
       box-shadow 0.2s ease,
       color 0.2s ease;
@@ -134,7 +134,7 @@
 .schip .sic {
   width: 34px;
   height: 34px;
-  border-radius: 11px;
+  border-radius: var(--shape-icon-md);
   display: grid;
   place-items: center;
   background: var(--card2);

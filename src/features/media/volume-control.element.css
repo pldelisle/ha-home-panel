@@ -20,7 +20,7 @@
   flex: none;
   width: 44px;
   height: 44px;
-  border-radius: 14px;
+  border-radius: var(--shape-control-sm);
   border: 0;
   background: var(--vol-well, var(--card));
   color: var(--fg);
@@ -50,12 +50,12 @@
 }
 .vol input::-webkit-slider-runnable-track {
   height: 6px;
-  border-radius: 3px;
+  border-radius: var(--shape-bar);
   background: linear-gradient(to right, var(--c-home) var(--v), var(--vol-well, var(--card)) var(--v));
 }
 .vol input::-moz-range-track {
   height: 6px;
-  border-radius: 3px;
+  border-radius: var(--shape-bar);
   background: linear-gradient(to right, var(--c-home) var(--v), var(--vol-well, var(--card)) var(--v));
 }
 .vol input::-webkit-slider-thumb {
@@ -79,7 +79,7 @@
 .vol input:focus-visible {
   outline: 2px solid var(--c-home);
   outline-offset: 2px;
-  border-radius: 8px;
+  border-radius: var(--shape-focus);
 }
 .app.gl .vol .step {
   background: var(--g-sel);

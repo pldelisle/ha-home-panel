@@ -3,7 +3,7 @@
    for the legacy sheets and for the elements that draw them; inside an element `.app.gl` reads as `:host([glass])` (host.ts). */
 .inner {
   background: var(--card2);
-  border-radius: 22px;
+  border-radius: var(--shape-card);
   padding: 18px;
   min-width: 0;
 }

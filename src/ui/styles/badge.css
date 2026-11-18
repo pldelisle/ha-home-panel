@@ -5,7 +5,7 @@
 .ph .badge {
   width: 54px;
   height: 54px;
-  border-radius: 18px;
+  border-radius: var(--shape-card-compact);
   display: grid;
   place-items: center;
   flex: none;
@@ -15,7 +15,7 @@
 .app.cp .ph .badge {
   width: 44px;
   height: 44px;
-  border-radius: 14px;
+  border-radius: var(--shape-control-sm);
 }
 .app.cp .ph .badge svg {
   width: 22px;
