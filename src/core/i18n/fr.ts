@@ -902,6 +902,7 @@ export const fr: Record<MessageKey, string> = {
   'car.sessions.summary':
     "{n, plural, one {# session de recharge} other {# sessions de recharge}} sur la Wallbox depuis le {date}{stop} Le coût est estimé au tarif de {cents} ¢/kWh réglé dans l'application Wallbox.",
   'car.sessions.none': 'Aucune session de recharge dans la dernière année.',
+  'car.sessions.noneMonth': 'Aucune session de recharge au cours des 30 derniers jours.',
   'car.sessions.sessions': 'Sessions',
   'car.sessions.average': 'Moyenne',
   'car.sessions.perSession': 'par session',

@@ -234,7 +234,13 @@ test.describe('on a tablet', () => {
       const sessions = historySheet(house).locator('hp-car-sessions');
       const rows = sessions.locator('tbody tr');
       const toggle = sessions.locator('.showall');
+      // the sheet opens on Month, the last 30 days: all twelve sessions are within a week; Year is the months' chart and the same table
+      const tabs = pane(house).locator('hp-range-tabs');
+      await expect(tabs.getByRole('tab', {name: 'Month'})).toHaveAttribute('aria-selected', 'true');
+      await expect(sessions.locator('hp-chart')).toHaveCount(0);
       await expect(sessions.locator('.stiles .tile .v').first()).toHaveText('12');
+      await tabs.getByRole('tab', {name: 'Year'}).click();
+      await expect(sessions.locator('hp-chart .apexcharts-bar-area').first()).toBeVisible();
       await expect(rows).toHaveCount(10);
       await expect(toggle).toHaveText('Show all 12 sessions');
       await toggle.click();
@@ -252,6 +258,43 @@ test.describe('on a tablet', () => {
       await expect(historySheet(house).locator('hp-car-sessions')).toBeVisible();
       await house.page.keyboard.press('Escape');
       await expect(historySheet(house)).toHaveCount(0);
+    });
+  });
+
+  // two sessions this week and two from two months ago: Month shows the first pair, Year all four
+  test.describe('with sessions older than a month', () => {
+    test.use({
+      houseOpts: {
+        cfg: FULL_CFG,
+        charges: {
+          id: CHARGER,
+          runs: [20, 44, 1500, 1580].map(hoursAgo => ({hoursAgo, hours: 3, kw: 7.2})),
+        },
+      },
+    });
+
+    test('the history sheet opens on Month, Year adds the older sessions and the months’ chart, and the choice stays when it closes', async ({
+      house,
+    }) => {
+      await house.tab('car');
+      await expect(history(house).locator('.hist .tx small')).toHaveText(/^4 sessions · \d+ kWh$/);
+      await history(house).locator('.hist').click();
+      const sessions = historySheet(house).locator('hp-car-sessions');
+      const tabs = pane(house).locator('hp-range-tabs');
+      await expect(tabs.getByRole('tab', {name: 'Month'})).toHaveAttribute('aria-selected', 'true');
+      await expect(sessions.locator('tbody tr')).toHaveCount(2);
+      await expect(sessions.locator('.stiles .tile .v').first()).toHaveText('2');
+      await expect(sessions.locator('hp-chart')).toHaveCount(0);
+      await tabs.getByRole('tab', {name: 'Year'}).click();
+      await expect(sessions.locator('tbody tr')).toHaveCount(4);
+      await expect(sessions.locator('.stiles .tile .v').first()).toHaveText('4');
+      await expect(sessions.locator('hp-chart .apexcharts-bar-area').first()).toBeVisible();
+      // the pane holds the window for the panel's life: the row on the tab still says the year, and the sheet opens on Year again
+      await pane(house).getByRole('button', {name: 'Done'}).click();
+      await expect(history(house).locator('.hist .tx small')).toHaveText(/^4 sessions · \d+ kWh$/);
+      await history(house).locator('.hist').click();
+      await expect(tabs.getByRole('tab', {name: 'Year'})).toHaveAttribute('aria-selected', 'true');
+      await expect(sessions.locator('tbody tr')).toHaveCount(4);
     });
   });
 

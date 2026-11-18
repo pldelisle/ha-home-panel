@@ -20,9 +20,20 @@ export interface CarModelDeps {
   fmt: Formatters;
   /** The sessions' table shows every session and not the latest ten: the detail's toggle, element state. */
   allSessions: boolean;
+  /** The window the history sheet's sessions, tiles and months cover: the pane's state, which the sheet's Month / Year tabs set. */
+  historyWindow: HistoryWindow;
   /** Why the history did not load (the loader's), or null. */
   historyError: string | null;
 }
+
+/** What the history sheet's sessions cover: the last 30 days or the year the history holds. */
+export type HistoryWindow = 'month' | 'year';
+
+/** The windows in the order their tabs show them; their words are the kit's range tabs' (`range.<window>.tab`). */
+export const HISTORY_WINDOWS: readonly HistoryWindow[] = ['month', 'year'];
+
+/** The month window reaches this far back from the history's own instant, which is as far as the sheet's bars go. */
+const MONTH_MS = DAILY_DAYS * 864e5;
 
 /** The table shows this many sessions, the latest, until "show all". */
 const LATEST_SESSIONS = 10;
@@ -154,7 +165,7 @@ export interface SessionsBlock {
   /** The sentence under the title; empty until the history loads. */
   summary: string;
   tiles: CarTile[];
-  /** The kWh by month, which the chart draws (`sessionsChartOptions`). */
+  /** The kWh by month, which the chart draws (`sessionsChartOptions`); empty in the month window, as the chart is the year's. */
   months: MonthlySessions[];
   columns: {date: string; time: string; length: string; energy: string; peak: string; cost: string};
   rows: SessionRow[];
@@ -167,6 +178,8 @@ export interface HistoryBlock {
   title: string;
   /** The sheet's button that closes it. */
   done: string;
+  /** The tabs that choose what the sheet's sessions cover. */
+  windows: {range: HistoryWindow; label: string}[];
   /** `3 sessions · 39 kWh`; `''` until the history loads. */
   line: string;
   /** The year's estimated cost; `''` until the history loads. */
@@ -511,15 +524,17 @@ function sessionTiles(sessions: readonly Session[], price: number, cents: string
   ];
 }
 
-function sessionsOf(
-  sessions: readonly Session[] | undefined,
-  charger: WallboxInputs,
-  deps: CarModelDeps,
-): SessionsBlock {
-  const {t, fmt, allSessions} = deps;
+/** The sessions of the window: the year's are the history's, the month's are those that started within 30 days of the history's own instant (the model reads no clock). */
+function inWindow({at, sessions}: CarHistoryData, window: HistoryWindow): Session[] {
+  return window === 'year' ? sessions : sessions.filter(session => session.start >= at - MONTH_MS);
+}
+
+function sessionsOf(history: CarHistoryData | null, charger: WallboxInputs, deps: CarModelDeps): SessionsBlock {
+  const {t, fmt, allSessions, historyWindow} = deps;
   const columns = sessionColumns(t);
   const title = t('car.sessions.title');
-  if (!sessions) return {title, summary: '', tiles: [], months: [], columns, rows: [], toggle: null};
+  if (!history) return {title, summary: '', tiles: [], months: [], columns, rows: [], toggle: null};
+  const sessions = inWindow(history, historyWindow);
   const price = charger.price ?? DEFAULT_KWH_PRICE;
   const cents = fmt.fixed(price * 100, 0);
   const since = sessions.length ? fmt.date(sessions[0].start) : '';
@@ -530,9 +545,9 @@ function sessionsOf(
     title,
     summary: sessions.length
       ? t('car.sessions.summary', {n: sessions.length, date: since, stop: stopAfter(since), cents})
-      : t('car.sessions.none'),
+      : t(historyWindow === 'month' ? 'car.sessions.noneMonth' : 'car.sessions.none'),
     tiles: sessionTiles(sessions, price, cents, deps),
-    months: monthlySessions(sessions, fmt),
+    months: historyWindow === 'year' ? monthlySessions(sessions, fmt) : [],
     columns,
     rows: shown.map(session => sessionRow(session, widest, price, deps)),
     toggle:
@@ -549,13 +564,15 @@ function historyOf(history: CarHistoryData | null, charger: WallboxInputs, deps:
   const {t, fmt} = deps;
   const title = t('car.sessions.title');
   const done = t('car.history.done');
-  if (!history) return {title, done, line: '', value: '', daily: null};
+  const windows = HISTORY_WINDOWS.map(range => ({range, label: t(`range.${range}.tab`)}));
+  if (!history) return {title, done, windows, line: '', value: '', daily: null};
   const {sessions} = history;
   const total = sum(sessions.map(session => session.kwh));
   const price = charger.price ?? DEFAULT_KWH_PRICE;
   return {
     title,
     done,
+    windows,
     line: t('car.history.line', {n: sessions.length, kwh: fmt.integer(total)}),
     value: sessions.length ? money(deps, total * price, false) : '',
     daily: dailyBars(history, deps),
@@ -595,7 +612,7 @@ export function carModel(inputs: CarFeatureInputs, history: CarHistoryData | nul
       summary: summaryBlockOf(car, deps),
       status: statusOf(car, deps),
       history: historyOf(history, charger, deps),
-      sessions: sessionsOf(history?.sessions, charger, deps),
+      sessions: sessionsOf(history, charger, deps),
       ford: fordOf(car, deps),
       last: lastOf(car, history, deps),
     },

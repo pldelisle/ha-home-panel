@@ -21,7 +21,7 @@ function modelOf(
   const store = storeOf(hass, config);
   const {t, fmt} = depsOf(hass, language);
   const inputs = readCarFeature(hass.states, store.config, store.names);
-  return carModel(inputs, history, {t, fmt, allSessions: false, historyError: null, ...rest});
+  return carModel(inputs, history, {t, fmt, allSessions: false, historyWindow: 'year', historyError: null, ...rest});
 }
 
 const PREFIX = 'fordpass_t';
@@ -170,7 +170,17 @@ describe('the test house, in English', () => {
     expect(detail?.status).not.toHaveProperty('caption');
     expect(detail?.status.rows).toEqual([{label: 'Odometer', value: '12,000', unit: 'km', sub: '', word: false}]);
     expect(detail?.ford).toBeNull();
-    expect(detail?.history).toEqual({title: 'Charging history', done: 'Done', line: '', value: '', daily: null});
+    expect(detail?.history).toEqual({
+      title: 'Charging history',
+      done: 'Done',
+      windows: [
+        {range: 'month', label: 'Month'},
+        {range: 'year', label: 'Year'},
+      ],
+      line: '',
+      value: '',
+      daily: null,
+    });
     expect(detail?.last).toEqual({
       title: 'Last plug-in',
       caption: "Ford hasn't reported a charging session yet.",
@@ -346,7 +356,17 @@ describe('a car with every sensor', () => {
 
   test('a house with no history yet has no bars, no sessions and nothing delivered', () => {
     const early = modelOf(carHouse());
-    expect(early.detail?.history).toEqual({title: 'Charging history', done: 'Done', line: '', value: '', daily: null});
+    expect(early.detail?.history).toEqual({
+      title: 'Charging history',
+      done: 'Done',
+      windows: [
+        {range: 'month', label: 'Month'},
+        {range: 'year', label: 'Year'},
+      ],
+      line: '',
+      value: '',
+      daily: null,
+    });
     expect(early.detail?.sessions).toMatchObject({summary: '', tiles: [], months: [], rows: [], toggle: null});
     expect(early.detail?.last.tiles[3]).toMatchObject({label: 'Delivered', value: '–'});
   });
@@ -360,6 +380,72 @@ describe('a car with every sensor', () => {
       {label: 'Average', value: '–', unit: 'kWh', sub: 'per session', word: false},
       {label: 'Est. cost', value: '$0', unit: '', sub: 'at 7¢/kWh', word: false},
     ]);
+  });
+});
+
+describe('the history sheet’s window', () => {
+  // the history's instant is Nov 9, 12:00 (-05:00), 17:00 UTC: thirty days before it is Oct 10, 17:00 UTC
+  const sessions = [
+    session('2026-09-15T12:00:00Z', 2, 10),
+    session('2026-10-10T16:59:00Z', 2, 20),
+    session('2026-10-10T17:00:00Z', 2, 5),
+    session('2026-11-06T22:00:00Z', 2, 14.46),
+    session('2026-11-08T14:00:00Z', 1, 6.04),
+  ];
+  const house = carHouse();
+
+  test('Month keeps the sessions of the last 30 days, from the history’s own instant, and totals only those', () => {
+    const month = modelOf(house, history({sessions}), {historyWindow: 'month'}).detail!.sessions;
+    // the session a minute before the cut is out, the one exactly on it is in
+    expect(month.rows.map(row => row.date)).toEqual(['Sun, Nov 8', 'Fri, Nov 6', 'Sat, Oct 10']);
+    expect(month.tiles).toEqual([
+      {label: 'Sessions', value: '3', unit: '', sub: 'since Oct 10', word: false},
+      {label: 'Delivered', value: '26', unit: 'kWh', sub: '', word: false},
+      {label: 'Average', value: '8.5', unit: 'kWh', sub: 'per session', word: false},
+      {label: 'Est. cost', value: '$2', unit: '', sub: 'at 7¢/kWh', word: false},
+    ]);
+    expect(month.summary).toBe(
+      '3 charging sessions on the Wallbox since Oct 10. Cost is estimated at the 7¢/kWh set in the Wallbox app.',
+    );
+  });
+
+  test('Month has no months chart: it is the year’s', () => {
+    expect(modelOf(house, history({sessions}), {historyWindow: 'month'}).detail!.sessions.months).toEqual([]);
+    expect(modelOf(house, history({sessions}), {historyWindow: 'year'}).detail!.sessions.months).toHaveLength(3);
+  });
+
+  test('Year keeps all five sessions', () => {
+    const year = modelOf(house, history({sessions}), {historyWindow: 'year'}).detail!.sessions;
+    expect(year.rows).toHaveLength(5);
+    expect(year.tiles[0]).toMatchObject({label: 'Sessions', value: '5', sub: 'since Sep 15'});
+  });
+
+  test('the row on the tab keeps saying the year in both windows', () => {
+    const line = (historyWindow: 'month' | 'year') =>
+      modelOf(house, history({sessions}), {historyWindow}).detail!.history.line;
+    expect(line('month')).toBe('5 sessions · 56 kWh');
+    expect(line('year')).toBe('5 sessions · 56 kWh');
+  });
+
+  test('a month with no session says so in its own words, though the year has some; the French too', () => {
+    const old = [session('2026-08-01T12:00:00Z', 2, 10)];
+    expect(modelOf(house, history({sessions: old}), {historyWindow: 'month'}).detail!.sessions).toMatchObject({
+      summary: 'No charging sessions in the last 30 days.',
+      rows: [],
+    });
+    expect(modelOf(house, history({sessions: old}), {historyWindow: 'year'}).detail!.sessions.rows).toHaveLength(1);
+    const french = modelOf(house, history({sessions: old}), {historyWindow: 'month', language: 'fr'});
+    expect(french.detail!.sessions.summary).toBe('Aucune session de recharge au cours des 30 derniers jours.');
+    expect(french.detail!.history.windows.map(window => window.label)).toEqual(['Mois', 'Année']);
+  });
+
+  test('the table’s latest ten and its toggle follow the window', () => {
+    const many = Array.from({length: 12}, (_, index) =>
+      session(`2026-11-0${1 + (index % 8)}T1${index % 10}:00:00Z`, 1, 1 + index),
+    ).sort((a, b) => a.start - b.start);
+    const month = modelOf(house, history({sessions: many}), {historyWindow: 'month'}).detail!.sessions;
+    expect(month.rows).toHaveLength(10);
+    expect(month.toggle).toBe('Show all 12 sessions');
   });
 });
 

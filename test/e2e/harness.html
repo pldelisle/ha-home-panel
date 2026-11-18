@@ -42,14 +42,22 @@
       const answer = m => {
         const reply = read.ws(m),
           {id, runs} = window.CHARGES ?? {};
-        if (m.type === 'recorder/statistics_during_period' && m.period === 'hour' && reply[id])
-          reply[id] = reply[id].map(row => {
+        if (m.type === 'recorder/statistics_during_period' && m.period === 'hour' && reply[id]) {
+          // the made-up curve reaches back a week: a run older than that gets its hours too, as a year's recorder has them
+          const oldest = Math.max(...runs.map(({hoursAgo, hours}) => hoursAgo + hours)),
+            first = reply[id][0],
+            missing = Math.max(0, Math.ceil((first.start - (now - oldest * 36e5)) / 36e5));
+          reply[id] = [
+            ...Array.from({length: missing}, (_, i) => ({...first, start: first.start - (missing - i) * 36e5})),
+            ...reply[id],
+          ].map(row => {
             const run = runs.find(({hoursAgo, hours}) => {
               const from = now - hoursAgo * 36e5;
               return row.start >= from && row.start < from + hours * 36e5;
             });
             return {...row, mean: run ? run.kw : 0, max: run ? run.kw + 0.5 : 0};
           });
+        }
         return reply;
       };
       // the live subscriptions the panel holds (`subscribeMessage`), so the test's side can deliver a message to them

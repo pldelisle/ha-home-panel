@@ -1,4 +1,4 @@
-// <hp-car-sessions>: the Car detail's charging history: the sentence and four tiles, the monthly bars through <hp-chart>, and the table of the latest ten sessions with the button that shows them all.
+// <hp-car-sessions>: the Car detail's charging history: the sentence and four tiles, the monthly bars through <hp-chart> (the year window's; the month's has none), and the table of the latest ten sessions with the button that shows them all.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) placing the model's `SessionsBlock`, the rows keyed by the session's start (Lit docs, repeat); the chart's options are rebuilt only when the months,
 // the theme or the language changed, so an update for anything else does not ask the chart to draw again. The table's length is the pane's state: the button asks (`sessions-toggle`) and the model answers.
 // Must not: read an entity or the clock, sum or cost a session or word a string (the model did), call the API client, or hold which rows are shown.
@@ -56,14 +56,14 @@ export class CarSessions extends LitElement {
     const block = this.view;
     if (!block) return nothing;
     const {columns, rows, toggle} = block;
-    // the tiles and the bars are there once the history has loaded; the table's heading is there before
-    const loaded = block.tiles.length > 0;
+    // the months' chart is the year's: the month window has none, and nor has a year with no session
+    const charted = block.months.length > 0;
     return html`<div class="inner fill">
         <h3>${block.title}</h3>
         <p>${block.summary || this.error}</p>
         <div class="tiles stiles">${carTiles(block.tiles)}</div>
         ${
-          loaded
+          charted
             ? html`<hp-chart
                 .height=${220}
                 .label=${`${block.title}. ${block.summary}`}

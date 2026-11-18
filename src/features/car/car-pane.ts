@@ -1,7 +1,7 @@
 // <hp-car-pane>: the Car pane (the rail's Tab is its button): the detail inline, on a phone under the header with the car's name and its summary line; on a phone the detail's sheet too, which the Home
 // tile and the live pill open over another tab; and the charging history's sheet, which the history row asks for.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over a view model: `carModel` runs in `willUpdate` and the template places what it returns; a store controller on `carIds` (ADR 0012), paused while no part of the pane
-// is on screen, and `CarHistory`, which loads the Car's two windows then (ADR 0028). It keeps the sessions table's length for the panel's life and hands the inputs down to the detail's controls.
+// is on screen, and `CarHistory`, which loads the Car's two windows then (ADR 0028). It keeps the sessions table's length and the history sheet's window (Month or Year) for the panel's life and hands the inputs down to the detail's controls.
 // Must not: read an entity itself (`readCarFeature` does), hold a string the household reads, call the API (the history controller asks the cache), or open a sheet (the tile, the pill or the row asks).
 import {ContextConsumer} from '@lit/context';
 import {LitElement, html, nothing, unsafeCSS, type PropertyValues} from 'lit';
@@ -11,7 +11,7 @@ import paneOwn from './car-pane.element.css?inline';
 import {carIds} from './ids.ts';
 import {readCarFeature, type CarFeatureInputs} from './inputs.ts';
 import {CarHistory, type CarHistoryHost} from './loader.ts';
-import {carModel, type CarViewModel} from './model.ts';
+import {carModel, HISTORY_WINDOWS, type CarViewModel, type HistoryWindow} from './model.ts';
 import {DETAIL_SHEET, HISTORY_SHEET} from './sheets.ts';
 import type {CarRef} from '../../providers/fordpass.ts';
 import type {StatisticsCache} from '../../core/statistics-cache.ts';
@@ -20,6 +20,8 @@ import {StoreController} from '../../ui/controllers/store-controller.ts';
 import {statisticsCacheContext} from '../../ui/contexts.ts';
 import {SheetDismissEvent} from '../../ui/events.ts';
 import '../../ui/pane-header.ts'; // defines <hp-pane-header>
+import '../../ui/range-tabs.ts'; // defines <hp-range-tabs>
+import type {RangeChangeDetail} from '../../ui/range-tabs.ts';
 import '../../ui/sheet.ts'; // defines <hp-sheet>
 import {common} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
@@ -51,6 +53,8 @@ export class CarPane extends LitElement {
   private inputs: CarFeatureInputs | undefined;
   // the sessions' table shows every session and not the latest ten: the toggle's state, which the model's rows follow
   private allSessions = false;
+  // what the history sheet's sessions cover, which its tabs set: the last 30 days until the household chooses the year, and kept when the sheet closes
+  private historyWindow: HistoryWindow = 'month';
   // Ford's photo did not load: the drawn car stands in for it until the pane goes, on the card and in the battery block alike (the legacy panel's `imgFail`, per session), so a broken photo is asked for once
   private imageFailed = false;
 
@@ -111,6 +115,7 @@ export class CarPane extends LitElement {
       t: store.t,
       fmt: store.fmt,
       allSessions: this.allSessions,
+      historyWindow: this.historyWindow,
       historyError: this.history.error,
     });
   }
@@ -180,13 +185,19 @@ export class CarPane extends LitElement {
     >
       ${
         this.historyOpen
-          ? html`<hp-car-history-sheet
-              .view=${history}
-              .sessions=${detail.sessions}
-              .last=${detail.last}
-              .error=${error}
-              @sessions-toggle=${this.onSessionsToggle}
-            ></hp-car-history-sheet>`
+          ? html`<hp-range-tabs
+                slot="tabs"
+                .ranges=${history.windows}
+                .value=${this.historyWindow}
+                @range-change=${this.onHistoryWindow}
+              ></hp-range-tabs
+              ><hp-car-history-sheet
+                .view=${history}
+                .sessions=${detail.sessions}
+                .last=${detail.last}
+                .error=${error}
+                @sessions-toggle=${this.onSessionsToggle}
+              ></hp-car-history-sheet>`
           : nothing
       }
     </hp-sheet>`;
@@ -196,6 +207,16 @@ export class CarPane extends LitElement {
   private readonly onSessionsToggle = (e: Event): void => {
     e.stopPropagation();
     this.allSessions = !this.allSessions;
+    this.requestUpdate();
+  };
+
+  // a tab of the history sheet: the window the sessions cover; one that is not a window of the model's is no choice
+  private readonly onHistoryWindow = (e: CustomEvent<RangeChangeDetail<string>>): void => {
+    e.stopPropagation();
+    const {range} = e.detail;
+    const chosen = HISTORY_WINDOWS.find(window => window === range);
+    if (!chosen) return;
+    this.historyWindow = chosen;
     this.requestUpdate();
   };
 
