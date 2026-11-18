@@ -1,9 +1,9 @@
-// <hp-energy-detail>: the Energy detail: the main stacked chart, the Sankey and the donut, each for the tab's one range, and the six totals.
+// <hp-energy-detail>: the Energy detail: the main stacked chart, the Sankey and the donut, each for the tab's one range.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) placing the view model the pane hands down, the charts through <hp-chart> (ADR 0022, 0027)
 // from the pure options of charts.ts and the Sankey through <hp-sankey>; a controlled component (the range is the pane's, told
-// upward as `range-chosen`, by the tabs and by a total that holds a range); a switch of range redraws from the history the pane loaded, so it asks nothing.
-// Now (`view.live`) draws the live flow alone, and builds no chart options; the hours, the donut and the totals are the other ranges'.
-// A card whose range holds no history yet draws its title and the model's one sentence (`notice`) and nothing else: no axes, donut, legend or tiles of 0 kWh.
+// upward as `range-chosen` by the tabs); a switch of range redraws from the history the pane loaded, so it asks nothing.
+// Now (`view.live`) draws the live flow alone, and builds no chart options; the hours and the donut are the other ranges'.
+// A card whose range holds no history yet draws its title and the model's one sentence (`notice`) and nothing else: no axes, donut or legend.
 // Must not: read an entity or the clock for a figure (the model did), call the API client, open a sheet itself, or build options for what did not change.
 import {LitElement, html, nothing, svg, unsafeCSS} from 'lit';
 import {ifDefined} from 'lit/directives/if-defined.js';
@@ -22,17 +22,15 @@ import type {EnergyHistoryData} from './history.ts';
 import type {DonutRow, EnergyDetailView, LegendItem} from './model.ts';
 import './power-flow.ts'; // defines <hp-power-flow>
 import './sankey.ts'; // defines <hp-sankey>
-import {tileList} from './tile-list.ts';
 import '../../ui/chart.ts'; // defines <hp-chart>
 import type {ChartOptions} from '../../ui/chart-options.ts';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
-import {MediaQueryController} from '../../ui/controllers/media-query.ts';
 import {StoreController} from '../../ui/controllers/store-controller.ts';
 import {lens} from '../../ui/lens.ts';
 import '../../ui/pane-header.ts'; // defines <hp-pane-header>
 import '../../ui/range-tabs.ts'; // defines <hp-range-tabs>
 import type {RangeChangeDetail} from '../../ui/range-tabs.ts';
-import {chart, common, inner, range as rangeStyles, tiles} from '../../ui/styles/index.ts';
+import {chart, common, inner, range as rangeStyles} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
 /** The charts' options, made for one history, range, theme, language and shape, so an update for anything else draws nothing again. */
@@ -55,18 +53,17 @@ export class EnergyDetail extends LitElement {
     history: {attribute: false},
     range: {},
   };
-  /** The pane's view model of the detail: the words, the Sankey's geometry, the donut's table and the totals. */
+  /** The pane's view model of the detail: the words, the Sankey's geometry, and the donut's table. */
   declare view: EnergyDetailView | undefined;
   /** The history the pane loaded; null before it arrives. The charts are drawn from it. */
   declare history: EnergyHistoryData | null;
   /** The range chosen, which the three cards follow: the pane keeps it for the panel's life and passes it in, as the legacy sheet kept its own. */
   declare range: EnergyRange;
 
-  // The kit's wells, tiles, tabs and legend, and the element's own rules last (energy-detail.element.css).
-  static override styles = [common, inner, tiles, rangeStyles, chart, unsafeCSS(forShadow(detailOwn))];
+  // The kit's wells, tabs and legend, and the element's own rules last (energy-detail.element.css).
+  static override styles = [common, inner, rangeStyles, chart, unsafeCSS(forShadow(detailOwn))];
 
   private readonly storeController = new StoreController(this, {ids: () => []});
-  private readonly motion = new MediaQueryController(this, '(prefers-reduced-motion: reduce)');
   private readonly appearance = new AppearanceConsumer(this);
   private built: Built | undefined;
 
@@ -132,7 +129,7 @@ export class EnergyDetail extends LitElement {
         ${compact ? nothing : this.renderHeader(view)}
         ${view.error === null ? nothing : html`<p class="histnote">${view.error}</p>`}
         ${view.live ? nothing : this.renderMain(view, built)} ${this.renderSankey(view)}
-        ${view.live ? nothing : this.renderTwo(view, built)}
+        ${view.live ? nothing : this.renderDonut(view, built)}
       </div>
       ${lens}`;
   }
@@ -180,24 +177,6 @@ export class EnergyDetail extends LitElement {
             ></hp-chart>`
           : nothing
       }
-    </div>`;
-  }
-
-  // the donut and the totals, which are the history's: Now has neither
-  private renderTwo(view: EnergyDetailView, built: Built | undefined) {
-    return html`<div class="two">
-      ${this.renderDonut(view, built)}
-      <div class="inner">
-        <h3>${view.totals.title}</h3>
-        ${
-          view.totals.notice !== null
-            ? html`<p class="loading">${view.totals.notice}</p>`
-            : html`<p>${view.totals.hint}</p>
-                <div class="totals">
-                  ${tileList(view.totals.tiles, {onRange: this.onTotal, opens: this.storeController.store.t('energy.totals.opensChart')})}
-                </div>`
-        }
-      </div>
     </div>`;
   }
 
@@ -255,15 +234,6 @@ export class EnergyDetail extends LitElement {
     </tr>`;
 
   // arrow fields, so the template hands the same function at every render
-
-  // a total's tap: the range that holds its period is the tab's (the pane keeps it, as for the tabs), and the chart that follows it is brought into view
-  private readonly onTotal = (range: EnergyRange): void => {
-    this.dispatchEvent(new CustomEvent<RangeChangeDetail<string>>('range-chosen', {detail: {range}}));
-    // `start`, not `nearest`: a chart half in view is brought to the top, where the whole of it can be read
-    this.renderRoot
-      .querySelector('.mainblock')
-      ?.scrollIntoView({block: 'start', behavior: this.motion.matches ? 'auto' : 'smooth'});
-  };
 
   // the header's tabs (a tablet) tell here; the pane keeps the choice and hands it back
   private readonly onRange = (event: CustomEvent<RangeChangeDetail<string>>): void => {

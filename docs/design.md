@@ -31,11 +31,11 @@ strength setting moves the navigation layer only.
 - **A value tile with a chevron leads to its data; a tile without one is not a button.** If a tile opens something (a history, or
   the chart and range it summarises), it is a control, the kit's `.tile.tilebtn` (`src/ui/styles/tiles.css`): a `<button>` raised on
   `--ctl-bg`, its figure followed by a `›`, and a screen-reader description of where it leads (`aria-description`: "Opens the
-  history", "Shows its chart"). Every tile is drawn by one template, `tile()` (`src/ui/tile.ts`), which Climate, Energy and Air share. If it opens nothing it is a well (`.tile`): a `<div>`, flat, with no pointer. One row of tiles can
-  mix the two (Energy's totals, Climate's house detail): only the tiles that lead somewhere are buttons. Why: HIG, Buttons and Lists and tables: a thing that acts looks as if it does, and the same shape works the same way
-  everywhere. Used by Weather's tiles, Air's readings ("Opens its history"),
-  Climate's Warmest and Coolest, and Energy's totals. Enforced by `test/e2e/climate.spec.ts` (the description), `test/e2e/energy.spec.ts` (four of the six totals are buttons, the car and the
-  rate are not) and `test/e2e/air.spec.ts` (the description); `test/e2e/a11y.spec.ts` fails a button that holds another (`nestedInteractive`).
+  history"). Every tile is drawn by one template, `tile()` (`src/ui/tile.ts`), which Climate, Energy and Air share. If it opens nothing it is a well (`.tile`): a `<div>`, flat, with no pointer. One row of tiles can
+  mix the two (Climate's house detail): only the tiles that lead somewhere are buttons. Why: HIG, Buttons and Lists and tables: a thing that acts looks as if it does, and the same shape works the same way
+  everywhere. Used by Weather's tiles, Air's readings ("Opens its history")
+  and Climate's Warmest and Coolest. Enforced by `test/e2e/climate.spec.ts` (the description)
+  and `test/e2e/air.spec.ts` (the description); `test/e2e/a11y.spec.ts` fails a button that holds another (`nestedInteractive`).
 - A whole card is tappable only when the whole card goes to one place (the Home tiles, which show a plain `›` in their
   top-right corner, in `--fg3`, with no box: a boxed chevron reads as a second button). A card with controls inside it is not itself tappable; if it also leads somewhere, its header row carries a plain `›`, as the tiles do (the Security card). A row that opens something ends in a plain `›` (a light tile's row, the Car's departure and charging
   history, the Automations list); a tile that acts and opens nothing (a scene, a bulb) has none, and a light tile is two sibling
@@ -66,10 +66,10 @@ Color (never colour alone). Nothing forbids a capsule mechanically yet: the e2e 
 A pane with a history has **one range control, at the top** (`<hp-range-tabs>`, `src/ui/range-tabs.ts`; the ranges are `RANGES` in
 `src/ui/ranges.ts`, with Energy's own Now and Today). Every card below it follows it, or names its own fixed period in its title
 or its line ("Today, hour by hour", "Today so far", "30 days"); a card never carries a second range control, and a tile that
-sets the range does it by setting the tab's (Energy's totals). A sheet that opens over a pane for one reading's history (Weather's
+sets the range does it by setting the tab's. A sheet that opens over a pane for one reading's history (Weather's
 and Air's tiles, a sensor) is its own place and has its own one control, at its top. Why: HIG, Segmented controls: one control
 chooses one thing, so the page cannot say Week while a card says Today. Enforced by `test/e2e/energy.spec.ts` (one
-`hp-range-tabs` under the header, the totals set it) and the unit tests of the ranges (`test/unit/ui/ranges.test.ts`).
+`hp-range-tabs` under the header) and the unit tests of the ranges (`test/unit/ui/ranges.test.ts`).
 
 ## One formatter per kind of quantity
 

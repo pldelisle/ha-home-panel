@@ -24,7 +24,7 @@ The words the panel and its code use. One word per concept: use it in issues, te
 
 **Status** — A fact the panel reports, written as text with a small coloured dot before it (`.status`, `src/ui/styles/status.css`): the Car's facts, an automation's date and run, Air's ratings, who is home. The dot's tone (ok, warn, bad) adds to the word and never replaces it. Never a filled capsule, which is a button's shape. Avoid: status pill, badge (the pane header's is the icon square). Not the Status checks, the list behind the attention pill.
 
-**Range** — How far back a history reaches: Day, Week, Month or Year (`RANGES`, `src/ui/ranges.ts`), or a feature's own such as Energy's Now and Today, chosen with the pane's `<hp-range-tabs>`. A pane has one, at the top, and every card follows it or names its own fixed period; a tile that sets it (Energy's totals) sets that one. Avoid: period (the recorder's statistics period, one of `5minute`, `hour` and `day`, which a range asks for), span, timeframe.
+**Range** — How far back a history reaches: Day, Week, Month or Year (`RANGES`, `src/ui/ranges.ts`), or a feature's own such as Energy's Now and Today, chosen with the pane's `<hp-range-tabs>`. A pane has one, at the top, and every card follows it or names its own fixed period; a tile that sets it sets that one. Avoid: period (the recorder's statistics period, one of `5minute`, `hour` and `day`, which a range asks for), span, timeframe.
 
 **Chip** — A small rounded label, in the header (weather, the critical peak, the people) or in a sheet (a single bulb, with a check mark when on).
 

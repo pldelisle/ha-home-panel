@@ -1,7 +1,7 @@
 // energyModel: the live power, Hilo, the water heater and the loaded history in, every text, figure and shape the Energy detail, the two cards and the phone's tiles place out.
 // Pattern: a pure view-model function, a humble object's other half (Meszaros, Fowler): it reads no clock, no `hass` and no store, words every message through
 // `deps.t` and every number through `deps.fmt`, and delegates the two drawings to the pure geometry of flow-layout.ts and water-chart.ts. Each rule is the legacy
-// panel's own (`renderEnergy`, `renderWater`, `renderHilo`, `renderEnergyTiles` and, in #240, `energySheet` and `sankeyData`, deleted; `energySummary`, deleted in #241); the detail's blocks, the donut and the totals included.
+// panel's own (`renderEnergy`, `renderWater`, `renderHilo`, `renderEnergyTiles` and, in #240, `energySheet` and `sankeyData`, deleted; `energySummary`, deleted in #241); the detail's blocks and the donut included.
 // Must not: import the DOM, Lit or the shell, read the clock, or hold text the household reads (a catalog key says it).
 import type {MessageKey} from '../../core/i18n/en.ts';
 import {fixedOr, money, power, temperatureFigure, whole, type Formatters} from '../../core/i18n/format.ts';
@@ -95,9 +95,8 @@ export const periodsOf = (range: EnergyRange): Periods => ({
   donut: PERIOD_DAYS[range],
 });
 
-/** A month's heating over this many kWh is worth naming as the peak, and a day's charging over this many is a charging day (the legacy `energyMain` and `energySheet`'s own). */
+/** A month's heating over this many kWh is worth naming as the peak, (the legacy `energyMain`'s own). */
 const HEATING_PEAK_KWH = 50;
-const EV_DAY_KWH = 5;
 
 /** The unit symbols the tiles write small after a figure; words ("kW · HOME") are catalog keys. */
 const UNIT = {kwh: 'kWh', degrees: '°', cents: '¢', centsPerKwh: '¢/kWh', dollars: '$'} as const;
@@ -116,12 +115,10 @@ export interface EnergyModelDeps {
   error?: string | null;
 }
 
-/** A tile of the Hilo card or of the detail's totals: a reading with its label and a line under it (empty when there is none). */
+/** A tile of the Hilo card: a reading with its label and a line under it (empty when there is none). */
 export interface EnergyTile extends Reading {
   label: string;
   sub: string;
-  /** The tab's range that holds the tile's period, which a tap sets (a total of the detail); absent for a tile that leads nowhere, which is no button. */
-  range?: EnergyRange;
 }
 
 /** A tile of the phone's Energy tab, which opens its card in a sheet. */
@@ -158,7 +155,7 @@ export interface EnergyDetailView {
   error: string | null;
   /** The range tabs, now to year. */
   ranges: RangeTab<EnergyRange>[];
-  /** Now: the live flow is the whole detail, and the history's cards (the hours, the donut, the totals) are for the other ranges. */
+  /** Now: the live flow is the whole detail, and the history's cards (the hours, the donut) are for the other ranges. */
   live: boolean;
   main: {title: string; caption: string; legend: LegendItem[]; notice: Notice};
   sankey: {title: string; note: string; body: SankeyBody};
@@ -170,7 +167,6 @@ export interface EnergyDetailView {
     rows: DonutRow[];
     notice: Notice;
   };
-  totals: {title: string; hint: string; tiles: EnergyTile[]; notice: Notice};
 }
 
 export interface EnergyViewModel {
@@ -420,64 +416,6 @@ function donutBlock(history: EnergyHistoryData | null, deps: DetailDeps): Energy
   };
 }
 
-/** The six totals the Hilo meter and the history give: today, yesterday, 30 days, this month, the car's 30 days and the rate now. */
-function totalsBlock(
-  history: EnergyHistoryData | null,
-  rate: {value: string | null; tier: string},
-  {now, t, fmt}: DetailDeps,
-): EnergyDetailView['totals'] {
-  const title = t('energy.totals.title');
-  const hint = t('energy.totals.hint');
-  if (!history) return {title, hint, tiles: [], notice: null};
-  // a figure carries the value of the source its label names: these are the Hilo meter's (the uses cards say the devices' hours)
-  const {totals, g30} = history;
-  // a meter that read nothing and no day: no tile of 0 kWh and dashes, the one sentence
-  if (!history.daily.length && !totals.today && totals.yesterday === null && !totals.d30 && !totals.month)
-    return {title, hint: '', tiles: [], notice: emptyChartText(t)};
-  const chargingDays = history.daily.slice(-30).filter(row => row.ev > EV_DAY_KWH).length;
-  return {
-    title,
-    hint,
-    notice: null,
-    tiles: [
-      {
-        label: t('energy.totals.today'),
-        ...reading(t, fmt.fixed(totals.today, 1), UNIT.kwh),
-        sub: t('energy.totals.until', {time: fmt.time(now)}),
-        range: 'today',
-      },
-      {
-        label: t('energy.totals.yesterday'),
-        ...reading(t, fixedOr(fmt, totals.yesterday, 1), UNIT.kwh),
-        sub: '',
-        range: 'week',
-      },
-      {
-        label: t('energy.days30'),
-        ...reading(t, whole(fmt, totals.d30), UNIT.kwh),
-        sub: t('energy.totals.perDay', {kwh: fmt.fixed(totals.d30 / 30, 1)}),
-        range: 'month',
-      },
-      {
-        label: fmt.month(now, 'long'),
-        ...reading(t, whole(fmt, totals.month), UNIT.kwh),
-        sub: t('energy.totals.soFar'),
-        range: 'month',
-      },
-      {
-        label: t('energy.totals.ev'),
-        ...reading(t, whole(fmt, g30[2]), UNIT.kwh),
-        sub: t('energy.totals.chargingDays', {n: chargingDays}),
-      },
-      {
-        label: t('energy.totals.rate'),
-        ...reading(t, rate.value, UNIT.cents),
-        sub: t('energy.totals.rateTier', {tier: rate.tier}),
-      },
-    ],
-  };
-}
-
 export function energyModel(
   inputs: EnergyInputs,
   history: EnergyHistoryData | null,
@@ -567,7 +505,6 @@ export function energyModel(
       main: mainBlock(history, detail),
       sankey: sankeyBlock(inputs, history, flow, detail),
       donut: donutBlock(history, detail),
-      totals: totalsBlock(history, {value: cents(hilo.current), tier: t(tier.name).toLowerCase()}, detail),
     },
   };
 }
