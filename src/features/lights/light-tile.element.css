@@ -228,7 +228,7 @@
   border-radius: var(--shape-stat-tile);
 }
 :host([design='material']) .lcell {
-  --pad: 12px;
+  --pad: var(--space-12);
   --bulb: 44px;
   min-height: 72px;
   border-radius: var(--shape-stat-tile);
@@ -259,7 +259,7 @@
 }
 :host([design='material']) .lcell .tx small,
 :host([design='material']) .lcell.on .tx small {
-  color: color-mix(in srgb, currentColor 72%, transparent);
+  color: color-mix(in srgb, currentColor 85%, transparent);
 }
 :host([design='material']) .lcell .lkd,
 :host([design='material']) .lcell.on .lkd {

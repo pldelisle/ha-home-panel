@@ -78,7 +78,7 @@
    tightens its corners under a finger (common.css) on the spatial spring, with the state layer. The four share the row's width, because two of them
    carry a word ("Mute"), not a glyph. Mute, while it holds, is primary; a disabled key is the content at 38% over a 12% fill. */
 :host([design='material']) .tvkeys {
-  gap: 8px;
+  gap: var(--space-8);
 }
 :host([design='material']) .tvkeys button {
   height: 48px;

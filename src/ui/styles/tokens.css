@@ -358,6 +358,9 @@
    has an elevation. Motion is a spring, sampled into a `linear()` easing with its settle time as the duration: spatial for what moves or changes shape,
    effects for a colour or an opacity, which never overshoots. A press changes the shape and lays a state layer (common.css), it does not scale. */
 .app[data-design='material'] {
+  /* the spacing the design system's tokens.json names (space-8, space-12), for the rules that have adopted it */
+  --space-8: 8px;
+  --space-12: 12px;
   /* the scale */
   --shape-extra-small: 4px;
   --shape-small: 8px;
