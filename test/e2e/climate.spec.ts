@@ -564,6 +564,35 @@ test.describe('the heat pump’s controls, on a tablet', () => {
     await expect(house.root().locator('#toast')).toHaveText('Louvers: swing up and down');
   });
 
+  test('a unit that sets its side-to-side louvers apart has a select per direction, each with its own call', async ({
+    house,
+  }) => {
+    await house.setState('climate.heat_pump', {
+      ...UNIT,
+      attributes: {
+        ...UNIT.attributes,
+        swing_modes: ['vertical', 'horizontal', 'Vertical_1', 'Vertical_7', 'Horizontal_3'],
+        swing_mode: 'Vertical_7',
+        swing_horizontal_modes: ['horizontal', 'Horizontal_1', 'Horizontal_3'],
+        swing_horizontal_mode: 'Horizontal_3',
+      },
+    });
+    const vertical = controls(house).getByLabel('Vertical louver position');
+    const horizontal = controls(house).getByLabel('Horizontal louver position');
+    await expect(vertical.locator('option')).toHaveText(['Swing', 'Position 1', 'Position 7']);
+    await expect(vertical).toHaveValue('Vertical_7');
+    await expect(horizontal).toHaveValue('Horizontal_3');
+    await expect(controls(house).getByLabel('Louver position', {exact: true})).toHaveCount(0);
+    await horizontal.selectOption({label: 'Swing'});
+    await expectCall(
+      house,
+      /^climate\.set_swing_horizontal_mode \{"entity_id":"climate\.heat_pump","swing_horizontal_mode":"horizontal"\}$/,
+    );
+    await expect(house.root().locator('#toast')).toHaveText('Horizontal louvers: swing');
+    await vertical.selectOption({label: 'Position 1'});
+    await expectCall(house, /^climate\.set_swing_mode \{"entity_id":"climate\.heat_pump","swing_mode":"Vertical_1"\}$/);
+  });
+
   test('a mode with no target has no stepper, and off has no fan, preset or louvers', async ({house}) => {
     const radios = controls(house).locator('hp-seg').first().getByRole('radio');
     await radios.nth(3).click();
