@@ -9,6 +9,10 @@
 hp-switch-row {
   margin-top: 8px;
 }
+/* the Material design's switch rows form one list group: 2 px between them (the row rounds its own outer corners, switch-row.element.css) */
+.app[data-design='material'] hp-switch-row + hp-switch-row {
+  margin-top: 2px;
+}
 /* the charger that does not answer: one well instead of its controls */
 .unav {
   display: flex;

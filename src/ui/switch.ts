@@ -4,6 +4,8 @@
 // Must not: flip `checked` itself, send a service call, or know what it stands for (a light, a charger, a purifier).
 import {LitElement, html, unsafeCSS} from 'lit';
 import {ifDefined} from 'lit/directives/if-defined.js';
+import {AppearanceConsumer} from './controllers/appearance-consumer.ts';
+import {ico} from './icons.ts';
 import {common} from './styles/index.ts';
 import {forShadow} from './styles/host.ts';
 import switchOwn from './switch.element.css?inline';
@@ -26,6 +28,7 @@ export class HpSwitch extends LitElement {
   declare label: string | undefined;
 
   // `display: contents`: the host has no box of its own, so the button is a child of whatever lays the row out
+  // The handle's check is the panel's own icon, drawn for both designs and shown by Material only.
   // The element's own rules, its `:host` and what only its tree has, are in switch.element.css.
   static override styles = [common, unsafeCSS(forShadow(switchOwn))];
 
@@ -33,6 +36,8 @@ export class HpSwitch extends LitElement {
     super();
     this.checked = false;
     this.disabled = false;
+    // `design` comes from the shell as a host attribute the Material rules test
+    new AppearanceConsumer(this);
   }
 
   protected override render() {
@@ -44,7 +49,9 @@ export class HpSwitch extends LitElement {
       aria-label=${ifDefined(this.label)}
       ?disabled=${this.disabled}
       @click=${this.toggle}
-    ></button>`;
+    >
+      <span class="chk">${ico('check', 16)}</span>
+    </button>`;
   }
 
   // The button turns Space and Enter into a click, so this one listener covers a tap and the keyboard. The event leaves the

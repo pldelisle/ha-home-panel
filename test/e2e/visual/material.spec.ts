@@ -152,3 +152,30 @@ for (const {viewport, theme} of [
     });
   });
 }
+
+// The Material switch and switch row (#464): the Car's charger card holds a switch row (the lock), shown off and then on (the owner holds the tap's value
+// at once) on the tablet in light and dark and on the phone in light. Element shots, so the history's chart and the car's picture stay out of them.
+for (const {viewport, theme} of SHOTS) {
+  test.describe(`${viewport}, ${theme}, switches`, () => {
+    test.use({
+      viewport: VIEWPORTS[viewport],
+      houseOpts: {cfg: FULL_CFG, theme, design: 'material', time: AFTERNOON, frozen: true},
+    });
+
+    test('the switch row in Material, off and on', async ({house}) => {
+      await house.tab('car');
+      const charger = house.root().locator('#pane-car hp-charger-controls');
+      await expect(charger.locator('h3')).toHaveText('Home charger');
+      // the row's 40 px icon container is the Material anatomy
+      await expect(charger.locator('hp-switch-row .ic')).toBeVisible();
+      const lock = charger.getByRole('switch', {name: 'Lock charger'});
+      await expect(lock).toHaveAttribute('aria-checked', 'false');
+      await expect(charger).toHaveScreenshot(`material-switch-off-${viewport}-${theme}-en.png`);
+      await lock.click();
+      await expect(lock).toHaveAttribute('aria-checked', 'true');
+      // the handle's spring has settled
+      await house.page.waitForTimeout(600);
+      await expect(charger).toHaveScreenshot(`material-switch-on-${viewport}-${theme}-en.png`);
+    });
+  });
+}

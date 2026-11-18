@@ -26,6 +26,10 @@ span {
   font-size: calc(12px * var(--tx));
   color: var(--fg2);
 }
+/* the icon container is the Material row's: the Apple row draws none */
+.ic {
+  display: none;
+}
 :host([glass]) .row {
   background: var(--g-tile);
   box-shadow: var(--g-edge-s);
@@ -48,12 +52,45 @@ span {
 .row:active {
   transform: scale(var(--press-scale));
 }
+/* The Material row (ADR 0037, #464): a list group's row, with the switch at its end. A `well` row, `--shape-list-item` corners inside the group and
+   `--shape-list-group` on its outer ends (the first and the last of the tag among its siblings: the rows of one group sit in one container, 2 px apart,
+   which the owner spaces: see charger-controls.element.css). The icon sits in a 40 px round container, in the secondary container's colour, the
+   primary container's when the switch is on. The row is not itself tappable: the switch is. */
+:host([design='material']) .row {
+  gap: 16px;
+  min-height: 56px;
+  box-sizing: border-box;
+  padding: 12px 16px;
+  border-radius: var(--shape-list-item);
+}
+:host([design='material']:first-of-type) .row {
+  border-top-left-radius: var(--shape-list-group);
+  border-top-right-radius: var(--shape-list-group);
+}
+:host([design='material']:last-of-type) .row {
+  border-bottom-left-radius: var(--shape-list-group);
+  border-bottom-right-radius: var(--shape-list-group);
+}
+:host([design='material']) .ic {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--shape-pill);
+  background: var(--control);
+  color: var(--on-control);
+}
+:host([design='material']) .ic[data-on] {
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+}
 /* Material's type roles: see tokens.css. */
 :host([design='material']) b {
   font: var(--type-title-medium);
   letter-spacing: var(--track-title-medium);
 }
-:host([design='material']) span {
-  font: var(--type-body-small);
-  letter-spacing: var(--track-body-small);
+:host([design='material']) span:not(.ic) {
+  font: var(--type-body-medium);
+  letter-spacing: var(--track-body-medium);
 }

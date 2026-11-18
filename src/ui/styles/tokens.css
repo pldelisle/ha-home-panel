@@ -118,6 +118,8 @@
   --shape-well: 16px;
   --shape-control: 16px;
   --shape-switch: 15px;
+  --shape-list-item: 16px;
+  --shape-list-group: 16px;
   --shape-control-sm: 14px;
   --shape-segment: 12px;
   --shape-focus: 8px;
@@ -363,6 +365,9 @@
   --shape-well: var(--shape-medium);
   --shape-control: var(--shape-large);
   --shape-switch: var(--shape-full);
+  /* a list group's rows: square-ish inside, the large corner on the group's outer ends */
+  --shape-list-item: var(--shape-extra-small);
+  --shape-list-group: var(--shape-large);
   --shape-control-sm: var(--shape-small);
   --shape-segment: var(--shape-small);
   --shape-focus: var(--shape-small);
