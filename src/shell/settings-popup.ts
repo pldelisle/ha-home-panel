@@ -14,7 +14,6 @@ import type {PanelSettings} from '../core/settings.ts';
 import {
   TEXT_STEPS,
   appearanceAfterAuto,
-  fixedTextStep,
   stepOfText,
   textAfterAuto,
   textAtStep,
@@ -39,6 +38,7 @@ const DESIGNS: readonly (readonly [string, MessageKey])[] = [
 // the message that names each text size the slider stands on (Auto is the switch's)
 const TEXT_STEP_NAMES: Record<string, MessageKey> = {
   smaller: 'settings.text.smaller',
+  normal: 'settings.text.normal',
   large: 'settings.text.large',
   larger: 'settings.text.larger',
 };
@@ -89,8 +89,6 @@ export class SettingsPopup extends LitElement {
   private readonly appearance = new AppearanceConsumer(this);
   private source: PanelSettings | undefined;
   private unfollow: (() => void) | undefined;
-  // the text size the slider last stood on: where it goes back to when Auto is turned off
-  private lastText = fixedTextStep('');
   constructor() {
     super();
     this.version = '';
@@ -113,8 +111,6 @@ export class SettingsPopup extends LitElement {
   protected override willUpdate(changed: PropertyValues<this>): void {
     // a popup that closes starts over at the modules, as Control Center does
     if (changed.has('open') && !this.open) this.view = 'modules';
-    // the slider remembers the size it stood on while Auto holds the size
-    this.lastText = fixedTextStep(this.settingsNow().text, this.lastText);
   }
 
   protected override render() {
@@ -169,7 +165,7 @@ export class SettingsPopup extends LitElement {
         aria-label=${t('settings.sleepNow')}
         title=${t('settings.sleepNow')}
       >
-        <span class="ccic">${ico('moon', 22)}</span
+        <span class="ccic">${ico('clock', 22)}</span
         ><span class="ccbl" aria-hidden="true">${t('settings.sleepNow')}</span>
       </button>
       <button
@@ -179,7 +175,7 @@ export class SettingsPopup extends LitElement {
         aria-label=${t('settings.design.title')}
         title=${t('settings.design.title')}
       >
-        <span class="ccic">${ico('half', 22)}</span
+        <span class="ccic">${ico('palette', 22)}</span
         ><span class="ccbl" aria-hidden="true">${t('settings.design.title')}</span>
       </button>
       <button type="button" class="ccm pill textsize" data-open="text">
@@ -241,7 +237,7 @@ export class SettingsPopup extends LitElement {
     const {t} = this.store.store;
     const {text} = this.settingsNow();
     const auto = text === 'auto';
-    const step = stepOfText(text, this.lastText);
+    const step = stepOfText(text, this.appearance.value?.textScale ?? 1);
     const last = TEXT_STEPS.length - 1;
     const name = t(TEXT_STEP_NAMES[TEXT_STEPS[step]]);
     return html`<div class="ccm wide steps" data-off=${auto}>
@@ -262,7 +258,7 @@ export class SettingsPopup extends LitElement {
             @input=${this.onTextStep}
           />
         </div>
-        <div class="stepends"><span>${t('settings.text.smaller')}</span><span>${t('settings.text.larger')}</span></div>
+        <div class="stepends"><span>${t('settings.text.smaller')}</span><span>${t('settings.text.maximum')}</span></div>
       </div>
       ${this.autoRow(auto, this.onAutoText)}`;
   }
@@ -401,7 +397,7 @@ export class SettingsPopup extends LitElement {
 
   private readonly onAutoText = (e: CustomEvent<SwitchChangeDetail>): void => {
     e.stopPropagation();
-    this.source?.set('text', textAfterAuto(e.detail.checked, this.lastText));
+    this.source?.set('text', textAfterAuto(e.detail.checked, this.appearance.value?.textScale ?? 1));
   };
 
   // the slider's position is a step; the setting is the text size the step names, so the stored values are the ones they always were

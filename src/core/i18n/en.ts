@@ -142,8 +142,11 @@ export const en = {
   'settings.text.title': 'Text size',
   'settings.text.smaller': 'Smaller',
   'settings.text.auto': 'Auto',
+  'settings.text.normal': 'Normal',
   'settings.text.large': 'Large',
   'settings.text.larger': 'Larger',
+  // the right end of the Text size slider: the largest step is the maximum
+  'settings.text.maximum': 'Maximum',
   'settings.glass.title': 'Glass',
   'settings.glass.none': 'None',
   'settings.glass.dawn': 'Dawn',

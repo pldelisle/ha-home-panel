@@ -30,6 +30,14 @@
       "written": "Auto · Light"
     },
     {
+      "key": "settings.text.normal",
+      "written": "Normal"
+    },
+    {
+      "key": "settings.text.maximum",
+      "written": "Maximum"
+    },
+    {
       "key": "settings.back",
       "written": "Retour"
     },

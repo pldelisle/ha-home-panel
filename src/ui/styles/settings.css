@@ -564,18 +564,15 @@ span.cclb {
   backdrop-filter: var(--m-bd);
   box-shadow: var(--m-edge);
 }
-/* Control Center's round icon: white, its glyph neutral when off and the panel's blue when on (dark: the blue disc with a white glyph) */
+/* Control Center's round icon, in both themes: neutral (a well's disc, the neutral glyph) when off; on, a white disc with the panel's blue glyph */
 .app:not([data-design='material']) .ccic {
-  background: var(--seg-thumb);
+  background: var(--card2);
   color: var(--fg2);
-  box-shadow: var(--seg-thumb-edge);
 }
 .app:not([data-design='material']) .ccib[data-on='true'] .ccic {
-  color: var(--c-home);
-}
-.app[data-theme='dark']:not([data-design='material']) .ccib[data-on='true'] .ccic {
-  background: var(--c-home);
-  color: #fff;
+  background: var(--cc-disc-on);
+  color: var(--cc-glyph-on);
+  box-shadow: var(--seg-thumb-edge);
 }
 .app:not([data-design='material']) .ccm.sq .ccic,
 .app:not([data-design='material']) .ccm.textsize .ccic {
@@ -724,4 +721,23 @@ span.cclb {
 .app[data-design='material'] .ccbl {
   font: var(--type-label-large);
   letter-spacing: var(--track-label-large);
+}
+/* Material's tap target is 48 px (the design system's tap-48): the round icons, the back chevron, and the pills and square buttons that hold them */
+.app[data-design='material'] .ccic,
+.app[data-design='material'] .ccib,
+.app[data-design='material'] .ccback {
+  width: 48px;
+  height: 48px;
+}
+.app[data-design='material'] .cclb {
+  min-height: 48px;
+}
+.app[data-design='material'] .ccm.pill {
+  min-height: 64px;
+}
+.app[data-design='material'] .ccm.sq {
+  min-height: 64px;
+}
+.app[data-design='material']:not(.cp) .cc {
+  grid-template-columns: 1fr 64px 64px;
 }

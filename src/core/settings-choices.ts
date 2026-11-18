@@ -3,11 +3,16 @@
 // the model: a module's round icon toggles it in one tap, its Auto switch hands the choice back to the device (HIG, Toggles).
 // Must not: read a setting, the DOM or a media query, or return a value the settings do not already keep (`light`, `dark`, `auto`, a text size).
 
-/** The text sizes a slider can stand on, smallest to largest; `auto` is not a step but the switch beside it, and the stored values are unchanged. */
-export const TEXT_STEPS: readonly string[] = ['smaller', 'large', 'larger'];
+/** The text sizes a slider can stand on, with the scale (`--tx`) each gives; `auto` is not a step but the switch beside it, and follows the device. */
+export const TEXT_SCALES: ReadonlyMap<string, number> = new Map([
+  ['smaller', 0.9],
+  ['normal', 1],
+  ['large', 1.15],
+  ['larger', 1.3],
+]);
 
-/** The size a person gets when they turn Auto off and have not chosen one in this session: the first above the device's own. */
-export const DEFAULT_TEXT_STEP = 'large';
+/** The steps, smallest to largest. */
+export const TEXT_STEPS: readonly string[] = [...TEXT_SCALES.keys()];
 
 /**
  * The next appearance for a tap on the round icon: the opposite of what shows. On Auto, what shows is the device's (`dark`), and the tap
@@ -24,9 +29,18 @@ export function appearanceAfterAuto(on: boolean, dark: boolean): 'auto' | 'light
   return dark ? 'dark' : 'light';
 }
 
-/** The step a text size stands on, or `fallback` for `auto` (or anything else): the slider keeps its last place while Auto holds the size. */
-export function fixedTextStep(text: string, fallback: string = DEFAULT_TEXT_STEP): string {
-  return TEXT_STEPS.includes(text) ? text : fallback;
+/** The step whose scale is nearest `scale`, the smaller one on a tie: where a size that follows the device stands among the steps. */
+export function nearestTextStep(scale: number): string {
+  let best = TEXT_STEPS[0];
+  let gap = Infinity;
+  for (const [step, at] of TEXT_SCALES) {
+    const away = Math.abs(at - scale);
+    if (away < gap - 1e-9) {
+      best = step;
+      gap = away;
+    }
+  }
+  return best;
 }
 
 /** The text size at a slider position, 0 to the last step; a position outside the steps is moved to the nearest. */
@@ -35,12 +49,12 @@ export function textAtStep(index: number): string {
   return TEXT_STEPS[clamped];
 }
 
-/** The slider position of a text size; the fallback's for `auto`, which the slider does not stand on. */
-export function stepOfText(text: string, fallback: string = DEFAULT_TEXT_STEP): number {
-  return TEXT_STEPS.indexOf(fixedTextStep(text, fallback));
+/** The slider position of a text size; for `auto` (which is no step) the step nearest the scale in force, so the slider stands where the text is. */
+export function stepOfText(text: string, scale: number): number {
+  return TEXT_STEPS.indexOf(TEXT_SCALES.has(text) ? text : nearestTextStep(scale));
 }
 
-/** What the text-size Auto switch writes: `auto` when it turns on, else the size the slider stood on. */
-export function textAfterAuto(on: boolean, remembered: string): string {
-  return on ? 'auto' : fixedTextStep(remembered);
+/** What the text-size Auto switch writes: `auto` when it turns on, else the step nearest the scale in force, so the text does not jump. */
+export function textAfterAuto(on: boolean, scale: number): string {
+  return on ? 'auto' : nearestTextStep(scale);
 }

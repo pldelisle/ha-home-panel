@@ -1,8 +1,9 @@
 import {describe, expect, it} from 'vitest';
 import {
+  TEXT_SCALES,
   TEXT_STEPS,
   appearanceAfterAuto,
-  fixedTextStep,
+  nearestTextStep,
   stepOfText,
   textAfterAuto,
   textAtStep,
@@ -29,25 +30,30 @@ describe('appearanceAfterAuto', () => {
 });
 
 describe('the text steps', () => {
-  it('are the stored sizes above auto, in order, and the slider maps both ways', () => {
-    expect(TEXT_STEPS).toEqual(['smaller', 'large', 'larger']);
+  it('are the sizes the settings keep above auto, in order, with their scales', () => {
+    expect(TEXT_STEPS).toEqual(['smaller', 'normal', 'large', 'larger']);
+    expect(TEXT_SCALES.get('normal')).toBe(1);
+  });
+  it('map a slider position to a size and back', () => {
     expect(textAtStep(0)).toBe('smaller');
-    expect(textAtStep(2)).toBe('larger');
+    expect(textAtStep(1)).toBe('normal');
+    expect(textAtStep(3)).toBe('larger');
     expect(textAtStep(-3)).toBe('smaller');
     expect(textAtStep(9)).toBe('larger');
-    expect(stepOfText('larger')).toBe(2);
-    expect(stepOfText('smaller')).toBe(0);
+    expect(stepOfText('larger', 1)).toBe(3);
+    expect(stepOfText('smaller', 1.3)).toBe(0);
   });
-  it('keep the slider where it was while Auto holds the size', () => {
-    expect(fixedTextStep('auto')).toBe('large');
-    expect(fixedTextStep('auto', 'smaller')).toBe('smaller');
-    expect(fixedTextStep('larger', 'smaller')).toBe('larger');
-    expect(stepOfText('auto')).toBe(1);
-    expect(stepOfText('auto', 'larger')).toBe(2);
+  it('place a size that follows the device at the step nearest its scale', () => {
+    expect(nearestTextStep(1)).toBe('normal');
+    expect(nearestTextStep(0.2)).toBe('smaller');
+    expect(nearestTextStep(1.6)).toBe('larger');
+    expect(nearestTextStep(1.1)).toBe('large'); // 1.15 is nearer than 1
+    expect(nearestTextStep(1.075)).toBe('normal'); // a tie goes to the smaller
+    expect(stepOfText('auto', 1.3)).toBe(3);
   });
-  it('the Auto switch writes auto, or the size the slider stood on', () => {
-    expect(textAfterAuto(true, 'larger')).toBe('auto');
-    expect(textAfterAuto(false, 'larger')).toBe('larger');
-    expect(textAfterAuto(false, 'auto')).toBe('large');
+  it('the Auto switch writes auto, or the step nearest the scale in force', () => {
+    expect(textAfterAuto(true, 1.3)).toBe('auto');
+    expect(textAfterAuto(false, 1)).toBe('normal');
+    expect(textAfterAuto(false, 1.3)).toBe('larger');
   });
 });

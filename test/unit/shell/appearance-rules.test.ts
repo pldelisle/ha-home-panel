@@ -69,8 +69,9 @@ describe('glassDensity', () => {
 });
 
 describe('textScale', () => {
-  test('the three fixed sizes ignore the probe', () => {
+  test('the four fixed sizes ignore the probe', () => {
     expect(textScale('smaller', 30)).toBe(0.9);
+    expect(textScale('normal', 30)).toBe(1);
     expect(textScale('large', 10)).toBe(1.15);
     expect(textScale('larger', 17)).toBe(1.3);
   });

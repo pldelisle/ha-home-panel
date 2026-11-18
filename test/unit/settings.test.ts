@@ -37,6 +37,13 @@ describe('reading', () => {
     expect(createSettings(mapStorage().storage).get()).toEqual(DEFAULTS);
   });
 
+  test('every text size the slider stands on, and auto, is read back as stored', () => {
+    for (const text of ['smaller', 'normal', 'large', 'larger', 'auto']) {
+      const {storage} = mapStorage({'home-panel-text': text});
+      expect(createSettings(storage).get().text).toBe(text);
+    }
+  });
+
   test('stored values are read from the seven keys', () => {
     const {storage} = mapStorage({
       'home-panel-theme': 'dark',

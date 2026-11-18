@@ -103,6 +103,7 @@ const autoSwitch = (house: House) => popup(house).getByRole('switch', {name: 'Au
 
 test('the Appearance icon toggles Light and Dark in one tap, turns the frame and is kept', async ({house}) => {
   await open(house);
+  await expect(popup(house).getByRole('button', {name: 'Dark', pressed: false})).toBeVisible(); // the icon's name, and its state
   await expect(darkIcon(house)).toHaveAttribute('aria-pressed', 'false');
   await expect(popup(house).locator('[data-open="appearance"]')).toContainText('Light');
   await darkIcon(house).click();
@@ -144,19 +145,22 @@ test('the Text size slider: a step per size above Auto, the arrow keys move a st
   const slider = popup(house).getByRole('slider', {name: 'Text size'});
   await expect(autoSwitch(house)).toHaveAttribute('aria-checked', 'true'); // Auto is the default
   await expect(slider).toBeDisabled();
-  await expect(popup(house).locator('.stepends')).toHaveText('SmallerLarger');
-  await expect(popup(house).locator('.ticks i')).toHaveCount(3);
+  await expect(popup(house).locator('.stepends')).toHaveText('SmallerMaximum');
+  await expect(popup(house).locator('.ticks i')).toHaveCount(4);
   await autoSwitch(house).click();
   await expect(slider).toBeEnabled();
+  expect(await stored(house, 'home-panel-text')).toBe('normal'); // the step nearest the scale Auto gave: no jump
+  await expect(app(house)).toHaveCSS('--tx', '1.000');
+  await expect(slider).toHaveAttribute('aria-valuetext', 'Normal');
+  await slider.focus();
+  await house.page.keyboard.press('ArrowRight');
   expect(await stored(house, 'home-panel-text')).toBe('large');
   await expect(slider).toHaveAttribute('aria-valuetext', 'Large');
-  await slider.focus();
   await house.page.keyboard.press('ArrowRight');
   expect(await stored(house, 'home-panel-text')).toBe('larger');
   await expect(slider).toHaveAttribute('aria-valuetext', 'Larger');
   await expect(app(house)).toHaveClass(/\btxl\b/);
-  await house.page.keyboard.press('ArrowLeft');
-  await house.page.keyboard.press('ArrowLeft');
+  for (let i = 0; i < 3; i++) await house.page.keyboard.press('ArrowLeft');
   expect(await stored(house, 'home-panel-text')).toBe('smaller');
   await autoSwitch(house).click(); // back to Auto: the slider is dimmed and inactive
   await expect(slider).toBeDisabled();
@@ -314,6 +318,7 @@ test.describe('in French', () => {
       /^Home panel v\d+\.\d+\.\d+ · statistiques actualisées aux 15 minutes$/,
     );
     await expect(popup(house).locator('[data-open="appearance"]')).toContainText('Clair');
+    await expect(popup(house).getByRole('button', {name: 'Sombre', pressed: false})).toBeVisible();
     await openSubmenu(house, 'appearance');
     await expect(popup(house).getByRole('switch', {name: 'Auto'})).toBeVisible();
     await expect(popup(house).getByText("Suit l'appareil")).toBeVisible();

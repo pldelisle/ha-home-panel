@@ -1,5 +1,6 @@
 // Helpers for the specs that change a setting through the Control Center popup: the modules, the submenus and the controls in them, as a person uses them.
 // The clicks are dispatched, because on the phone the bar covers part of the popup.
+import {TEXT_STEPS} from '../../src/core/settings-choices.ts';
 import {expect, type House} from './fixtures';
 
 export type Submenu = 'appearance' | 'text' | 'design' | 'glass';
@@ -52,10 +53,8 @@ export async function setTheme(house: House, theme: 'light' | 'dark' | 'auto') {
   await expect(toggle).toHaveAttribute('aria-pressed', String(theme === 'dark'));
 }
 
-const TEXT_STEPS = ['smaller', 'large', 'larger'];
-
 /** a text size through the Text size submenu: the Auto switch, and the slider's step; back at the modules */
-export async function setTextSize(house: House, size: 'smaller' | 'auto' | 'large' | 'larger') {
+export async function setTextSize(house: House, size: 'smaller' | 'auto' | 'normal' | 'large' | 'larger') {
   await openSubmenu(house, 'text');
   await setAuto(house, size === 'auto');
   if (size !== 'auto') {

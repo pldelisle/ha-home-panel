@@ -3,15 +3,12 @@
 // the probe; these decide. They are the legacy class's `applyTheme`, `applyGlass` and `applyText` with the reads taken out.
 // Must not: read a setting, a media query, the store or the DOM, or return anything but plain values.
 
+import {TEXT_SCALES} from '../core/settings-choices.ts';
+
 /** The wallpapers the Glass setting offers besides None; `sky` is picked from the time of day and the weather. */
 const WALLPAPERS: readonly string[] = ['dawn', 'lake', 'meadow', 'ember', 'aurora', 'sand', 'sky'];
 
-// The Text size choices that fix the scale; `auto` follows the device (see `textScale`).
-const FIXED_SCALES = new Map([
-  ['smaller', 0.9],
-  ['large', 1.15],
-  ['larger', 1.3],
-]);
+// The Text size choices that fix the scale are core/settings-choices.ts's steps; `auto` follows the device (see `textScale`).
 
 // The scale from which the frame is told the text is large (`txl`), so a row that no longer fits can wrap.
 const LARGE_TEXT = 1.25;
@@ -50,7 +47,7 @@ export function isLargeText(scale: number): boolean {
 
 /** The text scale (`--tx`): fixed by the setting, or on auto the probe's size over the body size, from 1 to 1.6. */
 export function textScale(text: string, probePx: number): number {
-  const fixed = FIXED_SCALES.get(text);
+  const fixed = TEXT_SCALES.get(text);
   if (fixed !== undefined) return fixed;
   if (text !== 'auto') return 1;
   return Math.min(MAX_AUTO_SCALE, Math.max(1, (probePx || BODY_PX) / BODY_PX));
