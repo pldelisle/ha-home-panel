@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.16.1
+
+- The sidebar and the phone's tab bar show every section in grey and the open one in blue, icon and label alike.
+
 ## 2.16.0
 
 - The Weather tab's year and season charts now reach back before Home Assistant's first recorded day, from Environment Canada's nearest climate station (set `climate_station`, or `false` to turn it off).
