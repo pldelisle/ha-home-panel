@@ -7,6 +7,7 @@ import {resolveConfig} from '../../src/core/config.ts';
 import {createStore} from '../../src/core/store.ts';
 import {airFeature} from '../../src/features/air/index.ts';
 import {automationsFeature} from '../../src/features/automations/index.ts';
+import {climateFeature} from '../../src/features/climate/index.ts';
 import {lightsFeature} from '../../src/features/lights/index.ts';
 import {energyFeature} from '../../src/features/energy/index.ts';
 import {mediaFeature} from '../../src/features/media/index.ts';
@@ -317,10 +318,20 @@ describe('the rooms of the registry', () => {
     return {store, sheetOpen: () => false, sheetDetail: () => undefined, room: null};
   };
 
-  test('Lights, Air, Media and Security have a room part; Lights and Media give no reading for the header', () => {
-    expect(FEATURES.filter(f => f.room).map(f => f.key)).toEqual(['lights', 'air', 'media', 'cams']);
+  test('Lights, Climate, Air, Media and Security have a room part; Lights and Media give no reading for the header', () => {
+    expect(FEATURES.filter(f => f.room).map(f => f.key)).toEqual(['lights', 'climate', 'air', 'media', 'cams']);
     expect(lightsFeature.room).not.toHaveProperty('chip');
     expect(mediaFeature.room).not.toHaveProperty('chip');
+    expect(climateFeature.room).toHaveProperty('chip');
+  });
+
+  test('Climate lists the areas of its thermostats and reads a room’s temperature, and neither before the house has been heard', () => {
+    expect(climateFeature.room?.areas(env())).toEqual([]);
+    expect(climateFeature.room?.chip?.(env(), 'office')).toBeNull();
+    const e = env(fakeHass.fromHouse(full));
+    expect([...(climateFeature.room?.areas(e) ?? [])].sort()).toEqual(['bedroom', 'garage', 'living_room', 'office']);
+    expect(climateFeature.room?.chip?.(e, 'office')).toBe('20.4°');
+    expect(climateFeature.room?.chip?.(e, 'kitchen')).toBeNull();
   });
 
   test('Media lists the areas of its speakers and of its television, and draws its sheet over a room view', () => {
@@ -334,9 +345,11 @@ describe('the rooms of the registry', () => {
     expect(lightsFeature.room?.areas(env(fakeHass.fromHouse(full)))).toEqual(['kitchen', 'living_room', 'office']);
   });
 
-  test("the test house's rooms are those areas, by display name", () => {
+  test("the test house's rooms are the areas of its lights and thermostats, by display name", () => {
     const e = env(fakeHass.fromHouse(full));
     expect(roomList(FEATURES, e, e.store.names, 'en-CA')).toEqual([
+      {areaId: 'bedroom', name: 'Bedroom'},
+      {areaId: 'garage', name: 'Garage'},
       {areaId: 'kitchen', name: 'Kitchen'},
       {areaId: 'living_room', name: 'Living room'},
       {areaId: 'office', name: 'Office'},

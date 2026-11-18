@@ -1,8 +1,8 @@
 /*
  * <hp-climate-pane>'s own rules: it lays out nothing itself, so the header, the tablet's grid and the phone's tiles are items of the pane section's own column
  * (`.pane-climate`, phone.css: sixteen pixels between them on a phone), as the old pane's were; the sheet is fixed to the screen, and the heatmap
- * follows the grid. Moved from the legacy `.clim` and `.ctiles2` rules (base.css, extra.css, phone.css), which this move
- * deleted; the phone's own grid of list items went with the list, which the phone's tiles replaced.
+ * follows the grid. Moved from the legacy `.clim` rules (base.css, extra.css, phone.css), which this move deleted; the phone's grid
+ * of tiles is climate-tiles.css, which a room view draws too.
  */
 :host {
   display: contents;
@@ -30,13 +30,4 @@
 /* the heatmap under the grid, sixteen pixels below it as the legacy panel's inner cards were */
 .cblocks > * + * {
   margin-top: 16px;
-}
-/* the phone's tiles, two across, the house's wide; one column at the Larger text size, so nothing is cut */
-.ctiles2 {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-:host([large-text]) .ctiles2 {
-  grid-template-columns: 1fr;
 }
