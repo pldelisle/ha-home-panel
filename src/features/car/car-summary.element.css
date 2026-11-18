@@ -58,3 +58,22 @@
 :host([compact]) .carhero .t {
   font-size: calc(52px * var(--tx));
 }
+/* Material's type roles: see tokens.css. */
+:host([design='material']) .carhero .t {
+  font: var(--type-display-large);
+  letter-spacing: var(--track-display-large);
+  font-variant-numeric: tabular-nums;
+}
+:host([compact][design='material']) .carhero .t {
+  font: var(--type-display-medium);
+  letter-spacing: var(--track-display-medium);
+  font-variant-numeric: tabular-nums;
+}
+:host([design='material']) .autonomy {
+  font: var(--type-body-medium);
+  letter-spacing: var(--track-body-medium);
+}
+:host([design='material']) .facts .status {
+  font: var(--type-body-medium);
+  letter-spacing: var(--track-body-medium);
+}

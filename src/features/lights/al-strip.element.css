@@ -121,3 +121,12 @@
 .app.cp .almark {
   font-size: calc(11px * var(--tx));
 }
+/* Material's type roles: see tokens.css. */
+:host([design='material']) .alcard .lbl {
+  font: var(--type-title-small);
+  letter-spacing: var(--track-title-small);
+}
+:host([design='material']) .alcard .top .right {
+  font: var(--type-label-medium);
+  letter-spacing: var(--track-label-medium);
+}

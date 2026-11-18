@@ -211,3 +211,12 @@
     backdrop-filter: none;
   }
 }
+/* Material's type roles: see tokens.css. */
+:host([design='material']) .lcell .tx b {
+  font: var(--type-title-medium);
+  letter-spacing: var(--track-title-medium);
+}
+:host([design='material']) .lcell .tx small {
+  font: var(--type-body-small);
+  letter-spacing: var(--track-body-small);
+}

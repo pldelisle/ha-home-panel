@@ -131,3 +131,24 @@
   font-weight: 600;
   color: var(--fg);
 }
+/* Material's type roles: see tokens.css. */
+.app[data-design='material'] :is(.lbl, .card .top .lbl, .lrow .lbl) {
+  font: var(--type-title-small);
+  letter-spacing: var(--track-title-small);
+}
+.app[data-design='material'] .card .top .right {
+  font: var(--type-label-medium);
+  letter-spacing: var(--track-label-medium);
+}
+.app[data-design='material'] .note {
+  font: var(--type-body-small);
+  letter-spacing: var(--track-body-small);
+}
+.app[data-design='material'] .hint {
+  font: var(--type-body-small);
+  letter-spacing: var(--track-body-small);
+}
+.app[data-design='material'] .more {
+  font: var(--type-label-large);
+  letter-spacing: var(--track-label-large);
+}

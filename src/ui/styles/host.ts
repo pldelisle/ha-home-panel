@@ -1,4 +1,4 @@
-// The element view of a kit stylesheet: the legacy frame selectors (`.app.cp`, `.app.gl`) become host selectors.
+// The element view of a kit stylesheet: the legacy frame selectors (`.app.cp`, `.app.gl`, `.app[data-design]`) become host selectors.
 // Pattern: one source, two views (ADR 0019): a rule is written once, in the frame's terms, and an element adopts the
 // same text with the frame's state read from its own host attributes, which `AppearanceConsumer` reflects (Lit docs, Styles: `:host()`).
 // Must not: change any other part of a rule, know a rule by name, or run anywhere but where a stylesheet is adopted.
@@ -16,6 +16,9 @@ const STATE: Readonly<Record<string, string>> = {
 const FRAME = /(?<![\w-])\.app((?:\.[\w-]+|\[[^\]]*\]|:not\([^)]*\))*)(?![\w-])/g;
 const PART = /\.([\w-]+)|(\[[^\]]*\])|:not\(([^)]*)\)/g;
 
+// the design is `data-design` on the frame's `.app` and `design` on an element's host (AppearanceConsumer)
+const attribute = (attr: string): string => attr.replace(/^\[data-design(?=[=\]])/, '[design');
+
 const state = (cls: string): string => {
   const mapped = STATE[cls];
   if (mapped === undefined) throw new Error(`a kit rule names the frame state .${cls}, which has no host attribute`);
@@ -32,7 +35,7 @@ const negate = (inner: string): string => {
 export function forShadow(css: string): string {
   return css.replace(FRAME, (_all, chain: string) => {
     const tests = chain.replace(PART, (_part, cls?: string, attr?: string, not?: string) =>
-      cls !== undefined ? state(cls) : attr !== undefined ? attr : negate(not as string),
+      cls !== undefined ? state(cls) : attr !== undefined ? attribute(attr) : negate(not as string),
     );
     return tests ? `:host(${tests})` : ':host';
   });

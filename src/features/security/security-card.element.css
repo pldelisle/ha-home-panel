@@ -278,3 +278,12 @@
   color: var(--fg2);
   margin: 6px 0 0;
 }
+/* Material's type roles: see tokens.css. */
+:host([design='material']) .hh .lbl {
+  font: var(--type-title-small);
+  letter-spacing: var(--track-title-small);
+}
+:host([design='material']) .hh .right {
+  font: var(--type-label-medium);
+  letter-spacing: var(--track-label-medium);
+}

@@ -48,7 +48,7 @@ const shipLicenses: Plugin = {
   },
 };
 
-// The fonts (spec 08): the woff2 files src/ui/fonts.ts declares, Manrope and JetBrains Mono, copied from their Fontsource
+// The fonts (spec 08): the woff2 files src/ui/fonts.ts declares, Manrope, Roboto Flex and JetBrains Mono, copied from their Fontsource
 // packages into dist/fonts/ under Fontsource's own names. Not imported through CSS, where Vite would inline or hash them: the names
 // stay stable, so a tablet's cached font outlives an update, and src/ui/fonts.ts can name them.
 const requireFontsource = createRequire(import.meta.url);

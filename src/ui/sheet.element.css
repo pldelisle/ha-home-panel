@@ -61,3 +61,12 @@ h2 {
   backdrop-filter: none;
   animation: none;
 }
+/* Material's type roles: see tokens.css. */
+:host([design='material']) h2 {
+  font: var(--type-headline-large);
+  letter-spacing: var(--track-headline-large);
+}
+:host([compact][design='material']) h2 {
+  font: var(--type-headline-small);
+  letter-spacing: var(--track-headline-small);
+}

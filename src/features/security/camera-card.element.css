@@ -191,3 +191,16 @@
       color 0.2s ease;
   }
 }
+/* Material's type roles: see tokens.css. */
+:host([design='material']) .top .lbl {
+  font: var(--type-title-small);
+  letter-spacing: var(--track-title-small);
+}
+:host([design='material']) .top .right {
+  font: var(--type-label-medium);
+  letter-spacing: var(--track-label-medium);
+}
+:host([design='material']) .camempty .more {
+  font: var(--type-label-large);
+  letter-spacing: var(--track-label-large);
+}

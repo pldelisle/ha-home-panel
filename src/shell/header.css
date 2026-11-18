@@ -94,3 +94,29 @@ hp-header {
 .app.gl:not([data-theme='dark']) .clock small {
   color: var(--fg);
 }
+/* Material's type roles: see tokens.css. */
+.app[data-design='material'] .hello h1 {
+  font: var(--type-display-small);
+  letter-spacing: var(--track-display-small);
+}
+.app.cp[data-design='material'] .head .hello h1 {
+  font: var(--type-headline-small);
+  letter-spacing: var(--track-headline-small);
+}
+.app[data-design='material'] .hello div {
+  font: var(--type-body-small);
+  letter-spacing: var(--track-body-small);
+}
+.app.cp[data-design='material'] .head .hello div {
+  font: var(--type-body-small);
+  letter-spacing: var(--track-body-small);
+}
+.app[data-design='material'] .clock {
+  font: var(--type-display-medium);
+  letter-spacing: var(--track-display-medium);
+  font-variant-numeric: tabular-nums;
+}
+.app[data-design='material'] .clock small {
+  font: var(--type-body-medium);
+  letter-spacing: var(--track-body-medium);
+}

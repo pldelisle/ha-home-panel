@@ -273,3 +273,30 @@
 .stile .pp2:active {
   transform: scale(0.96);
 }
+/* Material's type roles: see tokens.css. */
+.app[data-design='material'] .stile small {
+  font: var(--type-body-small);
+  letter-spacing: var(--track-body-small);
+}
+.app[data-design='material'] .stile.wide small {
+  font: var(--type-body-small);
+  letter-spacing: var(--track-body-small);
+}
+.app[data-design='material'] .stile b {
+  font: var(--type-title-small);
+  letter-spacing: var(--track-title-small);
+}
+.app[data-design='material'] .stile.wide b {
+  font: var(--type-title-medium);
+  letter-spacing: var(--track-title-medium);
+}
+.app[data-design='material'] .stile .tv small {
+  font: var(--type-label-large);
+  letter-spacing: var(--track-label-large);
+}
+.app[data-design='material'] .stile .tv.num,
+.app[data-design='material'] .stile.wide .tv.num {
+  font: var(--type-headline-small);
+  letter-spacing: var(--track-headline-small);
+  font-variant-numeric: tabular-nums;
+}

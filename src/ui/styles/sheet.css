@@ -250,3 +250,20 @@ button.icon:focus-visible {
     transition: none;
   }
 }
+/* Material's type roles: see tokens.css. */
+.app[data-design='material'] .sheet .ph h2 {
+  font: var(--type-headline-large);
+  letter-spacing: var(--track-headline-large);
+}
+.app.cp[data-design='material'] .sheet .ph h2 {
+  font: var(--type-headline-small);
+  letter-spacing: var(--track-headline-small);
+}
+.app[data-design='material'] .sheet .ph .sub {
+  font: var(--type-body-medium);
+  letter-spacing: var(--track-body-medium);
+}
+.app.cp[data-design='material'] .sheet .ph .sub {
+  font: var(--type-body-small);
+  letter-spacing: var(--track-body-small);
+}

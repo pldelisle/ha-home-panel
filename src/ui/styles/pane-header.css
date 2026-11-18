@@ -39,3 +39,22 @@
 .app.gl:not([data-theme='dark']) ::slotted([slot='sub']) {
   color: var(--fg);
 }
+/* Material's type roles: see tokens.css. */
+.app[data-design='material'] .ph h2,
+.app[data-design='material'] ::slotted([slot='title']) {
+  font: var(--type-headline-medium);
+  letter-spacing: var(--track-headline-medium);
+}
+.app.cp[data-design='material'] .ph h2,
+.app.cp[data-design='material'] ::slotted([slot='title']) {
+  font: var(--type-headline-small);
+  letter-spacing: var(--track-headline-small);
+}
+.app[data-design='material'] ::slotted([slot='sub']) {
+  font: var(--type-body-medium);
+  letter-spacing: var(--track-body-medium);
+}
+.app.cp[data-design='material'] ::slotted([slot='sub']) {
+  font: var(--type-body-small);
+  letter-spacing: var(--track-body-small);
+}

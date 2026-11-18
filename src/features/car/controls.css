@@ -11,3 +11,12 @@
   color: var(--fg2);
   margin: 6px 0 0;
 }
+/* Material's type roles: see tokens.css. */
+:host([design='material']) .ctl-l {
+  font: var(--type-label-large);
+  letter-spacing: var(--track-label-large);
+}
+:host([design='material']) .inner .hint {
+  font: var(--type-body-small);
+  letter-spacing: var(--track-body-small);
+}

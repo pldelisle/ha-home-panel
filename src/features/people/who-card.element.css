@@ -20,3 +20,8 @@
   color: var(--fg2);
   margin: 6px 0 0;
 }
+/* Material's type roles: see tokens.css. */
+:host([design='material']) .hwho {
+  font: var(--type-title-small);
+  letter-spacing: var(--track-title-small);
+}

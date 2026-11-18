@@ -13,3 +13,8 @@
 .tile .v .word {
   font-size: 18px;
 }
+/* Material's type roles: see tokens.css. */
+:host([design='material']) .tile .v .word {
+  font: var(--type-title-large);
+  letter-spacing: var(--track-title-large);
+}

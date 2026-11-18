@@ -113,3 +113,12 @@
       color 0.2s ease;
   }
 }
+/* Material's type roles: see tokens.css. */
+:host([design='material']) .scenetile b {
+  font: var(--type-title-medium);
+  letter-spacing: var(--track-title-medium);
+}
+:host([design='material']) .scenetile small {
+  font: var(--type-body-small);
+  letter-spacing: var(--track-body-small);
+}

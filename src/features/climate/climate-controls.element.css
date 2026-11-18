@@ -117,3 +117,8 @@ hp-seg::part(label) {
   color: var(--fg2);
   margin: 8px 0 0;
 }
+/* Material's type roles: see tokens.css. */
+:host([design='material']) .chint {
+  font: var(--type-body-small);
+  letter-spacing: var(--track-body-small);
+}

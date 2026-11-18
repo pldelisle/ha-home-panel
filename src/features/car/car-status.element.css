@@ -77,3 +77,13 @@
 :host([glass]) .rows {
   background: var(--g-tile);
 }
+/* Material's type roles: see tokens.css. */
+:host([design='material']) .tpms .tp .k {
+  font: var(--type-label-medium);
+  letter-spacing: var(--track-label-medium);
+}
+:host([design='material']) .tpms .tp .v {
+  font: var(--type-headline-small);
+  letter-spacing: var(--track-headline-small);
+  font-variant-numeric: tabular-nums;
+}

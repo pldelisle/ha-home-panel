@@ -84,3 +84,12 @@ dialog p {
   outline: 2px solid var(--c-home);
   outline-offset: 2px;
 }
+/* Material's type roles: see tokens.css. */
+:host([design='material']) dialog h4 {
+  font: var(--type-headline-small);
+  letter-spacing: var(--track-headline-small);
+}
+:host([design='material']) dialog p {
+  font: var(--type-body-medium);
+  letter-spacing: var(--track-body-medium);
+}

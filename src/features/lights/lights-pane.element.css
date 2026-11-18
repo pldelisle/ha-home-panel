@@ -188,3 +188,20 @@ hp-pane-header {
     outline-offset: 3px;
   }
 }
+/* Material's type roles: see tokens.css. */
+:host([design='material']) .lcard > .top .lbl {
+  font: var(--type-title-small);
+  letter-spacing: var(--track-title-small);
+}
+:host([design='material']) .lcard > .top .right {
+  font: var(--type-label-medium);
+  letter-spacing: var(--track-label-medium);
+}
+:host([design='material']) .lbtn {
+  font: var(--type-label-large);
+  letter-spacing: var(--track-label-large);
+}
+:host([design='material']) .ltiles .hint {
+  font: var(--type-body-small);
+  letter-spacing: var(--track-body-small);
+}

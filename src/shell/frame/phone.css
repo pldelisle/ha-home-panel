@@ -107,3 +107,9 @@
 .pane > .panel > .grab + * {
   margin-top: 0;
 }
+/* Material's type roles: see tokens.css. */
+.app.cp[data-design='material'] .rtab[data-ph],
+.app.cp[data-design='material'] .rtab.rmore {
+  font: var(--type-label-medium);
+  letter-spacing: var(--track-label-medium);
+}

@@ -130,3 +130,17 @@
 .app.tabsv.cp .htile .hh .go {
   display: none;
 }
+/* Material's type roles: see tokens.css. */
+:host([design='material']) .htile .hh .lbl {
+  font: var(--type-title-small);
+  letter-spacing: var(--track-title-small);
+}
+:host([design='material']) .htile .hv {
+  font: var(--type-headline-small);
+  letter-spacing: var(--track-headline-small);
+  font-variant-numeric: tabular-nums;
+}
+:host([design='material']) .htile .hs {
+  font: var(--type-body-small);
+  letter-spacing: var(--track-body-small);
+}

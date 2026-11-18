@@ -71,3 +71,8 @@
     background: var(--card);
   }
 }
+/* Material's type roles: see tokens.css. */
+:host([design='material']) .toast {
+  font: var(--type-body-medium);
+  letter-spacing: var(--track-body-medium);
+}

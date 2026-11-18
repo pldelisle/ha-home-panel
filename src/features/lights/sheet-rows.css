@@ -82,3 +82,12 @@ button.lgr:focus-visible {
 .lgr .lnow {
   color: var(--t-warn, var(--warn));
 }
+/* Material's type roles: see tokens.css. */
+:host([design='material']) .lgr .tx b {
+  font: var(--type-title-medium);
+  letter-spacing: var(--track-title-medium);
+}
+:host([design='material']) .lgr .tx small {
+  font: var(--type-body-small);
+  letter-spacing: var(--track-body-small);
+}

@@ -16,3 +16,8 @@
   color: var(--fg2);
   min-width: 0;
 }
+/* Material's type roles: see tokens.css. */
+:host([design='material']) .aqsum .why {
+  font: var(--type-body-medium);
+  letter-spacing: var(--track-body-medium);
+}

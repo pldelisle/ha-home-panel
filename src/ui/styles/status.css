@@ -29,3 +29,8 @@
 .status.warn {
   color: var(--t-warn);
 }
+/* Material's type roles: see tokens.css. */
+.app[data-design='material'] .status {
+  font: var(--type-label-medium);
+  letter-spacing: var(--track-label-medium);
+}

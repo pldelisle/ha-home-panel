@@ -126,3 +126,13 @@
     transition: none;
   }
 }
+/* Material's type roles: see tokens.css. */
+:host([design='material']) .dialc b {
+  font: var(--type-display-medium);
+  letter-spacing: var(--track-display-medium);
+  font-variant-numeric: tabular-nums;
+}
+:host([design='material']) .dialc small {
+  font: var(--type-body-small);
+  letter-spacing: var(--track-body-small);
+}

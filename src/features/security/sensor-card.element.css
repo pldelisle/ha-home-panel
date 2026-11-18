@@ -179,3 +179,12 @@
     height: 26px;
   }
 }
+/* Material's type roles: see tokens.css. */
+:host([design='material']) .top .lbl {
+  font: var(--type-title-small);
+  letter-spacing: var(--track-title-small);
+}
+:host([design='material']) .top .right {
+  font: var(--type-label-medium);
+  letter-spacing: var(--track-label-medium);
+}

@@ -83,3 +83,8 @@
 .showall:active {
   transform: scale(0.96);
 }
+/* Material's type roles: see tokens.css. */
+:host([design='material']) .showall {
+  font: var(--type-label-large);
+  letter-spacing: var(--track-label-large);
+}

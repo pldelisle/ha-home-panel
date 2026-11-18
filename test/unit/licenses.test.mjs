@@ -33,7 +33,13 @@ test('LICENSES.md lists every production dependency at the version package-lock.
   const {packages} = json('package-lock.json');
   const names = Object.keys(dependencies);
   expect(names).toEqual(
-    expect.arrayContaining(['apexcharts', 'mermaid', '@fontsource/manrope', '@fontsource/jetbrains-mono']),
+    expect.arrayContaining([
+      'apexcharts',
+      'mermaid',
+      '@fontsource/manrope',
+      '@fontsource-variable/roboto-flex',
+      '@fontsource/jetbrains-mono',
+    ]),
   );
   for (const name of names) {
     const version = packages[`node_modules/${name}`]?.version;

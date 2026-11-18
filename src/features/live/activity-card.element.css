@@ -197,3 +197,12 @@
 .lbtns button.go:active {
   transform: scale(0.96);
 }
+/* Material's type roles: see tokens.css. */
+:host([design='material']) .lah b {
+  font: var(--type-title-small);
+  letter-spacing: var(--track-title-small);
+}
+:host([design='material']) .lah .rt {
+  font: var(--type-label-medium);
+  letter-spacing: var(--track-label-medium);
+}

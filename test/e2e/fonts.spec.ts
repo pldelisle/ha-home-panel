@@ -88,3 +88,34 @@ test("no tab asks anything of a server other than the house's, and charts and fl
   // the family the charts and the flows name is the bundled one, loaded
   expect(await loadedFontWeights(house)).toEqual(FONT_WEIGHTS);
 });
+
+test.describe('the Material design', () => {
+  test.use({houseOpts: {cfg: FULL_CFG, design: 'material'}});
+
+  test("draws in Roboto Flex from the panel's fonts/ folder, and Material's type roles set the sizes", async ({
+    house,
+  }) => {
+    // the one variable file serves every weight; every font file the page received is the panel's, with a 200
+    await expect
+      .poll(() => house.fonts.map(f => f.url.slice(f.url.lastIndexOf('/') + 1)), 'font files received')
+      .toContain('roboto-flex-latin-opsz-normal.woff2');
+    for (const f of house.fonts) {
+      expect(f.url).toMatch(FONT_URL);
+      expect(f.status, f.url).toBe(200);
+    }
+    await house.tab('home');
+    expect(await family(house, 'hp-greeting h1')).toMatch(/^["']?Roboto Flex["']?,/);
+    // display-small for the greeting and display-medium for the clock, in the 400 weight, never in capitals
+    const style = (selector: string) =>
+      house
+        .root()
+        .locator(selector)
+        .first()
+        .evaluate(e => {
+          const s = getComputedStyle(e);
+          return [s.fontSize, s.lineHeight, s.fontWeight, s.textTransform, s.fontVariantNumeric];
+        });
+    expect(await style('hp-greeting h1')).toEqual(['36px', '44px', '400', 'none', 'normal']);
+    expect(await style('.clock')).toEqual(['45px', '52px', '400', 'none', 'tabular-nums']);
+  });
+});

@@ -47,3 +47,12 @@ span {
 .row:active {
   transform: scale(0.96);
 }
+/* Material's type roles: see tokens.css. */
+:host([design='material']) b {
+  font: var(--type-title-medium);
+  letter-spacing: var(--track-title-medium);
+}
+:host([design='material']) span {
+  font: var(--type-body-small);
+  letter-spacing: var(--track-body-small);
+}

@@ -55,3 +55,12 @@
   padding: 24px 0;
   text-align: center;
 }
+/* Material's type roles: see tokens.css. */
+.app[data-design='material'] .inner h3 {
+  font: var(--type-title-large);
+  letter-spacing: var(--track-title-large);
+}
+.app[data-design='material'] .inner p {
+  font: var(--type-body-medium);
+  letter-spacing: var(--track-body-medium);
+}

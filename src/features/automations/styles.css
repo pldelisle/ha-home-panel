@@ -497,3 +497,39 @@
 .augraph .edgeLabel span {
   color: var(--fg2) !important;
 }
+/* Material's type roles: see tokens.css. */
+:host([design='material']) .aulbl {
+  font: var(--type-title-small);
+  letter-spacing: var(--track-title-small);
+}
+:host([design='material']) .aubox .hint {
+  font: var(--type-body-small);
+  letter-spacing: var(--track-body-small);
+}
+:host([design='material']) .auhead h3 {
+  font: var(--type-title-medium);
+  letter-spacing: var(--track-title-medium);
+}
+:host([design='material']) .auhead p {
+  font: var(--type-body-medium);
+  letter-spacing: var(--track-body-medium);
+}
+:host([design='material']) .aupick .chip {
+  font: var(--type-label-medium);
+  letter-spacing: var(--track-label-medium);
+}
+:host([design='material']) .aurow {
+  font: var(--type-title-medium);
+  letter-spacing: var(--track-title-medium);
+}
+:host([design='material']) .aurow small {
+  font: var(--type-body-small);
+  letter-spacing: var(--track-body-small);
+}
+:host([design='material']) .autl .hr,
+:host([design='material']) .aul,
+:host([design='material']) .aul b,
+:host([design='material']) .aulegend {
+  font: var(--type-label-small);
+  letter-spacing: var(--track-label-small);
+}

@@ -358,3 +358,89 @@
     transition: none;
   }
 }
+/* Material's type roles: see tokens.css. */
+:host([design='material']) .sh {
+  font: var(--type-body-medium);
+  letter-spacing: var(--track-body-medium);
+}
+:host([design='material']) .sh b {
+  font: var(--type-title-small);
+  letter-spacing: var(--track-title-small);
+}
+:host([design='material']) .sbig {
+  font: var(--type-display-medium);
+  letter-spacing: var(--track-display-medium);
+  font-variant-numeric: tabular-nums;
+}
+:host([mode='home'][design='material']) .sbig {
+  font: var(--type-headline-large);
+  letter-spacing: var(--track-headline-large);
+  font-variant-numeric: tabular-nums;
+}
+:host([design='material']) .swx .sbig {
+  font: var(--type-display-small);
+  letter-spacing: var(--track-display-small);
+  font-variant-numeric: tabular-nums;
+}
+:host([design='material']) .smid {
+  font: var(--type-title-medium);
+  letter-spacing: var(--track-title-medium);
+}
+:host([mode='home'][design='material']) .smid {
+  font: var(--type-title-medium);
+  letter-spacing: var(--track-title-medium);
+}
+:host([design='material']) .sft {
+  font: var(--type-body-medium);
+  letter-spacing: var(--track-body-medium);
+}
+:host([design='material']) .schips span {
+  font: var(--type-label-large);
+  letter-spacing: var(--track-label-large);
+}
+:host([design='material']) .sring b {
+  font: var(--type-headline-medium);
+  letter-spacing: var(--track-headline-medium);
+  font-variant-numeric: tabular-nums;
+}
+:host([design='material']) .skv small {
+  font: var(--type-body-small);
+  letter-spacing: var(--track-body-small);
+}
+:host([design='material']) .skv b {
+  font: var(--type-title-large);
+  letter-spacing: var(--track-title-large);
+  font-variant-numeric: tabular-nums;
+}
+:host([design='material']) .sp b {
+  font: var(--type-title-medium);
+  letter-spacing: var(--track-title-medium);
+}
+:host([design='material']) .sp small {
+  font: var(--type-body-small);
+  letter-spacing: var(--track-body-small);
+}
+:host([design='material']) .sav {
+  font: var(--type-title-large);
+  letter-spacing: var(--track-title-large);
+}
+:host([design='material']) .stag {
+  font: var(--type-label-medium);
+  letter-spacing: var(--track-label-medium);
+}
+:host([design='material']) .sev b {
+  font: var(--type-title-medium);
+  letter-spacing: var(--track-title-medium);
+}
+:host([design='material']) .sev small {
+  font: var(--type-body-small);
+  letter-spacing: var(--track-body-small);
+}
+:host([design='material']) .snp b {
+  font: var(--type-title-large);
+  letter-spacing: var(--track-title-large);
+}
+:host([design='material']) .snp small {
+  font: var(--type-body-small);
+  letter-spacing: var(--track-body-small);
+}

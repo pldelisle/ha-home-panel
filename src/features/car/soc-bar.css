@@ -26,3 +26,8 @@
   font-size: calc(11.5px * var(--tx));
   color: var(--fg2);
 }
+/* Material's type roles: see tokens.css. */
+:host([design='material']) .socscale {
+  font: var(--type-label-small);
+  letter-spacing: var(--track-label-small);
+}

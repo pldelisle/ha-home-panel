@@ -102,3 +102,17 @@ hp-sheet > .mcard > .top {
     background: var(--card);
   }
 }
+/* Material's type roles: see tokens.css. */
+:host([design='material']) .mcard .lbl {
+  font: var(--type-title-small);
+  letter-spacing: var(--track-title-small);
+}
+:host([design='material']) .mcard .top .right {
+  font: var(--type-label-medium);
+  letter-spacing: var(--track-label-medium);
+}
+:host([design='material']) .mcard .hint,
+:host([design='material']) .mtiles .hint {
+  font: var(--type-body-small);
+  letter-spacing: var(--track-body-small);
+}

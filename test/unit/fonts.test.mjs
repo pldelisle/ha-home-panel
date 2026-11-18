@@ -1,4 +1,4 @@
-// src/ui/fonts.ts declares the bundled faces, Manrope and JetBrains Mono (spec 08). Their file names and unicode ranges must
+// src/ui/fonts.ts declares the bundled faces, Manrope, Roboto Flex and JetBrains Mono (spec 08, ADR 0037). Their file names and unicode ranges must
 // be the ones the installed Fontsource packages ship and declare, so that a bump which renames a file or moves a range
 // fails here rather than on a tablet; and the rules go into the document once, however often the panel redraws itself.
 import {test, expect, afterEach} from 'vitest';
@@ -16,13 +16,16 @@ import {
 } from '../../src/ui/fonts.ts';
 
 const require = createRequire(import.meta.url);
-const pkgDir = pkg => dirname(require.resolve(`@fontsource/${pkg}/package.json`));
-const pkgFile = (pkg, f) => readFileSync(join(pkgDir(pkg), f), 'utf8');
+// Roboto Flex is Fontsource's variable package; the other two are its static ones
+const scopeOf = face => (face.variable ? '@fontsource-variable' : '@fontsource');
+const pkgDir = face => dirname(require.resolve(`${scopeOf(face)}/${face.pkg}/package.json`));
+const pkgFile = (face, f) => readFileSync(join(pkgDir(face), f), 'utf8');
 const noSpace = s => s.replaceAll(/\s/g, '');
 
-test("the files are Fontsource's: Manrope 400 to 700 and JetBrains Mono 400, in the latin and latin-ext subsets", () => {
+test("the files are Fontsource's: Manrope 400 to 700, Roboto Flex's variable weight axis and JetBrains Mono 400, in the latin and latin-ext subsets", () => {
   expect(FONT_FACES.map(f => [f.family, f.weights])).toEqual([
     ['Manrope', [400, 500, 600, 700]],
+    ['Roboto Flex', [100, 1000]],
     ['JetBrains Mono', [400]],
   ]);
   expect(FONT_WEIGHTS).toEqual([400, 500, 600, 700]);
@@ -37,27 +40,33 @@ test("the files are Fontsource's: Manrope 400 to 700 and JetBrains Mono 400, in 
     'manrope-latin-ext-500-normal.woff2',
     'manrope-latin-ext-600-normal.woff2',
     'manrope-latin-ext-700-normal.woff2',
+    'roboto-flex-latin-ext-opsz-normal.woff2',
+    'roboto-flex-latin-opsz-normal.woff2',
   ]);
   for (const [pkg, f] of FONT_SOURCES)
     expect(existsSync(join(dirname(require.resolve(`${pkg}/package.json`)), 'files', f)), f).toBe(true);
 });
 
-test('each subset has the unicode-range Fontsource declares for it, in the order its CSS declares them, in both packages', () => {
-  for (const {pkg, weights} of FONT_FACES) {
-    const ranges = JSON.parse(pkgFile(pkg, 'unicode.json'));
+test('each subset has the unicode-range Fontsource declares for it, in the order its CSS declares them, in every package', () => {
+  for (const face of FONT_FACES) {
+    const {pkg, weights, variable} = face;
+    const ranges = JSON.parse(pkgFile(face, 'unicode.json'));
+    // the weight files (400.css …) name each weight's files; the variable package's opsz.css names the one file of the weight and optical-size axes
+    const sheets = variable ? ['opsz'] : weights.map(String);
     for (const [subset, range] of FONT_SUBSETS) {
       expect(range, `${pkg} ${subset}`).toBe(noSpace(ranges[subset]));
-      // the weight files (400.css …) declare the same range on the block for this subset's file
-      for (const w of weights) {
-        const block = pkgFile(pkg, `${w}.css`)
+      // the sheet declares the same range on the block for this subset's file
+      for (const w of sheets) {
+        const block = pkgFile(face, `${w}.css`)
           .split('@font-face')
           .find(b => b.includes(`/${pkg}-${subset}-${w}-normal.woff2`));
         expect(noSpace(block.match(/unicode-range:([^;]+);/)[1]), `${pkg} ${w}.css, ${subset}`).toBe(range);
       }
     }
     // latin last: where two ranges overlap, the face declared last is used
-    const css = pkgFile(pkg, '400.css');
-    const at = subset => css.indexOf(`/${pkg}-${subset}-400-normal.woff2`);
+    const [w] = sheets;
+    const css = pkgFile(face, `${w}.css`);
+    const at = subset => css.indexOf(`/${pkg}-${subset}-${w}-normal.woff2`);
     expect(FONT_SUBSETS.map(([subset]) => subset).toSorted((a, b) => at(a) - at(b))).toEqual(
       FONT_SUBSETS.map(([subset]) => subset),
     );
@@ -90,15 +99,20 @@ test('the rules: one face per file, swap, each file under the base URL it is giv
   const rules = fontFaces(base).split('\n');
   expect(rules).toHaveLength(FONT_FILES.length);
   const re =
-    /^@font-face\{font-family:'([^']+)';font-style:normal;font-weight:(\d+);font-display:swap;src:url\("([^"]+)"\) format\('woff2'\);unicode-range:([^}]+)\}$/;
+    /^@font-face\{font-family:'([^']+)';font-style:normal;font-weight:(\d+(?: \d+)?);font-display:swap;src:url\("([^"]+)"\) format\('woff2'\);unicode-range:([^}]+)\}$/;
   const seen = rules.map(rule => {
     const [, family, weight, url, range] = rule.match(re) ?? [];
     expect(url, rule).toBeDefined();
     const file = url.slice(base.length);
     expect(url).toBe(base + file);
-    const [, pkg, subset, w] = file.match(/^(manrope|jetbrains-mono)-(latin(?:-ext)?)-(\d+)-normal\.woff2$/);
-    expect(family).toBe(FONT_FACES.find(f => f.pkg === pkg).family);
-    expect(w).toBe(weight);
+    const [, pkg, subset, w] = file.match(
+      /^(manrope|roboto-flex|jetbrains-mono)-(latin(?:-ext)?)-(\d+|opsz)-normal\.woff2$/,
+    );
+    const face = FONT_FACES.find(f => f.pkg === pkg);
+    expect(family).toBe(face.family);
+    // Roboto Flex is one file for the whole weight axis, and its rule says the axis once: `font-weight:100 1000`
+    expect(weight).toBe(face.variable ? '100 1000' : w);
+    if (face.variable) expect(w).toBe('opsz');
     expect(range).toBe(FONT_SUBSETS.find(([s]) => s === subset)[1]);
     return file;
   });
@@ -114,6 +128,26 @@ function fakeDocument() {
     createElement: tagName => ({tagName, id: '', textContent: ''}),
   };
 }
+
+// the tokens: the Apple design is set in Manrope, the Material one in Roboto Flex, and each names a face this module declares
+test('the frame sets the Apple design in Manrope and the Material design in Roboto Flex, both faces declared here', () => {
+  const tokens = readFileSync(new URL('../../src/ui/styles/tokens.css', import.meta.url), 'utf8');
+  const rule = selector => tokens.slice(tokens.indexOf(`${selector} {`)).match(/\{([^}]*)\}/)[1];
+  const first = (css, prop) => css.match(new RegExp(`--${prop}:\\s*'([^']+)'`))[1];
+  const declared = FONT_FACES.map(f => f.family);
+  for (const prop of ['f-num', 'f-body']) {
+    const apple = first(rule('.app'), prop);
+    const material = first(rule(".app[data-design='material']"), prop);
+    expect([apple, material], prop).toEqual(['Manrope', 'Roboto Flex']);
+    expect(declared).toEqual(expect.arrayContaining([apple, material]));
+  }
+  // Roboto Flex is one variable face: one rule per subset, each saying the whole weight axis
+  const rules = fontFaces('https://ha.local/fonts/')
+    .split('\n')
+    .filter(r => r.includes("'Roboto Flex'"));
+  expect(rules).toHaveLength(FONT_SUBSETS.length);
+  for (const r of rules) expect(r).toContain('font-weight:100 1000');
+});
 
 afterEach(() => {
   delete globalThis.document;

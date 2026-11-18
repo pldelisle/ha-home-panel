@@ -69,3 +69,13 @@
 .step:active {
   transform: scale(0.96);
 }
+/* Material's type roles: see tokens.css. */
+:host([design='material']) .sv b {
+  font: var(--type-title-large);
+  letter-spacing: var(--track-title-large);
+  font-variant-numeric: tabular-nums;
+}
+:host([design='material']) .sv small {
+  font: var(--type-label-medium);
+  letter-spacing: var(--track-label-medium);
+}
