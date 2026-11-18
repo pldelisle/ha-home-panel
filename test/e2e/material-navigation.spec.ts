@@ -49,10 +49,14 @@ for (const lang of ['en', 'fr'] as const) {
 
     test('the keyboard focus ring is drawn on the pill, not on the whole item', async ({house}) => {
       tabletOnly();
-      const other = house.root().locator('#rail .rtab[aria-selected="false"]:visible').first();
-      await other.focus();
+      // the list is one tab stop (the selected tab's, #493), so the keyboard reaches another tab with an arrow
+      const selected = house.root().locator('#rail .rtab[aria-selected="true"]');
+      await selected.focus();
       await house.page.keyboard.press('Shift+Tab');
       await house.page.keyboard.press('Tab');
+      await house.page.keyboard.press('ArrowDown');
+      const other = house.root().locator('#rail .rtab:focus');
+      await expect(other).toHaveAttribute('aria-selected', 'false');
       const ring = await other.evaluate(e => ({
         item: getComputedStyle(e).outlineStyle,
         pill: getComputedStyle(e, '::after').outlineStyle,
