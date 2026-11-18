@@ -219,6 +219,7 @@ export class EnergyDetail extends LitElement {
     return html`<div class="inner">
       <h3>${donut.title}</h3>
       <p>${donut.hint}</p>
+      ${donut.note ? html`<p class="histnote">${donut.note}</p>` : nothing}
       <div class="donut">
         <div class="donutchart">
           ${

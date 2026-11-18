@@ -1,7 +1,6 @@
 // The phone's "Coming up" list (#267): what `readUpcoming` reads of the test house, and each row `upcoming` words, in the legacy
 // `upcoming()`'s order: the sun's two events in the order they come, then Hilo, Hydro-Québec, the car's departure and the modes on.
 import {describe, expect, test} from 'vitest';
-import {sunTimes} from '../../../src/core/sun.ts';
 import {readUpcoming, upcoming, type UpcomingInputs} from '../../../src/shell/upcoming.ts';
 import {FULL_CFG} from '../../e2e/houses.ts';
 import type {FakeHass} from '../fake-hass.ts';
@@ -34,14 +33,6 @@ describe('readUpcoming and upcoming', () => {
       '4:45 pm | Sunset · theme turns dark',
       '7:00 am | Sunrise · every light off, night modes off',
     ]);
-  });
-
-  test("given the house's place and day, the sun's rows are today's computed pair, the same as Lights and Weather say", () => {
-    const store = storeAt();
-    const {rise, set} = sunTimes(43.65, -79.38, '2026-11-07');
-    const today = {latitude: 43.65, longitude: -79.38, day: '2026-11-07'};
-    const inputs = readUpcoming(store.hass!.states, store.config, store.names, today);
-    expect([inputs.sunrise, inputs.sunset]).toStrictEqual([rise, set]);
   });
 
   test('by night the sunrise comes first, and a sun sensor that reads nothing has no row', () => {

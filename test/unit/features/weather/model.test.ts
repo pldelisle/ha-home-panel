@@ -473,6 +473,18 @@ describe('the card', () => {
     });
     expect([down.card.sunLabel, down.card.sunTime]).toEqual(['Sunrise', '7:00 am']);
   });
+
+  test("the sun's time is today's pair when the pane has it, the same one the Sun card says, not the sensor's next event", () => {
+    const sun = {rise: REFERENCE_MS - 7 * 36e5, set: REFERENCE_MS + 3 * 36e5 + 10 * 6e4};
+    const next = {kind: 'rise' as const, at: REFERENCE_MS + 17 * 36e5};
+    const up = inEnglish({sun: {up: true, next: {kind: 'set', at: sun.set + 36e5}, hasFirstLight: false}}, {sun});
+    expect([up.card.sunLabel, up.card.sunTime]).toEqual(['Sunset', '5:10 pm']);
+    const down = inEnglish({sun: {up: false, next, hasFirstLight: false}}, {sun});
+    expect([down.card.sunLabel, down.card.sunTime]).toEqual(['Sunrise', '7:00 am']);
+    expect(
+      inEnglish({sun: {up: true, next: null, hasFirstLight: false}}, {sun: {rise: null, set: null}}).card.sunTime,
+    ).toBe('–');
+  });
 });
 
 describe('the sun block', () => {

@@ -4,6 +4,7 @@ import {describe, expect, test} from 'vitest';
 import {resolveConfig} from '../../../src/core/config.ts';
 import {sunTimes} from '../../../src/core/sun.ts';
 import {sunToday} from '../../../src/providers/sun.ts';
+import {entity} from '../fake-hass.ts';
 import {fullHouse} from '../features/media/support.ts';
 
 const config = resolveConfig({}, fullHouse.states);
@@ -15,7 +16,19 @@ describe('sunToday', () => {
     expect(sunToday(fullHouse.states, config, {latitude: 43.65, longitude: -79.38, day: DAY})).toStrictEqual({
       rise: expected.rise,
       set: expected.set,
+      noon: expected.noon,
     });
+  });
+
+  test('without coordinates the noon is the midpoint of the two sensors, and none when a sensor reads nothing', () => {
+    const times = sunToday(fullHouse.states, config, {day: DAY});
+    expect(times.noon).toBe((times.rise! + times.set!) / 2);
+    const off = {
+      ...fullHouse.states,
+      'sun.sun': entity('sun.sun', 'above_horizon'),
+      [config.entities.setting!]: entity(config.entities.setting!, 'unavailable'),
+    };
+    expect(sunToday(off, config, {day: DAY})).toStrictEqual({rise: times.rise, set: null, noon: null});
   });
 
   test('falls back to the two sensors for a house with no coordinates', () => {

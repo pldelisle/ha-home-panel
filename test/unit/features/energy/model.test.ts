@@ -528,10 +528,11 @@ describe('the detail', () => {
         ['Room heating', '8.0 kWh'],
         ['Water heating', '3.0 kWh'],
         ['Rest of home', '3.0 kWh'],
-        ['Bedroom', '4.0 kWh'],
-        ['Garage', '3.0 kWh'],
-        ['Living room', '2.0 kWh'],
-        ['Office', '1.0 kWh'],
+        // the day's 4, 3, 2 and 1 kWh of rooms, scaled to the hours' 8 kWh of heating
+        ['Bedroom', '3.2 kWh'],
+        ['Garage', '2.4 kWh'],
+        ['Living room', '1.6 kWh'],
+        ['Office', '0.8 kWh'],
       ]);
     });
 
@@ -613,9 +614,9 @@ describe('the detail', () => {
       }
     });
 
-    test('today with no meter day reads the hours the chart draws: the donut, the Sankey and the Totals agree with it', () => {
+    test('today reads the hours the chart draws: the donut and the Sankey, rooms scaled to the same heating; the Totals keep the meter', () => {
       // `flow` has two hours today: heating 2 + 6, water 1 + 2, rest 1 + 2.04, and nothing for the charger
-      const totals = {today: 0, yesterday: 20, d30: 400, month: 100};
+      const totals = {today: 12.3, yesterday: 20, d30: 400, month: 100};
       const view = detail({daily: [day('2026-11-06')], totals});
       const sankey = detail({daily: [day('2026-11-06')], totals}, {range: 'today'}).sankey;
       expect(view.donut.parts.map(part => [part.key, part.kwh])).toEqual([
@@ -626,10 +627,39 @@ describe('the detail', () => {
       ]);
       expect(sankey.body.kind).toBe('ribbons');
       expect(sankey.note).toContain('14.0 kWh');
-      expect(view.totals.tiles[0]).toMatchObject({label: 'Today so far', value: '14.0'});
+      // a label names its source: the Totals tile is the Hilo meter's today, not the devices' hours
+      expect(view.totals.tiles[0]).toMatchObject({label: 'Today so far', value: '12.3'});
       // a day's own row that disagrees with the hours does not win: the chart's hours are the figure
       const own = detail({daily: [day(today, {heat: 99})], totals}).donut.parts[0];
       expect([own.key, own.kwh]).toEqual(['heat', 8]);
+      // the day's rooms (4, 3, 2, 1 of its 10 kWh of heating) are scaled to the hours' 8 kWh, so the rooms add up to the heating
+      const withRooms = detail({daily: [day('2026-11-06'), day(today)], totals}, {range: 'today'}).sankey;
+      const rooms = labelsOf(withRooms)
+        .filter(label => ['Bedroom', 'Garage', 'Living room', 'Office'].includes(label.name))
+        .map(label => label.value);
+      expect(rooms).toEqual(['3.2 kWh', '2.4 kWh', '1.6 kWh', '0.8 kWh']);
+    });
+
+    describe('devices over the meter today', () => {
+      // the hours stack 14.04 kWh of devices; the meter's today is what the Totals read
+      const note = (meter: number, range: 'now' | 'today' | 'week' = 'today') =>
+        detail({totals: {today: meter, yesterday: 20, d30: 400, month: 100}}, {range}).donut.note;
+      const SAID = 'Devices report more than the meter today.';
+
+      test('the uses say so once, under Where it went, past the tolerance of 0.1 kWh and in French too', () => {
+        expect(note(12)).toBe(SAID);
+        expect(note(0)).toBe(SAID);
+        expect(note(13.84)).toBe(SAID);
+        expect(note(12, 'now')).toBe(SAID);
+        const fr = detail({totals: {today: 12, yesterday: 20, d30: 400, month: 100}}, {}, 'fr');
+        expect(fr.donut.note).toBe('Les appareils déclarent plus que le compteur aujourd\u2019hui.');
+      });
+
+      test('no note at exactly 0.1 kWh over, when the devices fit, or for a range of days', () => {
+        expect(note(13.94)).toBe('');
+        expect(note(20)).toBe('');
+        expect(note(12, 'week')).toBe('');
+      });
     });
 
     test('with no meter day and no hour today the chart, Where it went and the Totals all say there is no data', () => {

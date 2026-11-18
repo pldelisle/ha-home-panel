@@ -18,6 +18,7 @@ import './weather-detail.ts'; // defines <hp-weather-detail>
 import './weather-history.ts'; // defines <hp-weather-history>
 import paneStyles from './styles.css?inline';
 import {createStatisticsCache, type StatisticsCache} from '../../core/statistics-cache.ts';
+import {sunToday} from '../../providers/sun.ts';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {StoreController} from '../../ui/controllers/store-controller.ts';
 import {apiContext} from '../../ui/contexts.ts';
@@ -105,6 +106,11 @@ export class WeatherPane extends LitElement {
         t: store.t,
         latitude: hass.config.latitude ?? 0,
         longitude: hass.config.longitude ?? 0,
+        sun: sunToday(hass.states, store.config, {
+          latitude: hass.config.latitude,
+          longitude: hass.config.longitude,
+          day: store.fmt.isoDay(Date.now()),
+        }),
         house: store.config.house,
       },
     );

@@ -9,15 +9,15 @@ import type {HassEntities} from '../core/hass.ts';
 import type {Formatters} from '../core/i18n/format.ts';
 import type {Translate} from '../core/i18n/messages.ts';
 import type {Names} from '../core/i18n/names.ts';
+import {isAvailable} from '../core/states.ts';
 import {findCar, readCar, type Schedule} from '../providers/fordpass.ts';
 import {hiloChallenge} from '../providers/hilo.ts';
 import {hydroQuebec} from '../providers/hydro-quebec.ts';
-import {sunNext, sunToday, type SunDay} from '../providers/sun.ts';
 
 export interface UpcomingInputs {
   /** The sun is up, or the house has no sun: the sunset comes first. */
   day: boolean;
-  /** The sunset and sunrise in milliseconds (today's when the house's place is known, else the sensors' next); null when none. */
+  /** The next sunset and sunrise in milliseconds; null when the sensor reads nothing. */
   sunset: number | null;
   sunrise: number | null;
   /** Hilo's challenge state while one is on, else null. */
@@ -43,26 +43,23 @@ export interface UpcomingDeps {
 const WEEKDAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
 const EVERY_DAY = 7;
 
-/**
- * What the list reads of the states. `today` is the house's place and local day: the sun's two rows then say today's sunrise and sunset, the
- * same pair every tab says; without it (or without coordinates) they say the sensors' next events.
- */
-export function readUpcoming(
-  states: HassEntities,
-  config: ResolvedConfig,
-  names: Names,
-  today?: SunDay,
-): UpcomingInputs {
-  const {sun} = config.entities;
-  const times = today ? sunToday(states, config, today) : sunNext(states, config);
+/** The instant a sun sensor names, or null. */
+function instantOf(states: HassEntities, id: string | null): number | null {
+  const s = id ? states[id] : undefined;
+  return isAvailable(s) ? Date.parse(s.state) : null;
+}
+
+/** What the list reads of the states. */
+export function readUpcoming(states: HassEntities, config: ResolvedConfig, names: Names): UpcomingInputs {
+  const {sun, setting, rising} = config.entities;
   const sunState = sun ? states[sun] : undefined;
   const challenge = hiloChallenge(states, config);
   const ref = findCar(states);
   const car = ref && readCar(states, config, names, ref);
   return {
     day: !sunState || sunState.state === 'above_horizon',
-    sunset: times.set,
-    sunrise: times.rise,
+    sunset: instantOf(states, setting),
+    sunrise: instantOf(states, rising),
     challenge: challenge?.active ? challenge.state : null,
     peakComing: !!hydroQuebec(states, config)?.peakUpcoming,
     departure: car?.departureOn ? car.schedule : null,

@@ -458,11 +458,15 @@ test.describe('the detail on a tablet', () => {
       'Rest of home',
     ]);
     // Now draws today's hours, so the donut is today's (eight hours into the day)
-    await expect(detail(house).locator('.donut').locator('xpath=..').locator('p')).toHaveText(
+    await expect(detail(house).locator('.donut').locator('xpath=..').locator('p').first()).toHaveText(
       /^Today so far\. Rest of home/,
     );
     await expect(rows.locator('td.r:nth-child(2)')).toHaveText(['70.7 kWh', '17.7 kWh', '17.7 kWh', '0.0 kWh']);
     await expect(rows.locator('td.r:nth-child(3)')).toHaveText(['67%', '17%', '17%', '0%']);
+    // the test house's devices (106 kWh of hours) outrun its meter (which reads 0.0 today): the live flow and the uses each say so once, and the Totals keep the meter
+    await expect(flow(house).locator('svg')).toContainText('Devices report more than the meter');
+    await expect(flow(house).locator('svg')).not.toContainText('Rest of home');
+    await expect(detail(house).locator('.histnote')).toHaveText('Devices report more than the meter today.');
     // the Month tab is the 30 days the donut always drew
     await rangeTab(house, 'Month').click();
     await expect(detail(house).locator('.donut').locator('xpath=..').locator('p')).toHaveText(

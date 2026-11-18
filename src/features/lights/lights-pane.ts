@@ -38,7 +38,7 @@ import paneOwn from './lights-pane.element.css?inline';
 import {rejectionReason, type PanelApi} from '../../core/api.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
 import {registriesOf} from '../../core/registry.ts';
-import {sunTimes} from '../../core/sun.ts';
+import {sunToday} from '../../providers/sun.ts';
 import {hasManualControlService} from '../../providers/adaptive-lighting.ts';
 import {CommandRunner} from '../../ui/commands.ts';
 import {DragReorderController} from '../../ui/controllers/drag-reorder.ts';
@@ -170,7 +170,13 @@ export class LightsPane extends LitElement {
     const {store} = this.storeController;
     const {hass, fmt} = store;
     const now = Date.now();
-    const sun = sunTimes(hass!.config.latitude ?? 0, hass!.config.longitude ?? 0, fmt.isoDay(now));
+    // the one pair every tab says; a noon is only drawn between a rise and a set, so a house with neither has none to give
+    const today = sunToday(hass!.states, store.config, {
+      latitude: hass!.config.latitude,
+      longitude: hass!.config.longitude,
+      day: fmt.isoDay(now),
+    });
+    const sun = {rise: today.rise, set: today.set, noon: today.noon ?? now};
     this.inputs = inputs;
     this.view = lightsModel(inputs, {
       t: store.t,

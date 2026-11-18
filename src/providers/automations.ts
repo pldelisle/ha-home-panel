@@ -6,7 +6,7 @@ import type {AutomationConfig} from '../core/ha.ts';
 import type {HassEntities} from '../core/hass.ts';
 import type {Formatters} from '../core/i18n/format.ts';
 import type {Names} from '../core/i18n/names.ts';
-import {isAvailable} from '../core/states.ts';
+import type {SunNext} from './sun.ts';
 
 export interface Automation {
   entity: string;
@@ -45,28 +45,6 @@ export const asList = <T>(v: T | T[] | null | undefined): T[] => (v == null ? []
 export function minutesOfDay(t: number | string, fmt: Formatters): number {
   const [h, m] = fmt.time24(new Date(t)).split(':').map(Number);
   return h * 60 + m;
-}
-
-/** The sun's next rising and setting, from `sun.sun`'s attributes or, failing those, the two sun sensors. */
-export interface SunNext {
-  nextRising: string | null;
-  nextSetting: string | null;
-}
-
-/** The entities `sunNext` reads: a reader of it listens to these. */
-export const SUN_IDS = ['sun.sun', 'sensor.sun_next_rising', 'sensor.sun_next_setting'] as const;
-
-export function sunNext(states: HassEntities): SunNext {
-  const read = (attribute: string, sensor: string): string | null => {
-    const v: unknown = states['sun.sun']?.attributes[attribute];
-    if (typeof v === 'string' && v) return v;
-    const s = states[sensor];
-    return isAvailable(s) ? s.state : null;
-  };
-  return {
-    nextRising: read('next_rising', 'sensor.sun_next_rising'),
-    nextSetting: read('next_setting', 'sensor.sun_next_setting'),
-  };
 }
 
 export interface Upcoming {

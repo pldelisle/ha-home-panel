@@ -231,4 +231,10 @@ describe('devices that report more than the meter', () => {
     expect(words(layout(over, 'fr'))).toContain('Les appareils déclarent plus que le compteur');
     expect(words(layout({grid: 3.24, heat: 1, waterHeater: 0, ev: 1, rest: 1.24}))).toContain('Rest of home');
   });
+
+  test('exactly 10 W over the meter is the figures’ own rounding and draws no note; 20 W over does', () => {
+    const near = {grid: 1, heat: 1.01, waterHeater: 0, ev: 0, rest: 0};
+    expect(words(layout(near))).not.toContain('Devices report more than the meter');
+    expect(words(layout({...near, heat: 1.02}))).toContain('Devices report more than the meter');
+  });
 });

@@ -65,7 +65,7 @@ export interface DonutPart {
 const KWH = 'kWh';
 const MWH = 'MWh';
 /** A flow row's column for each use: `[t, ev, wh, heat, rest, total]`. */
-const COLUMN = {heat: 3, wh: 2, ev: 1, rest: 4} as const;
+export const COLUMN = {heat: 3, wh: 2, ev: 1, rest: 4} as const;
 /** The height of a flow row's bar: the four uses stacked (columns 1 to 4), which is the grid's total only while the devices fit the meter. */
 export const stackOf = (row: FlowRow): number => row[COLUMN.ev] + row[COLUMN.wh] + row[COLUMN.heat] + row[COLUMN.rest];
 /** The bars' rounded top, shared by the four ranges. */

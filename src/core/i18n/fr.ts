@@ -653,6 +653,7 @@ export const fr: Record<MessageKey, string> = {
   'energy.donut.title': "Où est allée l'énergie",
   'energy.donut.hint':
     "{days, plural, =1 {Aujourd'hui jusqu'ici} other {# derniers jours}}. Le reste de la maison comprend tout ce qui n'a pas son propre capteur de puissance, y compris la thermopompe.",
+  'energy.donut.overMeter': 'Les appareils déclarent plus que le compteur aujourd’hui.',
   'energy.donut.total': 'kWh',
   'energy.donut.percent': '{n}\u202f%',
   'energy.totals.title': 'Totaux',
