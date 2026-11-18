@@ -578,3 +578,7 @@
     }
   }
 }
+/* a pane takes focus, as a landmark, when a tap of Home's Rooms row, of More's or of a Back button opens it; it is no control, so no ring */
+.pane:focus {
+  outline: none;
+}

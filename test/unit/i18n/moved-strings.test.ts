@@ -70,10 +70,12 @@ const read = (move: string) =>
     .messages;
 
 // the rail's label for the subject is the shell's (src/shell/features.ts says it), not a message the move introduced
-const ofMove = (prefix: string) => Object.keys(en).filter(key => key.startsWith(prefix) && key !== `${prefix}title`);
+const ofMove = (prefix: string, except: string[]) =>
+  Object.keys(en).filter(key => key.startsWith(prefix) && key !== `${prefix}title` && !except.includes(key));
 
 // a move: its fixture, the prefix of the keys it introduced, the folders that say them, and the keys outside the prefix it
-// also introduced (the kit's `common.failed` came with Media's command layer; the kit says it, in src/ui/)
+// also introduced (the kit's `common.failed` came with Media's command layer; the kit says it, in src/ui/), and the keys under the prefix it
+// did not (the room view's Back button, `room.back`, #511, is the shell's: src/shell/room-pane.ts)
 describe.each([
   ['weather', 'weather.', ['src/features/weather/', 'src/providers/', 'src/core/i18n/'], []],
   ['media', 'media.', ['src/features/media/', 'src/providers/'], ['common.failed']],
@@ -91,8 +93,8 @@ describe.each([
   ['chart', 'chart.', ['src/ui/'], []],
   ['ranges', 'range.', ['src/ui/'], []],
   ['settings', 'settings.', ['src/shell/'], []],
-  ['rooms', 'room.', ['src/core/i18n/'], []],
-])('the %s move', (move, prefix, folders, extra) => {
+  ['rooms', 'room.', ['src/core/i18n/'], [], ['room.back']],
+])('the %s move', (move, prefix, folders, extra, except = []) => {
   const moved = read(move);
 
   test.each(moved.map(m => [`${m.key} ${JSON.stringify(m.values ?? {})}`, m] as const))('%s', (_name, m) => {
@@ -112,7 +114,7 @@ describe.each([
   });
 
   test('lists every message the move introduced, and only messages that exist', () => {
-    const introduced = [...ofMove(prefix), ...extra];
+    const introduced = [...ofMove(prefix, except), ...extra];
     expect([...new Set(moved.map(m => m.key))].sort()).toEqual(introduced.sort());
   });
 
@@ -128,6 +130,6 @@ describe.each([
         .join('\n');
     const unsaid = (keys: string[], source: string) =>
       keys.filter(key => !source.includes(`'${key}'`) && !source.includes(`\`${key.replace(/[^.]+$/, '')}$\{`));
-    expect([...unsaid(ofMove(prefix), sourceOf(folders)), ...unsaid(extra, sourceOf(['src/ui/']))]).toEqual([]);
+    expect([...unsaid(ofMove(prefix, except), sourceOf(folders)), ...unsaid(extra, sourceOf(['src/ui/']))]).toEqual([]);
   });
 });

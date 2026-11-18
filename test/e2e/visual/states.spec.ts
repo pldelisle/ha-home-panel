@@ -13,6 +13,10 @@ import {openSubmenu} from '../settings-controls';
 // every screenshot shows the bundled Manrope, never the fallback it swaps from (font-display: swap)
 test.beforeEach(({house}) => fontsLoaded(house));
 
+// The tablet room views flake in CI by 3 to 31 pixels at the Liquid Glass sidebar's bottom corners, a different shot each run, while a local run of
+// the same image is stable (#521). Until that is found, these shots allow 40 pixels out of about a million: too few to hide a changed tile or row.
+const ROOM_SHOT = {maxDiffPixels: 40};
+
 // The idle clock draws two things that differ between runs, and neither is a tolerance question:
 // - the time: it reads "now", so Date cannot be frozen (`frozen` would show 11:30 pm after five minutes). The test stops the clock
 //   a minute on from the load and lets goIdle move it five minutes on, on a phone too, so the time (and the card the stack turns
@@ -185,36 +189,36 @@ for (const viewport of ['tablet', 'phone'] as const) {
 
             // a room view (#506): the Liquid Glass sidebar's Rooms group with the room's row selected, the room's name and icon, and its Lights tiles
             test('room view', async ({house}) => {
-              await house.root().locator('#rail [data-room="living_room"]').click();
+              await house.root().locator('#rail [data-room=\"living_room\"]').click();
               await expect(house.root().locator('#pane-room hp-light-tile')).toBeVisible();
               await house.page.mouse.move(0, 0);
-              await expect(house.page).toHaveScreenshot(`room-view-${viewport}-${theme}-en.png`);
+              await expect(house.page).toHaveScreenshot(`room-view-${viewport}-${theme}-en.png`, ROOM_SHOT);
             });
 
             // a room with a thermostat (#507): the Lights tiles and the Climate section's tile, with the room's temperature in the header
             if (theme === 'light')
               test('room view with climate', async ({house}) => {
-                await house.root().locator('#rail [data-room="living_room"]').click();
+                await house.root().locator('#rail [data-room=\"living_room\"]').click();
                 await expect(house.root().locator('#pane-room hp-climate-room hp-stat-tile button')).toBeVisible();
                 await house.page.mouse.move(0, 0);
-                await expect(house.page).toHaveScreenshot(`room-view-climate-${viewport}-${theme}-en.png`);
+                await expect(house.page).toHaveScreenshot(`room-view-climate-${viewport}-${theme}-en.png`, ROOM_SHOT);
               });
 
             // a room with a purifier (#508): the Air card under the lights, and the room's humidity in its header
             test('room view with air', async ({house}) => {
-              await house.root().locator('#rail [data-room="office"]').click();
+              await house.root().locator('#rail [data-room=\"office\"]').click();
               await expect(house.root().locator('#pane-room hp-air-room')).toBeVisible();
               await house.page.mouse.move(0, 0);
-              await expect(house.page).toHaveScreenshot(`room-view-air-${viewport}-${theme}-en.png`);
+              await expect(house.page).toHaveScreenshot(`room-view-air-${viewport}-${theme}-en.png`, ROOM_SHOT);
             });
 
             // the Media part of a room view (#509): the speakers' controls over the room, whose own view stays behind the sheet
             test('room view with the speakers sheet over it', async ({house}) => {
-              await house.root().locator('#rail [data-room="living_room"]').click();
+              await house.root().locator('#rail [data-room=\"living_room\"]').click();
               await house.root().locator('#pane-room hp-media-tile').getByText('speaker', {exact: true}).click();
               await expect(house.root().getByRole('dialog', {name: 'Speakers'})).toBeVisible();
               await house.page.mouse.move(0, 0);
-              await expect(house.page).toHaveScreenshot(`room-view-media-sheet-${viewport}-${theme}-en.png`);
+              await expect(house.page).toHaveScreenshot(`room-view-media-sheet-${viewport}-${theme}-en.png`, ROOM_SHOT);
             });
 
             test('settings popup', async ({house}) => {
@@ -343,3 +347,42 @@ for (const lang of ['en', 'fr'] as const) {
     });
   });
 }
+
+// Rooms on the phone and under Material (#511): a room view on the phone, with its Back button, in light and dark; and the same view on Material's
+// tablet in light, where the rail selects no tab; and the phone's Home scrolled to its Rooms row. Material's tablet Home and the phone's More sheet,
+// which now list the rooms, are the matrix's and material.spec.ts's own shots, re-recorded.
+for (const theme of ['light', 'dark'] as const) {
+  test.describe(`room view on the phone, ${theme}`, () => {
+    test.use({viewport: VIEWPORTS.phone, houseOpts: {cfg: FULL_CFG, theme, time: AFTERNOON, frozen: true}});
+    // Home's Rooms row sits under the six tiles, below the first screen: scrolled to
+    test('Home Rooms row', async ({house}) => {
+      await house.tab('home');
+      await house.root().locator('#hrooms').scrollIntoViewIfNeeded();
+      await house.page.mouse.move(0, 0);
+      await expect(house.root().locator('#hrooms .hroom')).toHaveCount(5);
+      await expect(house.page).toHaveScreenshot(`home-rooms-row-phone-${theme}-en.png`);
+    });
+
+    test('room view', async ({house}) => {
+      await house.tab('home');
+      await house.root().locator('#hrooms .hroom', {hasText: 'Living room'}).click();
+      await expect(house.root().locator('#pane-room hp-light-tile')).toBeVisible();
+      await house.page.mouse.move(0, 0);
+      await expect(house.page).toHaveScreenshot(`room-view-phone-back-${theme}-en.png`);
+    });
+  });
+}
+
+test.describe('room view under Material, tablet, light', () => {
+  test.use({
+    viewport: VIEWPORTS.tablet,
+    houseOpts: {cfg: FULL_CFG, theme: 'light', design: 'material', time: AFTERNOON, frozen: true},
+  });
+  test('room view', async ({house}) => {
+    await house.tab('home');
+    await house.root().locator('#hrooms .hroom', {hasText: 'Living room'}).click();
+    await expect(house.root().locator('#pane-room hp-light-tile')).toBeVisible();
+    await house.page.mouse.move(0, 0);
+    await expect(house.page).toHaveScreenshot('room-view-material-tablet-light-en.png', {maxDiffPixels: 4});
+  });
+});

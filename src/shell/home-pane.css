@@ -178,3 +178,71 @@ hp-home-pane {
   outline: var(--focus-width) solid var(--focus-color);
   outline-offset: var(--focus-offset);
 }
+/* The Rooms row (ADR 0039, #511), where the sidebar does not list the rooms: a row of chips that scrolls sideways, right under the six tiles (in the
+   right column on a tablet, across the pane on the phone, where the column is `display: contents`). The chip is the kit's assist chip (list.css, with
+   the Material design's) as a button; under Material its hit area is 48px, as the 32px chip is only what is drawn. */
+.hright.hrooms-on {
+  grid-template-rows: auto auto 1fr;
+}
+.hrooms {
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.hrooms::-webkit-scrollbar {
+  display: none;
+}
+.hroom {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 70vw;
+  min-height: 44px;
+  padding: 0 16px 0 12px;
+  border: 0;
+  border-radius: var(--shape-chip);
+  background: var(--card2);
+  color: var(--fg);
+  font: 600 calc(14px * var(--tx)) var(--f-body);
+  cursor: pointer;
+  scroll-snap-align: start;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.hroom svg {
+  flex: none;
+}
+.hroom span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hroom:focus-visible {
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
+}
+.app[data-design='material'] .hroom::after {
+  content: '';
+  position: absolute;
+  inset: -8px 0;
+}
+/* the row scrolls, so it clips what is outside it: the hit area's 8px above and below the chip are the row's own padding, taken back by its margin */
+.app[data-design='material'] .hrooms {
+  padding-block: 8px;
+  margin-block: -8px;
+}
+/* on the phone the row runs to the screen's edges, as the scenes row does */
+.app.tabsv.cp .hrooms {
+  margin: 0 -16px;
+  padding: 0 16px 2px;
+}
+.app.tabsv.cp[data-design='material'] .hrooms {
+  margin: -8px -16px;
+  padding: 8px 16px;
+}

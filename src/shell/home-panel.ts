@@ -239,6 +239,8 @@ export class HomePanel extends LitElement {
       sheetOpen: id => this.sheets.isOpen(id),
       sheetDetail: id => this.sheets.detail(id),
       room: this.room,
+      rooms: this.rooms,
+      sidebarRooms: this.sidebarRooms,
     };
   }
 
@@ -285,6 +287,11 @@ export class HomePanel extends LitElement {
   /** The tab shown: the one chosen, or Home when this house hides it or the settings name no tab. */
   get tab(): FeatureKey {
     return this.visible;
+  }
+
+  /** Whether the Liquid Glass sidebar is drawn, and lists the rooms: not Material's rail, and a tablet wide enough. Elsewhere Home's Rooms row and More list them. */
+  private get sidebarRooms(): boolean {
+    return this.appearance.value.design !== 'material' && this.sidebarWide.matches;
   }
 
   /** The section shown, or null while a room view is. */
@@ -385,7 +392,18 @@ export class HomePanel extends LitElement {
   private readonly onTabSelect = (e: TabSelectEvent): void => {
     this.sheets.close(MORE_SHEET);
     this.setTab('room' in e.detail ? roomTab(e.detail.room) : e.detail.key);
+    // the button that asked was in the pane that is now hidden, or in the sheet that closed: focus goes to the view that shows (WCAG 2.4.3)
+    void this.focusShownView();
   };
+
+  // Focus goes to the room's heading, or to the pane of the section shown (a tabpanel with tabindex -1), once the frame and the room pane have drawn.
+  private async focusShownView(): Promise<void> {
+    await this.updateComplete;
+    if (this.room === null) return this.renderRoot.querySelector<HTMLElement>(`#pane-${this.visible}`)?.focus();
+    const pane = this.renderRoot.querySelector('hp-room-pane');
+    await pane?.updateComplete;
+    pane?.focusHeading();
+  }
 
   // an element asked upward for a sheet, or for the toast; the event stops here, it is the panel's business
   private readonly onSheetRequest = (e: SheetRequestEvent): void => {
@@ -563,6 +581,8 @@ export class HomePanel extends LitElement {
       <hp-more-sheet
         .features=${UNDER_MORE}
         .shown=${this.shown}
+        .rooms=${this.rooms}
+        .roomColor=${roomColor(FEATURES)}
         .summaries=${this.moreSummaries}
         .current=${this.tab}
         .open=${this.sheets.isOpen(MORE_SHEET)}
@@ -615,6 +635,7 @@ export class HomePanel extends LitElement {
               html`<section
                 class="pane pane-${f.key} ${this.sheetBehind(f) ? 'behind' : ''}"
                 id="pane-${f.key}"
+                tabindex="-1"
                 role=${ifDefined(this.sheetBehind(f) ? undefined : 'tabpanel')}
                 aria-labelledby=${ifDefined(this.sheetBehind(f) ? undefined : `tab-${f.key}`)}
                 ?hidden=${this.section !== f.key && !this.sheetBehind(f)}
@@ -660,7 +681,7 @@ export class HomePanel extends LitElement {
   private renderRail(): TemplateResult {
     const {t} = this.store;
     const tab = this.section;
-    const glass = this.appearance.value.design !== 'material' && this.sidebarWide.matches;
+    const glass = this.sidebarRooms;
     const open = this.sidebar === 'open';
     // a collapsed strip has no labels to read, so each icon names itself on hover
     const strip = glass && !open;

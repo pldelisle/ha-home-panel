@@ -118,6 +118,8 @@ export const en = {
   'nav.sections': 'Sections',
   'nav.categories': 'Categories',
   'nav.rooms': 'Rooms',
+  // a room view on the phone: the button that returns to Home (src/shell/room-pane.ts)
+  'room.back': 'Home',
   'nav.sidebarShow': 'Show sidebar',
   'nav.sidebarHide': 'Hide sidebar',
   // the phone's More sheet (src/shell/more-sheet.ts): its title, the line under it and its Close button

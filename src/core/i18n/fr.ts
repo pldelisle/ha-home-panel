@@ -111,6 +111,7 @@ export const fr: Record<MessageKey, string> = {
   'nav.sections': 'Sections',
   'nav.categories': 'Catégories',
   'nav.rooms': 'Pièces',
+  'room.back': 'Accueil',
   'nav.sidebarShow': 'Afficher la barre latérale',
   'nav.sidebarHide': 'Masquer la barre latérale',
   'more.title': 'Plus',

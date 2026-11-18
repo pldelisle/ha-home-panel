@@ -1,3 +1,14 @@
 :host {
   display: contents;
 }
+/* The Rooms under the sections: a heading, then the kit's rows (list.css) as buttons, which list.css styles. */
+.roomshead {
+  margin: 20px 0 10px;
+  color: var(--fg2);
+  font: 600 calc(15px * var(--tx)) var(--f-body);
+  letter-spacing: 0.02em;
+}
+:host([design='material']) .roomshead {
+  font: var(--type-title-small);
+  letter-spacing: var(--track-title-small);
+}
