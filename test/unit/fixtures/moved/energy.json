@@ -148,6 +148,10 @@
       "was": "Reste de la maison"
     },
     {
+      "key": "energy.flow.overMeter",
+      "written": "Les appareils déclarent plus que le compteur"
+    },
+    {
       "key": "energy.importing",
       "was": "Consomme"
     },
@@ -523,6 +527,10 @@
         "days": 30
       },
       "written": "30 derniers jours. Le reste de la maison comprend tout ce qui n'a pas son propre capteur de puissance, y compris la thermopompe."
+    },
+    {
+      "key": "energy.donut.overMeter",
+      "written": "Les appareils déclarent plus que le compteur aujourd’hui."
     },
     {
       "key": "energy.donut.total"

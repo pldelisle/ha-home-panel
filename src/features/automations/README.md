@@ -6,7 +6,7 @@ What the Automations tab reads and computes ([spec 25](../../../docs/specs/25-au
 
 ```
 src/providers/
-  automations.ts           automationsOf(states, names); upcomingRuns(configs, automations, now, sun, fmt); sunNext(states); minutesOfDay(t, fmt); asList; triggerKind
+  automations.ts           automationsOf(states, names); upcomingRuns(configs, automations, now, sun, fmt); minutesOfDay(t, fmt); asList; triggerKind
 src/features/automations/
   README.md
   traces.ts                isNoise(summary, config), noiseOf(configs), picks(list, selection, noise), fingerprint(automations), todayRuns(list, midnight, noise), elapsedText(startMs, now, t)

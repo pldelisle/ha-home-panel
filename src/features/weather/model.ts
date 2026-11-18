@@ -39,6 +39,8 @@ export interface WeatherModelDeps {
   t: Translate;
   latitude: number;
   longitude: number;
+  /** Today's sunrise and sunset as `sunToday` says them, the pair every tab shows; without it the card says the sensor's next event. */
+  sun?: {rise: number | null; set: number | null};
   /** The house picture the config names, one for the light theme and one for the dark; none by default. */
   house?: {day: string | null; night: string | null} | null;
 }
@@ -579,6 +581,12 @@ function sunView(inputs: WeatherInputs, deps: WeatherModelDeps, days: Days, {t, 
   };
 }
 
+/** The phone card's sun time: today's sunset while the sun is up, else today's sunrise (the pair `sunToday` says); the sensor's next event without it. */
+function cardSunTime(inputs: WeatherInputs, sun: WeatherModelDeps['sun'], fmt: Pick<Formatters, 'time'>): string {
+  const at = sun ? (inputs.sun.up ? sun.set : sun.rise) : (inputs.sun.next?.at ?? null);
+  return at === null ? DASH : fmt.time(at);
+}
+
 // ---------- the model ----------
 
 /** The current condition: the source's own phrase has its message, else the word is Home Assistant's (or capitalised as it came). */
@@ -677,7 +685,7 @@ export function weatherModel(
     card: {
       house: deps.house?.day ? {day: deps.house.day, night: deps.house.night ?? deps.house.day} : null,
       sunLabel: inputs.sun.up ? t('weather.sunset') : t('weather.sunrise'),
-      sunTime: inputs.sun.next ? fmt.time(inputs.sun.next.at) : DASH,
+      sunTime: cardSunTime(inputs, deps.sun, fmt),
       ...hero,
       condition,
       range: rangeLine(inputs, null, true, say),

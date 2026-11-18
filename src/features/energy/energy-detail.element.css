@@ -2,7 +2,7 @@
  * <hp-energy-detail>'s own rules: the column of its blocks, the Sankey block, the donut and its table, the totals' grid. Moved from
  * the legacy `.donut`, `.totals` and `.sankey` rules (base.css, tabs.css), which the detail's move (#240) deleted. The Sankey has no tabs of its own since
  * the tab's one range (#384). The inner cards, the tiles, the tabs' look and the legend are the kit's.
- * The line it says when the history did not load (`.histnote`) was the Energy card's before the phone showed the detail inline.
+ * The small line (`.histnote`): what it says when the history did not load, which was the Energy card's before the phone showed the detail inline.
  */
 :host {
   display: block;

@@ -2,12 +2,13 @@
 // the condition and the high and low, and the house picture the config names, one for the light theme and one for the dark.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over `weatherCardModel`; its host lays out nothing, so its three parts are
 // items of the Home pane's card, as the legacy `renderHome`'s `#hwx-wx` (deleted in #268) placed them.
-// Must not: read an entity itself (`readWeather` and `readSunTimes` do), word anything (the model does), or open a sheet.
+// Must not: read an entity itself (`readWeather` and `sunToday` do), word anything (the model does), or open a sheet.
 import {LitElement, html, nothing, unsafeCSS} from 'lit';
 import {weatherIds} from './ids.ts';
-import {readSunTimes, readWeather} from './inputs.ts';
+import {readWeather} from './inputs.ts';
 import {weatherCardModel, type WeatherCardView} from './model.ts';
 import cardOwn from './weather-card.element.css?inline';
+import {sunToday} from '../../providers/sun.ts';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {StoreController} from '../../ui/controllers/store-controller.ts';
 import {common} from '../../ui/styles/index.ts';
@@ -29,7 +30,15 @@ export class WeatherCard extends LitElement {
   protected override willUpdate(): void {
     const {hass, config, t, fmt} = this.storeController.store;
     this.view = hass
-      ? weatherCardModel(readWeather(hass.states, config), readSunTimes(hass.states, config), {t, fmt})
+      ? weatherCardModel(
+          readWeather(hass.states, config),
+          sunToday(hass.states, config, {
+            latitude: hass.config.latitude,
+            longitude: hass.config.longitude,
+            day: fmt.isoDay(Date.now()),
+          }),
+          {t, fmt},
+        )
       : undefined;
   }
 

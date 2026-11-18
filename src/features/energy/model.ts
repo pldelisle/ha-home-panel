@@ -14,7 +14,16 @@ import type {RangeTab} from '../../ui/range-tabs.ts';
 import {emptyChartText} from '../../ui/chart-notice.ts';
 import {reading, type Reading} from '../../ui/reading.ts';
 import {RANGES} from '../../ui/ranges.ts';
-import {ENERGY_RANGES, mainRows, middleOf, type EnergyRange, type MainRows} from './charts.ts';
+import {
+  COLUMN,
+  ENERGY_RANGES,
+  hoursOfToday,
+  mainRows,
+  middleOf,
+  stackOf,
+  type EnergyRange,
+  type MainRows,
+} from './charts.ts';
 import {flowLayout, LIVE_KW, type FlowGeometry} from './flow-layout.ts';
 import {
   GROUPS,
@@ -151,7 +160,14 @@ export interface EnergyDetailView {
   ranges: RangeTab<EnergyRange>[];
   main: {title: string; caption: string; legend: LegendItem[]; notice: Notice};
   sankey: {title: string; note: string; body: SankeyBody};
-  donut: {title: string; hint: string; parts: (LegendItem & {kwh: number})[]; rows: DonutRow[]; notice: Notice};
+  donut: {
+    title: string;
+    hint: string;
+    note: string;
+    parts: (LegendItem & {kwh: number})[];
+    rows: DonutRow[];
+    notice: Notice;
+  };
   totals: {title: string; hint: string; tiles: EnergyTile[]; notice: Notice};
 }
 
@@ -254,10 +270,16 @@ function mainBlock(history: EnergyHistoryData | null, {now, t, fmt, range}: Deta
     };
   }
   const {rows} = main;
-  const busiest = rows.reduce((best, row) => (row[5] > best[5] ? row : best), rows[0]);
+  // the bars stack each device's own column, so the tallest bar is the largest stack, not the grid's total (which the devices can outrun)
+  const busiest = rows.reduce((best, row) => (stackOf(row) > stackOf(best) ? row : best), rows[0]);
   const day = main.range === 'week' ? `${fmt.weekday(busiest[0], 'short')} ` : '';
   const when = `${day}${fmt.time(busiest[0])}`;
-  return {title, caption: t('energy.detail.busiest', {kwh: fmt.fixed(busiest[5], 1), when}), legend, notice: null};
+  return {
+    title,
+    caption: t('energy.detail.busiest', {kwh: fmt.fixed(stackOf(busiest), 1), when}),
+    legend,
+    notice: null,
+  };
 }
 
 /** What a period of the Sankey draws: the grid's total, the four uses in the order of `GROUPS`, the rooms' shares, the figure's format and the note. */
@@ -269,10 +291,46 @@ interface SankeyPeriod {
   note: string;
 }
 
-/** The rows of the history's last `days` days; for a single day, today's row, or none when nothing has been read since midnight. */
-function daysOf(history: EnergyHistoryData, days: number, {now, fmt}: Pick<DetailDeps, 'now' | 'fmt'>): DailyRow[] {
+/**
+ * Today as the main chart draws it: the sum of today's hours (`hoursOfToday`), as one day's row; null when the chart has no hour today, and the
+ * day's own row (a mean times the hours so far) or the meter's today answers as before. The hours are the finest reading of the same recorder
+ * and the figure the bars show, so Where it went, the Sankey and the Totals' Today tile take them first and cannot contradict the chart.
+ */
+function todayFromHours(history: EnergyHistoryData, {now, fmt}: Pick<DetailDeps, 'now' | 'fmt'>): DailyRow | null {
+  const rows = hoursOfToday(history, {fmt, now});
+  if (!rows.length) return null;
+  const [heat, wh, ev, rest] = [COLUMN.heat, COLUMN.wh, COLUMN.ev, COLUMN.rest].map(column =>
+    sum(rows.map(row => row[column])),
+  );
+  // the rooms' own heating is only in the day's row, a mean times the hours so far: scaled to the hours' heating, so the rooms add up to the
+  // heating they are drawn beside (the Sankey scales its rooms by the larger of the two)
+  const day = fmt.isoDay(now);
+  const own = history.daily.find(row => row.day === day)?.rooms ?? [];
+  const ownSum = sum(own);
+  const rooms = ownSum > 0 ? own.map(kwh => (kwh * heat) / ownSum) : own;
+  return {day, heat, wh, ev, rest, total: heat + wh + ev + rest, rooms};
+}
+
+/** Devices summing over the meter's today by more than this many watt-hours are over it (the figures' own rounding, a tenth of a kWh). */
+const METER_TOLERANCE_WH = 100;
+
+/**
+ * Whether today's devices (the hours the chart draws) sum to more than the meter read today, so the uses cards, whose figures are the devices',
+ * and the Totals, whose are the meter's, are known to differ. A meter that read 0 today is under the devices too: the note explains the 0.0.
+ */
+function overMeterToday(history: EnergyHistoryData, deps: Pick<DetailDeps, 'now' | 'fmt'>): boolean {
+  const hours = todayFromHours(history, deps);
+  const meter = history.totals.today;
+  return !!hours && Math.round((hours.total - meter) * 1000) > METER_TOLERANCE_WH;
+}
+
+/** The rows of the history's last `days` days; for a single day, today as the chart draws it, else the day's own row when it has one, else none. */
+function daysOf(history: EnergyHistoryData, days: number, deps: Pick<DetailDeps, 'now' | 'fmt'>): DailyRow[] {
   const last = history.daily.slice(-days);
-  return days === 1 && last[0]?.day !== fmt.isoDay(now) ? [] : last;
+  if (days !== 1) return last;
+  const hours = todayFromHours(history, deps);
+  if (hours) return [hours];
+  return last[0]?.day === deps.fmt.isoDay(deps.now) ? last : [];
 }
 
 /** The last `days` days' totals from the history; null when today is the period and has no row (the caller says "loading" before the history is in). */
@@ -344,10 +402,11 @@ function donutBlock(history: EnergyHistoryData | null, deps: DetailDeps): Energy
   const total = sum(parts.map(part => part.kwh));
   // a loaded history whose period holds nothing draws no donut of 0 kWh: the title and the one sentence
   if (history && total <= 0)
-    return {title: t('energy.donut.title'), hint: '', parts: [], rows: [], notice: emptyChartText(t)};
+    return {title: t('energy.donut.title'), hint: '', note: '', parts: [], rows: [], notice: emptyChartText(t)};
   return {
     title: t('energy.donut.title'),
     hint: t('energy.donut.hint', {days}),
+    note: history && days === 1 && overMeterToday(history, deps) ? t('energy.donut.overMeter') : '',
     notice: null,
     parts,
     rows: parts.map(({key, name, kwh}) => ({
@@ -368,6 +427,7 @@ function totalsBlock(
   const title = t('energy.totals.title');
   const hint = t('energy.totals.hint');
   if (!history) return {title, hint, tiles: [], notice: null};
+  // a figure carries the value of the source its label names: these are the Hilo meter's (the uses cards say the devices' hours)
   const {totals, g30} = history;
   // a meter that read nothing and no day: no tile of 0 kWh and dashes, the one sentence
   if (!history.daily.length && !totals.today && totals.yesterday === null && !totals.d30 && !totals.month)

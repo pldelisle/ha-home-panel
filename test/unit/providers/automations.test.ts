@@ -11,10 +11,10 @@ import {
   asList,
   automationsOf,
   minutesOfDay,
-  sunNext,
   upcomingRuns,
   type Automation,
 } from '../../../src/providers/automations.ts';
+import {sunNext} from '../../../src/providers/sun.ts';
 import {REFERENCE_MS} from '../../houses/clock.mjs';
 import * as full from '../../houses/full.mjs';
 import {fakeHass} from '../fake-hass.ts';

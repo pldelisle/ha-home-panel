@@ -29,15 +29,6 @@ function readSun(states: HassEntities, config: ResolvedConfig): Pick<WeatherInpu
   };
 }
 
-/** The next sunset and sunrise in milliseconds, null when a sensor reads nothing: the Home pane's weather card says both (#268). */
-export function readSunTimes(states: HassEntities, config: ResolvedConfig): {set: number | null; rise: number | null} {
-  const at = (id: string | null) => {
-    const ms = Date.parse(textOf(states, id) ?? '');
-    return Number.isNaN(ms) ? null : ms;
-  };
-  return {set: at(config.entities.setting), rise: at(config.entities.rising)};
-}
-
 /**
  * The inputs of the house at these states. A source that is present applies its fields over what came before; a field it
  * does not know stays as it was, and a field it does know replaces the earlier source's whole value (a shallow merge).

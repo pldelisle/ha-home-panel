@@ -588,6 +588,7 @@ export const en = {
   'energy.flow.heat': 'Room heating',
   'energy.flow.ev': 'EV charging',
   'energy.flow.rest': 'Rest of home',
+  'energy.flow.overMeter': 'Devices report more than the meter',
   'energy.importing': 'Importing',
   'energy.idle': 'Idle',
   'energy.heating': 'Heating',
@@ -674,6 +675,7 @@ export const en = {
   'energy.donut.title': 'Where it went',
   'energy.donut.hint':
     '{days, plural, =1 {Today so far} other {Last # days}}. Rest of home is everything without its own power sensor, including the heat pump.',
+  'energy.donut.overMeter': 'Devices report more than the meter today.',
   'energy.donut.total': 'kWh',
   'energy.donut.percent': '{n}%',
   'energy.totals.title': 'Totals',
