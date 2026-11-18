@@ -1,6 +1,6 @@
 // The header's elements (#269): the greeting turns at 5:00 by the clock, the weather chip slims beside a live activity and widens when it
 // ends, and the clock's small line says when the history last loaded.
-import {test, expect, tabletOnly, phoneOnly, isPhone} from './fixtures';
+import {test, expect, tabletOnly, phoneOnly} from './fixtures';
 import {FULL_CFG} from './houses';
 import {pill, stopCharging} from './live';
 
@@ -29,18 +29,32 @@ test.describe('in the afternoon', () => {
     await expect(condition).toBeVisible();
   });
 
-  test('the clock says when the history last loaded', async ({house}) => {
-    await expect(house.root().locator('#clock small')).toHaveText('Live · history 2:00 pm');
+  test('the clock has no line while the history is fresh, and says when it was updated once it is old', async ({
+    house,
+  }) => {
+    await house.root().locator('#gear').click(); // the settings' foot says the history has loaded
+    await expect(house.root().locator('#setpop .ccv')).toContainText('statistics refreshed');
+    await house.root().locator('#gear').click();
+    const clock = house.root().locator('#clock');
+    await expect(clock).toBeVisible();
+    await expect(clock.locator('small')).toHaveCount(0);
+    // the panels' own readers refresh the history by themselves, so the test hands the clock an old reply: half an hour before 2:00 pm
+    await clock.evaluate((el: HTMLElement & {at: number}) => (el.at = Date.now() - 30 * 60_000));
+    await expect(clock.locator('small')).toHaveText('Updated 1:30 pm');
   });
 });
 
 test.describe('the greeting belongs to Home', () => {
   test.use({houseOpts: {cfg: FULL_CFG, time: '2026-11-07T14:00:00-05:00'}});
 
-  test('Home keeps the greeting, the date and the people; Lights drops them for the tab title', async ({house}) => {
+  test('Home keeps the greeting with its date and temperatures as its only title; Lights drops them for the tab title', async ({
+    house,
+  }) => {
     const hello = house.root().locator('#hello');
     await expect(hello.locator('h1')).toBeVisible();
-    if (!isPhone(house)) await expect(hello.locator('.status').first()).toBeVisible(); // a phone's Home pane shows them
+    await expect(hello.locator('div')).toContainText(/Saturday, November 7 · .*inside/);
+    await expect(house.root().locator('#pane-home hp-pane-header')).toHaveCount(0); // no second title under the greeting
+    await expect(house.root().locator('hp-who-chips')).toHaveCount(1); // Who is home is the card, not the greeting too
     await house.tab('lights');
     await expect(hello).toBeHidden();
     await expect(house.root().locator('#gear')).toBeVisible();
@@ -65,6 +79,19 @@ test.describe('the greeting belongs to Home', () => {
     const title = await house.root().locator('#pane-lights hp-pane-header h2').boundingBox();
     expect(clock!.y + clock!.height).toBeLessThanOrEqual(title!.y);
     await expect(house.root().locator('#gear')).toBeVisible();
+  });
+
+  test('on a tablet the clock, the weather, the live pill and the gear sit in the same place on Home and on Lights', async ({
+    house,
+  }) => {
+    tabletOnly();
+    const parts = ['#clock', 'hp-weather-chip .wx', '#chips .attchip', '#gear'];
+    const boxes = () => Promise.all(parts.map(part => house.root().locator(part).boundingBox()));
+    await expect(pill(house)).toBeVisible(); // the car charges in this house
+    const onHome = await boxes();
+    await house.tab('lights');
+    await expect(pill(house)).toBeVisible();
+    expect(await boxes()).toEqual(onHome);
   });
 
   test('on a phone the menu button and Settings share one row, and the title starts near the top', async ({house}) => {

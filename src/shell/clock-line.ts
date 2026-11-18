@@ -1,9 +1,10 @@
 // <hp-clock-line>: the header's clock, the time with its am or pm smaller beside it (French says the 24-hour time alone), and the small line
-// under it, "Live · history 2:00 pm", the time of the statistics cache's last reply (`at`, which the header hands it), or "Live · loading history" before the first.
+// under it, empty while the history is fresh and "Updated 2:00 pm" (the time of the statistics cache's last reply, `at`, which the header hands it) once `isHistoryStale` says it is old (#426).
 // Pattern: a humble object (Meszaros, xUnit Test Patterns) on a one-second tick, drawn in light DOM (ADR 0033) so the legacy `.clock` rules
 // still size it. It replaced the legacy `renderHeader`'s clock (#269).
 // Must not: read an entity or the cache, or word anything but through the catalog.
 import {LitElement, html, nothing} from 'lit';
+import {isHistoryStale} from './clock-note.ts';
 import {StoreController} from '../ui/controllers/store-controller.ts';
 import {TickController} from '../ui/controllers/tick.ts';
 
@@ -32,8 +33,11 @@ export class ClockLine extends LitElement {
     // "2:00 pm" is the time and its day period, the second drawn smaller; French has none
     const [time, period = ''] = isFrench ? [fmt.time24(now)] : fmt.time(now).split(' ');
     const {at} = this;
-    return html`${time}<span style="font-size:.45em;margin-left:4px">${period}</span
-      ><small>${at === null ? t('home.clock.loading') : t('home.clock.history', {time: fmt.time(at)})}</small>`;
+    return html`${time}<span style="font-size:.45em;margin-left:4px">${period}</span>${
+        at !== null && isHistoryStale(at, now)
+          ? html`<small>${t('home.clock.updated', {time: fmt.time(at)})}</small>`
+          : nothing
+      }`;
   }
 }
 

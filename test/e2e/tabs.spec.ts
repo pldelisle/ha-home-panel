@@ -44,10 +44,9 @@ const rememberedCar = test.extend({
   },
 });
 
-// the title each pane opens with, in the order of the rail: `<hp-pane-header>`'s heading, from the catalog (the Car's is the car's name, and the catalog's "Car" where it has none)
+// the title each pane but Home's opens with (Home's is the header's greeting, #426), in the order of the rail: `<hp-pane-header>`'s heading, from the catalog (the Car's is the car's name, and the catalog's "Car" where it has none)
 const TITLES = {
   en: {
-    home: 'Home',
     lights: 'Lights',
     climate: 'Climate',
     weather: 'Weather',
@@ -59,7 +58,6 @@ const TITLES = {
     auto: 'Automations',
   },
   fr: {
-    home: 'Maison',
     lights: 'Lumières',
     climate: 'Climat',
     weather: 'Météo',
@@ -75,6 +73,8 @@ const HOME_CLIMATE = {en: 'Home climate', fr: 'Climat de la maison'} as const;
 // every shown tab's pane opens with one heading, in the header's shadow root (or slotted), whatever the language
 const headings = (lang: keyof typeof TITLES) => async (house: House) => {
   await eachShownTab(house, async (tab, pane) => {
+    // Home has no header of its own: the greeting is its one title
+    if (tab === 'home') return await expect(pane.locator('hp-pane-header')).toHaveCount(0);
     // a tablet's Energy pane draws no header of its own: the one in the pane is the detail's, titled Home energy
     if (tab === 'energy' && !isPhone(house))
       return await expect(pane.locator('hp-energy-detail hp-pane-header h2')).toHaveCount(1);
@@ -221,6 +221,7 @@ test.describe('full house', () => {
         tab === 'car'
           ? 2
           : 1;
+      if (tab === 'home') return; // Home's one title is the greeting
       await expect(pane.locator('hp-pane-header > [slot="sub"]'), tab).toHaveCount(headers);
     });
   });

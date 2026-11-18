@@ -510,6 +510,7 @@ export class HomePanel extends LitElement {
         .liveKey=${this.liveKey}
         .historyAt=${this.statistics.lastLoadedAt}
         .tab=${this.tab}
+        .attention=${this.attention}
       ></hp-header>
       <div class="tabview" id="tabview">
         ${this.renderRail()}

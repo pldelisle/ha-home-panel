@@ -1,16 +1,11 @@
 /*
  * The Home pane's own rules (ADR 0032): <hp-home-pane> draws in light DOM, so these join the shell's root after the legacy sheet.
- * The host lays out nothing, so the header and the four parts are items of the `.pane-home` grid (tabs.css) as the legacy hosts were;
+ * The host lays out nothing, so the four parts are items of the `.pane-home` grid (tabs.css) as the legacy hosts were;
  * then the left column (the weather card, Who's home, the smart stack), the right column of tiles and the Security card, the configuration card and the scenes row.
  * Moved from tabs.css and phone.css by the Home move (#268); the tile's and the weather card's own rules are in their `*.element.css`.
  */
 hp-home-pane {
   display: contents;
-}
-hp-home-pane > hp-pane-header {
-  grid-column: 1/-1;
-  margin-bottom: 2px;
-  align-self: start;
 }
 /* the left column: one card per subject (the weather, Who's home, the stack), each its own box; on a phone the column's box goes
    and its cards are items of the pane, as the tiles' column is */
@@ -142,10 +137,7 @@ hp-home-pane > hp-pane-header {
 .app.tabsv.cp.txl .htiles {
   grid-template-columns: 1fr;
 }
-/* the scenes come first, one row that scrolls sideways; the pane has no title of its own, the header line says the date and temperatures */
-.app.tabsv.cp hp-home-pane > hp-pane-header {
-  display: none;
-}
+/* the scenes come first, one row that scrolls sideways; the pane has no title of its own, the header's greeting is Home's (#426) */
 /* the configuration card stays the first thing on the Home tab: -2 only because the scenes row below is -1 (change both together) */
 .app.tabsv.cp .cfgerrh {
   order: -2;

@@ -88,18 +88,14 @@
       "translated": "2 éléments à vérifier"
     },
     {
-      "key": "home.clock.history",
+      "key": "home.clock.updated",
       "values": {
         "time": "2:00 pm"
       },
       "fr": {
         "time": "14 h"
       },
-      "was": "En direct · historique 14 h"
-    },
-    {
-      "key": "home.clock.loading",
-      "was": "En direct · chargement de l'historique"
+      "written": "Mis à jour à 14 h"
     }
   ]
 }
