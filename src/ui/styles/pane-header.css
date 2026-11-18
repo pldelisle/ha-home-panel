@@ -39,7 +39,7 @@
 .app.gl:not([data-theme='dark']) ::slotted([slot='sub']) {
   color: var(--fg);
 }
-/* Material's type roles (ADR 0037, #462): the role each style draws in under the Material design (tokens.css holds the roles; the Apple design keeps the sizes above). */
+/* Material's type roles: see tokens.css. */
 .app[data-design='material'] .ph h2,
 .app[data-design='material'] ::slotted([slot='title']) {
   font: var(--type-headline-medium);

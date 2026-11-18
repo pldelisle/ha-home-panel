@@ -98,7 +98,7 @@ test.describe('the Material design', () => {
     // the one variable file serves every weight; every font file the page received is the panel's, with a 200
     await expect
       .poll(() => house.fonts.map(f => f.url.slice(f.url.lastIndexOf('/') + 1)), 'font files received')
-      .toContain('roboto-flex-latin-wght-normal.woff2');
+      .toContain('roboto-flex-latin-opsz-normal.woff2');
     for (const f of house.fonts) {
       expect(f.url).toMatch(FONT_URL);
       expect(f.status, f.url).toBe(200);

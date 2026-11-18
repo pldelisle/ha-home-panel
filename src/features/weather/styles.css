@@ -363,3 +363,33 @@
     background: var(--card2);
   }
 }
+/* Material's type roles: see tokens.css. */
+:host([design='material']) .walert b {
+  font: var(--type-label-large);
+  letter-spacing: var(--track-label-large);
+}
+:host([design='material']) .hstrip {
+  font: var(--type-body-small);
+  letter-spacing: var(--track-body-small);
+}
+:host([design='material']) .hstrip b {
+  font: var(--type-title-medium);
+  letter-spacing: var(--track-title-medium);
+}
+:host([design='material']) .hstrip small {
+  font: var(--type-label-medium);
+  letter-spacing: var(--track-label-medium);
+}
+:host([design='material']) .drow,
+:host([design='material']) .mrow {
+  font: var(--type-body-medium);
+  letter-spacing: var(--track-body-medium);
+}
+:host([design='material']) .dp {
+  font: var(--type-label-medium);
+  letter-spacing: var(--track-label-medium);
+}
+:host([design='material']) .tick {
+  font: var(--type-label-small);
+  letter-spacing: var(--track-label-small);
+}

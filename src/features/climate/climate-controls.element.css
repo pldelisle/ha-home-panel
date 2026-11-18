@@ -117,7 +117,7 @@ hp-seg::part(label) {
   color: var(--fg2);
   margin: 8px 0 0;
 }
-/* Material's type roles (ADR 0037, #462): the role each style draws in under the Material design (tokens.css holds the roles; the Apple design keeps the sizes above). */
+/* Material's type roles: see tokens.css. */
 :host([design='material']) .chint {
   font: var(--type-body-small);
   letter-spacing: var(--track-body-small);

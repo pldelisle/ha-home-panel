@@ -54,3 +54,26 @@
   max-width: 220px;
   margin: 2px auto;
 }
+/* Material's type roles: see tokens.css. */
+:host([design='material']) .hbig .num {
+  font: var(--type-display-large);
+  letter-spacing: var(--track-display-large);
+  font-variant-numeric: tabular-nums;
+}
+:host([compact][design='material']) .hbig .num {
+  font: var(--type-display-medium);
+  letter-spacing: var(--track-display-medium);
+  font-variant-numeric: tabular-nums;
+}
+:host([design='material']) .hbig .hc {
+  font: var(--type-title-medium);
+  letter-spacing: var(--track-title-medium);
+}
+:host([design='material']) .hbig .muted {
+  font: var(--type-body-small);
+  letter-spacing: var(--track-body-small);
+}
+:host([design='material']) .sunline {
+  font: var(--type-body-small);
+  letter-spacing: var(--track-body-small);
+}

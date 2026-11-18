@@ -8,8 +8,8 @@
  * The faces: the family name the stylesheet asks for, the Fontsource package (and file prefix) it comes from, and the
  * weights the stylesheet uses. Automations labels ask for 800, which draws with the 700 file. A `variable` face comes from the
  * `@fontsource-variable` scope instead, one file per subset that holds the whole weight axis, so its `weights` are the
- * range `[min, max]` of that axis, declared once (`font-weight: 100 1000`). Roboto Flex is the `wght` file only: the browser draws it at
- * its default optical size, which is what Fontsource's smallest file keeps (34 kB, against 250 kB with every axis).
+ * range `[min, max]` of that axis, declared once (`font-weight: 100 1000`). Roboto Flex is Fontsource's `opsz` file: the weight and
+ * the optical-size axes only (84 kB latin, 59 kB latin-ext, against 326 kB with every axis); the stylesheet leaves `font-optical-sizing` on auto.
  */
 export const FONT_FACES: ReadonlyArray<{family: string; pkg: string; weights: number[]; variable?: true}> = [
   {family: 'Manrope', pkg: 'manrope', weights: [400, 500, 600, 700]},
@@ -38,8 +38,8 @@ export const FONT_SUBSETS: Array<[string, string]> = [
   ],
 ];
 
-/** Fontsource's name for one file, kept as it is in dist/fonts/: `manrope-latin-400-normal.woff2`, `roboto-flex-latin-wght-normal.woff2` */
-const fontFile = (pkg: string, subset: string, weight: number | 'wght') => `${pkg}-${subset}-${weight}-normal.woff2`;
+/** Fontsource's name for one file, kept as it is in dist/fonts/: `manrope-latin-400-normal.woff2`, `roboto-flex-latin-opsz-normal.woff2` */
+const fontFile = (pkg: string, subset: string, weight: number | 'opsz') => `${pkg}-${subset}-${weight}-normal.woff2`;
 
 /**
  * Every file the panel ships, with the face it belongs to, in declaration order.
@@ -57,7 +57,7 @@ const FONT_ENTRIES: Array<{
   const scope = variable ? '@fontsource-variable' : '@fontsource';
   return FONT_SUBSETS.flatMap(([subset, range]) =>
     variable
-      ? [{family, pkg, scope, subset, range, weight: weights.join(' '), file: fontFile(pkg, subset, 'wght')}]
+      ? [{family, pkg, scope, subset, range, weight: weights.join(' '), file: fontFile(pkg, subset, 'opsz')}]
       : weights.map(weight => ({
           family,
           pkg,

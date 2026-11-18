@@ -131,8 +131,8 @@
   font-weight: 600;
   color: var(--fg);
 }
-/* Material's type roles (ADR 0037, #462): the role each style draws in under the Material design (tokens.css holds the roles; the Apple design keeps the sizes above). */
-.app[data-design='material'] .lbl {
+/* Material's type roles: see tokens.css. */
+.app[data-design='material'] :is(.lbl, .card .top .lbl, .lrow .lbl) {
   font: var(--type-title-small);
   letter-spacing: var(--track-title-small);
 }

@@ -77,7 +77,7 @@
 :host([glass]) .rows {
   background: var(--g-tile);
 }
-/* Material's type roles (ADR 0037, #462): the role each style draws in under the Material design (tokens.css holds the roles; the Apple design keeps the sizes above). */
+/* Material's type roles: see tokens.css. */
 :host([design='material']) .tpms .tp .k {
   font: var(--type-label-medium);
   letter-spacing: var(--track-label-medium);

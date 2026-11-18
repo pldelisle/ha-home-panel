@@ -314,3 +314,34 @@ button.cct:focus-visible {
 .cct:active {
   transform: scale(0.96);
 }
+/* Material's type roles: see tokens.css. */
+.app[data-design='material'] .cct b {
+  font: var(--type-title-medium);
+  letter-spacing: var(--track-title-medium);
+}
+.app[data-design='material'] .cct small {
+  font: var(--type-body-small);
+  letter-spacing: var(--track-body-small);
+}
+.app[data-design='material'] .cct .ccl {
+  font: var(--type-label-large);
+  letter-spacing: var(--track-label-large);
+}
+.app[data-design='material'] .ccn,
+.app[data-design='material'] .ccv,
+.app[data-design='material'] .gtrow {
+  font: var(--type-body-small);
+  letter-spacing: var(--track-body-small);
+}
+.app[data-design='material'] .cch h2 {
+  font: var(--type-headline-small);
+  letter-spacing: var(--track-headline-small);
+}
+.app[data-design='material'] .swn {
+  font: var(--type-label-medium);
+  letter-spacing: var(--track-label-medium);
+}
+.app[data-design='material'] .gcrow {
+  font: var(--type-label-large);
+  letter-spacing: var(--track-label-large);
+}

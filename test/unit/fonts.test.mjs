@@ -40,8 +40,8 @@ test("the files are Fontsource's: Manrope 400 to 700, Roboto Flex's variable wei
     'manrope-latin-ext-500-normal.woff2',
     'manrope-latin-ext-600-normal.woff2',
     'manrope-latin-ext-700-normal.woff2',
-    'roboto-flex-latin-ext-wght-normal.woff2',
-    'roboto-flex-latin-wght-normal.woff2',
+    'roboto-flex-latin-ext-opsz-normal.woff2',
+    'roboto-flex-latin-opsz-normal.woff2',
   ]);
   for (const [pkg, f] of FONT_SOURCES)
     expect(existsSync(join(dirname(require.resolve(`${pkg}/package.json`)), 'files', f)), f).toBe(true);
@@ -51,8 +51,8 @@ test('each subset has the unicode-range Fontsource declares for it, in the order
   for (const face of FONT_FACES) {
     const {pkg, weights, variable} = face;
     const ranges = JSON.parse(pkgFile(face, 'unicode.json'));
-    // the weight files (400.css …) name each weight's files; the variable package's wght.css names the one file of the whole axis
-    const sheets = variable ? ['wght'] : weights.map(String);
+    // the weight files (400.css …) name each weight's files; the variable package's opsz.css names the one file of the weight and optical-size axes
+    const sheets = variable ? ['opsz'] : weights.map(String);
     for (const [subset, range] of FONT_SUBSETS) {
       expect(range, `${pkg} ${subset}`).toBe(noSpace(ranges[subset]));
       // the sheet declares the same range on the block for this subset's file
@@ -106,13 +106,13 @@ test('the rules: one face per file, swap, each file under the base URL it is giv
     const file = url.slice(base.length);
     expect(url).toBe(base + file);
     const [, pkg, subset, w] = file.match(
-      /^(manrope|roboto-flex|jetbrains-mono)-(latin(?:-ext)?)-(\d+|wght)-normal\.woff2$/,
+      /^(manrope|roboto-flex|jetbrains-mono)-(latin(?:-ext)?)-(\d+|opsz)-normal\.woff2$/,
     );
     const face = FONT_FACES.find(f => f.pkg === pkg);
     expect(family).toBe(face.family);
     // Roboto Flex is one file for the whole weight axis, and its rule says the axis once: `font-weight:100 1000`
     expect(weight).toBe(face.variable ? '100 1000' : w);
-    if (face.variable) expect(w).toBe('wght');
+    if (face.variable) expect(w).toBe('opsz');
     expect(range).toBe(FONT_SUBSETS.find(([s]) => s === subset)[1]);
     return file;
   });
