@@ -101,6 +101,7 @@ export class SettingsPopup extends LitElement {
     const glassStop = tabStop(GLASSES.map(([value]) => ({checked: value === glass})));
     const seedStop = tabStop(SEED_IDS.map(id => ({checked: id === seed})));
     const dark = this.appearance.value?.theme === 'dark';
+    const contrast = this.appearance.value?.moreContrast ? 1 : 0;
     const phone = this.appearance.value?.compact === true;
     const themes: SegOption[] = THEMES.map(([value, key]) => ({value, label: t(key)}));
     const designs: SegOption[] = DESIGNS.map(([value, key]) => ({value, label: t(key)}));
@@ -155,7 +156,7 @@ export class SettingsPopup extends LitElement {
                 @keydown=${this.onSeedKey}
               >
                 ${SEED_IDS.map((id, index) => {
-                  const [primary, container, secondary, card] = seedSwatch(SEEDS[id], dark);
+                  const [primary, container, secondary, card] = seedSwatch(SEEDS[id], dark, contrast);
                   return html`<button
                     type="button"
                     class="sw seed"

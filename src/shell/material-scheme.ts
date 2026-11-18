@@ -107,17 +107,27 @@ export function materialScheme(seedHex: string, dark: boolean, contrast: number)
   return out;
 }
 
+type Swatch = readonly [string, string, string, string];
+
+// the popup draws seven swatches on every render and a scheme costs a few milliseconds: each is built once, by seed, theme and contrast
+const SWATCHES = new Map<string, Swatch>();
+
 /**
  * The four colours of a seed's swatch in Settings: the scheme's primary, primary container, secondary container and card (the
  * surface the panel's cards sit on: the background in light, where the card itself is white, and the card in dark). Computed from
- * `materialScheme` itself, never held, so the swatch cannot disagree with the panel.
+ * `materialScheme` itself (at the contrast the panel is at), so the swatch cannot disagree with the panel; remembered, as it is pure.
  */
-export function seedSwatch(seedHex: string, dark: boolean): [string, string, string, string] {
-  const s = materialScheme(seedHex, dark, 0);
-  return [
+export function seedSwatch(seedHex: string, dark: boolean, contrast = 0): Swatch {
+  const key = `${seedHex}/${dark}/${contrast}`;
+  const known = SWATCHES.get(key);
+  if (known) return known;
+  const s = materialScheme(seedHex, dark, contrast);
+  const swatch: Swatch = [
     s['--md-primary'],
     s['--md-primary-container'],
     s['--md-secondary-container'],
     dark ? s['--card'] : s['--bg'],
   ];
+  SWATCHES.set(key, swatch);
+  return swatch;
 }

@@ -9,6 +9,7 @@ import {createContext} from '@lit/context';
 import type {PanelApi} from '../core/api.ts';
 import type {StatisticsArchive} from '../core/archive-statistics.ts';
 import type {ForecastEntry} from '../core/ha.ts';
+import type {SeedId} from '../core/seeds.ts';
 import type {PanelSettings} from '../core/settings.ts';
 import type {StatisticsCache} from '../core/statistics-cache.ts';
 import type {PanelStore} from '../core/store.ts';
@@ -62,7 +63,7 @@ export interface Appearance {
   /** The device asks for less transparency. */
   readonly reducedTransparency: boolean;
   /** Under Material, the seed the palette is built from (an id of core/seeds.ts); under Apple, the choice waiting for the way back. */
-  readonly seed: string;
+  readonly seed: SeedId;
   /** The device asks for more contrast (`prefers-contrast: more`): Material's scheme is built at contrast level 1. */
   readonly moreContrast: boolean;
   /** Something was touched in the last minute. */

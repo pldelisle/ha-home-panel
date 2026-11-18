@@ -187,6 +187,13 @@ describe('seedSwatch', () => {
     expect(seedSwatch(SEEDS.sand, true)).toEqual(['#eac16c', '#5c4200', '#53452a', '#2e2921']);
   });
 
+  test('under More contrast the swatch is the high-contrast scheme, and a repeat is the same answer', () => {
+    expect(seedSwatch(SEEDS.house, false, 1).slice(0, 2)).toEqual(['#002d54', '#214b78']);
+    expect(seedSwatch(SEEDS.house, true, 1).slice(0, 2)).toEqual(['#e9f0ff', '#9fc5fa']);
+    expect(seedSwatch(SEEDS.house, false, 1)).toBe(seedSwatch(SEEDS.house, false, 1));
+    expect(seedSwatch(SEEDS.house, false)).not.toEqual(seedSwatch(SEEDS.house, false, 1));
+  });
+
   test('they come from the panel’s own scheme, so the swatch cannot disagree with the panel', () => {
     for (const dark of [false, true]) {
       const s = materialScheme(SEEDS.ember, dark, 0);

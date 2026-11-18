@@ -156,9 +156,7 @@ export class AppearanceController implements ReactiveController {
     if (key === this.schemeKey) return;
     this.schemeKey = key;
     const tokens =
-      a.design === 'material'
-        ? materialScheme(SEEDS[parseSeed(a.seed)], a.theme === 'dark', a.moreContrast ? 1 : 0)
-        : {};
+      a.design === 'material' ? materialScheme(SEEDS[a.seed], a.theme === 'dark', a.moreContrast ? 1 : 0) : {};
     for (const name of this.schemeNames) if (!(name in tokens)) app.style.removeProperty(name);
     for (const [name, value] of Object.entries(tokens)) app.style.setProperty(name, value);
     this.schemeNames = Object.keys(tokens);
