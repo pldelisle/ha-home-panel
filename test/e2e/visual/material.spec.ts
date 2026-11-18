@@ -4,7 +4,7 @@
 // Baselines live in test/e2e/__screenshots__/visual/material.spec.ts/ and are recorded only inside the Playwright image (Docker or
 // `container`: npm run test:visual:update); a difference is either fixed or approved by updating them in the same pull request.
 import {test, expect, fontsLoaded} from '../fixtures';
-import {AFTERNOON, FULL_CFG, VIEWPORTS} from '../houses';
+import {AFTERNOON, FULL_CFG, KEEP_ENGLISH_NAMES, VIEWPORTS} from '../houses';
 
 // every screenshot shows the bundled Manrope, never the fallback it swaps from (font-display: swap)
 test.beforeEach(({house}) => fontsLoaded(house));
@@ -63,5 +63,57 @@ test.describe('tablet, light, Meadow', () => {
   test('Home in Material with the Meadow seed', async ({house}) => {
     await house.tab('home');
     await expect(house.page).toHaveScreenshot('material-home-tablet-light-meadow-en.png');
+  });
+});
+
+// The connected button group (#465): the Air tab holds both, the range tabs (Day, Week, Month) and a room card's mode group (hp-seg) with its
+// chosen mode a primary pill. Air is a tab on a tablet and under More on a phone.
+for (const {viewport, theme} of SHOTS) {
+  test.describe(`button group, ${viewport}, ${theme}`, () => {
+    test.use({
+      viewport: VIEWPORTS[viewport],
+      houseOpts: {cfg: FULL_CFG, theme, design: 'material', time: AFTERNOON, frozen: true},
+    });
+
+    test('Air with the button groups in Material', async ({house}) => {
+      if (viewport === 'phone') {
+        await house.root().locator('#moretab').click();
+        await house.root().locator('#morelist hp-stat-tile[key="air"] button').click();
+        await expect(house.root().locator('#pane-air')).toBeVisible();
+      } else {
+        await house.tab('air');
+      }
+      const pane = house.root().locator('#pane-air hp-air-pane');
+      // the range tabs: in the pane's header on a phone, in the detail on a tablet
+      await expect(pane.locator('hp-range-tabs [role="tab"]').first()).toBeVisible();
+      await expect(pane.locator('hp-air-room').getByRole('radio', {name: 'Automagic'})).toHaveAttribute(
+        'aria-checked',
+        'true',
+      );
+      await expect(house.page).toHaveScreenshot(`material-button-group-${viewport}-${theme}-en.png`);
+    });
+  });
+}
+
+// the same on a phone in French, where the range tabs' words are longer: they share the width and give way with an ellipsis, never spilling out of the group
+test.describe('button group, phone, light, French', () => {
+  test.use({
+    viewport: VIEWPORTS.phone,
+    houseOpts: {
+      cfg: {...FULL_CFG, names: KEEP_ENGLISH_NAMES},
+      theme: 'light',
+      lang: 'fr',
+      design: 'material',
+      time: AFTERNOON,
+      frozen: true,
+    },
+  });
+
+  test('Air with the button groups in Material, in French', async ({house}) => {
+    await house.root().locator('#moretab').click();
+    await house.root().locator('#morelist hp-stat-tile[key="air"] button').click();
+    await expect(house.root().locator('#pane-air')).toBeVisible();
+    await expect(house.root().locator('#pane-air hp-range-tabs [role="tab"]').first()).toBeVisible();
+    await expect(house.page).toHaveScreenshot('material-button-group-phone-light-fr.png');
   });
 });

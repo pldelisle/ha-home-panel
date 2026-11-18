@@ -15,3 +15,10 @@
   cursor: default;
   opacity: 0.5;
 }
+/* Material: a read-only group keeps the group's own colours and mutes the unchosen buttons as a whole (the chosen one stays `primary`), where the Apple look greys their words */
+:host([design='material']) .seg[aria-disabled='true'] button:not([aria-checked='true']) {
+  opacity: 0.6;
+}
+:host([design='material']) .seg[aria-disabled='true'] button:not([aria-checked='true']) b {
+  color: inherit;
+}

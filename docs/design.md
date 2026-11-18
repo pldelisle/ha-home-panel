@@ -75,6 +75,9 @@ value, so a second design language can redefine the set in one place. No rule wr
   effects 137 / 211 / 299 ms). A press scales nothing (`--press-scale: 1`): `common.css` lays a state layer on every button (the content colour at 8% under a
   mouse, 10% under the keyboard or a finger, `border-radius: inherit`), morphs a pressed pill's corners, and under Reduce Motion turns every transition into the
   effects-fast fade. Cards and stat tiles lose their edge (`--shadow`, `--ctl-edge`, `--m-edge` are `none`); only the knob, the toast, All off and a dialog float.
+- Under Material the segmented control (`hp-seg`, 48 px) and the range tabs (`hp-range-tabs`, 40 px) are the connected button group (#465): no container, buttons joined by
+  2 px, the outer ends `--shape-pill`, the inner corners `--shape-group-inner` (8; 12 in Apple, where the rule is unused), the chosen one `primary` and a full pill
+  (`--shape-segment-selected`), its corners on the spatial-fast spring. The rules sit in `seg.css` and `range.css` under `.app[data-design='material']`.
 - The ApexCharts bars' radii (`src/features/car/history.ts`) are JavaScript, not CSS, and are the same in both designs.
 - A radius that is the shape of the element's box (a circle is `50%`, a square corner `0`, a child that follows its parent
   `inherit`) stays as it is: it is geometry, not design.

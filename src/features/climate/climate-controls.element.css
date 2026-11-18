@@ -107,10 +107,27 @@ hp-seg::part(label) {
   font-family: var(--f-body);
   font-weight: 600;
 }
+/* Material: the button group's label is its type role, not the Apple look's 13px body weight */
+:host([design='material']) hp-seg::part(label) {
+  font: var(--type-label-large);
+  letter-spacing: var(--track-label-large);
+}
 @media (max-width: 720px) {
   hp-seg::part(group) {
     grid-auto-flow: row;
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+/* Material: the button group stays one row on a narrow window (its outer ends are the first and last buttons); the words give way with an ellipsis, not a scroll
+   that would clip the focus ring and the state layer */
+@media (max-width: 720px) {
+  :host([design='material']) hp-seg::part(group) {
+    grid-auto-flow: column;
+    grid-template-columns: none;
+  }
+  :host([design='material']) hp-seg::part(label) {
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }
 .chint {

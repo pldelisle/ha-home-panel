@@ -54,3 +54,37 @@
 .tab:active {
   transform: scale(var(--press-scale));
 }
+/* Material's connected button group (ADR 0037, #465), after the design system's ButtonGroup at its 40px size: no pill behind the tabs, the tabs joined by 2px, the
+   outer ends as round as the box allows, the inner corners small, and the chosen one `primary` and a full pill, springing on the spatial-fast curve. The group
+   does not scroll (`overflow` visible), so the focus ring and the state layer are not clipped by a padding the Apple pill needs. */
+.app[data-design='material'] .tabs {
+  gap: 2px;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  overflow: visible;
+}
+.app[data-design='material'] .tab {
+  min-height: 40px;
+  padding: 0 16px;
+  background: var(--control);
+  color: var(--on-control);
+  font: var(--type-label-large);
+  letter-spacing: var(--track-label-large);
+  border-radius: var(--shape-group-inner);
+  transition:
+    border-radius var(--motion-spatial-fast-ms) var(--motion-spatial-fast),
+    background-color var(--motion-effects-default-ms) var(--motion-effects),
+    color var(--motion-effects-default-ms) var(--motion-effects);
+}
+.app[data-design='material'] .tab:first-child {
+  border-radius: var(--shape-pill) var(--shape-group-inner) var(--shape-group-inner) var(--shape-pill);
+}
+.app[data-design='material'] .tab:last-child {
+  border-radius: var(--shape-group-inner) var(--shape-pill) var(--shape-pill) var(--shape-group-inner);
+}
+.app[data-design='material'] .tab[aria-selected='true'] {
+  background: var(--md-primary);
+  color: var(--md-on-primary);
+  border-radius: var(--shape-segment-selected);
+}
