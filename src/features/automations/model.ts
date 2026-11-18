@@ -64,6 +64,8 @@ export interface TodayView {
   /** The hour marks of the line: where each sits (percent) and its label in the house's format. */
   hours: {pct: number; label: string}[];
   dots: DotView[];
+  /** The four marks a dot takes, each with its words, drawn under the line as the flow's lines are. */
+  legend: {cls: DotClass; label: string}[];
   tiles: [TileView, TileView, TileView];
 }
 
@@ -83,6 +85,8 @@ export interface FlowCardView {
   key: string;
   kind: CardKind;
   item: string;
+  /** The automation's name, which a sheet's heading says. */
+  name: string;
   title: string;
   /** Null when its config could not be read: the card says so and draws nothing else. */
   flow: {
@@ -228,6 +232,12 @@ export function automationsModel(
         run: isUp(d) ? undefined : d.summary.run_id,
       };
     }),
+    legend: [
+      {cls: '', label: t('automations.dots.ran')},
+      {cls: 'skip', label: t('automations.dots.skipped')},
+      {cls: 'now', label: t('automations.dots.now')},
+      {cls: 'up', label: t('automations.dots.up')},
+    ],
     tiles: [
       {
         label: t('automations.tile.ranToday'),
@@ -263,7 +273,7 @@ export function automationsModel(
     // a trace carries the config it ran with, for an automation whose own could not be read
     const config = data.configs[it] || (trace?.config as AutomationConfig | undefined) || null;
     if (!config) {
-      cards.push({key, kind, item: it, title, flow: null});
+      cards.push({key, kind, item: it, name, title, flow: null});
       return;
     }
     const graph = automationGraph(config, trace ?? null, run ?? null, {t, fmt, states, names: deps.names});
@@ -279,6 +289,7 @@ export function automationsModel(
       key,
       kind,
       item: it,
+      name,
       title,
       flow: {
         sentence: graph.sentence || (run ? '' : t('automations.card.shapeOnly')),

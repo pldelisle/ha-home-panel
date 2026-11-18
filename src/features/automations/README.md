@@ -20,7 +20,8 @@ src/features/automations/
   model.ts                 automationsModel(inputs, data, selection, deps): the line, the Today card, the flow cards, the chips; automationsBrief
   flow-mount.ts            mountFlow(box, def, deps): Mermaid loaded, initialized per theme, rendered once per definition, decorated
   events.ts                SelectRunEvent, CloseSelectionEvent
-  automations-pane.ts      <hp-automations-pane>
+  sheets.ts                FLOW_SHEET: the id of the flow's sheet a phone's list row opens
+  automations-pane.ts      <hp-automations-pane>: on a phone Today's card then the list, the selected card in the flow's sheet
   run-timeline.ts          <hp-run-timeline>
   flow-card.ts             <hp-flow-card>
   automation-list.ts      <hp-automation-list>: the list of every automation
@@ -34,6 +35,8 @@ test/unit/
 
 ## The rules it keeps
 
+- On a phone the tab is Today's card, then the list; a row (or a dot) selects an automation and asks the sheet host for `automations.flow`, whose sheet draws the selected card `framed` (the sheet says the name and closes). No flow is drawn, and Mermaid is not fetched, until that sheet opens; the selection goes when the sheet closes. A tablet keeps the cards above the list.
+- Today's dots have a legend of four marks (ran, checked and did nothing, running now, still to come), as the flow has its lines.
 - A run is noise when its automation's every trigger is a `time_pattern`, or when a time-pattern run stopped at its condition: the tab leaves it out of today's line and the cards, but draws it when it is picked.
 - The sentences say what Home Assistant's config says, never more: a name is the resolver's, a state the panel has no word for is Home Assistant's own, with underscores as spaces (a door's or a motion sensor's as Home Assistant writes it).
 - A config's clock time is read as hours and minutes cut from Home Assistant's text (`18:00:00` is `6:00 pm` in English, `18 h` in French), written by `fmt.clock`, so no zone moves it. Every other time the tab shows is `fmt.time` (`fmt.timeSeconds` for a flow step, `fmt.hourOfDay` for the line's marks).

@@ -1,5 +1,6 @@
 // <hp-flow-card>: one flow card of the Automations tab: its title and sentence, the status that says how the run ended, as text with a dot (counting up
-// while it runs), the run picker of the selected card, the legend and the Mermaid drawing of the automation with the run lit up.
+// while it runs), the run picker of the selected card, the legend and the Mermaid drawing of the automation with the run lit up. On a phone the selected
+// card sits `framed` in the flow's sheet, which says the name and has the Close: the card then draws neither a title nor a close of its own.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over the model's `FlowCardView`; the drawing goes through the mount module
 // (`mountFlow`), mounted after the first update and again when the definition or the theme changes, destroyed on disconnect.
 // Must not: build the graph or its definition (the model does), load Mermaid itself, or hold the selection (it tells the pane).
@@ -17,8 +18,10 @@ import {common, status} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 
 export class FlowCard extends LitElement {
-  static override properties = {view: {attribute: false}};
+  static override properties = {view: {attribute: false}, framed: {type: Boolean, reflect: true}};
   declare view: FlowCardView | undefined;
+  /** Inside a sheet, which says the name and closes: no title, no close, and no card of its own. */
+  declare framed: boolean;
 
   static override styles = [common, status, unsafeCSS(forShadow(shared)), unsafeCSS(forShadow(own))];
 
@@ -31,6 +34,7 @@ export class FlowCard extends LitElement {
   constructor() {
     super();
     this.view = undefined;
+    this.framed = false;
     // a running run's status counts up each second; the drawing is not touched
     new TickController(this, 1000, () => this.view?.flow?.status.since !== undefined);
   }
@@ -63,12 +67,12 @@ export class FlowCard extends LitElement {
     return html`<section class="aubox auc${selected ? ' ausel' : ''}">
         <div class="auhead">
           <div>
-            <h3>${v.title}</h3>
+            ${this.framed ? nothing : html`<h3>${v.title}</h3>`}
             <p>${flow.sentence}</p>
           </div>
           <div class="auhr">
             <span class="status ${flow.status.tone}"><i aria-hidden="true"></i>${statusText}</span>${
-              selected
+              selected && !this.framed
                 ? html`<button
                     type="button"
                     class="close"

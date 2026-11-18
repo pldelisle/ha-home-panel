@@ -2,7 +2,7 @@
 // text: none of it may act as Mermaid syntax, such as a %%{init}%% directive, a label closed early or a click handler.
 import AxeBuilder from '@axe-core/playwright';
 import type {Locator} from '@playwright/test';
-import {test, expect, tabletOnly, KATEX_CHUNK_URL, type House} from './fixtures';
+import {test, expect, isPhone, phoneOnly, tabletOnly, KATEX_CHUNK_URL, type House} from './fixtures';
 import {AFTERNOON, FULL_CFG} from './houses';
 import {automations as houseAutomations} from '../houses/full.mjs';
 
@@ -175,6 +175,14 @@ test.describe('A % or # that ends a label in a flow with no run stored', () => {
   });
 });
 
+// the tab: the rail's on a tablet, More's list on a phone (Automations is not one of the bar's four)
+const openAuto = async (house: House) => {
+  if (!isPhone(house)) return house.tab('auto');
+  await house.root().locator('#moretab').click();
+  await house.root().locator('#morelist hp-stat-tile[key="auto"] button').click();
+  await expect(house.root().locator('#pane-auto')).toBeVisible();
+};
+
 // The pane drawn by the feature (#273): the line and the Today dots from the test house's runs, a chip's card with its flow, the
 // twenty-second rule of the runs' list, nothing redrawn for an entity the pane does not read, and no accessibility finding
 test.describe('the Automations pane', () => {
@@ -270,5 +278,47 @@ test.describe('the Automations pane', () => {
       .filter(v => v.impact === 'serious' || v.impact === 'critical')
       .flatMap(v => v.nodes.map(() => v.id));
     expect(bad).toEqual([]);
+  });
+});
+
+// HIG audit 15 (#428). Both shapes: the dots' legend of four marks replaces the paragraph that explained them.
+test.describe('the Automations pane, the dots legend', () => {
+  test.use({houseOpts: {cfg: FULL_CFG, time: AFTERNOON}});
+
+  test('names the four marks of a dot, in a legend and not in a paragraph', async ({house}) => {
+    await openAuto(house);
+    const today = house.root().locator('hp-automations-pane hp-run-timeline');
+    await expect(today.locator('.audots span')).toHaveText([
+      'ran',
+      'checked, did nothing',
+      'running now',
+      'still to come',
+    ]);
+    await expect(today.locator('.auhead p')).not.toContainText('Filled');
+  });
+});
+
+// On a phone Today's card is followed by the list; a row opens that automation's flow and last run in a sheet, and the flow is
+// drawn (Mermaid fetched) only then.
+test.describe('the Automations pane on a phone', () => {
+  test.use({houseOpts: {cfg: FULL_CFG, time: AFTERNOON}});
+  test.beforeEach(phoneOnly);
+
+  test('has the list under Today and no flow until a row opens its sheet', async ({house}) => {
+    await openAuto(house);
+    const pane = house.root().locator('hp-automations-pane');
+    await expect(pane.locator('hp-run-timeline + hp-automation-list')).toBeAttached();
+    await expect(pane.locator('.augraph')).toHaveCount(0);
+    expect(house.chunkRequests, 'chunks asked for before a flow is opened').toEqual([]);
+    await pane.locator('.aurow[data-au="front_door_light"]').click();
+    const sheet = pane.locator('hp-sheet .sheet');
+    await expect(sheet).toBeVisible();
+    await expect(sheet.locator('h2')).toContainText('Entrance'); // the sheet says the name; the framed card draws no title
+    await expect(pane.locator('hp-sheet hp-flow-card .auc.ausel')).toHaveCount(1);
+    await expect(pane.locator('hp-sheet hp-flow-card .auc.ausel h3')).toHaveCount(0);
+    await expect(pane.locator('hp-sheet hp-flow-card .augraph svg')).toBeVisible({timeout: 10_000});
+    await house.page.keyboard.press('Escape');
+    await expect(sheet).toBeHidden();
+    await expect(pane.locator('.augraph')).toHaveCount(0);
   });
 });

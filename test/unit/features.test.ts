@@ -6,6 +6,7 @@ import {fr} from '../../src/core/i18n/fr.ts';
 import {resolveConfig} from '../../src/core/config.ts';
 import {createStore} from '../../src/core/store.ts';
 import {airFeature} from '../../src/features/air/index.ts';
+import {automationsFeature} from '../../src/features/automations/index.ts';
 import {energyFeature} from '../../src/features/energy/index.ts';
 import {mediaFeature} from '../../src/features/media/index.ts';
 import {securityFeature} from '../../src/features/security/index.ts';
@@ -252,5 +253,20 @@ describe('the Security descriptor', () => {
     house.states['binary_sensor.hall_motion'] = {...house.states['binary_sensor.hall_motion'], state: 'off'};
     expect(securityFeature.summary?.(env(fakeHass.fromHouse(full, {states: house.states})))).toBe('1 door open');
     expect(securityFeature.summary?.(env())).toBeNull();
+  });
+});
+
+describe('the Automations descriptor', () => {
+  const env = (open: string | null) => {
+    const store = createStore({defaultTimeZone: 'America/Toronto', resolve: resolveConfig});
+    store.setPanelConfig(FULL_CFG);
+    return {store, sheetOpen: (id: string) => id === open, sheetDetail: () => undefined, attention: 0};
+  };
+
+  // a phone's row opens that automation's flow in a sheet the pane draws; the pane stays the tab, so there is no `overSheets`
+  test("binds its pane to the sheet host's answer for the flow's sheet", () => {
+    expect(FEATURES.find(f => f.key === 'auto')).toBe(automationsFeature);
+    expect(automationsFeature.pane(env(null)).values).toEqual([false]);
+    expect(automationsFeature.pane(env('automations.flow')).values).toEqual([true]);
   });
 });

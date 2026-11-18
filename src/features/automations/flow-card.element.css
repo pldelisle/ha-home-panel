@@ -1,4 +1,12 @@
-/* <hp-flow-card>'s own rules: it has no box of its own, so its card is an item of the pane's column, as the legacy card was. */
+/* <hp-flow-card>'s own rules: it has no box of its own, so its card is an item of the pane's column, as the legacy card was; in a sheet (`framed`) the sheet is the card. */
 :host {
   display: contents;
+}
+:host([framed]) .aubox {
+  background: none;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  border-radius: 0;
+  padding: 0;
 }
