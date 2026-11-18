@@ -382,7 +382,8 @@
 .app.cp .aul {
   display: none;
 }
-/* the legend of a flow: the path taken, the step waited on, the check that stopped it, what was not taken */
+/* the legend of a flow (the path taken, the step waited on, the check that stopped it, what was not taken) and of the Today line (`.audots`,
+   the four marks a dot takes): one row of marks with their words */
 .aulegend {
   display: flex;
   flex-wrap: wrap;
@@ -409,6 +410,33 @@
 }
 .aulegend i.off {
   background: var(--ring);
+}
+/* the Today line's marks are small dots, and its legend keeps below it the gap the line keeps above it, before the tiles */
+.audots {
+  margin-bottom: 18px;
+}
+.app.cp .audots {
+  margin-bottom: 16px;
+}
+.audots i {
+  box-sizing: border-box;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--fg2);
+  background: var(--fg2);
+}
+.audots i.skip {
+  background: var(--card);
+  border-color: var(--crit);
+}
+.audots i.now {
+  background: var(--ok);
+  border-color: var(--ok);
+}
+.audots i.up {
+  background: var(--card);
+  border-color: var(--ring);
 }
 /* the flow's box: the drawing fits, or scrolls with its right edge fading until the end is reached */
 .augraph {

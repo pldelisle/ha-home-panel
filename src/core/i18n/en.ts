@@ -1271,8 +1271,11 @@ export const en = {
   'automations.refused':
     "Home Assistant didn't return the automation traces ({error}). The panel needs an administrator account to read them.",
   'automations.today.title': 'Today',
-  'automations.today.caption':
-    'One dot per run, a number when several ran close together. Filled ran, ringed red checked and did nothing, green is running now, hollow is still to come.',
+  'automations.today.caption': 'One dot per run, a number when several ran close together.',
+  'automations.dots.ran': 'ran',
+  'automations.dots.skipped': 'checked, did nothing',
+  'automations.dots.now': 'running now',
+  'automations.dots.up': 'still to come',
   'automations.tile.ranToday': 'Ran today',
   'automations.tile.skipped': '{n} more checked and did nothing',
   'automations.tile.allPassed': 'every run passed its checks',
@@ -1299,6 +1302,7 @@ export const en = {
   'automations.noRuns': 'No automation has run since Home Assistant last started.',
   'automations.chips.title': 'Every automation',
   'automations.chips.caption': 'Latest first. The selected one has its flow drawn above, with its last run lit up.',
+  'automations.chips.captionPhone': 'Latest first.',
   'automations.chip.off': 'off',
   'automations.chip.running': 'running',
   'automations.chip.never': 'never',

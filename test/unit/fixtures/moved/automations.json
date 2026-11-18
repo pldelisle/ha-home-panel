@@ -496,8 +496,12 @@
     {"key": "automations.today.title"},
     {
       "key": "automations.today.caption",
-      "translated": "Un point par exécution, un nombre quand plusieurs se suivent de près. Plein : exécutée; cerclé de rouge : vérifiée, rien fait; vert : en cours; vide : à venir."
+      "translated": "Un point par exécution, un nombre quand plusieurs se suivent de près."
     },
+    {"key": "automations.dots.ran", "translated": "exécutée"},
+    {"key": "automations.dots.skipped", "translated": "vérifiée, rien fait"},
+    {"key": "automations.dots.now", "was": "en cours"},
+    {"key": "automations.dots.up", "translated": "à venir"},
     {"key": "automations.tile.ranToday", "was": "Exécutées aujourd'hui"},
     {"key": "automations.tile.skipped", "values": {"n": 2}, "was": "2 autres vérifiées, rien fait"},
     {"key": "automations.tile.allPassed", "was": "toutes ont passé leurs vérifications"},
@@ -531,6 +535,10 @@
     {
       "key": "automations.chips.caption",
       "translated": "Les plus récentes d’abord. Celle qui est choisie a son parcours dessiné plus haut, avec sa dernière exécution en couleur."
+    },
+    {
+      "key": "automations.chips.captionPhone",
+      "translated": "Les plus récentes d’abord."
     },
     {"key": "automations.chip.off"},
     {"key": "automations.chip.running", "was": "en cours"},

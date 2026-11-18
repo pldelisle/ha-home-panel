@@ -111,6 +111,17 @@ describe('automationsModel: the Today card', () => {
     ]);
     expect(view.today.status).toMatch(/ · 12:00 pm$/);
   });
+  // the dots' four marks are a legend (the marks the line draws, by their classes), not a paragraph in the caption
+  test('the Today card names the four marks of a dot, and its caption no longer explains them', () => {
+    const {legend, caption} = automationsModel(inputs([auto('a')]), data(), null, deps).today;
+    expect(legend).toEqual([
+      {mark: 'ran', label: 'ran'},
+      {mark: 'skip', label: 'checked, did nothing'},
+      {mark: 'now', label: 'running now'},
+      {mark: 'up', label: 'still to come'},
+    ]);
+    expect(caption).not.toContain('Filled');
+  });
   test('the hour marks of the line and the status follow the house format, in English and in French', () => {
     const en = automationsModel(inputs([auto('a')]), data(), null, deps).today;
     expect(en.hours).toEqual([
@@ -217,7 +228,9 @@ describe('automationsModel: the flow cards', () => {
       null,
       deps,
     );
-    expect(unread.cards).toEqual([{key: 'r', kind: 'completed', item: 'z', title: 'Last completed · z', flow: null}]);
+    expect(unread.cards).toEqual([
+      {key: 'r', kind: 'completed', item: 'z', name: 'z', title: 'Last completed · z', flow: null},
+    ]);
   });
   test('a trace carries the config it ran with; no run at all is the no-runs line', () => {
     const traces = {'a/p': {config: lamp, trace: {}}};

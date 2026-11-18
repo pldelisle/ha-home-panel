@@ -1,5 +1,5 @@
 // <hp-run-timeline>: the Today card of the Automations tab: the day's line with a dot per run (several close together share one, each a 44 pt button
-// round the drawn dot, the ones still to come hollow), the now line and the hour marks, then the three tiles (ran today, next, then).
+// round the drawn dot, the ones still to come hollow), the now line and the hour marks, the legend of the four marks a dot takes, then the three tiles (ran today, next, then).
 // Pattern: humble object (Meszaros, xUnit Test Patterns): it places the `TodayView` the model laid out (`timelineLayout`) and tells
 // its parent by an event (Lit docs, Events: properties down, events up) which run or automation a dot picks.
 // Must not: lay the dots out, word anything, or select a run itself (the pane holds the selection).
@@ -48,6 +48,9 @@ export class RunTimeline extends LitElement {
             d => d.key,
             d => this.dot(d),
           )}
+        </div>
+        <div class="aulegend audots">
+          ${v.legend.map(m => html`<span><i class=${m.mark} aria-hidden="true"></i>${m.label}</span>`)}
         </div>
         <div class="tiles" style="grid-template-columns:repeat(3,minmax(0,1fr))">
           ${v.tiles.map(

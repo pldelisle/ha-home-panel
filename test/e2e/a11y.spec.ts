@@ -178,6 +178,14 @@ for (const lang of ['en', 'fr'] as const) {
       await scanDialog(house, 'media.controls', 'hp-media-pane hp-sheet .sheet');
     });
 
+    test('the automation flow sheet has no serious or critical finding', async ({house}) => {
+      phoneOnly(); // a phone's list row opens it; a tablet draws the card inline, which every shown tab covers
+      await openTab(house, 'auto');
+      await house.root().locator('hp-automation-list .aurow:not([disabled])').first().click();
+      await expect(house.root().locator('hp-automations-pane hp-sheet .augraph svg')).toBeVisible({timeout: 10_000});
+      await scanDialog(house, 'automations.flow', 'hp-automations-pane hp-sheet .sheet');
+    });
+
     test('the camera sheet has no serious or critical finding', async ({house}) => {
       // the test house has no camera: Home Assistant adds one the way it adds any entity
       await house.setState('camera.porch', {
