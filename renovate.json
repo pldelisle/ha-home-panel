@@ -27,6 +27,11 @@
       "groupName": "npm minor and patch updates"
     },
     {
+      "description": "material-color-utilities stays on 0.3.x: 0.4.0's modules import siblings without .js extensions, which Node's ESM loader (Vitest) cannot resolve, and tokens.json was built with 0.3.0 (ADR 0037)",
+      "matchPackageNames": ["@material/material-color-utilities"],
+      "allowedVersions": "0.3.x"
+    },
+    {
       "description": "Every GitHub Action arrives together in one weekly pull request",
       "matchManagers": ["github-actions"],
       "groupName": "GitHub Actions"

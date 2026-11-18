@@ -22,9 +22,10 @@ The forces: Apple must stay pixel-identical (ADR 0004), so the new look cannot b
 
 - Apple stays pixel-identical: nothing is written under Apple but one attribute, and the one visible change is a Design row in the Settings popup, whose two baselines were re-recorded.
 - A new design is an attribute away: a third language is a value, a scheme function and a set of `:host([design=...])` rules, not a fork.
-- The library is 0.3.0, not 0.4.0: 0.4.0's ES modules import siblings without the `.js` extension, which Node's ESM loader (Vitest) cannot resolve; 0.3.0 loads in Node and in Vite and gives the design system's token values exactly. Renovate manages the pin; a bump is a decision to check with the scheme's unit test, which holds tokens.json's values.
+- The library is 0.3.0, not 0.4.0: 0.4.0's ES modules import siblings without the `.js` extension, which Node's ESM loader (Vitest) cannot resolve; 0.3.0 loads in Node and in Vite and gives the design system's token values exactly. Renovate manages the pin; a bump is a decision to check with the scheme's unit test, which holds tokens.json's values. A `packageRules` entry in `renovate.json` holds it at 0.3.x. A later bump may get past the missing extensions with Vitest's `server.deps.inline: ['@material/material-color-utilities']`.
 - The package adds weight to the entry chunk (the scheme classes and the HCT maths). `npm run size` prints it; there is no budget (ADR 0010).
 - The Material look is half-built until its slices land: the shell, the controls and the motion keep Apple's shapes for now, and a Material screenshot shows only the new colour.
+- Only the panel's surface and text roles follow the seed. The status colours (`--ok`, `--warn`, `--crit`, `--t-*`), the `--m-*` accents, `--shadow` and `--ctl-edge`, and colours hard-coded in element CSS stay Apple's until the status, elevation and component slices restyle them.
 - The contrast level is passed as 0; the `prefers-contrast` schemes come with the seeds slice.
 - Two looks double the baselines of whatever a later slice restyles.
 

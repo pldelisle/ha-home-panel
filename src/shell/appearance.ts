@@ -1,7 +1,7 @@
 // AppearanceController: the shell's theme, design, glass, text size, document background and `live` class, gathered into one frozen Appearance.
 // Pattern: Lit reactive controller (Lit docs, Reactive Controllers) wrapping what were six methods of the legacy class; it
 // provides its value by context (ADR 0018, after the Context Protocol) and the pure rules of appearance-rules.ts decide.
-// Must not: read localStorage (the settings module does), hold a rule (the rules do), or write into the frame.
+// Must not: read localStorage (the settings module does), hold a rule (the rules do), or write into the frame beyond `.app`'s inline custom properties.
 import {ContextProvider} from '@lit/context';
 import type {LitElement, ReactiveController} from 'lit';
 import {createFormatters} from '../core/i18n/format.ts';

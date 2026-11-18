@@ -265,7 +265,10 @@ test('Material turns glass off and recolours the frame from the seed; Apple take
   await expect(app(house)).toHaveAttribute('data-design', 'apple');
   await expect(app(house)).toHaveClass(/\bgl\b/);
   await expect(app(house)).toHaveAttribute('data-wp', 'lake');
-  expect(await app(house).evaluate(e => (e as HTMLElement).getAttribute('style') ?? '')).not.toMatch(/--(bg|card|md-)/);
+  // Under Apple the controller writes only --g-m and --tx inline; every scheme token is gone.
+  expect(
+    await app(house).evaluate(e => [...(e as HTMLElement).style].filter(p => p !== '--g-m' && p !== '--tx')),
+  ).toEqual([]);
 });
 
 test('the transparency slider sets how dense the glass is', async ({house}) => {
