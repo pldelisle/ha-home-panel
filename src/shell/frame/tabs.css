@@ -362,6 +362,9 @@
   background: var(--control);
   opacity: 0;
   transform: scaleX(0.4286);
+  /* its own layer for good, not only while it springs: Chrome otherwise drops the layer some time after the spring ends, and the pill's
+     edge and the icon over it are antialiased one way or the other depending on when the page is drawn (a CI shot differed by 10 pixels) */
+  will-change: transform, opacity;
   transition:
     transform var(--motion-spatial-fast-ms) var(--motion-spatial-fast),
     opacity var(--motion-effects-default-ms) var(--motion-effects);
