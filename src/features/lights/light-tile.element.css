@@ -220,3 +220,57 @@
   font: var(--type-body-small);
   letter-spacing: var(--track-body-small);
 }
+/* The Material design's room tile (ADR 0037, #484): the Tile and StatTile components' colours on the row's layout. An off room is a `control` with its bulb a
+   quiet square of the content's colour; a room that is on turns the whole tile primary-container and its bulb a `primary` square, so one glance shows what is
+   lit. The light's own colour, its glow and the hover ring are the Apple look's and are not drawn. The row's state layer (common.css) follows the tile's corners. */
+:host([design='material']),
+:host([design='material'][compact]) {
+  border-radius: var(--shape-stat-tile);
+}
+:host([design='material']) .lcell {
+  --pad: 12px;
+  --bulb: 44px;
+  min-height: 72px;
+  border-radius: var(--shape-stat-tile);
+  background: var(--control);
+  color: var(--on-control);
+  box-shadow: none;
+}
+:host([design='material']) .lcell.on {
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  box-shadow: none;
+}
+:host([design='material']) .lcell .lbulb {
+  border-radius: var(--shape-icon-lg);
+  background: color-mix(in srgb, currentColor 12%, transparent);
+  color: inherit;
+  box-shadow: none;
+}
+:host([design='material']) .lcell.on .lbulb {
+  background: var(--md-primary);
+  color: var(--md-on-primary);
+  box-shadow: none;
+}
+:host([design='material']) .lcell .lbulb:disabled {
+  background: color-mix(in srgb, var(--fg) 12%, transparent);
+  color: color-mix(in srgb, var(--fg) 38%, transparent);
+  opacity: 1;
+}
+:host([design='material']) .lcell .tx small,
+:host([design='material']) .lcell.on .tx small {
+  color: color-mix(in srgb, currentColor 72%, transparent);
+}
+:host([design='material']) .lcell .lkd,
+:host([design='material']) .lcell.on .lkd {
+  color: inherit;
+}
+:host([design='material']) .lcell .lchev,
+:host([design='material']) .lcell.on .lchev {
+  color: inherit;
+  opacity: 0.6;
+}
+:host([design='material']) .lcell:hover,
+:host([design='material']) .lcell.on:hover {
+  box-shadow: none;
+}

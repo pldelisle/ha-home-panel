@@ -494,3 +494,61 @@ for (const theme of ['light', 'dark'] as const) {
     });
   });
 }
+
+// The remote keys and the room tiles (#484): the Media pane's four keys are 48px tonal icon buttons (a pill that tightens under a finger, mute primary
+// while it holds), and a room of the Lights pane is a `control` tile, primary-container with a primary bulb when it is on. Media on the tablet, Lights
+// on the phone, both in light.
+test.describe('tablet, light, remote keys', () => {
+  test.use({
+    viewport: VIEWPORTS.tablet,
+    houseOpts: {cfg: FULL_CFG, theme: 'light', design: 'material', time: AFTERNOON, frozen: true},
+  });
+
+  test('Media: the TV remote keys are 48px tonal pills, the muted one primary', async ({house}) => {
+    await house.tab('media');
+    const box = house.root().locator('#pane-media hp-tv-box');
+    const keys = box.locator('.tvkeys button');
+    await expect(keys).toHaveCount(4);
+    await settled(house);
+    for (const key of await keys.all()) {
+      expect(await style(key, 'height')).toBe('48px');
+      expect(await style(key, 'border-top-left-radius')).toBe('999px');
+      expect(await style(key, 'background-color')).toBe(await role(house, '--control'));
+      expect(await style(key, 'color')).toBe(await role(house, '--on-control'));
+    }
+    // the muted key is primary
+    const mute = box.getByRole('button', {name: 'Mute', exact: true});
+    await mute.click();
+    await expect(mute).toHaveAttribute('aria-pressed', 'true');
+    await settled(house);
+    expect(await style(mute, 'background-color')).toBe(await role(house, '--md-primary'));
+    expect(await style(mute, 'color')).toBe(await role(house, '--md-on-primary'));
+    await expect(house.page).toHaveScreenshot('material-media-tablet-light-en.png', SHOT);
+  });
+});
+
+test.describe('phone, light, room tiles', () => {
+  test.use({
+    viewport: VIEWPORTS.phone,
+    houseOpts: {cfg: FULL_CFG, theme: 'light', design: 'material', time: AFTERNOON, frozen: true},
+  });
+
+  test('Lights: a room that is on is primary-container with a primary bulb, one that is off a control', async ({
+    house,
+  }) => {
+    await house.tab('lights');
+    const lit = house.root().locator('#pane-lights .lcell.on:visible').first();
+    const dark = house.root().locator('#pane-lights .lcell:not(.on):visible').first();
+    await expect(lit).toBeVisible();
+    await expect(dark).toBeVisible();
+    await settled(house);
+    expect(await style(lit, 'background-color')).toBe(await role(house, '--md-primary-container'));
+    expect(await style(lit, 'color')).toBe(await role(house, '--md-on-primary-container'));
+    expect(await style(lit.locator('.lbulb'), 'background-color')).toBe(await role(house, '--md-primary'));
+    expect(await style(dark, 'background-color')).toBe(await role(house, '--control'));
+    expect(await style(dark, 'color')).toBe(await role(house, '--on-control'));
+    expect(await style(dark, 'border-top-left-radius')).toBe('16px');
+    expect(await style(dark.locator('.lbulb'), 'border-top-left-radius')).toBe('20px');
+    await expect(house.page).toHaveScreenshot('material-lights-phone-light-en.png', SHOT);
+  });
+});
