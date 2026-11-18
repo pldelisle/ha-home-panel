@@ -377,9 +377,7 @@ test.describe('French', () => {
   }) => {
     phoneOnly();
     await house.root().locator('#moretab').click();
-    await expect(house.root().locator('#morelist hp-stat-tile[key="cams"] small')).toHaveText(
-      'Portes fermées · mouvement en cours',
-    );
+    await expect(house.root().locator('#morelist hp-stat-tile[key="cams"] small')).toHaveText('Fermées · mouv.');
   });
 });
 
