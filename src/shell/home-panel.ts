@@ -52,6 +52,7 @@ import {MORE_SHEET} from './sheets.ts';
 import {ensureFonts} from '../ui/fonts.ts';
 import {lens} from '../ui/lens.ts';
 import '../ui/toast.ts'; // defines <hp-toast>
+import {focusTo, stopAt} from '../ui/tabs-keys.ts';
 import {expiry, nextToast, type ToastAction, type ToastState} from '../ui/toast-schedule.ts';
 
 /** The panel Home Assistant hands over with the config the `panel_custom:` block carried. */
@@ -550,6 +551,7 @@ export class HomePanel extends LitElement {
 
   // The header (<hp-header>, #269) and the tabs: the rail and one pane per feature, each its element. The live pill and the Status popup
   // are the live feature's elements (#256), the popup one the shell keeps open (`statusOpen`); so is the settings popup (`settingsOpen`).
+  // A pane behind a sheet has no tabpanel role: its tab is not the selected one, and the sheet it holds is the dialog on screen.
   private renderWrap(): TemplateResult {
     return html`<div class="wrap">
       <hp-header
@@ -572,6 +574,8 @@ export class HomePanel extends LitElement {
               html`<section
                 class="pane pane-${f.key} ${this.sheetBehind(f) ? 'behind' : ''}"
                 id="pane-${f.key}"
+                role=${ifDefined(this.sheetBehind(f) ? undefined : 'tabpanel')}
+                aria-labelledby=${ifDefined(this.sheetBehind(f) ? undefined : `tab-${f.key}`)}
                 ?hidden=${this.tab !== f.key && !this.sheetBehind(f)}
                 ${ref(el => this.scopeStatistics(f.key, el))}
               >
@@ -597,6 +601,13 @@ export class HomePanel extends LitElement {
     // the fifth button is the way to the other tabs, so it says More whichever tab shows; it is selected while one of them does
     const underMore = FEATURES.some(f => f.key === tab && !f.phoneBar);
     const rows = glass ? sidebarRows(FEATURES) : FEATURES;
+    // roving tabindex: the list is one tab stop, the selected tab's; the arrow keys move focus inside it (`onTabsKey`)
+    const stops = rows.filter((row): row is FeatureDescriptor => row !== CATEGORIES);
+    const stop = stopAt([
+      ...stops.map(row => ({disabled: !this.tabOn(row.key), checked: tab === row.key})),
+      {disabled: !this.tabOn('more'), checked: underMore},
+    ]);
+    const stopKey: FeatureKey | 'more' | null = stop === null ? null : stop < stops.length ? stops[stop].key : 'more';
     return html`<nav class="rail" id="rail">
       <button
         type="button"
@@ -607,7 +618,13 @@ export class HomePanel extends LitElement {
       >
         ${ico('sidebar', 24)}
       </button>
-      <div class="rtabs" role="tablist" aria-label=${t('nav.sections')}>
+      <div
+        class="rtabs"
+        role="tablist"
+        aria-label=${t('nav.sections')}
+        aria-orientation=${this.compact ? 'horizontal' : 'vertical'}
+        @keydown=${this.onTabsKey}
+      >
         ${repeat(
           rows,
           row => (row === CATEGORIES ? 'categories' : row.key),
@@ -618,10 +635,13 @@ export class HomePanel extends LitElement {
                   type="button"
                   class="rtab"
                   role="tab"
+                  id="tab-${row.key}"
                   data-tab=${row.key}
                   ?data-ph=${row.phoneBar}
                   ?hidden=${!this.answered || this.shown[row.key] === false}
                   aria-selected=${tab === row.key}
+                  aria-controls="pane-${row.key}"
+                  tabindex=${stopKey === row.key ? 0 : -1}
                   title=${ifDefined(strip ? t(row.title) : undefined)}
                   style=${`--tab-c:${row.color}`}
                   @click=${() => this.setTab(row.key)}
@@ -634,6 +654,7 @@ export class HomePanel extends LitElement {
           role="tab"
           id="moretab"
           aria-selected=${underMore}
+          tabindex=${stopKey === 'more' ? 0 : -1}
           aria-haspopup="dialog"
           @click=${() => this.sheets.open(MORE_SHEET)}
         >
@@ -642,6 +663,32 @@ export class HomePanel extends LitElement {
       </div>
     </nav>`;
   }
+
+  // Whether a tab is on screen: the house shows it (and has answered), and on the phone the bar holds it; More is the phone's alone. The roving
+  // tabindex and the arrow keys pass over a tab that is not, as CSS does (`.cp .rtab`).
+  private tabOn(key: FeatureKey | 'more'): boolean {
+    if (key === 'more') return this.compact;
+    const f = FEATURES.find(feature => feature.key === key);
+    return this.answered && this.shown[key] !== false && (!this.compact || f?.phoneBar === true);
+  }
+
+  // The WAI-ARIA tabs keys (tabs-keys.ts decides where): an arrow, Home or End moves focus, and Enter or Space, the button's own click, selects.
+  private readonly onTabsKey = (e: KeyboardEvent): void => {
+    if (e.altKey || e.ctrlKey || e.metaKey) return; // Alt+Left (back), Cmd+Up and the like are the browser's and the system's
+    const buttons = [...(e.currentTarget as HTMLElement).querySelectorAll<HTMLButtonElement>('.rtab')];
+    const key = (b: HTMLElement) => b.dataset.tab as FeatureKey | undefined;
+    const from = buttons.findIndex(b => b === this.shadowRoot?.activeElement);
+    if (from < 0) return;
+    const to = focusTo(
+      buttons.map(b => ({disabled: !this.tabOn(key(b) ?? 'more')})),
+      from,
+      e.key,
+      this.compact ? 'horizontal' : 'vertical',
+    );
+    if (to === null) return;
+    e.preventDefault();
+    buttons[to]?.focus();
+  };
 
   // the frame is in the page now: the fonts go into the document, the popups register, and the house is asked about
   protected override firstUpdated(): void {

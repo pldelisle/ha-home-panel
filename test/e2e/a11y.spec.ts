@@ -3,7 +3,7 @@
 // Spec: docs/specs/14-lit-shell.md, "axe in the end-to-end run (step A)". Not numbered in docs/specs/01-playwright-test.md:
 // it checks no behaviour, only what a screen reader would be told.
 import AxeBuilder from '@axe-core/playwright';
-import {test, expect, eachShownTab, isPhone, nestedInteractive, phoneOnly, type House} from './fixtures';
+import {test, expect, eachShownTab, isPhone, nestedInteractive, phoneOnly, tabletOnly, type House} from './fixtures';
 import {FULL_CFG, PHONE_TABS} from './houses';
 import {openOfficeSheet} from './lights';
 import {backToModules, openSettings, openSubmenu} from './settings-controls';
@@ -288,5 +288,155 @@ test.describe('bare house', () => {
 
   test('the More sheet has no serious or critical finding', async ({house}) => {
     await moreSheet(house);
+  });
+});
+
+// The section tabs are a WAI-ARIA tabs widget (#493): one tab stop (the selected tab's), the arrow keys, Home and End move focus and wrap, Enter selects, and each
+// tab names its pane (aria-controls) while the pane names its tab (role tabpanel, aria-labelledby). The sidebar (open and collapsed), Material's rail and the
+// phone's bar share the markup, so one walk serves all four.
+const walkTabs = async (house: House, next: string, previous: string) => {
+  await expect(house.root().locator('#rail [role="tablist"]')).toHaveAttribute(
+    'aria-orientation',
+    isPhone(house) ? 'horizontal' : 'vertical',
+  );
+  const tabs = house.root().locator('#rail .rtab:visible');
+  const names = await tabs.evaluateAll(l => l.map(e => e.id));
+  expect(names.length).toBeGreaterThan(2);
+  const focused = () => house.root().locator('#rail .rtab:focus');
+  const at = async () => focused().getAttribute('id');
+  // one tab stop: the selected tab holds it, every other tab on screen is out of the Tab order
+  await expect(house.root().locator('#rail .rtab[tabindex="0"]')).toHaveCount(1);
+  await expect(house.root().locator('#rail .rtab[tabindex="0"]')).toHaveAttribute('aria-selected', 'true');
+  await expect(house.root().locator('#rail .rtab:visible:not([tabindex="0"])')).toHaveCount(names.length - 1);
+  await house.root().locator('#rail .rtab[tabindex="0"]').focus();
+  const first = names.indexOf((await at())!);
+  // Tab leaves the list at once
+  await house.page.keyboard.press('Tab');
+  expect(await focused().count()).toBe(0);
+  await house.page.keyboard.press('Shift+Tab');
+  expect(await at()).toBe(names[first]);
+  // the next key walks every tab on screen in order and wraps; the previous key goes back
+  const seen: (string | null)[] = [];
+  for (let i = 1; i <= names.length; i++) {
+    await house.page.keyboard.press(next);
+    seen.push(await at());
+  }
+  expect(seen).toEqual(names.map((_, i) => names[(first + 1 + i) % names.length]));
+  await house.page.keyboard.press(previous);
+  expect(await at()).toBe(names[(first - 1 + names.length) % names.length]);
+  await house.page.keyboard.press('Home');
+  expect(await at()).toBe(names[0]);
+  await house.page.keyboard.press('End');
+  expect(await at()).toBe(names.at(-1));
+  // focus moving selected nothing
+  await expect(house.root().locator('#rail .rtab[aria-selected="true"]:visible')).toHaveCount(1);
+};
+
+/** each tab on screen that has a pane names it, and the pane names the tab back */
+const wiredToPanes = async (house: House) => {
+  const pairs = await house
+    .root()
+    .locator('#rail .rtab[aria-controls]:visible')
+    .evaluateAll(l => l.map(e => [e.id, e.getAttribute('aria-controls')]));
+  expect(pairs.length).toBeGreaterThan(3);
+  for (const [tab, pane] of pairs) {
+    await expect(house.root().locator(`#${pane}`)).toHaveAttribute('role', 'tabpanel');
+    await expect(house.root().locator(`#${pane}`)).toHaveAttribute('aria-labelledby', tab!);
+  }
+};
+
+const enterSelects = async (house: House, key: string) => {
+  const target = house.root().locator(`#rail .rtab[data-tab="${key}"]`);
+  await target.focus();
+  await house.page.keyboard.press('Enter');
+  await expect(target).toHaveAttribute('aria-selected', 'true');
+  await expect(target).toHaveAttribute('tabindex', '0');
+  await expect(house.root().locator(`#pane-${key}`)).toBeVisible();
+};
+
+test.describe('the section tabs keyboard pattern', () => {
+  test.describe('Liquid Glass sidebar', () => {
+    test.use({houseOpts: {cfg: FULL_CFG}});
+
+    test('collapsed: one tab stop, Up and Down, Home and End, Enter selects, panes are wired', async ({house}) => {
+      tabletOnly();
+      await expect(house.root().locator('#rail .rside')).toHaveAttribute('aria-expanded', 'false');
+      await walkTabs(house, 'ArrowDown', 'ArrowUp');
+      await wiredToPanes(house);
+      await enterSelects(house, 'lights');
+    });
+
+    test('open: the same keys', async ({house}) => {
+      tabletOnly();
+      await house.root().locator('#rail .rside').click();
+      await expect(house.root().locator('#rail .rside')).toHaveAttribute('aria-expanded', 'true');
+      await walkTabs(house, 'ArrowDown', 'ArrowUp');
+      await wiredToPanes(house);
+      await enterSelects(house, 'weather');
+    });
+
+    test('a key with Alt, Ctrl or Cmd is left to the browser', async ({house}) => {
+      tabletOnly();
+      const stop = house.root().locator('#rail .rtab[tabindex="0"]');
+      await stop.focus();
+      for (const mod of ['Alt', 'Control', 'Meta']) await house.page.keyboard.press(`${mod}+ArrowDown`);
+      await expect(stop).toBeFocused();
+    });
+
+    test("a pane behind another tab's sheet is no tab panel", async ({house}) => {
+      phoneOnly(); // Home's Air tile opens Air's detail as a sheet, the Air pane staying in the page behind it
+      await house.tab('home');
+      await expect(house.root().locator('#pane-air')).toHaveAttribute('role', 'tabpanel');
+      await house.root().locator('[data-opens="air.detail"]').first().click();
+      await expect(house.root().locator('#pane-air.behind')).toHaveCount(1);
+      await expect(house.root().locator('#pane-air')).not.toHaveAttribute('role', /./);
+      await expect(house.root().locator('#pane-air')).not.toHaveAttribute('aria-labelledby', /./);
+    });
+
+    test('Left and Right are no keys of the vertical list', async ({house}) => {
+      tabletOnly();
+      await house.root().locator('#rail .rtab[tabindex="0"]').focus();
+      await house.page.keyboard.press('ArrowRight');
+      await expect(house.root().locator('#rail .rtab[tabindex="0"]')).toBeFocused();
+    });
+
+    test('the bar on the phone: More holds the tab stop while a tab under it is open', async ({house}) => {
+      phoneOnly();
+      await walkTabs(house, 'ArrowRight', 'ArrowLeft');
+      await openTab(house, 'weather'); // under More
+      await expect(house.root().locator('#rail #moretab')).toHaveAttribute('aria-selected', 'true');
+      await expect(house.root().locator('#rail .rtab[tabindex="0"]')).toHaveAttribute('id', 'moretab');
+      await house.root().locator('#moretab').focus();
+      await house.page.keyboard.press('Enter');
+      await expect(house.root().locator('hp-more-sheet .sheet')).toBeVisible();
+    });
+  });
+
+  test.describe('Material rail and bar', () => {
+    test.use({houseOpts: {cfg: FULL_CFG, design: 'material'}});
+
+    test('the rail on the tablet', async ({house}) => {
+      tabletOnly();
+      await walkTabs(house, 'ArrowDown', 'ArrowUp');
+      await wiredToPanes(house);
+      await enterSelects(house, 'lights');
+    });
+
+    test('the bar on the phone: Left and Right, with More in the set', async ({house}) => {
+      phoneOnly();
+      await walkTabs(house, 'ArrowRight', 'ArrowLeft');
+      await house.page.keyboard.press('End');
+      await expect(house.root().locator('#rail #moretab')).toBeFocused();
+      await wiredToPanes(house);
+      await enterSelects(house, 'lights');
+    });
+  });
+
+  test.describe('bare house', () => {
+    test.use({houseOpts: {house: 'bare'}});
+
+    test('a tab the house does not show is passed over', async ({house}) => {
+      await walkTabs(house, isPhone(house) ? 'ArrowRight' : 'ArrowDown', isPhone(house) ? 'ArrowLeft' : 'ArrowUp');
+    });
   });
 });
