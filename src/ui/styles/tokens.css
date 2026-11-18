@@ -542,3 +542,10 @@
 .app.cp[data-design='material'] {
   --nav-bar-h: 64px;
 }
+/* The navigation rail's width (#466): the page's first column on the tablet under Apple, and the room the page leaves beside the fixed rail under Material. */
+.app {
+  --nav-rail-w: 96px;
+}
+.app[data-design='material'] {
+  --nav-rail-w: 96px;
+}

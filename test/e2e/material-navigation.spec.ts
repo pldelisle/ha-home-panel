@@ -25,20 +25,40 @@ for (const lang of ['en', 'fr'] as const) {
       // nothing of the page is under the rail
       const pane = await house.root().locator('.panes').boundingBox();
       expect(pane!.x).toBeGreaterThanOrEqual(96);
+      const head = await house.root().locator('.head').boundingBox();
+      expect(head!.x).toBeGreaterThanOrEqual(96);
     });
 
     test('the open section has the pill and the bold label, the others none', async ({house}) => {
       tabletOnly();
       await house.tab('lights');
       const open = house.root().locator('#rail .rtab[aria-selected="true"]');
-      const icon = open.locator('svg');
-      // the pill grows in on a spring: it is 56 x 32 once it has settled
-      await expect.poll(() => icon.evaluate(e => e.getBoundingClientRect().width)).toBe(56);
-      expect(await icon.evaluate(e => e.getBoundingClientRect().height)).toBe(32);
-      expect(await icon.evaluate(e => getComputedStyle(e).backgroundColor)).not.toBe('rgba(0, 0, 0, 0)');
+      // the pill is the item's ::after, which grows in on a spring (a scale on X): 56 x 32, opaque, once it has settled
+      const pill = (e: Element) => {
+        const cs = getComputedStyle(e, '::after');
+        return {w: cs.width, h: cs.height, opacity: cs.opacity, transform: cs.transform, bg: cs.backgroundColor};
+      };
+      await expect.poll(() => open.evaluate(pill).then(p => p.transform)).toBe('none');
+      const settled = await open.evaluate(pill);
+      expect([settled.w, settled.h, settled.opacity]).toEqual(['56px', '32px', '1']);
+      expect(settled.bg).not.toBe('rgba(0, 0, 0, 0)');
       expect(await open.evaluate(e => getComputedStyle(e).fontWeight)).toBe('600');
-      const other = house.root().locator('#rail .rtab[aria-selected="false"]:visible svg').first();
-      expect(await other.evaluate(e => getComputedStyle(e).backgroundColor)).toBe('rgba(0, 0, 0, 0)');
+      const other = house.root().locator('#rail .rtab[aria-selected="false"]:visible').first();
+      expect((await other.evaluate(pill)).opacity).toBe('0');
+    });
+
+    test('the keyboard focus ring is drawn on the pill, not on the whole item', async ({house}) => {
+      tabletOnly();
+      const other = house.root().locator('#rail .rtab[aria-selected="false"]:visible').first();
+      await other.focus();
+      await house.page.keyboard.press('Shift+Tab');
+      await house.page.keyboard.press('Tab');
+      const ring = await other.evaluate(e => ({
+        item: getComputedStyle(e).outlineStyle,
+        pill: getComputedStyle(e, '::after').outlineStyle,
+        focused: e.matches(':focus-visible'),
+      }));
+      expect(ring).toEqual({item: 'none', pill: 'solid', focused: true});
     });
 
     test('the bar on the phone is 64 px, and the page keeps room under it', async ({house}) => {
@@ -46,12 +66,13 @@ for (const lang of ['en', 'fr'] as const) {
       const rail = house.root().locator('#rail');
       const box = await rail.boundingBox();
       expect(box?.height).toBe(64);
-      expect(box?.width).toBe(393);
+      expect(box?.width).toBe(house.page.viewportSize()?.width);
       const padding = await house
         .root()
         .locator('.wrap')
         .evaluate(e => parseFloat(getComputedStyle(e).paddingBottom));
-      expect(padding).toBeGreaterThanOrEqual(64);
+      // the bar's 64 px and 16 px of air (the inset is 0 here)
+      expect(padding).toBe(80);
       const cut = await rail
         .locator('.rtab:visible span')
         .evaluateAll(spans => spans.filter(e => e.scrollWidth > e.clientWidth).map(e => e.textContent));

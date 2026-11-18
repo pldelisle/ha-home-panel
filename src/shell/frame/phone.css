@@ -120,6 +120,7 @@
   padding: 6px max(0px, env(safe-area-inset-right, 0px)) env(safe-area-inset-bottom, 0px)
     max(0px, env(safe-area-inset-left, 0px));
   background: var(--md-surface-container);
+  border-radius: 0;
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
   box-shadow: none;
