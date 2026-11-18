@@ -130,7 +130,7 @@ export const panelConfig = block({
     }),
   ),
   // the ECCC climate station whose past fills the Weather tab's charts before the recorder's first row: its climate identifier
-  // (YAML reads 7014160 as a number, which counts), or false to turn that off; left out, the nearest active hourly station within 40 km of the house
+  // (YAML reads 7000100 as a number, which counts), or false to turn that off; left out, the nearest active hourly station within 40 km of the house
   climate_station: optional(
     either(
       v => typeof v === 'number',

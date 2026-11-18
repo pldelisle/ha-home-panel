@@ -144,12 +144,12 @@ test('split_light_areas: a list or one area, empty by default', () => {
 });
 
 test('climate_station: an identifier (a number too), false for none, null (look for the nearest) by default and for anything else', () => {
-  expect(resolveConfig({climate_station: '7014160'}).climateStation).toBe('7014160');
+  expect(resolveConfig({climate_station: '7000100'}).climateStation).toBe('7000100');
   expect(resolveConfig({climate_station: false}).climateStation).toBe(false);
   expect(resolveConfig({}).climateStation).toBeNull();
   expect(resolveConfig({climate_station: true}).climateStation).toBeNull();
   // YAML reads an unquoted identifier as a number
-  expect(resolveConfig({climate_station: 7014160}).climateStation).toBe('7014160');
+  expect(resolveConfig({climate_station: 7000100}).climateStation).toBe('7000100');
   expect(resolveConfig({climate_station: Infinity}).climateStation).toBeNull();
   expect(resolveConfig({climate_station: ''}).climateStation).toBeNull();
 });

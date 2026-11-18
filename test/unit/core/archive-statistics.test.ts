@@ -32,7 +32,7 @@ function setup(
 const archived =
   (...starts: number[]) =>
   () =>
-    Promise.resolve({station: "L'ASSOMPTION", rows: starts.map(at => row(at, 1))});
+    Promise.resolve({station: 'LAKESIDE', rows: starts.map(at => row(at, 1))});
 
 describe('the gap split', () => {
   test('the archive fills what comes before the first recorder row, per id, and the recorder rows stay as they are', async () => {
@@ -49,7 +49,7 @@ describe('the gap split', () => {
     expect(recorded['sensor.wind']).toHaveLength(1);
     // the notice names where the archive's rows end (the end of the last), not where the recorder's begin
     expect(api.notice(['sensor.wind', 'sensor.hum'], 'hour', START)).toEqual({
-      station: "L'ASSOMPTION",
+      station: 'LAKESIDE',
       before: START.getTime() + HOUR,
     });
     // the notice belongs to that read: another range of the same ids, or other ids, has none

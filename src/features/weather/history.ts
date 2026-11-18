@@ -292,7 +292,7 @@ export const STATISTICS_TTL_MS = 15 * 60_000;
 /** How long a tile's history stays fresh in the cache: the ten minutes the legacy sheet kept it. */
 export const HISTORY_TTL_MS = 10 * 60_000;
 
-/** The line that says where the earlier part of a chart comes from: `Before Nov 10: ECCC, L'ASSOMPTION`, `Avant le 10 nov. : ECCC, ...`. */
+/** The line that says where the earlier part of a chart comes from: `Before Nov 10: ECCC, LAKESIDE`, `Avant le 10 nov. : ECCC, ...`. */
 export const archiveSource = (notice: ArchiveNotice, {fmt, t}: {fmt: Formatters; t: Translate}): string =>
   t('archive.source', {date: fmt.date(notice.before), station: notice.station});
 
