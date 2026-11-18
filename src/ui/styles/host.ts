@@ -28,7 +28,7 @@ const state = (cls: string): string => {
 // the inside of one `:not(...)`: a state class, or an attribute test
 const negate = (inner: string): string => {
   const cls = /^\.([\w-]+)$/.exec(inner)?.[1];
-  return `:not(${cls ? state(cls) : inner})`;
+  return `:not(${cls ? state(cls) : attribute(inner)})`;
 };
 
 /** `.app.gl .sheet` is `:host([glass]) .sheet`, `.app:not(.cp) .x` is `:host(:not([compact])) .x`, a bare `.app .x` is `:host .x`. */
