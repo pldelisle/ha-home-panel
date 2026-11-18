@@ -1,5 +1,107 @@
 # Changelog
 
+## 2.15.0
+
+- The Car tab is rebuilt around what you do most. At the top, the charge, the range and the limit Ford sets, with what needs a look (a door open, unlocked) said once. Under it, one row of actions: Unlock, Start…, Pause charging and Honk & flash, shown only when the car or the charger can do them; unlocking and starting ask first. The charger shows its power limit and lock, or one line while it does not answer. The departure schedule is one row that opens an editor with Cancel and Save, and the charging history one row that opens the sessions. On a phone the tab shows all of it directly, with no extra sheet. The charging history opens as a sheet like the panel's other histories; the start question says the heaters are saved as you switch them; and a Wallbox that stops answering says since when.
+- With the glass look on, cards and everything inside them are now near-opaque, as Apple's guidelines ask: only the sidebar, the phone's tab bar, the header's buttons, popups, messages and sheets stay glass. Text and buttons are easier to read over the wallpaper, and what floats above the page is clearly what you navigate with.
+- The panel now draws in Manrope, with configuration paths in JetBrains Mono, both shipped with the panel so tablets still never call Google. Everything you can tap now looks raised and everything that only shows a value looks flat, so the Car's comfort buttons, the weather readings that open a history, the door and motion rows and the TV keys read as buttons. The on/off switch has a shape of its own, the header's weather is plain text beside the buttons, the Home line no longer repeats the date, and "Tap to run" is now "Never run".
+- The Automations tab's flow charts are drawn with a newer drawing library: the shapes have slightly thicker outlines and wider rounded boxes; the colours and the reading order are the same.
+- Settings has a new Transparent cards switch under the glass choices: turn it on to have the cards glass again, as they were before, over the wallpaper. It's off by default, and it gives way to the device's Increase Contrast setting.
+- Internal tidying of the air cards. Nothing visible changes.
+- The Air detail is redrawn with the same look; its controls answer at once. Nothing else changes.
+- Internal groundwork for the Air tab in your language. Nothing visible changes.
+- The Air tab's card is redrawn with the same look and numbers in your language. Nothing else changes.
+- On a phone the Air tab now shows the purifier, the charts and the outside air right in the tab, instead of a card that opened a sheet.
+- Internal tidying of how the panel finds the purifiers and rates the air. Nothing visible changes.
+- Internal tidying of the volume buttons. Nothing visible changes.
+- Each Air reading (PM2.5, CO₂, VOC, CO, PM1, PM10, humidity) is now a tile that opens its own history, like Weather's tiles, and the separate metric control above the chart is gone.
+- Air's outdoor history is two charts, the US AQI and the AQHI, each on its own scale with room for its highest reading, and its block sits a regular gap below the pollen.
+- Internal tidying of the automation flow charts. Nothing visible changes.
+- The Automations tab is redrawn with the same look. Nothing visible changes.
+- On the phone, Automations shows Today's card and then the list, and each automation opens its flow in a sheet; the dots on Today's line have a small legend.
+- Internal tidying of the Automations tab. Nothing visible changes.
+- On Automations, the timeline's dots are easy to hit with a finger, every automation is a plain list you can select a row from, and the "tap one" hints are gone.
+- Internal tidying of the Car controls, with three things you can see. Saving a departure schedule with the time cleared no longer sends a broken time to the car: it says "Pick a departure time first". A few words the French screens left in English or got wrong are French now (a current outside the usual steps, an open door, the remote start's cabin setting, the saved schedule's message), and the charger's status reads in lower case in its line. Everything else looks and works as before.
+- The Car's departure row is now one button that opens the editor and says what is saved and whether it is on; the switch moved into the editor.
+- The Car detail is redrawn with the same look, and it no longer redraws every second: it changes when something it shows changes. A few words change: the battery line has no leading dot when the car gives no battery temperature (nor Ford's battery line when it is partial), one charging session or one day is singular ("1 charging session", "1 session" in French), a last plug-in with no plug-in or plug-out time shows a dash for what the Wallbox delivered where it showed 0.0, and a dash for each missing time in its window ("– to –"), a tire Ford calls low reads "Faible" in French, and the words the French screens left in English are French: the alarm and gear states ("Alarme activée", "Rapport drive"), Ford's saved departure line, a dated message ("Service due, 6 nov." with the month once), the last plug-in's title and its "Ford hasn't reported…" line, and the sessions chart's tooltip. The charging history's bars are described to a screen reader (the title and the sentence), in the language. The charging history says "History didn't load: …" in the place of its sentence when the recorder does not answer. A photo of the car that fails to load gives way to the drawing on the card and in the detail alike, and is not tried again until the panel is reloaded.
+- The Car's charging history shows the end date of a session that runs past midnight, draws its 30 days as a chart with day labels and a kWh axis, calls the card under it Sessions, and names the tab 30 days.
+- The Car's charging history sheet opens on Month, the sessions of the last 30 days with their tiles and table, and a Year tab in its header shows the year with the months chart, as before. The history row on the tab still says the year.
+- Internal groundwork for the Car tab in your language. Nothing visible changes.
+- The Car tab is redrawn with the same look and loads its history when you open it. A few words and figures change: the card no longer starts its line with a dot when the car reports no range, counts "1 charging day" in the singular, and describes its bars and its drawn car in French for screen readers; the card's own description ("Open car details") is French in French; the charger's status on the card comes from the translated catalog; and the card's daily line groups its thousands as the language does ("1,107 kWh" in English, "1 107 kWh" in French), which moves the number in the four phone Car baselines. A history that does not load is said on the Car card, not at the top of the screen; a failure of the history the Home stack and tile, the live pill and the header share is now only logged (Energy and Car show their own lines, other tabs log it).
+- Internal tidying of how the panel reads the car and the charger. Nothing visible changes.
+- Climate's Set all and All off now ask in a dialog ("Set every room to 21.0°?", "Turn every room off?") with a named button and Cancel, instead of changing their label for a second tap.
+- The climate charts are redrawn with the same look and load when you open them. Nothing visible changes.
+- Internal tidying of the Climate controls. The French messages for the heat pump, its fan and its louvers now read correctly; nothing else visible changes.
+- Internal groundwork for the climate charts. Nothing visible changes.
+- Internal groundwork for the Climate tab in your language. Nothing visible changes.
+- The Climate tab no longer draws a separate "Outside, last 24 hours" chart under the heatmap: the outside temperature is already a line on the room chart above it.
+- The Climate tab is redrawn with the same look. Nothing visible changes.
+- Internal tidying of the thermostat and heat-pump readings. Nothing visible changes.
+- The Car's departure editor dims the time, the cabin and the days while departure times are off, writes the time the way the rest of the panel does, and lets a tap anywhere on the time or cabin row open its picker.
+- A chart with no history yet says so once, "No history yet. It fills in as Home Assistant records the next hour.", instead of drawing empty axes, a donut of 0 kWh and tiles of dashes, and Home's Energy and Water heater tiles say "No reading" in small type instead of a big dash.
+- Internal tidying of the energy readings. Nothing visible changes.
+- The Energy detail is redrawn with the same look. Nothing visible changes.
+- Internal groundwork for loading the energy history when it is shown. Nothing visible changes.
+- Internal groundwork for the Energy tab in your language. Nothing visible changes.
+- Energy has one range at the top (Now, Today, Week, Month, Year) and every card follows it, so "Where the power goes" and "Where it went" no longer have a range of their own.
+- The Energy tab is redrawn with the same look and loads its history when you open it. Nothing visible changes.
+- On a phone the Energy tab shows the range, the power flow, the hourly chart, where the power goes and the totals right under its header, instead of behind a card that opens a sheet.
+- Internal tidying of the live power readings. Nothing visible changes.
+- Energy's Now tab shows only the live power flow, Today keeps the hourly chart, the bars sit on whole hours, the axis labels never tilt, and the "Tap a bar" hint is gone.
+- The phone's Energy tiles say "No reading" instead of a big dash when their sensor has no value.
+- Energy's numbers now agree with each other (the busiest hour matches the tallest bar, Totals and "Where it went" match the chart, and devices that outrun the meter are called out), and Home, Lights and Weather show the same sunrise and sunset for today.
+- The sidebar and the phone's tab bar now look like the Files app's: every icon in the same blue, and the open section on a darker grey instead of its own colour. The icon beside each section's title has no coloured square behind it any more.
+- The greeting, the date and who's home show on Home only; every other tab opens with a slim top row and its own title as the page's large title.
+- The last of the old code is gone: the shell draws the whole panel. The one visible change is a fix: in Chromium the glass's lens no longer drops out after a redraw (#198).
+- The battery, the temperatures, the powers and the money now read the same on every tab: 64% for the battery, 4.2° for the outside air, 850 W or 3.2 kW for a power.
+- The clock, the weather and the gear stay in the same place on every tab, Home has the greeting as its only title with Who's home shown once, and the line under the clock appears only when the statistics are out of date.
+- Media: the TV has the same power button on the phone as on the iPad, a speaker's tile on the phone has its volume slider with − and +, the TV's play button shows ▶ or ❙❙ for what it will do, and the toast after a play or pause names the room ("Living room paused").
+- A tile with no reading now says "No reading" instead of a dash beside its unit, and the Automations Then tile is left out when nothing follows Next.
+- On the iPad, VoiceOver now calls the Car, Weather, Air and Home energy tabs regions instead of dialogs.
+- The Settings popup now has one Light / Dark / Auto control, shows the glass themes as colour swatches, and on the phone has a Settings title and a Done button.
+- Small fixes: the water heater's chart text and the live activity's time marks are easier to read, "Motion now" is plain text with a dot instead of blue, the Car's top view of the tyres takes the car's colour, and the More sheet's captions are shorter so they are no longer cut.
+- Internal rewiring of the header. Nothing visible changes, except that in French the Home heading now says how many items need attention in French.
+- On the iPad's Home the weather, Who's home and the stack are each their own card, and the tiles' chevron is a plain "›" without a box.
+- The Home tab is redrawn with the same look. In French, a few words on the Home tiles and the weather card that stayed in English are now French, and a house without air purifiers no longer shows an empty Air tile.
+- Internal groundwork for the Home tab's tiles. Nothing visible changes.
+- Internal: the Car's Unlock and Start questions are now a shared dialog that other tabs can use. Nothing visible changes.
+- The idle clock is redrawn with the same look. Nothing visible changes.
+- Labels are written in sentence case, as iOS 26 writes them: Warmest, Rain or snow, Text size, Grid, Water heating.
+- Internal tidying of the Lights controls. Nothing visible changes.
+- Internal groundwork for the light controls. Nothing visible changes.
+- Internal groundwork for the Lights tab in your language. Nothing visible changes.
+- On the Lights tab, a room whose lights are off is a dimmed grey tile, as in Apple Home, so the lit rooms stand out at a glance.
+- The Lights tab is redrawn with the same look. In French, the empty tab's line and the Adaptive Lighting lines are now in French.
+- Internal tidying of how the panel groups the lights. Nothing visible changes.
+- The room's light sheet is redrawn with the same look. Nothing visible changes.
+- Internal tidying of the Status checks. Nothing visible changes.
+- Internal groundwork for the header's live pill. Nothing visible changes.
+- The header's pill and Status checks are redrawn with the same look. After Pause charging, the message now says "Charging off" (and "Charging on" after Resume), as the Car tab does.
+- On the Media tab, the TV's power is a round power button, the speakers' volume is a slider with − and + at its ends, and the grey box that only said "Netflix" is now a "Now on Netflix" line under the TV's name.
+- VoiceOver and Switch Control now find one control with one name wherever a row has a second action (Lights, the phone's Media), and the Now playing and weather cards on Home are named buttons.
+- Internal tidying of the header chips. Nothing visible changes.
+- Internal tidying of who's home and the calendar. Nothing visible changes.
+- Phase 3 is finished: the last leftovers of the old panel are gone and every sheet and popup is checked for accessibility. Nothing visible changes.
+- On a phone, the tab bar's last button always says More, even while you are on Weather, Energy, Air, Media, Security or Automations.
+- On a phone, a sheet opened from a tab (a room on Climate or Lights) covers the whole screen again, instead of stopping half-way down with the header and tab bar showing.
+- Media's speaker rows show the room name whole, with the volume on a row under it. Chart axes land on whole hours or whole days ("12 am, 2 am, 4 am"), and a chart within one day never prints a date. Every tab has one hidden heading naming the panel. The Automations flow writes its node tags in sentence case, Air's empty history says what the other charts say, and the automations list is called a list.
+- Internal tidying of the door and motion sensors. Nothing visible changes.
+- Internal rewiring of the Home security card. Nothing visible changes.
+- Internal groundwork for the Security tab's texts in your language. Nothing visible changes.
+- The Security tab is redrawn with the same look. Nothing visible changes.
+- Internal tidying of how the panel finds the cameras and the door and motion sensors. Nothing visible changes.
+- A door or motion sensor's history shows times and dates in your language. Nothing else changes.
+- The option buttons can be moved between with the arrow keys. Nothing else changes.
+- Climate's selected room is a quiet filled row, the iPhone Weather card no longer repeats what the tiles say, and "Add UniFi Protect" looks like a button.
+- Internal rewiring of the smart stack and Who's home. Nothing visible changes, except two words in French: the evening card names tonight's sky with the Weather tab's word, and a car with no name is « Voiture ».
+- Internal tidying of the smart stack's rules. Nothing visible changes.
+- Facts such as a run's date and outcome, Air's ratings and who is home read as plain text with a coloured dot, no longer as capsules that look like buttons.
+- Climate's Warmest and Coolest tiles show that room's chart, and Energy's totals set the tab to the range that holds their period.
+- Times and dates read the same everywhere: 12-hour with am and pm in English, 24-hour in French, on Automations and on every chart's axes and tooltips.
+- The error message at night is now a deeper red, so its white text is easy to read.
+- Internal tidying of the notifications. Nothing visible changes.
+- On a phone the Weather tab now shows the forecast, the sun and the radar right in the tab, and Home's weather card takes you to it, instead of opening a sheet.
+
 ## 2.14.2
 
 - Internal groundwork for the controls that send commands. Nothing visible changes.
