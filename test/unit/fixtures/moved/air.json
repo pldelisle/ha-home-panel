@@ -149,6 +149,17 @@
       }
     },
     {
+      "key": "air.humidityChip",
+      "values": {
+        "n": 45
+      },
+      "written": "45\u202f%"
+    },
+    {
+      "key": "air.roomDetails",
+      "written": "Toutes les pièces et l’air extérieur"
+    },
+    {
       "key": "air.rh",
       "values": {
         "n": 45

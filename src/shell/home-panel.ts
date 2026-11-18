@@ -311,12 +311,19 @@ export class HomePanel extends LitElement {
   /** Shows a tab, a section's key or a room's `room:<area_id>`: remembers it and draws the frame with its pane open. */
   private setTab(tab: string): void {
     const next = isFeatureKey(tab) || parseView(tab).kind === 'room' ? tab : 'home';
-    // a sheet opened over a room view (a detail sheet, a room's light sheet) belongs to that view: leaving it closes the sheet, as More's is
-    if (this.room !== null && next !== roomTab(this.room)) this.sheets.close();
+    this.closeSheetsOver(this.room, this.room !== null && next === roomTab(this.room));
     this.selected = next;
     this.settings.set('tab', this.selected);
     this.idle.arm();
     this.flush();
+  }
+
+  /**
+   * A sheet opened over a room view (a detail sheet, a room's light sheet) belongs to that view: leaving it closes the sheet, as More's is.
+   * Asked by `setTab` and by the frame when the room itself went away (its last tile left).
+   */
+  private closeSheetsOver(room: string | null, stays: boolean): void {
+    if (room !== null && !stays) this.sheets.close();
   }
 
   /** Opens or collapses the Liquid Glass tablet's sidebar and remembers the choice on this device. */
@@ -495,7 +502,10 @@ export class HomePanel extends LitElement {
     const before = this.viewId;
     const view = visibleView(this.selected, this.shown, this.rooms);
     this.visible = view.kind === 'room' ? 'home' : view.key;
+    const was = this.room;
     this.room = view.kind === 'room' ? view.areaId : null;
+    // a room that went away with a sheet open over it (its area was deleted) takes the sheet with it, as leaving the room by a tab does
+    this.closeSheetsOver(was, this.room === was);
     // Another tab shows by another road than a tile of More (a card of Home, a house that stopped showing it): More closes,
     // as the legacy panel's tabChanged hid it. No screen reaches this road today, so no test does.
     if (this.viewId !== before) this.sheets.close(MORE_SHEET);

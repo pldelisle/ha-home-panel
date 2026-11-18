@@ -195,10 +195,27 @@ for (const viewport of ['tablet', 'phone'] as const) {
             if (theme === 'light')
               test('room view with climate', async ({house}) => {
                 await house.root().locator('#rail [data-room="living_room"]').click();
-                await expect(house.root().locator('#pane-room hp-climate-room hp-stat-tile')).toBeVisible();
+                await expect(house.root().locator('#pane-room hp-climate-room hp-stat-tile button')).toBeVisible();
                 await house.page.mouse.move(0, 0);
                 await expect(house.page).toHaveScreenshot(`room-view-climate-${viewport}-${theme}-en.png`);
               });
+
+            // a room with a purifier (#508): the Air card under the lights, and the room's humidity in its header
+            test('room view with air', async ({house}) => {
+              await house.root().locator('#rail [data-room="office"]').click();
+              await expect(house.root().locator('#pane-room hp-air-room')).toBeVisible();
+              await house.page.mouse.move(0, 0);
+              await expect(house.page).toHaveScreenshot(`room-view-air-${viewport}-${theme}-en.png`);
+            });
+
+            // the Media part of a room view (#509): the speakers' controls over the room, whose own view stays behind the sheet
+            test('room view with the speakers sheet over it', async ({house}) => {
+              await house.root().locator('#rail [data-room="living_room"]').click();
+              await house.root().locator('#pane-room hp-media-tile').getByText('speaker', {exact: true}).click();
+              await expect(house.root().getByRole('dialog', {name: 'Speakers'})).toBeVisible();
+              await house.page.mouse.move(0, 0);
+              await expect(house.page).toHaveScreenshot(`room-view-media-sheet-${viewport}-${theme}-en.png`);
+            });
 
             test('settings popup', async ({house}) => {
               await house.root().locator('#gear').click();

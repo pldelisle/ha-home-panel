@@ -3,7 +3,15 @@
 import {describe, expect, test} from 'vitest';
 import {readAir, type AirInputs} from '../../../../src/features/air/inputs.ts';
 import {K} from '../../../../src/features/air/commands.ts';
-import {airBrief, airModel, toneClass, type AirViewModel} from '../../../../src/features/air/model.ts';
+import {
+  airBrief,
+  airModel,
+  airRoomAreas,
+  roomDetailsIn,
+  roomHumidity,
+  toneClass,
+  type AirViewModel,
+} from '../../../../src/features/air/model.ts';
 import type {AirRoomInputs, OutsideAirInputs} from '../../../../src/providers/mila.ts';
 import {fakeHass} from '../../fake-hass.ts';
 import {depsOf, fullHouse, readingOf, recorded, type Language} from '../media/support.ts';
@@ -439,5 +447,47 @@ describe('a tile opens its history', () => {
 describe('toneClass: the kit’s dotted text for an Air level', () => {
   test('good is ok, moderate is warn, poor is bad', () => {
     expect(([0, 1, 2] as const).map(toneClass)).toEqual(['ok', 'warn', 'bad']);
+  });
+});
+
+describe('a room view’s part (ADR 0039)', () => {
+  const den = room({areaId: 'den', fanId: 'fan.den', name: 'Den', readings: {humidity: 45.4}});
+  const pair = room({areaId: 'den', fanId: 'fan.den_2', name: 'Den 2', readings: {humidity: 50}});
+  const office = room({areaId: 'office', fanId: 'fan.office', name: 'Office'});
+  const unplaced = room({areaId: null, fanId: 'fan.hall', name: 'Hall'});
+  const rooms = [den, pair, office, unplaced];
+  const deps = (language: Language = 'en') => {
+    const {t, fmt} = depsOf(fullHouse, language);
+    return {now: 0, t, fmt, overlay: unheld};
+  };
+
+  test('the areas are the purifiers’ own, once each; a purifier with no area is in no room', () => {
+    expect(airRoomAreas(rooms)).toEqual(['den', 'office']);
+    expect(airRoomAreas([unplaced])).toEqual([]);
+  });
+
+  test('the cards are the detail’s, filtered to the area', () => {
+    const inputs = inputsOf(rooms);
+    const all = modelOf(inputs).detail.rooms;
+    const here = roomDetailsIn(inputs, 'den', deps());
+    expect(here.map(r => r.id)).toEqual(['fan.den', 'fan.den_2']);
+    expect(here).toEqual(all.filter(r => r.id.startsWith('fan.den')));
+    expect(roomDetailsIn(inputs, 'attic', deps())).toEqual([]);
+  });
+
+  test('a held mode shows in the room’s card as on the Air tab', () => {
+    const held = {...deps(), overlay: holding({[K.mode('fan.office')]: 'Manual'})};
+    const [card] = roomDetailsIn(inputsOf(rooms), 'office', held);
+    expect(card.control).toMatchObject({offline: false, modes: [{checked: false}, {checked: true}], speed: {}});
+  });
+
+  test('the humidity chip is the mean of the room’s purifiers, whole, in the language’s own spacing', () => {
+    expect(roomHumidity(rooms, 'den', deps())).toBe('48 %');
+    expect(roomHumidity([den], 'den', deps('fr'))).toBe('45\u202f%');
+  });
+
+  test('no reading, or no purifier in the area, is no chip', () => {
+    expect(roomHumidity(rooms, 'office', deps())).toBeNull();
+    expect(roomHumidity(rooms, 'attic', deps())).toBeNull();
   });
 });

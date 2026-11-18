@@ -515,6 +515,9 @@ export const en = {
   'air.manual': 'Manual',
   'air.fanLine': '{mode} · {n}%',
   'air.rh': '{n}% RH',
+  // a room view's part (ADR 0039): the room's humidity in its header, and the button that opens the whole Air detail over it
+  'air.humidityChip': '{n} %',
+  'air.roomDetails': 'Every room and the outside air',
   // a room's detail and the purifier's controls
   'air.offlineHint': "The purifier is offline, so it can't be adjusted right now.",
   'air.automagicHint': "Automagic sets the fan from the room's sensors{clauses}.",
