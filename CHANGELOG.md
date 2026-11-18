@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.19.0
+
+- Settings is a Control Center, under Liquid Glass and Material alike: Appearance and Text size are modules whose round icon toggles in one tap and whose label opens a submenu inside the popup, Sleep now and Design are round buttons, and Glass (Colour under Material) is a wide module with its swatches in view. Text size is a stepped slider with an Auto switch; the stored settings are unchanged.
+- Under Liquid Glass the Settings popup's tiles match the cards, and the chosen option of a segmented control or the range tabs is a clearly raised, semibold thumb.
+- The sidebar's open row keeps Liquid Glass's neutral selection with only its icon in the section's colour, and the collapsed strip centres its icons.
+
 ## 2.18.0
 
 - The panel starts in Material on Android and in Liquid Glass on Apple's devices, until a design is chosen in Settings.
