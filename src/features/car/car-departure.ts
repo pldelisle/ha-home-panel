@@ -1,5 +1,5 @@
 // <hp-car-departure>: the Car tab's departure row (one button: what Ford saved and whether it is on) and its editor, a sheet with Cancel and Save (docs/apple-hig-audit-car-2026-11-17.md, findings 5 and 14): the switch, which acts at once, the time, the cabin
-// to choose, and the seven days as a checkmark list; Save waits, and says why, until `validate` allows it.
+// to choose, and the seven days as a checkmark list (the time, the cabin and the days are dimmed and still while the switch is off; the time and the cabin read in the house's format and a transparent native field fills each row, so a tap anywhere on it opens the picker); Save waits, and says why, until `validate` allows it.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over `departureControls`, the model's pure view; the draft is its state, edited locally, validated and sent once (a form draft: Fowler's
 // Unit of Work in miniature), begun again when Ford's saved schedule changes (the cabin choice kept: Ford does not report it) and when the editor is cancelled. The editor is a native `<dialog>` (ADR 0036): Cancel, Save or Escape close it, never a tap on the backdrop, which would drop the draft.
 // Must not: read an entity or the clock (the inputs and the model did), build a command by hand (commands.ts does), send a draft that `validate` refuses, or keep the draft anywhere else.
@@ -109,20 +109,25 @@ export class CarDeparture extends LitElement {
                   this.ask(toggleDeparture(view.car, e.detail.checked), e.detail.checked)}
               ></hp-switch>
             </div>
-            <label class="lrow">
+            <label class="lrow pick">
               <span class="lbl">${editor.time.label}</span>
+              <span class="shown" aria-hidden="true">${editor.time.shown}</span>
               <input
                 class="dtime"
                 type="time"
                 step="300"
+                ?disabled=${!editor.live}
                 .value=${editor.time.value}
+                @click=${(e: Event) => (e.target as HTMLInputElement).showPicker?.()}
                 @change=${(e: Event) => this.edit(draft => ({...draft, time: (e.target as HTMLInputElement).value}))}
               />
             </label>
-            <label class="lrow">
+            <label class="lrow pick">
               <span class="lbl">${editor.cabin.label}</span>
+              <span class="shown" aria-hidden="true">${editor.cabin.shown}</span>
               <select
                 class="cabin"
+                ?disabled=${!editor.live}
                 @change=${(e: Event) =>
                   this.edit(draft => ({...draft, temp: (e.target as HTMLSelectElement).value as CabinTemperature}))}
               >
@@ -147,7 +152,8 @@ export class CarDeparture extends LitElement {
                   class="lrow"
                   role="checkbox"
                   aria-checked=${checked ? 'true' : 'false'}
-                  @click=${() => this.edit(draft => toggleDay(draft, day))}
+                  aria-disabled=${editor.live ? 'false' : 'true'}
+                  @click=${() => editor.live && this.edit(draft => toggleDay(draft, day))}
                 >
                   <span class="lbl">${name}</span><span class="chk">${checked ? ico('check', 20) : nothing}</span>
                 </button>`,

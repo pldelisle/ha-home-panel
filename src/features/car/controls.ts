@@ -14,6 +14,7 @@ import type {CarFeatureInputs} from './inputs.ts';
 import {K} from './keys.ts';
 import {
   DAYS,
+  clockWords,
   draftFromSchedule,
   scheduleWords,
   validate,
@@ -262,8 +263,17 @@ export interface DepartureEditorView {
   /** Whether Save can be pressed; `reason` says what is missing while it cannot. */
   canSave: boolean;
   reason: string;
-  time: {label: string; value: string};
-  cabin: {label: string; options: ChoiceView[]; chosen: CabinTemperature | undefined; choose: string};
+  /** Whether the rows below the switch answer a tap: not while the car's switch is there and off (Ford keeps no schedule then); a car with no switch has none that is off. */
+  live: boolean;
+  /** `value` is the input's `HH:MM`; `shown` is the same time in the house's format (`8:30 am`), what the row reads. */
+  time: {label: string; value: string; shown: string};
+  cabin: {
+    label: string;
+    options: ChoiceView[];
+    chosen: CabinTemperature | undefined;
+    choose: string;
+    /** what the row reads: the chosen cabin's name, or `choose` while none is */ shown: string;
+  };
   repeat: string;
   days: {day: string; name: string; checked: boolean}[];
   foot: string;
@@ -286,6 +296,12 @@ export function departureControls(
   const depId = ref.id('switch', 'departuretimes');
   const on = overlay(K.departure(depId), car.departureOn === true);
   const problem = validate(draft);
+  const cabins: ChoiceView[] = [
+    {value: 'low', label: t('car.comfort.cool')},
+    {value: 'medium', label: t('car.comfort.medium')},
+    {value: 'high', label: t('car.comfort.warm')},
+    {value: 'off', label: t('car.off')},
+  ];
   return {
     car: ref,
     row: {
@@ -304,17 +320,14 @@ export function departureControls(
       save: t('car.departure.save'),
       canSave: problem === null,
       reason: problem === null ? '' : t(problem),
-      time: {label: t('car.departure.time'), value: draft.time},
+      live: on || !car.departureAvailable,
+      time: {label: t('car.departure.time'), value: draft.time, shown: clockWords(draft.time, fmt)},
       cabin: {
         label: t('car.departure.cabin'),
-        options: [
-          {value: 'low', label: t('car.comfort.cool')},
-          {value: 'medium', label: t('car.comfort.medium')},
-          {value: 'high', label: t('car.comfort.warm')},
-          {value: 'off', label: t('car.off')},
-        ],
+        options: cabins,
         chosen: draft.temp ?? undefined,
         choose: t('car.departure.choose'),
+        shown: cabins.find(({value}) => value === draft.temp)?.label ?? t('car.departure.choose'),
       },
       repeat: t('car.departure.repeat'),
       days: DAYS.map(day => ({day, name: t('car.departure.every', {day}), checked: draft.days.includes(day)})),

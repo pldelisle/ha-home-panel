@@ -205,8 +205,9 @@ describe('the departure row and its editor', () => {
       title: 'Departure',
       cancel: 'Cancel',
       save: 'Save',
-      time: {label: 'Time', value: '08:30'},
-      cabin: {label: 'Cabin', chosen: undefined, choose: 'Choose'},
+      time: {label: 'Time', value: '08:30', shown: '8:30 am'},
+      live: true,
+      cabin: {label: 'Cabin', chosen: undefined, choose: 'Choose', shown: 'Choose'},
       repeat: 'Repeat',
       foot: "Ford doesn't report the cabin setting of a saved schedule.",
     });
@@ -220,7 +221,7 @@ describe('the departure row and its editor', () => {
     const noDays = departureControls(inputsOf(hass), {...saved, temp: 'high', days: []}, depsFor(hass))!;
     expect(noDays.editor).toMatchObject({canSave: false, reason: 'Pick at least one day'});
     const ready = departureControls(inputsOf(hass), {...saved, temp: 'high'}, depsFor(hass))!;
-    expect(ready.editor).toMatchObject({canSave: true, reason: '', cabin: {chosen: 'high'}});
+    expect(ready.editor).toMatchObject({canSave: true, reason: '', cabin: {chosen: 'high', shown: 'Warm'}});
   });
 
   test('with no schedule saved the row says so, not the editor’s default time', () => {
@@ -238,6 +239,11 @@ describe('the departure row and its editor', () => {
     const view = departureControls(inputsOf(none), saved, depsFor(none))!;
     expect(view.editor.departure).toMatchObject({on: false, disabled: true});
     expect(view.row.line).toBe('Weekdays at 8:30 am · Off');
+    // a car with no switch has none that is off: its rows stay live, and the time reads in the house's format
+    expect(view.editor).toMatchObject({live: true, time: {shown: '8:30 am'}});
+    // with the switch there and off the rows below are not live (the sheet dims them)
+    const off = carHouse({[id('switch', 'departuretimes')]: car('switch', 'departuretimes', 'off')});
+    expect(departureControls(inputsOf(off), saved, depsFor(off))!.editor.live).toBe(false);
     expect(departureControls(inputsOf(houseOf([], [])), saved, depsFor(houseOf([], [])))).toBeNull();
   });
 
@@ -245,6 +251,7 @@ describe('the departure row and its editor', () => {
     const fr = departureControls(inputsOf(hass), saved, depsFor(hass, 'fr'))!;
     expect(fr.row.title).toBe('Départ');
     expect(fr.editor.days[0].name).toBe('Chaque lundi');
+    expect(fr.editor.time.shown).toBe('8 h 30');
     expect(fr.editor).toMatchObject({cancel: 'Annuler', save: 'Enregistrer', repeat: 'Répéter'});
   });
 });

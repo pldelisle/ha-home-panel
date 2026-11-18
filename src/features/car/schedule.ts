@@ -101,12 +101,18 @@ const daysWords = (days: readonly string[], t: Translate): string => {
   return days.map(day => t('car.dayShort', {day})).join(', ') || t('car.noDays');
 };
 
+/** The draft's `HH:MM` as the house writes a time of day (`8:30 am`, `8 h 30`); empty while it is not a time (a cleared field). */
+export function clockWords(time: string, fmt: Pick<Formatters, 'clock'>): string {
+  const parsed = parseTime(time);
+  return parsed ? fmt.clock(parsed.hours, parsed.minutes) : '';
+}
+
 /**
  * What the draft says it will do, `weekdays at 8:30 am`: the days, and the time the way the household's language writes it
  * (`8 h 30`); a cleared time field names no time, only the days. Read by the departure row and by the toast that says a schedule was saved.
  */
 export function scheduleWords(draft: ScheduleDraft, fmt: Pick<Formatters, 'clock'>, t: Translate): string {
   const days = daysWords(draft.days, t);
-  const parsed = parseTime(draft.time);
-  return parsed ? t('car.at', {days, time: fmt.clock(parsed.hours, parsed.minutes)}) : days;
+  const time = clockWords(draft.time, fmt);
+  return time ? t('car.at', {days, time}) : days;
 }
