@@ -2,7 +2,7 @@
 // the clock, and the two popups the shell keeps open or shut (the Status checks under the pill, the settings under the gear).
 // Pattern: a humble composition (Meszaros, xUnit Test Patterns), the composition root's child, drawn in light DOM (ADR 0033) so the legacy
 // `.head` rules still lay out its row, as the Home pane is (ADR 0032); its own rules are header.css. It replaced the guest's header (#269).
-// Its three aria-labels are still English, which the French map translates until phase 4. Must not: decide whether a popup is open (the shell does, from the events the gear, the pill and the popups send up), or read an entity.
+// Its accessible names (the gear, the settings popup, the Status checks) are catalog messages. Must not: decide whether a popup is open (the shell does, from the events the gear, the pill and the popups send up), or read an entity.
 import {LitElement, html, nothing, unsafeCSS} from 'lit';
 import {keyed} from 'lit/directives/keyed.js';
 import './clock-line.ts'; // defines <hp-clock-line>
@@ -74,12 +74,13 @@ export class Header extends LitElement {
   // The weather chip is drawn anew whenever the pill changes, as the legacy header redrew it: the pill moves the chips, and Chromium
   // keeps a moved glass chip's old sub-pixel raster where a new one is drawn fresh.
   protected override render() {
+    const {t} = this.storeController.store;
     return html`<header class="head${this.tab === 'home' ? '' : ' slim'}">
       <button class="icon menu" id="menu" type="button" aria-label="Open the sidebar" @click=${this.openSidebar}>
         ${ico('menu')}
       </button>
       <hp-greeting class="hello" id="hello" ?hidden=${this.tab !== 'home'}></hp-greeting>
-      ${this.tab === 'home' ? nothing : html`<h1 class="sr">${this.storeController.store.t('header.panel')}</h1>`}
+      ${this.tab === 'home' ? nothing : html`<h1 class="sr">${t('header.panel')}</h1>`}
       <div class="chips">
         <div id="chips">
           ${keyed(this.liveKey, html`<hp-weather-chip .slim=${this.live}></hp-weather-chip>`)}<hp-peak-chip
@@ -90,7 +91,7 @@ export class Header extends LitElement {
           class="icon"
           id="gear"
           type="button"
-          aria-label="Settings"
+          aria-label=${t('settings.title')}
           aria-haspopup="dialog"
           aria-expanded=${this.settingsOpen}
           @click=${this.toggleSettings}
@@ -103,11 +104,11 @@ export class Header extends LitElement {
         class="pop"
         id="attpop"
         role="dialog"
-        aria-label="Status checks"
+        aria-label=${t('header.statusChecks')}
         ?hidden=${!this.statusOpen}
         .open=${this.statusOpen}
       ></hp-status-popup>
-      <div class="pop" id="setpop" ?hidden=${!this.settingsOpen} role="dialog" aria-label="Settings">
+      <div class="pop" id="setpop" ?hidden=${!this.settingsOpen} role="dialog" aria-label=${t('settings.title')}>
         <hp-settings-popup .version=${__VERSION__} .statistics=${this.historyAt !== null}></hp-settings-popup>
       </div>
     </header>`;

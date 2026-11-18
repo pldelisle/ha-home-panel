@@ -1,7 +1,7 @@
 // The settings popup behind the gear, `<hp-settings-popup>` (spec 14, step D): what a person sees and does with it, in English and
 // in French. Everything is driven as a person drives it: the gear, the buttons, the range, Escape, a tap elsewhere. What is read back
 // is what the screen shows (text, roles, states) and what the settings kept (localStorage, the frame's attributes).
-import {test, expect, type House} from './fixtures';
+import {test, expect, isPhone, type House} from './fixtures';
 import {AFTERNOON, FULL_CFG} from './houses';
 import {openFrontDoor, openPopup, stopCharging} from './live';
 
@@ -56,16 +56,17 @@ test('Escape closes the Status checks first and the popup after', async ({house}
   await expect(pop(house)).toBeHidden();
 });
 
-test('lists the four text sizes and the eight glasses in order, as radio buttons that say which is chosen', async ({
+test('lists the four text sizes as radio buttons and the eight glasses as swatches, in order, each saying which is chosen', async ({
   house,
 }) => {
   await open(house);
   const sizes = popup(house).getByRole('radiogroup', {name: 'Text size'}).getByRole('radio');
   await expect(sizes).toHaveText(['Smaller', 'Auto', 'Large', 'Larger']);
   await expect(sizes.nth(1)).toBeChecked();
-  const glasses = popup(house).getByRole('radiogroup', {name: 'Glass'}).getByRole('radio');
+  const glasses = popup(house).getByRole('group', {name: 'Glass'}).getByRole('button');
   await expect(glasses).toHaveText(['None', 'Dawn', 'Lake', 'Meadow', 'Ember', 'Aurora', 'Sand', 'Sky']);
-  await expect(glasses.nth(1)).toBeChecked(); // Dawn is the default
+  await expect(glasses.nth(1)).toHaveAttribute('aria-pressed', 'true'); // Dawn is the default
+  await expect(glasses.nth(2)).toHaveAttribute('aria-pressed', 'false');
   await expect(popup(house).getByRole('slider', {name: 'Transparency'})).toHaveValue('50');
 });
 
@@ -80,35 +81,72 @@ test('a choice is kept, applied and shown by the popup', async ({house}) => {
   const lake = popup(house).locator('[data-gl="lake"]');
   await lake.click();
   expect(await stored(house, 'home-panel-glass')).toBe('lake');
-  await expect(lake).toBeChecked();
-  await expect(popup(house).locator('[data-gl="dawn"]')).not.toBeChecked();
+  await expect(lake).toHaveAttribute('aria-pressed', 'true');
+  await expect(popup(house).locator('[data-gl="dawn"]')).toHaveAttribute('aria-pressed', 'false');
   const range = popup(house).getByRole('slider', {name: 'Transparency'});
   await range.fill('100');
   expect(await stored(house, 'home-panel-glass-t')).toBe('100');
   await expect(range).toHaveAttribute('style', /--p:\s*100%/); // the filled part of the track follows the value
 });
 
-test('the dark toggle turns the frame dark and says so, and turning it back says that', async ({house}) => {
+const appearance = (house: House) => popup(house).getByRole('radiogroup', {name: 'Appearance'}).getByRole('radio');
+
+test('appearance is one segmented control, Light, Dark and Auto, and a choice turns the frame and is kept', async ({
+  house,
+}) => {
   await open(house);
-  const toggle = popup(house).locator('[data-th="toggle"]');
-  await expect(toggle).toHaveAttribute('aria-label', 'Theme: light. Tap to switch');
-  await toggle.click();
+  await expect(appearance(house)).toHaveText(['Light', 'Dark', 'Auto']);
+  await expect(appearance(house).first()).toBeChecked();
+  await appearance(house).nth(1).click();
   await expect(app(house)).toHaveAttribute('data-theme', 'dark');
-  await expect(toggle).toHaveAttribute('aria-pressed', 'true');
-  await expect(toggle).toHaveAttribute('aria-label', 'Theme: dark. Tap to switch');
-  await expect(toggle.locator('b')).toHaveText('Dark');
-  await toggle.click();
+  await expect(appearance(house).nth(1)).toBeChecked();
+  expect(await stored(house, 'home-panel-theme')).toBe('dark');
+  await appearance(house).first().click();
   await expect(app(house)).toHaveAttribute('data-theme', 'light');
-  await expect(toggle.locator('b')).toHaveText('Light');
+  await expect(appearance(house).first()).toBeChecked();
 });
 
-test('Auto says it follows the device, and the toggle then says so too', async ({house}) => {
+test('Auto follows the device and says so', async ({house}) => {
   await open(house);
-  const auto = popup(house).locator('[data-th="auto"]');
-  await expect(auto.locator('small')).toHaveText('Follows the device');
-  await auto.click();
-  await expect(auto).toHaveAttribute('aria-pressed', 'true');
-  await expect(popup(house).locator('[data-th="toggle"] small')).toHaveText('Following the device');
+  await expect(popup(house).getByText('Follows the device')).toHaveCount(0);
+  await appearance(house).nth(2).click();
+  await expect(appearance(house).nth(2)).toBeChecked();
+  expect(await stored(house, 'home-panel-theme')).toBe('auto');
+  await expect(popup(house).getByText('Follows the device')).toBeVisible();
+});
+
+test('a glass is a 44 pt swatch with its name under it, and the chosen one is checked', async ({house}) => {
+  await open(house);
+  const glasses = popup(house).getByRole('group', {name: 'Glass'}).getByRole('button');
+  for (const glass of await glasses.all()) {
+    const box = (await glass.boundingBox())!;
+    expect(box.width).toBeGreaterThanOrEqual(44);
+    expect(box.height).toBeGreaterThanOrEqual(44);
+  }
+  await expect(popup(house).locator('[data-gl="dawn"] .swc svg')).toBeVisible(); // the check mark of the chosen one
+  await expect(popup(house).locator('[data-gl="lake"] .swc svg')).toHaveCount(0);
+});
+
+test('the phone titles the popup Settings and has Done; Done and Escape close it and focus returns to the gear', async ({
+  house,
+}) => {
+  const title = popup(house).getByRole('heading', {name: 'Settings'});
+  const done = popup(house).getByRole('button', {name: 'Done'});
+  await open(house);
+  if (!isPhone(house)) {
+    await expect(title).toHaveCount(0);
+    await expect(done).toHaveCount(0);
+  } else {
+    await expect(title).toBeVisible();
+    await done.click();
+    await expect(pop(house)).toBeHidden();
+    await expect(gear(house)).toBeFocused();
+    await open(house);
+  }
+  await popup(house).locator('[data-tx="large"]').focus();
+  await house.page.keyboard.press('Escape');
+  await expect(pop(house)).toBeHidden();
+  await expect(gear(house)).toBeFocused();
 });
 
 test('the foot says the version, and that the statistics are refreshed once they have loaded', async ({house}) => {
@@ -138,8 +176,8 @@ test('keeps following the settings when the panel leaves the page and comes back
   // the same element came back (a popup the frame had drawn again would prove nothing about following the settings again)
   await expect(popup(house)).toHaveAttribute('data-first', '');
   await popup(house).locator('[data-gl="aurora"]').click();
-  await expect(popup(house).locator('[data-gl="aurora"]')).toBeChecked();
-  await expect(popup(house).locator('[data-gl="dawn"]')).not.toBeChecked();
+  await expect(popup(house).locator('[data-gl="aurora"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(popup(house).locator('[data-gl="dawn"]')).toHaveAttribute('aria-pressed', 'false');
 });
 
 test.describe('in French', () => {
@@ -148,15 +186,22 @@ test.describe('in French', () => {
   test('opens in French and reads Taille du texte', async ({house}) => {
     await open(house);
     await expect(popup(house).getByText('Taille du texte')).toBeVisible();
-    await expect(popup(house).getByRole('radiogroup', {name: 'Verre'}).getByRole('radio').first()).toHaveText('Aucun');
+    await expect(popup(house).getByRole('group', {name: 'Verre'}).getByRole('button').first()).toHaveText('Aucun');
     await expect(popup(house).locator('[data-sleep] b')).toHaveText('Dormir maintenant');
     await expect(popup(house).locator('.ccv')).toHaveText(
       /^Home panel v\d+\.\d+\.\d+ · statistiques actualisées aux 15 minutes$/,
     );
-    await expect(popup(house).locator('[data-th="toggle"]')).toHaveAttribute(
-      'aria-label',
-      'Thème\u00a0: clair. Toucher pour changer',
-    );
+    await expect(popup(house).getByRole('radiogroup', {name: 'Apparence'}).getByRole('radio')).toHaveText([
+      'Clair',
+      'Sombre',
+      'Auto',
+    ]);
+  });
+
+  test('says its three labels in French: the gear, the popup and the Status checks', async ({house}) => {
+    await expect(gear(house)).toHaveAttribute('aria-label', 'Réglages');
+    await expect(pop(house)).toHaveAttribute('aria-label', 'Réglages');
+    await expect(house.root().locator('#attpop')).toHaveAttribute('aria-label', 'Vérifications');
   });
 
   // The popup's root is outside the rewrite layer's observer, so its words are the catalog's from the first render: no English
@@ -179,7 +224,7 @@ test.describe('in French', () => {
       };
     });
     await house.page.reload();
-    await expect(popup(house).locator('.ccl').first()).toHaveText('Taille du texte');
+    await expect(popup(house).locator('.ccl').first()).toHaveText('Apparence');
     const texts = await house.page.evaluate(() => (window as unknown as {popupTexts: string[]}).popupTexts);
     expect(texts.length, 'the popup drew').toBeGreaterThan(0);
     for (const text of texts) expect(text).not.toMatch(/Text size|Sleep now|Smaller|Solid|Follows the device/);

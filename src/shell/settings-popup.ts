@@ -1,21 +1,29 @@
-// <hp-settings-popup>: the Control Center popup behind the gear (theme, Sleep now, text size, glass, transparency), in its own shadow root.
+// <hp-settings-popup>: the Control Center popup behind the gear (appearance, Sleep now, text size, glass, transparency), in its own shadow root.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over the settings module, an observer of it (Gamma et al.); a choice is a
-// `settings.set` and the shell's AppearanceController applies it; "Sleep now" goes up as an event (Lit docs, Events).
+// `settings.set` and the shell's AppearanceController applies it; "Sleep now" and, on the phone, Done go up as events (Lit docs, Events).
+// Appearance is the kit's <hp-seg> (HIG, Segmented controls); a glass is a colour, so it is a swatch with its name and a check (HIG, Color).
 // Its words are catalog messages: the French rewrite layer cannot see inside this root (ADR 0019, ADR 0013).
-// Must not: apply a setting, open or close itself (its container is the shell's), or know the idle timer.
+// Must not: apply a setting, open or close itself (its container is the shell's, Done only asks), or know the idle timer.
 import {ContextConsumer} from '@lit/context';
-import {LitElement, html} from 'lit';
+import {LitElement, html, nothing} from 'lit';
 import type {MessageKey} from '../core/i18n/en.ts';
 import type {PanelSettings} from '../core/settings.ts';
 import {AppearanceConsumer} from '../ui/controllers/appearance-consumer.ts';
 import {StoreController} from '../ui/controllers/store-controller.ts';
 import {settingsContext} from '../ui/contexts.ts';
 import {ico} from '../ui/icons.ts';
+import type {SegChangeDetail, SegOption} from '../ui/seg.ts';
+import '../ui/seg.ts'; // defines <hp-seg>
 import type {SwitchChangeDetail} from '../ui/switch.ts';
 import '../ui/switch.ts'; // defines <hp-switch>
 import {common, seg, settings} from '../ui/styles/index.ts';
 
 // the choices, in the order the popup lists them: the value the settings keep and the message that names it
+const THEMES: readonly (readonly [string, MessageKey])[] = [
+  ['light', 'settings.theme.light'],
+  ['dark', 'settings.theme.dark'],
+  ['auto', 'settings.theme.auto'],
+];
 const TEXT_SIZES: readonly (readonly [string, MessageKey])[] = [
   ['smaller', 'settings.text.smaller'],
   ['auto', 'settings.text.auto'],
@@ -70,26 +78,24 @@ export class SettingsPopup extends LitElement {
   protected override render() {
     const {t} = this.store.store;
     const {theme, text, glass, glassLevel, cards} = this.settingsNow();
-    const dark = this.appearance.value?.theme === 'dark';
-    const hint = t(theme === 'auto' ? 'settings.theme.following' : 'settings.theme.tap');
+    const phone = this.appearance.value?.compact === true;
+    const themes: SegOption[] = THEMES.map(([value, key]) => ({value, label: t(key)}));
     // the foot of the popup: the version, and that the charts' history is kept fresh once it has loaded
     const foot = t(this.statistics ? 'settings.versionStatistics' : 'settings.version', {version: this.version});
     return html`<div class="cc" @click=${this.onClick}>
-      <button
-        type="button"
-        class="cct tog"
-        data-th="toggle"
-        aria-pressed=${dark}
-        aria-label=${t('settings.theme.label', {theme: dark ? 'dark' : 'light', hint})}
-      >
-        <span class="ccic">${ico(dark ? 'moon' : 'sun', 22)}</span
-        ><b>${t(dark ? 'settings.theme.dark' : 'settings.theme.light')}</b>
-        <small>${hint}</small>
-      </button>
-      <button type="button" class="cct tog" data-th="auto" aria-pressed=${theme === 'auto'}>
-        <span class="ccic">${ico('sunauto', 22)}</span><b>${t('settings.theme.auto')}</b
-        ><small>${t('settings.theme.autoCaption')}</small>
-      </button>
+      ${
+        phone
+          ? html`<div class="cch">
+              <h2>${t('settings.title')}</h2>
+              <button type="button" class="done" data-done="1">${t('settings.done')}</button>
+            </div>`
+          : nothing
+      }
+      <div class="cct wide">
+        <div class="ccl">${t('settings.theme.title')}</div>
+        <hp-seg .options=${themes} .value=${theme} .label=${t('settings.theme.title')} @change=${this.onTheme}></hp-seg>
+        ${theme === 'auto' ? html`<small class="ccn">${t('settings.theme.autoCaption')}</small>` : nothing}
+      </div>
       <button type="button" class="cct tog wide sleepnow" data-sleep="1">
         <span class="ccic">${ico('moon', 22)}</span
         ><span class="sltx"><b>${t('settings.sleepNow')}</b><small>${t('settings.sleepNowCaption')}</small></span>
@@ -107,11 +113,12 @@ export class SettingsPopup extends LitElement {
       </div>
       <div class="cct wide">
         <div class="ccl">${t('settings.glass.title')}</div>
-        <div class="seg wps" role="radiogroup" aria-label=${t('settings.glass.title')}>
+        <div class="swatches" role="group" aria-label=${t('settings.glass.title')}>
           ${GLASSES.map(
             ([value, key]) =>
-              html`<button type="button" role="radio" aria-checked=${value === glass} data-gl=${value}>
-                <b>${t(key)}</b>
+              html`<button type="button" class="sw" aria-pressed=${value === glass} data-gl=${value}>
+                <span class="swc" aria-hidden="true">${value === glass ? ico('check', 18) : nothing}</span>
+                <span class="swn">${t(key)}</span>
               </button>`,
           )}
         </div>
@@ -147,7 +154,12 @@ export class SettingsPopup extends LitElement {
     return this.source.get();
   }
 
-  // One listener for the tiles and the two groups, as the class had: the button says what it chooses in a data attribute.
+  // Light, Dark or Auto: the setting is the choice itself, and the theme in force follows from it (the shell's controller)
+  private readonly onTheme = (e: CustomEvent<SegChangeDetail>): void => {
+    this.source?.set('theme', e.detail.value);
+  };
+
+  // One listener for the tile and the two groups, as the class had: the button says what it chooses in a data attribute.
   private readonly onClick = (e: Event): void => {
     const target = e.target as Element;
     const {source} = this;
@@ -156,14 +168,13 @@ export class SettingsPopup extends LitElement {
       this.dispatchEvent(new CustomEvent('sleep-now', {bubbles: true, composed: true}));
       return;
     }
-    const theme = target.closest<HTMLElement>('[data-th]')?.dataset.th;
+    if (target.closest('[data-done]')) {
+      this.dispatchEvent(new CustomEvent('settings-close', {bubbles: true, composed: true}));
+      return;
+    }
     const glass = target.closest<HTMLElement>('[data-gl]')?.dataset.gl;
     const text = target.closest<HTMLElement>('[data-tx]')?.dataset.tx;
-    if (theme !== undefined) {
-      // the toggle flips the theme in force, which on Auto is the device's, so it leaves Auto for the other one
-      const dark = this.appearance.value?.theme === 'dark';
-      source.set('theme', theme === 'auto' ? 'auto' : dark ? 'light' : 'dark');
-    } else if (glass !== undefined) source.set('glass', glass);
+    if (glass !== undefined) source.set('glass', glass);
     else if (text !== undefined) source.set('text', text);
   };
 
@@ -190,6 +201,7 @@ declare global {
   }
   interface HTMLElementEventMap {
     'sleep-now': CustomEvent<void>;
+    'settings-close': CustomEvent<void>;
   }
 }
 

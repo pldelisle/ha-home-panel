@@ -30,6 +30,7 @@ export const en = {
   // the Status checks that need attention (the pane's heading), and the clock's small line
   // the heading every tab but Home has, hidden: the page's one h1 names the panel (the tab's own title is the pane's h2)
   'header.panel': 'Home panel',
+  'header.statusChecks': 'Status checks',
   'home.greeting.night': 'Good night',
   'home.greeting.morning': 'Good morning',
   'home.greeting.afternoon': 'Good afternoon',
@@ -113,12 +114,12 @@ export const en = {
   'more.title': 'More',
   'more.sub': 'All sections',
   'more.close': 'Close',
-  // the settings popup behind the gear (src/shell/settings-popup.ts); the popup's own name is the shell's, in its template
+  // the settings popup behind the gear (src/shell/settings-popup.ts); its title is also the gear's and the popup's accessible name (src/shell/header.ts)
+  'settings.title': 'Settings',
+  'settings.done': 'Done',
+  'settings.theme.title': 'Appearance',
   'settings.theme.dark': 'Dark',
   'settings.theme.light': 'Light',
-  'settings.theme.following': 'Following the device',
-  'settings.theme.tap': 'Tap to switch',
-  'settings.theme.label': 'Theme: {theme, select, dark {dark} other {light}}. {hint}',
   'settings.theme.auto': 'Auto',
   'settings.theme.autoCaption': 'Follows the device',
   'settings.sleepNow': 'Sleep now',

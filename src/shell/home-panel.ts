@@ -282,6 +282,14 @@ export class HomePanel extends LitElement {
     this.settingsOpen = false;
   }
 
+  // Done (the phone's) and Escape close the popup and give focus back to the gear, which a tap outside does not: the tap went elsewhere
+  private closeSettingsToGear(): void {
+    this.closeSettings();
+    this.renderRoot.querySelector<HTMLElement>('#gear')?.focus();
+  }
+
+  private readonly onSettingsDone = (): void => this.closeSettingsToGear();
+
   // the Status checks: the pill opens and closes them, a tap outside and Escape close them
   private closeStatus(): void {
     this.statusOpen = false;
@@ -452,6 +460,7 @@ export class HomePanel extends LitElement {
       @live-activities=${this.onLiveActivities}
       @settings-toggle=${this.toggleSettings}
       @sleep-now=${this.onSleepNow}
+      @settings-close=${this.onSettingsDone}
       @click=${this.onTapOutside}
     >
       ${keyed(this.epoch, this.renderWrap())} ${lens}
@@ -574,7 +583,10 @@ export class HomePanel extends LitElement {
     this.statusOff?.();
     this.statusOff = this.sheets.registerPopup({isOpen: () => this.statusOpen, close: () => this.closeStatus()});
     this.settingsOff?.();
-    this.settingsOff = this.sheets.registerPopup({isOpen: () => this.settingsOpen, close: () => this.closeSettings()});
+    this.settingsOff = this.sheets.registerPopup({
+      isOpen: () => this.settingsOpen,
+      close: () => this.closeSettingsToGear(),
+    });
     this.answered = true;
     this.phoneNow = this.phone.matches;
     this.toldCompact = this.phoneNow;

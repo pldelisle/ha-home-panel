@@ -16,6 +16,15 @@ async function choose(house: House, selector: string) {
   await expect(pop).toBeVisible();
   await popup(house).locator(selector).dispatchEvent('click');
 }
+// the appearance control's three segments, by their words
+async function chooseTheme(house: House, name: 'Light' | 'Dark' | 'Auto') {
+  const pop = house.root().locator('#setpop');
+  if (await pop.isHidden()) await house.root().locator('#gear').click();
+  await expect(pop).toBeVisible();
+  await themeRadio(house, name).dispatchEvent('click');
+}
+const themeRadio = (house: House, name: string) =>
+  popup(house).getByRole('radiogroup', {name: 'Appearance'}).getByRole('radio', {name, exact: true});
 const pageBackground = (page: Page) =>
   page.evaluate(() => ({
     html: document.documentElement.style.backgroundColor,
@@ -24,13 +33,13 @@ const pageBackground = (page: Page) =>
 
 test('the popup switches between dark and light, and the choice stays', async ({house}) => {
   await expect(app(house)).toHaveAttribute('data-theme', 'light');
-  await choose(house, '[data-th="toggle"]');
+  await chooseTheme(house, 'Dark');
   await expect(app(house)).toHaveAttribute('data-theme', 'dark');
-  await expect(popup(house).locator('[data-th="toggle"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(themeRadio(house, 'Dark')).toBeChecked();
   expect(await house.page.evaluate(() => localStorage.getItem('home-panel-theme'))).toBe('dark');
-  await choose(house, '[data-th="toggle"]');
+  await chooseTheme(house, 'Light');
   await expect(app(house)).toHaveAttribute('data-theme', 'light');
-  await expect(popup(house).locator('[data-th="toggle"]')).toHaveAttribute('aria-pressed', 'false');
+  await expect(themeRadio(house, 'Light')).toBeChecked();
 });
 
 // Auto is the device's own light or dark setting (`prefers-color-scheme`), as it changes. The sun has no part in the
@@ -60,17 +69,16 @@ test.describe('the theme on auto', () => {
     await expect(app(house)).toHaveAttribute('data-theme', 'dark');
   });
 
-  test('leaves an open settings popup open and showing the theme in force when the device flips', async ({house}) => {
-    await choose(house, '[data-th="auto"]');
-    const toggle = popup(house).locator('[data-th="toggle"]');
-    await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+  test('leaves an open settings popup open, still on Auto, when the device flips', async ({house}) => {
+    await chooseTheme(house, 'Auto');
+    const auto = themeRadio(house, 'Auto');
+    await expect(auto).toBeChecked();
     await house.page.emulateMedia({colorScheme: 'dark'});
     await expect(app(house)).toHaveAttribute('data-theme', 'dark');
     await expect(house.root().locator('#setpop')).toBeVisible();
-    await expect(toggle).toHaveAttribute('aria-pressed', 'true');
-    await expect(toggle.locator('b')).toHaveText('Dark');
+    await expect(auto).toBeChecked();
     await house.page.emulateMedia({colorScheme: 'light'});
-    await expect(toggle.locator('b')).toHaveText('Light');
+    await expect(app(house)).toHaveAttribute('data-theme', 'light');
   });
 
   test('is changed while the panel is off the page: the new setting is there when it returns', async ({house}) => {
@@ -175,7 +183,7 @@ test.describe('the first theme shown', () => {
 });
 
 test('a redraw of the guest keeps the theme: the language changes and the panel is still dark', async ({house}) => {
-  await choose(house, '[data-th="toggle"]');
+  await chooseTheme(house, 'Dark');
   await expect(app(house)).toHaveAttribute('data-theme', 'dark');
   await house.setLanguage('fr');
   await expect(house.root().locator('#hello')).not.toBeEmpty();
@@ -196,7 +204,7 @@ test('the page takes the colour of the wallpaper in force: it changes with the t
   const light = await wallpaperBase();
   expect(light.base).not.toBe('');
   expect(light.html).toBe(light.base);
-  await choose(house, '[data-th="toggle"]');
+  await chooseTheme(house, 'Dark');
   await expect(app(house)).toHaveAttribute('data-theme', 'dark');
   await expect.poll(async () => (await wallpaperBase()).html === (await wallpaperBase()).base).toBe(true);
   const dark = await wallpaperBase();

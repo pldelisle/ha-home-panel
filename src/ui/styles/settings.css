@@ -67,30 +67,116 @@ button.cct:focus-visible {
   font-size: calc(12px * var(--tx));
   color: var(--fg2);
 }
-button.cct[aria-pressed='true'] {
-  background: var(--fg);
-  color: var(--card);
-}
-button.cct[aria-pressed='true'] .ccic {
-  background: rgba(255, 255, 255, 0.22);
-  color: inherit;
-}
-button.cct[aria-pressed='true'] small {
-  color: inherit;
-  opacity: 0.75;
-}
 .cct .ccl {
   font-size: calc(13px * var(--tx));
   font-weight: 600;
   color: var(--fg2);
   margin-bottom: 8px;
 }
-.cct .seg {
+.cct .seg,
+.cct hp-seg::part(group) {
   background: var(--card);
 }
-.cct .seg.wps {
-  grid-auto-flow: row;
+/* "Auto follows the device", under the appearance control */
+.ccn {
+  display: block;
+  margin-top: 8px;
+  font-size: calc(12px * var(--tx));
+  color: var(--fg2);
+}
+/* the phone's title and Done, above the tiles (the popup has neither on a tablet, where it hangs under the gear) */
+.cch {
+  grid-column: 1/-1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.cch h2 {
+  margin: 0;
+  font-size: calc(22px * var(--tx));
+  font-weight: 700;
+}
+.cch .done {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 22px;
+  background: var(--card2);
+  font: inherit;
+  font-weight: 600;
+  color: var(--fg);
+  cursor: pointer;
+}
+.cch .done:focus-visible,
+.sw:focus-visible {
+  outline: 2px solid var(--c-home);
+  outline-offset: 2px;
+}
+/* a glass is a colour: a 44 pt swatch of its wallpaper's leading colours (frame/glass.css has the wallpapers) with its name under it,
+   and a check on the chosen one; Sky follows the hour, so it shows the four wallpapers it picks among */
+.swatches {
+  display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px 4px;
+}
+.sw {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: var(--fg);
+  cursor: pointer;
+}
+.swc {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--sw);
+  color: #1c1c1e;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.14);
+}
+.sw[aria-pressed='true'] .swc {
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.14),
+    0 0 0 2px var(--card2),
+    0 0 0 4px var(--c-home);
+}
+.swn {
+  font-size: calc(12px * var(--tx));
+  font-weight: 600;
+}
+.sw[data-gl='none'] {
+  --sw: linear-gradient(135deg, #fff 50%, #d1d1d6 50%);
+}
+.sw[data-gl='dawn'] {
+  --sw: linear-gradient(135deg, #faba96, #c0acec 55%, #9cc4f4);
+}
+.sw[data-gl='lake'] {
+  --sw: linear-gradient(135deg, #609cf4, #8e72e8 55%, #ee92c8);
+}
+.sw[data-gl='meadow'] {
+  --sw: linear-gradient(135deg, #a0e0c4, #6ebac2 55%, #f6e296);
+}
+.sw[data-gl='ember'] {
+  --sw: linear-gradient(135deg, #fa9678, #fcce78 55%, #c48cc8);
+}
+.sw[data-gl='aurora'] {
+  --sw: linear-gradient(135deg, #64dcc8, #96e8aa 55%, #a08cf0);
+}
+.sw[data-gl='sand'] {
+  --sw: linear-gradient(135deg, #ecce96, #e8a078 55%, #96c4f0);
+}
+.sw[data-gl='sky'] {
+  --sw: conic-gradient(#609cf4, #faba96, #fa9678, #64dcc8, #609cf4);
 }
 .cct .gtrow {
   margin-top: 8px;
@@ -182,13 +268,6 @@ button.cct[aria-pressed='true'] small {
 }
 .app.gl .cct .ccic {
   background: var(--g-sel);
-}
-.app.gl button.cct[aria-pressed='true'] {
-  background: var(--fg);
-  box-shadow: none;
-}
-.app.gl button.cct[aria-pressed='true'] .ccic {
-  background: rgba(255, 255, 255, 0.22);
 }
 @media (prefers-reduced-motion: no-preference) {
   .cct {

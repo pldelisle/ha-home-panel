@@ -26,7 +26,11 @@ const FAKE_CARD = `
 
 async function toggleTheme(house: House) {
   await house.root().locator('#gear').click();
-  await house.root().locator('hp-settings-popup').locator('[data-th="toggle"]').dispatchEvent('click');
+  await house
+    .root()
+    .locator('hp-settings-popup')
+    .getByRole('radio', {name: 'Dark', exact: true})
+    .dispatchEvent('click');
 }
 
 test('the Weather tab shows the detail in its pane: the header, the sun block, the days and the three seven-day charts', async ({
