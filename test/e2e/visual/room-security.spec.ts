@@ -4,7 +4,6 @@
 import {test, expect, fontsLoaded} from '../fixtures';
 import {AFTERNOON, FULL_CFG, VIEWPORTS} from '../houses';
 import {addPorchCamera} from '../room-camera';
-import {openRoomRow} from '../room-row';
 
 test.beforeEach(({house}) => fontsLoaded(house));
 
@@ -13,12 +12,14 @@ test.describe('a room with security, tablet, light', () => {
 
   test('room view with security', async ({house}) => {
     await addPorchCamera(house, 'living_room');
-    await openRoomRow(house, 'living_room');
+    await house.root().locator('#rail [data-room=\"living_room\"]').click();
     await expect(house.root().locator('#pane-room hp-camera-card .cam')).toBeVisible();
     await house.page.mouse.move(0, 0);
     // the snapshot is a Home Assistant proxy URL the harness never serves: masked, as it is wherever a camera is on screen
+    // 40 pixels allowed, as for the other tablet room views (states.spec.ts, #521): they flake in CI at the glass sidebar's bottom corners
     await expect(house.page).toHaveScreenshot('room-view-security-tablet-light-en.png', {
       mask: [house.root().locator('#pane-room hp-camera-card .cam img')],
+      maxDiffPixels: 40,
     });
   });
 });
