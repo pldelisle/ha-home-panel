@@ -1,7 +1,7 @@
 // weatherIds: every entity id the Weather pane reads, so the store tells it about those and no others.
 import {describe, expect, test} from 'vitest';
 import {resolveConfig, type ResolvedConfig} from '../../../../src/core/config.ts';
-import {sevenDayIds, weatherIds} from '../../../../src/features/weather/ids.ts';
+import {archiveKeys, sevenDayIds, weatherIds} from '../../../../src/features/weather/ids.ts';
 import type {WeatherSource} from '../../../../src/providers/weather-source.ts';
 import {entity} from '../../fake-hass.ts';
 import {bareHouse, fullHouse} from './support.ts';
@@ -89,5 +89,18 @@ describe('sevenDayIds', () => {
       wind: 'sensor.w',
       gusts: null,
     });
+  });
+});
+
+describe('archiveKeys', () => {
+  test('the sensors the climate archive has a series for, each id under its key, and none for a sensor the house lacks', () => {
+    const keys = archiveKeys(
+      resolveConfig({entities: {outT: 'sensor.out', gust: null, humidex: null}}, fullHouse.states),
+    );
+    expect(keys.get('sensor.out')).toBe('outT');
+    expect([...keys.values()]).not.toContain('gust');
+    expect([...keys.values()]).not.toContain('humidex');
+    expect([...keys.values()]).toContain('wind');
+    expect(archiveKeys(resolveConfig({}, bareHouse.states)).size).toBe(0);
   });
 });

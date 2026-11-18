@@ -353,6 +353,7 @@ export const fr: Record<MessageKey, string> = {
   'weather.detail.pressureNote': 'En kPa. Une baisse constante annonce souvent du mauvais temps.',
   'weather.detail.season': "La saison jusqu'ici",
   'weather.detail.historyFailed': 'L’historique n’est pas disponible pour le moment.',
+  'archive.source': 'Avant le {date} : ECCC, {station}',
   'weather.series.temperature': 'Température',
   'weather.series.wind': 'Vent',
   'weather.series.pressure': 'Pression',

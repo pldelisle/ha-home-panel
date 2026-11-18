@@ -178,6 +178,15 @@ export const test = base.extend<{houseOpts: HouseOpts; house: House}>({
       if (isGoogleFont(r.url())) errors.push(`Google Fonts request: ${r.url()}`);
     });
     await page.route(isGoogleFont, r => r.abort());
+    // the harness has no network, and a house has a place: ECCC's climate archive (#447) finds no station, so the archive is off and the charts
+    // read the recorder alone, as the baselines were recorded
+    await page.route(/^https:\/\/api\.weather\.gc\.ca\//, r =>
+      r.fulfill({
+        contentType: 'application/json',
+        headers: {'access-control-allow-origin': '*'},
+        body: JSON.stringify({type: 'FeatureCollection', features: []}),
+      }),
+    );
     page.on('response', r => {
       if (r.request().resourceType() === 'font') fonts.push({url: r.url(), status: r.status()});
     });

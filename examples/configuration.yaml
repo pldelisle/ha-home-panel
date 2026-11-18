@@ -58,6 +58,9 @@ panel_custom:
         - lights: [light.kitchen_island, light.kitchen_sink]
           switch: input_boolean.kitchen_lights_linked
         - [office, hallway]
+      # the Environment and Climate Change Canada climate station whose past fills the Weather tab's year and season before the
+      # recorder's first row: its climate identifier, or false for none. Left out, the nearest active hourly station within 40 km.
+      climate_station: '7014160'
       # a name per language, for a Home Assistant name, an entity id, an area id or a device id; beats the built-in room words
       # (a room Home Assistant calls Salon already reads Living room in English, and the other way round)
       names:

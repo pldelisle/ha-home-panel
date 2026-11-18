@@ -360,6 +360,8 @@ export const en = {
   'weather.detail.pressureNote': 'In kPa. A steady fall often means weather is on the way.',
   'weather.detail.season': 'Season so far',
   'weather.detail.historyFailed': 'History is not available right now.',
+  // where the part of a chart before Home Assistant's own history comes from (src/providers/climate-archive.ts)
+  'archive.source': 'Before {date}: ECCC, {station}',
   'weather.series.temperature': 'Temperature',
   'weather.series.wind': 'Wind',
   'weather.series.pressure': 'Pressure',
