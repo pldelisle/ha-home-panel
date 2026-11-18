@@ -15,7 +15,7 @@ import {
 } from '../../../../src/features/media/commands.ts';
 
 const TV = {id: 'media_player.living_room_tv', wakeButton: null};
-const SPEAKER = {id: 'media_player.kitchen_speaker', name: 'HomePod mini'};
+const SPEAKER = {id: 'media_player.kitchen_speaker', room: 'Living room'};
 
 describe('the typed overlay keys', () => {
   test('are the id and a suffix, so the television, a speaker and a mode never share a key', () => {
@@ -93,13 +93,13 @@ describe('the television', () => {
 });
 
 describe('a speaker', () => {
-  test('play holds the state as playing and says the speaker by name', () => {
+  test('play holds the state as playing and says the room, as the card does', () => {
     expect(speakerPlayPause(SPEAKER, true)).toEqual({
       domain: 'media_player',
       service: 'media_play',
       data: {entity_id: 'media_player.kitchen_speaker'},
       holds: ['media_player.kitchen_speaker:st'],
-      done: {key: 'media.speakerPlaying', values: {name: 'HomePod mini'}},
+      done: {key: 'media.speakerPlaying', values: {name: 'Living room'}},
     });
   });
 
@@ -109,7 +109,7 @@ describe('a speaker', () => {
       service: 'media_pause',
       data: {entity_id: 'media_player.kitchen_speaker'},
       holds: ['media_player.kitchen_speaker:st'],
-      done: {key: 'media.speakerPaused', values: {name: 'HomePod mini'}},
+      done: {key: 'media.speakerPaused', values: {name: 'Living room'}},
     });
   });
 

@@ -64,8 +64,20 @@ test.describe('the tablet', () => {
     await expect(box.getByText('Now on Netflix', {exact: true})).toBeVisible();
     await expect(box.locator('.tvscreen')).toHaveCount(0);
     await expect(power(house)).toHaveAttribute('aria-pressed', 'true');
+    // the test house's TV says only `on`, so its play button claims neither Play nor Pause; the card no longer explains a slider it does not have
+    await expect(box.getByRole('button', {name: 'Play or pause', exact: true})).toBeVisible();
+    await expect(pane(house).getByText(/no slider/)).toHaveCount(0);
     await pod(house).getByRole('button', {name: 'Volume down'}).click();
     await expect(slider(house)).toHaveValue('30');
+  });
+
+  test("the television's play button says Pause while it plays and Play while it is paused", async ({house}) => {
+    await house.tab('media');
+    const box = house.root().locator('#pane-media hp-tv-box');
+    await house.setState(TV, {state: 'playing'});
+    await expect(box.getByRole('button', {name: 'Pause', exact: true})).toBeVisible();
+    await house.setState(TV, {state: 'paused'});
+    await expect(box.getByRole('button', {name: 'Play', exact: true})).toBeVisible();
   });
 
   test('the room name has a line to itself, whole, with the volume on a row under it', async ({house}) => {
@@ -107,7 +119,7 @@ test.describe('the tablet', () => {
     // the harness never answers with a new state, so what shows is the value the tap holds
     await expect(pod(house).getByRole('button', {name: 'Pause', exact: true})).toBeEnabled();
     await expectCall(house, /^media_player\.media_play \{"entity_id":"media_player\.living_room_speaker"\}$/);
-    await expect(house.root().locator('#toast')).toHaveText('speaker playing');
+    await expect(house.root().locator('#toast')).toHaveText('Living room playing');
   });
 
   test.describe('a television that will not turn on', () => {
@@ -208,10 +220,14 @@ test.describe('the phone', () => {
     await expect(sheet(house).getByText('1 speaker playing', {exact: true})).toBeVisible();
   });
 
-  test("the switch on the television's tile turns it off at once, and opens nothing", async ({house}) => {
-    const power = tile(house, 'Samsung TV').getByRole('switch', {name: 'Samsung TV power'});
+  test("the power button on the television's tile turns it off at once, and opens nothing", async ({house}) => {
+    const power = tile(house, 'Samsung TV').getByRole('button', {name: 'Turn the TV off'});
+    await expect(power).toHaveAttribute('aria-pressed', 'true');
     await power.click();
-    await expect(power).toHaveAttribute('aria-checked', 'false');
+    await expect(tile(house, 'Samsung TV').getByRole('button', {name: 'Turn the TV on'})).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
     await expectCall(house, /^media_player\.turn_off \{"entity_id":"media_player\.living_room_tv"\}$/);
     await expect(house.root().getByRole('dialog')).toHaveCount(0);
   });
@@ -221,6 +237,23 @@ test.describe('the phone', () => {
     await expect(tile(house, 'Living room').getByRole('button', {name: 'Play', exact: true})).toBeEnabled();
     await expectCall(house, /^media_player\.media_pause \{"entity_id":"media_player\.living_room_speaker"\}$/);
     await expect(house.root().getByRole('dialog')).toHaveCount(0);
+    // the toast names the room the card shows, not the entity's own name
+    await expect(house.root().locator('#toast')).toHaveText('Living room paused');
+  });
+
+  test("a speaker's tile has the volume slider with its − and +, beside its row and not inside it", async ({house}) => {
+    const living = tile(house, 'Living room');
+    const slider = living.getByRole('slider', {name: 'Living room volume'});
+    await expect(slider).toHaveValue('35');
+    await living.getByRole('button', {name: 'Volume up'}).click();
+    await expect(slider).toHaveValue('40');
+    await expectCall(
+      house,
+      /^media_player\.volume_set \{"entity_id":"media_player\.living_room_speaker","volume_level":0\.4\}$/,
+    );
+    await expect(house.root().getByRole('dialog'), 'a tap on the volume opens nothing').toHaveCount(0);
+    // the slider is a sibling of the row's button, never inside any button (nested-interactive)
+    expect(await slider.evaluate(el => el.closest('button'))).toBeNull();
   });
 
   test('draws a tile per player, and leaves the box and the pods to the sheets', async ({house}) => {

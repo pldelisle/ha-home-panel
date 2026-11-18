@@ -32,6 +32,11 @@ export interface TvControl {
   label: string;
 }
 
+/** The television's play button: its glyph and name say what a press will do when the set says what it does, and the neutral play-or-pause glyph when it does not. */
+export interface TvPlayControl extends TvControl {
+  icon: 'play' | 'pause' | 'pp';
+}
+
 export interface TvView {
   /** The player and its wake-on-LAN button, which the box's commands name (`tvPower` and the others). */
   id: string;
@@ -49,12 +54,8 @@ export interface TvView {
   nowOn: string | null;
   /** The power button's name for a screen reader: it says what a press does ("Turn the TV off"). */
   powerLabel: string;
-  /** The phone's tile switch's name for a screen reader. */
-  switchLabel: string;
   controlsLabel: string;
-  /** The pane's note that there is no volume slider. */
-  hint: string;
-  controls: {volumeDown: TvControl; volumeUp: TvControl; mute: TvControl; playPause: TvControl};
+  controls: {volumeDown: TvControl; volumeUp: TvControl; mute: TvControl; playPause: TvPlayControl};
 }
 
 export interface VolumeView {
@@ -91,16 +92,20 @@ export interface SpeakerView {
   playPause: {enabled: boolean; label: string; icon: 'play' | 'pause'};
 }
 
-/** A tile's one control, with what its command names: the television's power switch, or a speaker's play button. */
+/**
+ * A tile's one control, with what its command names: the television's power button, or a speaker's play button. A speaker's
+ * volume rides with it, so the tile draws the pod's slider; `speaker.room` is the name the card shows and the toast says.
+ */
 export type MediaControlView =
-  | {kind: 'switch'; checked: boolean; label: string; disabled: boolean; tv: Pick<TvView, 'id' | 'wakeButton'>}
+  | {kind: 'power'; on: boolean; label: string; disabled: boolean; tv: Pick<TvView, 'id' | 'wakeButton'>}
   | {
       kind: 'play';
       playing: boolean;
       label: string;
       disabled: boolean;
       icon: 'play' | 'pause';
-      speaker: Pick<SpeakerView, 'id' | 'name'>;
+      speaker: Pick<SpeakerView, 'id' | 'room'>;
+      volume: VolumeView | null;
     };
 
 /** A tile of the phone's Media list: the television, or a speaker. */
@@ -135,6 +140,13 @@ export interface MediaViewModel {
   labels: {speakers: string; noDevices: string; noSpeakers: string};
 }
 
+/** What a press of the television's play button will do: a set that says `playing` will pause, `paused` will play, and any other says neither. */
+function playPauseOf(playback: TvInputs['playback'], t: Translate): TvPlayControl {
+  if (playback === 'playing') return {text: null, label: t('media.pause'), icon: 'pause'};
+  if (playback === 'paused') return {text: null, label: t('media.play'), icon: 'play'};
+  return {text: null, label: t('media.playOrPause'), icon: 'pp'};
+}
+
 /** The television's view: a held `on` and `mute` replace what the player says until it agrees. */
 function tvView(tv: TvInputs, {t, overlay}: MediaModelDeps): TvView {
   const live = tv.state !== 'unavailable';
@@ -156,14 +168,12 @@ function tvView(tv: TvInputs, {t, overlay}: MediaModelDeps): TvView {
     status,
     nowOn: sourceLabel ? t('media.nowOn', {source: sourceLabel}) : null,
     powerLabel: t(on ? 'media.tvPowerOff' : 'media.tvPowerOn'),
-    switchLabel: t('media.tvPower', {name}),
     controlsLabel: t('media.volumeAndPlayback'),
-    hint: t('media.noVolumeSlider'),
     controls: {
       volumeDown: {text: t('media.volumeDownShort'), label: t('media.volumeDownPane')},
       volumeUp: {text: t('media.volumeUpShort'), label: t('media.volumeUpPane')},
       mute: {text: t('media.mute'), label: t('media.mute')},
-      playPause: {text: null, label: t('media.playOrPause')},
+      playPause: playPauseOf(tv.playback, t),
     },
   };
 }
@@ -276,9 +286,9 @@ function tvTile(tv: TvView, t: Translate): MediaTileView {
     on: tv.on,
     picture: null,
     control: {
-      kind: 'switch',
-      checked: tv.on,
-      label: tv.switchLabel,
+      kind: 'power',
+      on: tv.on,
+      label: tv.powerLabel,
       disabled: !tv.available,
       tv: {id: tv.id, wakeButton: tv.wakeButton},
     },
@@ -303,7 +313,8 @@ function speakerTile(speaker: SpeakerView, t: Translate): MediaTileView {
       label: speaker.playPause.label,
       disabled: !speaker.playPause.enabled,
       icon: speaker.playPause.icon,
-      speaker: {id: speaker.id, name: speaker.name},
+      speaker: {id: speaker.id, room: speaker.room},
+      volume: speaker.volume,
     },
   };
 }

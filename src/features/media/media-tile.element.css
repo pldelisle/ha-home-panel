@@ -1,4 +1,4 @@
-/* <hp-media-tile>'s own rules: none but its host's. Its look is the kit's `.stile` (stat-tile.css), the play button's included. */
+/* <hp-media-tile>'s own rules: its host's, the row's, and the volume's line under them. Its look is the kit's `.stile` (stat-tile.css), the play button's included. */
 /* no box of its own: the tile is the item of the pane's list */
 :host {
   display: contents;
@@ -27,4 +27,16 @@
 .stile .mrow:focus-visible {
   outline: 2px solid var(--c-home);
   outline-offset: 2px;
+}
+/* a speaker's volume takes a line of its own under the row and the play button: the tile wraps, and the control's row fills the line */
+.stile.wide.home {
+  flex-wrap: wrap;
+}
+/* the − and + and the track's rest take the tile's raised colour, as the pod's take the card's */
+hp-volume-control {
+  --vol-well: var(--card2);
+}
+/* the power button sits level with a speaker's play button */
+hp-tv-power {
+  --power-size: 44px;
 }

@@ -1,15 +1,18 @@
-// <hp-media-tile>: one player on the phone's Media tab, the kit's wide summary tile with the television's switch or a speaker's play button.
+// <hp-media-tile>: one player on the phone's Media tab, the kit's wide summary tile with the television's power button (<hp-tv-power>, the box's own) or a speaker's play button.
 // Pattern: humble object (Meszaros) over the model's `MediaTileView`; a tap on the tile's row asks the shell for its controls' sheet by a
 // `SheetRequestEvent` (ADR 0021), and a tap on its control, a sibling of the row and never inside it, holds the value it asks for and runs the feature's command (ADR 0023).
+// A speaker's tile composes <hp-volume-control> under the row, a sibling of the row's button too: a slider inside a button is nested-interactive.
 // Its look is the kit's `.stile` rules, adopted (ADR 0019), as `<hp-stat-tile>` draws them.
 // Must not: read an entity or the store's state (the pane hands it `tile`), word a string, or open the sheet from its control.
 import {LitElement, html, nothing, unsafeCSS} from 'lit';
 import {classMap} from 'lit/directives/class-map.js';
 import {ifDefined} from 'lit/directives/if-defined.js';
-import {K, TV_HOLD_MS, speakerPlayPause, tvPower} from './commands.ts';
+import {K, speakerPlayPause} from './commands.ts';
 import type {MediaControlView, MediaTileView} from './model.ts';
 import {CONTROLS_SHEET} from './sheets.ts';
 import tileOwn from './media-tile.element.css?inline';
+import './tv-power.ts'; // defines <hp-tv-power>
+import './volume-control.ts'; // defines <hp-volume-control>
 import {CommandRunner} from '../../ui/commands.ts';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
 import {OptimisticController} from '../../ui/controllers/optimistic.ts';
@@ -18,8 +21,6 @@ import {SheetRequestEvent} from '../../ui/events.ts';
 import {ico} from '../../ui/icons.ts';
 import {common, statTile} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
-import '../../ui/switch.ts'; // defines <hp-switch>
-import type {SwitchChangeDetail} from '../../ui/switch.ts';
 
 export class MediaTile extends LitElement {
   static override properties = {
@@ -65,22 +66,20 @@ export class MediaTile extends LitElement {
   }
 
   private renderControl(control: MediaControlView) {
-    return control.kind === 'switch'
-      ? html`<hp-switch
-          .checked=${control.checked}
-          .disabled=${control.disabled}
-          .label=${control.label}
-          @change=${this.onPower}
-        ></hp-switch>`
+    return control.kind === 'power'
+      ? html`<hp-tv-power
+          .tv=${{...control.tv, on: control.on, available: !control.disabled, powerLabel: control.label}}
+        ></hp-tv-power>`
       : html`<button
-          type="button"
-          class=${classMap({pp2: true, on: control.playing})}
-          aria-label=${control.label}
-          ?disabled=${control.disabled}
-          @click=${this.onPlay}
-        >
-          ${ico(control.icon, 20)}
-        </button>`;
+            type="button"
+            class=${classMap({pp2: true, on: control.playing})}
+            aria-label=${control.label}
+            ?disabled=${control.disabled}
+            @click=${this.onPlay}
+          >
+            ${ico(control.icon, 20)}
+          </button>
+          <hp-volume-control .speaker=${control.speaker} .volume=${control.volume}></hp-volume-control>`;
   }
 
   // arrow fields, so the template hands the same functions at every render
@@ -88,15 +87,6 @@ export class MediaTile extends LitElement {
   // the tile asks for its controls; the shell's sheet host opens them over the tab, which stays (ADR 0021)
   private readonly open = (): void => {
     if (this.tile) this.dispatchEvent(new SheetRequestEvent(CONTROLS_SHEET, {key: this.tile.key}));
-  };
-
-  // The switch asks for a state and does not flip itself: the tile holds it, so the tile, the pane and the sheet read it at once.
-  private readonly onPower = (e: CustomEvent<SwitchChangeDetail>): void => {
-    e.stopPropagation();
-    const control = this.tile?.control;
-    if (control?.kind !== 'switch') return;
-    this.optimistic.hold(K.on(control.tv.id), e.detail.checked, TV_HOLD_MS);
-    void this.commands.run(tvPower(control.tv, e.detail.checked));
   };
 
   private readonly onPlay = (e: Event): void => {

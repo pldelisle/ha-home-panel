@@ -43,6 +43,7 @@ describe('the test house', () => {
       source: 'Netflix',
       summarySource: 'Netflix',
       muted: false,
+      playback: 'unknown',
     });
   });
 
@@ -217,5 +218,14 @@ describe('the state, the input and the volume', () => {
     expect(muted(true)).toBe(true);
     expect(muted(false)).toBe(false);
     expect(muted(undefined)).toBe(false);
+  });
+
+  test('playback says playing or paused when the player does, and unknown for a set that reports only on', () => {
+    const playback = (state: string) =>
+      tvOf(houseOf([['media_player.a', state, {...SET}, {platform: 'samsungtv'}]]))?.playback;
+    expect(playback('paused')).toBe('paused');
+    expect(playback('playing')).toBe('playing');
+    expect(playback('on')).toBe('unknown');
+    expect(playback('idle')).toBe('unknown');
   });
 });

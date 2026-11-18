@@ -45,6 +45,7 @@ const tv = (over: Partial<TvInputs> = {}): TvInputs => ({
   source: 'Netflix',
   summarySource: 'Netflix',
   muted: false,
+  playback: 'unknown',
   ...over,
 });
 
@@ -92,14 +93,12 @@ describe('the full test house, in English', () => {
       status: 'On',
       nowOn: 'Now on Netflix',
       powerLabel: 'Turn the TV off',
-      switchLabel: 'Samsung TV power',
       controlsLabel: 'Volume and playback',
-      hint: "The TV doesn't report its volume, so there's no slider.",
       controls: {
         volumeDown: {text: 'Vol −', label: 'Vol −, volume down'},
         volumeUp: {text: 'Vol +', label: 'Vol +, volume up'},
         mute: {text: 'Mute', label: 'Mute'},
-        playPause: {text: null, label: 'Play or pause'},
+        playPause: {text: null, label: 'Play or pause', icon: 'pp'},
       },
     });
   });
@@ -145,9 +144,9 @@ describe('the full test house, in English', () => {
         on: true,
         picture: null,
         control: {
-          kind: 'switch',
-          checked: true,
-          label: 'Samsung TV power',
+          kind: 'power',
+          on: true,
+          label: 'Turn the TV off',
           disabled: false,
           tv: {id: 'media_player.living_room_tv', wakeButton: null},
         },
@@ -169,7 +168,16 @@ describe('the full test house, in English', () => {
           label: 'Pause',
           disabled: false,
           icon: 'pause',
-          speaker: {id: 'media_player.living_room_speaker', name: 'speaker'},
+          speaker: {id: 'media_player.living_room_speaker', room: 'Living room'},
+          volume: {
+            percent: 35,
+            text: '35%',
+            caption: 'Volume',
+            label: 'Living room volume',
+            downLabel: 'Volume down',
+            upLabel: 'Volume up',
+            level: 0.35,
+          },
         },
       },
     ]);
@@ -189,10 +197,7 @@ describe('the full test house, in French', () => {
       status: 'Activé',
       nowOn: 'Sur Netflix en ce moment',
       powerLabel: 'Éteindre la télé',
-      switchLabel: 'Samsung TV : alimentation',
       controlsLabel: 'Volume et lecture',
-      // the layer has no entry for this line: the French pane reads it in English
-      hint: "The TV doesn't report its volume, so there's no slider.",
     });
     expect(vm.tv?.controls.mute.text).toBe('Sourdine');
     expect(vm.tv?.controls.volumeDown.text).toBe('Vol −');
@@ -202,7 +207,7 @@ describe('the full test house, in French', () => {
 
   test("the phone's tiles", () => {
     expect(vm.tiles.map(({subLine, description, control}) => [subLine, description, control.label])).toEqual([
-      ['Activé · Netflix', 'Ouvre les commandes', 'Samsung TV : alimentation'],
+      ['Activé · Netflix', 'Ouvre les commandes', 'Éteindre la télé'],
       ['Test tone · Nobody', 'Ouvre les commandes', 'Pause'],
     ]);
   });
@@ -248,7 +253,23 @@ describe('the recorded house', () => {
 });
 
 describe('the television', () => {
-  test('is off: no source, no "Now on" line, the switch unchecked and the power button offering to turn it on', () => {
+  test('its play button shows what a press will do, with a label that says it', () => {
+    expect(tvOnly({playback: 'playing'}).tv?.controls.playPause).toEqual({text: null, label: 'Pause', icon: 'pause'});
+    expect(tvOnly({playback: 'paused'}).tv?.controls.playPause).toEqual({text: null, label: 'Play', icon: 'play'});
+    expect(tvOnly({playback: 'paused'}, 'fr').tv?.controls.playPause).toMatchObject({label: 'Lecture', icon: 'play'});
+    // a set that reports only `on` does not say what a press does, so the button does not claim to
+    expect(tvOnly({playback: 'unknown'}).tv?.controls.playPause).toEqual({
+      text: null,
+      label: 'Play or pause',
+      icon: 'pp',
+    });
+    expect(tvOnly({playback: 'unknown'}, 'fr').tv?.controls.playPause).toMatchObject({
+      label: 'Lecture ou pause',
+      icon: 'pp',
+    });
+  });
+
+  test('is off: no source, no "Now on" line, the tile and the box offering to turn it on', () => {
     const vm = tvOnly({state: 'off'});
     expect(vm.tv).toMatchObject({
       on: false,
@@ -259,7 +280,7 @@ describe('the television', () => {
       powerLabel: 'Turn the TV on',
     });
     expect(vm.summary).toBe('TV off');
-    expect(vm.tiles[0]).toMatchObject({subLine: 'Off', on: false, control: {checked: false}});
+    expect(vm.tiles[0]).toMatchObject({subLine: 'Off', on: false, control: {on: false, label: 'Turn the TV on'}});
   });
 
   test('says its input in the sub-line with the dash cut and the full-width ampersand kept, where the box makes it plain', () => {
@@ -275,7 +296,7 @@ describe('the television', () => {
     expect(vm.tiles[0].subLine).toBe('On');
   });
 
-  test('is unavailable without a wake button: not responding, the switch disabled', () => {
+  test('is unavailable without a wake button: not responding, the power button disabled', () => {
     const vm = tvOnly({state: 'unavailable', source: null, summarySource: null});
     expect(vm.tv).toMatchObject({available: false, on: false, status: 'Not responding'});
     expect(vm.tiles[0]).toMatchObject({subLine: 'Not responding', control: {disabled: true}});
@@ -455,7 +476,7 @@ describe('the brief line under More', () => {
 });
 
 describe('the model applies the held values the overlay gives', () => {
-  test('a television held as off is off in the box, the tile, and the switch', () => {
+  test('a television held as off is off in the box, the tile and the power button', () => {
     const vm = tvOnly({}, 'en', holding({'media_player.tv:on': false}));
     expect(vm.tv).toMatchObject({
       on: false,
@@ -464,7 +485,7 @@ describe('the model applies the held values the overlay gives', () => {
       sourceLabel: '',
       powerLabel: 'Turn the TV on',
     });
-    expect(vm.tiles[0]).toMatchObject({on: false, subLine: 'Off', control: {checked: false}});
+    expect(vm.tiles[0]).toMatchObject({on: false, subLine: 'Off', control: {on: false, label: 'Turn the TV on'}});
   });
 
   test('a television held as on is on, though the player says off', () => {

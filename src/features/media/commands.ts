@@ -53,11 +53,11 @@ export const tvMute = (tv: Pick<TvInputs, 'id'>, muted: boolean): Command => ({
 
 export const tvPlayPause = (tv: Pick<TvInputs, 'id'>): Command => player('media_play_pause', tv.id);
 
-/** Plays or pauses a speaker, and says which one. */
-export const speakerPlayPause = (speaker: Pick<Speaker, 'id' | 'name'>, play: boolean): Command => ({
+/** Plays or pauses a speaker, and says which one by the room its card shows (`SpeakerView.room`, which model.ts imports this module for, so the shape is written here), not the entity's own name. */
+export const speakerPlayPause = (speaker: Pick<Speaker, 'id'> & {room: string}, play: boolean): Command => ({
   ...player(play ? 'media_play' : 'media_pause', speaker.id),
   holds: [K.state(speaker.id)],
-  done: {key: play ? 'media.speakerPlaying' : 'media.speakerPaused', values: {name: speaker.name}},
+  done: {key: play ? 'media.speakerPlaying' : 'media.speakerPaused', values: {name: speaker.room}},
 });
 
 export const speakerSkip = (speaker: Pick<Speaker, 'id'>, direction: 'next' | 'previous'): Command =>

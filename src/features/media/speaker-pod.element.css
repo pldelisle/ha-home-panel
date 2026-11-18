@@ -1,8 +1,8 @@
 /*
- * <hp-speaker-pod>'s own rules: the cover, the room and the track, the volume slider with its − and + and the play button: the cover, the
- * room and play on one row with the volume under them, on a tablet and in a phone's sheet alike (#376 review: beside the name, the volume left the room
+ * <hp-speaker-pod>'s own rules: the cover, the room and the track, and the play button: the cover, the room and play on one row with
+ * the volume (<hp-volume-control>, which draws its own slider) under them, on a tablet and in a phone's sheet alike (#376 review: beside the name, the volume left the room
  * a few letters wide and "Living room" wrapped and was clipped), as the legacy `.app.cp .pod` rules had it for the phone.
- * The volume is a native range input drawn with the level in `--v`: the track fills up to the thumb. The play button, `.play`, began as
+ * The play button, `.play`, began as
  * the legacy `.pp`, which #218 deleted.
  */
 /* no box of its own: the pod is the item of the pane's list */
@@ -65,79 +65,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.player .vol {
-  order: 2;
-  flex: 1 1 100%;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.player .vol .step {
-  flex: none;
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
-  border: 0;
-  background: var(--card);
-  color: var(--fg);
-  font: 600 calc(22px * var(--tx)) var(--f-body);
-  cursor: pointer;
-  box-shadow: var(--shadow);
-}
-.player .vol .step:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-.player .vol .vv {
-  flex: none;
-  min-width: 4ch;
-  text-align: end;
-  font-size: calc(16px * var(--tx));
-}
-.player .vol input {
-  flex: 1;
-  min-width: 0;
-  height: 44px;
-  margin: 0;
-  background: transparent;
-  cursor: pointer;
-  -webkit-appearance: none;
-  appearance: none;
-}
-.player .vol input::-webkit-slider-runnable-track {
-  height: 6px;
-  border-radius: 3px;
-  background: linear-gradient(to right, var(--c-home) var(--v), var(--card) var(--v));
-}
-.player .vol input::-moz-range-track {
-  height: 6px;
-  border-radius: 3px;
-  background: linear-gradient(to right, var(--c-home) var(--v), var(--card) var(--v));
-}
-.player .vol input::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 28px;
-  height: 28px;
-  margin-top: -11px;
-  border: 0;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 1px 4px rgb(0 0 0 / 0.35);
-}
-.player .vol input::-moz-range-thumb {
-  width: 28px;
-  height: 28px;
-  border: 0;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 1px 4px rgb(0 0 0 / 0.35);
-}
-.player .vol input:focus-visible {
-  outline: 2px solid var(--c-home);
-  outline-offset: 2px;
-  border-radius: 8px;
-}
 .player .play {
   order: 1;
   width: 60px;
@@ -180,7 +107,6 @@
   background: var(--g-tile);
   box-shadow: var(--g-edge-s);
 }
-.app.gl .player .vol .step,
 .app.gl .player .play,
 .app.gl .player .pic {
   background: var(--g-sel);
