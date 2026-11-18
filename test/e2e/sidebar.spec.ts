@@ -36,6 +36,18 @@ test.describe('the sidebar on the tablet', () => {
     expect((await house.root().locator('.panes').boundingBox())!.x).toBeLessThan(120);
   });
 
+  test('collapsed, each icon sits in the middle of its row', async ({house}) => {
+    const off = await rows(house).evaluateAll(els =>
+      els.map(row => {
+        const r = row.getBoundingClientRect();
+        const i = row.querySelector('svg')!.getBoundingClientRect();
+        return Math.abs(r.left + r.width / 2 - (i.left + i.width / 2));
+      }),
+    );
+    expect(off.length).toBeGreaterThan(5);
+    for (const d of off) expect(d).toBeLessThanOrEqual(0.5);
+  });
+
   test('the toggle opens it, by keyboard too: labels, two groups, rows of 44 px or more', async ({house}) => {
     tabletOnly();
     await toggle(house).focus();
@@ -97,7 +109,7 @@ test.describe('the sidebar on the tablet', () => {
       await house.root().locator(`[data-tab="${key}"]`).click();
       const open = `#rail [data-tab="${key}"][aria-selected="true"]`;
       await expect(house.root().locator(open)).toBeVisible();
-      // light theme: the icon is the colour pulled toward the text colour so it keeps 3:1 on its pill, so it is the card's colour, darker
+      // light theme: the icon is the colour pulled toward the text colour so it keeps 3:1 on the light grounds, so it is the card's colour, darker
       const icon = await colour(house, `${open} svg`);
       // rgb(...) in 0-255, or color(srgb ...) in 0-1: the brightness is the sum of the three channels on one scale
       const sum = (c: string) => {
@@ -109,7 +121,18 @@ test.describe('the sidebar on the tablet', () => {
       };
       expect(icon, `${key}: the row's icon is not the card's colour`).not.toBe(card[key]);
       expect(sum(icon), `${key}: the row's icon is darker`).toBeLessThan(sum(card[key]));
-      // the pill is that colour at a low alpha, and the label keeps the text colour
+      // the row's fill is the navigation layer's neutral selection, not the section's colour; the label keeps the text colour
+      const neutral = await house
+        .root()
+        .locator('#app')
+        .evaluate(e => {
+          const probe = document.createElement('i');
+          probe.style.background = 'var(--nav-sel-bg)';
+          e.append(probe);
+          const bg = getComputedStyle(probe).backgroundColor;
+          probe.remove();
+          return bg;
+        });
       await expect
         .poll(() =>
           house
@@ -117,7 +140,7 @@ test.describe('the sidebar on the tablet', () => {
             .locator(open)
             .evaluate(e => getComputedStyle(e).backgroundColor),
         )
-        .toMatch(/ 0\.16\)$/);
+        .toBe(neutral);
       const label = await colour(house, `${open} span`);
       const text = await house
         .root()
