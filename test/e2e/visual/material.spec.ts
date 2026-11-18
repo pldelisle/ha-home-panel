@@ -16,9 +16,10 @@ test.beforeEach(({house}) => fontsLoaded(house));
 // before a shot the pointer leaves for the page's corner (a tap leaves it over whatever the closing sheet uncovers, a navigation item
 // on the phone, whose hover layer then shows in one run and not the next) and every finite animation, in every shadow root, ends (the
 // navigation pill and the state layers spring after a tap); an infinite one (a live dot's pulse) is left to the screenshot's own pause
-// Material shots allow four stray pixels (Apple's stay at zero, playwright.config.ts): in some CI runs one pixel of blank page
-// background beside the tablet rail paints a shade bluer (blue 29 for 24) on every retry of that run, with nothing hit-testable
-// there (#485 tracks the painter). Four pixels of about a million cannot hide a changed control.
+// Material shots allow four stray pixels (Apple's stay at zero, playwright.config.ts). The pixel that strayed beside the tablet rail (#485)
+// was the greeting's subpixel fringe, left in a tile that Chromium repainted only in part on the switch to another tab; header.css now
+// clips it. Chromium's partial repaint still leaves a pixel or two now and then elsewhere (the Status popup's shadow, a line of text in
+// Climate, about 1 run in 30). Four pixels out of about a million cannot hide a changed control.
 const SHOT = {maxDiffPixels: 4};
 
 const settled = async (house: House) => {
@@ -570,5 +571,28 @@ test.describe('phone, light, room tiles', () => {
     expect(await style(dark.locator('.lbulb'), 'color')).toBe(await role(house, '--on-control'));
     expect(await style(dark.locator('.lbulb'), 'background-color')).toMatch(/0\.12\)$/);
     await expect(house.page).toHaveScreenshot('material-lights-phone-light-en.png', SHOT);
+  });
+});
+
+// The greeting's ink stays in its box (#485): Chromium's subpixel text spilled a fringe one pixel left of the subline, where hiding the
+// greeting on another tab did not repaint, so that pixel showed beside the rail in some runs. The column just left of the box paints
+// what a column of bare page background does, byte for byte.
+test.describe('tablet, dark, greeting ink', () => {
+  test.use({
+    viewport: VIEWPORTS.tablet,
+    houseOpts: {cfg: FULL_CFG, theme: 'dark', design: 'material', time: AFTERNOON, frozen: true},
+  });
+
+  test('the greeting paints nothing left of its box', async ({house}) => {
+    await settled(house);
+    const box = await house.root().locator('#hello').boundingBox();
+    if (!box) throw new Error('the greeting has no box');
+    const column = (x: number) =>
+      house.page.screenshot({
+        clip: {x, y: Math.floor(box.y), width: 1, height: Math.ceil(box.height)},
+        animations: 'disabled',
+      });
+    // ten pixels further left is the gap between the rail and the page, which nothing draws in
+    expect((await column(Math.floor(box.x) - 1)).equals(await column(Math.floor(box.x) - 10))).toBe(true);
   });
 });
