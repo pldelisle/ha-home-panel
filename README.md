@@ -55,9 +55,9 @@ Home Assistant caches files under `/local/` for 31 days. After each update, chan
 
 Home Assistant can install a release itself, so you don't copy files into `<config>` from another machine.
 [examples/update-from-github.yaml](examples/update-from-github.yaml) adds a script, "Update Home panel", that runs [scripts/ha/update_home_panel.py](scripts/ha/update_home_panel.py) inside Home Assistant.
-The updater downloads `home-panel.zip` from the latest release (or from the tag you give it) and checks it against the release's sha256 digest.
-It then swaps the build files in `www/home-panel/`, leaving your own files there alone, keeps the previous build in `<config>/home-panel-backup/` and sets `?v=` on the `module_url` line.
-It only writes under `www/home-panel/`, `home-panel-backup/` and that one line of `configuration.yaml`. Restart Home Assistant afterwards.
+The updater downloads `home-panel.zip` from the latest release (or from the tag you give it) and checks it against the release's sha256 digest; it refuses a release that has none.
+It then swaps the build files in `www/home-panel/`, leaving your own files there alone, keeps the previous build in `<config>/home-panel-backup/` and sets `?v=` on the `module_url:` line (not on a commented-out one).
+It only writes under `www/home-panel/`, a staging folder `www/.home-panel-staging-*` that it removes, `home-panel-backup/` and that one line of `configuration.yaml`. Restart Home Assistant afterwards.
 
 ## Configure
 

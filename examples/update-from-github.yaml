@@ -12,7 +12,8 @@
 shell_command:
   # Home Assistant gives a shell_command 60 seconds; the zip is about 9 MB
   update_home_panel: >-
-    python3 /config/home-panel-updater/update_home_panel.py --config /config --tag "{{ tag | default('') }}"
+    python3 /config/home-panel-updater/update_home_panel.py --config /config --tag "{{ tag | default('') |
+    regex_replace('[^0-9A-Za-z.-]', '') }}"
 
 script:
   update_home_panel:
@@ -36,9 +37,11 @@ script:
           title: Home panel update
           notification_id: home_panel_update
           message: >-
-            {% set out = (result.stdout | default('{}')) | from_json(default={}) %}
+            {% set out = (result.stdout if result is defined else '{}') | from_json(default={}) %}
             {% if out.status == 'installed' %}Installed {{ out.version }} (was {{ out.previous or 'unknown' }}).
             {% if out.module_url_updated %}Restart Home Assistant, then reload the panel.{% else %}The module_url line
             was not found in configuration.yaml: set ?v={{ out.version }} on it by hand, then restart.{% endif %}
             {% elif out.status == 'up_to_date' %}{{ out.version }} is installed already.
-            {% else %}Failed: {{ out.error | default(result.stderr | default('no output')) }}{% endif %}
+            {% elif result is not defined %}Failed: the command did not finish (Home Assistant stops it after 60
+            seconds). Run the script again; check that www/home-panel/home-panel.js is there.
+            {% else %}Failed: {{ out.error | default(result.stderr or 'no output') }}{% endif %}
