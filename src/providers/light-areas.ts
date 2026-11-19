@@ -24,7 +24,7 @@ export interface LightArea {
   name: string;
   /** The lights this tile switches and dims: the members of its groups and its loose lights. */
   ids: string[];
-  /** Every light of the tile's area, a split tile's siblings included: what the Adaptive Lighting match reads (`adaptiveSwitch`). */
+  /** Every light of the tile's area, a split tile's siblings included: what the Adaptive Lighting match falls back on (`adaptiveSwitch`). */
   areaLights: string[];
   /** The buttons under it, by name: its light groups and its loose lights. */
   units: string[];

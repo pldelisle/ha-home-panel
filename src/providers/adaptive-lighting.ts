@@ -65,26 +65,41 @@ const instanceName = (states: HassEntities, id: string): string =>
  * The switch that runs an area's lights, by four rules, each winning over the next: a switch whose lights include one of the area's; the one the
  * config's `adaptive_lighting_areas` names for the area; a switch in the area; a switch whose instance name is in the name of a light group the
  * registry places in the area. Null when none matches.
+ *
+ * A split tile (its key is its own group or light, not the area) first looks for a switch of its own, by the same rules narrowed to the tile: a
+ * switch whose lights include one of the tile's, the one `adaptive_lighting_areas` names for the tile's key, an instance whose name is in the
+ * tile's own group's name. So two groups of a split area can each have their own instance, and so their own Auto and Night; a tile with none
+ * of its own shares the area's, as before.
  */
 export function adaptiveSwitch(
-  area: Pick<LightArea, 'areaId' | 'areaLights'>,
+  area: Pick<LightArea, 'areaId' | 'areaLights'> & Partial<Pick<LightArea, 'key' | 'ids' | 'units'>>,
   states: HassEntities,
   registries: Registries,
   alAreas: Record<string, string>,
 ): string | null {
   const switches = alSwitches(states);
   const areaId = area.areaId ?? '';
-  const named = alAreas[areaId];
+  const nameIn = (groups: string[]) =>
+    switches.find(s => {
+      const name = instanceName(states, s);
+      return !!name && groups.some(g => fold(String(states[g]?.attributes.friendly_name ?? '')).includes(name));
+    });
+  const listing = (lights: string[]) => switches.find(s => runs(states, s).some(l => lights.includes(l)));
+  const mapped = (key: string) => (alAreas[key] ? switches.find(s => s === alAreas[key]) : undefined);
+  const split = !!areaId && !!area.key && area.key !== areaId;
+  const own = split
+    ? (listing(area.ids ?? []) ??
+      mapped(area.key!) ??
+      nameIn((area.units ?? []).filter(u => lightGroups(states).includes(u))))
+    : undefined;
   // the group's own area here, not its members': the legacy rule, kept
   const groups = () => lightGroups(states).filter(g => areaOf(g, registries) === areaId);
   return (
-    switches.find(s => runs(states, s).some(l => area.areaLights.includes(l))) ??
-    (named ? switches.find(s => s === named) : undefined) ??
+    own ??
+    listing(area.areaLights) ??
+    mapped(areaId) ??
     switches.find(s => areaId && areaOf(s, registries) === areaId) ??
-    switches.find(s => {
-      const name = instanceName(states, s);
-      return !!name && groups().some(g => fold(String(states[g].attributes.friendly_name ?? '')).includes(name));
-    }) ??
+    nameIn(groups()) ??
     null
   );
 }

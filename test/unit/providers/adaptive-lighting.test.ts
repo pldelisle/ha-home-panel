@@ -71,6 +71,57 @@ describe('adaptiveSwitch', () => {
     expect(alSwitches(house.states)).toEqual(['switch.adaptive_lighting_réading', 'switch.adaptive_lighting_x']);
   });
 
+  describe('a split area', () => {
+    const living: Player[] = [
+      ['light.salon_1', 'on', {}, {area_id: 'living', hidden: true}],
+      ['light.tele_1', 'on', {}, {area_id: 'living', hidden: true}],
+      [
+        'light.lumieres_salon',
+        'on',
+        {entity_id: ['light.salon_1'], friendly_name: 'Lumières Salon'},
+        {area_id: 'living'},
+      ],
+      ['light.lumieres_tele', 'on', {entity_id: ['light.tele_1'], friendly_name: 'Lumières Télé'}, {area_id: 'living'}],
+    ];
+    const tiles = (players: Player[], alAreas: Record<string, string> = {}) => {
+      const {states, registries, names} = readingOf(houseOf([...living, ...players], [], {living: 'Living'}));
+      return Object.fromEntries(
+        lightAreas(states, registries, names, {splitLightAreas: ['living']}).map(a => [
+          a.key,
+          adaptiveSwitch(a, states, registries, alAreas),
+        ]),
+      );
+    };
+
+    test('one instance for the area runs both tiles, as before', () => {
+      expect(tiles([al('salon')])).toEqual({
+        'light.lumieres_salon': 'switch.adaptive_lighting_salon',
+        'light.lumieres_tele': 'switch.adaptive_lighting_salon',
+      });
+    });
+
+    test('an instance named after each group gives each tile its own, whichever the states list first', () => {
+      const own = {
+        'light.lumieres_salon': 'switch.adaptive_lighting_salon',
+        'light.lumieres_tele': 'switch.adaptive_lighting_tele',
+      };
+      expect(tiles([al('salon'), al('tele')])).toEqual(own);
+      expect(tiles([al('tele'), al('salon')])).toEqual(own);
+    });
+
+    test('a switch listing the tile’s lights, then the config’s map by the tile’s key, win over the names', () => {
+      expect(tiles([al('salon'), al('tele'), al('tv', {configured_lights: ['light.lumieres_tele']})])).toMatchObject({
+        'light.lumieres_tele': 'switch.adaptive_lighting_tv',
+      });
+      expect(
+        tiles([al('salon'), al('tele'), al('tv')], {'light.lumieres_tele': 'switch.adaptive_lighting_tv'}),
+      ).toEqual({
+        'light.lumieres_salon': 'switch.adaptive_lighting_salon',
+        'light.lumieres_tele': 'switch.adaptive_lighting_tv',
+      });
+    });
+  });
+
   test('no switch matches: none listed, none mapped, none in the area, no group of the area shares a name', () => {
     expect(switchOf(houseOf([...denLights, al('garage')], [], areas), 'den')).toBeNull();
   });
