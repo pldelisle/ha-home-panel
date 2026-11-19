@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.20.1
+
+- In an area listed in `split_light_areas`, each light tile now finds its own Adaptive Lighting instance: one listing the tile's lights, one named for the tile's key in `adaptive_lighting_areas`, or one whose name is in the tile's group name. Two groups of one room can then have separate Auto and Night. A tile with no instance of its own still shares the area's, as before.
+
 ## 2.20.0
 
 - Under the Material design a button group with more than five modes (a heat pump or a purifier that reports six or seven) shows its first four modes and a More button that opens a menu with the rest; when the chosen mode is in the menu, More shows its name and is drawn chosen. The arrow keys still run across every mode, and More opens its menu on Enter, Space or the down arrow. Liquid Glass keeps its one row.
