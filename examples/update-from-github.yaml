@@ -1,0 +1,47 @@
+# Lets Home Assistant install a release of the Home panel itself, from GitHub: no copying files into <config>.
+#
+# Once: put scripts/ha/update_home_panel.py at <config>/home-panel-updater/update_home_panel.py. From the
+# Terminal & SSH add-on:
+#   mkdir -p /config/home-panel-updater && wget -O /config/home-panel-updater/update_home_panel.py \
+#     https://raw.githubusercontent.com/pldelisle/ha-home-panel/main/scripts/ha/update_home_panel.py
+# then add the blocks below to configuration.yaml and restart Home Assistant.
+#
+# Each update: run the script "Update Home panel" (Settings > Automations & scenes > Scripts), leave the tag empty for
+# the latest release. A notification says what it installed; restart Home Assistant, then reload the panel.
+# The previous build is kept in <config>/home-panel-backup/.
+shell_command:
+  # Home Assistant gives a shell_command 60 seconds; the zip is about 9 MB
+  update_home_panel: >-
+    python3 /config/home-panel-updater/update_home_panel.py --config /config --tag "{{ tag | default('') |
+    regex_replace('[^0-9A-Za-z.-]', '') }}"
+
+script:
+  update_home_panel:
+    alias: Update Home panel
+    icon: mdi:download
+    fields:
+      tag:
+        name: Release tag
+        description: A tag such as v2.20.0. Empty installs the latest release.
+        example: v2.20.0
+        selector:
+          text:
+    sequence:
+      - action: shell_command.update_home_panel
+        data:
+          tag: '{{ tag | default("") }}'
+        response_variable: result
+        continue_on_error: true
+      - action: persistent_notification.create
+        data:
+          title: Home panel update
+          notification_id: home_panel_update
+          message: >-
+            {% set out = (result.stdout if result is defined else '{}') | from_json(default={}) %}
+            {% if out.status == 'installed' %}Installed {{ out.version }} (was {{ out.previous or 'unknown' }}).
+            {% if out.module_url_updated %}Restart Home Assistant, then reload the panel.{% else %}The module_url line
+            was not found in configuration.yaml: set ?v={{ out.version }} on it by hand, then restart.{% endif %}
+            {% elif out.status == 'up_to_date' %}{{ out.version }} is installed already.
+            {% elif result is not defined %}Failed: the command did not finish (Home Assistant stops it after 60
+            seconds). Run the script again; check that www/home-panel/home-panel.js is there.
+            {% else %}Failed: {{ out.error | default(result.stderr or 'no output') }}{% endif %}
