@@ -12,3 +12,6 @@ coverage/
 # Local oMLX benchmarking, kept out of the public repo (personal data)
 scripts/omlx.py
 scripts/omlx_grid_results/
+
+# Python bytecode (scripts/ha/ runs in Home Assistant)
+__pycache__/
