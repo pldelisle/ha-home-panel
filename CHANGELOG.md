@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.21.0
+
+- Lights: a room's sheet has an Auto brightness and an Auto colour switch in place of the single Auto, each wired to Adaptive Lighting's own `_adapt_brightness` and `_adapt_color` switch, beside Night. Each shows on only while that part really follows the day, so a brightness held off by an automation (a night hold that a missed sunrise never released) shows off, and one tap turns it back on: the room's Adaptive Lighting switch on, its lights no longer held by hand, then the part's own switch on.
+- Lights: an Adaptive Lighting instance made in an area, whose switches Home Assistant names `switch.<area>_adaptive_lighting_<name>`, is found like the others, with its Night, Auto brightness and Auto colour switches.
+- Home Assistant can now install a release of the panel itself: `examples/update-from-github.yaml` adds an "Update Home panel" script that downloads `home-panel.zip` from GitHub, checks its digest, swaps the build files in `www/home-panel/` (keeping your own files and a backup of the old build) and sets `?v=` on the panel's `module_url`.
+
 ## 2.20.1
 
 - In an area listed in `split_light_areas`, each light tile now finds its own Adaptive Lighting instance: one listing the tile's lights, one named for the tile's key in `adaptive_lighting_areas`, or one whose name is in the tile's group name. Two groups of one room can then have separate Auto and Night. A tile with no instance of its own still shares the area's, as before.
