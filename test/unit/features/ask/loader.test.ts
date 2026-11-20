@@ -202,6 +202,25 @@ describe('a question that has no answer', () => {
   });
 });
 
+describe('the thirty seconds are the AI Task’s', () => {
+  test('a history read that is slower than that is not a timeout: the cache has its own rules, and the answer arrives', async () => {
+    vi.useFakeTimers();
+    const {loader, statistics, generateData} = setup();
+    const rows = deferred<Record<string, StatisticRow[]>>();
+    statistics.mockReturnValueOnce(rows.promise);
+    loader.ask(QUESTION);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(loader.state.at).toBe('fetching');
+    await vi.advanceTimersByTimeAsync(ASK_TIMEOUT_MS + 5_000);
+    expect(loader.state.at).toBe('fetching');
+    // the signal has done its job with the plan: the cache takes none, so the timer is not left to abort a call that is over
+    expect(generateData.mock.calls[0][3]?.signal?.aborted).toBe(false);
+    rows.resolve({'sensor.office_temperature': [row(NOW - 20 * HOUR, 20)]});
+    await vi.advanceTimersByTimeAsync(1);
+    expect(loader.state).toMatchObject({at: 'answered'});
+  });
+});
+
 describe('a reply that is no longer wanted is dropped', () => {
   test('a new question replaces the one in flight, whose late reply changes nothing', async () => {
     const {loader, replies} = setup();
@@ -307,10 +326,10 @@ describe('the catalog', () => {
     expect(loader.catalog.entries.map(entry => entry.key)).toEqual(
       expect.arrayContaining(['temp.office', 'power.grid']),
     );
-    expect(loader.problems).toEqual([]);
+    expect(loader.catalog.omitted).toBe(0);
   });
 
-  test('a house the cap cuts says so, as a config problem the sheet can word', () => {
+  test('a house the cap cuts keeps the first 60 sensors and counts what it left out, which the sheet tells an admin (askNotes)', () => {
     const store = storeOf(fullHouse, config);
     const power = powerNow(fullHouse.states, store.config);
     const room = power.rooms[0];
@@ -334,9 +353,8 @@ describe('the catalog', () => {
     }));
     const crowdedStore = {...store, config: {...store.config, rooms}} as unknown as AskDeps['store'];
     const {loader} = setup(config, {reads: () => crowded, store: crowdedStore});
-    expect(loader.problems).toEqual([
-      {path: 'ask', key: 'config.askOverCap', values: {path: 'ask', cap: 60, omitted: 13}},
-    ]);
+    expect(loader.catalog.entries).toHaveLength(60);
+    expect(loader.catalog.omitted).toBe(13);
   });
 
   test('before Home Assistant has sent a state is empty', () => {

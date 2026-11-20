@@ -1,17 +1,15 @@
 // AskLoader: the controller that runs one question of the Ask sheet: the catalog, the AI Task's plan, the history window and the answer, each step a dispatch into the sheet's reducer.
 // Pattern: a Lit reactive controller (Lit docs, Reactive Controllers) over a reducer (Elm's update) with an async effect; every reply is matched to the request that asked it by id,
-// so a cancelled or replaced question's late reply is dropped by the reducer, and the one `AbortSignal` of a question is also its thirty-second timeout (ADR 0040, "The model plans, the panel computes").
+// so a cancelled or replaced question's late reply is dropped by the reducer, and the one `AbortSignal` of a question is also the thirty-second timeout of the call to the AI Task (the cache takes no signal) (ADR 0040, "The model plans, the panel computes").
 // The catalog is built when the sheet opens, from the providers' reads (ADR 0025), and never before; the window goes through the panel's statistics cache (ADR 0028), never the API client.
 // Must not: import the shell or another feature, draw or word anything (the model's `askView` does), keep the model's reply, retry, or subscribe to an entity.
 import type {ReactiveController, ReactiveControllerHost} from 'lit';
 import {Cancelled, StaleReply, type PanelApi} from '../../core/api.ts';
-import type {ConfigProblem} from '../../core/config.ts';
 import type {StatisticsCache} from '../../core/statistics-cache.ts';
 import type {PanelStore} from '../../core/store.ts';
 import {registriesOf} from '../../core/registry.ts';
 import {powerNow} from '../../providers/power.ts';
 import {askCatalog, type AskReads, type Catalog} from './catalog.ts';
-import {askChecks} from './checks.ts';
 import {evaluateSeries} from './evaluate.ts';
 import {askInstructions, askStructure} from './instructions.ts';
 import {askReducer, IDLE, type AskEvent, type AskState} from './model.ts';
@@ -59,11 +57,6 @@ export class AskLoader implements ReactiveController {
   /** The sensors a question may name, as they were when the sheet opened; built on first use when nothing opened the sheet. */
   get catalog(): Catalog {
     return (this.built ??= this.build());
-  }
-
-  /** What the catalog says against the config (it was cut at its cap): the sheet shows it to an admin, as the config card would. */
-  get problems(): ConfigProblem[] {
-    return askChecks(this.catalog);
   }
 
   /** The sheet opened: the catalog is built now, from the house as it is, and nothing is asked. */
@@ -128,6 +121,8 @@ export class AskLoader implements ReactiveController {
     try {
       const instructions = askInstructions(question, now(), catalog, store.isFrench ? 'fr' : 'en', store.fmt);
       const reply = await api.generateData(entity, instructions, askStructure(catalog), {signal: abort.signal});
+      // the thirty seconds are the AI Task's: the statistics cache takes no signal and has its own failure and retry rules (ADR 0028)
+      clearTimeout(timer);
       const plan = parsePlan(reply, catalog);
       // the reason goes to the console, never to the screen (spec 29, "The plan")
       if (isPlanError(plan)) console.warn('home-panel ask: the reply was refused:', plan.error);

@@ -235,7 +235,18 @@ test('no chunk imports the entry back, and the one file that holds the panel is 
   ).toEqual([]);
   expect(shared.length, 'the Ask feature is a lazy chunk that imports the panel file').toBe(1);
   // and the panel file imports no chunk but through import(): the page loads it and nothing else until a tab or a tap asks
-  expect(readFileSync(BUNDLE, 'utf8')).not.toMatch(/\bfrom\s*["']\.\/chunks\//);
+  expect(readFileSync(BUNDLE, 'utf8')).not.toMatch(STATIC_CHUNK_IMPORT);
+});
+
+// a static import of a chunk, `import {a} from "./chunks/x.js"` or the bare `import"./chunks/x.js"`, and not `import("./chunks/x.js")`
+const STATIC_CHUNK_IMPORT = /(?:\bfrom|\bimport)\s*["'`]\.\/chunks\//;
+
+test('the static-import check sees a bare import as well as a named one, and not a dynamic one', () => {
+  expect('import"./chunks/x.js";').toMatch(STATIC_CHUNK_IMPORT);
+  expect('import {a} from"./chunks/x.js";').toMatch(STATIC_CHUNK_IMPORT);
+  expect('export{a}from"./chunks/x.js";').toMatch(STATIC_CHUNK_IMPORT);
+  expect('import("./chunks/x.js")').not.toMatch(STATIC_CHUNK_IMPORT);
+  expect('import(`./chunks/x.js`)').not.toMatch(STATIC_CHUNK_IMPORT);
 });
 
 test('the Ask feature is a chunk of its own: the elements are in it, and not in the panel file', () => {

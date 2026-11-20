@@ -178,7 +178,9 @@ describe('askView', () => {
   });
   const view = (state: AskState, language: 'en' | 'fr' = 'en', c = catalog) => {
     const {t, fmt} = depsOf(fullHouse, language);
-    return askView(state, t, fmt, c);
+    // the sheet finds the answered sensor's entry once and hands it over
+    const sensor = state.at === 'answered' ? c.entries.find(entry => entry.key === state.plan.sensor) : undefined;
+    return askView(state, t, fmt, sensor);
   };
 
   test('idle says nothing', () => {

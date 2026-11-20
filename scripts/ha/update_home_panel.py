@@ -5,8 +5,8 @@ the machine that serves them and nothing has to reach into the config folder fro
   1. asks the GitHub API for the release (the latest, or the tag given) and its home-panel.zip asset
   2. streams the zip into a staging folder <config>/www/.home-panel-staging-*, checks it against the asset's sha256
      digest (a release without one is refused) and unzips it there: same disk, so the swap below is renames only
-  3. moves the old build (home-panel.js and its .gz/.br/.map, chunks/, fonts/, LICENSES.md, and any name the new build
-     has) aside and the new one into place, then keeps the old one as <config>/home-panel-backup/; every other file in
+  3. moves the old build (home-panel.js and its .gz/.br, the panel file main-<hash>.js with its .gz/.br/.map, whatever its
+     hash, chunks/, fonts/, LICENSES.md, and any name the new build has) aside and the new one into place, then keeps the old one as <config>/home-panel-backup/; every other file in
      the folder (your house pictures, other libraries) stays. A failure during the swap puts the old build back.
   4. sets `?v=` on the panel's `module_url:` line in configuration.yaml to the new version, so browsers drop their
      31-day copy, and only then records the version in www/home-panel/.release
@@ -39,6 +39,8 @@ REPO = 'pldelisle/ha-home-panel'
 ASSET = 'home-panel.zip'
 # what a build puts in the panel's folder; anything else there belongs to the owner and is left alone
 BUILD_FILES = ('home-panel.js', 'home-panel.js.gz', 'home-panel.js.br', 'home-panel.js.map', 'LICENSES.md')
+# the panel file the entry imports (ADR 0041) is named by its content hash, so the old one is found by its shape, with its map and compressed copies
+PANEL_FILE = re.compile(r'main-[\w-]+\.js(?:\.map|\.gz|\.br)?')
 BUILD_DIRS = ('chunks', 'fonts')
 # the file in the panel's folder that names the installed version, so a second run with nothing new does nothing
 VERSION_FILE = '.release'
@@ -104,7 +106,8 @@ def swap(build, panel_dir, staging, backup_dir):
     os.makedirs(old_build)
     moved_out, moved_in = [], []
     try:
-        for name in dict.fromkeys(BUILD_FILES + BUILD_DIRS + tuple(incoming)):
+        old_panel_files = tuple(name for name in os.listdir(panel_dir) if PANEL_FILE.fullmatch(name))
+        for name in dict.fromkeys(BUILD_FILES + BUILD_DIRS + old_panel_files + tuple(incoming)):
             old = os.path.join(panel_dir, name)
             if os.path.lexists(old):
                 os.replace(old, os.path.join(old_build, name))

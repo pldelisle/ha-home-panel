@@ -1,6 +1,6 @@
 // resolvePeriod: the nine closed words of a plan as a window of the house's calendar. Fixed clocks, in the house's zone, with the
 // expected instants written out in UTC (Toronto is UTC-5 in winter and UTC-4 in summer).
-import {describe, expect, test} from 'vitest';
+import {afterAll, beforeAll, describe, expect, test} from 'vitest';
 import {createFormatters} from '../../../../src/core/i18n/format.ts';
 import {englishLocale} from '../../../../src/core/i18n/locale.ts';
 import {PERIODS, resolvePeriod, weekStartOf, type Period, type WeekStart} from '../../../../src/features/ask/period.ts';
@@ -152,6 +152,30 @@ describe('weekStartOf', () => {
     ['de', 1],
   ] as const)('the week of %s begins on day %s', (tag, first) => {
     expect(weekStartOf(tag)).toBe(first);
+  });
+
+  describe('where the runtime has no getWeekInfo (Firefox)', () => {
+    const proto = Intl.Locale.prototype as unknown as {getWeekInfo?: unknown};
+    const original = Object.getOwnPropertyDescriptor(proto, 'getWeekInfo');
+    beforeAll(() => Object.defineProperty(proto, 'getWeekInfo', {value: undefined, configurable: true}));
+    afterAll(() => original && Object.defineProperty(proto, 'getWeekInfo', original));
+
+    test.each([
+      ['en', 0], // English's likely region is the United States
+      ['en-CA', 0],
+      ['fr-CA', 0],
+      ['es-MX', 0],
+      ['pt-BR', 0],
+      ['ja-JP', 0],
+      ['he-IL', 0],
+      ['en-US', 0],
+      ['fr', 1], // France
+      ['fr-FR', 1],
+      ['de', 1],
+      ['en-GB', 1],
+    ] as const)('the week of %s begins on day %s, from its region', (tag, first) => {
+      expect(weekStartOf(tag)).toBe(first);
+    });
   });
 
   test('a tag the runtime cannot read begins on Monday', () => {

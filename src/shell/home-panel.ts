@@ -36,6 +36,7 @@ import {OverlayStore} from '../ui/overlay-store.ts';
 import {ico} from '../ui/icons.ts';
 import type {SheetDismissEvent, SheetRequestEvent, TabSelectEvent, ToastEvent} from '../ui/events.ts';
 import {AppearanceController} from './appearance.ts';
+import {AskWatch} from './ask-watch.ts';
 import type {FeatureDescriptor, FeatureEnv, FeatureKey} from '../ui/feature.ts';
 import {CATEGORIES, FEATURES, UNDER_MORE, isFeatureKey, sidebarRows} from './features.ts';
 import {FRAME_CSS} from './frame-styles.ts';
@@ -171,12 +172,13 @@ export class HomePanel extends LitElement {
   // a context provider never answers its own element.
   private readonly storeController = new StoreController(this, {
     store: this.store,
-    // the one entity it watches is the Ask sheet's AI Task entity: the button is drawn once Home Assistant has it, which an integration loading late may do after the panel
-    ids: () => (this.store.config.ask ? [this.store.config.ask.entity] : []),
+    ids: () => [],
     onChange: () => {
       this.stale = true;
     },
   });
+  // the Ask button is drawn once Home Assistant has the AI Task entity, which an integration loading late may add after the panel: the shell redraws when the entity appears or goes, and not for its state, which every question changes
+  private readonly askWatch = new AskWatch(this, this.store);
   private readonly phone = new MediaQueryController(this, PHONE);
   private readonly sidebarWide = new MediaQueryController(this, SIDEBAR_WIDE);
   // Five minutes without a touch and a tablet shows the clock; a phone never does by itself. The listeners are the

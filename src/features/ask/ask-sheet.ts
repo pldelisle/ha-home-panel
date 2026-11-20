@@ -6,6 +6,7 @@ import {ContextConsumer} from '@lit/context';
 import {LitElement, html, nothing, unsafeCSS, type PropertyValues} from 'lit';
 import ownCss from './ask-sheet.element.css?inline';
 import './ask-answer.ts'; // defines <hp-ask-answer>
+import {askNotes} from './checks.ts';
 import {QUESTION_CAP} from './instructions.ts';
 import {AskLoader} from './loader.ts';
 import {askView} from './model.ts';
@@ -102,9 +103,11 @@ export class AskSheet extends LitElement {
     const {store} = this.storeController;
     const {t} = store;
     const {state, catalog} = this.loader;
-    const view = askView(state, t, store.fmt, catalog);
+    // the answered plan's sensor, found once: the view names it and the chart draws it in its unit
+    const sensor = state.at === 'answered' ? catalog.entries.find(entry => entry.key === state.plan.sensor) : undefined;
+    const view = askView(state, t, store.fmt, sensor);
     // what the catalog says against the config is an admin's business, as the config card's problems are
-    const problems = store.isAdmin ? this.loader.problems : [];
+    const notes = askNotes(catalog, store.isAdmin, t);
     return html`<div class="body">
       <form class="ask" id="ask-form" @submit=${this.onSubmit}>
         <label class="sr" for="ask-question">${t('ask.field')}</label>
@@ -122,7 +125,7 @@ export class AskSheet extends LitElement {
         />
         <button class="abtn send" id="ask-send" type="submit">${t('ask.send')}</button>
       </form>
-      ${problems.map(problem => html`<p class="admin-note">${t(problem.key, problem.values)}</p>`)}
+      ${notes.map(note => html`<p class="admin-note">${note}</p>`)}
       <div class="result" id="ask-result" aria-live="polite">
         ${
           view.message

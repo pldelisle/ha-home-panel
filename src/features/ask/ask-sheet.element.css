@@ -8,10 +8,13 @@
   align-content: start;
   gap: 14px;
 }
-/* a phone's sheet covers the screen: the body is as tall as it, in dynamic viewport units, so the field stays at the top and above the on-screen keyboard
-   (no bottom offset is fixed to anything), and an answer taller than the screen scrolls inside the panel */
+/* A phone's sheet covers the screen: the body is as tall as the screen less the sheet's own chrome (the grabber, the header and the panel's padding), in dynamic viewport
+   units, which follow the browser's toolbars as they show and hide but not the on-screen keyboard (iOS draws that over the page). The field stays visible with the keyboard
+   up because it is the first thing in the body, at the top of the screen, and no bottom offset is fixed to anything. An answer taller than the screen scrolls inside the panel.
+   No layout rule can say "as tall as the panel's maximum" from inside a body whose panel is as tall as its content, so the chrome's height is named. */
 :host([compact]) .body {
-  min-height: calc(100dvh - 220px);
+  --sheet-chrome: 220px;
+  min-height: calc(100dvh - var(--sheet-chrome));
 }
 .ask {
   display: flex;

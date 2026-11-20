@@ -1555,7 +1555,7 @@ export const en = {
   // a question in progress, and why one has no answer (the model's own words are never shown)
   'ask.state.planning': 'Working out what you asked…',
   'ask.state.fetching': 'Reading the history…',
-  'ask.failed.unsupported': 'The panel has no sensor for that, or cannot look that up yet. Try one of the suggestions.',
+  'ask.failed.unsupported': 'The panel has no sensor for that, or cannot look that up yet.',
   'ask.failed.timeout': 'That took too long. Try again.',
   'ask.failed.unavailable': 'The assistant is not available right now.',
   'ask.failed.empty': 'The history has nothing for that period.',

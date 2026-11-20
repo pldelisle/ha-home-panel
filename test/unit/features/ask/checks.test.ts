@@ -2,7 +2,7 @@
 // (the entity, an excluded id) are config-check.test.ts's, beside the core's `checkHouse`.
 import {describe, expect, test} from 'vitest';
 import {createMessages} from '../../../../src/core/i18n/messages.ts';
-import {askChecks} from '../../../../src/features/ask/checks.ts';
+import {askChecks, askNotes} from '../../../../src/features/ask/checks.ts';
 
 describe('askChecks', () => {
   test('a catalog under the cap has nothing to say', () => {
@@ -24,5 +24,25 @@ describe('askChecks', () => {
     const [one] = askChecks({omitted: 1});
     expect(en.t(one.key, one.values)).toContain('1 sensor was left out');
     expect(createMessages({language: 'fr', tag: 'fr'}).t(problem.key, problem.values)).toContain('13 capteurs');
+  });
+});
+
+describe('askNotes', () => {
+  const en = createMessages({language: 'en', tag: 'en'});
+  const fr = createMessages({language: 'fr', tag: 'fr'});
+
+  test('an admin reads one worded line when the cap left sensors out, in the panel language', () => {
+    expect(askNotes({omitted: 13}, true, en.t)).toEqual([
+      'ask: the catalog is limited to 60 sensors, and 13 sensors were left out. Exclude some under ask.exclude.',
+    ]);
+    expect(askNotes({omitted: 1}, true, fr.t)[0]).toContain('1 capteur a été laissé de côté');
+  });
+
+  test('a household member reads nothing, whatever the cap did', () => {
+    expect(askNotes({omitted: 13}, false, en.t)).toEqual([]);
+  });
+
+  test('an admin reads nothing about a catalog under the cap', () => {
+    expect(askNotes({omitted: 0}, true, en.t)).toEqual([]);
   });
 });

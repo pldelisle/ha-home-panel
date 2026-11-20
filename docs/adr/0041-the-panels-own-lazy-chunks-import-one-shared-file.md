@@ -19,6 +19,7 @@ Home Assistant loads the entry as `home-panel.js?v=…`. A chunk that imported `
 - A feature of the panel can be lazy by one `import()` in the shell and one line in `LAZY_SOURCES`; a house that never uses it fetches nothing of it.
 - The page loads two files in sequence, the entry and then the panel file, where it loaded one: one more round trip on a cold load. The names carry a content hash, so a new release's entry (new `?v=`) points at a new file.
 - A cached `home-panel.js` from an older release names a panel file the new release's folder no longer holds, so an update must bump `?v=` as the install steps already say; before, a stale entry kept working by itself.
+- The panel file's name changes at every release, so a folder that is updated by copying keeps every old one. `scripts/ha/update_home_panel.py` treats `main-*.js*` in the panel folder as build files and moves the old ones to the backup with the rest of the old build. The installed updater on the live house learns this only once it has been updated, so one old `main-<hash>.js` (with its map and compressed copies) may stay there until then; it is harmless and the next update removes it.
 - The dist test reads the panel file where it read the entry, and `size-limit` adds the two.
 - A lazy entry missing from `LAZY_SOURCES` is pulled into the panel file and stops being a chunk; the dist test of the Ask chunk (and the `chunks.spec.ts` one) fails then.
 

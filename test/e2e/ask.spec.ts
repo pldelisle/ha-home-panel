@@ -20,7 +20,7 @@ import {
   withAsk,
 } from './ask';
 
-const UNSUPPORTED_EN = 'The panel has no sensor for that, or cannot look that up yet. Try one of the suggestions.';
+const UNSUPPORTED_EN = 'The panel has no sensor for that, or cannot look that up yet.';
 
 test.describe('a house without an ask block', () => {
   test.use({houseOpts: {cfg: FULL_CFG}});
@@ -137,26 +137,29 @@ test.describe('a house with an ask block', () => {
     const sent = JSON.stringify(call.data);
     // the AI Task is the one entity addressed; no other id of the house is in what was sent
     expect(call.data.entity_id).toBe(ASK_ENTITY);
-    const ids = sent
-      .match(/\b[a-z_]+\.[a-z0-9_]+\b/g)!
-      .filter(word =>
-        /^(sensor|binary_sensor|climate|light|switch|lock|number|person|weather|sun|input_boolean|scene|camera|media_player|fan|cover)\./.test(
-          word,
-        ),
-      );
+    // no entity id of the house: not one of the ids in its states, the AI Task entity aside (it is what the call addresses, in `entity_id`)
+    const states = await house.page.evaluate(() =>
+      Object.entries((window as unknown as {hass: {states: Record<string, {state: string}>}}).hass.states).map(
+        ([id, entity]) => [id, entity.state] as const,
+      ),
+    );
+    expect(states.length).toBeGreaterThan(50);
+    const ids = states.map(([id]) => id).filter(id => id !== ASK_ENTITY && sent.includes(id));
     expect(ids).toEqual([]);
     // the question is in it, and so are the handles the model answers with
     expect(sent).toContain(QUESTION);
     expect(sent).toContain('temp.office');
-    // no reading: the house's decimal states (the office's temperature, the grid's power) are nowhere in what was sent
-    const states = await house.page.evaluate(() =>
-      Object.values((window as unknown as {hass: {states: Record<string, {state: string}>}}).hass.states).map(
-        entity => entity.state,
-      ),
-    );
-    const readings = states.filter(state => /^-?\d+\.\d+$/.test(state));
-    expect(readings.length).toBeGreaterThan(0);
-    for (const reading of readings) expect(sent, `the reading ${reading}`).not.toContain(reading);
+    // no reading: every numeric state of the house of two characters or more (decimals and integers) is nowhere in what was sent, as a number of its own. The numbers the
+    // instructions hold themselves (their examples, the question's, the date's) are not readings, and are told by being in the text with every sensor's line and the question taken out.
+    const readings = [
+      ...new Set(states.map(([, state]) => state).filter(state => /^-?\d+(\.\d+)?$/.test(state) && state.length >= 2)),
+    ];
+    expect(readings.length).toBeGreaterThan(5);
+    const own = (call.data.instructions as string).replace(QUESTION, '').replace(/^- (?:temp|power)\..*$/gm, '');
+    const asNumber = (text: string, reading: string) =>
+      new RegExp(`(?<![\\w.-])${reading.replace('.', '\\.')}(?![\\w.])`).test(text);
+    for (const reading of readings.filter(reading => !asNumber(own, reading)))
+      expect(asNumber(sent, reading), `the reading ${reading}`).toBe(false);
   });
 
   test('a sensor the catalog does not have is refused: the sheet says it cannot answer, and the model’s words are not shown', async ({

@@ -29,6 +29,7 @@ export default defineConfig({
         'src/ui/controllers/{optimistic,armed,windowed-history,system-data}.ts',
         'src/ui/styles/host.ts',
         'src/shell/features.ts',
+        'src/shell/ask-watch.ts', // the Ask button's watch of the AI Task entity, a controller tested with a fake store and host
         'src/shell/sheets.ts', // the ids of the shell's own sheet and popup, constants only
         'src/shell/home-line.ts', // the line under the greeting and the Home heading, a pure model
         'src/shell/home-tiles.ts', // the table of the six glance tiles: ids and readers, no element
@@ -83,6 +84,7 @@ export default defineConfig({
         'src/ui/styles/host.ts': {statements: 100},
         'src/shell/drift.ts': {statements: 100},
         'src/shell/features.ts': {statements: 100},
+        'src/shell/ask-watch.ts': {statements: 100},
         'src/shell/sheets.ts': {statements: 100, branches: 100},
         'src/shell/home-line.ts': {statements: 100},
         'src/shell/home-tiles.ts': {statements: 100},
