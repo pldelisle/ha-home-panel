@@ -213,6 +213,8 @@ Claude's picks, in the order they would ship: \#16 Ask the house, \#17 Welcome c
 
 From round 5, start with \#47: its first PR fixes a real gap, because Away can start tonight with a sitter alone with the child. After it, \#43 house memory and \#51 change notes for the other adult are an afternoon each. \#70 the outage drill is the one most likely to prevent the next bad evening.
 
+Idea 46 is spec 29 ([docs/specs/29-ask.md](specs/29-ask.md), #533).
+
 - [ ] The owner picks the ideas to build (numbers)
 
 - [ ] For \#8: a photo or sketch of each floor with the room names

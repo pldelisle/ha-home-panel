@@ -62,6 +62,14 @@ The words the panel and its code use. One word per concept: use it in issues, te
 
 **Who's home** — The people the panel knows (the `people` option), shown as chips in the header and as the Who's home card on the Home tab; it is also a smart-stack card for 30 minutes after someone arrives or leaves.
 
+**Ask sheet** — The sheet the header's button opens when the config has an `ask` block: a text field, up to three suggested questions and, after a question, one answer; it controls nothing, stores nothing and opens empty every time (spec 29, ADR 0040). Avoid: chat, assistant.
+
+**Sensor catalog** — The list of sensors the panel offers the model with a question: for each a short stable key, a display name, a kind (`binary`, `measure` or `meter`) and a unit, built from the providers' reads and never holding an entity id or a reading. Not the message Catalog. Avoid: entity list, exposure list.
+
+**Plan** — What the model returns for a question, parsed once into a closed type: a form (series, moments, total or unsupported), a sensor key from the sensor catalog, a period and, for moments, a test. The model writes no sentence and computes nothing. Avoid: query, intent.
+
+**Answer** — What the Ask sheet draws for a plan: a chart with its low, high and mean, a list of moments with their count and total, or a single figure with a bar per day, computed by the panel from the recorder, with a line saying what it understood. Avoid: response, result.
+
 **Full test house** — The made-up house in `test/houses/full.mjs` (plain data, read by the harness and by `fakeHass.fromHouse`) with thermostats, a car and a water heater (the Hilo card stays hidden); it is the default house for tests and baselines. Avoid: fixture (recorded, anonymised data that feeds model tests).
 
 **Bare test house** — `test/houses/bare.mjs`, the same kind of data with almost nothing configured; it proves that a section whose entities are missing is hidden (no Climate or Car tab, no water heater or Hilo card). Avoid: fixture.
