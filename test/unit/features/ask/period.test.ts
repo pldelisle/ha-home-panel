@@ -1,15 +1,17 @@
 // resolvePeriod: the nine closed words of a plan as a window of the house's calendar. Fixed clocks, in the house's zone, with the
 // expected instants written out in UTC (Toronto is UTC-5 in winter and UTC-4 in summer).
 import {describe, expect, test} from 'vitest';
-import {PERIODS, resolvePeriod, type Period} from '../../../../src/features/ask/period.ts';
+import {createFormatters} from '../../../../src/core/i18n/format.ts';
+import {englishLocale} from '../../../../src/core/i18n/locale.ts';
+import {PERIODS, resolvePeriod, type Period, type WeekStart} from '../../../../src/features/ask/period.ts';
 
 const ZONE = 'America/Toronto';
-const MONDAY = 1;
-const SUNDAY = 0;
+const MONDAY: WeekStart = 1;
+const SUNDAY: WeekStart = 0;
 
 /** The window as ISO instants, so a failure reads as dates. */
 const window = (period: Period, now: string, weekStart = MONDAY, zone = ZONE) => {
-  const w = resolvePeriod(period, new Date(now), zone, weekStart);
+  const w = resolvePeriod(period, new Date(now), createFormatters(englishLocale(zone)), weekStart);
   return [w.start.toISOString(), w.end.toISOString(), w.statistic];
 };
 

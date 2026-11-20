@@ -1,5 +1,5 @@
 // The sheet's model: the reducer over one discriminated state, and the texts the sheet shows for a state. Every transition, a reply for a
-// question that was cancelled or replaced, and the view in both languages over the real formatters of a store.
+// request that was cancelled or replaced, even when the same words were asked again, and the view in both languages over the real formatters of a store.
 import {describe, expect, test} from 'vitest';
 import type {Catalog} from '../../../../src/features/ask/catalog.ts';
 import type {EmptyAnswer, SeriesAnswer} from '../../../../src/features/ask/evaluate.ts';
@@ -30,30 +30,36 @@ const ANSWER: SeriesAnswer = {
 const EMPTY: EmptyAnswer = {kind: 'empty'};
 
 const run = (events: AskEvent[], from: AskState = IDLE): AskState => events.reduce(askReducer, from);
-const ask = (question: string): AskEvent => ({type: 'asked', question});
-const planning = (question = 'how warm was the office yesterday?'): AskState => ({at: 'planning', question});
-const fetching = (question = 'how warm was the office yesterday?'): AskState => ({
+const ask = (question: string, id = 1): AskEvent => ({type: 'asked', id, question});
+const planning = (question = 'how warm was the office yesterday?', id = 1): AskState => ({
+  at: 'planning',
+  id,
+  question,
+});
+const fetching = (question = 'how warm was the office yesterday?', id = 1): AskState => ({
   at: 'fetching',
+  id,
   question,
   plan: SERIES,
 });
 
 describe('the reducer', () => {
-  test('starts idle, and a question puts it to planning', () => {
+  test('starts idle, and a question puts it to planning, under its request id', () => {
     expect(IDLE).toEqual({at: 'idle'});
     expect(run([ask('how warm was the office yesterday?')])).toEqual(planning());
   });
 
   test('a question is trimmed, and a blank one asks nothing', () => {
-    expect(run([ask('  hello  ')])).toEqual({at: 'planning', question: 'hello'});
+    expect(run([ask('  hello  ', 4)])).toEqual({at: 'planning', id: 4, question: 'hello'});
     expect(run([ask('   ')])).toBe(IDLE);
     const state = planning();
     expect(askReducer(state, ask(''))).toBe(state);
   });
 
   test('a plan to run moves planning to fetching, with the plan', () => {
-    expect(run([{type: 'planned', question: 'q', plan: SERIES}], planning('q'))).toEqual({
+    expect(run([{type: 'planned', id: 1, plan: SERIES}], planning('q'))).toEqual({
       at: 'fetching',
+      id: 1,
       question: 'q',
       plan: SERIES,
     });
@@ -61,19 +67,19 @@ describe('the reducer', () => {
 
   test('an unsupported plan, or a PlanError, is a failure with the reason unsupported', () => {
     const unsupported = {at: 'failed', question: 'q', reason: 'unsupported'};
-    expect(run([{type: 'planned', question: 'q', plan: {form: 'unsupported'}}], planning('q'))).toEqual(unsupported);
+    expect(run([{type: 'planned', id: 1, plan: {form: 'unsupported'}}], planning('q'))).toEqual(unsupported);
     const error: PlanError = {error: 'unknown_sensor'};
-    expect(run([{type: 'planned', question: 'q', plan: error}], planning('q'))).toEqual(unsupported);
+    expect(run([{type: 'planned', id: 1, plan: error}], planning('q'))).toEqual(unsupported);
   });
 
   test('an answer moves fetching to answered, and no rows at all is the failure empty', () => {
-    expect(run([{type: 'answered', question: 'q', answer: ANSWER}], fetching('q'))).toEqual({
+    expect(run([{type: 'answered', id: 1, answer: ANSWER}], fetching('q'))).toEqual({
       at: 'answered',
       question: 'q',
       plan: SERIES,
       answer: ANSWER,
     });
-    expect(run([{type: 'answered', question: 'q', answer: EMPTY}], fetching('q'))).toEqual({
+    expect(run([{type: 'answered', id: 1, answer: EMPTY}], fetching('q'))).toEqual({
       at: 'failed',
       question: 'q',
       reason: 'empty',
@@ -82,16 +88,8 @@ describe('the reducer', () => {
 
   test('a timeout or an unavailable model fails the question in either waiting state', () => {
     for (const reason of ['timeout', 'unavailable'] as const) {
-      expect(run([{type: 'failed', question: 'q', reason}], planning('q'))).toEqual({
-        at: 'failed',
-        question: 'q',
-        reason,
-      });
-      expect(run([{type: 'failed', question: 'q', reason}], fetching('q'))).toEqual({
-        at: 'failed',
-        question: 'q',
-        reason,
-      });
+      expect(run([{type: 'failed', id: 1, reason}], planning('q'))).toEqual({at: 'failed', question: 'q', reason});
+      expect(run([{type: 'failed', id: 1, reason}], fetching('q'))).toEqual({at: 'failed', question: 'q', reason});
     }
   });
 
@@ -103,7 +101,7 @@ describe('the reducer', () => {
       {at: 'answered', question: 'old', plan: SERIES, answer: ANSWER},
       {at: 'failed', question: 'old', reason: 'timeout'},
     ];
-    for (const from of states) expect(run([ask('new')], from)).toEqual(planning('new'));
+    for (const from of states) expect(run([ask('new', 2)], from)).toEqual(planning('new', 2));
   });
 
   test('cancel goes back to idle from a waiting state and leaves the others alone', () => {
@@ -120,40 +118,49 @@ describe('the reducer', () => {
 });
 
 describe('a reply that is late is dropped', () => {
+  const replies = (id: number): AskEvent[] => [
+    {type: 'planned', id, plan: SERIES},
+    {type: 'answered', id, answer: ANSWER},
+    {type: 'failed', id, reason: 'timeout'},
+  ];
+
   test('a plan, an answer or a failure that arrives after a cancel changes nothing', () => {
-    const cancelled = run([ask('q'), {type: 'cancelled'}]);
+    const cancelled = run([ask('q', 1), {type: 'cancelled'}]);
     expect(cancelled).toBe(IDLE);
-    for (const late of [
-      {type: 'planned', question: 'q', plan: SERIES},
-      {type: 'answered', question: 'q', answer: ANSWER},
-      {type: 'failed', question: 'q', reason: 'timeout'},
-    ] as AskEvent[])
-      expect(askReducer(cancelled, late)).toBe(cancelled);
+    for (const late of replies(1)) expect(askReducer(cancelled, late)).toBe(cancelled);
   });
 
-  test('a reply for the question that was replaced is dropped, in either waiting state', () => {
-    const replaced = run([ask('old'), ask('new')]);
-    for (const late of [
-      {type: 'planned', question: 'old', plan: SERIES},
-      {type: 'answered', question: 'old', answer: ANSWER},
-      {type: 'failed', question: 'old', reason: 'unavailable'},
-    ] as AskEvent[])
-      expect(askReducer(replaced, late)).toBe(replaced);
-    const reading = fetching('new');
-    for (const late of [
-      {type: 'planned', question: 'new', plan: SERIES},
-      {type: 'answered', question: 'old', answer: ANSWER},
-      {type: 'failed', question: 'old', reason: 'unavailable'},
-    ] as AskEvent[])
-      expect(askReducer(reading, late)).toBe(reading);
+  test("the same words asked again after a cancel are a new request: the first one's late reply is dropped", () => {
+    const again = run([ask('q', 1), {type: 'cancelled'}, ask('q', 2)]);
+    expect(again).toEqual({at: 'planning', id: 2, question: 'q'});
+    for (const late of replies(1)) expect(askReducer(again, late)).toBe(again);
+    // and the current request's own reply is taken
+    expect(askReducer(again, {type: 'planned', id: 2, plan: SERIES})).toMatchObject({at: 'fetching', id: 2});
+  });
+
+  test('the same holds in the fetching state, and the words need not match to the letter', () => {
+    const reading = run([
+      ask(' q ', 1),
+      {type: 'planned', id: 1, plan: SERIES},
+      {type: 'cancelled'},
+      ask('q', 2),
+      {type: 'planned', id: 2, plan: SERIES},
+    ]);
+    expect(reading).toMatchObject({at: 'fetching', id: 2});
+    for (const late of replies(1)) expect(askReducer(reading, late)).toBe(reading);
+  });
+
+  test('a reply for the request that was replaced is dropped, in either waiting state', () => {
+    const replaced = run([ask('old', 1), ask('new', 2)]);
+    for (const late of replies(1)) expect(askReducer(replaced, late)).toBe(replaced);
+    const reading = fetching('new', 2);
+    for (const late of replies(1)) expect(askReducer(reading, late)).toBe(reading);
   });
 
   test('a reply for a question already answered does not move an answer or a failure', () => {
     const answered: AskState = {at: 'answered', question: 'q', plan: SERIES, answer: ANSWER};
     const failed: AskState = {at: 'failed', question: 'q', reason: 'timeout'};
-    for (const from of [answered, failed])
-      expect(askReducer(from, {type: 'answered', question: 'q', answer: ANSWER})).toBe(from);
-    expect(askReducer(failed, {type: 'failed', question: 'q', reason: 'unavailable'})).toBe(failed);
+    for (const from of [answered, failed]) for (const late of replies(1)) expect(askReducer(from, late)).toBe(from);
   });
 });
 

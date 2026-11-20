@@ -479,6 +479,32 @@ describe('panel config', () => {
     expect(store.configProblems).toEqual([]);
   });
 
+  test('the ask block is checked against the house: nothing before a hass, a warning while the entity is missing, none once it is there', () => {
+    const store = createStore({defaultTimeZone: 'UTC', resolve: resolveConfig});
+    store.setPanelConfig({ask: {entity: 'ai_task.model', exclude: ['sensor.a']}});
+    expect(store.configProblems).toEqual([]);
+    store.setHass(house());
+    expect(store.configProblems).toEqual([
+      {path: 'ask.entity', key: 'config.askMissingEntity', values: {path: 'ask.entity', entity: 'ai_task.model'}},
+    ]);
+    const warned = store.configProblems;
+    // a state changes elsewhere: the very same list, so a reader that compares by identity is not woken
+    store.setHass(fakeHass({states: {...house().states, 'sensor.z': entity('sensor.z', '9')}}));
+    expect(store.configProblems).toBe(warned);
+    store.setHass(fakeHass({states: {...house().states, 'ai_task.model': entity('ai_task.model', 'idle')}}));
+    expect(store.configProblems).toEqual([]);
+  });
+
+  test('a schema problem and a house warning are listed together', () => {
+    const store = createStore({defaultTimeZone: 'UTC', resolve: resolveConfig});
+    store.setHass(house());
+    store.setPanelConfig({peoples: [], ask: {entity: 'ai_task.model'}});
+    expect(store.configProblems.map(problem => problem.key)).toEqual([
+      'config.unknownKeyHint',
+      'config.askMissingEntity',
+    ]);
+  });
+
   test('a config set after a hass resolves against its states', () => {
     const store = make();
     store.setHass(house());

@@ -1,6 +1,8 @@
 // askInstructions and askStructure: what a model is told and the fields it must fill. Tests state what the model is given (the date in
 // the house's zone, every sensor, the question as quoted data, the vocabulary) and the shape the service takes; none asserts the wording.
 import {describe, expect, test} from 'vitest';
+import {createFormatters} from '../../../../src/core/i18n/format.ts';
+import {englishLocale} from '../../../../src/core/i18n/locale.ts';
 import type {Catalog} from '../../../../src/features/ask/catalog.ts';
 import {
   askInstructions,
@@ -22,7 +24,7 @@ const catalog: Catalog = {
 
 const FRIDAY_EVENING = new Date('2026-11-21T03:00:00Z'); // 10 pm on the 20th in Toronto, already the 21st in Paris
 const instructions = (question: string, language = 'en', zone = 'America/Toronto') =>
-  askInstructions(question, FRIDAY_EVENING, catalog, language, zone);
+  askInstructions(question, FRIDAY_EVENING, catalog, language, createFormatters(englishLocale(zone)));
 
 describe('askInstructions', () => {
   test('tells the date and the weekday of the house, not of the clock that carried them', () => {

@@ -3,7 +3,7 @@
 // frontend data docs); a deep module whose dependencies are accepted, not created (Ousterhout, A Philosophy of Software Design).
 // Must not: touch the DOM, call a hass method, read the clock, or be imported as a singleton; the only `Intl` it reaches
 // is through the message compiler it builds for the locale.
-import {checkConfig, type ConfigProblem, type ResolvedConfig} from './config.ts';
+import {checkConfig, checkHouse, type ConfigProblem, type ResolvedConfig} from './config.ts';
 import type {
   AreaRegistryEntry,
   DeviceRegistryEntry,
@@ -91,7 +91,17 @@ export function createStore(opts: StoreOptions): PanelStore {
   let raw: unknown = {};
   let configKey: string | null = null;
   let config = opts.resolve(raw, {});
-  let configProblems = checkConfig(raw);
+  let schemaProblems = checkConfig(raw);
+  let houseProblems: ConfigProblem[] = [];
+  let configProblems = schemaProblems;
+  // the list the config card reads: what is wrong with the config as written, then what the house says against it; the very same array
+  // until one of the two changes, so a reader that compares by identity is not woken by every state
+  const refreshProblems = (schemaChanged: boolean) => {
+    const next = hass ? checkHouse(config, hass.states) : [];
+    if (!schemaChanged && JSON.stringify(next) === JSON.stringify(houseProblems)) return;
+    houseProblems = next;
+    configProblems = next.length ? [...schemaProblems, ...next] : schemaProblems;
+  };
   let generation = 0;
 
   // t reads only the language and the tag; the defaults panelLocale asks for matter to the formatters, not here
@@ -215,6 +225,7 @@ export function createStore(opts: StoreOptions): PanelStore {
       seenTimeZone = timeZoneOf(next);
       // the config was resolved against no states until now (discovery needs them): resolve it again, same generation
       if (!prev) config = opts.resolve(raw, next.states);
+      refreshProblems(false);
       // the messages and the names are built from the first hass, then rebuilt on the locale change the subscribers are
       // told of; the names are also rebuilt when the config changes (setConfig), the messages are not
       if (!prev || change.locale) {
@@ -231,7 +242,8 @@ export function createStore(opts: StoreOptions): PanelStore {
       configKey = key;
       raw = value ?? {};
       config = opts.resolve(raw, hass?.states ?? {});
-      configProblems = checkConfig(raw);
+      schemaProblems = checkConfig(raw);
+      refreshProblems(true);
       names = buildNames();
       generation++;
       return true;

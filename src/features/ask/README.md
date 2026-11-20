@@ -11,18 +11,18 @@ src/features/ask/
   README.md
   catalog.ts       askCatalog(reads, names, config): Catalog: the sensors a question may name, as handles, and the private map to entities
   plan.ts          Period, Test, Plan, PlanError; parsePlan(reply, catalog): Plan | PlanError, the one place a model's reply is read
-  period.ts        resolvePeriod(period, now, timeZone, weekStart): the nine periods as a window of the house's calendar
+  period.ts        resolvePeriod(period, now, fmt, weekStart): the nine periods as a window of the house's calendar
   instructions.ts  askInstructions(...), askStructure(catalog), INSTRUCTIONS_VERSION: what the model is told and the fields it fills
   evaluate.ts      evaluateSeries(rows, window): the points, the low, the high, the mean and the coverage, or empty
   model.ts         AskState, askReducer, askView(state, t, fmt, catalog): the sheet's state and its texts
-  checks.ts        askChecks(ask, states, catalog): what the house says against the `ask` block
+  checks.ts        askChecks(catalog): the cap warning (the entity and exclude warnings are the core's checkHouse)
 ```
 
 Every file is a pure module: values in, values out, no clock, no DOM, no `hass`.
 
 ## The catalog
 
-Built from the providers' reads (ADR 0025), never from a feature. An entry is `{key, name, kind, unit}`: the key is a stable handle (`temp.office`, `power.grid`) and not an entity id, the name is the display name in the panel's language, and the kind is `binary`, `measure` or `meter`. The map from a key to an entity id stays on the panel's side. This slice fills the `measure` entries: the rooms' temperatures and the live power readings. `ask.exclude` removes entries by entity id, and the catalog is cut at 60.
+Built from the providers' reads (ADR 0025), never from a feature. An entry is `{key, name, kind, unit}`: the key is a stable handle (`temp.office`, `power.grid`), built from the room's area (else the key its config gives it, else its display name) or the power role, and never from an entity id. The name is the display name in the panel's language, and the kind is `binary`, `measure` or `meter`. The map from a key to an entity id stays on the panel's side. This slice fills the `measure` entries: the rooms' temperatures and the live power readings. `ask.exclude` removes entries by entity id, and the catalog is cut at 60.
 
 ## The plan
 

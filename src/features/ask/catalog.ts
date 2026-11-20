@@ -1,11 +1,13 @@
 // The sensor catalog: the sensors a question may be about, as the names and kinds the model is told and the map the panel keeps back.
 // Pattern: an anti-corruption layer (Evans, DDD) between the house and a model, built from the providers' reads and never from a
-// feature (ADR 0025); a handle (`temp.office`, `power.grid`) is a stable key, so a hallucinated sensor is a parse error by construction
+// feature (ADR 0025). A handle (`temp.office`, `power.grid`) is a stable key built from a room's area (else the key its config gives it,
+// else its display name) or from a power role, never from an entity id, so a hallucinated sensor is a parse error by construction
 // (ADR 0040, "The model plans, the panel computes"). Spec 29, "The sensor catalog". This slice fills the `measure` entries.
 // Must not: send or hold an entity id in an entry, a reading or a state value, word a name but through `t` and the name resolver, or read the clock.
 import type {ResolvedConfig} from '../../core/config.ts';
-import type {HassEntities} from '../../core/hass.ts';
+import type {HassEntities, Registries} from '../../core/hass.ts';
 import {roomName, type RoomNameDeps} from '../../core/i18n/room-name.ts';
+import {areaOf} from '../../core/registry.ts';
 import {textAttributeOf} from '../../core/states.ts';
 import type {PowerNow} from '../../providers/power.ts';
 
@@ -36,10 +38,11 @@ export interface Catalog {
   omitted: number;
 }
 
-/** What the catalog reads of the house: the live flow the Power provider gives, and the states for each entity's own unit. */
+/** What the catalog reads of the house: the live flow the Power provider gives, the states for each entity's own unit and the registries for a room's area. */
 export interface AskReads {
   power: PowerNow;
   states: HassEntities;
+  registries: Registries;
 }
 
 /** A name or id made into a handle's second half: lower case, letters and digits, one underscore between runs of anything else. */
@@ -59,14 +62,21 @@ export function askCatalog(
   config: Pick<ResolvedConfig, 'ask' | 'entities' | 'rooms'>,
 ): Catalog {
   const found: [CatalogEntry, string][] = [];
-  const add = (key: CatalogKey, name: string, unit: string, entity: string) => {
-    if (!found.some(([entry]) => entry.key === key)) found.push([{key, name, kind: 'measure', unit}, entity]);
+  // two sensors that would share a handle keep both, the second as `temp.den-2`: stable, and visible to a reader of the instructions
+  const add = (handle: CatalogKey, name: string, unit: string, entity: string) => {
+    let key = handle;
+    for (let n = 2; found.some(([entry]) => entry.key === key); n++) key = `${handle}-${n}`;
+    found.push([{key, name, kind: 'measure', unit}, entity]);
   };
   const {entities} = config;
   for (const room of reads.power.rooms) {
     const spec = config.rooms.find(candidate => candidate.climate === room.climate);
-    if (spec && (room.present || room.temperature !== null))
-      add(`temp.${slug(room.key)}`, roomName(room, names), '°', spec.temp);
+    if (!spec || !(room.present || room.temperature !== null)) continue;
+    const name = roomName(room, names);
+    // a handle is built from the room's area, else the key its config gives it, else (last) its display name: never from an entity id
+    const word =
+      [areaOf(room.climate, reads.registries), spec.explicitKey ?? '', name].map(slug).find(Boolean) ?? 'room';
+    add(`temp.${word}`, name, '°', spec.temp);
   }
   const unitOf = (id: string) => textAttributeOf(reads.states, id, 'unit_of_measurement') ?? 'kW';
   const flow: [string, number | null, string | null, 'grid' | 'waterHeater' | 'ev'][] = [

@@ -1,6 +1,6 @@
 // The model of the Ask sheet: one discriminated state, the reducer that moves it, and the texts the sheet shows for a state.
 // Pattern: a reducer over a tagged union (Elm's update; Redux), so no impossible combination can be written (a failure with an answer, an
-// answer with no plan); a reply is dropped unless it is for the question that is in flight, which is how a cancel is honoured without
+// answer with no plan); a reply is dropped unless it is for the request that is in flight (matched by id, not by the words), which is how a cancel is honoured without
 // aborting anything here. `askView` is the humble element's only source of text (ADR 0005). Spec 29, "The model of the sheet".
 // Must not: call a model, fetch, read the clock or the DOM, show a model's own words (the texts are the catalog's), or hold a timer (the timeout is the port's).
 import type {Formatters} from '../../core/i18n/format.ts';
@@ -19,17 +19,20 @@ export type FailureReason = 'unsupported' | 'timeout' | 'unavailable' | 'empty';
 
 export type AskState =
   | {at: 'idle'}
-  | {at: 'planning'; question: string}
-  | {at: 'fetching'; question: string; plan: AnswerablePlan}
+  | {at: 'planning'; id: number; question: string}
+  | {at: 'fetching'; id: number; question: string; plan: AnswerablePlan}
   | {at: 'answered'; question: string; plan: AnswerablePlan; answer: Answer}
   | {at: 'failed'; question: string; reason: FailureReason};
 
-/** What happens to the sheet. A reply names the question it is for, so a late one can be told from a current one. */
+/**
+ * What happens to the sheet. A question carries a request id, a number the caller counts up, and every reply names the id it is for, so a late
+ * reply is told from a current one even when the same words were asked again after a cancel.
+ */
 export type AskEvent =
-  | {type: 'asked'; question: string}
-  | {type: 'planned'; question: string; plan: Plan | PlanError}
-  | {type: 'answered'; question: string; answer: Answer | EmptyAnswer}
-  | {type: 'failed'; question: string; reason: 'timeout' | 'unavailable'}
+  | {type: 'asked'; id: number; question: string}
+  | {type: 'planned'; id: number; plan: Plan | PlanError}
+  | {type: 'answered'; id: number; answer: Answer | EmptyAnswer}
+  | {type: 'failed'; id: number; reason: 'timeout' | 'unavailable'}
   | {type: 'cancelled'}
   | {type: 'closed'};
 
@@ -38,33 +41,33 @@ export const IDLE: AskState = {at: 'idle'};
 const isWaiting = (state: AskState): state is Extract<AskState, {at: 'planning' | 'fetching'}> =>
   state.at === 'planning' || state.at === 'fetching';
 
-/** The next state. A reply that is not for the question in flight returns the state it was given, the very same object. */
+/** The next state. A reply that is not for the request in flight returns the state it was given, the very same object. */
 export function askReducer(state: AskState, event: AskEvent): AskState {
   switch (event.type) {
     case 'asked': {
       const question = event.question.trim();
-      return question ? {at: 'planning', question} : state;
+      return question ? {at: 'planning', id: event.id, question} : state;
     }
     case 'cancelled':
       return isWaiting(state) ? IDLE : state;
     case 'closed':
       return IDLE;
     case 'planned': {
-      if (state.at !== 'planning' || state.question !== event.question) return state;
+      if (state.at !== 'planning' || state.id !== event.id) return state;
       const {plan} = event;
       return isPlanError(plan) || plan.form === 'unsupported'
         ? {at: 'failed', question: state.question, reason: 'unsupported'}
-        : {at: 'fetching', question: state.question, plan};
+        : {at: 'fetching', id: state.id, question: state.question, plan};
     }
     case 'answered': {
-      if (state.at !== 'fetching' || state.question !== event.question) return state;
+      if (state.at !== 'fetching' || state.id !== event.id) return state;
       const {answer} = event;
       return answer.kind === 'empty'
         ? {at: 'failed', question: state.question, reason: 'empty'}
         : {at: 'answered', question: state.question, plan: state.plan, answer};
     }
     case 'failed':
-      return isWaiting(state) && state.question === event.question
+      return isWaiting(state) && state.id === event.id
         ? {at: 'failed', question: state.question, reason: event.reason}
         : state;
   }
