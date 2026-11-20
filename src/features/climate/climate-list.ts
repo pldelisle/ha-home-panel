@@ -5,6 +5,7 @@
 import {LitElement, html, unsafeCSS} from 'lit';
 import {repeat} from 'lit/directives/repeat.js';
 import listOwn from './climate-list.element.css?inline';
+import {activeClass} from './climate-tiles.ts';
 import type {ClimateItem} from './items.ts';
 import type {ClimateSelection} from './model.ts';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
@@ -48,9 +49,9 @@ export class ClimateList extends LitElement {
         ${repeat(
           this.items,
           ({id}) => id,
-          ({id, icon, name, sub, value, missing, tone}) =>
+          ({id, icon, name, sub, value, missing, tone, active}) =>
             html`<button
-              class=${`citem ${tone}`}
+              class=${`citem ${tone}${activeClass(active)}`}
               role="option"
               type="button"
               data-id=${id}

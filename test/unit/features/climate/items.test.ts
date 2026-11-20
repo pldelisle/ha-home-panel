@@ -83,18 +83,24 @@ describe('a room', () => {
   const sub = (states: ReturnType<typeof entity>[]) => itemsOf(houseOf([], states), 'en', ROOMS)[1];
 
   test('holding the setpoint, off at the frost guard or with none, unavailable, and heating by the thermostat or by its power', () => {
-    expect(sub([thermostat('den', 'heat', {temperature: 20.5})])).toMatchObject({sub: 'Holding 20.5°', tone: ''});
-    expect(sub([thermostat('den', 'heat', {temperature: 5.5})])).toMatchObject({sub: 'Off', tone: ''});
+    expect(sub([thermostat('den', 'heat', {temperature: 20.5})])).toMatchObject({
+      sub: 'Holding 20.5°',
+      tone: '',
+      active: true,
+    });
+    expect(sub([thermostat('den', 'heat', {temperature: 5.5})])).toMatchObject({sub: 'Off', tone: '', active: false});
     expect(sub([thermostat('den', 'heat')])).toMatchObject({sub: 'Off'});
     expect(sub([thermostat('den', 'unavailable')])).toMatchObject({
       sub: 'Unavailable',
       value: 'No reading',
       missing: true,
       tone: 'bad',
+      active: false,
     });
     expect(sub([thermostat('den', 'heat', {hvac_action: 'heating'})])).toMatchObject({
       sub: 'Heating · 0\u00a0W',
       tone: 'on',
+      active: true,
     });
     expect(sub([thermostat('den'), entity('sensor.den_power', '600', {unit_of_measurement: 'W'})])).toMatchObject({
       sub: 'Heating · 600\u00a0W',
@@ -109,6 +115,7 @@ describe('a room', () => {
       value: '20.0°',
       sub: '0 rooms heating',
       tone: '',
+      active: null,
     });
     expect(house(thermostat('den', 'heat'), thermostat('hall', 'heat'))).toMatchObject({
       value: 'No reading',
@@ -132,16 +139,23 @@ describe('the heat pump', () => {
       sub: 'Daikin · heating to 22°',
       value: '19.0°',
       tone: 'on',
+      active: true,
     });
     expect(item(pump('heat', {hvac_action: 'idle', temperature: 21.5}))).toMatchObject({
       sub: 'Daikin · idle to 21.5°',
       value: 'No reading',
       tone: '',
+      active: true,
     });
     expect(item(pump('cool', {}))).toMatchObject({sub: 'Daikin · cool'});
-    expect(item(pump('off', {temperature: 22}))).toMatchObject({sub: 'Daikin · off', tone: ''});
-    expect(item(pump('unavailable'))).toMatchObject({sub: 'Daikin · offline', value: 'No reading', tone: 'bad'});
-    expect(item()).toMatchObject({sub: 'Not found', value: 'No reading', tone: 'bad'});
+    expect(item(pump('off', {temperature: 22}))).toMatchObject({sub: 'Daikin · off', tone: '', active: false});
+    expect(item(pump('unavailable'))).toMatchObject({
+      sub: 'Daikin · offline',
+      value: 'No reading',
+      tone: 'bad',
+      active: false,
+    });
+    expect(item()).toMatchObject({sub: 'Not found', value: 'No reading', tone: 'bad', active: false});
   });
 
   test('a unit with no maker is "Heat pump" in the sub, Fujitsu through FGLair, and its heating lights the house', () => {

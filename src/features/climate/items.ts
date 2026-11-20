@@ -36,6 +36,8 @@ export interface ClimateItem extends Pick<Reading, 'value' | 'missing'> {
   name: string;
   sub: string;
   tone: Tone;
+  /** A thermostat or the heat pump that is on, heating or not (any mode but off): its tile and its row stand out; null for the whole house, which is neither. */
+  active: boolean | null;
 }
 
 /** The words, the figures and the names an item is written with. */
@@ -67,6 +69,10 @@ function roomStatus(room: RoomPower, {t, fmt}: ClimateItemsDeps): string {
   return t('climate.off');
 }
 
+/** A thermostat is on when it heats or holds a setpoint above the frost guard: the status line's own rule, so a tile that says Off is never lit. */
+const roomIsOn = (room: RoomPower): boolean =>
+  room.available && (room.heating || (room.setpoint !== null && room.setpoint > OFF_AT_OR_BELOW));
+
 /** The heat pump's status line: not found, offline, off, else its action, to its setpoint when it has one; `brand` is the maker's name, else the catalog's word. */
 function heatPumpStatus(heatPump: HeatPumpInputs, brand: string, {t, fmt}: ClimateItemsDeps): string {
   if (!heatPump.present) return t('climate.notFound');
@@ -94,6 +100,7 @@ export function climateItems({rooms, heatPump, heatPumpOn}: ClimateInputs, deps:
       sub: t(heatPumpOn ? 'climate.heatPumpPlusRooms' : 'climate.roomsHeating', {n: heating}),
       ...bareReading(t, degreesOf(fmt, average)),
       tone: heating || heatPumpOn ? 'on' : '',
+      active: null,
     },
     ...rooms.map((room): ClimateItem => ({
       id: room.key,
@@ -102,6 +109,7 @@ export function climateItems({rooms, heatPump, heatPumpOn}: ClimateInputs, deps:
       sub: roomStatus(room, deps),
       ...bareReading(t, degreesOf(fmt, room.temperature)),
       tone: room.heating ? 'on' : !room.available ? 'bad' : '',
+      active: roomIsOn(room),
     })),
   ];
   if (heatPump) {
@@ -112,6 +120,7 @@ export function climateItems({rooms, heatPump, heatPumpOn}: ClimateInputs, deps:
       sub: heatPumpStatus(heatPump, heatPump.brand ?? t('climate.heatPump'), deps),
       ...bareReading(t, heatPump.available ? degreesOf(fmt, heatPump.temperature) : null),
       tone: !heatPump.available ? 'bad' : heatPumpOn ? 'on' : '',
+      active: heatPump.present && heatPump.available && heatPump.mode !== 'off',
     });
   }
   return items;

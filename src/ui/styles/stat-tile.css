@@ -252,11 +252,36 @@
 .app.gl .stile.list .ic {
   background: color-mix(in srgb, var(--rc) 20%, var(--g-tile));
 }
+/* a thermostat or heat pump that is on (`act`, heating or not) stands out from one that is off (`rest`), as the Climate tiles set them:
+   with solid cards the one that is on is the brighter card (light: the off one dims toward the well; dark: the on one lifts toward white),
+   with glass it is the more opaque card (--g-card-on, glass.css) */
+.stile.rest {
+  background: color-mix(in srgb, var(--card) 20%, var(--card2));
+}
+.app[data-theme='dark'] .stile.rest {
+  background: var(--card);
+}
+.app[data-theme='dark'] .stile.act {
+  background: color-mix(in srgb, #fff 8%, var(--card));
+}
+.app.gl .stile.rest {
+  background: var(--g-card-off);
+}
+.app.gl .stile.act {
+  background: var(--g-card-on);
+}
 @media (prefers-reduced-transparency: reduce) {
   .app.gl .stile {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
     background: var(--card);
+  }
+  .app.gl .stile.rest,
+  .app.gl .stile.act {
+    background: var(--card);
+  }
+  .app.gl[data-theme='dark'] .stile.act {
+    background: color-mix(in srgb, #fff 8%, var(--card));
   }
 }
 @media (prefers-reduced-motion: no-preference) {
