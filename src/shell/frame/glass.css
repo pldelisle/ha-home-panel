@@ -153,12 +153,17 @@
    --ctl-edge from tokens.css). The glass strength setting (--g-m) moves the navigation layer only. */
 .app.gl {
   --g-card: rgba(255, 255, 255, 0.86);
+  /* a thermostat or heat pump that is on: the card a step brighter and more opaque; one that is off: a step greyer (stat-tile.css, climate-list.element.css) */
+  --g-card-on: rgba(255, 255, 255, 0.97);
+  --g-card-off: rgba(243, 241, 237, 0.8);
   --g-tile: rgba(243, 241, 237, 0.92);
   --g-sel: var(--card);
   --g-edge-s: 0 0 #0000;
 }
 .app.gl[data-theme='dark'] {
   --g-card: rgba(47, 45, 42, 0.86);
+  --g-card-on: rgba(66, 63, 59, 0.94);
+  --g-card-off: var(--g-card);
   --g-tile: rgba(56, 53, 50, 0.92);
   --g-sel: var(--card);
 }
@@ -221,6 +226,8 @@
 @media not (prefers-contrast: more) {
   .app.gl.gc {
     --g-card: rgba(255, 255, 255, calc(0.14 * var(--g-m, 1)));
+    --g-card-on: rgba(255, 255, 255, calc(0.4 * var(--g-m, 1)));
+    --g-card-off: var(--g-card);
     --g-tile: rgba(255, 255, 255, calc(0.12 * var(--g-m, 1)));
     --g-sel: rgba(255, 255, 255, calc(0.3 * var(--g-m, 1)));
     --g-edge-s: inset 0 0 8px -3px var(--g-hi), inset 0 0 0 1px var(--g-ring);
@@ -231,6 +238,7 @@
   }
   .app.gl.gc[data-theme='dark'] {
     --g-card: rgba(255, 255, 255, calc(0.06 * var(--g-m, 1)));
+    --g-card-on: rgba(255, 255, 255, calc(0.16 * var(--g-m, 1)));
     --g-tile: rgba(255, 255, 255, calc(0.06 * var(--g-m, 1)));
     --g-sel: rgba(255, 255, 255, calc(0.12 * var(--g-m, 1)));
   }
@@ -242,6 +250,8 @@
     --g-dense: rgba(255, 255, 255, 0.95);
     --g-sel: rgba(255, 255, 255, 0.95);
     --g-card: rgba(255, 255, 255, 0.95);
+    --g-card-on: #fff;
+    --g-card-off: var(--g-card);
     --g-tile: rgba(243, 241, 237, 0.95);
   }
   .app.gl[data-theme='dark'] {
@@ -250,6 +260,7 @@
     --g-dense: rgba(30, 30, 34, 0.95);
     --g-sel: rgba(255, 255, 255, 0.2);
     --g-card: rgba(47, 45, 42, 0.95);
+    --g-card-on: rgba(66, 63, 59, 0.97);
     --g-tile: rgba(56, 53, 50, 0.95);
   }
 }

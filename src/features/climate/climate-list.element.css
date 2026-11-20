@@ -30,6 +30,16 @@
   outline: var(--focus-width) solid var(--focus-color);
   outline-offset: var(--focus-offset);
 }
+/* a thermostat or heat pump that is on (`act`) is the brighter card, one that is off (`rest`) the dimmer, as the phone's tiles (stat-tile.css) */
+.citem.rest:not([aria-selected='true']) {
+  background: color-mix(in srgb, var(--card) 20%, var(--card2));
+}
+:host([data-theme='dark']) .citem.rest:not([aria-selected='true']) {
+  background: var(--card);
+}
+:host([data-theme='dark']) .citem.act:not([aria-selected='true']) {
+  background: color-mix(in srgb, #fff 8%, var(--card));
+}
 .citem[aria-selected='true'] {
   background: var(--nav-sel-bg);
   box-shadow: none;
@@ -82,6 +92,12 @@
   backdrop-filter: var(--m-bd);
   box-shadow: var(--m-edge);
 }
+:host([glass]) .citem.rest:not([aria-selected='true']) {
+  background: var(--g-card-off);
+}
+:host([glass]) .citem.act:not([aria-selected='true']) {
+  background: var(--g-card-on);
+}
 :host([glass]) .citem .ic {
   background: var(--g-sel);
   border-color: transparent;
@@ -101,6 +117,13 @@
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
     background: var(--card);
+  }
+  :host([glass]) .citem.rest:not([aria-selected='true']),
+  :host([glass]) .citem.act:not([aria-selected='true']) {
+    background: var(--card);
+  }
+  :host([glass][data-theme='dark']) .citem.act:not([aria-selected='true']) {
+    background: color-mix(in srgb, #fff 8%, var(--card));
   }
 }
 /* Material's type roles: see tokens.css. */
