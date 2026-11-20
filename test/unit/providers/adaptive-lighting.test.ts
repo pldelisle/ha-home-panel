@@ -71,6 +71,25 @@ describe('adaptiveSwitch', () => {
     expect(alSwitches(house.states)).toEqual(['switch.adaptive_lighting_réading', 'switch.adaptive_lighting_x']);
   });
 
+  test('an instance made in an area, whose ids Home Assistant starts with the area, is a switch too, and so are its twins', () => {
+    const tv = 'switch.living_room_adaptive_lighting_tv';
+    const states = {
+      [tv]: entity(tv, 'on', {friendly_name: 'Adaptive Lighting: TV', manual_control: []}),
+      [`${tv}_sleep_mode`]: entity(`${tv}_sleep_mode`, 'off'),
+      [`${tv}_adapt_brightness`]: entity(`${tv}_adapt_brightness`, 'off'),
+      [`${tv}_adapt_color`]: entity(`${tv}_adapt_color`, 'on'),
+      'switch.living_room_lamp': entity('switch.living_room_lamp', 'on'),
+    };
+    expect(alSwitches(states)).toEqual([tv]);
+    expect(alMode({ids: [], units: []}, tv, states)).toMatchObject({
+      nightSwitch: `${tv}_sleep_mode`,
+      brightnessSwitch: `${tv}_adapt_brightness`,
+      brightnessOn: false,
+      colourSwitch: `${tv}_adapt_color`,
+      colourOn: true,
+    });
+  });
+
   describe('a split area', () => {
     const living: Player[] = [
       ['light.salon_1', 'on', {}, {area_id: 'living', hidden: true}],

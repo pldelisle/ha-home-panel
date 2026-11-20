@@ -39,10 +39,15 @@ export interface AlCurve {
 const DEFAULT_MIN_K = 2000;
 const DEFAULT_MAX_K = 5500;
 
-/** The integration's main switches: `switch.adaptive_lighting_<name>`, without the sleep-mode, colour and brightness twins. */
+/**
+ * The integration's main switches: `switch.adaptive_lighting_<name>`, or `switch.<area>_adaptive_lighting_<name>` where Home Assistant put the
+ * device's area in front of an instance made in an area, without the sleep-mode, colour and brightness twins (each is its main switch's id
+ * with the twin's suffix, whichever way the id starts).
+ */
 export const alSwitches = (states: HassEntities): string[] =>
   Object.keys(states).filter(
-    id => /^switch\.adaptive_lighting_/.test(id) && !/_(sleep_mode|adapt_color|adapt_brightness)$/.test(id),
+    id =>
+      /^switch\.(?:[a-z0-9_]+_)?adaptive_lighting_/.test(id) && !/_(sleep_mode|adapt_color|adapt_brightness)$/.test(id),
   );
 
 const record = (v: unknown): Record<string, unknown> =>
