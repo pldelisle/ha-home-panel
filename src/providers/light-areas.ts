@@ -12,7 +12,7 @@ import {attributeOf} from '../core/states.ts';
 
 /** One tile of the Lights tab before its state is read. */
 export interface LightArea {
-  /** The area's id; a split tile's own group (or light) id; `''` for the Other tile. */
+  /** The area's id; a split tile's own group (or light) id; `OTHER_KEY` for the Other tile. */
   key: string;
   /** The area the lights sit in; null for the Other tile. */
   areaId: string | null;
@@ -31,6 +31,12 @@ export interface LightArea {
   /** `units`' names without the words they all share (`shortNames`). */
   labels: string[];
 }
+
+/**
+ * The Other tile's key. Not `''`: the room's sheet is asked for by key and an empty one reads as no sheet, so the tile would not open, and the
+ * link picker's None is `''`. An area id is a slug, so it never starts with `#`.
+ */
+export const OTHER_KEY = '#other';
 
 /** What the grouping reads of the panel config. */
 export interface LightAreasConfig {
@@ -105,7 +111,7 @@ export function lightAreas(
         if (mine.length)
           out.push({...common, key: unit, name: labels[k], ids: mine, units: [unit], labels: [labels[k]]});
       });
-    } else out.push({...common, key: areaId, name: area, ids, units, labels});
+    } else out.push({...common, key: areaId || OTHER_KEY, name: area, ids, units, labels});
   }
   return out.sort(
     (a, b) => Number(a.other) - Number(b.other) || a.area.localeCompare(b.area) || a.name.localeCompare(b.name),

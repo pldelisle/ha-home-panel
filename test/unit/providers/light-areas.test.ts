@@ -70,7 +70,7 @@ describe('literal houses', () => {
     expect(tilesOf(house).map(t => [t.key, t.areaId, t.area, t.other, t.ids])).toEqual([
       ['attic', 'attic', 'Attic', false, ['light.attic_1']],
       ['den', 'den', 'Den', false, ['light.lamp']],
-      ['', null, '', true, ['light.stray']],
+      ['#other', null, '', true, ['light.stray']],
     ]);
   });
 
@@ -115,7 +115,7 @@ describe('literal houses', () => {
       [],
       areas,
     );
-    expect(tilesOf(house).map(t => [t.key, t.ids])).toEqual([['', ['light.m']]]);
+    expect(tilesOf(house).map(t => [t.key, t.ids])).toEqual([['#other', ['light.m']]]);
   });
 
   test('a split area with one button stays one tile, and a split unit with no light of its own gets no tile', () => {
