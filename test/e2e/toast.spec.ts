@@ -72,12 +72,12 @@ test.describe('in French', () => {
     await expect(toast(house).getByRole('button')).toHaveText('Fermer');
   });
 
-  // the room sheet's Auto switch, a command's toast from the catalog since the sheet moved to its element (#262)
-  test("the light sheet's Auto toast is in French", async ({house}) => {
+  // the room sheet's Auto brightness switch, a command's toast from the catalog since the sheet moved to its element (#262)
+  test("the light sheet's Auto brightness toast is in French", async ({house}) => {
     tabletOnly();
     await openOfficeSheet(house);
-    await house.root().locator('#lsheet hp-switch[data-l="al"] button').click();
-    await expect(toast(house)).toHaveText('Auto désactivé');
+    await house.root().locator('#lsheet hp-switch[data-l="abr"] button').click();
+    await expect(toast(house)).toHaveText('Intensité auto désactivée');
   });
 });
 

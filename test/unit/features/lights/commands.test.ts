@@ -3,11 +3,11 @@ import {describe, expect, test} from 'vitest';
 import type {Command} from '../../../../src/core/commands.ts';
 import {
   allOff,
-  isAuto,
+  isAdapting,
   isNight,
   link,
   pairOf,
-  setAuto,
+  setAdapt,
   setBrightness,
   setColorTemp,
   setNight,
@@ -27,6 +27,9 @@ interface Spec {
   mode?: Mode;
   /** Night only: the sleep mode on while the switch is off. */
   nightAlone?: boolean;
+  /** The brightness and colour twins: on (the default), off, or missing from the house. */
+  brightness?: 'on' | 'off' | 'none';
+  colour?: 'on' | 'off' | 'none';
   br?: number;
   k?: number | null;
   tunable?: string[];
@@ -40,6 +43,8 @@ function tile({
   on = [],
   mode = 'none',
   nightAlone = false,
+  brightness = 'on',
+  colour = 'on',
   br = 50,
   k = null,
   tunable,
@@ -58,6 +63,10 @@ function tile({
       alOn,
       nightSwitch: al && `${al}_sleep_mode`,
       nightOn,
+      brightnessSwitch: al && brightness !== 'none' ? `${al}_adapt_brightness` : null,
+      brightnessOn: brightness === 'none' ? alOn : brightness === 'on',
+      colourSwitch: al && colour !== 'none' ? `${al}_adapt_color` : null,
+      colourOn: colour === 'none' ? alOn : colour === 'on',
       manual: mode === 'manual',
       auto: alOn && mode !== 'manual',
       mode: '',
@@ -90,61 +99,85 @@ describe('allOff, toggleOne, toggleArea', () => {
   });
 });
 
-describe('Auto', () => {
+describe('Auto brightness and Auto colour', () => {
+  const MAIN = 'switch.adaptive_lighting_den';
+  const BR = 'switch.adaptive_lighting_den_adapt_brightness';
+  const COL = 'switch.adaptive_lighting_den_adapt_color';
+  const RESUME = [
+    'adaptive_lighting.set_manual_control',
+    {entity_id: MAIN, lights: ['light.den_1', 'light.den_2'], manual_control: false},
+  ];
   test.each([
     [
-      'on, the switch off, with the service',
-      tile({mode: 'off'}),
+      'brightness on, held off overnight: its own switch on, after the room is handed back',
+      tile({mode: 'auto', brightness: 'off'}),
+      'brightness',
       true,
       WITH,
-      [
-        ['switch.turn_on', {entity_id: 'switch.adaptive_lighting_den'}],
-        [
-          'adaptive_lighting.set_manual_control',
-          {entity_id: 'switch.adaptive_lighting_den', lights: ['light.den_1', 'light.den_2'], manual_control: false},
-          'lights.autoOn',
-        ],
-      ],
+      [RESUME, ['switch.turn_on', {entity_id: BR}, 'lights.autoBrightnessOn']],
     ],
     [
-      'on, the switch on but held by hand, without the service: nothing to send',
+      'brightness on, everything off: the switch, the hand flag and the twin',
+      tile({mode: 'off', brightness: 'off'}),
+      'brightness',
+      true,
+      WITH,
+      [['switch.turn_on', {entity_id: MAIN}], RESUME, ['switch.turn_on', {entity_id: BR}, 'lights.autoBrightnessOn']],
+    ],
+    [
+      'colour on, set by hand, without the service: only the twin, already on, so nothing',
       tile({mode: 'manual'}),
+      'colour',
       true,
       WITHOUT,
       [],
     ],
     [
-      'on, the switch off, without the service',
-      tile({mode: 'off'}),
+      'colour on, its twin off, without the service',
+      tile({mode: 'auto', colour: 'off'}),
+      'colour',
       true,
       WITHOUT,
-      [['switch.turn_on', {entity_id: 'switch.adaptive_lighting_den'}, 'lights.autoOn']],
+      [['switch.turn_on', {entity_id: COL}, 'lights.autoColourOn']],
     ],
     [
-      'off, Night on: both switches off',
+      'brightness off: only its own switch, Night and colour untouched',
       tile({mode: 'night'}),
+      'brightness',
+      false,
+      WITH,
+      [['switch.turn_off', {entity_id: BR}, 'lights.autoBrightnessOff']],
+    ],
+    [
+      'colour off',
+      tile({mode: 'auto'}),
+      'colour',
+      false,
+      WITH,
+      [['switch.turn_off', {entity_id: COL}, 'lights.autoColourOff']],
+    ],
+    [
+      'off without the twin: the whole switch off, and Night with it',
+      tile({mode: 'night', brightness: 'none'}),
+      'brightness',
       false,
       WITH,
       [
-        ['switch.turn_off', {entity_id: 'switch.adaptive_lighting_den'}],
-        ['switch.turn_off', {entity_id: 'switch.adaptive_lighting_den_sleep_mode'}, 'lights.autoOff'],
+        ['switch.turn_off', {entity_id: MAIN}],
+        ['switch.turn_off', {entity_id: 'switch.adaptive_lighting_den_sleep_mode'}, 'lights.autoBrightnessOff'],
       ],
     ],
-    [
-      'off, Night off',
-      tile({mode: 'auto'}),
-      false,
-      WITH,
-      [['switch.turn_off', {entity_id: 'switch.adaptive_lighting_den'}, 'lights.autoOff']],
-    ],
-    ['a tile with no switch sends nothing', tile(), true, WITH, []],
-  ] as const)('%s', (_name, x, on, services, expected) => {
-    expect(calls(setAuto([x], on, services))).toEqual(expected);
+    ['a tile with no switch sends nothing', tile(), 'brightness', true, WITH, []],
+  ] as const)('%s', (_name, x, part, on, services, expected) => {
+    expect(calls(setAdapt([x], part, on, services))).toEqual(expected);
   });
 
-  test('a pair is under Auto when every tile with a switch is', () => {
-    expect(isAuto([tile({mode: 'auto'}), tile({key: 'attic'})])).toBe(true);
-    expect(isAuto([tile({mode: 'auto'}), tile({key: 'attic', mode: 'manual'})])).toBe(false);
+  test('a part follows the day when every tile with a switch has it on, the switch on and no light held by hand', () => {
+    expect(isAdapting([tile({mode: 'auto'}), tile({key: 'attic'})], 'brightness')).toBe(true);
+    expect(isAdapting([tile({mode: 'auto'}), tile({key: 'attic', mode: 'manual'})], 'brightness')).toBe(false);
+    expect(isAdapting([tile({mode: 'auto', brightness: 'off'})], 'brightness')).toBe(false);
+    expect(isAdapting([tile({mode: 'auto', brightness: 'off'})], 'colour')).toBe(true);
+    expect(isAdapting([tile({mode: 'off'})], 'colour')).toBe(false);
   });
 });
 

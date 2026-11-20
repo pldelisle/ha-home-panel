@@ -1,6 +1,6 @@
 // Adaptive Lighting: which of its switches runs an area's lights, what mode the area is in (Auto, Night, by hand), and today's colour curve.
 // Pattern: a provider (ADR 0025) naming the integration's quirks where they live: the switch's entity naming, its `configured_lights` (hidden
-// unless `include_config_in_attributes` is on), `manual_control` and the `_sleep_mode` twin; the rules are the legacy `alFor`,
+// unless `include_config_in_attributes` is on), `manual_control` and the `_sleep_mode`, `_adapt_brightness` and `_adapt_color` twins; the rules are the legacy `alFor`,
 // `lightMode` and `renderAlBar`'s curve, whose copies went with the strip (#260) and the sheet (#262).
 // Must not: word anything, read the clock, the DOM or `hass` itself, or send a command (the feature's commands do).
 import type {SunTimes} from '../core/sun.ts';
@@ -20,6 +20,11 @@ export interface AlMode {
   manual: boolean;
   /** Adaptive Lighting is on and none of the lights was set by hand. */
   auto: boolean;
+  /** The switch's brightness and colour twins, when the house has them: on when Adaptive Lighting may change that part. */
+  brightnessSwitch: string | null;
+  brightnessOn: boolean;
+  colourSwitch: string | null;
+  colourOn: boolean;
   /** Night when the sleep mode and the switch are on, Auto, Manual when the area has a switch, else `''`. */
   mode: 'Night' | 'Auto' | 'Manual' | '';
 }
@@ -45,6 +50,10 @@ const record = (v: unknown): Record<string, unknown> =>
 const list = (v: unknown): string[] => (Array.isArray(v) ? v.map(String) : []);
 /** The sleep-mode twin's id of a main switch, whether or not the house has it. */
 export const sleepSwitchOf = (switchId: string): string => `${switchId}_sleep_mode`;
+/** The brightness twin's id of a main switch (`_adapt_brightness`), whether or not the house has it. */
+export const brightnessSwitchOf = (switchId: string): string => `${switchId}_adapt_brightness`;
+/** The colour twin's id of a main switch (`_adapt_color`), whether or not the house has it. */
+export const colourSwitchOf = (switchId: string): string => `${switchId}_adapt_color`;
 
 const isOn = (states: HassEntities, id: string | null): boolean => !!id && states[id]?.state === 'on';
 
@@ -109,6 +118,9 @@ export function alMode(area: Pick<LightArea, 'ids' | 'units'>, switchId: string 
   const alOn = isOn(states, switchId);
   const nightSwitch = switchId && states[sleepSwitchOf(switchId)] ? sleepSwitchOf(switchId) : null;
   const nightOn = isOn(states, nightSwitch);
+  const twin = (id: string | null) => (id && states[id] ? id : null);
+  const brightnessSwitch = twin(switchId && brightnessSwitchOf(switchId));
+  const colourSwitch = twin(switchId && colourSwitchOf(switchId));
   const manual =
     alOn && list(states[switchId!].attributes.manual_control).some(l => area.ids.includes(l) || area.units.includes(l));
   const auto = alOn && !manual;
@@ -116,6 +128,11 @@ export function alMode(area: Pick<LightArea, 'ids' | 'units'>, switchId: string 
     alOn,
     nightSwitch,
     nightOn,
+    brightnessSwitch,
+    // a house without the twin adapts that part whenever the switch is on
+    brightnessOn: brightnessSwitch ? isOn(states, brightnessSwitch) : alOn,
+    colourSwitch,
+    colourOn: colourSwitch ? isOn(states, colourSwitch) : alOn,
     manual,
     auto,
     mode: nightOn && alOn ? 'Night' : auto ? 'Auto' : switchId ? 'Manual' : '',

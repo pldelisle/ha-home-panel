@@ -87,6 +87,12 @@ b.add('switch.adaptive_lighting_office', 'on', {
 b.add('switch.adaptive_lighting_office_sleep_mode', 'off', {
   friendly_name: 'Adaptive Lighting Sleep Mode: Office',
 });
+b.add('switch.adaptive_lighting_office_adapt_brightness', 'on', {
+  friendly_name: 'Adaptive Lighting Adapt Brightness: Office',
+});
+b.add('switch.adaptive_lighting_office_adapt_color', 'on', {
+  friendly_name: 'Adaptive Lighting Adapt Color: Office',
+});
 // two light groups in one area: one tile by default, one tile each with split_light_areas
 const ct = {
   supported_color_modes: ['color_temp'],

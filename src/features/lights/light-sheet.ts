@@ -1,4 +1,4 @@
-// <hp-light-sheet>: a room's sheet: power and Done in the header, the two tall pills, the Auto and Night rows, the bulbs' chips and
+// <hp-light-sheet>: a room's sheet: power and Done in the header, the two tall pills, the Auto brightness, Auto colour and Night rows, the bulbs' chips and
 // "Linked with", whose row pushes the list of rooms (<hp-link-picker>) in the body's place.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over the model's `SheetView`, events up (Lit docs, Events). It draws the kit's
 // sheet chrome (sheet.css) itself rather than <hp-sheet>, whose badge and ✕ cannot be the legacy power button and Done (README, the sheet).
@@ -22,8 +22,13 @@ import {common, motion, sheet} from '../../ui/styles/index.ts';
 import {forShadow} from '../../ui/styles/host.ts';
 import '../../ui/switch.ts'; // defines <hp-switch>
 
-/** What a row or a chip of the sheet asks: Auto or Night the other way, or one bulb switched. */
-export type SheetIntent = {kind: 'auto'} | {kind: 'night'} | {kind: 'bulb'; id: string};
+/** What a row or a chip of the sheet asks: Auto brightness, Auto colour or Night the other way, or one bulb switched. */
+export type SheetIntent = {kind: 'brightness'} | {kind: 'colour'} | {kind: 'night'} | {kind: 'bulb'; id: string};
+
+/** A row of the sheet's switches. */
+type ModeKind = 'brightness' | 'colour' | 'night';
+/** Each row's `data-l`, the hook the tests and the panel's styles find it by. */
+const MODE_HOOK: Record<ModeKind, string> = {brightness: 'abr', colour: 'acol', night: 'night'};
 
 export class SheetIntentEvent extends CustomEvent<SheetIntent> {
   constructor(intent: SheetIntent) {
@@ -154,8 +159,8 @@ export class LightSheet extends LitElement {
 
   private renderModes(modes: NonNullable<SheetView['modes']>) {
     const row = (
-      m: NonNullable<SheetView['modes']>['auto'],
-      kind: 'auto' | 'night',
+      m: NonNullable<SheetView['modes']>['brightness'],
+      kind: ModeKind,
       gi: string,
       icon: ReturnType<typeof ico>,
     ) =>
@@ -163,7 +168,7 @@ export class LightSheet extends LitElement {
         <span class="lgi" style=${styleMap({'--gi': gi})}>${icon}</span
         ><span class="tx"><b>${m.label}</b><small>${m.desc}</small></span
         ><hp-switch
-          data-l=${kind === 'auto' ? 'al' : 'night'}
+          data-l=${MODE_HOOK[kind]}
           data-id=${m.id}
           .checked=${m.on}
           .disabled=${!m.available}
@@ -172,9 +177,12 @@ export class LightSheet extends LitElement {
         ></hp-switch>
       </div>`;
     return html`<div class="lgrp">
-      ${row(modes.auto, 'auto', '#D98A1E', ico('lsun', 20))}${
-        modes.night ? row(modes.night, 'night', '#C2412A', ico('moon', 19)) : nothing
-      }
+      ${row(modes.brightness, 'brightness', '#D98A1E', ico('lsun', 20))}${row(
+        modes.colour,
+        'colour',
+        '#B8742A',
+        ico('palette', 19),
+      )}${modes.night ? row(modes.night, 'night', '#C2412A', ico('moon', 19)) : nothing}
     </div>`;
   }
 
@@ -219,7 +227,7 @@ export class LightSheet extends LitElement {
   };
 
   // the switch says the state it asks for; the pane turns the pair the other way from what it reads, as the legacy panel did
-  private onSwitch(e: Event, kind: 'auto' | 'night'): void {
+  private onSwitch(e: Event, kind: ModeKind): void {
     e.stopPropagation();
     this.dispatchEvent(new SheetIntentEvent({kind}));
   }

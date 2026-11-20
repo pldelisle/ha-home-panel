@@ -10,11 +10,11 @@ import {ifDefined} from 'lit/directives/if-defined.js';
 import {repeat} from 'lit/directives/repeat.js';
 import {
   allOff,
-  isAuto,
+  isAdapting,
   isNight,
   link,
   pairOf,
-  setAuto,
+  setAdapt,
   setBrightness,
   setColorTemp,
   setNight,
@@ -319,7 +319,7 @@ export class LightsPane extends LitElement {
     void this.commands.runAll(set(pair, value, this.services()));
   };
 
-  // Auto or Night the other way from what the pair is in, or one bulb switched
+  // Auto brightness, Auto colour or Night the other way from what the pair is in, or one bulb switched
   private readonly onIntent = (e: SheetIntentEvent): void => {
     e.stopPropagation();
     const intent = e.detail;
@@ -330,9 +330,9 @@ export class LightsPane extends LitElement {
     const pair = this.sheetPair();
     if (!pair.length) return;
     const commands =
-      intent.kind === 'auto'
-        ? setAuto(pair, !isAuto(pair), this.services())
-        : setNight(pair, !isNight(pair[0]), this.services());
+      intent.kind === 'night'
+        ? setNight(pair, !isNight(pair[0]), this.services())
+        : setAdapt(pair, intent.kind, !isAdapting(pair, intent.kind), this.services());
     void this.commands.runAll(commands);
   };
 

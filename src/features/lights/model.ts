@@ -239,7 +239,7 @@ export interface SheetView {
   power: {on: boolean; available: boolean; label: string; tint: string};
   brightness: SliderView & {off: boolean};
   colour: (SliderView & {night: boolean; warm: string; mid: string; cool: string}) | null;
-  modes: {auto: SheetSwitchView; night: SheetSwitchView | null} | null;
+  modes: {brightness: SheetSwitchView; colour: SheetSwitchView; night: SheetSwitchView | null} | null;
   bulbs: {label: string; chips: (SwitchReading & {label: string})[]} | null;
   link: {show: boolean; enabled: boolean; label: string; desc: string; value: string};
   picker: {
@@ -301,10 +301,22 @@ export function sheetModel(
       mid: kelvinRGB((ct.min + ct.max) / 2),
       cool: kelvinRGB(ct.max),
     },
-    modes: tile.auto && {
-      auto: {...tile.auto, on: mode.auto, label: t('lights.auto'), desc: t('lights.autoDesc')},
-      night: tile.night && {...tile.night, on: night, label: t('lights.night'), desc: t('lights.nightDesc')},
-    },
+    modes: tile.brightness &&
+      tile.colour && {
+        brightness: {
+          ...tile.brightness,
+          on: mode.auto && mode.brightnessOn,
+          label: t('lights.autoBrightness'),
+          desc: t('lights.autoBrightnessDesc'),
+        },
+        colour: {
+          ...tile.colour,
+          on: mode.auto && mode.colourOn,
+          label: t('lights.autoColour'),
+          desc: t('lights.autoColourDesc'),
+        },
+        night: tile.night && {...tile.night, on: night, label: t('lights.night'), desc: t('lights.nightDesc')},
+      },
     bulbs:
       tile.units.length > 1
         ? {label: t('lights.bulbs'), chips: tile.bulbs.map((bulb, k) => ({...bulb, label: tile.labels[k]}))}
