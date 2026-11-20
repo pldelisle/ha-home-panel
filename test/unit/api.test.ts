@@ -344,7 +344,7 @@ describe('generateData', () => {
   test('names the task when the caller does not, and answers an unknown question with the unsupported form', async () => {
     const {hass, api} = setup();
     expect(await api.generateData('ai_task.assistant', 'anything', STRUCTURE)).toEqual({form: 'unsupported'});
-    expect(hass.calls.service[0]).toMatchObject({data: {task_name: 'Ask the history'}});
+    expect(hass.calls.service[0]).toMatchObject({data: {task_name: 'Home panel'}});
   });
 
   test('rejects with StaleReply when the config changed meanwhile, and takes the reply when stale is false', async () => {
@@ -371,7 +371,18 @@ describe('generateData', () => {
     expect(hass.calls.service).toEqual([]);
   });
 
-  test('rejects with Cancelled as soon as the signal aborts, and drops the late reply', async () => {
+  /** What a call settled with, in order: a call that settles twice shows as two entries. */
+  function outcomes(asked: Promise<unknown>) {
+    const seen: unknown[] = [];
+    asked.then(
+      value => seen.push(value),
+      (error: unknown) => seen.push(error),
+    );
+    return seen;
+  }
+  const later = () => new Promise(resolve => setTimeout(resolve, 0));
+
+  test('rejects with Cancelled as soon as the signal aborts: it settles once, and the late reply changes nothing', async () => {
     const {api, hass} = setup();
     let reply: (value: unknown) => void = () => {};
     hass.callService = () =>
@@ -380,13 +391,17 @@ describe('generateData', () => {
       });
     const controller = new AbortController();
     const asked = api.generateData('e', 'q', STRUCTURE, {signal: controller.signal});
+    const seen = outcomes(asked);
     controller.abort();
-    await expect(asked).rejects.toBeInstanceOf(Cancelled);
+    await later();
+    expect(seen).toHaveLength(1);
+    expect(seen[0]).toBeInstanceOf(Cancelled);
     reply({response: {data: PLAN}});
-    await Promise.resolve();
+    await later();
+    expect(seen).toHaveLength(1);
   });
 
-  test('a late rejection of an aborted call is dropped too', async () => {
+  test('a late rejection of an aborted call is dropped too: Cancelled stays the only outcome', async () => {
     const {api, hass} = setup();
     let fail: (reason: unknown) => void = () => {};
     hass.callService = () =>
@@ -395,10 +410,31 @@ describe('generateData', () => {
       });
     const controller = new AbortController();
     const asked = api.generateData('e', 'q', STRUCTURE, {signal: controller.signal});
+    const seen = outcomes(asked);
     controller.abort();
-    await expect(asked).rejects.toBeInstanceOf(Cancelled);
+    await later();
     fail(new Error('too late'));
-    await Promise.resolve();
+    await later();
+    expect(seen).toHaveLength(1);
+    expect(seen[0]).toBeInstanceOf(Cancelled);
+  });
+
+  test('rejects with Cancelled when the signal aborts as the reply arrives, ahead of the stale check', async () => {
+    const {api, hass, store} = setup();
+    const controller = new AbortController();
+    const asked = api.generateData('e', 'q', STRUCTURE, {signal: controller.signal});
+    store.setPanelConfig({people: ['x']});
+    controller.abort();
+    expect(hass.calls.service).toHaveLength(1);
+    await expect(asked).rejects.toBeInstanceOf(Cancelled);
+  });
+
+  test('a call that finished no longer listens to its signal', async () => {
+    const {api} = setup();
+    const controller = new AbortController();
+    const remove = vi.spyOn(controller.signal, 'removeEventListener');
+    await api.generateData('e', 'q', STRUCTURE, {signal: controller.signal});
+    expect(remove).toHaveBeenCalledWith('abort', expect.any(Function));
   });
 
   test('lets the error of Home Assistant through', async () => {

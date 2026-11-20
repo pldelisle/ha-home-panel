@@ -4,6 +4,7 @@
 // house module (test/houses/) with the reader the harness uses, so a model test and a screenshot see the same house;
 // `fromFixture` reads a recorded, anonymised house (test/unit/fixtures/houses/) into the same shape.
 // Must not: grow behaviour beyond `calls`, `replies`, `aiTask` and `next`, which only record and replay what Home Assistant does.
+// Unlike the harness's `failNext` (which covers every service call but this one), nothing makes `ai_task.generate_data` fail but `aiTask.fail`.
 import {readFileSync} from 'node:fs';
 import type {HassEntity, PanelHass} from '../../src/core/hass.ts';
 import {REFERENCE_MS} from '../houses/clock.mjs';
@@ -15,7 +16,10 @@ export type WsReply = (msg: {type: string} & Record<string, unknown>) => unknown
 
 export type FakeHass = PanelHass & {
   calls: {service: unknown[]; ws: unknown[]};
-  /** what `ai_task.generate_data` answers (test/houses/ai-task.mjs): a table keyed by a substring of the question; a test may set it */
+  /**
+   * what `ai_task.generate_data` answers (test/houses/ai-task.mjs): a table keyed by a substring of the question. The object is shared
+   * by every `next` and read at each call: a test changes it in place (`hass.aiTask.replies[question] = plan`), it does not assign a new one.
+   */
   aiTask: AiTaskOptions;
   /** The `callWS` router, keyed by message type; set an entry to change a reply, delete one to get `{}`. */
   replies: Map<string, WsReply>;

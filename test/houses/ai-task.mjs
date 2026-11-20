@@ -1,6 +1,8 @@
 // The AI Task entity of a test house: the reply `ai_task.generate_data` gives to a question, from a table the test sets.
 // Pattern: a table-driven fake (a stub with canned answers, after Meszaros, xUnit Test Patterns), shared by the Vitest fake
 // and the e2e harness so the two adapters at the hass seam (ADR 0005) answer one way and cannot drift.
+// The harness's `failNext` does not apply to `ai_task.generate_data`: `fail` is its only way to fail. Both adapters record the same
+// fields of a call (`domain`, `service`, `data`, `notifyOnError`, `returnResponse`).
 // Must not: read the clock, touch the page, or hold a state: the options and the call come in, the reply comes out.
 
 /** What a house answers when no question in the table matches: the plan's own way to say "I cannot do that". */

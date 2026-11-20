@@ -55,7 +55,7 @@ export interface ReadOptions {
 export interface GenerateOptions extends ReadOptions {
   /** Aborting it rejects the call with a Cancelled; a reply that comes later is dropped. The caller's timeout is this signal. */
   signal?: AbortSignal;
-  /** What Home Assistant lists the task as (default: Ask the history). */
+  /** What Home Assistant lists the task as (default: Home panel); the feature that asks names its own. */
   taskName?: string;
 }
 
@@ -160,6 +160,11 @@ export function createApi(store: PanelStore): PanelApi {
     return hass;
   };
 
+  /** Drops a reply, as a StaleReply, when the config changed since `generation` (unless the caller takes any reply). */
+  const dropIfStale = (generation: number, stale: boolean): void => {
+    if (stale && store.generation !== generation) throw new StaleReply(generation, store.generation);
+  };
+
   /** A read: the reply is dropped, as a StaleReply, when the config changed while it was on its way. */
   async function read<W, R>(
     msg: {type: string} & Record<string, unknown>,
@@ -169,7 +174,7 @@ export function createApi(store: PanelStore): PanelApi {
     const hass = connected();
     const generation = store.generation;
     const wire = await hass.callWS<W>(msg);
-    if (stale && store.generation !== generation) throw new StaleReply(generation, store.generation);
+    dropIfStale(generation, stale);
     return reader(wire);
   }
 
@@ -267,7 +272,7 @@ export function createApi(store: PanelStore): PanelApi {
       });
     },
 
-    async generateData(entityId, instructions, structure, {signal, taskName = 'Ask the history', stale = true} = {}) {
+    async generateData(entityId, instructions, structure, {signal, taskName = 'Home panel', stale = true} = {}) {
       const hass = connected();
       const generation = store.generation;
       if (signal?.aborted) throw new Cancelled();
@@ -288,7 +293,9 @@ export function createApi(store: PanelStore): PanelApi {
       });
       try {
         const reply = await Promise.race([call, aborted]);
-        if (stale && store.generation !== generation) throw new StaleReply(generation, store.generation);
+        // an abort that came as the reply did wins over a stale one
+        if (signal?.aborted) throw new Cancelled();
+        dropIfStale(generation, stale);
         return reply?.response?.data;
       } finally {
         signal?.removeEventListener('abort', onAbort);

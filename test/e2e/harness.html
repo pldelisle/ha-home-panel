@@ -84,7 +84,8 @@
         services: blueprint.services,
         callService: async (d, s, data, target, notifyOnError, returnResponse) => {
           if (d === 'ai_task' && s === 'generate_data') {
-            generated.push({domain: d, service: s, data, returnResponse});
+            // `failNext` does not apply here (`aiTask.fail` does); the record has the fields fakeHass records
+            generated.push({domain: d, service: s, data, notifyOnError, returnResponse});
             return answerAiTask(aiTask, data);
           }
           // the next call whose `domain.service` contains `window.house.failNext`'s pattern rejects once, as Home Assistant's socket does

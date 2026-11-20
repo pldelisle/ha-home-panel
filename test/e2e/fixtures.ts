@@ -39,6 +39,7 @@ declare global {
         domain: string;
         service: string;
         data: {[field: string]: unknown};
+        notifyOnError?: boolean;
         returnResponse?: boolean;
       }>;
       /** every read message the panel has sent with `callWS`, in order, as `"type {json of the other fields}"` (`"history/history_during_period {...}"`) */
