@@ -186,6 +186,12 @@ export const en = {
   'config.notAPair': '{path}: a link needs exactly two cards.',
   'config.notATime': '{path}: {got} is not a time like 20:00.',
   'config.missingKey': '{path}: {missing} is required.',
+  'config.askNotAiTask': '{path}: {got} is not an AI Task entity. Its id starts with ai_task.',
+  // what the Ask block's check says about the house (src/features/ask/checks.ts): the entity is not in the house, an excluded id is not, the catalog was cut
+  'config.askMissingEntity': '{path}: {entity} is not in this house, so the Ask sheet stays off.',
+  'config.askUnknownExclude': '{path}: {entity} is not in this house, so excluding it does nothing.',
+  'config.askOverCap':
+    '{path}: the catalog is limited to {cap} sensors, and {omitted, plural, one {# sensor was} other {# sensors were}} left out. Exclude some under ask.exclude.',
   'config.footer': 'Fix configuration.yaml and restart Home Assistant.',
   // Weather (src/features/weather): what the model says; the French is what the rewrite layer makes of the English
   'weather.cond.clear-night': 'Clear',
@@ -1527,6 +1533,32 @@ export const en = {
   'stack.energy.label': 'Energy today',
   'stack.energy.soFar': 'so far',
   'stack.energy.split': 'Heating {heat}% · water {water}% · car {car}%',
+  // the Ask sheet (src/features/ask): the names of the live power readings in the sensor catalog a model is told
+  'ask.sensor.grid': 'Grid',
+  'ask.sensor.waterHeater': 'Water heater',
+  'ask.sensor.ev': 'EV charging',
+  // the nine periods, as the answer's summary and the understood line say them
+  'ask.period.today': 'today',
+  'ask.period.yesterday': 'yesterday',
+  'ask.period.last_24h': 'last 24 hours',
+  'ask.period.this_week': 'this week',
+  'ask.period.last_week': 'last week',
+  'ask.period.last_7_days': 'last 7 days',
+  'ask.period.this_month': 'this month',
+  'ask.period.last_month': 'last month',
+  'ask.period.last_30_days': 'last 30 days',
+  // a series answered: the summary line, the mean, what the panel understood and the note when the history covers only part of the period
+  'ask.summary.series': '{name} · {period} · {low} to {high}',
+  'ask.mean': 'Mean {mean}',
+  'ask.understood.series': '{name} · over time · {period}',
+  'ask.coverage': 'From {date}, the history covers {percent}% of the period.',
+  // a question in progress, and why one has no answer (the model's own words are never shown)
+  'ask.state.planning': 'Working out what you asked…',
+  'ask.state.fetching': 'Reading the history…',
+  'ask.failed.unsupported': 'The panel has no sensor for that, or cannot look that up yet. Try one of the suggestions.',
+  'ask.failed.timeout': 'That took too long. Try again.',
+  'ask.failed.unavailable': 'The assistant is not available right now.',
+  'ask.failed.empty': 'The history has nothing for that period.',
 } as const;
 
 /** Every message key; a key exists when it is written in `en`. */

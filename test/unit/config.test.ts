@@ -208,6 +208,21 @@ test('idle_stack: on by default, reminders need an HH:MM time, away_mode alias',
   });
 });
 
+test('ask: off without the block, the entity and the exclusions as a list, a refused entity drops the block', () => {
+  expect(resolveConfig({}, {}).ask).toBeNull();
+  expect(resolveConfig({ask: {entity: 'ai_task.local_model'}}, {}).ask).toStrictEqual({
+    entity: 'ai_task.local_model',
+    exclude: [],
+  });
+  expect(resolveConfig({ask: {entity: 'ai_task.local_model', exclude: 'sensor.a'}}, {}).ask?.exclude).toStrictEqual([
+    'sensor.a',
+  ]);
+  expect(resolveConfig({ask: {entity: 'ai_task.m', exclude: ['sensor.a', 'sensor.b']}}, {}).ask?.exclude).toStrictEqual(
+    ['sensor.a', 'sensor.b'],
+  );
+  expect(resolveConfig({ask: {entity: 'conversation.assistant'}}, {}).ask).toBeNull();
+});
+
 test('discovery reads a friendly name as the old resolver did: through String(), a falsy value as no name', () => {
   const named = (name: unknown) =>
     resolveConfig({}, Object.fromEntries([st('person.x', {friendly_name: name})])).people;

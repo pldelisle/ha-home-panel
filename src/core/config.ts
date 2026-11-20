@@ -100,6 +100,9 @@ const room = either(
 // two cards (an area id or a light entity each) that move together, with an optional input_boolean to link and unlink them
 const lightLink = either(isRecord, block({lights: pair, switch: optional(string())}), pair);
 
+// the Ask sheet's switch: the AI Task entity that plans the questions, and the entities kept out of what the model is told (spec 29)
+const ask = block({entity: pattern(string(), /^ai_task\./), exclude: optional(oneOrList(string()))});
+
 // `at` is a time of day, 8:00 or 20:00: the resolver has always read both, and read it trimmed
 const reminder = block({
   at: pattern(string(), /^\s*\d{1,2}:\d{2}\s*$/),
@@ -138,6 +141,8 @@ export const panelConfig = block({
       either(v => typeof v === 'string', string(), literal(false)),
     ),
   ),
+  // the AI Task entity behind the Ask sheet; without the block there is no Ask button and no code of the feature loads
+  ask: optional(ask),
   // a name per language, for the name Home Assistant gives (the exact name), an entity id, an area id or a device id
   names: optional(dictionary(dictionary(string()))),
   // Home Assistant adds this to every custom panel's config; it is not ours to check
@@ -187,6 +192,8 @@ export interface ResolvedConfig {
   /** The `names:` block as written, or an empty record; the store's name resolver reads it. */
   names: Record<string, Record<string, string>>;
   stack: {on: boolean; sunriseOff: boolean; reminders: Reminder[]};
+  /** The Ask sheet's AI Task entity and the entities left out of its catalog; null without the block (no button, no feature code). */
+  ask: {entity: string; exclude: string[]} | null;
   /** The `climate_station` as written: an ECCC climate identifier, false for none, null to look for the nearest. */
   climateStation: string | false | null;
 }
@@ -287,6 +294,8 @@ function problemOf(failure: Failure): ProblemAt {
   const branch = failure.branch as unknown[];
   if (value === undefined && isRecord(branch[branch.length - 2]))
     return problemAt(at.slice(0, -1), 'config.missingKey', {missing: String(at[at.length - 1])});
+  if (failure.refinement === 'pattern' && pathOf(at) === 'ask.entity')
+    return problemAt(at, 'config.askNotAiTask', {got: String(value)});
   if (failure.refinement === 'pattern') return problemAt(at, 'config.notATime', {got: String(value)});
   if (failure.type === 'enums' && (typeof value === 'string' || typeof value === 'number'))
     return problemAt(at, 'config.notOneOf', {got: String(value), options: ROOM_ICONS.join(', ')});
@@ -463,6 +472,7 @@ export function resolveConfig(raw: unknown, states?: ConfigStates | null): Resol
     // a name (or an id) to one name per language; the name resolver in the core reads it
     names: cfg.names ?? {},
     climateStation: climateStationOf(cfg.climate_station),
+    ask: cfg.ask ? {entity: cfg.ask.entity, exclude: asList(cfg.ask.exclude)} : null,
     car: {
       name: cfg.car?.name || null,
       color: cfg.car?.color || null,

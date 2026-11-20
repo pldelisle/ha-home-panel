@@ -237,6 +237,50 @@ describe('config.notOneOf', () => {
   });
 });
 
+describe('the ask block', () => {
+  test('an AI Task entity, with or without the exclusions, has no problem', () => {
+    expect(checkConfig({ask: {entity: 'ai_task.local_model'}})).toEqual([]);
+    expect(checkConfig({ask: {entity: 'ai_task.local_model', exclude: ['sensor.a', 'sensor.b']}})).toEqual([]);
+    expect(checkConfig({ask: {entity: 'ai_task.local_model', exclude: 'sensor.a'}})).toEqual([]);
+  });
+
+  test('an entity outside the ai_task domain is refused, naming it', () => {
+    expect(checkConfig({ask: {entity: 'conversation.assistant'}})).toEqual([
+      {
+        path: 'ask.entity',
+        key: 'config.askNotAiTask',
+        values: {path: 'ask.entity', got: 'conversation.assistant'},
+      },
+    ]);
+    expect(checkConfig({ask: {entity: 'sensor.ai_task.x'}})).toHaveLength(1);
+  });
+
+  test('the entity is required, and must be text', () => {
+    expect(checkConfig({ask: {}})).toEqual([
+      {path: 'ask', key: 'config.missingKey', values: {path: 'ask', missing: 'entity'}},
+    ]);
+    expect(checkConfig({ask: {entity: 5}})[0]).toMatchObject({
+      path: 'ask.entity',
+      key: 'config.wrongType',
+      values: {expected: 'text', got: 'number'},
+    });
+  });
+
+  test('a misspelt key is near the one meant', () => {
+    expect(checkConfig({ask: {entity: 'ai_task.a', exclud: []}})).toEqual([
+      {path: 'ask.exclud', key: 'config.unknownKeyHint', values: {path: 'ask.exclud', hint: 'exclude'}},
+    ]);
+  });
+
+  test('the messages exist in both languages and say what to do', () => {
+    expect(en['config.askNotAiTask']).toBe('{path}: {got} is not an AI Task entity. Its id starts with ai_task.');
+    for (const key of ['config.askMissingEntity', 'config.askUnknownExclude', 'config.askOverCap'] as const) {
+      expect(en[key]).toContain('{path}');
+      expect(fr[key]).toContain('{path}');
+    }
+  });
+});
+
 describe('config.notAPair', () => {
   test('a link of one card, of three, or of something else', () => {
     const at = (path: string) => ({path, key: 'config.notAPair', values: {path}});
