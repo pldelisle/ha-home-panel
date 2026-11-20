@@ -199,7 +199,7 @@ describe('lightsModel', () => {
 });
 
 describe('sheetModel', () => {
-  test('the office: on under Auto, its two sliders, Auto and Night, no chips, the Linked with row', () => {
+  test('the office: on under Auto, its two sliders, Auto brightness, Auto colour and Night, no chips, the Linked with row', () => {
     const sheet = sheetModel('office', inputsOf(), deps())!;
     expect(sheet).toMatchObject({
       key: 'office',
@@ -231,12 +231,19 @@ describe('sheetModel', () => {
         cool: 'rgb(255,254,250)',
       },
       modes: {
-        auto: {
-          id: 'switch.adaptive_lighting_office',
+        brightness: {
+          id: 'switch.adaptive_lighting_office_adapt_brightness',
           on: true,
           available: true,
-          label: 'Auto',
-          desc: 'Brightness and colour follow the time of day',
+          label: 'Auto brightness',
+          desc: 'Brightness follows the time of day',
+        },
+        colour: {
+          id: 'switch.adaptive_lighting_office_adapt_color',
+          on: true,
+          available: true,
+          label: 'Auto colour',
+          desc: 'Colour follows the time of day',
         },
         night: {
           id: 'switch.adaptive_lighting_office_sleep_mode',
@@ -261,7 +268,12 @@ describe('sheetModel', () => {
       ['switch.adaptive_lighting_office_sleep_mode', 'on'],
       ['switch.adaptive_lighting_office', 'unavailable'],
     );
-    expect(sheetModel('office', inputsOf(night), deps())!.modes?.auto).toMatchObject({on: false, available: false});
+    expect(sheetModel('office', inputsOf(night), deps())!.modes?.brightness).toMatchObject({on: false});
+    const held = withStates(['switch.adaptive_lighting_office_adapt_brightness', 'off']);
+    expect(sheetModel('office', inputsOf(held), deps())!.modes).toMatchObject({
+      brightness: {on: false},
+      colour: {on: true},
+    });
     const on = withStates(['switch.adaptive_lighting_office_sleep_mode', 'on']);
     expect(sheetModel('office', inputsOf(on), deps())).toMatchObject({
       sub: '78% · Night',

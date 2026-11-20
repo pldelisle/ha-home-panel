@@ -144,10 +144,30 @@ describe('alMode', () => {
       alOn: true,
       nightSwitch: 'switch.adaptive_lighting_den_sleep_mode',
       nightOn: false,
+      brightnessSwitch: null,
+      brightnessOn: true,
+      colourSwitch: null,
+      colourOn: true,
       manual: false,
       auto: true,
       mode: 'Auto',
     });
+  });
+
+  test('the brightness and colour twins: each on or off on its own; without one, that part follows the switch', () => {
+    const states = {
+      'switch.adaptive_lighting_den': entity('switch.adaptive_lighting_den', 'on', {manual_control: []}),
+      'switch.adaptive_lighting_den_adapt_brightness': entity('switch.adaptive_lighting_den_adapt_brightness', 'off'),
+      'switch.adaptive_lighting_den_adapt_color': entity('switch.adaptive_lighting_den_adapt_color', 'on'),
+    };
+    expect(alMode(area, 'switch.adaptive_lighting_den', states)).toMatchObject({
+      brightnessSwitch: 'switch.adaptive_lighting_den_adapt_brightness',
+      brightnessOn: false,
+      colourSwitch: 'switch.adaptive_lighting_den_adapt_color',
+      colourOn: true,
+      auto: true,
+    });
+    expect(house('off', null)).toMatchObject({brightnessOn: false, colourOn: false});
   });
 
   test('Night: the sleep mode on while the switch is', () => {
@@ -171,6 +191,10 @@ describe('alMode', () => {
       alOn: false,
       nightSwitch: null,
       nightOn: false,
+      brightnessSwitch: null,
+      brightnessOn: false,
+      colourSwitch: null,
+      colourOn: false,
       manual: false,
       auto: false,
       mode: '',

@@ -25,8 +25,12 @@ export interface LightTile extends LightArea {
   link: TileLink | null;
   state: AreaState;
   mode: AlMode;
-  /** The Adaptive Lighting switch and its sleep-mode twin as the sheet's Auto and Night rows read them; null where the tile has none. */
-  auto: SwitchReading | null;
+  /**
+   * The Adaptive Lighting switches as the sheet's Auto brightness, Auto colour and Night rows read them: the brightness and colour twins (the
+   * main switch where the house has no twin) and the sleep-mode twin; null where the tile has none.
+   */
+  brightness: SwitchReading | null;
+  colour: SwitchReading | null;
   night: SwitchReading | null;
   /** Its buttons as the sheet's chips read them, in `units`' order. */
   bulbs: SwitchReading[];
@@ -84,7 +88,8 @@ export function readLights(
       ...tile,
       state: areaState(tile, states),
       mode,
-      auto: tile.al ? reading(states, tile.al) : null,
+      brightness: tile.al ? reading(states, mode.brightnessSwitch ?? tile.al) : null,
+      colour: tile.al ? reading(states, mode.colourSwitch ?? tile.al) : null,
       night: mode.nightSwitch ? reading(states, mode.nightSwitch) : null,
       bulbs: tile.units.map(id => reading(states, id)),
       pairTint: partner ? tintOf(lit([...tile.ids, ...partner.ids]), states) : '',

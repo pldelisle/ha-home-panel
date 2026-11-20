@@ -53,28 +53,57 @@ function resume(x: CommandTile, services: LightServices): Command[] {
   ];
 }
 
-/** Whether the pair is under Auto: every tile with a switch is. The Auto switch shows it, and a tap turns it the other way. */
-export const isAuto = (pair: CommandTile[]): boolean => pair.every(x => !x.al || x.mode.auto);
+/** The part of the light Adaptive Lighting changes, each with its own switch: brightness (`_adapt_brightness`) or colour (`_adapt_color`). */
+export type AdaptPart = 'brightness' | 'colour';
 
-/** Auto on: each switch takes its room back (Night stays as it was); Auto off: each switch lets go, and Night with it. */
-export function setAuto(pair: CommandTile[], on: boolean, services: LightServices): Command[] {
+const twinOf = (x: CommandTile, part: AdaptPart): string | null =>
+  part === 'brightness' ? x.mode.brightnessSwitch : x.mode.colourSwitch;
+const partOn = (x: CommandTile, part: AdaptPart): boolean =>
+  part === 'brightness' ? x.mode.brightnessOn : x.mode.colourOn;
+
+/**
+ * Whether the pair's `part` follows the time of day: every tile with a switch has its switch on, none of its lights held by hand, and the
+ * part's own switch on. The part's switch in the sheet shows it, and a tap turns it the other way.
+ */
+export const isAdapting = (pair: CommandTile[], part: AdaptPart): boolean =>
+  pair.every(x => !x.al || (x.mode.auto && partOn(x, part)));
+
+/**
+ * Auto brightness or Auto colour on: everything that keeps the part from following the day is undone, so one tap always makes it work: the
+ * switch on and the room's lights no longer held by hand (`resume`), then the part's own switch on. Off: only the part's own switch off (the
+ * other part and Night stay as they are); a house without the twin turns the whole switch off, as the single Auto did.
+ */
+export function setAdapt(pair: CommandTile[], part: AdaptPart, on: boolean, services: LightServices): Command[] {
   const commands = pair
     .filter(x => x.al)
-    .flatMap(x =>
-      on
-        ? resume(x, services)
-        : [
-            call('switch', 'turn_off', {entity_id: x.al}),
-            ...(x.mode.nightOn ? [call('switch', 'turn_off', {entity_id: x.mode.nightSwitch})] : []),
-          ],
-    );
-  return saying(commands, on ? 'lights.autoOn' : 'lights.autoOff');
+    .flatMap(x => {
+      const twin = twinOf(x, part);
+      if (on)
+        return [
+          ...resume(x, services),
+          ...(twin && !partOn(x, part) ? [call('switch', 'turn_on', {entity_id: twin})] : []),
+        ];
+      if (twin) return partOn(x, part) ? [call('switch', 'turn_off', {entity_id: twin})] : [];
+      return [
+        call('switch', 'turn_off', {entity_id: x.al}),
+        ...(x.mode.nightOn ? [call('switch', 'turn_off', {entity_id: x.mode.nightSwitch})] : []),
+      ];
+    });
+  const key =
+    part === 'brightness'
+      ? on
+        ? 'lights.autoBrightnessOn'
+        : 'lights.autoBrightnessOff'
+      : on
+        ? 'lights.autoColourOn'
+        : 'lights.autoColourOff';
+  return saying(commands, key);
 }
 
 /** Whether the tile is in Night: its sleep mode and its switch on. */
 export const isNight = (tile: CommandTile): boolean => tile.mode.nightOn && tile.mode.alOn;
 
-/** Night on or off for each tile with a sleep mode; Night needs Adaptive Lighting, so turning it on also hands the room back to Auto. */
+/** Night on or off for each tile with a sleep mode; Night needs Adaptive Lighting, so turning it on also hands the room back to the schedule. */
 export function setNight(pair: CommandTile[], on: boolean, services: LightServices): Command[] {
   const commands = pair
     .filter(x => x.mode.nightSwitch)

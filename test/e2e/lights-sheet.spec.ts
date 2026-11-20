@@ -74,13 +74,22 @@ test('29 ArrowDown on the brightness slider dims by 10 %', async ({house}) => {
     .toBe(true);
 });
 
-test('30 the Auto and Night switches reach Adaptive Lighting', async ({house}) => {
+test('30 the Auto brightness, Auto colour and Night switches reach their Adaptive Lighting switches', async ({
+  house,
+}) => {
   await openOfficeSheet(house);
-  await house.root().locator('#lsheet hp-switch[data-l="al"] button').click();
+  await house.root().locator('#lsheet hp-switch[data-l="abr"] button').click();
   await expect
     .poll(
-      () => house.calls.some(c => /^switch\.turn_off .*adaptive_lighting_office"/.test(c)),
-      callsMessage(house, 'Auto reaches the Adaptive Lighting switch'),
+      () => house.calls.some(c => /^switch\.turn_off .*adaptive_lighting_office_adapt_brightness"/.test(c)),
+      callsMessage(house, 'Auto brightness turns Adapt brightness off'),
+    )
+    .toBe(true);
+  await house.root().locator('#lsheet hp-switch[data-l="acol"] button').click();
+  await expect
+    .poll(
+      () => house.calls.some(c => /^switch\.turn_off .*adaptive_lighting_office_adapt_color"/.test(c)),
+      callsMessage(house, 'Auto colour turns Adapt colour off'),
     )
     .toBe(true);
   await house.root().locator('#lsheet hp-switch[data-l="night"] button').click();

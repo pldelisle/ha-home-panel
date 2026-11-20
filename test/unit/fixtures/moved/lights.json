@@ -221,11 +221,20 @@
       "was": "Blanc neutre"
     },
     {
-      "key": "lights.auto"
+      "key": "lights.autoBrightness",
+      "translated": "Intensité auto"
     },
     {
-      "key": "lights.autoDesc",
-      "was": "L'intensité et la couleur suivent l'heure du jour"
+      "key": "lights.autoBrightnessDesc",
+      "translated": "L'intensité suit l'heure du jour"
+    },
+    {
+      "key": "lights.autoColour",
+      "translated": "Couleur auto"
+    },
+    {
+      "key": "lights.autoColourDesc",
+      "translated": "La couleur suit l'heure du jour"
     },
     {
       "key": "lights.nightDesc",
@@ -270,14 +279,20 @@
       "was": "Les pièces liées s'allument, se tamisent et changent de couleur ensemble. Choisir une pièce y copie l'éclairage de celle-ci. Une pièce se lie à une seule autre à la fois."
     },
     {
-      "key": "lights.autoOn",
-      "was": "Auto activé",
-      "after": "Auto : activé"
+      "key": "lights.autoBrightnessOn",
+      "translated": "Intensité auto activée"
     },
     {
-      "key": "lights.autoOff",
-      "was": "Auto désactivé",
-      "after": "Auto : désactivé"
+      "key": "lights.autoBrightnessOff",
+      "translated": "Intensité auto désactivée"
+    },
+    {
+      "key": "lights.autoColourOn",
+      "translated": "Couleur auto activée"
+    },
+    {
+      "key": "lights.autoColourOff",
+      "translated": "Couleur auto désactivée"
     },
     {
       "key": "lights.nightOn",
