@@ -87,3 +87,13 @@ export interface ForecastEntry {
   wind_speed?: number;
   is_daytime?: boolean;
 }
+
+/** One field of the structure an AI Task is asked to fill (`ai_task.generate_data`'s `structure`); the selector is a Home Assistant selector. */
+export interface AiTaskField {
+  selector: Record<string, unknown>;
+  description?: string;
+  required?: boolean;
+}
+
+/** The shape asked of an AI Task's reply, keyed by field name; the names stay the wire's. */
+export type AiTaskStructure = Record<string, AiTaskField>;

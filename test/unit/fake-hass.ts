@@ -3,10 +3,11 @@
 // Pattern: a fake at the hass seam (ADR 0005); `next` hands over a new hass the way Home Assistant does; `fromHouse` reads a
 // house module (test/houses/) with the reader the harness uses, so a model test and a screenshot see the same house;
 // `fromFixture` reads a recorded, anonymised house (test/unit/fixtures/houses/) into the same shape.
-// Must not: grow behaviour beyond `calls`, `replies` and `next`, which only record and replay what Home Assistant does.
+// Must not: grow behaviour beyond `calls`, `replies`, `aiTask` and `next`, which only record and replay what Home Assistant does.
 import {readFileSync} from 'node:fs';
 import type {HassEntity, PanelHass} from '../../src/core/hass.ts';
 import {REFERENCE_MS} from '../houses/clock.mjs';
+import {answerAiTask, type AiTaskOptions} from '../houses/ai-task.mjs';
 import {readHouse} from '../houses/read.mjs';
 
 /** What `callWS` answers for one message type; a test overrides it, and may return a promise to hold the reply back. */
@@ -14,6 +15,8 @@ export type WsReply = (msg: {type: string} & Record<string, unknown>) => unknown
 
 export type FakeHass = PanelHass & {
   calls: {service: unknown[]; ws: unknown[]};
+  /** what `ai_task.generate_data` answers (test/houses/ai-task.mjs): a table keyed by a substring of the question; a test may set it */
+  aiTask: AiTaskOptions;
   /** The `callWS` router, keyed by message type; set an entry to change a reply, delete one to get `{}`. */
   replies: Map<string, WsReply>;
   next(patch: Record<string, Partial<HassEntity>>): FakeHass;
@@ -46,23 +49,30 @@ export function entity(id: string, state: string, attributes: Record<string, unk
 }
 
 /** A new hass the way Home Assistant makes one: new objects for the patched states, the same references for the rest. */
-function build(base: PanelHass, calls: FakeHass['calls'], replies: FakeHass['replies']): FakeHass {
+function build(
+  base: PanelHass,
+  calls: FakeHass['calls'],
+  replies: FakeHass['replies'],
+  aiTask: AiTaskOptions,
+): FakeHass {
   return {
     ...base,
     calls,
     replies,
+    aiTask,
     next(patch) {
       const states = {...base.states};
       for (const [id, change] of Object.entries(patch)) {
         const prev = states[id] ?? entity(id, '');
         states[id] = {...prev, ...change, attributes: {...prev.attributes, ...change.attributes}};
       }
-      return build({...base, states}, calls, replies);
+      return build({...base, states}, calls, replies, aiTask);
     },
   };
 }
 
-export function fakeHass(init: Partial<PanelHass> = {}): FakeHass {
+export function fakeHass(init: Partial<PanelHass> & {aiTask?: AiTaskOptions} = {}): FakeHass {
+  const {aiTask = {replies: {}}, ...rest} = init;
   const calls: FakeHass['calls'] = {service: [], ws: []};
   const replies = defaultReplies();
   return build(
@@ -71,8 +81,15 @@ export function fakeHass(init: Partial<PanelHass> = {}): FakeHass {
       config: {time_zone: 'America/Toronto', latitude: 43.65, longitude: -79.38, country: 'CA'},
       user: {name: 'Alex Example', is_admin: true},
       locale: {language: 'en'},
-      callService: (domain, service, data) => {
-        calls.service.push({domain, service, data});
+      callService: (domain, service, data, _target, notifyOnError, returnResponse) => {
+        calls.service.push({
+          domain,
+          service,
+          data,
+          ...(notifyOnError === undefined ? {} : {notifyOnError}),
+          ...(returnResponse === undefined ? {} : {returnResponse}),
+        });
+        if (domain === 'ai_task' && service === 'generate_data') return answerAiTask(aiTask, data ?? {});
         return Promise.resolve();
       },
       callWS: <T>(msg: {type: string} & Record<string, unknown>) => {
@@ -80,10 +97,11 @@ export function fakeHass(init: Partial<PanelHass> = {}): FakeHass {
         const reply = replies.get(msg.type);
         return Promise.resolve((reply ? reply(msg) : {}) as T);
       },
-      ...init,
+      ...rest,
     },
     calls,
     replies,
+    aiTask,
   );
 }
 
@@ -106,7 +124,7 @@ export type FromHouseOptions = {
   frenchAreas?: boolean;
   /** replaces the house's automations, as the e2e fixture's `automations` option does */
   automations?: HouseModule['automations'];
-} & Partial<PanelHass>;
+} & Partial<PanelHass> & {aiTask?: AiTaskOptions};
 
 /**
  * The fake `hass` of a house module: its states, registries and zone, and the registry and recorder replies the harness
@@ -178,7 +196,7 @@ function recordedStatistics(recorded: NonNullable<HouseFixture['statistics']>, m
  * The shape is the one `fromHouse` builds; what a fixture does not hold (the zone, the user, the services) is the default of
  * `fakeHass` (the zone is America/Toronto, whatever zone the house was recorded in), and `init` overrides any of it.
  */
-function fromFixture(name: string, init: Partial<PanelHass> = {}): FakeHass {
+function fromFixture(name: string, init: Partial<PanelHass> & {aiTask?: AiTaskOptions} = {}): FakeHass {
   const fixture = readFixture(name);
   const hass = fakeHass({
     states: Object.fromEntries(

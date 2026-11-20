@@ -13,6 +13,7 @@ declare global {
     SYSDATA: object | null;
     AUTOMATIONS: object[] | null;
     CHARGES: HouseOpts['charges'] | null;
+    AI_TASK: HouseOpts['aiTask'] | null;
     house: {
       setState(entityId: string, patch: object): void;
       setAreaName(areaId: string, name: string): void;
@@ -33,6 +34,13 @@ declare global {
       failNext(pattern: string | null): void;
       /** the messages of this `type` the panel has sent with `callWS` */
       asked(type: string): Array<{type: string; [field: string]: unknown}>;
+      /** the `ai_task.generate_data` calls the panel has made, as sent */
+      readonly generated: Array<{
+        domain: string;
+        service: string;
+        data: {[field: string]: unknown};
+        returnResponse?: boolean;
+      }>;
       /** every read message the panel has sent with `callWS`, in order, as `"type {json of the other fields}"` (`"history/history_during_period {...}"`) */
       readonly reads: string[];
     };
@@ -94,6 +102,11 @@ export type HouseOpts = {
   forecast?: boolean;
   /** a second panel on the same page (`page.locator('home-panel').nth(1)`), with two rooms and one person (spec 10) */
   two?: boolean;
+  /**
+   * what the AI Task answers (test/houses/ai-task.mjs): `replies` keyed by a substring of the question, with `{form: 'unsupported'}` for
+   * a question not in the table; `delayMs` holds the reply back, `fail` rejects it as the socket does
+   */
+  aiTask?: {replies: Record<string, unknown>; delayMs?: number; fail?: boolean};
   /** one charger's hours of charging, for the recorder's hourly rows of that sensor: 0 kW outside each run, the run's power inside it (`hoursAgo` is when it began) */
   charges?: {id: string; runs: Array<{hoursAgo: number; hours: number; kw: number}>};
 };
@@ -150,6 +163,8 @@ export type House = {
    * counts to say "one request per range" or "a cache hit" (`reads.filter(r => r.startsWith('history/'))`)
    */
   reads: () => Promise<string[]>;
+  /** the `ai_task.generate_data` calls the panel has made so far (`window.house.generated`): what was sent, whatever the answer */
+  generated: () => Promise<Window['house']['generated']>;
 };
 
 const DEFAULTS: Required<Pick<HouseOpts, 'house' | 'lang' | 'theme' | 'admin'>> = {
@@ -170,11 +185,12 @@ export const test = base.extend<{houseOpts: HouseOpts; house: House}>({
       chunks: Chunk[] = [],
       fonts: House['fonts'] = [];
     await page.addInitScript(
-      ([cfg, sysdata, automations, theme, charges, design, seed]) => {
+      ([cfg, sysdata, automations, theme, charges, design, seed, aiTask]) => {
         window.PANEL_CFG = cfg;
         window.SYSDATA = sysdata;
         window.AUTOMATIONS = automations;
         window.CHARGES = charges;
+        window.AI_TASK = aiTask;
         try {
           localStorage.setItem('home-panel-theme', theme);
           if (design) localStorage.setItem('home-panel-design', design);
@@ -191,6 +207,7 @@ export const test = base.extend<{houseOpts: HouseOpts; house: House}>({
         o.charges ?? null,
         o.design ?? null,
         o.seed ?? null,
+        o.aiTask ?? null,
       ] as const,
     );
     // a Google Fonts request fails the test; it is also aborted, so that a run never depends on the internet
@@ -300,6 +317,7 @@ export const test = base.extend<{houseOpts: HouseOpts; house: House}>({
       subscribed: type => page.evaluate(type => window.house.subscribed(type), type),
       asked: type => page.evaluate(type => window.house.asked(type), type),
       reads: () => page.evaluate(() => window.house.reads),
+      generated: () => page.evaluate(() => window.house.generated),
       setStateSince: (id, patch, agoMs) =>
         page.evaluate(
           ([id, patch, agoMs]) =>
