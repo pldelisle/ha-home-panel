@@ -64,7 +64,7 @@ The words the panel and its code use. One word per concept: use it in issues, te
 
 **Ask sheet** — The sheet the header's button opens when the config has an `ask` block: a text field, up to three suggested questions and, after a question, one answer; it controls nothing, stores nothing and opens empty every time (spec 29, ADR 0040). Avoid: chat, assistant.
 
-**Sensor catalog** — The list of sensors the panel offers the model with a question: for each a short stable key, a display name and a kind (`binary`, `measure` or `meter`), built from the providers' reads and never holding an entity id or a reading. Not the message Catalog. Avoid: entity list, exposure list.
+**Sensor catalog** — The list of sensors the panel offers the model with a question: for each a short stable key, a display name, a kind (`binary`, `measure` or `meter`) and a unit, built from the providers' reads and never holding an entity id or a reading. Not the message Catalog. Avoid: entity list, exposure list.
 
 **Plan** — What the model returns for a question, parsed once into a closed type: a form (series, moments, total or unsupported), a sensor key from the sensor catalog, a period and, for moments, a test. The model writes no sentence and computes nothing. Avoid: query, intent.
 
