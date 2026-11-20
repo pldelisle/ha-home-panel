@@ -22,7 +22,8 @@ export type AskState =
   | {at: 'planning'; id: number; question: string}
   | {at: 'fetching'; id: number; question: string; plan: AnswerablePlan}
   | {at: 'answered'; question: string; plan: AnswerablePlan; answer: Answer}
-  | {at: 'failed'; question: string; reason: FailureReason};
+  // an empty failure keeps the plan, so its line can name the sensor and the period it found nothing for
+  | {at: 'failed'; question: string; reason: FailureReason; plan?: AnswerablePlan};
 
 /**
  * What happens to the sheet. A question carries a request id, a number the caller counts up, and every reply names the id it is for, so a late
@@ -63,7 +64,7 @@ export function askReducer(state: AskState, event: AskEvent): AskState {
       if (state.at !== 'fetching' || state.id !== event.id) return state;
       const {answer} = event;
       return answer.kind === 'empty'
-        ? {at: 'failed', question: state.question, reason: 'empty'}
+        ? {at: 'failed', question: state.question, reason: 'empty', plan: state.plan}
         : {at: 'answered', question: state.question, plan: state.plan, answer};
     }
     case 'failed':
@@ -72,6 +73,10 @@ export function askReducer(state: AskState, event: AskEvent): AskState {
         : state;
   }
 }
+
+/** The failures a second try can change: the model was slow or away. A question the panel cannot place, or a period with no history, answers the same again. */
+export const canRetry = (state: AskState): boolean =>
+  state.at === 'failed' && (state.reason === 'timeout' || state.reason === 'unavailable');
 
 /** The texts the sheet shows for a state; a null is a line it does not draw. */
 export interface AskView {
@@ -95,7 +100,7 @@ export const figure = (fmt: Formatters, value: number, unit: string): string => 
   return unit === '°' ? `${text}°` : unit ? `${text} ${unit}` : text;
 };
 
-/** The words of a state, in the panel's language, from the catalog's messages and the store's formatters. `sensor` is the catalog's entry for the answered plan's sensor (the caller finds it once), if the catalog still lists it. */
+/** The words of a state, in the panel's language, from the catalog's messages and the store's formatters. `sensor` is the catalog's entry for the plan's sensor (an answer's, or an empty failure's) (the caller finds it once), if the catalog still lists it. */
 export function askView(state: AskState, t: Translate, fmt: Formatters, sensor?: CatalogEntry): AskView {
   switch (state.at) {
     case 'idle':
@@ -104,8 +109,16 @@ export function askView(state: AskState, t: Translate, fmt: Formatters, sensor?:
       return {...NOTHING, message: t('ask.state.planning')};
     case 'fetching':
       return {...NOTHING, message: t('ask.state.fetching')};
-    case 'failed':
-      return {...NOTHING, message: t(`ask.failed.${state.reason}`)};
+    case 'failed': {
+      const {plan} = state;
+      return {
+        ...NOTHING,
+        message: t(
+          `ask.failed.${state.reason}`,
+          plan ? {name: sensor?.name ?? plan.sensor, period: t(`ask.period.${plan.period}`)} : undefined,
+        ),
+      };
+    }
     case 'answered': {
       const {plan, answer} = state;
       const name = sensor?.name ?? plan.sensor;

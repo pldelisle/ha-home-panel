@@ -71,6 +71,8 @@
       const asked = [];
       // a recorder that is down for one statistics period, or for all of them (`window.house.failStatistics`), answering with an error as the socket does
       let failing = null;
+      // a recorder that holds no row at all (`window.house.emptyStatistics(true)`): every statistics request is answered with nothing, as an entity with no history is
+      let empty = false;
       // the pattern `window.house.failNext` set, until the next matching service call has been rejected
       let failingCall = null;
       let hass = {
@@ -105,7 +107,9 @@
               : (asked.push(m),
                   m.type === 'recorder/statistics_during_period' && (failing === 'all' || m.period === failing))
                 ? Promise.reject(new Error('the recorder is down'))
-                : answer(m),
+                : m.type === 'recorder/statistics_during_period' && empty
+                  ? {}
+                  : answer(m),
         connection: {
           subscribeMessage: async (callback, msg) => {
             console.log('WS', JSON.stringify(msg)); // the fixture's `ws` lists it, as it lists the system-data writes
@@ -170,6 +174,9 @@
         // the recorder fails every statistics request of this period (null: it answers again)
         failStatistics(period) {
           failing = period;
+        },
+        emptyStatistics(on) {
+          empty = on;
         },
         // the next service call whose `domain.service` contains the pattern rejects once, then calls work again (null: cancels it)
         failNext(pattern) {

@@ -9,9 +9,10 @@ import './ask-answer.ts'; // defines <hp-ask-answer>
 import {askNotes} from './checks.ts';
 import {QUESTION_CAP} from './instructions.ts';
 import {AskLoader} from './loader.ts';
-import {askView} from './model.ts';
+import {askView, canRetry} from './model.ts';
 import {weekStartOf} from './period.ts';
 import type {PanelApi} from '../../core/api.ts';
+import type {Translate} from '../../core/i18n/messages.ts';
 import {browserDefaults} from '../../core/i18n/browser.ts';
 import {ENGLISH_TAG, panelLocale} from '../../core/i18n/locale.ts';
 import type {StatisticsCache} from '../../core/statistics-cache.ts';
@@ -85,6 +86,23 @@ export class AskSheet extends LitElement {
     this.loader.ask(this.draft);
   };
 
+  // the field takes focus back when the button that had it is gone: a cancel returns to the question, kept as it was typed
+  private focusField(): void {
+    void this.updateComplete.then(() => this.renderRoot.querySelector<HTMLInputElement>('#ask-question')?.focus());
+  }
+
+  private readonly onCancel = (): void => {
+    this.loader.cancel();
+    this.focusField();
+  };
+
+  private readonly onRetry = (): void => {
+    const {state} = this.loader;
+    if (state.at !== 'failed') return;
+    this.loader.ask(state.question);
+    this.focusField();
+  };
+
   protected override render() {
     const {t} = this.storeController.store;
     return html`<hp-sheet
@@ -98,13 +116,31 @@ export class AskSheet extends LitElement {
     </hp-sheet>`;
   }
 
+  // the line that stands in place of an answer: a progress row with its Cancel, a failure with its Try again where a second try can change something, a failure alone otherwise
+  private renderMessage(at: string, message: string, retry: boolean, t: Translate) {
+    const failed = at === 'failed';
+    const line = html`<p class="message ${failed ? 'failed' : 'progress'}" id="ask-message">${message}</p>`;
+    if (failed && !retry) return line;
+    return html`<div class="outcome">
+      ${line}
+      ${
+        failed
+          ? html`<button class="abtn" id="ask-retry" type="button" @click=${this.onRetry}>${t('ask.retry')}</button>`
+          : html`<button class="abtn" id="ask-cancel" type="button" @click=${this.onCancel}>${t('ask.cancel')}</button>`
+      }
+    </div>`;
+  }
+
   // drawn only while open: the catalog is the loader's, built when the sheet opens, and a closed sheet reads no house
   private renderBody() {
     const {store} = this.storeController;
     const {t} = store;
     const {state, catalog} = this.loader;
     // the answered plan's sensor, found once: the view names it and the chart draws it in its unit
-    const sensor = state.at === 'answered' ? catalog.entries.find(entry => entry.key === state.plan.sensor) : undefined;
+    const sensor =
+      state.at === 'answered' || state.at === 'failed'
+        ? catalog.entries.find(entry => entry.key === state.plan?.sensor)
+        : undefined;
     const view = askView(state, t, store.fmt, sensor);
     // what the catalog says against the config is an admin's business, as the config card's problems are
     const notes = askNotes(catalog, store.isAdmin, t);
@@ -127,13 +163,7 @@ export class AskSheet extends LitElement {
       </form>
       ${notes.map(note => html`<p class="admin-note">${note}</p>`)}
       <div class="result" id="ask-result" aria-live="polite">
-        ${
-          view.message
-            ? html`<p class="message ${state.at === 'failed' ? 'failed' : 'progress'}" id="ask-message">
-                ${view.message}
-              </p>`
-            : nothing
-        }
+        ${view.message ? this.renderMessage(state.at, view.message, canRetry(state), t) : nothing}
         ${
           state.at === 'answered'
             ? html`<hp-ask-answer

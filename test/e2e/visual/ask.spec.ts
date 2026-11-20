@@ -1,4 +1,5 @@
-// The Ask sheet and the header's button, one screenshot each (spec 29, #538): the sheet idle, with a series answered and with a question the panel cannot place, on the
+// The Ask sheet and the header's button, one screenshot each (spec 29, #538, #539): the sheet idle, with a series answered, with a question the panel cannot place, with a question
+// in flight, one that timed out and one the model is not there for, on the
 // tablet and the phone, light and dark, in English and French; and the header with the button once per design (Liquid Glass and Material).
 // Baselines live in test/e2e/__screenshots__/visual/ask.spec.ts/ and are recorded only inside the Playwright image (Docker or `container`).
 import {test, expect, fontsLoaded} from '../fixtures';
@@ -7,7 +8,9 @@ import {
   ASK_CFG,
   QUESTION,
   QUESTION_FR,
+  ASK_ENTITY,
   askField,
+  askMessage,
   askSheet,
   chartDrawn,
   openAsk,
@@ -62,6 +65,54 @@ for (const viewport of ['tablet', 'phone'] as const) {
             await chartDrawn(house);
             await settle(house);
             await expect(house.page).toHaveScreenshot(`ask-series-${viewport}-${theme}-${lang}.png`);
+          });
+
+          // the reply is held back for ten minutes of the page's clock, which nothing runs; under the project's reduced motion the progress dot does not breathe, so the pixels are still
+          test.describe('in flight', () => {
+            test.use({
+              houseOpts: {
+                cfg: {...ASK_CFG, ...(lang === 'fr' ? {names: KEEP_ENGLISH_NAMES} : {})},
+                aiTask: {...AI_TASK, delayMs: 600_000},
+                lang,
+                theme,
+                time: AFTERNOON,
+                frozen: true,
+              },
+            });
+
+            test('a question being worked out, with its Cancel', async ({house}) => {
+              await withAsk(house);
+              await house.tab('lights');
+              await openAsk(house);
+              await sendQuestion(house, QUESTIONS[lang].answered);
+              await expect(askMessage(house)).toBeVisible();
+              await expect(askSheet(house).locator('#ask-cancel')).toBeVisible();
+              await settle(house);
+              await expect(house.page).toHaveScreenshot(`ask-planning-${viewport}-${theme}-${lang}.png`);
+            });
+
+            test('a question that took too long, with Try again', async ({house}) => {
+              await withAsk(house);
+              await house.tab('lights');
+              await openAsk(house);
+              await sendQuestion(house, QUESTIONS[lang].answered);
+              await expect(askMessage(house)).toBeVisible();
+              await house.clock.runFor(30_001);
+              await expect(askSheet(house).locator('#ask-retry')).toBeVisible();
+              await settle(house);
+              await expect(house.page).toHaveScreenshot(`ask-timeout-${viewport}-${theme}-${lang}.png`);
+            });
+          });
+
+          test('a model that is not there, with Try again', async ({house}) => {
+            await withAsk(house);
+            await house.setState(ASK_ENTITY, {state: 'unavailable'});
+            await house.tab('lights');
+            await openAsk(house);
+            await sendQuestion(house, QUESTIONS[lang].answered);
+            await expect(askSheet(house).locator('#ask-retry')).toBeVisible();
+            await settle(house);
+            await expect(house.page).toHaveScreenshot(`ask-unavailable-${viewport}-${theme}-${lang}.png`);
           });
 
           test('a question the panel cannot place', async ({house}) => {
