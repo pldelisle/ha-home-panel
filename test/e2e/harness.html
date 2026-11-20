@@ -24,6 +24,7 @@
       //                rooms and one person (spec 10: each panel shows its own house)
       // window.PANEL_CFG (set before the page loads) becomes the panel's config, as panel_custom's `config:` would.
       import '/panel/home-panel.js';
+      import {answerAiTask} from '/houses/ai-task.mjs';
       import {readHouse} from '/houses/read.mjs';
       const params = new URLSearchParams(location.search),
         full = (params.get('house') || 'full') === 'full';
@@ -32,6 +33,10 @@
       const {house: blueprint} = await import(full ? '/houses/full.mjs' : '/houses/bare.mjs');
       const now = Date.now(),
         iso = t => new Date(t).toISOString();
+      // window.AI_TASK (set before the page loads) is what the AI Task answers: replies keyed by a substring of the question, a delay, a failure
+      const aiTask = window.AI_TASK ?? {replies: {}};
+      // the `ai_task.generate_data` calls the panel made, as sent (`window.house.generated`)
+      const generated = [];
       // window.AUTOMATIONS (set before the page loads) replaces the full house's automations
       const read = readHouse(blueprint, {
         now,
@@ -77,7 +82,12 @@
         user: {...blueprint.user, is_admin: blueprint.user.is_admin && params.get('admin') !== '0'},
         locale: {language: params.get('lang') || 'en'},
         services: blueprint.services,
-        callService: async (d, s, data) => {
+        callService: async (d, s, data, target, notifyOnError, returnResponse) => {
+          if (d === 'ai_task' && s === 'generate_data') {
+            // `failNext` does not apply here (`aiTask.fail` does); the record has the fields fakeHass records
+            generated.push({domain: d, service: s, data, notifyOnError, returnResponse});
+            return answerAiTask(aiTask, data);
+          }
           // the next call whose `domain.service` contains `window.house.failNext`'s pattern rejects once, as Home Assistant's socket does
           if (failingCall !== null && (d + '.' + s).includes(failingCall)) {
             failingCall = null;
@@ -142,6 +152,10 @@
         forecast(type, entries) {
           for (const {callback, msg} of subscriptions)
             if (msg.type === 'weather/subscribe_forecast' && msg.forecast_type === type) callback({forecast: entries});
+        },
+        // the `ai_task.generate_data` calls the panel made so far, as sent: what a test reads to say what the question was
+        get generated() {
+          return generated;
         },
         // how many subscriptions of a kind are live: what the panel holds, not what it asked for
         // the messages of a type the panel sent so far, whatever the answer

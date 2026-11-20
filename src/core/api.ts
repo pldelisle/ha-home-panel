@@ -4,6 +4,7 @@
 // Time fields become milliseconds and shapes are typed at the edge; field names stay the wire's (item_id, light_order).
 // Must not: let a caller parse a wire shape, cache, retry or batch, touch the DOM, or be bypassed (ESLint forbids callWS).
 import type {
+  AiTaskStructure,
   AutomationConfig,
   ForecastEntry,
   HistoryPoint,
@@ -35,12 +36,27 @@ export class StaleReply extends Error {
   }
 }
 
+/** The caller stopped waiting: its signal aborted. Home Assistant is not told, a service call cannot be cancelled there. */
+export class Cancelled extends Error {
+  constructor() {
+    super('The caller stopped waiting for the reply');
+    this.name = 'Cancelled';
+  }
+}
+
 /** The forecast kinds `weather/subscribe_forecast` serves. */
 export type ForecastType = 'daily' | 'hourly' | 'twice_daily';
 
 export interface ReadOptions {
   /** False takes the reply whatever the config did meanwhile; true (the default) rejects with a StaleReply. */
   stale?: boolean;
+}
+
+export interface GenerateOptions extends ReadOptions {
+  /** Aborting it rejects the call with a Cancelled; a reply that comes later is dropped. The caller's timeout is this signal. */
+  signal?: AbortSignal;
+  /** What Home Assistant lists the task as (default: Home panel); the feature that asks names its own. */
+  taskName?: string;
 }
 
 export interface HistoryOptions {
@@ -74,6 +90,16 @@ export interface PanelApi {
   lovelaceResources(): Promise<LovelaceResource[]>;
   /** The returned function unsubscribes. */
   subscribeForecast(entityId: string, type: ForecastType, cb: (forecast: ForecastEntry[]) => void): Promise<() => void>;
+  /**
+   * Asks the AI Task entity for data of the given structure and returns the reply's data as it came, unparsed: reading it is
+   * the feature's. No retry, no cache, no timeout: the caller's is its signal.
+   */
+  generateData(
+    entityId: string,
+    instructions: string,
+    structure: AiTaskStructure,
+    options?: GenerateOptions,
+  ): Promise<unknown>;
   /** Calls a Home Assistant service; not named `callService`, which the lint rule keeps for hass alone. */
   runService(domain: string, service: string, data?: Record<string, unknown>): Promise<void>;
 }
@@ -134,6 +160,11 @@ export function createApi(store: PanelStore): PanelApi {
     return hass;
   };
 
+  /** Drops a reply, as a StaleReply, when the config changed since `generation` (unless the caller takes any reply). */
+  const dropIfStale = (generation: number, stale: boolean): void => {
+    if (stale && store.generation !== generation) throw new StaleReply(generation, store.generation);
+  };
+
   /** A read: the reply is dropped, as a StaleReply, when the config changed while it was on its way. */
   async function read<W, R>(
     msg: {type: string} & Record<string, unknown>,
@@ -143,7 +174,7 @@ export function createApi(store: PanelStore): PanelApi {
     const hass = connected();
     const generation = store.generation;
     const wire = await hass.callWS<W>(msg);
-    if (stale && store.generation !== generation) throw new StaleReply(generation, store.generation);
+    dropIfStale(generation, stale);
     return reader(wire);
   }
 
@@ -239,6 +270,36 @@ export function createApi(store: PanelStore): PanelApi {
         forecast_type: type,
         entity_id: entityId,
       });
+    },
+
+    async generateData(entityId, instructions, structure, {signal, taskName = 'Home panel', stale = true} = {}) {
+      const hass = connected();
+      const generation = store.generation;
+      if (signal?.aborted) throw new Cancelled();
+      // `ai_task.generate_data` answers `{context, response: {conversation_id, data}}` when the response is asked for
+      const call = hass.callService(
+        'ai_task',
+        'generate_data',
+        {task_name: taskName, instructions, entity_id: entityId, structure},
+        undefined,
+        false,
+        true,
+      ) as Promise<{response?: {data?: unknown}} | null | undefined>;
+      let onAbort!: () => void;
+      // the race stops the wait, not the call: whatever the call does later has a handler and is dropped
+      const aborted = new Promise<never>((_, reject) => {
+        onAbort = () => reject(new Cancelled());
+        signal?.addEventListener('abort', onAbort, {once: true});
+      });
+      try {
+        const reply = await Promise.race([call, aborted]);
+        // an abort that came as the reply did wins over a stale one
+        if (signal?.aborted) throw new Cancelled();
+        dropIfStale(generation, stale);
+        return reply?.response?.data;
+      } finally {
+        signal?.removeEventListener('abort', onAbort);
+      }
     },
 
     async runService(domain, service, data) {

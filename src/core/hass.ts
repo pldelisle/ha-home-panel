@@ -52,7 +52,15 @@ export interface PanelHass {
   locale?: PanelLocale;
   language?: string;
   services?: Record<string, Record<string, unknown>>;
-  callService(domain: string, service: string, data?: Record<string, unknown>): Promise<unknown>;
+  /** The frontend's: `returnResponse` true makes it resolve to `{context, response}`, the service's reply under `response`. */
+  callService(
+    domain: string,
+    service: string,
+    data?: Record<string, unknown>,
+    target?: Record<string, unknown>,
+    notifyOnError?: boolean,
+    returnResponse?: boolean,
+  ): Promise<unknown>;
   callWS<T = unknown>(msg: {type: string} & Record<string, unknown>): Promise<T>;
   connection?: Pick<Connection, 'subscribeMessage'>;
 }

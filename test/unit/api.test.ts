@@ -1,7 +1,7 @@
 // The API client at the hass seam (ADR 0005, ADR 0014): hand it the fake hass, assert the exact message that left and the
 // typed value that came back from a literal wire reply. No socket is mocked; callWS is a function on an object.
 import {describe, expect, test, vi} from 'vitest';
-import {createApi, StaleReply} from '../../src/core/api.ts';
+import {Cancelled, createApi, StaleReply} from '../../src/core/api.ts';
 import type {ForecastEntry} from '../../src/core/ha.ts';
 import {resolveConfig} from '../../src/core/config.ts';
 import {createStore} from '../../src/core/store.ts';
@@ -312,6 +312,139 @@ describe('runService', () => {
   test('lets the error of Home Assistant through', async () => {
     const {api} = setup({callService: () => Promise.reject(new Error('Service not found'))});
     await expect(api.runService('light', 'turn_on')).rejects.toThrow('Service not found');
+  });
+});
+
+describe('generateData', () => {
+  const STRUCTURE = {form: {selector: {select: {options: ['series', 'event']}}, required: true}};
+  const PLAN = {form: 'series', sensor: 'sensor.attic_temperature', period: 'week', test: 'none'};
+
+  test('sends ai_task.generate_data asking for the response, and returns the response data as it came', async () => {
+    const {hass, api} = setup({aiTask: {replies: {'attic is warmest': PLAN}}});
+    const data = await api.generateData('ai_task.assistant', 'When was the attic is warmest?', STRUCTURE, {
+      taskName: 'Ask the history',
+    });
+    expect(data).toEqual(PLAN);
+    expect(hass.calls.service).toEqual([
+      {
+        domain: 'ai_task',
+        service: 'generate_data',
+        data: {
+          task_name: 'Ask the history',
+          instructions: 'When was the attic is warmest?',
+          entity_id: 'ai_task.assistant',
+          structure: STRUCTURE,
+        },
+        notifyOnError: false,
+        returnResponse: true,
+      },
+    ]);
+  });
+
+  test('names the task when the caller does not, and answers an unknown question with the unsupported form', async () => {
+    const {hass, api} = setup();
+    expect(await api.generateData('ai_task.assistant', 'anything', STRUCTURE)).toEqual({form: 'unsupported'});
+    expect(hass.calls.service[0]).toMatchObject({data: {task_name: 'Home panel'}});
+  });
+
+  test('rejects with StaleReply when the config changed meanwhile, and takes the reply when stale is false', async () => {
+    const {api, store, hass} = setup();
+    const releases: Array<() => void> = [];
+    const slow = hass.callService.bind(hass);
+    hass.callService = (...args) =>
+      new Promise(resolve => {
+        releases.push(() => resolve(slow(...args)));
+      });
+    const stale = api.generateData('ai_task.assistant', 'q', STRUCTURE);
+    const fresh = api.generateData('ai_task.assistant', 'q', STRUCTURE, {stale: false});
+    store.setPanelConfig({people: ['x']});
+    releases.forEach(release => release());
+    await expect(stale).rejects.toBeInstanceOf(StaleReply);
+    await expect(fresh).resolves.toEqual({form: 'unsupported'});
+  });
+
+  test('rejects with Cancelled, and sends nothing, when the signal is already aborted', async () => {
+    const {hass, api} = setup();
+    const err = await api.generateData('e', 'q', STRUCTURE, {signal: AbortSignal.abort()}).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(Cancelled);
+    expect(err).toMatchObject({name: 'Cancelled'});
+    expect(hass.calls.service).toEqual([]);
+  });
+
+  /** What a call settled with, in order: a call that settles twice shows as two entries. */
+  function outcomes(asked: Promise<unknown>) {
+    const seen: unknown[] = [];
+    asked.then(
+      value => seen.push(value),
+      (error: unknown) => seen.push(error),
+    );
+    return seen;
+  }
+  const later = () => new Promise(resolve => setTimeout(resolve, 0));
+
+  test('rejects with Cancelled as soon as the signal aborts: it settles once, and the late reply changes nothing', async () => {
+    const {api, hass} = setup();
+    let reply: (value: unknown) => void = () => {};
+    hass.callService = () =>
+      new Promise(resolve => {
+        reply = resolve;
+      });
+    const controller = new AbortController();
+    const asked = api.generateData('e', 'q', STRUCTURE, {signal: controller.signal});
+    const seen = outcomes(asked);
+    controller.abort();
+    await later();
+    expect(seen).toHaveLength(1);
+    expect(seen[0]).toBeInstanceOf(Cancelled);
+    reply({response: {data: PLAN}});
+    await later();
+    expect(seen).toHaveLength(1);
+  });
+
+  test('a late rejection of an aborted call is dropped too: Cancelled stays the only outcome', async () => {
+    const {api, hass} = setup();
+    let fail: (reason: unknown) => void = () => {};
+    hass.callService = () =>
+      new Promise((_, reject) => {
+        fail = reject;
+      });
+    const controller = new AbortController();
+    const asked = api.generateData('e', 'q', STRUCTURE, {signal: controller.signal});
+    const seen = outcomes(asked);
+    controller.abort();
+    await later();
+    fail(new Error('too late'));
+    await later();
+    expect(seen).toHaveLength(1);
+    expect(seen[0]).toBeInstanceOf(Cancelled);
+  });
+
+  test('rejects with Cancelled when the signal aborts as the reply arrives, ahead of the stale check', async () => {
+    const {api, hass, store} = setup();
+    const controller = new AbortController();
+    const asked = api.generateData('e', 'q', STRUCTURE, {signal: controller.signal});
+    store.setPanelConfig({people: ['x']});
+    controller.abort();
+    expect(hass.calls.service).toHaveLength(1);
+    await expect(asked).rejects.toBeInstanceOf(Cancelled);
+  });
+
+  test('a call that finished no longer listens to its signal', async () => {
+    const {api} = setup();
+    const controller = new AbortController();
+    const remove = vi.spyOn(controller.signal, 'removeEventListener');
+    await api.generateData('e', 'q', STRUCTURE, {signal: controller.signal});
+    expect(remove).toHaveBeenCalledWith('abort', expect.any(Function));
+  });
+
+  test('lets the error of Home Assistant through', async () => {
+    const {api} = setup({aiTask: {replies: {}, fail: true}});
+    await expect(api.generateData('e', 'q', STRUCTURE)).rejects.toMatchObject({code: 'unknown_error'});
+  });
+
+  test('a reply without data is undefined, for the feature to refuse', async () => {
+    const {api} = setup({callService: () => Promise.resolve({context: {}})});
+    await expect(api.generateData('e', 'q', STRUCTURE)).resolves.toBeUndefined();
   });
 });
 
