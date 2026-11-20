@@ -10,7 +10,7 @@ src/core/
   color.ts                 gains kelvinRGB(kelvin): a colour temperature as the white it looks like
 src/providers/
   light-areas.ts           lightAreas(states, registries, names, config): LightArea[]; lightGroups(states); shortNames(names)
-  adaptive-lighting.ts     alSwitches(states); adaptiveSwitch(area, states, registries, alAreas); alMode(area, switchId, states): AlMode;
+  adaptive-lighting.ts     alSwitches(states) (`switch.adaptive_lighting_*` or `switch.<area>_adaptive_lighting_*`); adaptiveSwitch(area, states, registries, alAreas); alMode(area, switchId, states): AlMode;
                            sleepSwitchOf(id); alCurve(configurations, sun) (null with no switch); curveKelvin(curve, t); hasManualControlService(services)
 src/features/lights/
   README.md
