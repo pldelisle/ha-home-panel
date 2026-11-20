@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.22.0
+
+- Climate: a thermostat or the heat pump that is on (heating or not, any mode but off) now stands out from one that is off, on the phone's tiles and the tablet's list. With Transparent cards on, its card is a step more opaque; with solid cards, it is the brighter card (light theme: the off cards dim a little; dark theme: the on cards lift a little).
+
 ## 2.21.0
 
 - Lights: a room's sheet has an Auto brightness and an Auto colour switch in place of the single Auto, each wired to Adaptive Lighting's own `_adapt_brightness` and `_adapt_color` switch, beside Night. Each shows on only while that part really follows the day, so a brightness held off by an automation (a night hold that a missed sunrise never released) shows off, and one tap turns it back on: the room's Adaptive Lighting switch on, its lights no longer held by hand, then the part's own switch on.
