@@ -1559,6 +1559,15 @@ export const en = {
   'ask.failed.timeout': 'That took too long. Try again.',
   'ask.failed.unavailable': 'The assistant is not available right now.',
   'ask.failed.empty': 'The history has nothing for that period.',
+  // the header's button and the sheet it opens (src/shell/header.ts, src/features/ask/ask-sheet.ts): the button's accessible name, the sheet's title, the field and its send button
+  'ask.button': 'Ask the history',
+  'ask.title': 'Ask the history',
+  'ask.close': 'Close',
+  'ask.field': 'Your question',
+  'ask.placeholder': 'How warm was the office yesterday?',
+  'ask.send': 'Ask',
+  // the sheet's code is a chunk of its own, fetched when the button is first tapped; this is said when it cannot be
+  'ask.loadFailed': "The Ask sheet didn't load. Try again.",
 } as const;
 
 /** Every message key; a key exists when it is written in `en`. */

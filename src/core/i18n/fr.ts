@@ -1522,4 +1522,11 @@ export const fr: Record<MessageKey, string> = {
   'ask.failed.timeout': 'Cela a pris trop de temps. Réessayez.',
   'ask.failed.unavailable': "L'assistant n'est pas disponible pour le moment.",
   'ask.failed.empty': "L'historique ne contient rien pour cette période.",
+  'ask.button': "Interroger l'historique",
+  'ask.title': "Interroger l'historique",
+  'ask.close': 'Fermer',
+  'ask.field': 'Votre question',
+  'ask.placeholder': 'Quelle température faisait-il au bureau hier ?',
+  'ask.send': 'Demander',
+  'ask.loadFailed': "La fenêtre Interroger n'a pas pu se charger. Réessayez.",
 };

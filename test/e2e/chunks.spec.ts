@@ -3,6 +3,7 @@
 // `house.chunks` what arrived, with its text, so a library is told by what is inside the chunk, not by a file name
 // (names carry a content hash).
 import {test, expect, tabletOnly, countAdded, CHUNK_URL, KATEX_CHUNK_URL, type House} from './fixtures';
+import {ASK_CFG, askButton, askField, openAsk, withAsk} from './ask';
 import {AFTERNOON, FULL_CFG} from './houses';
 
 // ApexCharts' export name; the chunk is the only file under chunks/ that has it
@@ -145,5 +146,44 @@ test.describe('lazy chunks', () => {
     await expect(graphs.first()).toContainText("The flow drawing library didn't load");
     await expect(graphs.locator('svg')).toHaveCount(0);
     await house.tab('home');
+  });
+});
+
+// The Ask sheet's code is a chunk of its own: a house that never taps the button never fetches it. It is told by what is inside it, as the libraries are.
+const ASK_SHEET_CHUNK = /customElements\.define\(["'`]hp-ask-sheet["'`]/;
+
+test.describe('the Ask feature chunk', () => {
+  test.use({houseOpts: {cfg: ASK_CFG, time: AFTERNOON}});
+
+  test('is not requested until the button is tapped, and then once, without the charts library', async ({house}) => {
+    await withAsk(house);
+    // four minutes pass on Home with the button drawn: a timer or a subscription that fetched the feature would fire
+    await house.clock.runFor(4 * 60_000);
+    expect(house.chunkRequests, 'chunks asked for on the Home tab, with the Ask button drawn').toEqual([]);
+    // a tab with no chart: opening one does not fetch the feature either
+    await house.tab('lights');
+    await house.tab('home');
+    expect(house.chunksWith(ASK_SHEET_CHUNK)).toEqual([]);
+
+    await askButton(house).click();
+    await expect(askField(house)).toBeVisible();
+    await expect.poll(() => house.chunksWith(ASK_SHEET_CHUNK), 'chunks holding the Ask sheet').toHaveLength(1);
+    // an empty sheet draws no chart: the library is still not fetched
+    expect(house.chunksWith(APEX)).toEqual([]);
+
+    // the sheet closed and opened again does not fetch the feature a second time
+    const requested = house.chunkRequests.length;
+    await house.page.keyboard.press('Escape');
+    await openAsk(house);
+    expect(house.chunkRequests).toHaveLength(requested);
+  });
+
+  test('when the chunk cannot be fetched the sheet closes and the panel says so', async ({house}) => {
+    await withAsk(house);
+    await house.page.route(CHUNK_URL, r => r.abort());
+    await askButton(house).click();
+    await expect(house.root().locator('#toast')).toContainText("The Ask sheet didn't load");
+    await expect(askField(house)).toHaveCount(0);
+    expect(house.chunksWith(ASK_SHEET_CHUNK)).toEqual([]);
   });
 });

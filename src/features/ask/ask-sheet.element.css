@@ -1,0 +1,91 @@
+/* <hp-ask-sheet>: the sheet's body: the field and its send button, the note an admin reads, and the result under them. `.app.cp` reads as `:host([compact])`,
+   `.app[data-design]` as `:host([design])`. The sheet's chrome (backdrop, panel, header) is <hp-sheet>'s. */
+:host {
+  display: contents;
+}
+.body {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+}
+/* a phone's sheet covers the screen: the body is as tall as it, in dynamic viewport units, so the field stays at the top and above the on-screen keyboard
+   (no bottom offset is fixed to anything), and an answer taller than the screen scrolls inside the panel */
+:host([compact]) .body {
+  min-height: calc(100dvh - 220px);
+}
+.ask {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.field {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 48px;
+  border: 1px solid var(--line);
+  border-radius: var(--shape-control);
+  background: var(--card);
+  color: var(--fg);
+  padding: 0 16px;
+  /* at least 16px, or iOS zooms the page when the field takes focus */
+  font: inherit;
+  font-size: max(16px, calc(16px * var(--tx)));
+}
+.field::placeholder {
+  color: var(--fg2);
+  opacity: 1;
+}
+.field:focus-visible {
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
+}
+.send {
+  flex: none;
+}
+.message,
+.admin-note {
+  margin: 0;
+  color: var(--fg2);
+  font-size: calc(15px * var(--tx));
+  line-height: 1.4;
+}
+.admin-note {
+  font-size: calc(13px * var(--tx));
+}
+/* a failure is said in the text colour: the sheet shows what happened, it does not alarm */
+.message.failed {
+  color: var(--fg);
+}
+/* the one progress row: a dot that breathes beside the line, still under Reduce Motion */
+.progress::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 10px;
+  border-radius: 50%;
+  background: var(--c-home);
+  vertical-align: 1px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .progress::before {
+    animation: askbreath 1.4s ease-in-out infinite;
+  }
+}
+@keyframes askbreath {
+  50% {
+    opacity: 0.3;
+  }
+}
+.app[data-design='material'] .field {
+  font: var(--type-body-large);
+  letter-spacing: var(--track-body-large);
+}
+.app[data-design='material'] .message {
+  font: var(--type-body-large);
+  letter-spacing: var(--track-body-large);
+}
+.app[data-design='material'] .admin-note {
+  font: var(--type-body-small);
+  letter-spacing: var(--track-body-small);
+}

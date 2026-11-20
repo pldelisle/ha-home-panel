@@ -155,6 +155,20 @@ Red cards stay on screen alone, and amber cards come first in the rotation. No c
 
 Room icons can be `sofa`, `door`, `desk`, `bed`, `bath`, `drop`, `car`, `house` and `therm`.
 
+### Ask the history
+
+A button in the header, on every tab, opens a sheet where you type a question about the house, in English or French, such as "how warm was the office yesterday?". The panel draws a chart of that room's temperature, with its low, high and mean, and says in one line what it understood. It appears when the config names a Home Assistant AI Task entity under `ask`, and only if that entity exists; without the block there is no button and none of the feature's code is loaded.
+
+```yaml
+      ask:
+        entity: ai_task.local_model
+        exclude: [sensor.guest_room_temperature]
+```
+
+It needs an AI Task entity: an integration that exposes a model (a local one, if you like) to Home Assistant as `ai_task.<name>`. Which model answers is a Home Assistant setting; the panel only talks to that entity. `exclude` keeps entities out of what the model is told.
+
+What leaves the panel for the AI Task entity is the question you typed, today's date and weekday, and the names and kinds of the sensors the panel already shows (the catalog, at most 60). No reading, no state and no entity id of your house is sent. The model answers with a plan (which sensor, which period) and writes no sentence: the panel reads the history from Home Assistant's recorder, computes every figure itself and writes the answer in its own language. This first version answers how a temperature or a power reading varied over a day, a week or a month; other questions get a message that the panel cannot look that up yet.
+
 ## Develop
 
 You need Node 24.5 or later, with npm 11 (what Node 24 ships): `size-limit` 14 requires 24.5 on the 24 line, and Vitest 5 and Vite 8 need less. Every CI job that uses Node runs 24: `setup-node` for the lint, changeset, version and release jobs, and the Playwright image for the test and visual jobs.
@@ -163,7 +177,7 @@ You need Node 24.5 or later, with npm 11 (what Node 24 ships): `size-limit` 14 r
 npm ci
 # once per clone: git blame skips the Prettier format commit
 git config blame.ignoreRevsFile .git-blame-ignore-revs
-npm run build          # Vite: dist/home-panel.js (minified), home-panel.js.map, the lazy chunks in dist/chunks/, the font in dist/fonts/ and LICENSES.md
+npm run build          # Vite: dist/home-panel.js (one import of dist/main-[hash].js, the minified panel, with its map), the lazy chunks in dist/chunks/, the font in dist/fonts/ and LICENSES.md
 npm run dev            # the same build, redone on every save (vite build --watch)
 npm run size           # the gzipped size of the main chunk and of the lazy chunks, for information (run it after a build)
 npm run licenses       # rewrites LICENSES.md from package-lock.json and node_modules, production packages only (run it when apexcharts, mermaid, the font or the lock file changes)
@@ -215,7 +229,7 @@ Renovate does not re-record screenshots: a person pushes the re-recorded baselin
 Every `uses:` in `.github/workflows/` is pinned to a commit with its version in a comment (Renovate keeps both current), each workflow declares its `permissions:` at the top, and `.github/workflows/codeql.yml` runs CodeQL on pushes to `main`, on pull requests and weekly.
 `test/unit/workflows.test.mjs` fails a workflow that breaks the first two rules.
 
-`npm run build` builds `dist/home-panel.js` with Vite from the ES modules under `src/`, minified, with a source map beside it; `npm run dev` rebuilds on save.
+`npm run build` builds the panel with Vite from the ES modules under `src/`, minified, with a source map beside it, into `dist/main-[hash].js`, which `dist/home-panel.js` imports (ADR 0041); `npm run dev` rebuilds on save.
 `npm run size` prints the gzipped size of the main chunk and of the lazy chunks (as `size-limit` counts it). There is no limit: the panel is growing on purpose,
 and a size that jumps without a reason is for the reviewer to notice in the CI log.
 
@@ -225,7 +239,7 @@ The fonts come from npm too: `@fontsource/manrope`'s woff2 files for weights 400
 and `src/ui/fonts.ts` declares them with `@font-face` rules in the document (Chromium ignores them inside a shadow root), so the panel never calls Google Fonts.
 No library is committed as a file. `LICENSES.md` at the root lists every production package with its version and licence text; `npm run licenses` generates it (it is not edited by hand, and Prettier skips it), `vite build` copies it into `dist/`, and `test/unit/licenses.test.mjs` fails when it is out of date.
 `npm run typecheck` runs `tsc` once, strictly, over every file under `src/` (`tsconfig.check.json`).
-The source map points a stack trace or the browser's DevTools back at the files in `src/`; it ships in the release zip next to `home-panel.js`.
+The source map points a stack trace or the browser's DevTools back at the files in `src/`; it ships in the release zip next to the panel file, `main-[hash].js`.
 The test houses in `test/houses/` are made up. Keep real names, addresses and entity IDs out of the repository:
 `npm test` fails if it finds some of them in any committed file.
 

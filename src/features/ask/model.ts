@@ -90,7 +90,7 @@ export interface AskView {
 const NOTHING: AskView = {message: null, summary: null, mean: null, understood: null, coverage: null};
 
 /** A figure as the sheet writes it: one decimal at most, the degree sign against the figure and any other unit after a space. */
-const figure = (fmt: Formatters, value: number, unit: string): string => {
+export const figure = (fmt: Formatters, value: number, unit: string): string => {
   const text = fmt.number(value, 1);
   return unit === '°' ? `${text}°` : unit ? `${text} ${unit}` : text;
 };

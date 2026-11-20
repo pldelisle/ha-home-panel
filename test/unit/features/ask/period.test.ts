@@ -3,7 +3,7 @@
 import {describe, expect, test} from 'vitest';
 import {createFormatters} from '../../../../src/core/i18n/format.ts';
 import {englishLocale} from '../../../../src/core/i18n/locale.ts';
-import {PERIODS, resolvePeriod, type Period, type WeekStart} from '../../../../src/features/ask/period.ts';
+import {PERIODS, resolvePeriod, weekStartOf, type Period, type WeekStart} from '../../../../src/features/ask/period.ts';
 
 const ZONE = 'America/Toronto';
 const MONDAY: WeekStart = 1;
@@ -141,5 +141,20 @@ describe('the edges of the calendar', () => {
     const instant = '2026-11-18T03:00:00Z'; // the 17th in Toronto, the 18th in Paris
     expect(window('today', instant, MONDAY, 'America/Toronto')[0]).toBe('2026-11-17T05:00:00.000Z');
     expect(window('today', instant, MONDAY, 'Europe/Paris')[0]).toBe('2026-11-17T23:00:00.000Z');
+  });
+});
+
+describe('weekStartOf', () => {
+  test.each([
+    ['en-CA', 0],
+    ['fr-CA', 0],
+    ['fr-FR', 1],
+    ['de', 1],
+  ] as const)('the week of %s begins on day %s', (tag, first) => {
+    expect(weekStartOf(tag)).toBe(first);
+  });
+
+  test('a tag the runtime cannot read begins on Monday', () => {
+    expect(weekStartOf('not a tag!')).toBe(1);
   });
 });

@@ -16,7 +16,10 @@ import {bannedHits, scannedFiles} from '../personal-data.mjs';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const DIST = join(ROOT, 'dist');
-const BUNDLE = join(DIST, 'home-panel.js');
+// Home Assistant loads the entry, dist/home-panel.js?v=…, which is one import of the file that holds the panel, dist/main-[hash].js (`APP`): the panel's own code and the libraries it runs on.
+// The Ask feature is a lazy chunk of the panel's own code, so it imports that file, by the same URL as the entry does (one copy of every module), and never the entry itself.
+const ENTRY = join(DIST, 'home-panel.js');
+let BUNDLE; // the file that holds the panel, set once the build is there
 const read = f => readFileSync(join(ROOT, f), 'utf8');
 const version = JSON.parse(read('package.json')).version;
 // the package a source map names by its node_modules/ path (`@scope/name` or `name`), or null for a file of the panel
@@ -46,8 +49,11 @@ const newestInput = () =>
   );
 
 beforeAll(() => {
-  if (existsSync(BUNDLE) && statSync(BUNDLE).mtimeMs >= newestInput()) return;
-  execFileSync('npm', ['run', 'build'], {cwd: ROOT, stdio: 'pipe'});
+  if (!(existsSync(ENTRY) && statSync(ENTRY).mtimeMs >= newestInput()))
+    execFileSync('npm', ['run', 'build'], {cwd: ROOT, stdio: 'pipe'});
+  const imported = /^import\s*["']\.\/(main-[\w-]+\.js)["'];?\s*$/.exec(readFileSync(ENTRY, 'utf8'));
+  if (!imported) throw new Error('dist/home-panel.js is not one import of dist/main-[hash].js');
+  BUNDLE = join(DIST, imported[1]);
 }, 120_000);
 
 // every file under dist/, as paths relative to it ('chunks/x.js'), sorted; the lazy chunks the entry loads with
@@ -67,7 +73,7 @@ test('dist/ holds the bundle, its source map, the lazy chunks, a .br and a .gz b
   // (`?inline`)
   // the fonts are the files src/ui/fonts.ts names (fonts.test.mjs pins that list to Fontsource's names)
   // every script (the entry and each chunk) has a .br and a .gz beside it (vite.config.ts, precompress) and no map has one
-  const scripts = ['home-panel.js', ...chunks];
+  const scripts = ['home-panel.js', basename(BUNDLE), ...chunks];
   const rest = distFiles.filter(
     f => !chunks.some(c => f === c || f === c + '.map') && !/^chunks\/.+\.js\.(br|gz)$/.test(f),
   );
@@ -75,7 +81,8 @@ test('dist/ holds the bundle, its source map, the lazy chunks, a .br and a .gz b
     [
       'LICENSES.md',
       ...FONT_FILES.map(f => `fonts/${f}`),
-      ...['home-panel.js', 'home-panel.js.map', 'home-panel.js.br', 'home-panel.js.gz'],
+      ...['home-panel.js', 'home-panel.js.br', 'home-panel.js.gz'],
+      ...[basename(BUNDLE), `${basename(BUNDLE)}.map`, `${basename(BUNDLE)}.br`, `${basename(BUNDLE)}.gz`],
     ].sort(),
   );
   expect(distFiles.filter(f => /\.(br|gz)$/.test(f))).toStrictEqual(
@@ -98,7 +105,7 @@ test('dist/ holds the bundle, its source map, the lazy chunks, a .br and a .gz b
 test('every script has a .br and a .gz beside it that decompress to it byte for byte', () => {
   // Home Assistant sends X.js.br or X.js.gz in place of X.js to a browser that accepts the encoding (vite.config.ts,
   // precompress), so a copy that does not decompress to the script would break the panel on the tablet
-  const scripts = ['home-panel.js', ...chunks];
+  const scripts = ['home-panel.js', basename(BUNDLE), ...chunks];
   expect(scripts.length).toBeGreaterThan(50);
   for (const f of scripts) {
     const js = readFileSync(join(DIST, f));
@@ -110,7 +117,7 @@ test('every script has a .br and a .gz beside it that decompress to it byte for 
 test("the maps of the chunks and of the entry name the libraries' files but leave out their text", () => {
   // vite.config.ts drops each node_modules source's text from the maps (9.9 MB of Mermaid alone); the panel's own
   // files keep theirs, since Home Assistant serves the panel's folder, not src/, so DevTools reads the code from the map
-  const maps = distFiles.filter(f => /^(chunks\/.+|home-panel)\.js\.map$/.test(f));
+  const maps = distFiles.filter(f => /^(chunks\/.+|main-[\w-]+)\.js\.map$/.test(f));
   expect(maps.length).toBeGreaterThan(1);
   for (const f of maps) {
     const map = JSON.parse(readFileSync(join(DIST, f), 'utf8'));
@@ -158,7 +165,7 @@ test('every package whose code is in a chunk or the entry is listed in LICENSES.
     .filter(l => l.startsWith('| '))
     .map(l => l.split(' | ')[0].slice(2));
   const used = new Set();
-  for (const f of distFiles.filter(f => /^(chunks\/.+|home-panel)\.js\.map$/.test(f)))
+  for (const f of distFiles.filter(f => /^(chunks\/.+|main-[\w-]+)\.js\.map$/.test(f)))
     for (const s of JSON.parse(readFileSync(join(DIST, f), 'utf8')).sources) {
       const name = packageOf(s);
       if (name) used.add(name);
@@ -216,10 +223,27 @@ test('Mermaid is a lazy chunk with its map, not in the entry, which fetches no c
   expect(refs.map(r => r[2])).toContain(mermaid[0]);
 });
 
-test('no chunk imports the entry back', () => {
+test('no chunk imports the entry back, and the one file that holds the panel is the only one they import of it', () => {
   // Home Assistant loads home-panel.js?v=…; a chunk importing ../home-panel.js would load a second copy without the
-  // query and run the panel's modules twice
+  // query and run the panel's modules twice (a second `Symbol('home-panel.store')`, so no element would find the store). The panel's own code is
+  // one file the entry imports (dist/main-[hash].js), and the Ask feature's chunk imports that same file by the same URL: one copy of every module.
   for (const c of chunks) expect(text(c).includes('home-panel.js'), c).toBe(false);
+  const shared = chunks.filter(c => text(c).includes(`../${basename(BUNDLE)}`));
+  expect(
+    shared.map(c => basename(c)).filter(c => !/^ask-/.test(c)),
+    'chunks of the panel own code other than the Ask feature',
+  ).toEqual([]);
+  expect(shared.length, 'the Ask feature is a lazy chunk that imports the panel file').toBe(1);
+  // and the panel file imports no chunk but through import(): the page loads it and nothing else until a tab or a tap asks
+  expect(readFileSync(BUNDLE, 'utf8')).not.toMatch(/\bfrom\s*["']\.\/chunks\//);
+});
+
+test('the Ask feature is a chunk of its own: the elements are in it, and not in the panel file', () => {
+  const ask = chunks.filter(c => /customElements\.define\(["'`]hp-ask-sheet["'`]/.test(text(c)));
+  expect(ask, 'chunks defining <hp-ask-sheet>').toHaveLength(1);
+  expect(readFileSync(BUNDLE, 'utf8')).not.toMatch(/customElements\.define\(["'`]hp-ask-sheet["'`]/);
+  // the panel file reaches it through a dynamic import of a path under chunks/
+  expect(readFileSync(BUNDLE, 'utf8')).toMatch(/import\(\s*[`"']\.\/chunks\/ask-[\w-]+\.js[`"']\s*\)/);
 });
 
 test('the bundle parses as an ES module', () => {
@@ -237,7 +261,7 @@ test('the bundle carries the package version once and no placeholder', () => {
 });
 
 test("the entry's source map names the original files under src/ and the libraries built in, no other library's", () => {
-  const map = JSON.parse(readFileSync(join(DIST, 'home-panel.js.map'), 'utf8'));
+  const map = JSON.parse(readFileSync(`${BUNDLE}.map`, 'utf8'));
   for (const f of ['src/core/config.ts', 'src/shell/home-panel.ts', 'src/features/automations/model.ts'])
     expect(
       map.sources.some(s => s.endsWith(f)),
@@ -266,7 +290,9 @@ test("the entry's source map names the original files under src/ and the librari
     'lit-html',
     'superstruct',
   ]);
-  expect(readFileSync(BUNDLE, 'utf8')).toMatch(/\n\/\/# sourceMappingURL=home-panel\.js\.map\s*$/);
+  expect(readFileSync(BUNDLE, 'utf8')).toMatch(
+    new RegExp(`\\n//# sourceMappingURL=${basename(BUNDLE).replace('.', '\\.')}\\.map\\s*$`),
+  );
 });
 
 test('no personal data: names, places, a house photo or house-specific entity ids', () => {
@@ -298,8 +324,9 @@ test('no personal data: names, places, a house photo or house-specific entity id
   const texts = [
     ['(tracked paths)', files.join('\n')],
     ...files.map(f => [f, read(f)]),
-    ['dist/home-panel.js', readFileSync(BUNDLE, 'utf8')],
-    ['dist/home-panel.js.map', readFileSync(`${BUNDLE}.map`, 'utf8')],
+    ['dist/home-panel.js', readFileSync(ENTRY, 'utf8')],
+    [`dist/${basename(BUNDLE)}`, readFileSync(BUNDLE, 'utf8')],
+    [`dist/${basename(BUNDLE)}.map`, readFileSync(`${BUNDLE}.map`, 'utf8')],
   ];
   const hits = bannedHits(texts);
   expect(hits).toEqual([]);

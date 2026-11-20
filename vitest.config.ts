@@ -17,6 +17,7 @@ export default defineConfig({
         'src/providers/**/*.ts',
         'src/features/*/{ids,inputs,model,tiles,history,scenes,commands,flow-layout,water-chart,charts,sankey-layout,schedule,checks,order,state,al-strip-layout,traces,sentences,timeline-layout,graph,mermaid-def,activities,done,cards,rotation,card-cache,glance,catalog,period,plan,instructions,evaluate}.ts', // the pure files; the elements are proven by the harness
         'src/features/stack/loader.ts', // the same, for the smart stack's Energy-today filler
+        'src/features/ask/loader.ts', // the Ask sheet's controller over the AI Task and the statistics cache, tested with a fake API client, cache and host; the sheet that mounts it is proven by the harness
         'src/features/live/loader.ts', // a controller over the statistics cache through the kit's WindowedHistory, tested with a fake cache, store and host
         'src/features/car/controls.ts', // the controls' view: strings and flags from the inputs, the held values and the draft; the two cards that call it are proven by the harness
         'src/features/car/keys.ts', // the overlay keys, one typed function each; proven through the commands' and the controls' unit tests
@@ -63,6 +64,7 @@ export default defineConfig({
           },
         'src/features/car/controls.ts': {statements: 100},
         'src/features/car/keys.ts': {statements: 100},
+        'src/features/ask/loader.ts': {statements: 100},
         'src/features/live/loader.ts': {statements: 100},
         'src/features/stack/loader.ts': {statements: 100},
         'src/features/car/loader.ts': {statements: 100},

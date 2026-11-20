@@ -1,0 +1,51 @@
+/* <hp-ask-answer>: the answer's lines and its chart, in the sheet's body. `.app[data-design]` reads as `:host([design])`. */
+:host {
+  display: block;
+}
+.answer {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+}
+.summary {
+  margin: 0;
+  font-family: var(--f-num);
+  font-weight: var(--num-w);
+  font-size: calc(20px * var(--tx));
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+.mean {
+  margin: 0;
+  color: var(--fg2);
+  font-size: calc(15px * var(--tx));
+}
+hp-chart {
+  display: block;
+  margin: 6px 0 2px;
+}
+.understood,
+.coverage {
+  margin: 0;
+  color: var(--fg2);
+  font-size: calc(13px * var(--tx));
+  line-height: 1.35;
+}
+/* the line that says what the panel understood is set apart from the figures, so a wrong plan reads as a wrong plan */
+.understood {
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+.app[data-design='material'] .summary {
+  font: var(--type-title-large);
+  letter-spacing: var(--track-title-large);
+}
+.app[data-design='material'] .mean {
+  font: var(--type-body-large);
+  letter-spacing: var(--track-body-large);
+}
+.app[data-design='material'] .understood,
+.app[data-design='material'] .coverage {
+  font: var(--type-body-medium);
+  letter-spacing: var(--track-body-medium);
+}

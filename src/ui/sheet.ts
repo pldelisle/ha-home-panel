@@ -158,9 +158,11 @@ export class HpSheet extends LitElement {
 
   // The button is slotted into the pane header, whose own tree is drawn after this one's: a sheet made open (a feature draws it only while
   // it is open) has no slot for the button until the header has rendered, and a button that is not drawn cannot take focus.
+  // A sheet whose body is a field to type in marks it `autofocus`: that takes the focus instead, so the keyboard is in the field at once.
   private async focusClose(): Promise<void> {
     await this.renderRoot.querySelector<PaneHeader>('hp-pane-header')?.updateComplete;
-    if (this.open) this.renderRoot.querySelector<HTMLElement>('.close')?.focus();
+    if (!this.open) return;
+    (this.querySelector<HTMLElement>('[autofocus]') ?? this.renderRoot.querySelector<HTMLElement>('.close'))?.focus();
   }
 }
 

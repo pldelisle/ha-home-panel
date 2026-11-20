@@ -2,7 +2,9 @@
 
 A button in the header opens a sheet where a household member types a question about the house's history, and gets an answer the panel computed ([spec 29](../../../docs/specs/29-ask.md), parent issue #533; [ADR 0040](../../../docs/adr/0040-the-model-plans-the-panel-computes.md), "The model plans, the panel computes"). The model's only output is a **plan** in a closed vocabulary: which sensor, which period, which form. The panel resolves the period, fetches the history, computes every figure and writes every sentence. No reading and no entity id leaves the panel.
 
-This folder is built in slices. **The pure half of a series** (#537) is here: everything about a series question that needs no element. It has no element, no port to the model and no import from the shell, so nothing a household member sees has changed. The port (`generateData` on the API client), the sheet and its header button, the moments and the total, and the recorded-model suite are the next slices.
+This folder is built in slices. **The tracer** (#538) is here: a header button on every tab, the sheet it opens, and a chart for a typed question about a temperature or a power reading, in English and French. The pure half of a series (#537) and the port to the model (`generateData` on the API client, #536) came before it. The sheet's cancel button and per-reason messages, the suggestions, the moments and the total, and the recorded-model suite are the next slices.
+
+The feature is a **lazy chunk**: the shell imports `sheets.ts` (one constant, the id `ask.sheet`) and `import()`s `index.ts`, which defines the two elements, on the first tap of the header's Ask button. A house with no `ask` block draws no button and never fetches the chunk. The dependency rule holds both ways: the shell imports the feature, the feature imports no shell module.
 
 ## The folder
 
@@ -15,10 +17,16 @@ src/features/ask/
   instructions.ts  askInstructions(...), askStructure(catalog), INSTRUCTIONS_VERSION: what the model is told and the fields it fills
   evaluate.ts      evaluateSeries(rows, window): the points, the low, the high, the mean and the coverage, or empty
   model.ts         AskState, askReducer, askView(state, t, fmt, catalog): the sheet's state and its texts
-  checks.ts        askChecks(catalog): the cap warning (the entity and exclude warnings are the core's checkHouse)
+  checks.ts        askChecks(catalog): the cap warning (the entity and exclude warnings are the core's checkHouse); the sheet shows it to an admin
+  charts.ts        seriesChartOptions(answer, deps): the chart's options as data, for <hp-chart>
+  loader.ts        AskLoader: the controller that runs one question (AI Task, plan, history window, answer) into the reducer; drops a stale or cancelled reply
+  sheets.ts        ASK_SHEET, the sheet's id (ADR 0021)
+  index.ts         defines the elements; imported dynamically by the shell
+  ask-sheet.ts     <hp-ask-sheet>: the field, the send button and the result in an aria-live region
+  ask-answer.ts    <hp-ask-answer>: the summary, the mean, <hp-chart> and the understood line
 ```
 
-Every file is a pure module: values in, values out, no clock, no DOM, no `hass`.
+Every file but the loader and the two elements is a pure module: values in, values out, no clock, no DOM, no `hass`. The loader holds the one question in flight and reads the clock it is given; the elements are humble (ADR 0005).
 
 ## The catalog
 

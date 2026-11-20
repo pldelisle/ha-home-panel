@@ -4,7 +4,8 @@
 // it checks no behaviour, only what a screen reader would be told.
 import AxeBuilder from '@axe-core/playwright';
 import {test, expect, eachShownTab, isPhone, nestedInteractive, phoneOnly, tabletOnly, type House} from './fixtures';
-import {FULL_CFG, PHONE_TABS} from './houses';
+import {AI_TASK, ASK_CFG, QUESTION, QUESTION_FR, askField, chartDrawn, openAsk, sendQuestion, withAsk} from './ask';
+import {AFTERNOON, FULL_CFG, KEEP_ENGLISH_NAMES, PHONE_TABS} from './houses';
 import {openOfficeSheet} from './lights';
 import {backToModules, openSettings, openSubmenu} from './settings-controls';
 import {stopCharging, openFrontDoor, openPopup, pill} from './live';
@@ -271,6 +272,26 @@ for (const lang of ['en', 'fr'] as const) {
 
     test('the More sheet has no serious or critical finding', async ({house}) => {
       await moreSheet(house);
+    });
+  });
+}
+
+// The Ask sheet is not a tab of the registry: the header's button opens it in a house with an `ask` block, which the full house has not, so it has its own describe.
+for (const lang of ['en', 'fr'] as const) {
+  test.describe(`house with the Ask sheet, ${lang}`, () => {
+    test.use({
+      houseOpts: {cfg: {...ASK_CFG, names: KEEP_ENGLISH_NAMES}, lang, aiTask: AI_TASK, time: AFTERNOON},
+    });
+
+    test('the Ask sheet, idle and answered, has no serious or critical finding', async ({house}) => {
+      await withAsk(house);
+      await openAsk(house);
+      await expect(askField(house)).toBeVisible();
+      await scan(house, `ask.sheet (idle, ${lang})`);
+      await sendQuestion(house, lang === 'fr' ? QUESTION_FR : QUESTION);
+      await expect(house.root().locator('hp-ask-sheet #ask-summary')).toBeVisible();
+      await chartDrawn(house);
+      await scanDialog(house, 'ask.sheet', 'hp-ask-sheet hp-sheet .sheet', `answered, ${lang}`);
     });
   });
 }

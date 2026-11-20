@@ -43,6 +43,21 @@ const firstOfMonth = (day: string, months: number): string => {
   return new Date(Date.UTC(year, month - 1 + months, 1)).toISOString().slice(0, 10);
 };
 
+/** What the runtime says of a locale's week: `Intl.Locale.getWeekInfo()`, which the library typings of the build do not have yet; `firstDay` counts 1 for Monday to 7 for Sunday. */
+interface WeekInfoLocale {
+  getWeekInfo?: () => {firstDay: number};
+}
+
+/** The first day of the week in a locale tag, as `WeekStart` counts it (0 is Sunday): `en-CA` and `fr-CA` begin on Sunday, `fr-FR` on Monday. Monday when the runtime cannot say. */
+export function weekStartOf(tag: string): WeekStart {
+  try {
+    const info = (new Intl.Locale(tag) as WeekInfoLocale).getWeekInfo?.();
+    return ((info?.firstDay ?? 1) % 7) as WeekStart;
+  } catch {
+    return 1;
+  }
+}
+
 /** The day of the week of a day key, as `WeekStart` counts it: 0 is Sunday. */
 export const dayOfWeek = (day: string): WeekStart => new Date(`${day}T12:00:00Z`).getUTCDay() as WeekStart;
 
