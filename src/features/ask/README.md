@@ -1,0 +1,37 @@
+# Ask the history
+
+A button in the header opens a sheet where a household member types a question about the house's history, and gets an answer the panel computed ([spec 29](../../../docs/specs/29-ask.md), parent issue #533; [ADR 0040](../../../docs/adr/0040-the-model-plans-the-panel-computes.md), "The model plans, the panel computes"). The model's only output is a **plan** in a closed vocabulary: which sensor, which period, which form. The panel resolves the period, fetches the history, computes every figure and writes every sentence. No reading and no entity id leaves the panel.
+
+This folder is built in slices. **The pure half of a series** (#537) is here: everything about a series question that needs no element. It has no element, no port to the model and no import from the shell, so nothing a household member sees has changed. The port (`generateData` on the API client), the sheet and its header button, the moments and the total, and the recorded-model suite are the next slices.
+
+## The folder
+
+```
+src/features/ask/
+  README.md
+  catalog.ts       askCatalog(reads, names, config): Catalog: the sensors a question may name, as handles, and the private map to entities
+  plan.ts          Period, Test, Plan, PlanError; parsePlan(reply, catalog): Plan | PlanError, the one place a model's reply is read
+  period.ts        resolvePeriod(period, now, fmt, weekStart): the nine periods as a window of the house's calendar
+  instructions.ts  askInstructions(...), askStructure(catalog), INSTRUCTIONS_VERSION: what the model is told and the fields it fills
+  evaluate.ts      evaluateSeries(rows, window): the points, the low, the high, the mean and the coverage, or empty
+  model.ts         AskState, askReducer, askView(state, t, fmt, catalog): the sheet's state and its texts
+  checks.ts        askChecks(catalog): the cap warning (the entity and exclude warnings are the core's checkHouse)
+```
+
+Every file is a pure module: values in, values out, no clock, no DOM, no `hass`.
+
+## The catalog
+
+Built from the providers' reads (ADR 0025), never from a feature. An entry is `{key, name, kind, unit}`: the key is a stable handle (`temp.office`, `power.grid`), built from the room's area (else the key its config gives it, else its display name) or the power role, and never from an entity id. The name is the display name in the panel's language, and the kind is `binary`, `measure` or `meter`. The map from a key to an entity id stays on the panel's side. This slice fills the `measure` entries: the rooms' temperatures and the live power readings. `ask.exclude` removes entries by entity id, and the catalog is cut at 60.
+
+## The plan
+
+The model fills six flat fields (`form`, `sensor`, `period`, `test`, `value`, `longer_than_min`), because that is what Home Assistant's `ai_task.generate_data` structure takes and what the probe of #535 found a local model fills correctly: every field is nullable, the unused ones come back `null`, and `test` is the word `none` for a series. `parsePlan` maps them onto the spec's `Plan` and treats an absent field, `null` and `''` alike. A combination that makes no sense (a series of a binary sensor, a total of a measure) is a `PlanError`, not a runtime branch. `moments` and `total` parse to `form_not_supported_yet` until their slices land; `readPlan` already parses the whole union.
+
+## The instructions
+
+Fixed text plus the question (quoted, cut at 200 characters), the date and weekday in the house's zone, and the catalog. The probe found the instructions matter more than the schema: they say what each form is, which test goes with which kind of sensor and when a field is `null`. Change the text, raise `INSTRUCTIONS_VERSION`.
+
+## Tests
+
+`test/unit/features/ask/`, on literals and on the full and the bare test houses. The coverage gate holds every module here at 100 percent of statements.

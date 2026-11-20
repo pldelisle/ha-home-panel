@@ -2,7 +2,7 @@
 // the resolver that turns what is understood, plus what the house's entities say, into the settings the panel runs with.
 // Pattern: parse, don't validate (King, 2019), so `PanelConfig` is inferred from the struct and cannot disagree with the
 // parser; tolerant reader (Fowler): a bad leaf, element or key is dropped and reported, never thrown; superstruct, as Home
-// Assistant's frontend validates card configs. Must not: throw, coerce a type, check that a configured entity exists, read
+// Assistant's frontend validates card configs. Must not: throw, coerce a type, check that a configured entity exists (`checkHouse` does, over the states it is given), read
 // the clock, or touch the DOM or `hass` (it reads the house's `states` it is handed, to find what the config leaves out).
 import {
   array,
@@ -100,6 +100,9 @@ const room = either(
 // two cards (an area id or a light entity each) that move together, with an optional input_boolean to link and unlink them
 const lightLink = either(isRecord, block({lights: pair, switch: optional(string())}), pair);
 
+// the Ask sheet's switch: the AI Task entity that plans the questions, and the entities kept out of what the model is told (spec 29)
+const ask = block({entity: pattern(string(), /^ai_task\./), exclude: optional(oneOrList(string()))});
+
 // `at` is a time of day, 8:00 or 20:00: the resolver has always read both, and read it trimmed
 const reminder = block({
   at: pattern(string(), /^\s*\d{1,2}:\d{2}\s*$/),
@@ -138,6 +141,8 @@ export const panelConfig = block({
       either(v => typeof v === 'string', string(), literal(false)),
     ),
   ),
+  // the AI Task entity behind the Ask sheet; without the block there is no Ask button and no code of the feature loads
+  ask: optional(ask),
   // a name per language, for the name Home Assistant gives (the exact name), an entity id, an area id or a device id
   names: optional(dictionary(dictionary(string()))),
   // Home Assistant adds this to every custom panel's config; it is not ours to check
@@ -151,6 +156,8 @@ export type PanelConfig = Infer<typeof panelConfig>;
 export interface RoomSpec {
   /** The room's key: the config's `key`, else the thermostat's name without climate. and thermostat_. */
   k: string;
+  /** The config's `key` when the room has one, else null: a word the person chose, which the Ask catalog may build a handle from. */
+  explicitKey: string | null;
   /** The config's `name`; null when the card takes the thermostat's own name. */
   n: string | null;
   /** The config's icon when it is in ROOM_ICONS, else guessIcon() of the room's name. */
@@ -187,6 +194,8 @@ export interface ResolvedConfig {
   /** The `names:` block as written, or an empty record; the store's name resolver reads it. */
   names: Record<string, Record<string, string>>;
   stack: {on: boolean; sunriseOff: boolean; reminders: Reminder[]};
+  /** The Ask sheet's AI Task entity and the entities left out of its catalog; null without the block (no button, no feature code). */
+  ask: {entity: string; exclude: string[]} | null;
   /** The `climate_station` as written: an ECCC climate identifier, false for none, null to look for the nearest. */
   climateStation: string | false | null;
 }
@@ -287,6 +296,8 @@ function problemOf(failure: Failure): ProblemAt {
   const branch = failure.branch as unknown[];
   if (value === undefined && isRecord(branch[branch.length - 2]))
     return problemAt(at.slice(0, -1), 'config.missingKey', {missing: String(at[at.length - 1])});
+  if (failure.refinement === 'pattern' && pathOf(at) === 'ask.entity')
+    return problemAt(at, 'config.askNotAiTask', {got: String(value)});
   if (failure.refinement === 'pattern') return problemAt(at, 'config.notATime', {got: String(value)});
   if (failure.type === 'enums' && (typeof value === 'string' || typeof value === 'number'))
     return problemAt(at, 'config.notOneOf', {got: String(value), options: ROOM_ICONS.join(', ')});
@@ -313,6 +324,22 @@ function findProblems(raw: Record<string, unknown>): ProblemAt[] {
  */
 export function checkConfig(raw: unknown): ConfigProblem[] {
   return isRecord(raw) ? findProblems(defined(raw) as Record<string, unknown>).map(f => f.problem) : [];
+}
+
+/**
+ * What the house says against the settings that name an entity of it: the `ask` entity is not there, an `ask.exclude` id is not. A warning, not a
+ * refusal: the setting still applies. `states` is the house's (`hass.states`); the card shows these beside `checkConfig`'s. Never throws.
+ */
+export function checkHouse(config: Pick<ResolvedConfig, 'ask'>, states: Record<string, unknown>): ConfigProblem[] {
+  const {ask} = config;
+  if (!ask) return [];
+  const problems: ConfigProblem[] = [];
+  const missing = (at: Place, key: MessageKey, entity: string) => problems.push(problemAt(at, key, {entity}).problem);
+  if (!Object.hasOwn(states, ask.entity)) missing(['ask', 'entity'], 'config.askMissingEntity', ask.entity);
+  ask.exclude.forEach((id, i) => {
+    if (!Object.hasOwn(states, id)) missing(['ask', 'exclude', i], 'config.askUnknownExclude', id);
+  });
+  return problems;
 }
 
 // ---------- pruning: the tolerant reader ----------
@@ -372,6 +399,7 @@ function roomSpec(r: Infer<typeof room>, states: ConfigStates): RoomSpec {
   const name = settings.name ?? null;
   return {
     k: settings.key || thermostat.replace(/^thermostat_/, ''),
+    explicitKey: settings.key || null,
     n: name,
     icon: settings.icon ?? guessIcon(name || friendlyName || thermostat),
     climate: settings.climate,
@@ -463,6 +491,7 @@ export function resolveConfig(raw: unknown, states?: ConfigStates | null): Resol
     // a name (or an id) to one name per language; the name resolver in the core reads it
     names: cfg.names ?? {},
     climateStation: climateStationOf(cfg.climate_station),
+    ask: cfg.ask ? {entity: cfg.ask.entity, exclude: asList(cfg.ask.exclude)} : null,
     car: {
       name: cfg.car?.name || null,
       color: cfg.car?.color || null,

@@ -3,7 +3,14 @@
 import {readFileSync} from 'node:fs';
 import {parse} from 'yaml';
 import {describe, expect, test} from 'vitest';
-import {checkConfig, panelConfig, resolveConfig, ROOM_ICONS, type PanelConfig} from '../../src/core/config.ts';
+import {
+  checkConfig,
+  checkHouse,
+  panelConfig,
+  resolveConfig,
+  ROOM_ICONS,
+  type PanelConfig,
+} from '../../src/core/config.ts';
 import {en} from '../../src/core/i18n/en.ts';
 import {fr} from '../../src/core/i18n/fr.ts';
 import {createMessages} from '../../src/core/i18n/messages.ts';
@@ -234,6 +241,94 @@ describe('config.notOneOf', () => {
         values: {path: 'rooms[0].icon', expected: 'text', got: 'list'},
       },
     ]);
+  });
+});
+
+describe('the ask block', () => {
+  test('an AI Task entity, with or without the exclusions, has no problem', () => {
+    expect(checkConfig({ask: {entity: 'ai_task.local_model'}})).toEqual([]);
+    expect(checkConfig({ask: {entity: 'ai_task.local_model', exclude: ['sensor.a', 'sensor.b']}})).toEqual([]);
+    expect(checkConfig({ask: {entity: 'ai_task.local_model', exclude: 'sensor.a'}})).toEqual([]);
+  });
+
+  test('an entity outside the ai_task domain is refused, naming it', () => {
+    expect(checkConfig({ask: {entity: 'conversation.assistant'}})).toEqual([
+      {
+        path: 'ask.entity',
+        key: 'config.askNotAiTask',
+        values: {path: 'ask.entity', got: 'conversation.assistant'},
+      },
+    ]);
+    expect(checkConfig({ask: {entity: 'sensor.ai_task.x'}})).toHaveLength(1);
+  });
+
+  test('the entity is required, and must be text', () => {
+    expect(checkConfig({ask: {}})).toEqual([
+      {path: 'ask', key: 'config.missingKey', values: {path: 'ask', missing: 'entity'}},
+    ]);
+    expect(checkConfig({ask: {entity: 5}})[0]).toMatchObject({
+      path: 'ask.entity',
+      key: 'config.wrongType',
+      values: {expected: 'text', got: 'number'},
+    });
+  });
+
+  test('a misspelt key is near the one meant', () => {
+    expect(checkConfig({ask: {entity: 'ai_task.a', exclud: []}})).toEqual([
+      {path: 'ask.exclud', key: 'config.unknownKeyHint', values: {path: 'ask.exclud', hint: 'exclude'}},
+    ]);
+  });
+
+  test('the messages exist in both languages and say what to do', () => {
+    expect(en['config.askNotAiTask']).toBe('{path}: {got} is not an AI Task entity. Its id starts with ai_task.');
+    for (const key of ['config.askMissingEntity', 'config.askUnknownExclude', 'config.askOverCap'] as const) {
+      expect(en[key]).toContain('{path}');
+      expect(fr[key]).toContain('{path}');
+    }
+  });
+});
+
+describe('checkHouse: what the house says against the settings that name its entities', () => {
+  const states = {'ai_task.model': {}, 'sensor.office_temperature': {}};
+  const house = (ask: unknown, inHouse: Record<string, unknown> = states) => checkHouse(resolveConfig({ask}), inHouse);
+
+  test('a house with no ask block has nothing to check', () => {
+    expect(checkHouse(resolveConfig({}), {})).toEqual([]);
+  });
+
+  test('an entity in the house and exclusions in the house are fine', () => {
+    expect(house({entity: 'ai_task.model', exclude: ['sensor.office_temperature']})).toEqual([]);
+  });
+
+  test('an AI Task entity that is not in the house is named, where it is written', () => {
+    expect(house({entity: 'ai_task.gone'})).toEqual([
+      {path: 'ask.entity', key: 'config.askMissingEntity', values: {path: 'ask.entity', entity: 'ai_task.gone'}},
+    ]);
+  });
+
+  test('each excluded id the house does not have is named by its place in the list', () => {
+    const exclude = ['sensor.office_temperature', 'sensor.gone', 'constructor'];
+    expect(house({entity: 'ai_task.model', exclude})).toEqual([
+      {
+        path: 'ask.exclude[1]',
+        key: 'config.askUnknownExclude',
+        values: {path: 'ask.exclude[1]', entity: 'sensor.gone'},
+      },
+      {
+        path: 'ask.exclude[2]',
+        key: 'config.askUnknownExclude',
+        values: {path: 'ask.exclude[2]', entity: 'constructor'},
+      },
+    ]);
+  });
+
+  test('every message fills, in both languages, and names the entity', () => {
+    const problems = house({entity: 'ai_task.gone', exclude: ['sensor.gone']}, {});
+    expect(problems).toHaveLength(2);
+    for (const language of ['en', 'fr']) {
+      const {t} = createMessages({language, tag: language});
+      expect(problems.map(p => t(p.key, p.values).includes(String(p.values.entity)))).toEqual([true, true]);
+    }
   });
 });
 
