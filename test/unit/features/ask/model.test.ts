@@ -2,7 +2,7 @@
 // request that was cancelled or replaced, even when the same words were asked again, and the view in both languages over the real formatters of a store.
 import {describe, expect, test} from 'vitest';
 import type {Catalog} from '../../../../src/features/ask/catalog.ts';
-import type {EmptyAnswer, SeriesAnswer} from '../../../../src/features/ask/evaluate.ts';
+import type {EmptyAnswer, MomentsAnswer, SeriesAnswer} from '../../../../src/features/ask/evaluate.ts';
 import {
   askReducer,
   askView,
@@ -293,5 +293,143 @@ describe('askView', () => {
 
   test('a sensor the catalog no longer lists is named by its handle, not left blank', () => {
     expect(view(answered(), 'en', {...catalog, entries: []}).summary).toBe('temp.office · yesterday · 18.2 to 21.4');
+  });
+});
+
+describe('askView of moments', () => {
+  const WORDS = {on: 'ask.words.open', off: 'ask.words.closed'};
+  const catalog: Catalog = {
+    entries: [
+      {key: 'door.patio', name: 'Patio door', kind: 'binary', unit: '', words: WORDS},
+      {key: 'home.alex', name: 'Alex', kind: 'binary', unit: '', words: {on: 'ask.words.home', off: 'ask.words.away'}},
+      {key: 'temp.office', name: 'Office', kind: 'measure', unit: '°'},
+    ],
+    entityOf: new Map(),
+    omitted: 0,
+  };
+  const MIN = 6e4;
+  // 10:07 am Toronto time, Tuesday the 17th
+  const at = (hour: number, minute: number) => Date.UTC(2026, 10, 17, hour + 5, minute);
+  const span = (from: [number, number], to: [number, number], ongoing = false) => ({
+    start: at(...from),
+    end: at(...to),
+    ongoing,
+  });
+  const SPANS = [span([10, 7], [10, 32]), span([14, 10], [14, 22])];
+  const MOMENTS: MomentsAnswer = {
+    kind: 'moments',
+    spans: SPANS,
+    count: 2,
+    totalMs: 37 * MIN,
+    coverage: 1,
+    from: at(0, 0),
+  };
+  const planOf = (over: Record<string, unknown> = {}): AnswerablePlan => ({
+    form: 'moments',
+    sensor: 'door.patio',
+    period: 'this_week',
+    test: {on: true},
+    longerThanMin: null,
+    ...over,
+  });
+  const view = (answer: MomentsAnswer, plan: AnswerablePlan, language: 'en' | 'fr' = 'en', c = catalog) => {
+    const {t, fmt} = depsOf(fullHouse, language);
+    const state: AskState = {at: 'answered', question: 'q', plan, answer};
+    return askView(state, t, fmt, sensorOf(state, c));
+  };
+
+  test('says the count and the total as the summary, the spans with their start, end and length, and what it understood', () => {
+    expect(view(MOMENTS, planOf({longerThanMin: 10}))).toEqual({
+      message: null,
+      summary: '2 times, 37 min',
+      mean: null,
+      understood: 'Patio door · open longer than 10 min · this week',
+      coverage: null,
+      moments: [
+        {when: 'Tue 10:07 am – 10:32 am', length: '25 min', ongoing: false},
+        {when: 'Tue 2:10 pm – 2:22 pm', length: '12 min', ongoing: false},
+      ],
+    });
+  });
+
+  test('says it in French, with the plural of a single time', () => {
+    const one: MomentsAnswer = {...MOMENTS, spans: [SPANS[1]], count: 1, totalMs: 12 * MIN};
+    const french = view(one, planOf({test: {on: false}, longerThanMin: 5}), 'fr');
+    expect(french.summary).toBe('1 fois, 12 min');
+    expect(french.understood).toBe('Patio door · fermé plus de 5 min · cette semaine');
+    expect(french.moments?.[0]).toEqual({when: 'mar. 14 h 10 – 14 h 22', length: '12 min', ongoing: false});
+    expect(view(MOMENTS, planOf()).summary).toBe('2 times, 37 min');
+    expect(view({...MOMENTS, count: 1, spans: [SPANS[0]]}, planOf()).summary).toBe('1 time, 37 min');
+  });
+
+  test('a span that is still going says "still" where its end would be', () => {
+    const going: MomentsAnswer = {...MOMENTS, spans: [span([16, 0], [16, 40], true)], count: 1, totalMs: 40 * MIN};
+    expect(view(going, planOf()).moments).toEqual([{when: 'Tue 4:00 pm – still', length: '40 min', ongoing: true}]);
+    expect(view(going, planOf(), 'fr').moments?.[0].when).toBe('mar. 16 h – en cours');
+  });
+
+  test('a span that ends another day names that day, and a month-long period names the date of each start', () => {
+    const across: MomentsAnswer = {
+      ...MOMENTS,
+      spans: [{start: at(22, 0), end: at(26, 0), ongoing: false}],
+      count: 1,
+      totalMs: 4 * 60 * MIN,
+    };
+    expect(view(across, planOf()).moments?.[0].when).toBe('Tue 10:00 pm – Wed 2:00 am');
+    expect(view(across, planOf({period: 'last_30_days'})).moments?.[0].when).toBe(
+      'Tue, Nov 17 10:00 pm – Wed, Nov 18 2:00 am',
+    );
+  });
+
+  test('shows at most 20 spans and says how many more there are', () => {
+    const many: MomentsAnswer = {
+      ...MOMENTS,
+      spans: Array.from({length: 34}, (_, i) => span([0, i], [0, i + 1])),
+      count: 34,
+      totalMs: 34 * MIN,
+    };
+    const shown = view(many, planOf());
+    expect(shown.moments).toHaveLength(20);
+    expect(shown.more).toBe('and 14 more');
+    expect(view(many, planOf(), 'fr').more).toBe('et 14 de plus');
+    expect(view({...many, spans: many.spans.slice(0, 20), count: 20}, planOf()).more).toBeUndefined();
+  });
+
+  test('nothing matched is said plainly, with no list, and the understood line still says what was asked', () => {
+    const none: MomentsAnswer = {...MOMENTS, spans: [], count: 0, totalMs: 0};
+    expect(view(none, planOf())).toEqual({
+      message: null,
+      summary: 'No moments this week',
+      mean: null,
+      understood: 'Patio door · open · this week',
+      coverage: null,
+    });
+    expect(view(none, planOf(), 'fr').summary).toBe('Aucun moment cette semaine');
+  });
+
+  test('a measure says its threshold in its unit, above or below', () => {
+    const above = view(MOMENTS, planOf({sensor: 'temp.office', test: {above: 23}, period: 'yesterday'}));
+    expect(above.understood).toBe('Office · above 23° · yesterday');
+    expect(view(MOMENTS, planOf({sensor: 'temp.office', test: {below: 18.5}, longerThanMin: 30})).understood).toBe(
+      'Office · below 18.5° longer than 30 min · this week',
+    );
+    expect(view(MOMENTS, planOf({sensor: 'temp.office', test: {above: 23}}), 'fr').understood).toBe(
+      'Office · au-dessus de 23° · cette semaine',
+    );
+    expect(view(MOMENTS, planOf({sensor: 'temp.office', test: {below: 18.5}}), 'fr').understood).toContain(
+      'sous 18,5°',
+    );
+  });
+
+  test('each pair of words, and the plain on and off for a sensor the catalog no longer lists', () => {
+    expect(view(MOMENTS, planOf({sensor: 'home.alex'})).understood).toBe('Alex · home · this week');
+    expect(view(MOMENTS, planOf({sensor: 'home.alex', test: {on: false}})).understood).toBe('Alex · away · this week');
+    const gone = {...catalog, entries: []};
+    expect(view(MOMENTS, planOf(), 'en', gone).understood).toBe('door.patio · on · this week');
+    expect(view(MOMENTS, planOf({test: {on: false}}), 'en', gone).understood).toBe('door.patio · off · this week');
+  });
+
+  test('partial coverage adds the note saying where the history starts', () => {
+    expect(view({...MOMENTS, coverage: 0.4}, planOf()).coverage).toBe('History starts Nov 17');
   });
 });

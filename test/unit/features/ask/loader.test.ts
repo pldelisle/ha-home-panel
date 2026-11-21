@@ -3,6 +3,7 @@
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest';
 import {Cancelled, StaleReply} from '../../../../src/core/api.ts';
 import {resolveConfig} from '../../../../src/core/config.ts';
+import type {StatisticsCache} from '../../../../src/core/statistics-cache.ts';
 import {createStore} from '../../../../src/core/store.ts';
 import type {StatisticRow} from '../../../../src/core/ha.ts';
 import type {AskReads} from '../../../../src/features/ask/catalog.ts';
@@ -21,7 +22,13 @@ const PLAN = {
   value: null,
   longer_than_min: null,
 };
+const DOOR_PLAN = {...PLAN, form: 'moments', sensor: 'door.living_room', test: 'on', longer_than_min: 10};
+const OFFICE_ABOVE = {...PLAN, form: 'moments', test: 'above', value: 19, longer_than_min: null};
 const QUESTION = 'how warm was the office yesterday?';
+
+/** The door's states from the day before the test house's clock, as the recorder's history gives them. */
+const point = (time: number, state: string) => ({state, lastUpdated: time, lastChanged: time});
+const DOOR_POINTS = [point(NOW - 30 * HOUR, 'off')];
 
 const config = {...FULL_CFG, ask: {entity: 'ai_task.local_model'}};
 const row = (start: number, mean: number): StatisticRow => ({
@@ -53,17 +60,19 @@ function setup(panelConfig: unknown = config, extra: Partial<AskDeps> = {}) {
   const statistics = vi.fn((_ids: readonly (string | null | undefined)[], _period: string, start: Date) =>
     Promise.resolve({'sensor.office_temperature': [row(start.getTime(), 18), row(start.getTime() + 300_000, 21)]}),
   );
+  // the front door's history: closed since before the window, until a test says otherwise
+  const history = vi.fn<StatisticsCache['history']>(() => Promise.resolve({'binary_sensor.front_door': DOOR_POINTS}));
   const host = {addController: vi.fn(), requestUpdate: vi.fn()};
   const deps: AskDeps = {
     api: {generateData},
-    cache: {statistics},
+    cache: {statistics, history},
     store,
     weekStart: 0,
     now: () => new Date(NOW),
     ...extra,
   };
   const loader = new AskLoader(host as never, () => deps);
-  return {loader, generateData, statistics, host, replies};
+  return {loader, generateData, statistics, history, host, replies};
 }
 
 const settle = () => new Promise<void>(resolve => setImmediate(resolve));
@@ -129,6 +138,67 @@ describe('a question that is answered', () => {
     loader.ask('   ');
     expect(loader.state).toBe(answered);
     expect(generateData).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('a question about moments', () => {
+  // a door the model plans over: the history of its entity, in minimal states, from the window's start to its end (a window that ended is not "now")
+  test('over a binary sensor reads its state history, by the entity behind the handle, and answers with the spans', async () => {
+    const {loader, replies, history, statistics} = setup();
+    replies.push(() => Promise.resolve({...DOOR_PLAN, period: 'last_24h'}));
+    history.mockResolvedValueOnce({
+      'binary_sensor.front_door': [point(NOW - 5 * HOUR, 'on'), point(NOW - 4 * HOUR, 'off')],
+    });
+    loader.ask('was the front door open?');
+    await settle();
+    expect(loader.state).toMatchObject({
+      at: 'answered',
+      plan: {form: 'moments', sensor: 'door.living_room', test: {on: true}, longerThanMin: 10},
+      answer: {kind: 'moments', count: 1, totalMs: HOUR},
+    });
+    const [ids, start, options] = history.mock.calls[0] as unknown as [string[], Date, {minimal: boolean; end: Date}];
+    expect(ids).toEqual(['binary_sensor.front_door']);
+    expect(options).toMatchObject({minimal: true, attributes: false});
+    expect(options.end.getTime() - start.getTime()).toBeGreaterThan(0);
+    expect(statistics).not.toHaveBeenCalled();
+  });
+
+  test('over a measure reads the statistics of its sensor and answers with the buckets that meet the threshold', async () => {
+    const {loader, replies, history, statistics} = setup();
+    replies.push(() => Promise.resolve(OFFICE_ABOVE));
+    loader.ask('when was the office above 19?');
+    await settle();
+    // the two buckets are 18 and 21: only the second is above 19
+    expect(loader.state).toMatchObject({
+      at: 'answered',
+      answer: {kind: 'moments', count: 1, totalMs: 300_000},
+    });
+    expect(statistics.mock.calls[0][0]).toEqual(['sensor.office_temperature']);
+    expect(history).not.toHaveBeenCalled();
+  });
+
+  test('a span still going when the period reaches now is marked so', async () => {
+    const {loader, replies, history} = setup();
+    replies.push(() => Promise.resolve({...DOOR_PLAN, period: 'today', longer_than_min: null}));
+    history.mockResolvedValueOnce({'binary_sensor.front_door': [point(NOW - HOUR, 'on')]});
+    loader.ask('is the front door open?');
+    await settle();
+    expect(loader.state).toMatchObject({at: 'answered', answer: {spans: [{ongoing: true}]}});
+  });
+
+  test('a recorder with no state for the sensor fails as empty, and a door never opened is an answer of no moments', async () => {
+    const {loader, replies, history} = setup();
+    replies.push(
+      () => Promise.resolve(DOOR_PLAN),
+      () => Promise.resolve(DOOR_PLAN),
+    );
+    history.mockResolvedValueOnce({});
+    loader.ask('was the front door open?');
+    await settle();
+    expect(loader.state).toMatchObject({at: 'failed', reason: 'empty', plan: {form: 'moments'}});
+    loader.ask('was the front door open, again?');
+    await settle();
+    expect(loader.state).toMatchObject({at: 'answered', answer: {kind: 'moments', count: 0}});
   });
 });
 
@@ -423,6 +493,8 @@ describe('the catalog', () => {
       power: powerNow(fullHouse.states, storeOf(fullHouse, config).config),
       states: fullHouse.states,
       registries: registriesOf(fullHouse),
+      sensors: [],
+      people: [],
     }));
     const {loader, host} = setup(config, {reads});
     expect(reads).not.toHaveBeenCalled();
@@ -457,6 +529,8 @@ describe('the catalog', () => {
       },
       states: fullHouse.states,
       registries: registriesOf(fullHouse),
+      sensors: [],
+      people: [],
     };
     const rooms = Array.from({length: 70}, (_, i) => ({
       ...store.config.rooms[0],

@@ -1,7 +1,7 @@
 // presence and frozenPresence: who is home and since when, and which iCloud trackers stopped. The test house's two people give
 // today's answer; literal houses give the phone-and-watch rule, the config's order and the three-hour edge. Made-up names only.
 import {describe, expect, test} from 'vitest';
-import {frozenPresence, presence, presenceIds} from '../../../src/providers/people.ts';
+import {frozenPresence, personEntities, presence, presenceIds} from '../../../src/providers/people.ts';
 import {registriesOf} from '../../../src/core/registry.ts';
 import {entity, type FakeHass} from '../fake-hass.ts';
 import {fullHouse, houseOf} from '../features/media/support.ts';
@@ -106,5 +106,22 @@ describe('frozenPresence', () => {
   test('another platform or an unavailable tracker is never frozen', () => {
     expect(frozen(house('mobile_app'), '2026-01-01T00:00:00Z')).toEqual([]);
     expect(frozen(house('icloud', 'unavailable'), '2026-01-01T00:00:00Z')).toEqual([]);
+  });
+});
+
+describe('personEntities', () => {
+  test('the person entity of each configured name, in the config order, whatever its state', () => {
+    expect(personEntities(fullHouse.states, ['Sam', 'Alex'])).toEqual([
+      {name: 'Sam', id: 'person.sam'},
+      {name: 'Alex', id: 'person.alex'},
+    ]);
+    const gone = houseOf([], [entity('person.b', 'unavailable', {friendly_name: 'ÉMILE Example'})]);
+    expect(personEntities(gone.states, ['Émile'])).toEqual([{name: 'Émile', id: 'person.b'}]);
+  });
+
+  test('a name with no person entity has none, and a tracker is not a person: the history is the person entity’s', () => {
+    const hass = houseOf([], [entity('device_tracker.a', 'home', {friendly_name: "Alex's iPhone"})]);
+    expect(personEntities(hass.states, ['Alex'])).toEqual([]);
+    expect(personEntities(fullHouse.states, ['Robin'])).toEqual([]);
   });
 });

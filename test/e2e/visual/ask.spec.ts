@@ -7,6 +7,10 @@ import {
   AI_TASK,
   ASK_CFG,
   QUESTION,
+  QUESTION_DOOR,
+  QUESTION_DOOR_FR,
+  QUESTION_DOOR_NONE,
+  QUESTION_DOOR_NONE_FR,
   QUESTION_FR,
   ASK_ENTITY,
   askField,
@@ -24,8 +28,13 @@ import {AFTERNOON, KEEP_ENGLISH_NAMES, VIEWPORTS} from '../houses';
 test.beforeEach(({house}) => fontsLoaded(house));
 
 const QUESTIONS = {
-  en: {answered: QUESTION, unsupported: 'Open the garage door'},
-  fr: {answered: QUESTION_FR, unsupported: 'Ouvre la porte du garage'},
+  en: {answered: QUESTION, moments: QUESTION_DOOR, none: QUESTION_DOOR_NONE, unsupported: 'Open the garage door'},
+  fr: {
+    answered: QUESTION_FR,
+    moments: QUESTION_DOOR_FR,
+    none: QUESTION_DOOR_NONE_FR,
+    unsupported: 'Ouvre la porte du garage',
+  },
 } as const;
 
 for (const viewport of ['tablet', 'phone'] as const) {
@@ -65,6 +74,28 @@ for (const viewport of ['tablet', 'phone'] as const) {
             await chartDrawn(house);
             await settle(house);
             await expect(house.page).toHaveScreenshot(`ask-series-${viewport}-${theme}-${lang}.png`);
+          });
+
+          // moments: the front door's spans of the last day with their count and total, and the plain line when a minimum length leaves none
+          test('moments answered', async ({house}) => {
+            await withAsk(house);
+            await house.tab('lights');
+            await openAsk(house);
+            await sendQuestion(house, QUESTIONS[lang].moments);
+            await expect(askSheet(house).locator('#ask-moments')).toBeVisible();
+            await settle(house);
+            await expect(house.page).toHaveScreenshot(`ask-moments-${viewport}-${theme}-${lang}.png`);
+          });
+
+          test('no moments', async ({house}) => {
+            await withAsk(house);
+            await house.tab('lights');
+            await openAsk(house);
+            await sendQuestion(house, QUESTIONS[lang].none);
+            await expect(askSheet(house).locator('#ask-summary')).toBeVisible();
+            await expect(askSheet(house).locator('#ask-moments')).toHaveCount(0);
+            await settle(house);
+            await expect(house.page).toHaveScreenshot(`ask-moments-none-${viewport}-${theme}-${lang}.png`);
           });
 
           // the reply is held back for ten minutes of the page's clock, which nothing runs; under the project's reduced motion the progress dot does not breathe, so the pixels are still

@@ -85,6 +85,26 @@ export function presence(states: HassEntities, registries: Registries, people: s
   return people.flatMap(name => by.get(name) ?? []);
 }
 
+/** A configured person and the `person.*` entity whose state history says when they were home. */
+export interface PersonEntity {
+  /** The name as the config gives it. */
+  name: string;
+  /** `person.*`. */
+  id: string;
+}
+
+/**
+ * The person entity of each configured name, in the config's order, available or not (its history answers either way); a name with none has no entry, since
+ * the iPhones and watches behind `presence` are several entities and no one history. The rule that matches a name is `presence`'s.
+ */
+export function personEntities(states: HassEntities, people: string[]): PersonEntity[] {
+  const ids = Object.keys(states).filter(id => id.startsWith('person.'));
+  return people.flatMap(name => {
+    const id = ids.find(candidate => whoIs(textAttributeOf(states, candidate, 'friendly_name') ?? '', [name]));
+    return id ? [{name, id}] : [];
+  });
+}
+
 /**
  * Every entity `presence` may read for the configured people: their person entities and their owners' visible iPhones and watches,
  * whichever decides today, because a person entity that appears or goes changes which one does.

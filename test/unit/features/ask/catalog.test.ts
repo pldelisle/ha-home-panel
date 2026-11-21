@@ -5,6 +5,8 @@ import type {ResolvedConfig} from '../../../../src/core/config.ts';
 import type {RoomNameDeps} from '../../../../src/core/i18n/room-name.ts';
 import {askCatalog, ASK_CATALOG_CAP, type AskReads} from '../../../../src/features/ask/catalog.ts';
 import {registriesOf} from '../../../../src/core/registry.ts';
+import {doorMotionSensors, type SensorInputs} from '../../../../src/providers/door-motion.ts';
+import {personEntities} from '../../../../src/providers/people.ts';
 import {powerNow} from '../../../../src/providers/power.ts';
 import {FULL_CFG} from '../../../e2e/houses.ts';
 import * as bare from '../../../houses/bare.mjs';
@@ -15,10 +17,13 @@ const house = (hass: FakeHass, panelConfig: unknown = {}, language = 'en') => {
   const french = {...hass, locale: {language}};
   const store = storeOf(french, panelConfig);
   const naming: RoomNameDeps = {names: store.names, t: store.t, language};
+  const registries = registriesOf(hass);
   const reads: AskReads = {
     power: powerNow(hass.states, store.config),
     states: hass.states,
-    registries: registriesOf(hass),
+    registries,
+    sensors: doorMotionSensors(hass.states, registries, store.names),
+    people: personEntities(hass.states, store.config.people),
   };
   return {
     store,
@@ -29,10 +34,15 @@ const house = (hass: FakeHass, panelConfig: unknown = {}, language = 'en') => {
   };
 };
 
+// the words of a binary sensor's two states are message keys, which the understood line words in the panel's language
+const DOOR_WORDS = {on: 'ask.words.open', off: 'ask.words.closed'} as const;
+const MOTION_WORDS = {on: 'ask.words.motion', off: 'ask.words.clear'} as const;
+const HOME_WORDS = {on: 'ask.words.home', off: 'ask.words.away'} as const;
+
 describe('the full test house', () => {
   const {catalog} = house(fullHouse, FULL_CFG);
 
-  test('lists the four rooms, then the grid, the water heater and the EV, each with a kind and a unit', () => {
+  test('lists the four rooms, then the grid, the water heater and the EV, then the door, the motion sensor and the two people, each with a kind and a unit', () => {
     expect(catalog().entries).toEqual([
       {key: 'temp.bedroom', name: 'Bedroom', kind: 'measure', unit: '°'},
       {key: 'temp.garage', name: 'Garage', kind: 'measure', unit: '°'},
@@ -41,6 +51,10 @@ describe('the full test house', () => {
       {key: 'power.grid', name: 'Grid', kind: 'measure', unit: 'W'},
       {key: 'power.water_heater', name: 'Water heater', kind: 'measure', unit: 'W'},
       {key: 'power.ev', name: 'EV charging', kind: 'measure', unit: 'kW'},
+      {key: 'door.living_room', name: 'Front door', kind: 'binary', unit: '', words: DOOR_WORDS},
+      {key: 'motion.office', name: 'Hall motion', kind: 'binary', unit: '', words: MOTION_WORDS},
+      {key: 'home.alex', name: 'Alex', kind: 'binary', unit: '', words: HOME_WORDS},
+      {key: 'home.sam', name: 'Sam', kind: 'binary', unit: '', words: HOME_WORDS},
     ]);
   });
 
@@ -53,13 +67,17 @@ describe('the full test house', () => {
       ['power.grid', 'sensor.house_power'],
       ['power.water_heater', 'sensor.water_heater_power'],
       ['power.ev', 'sensor.charger_power'],
+      ['door.living_room', 'binary_sensor.front_door'],
+      ['motion.office', 'binary_sensor.hall_motion'],
+      ['home.alex', 'person.alex'],
+      ['home.sam', 'person.sam'],
     ]);
     expect(JSON.stringify(catalog().entries)).not.toContain('sensor.');
   });
 
   test('names the sensors in the panel language', () => {
     const french = house(fullHouse, FULL_CFG, 'fr').catalog().entries;
-    expect(french.slice(4).map(entry => entry.name)).toEqual(['Réseau', 'Chauffe-eau', 'Recharge de la voiture']);
+    expect(french.slice(4, 7).map(entry => entry.name)).toEqual(['Réseau', 'Chauffe-eau', 'Recharge de la voiture']);
     expect(french.slice(0, 2).map(entry => entry.key)).toEqual(['temp.bedroom', 'temp.garage']);
   });
 
@@ -79,8 +97,21 @@ describe('the full test house', () => {
       'temp.living_room',
       'power.water_heater',
       'power.ev',
+      'door.living_room',
+      'motion.office',
+      'home.alex',
+      'home.sam',
     ]);
     expect(excluding.catalog().entityOf.has('power.grid')).toBe(false);
+  });
+
+  test('leaves out a door, a motion sensor or a person the house excludes, by entity id', () => {
+    const excluding = house(fullHouse, {
+      ...FULL_CFG,
+      ask: {entity: 'ai_task.model', exclude: ['binary_sensor.front_door', 'person.sam']},
+    });
+    const keys = excluding.catalog().entries.map(entry => entry.key);
+    expect(keys.slice(7)).toEqual(['motion.office', 'home.alex']);
   });
 });
 
@@ -187,10 +218,46 @@ describe('the corners', () => {
     expect(catalog().entries.find(entry => entry.key === 'power.grid')?.unit).toBe('kW');
   });
 
+  test('a door, a motion sensor or a person is handled by area, else display name, else the configured name, and never by its entity id', () => {
+    const {reads, naming, store} = house(fullHouse, FULL_CFG);
+    const door = (id: string, kind: 'door' | 'motion', areaId: string | null, name: string): SensorInputs => ({
+      ...reads.sensors[0],
+      id,
+      kind,
+      areaId,
+      name,
+    });
+    const crowded: AskReads = {
+      ...reads,
+      sensors: [
+        door('binary_sensor.zx9secret_a', 'door', 'patio', 'Patio door'),
+        door('binary_sensor.zx9secret_b', 'door', 'patio', 'Sliding door'),
+        door('binary_sensor.zx9secret_c', 'door', null, 'Back Gate'),
+        door('binary_sensor.zx9secret_d', 'motion', null, '!!!'),
+      ],
+      people: [
+        {name: 'Émile Doe', id: 'person.zx9secret_f'},
+        {name: '!!!', id: 'person.zx9secret_g'},
+      ],
+    };
+    const {entries, entityOf} = askCatalog(crowded, naming, store.config);
+    const binary = entries.filter(entry => entry.kind === 'binary');
+    expect(binary.map(entry => entry.key)).toEqual([
+      'door.patio',
+      'door.patio-2',
+      'door.back_gate',
+      'motion.sensor',
+      'home.emile_doe',
+      'home.person',
+    ]);
+    expect(entityOf.get('door.patio-2')).toBe('binary_sensor.zx9secret_b');
+    expect(JSON.stringify(entries)).not.toContain('zx9secret');
+  });
+
   test('without an ask block nothing is excluded', () => {
     const {store, catalog} = house(fullHouse, FULL_CFG);
     expect(store.config.ask).toBeNull();
-    expect(catalog().entries).toHaveLength(7);
+    expect(catalog().entries).toHaveLength(11);
   });
 
   test('keeps the first 60 in order and says how many it left out', () => {
@@ -210,6 +277,8 @@ describe('the corners', () => {
     };
     const crowded: AskReads = {
       ...reads,
+      sensors: [],
+      people: [],
       power: {
         ...reads.power,
         rooms: many.map(i => ({...roomRead, key: `r${i}`, thermostatName: '', climate: `climate.r${i}`})),

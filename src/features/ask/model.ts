@@ -6,14 +6,15 @@
 import type {Formatters} from '../../core/i18n/format.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
 import type {Catalog, CatalogEntry} from './catalog.ts';
-import type {EmptyAnswer, SeriesAnswer} from './evaluate.ts';
+import type {EmptyAnswer, Moment, MomentsAnswer, SeriesAnswer} from './evaluate.ts';
+import type {Period} from './period.ts';
 import {isPlanError, type Plan, type PlanError} from './plan.ts';
 
 /** A plan the panel can run: everything but `unsupported`, which is a failure and never a plan to fetch for. */
 export type AnswerablePlan = Exclude<Plan, {form: 'unsupported'}>;
 
-/** What the sheet draws for a question that was answered; the moments and the total join this union with their slices. */
-export type Answer = SeriesAnswer;
+/** What the sheet draws for a question that was answered; the total joins this union with its slice. */
+export type Answer = SeriesAnswer | MomentsAnswer;
 
 export type FailureReason = 'unsupported' | 'timeout' | 'unavailable' | 'empty';
 
@@ -97,7 +98,23 @@ export interface AskView {
   understood: string | null;
   /** The note under an answer whose history covers only part of the period. */
   coverage: string | null;
+  /** The spans of a moments answer, the first `MOMENTS_SHOWN` of them; absent for any other state, and for a moments answer with no span. */
+  moments?: MomentLine[];
+  /** "and 14 more", when the spans were more than are shown. */
+  more?: string;
 }
+
+/** One span of a moments answer: "Tue 10:07 am – 10:32 am", "25 min"; `ongoing` when its end reads "still". */
+export interface MomentLine {
+  when: string;
+  length: string;
+  ongoing: boolean;
+}
+
+/** How many spans the list shows before it says how many more there are (spec 29, "The elements"). */
+export const MOMENTS_SHOWN = 20;
+
+type MomentsPlan = Extract<Plan, {form: 'moments'}>;
 
 const NOTHING: AskView = {message: null, summary: null, mean: null, understood: null, coverage: null};
 
@@ -106,6 +123,65 @@ export const figure = (fmt: Formatters, value: number, unit: string): string => 
   const text = fmt.number(value, 1);
   return unit === '°' ? `${text}°` : unit ? `${text} ${unit}` : text;
 };
+
+/** The periods of a month's length, whose spans are told apart by their date, not by the weekday alone. */
+const LONG_PERIODS: readonly Period[] = ['this_month', 'last_month', 'last_30_days'];
+
+/** The line of a span: its start and its end (or "still") as the house writes them, the day named where the day is not plain. */
+function momentLine(span: Moment, period: Period, t: Translate, fmt: Formatters): MomentLine {
+  const day = (instant: number) =>
+    LONG_PERIODS.includes(period) ? fmt.dateWeekday(instant) : fmt.weekday(instant, 'short');
+  const start = `${day(span.start)} ${fmt.time(span.start)}`;
+  const end = span.ongoing
+    ? t('ask.moment.still')
+    : fmt.isoDay(span.end) === fmt.isoDay(span.start)
+      ? fmt.time(span.end)
+      : `${day(span.end)} ${fmt.time(span.end)}`;
+  return {when: `${start} – ${end}`, length: fmt.durationShort(span.end - span.start), ongoing: span.ongoing};
+}
+
+/** What the panel understood of a moments plan: the sensor's word for the state, or the threshold, then the shortest length asked for. */
+function testWords(plan: MomentsPlan, t: Translate, fmt: Formatters, sensor?: CatalogEntry): string {
+  const {test} = plan;
+  const unit = sensor?.unit ?? '';
+  const words = sensor?.words ?? {on: 'ask.words.on', off: 'ask.words.off'};
+  const said =
+    'on' in test
+      ? t(test.on ? words.on : words.off)
+      : 'above' in test
+        ? t('ask.test.above', {value: figure(fmt, test.above, unit)})
+        : t('ask.test.below', {value: figure(fmt, test.below, unit)});
+  return plan.longerThanMin === null ? said : t('ask.test.longer', {test: said, n: fmt.number(plan.longerThanMin)});
+}
+
+/** The view of a moments answer: the count and the total (or "no moments"), the list, what was understood and the coverage note. */
+function momentsView(
+  plan: MomentsPlan,
+  answer: MomentsAnswer,
+  t: Translate,
+  fmt: Formatters,
+  sensor?: CatalogEntry,
+): AskView {
+  const period = t(`ask.period.${plan.period}`);
+  const view: AskView = {
+    message: null,
+    summary:
+      answer.count === 0
+        ? t('ask.summary.none', {period})
+        : t('ask.summary.moments', {count: answer.count, total: fmt.durationShort(answer.totalMs)}),
+    mean: null,
+    understood: t('ask.understood.moments', {
+      name: sensor?.name ?? plan.sensor,
+      test: testWords(plan, t, fmt, sensor),
+      period,
+    }),
+    coverage: answer.coverage < 1 ? t('ask.coverage', {date: fmt.date(answer.from)}) : null,
+  };
+  if (answer.count > 0)
+    view.moments = answer.spans.slice(0, MOMENTS_SHOWN).map(span => momentLine(span, plan.period, t, fmt));
+  if (answer.count > MOMENTS_SHOWN) view.more = t('ask.more', {count: answer.count - MOMENTS_SHOWN});
+  return view;
+}
 
 /** The words of a state, in the panel's language, from the catalog's messages and the store's formatters. `sensor` is what `sensorOf` found. */
 export function askView(state: AskState, t: Translate, fmt: Formatters, sensor?: CatalogEntry): AskView {
@@ -129,6 +205,8 @@ export function askView(state: AskState, t: Translate, fmt: Formatters, sensor?:
       };
     case 'answered': {
       const {plan, answer} = state;
+      // a moments answer is only ever of a moments plan: the loader runs the one the plan names
+      if (answer.kind === 'moments') return momentsView(plan as MomentsPlan, answer, t, fmt, sensor);
       const name = sensor?.name ?? plan.sensor;
       const unit = sensor?.unit ?? '';
       const period = t(`ask.period.${plan.period}`);

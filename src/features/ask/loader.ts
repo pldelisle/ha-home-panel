@@ -8,12 +8,14 @@ import {Cancelled, StaleReply, type PanelApi} from '../../core/api.ts';
 import type {StatisticsCache} from '../../core/statistics-cache.ts';
 import type {PanelStore} from '../../core/store.ts';
 import {registriesOf} from '../../core/registry.ts';
+import {doorMotionSensors} from '../../providers/door-motion.ts';
+import {personEntities} from '../../providers/people.ts';
 import {powerNow} from '../../providers/power.ts';
 import {askCatalog, type AskReads, type Catalog} from './catalog.ts';
-import {evaluateSeries} from './evaluate.ts';
+import {evaluateMoments, evaluateSeries, type EmptyAnswer} from './evaluate.ts';
 import {askInstructions, askStructure} from './instructions.ts';
-import {askReducer, IDLE, type AskEvent, type AskState} from './model.ts';
-import {resolvePeriod, type WeekStart} from './period.ts';
+import {askReducer, IDLE, type Answer, type AnswerablePlan, type AskEvent, type AskState} from './model.ts';
+import {resolvePeriod, type PeriodWindow, type WeekStart} from './period.ts';
 import {isPlanError, parsePlan} from './plan.ts';
 
 /** How long a question may wait for the AI Task: a local model takes a few seconds, and the sheet never spins forever (spec 29, story 16). */
@@ -25,7 +27,7 @@ const STATISTIC_TYPES = ['mean', 'min', 'max'] as const;
 /** What the loader asks of the panel, read at each use: the stores follow the language and the config. */
 export interface AskDeps {
   api: Pick<PanelApi, 'generateData'>;
-  cache: Pick<StatisticsCache, 'statistics'>;
+  cache: Pick<StatisticsCache, 'statistics' | 'history'>;
   store: Pick<PanelStore, 'hass' | 'config' | 'names' | 't' | 'language' | 'isFrench' | 'fmt'>;
   /** The first day of the week in the panel's locale, which the element reads (`weekStartOf`). */
   weekStart: WeekStart;
@@ -95,10 +97,13 @@ export class AskLoader implements ReactiveController {
     const {store} = this.deps();
     const {hass, config} = store;
     const states = hass?.states ?? {};
+    const registries = registriesOf(hass ?? {entities: {}, devices: {}, areas: {}});
     const reads = this.deps().reads?.() ?? {
       power: powerNow(states, config),
       states,
-      registries: registriesOf(hass ?? {entities: {}, devices: {}, areas: {}}),
+      registries,
+      sensors: doorMotionSensors(states, registries, store.names),
+      people: personEntities(states, config.people),
     };
     return askCatalog(reads, {names: store.names, t: store.t, language: store.language}, config);
   }
@@ -113,6 +118,21 @@ export class AskLoader implements ReactiveController {
   /** True while `id` is the request the state is waiting on, in the step named. */
   private waiting(id: number, step: 'planning' | 'fetching'): boolean {
     return this.state.at === step && this.state.id === id;
+  }
+
+  /** A measure's statistics for the window: drawn as a series, or read for the buckets that meet a moments plan's threshold. */
+  private async measured(
+    plan: AnswerablePlan,
+    cache: AskDeps['cache'],
+    sensor: string,
+    window: PeriodWindow,
+    now: number,
+  ): Promise<Answer | EmptyAnswer> {
+    const rows =
+      (await cache.statistics([sensor], window.statistic, window.start, STATISTIC_TYPES, window.end))[sensor] ?? [];
+    return plan.form === 'moments'
+      ? evaluateMoments({statistics: rows}, plan, window, now)
+      : evaluateSeries(rows, window);
   }
 
   private async run(id: number, question: string, abort: AbortController): Promise<void> {
@@ -140,8 +160,22 @@ export class AskLoader implements ReactiveController {
       if (!this.waiting(id, 'fetching') || isPlanError(plan) || plan.form === 'unsupported') return;
       const window = resolvePeriod(plan.period, now(), store.fmt, weekStart);
       const sensor = catalog.entityOf.get(plan.sensor) as string;
-      const rows = await cache.statistics([sensor], window.statistic, window.start, STATISTIC_TYPES, window.end);
-      this.dispatch({type: 'answered', id, answer: evaluateSeries(rows[sensor] ?? [], window)});
+      const answer =
+        plan.form === 'moments' && 'on' in plan.test
+          ? // a binary sensor is read as states, from the window's start (the first point is the state then) to its end
+            evaluateMoments(
+              {
+                history:
+                  (await cache.history([sensor], window.start, {minimal: true, attributes: false, end: window.end}))[
+                    sensor
+                  ] ?? [],
+              },
+              plan,
+              window,
+              now().getTime(),
+            )
+          : await this.measured(plan, cache, sensor, window, now().getTime());
+      this.dispatch({type: 'answered', id, answer});
     } catch (error) {
       if (error instanceof Cancelled && timedOut) this.dispatch({type: 'failed', id, reason: 'timeout'});
       // a close or a newer question let this one go (its state is theirs now), and a reply of a config that is gone is no answer: the frame starts over

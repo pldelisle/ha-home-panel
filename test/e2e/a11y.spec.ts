@@ -4,7 +4,21 @@
 // it checks no behaviour, only what a screen reader would be told.
 import AxeBuilder from '@axe-core/playwright';
 import {test, expect, eachShownTab, isPhone, nestedInteractive, phoneOnly, tabletOnly, type House} from './fixtures';
-import {AI_TASK, ASK_CFG, QUESTION, QUESTION_FR, askField, chartDrawn, openAsk, sendQuestion, withAsk} from './ask';
+import {
+  AI_TASK,
+  ASK_CFG,
+  QUESTION,
+  QUESTION_DOOR,
+  QUESTION_DOOR_FR,
+  QUESTION_DOOR_NONE,
+  QUESTION_DOOR_NONE_FR,
+  QUESTION_FR,
+  askField,
+  chartDrawn,
+  openAsk,
+  sendQuestion,
+  withAsk,
+} from './ask';
 import {AFTERNOON, FULL_CFG, KEEP_ENGLISH_NAMES, PHONE_TABS} from './houses';
 import {openOfficeSheet} from './lights';
 import {backToModules, openSettings, openSubmenu} from './settings-controls';
@@ -292,6 +306,20 @@ for (const lang of ['en', 'fr'] as const) {
       await expect(house.root().locator('hp-ask-sheet #ask-summary')).toBeVisible();
       await chartDrawn(house);
       await scanDialog(house, 'ask.sheet', 'hp-ask-sheet hp-sheet .sheet', `answered, ${lang}`);
+    });
+
+    test('the Ask sheet with a list of moments, and with none, has no serious or critical finding', async ({house}) => {
+      await withAsk(house);
+      await openAsk(house);
+      await sendQuestion(house, lang === 'fr' ? QUESTION_DOOR_FR : QUESTION_DOOR);
+      await expect(house.root().locator('hp-ask-sheet #ask-moments')).toBeVisible();
+      await scanDialog(house, 'ask.sheet', 'hp-ask-sheet hp-sheet .sheet', `moments, ${lang}`);
+      // the scan of a dialog leaves it closed
+      await openAsk(house);
+      await sendQuestion(house, lang === 'fr' ? QUESTION_DOOR_NONE_FR : QUESTION_DOOR_NONE);
+      await expect(house.root().locator('hp-ask-sheet #ask-moments')).toHaveCount(0);
+      await expect(house.root().locator('hp-ask-sheet #ask-summary')).toBeVisible();
+      await scanDialog(house, 'ask.sheet', 'hp-ask-sheet hp-sheet .sheet', `no moments, ${lang}`);
     });
   });
 }

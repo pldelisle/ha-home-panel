@@ -1,8 +1,9 @@
 // evaluateSeries: literal statistics rows in, the answer a chart draws out: the points, the low, the high, the mean and how much of the
-// period the recorder had rows for. No model, no clock, no house.
+// period the recorder had rows for. evaluateMoments: state history (a binary sensor) or statistics rows (a measure) in, the spans that meet
+// a test out, with their count and total. No model, no clock, no house.
 import {describe, expect, test} from 'vitest';
-import type {StatisticRow} from '../../../../src/core/ha.ts';
-import {evaluateSeries} from '../../../../src/features/ask/evaluate.ts';
+import type {HistoryPoint, StatisticRow} from '../../../../src/core/ha.ts';
+import {evaluateMoments, evaluateSeries} from '../../../../src/features/ask/evaluate.ts';
 import type {PeriodWindow} from '../../../../src/features/ask/period.ts';
 
 const HOUR = 36e5;
@@ -99,5 +100,218 @@ describe('no rows', () => {
   test('so are rows that all have no value, or that all lie outside the window', () => {
     expect(evaluateSeries([row(10, null), row(11, null)], hourly(10, 14))).toEqual({kind: 'empty'});
     expect(evaluateSeries([row(8, 20), row(14, 21)], hourly(10, 14))).toEqual({kind: 'empty'});
+  });
+});
+
+const MIN = 6e4;
+/** A state of a binary sensor from `time` on, as the recorder's history gives it. */
+const point = (time: number, state: string): HistoryPoint => ({state, lastUpdated: time, lastChanged: time});
+const history = (...points: HistoryPoint[]) => ({history: points});
+const on = {test: {on: true}, longerThanMin: null};
+const off = {test: {on: false}, longerThanMin: null};
+/** A window of the 17th, 10:00 to 22:00, which ended before `later` (a calendar period that is over). */
+const day = hourly(10, 22);
+const LATER = at(23);
+
+describe('moments of a binary sensor: the spans of state history', () => {
+  test('lists each span in time order with the count and the total, whatever order the points came in', () => {
+    const answer = evaluateMoments(
+      history(point(at(15), 'off'), point(at(10, 30), 'off'), point(at(14), 'on'), point(at(10, 10), 'on')),
+      on,
+      day,
+      LATER,
+    );
+    expect(answer).toEqual({
+      kind: 'moments',
+      spans: [
+        {start: at(10, 10), end: at(10, 30), ongoing: false},
+        {start: at(14), end: at(15), ongoing: false},
+      ],
+      count: 2,
+      totalMs: 20 * MIN + 60 * MIN,
+      coverage: 710 / 720,
+      from: at(10, 10),
+    });
+  });
+
+  test('a span that began before the period starts at the period start, the first point being the state then, not a change', () => {
+    const answer = evaluateMoments(history(point(at(8), 'on'), point(at(11), 'off')), on, day, LATER);
+    expect(answer).toMatchObject({spans: [{start: at(10), end: at(11), ongoing: false}], coverage: 1});
+  });
+
+  test('a span that is open at the period end is cut there, and is "still" only when the period reaches now', () => {
+    const points = history(point(at(9), 'off'), point(at(21, 30), 'on'));
+    expect(evaluateMoments(points, on, day, LATER)).toMatchObject({
+      spans: [{start: at(21, 30), end: at(22), ongoing: false}],
+      totalMs: 30 * MIN,
+    });
+    expect(evaluateMoments(points, on, day, at(22))).toMatchObject({
+      spans: [{start: at(21, 30), end: at(22), ongoing: true}],
+    });
+  });
+
+  test('a point at the end of the window or after it changes nothing, and the same state twice is one span', () => {
+    const answer = evaluateMoments(
+      history(
+        point(at(11), 'on'),
+        point(at(12), 'on'),
+        point(at(13), 'off'),
+        point(at(22), 'on'),
+        point(at(23), 'off'),
+      ),
+      on,
+      day,
+      LATER,
+    );
+    expect(answer).toMatchObject({spans: [{start: at(11), end: at(13)}], count: 1});
+  });
+
+  test('an unavailable or unknown gap ends a span and is not counted, in either test', () => {
+    const points = history(
+      point(at(10), 'on'),
+      point(at(11), 'unavailable'),
+      point(at(12), 'on'),
+      point(at(13), 'unknown'),
+      point(at(14), 'off'),
+      point(at(16), 'unavailable'),
+      point(at(17), 'off'),
+    );
+    expect(evaluateMoments(points, on, day, LATER)).toMatchObject({
+      spans: [
+        {start: at(10), end: at(11)},
+        {start: at(12), end: at(13)},
+      ],
+      totalMs: 2 * HOUR,
+    });
+    expect(evaluateMoments(points, off, day, LATER)).toMatchObject({
+      spans: [
+        {start: at(14), end: at(16)},
+        {start: at(17), end: at(22)},
+      ],
+      totalMs: 7 * HOUR,
+    });
+  });
+
+  test('home is on and every other state of a person, a zone included, is away; the gap is neither', () => {
+    const points = history(
+      point(at(10), 'home'),
+      point(at(12), 'not_home'),
+      point(at(14), 'office'),
+      point(at(16), 'unavailable'),
+      point(at(18), 'home'),
+    );
+    expect(evaluateMoments(points, on, day, LATER)).toMatchObject({count: 2, totalMs: 6 * HOUR});
+    expect(evaluateMoments(points, off, day, LATER)).toMatchObject({
+      spans: [{start: at(12), end: at(16)}],
+      count: 1,
+    });
+  });
+
+  test('a span must last at least the minimum, and exactly the minimum is kept', () => {
+    const points = history(
+      point(at(10), 'on'),
+      point(at(10, 10), 'off'),
+      point(at(11), 'on'),
+      point(at(11, 9), 'off'),
+      point(at(12), 'on'),
+      point(at(12, 30), 'off'),
+    );
+    const longer = (longerThanMin: number | null) =>
+      evaluateMoments(points, {test: {on: true}, longerThanMin}, day, LATER);
+    expect(longer(null)).toMatchObject({count: 3});
+    expect(longer(10)).toMatchObject({count: 2, totalMs: 40 * MIN});
+    expect(longer(10.5)).toMatchObject({count: 1, totalMs: 30 * MIN});
+    expect(longer(31)).toMatchObject({count: 0, spans: [], totalMs: 0});
+  });
+
+  test('nothing matched is an answer of no moments, with the coverage; no point in the window is empty', () => {
+    expect(evaluateMoments(history(point(at(9), 'off')), on, day, LATER)).toEqual({
+      kind: 'moments',
+      spans: [],
+      count: 0,
+      totalMs: 0,
+      coverage: 1,
+      from: at(10),
+    });
+    expect(evaluateMoments(history(), on, day, LATER)).toEqual({kind: 'empty'});
+    expect(evaluateMoments(history(point(at(22), 'on')), on, day, LATER)).toEqual({kind: 'empty'});
+  });
+
+  test('coverage is the part of the period from the first point on, and the answer says from when', () => {
+    const answer = evaluateMoments(history(point(at(16), 'on'), point(at(18), 'off')), on, day, LATER);
+    expect(answer).toMatchObject({coverage: 0.5, from: at(16), count: 1});
+  });
+});
+
+describe('moments of a measure: the buckets that meet a threshold', () => {
+  const means = (...values: (number | null)[]) => ({statistics: values.map((value, i) => row(10 + i, value))});
+  const above = (value: number, longerThanMin: number | null = null) => ({test: {above: value}, longerThanMin});
+  const below = (value: number) => ({test: {below: value}, longerThanMin: null});
+
+  test('joins the buckets in a row into a span from the first start to the last end, with the count and the total', () => {
+    const answer = evaluateMoments(means(20, 23.5, 24, 22, 22, 25, 21), above(23), day, LATER);
+    expect(answer).toEqual({
+      kind: 'moments',
+      spans: [
+        {start: at(11), end: at(13), ongoing: false},
+        {start: at(15), end: at(16), ongoing: false},
+      ],
+      count: 2,
+      totalMs: 3 * HOUR,
+      coverage: 7 / 12,
+      from: at(10),
+    });
+  });
+
+  test('a threshold exactly met counts, above and below', () => {
+    expect(evaluateMoments(means(22.9, 23, 23.1), above(23), day, LATER)).toMatchObject({
+      spans: [{start: at(11), end: at(13)}],
+    });
+    expect(evaluateMoments(means(22.9, 23, 23.1), below(23), day, LATER)).toMatchObject({
+      spans: [{start: at(10), end: at(12)}],
+    });
+  });
+
+  test('a bucket with no value, and a bucket the recorder has no row for, each end a span', () => {
+    const rows = [row(10, 24), row(11, null), row(12, 24), row(14, 24), row(15, 24)];
+    expect(evaluateMoments({statistics: rows}, above(23), day, LATER)).toMatchObject({
+      spans: [
+        {start: at(10), end: at(11)},
+        {start: at(12), end: at(13)},
+        {start: at(14), end: at(16)},
+      ],
+      count: 3,
+    });
+  });
+
+  test('a span that reaches the end of a window that ends now is still going, and is cut at now, not at its bucket end', () => {
+    const window = hourly(10, 12, 20);
+    const answer = evaluateMoments(means(20, 24, 25), above(23), window, at(12, 20));
+    expect(answer).toMatchObject({spans: [{start: at(11), end: at(12, 20), ongoing: true}], totalMs: 80 * MIN});
+    expect(evaluateMoments(means(20, 24, 25), above(23), window, at(13))).toMatchObject({
+      spans: [{start: at(11), end: at(12, 20), ongoing: false}],
+    });
+  });
+
+  test('a bucket outside the window is left out, and the minimum length keeps the spans that last it', () => {
+    const rows = [row(9, 30), row(10, 24), row(11, 20), row(12, 24), row(13, 24), row(22, 30)];
+    expect(evaluateMoments({statistics: rows}, above(23), day, LATER)).toMatchObject({count: 2});
+    expect(evaluateMoments({statistics: rows}, above(23, 120), day, LATER)).toMatchObject({
+      spans: [{start: at(12), end: at(14)}],
+      count: 1,
+      totalMs: 2 * HOUR,
+    });
+  });
+
+  test('no row with a value is empty; rows none of which meet the test are an answer of no moments', () => {
+    expect(evaluateMoments({statistics: []}, above(23), day, LATER)).toEqual({kind: 'empty'});
+    expect(evaluateMoments(means(null, null), above(23), day, LATER)).toEqual({kind: 'empty'});
+    expect(evaluateMoments(means(20, 21), above(23), day, LATER)).toMatchObject({kind: 'moments', count: 0, spans: []});
+  });
+
+  test('a test that does not go with the data it was given has nothing to say', () => {
+    expect(evaluateMoments(means(20, 24), on, day, LATER)).toEqual({kind: 'empty'});
+    expect(evaluateMoments(history(point(at(10), 'on')), above(23), day, LATER)).toEqual({kind: 'empty'});
+    expect(evaluateMoments(history(point(at(10), 'on')), off, day, LATER)).toMatchObject({count: 0});
   });
 });

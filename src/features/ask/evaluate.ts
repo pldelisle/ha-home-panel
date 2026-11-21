@@ -1,10 +1,11 @@
-// The evaluation of a series question: statistics rows in, the answer a chart draws out, every figure computed here and none by a model.
+// The evaluation of a question: statistics rows in, the series a chart draws out; state history or rows in, the spans of a test out; every figure computed here and none by a model.
 // Pattern: a pure function over values (functional core; ADR 0040, "The model plans, the panel computes"); spec 29, "The evaluation".
-// `empty` (no rows at all) is its own result, as "no moments matched" will be: an answer of nothing is not a missing one.
-// Must not: fetch, read the clock (the window carries `now` for a period that includes it), word a figure, or know a plan or a catalog.
-import type {StatisticRow, StatisticsPeriod} from '../../core/ha.ts';
+// `empty` (no rows at all) is its own result, distinct from "no moments matched" (a moments answer with a count of 0): an answer of nothing is not a missing one.
+// Must not: fetch, read the clock (the window carries the period's end, the caller `now`), word a figure, or know a plan (it takes a test and a minimum) or a catalog.
+import type {HistoryPoint, StatisticRow, StatisticsPeriod} from '../../core/ha.ts';
 import {HOUR_MS, MINUTE_MS, DAY_MS} from '../../core/figures.ts';
 import type {PeriodWindow} from './period.ts';
+import type {Test} from './plan.ts';
 
 /** One bucket of the series: when it starts and its mean. */
 export interface SeriesPoint {
@@ -59,4 +60,134 @@ export function evaluateSeries(rows: readonly StatisticRow[], window: PeriodWind
     coverage: Math.min(1, kept.length / whole),
     from: kept[0].start,
   };
+}
+
+/** One stretch of time the test held, in milliseconds. */
+export interface Moment {
+  start: number;
+  end: number;
+  /** The stretch was still going when the period ended and the period reaches now: "still". */
+  ongoing: boolean;
+}
+
+/** The spans that met a test: each, how many, how long in all, and how much of the period the recorder covered. */
+export interface MomentsAnswer {
+  kind: 'moments';
+  /** In time order; only the spans that lasted the plan's minimum. */
+  spans: Moment[];
+  count: number;
+  totalMs: number;
+  /** From 0 to 1: the part of the period the recorder had rows for. Under 1 the answer says where the history starts. */
+  coverage: number;
+  /** When the history the answer covers begins, in milliseconds. */
+  from: number;
+}
+
+/** What a moments question asks of the history: the test, and the shortest span in minutes (null for none). */
+export interface MomentsQuery {
+  test: Test;
+  longerThanMin: number | null;
+}
+
+/** What the recorder gave: a binary sensor's state history, or a measure's statistics rows. */
+export type MomentsInput = {history: readonly HistoryPoint[]} | {statistics: readonly StatisticRow[]};
+
+/** A state that says nothing about the sensor: it ends a span, and counts as neither side of the test. */
+const GAPS: ReadonlySet<string> = new Set(['unavailable', 'unknown', '']);
+
+/** The threshold tests of a measure. */
+type Threshold = Exclude<Test, {on: boolean}>;
+
+/** Whether a measure's bucket mean meets a threshold; a threshold exactly met is met. */
+const meets = (test: Threshold, mean: number): boolean => ('above' in test ? mean >= test.above : mean <= test.below);
+
+/** A stretch of the window and whether the test held for it; null for a gap. */
+interface Segment {
+  from: number;
+  to: number;
+  holds: boolean | null;
+}
+
+/** The spans of the contiguous segments where the test held, as `[start, end)` pairs, in order; a gap or a segment where it did not hold ends one. */
+function joined(segments: readonly Segment[]): [number, number][] {
+  const spans: [number, number][] = [];
+  for (const {from, to, holds} of segments) {
+    if (!holds) continue;
+    const last = spans[spans.length - 1];
+    if (last && last[1] === from) last[1] = to;
+    else spans.push([from, to]);
+  }
+  return spans;
+}
+
+/** The answer of spans: the ones of at least the minimum length, marked `ongoing` when they reach a window end that is not before `now`. */
+function answerOf(
+  spans: readonly [number, number][],
+  query: MomentsQuery,
+  window: PeriodWindow,
+  now: number,
+  covered: {coverage: number; from: number},
+): MomentsAnswer {
+  const end = window.end.getTime();
+  const shortest = (query.longerThanMin ?? 0) * MINUTE_MS;
+  const kept = spans
+    .filter(([from, to]) => to - from >= shortest)
+    .map(([from, to]): Moment => ({start: from, end: to, ongoing: to === end && now <= end}));
+  const totalMs = kept.reduce((sum, moment) => sum + moment.end - moment.start, 0);
+  return {kind: 'moments', spans: kept, count: kept.length, totalMs, ...covered};
+}
+
+/** A binary sensor's state history: each point holds from its change to the next, the first one from the window start if it came before it. */
+function momentsOfHistory(
+  points: readonly HistoryPoint[],
+  test: {on: boolean},
+  query: MomentsQuery,
+  window: PeriodWindow,
+  now: number,
+): MomentsAnswer | EmptyAnswer {
+  const start = window.start.getTime();
+  const end = window.end.getTime();
+  const known = points.filter(point => point.lastChanged < end).sort((a, b) => a.lastChanged - b.lastChanged);
+  if (known.length === 0) return {kind: 'empty'};
+  const segments = known.map((point, i): Segment => {
+    const holds = GAPS.has(point.state) ? null : (point.state === 'on' || point.state === 'home') === test.on;
+    return {from: Math.max(start, point.lastChanged), to: Math.min(end, known[i + 1]?.lastChanged ?? end), holds};
+  });
+  const from = Math.max(start, known[0].lastChanged);
+  return answerOf(joined(segments), query, window, now, {coverage: Math.min(1, (end - from) / (end - start)), from});
+}
+
+/** A measure's statistics rows: a bucket holds when its mean meets the threshold, and a bucket with no value or no row is a gap. */
+function momentsOfStatistics(
+  rows: readonly StatisticRow[],
+  query: MomentsQuery,
+  window: PeriodWindow,
+  now: number,
+): MomentsAnswer | EmptyAnswer {
+  const series = evaluateSeries(rows, window);
+  if (series.kind === 'empty') return series;
+  const bucket = BUCKET_MS[window.statistic];
+  const end = window.end.getTime();
+  const segments = series.points.map((point): Segment => ({
+    from: point.at,
+    to: Math.min(end, point.at + bucket),
+    holds: meets(query.test as Threshold, point.value),
+  }));
+  return answerOf(joined(segments), query, window, now, {coverage: series.coverage, from: series.from});
+}
+
+/**
+ * The spans of a period where a test held, from the history that suits the sensor: a binary sensor's states (`on` is open, on or home; its opposite is every
+ * other state but a gap) or a measure's bucket means against a threshold. `now` says whether a span that reaches the window's end is still going. Data that does not go with the test is empty.
+ */
+export function evaluateMoments(
+  input: MomentsInput,
+  query: MomentsQuery,
+  window: PeriodWindow,
+  now: number,
+): MomentsAnswer | EmptyAnswer {
+  const {test} = query;
+  if ('history' in input)
+    return 'on' in test ? momentsOfHistory(input.history, test, query, window, now) : {kind: 'empty'};
+  return 'on' in test ? {kind: 'empty'} : momentsOfStatistics(input.statistics, query, window, now);
 }
