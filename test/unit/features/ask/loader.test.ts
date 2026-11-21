@@ -457,7 +457,7 @@ describe('a suggestion', () => {
   test('a door is read as a typed question of the same plan is', async () => {
     const {loader, history} = setup();
     loader.suggest({
-      text: 'Front door: left open this week?',
+      text: 'Front door: opened this week?',
       plan: {form: 'moments', sensor: 'door.living_room', period: 'this_week', test: {on: true}, longerThanMin: null},
     });
     await settle();
@@ -493,7 +493,39 @@ describe('a suggestion', () => {
     statistics.mockImplementationOnce(() => Promise.reject(new Error('recorder down')));
     loader.suggest(SUGGESTION);
     await settle();
+    expect(loader.state).toMatchObject({at: 'failed', reason: 'unavailable', plan: SUGGESTION.plan});
+  });
+
+  test('Try again after a failed read reads again with the plan it has: its words never go to the model', async () => {
+    const {loader, generateData, statistics} = setup();
+    statistics.mockImplementationOnce(() => Promise.reject(new Error('recorder down')));
+    loader.suggest(SUGGESTION);
+    await settle();
     expect(loader.state).toMatchObject({at: 'failed', reason: 'unavailable'});
+    loader.retry();
+    await settle();
+    expect(loader.state).toMatchObject({at: 'answered', question: SUGGESTION.text, answer: {kind: 'series'}});
+    expect(generateData).not.toHaveBeenCalled();
+  });
+
+  test('a typed question whose read failed is retried from its plan too, and one that failed at the model is asked again', async () => {
+    const {loader, generateData, statistics, replies} = setup();
+    statistics.mockImplementationOnce(() => Promise.reject(new Error('recorder down')));
+    loader.ask(QUESTION);
+    await settle();
+    expect(generateData).toHaveBeenCalledTimes(1);
+    loader.retry();
+    await settle();
+    expect(loader.state).toMatchObject({at: 'answered', question: QUESTION});
+    expect(generateData).toHaveBeenCalledTimes(1);
+
+    replies.push(() => Promise.reject(new Error('model down')));
+    loader.ask(QUESTION);
+    await settle();
+    expect(loader.state).toMatchObject({at: 'failed', reason: 'unavailable'});
+    loader.retry();
+    await settle();
+    expect(generateData).toHaveBeenCalledTimes(3);
   });
 });
 

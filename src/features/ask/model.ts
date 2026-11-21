@@ -26,7 +26,9 @@ export type AskState =
   | {at: 'answered'; question: string; plan: AnswerablePlan; answer: Answer}
   // an empty failure keeps the plan, so its line can name the sensor and the period it found nothing for; no other failure has one
   | {at: 'failed'; question: string; reason: 'empty'; plan: AnswerablePlan}
-  | {at: 'failed'; question: string; reason: Exclude<FailureReason, 'empty'>};
+  // a failure of the model's has no plan; one of the recorder's (after the plan was known) keeps it, so a second try reads again and never asks the model
+  | {at: 'failed'; question: string; reason: 'timeout' | 'unavailable'; plan?: AnswerablePlan}
+  | {at: 'failed'; question: string; reason: 'unsupported'};
 
 /**
  * What happens to the sheet. A question carries a request id, a number the caller counts up, and every reply names the id it is for, so a late
@@ -75,9 +77,10 @@ export function askReducer(state: AskState, event: AskEvent): AskState {
         : {at: 'answered', question: state.question, plan: state.plan, answer};
     }
     case 'failed':
-      return isWaiting(state) && state.id === event.id
-        ? {at: 'failed', question: state.question, reason: event.reason}
-        : state;
+      if (!isWaiting(state) || state.id !== event.id) return state;
+      return state.at === 'fetching'
+        ? {at: 'failed', question: state.question, reason: event.reason, plan: state.plan}
+        : {at: 'failed', question: state.question, reason: event.reason};
   }
 }
 

@@ -113,9 +113,7 @@ export class AskSheet extends LitElement {
   };
 
   private readonly onRetry = (): void => {
-    const {state} = this.loader;
-    if (state.at !== 'failed') return;
-    this.loader.ask(state.question);
+    this.loader.retry();
     this.focusField();
   };
 

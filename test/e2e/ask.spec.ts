@@ -36,7 +36,7 @@ const UNSUPPORTED_PLAIN_EN = 'The panel has no sensor for that, or cannot look t
 // a house with something to suggest points at the suggestions; one with nothing says only the plain line
 const UNSUPPORTED_EN = `${UNSUPPORTED_PLAIN_EN} Try one of the suggestions.`;
 const SUGGESTIONS_EN = [
-  'Front door: left open this week?',
+  'Front door: opened this week?',
   'Bedroom: how warm was it yesterday?',
   'Car charging energy: how much last week?',
 ];
@@ -673,6 +673,20 @@ test.describe('the suggested questions', () => {
     await expect(askSheet(house).locator('#ask-summary')).toBeVisible();
     // still the one call: the tap made none
     expect(await house.generated()).toHaveLength(1);
+  });
+
+  test('Try again after a failed read reads again from the plan: the model is never asked', async ({house}) => {
+    await withAsk(house);
+    await openAsk(house);
+    await house.page.evaluate(() => window.house.failStatistics('all'));
+    await suggestionButtons(house).nth(1).click();
+    await expect(retryButton(house)).toBeVisible();
+    expect(house.errors).toEqual([expect.stringContaining('home-panel ask')]);
+    house.errors.length = 0;
+    await house.page.evaluate(() => window.house.failStatistics(null));
+    await retryButton(house).click();
+    await expect(askSheet(house).locator('#ask-summary')).toBeVisible();
+    expect(await house.generated()).toHaveLength(0);
   });
 
   test('their words wrap at the largest text without being clipped', async ({house}) => {

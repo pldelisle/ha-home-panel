@@ -120,6 +120,15 @@ export class AskLoader implements ReactiveController {
     void this.fetchFor(id, plan, this.deps().now(), abort);
   }
 
+  /** The sheet's Try again: a question that failed after its plan was known reads again from that plan, whoever made it, and the model is asked again only when it was the model that failed. */
+  retry(): void {
+    const {state} = this;
+    if (state.at !== 'failed') return;
+    if (state.reason !== 'empty' && state.reason !== 'unsupported' && state.plan)
+      this.suggest({text: state.question, plan: state.plan});
+    else this.ask(state.question);
+  }
+
   private build(): Catalog {
     const {store} = this.deps();
     const {hass, config} = store;

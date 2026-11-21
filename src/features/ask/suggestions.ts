@@ -21,13 +21,24 @@ const isRoom = (entry: CatalogEntry): boolean => entry.kind === 'measure' && ent
 /** The first meter. */
 const isMeter = (entry: CatalogEntry): boolean => entry.kind === 'meter';
 
-/** The suggestions of a house, in this order: a door, a room, a meter; a kind the house lacks is left out, and a house with none of them has none. */
+/** What was built for a catalog, and for the `t` it was worded with: the sheet asks at every render, and a catalog is built once when the sheet opens. */
+const built = new WeakMap<object, {t: Translate; suggestions: Suggestion[]}>();
+
+/** The suggestions of a house, in this order: a door, a room, a meter; a kind the house lacks is left out, and a house with none of them has none. Built once for a catalog and a `t`. */
 export function askSuggestions(catalog: Pick<Catalog, 'entries'>, t: Translate): Suggestion[] {
+  const known = built.get(catalog);
+  if (known?.t === t) return known.suggestions;
+  const suggestions = suggestionsOf(catalog, t);
+  built.set(catalog, {t, suggestions});
+  return suggestions;
+}
+
+function suggestionsOf(catalog: Pick<Catalog, 'entries'>, t: Translate): Suggestion[] {
   const {entries} = catalog;
   const door = entries.find(isDoor);
   const room = entries.find(isRoom);
   const meter = entries.find(isMeter);
-  const suggestions: (Suggestion | undefined)[] = [
+  const all: (Suggestion | undefined)[] = [
     door && {
       text: t('ask.suggest.door', {name: door.name}),
       plan: {form: 'moments', sensor: door.key, period: 'this_week', test: {on: true}, longerThanMin: null},
@@ -41,5 +52,5 @@ export function askSuggestions(catalog: Pick<Catalog, 'entries'>, t: Translate):
       plan: {form: 'total', sensor: meter.key, period: 'last_week'},
     },
   ];
-  return suggestions.filter((suggestion): suggestion is Suggestion => suggestion !== undefined);
+  return all.filter((suggestion): suggestion is Suggestion => suggestion !== undefined);
 }

@@ -55,7 +55,7 @@
 .admin-note {
   font-size: calc(13px * var(--tx));
 }
-/* the suggested questions: a short caption and a button for each, as wide as the sheet's body, whose words wrap at large text. Each is a 48px touch target at least. */
+/* the suggested questions: a short caption and a button for each, as wide as the sheet's body, whose words wrap at large text. Each is 44px tall at least (the pill button's own height; Material's is 48px). */
 .suggest {
   display: grid;
   gap: 8px;
@@ -68,7 +68,6 @@
   font-weight: 600;
 }
 .suggestion {
-  min-height: 48px;
   border-radius: var(--shape-control);
   text-align: start;
   /* the words may take as many lines as they need */
@@ -110,6 +109,7 @@
   }
 }
 .app[data-design='material'] .suggestion {
+  /* the common button is 40px inside a 48px touch target: a suggestion's words take more lines, so it is 48px itself */
   min-height: 48px;
   padding: 8px 16px;
 }

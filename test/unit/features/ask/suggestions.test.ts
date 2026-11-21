@@ -38,7 +38,7 @@ describe('the full test house', () => {
     const {catalog, t} = catalogOf(fullHouse, 'en', FULL_CFG);
     expect(askSuggestions(catalog, t)).toEqual([
       {
-        text: 'Front door: left open this week?',
+        text: 'Front door: opened this week?',
         plan: {form: 'moments', sensor: 'door.living_room', period: 'this_week', test: {on: true}, longerThanMin: null},
       },
       {
@@ -71,6 +71,16 @@ describe('the full test house', () => {
     const {catalog, t} = catalogOf(fullHouse, 'en', FULL_CFG);
     for (const {plan} of askSuggestions(catalog, t))
       expect(catalog.entries.map(entry => entry.key)).toContain(plan.sensor);
+  });
+});
+
+describe('the same catalog', () => {
+  test('is built once for a `t`, and again for another', () => {
+    const {catalog, t} = catalogOf(fullHouse, 'en', FULL_CFG);
+    const first = askSuggestions(catalog, t);
+    expect(askSuggestions(catalog, t)).toBe(first);
+    const french = catalogOf(fullHouse, 'fr', FULL_CFG).t;
+    expect(askSuggestions(catalog, french)).not.toBe(first);
   });
 });
 

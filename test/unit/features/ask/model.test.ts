@@ -104,7 +104,13 @@ describe('the reducer', () => {
   test('a timeout or an unavailable model fails the question in either waiting state', () => {
     for (const reason of ['timeout', 'unavailable'] as const) {
       expect(run([{type: 'failed', id: 1, reason}], planning('q'))).toEqual({at: 'failed', question: 'q', reason});
-      expect(run([{type: 'failed', id: 1, reason}], fetching('q'))).toEqual({at: 'failed', question: 'q', reason});
+      // a failure while fetching keeps the plan the panel already has, so a second try need not ask the model again
+      expect(run([{type: 'failed', id: 1, reason}], fetching('q'))).toEqual({
+        at: 'failed',
+        question: 'q',
+        reason,
+        plan: SERIES,
+      });
     }
   });
 

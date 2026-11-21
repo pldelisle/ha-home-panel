@@ -1590,7 +1590,7 @@ export const en = {
   'ask.retry': 'Try again',
   // the suggested questions (src/features/ask/suggestions.ts): the display name leads, so no article is needed; a suggestion is asked as it stands, with no model
   'ask.suggest.title': 'Try asking',
-  'ask.suggest.door': '{name}: left open this week?',
+  'ask.suggest.door': '{name}: opened this week?',
   'ask.suggest.temp': '{name}: how warm was it yesterday?',
   'ask.suggest.meter': '{name}: how much last week?',
   'ask.failed.unsupportedTry':
