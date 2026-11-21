@@ -11,8 +11,16 @@ import {registriesOf} from '../../core/registry.ts';
 import {doorMotionSensors} from '../../providers/door-motion.ts';
 import {personEntities} from '../../providers/people.ts';
 import {powerNow} from '../../providers/power.ts';
+import {powerWindows} from '../../providers/power-history.ts';
 import {askCatalog, type AskReads, type Catalog} from './catalog.ts';
-import {evaluateMoments, evaluateSeries, type EmptyAnswer, type MomentsAnswer} from './evaluate.ts';
+import {
+  evaluateMoments,
+  evaluateSeries,
+  evaluateTotal,
+  type EmptyAnswer,
+  type MomentsAnswer,
+  type TotalAnswer,
+} from './evaluate.ts';
 import {askInstructions, askStructure} from './instructions.ts';
 import {
   askReducer,
@@ -20,10 +28,11 @@ import {
   type Answer,
   type AnswerablePlan,
   type MomentsPlan,
+  type TotalPlan,
   type AskEvent,
   type AskState,
 } from './model.ts';
-import {momentsWindow, resolvePeriod, type PeriodWindow, type WeekStart} from './period.ts';
+import {momentsWindow, resolvePeriod, totalWindow, type PeriodWindow, type WeekStart} from './period.ts';
 import {isPlanError, parsePlan} from './plan.ts';
 
 /** How long a question may wait for the AI Task: a local model takes a few seconds, and the sheet never spins forever (spec 29, story 16). */
@@ -142,7 +151,7 @@ export class AskLoader implements ReactiveController {
 
   /** A measure's statistics for the window: drawn as a series (the window's own bucket), or, for moments, read by the hour or finer, never by the day. */
   private async measured(
-    plan: AnswerablePlan,
+    plan: Exclude<AnswerablePlan, TotalPlan>,
     cache: AskDeps['cache'],
     sensor: string,
     window: PeriodWindow,
@@ -152,6 +161,39 @@ export class AskLoader implements ReactiveController {
     const rows =
       (await cache.statistics([sensor], read.statistic, read.start, STATISTIC_TYPES, read.end))[sensor] ?? [];
     return plan.form === 'moments' ? evaluateMoments({statistics: rows}, plan, read, now) : evaluateSeries(rows, read);
+  }
+
+  /**
+   * A meter's total: the buckets' `change` (a meter's resets are the recorder's to absorb). Where the Energy card already asked a window that holds ours (its hourly `today` of the house
+   * meter, its 33 daily buckets of the house and the water heater), the very same call is made, so the cache answers it (ADR 0028); any other period asks for itself, on its own
+   * stable start and, once it has ended, its end. A window that reaches now has no end to give: the recorder answers up to now.
+   */
+  private async metered(
+    cache: AskDeps['cache'],
+    store: AskDeps['store'],
+    sensor: string,
+    plan: TotalPlan,
+    window: PeriodWindow,
+    now: number,
+  ): Promise<TotalAnswer | EmptyAnswer> {
+    const read = totalWindow(plan.period, window);
+    const {today, meter33} = powerWindows(now, store.config, store.fmt);
+    const shared = [today, meter33].find(
+      candidate =>
+        candidate.period === read.statistic &&
+        candidate.ids.includes(sensor) &&
+        candidate.start.getTime() <= read.start.getTime(),
+    );
+    const rows = shared
+      ? await cache.statistics(shared.ids, shared.period, shared.start, shared.types)
+      : await cache.statistics(
+          [sensor],
+          read.statistic,
+          read.start,
+          ['change'],
+          read.end.getTime() < now ? read.end : undefined,
+        );
+    return evaluateTotal(rows[sensor] ?? [], read);
   }
 
   private async run(id: number, question: string, abort: AbortController): Promise<void> {
@@ -182,9 +224,11 @@ export class AskLoader implements ReactiveController {
       const window = resolvePeriod(plan.period, asked, store.fmt, weekStart);
       const sensor = catalog.entityOf.get(plan.sensor) as string;
       const answer =
-        plan.form === 'moments' && 'on' in plan.test
-          ? await this.stated(plan, cache, sensor, window, asked.getTime())
-          : await this.measured(plan, cache, sensor, window, asked.getTime());
+        plan.form === 'total'
+          ? await this.metered(cache, store, sensor, plan, window, asked.getTime())
+          : plan.form === 'moments' && 'on' in plan.test
+            ? await this.stated(plan, cache, sensor, window, asked.getTime())
+            : await this.measured(plan, cache, sensor, window, asked.getTime());
       this.dispatch({type: 'answered', id, answer});
     } catch (error) {
       if (error instanceof Cancelled && timedOut) this.dispatch({type: 'failed', id, reason: 'timeout'});

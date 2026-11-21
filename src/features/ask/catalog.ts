@@ -2,7 +2,7 @@
 // Pattern: an anti-corruption layer (Evans, DDD) between the house and a model, built from the providers' reads and never from a
 // feature (ADR 0025). A handle (`temp.office`, `power.grid`) is a stable key built from a room's area (else the key its config gives it,
 // else its display name) or from a power role, never from an entity id, so a hallucinated sensor is a parse error by construction
-// (ADR 0040, "The model plans, the panel computes"). Spec 29, "The sensor catalog". It holds the `measure` entries (rooms' temperatures, live power) and the `binary` ones (doors, motion, who is home).
+// (ADR 0040, "The model plans, the panel computes"). Spec 29, "The sensor catalog". It holds the `measure` entries (rooms' temperatures, live power), the `meter` ones (the house's energy total and the water heater's) and the `binary` ones (doors, motion, who is home).
 // Must not: send or hold an entity id in an entry, a reading or a state value, word a name but through `t` and the name resolver, or read the clock.
 import type {ResolvedConfig} from '../../core/config.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
@@ -13,6 +13,9 @@ import {textAttributeOf} from '../../core/states.ts';
 import type {SensorInputs} from '../../providers/door-motion.ts';
 import type {PersonEntity} from '../../providers/people.ts';
 import type {PowerNow} from '../../providers/power.ts';
+
+/** The unit of every meter: the API client asks the recorder for kilowatt-hours, so a meter that counts in Wh in the house still arrives in kWh (src/core/api.ts). */
+export const METER_UNIT = 'kWh';
 
 /** More sensors than this are not offered to a model: the first ones, in provider order, are kept. */
 export const ASK_CATALOG_CAP = 60;
@@ -104,6 +107,14 @@ export function askCatalog(
   ];
   for (const [key, reading, entity, role] of flow)
     if (reading !== null && entity) add(key, names.t(`ask.sensor.${role}`), unitOf(entity), entity);
+  // the energy meters the Energy card reads (`meter33` of the power history), whose `change` the recorder keeps: unit kWh whatever the entity counts in, as the API client asks it
+  const totals: [string, 'energy' | 'waterHeaterEnergy', string | null][] = [
+    ['energy.house', 'energy', entities.energy],
+    ['energy.water_heater', 'waterHeaterEnergy', entities.whE],
+  ];
+  for (const [key, role, entity] of totals)
+    if (entity && reads.states[entity])
+      addEntry(key, {name: names.t(`ask.sensor.${role}`), kind: 'meter', unit: METER_UNIT}, entity);
   // a door's or a motion sensor's handle is built from its area, else its display name, and a person's from the configured name: never from an entity id
   for (const sensor of reads.sensors) {
     const word = [sensor.areaId ?? '', sensor.name].map(slug).find(Boolean) ?? 'sensor';

@@ -13,6 +13,9 @@ import {
   QUESTION_DOOR_NONE,
   QUESTION_DOOR_NONE_FR,
   QUESTION_FR,
+  QUESTION_TOTAL,
+  QUESTION_TOTAL_FR,
+  TOTAL_CFG,
   askField,
   chartDrawn,
   openAsk,
@@ -320,6 +323,24 @@ for (const lang of ['en', 'fr'] as const) {
       await expect(house.root().locator('hp-ask-sheet #ask-moments')).toHaveCount(0);
       await expect(house.root().locator('hp-ask-sheet #ask-summary')).toBeVisible();
       await scanDialog(house, 'ask.sheet', 'hp-ask-sheet hp-sheet .sheet', `no moments, ${lang}`);
+    });
+  });
+}
+
+// The Ask sheet's total: the figure and its bars, over the house with its energy meters named.
+for (const lang of ['en', 'fr'] as const) {
+  test.describe(`house with the Ask sheet's total, ${lang}`, () => {
+    test.use({
+      houseOpts: {cfg: {...TOTAL_CFG, names: KEEP_ENGLISH_NAMES}, lang, aiTask: AI_TASK, time: AFTERNOON},
+    });
+
+    test('the Ask sheet with a total has no serious or critical finding', async ({house}) => {
+      await withAsk(house);
+      await openAsk(house);
+      await sendQuestion(house, lang === 'fr' ? QUESTION_TOTAL_FR : QUESTION_TOTAL);
+      await expect(house.root().locator('hp-ask-sheet #ask-total')).toBeVisible();
+      await chartDrawn(house);
+      await scanDialog(house, 'ask.sheet', 'hp-ask-sheet hp-sheet .sheet', `total, ${lang}`);
     });
   });
 }

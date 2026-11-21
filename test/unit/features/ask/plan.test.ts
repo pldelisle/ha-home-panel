@@ -3,7 +3,7 @@
 // wire fields, the unused ones `null`, `test` the word `none` for a series.
 import {describe, expect, test} from 'vitest';
 import type {Catalog} from '../../../../src/features/ask/catalog.ts';
-import {isPlanError, parsePlan, readPlan} from '../../../../src/features/ask/plan.ts';
+import {isPlanError, parsePlan} from '../../../../src/features/ask/plan.ts';
 
 const catalog: Catalog = {
   entries: [
@@ -120,8 +120,8 @@ describe('every PlanError, on the first field that fails', () => {
   });
 });
 
-describe('moments are answered, a total is not yet', () => {
-  test('a reply for moments parses to a plan; a total still parses to form_not_supported_yet, the one the next slice removes', () => {
+describe('moments and totals are answered', () => {
+  test('a reply for moments parses to a plan', () => {
     expect(parsePlan(reply({form: 'moments', sensor: 'door.patio', test: 'on', longer_than_min: 10}), catalog)).toEqual(
       {
         form: 'moments',
@@ -137,7 +137,27 @@ describe('moments are answered, a total is not yet', () => {
         test: {above: 23},
       },
     );
-    expect(parsePlan(reply({form: 'total', sensor: 'energy.car'}), catalog)).toEqual({error: 'form_not_supported_yet'});
+  });
+
+  test('a total is a plan of a meter, for any period, with the fields it does not use ignored', () => {
+    expect(parsePlan(reply({form: 'total', sensor: 'energy.car', period: 'last_week'}), catalog)).toEqual({
+      form: 'total',
+      sensor: 'energy.car',
+      period: 'last_week',
+    });
+    expect(
+      parsePlan(reply({form: 'total', sensor: 'energy.car', test: 'above', value: 3, longer_than_min: 1}), catalog),
+    ).toEqual({form: 'total', sensor: 'energy.car', period: 'yesterday'});
+  });
+
+  test('a total of a measure or a binary sensor, and a series of a meter, are form_kind_mismatch; the other faults keep their names', () => {
+    for (const sensor of ['temp.office', 'door.patio'])
+      expect(parsePlan(reply({form: 'total', sensor}), catalog)).toEqual({error: 'form_kind_mismatch'});
+    expect(parsePlan(reply({form: 'series', sensor: 'energy.car'}), catalog)).toEqual({error: 'form_kind_mismatch'});
+    expect(parsePlan(reply({form: 'total', sensor: 'energy.nope'}), catalog)).toEqual({error: 'unknown_sensor'});
+    expect(parsePlan(reply({form: 'total', sensor: 'energy.car', period: 'x'}), catalog)).toEqual({
+      error: 'unknown_period',
+    });
   });
 
   test('the mismatches are errors: a binary needs on or off, a measure above or below, a meter is refused', () => {
@@ -153,10 +173,10 @@ describe('moments are answered, a total is not yet', () => {
   });
 });
 
-describe('the whole union, which readPlan accepts', () => {
+describe('the moments, form by form', () => {
   test('moments over a binary sensor takes on or off, and a minimum length', () => {
     expect(
-      readPlan(
+      parsePlan(
         reply({form: 'moments', sensor: 'door.patio', period: 'this_week', test: 'on', longer_than_min: 10}),
         catalog,
       ),
@@ -167,7 +187,7 @@ describe('the whole union, which readPlan accepts', () => {
       test: {on: true},
       longerThanMin: 10,
     });
-    expect(readPlan(reply({form: 'moments', sensor: 'door.patio', test: 'off'}), catalog)).toMatchObject({
+    expect(parsePlan(reply({form: 'moments', sensor: 'door.patio', test: 'off'}), catalog)).toMatchObject({
       test: {on: false},
       longerThanMin: null,
     });
@@ -175,25 +195,25 @@ describe('the whole union, which readPlan accepts', () => {
 
   test('moments over a measure takes a threshold above or below, and 0 is a threshold', () => {
     const moments = (test: string, value: unknown) =>
-      readPlan(reply({form: 'moments', sensor: 'temp.office', test, value}), catalog);
+      parsePlan(reply({form: 'moments', sensor: 'temp.office', test, value}), catalog);
     expect(moments('above', 23)).toMatchObject({test: {above: 23}});
     expect(moments('below', 19.5)).toMatchObject({test: {below: 19.5}});
     expect(moments('above', 0)).toMatchObject({test: {above: 0}});
   });
 
   test('the value is read only for above and below, and nothing is read as a number that is not one', () => {
-    expect(readPlan(reply({form: 'moments', sensor: 'door.patio', test: 'on', value: 0}), catalog)).toMatchObject({
+    expect(parsePlan(reply({form: 'moments', sensor: 'door.patio', test: 'on', value: 0}), catalog)).toMatchObject({
       test: {on: true},
     });
     for (const value of [null, undefined, '', '23', Number.NaN, Infinity, true])
-      expect(readPlan(reply({form: 'moments', sensor: 'temp.office', test: 'above', value}), catalog)).toEqual({
+      expect(parsePlan(reply({form: 'moments', sensor: 'temp.office', test: 'above', value}), catalog)).toEqual({
         error: 'bad_test',
       });
   });
 
   test('a test that does not go with the kind, or is not a test, is bad_test', () => {
     const moments = (sensor: string, test: unknown) =>
-      readPlan(reply({form: 'moments', sensor, test, value: 20}), catalog);
+      parsePlan(reply({form: 'moments', sensor, test, value: 20}), catalog);
     expect(moments('door.patio', 'above')).toEqual({error: 'bad_test'});
     expect(moments('door.patio', 'below')).toEqual({error: 'bad_test'});
     expect(moments('temp.office', 'on')).toEqual({error: 'bad_test'});
@@ -206,27 +226,27 @@ describe('the whole union, which readPlan accepts', () => {
 
   test('the minimum length: null, absent, empty and 0 are no minimum, a negative or a text is refused', () => {
     const longer = (value: unknown) =>
-      readPlan(reply({form: 'moments', sensor: 'door.patio', test: 'on', longer_than_min: value}), catalog);
+      parsePlan(reply({form: 'moments', sensor: 'door.patio', test: 'on', longer_than_min: value}), catalog);
     for (const none of [null, undefined, '', 0]) expect(longer(none)).toMatchObject({longerThanMin: null});
     expect(longer(2.5)).toMatchObject({longerThanMin: 2.5});
     for (const bad of [-5, '10', Number.NaN, true]) expect(longer(bad)).toEqual({error: 'bad_duration'});
   });
 
   test('moments are of a binary sensor or a measure, never a meter', () => {
-    expect(readPlan(reply({form: 'moments', sensor: 'energy.car', test: 'above', value: 1}), catalog)).toEqual({
+    expect(parsePlan(reply({form: 'moments', sensor: 'energy.car', test: 'above', value: 1}), catalog)).toEqual({
       error: 'form_kind_mismatch',
     });
   });
 
   test('a total is of a meter, and its other fields are not read', () => {
     expect(
-      readPlan(reply({form: 'total', sensor: 'energy.car', period: 'last_week', test: 'above', value: 3}), catalog),
+      parsePlan(reply({form: 'total', sensor: 'energy.car', period: 'last_week', test: 'above', value: 3}), catalog),
     ).toEqual({
       form: 'total',
       sensor: 'energy.car',
       period: 'last_week',
     });
-    expect(readPlan(reply({form: 'total', sensor: 'temp.office'}), catalog)).toEqual({error: 'form_kind_mismatch'});
-    expect(readPlan(reply({form: 'total', sensor: 'door.patio'}), catalog)).toEqual({error: 'form_kind_mismatch'});
+    expect(parsePlan(reply({form: 'total', sensor: 'temp.office'}), catalog)).toEqual({error: 'form_kind_mismatch'});
+    expect(parsePlan(reply({form: 'total', sensor: 'door.patio'}), catalog)).toEqual({error: 'form_kind_mismatch'});
   });
 });

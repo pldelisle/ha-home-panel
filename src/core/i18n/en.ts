@@ -1537,6 +1537,8 @@ export const en = {
   'ask.sensor.grid': 'Grid',
   'ask.sensor.waterHeater': 'Water heater',
   'ask.sensor.ev': 'EV charging',
+  'ask.sensor.energy': 'House energy',
+  'ask.sensor.waterHeaterEnergy': 'Water heater energy',
   // the nine periods, as the answer's summary and the understood line say them
   'ask.period.today': 'today',
   'ask.period.yesterday': 'yesterday',
@@ -1569,6 +1571,12 @@ export const en = {
   'ask.test.longer': '{test} longer than {n} min',
   'ask.moment.still': 'still',
   'ask.more': 'and {count} more',
+  // a total answered: the summary line, what the panel understood, the bars' description for a screen reader and the name of the bar that is still filling
+  'ask.summary.total': '{name} · {period}',
+  'ask.understood.total': '{name} · total · {period}',
+  'ask.bars.day': '{name} by day, {period}',
+  'ask.bars.hour': '{name} by hour, {period}',
+  'ask.bar.today': 'Today so far',
   // a question in progress, and why one has no answer (the model's own words are never shown)
   'ask.state.planning': 'Working out what you asked…',
   'ask.state.fetching': 'Reading the history…',

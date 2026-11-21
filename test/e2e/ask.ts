@@ -34,6 +34,26 @@ export const momentsPlan = (
   longer_than_min: options.longerThanMin ?? null,
 });
 
+/** The full house with its energy meters named in the config, so the Ask catalog has them: a house's `energy_total` and the water heater's (both are in the test house's states). */
+export const TOTAL_CFG = {
+  ...ASK_CFG,
+  entities: {
+    ...FULL_CFG.entities,
+    energy_total: 'sensor.house_energy',
+    water_heater_energy: 'sensor.heater_energy',
+  },
+};
+
+/** What a model returns for a question about how much a meter used. */
+export const totalPlan = (sensor: string, period: string) => ({
+  form: 'total',
+  sensor,
+  period,
+  test: 'none',
+  value: null,
+  longer_than_min: null,
+});
+
 /**
  * What the AI Task answers, by a substring of the question (the instructions hold the sensors' names too, so a key is words of the question
  * alone, and none that the instructions' own examples hold, such as "how warm was the office yesterday": the office's temperature over the last 24 hours, a sensor the catalog does not have, and, for anything else, the harness's "unsupported".
@@ -50,6 +70,10 @@ export const AI_TASK = {
     'office above 21 degrees': momentsPlan('temp.office', 'last_24h', 'above', {value: 21}),
     'restée ouverte pendant': momentsPlan('door.living_room', 'last_24h', 'on', {longerThanMin: 120}),
     'restée ouverte dans': momentsPlan('door.living_room', 'last_24h', 'on', {longerThanMin: 1}),
+    // the test house's recorder: a daily bucket of each of the last sixty days and an hourly one of each of the last 170 hours, for a meter in its states
+    'house use over the last seven days': totalPlan('energy.house', 'last_7_days'),
+    'house use yesterday': totalPlan('energy.house', 'yesterday'),
+    'maison a-t-elle consommé': totalPlan('energy.house', 'last_7_days'),
   },
 };
 
@@ -62,6 +86,9 @@ export const QUESTION_DOOR_NONE = 'Was the front door open for two hours?';
 export const QUESTION_ABOVE = 'When was the office above 21 degrees in the last day?';
 export const QUESTION_DOOR_FR = "La porte d'entrée est-elle restée ouverte dans les dernières 24 heures ?";
 export const QUESTION_DOOR_NONE_FR = "La porte d'entrée est-elle restée ouverte pendant deux heures ?";
+export const QUESTION_TOTAL = 'What was the house use over the last seven days?';
+export const QUESTION_TOTAL_DAY = 'What was the house use yesterday?';
+export const QUESTION_TOTAL_FR = 'Combien la maison a-t-elle consommé ces sept derniers jours ?';
 export const QUESTION_FR = 'Quelle température faisait-il au bureau dans les dernières 24 heures ?';
 
 export const askButton = (house: House) => house.root().locator('#ask');

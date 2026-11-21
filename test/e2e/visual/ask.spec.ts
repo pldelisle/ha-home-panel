@@ -12,6 +12,9 @@ import {
   QUESTION_DOOR_NONE,
   QUESTION_DOOR_NONE_FR,
   QUESTION_FR,
+  QUESTION_TOTAL,
+  QUESTION_TOTAL_FR,
+  TOTAL_CFG,
   ASK_ENTITY,
   askField,
   askMessage,
@@ -96,6 +99,31 @@ for (const viewport of ['tablet', 'phone'] as const) {
             await expect(askSheet(house).locator('#ask-moments')).toHaveCount(0);
             await settle(house);
             await expect(house.page).toHaveScreenshot(`ask-moments-none-${viewport}-${theme}-${lang}.png`);
+          });
+
+          // a total: the figure of a meter over the last seven days and a bar for each day (the house's energy meters are named in this test's config)
+          test.describe('a total', () => {
+            test.use({
+              houseOpts: {
+                cfg: {...TOTAL_CFG, ...(lang === 'fr' ? {names: KEEP_ENGLISH_NAMES} : {})},
+                aiTask: AI_TASK,
+                lang,
+                theme,
+                time: AFTERNOON,
+                frozen: true,
+              },
+            });
+
+            test('a total answered', async ({house}) => {
+              await withAsk(house);
+              await house.tab('lights');
+              await openAsk(house);
+              await sendQuestion(house, lang === 'fr' ? QUESTION_TOTAL_FR : QUESTION_TOTAL);
+              await expect(askSheet(house).locator('#ask-total')).toBeVisible();
+              await chartDrawn(house);
+              await settle(house);
+              await expect(house.page).toHaveScreenshot(`ask-total-${viewport}-${theme}-${lang}.png`);
+            });
           });
 
           // the reply is held back for ten minutes of the page's clock, which nothing runs; under the project's reduced motion the progress dot does not breathe, so the pixels are still

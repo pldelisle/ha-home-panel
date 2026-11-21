@@ -1,9 +1,10 @@
-// The evaluation of a question: statistics rows in, the series a chart draws out; state history or rows in, the spans of a test out; every figure computed here and none by a model.
+// The evaluation of a question: statistics rows in, the series a chart draws or a meter's total out; state history or rows in, the spans of a test out; every figure computed here and none by a model.
 // Pattern: a pure function over values (functional core; ADR 0040, "The model plans, the panel computes"); spec 29, "The evaluation".
 // `empty` (no rows at all) is its own result, distinct from "no moments matched" (a moments answer with a count of 0): an answer of nothing is not a missing one.
-// Must not: fetch, read the clock (the window carries the period's end, the caller `now`), word a figure, or know a plan (it takes a test and a minimum) or a catalog.
+// Must not: fetch, read the clock (the window carries the period's end, the caller `now`), word a figure, or know a plan (it takes a test and a minimum) or a catalog's entries (the one thing it takes of it is the meters' unit).
 import type {HistoryPoint, StatisticRow, StatisticsPeriod} from '../../core/ha.ts';
 import {HOUR_MS, MINUTE_MS, DAY_MS} from '../../core/figures.ts';
+import {METER_UNIT} from './catalog.ts';
 import type {PeriodWindow} from './period.ts';
 import type {Test} from './plan.ts';
 
@@ -197,4 +198,53 @@ export function evaluateMoments(
   if ('history' in input)
     return 'on' in test ? momentsOfHistory(input.history, test, query, window, now) : {kind: 'empty'};
   return 'on' in test ? {kind: 'empty'} : momentsOfStatistics(input.statistics, test, query, window, now);
+}
+
+/** One bucket of a total: when it starts and what the meter grew by in it. */
+export interface TotalBar {
+  at: number;
+  value: number;
+  /** The window ends inside this bucket (today, in "this week"): the bar is what there is so far, and is kept. */
+  partial: boolean;
+}
+
+/** What a meter used over a period, and by which bucket. A total of 0 is an answer: the meter was read and did not move. */
+export interface TotalAnswer {
+  kind: 'total';
+  /** The sum of the buckets' changes, in `unit`. */
+  total: number;
+  unit: string;
+  /** In time order; a bucket with no value is not here (it is a gap, not a zero). */
+  bars: TotalBar[];
+  /** The length of a bar: an hour for a period of a day or less, else a day. */
+  bucket: 'hour' | 'day';
+  /** From 0 to 1: the whole buckets that have a value, of the whole buckets the window holds. Under 1 the answer says where the history starts. */
+  coverage: number;
+  /** When the first bucket with a value starts, in milliseconds. */
+  from: number;
+}
+
+/**
+ * A meter's total from the buckets' `change`, which the recorder keeps from the meter's `sum` and which absorbs a reset (a difference of two sums would
+ * not). A row outside `[start, end)` or with no change is left out. Coverage counts the whole buckets that have a value against the whole buckets the window holds,
+ * so the bucket still running at `now` (which has no row yet, or a partial one) is neither missing nor extra.
+ */
+export function evaluateTotal(rows: readonly StatisticRow[], window: PeriodWindow): TotalAnswer | EmptyAnswer {
+  const start = window.start.getTime();
+  const end = window.end.getTime();
+  const kept = rows
+    .filter(row => row.start >= start && row.start < end && finite(row.change))
+    .sort((a, b) => a.start - b.start);
+  if (kept.length === 0) return {kind: 'empty'};
+  const bars = kept.map((row): TotalBar => ({at: row.start, value: row.change as number, partial: row.end > end}));
+  const whole = Math.max(1, Math.floor((end - start) / BUCKET_MS[window.statistic]));
+  return {
+    kind: 'total',
+    total: bars.reduce((sum, bar) => sum + bar.value, 0),
+    unit: METER_UNIT,
+    bars,
+    bucket: window.statistic === 'day' ? 'day' : 'hour',
+    coverage: Math.min(1, kept.filter(row => row.end <= end).length / whole),
+    from: kept[0].start,
+  };
 }

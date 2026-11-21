@@ -10,6 +10,8 @@ import type {AskReads} from '../../../../src/features/ask/catalog.ts';
 import {ASK_TIMEOUT_MS, AskLoader, type AskDeps} from '../../../../src/features/ask/loader.ts';
 import {registriesOf} from '../../../../src/core/registry.ts';
 import {powerNow} from '../../../../src/providers/power.ts';
+import {powerWindows} from '../../../../src/providers/power-history.ts';
+import {entity} from '../../fake-hass.ts';
 import {FULL_CFG} from '../../../e2e/houses.ts';
 import {fullHouse, NOW, storeOf} from '../media/support.ts';
 
@@ -226,6 +228,117 @@ describe('a question about moments', () => {
     loader.ask('was the front door open, again?');
     await settle();
     expect(loader.state).toMatchObject({at: 'answered', answer: {kind: 'moments', count: 0}});
+  });
+});
+
+describe('a question about how much', () => {
+  // the house's energy total and the water heater's, which the Energy card reads too
+  const METERS = {
+    ...config,
+    entities: {...config.entities, energy_total: 'sensor.mains_energy', water_heater_energy: 'sensor.tank_energy'},
+  };
+  const metered = storeOf(
+    {
+      ...fullHouse,
+      states: {
+        ...fullHouse.states,
+        'sensor.mains_energy': entity('sensor.mains_energy', '9000', {unit_of_measurement: 'Wh'}),
+        'sensor.tank_energy': entity('sensor.tank_energy', '300', {unit_of_measurement: 'kWh'}),
+      },
+    },
+    METERS,
+  );
+  const TOTAL_PLAN = {...PLAN, form: 'total', sensor: 'energy.house', period: 'last_7_days'};
+  // the recorder's daily rows, which start at a local midnight (5:00 UTC in November, 4:00 on the first, when the clocks went back)
+  const day = (n: number): StatisticRow => ({
+    start: Date.UTC(2026, 10, n, n === 1 ? 4 : 5),
+    end: Date.UTC(2026, 10, n + 1, 5),
+    change: n,
+  });
+  const ask = async (plan: object, rows: Record<string, StatisticRow[]> = {}) => {
+    const made = setup(METERS, {store: metered as unknown as AskDeps['store']});
+    made.replies.push(() => Promise.resolve(plan));
+    made.statistics.mockResolvedValueOnce(rows);
+    made.loader.ask('how much did the house use?');
+    await settle();
+    const [ids, period, start, types, end] = made.statistics.mock.calls[0] as unknown as [
+      string[],
+      string,
+      Date,
+      string[],
+      Date | undefined,
+    ];
+    return {...made, call: {ids, period, start, types, end}};
+  };
+
+  test('is answered from the change of the meter behind the handle, and the other meter of the same reply is not read', async () => {
+    const {loader, call} = await ask(TOTAL_PLAN, {
+      'sensor.mains_energy': [day(1), day(2), day(3)],
+      'sensor.tank_energy': [{...day(1), change: 100}],
+    });
+    expect(loader.state).toMatchObject({
+      at: 'answered',
+      plan: {form: 'total', sensor: 'energy.house', period: 'last_7_days'},
+      answer: {kind: 'total', total: 6, unit: 'kWh', bucket: 'day', bars: [{value: 1}, {value: 2}, {value: 3}]},
+    });
+    expect(call.types).toEqual(['change']);
+  });
+
+  test('a week or a month in daily buckets asks what the Energy card asked: the same ids, period and stable start, with no end, so the cache answers', async () => {
+    const {call} = await ask(TOTAL_PLAN, {});
+    const shared = powerWindows(NOW, metered.config, metered.fmt).meter33;
+    expect(call).toEqual({
+      ids: ['sensor.mains_energy', 'sensor.tank_energy'],
+      period: 'day',
+      start: shared.start,
+      types: ['change'],
+      end: undefined,
+    });
+  });
+
+  test('today of the house meter is the Energy card’s hourly window since midnight', async () => {
+    const {call} = await ask({...TOTAL_PLAN, period: 'today'}, {});
+    const shared = powerWindows(NOW, metered.config, metered.fmt).today;
+    expect(call).toEqual({
+      ids: ['sensor.mains_energy'],
+      period: 'hour',
+      start: shared.start,
+      types: ['change'],
+      end: undefined,
+    });
+  });
+
+  test('a period the Energy card does not hold is asked for itself, on its own stable instants, and closed when it has ended', async () => {
+    const yesterday = await ask({...TOTAL_PLAN, sensor: 'energy.water_heater', period: 'yesterday'}, {});
+    expect(yesterday.call).toMatchObject({ids: ['sensor.tank_energy'], period: 'hour', types: ['change']});
+    expect(yesterday.call.start.toISOString()).toBe('2026-11-06T05:00:00.000Z');
+    expect(yesterday.call.end?.toISOString()).toBe('2026-11-07T05:00:00.000Z');
+    // a period that reaches now has no end to give
+    const today = await ask({...TOTAL_PLAN, sensor: 'energy.water_heater', period: 'today'}, {});
+    expect(today.call).toMatchObject({ids: ['sensor.tank_energy'], period: 'hour', end: undefined});
+    // last month began before the 33 days of the Energy card's window
+    const month = await ask({...TOTAL_PLAN, period: 'last_month'}, {});
+    expect(month.call).toMatchObject({ids: ['sensor.mains_energy'], period: 'day'});
+    expect(month.call.start.toISOString()).toBe('2026-10-01T04:00:00.000Z');
+    expect(month.call.end?.toISOString()).toBe('2026-11-01T04:00:00.000Z');
+  });
+
+  test('the last bar of a period that includes today is the partial day, and a zero total is an answer', async () => {
+    const {loader} = await ask(TOTAL_PLAN, {
+      'sensor.mains_energy': [
+        {...day(1), change: 0},
+        {...day(7), change: 0},
+      ],
+    });
+    expect(loader.state).toMatchObject({
+      at: 'answered',
+      answer: {kind: 'total', total: 0, bars: [{partial: false}, {partial: true}]},
+    });
+  });
+
+  test('a recorder with no row of the meter fails as empty, and the failure keeps the plan to name the meter', async () => {
+    const {loader} = await ask(TOTAL_PLAN, {});
+    expect(loader.state).toMatchObject({at: 'failed', reason: 'empty', plan: {form: 'total'}});
   });
 });
 

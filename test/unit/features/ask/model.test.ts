@@ -2,7 +2,7 @@
 // request that was cancelled or replaced, even when the same words were asked again, and the view in both languages over the real formatters of a store.
 import {describe, expect, test} from 'vitest';
 import type {Catalog} from '../../../../src/features/ask/catalog.ts';
-import type {EmptyAnswer, MomentsAnswer, SeriesAnswer} from '../../../../src/features/ask/evaluate.ts';
+import type {EmptyAnswer, MomentsAnswer, SeriesAnswer, TotalAnswer} from '../../../../src/features/ask/evaluate.ts';
 import {
   askReducer,
   askView,
@@ -436,5 +436,78 @@ describe('askView of moments', () => {
 
   test('partial coverage adds the note saying where the history starts', () => {
     expect(view({...MOMENTS, coverage: 0.4}, planOf()).coverage).toBe('History starts Nov 17');
+  });
+});
+
+describe('askView of a total', () => {
+  const catalog: Catalog = {
+    entries: [{key: 'energy.house', name: 'House energy', kind: 'meter', unit: 'kWh'}],
+    entityOf: new Map(),
+    omitted: 0,
+  };
+  const day = (n: number) => Date.UTC(2026, 10, 9 + n, 5);
+  const TOTAL: TotalAnswer = {
+    kind: 'total',
+    total: 42.34,
+    unit: 'kWh',
+    bucket: 'day',
+    bars: [
+      {at: day(0), value: 20.1, partial: false},
+      {at: day(1), value: 22.24, partial: false},
+    ],
+    coverage: 1,
+    from: day(0),
+  };
+  const plan = (period: 'last_week' | 'today' = 'last_week'): AnswerablePlan => ({
+    form: 'total',
+    sensor: 'energy.house',
+    period,
+  });
+  const view = (answer: TotalAnswer, p: AnswerablePlan = plan(), language: 'en' | 'fr' = 'en', c = catalog) => {
+    const {t, fmt} = depsOf(fullHouse, language);
+    const state: AskState = {at: 'answered', question: 'q', plan: p, answer};
+    return askView(state, t, fmt, sensorOf(state, c));
+  };
+
+  test('says the figure with its unit, what the panel understood and, for the bars, a description a screen reader can read', () => {
+    expect(view(TOTAL)).toEqual({
+      message: null,
+      summary: 'House energy · last week',
+      mean: null,
+      understood: 'House energy · total · last week',
+      coverage: null,
+      total: {value: '42.3', unit: 'kWh'},
+      bars: 'House energy by day, last week',
+    });
+  });
+
+  test('says it in French, with the decimal comma, and says the bars are by the hour for a day', () => {
+    const named: Catalog = {...catalog, entries: [{...catalog.entries[0], name: 'Énergie de la maison'}]};
+    expect(view(TOTAL, plan(), 'fr', named)).toMatchObject({
+      summary: 'Énergie de la maison · la semaine dernière',
+      understood: 'Énergie de la maison · total · la semaine dernière',
+      total: {value: '42,3', unit: 'kWh'},
+      bars: 'Énergie de la maison par jour, la semaine dernière',
+    });
+    expect(view({...TOTAL, bucket: 'hour'}, plan('today'))).toMatchObject({bars: 'House energy by hour, today'});
+  });
+
+  test('a zero total is a figure, not no history', () => {
+    expect(view({...TOTAL, total: 0, bars: [{at: day(0), value: 0, partial: false}]})).toMatchObject({
+      summary: 'House energy · last week',
+      total: {value: '0', unit: 'kWh'},
+    });
+  });
+
+  test('names the meter by its handle when the catalog no longer lists it, and notes partial coverage', () => {
+    expect(view({...TOTAL, coverage: 0.5}, plan(), 'en', {...catalog, entries: []})).toMatchObject({
+      summary: 'energy.house · last week',
+      coverage: 'History starts Nov 9',
+    });
+  });
+
+  test('a total answer of a plan that is not a total has no words, and no wrong ones', () => {
+    const series: AnswerablePlan = {form: 'series', sensor: 'energy.house', period: 'last_week'};
+    expect(view(TOTAL, series)).toEqual({message: null, summary: null, mean: null, understood: null, coverage: null});
   });
 });

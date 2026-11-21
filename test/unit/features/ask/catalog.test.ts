@@ -10,7 +10,7 @@ import {personEntities} from '../../../../src/providers/people.ts';
 import {powerNow} from '../../../../src/providers/power.ts';
 import {FULL_CFG} from '../../../e2e/houses.ts';
 import * as bare from '../../../houses/bare.mjs';
-import {fakeHass, type FakeHass} from '../../fake-hass.ts';
+import {entity, fakeHass, type FakeHass} from '../../fake-hass.ts';
 import {fullHouse, storeOf} from '../media/support.ts';
 
 const house = (hass: FakeHass, panelConfig: unknown = {}, language = 'en') => {
@@ -112,6 +112,66 @@ describe('the full test house', () => {
     });
     const keys = excluding.catalog().entries.map(entry => entry.key);
     expect(keys.slice(7)).toEqual(['motion.office', 'home.alex']);
+  });
+});
+
+describe('the meters', () => {
+  // the house's energy total and the water heater's, named in the config, the way the Energy card reads them; the heater's own entity id is made up
+  const METERS = {
+    ...FULL_CFG,
+    entities: {...FULL_CFG.entities, energy_total: 'sensor.mains_energy', water_heater_energy: 'sensor.tank_energy'},
+  };
+  const withMeters = (...ids: string[]): FakeHass => ({
+    ...fullHouse,
+    states: {
+      ...fullHouse.states,
+      ...Object.fromEntries(ids.map(id => [id, entity(id, '1234.5', {unit_of_measurement: 'Wh'})])),
+    },
+  });
+
+  test('the house and the water heater are meters in kWh, after the live power and before the doors, and the map keeps their entities', () => {
+    const {entries, entityOf} = house(withMeters('sensor.mains_energy', 'sensor.tank_energy'), METERS).catalog();
+    expect(entries.filter(entry => entry.kind === 'meter')).toEqual([
+      {key: 'energy.house', name: 'House energy', kind: 'meter', unit: 'kWh'},
+      {key: 'energy.water_heater', name: 'Water heater energy', kind: 'meter', unit: 'kWh'},
+    ]);
+    expect(entries.findIndex(entry => entry.key === 'energy.house')).toBe(
+      entries.findIndex(entry => entry.key === 'power.ev') + 1,
+    );
+    expect(entityOf.get('energy.house')).toBe('sensor.mains_energy');
+    expect(entityOf.get('energy.water_heater')).toBe('sensor.tank_energy');
+    expect(JSON.stringify(entries)).not.toContain('sensor.');
+  });
+
+  test('a meter the config names but the house does not have, and one the config leaves unset, is not offered', () => {
+    expect(
+      house(withMeters('sensor.mains_energy'), METERS)
+        .catalog()
+        .entries.map(entry => entry.key),
+    ).toContain('energy.house');
+    const only = house(withMeters('sensor.mains_energy'), METERS).catalog().entries;
+    expect(only.some(entry => entry.key === 'energy.water_heater')).toBe(false);
+    // the full test house has neither the default energy total nor a heater energy
+    expect(
+      house(fullHouse, FULL_CFG)
+        .catalog()
+        .entries.some(entry => entry.kind === 'meter'),
+    ).toBe(false);
+  });
+
+  test('is named in the panel language, and the house can exclude one by entity id', () => {
+    const french = house(withMeters('sensor.mains_energy', 'sensor.tank_energy'), METERS, 'fr').catalog().entries;
+    expect(french.filter(entry => entry.kind === 'meter').map(entry => entry.name)).toEqual([
+      'Énergie de la maison',
+      'Énergie du chauffe-eau',
+    ]);
+    const excluding = house(withMeters('sensor.mains_energy', 'sensor.tank_energy'), {
+      ...METERS,
+      ask: {entity: 'ai_task.model', exclude: ['sensor.mains_energy']},
+    }).catalog();
+    expect(excluding.entries.filter(entry => entry.kind === 'meter').map(entry => entry.key)).toEqual([
+      'energy.water_heater',
+    ]);
   });
 });
 

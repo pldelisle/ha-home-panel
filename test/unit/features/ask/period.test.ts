@@ -7,6 +7,7 @@ import {
   momentsWindow,
   PERIODS,
   resolvePeriod,
+  totalWindow,
   weekStartOf,
   type Period,
   type WeekStart,
@@ -205,5 +206,23 @@ describe('weekStartOf', () => {
 
   test('a tag the runtime cannot read begins on Monday', () => {
     expect(weekStartOf('not a tag!')).toBe(1);
+  });
+});
+
+describe('totalWindow', () => {
+  const fmt = createFormatters(englishLocale(ZONE));
+  const of = (period: Period, now = WEDNESDAY) =>
+    totalWindow(period, resolvePeriod(period, new Date(now), fmt, MONDAY));
+
+  test('is hourly for a period of a day or less, and daily beyond, never in five minutes', () => {
+    for (const period of ['today', 'yesterday', 'last_24h'] as const) expect(of(period).statistic, period).toBe('hour');
+    for (const period of PERIODS.filter(candidate => !['today', 'yesterday', 'last_24h'].includes(candidate)))
+      expect(of(period).statistic, period).toBe('day');
+  });
+
+  test('keeps the period start and end, which are the stable instants the cache answers from', () => {
+    const week = resolvePeriod('this_week', new Date(WEDNESDAY), fmt, MONDAY);
+    expect(totalWindow('this_week', week)).toEqual({...week, statistic: 'day'});
+    expect(of('yesterday').start.toISOString()).toBe('2026-11-17T05:00:00.000Z');
   });
 });

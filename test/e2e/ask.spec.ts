@@ -14,6 +14,10 @@ import {
   QUESTION_DOOR_NONE,
   QUESTION_YESTERDAY,
   QUESTION_FR,
+  QUESTION_TOTAL,
+  QUESTION_TOTAL_DAY,
+  QUESTION_TOTAL_FR,
+  TOTAL_CFG,
   aiTaskNow,
   askButton,
   askMessage,
@@ -501,6 +505,76 @@ test.describe('moments in French', () => {
     await expect(askSheet(house).locator('#ask-summary')).toHaveText('2 fois, 1 h 08');
     await expect(askSheet(house).locator('#ask-understood')).toHaveText(
       'Front door · ouvert plus de 1 min · dernières 24 heures',
+    );
+  });
+});
+
+test.describe('totals', () => {
+  // the clock is frozen, so the recorder's newest daily row starts at the very instant the question is asked and the period holds the six whole days before it
+  test.use({houseOpts: {cfg: TOTAL_CFG, aiTask: AI_TASK, time: AFTERNOON, frozen: true}});
+
+  test('a question about how much gives the figure with its unit and a bar for each day', async ({house}) => {
+    await withAsk(house);
+    await openAsk(house);
+    await sendQuestion(house, QUESTION_TOTAL);
+    const sheet = askSheet(house);
+    await expect(sheet.locator('#ask-summary')).toHaveText('House energy · last 7 days');
+    // the figure is the kit's cell: the number, then its unit written small
+    await expect(sheet.locator('#ask-total .v')).toHaveText(/^\d+(\.\d)?kWh$/);
+    await expect(sheet.locator('#ask-total .v small')).toHaveText('kWh');
+    await expect(sheet.locator('#ask-understood')).toHaveText('House energy · total · last 7 days');
+    await chartDrawn(house);
+    // a bar for each of the days the recorder holds, and the chart is described for a screen reader
+    await expect(sheet.locator('hp-chart .apexcharts-bar-area')).toHaveCount(6);
+    await expect(sheet.locator('hp-chart .chart')).toHaveAttribute('aria-label', 'House energy by day, last 7 days');
+    await expect(sheet.locator('#ask-result #ask-total')).toBeVisible();
+    expect(await house.generated()).toHaveLength(1);
+  });
+
+  test('is read from the meter behind the handle, by its change, in the window the Energy card shares', async ({
+    house,
+  }) => {
+    await withAsk(house);
+    await openAsk(house);
+    await sendQuestion(house, QUESTION_TOTAL);
+    await expect(askSheet(house).locator('#ask-total')).toBeVisible();
+    const reads = (await house.reads()).filter(read => read.startsWith('recorder/statistics_during_period '));
+    // one read of the 33 daily buckets of both meters, by their change: the Energy card's own, which the question did not ask again (the cache answered it)
+    const daily = reads.filter(read => read.includes('"period":"day"') && read.includes('sensor.house_energy'));
+    expect(daily).toHaveLength(1);
+    expect(daily[0]).toContain('sensor.heater_energy');
+    expect(daily[0]).toContain('"types":["change"]');
+  });
+
+  test('a day is told by the hour', async ({house}) => {
+    await withAsk(house);
+    await openAsk(house);
+    await sendQuestion(house, QUESTION_TOTAL_DAY);
+    const sheet = askSheet(house);
+    await expect(sheet.locator('#ask-summary')).toHaveText('House energy · yesterday');
+    await expect(sheet.locator('hp-chart .chart')).toHaveAttribute('aria-label', 'House energy by hour, yesterday');
+    await chartDrawn(house);
+    expect(await sheet.locator('hp-chart .apexcharts-bar-area').count()).toBeGreaterThan(12);
+  });
+});
+
+test.describe('totals in French', () => {
+  test.use({
+    houseOpts: {cfg: {...TOTAL_CFG, names: KEEP_ENGLISH_NAMES}, lang: 'fr', aiTask: AI_TASK, time: AFTERNOON},
+  });
+
+  test('the figure, the summary and the description of the bars are said in French', async ({house}) => {
+    await withAsk(house);
+    await openAsk(house);
+    await sendQuestion(house, QUESTION_TOTAL_FR);
+    const sheet = askSheet(house);
+    await expect(sheet.locator('#ask-summary')).toHaveText('Énergie de la maison · 7 derniers jours');
+    // the French decimal comma
+    await expect(sheet.locator('#ask-total .v')).toHaveText(/^\d+(,\d)?kWh$/);
+    await expect(sheet.locator('#ask-understood')).toHaveText('Énergie de la maison · total · 7 derniers jours');
+    await expect(sheet.locator('hp-chart .chart')).toHaveAttribute(
+      'aria-label',
+      'Énergie de la maison par jour, 7 derniers jours',
     );
   });
 });
