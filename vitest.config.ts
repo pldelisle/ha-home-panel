@@ -44,6 +44,7 @@ export default defineConfig({
         'src/ui/events.ts',
         'src/ui/lens.ts',
         'scripts/lib/anonymise.mjs',
+        'scripts/lib/ask-suite.mjs', // the recorded-model suite's pure half: judging a reply, the score, the problems of a recording
       ],
       // the one module that names the library is a vendored lib, loaded by the lazy chunk and proved by chunks.spec.ts: not our code, not a legacy file
       exclude: ['src/core/apex-lib.ts'],
@@ -98,6 +99,7 @@ export default defineConfig({
         'src/ui/events.ts': {statements: 100},
         'src/ui/lens.ts': {statements: 100},
         'scripts/lib/anonymise.mjs': {statements: 100},
+        'scripts/lib/ask-suite.mjs': {statements: 100},
       },
     },
   },

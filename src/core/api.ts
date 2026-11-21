@@ -21,6 +21,9 @@ import type {PanelStore} from './store.ts';
 /** The unit every energy statistic is asked in, which `statistics` below sets in its `units` (the test of record-fixture pins the two together): a meter that counts in Wh in the house still arrives in kWh. */
 export const METER_UNIT = 'kWh';
 
+/** What Home Assistant lists an AI Task as when the caller names none; the recorded-model command (scripts/ask-record.mjs) sends the same name, so a model sees what it sees in the panel. */
+export const DEFAULT_TASK_NAME = 'Home panel';
+
 /** Why a call failed, as Home Assistant words it: it rejects with `{code, message}`, not an Error; the message, else the code, else the value. */
 export const rejectionReason = (error: unknown): string => {
   const rejection = error as {message?: unknown; code?: unknown} | null;
@@ -275,7 +278,7 @@ export function createApi(store: PanelStore): PanelApi {
       });
     },
 
-    async generateData(entityId, instructions, structure, {signal, taskName = 'Home panel', stale = true} = {}) {
+    async generateData(entityId, instructions, structure, {signal, taskName = DEFAULT_TASK_NAME, stale = true} = {}) {
       const hass = connected();
       const generation = store.generation;
       if (signal?.aborted) throw new Cancelled();

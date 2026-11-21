@@ -28,7 +28,8 @@
     "changeset": "changeset",
     "version-packages": "changeset version && node scripts/sync-version.mjs && prettier --write package.json README.md examples/configuration.yaml",
     "licenses": "node scripts/licenses.mjs",
-    "record:fixture": "node scripts/record-fixture.mjs"
+    "record:fixture": "node scripts/record-fixture.mjs",
+    "ask:record": "node scripts/ask-record.mjs"
   },
   "engines": {
     "node": "^24.5 || >=26"
