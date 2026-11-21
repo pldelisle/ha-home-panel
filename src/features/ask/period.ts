@@ -112,3 +112,10 @@ export function resolvePeriod(
       return since(midnight(addDays(today, -29)), 'day');
   }
 }
+
+/**
+ * The window of a moments question over a measure: the period's own, but never read by the day. A daily mean hides an afternoon above a threshold, and the recorder keeps
+ * 5-minute rows for only about ten days while its hourly rows last, so a month is read by the hour (spec 29, "The evaluation").
+ */
+export const momentsWindow = (window: PeriodWindow): PeriodWindow =>
+  window.statistic === 'day' ? {...window, statistic: 'hour'} : window;

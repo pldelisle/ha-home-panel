@@ -19,6 +19,21 @@ export const seriesPlan = (sensor: string, period: string) => ({
   longer_than_min: null,
 });
 
+/** What a model returns for a question about when something was in a state: a binary sensor's `on` or `off`, a measure's `above` or `below` with its value. */
+export const momentsPlan = (
+  sensor: string,
+  period: string,
+  test: 'on' | 'off' | 'above' | 'below',
+  options: {value?: number; longerThanMin?: number} = {},
+) => ({
+  form: 'moments',
+  sensor,
+  period,
+  test,
+  value: options.value ?? null,
+  longer_than_min: options.longerThanMin ?? null,
+});
+
 /**
  * What the AI Task answers, by a substring of the question (the instructions hold the sensors' names too, so a key is words of the question
  * alone, and none that the instructions' own examples hold, such as "how warm was the office yesterday": the office's temperature over the last 24 hours, a sensor the catalog does not have, and, for anything else, the harness's "unsupported".
@@ -29,6 +44,12 @@ export const AI_TASK = {
     'office temperature over the last day': seriesPlan('temp.office', 'last_24h'),
     'faisait-il au bureau': seriesPlan('temp.office', 'last_24h'),
     'attic temperature': seriesPlan('temp.attic', 'last_24h'),
+    // the test house's recorder: the front door was open 3 min, 40 s and 65 min in the last eight hours; the office's mean goes above 21 in several stretches
+    'door open for two hours': momentsPlan('door.living_room', 'last_24h', 'on', {longerThanMin: 120}),
+    'front door left open': momentsPlan('door.living_room', 'last_24h', 'on', {longerThanMin: 1}),
+    'office above 21 degrees': momentsPlan('temp.office', 'last_24h', 'above', {value: 21}),
+    'restée ouverte pendant': momentsPlan('door.living_room', 'last_24h', 'on', {longerThanMin: 120}),
+    'restée ouverte dans': momentsPlan('door.living_room', 'last_24h', 'on', {longerThanMin: 1}),
   },
 };
 
@@ -36,6 +57,11 @@ export const AI_TASK = {
 export const QUESTION = 'What was the office temperature over the last day?';
 export const QUESTION_YESTERDAY = 'What was the office temperature yesterday?';
 export const QUESTION_ATTIC = 'What was the attic temperature?';
+export const QUESTION_DOOR = 'Was the front door left open in the last day?';
+export const QUESTION_DOOR_NONE = 'Was the front door open for two hours?';
+export const QUESTION_ABOVE = 'When was the office above 21 degrees in the last day?';
+export const QUESTION_DOOR_FR = "La porte d'entrée est-elle restée ouverte dans les dernières 24 heures ?";
+export const QUESTION_DOOR_NONE_FR = "La porte d'entrée est-elle restée ouverte pendant deux heures ?";
 export const QUESTION_FR = 'Quelle température faisait-il au bureau dans les dernières 24 heures ?';
 
 export const askButton = (house: House) => house.root().locator('#ask');

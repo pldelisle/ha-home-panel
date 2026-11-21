@@ -24,6 +24,32 @@ hp-chart {
   display: block;
   margin: 6px 0 2px;
 }
+.moments {
+  margin: 4px 0 2px;
+  padding: 0;
+  list-style: none;
+}
+.moments li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 0;
+  border-top: 1px solid var(--line);
+  font-size: calc(15px * var(--tx));
+  line-height: 1.3;
+}
+.moments li:last-child {
+  border-bottom: 1px solid var(--line);
+}
+.moments .length {
+  flex: none;
+  color: var(--fg2);
+}
+/* a span still going is set in bolder type: the word "still" carries it, the weight only helps the eye */
+.moments .ongoing .when {
+  font-weight: 700;
+}
+.ask-more,
 .understood,
 .coverage {
   margin: 0;
@@ -44,6 +70,11 @@ hp-chart {
   font: var(--type-body-large);
   letter-spacing: var(--track-body-large);
 }
+.app[data-design='material'] .moments li {
+  font: var(--type-body-large);
+  letter-spacing: var(--track-body-large);
+}
+.app[data-design='material'] .ask-more,
 .app[data-design='material'] .understood,
 .app[data-design='material'] .coverage {
   font: var(--type-body-medium);

@@ -2,13 +2,16 @@
 // Pattern: an anti-corruption layer (Evans, DDD) between the house and a model, built from the providers' reads and never from a
 // feature (ADR 0025). A handle (`temp.office`, `power.grid`) is a stable key built from a room's area (else the key its config gives it,
 // else its display name) or from a power role, never from an entity id, so a hallucinated sensor is a parse error by construction
-// (ADR 0040, "The model plans, the panel computes"). Spec 29, "The sensor catalog". This slice fills the `measure` entries.
+// (ADR 0040, "The model plans, the panel computes"). Spec 29, "The sensor catalog". It holds the `measure` entries (rooms' temperatures, live power) and the `binary` ones (doors, motion, who is home).
 // Must not: send or hold an entity id in an entry, a reading or a state value, word a name but through `t` and the name resolver, or read the clock.
 import type {ResolvedConfig} from '../../core/config.ts';
+import type {MessageKey} from '../../core/i18n/en.ts';
 import type {HassEntities, Registries} from '../../core/hass.ts';
 import {roomName, type RoomNameDeps} from '../../core/i18n/room-name.ts';
 import {areaOf} from '../../core/registry.ts';
 import {textAttributeOf} from '../../core/states.ts';
+import type {SensorInputs} from '../../providers/door-motion.ts';
+import type {PersonEntity} from '../../providers/people.ts';
 import type {PowerNow} from '../../providers/power.ts';
 
 /** More sensors than this are not offered to a model: the first ones, in provider order, are kept. */
@@ -28,6 +31,8 @@ export interface CatalogEntry {
   kind: SensorKind;
   /** What a reading is measured in: `°`, `W`, `kW`. */
   unit: string;
+  /** A binary sensor's two states as message keys (`ask.words.open`), for the understood line; a measure has none. */
+  words?: {on: MessageKey; off: MessageKey};
 }
 
 export interface Catalog {
@@ -38,22 +43,33 @@ export interface Catalog {
   omitted: number;
 }
 
-/** What the catalog reads of the house: the live flow the Power provider gives, the states for each entity's own unit and the registries for a room's area. */
+/** What the catalog reads of the house: the live flow the Power provider gives, the states for each entity's own unit, the registries for a room's area, the door and motion sensors and the people's entities. */
 export interface AskReads {
   power: PowerNow;
   states: HassEntities;
   registries: Registries;
+  sensors: SensorInputs[];
+  people: PersonEntity[];
 }
 
-/** A name or id made into a handle's second half: lower case, letters and digits, one underscore between runs of anything else. */
+/** The words of a binary sensor's two states, as the message keys the understood line says them with. */
+const WORDS = {
+  door: {on: 'ask.words.open', off: 'ask.words.closed'},
+  motion: {on: 'ask.words.motion', off: 'ask.words.clear'},
+  home: {on: 'ask.words.home', off: 'ask.words.away'},
+} as const;
+
+/** A name or id made into a handle's second half: lower case, letters and digits (an accent folded away), one underscore between runs of anything else. */
 const slug = (text: string): string =>
   text
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '_')
     .replace(/^_|_$/g, '');
 
 /**
- * The catalog of a house: the rooms' temperatures, then the live power readings, minus what `ask.exclude` lists, cut at the cap.
+ * The catalog of a house: the rooms' temperatures, the live power readings, the doors and motion sensors, then the people, minus what `ask.exclude` lists, cut at the cap.
  * `names` is what a room's name needs (the resolver, `t` and the language); the sensors the live flow reads are named here.
  */
 export function askCatalog(
@@ -63,11 +79,13 @@ export function askCatalog(
 ): Catalog {
   const found: [CatalogEntry, string][] = [];
   // two sensors that would share a handle keep both, the second as `temp.den-2`: stable, and visible to a reader of the instructions
-  const add = (handle: CatalogKey, name: string, unit: string, entity: string) => {
+  const addEntry = (handle: CatalogKey, entry: Omit<CatalogEntry, 'key'>, entity: string) => {
     let key = handle;
-    for (let n = 2; found.some(([entry]) => entry.key === key); n++) key = `${handle}-${n}`;
-    found.push([{key, name, kind: 'measure', unit}, entity]);
+    for (let n = 2; found.some(([existing]) => existing.key === key); n++) key = `${handle}-${n}`;
+    found.push([{key, ...entry}, entity]);
   };
+  const add = (handle: CatalogKey, name: string, unit: string, entity: string) =>
+    addEntry(handle, {name, kind: 'measure', unit}, entity);
   const {entities} = config;
   for (const room of reads.power.rooms) {
     const spec = config.rooms.find(candidate => candidate.climate === room.climate);
@@ -86,6 +104,21 @@ export function askCatalog(
   ];
   for (const [key, reading, entity, role] of flow)
     if (reading !== null && entity) add(key, names.t(`ask.sensor.${role}`), unitOf(entity), entity);
+  // a door's or a motion sensor's handle is built from its area, else its display name, and a person's from the configured name: never from an entity id
+  for (const sensor of reads.sensors) {
+    const word = [sensor.areaId ?? '', sensor.name].map(slug).find(Boolean) ?? 'sensor';
+    addEntry(
+      `${sensor.kind}.${word}`,
+      {name: sensor.name, kind: 'binary', unit: '', words: WORDS[sensor.kind]},
+      sensor.id,
+    );
+  }
+  for (const person of reads.people)
+    addEntry(
+      `home.${slug(person.name) || 'person'}`,
+      {name: person.name, kind: 'binary', unit: '', words: WORDS.home},
+      person.id,
+    );
   const excluded = new Set(config.ask?.exclude);
   const kept = found.filter(([, entity]) => !excluded.has(entity));
   const cut = kept.slice(0, ASK_CATALOG_CAP);

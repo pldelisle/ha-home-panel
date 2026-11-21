@@ -120,18 +120,40 @@ describe('every PlanError, on the first field that fails', () => {
   });
 });
 
-describe('moments and a total are not answered yet', () => {
-  test('a reply for either parses to form_not_supported_yet, the one the next slices remove', () => {
+describe('moments are answered, a total is not yet', () => {
+  test('a reply for moments parses to a plan; a total still parses to form_not_supported_yet, the one the next slice removes', () => {
     expect(parsePlan(reply({form: 'moments', sensor: 'door.patio', test: 'on', longer_than_min: 10}), catalog)).toEqual(
       {
-        error: 'form_not_supported_yet',
+        form: 'moments',
+        sensor: 'door.patio',
+        period: 'yesterday',
+        test: {on: true},
+        longerThanMin: 10,
+      },
+    );
+    expect(parsePlan(reply({form: 'moments', sensor: 'temp.office', test: 'above', value: 23}), catalog)).toMatchObject(
+      {
+        form: 'moments',
+        test: {above: 23},
       },
     );
     expect(parsePlan(reply({form: 'total', sensor: 'energy.car'}), catalog)).toEqual({error: 'form_not_supported_yet'});
   });
+
+  test('the mismatches are errors: a binary needs on or off, a measure above or below, a meter is refused', () => {
+    expect(parsePlan(reply({form: 'moments', sensor: 'door.patio', test: 'above', value: 1}), catalog)).toEqual({
+      error: 'bad_test',
+    });
+    expect(parsePlan(reply({form: 'moments', sensor: 'temp.office', test: 'on'}), catalog)).toEqual({
+      error: 'bad_test',
+    });
+    expect(parsePlan(reply({form: 'moments', sensor: 'energy.car', test: 'above', value: 1}), catalog)).toEqual({
+      error: 'form_kind_mismatch',
+    });
+  });
 });
 
-describe('the whole union, which the next slices will accept', () => {
+describe('the whole union, which readPlan accepts', () => {
   test('moments over a binary sensor takes on or off, and a minimum length', () => {
     expect(
       readPlan(

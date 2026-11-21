@@ -3,7 +3,14 @@
 import {afterAll, beforeAll, describe, expect, test} from 'vitest';
 import {createFormatters} from '../../../../src/core/i18n/format.ts';
 import {englishLocale} from '../../../../src/core/i18n/locale.ts';
-import {PERIODS, resolvePeriod, weekStartOf, type Period, type WeekStart} from '../../../../src/features/ask/period.ts';
+import {
+  momentsWindow,
+  PERIODS,
+  resolvePeriod,
+  weekStartOf,
+  type Period,
+  type WeekStart,
+} from '../../../../src/features/ask/period.ts';
 
 const ZONE = 'America/Toronto';
 const MONDAY: WeekStart = 1;
@@ -141,6 +148,24 @@ describe('the edges of the calendar', () => {
     const instant = '2026-11-18T03:00:00Z'; // the 17th in Toronto, the 18th in Paris
     expect(window('today', instant, MONDAY, 'America/Toronto')[0]).toBe('2026-11-17T05:00:00.000Z');
     expect(window('today', instant, MONDAY, 'Europe/Paris')[0]).toBe('2026-11-17T23:00:00.000Z');
+  });
+});
+
+describe('momentsWindow', () => {
+  const fmt = createFormatters(englishLocale(ZONE));
+  const of = (period: Period) => momentsWindow(resolvePeriod(period, new Date(WEDNESDAY), fmt, MONDAY));
+
+  test('is never daily: a daily mean hides an afternoon above a threshold, so a month is read by the hour', () => {
+    for (const period of ['this_month', 'last_month', 'last_30_days'] as const)
+      expect(of(period).statistic, period).toBe('hour');
+  });
+
+  test('keeps 5 minutes for a day or less and the hour beyond, and the window itself', () => {
+    expect(of('today').statistic).toBe('5minute');
+    expect(of('last_24h').statistic).toBe('5minute');
+    expect(of('last_week').statistic).toBe('hour');
+    const month = resolvePeriod('this_month', new Date(WEDNESDAY), fmt, MONDAY);
+    expect(momentsWindow(month)).toEqual({...month, statistic: 'hour'});
   });
 });
 

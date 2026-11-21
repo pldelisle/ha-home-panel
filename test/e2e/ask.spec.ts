@@ -7,7 +7,11 @@ import {
   ASK_CFG,
   ASK_ENTITY,
   QUESTION,
+  QUESTION_ABOVE,
   QUESTION_ATTIC,
+  QUESTION_DOOR,
+  QUESTION_DOOR_FR,
+  QUESTION_DOOR_NONE,
   QUESTION_YESTERDAY,
   QUESTION_FR,
   aiTaskNow,
@@ -423,5 +427,80 @@ test.describe('the failures in French', () => {
       'Cela a pris trop de temps. Réessayez ou posez une question plus simple.',
     );
     await expect(retryButton(house)).toHaveText('Réessayer');
+  });
+});
+
+test.describe('moments', () => {
+  test.use({houseOpts: {cfg: ASK_CFG, aiTask: AI_TASK, time: AFTERNOON}});
+
+  test('a door question lists each span with its start, end and length, above the count and the total', async ({
+    house,
+  }) => {
+    await withAsk(house);
+    await openAsk(house);
+    await sendQuestion(house, QUESTION_DOOR);
+    const sheet = askSheet(house);
+    // the test house's recorder: the door was open for 3 min, 40 s and 65 min; "longer than 1 min" leaves the first and the last
+    await expect(sheet.locator('#ask-summary')).toHaveText('2 times, 1 h 08');
+    await expect(sheet.locator('#ask-understood')).toHaveText('Front door · open longer than 1 min · last 24 hours');
+    const spans = sheet.locator('#ask-moments li');
+    await expect(spans).toHaveCount(2);
+    await expect(spans.nth(0).locator('.length')).toHaveText('3 min');
+    await expect(spans.nth(1).locator('.length')).toHaveText('1 h 05');
+    await expect(spans.nth(0).locator('.when')).toHaveText(/^\w{3} \d+:07 [ap]m – \d+:10 [ap]m$/);
+    // a list, not a chart: no chart is drawn, and the answer is in the polite live region
+    await expect(sheet.locator('hp-chart')).toHaveCount(0);
+    await expect(sheet.locator('#ask-result #ask-moments')).toBeVisible();
+    await expect(sheet.locator('#ask-more')).toHaveCount(0);
+  });
+
+  test('nothing matched is said plainly, and the understood line still says what was asked', async ({house}) => {
+    await withAsk(house);
+    await openAsk(house);
+    await sendQuestion(house, QUESTION_DOOR_NONE);
+    const sheet = askSheet(house);
+    await expect(sheet.locator('#ask-summary')).toHaveText('No moments last 24 hours');
+    await expect(sheet.locator('#ask-understood')).toHaveText('Front door · open longer than 120 min · last 24 hours');
+    await expect(sheet.locator('#ask-moments')).toHaveCount(0);
+    await expect(sheet.locator('#ask-message')).toHaveCount(0);
+  });
+
+  test('a threshold over a measure lists the stretches it was met, from statistics', async ({house}) => {
+    await withAsk(house);
+    await openAsk(house);
+    await sendQuestion(house, QUESTION_ABOVE);
+    const sheet = askSheet(house);
+    await expect(sheet.locator('#ask-understood')).toHaveText('Office · above 21° · last 24 hours');
+    await expect(sheet.locator('#ask-summary')).toHaveText(/^\d+ times?, /);
+    expect(await sheet.locator('#ask-moments li').count()).toBeGreaterThan(0);
+    // statistics, not state history, answered it
+    const reads = await house.reads();
+    expect(reads.some(read => read.startsWith('history/history_during_period '))).toBe(false);
+  });
+
+  test('a door question reads the door’s state history, from the sensor behind the handle', async ({house}) => {
+    await withAsk(house);
+    await openAsk(house);
+    await sendQuestion(house, QUESTION_DOOR);
+    await expect(askSheet(house).locator('#ask-moments')).toBeVisible();
+    const reads = (await house.reads()).filter(read => read.startsWith('history/history_during_period '));
+    expect(reads).toHaveLength(1);
+    expect(reads[0]).toContain('binary_sensor.front_door');
+  });
+});
+
+test.describe('moments in French', () => {
+  test.use({
+    houseOpts: {cfg: {...ASK_CFG, names: KEEP_ENGLISH_NAMES}, lang: 'fr', aiTask: AI_TASK, time: AFTERNOON},
+  });
+
+  test('the count, the total and the understood line are said in French', async ({house}) => {
+    await withAsk(house);
+    await openAsk(house);
+    await sendQuestion(house, QUESTION_DOOR_FR);
+    await expect(askSheet(house).locator('#ask-summary')).toHaveText('2 fois, 1 h 08');
+    await expect(askSheet(house).locator('#ask-understood')).toHaveText(
+      'Front door · ouvert plus de 1 min · dernières 24 heures',
+    );
   });
 });

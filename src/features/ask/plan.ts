@@ -39,7 +39,7 @@ export const isPlanError = (parsed: Plan | PlanError): parsed is PlanError => 'e
 const FORMS: readonly PlanForm[] = ['series', 'moments', 'total', 'unsupported'];
 
 /** The forms the panel can answer yet. Each of the next slices adds one and removes it from the error below (`form_not_supported_yet`). */
-const ANSWERED: readonly PlanForm[] = ['series', 'unsupported'];
+const ANSWERED: readonly PlanForm[] = ['series', 'moments', 'unsupported'];
 
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
