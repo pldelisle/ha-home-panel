@@ -10,7 +10,9 @@ import {
   QUESTION_ATTIC,
   QUESTION_YESTERDAY,
   QUESTION_FR,
+  aiTaskNow,
   askButton,
+  askMessage,
   askDialog,
   askField,
   askSheet,
@@ -88,9 +90,7 @@ test.describe('a house with an ask block', () => {
     // the test house's recorder holds 25 hours of five-minute rows, so "yesterday" is only its last hours
     await sendQuestion(house, QUESTION_YESTERDAY);
     await expect(askSheet(house).locator('#ask-summary')).toHaveText(/^Office · yesterday · /);
-    await expect(askSheet(house).locator('#ask-coverage')).toHaveText(
-      /^From .+, the history covers \d+% of the period\.$/,
-    );
+    await expect(askSheet(house).locator('#ask-coverage')).toHaveText(/^History starts .+/);
   });
 
   test('the keyboard is enough: the field has focus on open, Enter sends, Escape closes and gives focus back', async ({
@@ -241,5 +241,187 @@ test.describe('the sheet on a phone', () => {
     const height = house.page.viewportSize()!.height;
     expect(field!.y).toBeLessThan(height / 3);
     expect(body!.height).toBeGreaterThan(height * 0.6);
+  });
+});
+
+// The ways a question fails (spec 29, "The model of the sheet"; #539): each has its own plain line, and a slow question can be stopped. The harness holds the model's reply
+// back by `delayMs` on the page's clock, which Playwright's `clock` runs, so thirty seconds take no real time.
+const TIMEOUT_EN = 'That took too long. Try again or ask something simpler.';
+const UNAVAILABLE_EN = "The house's model isn't answering right now.";
+const retryButton = (house: Parameters<typeof askMessage>[0]) => askSheet(house).locator('#ask-retry');
+const cancelButton = (house: Parameters<typeof askMessage>[0]) => askSheet(house).locator('#ask-cancel');
+
+test.describe('a slow model', () => {
+  // a reply that takes twenty seconds is slow and still in time; the timeout test holds it back for two minutes
+  test.use({houseOpts: {cfg: ASK_CFG, aiTask: {...AI_TASK, delayMs: 20_000}, time: AFTERNOON}});
+
+  test('says what it is doing, and Cancel returns to the field with the question kept and focus on it', async ({
+    house,
+  }) => {
+    await withAsk(house);
+    await openAsk(house);
+    await sendQuestion(house, QUESTION);
+    await expect(askMessage(house)).toHaveText('Working out what you asked…');
+    await expect(cancelButton(house)).toHaveText('Cancel');
+    await cancelButton(house).click();
+    await expect(askMessage(house)).toHaveCount(0);
+    await expect(cancelButton(house)).toHaveCount(0);
+    await expect(askField(house)).toHaveValue(QUESTION);
+    await expect(askField(house)).toBeFocused();
+    // the reply that comes later is dropped, and the model's thirty seconds are over with the cancel
+    await house.clock.runFor(150_000);
+    await expect(askMessage(house)).toHaveCount(0);
+    await expect(askSheet(house).locator('hp-ask-answer')).toHaveCount(0);
+    expect(await house.generated()).toHaveLength(1);
+  });
+
+  test('a cancelled question can be asked again, and its answer is the one shown', async ({house}) => {
+    await withAsk(house);
+    await openAsk(house);
+    await sendQuestion(house, QUESTION);
+    await cancelButton(house).click();
+    await askField(house).press('Enter');
+    await expect(askMessage(house)).toHaveText('Working out what you asked…');
+    await house.clock.runFor(20_001);
+    await expect(askSheet(house).locator('#ask-summary')).toHaveText(/^Office · last 24 hours/);
+    expect(await house.generated()).toHaveLength(2);
+  });
+
+  test('a second question typed while one is in flight replaces it: the first reply is dropped', async ({house}) => {
+    await withAsk(house);
+    await openAsk(house);
+    await sendQuestion(house, QUESTION_YESTERDAY);
+    await expect.poll(async () => (await house.generated()).length).toBe(1);
+    await sendQuestion(house, QUESTION);
+    await expect.poll(async () => (await house.generated()).length).toBe(2);
+    await house.clock.runFor(20_001);
+    await expect(askSheet(house).locator('#ask-summary')).toHaveText(/^Office · last 24 hours/);
+    await expect(askSheet(house).locator('#ask-understood')).not.toContainText('yesterday');
+  });
+
+  test('focus on Cancel does not fall to the page when the answer arrives: it goes to the field', async ({house}) => {
+    await withAsk(house);
+    await openAsk(house);
+    await sendQuestion(house, QUESTION);
+    await cancelButton(house).focus();
+    await house.clock.runFor(20_001);
+    await expect(askSheet(house).locator('#ask-summary')).toBeVisible();
+    await expect(askField(house)).toBeFocused();
+  });
+
+  test('focus on Cancel goes to Try again when the question times out', async ({house}) => {
+    await aiTaskNow(house, {delayMs: 120_000});
+    await withAsk(house);
+    await openAsk(house);
+    await sendQuestion(house, QUESTION);
+    await cancelButton(house).focus();
+    await house.clock.runFor(30_001);
+    await expect(retryButton(house)).toBeFocused();
+  });
+
+  test('gives up after thirty seconds, says so and offers to try again', async ({house}) => {
+    await aiTaskNow(house, {delayMs: 120_000});
+    await withAsk(house);
+    await openAsk(house);
+    await sendQuestion(house, QUESTION);
+    await expect(askMessage(house)).toHaveText('Working out what you asked…');
+    await house.clock.runFor(29_000);
+    await expect(askMessage(house)).toHaveText('Working out what you asked…');
+    await house.clock.runFor(1_001);
+    await expect(askMessage(house)).toHaveText(TIMEOUT_EN);
+    await expect(cancelButton(house)).toHaveCount(0);
+    await expect(askField(house)).toHaveValue(QUESTION);
+    // Try again sends the same question once more; this time the model answers at once
+    await aiTaskNow(house, {delayMs: 0});
+    await retryButton(house).click();
+    await expect(askSheet(house).locator('#ask-summary')).toHaveText(/^Office · last 24 hours/);
+    const calls = await house.generated();
+    expect(calls).toHaveLength(2);
+    expect(calls[1].data.instructions).toBe(calls[0].data.instructions);
+  });
+
+  test('the progress row keeps its dot still under reduced motion, and breathes otherwise', async ({house}) => {
+    const dot = (h: typeof house) => askMessage(h).evaluate(el => getComputedStyle(el, '::before').animationName);
+    // the project's browsers are set to reduce motion; this one test asks for the motion first
+    await house.page.emulateMedia({reducedMotion: 'no-preference'});
+    await withAsk(house);
+    await openAsk(house);
+    await sendQuestion(house, QUESTION);
+    await expect(askMessage(house)).toBeVisible();
+    expect(await dot(house)).toBe('askbreath');
+    await house.page.emulateMedia({reducedMotion: 'reduce'});
+    expect(await dot(house)).toBe('none');
+  });
+});
+
+test.describe('a model that does not answer', () => {
+  test.use({houseOpts: {cfg: ASK_CFG, aiTask: {...AI_TASK, fail: true}, time: AFTERNOON}});
+
+  test('is said so, with Try again, which asks the same question and is answered once the model is back', async ({
+    house,
+  }) => {
+    await withAsk(house);
+    await openAsk(house);
+    await sendQuestion(house, QUESTION);
+    await expect(askMessage(house)).toHaveText(UNAVAILABLE_EN);
+    await expect(askField(house)).toHaveValue(QUESTION);
+    // the cause is logged to the console for the one who looks (the loader's), and is the only error this test expects
+    expect(house.errors).toEqual(['home-panel ask {code: unknown_error, message: the AI Task failed on purpose}']);
+    house.errors.length = 0;
+    await aiTaskNow(house, {fail: false});
+    await retryButton(house).click();
+    await expect(askSheet(house).locator('#ask-summary')).toBeVisible();
+    expect(await house.generated()).toHaveLength(2);
+  });
+});
+
+test.describe('an AI Task entity that is unavailable', () => {
+  test.use({houseOpts: {cfg: ASK_CFG, aiTask: AI_TASK, time: AFTERNOON}});
+
+  test('is said so at once, without a call to it', async ({house}) => {
+    await withAsk(house);
+    await house.setState(ASK_ENTITY, {state: 'unavailable'});
+    await openAsk(house);
+    await sendQuestion(house, QUESTION);
+    await expect(askMessage(house)).toHaveText(UNAVAILABLE_EN);
+    await expect(retryButton(house)).toBeVisible();
+    expect(await house.generated()).toHaveLength(0);
+  });
+});
+
+test.describe('a period the recorder has nothing for', () => {
+  test.use({houseOpts: {cfg: ASK_CFG, aiTask: AI_TASK, time: AFTERNOON}});
+
+  test('names the sensor and the period, and offers no retry (it would answer the same)', async ({house}) => {
+    await withAsk(house);
+    await openAsk(house);
+    await house.page.evaluate(() => window.house.emptyStatistics(true));
+    await sendQuestion(house, QUESTION_YESTERDAY);
+    await expect(askMessage(house)).toHaveText('No history for Office yesterday.');
+    await expect(askSheet(house).locator('hp-ask-answer')).toHaveCount(0);
+    await expect(retryButton(house)).toHaveCount(0);
+  });
+});
+
+test.describe('the failures in French', () => {
+  test.use({
+    houseOpts: {
+      cfg: {...ASK_CFG, names: KEEP_ENGLISH_NAMES},
+      lang: 'fr',
+      aiTask: {...AI_TASK, delayMs: 120_000},
+      time: AFTERNOON,
+    },
+  });
+
+  test('the progress row, the timeout and the way to try again are said in French', async ({house}) => {
+    await withAsk(house);
+    await openAsk(house);
+    await sendQuestion(house, QUESTION_FR);
+    await expect(cancelButton(house)).toHaveText('Annuler');
+    await house.clock.runFor(30_001);
+    await expect(askMessage(house)).toHaveText(
+      'Cela a pris trop de temps. Réessayez ou posez une question plus simple.',
+    );
+    await expect(retryButton(house)).toHaveText('Réessayer');
   });
 });

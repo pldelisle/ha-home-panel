@@ -74,6 +74,13 @@ export class AskLoader implements ReactiveController {
     this.dispatch({type: 'closed'});
   }
 
+  /** The button of the progress row: the question in flight is let go, and the sheet goes back to its field, which still holds the words. Nothing is shown for it. */
+  cancel(): void {
+    this.abort?.abort();
+    this.abort = null;
+    this.dispatch({type: 'cancelled'});
+  }
+
   /** Asks a question, which replaces the one in flight. An empty one asks nothing. */
   ask(question: string): void {
     if (!question.trim()) return;
@@ -112,6 +119,9 @@ export class AskLoader implements ReactiveController {
     const {api, cache, store, weekStart, now, timeoutMs = ASK_TIMEOUT_MS} = this.deps();
     const entity = store.config.ask?.entity;
     if (entity === undefined) return this.dispatch({type: 'failed', id, reason: 'unavailable'});
+    // the entity's own state says so before any call is made: nothing to wait thirty seconds for (the other source is a call that rejects, below)
+    if (store.hass?.states[entity]?.state === 'unavailable')
+      return this.dispatch({type: 'failed', id, reason: 'unavailable'});
     const catalog = this.catalog;
     let timedOut = false;
     const timer = setTimeout(() => {

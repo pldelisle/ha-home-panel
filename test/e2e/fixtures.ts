@@ -26,6 +26,8 @@ declare global {
       subscribed(type: string): number;
       /** the recorder answers every statistics request of this period ('all': of every period) with an error (null: it answers again) */
       failStatistics(period: '5minute' | 'hour' | 'day' | 'all' | null): void;
+      /** the recorder answers every statistics request with no row at all (false: it answers as the house's curves again) */
+      emptyStatistics(on: boolean): void;
       /**
        * the next `callService` whose `domain.service` contains the pattern (`'media_player.turn_on'`, `'light.'`) rejects once with
        * `{code: 'unknown_error', message: 'the service call failed on purpose'}`, as Home Assistant's socket does; the rejected call is

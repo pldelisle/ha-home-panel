@@ -6,9 +6,11 @@ import type {EmptyAnswer, SeriesAnswer} from '../../../../src/features/ask/evalu
 import {
   askReducer,
   askView,
+  canRetry,
   IDLE,
   type AnswerablePlan,
   type AskEvent,
+  sensorOf,
   type AskState,
 } from '../../../../src/features/ask/model.ts';
 import type {PlanError} from '../../../../src/features/ask/plan.ts';
@@ -79,10 +81,12 @@ describe('the reducer', () => {
       plan: SERIES,
       answer: ANSWER,
     });
+    // the empty failure keeps the plan, so its line can name the sensor and the period
     expect(run([{type: 'answered', id: 1, answer: EMPTY}], fetching('q'))).toEqual({
       at: 'failed',
       question: 'q',
       reason: 'empty',
+      plan: SERIES,
     });
   });
 
@@ -110,6 +114,26 @@ describe('the reducer', () => {
     const answered: AskState = {at: 'answered', question: 'q', plan: SERIES, answer: ANSWER};
     expect(run([{type: 'cancelled'}], answered)).toBe(answered);
     expect(run([{type: 'cancelled'}])).toBe(IDLE);
+  });
+
+  test('a failed question asked again with the same words is a new request under a new id', () => {
+    const failed = run([ask('q', 1), {type: 'failed', id: 1, reason: 'timeout'}]);
+    expect(failed).toEqual({at: 'failed', question: 'q', reason: 'timeout'});
+    expect(run([ask((failed as {question: string}).question, 2)], failed)).toEqual(planning('q', 2));
+  });
+
+  test('only a timeout and an unavailable model offer to try again', () => {
+    const failed = (reason: 'unsupported' | 'timeout' | 'unavailable' | 'empty'): AskState => ({
+      at: 'failed',
+      question: 'q',
+      reason,
+    });
+    expect(canRetry(failed('timeout'))).toBe(true);
+    expect(canRetry(failed('unavailable'))).toBe(true);
+    expect(canRetry(failed('unsupported'))).toBe(false);
+    expect(canRetry(failed('empty'))).toBe(false);
+    expect(canRetry(planning())).toBe(false);
+    expect(canRetry(IDLE)).toBe(false);
   });
 
   test('closing the sheet forgets the question and the answer', () => {
@@ -178,9 +202,8 @@ describe('askView', () => {
   });
   const view = (state: AskState, language: 'en' | 'fr' = 'en', c = catalog) => {
     const {t, fmt} = depsOf(fullHouse, language);
-    // the sheet finds the answered sensor's entry once and hands it over
-    const sensor = state.at === 'answered' ? c.entries.find(entry => entry.key === state.plan.sensor) : undefined;
-    return askView(state, t, fmt, sensor);
+    // the sheet finds the state's sensor entry once and hands it over
+    return askView(state, t, fmt, sensorOf(state, c));
   };
 
   test('idle says nothing', () => {
@@ -193,11 +216,26 @@ describe('askView', () => {
   });
 
   test('each failure says its reason in plain words', () => {
-    const messages = (['unsupported', 'timeout', 'unavailable', 'empty'] as const).map(
-      reason => view({at: 'failed', question: 'q', reason}).message,
+    const failed = (reason: 'unsupported' | 'timeout' | 'unavailable' | 'empty'): AskState => ({
+      at: 'failed',
+      question: 'q',
+      reason,
+      ...(reason === 'empty' ? {plan: SERIES} : {}),
+    });
+    expect(view(failed('timeout')).message).toBe('That took too long. Try again or ask something simpler.');
+    expect(view(failed('unavailable')).message).toBe("The house's model isn't answering right now.");
+    expect(view(failed('empty')).message).toBe('No history for Office yesterday.');
+    expect(view(failed('unsupported')).message).toBe('The panel has no sensor for that, or cannot look that up yet.');
+    expect(view(failed('empty'), 'fr').message).toBe("Pas d'historique pour Office hier.");
+    expect(view(failed('timeout'), 'fr').message).toContain('trop de temps');
+    expect(view(failed('unavailable'), 'fr').message).toContain('modèle de la maison');
+  });
+
+  test('an empty failure names the sensor by its handle when the catalog no longer lists it', () => {
+    const state: AskState = {at: 'failed', question: 'q', reason: 'empty', plan: SERIES};
+    expect(askView(state, depsOf(fullHouse, 'en').t, depsOf(fullHouse, 'en').fmt).message).toBe(
+      'No history for temp.office yesterday.',
     );
-    expect(messages.every(message => message && message.length > 20)).toBe(true);
-    expect(new Set(messages).size).toBe(4);
   });
 
   test('a series says its summary, its mean and what the panel understood, in English', () => {
@@ -248,13 +286,9 @@ describe('askView', () => {
     });
   });
 
-  test('partial coverage adds a note with the share and where the history starts', () => {
-    expect(view(answered({...ANSWER, coverage: 0.5})).coverage).toBe(
-      'From Nov 17, the history covers 50% of the period.',
-    );
-    expect(view(answered({...ANSWER, coverage: 0.5}), 'fr').coverage).toBe(
-      "À partir du 17 nov., l'historique couvre 50\u202f% de la période.",
-    );
+  test('partial coverage adds a note saying where the history starts', () => {
+    expect(view(answered({...ANSWER, coverage: 0.5})).coverage).toBe('History starts Nov 17');
+    expect(view(answered({...ANSWER, coverage: 0.5}), 'fr').coverage).toBe("L'historique commence le 17 nov.");
   });
 
   test('a sensor the catalog no longer lists is named by its handle, not left blank', () => {

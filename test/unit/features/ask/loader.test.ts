@@ -165,7 +165,11 @@ describe('a question that has no answer', () => {
     statistics.mockResolvedValueOnce({});
     loader.ask(QUESTION);
     await settle();
-    expect(loader.state).toMatchObject({at: 'failed', reason: 'empty'});
+    expect(loader.state).toMatchObject({
+      at: 'failed',
+      reason: 'empty',
+      plan: {sensor: 'temp.office', period: 'yesterday'},
+    });
   });
 
   test('an AI Task that fails is unavailable, and the cause is logged', async () => {
@@ -199,6 +203,113 @@ describe('a question that has no answer', () => {
     await vi.advanceTimersByTimeAsync(1);
     expect(loader.state).toEqual({at: 'failed', question: QUESTION, reason: 'timeout'});
     expect(signal.aborted).toBe(true);
+  });
+});
+
+describe('a question the model cannot be asked', () => {
+  const unavailable = fullHouse.next({'ai_task.local_model': {state: 'unavailable'}});
+
+  test('an AI Task entity whose state is unavailable fails as unavailable without a call, so there is nothing to wait for', async () => {
+    const {generateData, loader} = setup(config, {store: storeOf(unavailable, config)});
+    loader.ask(QUESTION);
+    await settle();
+    expect(loader.state).toEqual({at: 'failed', question: QUESTION, reason: 'unavailable'});
+    expect(generateData).not.toHaveBeenCalled();
+  });
+
+  test('and asking again once the entity is back is a new question', async () => {
+    const made = setup(config, {store: storeOf(unavailable, config)});
+    made.loader.ask(QUESTION);
+    expect(made.loader.state).toMatchObject({at: 'failed'});
+    const back = setup();
+    back.loader.ask(QUESTION);
+    await settle();
+    expect(back.loader.state.at).toBe('answered');
+  });
+});
+
+describe('cancel', () => {
+  test('while the model works returns to idle, aborts the call and drops what the model says later', async () => {
+    const {loader, replies, statistics} = setup();
+    const late = deferred<unknown>();
+    let signal!: AbortSignal;
+    replies.push(options => {
+      signal = options.signal;
+      return late.promise;
+    });
+    loader.ask(QUESTION);
+    loader.cancel();
+    expect(loader.state).toEqual({at: 'idle'});
+    expect(signal.aborted).toBe(true);
+    late.resolve(PLAN);
+    await settle();
+    expect(loader.state).toEqual({at: 'idle'});
+    expect(statistics).not.toHaveBeenCalled();
+  });
+
+  test('a call that rejects as Cancelled on the abort is no failure: nothing is logged and nothing is shown', async () => {
+    vi.useFakeTimers();
+    const {loader, replies} = setup();
+    replies.push(
+      options => new Promise((_, reject) => options.signal.addEventListener('abort', () => reject(new Cancelled()))),
+    );
+    loader.ask(QUESTION);
+    loader.cancel();
+    await vi.advanceTimersByTimeAsync(ASK_TIMEOUT_MS + 1);
+    expect(loader.state).toEqual({at: 'idle'});
+    expect(console.error).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  test('while the history is read drops the rows when they come', async () => {
+    const {loader, statistics} = setup();
+    const rows = deferred<Record<string, StatisticRow[]>>();
+    statistics.mockReturnValueOnce(rows.promise);
+    loader.ask(QUESTION);
+    await settle();
+    expect(loader.state.at).toBe('fetching');
+    loader.cancel();
+    expect(loader.state).toEqual({at: 'idle'});
+    rows.resolve({'sensor.office_temperature': [row(NOW - HOUR, 20)]});
+    await settle();
+    expect(loader.state).toEqual({at: 'idle'});
+  });
+
+  test('then asking again is a new request, whose answer is taken', async () => {
+    const {loader, replies} = setup();
+    replies.push(() => new Promise(() => undefined));
+    loader.ask(QUESTION);
+    loader.cancel();
+    loader.ask(QUESTION);
+    await settle();
+    expect(loader.state).toMatchObject({at: 'answered', question: QUESTION});
+  });
+
+  test('leaves an answer, a failure and an idle sheet as they are', async () => {
+    const {loader} = setup();
+    loader.cancel();
+    expect(loader.state).toEqual({at: 'idle'});
+    loader.ask(QUESTION);
+    await settle();
+    const answered = loader.state;
+    loader.cancel();
+    expect(loader.state).toBe(answered);
+  });
+});
+
+describe('a timeout, then the same question again', () => {
+  test('goes through, since the timer and the signal are the question’s own', async () => {
+    vi.useFakeTimers();
+    const {loader, replies} = setup();
+    replies.push(
+      options => new Promise((_, reject) => options.signal.addEventListener('abort', () => reject(new Cancelled()))),
+    );
+    loader.ask(QUESTION);
+    await vi.advanceTimersByTimeAsync(ASK_TIMEOUT_MS);
+    expect(loader.state).toMatchObject({at: 'failed', reason: 'timeout'});
+    loader.ask(QUESTION);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(loader.state).toMatchObject({at: 'answered'});
   });
 });
 
@@ -287,7 +398,8 @@ describe('a reply that is no longer wanted is dropped', () => {
     expect(loader.state).toEqual({at: 'idle'});
   });
 
-  test('a reply of a config that is gone is no answer: the state is left to the frame that starts over', async () => {
+  // the shell's `resetFrame()` forgets the sheet when the config generation changes, so the loader leaves the state alone and the sheet is not left spinning
+  test('a reply of a config that is gone is no answer: the loader says nothing, and the shell’s reset of the frame forgets the sheet', async () => {
     const {loader, replies} = setup();
     replies.push(() => Promise.reject(new StaleReply(1, 2)));
     loader.ask(QUESTION);

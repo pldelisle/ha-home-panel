@@ -65,6 +65,12 @@ export const sendQuestion = async (house: House, question: string) => {
 export const chartDrawn = (house: House) =>
   expect(askSheet(house).locator('hp-chart .apexcharts-canvas')).toBeVisible();
 
+/** What the AI Task answers from now on: the harness reads its table at each call, so a test changes the delay or the failure under a question already asked. */
+export const aiTaskNow = (house: House, change: {delayMs?: number; fail?: boolean}) =>
+  house.page.evaluate(change => Object.assign((window as unknown as {AI_TASK: object}).AI_TASK, change), change);
+
+export const askMessage = (house: House) => askSheet(house).locator('#ask-message');
+
 /** After a tap: the pointer is moved off the control, and the animations are awaited, so no hover layer is in a screenshot. */
 export const settle = async (house: House) => {
   await house.page.mouse.move(0, 0);

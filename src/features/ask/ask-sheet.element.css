@@ -55,6 +55,15 @@
 .admin-note {
   font-size: calc(13px * var(--tx));
 }
+.outcome {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+.outcome .abtn {
+  flex: none;
+}
 /* a failure is said in the text colour: the sheet shows what happened, it does not alarm */
 .message.failed {
   color: var(--fg);
