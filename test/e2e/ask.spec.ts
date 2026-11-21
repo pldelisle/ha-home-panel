@@ -15,6 +15,7 @@ import {
   QUESTION_YESTERDAY,
   QUESTION_FR,
   QUESTION_TOTAL,
+  QUESTION_TOTAL_CAR,
   QUESTION_TOTAL_DAY,
   QUESTION_TOTAL_FR,
   TOTAL_CFG,
@@ -544,6 +545,25 @@ test.describe('totals', () => {
     expect(daily).toHaveLength(1);
     expect(daily[0]).toContain('sensor.heater_energy');
     expect(daily[0]).toContain('"types":["change"]');
+  });
+
+  test('the car is a power sensor: its means are turned into kWh, from the Energy card’s own daily window', async ({
+    house,
+  }) => {
+    await withAsk(house);
+    await openAsk(house);
+    await sendQuestion(house, QUESTION_TOTAL_CAR);
+    const sheet = askSheet(house);
+    await expect(sheet.locator('#ask-summary')).toHaveText('Car charging energy · last 7 days');
+    await expect(sheet.locator('#ask-total .v small')).toHaveText('kWh');
+    await chartDrawn(house);
+    // the mean kW of the test house's charger over 24 hours: a few tens of kWh a day, not the few kW of its power
+    const figure = await sheet.locator('#ask-total .v').innerText();
+    expect(parseFloat(figure)).toBeGreaterThan(50);
+    const daily = (await house.reads()).filter(
+      read => read.includes('"period":"day"') && read.includes('"types":["mean"]'),
+    );
+    expect(daily.every(read => read.includes('sensor.charger_power'))).toBe(true);
   });
 
   test('a day is told by the hour', async ({house}) => {

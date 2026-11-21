@@ -1,11 +1,12 @@
 // The evaluation of a question: statistics rows in, the series a chart draws or a meter's total out; state history or rows in, the spans of a test out; every figure computed here and none by a model.
 // Pattern: a pure function over values (functional core; ADR 0040, "The model plans, the panel computes"); spec 29, "The evaluation".
 // `empty` (no rows at all) is its own result, distinct from "no moments matched" (a moments answer with a count of 0): an answer of nothing is not a missing one.
-// Must not: fetch, read the clock (the window carries the period's end, the caller `now`), word a figure, or know a plan (it takes a test and a minimum) or a catalog's entries (the one thing it takes of it is the meters' unit).
+// Must not: fetch, read the clock (the window carries the period's end, the caller `now`), word a figure, or know a plan (it takes a test and a minimum) or a catalog.
+import {METER_UNIT} from '../../core/api.ts';
 import type {HistoryPoint, StatisticRow, StatisticsPeriod} from '../../core/ha.ts';
 import {HOUR_MS, MINUTE_MS, DAY_MS} from '../../core/figures.ts';
-import {METER_UNIT} from './catalog.ts';
-import type {PeriodWindow} from './period.ts';
+import {startOfDay, type Formatters} from '../../core/i18n/format.ts';
+import {addDays, type PeriodWindow} from './period.ts';
 import type {Test} from './plan.ts';
 
 /** One bucket of the series: when it starts and its mean. */
@@ -200,10 +201,10 @@ export function evaluateMoments(
   return 'on' in test ? {kind: 'empty'} : momentsOfStatistics(input.statistics, test, query, window, now);
 }
 
-/** One bucket of a total: when it starts and what the meter grew by in it. */
+/** One bucket of a total: when it starts and what the meter grew by in it; null for a day the recorder has no row for, which the chart leaves as a gap. */
 export interface TotalBar {
   at: number;
-  value: number;
+  value: number | null;
   /** The window ends inside this bucket (today, in "this week"): the bar is what there is so far, and is kept. */
   partial: boolean;
 }
@@ -214,7 +215,7 @@ export interface TotalAnswer {
   /** The sum of the buckets' changes, in `unit`. */
   total: number;
   unit: string;
-  /** In time order; a bucket with no value is not here (it is a gap, not a zero). */
+  /** In time order. A day inside the history with no value is a bar with a null value (a gap, not a zero); an hour with none is left out, and the time axis shows it. */
   bars: TotalBar[];
   /** The length of a bar: an hour for a period of a day or less, else a day. */
   bucket: 'hour' | 'day';
@@ -224,27 +225,51 @@ export interface TotalAnswer {
   from: number;
 }
 
+/** The day keys from `from` up to and not including `to`. */
+function daysBetween(from: string, to: string): string[] {
+  const keys: string[] = [];
+  for (let key = from; key < to; key = addDays(key, 1)) keys.push(key);
+  return keys;
+}
+
 /**
  * A meter's total from the buckets' `change`, which the recorder keeps from the meter's `sum` and which absorbs a reset (a difference of two sums would
- * not). A row outside `[start, end)` or with no change is left out. Coverage counts the whole buckets that have a value against the whole buckets the window holds,
- * so the bucket still running at `now` (which has no row yet, or a partial one) is neither missing nor extra.
+ * not). A row outside `[start, end)` or with no change is left out. The whole buckets a window holds are counted in the house's own days (`fmt` holds its zone: a
+ * day of 23 or 25 hours is one day), so the bucket still running at `now` (which has no row yet, or a partial one) is neither missing nor extra.
  */
-export function evaluateTotal(rows: readonly StatisticRow[], window: PeriodWindow): TotalAnswer | EmptyAnswer {
+export function evaluateTotal(
+  rows: readonly StatisticRow[],
+  window: PeriodWindow,
+  fmt: Pick<Formatters, 'isoDay'>,
+): TotalAnswer | EmptyAnswer {
   const start = window.start.getTime();
   const end = window.end.getTime();
   const kept = rows
     .filter(row => row.start >= start && row.start < end && finite(row.change))
     .sort((a, b) => a.start - b.start);
   if (kept.length === 0) return {kind: 'empty'};
-  const bars = kept.map((row): TotalBar => ({at: row.start, value: row.change as number, partial: row.end > end}));
-  const whole = Math.max(1, Math.floor((end - start) / BUCKET_MS[window.statistic]));
+  const bar = (row: StatisticRow): TotalBar => ({at: row.start, value: row.change as number, partial: row.end > end});
+  const daily = window.statistic === 'day';
+  // a day is told by the key of the instant its row starts at; an hour is a whole hour of the clock
+  const keyed = new Map(kept.map(row => [fmt.isoDay(row.start), row]));
+  const wholeDays = daily ? daysBetween(fmt.isoDay(start), fmt.isoDay(end)) : [];
+  // the days from the first with a value to the last the window holds: a day with no row keeps its place as a gap, and the day still running is there only if it has a row
+  const bars = daily
+    ? daysBetween(fmt.isoDay(kept[0].start), addDays(fmt.isoDay(end - 1), 1)).flatMap((key): TotalBar[] => {
+        const row = keyed.get(key);
+        if (row) return [bar(row)];
+        return wholeDays.includes(key) ? [{at: startOfDay(key, fmt), value: null, partial: false}] : [];
+      })
+    : kept.map(bar);
+  const covered = daily ? wholeDays.filter(key => keyed.has(key)).length : kept.filter(row => row.end <= end).length;
+  const whole = daily ? wholeDays.length : Math.floor((end - start) / BUCKET_MS[window.statistic]);
   return {
     kind: 'total',
-    total: bars.reduce((sum, bar) => sum + bar.value, 0),
+    total: bars.reduce((sum, item) => sum + (item.value ?? 0), 0),
     unit: METER_UNIT,
     bars,
-    bucket: window.statistic === 'day' ? 'day' : 'hour',
-    coverage: Math.min(1, kept.filter(row => row.end <= end).length / whole),
+    bucket: daily ? 'day' : 'hour',
+    coverage: Math.min(1, covered / Math.max(1, whole)),
     from: kept[0].start,
   };
 }

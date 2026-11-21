@@ -1504,6 +1504,8 @@ export const fr: Record<MessageKey, string> = {
   'ask.sensor.ev': 'Recharge de la voiture',
   'ask.sensor.energy': 'Énergie de la maison',
   'ask.sensor.waterHeaterEnergy': 'Énergie du chauffe-eau',
+  'ask.sensor.carEnergy': 'Énergie de recharge de la voiture',
+  'ask.sensor.heatingEnergy': 'Énergie du chauffage',
   'ask.period.today': "aujourd'hui",
   'ask.period.yesterday': 'hier',
   'ask.period.last_24h': 'dernières 24 heures',

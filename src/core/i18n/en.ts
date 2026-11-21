@@ -1539,6 +1539,8 @@ export const en = {
   'ask.sensor.ev': 'EV charging',
   'ask.sensor.energy': 'House energy',
   'ask.sensor.waterHeaterEnergy': 'Water heater energy',
+  'ask.sensor.carEnergy': 'Car charging energy',
+  'ask.sensor.heatingEnergy': 'Heating energy',
   // the nine periods, as the answer's summary and the understood line say them
   'ask.period.today': 'today',
   'ask.period.yesterday': 'yesterday',

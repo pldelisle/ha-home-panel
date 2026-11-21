@@ -121,6 +121,14 @@ describe('totalChartOptions', () => {
     expect(chart.tooltip.x?.formatter('Mon')).toBe('Mon');
   });
 
+  test('a day with no value keeps its label and its place, with a null where its bar would be', () => {
+    const missing = answer('day', days(3));
+    missing.bars[1].value = null;
+    const chart = options(missing);
+    expect(chart.series[0].data).toEqual([10, null, 10.67]);
+    expect(chart.xaxis.categories).toHaveLength(3);
+  });
+
   test('a month of days is under its date, thinned on a phone and still named in full by the tooltip', () => {
     const chart = options(answer('day', days(30)), true);
     const labels = chart.xaxis.categories as string[];

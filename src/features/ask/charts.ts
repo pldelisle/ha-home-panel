@@ -75,7 +75,7 @@ export function totalChartOptions(
     plotOptions: {bar: {borderRadius: 4, borderRadiusApplication: 'end', columnWidth: '64%'}},
     yaxis: {min: 0, labels: {formatter: written}},
   };
-  const value = (bar: (typeof bars)[number]): number => +bar.value.toFixed(2);
+  const value = (bar: (typeof bars)[number]): number | null => (bar.value === null ? null : +bar.value.toFixed(2));
   if (bucket === 'hour')
     return {
       ...shared,

@@ -32,7 +32,7 @@ export interface PeriodWindow {
 }
 
 /** A day key moved by whole days, on the calendar and so across a daylight-saving change. */
-const addDays = (day: string, days: number): string => {
+export const addDays = (day: string, days: number): string => {
   const [year, month, date] = day.split('-').map(Number);
   return new Date(Date.UTC(year, month - 1, date + days)).toISOString().slice(0, 10);
 };

@@ -10,7 +10,7 @@ import type {AskReads} from '../../../../src/features/ask/catalog.ts';
 import {ASK_TIMEOUT_MS, AskLoader, type AskDeps} from '../../../../src/features/ask/loader.ts';
 import {registriesOf} from '../../../../src/core/registry.ts';
 import {powerNow} from '../../../../src/providers/power.ts';
-import {powerWindows} from '../../../../src/providers/power-history.ts';
+import {dailyPowerWindow, powerWindows} from '../../../../src/providers/power-history.ts';
 import {entity} from '../../fake-hass.ts';
 import {FULL_CFG} from '../../../e2e/houses.ts';
 import {fullHouse, NOW, storeOf} from '../media/support.ts';
@@ -279,8 +279,17 @@ describe('a question about how much', () => {
     expect(loader.state).toMatchObject({
       at: 'answered',
       plan: {form: 'total', sensor: 'energy.house', period: 'last_7_days'},
-      answer: {kind: 'total', total: 6, unit: 'kWh', bucket: 'day', bars: [{value: 1}, {value: 2}, {value: 3}]},
+      answer: {kind: 'total', total: 6, unit: 'kWh', bucket: 'day'},
     });
+    // the three days of the week the recorder has no row for keep their place, as gaps
+    expect((loader.state as {answer: {bars: {value: number | null}[]}}).answer.bars.map(bar => bar.value)).toEqual([
+      1,
+      2,
+      3,
+      null,
+      null,
+      null,
+    ]);
     expect(call.types).toEqual(['change']);
   });
 
@@ -332,7 +341,77 @@ describe('a question about how much', () => {
     });
     expect(loader.state).toMatchObject({
       at: 'answered',
-      answer: {kind: 'total', total: 0, bars: [{partial: false}, {partial: true}]},
+      answer: {kind: 'total', total: 0},
+    });
+    const {bars} = (loader.state as {answer: {bars: {value: number | null; partial: boolean}[]}}).answer;
+    expect([bars[0], bars[bars.length - 1]]).toMatchObject([
+      {value: 0, partial: false},
+      {value: 0, partial: true},
+    ]);
+  });
+
+  describe('of the car and the heating, which are power sensors', () => {
+    const rooms = metered.config.rooms.map(room => room.power);
+    // a daily row of mean kW, starting at a local midnight; a row of an hour starts on the hour
+    const kw = (start: number, mean: number, length = 864e5): StatisticRow => ({start, end: start + length, mean});
+    const midnight = (n: number) => Date.UTC(2026, 10, n, n === 1 ? 4 : 5);
+
+    test('a week reads the Energy card’s 400 daily means, and a day of mean kW is 24 hours of it, today only the hours so far', async () => {
+      const {loader, call} = await ask(
+        {...TOTAL_PLAN, sensor: 'energy.car'},
+        {
+          'sensor.charger_power': [kw(midnight(1), 1), kw(midnight(2), 2), kw(midnight(7), 1)],
+          [rooms[0]]: [kw(midnight(1), 9)],
+        },
+      );
+      expect(call).toEqual({
+        ids: dailyPowerWindow(NOW, metered.config).ids,
+        period: 'day',
+        start: dailyPowerWindow(NOW, metered.config).start,
+        types: ['mean'],
+        end: undefined,
+      });
+      // the test house's clock is 2 pm: 14 hours of today
+      expect(loader.state).toMatchObject({
+        at: 'answered',
+        plan: {form: 'total', sensor: 'energy.car'},
+        answer: {kind: 'total', unit: 'kWh', bucket: 'day', total: 24 + 48 + 14},
+      });
+    });
+
+    test('the heating adds up the rooms’ power sensors, bucket by bucket', async () => {
+      const {loader} = await ask(
+        {...TOTAL_PLAN, sensor: 'energy.heating'},
+        {
+          [rooms[0]]: [kw(midnight(2), 1)],
+          [rooms[1]]: [kw(midnight(2), 2), kw(midnight(3), 0.5)],
+          'sensor.charger_power': [kw(midnight(2), 9)],
+        },
+      );
+      expect(loader.state).toMatchObject({
+        at: 'answered',
+        answer: {total: 72 + 12},
+      });
+      expect((loader.state as {answer: {bars: {value: number | null}[]}}).answer.bars.slice(0, 2)).toMatchObject([
+        {value: 72},
+        {value: 12},
+      ]);
+    });
+
+    test('a day or less reads the Energy card’s hourly week, where an hour of mean kW is its kWh', async () => {
+      const hours = Array.from({length: 24}, (_, i) => kw(Date.UTC(2026, 10, 6, 5 + i), 3, 36e5));
+      const {loader, call} = await ask(
+        {...TOTAL_PLAN, sensor: 'energy.car', period: 'yesterday'},
+        {'sensor.charger_power': hours},
+      );
+      const week = powerWindows(NOW, metered.config, metered.fmt).hour7;
+      expect(call).toEqual({ids: week.ids, period: 'hour', start: week.start, types: ['mean'], end: undefined});
+      expect(loader.state).toMatchObject({at: 'answered', answer: {bucket: 'hour', total: 72, coverage: 1}});
+    });
+
+    test('a sensor the recorder has no row for fails as empty', async () => {
+      const {loader} = await ask({...TOTAL_PLAN, sensor: 'energy.car'}, {});
+      expect(loader.state).toMatchObject({at: 'failed', reason: 'empty'});
     });
   });
 
@@ -680,7 +759,7 @@ describe('the catalog', () => {
     const crowdedStore = {...store, config: {...store.config, rooms}} as unknown as AskDeps['store'];
     const {loader} = setup(config, {reads: () => crowded, store: crowdedStore});
     expect(loader.catalog.entries).toHaveLength(60);
-    expect(loader.catalog.omitted).toBe(13);
+    expect(loader.catalog.omitted).toBe(15);
   });
 
   test('before Home Assistant has sent a state is empty', () => {

@@ -73,6 +73,7 @@ export const AI_TASK = {
     // the test house's recorder: a daily bucket of each of the last sixty days and an hourly one of each of the last 170 hours, for a meter in its states
     'house use over the last seven days': totalPlan('energy.house', 'last_7_days'),
     'house use yesterday': totalPlan('energy.house', 'yesterday'),
+    'car use over the last seven days': totalPlan('energy.car', 'last_7_days'),
     'maison a-t-elle consommé': totalPlan('energy.house', 'last_7_days'),
   },
 };
@@ -87,6 +88,7 @@ export const QUESTION_ABOVE = 'When was the office above 21 degrees in the last 
 export const QUESTION_DOOR_FR = "La porte d'entrée est-elle restée ouverte dans les dernières 24 heures ?";
 export const QUESTION_DOOR_NONE_FR = "La porte d'entrée est-elle restée ouverte pendant deux heures ?";
 export const QUESTION_TOTAL = 'What was the house use over the last seven days?';
+export const QUESTION_TOTAL_CAR = 'What was the car use over the last seven days?';
 export const QUESTION_TOTAL_DAY = 'What was the house use yesterday?';
 export const QUESTION_TOTAL_FR = 'Combien la maison a-t-elle consommé ces sept derniers jours ?';
 export const QUESTION_FR = 'Quelle température faisait-il au bureau dans les dernières 24 heures ?';
