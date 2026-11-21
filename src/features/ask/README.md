@@ -51,3 +51,5 @@ Fixed text plus the question (quoted, cut at 200 characters), the date and weekd
 ## Tests
 
 `test/unit/features/ask/`, on literals and on the full and the bare test houses. The coverage gate holds every module here at 100 percent of statements.
+
+**Measuring a model.** A question set and a command that records a real AI Task entity's replies live in `test/unit/fixtures/ask/` (`npm run ask:record`); a test parses the saved replies in CI. See its [README](../../../test/unit/fixtures/ask/README.md).
