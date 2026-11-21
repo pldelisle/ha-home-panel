@@ -3,7 +3,14 @@
 // a test out, with their count and total. No model, no clock, no house.
 import {describe, expect, test} from 'vitest';
 import type {HistoryPoint, StatisticRow} from '../../../../src/core/ha.ts';
-import {evaluateMoments, evaluateSeries} from '../../../../src/features/ask/evaluate.ts';
+import {
+  evaluateMoments,
+  evaluateSeries,
+  evaluateTotal,
+  type TotalAnswer,
+} from '../../../../src/features/ask/evaluate.ts';
+import {createFormatters} from '../../../../src/core/i18n/format.ts';
+import {englishLocale} from '../../../../src/core/i18n/locale.ts';
 import type {PeriodWindow} from '../../../../src/features/ask/period.ts';
 
 const HOUR = 36e5;
@@ -331,5 +338,123 @@ describe('moments of a measure: the buckets that meet a threshold', () => {
     expect(evaluateMoments(means(20, 24), on, day, LATER)).toEqual({kind: 'empty'});
     expect(evaluateMoments(history(point(at(10), 'on')), above(23), day, LATER)).toEqual({kind: 'empty'});
     expect(evaluateMoments(history(point(at(10), 'on')), off, day, LATER)).toMatchObject({count: 0});
+  });
+});
+
+describe('evaluateTotal', () => {
+  const DAY = 864e5;
+  const utc = createFormatters(englishLocale('UTC'));
+  const day = (n: number) => Date.UTC(2026, 10, 9 + n); // n = 0 is Monday 9 November
+  /** One daily bucket of a meter: its `change` is what the meter grew by that day. */
+  const daily = (n: number, change: number | null): StatisticRow => ({
+    start: day(n),
+    end: day(n) + DAY,
+    change,
+    sum: 1000 + n,
+  });
+  /** A daily window from Monday to `end`. */
+  const week = (end: number): PeriodWindow => ({start: new Date(day(0)), end: new Date(end), statistic: 'day'});
+  const total = (rows: StatisticRow[], window: PeriodWindow) => evaluateTotal(rows, window, utc);
+  const answer = (rows: StatisticRow[], window: PeriodWindow) => total(rows, window) as TotalAnswer;
+
+  test('adds the changes of the days and gives a bar for each, in time order, in kWh', () => {
+    expect(total([daily(2, 3), daily(0, 5), daily(1, 4)], week(day(3)))).toEqual({
+      kind: 'total',
+      total: 12,
+      unit: 'kWh',
+      bucket: 'day',
+      bars: [
+        {at: day(0), value: 5, partial: false},
+        {at: day(1), value: 4, partial: false},
+        {at: day(2), value: 3, partial: false},
+      ],
+      coverage: 1,
+      from: day(0),
+    });
+  });
+
+  test('takes a meter reset inside the period as the recorder gives it: a change, never a difference of two sums', () => {
+    // the meter fell back to 0 on Tuesday: the sums go 1000, 0.4, 3.5, which subtract to a negative, the changes do not
+    const rows = [daily(0, 5), {...daily(1, 0.4), sum: 0.4}, {...daily(2, 3.1), sum: 3.5}];
+    expect(answer(rows, week(day(3))).total).toBeCloseTo(8.5, 9);
+  });
+
+  test('the last bar of a period that includes today is partial and kept, the others are whole', () => {
+    const result = answer([daily(0, 5), daily(1, 4), daily(2, 1.5)], week(day(2) + 14 * 36e5));
+    expect(result).toMatchObject({total: 10.5, coverage: 1});
+    expect(result.bars.map(bar => bar.partial)).toEqual([false, false, true]);
+  });
+
+  test('a day with no row is a slot with no value, not a zero and not a bar left out: the coverage says so and the history starts where the rows do', () => {
+    const result = answer([daily(1, 4), daily(2, 3)], week(day(4)));
+    expect(result).toMatchObject({total: 7, from: day(1)});
+    expect(result.coverage).toBeCloseTo(0.5, 9);
+    // the days after the last row are missing too; the days before the first are not drawn
+    expect(result.bars).toEqual([
+      {at: day(1), value: 4, partial: false},
+      {at: day(2), value: 3, partial: false},
+      {at: day(3), value: null, partial: false},
+    ]);
+    // a gap inside the history, with a partial day at its end that is not a missing one
+    const gap = answer([daily(0, 5), daily(2, 3), daily(3, 1)], week(day(3) + 6 * 36e5));
+    expect(gap.coverage).toBeCloseTo(2 / 3, 9);
+    expect(gap.bars.map(bar => bar.value)).toEqual([5, null, 3, 1]);
+    expect(gap.bars[1].at).toBe(day(1));
+  });
+
+  test('a bucket with no change is a missing one; a row outside the window is not read', () => {
+    const result = answer([daily(-1, 9), daily(0, null), daily(1, 4), daily(5, 7)], week(day(3)));
+    expect(result.total).toBe(4);
+    expect(result.bars.map(bar => [bar.at, bar.value])).toEqual([
+      [day(1), 4],
+      [day(2), null],
+    ]);
+  });
+
+  test('a zero total is an answer: the meter was read and did not move', () => {
+    expect(total([daily(0, 0), daily(1, 0)], week(day(2)))).toMatchObject({
+      kind: 'total',
+      total: 0,
+      bars: [{value: 0}, {value: 0}],
+    });
+  });
+
+  test('no row at all is empty, which is not a zero', () => {
+    expect(total([], week(day(3)))).toEqual({kind: 'empty'});
+    expect(total([daily(7, 3), daily(0, null)], week(day(3)))).toEqual({kind: 'empty'});
+  });
+
+  describe('a week with a 23-hour day', () => {
+    // Toronto, the week of 2 March 2026: the clocks went forward on the Sunday, so the week is 167 hours and the 7 days of it are not 6.96 of 24 hours
+    const toronto = createFormatters(englishLocale('America/Toronto'));
+    const midnight = (d: number) => Date.UTC(2026, 2, d, d >= 9 ? 4 : 5);
+    const local = (d: number, change: number): StatisticRow => ({
+      start: midnight(d),
+      end: midnight(d + 1),
+      change,
+    });
+    const window: PeriodWindow = {start: new Date(midnight(2)), end: new Date(midnight(9)), statistic: 'day'};
+
+    test('counts the seven days of it, so six rows are six of seven and the missing day keeps its place', () => {
+      const rows = [2, 3, 4, 6, 7, 8].map(d => local(d, 1));
+      const result = evaluateTotal(rows, window, toronto) as TotalAnswer;
+      expect(result.coverage).toBeCloseTo(6 / 7, 9);
+      expect(result.bars.map(bar => bar.value)).toEqual([1, 1, 1, null, 1, 1, 1]);
+      expect(result.bars[3].at).toBe(midnight(5));
+      expect(evaluateTotal([...rows, local(5, 1)], window, toronto)).toMatchObject({coverage: 1});
+    });
+  });
+
+  test('an hourly window bars each hour, and the hour that is still running has no row to miss', () => {
+    const hours = (n: number): StatisticRow[] =>
+      Array.from({length: n}, (_, i) => ({start: at(i), end: at(i + 1), change: 0.5}));
+    const window: PeriodWindow = {start: new Date(at(0)), end: new Date(at(6, 30)), statistic: 'hour'};
+    expect(total(hours(6), window)).toMatchObject({kind: 'total', total: 3, bucket: 'hour', coverage: 1});
+    // the seventh hour ends after the window: if the recorder has written it, it is a partial bar
+    const running = answer(hours(7), window);
+    expect(running.bars[6].partial).toBe(true);
+    expect(running.coverage).toBe(1);
+    // an hour the recorder skipped is a gap of the time axis, and counts against the coverage
+    expect(answer([...hours(2), ...hours(5).slice(3)], window).coverage).toBeCloseTo(4 / 6, 9);
   });
 });

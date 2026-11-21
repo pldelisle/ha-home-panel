@@ -20,6 +20,19 @@
   color: var(--fg2);
   font-size: calc(15px * var(--tx));
 }
+/* the figure of a total, in the kit's figure cell: a big number with its small unit, as a hero draws it (hero.css) */
+.total .v {
+  font-size: calc(48px * var(--tx));
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+.total .v small {
+  font-family: var(--f-body);
+  font-size: calc(18px * var(--tx));
+  color: var(--fg2);
+  font-weight: 500;
+  margin-left: 4px;
+}
 hp-chart {
   display: block;
   margin: 6px 0 2px;
@@ -65,6 +78,11 @@ hp-chart {
 .app[data-design='material'] .summary {
   font: var(--type-title-large);
   letter-spacing: var(--track-title-large);
+}
+.app[data-design='material'] .total .v {
+  font: var(--type-display-medium);
+  letter-spacing: var(--track-display-medium);
+  font-variant-numeric: tabular-nums;
 }
 .app[data-design='material'] .mean {
   font: var(--type-body-large);

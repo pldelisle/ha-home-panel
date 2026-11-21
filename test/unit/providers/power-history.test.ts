@@ -9,7 +9,10 @@ import {
   dailyChanges,
   dayKeys,
   hourlyFlow,
+  hoursOfDay,
+  kwhOfMeans,
   meterTotals,
+  NOON_MS,
   powerWindows,
   rowsOf,
   sessionsWindow,
@@ -148,6 +151,36 @@ describe('hourlyFlow', () => {
 
   test('a house with no grid sensor has no flow', () => {
     expect(hourlyFlow({g: [row(T0, {mean: 1})]}, {...ids, grid: null})).toEqual([]);
+  });
+});
+
+describe('kwhOfMeans', () => {
+  const T0 = at('2026-11-09T08:00:00-05:00');
+  const keys = dayKeys(NOW, fmt);
+
+  test('an hour of mean kW is its kWh, and the sensors given are summed by the bucket they share', () => {
+    const a = [row(T0, {mean: 0.5}), row(T0 + HOUR, {mean: 0.125})];
+    const b = [row(T0, {mean: 0.25}), row(T0 + 2 * HOUR, {mean: null}), row(T0 + 3 * HOUR, {mean: 2})];
+    expect(kwhOfMeans([a, b], 'hour', keys, isoDay)).toEqual([
+      row(T0, {change: 0.75}),
+      row(T0 + HOUR, {change: 0.125}),
+      row(T0 + 3 * HOUR, {change: 2}),
+    ]);
+  });
+
+  test('a day of mean kW is 24 hours of it, and today only the hours so far', () => {
+    const rows = [dayRow('2026-11-08', null), dayRow('2026-11-09', null)].map((r, i) => ({...r, mean: 2 + i}));
+    expect(kwhOfMeans([rows], 'day', keys, isoDay).map(r => [isoDay(r.start + NOON_MS), r.change])).toEqual([
+      ['2026-11-08', 48],
+      ['2026-11-09', 27],
+    ]);
+    expect(hoursOfDay('2026-11-08', keys)).toBe(24);
+    expect(hoursOfDay('2026-11-09', keys)).toBe(9);
+  });
+
+  test('nothing to read is no row', () => {
+    expect(kwhOfMeans([], 'hour', keys, isoDay)).toEqual([]);
+    expect(kwhOfMeans([[row(T0, {})]], 'hour', keys, isoDay)).toEqual([]);
   });
 });
 

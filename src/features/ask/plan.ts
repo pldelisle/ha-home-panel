@@ -27,8 +27,7 @@ export type PlanErrorReason =
   | 'unknown_period'
   | 'form_kind_mismatch'
   | 'bad_test'
-  | 'bad_duration'
-  | 'form_not_supported_yet';
+  | 'bad_duration';
 
 export interface PlanError {
   error: PlanErrorReason;
@@ -37,9 +36,6 @@ export interface PlanError {
 export const isPlanError = (parsed: Plan | PlanError): parsed is PlanError => 'error' in parsed;
 
 const FORMS: readonly PlanForm[] = ['series', 'moments', 'total', 'unsupported'];
-
-/** The forms the panel can answer yet. Each of the next slices adds one and removes it from the error below (`form_not_supported_yet`). */
-const ANSWERED: readonly PlanForm[] = ['series', 'moments', 'unsupported'];
 
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -80,13 +76,9 @@ function planOf(reply: Record<string, unknown>, form: PlanForm, catalog: Catalog
   return {form, sensor: entry.key, period, test, longerThanMin: isNumber(minutes) && minutes > 0 ? minutes : null};
 }
 
-/** The reply parsed against every form of the union, which is what the next slices will accept; `parsePlan` answers the forms built so far. */
-export function readPlan(reply: unknown, catalog: Catalog, answered: readonly PlanForm[] = FORMS): Plan | PlanError {
+/** A model's reply as a plan the panel can answer, or the name of what was wrong with it. */
+export function parsePlan(reply: unknown, catalog: Catalog): Plan | PlanError {
   if (!isObject(reply)) return {error: 'not_an_object'};
   const form = FORMS.find(candidate => candidate === reply.form);
-  if (!form) return {error: 'unknown_form'};
-  return answered.includes(form) ? planOf(reply, form, catalog) : {error: 'form_not_supported_yet'};
+  return form ? planOf(reply, form, catalog) : {error: 'unknown_form'};
 }
-
-/** A model's reply as a plan the panel can answer, or the name of what was wrong with it. */
-export const parsePlan = (reply: unknown, catalog: Catalog): Plan | PlanError => readPlan(reply, catalog, ANSWERED);

@@ -13,6 +13,7 @@ import {
   flowIds,
   flowParts,
   hourlyFlow,
+  hoursOfDay,
   meterTotals,
   NOON_MS,
   powerWindows,
@@ -71,7 +72,7 @@ export function dailyTotals(
 ): DailyRow[] {
   return flowParts(stats, ids).map(({start, grid, wh: whKw, ev: evKw, heat: heatKw, rooms}) => {
     const day = isoDay(start + NOON_MS);
-    const hours = day === keys.today ? keys.hoursToday : 24;
+    const hours = hoursOfDay(day, keys);
     const wh = whKw * hours;
     const ev = evKw * hours;
     const heat = heatKw * hours;

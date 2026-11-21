@@ -18,6 +18,9 @@ import type {
 import type {PanelHass} from './hass.ts';
 import type {PanelStore} from './store.ts';
 
+/** The unit every energy statistic is asked in, which `statistics` below sets in its `units` (the test of record-fixture pins the two together): a meter that counts in Wh in the house still arrives in kWh. */
+export const METER_UNIT = 'kWh';
+
 /** Why a call failed, as Home Assistant words it: it rejects with `{code, message}`, not an Error; the message, else the code, else the value. */
 export const rejectionReason = (error: unknown): string => {
   const rejection = error as {message?: unknown; code?: unknown} | null;

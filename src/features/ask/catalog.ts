@@ -2,8 +2,9 @@
 // Pattern: an anti-corruption layer (Evans, DDD) between the house and a model, built from the providers' reads and never from a
 // feature (ADR 0025). A handle (`temp.office`, `power.grid`) is a stable key built from a room's area (else the key its config gives it,
 // else its display name) or from a power role, never from an entity id, so a hallucinated sensor is a parse error by construction
-// (ADR 0040, "The model plans, the panel computes"). Spec 29, "The sensor catalog". It holds the `measure` entries (rooms' temperatures, live power) and the `binary` ones (doors, motion, who is home).
+// (ADR 0040, "The model plans, the panel computes"). Spec 29, "The sensor catalog". It holds the `measure` entries (rooms' temperatures, live power), the `meter` ones (the house's energy total and the water heater's) and the `binary` ones (doors, motion, who is home).
 // Must not: send or hold an entity id in an entry, a reading or a state value, word a name but through `t` and the name resolver, or read the clock.
+import {METER_UNIT} from '../../core/api.ts';
 import type {ResolvedConfig} from '../../core/config.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
 import type {HassEntities, Registries} from '../../core/hass.ts';
@@ -37,8 +38,10 @@ export interface CatalogEntry {
 
 export interface Catalog {
   entries: CatalogEntry[];
-  /** The map from a handle to the entity whose history answers it: it stays on the panel's side and is never sent. */
-  entityOf: ReadonlyMap<CatalogKey, string>;
+  /** The map from a handle to the entities whose history answers it (one, but for the heating, the rooms' power sensors added up): it stays on the panel's side and is never sent. */
+  entityOf: ReadonlyMap<CatalogKey, readonly string[]>;
+  /** The meters that are power sensors (the car, the heating), whose statistics are means of kW the panel turns into kWh; the others are energy totals whose `change` is read as it is. */
+  fromPower?: ReadonlySet<CatalogKey>;
   /** How many sensors the cap left out; the config check warns when it is not zero. */
   omitted: number;
 }
@@ -77,12 +80,14 @@ export function askCatalog(
   names: RoomNameDeps,
   config: Pick<ResolvedConfig, 'ask' | 'entities' | 'rooms'>,
 ): Catalog {
-  const found: [CatalogEntry, string][] = [];
+  const found: [CatalogEntry, string[]][] = [];
+  const fromPower = new Set<CatalogKey>();
   // two sensors that would share a handle keep both, the second as `temp.den-2`: stable, and visible to a reader of the instructions
-  const addEntry = (handle: CatalogKey, entry: Omit<CatalogEntry, 'key'>, entity: string) => {
+  const addEntry = (handle: CatalogKey, entry: Omit<CatalogEntry, 'key'>, entity: string | string[]) => {
     let key = handle;
     for (let n = 2; found.some(([existing]) => existing.key === key); n++) key = `${handle}-${n}`;
-    found.push([{key, ...entry}, entity]);
+    found.push([{key, ...entry}, [entity].flat()]);
+    return key;
   };
   const add = (handle: CatalogKey, name: string, unit: string, entity: string) =>
     addEntry(handle, {name, kind: 'measure', unit}, entity);
@@ -104,6 +109,25 @@ export function askCatalog(
   ];
   for (const [key, reading, entity, role] of flow)
     if (reading !== null && entity) add(key, names.t(`ask.sensor.${role}`), unitOf(entity), entity);
+  // the meters: the energy totals of the house and the water heater, whose `change` the recorder keeps, and the car and the heating, which are power sensors whose means the panel
+  // turns into kWh as the Energy card does; the unit is kWh whatever the entity counts in, as the API client asks it
+  const present = (ids: (string | null)[]) => [
+    ...new Set(ids.filter((id): id is string => !!id && !!reads.states[id])),
+  ];
+  const totals: [string, 'energy' | 'waterHeaterEnergy' | 'carEnergy' | 'heatingEnergy', string[], boolean][] = [
+    ['energy.house', 'energy', present([entities.energy]), false],
+    ['energy.water_heater', 'waterHeaterEnergy', present([entities.whE]), false],
+    ['energy.car', 'carEnergy', present([entities.evP]), true],
+    ['energy.heating', 'heatingEnergy', present(config.rooms.map(room => room.power)), true],
+  ];
+  const excluded = new Set(config.ask?.exclude);
+  for (const [handle, role, ids, power] of totals) {
+    // an excluded sensor is left out of a sum too, and a meter with nothing left is not offered
+    const left = ids.filter(id => !excluded.has(id));
+    if (left.length === 0) continue;
+    const key = addEntry(handle, {name: names.t(`ask.sensor.${role}`), kind: 'meter', unit: METER_UNIT}, left);
+    if (power) fromPower.add(key);
+  }
   // a door's or a motion sensor's handle is built from its area, else its display name, and a person's from the configured name: never from an entity id
   for (const sensor of reads.sensors) {
     const word = [sensor.areaId ?? '', sensor.name].map(slug).find(Boolean) ?? 'sensor';
@@ -119,12 +143,12 @@ export function askCatalog(
       {name: person.name, kind: 'binary', unit: '', words: WORDS.home},
       person.id,
     );
-  const excluded = new Set(config.ask?.exclude);
-  const kept = found.filter(([, entity]) => !excluded.has(entity));
+  const kept = found.filter(([, ids]) => !ids.some(id => excluded.has(id)));
   const cut = kept.slice(0, ASK_CATALOG_CAP);
   return {
     entries: cut.map(([entry]) => entry),
-    entityOf: new Map(cut.map(([entry, entity]) => [entry.key, entity])),
+    entityOf: new Map(cut.map(([entry, ids]) => [entry.key, ids])),
+    fromPower,
     omitted: kept.length - cut.length,
   };
 }

@@ -6,15 +6,16 @@
 import type {Formatters} from '../../core/i18n/format.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
 import type {Catalog, CatalogEntry} from './catalog.ts';
-import type {EmptyAnswer, Moment, MomentsAnswer, SeriesAnswer} from './evaluate.ts';
+import type {EmptyAnswer, Moment, MomentsAnswer, SeriesAnswer, TotalAnswer} from './evaluate.ts';
+import type {Reading} from '../../ui/reading.ts';
 import type {Period} from './period.ts';
 import {isPlanError, type Plan, type PlanError} from './plan.ts';
 
 /** A plan the panel can run: everything but `unsupported`, which is a failure and never a plan to fetch for. */
 export type AnswerablePlan = Exclude<Plan, {form: 'unsupported'}>;
 
-/** What the sheet draws for a question that was answered; the total joins this union with its slice. */
-export type Answer = SeriesAnswer | MomentsAnswer;
+/** What the sheet draws for a question that was answered. */
+export type Answer = SeriesAnswer | MomentsAnswer | TotalAnswer;
 
 export type FailureReason = 'unsupported' | 'timeout' | 'unavailable' | 'empty';
 
@@ -102,6 +103,10 @@ export interface AskView {
   moments?: MomentLine[];
   /** "and 14 more", when the spans were more than are shown. */
   more?: string;
+  /** The figure of a total, for the kit's figure cell: "42.3" and "kWh". Absent for any other state. */
+  total?: Reading;
+  /** What a screen reader hears of a total's bars: "House energy by day, last week". Absent for any other state. */
+  bars?: string;
 }
 
 /** One span of a moments answer: "Tue 10:07 am – 10:32 am", "25 min"; `ongoing` when its end reads "still". */
@@ -184,6 +189,30 @@ function momentsView(
   return view;
 }
 
+/** The plan of a total question. */
+export type TotalPlan = Extract<Plan, {form: 'total'}>;
+
+/** The view of a total: the line that says what it is of, the figure (the sheet draws it large, in the kit's figure cell), what was understood, the bars' description and the coverage note. */
+function totalView(
+  plan: TotalPlan,
+  answer: TotalAnswer,
+  t: Translate,
+  fmt: Formatters,
+  sensor?: CatalogEntry,
+): AskView {
+  const name = sensor?.name ?? plan.sensor;
+  const period = t(`ask.period.${plan.period}`);
+  return {
+    message: null,
+    summary: t('ask.summary.total', {name, period}),
+    mean: null,
+    understood: t('ask.understood.total', {name, period}),
+    coverage: answer.coverage < 1 ? t('ask.coverage', {date: fmt.date(answer.from)}) : null,
+    total: {value: fmt.number(answer.total, 1), unit: answer.unit},
+    bars: t(`ask.bars.${answer.bucket}`, {name, period}),
+  };
+}
+
 /** The words of a state, in the panel's language, from the catalog's messages and the store's formatters. `sensor` is what `sensorOf` found. */
 export function askView(state: AskState, t: Translate, fmt: Formatters, sensor?: CatalogEntry): AskView {
   switch (state.at) {
@@ -208,6 +237,7 @@ export function askView(state: AskState, t: Translate, fmt: Formatters, sensor?:
       const {plan, answer} = state;
       // a moments answer is of a moments plan, the one that has a test; the loader runs the form the plan names, so any other pair has no words
       if (answer.kind === 'moments') return 'test' in plan ? momentsView(plan, answer, t, fmt, sensor) : NOTHING;
+      if (answer.kind === 'total') return plan.form === 'total' ? totalView(plan, answer, t, fmt, sensor) : NOTHING;
       const name = sensor?.name ?? plan.sensor;
       const unit = sensor?.unit ?? '';
       const period = t(`ask.period.${plan.period}`);

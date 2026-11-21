@@ -145,6 +145,33 @@ export function dayKeys(now: number, fmt: Pick<Formatters, 'isoDay' | 'hourNow'>
   };
 }
 
+/** The hours a day's mean kW covers: all 24, and for today only the hours so far (`dayKeys().hoursToday`), the rule of Energy's daily totals. */
+export const hoursOfDay = (day: string, keys: Pick<DayKeys, 'today' | 'hoursToday'>): number =>
+  day === keys.today ? keys.hoursToday : 24;
+
+/**
+ * Power sensors' rows as energy rows: the means of the buckets the sensors share are added (a sensor with no mean for a bucket counts for nothing, a bucket none has a mean for is no row),
+ * and a bucket's kWh is the sum times the hours it covers: one for an hour, `hoursOfDay` for a day. The rows have a `change`, as a meter's do, so one reader's rule is every reader's.
+ */
+export function kwhOfMeans(
+  lists: readonly (readonly StatisticRow[])[],
+  bucket: 'hour' | 'day',
+  keys: Pick<DayKeys, 'today' | 'hoursToday'>,
+  isoDay: Formatters['isoDay'],
+): StatisticRow[] {
+  const sums = new Map<number, {end: number; kw: number}>();
+  for (const rows of lists)
+    for (const {start, end, mean} of rows)
+      if (mean != null) sums.set(start, {end, kw: (sums.get(start)?.kw ?? 0) + mean});
+  return [...sums]
+    .sort(([a], [b]) => a - b)
+    .map(([start, {end, kw}]) => ({
+      start,
+      end,
+      change: kw * (bucket === 'hour' ? 1 : hoursOfDay(isoDay(start + NOON_MS), keys)),
+    }));
+}
+
 /** The sensors' means for one of the grid's rows, in kW: the grid, the water heater, the charger, the heating (the rooms together) and each room. */
 export interface FlowParts {
   start: number;

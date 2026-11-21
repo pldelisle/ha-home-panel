@@ -2,7 +2,7 @@
 
 A button in the header opens a sheet where a household member types a question about the house's history, and gets an answer the panel computed ([spec 29](../../../docs/specs/29-ask.md), parent issue #533; [ADR 0040](../../../docs/adr/0040-the-model-plans-the-panel-computes.md), "The model plans, the panel computes"). The model's only output is a **plan** in a closed vocabulary: which sensor, which period, which form. The panel resolves the period, fetches the history, computes every figure and writes every sentence. No reading and no entity id leaves the panel.
 
-This folder is built in slices. **The tracer** (#538) is here: a header button on every tab, the sheet it opens, and a chart for a typed question about a temperature or a power reading, in English and French. The pure half of a series (#537) and the port to the model (`generateData` on the API client, #536) came before it. The failure states (#539) are in too: the Cancel button, the thirty-second timeout, the model unavailable (its entity's state, or a call that fails), no history, the coverage note and Try again. The moments (#540) are in too: a question about when, how often or how long gives a list of spans with the count and the total, for doors, motion, who is home and thresholds on a measure. The next slices are the suggestions, the total and the recorded-model suite.
+This folder is built in slices. **The tracer** (#538) is here: a header button on every tab, the sheet it opens, and a chart for a typed question about a temperature or a power reading, in English and French. The pure half of a series (#537) and the port to the model (`generateData` on the API client, #536) came before it. The failure states (#539) are in too: the Cancel button, the thirty-second timeout, the model unavailable (its entity's state, or a call that fails), no history, the coverage note and Try again. The moments (#540) are in too: a question about when, how often or how long gives a list of spans with the count and the total, for doors, motion, who is home and thresholds on a measure. The total (#541) is in too: a question about how much of a meter gives one figure and a bar for each day (each hour for a day or less). The next slices are the suggestions and the recorded-model suite.
 
 The feature is a **lazy chunk**: the shell imports `sheets.ts` (one constant, the id `ask.sheet`) and `import()`s `index.ts`, which defines the two elements, on the first tap of the header's Ask button. A house with no `ask` block draws no button and never fetches the chunk. The dependency rule holds both ways: the shell imports the feature, the feature imports no shell module.
 
@@ -15,15 +15,15 @@ src/features/ask/
   plan.ts          Period, Test, Plan, PlanError; parsePlan(reply, catalog): Plan | PlanError, the one place a model's reply is read
   period.ts        resolvePeriod(period, now, fmt, weekStart): the nine periods as a window of the house's calendar
   instructions.ts  askInstructions(...), askStructure(catalog), INSTRUCTIONS_VERSION: what the model is told and the fields it fills
-  evaluate.ts      evaluateSeries(rows, window): the points, the low, the high, the mean and the coverage, or empty; evaluateMoments(input, query, window, now): the spans a test held, their count and total
+  evaluate.ts      evaluateSeries(rows, window): the points, the low, the high, the mean and the coverage, or empty; evaluateMoments(input, query, window, now): the spans a test held, their count and total; evaluateTotal(rows, window): a meter's change summed, with a bar for each bucket
   model.ts         AskState, askReducer, askView(state, t, fmt, catalog): the sheet's state and its texts
   checks.ts        askChecks(catalog): the cap warning (the entity and exclude warnings are the core's checkHouse); the sheet shows it to an admin
-  charts.ts        seriesChartOptions(answer, deps): the chart's options as data, for <hp-chart>
+  charts.ts        seriesChartOptions(answer, deps) and totalChartOptions(answer, deps): the charts' options as data, for <hp-chart>
   loader.ts        AskLoader: the controller that runs one question (AI Task, plan, history window, answer) into the reducer; drops a stale or cancelled reply
   sheets.ts        ASK_SHEET, the sheet's id (ADR 0021)
   index.ts         defines the elements; imported dynamically by the shell
   ask-sheet.ts     <hp-ask-sheet>: the field, the send button and the result in an aria-live region
-  ask-answer.ts    <hp-ask-answer>: the summary, then the mean and <hp-chart> of a series or the list of spans of moments, and the understood line
+  ask-answer.ts    <hp-ask-answer>: the summary, then the mean and <hp-chart> of a series, the list of spans of moments or the figure and <hp-chart> bars of a total, and the understood line
 ```
 
 Every file but the loader and the two elements is a pure module: values in, values out, no clock, no DOM, no `hass`. The loader holds the one question in flight and reads the clock it is given; the elements are humble (ADR 0005).
@@ -34,7 +34,11 @@ Built from the providers' reads (ADR 0025), never from a feature. An entry is `{
 
 ## The plan
 
-The model fills six flat fields (`form`, `sensor`, `period`, `test`, `value`, `longer_than_min`), because that is what Home Assistant's `ai_task.generate_data` structure takes and what the probe of #535 found a local model fills correctly: every field is nullable, the unused ones come back `null`, and `test` is the word `none` for a series. `parsePlan` maps them onto the spec's `Plan` and treats an absent field, `null` and `''` alike. A combination that makes no sense (a series of a binary sensor, a total of a measure) is a `PlanError`, not a runtime branch. `total` parses to `form_not_supported_yet` until its slice lands; `readPlan` already parses the whole union.
+The model fills six flat fields (`form`, `sensor`, `period`, `test`, `value`, `longer_than_min`), because that is what Home Assistant's `ai_task.generate_data` structure takes and what the probe of #535 found a local model fills correctly: every field is nullable, the unused ones come back `null`, and `test` is the word `none` for a series. `parsePlan` maps them onto the spec's `Plan` and treats an absent field, `null` and `''` alike. A combination that makes no sense (a series of a binary sensor, a total of a measure) is a `PlanError`, not a runtime branch. A `total` is of a `meter` only, and a `series` of a meter is `form_kind_mismatch`.
+
+## Totals
+
+The meters are `energy.house` (the config's `energy_total`), `energy.water_heater` (`water_heater_energy`), `energy.car` (the charger's power sensor) and `energy.heating` (the rooms' power sensors, one handle that maps privately to the list, added up), in kWh whatever the entity counts in (`METER_UNIT`, src/core/api.ts: the client asks the recorder for kWh); an entity the house does not have is not offered, and `ask.exclude` takes a sensor out of a sum. The heat pump has no power or energy reading, so it is not a meter. The car and the heating are power sensors, so the loader reads the Energy card's own hourly week or 400 daily means and turns each bucket's mean kW into kWh with `kwhOfMeans` (src/providers/power-history.ts, which Energy's daily totals share: a day is 24 hours of it, today only the hours so far); the totals are read by `change`. `evaluateTotal` sums the buckets' `change`, which the recorder keeps from the meter's `sum` and which absorbs a reset; the window is `totalWindow`: by the hour for today, yesterday and the last 24 hours, by the day beyond. A day with no change is a gap, not a zero: it keeps its label in the chart with no bar, and lowers the coverage, which counts the days of the house's own calendar (a 23-hour day is one day), the last bar of a period that includes today is kept and marked partial (the chart calls it "Today"), and a total of 0 is an answer: only no row at all is `empty`. The loader asks the very window the Energy card asked where one holds ours (its 33 daily buckets, its hourly `today`), so the statistics cache answers from what Energy fetched (ADR 0028).
 
 ## Moments
 

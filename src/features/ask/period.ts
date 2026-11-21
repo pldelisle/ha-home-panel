@@ -32,7 +32,7 @@ export interface PeriodWindow {
 }
 
 /** A day key moved by whole days, on the calendar and so across a daylight-saving change. */
-const addDays = (day: string, days: number): string => {
+export const addDays = (day: string, days: number): string => {
   const [year, month, date] = day.split('-').map(Number);
   return new Date(Date.UTC(year, month - 1, date + days)).toISOString().slice(0, 10);
 };
@@ -119,3 +119,15 @@ export function resolvePeriod(
  */
 export const momentsWindow = (window: PeriodWindow): PeriodWindow =>
   window.statistic === 'day' ? {...window, statistic: 'hour'} : window;
+
+/** The periods of a day or less, whose total is told hour by hour; a longer one is told day by day. */
+const HOURLY_TOTALS: readonly Period[] = ['today', 'yesterday', 'last_24h'];
+
+/**
+ * The window of a total: the period's own start and end, read by the hour up to a day and by the day beyond (spec 29, "The evaluation"). The meter's `change` has no 5-minute
+ * need, and a bar per day is what the question wants; the start is the same stable instant the other readers of the statistics ask (ADR 0028).
+ */
+export const totalWindow = (period: Period, window: PeriodWindow): PeriodWindow => ({
+  ...window,
+  statistic: HOURLY_TOTALS.includes(period) ? 'hour' : 'day',
+});

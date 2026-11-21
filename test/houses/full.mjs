@@ -36,6 +36,9 @@ for (const [k, v] of Object.entries({
   b.add(`sensor.springfield_${k}`, v, k === 'temperature' ? {unit_of_measurement: '°C'} : {});
 // energy: a whole-house meter, a water heater and an EV charger, named in the config
 b.add('sensor.house_power', 3240, {unit_of_measurement: 'W'});
+// the whole-house energy total and the water heater's, which no config of the house names unless a test (the Ask sheet's total) does
+b.add('sensor.house_energy', 4821.6, {unit_of_measurement: 'kWh'});
+b.add('sensor.heater_energy', 612.3, {unit_of_measurement: 'kWh'});
 b.add('sensor.water_heater_power', 0, {unit_of_measurement: 'W'});
 b.add('sensor.water_heater_temperature', 50, {unit_of_measurement: '°C'});
 b.add('sensor.charger_power', 7.1, {unit_of_measurement: 'kW'});

@@ -971,6 +971,8 @@ describe('the recorded statistics spans', () => {
   test('the units are the ones the API client asks for', () => {
     const client = readFileSync(new URL('../../src/core/api.ts', import.meta.url), 'utf8');
     expect(client).toContain("units: {power: 'kW', energy: 'kWh', temperature: '°C'}");
+    // the constant the Ask feature words its meters' unit with is the same energy unit
+    expect(client).toContain("export const METER_UNIT = 'kWh'");
     expect(readFileSync(new URL('../../scripts/record-fixture.mjs', import.meta.url), 'utf8')).toContain(
       "STATISTIC_UNITS = {power: 'kW', energy: 'kWh', temperature: '°C'}",
     );

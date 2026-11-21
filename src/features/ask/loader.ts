@@ -11,8 +11,16 @@ import {registriesOf} from '../../core/registry.ts';
 import {doorMotionSensors} from '../../providers/door-motion.ts';
 import {personEntities} from '../../providers/people.ts';
 import {powerNow} from '../../providers/power.ts';
+import {dailyPowerWindow, dayKeys, kwhOfMeans, powerWindows, rowsOf} from '../../providers/power-history.ts';
 import {askCatalog, type AskReads, type Catalog} from './catalog.ts';
-import {evaluateMoments, evaluateSeries, type EmptyAnswer, type MomentsAnswer} from './evaluate.ts';
+import {
+  evaluateMoments,
+  evaluateSeries,
+  evaluateTotal,
+  type EmptyAnswer,
+  type MomentsAnswer,
+  type TotalAnswer,
+} from './evaluate.ts';
 import {askInstructions, askStructure} from './instructions.ts';
 import {
   askReducer,
@@ -20,10 +28,11 @@ import {
   type Answer,
   type AnswerablePlan,
   type MomentsPlan,
+  type TotalPlan,
   type AskEvent,
   type AskState,
 } from './model.ts';
-import {momentsWindow, resolvePeriod, type PeriodWindow, type WeekStart} from './period.ts';
+import {momentsWindow, resolvePeriod, totalWindow, type PeriodWindow, type WeekStart} from './period.ts';
 import {isPlanError, parsePlan} from './plan.ts';
 
 /** How long a question may wait for the AI Task: a local model takes a few seconds, and the sheet never spins forever (spec 29, story 16). */
@@ -142,7 +151,7 @@ export class AskLoader implements ReactiveController {
 
   /** A measure's statistics for the window: drawn as a series (the window's own bucket), or, for moments, read by the hour or finer, never by the day. */
   private async measured(
-    plan: AnswerablePlan,
+    plan: Exclude<AnswerablePlan, TotalPlan>,
     cache: AskDeps['cache'],
     sensor: string,
     window: PeriodWindow,
@@ -152,6 +161,54 @@ export class AskLoader implements ReactiveController {
     const rows =
       (await cache.statistics([sensor], read.statistic, read.start, STATISTIC_TYPES, read.end))[sensor] ?? [];
     return plan.form === 'moments' ? evaluateMoments({statistics: rows}, plan, read, now) : evaluateSeries(rows, read);
+  }
+
+  /**
+   * A meter's total. An energy total is read by its `change` (a meter's resets are the recorder's to absorb); where the Energy card already asked a window that holds ours (its hourly `today`
+   * of the house meter, its 33 daily buckets of the house and the water heater), the very same call is made, so the cache answers it (ADR 0028), and any other period asks for itself, on its own
+   * stable start and, once it has ended, its end. A power sensor (the car, the heating: the rooms added up) is read from the Energy card's own hourly week or 400 daily means, and each bucket's
+   * mean kW becomes kWh by the rule the card uses (`kwhOfMeans`), so the evaluation is the same for both.
+   */
+  private async metered(
+    cache: AskDeps['cache'],
+    store: AskDeps['store'],
+    sensors: readonly string[],
+    power: boolean,
+    plan: TotalPlan,
+    window: PeriodWindow,
+    now: number,
+  ): Promise<TotalAnswer | EmptyAnswer> {
+    const read = totalWindow(plan.period, window);
+    const hourly = read.statistic === 'hour';
+    if (power) {
+      const shared = hourly ? powerWindows(now, store.config, store.fmt).hour7 : dailyPowerWindow(now, store.config);
+      const stats = await cache.statistics(shared.ids, shared.period, shared.start, shared.types);
+      const rows = kwhOfMeans(
+        sensors.map(id => rowsOf(stats, id)),
+        hourly ? 'hour' : 'day',
+        dayKeys(now, store.fmt),
+        instant => store.fmt.isoDay(instant),
+      );
+      return evaluateTotal(rows, read, store.fmt);
+    }
+    const [sensor] = sensors;
+    const {today, meter33} = powerWindows(now, store.config, store.fmt);
+    const shared = [today, meter33].find(
+      candidate =>
+        candidate.period === read.statistic &&
+        candidate.ids.includes(sensor) &&
+        candidate.start.getTime() <= read.start.getTime(),
+    );
+    const rows = shared
+      ? await cache.statistics(shared.ids, shared.period, shared.start, shared.types)
+      : await cache.statistics(
+          [sensor],
+          read.statistic,
+          read.start,
+          ['change'],
+          read.end.getTime() < now ? read.end : undefined,
+        );
+    return evaluateTotal(rows[sensor] ?? [], read, store.fmt);
   }
 
   private async run(id: number, question: string, abort: AbortController): Promise<void> {
@@ -180,11 +237,22 @@ export class AskLoader implements ReactiveController {
       this.dispatch({type: 'planned', id, plan});
       if (!this.waiting(id, 'fetching') || isPlanError(plan) || plan.form === 'unsupported') return;
       const window = resolvePeriod(plan.period, asked, store.fmt, weekStart);
-      const sensor = catalog.entityOf.get(plan.sensor) as string;
+      const sensors = catalog.entityOf.get(plan.sensor) as readonly string[];
+      const [sensor] = sensors;
       const answer =
-        plan.form === 'moments' && 'on' in plan.test
-          ? await this.stated(plan, cache, sensor, window, asked.getTime())
-          : await this.measured(plan, cache, sensor, window, asked.getTime());
+        plan.form === 'total'
+          ? await this.metered(
+              cache,
+              store,
+              sensors,
+              catalog.fromPower?.has(plan.sensor) === true,
+              plan,
+              window,
+              asked.getTime(),
+            )
+          : plan.form === 'moments' && 'on' in plan.test
+            ? await this.stated(plan, cache, sensor, window, asked.getTime())
+            : await this.measured(plan, cache, sensor, window, asked.getTime());
       this.dispatch({type: 'answered', id, answer});
     } catch (error) {
       if (error instanceof Cancelled && timedOut) this.dispatch({type: 'failed', id, reason: 'timeout'});
