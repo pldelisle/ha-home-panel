@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.23.0
+
+- A new Ask button in the header answers a question about the house's history. Type "how warm was the office yesterday?" and the panel draws the chart. It appears when the config names an AI Task entity under `ask`.
+- Ask when or how often something happened: "was the patio door left open this week?" lists each time with its start, end and length.
+- Ask how much: "how much did the car use last week?" gives the total and a bar for each day.
+- The Ask sheet now says why a question had no answer, lets you cancel a slow one and gives up after 30 seconds.
+- The Ask sheet suggests three questions about your own house; tap one to ask it.
+
 ## 2.22.0
 
 - Climate: a thermostat or the heat pump that is on (heating or not, any mode but off) now stands out from one that is off, on the phone's tiles and the tablet's list. With Transparent cards on, its card is a step more opaque; with solid cards, it is the brighter card (light theme: the off cards dim a little; dark theme: the on cards lift a little).
