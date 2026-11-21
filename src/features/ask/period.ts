@@ -43,6 +43,29 @@ const firstOfMonth = (day: string, months: number): string => {
   return new Date(Date.UTC(year, month - 1 + months, 1)).toISOString().slice(0, 10);
 };
 
+/** What the runtime says of a locale's week: `Intl.Locale.getWeekInfo()`, which the library typings of the build do not have yet; `firstDay` counts 1 for Monday to 7 for Sunday. */
+interface WeekInfoLocale {
+  getWeekInfo?: () => {firstDay: number};
+}
+
+/** The regions whose weeks begin on a Sunday, which the runtimes without `getWeekInfo` (Firefox) are not asked: every other region begins on a Monday. */
+const SUNDAY_REGIONS: ReadonlySet<string> = new Set(['US', 'CA', 'MX', 'BR', 'JP', 'IL']);
+
+/**
+ * The first day of the week in a locale tag, as `WeekStart` counts it (0 is Sunday): `en-CA` and `fr-CA` begin on Sunday, `fr-FR` on Monday. Where the runtime has no `getWeekInfo` it is
+ * told by the tag's region (the likely one when the tag has none: `en` is the United States), Sunday for a few regions and Monday for the rest. Monday when the tag cannot be read.
+ */
+export function weekStartOf(tag: string): WeekStart {
+  try {
+    const locale = new Intl.Locale(tag);
+    const info = (locale as WeekInfoLocale).getWeekInfo?.();
+    if (info) return (info.firstDay % 7) as WeekStart;
+    return SUNDAY_REGIONS.has(locale.maximize().region ?? '') ? 0 : 1;
+  } catch {
+    return 1;
+  }
+}
+
 /** The day of the week of a day key, as `WeekStart` counts it: 0 is Sunday. */
 export const dayOfWeek = (day: string): WeekStart => new Date(`${day}T12:00:00Z`).getUTCDay() as WeekStart;
 

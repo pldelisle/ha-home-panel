@@ -2,7 +2,8 @@
 // the clock, and the two popups the shell keeps open or shut (the Status checks under the pill, the settings under the gear).
 // Pattern: a humble composition (Meszaros, xUnit Test Patterns), the composition root's child, drawn in light DOM (ADR 0033) so the legacy
 // `.head` rules still lay out its row, as the Home pane is (ADR 0032); its own rules are header.css. It replaced the guest's header (#269).
-// Its accessible names (the gear, the settings popup, the Status checks) are catalog messages. Must not: decide whether a popup is open (the shell does, from the events the gear, the pill and the popups send up), or read an entity.
+// The Ask button, when the shell says the house has the Ask sheet (`ask`), sits after the chips and only sends `ask-toggle`: the sheet is the shell's to open (the feature's code loads on the first tap).
+// Its accessible names (the gear, the settings popup, the Status checks, the Ask button) are catalog messages. Must not: decide whether a popup is open (the shell does, from the events the gear, the pill and the popups send up), or read an entity.
 import {LitElement, html, nothing, unsafeCSS} from 'lit';
 import {keyed} from 'lit/directives/keyed.js';
 import './clock-line.ts'; // defines <hp-clock-line>
@@ -24,11 +25,20 @@ export class SettingsToggleEvent extends Event {
   }
 }
 
+/** The Ask button asks the shell to open or close the Ask sheet. */
+export class AskToggleEvent extends Event {
+  constructor() {
+    super('ask-toggle', {bubbles: true, composed: true});
+  }
+}
+
 export class Header extends LitElement {
   static override properties = {
     statusOpen: {type: Boolean},
     settingsOpen: {type: Boolean},
     live: {type: Boolean},
+    ask: {type: Boolean},
+    askOpen: {type: Boolean},
     liveKey: {type: Number},
     historyAt: {attribute: false},
     historyAnsweredAt: {attribute: false},
@@ -41,6 +51,10 @@ export class Header extends LitElement {
   declare settingsOpen: boolean;
   /** A live activity shows in the pill: the weather chip slims beside it. */
   declare live: boolean;
+  /** The house has the Ask sheet (its config names an AI Task entity that exists): the button is drawn. */
+  declare ask: boolean;
+  /** The Ask sheet is open: the button says so (`aria-expanded`). */
+  declare askOpen: boolean;
   /** Counts the pill's changes: the weather chip is drawn anew at each, see `render`. */
   declare liveKey: number;
   /** When the statistics cache last answered, null before its first reply: the settings popup's version line. */
@@ -60,6 +74,8 @@ export class Header extends LitElement {
     this.statusOpen = false;
     this.settingsOpen = false;
     this.live = false;
+    this.ask = false;
+    this.askOpen = false;
     this.liveKey = 0;
     this.historyAt = null;
     this.historyAnsweredAt = () => null;
@@ -73,6 +89,10 @@ export class Header extends LitElement {
 
   private readonly openSidebar = (): void => {
     this.dispatchEvent(new Event('hass-toggle-menu', {bubbles: true, composed: true}));
+  };
+
+  private readonly toggleAsk = (): void => {
+    this.dispatchEvent(new AskToggleEvent());
   };
 
   private readonly toggleSettings = (): void => {
@@ -92,8 +112,21 @@ export class Header extends LitElement {
       <div class="chips">
         <div id="chips">
           ${keyed(this.liveKey, html`<hp-weather-chip .slim=${this.live}></hp-weather-chip>`)}<hp-peak-chip
-          ></hp-peak-chip>
-          <hp-live-pill .open=${this.statusOpen}></hp-live-pill>
+          ></hp-peak-chip> <hp-live-pill .open=${this.statusOpen}></hp-live-pill>${
+            this.ask
+              ? html`<button
+                  class="icon"
+                  id="ask"
+                  type="button"
+                  aria-label=${t('ask.button')}
+                  aria-haspopup="dialog"
+                  aria-expanded=${this.askOpen}
+                  @click=${this.toggleAsk}
+                >
+                  ${ico('ask', 20)}
+                </button>`
+              : nothing
+          }
         </div>
         <button
           class="icon"
@@ -133,6 +166,7 @@ declare global {
   }
   interface HTMLElementEventMap {
     'settings-toggle': SettingsToggleEvent;
+    'ask-toggle': AskToggleEvent;
   }
 }
 

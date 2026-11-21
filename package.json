@@ -73,8 +73,11 @@
   },
   "size-limit": [
     {
-      "name": "entry (information)",
-      "path": "dist/home-panel.js",
+      "name": "entry and the panel file (information)",
+      "path": [
+        "dist/home-panel.js",
+        "dist/main-*.js"
+      ],
       "gzip": true
     },
     {

@@ -5,7 +5,7 @@
 // Must not: call a model, fetch, read the clock or the DOM, show a model's own words (the texts are the catalog's), or hold a timer (the timeout is the port's).
 import type {Formatters} from '../../core/i18n/format.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
-import type {Catalog} from './catalog.ts';
+import type {CatalogEntry} from './catalog.ts';
 import type {EmptyAnswer, SeriesAnswer} from './evaluate.ts';
 import {isPlanError, type Plan, type PlanError} from './plan.ts';
 
@@ -90,13 +90,13 @@ export interface AskView {
 const NOTHING: AskView = {message: null, summary: null, mean: null, understood: null, coverage: null};
 
 /** A figure as the sheet writes it: one decimal at most, the degree sign against the figure and any other unit after a space. */
-const figure = (fmt: Formatters, value: number, unit: string): string => {
+export const figure = (fmt: Formatters, value: number, unit: string): string => {
   const text = fmt.number(value, 1);
   return unit === '°' ? `${text}°` : unit ? `${text} ${unit}` : text;
 };
 
-/** The words of a state, in the panel's language, from the catalog's messages and the store's formatters. */
-export function askView(state: AskState, t: Translate, fmt: Formatters, catalog: Catalog): AskView {
+/** The words of a state, in the panel's language, from the catalog's messages and the store's formatters. `sensor` is the catalog's entry for the answered plan's sensor (the caller finds it once), if the catalog still lists it. */
+export function askView(state: AskState, t: Translate, fmt: Formatters, sensor?: CatalogEntry): AskView {
   switch (state.at) {
     case 'idle':
       return NOTHING;
@@ -108,7 +108,6 @@ export function askView(state: AskState, t: Translate, fmt: Formatters, catalog:
       return {...NOTHING, message: t(`ask.failed.${state.reason}`)};
     case 'answered': {
       const {plan, answer} = state;
-      const sensor = catalog.entries.find(entry => entry.key === plan.sensor);
       const name = sensor?.name ?? plan.sensor;
       const unit = sensor?.unit ?? '';
       const period = t(`ask.period.${plan.period}`);

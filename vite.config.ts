@@ -7,7 +7,7 @@ import {fileURLToPath} from 'node:url';
 import pkg from './package.json' with {type: 'json'};
 import {FONT_SOURCES} from './src/ui/fonts.ts';
 
-// One minified ES module, dist/home-panel.js, with its source map beside it. The CSS is imported as minified text
+// One minified ES module, dist/main-[hash].js, with its source map beside it, which the one-line entry dist/home-panel.js imports (see `advancedChunks` below). The CSS is imported as minified text
 // (`?inline`, src/styles.js) and the version is injected here, from package.json. ApexCharts and Mermaid come from npm
 // through dynamic imports, so they are emitted as lazy chunks under dist/chunks/, fetched when a tab first needs
 // them. The generated LICENSES.md (npm run licenses) is emitted beside the entry, so the release zip carries the
@@ -19,13 +19,13 @@ export const define = {__VERSION__: JSON.stringify(pkg.version)};
 
 // Every chunk with code keeps its map, so a stack trace from a chart or a flow names the file and line it came from,
 // but the maps leave out the libraries' own text: with it they were 9.9 MB for Mermaid alone and nearly tripled the
-// release zip. The panel's own files keep their text, in home-panel.js.map and in any chunk. The entry's map is held
-// to the same rule since intl-messageformat, a production library, is built into the entry.
+// release zip. The panel's own files keep their text, in main-[hash].js.map (the panel file the entry imports, ADR 0041) and in any chunk. That map is held
+// to the same rule since intl-messageformat, a production library, is built into the panel file.
 const chunkMapsWithoutLibrarySources: Plugin = {
   name: 'maps-without-library-sources',
   generateBundle(_, bundle) {
     for (const f of Object.values(bundle))
-      if (f.type === 'asset' && /^(chunks\/.+|home-panel)\.js\.map$/.test(f.fileName)) {
+      if (f.type === 'asset' && /^(chunks\/.+|home-panel|main-[\w-]+)\.js\.map$/.test(f.fileName)) {
         const m = JSON.parse(String(f.source)) as {sources: string[]; sourcesContent?: (string | null)[]};
         m.sourcesContent = m.sources.map((s, i) =>
           s.includes('node_modules/') ? null : (m.sourcesContent?.[i] ?? null),
@@ -94,6 +94,13 @@ const precompress: Plugin = {
   },
 };
 
+// what the shared file holds: the panel's own sources, and the runtime libraries they import (not ApexCharts or Mermaid, which are lazy chunks of their own)
+const SRC = fileURLToPath(new URL('./src/', import.meta.url));
+// ...except the entries of the lazy chunks and what only they hold: ApexCharts' door, and the Ask feature (its `sheets.ts` is the one file the shell imports, so it stays in the shared file)
+const LAZY_SOURCES = /[\\/]src[\\/](?:core[\\/]apex-lib\.ts|features[\\/]ask[\\/](?!sheets\.ts))/;
+const PANEL_LIBRARIES =
+  /[\\/]node_modules[\\/](?:lit|lit-html|lit-element|@lit|superstruct|@formatjs|intl-messageformat|@material[\\/]material-color-utilities)[\\/]/;
+
 export default defineConfig({
   define,
   build: {
@@ -125,7 +132,20 @@ export default defineConfig({
         minify: {codegen: true},
         // the libraries' licence comments (/*! … */, @license) stay in their chunks
         comments: {legal: true},
-        chunkFileNames: 'chunks/[name]-[hash].js',
+        // The panel's own code, and the libraries it runs on (Lit, Superstruct, intl-messageformat, the Material colour utilities), are one file, dist/main-[hash].js, which the
+        // entry (dist/home-panel.js) imports. The Ask feature is a lazy chunk of the panel's own code (spec 29, #538), so it imports the modules the entry holds, and a chunk
+        // may not import the entry itself: Home Assistant loads `home-panel.js?v=…`, and `../home-panel.js` is another URL, a second copy of every module. So the shared
+        // code lives in a file both import by the same URL. Left to Rolldown it would split the shared code across the entry and a second chunk, under chunks/.
+        advancedChunks: {
+          groups: [
+            {
+              name: 'main',
+              test: (id: string) => (id.startsWith(SRC) && !LAZY_SOURCES.test(id)) || PANEL_LIBRARIES.test(id),
+            },
+          ],
+        },
+        // the shared file is beside the entry, so `import.meta.url` (the fonts' folder) and the chunks' URLs stay where they were
+        chunkFileNames: chunk => (chunk.name === 'main' ? '[name]-[hash].js' : 'chunks/[name]-[hash].js'),
         assetFileNames: 'assets/[name]-[hash][extname]',
       },
     },

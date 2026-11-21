@@ -37,7 +37,11 @@ beforeAll(async () => {
     ...common,
     build: {outDir: join(scratch, 'entry'), emptyOutDir: true, sourcemap: false, lib: {entry: 'src/main.js'}},
   });
-  entry = readFileSync(join(scratch, 'entry/home-panel.js'), 'utf8');
+  // the entry is one import of the file that holds the panel (vite.config.ts, `advancedChunks`): the text is that file's
+  entry = readdirSync(join(scratch, 'entry'))
+    .filter(f => /^main-.+\.js$/.test(f))
+    .map(f => readFileSync(join(scratch, 'entry', f), 'utf8'))
+    .join('\n');
   // src/shell/frame-styles.ts alone, with the same CSS settings: its `FRAME_CSS` export is the minified stylesheet
   await build({
     ...common,

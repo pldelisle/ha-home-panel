@@ -26,7 +26,7 @@ export class HpSheet extends LitElement {
     leaving: {state: true},
     dragged: {state: true},
   };
-  /** On screen. Its owner binds it to the sheet host's `isOpen`; the Close button takes focus when it turns true. */
+  /** On screen. Its owner binds it to the sheet host's `isOpen`; the field marked `autofocus` in its body, else the Close button, takes focus when it turns true. */
   declare open: boolean;
   /** Placed in its pane (a tablet's detail panel) instead of over the page: no backdrop, no `aria-modal`, no swipe, and a region, not a dialog, for a screen reader. */
   declare inline: boolean;
@@ -152,15 +152,17 @@ export class HpSheet extends LitElement {
   }
 
   protected override updated(changed: PropertyValues<this>): void {
-    // the Close button takes focus, as the legacy sheet's did, so a keyboard or a switch is inside the sheet at once
-    if (changed.has('open') && this.open) void this.focusClose();
+    // a field marked `autofocus` in the body, else the Close button (as the legacy sheet's did), takes focus, so a keyboard or a switch is inside the sheet at once
+    if (changed.has('open') && this.open) void this.focusFirst();
   }
 
   // The button is slotted into the pane header, whose own tree is drawn after this one's: a sheet made open (a feature draws it only while
   // it is open) has no slot for the button until the header has rendered, and a button that is not drawn cannot take focus.
-  private async focusClose(): Promise<void> {
+  // A sheet whose body is a field to type in marks it `autofocus`: that takes the focus instead, so the keyboard is in the field at once.
+  private async focusFirst(): Promise<void> {
     await this.renderRoot.querySelector<PaneHeader>('hp-pane-header')?.updateComplete;
-    if (this.open) this.renderRoot.querySelector<HTMLElement>('.close')?.focus();
+    if (!this.open) return;
+    (this.querySelector<HTMLElement>('[autofocus]') ?? this.renderRoot.querySelector<HTMLElement>('.close'))?.focus();
   }
 }
 

@@ -24,6 +24,15 @@ const PINNED = /^[\w.-]+\/[\w.-]+(?:\/[\w./-]+)?@[0-9a-f]{40} # v\d+\.\d+\.\d+$/
 const PERMS =
   /^permissions:[ \t]*(?:read-all|\{\s*\}|\{[^}\n]*\}|(?:[ \t]*#.*)?\n(?: {2}[\w-]+: (?:read|write|none)(?: #.*)?\n)+)/m;
 
+test('the release workflow checks the zip for the files the build makes: the entry, and the panel file with its map (ADR 0041)', () => {
+  const release = read('release.yml');
+  expect(release).toContain("grep -qx 'home-panel.js'");
+  // dist/home-panel.js is one import of dist/main-[hash].js, which holds the panel and has the map: there is no home-panel.js.map
+  expect(release).not.toContain('home-panel.js.map');
+  expect(release).toMatch(/grep -Eqx '[^']*main-[^']*\\\.js' "\$RUNNER_TEMP\/zip\.txt"/);
+  expect(release).toMatch(/grep -Eqx '[^']*main-[^']*\\\.js\\\.map' "\$RUNNER_TEMP\/zip\.txt"/);
+});
+
 test('there are workflows to check', () => {
   expect(files).toContain('ci.yml');
   expect(files).toContain('codeql.yml');

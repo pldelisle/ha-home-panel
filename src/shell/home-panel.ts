@@ -36,14 +36,16 @@ import {OverlayStore} from '../ui/overlay-store.ts';
 import {ico} from '../ui/icons.ts';
 import type {SheetDismissEvent, SheetRequestEvent, TabSelectEvent, ToastEvent} from '../ui/events.ts';
 import {AppearanceController} from './appearance.ts';
+import {AskWatch} from './ask-watch.ts';
 import type {FeatureDescriptor, FeatureEnv, FeatureKey} from '../ui/feature.ts';
 import {CATEGORIES, FEATURES, UNDER_MORE, isFeatureKey, sidebarRows} from './features.ts';
 import {FRAME_CSS} from './frame-styles.ts';
 import './idle-screen.ts'; // defines <hp-idle-screen>
 import {IdleTimer, type IdleState} from './idle-timer.ts';
-import {headerStyles, type SettingsToggleEvent} from './header.ts'; // defines <hp-header>
+import {headerStyles, type AskToggleEvent, type SettingsToggleEvent} from './header.ts'; // defines <hp-header>
 import {homePaneStyles} from './home-pane.ts';
 import type {ForecastEvent} from '../features/weather/forecast-controller.ts';
+import {ASK_SHEET} from '../features/ask/sheets.ts'; // the id alone: the feature's elements are imported on the first tap of the Ask button
 import {STATUS_SHEET, type LiveActivitiesEvent} from '../features/live/index.ts'; // defines <hp-live-pill> and <hp-status-popup>
 import './more-sheet.ts'; // defines <hp-more-sheet>
 import '../ui/pane-header.ts'; // defines <hp-pane-header>
@@ -111,6 +113,7 @@ export class HomePanel extends LitElement {
     settingsOpen: {state: true},
     sidebar: {state: true},
     statusOpen: {state: true},
+    askLoaded: {state: true},
     toastNow: {state: true},
     liveKey: {state: true},
     attention: {state: true},
@@ -130,6 +133,8 @@ export class HomePanel extends LitElement {
   declare private settingsOpen: boolean;
   /** The Status checks under the live pill are open: a popup, as the settings are, so a sheet opens over it and Escape closes the sheet first. */
   declare private statusOpen: boolean;
+  /** The Ask feature's code has been fetched (the first tap of the header's Ask button): its sheet is drawn from then on. */
+  declare private askLoaded: boolean;
   /** The toast showing, from the last `ToastEvent` through the pure schedule; null when none is. */
   declare private toastNow: ToastState;
   /** Counts the live pill's changes, which the header redraws its weather chip at; with `liveRunning`, whether an activity shows. */
@@ -172,6 +177,8 @@ export class HomePanel extends LitElement {
       this.stale = true;
     },
   });
+  // the Ask button is drawn once Home Assistant has the AI Task entity, which an integration loading late may add after the panel: the shell redraws when the entity appears or goes, and not for its state, which every question changes
+  private readonly askWatch = new AskWatch(this, this.store);
   private readonly phone = new MediaQueryController(this, PHONE);
   private readonly sidebarWide = new MediaQueryController(this, SIDEBAR_WIDE);
   // Five minutes without a touch and a tablet shows the clock; a phone never does by itself. The listeners are the
@@ -268,6 +275,7 @@ export class HomePanel extends LitElement {
     this.sidebar = this.settings.get().sidebar;
     this.settingsOpen = false;
     this.statusOpen = false;
+    this.askLoaded = false;
     this.toastNow = null;
     this.liveKey = 0;
     this.attention = 0;
@@ -348,6 +356,7 @@ export class HomePanel extends LitElement {
   // and the popups closed. The update runs now, so the frame is new before anything else reads it.
   private resetFrame(): void {
     this.sheets.forget(MORE_SHEET);
+    this.sheets.forget(ASK_SHEET);
     this.statusOpen = false;
     this.settingsOpen = false;
     this.epoch++;
@@ -358,6 +367,33 @@ export class HomePanel extends LitElement {
 
   // the sheet's Close button, its backdrop and its swipe: the host closes it, if it is still the sheet that is open
   private readonly onMoreClose = (): void => this.sheets.close(MORE_SHEET);
+
+  // The header's Ask button opens and closes the Ask sheet. The feature's code is a chunk of its own: the first tap fetches it, and the sheet is drawn once it is there
+  // (a house that never taps pays nothing). The popups never stay open beside a sheet, so they close; a chunk that cannot be fetched closes the sheet and says so.
+  private readonly onAskToggle = (e: AskToggleEvent): void => {
+    e.stopPropagation();
+    if (this.sheets.isOpen(ASK_SHEET)) return this.sheets.close(ASK_SHEET);
+    this.settingsOpen = false;
+    this.statusOpen = false;
+    this.sheets.open(ASK_SHEET);
+    if (this.askLoaded) return;
+    import('../features/ask/index.ts').then(
+      () => (this.askLoaded = true),
+      () => {
+        this.sheets.close(ASK_SHEET);
+        this.toastAct({type: 'show', message: this.store.t('ask.loadFailed'), sticky: true});
+      },
+    );
+  };
+
+  // the sheet's Close button, its backdrop and its swipe
+  private readonly onAskClose = (): void => this.sheets.close(ASK_SHEET);
+
+  /** The house has the Ask sheet: its config names an AI Task entity, and Home Assistant has it. */
+  private get hasAsk(): boolean {
+    const {ask} = this.store.config;
+    return ask !== null && this.store.state(ask.entity) !== undefined;
+  }
 
   // The header's gear opens and closes the popup, and closes the Status checks, which never stay open beside it from the gear; its Sleep now
   // closes it and starts the idle clock. Escape reaches it through the sheet host (registered after the Status checks, so those close first),
@@ -566,6 +602,7 @@ export class HomePanel extends LitElement {
       @weather-forecast=${this.onForecast}
       @live-activities=${this.onLiveActivities}
       @settings-toggle=${this.toggleSettings}
+      @ask-toggle=${this.onAskToggle}
       @sleep-now=${this.onSleepNow}
       @settings-close=${this.closeSettingsToGear}
       @click=${this.onTapOutside}
@@ -588,6 +625,11 @@ export class HomePanel extends LitElement {
         .open=${this.sheets.isOpen(MORE_SHEET)}
         @sheet-close=${this.onMoreClose}
       ></hp-more-sheet>
+      ${
+        this.askLoaded
+          ? html`<hp-ask-sheet .open=${this.sheets.isOpen(ASK_SHEET)} @sheet-close=${this.onAskClose}></hp-ask-sheet>`
+          : nothing
+      }
       ${this.renderIdle()}
       <span
         id="txprobe"
@@ -619,6 +661,8 @@ export class HomePanel extends LitElement {
         .statusOpen=${this.statusOpen}
         .settingsOpen=${this.settingsOpen}
         .live=${this.liveRunning}
+        .ask=${this.hasAsk}
+        .askOpen=${this.sheets.isOpen(ASK_SHEET)}
         .liveKey=${this.liveKey}
         .historyAt=${this.statistics.lastLoadedAt}
         .historyAnsweredAt=${this.historyAnsweredAt}

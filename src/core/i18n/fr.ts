@@ -1517,9 +1517,15 @@ export const fr: Record<MessageKey, string> = {
   'ask.coverage': "À partir du {date}, l'historique couvre {percent}\u202f% de la période.",
   'ask.state.planning': 'Analyse de votre question…',
   'ask.state.fetching': "Lecture de l'historique…",
-  'ask.failed.unsupported':
-    "Le panneau n'a pas de capteur pour cela, ou ne peut pas encore le chercher. Essayez une des suggestions.",
+  'ask.failed.unsupported': "Le panneau n'a pas de capteur pour cela, ou ne peut pas encore le chercher.",
   'ask.failed.timeout': 'Cela a pris trop de temps. Réessayez.',
   'ask.failed.unavailable': "L'assistant n'est pas disponible pour le moment.",
   'ask.failed.empty': "L'historique ne contient rien pour cette période.",
+  'ask.button': "Interroger l'historique",
+  'ask.title': "Interroger l'historique",
+  'ask.close': 'Fermer',
+  'ask.field': 'Votre question',
+  'ask.placeholder': 'Quelle température faisait-il au bureau hier ?',
+  'ask.send': 'Demander',
+  'ask.loadFailed': "La fenêtre Interroger n'a pas pu se charger. Réessayez.",
 };

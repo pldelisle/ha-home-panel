@@ -311,14 +311,16 @@ test('on a phone a sheet opened from a tab covers the screen, its backdrop from 
     await house.root().locator(`#pane-${tab}`).getByText(room).first().click();
     const sheet = house.root().locator(`#pane-${tab} .sheet`).filter({visible: true}).first();
     await expect(sheet).toBeVisible();
-    const box = await sheet.boundingBox();
     const viewport = house.page.viewportSize()!;
-    expect(box, `${tab}: the sheet's backdrop`).toMatchObject({
-      x: 0,
-      y: 0,
-      width: viewport.width,
-      height: viewport.height,
-    });
+    // polled: while the pane's own entrance animation still runs, its transform is the sheet's containing block for a few frames; the bug was a box that stayed
+    await expect
+      .poll(() => sheet.boundingBox(), {message: `${tab}: the sheet's backdrop`, timeout: 2000})
+      .toMatchObject({
+        x: 0,
+        y: 0,
+        width: viewport.width,
+        height: viewport.height,
+      });
     await house.page.keyboard.press('Escape');
     await expect(sheet).toBeHidden();
   }

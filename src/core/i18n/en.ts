@@ -1555,10 +1555,19 @@ export const en = {
   // a question in progress, and why one has no answer (the model's own words are never shown)
   'ask.state.planning': 'Working out what you asked…',
   'ask.state.fetching': 'Reading the history…',
-  'ask.failed.unsupported': 'The panel has no sensor for that, or cannot look that up yet. Try one of the suggestions.',
+  'ask.failed.unsupported': 'The panel has no sensor for that, or cannot look that up yet.',
   'ask.failed.timeout': 'That took too long. Try again.',
   'ask.failed.unavailable': 'The assistant is not available right now.',
   'ask.failed.empty': 'The history has nothing for that period.',
+  // the header's button and the sheet it opens (src/shell/header.ts, src/features/ask/ask-sheet.ts): the button's accessible name, the sheet's title, the field and its send button
+  'ask.button': 'Ask the history',
+  'ask.title': 'Ask the history',
+  'ask.close': 'Close',
+  'ask.field': 'Your question',
+  'ask.placeholder': 'How warm was the office yesterday?',
+  'ask.send': 'Ask',
+  // the sheet's code is a chunk of its own, fetched when the button is first tapped; this is said when it cannot be
+  'ask.loadFailed': "The Ask sheet didn't load. Try again.",
 } as const;
 
 /** Every message key; a key exists when it is written in `en`. */

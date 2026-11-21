@@ -8,6 +8,11 @@ describe('the icons', () => {
     expect(ico('menu', 24).values[0]).toBe(24);
     expect(ico('menu').values).toEqual([20, 20, ICONS.menu]);
   });
+
+  test('the Ask button has its own icon, a speech bubble with a question mark', () => {
+    expect(ico('ask', 20).values).toEqual([20, 20, ICONS.ask]);
+    expect(ICONS.ask).not.toBe(ICONS.more);
+  });
 });
 
 describe('the weather icons', () => {
