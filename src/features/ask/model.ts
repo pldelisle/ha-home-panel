@@ -26,7 +26,9 @@ export type AskState =
   | {at: 'answered'; question: string; plan: AnswerablePlan; answer: Answer}
   // an empty failure keeps the plan, so its line can name the sensor and the period it found nothing for; no other failure has one
   | {at: 'failed'; question: string; reason: 'empty'; plan: AnswerablePlan}
-  | {at: 'failed'; question: string; reason: Exclude<FailureReason, 'empty'>};
+  // a failure of the model's has no plan; one of the recorder's (after the plan was known) keeps it, so a second try reads again and never asks the model
+  | {at: 'failed'; question: string; reason: 'timeout' | 'unavailable'; plan?: AnswerablePlan}
+  | {at: 'failed'; question: string; reason: 'unsupported'};
 
 /**
  * What happens to the sheet. A question carries a request id, a number the caller counts up, and every reply names the id it is for, so a late
@@ -34,6 +36,8 @@ export type AskState =
  */
 export type AskEvent =
   | {type: 'asked'; id: number; question: string}
+  // a suggestion's tap: the plan is the panel's own, so the question goes straight to fetching, with no model and no planning step
+  | {type: 'suggested'; id: number; question: string; plan: AnswerablePlan}
   | {type: 'planned'; id: number; plan: Plan | PlanError}
   | {type: 'answered'; id: number; answer: Answer | EmptyAnswer}
   | {type: 'failed'; id: number; reason: 'timeout' | 'unavailable'}
@@ -52,6 +56,8 @@ export function askReducer(state: AskState, event: AskEvent): AskState {
       const question = event.question.trim();
       return question ? {at: 'planning', id: event.id, question} : state;
     }
+    case 'suggested':
+      return {at: 'fetching', id: event.id, question: event.question, plan: event.plan};
     case 'cancelled':
       return isWaiting(state) ? IDLE : state;
     case 'closed':
@@ -71,9 +77,10 @@ export function askReducer(state: AskState, event: AskEvent): AskState {
         : {at: 'answered', question: state.question, plan: state.plan, answer};
     }
     case 'failed':
-      return isWaiting(state) && state.id === event.id
-        ? {at: 'failed', question: state.question, reason: event.reason}
-        : state;
+      if (!isWaiting(state) || state.id !== event.id) return state;
+      return state.at === 'fetching'
+        ? {at: 'failed', question: state.question, reason: event.reason, plan: state.plan}
+        : {at: 'failed', question: state.question, reason: event.reason};
   }
 }
 
@@ -213,8 +220,17 @@ function totalView(
   };
 }
 
-/** The words of a state, in the panel's language, from the catalog's messages and the store's formatters. `sensor` is what `sensorOf` found. */
-export function askView(state: AskState, t: Translate, fmt: Formatters, sensor?: CatalogEntry): AskView {
+/**
+ * The words of a state, in the panel's language, from the catalog's messages and the store's formatters. `sensor` is what `sensorOf` found; `suggested` is whether the sheet has
+ * suggestions to show, which the line of an unsupported question points at.
+ */
+export function askView(
+  state: AskState,
+  t: Translate,
+  fmt: Formatters,
+  sensor?: CatalogEntry,
+  suggested = false,
+): AskView {
   switch (state.at) {
     case 'idle':
       return NOTHING;
@@ -231,7 +247,9 @@ export function askView(state: AskState, t: Translate, fmt: Formatters, sensor?:
                 name: sensor?.name ?? state.plan.sensor,
                 period: t(`ask.period.${state.plan.period}`),
               })
-            : t(`ask.failed.${state.reason}`),
+            : state.reason === 'unsupported' && suggested
+              ? t('ask.failed.unsupportedTry')
+              : t(`ask.failed.${state.reason}`),
       };
     case 'answered': {
       const {plan, answer} = state;

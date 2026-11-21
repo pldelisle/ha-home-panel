@@ -421,6 +421,127 @@ describe('a question about how much', () => {
   });
 });
 
+describe('a suggestion', () => {
+  const SUGGESTION = {
+    text: 'Office: how warm was it yesterday?',
+    plan: {form: 'series', sensor: 'temp.office', period: 'yesterday'},
+  } as const;
+
+  test('is answered from its own plan: the recorder is read and the AI Task is never called', async () => {
+    const {loader, generateData, statistics} = setup();
+    loader.open();
+    loader.suggest(SUGGESTION);
+    // no planning step: it is fetching the moment it is tapped
+    expect(loader.state).toMatchObject({at: 'fetching', question: SUGGESTION.text, plan: SUGGESTION.plan});
+    await settle();
+    expect(loader.state).toMatchObject({at: 'answered', question: SUGGESTION.text, answer: {kind: 'series'}});
+    expect(generateData).not.toHaveBeenCalled();
+    expect(statistics).toHaveBeenCalledTimes(1);
+    expect(statistics.mock.calls[0][0]).toEqual(['sensor.office_temperature']);
+  });
+
+  test('is answered when the model is away: an unavailable AI Task does not stop it', async () => {
+    const away = {
+      ...fullHouse.states['sensor.office_temperature'],
+      entity_id: 'ai_task.local_model',
+      state: 'unavailable',
+    };
+    const store = storeOf({...fullHouse, states: {...fullHouse.states, 'ai_task.local_model': away}}, config);
+    const {loader, generateData} = setup(config, {store});
+    loader.suggest(SUGGESTION);
+    await settle();
+    expect(loader.state).toMatchObject({at: 'answered'});
+    expect(generateData).not.toHaveBeenCalled();
+  });
+
+  test('a door is read as a typed question of the same plan is', async () => {
+    const {loader, history} = setup();
+    loader.suggest({
+      text: 'Front door: opened this week?',
+      plan: {form: 'moments', sensor: 'door.living_room', period: 'this_week', test: {on: true}, longerThanMin: null},
+    });
+    await settle();
+    expect(history).toHaveBeenCalledTimes(1);
+    expect(loader.state).toMatchObject({at: 'answered', answer: {kind: 'moments'}});
+  });
+
+  test('a tap replaces a question in flight, whose late reply is dropped', async () => {
+    const {loader, replies} = setup();
+    const first = deferred<unknown>();
+    replies.push(() => first.promise);
+    loader.ask('the first question');
+    loader.suggest(SUGGESTION);
+    await settle();
+    const answered = loader.state;
+    expect(answered).toMatchObject({at: 'answered', question: SUGGESTION.text});
+    first.resolve({...PLAN, period: 'today'});
+    await settle();
+    expect(loader.state).toBe(answered);
+  });
+
+  test('Cancel lets a suggestion go, and a failed read is said as a failure', async () => {
+    const {loader, statistics} = setup();
+    const read = deferred<Record<string, StatisticRow[]>>();
+    statistics.mockImplementationOnce(() => read.promise);
+    loader.suggest(SUGGESTION);
+    loader.cancel();
+    expect(loader.state).toEqual({at: 'idle'});
+    read.resolve({});
+    await settle();
+    expect(loader.state).toEqual({at: 'idle'});
+
+    statistics.mockImplementationOnce(() => Promise.reject(new Error('recorder down')));
+    loader.suggest(SUGGESTION);
+    await settle();
+    expect(loader.state).toMatchObject({at: 'failed', reason: 'unavailable', plan: SUGGESTION.plan});
+  });
+
+  test('Try again after a failed read reads again with the plan it has: its words never go to the model', async () => {
+    const {loader, generateData, statistics} = setup();
+    statistics.mockImplementationOnce(() => Promise.reject(new Error('recorder down')));
+    loader.suggest(SUGGESTION);
+    await settle();
+    expect(loader.state).toMatchObject({at: 'failed', reason: 'unavailable'});
+    loader.retry();
+    await settle();
+    expect(loader.state).toMatchObject({at: 'answered', question: SUGGESTION.text, answer: {kind: 'series'}});
+    expect(generateData).not.toHaveBeenCalled();
+  });
+
+  test('Try again has nothing to retry when nothing failed', async () => {
+    const {loader, generateData, statistics} = setup();
+    loader.retry();
+    expect(loader.state).toEqual({at: 'idle'});
+    loader.suggest(SUGGESTION);
+    await settle();
+    const answered = loader.state;
+    loader.retry();
+    expect(loader.state).toBe(answered);
+    expect(generateData).not.toHaveBeenCalled();
+    expect(statistics).toHaveBeenCalledTimes(1);
+  });
+
+  test('a typed question whose read failed is retried from its plan too, and one that failed at the model is asked again', async () => {
+    const {loader, generateData, statistics, replies} = setup();
+    statistics.mockImplementationOnce(() => Promise.reject(new Error('recorder down')));
+    loader.ask(QUESTION);
+    await settle();
+    expect(generateData).toHaveBeenCalledTimes(1);
+    loader.retry();
+    await settle();
+    expect(loader.state).toMatchObject({at: 'answered', question: QUESTION});
+    expect(generateData).toHaveBeenCalledTimes(1);
+
+    replies.push(() => Promise.reject(new Error('model down')));
+    loader.ask(QUESTION);
+    await settle();
+    expect(loader.state).toMatchObject({at: 'failed', reason: 'unavailable'});
+    loader.retry();
+    await settle();
+    expect(generateData).toHaveBeenCalledTimes(3);
+  });
+});
+
 describe('a question that has no answer', () => {
   test('an unsupported plan fails as unsupported and never reads the history', async () => {
     const {loader, statistics, replies} = setup();

@@ -74,6 +74,17 @@ describe('the reducer', () => {
     expect(run([{type: 'planned', id: 1, plan: error}], planning('q'))).toEqual(unsupported);
   });
 
+  test('a suggestion goes from idle, or from an unsupported answer, straight to fetching with its plan: no planning step', () => {
+    const tap: AskEvent = {type: 'suggested', id: 3, question: 'Office: how warm was it yesterday?', plan: SERIES};
+    const fetched = {at: 'fetching', id: 3, question: 'Office: how warm was it yesterday?', plan: SERIES};
+    expect(run([tap])).toEqual(fetched);
+    expect(run([tap], {at: 'failed', question: 'q', reason: 'unsupported'})).toEqual(fetched);
+    // like a typed question, it replaces anything else and its answer is matched by its id
+    expect(run([tap], planning('old', 2))).toEqual(fetched);
+    expect(run([{type: 'answered', id: 3, answer: ANSWER}], run([tap]))).toMatchObject({at: 'answered', plan: SERIES});
+    expect(run([{type: 'answered', id: 2, answer: ANSWER}], run([tap]))).toEqual(fetched);
+  });
+
   test('an answer moves fetching to answered, and no rows at all is the failure empty', () => {
     expect(run([{type: 'answered', id: 1, answer: ANSWER}], fetching('q'))).toEqual({
       at: 'answered',
@@ -93,7 +104,13 @@ describe('the reducer', () => {
   test('a timeout or an unavailable model fails the question in either waiting state', () => {
     for (const reason of ['timeout', 'unavailable'] as const) {
       expect(run([{type: 'failed', id: 1, reason}], planning('q'))).toEqual({at: 'failed', question: 'q', reason});
-      expect(run([{type: 'failed', id: 1, reason}], fetching('q'))).toEqual({at: 'failed', question: 'q', reason});
+      // a failure while fetching keeps the plan the panel already has, so a second try need not ask the model again
+      expect(run([{type: 'failed', id: 1, reason}], fetching('q'))).toEqual({
+        at: 'failed',
+        question: 'q',
+        reason,
+        plan: SERIES,
+      });
     }
   });
 
@@ -229,6 +246,19 @@ describe('askView', () => {
     expect(view(failed('empty'), 'fr').message).toBe("Pas d'historique pour Office hier.");
     expect(view(failed('timeout'), 'fr').message).toContain('trop de temps');
     expect(view(failed('unavailable'), 'fr').message).toContain('modèle de la maison');
+  });
+
+  test('an unsupported line points at the suggestions only when there are some to point at', () => {
+    const state: AskState = {at: 'failed', question: 'q', reason: 'unsupported'};
+    const {t, fmt} = depsOf(fullHouse, 'en');
+    expect(askView(state, t, fmt, undefined, true).message).toBe(
+      'The panel has no sensor for that, or cannot look that up yet. Try one of the suggestions.',
+    );
+    expect(askView(state, t, fmt, undefined, false).message).toBe(
+      'The panel has no sensor for that, or cannot look that up yet.',
+    );
+    const french = depsOf(fullHouse, 'fr');
+    expect(askView(state, french.t, french.fmt, undefined, true).message).toContain('Essayez une des suggestions.');
   });
 
   test('an empty failure names the sensor by its handle when the catalog no longer lists it', () => {

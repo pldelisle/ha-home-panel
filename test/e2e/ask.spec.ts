@@ -1,6 +1,6 @@
 // The Ask sheet, end to end (spec 29, "The elements"; #538): the header's button, the sheet, and a chart for a typed question, in English and French, against the harness's AI Task
 // (test/houses/ai-task.mjs). The panel is driven the way a person drives it: taps, typing, Enter and Escape. The axe scans of the sheet are a11y.spec.ts's, which scans every sheet.
-import {test, expect, eachShownTab, isPhone} from './fixtures';
+import {test, expect, eachShownTab, isPhone, type House} from './fixtures';
 import {AFTERNOON, FULL_CFG, KEEP_ENGLISH_NAMES} from './houses';
 import {
   AI_TASK,
@@ -30,8 +30,16 @@ import {
   sendQuestion,
   withAsk,
 } from './ask';
+import {setTextSize} from './settings-controls';
 
-const UNSUPPORTED_EN = 'The panel has no sensor for that, or cannot look that up yet.';
+const UNSUPPORTED_PLAIN_EN = 'The panel has no sensor for that, or cannot look that up yet.';
+// a house with something to suggest points at the suggestions; one with nothing says only the plain line
+const UNSUPPORTED_EN = `${UNSUPPORTED_PLAIN_EN} Try one of the suggestions.`;
+const SUGGESTIONS_EN = [
+  'Front door: opened this week?',
+  'Bedroom: how warm was it yesterday?',
+  'Car charging energy: how much last week?',
+];
 
 test.describe('a house without an ask block', () => {
   test.use({houseOpts: {cfg: FULL_CFG}});
@@ -596,5 +604,131 @@ test.describe('totals in French', () => {
       'aria-label',
       'Énergie de la maison par jour, 7 derniers jours',
     );
+  });
+});
+
+const suggestionButtons = (house: House) => askSheet(house).locator('.suggestion');
+
+test.describe('the suggested questions', () => {
+  test.use({houseOpts: {cfg: ASK_CFG, aiTask: AI_TASK, time: AFTERNOON}});
+
+  test('three from the house’s own sensors are under the field, each a button of at least 44 px', async ({house}) => {
+    await withAsk(house);
+    await openAsk(house);
+    await expect(suggestionButtons(house)).toHaveText(SUGGESTIONS_EN);
+    await expect(askSheet(house).getByRole('group', {name: 'Try asking'})).toBeVisible();
+    for (const button of await suggestionButtons(house).all()) {
+      const box = await button.boundingBox();
+      expect(box?.height).toBeGreaterThanOrEqual(44);
+    }
+    // the first thing in the sheet is still the field, which has focus
+    await expect(askField(house)).toBeFocused();
+  });
+
+  test('a tap asks at once, with no call to the AI Task, and the answer is the plan’s own', async ({house}) => {
+    await withAsk(house);
+    await openAsk(house);
+    await suggestionButtons(house).nth(1).click();
+    const sheet = askSheet(house);
+    await expect(sheet.locator('#ask-summary')).toHaveText(/^Bedroom · yesterday · \d+\.\d° to \d+\.\d°$/);
+    await expect(sheet.locator('#ask-understood')).toHaveText('Bedroom · over time · yesterday');
+    await chartDrawn(house);
+    // the field shows what was asked, and the suggestions are gone with the answer
+    await expect(askField(house)).toHaveValue(SUGGESTIONS_EN[1]);
+    await expect(suggestionButtons(house)).toHaveCount(0);
+    expect(await house.generated()).toHaveLength(0);
+  });
+
+  test('a door and a meter are answered the same way', async ({house}) => {
+    await withAsk(house);
+    await openAsk(house);
+    await suggestionButtons(house).nth(0).click();
+    await expect(askSheet(house).locator('#ask-understood')).toHaveText('Front door · open · this week');
+    await house.page.keyboard.press('Escape');
+    await expect(askDialog(house)).toBeHidden();
+    await openAsk(house);
+    await suggestionButtons(house).nth(2).click();
+    await expect(askSheet(house).locator('#ask-understood')).toHaveText('Car charging energy · total · last week');
+    await expect(askSheet(house).locator('#ask-total .v small')).toHaveText('kWh');
+    expect(await house.generated()).toHaveLength(0);
+  });
+
+  test('a suggestion is asked while the model is away: it needs no model', async ({house}) => {
+    await withAsk(house);
+    await house.setState(ASK_ENTITY, {state: 'unavailable'});
+    await openAsk(house);
+    await suggestionButtons(house).nth(1).click();
+    await expect(askSheet(house).locator('#ask-summary')).toBeVisible();
+    expect(await house.generated()).toHaveLength(0);
+  });
+
+  test('they come back after an answer of “unsupported”, and a tap on one is answered', async ({house}) => {
+    await withAsk(house);
+    await openAsk(house);
+    await sendQuestion(house, QUESTION_ATTIC);
+    await expect(askMessage(house)).toHaveText(UNSUPPORTED_EN);
+    await expect(suggestionButtons(house)).toHaveText(SUGGESTIONS_EN);
+    expect(await house.generated()).toHaveLength(1);
+    await suggestionButtons(house).nth(1).click();
+    await expect(askSheet(house).locator('#ask-summary')).toBeVisible();
+    // still the one call: the tap made none
+    expect(await house.generated()).toHaveLength(1);
+  });
+
+  test('Try again after a failed read reads again from the plan: the model is never asked', async ({house}) => {
+    await withAsk(house);
+    await openAsk(house);
+    await house.page.evaluate(() => window.house.failStatistics('all'));
+    await suggestionButtons(house).nth(1).click();
+    await expect(retryButton(house)).toBeVisible();
+    expect(house.errors).toEqual([expect.stringContaining('home-panel ask')]);
+    house.errors.length = 0;
+    await house.page.evaluate(() => window.house.failStatistics(null));
+    await retryButton(house).click();
+    await expect(askSheet(house).locator('#ask-summary')).toBeVisible();
+    expect(await house.generated()).toHaveLength(0);
+  });
+
+  test('their words wrap at the largest text without being clipped', async ({house}) => {
+    await withAsk(house);
+    await setTextSize(house, 'larger');
+    await house.page.keyboard.press('Escape');
+    await openAsk(house);
+    for (const button of await suggestionButtons(house).all()) {
+      const fits = await button.evaluate(e => e.scrollWidth <= e.clientWidth && e.scrollHeight <= e.clientHeight + 1);
+      expect(fits, await button.innerText()).toBe(true);
+      expect((await button.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+    }
+  });
+});
+
+test.describe('the suggested questions in French', () => {
+  test.use({houseOpts: {cfg: {...ASK_CFG, names: KEEP_ENGLISH_NAMES}, lang: 'fr', aiTask: AI_TASK, time: AFTERNOON}});
+
+  test('are worded in French, and the line of an unsupported question points at them', async ({house}) => {
+    await withAsk(house);
+    await openAsk(house);
+    await expect(suggestionButtons(house)).toHaveText([
+      'Front door\u00a0: quelles ouvertures cette semaine\u00a0?',
+      'Bedroom\u00a0: quelle température hier\u00a0?',
+      'Énergie de recharge de la voiture\u00a0: combien consommé la semaine dernière\u00a0?',
+    ]);
+    await expect(askSheet(house).getByRole('group', {name: 'Essayez de demander'})).toBeVisible();
+    await sendQuestion(house, 'Ouvre la porte du garage');
+    await expect(askMessage(house)).toContainText('Essayez une des suggestions.');
+  });
+});
+
+test.describe('a house with nothing to suggest', () => {
+  test.use({houseOpts: {house: 'bare', cfg: ASK_CFG, aiTask: AI_TASK, time: AFTERNOON}});
+
+  test('is the bare field, and its unsupported line does not point at suggestions', async ({house}) => {
+    await withAsk(house);
+    await openAsk(house);
+    await expect(suggestionButtons(house)).toHaveCount(0);
+    await expect(askSheet(house).locator('.suggest')).toHaveCount(0);
+    await sendQuestion(house, QUESTION_ATTIC);
+    await expect(askMessage(house)).toHaveText(UNSUPPORTED_PLAIN_EN);
+    await expect(suggestionButtons(house)).toHaveCount(0);
   });
 });

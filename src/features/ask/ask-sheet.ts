@@ -1,13 +1,14 @@
 // <hp-ask-sheet>: the Ask sheet: a text field and its send button, then, in a polite live region, the progress of a question, its answer or the line that says why it has none.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) composing the kit's <hp-sheet> for its chrome and `AskLoader` for the question; properties down (`open`), events up (`sheet-close` passes through).
 // The sheet is read-only and keeps nothing: it asks the loader to open when it opens and to close when it closes, so the next opening starts empty (spec 29, story 20), and it subscribes to no entity.
-// Must not: draw a sheet's chrome, listen for Escape or know which sheet is open (the shell and its host do), call a model or the API client (the loader does), word a figure, or show the model's own words.
+// Must not: draw a sheet's chrome, build a suggestion (suggestions.ts does) or send its words to a model, listen for Escape or know which sheet is open (the shell and its host do), call a model or the API client (the loader does), word a figure, or show the model's own words.
 import {ContextConsumer} from '@lit/context';
 import {LitElement, html, nothing, unsafeCSS, type PropertyValues} from 'lit';
 import ownCss from './ask-sheet.element.css?inline';
 import './ask-answer.ts'; // defines <hp-ask-answer>
 import {askNotes} from './checks.ts';
 import {QUESTION_CAP} from './instructions.ts';
+import {askSuggestions, type Suggestion} from './suggestions.ts';
 import {AskLoader} from './loader.ts';
 import {askView, canRetry, sensorOf, type AskState} from './model.ts';
 import {weekStartOf} from './period.ts';
@@ -112,11 +113,31 @@ export class AskSheet extends LitElement {
   };
 
   private readonly onRetry = (): void => {
-    const {state} = this.loader;
-    if (state.at !== 'failed') return;
-    this.loader.ask(state.question);
+    this.loader.retry();
     this.focusField();
   };
+
+  // a tap asks the suggestion as it stands, with no model: the field shows its words, and has focus again where the button that had it is gone
+  private readonly onSuggest = (suggestion: Suggestion): void => {
+    this.draft = suggestion.text;
+    this.loader.suggest(suggestion);
+    this.focusField();
+  };
+
+  // the suggested questions, under the field when it is empty and under the line that says a question could not be placed; none for a house with nothing to suggest
+  private renderSuggestions(state: AskState, suggestions: Suggestion[], t: Translate) {
+    const shown = state.at === 'idle' || (state.at === 'failed' && state.reason === 'unsupported');
+    if (!shown || suggestions.length === 0) return nothing;
+    return html`<div class="suggest" role="group" aria-labelledby="ask-suggest-title">
+      <p class="suggest-title" id="ask-suggest-title">${t('ask.suggest.title')}</p>
+      ${suggestions.map(
+        suggestion =>
+          html`<button class="abtn suggestion" type="button" @click=${() => this.onSuggest(suggestion)}>
+            ${suggestion.text}
+          </button>`,
+      )}
+    </div>`;
+  }
 
   protected override render() {
     const {t} = this.storeController.store;
@@ -153,7 +174,8 @@ export class AskSheet extends LitElement {
     const {state, catalog} = this.loader;
     // the sensor the state is about, found once: the view names it and the chart draws it in its unit
     const sensor = sensorOf(state, catalog);
-    const view = askView(state, t, store.fmt, sensor);
+    const suggestions = askSuggestions(catalog, t);
+    const view = askView(state, t, store.fmt, sensor, suggestions.length > 0);
     // what the catalog says against the config is an admin's business, as the config card's problems are
     const notes = askNotes(catalog, store.isAdmin, t);
     return html`<div class="body">
@@ -187,6 +209,7 @@ export class AskSheet extends LitElement {
             : nothing
         }
       </div>
+      ${this.renderSuggestions(state, suggestions, t)}
     </div>`;
   }
 }
