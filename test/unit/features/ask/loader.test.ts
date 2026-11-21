@@ -508,6 +508,19 @@ describe('a suggestion', () => {
     expect(generateData).not.toHaveBeenCalled();
   });
 
+  test('Try again has nothing to retry when nothing failed', async () => {
+    const {loader, generateData, statistics} = setup();
+    loader.retry();
+    expect(loader.state).toEqual({at: 'idle'});
+    loader.suggest(SUGGESTION);
+    await settle();
+    const answered = loader.state;
+    loader.retry();
+    expect(loader.state).toBe(answered);
+    expect(generateData).not.toHaveBeenCalled();
+    expect(statistics).toHaveBeenCalledTimes(1);
+  });
+
   test('a typed question whose read failed is retried from its plan too, and one that failed at the model is asked again', async () => {
     const {loader, generateData, statistics, replies} = setup();
     statistics.mockImplementationOnce(() => Promise.reject(new Error('recorder down')));
