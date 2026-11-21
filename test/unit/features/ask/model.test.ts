@@ -10,6 +10,7 @@ import {
   IDLE,
   type AnswerablePlan,
   type AskEvent,
+  sensorOf,
   type AskState,
 } from '../../../../src/features/ask/model.ts';
 import type {PlanError} from '../../../../src/features/ask/plan.ts';
@@ -201,12 +202,8 @@ describe('askView', () => {
   });
   const view = (state: AskState, language: 'en' | 'fr' = 'en', c = catalog) => {
     const {t, fmt} = depsOf(fullHouse, language);
-    // the sheet finds the answered sensor's entry once and hands it over
-    const sensor =
-      state.at === 'answered' || state.at === 'failed'
-        ? c.entries.find(entry => entry.key === state.plan?.sensor)
-        : undefined;
-    return askView(state, t, fmt, sensor);
+    // the sheet finds the state's sensor entry once and hands it over
+    return askView(state, t, fmt, sensorOf(state, c));
   };
 
   test('idle says nothing', () => {

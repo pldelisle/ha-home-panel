@@ -5,7 +5,7 @@
 // Must not: call a model, fetch, read the clock or the DOM, show a model's own words (the texts are the catalog's), or hold a timer (the timeout is the port's).
 import type {Formatters} from '../../core/i18n/format.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
-import type {CatalogEntry} from './catalog.ts';
+import type {Catalog, CatalogEntry} from './catalog.ts';
 import type {EmptyAnswer, SeriesAnswer} from './evaluate.ts';
 import {isPlanError, type Plan, type PlanError} from './plan.ts';
 
@@ -22,8 +22,9 @@ export type AskState =
   | {at: 'planning'; id: number; question: string}
   | {at: 'fetching'; id: number; question: string; plan: AnswerablePlan}
   | {at: 'answered'; question: string; plan: AnswerablePlan; answer: Answer}
-  // an empty failure keeps the plan, so its line can name the sensor and the period it found nothing for
-  | {at: 'failed'; question: string; reason: FailureReason; plan?: AnswerablePlan};
+  // an empty failure keeps the plan, so its line can name the sensor and the period it found nothing for; no other failure has one
+  | {at: 'failed'; question: string; reason: 'empty'; plan: AnswerablePlan}
+  | {at: 'failed'; question: string; reason: Exclude<FailureReason, 'empty'>};
 
 /**
  * What happens to the sheet. A question carries a request id, a number the caller counts up, and every reply names the id it is for, so a late
@@ -78,6 +79,12 @@ export function askReducer(state: AskState, event: AskEvent): AskState {
 export const canRetry = (state: AskState): boolean =>
   state.at === 'failed' && (state.reason === 'timeout' || state.reason === 'unavailable');
 
+/** The catalog's entry for the sensor a state is about (an answer's, or an empty failure's), if the catalog still lists it: the caller finds it once and hands it to `askView` and the chart. */
+export const sensorOf = (state: AskState, catalog: Pick<Catalog, 'entries'>): CatalogEntry | undefined =>
+  state.at === 'answered' || (state.at === 'failed' && state.reason === 'empty')
+    ? catalog.entries.find(entry => entry.key === state.plan.sensor)
+    : undefined;
+
 /** The texts the sheet shows for a state; a null is a line it does not draw. */
 export interface AskView {
   /** What stands in place of an answer: the progress of a question, or the reason it has none. */
@@ -100,7 +107,7 @@ export const figure = (fmt: Formatters, value: number, unit: string): string => 
   return unit === '°' ? `${text}°` : unit ? `${text} ${unit}` : text;
 };
 
-/** The words of a state, in the panel's language, from the catalog's messages and the store's formatters. `sensor` is the catalog's entry for the plan's sensor (an answer's, or an empty failure's) (the caller finds it once), if the catalog still lists it. */
+/** The words of a state, in the panel's language, from the catalog's messages and the store's formatters. `sensor` is what `sensorOf` found. */
 export function askView(state: AskState, t: Translate, fmt: Formatters, sensor?: CatalogEntry): AskView {
   switch (state.at) {
     case 'idle':
@@ -109,16 +116,17 @@ export function askView(state: AskState, t: Translate, fmt: Formatters, sensor?:
       return {...NOTHING, message: t('ask.state.planning')};
     case 'fetching':
       return {...NOTHING, message: t('ask.state.fetching')};
-    case 'failed': {
-      const {plan} = state;
+    case 'failed':
       return {
         ...NOTHING,
-        message: t(
-          `ask.failed.${state.reason}`,
-          plan ? {name: sensor?.name ?? plan.sensor, period: t(`ask.period.${plan.period}`)} : undefined,
-        ),
+        message:
+          state.reason === 'empty'
+            ? t('ask.failed.empty', {
+                name: sensor?.name ?? state.plan.sensor,
+                period: t(`ask.period.${state.plan.period}`),
+              })
+            : t(`ask.failed.${state.reason}`),
       };
-    }
     case 'answered': {
       const {plan, answer} = state;
       const name = sensor?.name ?? plan.sensor;
@@ -134,10 +142,7 @@ export function askView(state: AskState, t: Translate, fmt: Formatters, sensor?:
         }),
         mean: t('ask.mean', {mean: figure(fmt, answer.mean, unit)}),
         understood: t('ask.understood.series', {name, period}),
-        coverage:
-          answer.coverage < 1
-            ? t('ask.coverage', {percent: fmt.integer(answer.coverage * 100), date: fmt.date(answer.from)})
-            : null,
+        coverage: answer.coverage < 1 ? t('ask.coverage', {date: fmt.date(answer.from)}) : null,
       };
     }
   }

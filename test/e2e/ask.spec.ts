@@ -299,6 +299,26 @@ test.describe('a slow model', () => {
     await expect(askSheet(house).locator('#ask-understood')).not.toContainText('yesterday');
   });
 
+  test('focus on Cancel does not fall to the page when the answer arrives: it goes to the field', async ({house}) => {
+    await withAsk(house);
+    await openAsk(house);
+    await sendQuestion(house, QUESTION);
+    await cancelButton(house).focus();
+    await house.clock.runFor(20_001);
+    await expect(askSheet(house).locator('#ask-summary')).toBeVisible();
+    await expect(askField(house)).toBeFocused();
+  });
+
+  test('focus on Cancel goes to Try again when the question times out', async ({house}) => {
+    await aiTaskNow(house, {delayMs: 120_000});
+    await withAsk(house);
+    await openAsk(house);
+    await sendQuestion(house, QUESTION);
+    await cancelButton(house).focus();
+    await house.clock.runFor(30_001);
+    await expect(retryButton(house)).toBeFocused();
+  });
+
   test('gives up after thirty seconds, says so and offers to try again', async ({house}) => {
     await aiTaskNow(house, {delayMs: 120_000});
     await withAsk(house);

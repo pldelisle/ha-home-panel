@@ -9,7 +9,7 @@ import './ask-answer.ts'; // defines <hp-ask-answer>
 import {askNotes} from './checks.ts';
 import {QUESTION_CAP} from './instructions.ts';
 import {AskLoader} from './loader.ts';
-import {askView, canRetry} from './model.ts';
+import {askView, canRetry, sensorOf, type AskState} from './model.ts';
 import {weekStartOf} from './period.ts';
 import type {PanelApi} from '../../core/api.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
@@ -70,11 +70,26 @@ export class AskSheet extends LitElement {
     });
   }
 
+  // the Cancel button had focus before this update: when it is gone after it (a timeout, an answer), focus goes to Try again where it is shown, else to the field, and not to the page
+  private cancelHadFocus = false;
+
   protected override willUpdate(changed: PropertyValues<this>): void {
+    this.cancelHadFocus =
+      this.renderRoot.querySelector('#ask-cancel') !== null &&
+      (this.renderRoot as ShadowRoot).activeElement?.id === 'ask-cancel';
     if (!changed.has('open')) return;
     this.draft = '';
     if (this.open) this.loader.open();
     else this.loader.close();
+  }
+
+  protected override updated(): void {
+    if (!this.cancelHadFocus || this.renderRoot.querySelector('#ask-cancel')) return;
+    this.cancelHadFocus = false;
+    (
+      this.renderRoot.querySelector<HTMLElement>('#ask-retry') ??
+      this.renderRoot.querySelector<HTMLElement>('#ask-question')
+    )?.focus();
   }
 
   private readonly onInput = (e: Event): void => {
@@ -117,10 +132,10 @@ export class AskSheet extends LitElement {
   }
 
   // the line that stands in place of an answer: a progress row with its Cancel, a failure with its Try again where a second try can change something, a failure alone otherwise
-  private renderMessage(at: string, message: string, retry: boolean, t: Translate) {
-    const failed = at === 'failed';
+  private renderMessage(state: AskState, message: string, t: Translate) {
+    const failed = state.at === 'failed';
     const line = html`<p class="message ${failed ? 'failed' : 'progress'}" id="ask-message">${message}</p>`;
-    if (failed && !retry) return line;
+    if (failed && !canRetry(state)) return line;
     return html`<div class="outcome">
       ${line}
       ${
@@ -136,11 +151,8 @@ export class AskSheet extends LitElement {
     const {store} = this.storeController;
     const {t} = store;
     const {state, catalog} = this.loader;
-    // the answered plan's sensor, found once: the view names it and the chart draws it in its unit
-    const sensor =
-      state.at === 'answered' || state.at === 'failed'
-        ? catalog.entries.find(entry => entry.key === state.plan?.sensor)
-        : undefined;
+    // the sensor the state is about, found once: the view names it and the chart draws it in its unit
+    const sensor = sensorOf(state, catalog);
     const view = askView(state, t, store.fmt, sensor);
     // what the catalog says against the config is an admin's business, as the config card's problems are
     const notes = askNotes(catalog, store.isAdmin, t);
@@ -163,14 +175,14 @@ export class AskSheet extends LitElement {
       </form>
       ${notes.map(note => html`<p class="admin-note">${note}</p>`)}
       <div class="result" id="ask-result" aria-live="polite">
-        ${view.message ? this.renderMessage(state.at, view.message, canRetry(state), t) : nothing}
+        ${view.message ? this.renderMessage(state, view.message, t) : nothing}
         ${
           state.at === 'answered'
             ? html`<hp-ask-answer
                 .view=${view}
                 .answer=${state.answer}
-                .name=${catalog.entries.find(entry => entry.key === state.plan.sensor)?.name ?? ''}
-                .unit=${catalog.entries.find(entry => entry.key === state.plan.sensor)?.unit ?? ''}
+                .name=${sensor?.name ?? ''}
+                .unit=${sensor?.unit ?? ''}
               ></hp-ask-answer>`
             : nothing
         }

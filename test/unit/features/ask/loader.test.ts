@@ -398,7 +398,8 @@ describe('a reply that is no longer wanted is dropped', () => {
     expect(loader.state).toEqual({at: 'idle'});
   });
 
-  test('a reply of a config that is gone is no answer: the state is left to the frame that starts over', async () => {
+  // the shell's `resetFrame()` forgets the sheet when the config generation changes, so the loader leaves the state alone and the sheet is not left spinning
+  test('a reply of a config that is gone is no answer: the loader says nothing, and the shell’s reset of the frame forgets the sheet', async () => {
     const {loader, replies} = setup();
     replies.push(() => Promise.reject(new StaleReply(1, 2)));
     loader.ask(QUESTION);
