@@ -7,16 +7,14 @@ import {mkdirSync, readFileSync, realpathSync, writeFileSync} from 'node:fs';
 import {dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {parseArgs} from 'node:util';
+import {DEFAULT_TASK_NAME} from '../src/core/api.ts';
 import {askInstructions, askStructure, INSTRUCTIONS_VERSION} from '../src/features/ask/instructions.ts';
-import {ASK_NOW, askHouse} from './lib/ask-house.mjs';
+import {ASK_NOW, askHouse, catalogOf} from './lib/ask-house.mjs';
 import {stringify} from './record-fixture.mjs';
 import {scoreLines, scoreOf} from './lib/ask-suite.mjs';
 
 export const QUESTIONS_PATH = new URL('../test/unit/fixtures/ask/questions.json', import.meta.url);
 export const RECORDINGS_DIR = 'test/unit/fixtures/ask/recordings';
-
-// the task name the panel sends (src/core/api.ts), so the model sees what it sees in the panel
-const TASK_NAME = 'Home panel';
 
 // what the library throws for a connection that does not open (it throws numbers, not errors)
 const LIBRARY_ERRORS = {
@@ -65,7 +63,7 @@ export async function askModel(connection, entity, question, now) {
     domain: 'ai_task',
     service: 'generate_data',
     service_data: {
-      task_name: TASK_NAME,
+      task_name: DEFAULT_TASK_NAME,
       entity_id: entity,
       instructions: askInstructions(question.question, now, catalog, question.language, fmt),
       structure: askStructure(catalog),
@@ -158,11 +156,7 @@ export async function main(argv, env, deps = {}) {
   };
   writeFile(fileURLToPath(new URL(`../${path}`, import.meta.url)), `${stringify(recording)}\n`);
   log(`wrote ${path}`);
-  for (const line of scoreLines(
-    scoreOf(questions, replies, language => askHouse(language).catalog),
-    args.model,
-  ))
-    log(line);
+  for (const line of scoreLines(scoreOf(questions, replies, catalogOf), args.model)) log(line);
   const failed = Object.keys(failures).length;
   if (failed > 0) log(`  ${failed} call(s) failed and are recorded as misses: ${Object.keys(failures).join(', ')}`);
   return 0;

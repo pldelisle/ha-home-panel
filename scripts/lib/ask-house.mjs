@@ -34,6 +34,12 @@ export function askHouse(language) {
   return /** @type {ReturnType<typeof buildHouse>} */ (built.get(language));
 }
 
+/**
+ * The catalog of the full test house in `language`: what the instructions list and what a reply is parsed against.
+ * @param {string} language
+ */
+export const catalogOf = language => askHouse(language).catalog;
+
 /** @param {string} language */
 function buildHouse(language) {
   const hass = {...fakeHass.fromHouse(full), locale: {language}};

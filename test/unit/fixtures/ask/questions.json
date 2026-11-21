@@ -2,7 +2,7 @@
   {
     "id": "en-series-office-yesterday",
     "language": "en",
-    "question": "How warm was the office yesterday?",
+    "question": "What was the office temperature yesterday?",
     "expected": {"form": "series", "sensor": "temp.office", "period": "yesterday"}
   },
   {
@@ -38,7 +38,7 @@
   {
     "id": "en-moments-office-warm",
     "language": "en",
-    "question": "When was the office above 23 degrees yesterday?",
+    "question": "When did the office go over 23 degrees yesterday?",
     "expected": {
       "form": "moments",
       "sensor": "temp.office",
@@ -98,7 +98,7 @@
   {
     "id": "en-total-car-week",
     "language": "en",
-    "question": "How much did the car charge last week?",
+    "question": "How much energy did the car take last week?",
     "expected": {"form": "total", "sensor": "energy.car", "period": "last_week"}
   },
   {

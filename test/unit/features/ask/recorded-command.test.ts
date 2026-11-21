@@ -5,17 +5,11 @@
 import {readFileSync} from 'node:fs';
 import {describe, expect, test, vi} from 'vitest';
 import {askModel, main, parseArguments} from '../../../../scripts/ask-record.mjs';
-import {ASK_NOW, askHouse} from '../../../../scripts/lib/ask-house.mjs';
-import {scoreOf, wireOf} from '../../../../scripts/lib/ask-suite.mjs';
+import {ASK_NOW, catalogOf} from '../../../../scripts/lib/ask-house.mjs';
+import {scoreOf, wireOf, type Question} from '../../../../scripts/lib/ask-suite.mjs';
+import {DEFAULT_TASK_NAME} from '../../../../src/core/api.ts';
 import {INSTRUCTIONS_VERSION} from '../../../../src/features/ask/instructions.ts';
 import {BANNED_PATTERNS} from '../../../personal-data.mjs';
-
-interface Question {
-  id: string;
-  language: 'en' | 'fr';
-  question: string;
-  expected: {form: string};
-}
 
 const QUESTIONS_URL = new URL('../../fixtures/ask/questions.json', import.meta.url);
 const SUITE = JSON.parse(readFileSync(QUESTIONS_URL, 'utf8')) as Question[];
@@ -28,7 +22,6 @@ interface Written {
 const ENV = {HASS_URL: 'http://ha.example:8123', HASS_TOKEN: 'token'};
 const ARGS = ['--entity', 'ai_task.local_model', '--model', 'model-a'];
 const RECORDED_AT = new Date('2026-12-01T15:00:00Z');
-const catalogOf = (language: string) => askHouse(language).catalog;
 
 const ASKED = [
   {
@@ -105,7 +98,7 @@ describe('ask:record, main', () => {
       return_response: true,
     });
     expect(english.service_data.entity_id).toBe('ai_task.local_model');
-    expect(english.service_data.task_name).toBe('Home panel');
+    expect(english.service_data.task_name).toBe(DEFAULT_TASK_NAME);
     expect(english.service_data.instructions).toContain('Question: "How warm was the office yesterday?"');
     // the fixed instant, not the clock of the run: the date the model is told is the recording's
     expect(english.service_data.instructions).toContain('Today is Saturday 2026-11-21.');
@@ -140,14 +133,28 @@ describe('ask:record, main', () => {
     expect(connection.close).toHaveBeenCalledTimes(1);
   });
 
-  test('prints the score per language and per form, then the misses with the line that accepts them', async () => {
+  test('prints the score, counts the wrong valid plans and lists them first, then the other misses', async () => {
     const wrong = {...wireOf(ASKED[1].expected), sensor: 'energy.car'};
-    const {log} = await record({'How warm': wireOf(ASKED[0].expected), 'Combien le chauffage': wrong});
-    expect(log).toContain('model-a: 1/2 right');
-    expect(log).toContain('  by language: en 1/1, fr 0/1');
-    expect(log).toContain('  by form: series 1/1, total 0/1');
-    expect(log).toContain('    q-fr: wanted total energy.heating yesterday, got total energy.car yesterday');
-    expect(log).toContain('  to accept them in CI, add to the file: "knownMisses": ["q-fr"]');
+    const {log} = await record({'How warm': {form: 'unsupported'}, 'Combien le chauffage': wrong});
+    expect(log).toContain('model-a: 0/2 right');
+    expect(log).toContain('  by language: en 0/1, fr 0/1');
+    expect(log).toContain('  by form: series 0/1, total 0/1');
+    expect(log).toContain('  wrong valid plans: 1');
+    const wrongAt = log.findIndex(line =>
+      line.includes('q-fr: wanted total energy.heating yesterday, got total energy.car'),
+    );
+    const otherAt = log.findIndex(line => line.includes('q-en: wanted series temp.office yesterday, got unsupported'));
+    expect(wrongAt).toBeGreaterThan(-1);
+    expect(wrongAt).toBeLessThan(otherAt);
+    expect(log[wrongAt]).toContain('WRONG PLAN');
+    // only the one a model may be allowed to get wrong is offered for the file; a wrong valid plan is never accepted
+    expect(log).toContain('  to accept them in CI, add to the file: "knownMisses": ["q-en"]');
+  });
+
+  test('says no wrong valid plans when there are none, and offers no line when nothing missed', async () => {
+    const {log} = await record(RIGHT);
+    expect(log).toContain('  wrong valid plans: 0');
+    expect(log.some(line => line.includes('knownMisses'))).toBe(false);
   });
 
   test('a failed call is recorded as a miss and the run goes on; it is not a crash', async () => {
