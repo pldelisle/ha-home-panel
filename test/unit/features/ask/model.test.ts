@@ -429,6 +429,11 @@ describe('askView of moments', () => {
     expect(view(MOMENTS, planOf({test: {on: false}}), 'en', gone).understood).toBe('door.patio · off · this week');
   });
 
+  test('a moments answer of a plan that is not for moments has no words, and no wrong ones', () => {
+    const series: AnswerablePlan = {form: 'series', sensor: 'temp.office', period: 'yesterday'};
+    expect(view(MOMENTS, series)).toEqual({message: null, summary: null, mean: null, understood: null, coverage: null});
+  });
+
   test('partial coverage adds the note saying where the history starts', () => {
     expect(view({...MOMENTS, coverage: 0.4}, planOf()).coverage).toBe('History starts Nov 17');
   });

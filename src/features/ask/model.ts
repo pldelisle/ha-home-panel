@@ -114,7 +114,8 @@ export interface MomentLine {
 /** How many spans the list shows before it says how many more there are (spec 29, "The elements"). */
 export const MOMENTS_SHOWN = 20;
 
-type MomentsPlan = Extract<Plan, {form: 'moments'}>;
+/** The plan of a moments question. */
+export type MomentsPlan = Extract<Plan, {form: 'moments'}>;
 
 const NOTHING: AskView = {message: null, summary: null, mean: null, understood: null, coverage: null};
 
@@ -205,8 +206,8 @@ export function askView(state: AskState, t: Translate, fmt: Formatters, sensor?:
       };
     case 'answered': {
       const {plan, answer} = state;
-      // a moments answer is only ever of a moments plan: the loader runs the one the plan names
-      if (answer.kind === 'moments') return momentsView(plan as MomentsPlan, answer, t, fmt, sensor);
+      // a moments answer is of a moments plan, the one that has a test; the loader runs the form the plan names, so any other pair has no words
+      if (answer.kind === 'moments') return 'test' in plan ? momentsView(plan, answer, t, fmt, sensor) : NOTHING;
       const name = sensor?.name ?? plan.sensor;
       const unit = sensor?.unit ?? '';
       const period = t(`ask.period.${plan.period}`);

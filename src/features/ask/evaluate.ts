@@ -137,7 +137,11 @@ function answerOf(
   return {kind: 'moments', spans: kept, count: kept.length, totalMs, ...covered};
 }
 
-/** A binary sensor's state history: each point holds from its change to the next, the first one from the window start if it came before it. */
+/**
+ * A binary sensor's state history: each point holds from its change to the next, the first one from the window start if it came before it.
+ * This is Security's `segments()` (src/features/security/history.ts) generalised, with one deliberate difference: there, any state that is not `on`
+ * ends a run; here `unavailable` and `unknown` are neither side of the test, so a gap is not "off" and is not counted (spec 29, "The evaluation").
+ */
 function momentsOfHistory(
   points: readonly HistoryPoint[],
   test: {on: boolean},
@@ -160,6 +164,7 @@ function momentsOfHistory(
 /** A measure's statistics rows: a bucket holds when its mean meets the threshold, and a bucket with no value or no row is a gap. */
 function momentsOfStatistics(
   rows: readonly StatisticRow[],
+  test: Threshold,
   query: MomentsQuery,
   window: PeriodWindow,
   now: number,
@@ -168,10 +173,12 @@ function momentsOfStatistics(
   if (series.kind === 'empty') return series;
   const bucket = BUCKET_MS[window.statistic];
   const end = window.end.getTime();
+  // a window that ends now has no bucket the recorder has closed after the newest it wrote (an hourly row is written after its hour): a run that includes the newest bucket is taken to go on to now
+  const newest = series.points[series.points.length - 1].at;
   const segments = series.points.map((point): Segment => ({
     from: point.at,
-    to: Math.min(end, point.at + bucket),
-    holds: meets(query.test as Threshold, point.value),
+    to: point.at === newest && end >= now ? end : Math.min(end, point.at + bucket),
+    holds: meets(test, point.value),
   }));
   return answerOf(joined(segments), query, window, now, {coverage: series.coverage, from: series.from});
 }
@@ -189,5 +196,5 @@ export function evaluateMoments(
   const {test} = query;
   if ('history' in input)
     return 'on' in test ? momentsOfHistory(input.history, test, query, window, now) : {kind: 'empty'};
-  return 'on' in test ? {kind: 'empty'} : momentsOfStatistics(input.statistics, query, window, now);
+  return 'on' in test ? {kind: 'empty'} : momentsOfStatistics(input.statistics, test, query, window, now);
 }

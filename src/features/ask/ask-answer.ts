@@ -71,7 +71,7 @@ export class AskAnswer extends LitElement {
             </ul>`
           : nothing
       }
-      ${view.more ? html`<p class="rest" id="ask-more">${view.more}</p>` : nothing}
+      ${view.more ? html`<p class="ask-more" id="ask-more">${view.more}</p>` : nothing}
       <p class="understood" id="ask-understood">${view.understood}</p>
       ${view.coverage ? html`<p class="coverage" id="ask-coverage">${view.coverage}</p>` : nothing}
     </div>`;

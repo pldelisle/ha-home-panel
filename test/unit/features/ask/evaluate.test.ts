@@ -293,6 +293,24 @@ describe('moments of a measure: the buckets that meet a threshold', () => {
     });
   });
 
+  test('a run that includes the newest bucket the recorder wrote is still going when the window ends now, even though that bucket closed before now', () => {
+    // the recorder wrote hours up to 11:00 (it closed at 12:00); now is 12:20, the window's end
+    const window = hourly(10, 12, 20);
+    expect(evaluateMoments(means(20, 24), above(23), window, at(12, 20))).toMatchObject({
+      spans: [{start: at(11), end: at(12, 20), ongoing: true}],
+      totalMs: 80 * MIN,
+    });
+    // a run that does not include the newest bucket ends with its own bucket, and so does a newest bucket that does not meet the test
+    expect(evaluateMoments(means(24, 20), above(23), window, at(12, 20))).toMatchObject({
+      spans: [{start: at(10), end: at(11), ongoing: false}],
+    });
+    expect(evaluateMoments(means(20, 20), above(23), window, at(12, 20))).toMatchObject({count: 0});
+    // a window that ended before now has no "newest": the span ends with its bucket
+    expect(evaluateMoments(means(20, 24), above(23), window, at(13))).toMatchObject({
+      spans: [{start: at(11), end: at(12), ongoing: false}],
+    });
+  });
+
   test('a bucket outside the window is left out, and the minimum length keeps the spans that last it', () => {
     const rows = [row(9, 30), row(10, 24), row(11, 20), row(12, 24), row(13, 24), row(22, 30)];
     expect(evaluateMoments({statistics: rows}, above(23), day, LATER)).toMatchObject({count: 2});

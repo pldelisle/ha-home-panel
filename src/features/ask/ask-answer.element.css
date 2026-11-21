@@ -49,7 +49,7 @@ hp-chart {
 .moments .ongoing .when {
   font-weight: 700;
 }
-.rest,
+.ask-more,
 .understood,
 .coverage {
   margin: 0;
@@ -74,7 +74,7 @@ hp-chart {
   font: var(--type-body-large);
   letter-spacing: var(--track-body-large);
 }
-.app[data-design='material'] .rest,
+.app[data-design='material'] .ask-more,
 .app[data-design='material'] .understood,
 .app[data-design='material'] .coverage {
   font: var(--type-body-medium);

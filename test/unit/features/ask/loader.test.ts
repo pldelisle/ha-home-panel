@@ -186,6 +186,33 @@ describe('a question about moments', () => {
     expect(loader.state).toMatchObject({at: 'answered', answer: {spans: [{ongoing: true}]}});
   });
 
+  test('reads the clock once for a question: a clock that moves while the history is fetched does not take the "still" away', async () => {
+    let ticks = 0;
+    const {loader, replies, history} = setup(config, {now: () => new Date(NOW + 1000 * ticks++)});
+    replies.push(() => Promise.resolve({...DOOR_PLAN, period: 'today', longer_than_min: null}));
+    history.mockResolvedValueOnce({'binary_sensor.front_door': [point(NOW - HOUR, 'on')]});
+    loader.ask('is the front door open?');
+    await settle();
+    expect(loader.state).toMatchObject({at: 'answered', answer: {spans: [{ongoing: true}]}});
+  });
+
+  test('a month over a measure is read by the hour, never by the day', async () => {
+    const {loader, replies, statistics} = setup();
+    replies.push(() => Promise.resolve({...OFFICE_ABOVE, period: 'this_month'}));
+    loader.ask('when was the office above 19 this month?');
+    await settle();
+    expect(statistics.mock.calls[0][1]).toBe('hour');
+    expect(loader.state).toMatchObject({at: 'answered', answer: {kind: 'moments'}});
+  });
+
+  test('a series over a month still reads daily statistics', async () => {
+    const {loader, replies, statistics} = setup();
+    replies.push(() => Promise.resolve({...PLAN, period: 'this_month'}));
+    loader.ask('how warm was the office this month?');
+    await settle();
+    expect(statistics.mock.calls[0][1]).toBe('day');
+  });
+
   test('a recorder with no state for the sensor fails as empty, and a door never opened is an answer of no moments', async () => {
     const {loader, replies, history} = setup();
     replies.push(
