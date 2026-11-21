@@ -34,6 +34,7 @@ import {
 } from './model.ts';
 import {momentsWindow, resolvePeriod, totalWindow, type PeriodWindow, type WeekStart} from './period.ts';
 import {isPlanError, parsePlan} from './plan.ts';
+import type {Suggestion} from './suggestions.ts';
 
 /** How long a question may wait for the AI Task: a local model takes a few seconds, and the sheet never spins forever (spec 29, story 16). */
 export const ASK_TIMEOUT_MS = 30_000;
@@ -108,6 +109,15 @@ export class AskLoader implements ReactiveController {
     this.dispatch({type: 'asked', id, question});
     const abort = (this.abort = new AbortController());
     void this.run(id, question.trim(), abort);
+  }
+
+  /** Asks a suggestion: its plan is the panel's own, so the AI Task is not called and the question goes straight to reading the history. It replaces the question in flight. */
+  suggest({text, plan}: Suggestion): void {
+    this.abort?.abort();
+    const id = ++this.last;
+    this.dispatch({type: 'suggested', id, question: text, plan});
+    const abort = (this.abort = new AbortController());
+    void this.fetchFor(id, plan, this.deps().now(), abort);
   }
 
   private build(): Catalog {
@@ -212,7 +222,7 @@ export class AskLoader implements ReactiveController {
   }
 
   private async run(id: number, question: string, abort: AbortController): Promise<void> {
-    const {api, cache, store, weekStart, now, timeoutMs = ASK_TIMEOUT_MS} = this.deps();
+    const {api, store, now, timeoutMs = ASK_TIMEOUT_MS} = this.deps();
     const entity = store.config.ask?.entity;
     if (entity === undefined) return this.dispatch({type: 'failed', id, reason: 'unavailable'});
     // the entity's own state says so before any call is made: nothing to wait thirty seconds for (the other source is a call that rejects, below)
@@ -236,34 +246,52 @@ export class AskLoader implements ReactiveController {
       if (isPlanError(plan)) console.warn('home-panel ask: the reply was refused:', plan.error);
       this.dispatch({type: 'planned', id, plan});
       if (!this.waiting(id, 'fetching') || isPlanError(plan) || plan.form === 'unsupported') return;
-      const window = resolvePeriod(plan.period, asked, store.fmt, weekStart);
-      const sensors = catalog.entityOf.get(plan.sensor) as readonly string[];
-      const [sensor] = sensors;
-      const answer =
-        plan.form === 'total'
-          ? await this.metered(
-              cache,
-              store,
-              sensors,
-              catalog.fromPower?.has(plan.sensor) === true,
-              plan,
-              window,
-              asked.getTime(),
-            )
-          : plan.form === 'moments' && 'on' in plan.test
-            ? await this.stated(plan, cache, sensor, window, asked.getTime())
-            : await this.measured(plan, cache, sensor, window, asked.getTime());
-      this.dispatch({type: 'answered', id, answer});
+      await this.read(id, plan, asked);
     } catch (error) {
       if (error instanceof Cancelled && timedOut) this.dispatch({type: 'failed', id, reason: 'timeout'});
-      // a close or a newer question let this one go (its state is theirs now), and a reply of a config that is gone is no answer: the frame starts over
-      else if (error instanceof Cancelled || error instanceof StaleReply) return;
-      else {
-        console.error('home-panel ask', error);
-        this.dispatch({type: 'failed', id, reason: 'unavailable'});
-      }
+      else this.fail(id, error);
     } finally {
       clearTimeout(timer);
     }
+  }
+
+  /** The reading half of a question, for a plan the panel has (a suggestion's, or the model's once parsed): the window, the recorder and the evaluation. A failure here is the recorder's, not the model's. */
+  private async fetchFor(id: number, plan: AnswerablePlan, asked: Date, abort: AbortController): Promise<void> {
+    try {
+      await this.read(id, plan, asked);
+    } catch (error) {
+      this.fail(id, error);
+    }
+    if (this.abort === abort) this.abort = null;
+  }
+
+  private async read(id: number, plan: AnswerablePlan, asked: Date): Promise<void> {
+    const {cache, store, weekStart} = this.deps();
+    const catalog = this.catalog;
+    const window = resolvePeriod(plan.period, asked, store.fmt, weekStart);
+    const sensors = catalog.entityOf.get(plan.sensor) as readonly string[];
+    const [sensor] = sensors;
+    const answer =
+      plan.form === 'total'
+        ? await this.metered(
+            cache,
+            store,
+            sensors,
+            catalog.fromPower?.has(plan.sensor) === true,
+            plan,
+            window,
+            asked.getTime(),
+          )
+        : plan.form === 'moments' && 'on' in plan.test
+          ? await this.stated(plan, cache, sensor, window, asked.getTime())
+          : await this.measured(plan, cache, sensor, window, asked.getTime());
+    this.dispatch({type: 'answered', id, answer});
+  }
+
+  /** A close or a newer question let this one go (its state is theirs now), and a reply of a config that is gone is no answer: the frame starts over; anything else is said as a failure. */
+  private fail(id: number, error: unknown): void {
+    if (error instanceof Cancelled || error instanceof StaleReply) return;
+    console.error('home-panel ask', error);
+    this.dispatch({type: 'failed', id, reason: 'unavailable'});
   }
 }

@@ -1548,6 +1548,12 @@ export const fr: Record<MessageKey, string> = {
   'ask.failed.empty': "Pas d'historique pour {name} {period}.",
   'ask.cancel': 'Annuler',
   'ask.retry': 'Réessayer',
+  'ask.suggest.title': 'Essayez de demander',
+  'ask.suggest.door': '{name}\u00a0: quelles ouvertures cette semaine\u00a0?',
+  'ask.suggest.temp': '{name}\u00a0: quelle température hier\u00a0?',
+  'ask.suggest.meter': '{name}\u00a0: combien consommé la semaine dernière\u00a0?',
+  'ask.failed.unsupportedTry':
+    "Le panneau n'a pas de capteur pour cela, ou ne peut pas encore le chercher. Essayez une des suggestions.",
   'ask.button': "Interroger l'historique",
   'ask.title': "Interroger l'historique",
   'ask.close': 'Fermer',

@@ -55,6 +55,26 @@
 .admin-note {
   font-size: calc(13px * var(--tx));
 }
+/* the suggested questions: a short caption and a button for each, as wide as the sheet's body, whose words wrap at large text. Each is a 48px touch target at least. */
+.suggest {
+  display: grid;
+  gap: 8px;
+}
+.suggest-title {
+  margin: 0;
+  color: var(--fg2);
+  font-size: calc(13px * var(--tx));
+  line-height: calc(20px * var(--tx));
+  font-weight: 600;
+}
+.suggestion {
+  min-height: 48px;
+  border-radius: var(--shape-control);
+  text-align: start;
+  /* the words may take as many lines as they need */
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
 .outcome {
   display: flex;
   gap: 12px;
@@ -88,6 +108,10 @@
   50% {
     opacity: 0.3;
   }
+}
+.app[data-design='material'] .suggestion {
+  min-height: 48px;
+  padding: 8px 16px;
 }
 .app[data-design='material'] .field {
   font: var(--type-body-large);

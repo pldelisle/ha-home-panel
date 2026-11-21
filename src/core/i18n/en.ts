@@ -1588,6 +1588,13 @@ export const en = {
   'ask.failed.empty': 'No history for {name} {period}.',
   'ask.cancel': 'Cancel',
   'ask.retry': 'Try again',
+  // the suggested questions (src/features/ask/suggestions.ts): the display name leads, so no article is needed; a suggestion is asked as it stands, with no model
+  'ask.suggest.title': 'Try asking',
+  'ask.suggest.door': '{name}: left open this week?',
+  'ask.suggest.temp': '{name}: how warm was it yesterday?',
+  'ask.suggest.meter': '{name}: how much last week?',
+  'ask.failed.unsupportedTry':
+    'The panel has no sensor for that, or cannot look that up yet. Try one of the suggestions.',
   // the header's button and the sheet it opens (src/shell/header.ts, src/features/ask/ask-sheet.ts): the button's accessible name, the sheet's title, the field and its send button
   'ask.button': 'Ask the history',
   'ask.title': 'Ask the history',
