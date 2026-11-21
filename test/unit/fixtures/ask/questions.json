@@ -1,0 +1,326 @@
+[
+  {
+    "id": "en-series-office-yesterday",
+    "language": "en",
+    "question": "How warm was the office yesterday?",
+    "expected": {"form": "series", "sensor": "temp.office", "period": "yesterday"}
+  },
+  {
+    "id": "en-series-garage-week",
+    "language": "en",
+    "question": "What was the temperature in the garage this week?",
+    "expected": {"form": "series", "sensor": "temp.garage", "period": "this_week"}
+  },
+  {
+    "id": "en-series-bedroom-24h",
+    "language": "en",
+    "question": "Show me the bedroom temperature over the last 24 hours",
+    "expected": {"form": "series", "sensor": "temp.bedroom", "period": "last_24h"}
+  },
+  {
+    "id": "en-series-grid-today",
+    "language": "en",
+    "question": "Chart the grid power today",
+    "expected": {"form": "series", "sensor": "power.grid", "period": "today"}
+  },
+  {
+    "id": "en-moments-door-open-week",
+    "language": "en",
+    "question": "Was the front door open for more than 10 minutes this week?",
+    "expected": {
+      "form": "moments",
+      "sensor": "door.living_room",
+      "period": "this_week",
+      "test": {"on": true},
+      "longerThanMin": 10
+    }
+  },
+  {
+    "id": "en-moments-office-warm",
+    "language": "en",
+    "question": "When was the office above 23 degrees yesterday?",
+    "expected": {
+      "form": "moments",
+      "sensor": "temp.office",
+      "period": "yesterday",
+      "test": {"above": 23},
+      "longerThanMin": null
+    }
+  },
+  {
+    "id": "en-moments-hall-motion",
+    "language": "en",
+    "question": "Was there any motion in the hall today?",
+    "expected": {
+      "form": "moments",
+      "sensor": "motion.office",
+      "period": "today",
+      "test": {"on": true},
+      "longerThanMin": null
+    }
+  },
+  {
+    "id": "en-moments-alex-home",
+    "language": "en",
+    "question": "When was Alex home last week?",
+    "expected": {
+      "form": "moments",
+      "sensor": "home.alex",
+      "period": "last_week",
+      "test": {"on": true},
+      "longerThanMin": null
+    }
+  },
+  {
+    "id": "en-moments-garage-cold",
+    "language": "en",
+    "question": "How often was the garage below 5 degrees last month?",
+    "expected": {
+      "form": "moments",
+      "sensor": "temp.garage",
+      "period": "last_month",
+      "test": {"below": 5},
+      "longerThanMin": null
+    }
+  },
+  {
+    "id": "en-moments-grid-peak",
+    "language": "en",
+    "question": "Did the grid draw more than 5000 watts for at least 30 minutes in the last 7 days?",
+    "expected": {
+      "form": "moments",
+      "sensor": "power.grid",
+      "period": "last_7_days",
+      "test": {"above": 5000},
+      "longerThanMin": 30
+    }
+  },
+  {
+    "id": "en-total-car-week",
+    "language": "en",
+    "question": "How much did the car charge last week?",
+    "expected": {"form": "total", "sensor": "energy.car", "period": "last_week"}
+  },
+  {
+    "id": "en-total-house-yesterday",
+    "language": "en",
+    "question": "How much energy did the house use yesterday?",
+    "expected": {"form": "total", "sensor": "energy.house", "period": "yesterday"}
+  },
+  {
+    "id": "en-total-heater-month",
+    "language": "en",
+    "question": "How much energy did the water heater use this month?",
+    "expected": {"form": "total", "sensor": "energy.water_heater", "period": "this_month"}
+  },
+  {
+    "id": "en-total-heating-30d",
+    "language": "en",
+    "question": "What did the heating consume over the last 30 days?",
+    "expected": {"form": "total", "sensor": "energy.heating", "period": "last_30_days"}
+  },
+  {
+    "id": "en-unsupported-why",
+    "language": "en",
+    "question": "Why was the office so cold last night?",
+    "expected": {"form": "unsupported"}
+  },
+  {
+    "id": "en-unsupported-two-sensors",
+    "language": "en",
+    "question": "Compare the office and the bedroom temperatures this week",
+    "expected": {"form": "unsupported"}
+  },
+  {
+    "id": "en-unsupported-switch",
+    "language": "en",
+    "question": "Turn off the living room lights",
+    "expected": {"form": "unsupported"}
+  },
+  {
+    "id": "en-unsupported-missing-sensor",
+    "language": "en",
+    "question": "How warm was the pool yesterday?",
+    "expected": {"form": "unsupported"}
+  },
+  {
+    "id": "en-unsupported-two-periods",
+    "language": "en",
+    "question": "Was the garage warmer this week than last week?",
+    "expected": {"form": "unsupported"}
+  },
+  {
+    "id": "en-unsupported-small-talk",
+    "language": "en",
+    "question": "Hello, how are you today?",
+    "expected": {"form": "unsupported"}
+  },
+  {
+    "id": "en-unsupported-right-now",
+    "language": "en",
+    "question": "What is the office temperature right now?",
+    "expected": {"form": "unsupported"}
+  },
+  {
+    "id": "fr-series-office-yesterday",
+    "language": "fr",
+    "question": "Quelle température a-t-il fait dans le bureau hier soir?",
+    "expected": {"form": "series", "sensor": "temp.office", "period": "yesterday"}
+  },
+  {
+    "id": "fr-series-living-room-last-week",
+    "language": "fr",
+    "question": "Montre-moi la température du salon la semaine passée",
+    "expected": {"form": "series", "sensor": "temp.living_room", "period": "last_week"}
+  },
+  {
+    "id": "fr-series-grid-24h",
+    "language": "fr",
+    "question": "Comment la puissance du réseau a-t-elle évolué dans les dernières 24 heures?",
+    "expected": {"form": "series", "sensor": "power.grid", "period": "last_24h"}
+  },
+  {
+    "id": "fr-series-bedroom-7-days",
+    "language": "fr",
+    "question": "La température de la chambre au cours des 7 derniers jours",
+    "expected": {"form": "series", "sensor": "temp.bedroom", "period": "last_7_days"}
+  },
+  {
+    "id": "fr-moments-door-open-week",
+    "language": "fr",
+    "question": "Est-ce que la porte d'en avant a été ouverte plus de 10 minutes cette semaine?",
+    "expected": {
+      "form": "moments",
+      "sensor": "door.living_room",
+      "period": "this_week",
+      "test": {"on": true},
+      "longerThanMin": 10
+    }
+  },
+  {
+    "id": "fr-moments-office-warm",
+    "language": "fr",
+    "question": "Quand est-ce qu'il a fait plus de 23 degrés dans le bureau aujourd'hui?",
+    "expected": {
+      "form": "moments",
+      "sensor": "temp.office",
+      "period": "today",
+      "test": {"above": 23},
+      "longerThanMin": null
+    }
+  },
+  {
+    "id": "fr-moments-hall-motion",
+    "language": "fr",
+    "question": "Y a-t-il eu du mouvement dans le hall hier?",
+    "expected": {
+      "form": "moments",
+      "sensor": "motion.office",
+      "period": "yesterday",
+      "test": {"on": true},
+      "longerThanMin": null
+    }
+  },
+  {
+    "id": "fr-moments-sam-home",
+    "language": "fr",
+    "question": "Quand est-ce que Sam était à la maison la semaine passée?",
+    "expected": {
+      "form": "moments",
+      "sensor": "home.sam",
+      "period": "last_week",
+      "test": {"on": true},
+      "longerThanMin": null
+    }
+  },
+  {
+    "id": "fr-moments-garage-cold",
+    "language": "fr",
+    "question": "Combien de fois la température du garage est-elle descendue sous 5 degrés le mois passé?",
+    "expected": {
+      "form": "moments",
+      "sensor": "temp.garage",
+      "period": "last_month",
+      "test": {"below": 5},
+      "longerThanMin": null
+    }
+  },
+  {
+    "id": "fr-moments-alex-away",
+    "language": "fr",
+    "question": "Est-ce qu'Alex a été parti plus de 2 heures aujourd'hui?",
+    "expected": {
+      "form": "moments",
+      "sensor": "home.alex",
+      "period": "today",
+      "test": {"on": false},
+      "longerThanMin": 120
+    }
+  },
+  {
+    "id": "fr-total-car-last-week",
+    "language": "fr",
+    "question": "Combien d'énergie la voiture a-t-elle consommée la semaine passée?",
+    "expected": {"form": "total", "sensor": "energy.car", "period": "last_week"}
+  },
+  {
+    "id": "fr-total-house-month",
+    "language": "fr",
+    "question": "Combien de kWh la maison a-t-elle consommés ce mois-ci?",
+    "expected": {"form": "total", "sensor": "energy.house", "period": "this_month"}
+  },
+  {
+    "id": "fr-total-heater-yesterday",
+    "language": "fr",
+    "question": "Combien d'énergie le chauffe-eau a-t-il utilisée hier?",
+    "expected": {"form": "total", "sensor": "energy.water_heater", "period": "yesterday"}
+  },
+  {
+    "id": "fr-total-heating-30d",
+    "language": "fr",
+    "question": "Combien le chauffage a-t-il consommé dans les 30 derniers jours?",
+    "expected": {"form": "total", "sensor": "energy.heating", "period": "last_30_days"}
+  },
+  {
+    "id": "fr-unsupported-why",
+    "language": "fr",
+    "question": "Pourquoi le garage était-il si froid hier soir?",
+    "expected": {"form": "unsupported"}
+  },
+  {
+    "id": "fr-unsupported-two-sensors",
+    "language": "fr",
+    "question": "Compare la température du salon et celle de la chambre cette semaine",
+    "expected": {"form": "unsupported"}
+  },
+  {
+    "id": "fr-unsupported-switch",
+    "language": "fr",
+    "question": "Allume les lumières du salon",
+    "expected": {"form": "unsupported"}
+  },
+  {
+    "id": "fr-unsupported-missing-sensor",
+    "language": "fr",
+    "question": "Quelle température faisait-il dans la piscine hier?",
+    "expected": {"form": "unsupported"}
+  },
+  {
+    "id": "fr-unsupported-two-periods",
+    "language": "fr",
+    "question": "Est-ce que le bureau était plus chaud cette semaine que la semaine passée?",
+    "expected": {"form": "unsupported"}
+  },
+  {
+    "id": "fr-unsupported-small-talk",
+    "language": "fr",
+    "question": "Salut, ça va bien à soir?",
+    "expected": {"form": "unsupported"}
+  },
+  {
+    "id": "fr-unsupported-right-now",
+    "language": "fr",
+    "question": "Quelle température fait-il dans le bureau en ce moment?",
+    "expected": {"form": "unsupported"}
+  }
+]
