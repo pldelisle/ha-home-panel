@@ -1,4 +1,4 @@
-// climateModel: the house, its rooms and the heat pump in, every text, figure and shape the Climate list, the phone's tiles and the detail's head, tiles, note and controls place out, and whether the chart's legend names the heating bars.
+// climateModel: the house, its rooms and the heat pump in, every text, figure and shape the Climate list, the phone's tiles and the detail's head, tiles, note and controls place out, and whether the chart's legend names the heating area.
 // Pattern: a pure view-model function, a humble object's other half (Meszaros, Fowler): it reads no clock, no `hass` and no store, words every message through
 // `deps.t` and every number through `deps.fmt`, takes a held setpoint or mode from `deps.overlay` (ADR 0023), and delegates the drawings to the pure geometry of
 // dial-geometry.ts and gauge-geometry.ts. Each rule is the legacy panel's own (`climateSummary`, `climInfo`, `renderClimateHead`, `renderClimateControls`), which #244 to #248 deleted.
@@ -43,7 +43,7 @@ interface Figures {
   kwh: number | null;
   /** The instant the heat pump's line starts, when that is later than the range does (the recorder keeps about ten days of its history); null for any other selection. */
   hpFrom: number | null;
-  /** What the detail chart's heating bars are of the selection: kW, the heat pump's share of each bucket, or null when it has none to draw. */
+  /** What the detail chart's heating area is of the selection: kW, the heat pump's share of each bucket, or null when it has none to draw. */
   heating: 'kw' | 'share' | null;
 }
 
@@ -711,7 +711,7 @@ function figuresOf(
     span: values.length ? {lo: Math.min(...values), hi: Math.max(...values)} : null,
     kwh: selectedKwh(history, selection),
     hpFrom: selection === 'hp' ? lateHeatPumpStart(history) : null,
-    heating: heating.bars.length ? heating.unit : null,
+    heating: heating.steps.length ? heating.unit : null,
   };
 }
 
@@ -727,10 +727,10 @@ function waiting(loaded: boolean, {t, historyFailed}: ClimateModelDeps, dry = fa
 const ROOM_LINE = 'var(--c-wh)';
 const OUTSIDE_LINE = 'var(--c-home)';
 const SETPOINT_LINE = 'var(--fg2)';
-/** The heating bars are the room line's colour, muted by their opacity in the chart (the legend's swatch is the plain colour). */
+/** The heating area is the room line's colour, muted by its opacity in the chart (the legend's swatch is the plain colour). */
 const HEATING_BARS = ROOM_LINE;
 
-/** The detail chart's legend and words: the line (the house is "House average"), its setpoint for a room or the heat pump, the outside, and the heating bars when it has some. */
+/** The detail chart's legend and words: the line (the house is "House average"), its setpoint for a room or the heat pump, the outside, and the heating area when it has one. */
 function chartBlock(
   head: Head,
   selection: ClimateSelection,

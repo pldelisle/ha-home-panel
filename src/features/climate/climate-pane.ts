@@ -1,5 +1,5 @@
 // <hp-climate-pane>: the Climate tab: on a phone the header with the summary, a grid of tiles and the detail's sheet (which a room view's tile opens over the room, on a tablet too); on a tablet the header with the range tabs, the list
-// beside the selected item's detail, and the heatmap under them. It keeps the selection and the range the person chose; the chart's colours (the line, the heating bars, the setpoint) are read from the page's tokens when one is built.
+// beside the selected item's detail, and the heatmap under them. It keeps the selection and the range the person chose; the chart's colours (the line, the heating area, the setpoint) are read from the page's tokens when one is built.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) over a view model: `climateModel` runs in `willUpdate` and the template places what it returns; a store
 // controller on `climateIds` (ADR 0012), paused while no part of the pane is on screen, and `ClimateHistory`, which loads the range shown (ADR 0028). The held values the model reads are the panel's overlay (ADR 0023).
 // Must not: read an entity itself (`readClimate` does), hold a string the household reads, call the API (the history controller asks the cache), send a command (the detail's controls do), or open the sheet (a tile asks).

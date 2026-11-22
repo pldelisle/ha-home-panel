@@ -497,7 +497,11 @@ describe('the heat pump', () => {
         ? pumpOf(pump('heat'), {history, language})
         : modelOf(fullHouse, sel, {history, language})
       ).detail.chart.legend.map(item => item.name);
-    const bars = loaded({heat: {bedroom: [[AT - 1e6, 1.2]]}, hpHeat: [[AT - 1e6, 40]]});
+    const bars = loaded({
+      rooms: {bedroom: points(19, 20), garage: points(19, 20), living_room: points(19, 20), office: points(19, 20)},
+      heat: {bedroom: [[AT - 2 * 36e5 - 150000, 1.2]], garage: []},
+      hpHeat: [[AT - 1e6, 40]],
+    });
     expect(names('bedroom', bars).slice(1)).toEqual(['Setpoint', 'Outside', 'Heating']);
     expect(names('house', bars)).toEqual(['House average', 'Outside', 'Heating']);
     expect(names('hp', bars).slice(1)).toEqual(['Setpoint', 'Outside', 'Heating time']);

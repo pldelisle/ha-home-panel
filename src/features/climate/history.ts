@@ -1,4 +1,4 @@
-// Climate's history as pure functions: the window it asks, the replies in, the series, the heating kWh and bars, the heatmap's cells and heat scale, and the three charts' options out.
+// Climate's history as pure functions: the window it asks, the replies in, the series, the heating kWh and steps, the heatmap's cells and heat scale, and the three charts' options out.
 // Pattern: functional core (Bernhardt, Boundaries), the data half of a humble object (Meszaros), after Air's and Energy's history; each rule is the legacy panel's own
 // (`loadClimRange`, `houseSeries`, `bucket`, `heatColor`, `climateSheet`, `climateDetail`, deleted in #246) and options are plain data (ADR 0022): `fmt` and `t` are arguments.
 // The callers are the loader (the window and the derivation), the model (the figures) and `ClimateCharts` (the options); its heat scale's stops are the only colours it owns.
@@ -93,28 +93,56 @@ export function setpointSeries(stats: StatsReply, id: string | null | undefined,
 /** How many hours a statistics period spans. */
 const PERIOD_HOURS: Record<StatisticsPeriod, number> = {'5minute': 1 / 12, hour: 1, day: 24};
 
-/** A heating bar: milliseconds at the middle of its bucket, and the bucket's figure (a baseboard's mean kW, or the heat pump's whole percent of the bucket spent heating). */
-export type HeatingBar = readonly [at: number, value: number];
+/** A step of the heating's area: milliseconds at the start of a bucket (a step line holds a value until the next point), and the figure held (a baseboard's mean kW, or the heat pump's whole percent of the bucket spent heating). */
+export type HeatingStep = readonly [at: number, value: number];
 
-/** The baseboard's mean kW of each row of `id` at the middle of its bucket, two decimals; a row with no mean, or a mean at or under `HEATING_KW`, draws no bar. Read by `deriveClimateHistory` for each room. */
-export function heatingBars(stats: StatsReply, id: string | null | undefined, range: Range): HeatingBar[] {
-  const offset = bucketMiddle(range);
+/** The baseboard's mean kW of each row of `id` at the start of its bucket, two decimals; a mean at or under `HEATING_KW` is 0 (a 0 draws nothing) and a row with no mean is skipped. Read by `deriveClimateHistory` for each room. */
+export function heatingPower(stats: StatsReply, id: string | null | undefined): HeatingStep[] {
   return rowsOf(stats, id).flatMap(({start, mean}) =>
-    mean == null || mean <= HEATING_KW ? [] : [[start + offset, hundredths(mean)] as HeatingBar],
+    mean == null ? [] : [[start, mean <= HEATING_KW ? 0 : hundredths(mean)] as HeatingStep],
   );
 }
 
+/** The rooms' kW added at each bucket start, two decimals: a room with no row at a bucket counts as 0 there (unlike `houseSeries`, whose mean drops it). Read by `selectedSeries` for the house. */
+export function sumHeating(rooms: readonly (readonly HeatingStep[])[]): HeatingStep[] {
+  const byStart = new Map<number, number>();
+  for (const steps of rooms) for (const [start, kw] of steps) byStart.set(start, (byStart.get(start) ?? 0) + kw);
+  return [...byStart].sort((a, b) => a[0] - b[0]).map(([start, kw]) => [start, hundredths(kw)]);
+}
+
 /**
- * The share of each bucket the heat pump spent heating, in whole percent at the middle of the bucket (buckets of `bucketMs` counted from `start`): a point holds
+ * The heating's steps along a line, one for each of the line's points at the start of its bucket (the line is drawn at the middle), 0 where the bucket has none,
+ * so that ApexCharts' shared tooltip, which reads every series by its position in the list, shows a bucket's own figure; one closing point, at the last bucket's end
+ * or at `at` while it is running, gives the last step its width. Empty when nothing heated (the chart then draws none). Read by `selectedSeries` for a room and the house.
+ */
+export function heatingAlong(
+  line: readonly Reading[],
+  steps: readonly HeatingStep[],
+  range: Range,
+  at: number,
+): HeatingStep[] {
+  const byStart = new Map(steps);
+  const along = line.map(([middle]): HeatingStep => {
+    const start = middle - bucketMiddle(range);
+    return [start, byStart.get(start) ?? 0];
+  });
+  if (!along.some(([, kw]) => kw > 0)) return [];
+  return [...along, [Math.min(along[along.length - 1][0] + RANGES[range].bucketMs, at), 0]];
+}
+
+/**
+ * The share of each bucket the heat pump spent heating, in whole percent at the start of the bucket (buckets of `bucketMs` counted from `start`): a point holds
  * from its `lastUpdated` to the next point's (the last one to `end`) and counts when it is not `unavailable` and its `hvac_action` is `heating`. What lies outside
- * `[start, end)` is clipped, so the running bucket counts only up to `end`; a bucket with no heating draws no bar. Read by `deriveClimateHistory`.
+ * `[start, end)` is clipped, so the running bucket counts only up to `end`. The steps run from the first bucket that heated to the last, a 0 for each between (a step
+ * line would otherwise hold a figure across them), and one closing point at the last bucket's end, or `end` while it is running. Empty when it never heated.
+ * Read by `deriveClimateHistory`.
  */
 export function heatingShare(
   points: readonly HistoryPoint[],
   start: number,
   end: number,
   bucketMs: number,
-): HeatingBar[] {
+): HeatingStep[] {
   const heating = new Map<number, number>();
   points.forEach((point, index) => {
     if (point.state === 'unavailable' || point.attributes?.hvac_action !== 'heating') return;
@@ -126,12 +154,17 @@ export function heatingShare(
       at = next;
     }
   });
-  return [...heating]
-    .sort((a, b) => a[0] - b[0])
-    .flatMap(([bucketIndex, ms]) => {
-      const percent = Math.round((ms / bucketMs) * 100);
-      return percent > 0 ? [[start + bucketIndex * bucketMs + bucketMs / 2, percent] as HeatingBar] : [];
-    });
+  const percents = new Map([...heating].map(([index, ms]) => [index, Math.round((ms / bucketMs) * 100)] as const));
+  const heated = [...percents].filter(([, percent]) => percent > 0).map(([index]) => index);
+  if (!heated.length) return [];
+  const [first, last] = [Math.min(...heated), Math.max(...heated)];
+  return [
+    ...Array.from({length: last - first + 1}, (_, offset): HeatingStep => {
+      const index = first + offset;
+      return [start + index * bucketMs, percents.get(index) ?? 0];
+    }),
+    [Math.min(end, start + (last + 1) * bucketMs), 0],
+  ];
 }
 
 /** The heating of one power sensor over the rows, in kWh: each period's mean kW times its hours, and the running period counts only the hours so far. Read by `deriveClimateHistory` for each room's figure. */
@@ -188,16 +221,16 @@ export interface ClimateHistoryData {
   sp: Record<string, SetpointPoint[]>;
   /** The heating of each room over the range, in kWh. */
   kwh: Record<string, number>;
-  /** Each room's baseboard as bars: its mean kW per bucket, none for a bucket at or under `HEATING_KW`. */
-  heat: Record<string, HeatingBar[]>;
+  /** Each room's baseboard: its mean kW at the start of each bucket, 0 at or under `HEATING_KW`. */
+  heat: Record<string, HeatingStep[]>;
   out: RangePoint[];
   hp: HeatPumpLine;
   /** The heat pump's target, a gap in the modes that have none (`off`, `fan_only`, `dry`). */
   hpSp: HeatPumpLine;
   /** The instant the heat pump's line starts; null without one. */
   hpFrom: number | null;
-  /** The share of each bucket the heat pump spent heating, in whole percent. */
-  hpHeat: HeatingBar[];
+  /** The share of each bucket the heat pump spent heating, in whole percent, as steps (`heatingShare`). */
+  hpHeat: HeatingStep[];
 }
 
 /** A reading that is a number: an attribute the unit reports as anything else is no reading. */
@@ -221,7 +254,7 @@ export function deriveClimateHistory(
     rooms[room.k] = rangeSeries(statistics, room.temp, range);
     sp[room.k] = setpointSeries(statistics, room.target, range);
     kwh[room.k] = heatingKwh(statistics, room.power, period, at);
-    heat[room.k] = heatingBars(statistics, room.power, range);
+    heat[room.k] = heatingPower(statistics, room.power);
   }
   const points = (config.entities.hp && history[config.entities.hp]) || [];
   const hp = hpSeries(points, attributes => numeric(attributes.current_temperature));
@@ -243,20 +276,13 @@ export function deriveClimateHistory(
   };
 }
 
-/** What the detail's chart draws of a selection: its line, its setpoint's and the bars of when the heating ran. */
+/** What the detail's chart draws of a selection: its line, its setpoint's and the steps of when the heating ran. */
 export interface SelectedSeries {
   points: readonly Reading[];
   /** Empty for the house, which has no setpoint. */
   setpoints: readonly SetpointPoint[];
-  /** The bars under the line: kW for a room (the house's is the rooms' sum), the share of each bucket for the heat pump; empty when nothing heated. */
-  heating: {unit: 'kw' | 'share'; bars: readonly HeatingBar[]};
-}
-
-/** The rooms' kW added at each bucket, two decimals: a room with no bar at a bucket counts as 0 there (unlike `houseSeries`, whose mean drops it). Read by `selectedSeries` for the house. */
-export function houseHeating(roomBars: readonly (readonly HeatingBar[])[]): HeatingBar[] {
-  const byTime = new Map<number, number>();
-  for (const bars of roomBars) for (const [at, kw] of bars) byTime.set(at, (byTime.get(at) ?? 0) + kw);
-  return [...byTime].sort((a, b) => a[0] - b[0]).map(([at, kw]) => [at, hundredths(kw)]);
+  /** The area under the line: kW for a room (the house's is the rooms' sum), the share of each bucket for the heat pump; empty when nothing heated. */
+  heating: {unit: 'kw' | 'share'; steps: readonly HeatingStep[]};
 }
 
 /** The line a selection draws: the heat pump's, the house's (the mean of the rooms), or a room's, with its setpoint. */
@@ -265,20 +291,21 @@ export function selectedSeries(
   selection: string,
   roomKeys: readonly string[],
 ): SelectedSeries {
-  if (selection === 'hp') return {points: data.hp, setpoints: data.hpSp, heating: {unit: 'share', bars: data.hpHeat}};
-  if (selection === 'house')
-    return {
-      points: houseSeries(
-        roomKeys.map(key => data.rooms[key] ?? []),
-        roomKeys.length,
-      ),
-      setpoints: [],
-      heating: {unit: 'kw', bars: houseHeating(roomKeys.map(key => data.heat[key] ?? []))},
-    };
+  const {range, at} = data;
+  if (selection === 'hp') return {points: data.hp, setpoints: data.hpSp, heating: {unit: 'share', steps: data.hpHeat}};
+  if (selection === 'house') {
+    const points = houseSeries(
+      roomKeys.map(key => data.rooms[key] ?? []),
+      roomKeys.length,
+    );
+    const steps = sumHeating(roomKeys.map(key => data.heat[key] ?? []));
+    return {points, setpoints: [], heating: {unit: 'kw', steps: heatingAlong(points, steps, range, at)}};
+  }
+  const points = data.rooms[selection] ?? [];
   return {
-    points: data.rooms[selection] ?? [],
+    points,
     setpoints: data.sp[selection] ?? [],
-    heating: {unit: 'kw', bars: data.heat[selection] ?? []},
+    heating: {unit: 'kw', steps: heatingAlong(points, data.heat[selection] ?? [], range, at)},
   };
 }
 
@@ -495,7 +522,7 @@ export const RANGE_WORDS: Record<Range, {heatTitle: MessageKey}> = {
 
 // ---------- the options ----------
 
-/** What the charts take from the page's tokens: the room's line (`--c-wh`) and the heating bars' (the same, muted by their opacity), the outside's (`--c-home`), the setpoint's (`--fg2`) and the heatmap's cell borders (`--card`). */
+/** What the charts take from the page's tokens: the room's line (`--c-wh`) and the heating area's (the same, muted by its opacity), the outside's (`--c-home`), the setpoint's (`--fg2`) and the heatmap's cell borders (`--card`). */
 export interface ClimateTokens {
   room: string;
   heating: string;
@@ -551,7 +578,7 @@ export function heatmapOptions(
   return mergeOptions(thinned, {xaxis: {labels: {formatter: writer(axis, labels, compact)}}});
 }
 
-/** What a room's chart draws: its line, its setpoint's, the outside's, the heating bars under them, and whether it is the heat pump's. */
+/** What a room's chart draws: its line, its setpoint's, the outside's, the heating steps under them, and whether it is the heat pump's. */
 export interface RoomLines {
   /** The line's name: the room's, the heat pump's or the house average. */
   name: string;
@@ -569,8 +596,9 @@ const plain = (points: readonly Reading[]) => points.map(([at, value]) => [at, v
 /**
  * The options of the detail's chart, without the theme: the room's line, the thermostat's setpoint stepped and dashed when it has one, and the outside's. The
  * curve is straight for the heat pump, `monotoneCubic` with a setpoint (ApexCharts splits a `smooth` line once any series has a gap) and `smooth` otherwise.
- * With heating bars it adds them as a muted column series on a second axis at the right (0 to the largest kW in whole kW, never under 1, or 0 to 100 %) while
- * every line shares the left axis; without bars the options are the chart's alone. Read by `ClimateCharts`.
+ * With heating steps it adds them as a muted step area (not columns: ApexCharts never draws a column wider than the smallest gap between any two points of any series,
+ * and the heat pump's line has points a millisecond apart) on a second axis at the right (0 to the largest kW in whole kW, never under 1, or 0 to 100 %) while every
+ * line shares the left axis; without steps the options are the chart's alone. Read by `ClimateCharts`.
  */
 export function roomChartOptions(
   {name, points, setpoints, outside, heating, heatPump}: RoomLines,
@@ -601,39 +629,39 @@ export function roomChartOptions(
       y: {formatter: (value: number | null) => celsius(fmt, value)},
     },
   };
-  const {unit, bars} = heating;
-  if (!bars.length) return own;
+  const {unit, steps} = heating;
+  if (!steps.length) return own;
   const share = unit === 'share';
-  const barLabel = (value: number | null): string =>
+  // the heat pump's line has irregular times, so its steps cannot line up with it by position in the shared tooltip (as its line and the outside's already do not)
+  const stepLabel = (value: number | null): string =>
     value == null ? '' : share ? `${fmt.integer(value)} %` : power(fmt, value * 1000);
   const stepped = (index: number): boolean => hasSetpoint && index === 1;
   return mergeOptions(own, {
     series: [
       ...lines.map(line => ({...line, type: 'line'})),
-      {name: t(share ? 'climate.chart.heatingTime' : 'climate.chart.heating'), type: 'column', data: bars},
+      {name: t(share ? 'climate.chart.heatingTime' : 'climate.chart.heating'), type: 'area', data: steps},
     ],
     colors: [...colors, tokens.heating],
-    // a width that is a number, not an array, would draw a border around the columns
+    // a width that is a number, not an array, would outline the area
     stroke: {
       width: [...lines.map((_, index) => (stepped(index) ? 2 : 2.2)), 0],
-      curve: [...lines.map((_, index) => (stepped(index) ? 'stepline' : curve)), 'straight'],
+      curve: [...lines.map((_, index) => (stepped(index) ? 'stepline' : curve)), 'stepline'],
       dashArray: [...lines.map((_, index) => (stepped(index) ? 5 : 0)), 0],
     },
-    fill: {opacity: [...lines.map(() => 1), 0.35]},
-    plotOptions: {bar: {columnWidth: '80%'}},
+    fill: {type: 'solid', opacity: [...lines.map(() => 1), 0.35]},
     // every temperature line names the room's, so ApexCharts gives them one scale; only the first writes its labels
     yaxis: [
       ...lines.map((_, index) => ({seriesName: name, show: index === 0, labels: {formatter: degreeLabel}})),
       {
         opposite: true,
         min: 0,
-        max: share ? 100 : Math.max(1, Math.ceil(Math.max(...bars.map(([, kw]) => kw)))),
+        max: share ? 100 : Math.max(1, Math.ceil(Math.max(...steps.map(([, kw]) => kw)))),
         tickAmount: 2,
-        labels: {formatter: barLabel},
+        labels: {formatter: stepLabel},
       },
     ],
     tooltip: {
-      y: [...lines.map(() => ({formatter: (value: number | null) => celsius(fmt, value)})), {formatter: barLabel}],
+      y: [...lines.map(() => ({formatter: (value: number | null) => celsius(fmt, value)})), {formatter: stepLabel}],
     },
   });
 }
