@@ -632,6 +632,13 @@ export function roomChartOptions(
   const {unit, steps} = heating;
   if (!steps.length) return own;
   const share = unit === 'share';
+  // with a second axis and an area ApexCharts pulls the temperature scale down to 0, so it is given: the readings' span, half a degree each side, in whole degrees (the water heater's chart rule)
+  const readings = lines.flatMap(({data}) =>
+    (data as readonly (readonly (number | null)[])[]).flatMap(([, value]) => (value == null ? [] : [value])),
+  );
+  const scale = readings.length
+    ? {min: Math.floor(Math.min(...readings) - 0.5), max: Math.ceil(Math.max(...readings) + 0.5)}
+    : {};
   // the heat pump's line has irregular times, so its steps cannot line up with it by position in the shared tooltip (as its line and the outside's already do not)
   const stepLabel = (value: number | null): string =>
     value == null ? '' : share ? `${fmt.integer(value)} %` : power(fmt, value * 1000);
@@ -651,7 +658,7 @@ export function roomChartOptions(
     fill: {type: 'solid', opacity: [...lines.map(() => 1), 0.35]},
     // every temperature line names the room's, so ApexCharts gives them one scale; only the first writes its labels
     yaxis: [
-      ...lines.map((_, index) => ({seriesName: name, show: index === 0, labels: {formatter: degreeLabel}})),
+      ...lines.map((_, index) => ({seriesName: name, show: index === 0, ...scale, labels: {formatter: degreeLabel}})),
       {
         opposite: true,
         min: 0,

@@ -726,6 +726,29 @@ describe('the heating steps', () => {
       expect(tooltip[0].formatter(20)).toContain('20');
     });
 
+    test('with steps every temperature axis is given the span of the readings, half a degree each side in whole degrees, so the area does not pull it down to 0', () => {
+      const options = build(kw(1.4), {
+        points: [
+          [1, 19.2],
+          [2, null],
+          [3, 21.7],
+        ],
+        outside: [[1, 17.4]],
+      });
+      const yaxis = at(options, 'yaxis') as {min?: number; max?: number; labels: {formatter: (v: number) => string}}[];
+      // the line 19.2 to 21.7, the setpoint 21 and the outside 17.4
+      expect(yaxis.slice(0, 3).map(axis => [axis.min, axis.max])).toEqual([
+        [16, 23],
+        [16, 23],
+        [16, 23],
+      ]);
+      expect(yaxis[0].labels.formatter(20)).toContain('20');
+      expect(yaxis[3].min).toBe(0);
+      const empty = build(kw(1.4), {points: [], setpoints: [], outside: []});
+      expect(at(empty, 'yaxis.0.min')).toBeUndefined();
+      expect(at(empty, 'yaxis.0.max')).toBeUndefined();
+    });
+
     test('the kW axis is never under 1, and the heat pump’s share is 0 to 100 % named "Heating time", its line kept straight', () => {
       expect(at(build(kw(0.3)), 'yaxis.3.max')).toBe(1);
       const share = build({unit: 'share', steps: [[1, 40]]}, {heatPump: true, setpoints: []});
