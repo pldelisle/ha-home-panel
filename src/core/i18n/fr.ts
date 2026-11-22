@@ -772,6 +772,8 @@ export const fr: Record<MessageKey, string> = {
   'climate.block.evening': '{day}, soir',
   'climate.chart.setpoint': 'Consigne',
   'climate.chart.outside': 'Extérieur',
+  'climate.chart.heating': 'Chauffage',
+  'climate.chart.heatingTime': 'Temps de chauffe',
   'climate.houseAverage': 'Moyenne de la maison',
   'climate.heatHint': 'Température moyenne par pièce, sur une échelle continue du bleu frais au rouge chaud.',
   'climate.historyLoading': 'Chargement de l’historique…',

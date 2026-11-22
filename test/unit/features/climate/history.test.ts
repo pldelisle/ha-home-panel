@@ -11,11 +11,14 @@ import {
   climateWindow,
   deriveClimateHistory,
   heatColor,
+  heatingBars,
   heatingKwh,
+  heatingShare,
   heatmapOptions,
   heatLegend,
   heatRanges,
   heatScale,
+  houseHeating,
   houseSeries,
   lateHeatPumpStart,
   rangeSeries,
@@ -55,7 +58,7 @@ const deps = (language: 'en' | 'fr' = 'en') => {
 const local = (day: number, hour: number, minute = 0) => Date.UTC(2026, 10, day, hour + 5, minute);
 
 const NOW = local(10, 12);
-const TOKENS = {room: '#room', outside: '#out', setpoint: '#sp', card: '#card'};
+const TOKENS = {room: '#room', heating: '#heat', outside: '#out', setpoint: '#sp', card: '#card'};
 const chartDeps = (language: 'en' | 'fr' = 'en', compact = false): ClimateChartDeps => ({
   ...deps(language),
   tokens: TOKENS,
@@ -424,7 +427,7 @@ describe('roomChartOptions', () => {
   ];
   const build = (over: Partial<RoomLines> = {}, language: 'en' | 'fr' = 'en') =>
     roomChartOptions(
-      {name: 'Den', points, setpoints: [], outside, heatPump: false, ...over},
+      {name: 'Den', points, setpoints: [], outside, heating: {unit: 'kw', bars: []}, heatPump: false, ...over},
       'week',
       chartDeps(language),
     );
@@ -491,6 +494,197 @@ describe('roomChartOptions', () => {
     expect(at(options, 'tooltip.shared')).toBe(true);
     expect(call(options, 'tooltip.y.formatter', 20.25)).toBe('20.3 °C');
     expect(call(options, 'tooltip.y.formatter', null)).toBe('–');
+  });
+});
+
+describe('the heating bars', () => {
+  const HOUR = 36e5;
+  const MINUTE = 6e4;
+  const start = local(10, 6);
+
+  test('heatingBars: a row’s mean kW at the middle of its bucket, two decimals, none for a mean at or under 50 W or without one', () => {
+    const stats = {
+      'sensor.p': [
+        row(start, 1.2345),
+        row(start + HOUR, 0.05),
+        row(start + 2 * HOUR, null),
+        row(start + 3 * HOUR, 0.06),
+      ],
+    };
+    expect(heatingBars(stats, 'sensor.p', 'week')).toEqual([
+      [start + HOUR / 2, 1.23],
+      [start + 3.5 * HOUR, 0.06],
+    ]);
+    expect(heatingBars(stats, 'sensor.p', 'year')[0][0]).toBe(start + 12 * HOUR);
+    expect(heatingBars(stats, null, 'week')).toEqual([]);
+  });
+
+  test('houseHeating: the rooms’ kW added at each bucket, a room with no bar there counting 0', () => {
+    expect(
+      houseHeating([
+        [
+          [start + 5, 1.2],
+          [start + 15, 0.5],
+        ],
+        [
+          [start + 15, 0.75],
+          [start + 25, 2],
+        ],
+      ]),
+    ).toEqual([
+      [start + 5, 1.2],
+      [start + 15, 1.25],
+      [start + 25, 2],
+    ]);
+  });
+
+  test('heatingShare: a stretch spanning two buckets, an unavailable point that stops it, and the running bucket counting only up to the end', () => {
+    const point = (lastUpdated: number, state: string, hvacAction?: string) => ({
+      state,
+      lastUpdated,
+      lastChanged: lastUpdated,
+      attributes: hvacAction ? {hvac_action: hvacAction} : undefined,
+    });
+    const points = [
+      point(start + 40 * MINUTE, 'heat', 'heating'),
+      point(start + 80 * MINUTE, 'heat', 'idle'),
+      point(start + 2 * HOUR, 'heat', 'heating'),
+      point(start + 2.5 * HOUR, 'unavailable', 'heating'),
+      point(start + 3 * HOUR, 'heat', 'heating'),
+    ];
+    // 20 of the first hour's minutes and 20 of the second's; 30 of the third's (the unavailable point holds nothing); 15 of the running fourth
+    expect(heatingShare(points, start, start + 3.25 * HOUR, HOUR)).toEqual([
+      [start + HOUR / 2, 33],
+      [start + 1.5 * HOUR, 33],
+      [start + 2.5 * HOUR, 50],
+      [start + 3.5 * HOUR, 25],
+    ]);
+    // a stretch that began before the window counts from its start, and a point after the end counts for nothing
+    expect(
+      heatingShare(
+        [point(start - HOUR, 'heat', 'heating'), point(start + HOUR, 'heat', 'heating')],
+        start,
+        start + 30 * MINUTE,
+        HOUR,
+      ),
+    ).toEqual([[start + HOUR / 2, 50]]);
+    expect(heatingShare([], start, start + HOUR, HOUR)).toEqual([]);
+  });
+
+  test('deriveClimateHistory and selectedSeries: a room’s bars, the house’s sum, and the heat pump’s share', () => {
+    const config = {
+      entities: {outT: null, hp: 'climate.pump'},
+      rooms: [
+        {k: 'den', temp: 'sensor.den_t', target: null, power: 'sensor.den_p'},
+        {k: 'loft', temp: 'sensor.loft_t', target: null, power: 'sensor.loft_p'},
+      ],
+    } as unknown as Pick<ResolvedConfig, 'entities' | 'rooms'>;
+    const statistics = {
+      'sensor.den_p': [row(start, 1.5), row(start + HOUR, 0.02)],
+      'sensor.loft_p': [row(start, 0.5), row(start + 2 * HOUR, 0.25)],
+    };
+    const history = {
+      'climate.pump': [
+        {state: 'heat', lastUpdated: start + 30 * MINUTE, lastChanged: 0, attributes: {hvac_action: 'heating'}},
+      ],
+    };
+    const data = deriveClimateHistory({statistics, history}, 'week', config, start + 2 * HOUR, start);
+    expect(data.heat).toEqual({
+      den: [[start + HOUR / 2, 1.5]],
+      loft: [
+        [start + HOUR / 2, 0.5],
+        [start + 2.5 * HOUR, 0.25],
+      ],
+    });
+    expect(data.hpHeat).toEqual([
+      [start + HOUR / 2, 50],
+      [start + 1.5 * HOUR, 100],
+    ]);
+    const keys = ['den', 'loft'];
+    expect(selectedSeries(data, 'house', keys).heating).toEqual({
+      unit: 'kw',
+      bars: [
+        [start + HOUR / 2, 2],
+        [start + 2.5 * HOUR, 0.25],
+      ],
+    });
+    expect(selectedSeries(data, 'hp', keys).heating).toEqual({unit: 'share', bars: data.hpHeat});
+  });
+
+  describe('roomChartOptions', () => {
+    const lines = {
+      name: 'Den',
+      points: [[1, 20]],
+      setpoints: [[1, 21]] as SetpointPoint[],
+      outside: [[1, 3]],
+      heatPump: false,
+    };
+    const build = (heating: RoomLines['heating'], over: Partial<RoomLines> = {}, language: 'en' | 'fr' = 'en') =>
+      roomChartOptions({...lines, heating, ...over}, 'week', chartDeps(language));
+    const bars = (kw: number): RoomLines['heating'] => ({
+      unit: 'kw',
+      bars: [
+        [1, 0.4],
+        [2, kw],
+      ],
+    });
+
+    test('kW bars are a muted column series on a right-hand axis, the lines sharing one left scale', () => {
+      const options = build(bars(1.4));
+      const series = at(options, 'series') as {name: string; type: string}[];
+      expect(series.map(line => [line.name, line.type])).toEqual([
+        ['Den', 'line'],
+        ['Setpoint', 'line'],
+        ['Outside', 'line'],
+        ['Heating', 'column'],
+      ]);
+      expect(at(options, 'colors')).toEqual(['#room', '#sp', '#out', '#heat']);
+      expect(at(options, 'stroke')).toEqual({
+        width: [2.2, 2, 2.2, 0],
+        curve: ['monotoneCubic', 'stepline', 'monotoneCubic', 'straight'],
+        dashArray: [0, 5, 0, 0],
+      });
+      expect(at(options, 'fill')).toEqual({opacity: [1, 1, 1, 0.35]});
+      expect(at(options, 'plotOptions.bar.columnWidth')).toBe('80%');
+      const yaxis = at(options, 'yaxis') as {
+        seriesName?: string;
+        show?: boolean;
+        opposite?: boolean;
+        min?: number;
+        max?: number;
+        tickAmount?: number;
+        labels: {formatter: (v: number) => string};
+      }[];
+      expect(yaxis.map(axis => [axis.seriesName, axis.show])).toEqual([
+        ['Den', true],
+        ['Den', false],
+        ['Den', false],
+        [undefined, undefined],
+      ]);
+      expect(yaxis[3]).toMatchObject({opposite: true, min: 0, max: 2, tickAmount: 2});
+      expect(yaxis[3].labels.formatter(1.5)).toBe('1.5\u00a0kW');
+      const tooltip = at(options, 'tooltip.y') as {formatter: (v: number) => string}[];
+      expect(tooltip).toHaveLength(4);
+      expect(tooltip[3].formatter(1.25)).toBe('1.3\u00a0kW');
+      expect(tooltip[0].formatter(20)).toContain('20');
+    });
+
+    test('the kW axis is never under 1, and the heat pump’s share is 0 to 100 % named "Heating time" and kept straight', () => {
+      expect(at(build(bars(0.3)), 'yaxis.3.max')).toBe(1);
+      const share = build({unit: 'share', bars: [[1, 40]]}, {heatPump: true, setpoints: []});
+      expect(at(share, 'yaxis.2.max')).toBe(100);
+      expect((at(share, 'yaxis.2.labels.formatter') as (v: number) => string)(40)).toBe('40 %');
+      expect((at(share, 'series') as {name: string}[]).at(-1)?.name).toBe('Heating time');
+      expect(at(share, 'stroke.curve')).toEqual(['straight', 'straight', 'straight']);
+      expect((at(build(bars(1), {}, 'fr'), 'series') as {name: string}[]).at(-1)?.name).toBe('Chauffage');
+    });
+
+    test('with no bars the options are the line chart’s alone', () => {
+      const options = build({unit: 'kw', bars: []});
+      expect(Object.keys(options)).toEqual(['chart', 'series', 'colors', 'stroke', 'xaxis', 'yaxis', 'tooltip']);
+      expect(at(options, 'stroke')).toMatchObject({dashArray: [0, 5, 0]});
+      expect(Array.isArray(at(options, 'yaxis'))).toBe(false);
+    });
   });
 });
 
@@ -581,11 +775,27 @@ describe('deriveClimateHistory', () => {
 
   test('selectedSeries: the heat pump’s lines, the mean of the rooms, or a room’s own with its setpoint; selectedKwh: the total, a room’s, or none', () => {
     const keys = ['den', 'loft'];
-    expect(selectedSeries(derived, 'hp', keys)).toEqual({points: derived.hp, setpoints: derived.hpSp});
-    expect(selectedSeries(derived, 'den', keys)).toEqual({points: derived.rooms.den, setpoints: derived.sp.den});
+    expect(selectedSeries(derived, 'hp', keys)).toEqual({
+      points: derived.hp,
+      setpoints: derived.hpSp,
+      heating: {unit: 'share', bars: []},
+    });
+    expect(selectedSeries(derived, 'den', keys)).toEqual({
+      points: derived.rooms.den,
+      setpoints: derived.sp.den,
+      heating: {unit: 'kw', bars: derived.heat.den},
+    });
     // only the instant both rooms have a reading for, and the house has no setpoint
-    expect(selectedSeries(derived, 'house', keys)).toEqual({points: [[start + HOUR / 2, 19.81]], setpoints: []});
-    expect(selectedSeries(derived, 'nowhere', keys)).toEqual({points: [], setpoints: []});
+    expect(selectedSeries(derived, 'house', keys)).toEqual({
+      points: [[start + HOUR / 2, 19.81]],
+      setpoints: [],
+      heating: {unit: 'kw', bars: derived.heat.den},
+    });
+    expect(selectedSeries(derived, 'nowhere', keys)).toEqual({
+      points: [],
+      setpoints: [],
+      heating: {unit: 'kw', bars: []},
+    });
     expect(selectedKwh(derived, 'hp')).toBeNull();
     expect(selectedKwh(derived, 'den')).toBe(derived.kwh.den);
     expect(selectedKwh(derived, 'house')).toBeCloseTo(derived.kwh.den);

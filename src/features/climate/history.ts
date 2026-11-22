@@ -1,4 +1,4 @@
-// Climate's history as pure functions: the window it asks, the replies in, the series, the heating kWh, the heatmap's cells and heat scale, and the three charts' options out.
+// Climate's history as pure functions: the window it asks, the replies in, the series, the heating kWh and bars, the heatmap's cells and heat scale, and the three charts' options out.
 // Pattern: functional core (Bernhardt, Boundaries), the data half of a humble object (Meszaros), after Air's and Energy's history; each rule is the legacy panel's own
 // (`loadClimRange`, `houseSeries`, `bucket`, `heatColor`, `climateSheet`, `climateDetail`, deleted in #246) and options are plain data (ADR 0022): `fmt` and `t` are arguments.
 // The callers are the loader (the window and the derivation), the model (the figures) and `ClimateCharts` (the options); its heat scale's stops are the only colours it owns.
@@ -8,10 +8,10 @@ import type {ResolvedConfig} from '../../core/config.ts';
 import {DAY_MS, HOUR_MS, hundredths} from '../../core/figures.ts';
 import type {HistoryPoint, StatisticRow} from '../../core/ha.ts';
 import type {MessageKey} from '../../core/i18n/en.ts';
-import {degrees, noonOf, utcNoonOf, type Formatters} from '../../core/i18n/format.ts';
+import {degrees, noonOf, power, utcNoonOf, type Formatters} from '../../core/i18n/format.ts';
 import type {Translate} from '../../core/i18n/messages.ts';
 import {hpSeries, NO_TARGET_MODES} from '../../providers/heat-pump.ts';
-import {OFF_AT_OR_BELOW} from '../../providers/power.ts';
+import {HEATING_KW, OFF_AT_OR_BELOW} from '../../providers/power.ts';
 import {sum, windowStart, type StatisticsWindow, type StatsReply} from '../../providers/power-history.ts';
 import {celsius, mergeOptions, timeAxis, tooltipDate, type ChartOptions} from '../../ui/chart-options.ts';
 import {bucketMiddle, RANGES, type Range, type StatisticsPeriod} from '../../ui/ranges.ts';
@@ -93,6 +93,47 @@ export function setpointSeries(stats: StatsReply, id: string | null | undefined,
 /** How many hours a statistics period spans. */
 const PERIOD_HOURS: Record<StatisticsPeriod, number> = {'5minute': 1 / 12, hour: 1, day: 24};
 
+/** A heating bar: milliseconds at the middle of its bucket, and the bucket's figure (a baseboard's mean kW, or the heat pump's whole percent of the bucket spent heating). */
+export type HeatingBar = readonly [at: number, value: number];
+
+/** The baseboard's mean kW of each row of `id` at the middle of its bucket, two decimals; a row with no mean, or a mean at or under `HEATING_KW`, draws no bar. Read by `deriveClimateHistory` for each room. */
+export function heatingBars(stats: StatsReply, id: string | null | undefined, range: Range): HeatingBar[] {
+  const offset = bucketMiddle(range);
+  return rowsOf(stats, id).flatMap(({start, mean}) =>
+    mean == null || mean <= HEATING_KW ? [] : [[start + offset, hundredths(mean)] as HeatingBar],
+  );
+}
+
+/**
+ * The share of each bucket the heat pump spent heating, in whole percent at the middle of the bucket (buckets of `bucketMs` counted from `start`): a point holds
+ * from its `lastUpdated` to the next point's (the last one to `end`) and counts when it is not `unavailable` and its `hvac_action` is `heating`. What lies outside
+ * `[start, end)` is clipped, so the running bucket counts only up to `end`; a bucket with no heating draws no bar. Read by `deriveClimateHistory`.
+ */
+export function heatingShare(
+  points: readonly HistoryPoint[],
+  start: number,
+  end: number,
+  bucketMs: number,
+): HeatingBar[] {
+  const heating = new Map<number, number>();
+  points.forEach((point, index) => {
+    if (point.state === 'unavailable' || point.attributes?.hvac_action !== 'heating') return;
+    const until = Math.min(end, points[index + 1]?.lastUpdated ?? end);
+    for (let at = Math.max(start, point.lastUpdated); at < until;) {
+      const bucketIndex = Math.floor((at - start) / bucketMs);
+      const next = Math.min(until, start + (bucketIndex + 1) * bucketMs);
+      heating.set(bucketIndex, (heating.get(bucketIndex) ?? 0) + next - at);
+      at = next;
+    }
+  });
+  return [...heating]
+    .sort((a, b) => a[0] - b[0])
+    .flatMap(([bucketIndex, ms]) => {
+      const percent = Math.round((ms / bucketMs) * 100);
+      return percent > 0 ? [[start + bucketIndex * bucketMs + bucketMs / 2, percent] as HeatingBar] : [];
+    });
+}
+
 /** The heating of one power sensor over the rows, in kWh: each period's mean kW times its hours, and the running period counts only the hours so far. Read by `deriveClimateHistory` for each room's figure. */
 export function heatingKwh(
   stats: StatsReply,
@@ -147,12 +188,16 @@ export interface ClimateHistoryData {
   sp: Record<string, SetpointPoint[]>;
   /** The heating of each room over the range, in kWh. */
   kwh: Record<string, number>;
+  /** Each room's baseboard as bars: its mean kW per bucket, none for a bucket at or under `HEATING_KW`. */
+  heat: Record<string, HeatingBar[]>;
   out: RangePoint[];
   hp: HeatPumpLine;
   /** The heat pump's target, a gap in the modes that have none (`off`, `fan_only`, `dry`). */
   hpSp: HeatPumpLine;
   /** The instant the heat pump's line starts; null without one. */
   hpFrom: number | null;
+  /** The share of each bucket the heat pump spent heating, in whole percent. */
+  hpHeat: HeatingBar[];
 }
 
 /** A reading that is a number: an attribute the unit reports as anything else is no reading. */
@@ -171,10 +216,12 @@ export function deriveClimateHistory(
   const rooms: ClimateHistoryData['rooms'] = {};
   const sp: ClimateHistoryData['sp'] = {};
   const kwh: ClimateHistoryData['kwh'] = {};
+  const heat: ClimateHistoryData['heat'] = {};
   for (const room of config.rooms) {
     rooms[room.k] = rangeSeries(statistics, room.temp, range);
     sp[room.k] = setpointSeries(statistics, room.target, range);
     kwh[room.k] = heatingKwh(statistics, room.power, period, at);
+    heat[room.k] = heatingBars(statistics, room.power, range);
   }
   const points = (config.entities.hp && history[config.entities.hp]) || [];
   const hp = hpSeries(points, attributes => numeric(attributes.current_temperature));
@@ -185,20 +232,31 @@ export function deriveClimateHistory(
     rooms,
     sp,
     kwh,
+    heat,
     out: rangeSeries(statistics, config.entities.outT, range),
     hp,
     hpSp: hpSeries(points, (attributes, state) =>
       NO_TARGET_MODES.has(state) ? null : numeric(attributes.temperature),
     ),
     hpFrom: hp.length ? hp[0][0] : null,
+    hpHeat: heatingShare(points, start, at, RANGES[range].bucketMs),
   };
 }
 
-/** What the detail's chart draws of a selection: its line and its setpoint's. */
+/** What the detail's chart draws of a selection: its line, its setpoint's and the bars of when the heating ran. */
 export interface SelectedSeries {
   points: readonly Reading[];
   /** Empty for the house, which has no setpoint. */
   setpoints: readonly SetpointPoint[];
+  /** The bars under the line: kW for a room (the house's is the rooms' sum), the share of each bucket for the heat pump; empty when nothing heated. */
+  heating: {unit: 'kw' | 'share'; bars: readonly HeatingBar[]};
+}
+
+/** The rooms' kW added at each bucket, two decimals: a room with no bar at a bucket counts as 0 there (unlike `houseSeries`, whose mean drops it). Read by `selectedSeries` for the house. */
+export function houseHeating(roomBars: readonly (readonly HeatingBar[])[]): HeatingBar[] {
+  const byTime = new Map<number, number>();
+  for (const bars of roomBars) for (const [at, kw] of bars) byTime.set(at, (byTime.get(at) ?? 0) + kw);
+  return [...byTime].sort((a, b) => a[0] - b[0]).map(([at, kw]) => [at, hundredths(kw)]);
 }
 
 /** The line a selection draws: the heat pump's, the house's (the mean of the rooms), or a room's, with its setpoint. */
@@ -207,7 +265,7 @@ export function selectedSeries(
   selection: string,
   roomKeys: readonly string[],
 ): SelectedSeries {
-  if (selection === 'hp') return {points: data.hp, setpoints: data.hpSp};
+  if (selection === 'hp') return {points: data.hp, setpoints: data.hpSp, heating: {unit: 'share', bars: data.hpHeat}};
   if (selection === 'house')
     return {
       points: houseSeries(
@@ -215,8 +273,13 @@ export function selectedSeries(
         roomKeys.length,
       ),
       setpoints: [],
+      heating: {unit: 'kw', bars: houseHeating(roomKeys.map(key => data.heat[key] ?? []))},
     };
-  return {points: data.rooms[selection] ?? [], setpoints: data.sp[selection] ?? []};
+  return {
+    points: data.rooms[selection] ?? [],
+    setpoints: data.sp[selection] ?? [],
+    heating: {unit: 'kw', bars: data.heat[selection] ?? []},
+  };
 }
 
 /** The heating over the range of a selection, in kWh: the house's total or a room's own; null for the heat pump, which has no power sensor. */
@@ -432,9 +495,10 @@ export const RANGE_WORDS: Record<Range, {heatTitle: MessageKey}> = {
 
 // ---------- the options ----------
 
-/** What the charts take from the page's tokens: the room's line (`--c-wh`), the outside's (`--c-home`), the setpoint's (`--fg2`) and the heatmap's cell borders (`--card`). */
+/** What the charts take from the page's tokens: the room's line (`--c-wh`) and the heating bars' (the same, muted by their opacity), the outside's (`--c-home`), the setpoint's (`--fg2`) and the heatmap's cell borders (`--card`). */
 export interface ClimateTokens {
   room: string;
+  heating: string;
   outside: string;
   setpoint: string;
   card: string;
@@ -487,7 +551,7 @@ export function heatmapOptions(
   return mergeOptions(thinned, {xaxis: {labels: {formatter: writer(axis, labels, compact)}}});
 }
 
-/** What a room's chart draws: its line, its setpoint's, the outside's, and whether it is the heat pump's. */
+/** What a room's chart draws: its line, its setpoint's, the outside's, the heating bars under them, and whether it is the heat pump's. */
 export interface RoomLines {
   /** The line's name: the room's, the heat pump's or the house average. */
   name: string;
@@ -495,6 +559,7 @@ export interface RoomLines {
   /** Empty when the selection has none (the house). */
   setpoints: readonly SetpointPoint[];
   outside: readonly Reading[];
+  heating: SelectedSeries['heating'];
   heatPump: boolean;
 }
 
@@ -504,32 +569,71 @@ const plain = (points: readonly Reading[]) => points.map(([at, value]) => [at, v
 /**
  * The options of the detail's chart, without the theme: the room's line, the thermostat's setpoint stepped and dashed when it has one, and the outside's. The
  * curve is straight for the heat pump, `monotoneCubic` with a setpoint (ApexCharts splits a `smooth` line once any series has a gap) and `smooth` otherwise.
- * Read by `ClimateCharts`.
+ * With heating bars it adds them as a muted column series on a second axis at the right (0 to the largest kW in whole kW, never under 1, or 0 to 100 %) while
+ * every line shares the left axis; without bars the options are the chart's alone. Read by `ClimateCharts`.
  */
 export function roomChartOptions(
-  {name, points, setpoints, outside, heatPump}: RoomLines,
+  {name, points, setpoints, outside, heating, heatPump}: RoomLines,
   range: Range,
   {fmt, t, tokens, now}: Pick<ClimateChartDeps, 'fmt' | 't' | 'tokens' | 'now'>,
 ): ChartOptions {
   const hasSetpoint = setpoints.some(([, value]) => value != null);
   const curve = heatPump ? 'straight' : hasSetpoint ? 'monotoneCubic' : 'smooth';
-  return {
+  const lines = [
+    {name, data: plain(points)},
+    ...(hasSetpoint ? [{name: t('climate.chart.setpoint'), data: setpoints}] : []),
+    {name: t('climate.chart.outside'), data: plain(outside)},
+  ];
+  const colors = [tokens.room, ...(hasSetpoint ? [tokens.setpoint] : []), tokens.outside];
+  const degreeLabel = (value: number | null) => (value == null ? '' : degrees(fmt, value));
+  const own: ChartOptions = {
     chart: {type: 'line'},
-    series: [
-      {name, data: plain(points)},
-      ...(hasSetpoint ? [{name: t('climate.chart.setpoint'), data: setpoints}] : []),
-      {name: t('climate.chart.outside'), data: plain(outside)},
-    ],
-    colors: [tokens.room, ...(hasSetpoint ? [tokens.setpoint] : []), tokens.outside],
+    series: lines,
+    colors,
     stroke: hasSetpoint
       ? {width: [2.2, 2, 2.2], curve: [curve, 'stepline', curve], dashArray: [0, 5, 0]}
       : {width: 2.2, curve},
     xaxis: timeAxis(RANGES[range].days, now, fmt),
-    yaxis: {labels: {formatter: (value: number | null) => (value == null ? '' : degrees(fmt, value))}},
+    yaxis: {labels: {formatter: degreeLabel}},
     tooltip: {
       shared: true,
       x: {formatter: tooltipDate(RANGES[range].tooltip, fmt)},
       y: {formatter: (value: number | null) => celsius(fmt, value)},
     },
   };
+  const {unit, bars} = heating;
+  if (!bars.length) return own;
+  const share = unit === 'share';
+  const barLabel = (value: number | null): string =>
+    value == null ? '' : share ? `${fmt.integer(value)} %` : power(fmt, value * 1000);
+  const stepped = (index: number): boolean => hasSetpoint && index === 1;
+  return mergeOptions(own, {
+    series: [
+      ...lines.map(line => ({...line, type: 'line'})),
+      {name: t(share ? 'climate.chart.heatingTime' : 'climate.chart.heating'), type: 'column', data: bars},
+    ],
+    colors: [...colors, tokens.heating],
+    // a width that is a number, not an array, would draw a border around the columns
+    stroke: {
+      width: [...lines.map((_, index) => (stepped(index) ? 2 : 2.2)), 0],
+      curve: [...lines.map((_, index) => (stepped(index) ? 'stepline' : curve)), 'straight'],
+      dashArray: [...lines.map((_, index) => (stepped(index) ? 5 : 0)), 0],
+    },
+    fill: {opacity: [...lines.map(() => 1), 0.35]},
+    plotOptions: {bar: {columnWidth: '80%'}},
+    // every temperature line names the room's, so ApexCharts gives them one scale; only the first writes its labels
+    yaxis: [
+      ...lines.map((_, index) => ({seriesName: name, show: index === 0, labels: {formatter: degreeLabel}})),
+      {
+        opposite: true,
+        min: 0,
+        max: share ? 100 : Math.max(1, Math.ceil(Math.max(...bars.map(([, kw]) => kw)))),
+        tickAmount: 2,
+        labels: {formatter: barLabel},
+      },
+    ],
+    tooltip: {
+      y: [...lines.map(() => ({formatter: (value: number | null) => celsius(fmt, value)})), {formatter: barLabel}],
+    },
+  });
 }

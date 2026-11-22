@@ -75,14 +75,14 @@ const ofMove = (prefix: string, except: string[]) =>
 
 // a move: its fixture, the prefix of the keys it introduced, the folders that say them, and the keys outside the prefix it
 // also introduced (the kit's `common.failed` came with Media's command layer; the kit says it, in src/ui/), and the keys under the prefix it
-// did not (the room view's Back button, `room.back`, #511, is the shell's: src/shell/room-pane.ts)
+// did not (the room view's Back button, `room.back`, #511, is the shell's: src/shell/room-pane.ts; Climate's heating bars' names, #626)
 describe.each([
   ['weather', 'weather.', ['src/features/weather/', 'src/providers/', 'src/core/i18n/'], []],
   ['media', 'media.', ['src/features/media/', 'src/providers/'], ['common.failed']],
   ['security', 'security.', ['src/features/security/'], []],
   ['air', 'air.', ['src/features/air/', 'src/providers/'], []],
   ['energy', 'energy.', ['src/features/energy/', 'src/providers/'], ['common.noReading']],
-  ['climate', 'climate.', ['src/features/climate/'], []],
+  ['climate', 'climate.', ['src/features/climate/'], [], ['climate.chart.heating', 'climate.chart.heatingTime']],
   ['car', 'car.', ['src/features/car/', 'src/providers/'], []],
   ['live', 'live.', ['src/features/live/'], []],
   ['automations', 'automations.', ['src/features/automations/'], []],

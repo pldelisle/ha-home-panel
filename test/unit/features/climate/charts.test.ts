@@ -30,6 +30,7 @@ const history = (over: Partial<ClimateHistoryData> = {}): ClimateHistoryData => 
   },
   sp: {den: [[AT - HOUR, 21]], loft: []},
   kwh: {},
+  heat: {},
   out: [
     [AT - 2 * HOUR, -3, -5, 1],
     [AT - HOUR, -2, -4, 2],
@@ -37,6 +38,7 @@ const history = (over: Partial<ClimateHistoryData> = {}): ClimateHistoryData => 
   hp: [[AT - HOUR, 19]],
   hpSp: [[AT - HOUR, 22]],
   hpFrom: AT - HOUR,
+  hpHeat: [],
   ...over,
 });
 
@@ -45,7 +47,7 @@ const locale = (language: 'en' | 'fr') =>
 
 /** The deps of a page, with the tokens counted: a chart that is not built reads none. */
 function deps(over: Partial<ClimateChartsDeps> = {}) {
-  const tokens = vi.fn(() => ({room: '#room', outside: '#out', setpoint: '#sp', card: '#card'}));
+  const tokens = vi.fn(() => ({room: '#room', heating: '#heat', outside: '#out', setpoint: '#sp', card: '#card'}));
   const page: ClimateChartsDeps = {
     fmt: createFormatters(locale('en')),
     t: createMessages(locale('en')).t,
