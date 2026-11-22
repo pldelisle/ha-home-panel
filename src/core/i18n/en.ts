@@ -806,6 +806,8 @@ export const en = {
   'climate.block.evening': '{day}, evening',
   'climate.chart.setpoint': 'Setpoint',
   'climate.chart.outside': 'Outside',
+  'climate.chart.heating': 'Heating',
+  'climate.chart.heatingTime': 'Heating time',
   // the charts' own words, drawn with the history (the loader's): the heatmap's line and what stands in for a chart
   'climate.houseAverage': 'House average',
   'climate.heatHint': 'Mean temperature per room, on a smooth scale from cool blue to warm red.',

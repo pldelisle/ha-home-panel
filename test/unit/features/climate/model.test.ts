@@ -50,10 +50,12 @@ const loaded = (over: Partial<ClimateHistoryData> = {}, range: Range = 'day'): C
   rooms: {},
   sp: {},
   kwh: {},
+  heat: {},
   out: [],
   hp: [],
   hpSp: [],
   hpFrom: null,
+  hpHeat: [],
   ...over,
 });
 const points = (...values: number[]): [number, number, null, null][] =>
@@ -487,6 +489,25 @@ describe('the heat pump', () => {
     const detail = pumpOf(pump('heat'), {history: loaded({hp, kwh: {den: 5}})}).detail;
     expect(detail.tiles[0]).toMatchObject({value: '17.0–24.5'});
     expect(detail.chart.legend.map(item => item.name)).toEqual(['Heat pump', 'Setpoint', 'Outside']);
+  });
+
+  test('the legend adds "Heating" for a room or the house with bars and "Heating time" for a heat pump that heated, in both languages, and nothing without bars', () => {
+    const names = (sel: string, history: ClimateHistoryData, language: Language = 'en') =>
+      (sel === 'hp'
+        ? pumpOf(pump('heat'), {history, language})
+        : modelOf(fullHouse, sel, {history, language})
+      ).detail.chart.legend.map(item => item.name);
+    const bars = loaded({
+      rooms: {bedroom: points(19, 20), garage: points(19, 20), living_room: points(19, 20), office: points(19, 20)},
+      heat: {bedroom: [[AT - 2 * 36e5 - 150000, 1.2]], garage: []},
+      hpHeat: [[AT - 1e6, 40]],
+    });
+    expect(names('bedroom', bars).slice(1)).toEqual(['Setpoint', 'Outside', 'Heating']);
+    expect(names('house', bars)).toEqual(['House average', 'Outside', 'Heating']);
+    expect(names('hp', bars).slice(1)).toEqual(['Setpoint', 'Outside', 'Heating time']);
+    expect(names('bedroom', bars, 'fr').slice(1)).toEqual(['Consigne', 'Extérieur', 'Chauffage']);
+    expect(names('hp', bars, 'fr').at(-1)).toBe('Temps de chauffe');
+    expect(names('garage', bars).slice(1)).toEqual(['Setpoint', 'Outside']);
   });
 
   test('the note says where the line starts when the history keeps less than the range, in both languages, and not otherwise', () => {
