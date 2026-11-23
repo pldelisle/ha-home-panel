@@ -1,6 +1,7 @@
 // <hp-sheet>: the kit's sheet: a backdrop, a panel with a grabber, a header (badge, heading, sub-line, tabs, actions, Close) and a body.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) composing <hp-pane-header>, with slots for what varies (Lit docs, Shadow DOM:
-// Slots); properties down (`open`, `inline`), events up (`sheet-close`), the drag to close a controller (Lit docs, Reactive Controllers).
+// Slots); properties down (`open`, `inline`), events up (`sheet-close`), the drag to close a controller (Lit docs, Reactive Controllers); the host reflects `has-actions`
+// while its owner slots an action, for the phone's heading padding.
 // Must not: know which sheet is open or listen for Escape (the sheet host does, ADR 0021), fetch anything, or choose `inline` itself.
 import {LitElement, html, type PropertyValues, unsafeCSS} from 'lit';
 import {ifDefined} from 'lit/directives/if-defined.js';
@@ -23,6 +24,7 @@ export class HpSheet extends LitElement {
     label: {},
     closeLabel: {attribute: 'close-label'},
     hasSub: {state: true},
+    hasActions: {type: Boolean, attribute: 'has-actions', reflect: true},
     leaving: {state: true},
     dragged: {state: true},
   };
@@ -41,6 +43,8 @@ export class HpSheet extends LitElement {
   declare closeLabel: string;
   /** Something is slotted as the sub-line: without one the header draws no line, so the heading sits where the legacy card sheet's did. */
   declare private hasSub: boolean;
+  /** Something is slotted as an action (not a tab): the host says so as `has-actions`, so a phone's rule can keep the heading clear of Close and of the action beside it. */
+  declare private hasActions: boolean;
   /** Under Material a closed sheet is still drawn while it fades out and slides off (sheet.css, `.leaving`); then it is hidden. */
   declare private leaving: boolean;
   /** The leave is one a drag began: the panel has slid off under the finger, so only the scrim fades (sheet.css, `.dragged`). */
@@ -85,6 +89,7 @@ export class HpSheet extends LitElement {
     this.label = '';
     this.closeLabel = '';
     this.hasSub = false;
+    this.hasActions = false;
     this.leaving = false;
     this.dragged = false;
   }
@@ -115,7 +120,7 @@ export class HpSheet extends LitElement {
             <slot name="sub" @slotchange=${this.onSubChange}></slot>
           </div>
           <div slot="actions" class="actions">
-            <slot name="tabs"></slot><slot name="actions"></slot>
+            <slot name="tabs"></slot><slot name="actions" @slotchange=${this.onActionsChange}></slot>
             <button class="icon close" type="button" aria-label=${this.closeLabel} @click=${this.close}>✕</button>
           </div>
         </hp-pane-header>
@@ -127,6 +132,11 @@ export class HpSheet extends LitElement {
   // the slot tells when its nodes change, and an empty one at the first draw says nothing, which `hasSub`'s false already means
   private readonly onSubChange = (e: Event): void => {
     this.hasSub = (e.target as HTMLSlotElement).assignedNodes({flatten: true}).length > 0;
+  };
+
+  // the same for the actions: `has-actions` on the host is the CSS's to read (sheet.element.css), and is absent for a sheet whose owner slots none
+  private readonly onActionsChange = (e: Event): void => {
+    this.hasActions = (e.target as HTMLSlotElement).assignedNodes({flatten: true}).length > 0;
   };
 
   // Under Material the event follows the fade, so an owner that takes the sheet out of its template on it does not cut the fade; a second ask while it leaves does nothing

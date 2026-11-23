@@ -263,6 +263,21 @@ test.describe('the cheat sheet link', () => {
       await openAsk(house);
       await expect(cheatSheet(house)).toHaveAccessibleName('Aide-mémoire');
     });
+
+    test('on a phone the heading ends left of the link', async ({house}) => {
+      test.skip(!isPhone(house), 'the phone puts Close in the corner');
+      await withAsk(house);
+      await openAsk(house);
+      const heading = askDialog(house, "Interroger l'historique").getByRole('heading');
+      // the text's own right edge: the heading is a block as wide as its padding leaves, so a range over its words is measured
+      const edge = await heading.evaluate(h => {
+        const range = document.createRange();
+        range.selectNodeContents(h);
+        return Math.max(...[...range.getClientRects()].map(r => r.right));
+      });
+      const link = await cheatSheet(house).boundingBox();
+      expect(edge).toBeLessThan(link!.x);
+    });
   });
 
   test.describe('without ask.cheat_sheet', () => {

@@ -183,8 +183,8 @@ type AskState =
 
 ### The config
 
-- `ask: {entity: 'ai_task.<name>', exclude?: string[], cheat_sheet?: string}`. The schema refuses an `entity` outside the `ai_task` domain with a message in the config card. `cheat_sheet` is the owner's own page about what to ask, and must start with `https://` (`config.askCheatSheetNotHttps` otherwise, in both languages); it is a setting because the repository holds no URL. `ResolvedConfig.ask.cheatSheet` is that address, or null.
-- With a `cheat_sheet`, the sheet's header draws a Cheat sheet icon link in `<hp-sheet>`'s `actions` slot, left of Close: `target="_blank"` and `rel="noopener noreferrer"`, named "Cheat sheet" ("Aide-mémoire") with the same words as its tooltip, with Close's size (44px at least), hit area and focus ring. Without it there is no icon. An entity that does not exist in the house is a config check's warning, and the button is not drawn.
+- `ask: {entity: 'ai_task.<name>', exclude?: string[], cheat_sheet?: string}`. The schema refuses an `entity` outside the `ai_task` domain with a message in the config card. An entity that does not exist in the house is a config check's warning, and the button is not drawn. `cheat_sheet` is the owner's own page about what to ask, and must start with `https://` (`config.askCheatSheetNotHttps` otherwise, in both languages); it is a setting because the repository holds no URL. `ResolvedConfig.ask.cheatSheet` is that address, or null.
+- With a `cheat_sheet`, the sheet's header draws a Cheat sheet icon link in `<hp-sheet>`'s `actions` slot, left of Close: `target="_blank"` and `rel="noopener noreferrer"`, named "Cheat sheet" ("Aide-mémoire") with the same words as its tooltip, with Close's size (44px at least), hit area and focus ring. Without it there is no icon. On a phone `<hp-sheet>` keeps its heading clear of Close and of the link (`has-actions`, set while something is slotted in `actions`).
 - The full test house and the bare test house have no `ask` block. The states that need one set it through the harness, as the other spec-specific states do.
 
 ### Strings
