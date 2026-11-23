@@ -125,3 +125,86 @@
   font: var(--type-body-small);
   letter-spacing: var(--track-body-small);
 }
+/* The Cheat sheet link, in the header's actions slot before Close: the sheet's Close button's own circle (src/ui/styles/sheet.css, `button.icon` and `.close`): 44px, the card's fill, the
+   shadow and the focus ring; Liquid Glass's rim and Material's 48px tonal circle follow it. A link, so no button state layer is drawn over it. */
+.cheat-sheet {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--card);
+  color: var(--fg);
+  display: grid;
+  place-items: center;
+  box-shadow: var(--shadow);
+  text-decoration: none;
+  cursor: pointer;
+}
+.cheat-sheet:focus-visible {
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
+}
+:host([glass]) .cheat-sheet {
+  background: var(--g-fill);
+  box-shadow: var(--g-nav-rim-s);
+}
+:host([design='material']) .cheat-sheet {
+  width: 48px;
+  height: 48px;
+  background: var(--control);
+  color: var(--on-control);
+  box-shadow: none;
+}
+/* Close's press and hover (sheet.css, `.close:active`; common.css' state layer): the Apple design's press scale, Material's tonal layer over the content colour at the hover, focus and pressed opacities */
+@media (prefers-reduced-motion: no-preference) {
+  .cheat-sheet {
+    transition:
+      transform var(--motion-press-ms) var(--motion-standard),
+      background-color var(--motion-fade-ms) var(--motion-fade),
+      box-shadow var(--motion-fade-ms) var(--motion-fade),
+      color var(--motion-fade-ms) var(--motion-fade);
+  }
+}
+.cheat-sheet:active {
+  transform: scale(var(--press-scale));
+}
+:host([design='material']) .cheat-sheet {
+  position: relative;
+  isolation: isolate;
+  transition:
+    transform var(--motion-spatial-fast-ms) var(--motion-spatial-fast),
+    background-color var(--motion-effects-default-ms) var(--motion-effects),
+    color var(--motion-effects-default-ms) var(--motion-effects);
+}
+:host([design='material']) .cheat-sheet::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--motion-effects-fast-ms) var(--motion-effects);
+}
+@media (hover: hover) {
+  :host([design='material']) .cheat-sheet:hover::before {
+    opacity: var(--state-hover);
+  }
+}
+:host([design='material']) .cheat-sheet:focus-visible::before {
+  opacity: var(--state-focus);
+}
+:host([design='material']) .cheat-sheet:active::before {
+  opacity: var(--state-pressed);
+}
+/* on a phone the sheet's Close is in the corner (sheet.element.css), so the link sits clear of it, to its left */
+@media (max-width: 720px) {
+  .cheat-sheet {
+    position: absolute;
+    top: 0;
+    right: 52px;
+  }
+  :host([design='material']) .cheat-sheet {
+    right: 56px;
+  }
+}

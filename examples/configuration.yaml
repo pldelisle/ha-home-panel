@@ -74,6 +74,7 @@ panel_custom:
       # ask:
       #   entity: ai_task.local_model
       #   exclude: [sensor.guest_room_temperature]
+      #   cheat_sheet: https://example.com/ask-cheat-sheet # your own page of what to ask: an icon in the sheet's header opens it in a new tab
       # the idle clock's smart stack: one card beside the clock that changes with the moment (see the README)
       idle_stack:
         enabled: true # false keeps the clock alone

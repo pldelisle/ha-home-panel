@@ -51,6 +51,15 @@ h2 {
     top: 0;
     right: 0;
   }
+  /* an action slotted beside Close (the Ask sheet's Cheat sheet link, 44px at 52px from the corner, 48px at 56px under Material) takes room of its own, which the heading keeps clear of */
+  :host([has-actions]) h2,
+  :host([has-actions]) .subline {
+    padding-right: 104px;
+  }
+  :host([has-actions][design='material']) h2,
+  :host([has-actions][design='material']) .subline {
+    padding-right: 112px;
+  }
 }
 :host([inline]) .sheet {
   position: static;

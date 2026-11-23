@@ -220,6 +220,77 @@ test.describe('a house with an ask block', () => {
   });
 });
 
+test.describe('the cheat sheet link', () => {
+  const CHEAT_SHEET = 'https://example.com/ask-cheat-sheet';
+  const cheatSheet = (house: House) => askSheet(house).locator('#ask-cheat-sheet');
+
+  test.describe('with ask.cheat_sheet set', () => {
+    test.use({
+      houseOpts: {cfg: {...ASK_CFG, ask: {entity: ASK_ENTITY, cheat_sheet: CHEAT_SHEET}}, aiTask: AI_TASK},
+    });
+
+    test('is an icon link in the header, left of Close, as large as Close, that opens the page in a new tab', async ({
+      house,
+    }) => {
+      await withAsk(house);
+      await openAsk(house);
+      const link = cheatSheet(house);
+      await expect(link).toHaveAttribute('href', CHEAT_SHEET);
+      await expect(link).toHaveAttribute('target', '_blank');
+      await expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+      await expect(link).toHaveAccessibleName('Cheat sheet');
+      await expect(link).toHaveAttribute('title', 'Cheat sheet');
+      const close = askDialog(house).getByRole('button', {name: 'Close'});
+      const [a, b] = await Promise.all([link.boundingBox(), close.boundingBox()]);
+      expect(a!.width).toBeGreaterThanOrEqual(44);
+      expect(a!.height).toBeGreaterThanOrEqual(44);
+      expect(a!.width).toBeCloseTo(b!.width, 0);
+      expect(a!.x + a!.width).toBeLessThanOrEqual(b!.x + 0.5);
+    });
+  });
+
+  test.describe('in French', () => {
+    test.use({
+      houseOpts: {
+        cfg: {...ASK_CFG, ask: {entity: ASK_ENTITY, cheat_sheet: CHEAT_SHEET}, names: KEEP_ENGLISH_NAMES},
+        lang: 'fr',
+        aiTask: AI_TASK,
+      },
+    });
+
+    test('is named in French', async ({house}) => {
+      await withAsk(house);
+      await openAsk(house);
+      await expect(cheatSheet(house)).toHaveAccessibleName('Aide-mémoire');
+    });
+
+    test('on a phone the heading ends left of the link', async ({house}) => {
+      test.skip(!isPhone(house), 'the phone puts Close in the corner');
+      await withAsk(house);
+      await openAsk(house);
+      const heading = askDialog(house, "Interroger l'historique").getByRole('heading');
+      // the text's own right edge: the heading is a block as wide as its padding leaves, so a range over its words is measured
+      const edge = await heading.evaluate(h => {
+        const range = document.createRange();
+        range.selectNodeContents(h);
+        return Math.max(...[...range.getClientRects()].map(r => r.right));
+      });
+      const link = await cheatSheet(house).boundingBox();
+      expect(edge).toBeLessThan(link!.x);
+    });
+  });
+
+  test.describe('without ask.cheat_sheet', () => {
+    test.use({houseOpts: {cfg: ASK_CFG, aiTask: AI_TASK}});
+
+    test('draws no link', async ({house}) => {
+      await withAsk(house);
+      await openAsk(house);
+      await expect(cheatSheet(house)).toHaveCount(0);
+    });
+  });
+});
+
 test.describe('in French', () => {
   test.use({houseOpts: {cfg: {...ASK_CFG, names: KEEP_ENGLISH_NAMES}, lang: 'fr', aiTask: AI_TASK, time: AFTERNOON}});
 

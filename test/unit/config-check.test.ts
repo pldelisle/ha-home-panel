@@ -262,6 +262,20 @@ describe('the ask block', () => {
     expect(checkConfig({ask: {entity: 'sensor.ai_task.x'}})).toHaveLength(1);
   });
 
+  test('a cheat sheet page is an https address, and nothing else is accepted', () => {
+    expect(checkConfig({ask: {entity: 'ai_task.a', cheat_sheet: 'https://example.com/ask-cheat-sheet'}})).toEqual([]);
+    expect(checkConfig({ask: {entity: 'ai_task.a'}})).toEqual([]);
+    for (const got of ['http://example.com/ask-cheat-sheet', 'example.com/ask-cheat-sheet', '']) {
+      expect(checkConfig({ask: {entity: 'ai_task.a', cheat_sheet: got}})).toEqual([
+        {path: 'ask.cheat_sheet', key: 'config.askCheatSheetNotHttps', values: {path: 'ask.cheat_sheet', got}},
+      ]);
+    }
+    expect(checkConfig({ask: {entity: 'ai_task.a', cheat_sheet: 5}})[0]).toMatchObject({
+      path: 'ask.cheat_sheet',
+      key: 'config.wrongType',
+    });
+  });
+
   test('the entity is required, and must be text', () => {
     expect(checkConfig({ask: {}})).toEqual([
       {path: 'ask', key: 'config.missingKey', values: {path: 'ask', missing: 'entity'}},
@@ -281,7 +295,13 @@ describe('the ask block', () => {
 
   test('the messages exist in both languages and say what to do', () => {
     expect(en['config.askNotAiTask']).toBe('{path}: {got} is not an AI Task entity. Its id starts with ai_task.');
-    for (const key of ['config.askMissingEntity', 'config.askUnknownExclude', 'config.askOverCap'] as const) {
+    expect(en['config.askCheatSheetNotHttps']).toBe('{path}: {got} is not an https address. It starts with https://.');
+    for (const key of [
+      'config.askCheatSheetNotHttps',
+      'config.askMissingEntity',
+      'config.askUnknownExclude',
+      'config.askOverCap',
+    ] as const) {
       expect(en[key]).toContain('{path}');
       expect(fr[key]).toContain('{path}');
     }
