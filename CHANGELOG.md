@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.24.0
+
+- The Ask sheet can link to your own cheat sheet: set `ask.cheat_sheet` to an https address and a Cheat sheet icon in the sheet's header opens it in a new tab.
+- The Climate chart shows when the heating ran: muted bars under the temperature line, a baseboard's power for a room, the rooms' sum for the house, and the share of each bucket the heat pump spent heating.
+
 ## 2.23.0
 
 - A new Ask button in the header answers a question about the house's history. Type "how warm was the office yesterday?" and the panel draws the chart. It appears when the config names an AI Task entity under `ask`.
