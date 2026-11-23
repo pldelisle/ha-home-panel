@@ -186,6 +186,7 @@ export const en = {
   'config.notAPair': '{path}: a link needs exactly two cards.',
   'config.notATime': '{path}: {got} is not a time like 20:00.',
   'config.missingKey': '{path}: {missing} is required.',
+  'config.askCheatSheetNotHttps': '{path}: {got} is not an https address. It starts with https://.',
   'config.askNotAiTask': '{path}: {got} is not an AI Task entity. Its id starts with ai_task.',
   // what the Ask block's check says about the house (src/features/ask/checks.ts): the entity is not in the house, an excluded id is not, the catalog was cut
   'config.askMissingEntity': '{path}: {entity} is not in this house, so the Ask sheet stays off.',
@@ -1599,6 +1600,7 @@ export const en = {
   'ask.button': 'Ask the history',
   'ask.title': 'Ask the history',
   'ask.close': 'Close',
+  'ask.cheatSheet': 'Cheat sheet',
   'ask.field': 'Your question',
   'ask.placeholder': 'How warm was the office yesterday?',
   'ask.send': 'Ask',

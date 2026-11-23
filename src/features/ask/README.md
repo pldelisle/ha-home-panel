@@ -23,7 +23,7 @@ src/features/ask/
   loader.ts        AskLoader: the controller that runs one question (AI Task, plan, history window, answer) into the reducer; drops a stale or cancelled reply
   sheets.ts        ASK_SHEET, the sheet's id (ADR 0021)
   index.ts         defines the elements; imported dynamically by the shell
-  ask-sheet.ts     <hp-ask-sheet>: the field, the send button and the result in an aria-live region
+  ask-sheet.ts     <hp-ask-sheet>: the field, the send button and the result in an aria-live region; the Cheat sheet icon link in the header when `ask.cheat_sheet` is set
   ask-answer.ts    <hp-ask-answer>: the summary, then the mean and <hp-chart> of a series, the list of spans of moments or the figure and <hp-chart> bars of a total, and the understood line
 ```
 

@@ -208,11 +208,23 @@ test('idle_stack: on by default, reminders need an HH:MM time, away_mode alias',
   });
 });
 
+test('ask.cheat_sheet: the https page as it is, null when absent or not https', () => {
+  const entity = 'ai_task.local_model';
+  expect(resolveConfig({ask: {entity, cheat_sheet: 'https://example.com/ask-cheat-sheet'}}, {}).ask?.cheatSheet).toBe(
+    'https://example.com/ask-cheat-sheet',
+  );
+  expect(resolveConfig({ask: {entity}}, {}).ask?.cheatSheet).toBeNull();
+  expect(
+    resolveConfig({ask: {entity, cheat_sheet: 'http://example.com/ask-cheat-sheet'}}, {}).ask?.cheatSheet,
+  ).toBeNull();
+});
+
 test('ask: off without the block, the entity and the exclusions as a list, a refused entity drops the block', () => {
   expect(resolveConfig({}, {}).ask).toBeNull();
   expect(resolveConfig({ask: {entity: 'ai_task.local_model'}}, {}).ask).toStrictEqual({
     entity: 'ai_task.local_model',
     exclude: [],
+    cheatSheet: null,
   });
   expect(resolveConfig({ask: {entity: 'ai_task.local_model', exclude: 'sensor.a'}}, {}).ask?.exclude).toStrictEqual([
     'sensor.a',

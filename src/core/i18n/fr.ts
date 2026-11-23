@@ -169,6 +169,7 @@ export const fr: Record<MessageKey, string> = {
   'config.notAPair': '{path} : un lien doit relier exactement deux cartes.',
   'config.notATime': "{path} : {got} n'est pas une heure comme 20:00.",
   'config.missingKey': '{path} : {missing} est obligatoire.',
+  'config.askCheatSheetNotHttps': "{path} : {got} n'est pas une adresse https. Elle commence par https://.",
   'config.askNotAiTask': "{path} : {got} n'est pas une entité AI Task. Son identifiant commence par ai_task.",
   'config.askMissingEntity':
     "{path} : {entity} n'existe pas dans cette maison, la fenêtre Demander reste donc éteinte.",
@@ -1557,6 +1558,7 @@ export const fr: Record<MessageKey, string> = {
   'ask.button': "Interroger l'historique",
   'ask.title': "Interroger l'historique",
   'ask.close': 'Fermer',
+  'ask.cheatSheet': 'Aide-mémoire',
   'ask.field': 'Votre question',
   'ask.placeholder': 'Quelle température faisait-il au bureau hier ?',
   'ask.send': 'Demander',

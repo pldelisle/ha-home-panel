@@ -183,12 +183,13 @@ type AskState =
 
 ### The config
 
-- `ask: {entity: 'ai_task.<name>', exclude?: string[]}`. The schema refuses an `entity` outside the `ai_task` domain with a message in the config card. An entity that does not exist in the house is a config check's warning, and the button is not drawn.
+- `ask: {entity: 'ai_task.<name>', exclude?: string[], cheat_sheet?: string}`. The schema refuses an `entity` outside the `ai_task` domain with a message in the config card. `cheat_sheet` is the owner's own page about what to ask, and must start with `https://` (`config.askCheatSheetNotHttps` otherwise, in both languages); it is a setting because the repository holds no URL. `ResolvedConfig.ask.cheatSheet` is that address, or null.
+- With a `cheat_sheet`, the sheet's header draws a Cheat sheet icon link in `<hp-sheet>`'s `actions` slot, left of Close: `target="_blank"` and `rel="noopener noreferrer"`, named "Cheat sheet" ("Aide-mémoire") with the same words as its tooltip, with Close's size (44px at least), hit area and focus ring. Without it there is no icon. An entity that does not exist in the house is a config check's warning, and the button is not drawn.
 - The full test house and the bare test house have no `ask` block. The states that need one set it through the harness, as the other spec-specific states do.
 
 ### Strings
 
-About forty message keys under `ask.*`, in both catalogs: the button's name, the field's placeholder, the three suggestions, the five states, the three answer forms' summaries with plurals, the nine periods, the tests ("open longer than {n} min", "above {v}"), the coverage note and the config errors.
+About forty message keys under `ask.*`, in both catalogs: the button's name, the Cheat sheet link's name, the field's placeholder, the three suggestions, the five states, the three answer forms' summaries with plurals, the nine periods, the tests ("open longer than {n} min", "above {v}"), the coverage note and the config errors.
 
 ### Performance, by construction
 

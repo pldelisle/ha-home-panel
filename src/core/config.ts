@@ -100,8 +100,13 @@ const room = either(
 // two cards (an area id or a light entity each) that move together, with an optional input_boolean to link and unlink them
 const lightLink = either(isRecord, block({lights: pair, switch: optional(string())}), pair);
 
-// the Ask sheet's switch: the AI Task entity that plans the questions, and the entities kept out of what the model is told (spec 29)
-const ask = block({entity: pattern(string(), /^ai_task\./), exclude: optional(oneOrList(string()))});
+// the Ask sheet's switch: the AI Task entity that plans the questions, the entities kept out of what the model is told, and the owner's own page of what to ask,
+// opened in a new tab by an icon in the sheet's header; it is a setting because no URL is written in the repository (spec 29)
+const ask = block({
+  entity: pattern(string(), /^ai_task\./),
+  exclude: optional(oneOrList(string())),
+  cheat_sheet: optional(pattern(string(), /^https:\/\//)),
+});
 
 // `at` is a time of day, 8:00 or 20:00: the resolver has always read both, and read it trimmed
 const reminder = block({
@@ -194,8 +199,11 @@ export interface ResolvedConfig {
   /** The `names:` block as written, or an empty record; the store's name resolver reads it. */
   names: Record<string, Record<string, string>>;
   stack: {on: boolean; sunriseOff: boolean; reminders: Reminder[]};
-  /** The Ask sheet's AI Task entity and the entities left out of its catalog; null without the block (no button, no feature code). */
-  ask: {entity: string; exclude: string[]} | null;
+  /**
+   * The Ask sheet's AI Task entity, the entities left out of its catalog and the https page its header's Cheat sheet icon opens (null: no icon);
+   * null without the block (no button, no feature code).
+   */
+  ask: {entity: string; exclude: string[]; cheatSheet: string | null} | null;
   /** The `climate_station` as written: an ECCC climate identifier, false for none, null to look for the nearest. */
   climateStation: string | false | null;
 }
@@ -298,6 +306,8 @@ function problemOf(failure: Failure): ProblemAt {
     return problemAt(at.slice(0, -1), 'config.missingKey', {missing: String(at[at.length - 1])});
   if (failure.refinement === 'pattern' && pathOf(at) === 'ask.entity')
     return problemAt(at, 'config.askNotAiTask', {got: String(value)});
+  if (failure.refinement === 'pattern' && pathOf(at) === 'ask.cheat_sheet')
+    return problemAt(at, 'config.askCheatSheetNotHttps', {got: String(value)});
   if (failure.refinement === 'pattern') return problemAt(at, 'config.notATime', {got: String(value)});
   if (failure.type === 'enums' && (typeof value === 'string' || typeof value === 'number'))
     return problemAt(at, 'config.notOneOf', {got: String(value), options: ROOM_ICONS.join(', ')});
@@ -491,7 +501,9 @@ export function resolveConfig(raw: unknown, states?: ConfigStates | null): Resol
     // a name (or an id) to one name per language; the name resolver in the core reads it
     names: cfg.names ?? {},
     climateStation: climateStationOf(cfg.climate_station),
-    ask: cfg.ask ? {entity: cfg.ask.entity, exclude: asList(cfg.ask.exclude)} : null,
+    ask: cfg.ask
+      ? {entity: cfg.ask.entity, exclude: asList(cfg.ask.exclude), cheatSheet: cfg.ask.cheat_sheet ?? null}
+      : null,
     car: {
       name: cfg.car?.name || null,
       color: cfg.car?.color || null,

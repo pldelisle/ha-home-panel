@@ -13,6 +13,11 @@ describe('the icons', () => {
     expect(ico('ask', 20).values).toEqual([20, 20, ICONS.ask]);
     expect(ICONS.ask).not.toBe(ICONS.more);
   });
+
+  test('the Cheat sheet link has its own icon, a document with lines', () => {
+    expect(ico('cheatsheet', 22).values).toEqual([22, 22, ICONS.cheatsheet]);
+    expect(ICONS.cheatsheet).not.toBe(ICONS.ask);
+  });
 });
 
 describe('the weather icons', () => {

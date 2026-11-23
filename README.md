@@ -163,9 +163,10 @@ A button in the header, on every tab, opens a sheet where you type a question ab
       ask:
         entity: ai_task.local_model
         exclude: [sensor.guest_room_temperature]
+        cheat_sheet: https://example.com/ask-cheat-sheet
 ```
 
-It needs an AI Task entity: an integration that exposes a model (a local one, if you like) to Home Assistant as `ai_task.<name>`. Which model answers is a Home Assistant setting; the panel only talks to that entity. `exclude` keeps entities out of what the model is told.
+It needs an AI Task entity: an integration that exposes a model (a local one, if you like) to Home Assistant as `ai_task.<name>`. Which model answers is a Home Assistant setting; the panel only talks to that entity. `exclude` keeps entities out of what the model is told. `cheat_sheet` is optional: an `https://` address of your own page about what to ask. With it, a Cheat sheet icon in the sheet's header, left of Close, opens that page in a new tab; without it there is no icon.
 
 What leaves the panel for the AI Task entity is the question you typed, today's date and weekday, and the names and kinds of the sensors the panel already shows (the catalog, at most 60). No reading, no state and no entity id of your house is sent. The model answers with a plan (which sensor, which period) and writes no sentence: the panel reads the history from Home Assistant's recorder, computes every figure itself and writes the answer in its own language. This first version answers how a temperature or a power reading varied over a day, a week or a month; other questions get a message that the panel cannot look that up yet.
 

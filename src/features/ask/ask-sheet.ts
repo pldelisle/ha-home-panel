@@ -1,7 +1,8 @@
-// <hp-ask-sheet>: the Ask sheet: a text field and its send button, then, in a polite live region, the progress of a question, its answer or the line that says why it has none.
+// <hp-ask-sheet>: the Ask sheet: a text field and its send button, then, in a polite live region, the progress of a question, its answer or the line that says why it has none;
+// in the header, when the config has `ask.cheat_sheet`, an icon link that opens the owner's own page of what to ask in a new tab.
 // Pattern: humble object (Meszaros, xUnit Test Patterns) composing the kit's <hp-sheet> for its chrome and `AskLoader` for the question; properties down (`open`), events up (`sheet-close` passes through).
 // The sheet is read-only and keeps nothing: it asks the loader to open when it opens and to close when it closes, so the next opening starts empty (spec 29, story 20), and it subscribes to no entity.
-// Must not: draw a sheet's chrome, build a suggestion (suggestions.ts does) or send its words to a model, listen for Escape or know which sheet is open (the shell and its host do), call a model or the API client (the loader does), word a figure, or show the model's own words.
+// Must not: draw a sheet's chrome (the Cheat sheet link only fills its `actions` slot), name a page of its own (the address is the config's), build a suggestion (suggestions.ts does) or send its words to a model, listen for Escape or know which sheet is open (the shell and its host do), call a model or the API client (the loader does), word a figure, or show the model's own words.
 import {ContextConsumer} from '@lit/context';
 import {LitElement, html, nothing, unsafeCSS, type PropertyValues} from 'lit';
 import ownCss from './ask-sheet.element.css?inline';
@@ -18,6 +19,7 @@ import {browserDefaults} from '../../core/i18n/browser.ts';
 import {ENGLISH_TAG, panelLocale} from '../../core/i18n/locale.ts';
 import type {StatisticsCache} from '../../core/statistics-cache.ts';
 import {AppearanceConsumer} from '../../ui/controllers/appearance-consumer.ts';
+import {ico} from '../../ui/icons.ts';
 import {StoreController} from '../../ui/controllers/store-controller.ts';
 import {apiContext, statisticsCacheContext} from '../../ui/contexts.ts';
 import '../../ui/sheet.ts'; // defines <hp-sheet>
@@ -139,6 +141,24 @@ export class AskSheet extends LitElement {
     </div>`;
   }
 
+  // the owner's own page of what to ask, in a new tab, from the header's actions slot (drawn before Close); none when the config names no page. `noopener` so the page cannot reach back.
+  private renderCheatSheet(t: Translate) {
+    const href = this.storeController.store.config.ask?.cheatSheet;
+    if (!href) return nothing;
+    const label = t('ask.cheatSheet');
+    return html`<a
+      slot="actions"
+      class="cheat-sheet"
+      id="ask-cheat-sheet"
+      href=${href}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label=${label}
+      title=${label}
+      >${ico('cheatsheet', 22)}</a
+    >`;
+  }
+
   protected override render() {
     const {t} = this.storeController.store;
     return html`<hp-sheet
@@ -148,7 +168,7 @@ export class AskSheet extends LitElement {
       .heading=${t('ask.title')}
       .closeLabel=${t('ask.close')}
     >
-      ${this.open ? this.renderBody() : nothing}
+      ${this.renderCheatSheet(t)} ${this.open ? this.renderBody() : nothing}
     </hp-sheet>`;
   }
 

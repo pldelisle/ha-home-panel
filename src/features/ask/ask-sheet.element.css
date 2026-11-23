@@ -125,3 +125,43 @@
   font: var(--type-body-small);
   letter-spacing: var(--track-body-small);
 }
+/* The Cheat sheet link, in the header's actions slot before Close: the sheet's Close button's own circle (src/ui/styles/sheet.css, `button.icon` and `.close`): 44px, the card's fill, the
+   shadow and the focus ring; Liquid Glass's rim and Material's 48px tonal circle follow it. A link, so no button state layer is drawn over it. */
+.cheat-sheet {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--card);
+  color: var(--fg);
+  display: grid;
+  place-items: center;
+  box-shadow: var(--shadow);
+  text-decoration: none;
+  cursor: pointer;
+}
+.cheat-sheet:focus-visible {
+  outline: var(--focus-width) solid var(--focus-color);
+  outline-offset: var(--focus-offset);
+}
+:host([glass]) .cheat-sheet {
+  background: var(--g-fill);
+  box-shadow: var(--g-nav-rim-s);
+}
+:host([design='material']) .cheat-sheet {
+  width: 48px;
+  height: 48px;
+  background: var(--control);
+  color: var(--on-control);
+  box-shadow: none;
+}
+/* on a phone the sheet's Close is in the corner (sheet.element.css), so the link sits clear of it, to its left */
+@media (max-width: 720px) {
+  .cheat-sheet {
+    position: absolute;
+    top: 0;
+    right: 52px;
+  }
+  :host([design='material']) .cheat-sheet {
+    right: 56px;
+  }
+}
