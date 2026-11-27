@@ -75,7 +75,8 @@ const ofMove = (prefix: string, except: string[]) =>
 
 // a move: its fixture, the prefix of the keys it introduced, the folders that say them, and the keys outside the prefix it
 // also introduced (the kit's `common.failed` came with Media's command layer; the kit says it, in src/ui/), and the keys under the prefix it
-// did not (the room view's Back button, `room.back`, #511, is the shell's: src/shell/room-pane.ts; Climate's heating bars' names, #626)
+// did not (the room view's Back button, `room.back`, #511, is the shell's: src/shell/room-pane.ts; Climate's heating bars' names, #626; the Status
+// checks of the house's own monitoring, which came after the move and were never the legacy layer's)
 describe.each([
   ['weather', 'weather.', ['src/features/weather/', 'src/providers/', 'src/core/i18n/'], []],
   ['media', 'media.', ['src/features/media/', 'src/providers/'], ['common.failed']],
@@ -84,7 +85,23 @@ describe.each([
   ['energy', 'energy.', ['src/features/energy/', 'src/providers/'], ['common.noReading']],
   ['climate', 'climate.', ['src/features/climate/'], [], ['climate.chart.heating', 'climate.chart.heatingTime']],
   ['car', 'car.', ['src/features/car/', 'src/providers/'], []],
-  ['live', 'live.', ['src/features/live/'], []],
+  [
+    'live',
+    'live.',
+    ['src/features/live/'],
+    [],
+    [
+      'live.infraSilent',
+      'live.infraSilentLine',
+      'live.infraAlertFor',
+      'live.infraAlertLine',
+      'live.infraClear',
+      'live.securityWatch',
+      'live.securityAct',
+      'live.securityLine',
+      'live.securityClear',
+    ],
+  ],
   ['automations', 'automations.', ['src/features/automations/'], []],
   ['lights', 'lights.', ['src/features/lights/'], []],
   ['people', 'people.', ['src/features/people/'], []],

@@ -40,6 +40,10 @@ panel_custom:
         hydro_quebec_peak: binary_sensor.hydro_quebec_critical_peak_in_progress
         hydro_quebec_upcoming_peak: binary_sensor.hydro_quebec_upcoming_critical_peak
         away_mode: input_boolean.away # on while the house is in Away mode (a card on the idle clock)
+        # the house's own monitoring in the status checks (these are the defaults): the alerts Prometheus fires, through a rest sensor,
+        # and a nightly security digest whose state is ok, watch or act
+        infra_alerts: sensor.infra_alerts
+        security_digest: sensor.security_digest
       # rooms on the Climate tab, in this order (default: every thermostat except the heat pump)
       rooms:
         - {climate: climate.living_room, name: Living room, icon: sofa}

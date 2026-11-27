@@ -68,6 +68,9 @@ export const DEFAULT_ENTITIES = {
   hp: null,
   // an input_boolean that is on while the house is in Away mode (the idle clock shows a card for it)
   away: null,
+  // the house's own monitoring, from two Home Assistant packages whose names fix these ids: the alerts Prometheus fires and the nightly security digest
+  infraAlerts: 'sensor.infra_alerts',
+  securityDigest: 'sensor.security_digest',
 } satisfies Record<string, string | null>;
 /** The keys of DEFAULT_ENTITIES: the entities each card reads. */
 export type EntityKey = keyof typeof DEFAULT_ENTITIES;
@@ -139,6 +142,8 @@ export const ENTITY_ALIAS: Record<string, EntityKey> = {
   hydro_quebec_upcoming_peak: 'hqUpcoming',
   heat_pump: 'hp',
   away_mode: 'away',
+  infra_alerts: 'infraAlerts',
+  security_digest: 'securityDigest',
 };
 /** Every key the `entities:` block accepts: both spellings. */
 export const ENTITY_KEYS = [...Object.keys(ENTITY_ALIAS), ...Object.keys(DEFAULT_ENTITIES)];

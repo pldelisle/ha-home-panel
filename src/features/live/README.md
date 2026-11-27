@@ -6,6 +6,7 @@ The header's live-activity pill and its Status checks ([spec 22](../../../docs/s
 
 ```
 src/providers/
+  infra-monitoring.ts      infraAlerts and securityDigest: the house's own monitoring, from two Home Assistant sensors
   hilo.ts                  gains hiloGateway(states, config): {on, disconnected} | null
   environment-canada.ts    gains warningCount(states, config): number | null
   hydro-quebec.ts          gains balancePresent, balanceUpdated and peakReporting on its inputs
@@ -17,7 +18,7 @@ src/core/i18n/
 src/features/live/
   README.md
   inputs.ts                readLive(states, registries, config, names, now): LiveInputs, the providers composed
-  checks.ts                the fourteen checks, CHECKS (the chain) and runChecks(inputs, deps)
+  checks.ts                the sixteen checks, CHECKS (the chain) and runChecks(inputs, deps)
   ids.ts                   liveIds(store): every id readLive reads
   activities.ts            hiloActivity, carActivity, waterActivity: each running activity's pill text, ring and card
   done.ts                  nextDone(previous, activities, inputs): the ten-minute "finished" state, LiveState
@@ -32,25 +33,27 @@ An activity is one thing running now: a Hilo challenge, the car charging (or pau
 
 ## The Status checks
 
-Each check is a named `Check`: a key and `run(inputs, deps)`, which returns `null` when the check does not apply to this house (its integration is absent, so a house without Hilo has no Hilo line at all), else what it says: an `item` (`crit` or `warn`, a title and a line), `items` (one per sensor, for the open doors, the offline sensors and the low batteries) and the phrase it says when all is well (`clear`, such as "Car locked"). `CHECKS` lists them in the legacy `attention()`'s order, which is the popup's list order, and `runChecks` folds the chain: the items in chain order, then the phrases in chain order. This is Chain of Responsibility in its collecting form (Gamma et al., _Design Patterns_): every link is asked and none stops the chain.
+Each check is a named `Check`: a key and `run(inputs, deps)`, which returns `null` when the check does not apply to this house (its integration is absent, so a house without Hilo has no Hilo line at all), else what it says: an `item` (`crit` or `warn`, a title and a line), `items` (one per sensor, for the open doors, the offline sensors and the low batteries) and the phrase it says when all is well (`clear`, such as "Car locked"). `CHECKS` lists them in the legacy `attention()`'s order, then the two of the house's own monitoring, which is the popup's list order, and `runChecks` folds the chain: the items in chain order, then the phrases in chain order. This is Chain of Responsibility in its collecting form (Gamma et al., _Design Patterns_): every link is asked and none stops the chain.
 
-The thresholds are the legacy panel's, compared the same way: the Hydro-Québec balance is stale after more than 36 hours, a door is a warning after more than ten minutes open, a sensor's battery under 15 percent. A fifteenth check is one function, one line in `CHECKS` and one test.
+The thresholds are the legacy panel's, compared the same way: the Hydro-Québec balance is stale after more than 36 hours, a door is a warning after more than ten minutes open, a sensor's battery under 15 percent. A new check is one function, one line in `CHECKS` and one test. The fifteenth and sixteenth read the house's own monitoring: the alerts Prometheus fires and the nightly security digest, each through a Home Assistant sensor, never Prometheus itself (spec 27).
 
-| Check                     | Applies when                                 | Item                       | Phrase                                         |
-| ------------------------- | -------------------------------------------- | -------------------------- | ---------------------------------------------- |
-| `hydroQuebecStale`        | the balance sensor is in the states          | warn, stale or unavailable | Hydro-Québec updating                          |
-| `heatPumpOffline`         | the heat pump is in the states               | crit, with its maker       | Heat pump online                               |
-| `hiloGatewayOffline`      | the gateway sensor is in the states          | crit, off or disconnected  | Hilo gateway online                            |
-| `thermostatsNotReporting` | a room's thermostat is in the states         | warn, the rooms' names     |                                                |
-| `criticalPeak`            | Hydro-Québec is there                        | crit now, warn coming      | No critical peak (the peak sensor has a value) |
-| `weatherWarnings`         | the warnings sensor reads a number           | warn                       | No weather alerts                              |
-| `tirePressureLow`         | a car                                        | warn                       |                                                |
-| `carUnlocked`             | a car                                        | warn                       | Car locked                                     |
-| `carNotReporting`         | a car                                        | warn, no charge reading    |                                                |
-| `doorOpenTenMinutes`      | a door sensor                                | warn, one per door         |                                                |
-| `sensorOffline`           | a door or motion sensor                      | warn, one per sensor       |                                                |
-| `sensorBatteryLow`        | a door or motion sensor                      | warn, one per sensor       |                                                |
-| `doorsClosed`             | a door sensor                                |                            | Doors closed                                   |
-| `wallboxOffline`          | the charger's status sensor is in the states | warn                       |                                                |
+| Check                     | Applies when                                 | Item                               | Phrase                                         |
+| ------------------------- | -------------------------------------------- | ---------------------------------- | ---------------------------------------------- |
+| `hydroQuebecStale`        | the balance sensor is in the states          | warn, stale or unavailable         | Hydro-Québec updating                          |
+| `heatPumpOffline`         | the heat pump is in the states               | crit, with its maker               | Heat pump online                               |
+| `hiloGatewayOffline`      | the gateway sensor is in the states          | crit, off or disconnected          | Hilo gateway online                            |
+| `thermostatsNotReporting` | a room's thermostat is in the states         | warn, the rooms' names             |                                                |
+| `criticalPeak`            | Hydro-Québec is there                        | crit now, warn coming              | No critical peak (the peak sensor has a value) |
+| `weatherWarnings`         | the warnings sensor reads a number           | warn                               | No weather alerts                              |
+| `tirePressureLow`         | a car                                        | warn                               |                                                |
+| `carUnlocked`             | a car                                        | warn                               | Car locked                                     |
+| `carNotReporting`         | a car                                        | warn, no charge reading            |                                                |
+| `doorOpenTenMinutes`      | a door sensor                                | warn, one per door                 |                                                |
+| `sensorOffline`           | a door or motion sensor                      | warn, one per sensor               |                                                |
+| `sensorBatteryLow`        | a door or motion sensor                      | warn, one per sensor               |                                                |
+| `doorsClosed`             | a door sensor                                |                                    | Doors closed                                   |
+| `wallboxOffline`          | the charger's status sensor is in the states | warn                               |                                                |
+| `infraAlerts`             | the alerts sensor is in the states           | one per alert, or warn when silent | Servers healthy                                |
+| `securityDigest`          | the digest sensor is in the states           | warn on watch, crit on act         | Security digest clear                          |
 
 The legacy `attention()` keeps drawing the popup until #256 switches the header to these rules.

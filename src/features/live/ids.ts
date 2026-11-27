@@ -7,7 +7,7 @@ import type {PanelStore} from '../../core/store.ts';
 import {doorMotionSensors} from '../../providers/door-motion.ts';
 import {carEntityIds, findCar} from '../../providers/fordpass.ts';
 
-/** The sensors of the integrations the header reads, by config key: the flow, Hilo, Hydro-Québec, the heat pump, the warnings, the Wallbox. */
+/** The sensors of the integrations the header reads, by config key: the flow, Hilo, Hydro-Québec, the heat pump, the warnings, the Wallbox, the monitoring. */
 const CONFIG_KEYS = [
   'grid',
   'gridLive',
@@ -30,6 +30,8 @@ const CONFIG_KEYS = [
   'wbPause',
   'wbLock',
   'wbPrice',
+  'infraAlerts',
+  'securityDigest',
 ] as const;
 
 /** The ids the Status checks and the activities read; none before Home Assistant's first states. */

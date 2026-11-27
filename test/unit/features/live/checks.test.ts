@@ -16,7 +16,9 @@ import {
   hiloGatewayOffline,
   HYDRO_QUEBEC_STALE_MS,
   hydroQuebecStale,
+  infraAlerts,
   runChecks,
+  securityDigest,
   sensorBatteryLow,
   sensorOffline,
   thermostatsNotReporting,
@@ -29,6 +31,7 @@ import {
 import {readLive, type LiveInputs} from '../../../../src/features/live/inputs.ts';
 import type {HeatPumpInputs} from '../../../../src/providers/heat-pump.ts';
 import type {HydroQuebecInputs} from '../../../../src/providers/hydro-quebec.ts';
+import type {InfraAlert} from '../../../../src/providers/infra-monitoring.ts';
 import type {SensorInputs} from '../../../../src/providers/door-motion.ts';
 import {FULL_CFG} from '../../../e2e/houses.ts';
 import {fullHouse, NOW, storeOf} from '../media/support.ts';
@@ -73,7 +76,15 @@ const sensor = (over: Partial<SensorInputs>): SensorInputs => ({
 describe('the test house', () => {
   test('has nothing to check but says the car is locked and the doors closed; the checks of what it lacks say nothing', () => {
     expect(runChecks(house, deps)).toEqual({items: [], clear: ['Car locked', 'Doors closed']});
-    for (const check of [hydroQuebecStale, heatPumpOffline, hiloGatewayOffline, criticalPeak, weatherWarnings])
+    for (const check of [
+      hydroQuebecStale,
+      heatPumpOffline,
+      hiloGatewayOffline,
+      criticalPeak,
+      weatherWarnings,
+      infraAlerts,
+      securityDigest,
+    ])
       expect(check.run(house, deps), check.key).toBeNull();
   });
 });
@@ -275,8 +286,88 @@ describe('the Wallbox', () => {
   });
 });
 
+describe('the server alerts', () => {
+  const firing = (over: Partial<InfraAlert> = {}): InfraAlert => ({
+    name: 'BackupStale',
+    critical: true,
+    summary: 'The home VM has not been backed up for 36 hours',
+    since: NOW - 12 * 60_000,
+    identity: 'alertname=BackupStale,vm=home',
+    ...over,
+  });
+  const alerts = (...list: InfraAlert[]) => ({infraAlerts: {answering: true, firing: list}});
+
+  test('one item per firing alert: critical in red, the rest in amber, the summary as the title and how long it fires', () => {
+    expect(
+      run(infraAlerts, alerts(firing(), firing({critical: false, identity: 'alertname=DiskFilling', since: null}))),
+    ).toEqual({
+      items: [
+        {
+          level: 'crit',
+          key: 'infra:alertname=BackupStale,vm=home',
+          title: 'The home VM has not been backed up for 36 hours',
+          line: 'Server alert, firing for 12 min.',
+        },
+        {
+          level: 'warn',
+          key: 'infra:alertname=DiskFilling',
+          title: 'The home VM has not been backed up for 36 hours',
+          line: 'Server alert from Prometheus.',
+        },
+      ],
+    });
+    expect(run(infraAlerts, alerts(firing()), frDeps)?.items?.[0]?.line).toBe('Alerte serveur, active depuis 12 min.');
+  });
+
+  test('an alert without a summary is titled by its rule', () => {
+    expect(run(infraAlerts, alerts(firing({summary: null})))?.items?.[0]?.title).toBe('BackupStale');
+  });
+
+  test('monitoring that does not answer is one amber item; none firing says the servers are healthy', () => {
+    expect(run(infraAlerts, {infraAlerts: {answering: false, firing: []}})).toEqual({
+      item: {
+        level: 'warn',
+        key: 'infraSilent',
+        title: 'Monitoring not answering',
+        line: 'Home Assistant has no reply from Prometheus, so server alerts cannot show.',
+      },
+    });
+    expect(run(infraAlerts, alerts())).toEqual({clear: 'Servers healthy'});
+  });
+});
+
+describe('the security digest', () => {
+  const digest = (level: 'ok' | 'watch' | 'act' | 'unknown', summary: string | null = 'Two logins from abroad.') => ({
+    securityDigest: {level, summary},
+  });
+
+  test('watch is amber, act is red, each with the digest’s sentence', () => {
+    expect(run(securityDigest, digest('watch'))).toEqual({
+      item: {
+        level: 'warn',
+        key: 'securityDigest',
+        title: 'Security digest: worth a look',
+        line: 'Two logins from abroad.',
+      },
+    });
+    expect(run(securityDigest, digest('act', null))).toEqual({
+      item: {
+        level: 'crit',
+        key: 'securityDigest',
+        title: 'Security digest: act now',
+        line: "Last night's log review flagged something.",
+      },
+    });
+  });
+
+  test('ok says so; an unknown digest says nothing', () => {
+    expect(run(securityDigest, digest('ok'))).toEqual({clear: 'Security digest clear'});
+    expect(run(securityDigest, digest('unknown'))).toEqual({});
+  });
+});
+
 describe('the chain', () => {
-  test('is the fourteen rules in the legacy order', () => {
+  test('is the fourteen rules in the legacy order, then the monitoring’s two', () => {
     expect(CHECKS.map(check => check.key)).toEqual([
       'hydroQuebecStale',
       'heatPumpOffline',
@@ -292,6 +383,8 @@ describe('the chain', () => {
       'sensorBatteryLow',
       'doorsClosed',
       'wallboxOffline',
+      'infraAlerts',
+      'securityDigest',
     ]);
   });
 
