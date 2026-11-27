@@ -1060,6 +1060,16 @@ export const fr: Record<MessageKey, string> = {
   'live.doorsClosed': 'Portes fermées',
   'live.wallboxOffline': 'Wallbox hors ligne',
   'live.wallboxOfflineLine': 'La borne est indisponible dans Home Assistant.',
+  'live.infraSilent': 'La surveillance ne répond pas',
+  'live.infraSilentLine':
+    "Home Assistant n'a pas de réponse de Prometheus : les alertes des serveurs ne peuvent pas s'afficher.",
+  'live.infraAlertFor': 'Alerte serveur, active depuis {d}.',
+  'live.infraAlertLine': 'Alerte serveur de Prometheus.',
+  'live.infraClear': 'Serveurs en bon état',
+  'live.securityWatch': 'Bilan de sécurité : à vérifier',
+  'live.securityAct': 'Bilan de sécurité : à traiter',
+  'live.securityLine': "L'analyse des journaux de la nuit a relevé quelque chose.",
+  'live.securityClear': 'Bilan de sécurité sans anomalie',
   // ---- automations: the words of a flow (spec 25, #271) ----
   'automations.domain.climate': 'Climat',
   'automations.domain.light': 'Lumière',

@@ -161,3 +161,38 @@ test.describe('with the Hydro-Québec peak sensor', () => {
     await expect(chip).toHaveText('');
   });
 });
+
+// The house's own monitoring (the guide's sensor.infra_alerts and sensor.security_digest): a critical alert makes the pill red with
+// its summary in the Status checks; Prometheus going silent is an amber item of its own; the digest's "act" is red with its summary.
+test('63 a firing server alert and the security digest show in the Status checks', async ({house}) => {
+  await stopCharging(house);
+  await house.setState('sensor.infra_alerts', {
+    state: '1',
+    attributes: {
+      alerts: [
+        {
+          labels: {alertname: 'BackupStale', severity: 'critical', vm: 'home'},
+          annotations: {summary: 'The home VM has not been backed up for 36 hours'},
+          state: 'firing',
+          activeAt: new Date(Date.now() - 12 * 60_000).toISOString(),
+        },
+      ],
+    },
+  });
+  await house.setState('sensor.security_digest', {state: 'act', attributes: {summary: 'Two sign-ins from abroad.'}});
+  await expect(pill(house)).toContainText(/2 things need attention/);
+  const popup = await openPopup(house);
+  await expect(popup).toContainText('The home VM has not been backed up for 36 hours');
+  await expect(popup).toContainText('Security digest: act now');
+  await expect(popup).toContainText('Two sign-ins from abroad.');
+});
+
+test('64 monitoring that stops answering is one item, and a quiet night says the digest is clear', async ({house}) => {
+  await stopCharging(house);
+  await house.setState('sensor.infra_alerts', {state: 'unavailable', attributes: {}});
+  await house.setState('sensor.security_digest', {state: 'ok', attributes: {summary: ''}});
+  await expect(pill(house)).toContainText(/needs attention/);
+  const popup = await openPopup(house);
+  await expect(popup).toContainText('Monitoring not answering');
+  await expect(popup).toContainText('Security digest clear');
+});

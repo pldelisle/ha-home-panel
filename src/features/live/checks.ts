@@ -1,4 +1,5 @@
-// The header's fourteen Status checks: one named pure rule each over `LiveInputs`, in the legacy `attention()`'s order, and the fold.
+// The header's sixteen Status checks: one named pure rule each over `LiveInputs`, the legacy `attention()`'s fourteen in its order then the
+// house's own monitoring (its alerts and its security digest), and the fold.
 // Pattern: Chain of Responsibility in its collecting form (Gamma et al.): `CHECKS` is the chain and `runChecks` asks every link,
 // keeping each item and each "all is well" phrase in chain order; a link that returns null does not apply to this house.
 // Must not: import a feature, read the clock or the states (everything comes through `readLive`), or change a threshold: the
@@ -251,7 +252,47 @@ export const wallboxOffline: Check = {
   },
 };
 
-/** The chain, in the legacy `attention()`'s order, which is the popup's list order. */
+export const infraAlerts: Check = {
+  key: 'infraAlerts',
+  run: ({infraAlerts: monitoring, now}, {t, fmt}) => {
+    if (!monitoring) return null;
+    if (!monitoring.answering)
+      return {
+        item: {level: 'warn', key: 'infraSilent', title: t('live.infraSilent'), line: t('live.infraSilentLine')},
+      };
+    if (!monitoring.firing.length) return {clear: t('live.infraClear')};
+    return {
+      items: monitoring.firing.map(alert => ({
+        level: alert.critical ? 'crit' : 'warn',
+        key: `infra:${alert.identity}`,
+        title: alert.summary ?? alert.name,
+        line:
+          alert.since === null
+            ? t('live.infraAlertLine')
+            : t('live.infraAlertFor', {d: fmt.durationShort(Math.max(0, now - alert.since))}),
+      })),
+    };
+  },
+};
+
+export const securityDigest: Check = {
+  key: 'securityDigest',
+  run: ({securityDigest: digest}, {t}) => {
+    if (!digest) return null;
+    if (digest.level === 'ok') return {clear: t('live.securityClear')};
+    if (digest.level === 'unknown') return {};
+    return {
+      item: {
+        level: digest.level === 'act' ? 'crit' : 'warn',
+        key: 'securityDigest',
+        title: t(digest.level === 'act' ? 'live.securityAct' : 'live.securityWatch'),
+        line: digest.summary ?? t('live.securityLine'),
+      },
+    };
+  },
+};
+
+/** The chain, in the legacy `attention()`'s order then the monitoring's, which is the popup's list order. */
 export const CHECKS: readonly Check[] = [
   hydroQuebecStale,
   heatPumpOffline,
@@ -267,6 +308,8 @@ export const CHECKS: readonly Check[] = [
   sensorBatteryLow,
   doorsClosed,
   wallboxOffline,
+  infraAlerts,
+  securityDigest,
 ];
 
 /** Every link of the chain asked in order: the items and the phrases, each in chain order. */
